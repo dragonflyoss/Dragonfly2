@@ -213,3 +213,10 @@ type StreamServer interface {
 	// get the network listener
 	Listener() net.Listener
 }
+
+// PacketServer is like udp listen endpoint
+type PacketServer interface {
+	Server
+	// get the network listener
+	PacketConn() net.PacketConn
+}
