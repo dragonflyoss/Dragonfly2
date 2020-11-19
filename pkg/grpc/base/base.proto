@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// common data for request and response
+// basic structure for request and response
 
 syntax = "proto3";
 
@@ -42,5 +42,10 @@ message ResponseState{
   bool success = 1;
   Code code = 2;
   string msg = 3;
+}
+
+message UrlMeta{
+  string md5 = 1; // md5 of content downloaded from url
+  string range = 2; // downloading range for single file
 }
 

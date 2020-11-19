@@ -32,7 +32,7 @@ message PeerTaskRequest{
   // biz_id and md5 are used for task id generator to distinguish the same urls
   // md5 is also used to check consistency about file content
   string biz_id = 3; // caller's biz id that can be any string
-  string md5 = 4; // downloaded file content md5
+  base.UrlMeta url_mata = 4; // downloaded file content md5
   string pid = 5; // peer id
   PeerHost peer_host = 6; // peer host info
 }
@@ -42,7 +42,7 @@ message PeerHost{
   // to avoid conflict, need check other information(ip、port...)
   string uuid = 1;
   string ip = 2;
-  int32 port = 3; // peer server port
+  int32 port = 3; // peer server http port
   string host_name = 4;
   string security_domain = 5; // security isolation domain for network
   string location = 6; // area|country|province|city|...

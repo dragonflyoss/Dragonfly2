@@ -31,8 +31,7 @@ message DownRequest{
   // blocks will be written to output path directly,
   // at the same time, dfdaemon workspace also makes soft link to the output
   string output = 2;
-  // md5 of content downloaded from url
-  string md5 = 3;
+  base.UrlMeta url_meta = 3;
   // caller business id
   string biz_id = 4;
   // regex format
