@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// basic message for request and response
+// common data for request and response
 
 syntax = "proto3";
 
