@@ -48,15 +48,15 @@ var (
 	supernodeViper = viper.GetViper()
 )
 
-// supernodeDescription is used to describe supernode command in details.
-var supernodeDescription = `SuperNode is a long-running process with two primary responsibilities:
+// cdnNodeDescription is used to describe cdn command in details.
+var cdnNodeDescription = `SuperNode is a long-running process with two primary responsibilities:
 It's the tracker and scheduler in the P2P network that choose appropriate downloading net-path for each peer.
 It's also a CDN server that caches downloaded data from source to avoid downloading the same files from source repeatedly.`
 
 var rootCmd = &cobra.Command{
-	Use:               "supernode",
+	Use:               "cdn",
 	Short:             "the central control server of Dragonfly used for scheduling and cdn cache",
-	Long:              supernodeDescription,
+	Long:              cdnNodeDescription,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
@@ -115,12 +115,6 @@ func setupFlags(cmd *cobra.Command) {
 
 	flagSet.BoolP("debug", "D", defaultBaseProperties.Debug,
 		"switch daemon log level to DEBUG mode")
-
-	flagSet.Int("up-limit", defaultBaseProperties.PeerUpLimit,
-		"upload limit for a peer to serve download tasks")
-
-	flagSet.Int("down-limit", defaultBaseProperties.PeerDownLimit,
-		"download limit for supernode to serve download tasks")
 
 	flagSet.String("advertise-ip", "",
 		"the supernode ip is the ip we advertise to other peers in the p2p-network")

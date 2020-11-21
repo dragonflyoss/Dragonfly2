@@ -26,9 +26,11 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
 )
-
+//get download path
 var getDownloadRawFunc = getDownloadRaw
+//get metaData path
 var getMetaDataRawFunc = getMetaDataRaw
+//get md5 path
 var getMd5DataRawFunc = getMd5DataRaw
 var getHomeRawFunc = getHomeRaw
 

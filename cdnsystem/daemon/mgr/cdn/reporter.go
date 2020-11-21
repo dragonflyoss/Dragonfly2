@@ -21,11 +21,11 @@ import (
 	"hash"
 
 	"github.com/dragonflyoss/Dragonfly2/apis/types"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/pkg/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
-	"github.com/dragonflyoss/Dragonfly2/supernode/config"
-	"github.com/dragonflyoss/Dragonfly2/supernode/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/supernode/store"
 
 	"github.com/sirupsen/logrus"
 )
@@ -39,17 +39,18 @@ type reporter struct {
 	pieceMD5Manager *pieceMD5Mgr
 }
 
-func newReporter(cfg *config.Config, cacheStore *store.Store, progressManager mgr.ProgressMgr,
+func newReporter(cfg *config.Config, cacheStore *store.Store,
 	metaDataManager *fileMetaDataManager, pieceMD5Manager *pieceMD5Mgr) *reporter {
 	return &reporter{
 		cfg:             cfg,
 		cacheStore:      cacheStore,
-		progressManager: progressManager,
+		progressManager: nil,
 		metaDataManager: metaDataManager,
 		pieceMD5Manager: pieceMD5Manager,
 	}
 }
 
+// todo 需要指定report的 scheduler ip
 func (re *reporter) reportCache(ctx context.Context, taskID string, metaData *fileMetaData,
 	breakNum int) (hash.Hash, *types.TaskInfo, error) {
 	// cache not hit

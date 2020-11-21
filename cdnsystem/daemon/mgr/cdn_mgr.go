@@ -19,17 +19,17 @@ package mgr
 import (
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/sourceclient"
 
 	"github.com/dragonflyoss/Dragonfly2/apis/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/httpclient"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type CDNBuilder func(cfg *config.Config, cacheStore *store.Store, progressManager ProgressMgr,
-	originClient httpclient.OriginHTTPClient, register prometheus.Registerer) (CDNMgr, error)
+	originClient sourceclient.SourceClient, register prometheus.Registerer) (CDNMgr, error)
 
 var cdnBuilderMap = make(map[config.CDNPattern]CDNBuilder)
 
@@ -38,7 +38,7 @@ func Register(name config.CDNPattern, builder CDNBuilder) {
 }
 
 func GetCDNManager(cfg *config.Config, cacheStore *store.Store, progressManager ProgressMgr,
-	originClient httpclient.OriginHTTPClient, register prometheus.Registerer) (CDNMgr, error) {
+	originClient sourceclient.SourceClient, register prometheus.Registerer) (CDNMgr, error) {
 	name := cfg.CDNPattern
 	if name == "" {
 		name = config.CDNPatternLocal
@@ -81,7 +81,7 @@ type CDNMgr interface {
 	GetPieceMD5(ctx context.Context, taskID string, pieceNum int, pieceRange, source string) (pieceMd5 string, err error)
 
 	// CheckFile checks the file whether exists.
-	CheckFile(ctx context.Context, taskID string) bool
+	CheckFileExist(ctx context.Context, taskID string) bool
 
 	// Delete the cdn meta with specified taskID.
 	// The file on the disk will be deleted when the force is true.

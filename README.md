@@ -22,6 +22,6 @@
 
 ## 架构大图
 ### 产品架构
-![](docs/product-arch.png)
+![](docs/prod-arch.png)
 ### 技术架构
-![](docs/technique-arch.png)
+![](docs/tech-arch.png)

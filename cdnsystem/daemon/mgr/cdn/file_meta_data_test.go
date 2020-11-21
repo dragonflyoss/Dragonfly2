@@ -23,7 +23,7 @@ import (
 	"os"
 
 	"github.com/dragonflyoss/Dragonfly2/apis/types"
-	"github.com/dragonflyoss/Dragonfly2/supernode/store"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 
 	"github.com/go-check/check"
 	"github.com/prashantv/gostub"

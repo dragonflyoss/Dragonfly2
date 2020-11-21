@@ -19,7 +19,7 @@ package mgr
 import (
 	"context"
 
-	"github.com/dragonflyoss/Dragonfly/apis/types"
+	"github.com/dragonflyoss/Dragonfly2/apis/types"
 )
 
 // PreheatTask stores the detailed preheat task information.

@@ -20,12 +20,12 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/sourceclient"
 	"path"
 
 	"github.com/dragonflyoss/Dragonfly2/apis/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/httpclient"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/limitreader"
@@ -83,40 +83,36 @@ type Manager struct {
 	cacheStore      *store.Store
 	limiter         *ratelimiter.RateLimiter
 	cdnLocker       *util.LockerPool
-	progressManager mgr.ProgressMgr
-
 	metaDataManager *fileMetaDataManager
 	cdnReporter     *reporter
 	detector        *cacheDetector
-	originClient    httpclient.OriginHTTPClient
+	sourceClient    sourceclient.SourceClient
 	pieceMD5Manager *pieceMD5Mgr
 	writer          *superWriter
 	metrics         *metrics
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, progressManager mgr.ProgressMgr,
-	originClient httpclient.OriginHTTPClient, register prometheus.Registerer) (mgr.CDNMgr, error) {
-	return newManager(cfg, cacheStore, progressManager, originClient, register)
+func NewManager(cfg *config.Config, cacheStore *store.Store, sourceClient sourceclient.SourceClient, register prometheus.Registerer) (mgr.CDNMgr, error) {
+	return newManager(cfg, cacheStore, sourceClient, register)
 }
 
-func newManager(cfg *config.Config, cacheStore *store.Store, progressManager mgr.ProgressMgr,
-	originClient httpclient.OriginHTTPClient, register prometheus.Registerer) (*Manager, error) {
+func newManager(cfg *config.Config, cacheStore *store.Store,
+	sourceClient sourceclient.SourceClient, register prometheus.Registerer) (*Manager, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
 	pieceMD5Manager := newpieceMD5Mgr()
-	cdnReporter := newReporter(cfg, cacheStore, progressManager, metaDataManager, pieceMD5Manager)
+	cdnReporter := newReporter(cfg, cacheStore, metaDataManager, pieceMD5Manager)
 	return &Manager{
 		cfg:             cfg,
 		cacheStore:      cacheStore,
 		limiter:         rateLimiter,
 		cdnLocker:       util.NewLockerPool(),
-		progressManager: progressManager,
 		metaDataManager: metaDataManager,
 		pieceMD5Manager: pieceMD5Manager,
 		cdnReporter:     cdnReporter,
-		detector:        newCacheDetector(cacheStore, metaDataManager, originClient),
-		originClient:    originClient,
+		detector:        newCacheDetector(cacheStore, metaDataManager, sourceClient),
+		sourceClient:    sourceClient,
 		writer:          newSuperWriter(cacheStore, cdnReporter),
 		metrics:         newMetrics(register),
 	}, nil
@@ -128,7 +124,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.TaskInfo) (*types
 	if httpFileLength == 0 {
 		httpFileLength = -1
 	}
-
+	// obtain taskID write lock
 	cm.cdnLocker.GetLock(task.ID, false)
 	defer cm.cdnLocker.ReleaseLock(task.ID, false)
 	// detect Cache
@@ -246,7 +242,7 @@ func (cm *Manager) GetPieceMD5(ctx context.Context, taskID string, pieceNum int,
 }
 
 // CheckFile checks the file whether exists.
-func (cm *Manager) CheckFile(ctx context.Context, taskID string) bool {
+func (cm *Manager) CheckFileExist(ctx context.Context, taskID string) bool {
 	if _, err := cm.cacheStore.Stat(ctx, getDownloadRaw(taskID)); err != nil {
 		return false
 	}

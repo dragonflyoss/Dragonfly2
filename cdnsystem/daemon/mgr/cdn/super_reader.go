@@ -24,9 +24,9 @@ import (
 	"hash"
 	"io"
 
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/pkg/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util"
-	"github.com/dragonflyoss/Dragonfly2/supernode/config"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

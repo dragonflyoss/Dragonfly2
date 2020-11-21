@@ -19,6 +19,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/sourceclient"
 	"net"
 	"net/http"
 	"time"
@@ -33,7 +34,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/progress"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/task"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/httpclient"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/sourceclient/httpclient"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/version"
 
@@ -54,7 +55,7 @@ type Server struct {
 	PieceErrorMgr mgr.PieceErrorMgr  // 分片错误处理
 	PreheatMgr    mgr.PreheatManager  // 预热管理
 
-	originClient httpclient.OriginHTTPClient
+	sourceClient sourceclient.SourceClient
 }
 
 // New creates a brand new server instance.
@@ -74,7 +75,7 @@ func New(cfg *config.Config, logger *logrus.Logger, register prometheus.Register
 		return nil, err
 	}
 
-	originClient := httpclient.NewOriginClient()
+	originClient := httpclient.NewHttpSourceClient()
 	peerMgr, err := peer.NewManager(register)
 	if err != nil {
 		return nil, err
@@ -130,7 +131,7 @@ func New(cfg *config.Config, logger *logrus.Logger, register prometheus.Register
 		GCMgr:         gcMgr,
 		PieceErrorMgr: pieceErrorMgr,
 		PreheatMgr:    preheatMgr,
-		originClient:  originClient,
+		sourceClient:  originClient,
 	}, nil
 }
 

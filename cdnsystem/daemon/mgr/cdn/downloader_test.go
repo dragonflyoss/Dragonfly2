@@ -19,7 +19,7 @@ package cdn
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/sourceclient/httpclient"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +27,6 @@ import (
 	"testing"
 
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/httpclient"
 	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/httputils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
@@ -48,7 +47,7 @@ func init() {
 }
 
 func (s *CDNDownloadTestSuite) TestDownload(c *check.C) {
-	cm, _ := mgr.newManager(config.NewConfig(), nil, nil, httpclient.NewOriginClient(), prometheus.DefaultRegisterer)
+	cm, _ := newManager(config.NewConfig(), nil, httpclient.NewHttpSourceClient(), prometheus.DefaultRegisterer)
 	bytes := []byte("hello world")
 	bytesLength := int64(len(bytes))
 
