@@ -18,28 +18,22 @@ package daemon
 
 import (
 	"context"
-	"os"
-
-	"github.com/dragonflyoss/Dragonfly2/apis/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/server"
-
-	"github.com/go-openapi/strfmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
-// Daemon is a struct to identify main instance of supernode.
+// Daemon is a struct to identify main instance of cdnNode.
 type Daemon struct {
 	Name string
 
 	config *config.Config
 
-	// members of the Supernode cluster
-	ClusterMember []string
+	httpServer *server.HTTPServer
 
-	server *server.Server
+	rpcServer *server.RPCServer
 }
 
 // New creates a new Daemon.
@@ -48,42 +42,39 @@ func New(cfg *config.Config, dfgetLogger *logrus.Logger) (*Daemon, error) {
 		return nil, err
 	}
 
-	s, err := server.New(cfg, dfgetLogger, prometheus.DefaultRegisterer)
+	httpServer, err := server.NewHttpServer(cfg, dfgetLogger, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, err
 	}
 
+	rpcServer, err := server.NewRpcServer(cfg, dfgetLogger, prometheus.DefaultRegisterer)
+	if err != nil {
+		return nil, err
+	}
 	return &Daemon{
 		config: cfg,
-		server: s,
+		httpServer: httpServer,
+		rpcServer: rpcServer,
 	}, nil
-}
-
-// RegisterSuperNode registers the supernode as a peer.
-func (d *Daemon) RegisterSuperNode() error {
-	// construct the PeerCreateRequest for supernode.
-	// TODO: add supernode version
-	hostname, _ := os.Hostname()
-	req := &types.PeerCreateRequest{
-		IP:       strfmt.IPv4(d.config.AdvertiseIP),
-		HostName: strfmt.Hostname(hostname),
-		Port:     int32(d.config.DownloadPort),
-	}
-
-	resp, err := d.server.PeerMgr.Register(context.Background(), req)
-	if err != nil {
-		return err
-	}
-
-	d.config.SetSuperPID(resp.ID)
-	return nil
 }
 
 // Run runs the daemon.
 func (d *Daemon) Run() error {
-	if err := d.server.Start(); err != nil {
-		logrus.Errorf("failed to start HTTP server: %v", err)
+
+	httpserver, err := d.httpServer.Start()
+	if err != nil {
+		logrus.Errorf("failed to start http server: %v", err)
 		return err
 	}
+
+	if _, err := d.rpcServer.Start(); err != nil {
+		logrus.Errorf("failed to start rpc server: %v", err)
+		if err := httpserver.Shutdown(context.Background()); err != nil {
+			logrus.Errorf("failed to shutdown http server: %v", err)
+		}
+		return err
+	}
+
 	return nil
+
 }

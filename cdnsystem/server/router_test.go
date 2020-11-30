@@ -63,13 +63,12 @@ func (rs *RouterTestSuite) SetUpSuite(c *check.C) {
 
 	testConf := &config.Config{
 		BaseProperties: &config.BaseProperties{
-			ListenPort: port,
+			ListenHttpPort: port,
 			Debug:      true,
 			HomeDir:    tmpDir,
 			CDNPattern: config.CDNPatternLocal,
 		},
 		Plugins:  nil,
-		Storages: nil,
 	}
 	s, err := New(testConf, logrus.StandardLogger(), prometheus.NewRegistry())
 	c.Check(err, check.IsNil)

@@ -27,7 +27,7 @@ option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/grpc/cdnsystem";
 message SeedRequest{
   string task_id = 1;
   string url = 2;
-  string md5 = 3; // check content downloaded from remote url
+  base.UrlMeta url_meta = 3; // check content downloaded from remote url
 }
 
 // keep piece meta and data separately
@@ -41,9 +41,12 @@ message PieceSeed{
   string piece_md5 = 5; // for transported piece content
   string piece_range = 6; // for transported piece content
   uint64 piece_offset = 7; // piece's real offset in the file
+  uint64 piece_len = 8;
+  string downloadPath = 9; // download path
 
-  bool last = 8; // whether or not last piece seed for the url
-  uint64 content_length = 9; // content total length for the url
+  bool last = 10; // whether or not last piece seed for the url
+  uint64 content_length = 11; // content total length for the url
+
 }
 
 // seed maker for download url

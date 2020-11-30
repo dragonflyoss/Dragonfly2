@@ -57,7 +57,7 @@ func Initialize(cfg *config.Config) error {
 }
 
 // RegisterPlugin register a plugin builder that will be called to create a new
-// plugin instant when supernode starts.
+// plugin instant when cdnNode starts.
 func RegisterPlugin(pt config.PluginType, name string, builder Builder) {
 	mgr.AddBuilder(pt, name, builder)
 }

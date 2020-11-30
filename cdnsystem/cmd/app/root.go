@@ -1,24 +1,11 @@
-/*
- * Copyright The Dragonfly Authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 package app
 
 import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon"
+	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -39,29 +26,73 @@ import (
 )
 
 const (
-	// SupernodeEnvPrefix is the default environment prefix for Viper.
+	// cdnNodeEnvPrefix is the default environment prefix for Viper.
 	// Both BindEnv and AutomaticEnv will use this prefix.
-	SupernodeEnvPrefix = "supernode"
+	cdnNodeEnvPrefix = "cdnNode"
 )
 
 var (
-	supernodeViper = viper.GetViper()
+	cdnNodeViper = viper.GetViper()
 )
 
 // cdnNodeDescription is used to describe cdn command in details.
-var cdnNodeDescription = `SuperNode is a long-running process with two primary responsibilities:
-It's the tracker and scheduler in the P2P network that choose appropriate downloading net-path for each peer.
-It's also a CDN server that caches downloaded data from source to avoid downloading the same files from source repeatedly.`
+var cdnNodeDescription = `cdnNode is a CDN server that caches downloaded data from source to avoid downloading the same files from source repeatedly.`
 
 var rootCmd = &cobra.Command{
 	Use:               "cdn",
-	Short:             "the central control server of Dragonfly used for scheduling and cdn cache",
+	Short:             "the data cache server of Dragonfly used for avoiding downloading the same files from source repeatedly",
 	Long:              cdnNodeDescription,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return nil
+		// load config file into the given viper instance.
+		if err := readConfigFile(cdnNodeViper, cmd); err != nil {
+			return errors.Wrap(err, "read config file")
+		}
+
+		// get config from viper.
+		cfg, err := getConfigFromViper(cdnNodeViper)
+		if err != nil {
+			return errors.Wrap(err, "get config from viper")
+		}
+
+		// create home dir
+		if err := fileutils.CreateDirectory(cdnNodeViper.GetString("base.homeDir")); err != nil {
+			return fmt.Errorf("failed to create home dir %s: %v", cdnNodeViper.GetString("base.homeDir"), err)
+		}
+
+		// initialize cdnnode logger.
+		if err := initLog(logrus.StandardLogger(), "app.log", cfg.LogConfig); err != nil {
+			return err
+		}
+
+		// initialize dfget logger.
+		dfgetLogger := logrus.New()
+		if err := initLog(dfgetLogger, "dfget.log", cfg.LogConfig); err != nil {
+			return err
+		}
+
+		// set cdnNode advertise ip
+		if stringutils.IsEmptyStr(cfg.AdvertiseIP) {
+			if err := setAdvertiseIP(cfg); err != nil {
+				return err
+			}
+		}
+		logrus.Infof("success to init local ip of cdn, use ip: %s", cfg.AdvertiseIP)
+
+		// set up the CIDPrefix
+		cfg.SetCIDPrefix(cfg.AdvertiseIP)
+
+		logrus.Debugf("get cdnNode config: %+v", cfg)
+		logrus.Info("start to run cdnNode")
+
+		d, err := daemon.New(cfg, dfgetLogger)
+		if err != nil {
+			logrus.Errorf("failed to initialize daemon in cdn: %v", err)
+			return err
+		}
+		return d.Run()
 	},
 }
 
@@ -69,9 +100,9 @@ func init() {
 	setupFlags(rootCmd)
 
 	// add sub commands
-	rootCmd.AddCommand(cmd.NewGenDocCommand("supernode"))
-	rootCmd.AddCommand(cmd.NewVersionCommand("supernode"))
-	rootCmd.AddCommand(cmd.NewConfigCommand("supernode", getDefaultConfig))
+	rootCmd.AddCommand(cmd.NewGenDocCommand("cdn"))
+	rootCmd.AddCommand(cmd.NewVersionCommand("cdn"))
+	rootCmd.AddCommand(cmd.NewConfigCommand("cdn", getDefaultConfig))
 }
 
 // setupFlags setups flags for command line.
@@ -86,38 +117,41 @@ func setupFlags(cmd *cobra.Command) {
 
 	defaultBaseProperties := config.NewBaseProperties()
 
-	flagSet.String("config", config.DefaultSupernodeConfigFilePath,
-		"the path of supernode's configuration file")
+	flagSet.String("config", config.DefaultCdnConfigFilePath,
+		"the path of cdn's configuration file")
 
 	flagSet.String("cdn-pattern", config.CDNPatternLocal,
 		"cdn pattern, must be in [\"local\", \"source\"]. Default: local")
 
-	flagSet.Int("port", defaultBaseProperties.ListenPort,
-		"listenPort is the port that supernode server listens on")
+	flagSet.Int("rpc-port", defaultBaseProperties.ListenRpcPort,
+		"listenPort is the port that cdn rpc server listens on")
+
+	flagSet.Int("http-port", defaultBaseProperties.ListenHttpPort,
+		"listenPort is the port that cdn http server listens on")
 
 	flagSet.Int("download-port", defaultBaseProperties.DownloadPort,
-		"downloadPort is the port for download files from supernode")
+		"downloadPort is the port for download files from cdnNode")
 
 	flagSet.String("home-dir", defaultBaseProperties.HomeDir,
-		"homeDir is the working directory of supernode")
+		"homeDir is the working directory of cdnNode")
 
 	flagSet.Var(&defaultBaseProperties.SystemReservedBandwidth, "system-bandwidth",
 		"network rate reserved for system")
 
 	flagSet.Var(&defaultBaseProperties.MaxBandwidth, "max-bandwidth",
-		"network rate that supernode can use")
+		"network rate that cdnNode can use")
 
 	flagSet.Int("pool-size", defaultBaseProperties.SchedulerCorePoolSize,
 		"pool size is the core pool size of ScheduledExecutorService")
 
 	flagSet.Bool("profiler", defaultBaseProperties.EnableProfiler,
-		"profiler sets whether supernode HTTP server setups profiler")
+		"profiler sets whether cdnNode HTTP server setups profiler")
 
 	flagSet.BoolP("debug", "D", defaultBaseProperties.Debug,
 		"switch daemon log level to DEBUG mode")
 
 	flagSet.String("advertise-ip", "",
-		"the supernode ip is the ip we advertise to other peers in the p2p-network")
+		"the cdnNode ip is the ip we advertise to other peers in the p2p-network")
 
 	flagSet.Duration("fail-access-interval", defaultBaseProperties.FailAccessInterval,
 		"fail access interval is the interval time after failed to access the URL")
@@ -134,7 +168,7 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.Duration("peer-gc-delay", defaultBaseProperties.PeerGCDelay,
 		"peer gc delay is the delay time to execute the GC after the peer has reported the offline")
 
-	exitOnError(bindRootFlags(supernodeViper), "bind root command flags")
+	exitOnError(bindRootFlags(cdnNodeViper), "bind root command flags")
 }
 
 // bindRootFlags binds flags on rootCmd to the given viper instance.
@@ -223,7 +257,7 @@ func bindRootFlags(v *viper.Viper) error {
 		}
 	}
 
-	v.SetEnvPrefix(SupernodeEnvPrefix)
+	v.SetEnvPrefix(cdnNodeEnvPrefix)
 	v.AutomaticEnv()
 
 	return nil
@@ -247,12 +281,12 @@ func readConfigFile(v *viper.Viper, cmd *cobra.Command) error {
 	return nil
 }
 
-// getDefaultConfig returns the default configuration of supernode
+// getDefaultConfig returns the default configuration of cdnNode
 func getDefaultConfig() (interface{}, error) {
 	return getConfigFromViper(viper.GetViper())
 }
 
-// getConfigFromViper returns supernode config from the given viper instance
+// getConfigFromViper returns cdnNode config from the given viper instance
 func getConfigFromViper(v *viper.Viper) (*config.Config, error) {
 	cfg := config.NewConfig()
 
@@ -290,12 +324,13 @@ func decodeWithYAML(types ...reflect.Type) mapstructure.DecodeHookFunc {
 
 // initLog initializes log Level and log format.
 func initLog(logger *logrus.Logger, logPath string, logConfig dflog.LogConfig) error {
-	logFilePath := filepath.Join(supernodeViper.GetString("base.homeDir"), "logs", logPath)
+	// get log file path
+	logFilePath := filepath.Join(cdnNodeViper.GetString("base.homeDir"), "logs", logPath)
 
 	opts := []dflog.Option{
 		dflog.WithLogFile(logFilePath, logConfig.MaxSize, logConfig.MaxBackups),
 		dflog.WithSign(fmt.Sprintf("%d", os.Getpid())),
-		dflog.WithDebug(supernodeViper.GetBool("base.debug")),
+		dflog.WithDebug(cdnNodeViper.GetBool("base.debug")),
 	}
 
 	logrus.Debugf("use log file %s", logFilePath)
@@ -322,7 +357,7 @@ func setAdvertiseIP(cfg *config.Config) error {
 	return nil
 }
 
-// Execute will process supernode.
+// Execute will process cdnNode.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		logrus.Error(err)

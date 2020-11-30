@@ -1,35 +1,17 @@
-/*
- * Copyright The Dragonfly Authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package mgr
 
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/sourceclient"
-
-	"github.com/dragonflyoss/Dragonfly2/apis/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-type CDNBuilder func(cfg *config.Config, cacheStore *store.Store, progressManager ProgressMgr,
-	originClient sourceclient.SourceClient, register prometheus.Registerer) (CDNMgr, error)
+type CDNBuilder func(cfg *config.Config, cacheStore *store.Store,
+	sourceClientMgr *source.Manager, register prometheus.Registerer) (CDNMgr, error)
 
 var cdnBuilderMap = make(map[config.CDNPattern]CDNBuilder)
 
@@ -37,19 +19,27 @@ func Register(name config.CDNPattern, builder CDNBuilder) {
 	cdnBuilderMap[name] = builder
 }
 
-func GetCDNManager(cfg *config.Config, cacheStore *store.Store, progressManager ProgressMgr,
-	originClient sourceclient.SourceClient, register prometheus.Registerer) (CDNMgr, error) {
-	name := cfg.CDNPattern
-	if name == "" {
-		name = config.CDNPatternLocal
+// get an implementation of the interface of CDNMgr
+func GetCDNManager(cfg *config.Config, storeMgr *store.Manager, sourceClientMgr *source.Manager,
+	register prometheus.Registerer) (CDNMgr, error) {
+	cdnPattern := cfg.CDNPattern
+	if cdnPattern == "" {
+		cdnPattern = config.CDNPatternLocal
 	}
 
-	cdnBuilder, ok := cdnBuilderMap[name]
+	cdnBuilder, ok := cdnBuilderMap[cdnPattern]
 	if !ok {
-		return nil, fmt.Errorf("unexpected cdn pattern(%s) which must be in [\"local\", \"source\"]", name)
+		return nil, fmt.Errorf("unexpected cdn pattern(%s) which must be in [\"local\", \"source\"]", cdnPattern)
 	}
-
-	return cdnBuilder(cfg, cacheStore, progressManager, originClient, register)
+	storageDriver := cfg.StorageDriver
+	if storageDriver == "" {
+		storageDriver = config.LocalStorageDriver
+	}
+	storeLocal, err := storeMgr.Get(storageDriver)
+	if err != nil {
+		return nil, err
+	}
+	return cdnBuilder(cfg, storeLocal, sourceClientMgr, register)
 }
 
 // CDNMgr as an interface defines all operations against CDN and
@@ -63,10 +53,10 @@ type CDNMgr interface {
 	// In fact, it's a very time consuming operation.
 	// So if not necessary, it should usually be executed concurrently.
 	// In addition, it's not thread-safe.
-	TriggerCDN(ctx context.Context, taskInfo *types.TaskInfo) (*types.TaskInfo, error)
+	TriggerCDN(ctx context.Context, taskInfo *types.CdnTaskInfo) (*types.CdnTaskInfo, error)
 
 	// GetHTTPPath returns the http download path of taskID.
-	GetHTTPPath(ctx context.Context, taskInfo *types.TaskInfo) (path string, err error)
+	GetHTTPPath(ctx context.Context, taskInfo *types.CdnTaskInfo) (path string, err error)
 
 	// GetStatus gets the status of the file.
 	GetStatus(ctx context.Context, taskID string) (cdnStatus string, err error)
@@ -77,13 +67,11 @@ type CDNMgr interface {
 	// It should return all taskIDs that are not running when the free disk of cdn storage is less than config.FullGCThreshold.
 	GetGCTaskIDs(ctx context.Context, taskMgr TaskMgr) ([]string, error)
 
-	// GetPieceMD5 gets the piece Md5 according to the specified taskID and pieceNum.
-	GetPieceMD5(ctx context.Context, taskID string, pieceNum int, pieceRange, source string) (pieceMd5 string, err error)
-
 	// CheckFile checks the file whether exists.
 	CheckFileExist(ctx context.Context, taskID string) bool
 
 	// Delete the cdn meta with specified taskID.
 	// The file on the disk will be deleted when the force is true.
 	Delete(ctx context.Context, taskID string, force bool) error
+
 }

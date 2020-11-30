@@ -1,25 +1,9 @@
-/*
- * Copyright The Dragonfly Authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 package mgr
 
 import (
 	"context"
 
-	"github.com/dragonflyoss/Dragonfly2/apis/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/atomiccount"
 	"github.com/dragonflyoss/Dragonfly2/pkg/syncmap"
 )
@@ -49,7 +33,7 @@ type ProgressMgr interface {
 
 	// UpdateProgress updates the correlation information between peers and pieces.
 	// 1. update the info about srcCID to tell the scheduler that corresponding peer has the piece now.
-	// 2. update the info about dstPID to tell the scheduler that someone has downloaded the piece form here.
+	// 2. update the info about dstPID to tell the scheduler that someone has downloaded the piece from him.
 	// Scheduler will calculate the load and times of error/success for every peer to make better decisions.
 	UpdateProgress(ctx context.Context, taskID, srcCID, srcPID, dstPID string, pieceNum, pieceStatus int) error
 
@@ -75,9 +59,6 @@ type ProgressMgr interface {
 	//
 	// It's considered as a failure when then superload is greater than limit after adding delta.
 	UpdatePeerServiceDown(ctx context.Context, peerID string) (err error)
-
-	// GetPeersByTaskID gets all peers info with specified taskID.
-	GetPeersByTaskID(ctx context.Context, taskID string) (peersInfo []*types.PeerInfo, err error)
 
 	// GetBlackInfoByPeerID gets black info with specified peerID.
 	GetBlackInfoByPeerID(ctx context.Context, peerID string) (dstPIDMap *syncmap.SyncMap, err error)
