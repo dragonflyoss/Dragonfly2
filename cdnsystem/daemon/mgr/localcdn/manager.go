@@ -20,13 +20,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	PieceMd5SourceDefault = "default"
-	PieceMd5SourceMemory  = "memory"
-	PieceMd5SourceMeta    = "meta"
-	PieceMd5SourceFile    = "file"
-)
-
 var _ mgr.CDNMgr = &Manager{}
 
 func init() {
@@ -67,19 +60,19 @@ type Manager struct {
 	pieceMetaDataManager *pieceMetaDataManager
 	cdnReporter          *reporter
 	detector             *cacheDetector
-	sourceClientMgr      *source.Manager
+	resourceClient       source.ResourceClient
 	writer               *cacheWriter
 	metrics              *metrics
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, sourceClientMgr *source.Manager, register prometheus.Registerer) (mgr.CDNMgr, error) {
-	return newManager(cfg, cacheStore, sourceClientMgr, register)
+func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient,
+	rateLimiter *ratelimiter.RateLimiter, register prometheus.Registerer) (mgr.CDNMgr, error) {
+	return newManager(cfg, cacheStore, resourceClient, rateLimiter, register)
 }
 
 func newManager(cfg *config.Config, cacheStore *store.Store,
-	sourceClientMgr *source.Manager, register prometheus.Registerer) (*Manager, error) {
-	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
+	resourceClient source.ResourceClient, rateLimiter *ratelimiter.RateLimiter, register prometheus.Registerer) (*Manager, error) {
 	metaDataManager := newFileMetaDataManager(cacheStore)
 	pieceMetaDataManager := newPieceMetaDataMgr()
 	cdnReporter := newReporter(cfg, cacheStore, metaDataManager, pieceMetaDataManager)
@@ -91,15 +84,15 @@ func newManager(cfg *config.Config, cacheStore *store.Store,
 		metaDataManager:      metaDataManager,
 		pieceMetaDataManager: pieceMetaDataManager,
 		cdnReporter:          cdnReporter,
-		detector:             newCacheDetector(cacheStore, metaDataManager, pieceMetaDataManager, sourceClientMgr),
-		sourceClientMgr:      sourceClientMgr,
+		detector:             newCacheDetector(cacheStore, metaDataManager, pieceMetaDataManager, resourceClient),
+		resourceClient:       resourceClient,
 		writer:               newCacheWriter(cacheStore, cdnReporter),
 		metrics:              newMetrics(register),
 	}, nil
 }
 
 // TriggerCDN will trigger CDN to download the file from sourceUrl.
-func (cm *Manager) TriggerCDN(ctx context.Context, task *types.CdnTaskInfo) (*types.CdnTaskInfo, error) {
+func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*types.SeedTaskInfo, error) {
 	sourceFileLength := task.SourceFileLength
 	if sourceFileLength == 0 {
 		sourceFileLength = -1
@@ -127,7 +120,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.CdnTaskInfo) (*ty
 		fileMD5 = md5.New()
 	}
 	// start to download the source file
-	resp, err := cm.download(ctx, task.TaskID, task.Url, task.Headers, startPieceNum, sourceFileLength, task.PieceSize)
+	resp, err := cm.download(ctx, task.TaskID, task.Url, task.Headers, detectResult.breakNum, sourceFileLength, task.PieceSize)
 	cm.metrics.cdnDownloadCount.WithLabelValues().Inc()
 	if err != nil {
 		cm.metrics.cdnDownloadFailCount.WithLabelValues().Inc()
@@ -137,7 +130,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.CdnTaskInfo) (*ty
 
 	cm.updateExpireInfo(ctx, task.TaskID, resp.ExpireInfo)
 	reader := limitreader.NewLimitReaderWithLimiterAndMD5Sum(resp.Body, cm.limiter, fileMD5)
-	downloadMetadata, err := cm.writer.startWriter(ctx, cm.cfg, reader, task, startPieceNum, sourceFileLength, task.PieceSize)
+	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult.breakNum, detectResult.downloadedFileLength, sourceFileLength)
 	if err != nil {
 		logrus.Errorf("failed to write for task %s: %v", task.TaskID, err)
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
@@ -155,7 +148,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.CdnTaskInfo) (*ty
 
 // GetHTTPPath returns the http download path of taskID.
 // The returned path joined the DownloadRaw.Bucket and DownloadRaw.Key.
-func (cm *Manager) GetHTTPPath(ctx context.Context, task *types.CdnTaskInfo) (string, error) {
+func (cm *Manager) GetHTTPPath(ctx context.Context, task *types.SeedTaskInfo) (string, error) {
 	raw := getDownloadRawFunc(task.TaskID)
 	return path.Join("/", raw.Bucket, raw.Key), nil
 }
@@ -183,10 +176,10 @@ func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error 
 	return deleteTaskFiles(ctx, cm.cacheStore, taskID)
 }
 
-func (cm *Manager) handleCDNResult(ctx context.Context, task *types.CdnTaskInfo, realMd5 string, sourceFileLength, realSourceFileLength, realCdnFileLength int64) (bool, error) {
+func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTaskInfo, realMd5 string, sourceFileLength, realSourceFileLength, realCdnFileLength int64) (bool, error) {
 	var isSuccess = true
-	if !stringutils.IsEmptyStr(task.Md5) && task.Md5 != realMd5 {
-		logrus.Errorf("taskId:%s url:%s file md5 not match expected:%s real:%s", task.TaskID, task.Url, task.Md5, realMd5)
+	if !stringutils.IsEmptyStr(task.RequestMd5) && task.RequestMd5 != realMd5 {
+		logrus.Errorf("taskId:%s url:%s file md5 not match expected:%s real:%s", task.TaskID, task.Url, task.RequestMd5, realMd5)
 		isSuccess = false
 	}
 	if isSuccess && sourceFileLength >= 0 && sourceFileLength != realSourceFileLength {

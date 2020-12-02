@@ -17,7 +17,7 @@ import (
 
 // meta info already downloaded
 type cdnCacheResult struct {
-	breakNum         int
+	breakNum         int32
 	fileLength       int64             // length of file has been downloaded
 	pieceMetaRecords []pieceMetaRecord // piece meta data of taskId
 	fileMd5          hash.Hash         // md5 of content that has been downloaded
@@ -36,16 +36,16 @@ func (sr *cacheReader) readFile(ctx context.Context, reader io.Reader, pieceMeta
 	sort.Slice(pieceMetaRecords, func(i, j int) bool {
 		return pieceMetaRecords[i].PieceNum < pieceMetaRecords[j].PieceNum
 	})
-	var breakIndex int
+	var breakIndex int32
 	for index, record := range pieceMetaRecords {
-		if index != record.PieceNum {
-			breakIndex = index
+		if int32(index) != record.PieceNum {
+			breakIndex = int32(index)
 			break
 		}
 		// read content
 		if err := readContent(reader, record, result.fileMd5); err != nil {
 			logrus.Errorf("failed to read content for count %d: %v", index, err)
-			breakIndex = index
+			breakIndex = int32(index)
 			break
 		}
 		result.fileLength += int64(record.PieceLen)

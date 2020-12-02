@@ -2,7 +2,6 @@
 package syncmap
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/localcdn"
 	"strconv"
 	"sync"
 	"time"
@@ -214,16 +213,4 @@ func (mmap *SyncMap) ListKeyAsIntSlice() (result []int) {
 
 	mmap.Range(rangeFunc)
 	return
-}
-
-func (mmap *SyncMap) GetAsPieceMetaRecord(key string) (localcdn.PieceMetaRecord, error) {
-	v, err := mmap.Get(key)
-	if err != nil {
-		return localcdn.PieceMetaRecord{}, errors.Wrapf(err, "failed to get key %s from map", key)
-	}
-
-	if value, ok := v.(localcdn.PieceMetaRecord); ok {
-		return value, nil
-	}
-	return localcdn.PieceMetaRecord{}, errors.Wrapf(errortypes.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
 }

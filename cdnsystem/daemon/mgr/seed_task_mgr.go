@@ -2,29 +2,19 @@ package mgr
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/syncmap"
 )
 
-// PieceStatusMap maintains the mapping relationship between PieceUpdateRequestResult and PieceStatus code.
-var PieceStatusMap = map[string]int{
-	types.PieceUpdateRequestPieceStatusFAILED:  config.PieceFAILED,
-	types.PieceUpdateRequestPieceStatusSEMISUC: config.PieceSEMISUC,
-	types.PieceUpdateRequestPieceStatusSUCCESS: config.PieceSUCCESS,
-}
+// SeedTaskMgr as an interface defines all operations against SeedTask.
+// A SeedTask will store some meta info about the taskFile, pieces and something else.
+// A SeedTask has a one-to-one correspondence with a file on the disk which is identified by taskID.
+type SeedTaskMgr interface {
 
-// TaskMgr as an interface defines all operations against CdnTask.
-// A CdnTask will store some meta info about the taskFile, pieces and something else.
-// A CdnTask has a one-to-one correspondence with a file on the disk which is identified by taskID.
-type TaskMgr interface {
-	// add or update task with req
-	AddOrUpdateTask(ctx context.Context, req *types.CdnTaskCreateRequest) (*types.CdnTaskInfo, error)
-
- 	TriggerCdnSyncAction(ctx context.Context, task *types.CdnTaskInfo) error
+	Register(ctx context.Context, registerRequest *types.TaskRegisterRequest) (taskCreateResponse *types.TaskRegisterResponse, err error)
 
 	// Get the task Info with specified taskID.
-	Get(ctx context.Context, taskID string) (*types.CdnTaskInfo, error)
+	Get(ctx context.Context, taskID string) (*types.SeedTaskInfo, error)
 
 	// GetAccessTime gets all task accessTime.
 	GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error)

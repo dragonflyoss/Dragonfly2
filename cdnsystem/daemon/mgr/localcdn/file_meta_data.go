@@ -3,7 +3,6 @@ package localcdn
 import (
 	"context"
 	"encoding/json"
-	"github.com/dragonflyoss/Dragonfly2/cdnSystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
@@ -41,7 +40,7 @@ func newFileMetaDataManager(store *store.Store) *fileMetaDataManager {
 }
 
 // writeFileMetaData stores the metadata of task.ID to storage.
-func (mm *fileMetaDataManager) writeFileMetaDataByTask(ctx context.Context, task *types.CdnTaskInfo) (*fileMetaData, error) {
+func (mm *fileMetaDataManager) writeFileMetaDataByTask(ctx context.Context, task *types.SeedTaskInfo) (*fileMetaData, error) {
 	metaData := &fileMetaData{
 		TaskID:        task.TaskID,
 		URL:           task.Url,
@@ -82,9 +81,6 @@ func (mm *fileMetaDataManager) readFileMetaData(ctx context.Context, taskID stri
 	}
 	logrus.Debugf("success to read metadata: %+v for taskID: %s", metaData, taskID)
 
-	if metaData.PieceSize == 0 {
-		metaData.PieceSize = config.DefaultPieceSize
-	}
 	return metaData, nil
 }
 

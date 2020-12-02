@@ -1,19 +1,3 @@
-/*
- * Copyright The Dragonfly Authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package localcdn
 
 import (
@@ -36,7 +20,7 @@ import (
 //
 // It should return nil when the free disk of cdn storage is lager than config.YoungGCThreshold.
 // It should return all taskIDs that are not running when the free disk of cdn storage is less than config.FullGCThreshold.
-func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.TaskMgr) ([]string, error) {
+func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([]string, error) {
 	var gcTaskIDs []string
 
 	freeDisk, err := cm.cacheStore.GetAvailSpace(ctx, getHomeRawFunc())

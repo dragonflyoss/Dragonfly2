@@ -7,12 +7,12 @@ type UrlMeta struct {
 	Range string
 }
 
-type CdnTaskInfo struct {
+type SeedTaskInfo struct {
 	TaskID           string
 	Url              string
 	SourceFileLength int64
 	CdnFileLength    int64
-	Md5              string
+	RequestMd5       string
 	PieceSize        int32
 	Headers          map[string]string
 	CdnStatus        string

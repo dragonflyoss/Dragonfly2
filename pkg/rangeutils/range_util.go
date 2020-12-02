@@ -81,7 +81,7 @@ func ParsePieceIndex(rangeStr string) (start, end int64, err error) {
 //     end = rangeLength - 1
 // The different with the CalculatePieceRange function is that
 // the end is calculated by rangeLength which is passed in by the caller itself.
-func CalculateBreakRange(startPieceNum, pieceContSize int, rangeLength int64) (string, error) {
+func CalculateBreakRange(startPieceNum, pieceContSize int32, rangeLength int64) (string, error) {
 	// This method is to resume downloading from break-point,
 	// so there is no need to call this function when the startPieceNum equals to 0.
 	// It is recommended to check this value before calling this function.

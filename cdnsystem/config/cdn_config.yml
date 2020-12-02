@@ -86,12 +86,12 @@ base:
 
 ---
 plugins:
-  store:
+  storage:
     local:
       name: local
       enable: true
       config: fdas
-  source:
+  sourceClient:
     http:
       name: ddd
       enable: true

@@ -98,7 +98,5 @@ func (s *RPCServer) Start() (*grpc.Server, error) {
 }
 
 func registerServers(s *grpc.Server) {
-	pb.RegisterSeederServer(s, &rpc.CdnSeedServer{
-
-	})
+	pb.RegisterSeederServer(s, &rpc.CdnSeedServer{})
 }

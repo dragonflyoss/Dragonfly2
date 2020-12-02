@@ -2,10 +2,8 @@ package task
 
 import (
 	"context"
-	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	dutil "github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/util"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
@@ -19,7 +17,7 @@ import (
 	"time"
 )
 
-var _ mgr.TaskMgr = &Manager{}
+var _ mgr.SeedTaskMgr = &Manager{}
 
 type metrics struct {
 	tasks                        *prometheus.GaugeVec
@@ -51,170 +49,77 @@ func newMetrics(register prometheus.Registerer) *metrics {
 
 // Manager is an implementation of the interface of TaskMgr.
 type Manager struct {
-	cfg          *config.Config
-	metrics      *metrics
-	sourceClient source.SourceClient
-
-	// store object
-	taskStore               *dutil.Store
+	cfg                     *config.Config
+	metrics                 *metrics
+	sourceClient            source.SourceClient
+	taskStore               *syncmap.SyncMap
 	accessTimeMap           *syncmap.SyncMap
 	taskURLUnReachableStore *syncmap.SyncMap
-
-	// mgr object
-	cdnMgr       mgr.CDNMgr
+	cdnMgr                  mgr.CDNMgr
 }
 
-func (m Manager) AddOrUpdateTask(ctx context.Context, req *types.CdnTaskCreateRequest) (*types.CdnTaskInfo, error) {
-	taskId := req.TaskID
-	util.GetLock(taskId, true)
-	defer util.ReleaseLock(taskId, true)
-
-	if key, err := m.taskURLUnReachableStore.Get(taskId); err == nil {
-		if unReachableStartTime, ok := key.(time.Time); ok &&
-			time.Since(unReachableStartTime) < m.cfg.FailAccessInterval {
-			return nil, errors.Wrapf(errortypes.ErrURLNotReachable, "taskID: %s task hit unReachable cache and interval less than %d, url: %s", taskId, m.cfg.FailAccessInterval, req.URL)
-		}
-
-		m.taskURLUnReachableStore.Delete(taskId)
-	}
-
-	// using the existing task if it already exists corresponding to taskID
-	var task *types.CdnTaskInfo
-	newTask := &types.CdnTaskInfo{
-		TaskID:     taskId,
-		Headers:    req.Headers,
-		Md5:        req.Md5,
-		Url:        req.URL,
-		CdnStatus:  types.TaskInfoCdnStatusWAITING,
-		PieceTotal: -1,
-	}
-
-	if v, err := m.taskStore.Get(taskId); err == nil {
-		task = v.(*types.CdnTaskInfo)
-		if !equalsTask(task, newTask) {
-			return nil, errors.Wrapf(errortypes.ErrTaskIDDuplicate, "%s", task.TaskID)
-		}
-	} else {
-		task = newTask
-	}
-
-	if task.SourceFileLength != 0 {
-		return task, nil
-	}
-
-	// get sourceContentLength with req.Headers
-	sourceFileLength, err := m.sourceClient.GetContentLength(task.Url, req.Headers)
-	if err != nil {
-		logrus.Errorf("taskID: %s failed to get file length from http client : %v", task.TaskID, err)
-
-		if errortypes.IsURLNotReachable(err) {
-			m.taskURLUnReachableStore.Add(taskId, time.Now())
-			return nil, err
-		}
-		if errortypes.IsAuthenticationRequired(err) {
-			return nil, err
-		}
-	}
-	// source cdn
-	if m.cfg.CDNPattern == config.CDNPatternSource {
-		if sourceFileLength <= 0 {
-			return nil, fmt.Errorf("taskID: %s failed to get file length and it is required in source CDN pattern", task.TaskID)
-		}
-
-		supportRange, err := m.sourceClient.IsSupportRange(task.Url, task.Headers)
-		if err != nil {
-			return nil, errors.Wrapf(err, "taskID: %s failed to check whether the task supports partial requests", task.TaskID)
-		}
-		if !supportRange {
-			return nil, fmt.Errorf("taskID: %s the task URL should support range request in source CDN pattern", task.TaskID)
-		}
-	}
-	task.SourceFileLength = sourceFileLength
-	logrus.Infof("taskID: %s get file length %d from http client for task", task.TaskID, sourceFileLength)
-
-	// if success to get the information successfully with the req.Headers,
-	// and then update the task.Headers to req.Headers.
-	if req.Headers != nil {
-		task.Headers = req.Headers
-	}
-
-	// calculate piece size and update the PieceSize and PieceTotal
-	pieceSize := computePieceSize(task.SourceFileLength)
-	task.PieceSize = pieceSize
-	task.PieceTotal = int32((sourceFileLength + (int64(pieceSize) - 1)) / int64(pieceSize))
-
-	m.taskStore.Put(task.TaskID, task)
-	// update accessTime for taskID
-	if err := m.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
-		logrus.Warnf("taskID: %s failed to update accessTime for task: %v", task.TaskID, err)
-	}
-	m.metrics.tasks.WithLabelValues(task.CdnStatus).Inc()
-	return task, nil
-}
-
-func (m *Manager) TriggerCdnSyncAction(ctx context.Context, task *types.CdnTaskInfo) error {
+func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTaskInfo) error {
 	if !isFrozen(task.CdnStatus) {
-		logrus.Infof("TaskID: %s CDN(%s) is running or has been downloaded successfully", task.TaskID, task.CdnStatus)
+		logrus.Infof("TaskID: %s seedTask is running or has been downloaded successfully, status:%s", task.TaskID, task.CdnStatus)
 		return nil
 	}
-
-	if err := m.updateTask(task.TaskID, &types.CdnTaskInfo{
+	if err := tm.updateTask(task.TaskID, &types.SeedTaskInfo{
 		CdnStatus: types.TaskInfoCdnStatusRUNNING,
 	}); err != nil {
 		return err
 	}
 
 	go func() {
-		updateTaskInfo, err := m.cdnMgr.TriggerCDN(ctx, task)
-		m.metrics.triggerCdnCount.WithLabelValues().Inc()
+		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(ctx, task)
+		tm.metrics.triggerCdnCount.WithLabelValues().Inc()
 		if err != nil {
-			m.metrics.triggerCdnFailCount.WithLabelValues().Inc()
+			tm.metrics.triggerCdnFailCount.WithLabelValues().Inc()
 			logrus.Errorf("taskID: %s trigger cdn get error: %v", task.TaskID, err)
 		}
-		m.updateTask(task.TaskID, updateTaskInfo)
+		tm.updateTask(task.TaskID, updateTaskInfo)
 		logrus.Infof("taskID: %s success to update task cdn %+v", task.TaskID, updateTaskInfo)
 	}()
 	logrus.Infof("taskID: %s success to start cdn trigger", task.TaskID)
 	return nil
 }
 
-func (m *Manager) getTask(taskID string) (*types.CdnTaskInfo, error) {
+func (tm *Manager) getTask(taskID string) (*types.SeedTaskInfo, error) {
 	if stringutils.IsEmptyStr(taskID) {
 		return nil, errors.Wrap(errortypes.ErrEmptyValue, "taskID")
 	}
 
-	v, err := m.taskStore.Get(taskID)
+	v, err := tm.taskStore.Get(taskID)
 	if err != nil {
 		return nil, err
 	}
 
 	// type assertion
-	if info, ok := v.(*types.CdnTaskInfo); ok {
+	if info, ok := v.(*types.SeedTaskInfo); ok {
 		return info, nil
 	}
 	return nil, errors.Wrapf(errortypes.ErrConvertFailed, "taskID %s: %v", taskID, v)
 }
 
-func (m Manager) Get(ctx context.Context, taskID string) (*types.CdnTaskInfo, error) {
-	return m.getTask(taskID)
+func (tm Manager) Get(ctx context.Context, taskID string) (*types.SeedTaskInfo, error) {
+	return tm.getTask(taskID)
 }
 
-func (m Manager) GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error) {
-	return m.accessTimeMap, nil
+func (tm Manager) GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error) {
+	return tm.accessTimeMap, nil
 }
 
-func (m Manager) Delete(ctx context.Context, taskID string) error {
-	m.accessTimeMap.Delete(taskID)
-	m.taskURLUnReachableStore.Delete(taskID)
-	m.taskStore.Delete(taskID)
+func (tm Manager) Delete(ctx context.Context, taskID string) error {
+	tm.accessTimeMap.Delete(taskID)
+	tm.taskURLUnReachableStore.Delete(taskID)
+	tm.taskStore.Delete(taskID)
 	return nil
 }
 
-func (m Manager) GetPieces(ctx context.Context, taskID, clientID string, piecePullRequest *types.PiecePullRequest) (isFinished bool, data interface{}, err error) {
+func (tm Manager) GetPieces(ctx context.Context, taskID, clientID string, piecePullRequest *types.PiecePullRequest) (isFinished bool, data interface{}, err error) {
 	panic("implement me")
 }
 
-func (m Manager) UpdatePieceStatus(ctx context.Context, taskID, pieceRange string, pieceUpdateRequest *types.PieceUpdateRequest) error {
+func (tm Manager) UpdatePieceStatus(ctx context.Context, taskID, pieceRange string, pieceUpdateRequest *types.PieceUpdateRequest) error {
 	panic("implement me")
 }
 
@@ -223,11 +128,40 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr,
 	sourceClient source.SourceClient, register prometheus.Registerer) (*Manager, error) {
 	return &Manager{
 		cfg:                     cfg,
-		taskStore:               dutil.NewStore(),
+		taskStore:               syncmap.NewSyncMap(),
 		cdnMgr:                  cdnMgr,
 		accessTimeMap:           syncmap.NewSyncMap(),
 		taskURLUnReachableStore: syncmap.NewSyncMap(),
 		sourceClient:            sourceClient,
 		metrics:                 newMetrics(register),
+	}, nil
+}
+
+func (tm *Manager) Register(ctx context.Context,  req *types.TaskRegisterRequest) (taskCreateResponse *types.TaskRegisterResponse, err error) {
+	task, err := tm.addOrUpdateTask(ctx, req)
+	if err != nil {
+		logrus.Infof("failed to add or update task with req %+v: %v", req, err)
+		return nil, err
+	}
+	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
+	logrus.Debugf("success to get task info: %+v", task)
+	// 读锁
+	util.GetLock(task.TaskID, true)
+	defer util.ReleaseLock(task.TaskID, true)
+
+	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
+		logrus.Warnf("taskID: %s failed to update accessTime for task: %v", task.TaskID, err)
+	}
+	// update accessTime for taskID
+	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
+		logrus.Warnf("failed to update accessTime for taskID(%s): %v", task.TaskID, err)
+	}
+	// Step5: trigger CDN
+	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
+		return nil, errors.Wrapf(errortypes.ErrSystemError, "failed to trigger cdn: %v", err)
+	}
+	return &types.TaskRegisterResponse{
+		SourceFileLength: task.SourceFileLength,
+		PieceSize: task.PieceSize,
 	}, nil
 }

@@ -2,64 +2,58 @@ package rpc
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/grpc/base"
 	pb "github.com/dragonflyoss/Dragonfly2/pkg/grpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/netutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/syncmap"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // CdnSeedServer is used to implement cdnsystem.Seeder.
 type CdnSeedServer struct {
-	cfg                     *config.Config
-	CDNMgr                  mgr.CDNMgr
-	taskURLUnReachableStore *syncmap.SyncMap
-	taskMgr                 mgr.TaskMgr
+	taskMgr mgr.SeedTaskMgr
 }
 
-func (s *CdnSeedServer) ObtainSeeds(request *pb.SeedRequest, stream pb.Seeder_ObtainSeedsServer) error {
+// NewManager returns a new Manager Object.
+func NewCdnSeedServer(taskMgr mgr.SeedTaskMgr) (*CdnSeedServer, error) {
+	return &CdnSeedServer{
+		taskMgr: taskMgr,
+	}, nil
+}
+
+func (ss *CdnSeedServer) ObtainSeeds(request *pb.SeedRequest, stream pb.Seeder_ObtainSeedsServer) error {
 	if err := validateSeedRequestParams(request); err != nil {
 		return err
 	}
-	taskCreateRequest := &types.CdnTaskCreateRequest{
-		Headers: nil,
-		Md5:     request.GetUrlMeta().GetMd5(),
+	headers := constructRequestHeader(request.GetUrlMeta())
+	registerRequest := &types.TaskRegisterRequest{
+		Headers: headers,
 		URL:     request.GetUrl(),
+		Md5:     request.UrlMeta.Md5,
 		TaskID:  request.GetTaskId(),
 	}
-	// create CdnTask
-	cdnTask, err := s.taskMgr.AddOrUpdateTask(context.Background(), taskCreateRequest)
+	response, err := ss.taskMgr.Register(context.Background(), registerRequest)
 	if err != nil {
-		logrus.Errorf("taskId: %s failed to add or update task: %v", request.TaskId, err)
-		return err
-	}
-	pieceChan := make(chan *pb.PieceSeed)
-	// trigger CDN
-	ctx := context.WithValue(context.Background(), "pieceChan", pieceChan)
-	if err := s.taskMgr.TriggerCdnSyncAction(ctx, cdnTask); err != nil {
-		return errors.Wrapf(errortypes.ErrSystemError, "taskID: %s failed to trigger cdn: %v", request.TaskId, err)
+
 	}
 
-	for piece := range pieceChan {
-		stream.Send(piece)
-	}
-	stream.Send(&pb.PieceSeed{
-		State:         nil,
-		SeedAddr:      "",
-		PieceStyle:    0,
-		PieceNum:      0,
-		PieceMd5:      "",
-		PieceRange:    "",
-		PieceOffset:   0,
-		Last:          true,
-		ContentLength: 0,
-	})
 	return nil
+
+}
+
+func constructRequestHeader(meta *base.UrlMeta) map[string]string {
+	header := make(map[string]string)
+	if !stringutils.IsEmptyStr(meta.Md5) {
+		header["md5"] = meta.Md5
+	}
+
+	if !stringutils.IsEmptyStr(meta.Range) {
+		header["range"] = meta.Range
+	}
+	return header
 }
 
 // validateSeedRequestParams validates the params of SeedRequest.

@@ -22,7 +22,7 @@ type pieceMetaData struct {
 }
 
 type pieceMetaRecord struct {
-	PieceNum  int `json:"pieceNum"`
+	PieceNum  int32 `json:"pieceNum"`
 	PieceLen  int32  `json:"pieceLen"`
 	Md5       string `json:"md5"`
 	Range     string `json:"range"`
@@ -48,8 +48,15 @@ func (pmm *pieceMetaDataManager) getPieceMetaRecord(taskID string, pieceNum int)
 	if err != nil {
 		return pieceMetaRecord{}, err
 	}
+	v, err := pieceMetaRecords.Get(strconv.Itoa(pieceNum))
+	if err != nil {
+		return pieceMetaRecord{}, errors.Wrapf(err, "failed to get key %s from map", strconv.Itoa(pieceNum))
+	}
 
-	return pieceMetaRecords.GetAsPieceMetaRecord(strconv.Itoa(pieceNum))
+	if value, ok := v.(pieceMetaRecord); ok {
+		return value, nil
+	}
+	return pieceMetaRecord{}, errors.Wrapf(errortypes.ErrConvertFailed, "failed to get key %s from map with value %s", strconv.Itoa(pieceNum), v)
 }
 
 func (pmm *pieceMetaDataManager) setPieceMetaRecord(taskID string, pieceNum int, pieceMetaRecord pieceMetaRecord) error {
@@ -75,7 +82,7 @@ func (pmm *pieceMetaDataManager) getPieceMetaRecordsByTaskID(taskID string) (pie
 	sort.Ints(pieceNums)
 
 	for i := 0; i < len(pieceNums); i++ {
-		pieceMD5, err := pieceMD5sMap.GetAsPieceMetaRecord(strconv.Itoa(pieceNums[i]))
+		pieceMD5, err := pmm.getPieceMetaRecord(taskID, pieceNums[i])
 		if err != nil {
 			return nil, err
 		}
