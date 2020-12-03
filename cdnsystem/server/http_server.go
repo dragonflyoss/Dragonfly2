@@ -5,12 +5,6 @@ import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/gc"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/preheat"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/version"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
@@ -19,63 +13,22 @@ import (
 
 var dfgetLogger *logrus.Logger
 
-// Server is supernode server struct.
-type Server struct {
-	Config        *config.Config
-	PeerMgr       mgr.PeerMgr
-	TaskMgr       mgr.TaskMgr
-	DfgetTaskMgr  mgr.DfgetTaskMgr
-	GCMgr         mgr.GCMgr
-	PieceErrorMgr mgr.PieceErrorMgr
-	PreheatMgr    mgr.PreheatManager
-}
 
 // New creates a brand new server instance.
-func NewHttpServer(cfg *config.Config, logger *logrus.Logger, register prometheus.Registerer) (*HTTPServer, error) {
-	var err error
-	// register cdn build information
-	version.NewBuildInfo("cdnnode", register)
-
+func NewHttpServer(cfg *config.Config, logger *logrus.Logger, taskMgr mgr.SeedTaskMgr, gcMgr mgr.GCMgr) *HTTPServer {
 	dfgetLogger = logger
 
-	storeMgr, err := store.NewManager(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	sourceClientMgr, err := source.NewManager(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	// cdn manager
-	cdnMgr, err := mgr.GetCDNManager(cfg, storeMgr, sourceClientMgr, register)
-	if err != nil {
-		return nil, err
-	}
-
-	gcMgr, err := gc.NewManager(cfg, cdnMgr, register)
-	if err != nil {
-		return nil, err
-	}
-
-	preheatMgr, err := preheat.NewManager(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Server{
+	return &HTTPServer{
 		Config: cfg,
 		GCMgr: gcMgr,
-		PreheatMgr: preheatMgr,
+		TaskMgr: taskMgr,
 	}
 }
 // Server is supernode server struct.
 type HTTPServer struct {
 	Config       *config.Config
-	TaskMgr      mgr.TaskMgr  // task管理
+	TaskMgr      mgr.SeedTaskMgr  // task管理
 	GCMgr        mgr.GCMgr  // 垃圾回收
-	sourceClient source.SourceClient
 }
 
 

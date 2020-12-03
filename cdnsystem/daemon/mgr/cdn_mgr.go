@@ -21,7 +21,7 @@ func Register(name config.CDNPattern, builder CDNBuilder) {
 }
 
 // get an implementation of the interface of CDNMgr
-func GetCDNManager(cfg *config.Config, storeMgr *store.Manager, resourceClient source.ResourceClient, rateLimiter *ratelimiter.RateLimiter,
+func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, rateLimiter *ratelimiter.RateLimiter,
 	register prometheus.Registerer) (CDNMgr, error) {
 	cdnPattern := cfg.CDNPattern
 	if cdnPattern == "" {
@@ -32,15 +32,7 @@ func GetCDNManager(cfg *config.Config, storeMgr *store.Manager, resourceClient s
 	if !ok {
 		return nil, fmt.Errorf("unexpected cdn pattern(%s) which must be in [\"local\", \"source\"]", cdnPattern)
 	}
-	storageDriver := cfg.StorageDriver
-	if storageDriver == "" {
-		storageDriver = config.LocalStorageDriver
-	}
-	storeLocal, err := storeMgr.Get(storageDriver)
-	if err != nil {
-		return nil, err
-	}
-	return cdnBuilder(cfg, storeLocal, resourceClient, rateLimiter, register)
+	return cdnBuilder(cfg, cacheStore, resourceClient, rateLimiter, register)
 }
 
 // CDNMgr as an interface defines all operations against CDN and

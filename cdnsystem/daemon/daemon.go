@@ -1,11 +1,17 @@
-
 package daemon
 
 import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/gc"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/task"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/server"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
+	"github.com/dragonflyoss/Dragonfly2/pkg/ratelimiter"
+	"github.com/dragonflyoss/Dragonfly2/version"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
@@ -26,20 +32,39 @@ func New(cfg *config.Config, dfgetLogger *logrus.Logger) (*Daemon, error) {
 	if err := plugins.Initialize(cfg); err != nil {
 		return nil, err
 	}
+	var err error
+	// register cdn build information
+	version.NewBuildInfo("cdnnode", prometheus.DefaultRegisterer)
 
-	httpServer, err := server.NewHttpServer(cfg, dfgetLogger, prometheus.DefaultRegisterer)
+	storeMgr, err := store.NewManager(cfg)
+	if err != nil {
+		return nil, err
+	}
+	storeLocal, err := storeMgr.Get(store.LocalStorageDriver)
+
+	sourceClient := source.NewSourceClient()
+
+	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
+
+	// cdn manager
+	cdnMgr, err := mgr.GetCDNManager(cfg, storeLocal, sourceClient, rateLimiter, prometheus.DefaultRegisterer)
+
+	// task manager
+	taskMgr, err := task.NewManager(cfg, cdnMgr, sourceClient, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, err
 	}
 
-	rpcServer, err := server.NewRpcServer(cfg, dfgetLogger, prometheus.DefaultRegisterer)
+	// gc manager
+	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, prometheus.DefaultRegisterer)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Daemon{
-		config: cfg,
-		httpServer: httpServer,
-		rpcServer: rpcServer,
+		config:     cfg,
+		httpServer: server.NewHttpServer(cfg, dfgetLogger, taskMgr, gcMgr),
+		rpcServer:  server.NewRpcServer(cfg, dfgetLogger, taskMgr, gcMgr),
 	}, nil
 }
 

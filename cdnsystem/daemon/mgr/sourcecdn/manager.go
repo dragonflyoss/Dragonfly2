@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly2/pkg/ratelimiter"
 
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
@@ -23,14 +24,14 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, sourceClientMgr *source.Manager, register prometheus.Registerer) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, limiter *ratelimiter.RateLimiter, register prometheus.Registerer) (mgr.CDNMgr, error) {
 	return &Manager{
 		cfg: cfg,
 	}, nil
 }
 
 // TriggerCDN will trigger CDN to download the file from sourceUrl.
-func (cm *Manager) TriggerCDN(ctx context.Context, task *types.CdnTaskInfo) (*types.CdnTaskInfo, error) {
+func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*types.SeedTaskInfo, error) {
 	sourceFileLength := task.SourceFileLength
 	if sourceFileLength == 0 {
 		sourceFileLength = -1
@@ -49,13 +50,13 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.CdnTaskInfo) (*ty
 		}
 
 	}
-	return &types.CdnTaskInfo{
+	return &types.SeedTaskInfo{
 		CdnStatus: types.TaskInfoCdnStatusSUCCESS,
 	}, nil
 }
 
 // GetHTTPPath returns the http download path of taskID.
-func (cm *Manager) GetHTTPPath(ctx context.Context, taskInfo *types.CdnTaskInfo) (string, error) {
+func (cm *Manager) GetHTTPPath(ctx context.Context, taskInfo *types.SeedTaskInfo) (string, error) {
 	return taskInfo.Url, nil
 }
 
@@ -80,6 +81,6 @@ func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error 
 	return nil
 }
 
-func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.TaskMgr) ([]string, error) {
+func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([]string, error) {
 	return nil, nil
 }

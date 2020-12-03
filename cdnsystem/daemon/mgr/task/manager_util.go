@@ -50,7 +50,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 
 	// get sourceContentLength with req.Headers
-	sourceFileLength, err := tm.sourceClient.GetContentLength(task.Url, request.Headers)
+	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Headers)
 	if err != nil {
 		logrus.Errorf("taskID: %s failed to get url (%s) file length from http client : %v", task.TaskID, task.Url, err)
 
@@ -68,7 +68,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 			return nil, fmt.Errorf("taskID: %s failed to get file length and it is required in source CDN pattern", task.TaskID)
 		}
 
-		supportRange, err := tm.sourceClient.IsSupportRange(task.Url, task.Headers)
+		supportRange, err := tm.resourceClient.IsSupportRange(task.Url, task.Headers)
 		if err != nil {
 			return nil, errors.Wrapf(err, "taskID: %s failed to check whether the task supports partial requests", task.TaskID)
 		}

@@ -21,6 +21,7 @@ type CdnSeedServer struct {
 func NewCdnSeedServer(taskMgr mgr.SeedTaskMgr) (*CdnSeedServer, error) {
 	return &CdnSeedServer{
 		taskMgr: taskMgr,
+
 	}, nil
 }
 
@@ -35,11 +36,13 @@ func (ss *CdnSeedServer) ObtainSeeds(request *pb.SeedRequest, stream pb.Seeder_O
 		Md5:     request.UrlMeta.Md5,
 		TaskID:  request.GetTaskId(),
 	}
-	response, err := ss.taskMgr.Register(context.Background(), registerRequest)
+	_, err := ss.taskMgr.Register(context.Background(), registerRequest)
 	if err != nil {
-
+		return errors.Wrapf(err, "")
 	}
+	go func() {
 
+	}()
 	return nil
 
 }

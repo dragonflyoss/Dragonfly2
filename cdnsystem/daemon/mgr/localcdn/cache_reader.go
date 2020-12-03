@@ -1,7 +1,6 @@
 package localcdn
 
 import (
-	"context"
 	"crypto/md5"
 	"encoding/binary"
 	"fmt"
@@ -16,7 +15,7 @@ import (
 )
 
 // meta info already downloaded
-type cdnCacheResult struct {
+type CacheResult struct {
 	breakNum         int32
 	fileLength       int64             // length of file has been downloaded
 	pieceMetaRecords []pieceMetaRecord // piece meta data of taskId
@@ -30,8 +29,11 @@ func newCacheReader() *cacheReader {
 	return &cacheReader{}
 }
 
-func (sr *cacheReader) readFile(ctx context.Context, reader io.Reader, pieceMetaRecords []pieceMetaRecord) (result *cdnCacheResult, err error) {
-	result = &cdnCacheResult{}
+func (sr *cacheReader) readFile(reader io.Reader, pieceMetaRecords []pieceMetaRecord) (result *CacheResult, err error) {
+	if pieceMetaRecords == nil {
+		return
+	}
+	result = &CacheResult{}
 	result.fileMd5 = md5.New()
 	sort.Slice(pieceMetaRecords, func(i, j int) bool {
 		return pieceMetaRecords[i].PieceNum < pieceMetaRecords[j].PieceNum

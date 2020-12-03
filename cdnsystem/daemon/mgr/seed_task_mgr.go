@@ -24,11 +24,6 @@ type SeedTaskMgr interface {
 
 	// GetPieces gets the pieces to be downloaded based on the scheduling result,
 	// just like this: which pieces can be downloaded from which peers.
-	GetPieces(ctx context.Context, taskID, clientID string, piecePullRequest *types.PiecePullRequest) (isFinished bool, data interface{}, err error)
+	GetPieces(ctx context.Context, taskID string, piecePullRequest *types.PiecePullRequest) (isFinished bool, data interface{}, err error)
 
-	// UpdatePieceStatus updates the piece status with specified parameters.
-	// A task file is divided into several pieces logically.
-	// We use a sting called pieceRange to identify a piece.
-	// A pieceRange is separated by a dash, like this: 0-45565, etc.
-	UpdatePieceStatus(ctx context.Context, taskID, pieceRange string, pieceUpdateRequest *types.PieceUpdateRequest) error
 }

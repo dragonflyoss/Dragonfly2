@@ -59,7 +59,7 @@ func (pmm *pieceMetaDataManager) getPieceMetaRecord(taskID string, pieceNum int)
 	return pieceMetaRecord{}, errors.Wrapf(errortypes.ErrConvertFailed, "failed to get key %s from map with value %s", strconv.Itoa(pieceNum), v)
 }
 
-func (pmm *pieceMetaDataManager) setPieceMetaRecord(taskID string, pieceNum int, pieceMetaRecord pieceMetaRecord) error {
+func (pmm *pieceMetaDataManager) setPieceMetaRecord(taskID string, pieceNum int32, pieceMetaRecord pieceMetaRecord) error {
 	pieceRecords, err := pmm.taskPieceMetaRecords.GetAsMap(taskID)
 	if err != nil && !errortypes.IsDataNotFound(err) {
 		return err
@@ -70,7 +70,7 @@ func (pmm *pieceMetaDataManager) setPieceMetaRecord(taskID string, pieceNum int,
 		pmm.taskPieceMetaRecords.Add(taskID, pieceRecords)
 	}
 
-	return pieceRecords.Add(strconv.Itoa(pieceNum), pieceMetaRecord)
+	return pieceRecords.Add(strconv.Itoa(int(pieceNum)), pieceMetaRecord)
 }
 
 func (pmm *pieceMetaDataManager) getPieceMetaRecordsByTaskID(taskID string) (pieceMetaRecords []pieceMetaRecord, err error) {

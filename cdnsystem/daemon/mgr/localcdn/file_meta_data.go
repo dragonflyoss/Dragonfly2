@@ -48,7 +48,6 @@ func (mm *fileMetaDataManager) writeFileMetaDataByTask(ctx context.Context, task
 		SourceFileLen: task.SourceFileLength,
 		AccessTime:    getCurrentTimeMillisFunc(),
 		CdnFileLength: task.CdnFileLength,
-		Md5:           task.Md5,
 	}
 
 	if err := mm.writeFileMetaData(ctx, metaData); err != nil {

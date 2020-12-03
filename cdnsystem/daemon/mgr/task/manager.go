@@ -51,7 +51,7 @@ func newMetrics(register prometheus.Registerer) *metrics {
 type Manager struct {
 	cfg                     *config.Config
 	metrics                 *metrics
-	sourceClient            source.SourceClient
+	resourceClient          source.ResourceClient
 	taskStore               *syncmap.SyncMap
 	accessTimeMap           *syncmap.SyncMap
 	taskURLUnReachableStore *syncmap.SyncMap
@@ -115,29 +115,26 @@ func (tm Manager) Delete(ctx context.Context, taskID string) error {
 	return nil
 }
 
-func (tm Manager) GetPieces(ctx context.Context, taskID, clientID string, piecePullRequest *types.PiecePullRequest) (isFinished bool, data interface{}, err error) {
+func (tm Manager) GetPieces(ctx context.Context, taskID string, piecePullRequest *types.PiecePullRequest) (isFinished bool, data interface{}, err error) {
 	panic("implement me")
 }
 
-func (tm Manager) UpdatePieceStatus(ctx context.Context, taskID, pieceRange string, pieceUpdateRequest *types.PieceUpdateRequest) error {
-	panic("implement me")
-}
 
 // NewManager returns a new Manager Object.
 func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr,
-	sourceClient source.SourceClient, register prometheus.Registerer) (*Manager, error) {
+	resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
 	return &Manager{
 		cfg:                     cfg,
 		taskStore:               syncmap.NewSyncMap(),
 		cdnMgr:                  cdnMgr,
 		accessTimeMap:           syncmap.NewSyncMap(),
 		taskURLUnReachableStore: syncmap.NewSyncMap(),
-		sourceClient:            sourceClient,
+		resourceClient:          resourceClient,
 		metrics:                 newMetrics(register),
 	}, nil
 }
 
-func (tm *Manager) Register(ctx context.Context,  req *types.TaskRegisterRequest) (taskCreateResponse *types.TaskRegisterResponse, err error) {
+func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (taskCreateResponse *types.TaskRegisterResponse, err error) {
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
 		logrus.Infof("failed to add or update task with req %+v: %v", req, err)
@@ -162,6 +159,6 @@ func (tm *Manager) Register(ctx context.Context,  req *types.TaskRegisterRequest
 	}
 	return &types.TaskRegisterResponse{
 		SourceFileLength: task.SourceFileLength,
-		PieceSize: task.PieceSize,
+		PieceSize:        task.PieceSize,
 	}, nil
 }

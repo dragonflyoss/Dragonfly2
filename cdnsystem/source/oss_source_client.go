@@ -8,7 +8,7 @@ import (
 const ossClient = "oss"
 
 func init() {
-	sourceClient, err := NewOSSSourceClient()
+	sourceClient, err := newOSSSourceClient()
 	if err != nil {
 
 	}
@@ -41,6 +41,6 @@ func (o ossSourceClient) Download(url string, headers map[string]string, checkCo
 	panic("implement me")
 }
 
-func NewOSSSourceClient() (ResourceClient, error) {
+func newOSSSourceClient() (ResourceClient, error) {
 	return nil, nil
 }

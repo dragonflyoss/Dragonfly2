@@ -2,7 +2,6 @@ package localcdn
 
 import (
 	"context"
-	"crypto/md5"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"path"
@@ -75,7 +74,7 @@ func newManager(cfg *config.Config, cacheStore *store.Store,
 	resourceClient source.ResourceClient, rateLimiter *ratelimiter.RateLimiter, register prometheus.Registerer) (*Manager, error) {
 	metaDataManager := newFileMetaDataManager(cacheStore)
 	pieceMetaDataManager := newPieceMetaDataMgr()
-	cdnReporter := newReporter(cfg, cacheStore, metaDataManager, pieceMetaDataManager)
+	cdnReporter := newReporter(pieceMetaDataManager)
 	return &Manager{
 		cfg:                  cfg,
 		cacheStore:           cacheStore,
@@ -105,7 +104,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*t
 	if err != nil {
 		logrus.Errorf("taskId: %s failed to detect cache err: %v", task.TaskID, err)
 	}
-	fileMD5, updateTaskInfo, err := cm.cdnReporter.reportCache(ctx, task.TaskID, detectResult)
+	// report cache
+	updateTaskInfo, err := cm.cdnReporter.reportCache(task.TaskID, detectResult)
 	if err != nil {
 		logrus.Errorf("taskId: %s failed to report cache err: %v", task.TaskID, err)
 	}
@@ -116,9 +116,6 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*t
 		return updateTaskInfo, nil
 	}
 
-	if fileMD5 == nil {
-		fileMD5 = md5.New()
-	}
 	// start to download the source file
 	resp, err := cm.download(ctx, task.TaskID, task.Url, task.Headers, detectResult.breakNum, sourceFileLength, task.PieceSize)
 	cm.metrics.cdnDownloadCount.WithLabelValues().Inc()
@@ -129,7 +126,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*t
 	defer resp.Body.Close()
 
 	cm.updateExpireInfo(ctx, task.TaskID, resp.ExpireInfo)
-	reader := limitreader.NewLimitReaderWithLimiterAndMD5Sum(resp.Body, cm.limiter, fileMD5)
+	reader := limitreader.NewLimitReaderWithLimiterAndMD5Sum(resp.Body, cm.limiter, detectResult.fileMd5)
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult.breakNum, detectResult.downloadedFileLength, sourceFileLength)
 	if err != nil {
 		logrus.Errorf("failed to write for task %s: %v", task.TaskID, err)

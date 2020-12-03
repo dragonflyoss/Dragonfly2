@@ -6,6 +6,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"hash"
@@ -44,13 +45,13 @@ func newCacheDetector(cacheStore *store.Store, metaDataManager *fileMetaDataMana
 // And if not, return the latest piece num that has been downloaded.
 func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTaskInfo) (*detectCacheResult, error) {
 	// read metaData from storage
-	detectResult, err := cd.readCacheFile(ctx, task)
+	detectResult, err := cd.readCache(ctx, task)
 	logrus.Infof("taskID: %s detects cache breakNum: %d", task.TaskID, detectResult.breakNum)
 
 	if err != nil || detectResult == nil || detectResult.breakNum == 0 {
 		metaData, err := cd.resetRepo(ctx, task)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to reset repo")
+			return &detectCacheResult{}, errors.Wrapf(err, "failed to reset repo")
 		}
 		detectResult = &detectCacheResult{fileMetaData: metaData}
 	} else {
@@ -62,62 +63,63 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTaskIn
 	return detectResult, nil
 }
 
-func (cd *cacheDetector) readCacheFile(ctx context.Context, task *types.SeedTaskInfo) (result *detectCacheResult, err error) {
+func (cd *cacheDetector) readCache(ctx context.Context, task *types.SeedTaskInfo) (result *detectCacheResult, err error) {
 	result = &detectCacheResult{}
-	// task meta data
+	// read task meta data
 	metaData, err := cd.metaDataManager.readFileMetaData(ctx, task.TaskID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "taskId: %s read file meta data error", task.TaskID)
+		return &detectCacheResult{}, errors.Wrapf(err, "taskId: %s read file meta data error", task.TaskID)
 	}
 	if !checkSameFile(task, metaData) {
-		return nil, fmt.Errorf("taskID: %s check same file fail", task.TaskID)
+		return &detectCacheResult{}, fmt.Errorf("taskID: %s check same file fail", task.TaskID)
 	}
 	expired, err := cd.resourceClient.IsExpired(task.Url, task.Headers, metaData.ExpireInfo)
 	if err != nil {
-		return nil, errors.Wrapf(err, "taskID: %s failed to check whether the task has expired", task.TaskID)
+		return &detectCacheResult{}, errors.Wrapf(err, "taskID: %s failed to check whether the task has expired", task.TaskID)
 	}
 
 	logrus.Debugf("taskID: %s success to get expired result: %t", task.TaskID, expired)
 	if expired {
-		return nil, errors.Wrapf(err, "taskID: %s task has expired", task.TaskID)
+		return &detectCacheResult{}, errors.Wrapf(err, "taskID: %s task has expired", task.TaskID)
 	}
 	// not expired
 	if metaData.Finish {
-		return cd.parseCacheByMeta(ctx, task.TaskID, metaData)
+		return cd.parseCacheByMetaFile(ctx, task.TaskID, metaData)
 	}
 	// check source whether support range
 	supportRange, err := cd.resourceClient.IsSupportRange(task.Url, task.Headers)
 	if err != nil {
-		return nil, errors.Wrapf(err, "taskID: %s failed to check whether url %s supports range", task.TaskID, task.Url)
+		return &detectCacheResult{}, errors.Wrapf(err, "taskID: %s failed to check whether url %s supports range", task.TaskID, task.Url)
 	}
 	if !supportRange || task.CdnFileLength < 0 {
-		return nil, fmt.Errorf("taskID: %s failed to check whether the task supports partial requests: %v", task.TaskID, err)
+		return &detectCacheResult{}, fmt.Errorf("taskID: %s failed to check whether the task supports partial requests: %v", task.TaskID, err)
 	}
 
 	return cd.parseCacheByCheckFile(ctx, task.TaskID, metaData)
 }
-func (cd *cacheDetector) parseCacheByMeta(ctx context.Context, taskID string, metaData *fileMetaData) (result *detectCacheResult, err error) {
-	if metaData.Success {
+func (cd *cacheDetector) parseCacheByMetaFile(ctx context.Context, taskID string, metaData *fileMetaData) (result *detectCacheResult, err error) {
+	result = &detectCacheResult{}
+	if metaData.Success && !stringutils.IsEmptyStr(metaData.Md5) {
 		// check piece meta integrity
 		pieceMetaRecords, err := cd.pieceMetaDataManager.readAndCheckPieceMetaRecords(ctx, taskID, metaData.Md5)
 		if err != nil {
-			return nil, errors.Wrapf(err, "taskID: %s failed to read piece meta data", taskID)
+			return &detectCacheResult{}, errors.Wrapf(err, "taskID: %s failed to read piece meta data", taskID)
 		}
 		// check downloaded data integrity
 		storageInfo, err := cd.cacheStore.Stat(ctx, getDownloadRawFunc(taskID))
 		if err != nil {
-			return nil, errors.Wrapf(err, "taskID %s failed to processFullCache: check file size fail", taskID)
+			return &detectCacheResult{}, errors.Wrapf(err, "taskID %s failed to processFullCache: check file size fail", taskID)
 		}
 		if metaData.CdnFileLength != storageInfo.Size {
-			return nil, fmt.Errorf("taskID %s failed to processFullCache: fileSize not match with file meta data", taskID)
+			return &detectCacheResult{}, fmt.Errorf("taskID %s failed to processFullCache: fileSize not match with file meta data", taskID)
 		}
-		result.pieceMetaRecords = pieceMetaRecords
 		result.fileMetaData = metaData
-		result.downloadedFileLength = metaData.CdnFileLength
 		result.breakNum = -1
+		result.pieceMetaRecords = pieceMetaRecords
+		result.downloadedFileLength = metaData.CdnFileLength
 		return result, nil
 	}
-	return nil, fmt.Errorf("taskID: %s task has downloaded but the result of downloaded is fail", taskID)
+	return &detectCacheResult{}, fmt.Errorf("taskID: %s task has downloaded but the result of downloaded is fail", taskID)
 }
 
 func (cd *cacheDetector) parseCacheByCheckFile(ctx context.Context, taskID string, metaData *fileMetaData) (result *detectCacheResult, err error) {
@@ -125,19 +127,18 @@ func (cd *cacheDetector) parseCacheByCheckFile(ctx context.Context, taskID strin
 	cacheReader := newCacheReader()
 	reader, err := cd.cacheStore.Get(ctx, getDownloadRawFunc(taskID))
 	if err != nil {
-		logrus.Errorf("taskID: %s, failed to read key file: %v", taskID, err)
-		return nil, err
+		return &detectCacheResult{}, errors.Wrapf(err, "taskID: %s, failed to read key file", taskID)
 	}
 	pieceMetaRecords, err := cd.pieceMetaDataManager.readWithoutCheckPieceMetaRecords(ctx, taskID)
 	if err != nil {
-		logrus.Errorf("taskID: %s, failed to read piece meta file: %v", taskID, err)
-		return nil, err
+		return &detectCacheResult{}, errors.Wrapf(err, "taskID: %s, failed to read piece meta file", taskID)
 	}
-
-	cacheResult, err := cacheReader.readFile(ctx, reader, pieceMetaRecords)
+	if pieceMetaRecords == nil {
+		return &detectCacheResult{}, nil
+	}
+	cacheResult, err := cacheReader.readFile(reader, pieceMetaRecords)
 	if err != nil {
-		logrus.Errorf("taskID: %s, failed to read data file: %v", taskID, err)
-		return nil, err
+		return &detectCacheResult{}, errors.Wrapf(err, "taskID: %s, failed to read data file")
 	}
 	result.fileMetaData = metaData
 	result.breakNum = cacheResult.breakNum
@@ -181,6 +182,11 @@ func checkSameFile(task *types.SeedTaskInfo, metaData *fileMetaData) (result boo
 	}
 	if metaData.SourceFileLen != task.SourceFileLength {
 		return false
+	}
+	if !stringutils.IsEmptyStr(metaData.Md5) && !stringutils.IsEmptyStr(task.RequestMd5) {
+		if metaData.Md5 != task.RequestMd5 {
+			return false
+		}
 	}
 	return true
 }

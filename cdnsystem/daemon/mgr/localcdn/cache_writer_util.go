@@ -50,7 +50,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, n int
 
 				// report piece status
 				pieceSum := fileutils.GetMd5Sum(pieceMd5, nil)
-				pieceMetaRecord := &pieceMetaRecord{
+				pieceMetaRecord := pieceMetaRecord{
 					PieceNum:  job.pieceNum,
 					PieceLen:  job.pieceContentLen,
 					Md5:       pieceSum,
@@ -58,7 +58,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, n int
 					Offset:    job.sourceFileOffset,
 				}
 				if cw.cdnReporter != nil {
-					if err := cw.cdnReporter.reportPieceStatus(ctx, job.taskID, job.pieceNum, pieceMetaRecord, config.PieceSUCCESS); err != nil {
+					if err := cw.cdnReporter.pieceMetaDataManager.setPieceMetaRecord(job.taskID, job.pieceNum, pieceMetaRecord); err != nil {
 						// NOTE: should we do this job again?
 						logrus.Errorf("failed to report piece status taskID %s pieceNum %d pieceMetaRecord %s: %v", job.taskID, job.pieceNum, pieceMetaRecord, err)
 						continue
@@ -70,7 +70,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, n int
 	}
 }
 
-func (cw *cacheWriter) writeToFile(ctx context.Context, bytesBuffer *bytes.Buffer, taskID string, cdnFileOffset int64, pieceContSize int, pieceMd5 hash.Hash) error {
+func (cw *cacheWriter) writeToFile(ctx context.Context, bytesBuffer *bytes.Buffer, taskID string, cdnFileOffset int64, pieceContSize int32, pieceMd5 hash.Hash) error {
 	var resultBuf = &bytes.Buffer{}
 	// write piece content
 	var pieceContent []byte
