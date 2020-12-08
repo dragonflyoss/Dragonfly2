@@ -304,7 +304,6 @@ var file_pkg_grpc_base_base_proto_goTypes = []interface{}{
 	(Code)(0),             // 0: base.Code
 	(PieceStyle)(0),       // 1: base.PieceStyle
 	(*ResponseState)(nil), // 2: base.ResponseState
-	(*UrlMeta)(nil),       // 3: base.UrlMeta
 }
 var file_pkg_grpc_base_base_proto_depIdxs = []int32{
 	0, // 0: base.ResponseState.code:type_name -> base.Code

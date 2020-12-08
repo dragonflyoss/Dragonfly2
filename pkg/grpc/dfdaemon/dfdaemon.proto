@@ -20,7 +20,6 @@
 syntax = "proto3";
 
 package dfdaemon;
-
 import "pkg/grpc/base/base.proto";
 
 option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/grpc/dfdaemon";
