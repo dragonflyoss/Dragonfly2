@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/dfget/config"
 	"github.com/dragonflyoss/Dragonfly2/pkg/protocol"
+)
+
+const (
+	StrContentLength = "Content-Length"
+	StrRange         = "Range"
 )
 
 // Resource is an implementation of protocol.Resource for http protocol.
@@ -74,7 +78,7 @@ func (rs *Resource) Length(ctx context.Context) (int64, error) {
 	}
 
 	defer res.Body.Close()
-	lenStr := res.Header.Get(config.StrContentLength)
+	lenStr := res.Header.Get(StrContentLength)
 	if lenStr == "" {
 		return 0, fmt.Errorf("failed to get content length")
 	}
@@ -122,7 +126,7 @@ func (rs *Resource) newRequest(ctx context.Context, off, size int64) (*http.Requ
 	}
 
 	if size > 0 {
-		req.Header.Set(config.StrRange, fmt.Sprintf("bytes=%d-%d", off, off+size-1))
+		req.Header.Set(StrRange, fmt.Sprintf("bytes=%d-%d", off, off+size-1))
 	}
 
 	req = req.WithContext(ctx)
