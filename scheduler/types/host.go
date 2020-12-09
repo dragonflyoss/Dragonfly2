@@ -1,0 +1,19 @@
+package types
+
+type Host struct {
+	Uuid           string `json:"uuid,omitempty"`
+	Ip             string `json:"ip,omitempty"`
+	Port           int32  `json:"port,omitempty"` // peer server http port
+	HostName       string `json:"host_name,omitempty"`
+	SecurityDomain string `json:"security_domain,omitempty"` // security isolation domain for network
+	Location       string `json:"location,omitempty"`        // area|country|province|city|...
+	Idc            string `json:"idc,omitempty"`
+	Switch         string `json:"switch,omitempty"` // network device construct, xx|yy|zz
+
+	PeerTaskMap    map[string]*PeerTask // Pid => PeerTask
+
+	// ProducerLoad is the load of download services provided by the current node.
+	ProducerLoad int16
+	// ServiceDownTime the down time of the peer service.
+	ServiceDownTime int64
+}
