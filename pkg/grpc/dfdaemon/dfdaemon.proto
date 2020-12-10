@@ -24,7 +24,7 @@ import "pkg/grpc/base/base.proto";
 
 option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/grpc/dfdaemon";
 
-message DownRequest{
+message DownloadRequest{
   // download content with the url, but not only for http protocol
   string url = 1;
   // blocks will be written to output path directly,
@@ -37,7 +37,7 @@ message DownRequest{
   string filter = 5;
 }
 
-message DownResult{
+message DownloadResult{
   base.ResponseState state = 1;
   string task_id = 2;
   uint64 completed_length = 3;
@@ -46,7 +46,7 @@ message DownResult{
 
 service Downloader{
   // download content by dragonfly
-  rpc Get(DownRequest) returns(stream DownResult) {}
+  rpc Download(DownloadRequest) returns(stream DownloadResult) {}
 }
 
 

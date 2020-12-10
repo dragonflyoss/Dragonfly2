@@ -14,6 +14,7 @@ require (
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.2
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.4.2
@@ -30,7 +31,11 @@ require (
 	github.com/valyala/fasthttp v1.17.0
 	github.com/willf/bitset v1.1.11
 	go.uber.org/zap v1.16.0
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
+	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/sys v0.0.0-20201116194326-cc9327a14d48 // indirect
+	golang.org/x/text v0.3.4 // indirect
+	google.golang.org/genproto v0.0.0-20201117123952-62d171c70ae1
 	google.golang.org/grpc v1.33.2
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.0.1 // indirect
 	google.golang.org/protobuf v1.25.0
