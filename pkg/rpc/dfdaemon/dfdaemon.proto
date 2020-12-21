@@ -41,7 +41,7 @@ message DownRequest{
 message DownResult{
   base.ResponseState state = 1;
   string task_id = 2;
-  string pid = 3;
+  string peer_id = 3;
   uint64 completed_length = 4;
   bool done = 5; // done with success or fail
 }

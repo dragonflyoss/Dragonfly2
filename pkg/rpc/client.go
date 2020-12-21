@@ -82,6 +82,10 @@ func BuildClient(client interface{}, init InitClientFunc, addrs []basic.NetAddr)
 }
 
 func (c *Connection) connect() error {
+	if c.nextNum >= len(c.NetAddrs) {
+		return errors.New("available addr is not found in the candidates")
+	}
+
 	var cc *grpc.ClientConn
 	var err error
 

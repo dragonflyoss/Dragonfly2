@@ -88,8 +88,8 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	}
 
 	ph := ptr.PeerHost
-	logger.Infof("register peer task result:%t[%d] for [pid:%s] taskId:%s,url:%s,peerIp:%s,securityDomain:%s,idc:%s,scheduler:%s",
-		suc, int(code), ptr.Pid, taskId, ptr.Url, ph.Ip, ph.SecurityDomain, ph.Idc, target)
+	logger.Infof("register peer task result:%t[%d] for [peerId:%s] taskId:%s,url:%s,peerIp:%s,securityDomain:%s,idc:%s,scheduler:%s",
+		suc, int(code), ptr.PeerId, taskId, ptr.Url, ph.Ip, ph.SecurityDomain, ph.Idc, target)
 
 	if err != nil {
 		if err = sc.TryMigrate(nextNum, err); err == nil {
@@ -136,8 +136,8 @@ func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.P
 		rs = res.(*base.ResponseState)
 	}
 
-	logger.Infof("peer task down result:%t[%d] for [pid:%s] taskId:%s,url:%s,scheduler:%s,length:%d,traffic:%d,cost:%d",
-		pr.Success, int(pr.ErrorCode), pr.Pid, pr.TaskId, pr.Url, target, pr.ContentLength, pr.Traffic, pr.Cost)
+	logger.Infof("peer task down result:%t[%d] for [peerId:%s] taskId:%s,url:%s,scheduler:%s,length:%d,traffic:%d,cost:%d",
+		pr.Success, int(pr.ErrorCode), pr.PeerId, pr.TaskId, pr.Url, target, pr.ContentLength, pr.Traffic, pr.Cost)
 
 	return
 }
@@ -159,7 +159,7 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 		code = rs.Code
 	}
 
-	logger.Infof("leave from task result:%t[%d] for [pid:%s] taskId:%s,scheduler:%s", suc, int(code), pt.Pid, pt.TaskId, target)
+	logger.Infof("leave from task result:%t[%d] for [peerId:%s] taskId:%s,scheduler:%s", suc, int(code), pt.PeerId, pt.TaskId, target)
 
 	return
 }
