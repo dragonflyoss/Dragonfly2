@@ -119,7 +119,7 @@ func (pts *pieceTaskStream) retryRecv(cause error) (*scheduler.PiecePackage, err
 		}
 	}
 
-	pts.prc <- scheduler.NewZeroPieceResult(pts.taskId, pts.ptr.Pid)
+	pts.prc <- scheduler.NewZeroPieceResult(pts.taskId, pts.ptr.PeerId)
 
 	return pts.recv()
 }
