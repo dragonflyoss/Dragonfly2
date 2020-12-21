@@ -27,7 +27,8 @@ option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem";
 message SeedRequest{
   string task_id = 1;
   string url = 2;
-  base.UrlMeta url_meta = 3; // check content downloaded from remote url
+  string filter = 3;
+  base.UrlMeta url_meta = 4; // check content downloaded from remote url
 }
 
 // keep piece meta and data separately
