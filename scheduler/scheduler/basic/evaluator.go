@@ -1,7 +1,6 @@
 package basic
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/scheduler/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 )
@@ -9,16 +8,24 @@ import (
 var _ scheduler.IPeerTaskEvaluator= &Evaluator{}
 
 type Evaluator struct {
-	hostMgr *mgr.HostManager
-	taskMgr *mgr.TaskManager
-	peerTaskMgr *mgr.PeerTaskManager
 }
 
+func (e *Evaluator) GetMaxUsableHostValue() float64 {
+	return 100.0
+}
 
-func (e *Evaluator) GetNextPiece(peerTask *types.PeerTask) (*types.Piece, error) {
+func (e *Evaluator) GetNextPiece(peerTask *types.PeerTask) (p *types.Piece, err error) {
 	// first piece need download
-	pieceNum := peerTask.FirstPieceNum
+	pieceNum := peerTask.GetFirstPieceNum()
+	for !peerTask.IsPieceDownloading(pieceNum) && pieceNum < peerTask.Task.GetPieceTotal() {
+		pieceNum ++
+	}
 
+	if pieceNum >= peerTask.Task.GetPieceTotal() {
+		return
+	}
+
+	p = peerTask.Task.GetPiece(pieceNum)
 
 	return
 }

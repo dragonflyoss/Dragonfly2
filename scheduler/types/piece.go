@@ -15,19 +15,27 @@ type Piece struct {
 	PieceStyle  base.PieceStyle `json:"piece_style,omitempty"`
 
 	Task *Task
-	readyPeerHostList *sync.Map
-	downloadingPeerHostList *sync.Map
+	readyPeerTaskList *sync.Map
+	downloadingPeerTaskList *sync.Map
 }
 
-func(p *Piece) GetReadPeerHostList() (list []*PeerHost) {
-	if p == nil || p.readyPeerHostList == nil {
+func(p *Piece) GetReadPeerTaskList() (list []*PeerTask) {
+	if p == nil || p.readyPeerTaskList == nil {
 		return
 	}
-	p.readyPeerHostList.Range(func(key, value interface{}) bool {
-		host := value.(*PeerHost)
+	var downPeerTaskList []string
+	p.readyPeerTaskList.Range(func(key, value interface{}) bool {
+		host := value.(*PeerTask)
+		if host.IsDown() {
+			downPeerTaskList = append(downPeerTaskList, host.Pid)
+			return true
+		}
 		list = append(list, host)
 		return true
 	})
+	for _, pid := range downPeerTaskList {
+		p.readyPeerTaskList.Delete(pid)
+	}
 	return
 }
 

@@ -2,19 +2,22 @@ package scheduler
 
 import (
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/scheduler/scheduler/basic"
 	"math"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/dragonflyoss/Dragonfly2/scheduler/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 )
 
 type Scheduler struct {
-	hostMgr     *mgr.HostManager
-	taskMgr     *mgr.TaskManager
-	peerTaskMgr *mgr.PeerTaskManager
 	evaluator   IPeerTaskEvaluator
+}
+
+func CreateScheduler() *Scheduler {
+	return &Scheduler{
+		evaluator: &basic.Evaluator{},
+	}
 }
 
 func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, err error) {
@@ -28,24 +31,31 @@ func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, 
 
 		// scheduler piece to a host
 		srcHost := task.Host
-		readyPeerHostList := piece.GetReadPeerHostList()
-		var dstPeerHost *types.PeerHost
+		readyPeerTaskList:= piece.GetReadPeerTaskList()
+		var dstPeerTask *types.PeerTask
 		value := math.MaxFloat64
-		for _, host := range readyPeerHostList {
-			val, _ := s.evaluator.Evaluate(host.Host, srcHost)
+		for _, pt := range readyPeerTaskList {
+			val, _ := s.evaluator.Evaluate(pt.Host, srcHost)
 			if val < value {
 				value = val
-				dstPeerHost = host
+				dstPeerTask = pt
 			}
 		}
-		if dstPeerHost != nil {
+		if dstPeerTask != nil && value < s.evaluator.GetMaxUsableHostValue() {
 			result = append(result, &types.PieceTask{
 				Piece:   piece,
 				SrcPid:  task.Pid,
-				DstPid:  dstPeerHost.Pid,
-				DstAddr: fmt.Sprintf("%s:%d", dstPeerHost.Host.Ip, dstPeerHost.Host.Port),
+				DstPid:  dstPeerTask.Pid,
+				DstAddr: fmt.Sprintf("%s:%d", dstPeerTask.Host.Ip, dstPeerTask.Host.Port),
 			})
+		} else if value > s.evaluator.GetMaxUsableHostValue() {
+			// bad dstHost quality
+			return
 		}
 	}
 	return
+}
+
+func (s *Scheduler) Start() {
+
 }
