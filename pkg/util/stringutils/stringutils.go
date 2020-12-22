@@ -14,13 +14,29 @@
  * limitations under the License.
  */
 
-package dferror
+package stringutils
 
-import (
-	"errors"
-)
+import "unicode"
 
-// end of stream
-var EOS = errors.New("EOS")
+// SubString returns the subString of {str} which begins at {start} and end at {end - 1}.
+func SubString(str string, start, end int) string {
+	runes := []rune(str)
+	length := len(runes)
+	if start < 0 || start >= length ||
+		end <= 0 || end > length ||
+		start > end {
+		return ""
+	}
 
-var AddressReused = errors.New("address is reused")
+	return string(runes[start:end])
+}
+
+// IsEmptyStr returns whether the string s is empty.
+func IsEmptyStr(s string) bool {
+	for _, v := range s {
+		if !unicode.IsSpace(v) {
+			return false
+		}
+	}
+	return true
+}

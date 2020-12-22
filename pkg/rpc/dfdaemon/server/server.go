@@ -18,8 +18,8 @@ package server
 
 import (
 	"context"
-	dferror "github.com/dragonflyoss/Dragonfly2/pkg/error"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
@@ -73,7 +73,7 @@ func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_Downl
 
 	go send(drc, closeDrc, stream, errChan)
 
-	if err = <-errChan; err == dferror.EOS {
+	if err = <-errChan; dferrors.IsEndOfStream(err) {
 		err = nil
 	}
 
@@ -95,7 +95,7 @@ func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon
 			}
 		}
 
-		errChan <- dferror.EOS
+		errChan <- dferrors.ErrEndOfStream
 	})
 
 	if err != nil {

@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package math
+package timeutils
 
 import (
-	"math"
-	"math/rand"
 	"time"
 )
 
-func RandBackoff(initBackoff float64, multiplier float64, maxBackoff float64, n int) time.Duration {
-	rd := rand.New(rand.NewSource(time.Now().UnixNano()))
+// GetCurrentTimeMillis returns the time in millis for now.
+func GetCurrentTimeMillis() int64 {
+	return time.Now().UnixNano() / time.Millisecond.Nanoseconds()
+}
 
-	p := math.Pow(multiplier, float64(n))
-
-	bf := math.Max(initBackoff, rd.Float64()*math.Min(p*initBackoff, maxBackoff))
-
-	return time.Duration(bf * float64(time.Second))
+// SinceInMilliseconds gets the time since the specified start in milliseconds.
+func SinceInMilliseconds(start time.Time) float64 {
+	return float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond.Nanoseconds())
 }

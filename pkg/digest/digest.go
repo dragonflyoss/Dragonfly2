@@ -14,24 +14,27 @@
  * limitations under the License.
  */
 
-package file
+package digest
 
 import (
+	"crypto/sha1"
+	"crypto/sha256"
+	"encoding/hex"
 	"io"
-	"os"
 )
 
-func CopyFile(dstName, srcName string) (written int64, err error) {
-	src, err := os.Open(srcName)
-	if err != nil {
-		return
-	}
-	defer src.Close()
-	dst, err := os.OpenFile(dstName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		return
-	}
-	defer dst.Close()
+// Sha256 returns the SHA-256 checksum of the data.
+func Sha256(value string) string {
+	h := sha256.New()
+	h.Write([]byte(value))
+	return hex.EncodeToString(h.Sum(nil))
+}
 
-	return io.Copy(dst, src)
+// Sha1 returns the SHA-1 checksum of the contents.
+func Sha1(contents []string) string {
+	h := sha1.New()
+	for _, content := range contents {
+		io.WriteString(h, content)
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }

@@ -18,7 +18,7 @@ package logger
 
 import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/env"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/file"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc/grpclog"
@@ -50,7 +50,7 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 		}
 		fileInfo, err := os.Stat(filePath)
 		if err == nil && fileInfo.Size() >= int64(maxSize*1024*1024) {
-			_, _ = file.CopyFile(filePath+".old", filePath)
+			_, _ = fileutils.CopyFile(filePath+".old", filePath)
 			_ = os.Truncate(filePath, 0)
 		}
 		if syncer, _, err = zap.Open(filePath); err != nil {
@@ -69,7 +69,7 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 	}
 
 	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05")
+	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
 
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),

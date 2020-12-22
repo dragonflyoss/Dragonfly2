@@ -19,8 +19,8 @@ package server
 import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
-	dferror "github.com/dragonflyoss/Dragonfly2/pkg/error"
-	"github.com/dragonflyoss/Dragonfly2/pkg/log"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
@@ -142,7 +142,7 @@ func (p *proxy) PullPieceTasks(stream scheduler.Scheduler_PullPieceTasksServer) 
 
 	go call(ctx, prc, ppc, p, errChan)
 
-	if err = <-errChan; err == dferror.EOS {
+	if err = <-errChan; dferrors.IsEndOfStream(err) {
 		err = nil
 	}
 
@@ -191,7 +191,7 @@ func send(ppc chan *scheduler.PiecePackage, closePrc func(), closePpc func(), st
 			}
 		}
 
-		errChan <- dferror.EOS
+		errChan <- dferrors.ErrEndOfStream
 	})
 
 	if err != nil {
