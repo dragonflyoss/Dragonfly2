@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+
 package plugins
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/suite"
 	"reflect"
 	"testing"
 
@@ -26,38 +28,36 @@ import (
 )
 
 func Test(t *testing.T) {
-	suite.TestingT(t)
+	suite.Run(t, new(PluginsTestSuite))
 }
 
-func init() {
-	check.Suite(&PluginsTestSuite{})
-}
 
 type PluginsTestSuite struct {
+	suite.Suite
 	mgr Manager
 }
 
-func (s *PluginsTestSuite) SetUpSuite(c *check.C) {
+func (s *PluginsTestSuite) SetUpSuite() {
 	s.mgr = mgr
 }
 
-func (s *PluginsTestSuite) TearDownSuite(c *check.C) {
+func (s *PluginsTestSuite) TearDownSuite() {
 	mgr = s.mgr
 }
 
-func (s *PluginsTestSuite) TearDownTest(c *check.C) {
+func (s *PluginsTestSuite) TearDownTest() {
 	mgr = s.mgr
 }
 
-func (s *PluginsTestSuite) TestSetManager(c *check.C) {
+func (s *PluginsTestSuite) TestSetManager() {
 	tmp := &managerIml{}
 	SetManager(tmp)
-	c.Assert(mgr, check.Equals, tmp)
+	s.Equal(mgr, tmp)
 }
 
 // -----------------------------------------------------------------------------
 
-func (s *PluginsTestSuite) TestInitialize(c *check.C) {
+func (s *PluginsTestSuite) TestInitialize() {
 	var testCase = func(cfg *config.Config, b Builder,
 		pt config.PluginType, name string, hasPlugin bool, errMsg string) {
 		SetManager(NewManager())
@@ -66,16 +66,16 @@ func (s *PluginsTestSuite) TestInitialize(c *check.C) {
 		plugin := GetPlugin(pt, name)
 
 		if errMsg != "" {
-			c.Assert(err, check.NotNil)
-			c.Assert(err, check.ErrorMatches, ".*"+errMsg+".*")
-			c.Assert(plugin, check.IsNil)
+			s.NotNil(err)
+			s.EqualError(err, ".*"+errMsg+".*")
+			s.Nil(plugin)
 		} else {
-			c.Assert(err, check.IsNil)
+			s.Nil(err)
 			if hasPlugin {
-				c.Assert(plugin.Type(), check.Equals, pt)
-				c.Assert(plugin.Name(), check.Equals, name)
+				s.Equal(plugin.Type(), pt)
+				s.Equal(plugin.Name(), name)
 			} else {
-				c.Assert(plugin, check.IsNil)
+				s.Nil(plugin)
 			}
 		}
 	}
@@ -110,7 +110,7 @@ func (s *PluginsTestSuite) TestInitialize(c *check.C) {
 	}
 }
 
-func (s *PluginsTestSuite) TestManagerIml_Builder(c *check.C) {
+func (s *PluginsTestSuite) TestManagerIml_Builder() {
 	var builder Builder = func(conf string) (plugin Plugin, e error) {
 		return nil, nil
 	}
@@ -120,13 +120,13 @@ func (s *PluginsTestSuite) TestManagerIml_Builder(c *check.C) {
 		manager.AddBuilder(pt, name, b)
 		obj := manager.GetBuilder(pt, name)
 		if result {
-			c.Assert(obj, check.NotNil)
+			s.NotNil(obj)
 			objVal := reflect.ValueOf(obj)
 			bVal := reflect.ValueOf(b)
-			c.Assert(objVal.Pointer(), check.Equals, bVal.Pointer())
+			s.Equal(objVal.Pointer(), bVal.Pointer())
 			manager.DeleteBuilder(pt, name)
 		} else {
-			c.Assert(obj, check.IsNil)
+			s.Nil(obj)
 		}
 	}
 
@@ -139,18 +139,18 @@ func (s *PluginsTestSuite) TestManagerIml_Builder(c *check.C) {
 	}
 }
 
-func (s *PluginsTestSuite) TestManagerIml_Plugin(c *check.C) {
+func (s *PluginsTestSuite) TestManagerIml_Plugin() {
 	manager := NewManager()
 
 	var testFunc = func(p Plugin, result bool) {
 		manager.AddPlugin(p)
 		obj := manager.GetPlugin(p.Type(), p.Name())
 		if result {
-			c.Assert(obj, check.NotNil)
-			c.Assert(obj, check.DeepEquals, p)
+			s.NotNil(obj)
+			s.Equal(obj, p)
 			manager.DeletePlugin(p.Type(), p.Name())
 		} else {
-			c.Assert(obj, check.IsNil)
+			s.Nil(obj)
 		}
 	}
 
@@ -161,7 +161,7 @@ func (s *PluginsTestSuite) TestManagerIml_Plugin(c *check.C) {
 	}
 }
 
-func (s *PluginsTestSuite) TestRepositoryIml(c *check.C) {
+func (s *PluginsTestSuite) TestRepositoryIml() {
 	type testCase struct {
 		pt        config.PluginType
 		name      string
@@ -198,18 +198,18 @@ func (s *PluginsTestSuite) TestRepositoryIml(c *check.C) {
 		repo.Add(v.pt, v.name, v.data)
 		data := repo.Get(v.pt, v.name)
 		if v.addResult {
-			c.Assert(data, check.NotNil)
-			c.Assert(data, check.DeepEquals, v.data)
+			s.NotNil(data)
+			s.Equal(data, v.data)
 			repo.Delete(v.pt, v.name)
 			data = repo.Get(v.pt, v.name)
-			c.Assert(data, check.IsNil)
+			s.Nil(data)
 		} else {
-			c.Assert(data, check.IsNil)
+			s.Nil(data)
 		}
 	}
 }
 
-func (s *PluginsTestSuite) TestValidate(c *check.C) {
+func (s *PluginsTestSuite) TestValidate() {
 	type testCase struct {
 		pt       config.PluginType
 		name     string
@@ -226,8 +226,7 @@ func (s *PluginsTestSuite) TestValidate(c *check.C) {
 		)
 	}
 	for _, v := range cases {
-		c.Assert(validate(v.pt, v.name), check.Equals, v.expected,
-			check.Commentf("pluginType:%v name:%s", v.pt, v.name))
+		s.Equal(validate(v.pt, v.name), v.expected)
 	}
 }
 

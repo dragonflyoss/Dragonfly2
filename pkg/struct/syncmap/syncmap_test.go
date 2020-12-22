@@ -24,7 +24,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/atomiccount"
 
 	"github.com/go-check/check"
-	"github.com/willf/bitset"
 )
 
 func Test(t *testing.T) {
@@ -104,15 +103,6 @@ func (suite *SyncMapUtilSuite) TestGetAsMap(c *check.C) {
 	mmap.Add("aaa", expected)
 
 	result, _ := mmap.GetAsMap("aaa")
-	c.Check(result, check.DeepEquals, expected)
-}
-
-func (suite *SyncMapUtilSuite) TestGetAsBitset(c *check.C) {
-	expected := bitset.New(111)
-	mmap := NewSyncMap()
-	mmap.Add("aaa", expected)
-
-	result, _ := mmap.GetAsBitset("aaa")
 	c.Check(result, check.DeepEquals, expected)
 }
 

@@ -18,12 +18,11 @@ package queue
 
 import (
 	"container/list"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/assert"
 	"sync"
 	"sync/atomic"
 	"time"
 	"unsafe"
-
-	"github.com/dragonflyoss/Dragonfly2/pkg/util"
 )
 
 // Queue blocking queue. The items putted into queue mustn't be nil.
@@ -73,7 +72,7 @@ type infiniteQueue struct {
 var _ Queue = &infiniteQueue{}
 
 func (q *infiniteQueue) Put(item interface{}) {
-	if util.IsNil(item) {
+	if assert.IsNil(item) {
 		return
 	}
 	q.Lock()
@@ -87,7 +86,7 @@ func (q *infiniteQueue) Put(item interface{}) {
 
 func (q *infiniteQueue) PutTimeout(item interface{}, timeout time.Duration) bool {
 	q.Put(item)
-	return !util.IsNil(item)
+	return !assert.IsNil(item)
 }
 
 func (q *infiniteQueue) Poll() interface{} {
@@ -160,14 +159,14 @@ type finiteQueue struct {
 }
 
 func (q *finiteQueue) Put(item interface{}) {
-	if util.IsNil(item) {
+	if assert.IsNil(item) {
 		return
 	}
 	q.store <- item
 }
 
 func (q *finiteQueue) PutTimeout(item interface{}, timeout time.Duration) bool {
-	if util.IsNil(item) {
+	if assert.IsNil(item) {
 		return false
 	}
 	if timeout <= 0 {

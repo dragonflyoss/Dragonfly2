@@ -22,7 +22,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/httputils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
@@ -139,16 +139,16 @@ func (client *httpSourceClient) getHTTPFileLength(url string, headers map[string
 func (client *httpSourceClient) GetContentLength(url string, headers map[string]string) (int64, error) {
 	fileLength, code, err := client.getHTTPFileLength(url, headers)
 	if err != nil {
-		return -1, errors.Wrapf(errortypes.ErrUnknownError, "failed to get http file Length: %v", err)
+		return -1, errors.Wrapf(dferrors.ErrUnknownError, "failed to get http file Length: %v", err)
 	}
 
 	if code == http.StatusUnauthorized || code == http.StatusProxyAuthRequired {
-		return -1, errors.Wrapf(errortypes.ErrAuthenticationRequired, "url: %s,code: %d", url, code)
+		return -1, errors.Wrapf(dferrors.ErrAuthenticationRequired, "url: %s,code: %d", url, code)
 	}
 	if code != http.StatusOK && code != http.StatusPartialContent {
 		logrus.Warnf("failed to get http file length with unexpected code: %d", code)
 		if code == http.StatusNotFound {
-			return -1, errors.Wrapf(errortypes.ErrURLNotReachable, "url: %s", url)
+			return -1, errors.Wrapf(dferrors.ErrURLNotReachable, "url: %s", url)
 		}
 		return -1, nil
 	}
@@ -250,7 +250,7 @@ func (client *httpSourceClient) httpWithHeaders(method, url string, headers map[
 
 	httpClient, ok := httpClientObject.(*http.Client)
 	if !ok {
-		return nil, errors.Wrapf(errortypes.ErrInvalidValue, "http client type check error: %T", httpClientObject)
+		return nil, errors.Wrapf(dferrors.ErrInvalidValue, "http client type check error: %T", httpClientObject)
 	}
 	return httpClient.Do(req)
 }

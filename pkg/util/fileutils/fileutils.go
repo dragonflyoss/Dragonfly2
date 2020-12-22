@@ -113,42 +113,29 @@ func SymbolicLink(src string, target string) error {
 }
 
 // CopyFile copies the file src to dst.
-func CopyFile(src string, dst string) (err error) {
+func CopyFile(dst string, src string) (written int64, err error) {
 	var (
 		s *os.File
 		d *os.File
 	)
 	if !IsRegularFile(src) {
-		return fmt.Errorf("failed to copy %s to %s: src is not a regular file", src, dst)
+		return 0, fmt.Errorf("failed to copy %s to %s: src is not a regular file", src, dst)
 	}
 	if s, err = os.Open(src); err != nil {
-		return fmt.Errorf("failed to copy %s to %s when opening source file: %v", src, dst, err)
+		return 0, fmt.Errorf("failed to copy %s to %s when opening source file: %v", src, dst, err)
 	}
 	defer s.Close()
 
 	if PathExist(dst) {
-		return fmt.Errorf("failed to copy %s to %s: dst file already exists", src, dst)
+		return 0, fmt.Errorf("failed to copy %s to %s: dst file already exists", src, dst)
 	}
 
-	if d, err = OpenFile(dst, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0755); err != nil {
-		return fmt.Errorf("failed to copy %s to %s when opening destination file: %v", src, dst, err)
+	if d, err = OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644); err != nil {
+		return 0, fmt.Errorf("failed to copy %s to %s when opening destination file: %v", src, dst, err)
 	}
 	defer d.Close()
 
-	buf := make([]byte, BufferSize)
-	for {
-		n, err := s.Read(buf)
-		if err != nil && err != io.EOF {
-			return fmt.Errorf("failed to copy %s to %s when reading src file: %v", src, dst, err)
-		}
-		if n == 0 || err == io.EOF {
-			break
-		}
-		if _, err := d.Write(buf[:n]); err != nil {
-			return fmt.Errorf("failed to copy %s to %s when writing dst file: %v", src, dst, err)
-		}
-	}
-	return nil
+	return io.Copy(d, s)
 }
 
 // MoveFile moves the file src to dst.

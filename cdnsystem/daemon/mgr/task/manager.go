@@ -7,7 +7,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
@@ -81,7 +81,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 
 func (tm *Manager) getTask(taskID string) (*types.SeedTaskInfo, error) {
 	if stringutils.IsEmptyStr(taskID) {
-		return nil, errors.Wrap(errortypes.ErrEmptyValue, "taskID")
+		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskID")
 	}
 
 	v, err := tm.taskStore.Get(taskID)
@@ -93,7 +93,7 @@ func (tm *Manager) getTask(taskID string) (*types.SeedTaskInfo, error) {
 	if info, ok := v.(*types.SeedTaskInfo); ok {
 		return info, nil
 	}
-	return nil, errors.Wrapf(errortypes.ErrConvertFailed, "taskID %s: %v", taskID, v)
+	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "taskID %s: %v", taskID, v)
 }
 
 func (tm Manager) Get(ctx context.Context, taskID string) (*types.SeedTaskInfo, error) {
@@ -165,7 +165,7 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 	}
 	// Step5: trigger CDN
 	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
-		return errors.Wrapf(errortypes.ErrSystemError, "failed to trigger cdn: %v", err)
+		return errors.Wrapf(dferrors.ErrSystemError, "failed to trigger cdn: %v", err)
 	}
 	return nil
 }

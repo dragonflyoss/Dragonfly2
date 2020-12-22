@@ -1,28 +1,30 @@
-
 package app
 
 import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon"
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/cmd"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-	"os"
-	"path/filepath"
-	"reflect"
-	"time"
-
-	"github.com/dragonflyoss/Dragonfly2/pkg/cmd"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
+	"google.golang.org/grpc"
+	"gopkg.in/yaml.v3"
+	"os"
+	"path/filepath"
+	"reflect"
+	"time"
 )
 
 const (
@@ -72,10 +74,10 @@ var rootCmd = &cobra.Command{
 				return err
 			}
 		}
-		logrus.Infof("success to init local ip of cdn, use ip: %s", cfg.AdvertiseIP)
+		logger.Infof("success to init local ip of cdn, use ip: %s", cfg.AdvertiseIP)
 
-		logrus.Debugf("get cdn config: %+v", cfg)
-		logrus.Info("start to run cdn system")
+		logger.Debugf("get cdn config: %+v", cfg)
+		logger.Info("start to run cdn system")
 
 		d, err := daemon.New(cfg)
 		if err != nil {
@@ -152,7 +154,7 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.Duration("gc-disk-interval", defaultBaseProperties.GCDiskInterval,
 		"gc disk interval is the interval time to execute GC disk.")
 
-	flagSet.Var(&defaultBaseProperties.YoungGCThreshold,"young-gc-threshold",
+	flagSet.Var(&defaultBaseProperties.YoungGCThreshold, "young-gc-threshold",
 		"gc disk interval is the interval time to execute GC disk.")
 
 	flagSet.Int("clean-ratio", defaultBaseProperties.CleanRatio,
@@ -170,56 +172,43 @@ func bindRootFlags(v *viper.Viper) error {
 		{
 			key:  "config",
 			flag: "config",
-		},
-		{
+		}, {
 			key:  "base.CDNPattern",
 			flag: "cdn-pattern",
-		},
-		{
+		}, {
 			key:  "base.listenPort",
 			flag: "port",
-		},
-		{
+		}, {
 			key:  "base.downloadPort",
 			flag: "download-port",
-		},
-		{
+		}, {
 			key:  "base.homeDir",
 			flag: "home-dir",
-		},
-		{
+		}, {
 			key:  "base.systemReservedBandwidth",
 			flag: "system-bandwidth",
-		},
-		{
+		}, {
 			key:  "base.maxBandwidth",
 			flag: "max-bandwidth",
-		},
-		{
+		}, {
 			key:  "base.enableProfiler",
 			flag: "profiler",
-		},
-		{
+		}, {
 			key:  "base.debug",
 			flag: "debug",
-		},
-		{
+		}, {
 			key:  "base.advertiseIP",
 			flag: "advertise-ip",
-		},
-		{
+		}, {
 			key:  "base.failAccessInterval",
 			flag: "fail-access-interval",
-		},
-		{
+		}, {
 			key:  "base.gcInitialDelay",
 			flag: "gc-initial-delay",
-		},
-		{
+		}, {
 			key:  "base.gcMetaInterval",
 			flag: "gc-meta-interval",
-		},
-		{
+		}, {
 			key:  "base.taskExpireTime",
 			flag: "task-expire-time",
 		},
@@ -298,7 +287,21 @@ func decodeWithYAML(types ...reflect.Type) mapstructure.DecodeHookFunc {
 }
 
 // initLog initializes log Level and log format.
-func initLog(logger *logrus.Logger, logPath string, logConfig dflog.LogConfig) error {
+func initLog(logPath string, logConfig dflog.LogConfig) error {
+
+	logDir := basic.HomeDir + "/logs/dragonfly"
+
+	bizLogger := logger.CreateLogger(logDir+"/cdnsystem.log", 300, 30, 0, false, false)
+	logger.SetBizLogger(bizLogger.Sugar())
+
+	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
+	logger.SetGrpcLogger(grpcLogger.Sugar())
+
+	// set register with server implementation.
+	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
+		cdnsystem.RegisterSeederServer(s, &proxy{server: impl.(SeederServer)})
+	})
+
 	// get log file path
 	logFilePath := filepath.Join(cdnNodeViper.GetString("base.homeDir"), "logs", logPath)
 
@@ -320,11 +323,11 @@ func setAdvertiseIP(cfg *config.Config) error {
 	// use the first non-loop address if the AdvertiseIP is empty
 	ipList, err := netutils.GetAllIPs()
 	if err != nil {
-		return errors.Wrapf(errortypes.ErrSystemError, "failed to get ip list: %v", err)
+		return errors.Wrapf(dferrors.ErrSystemError, "failed to get ip list: %v", err)
 	}
 	if len(ipList) == 0 {
 		logrus.Errorf("get empty system's unicast interface addresses")
-		return errors.Wrapf(errortypes.ErrSystemError, "Unable to autodetect advertiser ip, please set it via --advertise-ip")
+		return errors.Wrapf(dferrors.ErrSystemError, "Unable to autodetect advertiser ip, please set it via --advertise-ip")
 	}
 
 	cfg.AdvertiseIP = ipList[0]

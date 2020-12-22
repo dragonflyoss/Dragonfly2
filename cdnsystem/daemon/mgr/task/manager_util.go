@@ -6,7 +6,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/sirupsen/logrus"
 	"time"
@@ -22,7 +22,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if key, err := tm.taskURLUnReachableStore.Get(taskId); err == nil {
 		if unReachableStartTime, ok := key.(time.Time); ok &&
 			time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
-			return nil, errors.Wrapf(errortypes.ErrURLNotReachable, "taskID: %s task hit unReachable cache and interval less than %d, url: %s", taskId, tm.cfg.FailAccessInterval, request.URL)
+			return nil, errors.Wrapf(dferrors.ErrURLNotReachable, "taskID: %s task hit unReachable cache and interval less than %d, url: %s", taskId, tm.cfg.FailAccessInterval, request.URL)
 		}
 		tm.taskURLUnReachableStore.Delete(taskId)
 	}
@@ -39,7 +39,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if v, err := tm.taskStore.Get(taskId); err == nil {
 		task = v.(*types.SeedTaskInfo)
 		if !equalsTask(task, newTask) {
-			return nil, errors.Wrapf(errortypes.ErrTaskIDDuplicate, "%s", task.TaskID)
+			return nil, errors.Wrapf(dferrors.ErrTaskIDDuplicate, "%s", task.TaskID)
 		}
 	} else {
 		task = newTask
@@ -54,11 +54,11 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if err != nil {
 		logrus.Errorf("taskID: %s failed to get url (%s) file length from http client : %v", task.TaskID, task.Url, err)
 
-		if errortypes.IsURLNotReachable(err) {
+		if dferrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskId, time.Now())
 			return nil, err
 		}
-		if errortypes.IsAuthenticationRequired(err) {
+		if dferrors.IsAuthenticationRequired(err) {
 			return nil, err
 		}
 	}
@@ -97,16 +97,16 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 
 func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTaskInfo) error {
 	if stringutils.IsEmptyStr(taskID) {
-		return errors.Wrap(errortypes.ErrEmptyValue, "taskID")
+		return errors.Wrap(dferrors.ErrEmptyValue, "taskID")
 	}
 
 	if updateTaskInfo == nil {
-		return errors.Wrap(errortypes.ErrEmptyValue, "Update TaskInfo")
+		return errors.Wrap(dferrors.ErrEmptyValue, "Update TaskInfo")
 	}
 
 	// the expected new CDNStatus is not nil
 	if stringutils.IsEmptyStr(updateTaskInfo.CdnStatus) {
-		return errors.Wrapf(errortypes.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
+		return errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
 	}
 	// get origin task
 	task, err := tm.getTask(taskID)

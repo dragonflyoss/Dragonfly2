@@ -21,7 +21,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 
 	"github.com/pkg/errors"
 )
@@ -30,22 +30,42 @@ import (
 type Fsize int64
 
 func (f Fsize) String() string {
-	panic("implement me")
+	var (
+		n      = int64(f)
+		symbol = "B"
+		unit   = B
+	)
+	if n == 0 {
+		return "0B"
+	}
+
+	switch int64(0) {
+	case n % int64(GB):
+		symbol = "GB"
+		unit = GB
+	case n % int64(MB):
+		symbol = "MB"
+		unit = MB
+	case n % int64(KB):
+		symbol = "KB"
+		unit = KB
+	}
+	return fmt.Sprintf("%v%v", n/int64(unit), symbol)
 }
 
-func (f Fsize) Set(s string) error {
+func (f *Fsize) Set(s string) error {
 	var err error
 	*f, err = ParseSize(s)
 	return err
 }
 
 func (f Fsize) Type() string {
-	return "fsize"
+	return "file-size"
 }
 
 var sizeRE = regexp.MustCompile("^([0-9]+)(MB?|m|KB?|k|GB?|g|B)$")
 
-// ParseRate parses a string into a int64.
+// ParseSize parses a string into a int64.
 func ParseSize(rateStr string) (Fsize, error) {
 	var n int
 	n, err := strconv.Atoi(rateStr)
@@ -54,12 +74,12 @@ func ParseSize(rateStr string) (Fsize, error) {
 	}
 
 	if n < 0 {
-		return 0, fmt.Errorf("not a valid rate string: %d, only non-negative values are supported", n)
+		return 0, fmt.Errorf("not a valid fsize string: %d, only non-negative values are supported", n)
 	}
 
 	matches := sizeRE.FindStringSubmatch(rateStr)
 	if len(matches) != 3 {
-		return 0, fmt.Errorf("not a valid rate string: %q, supported format: G(B)/g/M(B)/m/K(B)/k/B or pure number", rateStr)
+		return 0, fmt.Errorf("not a valid fsize string: %q, supported format: G(B)/g/M(B)/m/K(B)/k/B or pure number", rateStr)
 	}
 	n, _ = strconv.Atoi(matches[1])
 	switch unit := matches[2]; {
@@ -72,9 +92,9 @@ func ParseSize(rateStr string) (Fsize, error) {
 	case unit == "B":
 		// Value already correct
 	default:
-		return 0, fmt.Errorf("invalid unit in rate string: %q, supported format: G(B)/g/M(B)/m/K(B)/k/B or pure number", unit)
+		return 0, fmt.Errorf("invalid unit in fsize string: %q, supported format: G(B)/g/M(B)/m/K(B)/k/B or pure number", unit)
 	}
-	return Rate(n), nil
+	return Fsize(n), nil
 }
 
 const (
@@ -141,12 +161,12 @@ func StringToFSize(fsize string) (Fsize, error) {
 		return Fsize(n), nil
 	}
 	if n < 0 {
-		return 0, errors.Wrapf(errortypes.ErrInvalidValue, "%s is not a negative value fsize", fsize)
+		return 0, errors.Wrapf(dferrors.ErrInvalidValue, "%s is not a negative value fsize", fsize)
 	}
 
 	matches := fsizeRegex.FindStringSubmatch(fsize)
 	if len(matches) != 3 {
-		return 0, errors.Wrapf(errortypes.ErrInvalidValue, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
+		return 0, errors.Wrapf(dferrors.ErrInvalidValue, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
 	}
 	n, _ = strconv.Atoi(matches[1])
 	switch unit := matches[2]; {
@@ -159,7 +179,7 @@ func StringToFSize(fsize string) (Fsize, error) {
 	case unit == "B":
 		// Value already correct
 	default:
-		return 0, errors.Wrapf(errortypes.ErrInvalidValue, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
+		return 0, errors.Wrapf(dferrors.ErrInvalidValue, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
 	}
 	return Fsize(n), nil
 }

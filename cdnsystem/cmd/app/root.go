@@ -1,28 +1,25 @@
-
 package app
 
 import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-	"os"
-	"path/filepath"
-	"reflect"
-	"time"
-
 	"github.com/dragonflyoss/Dragonfly2/pkg/cmd"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
+	"os"
+	"path/filepath"
+	"reflect"
+	"time"
 )
 
 const (
@@ -333,11 +330,11 @@ func setAdvertiseIP(cfg *config.Config) error {
 	// use the first non-loop address if the AdvertiseIP is empty
 	ipList, err := netutils.GetAllIPs()
 	if err != nil {
-		return errors.Wrapf(errortypes.ErrSystemError, "failed to get ip list: %v", err)
+		return errors.Wrapf(dferrors.ErrSystemError, "failed to get ip list: %v", err)
 	}
 	if len(ipList) == 0 {
 		logrus.Errorf("get empty system's unicast interface addresses")
-		return errors.Wrapf(errortypes.ErrSystemError, "Unable to autodetect advertiser ip, please set it via --advertise-ip")
+		return errors.Wrapf(dferrors.ErrSystemError, "Unable to autodetect advertiser ip, please set it via --advertise-ip")
 	}
 
 	cfg.AdvertiseIP = ipList[0]

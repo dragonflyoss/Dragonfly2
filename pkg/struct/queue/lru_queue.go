@@ -20,7 +20,7 @@ import (
 	"container/list"
 	"sync"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 )
 
 // cQElementData is the value of list.Element.Value.
@@ -80,7 +80,7 @@ func (q *LRUQueue) Get(key string) (interface{}, error) {
 
 	data, exist := q.itemMap[key]
 	if !exist {
-		return nil, errortypes.ErrDataNotFound
+		return nil, dferrors.ErrDataNotFound
 	}
 
 	q.putAtFront(data)
@@ -126,7 +126,7 @@ func (q *LRUQueue) GetItemByKey(key string) (interface{}, error) {
 		return data.Value.(*cQElementData).data, nil
 	}
 
-	return nil, errortypes.ErrDataNotFound
+	return nil, dferrors.ErrDataNotFound
 }
 
 // Delete deletes the item by key, return the deleted item if item exists.

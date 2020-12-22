@@ -6,7 +6,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/server/rpc"
-	pb "github.com/dragonflyoss/Dragonfly2/pkg/grpc/cdnsystem"
+	pb "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"net"
@@ -34,7 +34,7 @@ type RPCServer struct {
 
 // Start runs cdn rpc server.
 func (s *RPCServer) Start() (*grpc.Server, error) {
-	address := fmt.Sprintf("0.0.0.0:%d", s.Config.ListenRpcPort)
+	address := fmt.Sprintf("0.0.0.0:%d", s.Config.ListenPort)
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
 		logrus.Errorf("failed to listen port %d: %v", s.Config.ListenHttpPort, err)
