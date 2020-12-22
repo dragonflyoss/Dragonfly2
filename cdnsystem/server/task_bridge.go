@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,3 +44,4 @@ func (s *Server) getTaskInfo(ctx context.Context, rw http.ResponseWriter, req *h
 	return EncodeResponse(rw, http.StatusOK, task)
 
 }
+

@@ -1,71 +1,39 @@
 package server
 
 import (
-	"context"
-	"encoding/json"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"net/http"
-	"strconv"
-
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/metricsutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
+	"net/http"
 
-	"github.com/go-openapi/strfmt"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// metrics defines some prometheus metrics for monitoring supernode.
+// metrics defines some prometheus metrics for monitoring cdnNode.
 type metrics struct {
 	// server http related metrics
 	requestCounter  *prometheus.CounterVec
 	requestDuration *prometheus.HistogramVec
 	requestSize     *prometheus.HistogramVec
 	responseSize    *prometheus.HistogramVec
-
-	// dfget metrics
-	dfgetDownloadDuration  *prometheus.HistogramVec
-	dfgetDownloadFileSize  *prometheus.CounterVec
-	dfgetDownloadCount     *prometheus.CounterVec
-	dfgetDownloadFailCount *prometheus.CounterVec
-
-	pieceDownloadedBytes *prometheus.CounterVec
 }
 
 func newMetrics(register prometheus.Registerer) *metrics {
 	return &metrics{
-		requestCounter: metricsutils.NewCounter(config.SubsystemSupernode, "http_requests_total",
+		requestCounter: metricsutils.NewCounter(config.SubsystemCdnSystem, "http_requests_total",
 			"Counter of HTTP requests.", []string{"code", "handler"}, register,
 		),
-		requestDuration: metricsutils.NewHistogram(config.SubsystemSupernode, "http_request_duration_seconds",
+		requestDuration: metricsutils.NewHistogram(config.SubsystemCdnSystem, "http_request_duration_seconds",
 			"Histogram of latencies for HTTP requests.", []string{"handler"},
 			[]float64{.01, .02, .04, .1, .2, .4, 1, 2, 4, 8, 20, 60, 120}, register,
 		),
-		requestSize: metricsutils.NewHistogram(config.SubsystemSupernode, "http_request_size_bytes",
+		requestSize: metricsutils.NewHistogram(config.SubsystemCdnSystem, "http_request_size_bytes",
 			"Histogram of request size for HTTP requests.", []string{"handler"},
 			prometheus.ExponentialBuckets(100, 10, 8), register,
 		),
-		responseSize: metricsutils.NewHistogram(config.SubsystemSupernode, "http_response_size_bytes",
+		responseSize: metricsutils.NewHistogram(config.SubsystemCdnSystem, "http_response_size_bytes",
 			"Histogram of response size for HTTP requests.", []string{"handler"},
 			prometheus.ExponentialBuckets(100, 10, 8), register,
-		),
-		pieceDownloadedBytes: metricsutils.NewCounter(config.SubsystemSupernode, "pieces_downloaded_size_bytes_total",
-			"total file size of pieces downloaded from supernode in bytes", []string{}, register,
-		),
-		dfgetDownloadDuration: metricsutils.NewHistogram(config.SubsystemDfget, "download_duration_seconds",
-			"Histogram of duration for dfget download.", []string{"callsystem", "peer"},
-			[]float64{1, 2, 5, 10, 30, 60, 120, 300, 600}, register,
-		),
-		dfgetDownloadFileSize: metricsutils.NewCounter(config.SubsystemDfget, "download_size_bytes_total",
-			"Total file size downloaded by dfget in bytes", []string{"callsystem", "peer"}, register,
-		),
-		dfgetDownloadCount: metricsutils.NewCounter(config.SubsystemDfget, "download_total",
-			"Total times of dfget download", []string{"callsystem", "peer"}, register,
-		),
-		dfgetDownloadFailCount: metricsutils.NewCounter(config.SubsystemDfget, "download_failed_total",
-			"Total failure times of dfget download", []string{"callsystem", "peer", "reason"}, register,
 		),
 	}
 }
@@ -85,34 +53,4 @@ func (m *metrics) instrumentHandler(handlerName string, handler http.HandlerFunc
 			),
 		),
 	)
-}
-
-func (m *metrics) handleMetricsReport(ctx context.Context, rw http.ResponseWriter, req *http.Request) (err error) {
-	reader := req.Body
-	request := &types.TaskMetricsRequest{}
-	if err := json.NewDecoder(reader).Decode(request); err != nil {
-		return errors.Wrap(errortypes.ErrInvalidValue, err.Error())
-	}
-
-	if err := request.Validate(strfmt.NewFormats()); err != nil {
-		return errors.Wrap(errortypes.ErrInvalidValue, err.Error())
-	}
-	status := "success"
-	if !request.Success {
-		status = "failed"
-	}
-
-	dfgetLogger.Debugf("dfget peer %s download %s, taskid %s, callsystem %s, filelength %d, "+
-		"backsource reason %s", request.IP+":"+strconv.Itoa(int(request.Port)), status, request.TaskID,
-		request.CallSystem, request.FileLength, request.BacksourceReason)
-
-	m.dfgetDownloadCount.WithLabelValues(request.CallSystem, request.IP).Inc()
-	if request.Success {
-		m.dfgetDownloadDuration.WithLabelValues(request.CallSystem, request.IP).Observe(request.Duration)
-		m.dfgetDownloadFileSize.WithLabelValues(request.CallSystem, request.IP).Add(float64(request.FileLength))
-	} else {
-		m.dfgetDownloadFailCount.WithLabelValues(request.CallSystem, request.IP, request.BacksourceReason).Inc()
-	}
-
-	return EncodeResponse(rw, http.StatusOK, nil)
 }

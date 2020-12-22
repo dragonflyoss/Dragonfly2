@@ -47,5 +47,4 @@ message ResponseState{
 message UrlMeta{
   string md5 = 1; // md5 of content downloaded from url
   string range = 2; // downloading range for single file
-  string bizId = 3;
 }

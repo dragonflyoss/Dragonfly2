@@ -22,8 +22,6 @@ type protocolContent struct {
 	pieceContent     *bytes.Buffer
 	sourceFileOffset int64
 	cdnFileOffset    int64
-	firstByte        byte
-	endByte          byte
 }
 
 type downloadMetadata struct {
@@ -46,20 +44,23 @@ func newCacheWriter(cdnStore *store.Store, cdnReporter *reporter) *cacheWriter {
 
 // startWriter writes the stream data from the reader to the underlying storage.
 func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *types.SeedTaskInfo,
-	startPieceNum int32, downloadedFileLength int64, sourceFileLength int64) (*downloadMetadata, error) {
-	// realCdnFileLength is used to calculate the cdn file Length dynamically
-	realCdnFileLength := downloadedFileLength
-	// realSourceFileLength is used to calculate the source file Length dynamically
-	realSourceFileLength := int64(startPieceNum) * int64(task.PieceSize)
+	detectResult *detectCacheResult) (*downloadMetadata, error) {
+	defer func() {
+		// todo go routine write pieceMeta
+	}()
+	// currentCdnFileLength is used to calculate the cdn file Length dynamically
+	currentCdnFileLength := detectResult.downloadedFileLength
+	// currentSourceFileLength is used to calculate the source file Length dynamically
+	currentSourceFileLength := int64(detectResult.breakNum) * int64(task.PieceSize)
 	// the pieceNum currently processed
-	curPieceNum := startPieceNum
+	curPieceNum := detectResult.breakNum
 	// the left size of data for a complete piece
 	pieceContLeft := task.PieceSize
 	buf := make([]byte, 256*1024)
 	var bb = &bytes.Buffer{}
 
 	// start writer pool
-	routineCount := calculateRoutineCount(sourceFileLength-realSourceFileLength, task.PieceSize)
+	routineCount := calculateRoutineCount(task.SourceFileLength-currentSourceFileLength, task.PieceSize)
 	var wg = &sync.WaitGroup{}
 	jobCh := make(chan *protocolContent)
 	cw.writerPool(ctx, wg, routineCount, jobCh)
@@ -68,7 +69,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 		n, e := reader.Read(buf)
 		if n > 0 {
 			logrus.Debugf("success to read content with length: %d", n)
-			realSourceFileLength += int64(n)
+			currentSourceFileLength += int64(n)
 			if int(pieceContLeft) <= n {
 				bb.Write(buf[:pieceContLeft])
 				pieceContentLen := int32(bb.Len())
@@ -78,12 +79,11 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 					pieceContentLen:  pieceContentLen,
 					pieceStyle:       "raw",
 					pieceContent:     bb,
-					pieceRange:       fmt.Sprintf("%d-%d", realCdnFileLength, realCdnFileLength+int64(pieceContentLen)),
-					cdnFileOffset:    realCdnFileLength,
+					pieceRange:       fmt.Sprintf("%d-%d", currentCdnFileLength, currentCdnFileLength+int64(pieceContentLen-1)),
+					cdnFileOffset:    currentCdnFileLength,
 					sourceFileOffset: int64(curPieceNum) * int64(task.PieceSize),
-					endByte:          buf[pieceContentLen-1],
 				}
-				realCdnFileLength = realCdnFileLength + int64(pieceContentLen)
+				currentCdnFileLength = currentCdnFileLength + int64(pieceContentLen)
 				jobCh <- pc
 				logrus.Debugf("send the protocolContent taskID: %s pieceNum: %d", task.TaskID, curPieceNum)
 				curPieceNum++
@@ -103,7 +103,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 		}
 
 		if e == io.EOF {
-			if realCdnFileLength == 0 || bb.Len() > 0 {
+			if currentCdnFileLength == 0 || bb.Len() > 0 {
 				pieceContentLen := int32(bb.Len())
 				jobCh <- &protocolContent{
 					taskID:           task.TaskID,
@@ -111,14 +111,14 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 					pieceContentLen:  pieceContentLen,
 					pieceStyle:       "raw",
 					pieceContent:     bb,
-					pieceRange:       fmt.Sprintf("%d-%d", realCdnFileLength, realCdnFileLength+int64(pieceContentLen)),
+					pieceRange:       fmt.Sprintf("%d-%d", currentCdnFileLength, currentCdnFileLength+int64(pieceContentLen)),
 					sourceFileOffset: int64(curPieceNum) * int64(task.PieceSize),
-					cdnFileOffset:    realCdnFileLength,
+					cdnFileOffset:    currentCdnFileLength,
 				}
 				logrus.Debugf("send the protocolContent taskID: %s pieceNum: %d", task.TaskID, curPieceNum)
-				realCdnFileLength = realCdnFileLength + int64(pieceContentLen)
+				currentCdnFileLength = currentCdnFileLength + int64(pieceContentLen)
 			}
-			logrus.Infof("send all protocolContents with realCdnFileLength(%d) and wait for cdnWriter", realCdnFileLength)
+			logrus.Infof("send all protocolContents with realCdnFileLength(%d) and wait for cdnWriter", currentCdnFileLength)
 			break
 		}
 		if e != nil {
@@ -130,8 +130,8 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	close(jobCh)
 	wg.Wait()
 	return &downloadMetadata{
-		realCdnFileLength:    realCdnFileLength,
-		realSourceFileLength: realSourceFileLength,
+		realCdnFileLength:    currentCdnFileLength,
+		realSourceFileLength: currentSourceFileLength,
 		pieceCount:           curPieceNum,
 	}, nil
 }

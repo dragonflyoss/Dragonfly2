@@ -24,7 +24,7 @@ import (
 
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 )
 //get download path
 var getDownloadRawFunc = getDownloadRaw
@@ -44,7 +44,7 @@ func getTaskMetaDataKey(taskID string) string {
 }
 
 func getPieceMetaDataKey(taskID string) string {
-	return path.Join(getParentKey(taskID), taskID+".piece.meta")
+	return path.Join(getParentKey(taskID), taskID+".piece")
 }
 
 func getParentKey(taskID string) string {

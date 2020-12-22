@@ -6,7 +6,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
-	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -20,7 +20,7 @@ type fileMetaData struct {
 	AccessTime    int64             `json:"accessTime"`
 	Interval      int64             `json:"interval"`
 	CdnFileLength int64             `json:"cdnFileLength"`
-	Md5           string            `json:"md5"`
+	SourceMd5     string            `json:"sourceRealMd5"`
 	ExpireInfo    map[string]string `json:"expireInfo"`
 	Finish        bool              `json:"finish"`
 	Success       bool              `json:"success"`
@@ -132,8 +132,8 @@ func (mm *fileMetaDataManager) updateStatusAndResult(ctx context.Context, taskID
 	originMetaData.Success = metaData.Success
 	if originMetaData.Success {
 		originMetaData.CdnFileLength = metaData.CdnFileLength
-		if !stringutils.IsEmptyStr(metaData.Md5) {
-			originMetaData.Md5 = metaData.Md5
+		if !stringutils.IsEmptyStr(metaData.SourceMd5) {
+			originMetaData.SourceMd5 = metaData.SourceMd5
 		}
 	}
 

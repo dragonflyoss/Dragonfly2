@@ -24,9 +24,9 @@ func (re *reporter) reportCache(taskID string, detectResult *detectCacheResult) 
 			}
 		}
 	}
-	// full cache
-	if detectResult.breakNum == -1 {
-		return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.Md5, detectResult.fileMetaData.CdnFileLength), nil
+	// full cache, update task status
+	if detectResult != nil && detectResult.breakNum == -1 {
+		return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceMd5, detectResult.fileMetaData.CdnFileLength), nil
 	}
 	// partial cache
 	return nil, nil

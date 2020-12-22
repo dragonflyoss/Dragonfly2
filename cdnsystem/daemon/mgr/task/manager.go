@@ -8,9 +8,9 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/metricsutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/syncmap"
+	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -20,30 +20,25 @@ import (
 var _ mgr.SeedTaskMgr = &Manager{}
 
 type metrics struct {
-	tasks                        *prometheus.GaugeVec
-	tasksRegisterCount           *prometheus.CounterVec
-	triggerCdnCount              *prometheus.CounterVec
-	triggerCdnFailCount          *prometheus.CounterVec
-	scheduleDurationMilliSeconds *prometheus.HistogramVec
+	tasks               *prometheus.GaugeVec
+	tasksRegisterCount  *prometheus.CounterVec
+	triggerCdnCount     *prometheus.CounterVec
+	triggerCdnFailCount *prometheus.CounterVec
 }
 
 func newMetrics(register prometheus.Registerer) *metrics {
 	return &metrics{
-		tasks: metricsutils.NewGauge(config.SubsystemSupernode, "tasks",
-			"Current status of Supernode tasks", []string{"cdnstatus"}, register),
+		tasks: metricsutils.NewGauge(config.SubsystemCdnSystem, "tasks",
+			"Current status of cdn tasks", []string{"taskStatus"}, register),
 
-		tasksRegisterCount: metricsutils.NewCounter(config.SubsystemSupernode, "tasks_registered_total",
+		tasksRegisterCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "seed_tasks_registered_total",
 			"Total times of registering tasks", []string{}, register),
 
-		triggerCdnCount: metricsutils.NewCounter(config.SubsystemSupernode, "cdn_trigger_total",
+		triggerCdnCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_trigger_total",
 			"Total times of triggering cdn", []string{}, register),
 
-		triggerCdnFailCount: metricsutils.NewCounter(config.SubsystemSupernode, "cdn_trigger_failed_total",
+		triggerCdnFailCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_trigger_failed_total",
 			"Total failure times of triggering cdn", []string{}, register),
-
-		scheduleDurationMilliSeconds: metricsutils.NewHistogram(config.SubsystemSupernode, "schedule_duration_milliseconds",
-			"Duration for task scheduling in milliseconds", []string{"peer"},
-			prometheus.ExponentialBuckets(0.01, 2, 7), register),
 	}
 }
 
@@ -63,6 +58,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		logrus.Infof("TaskID: %s seedTask is running or has been downloaded successfully, status:%s", task.TaskID, task.CdnStatus)
 		return nil
 	}
+	// update task status
 	if err := tm.updateTask(task.TaskID, &types.SeedTaskInfo{
 		CdnStatus: types.TaskInfoCdnStatusRUNNING,
 	}); err != nil {
@@ -115,10 +111,27 @@ func (tm Manager) Delete(ctx context.Context, taskID string) error {
 	return nil
 }
 
-func (tm Manager) GetPieces(ctx context.Context, taskID string, piecePullRequest *types.PiecePullRequest) (isFinished bool, data interface{}, err error) {
-	panic("implement me")
-}
+func (tm Manager) GetPieces(ctx context.Context, req *types.PiecePullRequest) (pieceCh <-chan types.SeedPiece, err error) {
+	logrus.Debugf("taskId: %s get pieces with request: %+v ", req.TaskID, req)
 
+	util.GetLock(req.TaskID, true)
+	defer util.ReleaseLock(req.TaskID, true)
+
+	task, err := tm.getTask(req.TaskID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get taskID (%s)", req.TaskID)
+	}
+	logrus.Debugf("success to get task: %+v", task)
+
+	if isErrorCDN(task.CdnStatus) {
+		return nil, errors.Errorf("task status(%s) error", task.CdnStatus)
+	}
+
+	if isSuccessCDN(task.CdnStatus) {
+
+	}
+	return pieceCh, nil
+}
 
 // NewManager returns a new Manager Object.
 func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr,
@@ -134,31 +147,25 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr,
 	}, nil
 }
 
-func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (taskCreateResponse *types.TaskRegisterResponse, err error) {
+// Register
+func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) error {
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
-		logrus.Infof("failed to add or update task with req %+v: %v", req, err)
-		return nil, err
+		logrus.Infof("taskId: %s failed to add or update task with req %+v: %v", req.TaskID, req, err)
+		return err
 	}
 	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
 	logrus.Debugf("success to get task info: %+v", task)
 	// 读锁
 	util.GetLock(task.TaskID, true)
 	defer util.ReleaseLock(task.TaskID, true)
-
-	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
-		logrus.Warnf("taskID: %s failed to update accessTime for task: %v", task.TaskID, err)
-	}
 	// update accessTime for taskID
 	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
 		logrus.Warnf("failed to update accessTime for taskID(%s): %v", task.TaskID, err)
 	}
 	// Step5: trigger CDN
 	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
-		return nil, errors.Wrapf(errortypes.ErrSystemError, "failed to trigger cdn: %v", err)
+		return errors.Wrapf(errortypes.ErrSystemError, "failed to trigger cdn: %v", err)
 	}
-	return &types.TaskRegisterResponse{
-		SourceFileLength: task.SourceFileLength,
-		PieceSize:        task.PieceSize,
-	}, nil
+	return nil
 }

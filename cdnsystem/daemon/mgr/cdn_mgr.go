@@ -7,7 +7,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/ratelimiter"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rate/ratelimiter"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -24,7 +24,7 @@ func Register(name config.CDNPattern, builder CDNBuilder) {
 func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, rateLimiter *ratelimiter.RateLimiter,
 	register prometheus.Registerer) (CDNMgr, error) {
 	cdnPattern := cfg.CDNPattern
-	if cdnPattern == "" {
+	if cdnPattern.String() == "" {
 		cdnPattern = config.CDNPatternLocal
 	}
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon"
-	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -14,9 +14,9 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/cmd"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/fileutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/netutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -81,13 +81,10 @@ var rootCmd = &cobra.Command{
 		}
 		logrus.Infof("success to init local ip of cdn, use ip: %s", cfg.AdvertiseIP)
 
-		// set up the CIDPrefix
-		cfg.SetCIDPrefix(cfg.AdvertiseIP)
-
 		logrus.Debugf("get cdnNode config: %+v", cfg)
 		logrus.Info("start to run cdnNode")
 
-		d, err := daemon.New(cfg, dfgetLogger)
+		d, err := daemon.New(cfg)
 		if err != nil {
 			logrus.Errorf("failed to initialize daemon in cdn: %v", err)
 			return err
@@ -120,14 +117,11 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.String("config", config.DefaultCdnConfigFilePath,
 		"the path of cdn's configuration file")
 
-	flagSet.String("cdn-pattern", config.CDNPatternLocal,
+	flagSet.Var(&defaultBaseProperties.CDNPattern, "cdn-pattern",
 		"cdn pattern, must be in [\"local\", \"source\"]. Default: local")
 
-	flagSet.Int("rpc-port", defaultBaseProperties.ListenRpcPort,
-		"listenPort is the port that cdn rpc server listens on")
-
-	flagSet.Int("http-port", defaultBaseProperties.ListenHttpPort,
-		"listenPort is the port that cdn http server listens on")
+	flagSet.Int("port", defaultBaseProperties.ListenPort,
+		"listenPort is the port that cdn server listens on")
 
 	flagSet.Int("download-port", defaultBaseProperties.DownloadPort,
 		"downloadPort is the port for download files from cdnNode")
@@ -140,9 +134,6 @@ func setupFlags(cmd *cobra.Command) {
 
 	flagSet.Var(&defaultBaseProperties.MaxBandwidth, "max-bandwidth",
 		"network rate that cdnNode can use")
-
-	flagSet.Int("pool-size", defaultBaseProperties.SchedulerCorePoolSize,
-		"pool size is the core pool size of ScheduledExecutorService")
 
 	flagSet.Bool("profiler", defaultBaseProperties.EnableProfiler,
 		"profiler sets whether cdnNode HTTP server setups profiler")
@@ -164,9 +155,6 @@ func setupFlags(cmd *cobra.Command) {
 
 	flagSet.Duration("task-expire-time", defaultBaseProperties.TaskExpireTime,
 		"task expire time is the time that a task is treated expired if the task is not accessed within the time")
-
-	flagSet.Duration("peer-gc-delay", defaultBaseProperties.PeerGCDelay,
-		"peer gc delay is the delay time to execute the GC after the peer has reported the offline")
 
 	exitOnError(bindRootFlags(cdnNodeViper), "bind root command flags")
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package server
 
 import (
 	"context"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 )
 
@@ -25,4 +26,9 @@ func (s *Server) ping(context context.Context, rw http.ResponseWriter, req *http
 	rw.WriteHeader(http.StatusOK)
 	_, err = rw.Write([]byte{'O', 'K'})
 	return err
+}
+
+func (s *Server) handleMetrics(ctx context.Context, rw http.ResponseWriter, req *http.Request) error {
+	promhttp.Handler().ServeHTTP(rw, req)
+	return nil
 }

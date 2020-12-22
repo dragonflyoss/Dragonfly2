@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,9 @@
 package api
 
 var (
-	// V1 is recommended, any new API should be registered in this category.
-	V1 = newCategory("v1 api", "/api/v1")
+	Core   = newCategory("core api", "/api")
 
-	// Extension allows users to register extension APIs into supernode.
-	// Customized APIs should be registered by using this category.
-	// It can distinguish between Dragonfly's core APIs and customized APIs.
-	// And supernode provides `/api/ext` to list all the registered APIs in this
-	// category.
-	Extension = newCategory("extension api", "/api/ext")
-
-	// Legacy is deprecated, just for compatibility with the old version,
-	// please do not use it to add new API.
-	Legacy = newCategory("legacy api", "")
+	System = newCategory("system api", "/sys")
 )
 
 var (

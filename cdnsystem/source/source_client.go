@@ -3,7 +3,7 @@ package source
 import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/go-openapi/strfmt"
 	"strings"
 )
@@ -21,13 +21,13 @@ type StatusCodeChecker func(int) bool
 type ResourceClient interface {
 
 	RegisterTLSConfig(rawURL string, insecure bool, caBlock []strfmt.Base64) error
-
+	// GetContentLength
 	GetContentLength(url string, headers map[string]string) (int64, error)
-	// checks whether the source supports breakpoint continuation
+	// IsSupportRange checks whether the source supports breakpoint continuation
 	IsSupportRange(url string, headers map[string]string) (bool, error)
-	// checks if the cache is expired
+	// IsExpired checks if the cache is expired
 	IsExpired(url string, headers , expireInfo map[string]string) (bool, error)
-	// download from source
+	// Download download from source
 	Download(url string, headers map[string]string, checkCode StatusCodeChecker) (*types.DownloadResponse, error)
 }
 

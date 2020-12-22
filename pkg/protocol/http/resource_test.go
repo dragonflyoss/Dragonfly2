@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/dragonflyoss/Dragonfly2/dfget/core/helper"
-	"github.com/dragonflyoss/Dragonfly2/pkg/httputils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/httputils"
 
 	"github.com/go-check/check"
 )

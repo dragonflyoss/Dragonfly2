@@ -2,6 +2,7 @@ package localcdn
 
 import (
 	"context"
+	"crypto/md5"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"path"
@@ -11,9 +12,9 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/limitreader"
-	"github.com/dragonflyoss/Dragonfly2/pkg/metricsutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/ratelimiter"
-	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rate/ratelimiter"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -34,17 +35,16 @@ type metrics struct {
 
 func newMetrics(register prometheus.Registerer) *metrics {
 	return &metrics{
-		cdnCacheHitCount: metricsutils.NewCounter(config.SubsystemSupernode, "cdn_cache_hit_total",
+		cdnCacheHitCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_cache_hit_total",
 			"Total times of hitting cdn cache", []string{}, register),
 
-		cdnDownloadCount: metricsutils.NewCounter(config.SubsystemSupernode, "cdn_download_total",
+		cdnDownloadCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_download_total",
 			"Total times of cdn download", []string{}, register),
 
-		cdnDownloadBytes: metricsutils.NewCounter(config.SubsystemSupernode, "cdn_download_size_bytes_total",
+		cdnDownloadBytes: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_download_size_bytes_total",
 			"total file size of cdn downloaded from source in bytes", []string{}, register,
 		),
-
-		cdnDownloadFailCount: metricsutils.NewCounter(config.SubsystemSupernode, "cdn_download_failed_total",
+		cdnDownloadFailCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_download_failed_total",
 			"Total failure times of cdn download", []string{}, register),
 	}
 }
@@ -73,7 +73,7 @@ func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient sour
 func newManager(cfg *config.Config, cacheStore *store.Store,
 	resourceClient source.ResourceClient, rateLimiter *ratelimiter.RateLimiter, register prometheus.Registerer) (*Manager, error) {
 	metaDataManager := newFileMetaDataManager(cacheStore)
-	pieceMetaDataManager := newPieceMetaDataMgr()
+	pieceMetaDataManager := newPieceMetaDataMgr(cacheStore)
 	cdnReporter := newReporter(pieceMetaDataManager)
 	return &Manager{
 		cfg:                  cfg,
@@ -92,19 +92,15 @@ func newManager(cfg *config.Config, cacheStore *store.Store,
 
 // TriggerCDN will trigger CDN to download the file from sourceUrl.
 func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*types.SeedTaskInfo, error) {
-	sourceFileLength := task.SourceFileLength
-	if sourceFileLength == 0 {
-		sourceFileLength = -1
-	}
 	// obtain taskID write lock
 	cm.cdnLocker.GetLock(task.TaskID, false)
 	defer cm.cdnLocker.ReleaseLock(task.TaskID, false)
-	// detect Cache
+	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
 	if err != nil {
 		logrus.Errorf("taskId: %s failed to detect cache err: %v", task.TaskID, err)
 	}
-	// report cache
+	// second: report detect result
 	updateTaskInfo, err := cm.cdnReporter.reportCache(task.TaskID, detectResult)
 	if err != nil {
 		logrus.Errorf("taskId: %s failed to report cache err: %v", task.TaskID, err)
@@ -115,9 +111,12 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*t
 		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
 		return updateTaskInfo, nil
 	}
-
-	// start to download the source file
-	resp, err := cm.download(ctx, task.TaskID, task.Url, task.Headers, detectResult.breakNum, sourceFileLength, task.PieceSize)
+	// 如果没有全部命中
+	if detectResult.fileMd5 == nil {
+		detectResult.fileMd5 = md5.New()
+	}
+	// third: start to download the source file
+	resp, err := cm.download(ctx, task, detectResult)
 	cm.metrics.cdnDownloadCount.WithLabelValues().Inc()
 	if err != nil {
 		cm.metrics.cdnDownloadFailCount.WithLabelValues().Inc()
@@ -127,20 +126,22 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*t
 
 	cm.updateExpireInfo(ctx, task.TaskID, resp.ExpireInfo)
 	reader := limitreader.NewLimitReaderWithLimiterAndMD5Sum(resp.Body, cm.limiter, detectResult.fileMd5)
-	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult.breakNum, detectResult.downloadedFileLength, sourceFileLength)
+	// forth: write to storage
+	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
 	if err != nil {
 		logrus.Errorf("failed to write for task %s: %v", task.TaskID, err)
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
 	}
 	cm.metrics.cdnDownloadBytes.WithLabelValues().Add(float64(downloadMetadata.realSourceFileLength))
 
-	realMD5 := reader.Md5()
-	success, err := cm.handleCDNResult(ctx, task, realMD5, sourceFileLength, downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength)
+	sourceMD5 := reader.Md5()
+	// fifth: handle CDN result
+	success, err := cm.handleCDNResult(ctx, task, sourceMD5, downloadMetadata)
 	if err != nil || !success {
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
 	}
 
-	return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, realMD5, downloadMetadata.realCdnFileLength), nil
+	return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, sourceMD5, downloadMetadata.realCdnFileLength), nil
 }
 
 // GetHTTPPath returns the http download path of taskID.
@@ -173,25 +174,29 @@ func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error 
 	return deleteTaskFiles(ctx, cm.cacheStore, taskID)
 }
 
-func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTaskInfo, realMd5 string, sourceFileLength, realSourceFileLength, realCdnFileLength int64) (bool, error) {
+func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTaskInfo, sourceMd5 string, downloadMetadata *downloadMetadata) (bool, error) {
+	sourceFileLength := task.SourceFileLength
+	realDownloadedSourceFileLength := downloadMetadata.realSourceFileLength
 	var isSuccess = true
-	if !stringutils.IsEmptyStr(task.RequestMd5) && task.RequestMd5 != realMd5 {
-		logrus.Errorf("taskId:%s url:%s file md5 not match expected:%s real:%s", task.TaskID, task.Url, task.RequestMd5, realMd5)
+	// check md5
+	if !stringutils.IsEmptyStr(task.RequestMd5) && task.RequestMd5 != sourceMd5 {
+		logrus.Errorf("taskId:%s url:%s file md5 not match expected:%s real:%s", task.TaskID, task.Url, task.RequestMd5, sourceMd5)
 		isSuccess = false
 	}
-	if isSuccess && sourceFileLength >= 0 && sourceFileLength != realSourceFileLength {
-		logrus.Errorf("taskId:%s url:%s file length not match expected:%d real:%d", task.TaskID, task.Url, sourceFileLength, realSourceFileLength)
+	// check source length
+	if isSuccess && sourceFileLength >= 0 && sourceFileLength != realDownloadedSourceFileLength {
+		logrus.Errorf("taskId:%s url:%s file length not match expected:%d real:%d", task.TaskID, task.Url, sourceFileLength, realDownloadedSourceFileLength)
 		isSuccess = false
 	}
 
 	if !isSuccess {
-		realCdnFileLength = 0
+		realDownloadedSourceFileLength = 0
 	}
 	if err := cm.metaDataManager.updateStatusAndResult(ctx, task.TaskID, &fileMetaData{
 		Finish:        true,
 		Success:       isSuccess,
-		Md5:           realMd5,
-		CdnFileLength: realCdnFileLength,
+		SourceMd5:     sourceMd5,
+		CdnFileLength: downloadMetadata.realCdnFileLength,
 	}); err != nil {
 		return false, err
 	}
@@ -200,14 +205,14 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTaskInfo
 		return false, nil
 	}
 
-	logrus.Infof("success to get taskID: %s fileLength: %d realMd5: %s", task.TaskID, realCdnFileLength, realMd5)
+	logrus.Infof("success to get taskID: %s fileLength: %d realMd5: %s", task.TaskID, downloadMetadata.realCdnFileLength, sourceMd5)
 
 	pieceMD5s, err := cm.pieceMetaDataManager.getPieceMetaRecordsByTaskID(task.TaskID)
 	if err != nil {
 		return false, err
 	}
 
-	if err := cm.pieceMetaDataManager.writePieceMetaRecords(ctx, task.TaskID, realMd5, pieceMD5s); err != nil {
+	if err := cm.pieceMetaDataManager.writePieceMetaRecords(ctx, task.TaskID, sourceMd5, pieceMD5s); err != nil {
 		return false, err
 	}
 	return true, nil

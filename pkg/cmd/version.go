@@ -18,10 +18,7 @@ package cmd
 
 import (
 	"fmt"
-
-	"github.com/dragonflyoss/Dragonfly2/pkg/printer"
 	"github.com/dragonflyoss/Dragonfly2/version"
-
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +35,7 @@ func NewVersionCommand(name string) *cobra.Command {
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			printer.Printf(version.Print(name))
+			Printf(version.Print(name))
 			return nil
 		},
 		Example: versionExample(name),

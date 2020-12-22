@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,10 +56,10 @@ func (s *APISuite) TestCategory_Register() {
 		c *category
 		h *HandlerSpec
 	}{
-		{V1, s.invalidHandler},
-		{V1, s.validHandler},
-		{Extension, s.validHandler},
-		{Legacy, s.validHandler},
+		{Core, s.invalidHandler},
+		{Core, s.validHandler},
+		{System, s.validHandler},
+		{System, s.validHandler},
 	}
 
 	for _, v := range cases {

@@ -8,7 +8,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/digest"
 	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/syncmap"
+	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"sort"
@@ -16,19 +16,17 @@ import (
 )
 
 type pieceMetaData struct {
-	PieceMetaRecords []pieceMetaRecord
-	FileMd5          string
-	Sha1Value        string
+	PieceMetaRecords []pieceMetaRecord `json:"pieceMetaRecords"`
+	FileMd5          string            `json:"fileMd5"`
+	Sha1Value        string            `json:"sha1Value"`
 }
 
 type pieceMetaRecord struct {
-	PieceNum  int32 `json:"pieceNum"`
-	PieceLen  int32  `json:"pieceLen"`
-	Md5       string `json:"md5"`
-	Range     string `json:"range"`
-	Offset    int64  `json:"offset"`
-	StartByte byte   `json:"startByte"`
-	EndByte   byte   `json:"endByte"`
+	PieceNum int32  `json:"pieceNum"`
+	PieceLen int32  `json:"pieceLen"` // 下载存储的真实长度
+	Md5      string `json:"md5"`
+	Range    string `json:"range"` // 下载存储到磁盘的range，不一定是origin source的range
+	Offset   int64  `json:"offset"`
 }
 
 type pieceMetaDataManager struct {
@@ -37,9 +35,11 @@ type pieceMetaDataManager struct {
 	locker               *util.LockerPool
 }
 
-func newPieceMetaDataMgr() *pieceMetaDataManager {
+func newPieceMetaDataMgr(store *store.Store) *pieceMetaDataManager {
 	return &pieceMetaDataManager{
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
+		fileStore:            store,
+		locker:               util.NewLockerPool(),
 	}
 }
 

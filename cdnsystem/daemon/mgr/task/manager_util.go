@@ -7,7 +7,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/sirupsen/logrus"
 	"time"
 
@@ -67,7 +67,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		if sourceFileLength <= 0 {
 			return nil, fmt.Errorf("taskID: %s failed to get file length and it is required in source CDN pattern", task.TaskID)
 		}
-
+		// check whether support range
 		supportRange, err := tm.resourceClient.IsSupportRange(task.Url, task.Headers)
 		if err != nil {
 			return nil, errors.Wrapf(err, "taskID: %s failed to check whether the task supports partial requests", task.TaskID)
@@ -108,7 +108,7 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTaskInfo)
 	if stringutils.IsEmptyStr(updateTaskInfo.CdnStatus) {
 		return errors.Wrapf(errortypes.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
 	}
-
+	// get origin task
 	task, err := tm.getTask(taskID)
 	if err != nil {
 		return err
@@ -120,7 +120,7 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTaskInfo)
 			return nil
 		}
 
-		// only update the task CdnStatus when the new CDNStatus and
+		// only update the task CdnStatus when the new task CDNStatus and
 		// the origin CDNStatus both not equals success
 		tm.metrics.tasks.WithLabelValues(task.CdnStatus).Dec()
 		tm.metrics.tasks.WithLabelValues(updateTaskInfo.CdnStatus).Inc()
@@ -134,13 +134,14 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTaskInfo)
 		task.CdnFileLength = updateTaskInfo.CdnFileLength
 	}
 
-	if !stringutils.IsEmptyStr(updateTaskInfo.RealMd5) {
-		task.RealMd5 = updateTaskInfo.RealMd5
+	if !stringutils.IsEmptyStr(updateTaskInfo.SourceRealMd5) {
+		task.SourceRealMd5 = updateTaskInfo.SourceRealMd5
 	}
 
 	var pieceTotal int32
 	if updateTaskInfo.SourceFileLength > 0 {
 		pieceTotal = int32((updateTaskInfo.SourceFileLength + int64(task.PieceSize-1)) / int64(task.PieceSize))
+		task.SourceFileLength = updateTaskInfo.SourceFileLength
 	}
 	if pieceTotal != 0 {
 		task.PieceTotal = pieceTotal
@@ -153,15 +154,17 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTaskInfo)
 }
 
 // equalsTask check whether the two task provided are the same
-// The result is based only on whether the attributes used to generate taskID are the same
-// which including taskURL, md5, identifier.
 func equalsTask(existTask, newTask *types.SeedTaskInfo) bool {
 	if existTask.Url != newTask.Url {
 		return false
 	}
 
-	if !stringutils.IsEmptyStr(existTask.RequestMd5) {
+	if !stringutils.IsEmptyStr(existTask.RequestMd5) && !stringutils.IsEmptyStr(newTask.RequestMd5){
 		return existTask.RequestMd5 == newTask.RequestMd5
+	}
+
+	if !stringutils.IsEmptyStr(newTask.RequestMd5) && !stringutils.IsEmptyStr(existTask.SourceRealMd5) {
+		return existTask.SourceRealMd5 == newTask.RequestMd5
 	}
 
 	return true
@@ -192,5 +195,10 @@ func isSuccessCDN(CDNStatus string) bool {
 func isFrozen(CDNStatus string) bool {
 	return CDNStatus == types.TaskInfoCdnStatusFAILED ||
 		CDNStatus == types.TaskInfoCdnStatusWAITING ||
+		CDNStatus == types.TaskInfoCdnStatusSOURCEERROR
+}
+
+func isErrorCDN(CDNStatus string) bool {
+	return CDNStatus == types.TaskInfoCdnStatusFAILED ||
 		CDNStatus == types.TaskInfoCdnStatusSOURCEERROR
 }

@@ -19,8 +19,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/printer"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -62,6 +60,6 @@ func runConfigPrintDefault(defaultComponentConfigFunc func() (interface{}, error
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal component default configurations")
 	}
-	printer.Print(string(d))
+	Print(string(d))
 	return nil
 }

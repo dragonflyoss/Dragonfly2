@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/ratelimiter"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rate/ratelimiter"
 
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
@@ -39,8 +39,6 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*t
 
 	if sourceFileLength > 0 {
 		pieceTotal := int((sourceFileLength + int64(task.PieceSize-1)) / int64(task.PieceSize))
-		//supernodeCID := cm.cfg.GetCdnCID(task.ID)
-		//supernodePID := cm.cfg.GetSuperPID()
 
 		var pieceNum int
 		for pieceNum = 0; pieceNum < pieceTotal; pieceNum++ {

@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// Package version represents the version the project Dragonfly.
 package version
 
 import (
@@ -28,7 +27,7 @@ import (
 	"text/template"
 
 	"github.com/dragonflyoss/Dragonfly2/apis/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/metricsutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -61,8 +60,11 @@ var (
 	// DFGetVersion is the version of dfget.
 	DFGetVersion = version
 
-	// SupernodeVersion is the version of supernode.
-	SupernodeVersion = version
+	// SchedulerVersion is the version of Scheduler.
+	SchedulerVersion = version
+
+	// cdnSystemVersion is the version of cdn system.
+	cdnSystemVersion = version
 
 	// DFVersion is the global instance of DragonflyVersion.
 	DFVersion *types.DragonflyVersion
@@ -135,3 +137,4 @@ func HandlerWithCtx(context context.Context, w http.ResponseWriter, r *http.Requ
 	Handler(w, r)
 	return
 }
+

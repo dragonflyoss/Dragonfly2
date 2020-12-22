@@ -12,12 +12,12 @@ type SeedTaskInfo struct {
 	Url              string
 	SourceFileLength int64
 	CdnFileLength    int64
-	RequestMd5       string
 	PieceSize        int32
 	Headers          map[string]string
 	CdnStatus        string
 	PieceTotal       int32
-	RealMd5          string
+	RequestMd5       string
+	SourceRealMd5    string
 }
 
 const (

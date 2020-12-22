@@ -7,8 +7,8 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/grpc/base"
 	pb "github.com/dragonflyoss/Dragonfly2/pkg/grpc/cdnsystem"
-	"github.com/dragonflyoss/Dragonfly2/pkg/netutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/stringutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
 
@@ -36,7 +36,7 @@ func (ss *CdnSeedServer) ObtainSeeds(request *pb.SeedRequest, stream pb.Seeder_O
 		Md5:     request.UrlMeta.Md5,
 		TaskID:  request.GetTaskId(),
 	}
-	_, err := ss.taskMgr.Register(context.Background(), registerRequest)
+	err := ss.taskMgr.Register(context.Background(), registerRequest)
 	if err != nil {
 		return errors.Wrapf(err, "")
 	}

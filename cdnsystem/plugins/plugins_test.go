@@ -23,11 +23,10 @@ import (
 
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 
-	"github.com/go-check/check"
 )
 
 func Test(t *testing.T) {
-	check.TestingT(t)
+	suite.TestingT(t)
 }
 
 func init() {

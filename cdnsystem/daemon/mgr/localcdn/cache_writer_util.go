@@ -10,7 +10,7 @@ import (
 
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/pkg/fileutils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 
 	"github.com/sirupsen/logrus"
 )
@@ -58,6 +58,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, n int
 					Offset:    job.sourceFileOffset,
 				}
 				if cw.cdnReporter != nil {
+					// todo 写到channel中
 					if err := cw.cdnReporter.pieceMetaDataManager.setPieceMetaRecord(job.taskID, job.pieceNum, pieceMetaRecord); err != nil {
 						// NOTE: should we do this job again?
 						logrus.Errorf("failed to report piece status taskID %s pieceNum %d pieceMetaRecord %s: %v", job.taskID, job.pieceNum, pieceMetaRecord, err)
