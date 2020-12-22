@@ -17,23 +17,20 @@
 package ratelimiter
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
-
-
 )
 
-func Test(t *testing.T) {
-	check.TestingT(t)
+func TestSuite(t *testing.T) {
+	suite.Run(t, new(RateLimiterSuite))
 }
 
-type RateLimiterSuite struct{}
-
-func init() {
-	check.Suite(&RateLimiterSuite{})
+type RateLimiterSuite struct {
+	suite.Suite
 }
 
-func (suite *RateLimiterSuite) TestNewRateLimiter(c *check.C) {
+func (suite *RateLimiterSuite) TestNewRateLimiter() {
 	var cases = []struct {
 		r int64
 		w int64
@@ -48,15 +45,15 @@ func (suite *RateLimiterSuite) TestNewRateLimiter(c *check.C) {
 
 	for _, cc := range cases {
 		rl := NewRateLimiter(cc.r, cc.w)
-		c.Assert(rl.capacity, check.Equals, cc.e.rate)
-		c.Assert(rl.bucket, check.Equals, int64(0))
-		c.Assert(rl.rate, check.Equals, cc.e.rate)
-		c.Assert(rl.window, check.Equals, cc.e.window)
-		c.Assert(rl.ratePerWindow, check.Equals, cc.e.ratePerWindow)
+		suite.Equal(rl.capacity, cc.e.rate)
+		suite.Equal(rl.bucket, int64(0))
+		suite.Equal(rl.rate, cc.e.rate)
+		suite.Equal(rl.window, cc.e.window)
+		suite.Equal(rl.ratePerWindow, cc.e.ratePerWindow)
 	}
 }
 
-func (suite *RateLimiterSuite) TestRateLimiter_SetRate(c *check.C) {
+func (suite *RateLimiterSuite) TestRateLimiter_SetRate() {
 	var cases = []struct {
 		r  int64
 		w  int64
@@ -74,14 +71,14 @@ func (suite *RateLimiterSuite) TestRateLimiter_SetRate(c *check.C) {
 	for _, cc := range cases {
 		rl := NewRateLimiter(cc.r, cc.w)
 		rl.SetRate(cc.nr)
-		c.Assert(rl.capacity, check.Equals, cc.e.rate)
-		c.Assert(rl.rate, check.Equals, cc.e.rate)
-		c.Assert(rl.window, check.Equals, cc.e.window)
-		c.Assert(rl.ratePerWindow, check.Equals, cc.e.ratePerWindow)
+		suite.Equal(rl.capacity, cc.e.rate)
+		suite.Equal(rl.rate, cc.e.rate)
+		suite.Equal(rl.window, cc.e.window)
+		suite.Equal(rl.ratePerWindow, cc.e.ratePerWindow)
 	}
 }
 
-func (suite *RateLimiterSuite) TestRateLimiter_AcquireBlocking(c *check.C) {
+func (suite *RateLimiterSuite) TestRateLimiter_AcquireBlocking() {
 	var cases = []struct {
 		r     int64
 		w     int64
@@ -101,22 +98,22 @@ func (suite *RateLimiterSuite) TestRateLimiter_AcquireBlocking(c *check.C) {
 		start := time.Now().UnixNano() / time.Millisecond.Nanoseconds()
 		rl := NewRateLimiter(cc.r, cc.w)
 		for i := 0; i < cc.count; i++ {
-			c.Assert(rl.AcquireBlocking(cc.t), check.Equals, cc.t)
+			suite.Equal(rl.AcquireBlocking(cc.t), cc.t)
 		}
 		end := time.Now().UnixNano() / time.Millisecond.Nanoseconds()
-		c.Assert(end-start >= cc.e, check.Equals, true)
-		c.Assert(end-start < cc.e+10, check.Equals, true)
+		suite.Equal(end-start >= cc.e, true)
+		suite.Equal(end-start < cc.e+10, true)
 	}
 }
 
-func (suite *RateLimiterSuite) TestRateLimiter_AcquireNonBlocking(c *check.C) {
+func (suite *RateLimiterSuite) TestRateLimiter_AcquireNonBlocking() {
 	rl := NewRateLimiter(1000, 1)
-	c.Assert(rl.AcquireNonBlocking(1000), check.Equals, int64(-1))
+	suite.Equal(rl.AcquireNonBlocking(1000), int64(-1))
 	rl.blocking(1000)
-	c.Assert(rl.AcquireNonBlocking(1000), check.Equals, int64(1000))
+	suite.Equal(rl.AcquireNonBlocking(1000), int64(1000))
 }
 
-func (suite *RateLimiterSuite) TestTransRate(c *check.C) {
+func (suite *RateLimiterSuite) TestTransRate() {
 	var cases = []struct {
 		r int64
 		e int64
@@ -129,6 +126,6 @@ func (suite *RateLimiterSuite) TestTransRate(c *check.C) {
 	}
 	for _, cc := range cases {
 		v := TransRate(cc.r)
-		c.Assert(v, check.Equals, cc.e)
+		suite.Equal(v, cc.e)
 	}
 }

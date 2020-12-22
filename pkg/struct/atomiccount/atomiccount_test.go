@@ -17,42 +17,39 @@
 package atomiccount
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
-
-
 )
 
-func Test(t *testing.T) {
-	check.TestingT(t)
+func TestSuite(t *testing.T) {
+	suite.Run(t, new(AtomicCountUtilSuite))
 }
 
-type AtomicCountUtilSuite struct{}
-
-func init() {
-	check.Suite(&AtomicCountUtilSuite{})
+type AtomicCountUtilSuite struct{
+	suite.Suite
 }
 
-func (suite *AtomicCountUtilSuite) TestAdd(c *check.C) {
+func (suite *AtomicCountUtilSuite) TestAdd() {
 	acount := NewAtomicInt(3)
 	acount.Add(4)
 	acount.Add(5)
 
 	result := acount.Get()
-	c.Check(result, check.Equals, (int32)(12))
+	suite.Equal(result, (int32)(12))
 
 	var nilAcount *AtomicInt
-	c.Check(nilAcount.Add(5), check.Equals, (int32)(0))
+	suite.Equal(nilAcount.Add(5), (int32)(0))
 }
 
-func (suite *AtomicCountUtilSuite) TestSet(c *check.C) {
+func (suite *AtomicCountUtilSuite) TestSet() {
 	acount := NewAtomicInt(3)
 	acount.Add(4)
 	acount.Add(5)
 
 	_ = acount.Set(1)
 	result := acount.Get()
-	c.Check(result, check.Equals, (int32)(1))
+	suite.Equal(result, (int32)(1))
 
 	var nilAcount *AtomicInt
-	c.Check(nilAcount.Get(), check.Equals, (int32)(0))
+	suite.Equal(nilAcount.Get(), (int32)(0))
 }

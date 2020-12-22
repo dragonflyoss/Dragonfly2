@@ -18,23 +18,27 @@ package rate
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/suite"
+	"gopkg.in/check.v1"
 	"testing"
 
 
 	"gopkg.in/yaml.v2"
 )
 
-func Test(t *testing.T) {
-	check.TestingT(t)
+func TestSuite(t *testing.T) {
+	suite.Run(t, new(RateSuite))
 }
 
-type RateSuite struct{}
+type RateSuite struct{
+	suite.Suite
+}
 
 func init() {
 	check.Suite(&RateSuite{})
 }
 
-func (suite *RateSuite) TestParseRate(c *check.C) {
+func (suite *RateSuite) TestParseRate() {
 	var cases = []struct {
 		input    string
 		expected Rate
@@ -57,16 +61,16 @@ func (suite *RateSuite) TestParseRate(c *check.C) {
 	for _, cc := range cases {
 		output, err := ParseRate(cc.input)
 		if !cc.isWrong {
-			c.Assert(err, check.IsNil)
-			c.Assert(output, check.Equals, cc.expected)
+			suite.NotNil(err)
+			suite.Equal(output, cc.expected)
 		} else {
-			c.Assert(err, check.NotNil)
+			suite.NotNil(err)
 		}
 
 	}
 }
 
-func (suite *RateSuite) TestString(c *check.C) {
+func (suite *RateSuite) TestString() {
 	var cases = []struct {
 		expected string
 		input    Rate
@@ -79,11 +83,11 @@ func (suite *RateSuite) TestString(c *check.C) {
 	}
 
 	for _, cc := range cases {
-		c.Check(cc.expected, check.Equals, cc.input.String())
+		suite.Equal(cc.expected, cc.input.String())
 	}
 }
 
-func (suite *RateSuite) TestMarshalJSON(c *check.C) {
+func (suite *RateSuite) TestMarshalJSON() {
 	var cases = []struct {
 		input  Rate
 		output string
@@ -108,12 +112,12 @@ func (suite *RateSuite) TestMarshalJSON(c *check.C) {
 
 	for _, cc := range cases {
 		data, err := json.Marshal(cc.input)
-		c.Check(err, check.IsNil)
-		c.Check(string(data), check.Equals, cc.output)
+		suite.Nil(err)
+		suite.Equal(string(data), cc.output)
 	}
 }
 
-func (suite *RateSuite) TestUnMarshalJSON(c *check.C) {
+func (suite *RateSuite) TestUnMarshalJSON() {
 	var cases = []struct {
 		output Rate
 		input  string
@@ -167,12 +171,12 @@ func (suite *RateSuite) TestUnMarshalJSON(c *check.C) {
 	for _, cc := range cases {
 		var r Rate
 		err := json.Unmarshal([]byte(cc.input), &r)
-		c.Check(err, check.IsNil)
-		c.Check(r, check.Equals, cc.output)
+		suite.Nil(err)
+		suite.Equal(r, cc.output)
 	}
 }
 
-func (suite *RateSuite) TestMarshalYAML(c *check.C) {
+func (suite *RateSuite) TestMarshalYAML() {
 	var cases = []struct {
 		input  Rate
 		output string
@@ -197,12 +201,12 @@ func (suite *RateSuite) TestMarshalYAML(c *check.C) {
 
 	for _, cc := range cases {
 		data, err := yaml.Marshal(cc.input)
-		c.Check(err, check.IsNil)
-		c.Check(string(data), check.Equals, cc.output)
+		suite.Nil(err)
+		suite.Equal(string(data), cc.output)
 	}
 }
 
-func (suite *RateSuite) TestUnMarshalYAML(c *check.C) {
+func (suite *RateSuite) TestUnMarshalYAML() {
 	var cases = []struct {
 		output Rate
 		input  string
@@ -228,7 +232,7 @@ func (suite *RateSuite) TestUnMarshalYAML(c *check.C) {
 	for _, cc := range cases {
 		var output Rate
 		err := yaml.Unmarshal([]byte(cc.input), &output)
-		c.Check(err, check.IsNil)
-		c.Check(output, check.Equals, cc.output)
+		suite.Nil(err)
+		suite.Equal(output, cc.output)
 	}
 }
