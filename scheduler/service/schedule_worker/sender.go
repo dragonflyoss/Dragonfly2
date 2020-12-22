@@ -1,26 +1,28 @@
 package schedule_worker
 
 import (
-	scheduler2 "github.com/dragonflyoss/Dragonfly2/pkg/grpc/scheduler"
+	scheduler2 "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"hash/crc32"
 )
 
-type ISender interface{
+type ISender interface {
 	Start()
 	Stop()
 	Send(pid string, pkg *scheduler2.PiecePackage)
 }
 
 type SenderGroup struct {
-	senderNum int
+	senderNum  int
+	chanSize   int
 	senderList []*Sender
-	stopCh chan struct{}
+	stopCh     chan struct{}
 }
 
 type Sender struct {
 	jobChan chan *sendJob
-	stopCh <-chan struct{}
+	stopCh  <-chan struct{}
 }
 
 type sendJob struct {
@@ -29,18 +31,21 @@ type sendJob struct {
 }
 
 func CreateSender() *SenderGroup {
+	senderNum := config.GetConfig().Worker.SenderNum
+	chanSize := config.GetConfig().Worker.SenderJobPoolSize
 	sg := &SenderGroup{
-		senderNum: 10,
+		senderNum: senderNum,
+		chanSize:  chanSize,
 	}
 	return sg
 }
 
 func (sg *SenderGroup) Start() {
 	sg.stopCh = make(chan struct{})
-	for i:=0; i<sg.senderNum; i++ {
+	for i := 0; i < sg.senderNum; i++ {
 		s := &Sender{
-			jobChan: make(chan *sendJob, 10000),
-			stopCh: sg.stopCh,
+			jobChan: make(chan *sendJob, sg.chanSize),
+			stopCh:  sg.stopCh,
 		}
 		s.Start()
 		sg.senderList = append(sg.senderList, s)
@@ -69,8 +74,15 @@ func (s *Sender) doSend() {
 		select {
 		case job := <-s.jobChan:
 			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(*job.pid)
-			peerTask.Send(job.pkg)
-		case <- s.stopCh:
+			err := peerTask.Send(job.pkg)
+			if err != nil {
+				//TODO error
+				return
+			}
+			if job.pkg.Done {
+				break
+			}
+		case <-s.stopCh:
 			return
 		}
 	}

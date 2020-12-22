@@ -3,30 +3,31 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/grpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/grpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/server"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/service"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/service/schedule_worker"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 )
 
-var _ scheduler.SchedulerServer = &SchedulerServer{}
+var _ server.SchedulerServer = &SchedulerServer{}
 
 type SchedulerServer struct {
-	svc *service.SchedulerService
+	svc    *service.SchedulerService
 	worker schedule_worker.IWorker
 }
 
 func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (pkg *scheduler.PiecePackage, err error) {
 	pkg = new(scheduler.PiecePackage)
-	defer func(){
+	defer func() {
 		e := recover()
 		if e != nil {
 			err = fmt.Errorf("%v", e)
 			return
 		}
 		if err != nil {
-			pkg.State.Code = base.Code_ERROR
+			pkg.State.Code = base.Code_SCHEDULER_ERROR
 			pkg.State.Msg = err.Error()
 			pkg.State.Success = false
 			err = nil
@@ -42,10 +43,10 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	task, _ := s.svc.GetTask(taskId)
 	if task == nil {
 		task = &types.Task{
-			TaskId: taskId,
-			Url: request.Url,
-			Filter: request.Filter,
-			BizId: request.BizId,
+			TaskId:  taskId,
+			Url:     request.Url,
+			Filter:  request.Filter,
+			BizId:   request.BizId,
 			UrlMata: request.UrlMata,
 		}
 		task, err = s.svc.AddTask(task)
@@ -59,14 +60,15 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	host, _ := s.svc.GetHost(hostId)
 	if host == nil {
 		host = &types.Host{
-			Uuid:            request.PeerHost.Uuid,
-			Ip:              request.PeerHost.Ip,
-			Port:            request.PeerHost.Port,
-			HostName:        request.PeerHost.HostName,
-			SecurityDomain:  request.PeerHost.SecurityDomain,
-			Location:        request.PeerHost.Location,
-			Idc:             request.PeerHost.Idc,
-			Switch:          request.PeerHost.Switch,
+			Type:           types.HostTypePeer,
+			Uuid:           request.PeerHost.Uuid,
+			Ip:             request.PeerHost.Ip,
+			Port:           request.PeerHost.Port,
+			HostName:       request.PeerHost.HostName,
+			SecurityDomain: request.PeerHost.SecurityDomain,
+			Location:       request.PeerHost.Location,
+			Idc:            request.PeerHost.Idc,
+			Switch:         request.PeerHost.Switch,
 		}
 		host, err = s.svc.AddHost(host)
 		if err != nil {
@@ -92,43 +94,41 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 	// assemble result
 	pkg.TaskId = taskId
-	if int(peerTask.GetFinishedNum()) + len(pieceList) >= len(task.PieceList) {
-		pkg.Last = true
+	if int(peerTask.GetFinishedNum())+len(pieceList) >= len(task.PieceList) {
+		pkg.Done = true
 		pkg.ContentLength = task.ContentLength
 	}
 	for _, p := range pieceList {
 		pkg.PieceTasks = append(pkg.PieceTasks, &scheduler.PiecePackage_PieceTask{
-		PieceNum : p.Piece.PieceNum,
-			PieceRange : p.Piece.PieceRange,
-			PieceMd5   : p.Piece.PieceMd5,
-			SrcPid     : p.SrcPid ,
-			DstPid     : p.DstPid,
-			DstAddr    : p.DstAddr,
+			PieceNum:    p.Piece.PieceNum,
+			PieceRange:  p.Piece.PieceRange,
+			PieceMd5:    p.Piece.PieceMd5,
+			SrcPid:      p.SrcPid,
+			DstPid:      p.DstPid,
+			DstAddr:     p.DstAddr,
 			PieceOffset: p.Piece.PieceOffset,
-			PieceStyle : p.Piece.PieceStyle,
+			PieceStyle:  p.Piece.PieceStyle,
 		})
 	}
 
 	return
 }
 
-
-
-func (s *SchedulerServer) PullPieceTasks(server scheduler.Scheduler_PullPieceTasksServer) (err error) {
+func (s *SchedulerServer) PullPieceTasks(ctx context.Context, server scheduler.Scheduler_PullPieceTasksServer) (err error) {
 	schedule_worker.CreateClient(server, s.worker).Start()
 	return
 }
 
 func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (ret *base.ResponseState, err error) {
 	ret = new(base.ResponseState)
-	defer func(){
+	defer func() {
 		e := recover()
 		if e != nil {
 			err = fmt.Errorf("%v", e)
 			return
 		}
 		if err != nil {
-			ret.Code = base.Code_ERROR
+			ret.Code = base.Code_SCHEDULER_ERROR
 			ret.Msg = err.Error()
 			ret.Success = false
 			err = nil
@@ -151,14 +151,14 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 
 func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (ret *base.ResponseState, err error) {
 	ret = new(base.ResponseState)
-	defer func(){
+	defer func() {
 		e := recover()
 		if e != nil {
 			err = fmt.Errorf("%v", e)
 			return
 		}
 		if err != nil {
-			ret.Code = base.Code_ERROR
+			ret.Code = base.Code_SCHEDULER_ERROR
 			ret.Msg = err.Error()
 			ret.Success = false
 			err = nil

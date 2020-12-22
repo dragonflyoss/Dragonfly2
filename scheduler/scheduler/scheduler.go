@@ -11,19 +11,20 @@ import (
 )
 
 type Scheduler struct {
-	evaluator   IPeerTaskEvaluator
+	evaluator IPeerTaskEvaluator
 }
 
 func CreateScheduler() *Scheduler {
 	return &Scheduler{
-		evaluator: &basic.Evaluator{},
+		evaluator: basic.NewEvaluator(),
 	}
 }
 
 func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, err error) {
 	for {
 		// choose a piece to download
-		piece, err := s.evaluator.GetNextPiece(task)
+		var piece *types.Piece
+		piece, err = s.evaluator.GetNextPiece(task)
 		if err != nil {
 			logrus.Debugf("scheduler get piece for taskID(%s) nil", task.Task.BizId)
 			break
@@ -31,7 +32,7 @@ func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, 
 
 		// scheduler piece to a host
 		srcHost := task.Host
-		readyPeerTaskList:= piece.GetReadPeerTaskList()
+		readyPeerTaskList := piece.GetReadyPeerTaskList()
 		var dstPeerTask *types.PeerTask
 		value := math.MaxFloat64
 		for _, pt := range readyPeerTaskList {

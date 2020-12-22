@@ -15,7 +15,7 @@ func CreatePeerTaskManager() *PeerTaskManager {
 	}
 }
 
-func (m *PeerTaskManager) AddPeerTask(pid string, task *types.Task, host *types.Host) (*types.PeerTask) {
+func (m *PeerTaskManager) AddPeerTask(pid string, task *types.Task, host *types.Host) *types.PeerTask {
 	v, ok := m.data.Load(pid)
 	if ok {
 		return v.(*types.PeerTask)
@@ -39,4 +39,3 @@ func (m *PeerTaskManager) GetPeerTask(pid string) (h *types.PeerTask, ok bool) {
 	h = data.(*types.PeerTask)
 	return
 }
-

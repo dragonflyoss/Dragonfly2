@@ -1,15 +1,19 @@
 package mgr
 
 var (
-	taskManager = CreateTaskManager()
-	hostManager = CreateHostManager()
+	cdnManager      = CreateCDNManager()
+	taskManager     = CreateTaskManager()
+	hostManager     = CreateHostManager()
 	peerTaskManager = CreatePeerTaskManager()
 )
+
+func GetCDNManager() *CDNManager {
+	return cdnManager
+}
 
 func GetTaskManager() *TaskManager {
 	return taskManager
 }
-
 
 func GetHostManager() *HostManager {
 	return hostManager

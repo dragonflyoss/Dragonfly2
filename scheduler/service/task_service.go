@@ -18,5 +18,6 @@ func (s *SchedulerService) GetTask(taskId string) (task *types.Task, err error) 
 
 func (s *SchedulerService) AddTask(task *types.Task) (ret *types.Task, err error) {
 	ret = s.taskMgr.AddTask(task)
+	s.cdnMgr.TriggerTask(task)
 	return
 }

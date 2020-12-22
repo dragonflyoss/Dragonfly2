@@ -1,8 +1,9 @@
 package schedule_worker
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/grpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
+	"io"
 )
 
 type Client struct {
@@ -25,7 +26,10 @@ func (c *Client) Start() {
 
 func (c *Client) doWork() {
 	pr, err := c.client.Recv()
-	if err != nil {
+	if err == io.EOF {
+		return
+	} else if err != nil {
+		// TODO error
 		return
 	}
 	pid := pr.SrcPid
@@ -35,7 +39,10 @@ func (c *Client) doWork() {
 	for {
 		c.worker.ReceiveJob(pr)
 		pr, err = c.client.Recv()
-		if err != nil {
+		if err == io.EOF {
+			return
+		} else if err != nil {
+			// TODO error
 			return
 		}
 	}

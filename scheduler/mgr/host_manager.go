@@ -6,7 +6,7 @@ import (
 )
 
 type HostManager struct {
-	 data *sync.Map
+	data *sync.Map
 }
 
 func CreateHostManager() *HostManager {
@@ -15,7 +15,7 @@ func CreateHostManager() *HostManager {
 	}
 }
 
-func (m *HostManager) AddHost(host *types.Host) (*types.Host) {
+func (m *HostManager) AddHost(host *types.Host) *types.Host {
 	v, ok := m.data.Load(host.Uuid)
 	if ok {
 		return v.(*types.Host)

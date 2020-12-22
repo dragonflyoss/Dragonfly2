@@ -1,11 +1,17 @@
 package config
 
+import (
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"runtime"
+)
+
 var config = createDefaultConfig()
 
 type Config struct {
 	Scheduler schedulerConfig
-	Server serverConfig
-	Worker schedulerWorkerConfig
+	Server    serverConfig
+	Worker    schedulerWorkerConfig
+	CDN       cdnConfig
 }
 
 type schedulerConfig struct {
@@ -13,13 +19,19 @@ type schedulerConfig struct {
 }
 
 type serverConfig struct {
+	Type basic.NetworkType
 	Addr string
-	Port int
 }
 
 type schedulerWorkerConfig struct {
-	WorkerNum int
-	SenderNum int
+	WorkerNum         int
+	WorkerJobPoolSize int
+	SenderNum         int
+	SenderJobPoolSize int
+}
+
+type cdnConfig struct {
+	List [][]serverConfig
 }
 
 func GetConfig() *Config {
@@ -27,16 +39,27 @@ func GetConfig() *Config {
 }
 
 func createDefaultConfig() *Config {
-	return &Config {
+	return &Config{
 		Server: serverConfig{
-			Port: 6666,
+			Type: basic.TCP,
+			Addr: ":6666",
+		},
+		Worker: schedulerWorkerConfig{
+			WorkerNum:         runtime.GOMAXPROCS(0),
+			WorkerJobPoolSize: 10000,
+			SenderNum:         50,
+			SenderJobPoolSize: 10000,
 		},
 		Scheduler: schedulerConfig{
 			MaxUsableValue: 100,
 		},
-		Worker: schedulerWorkerConfig{
-			WorkerNum: 4,
-			SenderNum: 50,
+		CDN: cdnConfig{
+			List: [][]serverConfig{
+				[]serverConfig{{
+					Type: basic.TCP,
+					Addr: ":6666",
+				}},
+			},
 		},
 	}
 }

@@ -15,8 +15,7 @@ func CreateTaskManager() *TaskManager {
 	}
 }
 
-
-func (m *TaskManager) AddTask(task *types.Task) (*types.Task) {
+func (m *TaskManager) AddTask(task *types.Task) *types.Task {
 	v, ok := m.data.Load(task.TaskId)
 	if ok {
 		return v.(*types.Task)
@@ -41,4 +40,3 @@ func (m *TaskManager) GetTask(taskId string) (h *types.Task, ok bool) {
 	h = data.(*types.Task)
 	return
 }
-

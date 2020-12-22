@@ -3,23 +3,23 @@ package types
 import (
 	"sync"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/grpc/base"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 )
 
 type Piece struct {
-	PieceNum    int32           `json:"piece_num,omitempty"`
-	PieceRange  string          `json:"piece_range,omitempty"`
-	PieceMd5    string          `json:"piece_md5,omitempty"`
+	PieceNum   int32  `json:"piece_num,omitempty"`
+	PieceRange string `json:"piece_range,omitempty"`
+	PieceMd5   string `json:"piece_md5,omitempty"`
 
 	PieceOffset uint64          `json:"piece_offset,omitempty"`
 	PieceStyle  base.PieceStyle `json:"piece_style,omitempty"`
 
-	Task *Task
-	readyPeerTaskList *sync.Map
+	Task                    *Task
+	readyPeerTaskList       *sync.Map
 	downloadingPeerTaskList *sync.Map
 }
 
-func(p *Piece) GetReadPeerTaskList() (list []*PeerTask) {
+func (p *Piece) GetReadyPeerTaskList() (list []*PeerTask) {
 	if p == nil || p.readyPeerTaskList == nil {
 		return
 	}
@@ -39,9 +39,16 @@ func(p *Piece) GetReadPeerTaskList() (list []*PeerTask) {
 	return
 }
 
+func (p *Piece) AddReadyPeerTask(pt *PeerTask) {
+	if p.readyPeerTaskList == nil {
+		p.readyPeerTaskList = new(sync.Map)
+	}
+	p.readyPeerTaskList.Store(pt.Pid, pt)
+}
+
 type PieceTask struct {
-	Piece *Piece
-	SrcPid      string          `json:"src_pid,omitempty"`
-	DstPid      string          `json:"dst_pid,omitempty"`
-	DstAddr     string          `json:"dst_addr,omitempty"` // ip:port
+	Piece   *Piece
+	SrcPid  string `json:"src_pid,omitempty"`
+	DstPid  string `json:"dst_pid,omitempty"`
+	DstAddr string `json:"dst_addr,omitempty"` // ip:port
 }

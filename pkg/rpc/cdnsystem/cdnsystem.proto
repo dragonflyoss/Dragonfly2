@@ -1,0 +1,55 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// check and make seeds
+
+syntax = "proto3";
+
+package cdnsystem;
+
+import "pkg/rpc/base/base.proto";
+
+option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem";
+
+message SeedRequest{
+  string task_id = 1;
+  string url = 2;
+  string filter = 3;
+  base.UrlMeta url_meta = 4; // check content downloaded from remote url
+}
+
+// keep piece meta and data separately
+// check piece md5 and total content length, no more file md5 verification
+// scheduler can also analyze cdn traffic from origin
+message PieceSeed{
+  base.ResponseState state = 1;
+  string seed_addr = 2; // ip:port
+  base.PieceStyle piece_style = 3;
+  int32 piece_num = 4;
+  string piece_md5 = 5; // for transported piece content
+  string piece_range = 6; // for transported piece content
+  uint64 piece_offset = 7; // piece's real offset in the file
+
+  bool done = 8; // whether or not all seeds are downloaded
+  int64 content_length = 9; // content total length for the url
+  int64 total_traffic = 10; // total traffic from the remote source
+}
+
+// seed maker for download url
+service Seeder{
+  // generate seeds and return to scheduler
+  rpc ObtainSeeds(SeedRequest)returns(stream PieceSeed){}
+}

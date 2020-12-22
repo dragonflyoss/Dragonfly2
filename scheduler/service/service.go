@@ -6,27 +6,24 @@ import (
 )
 
 type SchedulerService struct {
-	taskMgr *mgr.TaskManager
-	hostMgr *mgr.HostManager
+	cdnMgr      *mgr.CDNManager
+	taskMgr     *mgr.TaskManager
+	hostMgr     *mgr.HostManager
 	peerTaskMgr *mgr.PeerTaskManager
-	scheduler *scheduler.Scheduler
+	scheduler   *scheduler.Scheduler
 }
 
-func CreateSchedulerService() *SchedulerService{
+func CreateSchedulerService() *SchedulerService {
 	s := &SchedulerService{
-		taskMgr: mgr.GetTaskManager(),
-		hostMgr: mgr.CreateHostManager(),
+		cdnMgr:      mgr.GetCDNManager(),
+		taskMgr:     mgr.GetTaskManager(),
+		hostMgr:     mgr.CreateHostManager(),
 		peerTaskMgr: mgr.CreatePeerTaskManager(),
-		scheduler: scheduler.CreateScheduler(),
+		scheduler:   scheduler.CreateScheduler(),
 	}
 	return s
-}
-
-func (s *SchedulerService) Start() {
-	s.scheduler.Start()
 }
 
 func (s *SchedulerService) GetScheduler() *scheduler.Scheduler {
 	return s.scheduler
 }
-

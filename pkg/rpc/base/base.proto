@@ -1,0 +1,62 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// basic structure for request and response
+
+syntax = "proto3";
+
+package base;
+
+option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base";
+
+enum Code{
+  X_UNSPECIFIED = 0;
+
+  // no problem 200-299
+  SUCCESS = 200;
+
+  // client processing error 400-499
+  CLIENT_ERROR = 400;
+
+  // scheduler processing error 500-599
+  SCHEDULER_ERROR = 500;
+
+  // cdnsystem processing error 600-699
+  CDN_ERROR = 600;
+
+  // manager processing error 700-799
+  MANAGER_ERROR = 700;
+
+  // shared error 1000-1099
+  UNKNOWN_ERROR = 1000;
+  PARAM_INVALID = 1001;
+  REQUEST_TIME_OUT = 1002;
+}
+
+enum PieceStyle{
+  PLAIN_UNSPECIFIED = 0;
+}
+
+message ResponseState{
+  bool success = 1;
+  Code code = 2;
+  string msg = 3;
+}
+
+message UrlMeta{
+  string md5 = 1; // md5 of content downloaded from url
+  string range = 2; // downloading range for single file
+}
