@@ -85,6 +85,22 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 	return zap.New(core, opts...)
 }
 
+
+// LogConfig holds all configurable properties of log.
+type LogConfig struct {
+	// MaxSize is the maximum size in megabytes of the log file before it gets rotated.
+	// It defaults to 40 megabytes.
+	MaxSize int `yaml:"maxSize" json:"maxSize"`
+	// MaxAge
+	MaxAge int `yaml:"maxAge" json:"maxAge"`
+	// MaxBackups is the maximum number of old log files to retain.
+	// The default value is 1.
+	MaxBackups int `yaml:"maxBackups" json:"maxBackups"`
+	// Path is the location of log file
+	// The default value is logs/dfdaemon.log
+	Path string `yaml:"path" json:"path"`
+}
+
 func SetBizLogger(log *zap.SugaredLogger) {
 	bizLogger = log
 }
@@ -118,8 +134,20 @@ func Errorf(fmt string, args ...interface{}) {
 	bizLogger.Errorf(fmt, args...)
 }
 
+func Error(args ...interface{})  {
+	bizLogger.Error(args)
+}
+
 func Debugf(fmt string, args ...interface{}) {
 	bizLogger.Debugf(fmt, args...)
+}
+
+func Fatal(args ...interface{}) {
+	bizLogger.Fatal(args)
+}
+
+func Fatalf(fmt string, args ...interface{}) {
+	bizLogger.Fatalf(fmt, args)
 }
 
 type zapGrpc struct {

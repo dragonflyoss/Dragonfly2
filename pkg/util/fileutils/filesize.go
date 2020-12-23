@@ -20,10 +20,6 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
-
-	"github.com/pkg/errors"
 )
 
 // Fsize is a wrapper type which indicates the file size.
@@ -66,9 +62,9 @@ func (f Fsize) Type() string {
 var sizeRE = regexp.MustCompile("^([0-9]+)(MB?|m|KB?|k|GB?|g|B)$")
 
 // ParseSize parses a string into a int64.
-func ParseSize(rateStr string) (Fsize, error) {
+func ParseSize(fsize string) (Fsize, error) {
 	var n int
-	n, err := strconv.Atoi(rateStr)
+	n, err := strconv.Atoi(fsize)
 	if err == nil && n >= 0 {
 		return Fsize(n), nil
 	}
@@ -77,9 +73,9 @@ func ParseSize(rateStr string) (Fsize, error) {
 		return 0, fmt.Errorf("not a valid fsize string: %d, only non-negative values are supported", n)
 	}
 
-	matches := sizeRE.FindStringSubmatch(rateStr)
+	matches := sizeRE.FindStringSubmatch(fsize)
 	if len(matches) != 3 {
-		return 0, fmt.Errorf("not a valid fsize string: %q, supported format: G(B)/g/M(B)/m/K(B)/k/B or pure number", rateStr)
+		return 0, fmt.Errorf("not a valid fsize string: %q, supported format: G(B)/g/M(B)/m/K(B)/k/B or pure number", fsize)
 	}
 	n, _ = strconv.Atoi(matches[1])
 	switch unit := matches[2]; {
@@ -109,7 +105,7 @@ var fsizeRegex = regexp.MustCompile("^([0-9]+)([GMK]B?|B)$")
 
 // MarshalYAML implements the yaml.Marshaler interface.
 func (f Fsize) MarshalYAML() (interface{}, error) {
-	result := FsizeToString(f)
+	result := f.String()
 	return result, nil
 }
 
@@ -120,66 +116,10 @@ func (f *Fsize) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 
-	fsize, err := StringToFSize(fsizeStr)
+	fsize, err := ParseSize(fsizeStr)
 	if err != nil {
 		return err
 	}
 	*f = Fsize(fsize)
 	return nil
-}
-
-// FsizeToString parses a Fsize value into string.
-func FsizeToString(fsize Fsize) string {
-	var (
-		n      = int64(fsize)
-		symbol = "B"
-		unit   = B
-	)
-	if n == 0 {
-		return "0B"
-	}
-
-	switch int64(0) {
-	case n % int64(GB):
-		symbol = "GB"
-		unit = GB
-	case n % int64(MB):
-		symbol = "MB"
-		unit = MB
-	case n % int64(KB):
-		symbol = "KB"
-		unit = KB
-	}
-	return fmt.Sprintf("%v%v", n/int64(unit), symbol)
-}
-
-// StringToFSize parses a string into Fsize.
-func StringToFSize(fsize string) (Fsize, error) {
-	var n int
-	n, err := strconv.Atoi(fsize)
-	if err == nil && n >= 0 {
-		return Fsize(n), nil
-	}
-	if n < 0 {
-		return 0, errors.Wrapf(dferrors.ErrInvalidValue, "%s is not a negative value fsize", fsize)
-	}
-
-	matches := fsizeRegex.FindStringSubmatch(fsize)
-	if len(matches) != 3 {
-		return 0, errors.Wrapf(dferrors.ErrInvalidValue, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
-	}
-	n, _ = strconv.Atoi(matches[1])
-	switch unit := matches[2]; {
-	case unit == "G" || unit == "GB":
-		n *= int(GB)
-	case unit == "M" || unit == "MB":
-		n *= int(MB)
-	case unit == "K" || unit == "KB":
-		n *= int(KB)
-	case unit == "B":
-		// Value already correct
-	default:
-		return 0, errors.Wrapf(dferrors.ErrInvalidValue, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
-	}
-	return Fsize(n), nil
 }

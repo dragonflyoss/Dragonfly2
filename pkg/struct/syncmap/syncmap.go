@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// SyncMap is a thread-safe map.
+// SyncMap is a thread-safe map providing generic support
 type SyncMap struct {
 	*sync.Map
 }

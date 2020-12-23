@@ -18,14 +18,12 @@ package gc
 
 import (
 	"context"
-	"time"
-
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 var _ mgr.GCMgr = &Manager{}

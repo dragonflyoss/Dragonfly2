@@ -2,12 +2,10 @@ package gc
 
 import (
 	"context"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"sync"
 	"time"
-
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
-
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -23,7 +21,7 @@ func (gcm *Manager) gcTasks(ctx context.Context) {
 	// get all taskIDs and the corresponding accessTime
 	taskAccessMap, err := gcm.taskMgr.GetAccessTime(ctx)
 	if err != nil {
-		logrus.Errorf("gc tasks: failed to get task accessTime map for GC: %v", err)
+		logger.Errorf("gc tasks: failed to get task accessTime map for GC: %v", err)
 		return
 	}
 
@@ -33,29 +31,29 @@ func (gcm *Manager) gcTasks(ctx context.Context) {
 	for _, taskID := range taskIDs {
 		atime, err := taskAccessMap.GetAsTime(taskID)
 		if err != nil {
-			logrus.Errorf("gc tasks: failed to get access time taskID(%s): %v", taskID, err)
+			logger.Errorf("gc tasks: failed to get access time taskID(%s): %v", taskID, err)
 			continue
 		}
 		if time.Since(atime) < gcm.cfg.TaskExpireTime {
 			continue
 		}
-
+		// gc task memory data
 		gcm.gcTask(ctx, taskID, false)
 		removedTaskCount++
 	}
 
 	// slow GC detected, report it with a log warning
 	if timeDuring := time.Since(startTime); timeDuring > gcTasksTimeout {
-		logrus.Warnf("gc tasks:%d cost:%.3f", removedTaskCount, timeDuring.Seconds())
+		logger.Warnf("gc tasks:%d cost:%.3f", removedTaskCount, timeDuring.Seconds())
 	}
 
 	gcm.metrics.gcTasksCount.WithLabelValues().Add(float64(removedTaskCount))
 
-	logrus.Infof("gc tasks: success to full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
+	logger.Infof("gc tasks: success to full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
 }
 
 func (gcm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
-	logrus.Infof("gc task: start to deal with task: %s", taskID)
+	logger.Infof("gc task: start to deal with task: %s", taskID)
 
 	util.GetLock(taskID, false)
 	defer util.ReleaseLock(taskID, false)
@@ -67,7 +65,7 @@ func (gcm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
 		gcm.gcCDNByTaskID(ctx, taskID, full)
 		wg.Done()
 	}(&wg)
-
+	// delete memory data
 	go func(wg *sync.WaitGroup) {
 		gcm.gcTaskByTaskID(ctx, taskID)
 		wg.Done()
@@ -79,12 +77,12 @@ func (gcm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
 
 func (gcm *Manager) gcCDNByTaskID(ctx context.Context, taskID string, full bool) {
 	if err := gcm.cdnMgr.Delete(ctx, taskID, full); err != nil {
-		logrus.Errorf("gc task: failed to gc cdn meta taskID(%s) full(%t): %v", taskID, full, err)
+		logger.Errorf("gc task: failed to gc cdn meta taskID(%s) full(%t): %v", taskID, full, err)
 	}
 }
 
 func (gcm *Manager) gcTaskByTaskID(ctx context.Context, taskID string) {
 	if err := gcm.taskMgr.Delete(ctx, taskID); err != nil {
-		logrus.Errorf("gc task: failed to gc task info taskID(%s): %v", taskID, err)
+		logger.Errorf("gc task: failed to gc task info taskID(%s): %v", taskID, err)
 	}
 }

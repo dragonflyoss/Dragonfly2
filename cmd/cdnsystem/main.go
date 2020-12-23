@@ -17,7 +17,6 @@
 package cdnsystem
 
 import "github.com/dragonflyoss/Dragonfly2/cmd/cdnsystem/app"
-import _ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
 func main() {
 	app.Execute()
 }

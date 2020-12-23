@@ -21,10 +21,10 @@ import (
 	"time"
 
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
+	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v2"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 // NewConfig creates an instant with default values.
@@ -176,6 +176,9 @@ type BaseProperties struct {
 	// default: 5GB
 	FullGCThreshold fileutils.Fsize `yaml:"fullGCThreshold"`
 
+	// MaxStorageThreshold if the currently used disk space is greater than MaxStorageThreshold, clean disk up
+	MaxStorageThreshold fileutils.Fsize
+
 	// IntervalThreshold is the threshold of the interval at which the task file is accessed.
 	// default: 2h
 	IntervalThreshold time.Duration `yaml:"IntervalThreshold"`
@@ -186,5 +189,5 @@ type BaseProperties struct {
 	// default: 1
 	CleanRatio int `yaml:"cleanRatio"`
 
-	LogConfig dflog.LogConfig `yaml:"logConfig" json:"logConfig"`
+	LogConfig logger.LogConfig `yaml:"logConfig" json:"logConfig"`
 }

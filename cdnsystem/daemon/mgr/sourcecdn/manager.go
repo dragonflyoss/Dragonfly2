@@ -2,13 +2,11 @@ package cdn
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rate/ratelimiter"
-
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -24,7 +22,7 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, limiter *ratelimiter.RateLimiter, register prometheus.Registerer) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (mgr.CDNMgr, error) {
 	return &Manager{
 		cfg: cfg,
 	}, nil

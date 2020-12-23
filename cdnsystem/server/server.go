@@ -17,58 +17,54 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/gc"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/task"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/server/rpcpro/seed_server"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/pkg/grpc/cdnsystem"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rate/ratelimiter"
-	"github.com/dragonflyoss/Dragonfly2/version"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-	"net"
 )
 
 type Server struct {
-	Config     *config.Config
-	TaskMgr    mgr.SeedTaskMgr    // task管理
-	GCMgr      mgr.GCMgr          // 垃圾回收
+	Config  *config.Config
+	TaskMgr mgr.SeedTaskMgr
+	GCMgr   mgr.GCMgr
 }
 
 // New creates a brand new server instance.
 func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
-
 	var err error
-	version.NewBuildInfo("cdnnode", prometheus.DefaultRegisterer)
 
 	storeMgr, err := store.NewManager(cfg)
 	if err != nil {
 		return nil, err
 	}
+
 	storeLocal, err := storeMgr.Get(store.LocalStorageDriver)
+	if err != nil {
+		return nil, err
+	}
 
 	sourceClient := source.NewSourceClient()
 
-	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
-
 	// cdn manager
-	cdnMgr, err := mgr.GetCDNManager(cfg, storeLocal, sourceClient, rateLimiter, prometheus.DefaultRegisterer)
+	cdnMgr, err := mgr.GetCDNManager(cfg, storeLocal, sourceClient, register)
 	if err != nil {
 		return nil, err
 	}
 	// task manager
-	taskMgr, err := task.NewManager(cfg, cdnMgr, sourceClient, prometheus.DefaultRegisterer)
+	taskMgr, err := task.NewManager(cfg, cdnMgr, sourceClient, register)
 	if err != nil {
 		return nil, err
 	}
-
 	// gc manager
-	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, prometheus.DefaultRegisterer)
+	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, register)
 	if err != nil {
 		return nil, err
 	}
@@ -81,14 +77,25 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 }
 
 // Start runs cdn server.
-func (s *Server) Start() error {
-	address := fmt.Sprintf("0.0.0.0:%d", s.Config.ListenPort)
-	rpcServer := grpc.NewServer()
-	cdnsystem.RegisterSeederServer(rpcServer, seed_server.NewCdnSeedServer(s.TaskMgr))
-	lis, err := net.Listen("tcp", address)
-	if err != nil {
-		logrus.Errorf("failed to listen port %d: %v", s.Config.ListenPort, err)
-		return err
+func (s *Server) Start() (err error) {
+	defer func() {
+		if err := recover(); err != nil {
+			err = errors.New(fmt.Sprintf("%v", err))
+		}
+	}()
+	lisAddr := basic.NetAddr{
+		Type: basic.TCP,
+		Addr: fmt.Sprintf(":%d", s.Config.ListenPort),
 	}
-	return rpcServer.Serve(lis)
+	seedServer, err := NewCdnSeedServer(s.TaskMgr)
+	if err != nil {
+		return errors.Wrap(err, "create seedServer fail")
+	}
+	err = rpc.StartServer(lisAddr, seedServer)
+	if err != nil {
+		return errors.Wrap(err, "start seedServer fail")
+	}
+	// start gc
+	s.GCMgr.StartGC(context.Background())
+	return nil
 }

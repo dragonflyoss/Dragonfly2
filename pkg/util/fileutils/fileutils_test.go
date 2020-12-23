@@ -36,14 +36,14 @@ type FileUtilTestSuite struct {
 	suite.Suite
 }
 
-func (s *FileUtilTestSuite) SetUpSuite() {
+func (s *FileUtilTestSuite) SetupSuite() {
 	s.tmpDir, _ = ioutil.TempDir("/tmp", "dfget-FileUtilTestSuite-")
 	if u, e := user.Current(); e == nil {
 		s.username = u.Username
 	}
 }
 
-func (s *FileUtilTestSuite) TearDownSuite() {
+func (s *FileUtilTestSuite) TeardownSuite() {
 	if s.tmpDir != "" {
 		if err := os.RemoveAll(s.tmpDir); err != nil {
 			fmt.Printf("remove path:%s error", s.tmpDir)
@@ -293,8 +293,7 @@ func (s *FileUtilTestSuite) TestLoadYaml() {
 		var t T
 		err := LoadYaml(filename, &t)
 		if v.expected == nil {
-			s.NotNil(err)
-			s.EqualError(err, v.errMsg)
+			s.Error(err)
 		} else {
 			s.Nil(err)
 			s.Equal(&t, v.expected)

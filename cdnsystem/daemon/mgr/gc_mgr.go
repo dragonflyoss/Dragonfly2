@@ -4,6 +4,7 @@ import "context"
 
 // GCMgr as an interface defines all operations about gc operation.
 type GCMgr interface {
+
 	// StartGC starts to execute GC with a new goroutine.
 	StartGC(ctx context.Context)
 

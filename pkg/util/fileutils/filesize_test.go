@@ -17,7 +17,6 @@
 package fileutils
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
 
 	"github.com/go-check/check"
 	"gopkg.in/yaml.v2"
@@ -30,44 +29,6 @@ type FsizeTestSuite struct {
 
 func init() {
 	check.Suite(&FsizeTestSuite{})
-}
-
-func (suite *FsizeTestSuite) TestFsizeToString(c *check.C) {
-	var cases = []struct {
-		fsize    Fsize
-		fsizeStr string
-	}{
-		{B, "1B"},
-		{1024 * B, "1KB"},
-		{3 * MB, "3MB"},
-		{0 * GB, "0B"},
-	}
-
-	for _, ca := range cases {
-		result := FsizeToString(ca.fsize)
-		c.Assert(result, check.Equals, ca.fsizeStr)
-	}
-}
-
-func (suite *FsizeTestSuite) TestStringToFSize(c *check.C) {
-	var cases = []struct {
-		fsizeStr      string
-		fsize         Fsize
-		errAssertFunc errortypes.ErrAssertFunc
-	}{
-		{"0B", 0 * B, errortypes.IsNilError},
-		{"1B", B, errortypes.IsNilError},
-		{"10G", 10 * GB, errortypes.IsNilError},
-		{"1024", 1 * KB, errortypes.IsNilError},
-		{"-1", 0, errortypes.IsInvalidValue},
-		{"10b", 0, errortypes.IsInvalidValue},
-	}
-
-	for _, ca := range cases {
-		result, err := StringToFSize(ca.fsizeStr)
-		c.Assert(ca.errAssertFunc(err), check.Equals, true)
-		c.Assert(result, check.DeepEquals, ca.fsize)
-	}
 }
 
 func (suite *FsizeTestSuite) TestMarshalYAML(c *check.C) {

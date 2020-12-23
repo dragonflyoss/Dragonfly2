@@ -19,14 +19,14 @@ package gc
 import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
-	"github.com/sirupsen/logrus"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 )
 
 func (gcm *Manager) gcDisk(ctx context.Context) {
 	gcTaskIDs, err := gcm.cdnMgr.GetGCTaskIDs(ctx, gcm.taskMgr)
 	if err != nil {
-		logrus.Errorf("gc disk: failed to get gc tasks: %v", err)
+		logger.Errorf("gc disk: failed to get gc tasks: %v", err)
 		return
 	}
 
@@ -34,7 +34,7 @@ func (gcm *Manager) gcDisk(ctx context.Context) {
 		return
 	}
 
-	logrus.Debugf("gc disk: success to get gcTaskIDs(%d)", len(gcTaskIDs))
+	logger.Debugf("gc disk: success to get gcTaskIDs(%d)", len(gcTaskIDs))
 	gcm.deleteTaskDisk(ctx, gcTaskIDs)
 }
 
@@ -51,16 +51,16 @@ func (gcm *Manager) deleteTaskDisk(ctx context.Context, gcTaskIDs []string) {
 		util.GetLock(taskID, false)
 
 		// try to ensure the taskID is not using again
-		if _, err := gcm.taskMgr.Get(ctx, taskID); err == nil || !errortypes.IsDataNotFound(err) {
+		if _, err := gcm.taskMgr.Get(ctx, taskID); err == nil || !dferrors.IsDataNotFound(err) {
 			if err != nil {
-				logrus.Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
+				logger.Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
 			}
 			util.ReleaseLock(taskID, false)
 			continue
 		}
 
 		if err := gcm.cdnMgr.Delete(ctx, taskID, true); err != nil {
-			logrus.Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
+			logger.Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
 			util.ReleaseLock(taskID, false)
 			continue
 		}
@@ -70,5 +70,5 @@ func (gcm *Manager) deleteTaskDisk(ctx context.Context, gcTaskIDs []string) {
 	gcm.metrics.gcDisksCount.WithLabelValues().Add(float64(count))
 	gcm.metrics.lastGCDisksTime.WithLabelValues().SetToCurrentTime()
 
-	logrus.Debugf("gc disk: success to gc task count(%d), remainder count(%d)", count, len(gcTaskIDs)-count)
+	logger.Debugf("gc disk: success to gc task count(%d), remainder count(%d)", count, len(gcTaskIDs)-count)
 }

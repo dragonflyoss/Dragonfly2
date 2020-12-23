@@ -50,6 +50,7 @@ type Manager struct {
 	taskStore               *syncmap.SyncMap
 	accessTimeMap           *syncmap.SyncMap
 	taskURLUnReachableStore *syncmap.SyncMap
+	pieceMetaDataStore      *syncmap.SyncMap
 	cdnMgr                  mgr.CDNMgr
 }
 
@@ -81,7 +82,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 
 func (tm *Manager) getTask(taskID string) (*types.SeedTaskInfo, error) {
 	if stringutils.IsEmptyStr(taskID) {
-		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskID")
+		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskID is empty")
 	}
 
 	v, err := tm.taskStore.Get(taskID)
@@ -105,6 +106,7 @@ func (tm Manager) GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error) {
 }
 
 func (tm Manager) Delete(ctx context.Context, taskID string) error {
+	tm.pieceMetaDataStore.Delete(taskID)
 	tm.accessTimeMap.Delete(taskID)
 	tm.taskURLUnReachableStore.Delete(taskID)
 	tm.taskStore.Delete(taskID)

@@ -7,12 +7,11 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rate/ratelimiter"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type CDNBuilder func(cfg *config.Config, cacheStore *store.Store,
-	resourceClient source.ResourceClient, rateLimiter *ratelimiter.RateLimiter, register prometheus.Registerer) (CDNMgr, error)
+	resourceClient source.ResourceClient, register prometheus.Registerer) (CDNMgr, error)
 
 var cdnBuilderMap = make(map[config.CDNPattern]CDNBuilder)
 
@@ -21,7 +20,7 @@ func Register(name config.CDNPattern, builder CDNBuilder) {
 }
 
 // get an implementation of the interface of CDNMgr
-func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, rateLimiter *ratelimiter.RateLimiter,
+func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient,
 	register prometheus.Registerer) (CDNMgr, error) {
 	cdnPattern := cfg.CDNPattern
 	if cdnPattern.String() == "" {
@@ -32,20 +31,14 @@ func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient s
 	if !ok {
 		return nil, fmt.Errorf("unexpected cdn pattern(%s) which must be in [\"local\", \"source\"]", cdnPattern)
 	}
-	return cdnBuilder(cfg, cacheStore, resourceClient, rateLimiter, register)
+	return cdnBuilder(cfg, cacheStore, resourceClient, register)
 }
 
 // CDNMgr as an interface defines all operations against CDN and
 // operates on the underlying files stored on the local disk, etc.
 type CDNMgr interface {
+
 	// TriggerCDN will trigger CDN to download the file from sourceUrl.
-	// It includes the following steps:
-	// 1). download the source file
-	// 2). write the file to disk
-	//
-	// In fact, it's a very time consuming operation.
-	// So if not necessary, it should usually be executed concurrently.
-	// In addition, it's not thread-safe.
 	TriggerCDN(ctx context.Context, taskInfo *types.SeedTaskInfo) (*types.SeedTaskInfo, error)
 
 	// GetHTTPPath returns the http download path of taskID.
@@ -55,7 +48,6 @@ type CDNMgr interface {
 	GetStatus(ctx context.Context, taskID string) (cdnStatus string, err error)
 
 	// GetGCTaskIDs returns the taskIDs that should exec GC operations as a string slice.
-	//
 	// It should return nil when the free disk of cdn storage is lager than config.YoungGCThreshold.
 	// It should return all taskIDs that are not running when the free disk of cdn storage is less than config.FullGCThreshold.
 	GetGCTaskIDs(ctx context.Context, taskMgr SeedTaskMgr) ([]string, error)

@@ -8,10 +8,10 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"hash"
@@ -108,7 +108,7 @@ func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskID string,
 	result = &detectCacheResult{}
 	if metaData.Success && !stringutils.IsEmptyStr(metaData.SourceMd5) {
 		pieceMetaRecords, err := cd.pieceMetaDataManager.getPieceMetaRecordsByTaskID(taskID)
-		if err != nil && errortypes.IsDataNotFound(err) {
+		if err != nil && dferrors.IsDataNotFound(err) {
 			// check piece meta records integrity
 			pieceMetaRecords, err = cd.pieceMetaDataManager.readAndCheckPieceMetaRecords(ctx, taskID, metaData.SourceMd5)
 			if err != nil {
@@ -183,7 +183,7 @@ func (cd *cacheDetector) resetRepo(ctx context.Context, task *types.SeedTaskInfo
 	if err := deleteTaskFiles(ctx, cd.cacheStore, task.TaskID); err != nil {
 		logrus.Errorf("taskID: %s reset repo: failed to delete task files: %v", task.TaskID, err)
 	}
-	if err := cd.pieceMetaDataManager.removePieceMetaRecordsByTaskID(task.TaskID); err != nil && !errortypes.IsDataNotFound(err){
+	if err := cd.pieceMetaDataManager.removePieceMetaRecordsByTaskID(task.TaskID); err != nil && !dferrors.IsDataNotFound(err){
 		logrus.Errorf("taskID: %s reset repo: failed to remove task files: %v", task.TaskID, err)
 	}
 	// initialize meta data file

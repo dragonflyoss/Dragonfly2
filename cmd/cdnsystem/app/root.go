@@ -16,9 +16,9 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -64,7 +64,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// initialize logger.
-		if err := initLog(logrus.StandardLogger(), "app.log", cfg.LogConfig); err != nil {
+		if err := initLog(zap.New(), "app.log", cfg.LogConfig); err != nil {
 			return err
 		}
 
@@ -81,7 +81,7 @@ var rootCmd = &cobra.Command{
 
 		d, err := daemon.New(cfg)
 		if err != nil {
-			logrus.Errorf("failed to initialize daemon in cdn: %v", err)
+			logger.Errorf("failed to initialize daemon in cdn: %v", err)
 			return err
 		}
 		return d.Run()
@@ -287,7 +287,7 @@ func decodeWithYAML(types ...reflect.Type) mapstructure.DecodeHookFunc {
 }
 
 // initLog initializes log Level and log format.
-func initLog(logPath string, logConfig dflog.LogConfig) error {
+func initLog(logPath string, logConfig logger.LogConfig) error {
 
 	logDir := basic.HomeDir + "/logs/dragonfly"
 
@@ -297,25 +297,8 @@ func initLog(logPath string, logConfig dflog.LogConfig) error {
 	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	// set register with server implementation.
-	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
-		cdnsystem.RegisterSeederServer(s, &proxy{server: impl.(SeederServer)})
-	})
-
-	// get log file path
-	logFilePath := filepath.Join(cdnNodeViper.GetString("base.homeDir"), "logs", logPath)
-
-	opts := []dflog.Option{
-		dflog.WithLogFile(logFilePath, logConfig.MaxSize, logConfig.MaxBackups),
-		dflog.WithSign(fmt.Sprintf("%d", os.Getpid())),
-		dflog.WithDebug(cdnNodeViper.GetBool("base.debug")),
-	}
-
-	logrus.Debugf("use log file %s", logFilePath)
-	if err := dflog.Init(logger, opts...); err != nil {
-		return errors.Wrap(err, "init log")
-	}
-
+	downloadLogger := logger.CreateLogger(logDir + "/download.log", 300, 30, 0, false, false)
+	logger.SetGrpcLogger(downloadLogger)
 	return nil
 }
 
@@ -326,7 +309,7 @@ func setAdvertiseIP(cfg *config.Config) error {
 		return errors.Wrapf(dferrors.ErrSystemError, "failed to get ip list: %v", err)
 	}
 	if len(ipList) == 0 {
-		logrus.Errorf("get empty system's unicast interface addresses")
+		logger.Errorf("get empty system's unicast interface addresses")
 		return errors.Wrapf(dferrors.ErrSystemError, "Unable to autodetect advertiser ip, please set it via --advertise-ip")
 	}
 
@@ -338,13 +321,12 @@ func setAdvertiseIP(cfg *config.Config) error {
 // Execute will process cdn.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
+		logger.Fatal(err)
 	}
 }
 
 func exitOnError(err error, msg string) {
 	if err != nil {
-		logrus.Fatalf("%s: %v", msg, err)
+		logger.Fatalf("%s: %v", msg, err)
 	}
 }

@@ -13,10 +13,10 @@ require (
 	github.com/go-openapi/validate v0.20.0
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.2
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.7.3
 	github.com/gorilla/schema v1.2.0
 	github.com/gorilla/websocket v1.4.2
-	github.com/grpc-ecosystem/grpc-gateway v1.9.5
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.4.0
 	github.com/openacid/low v0.1.10
@@ -32,17 +32,8 @@ require (
 	go.uber.org/zap v1.16.0
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
-	google.golang.org/grpc v1.33.2
-	google.golang.org/protobuf v1.25.0
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0
-	gopkg.in/yaml.v2 v2.4.0
-	github.com/golang/protobuf v1.4.3
-	github.com/google/uuid v1.1.2
-	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.6.1
-	go.uber.org/zap v1.16.0
 	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 )

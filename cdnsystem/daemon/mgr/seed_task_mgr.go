@@ -8,7 +8,7 @@ import (
 
 // SeedTaskMgr as an interface defines all operations against SeedTask.
 // A SeedTask will store some meta info about the taskFile, pieces and something else.
-// A SeedTask has a one-to-one correspondence with a file on the disk which is identified by taskID.
+// A seedTask corresponds to three files on the disk, which are identified by taskId, the data file meta file piece file
 type SeedTaskMgr interface {
 
 	// Register the seed task

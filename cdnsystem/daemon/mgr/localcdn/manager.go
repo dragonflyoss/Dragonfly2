@@ -5,15 +5,15 @@ import (
 	"crypto/md5"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rate/limitreader"
 	"path"
 
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
-	"github.com/dragonflyoss/Dragonfly2/pkg/limitreader"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate/ratelimiter"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -66,15 +66,14 @@ type Manager struct {
 
 // NewManager returns a new Manager.
 func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient,
-	rateLimiter *ratelimiter.RateLimiter, register prometheus.Registerer) (mgr.CDNMgr, error) {
-	return newManager(cfg, cacheStore, resourceClient, rateLimiter, register)
+	register prometheus.Registerer) (mgr.CDNMgr, error) {
+	return newManager(cfg, cacheStore, resourceClient, register)
 }
 
 func newManager(cfg *config.Config, cacheStore *store.Store,
-	resourceClient source.ResourceClient, rateLimiter *ratelimiter.RateLimiter, register prometheus.Registerer) (*Manager, error) {
+	resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
+	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
-	pieceMetaDataManager := newPieceMetaDataMgr(cacheStore)
-	cdnReporter := newReporter(pieceMetaDataManager)
 	return &Manager{
 		cfg:                  cfg,
 		cacheStore:           cacheStore,
@@ -167,10 +166,6 @@ func (cm *Manager) CheckFileExist(ctx context.Context, taskID string) bool {
 // Delete the cdn meta with specified taskID.
 // It will also delete the files on the disk when the force equals true.
 func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error {
-	if !force {
-		return cm.pieceMetaDataManager.removePieceMetaRecordsByTaskID(taskID)
-	}
-
 	return deleteTaskFiles(ctx, cm.cacheStore, taskID)
 }
 

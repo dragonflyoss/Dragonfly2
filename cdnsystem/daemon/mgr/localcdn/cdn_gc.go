@@ -5,15 +5,14 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
-	"os"
-	"strings"
-	"time"
-
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"os"
+	"strings"
+	"time"
 )
 
 // GetGCTaskIDs returns the taskIDs that should exec GC operations as a string slice.
@@ -38,7 +37,7 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 	if freeDisk <= cm.cfg.FullGCThreshold {
 		fullGC = true
 	}
-	logrus.Debugf("start to exec gc with fullGC: %t", fullGC)
+	logger.Debugf("start to exec gc with fullGC: %t", fullGC)
 
 	gapTasks := treemap.NewWith(godsutils.Int64Comparator)
 	intervalTasks := treemap.NewWith(godsutils.Int64Comparator)
@@ -47,10 +46,10 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 	// which is extracted from file name.
 	walkTaskIDs := make(map[string]bool)
 	walkFn := func(path string, info os.FileInfo, err error) error {
-		logrus.Debugf("start to walk path(%s)", path)
+		logger.Debugf("start to walk path(%s)", path)
 
 		if err != nil {
-			logrus.Errorf("failed to access path(%s): %v", path, err)
+			logger.Errorf("failed to access path(%s): %v", path, err)
 			return err
 		}
 		if info.IsDir() {
@@ -65,9 +64,9 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 		walkTaskIDs[taskID] = true
 
 		// we should return directly when we success to get info which means it is being used
-		if _, err := taskMgr.Get(ctx, taskID); err == nil || !errortypes.IsDataNotFound(err) {
+		if _, err := taskMgr.Get(ctx, taskID); err == nil || !dferrors.IsDataNotFound(err) {
 			if err != nil {
-				logrus.Errorf("failed to get taskID(%s): %v", taskID, err)
+				logger.Errorf("failed to get taskID(%s): %v", taskID, err)
 			}
 			return nil
 		}
@@ -80,13 +79,13 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 
 		metaData, err := cm.metaDataManager.readFileMetaData(ctx, taskID)
 		if err != nil || metaData == nil {
-			logrus.Debugf("failed to get metadata taskID(%s): %v", taskID, err)
+			logger.Debugf("failed to get metadata taskID(%s): %v", taskID, err)
 			// TODO: delete the file when failed to get metadata
 			return nil
 		}
 		// put taskID into gapTasks or intervalTasks which will sort by some rules
 		if err := cm.sortInert(ctx, gapTasks, intervalTasks, metaData); err != nil {
-			logrus.Errorf("failed to parse inert metaData(%+v): %v", metaData, err)
+			logger.Errorf("failed to parse inert metaData(%+v): %v", metaData, err)
 		}
 
 		return nil

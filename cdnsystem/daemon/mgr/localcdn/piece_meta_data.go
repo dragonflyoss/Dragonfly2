@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/digest"
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -56,12 +56,12 @@ func (pmm *pieceMetaDataManager) getPieceMetaRecord(taskID string, pieceNum int)
 	if value, ok := v.(pieceMetaRecord); ok {
 		return value, nil
 	}
-	return pieceMetaRecord{}, errors.Wrapf(errortypes.ErrConvertFailed, "failed to get key %s from map with value %s", strconv.Itoa(pieceNum), v)
+	return pieceMetaRecord{}, errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", strconv.Itoa(pieceNum), v)
 }
 
 func (pmm *pieceMetaDataManager) setPieceMetaRecord(taskID string, pieceNum int32, pieceMetaRecord pieceMetaRecord) error {
 	pieceRecords, err := pmm.taskPieceMetaRecords.GetAsMap(taskID)
-	if err != nil && !errortypes.IsDataNotFound(err) {
+	if err != nil && !dferrors.IsDataNotFound(err) {
 		return err
 	}
 
