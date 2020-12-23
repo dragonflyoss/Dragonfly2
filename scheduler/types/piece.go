@@ -48,7 +48,7 @@ func (p *Piece) AddReadyPeerTask(pt *PeerTask) {
 
 type PieceTask struct {
 	Piece   *Piece
-	SrcPid  string `json:"src_pid,omitempty"`
-	DstPid  string `json:"dst_pid,omitempty"`
-	DstAddr string `json:"dst_addr,omitempty"` // ip:port
+	SrcPid  string
+	DstPid  string
+	DstAddr string  // ip:port
 }

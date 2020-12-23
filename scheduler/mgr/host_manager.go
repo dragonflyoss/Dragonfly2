@@ -9,7 +9,7 @@ type HostManager struct {
 	data *sync.Map
 }
 
-func CreateHostManager() *HostManager {
+func createHostManager() *HostManager {
 	return &HostManager{
 		data: new(sync.Map),
 	}

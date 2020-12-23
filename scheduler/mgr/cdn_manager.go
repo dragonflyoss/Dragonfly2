@@ -18,7 +18,7 @@ type CDNManager struct {
 	cdnList []*CDNClient
 }
 
-func CreateCDNManager() *CDNManager {
+func createCDNManager() *CDNManager {
 	cdnMgr := &CDNManager{}
 	list := config.GetConfig().CDN.List
 	for _, cdns := range list {
@@ -76,8 +76,15 @@ type CDNClient struct {
 }
 
 func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
-	for ps := range ch {
-		c.processPieceSeed(task, ps)
+	for {
+		select {
+			case ps, closed := <- ch:
+				if closed {
+					break
+				} else {
+					c.processPieceSeed(task, ps)
+				}
+		}
 	}
 }
 
@@ -102,7 +109,8 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 	}
 
 	if ps.Done {
-		peerTask.SetDown()
+		task.PieceTotal = peerTask.GetFinishedNum()
+		peerTask.Success = true
 		return
 	}
 

@@ -38,7 +38,7 @@ var LogLevel = zap.NewAtomicLevel()
 
 func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, compress bool, stats bool) *zap.Logger {
 	if os.Getenv(env.ActiveProfile) == "local" {
-		log, _ := zap.NewDevelopment()
+		log, _ := zap.NewDevelopment(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
 		return log
 	}
 
@@ -79,7 +79,7 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 
 	var opts []zap.Option
 	if !stats {
-		opts = append(opts, zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel))
+		opts = append(opts, zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
 	}
 
 	return zap.New(core, opts...)

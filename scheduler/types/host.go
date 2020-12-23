@@ -1,6 +1,9 @@
 package types
 
-import "sync"
+import (
+	"sync"
+	"sync/atomic"
+)
 
 type HostType int
 
@@ -10,20 +13,19 @@ const (
 )
 
 type Host struct {
-	Uuid           string   `json:"uuid,omitempty"`
-	Ip             string   `json:"ip,omitempty"`
-	Port           int32    `json:"port,omitempty"` // peer server http port
-	HostName       string   `json:"host_name,omitempty"`
-	SecurityDomain string   `json:"security_domain,omitempty"` // security isolation domain for network
-	Location       string   `json:"location,omitempty"`        // area|country|province|city|...
-	Idc            string   `json:"idc,omitempty"`
-	Switch         string   `json:"switch,omitempty"` // network device construct, xx|yy|zz
-	Type           HostType // peer / cdn
+	Uuid           string
+	Ip             string
+	Port           int32 // peer server http port
+	HostName       string
+	SecurityDomain string // security isolation domain for network
+	Location       string // area|country|province|city|...
+	Idc            string
+	Switch         string // network device construct, xx|yy|zz
 
+	Type        HostType  // peer / cdn
 	peerTaskMap *sync.Map // Pid => PeerTask
-
 	// ProducerLoad is the load of download services provided by the current node.
-	ProducerLoad int16
+	ProducerLoad int32
 	// ServiceDownTime the down time of the peer service.
 	ServiceDownTime int64
 }
@@ -40,4 +42,14 @@ func (h *Host) AddPeerTask(peerTask *PeerTask) {
 
 func (h *Host) DeletePeerTask(peerTaskId string) {
 	h.peerTaskMap.Delete(peerTaskId)
+}
+
+func (h *Host) GetPeerTask(peerTaskId string) (peerTask *PeerTask) {
+	v, _ := h.peerTaskMap.Load(peerTaskId)
+	peerTask, _ = v.(*PeerTask)
+	return
+}
+
+func (h *Host) AddLoad(delta int32) {
+	atomic.AddInt32(&h.ProducerLoad, delta)
 }

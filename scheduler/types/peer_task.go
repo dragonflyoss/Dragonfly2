@@ -7,17 +7,19 @@ import (
 )
 
 type PeerTask struct {
-	Pid  string `json:"pid,omitempty"`       // peer id
-	Task *Task  `json:"peer_host,omitempty"` // task info
-	Host *Host  `json:"peer_host,omitempty"` // host info
+	Pid  string // peer id
+	Task *Task  // task info
+	Host *Host  // host info
 
 	isDown                  bool // is leave scheduler
 	downloadingPieceNumList *sync.Map
 	pieceStatusList         *sync.Map
+	retryPieceList          map[int32]int32
 	lock                    *sync.Mutex
 	firstPieceNum           int32 //
 	finishedNum             int32 // download finished piece number
 
+	// the client of peer task, which used for send and receive msg
 	client scheduler.Scheduler_PullPieceTasksServer
 
 	Traffic   uint64
@@ -42,11 +44,22 @@ func NewPeerTask(pid string, task *Task, host *Host) *PeerTask {
 		Host:                    host,
 		downloadingPieceNumList: new(sync.Map),
 		pieceStatusList:         new(sync.Map),
+		retryPieceList:          make(map[int32]int32),
 		isDown:                  false,
 		lock:                    new(sync.Mutex),
 	}
 	host.AddPeerTask(pt)
 	return pt
+}
+
+func (pt *PeerTask) GetRetryPieceList() map[int32]int32 {
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
+	ret := make(map[int32]int32, len(pt.retryPieceList))
+	for k, v := range pt.retryPieceList {
+		ret[k] = v
+	}
+	return ret
 }
 
 func (pt *PeerTask) GetFirstPieceNum() int32 {
@@ -55,6 +68,10 @@ func (pt *PeerTask) GetFirstPieceNum() int32 {
 
 func (pt *PeerTask) GetFinishedNum() int32 {
 	return pt.finishedNum
+}
+
+func (pt *PeerTask) GetPieceStatusList() *sync.Map {
+	return pt.pieceStatusList
 }
 
 func (pt *PeerTask) AddPieceStatus(ps *PieceStatus) {
@@ -75,7 +92,13 @@ func (pt *PeerTask) AddPieceStatus(ps *PieceStatus) {
 		}
 	}
 	if !ps.Success {
+		pt.retryPieceList[ps.PieceNum]++
 		return
+	}
+	delete(pt.retryPieceList, ps.PieceNum)
+	piece := pt.Task.GetPiece(ps.PieceNum)
+	if piece != nil {
+		piece.AddReadyPeerTask(pt)
 	}
 	for {
 		v, ok := pt.pieceStatusList.Load(pt.firstPieceNum)
@@ -90,8 +113,26 @@ func (pt *PeerTask) AddPieceStatus(ps *PieceStatus) {
 	}
 }
 
+func (pt *PeerTask) AddDownloadingPiece(pieceNum int32) {
+	pt.downloadingPieceNumList.Store(pieceNum, true)
+	return
+}
+
+func (pt *PeerTask) DeleteDownloadingPiece(pieceNum int32) {
+	pt.downloadingPieceNumList.Delete(pieceNum)
+	return
+}
+
 func (pt *PeerTask) IsPieceDownloading(num int32) (ok bool) {
 	_, ok = pt.downloadingPieceNumList.Load(num)
+	return
+}
+
+func (pt *PeerTask) GetDownloadingPieceNum() (num int32) {
+	pt.downloadingPieceNumList.Range(func(key, value interface{}) bool {
+		num++
+		return true
+	})
 	return
 }
 
@@ -115,5 +156,8 @@ func (pt *PeerTask) SetClient(client scheduler.Scheduler_PullPieceTasksServer) {
 }
 
 func (pt *PeerTask) Send(pkg *scheduler.PiecePackage) error {
-	return pt.client.Send(pkg)
+	if pt.client != nil {
+		return pt.client.Send(pkg)
+	}
+	return nil
 }

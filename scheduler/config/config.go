@@ -16,6 +16,8 @@ type Config struct {
 
 type schedulerConfig struct {
 	MaxUsableValue float64
+	MaxUploadPieceNum int32
+	MaxDownloadPieceNum int32
 }
 
 type serverConfig struct {
@@ -52,10 +54,12 @@ func createDefaultConfig() *Config {
 		},
 		Scheduler: schedulerConfig{
 			MaxUsableValue: 100,
+			MaxUploadPieceNum: 5,
+			MaxDownloadPieceNum: 5,
 		},
 		CDN: cdnConfig{
 			List: [][]serverConfig{
-				[]serverConfig{{
+				{{
 					Type: basic.TCP,
 					Addr: ":6666",
 				}},

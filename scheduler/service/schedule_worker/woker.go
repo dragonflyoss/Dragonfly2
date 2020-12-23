@@ -60,6 +60,12 @@ func (w *Worker) updatePieceResult(pr *scheduler2.PieceResult) (err error) {
 		ErrorCode: pr.ErrorCode,
 		Cost:      pr.Cost,
 	})
+	peerTask.DeleteDownloadingPiece(pr.PieceNum)
+	dstPeerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.DstPid)
+	if dstPeerTask != nil {
+		dstPeerTask.Host.AddLoad(-1)
+	}
+
 	return
 }
 

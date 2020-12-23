@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/service"
@@ -11,13 +12,17 @@ import (
 type Server struct {
 	scheduler *service.SchedulerService
 	worker    schedule_worker.IWorker
+	server    *SchedulerServer
+	running bool
 }
 
 func NewServer() *Server {
 	s := &Server{
+		running: false,
 		scheduler: service.CreateSchedulerService(),
 	}
 	s.worker = schedule_worker.CreateWorkerGroup(s.scheduler.GetScheduler())
+	s.server = &SchedulerServer{svc: s.scheduler, worker: s.worker}
 	return s
 }
 
@@ -34,6 +39,28 @@ func (s *Server) Start() (err error) {
 		Type: typ,
 		Addr: addr,
 	}
-	err = rpc.StartServer(lisAddr, &SchedulerServer{svc: s.scheduler, worker: s.worker})
+	s.running = true
+	logger.Infof("start server at %s:%s", typ, addr)
+	err = rpc.StartServer(lisAddr, s.server)
 	return
+}
+
+func (s *Server) Stop() (err error) {
+	if s.running {
+		s.running = false
+		rpc.StopServer()
+	}
+	return
+}
+
+func (s *Server) GetServer() *SchedulerServer {
+	return s.server
+}
+
+func (s *Server) GetSchedulerService() *service.SchedulerService {
+	return s.scheduler
+}
+
+func (s *Server) GetWorker() schedule_worker.IWorker {
+	return s.worker
 }

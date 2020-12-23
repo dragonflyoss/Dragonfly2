@@ -9,7 +9,7 @@ type TaskManager struct {
 	data *sync.Map
 }
 
-func CreateTaskManager() *TaskManager {
+func createTaskManager() *TaskManager {
 	return &TaskManager{
 		data: new(sync.Map),
 	}
@@ -23,7 +23,7 @@ func (m *TaskManager) AddTask(task *types.Task) *types.Task {
 
 	copyTask := types.CopyTask(task)
 
-	m.data.Store(task.BizId, copyTask)
+	m.data.Store(task.TaskId, copyTask)
 	return copyTask
 }
 

@@ -6,6 +6,6 @@ import (
 
 type IPeerTaskEvaluator interface {
 	GetNextPiece(peerTask *types.PeerTask) (*types.Piece, error)
-	Evaluate(dst *types.Host, src *types.Host) (float64, error)
+	Evaluate(dst *types.PeerTask, src *types.PeerTask) (float64, error)
 	GetMaxUsableHostValue() float64
 }

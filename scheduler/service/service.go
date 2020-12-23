@@ -17,8 +17,8 @@ func CreateSchedulerService() *SchedulerService {
 	s := &SchedulerService{
 		cdnMgr:      mgr.GetCDNManager(),
 		taskMgr:     mgr.GetTaskManager(),
-		hostMgr:     mgr.CreateHostManager(),
-		peerTaskMgr: mgr.CreatePeerTaskManager(),
+		hostMgr:     mgr.GetHostManager(),
+		peerTaskMgr: mgr.GetPeerTaskManager(),
 		scheduler:   scheduler.CreateScheduler(),
 	}
 	return s

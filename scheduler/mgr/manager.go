@@ -1,10 +1,10 @@
 package mgr
 
 var (
-	cdnManager      = CreateCDNManager()
-	taskManager     = CreateTaskManager()
-	hostManager     = CreateHostManager()
-	peerTaskManager = CreatePeerTaskManager()
+	cdnManager      = createCDNManager()
+	taskManager     = createTaskManager()
+	hostManager     = createHostManager()
+	peerTaskManager = createPeerTaskManager()
 )
 
 func GetCDNManager() *CDNManager {

@@ -9,7 +9,7 @@ type PeerTaskManager struct {
 	data *sync.Map
 }
 
-func CreatePeerTaskManager() *PeerTaskManager {
+func createPeerTaskManager() *PeerTaskManager {
 	return &PeerTaskManager{
 		data: new(sync.Map),
 	}

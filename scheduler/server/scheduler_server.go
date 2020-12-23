@@ -26,6 +26,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 			err = fmt.Errorf("%v", e)
 			return
 		}
+		pkg.State = new(base.ResponseState)
 		if err != nil {
 			pkg.State.Code = base.Code_SCHEDULER_ERROR
 			pkg.State.Msg = err.Error()
@@ -94,7 +95,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 	// assemble result
 	pkg.TaskId = taskId
-	if int(peerTask.GetFinishedNum())+len(pieceList) >= len(task.PieceList) {
+	if task.PieceTotal > 0 && peerTask.GetFinishedNum()+peerTask.GetDownloadingPieceNum() >= task.PieceTotal {
 		pkg.Done = true
 		pkg.ContentLength = task.ContentLength
 	}

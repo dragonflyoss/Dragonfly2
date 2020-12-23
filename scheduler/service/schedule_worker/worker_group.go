@@ -1,6 +1,7 @@
 package schedule_worker
 
 import (
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
 	scheduler2 "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/scheduler"
@@ -41,10 +42,14 @@ func (wg *WorkerGroup) Start() {
 		w.Start()
 		wg.workerList = append(wg.workerList, w)
 	}
+	wg.sender.Start()
+	logger.Infof("start scheduler worker number:%d", wg.workerNum)
 }
 
 func (wg *WorkerGroup) Stop() {
 	close(wg.stopCh)
+	wg.sender.Stop()
+	logger.Infof("stop scheduler worker")
 }
 
 func (wg *WorkerGroup) ReceiveJob(job *scheduler2.PieceResult) {

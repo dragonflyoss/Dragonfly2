@@ -18,9 +18,23 @@ package dferror
 
 import (
 	"errors"
+	"fmt"
 )
 
 // end of stream
 var EOS = errors.New("EOS")
 
 var AddressReused = errors.New("address is reused")
+
+type codeError struct {
+	Code int32
+	Msg string
+}
+
+func (e *codeError) Error() string {
+	return fmt.Sprintf("%d:%s", e.Code, e.Msg)
+}
+
+func NewCodeError(code int32, msg string) *codeError {
+	return &codeError{Code:code, Msg: msg}
+}

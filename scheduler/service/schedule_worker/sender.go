@@ -1,6 +1,7 @@
 package schedule_worker
 
 import (
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
 	scheduler2 "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
@@ -50,14 +51,16 @@ func (sg *SenderGroup) Start() {
 		s.Start()
 		sg.senderList = append(sg.senderList, s)
 	}
+	logger.Infof("start sender worker : %d", sg.senderNum)
 }
 
 func (sg *SenderGroup) Stop() {
 	close(sg.stopCh)
+	logger.Infof("stop sender worker : %d", sg.senderNum)
 }
 
 func (sg *SenderGroup) Send(pid string, pkg *scheduler2.PiecePackage) {
-	sendId := crc32.ChecksumIEEE([]byte(pid))
+	sendId := crc32.ChecksumIEEE([]byte(pid)) % uint32(sg.senderNum)
 	sg.senderList[sendId].Send(pid, pkg)
 }
 
