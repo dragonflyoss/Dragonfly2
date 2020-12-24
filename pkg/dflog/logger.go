@@ -102,6 +102,10 @@ func SetGrpcLogger(log *zap.SugaredLogger) {
 	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
 }
 
+func With(args ...interface{}) *zap.SugaredLogger {
+	return bizLogger.With(args...)
+}
+
 func Infof(fmt string, args ...interface{}) {
 	bizLogger.Infof(fmt, args...)
 }
