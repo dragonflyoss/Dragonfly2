@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package localcdn
 
 import (
@@ -5,14 +21,13 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/binary"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"hash"
 	"sync"
 
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
-
-	"github.com/sirupsen/logrus"
 )
 
 // calculate need how many goroutine
@@ -36,14 +51,14 @@ func calculateRoutineCount(remainingFileLength int64, pieceSize int32) int {
 	return routineSize
 }
 
-func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, n int, jobCh chan *protocolContent) {
-	for i := 0; i < n; i++ {
+func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, writeRoutineCount int, jobCh chan *protocolContent) {
+	for i := 0; i < writeRoutineCount; i++ {
 		wg.Add(1)
 		go func(i int) {
 			for job := range jobCh {
 				var pieceMd5 = md5.New()
 				if err := cw.writeToFile(ctx, job.pieceContent, job.taskID, job.cdnFileOffset, job.pieceContentLen, pieceMd5); err != nil {
-					logrus.Errorf("failed to write taskID %s pieceNum %d file: %v", job.taskID, job.pieceNum, err)
+					logger.Errorf("failed to write taskID %s pieceNum %d file: %v", job.taskID, job.pieceNum, err)
 					// NOTE: should we redo the job?
 					continue
 				}
@@ -61,7 +76,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, n int
 					// todo 写到channel中
 					if err := cw.cdnReporter.pieceMetaDataManager.setPieceMetaRecord(job.taskID, job.pieceNum, pieceMetaRecord); err != nil {
 						// NOTE: should we do this job again?
-						logrus.Errorf("failed to report piece status taskID %s pieceNum %d pieceMetaRecord %s: %v", job.taskID, job.pieceNum, pieceMetaRecord, err)
+						logger.Errorf("failed to report piece status taskID %s pieceNum %d pieceMetaRecord %s: %v", job.taskID, job.pieceNum, pieceMetaRecord, err)
 						continue
 					}
 				}

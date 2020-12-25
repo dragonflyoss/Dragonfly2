@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package mgr
 
 import (
@@ -12,7 +28,7 @@ import (
 type SeedTaskMgr interface {
 
 	// Register the seed task
-	Register(ctx context.Context, registerRequest *types.TaskRegisterRequest) error
+	Register(ctx context.Context, registerRequest *types.TaskRegisterRequest) (pieceCh <-chan types.SeedPiece, err error)
 
 	// Get the task Info with specified taskID.
 	Get(ctx context.Context, taskID string) (*types.SeedTaskInfo, error)
@@ -25,5 +41,4 @@ type SeedTaskMgr interface {
 
 	// GetPieces
 	GetPieces(ctx context.Context, piecePullRequest *types.PiecePullRequest) (pieceCh <-chan types.SeedPiece, err error)
-
 }

@@ -1,33 +1,37 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package localcdn
 
-import (
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/sirupsen/logrus"
-)
-
 type reporter struct {
-	pieceMetaDataManager *pieceMetaDataManager
+	publisher            *PieceSeedPublisher
 }
 
-func newReporter(pieceMetaDataManager *pieceMetaDataManager) *reporter {
+func newReporter(seedPublisher *PieceSeedPublisher) *reporter {
 	return &reporter{
-		pieceMetaDataManager: pieceMetaDataManager,
+		publisher: seedPublisher,
 	}
 }
 
-func (re *reporter) reportCache(taskID string, detectResult *detectCacheResult) (*types.SeedTaskInfo, error) {
+func (re *reporter) reportCache(taskID string, detectResult *detectCacheResult) error {
 	// report cache pieces status
 	if detectResult != nil && detectResult.pieceMetaRecords != nil {
-		for pieceNum, pieceMetaRecord := range detectResult.pieceMetaRecords {
-			if err := re.pieceMetaDataManager.setPieceMetaRecord(taskID, int32(pieceNum), pieceMetaRecord); err != nil {
-				logrus.Errorf("taskId: %s failed to report piece meta record pieceNum %d: %v", taskID, pieceNum, err)
-			}
+		for _, pieceMetaRecord := range detectResult.pieceMetaRecords {
+			re.publisher.Publish(taskID, pieceMetaRecord)
 		}
 	}
-	// full cache, update task status
-	if detectResult != nil && detectResult.breakNum == -1 {
-		return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceMd5, detectResult.fileMetaData.CdnFileLength), nil
-	}
-	// partial cache
-	return nil, nil
+	return nil
 }

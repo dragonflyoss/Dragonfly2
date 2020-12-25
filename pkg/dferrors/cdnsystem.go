@@ -38,6 +38,13 @@ var (
 
 	// ErrAuthenticationRequired represents the authentication is required.
 	ErrAuthenticationRequired = DfError{codeAuthenticationRequired, "authentication required"}
+
+	//
+	ErrFileLengthNotEqual = DfError{codeFileLengthNotEqual, "file length not equal"}
+
+	ErrPieceRecordsCountNotEqual = DfError{codePieceRecordsCountNotEqual, ""}
+
+	ErrDownloadFail = DfError{codeDownloadFail, ""}
 )
 
 const (
@@ -49,6 +56,9 @@ const (
 	codeURLNotReachable
 	codeTaskIDDuplicate
 	codeAuthenticationRequired
+	codeFileLengthNotEqual
+	codePieceRecordsCountNotEqual
+	codeDownloadFail
 )
 
 // IsSystemError checks the error is a system error or not.

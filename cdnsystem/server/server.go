@@ -51,7 +51,12 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 		return nil, err
 	}
 
-	sourceClient := source.NewSourceClient()
+	sourceClient, err := source.NewSourceClient()
+	if err != nil {
+		return nil, err
+	}
+
+	//publisher := localcdn.NewPublisher(100*time.Millisecond, 10)
 
 	// cdn manager
 	cdnMgr, err := mgr.GetCDNManager(cfg, storeLocal, sourceClient, register)
@@ -87,7 +92,7 @@ func (s *Server) Start() (err error) {
 		Type: basic.TCP,
 		Addr: fmt.Sprintf(":%d", s.Config.ListenPort),
 	}
-	seedServer, err := NewCdnSeedServer(s.TaskMgr)
+	seedServer, err := NewCdnSeedServer(s.Config, s.TaskMgr)
 	if err != nil {
 		return errors.Wrap(err, "create seedServer fail")
 	}

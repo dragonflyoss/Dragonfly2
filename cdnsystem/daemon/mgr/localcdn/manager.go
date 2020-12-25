@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package localcdn
 
 import (
@@ -5,6 +21,8 @@ import (
 	"crypto/md5"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate/limitreader"
 	"path"
 
@@ -17,7 +35,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 )
 
 var _ mgr.CDNMgr = &Manager{}
@@ -55,8 +72,8 @@ type Manager struct {
 	cacheStore           *store.Store
 	limiter              *ratelimiter.RateLimiter
 	cdnLocker            *util.LockerPool
-	metaDataManager      *fileMetaDataManager
-	pieceMetaDataManager *pieceMetaDataManager
+	metaDataManager      *metaDataManager
+	pieceMetaDataManager *SeedPieceMetaDataManager
 	cdnReporter          *reporter
 	detector             *cacheDetector
 	resourceClient       source.ResourceClient
@@ -74,6 +91,8 @@ func newManager(cfg *config.Config, cacheStore *store.Store,
 	resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
+	pieceMetaDataManager := newPieceMetaDataMgr()
+	cdnReporter := newReporter(pieceMetaDataManager)
 	return &Manager{
 		cfg:                  cfg,
 		cacheStore:           cacheStore,
@@ -97,20 +116,23 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*t
 	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
 	if err != nil {
-		logrus.Errorf("taskId: %s failed to detect cache err: %v", task.TaskID, err)
+		logger.Errorf("taskId: %s failed to detect cache, err: %v", task.TaskID, err)
 	}
 	// second: report detect result
-	updateTaskInfo, err := cm.cdnReporter.reportCache(task.TaskID, detectResult)
+	err = cm.cdnReporter.reportCache(task.TaskID, detectResult)
 	if err != nil {
-		logrus.Errorf("taskId: %s failed to report cache err: %v", task.TaskID, err)
+		logger.Errorf("taskId: %s failed to report cache, reset detectResult err: %v", task.TaskID, err)
+		// todo reset
+		detectResult.breakNum = 0
+		detectResult.fileMd5.Reset()
 	}
 
-	if detectResult.breakNum == -1 {
-		logrus.Infof("taskId: %s cache full hit on local", task.TaskID)
+	if detectResult != nil && detectResult.breakNum == -1 {
+		logger.Infof("taskId: %s cache full hit on local", task.TaskID)
 		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
-		return updateTaskInfo, nil
+		return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceMd5, detectResult.fileMetaData.CdnFileLength), nil
 	}
-	// 如果没有全部命中
+
 	if detectResult.fileMd5 == nil {
 		detectResult.fileMd5 = md5.New()
 	}
@@ -128,7 +150,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*t
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
 	if err != nil {
-		logrus.Errorf("failed to write for task %s: %v", task.TaskID, err)
+		logger.Errorf("failed to write for task %s: %v", task.TaskID, err)
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
 	}
 	cm.metrics.cdnDownloadBytes.WithLabelValues().Add(float64(downloadMetadata.realSourceFileLength))
@@ -166,7 +188,13 @@ func (cm *Manager) CheckFileExist(ctx context.Context, taskID string) bool {
 // Delete the cdn meta with specified taskID.
 // It will also delete the files on the disk when the force equals true.
 func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error {
-	return deleteTaskFiles(ctx, cm.cacheStore, taskID)
+	if err := cm.pieceMetaDataManager.removePieceMetaRecordsByTaskID(taskID); err != nil && dferrors.IsDataNotFound(err) {
+		logger.Error("")
+	}
+	if force {
+		return deleteTaskFiles(ctx, cm.cacheStore, taskID)
+	}
+	return nil
 }
 
 func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTaskInfo, sourceMd5 string, downloadMetadata *downloadMetadata) (bool, error) {
@@ -175,12 +203,12 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTaskInfo
 	var isSuccess = true
 	// check md5
 	if !stringutils.IsEmptyStr(task.RequestMd5) && task.RequestMd5 != sourceMd5 {
-		logrus.Errorf("taskId:%s url:%s file md5 not match expected:%s real:%s", task.TaskID, task.Url, task.RequestMd5, sourceMd5)
+		logger.Errorf("taskId:%s url:%s file md5 not match expected:%s real:%s", task.TaskID, task.Url, task.RequestMd5, sourceMd5)
 		isSuccess = false
 	}
 	// check source length
 	if isSuccess && sourceFileLength >= 0 && sourceFileLength != realDownloadedSourceFileLength {
-		logrus.Errorf("taskId:%s url:%s file length not match expected:%d real:%d", task.TaskID, task.Url, sourceFileLength, realDownloadedSourceFileLength)
+		logger.Errorf("taskId:%s url:%s file length not match expected:%d real:%d", task.TaskID, task.Url, sourceFileLength, realDownloadedSourceFileLength)
 		isSuccess = false
 	}
 
@@ -200,14 +228,14 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTaskInfo
 		return false, nil
 	}
 
-	logrus.Infof("success to get taskID: %s fileLength: %d realMd5: %s", task.TaskID, downloadMetadata.realCdnFileLength, sourceMd5)
+	logger.Infof("success to get taskID: %s fileLength: %d realMd5: %s", task.TaskID, downloadMetadata.realCdnFileLength, sourceMd5)
 
 	pieceMD5s, err := cm.pieceMetaDataManager.getPieceMetaRecordsByTaskID(task.TaskID)
 	if err != nil {
 		return false, err
 	}
 
-	if err := cm.pieceMetaDataManager.writePieceMetaRecords(ctx, task.TaskID, sourceMd5, pieceMD5s); err != nil {
+	if err := cm.metaDataManager.writePieceMetaRecords(ctx, task.TaskID, sourceMd5, pieceMD5s); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -215,7 +243,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTaskInfo
 
 func (cm *Manager) updateExpireInfo(ctx context.Context, taskID string, expireInfo map[string]string) {
 	if err := cm.metaDataManager.updateExpireInfo(ctx, taskID, expireInfo); err != nil {
-		logrus.Errorf("taskID: %s failed to update expireInfo(%s): %v", taskID, expireInfo, err)
+		logger.Errorf("taskID: %s failed to update expireInfo(%s): %v", taskID, expireInfo, err)
 	}
-	logrus.Infof("taskID: %s success to update expireInfo(%s)", expireInfo, taskID)
+	logger.Infof("taskID: %s success to update expireInfo(%s)", expireInfo, taskID)
 }

@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package task
 
 import (
@@ -7,13 +23,12 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-	"github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/pkg/errors"
 )
-
 
 func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegisterRequest) (*types.SeedTaskInfo, error) {
 	taskId := request.TaskID
@@ -52,7 +67,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	// get sourceContentLength with req.Headers
 	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Headers)
 	if err != nil {
-		logrus.Errorf("taskID: %s failed to get url (%s) file length from http client : %v", task.TaskID, task.Url, err)
+		logger.Errorf("taskID: %s failed to get url (%s) file length from http client : %v", task.TaskID, task.Url, err)
 
 		if dferrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskId, time.Now())
@@ -78,7 +93,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 	// if not support file length header request ,return -1
 	task.SourceFileLength = sourceFileLength
-	logrus.Infof("taskID: %s get file length %d from http client for task", task.TaskID, sourceFileLength)
+	logger.Infof("taskID: %s get file length %d from http client for task", task.TaskID, sourceFileLength)
 
 	// if success to get the information successfully with the req.Headers then update the task.Headers to req.Headers.
 	if request.Headers != nil {

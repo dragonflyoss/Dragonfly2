@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package task
 
 import (
@@ -8,12 +24,12 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -50,13 +66,13 @@ type Manager struct {
 	taskStore               *syncmap.SyncMap
 	accessTimeMap           *syncmap.SyncMap
 	taskURLUnReachableStore *syncmap.SyncMap
-	pieceMetaDataStore      *syncmap.SyncMap
 	cdnMgr                  mgr.CDNMgr
 }
 
+// triggerCdnSyncAction
 func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTaskInfo) error {
 	if !isFrozen(task.CdnStatus) {
-		logrus.Infof("TaskID: %s seedTask is running or has been downloaded successfully, status:%s", task.TaskID, task.CdnStatus)
+		logger.Infof("TaskID: %s seedTask is running or has been downloaded successfully, status:%s", task.TaskID, task.CdnStatus)
 		return nil
 	}
 	// update task status
@@ -65,18 +81,18 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 	}); err != nil {
 		return err
 	}
-
+	// triggerCDN goroutine
 	go func() {
 		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(ctx, task)
 		tm.metrics.triggerCdnCount.WithLabelValues().Inc()
 		if err != nil {
 			tm.metrics.triggerCdnFailCount.WithLabelValues().Inc()
-			logrus.Errorf("taskID: %s trigger cdn get error: %v", task.TaskID, err)
+			logger.Errorf("taskID: %s trigger cdn get error: %v", task.TaskID, err)
 		}
 		tm.updateTask(task.TaskID, updateTaskInfo)
-		logrus.Infof("taskID: %s success to update task cdn %+v", task.TaskID, updateTaskInfo)
+		logger.Infof("taskID: %s success to update task cdn %+v", task.TaskID, updateTaskInfo)
 	}()
-	logrus.Infof("taskID: %s success to start cdn trigger", task.TaskID)
+	logger.Infof("taskID: %s success to start cdn trigger", task.TaskID)
 	return nil
 }
 
@@ -106,7 +122,6 @@ func (tm Manager) GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error) {
 }
 
 func (tm Manager) Delete(ctx context.Context, taskID string) error {
-	tm.pieceMetaDataStore.Delete(taskID)
 	tm.accessTimeMap.Delete(taskID)
 	tm.taskURLUnReachableStore.Delete(taskID)
 	tm.taskStore.Delete(taskID)
@@ -114,7 +129,7 @@ func (tm Manager) Delete(ctx context.Context, taskID string) error {
 }
 
 func (tm Manager) GetPieces(ctx context.Context, req *types.PiecePullRequest) (pieceCh <-chan types.SeedPiece, err error) {
-	logrus.Debugf("taskId: %s get pieces with request: %+v ", req.TaskID, req)
+	logger.Debugf("taskId: %s get pieces with request: %+v ", req.TaskID, req)
 
 	util.GetLock(req.TaskID, true)
 	defer util.ReleaseLock(req.TaskID, true)
@@ -123,14 +138,13 @@ func (tm Manager) GetPieces(ctx context.Context, req *types.PiecePullRequest) (p
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get taskID (%s)", req.TaskID)
 	}
-	logrus.Debugf("success to get task: %+v", task)
+	logger.Debugf("success to get task: %+v", task)
 
 	if isErrorCDN(task.CdnStatus) {
 		return nil, errors.Errorf("task status(%s) error", task.CdnStatus)
 	}
 
 	if isSuccessCDN(task.CdnStatus) {
-
 	}
 	return pieceCh, nil
 }
@@ -149,25 +163,24 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr,
 	}, nil
 }
 
-// Register
-func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) error {
+// Register register seed task
+func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceCh <-chan types.SeedPiece, err error) {
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
-		logrus.Infof("taskId: %s failed to add or update task with req %+v: %v", req.TaskID, req, err)
-		return err
+		logger.Infof("taskId: %s failed to add or update task with req %+v: %v", req.TaskID, req, err)
+		return nil, err
 	}
 	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
-	logrus.Debugf("success to get task info: %+v", task)
-	// 读锁
+	logger.Debugf("success to get task info: %+v", task)
 	util.GetLock(task.TaskID, true)
 	defer util.ReleaseLock(task.TaskID, true)
 	// update accessTime for taskID
 	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
-		logrus.Warnf("failed to update accessTime for taskID(%s): %v", task.TaskID, err)
+		logger.Warnf("taskID:%s, failed to update accessTime: %v", task.TaskID, err)
 	}
-	// Step5: trigger CDN
+	// trigger CDN
 	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
-		return errors.Wrapf(dferrors.ErrSystemError, "failed to trigger cdn: %v", err)
+		return nil, errors.Wrapf(dferrors.ErrSystemError, "failed to trigger cdn: %v", err)
 	}
-	return nil
+	return make(chan types.SeedPiece), nil
 }

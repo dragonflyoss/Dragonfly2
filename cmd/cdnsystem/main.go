@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package cdnsystem
+package main
 
-import "github.com/dragonflyoss/Dragonfly2/cmd/cdnsystem/app"
+import (
+	_ "github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/localcdn"
+	_ "github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/sourcecdn"
+	"github.com/dragonflyoss/Dragonfly2/cmd/cdnsystem/app"
+)
+
 func main() {
 	app.Execute()
 }

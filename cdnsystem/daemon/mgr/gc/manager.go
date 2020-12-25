@@ -20,9 +20,9 @@ import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -67,7 +67,7 @@ func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr, 
 
 // StartGC starts to do the gc jobs.
 func (gcm *Manager) StartGC(ctx context.Context) {
-	logrus.Debugf("start the gc job")
+	logger.Debugf("start the gc job")
 
 	// start a goroutine to gc memory
 	go func() {
@@ -95,6 +95,7 @@ func (gcm *Manager) StartGC(ctx context.Context) {
 }
 
 // GCTask is used to do the gc job with specified taskID.
+// The CDN file will be deleted when the full is true.
 func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) {
 	gcm.gcTask(ctx, taskID, full)
 }

@@ -17,13 +17,13 @@
 package types
 
 type SeedPiece struct {
-	SeedAddr      string
+	itemType      int8  // 1 piece 0 task
 	PieceStyle    int32
-	PieceNum      uint32
+	PieceNum      int32
 	PieceMd5      string
 	PieceRange    string
 	PieceOffset   uint64
-	PieceLen      uint64
+	PieceLen      int64
 	DownloadPath  string
 	Last          bool
 	ContentLength uint64
