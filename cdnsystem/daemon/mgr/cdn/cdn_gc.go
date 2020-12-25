@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package localcdn
+package cdn
 
 import (
 	"context"

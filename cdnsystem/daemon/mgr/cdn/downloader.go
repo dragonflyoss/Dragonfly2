@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package localcdn
+package cdn
 
 import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/httputils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/rangeutils"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -33,7 +33,7 @@ import (
 //
 // If the returned error is nil, the Response will contain a non-nil
 // Body which the caller is expected to close.
-func (cm *Manager) download(ctx context.Context, task *types.SeedTaskInfo, detectResult *detectCacheResult) (*types.DownloadResponse, error) {
+func (cm *Manager) download(ctx context.Context, task *types.SeedTask, detectResult *detectCacheResult) (*types.DownloadResponse, error) {
 	checkCode := []int{http.StatusOK, http.StatusPartialContent}
 	headers := source.CopyHeader(nil, task.Headers)
 	// cache partial data
@@ -49,7 +49,7 @@ func (cm *Manager) download(ctx context.Context, task *types.SeedTaskInfo, detec
 		checkCode = []int{http.StatusPartialContent}
 	}
 
-	logrus.Infof("start to download for taskId(%s) with fileUrl: %s"+
+	logger.Infof("start to download for taskId(%s) with fileUrl: %s"+
 		" header: %+v checkCode: %d", task.TaskID, task.Url, task.Headers, checkCode)
 	return cm.resourceClient.Download(task.Url, headers, checkStatusCode(checkCode))
 }

@@ -14,64 +14,61 @@
  * limitations under the License.
  */
 
-package localcdn
+package cdn
 
 import (
 	"context"
 	"crypto/md5"
-	"encoding/binary"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"hash"
-	"io"
 	"sort"
 )
 
+// cacheDetector detect cache
 type cacheDetector struct {
-	cacheStore           *store.Store
-	metaDataManager      *metaDataManager
-	pieceMetaDataManager *SeedPieceMetaDataManager
-	resourceClient       source.ResourceClient
+	cacheStore      *store.Store
+	metaDataManager *metaDataManager
+	seedPieceMgr    mgr.SeedPieceMgr
+	resourceClient  source.ResourceClient
 }
 
-// meta info already downloaded
-type detectCacheResult struct {
+// cacheResult data which has been cached
+type cacheResult struct {
 	breakNum             int32             // break
 	downloadedFileLength int64             // length of file has been downloaded
-	pieceMetaRecords     []pieceMetaRecord // piece meta data of taskId
-	fileMetaData         *fileMetaData     // file meta data of taskId
-	fileMd5              hash.Hash         // md5 of content that has been downloaded
+	pieceMetaRecords     []pieceMetaRecord // piece meta data records of task
+	fileMetaData         *fileMetaData     // file meta data of task
+	fileMd5              hash.Hash         // md5 of file content that has been downloaded
 }
 
-func newCacheDetector(cacheStore *store.Store, metaDataManager *metaDataManager, pieceMetaDataManager *SeedPieceMetaDataManager,
+func newCacheDetector(cacheStore *store.Store, metaDataManager *metaDataManager, seedPieceMgr mgr.SeedPieceMgr,
 	resourceClient source.ResourceClient) *cacheDetector {
 	return &cacheDetector{
-		cacheStore:           cacheStore,
-		metaDataManager:      metaDataManager,
-		pieceMetaDataManager: pieceMetaDataManager,
-		resourceClient:       resourceClient,
+		cacheStore:      cacheStore,
+		metaDataManager: metaDataManager,
+		seedPieceMgr:    seedPieceMgr,
+		resourceClient:  resourceClient,
 	}
 }
 
 // detectCache
-func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTaskInfo) (*detectCacheResult, error) {
-	detectResult := cd.parseCache(ctx, task)
-	logger.Infof("taskID: %s detects cache result:%v", task.TaskID, detectResult)
-
-	if detectResult == nil || detectResult.breakNum == 0 {
-		logger.Errorf("taskID: %s detect cache fail, detectResult:%v", task.TaskID, detectResult)
+func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) (*cacheResult, error) {
+	detectResult, err := cd.doDetect(ctx, task)
+	logger.Debugf("taskID: %s detects cache result:%v", task.TaskID, detectResult)
+	if err != nil {
+		logger.Errorf("taskID:%s, detect cache fail:%v", task.TaskID, err)
 		metaData, err := cd.resetRepo(ctx, task)
 		if err != nil {
-			return &detectCacheResult{}, errors.Wrapf(err, "failed to reset repo")
+			return &cacheResult{}, errors.Wrapf(err, "failed to reset repo")
 		}
-		detectResult = &detectCacheResult{fileMetaData: metaData}
+		detectResult = &cacheResult{fileMetaData: metaData}
 	} else {
 		logger.Debugf("taskID: %s start to update access time", task.TaskID)
 		if err := cd.metaDataManager.updateAccessTime(ctx, task.TaskID, getCurrentTimeMillisFunc()); err != nil {
@@ -81,27 +78,23 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTaskIn
 	return detectResult, nil
 }
 
-// parseCache detect file metaData and pieces metaData of specific task
-func (cd *cacheDetector) parseCache(ctx context.Context, task *types.SeedTaskInfo) *detectCacheResult {
+// doDetect detect file metaData and pieces metaData of specific task
+func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (*cacheResult, error) {
 	// read task meta data
 	fileMetaData, err := cd.metaDataManager.readFileMetaData(ctx, task.TaskID)
 	if err != nil {
-		logger.Errorf("taskId: %s read file meta data error:%v", task.TaskID, err)
-		return nil
+		return &cacheResult{}, errors.Wrapf(err, "read file meta data fail from disk")
 	}
-	if !checkSameFile(task, fileMetaData) {
-		logger.Errorf("taskID: %s check same file fail", task.TaskID)
-		return nil
+	if err := checkSameFile(task, fileMetaData); err != nil {
+		return &cacheResult{}, errors.Wrapf(err, "check same file fail")
 	}
 	expired, err := cd.resourceClient.IsExpired(task.Url, task.Headers, fileMetaData.ExpireInfo)
 	if err != nil {
-		logger.Errorf("taskID: %s failed to check whether the task has expired:%v", task.TaskID, err)
-		return nil
+		return &cacheResult{}, errors.Wrapf(err, "check whether the task expired fail")
 	}
 	logger.Debugf("taskID: %s success to get expired result: %t", task.TaskID, expired)
 	if expired {
-		logger.Errorf("taskID: %s task has expired", task.TaskID)
-		return nil
+		return &cacheResult{}, errors.Wrapf(dferrors.ErrResourceExpired, "url:%s, expireInfo:%v", task.Url, fileMetaData.ExpireInfo)
 	}
 	// not expired
 	if fileMetaData.Finish {
@@ -111,73 +104,65 @@ func (cd *cacheDetector) parseCache(ctx context.Context, task *types.SeedTaskInf
 	// check source whether support range. if support, check cache by reading file data
 	supportRange, err := cd.resourceClient.IsSupportRange(task.Url, task.Headers)
 	if err != nil {
-		logger.Errorf("taskID: %s failed to check whether url %s supports range:%v", task.TaskID, task.Url, err)
-		return nil
+		return &cacheResult{}, errors.Wrapf(err, "check whether url(%s) support range fail", task.Url)
 	}
 	if !supportRange {
 		logger.Errorf("taskID: %s taskUrl:%s not supports partial requests: %v", task.TaskID, task.Url, err)
-		return nil
+		return &cacheResult{}, errors.Wrapf(dferrors.ErrResourceNotSupportRangeRequest, "url:%s", task.Url)
 
 	}
 	return cd.parseByReadFile(ctx, task.TaskID, fileMetaData)
 }
 
 // parseByReadMetaFile detect cache by metaData of file and pieces
-func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskID string, fileMetaData *fileMetaData) *detectCacheResult {
+func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskID string, fileMetaData *fileMetaData) (*cacheResult, error) {
 	if !fileMetaData.Success {
-		logger.Errorf("taskID: %s task has downloaded but the result of downloaded is fail", taskID)
-		return nil
+		return &cacheResult{}, errors.Wrapf(dferrors.ErrDownloadFail, "success property in file meta data is false")
 	}
 	var pieceMetaRecords []pieceMetaRecord
-	if pieceMetaRecords, err := cd.pieceMetaDataManager.getPieceMetaRecordsByTaskID(taskID); err != nil {
+	if pieceMetaRecords, err := cd.seedPieceMgr.GetPieceMetaRecordsByTaskID(taskID); err != nil {
 		logger.Warnf("taskID: %s failed to read piece meta data from memory:%v, try read data from disk", taskID, err)
 		// check piece meta records integrity
 		pieceMetaRecords, err = cd.metaDataManager.readAndCheckPieceMetaRecords(ctx, taskID, fileMetaData.SourceMd5)
 		if err != nil {
-			logger.Errorf("taskID: %s failed to read piece meta data from disk:%v", taskID, err)
-			return nil
+			return &cacheResult{}, errors.Wrapf(err, "failed to read piece meta data from disk")
 		}
 		for _, pieceMetaRecord := range pieceMetaRecords {
 			cd.pieceMetaDataManager.setPieceMetaRecord(taskID, pieceMetaRecord)
 		}
 	}
 	if len(pieceMetaRecords) != fileMetaData.TotalPieceCount {
-		logger.Errorf("taskID: %s piece count not equal with meta piece count", taskID)
-		return nil
+		return &cacheResult{}, errors.Wrapf(dferrors.ErrPieceCountNotEqual, "memory piece count(%d), disk piece count(%d)", len(pieceMetaRecords), fileMetaData.TotalPieceCount)
 	}
 	// check downloaded data integrity
 	storageInfo, err := cd.cacheStore.Stat(ctx, getDownloadRawFunc(taskID))
 	if err != nil {
-		logger.Errorf("taskID %s failed to processFullCache: check file size fail:%v", taskID, err)
-		return nil
+		return &cacheResult{}, errors.Wrapf(err, "get cdn file length fail")
 	}
 	// check downloaded data integrity through file size
 	if fileMetaData.CdnFileLength != storageInfo.Size {
-		logger.Errorf("taskID %s parseByReadMetaFile fail: fileSize not match with file meta data", taskID)
-		return nil
+		return &cacheResult{}, errors.Wrapf(dferrors.ErrFileLengthNotEqual, "meta size %d, disk size %d", fileMetaData.CdnFileLength, storageInfo.Size)
 	}
-
-	return &detectCacheResult{
+	return &cacheResult{
 		breakNum:             -1,
 		downloadedFileLength: fileMetaData.CdnFileLength,
 		pieceMetaRecords:     pieceMetaRecords,
 		fileMetaData:         fileMetaData,
 		fileMd5:              nil,
-	}
+	}, nil
 }
 
 // parseByReadFile
-func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskID string, metaData *fileMetaData) *detectCacheResult {
+func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskID string, metaData *fileMetaData) (*cacheResult, error) {
 	reader, err := cd.cacheStore.Get(ctx, getDownloadRawFunc(taskID))
 	if err != nil {
-		logger.Errorf("taskID: %s, failed to read key file:%v", taskID, err)
-		return nil
+		return &cacheResult{}, errors.Wrapf(err, "failed to read key file")
 	}
+	// todo remove memory piece data
 	// read piece records
 	pieceMetaRecords, err := cd.metaDataManager.readWithoutCheckPieceMetaRecords(ctx, taskID)
 	if err != nil {
-		logger.Errorf("taskID: %s, failed to read piece meta file:%v", taskID, err)
-		return nil
+		return &cacheResult{}, errors.Wrapf(err, "failed to read piece meta file")
 	}
 
 	fileMd5 := md5.New()
@@ -201,16 +186,16 @@ func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskID string, met
 		}
 		downloadedFileLength += int64(record.PieceLen)
 	}
-	return &detectCacheResult{
+	return &cacheResult{
 		breakNum:             breakIndex,
 		downloadedFileLength: downloadedFileLength,
 		pieceMetaRecords:     pieceMetaRecords[0:breakIndex],
 		fileMetaData:         metaData,
 		fileMd5:              fileMd5,
-	}
+	}, nil
 }
 
-func (cd *cacheDetector) resetRepo(ctx context.Context, task *types.SeedTaskInfo) (*fileMetaData, error) {
+func (cd *cacheDetector) resetRepo(ctx context.Context, task *types.SeedTask) (*fileMetaData, error) {
 	logger.Infof("taskID: %s reset repo for task", task.TaskID)
 	if err := deleteTaskFiles(ctx, cd.cacheStore, task.TaskID); err != nil {
 		logger.Errorf("taskID: %s reset repo: failed to delete task files: %v", task.TaskID, err)
@@ -223,78 +208,24 @@ func (cd *cacheDetector) resetRepo(ctx context.Context, task *types.SeedTaskInfo
 }
 
 // checkSameFile check whether meta file is modified
-func checkSameFile(task *types.SeedTaskInfo, metaData *fileMetaData) (result bool) {
-	defer func() {
-		logger.Debugf("taskID: %s check same task get result: %t", task.TaskID, result)
-	}()
-
+func checkSameFile(task *types.SeedTask, metaData *fileMetaData) error {
 	if task == nil || metaData == nil {
-		return false
+		return errors.Errorf("task or metaData is nil, task:%v, metaData:%v", task, metaData)
 	}
 
 	if metaData.PieceSize != task.PieceSize {
-		return false
+		return errors.Errorf("meta piece size(%d) is not equals with task piece size(%d)", metaData.PieceSize, task.PieceSize)
 	}
 
 	if metaData.TaskID != task.TaskID {
-		return false
+		return errors.Errorf("meta task taskID(%s) is not equals with task taskID(%s)", metaData.TaskID, task.TaskID)
 	}
 
 	if metaData.URL != task.Url {
-		return false
+		return errors.Errorf("meta task url(%s) is not equals with task url(%s)", metaData.URL, task.Url)
 	}
-	if !stringutils.IsEmptyStr(metaData.SourceMd5) && !stringutils.IsEmptyStr(task.RequestMd5) {
-		if metaData.SourceMd5 != task.RequestMd5 {
-			return false
-		}
-	}
-	return true
-}
-
-//readContent read piece content
-func readContent(reader io.Reader, pieceMetaRecord pieceMetaRecord, fileMd5 hash.Hash) error {
-	bufSize := int32(256 * 1024)
-	pieceLen := pieceMetaRecord.PieceLen
-	if pieceLen < bufSize {
-		bufSize = pieceLen
-	}
-	pieceContent := make([]byte, bufSize)
-	var curContent int32
-	pieceMd5 := md5.New()
-	for {
-		if curContent+bufSize <= pieceLen {
-			if err := binary.Read(reader, binary.BigEndian, pieceContent); err != nil {
-				return err
-			}
-			curContent += bufSize
-			// calculate the md5
-			pieceMd5.Write(pieceContent)
-
-			if !util.IsNil(fileMd5) {
-				// todo 应该存放原始文件的md5
-				fileMd5.Write(pieceContent)
-			}
-		} else {
-			readLen := pieceLen - curContent
-			if err := binary.Read(reader, binary.BigEndian, pieceContent[:readLen]); err != nil {
-				return err
-			}
-			curContent += readLen
-			// calculate the md5
-			pieceMd5.Write(pieceContent[:readLen])
-			if !util.IsNil(fileMd5) {
-				// todo 应该存放原始文件的md5
-				fileMd5.Write(pieceContent[:readLen])
-			}
-		}
-		if curContent >= pieceLen {
-			break
-		}
-	}
-	realPieceMd5 := fileutils.GetMd5Sum(pieceMd5, nil)
-	// check piece content integrity
-	if realPieceMd5 != pieceMetaRecord.Md5 {
-		return errors.Errorf("piece md5 check fail, realPieceMd5 md5 (%s), expected md5 (%s)", realPieceMd5, pieceMetaRecord.Md5)
+	if !stringutils.IsEmptyStr(metaData.SourceMd5) && !stringutils.IsEmptyStr(task.RequestMd5) && metaData.SourceMd5 != task.RequestMd5 {
+		return errors.Errorf("meta task source md5(%s) is not equals with task request md5(%s)", metaData.SourceMd5, task.RequestMd5)
 	}
 	return nil
 }

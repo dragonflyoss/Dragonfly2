@@ -30,7 +30,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegisterRequest) (*types.SeedTaskInfo, error) {
+func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegisterRequest) (*types.SeedTask, error) {
 	taskId := request.TaskID
 	util.GetLock(taskId, false)
 	defer util.ReleaseLock(taskId, false)
@@ -41,8 +41,8 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		}
 		tm.taskURLUnReachableStore.Delete(taskId)
 	}
-	var task *types.SeedTaskInfo
-	newTask := &types.SeedTaskInfo{
+	var task *types.SeedTask
+	newTask := &types.SeedTask{
 		TaskID:     taskId,
 		Headers:    request.Headers,
 		RequestMd5: request.Md5,
@@ -52,7 +52,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 	// using the existing task if it already exists corresponding to taskID
 	if v, err := tm.taskStore.Get(taskId); err == nil {
-		task = v.(*types.SeedTaskInfo)
+		task = v.(*types.SeedTask)
 		if !equalsTask(task, newTask) {
 			return nil, errors.Wrapf(dferrors.ErrTaskIDDuplicate, "%s", task.TaskID)
 		}
@@ -110,7 +110,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	return task, nil
 }
 
-func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTaskInfo) error {
+func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) error {
 	if stringutils.IsEmptyStr(taskID) {
 		return errors.Wrap(dferrors.ErrEmptyValue, "taskID")
 	}
@@ -169,7 +169,7 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTaskInfo)
 }
 
 // equalsTask check whether the two task provided are the same
-func equalsTask(existTask, newTask *types.SeedTaskInfo) bool {
+func equalsTask(existTask, newTask *types.SeedTask) bool {
 	if existTask.Url != newTask.Url {
 		return false
 	}

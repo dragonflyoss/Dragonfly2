@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package localcdn
+package cdn
 
 import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
@@ -24,12 +24,12 @@ import (
 
 var getCurrentTimeMillisFunc = timeutils.GetCurrentTimeMillis
 
-func getUpdateTaskInfoWithStatusOnly(cdnStatus string) *types.SeedTaskInfo {
+func getUpdateTaskInfoWithStatusOnly(cdnStatus string) *types.SeedTask {
 	return getUpdateTaskInfo(cdnStatus, "", 0)
 }
 
-func getUpdateTaskInfo(cdnStatus, realMD5 string, cdnFileLength int64) *types.SeedTaskInfo {
-	return &types.SeedTaskInfo{
+func getUpdateTaskInfo(cdnStatus, realMD5 string, cdnFileLength int64) *types.SeedTask {
+	return &types.SeedTask{
 		CdnStatus:     cdnStatus,
 		SourceRealMd5: realMD5,
 		CdnFileLength: cdnFileLength,

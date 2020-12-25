@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package localcdn
+package cdn
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"io"
 	"sync"
-
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-
-	"github.com/sirupsen/logrus"
 )
 
 type protocolContent struct {
@@ -59,11 +57,8 @@ func newCacheWriter(cdnStore *store.Store, cdnReporter *reporter) *cacheWriter {
 }
 
 // startWriter writes the stream data from the reader to the underlying storage.
-func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *types.SeedTaskInfo,
+func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *types.SeedTask,
 	detectResult *detectCacheResult) (*downloadMetadata, error) {
-	defer func() {
-		// todo go routine write pieceMeta
-	}()
 	// currentCdnFileLength is used to calculate the cdn file Length dynamically
 	currentCdnFileLength := detectResult.downloadedFileLength
 	// currentSourceFileLength is used to calculate the source file Length dynamically
@@ -82,9 +77,9 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	cw.writerPool(ctx, wg, routineCount, jobCh)
 
 	for {
-		n, e := reader.Read(buf)
+		n, err := reader.Read(buf)
 		if n > 0 {
-			logrus.Debugf("success to read content with length: %d", n)
+			logger.Debugf("success to read content with length: %d", n)
 			currentSourceFileLength += int64(n)
 			if int(pieceContLeft) <= n {
 				bb.Write(buf[:pieceContLeft])
@@ -93,7 +88,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 					taskID:           task.TaskID,
 					pieceNum:         curPieceNum,
 					pieceContentLen:  pieceContentLen,
-					pieceStyle:       "raw",
+					pieceStyle:       "PLAIN_UNSPECIFIED",
 					pieceContent:     bb,
 					pieceRange:       fmt.Sprintf("%d-%d", currentCdnFileLength, currentCdnFileLength+int64(pieceContentLen-1)),
 					cdnFileOffset:    currentCdnFileLength,
@@ -101,11 +96,11 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 				}
 				currentCdnFileLength = currentCdnFileLength + int64(pieceContentLen)
 				jobCh <- pc
-				logrus.Debugf("send the protocolContent taskID: %s pieceNum: %d", task.TaskID, curPieceNum)
+				logger.Debugf("send the protocolContent taskID: %s pieceNum: %d", task.TaskID, curPieceNum)
 				curPieceNum++
 
 				// write the data left to a new buffer
-				// TODO: recycling bytes.Buffer
+				// todo recycling bytes.Buffer
 				bb = bytes.NewBuffer([]byte{})
 				n -= int(pieceContLeft)
 				if n > 0 {
@@ -118,28 +113,28 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 			pieceContLeft -= int32(n)
 		}
 
-		if e == io.EOF {
+		if err == io.EOF {
 			if currentCdnFileLength == 0 || bb.Len() > 0 {
 				pieceContentLen := int32(bb.Len())
 				jobCh <- &protocolContent{
 					taskID:           task.TaskID,
 					pieceNum:         curPieceNum,
 					pieceContentLen:  pieceContentLen,
-					pieceStyle:       "raw",
+					pieceStyle:       "PLAIN_UNSPECIFIED",
 					pieceContent:     bb,
 					pieceRange:       fmt.Sprintf("%d-%d", currentCdnFileLength, currentCdnFileLength+int64(pieceContentLen)),
 					sourceFileOffset: int64(curPieceNum) * int64(task.PieceSize),
 					cdnFileOffset:    currentCdnFileLength,
 				}
-				logrus.Debugf("send the protocolContent taskID: %s pieceNum: %d", task.TaskID, curPieceNum)
+				logger.Debugf("send the protocolContent taskID: %s pieceNum: %d", task.TaskID, curPieceNum)
 				currentCdnFileLength = currentCdnFileLength + int64(pieceContentLen)
 			}
-			logrus.Infof("send all protocolContents with realCdnFileLength(%d) and wait for cdnWriter", currentCdnFileLength)
+			logger.Infof("send all protocolContents with realCdnFileLength(%d) and wait for cdnWriter", currentCdnFileLength)
 			break
 		}
-		if e != nil {
+		if err != nil {
 			close(jobCh)
-			return nil, e
+			return nil, err
 		}
 	}
 

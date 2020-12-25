@@ -23,18 +23,17 @@ import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/httputils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-	"github.com/sirupsen/logrus"
+	"github.com/go-openapi/strfmt"
+	"github.com/pkg/errors"
 	"net"
 	"net/http"
 	netUrl "net/url"
 	"sync"
 	"time"
-
-	"github.com/go-openapi/strfmt"
-	"github.com/pkg/errors"
 )
 
 // HttpClient is a const of http source client.
@@ -146,7 +145,7 @@ func (client *httpSourceClient) GetContentLength(url string, headers map[string]
 		return -1, errors.Wrapf(dferrors.ErrAuthenticationRequired, "url: %s,code: %d", url, code)
 	}
 	if code != http.StatusOK && code != http.StatusPartialContent {
-		logrus.Warnf("failed to get http file length with unexpected code: %d", code)
+		logger.Warnf("failed to get http file length with unexpected code: %d", code)
 		if code == http.StatusNotFound {
 			return -1, errors.Wrapf(dferrors.ErrURLNotReachable, "url: %s", url)
 		}

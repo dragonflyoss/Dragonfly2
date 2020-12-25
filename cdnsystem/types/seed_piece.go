@@ -24,7 +24,6 @@ type SeedPiece struct {
 	PieceRange    string
 	PieceOffset   uint64
 	PieceLen      int64
-	DownloadPath  string
 	Last          bool
 	ContentLength uint64
 }

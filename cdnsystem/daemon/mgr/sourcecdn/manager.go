@@ -38,14 +38,14 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, publisher *mgr.PieceSeedPublisher, register prometheus.Registerer) (mgr.CDNMgr, error) {
 	return &Manager{
 		cfg: cfg,
 	}, nil
 }
 
 // TriggerCDN will trigger CDN to download the file from sourceUrl.
-func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*types.SeedTaskInfo, error) {
+func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (*types.SeedTask, error) {
 	sourceFileLength := task.SourceFileLength
 	if sourceFileLength == 0 {
 		sourceFileLength = -1
@@ -62,13 +62,13 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*t
 		}
 
 	}
-	return &types.SeedTaskInfo{
+	return &types.SeedTask{
 		CdnStatus: types.TaskInfoCdnStatusSUCCESS,
 	}, nil
 }
 
 // GetHTTPPath returns the http download path of taskID.
-func (cm *Manager) GetHTTPPath(ctx context.Context, taskInfo *types.SeedTaskInfo) (string, error) {
+func (cm *Manager) GetHTTPPath(ctx context.Context, taskInfo *types.SeedTask) (string, error) {
 	return taskInfo.Url, nil
 }
 

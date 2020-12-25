@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-package localcdn
+package piece
 
 import (
 	"container/list"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/pkg/errors"
 	"sync"
 	"time"
 )
 
-type SeedSubscriber chan pieceMetaRecord
-
 type PieceSeedPublisher struct {
 	seedSubscribers  *syncmap.SyncMap
-	pieceMetaDataMgr *SeedPieceMetaDataManager
+	pieceMetaDataMgr *seedPieceMetaDataManager
 	buffer           int
 	timeout          time.Duration
 	m                util.LockerPool
@@ -132,4 +130,8 @@ func (p *PieceSeedPublisher) close(taskID string) error {
 	}
 	wg.Wait()
 	return nil
+}
+
+func (p *PieceSeedPublisher) GetPieceMetaRecordsByTaskID(taskId string) (pieceMetaRecords []types.SeedPiece, error) {
+	return p.pieceMetaDataMgr.getPieceMetaRecordsByTaskID(taskId)
 }

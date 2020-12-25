@@ -18,11 +18,10 @@ package store
 
 import (
 	"fmt"
-	"path/filepath"
-	"sync"
-
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
+	"path/filepath"
+	"sync"
 )
 
 // StorageBuilder is a function that creates a new storage plugin instant

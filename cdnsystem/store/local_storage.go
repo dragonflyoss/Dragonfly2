@@ -19,17 +19,15 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
+	statutils "github.com/dragonflyoss/Dragonfly2/pkg/stat"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
-	statutils "github.com/dragonflyoss/Dragonfly2/pkg/stat"
-
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 const LocalStorageDriver = "local"

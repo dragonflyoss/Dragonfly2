@@ -19,6 +19,11 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
+	statutils "github.com/dragonflyoss/Dragonfly2/pkg/stat"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
+	"github.com/stretchr/testify/suite"
 	"io"
 	"io/ioutil"
 	"os"
@@ -26,29 +31,19 @@ import (
 	"strings"
 	"sync"
 	"testing"
-
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
-	statutils "github.com/dragonflyoss/Dragonfly2/pkg/stat"
-
-	"github.com/go-check/check"
 )
 
 func Test(t *testing.T) {
-	check.TestingT(t)
+	suite.Run(t, new(LocalStorageSuite))
 }
 
 type LocalStorageSuite struct {
 	workHome   string
 	storeLocal *Store
+	suite.Suite
 }
 
-func init() {
-	check.Suite(&LocalStorageSuite{})
-}
-
-func (s *LocalStorageSuite) SetUpSuite(c *check.C) {
+func (s *LocalStorageSuite) SetupSuite() {
 	s.workHome, _ = ioutil.TempDir("/tmp", "cdn-storageDriver-StoreTestSuite-")
 	pluginProps := map[config.PluginType][]*config.PluginProperties{
 		config.StoragePlugin: {
@@ -66,14 +61,14 @@ func (s *LocalStorageSuite) SetUpSuite(c *check.C) {
 
 	// init StorageManager
 	sm, err := NewManager(nil)
-	c.Assert(err, check.IsNil)
+	s.Nil(err)
 
 	// init store with local storage
 	s.storeLocal, err = sm.Get(LocalStorageDriver)
-	c.Assert(err, check.IsNil)
+	s.Nil(err)
 }
 
-func (s *LocalStorageSuite) TearDownSuite(c *check.C) {
+func (s *LocalStorageSuite) TearDownSuite() {
 	if s.workHome != "" {
 		if err := os.RemoveAll(s.workHome); err != nil {
 			fmt.Printf("remove path:%s error", s.workHome)
@@ -81,7 +76,7 @@ func (s *LocalStorageSuite) TearDownSuite(c *check.C) {
 	}
 }
 
-func (s *LocalStorageSuite) TestGetPutBytes(c *check.C) {
+func (s *LocalStorageSuite) TestGetPutBytes() {
 	var cases = []struct {
 		putRaw      *Raw
 		getRaw      *Raw
@@ -158,25 +153,25 @@ func (s *LocalStorageSuite) TestGetPutBytes(c *check.C) {
 	for _, v := range cases {
 		// put
 		err := s.storeLocal.PutBytes(context.Background(), v.putRaw, v.data)
-		c.Assert(err, check.IsNil)
+		s.Nil(err)
 
 		// get
 		result, err := s.storeLocal.GetBytes(context.Background(), v.getRaw)
-		c.Assert(v.getErrCheck(err), check.Equals, true)
+		s.Equal(v.getErrCheck(err), true)
 		if err == nil {
-			c.Assert(string(result), check.Equals, v.expected)
+			s.Equal(string(result), v.expected)
 		}
 
 		// stat
-		s.checkStat(v.putRaw, c)
+		s.checkStat(v.putRaw)
 
 		// remove
-		s.checkRemove(v.putRaw, c)
+		s.checkRemove(v.putRaw)
 	}
 
 }
 
-func (s *LocalStorageSuite) TestGetPut(c *check.C) {
+func (s *LocalStorageSuite) TestGetPut() {
 	var cases = []struct {
 		putRaw      *Raw
 		getRaw      *Raw
@@ -254,23 +249,23 @@ func (s *LocalStorageSuite) TestGetPut(c *check.C) {
 
 		// get
 		r, err := s.storeLocal.Get(context.Background(), v.getRaw)
-		c.Check(v.getErrCheck(err), check.Equals, true)
+		s.Equal(v.getErrCheck(err), true)
 		if err == nil {
 			result, err := ioutil.ReadAll(r)
-			c.Assert(err, check.IsNil)
-			c.Assert(string(result[:]), check.Equals, v.expected)
+			s.Nil(err)
+			s.Equal(string(result[:]), v.expected)
 		}
 
 		// stat
-		s.checkStat(v.putRaw, c)
+		s.checkStat(v.putRaw)
 
 		// remove
-		s.checkRemove(v.putRaw, c)
+		s.checkRemove(v.putRaw)
 	}
 
 }
 
-func (s *LocalStorageSuite) TestPutTrunc(c *check.C) {
+func (s *LocalStorageSuite) TestPutTrunc() {
 	originRaw := &Raw{
 		Key:    "fooTrunc.meta",
 		Offset: 0,
@@ -328,25 +323,25 @@ func (s *LocalStorageSuite) TestPutTrunc(c *check.C) {
 
 	for _, v := range cases {
 		err := s.storeLocal.Put(context.Background(), originRaw, strings.NewReader(originData))
-		c.Check(err, check.IsNil)
+		s.Nil(err)
 
 		err = s.storeLocal.Put(context.Background(), v.truncRaw, v.data)
-		c.Check(err, check.IsNil)
+		s.Nil(err)
 
 		r, err := s.storeLocal.Get(context.Background(), &Raw{
 			Key: "fooTrunc.meta",
 		})
-		c.Check(err, check.IsNil)
+		s.Nil(err)
 
 		if err == nil {
 			result, err := ioutil.ReadAll(r)
-			c.Assert(err, check.IsNil)
-			c.Assert(string(result[:]), check.Equals, v.expectedData)
+			s.Nil(err)
+			s.Equal(string(result[:]), v.expectedData)
 		}
 	}
 }
 
-func (s *LocalStorageSuite) TestPutParallel(c *check.C) {
+func (s *LocalStorageSuite) TestPutParallel() {
 	var key = "fooPutParallel"
 	var routineCount = 4
 	var testStr = "hello"
@@ -366,13 +361,13 @@ func (s *LocalStorageSuite) TestPutParallel(c *check.C) {
 	wg.Wait()
 
 	info, err := s.storeLocal.Stat(context.TODO(), &Raw{Key: key})
-	c.Check(err, check.IsNil)
-	c.Check(info.Size, check.Equals, int64(routineCount)*int64(testStrLength))
+	s.Nil(err)
+	s.Equal(info.Size, int64(routineCount)*int64(testStrLength))
 }
 
-func (s *LocalStorageSuite) BenchmarkPutParallel(c *check.C) {
+func (s *LocalStorageSuite) BenchmarkPutParallel() {
 	var wg sync.WaitGroup
-	for k := 0; k < c.N; k++ {
+	for k := 0; k < 1000; k++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
@@ -385,8 +380,8 @@ func (s *LocalStorageSuite) BenchmarkPutParallel(c *check.C) {
 	wg.Wait()
 }
 
-func (s *LocalStorageSuite) BenchmarkPutSerial(c *check.C) {
-	for k := 0; k < c.N; k++ {
+func (s *LocalStorageSuite) BenchmarkPutSerial() {
+	for k := 0; k < 1000; k++ {
 		s.storeLocal.Put(context.Background(), &Raw{
 			Key:    "foo1.bech",
 			Offset: int64(k) * 5,
@@ -394,7 +389,7 @@ func (s *LocalStorageSuite) BenchmarkPutSerial(c *check.C) {
 	}
 }
 
-func (s *LocalStorageSuite) TestManager_Get(c *check.C) {
+func (s *LocalStorageSuite) TestManager_Get() {
 	cfg := &config.Config{
 		BaseProperties: &config.BaseProperties{
 			HomeDir: filepath.Join(s.workHome, "test_mgr"),
@@ -403,29 +398,29 @@ func (s *LocalStorageSuite) TestManager_Get(c *check.C) {
 	mgr, _ := NewManager(cfg)
 
 	st, err := mgr.Get(LocalStorageDriver)
-	c.Check(err, check.IsNil)
-	c.Check(st, check.NotNil)
+	s.Nil(err)
+	s.NotNil(st)
 	_, ok := st.driver.(*localStorage)
-	c.Check(ok, check.Equals, true)
+	s.Equal(ok, true)
 
 	st, err = mgr.Get("testMgr")
-	c.Check(err, check.NotNil)
-	c.Check(st, check.IsNil)
+	s.NotNil(err)
+	s.Nil(st)
 }
 
 // -----------------------------------------------------------------------------
 // helper function
 
-func (s *LocalStorageSuite) checkStat(raw *Raw, c *check.C) {
+func (s *LocalStorageSuite) checkStat(raw *Raw) {
 	info, err := s.storeLocal.Stat(context.Background(), raw)
-	c.Assert(IsNilError(err), check.Equals, true)
+	s.Equal(IsNilError(err), true)
 
 	driver := s.storeLocal.driver.(*localStorage)
 	pathTemp := filepath.Join(driver.BaseDir, raw.Bucket, raw.Key)
 	f, _ := os.Stat(pathTemp)
 	sys, _ := fileutils.GetSys(f)
 
-	c.Assert(info, check.DeepEquals, &StorageInfo{
+	s.EqualValues(info, &StorageInfo{
 		Path:       filepath.Join(raw.Bucket, raw.Key),
 		Size:       f.Size(),
 		ModTime:    f.ModTime(),
@@ -433,10 +428,10 @@ func (s *LocalStorageSuite) checkStat(raw *Raw, c *check.C) {
 	})
 }
 
-func (s *LocalStorageSuite) checkRemove(raw *Raw, c *check.C) {
+func (s *LocalStorageSuite) checkRemove(raw *Raw) {
 	err := s.storeLocal.Remove(context.Background(), raw)
-	c.Assert(IsNilError(err), check.Equals, true)
+	s.Equal(IsNilError(err), true)
 
 	_, err = s.storeLocal.Stat(context.Background(), raw)
-	c.Assert(IsKeyNotFound(err), check.Equals, true)
+	s.Equal(IsKeyNotFound(err), true)
 }

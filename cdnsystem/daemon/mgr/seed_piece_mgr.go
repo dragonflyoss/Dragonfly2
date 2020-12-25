@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package localcdn
+package mgr
 
-type reporter struct {
-	publisher            *PieceSeedPublisher
-}
+import (
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+)
 
-func newReporter(seedPublisher *PieceSeedPublisher) *reporter {
-	return &reporter{
-		publisher: seedPublisher,
-	}
-}
+type SeedSubscriber chan types.SeedPiece
 
-func (re *reporter) reportCache(taskID string, detectResult *detectCacheResult) error {
-	// report cache pieces status
-	if detectResult != nil && detectResult.pieceMetaRecords != nil {
-		for _, pieceMetaRecord := range detectResult.pieceMetaRecords {
-			re.publisher.Publish(taskID, pieceMetaRecord)
-		}
-	}
-	return nil
+type SeedPieceMgr interface {
+
+	SubscribeTask(taskID string) (SeedSubscriber, error)
+
+	UnSubscribeTask(sub SeedSubscriber, taskID string) error
+
+	Publish(taskID string, record pieceMetaRecord) error
+
+	close(taskID string) error
+
+	GetPieceMetaRecordsByTaskID(taskId string) ([]types.SeedPiece, error)
 }

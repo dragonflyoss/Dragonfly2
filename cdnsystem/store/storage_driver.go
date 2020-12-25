@@ -18,11 +18,10 @@ package store
 
 import (
 	"context"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"io"
 	"path/filepath"
 	"time"
-
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 )
 
 // StorageDriver defines an interface to manage the data stored in the driver.

@@ -70,13 +70,13 @@ type Manager struct {
 }
 
 // triggerCdnSyncAction
-func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTaskInfo) error {
+func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTask) error {
 	if !isFrozen(task.CdnStatus) {
 		logger.Infof("TaskID: %s seedTask is running or has been downloaded successfully, status:%s", task.TaskID, task.CdnStatus)
 		return nil
 	}
 	// update task status
-	if err := tm.updateTask(task.TaskID, &types.SeedTaskInfo{
+	if err := tm.updateTask(task.TaskID, &types.SeedTask{
 		CdnStatus: types.TaskInfoCdnStatusRUNNING,
 	}); err != nil {
 		return err
@@ -96,7 +96,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 	return nil
 }
 
-func (tm *Manager) getTask(taskID string) (*types.SeedTaskInfo, error) {
+func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
 	if stringutils.IsEmptyStr(taskID) {
 		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskID is empty")
 	}
@@ -107,13 +107,13 @@ func (tm *Manager) getTask(taskID string) (*types.SeedTaskInfo, error) {
 	}
 
 	// type assertion
-	if info, ok := v.(*types.SeedTaskInfo); ok {
+	if info, ok := v.(*types.SeedTask); ok {
 		return info, nil
 	}
 	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "taskID %s: %v", taskID, v)
 }
 
-func (tm Manager) Get(ctx context.Context, taskID string) (*types.SeedTaskInfo, error) {
+func (tm Manager) Get(ctx context.Context, taskID string) (*types.SeedTask, error) {
 	return tm.getTask(taskID)
 }
 

@@ -21,8 +21,8 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/server"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -52,9 +52,9 @@ func New(cfg *config.Config) (*Daemon, error) {
 // Run runs the daemon.
 func (d *Daemon) Run() error {
 	if err := d.server.Start(); err != nil {
-		logrus.Errorf("failed to start cdn system %s : %v", d.Name, err)
+		logger.Errorf("failed to start cdn system %s : %v", d.Name, err)
 		return err
 	}
-	logrus.Infof("start cdn system %s successfully", d.Name)
+	logger.Infof("start cdn system %s successfully", d.Name)
 	return nil
 }

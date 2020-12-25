@@ -19,6 +19,7 @@ package netutils
 import (
 	"bufio"
 	"fmt"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"net"
 	"net/http"
 	"net/url"
@@ -33,8 +34,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/httputils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -49,7 +48,7 @@ var defaultRateLimit = 20 * rate.MB
 func NetLimit() *rate.Rate {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("parse default net limit error:%v", err)
+			logger.Errorf("parse default net limit error:%v", err)
 		}
 	}()
 	if runtime.NumCPU() < 24 {
@@ -63,7 +62,7 @@ func NetLimit() *rate.Rate {
 		ethtool = "/usr/sbin/ethtool"
 	}
 	if ethtool == "" {
-		log.Warn("ethtool not found")
+		logger.Warnf("ethtool not found")
 		return &defaultRateLimit
 	}
 
@@ -85,7 +84,7 @@ func NetLimit() *rate.Rate {
 		}
 
 		if err := cmd.Start(); err != nil {
-			log.Warnf("ethtool %s error:%v", dev.Name, err)
+			logger.Warnf("ethtool %s error:%v", dev.Name, err)
 			continue
 		}
 		scanner := bufio.NewScanner(stdoutPipe)

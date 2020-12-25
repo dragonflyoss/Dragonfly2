@@ -18,10 +18,8 @@ package plugins
 
 import (
 	"fmt"
-
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-
-	"github.com/sirupsen/logrus"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 )
 
 var mgr = NewManager()
@@ -36,7 +34,7 @@ func Initialize(cfg *config.Config) error {
 	for pt, value := range cfg.Plugins {
 		for _, v := range value {
 			if !v.Enabled {
-				logrus.Infof("plugin[%s][%s] is disabled", pt, v.Name)
+				logger.Infof("plugin[%s][%s] is disabled", pt, v.Name)
 				continue
 			}
 			builder := mgr.GetBuilder(pt, v.Name)
@@ -50,7 +48,7 @@ func Initialize(cfg *config.Config) error {
 					pt, v.Name, err)
 			}
 			mgr.AddPlugin(p)
-			logrus.Infof("add plugin[%s][%s]", pt, v.Name)
+			logger.Infof("add plugin[%s][%s]", pt, v.Name)
 		}
 	}
 	return nil

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package localcdn
+package cdn
 
 import (
 	"context"
@@ -23,13 +23,13 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/digest"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
+// fileMetaData
 type fileMetaData struct {
 	TaskID          string            `json:"taskID"`
 	URL             string            `json:"url"`
@@ -45,12 +45,14 @@ type fileMetaData struct {
 	TotalPieceCount int               `json:"totalPieceCount"`
 }
 
+// pieceMetaData
 type pieceMetaData struct {
 	PieceMetaRecords []pieceMetaRecord `json:"pieceMetaRecords"`
 	FileMd5          string            `json:"fileMd5"`
 	Sha1Value        string            `json:"sha1Value"`
 }
 
+// pieceMetaRecord
 type pieceMetaRecord struct {
 	PieceNum int32  `json:"pieceNum"`
 	PieceLen int32  `json:"pieceLen"` // 下载存储的真实长度
@@ -72,8 +74,8 @@ func newFileMetaDataManager(store *store.Store) *metaDataManager {
 	}
 }
 
-// writeFileMetaData stores the metadata of task.ID to storage.
-func (mm *metaDataManager) writeFileMetaDataByTask(ctx context.Context, task *types.SeedTaskInfo) (*fileMetaData, error) {
+// writeFileMetaDataByTask stores the metadata of task by task to storage.
+func (mm *metaDataManager) writeFileMetaDataByTask(ctx context.Context, task *types.SeedTask) (*fileMetaData, error) {
 	metaData := &fileMetaData{
 		TaskID:        task.TaskID,
 		URL:           task.Url,
@@ -111,7 +113,7 @@ func (mm *metaDataManager) readFileMetaData(ctx context.Context, taskID string) 
 	if err := json.Unmarshal(bytes, metaData); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal metadata bytes")
 	}
-	logrus.Debugf("success to read metadata: %+v for taskID: %s", metaData, taskID)
+	logger.Debugf("success to read metadata: %+v for taskID: %s", metaData, taskID)
 
 	return metaData, nil
 }
@@ -129,7 +131,7 @@ func (mm *metaDataManager) updateAccessTime(ctx context.Context, taskID string, 
 	interval := accessTime - originMetaData.AccessTime
 	originMetaData.Interval = interval
 	if interval <= 0 {
-		logrus.Warnf("taskId:%s file hit interval:%d", taskID, interval)
+		logger.Warnf("taskId:%s file hit interval:%d", taskID, interval)
 		originMetaData.Interval = 0
 	}
 
@@ -173,16 +175,13 @@ func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskID str
 	return mm.writeFileMetaData(ctx, originMetaData)
 }
 
-// writePieceMD5s writes the piece md5s to storage for the md5 file of taskID.
-//
-// And it should append the fileMD5 which means that the md5 of the task file
-// and the SHA-1 digest of fileMD5 at the end of the file.
+// writePieceMetaRecords writes the piece meta data to storage.
 func (pmm *metaDataManager) writePieceMetaRecords(ctx context.Context, taskID, fileMD5 string, pieceMetaRecords []pieceMetaRecord) error {
 	pmm.locker.GetLock(taskID, false)
 	defer pmm.locker.ReleaseLock(taskID, false)
 
 	if len(pieceMetaRecords) == 0 {
-		logrus.Warnf("failed to write empty pieceMetaRecords for taskID: %s", taskID)
+		logger.Warnf("failed to write empty pieceMetaRecords for taskID: %s", taskID)
 		return nil
 	}
 	pieceMetaStr, err := json.Marshal(pieceMetaRecords)

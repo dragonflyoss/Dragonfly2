@@ -27,7 +27,7 @@ import (
 )
 
 type CDNBuilder func(cfg *config.Config, cacheStore *store.Store,
-	resourceClient source.ResourceClient, register prometheus.Registerer) (CDNMgr, error)
+	resourceClient source.ResourceClient, publisher *SeedPieceMgr, register prometheus.Registerer) (CDNMgr, error)
 
 var cdnBuilderMap = make(map[config.CDNPattern]CDNBuilder)
 
@@ -37,7 +37,7 @@ func Register(name config.CDNPattern, builder CDNBuilder) {
 
 // get an implementation of the interface of CDNMgr
 func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient,
-	register prometheus.Registerer) (CDNMgr, error) {
+	publisher *SeedPieceMgr, register prometheus.Registerer) (CDNMgr, error) {
 	cdnPattern := cfg.CDNPattern
 	if cdnPattern.String() == "" {
 		cdnPattern = config.CDNPatternLocal
@@ -47,7 +47,7 @@ func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient s
 	if !ok {
 		return nil, fmt.Errorf("unexpected cdn pattern(%s) which must be in [\"local\", \"source\"]", cdnPattern)
 	}
-	return cdnBuilder(cfg, cacheStore, resourceClient, register)
+	return cdnBuilder(cfg, cacheStore, resourceClient, publisher, register)
 }
 
 // CDNMgr as an interface defines all operations against CDN and
@@ -55,10 +55,10 @@ func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient s
 type CDNMgr interface {
 
 	// TriggerCDN will trigger CDN to download the file from sourceUrl.
-	TriggerCDN(ctx context.Context, taskInfo *types.SeedTaskInfo) (*types.SeedTaskInfo, error)
+	TriggerCDN(ctx context.Context, taskInfo *types.SeedTask) (*types.SeedTask, error)
 
 	// GetHTTPPath returns the http download path of taskID.
-	GetHTTPPath(ctx context.Context, taskInfo *types.SeedTaskInfo) (path string, err error)
+	GetHTTPPath(ctx context.Context, taskInfo *types.SeedTask) (path string, err error)
 
 	// GetStatus gets the status of the file.
 	GetStatus(ctx context.Context, taskID string) (cdnStatus string, err error)

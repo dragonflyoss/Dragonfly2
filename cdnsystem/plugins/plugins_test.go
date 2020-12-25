@@ -19,12 +19,10 @@ package plugins
 
 import (
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/stretchr/testify/suite"
 	"reflect"
 	"testing"
-
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-
 )
 
 func Test(t *testing.T) {

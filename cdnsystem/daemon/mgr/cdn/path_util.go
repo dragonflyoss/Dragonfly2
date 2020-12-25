@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package localcdn
+package cdn
 
 import (
 	"context"
-	"path"
-
-	"github.com/sirupsen/logrus"
-
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
+	"path"
 )
 //get download path
 var getDownloadRawFunc = getDownloadRaw
@@ -106,7 +104,7 @@ func deleteTaskFiles(ctx context.Context, cacheStore *store.Store, taskID string
 	// try to clean the parent bucket
 	if err := cacheStore.Remove(ctx, getParentRaw(taskID)); err != nil &&
 		!store.IsKeyNotFound(err) {
-		logrus.Warnf("taskID:%s failed remove parent bucket:%v", taskID, err)
+		logger.Warnf("taskID:%s failed remove parent bucket:%v", taskID, err)
 	}
 	return nil
 }

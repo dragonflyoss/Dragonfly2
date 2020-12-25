@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package localcdn
+package mgr
 
 import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
@@ -24,18 +24,27 @@ import (
 	"strconv"
 )
 
-type SeedPieceMetaDataManager struct {
+type pieceMetaRecord struct {
+	PieceNum int32  `json:"pieceNum"`
+	PieceLen int32  `json:"pieceLen"` // 下载存储的真实长度
+	Md5      string `json:"md5"`
+	Range    string `json:"range"` // 下载存储到磁盘的range，不一定是origin source的range
+	Offset   int64  `json:"offset"`
+}
+
+
+type seedPieceMetaDataManager struct {
 	taskPieceMetaRecords *syncmap.SyncMap
 }
 
-func newPieceMetaDataMgr() *SeedPieceMetaDataManager {
-	return &SeedPieceMetaDataManager{
+func NewPieceMetaDataMgr() *seedPieceMetaDataManager {
+	return &seedPieceMetaDataManager{
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
 	}
 }
 
 // getPieceMetaRecord
-func (pmm *SeedPieceMetaDataManager) getPieceMetaRecord(taskID string, pieceNum int) (pieceMetaRecord, error) {
+func (pmm *seedPieceMetaDataManager) getPieceMetaRecord(taskID string, pieceNum int) (pieceMetaRecord, error) {
 	pieceMetaRecords, err := pmm.taskPieceMetaRecords.GetAsMap(taskID)
 	if err != nil {
 		return pieceMetaRecord{}, errors.Wrapf(err, "taskID:%s, failed to get pieceMetaRecords", taskID)
@@ -52,7 +61,7 @@ func (pmm *SeedPieceMetaDataManager) getPieceMetaRecord(taskID string, pieceNum 
 }
 
 // setPieceMetaRecord
-func (pmm *SeedPieceMetaDataManager) setPieceMetaRecord(taskID string, pieceMetaRecord pieceMetaRecord) error {
+func (pmm *seedPieceMetaDataManager) setPieceMetaRecord(taskID string, pieceMetaRecord pieceMetaRecord) error {
 	pieceRecords, err := pmm.taskPieceMetaRecords.GetAsMap(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
 		return err
@@ -66,7 +75,7 @@ func (pmm *SeedPieceMetaDataManager) setPieceMetaRecord(taskID string, pieceMeta
 }
 
 // getPieceMetaRecordsByTaskID
-func (pmm *SeedPieceMetaDataManager) getPieceMetaRecordsByTaskID(taskID string) (pieceMetaRecords []pieceMetaRecord, err error) {
+func (pmm *seedPieceMetaDataManager) getPieceMetaRecordsByTaskID(taskID string) (pieceMetaRecords []pieceMetaRecord, err error) {
 	pieceMetaRecordMap, err := pmm.taskPieceMetaRecords.GetAsMap(taskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "taskID:%s, failed to get piece meta records", taskID)
@@ -83,6 +92,6 @@ func (pmm *SeedPieceMetaDataManager) getPieceMetaRecordsByTaskID(taskID string) 
 	return pieceMetaRecords, nil
 }
 
-func (pmm *SeedPieceMetaDataManager) removePieceMetaRecordsByTaskID(taskID string) error {
+func (pmm *seedPieceMetaDataManager) removePieceMetaRecordsByTaskID(taskID string) error {
 	return pmm.taskPieceMetaRecords.Remove(taskID)
 }

@@ -19,13 +19,11 @@ package store
 import (
 	"context"
 	"fmt"
-	"io"
-
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-
 	"github.com/pkg/errors"
+	"io"
 )
 
 // Store is a wrapper of the storage which implements the interface of StorageDriver.

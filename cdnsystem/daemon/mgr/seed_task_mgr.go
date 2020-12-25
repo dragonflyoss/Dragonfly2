@@ -31,7 +31,7 @@ type SeedTaskMgr interface {
 	Register(ctx context.Context, registerRequest *types.TaskRegisterRequest) (pieceCh <-chan types.SeedPiece, err error)
 
 	// Get the task Info with specified taskID.
-	Get(ctx context.Context, taskID string) (*types.SeedTaskInfo, error)
+	Get(ctx context.Context, taskID string) (*types.SeedTask, error)
 
 	// GetAccessTime gets all task accessTime.
 	GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error)

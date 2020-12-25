@@ -39,12 +39,15 @@ var (
 	// ErrAuthenticationRequired represents the authentication is required.
 	ErrAuthenticationRequired = DfError{codeAuthenticationRequired, "authentication required"}
 
+	ErrPieceCountNotEqual = DfError{codePieceCountNotEqual, "piece count not equal"}
 	//
 	ErrFileLengthNotEqual = DfError{codeFileLengthNotEqual, "file length not equal"}
 
-	ErrPieceRecordsCountNotEqual = DfError{codePieceRecordsCountNotEqual, ""}
-
 	ErrDownloadFail = DfError{codeDownloadFail, ""}
+
+	ErrResourceExpired = DfError{codeResourceExpired, "task has expired"}
+
+	ErrResourceNotSupportRangeRequest = DfError{codeResourceNotSupportRangeRequest, "resource not support range request"}
 )
 
 const (
@@ -56,9 +59,11 @@ const (
 	codeURLNotReachable
 	codeTaskIDDuplicate
 	codeAuthenticationRequired
+	codePieceCountNotEqual
 	codeFileLengthNotEqual
-	codePieceRecordsCountNotEqual
 	codeDownloadFail
+	codeResourceExpired
+	codeResourceNotSupportRangeRequest
 )
 
 // IsSystemError checks the error is a system error or not.

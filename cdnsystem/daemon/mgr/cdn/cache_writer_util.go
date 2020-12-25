@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package localcdn
+package cdn
 
 import (
 	"bytes"
@@ -59,24 +59,28 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				var pieceMd5 = md5.New()
 				if err := cw.writeToFile(ctx, job.pieceContent, job.taskID, job.cdnFileOffset, job.pieceContentLen, pieceMd5); err != nil {
 					logger.Errorf("failed to write taskID %s pieceNum %d file: %v", job.taskID, job.pieceNum, err)
-					// NOTE: should we redo the job?
+					// todo redo the job?
 					continue
 				}
 
 				// report piece status
-				pieceSum := fileutils.GetMd5Sum(pieceMd5, nil)
-				pieceMetaRecord := pieceMetaRecord{
+				pieceMd5Sum := fileutils.GetMd5Sum(pieceMd5, nil)
+				pieceRecord := pieceMetaRecord{
 					PieceNum:  job.pieceNum,
 					PieceLen:  job.pieceContentLen,
-					Md5:       pieceSum,
+					Md5:       pieceMd5Sum,
 					Range:     job.pieceRange,
 					Offset:    job.sourceFileOffset,
 				}
+				// write piece meta
+				go func(record *pieceMetaRecord) {
+					// todo
+				}(&pieceRecord)
+
 				if cw.cdnReporter != nil {
-					// todo 写到channel中
-					if err := cw.cdnReporter.pieceMetaDataManager.setPieceMetaRecord(job.taskID, job.pieceNum, pieceMetaRecord); err != nil {
+					if err := cw.cdnReporter.reportPieceMetaRecord(job.taskID, pieceRecord); err != nil {
 						// NOTE: should we do this job again?
-						logger.Errorf("failed to report piece status taskID %s pieceNum %d pieceMetaRecord %s: %v", job.taskID, job.pieceNum, pieceMetaRecord, err)
+						logger.Errorf("failed to report piece status taskID %s pieceNum %d pieceMetaRecord %s: %v", job.taskID, job.pieceNum, pieceRecord, err)
 						continue
 					}
 				}
@@ -86,12 +90,12 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 	}
 }
 
-func (cw *cacheWriter) writeToFile(ctx context.Context, bytesBuffer *bytes.Buffer, taskID string, cdnFileOffset int64, pieceContSize int32, pieceMd5 hash.Hash) error {
+func (cw *cacheWriter) writeToFile(ctx context.Context, bytesBuffer *bytes.Buffer, taskID string, cdnFileOffset int64, pieceContLen int32, pieceMd5 hash.Hash) error {
 	var resultBuf = &bytes.Buffer{}
 	// write piece content
 	var pieceContent []byte
-	if pieceContSize > 0 {
-		pieceContent = make([]byte, pieceContSize)
+	if pieceContLen > 0 {
+		pieceContent = make([]byte, pieceContLen)
 		if _, err := bytesBuffer.Read(pieceContent); err != nil {
 			return err
 		}
@@ -108,6 +112,33 @@ func (cw *cacheWriter) writeToFile(ctx context.Context, bytesBuffer *bytes.Buffe
 		Bucket: config.DownloadHome,
 		Key:    getDownloadKey(taskID),
 		Offset: cdnFileOffset,
-		Length: int64(pieceContSize),
+		Length: int64(pieceContLen),
+	}, resultBuf)
+}
+
+// todo write piece meta data to disk
+func (cw *cacheWriter) writePieceMetaDataToFile(ctx context.Context, bytesBuffer *bytes.Buffer, taskID string, cdnFileOffset int64, pieceContLen int32, pieceMd5 hash.Hash) error {
+	var resultBuf = &bytes.Buffer{}
+	// write piece content
+	var pieceContent []byte
+	if pieceContLen > 0 {
+		pieceContent = make([]byte, pieceContLen)
+		if _, err := bytesBuffer.Read(pieceContent); err != nil {
+			return err
+		}
+		bytesBuffer.Reset()
+		binary.Write(resultBuf, binary.BigEndian, pieceContent)
+	}
+	if pieceMd5 != nil {
+		if len(pieceContent) > 0 {
+			pieceMd5.Write(pieceContent)
+		}
+	}
+	// write to the storage
+	return cw.cdnStore.Put(ctx, &store.Raw{
+		Bucket: config.DownloadHome,
+		Key:    getDownloadKey(taskID),
+		Offset: cdnFileOffset,
+		Length: int64(pieceContLen),
 	}, resultBuf)
 }

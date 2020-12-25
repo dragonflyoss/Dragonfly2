@@ -23,7 +23,7 @@ type UrlMeta struct {
 	Range string
 }
 
-type SeedTaskInfo struct {
+type SeedTask struct {
 	TaskID           string
 	Url              string
 	SourceFileLength int64

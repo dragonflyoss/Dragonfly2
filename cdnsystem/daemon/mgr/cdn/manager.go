@@ -14,27 +14,25 @@
  * limitations under the License.
  */
 
-package localcdn
+package cdn
 
 import (
 	"context"
 	"crypto/md5"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate/limitreader"
-	"path"
-
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate/ratelimiter"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-
 	"github.com/prometheus/client_golang/prometheus"
+	"path"
 )
 
 var _ mgr.CDNMgr = &Manager{}
@@ -68,48 +66,49 @@ func newMetrics(register prometheus.Registerer) *metrics {
 
 // Manager is an implementation of the interface of CDNMgr.
 type Manager struct {
-	cfg                  *config.Config
-	cacheStore           *store.Store
-	limiter              *ratelimiter.RateLimiter
-	cdnLocker            *util.LockerPool
-	metaDataManager      *metaDataManager
-	pieceMetaDataManager *SeedPieceMetaDataManager
-	cdnReporter          *reporter
-	detector             *cacheDetector
-	resourceClient       source.ResourceClient
-	writer               *cacheWriter
-	metrics              *metrics
+	cfg             *config.Config
+	cacheStore      *store.Store
+	limiter         *ratelimiter.RateLimiter
+	cdnLocker       *util.LockerPool
+	metaDataManager *metaDataManager
+	publisher       *mgr.PieceSeedPublisher
+	cdnReporter     *reporter
+	detector        *cacheDetector
+	resourceClient  source.ResourceClient
+	writer          *cacheWriter
+	metrics         *metrics
 }
 
 // NewManager returns a new Manager.
 func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient,
+	publisher *mgr.PieceSeedPublisher,
 	register prometheus.Registerer) (mgr.CDNMgr, error) {
-	return newManager(cfg, cacheStore, resourceClient, register)
+	return newManager(cfg, cacheStore, resourceClient, publisher, register)
 }
 
 func newManager(cfg *config.Config, cacheStore *store.Store,
-	resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
+	resourceClient source.ResourceClient, publisher *mgr.PieceSeedPublisher, register prometheus.Registerer) (*Manager, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
-	pieceMetaDataManager := newPieceMetaDataMgr()
-	cdnReporter := newReporter(pieceMetaDataManager)
+	pieceMetaDataManager := mgr.NewPieceMetaDataMgr()
+	cdnReporter := newReporter(publisher)
 	return &Manager{
-		cfg:                  cfg,
-		cacheStore:           cacheStore,
-		limiter:              rateLimiter,
-		cdnLocker:            util.NewLockerPool(),
-		metaDataManager:      metaDataManager,
-		pieceMetaDataManager: pieceMetaDataManager,
-		cdnReporter:          cdnReporter,
-		detector:             newCacheDetector(cacheStore, metaDataManager, pieceMetaDataManager, resourceClient),
-		resourceClient:       resourceClient,
-		writer:               newCacheWriter(cacheStore, cdnReporter),
-		metrics:              newMetrics(register),
+		cfg:             cfg,
+		cacheStore:      cacheStore,
+		limiter:         rateLimiter,
+		cdnLocker:       util.NewLockerPool(),
+		metaDataManager: metaDataManager,
+		publisher:       publisher,
+		cdnReporter:     cdnReporter,
+		detector:        newCacheDetector(cacheStore, metaDataManager, pieceMetaDataManager, resourceClient),
+		resourceClient:  resourceClient,
+		writer:          newCacheWriter(cacheStore, cdnReporter),
+		metrics:         newMetrics(register),
 	}, nil
 }
 
 // TriggerCDN will trigger CDN to download the file from sourceUrl.
-func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*types.SeedTaskInfo, error) {
+func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (*types.SeedTask, error) {
 	// obtain taskID write lock
 	cm.cdnLocker.GetLock(task.TaskID, false)
 	defer cm.cdnLocker.ReleaseLock(task.TaskID, false)
@@ -150,7 +149,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*t
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
 	if err != nil {
-		logger.Errorf("failed to write for task %s: %v", task.TaskID, err)
+		logger.Errorf("taskID:%s, failed to write for task: %v", task.TaskID, err)
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
 	}
 	cm.metrics.cdnDownloadBytes.WithLabelValues().Add(float64(downloadMetadata.realSourceFileLength))
@@ -167,7 +166,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTaskInfo) (*t
 
 // GetHTTPPath returns the http download path of taskID.
 // The returned path joined the DownloadRaw.Bucket and DownloadRaw.Key.
-func (cm *Manager) GetHTTPPath(ctx context.Context, task *types.SeedTaskInfo) (string, error) {
+func (cm *Manager) GetHTTPPath(ctx context.Context, task *types.SeedTask) (string, error) {
 	raw := getDownloadRawFunc(task.TaskID)
 	return path.Join("/", raw.Bucket, raw.Key), nil
 }
@@ -188,7 +187,7 @@ func (cm *Manager) CheckFileExist(ctx context.Context, taskID string) bool {
 // Delete the cdn meta with specified taskID.
 // It will also delete the files on the disk when the force equals true.
 func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error {
-	if err := cm.pieceMetaDataManager.removePieceMetaRecordsByTaskID(taskID); err != nil && dferrors.IsDataNotFound(err) {
+	if err := cm.publisher.removePieceMetaRecordsByTaskID(taskID); err != nil && dferrors.IsDataNotFound(err) {
 		logger.Error("")
 	}
 	if force {
@@ -197,7 +196,8 @@ func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error 
 	return nil
 }
 
-func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTaskInfo, sourceMd5 string, downloadMetadata *downloadMetadata) (bool, error) {
+// handleCDNResult
+func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, sourceMd5 string, downloadMetadata *downloadMetadata) (bool, error) {
 	sourceFileLength := task.SourceFileLength
 	realDownloadedSourceFileLength := downloadMetadata.realSourceFileLength
 	var isSuccess = true
@@ -211,7 +211,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTaskInfo
 		logger.Errorf("taskId:%s url:%s file length not match expected:%d real:%d", task.TaskID, task.Url, sourceFileLength, realDownloadedSourceFileLength)
 		isSuccess = false
 	}
-
+	// if validate fail
 	if !isSuccess {
 		realDownloadedSourceFileLength = 0
 	}
@@ -230,12 +230,12 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTaskInfo
 
 	logger.Infof("success to get taskID: %s fileLength: %d realMd5: %s", task.TaskID, downloadMetadata.realCdnFileLength, sourceMd5)
 
-	pieceMD5s, err := cm.pieceMetaDataManager.getPieceMetaRecordsByTaskID(task.TaskID)
+	pieceMetas, err := cm.publisher.getPieceMetaRecordsByTaskID(task.TaskID)
 	if err != nil {
 		return false, err
 	}
 
-	if err := cm.metaDataManager.writePieceMetaRecords(ctx, task.TaskID, sourceMd5, pieceMD5s); err != nil {
+	if err := cm.metaDataManager.writePieceMetaRecords(ctx, task.TaskID, sourceMd5, pieceMetas); err != nil {
 		return false, err
 	}
 	return true, nil
