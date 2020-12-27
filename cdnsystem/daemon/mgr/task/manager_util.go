@@ -164,7 +164,6 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) err
 	tm.metrics.tasks.WithLabelValues(task.CdnStatus).Dec()
 	tm.metrics.tasks.WithLabelValues(updateTaskInfo.CdnStatus).Inc()
 	task.CdnStatus = updateTaskInfo.CdnStatus
-
 	return nil
 }
 

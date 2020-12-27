@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package mgr
+package cdn
 
 import (
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/piece"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/pkg/errors"
@@ -24,44 +25,37 @@ import (
 	"strconv"
 )
 
-type pieceMetaRecord struct {
-	PieceNum int32  `json:"pieceNum"`
-	PieceLen int32  `json:"pieceLen"` // 下载存储的真实长度
-	Md5      string `json:"md5"`
-	Range    string `json:"range"` // 下载存储到磁盘的range，不一定是origin source的range
-	Offset   int64  `json:"offset"`
-}
-
-
 type seedPieceMetaDataManager struct {
 	taskPieceMetaRecords *syncmap.SyncMap
+	publisher            *piece.SeedPiecePublisher
 }
 
-func NewPieceMetaDataMgr() *seedPieceMetaDataManager {
+func NewPieceMetaDataMgr(publisher *piece.SeedPiecePublisher) *seedPieceMetaDataManager {
 	return &seedPieceMetaDataManager{
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
+		publisher:            publisher,
 	}
 }
 
 // getPieceMetaRecord
-func (pmm *seedPieceMetaDataManager) getPieceMetaRecord(taskID string, pieceNum int) (pieceMetaRecord, error) {
+func (pmm *seedPieceMetaDataManager) getPieceMetaRecord(taskID string, pieceNum int) (PieceMetaRecord, error) {
 	pieceMetaRecords, err := pmm.taskPieceMetaRecords.GetAsMap(taskID)
 	if err != nil {
-		return pieceMetaRecord{}, errors.Wrapf(err, "taskID:%s, failed to get pieceMetaRecords", taskID)
+		return PieceMetaRecord{}, errors.Wrapf(err, "taskID:%s, failed to get pieceMetaRecords", taskID)
 	}
 	v, err := pieceMetaRecords.Get(strconv.Itoa(pieceNum))
 	if err != nil {
-		return pieceMetaRecord{}, errors.Wrapf(err, "taskID:%s, failed to get pieceCount(%d)piece meta record", taskID, pieceNum)
+		return PieceMetaRecord{}, errors.Wrapf(err, "taskID:%s, failed to get pieceCount(%d)piece meta record", taskID, pieceNum)
 	}
 
-	if value, ok := v.(pieceMetaRecord); ok {
+	if value, ok := v.(PieceMetaRecord); ok {
 		return value, nil
 	}
-	return pieceMetaRecord{}, errors.Wrapf(dferrors.ErrConvertFailed, "taskID:%s, failed to convert piece count(%d) from map with value %v", taskID, pieceNum, v)
+	return PieceMetaRecord{}, errors.Wrapf(dferrors.ErrConvertFailed, "taskID:%s, failed to convert piece count(%d) from map with value %v", taskID, pieceNum, v)
 }
 
 // setPieceMetaRecord
-func (pmm *seedPieceMetaDataManager) setPieceMetaRecord(taskID string, pieceMetaRecord pieceMetaRecord) error {
+func (pmm *seedPieceMetaDataManager) setPieceMetaRecord(taskID string, pieceMetaRecord PieceMetaRecord) error {
 	pieceRecords, err := pmm.taskPieceMetaRecords.GetAsMap(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
 		return err
@@ -71,11 +65,12 @@ func (pmm *seedPieceMetaDataManager) setPieceMetaRecord(taskID string, pieceMeta
 		pmm.taskPieceMetaRecords.Add(taskID, pieceRecords)
 	}
 
-	return pieceRecords.Add(strconv.Itoa(int(pieceMetaRecord.PieceNum)), pieceMetaRecord)
+	pieceRecords.Add(strconv.Itoa(int(pieceMetaRecord.PieceNum)), pieceMetaRecord)
+	pmm.publisher.Publish(taskID, pieceMetaRecord)
 }
 
 // getPieceMetaRecordsByTaskID
-func (pmm *seedPieceMetaDataManager) getPieceMetaRecordsByTaskID(taskID string) (pieceMetaRecords []pieceMetaRecord, err error) {
+func (pmm *seedPieceMetaDataManager) getPieceMetaRecordsByTaskID(taskID string) (pieceMetaRecords []PieceMetaRecord, err error) {
 	pieceMetaRecordMap, err := pmm.taskPieceMetaRecords.GetAsMap(taskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "taskID:%s, failed to get piece meta records", taskID)

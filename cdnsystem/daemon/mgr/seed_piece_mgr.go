@@ -17,6 +17,7 @@
 package mgr
 
 import (
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/cdn"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 )
 
@@ -28,9 +29,9 @@ type SeedPieceMgr interface {
 
 	UnSubscribeTask(sub SeedSubscriber, taskID string) error
 
-	Publish(taskID string, record pieceMetaRecord) error
+	Publish(taskID string, record cdn.PieceMetaRecord) error
 
-	close(taskID string) error
+	Close(taskID string) error
 
 	GetPieceMetaRecordsByTaskID(taskId string) ([]types.SeedPiece, error)
 }

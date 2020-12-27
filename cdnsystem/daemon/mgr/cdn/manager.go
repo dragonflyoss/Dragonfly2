@@ -71,7 +71,7 @@ type Manager struct {
 	limiter         *ratelimiter.RateLimiter
 	cdnLocker       *util.LockerPool
 	metaDataManager *metaDataManager
-	publisher       *mgr.PieceSeedPublisher
+	publisher       mgr.SeedPieceMgr
 	cdnReporter     *reporter
 	detector        *cacheDetector
 	resourceClient  source.ResourceClient
@@ -81,16 +81,15 @@ type Manager struct {
 
 // NewManager returns a new Manager.
 func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient,
-	publisher *mgr.PieceSeedPublisher,
+	publisher mgr.SeedPieceMgr,
 	register prometheus.Registerer) (mgr.CDNMgr, error) {
 	return newManager(cfg, cacheStore, resourceClient, publisher, register)
 }
 
 func newManager(cfg *config.Config, cacheStore *store.Store,
-	resourceClient source.ResourceClient, publisher *mgr.PieceSeedPublisher, register prometheus.Registerer) (*Manager, error) {
+	resourceClient source.ResourceClient, publisher mgr.SeedPieceMgr, register prometheus.Registerer) (*Manager, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
-	pieceMetaDataManager := mgr.NewPieceMetaDataMgr()
 	cdnReporter := newReporter(publisher)
 	return &Manager{
 		cfg:             cfg,
@@ -100,7 +99,7 @@ func newManager(cfg *config.Config, cacheStore *store.Store,
 		metaDataManager: metaDataManager,
 		publisher:       publisher,
 		cdnReporter:     cdnReporter,
-		detector:        newCacheDetector(cacheStore, metaDataManager, pieceMetaDataManager, resourceClient),
+		detector:        newCacheDetector(cacheStore, metaDataManager, resourceClient),
 		resourceClient:  resourceClient,
 		writer:          newCacheWriter(cacheStore, cdnReporter),
 		metrics:         newMetrics(register),
@@ -115,7 +114,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (*types
 	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
 	if err != nil {
-		logger.Errorf("taskId: %s failed to detect cache, err: %v", task.TaskID, err)
+		logger.Errorf("taskId: %s failed to detect cache:%v", task.TaskID, err)
 	}
 	// second: report detect result
 	err = cm.cdnReporter.reportCache(task.TaskID, detectResult)
@@ -125,7 +124,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (*types
 		detectResult.breakNum = 0
 		detectResult.fileMd5.Reset()
 	}
-
+	// full cache
 	if detectResult != nil && detectResult.breakNum == -1 {
 		logger.Infof("taskId: %s cache full hit on local", task.TaskID)
 		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
@@ -138,12 +137,13 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (*types
 	// third: start to download the source file
 	resp, err := cm.download(ctx, task, detectResult)
 	cm.metrics.cdnDownloadCount.WithLabelValues().Inc()
+	// download fail
 	if err != nil {
 		cm.metrics.cdnDownloadFailCount.WithLabelValues().Inc()
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
 	}
 	defer resp.Body.Close()
-
+	// update Expire info
 	cm.updateExpireInfo(ctx, task.TaskID, resp.ExpireInfo)
 	reader := limitreader.NewLimitReaderWithLimiterAndMD5Sum(resp.Body, cm.limiter, detectResult.fileMd5)
 	// forth: write to storage
@@ -187,7 +187,7 @@ func (cm *Manager) CheckFileExist(ctx context.Context, taskID string) bool {
 // Delete the cdn meta with specified taskID.
 // It will also delete the files on the disk when the force equals true.
 func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error {
-	if err := cm.publisher.removePieceMetaRecordsByTaskID(taskID); err != nil && dferrors.IsDataNotFound(err) {
+	if err := cm.publisher.Close(taskID); err != nil && dferrors.IsDataNotFound(err) {
 		logger.Error("")
 	}
 	if force {
@@ -230,7 +230,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 
 	logger.Infof("success to get taskID: %s fileLength: %d realMd5: %s", task.TaskID, downloadMetadata.realCdnFileLength, sourceMd5)
 
-	pieceMetas, err := cm.publisher.getPieceMetaRecordsByTaskID(task.TaskID)
+	pieceMetas, err := cm.pieceManager.GetPieceMetaRecordsByTaskID(task.TaskID)
 	if err != nil {
 		return false, err
 	}

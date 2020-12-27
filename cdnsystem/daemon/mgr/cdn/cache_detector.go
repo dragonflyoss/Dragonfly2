@@ -19,7 +19,6 @@ package cdn
 import (
 	"context"
 	"crypto/md5"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
@@ -35,30 +34,28 @@ import (
 type cacheDetector struct {
 	cacheStore      *store.Store
 	metaDataManager *metaDataManager
-	seedPieceMgr    mgr.SeedPieceMgr
 	resourceClient  source.ResourceClient
 }
 
-// cacheResult data which has been cached
+// cacheResult detect cache result
 type cacheResult struct {
-	breakNum             int32             // break
+	breakNum             int32             // break num
 	downloadedFileLength int64             // length of file has been downloaded
-	pieceMetaRecords     []pieceMetaRecord // piece meta data records of task
+	pieceMetaRecords     []PieceMetaRecord // piece meta data records of task
 	fileMetaData         *fileMetaData     // file meta data of task
 	fileMd5              hash.Hash         // md5 of file content that has been downloaded
 }
 
-func newCacheDetector(cacheStore *store.Store, metaDataManager *metaDataManager, seedPieceMgr mgr.SeedPieceMgr,
+func newCacheDetector(cacheStore *store.Store, metaDataManager *metaDataManager,
 	resourceClient source.ResourceClient) *cacheDetector {
 	return &cacheDetector{
 		cacheStore:      cacheStore,
 		metaDataManager: metaDataManager,
-		seedPieceMgr:    seedPieceMgr,
 		resourceClient:  resourceClient,
 	}
 }
 
-// detectCache
+// detectCache detect cache
 func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) (*cacheResult, error) {
 	detectResult, err := cd.doDetect(ctx, task)
 	logger.Debugf("taskID: %s detects cache result:%v", task.TaskID, detectResult)
@@ -119,17 +116,9 @@ func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskID string,
 	if !fileMetaData.Success {
 		return &cacheResult{}, errors.Wrapf(dferrors.ErrDownloadFail, "success property in file meta data is false")
 	}
-	var pieceMetaRecords []pieceMetaRecord
-	if pieceMetaRecords, err := cd.seedPieceMgr.GetPieceMetaRecordsByTaskID(taskID); err != nil {
-		logger.Warnf("taskID: %s failed to read piece meta data from memory:%v, try read data from disk", taskID, err)
-		// check piece meta records integrity
-		pieceMetaRecords, err = cd.metaDataManager.readAndCheckPieceMetaRecords(ctx, taskID, fileMetaData.SourceMd5)
-		if err != nil {
-			return &cacheResult{}, errors.Wrapf(err, "failed to read piece meta data from disk")
-		}
-		for _, pieceMetaRecord := range pieceMetaRecords {
-			cd.pieceMetaDataManager.setPieceMetaRecord(taskID, pieceMetaRecord)
-		}
+	pieceMetaRecords, err := cd.metaDataManager.readAndCheckPieceMetaRecords(ctx, taskID, fileMetaData.SourceMd5)
+	if err != nil {
+		return &cacheResult{}, errors.Wrapf(err, "failed to read piece meta data from disk")
 	}
 	if len(pieceMetaRecords) != fileMetaData.TotalPieceCount {
 		return &cacheResult{}, errors.Wrapf(dferrors.ErrPieceCountNotEqual, "memory piece count(%d), disk piece count(%d)", len(pieceMetaRecords), fileMetaData.TotalPieceCount)
@@ -195,13 +184,11 @@ func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskID string, met
 	}, nil
 }
 
+// resetRepo
 func (cd *cacheDetector) resetRepo(ctx context.Context, task *types.SeedTask) (*fileMetaData, error) {
 	logger.Infof("taskID: %s reset repo for task", task.TaskID)
 	if err := deleteTaskFiles(ctx, cd.cacheStore, task.TaskID); err != nil {
 		logger.Errorf("taskID: %s reset repo: failed to delete task files: %v", task.TaskID, err)
-	}
-	if err := cd.pieceMetaDataManager.removePieceMetaRecordsByTaskID(task.TaskID); err != nil && !dferrors.IsDataNotFound(err) {
-		logger.Errorf("taskID: %s reset repo: failed to remove task files: %v", task.TaskID, err)
 	}
 	// initialize meta data file
 	return cd.metaDataManager.writeFileMetaDataByTask(ctx, task)

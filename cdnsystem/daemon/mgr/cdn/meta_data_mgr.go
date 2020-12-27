@@ -19,7 +19,6 @@ package cdn
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
@@ -27,6 +26,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/digest"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 // fileMetaData
@@ -47,13 +47,13 @@ type fileMetaData struct {
 
 // pieceMetaData
 type pieceMetaData struct {
-	PieceMetaRecords []pieceMetaRecord `json:"pieceMetaRecords"`
+	PieceMetaRecords []PieceMetaRecord `json:"pieceMetaRecords"`
 	FileMd5          string            `json:"fileMd5"`
 	Sha1Value        string            `json:"sha1Value"`
 }
 
 // pieceMetaRecord
-type pieceMetaRecord struct {
+type PieceMetaRecord struct {
 	PieceNum int32  `json:"pieceNum"`
 	PieceLen int32  `json:"pieceLen"` // 下载存储的真实长度
 	Md5      string `json:"md5"`
@@ -176,7 +176,7 @@ func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskID str
 }
 
 // writePieceMetaRecords writes the piece meta data to storage.
-func (pmm *metaDataManager) writePieceMetaRecords(ctx context.Context, taskID, fileMD5 string, pieceMetaRecords []pieceMetaRecord) error {
+func (pmm *metaDataManager) writePieceMetaRecords(ctx context.Context, taskID, fileMD5 string, pieceMetaRecords []PieceMetaRecord) error {
 	pmm.locker.GetLock(taskID, false)
 	defer pmm.locker.ReleaseLock(taskID, false)
 
@@ -184,30 +184,51 @@ func (pmm *metaDataManager) writePieceMetaRecords(ctx context.Context, taskID, f
 		logger.Warnf("failed to write empty pieceMetaRecords for taskID: %s", taskID)
 		return nil
 	}
-	pieceMetaStr, err := json.Marshal(pieceMetaRecords)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal piece records metadata")
+	var pieceMetaStrs []string
+	for _, record := range pieceMetaRecords {
+		pieceMetaStrs = append(pieceMetaStrs, getPieceMetaValue(record))
 	}
-	sha1s := make([]string, 2)
-	sha1s = append(sha1s, string(pieceMetaStr))
-	sha1s = append(sha1s, fileMD5)
-	sha1Value := digest.Sha1(sha1s)
-
-	pieceMetaData := pieceMetaData{
-		PieceMetaRecords: pieceMetaRecords,
-		FileMd5:          fileMD5,
-		Sha1Value:        sha1Value,
-	}
-
-	data, err := json.Marshal(pieceMetaData)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal piece metadata")
-	}
-	return pmm.fileStore.PutBytes(ctx, getPieceMetaDataRawFunc(taskID), data)
+	pieceMetaStrs = append(pieceMetaStrs, fileMD5)
+	pieceMetaStrs = append(pieceMetaStrs, digest.Sha1(pieceMetaStrs))
+	pieceStr := strings.Join(pieceMetaStrs, "\n")
+	return pmm.fileStore.PutBytes(ctx, getPieceMetaDataRawFunc(taskID), []byte(pieceStr))
 }
 
 // readPieceMetaDatas reads the md5 file of the taskID and returns the pieceMD5s.
-func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskID, fileMD5 string) ([]pieceMetaRecord, error) {
+func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskID, fileMD5 string) ([]PieceMetaRecord, error) {
+	pmm.locker.GetLock(taskID, true)
+	defer pmm.locker.ReleaseLock(taskID, true)
+
+	bytes, err := pmm.fileStore.GetBytes(ctx, getPieceMetaDataRawFunc(taskID))
+	if err != nil {
+		return nil, err
+	}
+	pieceMetaRecords := strings.Split(strings.TrimSpace(string(bytes)), "\n")
+	piecesLength := len(pieceMetaRecords)
+	if piecesLength < 3 {
+		return nil, errors.Errorf("piece meta file content line count is invalid, line count:%d", piecesLength)
+	}
+	piecesWithoutSha1Value := pieceMetaRecords[:piecesLength-1]
+	expectedSha1Value := digest.Sha1(piecesWithoutSha1Value)
+	realSha1Value := pieceMetaRecords[piecesLength-1]
+	if expectedSha1Value != realSha1Value {
+		return nil, errors.Errorf("failed to validate the SHA-1 checksum of piece meta records, expected: %s, real: %s", expectedSha1Value, realSha1Value)
+	}
+
+	// validate the fileMD5
+	realFileMD5 := pieceMetaRecords[piecesLength-2]
+	if realFileMD5 != fileMD5 {
+		return nil, errors.Errorf("failed to validate the fileMD5, expected: %s, real: %s", fileMD5, realFileMD5)
+	}
+	var result = make([]PieceMetaRecord, piecesLength-2)
+	for _, pieceStr := range pieceMetaRecords {
+		result = append(result, getPieceMetaRecord(pieceStr))
+	}
+	return result, nil
+}
+
+// readPieceMetaDatas reads the md5 file of the taskID and returns the pieceMD5s.
+func (pmm *metaDataManager) readWithoutCheckPieceMetaRecords(ctx context.Context, taskID string) ([]PieceMetaRecord, error) {
 	pmm.locker.GetLock(taskID, true)
 	defer pmm.locker.ReleaseLock(taskID, true)
 
@@ -216,44 +237,13 @@ func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, ta
 		return nil, err
 	}
 
-	pieceMetaData := &pieceMetaData{}
-	if err := json.Unmarshal(bytes, pieceMetaData); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal piece metadata bytes")
-	}
-
-	pieceMetaRecords := pieceMetaData.PieceMetaRecords
-
-	pieceMetaStr, err := json.Marshal(pieceMetaRecords)
-	if err != nil {
+	pieceMetaRecords := strings.Split(strings.TrimSpace(string(bytes)), "\n")
+	if len(pieceMetaRecords) == 0 {
 		return nil, nil
 	}
-	sha1s := make([]string, 2)
-	sha1s = append(sha1s, string(pieceMetaStr))
-	sha1s = append(sha1s, pieceMetaData.FileMd5)
-	expectedSha1Value := digest.Sha1(sha1s)
-	if expectedSha1Value != pieceMetaData.Sha1Value {
-		return nil, fmt.Errorf("taskID: %s failed to validate the SHA-1 checksum of pieceMD5s, expected: %s, real: %s", taskID, expectedSha1Value, pieceMetaData.Sha1Value)
+	var result = make([]PieceMetaRecord, len(pieceMetaRecords))
+	for _, pieceRecord := range pieceMetaRecords {
+		result = append(result, getPieceMetaRecord(pieceRecord))
 	}
-
-	if fileMD5 != "" && pieceMetaData.FileMd5 != fileMD5 {
-		return nil, fmt.Errorf("taskID: %s failed to validate the fileMD5, expected: %s, real: %s", taskID, fileMD5, pieceMetaData.FileMd5)
-	}
-	return pieceMetaRecords, nil
-}
-
-// readPieceMetaDatas reads the md5 file of the taskID and returns the pieceMD5s.
-func (pmm *metaDataManager) readWithoutCheckPieceMetaRecords(ctx context.Context, taskID string) ([]pieceMetaRecord, error) {
-	pmm.locker.GetLock(taskID, true)
-	defer pmm.locker.ReleaseLock(taskID, true)
-
-	bytes, err := pmm.fileStore.GetBytes(ctx, getPieceMetaDataRawFunc(taskID))
-	if err != nil {
-		return nil, err
-	}
-
-	pieceMetaData := &pieceMetaData{}
-	if err := json.Unmarshal(bytes, pieceMetaData); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal piece metadata bytes")
-	}
-	return pieceMetaData.PieceMetaRecords, nil
+	return result, nil
 }

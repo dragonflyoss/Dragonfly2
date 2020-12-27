@@ -97,6 +97,13 @@ func (s *Store) PutBytes(ctx context.Context, raw *Raw, data []byte) error {
 	return s.driver.PutBytes(ctx, raw, data)
 }
 
+func (s *Store) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
+	if err := checkEmptyKey(raw); err != nil {
+		return err
+	}
+	return s.driver.AppendBytes(ctx, raw, data)
+}
+
 // Remove the data from the storage based on raw information.
 func (s *Store) Remove(ctx context.Context, raw *Raw) error {
 	if raw == nil || (stringutils.IsEmptyStr(raw.Key) &&

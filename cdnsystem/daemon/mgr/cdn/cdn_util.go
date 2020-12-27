@@ -17,7 +17,10 @@
 package cdn
 
 import (
+	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"strconv"
+	"strings"
 
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/timeutils"
 )
@@ -33,5 +36,23 @@ func getUpdateTaskInfo(cdnStatus, realMD5 string, cdnFileLength int64) *types.Se
 		CdnStatus:     cdnStatus,
 		SourceRealMd5: realMD5,
 		CdnFileLength: cdnFileLength,
+	}
+}
+
+func getPieceMetaValue(record PieceMetaRecord) string {
+	return fmt.Sprintf("%d:%d:%s:%s:%d", record.PieceNum, record.PieceLen, record.Md5, record.Range, record.Offset)
+}
+
+func getPieceMetaRecord(value string) PieceMetaRecord {
+	fields := strings.Split(value, ":")
+	pieceNum, _ := strconv.Atoi(fields[0])
+	pieceLen, _ := strconv.Atoi(fields[1])
+	offSet, _ := strconv.ParseInt(fields[4], 10, 64)
+	return PieceMetaRecord{
+		PieceNum: int32(pieceNum),
+		PieceLen: int32(pieceLen),
+		Md5:      fields[2],
+		Range:    fields[3],
+		Offset:   offSet,
 	}
 }

@@ -17,14 +17,13 @@
 package config
 
 import (
-	"path/filepath"
-	"time"
-
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v2"
+	"path/filepath"
+	"time"
 )
 
 // NewConfig creates an instant with default values.

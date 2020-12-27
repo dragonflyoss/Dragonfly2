@@ -79,10 +79,6 @@ func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReq
 	}
 
 	pieceCh, err := ss.taskMgr.Register(ctx, registerRequest)
-	if err != nil {
-
-	}
-	//ss.taskMgr.GetPieces()
 
 	if err != nil {
 		return errors.Wrapf(err, "register seed task fail, registerRequest:%v", registerRequest)
@@ -111,16 +107,14 @@ func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReq
 			time.Sleep(3 * time.Second)
 		}
 	}
-
-	//for piece := range pieceCh {
-	//
-	//}
+	seedTask := ss.taskMgr.Get(ctx, req.GetTaskId())
+	seedTask.CdnStatus
 	psc <- &cdnsystem.PieceSeed{
-		State:         base.NewState(base.Code_SUCCESS, "success"),
-		SeedAddr:      fmt.Sprintf(ss.cfg.AdvertiseIP, ":", ss.cfg.ListenPort),
-		Done:          true,
-		//ContentLength: piece,
-		TotalTraffic:  100,
+		State:    base.NewState(base.Code_SUCCESS, "success"),
+		SeedAddr: fmt.Sprintf(ss.cfg.AdvertiseIP, ":", ss.cfg.ListenPort),
+		Done:     true,
+		ContentLength: 324,
+		TotalTraffic: 100,
 	}
 	return
 	var i = 5

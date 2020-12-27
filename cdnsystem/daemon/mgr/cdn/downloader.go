@@ -33,7 +33,7 @@ import (
 //
 // If the returned error is nil, the Response will contain a non-nil
 // Body which the caller is expected to close.
-func (cm *Manager) download(ctx context.Context, task *types.SeedTask, detectResult *detectCacheResult) (*types.DownloadResponse, error) {
+func (cm *Manager) download(ctx context.Context, task *types.SeedTask, detectResult *cacheResult) (*types.DownloadResponse, error) {
 	checkCode := []int{http.StatusOK, http.StatusPartialContent}
 	headers := source.CopyHeader(nil, task.Headers)
 	// cache partial data

@@ -19,26 +19,28 @@ package cdn
 import "github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 
 type reporter struct {
-	publisher *mgr.PieceSeedPublisher
+	seedPieceManager mgr.SeedPieceMgr
 }
 
-func newReporter(seedPublisher *mgr.PieceSeedPublisher) *reporter {
+func newReporter(seedPublisher mgr.SeedPieceMgr) *reporter {
 	return &reporter{
-		publisher: seedPublisher,
+		seedPieceManager: seedPublisher,
 	}
 }
 
-func (re *reporter) reportCache(taskID string, detectResult *detectCacheResult) error {
+func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error {
 	// report cache pieces status
 	if detectResult != nil && detectResult.pieceMetaRecords != nil {
-		for _, pieceMetaRecord := range detectResult.pieceMetaRecords {
-			re.publisher.Publish(taskID, pieceMetaRecord)
+		for _, record := range detectResult.pieceMetaRecords {
+			if err := re.seedPieceManager.Publish(taskID, record); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (re *reporter) reportPieceMetaRecord(taskID string, record pieceMetaRecord) error {
+func (re *reporter) reportPieceMetaRecord(taskID string, record PieceMetaRecord) error {
 	// report cache pieces status
-	return re.publisher.Publish(taskID, record)
+	return re.seedPieceManager.Publish(taskID, record)
 }

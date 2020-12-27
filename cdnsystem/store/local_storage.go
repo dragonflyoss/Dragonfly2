@@ -237,6 +237,30 @@ func (ls *localStorage) PutBytes(ctx context.Context, raw *Raw, data []byte) err
 	return nil
 }
 
+func (ls *localStorage) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
+	if err := checkPutRaw(raw); err != nil {
+		return err
+	}
+
+	path, err := ls.preparePath(raw.Bucket, raw.Key)
+	if err != nil {
+		return err
+	}
+
+	lock(path, raw.Offset, false)
+	defer unLock(path, raw.Offset, false)
+
+	f, err := fileutils.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := f.Write(data); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Stat determines whether the file exists.
 func (ls *localStorage) Stat(ctx context.Context, raw *Raw) (*StorageInfo, error) {
 	_, fileInfo, err := ls.statPath(raw.Bucket, raw.Key)

@@ -38,7 +38,7 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, publisher *mgr.PieceSeedPublisher, register prometheus.Registerer) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, publisher *mgr.Se, register prometheus.Registerer) (mgr.CDNMgr, error) {
 	return &Manager{
 		cfg: cfg,
 	}, nil

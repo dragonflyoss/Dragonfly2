@@ -30,7 +30,7 @@ import (
 type protocolContent struct {
 	taskID           string
 	pieceNum         int32
-	pieceStyle       string
+	pieceStyle       int32
 	pieceContentLen  int32
 	pieceRange       string
 	pieceContent     *bytes.Buffer
@@ -58,7 +58,7 @@ func newCacheWriter(cdnStore *store.Store, cdnReporter *reporter) *cacheWriter {
 
 // startWriter writes the stream data from the reader to the underlying storage.
 func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *types.SeedTask,
-	detectResult *detectCacheResult) (*downloadMetadata, error) {
+	detectResult *cacheResult) (*downloadMetadata, error) {
 	// currentCdnFileLength is used to calculate the cdn file Length dynamically
 	currentCdnFileLength := detectResult.downloadedFileLength
 	// currentSourceFileLength is used to calculate the source file Length dynamically
@@ -88,7 +88,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 					taskID:           task.TaskID,
 					pieceNum:         curPieceNum,
 					pieceContentLen:  pieceContentLen,
-					pieceStyle:       "PLAIN_UNSPECIFIED",
+					pieceStyle:       0,
 					pieceContent:     bb,
 					pieceRange:       fmt.Sprintf("%d-%d", currentCdnFileLength, currentCdnFileLength+int64(pieceContentLen-1)),
 					cdnFileOffset:    currentCdnFileLength,
@@ -100,7 +100,6 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 				curPieceNum++
 
 				// write the data left to a new buffer
-				// todo recycling bytes.Buffer
 				bb = bytes.NewBuffer([]byte{})
 				n -= int(pieceContLeft)
 				if n > 0 {
@@ -120,7 +119,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 					taskID:           task.TaskID,
 					pieceNum:         curPieceNum,
 					pieceContentLen:  pieceContentLen,
-					pieceStyle:       "PLAIN_UNSPECIFIED",
+					pieceStyle:       0,
 					pieceContent:     bb,
 					pieceRange:       fmt.Sprintf("%d-%d", currentCdnFileLength, currentCdnFileLength+int64(pieceContentLen)),
 					sourceFileOffset: int64(curPieceNum) * int64(task.PieceSize),

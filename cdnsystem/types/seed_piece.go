@@ -16,8 +16,9 @@
 
 package types
 
+// SeedPiece
 type SeedPiece struct {
-	itemType      int8  // 1 piece 0 task
+	itemType      int8 // 1 piece 0 task
 	PieceStyle    int32
 	PieceNum      int32
 	PieceMd5      string

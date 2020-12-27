@@ -27,9 +27,9 @@ import (
 )
 
 //readContent read piece content
-func readContent(reader io.Reader, pieceMetaRecord pieceMetaRecord, fileMd5 hash.Hash) error {
+func readContent(reader io.Reader, pieceRecord pieceMetaRecord, fileMd5 hash.Hash) error {
 	bufSize := int32(256 * 1024)
-	pieceLen := pieceMetaRecord.PieceLen
+	pieceLen := pieceRecord.PieceLen
 	if pieceLen < bufSize {
 		bufSize = pieceLen
 	}
@@ -39,27 +39,35 @@ func readContent(reader io.Reader, pieceMetaRecord pieceMetaRecord, fileMd5 hash
 	for {
 		if curContent+bufSize <= pieceLen {
 			if err := binary.Read(reader, binary.BigEndian, pieceContent); err != nil {
-				return err
+				return errors.Wrapf(err, "read file content error")
 			}
 			curContent += bufSize
 			// calculate the md5
-			pieceMd5.Write(pieceContent)
+			if _, err := pieceMd5.Write(pieceContent); err != nil {
+				return errors.Wrapf(err, "write piece content md5 err")
+			}
 
 			if !util.IsNil(fileMd5) {
 				// todo 应该存放原始文件的md5
-				fileMd5.Write(pieceContent)
+				if _, err := fileMd5.Write(pieceContent); err != nil {
+					return errors.Wrapf(err, "write file content md5 error")
+				}
 			}
 		} else {
 			readLen := pieceLen - curContent
 			if err := binary.Read(reader, binary.BigEndian, pieceContent[:readLen]); err != nil {
-				return err
+				return errors.Wrapf(err, "read file content error")
 			}
 			curContent += readLen
 			// calculate the md5
-			pieceMd5.Write(pieceContent[:readLen])
+			if _, err := pieceMd5.Write(pieceContent[:readLen]); err != nil {
+				return errors.Wrapf(err, "write piece content md5 err")
+			}
 			if !util.IsNil(fileMd5) {
 				// todo 应该存放原始文件的md5
-				fileMd5.Write(pieceContent[:readLen])
+				if _, err := fileMd5.Write(pieceContent[:readLen]); err != nil {
+					return errors.Wrapf(err, "write file content md5 err")
+				}
 			}
 		}
 		if curContent >= pieceLen {
@@ -67,10 +75,9 @@ func readContent(reader io.Reader, pieceMetaRecord pieceMetaRecord, fileMd5 hash
 		}
 	}
 	realPieceMd5 := fileutils.GetMd5Sum(pieceMd5, nil)
-	// check piece content integrity
-	if realPieceMd5 != pieceMetaRecord.Md5 {
-		return errors.Errorf("piece md5 check fail, realPieceMd5 md5 (%s), expected md5 (%s)", realPieceMd5, pieceMetaRecord.Md5)
+	// check piece content
+	if realPieceMd5 != pieceRecord.Md5 {
+		return errors.Errorf("piece md5 check fail, realPieceMd5 md5 (%s), expected md5 (%s)", realPieceMd5, pieceRecord.Md5)
 	}
 	return nil
 }
-

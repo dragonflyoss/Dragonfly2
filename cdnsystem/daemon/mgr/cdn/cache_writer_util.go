@@ -22,6 +22,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/pkg/errors"
 	"hash"
 	"sync"
 
@@ -65,17 +66,19 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 
 				// report piece status
 				pieceMd5Sum := fileutils.GetMd5Sum(pieceMd5, nil)
-				pieceRecord := pieceMetaRecord{
-					PieceNum:  job.pieceNum,
-					PieceLen:  job.pieceContentLen,
-					Md5:       pieceMd5Sum,
-					Range:     job.pieceRange,
-					Offset:    job.sourceFileOffset,
+				pieceRecord := PieceMetaRecord{
+					PieceNum: job.pieceNum,
+					PieceLen: job.pieceContentLen,
+					Md5:      pieceMd5Sum,
+					Range:    job.pieceRange,
+					Offset:   job.sourceFileOffset,
 				}
 				// write piece meta
-				go func(record *pieceMetaRecord) {
-					// todo
-				}(&pieceRecord)
+				go func(record PieceMetaRecord) {
+					if err := cw.appendPieceMetaDataToFile(ctx, job.taskID, record); err != nil {
+						logger.Errorf("failed to append piece meta data to file:%v", err)
+					}
+				}(pieceRecord)
 
 				if cw.cdnReporter != nil {
 					if err := cw.cdnReporter.reportPieceMetaRecord(job.taskID, pieceRecord); err != nil {
@@ -100,7 +103,9 @@ func (cw *cacheWriter) writeToFile(ctx context.Context, bytesBuffer *bytes.Buffe
 			return err
 		}
 		bytesBuffer.Reset()
-		binary.Write(resultBuf, binary.BigEndian, pieceContent)
+		if err := binary.Write(resultBuf, binary.BigEndian, pieceContent); err != nil {
+			return errors.Wrapf(err, "write data file fail")
+		}
 	}
 	if pieceMd5 != nil {
 		if len(pieceContent) > 0 {
@@ -116,29 +121,11 @@ func (cw *cacheWriter) writeToFile(ctx context.Context, bytesBuffer *bytes.Buffe
 	}, resultBuf)
 }
 
-// todo write piece meta data to disk
-func (cw *cacheWriter) writePieceMetaDataToFile(ctx context.Context, bytesBuffer *bytes.Buffer, taskID string, cdnFileOffset int64, pieceContLen int32, pieceMd5 hash.Hash) error {
-	var resultBuf = &bytes.Buffer{}
-	// write piece content
-	var pieceContent []byte
-	if pieceContLen > 0 {
-		pieceContent = make([]byte, pieceContLen)
-		if _, err := bytesBuffer.Read(pieceContent); err != nil {
-			return err
-		}
-		bytesBuffer.Reset()
-		binary.Write(resultBuf, binary.BigEndian, pieceContent)
-	}
-	if pieceMd5 != nil {
-		if len(pieceContent) > 0 {
-			pieceMd5.Write(pieceContent)
-		}
-	}
+func (cw *cacheWriter) appendPieceMetaDataToFile(ctx context.Context, taskID string, record PieceMetaRecord) error {
+	pieceMeta := getPieceMetaValue(record)
 	// write to the storage
-	return cw.cdnStore.Put(ctx, &store.Raw{
+	return cw.cdnStore.AppendBytes(ctx, &store.Raw{
 		Bucket: config.DownloadHome,
-		Key:    getDownloadKey(taskID),
-		Offset: cdnFileOffset,
-		Length: int64(pieceContLen),
-	}, resultBuf)
+		Key:    getPieceMetaDataKey(taskID),
+	}, []byte(pieceMeta+"\n"))
 }

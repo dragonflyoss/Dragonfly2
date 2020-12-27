@@ -53,6 +53,8 @@ type StorageDriver interface {
 	// If the offset>0, the storage driver should starting at byte raw.offset off.
 	PutBytes(ctx context.Context, raw *Raw, data []byte) error
 
+	AppendBytes(ctx context.Context, raw *Raw, data[]byte) error
+
 	// Remove the data from the storage based on raw information.
 	Remove(ctx context.Context, raw *Raw) error
 

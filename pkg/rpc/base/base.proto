@@ -37,6 +37,7 @@ enum Code{
   // cdnsystem processing error 600-699
   CDN_ERROR = 600;
 
+  TASK_FAIL
   // manager processing error 700-799
   MANAGER_ERROR = 700;
 

@@ -95,7 +95,7 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 
 		metaData, err := cm.metaDataManager.readFileMetaData(ctx, taskID)
 		if err != nil || metaData == nil {
-			logger.Debugf("failed to get metadata taskID(%s): %v", taskID, err)
+			logger.Debugf("taskID: %s, failed to get metadata: %v", taskID, err)
 			// TODO: delete the file when failed to get metadata
 			return nil
 		}
