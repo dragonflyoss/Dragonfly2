@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
@@ -190,7 +191,10 @@ func send(stream *pieceTaskStream, prc chan *scheduler.PieceResult) {
 		defer stream.closeSend()
 
 		for v := range prc {
-			_ = stream.send(v)
+			err := stream.send(v)
+			if err != nil {
+				fmt.Println("send error:", err)
+			}
 		}
 	})
 }

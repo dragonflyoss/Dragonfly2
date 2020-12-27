@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
@@ -27,8 +28,9 @@ func NewServer() *Server {
 }
 
 func (s *Server) Start() (err error) {
-	typ := config.GetConfig().Server.Type
-	addr := config.GetConfig().Server.Addr
+	typ := basic.TCP
+	addr := fmt.Sprintf("%s:%d", config.GetConfig().Server.IP,
+		config.GetConfig().Server.Port)
 
 	if err != nil {
 		return

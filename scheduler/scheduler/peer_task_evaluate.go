@@ -5,7 +5,7 @@ import (
 )
 
 type IPeerTaskEvaluator interface {
-	GetNextPiece(peerTask *types.PeerTask) (*types.Piece, error)
+	GetNextPiece(peerTask *types.PeerTask) (*types.Piece, int32, error)
 	Evaluate(dst *types.PeerTask, src *types.PeerTask) (float64, error)
 	GetMaxUsableHostValue() float64
 }

@@ -21,6 +21,7 @@ func CreateSchedulerService() *SchedulerService {
 		peerTaskMgr: mgr.GetPeerTaskManager(),
 		scheduler:   scheduler.CreateScheduler(),
 	}
+	s.cdnMgr.InitCDNClient()
 	return s
 }
 

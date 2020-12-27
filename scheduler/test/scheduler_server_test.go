@@ -6,7 +6,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/server"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 	"testing"
 	"time"
 )
@@ -117,13 +116,11 @@ func TestScheduler(t *testing.T) {
 		return
 	}
 
-	peerTask.Task.AddPiece(&types.Piece{
-		PieceNum:   0,
-		PieceRange: "0,100",
-		PieceMd5:   "11111",
-		PieceOffset: 10,
-		PieceStyle:  base.PieceStyle_PLAIN_UNSPECIFIED,
-	})
+	p := peerTask.Task.GetOrCreatePiece(0)
+	p.PieceRange = "0,100"
+	p.PieceMd5 = "11111"
+	p.PieceOffset = 10
+	p.PieceStyle = base.PieceStyle_PLAIN_UNSPECIFIED
 
 	svr.GetWorker().ReceiveJob(&scheduler.PieceResult{
 		TaskId:     taskId,
@@ -139,7 +136,7 @@ func TestScheduler(t *testing.T) {
 
 	scheduler := svr.GetSchedulerService().GetScheduler()
 
-	pieceList, err := scheduler.Scheduler(peerTask)
+	pieceList, _, err := scheduler.Scheduler(peerTask)
 	if err != nil {
 		t.Errorf("scheduler failed %s", err.Error())
 		return

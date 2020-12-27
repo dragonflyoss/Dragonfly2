@@ -1,50 +1,56 @@
 package config
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	"runtime"
+)
+
+const (
+	DefaultConfigFilePath string = "conf/scheduler.yml"
 )
 
 var config = createDefaultConfig()
 
 type Config struct {
-	Scheduler schedulerConfig
-	Server    serverConfig
-	Worker    schedulerWorkerConfig
-	CDN       cdnConfig
+	Scheduler schedulerConfig       `yaml:"scheduler"`
+	Server    serverConfig          `yaml:"server"`
+	Worker    schedulerWorkerConfig `yaml:"worker"`
+	CDN       cdnConfig             `yaml:"cdn"`
 }
 
 type schedulerConfig struct {
-	MaxUsableValue float64
-	MaxUploadPieceNum int32
-	MaxDownloadPieceNum int32
+	MaxUsableValue      float64 `yaml:"max-usable-value"`
+	MaxUploadPieceNum   int32   `yaml:"max-upload-piece-num"`
+	MaxDownloadPieceNum int32   `yaml:"max-download-piece-num"`
 }
 
 type serverConfig struct {
-	Type basic.NetworkType
-	Addr string
+	IP   string `yaml:"ip",omitempty`
+	Port int    `yaml:"port"`
 }
 
 type schedulerWorkerConfig struct {
-	WorkerNum         int
-	WorkerJobPoolSize int
-	SenderNum         int
-	SenderJobPoolSize int
+	WorkerNum         int `yaml:"worker-num"`
+	WorkerJobPoolSize int `yaml:"worker-job-pool-size"`
+	SenderNum         int `yaml:"sender-num"`
+	SenderJobPoolSize int `yaml:"sender-job-pool-size"`
 }
 
 type cdnConfig struct {
-	List [][]serverConfig
+	List [][]serverConfig `yaml:"list"`
 }
 
 func GetConfig() *Config {
 	return config
 }
 
+func SetConfig(cfg *Config) {
+	config = cfg
+}
+
 func createDefaultConfig() *Config {
 	return &Config{
 		Server: serverConfig{
-			Type: basic.TCP,
-			Addr: ":6666",
+			Port: 8002,
 		},
 		Worker: schedulerWorkerConfig{
 			WorkerNum:         runtime.GOMAXPROCS(0),
@@ -53,15 +59,15 @@ func createDefaultConfig() *Config {
 			SenderJobPoolSize: 10000,
 		},
 		Scheduler: schedulerConfig{
-			MaxUsableValue: 100,
-			MaxUploadPieceNum: 5,
+			MaxUsableValue:      100,
+			MaxUploadPieceNum:   5,
 			MaxDownloadPieceNum: 5,
 		},
 		CDN: cdnConfig{
 			List: [][]serverConfig{
 				{{
-					Type: basic.TCP,
-					Addr: ":6666",
+					IP:   "127.0.0.1",
+					Port: 8003,
 				}},
 			},
 		},

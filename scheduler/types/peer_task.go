@@ -4,6 +4,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"sync"
+	"time"
 )
 
 type PeerTask struct {
@@ -18,6 +19,7 @@ type PeerTask struct {
 	lock                    *sync.Mutex
 	firstPieceNum           int32 //
 	finishedNum             int32 // download finished piece number
+	lastActiveTime 			int64
 
 	// the client of peer task, which used for send and receive msg
 	client scheduler.Scheduler_PullPieceTasksServer
@@ -47,6 +49,7 @@ func NewPeerTask(pid string, task *Task, host *Host) *PeerTask {
 		retryPieceList:          make(map[int32]int32),
 		isDown:                  false,
 		lock:                    new(sync.Mutex),
+		lastActiveTime: time.Now().UnixNano(),
 	}
 	host.AddPeerTask(pt)
 	return pt
@@ -60,6 +63,10 @@ func (pt *PeerTask) GetRetryPieceList() map[int32]int32 {
 		ret[k] = v
 	}
 	return ret
+}
+
+func (pt *PeerTask) Touch() {
+	pt.lastActiveTime = time.Now().UnixNano()
 }
 
 func (pt *PeerTask) GetFirstPieceNum() int32 {
@@ -95,8 +102,9 @@ func (pt *PeerTask) AddPieceStatus(ps *PieceStatus) {
 		pt.retryPieceList[ps.PieceNum]++
 		return
 	}
+	pt.finishedNum++
 	delete(pt.retryPieceList, ps.PieceNum)
-	piece := pt.Task.GetPiece(ps.PieceNum)
+	piece := pt.Task.GetOrCreatePiece(ps.PieceNum)
 	if piece != nil {
 		piece.AddReadyPeerTask(pt)
 	}
@@ -142,6 +150,7 @@ func (pt *PeerTask) IsDown() (ok bool) {
 
 func (pt *PeerTask) SetDown() {
 	pt.isDown = true
+	pt.Touch()
 }
 
 func (pt *PeerTask) SetStatus(traffic uint64, cost uint32, success bool, errorCode base.Code) {
@@ -149,6 +158,7 @@ func (pt *PeerTask) SetStatus(traffic uint64, cost uint32, success bool, errorCo
 	pt.Cost = cost
 	pt.Success = success
 	pt.ErrorCode = errorCode
+	pt.Touch()
 }
 
 func (pt *PeerTask) SetClient(client scheduler.Scheduler_PullPieceTasksServer) {
@@ -156,6 +166,7 @@ func (pt *PeerTask) SetClient(client scheduler.Scheduler_PullPieceTasksServer) {
 }
 
 func (pt *PeerTask) Send(pkg *scheduler.PiecePackage) error {
+	// if pt != nil && pt.client != nil {
 	if pt.client != nil {
 		return pt.client.Send(pkg)
 	}

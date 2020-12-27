@@ -40,11 +40,11 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	}()
 
 	// get or create task
-	taskId := s.svc.GenerateTaskId(request.Url, request.Filter)
-	task, _ := s.svc.GetTask(taskId)
+	pkg.TaskId = s.svc.GenerateTaskId(request.Url, request.Filter)
+	task, _ := s.svc.GetTask(pkg.TaskId)
 	if task == nil {
 		task = &types.Task{
-			TaskId:  taskId,
+			TaskId:  pkg.TaskId,
 			Url:     request.Url,
 			Filter:  request.Filter,
 			BizId:   request.BizId,
@@ -94,7 +94,6 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	}
 
 	// assemble result
-	pkg.TaskId = taskId
 	if task.PieceTotal > 0 && peerTask.GetFinishedNum()+peerTask.GetDownloadingPieceNum() >= task.PieceTotal {
 		pkg.Done = true
 		pkg.ContentLength = task.ContentLength
@@ -115,7 +114,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	return
 }
 
-func (s *SchedulerServer) PullPieceTasks(ctx context.Context, server scheduler.Scheduler_PullPieceTasksServer) (err error) {
+func (s *SchedulerServer) PullPieceTasks(server scheduler.Scheduler_PullPieceTasksServer) (err error) {
 	schedule_worker.CreateClient(server, s.worker).Start()
 	return
 }

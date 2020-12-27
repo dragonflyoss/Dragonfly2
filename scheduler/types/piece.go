@@ -6,6 +6,8 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 )
 
+type WaitingType int
+
 type Piece struct {
 	PieceNum   int32  `json:"piece_num,omitempty"`
 	PieceRange string `json:"piece_range,omitempty"`
@@ -16,18 +18,29 @@ type Piece struct {
 
 	Task                    *Task
 	readyPeerTaskList       *sync.Map
-	downloadingPeerTaskList *sync.Map
+	waitingPeerTask 		*sync.Map
+	isReady 				bool
+}
+
+func newEmptyPiece(pieceNum int32, task *Task) *Piece {
+	return &Piece{
+		PieceNum: pieceNum,
+		Task: task,
+		isReady: false,
+		readyPeerTaskList:  new(sync.Map),
+		waitingPeerTask:  new(sync.Map),
+	}
 }
 
 func (p *Piece) GetReadyPeerTaskList() (list []*PeerTask) {
-	if p == nil || p.readyPeerTaskList == nil {
+	if p == nil {
 		return
 	}
-	var downPeerTaskList []string
+	var downPeerTaskList []*string
 	p.readyPeerTaskList.Range(func(key, value interface{}) bool {
 		host := value.(*PeerTask)
 		if host.IsDown() {
-			downPeerTaskList = append(downPeerTaskList, host.Pid)
+			downPeerTaskList = append(downPeerTaskList, &host.Pid)
 			return true
 		}
 		list = append(list, host)
@@ -40,10 +53,22 @@ func (p *Piece) GetReadyPeerTaskList() (list []*PeerTask) {
 }
 
 func (p *Piece) AddReadyPeerTask(pt *PeerTask) {
-	if p.readyPeerTaskList == nil {
-		p.readyPeerTaskList = new(sync.Map)
+	p.readyPeerTaskList.Store(&pt.Pid, pt)
+	if p.waitingPeerTask != nil {
+		p.waitingPeerTask.Range(func(key interface{}, value interface{}) bool {
+			f, ok := value.(func())
+			if ok {
+				f()
+			}
+			p.waitingPeerTask.Delete(key)
+			p.isReady = true
+			return true
+		})
 	}
-	p.readyPeerTaskList.Store(pt.Pid, pt)
+}
+
+func (p *Piece) AddWaitPeerTask(peerTask *PeerTask, callback func()) {
+	p.waitingPeerTask.Store(peerTask, callback)
 }
 
 type PieceTask struct {

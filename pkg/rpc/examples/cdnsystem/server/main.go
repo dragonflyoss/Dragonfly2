@@ -34,6 +34,7 @@ type helloSeeder struct {
 func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
 	safe.Call(func() {
 		fmt.Printf("req:%v\n", req)
+		var pieceNum = int32(0)
 		var i = 5
 		for {
 			select {
@@ -49,9 +50,10 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 					}
 					return
 				}
-				psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"), SeedAddr: "localhost:12345"}
+				psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"), SeedAddr: "localhost:12345", PieceNum: pieceNum}
 				time.Sleep(1 * time.Second)
 				i--
+				pieceNum++
 			}
 		}
 	})

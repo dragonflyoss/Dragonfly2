@@ -22,13 +22,13 @@ func (e *Evaluator) GetMaxUsableHostValue() float64 {
 	return e.maxUsableHostValue
 }
 
-func (e *Evaluator) GetNextPiece(peerTask *types.PeerTask) (p *types.Piece, err error) {
+func (e *Evaluator) GetNextPiece(peerTask *types.PeerTask) (p *types.Piece, pieceNum int32, err error) {
 	count := peerTask.GetDownloadingPieceNum()
 	if count >= config.GetConfig().Scheduler.MaxDownloadPieceNum {
 		return
 	}
 
-	var pieceNum int32 = -1
+	pieceNum = -1
 	retryList := peerTask.GetRetryPieceList()
 	if retryList != nil && len(retryList) > 0 && rand.Int31n(2) > 0 {
 		for p := range retryList {
@@ -41,7 +41,7 @@ func (e *Evaluator) GetNextPiece(peerTask *types.PeerTask) (p *types.Piece, err 
 	// first piece need download
 	if pieceNum < 0 {
 		pieceNum = peerTask.GetFirstPieceNum()
-		for peerTask.IsPieceDownloading(pieceNum) && peerTask.Task.GetPiece(pieceNum) != nil {
+		for peerTask.IsPieceDownloading(pieceNum) {
 			pieceNum++
 		}
 	}

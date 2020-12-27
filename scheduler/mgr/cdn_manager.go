@@ -3,14 +3,14 @@ package mgr
 import (
 	"context"
 	"fmt"
-	"hash/crc32"
-
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
+	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
+	"hash/crc32"
+
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/client"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/net"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 )
 
@@ -20,6 +20,10 @@ type CDNManager struct {
 
 func createCDNManager() *CDNManager {
 	cdnMgr := &CDNManager{}
+	return cdnMgr
+}
+
+func (cm *CDNManager)InitCDNClient() {
 	list := config.GetConfig().CDN.List
 	for _, cdns := range list {
 		if len(cdns) < 1 {
@@ -28,18 +32,16 @@ func createCDNManager() *CDNManager {
 		var addrs []basic.NetAddr
 		for _, cdn := range cdns {
 			addrs = append(addrs, basic.NetAddr{
-				Type: cdn.Type,
-				Addr: cdn.Addr,
+				Type: basic.TCP,
+				Addr: fmt.Sprintf("%s:%d", cdn.IP, cdn.Port),
 			})
 		}
 		seederClient, err := client.CreateClient(addrs)
 		if err != nil {
 			logger.Errorf("create cdn client failed main addr [%s]", addrs[0])
 		}
-		cdnMgr.cdnList = append(cdnMgr.cdnList, &CDNClient{SeederClient: seederClient})
+		cm.cdnList = append(cm.cdnList, &CDNClient{SeederClient: seederClient})
 	}
-
-	return cdnMgr
 }
 
 func (cm *CDNManager) TriggerTask(task *types.Task) (err error) {
@@ -78,12 +80,12 @@ type CDNClient struct {
 func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
 	for {
 		select {
-			case ps, closed := <- ch:
-				if closed {
-					break
-				} else {
-					c.processPieceSeed(task, ps)
-				}
+		case ps, ok := <-ch:
+			if !ok {
+				break
+			} else if ps != nil {
+				c.processPieceSeed(task, ps)
+			}
 		}
 	}
 }
@@ -110,6 +112,8 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 
 	if ps.Done {
 		task.PieceTotal = peerTask.GetFinishedNum()
+		task.ContentLength = ps.ContentLength
+		peerTask.Traffic = uint64(ps.TotalTraffic)
 		peerTask.Success = true
 		return
 	}
@@ -133,14 +137,12 @@ func (c *CDNClient) getHostUuid(ps *cdnsystem.PieceSeed) string {
 }
 
 func (c *CDNClient) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *types.PeerTask) *types.Piece {
-	p := &types.Piece{
-		PieceNum:    ps.PieceNum,
-		PieceRange:  ps.PieceRange,
-		PieceMd5:    ps.PieceMd5,
-		PieceOffset: ps.PieceOffset,
-		PieceStyle:  ps.PieceStyle,
-		Task:        task,
-	}
+	p := task.GetOrCreatePiece(ps.PieceNum)
+	p.PieceRange = ps.PieceRange
+	p.PieceMd5 = ps.PieceMd5
+	p.PieceOffset = ps.PieceOffset
+	p.PieceStyle = ps.PieceStyle
+
 	p.AddReadyPeerTask(pt)
 	return p
 }

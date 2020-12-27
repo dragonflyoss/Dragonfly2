@@ -1,6 +1,7 @@
 package schedule_worker
 
 import (
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"io"
@@ -20,7 +21,7 @@ func CreateClient(client scheduler.Scheduler_PullPieceTasksServer, worker IWorke
 }
 
 func (c *Client) Start() {
-	go c.doWork()
+	c.doWork()
 	return
 }
 
@@ -37,6 +38,9 @@ func (c *Client) doWork() {
 	peerTask.SetClient(c.client)
 
 	for {
+		if pr != nil {
+			logger.Debugf("recieve a pieceResult %v", *pr)
+		}
 		c.worker.ReceiveJob(pr)
 		pr, err = c.client.Recv()
 		if err == io.EOF {

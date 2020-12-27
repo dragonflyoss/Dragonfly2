@@ -1,8 +1,7 @@
 package main
 
-import "github.com/dragonflyoss/Dragonfly2/scheduler/server"
+import "github.com/dragonflyoss/Dragonfly2/cmd/scheduler/app"
 
 func main() {
-	svr := server.NewServer()
-	svr.Start()
+	app.Execute()
 }

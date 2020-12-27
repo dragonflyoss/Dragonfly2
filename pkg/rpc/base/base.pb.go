@@ -52,6 +52,7 @@ const (
 	Code_CLIENT_ERROR Code = 400
 	// scheduler processing error 500-599
 	Code_SCHEDULER_ERROR Code = 500
+	Code_SCHEDULER_RETRY_ERROR Code = 590
 	// cdnsystem processing error 600-699
 	Code_CDN_ERROR Code = 600
 	// manager processing error 700-799

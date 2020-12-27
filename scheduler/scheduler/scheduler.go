@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	dferror "github.com/dragonflyoss/Dragonfly2/pkg/error"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/scheduler/basic"
 	"math"
@@ -19,18 +20,31 @@ func CreateScheduler() *Scheduler {
 	}
 }
 
-func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, err error) {
+func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, waitingPieceNumList []int32, err error) {
+	err = dferror.SchedulerWaitPiece
 	for {
 		// choose a piece to download
-		var piece *types.Piece
-		piece, err = s.evaluator.GetNextPiece(task)
-		if err != nil {
+		piece, pieceNum, e := s.evaluator.GetNextPiece(task)
+		if e != nil {
 			logger.Debugf("scheduler get piece for taskID(%s) nil", task.Task.TaskId)
 			break
 		}
 
 		if piece == nil {
+			if pieceNum >= 0 && (pieceNum <= task.Task.GetMaxPieceNum() ||
+				(pieceNum>task.Task.GetMaxPieceNum() && task.Task.PieceTotal <= 0)) {
+				waitingPieceNumList = append(waitingPieceNumList, pieceNum)
+			} else if pieceNum>=task.Task.GetMaxPieceNum() && task.Task.PieceTotal > 0 {
+				if len(result) + len(waitingPieceNumList) == 0 {
+					err = dferror.SchedulerFinished
+					return
+				}
+			}
 			break
+		}
+
+		if err != nil {
+			err = dferror.SchedulerWaitReadyHost
 		}
 
 		// scheduler piece to a host
@@ -55,8 +69,14 @@ func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, 
 			})
 		} else if value > s.evaluator.GetMaxUsableHostValue() {
 			// bad dstHost quality
-			return
+			if pieceNum > 0 {
+				waitingPieceNumList = append(waitingPieceNumList, pieceNum)
+			}
+			break
 		}
+	}
+	if len(result) > 0 {
+		err = nil
 	}
 	return
 }

@@ -61,7 +61,7 @@ type SchedulerServer interface {
 	// these func.
 	//
 	// On error, it will abort the stream.
-	PullPieceTasks(context.Context, scheduler.Scheduler_PullPieceTasksServer) error
+	PullPieceTasks(scheduler.Scheduler_PullPieceTasksServer) error
 	// ReportPeerResult reports downloading result for one peer task.
 	ReportPeerResult(context.Context, *scheduler.PeerResult) (*base.ResponseState, error)
 	// LeaveTask makes the peer leaving from the task scheduling overlay.
@@ -105,8 +105,7 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 }
 
 func (p *proxy) PullPieceTasks(stream scheduler.Scheduler_PullPieceTasksServer) (err error) {
-	ctx, _ := context.WithCancel(stream.Context())
-	return p.server.PullPieceTasks(ctx, stream)
+	return p.server.PullPieceTasks(stream)
 }
 
 // The peer's result is determined by itself but not scheduler.
