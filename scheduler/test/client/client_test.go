@@ -14,7 +14,7 @@ import (
 )
 
 func TestClient(t *testing.T) {
-	pid := "006"
+	pid := "002"
 	c, err := client.CreateClient([]basic.NetAddr{{Type: basic.TCP, Addr: "localhost:8002"}})
 	if err != nil {
 		panic(err)
@@ -40,7 +40,7 @@ func TestClient(t *testing.T) {
 			Switch:         "",
 		},
 	}
-
+	replyChan := make(chan *scheduler.PiecePackage_PieceTask, 1000)
 	pkg, err := c.RegisterPeerTask(context.TODO(), request)
 	if err != nil {
 		t.Error(err)
@@ -50,13 +50,13 @@ func TestClient(t *testing.T) {
 	if pkg != nil && len(pkg.PieceTasks) > 0 {
 		fmt.Printf("RegisterPeerTask, recieve a pkg: %d, pieceNum:", len(pkg.PieceTasks))
 		for _, piece := range pkg.PieceTasks {
+			replyChan <- piece
 			fmt.Printf("[%d]", piece.PieceNum)
 		}
 		fmt.Println("")
 	} else {
 		fmt.Printf("RegisterPeerTask, pkg length: %d\n", len(pkg.PieceTasks))
 	}
-
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -72,6 +72,23 @@ func TestClient(t *testing.T) {
 	}
 	fmt.Println("send first pr")
 	in <- pr
+
+	go func() {
+		for t := range replyChan {
+			pr := &scheduler.PieceResult{
+				TaskId:     pkg.TaskId,
+				SrcPid:     pid,
+				DstPid:     t.DstPid,
+				PieceNum:   t.PieceNum,
+				PieceRange: t.PieceRange,
+				Success:    true,
+				ErrorCode:  base.Code_SUCCESS,
+				Cost:       10,
+			}
+			in <- pr
+		}
+	} ()
+
 	fmt.Println("send first pr finished")
 	for {
 		resp := <-out
@@ -94,18 +111,7 @@ func TestClient(t *testing.T) {
 			continue
 		}
 		for _, t := range resp.PieceTasks {
-			time.Sleep(time.Second)
-			pr := &scheduler.PieceResult{
-				TaskId:     pkg.TaskId,
-				SrcPid:     "001",
-				DstPid:     t.DstPid,
-				PieceNum:   t.PieceNum,
-				PieceRange: t.PieceRange,
-				Success:    true,
-				ErrorCode:  base.Code_SUCCESS,
-				Cost:       10,
-			}
-			go func(){in <- pr}()
+			replyChan <- t
 		}
 	}
 

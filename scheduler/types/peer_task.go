@@ -136,6 +136,18 @@ func (pt *PeerTask) IsPieceDownloading(num int32) (ok bool) {
 	return
 }
 
+func (pt *PeerTask) IsPieceDownloaded(num int32) (ok bool) {
+	v, _ := pt.pieceStatusList.Load(num)
+
+	ps, ok := v.(*PieceStatus)
+
+	if ps != nil {
+		ok = ps.ErrorCode == base.Code_SUCCESS
+	}
+
+	return
+}
+
 func (pt *PeerTask) GetDownloadingPieceNum() (num int32) {
 	pt.downloadingPieceNumList.Range(func(key, value interface{}) bool {
 		num++

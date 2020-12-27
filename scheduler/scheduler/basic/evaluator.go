@@ -32,7 +32,7 @@ func (e *Evaluator) GetNextPiece(peerTask *types.PeerTask) (p *types.Piece, piec
 	retryList := peerTask.GetRetryPieceList()
 	if retryList != nil && len(retryList) > 0 && rand.Int31n(2) > 0 {
 		for p := range retryList {
-			if !peerTask.IsPieceDownloading(pieceNum) {
+			if !peerTask.IsPieceDownloading(pieceNum) && !peerTask.IsPieceDownloaded(pieceNum) {
 				pieceNum = p
 			}
 		}
@@ -41,7 +41,7 @@ func (e *Evaluator) GetNextPiece(peerTask *types.PeerTask) (p *types.Piece, piec
 	// first piece need download
 	if pieceNum < 0 {
 		pieceNum = peerTask.GetFirstPieceNum()
-		for peerTask.IsPieceDownloading(pieceNum) {
+		for peerTask.IsPieceDownloading(pieceNum) || peerTask.IsPieceDownloaded(pieceNum) {
 			pieceNum++
 		}
 	}
