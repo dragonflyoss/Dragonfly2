@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/protocol"
 )
 
@@ -146,12 +146,12 @@ func WithMapInterface(opt map[string]interface{}) func(client protocol.Client) e
 			case "tls.config":
 				config, ok = v.(*tls.Config)
 				if !ok {
-					return errortypes.ErrConvertFailed
+					return dferrors.ErrConvertFailed
 				}
 			case "http.transport":
 				transport, ok = v.(*http.Transport)
 				if !ok {
-					return errortypes.ErrConvertFailed
+					return dferrors.ErrConvertFailed
 				}
 			default:
 			}

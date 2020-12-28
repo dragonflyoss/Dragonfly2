@@ -21,6 +21,7 @@ import (
 	"crypto/md5"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/pubsub"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
@@ -66,43 +67,45 @@ func newMetrics(register prometheus.Registerer) *metrics {
 
 // Manager is an implementation of the interface of CDNMgr.
 type Manager struct {
-	cfg             *config.Config
-	cacheStore      *store.Store
-	limiter         *ratelimiter.RateLimiter
-	cdnLocker       *util.LockerPool
-	metaDataManager *metaDataManager
-	publisher       mgr.SeedPieceMgr
-	cdnReporter     *reporter
-	detector        *cacheDetector
-	resourceClient  source.ResourceClient
-	writer          *cacheWriter
-	metrics         *metrics
+	cfg              *config.Config
+	cacheStore       *store.Store
+	limiter          *ratelimiter.RateLimiter
+	cdnLocker        *util.LockerPool
+	metaDataManager  *metaDataManager
+	pieceMetaManager *seedPieceMetaDataManager
+	cdnReporter      *reporter
+	detector         *cacheDetector
+	resourceClient   source.ResourceClient
+	writer           *cacheWriter
+	metrics          *metrics
 }
 
 // NewManager returns a new Manager.
 func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient,
-	publisher mgr.SeedPieceMgr,
+	publisher *pubsub.SeedPiecePublisher,
 	register prometheus.Registerer) (mgr.CDNMgr, error) {
 	return newManager(cfg, cacheStore, resourceClient, publisher, register)
 }
 
 func newManager(cfg *config.Config, cacheStore *store.Store,
-	resourceClient source.ResourceClient, publisher mgr.SeedPieceMgr, register prometheus.Registerer) (*Manager, error) {
+	resourceClient source.ResourceClient, publisher *pubsub.SeedPiecePublisher, register prometheus.Registerer) (*Manager, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
-	cdnReporter := newReporter(publisher)
+	pieceMetaManager := newPieceMetaDataMgr()
+	cdnReporter := newReporter(publisher, pieceMetaManager)
+
 	return &Manager{
-		cfg:             cfg,
-		cacheStore:      cacheStore,
-		limiter:         rateLimiter,
-		cdnLocker:       util.NewLockerPool(),
-		metaDataManager: metaDataManager,
-		publisher:       publisher,
-		cdnReporter:     cdnReporter,
-		detector:        newCacheDetector(cacheStore, metaDataManager, resourceClient),
-		resourceClient:  resourceClient,
-		writer:          newCacheWriter(cacheStore, cdnReporter),
-		metrics:         newMetrics(register),
+		cfg:              cfg,
+		cacheStore:       cacheStore,
+		limiter:          rateLimiter,
+		cdnLocker:        util.NewLockerPool(),
+		metaDataManager:  metaDataManager,
+		pieceMetaManager: pieceMetaManager,
+		cdnReporter:      cdnReporter,
+		detector:         newCacheDetector(cacheStore, metaDataManager, resourceClient),
+		resourceClient:   resourceClient,
+		writer:           newCacheWriter(cacheStore, cdnReporter),
+		metrics:          newMetrics(register),
 	}, nil
 }
 
@@ -187,7 +190,7 @@ func (cm *Manager) CheckFileExist(ctx context.Context, taskID string) bool {
 // Delete the cdn meta with specified taskID.
 // It will also delete the files on the disk when the force equals true.
 func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error {
-	if err := cm.publisher.Close(taskID); err != nil && dferrors.IsDataNotFound(err) {
+	if err := cm.pieceMetaManager.removePieceMetaRecordsByTaskID(taskID); err != nil && dferrors.IsDataNotFound(err) {
 		logger.Error("")
 	}
 	if force {
@@ -230,7 +233,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 
 	logger.Infof("success to get taskID: %s fileLength: %d realMd5: %s", task.TaskID, downloadMetadata.realCdnFileLength, sourceMd5)
 
-	pieceMetas, err := cm.pieceManager.GetPieceMetaRecordsByTaskID(task.TaskID)
+	pieceMetas, err := cm.pieceMetaManager.getPieceMetaRecordsByTaskID(task.TaskID)
 	if err != nil {
 		return false, err
 	}
@@ -246,4 +249,14 @@ func (cm *Manager) updateExpireInfo(ctx context.Context, taskID string, expireIn
 		logger.Errorf("taskID: %s failed to update expireInfo(%s): %v", taskID, expireInfo, err)
 	}
 	logger.Infof("taskID: %s success to update expireInfo(%s)", expireInfo, taskID)
+}
+
+func (cm *Manager) SubscribeTask(taskID string) (<-chan types.SeedPiece, error) {
+	return cm.cdnReporter.publisher.SubscribeTask(taskID)
+}
+
+func (cm *Manager) PublishTaskDone(task *types.SeedTask) error {
+	seedPiece := convertTaskInfo2SeedPiece(*task)
+	cm.cdnReporter.publisher.Publish(task.TaskID, seedPiece)
+	return cm.cdnReporter.publisher.Close(task.TaskID)
 }

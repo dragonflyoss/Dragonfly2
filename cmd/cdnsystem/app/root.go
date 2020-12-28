@@ -25,8 +25,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
@@ -34,8 +32,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -80,9 +76,9 @@ var rootCmd = &cobra.Command{
 		}
 
 		// initialize logger.
-		if err := initLog(zap.New(), "app.log", cfg.LogConfig); err != nil {
-			return err
-		}
+		//if err := initLog(zap.New(), "app.log", cfg.LogConfig); err != nil {
+		//	return err
+		//}
 
 		// set cdn node advertise ip
 		if stringutils.IsEmptyStr(cfg.AdvertiseIP) {
@@ -109,7 +105,6 @@ func init() {
 
 	// add sub commands
 	rootCmd.AddCommand(cmd.NewGenDocCommand("cdn"))
-	rootCmd.AddCommand(cmd.NewVersionCommand("cdn"))
 	rootCmd.AddCommand(cmd.NewConfigCommand("cdn", getDefaultConfig))
 }
 
@@ -313,8 +308,8 @@ func initLog(logPath string, logConfig logger.LogConfig) error {
 	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	downloadLogger := logger.CreateLogger(logDir + "/download.log", 300, 30, 0, false, false)
-	logger.SetGrpcLogger(downloadLogger)
+	//downloadLogger := logger.CreateLogger(logDir + "/download.log", 300, 30, 0, false, false)
+	//logger.SetGrpcLogger(downloadLogger)
 	return nil
 }
 

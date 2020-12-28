@@ -18,13 +18,19 @@ package types
 
 // SeedPiece
 type SeedPiece struct {
-	itemType      int8 // 1 piece 0 task
-	PieceStyle    int32
-	PieceNum      int32
-	PieceMd5      string
-	PieceRange    string
-	PieceOffset   uint64
-	PieceLen      int64
-	Last          bool
-	ContentLength uint64
+	ItemType         int8 // 1 piece 0 task
+	PieceStyle       int32
+	PieceNum         int32
+	PieceMd5         string
+	PieceRange       string
+	PieceOffset      uint64
+	PieceLen         int32
+	Last             bool
+	ContentLength    int64
+	BackSourceLength int64
 }
+
+const (
+	PIECE_TYPE = 0
+	TASK_TYPE  = 1
+)

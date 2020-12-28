@@ -66,15 +66,16 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 
 				// report piece status
 				pieceMd5Sum := fileutils.GetMd5Sum(pieceMd5, nil)
-				pieceRecord := PieceMetaRecord{
-					PieceNum: job.pieceNum,
-					PieceLen: job.pieceContentLen,
-					Md5:      pieceMd5Sum,
-					Range:    job.pieceRange,
-					Offset:   job.sourceFileOffset,
+				pieceRecord := pieceMetaRecord{
+					PieceNum:   job.pieceNum,
+					PieceLen:   job.pieceContentLen,
+					Md5:        pieceMd5Sum,
+					Range:      job.pieceRange,
+					Offset:     job.sourceFileOffset,
+					PieceStyle: job.pieceStyle,
 				}
 				// write piece meta
-				go func(record PieceMetaRecord) {
+				go func(record pieceMetaRecord) {
 					if err := cw.appendPieceMetaDataToFile(ctx, job.taskID, record); err != nil {
 						logger.Errorf("failed to append piece meta data to file:%v", err)
 					}
@@ -121,7 +122,7 @@ func (cw *cacheWriter) writeToFile(ctx context.Context, bytesBuffer *bytes.Buffe
 	}, resultBuf)
 }
 
-func (cw *cacheWriter) appendPieceMetaDataToFile(ctx context.Context, taskID string, record PieceMetaRecord) error {
+func (cw *cacheWriter) appendPieceMetaDataToFile(ctx context.Context, taskID string, record pieceMetaRecord) error {
 	pieceMeta := getPieceMetaValue(record)
 	// write to the storage
 	return cw.cdnStore.AppendBytes(ctx, &store.Raw{

@@ -20,6 +20,7 @@ import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/pubsub"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
@@ -38,7 +39,7 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, publisher *mgr.Se, register prometheus.Registerer) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, publisher *pubsub.SeedPiecePublisher, register prometheus.Registerer) (mgr.CDNMgr, error) {
 	return &Manager{
 		cfg: cfg,
 	}, nil
@@ -96,3 +97,14 @@ func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error 
 func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([]string, error) {
 	return nil, nil
 }
+
+func (cm *Manager) SubscribeTask(taskID string) (<-chan types.SeedPiece, error) {
+	panic("implement me")
+}
+
+func (cm *Manager) PublishTaskDone(task *types.SeedTask) error {
+	panic("implement me")
+	return nil
+}
+
+

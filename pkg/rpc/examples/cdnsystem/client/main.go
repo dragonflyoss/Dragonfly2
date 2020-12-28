@@ -28,12 +28,17 @@ import (
 )
 
 func main() {
-	c, err := client.CreateClient([]basic.NetAddr{{Type: basic.TCP, Addr: "localhost:12345"}})
+	c, err := client.CreateClient([]basic.NetAddr{{Type: basic.TCP, Addr: "localhost:8002"}})
 	if err != nil {
 		panic(err)
 	}
 
-	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{TaskId: uuid.New().String()})
+	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+		TaskId:  uuid.New().String(),
+		Url:     "http://www.baidu.com",
+		Filter:  "",
+		UrlMeta: nil,
+	})
 	if err != nil {
 		panic(err)
 	}

@@ -20,7 +20,6 @@ import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/piece"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
@@ -68,7 +67,6 @@ type Manager struct {
 	accessTimeMap           *syncmap.SyncMap
 	taskURLUnReachableStore *syncmap.SyncMap
 	cdnMgr                  mgr.CDNMgr
-	publisher               piece.SeedPiecePublisher
 }
 
 // triggerCdnSyncAction
@@ -78,12 +76,11 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		return nil
 	}
 	// update task status
-	if err := tm.updateTask(task.TaskID, &types.SeedTask{
+	if _, err := tm.updateTask(task.TaskID, &types.SeedTask{
 		CdnStatus: types.TaskInfoCdnStatusRUNNING,
 	}); err != nil {
 		return err
 	}
-	// tm.publisher.Create(task.TaskID) todo
 	// triggerCDN goroutine
 	go func() {
 		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(ctx, task)
@@ -93,9 +90,9 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 			tm.metrics.triggerCdnFailCount.WithLabelValues().Inc()
 			logger.Errorf("taskID: %s trigger cdn get error: %v", task.TaskID, err)
 		}
-		err = tm.updateTask(task.TaskID, updateTaskInfo)
+		updatedTask, err:= tm.updateTask(task.TaskID, updateTaskInfo)
 		// todo 通知任务结束
-		tm.publisher.Close(task.TaskID)
+		tm.cdnMgr.PublishTaskDone(updatedTask)
 		if err != nil {
 			logger.Errorf("taskID: %s, update task fail:%v", err)
 		} else {
@@ -161,7 +158,7 @@ func (tm Manager) GetPieces(ctx context.Context, req *types.PiecePullRequest) (p
 
 // NewManager returns a new Manager Object.
 func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr,
-	resourceClient source.ResourceClient, publisher piece.SeedPiecePublisher, register prometheus.Registerer) (*Manager, error) {
+	resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
 	return &Manager{
 		cfg:                     cfg,
 		taskStore:               syncmap.NewSyncMap(),
@@ -193,5 +190,5 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 		return nil, errors.Wrapf(dferrors.ErrSystemError, "failed to trigger cdn: %v", err)
 	}
 	// subscribe task update
-	return tm.publisher.SubscribeTask(task.TaskID)
+	return tm.cdnMgr.SubscribeTask(task.TaskID)
 }

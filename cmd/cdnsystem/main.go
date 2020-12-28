@@ -17,8 +17,10 @@
 package main
 
 import (
-	_ "github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/localcdn"
+	_ "github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/cdn"
 	_ "github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/sourcecdn"
+	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
+
 	"github.com/dragonflyoss/Dragonfly2/cmd/cdnsystem/app"
 )
 

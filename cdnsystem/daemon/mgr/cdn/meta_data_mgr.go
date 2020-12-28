@@ -47,18 +47,19 @@ type fileMetaData struct {
 
 // pieceMetaData
 type pieceMetaData struct {
-	PieceMetaRecords []PieceMetaRecord `json:"pieceMetaRecords"`
+	PieceMetaRecords []pieceMetaRecord `json:"pieceMetaRecords"`
 	FileMd5          string            `json:"fileMd5"`
 	Sha1Value        string            `json:"sha1Value"`
 }
 
 // pieceMetaRecord
-type PieceMetaRecord struct {
-	PieceNum int32  `json:"pieceNum"`
-	PieceLen int32  `json:"pieceLen"` // 下载存储的真实长度
-	Md5      string `json:"md5"`
-	Range    string `json:"range"` // 下载存储到磁盘的range，不一定是origin source的range
-	Offset   int64  `json:"offset"`
+type pieceMetaRecord struct {
+	PieceNum   int32  `json:"pieceNum"`
+	PieceLen   int32  `json:"pieceLen"` // 下载存储的真实长度
+	Md5        string `json:"md5"`
+	Range      string `json:"range"` // 下载存储到磁盘的range，不一定是origin source的range
+	Offset     uint64  `json:"offset"`
+	PieceStyle int32  `json:"pieceStyle"`
 }
 
 // fileMetaDataManager manages the meta file and piece meta file of each taskID.
@@ -176,7 +177,7 @@ func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskID str
 }
 
 // writePieceMetaRecords writes the piece meta data to storage.
-func (pmm *metaDataManager) writePieceMetaRecords(ctx context.Context, taskID, fileMD5 string, pieceMetaRecords []PieceMetaRecord) error {
+func (pmm *metaDataManager) writePieceMetaRecords(ctx context.Context, taskID, fileMD5 string, pieceMetaRecords []pieceMetaRecord) error {
 	pmm.locker.GetLock(taskID, false)
 	defer pmm.locker.ReleaseLock(taskID, false)
 
@@ -195,7 +196,7 @@ func (pmm *metaDataManager) writePieceMetaRecords(ctx context.Context, taskID, f
 }
 
 // readPieceMetaDatas reads the md5 file of the taskID and returns the pieceMD5s.
-func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskID, fileMD5 string) ([]PieceMetaRecord, error) {
+func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskID, fileMD5 string) ([]pieceMetaRecord, error) {
 	pmm.locker.GetLock(taskID, true)
 	defer pmm.locker.ReleaseLock(taskID, true)
 
@@ -220,15 +221,15 @@ func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, ta
 	if realFileMD5 != fileMD5 {
 		return nil, errors.Errorf("failed to validate the fileMD5, expected: %s, real: %s", fileMD5, realFileMD5)
 	}
-	var result = make([]PieceMetaRecord, piecesLength-2)
-	for _, pieceStr := range pieceMetaRecords {
+	var result = make([]pieceMetaRecord, 0, piecesLength-2)
+	for _, pieceStr := range pieceMetaRecords[:piecesLength-2] {
 		result = append(result, getPieceMetaRecord(pieceStr))
 	}
 	return result, nil
 }
 
 // readPieceMetaDatas reads the md5 file of the taskID and returns the pieceMD5s.
-func (pmm *metaDataManager) readWithoutCheckPieceMetaRecords(ctx context.Context, taskID string) ([]PieceMetaRecord, error) {
+func (pmm *metaDataManager) readWithoutCheckPieceMetaRecords(ctx context.Context, taskID string) ([]pieceMetaRecord, error) {
 	pmm.locker.GetLock(taskID, true)
 	defer pmm.locker.ReleaseLock(taskID, true)
 
@@ -241,7 +242,7 @@ func (pmm *metaDataManager) readWithoutCheckPieceMetaRecords(ctx context.Context
 	if len(pieceMetaRecords) == 0 {
 		return nil, nil
 	}
-	var result = make([]PieceMetaRecord, len(pieceMetaRecords))
+	var result = make([]pieceMetaRecord, len(pieceMetaRecords))
 	for _, pieceRecord := range pieceMetaRecords {
 		result = append(result, getPieceMetaRecord(pieceRecord))
 	}

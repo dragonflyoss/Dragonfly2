@@ -28,7 +28,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/pkg/errors"
-	"time"
 )
 
 // CdnSeedServer is used to implement cdnsystem.SeederServer.
@@ -41,16 +40,19 @@ type CdnSeedServer struct {
 func NewCdnSeedServer(cfg *config.Config, taskMgr mgr.SeedTaskMgr) (*CdnSeedServer, error) {
 	return &CdnSeedServer{
 		taskMgr: taskMgr,
+		cfg:     cfg,
 	}, nil
 }
 
 func constructRequestHeader(meta *base.UrlMeta) map[string]string {
 	header := make(map[string]string)
-	if !stringutils.IsEmptyStr(meta.Md5) {
-		header["md5"] = meta.Md5
-	}
-	if !stringutils.IsEmptyStr(meta.Range) {
-		header["range"] = meta.Range
+	if meta != nil {
+		if !stringutils.IsEmptyStr(meta.Md5) {
+			header["md5"] = meta.Md5
+		}
+		if !stringutils.IsEmptyStr(meta.Range) {
+			header["range"] = meta.Range
+		}
 	}
 	return header
 }
@@ -74,7 +76,7 @@ func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReq
 	registerRequest := &types.TaskRegisterRequest{
 		Headers: headers,
 		URL:     req.GetUrl(),
-		Md5:     req.UrlMeta.Md5,
+		Md5:     headers["md5"],
 		TaskID:  req.GetTaskId(),
 	}
 
@@ -84,58 +86,29 @@ func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReq
 		return errors.Wrapf(err, "register seed task fail, registerRequest:%v", registerRequest)
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case piece, ok := <-pieceCh:
-			if ok {
-				psc <- &cdnsystem.PieceSeed{
-					State:       base.NewState(base.Code_SUCCESS, "success"),
-					SeedAddr:    fmt.Sprintf(ss.cfg.AdvertiseIP, ":", ss.cfg.ListenPort),
-					PieceStyle:  base.PieceStyle(piece.PieceStyle),
-					PieceNum:    piece.PieceNum,
-					PieceMd5:    piece.PieceMd5,
-					PieceRange:  piece.PieceRange,
-					PieceOffset: piece.PieceOffset,
-					Done:        false,
-				}
-			} else {
-				break
+	for piece := range pieceCh {
+
+		switch piece.ItemType {
+		case types.PIECE_TYPE:
+			psc <- &cdnsystem.PieceSeed{
+				State:       base.NewState(base.Code_SUCCESS, "success"),
+				SeedAddr:    fmt.Sprintf("%s:%d", ss.cfg.AdvertiseIP, ss.cfg.ListenPort),
+				PieceStyle:  base.PieceStyle(piece.PieceStyle),
+				PieceNum:    piece.PieceNum,
+				PieceMd5:    piece.PieceMd5,
+				PieceRange:  piece.PieceRange,
+				PieceOffset: piece.PieceOffset,
+				Done:        false,
 			}
-		default:
-			time.Sleep(3 * time.Second)
+		case types.TASK_TYPE:
+			psc <- &cdnsystem.PieceSeed{
+				State:         base.NewState(base.Code_SUCCESS, "success"),
+				SeedAddr:      fmt.Sprintf("%s:%d", ss.cfg.AdvertiseIP, ss.cfg.ListenPort),
+				Done:          true,
+				ContentLength: piece.ContentLength,
+				TotalTraffic:  piece.BackSourceLength,
+			}
 		}
 	}
-	seedTask := ss.taskMgr.Get(ctx, req.GetTaskId())
-	seedTask.CdnStatus
-	psc <- &cdnsystem.PieceSeed{
-		State:    base.NewState(base.Code_SUCCESS, "success"),
-		SeedAddr: fmt.Sprintf(ss.cfg.AdvertiseIP, ":", ss.cfg.ListenPort),
-		Done:     true,
-		ContentLength: 324,
-		TotalTraffic: 100,
-	}
-	return
-	var i = 5
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			if i < 0 {
-				psc <- &cdnsystem.PieceSeed{
-					State:         base.NewState(base.Code_SUCCESS, "success"),
-					SeedAddr:      "localhost:12345",
-					Done:          true,
-					ContentLength: 100,
-					TotalTraffic:  100,
-				}
-				return
-			}
-			psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"), SeedAddr: "localhost:12345"}
-			time.Sleep(1 * time.Second)
-			i--
-		}
-	}
+	return nil
 }

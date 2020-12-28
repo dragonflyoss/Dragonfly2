@@ -34,7 +34,7 @@ type protocolContent struct {
 	pieceContentLen  int32
 	pieceRange       string
 	pieceContent     *bytes.Buffer
-	sourceFileOffset int64
+	sourceFileOffset uint64
 	cdnFileOffset    int64
 }
 
@@ -92,7 +92,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 					pieceContent:     bb,
 					pieceRange:       fmt.Sprintf("%d-%d", currentCdnFileLength, currentCdnFileLength+int64(pieceContentLen-1)),
 					cdnFileOffset:    currentCdnFileLength,
-					sourceFileOffset: int64(curPieceNum) * int64(task.PieceSize),
+					sourceFileOffset: uint64(curPieceNum) * uint64(task.PieceSize),
 				}
 				currentCdnFileLength = currentCdnFileLength + int64(pieceContentLen)
 				jobCh <- pc
@@ -122,7 +122,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 					pieceStyle:       0,
 					pieceContent:     bb,
 					pieceRange:       fmt.Sprintf("%d-%d", currentCdnFileLength, currentCdnFileLength+int64(pieceContentLen)),
-					sourceFileOffset: int64(curPieceNum) * int64(task.PieceSize),
+					sourceFileOffset: uint64(curPieceNum) * uint64(task.PieceSize),
 					cdnFileOffset:    currentCdnFileLength,
 				}
 				logger.Debugf("send the protocolContent taskID: %s pieceNum: %d", task.TaskID, curPieceNum)

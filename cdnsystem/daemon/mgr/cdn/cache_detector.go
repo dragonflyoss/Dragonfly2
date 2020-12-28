@@ -41,7 +41,7 @@ type cacheDetector struct {
 type cacheResult struct {
 	breakNum             int32             // break num
 	downloadedFileLength int64             // length of file has been downloaded
-	pieceMetaRecords     []PieceMetaRecord // piece meta data records of task
+	pieceMetaRecords     []pieceMetaRecord // piece meta data records of task
 	fileMetaData         *fileMetaData     // file meta data of task
 	fileMd5              hash.Hash         // md5 of file content that has been downloaded
 }

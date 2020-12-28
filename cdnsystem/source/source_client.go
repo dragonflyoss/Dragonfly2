@@ -18,6 +18,7 @@ package source
 
 import (
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/go-openapi/strfmt"
@@ -30,7 +31,6 @@ func Register(schema string, resourceClient ResourceClient) {
 	clients[schema] = resourceClient
 }
 
-
 type StatusCodeChecker func(int) bool
 
 // SourceClient supply apis that interact with the source.
@@ -42,13 +42,14 @@ type ResourceClient interface {
 	// IsSupportRange checks whether the source supports breakpoint continuation
 	IsSupportRange(url string, headers map[string]string) (bool, error)
 	// IsExpired checks if the cache is expired
-	IsExpired(url string, headers , expireInfo map[string]string) (bool, error)
+	IsExpired(url string, headers, expireInfo map[string]string) (bool, error)
 	// Download download from source
 	Download(url string, headers map[string]string, checkCode StatusCodeChecker) (*types.DownloadResponse, error)
 }
 
 type ResourceClientAdaptor struct {
 	clients map[string]ResourceClient
+	cfg     *config.Config
 }
 
 func (s *ResourceClientAdaptor) RegisterTLSConfig(url string, insecure bool, caBlock []strfmt.Base64) error {
@@ -115,9 +116,9 @@ func (s *ResourceClientAdaptor) getSourceClient(url string) (ResourceClient, err
 	return client, nil
 }
 
-func NewSourceClient() (ResourceClient, error){
+func NewSourceClient(cfg *config.Config) (ResourceClient, error) {
 	return &ResourceClientAdaptor{
+		cfg:     cfg,
 		clients: clients,
-	},nil
+	}, nil
 }
-

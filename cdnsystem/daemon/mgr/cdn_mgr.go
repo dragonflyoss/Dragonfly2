@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/pubsub"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
@@ -27,7 +28,7 @@ import (
 )
 
 type CDNBuilder func(cfg *config.Config, cacheStore *store.Store,
-	resourceClient source.ResourceClient, publisher *SeedPieceMgr, register prometheus.Registerer) (CDNMgr, error)
+	resourceClient source.ResourceClient, publisher *pubsub.SeedPiecePublisher, register prometheus.Registerer) (CDNMgr, error)
 
 var cdnBuilderMap = make(map[config.CDNPattern]CDNBuilder)
 
@@ -37,7 +38,7 @@ func Register(name config.CDNPattern, builder CDNBuilder) {
 
 // get an implementation of the interface of CDNMgr
 func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient,
-	publisher *SeedPieceMgr, register prometheus.Registerer) (CDNMgr, error) {
+	publisher *pubsub.SeedPiecePublisher, register prometheus.Registerer) (CDNMgr, error) {
 	cdnPattern := cfg.CDNPattern
 	if cdnPattern.String() == "" {
 		cdnPattern = config.CDNPatternLocal
@@ -75,4 +76,7 @@ type CDNMgr interface {
 	// The file on the disk will be deleted when the force is true.
 	Delete(ctx context.Context, taskID string, force bool) error
 
+	SubscribeTask(taskID string) (<-chan types.SeedPiece, error)
+
+	PublishTaskDone(task *types.SeedTask) error
 }

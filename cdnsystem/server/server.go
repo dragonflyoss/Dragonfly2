@@ -22,7 +22,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/gc"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/piece"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/pubsub"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/task"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
@@ -53,19 +53,19 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 		return nil, err
 	}
 
-	sourceClient, err := source.NewSourceClient()
+	sourceClient, err := source.NewSourceClient(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	publisher := piece.NewPublisher(100*time.Millisecond, 10)
+	publisher := pubsub.NewPublisher(10*time.Millisecond, 10)
 	// cdn manager
-	cdnMgr, err := mgr.GetCDNManager(cfg, storeLocal, sourceClient, register)
+	cdnMgr, err := mgr.GetCDNManager(cfg, storeLocal, sourceClient, publisher, register)
 	if err != nil {
 		return nil, err
 	}
 	// task manager
-	taskMgr, err := task.NewManager(cfg, cdnMgr, publisher, sourceClient, register)
+	taskMgr, err := task.NewManager(cfg, cdnMgr, sourceClient, register)
 	if err != nil {
 		return nil, err
 	}

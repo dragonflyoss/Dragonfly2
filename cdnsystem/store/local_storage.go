@@ -23,7 +23,7 @@ import (
 	statutils "github.com/dragonflyoss/Dragonfly2/pkg/stat"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"io"
 	"io/ioutil"
 	"os"

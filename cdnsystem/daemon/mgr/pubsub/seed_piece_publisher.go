@@ -14,43 +14,41 @@
  * limitations under the License.
  */
 
-package piece
+package pubsub
 
 import (
 	"container/list"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/cdn"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/pkg/errors"
 	"sync"
 	"time"
 )
 
+type SeedSubscriber chan types.SeedPiece
+
 type SeedPiecePublisher struct {
-	seedSubscribers  *syncmap.SyncMap
-	buffer           int
-	timeout          time.Duration
-	m                util.LockerPool
+	seedSubscribers      *syncmap.SyncMap
+	buffer               int
+	timeout              time.Duration
+	m                    *util.LockerPool
+	taskPieceMetaRecords *syncmap.SyncMap
 }
 
 func NewPublisher(publishTimeout time.Duration, buffer int) *SeedPiecePublisher {
 	return &SeedPiecePublisher{
-		buffer:          buffer,
-		timeout:         publishTimeout,
-		seedSubscribers: syncmap.NewSyncMap(),
+		seedSubscribers:      syncmap.NewSyncMap(),
+		buffer:               buffer,
+		timeout:              publishTimeout,
+		m:                    util.NewLockerPool(),
+		taskPieceMetaRecords: syncmap.NewSyncMap(),
 	}
 }
 
-func (p *SeedPiecePublisher) Create(taskID string) error {
-	return nil
-}
-
 // SubscribeTask subscribe task's piece seed
-func (p *SeedPiecePublisher) SubscribeTask(taskID string) (mgr.SeedSubscriber, error) {
+func (p *SeedPiecePublisher) SubscribeTask(taskID string) (SeedSubscriber, error) {
 	p.m.GetLock(taskID, false)
 	defer p.m.ReleaseLock(taskID, false)
 	chanList, err := p.seedSubscribers.GetAsList(taskID)
@@ -61,9 +59,9 @@ func (p *SeedPiecePublisher) SubscribeTask(taskID string) (mgr.SeedSubscriber, e
 		chanList = list.New()
 		p.seedSubscribers.Add(taskID, chanList)
 	}
-	ch := make(mgr.SeedSubscriber, p.buffer)
+	ch := make(SeedSubscriber, p.buffer)
 	chanList.PushBack(ch)
-	pieceMetaDataRecords, err := p.pieceMetaDataMgr.getPieceMetaRecordsByTaskID(taskID)
+	pieceMetaDataRecords, err := p.getPieceMetaRecordsByTaskID(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
 		return nil, errors.Wrapf(err, "taskID:%s, get piece meta records by taskId fail", taskID)
 	}
@@ -74,7 +72,7 @@ func (p *SeedPiecePublisher) SubscribeTask(taskID string) (mgr.SeedSubscriber, e
 }
 
 //UnSubscribeTask unsubscribe task's piece seed
-func (p *SeedPiecePublisher) UnSubscribeTask(sub mgr.SeedSubscriber, taskID string) error {
+func (p *SeedPiecePublisher) UnSubscribeTask(sub SeedSubscriber, taskID string) error {
 	p.m.GetLock(taskID, false)
 	defer p.m.ReleaseLock(taskID, false)
 	chanList, err := p.seedSubscribers.GetAsList(taskID)
@@ -82,7 +80,7 @@ func (p *SeedPiecePublisher) UnSubscribeTask(sub mgr.SeedSubscriber, taskID stri
 		return errors.Wrapf(err, "taskID:%s, get seed subscribers fail", taskID)
 	}
 	for e := chanList.Front(); e != nil; e = e.Next() {
-		if e.Value.(mgr.SeedSubscriber) == sub {
+		if e.Value.(SeedSubscriber) == sub {
 			chanList.Remove(e)
 			break
 		}
@@ -94,10 +92,7 @@ func (p *SeedPiecePublisher) UnSubscribeTask(sub mgr.SeedSubscriber, taskID stri
 func (p *SeedPiecePublisher) Publish(taskID string, record types.SeedPiece) error {
 	p.m.GetLock(taskID, false)
 	defer p.m.ReleaseLock(taskID, false)
-	err := p.pieceMetaDataMgr.setPieceMetaRecord(taskID, record)
-	if err != nil {
-		logger.Errorf("taskID: %s, set piece meta record fail, pieceRecord:%v", taskID, record)
-	}
+	p.setPieceMetaRecord(taskID, record)
 	var wg sync.WaitGroup
 	chanList, err := p.seedSubscribers.GetAsList(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
@@ -105,17 +100,45 @@ func (p *SeedPiecePublisher) Publish(taskID string, record types.SeedPiece) erro
 	}
 	for e := chanList.Front(); e != nil; e = e.Next() {
 		wg.Add(1)
-		sub := e.Value.(mgr.SeedSubscriber)
-		go func(sub mgr.SeedSubscriber, wg *sync.WaitGroup) {
+		sub := e.Value.(SeedSubscriber)
+		go func(sub SeedSubscriber, wg *sync.WaitGroup) {
 			defer wg.Done()
 			select {
 			case sub <- record:
+				return
 			case <-time.After(p.timeout):
 			}
 		}(sub, &wg)
 	}
 	wg.Wait()
 	return nil
+}
+
+// setpieceMetaRecord
+func (p *SeedPiecePublisher) setPieceMetaRecord(taskID string, record types.SeedPiece) error {
+	pieceRecords, err := p.taskPieceMetaRecords.GetAsList(taskID)
+	if err != nil && !dferrors.IsDataNotFound(err) {
+		return err
+	}
+	if pieceRecords == nil {
+		pieceRecords := list.New()
+		p.taskPieceMetaRecords.Add(taskID, pieceRecords)
+	}
+	pieceRecords.PushBack(record)
+	return nil
+}
+
+// getPieceMetaRecordsByTaskID
+func (p *SeedPiecePublisher) getPieceMetaRecordsByTaskID(taskID string) (records []types.SeedPiece, err error) {
+	pieceRecords, err := p.taskPieceMetaRecords.GetAsList(taskID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "taskID:%s, failed to get piece meta records", taskID)
+	}
+	for e := pieceRecords.Front(); e != nil; e = e.Next() {
+
+		records = append(records, e.Value.(types.SeedPiece))
+	}
+	return records, nil
 }
 
 func (p *SeedPiecePublisher) Close(taskID string) error {
@@ -128,16 +151,12 @@ func (p *SeedPiecePublisher) Close(taskID string) error {
 	var wg sync.WaitGroup
 	for e := chanList.Front(); e != nil; e = e.Next() {
 		wg.Add(1)
-		sub := e.Value.(mgr.SeedSubscriber)
-		go func(sub mgr.SeedSubscriber, wg *sync.WaitGroup) {
+		sub := e.Value.(SeedSubscriber)
+		go func(sub SeedSubscriber, wg *sync.WaitGroup) {
 			defer wg.Done()
 			close(sub)
 		}(sub, &wg)
 	}
 	wg.Wait()
 	return nil
-}
-
-func (p *SeedPiecePublisher) GetPieceMetaRecordsByTaskID(taskId string) (pieceMetaRecords []types.SeedPiece, error) {
-	return p.pieceMetaDataMgr.getPieceMetaRecordsByTaskID(taskId)
 }

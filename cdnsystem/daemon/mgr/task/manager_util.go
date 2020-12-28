@@ -110,29 +110,29 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	return task, nil
 }
 
-func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) error {
+func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*types.SeedTask, error) {
 	if stringutils.IsEmptyStr(taskID) {
-		return errors.Wrap(dferrors.ErrEmptyValue, "taskID")
+		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskID")
 	}
 
 	if updateTaskInfo == nil {
-		return errors.Wrap(dferrors.ErrEmptyValue, "Update TaskInfo")
+		return nil, errors.Wrap(dferrors.ErrEmptyValue, "Update TaskInfo")
 	}
 
 	// the expected new CDNStatus is not nil
 	if stringutils.IsEmptyStr(updateTaskInfo.CdnStatus) {
-		return errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
+		return nil, errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
 	}
 	// get origin task
 	task, err := tm.getTask(taskID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !isSuccessCDN(updateTaskInfo.CdnStatus) {
 		// when the origin CDNStatus equals success, do not update it to unsuccessful
 		if isSuccessCDN(task.CdnStatus) {
-			return nil
+			return task, nil
 		}
 
 		// only update the task CdnStatus when the new task CDNStatus and
@@ -140,7 +140,7 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) err
 		tm.metrics.tasks.WithLabelValues(task.CdnStatus).Dec()
 		tm.metrics.tasks.WithLabelValues(updateTaskInfo.CdnStatus).Inc()
 		task.CdnStatus = updateTaskInfo.CdnStatus
-		return nil
+		return task, nil
 	}
 
 	// only update the task info when the new CDNStatus equals success
@@ -164,7 +164,7 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) err
 	tm.metrics.tasks.WithLabelValues(task.CdnStatus).Dec()
 	tm.metrics.tasks.WithLabelValues(updateTaskInfo.CdnStatus).Inc()
 	task.CdnStatus = updateTaskInfo.CdnStatus
-	return nil
+	return task, nil
 }
 
 // equalsTask check whether the two task provided are the same

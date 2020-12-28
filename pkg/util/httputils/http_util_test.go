@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/errortypes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 
 	"github.com/go-check/check"
 	"github.com/valyala/fasthttp"
@@ -170,7 +170,7 @@ func (s *HTTPUtilTestSuite) TestGetRangeSE(c *check.C) {
 					EndIndex:   65575,
 				},
 			},
-			errCheck: errortypes.IsNilError,
+			errCheck: dferrors.IsNilError,
 		},
 		{
 			rangeHTTPHeader: "bytes=2-2",
@@ -181,7 +181,7 @@ func (s *HTTPUtilTestSuite) TestGetRangeSE(c *check.C) {
 					EndIndex:   2,
 				},
 			},
-			errCheck: errortypes.IsNilError,
+			errCheck: dferrors.IsNilError,
 		},
 		{
 			rangeHTTPHeader: "bytes=2-",
@@ -192,7 +192,7 @@ func (s *HTTPUtilTestSuite) TestGetRangeSE(c *check.C) {
 					EndIndex:   65575,
 				},
 			},
-			errCheck: errortypes.IsNilError,
+			errCheck: dferrors.IsNilError,
 		},
 		{
 			rangeHTTPHeader: "bytes=-100",
@@ -203,37 +203,37 @@ func (s *HTTPUtilTestSuite) TestGetRangeSE(c *check.C) {
 					EndIndex:   65575,
 				},
 			},
-			errCheck: errortypes.IsNilError,
+			errCheck: dferrors.IsNilError,
 		},
 		{
 			rangeHTTPHeader: "bytes=0-66575",
 			length:          65576,
 			expected:        nil,
-			errCheck:        errortypes.IsRangeNotSatisfiable,
+			errCheck:        dferrors.IsRangeNotSatisfiable,
 		},
 		{
 			rangeHTTPHeader: "bytes=0-65-575",
 			length:          65576,
 			expected:        nil,
-			errCheck:        errortypes.IsInvalidValue,
+			errCheck:        dferrors.IsInvalidValue,
 		},
 		{
 			rangeHTTPHeader: "bytes=0-hello",
 			length:          65576,
 			expected:        nil,
-			errCheck:        errortypes.IsInvalidValue,
+			errCheck:        dferrors.IsInvalidValue,
 		},
 		{
 			rangeHTTPHeader: "bytes=65575-0",
 			length:          65576,
 			expected:        nil,
-			errCheck:        errortypes.IsInvalidValue,
+			errCheck:        dferrors.IsInvalidValue,
 		},
 		{
 			rangeHTTPHeader: "bytes=-1-8",
 			length:          65576,
 			expected:        nil,
-			errCheck:        errortypes.IsInvalidValue,
+			errCheck:        dferrors.IsInvalidValue,
 		},
 	}
 

@@ -21,7 +21,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/mitchellh/go-homedir"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"path/filepath"
 	"time"
 )

@@ -16,15 +16,19 @@
 
 package cdn
 
-import "github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
+import (
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/pubsub"
+)
 
 type reporter struct {
-	seedPieceManager mgr.SeedPieceMgr
+	publisher    *pubsub.SeedPiecePublisher
+	pieceMetaMgr *seedPieceMetaDataManager
 }
 
-func newReporter(seedPublisher mgr.SeedPieceMgr) *reporter {
+func newReporter(publisher *pubsub.SeedPiecePublisher, pieceMetaMgr *seedPieceMetaDataManager) *reporter {
 	return &reporter{
-		seedPieceManager: seedPublisher,
+		publisher:    publisher,
+		pieceMetaMgr: pieceMetaMgr,
 	}
 }
 
@@ -32,7 +36,10 @@ func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error 
 	// report cache pieces status
 	if detectResult != nil && detectResult.pieceMetaRecords != nil {
 		for _, record := range detectResult.pieceMetaRecords {
-			if err := re.seedPieceManager.Publish(taskID, record); err != nil {
+			if err := re.pieceMetaMgr.setPieceMetaRecord(taskID, record); err != nil {
+				return err
+			}
+			if err := re.publisher.Publish(taskID, convertPieceMeta2SeedPiece(record)); err != nil {
 				return err
 			}
 		}
@@ -40,7 +47,10 @@ func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error 
 	return nil
 }
 
-func (re *reporter) reportPieceMetaRecord(taskID string, record PieceMetaRecord) error {
+func (re *reporter) reportPieceMetaRecord(taskID string, record pieceMetaRecord) error {
 	// report cache pieces status
-	return re.seedPieceManager.Publish(taskID, record)
+	if err := re.pieceMetaMgr.setPieceMetaRecord(taskID, record); err != nil {
+		return err
+	}
+	return re.publisher.Publish(taskID, convertPieceMeta2SeedPiece(record))
 }
