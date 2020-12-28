@@ -54,6 +54,10 @@ func (p *Piece) GetReadyPeerTaskList() (list []*PeerTask) {
 
 func (p *Piece) AddReadyPeerTask(pt *PeerTask) {
 	p.readyPeerTaskList.Store(&pt.Pid, pt)
+	p.ResumeWaitingPeerTask()
+}
+
+func (p *Piece) ResumeWaitingPeerTask() {
 	if p.waitingPeerTask != nil {
 		p.waitingPeerTask.Range(func(key interface{}, value interface{}) bool {
 			f, ok := value.(func())

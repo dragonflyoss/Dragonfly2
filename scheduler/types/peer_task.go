@@ -20,6 +20,7 @@ type PeerTask struct {
 	firstPieceNum           int32 //
 	finishedNum             int32 // download finished piece number
 	lastActiveTime 			int64
+	touch func(*PeerTask)
 
 	// the client of peer task, which used for send and receive msg
 	client scheduler.Scheduler_PullPieceTasksServer
@@ -39,7 +40,7 @@ type PieceStatus struct {
 	Cost      uint32
 }
 
-func NewPeerTask(pid string, task *Task, host *Host) *PeerTask {
+func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *PeerTask {
 	pt := &PeerTask{
 		Pid:                     pid,
 		Task:                    task,
@@ -50,8 +51,10 @@ func NewPeerTask(pid string, task *Task, host *Host) *PeerTask {
 		isDown:                  false,
 		lock:                    new(sync.Mutex),
 		lastActiveTime: time.Now().UnixNano(),
+		touch: touch,
 	}
 	host.AddPeerTask(pt)
+	pt.Touch()
 	return pt
 }
 
@@ -67,6 +70,7 @@ func (pt *PeerTask) GetRetryPieceList() map[int32]int32 {
 
 func (pt *PeerTask) Touch() {
 	pt.lastActiveTime = time.Now().UnixNano()
+	pt.touch(pt)
 }
 
 func (pt *PeerTask) GetFirstPieceNum() int32 {

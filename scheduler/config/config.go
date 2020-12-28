@@ -15,6 +15,7 @@ type Config struct {
 	Server    serverConfig          `yaml:"server"`
 	Worker    schedulerWorkerConfig `yaml:"worker"`
 	CDN       cdnConfig             `yaml:"cdn"`
+	GC       gcConfig             `yaml:"gc"`
 }
 
 type schedulerConfig struct {
@@ -37,6 +38,11 @@ type schedulerWorkerConfig struct {
 
 type cdnConfig struct {
 	List [][]serverConfig `yaml:"list"`
+}
+
+type gcConfig struct {
+	PeerTaskDelay int64 `yaml:"task-gc-delay-time"`
+	TaskDelay int64 `yaml:"peer-task-gc-delay-time"`
 }
 
 func GetConfig() *Config {
@@ -67,9 +73,13 @@ func createDefaultConfig() *Config {
 			List: [][]serverConfig{
 				{{
 					IP:   "127.0.0.1",
-					Port: 8003,
+					Port: 12345,
 				}},
 			},
+		},
+		GC: gcConfig{
+			TaskDelay: 3600*1000,
+			PeerTaskDelay: 24*3600*1000,
 		},
 	}
 }

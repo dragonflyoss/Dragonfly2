@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"sync"
+	"time"
 )
 
 type Task struct {
@@ -15,11 +16,13 @@ type Task struct {
 	BizId   string        `json:"biz_id,omitempty"`   // caller's biz id that can be any string
 	UrlMata *base.UrlMeta `json:"url_mata,omitempty"` // downloaded file content md5
 
+	CreateTime          time.Time
 	rwLock              *sync.RWMutex
 	PieceList           map[int32]*Piece // Piece list
 	maxPieceNum         int32            // the max piece num of all pieces
 	PieceTotal          int32            // the total number of Pieces, set > 0 when cdn finished
 	ContentLength       int64
+
 }
 
 func CopyTask(t *Task) *Task {
@@ -28,6 +31,7 @@ func CopyTask(t *Task) *Task {
 		copyTask.PieceList = make(map[int32]*Piece)
 		copyTask.rwLock = new(sync.RWMutex)
 		copyTask.maxPieceNum = -1
+		copyTask.CreateTime = time.Now()
 	}
 	return &copyTask
 }

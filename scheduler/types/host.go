@@ -44,6 +44,17 @@ func (h *Host) DeletePeerTask(peerTaskId string) {
 	h.peerTaskMap.Delete(peerTaskId)
 }
 
+func (h *Host) GetPeerTaskNum() int32 {
+	count := 0
+	if h.peerTaskMap != nil {
+		h.peerTaskMap.Range(func(key interface{}, value interface{})bool {
+			count++
+			return true
+		})
+	}
+	return int32(count)
+}
+
 func (h *Host) GetPeerTask(peerTaskId string) (peerTask *PeerTask) {
 	v, _ := h.peerTaskMap.Load(peerTaskId)
 	peerTask, _ = v.(*PeerTask)

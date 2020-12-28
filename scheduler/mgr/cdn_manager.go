@@ -84,6 +84,7 @@ func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
 			if !ok {
 				break
 			} else if ps != nil {
+				logger.Debugf("recieve a pieceSeed from cdn: %v", *ps)
 				c.processPieceSeed(task, ps)
 			}
 		}
@@ -115,6 +116,13 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		task.ContentLength = ps.ContentLength
 		peerTask.Traffic = uint64(ps.TotalTraffic)
 		peerTask.Success = true
+
+		// process waiting peerTask for done
+		piece := task.GetPiece(task.PieceTotal)
+		if piece != nil {
+			piece.ResumeWaitingPeerTask()
+		}
+
 		return
 	}
 
