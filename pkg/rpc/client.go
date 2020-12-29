@@ -51,8 +51,11 @@ type RetryMeta struct {
 }
 
 var clientOpts = []grpc.DialOption{
+	grpc.FailOnNonTempDialError(true),
+	grpc.WithBlock(),
 	grpc.WithInitialConnWindowSize(4 * 1024 * 1024),
 	grpc.WithInsecure(),
+
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
 		Time:                2 * time.Hour,
 		Timeout:             10 * time.Second,
@@ -90,7 +93,8 @@ func (c *Connection) connect() error {
 	var err error
 
 	for ; c.nextNum < len(c.NetAddrs); {
-		cc, err = grpc.Dial(c.NetAddrs[c.nextNum].GetEndpoint(), clientOpts...)
+		ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
+		cc, err = grpc.DialContext(ctx, c.NetAddrs[c.nextNum].GetEndpoint(), clientOpts...)
 
 		c.nextNum++
 

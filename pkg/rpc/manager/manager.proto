@@ -23,8 +23,9 @@ import "pkg/rpc/base/base.proto";
 option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager";
 
 message NavigatorRequest{
-  ClientHost client_host = 1;
-  string host_tag = 2; // client tag, json format: {vpcId:xxx,sn:xxx,...}
+  string ip = 1;
+  string host_name = 2;
+  string host_tag = 3; // client tag, json format: {vpcId:xxx,sn:xxx,...}
 }
 
 message ClientHost{
@@ -45,11 +46,16 @@ message SchedulerHosts{
 message CdnHosts{
   base.ResponseState state = 1;
   repeated string addrs = 2; // ip:port
-  ClientHost client_host = 3;
 }
 
 service Manager{
-  // get scheduler server list according to client info
+  // get scheduler server list according to client info.
+  // call scene as follows:
+  // 1. scheduler hosts is not found in config file
+  //
+  // 2. connection is fail for all servers
+  //
+  // 3. manager actively triggers fresh
   rpc GetSchedulerHosts(NavigatorRequest)returns(SchedulerHosts){}
   // sync cdn server list according to client info
   rpc SyncCdnHosts(NavigatorRequest)returns(stream CdnHosts){}

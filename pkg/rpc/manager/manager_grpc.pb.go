@@ -17,7 +17,13 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ManagerClient interface {
-	// get scheduler server list according to client info
+	// get scheduler server list according to client info.
+	// call scene as follows:
+	// 1. scheduler hosts is not found in config file
+	//
+	// 2. connection is fail for all servers
+	//
+	// 3. manager actively triggers fresh
 	GetSchedulerHosts(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerHosts, error)
 	// sync cdn server list according to client info
 	SyncCdnHosts(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (Manager_SyncCdnHostsClient, error)
@@ -76,7 +82,13 @@ func (x *managerSyncCdnHostsClient) Recv() (*CdnHosts, error) {
 // All implementations must embed UnimplementedManagerServer
 // for forward compatibility
 type ManagerServer interface {
-	// get scheduler server list according to client info
+	// get scheduler server list according to client info.
+	// call scene as follows:
+	// 1. scheduler hosts is not found in config file
+	//
+	// 2. connection is fail for all servers
+	//
+	// 3. manager actively triggers fresh
 	GetSchedulerHosts(context.Context, *NavigatorRequest) (*SchedulerHosts, error)
 	// sync cdn server list according to client info
 	SyncCdnHosts(*NavigatorRequest, Manager_SyncCdnHostsServer) error
