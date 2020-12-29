@@ -25,8 +25,8 @@ type ManagerClient interface {
 	//
 	// 3. manager actively triggers fresh
 	GetSchedulerHosts(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerHosts, error)
-	// sync cdn server list according to client info
-	SyncCdnHosts(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (Manager_SyncCdnHostsClient, error)
+	// get cdn server list according to client info
+	GetCdnHosts(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*CdnHosts, error)
 }
 
 type managerClient struct {
@@ -46,36 +46,13 @@ func (c *managerClient) GetSchedulerHosts(ctx context.Context, in *NavigatorRequ
 	return out, nil
 }
 
-func (c *managerClient) SyncCdnHosts(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (Manager_SyncCdnHostsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Manager_serviceDesc.Streams[0], "/manager.Manager/SyncCdnHosts", opts...)
+func (c *managerClient) GetCdnHosts(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*CdnHosts, error) {
+	out := new(CdnHosts)
+	err := c.cc.Invoke(ctx, "/manager.Manager/GetCdnHosts", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &managerSyncCdnHostsClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Manager_SyncCdnHostsClient interface {
-	Recv() (*CdnHosts, error)
-	grpc.ClientStream
-}
-
-type managerSyncCdnHostsClient struct {
-	grpc.ClientStream
-}
-
-func (x *managerSyncCdnHostsClient) Recv() (*CdnHosts, error) {
-	m := new(CdnHosts)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // ManagerServer is the server API for Manager service.
@@ -90,8 +67,8 @@ type ManagerServer interface {
 	//
 	// 3. manager actively triggers fresh
 	GetSchedulerHosts(context.Context, *NavigatorRequest) (*SchedulerHosts, error)
-	// sync cdn server list according to client info
-	SyncCdnHosts(*NavigatorRequest, Manager_SyncCdnHostsServer) error
+	// get cdn server list according to client info
+	GetCdnHosts(context.Context, *NavigatorRequest) (*CdnHosts, error)
 	mustEmbedUnimplementedManagerServer()
 }
 
@@ -102,8 +79,8 @@ type UnimplementedManagerServer struct {
 func (UnimplementedManagerServer) GetSchedulerHosts(context.Context, *NavigatorRequest) (*SchedulerHosts, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSchedulerHosts not implemented")
 }
-func (UnimplementedManagerServer) SyncCdnHosts(*NavigatorRequest, Manager_SyncCdnHostsServer) error {
-	return status.Errorf(codes.Unimplemented, "method SyncCdnHosts not implemented")
+func (UnimplementedManagerServer) GetCdnHosts(context.Context, *NavigatorRequest) (*CdnHosts, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCdnHosts not implemented")
 }
 func (UnimplementedManagerServer) mustEmbedUnimplementedManagerServer() {}
 
@@ -136,25 +113,22 @@ func _Manager_GetSchedulerHosts_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_SyncCdnHosts_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(NavigatorRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _Manager_GetCdnHosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NavigatorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(ManagerServer).SyncCdnHosts(m, &managerSyncCdnHostsServer{stream})
-}
-
-type Manager_SyncCdnHostsServer interface {
-	Send(*CdnHosts) error
-	grpc.ServerStream
-}
-
-type managerSyncCdnHostsServer struct {
-	grpc.ServerStream
-}
-
-func (x *managerSyncCdnHostsServer) Send(m *CdnHosts) error {
-	return x.ServerStream.SendMsg(m)
+	if interceptor == nil {
+		return srv.(ManagerServer).GetCdnHosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/manager.Manager/GetCdnHosts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServer).GetCdnHosts(ctx, req.(*NavigatorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Manager_serviceDesc = grpc.ServiceDesc{
@@ -165,13 +139,11 @@ var _Manager_serviceDesc = grpc.ServiceDesc{
 			MethodName: "GetSchedulerHosts",
 			Handler:    _Manager_GetSchedulerHosts_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "SyncCdnHosts",
-			Handler:       _Manager_SyncCdnHosts_Handler,
-			ServerStreams: true,
+			MethodName: "GetCdnHosts",
+			Handler:    _Manager_GetCdnHosts_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "pkg/rpc/manager/manager.proto",
 }

@@ -25,7 +25,8 @@ option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager";
 message NavigatorRequest{
   string ip = 1;
   string host_name = 2;
-  string host_tag = 3; // client tag, json format: {vpcId:xxx,sn:xxx,...}
+  // client tag, json format: {vpcId:xxx,sn:xxx,group:xxx,...}
+  string host_tag = 3;
 }
 
 message ClientHost{
@@ -57,6 +58,6 @@ service Manager{
   //
   // 3. manager actively triggers fresh
   rpc GetSchedulerHosts(NavigatorRequest)returns(SchedulerHosts){}
-  // sync cdn server list according to client info
-  rpc SyncCdnHosts(NavigatorRequest)returns(stream CdnHosts){}
+  // get cdn server list according to client info
+  rpc GetCdnHosts(NavigatorRequest)returns(CdnHosts){}
 }
