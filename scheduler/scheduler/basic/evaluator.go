@@ -69,7 +69,7 @@ func (e *Evaluator) Evaluate(dst *types.PeerTask, src *types.PeerTask) (result f
 }
 
 func (e *Evaluator) GetHostLoad(host *types.Host) (load float64, err error) {
-	load = float64(host.ProducerLoad) / float64(config.GetConfig().Scheduler.MaxUploadPieceNum)
+	load = float64(host.ProducerLoad) / float64(config.GetConfig().Scheduler.MaxUploadPieceNum) * e.maxUsableHostValue
 	return
 }
 

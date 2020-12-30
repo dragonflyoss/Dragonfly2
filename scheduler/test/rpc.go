@@ -6,6 +6,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/server"
+	"github.com/dragonflyoss/Dragonfly2/scheduler/service/schedule_worker"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
 	. "github.com/onsi/ginkgo"
 	"time"
@@ -128,7 +129,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 			p.PieceOffset = 10
 			p.PieceStyle = base.PieceStyle_PLAIN_UNSPECIFIED
 
-			svr.GetWorker().ReceiveJob(&scheduler.PieceResult{
+			(&schedule_worker.Client{}).UpdatePieceResult(&scheduler.PieceResult{
 				TaskId:     taskId,
 				SrcPid:     "001",
 				PieceNum:   0,

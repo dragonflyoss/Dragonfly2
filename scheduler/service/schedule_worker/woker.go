@@ -1,30 +1,25 @@
 package schedule_worker
 
 import (
-	"fmt"
 	dferror "github.com/dragonflyoss/Dragonfly2/pkg/error"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	scheduler2 "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
-	"sync"
+	"k8s.io/client-go/util/workqueue"
 )
 
 type Worker struct {
-	jobChan chan *scheduler2.PieceResult
-	jobMap  *sync.Map
+	queue workqueue.Interface
 	sender  ISender
 	stopCh  <-chan struct{}
 
 	scheduler *scheduler.Scheduler
 }
 
-func CreateWorker(sche *scheduler.Scheduler, sender ISender, chanSize int, stop <-chan struct{}) *Worker {
+func CreateWorker(sche *scheduler.Scheduler, sender ISender, stop <-chan struct{}) *Worker {
 	return &Worker{
-		jobChan:   make(chan *scheduler2.PieceResult, chanSize),
-		jobMap:    new(sync.Map),
+		queue:   workqueue.New(),
 		stopCh:    stop,
 		sender:    sender,
 		scheduler: sche,
@@ -35,94 +30,56 @@ func (w *Worker) Start() {
 	go w.doWorker()
 }
 
-func (w *Worker) ReceiveJob(job *scheduler2.PieceResult) {
-	_, loaded := w.jobMap.LoadOrStore(job.SrcPid, job)
-	if loaded {
-		if job.ErrorCode != base.Code_SCHEDULER_RETRY_ERROR {
-			w.jobMap.Store(job.SrcPid, job)
-		}
-	}
-	select {
-	case w.jobChan <- job:
-	default:
-		logger.Warnf("Worker job channel is full")
-	}
+func (w *Worker) ReceiveJob(job *types.PeerTask) {
+	w.queue.Add(job)
 }
 
 func (w *Worker) doWorker() {
 	for {
-		select {
-		case pr := <-w.jobChan:
-			v, ok := w.jobMap.Load(pr.SrcPid)
-			if ok {
-				pieceResult, ok := v.(*scheduler2.PieceResult)
-				if ok {
-					w.updatePieceResult(pieceResult)
-					pkg := w.doSchedule(pieceResult)
-					if pkg != nil {
-						w.sendScheduleResult(pr.SrcPid, pkg)
-					}
-				}
-			}
-			w.jobMap.Delete(pr.SrcPid)
-		case <-w.stopCh:
+		job, shutdown := w.queue.Get()
+		if shutdown {
 			return
 		}
+		pt, _ := job.(*types.PeerTask)
+		if pt != nil {
+			pkg := w.doSchedule(pt)
+			if pkg != nil {
+				w.sendScheduleResult(pt.Pid, pkg)
+			}
+		}
+		w.queue.Done(job)
 	}
 }
 
-func (w *Worker) updatePieceResult(pr *scheduler2.PieceResult) (err error) {
-	if pr.ErrorCode == base.Code_SCHEDULER_RETRY_ERROR || pr.PieceNum<0 {
-		return
-	}
-	peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
-	if peerTask == nil {
-		err = fmt.Errorf("peer task not exited : %s", pr.SrcPid)
-		return
-	}
-	peerTask.AddPieceStatus(&types.PieceStatus{
-		PieceNum:  pr.PieceNum,
-		SrcPid:    pr.SrcPid,
-		DstPid:    pr.DstPid,
-		Success:   pr.Success,
-		ErrorCode: pr.ErrorCode,
-		Cost:      pr.Cost,
-	})
-	peerTask.DeleteDownloadingPiece(pr.PieceNum)
-	dstPeerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.DstPid)
-	if dstPeerTask != nil {
-		dstPeerTask.Host.AddLoad(-1)
-	}
+func (w *Worker) doSchedule(peerTask *types.PeerTask) (pkg *scheduler2.PiecePackage) {
+	var pieceTaskList []*types.PieceTask
+	var waitingPieceNumList []int32
 
-	return
-}
-
-func (w *Worker) doSchedule(pr *scheduler2.PieceResult) (pkg *scheduler2.PiecePackage) {
+	logger.Debugf("[%s][%s]: begin do schedule", peerTask.Task.TaskId, peerTask.Pid)
 	defer func() {
-		if pr != nil {
-			logger.Debugf("doSchedule %v, pkg[%v]", *pr, pkg)
+		logger.Debugf("[%s][%s]: end do schedule", peerTask.Task.TaskId, peerTask.Pid)
+		if pkg == nil {
+			logger.Debugf("[%s][%s]: end do schedule wait %v", peerTask.Task.TaskId, peerTask.Pid, waitingPieceNumList)
+		} else if pkg.Done {
+			logger.Debugf("[%s][%s]: end do schedule done ", peerTask.Task.TaskId, peerTask.Pid)
+		} else {
+			logger.Debugf("[%s][%s]: end do schedule pkg-%v", peerTask.Task.TaskId, peerTask.Pid, pkg.PieceTasks)
 		}
 	} ()
-	peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
-	if peerTask == nil {
-		return
-	}
 	pieceTaskList, waitingPieceNumList, err := w.scheduler.Scheduler(peerTask)
 	if err != nil {
 		switch err {
 		case dferror.SchedulerWaitPiece:
 			for _, pieceNum := range waitingPieceNumList {
 				piece := peerTask.Task.GetOrCreatePiece(pieceNum)
-				piece.AddWaitPeerTask(peerTask, func() {
-					pr.ErrorCode = base.Code_SCHEDULER_RETRY_ERROR
-					w.ReceiveJob(pr)
-				})
+				peerTask.ScheduleTrigger = w
+				piece.AddWaitPeerTask(peerTask)
 			}
 			return nil
 		case dferror.SchedulerFinished:
 			pkg = new(scheduler2.PiecePackage)
-			pkg.TaskId = pr.TaskId
-			pkg.Pid = pr.SrcPid
+			pkg.TaskId = peerTask.Task.TaskId
+			pkg.Pid = peerTask.Pid
 			pkg.Done = true
 			pkg.ContentLength = peerTask.Task.ContentLength
 		}
@@ -130,8 +87,8 @@ func (w *Worker) doSchedule(pr *scheduler2.PieceResult) (pkg *scheduler2.PiecePa
 	}
 	// assemble result
 	pkg = new(scheduler2.PiecePackage)
-	pkg.TaskId = pr.TaskId
-	pkg.Pid = pr.SrcPid
+	pkg.TaskId = peerTask.Task.TaskId
+	pkg.Pid = peerTask.Pid
 	for _, p := range pieceTaskList {
 		pkg.PieceTasks = append(pkg.PieceTasks, &scheduler2.PiecePackage_PieceTask{
 			PieceNum:    p.Piece.PieceNum,
@@ -148,6 +105,7 @@ func (w *Worker) doSchedule(pr *scheduler2.PieceResult) (pkg *scheduler2.PiecePa
 }
 
 func (w *Worker) sendScheduleResult(pid string, pkg *scheduler2.PiecePackage) {
+	logger.Debugf("[%s][%s]: sendScheduleResult", pkg.TaskId, pid)
 	w.sender.Send(pid, pkg)
 	return
 }

@@ -26,25 +26,24 @@ func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, 
 		// choose a piece to download
 		piece, pieceNum, e := s.evaluator.GetNextPiece(task)
 		if e != nil {
-			logger.Debugf("scheduler get piece for taskID(%s) nil", task.Task.TaskId)
+			logger.Debugf("[%s][%s]: scheduler get piece nil", task.Pid, task.Task.TaskId)
 			break
+		}
+
+		if pieceNum>=task.Task.GetMaxPieceNum() && task.Task.PieceTotal > 0 {
+			if len(result) + len(waitingPieceNumList) == 0 {
+				err = dferror.SchedulerFinished
+				return
+			}
 		}
 
 		if piece == nil {
 			if pieceNum >= 0 && (pieceNum <= task.Task.GetMaxPieceNum() ||
 				(pieceNum>task.Task.GetMaxPieceNum() && task.Task.PieceTotal <= 0)) {
+				logger.Debugf("[%s][%s]: wait for piece [%d]", task.Task.TaskId, task.Pid, pieceNum)
 				waitingPieceNumList = append(waitingPieceNumList, pieceNum)
-			} else if pieceNum>=task.Task.GetMaxPieceNum() && task.Task.PieceTotal > 0 {
-				if len(result) + len(waitingPieceNumList) == 0 {
-					err = dferror.SchedulerFinished
-					return
-				}
 			}
 			break
-		}
-
-		if err != nil {
-			err = dferror.SchedulerWaitReadyHost
 		}
 
 		// scheduler piece to a host
@@ -61,17 +60,17 @@ func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, 
 		if dstPeerTask != nil && value < s.evaluator.GetMaxUsableHostValue() {
 			task.AddDownloadingPiece(piece.PieceNum)
 			dstPeerTask.Host.AddLoad(1)
+			logger.Debugf("[%s][%s]: host[%s] [%d] delete host load", task.Task.TaskId, task.Pid, dstPeerTask.Host.Uuid, piece.PieceNum)
 			result = append(result, &types.PieceTask{
 				Piece:   piece,
 				SrcPid:  task.Pid,
 				DstPid:  dstPeerTask.Pid,
 				DstAddr: fmt.Sprintf("%s:%d", dstPeerTask.Host.Ip, dstPeerTask.Host.Port),
 			})
-		} else if value > s.evaluator.GetMaxUsableHostValue() {
+		} else {
 			// bad dstHost quality
-			if pieceNum > 0 {
-				waitingPieceNumList = append(waitingPieceNumList, pieceNum)
-			}
+			logger.Debugf("[%s][%s]: wait for ready host [%d][%.04f]", task.Task.TaskId, task.Pid, pieceNum, value)
+			waitingPieceNumList = append(waitingPieceNumList, pieceNum)
 			break
 		}
 	}

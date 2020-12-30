@@ -1,9 +1,13 @@
 package mgr
 
 import (
+	"fmt"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 	"k8s.io/client-go/util/workqueue"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -26,6 +30,8 @@ func createPeerTaskManager() *PeerTaskManager {
 	}
 
 	go ptm.gcWorkingLoop()
+
+	go ptm.printDebugInfoLoop()
 
 	return ptm
 }
@@ -55,6 +61,24 @@ func (m *PeerTaskManager) GetPeerTask(pid string) (h *types.PeerTask, ok bool) {
 	return
 }
 
+func (m *PeerTaskManager) Walker(walker func(pt *types.PeerTask) bool) {
+	if walker == nil || m.data == nil {
+		return
+	}
+	m.data.Range(func(key interface{}, value interface{}) bool {
+		pt, _ := value.(*types.PeerTask)
+		return walker(pt)
+	})
+}
+
+func (m *PeerTaskManager) GetGCDelayTime() time.Duration {
+	return m.gcDelayTime
+}
+
+func (m *PeerTaskManager) SetGCDelayTime(delay time.Duration) {
+	m.gcDelayTime = delay
+}
+
 func (m *PeerTaskManager) addToGCQueue(pt *types.PeerTask) {
 	m.gcQueue.AddAfter(pt, m.gcDelayTime)
 }
@@ -69,7 +93,7 @@ func (m *PeerTaskManager) cleanPeerTask(pt *types.PeerTask) {
 		host, _ := GetHostManager().GetHost(pt.Host.Uuid)
 		if host != nil {
 			host.DeletePeerTask(pt.Pid)
-			if host.GetPeerTaskNum() < 0 {
+			if host.GetPeerTaskNum() <= 0 {
 				GetHostManager().DeleteHost(pt.Host.Uuid)
 			}
 		}
@@ -87,4 +111,61 @@ func (m *PeerTaskManager) gcWorkingLoop() {
 			m.cleanPeerTask(pt)
 		}
 	}
+}
+
+
+func (m *PeerTaskManager) printDebugInfoLoop() {
+	for {
+		time.Sleep(time.Second*10)
+		logger.Debugf(m.printDebugInfo())
+	}
+}
+
+func (m *PeerTaskManager) printDebugInfo() string {
+	msgMap := make(map[string]string)
+	var task *types.Task
+	m.data.Range(func(key interface{}, value interface{}) (ok bool) {
+		ok = true
+		peerTask, _ := value.(*types.PeerTask)
+		if peerTask == nil {
+			return
+		}
+		if task == nil {
+			task = peerTask.Task
+		}
+		msgMap[peerTask.Pid] = fmt.Sprintf("%s: finishedNum[%2d], downloadingNum[%2d] nextPieceNum[%2d] hostLoad[%d]",
+			peerTask.Pid, peerTask.GetFinishedNum(), peerTask.GetDownloadingPieceNum(), peerTask.GetFirstPieceNum(), peerTask.Host.ProducerLoad)
+		return
+	})
+	var keys, msgs []string
+	for key := range msgMap { 
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		msgs = append(msgs, msgMap[key])
+	}
+
+	msgs = append(msgs, "-----")
+
+	for i:=int32(0); i <= task.GetMaxPieceNum(); i++ {
+		piece := task.GetPiece(i)
+		if piece == nil {
+			continue
+		}
+		pMsg := fmt.Sprintf("piece[%2d]: ready[", piece.PieceNum)
+		for _, pt := range piece.GetReadyPeerTaskList() {
+			pMsg += pt.Pid + ","
+		}
+		pMsg += "] wait["
+		for _, pt := range piece.GetWaitingPeerTaskList() {
+			pMsg += pt.Pid + ","
+		}
+		pMsg += "]"
+		msgs = append(msgs, pMsg)
+	}
+
+
+	msg := "============\n" + strings.Join(msgs, "\n") + "\n==============="
+	return msg
 }

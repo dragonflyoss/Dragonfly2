@@ -19,6 +19,7 @@ type MockClient struct {
 	cli client.SchedulerClient
 	logger  common.TestLogger
 	replyChan chan *scheduler.PiecePackage_PieceTask
+	replyFinished chan struct{}
 	in chan<- *scheduler.PieceResult
 	out <-chan *scheduler.PiecePackage
 	pid string
@@ -38,8 +39,9 @@ func NewMockClient(addr string, logger common.TestLogger) *MockClient {
 		logger: logger,
 		replyChan : make(chan *scheduler.PiecePackage_PieceTask, 1000),
 		waitStop: make(chan struct{}),
+		replyFinished: make(chan struct{}),
 	}
-	mc.Start()
+	logger.Logf("NewMockClient %s", mc.pid)
 	return mc
 }
 
@@ -59,7 +61,7 @@ func (mc *MockClient) GetStopChan() chan struct{} {
 
 func (mc *MockClient) registerPeerTask() (err error) {
 	request := &scheduler.PeerTaskRequest{
-		Url:    "http://www.baidu.com",
+		Url:    "http://dragonfly.com/test-multi",
 		Filter: "",
 		BizId:  "12345",
 		UrlMata: &base.UrlMeta{
@@ -68,10 +70,10 @@ func (mc *MockClient) registerPeerTask() (err error) {
 		},
 		Pid: mc.pid,
 		PeerHost: &scheduler.PeerHost{
-			Uuid:           "host001",
+			Uuid:           fmt.Sprintf("host%s", mc.pid),
 			Ip:             "127.0.0.1",
 			Port:           23456,
-			HostName:       "host001",
+			HostName:       fmt.Sprintf("host%s", mc.pid),
 			SecurityDomain: "",
 			Location:       "",
 			Idc:            "",
@@ -80,14 +82,18 @@ func (mc *MockClient) registerPeerTask() (err error) {
 	}
 	pkg, err := mc.cli.RegisterPeerTask(context.TODO(), request)
 	if err != nil {
-		mc.logger.Errorf("RegisterPeerTask failed: %e", err)
+		mc.logger.Errorf("[%s] RegisterPeerTask failed: %e", mc.pid, err)
 		return
 	}
 	if pkg == nil {
-		mc.logger.Errorf("RegisterPeerTask failed: pkg is null")
+		mc.logger.Errorf("[%s] RegisterPeerTask failed: pkg is null", mc.pid)
 		return
 	}
 	mc.taskId = pkg.TaskId
+
+	for _, t := range pkg.PieceTasks {
+		mc.replyChan <- t
+	}
 
 	wait := make(chan bool)
 	go func() {
@@ -95,7 +101,7 @@ func (mc *MockClient) registerPeerTask() (err error) {
 		defer cancel()
 		mc.in, mc.out, err = mc.cli.PullPieceTasks(ctx, mc.taskId, request)
 		if err != nil {
-			mc.logger.Errorf("PullPieceTasks failed: %e",err)
+			mc.logger.Errorf("[%s] PullPieceTasks failed: %e", mc.pid, err)
 			return
 		}
 		wait<-true
@@ -104,16 +110,16 @@ func (mc *MockClient) registerPeerTask() (err error) {
 		for {
 			resp := <-mc.out
 			if len(resp.PieceTasks)>0 {
-				logMsg := fmt.Sprintf("recieve a pkg: %d, pieceNum:", len(resp.PieceTasks))
+				logMsg := fmt.Sprintf("[%s] recieve a pkg: %d, pieceNum:", mc.pid, len(resp.PieceTasks))
 				for _, piece := range resp.PieceTasks {
-					logMsg += fmt.Sprintf("[%d]", piece.PieceNum)
+					logMsg += fmt.Sprintf("[%d-%s]", piece.PieceNum, piece.DstPid)
 				}
 				mc.logger.Log(logMsg)
 			} else {
-				mc.logger.Logf("recieve a pkg: %d\n", len(resp.PieceTasks))
+				mc.logger.Logf("[%s] receive a pkg: pieceNum[%d]\n", mc.pid, len(resp.PieceTasks))
 			}
 			if resp != nil && resp.Done {
-				mc.logger.Logf("client[%d] download finished", mc.pid)
+				mc.logger.Logf("client[%s] download finished", mc.pid)
 				close(mc.waitStop)
 				break
 			}
@@ -125,7 +131,7 @@ func (mc *MockClient) registerPeerTask() (err error) {
 				mc.replyChan <- t
 			}
 		}
-
+		<-mc.replyFinished
 	}()
 	<-wait
 
@@ -134,6 +140,11 @@ func (mc *MockClient) registerPeerTask() (err error) {
 
 
 func (mc *MockClient) replyMessage() {
+	defer func(){
+		recover()
+		close(mc.replyFinished)
+	}()
+	closed := false
 	for t := range mc.replyChan {
 		var pr *scheduler.PieceResult
 		if t == nil {
@@ -155,6 +166,15 @@ func (mc *MockClient) replyMessage() {
 			}
 		}
 		time.Sleep(time.Millisecond * time.Duration(rand.Intn(3000)))
+		select {
+		case _, notClosed := <- mc.waitStop:
+			if !notClosed {
+				if !closed {
+					close(mc.replyChan)
+				}
+			}
+		default:
+		}
 		mc.in <- pr
 	}
 }

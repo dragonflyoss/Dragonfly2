@@ -84,7 +84,7 @@ func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
 			if !ok {
 				break
 			} else if ps != nil {
-				logger.Debugf("recieve a pieceSeed from cdn: %v", *ps)
+				logger.Debugf("recieve a pieceSeed from cdn: taskId[%s]-%d done [%v]", task.TaskId, ps.PieceNum, ps.Done)
 				c.processPieceSeed(task, ps)
 			}
 		}

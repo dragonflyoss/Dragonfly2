@@ -64,3 +64,7 @@ func (h *Host) GetPeerTask(peerTaskId string) (peerTask *PeerTask) {
 func (h *Host) AddLoad(delta int32) {
 	atomic.AddInt32(&h.ProducerLoad, delta)
 }
+
+func (h *Host) GetLoad() int32 {
+	return atomic.LoadInt32(&h.ProducerLoad)
+}

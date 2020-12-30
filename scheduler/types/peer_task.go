@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+type IWaitCallback interface{
+	ReceiveJob(*PeerTask)
+}
+
 type PeerTask struct {
 	Pid  string // peer id
 	Task *Task  // task info
@@ -21,6 +25,7 @@ type PeerTask struct {
 	finishedNum             int32 // download finished piece number
 	lastActiveTime 			int64
 	touch func(*PeerTask)
+	ScheduleTrigger IWaitCallback
 
 	// the client of peer task, which used for send and receive msg
 	client scheduler.Scheduler_PullPieceTasksServer
@@ -187,4 +192,17 @@ func (pt *PeerTask) Send(pkg *scheduler.PiecePackage) error {
 		return pt.client.Send(pkg)
 	}
 	return nil
+}
+
+func (pt *PeerTask) TriggerSchedule(load int32) {
+	for i:=int32(0); i<pt.Task.GetMaxPieceNum() && load > 0; i++ {
+		piece := pt.Task.GetPiece(i)
+		if piece != nil {
+			num := piece.GetWaitingPeerTaskNum()
+			if num > 0 {
+				piece.ResumeWaitingPeerTask()
+				load -= num
+			}
+		}
+	}
 }

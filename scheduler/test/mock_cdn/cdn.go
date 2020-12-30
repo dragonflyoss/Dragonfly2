@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"math/rand"
 	"net"
 	"sync"
 
@@ -74,7 +75,7 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 					return
 				}
 				psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"), SeedAddr: "localhost:12345", PieceNum: pieceNum}
-				time.Sleep(1 * time.Second)
+				time.Sleep(time.Millisecond*time.Duration(rand.Intn(3000)))
 				i--
 				pieceNum++
 			}
