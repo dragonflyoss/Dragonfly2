@@ -33,8 +33,8 @@ type SeedPiecePublisher struct {
 	seedSubscribers      *syncmap.SyncMap
 	buffer               int
 	timeout              time.Duration
-	m                    *util.LockerPool
 	taskPieceMetaRecords *syncmap.SyncMap
+	m                    *util.LockerPool
 }
 
 func NewPublisher(publishTimeout time.Duration, buffer int) *SeedPiecePublisher {
@@ -42,8 +42,8 @@ func NewPublisher(publishTimeout time.Duration, buffer int) *SeedPiecePublisher 
 		seedSubscribers:      syncmap.NewSyncMap(),
 		buffer:               buffer,
 		timeout:              publishTimeout,
-		m:                    util.NewLockerPool(),
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
+		m:                    util.NewLockerPool(),
 	}
 }
 
@@ -53,7 +53,7 @@ func (p *SeedPiecePublisher) SubscribeTask(taskID string) (SeedSubscriber, error
 	defer p.m.ReleaseLock(taskID, false)
 	chanList, err := p.seedSubscribers.GetAsList(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
-		return nil, errors.Wrapf(err, "taskID:%s, get seed subscribers fail", taskID)
+		return nil, errors.Wrap(err, "failed to get seed subscribers")
 	}
 	if dferrors.IsDataNotFound(err) {
 		chanList = list.New()
@@ -63,7 +63,7 @@ func (p *SeedPiecePublisher) SubscribeTask(taskID string) (SeedSubscriber, error
 	chanList.PushBack(ch)
 	pieceMetaDataRecords, err := p.getPieceMetaRecordsByTaskID(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
-		return nil, errors.Wrapf(err, "taskID:%s, get piece meta records by taskId fail", taskID)
+		return nil, errors.Wrap(err, "failed to get piece meta records by taskId")
 	}
 	for _, pieceMetaRecord := range pieceMetaDataRecords {
 		ch <- pieceMetaRecord
@@ -77,7 +77,7 @@ func (p *SeedPiecePublisher) UnSubscribeTask(sub SeedSubscriber, taskID string) 
 	defer p.m.ReleaseLock(taskID, false)
 	chanList, err := p.seedSubscribers.GetAsList(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
-		return errors.Wrapf(err, "taskID:%s, get seed subscribers fail", taskID)
+		return errors.Wrap(err, "failed to get seed subscribers")
 	}
 	for e := chanList.Front(); e != nil; e = e.Next() {
 		if e.Value.(SeedSubscriber) == sub {
@@ -96,7 +96,7 @@ func (p *SeedPiecePublisher) Publish(taskID string, record types.SeedPiece) erro
 	var wg sync.WaitGroup
 	chanList, err := p.seedSubscribers.GetAsList(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
-		return errors.Wrapf(err, "taskID:%s, get seed subscribers fail", taskID)
+		return errors.Wrap(err, "failed to get seed subscribers")
 	}
 	for e := chanList.Front(); e != nil; e = e.Next() {
 		wg.Add(1)
@@ -114,7 +114,7 @@ func (p *SeedPiecePublisher) Publish(taskID string, record types.SeedPiece) erro
 	return nil
 }
 
-// setpieceMetaRecord
+// setPieceMetaRecord
 func (p *SeedPiecePublisher) setPieceMetaRecord(taskID string, record types.SeedPiece) error {
 	pieceRecords, err := p.taskPieceMetaRecords.GetAsList(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
@@ -132,7 +132,7 @@ func (p *SeedPiecePublisher) setPieceMetaRecord(taskID string, record types.Seed
 func (p *SeedPiecePublisher) getPieceMetaRecordsByTaskID(taskID string) (records []types.SeedPiece, err error) {
 	pieceRecords, err := p.taskPieceMetaRecords.GetAsList(taskID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "taskID:%s, failed to get piece meta records", taskID)
+		return nil, errors.Wrap(err, "failed to get piece meta records")
 	}
 	for e := pieceRecords.Front(); e != nil; e = e.Next() {
 
@@ -146,7 +146,7 @@ func (p *SeedPiecePublisher) Close(taskID string) error {
 	defer p.m.ReleaseLock(taskID, false)
 	chanList, err := p.seedSubscribers.GetAsList(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
-		return errors.Wrapf(err, "taskID:%s, get seed subscribers fail", taskID)
+		return errors.Wrap(err, "failed to get seed subscribers")
 	}
 	var wg sync.WaitGroup
 	for e := chanList.Front(); e != nil; e = e.Next() {

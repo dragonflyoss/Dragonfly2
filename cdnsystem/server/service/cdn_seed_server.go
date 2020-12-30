@@ -23,6 +23,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
@@ -83,6 +84,7 @@ func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReq
 	pieceCh, err := ss.taskMgr.Register(ctx, registerRequest)
 
 	if err != nil {
+		logger.Named(req.TaskId).Errorf("register seed task fail, registerRequest=%v: %v", err)
 		return errors.Wrapf(err, "register seed task fail, registerRequest:%v", registerRequest)
 	}
 
