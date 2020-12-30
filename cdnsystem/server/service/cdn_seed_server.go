@@ -79,17 +79,17 @@ func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReq
 		URL:     req.GetUrl(),
 		Md5:     headers["md5"],
 		TaskID:  req.GetTaskId(),
+		Filter:  req.Filter,
 	}
 
-	pieceCh, err := ss.taskMgr.Register(ctx, registerRequest)
+	pieceChan, err := ss.taskMgr.Register(ctx, registerRequest)
 
 	if err != nil {
 		logger.Named(req.TaskId).Errorf("register seed task fail, registerRequest=%v: %v", err)
 		return errors.Wrapf(err, "register seed task fail, registerRequest:%v", registerRequest)
 	}
 
-	for piece := range pieceCh {
-
+	for piece := range pieceChan {
 		switch piece.Type {
 		case types.PieceType:
 			psc <- &cdnsystem.PieceSeed{
@@ -103,8 +103,14 @@ func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReq
 				Done:        false,
 			}
 		case types.TaskType:
+			var state *base.ResponseState
+			if piece.Result.Success {
+				state = base.NewState(base.Code_CDN_ERROR, piece.Result.Msg)
+			} else {
+				state = base.NewState(base.Code_SUCCESS, "success")
+			}
 			psc <- &cdnsystem.PieceSeed{
-				State:         base.NewState(base.Code_SUCCESS, "success"),
+				State:         state,
 				SeedAddr:      fmt.Sprintf("%s:%d", ss.cfg.AdvertiseIP, ss.cfg.ListenPort),
 				Done:          true,
 				ContentLength: piece.ContentLength,

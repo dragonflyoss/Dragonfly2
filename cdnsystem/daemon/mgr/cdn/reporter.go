@@ -17,18 +17,18 @@
 package cdn
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/pubsub"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"github.com/pkg/errors"
 )
 
 type reporter struct {
-	publisher    *pubsub.SeedPiecePublisher
-	pieceMetaMgr *seedPieceMetaDataManager
+	publisher mgr.SeedPieceMgr
 }
 
-func newReporter(publisher *pubsub.SeedPiecePublisher, pieceMetaMgr *seedPieceMetaDataManager) *reporter {
+func newReporter(publisher mgr.SeedPieceMgr) *reporter {
 	return &reporter{
-		publisher:    publisher,
-		pieceMetaMgr: pieceMetaMgr,
+		publisher: publisher,
 	}
 }
 
@@ -36,21 +36,19 @@ func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error 
 	// report cache pieces status
 	if detectResult != nil && detectResult.pieceMetaRecords != nil {
 		for _, record := range detectResult.pieceMetaRecords {
-			if err := re.pieceMetaMgr.setPieceMetaRecord(taskID, record); err != nil {
-				return err
-			}
-			if err := re.publisher.Publish(taskID, convertPieceMeta2SeedPiece(record)); err != nil {
-				return err
+			if err := re.publisher.PublishPiece(taskID, convertPieceMeta2SeedPiece(record)); err != nil {
+				return errors.Wrapf(err, "failed to publish pieceMetaRecord:%v, seedPiece:%v", record, convertPieceMeta2SeedPiece(record))
 			}
 		}
 	}
 	return nil
 }
 
-func (re *reporter) reportPieceMetaRecord(taskID string, record pieceMetaRecord) error {
+func (re *reporter) reportPieceMetaRecord(taskID string, record *pieceMetaRecord) error {
 	// report cache pieces status
-	if err := re.pieceMetaMgr.setPieceMetaRecord(taskID, record); err != nil {
-		return err
-	}
-	return re.publisher.Publish(taskID, convertPieceMeta2SeedPiece(record))
+	return re.publisher.PublishPiece(taskID, convertPieceMeta2SeedPiece(record))
+}
+
+func (re *reporter) reportTask(taskID string, task *types.SeedTask) error {
+	return re.publisher.PublishPiece(taskID, convertTaskInfo2SeedPiece(task))
 }

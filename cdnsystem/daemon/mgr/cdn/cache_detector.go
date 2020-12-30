@@ -40,8 +40,7 @@ type cacheDetector struct {
 // cacheResult detect cache result
 type cacheResult struct {
 	breakNum             int32             // break-point
-	downloadedFileLength int64             // length of file has been downloaded
-	pieceMetaRecords     []pieceMetaRecord // piece meta data records of task
+	pieceMetaRecords     []*pieceMetaRecord // piece meta data records of task
 	fileMetaData         *fileMetaData     // file meta data of task
 	fileMd5              hash.Hash         // md5 of file content that has been downloaded
 }
@@ -67,7 +66,6 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) 
 		}
 		detectResult = &cacheResult{
 			breakNum:             0,
-			downloadedFileLength: 0,
 			pieceMetaRecords:     nil,
 			fileMetaData:         metaData,
 			fileMd5:              nil,
@@ -136,7 +134,6 @@ func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskID string,
 	}
 	return &cacheResult{
 		breakNum:             -1,
-		downloadedFileLength: fileMetaData.CdnFileLength,
 		pieceMetaRecords:     pieceMetaRecords,
 		fileMetaData:         fileMetaData,
 		fileMd5:              nil,
@@ -149,13 +146,12 @@ func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskID string, met
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read file")
 	}
-	pieceMetaRecords, err := cd.metaDataManager.readWithoutCheckPieceMetaRecords(ctx, taskID)
+	pieceMetaRecords, err := cd.metaDataManager.readPieceMetaRecordsWithoutCheck(ctx, taskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read piece meta file")
 	}
 
 	fileMd5 := md5.New()
-	var downloadedFileLength int64 = 0
 	// sort piece meta records by pieceNum
 	sort.Slice(pieceMetaRecords, func(i, j int) bool {
 		return pieceMetaRecords[i].PieceNum < pieceMetaRecords[j].PieceNum
@@ -173,12 +169,10 @@ func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskID string, met
 			breakIndex = index
 			break
 		}
-		downloadedFileLength += int64(record.PieceLen)
 	}
 	// todo 清除不连续的分片元数据信息
 	return &cacheResult{
 		breakNum:             int32(breakIndex),
-		downloadedFileLength: downloadedFileLength,
 		pieceMetaRecords:     pieceMetaRecords[0:breakIndex],
 		fileMetaData:         metaData,
 		fileMd5:              fileMd5,

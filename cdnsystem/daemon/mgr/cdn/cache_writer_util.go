@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/binary"
+	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/pkg/errors"
@@ -56,28 +57,36 @@ func calculateRoutineCount(remainingFileLength int64, pieceSize int32) int {
 func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, writeRoutineCount int, jobCh chan *protocolContent) {
 	for i := 0; i < writeRoutineCount; i++ {
 		wg.Add(1)
-		go func(i int) {
+		go func() {
+			defer wg.Done()
 			for job := range jobCh {
 				var pieceMd5 = md5.New()
-				if err := cw.writeToFile(ctx, job.taskID, job.pieceContent, job.cdnFileOffset, job.pieceContentLen, pieceMd5); err != nil {
-					logger.Named(job.taskID).Errorf("failed to write file, pieceNum %d file: %v", job.pieceNum, err)
+				// todo 后续压缩等特性通过waitToWriteContent 和 pieceStyle 实现
+				waitToWriteContent := job.pieceContent
+				pieceLen := waitToWriteContent.Len()
+				pieceStyle := types.PlainUnspecified
+
+				if err := cw.writeToFile(ctx, job.taskID, waitToWriteContent, int64(job.pieceNum)*int64(job.pieceSize), pieceMd5); err != nil {
+					logger.Named(job.taskID).Errorf("failed to write file, pieceNum %d: %v", job.pieceNum, err)
 					// todo redo the job?
 					continue
 				}
-
 				// report piece status
 				pieceMd5Sum := fileutils.GetMd5Sum(pieceMd5, nil)
-				pieceRecord := pieceMetaRecord{
+				pieceRecord := &pieceMetaRecord{
 					PieceNum:   job.pieceNum,
-					PieceLen:   job.pieceContentLen,
+					PieceLen:   int32(pieceLen),
 					Md5:        pieceMd5Sum,
-					Range:      job.pieceRange,
-					Offset:     job.sourceFileOffset,
-					PieceStyle: types.PlainUnspecified,
+					Range:      fmt.Sprintf("%d-%d", job.pieceNum*job.pieceSize, job.pieceNum*job.pieceSize+int32(pieceLen)-1),
+					Offset:     uint64(job.pieceNum) * uint64(job.pieceSize),
+					PieceStyle: pieceStyle,
 				}
-				// write piece meta
-				go func(record pieceMetaRecord) {
-					if err := cw.appendPieceMetaDataToFile(ctx, job.taskID, record); err != nil {
+				wg.Add(1)
+				// write piece meta to storage
+				go func(record *pieceMetaRecord) {
+					defer wg.Done()
+					// todo 可以先塞入channel，然后启动单独goroutine顺序写文件
+					if err := cw.metaDataMgr.appendPieceMetaDataToFile(ctx, job.taskID, record); err != nil {
 						logger.Named(job.taskID).Errorf("failed to append piece meta data to file:%v", err)
 					}
 				}(pieceRecord)
@@ -90,15 +99,15 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 					}
 				}
 			}
-			wg.Done()
-		}(i)
+		}()
 	}
 }
 
-func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuffer *bytes.Buffer, cdnFileOffset int64, pieceContLen int32, pieceMd5 hash.Hash) error {
+func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuffer *bytes.Buffer, offset int64, pieceMd5 hash.Hash) error {
 	var resultBuf = &bytes.Buffer{}
 	// write piece content
 	var pieceContent []byte
+	pieceContLen := bytesBuffer.Len()
 	if pieceContLen > 0 {
 		pieceContent = make([]byte, pieceContLen)
 		if _, err := bytesBuffer.Read(pieceContent); err != nil {
@@ -118,16 +127,7 @@ func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuff
 	return cw.cdnStore.Put(ctx, &store.Raw{
 		Bucket: config.DownloadHome,
 		Key:    getDownloadKey(taskID),
-		Offset: cdnFileOffset,
+		Offset: offset,
 		Length: int64(pieceContLen),
 	}, resultBuf)
-}
-
-func (cw *cacheWriter) appendPieceMetaDataToFile(ctx context.Context, taskID string, record pieceMetaRecord) error {
-	pieceMeta := getPieceMetaValue(record)
-	// write to the storage
-	return cw.cdnStore.AppendBytes(ctx, &store.Raw{
-		Bucket: config.DownloadHome,
-		Key:    getPieceMetaDataKey(taskID),
-	}, []byte(pieceMeta+"\n"))
 }

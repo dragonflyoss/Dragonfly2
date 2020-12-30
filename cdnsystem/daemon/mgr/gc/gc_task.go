@@ -75,12 +75,14 @@ func (gcm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
 	defer util.ReleaseLock(taskID, false)
 
 	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func(wg *sync.WaitGroup) {
-		gcm.gcCDNByTaskID(ctx, taskID, full)
-		wg.Done()
-	}(&wg)
+	wg.Add(1)
+	if full {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			gcm.gcCDNByTaskID(ctx, taskID)
+			wg.Done()
+		}(&wg)
+	}
 
 	// delete memory data
 	go func(wg *sync.WaitGroup) {
@@ -92,9 +94,9 @@ func (gcm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
 }
 
 
-func (gcm *Manager) gcCDNByTaskID(ctx context.Context, taskID string, full bool) {
-	if err := gcm.cdnMgr.Delete(ctx, taskID, full); err != nil {
-		logger.GcLogger.Errorf("gc task: failed to gc cdn meta taskID(%s) full(%t): %v", taskID, full, err)
+func (gcm *Manager) gcCDNByTaskID(ctx context.Context, taskID string) {
+	if err := gcm.cdnMgr.Delete(ctx, taskID); err != nil {
+		logger.GcLogger.Errorf("gc task: failed to gc cdn meta taskID(%s): %v", taskID, err)
 	}
 }
 

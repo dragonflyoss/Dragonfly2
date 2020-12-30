@@ -19,49 +19,48 @@ package cdn
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/pkg/errors"
 	"io"
 	"sync"
 )
 
-// todo pieceContentLen / pieceRange / cdnFileOffset 为了支持以后的分片压缩存储需要从protoContent中移除，
 type protocolContent struct {
-	taskID           string
-	pieceNum         int32
-	pieceContent     *bytes.Buffer
-	pieceContentLen  int32
-	pieceRange       string
-	cdnFileOffset    int64
-	sourceFileOffset uint64
+	taskID       string
+	pieceNum     int32
+	pieceSize    int32
+	pieceContent *bytes.Buffer
 }
 
 type downloadMetadata struct {
-	realCdnFileLength    int64
-	realSourceFileLength int64
-	pieceCount           int32
+	backSourceLength     int64 // back to source download file length
+	realCdnFileLength    int64 // the actual length of the stored file
+	realSourceFileLength int64 // actually read the length of the source
+	pieceTotalCount      int32 // piece total count
 }
 
 type cacheWriter struct {
 	cdnStore    *store.Store
 	cdnReporter *reporter
+	metaDataMgr *metaDataManager
 }
 
-func newCacheWriter(cdnStore *store.Store, cdnReporter *reporter) *cacheWriter {
+func newCacheWriter(cdnStore *store.Store, cdnReporter *reporter, metaDataMgr *metaDataManager) *cacheWriter {
 	return &cacheWriter{
 		cdnStore:    cdnStore,
 		cdnReporter: cdnReporter,
+		metaDataMgr: metaDataMgr,
 	}
 }
 
 // startWriter writes the stream data from the reader to the underlying storage.
 func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *types.SeedTask, detectResult *cacheResult) (*downloadMetadata, error) {
-	// currentCdnFileLength is used to calculate the cdn file Length dynamically
-	currentCdnFileLength := detectResult.downloadedFileLength
 	// currentSourceFileLength is used to calculate the source file Length dynamically
 	currentSourceFileLength := int64(detectResult.breakNum) * int64(task.PieceSize)
+	// backSourceFileLength back source length
+	var backSourceFileLength int64 = 0
 	// the pieceNum currently processed
 	curPieceNum := detectResult.breakNum
 	// the left size of data for a complete piece
@@ -79,20 +78,15 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 		n, err := reader.Read(buf)
 		if n > 0 {
 			logger.Named(task.TaskID).Debugf("success to read content with length(%d) from source: %d", n)
-			currentSourceFileLength += int64(n)
+			backSourceFileLength += int64(n)
 			if int(pieceContLeft) <= n {
 				bb.Write(buf[:pieceContLeft])
-				pieceContentLen := int32(bb.Len())
 				pc := &protocolContent{
-					taskID:           task.TaskID,
-					pieceNum:         curPieceNum,
-					pieceContentLen:  pieceContentLen,
-					pieceContent:     bb,
-					pieceRange:       fmt.Sprintf("%d-%d", currentCdnFileLength, currentCdnFileLength+int64(pieceContentLen-1)),
-					cdnFileOffset:    currentCdnFileLength,
-					sourceFileOffset: uint64(curPieceNum) * uint64(task.PieceSize),
+					taskID:       task.TaskID,
+					pieceNum:     curPieceNum,
+					pieceSize:    task.PieceSize,
+					pieceContent: bb,
 				}
-				currentCdnFileLength = currentCdnFileLength + int64(pieceContentLen)
 				jobCh <- pc
 				logger.Named(task.TaskID).Debugf("send protocolContent to jobCh, pieceNum: %d", curPieceNum)
 				curPieceNum++
@@ -111,34 +105,35 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 		}
 
 		if err == io.EOF {
-			if currentCdnFileLength == 0 || bb.Len() > 0 {
-				pieceContentLen := int32(bb.Len())
+			if bb.Len() > 0 {
 				jobCh <- &protocolContent{
-					taskID:           task.TaskID,
-					pieceNum:         curPieceNum,
-					pieceContentLen:  pieceContentLen,
-					pieceContent:     bb,
-					pieceRange:       fmt.Sprintf("%d-%d", currentCdnFileLength, currentCdnFileLength+int64(pieceContentLen)),
-					sourceFileOffset: uint64(curPieceNum) * uint64(task.PieceSize),
-					cdnFileOffset:    currentCdnFileLength,
+					taskID:       task.TaskID,
+					pieceNum:     curPieceNum,
+					pieceSize:    task.PieceSize,
+					pieceContent: bb,
 				}
 				logger.Named(task.TaskID).Debugf("send the protocolContent, pieceNum: %d", curPieceNum)
-				currentCdnFileLength = currentCdnFileLength + int64(pieceContentLen)
 			}
-			logger.Named(task.TaskID).Infof("send all protocolContents with realCdnFileLength(%d) and wait for cdnWriter", currentCdnFileLength)
+			logger.Named(task.TaskID).Info("send all protocolContents and wait for cdnWriter")
 			break
 		}
 		if err != nil {
 			close(jobCh)
-			return nil, err
+			return &downloadMetadata{backSourceLength: backSourceFileLength}, err
 		}
 	}
 
 	close(jobCh)
 	wg.Wait()
+
+	storageInfo, err := cw.cdnStore.Stat(ctx, getDownloadRawFunc(task.TaskID))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get cdn file length")
+	}
 	return &downloadMetadata{
-		realCdnFileLength:    currentCdnFileLength,
-		realSourceFileLength: currentSourceFileLength,
-		pieceCount:           curPieceNum,
+		backSourceLength:     backSourceFileLength,
+		realCdnFileLength:    storageInfo.Size,
+		realSourceFileLength: currentSourceFileLength + backSourceFileLength,
+		pieceTotalCount:      curPieceNum,
 	}, nil
 }

@@ -100,7 +100,7 @@ func (client *httpSourceClient) GetContentLength(url string, headers map[string]
 	if code != http.StatusOK && code != http.StatusPartialContent {
 		logger.Warnf("failed to get http file length with unexpected code: %d", code)
 		if code == http.StatusNotFound {
-			return -1, errors.Wrapf(dferrors.ErrURLNotReachable, "url: %s", url)
+			return -1, dferrors.ErrURLNotReachable
 		}
 		return -1, nil
 	}
@@ -123,6 +123,9 @@ func (client *httpSourceClient) IsSupportRange(url string, headers map[string]st
 
 	if resp.StatusCode == http.StatusPartialContent {
 		return true, nil
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return false, dferrors.ErrURLNotReachable
 	}
 	return false, nil
 }

@@ -14,37 +14,26 @@
  * limitations under the License.
  */
 
-package types
+package mgr
 
-// SeedPiece
-type SeedPiece struct {
-	Type             ItemType    // 1: piece 0: task
-	PieceStyle       PieceFormat // 0: PlainUnspecified
-	PieceNum         int32
-	PieceMd5         string
-	PieceRange       string
-	PieceOffset      uint64
-	PieceLen         int32
-	Last             bool
-	ContentLength    int64
-	BackSourceLength int64
-	Result           Result
-}
-
-type Result struct {
-	Success bool
-	Msg     string
-}
-
-type ItemType int8
-
-const (
-	PieceType ItemType = 1
-	TaskType  ItemType = 2
+import (
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 )
 
-type PieceFormat int8
+// SeedPieceMgr as an interface defines all operations about piece
+type SeedPieceMgr interface {
 
-const (
-	PlainUnspecified PieceFormat = 1
-)
+	// WatchSeedTask
+	WatchSeedTask(taskID string) (<-chan *types.SeedPiece, error)
+
+	// UnWatchTask unwatch task's piece seed
+	UnWatchTask(seedSubscriber chan *types.SeedPiece, taskID string) error
+
+	// PublishPiece publish seedPiece
+	PublishPiece(taskID string, record *types.SeedPiece) error
+
+	// GetPieceMetaRecordsByTaskID
+	GetPieceMetaRecordsByTaskID(taskID string) (records []*types.SeedPiece, err error)
+
+	Close(taskID string) error
+}

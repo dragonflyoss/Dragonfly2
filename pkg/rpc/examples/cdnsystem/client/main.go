@@ -44,7 +44,7 @@ func main() {
 	}
 
 	for pieceSeed := range psc {
-		fmt.Printf("response:%v\n", pieceSeed)
+		fmt.Printf("response:%+v\n", pieceSeed)
 	}
 
 	fmt.Println("client finish")

@@ -22,7 +22,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/gc"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/pubsub"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/piece"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/task"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/server/service"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
@@ -31,7 +31,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"time"
 )
 
 type Server struct {
@@ -59,7 +58,7 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 		return nil, err
 	}
 
-	publisher := pubsub.NewPublisher(10*time.Millisecond, 10)
+	publisher := piece.NewManager()
 	// cdn manager
 	cdnMgr, err := mgr.GetCDNManager(cfg, storeLocal, sourceClient, publisher, register)
 	if err != nil {

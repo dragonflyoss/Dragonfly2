@@ -40,11 +40,11 @@ func getUpdateTaskInfo(cdnStatus, realMD5 string, cdnFileLength int64) *types.Se
 	}
 }
 
-func getPieceMetaValue(record pieceMetaRecord) string {
+func getPieceMetaValue(record *pieceMetaRecord) string {
 	return fmt.Sprintf("%d:%d:%s:%s:%d:%d", record.PieceNum, record.PieceLen, record.Md5, record.Range, record.Offset, record.PieceStyle)
 }
 
-func getPieceMetaRecord(value string) (record pieceMetaRecord, err error) {
+func getPieceMetaRecord(value string) (record *pieceMetaRecord, err error) {
 	defer func() {
 		if msg := recover(); msg != nil {
 			err = errors.Errorf("%v", msg)
@@ -57,7 +57,7 @@ func getPieceMetaRecord(value string) (record pieceMetaRecord, err error) {
 	rangeStr := fields[3]
 	offSet, _ := strconv.ParseUint(fields[4], 10, 64)
 	pieceStyle, _ := strconv.Atoi(fields[5])
-	return pieceMetaRecord{
+	return &pieceMetaRecord{
 		PieceNum:   int32(pieceNum),
 		PieceLen:   int32(pieceLen),
 		Md5:        md5,
@@ -67,10 +67,10 @@ func getPieceMetaRecord(value string) (record pieceMetaRecord, err error) {
 	}, nil
 }
 
-func convertPieceMeta2SeedPiece(record pieceMetaRecord) types.SeedPiece {
-	return types.SeedPiece{
+func convertPieceMeta2SeedPiece(record *pieceMetaRecord) *types.SeedPiece {
+	return &types.SeedPiece{
 		Type:        types.PieceType,
-		PieceStyle:  types.PieceFormat(record.PieceStyle),
+		PieceStyle:  record.PieceStyle,
 		PieceNum:    record.PieceNum,
 		PieceMd5:    record.Md5,
 		PieceRange:  record.Range,
@@ -80,8 +80,8 @@ func convertPieceMeta2SeedPiece(record pieceMetaRecord) types.SeedPiece {
 	}
 }
 
-func convertTaskInfo2SeedPiece(task types.SeedTask) types.SeedPiece {
-	return types.SeedPiece{
+func convertTaskInfo2SeedPiece(task *types.SeedTask) *types.SeedPiece {
+	return &types.SeedPiece{
 		Type:             types.TaskType,
 		Last:             true,
 		ContentLength:    task.CdnFileLength,

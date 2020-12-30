@@ -92,7 +92,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		// check whether support range
 		supportRange, err := tm.resourceClient.IsSupportRange(task.Url, task.Headers)
 		if err != nil {
-			return nil, errors.Wrapf(err, "taskID: %s failed to check whether the task supports partial requests", task.TaskID)
+			return nil, errors.Wrapf(err, "taskID: %s failed to check whether the url(%s) supports partial requests", task.TaskID, task.Url)
 		}
 		if !supportRange {
 			return nil, fmt.Errorf("taskID: %s the task URL should support range request in source CDN pattern", task.TaskID)
@@ -117,29 +117,30 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	return task, nil
 }
 
-func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*types.SeedTask, error) {
+func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) error {
 	if stringutils.IsEmptyStr(taskID) {
-		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskID")
+		return errors.Wrap(dferrors.ErrEmptyValue, "taskID")
 	}
 
 	if updateTaskInfo == nil {
-		return nil, errors.Wrap(dferrors.ErrEmptyValue, "Update TaskInfo")
+		return errors.Wrap(dferrors.ErrEmptyValue, "Update TaskInfo")
 	}
-
 	// the expected new CDNStatus is not nil
 	if stringutils.IsEmptyStr(updateTaskInfo.CdnStatus) {
-		return nil, errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
+		return errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
 	}
+	util.GetLock(taskID, false)
+	util.ReleaseLock(taskID, false)
 	// get origin task
 	task, err := tm.getTask(taskID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if !isSuccessCDN(updateTaskInfo.CdnStatus) {
 		// when the origin CDNStatus equals success, do not update it to unsuccessful
 		if isSuccessCDN(task.CdnStatus) {
-			return task, nil
+			return nil
 		}
 
 		// only update the task CdnStatus when the new task CDNStatus and
@@ -147,7 +148,7 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 		tm.metrics.tasks.WithLabelValues(task.CdnStatus).Dec()
 		tm.metrics.tasks.WithLabelValues(updateTaskInfo.CdnStatus).Inc()
 		task.CdnStatus = updateTaskInfo.CdnStatus
-		return task, nil
+		return nil
 	}
 
 	// only update the task info when the new CDNStatus equals success
@@ -171,7 +172,7 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 	tm.metrics.tasks.WithLabelValues(task.CdnStatus).Dec()
 	tm.metrics.tasks.WithLabelValues(updateTaskInfo.CdnStatus).Inc()
 	task.CdnStatus = updateTaskInfo.CdnStatus
-	return task, nil
+	return nil
 }
 
 // equalsTask check whether the two task provided are the same

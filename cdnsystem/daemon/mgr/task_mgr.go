@@ -28,7 +28,7 @@ import (
 type SeedTaskMgr interface {
 
 	// Register the seed task
-	Register(ctx context.Context, registerRequest *types.TaskRegisterRequest) (pieceCh <-chan types.SeedPiece, err error)
+	Register(ctx context.Context, registerRequest *types.TaskRegisterRequest) (pieceCh <-chan *types.SeedPiece, err error)
 
 	// Get the task Info with specified taskID.
 	Get(ctx context.Context, taskID string) (*types.SeedTask, error)

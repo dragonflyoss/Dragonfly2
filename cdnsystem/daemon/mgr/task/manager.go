@@ -71,28 +71,36 @@ type Manager struct {
 
 // triggerCdnSyncAction
 func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTask) error {
+	util.GetLock(task.TaskID, true)
+	// update accessTime for taskID
+	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
+		logger.Named(task.TaskID).Warnf("failed to update accessTime: %v", err)
+	}
 	if !isFrozen(task.CdnStatus) {
 		logger.Named(task.TaskID).Infof("seedTask is running or has been downloaded successfully, status:%s", task.CdnStatus)
+		util.ReleaseLock(task.TaskID, true)
 		return nil
 	}
+	util.ReleaseLock(task.TaskID, true)
 	// update task status
-	if _, err := tm.updateTask(task.TaskID, &types.SeedTask{
+	util.GetLock(task.TaskID, false)
+	if err := tm.updateTask(task.TaskID, &types.SeedTask{
 		CdnStatus: types.TaskInfoCdnStatusRUNNING,
 	}); err != nil {
+		util.ReleaseLock(task.TaskID, false)
 		return err
 	}
+	util.ReleaseLock(task.TaskID, false)
+
 	// triggerCDN goroutine
 	go func() {
 		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(ctx, task)
-
 		tm.metrics.triggerCdnCount.WithLabelValues().Inc()
 		if err != nil {
 			tm.metrics.triggerCdnFailCount.WithLabelValues().Inc()
 			logger.Named(task.TaskID).Errorf("taskID: %s trigger cdn get error: %v", task.TaskID, err)
 		}
-		updatedTask, err := tm.updateTask(task.TaskID, updateTaskInfo)
-		// todo 通知任务结束
-		tm.cdnMgr.PublishTaskDone(updatedTask)
+		err = tm.updateTask(task.TaskID, updateTaskInfo)
 		if err != nil {
 			logger.Named(task.TaskID).Errorf("taskID: %s, update task fail:%v", err)
 		} else {
@@ -100,6 +108,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		}
 	}()
 	logger.Named(task.TaskID).Infof("taskID: %s success to start cdn trigger", task.TaskID)
+
 	return nil
 }
 
@@ -149,7 +158,7 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, resourceClient source.Res
 }
 
 // Register register seed task
-func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceCh <-chan types.SeedPiece, err error) {
+func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceCh <-chan *types.SeedPiece, err error) {
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
 		logger.Named(task.TaskID).Infof("failed to add or update task with req %+v: %v", req, err)
@@ -157,16 +166,10 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 	}
 	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
 	logger.Named(task.TaskID).Debugf("success to get task info: %+v", task)
-	util.GetLock(task.TaskID, true)
-	defer util.ReleaseLock(task.TaskID, true)
-	// update accessTime for taskID
-	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
-		logger.Named(task.TaskID).Warnf("failed to update accessTime: %v", err)
-	}
 	// trigger CDN
 	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
-		return nil, errors.Wrapf(dferrors.ErrSystemError, "failed to trigger cdn: %v", err)
+		return nil, errors.Wrapf(err, "failed to trigger cdn")
 	}
-	// subscribe task update
-	return tm.cdnMgr.SubscribeTask(task.TaskID)
+	// watch task update
+	return tm.cdnMgr.WatchSeedTask(task.TaskID)
 }

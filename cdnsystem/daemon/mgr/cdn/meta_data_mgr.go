@@ -48,12 +48,12 @@ type fileMetaData struct {
 
 // pieceMetaRecord
 type pieceMetaRecord struct {
-	PieceNum        int32             `json:"pieceNum"`
-	PieceLen        int32             `json:"pieceLen"`        // 下载存储的真实长度
-	Md5             string            `json:"md5"`             // piece content md5
-	Range           string            `json:"range"`           // 下载存储到磁盘的range，不一定是origin source的range
-	Offset          uint64            `json:"offset"`          //
-	PieceStyle      types.PieceFormat `json:"pieceStyle"`      // 0: PlainUnspecified
+	PieceNum   int32             `json:"pieceNum"`
+	PieceLen   int32             `json:"pieceLen"`   // 下载存储的真实长度
+	Md5        string            `json:"md5"`        // piece content md5
+	Range      string            `json:"range"`      // 下载存储到磁盘的range，不一定是origin source的range
+	Offset     uint64            `json:"offset"`     //
+	PieceStyle types.PieceFormat `json:"pieceStyle"` // 0: PlainUnspecified
 }
 
 // fileMetaDataManager manages the meta file and piece meta file of each taskID.
@@ -168,35 +168,42 @@ func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskID str
 	originMetaData.Success = metaData.Success
 	if originMetaData.Success {
 		originMetaData.CdnFileLength = metaData.CdnFileLength
+		originMetaData.SourceFileLen = metaData.SourceFileLen
 		if !stringutils.IsEmptyStr(metaData.SourceMd5) {
 			originMetaData.SourceMd5 = metaData.SourceMd5
 		}
 	}
-
 	return mm.writeFileMetaData(ctx, originMetaData)
 }
 
-// writePieceMetaRecords writes the piece meta data to storage.
-func (pmm *metaDataManager) writePieceMetaRecords(ctx context.Context, taskID, fileMD5 string, pieceMetaRecords []pieceMetaRecord) error {
+// appendPieceMetaDataToFile append piece meta info to storage
+func (pmm *metaDataManager) appendPieceMetaDataToFile(ctx context.Context, taskID string, record *pieceMetaRecord) error {
+	pieceMeta := getPieceMetaValue(record)
 	pmm.pieceMetaLocker.GetLock(taskID, false)
 	defer pmm.pieceMetaLocker.ReleaseLock(taskID, false)
+	// write to the storage
+	return pmm.fileStore.AppendBytes(ctx, getPieceMetaDataRawFunc(taskID), []byte(pieceMeta+"\n"))
+}
 
-	if len(pieceMetaRecords) == 0 {
-		logger.Named(taskID).Warnf("failed to write empty pieceMetaRecords")
-		return nil
+// writePieceMetaRecords writes the piece meta data to storage.
+func (pmm *metaDataManager) appendPieceMetaIntegrityData(ctx context.Context, taskID, fileMD5 string) error {
+	pmm.pieceMetaLocker.GetLock(taskID, false)
+	defer pmm.pieceMetaLocker.ReleaseLock(taskID, false)
+	pieceMetaRecords, err := pmm.readPieceMetaRecordsWithoutCheck(ctx, taskID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read piece meta records")
 	}
 	var pieceMetaStrs []string
 	for _, record := range pieceMetaRecords {
 		pieceMetaStrs = append(pieceMetaStrs, getPieceMetaValue(record))
 	}
 	pieceMetaStrs = append(pieceMetaStrs, fileMD5)
-	pieceMetaStrs = append(pieceMetaStrs, digest.Sha1(pieceMetaStrs))
-	pieceStr := strings.Join(pieceMetaStrs, "\n")
-	return pmm.fileStore.PutBytes(ctx, getPieceMetaDataRawFunc(taskID), []byte(pieceStr))
+	pieceStr := strings.Join([]string{fileMD5, digest.Sha1(pieceMetaStrs)}, "\n")
+	return pmm.fileStore.AppendBytes(ctx, getPieceMetaDataRawFunc(taskID), []byte(pieceStr))
 }
 
 // readAndCheckPieceMetaRecords reads pieceMetaRecords from storage and check data integrity by the md5 file of the taskID
-func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskID, fileMD5 string) ([]pieceMetaRecord, error) {
+func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskID, fileMD5 string) ([]*pieceMetaRecord, error) {
 	pmm.pieceMetaLocker.GetLock(taskID, true)
 	defer pmm.pieceMetaLocker.ReleaseLock(taskID, true)
 
@@ -220,7 +227,7 @@ func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, ta
 	if expectedSha1Value != realSha1Value {
 		return nil, errors.Errorf("failed to validate the SHA-1 checksum of piece meta records, expected: %s, real: %s", expectedSha1Value, realSha1Value)
 	}
-	var result = make([]pieceMetaRecord, 0, piecesLength-2)
+	var result = make([]*pieceMetaRecord, 0, piecesLength-2)
 	for _, pieceStr := range pieceMetaRecords[:piecesLength-2] {
 		record, err := getPieceMetaRecord(pieceStr)
 		if err != nil {
@@ -231,8 +238,8 @@ func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, ta
 	return result, nil
 }
 
-// readWithoutCheckPieceMetaRecords reads pieceMetaRecords from storage and without check data integrity
-func (pmm *metaDataManager) readWithoutCheckPieceMetaRecords(ctx context.Context, taskID string) ([]pieceMetaRecord, error) {
+// readPieceMetaRecordsWithoutCheck reads pieceMetaRecords from storage and without check data integrity
+func (pmm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context, taskID string) ([]*pieceMetaRecord, error) {
 	pmm.pieceMetaLocker.GetLock(taskID, true)
 	defer pmm.pieceMetaLocker.ReleaseLock(taskID, true)
 
@@ -245,11 +252,11 @@ func (pmm *metaDataManager) readWithoutCheckPieceMetaRecords(ctx context.Context
 	if len(pieceMetaRecords) == 0 {
 		return nil, dferrors.ErrDataNotFound
 	}
-	var result = make([]pieceMetaRecord, len(pieceMetaRecords))
+	var result = make([]*pieceMetaRecord, len(pieceMetaRecords))
 	for _, pieceRecord := range pieceMetaRecords {
 		record, err := getPieceMetaRecord(pieceRecord)
 		if err != nil {
-			logger.Named(taskID).Errorf("failed to get piece meta record: %v", err)
+			return nil, err
 		} else {
 			result = append(result, record)
 		}
