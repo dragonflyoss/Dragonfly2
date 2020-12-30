@@ -14,90 +14,41 @@
  * limitations under the License.
  */
 
-package source
+package httpprotocol
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/httputils"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/maputils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-	"github.com/go-openapi/strfmt"
 	"github.com/pkg/errors"
 	"net"
 	"net/http"
-	netUrl "net/url"
-	"sync"
 	"time"
 )
 
-// HttpClient is a const of http source client.
-const HttpClient = "http"
-const HttpsClient = "https"
+const (
+	HttpClient  = "http"
+	HttpsClient = "https"
+)
 
 func init() {
 	sourceClient, err := newHttpSourceClient()
 	if err != nil {
-
+		logger.Errorf("failed to create http/https source client:%v", err)
+		return
 	}
-	Register(HttpClient, sourceClient)
-	Register(HttpsClient, sourceClient)
+	source.Register(HttpClient, sourceClient)
+	source.Register(HttpsClient, sourceClient)
 }
 
 // NewHttpSourceClient returns a new HttpSourceClient.
-func newHttpSourceClient() (ResourceClient, error) {
-	defaultTransport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   3 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-	httputils.RegisterProtocolOnTransport(defaultTransport)
-	return &httpSourceClient{
-		clientMap: &sync.Map{},
-		defaultHTTPClient: &http.Client{
-			Transport: defaultTransport,
-		},
-	}, nil
-}
-
-// httpSourceClient is an implementation of the interface of SourceClient.
-type httpSourceClient struct {
-	clientMap         *sync.Map
-	defaultHTTPClient *http.Client
-}
-
-// RegisterTLSConfig saves tls config into map as http client.
-// tlsMap:
-// key->host value->*http.Client
-func (client *httpSourceClient) RegisterTLSConfig(rawURL string, insecure bool, caBlock []strfmt.Base64) error {
-	url, err := netUrl.Parse(rawURL)
-	if err != nil {
-		return err
-	}
-
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: insecure,
-	}
-	appendSuccess := false
-	roots := x509.NewCertPool()
-	for _, caBytes := range caBlock {
-		appendSuccess = appendSuccess || roots.AppendCertsFromPEM(caBytes)
-	}
-	if appendSuccess {
-		tlsConfig.RootCAs = roots
-	}
-
+func newHttpSourceClient() (source.ResourceClient, error) {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
@@ -108,18 +59,20 @@ func (client *httpSourceClient) RegisterTLSConfig(rawURL string, insecure bool, 
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
-		TLSClientConfig:       tlsConfig,
 	}
-
-	httputils.RegisterProtocolOnTransport(transport)
-
-	client.clientMap.Store(url.Host, &http.Client{
-		Transport: transport,
-	})
-	return nil
+	return &httpSourceClient{
+		httpClient: &http.Client{
+			Transport: transport,
+		},
+	}, nil
 }
 
-// GetContentLength sends a head request to get file length.
+// httpSourceClient is an implementation of the interface of SourceClient.
+type httpSourceClient struct {
+	httpClient *http.Client
+}
+
+// getHTTPFileLength sends a head request to get http content length.
 func (client *httpSourceClient) getHTTPFileLength(url string, headers map[string]string) (int64, int, error) {
 	// send request
 	resp, err := client.httpWithHeaders(http.MethodGet, url, headers, 4*time.Second)
@@ -138,11 +91,11 @@ func (client *httpSourceClient) getHTTPFileLength(url string, headers map[string
 func (client *httpSourceClient) GetContentLength(url string, headers map[string]string) (int64, error) {
 	fileLength, code, err := client.getHTTPFileLength(url, headers)
 	if err != nil {
-		return -1, errors.Wrapf(dferrors.ErrUnknownError, "failed to get http file Length: %v", err)
+		return -1, errors.Wrap(err, "failed to get http file Length")
 	}
 
 	if code == http.StatusUnauthorized || code == http.StatusProxyAuthRequired {
-		return -1, errors.Wrapf(dferrors.ErrAuthenticationRequired, "url: %s,code: %d", url, code)
+		return -1, errors.Wrapf(dferrors.ErrAuthenticationRequired, "url: %s, response code: %d", url, code)
 	}
 	if code != http.StatusOK && code != http.StatusPartialContent {
 		logger.Warnf("failed to get http file length with unexpected code: %d", code)
@@ -158,7 +111,7 @@ func (client *httpSourceClient) GetContentLength(url string, headers map[string]
 // IsSupportRange checks if the source url support partial requests.
 func (client *httpSourceClient) IsSupportRange(url string, headers map[string]string) (bool, error) {
 	// set headers: headers is a reference to map, should not change it
-	copied := CopyHeader(nil, headers)
+	copied := maputils.DeepCopyMap(nil, headers)
 	copied["Range"] = "bytes=0-0"
 
 	// send request
@@ -186,7 +139,7 @@ func (client *httpSourceClient) IsExpired(url string, headers, expireInfo map[st
 	}
 
 	// set headers: headers is a reference to map, should not change it
-	copied := CopyHeader(nil, headers)
+	copied := maputils.DeepCopyMap(nil, headers)
 	if lastModified > 0 {
 		copied["If-Modified-Since"] = expireInfo["Last-Modified"]
 	}
@@ -205,14 +158,13 @@ func (client *httpSourceClient) IsExpired(url string, headers, expireInfo map[st
 }
 
 // Download downloads the file from the original address
-func (client *httpSourceClient) Download(url string, headers map[string]string, checkCode StatusCodeChecker) (*types.DownloadResponse, error) {
+func (client *httpSourceClient) Download(url string, headers map[string]string) (*types.DownloadResponse, error) {
 	// TODO: add timeout
 	resp, err := client.httpWithHeaders(http.MethodGet, url, headers, 0)
 	if err != nil {
 		return nil, err
 	}
-
-	if checkCode(resp.StatusCode) {
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPartialContent {
 		return &types.DownloadResponse{
 			Body: resp.Body,
 			ExpireInfo: map[string]string{
@@ -240,27 +192,5 @@ func (client *httpSourceClient) httpWithHeaders(method, url string, headers map[
 	for k, v := range headers {
 		req.Header.Add(k, v)
 	}
-
-	httpClientObject, existed := client.clientMap.Load(req.Host)
-	if !existed {
-		// use client.defaultHTTPClient to support custom protocols
-		httpClientObject = client.defaultHTTPClient
-	}
-
-	httpClient, ok := httpClientObject.(*http.Client)
-	if !ok {
-		return nil, errors.Wrapf(dferrors.ErrInvalidValue, "http client type check error: %T", httpClientObject)
-	}
-	return httpClient.Do(req)
-}
-
-// CopyHeader copies the src to dst and return a non-nil dst map.
-func CopyHeader(dst, src map[string]string) map[string]string {
-	if dst == nil {
-		dst = make(map[string]string)
-	}
-	for k, v := range src {
-		dst[k] = v
-	}
-	return dst
+	return client.httpClient.Do(req)
 }

@@ -53,7 +53,7 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 	if freeDisk <= cm.cfg.FullGCThreshold {
 		fullGC = true
 	}
-	logger.Debugf("start to exec gc with fullGC: %t", fullGC)
+	logger.GcLogger.Debugf("start to exec gc with fullGC: %t", fullGC)
 
 	gapTasks := treemap.NewWith(godsutils.Int64Comparator)
 	intervalTasks := treemap.NewWith(godsutils.Int64Comparator)
@@ -62,10 +62,10 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 	// which is extracted from file name.
 	walkTaskIDs := make(map[string]bool)
 	walkFn := func(path string, info os.FileInfo, err error) error {
-		logger.Debugf("start to walk path(%s)", path)
+		logger.GcLogger.Debugf("start to walk path(%s)", path)
 
 		if err != nil {
-			logger.Errorf("failed to access path(%s): %v", path, err)
+			logger.GcLogger.Errorf("failed to access path(%s): %v", path, err)
 			return err
 		}
 		if info.IsDir() {
@@ -82,7 +82,7 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 		// we should return directly when we success to get info which means it is being used
 		if _, err := taskMgr.Get(ctx, taskID); err == nil || !dferrors.IsDataNotFound(err) {
 			if err != nil {
-				logger.Errorf("failed to get taskID(%s): %v", taskID, err)
+				logger.GcLogger.Errorf("failed to get taskID(%s): %v", taskID, err)
 			}
 			return nil
 		}
@@ -95,13 +95,13 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 
 		metaData, err := cm.metaDataManager.readFileMetaData(ctx, taskID)
 		if err != nil || metaData == nil {
-			logger.Debugf("taskID: %s, failed to get metadata: %v", taskID, err)
+			logger.GcLogger.Debugf("taskID: %s, failed to get metadata: %v", taskID, err)
 			// TODO: delete the file when failed to get metadata
 			return nil
 		}
 		// put taskID into gapTasks or intervalTasks which will sort by some rules
 		if err := cm.sortInert(ctx, gapTasks, intervalTasks, metaData); err != nil {
-			logger.Errorf("failed to parse inert metaData(%+v): %v", metaData, err)
+			logger.GcLogger.Errorf("failed to parse inert metaData(%+v): %v", metaData, err)
 		}
 
 		return nil

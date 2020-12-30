@@ -18,6 +18,7 @@ package types
 
 import "io"
 
+// DownloadResponse
 type DownloadResponse struct {
 	Body       io.ReadCloser
 	ExpireInfo map[string]string

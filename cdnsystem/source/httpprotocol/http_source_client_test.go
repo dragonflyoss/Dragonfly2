@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package source
+package httpprotocol
 
 import (
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/go-openapi/strfmt"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/maputils"
 	ht "net/http"
 	"reflect"
 	"testing"
@@ -53,7 +54,7 @@ func TestCopyHeader(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CopyHeader(tt.args.dst, tt.args.src); !reflect.DeepEqual(got, tt.want) {
+			if got := maputils.DeepCopyMap(tt.args.dst, tt.args.src); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CopyHeader() = %v, want %v", got, tt.want)
 			}
 		})
@@ -64,7 +65,7 @@ func Test_httpSourceClient_Download(t *testing.T) {
 	type args struct {
 		url       string
 		headers   map[string]string
-		checkCode StatusCodeChecker
+		checkCode source.StatusCodeChecker
 	}
 	tests := []struct {
 		name    string
@@ -231,37 +232,10 @@ func Test_httpSourceClient_IsSupportRange(t *testing.T) {
 	}
 }
 
-func Test_httpSourceClient_RegisterTLSConfig(t *testing.T) {
-	type args struct {
-		rawURL   string
-		insecure bool
-		caBlock  []strfmt.Base64
-	}
-	tests := []struct {
-		name    string
-		client  ResourceClient
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	client, err := newHttpSourceClient()
-	if err != nil {
-		t.Errorf("create http source client error = %+v", err)
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := client.RegisterTLSConfig(tt.args.rawURL, tt.args.insecure, tt.args.caBlock); (err != nil) != tt.wantErr {
-				t.Errorf("RegisterTLSConfig() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
 func Test_newHttpSourceClient(t *testing.T) {
 	tests := []struct {
 		name    string
-		want    ResourceClient
+		want    source.ResourceClient
 		wantErr bool
 	}{
 		// TODO: Add test cases.

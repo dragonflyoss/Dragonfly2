@@ -72,7 +72,7 @@ type Manager struct {
 // triggerCdnSyncAction
 func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTask) error {
 	if !isFrozen(task.CdnStatus) {
-		logger.Infof("TaskID: %s seedTask is running or has been downloaded successfully, status:%s", task.TaskID, task.CdnStatus)
+		logger.Named(task.TaskID).Infof("seedTask is running or has been downloaded successfully, status:%s", task.CdnStatus)
 		return nil
 	}
 	// update task status
@@ -88,18 +88,18 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		tm.metrics.triggerCdnCount.WithLabelValues().Inc()
 		if err != nil {
 			tm.metrics.triggerCdnFailCount.WithLabelValues().Inc()
-			logger.Errorf("taskID: %s trigger cdn get error: %v", task.TaskID, err)
+			logger.Named(task.TaskID).Errorf("taskID: %s trigger cdn get error: %v", task.TaskID, err)
 		}
-		updatedTask, err:= tm.updateTask(task.TaskID, updateTaskInfo)
+		updatedTask, err := tm.updateTask(task.TaskID, updateTaskInfo)
 		// todo 通知任务结束
 		tm.cdnMgr.PublishTaskDone(updatedTask)
 		if err != nil {
-			logger.Errorf("taskID: %s, update task fail:%v", err)
+			logger.Named(task.TaskID).Errorf("taskID: %s, update task fail:%v", err)
 		} else {
-			logger.Infof("taskID: %s success to update task cdn %+v", task.TaskID, updateTaskInfo)
+			logger.Named(task.TaskID).Infof("taskID: %s success to update task cdn %+v", task.TaskID, updateTaskInfo)
 		}
 	}()
-	logger.Infof("taskID: %s success to start cdn trigger", task.TaskID)
+	logger.Named(task.TaskID).Infof("taskID: %s success to start cdn trigger", task.TaskID)
 	return nil
 }
 
@@ -135,30 +135,8 @@ func (tm Manager) Delete(ctx context.Context, taskID string) error {
 	return nil
 }
 
-func (tm Manager) GetPieces(ctx context.Context, req *types.PiecePullRequest) (pieceCh <-chan types.SeedPiece, err error) {
-	logger.Debugf("taskId: %s get pieces with request: %+v ", req.TaskID, req)
-
-	util.GetLock(req.TaskID, true)
-	defer util.ReleaseLock(req.TaskID, true)
-
-	task, err := tm.getTask(req.TaskID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get taskID (%s)", req.TaskID)
-	}
-	logger.Debugf("success to get task: %+v", task)
-
-	if isErrorCDN(task.CdnStatus) {
-		return nil, errors.Errorf("task status(%s) error", task.CdnStatus)
-	}
-
-	if isSuccessCDN(task.CdnStatus) {
-	}
-	return pieceCh, nil
-}
-
 // NewManager returns a new Manager Object.
-func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr,
-	resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
+func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
 	return &Manager{
 		cfg:                     cfg,
 		taskStore:               syncmap.NewSyncMap(),
@@ -174,16 +152,16 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr,
 func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceCh <-chan types.SeedPiece, err error) {
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
-		logger.Infof("taskId: %s failed to add or update task with req %+v: %v", req.TaskID, req, err)
+		logger.Named(task.TaskID).Infof("failed to add or update task with req %+v: %v", req, err)
 		return nil, err
 	}
 	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
-	logger.Debugf("success to get task info: %+v", task)
+	logger.Named(task.TaskID).Debugf("success to get task info: %+v", task)
 	util.GetLock(task.TaskID, true)
 	defer util.ReleaseLock(task.TaskID, true)
 	// update accessTime for taskID
 	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
-		logger.Warnf("taskID:%s, failed to update accessTime: %v", task.TaskID, err)
+		logger.Named(task.TaskID).Warnf("failed to update accessTime: %v", err)
 	}
 	// trigger CDN
 	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {

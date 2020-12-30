@@ -87,8 +87,7 @@ func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient sour
 	return newManager(cfg, cacheStore, resourceClient, publisher, register)
 }
 
-func newManager(cfg *config.Config, cacheStore *store.Store,
-	resourceClient source.ResourceClient, publisher *pubsub.SeedPiecePublisher, register prometheus.Registerer) (*Manager, error) {
+func newManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, publisher *pubsub.SeedPiecePublisher, register prometheus.Registerer) (*Manager, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
 	pieceMetaManager := newPieceMetaDataMgr()
@@ -117,19 +116,20 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (*types
 	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
 	if err != nil {
-		logger.Errorf("taskId: %s failed to detect cache:%v", task.TaskID, err)
+		logger.Named(task.TaskID).Errorf("failed to detect cache:%v", err)
+		detectResult = &cacheResult{} // reset cacheResult
 	}
 	// second: report detect result
 	err = cm.cdnReporter.reportCache(task.TaskID, detectResult)
 	if err != nil {
-		logger.Errorf("taskId: %s failed to report cache, reset detectResult err: %v", task.TaskID, err)
+		logger.Named(task.TaskID).Errorf("failed to report cache, reset detectResult:%v", err)
 		// todo reset
 		detectResult.breakNum = 0
 		detectResult.fileMd5.Reset()
 	}
 	// full cache
-	if detectResult != nil && detectResult.breakNum == -1 {
-		logger.Infof("taskId: %s cache full hit on local", task.TaskID)
+	if detectResult.breakNum == -1 {
+		logger.Named(task.TaskID).Infof("cache full hit on local", task.TaskID)
 		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
 		return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceMd5, detectResult.fileMetaData.CdnFileLength), nil
 	}
@@ -138,7 +138,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (*types
 		detectResult.fileMd5 = md5.New()
 	}
 	// third: start to download the source file
-	resp, err := cm.download(ctx, task, detectResult)
+	resp, err := cm.download(task, detectResult)
 	cm.metrics.cdnDownloadCount.WithLabelValues().Inc()
 	// download fail
 	if err != nil {
@@ -152,7 +152,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (*types
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
 	if err != nil {
-		logger.Errorf("taskID:%s, failed to write for task: %v", task.TaskID, err)
+		logger.Named(task.TaskID).Errorf("failed to write for task: %v", err)
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
 	}
 	cm.metrics.cdnDownloadBytes.WithLabelValues().Add(float64(downloadMetadata.realSourceFileLength))
@@ -191,7 +191,7 @@ func (cm *Manager) CheckFileExist(ctx context.Context, taskID string) bool {
 // It will also delete the files on the disk when the force equals true.
 func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error {
 	if err := cm.pieceMetaManager.removePieceMetaRecordsByTaskID(taskID); err != nil && dferrors.IsDataNotFound(err) {
-		logger.Error("")
+		logger.Named(taskID).Error("")
 	}
 	if force {
 		return deleteTaskFiles(ctx, cm.cacheStore, taskID)
@@ -206,12 +206,12 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 	var isSuccess = true
 	// check md5
 	if !stringutils.IsEmptyStr(task.RequestMd5) && task.RequestMd5 != sourceMd5 {
-		logger.Errorf("taskId:%s url:%s file md5 not match expected:%s real:%s", task.TaskID, task.Url, task.RequestMd5, sourceMd5)
+		logger.Named(task.TaskID).Errorf("file md5 not match expected:%s real:%s", task.RequestMd5, sourceMd5)
 		isSuccess = false
 	}
 	// check source length
 	if isSuccess && sourceFileLength >= 0 && sourceFileLength != realDownloadedSourceFileLength {
-		logger.Errorf("taskId:%s url:%s file length not match expected:%d real:%d", task.TaskID, task.Url, sourceFileLength, realDownloadedSourceFileLength)
+		logger.Named(task.TaskID).Errorf("file length not match expected:%d real:%d", sourceFileLength, realDownloadedSourceFileLength)
 		isSuccess = false
 	}
 	// if validate fail
@@ -231,7 +231,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 		return false, nil
 	}
 
-	logger.Infof("success to get taskID: %s fileLength: %d realMd5: %s", task.TaskID, downloadMetadata.realCdnFileLength, sourceMd5)
+	logger.Named(task.TaskID).Infof("success to get task, fileLength: %d realMd5: %s", downloadMetadata.realCdnFileLength, sourceMd5)
 
 	pieceMetas, err := cm.pieceMetaManager.getPieceMetaRecordsByTaskID(task.TaskID)
 	if err != nil {
@@ -246,9 +246,9 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 
 func (cm *Manager) updateExpireInfo(ctx context.Context, taskID string, expireInfo map[string]string) {
 	if err := cm.metaDataManager.updateExpireInfo(ctx, taskID, expireInfo); err != nil {
-		logger.Errorf("taskID: %s failed to update expireInfo(%s): %v", taskID, expireInfo, err)
+		logger.Named(taskID).Errorf("failed to update expireInfo(%s): %v", expireInfo, err)
 	}
-	logger.Infof("taskID: %s success to update expireInfo(%s)", expireInfo, taskID)
+	logger.Named(taskID).Infof("success to update expireInfo(%s)", expireInfo)
 }
 
 func (cm *Manager) SubscribeTask(taskID string) (<-chan types.SeedPiece, error) {

@@ -30,8 +30,7 @@ type RateLimiter struct {
 	ratePerWindow int64
 	window        int64
 	last          int64
-
-	mu sync.Mutex
+	mu            sync.Mutex
 }
 
 // NewRateLimiter creates a RateLimiter instance.

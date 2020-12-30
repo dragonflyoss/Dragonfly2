@@ -17,27 +17,24 @@
 package digest
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
-
-	"github.com/go-check/check"
 )
 
-func Test(t *testing.T) {
-	check.TestingT(t)
+func TestSuite(t *testing.T) {
+	suite.Run(t, new(DigestUtilSuite))
 }
 
-type DigestUtilSuite struct{}
-
-func init() {
-	check.Suite(&DigestUtilSuite{})
+type DigestUtilSuite struct{
+	suite.Suite
 }
 
-func (suite *DigestUtilSuite) TestSha256(c *check.C) {
+func (suite *DigestUtilSuite) TestSha256() {
 	result := Sha256("test")
-	c.Check(result, check.Equals, "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+	suite.Equal(result, "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
 }
 
-func (suite *DigestUtilSuite) TestSha1(c *check.C) {
+func (suite *DigestUtilSuite) TestSha1() {
 	result := Sha1([]string{"test1", "test2"})
-	c.Check(result, check.Equals, "dff964f6e3c1761b6288f5c75c319d36fb09b2b9")
+	suite.Equal(result, "dff964f6e3c1761b6288f5c75c319d36fb09b2b9")
 }

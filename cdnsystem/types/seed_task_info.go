@@ -17,23 +17,24 @@
 package types
 
 type UrlMeta struct {
-	// md5 of content downloaded from url
-	Md5 string
-	// downloading range for single file
-	Range string
+	// md5 of file content downloaded from url
+	Md5 string `json:"md5,omitempty"`
+	// downloading range of resource file
+	Range string `json:"range,omitempty"`
 }
 
 type SeedTask struct {
-	TaskID           string
-	Url              string
-	SourceFileLength int64
-	CdnFileLength    int64
-	PieceSize        int32
-	Headers          map[string]string
-	CdnStatus        string
-	PieceTotal       int32
-	RequestMd5       string
-	SourceRealMd5    string
+	TaskID           string            `json:"taskID,omitempty"`
+	Url              string            `json:"url,omitempty"`
+	TaskUrl          string            `json:"taskUrl,omitempty"`
+	SourceFileLength int64             `json:"sourceFileLength,omitempty"`
+	CdnFileLength    int64             `json:"cdnFileLength,omitempty"`
+	PieceSize        int32             `json:"pieceSize,omitempty"`
+	Headers          map[string]string `json:"headers,omitempty"`
+	CdnStatus        string            `json:"cdnStatus,omitempty"`
+	PieceTotal       int32             `json:"pieceTotal,omitempty"`
+	RequestMd5       string            `json:"requestMd5,omitempty"`
+	SourceRealMd5    string            `json:"sourceRealMd5,omitempty"`
 }
 
 const (

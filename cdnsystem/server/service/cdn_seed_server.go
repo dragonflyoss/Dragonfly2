@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package server
+package service
 
 import (
 	"context"
@@ -88,8 +88,8 @@ func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReq
 
 	for piece := range pieceCh {
 
-		switch piece.ItemType {
-		case types.PIECE_TYPE:
+		switch piece.Type {
+		case types.PieceType:
 			psc <- &cdnsystem.PieceSeed{
 				State:       base.NewState(base.Code_SUCCESS, "success"),
 				SeedAddr:    fmt.Sprintf("%s:%d", ss.cfg.AdvertiseIP, ss.cfg.ListenPort),
@@ -100,7 +100,7 @@ func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReq
 				PieceOffset: piece.PieceOffset,
 				Done:        false,
 			}
-		case types.TASK_TYPE:
+		case types.TaskType:
 			psc <- &cdnsystem.PieceSeed{
 				State:         base.NewState(base.Code_SUCCESS, "success"),
 				SeedAddr:      fmt.Sprintf("%s:%d", ss.cfg.AdvertiseIP, ss.cfg.ListenPort),

@@ -37,7 +37,7 @@ func (gcm *Manager) gcTasks(ctx context.Context) {
 	// get all taskIDs and the corresponding accessTime
 	taskAccessMap, err := gcm.taskMgr.GetAccessTime(ctx)
 	if err != nil {
-		logger.Errorf("gc tasks: failed to get task accessTime map for GC: %v", err)
+		logger.GcLogger.Errorf("gc tasks: failed to get task accessTime map for GC: %v", err)
 		return
 	}
 
@@ -47,7 +47,7 @@ func (gcm *Manager) gcTasks(ctx context.Context) {
 	for _, taskID := range taskIDs {
 		atime, err := taskAccessMap.GetAsTime(taskID)
 		if err != nil {
-			logger.Errorf("gc tasks: failed to get access time taskID(%s): %v", taskID, err)
+			logger.GcLogger.Errorf("gc tasks: failed to get access time taskID(%s): %v", taskID, err)
 			continue
 		}
 		if time.Since(atime) < gcm.cfg.TaskExpireTime {
@@ -60,16 +60,16 @@ func (gcm *Manager) gcTasks(ctx context.Context) {
 
 	// slow GC detected, report it with a log warning
 	if timeDuring := time.Since(startTime); timeDuring > gcTasksTimeout {
-		logger.Warnf("gc tasks:%d cost:%.3f", removedTaskCount, timeDuring.Seconds())
+		logger.GcLogger.Warnf("gc tasks:%d cost:%.3f", removedTaskCount, timeDuring.Seconds())
 	}
 
 	gcm.metrics.gcTasksCount.WithLabelValues().Add(float64(removedTaskCount))
 
-	logger.Infof("gc tasks: success to full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
+	logger.GcLogger.Infof("gc tasks: success to full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
 }
 
 func (gcm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
-	logger.Infof("gc task: start to deal with task: %s", taskID)
+	logger.GcLogger.Infof("gc task: start to deal with task: %s", taskID)
 
 	util.GetLock(taskID, false)
 	defer util.ReleaseLock(taskID, false)
@@ -94,12 +94,12 @@ func (gcm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
 
 func (gcm *Manager) gcCDNByTaskID(ctx context.Context, taskID string, full bool) {
 	if err := gcm.cdnMgr.Delete(ctx, taskID, full); err != nil {
-		logger.Errorf("gc task: failed to gc cdn meta taskID(%s) full(%t): %v", taskID, full, err)
+		logger.GcLogger.Errorf("gc task: failed to gc cdn meta taskID(%s) full(%t): %v", taskID, full, err)
 	}
 }
 
 func (gcm *Manager) gcTaskByTaskID(ctx context.Context, taskID string) {
 	if err := gcm.taskMgr.Delete(ctx, taskID); err != nil {
-		logger.Errorf("gc task: failed to gc task info taskID(%s): %v", taskID, err)
+		logger.GcLogger.Errorf("gc task: failed to gc task info taskID(%s): %v", taskID, err)
 	}
 }

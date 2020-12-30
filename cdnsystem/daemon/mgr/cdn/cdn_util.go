@@ -19,14 +19,15 @@ package cdn
 import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/timeutils"
+	"github.com/pkg/errors"
 	"strconv"
 	"strings"
-
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/timeutils"
 )
 
 var getCurrentTimeMillisFunc = timeutils.GetCurrentTimeMillis
 
+// getUpdateTaskInfoWithStatusOnly
 func getUpdateTaskInfoWithStatusOnly(cdnStatus string) *types.SeedTask {
 	return getUpdateTaskInfo(cdnStatus, "", 0)
 }
@@ -43,7 +44,12 @@ func getPieceMetaValue(record pieceMetaRecord) string {
 	return fmt.Sprintf("%d:%d:%s:%s:%d:%d", record.PieceNum, record.PieceLen, record.Md5, record.Range, record.Offset, record.PieceStyle)
 }
 
-func getPieceMetaRecord(value string) pieceMetaRecord {
+func getPieceMetaRecord(value string) (record pieceMetaRecord, err error) {
+	defer func() {
+		if msg := recover(); msg != nil {
+			err = errors.Errorf("%v", msg)
+		}
+	}()
 	fields := strings.Split(value, ":")
 	pieceNum, _ := strconv.Atoi(fields[0])
 	pieceLen, _ := strconv.Atoi(fields[1])
@@ -57,14 +63,14 @@ func getPieceMetaRecord(value string) pieceMetaRecord {
 		Md5:        md5,
 		Range:      rangeStr,
 		Offset:     offSet,
-		PieceStyle: int32(pieceStyle),
-	}
+		PieceStyle: types.PieceFormat(pieceStyle),
+	}, nil
 }
 
 func convertPieceMeta2SeedPiece(record pieceMetaRecord) types.SeedPiece {
 	return types.SeedPiece{
-		ItemType:    types.PIECE_TYPE,
-		PieceStyle:  record.PieceStyle,
+		Type:        types.PieceType,
+		PieceStyle:  types.PieceFormat(record.PieceStyle),
 		PieceNum:    record.PieceNum,
 		PieceMd5:    record.Md5,
 		PieceRange:  record.Range,
@@ -76,7 +82,7 @@ func convertPieceMeta2SeedPiece(record pieceMetaRecord) types.SeedPiece {
 
 func convertTaskInfo2SeedPiece(task types.SeedTask) types.SeedPiece {
 	return types.SeedPiece{
-		ItemType:         types.TASK_TYPE,
+		Type:             types.TaskType,
 		Last:             true,
 		ContentLength:    task.CdnFileLength,
 		BackSourceLength: 0,

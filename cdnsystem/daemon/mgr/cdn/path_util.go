@@ -85,6 +85,7 @@ func getHomeRaw() *store.Raw {
 	}
 }
 
+// deleteTaskFiles delete files associated with taskID
 func deleteTaskFiles(ctx context.Context, cacheStore *store.Store, taskID string) error {
 	// delete task meta data
 	if err := cacheStore.Remove(ctx, getTaskMetaDataRaw(taskID)); err != nil &&
@@ -104,7 +105,7 @@ func deleteTaskFiles(ctx context.Context, cacheStore *store.Store, taskID string
 	// try to clean the parent bucket
 	if err := cacheStore.Remove(ctx, getParentRaw(taskID)); err != nil &&
 		!store.IsKeyNotFound(err) {
-		logger.Warnf("taskID:%s failed remove parent bucket:%v", taskID, err)
+		logger.Named(taskID).Warnf("failed to remove parent bucket:%v", err)
 	}
 	return nil
 }

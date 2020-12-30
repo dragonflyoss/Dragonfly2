@@ -19,6 +19,7 @@ package cdn
 import (
 	"crypto/md5"
 	"encoding/binary"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/pkg/errors"
@@ -26,8 +27,8 @@ import (
 	"io"
 )
 
-//readContent read piece content
-func readContent(reader io.Reader, pieceRecord pieceMetaRecord, fileMd5 hash.Hash) error {
+//checkPieceContent read piece content from reader and check data integrity by pieceMetaRecord
+func checkPieceContent(reader io.Reader, pieceRecord pieceMetaRecord, fileMd5 hash.Hash) error {
 	bufSize := int32(256 * 1024)
 	pieceLen := pieceRecord.PieceLen
 	if pieceLen < bufSize {
@@ -77,7 +78,7 @@ func readContent(reader io.Reader, pieceRecord pieceMetaRecord, fileMd5 hash.Has
 	realPieceMd5 := fileutils.GetMd5Sum(pieceMd5, nil)
 	// check piece content
 	if realPieceMd5 != pieceRecord.Md5 {
-		return errors.Errorf("piece md5 check fail, realPieceMd5 md5 (%s), expected md5 (%s)", realPieceMd5, pieceRecord.Md5)
+		return errors.Wrapf(dferrors.ErrPieceMd5CheckFail, "realPieceMd5 md5 (%s), expected md5 (%s)", realPieceMd5, pieceRecord.Md5)
 	}
 	return nil
 }

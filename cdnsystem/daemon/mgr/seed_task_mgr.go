@@ -38,7 +38,4 @@ type SeedTaskMgr interface {
 
 	// Delete deletes a task.
 	Delete(ctx context.Context, taskID string) error
-
-	// GetPieces
-	GetPieces(ctx context.Context, piecePullRequest *types.PiecePullRequest) (pieceCh <-chan types.SeedPiece, err error)
 }

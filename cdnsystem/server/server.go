@@ -24,6 +24,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/gc"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/pubsub"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/task"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/server/service"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
@@ -93,7 +94,7 @@ func (s *Server) Start() (err error) {
 		Type: basic.TCP,
 		Addr: fmt.Sprintf(":%d", s.Config.ListenPort),
 	}
-	seedServer, err := NewCdnSeedServer(s.Config, s.TaskMgr)
+	seedServer, err := service.NewCdnSeedServer(s.Config, s.TaskMgr)
 	if err != nil {
 		return errors.Wrap(err, "create seedServer fail")
 	}

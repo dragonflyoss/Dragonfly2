@@ -36,7 +36,7 @@ func main() {
 	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 		TaskId:  uuid.New().String(),
 		Url:     "http://www.baidu.com",
-		Filter:  "",
+		Filter:  []string{""},
 		UrlMeta: nil,
 	})
 	if err != nil {

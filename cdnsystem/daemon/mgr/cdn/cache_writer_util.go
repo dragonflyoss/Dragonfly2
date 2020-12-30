@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/binary"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/pkg/errors"
 	"hash"
@@ -58,8 +59,8 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 		go func(i int) {
 			for job := range jobCh {
 				var pieceMd5 = md5.New()
-				if err := cw.writeToFile(ctx, job.pieceContent, job.taskID, job.cdnFileOffset, job.pieceContentLen, pieceMd5); err != nil {
-					logger.Errorf("failed to write taskID %s pieceNum %d file: %v", job.taskID, job.pieceNum, err)
+				if err := cw.writeToFile(ctx, job.taskID, job.pieceContent, job.cdnFileOffset, job.pieceContentLen, pieceMd5); err != nil {
+					logger.Named(job.taskID).Errorf("failed to write file, pieceNum %d file: %v", job.pieceNum, err)
 					// todo redo the job?
 					continue
 				}
@@ -72,19 +73,19 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 					Md5:        pieceMd5Sum,
 					Range:      job.pieceRange,
 					Offset:     job.sourceFileOffset,
-					PieceStyle: job.pieceStyle,
+					PieceStyle: types.PlainUnspecified,
 				}
 				// write piece meta
 				go func(record pieceMetaRecord) {
 					if err := cw.appendPieceMetaDataToFile(ctx, job.taskID, record); err != nil {
-						logger.Errorf("failed to append piece meta data to file:%v", err)
+						logger.Named(job.taskID).Errorf("failed to append piece meta data to file:%v", err)
 					}
 				}(pieceRecord)
 
 				if cw.cdnReporter != nil {
 					if err := cw.cdnReporter.reportPieceMetaRecord(job.taskID, pieceRecord); err != nil {
 						// NOTE: should we do this job again?
-						logger.Errorf("failed to report piece status taskID %s pieceNum %d pieceMetaRecord %s: %v", job.taskID, job.pieceNum, pieceRecord, err)
+						logger.Named(job.taskID).Errorf("failed to report piece status, pieceNum %d pieceMetaRecord %s: %v", job.pieceNum, pieceRecord, err)
 						continue
 					}
 				}
@@ -94,7 +95,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 	}
 }
 
-func (cw *cacheWriter) writeToFile(ctx context.Context, bytesBuffer *bytes.Buffer, taskID string, cdnFileOffset int64, pieceContLen int32, pieceMd5 hash.Hash) error {
+func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuffer *bytes.Buffer, cdnFileOffset int64, pieceContLen int32, pieceMd5 hash.Hash) error {
 	var resultBuf = &bytes.Buffer{}
 	// write piece content
 	var pieceContent []byte

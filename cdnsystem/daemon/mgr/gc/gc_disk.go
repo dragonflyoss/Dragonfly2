@@ -26,7 +26,7 @@ import (
 func (gcm *Manager) gcDisk(ctx context.Context) {
 	gcTaskIDs, err := gcm.cdnMgr.GetGCTaskIDs(ctx, gcm.taskMgr)
 	if err != nil {
-		logger.Errorf("gc disk: failed to get gc tasks: %v", err)
+		logger.GcLogger.Errorf("gc disk: failed to get gc tasks: %v", err)
 		return
 	}
 
@@ -34,7 +34,7 @@ func (gcm *Manager) gcDisk(ctx context.Context) {
 		return
 	}
 
-	logger.Debugf("gc disk: success to get gcTaskIDs(%d)", len(gcTaskIDs))
+	logger.GcLogger.Debugf("gc disk: success to get gcTaskIDs(%d)", len(gcTaskIDs))
 	gcm.deleteTaskDisk(ctx, gcTaskIDs)
 }
 
@@ -53,14 +53,14 @@ func (gcm *Manager) deleteTaskDisk(ctx context.Context, gcTaskIDs []string) {
 		// try to ensure the taskID is not using again
 		if _, err := gcm.taskMgr.Get(ctx, taskID); err == nil || !dferrors.IsDataNotFound(err) {
 			if err != nil {
-				logger.Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
+				logger.GcLogger.Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
 			}
 			util.ReleaseLock(taskID, false)
 			continue
 		}
 
 		if err := gcm.cdnMgr.Delete(ctx, taskID, true); err != nil {
-			logger.Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
+			logger.GcLogger.Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
 			util.ReleaseLock(taskID, false)
 			continue
 		}
@@ -70,5 +70,5 @@ func (gcm *Manager) deleteTaskDisk(ctx context.Context, gcTaskIDs []string) {
 	gcm.metrics.gcDisksCount.WithLabelValues().Add(float64(count))
 	gcm.metrics.lastGCDisksTime.WithLabelValues().SetToCurrentTime()
 
-	logger.Debugf("gc disk: success to gc task count(%d), remainder count(%d)", count, len(gcTaskIDs)-count)
+	logger.GcLogger.Debugf("gc disk: success to gc task count(%d), remainder count(%d)", count, len(gcTaskIDs)-count)
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"time"
 
@@ -31,13 +32,18 @@ import (
 )
 
 func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegisterRequest) (*types.SeedTask, error) {
+	taskURL := request.URL
+	if request.Filter != nil {
+		taskURL = netutils.FilterURLParam(request.URL, request.Filter)
+	}
 	taskId := request.TaskID
 	util.GetLock(taskId, false)
 	defer util.ReleaseLock(taskId, false)
 	if key, err := tm.taskURLUnReachableStore.Get(taskId); err == nil {
 		if unReachableStartTime, ok := key.(time.Time); ok &&
 			time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
-			return nil, errors.Wrapf(dferrors.ErrURLNotReachable, "taskID: %s task hit unReachable cache and interval less than %d, url: %s", taskId, tm.cfg.FailAccessInterval, request.URL)
+			return nil, errors.Wrapf(dferrors.ErrURLNotReachable,
+				"taskID: %s task hit unReachable cache and interval less than %d, url: %s", taskId, tm.cfg.FailAccessInterval, request.URL)
 		}
 		tm.taskURLUnReachableStore.Delete(taskId)
 	}
@@ -47,6 +53,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		Headers:    request.Headers,
 		RequestMd5: request.Md5,
 		Url:        request.URL,
+		TaskUrl:    taskURL,
 		CdnStatus:  types.TaskInfoCdnStatusWAITING,
 		PieceTotal: -1,
 	}
@@ -67,7 +74,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	// get sourceContentLength with req.Headers
 	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Headers)
 	if err != nil {
-		logger.Errorf("taskID: %s failed to get url (%s) file length from http client : %v", task.TaskID, task.Url, err)
+		logger.Named(task.TaskID).Errorf("failed to get url (%s) content length from http client:%v", task.Url, err)
 
 		if dferrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskId, time.Now())
@@ -93,7 +100,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 	// if not support file length header request ,return -1
 	task.SourceFileLength = sourceFileLength
-	logger.Infof("taskID: %s get file length %d from http client for task", task.TaskID, sourceFileLength)
+	logger.Named(taskId).Infof("get file content length: %d", sourceFileLength)
 
 	// if success to get the information successfully with the req.Headers then update the task.Headers to req.Headers.
 	if request.Headers != nil {
@@ -173,7 +180,7 @@ func equalsTask(existTask, newTask *types.SeedTask) bool {
 		return false
 	}
 
-	if !stringutils.IsEmptyStr(existTask.RequestMd5) && !stringutils.IsEmptyStr(newTask.RequestMd5){
+	if !stringutils.IsEmptyStr(existTask.RequestMd5) && !stringutils.IsEmptyStr(newTask.RequestMd5) {
 		return existTask.RequestMd5 == newTask.RequestMd5
 	}
 

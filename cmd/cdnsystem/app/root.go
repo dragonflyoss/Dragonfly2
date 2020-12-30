@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	"github.com/dragonflyoss/Dragonfly2/pkg/cmd"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
@@ -69,16 +68,10 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return errors.Wrap(err, "get config from viper")
 		}
-
 		// create home dir
 		if err := fileutils.CreateDirectory(cdnNodeViper.GetString("base.homeDir")); err != nil {
 			return fmt.Errorf("failed to create home dir %s: %v", cdnNodeViper.GetString("base.homeDir"), err)
 		}
-
-		// initialize logger.
-		//if err := initLog(zap.New(), "app.log", cfg.LogConfig); err != nil {
-		//	return err
-		//}
 
 		// set cdn node advertise ip
 		if stringutils.IsEmptyStr(cfg.AdvertiseIP) {
@@ -110,12 +103,7 @@ func init() {
 
 // setupFlags setups flags for command line.
 func setupFlags(cmd *cobra.Command) {
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
-	// flagSet := cmd.PersistentFlags()
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
 	flagSet := cmd.Flags()
 
 	defaultBaseProperties := config.NewBaseProperties()
@@ -295,22 +283,6 @@ func decodeWithYAML(types ...reflect.Type) mapstructure.DecodeHookFunc {
 		}
 		return data, nil
 	}
-}
-
-// initLog initializes log Level and log format.
-func initLog(logPath string, logConfig logger.LogConfig) error {
-
-	logDir := basic.HomeDir + "/logs/dragonfly"
-
-	bizLogger := logger.CreateLogger(logDir+"/cdnsystem.log", 300, 30, 0, false, false)
-	logger.SetBizLogger(bizLogger.Sugar())
-
-	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	//downloadLogger := logger.CreateLogger(logDir + "/download.log", 300, 30, 0, false, false)
-	//logger.SetGrpcLogger(downloadLogger)
-	return nil
 }
 
 func setAdvertiseIP(cfg *config.Config) error {

@@ -39,6 +39,8 @@ func init() {
 	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
+	gcLogger := logger.CreateLogger(logDir+"/gc.log", 300, 30, 0, false, false)
+	logger.SetGcLogger(gcLogger.Sugar())
 	// set register with server implementation.
 	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
 		cdnsystem.RegisterSeederServer(s, &proxy{server: impl.(SeederServer)})

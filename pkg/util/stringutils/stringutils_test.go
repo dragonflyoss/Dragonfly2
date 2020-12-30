@@ -17,22 +17,19 @@
 package stringutils
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
-
-	"github.com/go-check/check"
 )
 
 func Test(t *testing.T) {
-	check.TestingT(t)
+	suite.Run(t, new(StringUtilSuite))
 }
 
-type StringUtilSuite struct{}
-
-func init() {
-	check.Suite(&StringUtilSuite{})
+type StringUtilSuite struct {
+	suite.Suite
 }
 
-func (suite *StringUtilSuite) TestSubString(c *check.C) {
+func (suite *StringUtilSuite) TestSubString() {
 	var cases = []struct {
 		str      string
 		start    int
@@ -47,13 +44,13 @@ func (suite *StringUtilSuite) TestSubString(c *check.C) {
 	}
 
 	for _, v := range cases {
-		c.Check(SubString(v.str, v.start, v.end), check.Equals, v.expected)
+		suite.Equal(SubString(v.str, v.start, v.end), v.expected)
 	}
 }
 
-func (suite *StringUtilSuite) TestIsEmptyStr(c *check.C) {
-	c.Assert(IsEmptyStr(""), check.Equals, true)
-	c.Assert(IsEmptyStr("  "), check.Equals, true)
-	c.Assert(IsEmptyStr("\n  "), check.Equals, true)
-	c.Assert(IsEmptyStr("x"), check.Equals, false)
+func (suite *StringUtilSuite) TestIsEmptyStr() {
+	suite.Equal(IsEmptyStr(""),true)
+	suite.Equal(IsEmptyStr("  "), true)
+	suite.Equal(IsEmptyStr("\n  "), true)
+	suite.Equal(IsEmptyStr("x"), false)
 }

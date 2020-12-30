@@ -2,13 +2,9 @@
 # You can configure your cdn system by change the parameter according your requirement.
 ---
 base:
-  # listenRpcPort is the port cdn rpc server listens on.
+  # listenPort is the port cdn server listens on.
   # default: 8002
   listenPort: 8002
-
-  # listenHttpPort is the port cdn http server listens on.
-  # default: 8002
-#  listenHttpPort: 8002
 
   # DownloadPort is the port for download files from cdn.
   # And you should start a file server firstly which listens on the download port.
@@ -76,16 +72,3 @@ base:
   # CleanRatio is the ratio to clean the disk and it is based on 10.
   # It means the value of CleanRatio should be [1-10].
   CleanRatio: 1
-
----
-plugins:
-  storage:
-    local:
-      name: local
-      enable: true
-      config: fdas
-  sourceClient:
-    http:
-      name: ddd
-      enable: true
-      config: fds

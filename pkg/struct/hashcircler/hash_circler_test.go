@@ -17,25 +17,19 @@
 package hashcircler
 
 import (
+	"github.com/stretchr/testify/suite"
 	"math"
 	"math/rand"
 	"testing"
-
-	"github.com/go-check/check"
 )
 
-func Test(t *testing.T) {
-	check.TestingT(t)
+func TestSuite(t *testing.T) {
+	suite.Run(t, new(hashCirclerSuite))
 }
 
 type hashCirclerSuite struct {
 	hashMap map[string]uint64
-}
-
-func init() {
-	check.Suite(&hashCirclerSuite{
-		hashMap: make(map[string]uint64),
-	})
+	suite.Suite
 }
 
 func (suite *hashCirclerSuite) registerHashKV(key string, value uint64) {
@@ -59,7 +53,7 @@ func (suite *hashCirclerSuite) hash(input string) uint64 {
 	return 0
 }
 
-func (suite *hashCirclerSuite) TestHashCircler(c *check.C) {
+func (suite *hashCirclerSuite) TestHashCircler() {
 	defer suite.cleanHashMap()
 
 	rangeSize := uint64(math.MaxUint64 / 5)
@@ -83,13 +77,13 @@ func (suite *hashCirclerSuite) TestHashCircler(c *check.C) {
 	}
 
 	hasher, err := NewConsistentHashCircler(arr, nil)
-	c.Assert(err, check.IsNil)
+	suite.Nil(err)
 
 	originKeys := make([]string, len(inputStrs))
 
 	for i := 0; i < 10; i++ {
 		k, err := hasher.Hash(inputStrs[i])
-		c.Assert(err, check.IsNil)
+		suite.Nil(err)
 		originKeys[i] = k
 	}
 
@@ -97,10 +91,10 @@ func (suite *hashCirclerSuite) TestHashCircler(c *check.C) {
 	hasher.Delete(arr[0])
 	for i := 0; i < 10; i++ {
 		k, err := hasher.Hash(inputStrs[i])
-		c.Assert(err, check.IsNil)
-		c.Assert(k, check.Not(check.Equals), arr[0])
+		suite.Nil(err)
+		suite.NotEqual(k, arr[0])
 		if originKeys[i] != arr[0] {
-			c.Assert(k, check.Equals, originKeys[i])
+			suite.Equal(k, originKeys[i])
 		}
 	}
 
@@ -110,19 +104,19 @@ func (suite *hashCirclerSuite) TestHashCircler(c *check.C) {
 
 	for i := 0; i < 10; i++ {
 		k, err := hasher.Hash(inputStrs[i])
-		c.Assert(err, check.IsNil)
-		c.Assert(k, check.Equals, arr[3])
+		suite.Nil(err)
+		suite.Equal(k, arr[3])
 	}
 
 	hasher.Add(arr[1])
 
 	for i := 0; i < 10; i++ {
 		k, err := hasher.Hash(inputStrs[i])
-		c.Assert(err, check.IsNil)
+		suite.Nil(err)
 		if originKeys[i] == arr[1] || originKeys[i] == arr[3] {
-			c.Assert(k, check.Equals, originKeys[i])
+			suite.Equal(k, originKeys[i])
 		}
-		c.Assert(true, check.Equals, k == arr[3] || k == arr[1])
+		suite.Equal(true, k == arr[3] || k == arr[1])
 	}
 
 	hasher.Add(arr[1])
@@ -130,13 +124,13 @@ func (suite *hashCirclerSuite) TestHashCircler(c *check.C) {
 
 	for i := 0; i < 10; i++ {
 		k, err := hasher.Hash(inputStrs[i])
-		c.Assert(err, check.IsNil)
+		suite.Nil(err)
 
 		if originKeys[i] == arr[1] || originKeys[i] == arr[2] || originKeys[i] == arr[3] {
-			c.Assert(k, check.Equals, originKeys[i])
+			suite.Equal(k, originKeys[i])
 		}
 
-		c.Assert(true, check.Equals, k != arr[0] && k != arr[4])
+		suite.Equal(true, k != arr[0] && k != arr[4])
 	}
 
 	hasher.Delete(arr[0])
@@ -144,21 +138,21 @@ func (suite *hashCirclerSuite) TestHashCircler(c *check.C) {
 	hasher.Delete(arr[2])
 	for i := 0; i < 10; i++ {
 		k, err := hasher.Hash(inputStrs[i])
-		c.Assert(err, check.IsNil)
-		c.Assert(k, check.Equals, arr[3])
+		suite.Nil(err)
+		suite.Equal(k, arr[3])
 	}
 
 	hasher.Delete(arr[3])
 	for i := 0; i < 10; i++ {
 		_, err = hasher.Hash(inputStrs[i])
-		c.Assert(err, check.NotNil)
+		suite.NotNil(err)
 	}
 
 	hasher.Add(arr[0])
 	for i := 0; i < 10; i++ {
 		k, err := hasher.Hash(inputStrs[i])
-		c.Assert(err, check.IsNil)
-		c.Assert(k, check.Equals, arr[0])
+		suite.Nil(err)
+		suite.Equal(k, arr[0])
 	}
 
 	hasher.Add(arr[1])
@@ -168,7 +162,7 @@ func (suite *hashCirclerSuite) TestHashCircler(c *check.C) {
 
 	for i := 0; i < 10; i++ {
 		k, err := hasher.Hash(inputStrs[i])
-		c.Assert(err, check.IsNil)
-		c.Assert(k, check.Equals, originKeys[i])
+		suite.Nil(err)
+		suite.Equal(k, originKeys[i])
 	}
 }

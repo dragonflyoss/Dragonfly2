@@ -16,7 +16,8 @@
 
 package types
 
+// TaskRegisterResponse
 type TaskRegisterResponse struct {
-	SourceFileLength int64
-	PieceSize        int32
+	PieceSize        int32 `json:"pieceSize,omitempty"`
+	SourceFileLength int64 `json:"sourceFileLength,omitempty"`
 }

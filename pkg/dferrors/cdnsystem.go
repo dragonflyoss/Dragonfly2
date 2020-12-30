@@ -39,19 +39,26 @@ var (
 	// ErrAuthenticationRequired represents the authentication is required.
 	ErrAuthenticationRequired = DfError{codeAuthenticationRequired, "authentication required"}
 
-	ErrPieceCountNotEqual = DfError{codePieceCountNotEqual, "piece count not equal"}
-	//
-	ErrFileLengthNotEqual = DfError{codeFileLengthNotEqual, "file length not equal"}
+	// ErrPieceCountNotEqual
+	ErrPieceCountNotEqual = DfError{codePieceCountNotEqual, "inconsistent number of pieces"}
 
-	ErrDownloadFail = DfError{codeDownloadFail, ""}
+	// ErrFileLengthNotEqual
+	ErrFileLengthNotEqual = DfError{codeFileLengthNotEqual, "inconsistent file length"}
 
-	ErrResourceExpired = DfError{codeResourceExpired, "task has expired"}
+	// ErrDownloadFail
+	ErrDownloadFail = DfError{codeDownloadFail, "download failed"}
 
-	ErrResourceNotSupportRangeRequest = DfError{codeResourceNotSupportRangeRequest, "resource not support range request"}
+	// ErrResourceExpired
+	ErrResourceExpired = DfError{codeResourceExpired, "resource expired"}
+
+	// ErrResourceNotSupportRangeRequest
+	ErrResourceNotSupportRangeRequest = DfError{codeResourceNotSupportRangeRequest, "resource does not support range request"}
+
+	// ErrPieceMd5CheckFail
+	ErrPieceMd5CheckFail = DfError{codePieceMd5CheckFail, "piece md5 check fail"}
 )
 
 const (
-	// supernode
 	codeSystemError = iota + 1000
 	codeCDNFail
 	codeCDNWait
@@ -64,6 +71,7 @@ const (
 	codeDownloadFail
 	codeResourceExpired
 	codeResourceNotSupportRangeRequest
+	codePieceMd5CheckFail
 )
 
 // IsSystemError checks the error is a system error or not.
@@ -81,8 +89,8 @@ func IsCDNWait(err error) bool {
 	return checkError(err, codeCDNWait)
 }
 
-// IsUnknowError checks the error is UnknowError or not.
-func IsUnknowError(err error) bool {
+// IsUnknownError checks the error is UnknownError or not.
+func IsUnknownError(err error) bool {
 	return checkError(err, codeUnknownError)
 }
 

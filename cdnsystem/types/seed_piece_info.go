@@ -18,8 +18,8 @@ package types
 
 // SeedPiece
 type SeedPiece struct {
-	ItemType         int8 // 1 piece 0 task
-	PieceStyle       int32
+	Type             ItemType    // 1: piece 0: task
+	PieceStyle       PieceFormat // 0: PlainUnspecified
 	PieceNum         int32
 	PieceMd5         string
 	PieceRange       string
@@ -30,7 +30,15 @@ type SeedPiece struct {
 	BackSourceLength int64
 }
 
+type ItemType int8
+
 const (
-	PIECE_TYPE = 0
-	TASK_TYPE  = 1
+	PieceType ItemType = 1
+	TaskType  ItemType = 2
+)
+
+type PieceFormat int8
+
+const (
+	PlainUnspecified PieceFormat = 1
 )

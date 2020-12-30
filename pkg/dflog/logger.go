@@ -30,12 +30,14 @@ import (
 var (
 	bizLogger      *zap.SugaredLogger
 	GrpcLogger     *zap.SugaredLogger
+	GcLogger       *zap.SugaredLogger
 	StatPeerLogger *zap.Logger
 	StatSeedLogger *zap.Logger
 )
 
 var LogLevel = zap.NewAtomicLevel()
 
+// CreateLogger create logger
 func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, compress bool, stats bool) *zap.Logger {
 	if os.Getenv(env.ActiveProfile) == "local" {
 		log, _ := zap.NewDevelopment(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
@@ -85,7 +87,6 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 	return zap.New(core, opts...)
 }
 
-
 // LogConfig holds all configurable properties of log.
 type LogConfig struct {
 	// MaxSize is the maximum size in megabytes of the log file before it gets rotated.
@@ -118,15 +119,23 @@ func SetGrpcLogger(log *zap.SugaredLogger) {
 	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
 }
 
+func SetGcLogger(log *zap.SugaredLogger) {
+	GcLogger = log
+}
+
 func With(args ...interface{}) *zap.SugaredLogger {
 	return bizLogger.With(args...)
+}
+
+func Named(name string) *zap.SugaredLogger {
+	return bizLogger.Named(name)
 }
 
 func Infof(fmt string, args ...interface{}) {
 	bizLogger.Infof(fmt, args...)
 }
 
-func Info(args ...interface{})  {
+func Info(args ...interface{}) {
 	bizLogger.Info(args)
 }
 
@@ -138,7 +147,7 @@ func Errorf(fmt string, args ...interface{}) {
 	bizLogger.Errorf(fmt, args...)
 }
 
-func Error(args ...interface{})  {
+func Error(args ...interface{}) {
 	bizLogger.Error(args)
 }
 

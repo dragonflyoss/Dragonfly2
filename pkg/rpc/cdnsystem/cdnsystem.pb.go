@@ -50,7 +50,7 @@ type SeedRequest struct {
 
 	TaskId  string        `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	Url     string        `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
-	Filter  string        `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
+	Filter  []string        `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
 	UrlMeta *base.UrlMeta `protobuf:"bytes,4,opt,name=url_meta,json=urlMeta,proto3" json:"url_meta,omitempty"` // check content downloaded from remote url
 }
 
@@ -100,11 +100,11 @@ func (x *SeedRequest) GetUrl() string {
 	return ""
 }
 
-func (x *SeedRequest) GetFilter() string {
+func (x *SeedRequest) GetFilter() []string {
 	if x != nil {
 		return x.Filter
 	}
-	return ""
+	return nil
 }
 
 func (x *SeedRequest) GetUrlMeta() *base.UrlMeta {

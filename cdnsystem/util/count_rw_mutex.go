@@ -17,11 +17,11 @@
 package util
 
 import (
-	"sync"
-
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/atomiccount"
+	"sync"
 )
 
+// countRWMutex
 type countRWMutex struct {
 	count *atomiccount.AtomicInt
 	sync.RWMutex
