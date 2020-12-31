@@ -17,72 +17,69 @@
 package queue
 
 import (
+	"github.com/stretchr/testify/suite"
 	"math/rand"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
-
-
 )
 
-func Test(t *testing.T) {
-	check.TestingT(t)
+func TestQueue(t *testing.T) {
+	suite.Run(t, new(QueueTestSuite))
 }
 
-type DFGetUtilSuite struct{}
-
-func init() {
-	check.Suite(&DFGetUtilSuite{})
+type QueueTestSuite struct {
+	suite.Suite
 }
 
-func (suite *DFGetUtilSuite) SetUpTest(c *check.C) {
+func (suite *QueueTestSuite) SetupTest() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func (suite *DFGetUtilSuite) TestQueue_infiniteQueue(c *check.C) {
+func (suite *QueueTestSuite) TestQueue_infiniteQueue() {
 	timeout := 50 * time.Millisecond
 	q := NewQueue(0)
 
 	q.Put(nil)
-	c.Assert(q.Len(), check.Equals, 0)
+	suite.Equal(q.Len(), 0)
 
 	q.PutTimeout(nil, 0)
-	c.Assert(q.Len(), check.Equals, 0)
+	suite.Equal(q.Len(),  0)
 
 	q.Put(0)
-	c.Assert(q.Len(), check.Equals, 1)
-	c.Assert(q.Poll(), check.Equals, 0)
-	c.Assert(q.Len(), check.Equals, 0)
+	suite.Equal(q.Len(),  1)
+	suite.Equal(q.Poll(),  0)
+	suite.Equal(q.Len(),  0)
 
 	{ // test Poll
 		time.AfterFunc(timeout, func() { q.Put(1) })
 		start := time.Now()
-		c.Assert(q.Poll(), check.Equals, 1)
-		c.Assert(time.Since(start) > timeout, check.Equals, true)
+		suite.Equal(q.Poll(),  1)
+		suite.Equal(time.Since(start) > timeout,  true)
 	}
 
 	{ // test PollTimeout
 		v, ok := q.PollTimeout(0)
-		c.Assert(v, check.IsNil)
-		c.Check(ok, check.Equals, false)
+		suite.Nil(v)
+		suite.Equal(ok,  false)
 
 		start := time.Now()
 		v, ok = q.PollTimeout(timeout)
-		c.Assert(v, check.IsNil)
-		c.Check(ok, check.Equals, false)
-		c.Assert(time.Since(start) > timeout, check.Equals, true)
+		suite.Nil(v)
+		suite.Equal(ok,  false)
+		suite.Equal(time.Since(start) > timeout,  true)
 
 		time.AfterFunc(timeout/2, func() { q.Put(1) })
 		start = time.Now()
 		v, ok = q.PollTimeout(timeout)
-		c.Assert(ok, check.Equals, true)
-		c.Assert(v, check.Equals, 1)
-		c.Assert(time.Since(start) >= timeout/2, check.Equals, true)
-		c.Assert(time.Since(start) < timeout, check.Equals, true)
+		suite.Equal(ok,  true)
+		suite.Equal(v,  1)
+		suite.Equal(time.Since(start) >= timeout/2,  true)
+		suite.Equal(time.Since(start) < timeout,  true)
 	}
 }
-func (suite *DFGetUtilSuite) TestQueue_infiniteQueue_PollTimeout(c *check.C) {
+func (suite *QueueTestSuite) TestQueue_infiniteQueue_PollTimeout() {
 	timeout := 50 * time.Millisecond
 	q := NewQueue(0)
 
@@ -107,55 +104,55 @@ func (suite *DFGetUtilSuite) TestQueue_infiniteQueue_PollTimeout(c *check.C) {
 	})
 	wg.Wait()
 
-	c.Assert(time.Since(start) > timeout, check.Equals, true)
-	c.Assert(cnt, check.Equals, int32(n-1))
+	suite.Equal(time.Since(start) > timeout,  true)
+	suite.Equal(cnt,  int32(n-1))
 }
 
-func (suite *DFGetUtilSuite) TestQueue_finiteQueue(c *check.C) {
+func (suite *QueueTestSuite) TestQueue_finiteQueue() {
 	timeout := 50 * time.Millisecond
 	q := NewQueue(2)
 
 	q.Put(nil)
-	c.Assert(q.Len(), check.Equals, 0)
+	suite.Equal(q.Len(),  0)
 
 	q.PutTimeout(nil, 0)
-	c.Assert(q.Len(), check.Equals, 0)
+	suite.Equal(q.Len(),  0)
 
 	q.Put(1)
-	c.Assert(q.Len(), check.Equals, 1)
+	suite.Equal(q.Len(),  1)
 
 	start := time.Now()
 	q.PutTimeout(2, timeout)
 	q.PutTimeout(3, timeout)
 	q.PutTimeout(4, 0)
-	c.Assert(q.Len(), check.Equals, 2)
-	c.Assert(time.Since(start) >= timeout, check.Equals, true)
-	c.Assert(time.Since(start) < 2*timeout, check.Equals, true)
+	suite.Equal(q.Len(),  2)
+	suite.Equal(time.Since(start) >= timeout,  true)
+	suite.Equal(time.Since(start) < 2*timeout,  true)
 
-	c.Assert(q.Poll(), check.Equals, 1)
-	c.Assert(q.Len(), check.Equals, 1)
-	c.Assert(q.Poll(), check.Equals, 2)
+	suite.Equal(q.Poll(),  1)
+	suite.Equal(q.Len(),  1)
+	suite.Equal(q.Poll(),  2)
 
 	{
 		q.PutTimeout(1, 0)
 		item, ok := q.PollTimeout(timeout)
-		c.Assert(ok, check.Equals, true)
-		c.Assert(item, check.Equals, 1)
+		suite.Equal(ok,  true)
+		suite.Equal(item,  1)
 
 		start = time.Now()
 		item, ok = q.PollTimeout(timeout)
-		c.Assert(ok, check.Equals, false)
-		c.Assert(item, check.IsNil)
-		c.Assert(time.Since(start) >= timeout, check.Equals, true)
+		suite.Equal(ok,  false)
+		suite.Nil(item)
+		suite.Equal(time.Since(start) >= timeout,  true)
 
 		start = time.Now()
 		q.PutTimeout(1, 0)
 		item, ok = q.PollTimeout(0)
-		c.Assert(ok, check.Equals, true)
-		c.Assert(item, check.Equals, 1)
+		suite.Equal(ok,  true)
+		suite.Equal(item,  1)
 		item, ok = q.PollTimeout(0)
-		c.Assert(ok, check.Equals, false)
-		c.Assert(item, check.IsNil)
-		c.Assert(time.Since(start) < timeout, check.Equals, true)
+		suite.Equal(ok,  false)
+		suite.Nil(item)
+		suite.Equal(time.Since(start) < timeout,  true)
 	}
 }

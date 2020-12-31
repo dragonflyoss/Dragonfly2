@@ -20,14 +20,13 @@ import (
 	"bufio"
 	"crypto/md5"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"hash"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
-
-	"gopkg.in/yaml.v2"
 )
 
 // BufferSize defines the buffer size when reading and writing file.
