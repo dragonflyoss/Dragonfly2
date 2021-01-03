@@ -53,7 +53,10 @@ type StorageDriver interface {
 	// If the offset>0, the storage driver should starting at byte raw.offset off.
 	PutBytes(ctx context.Context, raw *Raw, data []byte) error
 
-	AppendBytes(ctx context.Context, raw *Raw, data[]byte) error
+	// AppendBytes appends the data into the storage with raw information.
+	// The data is passed in bytes.
+	// If the offset>0, the storage driver should starting at byte raw.offset off.
+	AppendBytes(ctx context.Context, raw *Raw, data []byte) error
 
 	// Remove the data from the storage based on raw information.
 	Remove(ctx context.Context, raw *Raw) error
@@ -84,8 +87,8 @@ type Raw struct {
 
 // StorageInfo includes partial meta information of the data.
 type StorageInfo struct {
-	Path       string
-	Size       int64
-	CreateTime time.Time
-	ModTime    time.Time
+	Path       string    // file path
+	Size       int64     // file size
+	CreateTime time.Time // create time
+	ModTime    time.Time // modified time
 }

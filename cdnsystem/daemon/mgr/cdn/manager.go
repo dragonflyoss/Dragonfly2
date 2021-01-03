@@ -21,7 +21,7 @@ import (
 	"crypto/md5"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/piece"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/progress"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
@@ -71,7 +71,7 @@ type Manager struct {
 	limiter         *ratelimiter.RateLimiter
 	cdnLocker       *util.LockerPool
 	metaDataManager *metaDataManager
-	pieceMgr        mgr.SeedPieceMgr
+	progressMgr     mgr.SeedProgressMgr
 	cdnReporter     *reporter
 	detector        *cacheDetector
 	resourceClient  source.ResourceClient
@@ -80,13 +80,14 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, pieceMgr *piece.Manager, register prometheus.Registerer) (mgr.CDNMgr, error) {
-	return newManager(cfg, cacheStore, resourceClient, pieceMgr, register)
+func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (mgr.CDNMgr, error) {
+	return newManager(cfg, cacheStore, resourceClient, register)
 }
 
-func newManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, publisher *piece.Manager, register prometheus.Registerer) (*Manager, error) {
+func newManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
+	publisher := progress.NewManager()
 	cdnReporter := newReporter(publisher)
 	return &Manager{
 		cfg:             cfg,
@@ -94,8 +95,8 @@ func newManager(cfg *config.Config, cacheStore *store.Store, resourceClient sour
 		limiter:         rateLimiter,
 		cdnLocker:       util.NewLockerPool(),
 		metaDataManager: metaDataManager,
-		pieceMgr:        publisher,
 		cdnReporter:     cdnReporter,
+		progressMgr:     publisher,
 		detector:        newCacheDetector(cacheStore, metaDataManager, resourceClient),
 		resourceClient:  resourceClient,
 		writer:          newCacheWriter(cacheStore, cdnReporter, metaDataManager),
@@ -186,8 +187,8 @@ func (cm *Manager) Delete(ctx context.Context, taskID string) error {
 	return deleteTaskFiles(ctx, cm.cacheStore, taskID)
 }
 
-func (cm *Manager) WatchSeedTask(taskID string) (<-chan *types.SeedPiece, error) {
-	return cm.pieceMgr.WatchSeedTask(taskID)
+func (cm *Manager) WatchSeedTask(taskID string, taskMgr mgr.SeedTaskMgr) (<-chan *types.SeedPiece, error) {
+	return cm.progressMgr.WatchSeedProgress(taskID, taskMgr)
 }
 
 // handleCDNResult

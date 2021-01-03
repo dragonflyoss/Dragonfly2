@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/HuKeping/rbtree v0.0.0-20200208030951-29f0b79e84ed
 	github.com/emirpasic/gods v1.12.0
+	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.2
 	github.com/mitchellh/go-homedir v1.1.0
@@ -17,6 +18,7 @@ require (
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 )

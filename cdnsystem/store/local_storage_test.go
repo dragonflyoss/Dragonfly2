@@ -22,7 +22,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
-	statutils "github.com/dragonflyoss/Dragonfly2/pkg/util/stat"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/stat"
 	"github.com/stretchr/testify/suite"
 	"io"
 	"io/ioutil"

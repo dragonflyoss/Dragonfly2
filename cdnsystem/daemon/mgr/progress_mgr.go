@@ -20,14 +20,14 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 )
 
-// SeedPieceMgr as an interface defines all operations about piece
-type SeedPieceMgr interface {
+// SeedProgressMgr as an interface defines all operations about seed progress
+type SeedProgressMgr interface {
 
-	// WatchSeedTask
-	WatchSeedTask(taskID string) (<-chan *types.SeedPiece, error)
+	// WatchSeedProgress watch seed progress
+	WatchSeedProgress(taskID string, taskMgr SeedTaskMgr) (<-chan *types.SeedPiece, error)
 
-	// UnWatchTask unwatch task's piece seed
-	UnWatchTask(seedSubscriber chan *types.SeedPiece, taskID string) error
+	// UnWatchSeedProgress unwatch seed progress
+	UnWatchSeedProgress(seedSubscriber chan *types.SeedPiece, taskID string) error
 
 	// PublishPiece publish seedPiece
 	PublishPiece(taskID string, record *types.SeedPiece) error

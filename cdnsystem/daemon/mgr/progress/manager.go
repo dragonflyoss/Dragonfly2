@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package piece
+package progress
 
 import (
 	"container/list"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
@@ -44,8 +45,8 @@ func NewManager() *Manager {
 	}
 }
 
-// SubscribeTask subscribe task's piece seed
-func (pm *Manager) WatchSeedTask(taskID string) (<-chan *types.SeedPiece, error) {
+// WatchSeedProgress subscribe task's piece seed
+func (pm *Manager) WatchSeedProgress(taskID string, taskMgr mgr.SeedTaskMgr) (<-chan *types.SeedPiece, error) {
 	pm.m.GetLock(taskID, true)
 	defer pm.m.ReleaseLock(taskID, true)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
@@ -70,7 +71,7 @@ func (pm *Manager) WatchSeedTask(taskID string) (<-chan *types.SeedPiece, error)
 	return ch, nil
 }
 
-func (pm *Manager) UnWatchTask(sub chan *types.SeedPiece, taskID string) error {
+func (pm *Manager) UnWatchSeedProgress(sub chan *types.SeedPiece, taskID string) error {
 	pm.m.GetLock(taskID, false)
 	defer pm.m.ReleaseLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)

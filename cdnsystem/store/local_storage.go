@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
-	statutils "github.com/dragonflyoss/Dragonfly2/pkg/util/stat"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/stat"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -39,6 +39,7 @@ func init() {
 }
 
 func lock(path string, offset int64, ro bool) {
+	// todo confirm
 	if offset != -1 {
 		fileLocker.GetLock(getLockKey(path, -1), true)
 	}
@@ -237,6 +238,7 @@ func (ls *localStorage) PutBytes(ctx context.Context, raw *Raw, data []byte) err
 	return nil
 }
 
+// AppendBytes append the content of key from storage with bytes.
 func (ls *localStorage) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
 	if err := checkPutRaw(raw); err != nil {
 		return err

@@ -41,7 +41,7 @@ func (s *CacheWriterTestSuite) SetupSuite() {
 	s.config = "baseDir: " + s.workHome
 	fileStore, err := store.NewStore(store.LocalStorageDriver, store.NewLocalStorage, s.config)
 	s.Nil(err)
-	s.writer = newCacheWriter(fileStore, nil)
+	s.writer = newCacheWriter(fileStore, nil, nil)
 }
 
 func (s *CacheWriterTestSuite) TeardownSuite() {
@@ -60,6 +60,6 @@ func (s *CacheWriterTestSuite) TestWriteToFile() {
 
 }
 
-func (s *CacheWriterTestSuite) TestAppendPieceMetaDataToFile()  {
+func (s *CacheWriterTestSuite) TestAppendPieceMetaDataToFile() {
 
 }

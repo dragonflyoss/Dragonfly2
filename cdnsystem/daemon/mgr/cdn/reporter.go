@@ -23,10 +23,10 @@ import (
 )
 
 type reporter struct {
-	publisher mgr.SeedPieceMgr
+	publisher mgr.SeedProgressMgr
 }
 
-func newReporter(publisher mgr.SeedPieceMgr) *reporter {
+func newReporter(publisher mgr.SeedProgressMgr) *reporter {
 	return &reporter{
 		publisher: publisher,
 	}

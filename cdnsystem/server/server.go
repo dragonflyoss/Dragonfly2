@@ -22,7 +22,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/gc"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/piece"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/task"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/server/service"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
@@ -57,10 +56,8 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	publisher := piece.NewManager()
 	// cdn manager
-	cdnMgr, err := mgr.GetCDNManager(cfg, storeLocal, sourceClient, publisher, register)
+	cdnMgr, err := mgr.GetCDNManager(cfg, storeLocal, sourceClient, register)
 	if err != nil {
 		return nil, err
 	}

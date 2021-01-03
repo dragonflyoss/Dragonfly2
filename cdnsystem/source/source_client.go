@@ -37,13 +37,13 @@ func NewSourceClient(cfg *config.Config) (ResourceClient, error) {
 // SourceClient supply apis that interact with the source.
 type ResourceClient interface {
 
-	// GetContentLength
+	// GetContentLength get content length from source
 	GetContentLength(url string, headers map[string]string) (int64, error)
 
-	// IsSupportRange checks whether the source supports breakpoint continuation
+	// IsSupportRange checks if source supports breakpoint continuation
 	IsSupportRange(url string, headers map[string]string) (bool, error)
 
-	// IsExpired checks if the cache is expired
+	// IsExpired checks if cache is expired
 	IsExpired(url string, headers, expireInfo map[string]string) (bool, error)
 
 	// Download download from source

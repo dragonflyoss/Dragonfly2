@@ -62,11 +62,41 @@ func newMetrics(register prometheus.Registerer) *metrics {
 type Manager struct {
 	cfg                     *config.Config
 	metrics                 *metrics
-	resourceClient          source.ResourceClient
 	taskStore               *syncmap.SyncMap
 	accessTimeMap           *syncmap.SyncMap
 	taskURLUnReachableStore *syncmap.SyncMap
+	resourceClient          source.ResourceClient
 	cdnMgr                  mgr.CDNMgr
+}
+
+// NewManager returns a new Manager Object.
+func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
+	return &Manager{
+		cfg:                     cfg,
+		metrics:                 newMetrics(register),
+		taskStore:               syncmap.NewSyncMap(),
+		accessTimeMap:           syncmap.NewSyncMap(),
+		taskURLUnReachableStore: syncmap.NewSyncMap(),
+		resourceClient:          resourceClient,
+		cdnMgr:                  cdnMgr,
+	}, nil
+}
+
+// Register register seed task
+func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceCh <-chan *types.SeedPiece, err error) {
+	task, err := tm.addOrUpdateTask(ctx, req)
+	if err != nil {
+		logger.Named(task.TaskID).Infof("failed to add or update task with req %+v: %v", req, err)
+		return nil, err
+	}
+	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
+	logger.Named(task.TaskID).Debugf("success to get task info: %+v", task)
+	// trigger CDN
+	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
+		return nil, errors.Wrapf(err, "failed to trigger cdn")
+	}
+	// watch task update
+	return tm.cdnMgr.WatchSeedTask(task.TaskID, tm)
 }
 
 // triggerCdnSyncAction
@@ -142,34 +172,4 @@ func (tm Manager) Delete(ctx context.Context, taskID string) error {
 	tm.taskURLUnReachableStore.Delete(taskID)
 	tm.taskStore.Delete(taskID)
 	return nil
-}
-
-// NewManager returns a new Manager Object.
-func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
-	return &Manager{
-		cfg:                     cfg,
-		taskStore:               syncmap.NewSyncMap(),
-		cdnMgr:                  cdnMgr,
-		accessTimeMap:           syncmap.NewSyncMap(),
-		taskURLUnReachableStore: syncmap.NewSyncMap(),
-		resourceClient:          resourceClient,
-		metrics:                 newMetrics(register),
-	}, nil
-}
-
-// Register register seed task
-func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceCh <-chan *types.SeedPiece, err error) {
-	task, err := tm.addOrUpdateTask(ctx, req)
-	if err != nil {
-		logger.Named(task.TaskID).Infof("failed to add or update task with req %+v: %v", req, err)
-		return nil, err
-	}
-	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
-	logger.Named(task.TaskID).Debugf("success to get task info: %+v", task)
-	// trigger CDN
-	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
-		return nil, errors.Wrapf(err, "failed to trigger cdn")
-	}
-	// watch task update
-	return tm.cdnMgr.WatchSeedTask(task.TaskID)
 }

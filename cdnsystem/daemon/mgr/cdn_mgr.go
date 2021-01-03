@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/piece"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
@@ -28,7 +27,7 @@ import (
 )
 
 type CDNBuilder func(cfg *config.Config, cacheStore *store.Store,
-	resourceClient source.ResourceClient, publisher *piece.Manager, register prometheus.Registerer) (CDNMgr, error)
+	resourceClient source.ResourceClient, register prometheus.Registerer) (CDNMgr, error)
 
 var cdnBuilderMap = make(map[config.CDNPattern]CDNBuilder)
 
@@ -37,8 +36,7 @@ func Register(name config.CDNPattern, builder CDNBuilder) {
 }
 
 // get an implementation of the interface of CDNMgr
-func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient,
-	publisher *piece.Manager, register prometheus.Registerer) (CDNMgr, error) {
+func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (CDNMgr, error) {
 	cdnPattern := cfg.CDNPattern
 	if cdnPattern.String() == "" {
 		cdnPattern = config.CDNPatternLocal
@@ -48,7 +46,7 @@ func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient s
 	if !ok {
 		return nil, fmt.Errorf("unexpected cdn pattern(%s) which must be in [\"local\", \"source\"]", cdnPattern)
 	}
-	return cdnBuilder(cfg, cacheStore, resourceClient, publisher, register)
+	return cdnBuilder(cfg, cacheStore, resourceClient, register)
 }
 
 // CDNMgr as an interface defines all operations against CDN and
@@ -74,7 +72,6 @@ type CDNMgr interface {
 	Delete(ctx context.Context, taskID string) error
 
 	// WatchSeedTask
-	WatchSeedTask(taskID string) (<-chan *types.SeedPiece, error)
-
+	WatchSeedTask(taskID string, taskMgr SeedTaskMgr) (<-chan *types.SeedPiece, error)
 
 }

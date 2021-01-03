@@ -27,15 +27,15 @@ import (
 // A seedTask corresponds to three files on the disk, which are identified by taskId, the data file meta file piece file
 type SeedTaskMgr interface {
 
-	// Register the seed task
+	// Register register seed task
 	Register(ctx context.Context, registerRequest *types.TaskRegisterRequest) (pieceCh <-chan *types.SeedPiece, err error)
 
-	// Get the task Info with specified taskID.
+	// Get get task Info with specified taskID.
 	Get(ctx context.Context, taskID string) (*types.SeedTask, error)
 
-	// GetAccessTime gets all task accessTime.
+	// GetAccessTime get all tasks accessTime.
 	GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error)
 
-	// Delete deletes a task.
+	// Delete delete a task.
 	Delete(ctx context.Context, taskID string) error
 }

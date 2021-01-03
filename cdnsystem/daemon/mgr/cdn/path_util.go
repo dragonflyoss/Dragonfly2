@@ -68,7 +68,6 @@ func getPieceMetaDataRaw(taskID string) *store.Raw {
 	return &store.Raw{
 		Bucket: config.DownloadHome,
 		Key:    getPieceMetaDataKey(taskID),
-		Trunc:  true,
 	}
 }
 
