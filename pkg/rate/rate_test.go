@@ -19,11 +19,8 @@ package rate
 import (
 	"encoding/json"
 	"github.com/stretchr/testify/suite"
-	"gopkg.in/check.v1"
+	"gopkg.in/yaml.v3"
 	"testing"
-
-
-	"gopkg.in/yaml.v2"
 )
 
 func TestSuite(t *testing.T) {
@@ -32,10 +29,6 @@ func TestSuite(t *testing.T) {
 
 type RateSuite struct{
 	suite.Suite
-}
-
-func init() {
-	check.Suite(&RateSuite{})
 }
 
 func (suite *RateSuite) TestParseRate() {
@@ -61,7 +54,7 @@ func (suite *RateSuite) TestParseRate() {
 	for _, cc := range cases {
 		output, err := ParseRate(cc.input)
 		if !cc.isWrong {
-			suite.NotNil(err)
+			suite.Nil(err)
 			suite.Equal(output, cc.expected)
 		} else {
 			suite.NotNil(err)

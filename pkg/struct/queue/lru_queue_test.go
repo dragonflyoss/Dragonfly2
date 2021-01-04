@@ -17,92 +17,101 @@
 package queue
 
 import (
-
+	"github.com/stretchr/testify/suite"
+	"testing"
 )
 
-func (suite *DFGetUtilSuite) TestLRUQueue(c *check.C) {
+func TestLruQueue(t *testing.T) {
+	suite.Run(t, new(LruQueueTestSuite))
+}
+
+type LruQueueTestSuite struct {
+	suite.Suite
+}
+
+func (suite *LruQueueTestSuite) TestLRUQueue() {
 	q := NewLRUQueue(5)
 
 	q.Put("key1", 1)
 
 	v1, err := q.GetItemByKey("key1")
-	c.Assert(err, check.IsNil)
-	c.Assert(v1.(int), check.Equals, 1)
+	suite.Nil(err)
+	suite.Equal(v1.(int), 1)
 
 	items := q.GetFront(1)
-	c.Assert(len(items), check.Equals, 1)
-	c.Assert(items[0], check.Equals, 1)
+	suite.Equal(len(items), 1)
+	suite.Equal(items[0], 1)
 
 	q.Put("key2", 2)
 	q.Put("key1", 3)
 
 	v1, err = q.GetItemByKey("key1")
-	c.Assert(err, check.IsNil)
-	c.Assert(v1.(int), check.Equals, 3)
+	suite.Nil(err)
+	suite.Equal(v1.(int), 3)
 
 	items = q.GetFront(10)
-	c.Assert(len(items), check.Equals, 2)
-	c.Assert(items[0], check.Equals, 3)
-	c.Assert(items[1], check.Equals, 2)
+	suite.Equal(len(items), 2)
+	suite.Equal(items[0], 3)
+	suite.Equal(items[1], 2)
 
 	items = q.GetFront(1)
-	c.Assert(len(items), check.Equals, 1)
-	c.Assert(items[0], check.Equals, 3)
+	suite.Equal(len(items), 1)
+	suite.Equal(items[0], 3)
 
 	_, err = q.GetItemByKey("key3")
-	c.Assert(err, check.NotNil)
+	suite.NotNil(err)
 
 	obsoleteKey, _ := q.Put("key3", "data3")
-	c.Assert(obsoleteKey, check.Equals, "")
+	suite.Equal(obsoleteKey, "")
 	obsoleteKey, _ = q.Put("key4", "data4")
-	c.Assert(obsoleteKey, check.Equals, "")
+	suite.Equal(obsoleteKey, "")
 	obsoleteKey, _ = q.Put("key5", "data5")
-	c.Assert(obsoleteKey, check.Equals, "")
+	suite.Equal(obsoleteKey, "")
 
 	items = q.GetFront(10)
-	c.Assert(len(items), check.Equals, 5)
-	c.Assert(items[0], check.Equals, "data5")
-	c.Assert(items[1], check.Equals, "data4")
-	c.Assert(items[2], check.Equals, "data3")
-	c.Assert(items[3], check.Equals, 3)
-	c.Assert(items[4], check.Equals, 2)
+	suite.Equal(len(items), 5)
+	suite.Equal(items[0],  "data5")
+	suite.Equal(items[1],  "data4")
+	suite.Equal(items[2],  "data3")
+	suite.Equal(items[3],  3)
+	suite.Equal(items[4],  2)
 
 	obsoleteKey, obsoleteData := q.Put("key6", "data6")
-	c.Assert(obsoleteKey, check.Equals, "key2")
-	c.Assert(obsoleteData.(int), check.Equals, 2)
+	suite.Equal(obsoleteKey,  "key2")
+	suite.Equal(obsoleteData.(int),  2)
 	_, err = q.GetItemByKey("key2")
-	c.Assert(err, check.NotNil)
+	suite.NotNil(err)
 
 	items = q.GetFront(5)
-	c.Assert(len(items), check.Equals, 5)
-	c.Assert(items[0], check.Equals, "data6")
-	c.Assert(items[1], check.Equals, "data5")
-	c.Assert(items[2], check.Equals, "data4")
-	c.Assert(items[3], check.Equals, "data3")
-	c.Assert(items[4], check.Equals, 3)
+	suite.Equal(len(items),  5)
+	suite.Equal(items[0],  "data6")
+	suite.Equal(items[1],  "data5")
+	suite.Equal(items[2],  "data4")
+	suite.Equal(items[3],  "data3")
+	suite.Equal(items[4],  3)
 
 	v1, err = q.Get("key5")
-	c.Assert(err, check.IsNil)
-	c.Assert(v1.(string), check.Equals, "data5")
+	suite.Nil(err)
+	suite.Equal(v1.(string),  "data5")
 
 	items = q.GetFront(5)
-	c.Assert(len(items), check.Equals, 5)
-	c.Assert(items[0], check.Equals, "data5")
-	c.Assert(items[1], check.Equals, "data6")
-	c.Assert(items[2], check.Equals, "data4")
-	c.Assert(items[3], check.Equals, "data3")
-	c.Assert(items[4], check.Equals, 3)
+	suite.Equal(len(items),  5)
+	suite.Equal(items[0],  "data5")
+	suite.Equal(items[1],  "data6")
+	suite.Equal(items[2],  "data4")
+	suite.Equal(items[3],  "data3")
+	suite.Equal(items[4],  3)
 
 	v1 = q.Delete("key3")
-	c.Assert(v1, check.Equals, "data3")
+	suite.Equal(v1,  "data3")
 
 	items = q.GetFront(5)
-	c.Assert(len(items), check.Equals, 4)
-	c.Assert(items[0], check.Equals, "data5")
-	c.Assert(items[1], check.Equals, "data6")
-	c.Assert(items[2], check.Equals, "data4")
-	c.Assert(items[3], check.Equals, 3)
+	suite.Equal(len(items),  4)
+	suite.Equal(items[0],  "data5")
+	suite.Equal(items[1],  "data6")
+	suite.Equal(items[2],  "data4")
+	suite.Equal(items[3],  3)
 
 	v1 = q.Delete("key3")
-	c.Assert(v1, check.IsNil)
+	suite.Nil(v1)
 }
