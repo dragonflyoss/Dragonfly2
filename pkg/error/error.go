@@ -28,7 +28,7 @@ var AddressReused = errors.New("address is reused")
 
 type codeError struct {
 	Code int32
-	Msg string
+	Msg  string
 }
 
 func (e *codeError) Error() string {
@@ -36,5 +36,5 @@ func (e *codeError) Error() string {
 }
 
 func NewCodeError(code int32, msg string) *codeError {
-	return &codeError{Code:code, Msg: msg}
+	return &codeError{Code: code, Msg: msg}
 }

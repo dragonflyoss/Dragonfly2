@@ -8,12 +8,14 @@ import (
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 )
+
 type tester struct {
 	start time.Time
-	t *testing.T
+	t     *testing.T
 }
+
 func (t *tester) Fail() {
-	t.t.Logf("--- FAIL: TestE2E(%f)", time.Since(t.start).Round(1 * time.Millisecond).Seconds())
+	t.t.Logf("--- FAIL: TestE2E(%f)", time.Since(t.start).Round(1*time.Millisecond).Seconds())
 }
 
 // RunE2ETests checks configuration parameters (specified through flags) and then runs

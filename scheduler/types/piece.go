@@ -7,7 +7,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 )
 
-
 type WaitingType int
 
 type Piece struct {
@@ -18,20 +17,20 @@ type Piece struct {
 	PieceOffset uint64          `json:"piece_offset,omitempty"`
 	PieceStyle  base.PieceStyle `json:"piece_style,omitempty"`
 
-	Task                    *Task
-	readyPeerTaskList       *sync.Map
-	waitingPeerTask 		*sync.Map
-	waitingPeerTaskNum      int32
-	isReady 				bool
+	Task               *Task
+	readyPeerTaskList  *sync.Map
+	waitingPeerTask    *sync.Map
+	waitingPeerTaskNum int32
+	isReady            bool
 }
 
 func newEmptyPiece(pieceNum int32, task *Task) *Piece {
 	return &Piece{
-		PieceNum: pieceNum,
-		Task: task,
-		isReady: false,
-		readyPeerTaskList:  new(sync.Map),
-		waitingPeerTask:  new(sync.Map),
+		PieceNum:          pieceNum,
+		Task:              task,
+		isReady:           false,
+		readyPeerTaskList: new(sync.Map),
+		waitingPeerTask:   new(sync.Map),
 	}
 }
 
@@ -100,5 +99,5 @@ type PieceTask struct {
 	Piece   *Piece
 	SrcPid  string
 	DstPid  string
-	DstAddr string  // ip:port
+	DstAddr string // ip:port
 }

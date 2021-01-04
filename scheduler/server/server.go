@@ -14,12 +14,12 @@ type Server struct {
 	scheduler *service.SchedulerService
 	worker    schedule_worker.IWorker
 	server    *SchedulerServer
-	running bool
+	running   bool
 }
 
 func NewServer() *Server {
 	s := &Server{
-		running: false,
+		running:   false,
 		scheduler: service.CreateSchedulerService(),
 	}
 	s.worker = schedule_worker.CreateWorkerGroup(s.scheduler.GetScheduler())

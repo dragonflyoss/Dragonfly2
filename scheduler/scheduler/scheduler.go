@@ -30,8 +30,8 @@ func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, 
 			break
 		}
 
-		if pieceNum>=task.Task.GetMaxPieceNum() && task.Task.PieceTotal > 0 {
-			if len(result) + len(waitingPieceNumList) == 0 {
+		if pieceNum >= task.Task.GetMaxPieceNum() && task.Task.PieceTotal > 0 {
+			if len(result)+len(waitingPieceNumList) == 0 {
 				err = dferror.SchedulerFinished
 				return
 			}
@@ -39,7 +39,7 @@ func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, 
 
 		if piece == nil {
 			if pieceNum >= 0 && (pieceNum <= task.Task.GetMaxPieceNum() ||
-				(pieceNum>task.Task.GetMaxPieceNum() && task.Task.PieceTotal <= 0)) {
+				(pieceNum > task.Task.GetMaxPieceNum() && task.Task.PieceTotal <= 0)) {
 				logger.Debugf("[%s][%s]: wait for piece [%d]", task.Task.TaskId, task.Pid, pieceNum)
 				waitingPieceNumList = append(waitingPieceNumList, pieceNum)
 			}
@@ -79,4 +79,3 @@ func (s *Scheduler) Scheduler(task *types.PeerTask) (result []*types.PieceTask, 
 	}
 	return
 }
-

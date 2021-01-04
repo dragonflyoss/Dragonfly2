@@ -14,7 +14,7 @@ var _ = Describe("One Client Download Test", func() {
 	tl := common.NewE2ELogger()
 
 	var (
-		cdn *mock_cdn.MockCDN
+		cdn    *mock_cdn.MockCDN
 		client *mock_client.MockClient
 		svr    = server.NewServer()
 		ss     = svr.GetServer()

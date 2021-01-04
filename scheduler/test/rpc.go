@@ -18,10 +18,10 @@ var _ = Describe("Scheduler RPC Test", func() {
 		svr    = server.NewServer()
 		ss     = svr.GetServer()
 		taskId string
-		url  = "http://dragonfly.com/test1"
+		url    = "http://dragonfly.com/test1"
 	)
 
-	Describe("start scheduler", func(){
+	Describe("start scheduler", func() {
 		It("start scheduler", func() {
 			svr.GetWorker().Start()
 		})
@@ -211,7 +211,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 		})
 	})
 
-	Describe("stop scheduler", func(){
+	Describe("stop scheduler", func() {
 		It("start scheduler", func() {
 			svr.GetWorker().Stop()
 		})

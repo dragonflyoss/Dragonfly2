@@ -15,12 +15,12 @@ var _ = Describe("Multi Client Download Test", func() {
 	tl := common.NewE2ELogger()
 
 	var (
-		cdn *mock_cdn.MockCDN
-		clientNum = 20
+		cdn        *mock_cdn.MockCDN
+		clientNum  = 20
 		clientList []*mock_client.MockClient
 		stopChList []chan struct{}
-		svr    = server.NewServer()
-		ss     = svr.GetServer()
+		svr        = server.NewServer()
+		ss         = svr.GetServer()
 	)
 
 	Describe("start cdn and scheduler", func() {
@@ -34,7 +34,7 @@ var _ = Describe("Multi Client Download Test", func() {
 
 	Describe("Create Multi Client", func() {
 		It("create multi client should be successfully", func() {
-			for i:=0; i<clientNum; i++ {
+			for i := 0; i < clientNum; i++ {
 				client := mock_client.NewMockClient("127.0.0.1:8002", tl)
 				go client.Start()
 				stopCh := client.GetStopChan()
@@ -45,12 +45,12 @@ var _ = Describe("Multi Client Download Test", func() {
 
 	Describe("Wait Clients Finish", func() {
 		It("all clients should be stopped successfully", func() {
-			timer := time.After(time.Minute*10)
+			timer := time.After(time.Minute * 10)
 			caseList := []reflect.SelectCase{
-				{Dir: reflect.SelectRecv,Chan: reflect.ValueOf(timer), Send:reflect.Value{}},
+				{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(timer), Send: reflect.Value{}},
 			}
 			for _, stopCh := range stopChList {
-				caseList = append(caseList, reflect.SelectCase{Dir: reflect.SelectRecv,Chan: reflect.ValueOf(stopCh), Send:reflect.Value{}})
+				caseList = append(caseList, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(stopCh), Send: reflect.Value{}})
 			}
 			closedNumber := 0
 			for {

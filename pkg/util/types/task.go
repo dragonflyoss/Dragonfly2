@@ -12,11 +12,11 @@ func GenerateTaskId(rawUrl string, filter string) (taskId string) {
 	taskUrl, err := url.Parse(rawUrl)
 	if err != nil {
 		logger.Warnf("GenerateTaskId rawUrl[%s] is invalid url", rawUrl)
-		taskId = fmt.Sprintf("%x",sha1.Sum([]byte(rawUrl)))
+		taskId = fmt.Sprintf("%x", sha1.Sum([]byte(rawUrl)))
 		return
 	}
 	queries := taskUrl.Query()
-	fields := strings.Split( filter,"&")
+	fields := strings.Split(filter, "&")
 	if len(fields) > 0 {
 		queries = url.Values{}
 		for _, key := range fields {
@@ -24,6 +24,6 @@ func GenerateTaskId(rawUrl string, filter string) (taskId string) {
 		}
 	}
 	taskUrl.RawQuery = queries.Encode()
-	taskId = fmt.Sprintf("%x",sha1.Sum([]byte(taskUrl.String())))
+	taskId = fmt.Sprintf("%x", sha1.Sum([]byte(taskUrl.String())))
 	return
 }

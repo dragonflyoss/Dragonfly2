@@ -13,19 +13,19 @@ import (
 )
 
 type PeerTaskManager struct {
-	data *sync.Map
-	gcQueue workqueue.DelayingInterface
+	data        *sync.Map
+	gcQueue     workqueue.DelayingInterface
 	gcDelayTime time.Duration
 }
 
 func createPeerTaskManager() *PeerTaskManager {
 	delay := time.Hour
-	if time.Duration(config.GetConfig().GC.PeerTaskDelay) * time.Millisecond > delay {
-		delay =  time.Duration(config.GetConfig().GC.PeerTaskDelay) * time.Millisecond
+	if time.Duration(config.GetConfig().GC.PeerTaskDelay)*time.Millisecond > delay {
+		delay = time.Duration(config.GetConfig().GC.PeerTaskDelay) * time.Millisecond
 	}
 	ptm := &PeerTaskManager{
-		data: new(sync.Map),
-		gcQueue: workqueue.NewDelayingQueue(),
+		data:        new(sync.Map),
+		gcQueue:     workqueue.NewDelayingQueue(),
 		gcDelayTime: delay,
 	}
 
@@ -113,10 +113,9 @@ func (m *PeerTaskManager) gcWorkingLoop() {
 	}
 }
 
-
 func (m *PeerTaskManager) printDebugInfoLoop() {
 	for {
-		time.Sleep(time.Second*10)
+		time.Sleep(time.Second * 10)
 		logger.Debugf(m.printDebugInfo())
 	}
 }
@@ -138,7 +137,7 @@ func (m *PeerTaskManager) printDebugInfo() string {
 		return
 	})
 	var keys, msgs []string
-	for key := range msgMap { 
+	for key := range msgMap {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
@@ -148,7 +147,7 @@ func (m *PeerTaskManager) printDebugInfo() string {
 
 	msgs = append(msgs, "-----")
 
-	for i:=int32(0); i <= task.GetMaxPieceNum(); i++ {
+	for i := int32(0); i <= task.GetMaxPieceNum(); i++ {
 		piece := task.GetPiece(i)
 		if piece == nil {
 			continue
@@ -164,7 +163,6 @@ func (m *PeerTaskManager) printDebugInfo() string {
 		pMsg += "]"
 		msgs = append(msgs, pMsg)
 	}
-
 
 	msg := "============\n" + strings.Join(msgs, "\n") + "\n==============="
 	return msg

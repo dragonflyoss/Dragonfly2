@@ -16,13 +16,12 @@ type Task struct {
 	BizId   string        `json:"biz_id,omitempty"`   // caller's biz id that can be any string
 	UrlMata *base.UrlMeta `json:"url_mata,omitempty"` // downloaded file content md5
 
-	CreateTime          time.Time
-	rwLock              *sync.RWMutex
-	PieceList           map[int32]*Piece // Piece list
-	maxPieceNum         int32            // the max piece num of all pieces
-	PieceTotal          int32            // the total number of Pieces, set > 0 when cdn finished
-	ContentLength       int64
-
+	CreateTime    time.Time
+	rwLock        *sync.RWMutex
+	PieceList     map[int32]*Piece // Piece list
+	maxPieceNum   int32            // the max piece num of all pieces
+	PieceTotal    int32            // the total number of Pieces, set > 0 when cdn finished
+	ContentLength int64
 }
 
 func CopyTask(t *Task) *Task {

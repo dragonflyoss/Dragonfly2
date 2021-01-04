@@ -8,17 +8,17 @@ import (
 )
 
 type TaskManager struct {
-	data *sync.Map
+	data        *sync.Map
 	gcDelayTime time.Duration
 }
 
 func createTaskManager() *TaskManager {
 	delay := time.Hour * 48
-	if  config.GetConfig().GC.TaskDelay > 0 {
+	if config.GetConfig().GC.TaskDelay > 0 {
 		delay = time.Duration(config.GetConfig().GC.TaskDelay) * time.Millisecond
 	}
 	tm := &TaskManager{
-		data: new(sync.Map),
+		data:        new(sync.Map),
 		gcDelayTime: delay,
 	}
 	go tm.gcWorkingLoop()

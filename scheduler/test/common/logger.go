@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/onsi/ginkgo" //nolint:stylecheck
+	"github.com/onsi/ginkgo"   //nolint:stylecheck
 	. "github.com/onsi/gomega" //nolint:stylecheck
 	"github.com/pborman/uuid"
 )
@@ -110,4 +110,3 @@ func ExpectNoErrorWithOffset(offset int, err error, explain ...interface{}) {
 type TestFixture interface {
 	TearDown(tl TestLogger)
 }
-

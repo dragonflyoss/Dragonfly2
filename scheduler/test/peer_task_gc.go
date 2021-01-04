@@ -12,8 +12,8 @@ var _ = Describe("PeerTask GC Test", func() {
 	tl := common.NewE2ELogger()
 
 	var (
-		hostMgr = mgr.GetHostManager()
-		peertaskMgr = mgr.GetPeerTaskManager()
+		hostMgr      = mgr.GetHostManager()
+		peertaskMgr  = mgr.GetPeerTaskManager()
 		oldDelayTime = peertaskMgr.GetGCDelayTime()
 	)
 
@@ -26,16 +26,16 @@ var _ = Describe("PeerTask GC Test", func() {
 	Describe("peer task should be removed by gc", func() {
 		It("peer task should be removed by gc", func() {
 			pid := "gc001"
-			host := types.CopyHost(&types.Host{ Uuid: "gc-host-001" })
-			task := types.CopyTask(&types.Task{ TaskId: "gc-task-001"})
+			host := types.CopyHost(&types.Host{Uuid: "gc-host-001"})
+			task := types.CopyTask(&types.Task{TaskId: "gc-task-001"})
 			hostMgr.AddHost(host)
 			peertaskMgr.AddPeerTask(pid, task, host)
-			time.Sleep(time.Second/2)
+			time.Sleep(time.Second / 2)
 			peerTask, _ := peertaskMgr.GetPeerTask(pid)
 			if peerTask == nil {
 				tl.Fatalf("peer task deleted before gc")
 			}
-			time.Sleep(time.Second/2)
+			time.Sleep(time.Second / 2)
 			peerTask, _ = peertaskMgr.GetPeerTask(pid)
 			if peerTask != nil {
 				tl.Fatalf("peer task should be gc by peer task manager")

@@ -16,15 +16,15 @@ import (
 var clientNum = int32(0)
 
 type MockClient struct {
-	cli client.SchedulerClient
-	logger  common.TestLogger
-	replyChan chan *scheduler.PiecePackage_PieceTask
+	cli           client.SchedulerClient
+	logger        common.TestLogger
+	replyChan     chan *scheduler.PiecePackage_PieceTask
 	replyFinished chan struct{}
-	in chan<- *scheduler.PieceResult
-	out <-chan *scheduler.PiecePackage
-	pid string
-	taskId string
-	waitStop chan struct{}
+	in            chan<- *scheduler.PieceResult
+	out           <-chan *scheduler.PiecePackage
+	pid           string
+	taskId        string
+	waitStop      chan struct{}
 }
 
 func NewMockClient(addr string, logger common.TestLogger) *MockClient {
@@ -34,11 +34,11 @@ func NewMockClient(addr string, logger common.TestLogger) *MockClient {
 	}
 	pid := atomic.AddInt32(&clientNum, 1)
 	mc := &MockClient{
-		cli: c,
-		pid: fmt.Sprintf("%04d", pid),
-		logger: logger,
-		replyChan : make(chan *scheduler.PiecePackage_PieceTask, 1000),
-		waitStop: make(chan struct{}),
+		cli:           c,
+		pid:           fmt.Sprintf("%04d", pid),
+		logger:        logger,
+		replyChan:     make(chan *scheduler.PiecePackage_PieceTask, 1000),
+		waitStop:      make(chan struct{}),
 		replyFinished: make(chan struct{}),
 	}
 	logger.Logf("NewMockClient %s", mc.pid)
@@ -104,12 +104,12 @@ func (mc *MockClient) registerPeerTask() (err error) {
 			mc.logger.Errorf("[%s] PullPieceTasks failed: %e", mc.pid, err)
 			return
 		}
-		wait<-true
+		wait <- true
 		mc.replyChan <- nil
 
 		for {
 			resp := <-mc.out
-			if len(resp.PieceTasks)>0 {
+			if len(resp.PieceTasks) > 0 {
 				logMsg := fmt.Sprintf("[%s] recieve a pkg: %d, pieceNum:", mc.pid, len(resp.PieceTasks))
 				for _, piece := range resp.PieceTasks {
 					logMsg += fmt.Sprintf("[%d-%s]", piece.PieceNum, piece.DstPid)
@@ -138,9 +138,8 @@ func (mc *MockClient) registerPeerTask() (err error) {
 	return
 }
 
-
 func (mc *MockClient) replyMessage() {
-	defer func(){
+	defer func() {
 		recover()
 		close(mc.replyFinished)
 	}()
@@ -167,7 +166,7 @@ func (mc *MockClient) replyMessage() {
 		}
 		time.Sleep(time.Millisecond * time.Duration(rand.Intn(3000)))
 		select {
-		case _, notClosed := <- mc.waitStop:
+		case _, notClosed := <-mc.waitStop:
 			if !notClosed {
 				if !closed {
 					close(mc.replyChan)
@@ -178,4 +177,3 @@ func (mc *MockClient) replyMessage() {
 		mc.in <- pr
 	}
 }
-

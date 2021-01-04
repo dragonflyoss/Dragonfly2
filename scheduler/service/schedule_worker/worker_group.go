@@ -7,6 +7,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/scheduler/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 	"hash/crc32"
+	"k8s.io/client-go/util/workqueue"
 	"time"
 )
 
@@ -24,7 +25,7 @@ type WorkerGroup struct {
 	stopCh     chan struct{}
 	sender     ISender
 
-	triggerLoadChan chan *types.PeerTask
+	triggerLoadQueue workqueue.Interface
 
 	scheduler *scheduler.Scheduler
 }
@@ -33,11 +34,11 @@ func CreateWorkerGroup(scheduler *scheduler.Scheduler) *WorkerGroup {
 	workerNum := config.GetConfig().Worker.WorkerNum
 	chanSize := config.GetConfig().Worker.WorkerJobPoolSize
 	return &WorkerGroup{
-		workerNum: workerNum,
-		chanSize:  chanSize,
-		sender:    CreateSender(),
-		scheduler: scheduler,
-		triggerLoadChan: make(chan *types.PeerTask, 1000),
+		workerNum:       workerNum,
+		chanSize:        chanSize,
+		sender:          CreateSender(),
+		scheduler:       scheduler,
+		triggerLoadQueue: workqueue.New(),
 	}
 }
 
@@ -56,6 +57,7 @@ func (wg *WorkerGroup) Start() {
 func (wg *WorkerGroup) Stop() {
 	close(wg.stopCh)
 	wg.sender.Stop()
+	wg.triggerLoadQueue.ShutDown()
 	logger.Infof("stop scheduler worker")
 }
 
@@ -68,29 +70,42 @@ func (wg *WorkerGroup) ReceiveJob(job *types.PeerTask) {
 }
 
 func (wg *WorkerGroup) TriggerSchedule(pt *types.PeerTask) {
-	select {
-		case wg.triggerLoadChan <- pt:
-		default:
-	}
+	wg.triggerLoadQueue.Add(pt)
 }
 
 func (wg *WorkerGroup) triggerScheduleLoop() {
+	go wg.triggerScheduleTicker()
+
+	for {
+		it, shutdown := wg.triggerLoadQueue.Get()
+		if shutdown {
+			break
+		}
+		pt, _ := it.(*types.PeerTask)
+		if pt != nil {
+			pt.TriggerSchedule(2)
+		}
+		wg.triggerLoadQueue.Done(pt)
+	}
+}
+
+func (wg *WorkerGroup) triggerScheduleTicker() {
 	peerTaskMgr := mgr.GetPeerTaskManager()
-	ticker := time.NewTicker(time.Second*10)
+	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-wg.stopCh:
 			break
-		case pt := <-wg.triggerLoadChan:
-			if pt != nil {
-				pt.TriggerSchedule(1)
-			}
 		case <-ticker.C:
+			// trigger all waiting peer task periodic
+			if wg.triggerLoadQueue.ShuttingDown() {
+				break
+			}
 			peerTaskMgr.Walker(func(pt *types.PeerTask) bool {
 				load := pt.Host.GetLoad()
-				if load <= 1 {
-					pt.TriggerSchedule(1)
+				if load <= 2 {
+				 	wg.triggerLoadQueue.Add(pt)
 				}
 				return true
 			})

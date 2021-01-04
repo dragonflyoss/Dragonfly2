@@ -23,7 +23,7 @@ func createCDNManager() *CDNManager {
 	return cdnMgr
 }
 
-func (cm *CDNManager)InitCDNClient() {
+func (cm *CDNManager) InitCDNClient() {
 	list := config.GetConfig().CDN.List
 	for _, cdns := range list {
 		if len(cdns) < 1 {

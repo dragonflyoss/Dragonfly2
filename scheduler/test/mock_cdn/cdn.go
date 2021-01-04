@@ -21,15 +21,15 @@ import (
 
 type MockCDN struct {
 	cdnsystem.UnimplementedSeederServer
-	logger common.TestLogger
-	addr string
+	logger   common.TestLogger
+	addr     string
 	listener net.Listener
 }
 
 func NewMockCDN(addr string, tl common.TestLogger) *MockCDN {
 	cdn := &MockCDN{
 		logger: tl,
-		addr: addr,
+		addr:   addr,
 	}
 	return cdn
 }
@@ -75,7 +75,7 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 					return
 				}
 				psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"), SeedAddr: "localhost:12345", PieceNum: pieceNum}
-				time.Sleep(time.Millisecond*time.Duration(rand.Intn(3000)))
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(3000)))
 				i--
 				pieceNum++
 			}
@@ -145,4 +145,3 @@ func call(ctx context.Context, psc chan *cdnsystem.PieceSeed, p *MockCDN, sr *cd
 		errChan <- status.Error(codes.FailedPrecondition, err.Error())
 	}
 }
-

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type IWaitCallback interface{
+type IWaitCallback interface {
 	ReceiveJob(*PeerTask)
 }
 
@@ -23,9 +23,9 @@ type PeerTask struct {
 	lock                    *sync.Mutex
 	firstPieceNum           int32 //
 	finishedNum             int32 // download finished piece number
-	lastActiveTime 			int64
-	touch func(*PeerTask)
-	ScheduleTrigger IWaitCallback
+	lastActiveTime          int64
+	touch                   func(*PeerTask)
+	ScheduleTrigger         IWaitCallback
 
 	// the client of peer task, which used for send and receive msg
 	client scheduler.Scheduler_PullPieceTasksServer
@@ -55,8 +55,8 @@ func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *Pee
 		retryPieceList:          make(map[int32]int32),
 		isDown:                  false,
 		lock:                    new(sync.Mutex),
-		lastActiveTime: time.Now().UnixNano(),
-		touch: touch,
+		lastActiveTime:          time.Now().UnixNano(),
+		touch:                   touch,
 	}
 	host.AddPeerTask(pt)
 	pt.Touch()
@@ -195,14 +195,18 @@ func (pt *PeerTask) Send(pkg *scheduler.PiecePackage) error {
 }
 
 func (pt *PeerTask) TriggerSchedule(load int32) {
-	for i:=int32(0); i<pt.Task.GetMaxPieceNum() && load > 0; i++ {
-		piece := pt.Task.GetPiece(i)
-		if piece != nil {
-			num := piece.GetWaitingPeerTaskNum()
-			if num > 0 {
-				piece.ResumeWaitingPeerTask()
-				load -= num
+	pt.pieceStatusList.Range(func(key, value interface{}) bool {
+		ps, _ := value.(*PieceStatus)
+		if ps != nil && ps.ErrorCode == base.Code_SUCCESS {
+			piece := pt.Task.GetPiece(ps.PieceNum)
+			if piece != nil {
+				num := piece.GetWaitingPeerTaskNum()
+				if num > 0 {
+					piece.ResumeWaitingPeerTask()
+					load -= num
+				}
 			}
 		}
-	}
+		return 	load>0
+	})
 }

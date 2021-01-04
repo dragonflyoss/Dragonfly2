@@ -47,7 +47,7 @@ func (h *Host) DeletePeerTask(peerTaskId string) {
 func (h *Host) GetPeerTaskNum() int32 {
 	count := 0
 	if h.peerTaskMap != nil {
-		h.peerTaskMap.Range(func(key interface{}, value interface{})bool {
+		h.peerTaskMap.Range(func(key interface{}, value interface{}) bool {
 			count++
 			return true
 		})

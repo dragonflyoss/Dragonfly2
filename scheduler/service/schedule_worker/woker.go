@@ -10,16 +10,16 @@ import (
 )
 
 type Worker struct {
-	queue workqueue.Interface
-	sender  ISender
-	stopCh  <-chan struct{}
+	queue  workqueue.Interface
+	sender ISender
+	stopCh <-chan struct{}
 
 	scheduler *scheduler.Scheduler
 }
 
 func CreateWorker(sche *scheduler.Scheduler, sender ISender, stop <-chan struct{}) *Worker {
 	return &Worker{
-		queue:   workqueue.New(),
+		queue:     workqueue.New(),
 		stopCh:    stop,
 		sender:    sender,
 		scheduler: sche,
@@ -65,7 +65,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) (pkg *scheduler2.PiecePack
 		} else {
 			logger.Debugf("[%s][%s]: end do schedule pkg-%v", peerTask.Task.TaskId, peerTask.Pid, pkg.PieceTasks)
 		}
-	} ()
+	}()
 	pieceTaskList, waitingPieceNumList, err := w.scheduler.Scheduler(peerTask)
 	if err != nil {
 		switch err {

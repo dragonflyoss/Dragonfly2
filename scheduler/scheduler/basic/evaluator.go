@@ -88,7 +88,7 @@ func (e *Evaluator) GetDistance(dst *types.PeerTask, src *types.PeerTask) (dist 
 	var list []*types.PieceStatus
 	historyList := src.GetPieceStatusList()
 	if historyList != nil {
-		historyList.Range(func(key, value interface{}) bool{
+		historyList.Range(func(key, value interface{}) bool {
 			ps := value.(*types.PieceStatus)
 			if ps.DstPid == dst.Pid {
 				list = append(list, ps)
@@ -103,7 +103,7 @@ func (e *Evaluator) GetDistance(dst *types.PeerTask, src *types.PeerTask) (dist 
 
 	if len(list) > 0 {
 		historyDist -= 10.0
-		for i:=0; i<len(list) && i<3; i++ {
+		for i := 0; i < len(list) && i < 3; i++ {
 			if !list[i].Success {
 				historyDist += 20.0
 			} else {
