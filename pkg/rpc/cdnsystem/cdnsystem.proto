@@ -21,6 +21,7 @@ syntax = "proto3";
 package cdnsystem;
 
 import "pkg/rpc/base/base.proto";
+import "pkg/rpc/scheduler/scheduler.proto";
 
 option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem";
 
@@ -52,4 +53,7 @@ message PieceSeed{
 service Seeder{
   // generate seeds and return to scheduler
   rpc ObtainSeeds(SeedRequest)returns(stream PieceSeed){}
+
+  // get piece tasks from cdn or dest peer
+  rpc GetPieceFromCdn(scheduler.PieceTaskRequest)returns(stream scheduler.PiecePackage){}
 }
