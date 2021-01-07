@@ -31,6 +31,7 @@ import (
 var (
 	bizLogger      *zap.SugaredLogger
 	GrpcLogger     *zap.SugaredLogger
+	GcLogger       *zap.SugaredLogger
 	StatPeerLogger *zap.Logger
 	StatSeedLogger *zap.Logger
 )
@@ -92,6 +93,10 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 
 func SetBizLogger(log *zap.SugaredLogger) {
 	bizLogger = log
+}
+
+func SetGcLogger(log *zap.SugaredLogger) {
+	GcLogger = log
 }
 
 func SetStatPeerLogger(log *zap.Logger) {

@@ -36,6 +36,9 @@ func init() {
 	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
+	gcLogger := logger.CreateLogger(logDir+"/gc.log", 300, 7, 0, false, false)
+	logger.SetGcLogger(gcLogger.Sugar())
+
 	statPeerLogger := logger.CreateLogger(logDir+"/stat/peer.log", 300, 30, 0, true, true)
 	logger.SetStatPeerLogger(statPeerLogger)
 
