@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-// dfdaemon is responsible for transporting/saving blocks between peers
-// and managing client download requests
-
 syntax = "proto3";
 
 package dfdaemon;
 
 import "pkg/rpc/base/base.proto";
-import "pkg/rpc/scheduler/scheduler.proto";
 
 option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon";
 
@@ -41,18 +37,21 @@ message DownRequest{
 
 message DownResult{
   base.ResponseState state = 1;
+
   string task_id = 2;
   string peer_id = 3;
   uint64 completed_length = 4;
   bool done = 5; // done with success or fail
 }
 
+// Daemon Client RPC Service
 service Daemon{
-  // download content by dragonfly
+  // trigger client to download files
   rpc Download(DownRequest) returns(stream DownResult) {}
-
-  // get piece tasks from cdn or dest peer
-  rpc GetPieceFromPeer(scheduler.PieceTaskRequest)returns(stream scheduler.PiecePackage){}
+  // get piece tasks from other peers
+  rpc GetPieceTasks(base.PieceTaskRequest)returns(base.PiecePacket){}
+  // check daemon health
+  rpc CheckHealth(base.EmptyRequest)returns(base.ResponseState){}
 }
 
 

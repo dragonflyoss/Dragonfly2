@@ -54,6 +54,10 @@ message ResponseState{
   string msg = 3;
 }
 
+message EmptyRequest{
+
+}
+
 message UrlMeta{
   // md5 of content downloaded from url
   // it is also used for task id generator to distinguish same urls

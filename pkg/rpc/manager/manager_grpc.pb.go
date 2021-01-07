@@ -24,9 +24,11 @@ type ManagerClient interface {
 	// 2. connection is fail for all servers
 	//
 	// 3. manager actively triggers fresh
-	GetSchedulerHosts(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerHosts, error)
+	GetSchedulers(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerHosts, error)
 	// get cdn server list according to client info
-	GetCdnHosts(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*CdnHosts, error)
+	GetCdnNodes(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*CdnHosts, error)
+	// keeps alive for cdn or scheduler and receives management configuration
+	KeepAlive(ctx context.Context, opts ...grpc.CallOption) (Manager_KeepAliveClient, error)
 }
 
 type managerClient struct {
@@ -37,22 +39,53 @@ func NewManagerClient(cc grpc.ClientConnInterface) ManagerClient {
 	return &managerClient{cc}
 }
 
-func (c *managerClient) GetSchedulerHosts(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerHosts, error) {
+func (c *managerClient) GetSchedulers(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerHosts, error) {
 	out := new(SchedulerHosts)
-	err := c.cc.Invoke(ctx, "/manager.Manager/GetSchedulerHosts", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/manager.Manager/GetSchedulers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *managerClient) GetCdnHosts(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*CdnHosts, error) {
+func (c *managerClient) GetCdnNodes(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*CdnHosts, error) {
 	out := new(CdnHosts)
-	err := c.cc.Invoke(ctx, "/manager.Manager/GetCdnHosts", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/manager.Manager/GetCdnNodes", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *managerClient) KeepAlive(ctx context.Context, opts ...grpc.CallOption) (Manager_KeepAliveClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Manager_serviceDesc.Streams[0], "/manager.Manager/KeepAlive", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &managerKeepAliveClient{stream}
+	return x, nil
+}
+
+type Manager_KeepAliveClient interface {
+	Send(*HeartRequest) error
+	Recv() (*ManagementConfig, error)
+	grpc.ClientStream
+}
+
+type managerKeepAliveClient struct {
+	grpc.ClientStream
+}
+
+func (x *managerKeepAliveClient) Send(m *HeartRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *managerKeepAliveClient) Recv() (*ManagementConfig, error) {
+	m := new(ManagementConfig)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // ManagerServer is the server API for Manager service.
@@ -66,9 +99,11 @@ type ManagerServer interface {
 	// 2. connection is fail for all servers
 	//
 	// 3. manager actively triggers fresh
-	GetSchedulerHosts(context.Context, *NavigatorRequest) (*SchedulerHosts, error)
+	GetSchedulers(context.Context, *NavigatorRequest) (*SchedulerHosts, error)
 	// get cdn server list according to client info
-	GetCdnHosts(context.Context, *NavigatorRequest) (*CdnHosts, error)
+	GetCdnNodes(context.Context, *NavigatorRequest) (*CdnHosts, error)
+	// keeps alive for cdn or scheduler and receives management configuration
+	KeepAlive(Manager_KeepAliveServer) error
 	mustEmbedUnimplementedManagerServer()
 }
 
@@ -76,11 +111,14 @@ type ManagerServer interface {
 type UnimplementedManagerServer struct {
 }
 
-func (UnimplementedManagerServer) GetSchedulerHosts(context.Context, *NavigatorRequest) (*SchedulerHosts, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSchedulerHosts not implemented")
+func (UnimplementedManagerServer) GetSchedulers(context.Context, *NavigatorRequest) (*SchedulerHosts, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSchedulers not implemented")
 }
-func (UnimplementedManagerServer) GetCdnHosts(context.Context, *NavigatorRequest) (*CdnHosts, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCdnHosts not implemented")
+func (UnimplementedManagerServer) GetCdnNodes(context.Context, *NavigatorRequest) (*CdnHosts, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCdnNodes not implemented")
+}
+func (UnimplementedManagerServer) KeepAlive(Manager_KeepAliveServer) error {
+	return status.Errorf(codes.Unimplemented, "method KeepAlive not implemented")
 }
 func (UnimplementedManagerServer) mustEmbedUnimplementedManagerServer() {}
 
@@ -95,40 +133,66 @@ func RegisterManagerServer(s grpc.ServiceRegistrar, srv ManagerServer) {
 	s.RegisterService(&_Manager_serviceDesc, srv)
 }
 
-func _Manager_GetSchedulerHosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Manager_GetSchedulers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NavigatorRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ManagerServer).GetSchedulerHosts(ctx, in)
+		return srv.(ManagerServer).GetSchedulers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/manager.Manager/GetSchedulerHosts",
+		FullMethod: "/manager.Manager/GetSchedulers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).GetSchedulerHosts(ctx, req.(*NavigatorRequest))
+		return srv.(ManagerServer).GetSchedulers(ctx, req.(*NavigatorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_GetCdnHosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Manager_GetCdnNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NavigatorRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ManagerServer).GetCdnHosts(ctx, in)
+		return srv.(ManagerServer).GetCdnNodes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/manager.Manager/GetCdnHosts",
+		FullMethod: "/manager.Manager/GetCdnNodes",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).GetCdnHosts(ctx, req.(*NavigatorRequest))
+		return srv.(ManagerServer).GetCdnNodes(ctx, req.(*NavigatorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _Manager_KeepAlive_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ManagerServer).KeepAlive(&managerKeepAliveServer{stream})
+}
+
+type Manager_KeepAliveServer interface {
+	Send(*ManagementConfig) error
+	Recv() (*HeartRequest, error)
+	grpc.ServerStream
+}
+
+type managerKeepAliveServer struct {
+	grpc.ServerStream
+}
+
+func (x *managerKeepAliveServer) Send(m *ManagementConfig) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *managerKeepAliveServer) Recv() (*HeartRequest, error) {
+	m := new(HeartRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 var _Manager_serviceDesc = grpc.ServiceDesc{
@@ -136,14 +200,21 @@ var _Manager_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*ManagerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetSchedulerHosts",
-			Handler:    _Manager_GetSchedulerHosts_Handler,
+			MethodName: "GetSchedulers",
+			Handler:    _Manager_GetSchedulers_Handler,
 		},
 		{
-			MethodName: "GetCdnHosts",
-			Handler:    _Manager_GetCdnHosts_Handler,
+			MethodName: "GetCdnNodes",
+			Handler:    _Manager_GetCdnNodes_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "KeepAlive",
+			Handler:       _Manager_KeepAlive_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "pkg/rpc/manager/manager.proto",
 }

@@ -40,7 +40,7 @@ message PeerHost{
   // avoiding conflict, need check other information(ip、port...)
   string uuid = 1;
   string ip = 2;
-  // peer server http port
+  // rpc service port for peer
   int32 port = 3;
   string host_name = 4;
   // security isolation domain for network
