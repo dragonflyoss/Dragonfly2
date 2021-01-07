@@ -47,6 +47,18 @@ func (m *PeerTaskManager) AddPeerTask(pid string, task *types.Task, host *types.
 	return pt
 }
 
+func (m *PeerTaskManager) AddFakePeerTask(pid string, task *types.Task) *types.PeerTask {
+	v, ok := m.data.Load(pid)
+	if ok {
+		return v.(*types.PeerTask)
+	}
+
+	pt := types.NewPeerTask(pid, task, nil, m.addToGCQueue)
+	m.data.Store(pid, pt)
+	pt.SetDown()
+	return pt
+}
+
 func (m *PeerTaskManager) DeletePeerTask(pid string) {
 	m.data.Delete(pid)
 	return
@@ -132,8 +144,8 @@ func (m *PeerTaskManager) printDebugInfo() string {
 		if task == nil {
 			task = peerTask.Task
 		}
-		msgMap[peerTask.Pid] = fmt.Sprintf("%s: finishedNum[%2d], downloadingNum[%2d] nextPieceNum[%2d] hostLoad[%d]",
-			peerTask.Pid, peerTask.GetFinishedNum(), peerTask.GetDownloadingPieceNum(), peerTask.GetFirstPieceNum(), peerTask.Host.ProducerLoad)
+		msgMap[peerTask.Pid] = fmt.Sprintf("%s: finishedNum[%2d] hostLoad[%d]",
+			peerTask.Pid, peerTask.GetFinishedNum(),peerTask.GetFreeLoad())
 		return
 	})
 	var keys, msgs []string

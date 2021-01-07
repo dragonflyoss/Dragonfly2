@@ -2,7 +2,6 @@ package types
 
 import (
 	"sync"
-	"sync/atomic"
 )
 
 type HostType int
@@ -21,11 +20,17 @@ type Host struct {
 	Location       string // area|country|province|city|...
 	Idc            string
 	Switch         string // network device construct, xx|yy|zz
+	Memory string
+	Cpu string
 
 	Type        HostType  // peer / cdn
 	peerTaskMap *sync.Map // Pid => PeerTask
 	// ProducerLoad is the load of download services provided by the current node.
-	ProducerLoad int32
+	totalUploadLoad int32
+	currentUploadLoad int32
+	totalDownloadLoad int32
+	currentDownloadLoad int32
+	loadLock *sync.Mutex
 	// ServiceDownTime the down time of the peer service.
 	ServiceDownTime int64
 }
@@ -33,6 +38,7 @@ type Host struct {
 func CopyHost(h *Host) *Host {
 	copyHost := *h
 	copyHost.peerTaskMap = new(sync.Map)
+	copyHost.loadLock = new(sync.Mutex)
 	return &copyHost
 }
 
@@ -61,10 +67,69 @@ func (h *Host) GetPeerTask(peerTaskId string) (peerTask *PeerTask) {
 	return
 }
 
-func (h *Host) AddLoad(delta int32) {
-	atomic.AddInt32(&h.ProducerLoad, delta)
+func (h *Host) SetTotalUploadLoad(load int32) {
+	h.loadLock.Lock()
+	defer h.loadLock.Unlock()
+	h.totalUploadLoad = load
 }
 
-func (h *Host) GetLoad() int32 {
-	return atomic.LoadInt32(&h.ProducerLoad)
+func (h *Host) AddUploadLoad(delta int32) {
+	h.loadLock.Lock()
+	defer h.loadLock.Unlock()
+	h.currentUploadLoad += delta
+}
+
+func (h *Host) GetUploadLoad() int32 {
+	h.loadLock.Lock()
+	defer h.loadLock.Unlock()
+	return h.currentUploadLoad
+}
+
+func (h *Host) GetUploadLoadPercent() float64 {
+	h.loadLock.Lock()
+	defer h.loadLock.Unlock()
+	if h.totalUploadLoad <= 0 {
+		return 1.0
+	}
+	return float64(h.currentUploadLoad) / float64(h.totalUploadLoad)
+}
+
+func (h *Host) GetFreeUploadLoad() int32 {
+	h.loadLock.Lock()
+	defer h.loadLock.Unlock()
+	return h.totalUploadLoad - h.currentUploadLoad
+}
+
+
+func (h *Host) SetTotalDownloadLoad(load int32) {
+	h.loadLock.Lock()
+	defer h.loadLock.Unlock()
+	h.totalDownloadLoad = load
+}
+
+func (h *Host) AddDownloadLoad(delta int32) {
+	h.loadLock.Lock()
+	defer h.loadLock.Unlock()
+	h.currentDownloadLoad += delta
+}
+
+func (h *Host) GetDownloadLoad() int32 {
+	h.loadLock.Lock()
+	defer h.loadLock.Unlock()
+	return h.currentDownloadLoad
+}
+
+func (h *Host) GetDownloadLoadPercent() float64 {
+	h.loadLock.Lock()
+	defer h.loadLock.Unlock()
+	if h.totalDownloadLoad <= 0 {
+		return 1.0
+	}
+	return float64(h.currentDownloadLoad) / float64(h.totalDownloadLoad)
+}
+
+func (h *Host) GetFreeDownloadLoad() int32 {
+	h.loadLock.Lock()
+	defer h.loadLock.Unlock()
+	return h.totalDownloadLoad - h.currentDownloadLoad
 }

@@ -5,7 +5,9 @@ import (
 )
 
 type IPeerTaskEvaluator interface {
-	GetNextPiece(peerTask *types.PeerTask) (*types.Piece, int32, error)
+	NeedAdjustParent(peer *types.PeerTask) bool
+	IsNodeBad(peer *types.PeerTask) bool
 	Evaluate(dst *types.PeerTask, src *types.PeerTask) (float64, error)
-	GetMaxUsableHostValue() float64
+	SelectChildCandidates(peer *types.PeerTask) []*types.PeerTask
+	SelectParentCandidates(peer *types.PeerTask) []*types.PeerTask
 }

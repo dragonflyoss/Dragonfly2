@@ -85,37 +85,27 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		if err != nil {
 			return
 		}
+	} else if peerTask.Host == nil {
+		peerTask.Host = host
+	}
+	if peerTask.IsDown() {
+		peerTask.SetUp()
 	}
 
 	// do scheduler piece
-	pieceList, err := s.svc.Scheduler(peerTask)
+	parent, _, err := s.svc.SchedulerParent(peerTask)
 	if err != nil {
 		return
 	}
 
 	// assemble result
-	if task.PieceTotal > 0 && peerTask.GetFinishedNum()+peerTask.GetDownloadingPieceNum() >= task.PieceTotal {
-		pkg.Done = true
-		pkg.ContentLength = task.ContentLength
-	}
-	for _, p := range pieceList {
-		pkg.PieceTasks = append(pkg.PieceTasks, &scheduler.PiecePackage_PieceTask{
-			PieceNum:    p.Piece.PieceNum,
-			PieceRange:  p.Piece.PieceRange,
-			PieceMd5:    p.Piece.PieceMd5,
-			SrcPid:      p.SrcPid,
-			DstPid:      p.DstPid,
-			DstAddr:     p.DstAddr,
-			PieceOffset: p.Piece.PieceOffset,
-			PieceStyle:  p.Piece.PieceStyle,
-		})
-	}
+	_ = parent
 
 	return
 }
 
 func (s *SchedulerServer) PullPieceTasks(server scheduler.Scheduler_PullPieceTasksServer) (err error) {
-	schedule_worker.CreateClient(server, s.worker).Start()
+	schedule_worker.CreateClient(server, s.worker, s.svc.GetScheduler()).Start()
 	return
 }
 

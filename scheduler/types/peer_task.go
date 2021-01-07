@@ -4,28 +4,36 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
-type IWaitCallback interface {
-	ReceiveJob(*PeerTask)
-}
+type PeerTaskStatus int8
+
+const (
+	PeerTaskStatusHealth  PeerTaskStatus = 0
+	PeerTaskStatusNeedParent  PeerTaskStatus = 1
+	PeerTaskStatusNeedChildren   PeerTaskStatus = 2
+	PeerTaskStatusBadNode    PeerTaskStatus = 3
+	PeerTaskStatusNeedAdjustNode PeerTaskStatus = 4
+)
 
 type PeerTask struct {
 	Pid  string // peer id
 	Task *Task  // task info
 	Host *Host  // host info
 
-	isDown                  bool // is leave scheduler
-	downloadingPieceNumList *sync.Map
-	pieceStatusList         *sync.Map
-	retryPieceList          map[int32]int32
-	lock                    *sync.Mutex
-	firstPieceNum           int32 //
-	finishedNum             int32 // download finished piece number
-	lastActiveTime          int64
-	touch                   func(*PeerTask)
-	ScheduleTrigger         IWaitCallback
+	isDown          bool // is leave scheduler
+	pieceStatusList *sync.Map
+	lock            *sync.Mutex
+	finishedNum     int32 // download finished piece number
+	lastActiveTime  int64
+	touch           func(*PeerTask)
+
+	parent          *PeerEdge               // primary download provider
+	children        map[*PeerTask]*PeerEdge // all primary download consumers
+	subTreeNodesNum int32                   // node number of subtree and current node is root of the subtree
+	deep            int32                   // the node number of the path from root to the current node
 
 	// the client of peer task, which used for send and receive msg
 	client scheduler.Scheduler_PullPieceTasksServer
@@ -34,6 +42,15 @@ type PeerTask struct {
 	Cost      uint32
 	Success   bool
 	ErrorCode base.Code
+
+	status PeerTaskStatus
+}
+
+type PeerEdge struct {
+	SrcPeerTask *PeerTask // child, consumer
+	DstPeerTask *PeerTask // parent, provider
+	Concurrency int8      // number of thread download from the provider
+	CostHistory []int32   // history of downloading one piece cost from the provider
 }
 
 type PieceStatus struct {
@@ -47,39 +64,102 @@ type PieceStatus struct {
 
 func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *PeerTask {
 	pt := &PeerTask{
-		Pid:                     pid,
-		Task:                    task,
-		Host:                    host,
-		downloadingPieceNumList: new(sync.Map),
-		pieceStatusList:         new(sync.Map),
-		retryPieceList:          make(map[int32]int32),
-		isDown:                  false,
-		lock:                    new(sync.Mutex),
-		lastActiveTime:          time.Now().UnixNano(),
-		touch:                   touch,
+		Pid:             pid,
+		Task:            task,
+		Host:            host,
+		pieceStatusList: new(sync.Map),
+		isDown:          false,
+		lock:            new(sync.Mutex),
+		lastActiveTime:  time.Now().UnixNano(),
+		subTreeNodesNum: 1,
+		children:        make(map[*PeerTask]*PeerEdge),
+		touch:           touch,
 	}
 	host.AddPeerTask(pt)
 	pt.Touch()
 	return pt
 }
 
-func (pt *PeerTask) GetRetryPieceList() map[int32]int32 {
-	pt.lock.Lock()
-	defer pt.lock.Unlock()
-	ret := make(map[int32]int32, len(pt.retryPieceList))
-	for k, v := range pt.retryPieceList {
-		ret[k] = v
+func (pt *PeerTask) AddParent(parent *PeerTask, concurrency int8) {
+	if pt == nil || parent == nil {
+		return
 	}
-	return ret
+
+	pe := &PeerEdge{
+		SrcPeerTask: pt,     // child
+		DstPeerTask: parent, // parent
+		Concurrency: concurrency,
+	}
+	pt.parent = pe
+	parent.children[pt] = pe
+
+	// modify subTreeNodesNum of all ancestor
+	p, c := parent, pt
+	for p != nil {
+		atomic.AddInt32(&p.subTreeNodesNum, c.subTreeNodesNum)
+		c = p
+		if p.parent == nil || p.parent.DstPeerTask == nil {
+			break
+		}
+		p = p.parent.DstPeerTask
+	}
+
+	pt.Host.AddDownloadLoad(int32(concurrency))
+	if parent.Host != nil {
+		parent.Host.AddUploadLoad(int32(concurrency))
+	}
+}
+
+func (pt *PeerTask) AddConcurrency(parent *PeerTask, delta int8) {
+	if pt == nil || parent == nil {
+		return
+	}
+
+	if pt.parent == nil && pt.parent.DstPeerTask != parent {
+		return
+	}
+
+	pt.parent.Concurrency += delta
+
+	pt.Host.AddDownloadLoad(int32(delta))
+	parent.Host.AddUploadLoad(int32(delta))
+}
+
+func (pt *PeerTask) DeleteParent(parent *PeerTask) {
+	if pt == nil || parent == nil {
+		return
+	}
+
+	if pt.parent != nil && pt.parent.DstPeerTask == parent {
+		pt.parent = nil
+	}
+
+	delete(parent.children, pt)
+
+	p, c := parent, pt
+	for p != nil {
+		atomic.AddInt32(&p.subTreeNodesNum, -c.subTreeNodesNum)
+		c = p
+		if p.parent == nil || p.parent.DstPeerTask == nil {
+			break
+		}
+		p = p.parent.DstPeerTask
+	}
+
+	pt.Host.AddDownloadLoad(-1)
+	parent.Host.AddUploadLoad(-1)
+}
+
+func (pt *PeerTask) GetFreeLoad() int32 {
+	if pt.Host == nil {
+		return 0
+	}
+	return pt.Host.GetFreeUploadLoad()
 }
 
 func (pt *PeerTask) Touch() {
 	pt.lastActiveTime = time.Now().UnixNano()
 	pt.touch(pt)
-}
-
-func (pt *PeerTask) GetFirstPieceNum() int32 {
-	return pt.firstPieceNum
 }
 
 func (pt *PeerTask) GetFinishedNum() int32 {
@@ -108,61 +188,13 @@ func (pt *PeerTask) AddPieceStatus(ps *PieceStatus) {
 		}
 	}
 	if !ps.Success {
-		pt.retryPieceList[ps.PieceNum]++
 		return
 	}
 	pt.finishedNum++
-	delete(pt.retryPieceList, ps.PieceNum)
 	piece := pt.Task.GetOrCreatePiece(ps.PieceNum)
 	if piece != nil {
 		piece.AddReadyPeerTask(pt)
 	}
-	for {
-		v, ok := pt.pieceStatusList.Load(pt.firstPieceNum)
-		if !ok {
-			break
-		}
-		tps, _ := v.(*PieceStatus)
-		if tps == nil || !tps.Success {
-			break
-		}
-		pt.firstPieceNum++
-	}
-}
-
-func (pt *PeerTask) AddDownloadingPiece(pieceNum int32) {
-	pt.downloadingPieceNumList.Store(pieceNum, true)
-	return
-}
-
-func (pt *PeerTask) DeleteDownloadingPiece(pieceNum int32) {
-	pt.downloadingPieceNumList.Delete(pieceNum)
-	return
-}
-
-func (pt *PeerTask) IsPieceDownloading(num int32) (ok bool) {
-	_, ok = pt.downloadingPieceNumList.Load(num)
-	return
-}
-
-func (pt *PeerTask) IsPieceDownloaded(num int32) (ok bool) {
-	v, _ := pt.pieceStatusList.Load(num)
-
-	ps, ok := v.(*PieceStatus)
-
-	if ps != nil {
-		ok = ps.ErrorCode == base.Code_SUCCESS
-	}
-
-	return
-}
-
-func (pt *PeerTask) GetDownloadingPieceNum() (num int32) {
-	pt.downloadingPieceNumList.Range(func(key, value interface{}) bool {
-		num++
-		return true
-	})
-	return
 }
 
 func (pt *PeerTask) IsDown() (ok bool) {
@@ -171,6 +203,11 @@ func (pt *PeerTask) IsDown() (ok bool) {
 
 func (pt *PeerTask) SetDown() {
 	pt.isDown = true
+	pt.Touch()
+}
+
+func (pt *PeerTask) SetUp() {
+	pt.isDown = false
 	pt.Touch()
 }
 
@@ -186,27 +223,35 @@ func (pt *PeerTask) SetClient(client scheduler.Scheduler_PullPieceTasksServer) {
 	pt.client = client
 }
 
-func (pt *PeerTask) Send(pkg *scheduler.PiecePackage) error {
+func (pt *PeerTask) Send() error {
 	// if pt != nil && pt.client != nil {
+	var pkg *scheduler.PiecePackage
 	if pt.client != nil {
 		return pt.client.Send(pkg)
 	}
 	return nil
 }
 
-func (pt *PeerTask) TriggerSchedule(load int32) {
-	pt.pieceStatusList.Range(func(key, value interface{}) bool {
-		ps, _ := value.(*PieceStatus)
-		if ps != nil && ps.ErrorCode == base.Code_SUCCESS {
-			piece := pt.Task.GetPiece(ps.PieceNum)
-			if piece != nil {
-				num := piece.GetWaitingPeerTaskNum()
-				if num > 0 {
-					piece.ResumeWaitingPeerTask()
-					load -= num
-				}
-			}
-		}
-		return 	load>0
-	})
+func (pt *PeerTask) GetDiffPieceNum(dst *PeerTask) int32 {
+	diff := dst.finishedNum - pt.finishedNum
+	if diff > 0 {
+		return diff
+	}
+	return 0
+}
+
+func (pt *PeerTask) GetSubTreeNodesNum() int32 {
+	return pt.subTreeNodesNum
+}
+
+func (pt *PeerTask) GetDeep() int32 {
+	return pt.deep
+}
+
+func (pt *PeerTask) GetNodeStatus() PeerTaskStatus {
+	return pt.status
+}
+
+func (pt *PeerTask) SetNodeStatus(status PeerTaskStatus) {
+	pt.status = status
 }

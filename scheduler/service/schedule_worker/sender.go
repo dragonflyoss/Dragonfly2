@@ -2,16 +2,16 @@ package schedule_worker
 
 import (
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
-	scheduler2 "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
+	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 	"hash/crc32"
 )
 
 type ISender interface {
 	Start()
 	Stop()
-	Send(pid string, pkg *scheduler2.PiecePackage)
+	Send(peerTask *types.PeerTask)
 }
 
 type SenderGroup struct {
@@ -22,13 +22,8 @@ type SenderGroup struct {
 }
 
 type Sender struct {
-	jobChan chan *sendJob
+	jobChan chan *string
 	stopCh  <-chan struct{}
-}
-
-type sendJob struct {
-	pid *string
-	pkg *scheduler2.PiecePackage
 }
 
 func CreateSender() *SenderGroup {
@@ -45,7 +40,7 @@ func (sg *SenderGroup) Start() {
 	sg.stopCh = make(chan struct{})
 	for i := 0; i < sg.senderNum; i++ {
 		s := &Sender{
-			jobChan: make(chan *sendJob, sg.chanSize),
+			jobChan: make(chan *string, sg.chanSize),
 			stopCh:  sg.stopCh,
 		}
 		s.Start()
@@ -59,13 +54,13 @@ func (sg *SenderGroup) Stop() {
 	logger.Infof("stop sender worker : %d", sg.senderNum)
 }
 
-func (sg *SenderGroup) Send(pid string, pkg *scheduler2.PiecePackage) {
-	sendId := crc32.ChecksumIEEE([]byte(pid)) % uint32(sg.senderNum)
-	sg.senderList[sendId].Send(pid, pkg)
+func (sg *SenderGroup) Send(peerTask *types.PeerTask) {
+	sendId := crc32.ChecksumIEEE([]byte(peerTask.Pid)) % uint32(sg.senderNum)
+	sg.senderList[sendId].Send(peerTask)
 }
 
-func (s *Sender) Send(pid string, pkg *scheduler2.PiecePackage) {
-	s.jobChan <- &sendJob{pid: &pid, pkg: pkg}
+func (s *Sender) Send(peerTask *types.PeerTask) {
+	s.jobChan <- &peerTask.Pid
 }
 
 func (s *Sender) Start() {
@@ -76,8 +71,8 @@ func (s *Sender) doSend() {
 	for {
 		select {
 		case job := <-s.jobChan:
-			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(*job.pid)
-			err := peerTask.Send(job.pkg)
+			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(*job)
+			err := peerTask.Send()
 			if err != nil {
 				//TODO error
 				logger.Errorf("[%s][%s]: send result failed : %v", peerTask.Task, peerTask.Pid, err.Error())
@@ -85,7 +80,7 @@ func (s *Sender) doSend() {
 			} else {
 				logger.Debugf("[%s][%s]: send result success", peerTask.Task.TaskId, peerTask.Pid)
 			}
-			if job.pkg.Done {
+			if peerTask.Success {
 				break
 			}
 		case <-s.stopCh:

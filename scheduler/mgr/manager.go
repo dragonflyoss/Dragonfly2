@@ -22,3 +22,4 @@ func GetHostManager() *HostManager {
 func GetPeerTaskManager() *PeerTaskManager {
 	return peerTaskManager
 }
+

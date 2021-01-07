@@ -2,20 +2,20 @@ package schedule_worker
 
 import (
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
+	scheduler2 "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 	"hash/crc32"
 	"k8s.io/client-go/util/workqueue"
-	"time"
 )
 
 type IWorker interface {
 	Start()
 	Stop()
-	ReceiveJob(job *types.PeerTask)
-	TriggerSchedule(*types.PeerTask)
+	ReceiveJob(job *types.PeerTask, typ JobType)
+	ReceiveUpdatePieceResult(pr *scheduler2.PieceResult)
 }
 
 type WorkerGroup struct {
@@ -50,7 +50,6 @@ func (wg *WorkerGroup) Start() {
 		wg.workerList = append(wg.workerList, w)
 	}
 	wg.sender.Start()
-	go wg.triggerScheduleLoop()
 	logger.Infof("start scheduler worker number:%d", wg.workerNum)
 }
 
@@ -65,50 +64,28 @@ func (wg *WorkerGroup) ReceiveJob(job *types.PeerTask) {
 	if job == nil {
 		return
 	}
-	choiceWorkerId := crc32.ChecksumIEEE([]byte(job.Pid)) % uint32(wg.workerNum)
+	var choiceWorkerId uint32
+	if job.Host == nil {
+		choiceWorkerId = crc32.ChecksumIEEE([]byte(job.Pid)) % uint32(wg.workerNum)
+	} else {
+		choiceWorkerId = crc32.ChecksumIEEE([]byte(job.Host.Uuid)) % uint32(wg.workerNum)
+	}
 	wg.workerList[choiceWorkerId].ReceiveJob(job)
 }
 
-func (wg *WorkerGroup) TriggerSchedule(pt *types.PeerTask) {
-	wg.triggerLoadQueue.Add(pt)
-}
-
-func (wg *WorkerGroup) triggerScheduleLoop() {
-	go wg.triggerScheduleTicker()
-
-	for {
-		it, shutdown := wg.triggerLoadQueue.Get()
-		if shutdown {
-			break
-		}
-		pt, _ := it.(*types.PeerTask)
-		if pt != nil {
-			pt.TriggerSchedule(2)
-		}
-		wg.triggerLoadQueue.Done(pt)
+func (wg *WorkerGroup) ReceiveUpdatePieceResult(pr *scheduler2.PieceResult) {
+	if pr == nil {
+		return
 	}
+	var choiceWorkerId uint32
+	pt, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
+	if pt.Host == nil {
+		choiceWorkerId = crc32.ChecksumIEEE([]byte(pt.Pid)) % uint32(wg.workerNum)
+	} else {
+		choiceWorkerId = crc32.ChecksumIEEE([]byte(pt.Host.Uuid)) % uint32(wg.workerNum)
+	}
+	wg.workerList[choiceWorkerId].ReceiveUpdatePieceResult(pr)
 }
 
-func (wg *WorkerGroup) triggerScheduleTicker() {
-	peerTaskMgr := mgr.GetPeerTaskManager()
-	ticker := time.NewTicker(time.Second * 10)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-wg.stopCh:
-			break
-		case <-ticker.C:
-			// trigger all waiting peer task periodic
-			if wg.triggerLoadQueue.ShuttingDown() {
-				break
-			}
-			peerTaskMgr.Walker(func(pt *types.PeerTask) bool {
-				load := pt.Host.GetLoad()
-				if load <= 2 {
-				 	wg.triggerLoadQueue.Add(pt)
-				}
-				return true
-			})
-		}
-	}
-}
+
+
