@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// basic structure for request and response
-
 syntax = "proto3";
 
 package base;
@@ -57,6 +55,43 @@ message ResponseState{
 }
 
 message UrlMeta{
-  string md5 = 1; // md5 of content downloaded from url
-  string range = 2; // downloading range for single file
+  // md5 of content downloaded from url
+  // it is also used for task id generator to distinguish same urls
+  string md5 = 1;
+  // downloading range for single file
+  string range = 2;
+}
+
+message HostLoad{
+  // cpu usage
+  float cpu_ratio = 1;
+  // memory usage
+  float mem_ratio = 2;
+  // disk space usage
+  float disk_ratio = 3;
+}
+
+message PieceTaskRequest{
+  string task_id = 1;
+  int32 start_num = 2;
+  int32 limit = 3;
+}
+
+message PieceTask{
+  int32 piece_num = 1;
+  string piece_range = 2;
+  string piece_md5 = 3;
+  string src_pid = 4;
+  string dst_pid = 5;
+  string dst_addr = 6; // ip:port
+  uint64 piece_offset = 7;
+  base.PieceStyle piece_style = 8;
+}
+
+message PiecePackage{
+  base.ResponseState state = 1;
+  string task_id = 2;
+  repeated PieceTask piece_tasks = 3;
+  int32 start_num = 4;
+  int32 limit = 5;
 }
