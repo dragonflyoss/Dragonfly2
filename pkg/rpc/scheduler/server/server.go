@@ -67,7 +67,7 @@ type proxy struct {
 	scheduler.UnimplementedSchedulerServer
 }
 
-func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (pp *scheduler.PiecePackage, err error) {
+func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (pp *scheduler.PeerPacket, err error) {
 	pp, err = p.server.RegisterPeerTask(ctx, ptr)
 	err = rpc.ConvertServerError(err)
 
@@ -98,11 +98,10 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 	return
 }
 
-func (p *proxy) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) (err error) {
+func (p *proxy) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
 	return p.server.ReportPieceResult(stream)
 }
 
-// The peer's result is determined by itself but not scheduler.
 func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) (*base.ResponseState, error) {
 	logger.StatPeerLogger.Info("finish peer task",
 		zap.Bool("success", pr.Success),

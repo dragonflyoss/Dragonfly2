@@ -17,6 +17,7 @@
 package logger
 
 import (
+	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/env"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"go.uber.org/zap"
@@ -35,6 +36,10 @@ var (
 )
 
 var LogLevel = zap.NewAtomicLevel()
+
+type SugaredLoggerOnWith struct {
+	withArgs []interface{}
+}
 
 func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, compress bool, stats bool) *zap.Logger {
 	if os.Getenv(env.ActiveProfile) == "local" {
@@ -102,24 +107,42 @@ func SetGrpcLogger(log *zap.SugaredLogger) {
 	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
 }
 
-func With(args ...interface{}) *zap.SugaredLogger {
-	return bizLogger.With(args...)
+func With(args ...interface{}) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: args,
+	}
 }
 
-func Infof(fmt string, args ...interface{}) {
-	bizLogger.Infof(fmt, args...)
+func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
+	bizLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
-func Warnf(fmt string, args ...interface{}) {
-	bizLogger.Warnf(fmt, args...)
+func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
+	bizLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
-func Errorf(fmt string, args ...interface{}) {
-	bizLogger.Errorf(fmt, args...)
+func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
+	bizLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
-func Debugf(fmt string, args ...interface{}) {
-	bizLogger.Debugf(fmt, args...)
+func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
+	bizLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func Infof(template string, args ...interface{}) {
+	bizLogger.Infof(template, args...)
+}
+
+func Warnf(template string, args ...interface{}) {
+	bizLogger.Warnf(template, args...)
+}
+
+func Errorf(template string, args ...interface{}) {
+	bizLogger.Errorf(template, args...)
+}
+
+func Debugf(template string, args ...interface{}) {
+	bizLogger.Debugf(template, args...)
 }
 
 type zapGrpc struct {
