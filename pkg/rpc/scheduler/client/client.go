@@ -28,20 +28,18 @@ import (
 )
 
 type SchedulerClient interface {
-	// RegisterPeerTask registers a peer into one task and returns a piece package immediately
-	// if task resource is enough.
-	RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.PiecePackage, error)
-	// PullPieceTasks get piece results and return piece tasks.
-	// PieceResult chan is used to get stream request and PiecePackage chan is used to return stream response.
-	// Closed PieceResult chan indicates that request stream reaches end.
-	// Closed PiecePackage chan indicates that response stream reaches end.
+	// RegisterPeerTask registers a peer into one task
+	// and returns a peer packet immediately if task resource is enough.
+	RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.PeerPacket, error)
+	// ReportPieceResult reports piece results and receives peer packets.
+	// when migrating to another scheduler,
+	// it will send the last piece result to the new scheduler.
 	//
-	// For PieceResult chan, send func must bind a recover, it is recommended that using safe.Call wraps
-	// these func.
-	PullPieceTasks(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PiecePackage, error)
-	// ReportPeerResult reports downloading result for one peer task.
+	// sending to chan must bind a recover, it is recommended that using safe.Call wraps these func.
+	ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, error)
+	// ReportPeerResult reports downloading result for the peer task.
 	ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) (*base.ResponseState, error)
-	// LeaveTask makes the peer leaving from the task scheduling overlay.
+	// LeaveTask makes the peer leaving from scheduling overlay for the task.
 	LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) (*base.ResponseState, error)
 	// close the client
 	Close() error
@@ -69,8 +67,7 @@ func CreateClient(netAddrs []basic.NetAddr) (SchedulerClient, error) {
 	}
 }
 
-// register task for specified peer
-func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (pp *scheduler.PiecePackage, err error) {
+func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (pp *scheduler.PeerPacket, err error) {
 	xc, target, nextNum := sc.GetClientSafely()
 	client := xc.(scheduler.SchedulerClient)
 
@@ -82,7 +79,7 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	var suc bool
 	var code base.Code
 	if err == nil {
-		pp = res.(*scheduler.PiecePackage)
+		pp = res.(*scheduler.PeerPacket)
 		taskId = pp.TaskId
 		suc = pp.State.Success
 		code = pp.State.Code
@@ -102,7 +99,7 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 }
 
 // push piece result and pull piece tasks
-func (sc *schedulerClient) PullPieceTasks(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PiecePackage, error) {
+func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, error) {
 	prc := make(chan *scheduler.PieceResult, 4)
 	ppc := make(chan *scheduler.PiecePackage, 4)
 

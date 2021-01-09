@@ -26,7 +26,6 @@ type NetworkType string
 
 const (
 	TCP  NetworkType = "tcp"
-	UNIX NetworkType = "unix"
 )
 
 var LocalIp string
@@ -64,8 +63,6 @@ type NetAddr struct {
 
 func (na *NetAddr) GetEndpoint() string {
 	switch na.Type {
-	case UNIX:
-		return "unix://" + na.Addr
 	default:
 		return "dns:///" + na.Addr
 	}

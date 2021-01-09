@@ -96,7 +96,7 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 		zap.String("securityDomain", peerHost.SecurityDomain),
 		zap.String("idc", peerHost.Idc),
 		zap.String("schedulerIp", basic.LocalIp),
-		zap.Int("code", int(code)))
+		zap.Int32("code", int32(code)))
 
 	return
 }
@@ -106,6 +106,8 @@ func (p *proxy) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultSe
 }
 
 func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) (*base.ResponseState, error) {
+	rs, err := p.server.ReportPeerResult(ctx, pr)
+
 	logger.StatPeerLogger.Info("finish peer task",
 		zap.Bool("success", pr.Success),
 		zap.String("taskId", pr.TaskId),
@@ -117,9 +119,7 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 		zap.Int64("contentLength", pr.ContentLength),
 		zap.Int64("traffic", pr.Traffic),
 		zap.Uint32("cost", pr.Cost),
-		zap.Int("code", int(pr.Code)))
-
-	rs, err := p.server.ReportPeerResult(ctx, pr)
+		zap.Int32("code", int32(pr.Code)))
 
 	return rs, rpc.ConvertServerError(err)
 }
