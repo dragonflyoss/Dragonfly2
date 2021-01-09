@@ -54,7 +54,7 @@ func init() {
 type SchedulerServer interface {
 	// RegisterPeerTask registers a peer into one task
 	// and returns a peer packet immediately if task resource is enough.
-	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.PeerPacket, error)
+	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error)
 	// ReportPieceResult reports piece results and receives peer packets.
 	// when migrating to another scheduler,
 	// it will send the last piece result to the new scheduler.
@@ -70,19 +70,19 @@ type proxy struct {
 	scheduler.UnimplementedSchedulerServer
 }
 
-func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (pp *scheduler.PeerPacket, err error) {
-	pp, err = p.server.RegisterPeerTask(ctx, ptr)
+func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (rr *scheduler.RegisterResult, err error) {
+	rr, err = p.server.RegisterPeerTask(ctx, ptr)
 	err = rpc.ConvertServerError(err)
 
 	var taskId = "unknown"
 	var suc bool
 	var code base.Code
 
-	if err == nil && pp != nil {
-		taskId = pp.TaskId
-		if pp.State != nil {
-			suc = pp.State.Success
-			code = pp.State.Code
+	if err == nil && rr != nil {
+		taskId = rr.TaskId
+		if rr.State != nil {
+			suc = rr.State.Success
+			code = rr.State.Code
 		}
 	}
 

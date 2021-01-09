@@ -31,6 +31,7 @@ enum Code{
 
   // scheduler processing error 500-599
   SCHEDULER_ERROR = 500;
+  PEER_TASK_NOT_REGISTERED = 501;
 
   // cdnsystem processing error 600-699
   CDN_ERROR = 600;

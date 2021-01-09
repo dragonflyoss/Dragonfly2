@@ -47,8 +47,7 @@ type SchedulerClient interface {
 
 type schedulerClient struct {
 	*rpc.Connection
-	lastResult *scheduler.PieceResult
-	Client     scheduler.SchedulerClient
+	Client scheduler.SchedulerClient
 }
 
 // init client info excepting connection
@@ -86,8 +85,8 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	}
 
 	ph := ptr.PeerHost
-	logger.With("peerId", ptr.PeerId).Infof("register peer task result:%t[%d] for taskId:%s,url:%s,peerIp:%s,securityDomain:%s,idc:%s,scheduler:%s",
-		suc, int(code), taskId, ptr.Url, ph.Ip, ph.SecurityDomain, ph.Idc, target)
+	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("register peer task result:%t[%d] for taskId:%s,url:%s,peerIp:%s,securityDomain:%s,idc:%s,scheduler:%s",
+		suc, int32(code), taskId, ptr.Url, ph.Ip, ph.SecurityDomain, ph.Idc, target)
 
 	if err != nil {
 		if err = sc.TryMigrate(nextNum, err); err == nil {
@@ -98,12 +97,12 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	return
 }
 
-// push piece result and pull piece tasks
 func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, error) {
 	prc := make(chan *scheduler.PieceResult, 4)
-	ppc := make(chan *scheduler.PiecePackage, 4)
+	ppc := make(chan *scheduler.PeerPacket, 4)
 
-	pts, err := newPieceTaskStream(sc, ctx, taskId, ptr, opts, prc)
+	pts, err := newPeerPacketStream(sc, ctx, taskId, ptr, opts, prc)
+	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskId:%s", taskId)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -115,7 +114,6 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string,
 	return prc, ppc, nil
 }
 
-// report whole file's downloading result for the peer
 func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) (rs *base.ResponseState, err error) {
 	xc, target, nextNum := sc.GetClientSafely()
 	client := xc.(scheduler.SchedulerClient)
@@ -134,13 +132,12 @@ func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.P
 		rs = res.(*base.ResponseState)
 	}
 
-	logger.With("peerId", pr.PeerId).Infof("peer task down result:%t[%d] for taskId:%s,url:%s,scheduler:%s,length:%d,traffic:%d,cost:%d",
-		pr.Success, int(pr.ErrorCode), pr.TaskId, pr.Url, target, pr.ContentLength, pr.Traffic, pr.Cost)
+	logger.With("peerId", pr.PeerId, "errMsg", err).Infof("peer task down result:%t[%d] for taskId:%s,url:%s,scheduler:%s,length:%d,traffic:%d,cost:%d",
+		pr.Success, int32(pr.Code), pr.TaskId, pr.Url, target, pr.ContentLength, pr.Traffic, pr.Cost)
 
 	return
 }
 
-// make peer leaving from scheduling overlay
 func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) (rs *base.ResponseState, err error) {
 	xc, target, _ := sc.GetClientSafely()
 	client := xc.(scheduler.SchedulerClient)
@@ -157,26 +154,26 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 		code = rs.Code
 	}
 
-	logger.With("peerId", pt.PeerId).Infof("leave from task result:%t[%d] for taskId:%s,scheduler:%s", suc, int(code), pt.TaskId, target)
+	logger.With("peerId", pt.PeerId, "errMsg", err).Infof("leave from task result:%t[%d] for taskId:%s,scheduler:%s", suc, int32(code), pt.TaskId, target)
 
 	return
 }
 
 // receiver also finishes sender
-func receive(stream *pieceTaskStream, ppc chan *scheduler.PiecePackage, prc chan *scheduler.PieceResult) {
+func receive(stream *pieceTaskStream, ppc chan *scheduler.PeerPacket, prc chan *scheduler.PieceResult) {
 	safe.Call(func() {
 		defer close(prc)
 		defer close(ppc)
 
 		for {
-			piecePackage, err := stream.recv()
+			peerPacket, err := stream.recv()
 			if err == nil {
-				ppc <- piecePackage
-				if piecePackage.Done {
+				ppc <- peerPacket
+				if peerPacket.Done {
 					return
 				}
 			} else {
-				ppc <- base.NewResWithErr(piecePackage, err).(*scheduler.PiecePackage)
+				ppc <- base.NewResWithErr(peerPacket, err).(*scheduler.PeerPacket)
 				return
 			}
 		}
