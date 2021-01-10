@@ -21,6 +21,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
@@ -33,9 +34,13 @@ func init() {
 	logDir := "/var/log/dragonfly"
 
 	bizLogger := logger.CreateLogger(logDir+"/daemon.log", 100, 7, 15, false, false)
-	log := bizLogger.Sugar()
-	logger.SetBizLogger(log)
-	logger.SetGrpcLogger(log)
+	logger.SetBizLogger(bizLogger.Sugar())
+
+	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 100, 7, 15, false, false)
+	logger.SetGrpcLogger(grpcLogger.Sugar())
+
+	gcLogger := logger.CreateLogger(logDir+"/gc.log", 100, 3, 6, false, false)
+	logger.SetGcLogger(gcLogger.Sugar())
 
 	// set register with server implementation.
 	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
@@ -45,8 +50,12 @@ func init() {
 
 // DaemonServer is the server API for Daemon service.
 type DaemonServer interface {
-	// download content by dragonfly
+	// trigger client to download files
 	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
+	// get piece tasks from other peers
+	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
+	// check daemon health
+	CheckHealth(context.Context, *base.EmptyRequest) (*base.ResponseState, error)
 }
 
 type proxy struct {
@@ -54,11 +63,12 @@ type proxy struct {
 	dfdaemon.UnimplementedDaemonServer
 }
 
+// trigger client to download files
 func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_DownloadServer) (err error) {
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
 
-	errChan := make(chan error, 8)
+	errChan := make(chan error, 10)
 	drc := make(chan *dfdaemon.DownResult, 4)
 
 	once := new(sync.Once)
@@ -78,6 +88,16 @@ func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_Downl
 	}
 
 	return
+}
+
+// get piece tasks from other peers
+func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	return p.server.GetPieceTasks(ctx, ptr)
+}
+
+// check daemon health
+func (p *proxy) CheckHealth(ctx context.Context, req *base.EmptyRequest) (*base.ResponseState, error) {
+	return p.server.CheckHealth(ctx, req)
 }
 
 func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon_DownloadServer, errChan chan error) {

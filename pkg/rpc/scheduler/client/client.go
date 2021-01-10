@@ -49,7 +49,8 @@ type SchedulerClient interface {
 
 type schedulerClient struct {
 	*rpc.Connection
-	Client scheduler.SchedulerClient
+	lastResult *scheduler.PieceResult
+	Client     scheduler.SchedulerClient
 }
 
 // init client info excepting connection

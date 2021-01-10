@@ -19,18 +19,12 @@ package server
 import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"io"
-	"sync"
 )
 
 func init() {
@@ -41,6 +35,9 @@ func init() {
 
 	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
 	logger.SetGrpcLogger(grpcLogger.Sugar())
+
+	gcLogger := logger.CreateLogger(logDir+"/gc.log", 300, 7, 0, false, false)
+	logger.SetGcLogger(gcLogger.Sugar())
 
 	statPeerLogger := logger.CreateLogger(logDir+"/stat/peer.log", 300, 30, 0, true, true)
 	logger.SetStatPeerLogger(statPeerLogger)
@@ -55,22 +52,16 @@ func init() {
 }
 
 type SchedulerServer interface {
-	// RegisterPeerTask registers a peer into one task and returns a piece package immediately
-	// if task resource is enough.
-	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.PiecePackage, error)
-	// PullPieceTasks get piece results and return piece tasks.
-	// PieceResult chan is used to get stream request and PiecePackage chan is used to return stream response.
-	// Closed PieceResult chan indicates that request stream reaches end.
-	// Closed PiecePackage chan indicates that response stream reaches end.
-	//
-	// For PiecePackage chan, send func must bind a recover, it is recommended that using safe.Call wraps
-	// these func.
-	//
-	// On error, it will abort the stream.
-	PullPieceTasks(context.Context, <-chan *scheduler.PieceResult, chan<- *scheduler.PiecePackage) error
-	// ReportPeerResult reports downloading result for one peer task.
+	// RegisterPeerTask registers a peer into one task
+	// and returns a peer packet immediately if task resource is enough.
+	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.PeerPacket, error)
+	// ReportPieceResult reports piece results and receives peer packets.
+	// when migrating to another scheduler,
+	// it will send the last piece result to the new scheduler.
+	ReportPieceResult(scheduler.Scheduler_ReportPieceResultServer) error
+	// ReportPeerResult reports downloading result for the peer task.
 	ReportPeerResult(context.Context, *scheduler.PeerResult) (*base.ResponseState, error)
-	// LeaveTask makes the peer leaving from the task scheduling overlay.
+	// LeaveTask makes the peer leaving from scheduling overlay for the task.
 	LeaveTask(context.Context, *scheduler.PeerTarget) (*base.ResponseState, error)
 }
 
@@ -79,7 +70,7 @@ type proxy struct {
 	scheduler.UnimplementedSchedulerServer
 }
 
-func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (pp *scheduler.PiecePackage, err error) {
+func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (pp *scheduler.PeerPacket, err error) {
 	pp, err = p.server.RegisterPeerTask(ctx, ptr)
 	err = rpc.ConvertServerError(err)
 
@@ -110,46 +101,10 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 	return
 }
 
-func (p *proxy) PullPieceTasks(stream scheduler.Scheduler_PullPieceTasksServer) (err error) {
-	ctx, cancel := context.WithCancel(stream.Context())
-	defer cancel()
-
-	prc := make(chan *scheduler.PieceResult, 4)
-	ppc := make(chan *scheduler.PiecePackage, 4)
-
-	once0 := new(sync.Once)
-	closePpc := func() {
-		once0.Do(func() {
-			close(ppc)
-		})
-	}
-	defer closePpc()
-
-	once1 := new(sync.Once)
-	closePrc := func() {
-		once1.Do(func() {
-			close(prc)
-		})
-	}
-	defer closePrc()
-
-	// capacity is enough to avoid block
-	errChan := make(chan error, 16)
-
-	go receive(prc, closePrc, closePpc, stream, errChan)
-
-	go send(ppc, closePrc, closePpc, stream, errChan)
-
-	go call(ctx, prc, ppc, p, errChan)
-
-	if err = <-errChan; dferrors.IsEndOfStream(err) {
-		err = nil
-	}
-
-	return
+func (p *proxy) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
+	return p.server.ReportPieceResult(stream)
 }
 
-// The peer's result is determined by itself but not scheduler.
 func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) (*base.ResponseState, error) {
 	logger.StatPeerLogger.Info("finish peer task",
 		zap.Bool("success", pr.Success),
@@ -162,7 +117,7 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 		zap.Int64("contentLength", pr.ContentLength),
 		zap.Int64("traffic", pr.Traffic),
 		zap.Uint32("cost", pr.Cost),
-		zap.Int("code", int(pr.ErrorCode)))
+		zap.Int("code", int(pr.Code)))
 
 	rs, err := p.server.ReportPeerResult(ctx, pr)
 
@@ -172,64 +127,4 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 func (p *proxy) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget) (*base.ResponseState, error) {
 	rs, err := p.server.LeaveTask(ctx, pt)
 	return rs, rpc.ConvertServerError(err)
-}
-
-// sender also finishes receiver
-func send(ppc chan *scheduler.PiecePackage, closePrc func(), closePpc func(), stream scheduler.Scheduler_PullPieceTasksServer, errChan chan error) {
-	err := safe.Call(func() {
-		defer closePrc()
-		defer closePpc()
-
-		for v := range ppc {
-			if err := stream.Send(v); err != nil {
-				errChan <- err
-				return
-			}
-
-			if v.Done {
-				break
-			}
-		}
-
-		errChan <- dferrors.ErrEndOfStream
-	})
-
-	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
-	}
-}
-
-func receive(prc chan *scheduler.PieceResult, closePrc func(), closePpc func(), stream scheduler.Scheduler_PullPieceTasksServer, errChan chan error) {
-	err := safe.Call(func() {
-		defer closePpc()
-		defer closePrc()
-
-		for {
-			pieceResult, err := stream.Recv()
-			if err == nil {
-				prc <- pieceResult
-			} else if err == io.EOF {
-				return
-			} else {
-				errChan <- err
-				return
-			}
-		}
-	})
-
-	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
-	}
-}
-
-func call(ctx context.Context, prc chan *scheduler.PieceResult, ppc chan *scheduler.PiecePackage, p *proxy, errChan chan error) {
-	err := safe.Call(func() {
-		if err := p.server.PullPieceTasks(ctx, prc, ppc); err != nil {
-			errChan <- rpc.ConvertServerError(err)
-		}
-	})
-
-	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
-	}
 }

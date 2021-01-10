@@ -17,6 +17,7 @@
 package logger
 
 import (
+	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/env"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"go.uber.org/zap"
@@ -37,7 +38,10 @@ var (
 
 var LogLevel = zap.NewAtomicLevel()
 
-// CreateLogger create logger
+type SugaredLoggerOnWith struct {
+	withArgs []interface{}
+}
+
 func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, compress bool, stats bool) *zap.Logger {
 	if os.Getenv(env.ActiveProfile) == "local" {
 		log, _ := zap.NewDevelopment(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
@@ -106,6 +110,10 @@ func SetBizLogger(log *zap.SugaredLogger) {
 	bizLogger = log
 }
 
+func SetGcLogger(log *zap.SugaredLogger) {
+	GcLogger = log
+}
+
 func SetStatPeerLogger(log *zap.Logger) {
 	StatPeerLogger = log
 }
@@ -117,10 +125,6 @@ func SetStatSeedLogger(log *zap.Logger) {
 func SetGrpcLogger(log *zap.SugaredLogger) {
 	GrpcLogger = log
 	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
-}
-
-func SetGcLogger(log *zap.SugaredLogger) {
-	GcLogger = log
 }
 
 func With(args ...interface{}) *zap.SugaredLogger {
@@ -143,8 +147,24 @@ func Warnf(fmt string, args ...interface{}) {
 	bizLogger.Warnf(fmt, args...)
 }
 
-func Errorf(fmt string, args ...interface{}) {
-	bizLogger.Errorf(fmt, args...)
+func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
+	bizLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
+	bizLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
+	bizLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
+	bizLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func Errorf(template string, args ...interface{}) {
+	bizLogger.Errorf(template, args...)
 }
 
 func Error(args ...interface{}) {
