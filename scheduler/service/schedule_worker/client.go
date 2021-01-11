@@ -1,7 +1,7 @@
 package schedule_worker
 
 import (
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	scheduler2 "github.com/dragonflyoss/Dragonfly2/scheduler/scheduler"
@@ -9,12 +9,12 @@ import (
 )
 
 type Client struct {
-	client scheduler.Scheduler_PullPieceTasksServer
+	client scheduler.Scheduler_ReportPieceResultServer
 	worker IWorker
 	scheduler *scheduler2.Scheduler
 }
 
-func CreateClient(client scheduler.Scheduler_PullPieceTasksServer, worker IWorker, scheduler *scheduler2.Scheduler) *Client {
+func CreateClient(client scheduler.Scheduler_ReportPieceResultServer, worker IWorker, scheduler *scheduler2.Scheduler) *Client {
 	c := &Client{
 		client: client,
 		worker: worker,
@@ -23,9 +23,9 @@ func CreateClient(client scheduler.Scheduler_PullPieceTasksServer, worker IWorke
 	return c
 }
 
-func (c *Client) Start() {
+func (c *Client) Start() error {
 	c.doWork()
-	return
+	return nil
 }
 
 func (c *Client) doWork() {

@@ -17,8 +17,9 @@
 package logger
 
 import (
+	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/env"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/file"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc/grpclog"
@@ -36,6 +37,10 @@ var (
 
 var LogLevel = zap.NewAtomicLevel()
 
+type SugaredLoggerOnWith struct {
+	withArgs []interface{}
+}
+
 func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, compress bool, stats bool) *zap.Logger {
 	if os.Getenv(env.ActiveProfile) == "local" {
 		log, _ := zap.NewDevelopment(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
@@ -50,7 +55,7 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 		}
 		fileInfo, err := os.Stat(filePath)
 		if err == nil && fileInfo.Size() >= int64(maxSize*1024*1024) {
-			_, _ = file.CopyFile(filePath+".old", filePath)
+			_, _ = fileutils.CopyFile(filePath+".old", filePath)
 			_ = os.Truncate(filePath, 0)
 		}
 		if syncer, _, err = zap.Open(filePath); err != nil {
@@ -69,7 +74,7 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 	}
 
 	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05")
+	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
 
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
@@ -102,20 +107,42 @@ func SetGrpcLogger(log *zap.SugaredLogger) {
 	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
 }
 
-func Infof(fmt string, args ...interface{}) {
-	bizLogger.Infof(fmt, args...)
+func With(args ...interface{}) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: args,
+	}
 }
 
-func Warnf(fmt string, args ...interface{}) {
-	bizLogger.Warnf(fmt, args...)
+func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
+	bizLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
-func Errorf(fmt string, args ...interface{}) {
-	bizLogger.Errorf(fmt, args...)
+func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
+	bizLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
-func Debugf(fmt string, args ...interface{}) {
-	bizLogger.Debugf(fmt, args...)
+func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
+	bizLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
+	bizLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func Infof(template string, args ...interface{}) {
+	bizLogger.Infof(template, args...)
+}
+
+func Warnf(template string, args ...interface{}) {
+	bizLogger.Warnf(template, args...)
+}
+
+func Errorf(template string, args ...interface{}) {
+	bizLogger.Errorf(template, args...)
+}
+
+func Debugf(template string, args ...interface{}) {
+	bizLogger.Debugf(template, args...)
 }
 
 type zapGrpc struct {

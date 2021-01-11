@@ -18,8 +18,8 @@ type SchedulerServer struct {
 	worker schedule_worker.IWorker
 }
 
-func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (pkg *scheduler.PiecePackage, err error) {
-	pkg = new(scheduler.PiecePackage)
+func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (pkg *scheduler.PeerPacket, err error) {
+	pkg = &scheduler.PeerPacket{SrcPid: request.PeerId}
 	defer func() {
 		e := recover()
 		if e != nil {
@@ -62,14 +62,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	if host == nil {
 		host = &types.Host{
 			Type:           types.HostTypePeer,
-			Uuid:           request.PeerHost.Uuid,
-			Ip:             request.PeerHost.Ip,
-			Port:           request.PeerHost.Port,
-			HostName:       request.PeerHost.HostName,
-			SecurityDomain: request.PeerHost.SecurityDomain,
-			Location:       request.PeerHost.Location,
-			Idc:            request.PeerHost.Idc,
-			Switch:         request.PeerHost.Switch,
+			PeerHost: *request.PeerHost,
 		}
 		host, err = s.svc.AddHost(host)
 		if err != nil {
@@ -78,7 +71,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	}
 
 	// get or creat PeerTask
-	pid := request.Pid
+	pid := request.PeerId
 	peerTask, _ := s.svc.GetPeerTask(pid)
 	if peerTask == nil {
 		peerTask, err = s.svc.AddPeerTask(pid, task, host)
@@ -99,14 +92,15 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	}
 
 	// assemble result
-	_ = parent
+	if parent != nil {
+		pkg = peerTask.GetSendPkg()
+	}
 
 	return
 }
 
-func (s *SchedulerServer) PullPieceTasks(server scheduler.Scheduler_PullPieceTasksServer) (err error) {
-	schedule_worker.CreateClient(server, s.worker, s.svc.GetScheduler()).Start()
-	return
+func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
+	return schedule_worker.CreateClient(stream, s.worker, s.svc.GetScheduler()).Start()
 }
 
 func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (ret *base.ResponseState, err error) {
@@ -134,7 +128,7 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 	if err != nil {
 		return
 	}
-	peerTask.SetStatus(result.Traffic, result.Cost, result.Success, result.ErrorCode)
+	peerTask.SetStatus(result.Traffic, result.Cost, result.Success, result.Code)
 
 	return
 }
@@ -159,7 +153,7 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 		return
 	}()
 
-	pid := target.Pid
+	pid := target.PeerId
 
 	err = s.svc.DeletePeerTask(pid)
 

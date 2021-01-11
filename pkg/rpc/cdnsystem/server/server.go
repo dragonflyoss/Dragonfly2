@@ -19,8 +19,8 @@ package server
 import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
-	dferror "github.com/dragonflyoss/Dragonfly2/pkg/error"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
@@ -74,7 +74,7 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 
 	go send(psc, closePsc, stream, errChan)
 
-	if err = <-errChan; err == dferror.EOS {
+	if err = <-errChan; dferrors.IsEndOfStream(err) {
 		err = nil
 	}
 
@@ -96,7 +96,7 @@ func send(psc chan *cdnsystem.PieceSeed, closePsc func(), stream cdnsystem.Seede
 			}
 		}
 
-		errChan <- dferror.EOS
+		errChan <- dferrors.ErrEndOfStream
 	})
 
 	if err != nil {

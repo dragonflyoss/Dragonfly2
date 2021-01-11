@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/math"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -51,8 +51,11 @@ type RetryMeta struct {
 }
 
 var clientOpts = []grpc.DialOption{
+	grpc.FailOnNonTempDialError(true),
+	grpc.WithBlock(),
 	grpc.WithInitialConnWindowSize(4 * 1024 * 1024),
 	grpc.WithInsecure(),
+
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
 		Time:                2 * time.Hour,
 		Timeout:             10 * time.Second,
@@ -82,11 +85,17 @@ func BuildClient(client interface{}, init InitClientFunc, addrs []basic.NetAddr)
 }
 
 func (c *Connection) connect() error {
+	if c.nextNum >= len(c.NetAddrs) {
+		return errors.New("available addr is not found in the candidates")
+	}
+
 	var cc *grpc.ClientConn
 	var err error
 
-	for c.nextNum < len(c.NetAddrs) {
-		cc, err = grpc.Dial(c.NetAddrs[c.nextNum].GetEndpoint(), clientOpts...)
+
+	for ; c.nextNum < len(c.NetAddrs); {
+		ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
+		cc, err = grpc.DialContext(ctx, c.NetAddrs[c.nextNum].GetEndpoint(), clientOpts...)
 
 		c.nextNum++
 

@@ -28,7 +28,8 @@ message SeedRequest{
   string task_id = 1;
   string url = 2;
   string filter = 3;
-  base.UrlMeta url_meta = 4; // check content downloaded from remote url
+  // check content downloaded from remote url
+  base.UrlMeta url_meta = 4;
 }
 
 // keep piece meta and data separately
@@ -36,6 +37,7 @@ message SeedRequest{
 // scheduler can also analyze cdn traffic from origin
 message PieceSeed{
   base.ResponseState state = 1;
+
   string seed_addr = 2; // ip:port
   base.PieceStyle piece_style = 3;
   int32 piece_num = 4;
@@ -48,8 +50,10 @@ message PieceSeed{
   int64 total_traffic = 10; // total traffic from the remote source
 }
 
-// seed maker for download url
+// CDN System RPC Service
 service Seeder{
   // generate seeds and return to scheduler
   rpc ObtainSeeds(SeedRequest)returns(stream PieceSeed){}
+  // get piece tasks from cdn
+  rpc GetPieceTasks(base.PieceTaskRequest)returns(base.PiecePacket){}
 }

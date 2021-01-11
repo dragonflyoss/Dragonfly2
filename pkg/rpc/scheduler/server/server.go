@@ -19,7 +19,7 @@ package server
 import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
-	"github.com/dragonflyoss/Dragonfly2/pkg/log"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
@@ -49,22 +49,16 @@ func init() {
 }
 
 type SchedulerServer interface {
-	// RegisterPeerTask registers a peer into one task and returns a piece package immediately
-	// if task resource is enough.
-	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.PiecePackage, error)
-	// PullPieceTasks get piece results and return piece tasks.
-	// PieceResult chan is used to get stream request and PiecePackage chan is used to return stream response.
-	// Closed PieceResult chan indicates that request stream reaches end.
-	// Closed PiecePackage chan indicates that response stream reaches end.
-	//
-	// For PiecePackage chan, send func must bind a recover, it is recommended that using safe.Call wraps
-	// these func.
-	//
-	// On error, it will abort the stream.
-	PullPieceTasks(scheduler.Scheduler_PullPieceTasksServer) error
-	// ReportPeerResult reports downloading result for one peer task.
+	// RegisterPeerTask registers a peer into one task
+	// and returns a peer packet immediately if task resource is enough.
+	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.PeerPacket, error)
+	// ReportPieceResult reports piece results and receives peer packets.
+	// when migrating to another scheduler,
+	// it will send the last piece result to the new scheduler.
+	ReportPieceResult(scheduler.Scheduler_ReportPieceResultServer) error
+	// ReportPeerResult reports downloading result for the peer task.
 	ReportPeerResult(context.Context, *scheduler.PeerResult) (*base.ResponseState, error)
-	// LeaveTask makes the peer leaving from the task scheduling overlay.
+	// LeaveTask makes the peer leaving from scheduling overlay for the task.
 	LeaveTask(context.Context, *scheduler.PeerTarget) (*base.ResponseState, error)
 }
 
@@ -73,7 +67,7 @@ type proxy struct {
 	scheduler.UnimplementedSchedulerServer
 }
 
-func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (pp *scheduler.PiecePackage, err error) {
+func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (pp *scheduler.PeerPacket, err error) {
 	pp, err = p.server.RegisterPeerTask(ctx, ptr)
 	err = rpc.ConvertServerError(err)
 
@@ -104,11 +98,10 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 	return
 }
 
-func (p *proxy) PullPieceTasks(stream scheduler.Scheduler_PullPieceTasksServer) (err error) {
-	return p.server.PullPieceTasks(stream)
+func (p *proxy) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
+	return p.server.ReportPieceResult(stream)
 }
 
-// The peer's result is determined by itself but not scheduler.
 func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) (*base.ResponseState, error) {
 	logger.StatPeerLogger.Info("finish peer task",
 		zap.Bool("success", pr.Success),
@@ -119,9 +112,9 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 		zap.String("idc", pr.Idc),
 		zap.String("schedulerIp", basic.LocalIp),
 		zap.Int64("contentLength", pr.ContentLength),
-		zap.Uint64("traffic", pr.Traffic),
+		zap.Uint64("traffic", uint64(pr.Traffic)),
 		zap.Uint32("cost", pr.Cost),
-		zap.Int("code", int(pr.ErrorCode)))
+		zap.Int("code", int(pr.Code)))
 
 	rs, err := p.server.ReportPeerResult(ctx, pr)
 

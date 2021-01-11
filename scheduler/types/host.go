@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"sync"
 )
 
@@ -12,16 +13,7 @@ const (
 )
 
 type Host struct {
-	Uuid           string
-	Ip             string
-	Port           int32 // peer server http port
-	HostName       string
-	SecurityDomain string // security isolation domain for network
-	Location       string // area|country|province|city|...
-	Idc            string
-	Switch         string // network device construct, xx|yy|zz
-	Memory string
-	Cpu string
+	scheduler.PeerHost
 
 	Type        HostType  // peer / cdn
 	peerTaskMap *sync.Map // Pid => PeerTask

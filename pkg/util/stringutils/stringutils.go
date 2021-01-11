@@ -14,16 +14,28 @@
  * limitations under the License.
  */
 
-package dferror
+package stringutils
 
+<<<<<<< HEAD:pkg/error/error.go
 import (
 	"errors"
 	"fmt"
 )
+=======
+import "unicode"
+>>>>>>> framework:pkg/util/stringutils/stringutils.go
 
-// end of stream
-var EOS = errors.New("EOS")
+// SubString returns the subString of {str} which begins at {start} and end at {end - 1}.
+func SubString(str string, start, end int) string {
+	runes := []rune(str)
+	length := len(runes)
+	if start < 0 || start >= length ||
+		end <= 0 || end > length ||
+		start > end {
+		return ""
+	}
 
+<<<<<<< HEAD:pkg/error/error.go
 var AddressReused = errors.New("address is reused")
 
 type codeError struct {
@@ -37,4 +49,17 @@ func (e *codeError) Error() string {
 
 func NewCodeError(code int32, msg string) *codeError {
 	return &codeError{Code: code, Msg: msg}
+=======
+	return string(runes[start:end])
+}
+
+// IsEmptyStr returns whether the string s is empty.
+func IsEmptyStr(s string) bool {
+	for _, v := range s {
+		if !unicode.IsSpace(v) {
+			return false
+		}
+	}
+	return true
+>>>>>>> framework:pkg/util/stringutils/stringutils.go
 }

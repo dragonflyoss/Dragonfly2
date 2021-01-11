@@ -16,10 +16,10 @@
 
 package scheduler
 
-func NewZeroPieceResult(taskId, pid string) *PieceResult {
+func NewZeroPieceResult(taskId, peerId string) *PieceResult {
 	return &PieceResult{
 		TaskId:   taskId,
-		SrcPid:   pid,
+		SrcPid:   peerId,
 		PieceNum: -1,
 	}
 }

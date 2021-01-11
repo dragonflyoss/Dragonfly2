@@ -19,7 +19,7 @@ package rpc
 import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"

@@ -36,12 +36,12 @@ type PeerTask struct {
 	deep            int32                   // the node number of the path from root to the current node
 
 	// the client of peer task, which used for send and receive msg
-	client scheduler.Scheduler_PullPieceTasksServer
+	client scheduler.Scheduler_ReportPieceResultServer
 
 	Traffic   uint64
 	Cost      uint32
 	Success   bool
-	ErrorCode base.Code
+	Code base.Code
 
 	status PeerTaskStatus
 }
@@ -211,23 +211,39 @@ func (pt *PeerTask) SetUp() {
 	pt.Touch()
 }
 
-func (pt *PeerTask) SetStatus(traffic uint64, cost uint32, success bool, errorCode base.Code) {
+func (pt *PeerTask) SetStatus(traffic uint64, cost uint32, success bool, code base.Code) {
 	pt.Traffic = traffic
 	pt.Cost = cost
 	pt.Success = success
-	pt.ErrorCode = errorCode
+	pt.Code = code
 	pt.Touch()
 }
 
-func (pt *PeerTask) SetClient(client scheduler.Scheduler_PullPieceTasksServer) {
+func (pt *PeerTask) SetClient(client scheduler.Scheduler_ReportPieceResultServer) {
 	pt.client = client
+}
+
+func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
+	// if pt != nil && pt.client != nil {
+	pkg = &scheduler.PeerPacket{
+		TaskId: pt.Task.TaskId,
+		// source peer id
+		SrcPid: pt.Pid,
+		// concurrent downloading count from main peer
+	}
+	if pt.parent != nil && pt.parent.DstPeerTask != nil && pt.parent.DstPeerTask.Host != nil {
+		pkg.ParallelCount = int32(pt.parent.Concurrency)
+		pkg.MainPeer = &pt.parent.DstPeerTask.Host.PeerHost
+	}
+	// TODO select StealPeers
+
+	return
 }
 
 func (pt *PeerTask) Send() error {
 	// if pt != nil && pt.client != nil {
-	var pkg *scheduler.PiecePackage
 	if pt.client != nil {
-		return pt.client.Send(pkg)
+		return pt.client.Send(pt.GetSendPkg())
 	}
 	return nil
 }
