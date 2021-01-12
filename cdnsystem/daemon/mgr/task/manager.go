@@ -100,7 +100,7 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 		return nil, errors.Wrapf(err, "failed to trigger cdn")
 	}
 	// watch seed progress
-	return tm.cdnMgr.WatchSeedProgress(ctx, task.TaskID, tm)
+	return tm.cdnMgr.WatchSeedProgress(ctx, task.TaskID)
 }
 
 // triggerCdnSyncAction
@@ -175,6 +175,6 @@ func (tm Manager) Delete(ctx context.Context, taskID string) error {
 	return nil
 }
 
-func (tm *Manager) GetPieces(ctx context.Context, piecePullRequest *types.PullPieceRequest) (pieces []*types.SeedPiece, err error) {
-	panic("implement me")
+func (tm *Manager) GetPieces(ctx context.Context, taskID string) (pieces []*types.SeedPiece, err error) {
+	return tm.cdnMgr.GetPieces(ctx, taskID)
 }

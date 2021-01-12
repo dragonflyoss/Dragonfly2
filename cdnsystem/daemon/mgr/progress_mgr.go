@@ -28,7 +28,7 @@ type SeedProgressMgr interface {
 	InitSeedProgress(ctx context.Context, taskID string) error
 
 	// WatchSeedProgress watch seed progress
-	WatchSeedProgress(ctx context.Context, taskID string, taskMgr SeedTaskMgr) (<-chan *types.SeedPiece, error)
+	WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error)
 
 	// UnWatchSeedProgress unwatch seed progress
 	UnWatchSeedProgress(seedSubscriber chan *types.SeedPiece, taskID string) error

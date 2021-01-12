@@ -19,7 +19,6 @@ package progress
 import (
 	"container/list"
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
@@ -56,7 +55,7 @@ func (pm *Manager) InitSeedProgress(ctx context.Context, taskID string) error {
 	return nil
 }
 
-func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string, taskMgr mgr.SeedTaskMgr) (<-chan *types.SeedPiece, error) {
+func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error) {
 	logger.Debugf("watch seed progress begin for taskID:%s", taskID)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {

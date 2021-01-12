@@ -29,6 +29,10 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/pkg/errors"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // CdnSeedServer is used to implement cdnsystem.SeederServer.
@@ -64,12 +68,17 @@ func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
 		return errors.Wrapf(dferrors.ErrInvalidValue, "resource url: %s", req.Url)
 	}
 	if stringutils.IsEmptyStr(req.TaskId) {
-		return errors.Wrapf(dferrors.ErrEmptyValue, "taskId: %s", req.TaskId)
+		return errors.Wrapf(dferrors.ErrEmptyValue, "taskId")
 	}
 	return nil
 }
 
 func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
+	defer func() {
+		if err != nil {
+			logger.Named(req.TaskId).Errorf("failed to obtain seeds, req=%+v: %v", req, err)
+		}
+	}()
 	if err := validateSeedRequestParams(req); err != nil {
 		return errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
@@ -85,7 +94,6 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
 
 	if err != nil {
-		logger.Named(req.TaskId).Errorf("register seed task fail, registerRequest=%+v: %v",registerRequest, err)
 		return errors.Wrapf(err, "register seed task fail, registerRequest:%+v", registerRequest)
 	}
 
@@ -121,41 +129,66 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	return nil
 }
 
-func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (piecePacket *base.PiecePacket, err error) {
+	defer func() {
+		if err != nil {
+			logger.Named(req.TaskId).Errorf("failed to get piece tasks, req=%+v :%v", req, err)
+		}
+	}()
 	if err := validateGetPieceTasksRequestParams(req); err != nil {
-		return nil, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
+		return &base.PiecePacket{
+			State:      base.NewState(base.Code_PARAM_INVALID, err),
+			TaskId:     req.TaskId,
+			PieceTasks: nil,
+		}, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
-	pullRequest := &types.PullPieceRequest{
-		TaskId:   req.TaskId,
-		SrcId:    req.SrcIp,
-		StartNum: req.StartNum,
-		Limit:    req.Limit,
-	}
-	pieces, err := css.taskMgr.GetPieces(ctx, pullRequest)
-	if err != nil {
 
+	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
+	if err != nil {
+		return &base.PiecePacket{
+			State:      base.NewState(base.Code_CDN_ERROR, err),
+			TaskId:     req.TaskId,
+			PieceTasks: nil,
+		}, errors.Wrapf(err, "failed to get pieces from cdn")
 	}
-	pieceTasks := make([]*base.PieceTask, len(pieces))
+	pieceTasks := make([]*base.PieceTask, 0)
 	for _, piece := range pieces {
-		pieceTasks = append(pieceTasks, &base.PieceTask{
-			PieceNum:    0,
-			RangeStart:  0,
-			RangeSize:   0,
-			PieceMd5:    piece.PieceMd5,
-			SrcPid:      "",
-			DstPid:      "",
-			DstAddr:     "",
-			PieceOffset: 0,
-			PieceStyle:  0,
-		})
+		if piece.PieceNum >= req.StartNum && piece.PieceNum <= req.StartNum+req.Limit {
+			hostName, _ := os.Hostname()
+			pieceRange := strings.Split(piece.PieceRange, "-")
+			pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
+			pieceTasks = append(pieceTasks, &base.PieceTask{
+				PieceNum:    piece.PieceNum,
+				RangeStart:  pieceStart,
+				RangeSize:   piece.PieceLen,
+				PieceMd5:    piece.PieceMd5,
+				SrcPid:      req.SrcIp,
+				DstPid:      fmt.Sprintf("%s-%s-%d", hostName, css.cfg.AdvertiseIP, time.Now().UnixNano()),
+				DstAddr:     fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
+				PieceOffset: piece.PieceOffset,
+				PieceStyle:  base.PieceStyle(piece.PieceStyle),
+			})
+		}
 	}
 	return &base.PiecePacket{
-		State:      nil,
+		State:      base.NewState(base.Code_SUCCESS, "success"),
 		TaskId:     req.TaskId,
 		PieceTasks: pieceTasks,
 	}, nil
 }
 
 func validateGetPieceTasksRequestParams(req *base.PieceTaskRequest) error {
+	if stringutils.IsEmptyStr(req.TaskId) {
+		return errors.Wrap(dferrors.ErrEmptyValue, "taskId")
+	}
+	if netutils.IsValidIP(req.SrcIp) {
+		return errors.Wrapf(dferrors.ErrInvalidValue, "invalid ip %s", req.SrcIp)
+	}
+	if req.StartNum < 0 {
+		return errors.Wrapf(dferrors.ErrInvalidValue, "invalid starNum %d", req.StartNum)
+	}
+	if req.Limit < 0 {
+		return errors.Wrapf(dferrors.ErrInvalidValue, "invalid limit %d", req.Limit)
+	}
 	return nil
 }

@@ -205,8 +205,12 @@ func (cm *Manager) InitSeedProgress(ctx context.Context, taskID string) error  {
 	return cm.progressMgr.InitSeedProgress(ctx, taskID)
 }
 
-func (cm *Manager) WatchSeedProgress(ctx context.Context, taskID string, taskMgr mgr.SeedTaskMgr) (<-chan *types.SeedPiece, error) {
-	return cm.progressMgr.WatchSeedProgress(ctx, taskID, taskMgr)
+func (cm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error) {
+	return cm.progressMgr.WatchSeedProgress(ctx, taskID)
+}
+
+func (cm *Manager) GetPieces(ctx context.Context, taskID string) ([]*types.SeedPiece, error) {
+	return cm.progressMgr.GetPieceMetaRecordsByTaskID(taskID)
 }
 
 // handleCDNResult

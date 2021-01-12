@@ -75,6 +75,8 @@ type CDNMgr interface {
 	InitSeedProgress(ctx context.Context, taskID string) error
 
 	// WatchSeedProgress
-	WatchSeedProgress(ctx context.Context, taskID string, taskMgr SeedTaskMgr) (<-chan *types.SeedPiece, error)
+	WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error)
 
+	// GetPieces
+	GetPieces(ctx context.Context, taskID string) ([]*types.SeedPiece, error)
 }
