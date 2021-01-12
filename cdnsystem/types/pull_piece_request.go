@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package main
+package types
 
-import (
-	_ "github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/cdn"
-	_ "github.com/dragonflyoss/Dragonfly2/cdnsystem/source/httpprotocol"
-	"github.com/dragonflyoss/Dragonfly2/cmd/cdnsystem/app"
-	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
-)
-
-func main() {
-	app.Execute()
+type PullPieceRequest struct {
+	TaskId string
+	SrcId string
+	StartNum int32
+	Limit int32
 }

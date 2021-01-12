@@ -59,10 +59,14 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 	return
 }
 
+func (hs helloSeeder) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	return nil, nil
+}
+
 func main() {
 	lisAddr := basic.NetAddr{
 		Type: basic.TCP,
-		Addr: ":12345",
+		Addr: ":8002",
 	}
 
 	err := rpc.StartServer(lisAddr, &helloSeeder{})

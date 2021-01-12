@@ -31,6 +31,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// addOrUpdateTask add a new task or update exist task
 func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegisterRequest) (*types.SeedTask, error) {
 	taskURL := request.URL
 	if request.Filter != nil {
@@ -43,7 +44,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		if unReachableStartTime, ok := key.(time.Time); ok &&
 			time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
 			return nil, errors.Wrapf(dferrors.ErrURLNotReachable,
-				"taskID: %s task hit unReachable cache and interval less than %d, url: %s", taskId, tm.cfg.FailAccessInterval, request.URL)
+				"task hit unReachable cache and interval less than %d, url: %s", tm.cfg.FailAccessInterval, request.URL)
 		}
 		tm.taskURLUnReachableStore.Delete(taskId)
 	}
@@ -61,7 +62,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if v, err := tm.taskStore.Get(taskId); err == nil {
 		task = v.(*types.SeedTask)
 		if !equalsTask(task, newTask) {
-			return nil, errors.Wrapf(dferrors.ErrTaskIDDuplicate, "%s", task.TaskID)
+			return nil, dferrors.ErrTaskIDDuplicate
 		}
 	} else {
 		task = newTask
@@ -117,30 +118,31 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	return task, nil
 }
 
-func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) error {
+// updateTask
+func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*types.SeedTask, error) {
 	if stringutils.IsEmptyStr(taskID) {
-		return errors.Wrap(dferrors.ErrEmptyValue, "taskID")
+		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskID")
 	}
 
 	if updateTaskInfo == nil {
-		return errors.Wrap(dferrors.ErrEmptyValue, "Update TaskInfo")
+		return nil, errors.Wrap(dferrors.ErrEmptyValue, "Update TaskInfo")
 	}
 	// the expected new CDNStatus is not nil
 	if stringutils.IsEmptyStr(updateTaskInfo.CdnStatus) {
-		return errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
+		return nil, errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
 	}
 	util.GetLock(taskID, false)
 	util.ReleaseLock(taskID, false)
 	// get origin task
 	task, err := tm.getTask(taskID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !isSuccessCDN(updateTaskInfo.CdnStatus) {
 		// when the origin CDNStatus equals success, do not update it to unsuccessful
 		if isSuccessCDN(task.CdnStatus) {
-			return nil
+			return task, nil
 		}
 
 		// only update the task CdnStatus when the new task CDNStatus and
@@ -148,7 +150,7 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) err
 		tm.metrics.tasks.WithLabelValues(task.CdnStatus).Dec()
 		tm.metrics.tasks.WithLabelValues(updateTaskInfo.CdnStatus).Inc()
 		task.CdnStatus = updateTaskInfo.CdnStatus
-		return nil
+		return task, nil
 	}
 
 	// only update the task info when the new CDNStatus equals success
@@ -172,17 +174,19 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) err
 	tm.metrics.tasks.WithLabelValues(task.CdnStatus).Dec()
 	tm.metrics.tasks.WithLabelValues(updateTaskInfo.CdnStatus).Inc()
 	task.CdnStatus = updateTaskInfo.CdnStatus
-	return nil
+	return task, nil
 }
 
 // equalsTask check whether the two task provided are the same
 func equalsTask(existTask, newTask *types.SeedTask) bool {
-	if existTask.Url != newTask.Url {
+	if existTask.TaskUrl != newTask.TaskUrl {
 		return false
 	}
 
 	if !stringutils.IsEmptyStr(existTask.RequestMd5) && !stringutils.IsEmptyStr(newTask.RequestMd5) {
-		return existTask.RequestMd5 == newTask.RequestMd5
+		if existTask.RequestMd5 != newTask.RequestMd5 {
+			return false
+		}
 	}
 
 	if !stringutils.IsEmptyStr(newTask.RequestMd5) && !stringutils.IsEmptyStr(existTask.SourceRealMd5) {
@@ -214,12 +218,18 @@ func isSuccessCDN(CDNStatus string) bool {
 	return CDNStatus == types.TaskInfoCdnStatusSUCCESS
 }
 
+// isFrozen
 func isFrozen(CDNStatus string) bool {
 	return CDNStatus == types.TaskInfoCdnStatusFAILED ||
 		CDNStatus == types.TaskInfoCdnStatusWAITING ||
 		CDNStatus == types.TaskInfoCdnStatusSOURCEERROR
 }
 
+func isWait(CDNStatus string) bool {
+	return CDNStatus == types.TaskInfoCdnStatusWAITING
+}
+
+// isErrorCDN
 func isErrorCDN(CDNStatus string) bool {
 	return CDNStatus == types.TaskInfoCdnStatusFAILED ||
 		CDNStatus == types.TaskInfoCdnStatusSOURCEERROR

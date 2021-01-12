@@ -33,7 +33,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 )
 
-// calculate need how many goroutine
+// calculateRoutineCount calculate how many goroutines are needed to execute write goroutine
 func calculateRoutineCount(remainingFileLength int64, pieceSize int32) int {
 	routineSize := config.CDNWriterRoutineLimit
 	if remainingFileLength < 0 || pieceSize <= 0 {
@@ -54,6 +54,7 @@ func calculateRoutineCount(remainingFileLength int64, pieceSize int32) int {
 	return routineSize
 }
 
+// writerPool
 func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, writeRoutineCount int, jobCh chan *protocolContent) {
 	for i := 0; i < writeRoutineCount; i++ {
 		wg.Add(1)
@@ -103,6 +104,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 	}
 }
 
+// writeToFile
 func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuffer *bytes.Buffer, offset int64, pieceMd5 hash.Hash) error {
 	var resultBuf = &bytes.Buffer{}
 	// write piece content

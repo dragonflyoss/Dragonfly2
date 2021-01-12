@@ -24,7 +24,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/client"
-	"github.com/google/uuid"
 )
 
 func main() {
@@ -34,8 +33,9 @@ func main() {
 	}
 
 	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-		TaskId:  uuid.New().String(),
-		Url:     "http://www.baidu.com",
+		TaskId: "111111",
+		//Url:    "http://www.baidu.com",
+		Url:     "https://download.jetbrains.8686c.com/go/goland-2020.2.3.dmg",
 		Filter:  []string{""},
 		UrlMeta: nil,
 	})

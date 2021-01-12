@@ -39,10 +39,10 @@ type cacheDetector struct {
 
 // cacheResult detect cache result
 type cacheResult struct {
-	breakNum             int32             // break-point
-	pieceMetaRecords     []*pieceMetaRecord // piece meta data records of task
-	fileMetaData         *fileMetaData     // file meta data of task
-	fileMd5              hash.Hash         // md5 of file content that has been downloaded
+	breakNum         int32              // break-point
+	pieceMetaRecords []*pieceMetaRecord // piece meta data records of task
+	fileMetaData     *fileMetaData      // file meta data of task
+	fileMd5          hash.Hash          // md5 of file content that has been downloaded
 }
 
 // newCacheDetector create a new cache detector
@@ -54,7 +54,7 @@ func newCacheDetector(cacheStore *store.Store, metaDataManager *metaDataManager,
 	}
 }
 
-// detectCache detect cache which has been stored on cacheStore
+// detectCache detect cache which has been downloaded and stored on cacheStore
 func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) (*cacheResult, error) {
 	detectResult, err := cd.doDetect(ctx, task)
 	logger.Named(task.TaskID).Debugf("detects cache result:%v", detectResult)
@@ -65,10 +65,10 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) 
 			return nil, errors.Wrapf(err, "failed to reset repo")
 		}
 		detectResult = &cacheResult{
-			breakNum:             0,
-			pieceMetaRecords:     nil,
-			fileMetaData:         metaData,
-			fileMd5:              nil,
+			breakNum:         0,
+			pieceMetaRecords: nil,
+			fileMetaData:     metaData,
+			fileMd5:          nil,
 		}
 	} else {
 		logger.Named(task.TaskID).Debugf("start to update access time")
@@ -117,7 +117,7 @@ func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskID string,
 	if !fileMetaData.Success {
 		return nil, errors.Wrapf(dferrors.ErrDownloadFail, "success property flag is false")
 	}
-	pieceMetaRecords, err := cd.metaDataManager.readAndCheckPieceMetaRecords(ctx, taskID, fileMetaData.SourceMd5)
+	pieceMetaRecords, err := cd.metaDataManager.readAndCheckPieceMetaRecords(ctx, taskID, fileMetaData.SourceRealMd5)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read piece meta data from storage")
 	}
@@ -133,10 +133,10 @@ func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskID string,
 		return nil, errors.Wrapf(dferrors.ErrFileLengthNotEqual, "meta size %d, disk size %d", fileMetaData.CdnFileLength, storageInfo.Size)
 	}
 	return &cacheResult{
-		breakNum:             -1,
-		pieceMetaRecords:     pieceMetaRecords,
-		fileMetaData:         fileMetaData,
-		fileMd5:              nil,
+		breakNum:         -1,
+		pieceMetaRecords: pieceMetaRecords,
+		fileMetaData:     fileMetaData,
+		fileMd5:          nil,
 	}, nil
 }
 
@@ -169,13 +169,14 @@ func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskID string, met
 			breakIndex = index
 			break
 		}
+		breakIndex = index + 1
 	}
 	// todo 清除不连续的分片元数据信息
 	return &cacheResult{
-		breakNum:             int32(breakIndex),
-		pieceMetaRecords:     pieceMetaRecords[0:breakIndex],
-		fileMetaData:         metaData,
-		fileMd5:              fileMd5,
+		breakNum:         int32(breakIndex),
+		pieceMetaRecords: pieceMetaRecords[0:breakIndex:breakIndex],
+		fileMetaData:     metaData,
+		fileMd5:          fileMd5,
 	}, nil
 }
 
@@ -206,8 +207,8 @@ func checkSameFile(task *types.SeedTask, metaData *fileMetaData) error {
 	if metaData.TaskURL != task.TaskUrl {
 		return errors.Errorf("meta task taskUrl(%s) is not equals with task taskUrl(%s)", metaData.TaskURL, task.Url)
 	}
-	if !stringutils.IsEmptyStr(metaData.SourceMd5) && !stringutils.IsEmptyStr(task.RequestMd5) && metaData.SourceMd5 != task.RequestMd5 {
-		return errors.Errorf("meta task source md5(%s) is not equals with task request md5(%s)", metaData.SourceMd5, task.RequestMd5)
+	if !stringutils.IsEmptyStr(metaData.SourceRealMd5) && !stringutils.IsEmptyStr(task.RequestMd5) && metaData.SourceRealMd5 != task.RequestMd5 {
+		return errors.Errorf("meta task source md5(%s) is not equals with task request md5(%s)", metaData.SourceRealMd5, task.RequestMd5)
 	}
 	return nil
 }

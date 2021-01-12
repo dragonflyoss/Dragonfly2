@@ -17,14 +17,18 @@
 package mgr
 
 import (
+	"context"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 )
 
 // SeedProgressMgr as an interface defines all operations about seed progress
 type SeedProgressMgr interface {
 
+	// InitSeedProgress
+	InitSeedProgress(ctx context.Context, taskID string) error
+
 	// WatchSeedProgress watch seed progress
-	WatchSeedProgress(taskID string, taskMgr SeedTaskMgr) (<-chan *types.SeedPiece, error)
+	WatchSeedProgress(ctx context.Context, taskID string, taskMgr SeedTaskMgr) (<-chan *types.SeedPiece, error)
 
 	// UnWatchSeedProgress unwatch seed progress
 	UnWatchSeedProgress(seedSubscriber chan *types.SeedPiece, taskID string) error
@@ -32,8 +36,11 @@ type SeedProgressMgr interface {
 	// PublishPiece publish seedPiece
 	PublishPiece(taskID string, record *types.SeedPiece) error
 
+	PublishTask(taskID string, record *types.SeedPiece) error
+
 	// GetPieceMetaRecordsByTaskID
 	GetPieceMetaRecordsByTaskID(taskID string) (records []*types.SeedPiece, err error)
 
-	Close(taskID string) error
+	// Clear
+	Clear(taskID string) error
 }

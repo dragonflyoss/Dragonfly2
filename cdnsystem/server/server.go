@@ -94,11 +94,11 @@ func (s *Server) Start() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "create seedServer fail")
 	}
+	// start gc
+	s.GCMgr.StartGC(context.Background())
 	err = rpc.StartServer(lisAddr, seedServer)
 	if err != nil {
 		return errors.Wrap(err, "start seedServer fail")
 	}
-	// start gc
-	s.GCMgr.StartGC(context.Background())
 	return nil
 }

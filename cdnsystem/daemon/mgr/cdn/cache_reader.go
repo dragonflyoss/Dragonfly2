@@ -34,6 +34,7 @@ func checkPieceContent(reader io.Reader, pieceRecord *pieceMetaRecord, fileMd5 h
 	if pieceLen < bufSize {
 		bufSize = pieceLen
 	}
+	// todo 针对分片格式解析出原始数据来计算fileMd5
 	pieceContent := make([]byte, bufSize)
 	var curContent int32
 	pieceMd5 := md5.New()

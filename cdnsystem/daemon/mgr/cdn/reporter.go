@@ -32,6 +32,7 @@ func newReporter(publisher mgr.SeedProgressMgr) *reporter {
 	}
 }
 
+// report cache result
 func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error {
 	// report cache pieces status
 	if detectResult != nil && detectResult.pieceMetaRecords != nil {
@@ -44,11 +45,13 @@ func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error 
 	return nil
 }
 
+// reportPieceMetaRecord
 func (re *reporter) reportPieceMetaRecord(taskID string, record *pieceMetaRecord) error {
 	// report cache pieces status
 	return re.publisher.PublishPiece(taskID, convertPieceMeta2SeedPiece(record))
 }
 
+// reportTask
 func (re *reporter) reportTask(taskID string, task *types.SeedTask) error {
-	return re.publisher.PublishPiece(taskID, convertTaskInfo2SeedPiece(task))
+	return re.publisher.PublishTask(taskID, convertTaskInfo2SeedPiece(task))
 }

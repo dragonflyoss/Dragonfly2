@@ -39,7 +39,7 @@ type fileMetaData struct {
 	AccessTime      int64             `json:"accessTime"`
 	Interval        int64             `json:"interval"`
 	CdnFileLength   int64             `json:"cdnFileLength"`
-	SourceMd5       string            `json:"sourceRealMd5"`
+	SourceRealMd5   string            `json:"sourceRealMd5"`
 	ExpireInfo      map[string]string `json:"expireInfo"`
 	Finish          bool              `json:"finish"`
 	Success         bool              `json:"success"`
@@ -48,12 +48,12 @@ type fileMetaData struct {
 
 // pieceMetaRecord
 type pieceMetaRecord struct {
-	PieceNum   int32             `json:"pieceNum"`
+	PieceNum   int32             `json:"pieceNum"`   // piece Num start from 0
 	PieceLen   int32             `json:"pieceLen"`   // 下载存储的真实长度
 	Md5        string            `json:"md5"`        // piece content md5
 	Range      string            `json:"range"`      // 下载存储到磁盘的range，不一定是origin source的range
-	Offset     uint64            `json:"offset"`     //
-	PieceStyle types.PieceFormat `json:"pieceStyle"` // 0: PlainUnspecified
+	Offset     uint64            `json:"offset"`     // offset
+	PieceStyle types.PieceFormat `json:"pieceStyle"` // 1: PlainUnspecified
 }
 
 // fileMetaDataManager manages the meta file and piece meta file of each taskID.
@@ -92,8 +92,6 @@ func (mm *metaDataManager) writeFileMetaDataByTask(ctx context.Context, task *ty
 
 // writeFileMetaData stores the metadata of taskID to storage.
 func (mm *metaDataManager) writeFileMetaData(ctx context.Context, metaData *fileMetaData) error {
-	mm.fileMetaLocker.GetLock(metaData.TaskID, false)
-	defer mm.fileMetaLocker.ReleaseLock(metaData.TaskID, false)
 	data, err := json.Marshal(metaData)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal metadata")
@@ -103,8 +101,6 @@ func (mm *metaDataManager) writeFileMetaData(ctx context.Context, metaData *file
 
 // readFileMetaData returns the fileMetaData info according to the taskID.
 func (mm *metaDataManager) readFileMetaData(ctx context.Context, taskID string) (*fileMetaData, error) {
-	mm.fileMetaLocker.GetLock(taskID, true)
-	defer mm.fileMetaLocker.ReleaseLock(taskID, true)
 	bytes, err := mm.fileStore.GetBytes(ctx, getTaskMetaDataRawFunc(taskID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get metadata bytes")
@@ -169,8 +165,8 @@ func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskID str
 	if originMetaData.Success {
 		originMetaData.CdnFileLength = metaData.CdnFileLength
 		originMetaData.SourceFileLen = metaData.SourceFileLen
-		if !stringutils.IsEmptyStr(metaData.SourceMd5) {
-			originMetaData.SourceMd5 = metaData.SourceMd5
+		if !stringutils.IsEmptyStr(metaData.SourceRealMd5) {
+			originMetaData.SourceRealMd5 = metaData.SourceRealMd5
 		}
 	}
 	return mm.writeFileMetaData(ctx, originMetaData)
@@ -193,7 +189,7 @@ func (pmm *metaDataManager) appendPieceMetaIntegrityData(ctx context.Context, ta
 	if err != nil {
 		return errors.Wrapf(err, "failed to read piece meta records")
 	}
-	var pieceMetaStrs []string
+	pieceMetaStrs := make([]string, 0, len(pieceMetaRecords)+2)
 	for _, record := range pieceMetaRecords {
 		pieceMetaStrs = append(pieceMetaStrs, getPieceMetaValue(record))
 	}
@@ -240,9 +236,6 @@ func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, ta
 
 // readPieceMetaRecordsWithoutCheck reads pieceMetaRecords from storage and without check data integrity
 func (pmm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context, taskID string) ([]*pieceMetaRecord, error) {
-	pmm.pieceMetaLocker.GetLock(taskID, true)
-	defer pmm.pieceMetaLocker.ReleaseLock(taskID, true)
-
 	bytes, err := pmm.fileStore.GetBytes(ctx, getPieceMetaDataRawFunc(taskID))
 	if err != nil {
 		return nil, err
@@ -252,7 +245,7 @@ func (pmm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context
 	if len(pieceMetaRecords) == 0 {
 		return nil, dferrors.ErrDataNotFound
 	}
-	var result = make([]*pieceMetaRecord, len(pieceMetaRecords))
+	var result = make([]*pieceMetaRecord, 0, len(pieceMetaRecords))
 	for _, pieceRecord := range pieceMetaRecords {
 		record, err := getPieceMetaRecord(pieceRecord)
 		if err != nil {

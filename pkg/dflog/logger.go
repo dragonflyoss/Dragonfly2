@@ -132,7 +132,7 @@ func With(args ...interface{}) *zap.SugaredLogger {
 }
 
 func Named(name string) *zap.SugaredLogger {
-	return bizLogger.Named(name)
+	return bizLogger.With("taskID", name)
 }
 
 func Infof(fmt string, args ...interface{}) {

@@ -48,7 +48,7 @@ func (o ossSourceClient) IsExpired(url string, headers, expireInfo map[string]st
 	panic("implement me")
 }
 
-func (o ossSourceClient) Download(url string, headers map[string]string, checkCode source.StatusCodeChecker) (*types.DownloadResponse, error) {
+func (o ossSourceClient) Download(url string, headers map[string]string) (*types.DownloadResponse, error) {
 	panic("implement me")
 }
 

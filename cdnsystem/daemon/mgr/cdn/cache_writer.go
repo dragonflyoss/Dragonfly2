@@ -106,12 +106,14 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 
 		if err == io.EOF {
 			if bb.Len() > 0 {
-				jobCh <- &protocolContent{
+				pc := &protocolContent{
 					taskID:       task.TaskID,
 					pieceNum:     curPieceNum,
 					pieceSize:    task.PieceSize,
 					pieceContent: bb,
 				}
+				jobCh <- pc
+				curPieceNum++
 				logger.Named(task.TaskID).Debugf("send the protocolContent, pieceNum: %d", curPieceNum)
 			}
 			logger.Named(task.TaskID).Info("send all protocolContents and wait for cdnWriter")

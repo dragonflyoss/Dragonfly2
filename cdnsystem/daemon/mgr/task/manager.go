@@ -22,7 +22,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
@@ -89,55 +88,56 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 		logger.Named(task.TaskID).Infof("failed to add or update task with req %+v: %v", req, err)
 		return nil, err
 	}
-	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
-	logger.Named(task.TaskID).Debugf("success to get task info: %+v", task)
-	// trigger CDN
-	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
-		return nil, errors.Wrapf(err, "failed to trigger cdn")
-	}
-	// watch task update
-	return tm.cdnMgr.WatchSeedTask(task.TaskID, tm)
-}
-
-// triggerCdnSyncAction
-func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTask) error {
-	util.GetLock(task.TaskID, true)
 	// update accessTime for taskID
 	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
 		logger.Named(task.TaskID).Warnf("failed to update accessTime: %v", err)
 	}
+	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
+	logger.Named(task.TaskID).Debugf("success to get task info: %+v", task)
+
+	// trigger CDN
+	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
+		return nil, errors.Wrapf(err, "failed to trigger cdn")
+	}
+	// watch seed progress
+	return tm.cdnMgr.WatchSeedProgress(ctx, task.TaskID, tm)
+}
+
+// triggerCdnSyncAction
+func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTask) error {
 	if !isFrozen(task.CdnStatus) {
 		logger.Named(task.TaskID).Infof("seedTask is running or has been downloaded successfully, status:%s", task.CdnStatus)
-		util.ReleaseLock(task.TaskID, true)
 		return nil
 	}
-	util.ReleaseLock(task.TaskID, true)
-	// update task status
-	util.GetLock(task.TaskID, false)
-	if err := tm.updateTask(task.TaskID, &types.SeedTask{
-		CdnStatus: types.TaskInfoCdnStatusRUNNING,
-	}); err != nil {
-		util.ReleaseLock(task.TaskID, false)
-		return err
+	if isWait(task.CdnStatus) {
+		err := tm.cdnMgr.InitSeedProgress(ctx, task.TaskID)
+		if err != nil {
+			return errors.Wrap(err, "failed to init seed progress")
+		}
+		logger.Named(task.TaskID).Infof("success to init seed progress")
 	}
-	util.ReleaseLock(task.TaskID, false)
-
+	updatedTask, err := tm.updateTask(task.TaskID, &types.SeedTask{
+		CdnStatus: types.TaskInfoCdnStatusRUNNING,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "update task failed")
+	}
 	// triggerCDN goroutine
 	go func() {
 		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(ctx, task)
 		tm.metrics.triggerCdnCount.WithLabelValues().Inc()
 		if err != nil {
 			tm.metrics.triggerCdnFailCount.WithLabelValues().Inc()
-			logger.Named(task.TaskID).Errorf("taskID: %s trigger cdn get error: %v", task.TaskID, err)
+			logger.Named(task.TaskID).Errorf("trigger cdn get error: %v", err)
 		}
-		err = tm.updateTask(task.TaskID, updateTaskInfo)
+		updatedTask, err = tm.updateTask(task.TaskID, updateTaskInfo)
 		if err != nil {
-			logger.Named(task.TaskID).Errorf("taskID: %s, update task fail:%v", err)
+			logger.Named(task.TaskID).Errorf("update task fail:%v", err)
 		} else {
-			logger.Named(task.TaskID).Infof("taskID: %s success to update task cdn %+v", task.TaskID, updateTaskInfo)
+			logger.Named(task.TaskID).Infof("success to update task cdn updatedTask:%+v", updatedTask)
 		}
 	}()
-	logger.Named(task.TaskID).Infof("taskID: %s success to start cdn trigger", task.TaskID)
+	logger.Named(task.TaskID).Infof("success to start cdn trigger")
 
 	return nil
 }
@@ -172,4 +172,8 @@ func (tm Manager) Delete(ctx context.Context, taskID string) error {
 	tm.taskURLUnReachableStore.Delete(taskID)
 	tm.taskStore.Delete(taskID)
 	return nil
+}
+
+func (tm *Manager) GetPieces(ctx context.Context, piecePullRequest *types.PullPieceRequest) (pieces []*types.SeedPiece, err error) {
+	panic("implement me")
 }

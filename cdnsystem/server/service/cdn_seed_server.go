@@ -69,24 +69,24 @@ func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
 	return nil
 }
 
-func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
+func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
 	if err := validateSeedRequestParams(req); err != nil {
 		return errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
 	headers := constructRequestHeader(req.GetUrlMeta())
 	registerRequest := &types.TaskRegisterRequest{
 		Headers: headers,
-		URL:     req.GetUrl(),
+		URL:     req.Url,
 		Md5:     headers["md5"],
-		TaskID:  req.GetTaskId(),
+		TaskID:  req.TaskId,
 		Filter:  req.Filter,
 	}
-
-	pieceChan, err := ss.taskMgr.Register(ctx, registerRequest)
+	// register task
+	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
 
 	if err != nil {
-		logger.Named(req.TaskId).Errorf("register seed task fail, registerRequest=%v: %v", err)
-		return errors.Wrapf(err, "register seed task fail, registerRequest:%v", registerRequest)
+		logger.Named(req.TaskId).Errorf("register seed task fail, registerRequest=%+v: %v",registerRequest, err)
+		return errors.Wrapf(err, "register seed task fail, registerRequest:%+v", registerRequest)
 	}
 
 	for piece := range pieceChan {
@@ -94,7 +94,7 @@ func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReq
 		case types.PieceType:
 			psc <- &cdnsystem.PieceSeed{
 				State:       base.NewState(base.Code_SUCCESS, "success"),
-				SeedAddr:    fmt.Sprintf("%s:%d", ss.cfg.AdvertiseIP, ss.cfg.ListenPort),
+				SeedAddr:    fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
 				PieceStyle:  base.PieceStyle(piece.PieceStyle),
 				PieceNum:    piece.PieceNum,
 				PieceMd5:    piece.PieceMd5,
@@ -111,12 +111,51 @@ func (ss *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReq
 			}
 			psc <- &cdnsystem.PieceSeed{
 				State:         state,
-				SeedAddr:      fmt.Sprintf("%s:%d", ss.cfg.AdvertiseIP, ss.cfg.ListenPort),
+				SeedAddr:      fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
 				Done:          true,
 				ContentLength: piece.ContentLength,
 				TotalTraffic:  piece.BackSourceLength,
 			}
 		}
 	}
+	return nil
+}
+
+func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	if err := validateGetPieceTasksRequestParams(req); err != nil {
+		return nil, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
+	}
+	pullRequest := &types.PullPieceRequest{
+		TaskId:   req.TaskId,
+		SrcId:    req.SrcIp,
+		StartNum: req.StartNum,
+		Limit:    req.Limit,
+	}
+	pieces, err := css.taskMgr.GetPieces(ctx, pullRequest)
+	if err != nil {
+
+	}
+	pieceTasks := make([]*base.PieceTask, len(pieces))
+	for _, piece := range pieces {
+		pieceTasks = append(pieceTasks, &base.PieceTask{
+			PieceNum:    0,
+			RangeStart:  0,
+			RangeSize:   0,
+			PieceMd5:    piece.PieceMd5,
+			SrcPid:      "",
+			DstPid:      "",
+			DstAddr:     "",
+			PieceOffset: 0,
+			PieceStyle:  0,
+		})
+	}
+	return &base.PiecePacket{
+		State:      nil,
+		TaskId:     req.TaskId,
+		PieceTasks: pieceTasks,
+	}, nil
+}
+
+func validateGetPieceTasksRequestParams(req *base.PieceTaskRequest) error {
 	return nil
 }
