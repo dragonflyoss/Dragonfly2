@@ -116,6 +116,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		}
 		logger.Named(task.TaskID).Infof("success to init seed progress")
 	}
+
 	updatedTask, err := tm.updateTask(task.TaskID, &types.SeedTask{
 		CdnStatus: types.TaskInfoCdnStatusRUNNING,
 	})

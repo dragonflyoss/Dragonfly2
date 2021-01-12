@@ -31,6 +31,7 @@ import (
 type Manager struct {
 	seedSubscribers      *syncmap.SyncMap
 	taskPieceMetaRecords *syncmap.SyncMap
+	progress             *syncmap.SyncMap
 	buffer               int
 }
 
@@ -38,6 +39,7 @@ func NewManager() *Manager {
 	return &Manager{
 		seedSubscribers:      syncmap.NewSyncMap(),
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
+		progress:             syncmap.NewSyncMap(),
 		buffer:               64,
 	}
 }
@@ -65,13 +67,25 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string, taskMgr
 		return nil, errors.Wrap(err, "failed to get piece meta records by taskId")
 	}
 	ch := make(chan *types.SeedPiece, pm.buffer)
-	chanList.PushBack(ch)
-	go func(seedCh chan *types.SeedPiece) {
-		for _, pieceMetaRecord := range pieceMetaDataRecords {
-			logger.Debugf("seed piece meta record %s", pieceMetaRecord)
-			seedCh <- pieceMetaRecord
-		}
-	}(ch)
+	task, _ := pm.progress.Get(taskID)
+	if task != nil {
+		go func(seedCh chan *types.SeedPiece) {
+			for _, pieceMetaRecord := range pieceMetaDataRecords {
+				logger.Debugf("seed piece meta record %s", pieceMetaRecord)
+				seedCh <- pieceMetaRecord
+			}
+
+			seedCh <- task.(*types.SeedPiece)
+		}(ch)
+	} else {
+		chanList.PushBack(ch)
+		go func(seedCh chan *types.SeedPiece) {
+			for _, pieceMetaRecord := range pieceMetaDataRecords {
+				logger.Debugf("seed piece meta record %s", pieceMetaRecord)
+				seedCh <- pieceMetaRecord
+			}
+		}(ch)
+	}
 	return ch, nil
 }
 
@@ -114,8 +128,12 @@ func (pm *Manager) PublishPiece(taskID string, record *types.SeedPiece) error {
 	return nil
 }
 
-func (pm *Manager) PublishTask(taskID string, record *types.SeedPiece) error {
-	logger.Debugf("seed task record %s", record)
+func (pm *Manager) PublishTask(taskID string, taskRecord *types.SeedPiece) error {
+	logger.Debugf("seed task record %s", taskRecord)
+	err := pm.progress.Add(taskID, taskRecord)
+	if err != nil {
+		errors.Wrap(err, "failed to add task record")
+	}
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get seed subscribers")
@@ -128,7 +146,7 @@ func (pm *Manager) PublishTask(taskID string, record *types.SeedPiece) error {
 			defer wg.Done()
 			sub <- record
 			pm.UnWatchSeedProgress(sub, taskID)
-		}(sub, record)
+		}(sub, taskRecord)
 	}
 	wg.Wait()
 	return nil
@@ -155,6 +173,10 @@ func (pm *Manager) Clear(taskID string) error {
 	err = pm.taskPieceMetaRecords.Remove(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
 		return errors.Wrap(err, "failed to clear piece meta records")
+	}
+	err = pm.progress.Remove(taskID)
+	if err != nil && !dferrors.IsDataNotFound(err) {
+		return errors.Wrap(err, "failed to clear progress record")
 	}
 	return nil
 }

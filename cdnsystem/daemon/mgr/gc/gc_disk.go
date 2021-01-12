@@ -59,7 +59,7 @@ func (gcm *Manager) deleteTaskDisk(ctx context.Context, gcTaskIDs []string) {
 			continue
 		}
 
-		if err := gcm.cdnMgr.Delete(ctx, taskID); err != nil {
+		if err := gcm.cdnMgr.Delete(ctx, taskID, true); err != nil {
 			logger.GcLogger.Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
 			util.ReleaseLock(taskID, false)
 			continue
