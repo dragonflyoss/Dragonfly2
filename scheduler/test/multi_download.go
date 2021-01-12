@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var _ = Describe("Multi Client Download Test", func() {
+var _ = FDescribe("Multi Client Download Test", func() {
 	tl := common.NewE2ELogger()
 
 	var (
@@ -25,15 +25,18 @@ var _ = Describe("Multi Client Download Test", func() {
 
 	Describe("start cdn and scheduler", func() {
 		It("start cdn and scheduler", func() {
-			cdn = mock_cdn.NewMockCDN(":12345", tl)
+			cdn = mock_cdn.NewMockCDN("localhost:12345", tl)
 			cdn.Start()
 			mgr.GetCDNManager().InitCDNClient()
 			go svr.Start()
+			time.Sleep(time.Second/2)
 		})
 	})
 
 	Describe("Create Multi Client", func() {
 		It("create multi client should be successfully", func() {
+			mock_client.ClearClient()
+			mock_client.RegisterClient(cdn.GetHostId(), cdn)
 			for i := 0; i < clientNum; i++ {
 				client := mock_client.NewMockClient("127.0.0.1:8002", tl)
 				go client.Start()

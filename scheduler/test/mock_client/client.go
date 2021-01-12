@@ -9,22 +9,53 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/client"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
 	"math/rand"
+	"sync"
 	"sync/atomic"
 	"time"
 )
 
 var clientNum = int32(0)
 
+var clientMap = make(map[string]IDownloadClient)
+var clientMapLock = new(sync.RWMutex)
+
+func ClearClient() {
+	clientMapLock.Lock()
+	clientMap = make(map[string]IDownloadClient)
+	clientMapLock.Unlock()
+}
+
+func RegisterClient(id string, downloadClient IDownloadClient) {
+	clientMapLock.Lock()
+	clientMap[id] = downloadClient
+	clientMapLock.Unlock()
+}
+
+func GetClient(id string) IDownloadClient {
+	clientMapLock.RLock()
+	defer clientMapLock.RUnlock()
+	return clientMap[id]
+}
+
+
+
+type IDownloadClient interface {
+	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
+}
+
 type MockClient struct {
 	cli           client.SchedulerClient
 	logger        common.TestLogger
-	replyChan     chan *scheduler.PiecePackage_PieceTask
+	replyChan     chan *scheduler.PieceResult
 	replyFinished chan struct{}
 	in            chan<- *scheduler.PieceResult
-	out           <-chan *scheduler.PiecePackage
+	out           <-chan *scheduler.PeerPacket
 	pid           string
 	taskId        string
 	waitStop      chan struct{}
+	pieceTaskList []*base.PieceTask
+	parentId      string
+	finished      bool
 }
 
 func NewMockClient(addr string, logger common.TestLogger) *MockClient {
@@ -37,10 +68,11 @@ func NewMockClient(addr string, logger common.TestLogger) *MockClient {
 		cli:           c,
 		pid:           fmt.Sprintf("%04d", pid),
 		logger:        logger,
-		replyChan:     make(chan *scheduler.PiecePackage_PieceTask, 1000),
+		replyChan:     make(chan *scheduler.PieceResult, 1000),
 		waitStop:      make(chan struct{}),
 		replyFinished: make(chan struct{}),
 	}
+	RegisterClient(mc.pid, mc)
 	logger.Logf("NewMockClient %s", mc.pid)
 	return mc
 }
@@ -52,11 +84,21 @@ func (mc *MockClient) Start() {
 		return
 	}
 
+	go mc.downloadPieces()
+
 	go mc.replyMessage()
 }
 
 func (mc *MockClient) GetStopChan() chan struct{} {
 	return mc.waitStop
+}
+
+func (mc *MockClient) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	return &base.PiecePacket{
+		TaskId:     mc.taskId,
+		PieceTasks: mc.pieceTaskList,
+		Finished:   mc.finished,
+	}, nil
 }
 
 func (mc *MockClient) registerPeerTask() (err error) {
@@ -68,9 +110,9 @@ func (mc *MockClient) registerPeerTask() (err error) {
 			Md5:   "",
 			Range: "",
 		},
-		Pid: mc.pid,
+		PeerId: mc.pid,
 		PeerHost: &scheduler.PeerHost{
-			Uuid:           fmt.Sprintf("host%s", mc.pid),
+			Uuid:           fmt.Sprintf("%s", mc.pid),
 			Ip:             "127.0.0.1",
 			Port:           23456,
 			HostName:       fmt.Sprintf("host%s", mc.pid),
@@ -90,16 +132,16 @@ func (mc *MockClient) registerPeerTask() (err error) {
 		return
 	}
 	mc.taskId = pkg.TaskId
-
-	for _, t := range pkg.PieceTasks {
-		mc.replyChan <- t
+	if pkg.MainPeer != nil {
+		mc.parentId = pkg.MainPeer.Uuid
 	}
 
 	wait := make(chan bool)
+
 	go func() {
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
-		mc.in, mc.out, err = mc.cli.PullPieceTasks(ctx, mc.taskId, request)
+		mc.in, mc.out, err = mc.cli.ReportPieceResult(ctx, mc.taskId, request)
 		if err != nil {
 			mc.logger.Errorf("[%s] PullPieceTasks failed: %e", mc.pid, err)
 			return
@@ -109,26 +151,20 @@ func (mc *MockClient) registerPeerTask() (err error) {
 
 		for {
 			resp := <-mc.out
-			if len(resp.PieceTasks) > 0 {
-				logMsg := fmt.Sprintf("[%s] recieve a pkg: %d, pieceNum:", mc.pid, len(resp.PieceTasks))
-				for _, piece := range resp.PieceTasks {
-					logMsg += fmt.Sprintf("[%d-%s]", piece.PieceNum, piece.DstPid)
-				}
+			if resp.MainPeer != nil {
+				mc.parentId = resp.MainPeer.Uuid
+				logMsg := fmt.Sprintf("[%s] recieve a parent: %s", mc.pid, mc.parentId)
 				mc.logger.Log(logMsg)
 			} else {
-				mc.logger.Logf("[%s] receive a pkg: pieceNum[%d]\n", mc.pid, len(resp.PieceTasks))
+				mc.logger.Logf("[%s] receive a empty parent\n", mc.pid)
 			}
 			if resp != nil && resp.Done {
 				mc.logger.Logf("client[%s] download finished", mc.pid)
-				close(mc.waitStop)
+				// close(mc.waitStop)
 				break
 			}
-			if resp == nil || len(resp.PieceTasks) == 0 {
-				mc.replyChan <- nil
+			if resp == nil {
 				continue
-			}
-			for _, t := range resp.PieceTasks {
-				mc.replyChan <- t
 			}
 		}
 		<-mc.replyFinished
@@ -143,8 +179,13 @@ func (mc *MockClient) replyMessage() {
 		recover()
 		close(mc.replyFinished)
 	}()
-	closed := false
-	for t := range mc.replyChan {
+	var t *scheduler.PieceResult
+	for  {
+		select {
+		case t = <-mc.replyChan:
+		case <-mc.waitStop:
+			break
+		}
 		var pr *scheduler.PieceResult
 		if t == nil {
 			pr = &scheduler.PieceResult{
@@ -153,27 +194,62 @@ func (mc *MockClient) replyMessage() {
 				PieceNum: -1,
 			}
 		} else {
-			pr = &scheduler.PieceResult{
-				TaskId:     mc.taskId,
-				SrcPid:     mc.pid,
-				DstPid:     t.DstPid,
-				PieceNum:   t.PieceNum,
-				PieceRange: t.PieceRange,
-				Success:    true,
-				ErrorCode:  base.Code_SUCCESS,
-				Cost:       10,
-			}
+			pr = t
 		}
-		time.Sleep(time.Millisecond * time.Duration(rand.Intn(3000)))
+		time.Sleep(time.Millisecond * time.Duration(rand.Intn(1000)))
+		mc.in <- pr
+	}
+}
+
+func (mc *MockClient) downloadPieces() {
+	for {
 		select {
-		case _, notClosed := <-mc.waitStop:
-			if !notClosed {
-				if !closed {
-					close(mc.replyChan)
-				}
-			}
+		case <-mc.waitStop:
+			return
 		default:
 		}
-		mc.in <- pr
+		cli := GetClient(mc.parentId)
+		if cli == nil {
+			time.Sleep(time.Second)
+			continue
+		}
+		pieces, _ := cli.GetPieceTasks(nil, nil)
+		if pieces != nil {
+			if pieces.Finished && len(pieces.PieceTasks) == len(mc.pieceTaskList) {
+				mc.finished = true
+				mc.logger.Logf("client[%s] download finished from [%s]", mc.pid, mc.parentId)
+				close(mc.waitStop)
+				return
+			}
+			for _, p := range pieces.PieceTasks {
+				has := false
+				for _, lp := range mc.pieceTaskList {
+					if p.PieceNum == lp.PieceNum {
+						has = true
+						break
+					}
+				}
+				if !has {
+					pr := &scheduler.PieceResult{
+						TaskId:     mc.taskId,
+						SrcPid:     mc.pid,
+						DstPid:     mc.parentId,
+						PieceNum:   p.PieceNum,
+						PieceRange: fmt.Sprintf("%d,%d", p.RangeStart, p.RangeStart+uint64(p.RangeSize)),
+						Success:    true,
+						Code:       base.Code_SUCCESS,
+						BeginTime:  uint64(time.Now().UnixNano() / int64(time.Millisecond)),
+					}
+					time.Sleep(time.Millisecond * time.Duration(rand.Intn(1000)+100))
+					pr.EndTime = uint64(time.Now().UnixNano() / int64(time.Millisecond))
+					mc.pieceTaskList = append(mc.pieceTaskList, p)
+					mc.logger.Logf("client[%s] download a piece [%d] from [%s]", mc.pid, p.PieceNum, mc.parentId)
+					mc.replyChan <- pr
+					break
+				} else {
+					time.Sleep(time.Second)
+				}
+			}
+		}
 	}
 }

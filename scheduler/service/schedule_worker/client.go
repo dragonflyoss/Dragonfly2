@@ -42,7 +42,7 @@ func (c *Client) doWork() {
 
 	for {
 		if pr != nil {
-			logger.Debugf("[%s][%s]: recieve a pieceResult %v - %v", pr.TaskId, pr.SrcPid, pr.PieceNum, pr.Success)
+			logger.Debugf("[%s][%s]: receive a pieceResult %v - %v", pr.TaskId, pr.SrcPid, pr.PieceNum, pr.Success)
 		}
 		c.worker.ReceiveUpdatePieceResult(pr)
 		pr, err = c.client.Recv()

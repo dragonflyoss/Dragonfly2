@@ -130,6 +130,11 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 	}
 	peerTask.SetStatus(result.Traffic, result.Cost, result.Success, result.Code)
 
+	if peerTask.Success {
+		peerTask.SetNodeStatus(types.PeerTaskStatusDone)
+		s.worker.ReceiveJob(peerTask)
+	}
+
 	return
 }
 

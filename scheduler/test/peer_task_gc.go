@@ -1,6 +1,7 @@
 package test
 
 import (
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
@@ -26,7 +27,7 @@ var _ = Describe("PeerTask GC Test", func() {
 	Describe("peer task should be removed by gc", func() {
 		It("peer task should be removed by gc", func() {
 			pid := "gc001"
-			host := types.CopyHost(&types.Host{Uuid: "gc-host-001"})
+			host := types.CopyHost(&types.Host{PeerHost:scheduler.PeerHost{Uuid: "gc-host-001"}})
 			task := types.CopyTask(&types.Task{TaskId: "gc-task-001"})
 			hostMgr.AddHost(host)
 			peertaskMgr.AddPeerTask(pid, task, host)

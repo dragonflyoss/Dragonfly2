@@ -68,12 +68,42 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) ( primary *types.PeerT
 }
 
 func (s *Scheduler) SchedulerBadNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
+	peer.DeleteParent()
+	s.SchedulerParent(peer)
+	adjustNodes = append(adjustNodes, peer)
+
+	for _, child := range peer.GetChildren() {
+		child.SrcPeerTask.DeleteParent()
+		s.SchedulerParent(child.SrcPeerTask)
+		adjustNodes = append(adjustNodes, child.SrcPeerTask)
+	}
+
+	children, _ := s.SchedulerChildren(peer)
+	for _, child := range children {
+		adjustNodes = append(adjustNodes, child)
+	}
+
 	return
 }
 
-func (s *Scheduler) SchedulerAdjustParentNode(peer *types.PeerTask) ( primary *types.PeerTask, secondary []*types.PeerTask, err error) {
+func (s *Scheduler) SchedulerAdjustParentNode(peer *types.PeerTask) (primary *types.PeerTask, secondary []*types.PeerTask, err error) {
+	peer.DeleteParent()
+	return s.SchedulerParent(peer)
+}
+
+func (s *Scheduler) SchedulerDone(peer *types.PeerTask) (parent *types.PeerTask, err error) {
+	if peer.GetParent() == nil {
+		return
+	}
+	parent = peer.GetParent().DstPeerTask
+	if parent == nil {
+		return
+	}
+	peer.DeleteParent()
+
 	return
 }
+
 
 func (s *Scheduler) NeedAdjustParent(peer *types.PeerTask) bool {
 	return s.evaluator.NeedAdjustParent(peer)

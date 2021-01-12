@@ -575,6 +575,7 @@ type PiecePacket struct {
 	State      *ResponseState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
 	TaskId     string         `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	PieceTasks []*PieceTask   `protobuf:"bytes,3,rep,name=piece_tasks,json=pieceTasks,proto3" json:"piece_tasks,omitempty"`
+	Finished   bool
 }
 
 func (x *PiecePacket) Reset() {

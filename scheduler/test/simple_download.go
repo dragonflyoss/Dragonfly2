@@ -22,15 +22,18 @@ var _ = Describe("One Client Download Test", func() {
 
 	Describe("start cdn and scheduler", func() {
 		It("start cdn and scheduler", func() {
-			cdn = mock_cdn.NewMockCDN(":12345", tl)
+			cdn = mock_cdn.NewMockCDN("localhost:12345", tl)
 			cdn.Start()
 			mgr.GetCDNManager().InitCDNClient()
 			go svr.Start()
+			time.Sleep(time.Second/2)
 		})
 	})
 
 	Describe("One Client Download a file Test", func() {
 		It("should be download a file successfully", func() {
+			mock_client.ClearClient()
+			mock_client.RegisterClient(cdn.GetHostId(), cdn)
 			client = mock_client.NewMockClient("127.0.0.1:8002", tl)
 			go client.Start()
 			stopCh := client.GetStopChan()

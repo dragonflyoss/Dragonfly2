@@ -71,6 +71,8 @@ func (h *Host) AddUploadLoad(delta int32) {
 	h.currentUploadLoad += delta
 }
 
+
+
 func (h *Host) GetUploadLoad() int32 {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()

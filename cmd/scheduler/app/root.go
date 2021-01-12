@@ -1,7 +1,7 @@
 package app
 
 import (
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/server"
 	"github.com/mitchellh/mapstructure"

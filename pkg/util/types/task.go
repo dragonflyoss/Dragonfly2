@@ -3,7 +3,7 @@ package types
 import (
 	"crypto/sha1"
 	"fmt"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"net/url"
 	"strings"
 )

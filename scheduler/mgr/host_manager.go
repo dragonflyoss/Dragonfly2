@@ -22,6 +22,7 @@ func (m *HostManager) AddHost(host *types.Host) *types.Host {
 	}
 
 	copyHost := types.CopyHost(host)
+	m.CalculateLoad(copyHost)
 	m.data.Store(host.Uuid, copyHost)
 	return copyHost
 }
@@ -37,5 +38,16 @@ func (m *HostManager) GetHost(uuid string) (h *types.Host, ok bool) {
 		return
 	}
 	h = data.(*types.Host)
+	return
+}
+
+func (m *HostManager) CalculateLoad(host *types.Host) {
+	if host.Type == types.HostTypePeer {
+		host.SetTotalUploadLoad(2)
+		host.SetTotalDownloadLoad(2)
+	} else {
+		host.SetTotalUploadLoad(3)
+		host.SetTotalDownloadLoad(3)
+	}
 	return
 }

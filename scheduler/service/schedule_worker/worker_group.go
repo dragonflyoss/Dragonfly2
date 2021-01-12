@@ -1,7 +1,7 @@
 package schedule_worker
 
 import (
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/log"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	scheduler2 "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
@@ -14,7 +14,7 @@ import (
 type IWorker interface {
 	Start()
 	Stop()
-	ReceiveJob(job *types.PeerTask, typ JobType)
+	ReceiveJob(job *types.PeerTask)
 	ReceiveUpdatePieceResult(pr *scheduler2.PieceResult)
 }
 
@@ -34,18 +34,24 @@ func CreateWorkerGroup(scheduler *scheduler.Scheduler) *WorkerGroup {
 	workerNum := config.GetConfig().Worker.WorkerNum
 	chanSize := config.GetConfig().Worker.WorkerJobPoolSize
 	return &WorkerGroup{
-		workerNum:       workerNum,
-		chanSize:        chanSize,
-		sender:          CreateSender(),
-		scheduler:       scheduler,
+		workerNum:        workerNum,
+		chanSize:         chanSize,
+		sender:           CreateSender(),
+		scheduler:        scheduler,
 		triggerLoadQueue: workqueue.New(),
 	}
 }
 
 func (wg *WorkerGroup) Start() {
 	wg.stopCh = make(chan struct{})
+
+	mgr.GetPeerTaskManager().SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
+		pt.SetNodeStatus(types.PeerTaskStatusNeedCheckNode)
+		wg.ReceiveJob(pt)
+	})
+
 	for i := 0; i < wg.workerNum; i++ {
-		w := CreateWorker(wg.scheduler, wg.sender, wg.stopCh)
+		w := CreateWorker(wg.scheduler, wg.sender, wg.ReceiveJob, wg.stopCh)
 		w.Start()
 		wg.workerList = append(wg.workerList, w)
 	}
@@ -86,6 +92,3 @@ func (wg *WorkerGroup) ReceiveUpdatePieceResult(pr *scheduler2.PieceResult) {
 	}
 	wg.workerList[choiceWorkerId].ReceiveUpdatePieceResult(pr)
 }
-
-
-

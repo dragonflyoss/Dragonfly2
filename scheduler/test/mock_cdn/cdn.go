@@ -2,7 +2,6 @@ package mock_cdn
 
 import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
-	dferror "github.com/dragonflyoss/Dragonfly2/pkg/error"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
 	"google.golang.org/grpc"
@@ -24,12 +23,17 @@ type MockCDN struct {
 	logger   common.TestLogger
 	addr     string
 	listener net.Listener
+	pieceTaskList []*base.PieceTask
+	taskId string
+	hostId string
+	finished bool
 }
 
 func NewMockCDN(addr string, tl common.TestLogger) *MockCDN {
 	cdn := &MockCDN{
 		logger: tl,
 		addr:   addr,
+		hostId: "cdn:"+addr,
 	}
 	return cdn
 }
@@ -55,9 +59,22 @@ func (mc *MockCDN) Stop() {
 	}
 }
 
+func (mc *MockCDN) GetHostId() string {
+	return mc.hostId
+}
+
+func (mc *MockCDN) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)  {
+	return &base.PiecePacket{
+		TaskId:     mc.taskId,
+		PieceTasks: mc.pieceTaskList,
+		Finished: 	mc.finished,
+	}, nil
+}
+
 func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
 	safe.Call(func() {
 		mc.logger.Logf("req:%v\n", req)
+		mc.taskId = req.TaskId
 		var pieceNum = int32(0)
 		var i = 5
 		for {
@@ -66,16 +83,22 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 				return
 			default:
 				if i < 0 {
-					psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"),
+					ps := &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"),
 						SeedAddr:      "localhost:12345",
 						Done:          true,
 						ContentLength: 100,
 						TotalTraffic:  100,
 					}
+					psc <- ps
+					mc.finished = true
 					return
 				}
-				psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"), SeedAddr: "localhost:12345", PieceNum: pieceNum}
-				time.Sleep(time.Millisecond * time.Duration(rand.Intn(3000)))
+				ps := &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"), SeedAddr: "localhost:12345", PieceNum: pieceNum}
+				psc <- ps
+				mc.pieceTaskList = append(mc.pieceTaskList, &base.PieceTask{
+					PieceNum: ps.PieceNum,
+				})
+					time.Sleep(time.Millisecond * time.Duration(rand.Intn(3000)))
 				i--
 				pieceNum++
 			}
@@ -104,9 +127,7 @@ func (mc *MockCDN) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seede
 
 	go send(psc, closePsc, stream, errChan)
 
-	if err = <-errChan; err == dferror.EOS {
-		err = nil
-	}
+	err = <-errChan
 
 	return
 }
@@ -126,7 +147,7 @@ func send(psc chan *cdnsystem.PieceSeed, closePsc func(), stream cdnsystem.Seede
 			}
 		}
 
-		errChan <- dferror.EOS
+		errChan <- nil
 	})
 
 	if err != nil {

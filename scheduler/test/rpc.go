@@ -6,7 +6,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/server"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/service/schedule_worker"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
 	. "github.com/onsi/ginkgo"
 	"time"
@@ -39,7 +38,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 					Md5:   "",
 					Range: "",
 				},
-				Pid: "001",
+				PeerId: "001",
 				PeerHost: &scheduler.PeerHost{
 					Uuid:           "host001",
 					Ip:             "127.0.0.1",
@@ -72,13 +71,13 @@ var _ = Describe("Scheduler RPC Test", func() {
 				return
 			}
 
-			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(request.Pid)
+			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(request.PeerId)
 			if peerTask == nil || peerTask.Host == nil || peerTask.Host.Uuid != request.PeerHost.Uuid {
 				tl.Fatalf("get peerTask Failed")
 				return
 			}
 
-			peerTask = host.GetPeerTask(request.Pid)
+			peerTask = host.GetPeerTask(request.PeerId)
 			if peerTask == nil {
 				tl.Fatalf("peerTask do not add into host")
 				return
@@ -97,7 +96,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 					Md5:   "",
 					Range: "",
 				},
-				Pid: "002",
+				PeerId: "002",
 				PeerHost: &scheduler.PeerHost{
 					Uuid:           "host002",
 					Ip:             "127.0.0.1",
@@ -117,7 +116,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 				tl.Fatalf("RegisterPeerTask pkg return nil")
 				return
 			}
-			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(request.Pid)
+			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(request.PeerId)
 			if peerTask == nil {
 				tl.Fatalf("peerTask do not add into host")
 				return
@@ -129,27 +128,28 @@ var _ = Describe("Scheduler RPC Test", func() {
 			p.PieceOffset = 10
 			p.PieceStyle = base.PieceStyle_PLAIN_UNSPECIFIED
 
-			(&schedule_worker.Client{}).UpdatePieceResult(&scheduler.PieceResult{
+			svr.GetWorker().ReceiveUpdatePieceResult(&scheduler.PieceResult{
 				TaskId:     taskId,
 				SrcPid:     "001",
 				PieceNum:   0,
 				PieceRange: "0,100",
 				Success:    true,
-				ErrorCode:  base.Code_SUCCESS,
-				Cost:       20,
+				Code:  base.Code_SUCCESS,
+				BeginTime:       uint64(time.Now().UnixNano() / int64(time.Millisecond)),
 			})
 
 			time.Sleep(time.Second)
 
 			scheduler := svr.GetSchedulerService().GetScheduler()
 
-			pieceList, _, err := scheduler.Scheduler(peerTask)
+			_, _, err = scheduler.SchedulerParent(peerTask)
 			if err != nil {
 				tl.Fatalf("scheduler failed %s", err.Error())
 				return
 			}
-			if len(pieceList) == 0 {
-				tl.Fatalf("scheduler failed piece is zero")
+
+			if peerTask.GetParent()  == nil {
+				tl.Fatalf("scheduler failed parent is null")
 			}
 		})
 
@@ -157,7 +157,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 			ctx := context.TODO()
 			var result = &scheduler.PeerResult{
 				TaskId:         taskId,
-				Pid:            "001",
+				PeerId:            "001",
 				SrcIp:          "001",
 				SecurityDomain: "",
 				Idc:            "",
@@ -165,14 +165,14 @@ var _ = Describe("Scheduler RPC Test", func() {
 				Traffic:        20,
 				Cost:           20,
 				Success:        true,
-				ErrorCode:      base.Code_SUCCESS,
+				Code:      base.Code_SUCCESS,
 			}
 			_, err := ss.ReportPeerResult(ctx, result)
 			if err != nil {
 				tl.Fatalf(err.Error())
 			}
-			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(result.Pid)
-			if peerTask == nil || peerTask.Success != result.Success || peerTask.ErrorCode != result.ErrorCode {
+			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(result.PeerId)
+			if peerTask == nil || peerTask.Success != result.Success || peerTask.Code != result.Code {
 				tl.Fatalf("peerTask report Failed")
 				return
 			}
@@ -183,7 +183,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 			ctx := context.TODO()
 			var target = &scheduler.PeerTarget{
 				TaskId: taskId,
-				Pid:    "001",
+				PeerId:    "001",
 			}
 			resp, err := ss.LeaveTask(ctx, target)
 			if err != nil {
@@ -193,7 +193,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 				tl.Fatalf("leave task Failed")
 				return
 			}
-			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(target.Pid)
+			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(target.PeerId)
 			if peerTask != nil {
 				tl.Fatalf("leave task Failed")
 				return
@@ -203,7 +203,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 				tl.Fatalf("get host Failed")
 				return
 			}
-			peerTask = host.GetPeerTask(target.Pid)
+			peerTask = host.GetPeerTask(target.PeerId)
 			if peerTask != nil {
 				tl.Fatalf("peerTask do not delete from host")
 				return

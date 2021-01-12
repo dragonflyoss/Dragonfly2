@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"hash/crc32"
 
@@ -98,10 +99,12 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		ip, port, _ := net.ParseAddress(ps.SeedAddr)
 		host = &types.Host{
 			Type:     types.HostTypeCdn,
-			Uuid:     hostId,
-			HostName: hostId,
-			Ip:       ip,
-			Port:     int32(port),
+			PeerHost: scheduler.PeerHost{
+				Uuid:     hostId,
+				HostName: hostId,
+				Ip:       ip,
+				Port:     int32(port),
+			},
 		}
 		host = GetHostManager().AddHost(host)
 	}
@@ -109,6 +112,8 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 	peerTask, _ := GetPeerTaskManager().GetPeerTask(pid)
 	if peerTask == nil {
 		peerTask = GetPeerTaskManager().AddPeerTask(pid, task, host)
+	} else if peerTask.Host == nil {
+		peerTask.Host = host
 	}
 
 	if ps.Done {
@@ -118,11 +123,6 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		peerTask.Success = true
 
 		// process waiting peerTask for done
-		piece := task.GetPiece(task.PieceTotal)
-		if piece != nil {
-			piece.ResumeWaitingPeerTask()
-		}
-
 		return
 	}
 
@@ -150,7 +150,5 @@ func (c *CDNClient) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *t
 	p.PieceMd5 = ps.PieceMd5
 	p.PieceOffset = ps.PieceOffset
 	p.PieceStyle = ps.PieceStyle
-
-	p.AddReadyPeerTask(pt)
 	return p
 }
