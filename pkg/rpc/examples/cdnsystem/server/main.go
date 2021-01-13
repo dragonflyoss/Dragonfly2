@@ -45,7 +45,6 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 						SeedAddr:      "localhost:12345",
 						Done:          true,
 						ContentLength: 100,
-						TotalTraffic:  100,
 					}
 					return
 				}

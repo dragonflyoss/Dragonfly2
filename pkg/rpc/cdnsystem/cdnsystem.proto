@@ -40,12 +40,10 @@ message PieceSeed{
 
   base.PieceStyle piece_style = 2;
   int32 piece_num = 3;
-  string piece_range = 4; // for transported piece content
-  uint64 piece_offset = 5; // piece's real offset in the file
+  string seed_addr = 4;
 
-  bool done = 6; // whether or not all seeds are downloaded
-  int64 content_length = 7; // content total length for the url
-  int64 total_traffic = 8; // total traffic from the remote source
+  bool done = 5; // whether or not all seeds are downloaded
+  int64 content_length = 6; // content total length for the url
 }
 
 // CDN System RPC Service
