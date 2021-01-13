@@ -40,6 +40,7 @@ type fileMetaData struct {
 	Interval        int64             `json:"interval"`
 	CdnFileLength   int64             `json:"cdnFileLength"`
 	SourceRealMd5   string            `json:"sourceRealMd5"`
+	PieceMd5Sign    string            `json:"pieceMd5Sign"`
 	ExpireInfo      map[string]string `json:"expireInfo"`
 	Finish          bool              `json:"finish"`
 	Success         bool              `json:"success"`

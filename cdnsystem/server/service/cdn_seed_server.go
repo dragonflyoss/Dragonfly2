@@ -32,7 +32,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // CdnSeedServer is used to implement cdnsystem.SeederServer.
@@ -102,10 +101,9 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		case types.PieceType:
 			psc <- &cdnsystem.PieceSeed{
 				State:       base.NewState(base.Code_SUCCESS, "success"),
-				SeedAddr:    fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
+				//SeedAddr:    fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
 				PieceStyle:  base.PieceStyle(piece.PieceStyle),
 				PieceNum:    piece.PieceNum,
-				PieceMd5:    piece.PieceMd5,
 				PieceRange:  piece.PieceRange,
 				PieceOffset: piece.PieceOffset,
 				Done:        false,
@@ -119,7 +117,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			}
 			psc <- &cdnsystem.PieceSeed{
 				State:         state,
-				SeedAddr:      fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
+				//SeedAddr:      fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
 				Done:          true,
 				ContentLength: piece.ContentLength,
 				TotalTraffic:  piece.BackSourceLength,
@@ -142,7 +140,6 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 			PieceTasks: nil,
 		}, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
-
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
 		return &base.PiecePacket{
@@ -155,7 +152,6 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	for _, piece := range pieces {
 		var count int32 = 0
 		if piece.PieceNum >= req.StartNum && count < req.Limit {
-			hostName, _ := os.Hostname()
 			pieceRange := strings.Split(piece.PieceRange, "-")
 			pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
 			pieceTasks = append(pieceTasks, &base.PieceTask{
@@ -163,19 +159,22 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 				RangeStart:  pieceStart,
 				RangeSize:   piece.PieceLen,
 				PieceMd5:    piece.PieceMd5,
-				SrcPid:      req.SrcIp,
-				DstPid:      fmt.Sprintf("%s-%s-%d", hostName, css.cfg.AdvertiseIP, time.Now().UnixNano()),
-				DstAddr:     fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
 				PieceOffset: piece.PieceOffset,
 				PieceStyle:  base.PieceStyle(piece.PieceStyle),
 			})
 			count++
 		}
 	}
+	hostName, _ := os.Hostname()
 	return &base.PiecePacket{
-		State:      base.NewState(base.Code_SUCCESS, "success"),
-		TaskId:     req.TaskId,
-		PieceTasks: pieceTasks,
+		State:         base.NewState(base.Code_SUCCESS, "success"),
+		TaskId:        req.TaskId,
+		DstPid:        fmt.Sprintf("%s-%s-%s", hostName, css.cfg.AdvertiseIP, req.TaskId),
+		DstAddr:       fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.DownloadPort),
+		PieceTasks:    pieceTasks,
+		TotalPiece:    0,
+		ContentLength: 0,
+		PieceMd5Sign:  "",
 	}, nil
 }
 

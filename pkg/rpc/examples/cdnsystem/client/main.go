@@ -16,7 +16,10 @@
 
 package main
 
-import _ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/server"
+import (
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/server"
+)
 
 import (
 	"context"
@@ -35,9 +38,12 @@ func main() {
 	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 		TaskId: "111111",
 		//Url:    "http://www.baidu.com",
-		Url:     "https://download.jetbrains.8686c.com/go/goland-2020.2.3.dmg",
-		Filter:  []string{""},
-		UrlMeta: nil,
+		Url:    "https://download.jetbrains.8686c.com/go/goland-2020.2.3.dmg",
+		Filter: []string{""},
+		UrlMeta: &base.UrlMeta{
+			Md5:   "1111111",
+			Range: "",
+		},
 	})
 	if err != nil {
 		panic(err)
