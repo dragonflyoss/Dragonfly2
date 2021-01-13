@@ -153,7 +153,8 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	}
 	pieceTasks := make([]*base.PieceTask, 0)
 	for _, piece := range pieces {
-		if piece.PieceNum >= req.StartNum && piece.PieceNum <= req.StartNum+req.Limit {
+		var count int32 = 0
+		if piece.PieceNum >= req.StartNum && count < req.Limit {
 			hostName, _ := os.Hostname()
 			pieceRange := strings.Split(piece.PieceRange, "-")
 			pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
@@ -168,6 +169,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 				PieceOffset: piece.PieceOffset,
 				PieceStyle:  base.PieceStyle(piece.PieceStyle),
 			})
+			count++
 		}
 	}
 	return &base.PiecePacket{
