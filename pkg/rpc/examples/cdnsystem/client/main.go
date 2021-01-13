@@ -30,7 +30,7 @@ import (
 )
 
 func main() {
-	c, err := client.CreateClient([]basic.NetAddr{{Type: basic.TCP, Addr: "localhost:8002"}})
+	c, err := client.CreateClient([]basic.NetAddr{{Type: basic.TCP, Addr: "localhost:8003"}})
 	if err != nil {
 		panic(err)
 	}

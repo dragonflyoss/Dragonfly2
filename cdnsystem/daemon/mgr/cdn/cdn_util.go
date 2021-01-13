@@ -81,10 +81,14 @@ func convertPieceMeta2SeedPiece(record *pieceMetaRecord) *types.SeedPiece {
 	}
 }
 
-func convertTaskInfo2SeedPiece(task *types.SeedTask) *types.SeedPiece {
+func convertTaskInfo2SeedPiece(task *types.SeedTask, msg string) *types.SeedPiece {
 	return &types.SeedPiece{
-		Type:             types.TaskType,
-		Last:             true,
-		ContentLength:    task.CdnFileLength,
+		Type:          types.TaskType,
+		Last:          true,
+		ContentLength: task.CdnFileLength,
+		Result: types.Result{
+			Success: task.CdnStatus == types.TaskInfoCdnStatusSUCCESS,
+			Msg:     msg,
+		},
 	}
 }

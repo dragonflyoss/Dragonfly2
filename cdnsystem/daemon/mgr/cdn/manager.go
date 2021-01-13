@@ -106,14 +106,17 @@ func newManager(cfg *config.Config, cacheStore *store.Store, resourceClient sour
 	}, nil
 }
 
-// TriggerCDN will trigger CDN to download the file from sourceUrl.
 func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTask *types.SeedTask, err error) {
 	// obtain taskID write lock
 	cm.cdnLocker.GetLock(task.TaskID, false)
 	defer cm.cdnLocker.ReleaseLock(task.TaskID, false)
 	defer func() {
 		// report task status
-		cm.cdnReporter.reportTask(task.TaskID, seedTask)
+		var msg = "success"
+		if err != nil {
+			msg = err.Error()
+		}
+		cm.cdnReporter.reportTask(task.TaskID, seedTask, msg)
 	}()
 	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
@@ -155,7 +158,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
 	if err != nil {
 		logger.Named(task.TaskID).Errorf("failed to write for task: %v", err)
-		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
+		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
+		return seedTask, err
 	}
 	// back source length
 	cm.metrics.cdnDownloadBytes.WithLabelValues().Add(float64(downloadMetadata.backSourceLength))
@@ -164,10 +168,11 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// fifth: handle CDN result
 	success, err := cm.handleCDNResult(ctx, task, sourceMD5, downloadMetadata)
 	if err != nil || !success {
-		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
+		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
+		return seedTask, err
 	}
-
-	return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, sourceMD5, downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength), nil
+	seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, sourceMD5, downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength)
+	return seedTask, nil
 }
 
 // GetHTTPPath returns the http download path of taskID.

@@ -65,7 +65,7 @@ func (hs helloSeeder) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequ
 func main() {
 	lisAddr := basic.NetAddr{
 		Type: basic.TCP,
-		Addr: ":8002",
+		Addr: ":8003",
 	}
 
 	err := rpc.StartServer(lisAddr, &helloSeeder{})

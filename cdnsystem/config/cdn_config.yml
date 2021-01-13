@@ -3,8 +3,8 @@
 ---
 base:
   # listenPort is the port cdn server listens on.
-  # default: 8002
-  listenPort: 8002
+  # default: 8003
+  listenPort: 8003
 
   # DownloadPort is the port for download files from cdn.
   # And you should start a file server firstly which listens on the download port.

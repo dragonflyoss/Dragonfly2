@@ -49,10 +49,8 @@ const (
 
 const (
 	// DefaultListenPort is the default port cdn server listens on.
-	DefaultListenPort = 8002
-	// DefaultListenHttpPort is the default port cdn http server listens on.
-	//DefaultListenHttpPort = 8002
-	// DefaultDownloadPort is the default port for download files from cdn.
+	DefaultListenPort = 8003
+  	// DefaultDownloadPort is the default port for download files from cdn.
 	DefaultDownloadPort = 8001
 )
 

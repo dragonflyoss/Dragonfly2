@@ -52,6 +52,6 @@ func (re *reporter) reportPieceMetaRecord(taskID string, record *pieceMetaRecord
 }
 
 // reportTask
-func (re *reporter) reportTask(taskID string, task *types.SeedTask) error {
-	return re.publisher.PublishTask(taskID, convertTaskInfo2SeedPiece(task))
+func (re *reporter) reportTask(taskID string, task *types.SeedTask, msg string) error {
+	return re.publisher.PublishTask(taskID, convertTaskInfo2SeedPiece(task, msg))
 }

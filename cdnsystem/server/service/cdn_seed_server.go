@@ -78,6 +78,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			logger.Named(req.TaskId).Errorf("failed to obtain seeds, req=%+v: %v", req, err)
 		}
 	}()
+	return errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	if err := validateSeedRequestParams(req); err != nil {
 		return errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
