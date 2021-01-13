@@ -58,16 +58,22 @@ message PeerHost{
   string switch = 8;
 }
 
+message DestHost{
+  string ip = 1;
+  string port = 2;
+  string peer_id = 3;
+}
 message PeerPacket{
   base.ResponseState state = 1;
 
   string task_id = 2;
   // source peer id
   string src_pid = 3;
+
   // concurrent downloading count from main peer
   int32 parallel_count = 4;
-  PeerHost main_peer = 5;
-  repeated PeerHost steal_peers = 6;
+  DestHost main_peer = 5;
+  repeated DestHost steal_peers = 6;
 }
 
 message PieceResult{
