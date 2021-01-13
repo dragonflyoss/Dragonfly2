@@ -68,9 +68,6 @@ message PeerPacket{
   int32 parallel_count = 4;
   PeerHost main_peer = 5;
   repeated PeerHost steal_peers = 6;
-  // whether or not peer task is finish
-  bool done = 7;
-  int64 content_length = 8;
 }
 
 message PieceResult{
@@ -84,6 +81,7 @@ message PieceResult{
   bool success = 8;
   base.Code code = 9;
   base.HostLoad host_load = 10;
+  int32 finished_count = 11;
 }
 
 message PeerResult{

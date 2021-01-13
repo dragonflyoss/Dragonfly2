@@ -38,16 +38,14 @@ message SeedRequest{
 message PieceSeed{
   base.ResponseState state = 1;
 
-  string seed_addr = 2; // ip:port
-  base.PieceStyle piece_style = 3;
-  int32 piece_num = 4;
-  string piece_md5 = 5; // for transported piece content
-  string piece_range = 6; // for transported piece content
-  uint64 piece_offset = 7; // piece's real offset in the file
+  base.PieceStyle piece_style = 2;
+  int32 piece_num = 3;
+  string piece_range = 4; // for transported piece content
+  uint64 piece_offset = 5; // piece's real offset in the file
 
-  bool done = 8; // whether or not all seeds are downloaded
-  int64 content_length = 9; // content total length for the url
-  int64 total_traffic = 10; // total traffic from the remote source
+  bool done = 6; // whether or not all seeds are downloaded
+  int64 content_length = 7; // content total length for the url
+  int64 total_traffic = 8; // total traffic from the remote source
 }
 
 // CDN System RPC Service
