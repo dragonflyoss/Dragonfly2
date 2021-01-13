@@ -104,8 +104,6 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 				//SeedAddr:    fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
 				PieceStyle:  base.PieceStyle(piece.PieceStyle),
 				PieceNum:    piece.PieceNum,
-				PieceRange:  piece.PieceRange,
-				PieceOffset: piece.PieceOffset,
 				Done:        false,
 			}
 		case types.TaskType:
@@ -120,7 +118,6 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 				//SeedAddr:      fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
 				Done:          true,
 				ContentLength: piece.ContentLength,
-				TotalTraffic:  piece.BackSourceLength,
 			}
 		}
 	}

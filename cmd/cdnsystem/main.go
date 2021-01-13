@@ -16,11 +16,12 @@
 
 package main
 
+import _ "github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/cdn"
+import _ "github.com/dragonflyoss/Dragonfly2/cdnsystem/source/httpprotocol"
+import _ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
+
 import (
-	_ "github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/cdn"
-	_ "github.com/dragonflyoss/Dragonfly2/cdnsystem/source/httpprotocol"
 	"github.com/dragonflyoss/Dragonfly2/cmd/cdnsystem/app"
-	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
 )
 
 func main() {
