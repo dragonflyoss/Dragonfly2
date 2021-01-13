@@ -35,6 +35,12 @@ message PeerTaskRequest{
   base.HostLoad host_load = 7;
 }
 
+message RegisterResult{
+  base.ResponseState state = 1;
+
+  string task_id = 2;
+}
+
 message PeerHost{
   // different uuid represents different peer host,
   // avoiding conflict, need check other information(ip、port...)
@@ -62,9 +68,6 @@ message PeerPacket{
   int32 parallel_count = 4;
   PeerHost main_peer = 5;
   repeated PeerHost steal_peers = 6;
-  // whether or not peer task is finish
-  bool done = 7;
-  int64 content_length = 8;
 }
 
 message PieceResult{
@@ -78,6 +81,7 @@ message PieceResult{
   bool success = 8;
   base.Code code = 9;
   base.HostLoad host_load = 10;
+  int32 finished_count = 11;
 }
 
 message PeerResult{
@@ -105,8 +109,7 @@ message PeerTarget{
 // Scheduler System RPC Service
 service Scheduler{
   // RegisterPeerTask registers a peer into one task
-  // and returns a peer packet immediately if task resource is enough.
-  rpc RegisterPeerTask(PeerTaskRequest)returns(PeerPacket){}
+  rpc RegisterPeerTask(PeerTaskRequest)returns(RegisterResult){}
 
   // ReportPieceResult reports piece results and receives peer packets.
   // when migrating to another scheduler,

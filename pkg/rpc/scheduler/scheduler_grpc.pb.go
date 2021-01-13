@@ -19,8 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SchedulerClient interface {
 	// RegisterPeerTask registers a peer into one task
-	// and returns a peer packet immediately if task resource is enough.
-	RegisterPeerTask(ctx context.Context, in *PeerTaskRequest, opts ...grpc.CallOption) (*PeerPacket, error)
+	RegisterPeerTask(ctx context.Context, in *PeerTaskRequest, opts ...grpc.CallOption) (*RegisterResult, error)
 	// ReportPieceResult reports piece results and receives peer packets.
 	// when migrating to another scheduler,
 	// it will send the last piece result to the new scheduler.
@@ -39,8 +38,8 @@ func NewSchedulerClient(cc grpc.ClientConnInterface) SchedulerClient {
 	return &schedulerClient{cc}
 }
 
-func (c *schedulerClient) RegisterPeerTask(ctx context.Context, in *PeerTaskRequest, opts ...grpc.CallOption) (*PeerPacket, error) {
-	out := new(PeerPacket)
+func (c *schedulerClient) RegisterPeerTask(ctx context.Context, in *PeerTaskRequest, opts ...grpc.CallOption) (*RegisterResult, error) {
+	out := new(RegisterResult)
 	err := c.cc.Invoke(ctx, "/scheduler.Scheduler/RegisterPeerTask", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -102,8 +101,7 @@ func (c *schedulerClient) LeaveTask(ctx context.Context, in *PeerTarget, opts ..
 // for forward compatibility
 type SchedulerServer interface {
 	// RegisterPeerTask registers a peer into one task
-	// and returns a peer packet immediately if task resource is enough.
-	RegisterPeerTask(context.Context, *PeerTaskRequest) (*PeerPacket, error)
+	RegisterPeerTask(context.Context, *PeerTaskRequest) (*RegisterResult, error)
 	// ReportPieceResult reports piece results and receives peer packets.
 	// when migrating to another scheduler,
 	// it will send the last piece result to the new scheduler.
@@ -119,7 +117,7 @@ type SchedulerServer interface {
 type UnimplementedSchedulerServer struct {
 }
 
-func (UnimplementedSchedulerServer) RegisterPeerTask(context.Context, *PeerTaskRequest) (*PeerPacket, error) {
+func (UnimplementedSchedulerServer) RegisterPeerTask(context.Context, *PeerTaskRequest) (*RegisterResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterPeerTask not implemented")
 }
 func (UnimplementedSchedulerServer) ReportPieceResult(Scheduler_ReportPieceResultServer) error {
