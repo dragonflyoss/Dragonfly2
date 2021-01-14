@@ -32,7 +32,11 @@ import (
 	"time"
 )
 
-var _ mgr.SeedTaskMgr = &Manager{}
+func init() {
+	// Ensure that Manager implements the SeedTaskMgr interface
+	var manager *Manager = nil
+	var _ mgr.SeedTaskMgr = manager
+}
 
 type metrics struct {
 	tasks               *prometheus.GaugeVec

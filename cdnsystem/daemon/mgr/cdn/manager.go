@@ -37,9 +37,14 @@ import (
 	"path"
 )
 
-var _ mgr.CDNMgr = &Manager{}
+func init() {
+
+}
 
 func init() {
+	// Ensure that Manager implements the CDNMgr interface
+	var manager *Manager = nil
+	var _ mgr.CDNMgr = manager
 	mgr.Register(config.CDNPatternLocal, NewManager)
 }
 

@@ -26,7 +26,11 @@ import (
 	"time"
 )
 
-var _ mgr.GCMgr = &Manager{}
+func init() {
+	// Ensure that Manager implements the GCMgr interface
+	var manager *Manager = nil
+	var _ mgr.GCMgr = manager
+}
 
 type metrics struct {
 	gcTasksCount    *prometheus.CounterVec

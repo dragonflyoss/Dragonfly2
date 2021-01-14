@@ -19,6 +19,7 @@ package progress
 import (
 	"container/list"
 	"context"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
@@ -26,6 +27,12 @@ import (
 	"github.com/pkg/errors"
 	"sync"
 )
+
+func init() {
+	// Ensure that Manager implements the SeedProgressMgr interface
+	var manager *Manager = nil
+	var _ mgr.SeedProgressMgr = manager
+}
 
 type Manager struct {
 	seedSubscribers      *syncmap.SyncMap
