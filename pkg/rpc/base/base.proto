@@ -46,7 +46,16 @@ enum Code{
 }
 
 enum PieceStyle{
-  PLAIN_UNSPECIFIED = 0;
+  PLAIN = 0;
+}
+
+enum SizeScope{
+  // size > one piece size
+  NORMAL = 0;
+  // 256 byte < size <= one piece size
+  SMALL = 1;
+  // size <= 256 byte
+  TINY = 2;
 }
 
 message ResponseState{
@@ -60,10 +69,10 @@ message EmptyRequest{
 }
 
 message UrlMeta{
-  // md5 of content downloaded from url
-  // it is also used for task id generator to distinguish same urls
+  // 1. check whether is consistent for downloaded file
+  // 2. be used to generate different task ids for same url
   string md5 = 1;
-  // downloading range for single file
+  // downloading range for url
   string range = 2;
 }
 

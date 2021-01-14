@@ -23,48 +23,75 @@ import "pkg/rpc/base/base.proto";
 option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler";
 
 message PeerTaskRequest{
+  // universal resource locator for different storage kinds
   string url = 1;
-  // filter is a regex string,
-  // used for task id generator, assimilating different urls
+  // filter is a regular expression
+  // used to generate same task id for different urls
   string filter = 2;
-  // biz_id is used for task id generator to distinguish same urls
+  // biz id is used to generate different task ids for same url
   string biz_id = 3;
+  // url meta info
   base.UrlMeta url_mata = 4;
+  // peer's id and be global uniqueness
   string peer_id = 5;
+  // peer host info
   PeerHost peer_host = 6;
+  // current host load
   base.HostLoad host_load = 7;
+  // whether this request is caused by migration
+  bool is_migrating = 8;
 }
 
 message RegisterResult{
   base.ResponseState state = 1;
 
+  // task id
   string task_id = 2;
+  // file content length scope for the url
+  base.SizeScope size_scope = 3;
+  // download the only piece directly
+  oneof direct_piece{
+    SinglePiece single_piece = 4;
+    bytes piece_content = 5;
+  }
+}
+
+message SinglePiece{
+  // destination peer id
+  string dst_pid = 1;
+  // download address(ip:port)
+  string dst_addr = 2;
+  // one piece task
+  base.PieceTask piece_task = 3;
 }
 
 message PeerHost{
-  // different uuid represents different peer host,
-  // avoiding conflict, need check other information(ip、port...)
+  // each time the daemon starts, it will generate a different uuid
   string uuid = 1;
   string ip = 2;
   // rpc service port for peer
-  int32 port = 3;
-  string host_name = 4;
+  int32 rpc_port = 3;
+  // piece downloading port for peer
+  int32 down_port = 4;
+  string host_name = 5;
   // security isolation domain for network
-  string security_domain = 5;
-  // area|country|province|city|...
-  string location = 6;
-  string idc = 7;
-  // network device construct, xx|yy|zz
-  string switch = 8;
+  string security_domain = 6;
+  // location path: area|country|province|city|...
+  string location = 7;
+  string idc = 8;
+  // network device path: switch|router|rack|...
+  string net_topology = 9;
 }
 
-message DestHost{
-  string ip = 1;
-  string port = 2;
-  string peer_id = 3;
-}
 message PeerPacket{
   base.ResponseState state = 1;
+
+  message DestPeer{
+    string ip = 1;
+    // rpc service port for peer
+    string rpc_port = 2;
+    string peer_id = 3;
+  }
 
   string task_id = 2;
   // source peer id
@@ -72,8 +99,8 @@ message PeerPacket{
 
   // concurrent downloading count from main peer
   int32 parallel_count = 4;
-  DestHost main_peer = 5;
-  repeated DestHost steal_peers = 6;
+  DestPeer main_peer = 5;
+  repeated DestPeer steal_peers = 6;
 }
 
 message PieceResult{
@@ -114,7 +141,7 @@ message PeerTarget{
 
 // Scheduler System RPC Service
 service Scheduler{
-  // RegisterPeerTask registers a peer into one task
+  // RegisterPeerTask registers a peer into one task.
   rpc RegisterPeerTask(PeerTaskRequest)returns(RegisterResult){}
 
   // ReportPieceResult reports piece results and receives peer packets.
