@@ -27,6 +27,8 @@ message SeedRequest{
   string url = 2;
   string filter = 3;
   base.UrlMeta url_meta = 4;
+  // maybe host ip or slb
+  string remote_ip = 5;
 }
 
 // keep piece meta and data separately
