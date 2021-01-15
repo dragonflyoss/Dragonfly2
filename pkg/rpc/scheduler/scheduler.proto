@@ -49,7 +49,7 @@ message RegisterResult{
   string task_id = 2;
   // file content length scope for the url
   base.SizeScope size_scope = 3;
-  // download the only piece directly
+  // download the only piece directly for small or tiny file
   oneof direct_piece{
     SinglePiece single_piece = 4;
     bytes piece_content = 5;
@@ -89,7 +89,7 @@ message PeerPacket{
   message DestPeer{
     string ip = 1;
     // rpc service port for peer
-    string rpc_port = 2;
+    int32 rpc_port = 2;
     string peer_id = 3;
   }
 

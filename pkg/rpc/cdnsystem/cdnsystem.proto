@@ -30,27 +30,29 @@ message SeedRequest{
 }
 
 // keep piece meta and data separately
-// check piece md5 and total content length, no more file md5 verification
-// scheduler can also analyze cdn traffic from origin
+// check piece md5, md5s sign and total content length
 message PieceSeed{
   base.ResponseState state = 1;
 
+  // peer id for cdn node, need suffix with _CDN
+  string peer_id = 2;
   // ip:port
-  string seed_addr = 2;
-  base.PieceStyle piece_style = 3;
-  int32 piece_num = 4;
+  string seed_addr = 3;
+  base.PieceStyle piece_style = 4;
+  int32 piece_num = 5;
   // for transported piece content
-  string piece_md5 = 5;
+  string piece_md5 = 6;
   // for transported piece content
-  string piece_range = 6;
+  string piece_range = 7;
   // piece's real offset in the file
-  uint64 piece_offset = 7;
-
+  uint64 piece_offset = 8;
+  // for tiny file
+  bytes piece_content = 9;
 
   // whether or not all seeds are downloaded
-  bool done = 8;
+  bool done = 10;
   // content total length for the url
-  int64 content_length = 9;
+  int64 content_length = 11;
 }
 
 // CDN System RPC Service

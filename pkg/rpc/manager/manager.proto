@@ -44,7 +44,7 @@ message ClientInfo{
   // area|country|province|city|...
   string location = 4;
   string idc = 5;
-  string switch = 6;
+  string net_topology = 6;
 }
 
 message CdnHosts{

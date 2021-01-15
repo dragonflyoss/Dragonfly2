@@ -52,9 +52,9 @@ enum PieceStyle{
 enum SizeScope{
   // size > one piece size
   NORMAL = 0;
-  // 256 byte < size <= one piece size
+  // 128 byte < size <= one piece size and be plain type
   SMALL = 1;
-  // size <= 256 byte
+  // size <= 128 byte and be plain type
   TINY = 2;
 }
 
@@ -69,10 +69,13 @@ message EmptyRequest{
 }
 
 message UrlMeta{
-  // 1. check whether is consistent for downloaded file
-  // 2. be used to generate different task ids for same url
+  // used as follows:
+  //
+  // 1. check whether downloaded content is consistent with the source file
+  //
+  // 2. generate different task ids for same url
   string md5 = 1;
-  // downloading range for url
+  // downloaded range for url
   string range = 2;
 }
 
@@ -99,8 +102,8 @@ message PieceTask{
   uint64 range_start = 2;
   int32 range_size = 3;
   string piece_md5 = 4;
-  uint64 piece_offset = 8;
-  base.PieceStyle piece_style = 9;
+  uint64 piece_offset = 5;
+  base.PieceStyle piece_style = 6;
 }
 
 message PiecePacket{

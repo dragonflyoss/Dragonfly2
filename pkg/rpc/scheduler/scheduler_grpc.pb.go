@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SchedulerClient interface {
-	// RegisterPeerTask registers a peer into one task
+	// RegisterPeerTask registers a peer into one task.
 	RegisterPeerTask(ctx context.Context, in *PeerTaskRequest, opts ...grpc.CallOption) (*RegisterResult, error)
 	// ReportPieceResult reports piece results and receives peer packets.
 	// when migrating to another scheduler,
@@ -100,7 +100,7 @@ func (c *schedulerClient) LeaveTask(ctx context.Context, in *PeerTarget, opts ..
 // All implementations must embed UnimplementedSchedulerServer
 // for forward compatibility
 type SchedulerServer interface {
-	// RegisterPeerTask registers a peer into one task
+	// RegisterPeerTask registers a peer into one task.
 	RegisterPeerTask(context.Context, *PeerTaskRequest) (*RegisterResult, error)
 	// ReportPieceResult reports piece results and receives peer packets.
 	// when migrating to another scheduler,
