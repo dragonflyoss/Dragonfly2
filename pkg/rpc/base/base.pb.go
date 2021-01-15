@@ -512,7 +512,7 @@ func (x *PieceTaskRequest) GetLimit() int32 {
 	return 0
 }
 
-type PieceTask struct {
+type PieceInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -525,8 +525,8 @@ type PieceTask struct {
 	PieceStyle  PieceStyle `protobuf:"varint,6,opt,name=piece_style,json=pieceStyle,proto3,enum=base.PieceStyle" json:"piece_style,omitempty"`
 }
 
-func (x *PieceTask) Reset() {
-	*x = PieceTask{}
+func (x *PieceInfo) Reset() {
+	*x = PieceInfo{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_pkg_rpc_base_base_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -534,13 +534,13 @@ func (x *PieceTask) Reset() {
 	}
 }
 
-func (x *PieceTask) String() string {
+func (x *PieceInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PieceTask) ProtoMessage() {}
+func (*PieceInfo) ProtoMessage() {}
 
-func (x *PieceTask) ProtoReflect() protoreflect.Message {
+func (x *PieceInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_pkg_rpc_base_base_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -552,47 +552,47 @@ func (x *PieceTask) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PieceTask.ProtoReflect.Descriptor instead.
-func (*PieceTask) Descriptor() ([]byte, []int) {
+// Deprecated: Use PieceInfo.ProtoReflect.Descriptor instead.
+func (*PieceInfo) Descriptor() ([]byte, []int) {
 	return file_pkg_rpc_base_base_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *PieceTask) GetPieceNum() int32 {
+func (x *PieceInfo) GetPieceNum() int32 {
 	if x != nil {
 		return x.PieceNum
 	}
 	return 0
 }
 
-func (x *PieceTask) GetRangeStart() uint64 {
+func (x *PieceInfo) GetRangeStart() uint64 {
 	if x != nil {
 		return x.RangeStart
 	}
 	return 0
 }
 
-func (x *PieceTask) GetRangeSize() int32 {
+func (x *PieceInfo) GetRangeSize() int32 {
 	if x != nil {
 		return x.RangeSize
 	}
 	return 0
 }
 
-func (x *PieceTask) GetPieceMd5() string {
+func (x *PieceInfo) GetPieceMd5() string {
 	if x != nil {
 		return x.PieceMd5
 	}
 	return ""
 }
 
-func (x *PieceTask) GetPieceOffset() uint64 {
+func (x *PieceInfo) GetPieceOffset() uint64 {
 	if x != nil {
 		return x.PieceOffset
 	}
 	return 0
 }
 
-func (x *PieceTask) GetPieceStyle() PieceStyle {
+func (x *PieceInfo) GetPieceStyle() PieceStyle {
 	if x != nil {
 		return x.PieceStyle
 	}
@@ -610,7 +610,7 @@ type PiecePacket struct {
 	DstPid string         `protobuf:"bytes,3,opt,name=dst_pid,json=dstPid,proto3" json:"dst_pid,omitempty"`
 	// ip:port
 	DstAddr    string       `protobuf:"bytes,4,opt,name=dst_addr,json=dstAddr,proto3" json:"dst_addr,omitempty"`
-	PieceTasks []*PieceTask `protobuf:"bytes,5,rep,name=piece_tasks,json=pieceTasks,proto3" json:"piece_tasks,omitempty"`
+	PieceInfos []*PieceInfo `protobuf:"bytes,5,rep,name=piece_infos,json=pieceInfos,proto3" json:"piece_infos,omitempty"`
 	// total piece count for url
 	TotalPiece    int32 `protobuf:"varint,6,opt,name=total_piece,json=totalPiece,proto3" json:"total_piece,omitempty"`
 	ContentLength int64 `protobuf:"varint,7,opt,name=content_length,json=contentLength,proto3" json:"content_length,omitempty"`
@@ -678,9 +678,9 @@ func (x *PiecePacket) GetDstAddr() string {
 	return ""
 }
 
-func (x *PiecePacket) GetPieceTasks() []*PieceTask {
+func (x *PiecePacket) GetPieceInfos() []*PieceInfo {
 	if x != nil {
-		return x.PieceTasks
+		return x.PieceInfos
 	}
 	return nil
 }
@@ -735,7 +735,7 @@ var file_pkg_rpc_base_base_proto_rawDesc = []byte{
 	0x74, 0x5f, 0x6e, 0x75, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x73, 0x74, 0x61,
 	0x72, 0x74, 0x4e, 0x75, 0x6d, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x04,
 	0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x22, 0xdb, 0x01, 0x0a, 0x09,
-	0x50, 0x69, 0x65, 0x63, 0x65, 0x54, 0x61, 0x73, 0x6b, 0x12, 0x1b, 0x0a, 0x09, 0x70, 0x69, 0x65,
+	0x50, 0x69, 0x65, 0x63, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x1b, 0x0a, 0x09, 0x70, 0x69, 0x65,
 	0x63, 0x65, 0x5f, 0x6e, 0x75, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70, 0x69,
 	0x65, 0x63, 0x65, 0x4e, 0x75, 0x6d, 0x12, 0x1f, 0x0a, 0x0b, 0x72, 0x61, 0x6e, 0x67, 0x65, 0x5f,
 	0x73, 0x74, 0x61, 0x72, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0a, 0x72, 0x61, 0x6e,
@@ -757,10 +757,10 @@ var file_pkg_rpc_base_base_proto_rawDesc = []byte{
 	0x07, 0x64, 0x73, 0x74, 0x5f, 0x70, 0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06,
 	0x64, 0x73, 0x74, 0x50, 0x69, 0x64, 0x12, 0x19, 0x0a, 0x08, 0x64, 0x73, 0x74, 0x5f, 0x61, 0x64,
 	0x64, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x64, 0x73, 0x74, 0x41, 0x64, 0x64,
-	0x72, 0x12, 0x30, 0x0a, 0x0b, 0x70, 0x69, 0x65, 0x63, 0x65, 0x5f, 0x74, 0x61, 0x73, 0x6b, 0x73,
+	0x72, 0x12, 0x30, 0x0a, 0x0b, 0x70, 0x69, 0x65, 0x63, 0x65, 0x5f, 0x69, 0x6e, 0x66, 0x6f, 0x73,
 	0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x50, 0x69,
-	0x65, 0x63, 0x65, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x0a, 0x70, 0x69, 0x65, 0x63, 0x65, 0x54, 0x61,
-	0x73, 0x6b, 0x73, 0x12, 0x1f, 0x0a, 0x0b, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x70, 0x69, 0x65,
+	0x65, 0x63, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x0a, 0x70, 0x69, 0x65, 0x63, 0x65, 0x49, 0x6e,
+	0x66, 0x6f, 0x73, 0x12, 0x1f, 0x0a, 0x0b, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x70, 0x69, 0x65,
 	0x63, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0a, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x50,
 	0x69, 0x65, 0x63, 0x65, 0x12, 0x25, 0x0a, 0x0e, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x5f,
 	0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x18, 0x07, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0d, 0x63, 0x6f,
@@ -814,14 +814,14 @@ var file_pkg_rpc_base_base_proto_goTypes = []interface{}{
 	(*UrlMeta)(nil),          // 5: base.UrlMeta
 	(*HostLoad)(nil),         // 6: base.HostLoad
 	(*PieceTaskRequest)(nil), // 7: base.PieceTaskRequest
-	(*PieceTask)(nil),        // 8: base.PieceTask
+	(*PieceInfo)(nil),        // 8: base.PieceInfo
 	(*PiecePacket)(nil),      // 9: base.PiecePacket
 }
 var file_pkg_rpc_base_base_proto_depIdxs = []int32{
 	0, // 0: base.ResponseState.code:type_name -> base.Code
-	1, // 1: base.PieceTask.piece_style:type_name -> base.PieceStyle
+	1, // 1: base.PieceInfo.piece_style:type_name -> base.PieceStyle
 	3, // 2: base.PiecePacket.state:type_name -> base.ResponseState
-	8, // 3: base.PiecePacket.piece_tasks:type_name -> base.PieceTask
+	8, // 3: base.PiecePacket.piece_infos:type_name -> base.PieceInfo
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
@@ -896,7 +896,7 @@ func file_pkg_rpc_base_base_proto_init() {
 			}
 		}
 		file_pkg_rpc_base_base_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PieceTask); i {
+			switch v := v.(*PieceInfo); i {
 			case 0:
 				return &v.state
 			case 1:

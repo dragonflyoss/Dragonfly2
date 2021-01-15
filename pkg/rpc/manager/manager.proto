@@ -32,11 +32,12 @@ message NavigatorRequest{
 message SchedulerHosts{
   base.ResponseState state = 1;
 
-  repeated string addrs = 2; // ip:port
-  ClientInfo client_info = 3;
+  repeated string ips = 2;
+  int32 rpc_port = 3;
+  HostInfo client_host = 4;
 }
 
-message ClientInfo{
+message HostInfo{
   string ip = 1;
   string host_name = 2;
   // security isolation domain for network
@@ -50,7 +51,9 @@ message ClientInfo{
 message CdnHosts{
   base.ResponseState state = 1;
 
-  repeated string addrs = 2; // ip:port
+  int32 rpc_port = 2;
+  int32 down_port = 3;
+  repeated HostInfo cdn_hosts = 4;
 }
 
 message HeartRequest{

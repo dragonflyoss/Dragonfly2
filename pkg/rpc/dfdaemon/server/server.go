@@ -33,10 +33,10 @@ import (
 func init() {
 	logDir := "/var/log/dragonfly"
 
-	bizLogger := logger.CreateLogger(logDir+"/daemon.log", 100, 7, 15, false, false)
+	bizLogger := logger.CreateLogger(logDir+"/daemon.log", 100, 7, 14, false, false)
 	logger.SetBizLogger(bizLogger.Sugar())
 
-	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 100, 7, 15, false, false)
+	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 100, 7, 14, false, false)
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
 	gcLogger := logger.CreateLogger(logDir+"/gc.log", 100, 3, 6, false, false)
