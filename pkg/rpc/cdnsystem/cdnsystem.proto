@@ -46,13 +46,11 @@ message PieceSeed{
   string piece_range = 7;
   // piece's real offset in the file
   uint64 piece_offset = 8;
-  // for tiny file
-  bytes piece_content = 9;
 
   // whether or not all seeds are downloaded
-  bool done = 10;
+  bool done = 9;
   // content total length for the url
-  int64 content_length = 11;
+  int64 content_length = 10;
 }
 
 // CDN System RPC Service
