@@ -4,7 +4,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
-	"sort"
 )
 
 type Evaluator struct {
@@ -146,39 +145,5 @@ func (e *Evaluator) GetDistance(dst *types.PeerTask, src *types.PeerTask) (dist 
 		hostDist = 20.0
 	}
 
-	historyDist := 40.0
-
-	var list []*types.PieceStatus
-	historyList := src.GetPieceStatusList()
-	if historyList != nil {
-		historyList.Range(func(key, value interface{}) bool {
-			ps := value.(*types.PieceStatus)
-			if ps.DstPid == dst.Pid {
-				list = append(list, ps)
-			}
-			return true
-		})
-	}
-
-	sort.Slice(list, func(i int, j int) bool {
-		return list[i].PieceNum > list[j].PieceNum
-	})
-
-	if len(list) > 0 {
-		historyDist -= 10.0
-		for i := 0; i < len(list) && i < 3; i++ {
-			if !list[i].Success {
-				historyDist += 20.0
-			} else {
-				cost := (float64(list[i].Cost) - 100.0) / 100.0 * 10
-				if cost > 10.0 {
-					cost = 10.0
-				}
-				historyDist += cost
-			}
-		}
-	}
-
-	dist = hostDist + historyDist
-	return 1.0 - dist/80.0, nil
+	return 1.0 - hostDist/80.0, nil
 }

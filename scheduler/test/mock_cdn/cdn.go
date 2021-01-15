@@ -64,11 +64,15 @@ func (mc *MockCDN) GetHostId() string {
 }
 
 func (mc *MockCDN) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)  {
-	return &base.PiecePacket{
+	pp := &base.PiecePacket{
 		TaskId:     mc.taskId,
 		PieceTasks: mc.pieceTaskList,
-		Finished: 	mc.finished,
-	}, nil
+		TotalPiece: -1,
+	}
+	if mc.finished {
+		pp.TotalPiece = int32(len(mc.pieceTaskList))
+	}
+	return pp, nil
 }
 
 func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {

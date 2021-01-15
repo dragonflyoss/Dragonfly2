@@ -89,6 +89,10 @@ func (c *Connection) connect() error {
 		return errors.New("available addr is not found in the candidates")
 	}
 
+	if c.Ref == nil {
+		return errors.New("client has already been closed")
+	}
+
 	var cc *grpc.ClientConn
 	var err error
 
@@ -121,6 +125,8 @@ func (c *Connection) GetClientSafely() (interface{}, string, int) {
 func (c *Connection) Close() error {
 	c.rwMutex.Lock()
 	defer c.rwMutex.Unlock()
+
+	c.Ref = nil
 
 	return c.Conn.Close()
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
@@ -39,6 +40,9 @@ func init() {
 	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
+	gcLogger := logger.CreateLogger(logDir+"/gc.log", 300, 7, 0, false, false)
+	logger.SetGcLogger(gcLogger.Sugar())
+
 	// set register with server implementation.
 	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
 		cdnsystem.RegisterSeederServer(s, &proxy{server: impl.(SeederServer)})
@@ -48,6 +52,8 @@ func init() {
 type SeederServer interface {
 	// generate seeds and return to scheduler
 	ObtainSeeds(context.Context, *cdnsystem.SeedRequest, chan<- *cdnsystem.PieceSeed) error
+	// get piece tasks from cdn
+	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
 }
 
 type proxy struct {
@@ -59,7 +65,7 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
 
-	errChan := make(chan error, 8)
+	errChan := make(chan error, 10)
 	psc := make(chan *cdnsystem.PieceSeed, 4)
 
 	once := new(sync.Once)
@@ -79,6 +85,10 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 	}
 
 	return
+}
+
+func (p *proxy) PullPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	return p.server.GetPieceTasks(ctx, ptr)
 }
 
 func send(psc chan *cdnsystem.PieceSeed, closePsc func(), stream cdnsystem.Seeder_ObtainSeedsServer, errChan chan error) {

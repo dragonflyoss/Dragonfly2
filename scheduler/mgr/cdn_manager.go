@@ -147,7 +147,6 @@ func (c *CDNClient) getHostUuid(ps *cdnsystem.PieceSeed) string {
 func (c *CDNClient) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *types.PeerTask) *types.Piece {
 	p := task.GetOrCreatePiece(ps.PieceNum)
 	p.PieceRange = ps.PieceRange
-	p.PieceMd5 = ps.PieceMd5
 	p.PieceOffset = ps.PieceOffset
 	p.PieceStyle = ps.PieceStyle
 	return p
