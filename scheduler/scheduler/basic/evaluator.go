@@ -139,7 +139,7 @@ func (e *Evaluator) GetDistance(dst *types.PeerTask, src *types.PeerTask) (dist 
 	hostDist := 40.0
 	if dst.Host == src.Host {
 		hostDist = 0.0
-	} else if dst.Host.Switch == src.Host.Switch && src.Host.Switch != "" {
+	} else if dst.Host.NetTopology == src.Host.NetTopology && src.Host.NetTopology != "" {
 		hostDist = 10.0
 	} else if dst.Host.Idc == src.Host.Idc && src.Host.Idc != "" {
 		hostDist = 20.0

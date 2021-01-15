@@ -26,6 +26,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
+	"io"
 )
 
 type SchedulerClient interface {
@@ -170,9 +171,8 @@ func receive(stream *pieceTaskStream, ppc chan *scheduler.PeerPacket, prc chan *
 			peerPacket, err := stream.recv()
 			if err == nil {
 				ppc <- peerPacket
-				if peerPacket.Done {
-					return
-				}
+			} else if err == io.EOF {
+				return
 			} else {
 				ppc <- base.NewResWithErr(peerPacket, err).(*scheduler.PeerPacket)
 				return

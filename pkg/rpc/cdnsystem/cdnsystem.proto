@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// check and make seeds
-
 syntax = "proto3";
 
 package cdnsystem;
@@ -28,24 +26,31 @@ message SeedRequest{
   string task_id = 1;
   string url = 2;
   string filter = 3;
-  // check content downloaded from remote url
   base.UrlMeta url_meta = 4;
 }
 
 // keep piece meta and data separately
-// check piece md5 and total content length, no more file md5 verification
-// scheduler can also analyze cdn traffic from origin
+// check piece md5, md5s sign and total content length
 message PieceSeed{
   base.ResponseState state = 1;
 
-  base.PieceStyle piece_style = 2;
-  int32 piece_num = 3;
-  string piece_range = 4; // for transported piece content
-  uint64 piece_offset = 5; // piece's real offset in the file
+  // peer id for cdn node, need suffix with _CDN
+  string peer_id = 2;
+  // ip:port
+  string seed_addr = 3;
+  base.PieceStyle piece_style = 4;
+  int32 piece_num = 5;
+  // for transported piece content
+  string piece_md5 = 6;
+  // for transported piece content
+  string piece_range = 7;
+  // piece's real offset in the file
+  uint64 piece_offset = 8;
 
-  bool done = 6; // whether or not all seeds are downloaded
-  int64 content_length = 7; // content total length for the url
-  int64 total_traffic = 8; // total traffic from the remote source
+  // whether or not all seeds are downloaded
+  bool done = 9;
+  // content total length for the url
+  int64 content_length = 10;
 }
 
 // CDN System RPC Service

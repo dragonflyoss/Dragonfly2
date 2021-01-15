@@ -264,7 +264,12 @@ func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 	}
 	if pt.parent != nil && pt.parent.DstPeerTask != nil && pt.parent.DstPeerTask.Host != nil {
 		pkg.ParallelCount = int32(pt.parent.Concurrency)
-		pkg.MainPeer = &pt.parent.DstPeerTask.Host.PeerHost
+		peerHost := pt.parent.DstPeerTask.Host.PeerHost
+		pkg.MainPeer = &scheduler.PeerPacket_DestPeer{
+			Ip : peerHost.Ip,
+			RpcPort: peerHost.RpcPort,
+			PeerId: pt.Pid,
+		}
 	}
 	// TODO select StealPeers
 

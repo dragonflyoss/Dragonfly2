@@ -91,7 +91,6 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 						SeedAddr:      "localhost:12345",
 						Done:          true,
 						ContentLength: 100,
-						TotalTraffic:  100,
 					}
 					psc <- ps
 					mc.finished = true

@@ -18,8 +18,8 @@ type SchedulerServer struct {
 	worker schedule_worker.IWorker
 }
 
-func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (pkg *scheduler.PeerPacket, err error) {
-	pkg = &scheduler.PeerPacket{SrcPid: request.PeerId}
+func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (pkg *scheduler.RegisterResult, err error) {
+	pkg = &scheduler.RegisterResult{}
 	defer func() {
 		e := recover()
 		if e != nil {
@@ -55,6 +55,8 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 			return
 		}
 	}
+	pkg.TaskId = task.TaskId
+	pkg.SizeScope = task.SizeScope
 
 	// get or create host
 	hostId := request.PeerHost.Uuid
@@ -85,15 +87,34 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		peerTask.SetUp()
 	}
 
+	switch pkg.SizeScope {
+	case base.SizeScope_NORMAL:
+		return
+	case base.SizeScope_TINY:
+		pkg.DirectPiece = task.DirectPiece
+		return
+	}
+
 	// do scheduler piece
 	parent, _, err := s.svc.SchedulerParent(peerTask)
 	if err != nil {
 		return
 	}
 
-	// assemble result
-	if parent != nil {
-		pkg = peerTask.GetSendPkg()
+	if parent == nil {
+		pkg.SizeScope = base.SizeScope_NORMAL
+		return
+	}
+
+	pkg.DirectPiece = &scheduler.RegisterResult_SinglePiece{
+		SinglePiece: &scheduler.SinglePiece{
+			// destination peer id
+			DstPid : parent.Pid,
+			// download address(ip:port)
+			DstAddr: parent.DstAddr,
+			// one piece task
+			PieceTask: &task.PieceList[0].PieceTask,
+		},
 	}
 
 	return

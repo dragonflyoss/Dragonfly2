@@ -174,6 +174,7 @@ func (pss *pieceSeedStream) replaceClient(cause error) error {
 	return err
 }
 
+
 func statSeedStart(sr *cdnsystem.SeedRequest, target string, success bool) {
 	logger.StatSeedLogger.Info("trigger seed making",
 		zap.Bool("success", success),
@@ -190,6 +191,5 @@ func statSeedFinish(last *cdnsystem.PieceSeed, taskId string, url string, begin 
 		zap.String("seeder", last.SeedAddr),
 		zap.Int64("cost", time.Now().Sub(begin).Milliseconds()),
 		zap.Int64("contentLength", last.ContentLength),
-		zap.Int64("totalTraffic", last.TotalTraffic),
 		zap.Int("code", int(last.State.Code)))
 }

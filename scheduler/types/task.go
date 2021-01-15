@@ -2,6 +2,7 @@ package types
 
 import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"sync"
 	"time"
 )
@@ -16,10 +17,12 @@ type Task struct {
 	BizId   string        `json:"biz_id,omitempty"`   // caller's biz id that can be any string
 	UrlMata *base.UrlMeta `json:"url_mata,omitempty"` // downloaded file content md5
 
+	SizeScope base.SizeScope
+	DirectPiece *scheduler.RegisterResult_PieceContent
+
 	CreateTime    time.Time
 	rwLock        *sync.RWMutex
 	PieceList     map[int32]*Piece // Piece list
-	maxPieceNum   int32            // the max piece num of all pieces
 	PieceTotal    int32            // the total number of Pieces, set > 0 when cdn finished
 	ContentLength int64
 }
@@ -29,14 +32,10 @@ func CopyTask(t *Task) *Task {
 	if copyTask.PieceList == nil {
 		copyTask.PieceList = make(map[int32]*Piece)
 		copyTask.rwLock = new(sync.RWMutex)
-		copyTask.maxPieceNum = -1
 		copyTask.CreateTime = time.Now()
+		copyTask.SizeScope = base.SizeScope_NORMAL
 	}
 	return &copyTask
-}
-
-func (t *Task) GetMaxPieceNum() int32 {
-	return t.maxPieceNum
 }
 
 func (t *Task) GetPiece(pieceNum int32) *Piece {
@@ -53,9 +52,6 @@ func (t *Task) GetOrCreatePiece(pieceNum int32) *Piece {
 		p = newEmptyPiece(pieceNum, t)
 		t.rwLock.Lock()
 		t.PieceList[pieceNum] = p
-		if p.PieceNum > t.maxPieceNum {
-			t.maxPieceNum = p.PieceNum
-		}
 		t.rwLock.Unlock()
 	} else {
 		t.rwLock.RUnlock()
@@ -67,7 +63,4 @@ func (t *Task) AddPiece(p *Piece) {
 	t.rwLock.Lock()
 	defer t.rwLock.Unlock()
 	t.PieceList[p.PieceNum] = p
-	if p.PieceNum > t.maxPieceNum {
-		t.maxPieceNum = p.PieceNum
-	}
 }

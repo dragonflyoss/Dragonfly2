@@ -134,7 +134,8 @@ type DownResult struct {
 	TaskId          string              `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	PeerId          string              `protobuf:"bytes,3,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 	CompletedLength uint64              `protobuf:"varint,4,opt,name=completed_length,json=completedLength,proto3" json:"completed_length,omitempty"`
-	Done            bool                `protobuf:"varint,5,opt,name=done,proto3" json:"done,omitempty"` // done with success or fail
+	// done with success or fail
+	Done bool `protobuf:"varint,5,opt,name=done,proto3" json:"done,omitempty"`
 }
 
 func (x *DownResult) Reset() {

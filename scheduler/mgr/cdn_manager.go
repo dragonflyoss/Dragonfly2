@@ -103,7 +103,7 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 				Uuid:     hostId,
 				HostName: hostId,
 				Ip:       ip,
-				Port:     int32(port),
+				RpcPort:     int32(port),
 			},
 		}
 		host = GetHostManager().AddHost(host)
@@ -119,7 +119,6 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 	if ps.Done {
 		task.PieceTotal = peerTask.GetFinishedNum()
 		task.ContentLength = ps.ContentLength
-		peerTask.Traffic = uint64(ps.TotalTraffic)
 		peerTask.Success = true
 
 		// process waiting peerTask for done
@@ -146,8 +145,10 @@ func (c *CDNClient) getHostUuid(ps *cdnsystem.PieceSeed) string {
 
 func (c *CDNClient) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *types.PeerTask) *types.Piece {
 	p := task.GetOrCreatePiece(ps.PieceNum)
-	p.PieceRange = ps.PieceRange
+
 	p.PieceOffset = ps.PieceOffset
 	p.PieceStyle = ps.PieceStyle
 	return p
 }
+
+

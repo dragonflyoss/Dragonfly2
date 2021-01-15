@@ -55,7 +55,10 @@ type MockClient struct {
 	waitStop      chan struct{}
 	pieceTaskList []*base.PieceTask
 	parentId      string
-	finished      bool
+	TotalPiece    int32 `protobuf:"varint,6,opt,name=total_piece,json=totalPiece,proto3" json:"total_piece,omitempty"`
+	ContentLength int64 `protobuf:"varint,7,opt,name=content_length,json=contentLength,proto3" json:"content_length,omitempty"`
+	// sha256 code of all piece md5
+	PieceMd5Sign string `protobuf:"bytes,8,opt,name=piece_md5_sign,json=pieceMd5Sign,proto3" json:"piece_md5_sign,omitempty"`
 }
 
 func NewMockClient(addr string, logger common.TestLogger) *MockClient {
@@ -96,8 +99,10 @@ func (mc *MockClient) GetStopChan() chan struct{} {
 func (mc *MockClient) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	return &base.PiecePacket{
 		TaskId:     mc.taskId,
-		PieceTasks: mc.pieceTaskList,
-		Finished:   mc.finished,
+		TotalPiece : mc.TotalPiece,
+		ContentLength: mc.ContentLength,
+		// sha256 code of all piece md5
+		PieceMd5Sign: mc.PieceMd5Sign,
 	}, nil
 }
 
@@ -114,12 +119,12 @@ func (mc *MockClient) registerPeerTask() (err error) {
 		PeerHost: &scheduler.PeerHost{
 			Uuid:           fmt.Sprintf("%s", mc.pid),
 			Ip:             "127.0.0.1",
-			Port:           23456,
+			RpcPort:           23456,
 			HostName:       fmt.Sprintf("host%s", mc.pid),
 			SecurityDomain: "",
 			Location:       "",
 			Idc:            "",
-			Switch:         "",
+			NetTopology:         "",
 		},
 	}
 	pkg, err := mc.cli.RegisterPeerTask(context.TODO(), request)
@@ -133,7 +138,7 @@ func (mc *MockClient) registerPeerTask() (err error) {
 	}
 	mc.taskId = pkg.TaskId
 	if pkg.MainPeer != nil {
-		mc.parentId = pkg.MainPeer.Uuid
+		mc.parentId = pkg.MainPeer.PeerId
 	}
 
 	wait := make(chan bool)
@@ -152,19 +157,15 @@ func (mc *MockClient) registerPeerTask() (err error) {
 		for {
 			resp := <-mc.out
 			if resp.MainPeer != nil {
-				mc.parentId = resp.MainPeer.Uuid
+				mc.parentId = resp.MainPeer.PeerId
 				logMsg := fmt.Sprintf("[%s] recieve a parent: %s", mc.pid, mc.parentId)
 				mc.logger.Log(logMsg)
 			} else {
 				mc.logger.Logf("[%s] receive a empty parent\n", mc.pid)
 			}
-			if resp != nil && resp.Done {
-				mc.logger.Logf("client[%s] download finished", mc.pid)
-				// close(mc.waitStop)
-				break
-			}
 			if resp == nil {
-				continue
+				mc.logger.Logf("client[%s] download finished", mc.pid)
+			 	break
 			}
 		}
 		<-mc.replyFinished
@@ -215,8 +216,10 @@ func (mc *MockClient) downloadPieces() {
 		}
 		pieces, _ := cli.GetPieceTasks(nil, nil)
 		if pieces != nil {
-			if pieces.Finished && len(pieces.PieceTasks) == len(mc.pieceTaskList) {
-				mc.finished = true
+			if pieces.TotalPiece >= 0 && len(pieces.PieceTasks) == len(mc.pieceTaskList) {
+				mc.TotalPiece = pieces.TotalPiece
+				mc.ContentLength = pieces.ContentLength
+				mc.PieceMd5Sign = pieces.PieceMd5Sign
 				mc.logger.Logf("client[%s] download finished from [%s]", mc.pid, mc.parentId)
 				close(mc.waitStop)
 				return

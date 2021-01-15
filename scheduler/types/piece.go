@@ -7,18 +7,14 @@ import (
 type WaitingType int
 
 type Piece struct {
-	PieceNum   int32  `json:"piece_num,omitempty"`
-	PieceRange string `json:"piece_range,omitempty"`
+	base.PieceTask
 
-	PieceOffset uint64          `json:"piece_offset,omitempty"`
-	PieceStyle  base.PieceStyle `json:"piece_style,omitempty"`
-
-	Task               *Task
+	Task *Task
 }
 
 func newEmptyPiece(pieceNum int32, task *Task) *Piece {
 	return &Piece{
-		PieceNum:          pieceNum,
-		Task:              task,
+		PieceTask: base.PieceTask{PieceNum: pieceNum},
+		Task:      task,
 	}
 }
