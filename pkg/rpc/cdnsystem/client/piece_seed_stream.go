@@ -171,3 +171,23 @@ func (pss *pieceSeedStream) replaceClient(cause error) error {
 
 	return err
 }
+
+
+func statSeedStart(sr *cdnsystem.SeedRequest, target string, success bool) {
+	logger.StatSeedLogger.Info("trigger seed making",
+		zap.Bool("success", success),
+		zap.String("taskId", sr.TaskId),
+		zap.String("url", sr.Url),
+		zap.String("seeder", target))
+}
+
+func statSeedFinish(last *cdnsystem.PieceSeed, taskId string, url string, begin time.Time) {
+	logger.StatSeedLogger.Info("seed making finish",
+		zap.Bool("success", last.State.Success),
+		zap.String("taskId", taskId),
+		zap.String("url", url),
+		zap.String("seeder", last.SeedAddr),
+		zap.Int64("cost", time.Now().Sub(begin).Milliseconds()),
+		zap.Int64("contentLength", last.ContentLength),
+		zap.Int("code", int(last.State.Code)))
+}
