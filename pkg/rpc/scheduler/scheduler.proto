@@ -62,7 +62,7 @@ message SinglePiece{
   // download address(ip:port)
   string dst_addr = 2;
   // one piece task
-  base.PieceTask piece_task = 3;
+  base.PieceInfo piece_info = 3;
 }
 
 message PeerHost{
@@ -108,13 +108,12 @@ message PieceResult{
   string src_pid = 2;
   string dst_pid = 3;
   int32 piece_num = 4;
-  string piece_range = 5;
-  uint64 begin_time = 6;
-  uint64 end_time = 7;
-  bool success = 8;
-  base.Code code = 9;
-  base.HostLoad host_load = 10;
-  int32 finished_count = 11;
+  uint64 begin_time = 5;
+  uint64 end_time = 6;
+  bool success = 7;
+  base.Code code = 8;
+  base.HostLoad host_load = 9;
+  int32 finished_count = 10;
 }
 
 message PeerResult{

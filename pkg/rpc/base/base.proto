@@ -97,7 +97,7 @@ message PieceTaskRequest{
   int32 limit = 4;
 }
 
-message PieceTask{
+message PieceInfo{
   int32 piece_num = 1;
   uint64 range_start = 2;
   int32 range_size = 3;
@@ -113,7 +113,7 @@ message PiecePacket{
   string dst_pid = 3;
   // ip:port
   string dst_addr = 4;
-  repeated PieceTask piece_tasks = 5;
+  repeated PieceInfo piece_infos = 5;
   // total piece count for url
   int32 total_piece = 6;
   int64 content_length = 7;
