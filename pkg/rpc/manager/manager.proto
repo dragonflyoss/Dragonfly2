@@ -80,6 +80,7 @@ message ManagementConfig{
   base.ResponseState state = 1;
 
   message ClientConfig{
+    //......
   }
 
   message SchedulerConfig{
@@ -88,6 +89,7 @@ message ManagementConfig{
   }
 
   message CdnConfig{
+    //......
   }
 
   oneof config{

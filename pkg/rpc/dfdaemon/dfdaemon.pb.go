@@ -48,7 +48,7 @@ type DownRequest struct {
 
 	// download content with the url, but not only for http protocol
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
-	// blocks will be written to output path directly,
+	// pieces will be written to output path directly,
 	// at the same time, dfdaemon workspace also makes soft link to the output
 	Output  string        `protobuf:"bytes,2,opt,name=output,proto3" json:"output,omitempty"`
 	UrlMeta *base.UrlMeta `protobuf:"bytes,3,opt,name=url_meta,json=urlMeta,proto3" json:"url_meta,omitempty"`

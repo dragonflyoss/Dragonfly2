@@ -131,7 +131,7 @@ type PieceSeed struct {
 	State *base.ResponseState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
 	// peer id for cdn node, need suffix with _CDN
 	PeerId string `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
-	// ip
+	// cdn node ip
 	SeederIp  string          `protobuf:"bytes,3,opt,name=seeder_ip,json=seederIp,proto3" json:"seeder_ip,omitempty"`
 	PieceInfo *base.PieceInfo `protobuf:"bytes,4,opt,name=piece_info,json=pieceInfo,proto3" json:"piece_info,omitempty"`
 	// whether or not all seeds are downloaded

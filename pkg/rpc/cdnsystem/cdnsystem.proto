@@ -38,7 +38,7 @@ message PieceSeed{
 
   // peer id for cdn node, need suffix with _CDN
   string peer_id = 2;
-  // ip
+  // cdn node ip
   string seeder_ip = 3;
   base.PieceInfo piece_info = 4;
 

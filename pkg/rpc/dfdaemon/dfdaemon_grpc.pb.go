@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DaemonClient interface {
-	// trigger client to download files
+	// trigger client to download file
 	Download(ctx context.Context, in *DownRequest, opts ...grpc.CallOption) (Daemon_DownloadClient, error)
 	// get piece tasks from other peers
 	GetPieceTasks(ctx context.Context, in *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
@@ -88,7 +88,7 @@ func (c *daemonClient) CheckHealth(ctx context.Context, in *base.EmptyRequest, o
 // All implementations must embed UnimplementedDaemonServer
 // for forward compatibility
 type DaemonServer interface {
-	// trigger client to download files
+	// trigger client to download file
 	Download(*DownRequest, Daemon_DownloadServer) error
 	// get piece tasks from other peers
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
