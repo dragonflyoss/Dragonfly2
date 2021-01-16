@@ -22,19 +22,26 @@ import "pkg/rpc/base/base.proto";
 
 option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager";
 
-message NavigatorRequest{
+message SchedulerNodeRequest{
+  // client ip
   string ip = 1;
+  // client host name
   string host_name = 2;
   // json format: {vpcId:xxx,sn:xxx,group:xxx,...}
   string host_tag = 3;
 }
 
-message SchedulerHosts{
+message CdnNodeRequest{
+  // scheduler host name
+  string host_name = 1;
+}
+
+message SchedulerNodes{
   base.ResponseState state = 1;
 
-  repeated string ips = 2;
-  int32 rpc_port = 3;
-  HostInfo client_host = 4;
+  // ip:port
+  repeated string addrs = 2;
+  HostInfo client_host = 3;
 }
 
 message HostInfo{
@@ -48,37 +55,57 @@ message HostInfo{
   string net_topology = 6;
 }
 
-message CdnHosts{
-  base.ResponseState state = 1;
-
+message ServerInfo{
+  HostInfo host_info = 1;
   int32 rpc_port = 2;
   int32 down_port = 3;
-  repeated HostInfo cdn_hosts = 4;
+}
+
+message CdnNodes{
+  base.ResponseState state = 1;
+
+  repeated ServerInfo cdn_hosts = 2;
 }
 
 message HeartRequest{
-  string ip = 1;
-  string host_name = 2;
-  bool is_scheduler = 3;
-  bool is_cdn = 4;
+  // identify servers with hostname
+  string host_name = 1;
+  bool is_scheduler = 2;
+  bool is_cdn = 3;
 }
 
 message ManagementConfig{
   base.ResponseState state = 1;
+
+  message ClientConfig{
+  }
+
+  message SchedulerConfig{
+    ClientConfig client_config = 1;
+    //......
+  }
+
+  message CdnConfig{
+  }
+
+  oneof config{
+    SchedulerConfig scheduler_config = 2;
+    CdnConfig cdn_config = 3;
+  }
 }
 
 // Manager System RPC Service
 service Manager{
-  // get scheduler server list according to client info.
-  // call scene as follows:
-  // 1. scheduler hosts is not found in config file
+  // get scheduler server list, using scene as follows:
+  // 1. scheduler servers are not exist in local config
   //
-  // 2. connection is fail for all servers
+  // 2. connection is fail for all servers from config,
+  // so need retry one times to get latest servers
   //
   // 3. manager actively triggers fresh
-  rpc GetSchedulers(NavigatorRequest)returns(SchedulerHosts){}
-  // get cdn server list according to client info
-  rpc GetCdnNodes(NavigatorRequest)returns(CdnHosts){}
+  rpc GetSchedulers(SchedulerNodeRequest)returns(SchedulerNodes){}
+  // get cdn server list, caller need call it to refresh the list with timer
+  rpc GetCdnNodes(CdnNodeRequest)returns(CdnNodes){}
   // keeps alive for cdn or scheduler and receives management configuration
   rpc KeepAlive(stream HeartRequest)returns(stream ManagementConfig){}
 }
