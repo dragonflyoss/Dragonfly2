@@ -44,6 +44,18 @@ message SchedulerNodes{
   HostInfo client_host = 3;
 }
 
+message CdnNodes{
+  base.ResponseState state = 1;
+
+  repeated ServerInfo cdn_hosts = 2;
+}
+
+message ServerInfo{
+  HostInfo host_info = 1;
+  int32 rpc_port = 2;
+  int32 down_port = 3;
+}
+
 message HostInfo{
   string ip = 1;
   string host_name = 2;
@@ -55,23 +67,13 @@ message HostInfo{
   string net_topology = 6;
 }
 
-message ServerInfo{
-  HostInfo host_info = 1;
-  int32 rpc_port = 2;
-  int32 down_port = 3;
-}
-
-message CdnNodes{
-  base.ResponseState state = 1;
-
-  repeated ServerInfo cdn_hosts = 2;
-}
-
 message HeartRequest{
   // identify servers with hostname
   string host_name = 1;
-  bool is_scheduler = 2;
-  bool is_cdn = 3;
+  oneof from{
+    bool scheduler = 2;
+    bool cdn = 3;
+  }
 }
 
 message ManagementConfig{
@@ -106,6 +108,6 @@ service Manager{
   rpc GetSchedulers(SchedulerNodeRequest)returns(SchedulerNodes){}
   // get cdn server list, caller need call it to refresh the list with timer
   rpc GetCdnNodes(CdnNodeRequest)returns(CdnNodes){}
-  // keeps alive for cdn or scheduler and receives management configuration
+  // keep alive for cdn or scheduler and receives management configuration
   rpc KeepAlive(stream HeartRequest)returns(stream ManagementConfig){}
 }
