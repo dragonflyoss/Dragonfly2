@@ -33,6 +33,9 @@ message DownRequest{
   string biz_id = 4;
   // regex format
   string filter = 5;
+  // identify one downloading
+  // framework will fill it automatically
+  string uuid = 6;
 }
 
 message DownResult{
