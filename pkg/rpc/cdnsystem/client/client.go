@@ -33,6 +33,7 @@ type SeederClient interface {
 	// GetPieceTasks
 	GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
+	// Close
 	Close() error
 }
 

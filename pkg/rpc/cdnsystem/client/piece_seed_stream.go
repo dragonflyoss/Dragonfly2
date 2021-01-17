@@ -19,32 +19,30 @@ package client
 import (
 	"context"
 	"errors"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strconv"
 	"sync"
 	"time"
 )
 
 type pieceSeedStream struct {
-	sc   *seederClient
-	ctx  context.Context
-	sr   *cdnsystem.SeedRequest
-	opts []grpc.CallOption
-
-	// client for one target
-	client  cdnsystem.SeederClient
-	nextNum int
-	target  string
-	// stream for one client
-	stream cdnsystem.Seeder_ObtainSeedsClient
-
+	sc         *seederClient
+	ctx        context.Context
+	sr         *cdnsystem.SeedRequest
+	opts       []grpc.CallOption
+	client     cdnsystem.SeederClient 			  // client for one target
+	nextNum    int
+	target     string
+	stream     cdnsystem.Seeder_ObtainSeedsClient // stream for one client
 	begin      time.Time
 	onceFinish sync.Once
-
 	rpc.RetryMeta
 }
 
@@ -171,7 +169,6 @@ func (pss *pieceSeedStream) replaceClient(cause error) error {
 
 	return err
 }
-
 
 func statSeedStart(sr *cdnsystem.SeedRequest, target string, success bool) {
 	logger.StatSeedLogger.Info("trigger seed making",
