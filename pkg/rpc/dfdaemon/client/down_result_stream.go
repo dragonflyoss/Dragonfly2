@@ -83,6 +83,7 @@ func (drs *downResultStream) recv() (dr *dfdaemon.DownResult, err error) {
 	if dr, err = drs.stream.Recv(); err != nil {
 		dr, err = drs.retryRecv(err)
 	}
+	
 	return
 }
 
@@ -142,7 +143,6 @@ func (drs *downResultStream) replaceClient(cause error) error {
 	} else {
 		drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
 		drs.Times = 1
+		return nil
 	}
-
-	return err
 }
