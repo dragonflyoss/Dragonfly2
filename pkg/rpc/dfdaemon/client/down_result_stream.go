@@ -83,7 +83,7 @@ func (drs *downResultStream) recv() (dr *dfdaemon.DownResult, err error) {
 	if dr, err = drs.stream.Recv(); err != nil {
 		dr, err = drs.retryRecv(err)
 	}
-	
+
 	return
 }
 
