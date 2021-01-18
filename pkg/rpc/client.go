@@ -44,7 +44,7 @@ type Connection struct {
 }
 
 type RetryMeta struct {
-	Times       int     // current replace times for one client
+	Times       int     // times of replacing stream on a client
 	MaxAttempts int     // limit count for retry
 	InitBackoff float64 // second
 	MaxBackOff  float64 // second

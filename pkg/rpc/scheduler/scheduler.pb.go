@@ -46,7 +46,7 @@ type PeerTaskRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// universal resource locator for different storage kinds
+	// universal resource locator for different kind of storage
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	// filter is a regular expression
 	// used to generate same task id for different urls
@@ -55,7 +55,7 @@ type PeerTaskRequest struct {
 	BizId string `protobuf:"bytes,3,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`
 	// url meta info
 	UrlMata *base.UrlMeta `protobuf:"bytes,4,opt,name=url_mata,json=urlMata,proto3" json:"url_mata,omitempty"`
-	// peer's id and be global uniqueness
+	// peer's id and must be global uniqueness
 	PeerId string `protobuf:"bytes,5,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 	// peer host info
 	PeerHost *PeerHost `protobuf:"bytes,6,opt,name=peer_host,json=peerHost,proto3" json:"peer_host,omitempty"`
@@ -250,10 +250,12 @@ type isRegisterResult_DirectPiece interface {
 }
 
 type RegisterResult_SinglePiece struct {
+	// for small file
 	SinglePiece *SinglePiece `protobuf:"bytes,4,opt,name=single_piece,json=singlePiece,proto3,oneof"`
 }
 
 type RegisterResult_PieceContent struct {
+	// for tiny file
 	PieceContent []byte `protobuf:"bytes,5,opt,name=piece_content,json=pieceContent,proto3,oneof"`
 }
 
@@ -270,7 +272,7 @@ type SinglePiece struct {
 	DstPid string `protobuf:"bytes,1,opt,name=dst_pid,json=dstPid,proto3" json:"dst_pid,omitempty"`
 	// download address(ip:port)
 	DstAddr string `protobuf:"bytes,2,opt,name=dst_addr,json=dstAddr,proto3" json:"dst_addr,omitempty"`
-	// one piece task
+	// one piece info
 	PieceInfo *base.PieceInfo `protobuf:"bytes,3,opt,name=piece_info,json=pieceInfo,proto3" json:"piece_info,omitempty"`
 }
 
@@ -334,18 +336,21 @@ type PeerHost struct {
 
 	// each time the daemon starts, it will generate a different uuid
 	Uuid string `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
-	Ip   string `protobuf:"bytes,2,opt,name=ip,proto3" json:"ip,omitempty"`
+	// peer host ip
+	Ip string `protobuf:"bytes,2,opt,name=ip,proto3" json:"ip,omitempty"`
 	// rpc service port for peer
 	RpcPort int32 `protobuf:"varint,3,opt,name=rpc_port,json=rpcPort,proto3" json:"rpc_port,omitempty"`
 	// piece downloading port for peer
-	DownPort int32  `protobuf:"varint,4,opt,name=down_port,json=downPort,proto3" json:"down_port,omitempty"`
+	DownPort int32 `protobuf:"varint,4,opt,name=down_port,json=downPort,proto3" json:"down_port,omitempty"`
+	// peer host name
 	HostName string `protobuf:"bytes,5,opt,name=host_name,json=hostName,proto3" json:"host_name,omitempty"`
 	// security isolation domain for network
 	SecurityDomain string `protobuf:"bytes,6,opt,name=security_domain,json=securityDomain,proto3" json:"security_domain,omitempty"`
 	// location path: area|country|province|city|...
 	Location string `protobuf:"bytes,7,opt,name=location,proto3" json:"location,omitempty"`
-	Idc      string `protobuf:"bytes,8,opt,name=idc,proto3" json:"idc,omitempty"`
-	// network device path: switch|router|rack|...
+	// idc where the peer host is located
+	Idc string `protobuf:"bytes,8,opt,name=idc,proto3" json:"idc,omitempty"`
+	// network device path: switch|router|...
 	NetTopology string `protobuf:"bytes,9,opt,name=net_topology,json=netTopology,proto3" json:"net_topology,omitempty"`
 }
 
@@ -444,116 +449,37 @@ func (x *PeerHost) GetNetTopology() string {
 	return ""
 }
 
-type PeerPacket struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	State  *base.ResponseState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
-	TaskId string              `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	// source peer id
-	SrcPid string `protobuf:"bytes,3,opt,name=src_pid,json=srcPid,proto3" json:"src_pid,omitempty"`
-	// concurrent downloading count from main peer
-	ParallelCount int32                  `protobuf:"varint,4,opt,name=parallel_count,json=parallelCount,proto3" json:"parallel_count,omitempty"`
-	MainPeer      *PeerPacket_DestPeer   `protobuf:"bytes,5,opt,name=main_peer,json=mainPeer,proto3" json:"main_peer,omitempty"`
-	StealPeers    []*PeerPacket_DestPeer `protobuf:"bytes,6,rep,name=steal_peers,json=stealPeers,proto3" json:"steal_peers,omitempty"`
-}
-
-func (x *PeerPacket) Reset() {
-	*x = PeerPacket{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_pkg_rpc_scheduler_scheduler_proto_msgTypes[4]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PeerPacket) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PeerPacket) ProtoMessage() {}
-
-func (x *PeerPacket) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_rpc_scheduler_scheduler_proto_msgTypes[4]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PeerPacket.ProtoReflect.Descriptor instead.
-func (*PeerPacket) Descriptor() ([]byte, []int) {
-	return file_pkg_rpc_scheduler_scheduler_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *PeerPacket) GetState() *base.ResponseState {
-	if x != nil {
-		return x.State
-	}
-	return nil
-}
-
-func (x *PeerPacket) GetTaskId() string {
-	if x != nil {
-		return x.TaskId
-	}
-	return ""
-}
-
-func (x *PeerPacket) GetSrcPid() string {
-	if x != nil {
-		return x.SrcPid
-	}
-	return ""
-}
-
-func (x *PeerPacket) GetParallelCount() int32 {
-	if x != nil {
-		return x.ParallelCount
-	}
-	return 0
-}
-
-func (x *PeerPacket) GetMainPeer() *PeerPacket_DestPeer {
-	if x != nil {
-		return x.MainPeer
-	}
-	return nil
-}
-
-func (x *PeerPacket) GetStealPeers() []*PeerPacket_DestPeer {
-	if x != nil {
-		return x.StealPeers
-	}
-	return nil
-}
-
 type PieceResult struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TaskId        string         `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	SrcPid        string         `protobuf:"bytes,2,opt,name=src_pid,json=srcPid,proto3" json:"src_pid,omitempty"`
-	DstPid        string         `protobuf:"bytes,3,opt,name=dst_pid,json=dstPid,proto3" json:"dst_pid,omitempty"`
-	PieceNum      int32          `protobuf:"varint,4,opt,name=piece_num,json=pieceNum,proto3" json:"piece_num,omitempty"`
-	BeginTime     uint64         `protobuf:"varint,5,opt,name=begin_time,json=beginTime,proto3" json:"begin_time,omitempty"`
-	EndTime       uint64         `protobuf:"varint,6,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
-	Success       bool           `protobuf:"varint,7,opt,name=success,proto3" json:"success,omitempty"`
-	Code          base.Code      `protobuf:"varint,8,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
-	HostLoad      *base.HostLoad `protobuf:"bytes,9,opt,name=host_load,json=hostLoad,proto3" json:"host_load,omitempty"`
-	FinishedCount int32          `protobuf:"varint,10,opt,name=finished_count,json=finishedCount,proto3" json:"finished_count,omitempty"`
+	// task id
+	TaskId string `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	// source peer id
+	SrcPid string `protobuf:"bytes,2,opt,name=src_pid,json=srcPid,proto3" json:"src_pid,omitempty"`
+	// dest peer id
+	DstPid string `protobuf:"bytes,3,opt,name=dst_pid,json=dstPid,proto3" json:"dst_pid,omitempty"`
+	// piece number
+	PieceNum int32 `protobuf:"varint,4,opt,name=piece_num,json=pieceNum,proto3" json:"piece_num,omitempty"`
+	// begin time for the piece downloading
+	BeginTime uint64 `protobuf:"varint,5,opt,name=begin_time,json=beginTime,proto3" json:"begin_time,omitempty"`
+	// end time for the piece downloading
+	EndTime uint64 `protobuf:"varint,6,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	// whether the piece downloading is successfully
+	Success bool `protobuf:"varint,7,opt,name=success,proto3" json:"success,omitempty"`
+	// result code
+	Code base.Code `protobuf:"varint,8,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
+	// current host resource usage
+	HostLoad *base.HostLoad `protobuf:"bytes,9,opt,name=host_load,json=hostLoad,proto3" json:"host_load,omitempty"`
+	// currently completed piece count
+	FinishedCount int32 `protobuf:"varint,10,opt,name=finished_count,json=finishedCount,proto3" json:"finished_count,omitempty"`
 }
 
 func (x *PieceResult) Reset() {
 	*x = PieceResult{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pkg_rpc_scheduler_scheduler_proto_msgTypes[5]
+		mi := &file_pkg_rpc_scheduler_scheduler_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -566,7 +492,7 @@ func (x *PieceResult) String() string {
 func (*PieceResult) ProtoMessage() {}
 
 func (x *PieceResult) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_rpc_scheduler_scheduler_proto_msgTypes[5]
+	mi := &file_pkg_rpc_scheduler_scheduler_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -579,7 +505,7 @@ func (x *PieceResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PieceResult.ProtoReflect.Descriptor instead.
 func (*PieceResult) Descriptor() ([]byte, []int) {
-	return file_pkg_rpc_scheduler_scheduler_proto_rawDescGZIP(), []int{5}
+	return file_pkg_rpc_scheduler_scheduler_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *PieceResult) GetTaskId() string {
@@ -652,6 +578,95 @@ func (x *PieceResult) GetFinishedCount() int32 {
 	return 0
 }
 
+type PeerPacket struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	State  *base.ResponseState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	TaskId string              `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	// source peer id
+	SrcPid string `protobuf:"bytes,3,opt,name=src_pid,json=srcPid,proto3" json:"src_pid,omitempty"`
+	// concurrent downloading count from main peer
+	ParallelCount int32                  `protobuf:"varint,4,opt,name=parallel_count,json=parallelCount,proto3" json:"parallel_count,omitempty"`
+	MainPeer      *PeerPacket_DestPeer   `protobuf:"bytes,5,opt,name=main_peer,json=mainPeer,proto3" json:"main_peer,omitempty"`
+	StealPeers    []*PeerPacket_DestPeer `protobuf:"bytes,6,rep,name=steal_peers,json=stealPeers,proto3" json:"steal_peers,omitempty"`
+}
+
+func (x *PeerPacket) Reset() {
+	*x = PeerPacket{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pkg_rpc_scheduler_scheduler_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PeerPacket) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PeerPacket) ProtoMessage() {}
+
+func (x *PeerPacket) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_rpc_scheduler_scheduler_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PeerPacket.ProtoReflect.Descriptor instead.
+func (*PeerPacket) Descriptor() ([]byte, []int) {
+	return file_pkg_rpc_scheduler_scheduler_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *PeerPacket) GetState() *base.ResponseState {
+	if x != nil {
+		return x.State
+	}
+	return nil
+}
+
+func (x *PeerPacket) GetTaskId() string {
+	if x != nil {
+		return x.TaskId
+	}
+	return ""
+}
+
+func (x *PeerPacket) GetSrcPid() string {
+	if x != nil {
+		return x.SrcPid
+	}
+	return ""
+}
+
+func (x *PeerPacket) GetParallelCount() int32 {
+	if x != nil {
+		return x.ParallelCount
+	}
+	return 0
+}
+
+func (x *PeerPacket) GetMainPeer() *PeerPacket_DestPeer {
+	if x != nil {
+		return x.MainPeer
+	}
+	return nil
+}
+
+func (x *PeerPacket) GetStealPeers() []*PeerPacket_DestPeer {
+	if x != nil {
+		return x.StealPeers
+	}
+	return nil
+}
+
 type PeerResult struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -665,12 +680,14 @@ type PeerResult struct {
 	Url            string `protobuf:"bytes,6,opt,name=url,proto3" json:"url,omitempty"`
 	// total content length(byte)
 	ContentLength int64 `protobuf:"varint,7,opt,name=content_length,json=contentLength,proto3" json:"content_length,omitempty"`
-	// network traffic usage(byte)
+	// total network traffic(byte)
 	Traffic int64 `protobuf:"varint,8,opt,name=traffic,proto3" json:"traffic,omitempty"`
-	// millisecond unit
-	Cost    uint32    `protobuf:"varint,9,opt,name=cost,proto3" json:"cost,omitempty"`
-	Success bool      `protobuf:"varint,10,opt,name=success,proto3" json:"success,omitempty"`
-	Code    base.Code `protobuf:"varint,11,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
+	// total time(millisecond) consumed
+	Cost uint32 `protobuf:"varint,9,opt,name=cost,proto3" json:"cost,omitempty"`
+	// whether peer downloading file is successfully
+	Success bool `protobuf:"varint,10,opt,name=success,proto3" json:"success,omitempty"`
+	// result code
+	Code base.Code `protobuf:"varint,11,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
 }
 
 func (x *PeerResult) Reset() {
@@ -842,10 +859,12 @@ type PeerPacket_DestPeer struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// dest ip
 	Ip string `protobuf:"bytes,1,opt,name=ip,proto3" json:"ip,omitempty"`
-	// rpc service port for peer
-	RpcPort int32  `protobuf:"varint,2,opt,name=rpc_port,json=rpcPort,proto3" json:"rpc_port,omitempty"`
-	PeerId  string `protobuf:"bytes,3,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
+	// rpc service port for dest peer
+	RpcPort int32 `protobuf:"varint,2,opt,name=rpc_port,json=rpcPort,proto3" json:"rpc_port,omitempty"`
+	// dest peer id
+	PeerId string `protobuf:"bytes,3,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 }
 
 func (x *PeerPacket_DestPeer) Reset() {
@@ -877,7 +896,7 @@ func (x *PeerPacket_DestPeer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PeerPacket_DestPeer.ProtoReflect.Descriptor instead.
 func (*PeerPacket_DestPeer) Descriptor() ([]byte, []int) {
-	return file_pkg_rpc_scheduler_scheduler_proto_rawDescGZIP(), []int{4, 0}
+	return file_pkg_rpc_scheduler_scheduler_proto_rawDescGZIP(), []int{5, 0}
 }
 
 func (x *PeerPacket_DestPeer) GetIp() string {
@@ -965,6 +984,26 @@ var file_pkg_rpc_scheduler_scheduler_proto_rawDesc = []byte{
 	0x63, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x69, 0x64, 0x63, 0x12, 0x21, 0x0a, 0x0c,
 	0x6e, 0x65, 0x74, 0x5f, 0x74, 0x6f, 0x70, 0x6f, 0x6c, 0x6f, 0x67, 0x79, 0x18, 0x09, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x0b, 0x6e, 0x65, 0x74, 0x54, 0x6f, 0x70, 0x6f, 0x6c, 0x6f, 0x67, 0x79, 0x22,
+	0xbd, 0x02, 0x0a, 0x0b, 0x50, 0x69, 0x65, 0x63, 0x65, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12,
+	0x17, 0x0a, 0x07, 0x74, 0x61, 0x73, 0x6b, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x06, 0x74, 0x61, 0x73, 0x6b, 0x49, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x73, 0x72, 0x63, 0x5f,
+	0x70, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x72, 0x63, 0x50, 0x69,
+	0x64, 0x12, 0x17, 0x0a, 0x07, 0x64, 0x73, 0x74, 0x5f, 0x70, 0x69, 0x64, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x06, 0x64, 0x73, 0x74, 0x50, 0x69, 0x64, 0x12, 0x1b, 0x0a, 0x09, 0x70, 0x69,
+	0x65, 0x63, 0x65, 0x5f, 0x6e, 0x75, 0x6d, 0x18, 0x04, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70,
+	0x69, 0x65, 0x63, 0x65, 0x4e, 0x75, 0x6d, 0x12, 0x1d, 0x0a, 0x0a, 0x62, 0x65, 0x67, 0x69, 0x6e,
+	0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x04, 0x52, 0x09, 0x62, 0x65, 0x67,
+	0x69, 0x6e, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x65, 0x6e, 0x64, 0x5f, 0x74, 0x69,
+	0x6d, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x04, 0x52, 0x07, 0x65, 0x6e, 0x64, 0x54, 0x69, 0x6d,
+	0x65, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x07, 0x20, 0x01,
+	0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x1e, 0x0a, 0x04, 0x63,
+	0x6f, 0x64, 0x65, 0x18, 0x08, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x0a, 0x2e, 0x62, 0x61, 0x73, 0x65,
+	0x2e, 0x43, 0x6f, 0x64, 0x65, 0x52, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x12, 0x2b, 0x0a, 0x09, 0x68,
+	0x6f, 0x73, 0x74, 0x5f, 0x6c, 0x6f, 0x61, 0x64, 0x18, 0x09, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0e,
+	0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x48, 0x6f, 0x73, 0x74, 0x4c, 0x6f, 0x61, 0x64, 0x52, 0x08,
+	0x68, 0x6f, 0x73, 0x74, 0x4c, 0x6f, 0x61, 0x64, 0x12, 0x25, 0x0a, 0x0e, 0x66, 0x69, 0x6e, 0x69,
+	0x73, 0x68, 0x65, 0x64, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x05,
+	0x52, 0x0d, 0x66, 0x69, 0x6e, 0x69, 0x73, 0x68, 0x65, 0x64, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x22,
 	0xde, 0x02, 0x0a, 0x0a, 0x50, 0x65, 0x65, 0x72, 0x50, 0x61, 0x63, 0x6b, 0x65, 0x74, 0x12, 0x29,
 	0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e,
 	0x62, 0x61, 0x73, 0x65, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x53, 0x74, 0x61,
@@ -987,26 +1026,6 @@ var file_pkg_rpc_scheduler_scheduler_proto_rawDesc = []byte{
 	0x72, 0x70, 0x63, 0x5f, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07,
 	0x72, 0x70, 0x63, 0x50, 0x6f, 0x72, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x70, 0x65, 0x65, 0x72, 0x5f,
 	0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x70, 0x65, 0x65, 0x72, 0x49, 0x64,
-	0x22, 0xbd, 0x02, 0x0a, 0x0b, 0x50, 0x69, 0x65, 0x63, 0x65, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74,
-	0x12, 0x17, 0x0a, 0x07, 0x74, 0x61, 0x73, 0x6b, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x06, 0x74, 0x61, 0x73, 0x6b, 0x49, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x73, 0x72, 0x63,
-	0x5f, 0x70, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x72, 0x63, 0x50,
-	0x69, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x64, 0x73, 0x74, 0x5f, 0x70, 0x69, 0x64, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x06, 0x64, 0x73, 0x74, 0x50, 0x69, 0x64, 0x12, 0x1b, 0x0a, 0x09, 0x70,
-	0x69, 0x65, 0x63, 0x65, 0x5f, 0x6e, 0x75, 0x6d, 0x18, 0x04, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08,
-	0x70, 0x69, 0x65, 0x63, 0x65, 0x4e, 0x75, 0x6d, 0x12, 0x1d, 0x0a, 0x0a, 0x62, 0x65, 0x67, 0x69,
-	0x6e, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x04, 0x52, 0x09, 0x62, 0x65,
-	0x67, 0x69, 0x6e, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x65, 0x6e, 0x64, 0x5f, 0x74,
-	0x69, 0x6d, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x04, 0x52, 0x07, 0x65, 0x6e, 0x64, 0x54, 0x69,
-	0x6d, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x07, 0x20,
-	0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x12, 0x1e, 0x0a, 0x04,
-	0x63, 0x6f, 0x64, 0x65, 0x18, 0x08, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x0a, 0x2e, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x43, 0x6f, 0x64, 0x65, 0x52, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x12, 0x2b, 0x0a, 0x09,
-	0x68, 0x6f, 0x73, 0x74, 0x5f, 0x6c, 0x6f, 0x61, 0x64, 0x18, 0x09, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x0e, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x48, 0x6f, 0x73, 0x74, 0x4c, 0x6f, 0x61, 0x64, 0x52,
-	0x08, 0x68, 0x6f, 0x73, 0x74, 0x4c, 0x6f, 0x61, 0x64, 0x12, 0x25, 0x0a, 0x0e, 0x66, 0x69, 0x6e,
-	0x69, 0x73, 0x68, 0x65, 0x64, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x0a, 0x20, 0x01, 0x28,
-	0x05, 0x52, 0x0d, 0x66, 0x69, 0x6e, 0x69, 0x73, 0x68, 0x65, 0x64, 0x43, 0x6f, 0x75, 0x6e, 0x74,
 	0x22, 0xb1, 0x02, 0x0a, 0x0a, 0x50, 0x65, 0x65, 0x72, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12,
 	0x17, 0x0a, 0x07, 0x74, 0x61, 0x73, 0x6b, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
 	0x52, 0x06, 0x74, 0x61, 0x73, 0x6b, 0x49, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x70, 0x65, 0x65, 0x72,
@@ -1073,8 +1092,8 @@ var file_pkg_rpc_scheduler_scheduler_proto_goTypes = []interface{}{
 	(*RegisterResult)(nil),      // 1: scheduler.RegisterResult
 	(*SinglePiece)(nil),         // 2: scheduler.SinglePiece
 	(*PeerHost)(nil),            // 3: scheduler.PeerHost
-	(*PeerPacket)(nil),          // 4: scheduler.PeerPacket
-	(*PieceResult)(nil),         // 5: scheduler.PieceResult
+	(*PieceResult)(nil),         // 4: scheduler.PieceResult
+	(*PeerPacket)(nil),          // 5: scheduler.PeerPacket
 	(*PeerResult)(nil),          // 6: scheduler.PeerResult
 	(*PeerTarget)(nil),          // 7: scheduler.PeerTarget
 	(*PeerPacket_DestPeer)(nil), // 8: scheduler.PeerPacket.DestPeer
@@ -1093,18 +1112,18 @@ var file_pkg_rpc_scheduler_scheduler_proto_depIdxs = []int32{
 	12, // 4: scheduler.RegisterResult.size_scope:type_name -> base.SizeScope
 	2,  // 5: scheduler.RegisterResult.single_piece:type_name -> scheduler.SinglePiece
 	13, // 6: scheduler.SinglePiece.piece_info:type_name -> base.PieceInfo
-	11, // 7: scheduler.PeerPacket.state:type_name -> base.ResponseState
-	8,  // 8: scheduler.PeerPacket.main_peer:type_name -> scheduler.PeerPacket.DestPeer
-	8,  // 9: scheduler.PeerPacket.steal_peers:type_name -> scheduler.PeerPacket.DestPeer
-	14, // 10: scheduler.PieceResult.code:type_name -> base.Code
-	10, // 11: scheduler.PieceResult.host_load:type_name -> base.HostLoad
+	14, // 7: scheduler.PieceResult.code:type_name -> base.Code
+	10, // 8: scheduler.PieceResult.host_load:type_name -> base.HostLoad
+	11, // 9: scheduler.PeerPacket.state:type_name -> base.ResponseState
+	8,  // 10: scheduler.PeerPacket.main_peer:type_name -> scheduler.PeerPacket.DestPeer
+	8,  // 11: scheduler.PeerPacket.steal_peers:type_name -> scheduler.PeerPacket.DestPeer
 	14, // 12: scheduler.PeerResult.code:type_name -> base.Code
 	0,  // 13: scheduler.Scheduler.RegisterPeerTask:input_type -> scheduler.PeerTaskRequest
-	5,  // 14: scheduler.Scheduler.ReportPieceResult:input_type -> scheduler.PieceResult
+	4,  // 14: scheduler.Scheduler.ReportPieceResult:input_type -> scheduler.PieceResult
 	6,  // 15: scheduler.Scheduler.ReportPeerResult:input_type -> scheduler.PeerResult
 	7,  // 16: scheduler.Scheduler.LeaveTask:input_type -> scheduler.PeerTarget
 	1,  // 17: scheduler.Scheduler.RegisterPeerTask:output_type -> scheduler.RegisterResult
-	4,  // 18: scheduler.Scheduler.ReportPieceResult:output_type -> scheduler.PeerPacket
+	5,  // 18: scheduler.Scheduler.ReportPieceResult:output_type -> scheduler.PeerPacket
 	11, // 19: scheduler.Scheduler.ReportPeerResult:output_type -> base.ResponseState
 	11, // 20: scheduler.Scheduler.LeaveTask:output_type -> base.ResponseState
 	17, // [17:21] is the sub-list for method output_type
@@ -1169,7 +1188,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 			}
 		}
 		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PeerPacket); i {
+			switch v := v.(*PieceResult); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1181,7 +1200,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 			}
 		}
 		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PieceResult); i {
+			switch v := v.(*PeerPacket); i {
 			case 0:
 				return &v.state
 			case 1:

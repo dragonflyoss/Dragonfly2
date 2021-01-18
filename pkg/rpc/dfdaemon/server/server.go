@@ -48,22 +48,18 @@ func init() {
 	})
 }
 
-// DaemonServer is the server API for Daemon service.
-type DaemonServer interface {
-	// trigger client to download files
-	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
-	// get piece tasks from other peers
-	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
-	// check daemon health
-	CheckHealth(context.Context, *base.EmptyRequest) (*base.ResponseState, error)
-}
-
 type proxy struct {
 	server DaemonServer
 	dfdaemon.UnimplementedDaemonServer
 }
 
-// trigger client to download files
+// see dfdaemon.DaemonServer
+type DaemonServer interface {
+	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
+	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
+	CheckHealth(context.Context) (*base.ResponseState, error)
+}
+
 func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_DownloadServer) (err error) {
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
@@ -90,14 +86,13 @@ func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_Downl
 	return
 }
 
-// get piece tasks from other peers
 func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	return p.server.GetPieceTasks(ctx, ptr)
 }
 
-// check daemon health
 func (p *proxy) CheckHealth(ctx context.Context, req *base.EmptyRequest) (*base.ResponseState, error) {
-	return p.server.CheckHealth(ctx, req)
+	_ = req
+	return p.server.CheckHealth(ctx)
 }
 
 func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon_DownloadServer, errChan chan error) {

@@ -27,21 +27,12 @@ import (
 	"google.golang.org/grpc"
 )
 
+// see scheduler.SchedulerClient
 type SchedulerClient interface {
-	// RegisterPeerTask registers a peer into one task
-	// and returns a peer packet immediately if task resource is enough.
-	RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.PeerPacket, error)
-	// ReportPieceResult reports piece results and receives peer packets.
-	// when migrating to another scheduler,
-	// it will send the last piece result to the new scheduler.
-	//
-	// sending to chan must bind a recover, it is recommended that using safe.Call wraps these func.
+	RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error)
 	ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, error)
-	// ReportPeerResult reports downloading result for the peer task.
 	ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) (*base.ResponseState, error)
-	// LeaveTask makes the peer leaving from scheduling overlay for the task.
 	LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) (*base.ResponseState, error)
-	// close the client
 	Close() error
 }
 
@@ -50,14 +41,12 @@ type schedulerClient struct {
 	Client scheduler.SchedulerClient
 }
 
-// init client info excepting connection
 var initClientFunc = func(c *rpc.Connection) {
 	sc := c.Ref.(*schedulerClient)
 	sc.Client = scheduler.NewSchedulerClient(c.Conn)
 	sc.Connection = c
 }
 
-// netAddrs are used to connect and migrate
 func CreateClient(netAddrs []basic.NetAddr) (SchedulerClient, error) {
 	if client, err := rpc.BuildClient(&schedulerClient{}, initClientFunc, netAddrs); err != nil {
 		return nil, err
@@ -66,7 +55,7 @@ func CreateClient(netAddrs []basic.NetAddr) (SchedulerClient, error) {
 	}
 }
 
-func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (pp *scheduler.PeerPacket, err error) {
+func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (rr *scheduler.RegisterResult, err error) {
 	xc, target, nextNum := sc.GetClientSafely()
 	client := xc.(scheduler.SchedulerClient)
 
@@ -78,15 +67,16 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	var suc bool
 	var code base.Code
 	if err == nil {
-		pp = res.(*scheduler.PeerPacket)
-		taskId = pp.TaskId
-		suc = pp.State.Success
-		code = pp.State.Code
+		rr = res.(*scheduler.RegisterResult)
+		taskId = rr.TaskId
+		suc = rr.State.Success
+		code = rr.State.Code
 	}
 
 	ph := ptr.PeerHost
-	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("register peer task result:%t[%d] for taskId:%s,url:%s,peerIp:%s,securityDomain:%s,idc:%s,scheduler:%s",
-		suc, int32(code), taskId, ptr.Url, ph.Ip, ph.SecurityDomain, ph.Idc, target)
+	logger.With("peerId", ptr.PeerId, "errMsg", err).
+		Infof("register peer task result:%t[%d] for taskId:%s,url:%s,peerIp:%s,securityDomain:%s,idc:%s,scheduler:%s",
+			suc, int32(code), taskId, ptr.Url, ph.Ip, ph.SecurityDomain, ph.Idc, target)
 
 	if err != nil {
 		if err = sc.TryMigrate(nextNum, err); err == nil {
@@ -132,8 +122,9 @@ func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.P
 		rs = res.(*base.ResponseState)
 	}
 
-	logger.With("peerId", pr.PeerId, "errMsg", err).Infof("peer task down result:%t[%d] for taskId:%s,url:%s,scheduler:%s,length:%d,traffic:%d,cost:%d",
-		pr.Success, int32(pr.Code), pr.TaskId, pr.Url, target, pr.ContentLength, pr.Traffic, pr.Cost)
+	logger.With("peerId", pr.PeerId, "errMsg", err).
+		Infof("peer task down result:%t[%d] for taskId:%s,url:%s,scheduler:%s,length:%d,traffic:%d,cost:%d",
+			pr.Success, int32(pr.Code), pr.TaskId, pr.Url, target, pr.ContentLength, pr.Traffic, pr.Cost)
 
 	return
 }
@@ -154,7 +145,9 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 		code = rs.Code
 	}
 
-	logger.With("peerId", pt.PeerId, "errMsg", err).Infof("leave from task result:%t[%d] for taskId:%s,scheduler:%s", suc, int32(code), pt.TaskId, target)
+	logger.With("peerId", pt.PeerId, "errMsg", err).
+		Infof("leave from task result:%t[%d] for taskId:%s,scheduler:%s",
+			suc, int32(code), pt.TaskId, target)
 
 	return
 }

@@ -27,8 +27,6 @@ message SeedRequest{
   string url = 2;
   string filter = 3;
   base.UrlMeta url_meta = 4;
-  // maybe host ip or slb
-  string remote_ip = 5;
 }
 
 // keep piece meta and data separately
@@ -38,8 +36,8 @@ message PieceSeed{
 
   // peer id for cdn node, need suffix with _CDN
   string peer_id = 2;
-  // ip
-  string seeder_ip = 3;
+  // cdn node host name
+  string seeder_name = 3;
   base.PieceInfo piece_info = 4;
 
   // whether or not all seeds are downloaded

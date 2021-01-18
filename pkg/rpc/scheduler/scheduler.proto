@@ -23,7 +23,7 @@ import "pkg/rpc/base/base.proto";
 option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler";
 
 message PeerTaskRequest{
-  // universal resource locator for different storage kinds
+  // universal resource locator for different kind of storage
   string url = 1;
   // filter is a regular expression
   // used to generate same task id for different urls
@@ -32,7 +32,7 @@ message PeerTaskRequest{
   string biz_id = 3;
   // url meta info
   base.UrlMeta url_mata = 4;
-  // peer's id and be global uniqueness
+  // peer's id and must be global uniqueness
   string peer_id = 5;
   // peer host info
   PeerHost peer_host = 6;
@@ -51,7 +51,9 @@ message RegisterResult{
   base.SizeScope size_scope = 3;
   // download the only piece directly for small or tiny file
   oneof direct_piece{
+    // for small file
     SinglePiece single_piece = 4;
+    // for tiny file
     bytes piece_content = 5;
   }
 }
@@ -61,35 +63,63 @@ message SinglePiece{
   string dst_pid = 1;
   // download address(ip:port)
   string dst_addr = 2;
-  // one piece task
+  // one piece info
   base.PieceInfo piece_info = 3;
 }
 
 message PeerHost{
   // each time the daemon starts, it will generate a different uuid
   string uuid = 1;
+  // peer host ip
   string ip = 2;
   // rpc service port for peer
   int32 rpc_port = 3;
   // piece downloading port for peer
   int32 down_port = 4;
+  // peer host name
   string host_name = 5;
   // security isolation domain for network
   string security_domain = 6;
   // location path: area|country|province|city|...
   string location = 7;
+  // idc where the peer host is located
   string idc = 8;
-  // network device path: switch|router|rack|...
+  // network device path: switch|router|...
   string net_topology = 9;
+}
+
+message PieceResult{
+  // task id
+  string task_id = 1;
+  // source peer id
+  string src_pid = 2;
+  // dest peer id
+  string dst_pid = 3;
+  // piece number
+  int32 piece_num = 4;
+  // begin time for the piece downloading
+  uint64 begin_time = 5;
+  // end time for the piece downloading
+  uint64 end_time = 6;
+  // whether the piece downloading is successfully
+  bool success = 7;
+  // result code
+  base.Code code = 8;
+  // current host resource usage
+  base.HostLoad host_load = 9;
+  // currently completed piece count
+  int32 finished_count = 10;
 }
 
 message PeerPacket{
   base.ResponseState state = 1;
 
   message DestPeer{
+    // dest ip
     string ip = 1;
-    // rpc service port for peer
+    // rpc service port for dest peer
     int32 rpc_port = 2;
+    // dest peer id
     string peer_id = 3;
   }
 
@@ -103,19 +133,6 @@ message PeerPacket{
   repeated DestPeer steal_peers = 6;
 }
 
-message PieceResult{
-  string task_id = 1;
-  string src_pid = 2;
-  string dst_pid = 3;
-  int32 piece_num = 4;
-  uint64 begin_time = 5;
-  uint64 end_time = 6;
-  bool success = 7;
-  base.Code code = 8;
-  base.HostLoad host_load = 9;
-  int32 finished_count = 10;
-}
-
 message PeerResult{
   string task_id = 1;
   string peer_id = 2;
@@ -125,11 +142,13 @@ message PeerResult{
   string url = 6;
   // total content length(byte)
   int64 content_length = 7;
-  // network traffic usage(byte)
+  // total network traffic(byte)
   int64 traffic = 8;
-  // millisecond unit
+  // total time(millisecond) consumed
   uint32 cost = 9;
+  // whether peer downloading file is successfully
   bool success = 10;
+  // result code
   base.Code code = 11;
 }
 
