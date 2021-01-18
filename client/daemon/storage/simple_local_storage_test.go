@@ -137,8 +137,8 @@ func TestSimpleLocalTaskStore_PutAndGetPiece(t *testing.T) {
 		data, err := ioutil.ReadAll(rd)
 		cl.Close()
 		assert.Nil(err, "read piece should be ok")
-		assert.Equal(len(data), p.end-p.start, "piece length should match")
-		assert.Equal(data, testBytes[p.start:p.end], "piece data should match")
+		assert.Equal(p.end-p.start, len(data), "piece length should match")
+		assert.Equal(testBytes[p.start:p.end], data, "piece data should match")
 	}
 
 	// clean up test data
