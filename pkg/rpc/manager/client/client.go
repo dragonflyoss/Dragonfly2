@@ -39,9 +39,7 @@ func init() {
 // ManagerClient
 type ManagerClient interface {
 	// GetSchedulers
-	GetSchedulers(context.Context, *manager.SchedulerNodeRequest, ...grpc.CallOption) (*manager.SchedulerNodes, error)
-	// GetCdnNodes
-	GetCdnNodes(context.Context, *manager.CdnNodeRequest, ...grpc.CallOption) (*manager.CdnNodes, error)
+	GetSchedulers(context.Context, *manager.NavigatorRequest, ...grpc.CallOption) (*manager.SchedulerNodes, error)
 	// KeepAlive
 	KeepAlive(context.Context, ...grpc.CallOption) (<-chan *manager.HeartRequest, chan<- *manager.ManagementConfig, error)
 	// close the conn
@@ -68,7 +66,7 @@ func CreateClient(netAddrs []basic.NetAddr) (ManagerClient, error) {
 	}
 }
 
-func (dc *managerClient) GetSchedulers(ctx context.Context, req *manager.SchedulerNodeRequest, opts ...grpc.CallOption) (shs *manager.SchedulerNodes, err error) {
+func (dc *managerClient) GetSchedulers(ctx context.Context, req *manager.NavigatorRequest, opts ...grpc.CallOption) (shs *manager.SchedulerNodes, err error) {
 	xc, _, nextNum := dc.GetClientSafely()
 	client := xc.(manager.ManagerClient)
 
@@ -83,24 +81,6 @@ func (dc *managerClient) GetSchedulers(ctx context.Context, req *manager.Schedul
 	if err != nil {
 		if err = dc.TryMigrate(nextNum, err); err == nil {
 			return dc.GetSchedulers(ctx, req, opts...)
-		}
-	}
-	return
-}
-
-func (dc *managerClient) GetCdnNodes(ctx context.Context, req *manager.CdnNodeRequest, opts ...grpc.CallOption) (chs *manager.CdnNodes, err error) {
-	mc, _, nextNum := dc.GetClientSafely()
-	client := mc.(manager.ManagerClient)
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return client.GetCdnNodes(ctx, req, opts...)
-	}, 0.5, 5.0, 5)
-
-	if err == nil {
-		chs = res.(*manager.CdnNodes)
-	}
-	if err != nil {
-		if err = dc.TryMigrate(nextNum, err); err == nil {
-			return dc.GetCdnNodes(ctx, req, opts...)
 		}
 	}
 	return

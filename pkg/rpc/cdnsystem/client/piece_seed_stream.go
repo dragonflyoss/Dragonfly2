@@ -27,7 +27,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -81,7 +80,7 @@ func (pss *pieceSeedStream) recv() (ps *cdnsystem.PieceSeed, err error) {
 		pss.onceFinish.Do(func() {
 			var last *cdnsystem.PieceSeed
 			if err != nil {
-				last = &cdnsystem.PieceSeed{State: base.NewState(base.Code_UNKNOWN_ERROR, err.Error()), SeedAddr: pss.target}
+				last = &cdnsystem.PieceSeed{State: base.NewState(base.Code_UNKNOWN_ERROR, err.Error())}
 			} else {
 				last = ps
 			}
@@ -183,7 +182,7 @@ func statSeedFinish(last *cdnsystem.PieceSeed, taskId string, url string, begin 
 		zap.Bool("success", last.State.Success),
 		zap.String("taskId", taskId),
 		zap.String("url", url),
-		zap.String("seeder", last.SeedAddr),
+		//zap.String("seeder", last.SeedAddr),
 		zap.Int64("cost", time.Now().Sub(begin).Milliseconds()),
 		zap.Int64("contentLength", last.ContentLength),
 		zap.Int("code", int(last.State.Code)))
