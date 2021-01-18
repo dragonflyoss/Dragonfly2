@@ -91,15 +91,18 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string,
 	prc := make(chan *scheduler.PieceResult, 4)
 	ppc := make(chan *scheduler.PeerPacket, 4)
 
-	pts, err := newPeerPacketStream(sc, ctx, taskId, ptr, opts, prc)
-	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskId:%s", taskId)
+	pps, err := newPeerPacketStream(sc, ctx, taskId, ptr, opts, prc)
+
+	logger.With("peerId", ptr.PeerId, "errMsg", err).
+		Infof("start to report piece result for taskId:%s", taskId)
+
 	if err != nil {
 		return nil, nil, err
 	}
 
-	go send(pts, prc)
+	go send(pps, prc)
 
-	go receive(pts, ppc, prc)
+	go receive(pps, ppc, prc)
 
 	return prc, ppc, nil
 }
@@ -152,8 +155,7 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 	return
 }
 
-// receiver also finishes sender
-func receive(stream *pieceTaskStream, ppc chan *scheduler.PeerPacket, prc chan *scheduler.PieceResult) {
+func receive(stream *peerPacketStream, ppc chan *scheduler.PeerPacket, prc chan *scheduler.PieceResult) {
 	safe.Call(func() {
 		defer close(prc)
 		defer close(ppc)
@@ -162,9 +164,9 @@ func receive(stream *pieceTaskStream, ppc chan *scheduler.PeerPacket, prc chan *
 			peerPacket, err := stream.recv()
 			if err == nil {
 				ppc <- peerPacket
-				if peerPacket.Done {
-					return
-				}
+				//if peerPacket.Done {
+				//	return
+				//}
 			} else {
 				ppc <- base.NewResWithErr(peerPacket, err).(*scheduler.PeerPacket)
 				return
@@ -173,7 +175,7 @@ func receive(stream *pieceTaskStream, ppc chan *scheduler.PeerPacket, prc chan *
 	})
 }
 
-func send(stream *pieceTaskStream, prc chan *scheduler.PieceResult) {
+func send(stream *peerPacketStream, prc chan *scheduler.PieceResult) {
 	safe.Call(func() {
 		defer stream.closeSend()
 
