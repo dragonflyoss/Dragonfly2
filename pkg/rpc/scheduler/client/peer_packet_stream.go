@@ -78,7 +78,11 @@ func (pps *peerPacketStream) send(pr *scheduler.PieceResult) error {
 		pps.lastPieceResult = pr
 	}
 
-	return pps.stream.Send(pr)
+	err := pps.stream.Send(pr)
+	if err !=nil && pr.PieceNum != base.END_OF_PIECE{
+		err = pps.retrySend(pr)
+	}
+	return err
 }
 
 func (pps *peerPacketStream) closeSend() error {

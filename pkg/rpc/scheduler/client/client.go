@@ -25,6 +25,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
+	"time"
 )
 
 // see scheduler.SchedulerClient
@@ -100,9 +101,9 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string,
 		return nil, nil, err
 	}
 
-	go send(pps, prc)
+	go send(pps, prc, ppc)
 
-	go receive(pps, ppc, prc)
+	go receive(pps, ppc)
 
 	return prc, ppc, nil
 }
@@ -155,32 +156,33 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 	return
 }
 
-func receive(stream *peerPacketStream, ppc chan *scheduler.PeerPacket, prc chan *scheduler.PieceResult) {
+func receive(stream *peerPacketStream, ppc chan *scheduler.PeerPacket) {
 	safe.Call(func() {
-		defer close(prc)
-		defer close(ppc)
-
 		for {
-			peerPacket, err := stream.recv()
-			if err == nil {
+			if peerPacket, err := stream.recv(); err == nil {
 				ppc <- peerPacket
-				//if peerPacket.Done {
-				//	return
-				//}
 			} else {
+				// return error and check ppc
 				ppc <- base.NewResWithErr(peerPacket, err).(*scheduler.PeerPacket)
-				return
+				time.Sleep(200 * time.Millisecond)
 			}
 		}
 	})
 }
 
-func send(stream *peerPacketStream, prc chan *scheduler.PieceResult) {
+// no send no receive
+func send(stream *peerPacketStream, prc chan *scheduler.PieceResult, ppc chan *scheduler.PeerPacket) {
 	safe.Call(func() {
+		defer close(ppc)
+		defer close(prc)
 		defer stream.closeSend()
 
 		for v := range prc {
-			_ = stream.send(v)
+			if err := stream.send(v); err != nil {
+				return
+			} else if v.PieceNum == base.END_OF_PIECE {
+				return
+			}
 		}
 	})
 }
