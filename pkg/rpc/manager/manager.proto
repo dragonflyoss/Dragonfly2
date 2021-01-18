@@ -22,7 +22,7 @@ import "pkg/rpc/base/base.proto";
 
 option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager";
 
-message SchedulerNodeRequest{
+message NavigatorRequest{
   // client ip
   string ip = 1;
   // client host name
@@ -31,40 +31,12 @@ message SchedulerNodeRequest{
   string host_tag = 3;
 }
 
-message CdnNodeRequest{
-  // scheduler host name
-  string host_name = 1;
-}
-
 message SchedulerNodes{
   base.ResponseState state = 1;
 
   // ip:port
   repeated string addrs = 2;
   HostInfo client_host = 3;
-}
-
-message CdnNodes{
-  base.ResponseState state = 1;
-
-  repeated ServerInfo cdn_hosts = 2;
-}
-
-message ServerInfo{
-  HostInfo host_info = 1;
-  int32 rpc_port = 2;
-  int32 down_port = 3;
-}
-
-message HostInfo{
-  string ip = 1;
-  string host_name = 2;
-  // security isolation domain for network
-  string security_domain = 3;
-  // area|country|province|city|...
-  string location = 4;
-  string idc = 5;
-  string net_topology = 6;
 }
 
 message HeartRequest{
@@ -85,6 +57,7 @@ message ManagementConfig{
 
   message SchedulerConfig{
     ClientConfig client_config = 1;
+    repeated ServerInfo cdn_hosts = 2;
     //......
   }
 
@@ -98,6 +71,23 @@ message ManagementConfig{
   }
 }
 
+message ServerInfo{
+  HostInfo host_info = 1;
+  int32 rpc_port = 2;
+  int32 down_port = 3;
+}
+
+message HostInfo{
+  string ip = 1;
+  string host_name = 2;
+  // security isolation domain for network
+  string security_domain = 3;
+  // area|country|province|city|...
+  string location = 4;
+  string idc = 5;
+  string net_topology = 6;
+}
+
 // Manager System RPC Service
 service Manager{
   // get scheduler server list, using scene as follows:
@@ -107,9 +97,7 @@ service Manager{
   // so need retry one times to get latest servers
   //
   // 3. manager actively triggers fresh
-  rpc GetSchedulers(SchedulerNodeRequest)returns(SchedulerNodes){}
-  // get cdn server list, caller need call it to refresh the list with timer
-  rpc GetCdnNodes(CdnNodeRequest)returns(CdnNodes){}
+  rpc GetSchedulers(NavigatorRequest)returns(SchedulerNodes){}
   // keep alive for cdn or scheduler and receives management configuration
   rpc KeepAlive(stream HeartRequest)returns(stream ManagementConfig){}
 }

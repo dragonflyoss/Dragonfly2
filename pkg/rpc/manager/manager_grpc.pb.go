@@ -24,9 +24,7 @@ type ManagerClient interface {
 	// so need retry one times to get latest servers
 	//
 	// 3. manager actively triggers fresh
-	GetSchedulers(ctx context.Context, in *SchedulerNodeRequest, opts ...grpc.CallOption) (*SchedulerNodes, error)
-	// get cdn server list, caller need call it to refresh the list with timer
-	GetCdnNodes(ctx context.Context, in *CdnNodeRequest, opts ...grpc.CallOption) (*CdnNodes, error)
+	GetSchedulers(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerNodes, error)
 	// keep alive for cdn or scheduler and receives management configuration
 	KeepAlive(ctx context.Context, opts ...grpc.CallOption) (Manager_KeepAliveClient, error)
 }
@@ -39,18 +37,9 @@ func NewManagerClient(cc grpc.ClientConnInterface) ManagerClient {
 	return &managerClient{cc}
 }
 
-func (c *managerClient) GetSchedulers(ctx context.Context, in *SchedulerNodeRequest, opts ...grpc.CallOption) (*SchedulerNodes, error) {
+func (c *managerClient) GetSchedulers(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerNodes, error) {
 	out := new(SchedulerNodes)
 	err := c.cc.Invoke(ctx, "/manager.Manager/GetSchedulers", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *managerClient) GetCdnNodes(ctx context.Context, in *CdnNodeRequest, opts ...grpc.CallOption) (*CdnNodes, error) {
-	out := new(CdnNodes)
-	err := c.cc.Invoke(ctx, "/manager.Manager/GetCdnNodes", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,9 +88,7 @@ type ManagerServer interface {
 	// so need retry one times to get latest servers
 	//
 	// 3. manager actively triggers fresh
-	GetSchedulers(context.Context, *SchedulerNodeRequest) (*SchedulerNodes, error)
-	// get cdn server list, caller need call it to refresh the list with timer
-	GetCdnNodes(context.Context, *CdnNodeRequest) (*CdnNodes, error)
+	GetSchedulers(context.Context, *NavigatorRequest) (*SchedulerNodes, error)
 	// keep alive for cdn or scheduler and receives management configuration
 	KeepAlive(Manager_KeepAliveServer) error
 	mustEmbedUnimplementedManagerServer()
@@ -111,11 +98,8 @@ type ManagerServer interface {
 type UnimplementedManagerServer struct {
 }
 
-func (UnimplementedManagerServer) GetSchedulers(context.Context, *SchedulerNodeRequest) (*SchedulerNodes, error) {
+func (UnimplementedManagerServer) GetSchedulers(context.Context, *NavigatorRequest) (*SchedulerNodes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSchedulers not implemented")
-}
-func (UnimplementedManagerServer) GetCdnNodes(context.Context, *CdnNodeRequest) (*CdnNodes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCdnNodes not implemented")
 }
 func (UnimplementedManagerServer) KeepAlive(Manager_KeepAliveServer) error {
 	return status.Errorf(codes.Unimplemented, "method KeepAlive not implemented")
@@ -134,7 +118,7 @@ func RegisterManagerServer(s grpc.ServiceRegistrar, srv ManagerServer) {
 }
 
 func _Manager_GetSchedulers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SchedulerNodeRequest)
+	in := new(NavigatorRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -146,25 +130,7 @@ func _Manager_GetSchedulers_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: "/manager.Manager/GetSchedulers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).GetSchedulers(ctx, req.(*SchedulerNodeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Manager_GetCdnNodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CdnNodeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ManagerServer).GetCdnNodes(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/manager.Manager/GetCdnNodes",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).GetCdnNodes(ctx, req.(*CdnNodeRequest))
+		return srv.(ManagerServer).GetSchedulers(ctx, req.(*NavigatorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -202,10 +168,6 @@ var _Manager_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSchedulers",
 			Handler:    _Manager_GetSchedulers_Handler,
-		},
-		{
-			MethodName: "GetCdnNodes",
-			Handler:    _Manager_GetCdnNodes_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
