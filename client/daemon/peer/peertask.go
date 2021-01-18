@@ -241,8 +241,13 @@ getPiecesTasks:
 	}
 }
 
-// FIXME goroutine safe for channel
 func (pt *filePeerTask) PushPieceResult(pieceResult *scheduler.PieceResult) error {
+	// FIXME goroutine safe for channel and send on closed channel
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Warnf("recover from %s", r)
+		}
+	}()
 	// retry failed piece
 	if !pieceResult.Success {
 		pt.failedPieceCh <- pieceResult.PieceNum

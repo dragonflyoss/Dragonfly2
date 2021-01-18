@@ -10,7 +10,6 @@ import (
 	"path"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
@@ -27,8 +26,11 @@ type simpleLocalTaskStore struct {
 
 	metadataFile     *os.File
 	metadataFilePath string
-	dataFile         *os.File
-	dataFilePath     string
+
+	// TODO currently, we open a new *os.File for all operations, we need a cache for it
+	// open file syscall costs about 700ns, while close syscall costs about 800ns
+	dataFile     *os.File
+	dataFilePath string
 
 	expireTime time.Duration
 	lastAccess time.Time
@@ -125,6 +127,7 @@ func (e simpleLocalTaskStoreExecutor) ReloadPersistentTask() error {
 				Warnf("load task from disk error: %s", err0)
 			continue
 		}
+		logger.Debugf("load task %s metadata from %s", t.persistentPeerTaskMetadata.TaskID, t.metadataFilePath)
 		e.tasks.Store(taskID, t)
 	}
 	if len(loadErrs) > 0 {
@@ -181,41 +184,49 @@ func (t *simpleLocalTaskStore) touch() {
 func (t *simpleLocalTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) error {
 	t.touch()
 
-	// TODO check piece if already exists
-
-	// FIXME dup fd to remove lock
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	if _, err := t.dataFile.Seek(req.Range.Start, 0); err != nil {
-		return err
+	// piece already exists
+	if _, ok := t.Pieces[req.Num]; ok {
+		return nil
 	}
-	_, err := io.Copy(t.dataFile, io.LimitReader(req.Reader, req.Range.Length))
+
+	file, err := os.OpenFile(t.dataFilePath, os.O_RDWR, defaultFileMode)
 	if err != nil {
 		return err
 	}
+	defer file.Close()
+	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
+		return err
+	}
+	n, err := io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
+	if err != nil {
+		return err
+	}
+	logger.Debugf("task %s wrote %d bytes to file %s, piece %d, start %d, length: %d",
+		t.TaskID, n, t.dataFilePath, req.Num, req.Range.Start, req.Range.Length)
+	t.lock.Lock()
 	t.Pieces[req.Num] = req.PieceMetaData
-	return err
+	t.lock.Unlock()
+	return nil
 }
 
 // GetPiece get a LimitReadCloser from task data with seeked, caller should read bytes and close it.
 func (t *simpleLocalTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error) {
 	t.touch()
-	// dup fd instead lock and open a new file
-	var dupFd, err = syscall.Dup(int(t.dataFile.Fd()))
+	file, err := os.Open(t.dataFilePath)
 	if err != nil {
 		return nil, nil, err
 	}
-	dupFile := os.NewFile(uintptr(dupFd), t.dataFile.Name())
 	// who call ReadPiece, who close the io.ReadCloser
-	if _, err = dupFile.Seek(req.Range.Start, 0); err != nil {
+	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
 		return nil, nil, err
 	}
-	return io.LimitReader(dupFile, req.Range.Length), dupFile, nil
+	return io.LimitReader(file, req.Range.Length), file, nil
 }
 
 func (t *simpleLocalTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 	err := t.saveMetadata()
 	if err != nil {
+		logger.Warnf("save task %s metadata error: %s", t.TaskID, err)
 		return err
 	}
 	// 1. try to link
@@ -223,21 +234,30 @@ func (t *simpleLocalTaskStore) Store(ctx context.Context, req *StoreRequest) err
 	if err == nil {
 		return nil
 	}
+	logger.Warnf("task %s link to file %q error: %s", t.TaskID, req.Destination, err)
 	// 2. link failed, copy it
-	dupFD, err := syscall.Dup(int(t.dataFile.Fd()))
+	file, err := os.Open(t.dataFilePath)
 	if err != nil {
+		logger.Debugf("open tasks %s data error: %s", t.TaskID, err)
 		return err
 	}
-	dupFile := os.NewFile(uintptr(dupFD), t.dataFile.Name())
-	dstFile, err := os.OpenFile(req.Destination, os.O_CREATE|os.O_RDWR, defaultFileMode)
+	defer file.Close()
+
+	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
+		logger.Debugf("task %s seek file error: %s", t.TaskID, err)
 		return err
 	}
-	defer dupFile.Close()
+	dstFile, err := os.OpenFile(req.Destination, os.O_CREATE|os.O_RDWR|os.O_TRUNC, defaultFileMode)
+	if err != nil {
+		logger.Debugf("open tasks %s destination file error: %s", t.TaskID, err)
+		return err
+	}
 	defer dstFile.Close()
 	// copy_file_range is valid in linux
 	// https://go-review.googlesource.com/c/go/+/229101/
-	_, err = io.Copy(dstFile, dupFile)
+	n, err := io.Copy(dstFile, file)
+	logger.Debugf("copied tasks %s data %d bytes to %s", t.TaskID, n, req.Destination)
 	return err
 }
 
@@ -308,7 +328,7 @@ func (t *simpleLocalTaskStore) saveMetadata() error {
 	if err != nil {
 		return err
 	}
-	_, err = t.metadataFile.Seek(0, 0)
+	_, err = t.metadataFile.Seek(0, io.SeekStart)
 	if err != nil {
 		return err
 	}
