@@ -49,8 +49,8 @@ func init() {
 }
 
 type ManagerServer interface {
-	GetSchedulers(context.Context, *manager.NavigatorRequest) (*manager.SchedulerHosts, error)
-	GetCdnNodes(context.Context, *manager.NavigatorRequest) (*manager.CdnHosts, error)
+	GetSchedulers(context.Context, *manager.SchedulerNodeRequest) (*manager.SchedulerNodes, error)
+	GetCdnNodes(context.Context, *manager.CdnNodeRequest) (*manager.CdnNodes, error)
 	KeepAlive(context.Context, <-chan *manager.HeartRequest, chan<- *manager.ManagementConfig) error
 }
 
@@ -59,12 +59,12 @@ type proxy struct {
 	manager.UnimplementedManagerServer
 }
 
-func (p *proxy) GetSchedulers(ctx context.Context, req *manager.NavigatorRequest) (*manager.SchedulerHosts, error) {
+func (p *proxy) GetSchedulers(ctx context.Context, req *manager.SchedulerNodeRequest) (*manager.SchedulerNodes, error) {
 	return p.server.GetSchedulers(ctx, req)
 }
 
 // get cdn server list according to client info
-func (p *proxy) GetCdnNodes(ctx context.Context, req *manager.NavigatorRequest) (*manager.CdnHosts, error) {
+func (p *proxy) GetCdnNodes(ctx context.Context, req *manager.CdnNodeRequest) (*manager.CdnNodes, error) {
 	return p.server.GetCdnNodes(ctx, req)
 }
 
