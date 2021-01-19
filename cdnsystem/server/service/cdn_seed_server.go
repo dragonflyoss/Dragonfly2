@@ -74,6 +74,10 @@ func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
 
 func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
 	defer func() {
+		if r := recover(); r != nil {
+			logger.Named(req.TaskId).Errorf("failed to obtain seeds, req=%+v: %v", req, r)
+		}
+
 		if err != nil {
 			logger.Named(req.TaskId).Errorf("failed to obtain seeds, req=%+v: %v", req, err)
 		}
@@ -127,6 +131,9 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 
 func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (piecePacket *base.PiecePacket, err error) {
 	defer func() {
+		if r := recover(); r != nil {
+			logger.Named(req.TaskId).Errorf("failed to get piece tasks, req=%+v: %v", req, r)
+		}
 		if err != nil {
 			logger.Named(req.TaskId).Errorf("failed to get piece tasks, req=%+v :%v", req, err)
 		}
