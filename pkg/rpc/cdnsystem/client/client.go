@@ -18,7 +18,7 @@ package client
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
@@ -50,8 +50,8 @@ var initClientFunc = func(c *rpc.Connection) {
 }
 
 // netAddrs are used to connect and migrate
-func CreateClient(netAddrs []basic.NetAddr) (SeederClient, error) {
-	if client, err := rpc.BuildClient(&seederClient{}, initClientFunc, netAddrs); err != nil {
+func CreateClient(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (SeederClient, error) {
+	if client, err := rpc.BuildClient(&seederClient{}, initClientFunc, netAddrs, opts); err != nil {
 		return nil, err
 	} else {
 		return client.(*seederClient), nil
@@ -99,7 +99,7 @@ func (sc *seederClient) GetPieceTasks(ctx context.Context, req *base.PieceTaskRe
 		return client.GetPieceTasks(ctx, req, opts...)
 	}, 0.5, 5.0, 5)
 	// todo log
-	println(target,res)
+	println(target, res)
 	if err == nil {
 		pp = res.(*base.PiecePacket)
 	}

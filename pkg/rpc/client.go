@@ -19,9 +19,9 @@ package rpc
 import (
 	"context"
 	"errors"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/math"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/maths"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
@@ -37,10 +37,11 @@ type Connection struct {
 	rwMutex   *sync.RWMutex
 	curTarget string
 	nextNum   int
-	NetAddrs  []basic.NetAddr
+	NetAddrs  []dfnet.NetAddr
 	Conn      *grpc.ClientConn
 	Ref       interface{}
 	init      InitClientFunc
+	opts      []grpc.DialOption
 }
 
 type RetryMeta struct {
@@ -65,7 +66,7 @@ var clientOpts = []grpc.DialOption{
 	grpc.WithUnaryInterceptor(unaryClientInterceptor),
 }
 
-func BuildClient(client interface{}, init InitClientFunc, addrs []basic.NetAddr) (interface{}, error) {
+func BuildClient(client interface{}, init InitClientFunc, addrs []dfnet.NetAddr, opts []grpc.DialOption) (interface{}, error) {
 	if len(addrs) == 0 || len(addrs) > 10 {
 		return nil, errors.New("addrs are empty or greater than 10")
 	}
@@ -75,6 +76,7 @@ func BuildClient(client interface{}, init InitClientFunc, addrs []basic.NetAddr)
 		NetAddrs: addrs,
 		Ref:      client,
 		init:     init,
+		opts:     opts,
 	}
 
 	if err := conn.connect(); err != nil {
@@ -98,7 +100,7 @@ func (c *Connection) connect() error {
 
 	for ; c.nextNum < len(c.NetAddrs); {
 		ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
-		cc, err = grpc.DialContext(ctx, c.NetAddrs[c.nextNum].GetEndpoint(), clientOpts...)
+		cc, err = grpc.DialContext(ctx, c.NetAddrs[c.nextNum].GetEndpoint(), append(clientOpts, c.opts...)...)
 
 		c.nextNum++
 
@@ -160,7 +162,7 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 outer:
 	for i := 0; i < maxAttempts; i++ {
 		if i > 0 {
-			time.Sleep(math.RandBackoff(initBackoff, 2.0, maxBackoff, i))
+			time.Sleep(maths.RandBackoff(initBackoff, 2.0, maxBackoff, i))
 		}
 
 		res, err = f()

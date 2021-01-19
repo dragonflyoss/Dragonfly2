@@ -17,7 +17,7 @@
 package basic
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/assert"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/asserts"
 	"os"
 	"os/user"
 	"strings"
@@ -40,7 +40,7 @@ func init() {
 			HomeDir = "/"
 		}
 	}
-	assert.PAssert(len(HomeDir) > 0, "home dir is empty")
+	asserts.PAssert(len(HomeDir) > 0, "home dir is empty")
 
 	TmpDir = os.TempDir()
 	if TmpDir == "" {

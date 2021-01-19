@@ -18,7 +18,7 @@ package client
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
@@ -58,8 +58,8 @@ var initClientFunc = func(c *rpc.Connection) {
 	dc.Connection = c
 }
 
-func CreateClient(netAddrs []basic.NetAddr) (ManagerClient, error) {
-	if client, err := rpc.BuildClient(&managerClient{}, initClientFunc, netAddrs); err != nil {
+func CreateClient(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerClient, error) {
+	if client, err := rpc.BuildClient(&managerClient{}, initClientFunc, netAddrs, opts); err != nil {
 		return nil, err
 	} else {
 		return client.(*managerClient), nil

@@ -15,8 +15,8 @@
  */
 
 // Package util provides some utility tools for other components.
-// Such as net-transporting, file-operating, rate-limiter.
-package assert
+// Such as dfnet-transporting, file-operating, rate-limiter.
+package asserts
 
 import (
 	"encoding/json"

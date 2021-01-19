@@ -18,7 +18,7 @@ package client
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
@@ -49,8 +49,8 @@ var initClientFunc = func(c *rpc.Connection) {
 	sc.Connection = c
 }
 
-func CreateClient(netAddrs []basic.NetAddr) (SchedulerClient, error) {
-	if client, err := rpc.BuildClient(&schedulerClient{}, initClientFunc, netAddrs); err != nil {
+func CreateClient(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
+	if client, err := rpc.BuildClient(&schedulerClient{}, initClientFunc, netAddrs, opts); err != nil {
 		return nil, err
 	} else {
 		return client.(*schedulerClient), nil
