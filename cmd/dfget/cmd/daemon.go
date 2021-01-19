@@ -141,7 +141,7 @@ func runDaemon() error {
 			// enable go pprof and statsview
 			var debugListen = "localhost:18066"
 			viewer.SetConfiguration(viewer.WithAddr(debugListen))
-			logger.Infof("enable go pprof at %d", debugListen)
+			logger.Infof("enable go pprof at %s", debugListen)
 			if err := statsview.New().Start(); err != nil {
 				logger.Warnf("serve go pprof error: %s", err)
 			}
@@ -152,18 +152,6 @@ func runDaemon() error {
 	if err != nil {
 		return err
 	}
-
-	//grpcControlUrl, err := url.Parse(flagDaemonOpt.grpcPort)
-	//if err != nil {
-	//	return err
-	//}
-	//if grpcControlUrl.Scheme != "tcp" || grpcControlUrl.Port() == " " {
-	//	return fmt.Errorf("rpc-control-listen must be tcp address, like: tcp://0.0.0.0:65000")
-	//}
-	//grpcControlPort, err := strconv.Atoi(grpcControlUrl.Port())
-	//if err != nil {
-	//	return err
-	//}
 
 	var ip string
 	if !net.IPv4zero.Equal(flagDaemonOpt.advertiseIP) {
@@ -203,38 +191,6 @@ func runDaemon() error {
 }
 
 func initDaemonOption() (*daemon.PeerHostOption, error) {
-	//grpcListenUrl, err := url.Parse(flagDaemonOpt.grpcUnixListen)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//switch grpcListenUrl.Scheme {
-	//case "tcp":
-	//	grpcListenUrl.Path = ""
-	//case "unix":
-	//	grpcListenUrl.Host = ""
-	//	os.Remove(grpcListenUrl.Path)
-	//case "":
-	//	grpcListenUrl.Scheme = "tcp"
-	//default:
-	//	return nil, fmt.Errorf("unsuport grpc listen scheme: %s", grpcListenUrl.Scheme)
-	//}
-
-	//uploadListenUrl, err := url.Parse(flagDaemonOpt.uploadPort)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//switch uploadListenUrl.Scheme {
-	//case "tcp":
-	//	uploadListenUrl.Path = ""
-	//case "unix":
-	//	uploadListenUrl.Host = ""
-	//	os.Remove(uploadListenUrl.Path)
-	//case "":
-	//	uploadListenUrl.Scheme = "tcp"
-	//default:
-	//	return nil, fmt.Errorf("unsuport upload listen scheme: %s", uploadListenUrl.Scheme)
-	//}
-
 	dr, err := units.FromHumanSize(flagDaemonOpt.downloadRate)
 	if err != nil {
 		return nil, fmt.Errorf("download rate %q parse error: %s", flagDaemonOpt.downloadRate, err)
