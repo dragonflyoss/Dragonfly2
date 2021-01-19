@@ -25,11 +25,13 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
+	"time"
 )
 
 // see scheduler.SchedulerClient
 type SchedulerClient interface {
 	RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error)
+	// IsMigrating of ptr will be set to true
 	ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, error)
 	ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) (*base.ResponseState, error)
 	LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) (*base.ResponseState, error)
@@ -91,15 +93,18 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string,
 	prc := make(chan *scheduler.PieceResult, 4)
 	ppc := make(chan *scheduler.PeerPacket, 4)
 
-	pts, err := newPeerPacketStream(sc, ctx, taskId, ptr, opts, prc)
-	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskId:%s", taskId)
+	pps, err := newPeerPacketStream(sc, ctx, taskId, ptr, opts, prc)
+
+	logger.With("peerId", ptr.PeerId, "errMsg", err).
+		Infof("start to report piece result for taskId:%s", taskId)
+
 	if err != nil {
 		return nil, nil, err
 	}
 
-	go send(pts, prc)
+	go send(pps, prc, ppc)
 
-	go receive(pts, ppc, prc)
+	go receive(pps, ppc)
 
 	return prc, ppc, nil
 }
@@ -152,33 +157,33 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 	return
 }
 
-// receiver also finishes sender
-func receive(stream *pieceTaskStream, ppc chan *scheduler.PeerPacket, prc chan *scheduler.PieceResult) {
+func receive(stream *peerPacketStream, ppc chan *scheduler.PeerPacket) {
 	safe.Call(func() {
-		defer close(prc)
-		defer close(ppc)
-
 		for {
-			peerPacket, err := stream.recv()
-			if err == nil {
+			if peerPacket, err := stream.recv(); err == nil {
 				ppc <- peerPacket
-				if peerPacket.Done {
-					return
-				}
 			} else {
+				// return error and check ppc
 				ppc <- base.NewResWithErr(peerPacket, err).(*scheduler.PeerPacket)
-				return
+				time.Sleep(200 * time.Millisecond)
 			}
 		}
 	})
 }
 
-func send(stream *pieceTaskStream, prc chan *scheduler.PieceResult) {
+// no send no receive
+func send(stream *peerPacketStream, prc chan *scheduler.PieceResult, ppc chan *scheduler.PeerPacket) {
 	safe.Call(func() {
+		defer close(ppc)
+		defer close(prc)
 		defer stream.closeSend()
 
 		for v := range prc {
-			_ = stream.send(v)
+			if err := stream.send(v); err != nil {
+				return
+			} else if v.PieceNum == base.END_OF_PIECE {
+				return
+			}
 		}
 	})
 }

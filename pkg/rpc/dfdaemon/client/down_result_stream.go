@@ -139,10 +139,11 @@ func (drs *downResultStream) replaceClient(cause error) error {
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts)
 
 	if err != nil {
-		return drs.replaceClient(err)
+		err = drs.replaceClient(err)
 	} else {
 		drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
 		drs.Times = 1
-		return nil
 	}
+
+	return err
 }
