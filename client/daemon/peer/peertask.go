@@ -65,8 +65,10 @@ type filePeerTask struct {
 	pieceManager               PieceManager
 
 	// peerPacket in the fly
-	peerPacket      *scheduler.PeerPacket
+	peerPacket *scheduler.PeerPacket
+
 	peerClient      dfdaemon.DaemonClient
+	peerClientConn  *grpc.ClientConn
 	peerClientInfo  *scheduler.PeerHost
 	peerClientReady sync.Cond
 
@@ -235,7 +237,11 @@ getPiecesTasks:
 		pt.pieceManager.PullPieces(pt, piecePacket)
 	}
 
-	err := pt.schedulerPieceResultClient.CloseSend()
+	err := pt.peerClientConn.Close()
+	if err != nil {
+		pt.log.Warnf("close grpc client error: %s", err)
+	}
+	err = pt.schedulerPieceResultClient.CloseSend()
 	if err != nil {
 		pt.log.Warnf("close piece client error: %s", err)
 	}
@@ -334,12 +340,19 @@ func (pt *filePeerTask) allPiecesDownloaded() bool {
 }
 
 func (pt *filePeerTask) updateAvailablePeerClient() bool {
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
+	// close old grpc conn
+	if pt.peerClientConn != nil {
+		pt.peerClientConn.Close()
+	}
 	// try main peer when current peer client is not main peer
 	if pt.peerPacket.MainPeer != nil &&
 		(pt.peerClientInfo == nil || pt.peerClientInfo.Uuid != pt.peerPacket.MainPeer.Uuid) {
-		dc, err := pt.connectPeerClient(pt.peerPacket.MainPeer.Ip, pt.peerPacket.MainPeer.Port)
+		conn, dc, err := pt.connectPeerClient(pt.peerPacket.MainPeer.Ip, pt.peerPacket.MainPeer.Port)
 		if err == nil {
 			pt.peerClient = dc
+			pt.peerClientConn = conn
 			pt.peerClientInfo = pt.peerPacket.MainPeer
 			return true
 		}
@@ -352,9 +365,10 @@ func (pt *filePeerTask) updateAvailablePeerClient() bool {
 		if pt.peerClientInfo != nil && pt.peerClientInfo.Uuid == peer.Uuid {
 			continue
 		}
-		dc, err := pt.connectPeerClient(peer.Ip, peer.Port)
+		conn, dc, err := pt.connectPeerClient(peer.Ip, peer.Port)
 		if err == nil {
 			pt.peerClient = dc
+			pt.peerClientConn = conn
 			pt.peerClientInfo = peer
 			return true
 		}
@@ -362,16 +376,16 @@ func (pt *filePeerTask) updateAvailablePeerClient() bool {
 	return false
 }
 
-func (pt *filePeerTask) connectPeerClient(ip string, port int32) (dfdaemon.DaemonClient, error) {
+func (pt *filePeerTask) connectPeerClient(ip string, port int32) (*grpc.ClientConn, dfdaemon.DaemonClient, error) {
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", ip, port),
 		grpc.WithInsecure())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	daemonClient := dfdaemon.NewDaemonClient(conn)
 	r, err := daemonClient.CheckHealth(context.Background(), &base.EmptyRequest{})
 	if err == nil && r.Success {
-		return daemonClient, nil
+		return conn, daemonClient, nil
 	}
 	if err != nil {
 		pt.log.Errorf("check daemon client failed: %s", err)
@@ -379,7 +393,7 @@ func (pt *filePeerTask) connectPeerClient(ip string, port int32) (dfdaemon.Daemo
 	if r != nil {
 		pt.log.Errorf("check daemon client failed, response: %#v", r)
 	}
-	return nil, err
+	return nil, nil, err
 }
 
 type Bitmap struct {
