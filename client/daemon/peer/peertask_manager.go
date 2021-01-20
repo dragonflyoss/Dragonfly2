@@ -21,10 +21,10 @@ import (
 	"io"
 	"sync"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/misc"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	schedulerclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/client"
 )
 
 type FilePeerTaskRequest struct {
@@ -48,19 +48,20 @@ type PeerTaskManager interface {
 // PeerTaskCallback inserts some operations for peer task download lifecycle
 type PeerTaskCallback interface {
 	Done() error
+	Init(int64) error
 }
 
 type peerTaskManager struct {
-	scheduler        scheduler.SchedulerClient
-	schedulerLocator misc.SchedulerLocator
-	pieceManager     PieceManager
-	storageManager   storage.Manager
+	scheduler      schedulerclient.SchedulerClient
+	pieceManager   PieceManager
+	storageManager storage.Manager
 
 	runningPeerTasks sync.Map
 }
 
 type peerTaskCallback struct {
 	DoneFunc func() error
+	InitFunc func(contentLength int64) error
 }
 
 func (p *peerTaskCallback) Done() error {
@@ -70,16 +71,20 @@ func (p *peerTaskCallback) Done() error {
 	return nil
 }
 
-func NewPeerTaskManager(pieceManager PieceManager, storageManager storage.Manager, locator misc.SchedulerLocator) (PeerTaskManager, error) {
+func (p *peerTaskCallback) Init(contentLength int64) error {
+	if p.InitFunc != nil {
+		return p.InitFunc(contentLength)
+	}
+	return nil
+}
+
+func NewPeerTaskManager(pieceManager PieceManager, storageManager storage.Manager, schedulerClient schedulerclient.SchedulerClient) (PeerTaskManager, error) {
 	ptm := &peerTaskManager{
 		runningPeerTasks: sync.Map{},
 		pieceManager:     pieceManager,
 		storageManager:   storageManager,
-		schedulerLocator: locator,
+		scheduler:        schedulerClient,
 	}
-	// TODO handle error
-	locator.Refresh(nil)
-	ptm.AdmitScheduler()
 	return ptm, nil
 }
 
@@ -91,32 +96,38 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	}
 	// when peer task done, call peer task manager to store data
 	pt.SetCallback(&peerTaskCallback{
+		InitFunc: func(contentLength int64) error {
+			// prepare storage
+			err = ptm.storageManager.RegisterTask(ctx,
+				storage.RegisterTaskRequest{
+					CommonTaskRequest: storage.CommonTaskRequest{
+						PeerID:      pt.peerId,
+						TaskID:      pt.taskId,
+						Destination: req.Output,
+					},
+					ContentLength: contentLength,
+				})
+			if err != nil {
+				logger.Errorf("register task to storage manager failed: %s", err)
+			}
+			return err
+		},
 		DoneFunc: func() error {
-			err := ptm.storageManager.Store(
+			e := ptm.storageManager.Store(
 				context.Background(),
 				&storage.StoreRequest{
 					PeerID:      pt.GetPeerID(),
 					TaskID:      pt.GetTaskID(),
 					Destination: req.Output,
 				})
-			if err != nil {
-				return err
+			if e != nil {
+				return e
 			}
 			ptm.PeerTaskDone(req.PeerId)
 			return nil
 		},
 	})
 
-	// prepare storage
-	err = ptm.storageManager.RegisterTask(ctx, &storage.RegisterTaskRequest{
-		PeerID:      pt.peerId,
-		TaskID:      pt.taskId,
-		Destination: req.Output,
-	})
-	if err != nil {
-		logger.Errorf("register task to storage manager failed: %s", err)
-		return nil, err
-	}
 	ptm.runningPeerTasks.Store(req.PeerId, pt)
 
 	// FIXME 1. merge same task id
@@ -139,20 +150,4 @@ func (ptm *peerTaskManager) PeerTaskDone(pid string) {
 	ptm.runningPeerTasks.Delete(pid)
 	// TODO report peer result
 	// ptm.scheduler.ReportPeerResult()
-}
-
-// TODO check scheduler alive periodicity
-func (ptm *peerTaskManager) AdmitScheduler() error {
-	sched, all, err := ptm.schedulerLocator.Next()
-	if err != nil {
-		return err
-	}
-	ptm.scheduler = sched
-	if all {
-		err = ptm.schedulerLocator.Refresh(nil)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

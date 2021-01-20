@@ -60,16 +60,17 @@ func (e simpleLocalTaskStoreExecutor) LoadTask(taskID string, _ string) (TaskSto
 	return d.(TaskStorageDriver), ok
 }
 
-func (e simpleLocalTaskStoreExecutor) CreateTask(taskID string, peerID string, dest string) error {
-	logger.Debugf("init local task storage, peer id: %s, task id: %s", peerID, taskID)
+func (e simpleLocalTaskStoreExecutor) CreateTask(req RegisterTaskRequest) error {
+	logger.Debugf("init local task storage, peer id: %s, task id: %s", req.PeerID, req.TaskID)
 
-	dataDir := path.Join(e.opt.DataPath, string(SimpleLocalTaskStoreDriver), taskID)
+	dataDir := path.Join(e.opt.DataPath, string(SimpleLocalTaskStoreDriver), req.TaskID)
 	t := &simpleLocalTaskStore{
 		persistentPeerTaskMetadata: persistentPeerTaskMetadata{
-			TaskID:   taskID,
-			TaskMeta: map[string]string{},
-			PeerID:   peerID,
-			Pieces:   map[int32]PieceMetaData{},
+			TaskID:        req.TaskID,
+			TaskMeta:      map[string]string{},
+			ContentLength: req.ContentLength,
+			PeerID:        req.PeerID,
+			Pieces:        map[int32]PieceMetaData{},
 		},
 		lock:             &sync.Mutex{},
 		dataDir:          dataDir,
@@ -80,7 +81,7 @@ func (e simpleLocalTaskStoreExecutor) CreateTask(taskID string, peerID string, d
 	if err := t.init(); err != nil {
 		return err
 	}
-	e.tasks.Store(taskID, t)
+	e.tasks.Store(req.TaskID, t)
 	return nil
 }
 
@@ -204,8 +205,12 @@ func (t *simpleLocalTaskStore) WritePiece(ctx context.Context, req *WritePieceRe
 	logger.Debugf("task %s wrote %d bytes to file %s, piece %d, start %d, length: %d",
 		t.TaskID, n, t.dataFilePath, req.Num, req.Range.Start, req.Range.Length)
 	t.lock.Lock()
+	defer t.lock.Unlock()
+	// double check
+	if _, ok := t.Pieces[req.Num]; ok {
+		return nil
+	}
 	t.Pieces[req.Num] = req.PieceMetaData
-	t.lock.Unlock()
 	return nil
 }
 
@@ -261,25 +266,34 @@ func (t *simpleLocalTaskStore) Store(ctx context.Context, req *StoreRequest) err
 	return err
 }
 
-func (t *simpleLocalTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRequest) ([]*base.PieceTask, error) {
-	var tasks []*base.PieceTask
+func (t *simpleLocalTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	var pieces []*base.PieceInfo
 	for i := int32(0); i < req.Limit; i++ {
 		if piece, ok := t.Pieces[req.StartNum+i]; ok {
-			tasks = append(tasks, &base.PieceTask{
-				PieceNum:   piece.Num,
-				RangeStart: uint64(piece.Range.Start),
-				RangeSize:  int32(piece.Range.Length),
-				PieceMd5:   piece.Md5,
-				SrcPid:     "",
-				DstPid:     t.PeerID,
-				// TODO update dst addr
-				DstAddr:     "",
+			pieces = append(pieces, &base.PieceInfo{
+				PieceNum:    piece.Num,
+				RangeStart:  uint64(piece.Range.Start),
+				RangeSize:   int32(piece.Range.Length),
+				PieceMd5:    piece.Md5,
 				PieceOffset: piece.Offset,
 				PieceStyle:  piece.Style,
 			})
 		}
 	}
-	return tasks, nil
+	return &base.PiecePacket{
+		State: &base.ResponseState{
+			Success: true,
+			Code:    base.Code_SUCCESS,
+			Msg:     "",
+		},
+		TaskId: req.TaskId,
+		DstPid: t.PeerID,
+		//DstAddr:       "", // filled by peer service
+		PieceInfos:    pieces,
+		TotalPiece:    int32(len(t.Pieces)),
+		ContentLength: t.ContentLength,
+		PieceMd5Sign:  t.PieceMd5Sign,
+	}, nil
 }
 
 func (t *simpleLocalTaskStore) TryGC() (bool, error) {

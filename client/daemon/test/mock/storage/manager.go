@@ -67,10 +67,10 @@ func (mr *MockTaskStorageDriverMockRecorder) ReadPiece(ctx, req interface{}) *go
 }
 
 // GetPieces mocks base method
-func (m *MockTaskStorageDriver) GetPieces(ctx context.Context, req *base.PieceTaskRequest) ([]*base.PieceTask, error) {
+func (m *MockTaskStorageDriver) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPieces", ctx, req)
-	ret0, _ := ret[0].([]*base.PieceTask)
+	ret0, _ := ret[0].(*base.PiecePacket)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -149,10 +149,10 @@ func (mr *MockManagerMockRecorder) ReadPiece(ctx, req interface{}) *gomock.Call 
 }
 
 // GetPieces mocks base method
-func (m *MockManager) GetPieces(ctx context.Context, req *base.PieceTaskRequest) ([]*base.PieceTask, error) {
+func (m *MockManager) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPieces", ctx, req)
-	ret0, _ := ret[0].([]*base.PieceTask)
+	ret0, _ := ret[0].(*base.PiecePacket)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -178,7 +178,7 @@ func (mr *MockManagerMockRecorder) Store(ctx, req interface{}) *gomock.Call {
 }
 
 // RegisterTask mocks base method
-func (m *MockManager) RegisterTask(ctx context.Context, req *storage.RegisterTaskRequest) error {
+func (m *MockManager) RegisterTask(ctx context.Context, req storage.RegisterTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterTask", ctx, req)
 	ret0, _ := ret[0].(error)
@@ -245,29 +245,29 @@ func (mr *MockTaskStorageExecutorMockRecorder) LoadTask(taskID, peerID interface
 }
 
 // CreateTask mocks base method
-func (m *MockTaskStorageExecutor) CreateTask(taskID, peerID, dest string, opt *storage.Option) error {
+func (m *MockTaskStorageExecutor) CreateTask(arg0 storage.RegisterTaskRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateTask", taskID, peerID, dest, opt)
+	ret := m.ctrl.Call(m, "CreateTask", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateTask indicates an expected call of CreateTask
-func (mr *MockTaskStorageExecutorMockRecorder) CreateTask(taskID, peerID, dest, opt interface{}) *gomock.Call {
+func (mr *MockTaskStorageExecutorMockRecorder) CreateTask(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).CreateTask), taskID, peerID, dest, opt)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).CreateTask), arg0)
 }
 
 // ReloadPersistentTask mocks base method
-func (m *MockTaskStorageExecutor) ReloadPersistentTask(opt *storage.Option) error {
+func (m *MockTaskStorageExecutor) ReloadPersistentTask() error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReloadPersistentTask", opt)
+	ret := m.ctrl.Call(m, "ReloadPersistentTask")
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ReloadPersistentTask indicates an expected call of ReloadPersistentTask
-func (mr *MockTaskStorageExecutorMockRecorder) ReloadPersistentTask(opt interface{}) *gomock.Call {
+func (mr *MockTaskStorageExecutorMockRecorder) ReloadPersistentTask() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReloadPersistentTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).ReloadPersistentTask), opt)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReloadPersistentTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).ReloadPersistentTask))
 }

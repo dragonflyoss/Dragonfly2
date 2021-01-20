@@ -37,7 +37,7 @@ type TaskStorageDriver interface {
 	// return a Reader and a Closer from task data with seeked, caller should read bytes and close it.
 	ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error)
 
-	GetPieces(ctx context.Context, req *base.PieceTaskRequest) ([]*base.PieceTask, error)
+	GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error)
 
 	// Store stores task data to the target path
 	Store(ctx context.Context, req *StoreRequest) error
@@ -46,7 +46,7 @@ type TaskStorageDriver interface {
 type Manager interface {
 	TaskStorageDriver
 	// RegisterTask registers a task in storage driver
-	RegisterTask(ctx context.Context, req *RegisterTaskRequest) error
+	RegisterTask(ctx context.Context, req RegisterTaskRequest) error
 }
 
 type Option struct {
@@ -63,7 +63,7 @@ type TaskStorageExecutor interface {
 	// LoadTask loads TaskStorageDriver from memory for task operations
 	LoadTask(taskID string, peerID string) (TaskStorageDriver, bool)
 	// CreateTask creates a new TaskStorageDriver
-	CreateTask(taskID string, peerID string, dest string) error
+	CreateTask(RegisterTaskRequest) error
 	// ReloadPersistentTask
 	ReloadPersistentTask() error
 }
@@ -140,14 +140,14 @@ func WithStorageOption(opt *Option) func(*storageManager) error {
 	}
 }
 
-func (s *storageManager) RegisterTask(ctx context.Context, req *RegisterTaskRequest) error {
+func (s *storageManager) RegisterTask(ctx context.Context, req RegisterTaskRequest) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	// double check if task store exists
 	// if ok, just unlock and return
 	if _, ok := s.executor.LoadTask(req.TaskID, req.PeerID); !ok {
 		// still not exist, create a new task store
-		return s.executor.CreateTask(req.TaskID, req.PeerID, req.Destination)
+		return s.executor.CreateTask(req)
 	}
 	return nil
 }
@@ -178,7 +178,7 @@ func (s *storageManager) Store(ctx context.Context, req *StoreRequest) error {
 	return t.(TaskStorageDriver).Store(ctx, req)
 }
 
-func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskRequest) ([]*base.PieceTask, error) {
+func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	t, ok := s.executor.LoadTask(req.TaskId, "")
 	if !ok {
 		// TODO recover for local task persistentMetadata data

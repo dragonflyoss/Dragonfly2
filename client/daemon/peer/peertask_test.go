@@ -8,5 +8,5 @@ func TestBitmap_Sets(t *testing.T) {
 		b.Set(i)
 	}
 	b.Sets(2, 3, 3, 4)
-	//t.Logf("%s, %d", b.String(), b.IsSettled())
+	//t.Logf("%s, %d", b.String(), b.Settled())
 }
