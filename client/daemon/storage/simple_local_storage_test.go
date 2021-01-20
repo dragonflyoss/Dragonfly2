@@ -59,9 +59,15 @@ func TestSimpleLocalTaskStore_PutAndGetPiece(t *testing.T) {
 			TaskExpireTime: time.Minute,
 		},
 	}
-	err = executor.CreateTask(taskID,
-		peerID,
-		dst)
+	err = executor.CreateTask(
+		RegisterTaskRequest{
+			CommonTaskRequest: CommonTaskRequest{
+				PeerID:      peerID,
+				TaskID:      taskID,
+				Destination: dst,
+			},
+			ContentLength: int64(len(testBytes)),
+		})
 	assert.Nil(err, "create task storage")
 	ts, ok := executor.LoadTask(taskID, peerID)
 	assert.True(ok, "")
@@ -104,7 +110,7 @@ func TestSimpleLocalTaskStore_PutAndGetPiece(t *testing.T) {
 					Start:  int64(p.start),
 					Length: int64(p.end - p.start),
 				},
-				Style: base.PieceStyle_PLAIN_UNSPECIFIED,
+				Style: base.PieceStyle_PLAIN,
 			},
 			Reader: bytes.NewBuffer(testBytes[p.start:p.end]),
 		})
@@ -130,7 +136,7 @@ func TestSimpleLocalTaskStore_PutAndGetPiece(t *testing.T) {
 					Start:  int64(p.start),
 					Length: int64(p.end - p.start),
 				},
-				Style: base.PieceStyle_PLAIN_UNSPECIFIED,
+				Style: base.PieceStyle_PLAIN,
 			},
 		})
 		assert.Nil(err, "get piece should be ok")

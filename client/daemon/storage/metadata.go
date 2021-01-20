@@ -8,10 +8,12 @@ import (
 )
 
 type persistentPeerTaskMetadata struct {
-	TaskID   string                  `json:"taskID"`
-	TaskMeta map[string]string       `json:"taskMeta"`
-	PeerID   string                  `json:"peerID"`
-	Pieces   map[int32]PieceMetaData `json:"pieces"`
+	TaskID        string                  `json:"taskID"`
+	TaskMeta      map[string]string       `json:"taskMeta"`
+	ContentLength int64                   `json:"contentLength"`
+	PeerID        string                  `json:"peerID"`
+	Pieces        map[int32]PieceMetaData `json:"pieces"`
+	PieceMd5Sign  string
 }
 
 type PeerTaskMetaData struct {
@@ -33,7 +35,10 @@ type CommonTaskRequest struct {
 	Destination string
 }
 
-type RegisterTaskRequest = CommonTaskRequest
+type RegisterTaskRequest struct {
+	CommonTaskRequest
+	ContentLength int64
+}
 
 type WritePieceRequest struct {
 	PeerTaskMetaData

@@ -27,8 +27,8 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		handleFunc      func(w http.ResponseWriter, r *http.Request)
 		taskID          string
 		pieceRange      string
-		rangeStart      int
-		rangeSize       int
+		rangeStart      uint64
+		rangeSize       int32
 		targetPieceData []byte
 	}{
 		{
@@ -63,7 +63,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 			taskID:          "task-2",
 			pieceRange:      fmt.Sprintf("bytes=512-%d", len(testData)-1),
 			rangeStart:      512,
-			rangeSize:       len(testData) - 512,
+			rangeSize:       int32(len(testData) - 512),
 			targetPieceData: testData[512:],
 		},
 		{
@@ -85,12 +85,16 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		addr, _ := url.Parse(server.URL)
 		pd, _ := NewPieceDownloader()
 		rc, err := pd.DownloadPiece(&DownloadPieceRequest{
-			TaskID: tt.taskID,
-			PieceTask: &base.PieceTask{
-				RangeStart: uint64(tt.rangeStart),
-				RangeSize:  int32(tt.rangeSize),
-				PieceMd5:   "TODO",
-				DstAddr:    addr.Host,
+			TaskID:  tt.taskID,
+			DstPid:  "",
+			DstAddr: addr.Host,
+			piece: &base.PieceInfo{
+				PieceNum:    0,
+				RangeStart:  tt.rangeStart,
+				RangeSize:   tt.rangeSize,
+				PieceMd5:    "TODO",
+				PieceOffset: tt.rangeStart,
+				PieceStyle:  base.PieceStyle_PLAIN,
 			},
 		})
 		assert.Nil(err, "downloaded piece should success")

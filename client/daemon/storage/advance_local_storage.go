@@ -22,7 +22,8 @@ import (
 // hard link: target device cache file -> target device cache file
 type advanceLocalTaskStorage struct {
 	*sync.Mutex
-	taskID    string
+	taskID string
+	// key: peerID
 	peerTasks map[string]*simpleLocalTaskStore
 }
 
@@ -71,44 +72,44 @@ func (e advanceLocalTaskStoreExecutor) LoadTask(taskID string, peerID string) (T
 	return d.(TaskStorageDriver), ok
 }
 
-func (e advanceLocalTaskStoreExecutor) CreateTask(taskID, peerID string, dest string) error {
-	d, ok := e.tasks.Load(taskID)
+func (e advanceLocalTaskStoreExecutor) CreateTask(req RegisterTaskRequest) error {
+	d, ok := e.tasks.Load(req.TaskID)
 	var s *advanceLocalTaskStorage
 	if !ok {
 		e.Lock()
 		// double check
-		d, ok = e.tasks.Load(taskID)
+		d, ok = e.tasks.Load(req.TaskID)
 		if !ok {
 			if e.dataPathStat == nil {
 
 			}
 			s = &advanceLocalTaskStorage{
 				Mutex:     &sync.Mutex{},
-				taskID:    taskID,
+				taskID:    req.TaskID,
 				peerTasks: map[string]*simpleLocalTaskStore{},
 			}
-			e.tasks.Store(taskID, s)
+			e.tasks.Store(req.TaskID, s)
 			d = s
 		}
 		e.Unlock()
 	}
 	s = d.(*advanceLocalTaskStorage)
 
-	logger.Debugf("init advance local task storage, peer id: %s, task id: %s", peerID, taskID)
-	filename := filepath.Base(dest)
-	dir := filepath.Dir(dest)
+	logger.Debugf("init advance local task storage, peer id: %s, task id: %s", req.PeerID, req.TaskID)
+	filename := filepath.Base(req.Destination)
+	dir := filepath.Dir(req.Destination)
 	dataFilePath := path.Join(dir, fmt.Sprintf(".%s.d7s.cache", filename))
 	dirStat, err := os.Stat(dir)
 	if err != nil {
 		return err
 	}
 
-	dataDir := path.Join(e.opt.DataPath, string(AdvanceLocalTaskStoreDriver), taskID)
+	dataDir := path.Join(e.opt.DataPath, string(AdvanceLocalTaskStoreDriver), req.TaskID)
 	t := &simpleLocalTaskStore{
 		persistentPeerTaskMetadata: persistentPeerTaskMetadata{
-			TaskID:   taskID,
+			TaskID:   req.TaskID,
 			TaskMeta: map[string]string{},
-			PeerID:   peerID,
+			PeerID:   req.PeerID,
 			Pieces:   map[int32]PieceMetaData{},
 		},
 		lock:             &sync.Mutex{},
@@ -146,7 +147,7 @@ func (e advanceLocalTaskStoreExecutor) CreateTask(taskID, peerID string, dest st
 	}
 
 	s.Lock()
-	s.peerTasks[peerID] = t
+	s.peerTasks[req.PeerID] = t
 	s.Unlock()
 	return nil
 }
@@ -194,29 +195,49 @@ func (a advanceLocalTaskStorage) ReadPiece(ctx context.Context, req *ReadPieceRe
 	return lts.ReadPiece(ctx, req)
 }
 
-func (a advanceLocalTaskStorage) GetPieces(ctx context.Context, req *base.PieceTaskRequest) ([]*base.PieceTask, error) {
-	var tasks []*base.PieceTask
+func (a advanceLocalTaskStorage) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	var (
+		pieces []*base.PieceInfo
+
+		peerID  string
+		md5sign string
+		total   int32
+		length  int64
+	)
 FindNextPiece:
 	for i := int32(0); i < req.Limit; i++ {
-		for _, store := range a.peerTasks {
+		for pid, store := range a.peerTasks {
 			if piece, ok := store.Pieces[req.StartNum+i]; ok {
-				tasks = append(tasks, &base.PieceTask{
-					PieceNum:   piece.Num,
-					RangeStart: uint64(piece.Range.Start),
-					RangeSize:  int32(piece.Range.Length),
-					PieceMd5:   piece.Md5,
-					SrcPid:     "",
-					DstPid:     store.PeerID,
-					// TODO update dst addr
-					DstAddr:     "",
+				pieces = append(pieces, &base.PieceInfo{
+					PieceNum:    piece.Num,
+					RangeStart:  uint64(piece.Range.Start),
+					RangeSize:   int32(piece.Range.Length),
+					PieceMd5:    piece.Md5,
 					PieceOffset: piece.Offset,
 					PieceStyle:  piece.Style,
 				})
+				// TODO use last store info
+				peerID = pid
+				total = int32(len(store.Pieces))
+				length = store.ContentLength
 				continue FindNextPiece
 			}
 		}
 	}
-	return tasks, nil
+	return &base.PiecePacket{
+		State: &base.ResponseState{
+			Success: true,
+			Code:    base.Code_SUCCESS,
+			Msg:     "",
+		},
+		TaskId: req.TaskId,
+		DstPid: peerID,
+		//DstAddr:       "",
+		PieceInfos:    pieces,
+		TotalPiece:    total,
+		ContentLength: length,
+		PieceMd5Sign:  md5sign,
+	}, nil
 }
 
 func (a advanceLocalTaskStorage) Store(ctx context.Context, req *StoreRequest) error {

@@ -30,8 +30,10 @@ import (
 )
 
 type DownloadPieceRequest struct {
-	TaskID string
-	*base.PieceTask
+	TaskID  string
+	DstPid  string
+	DstAddr string
+	piece   *base.PieceInfo
 }
 
 type PieceDownloader interface {
@@ -85,7 +87,7 @@ func (p *pieceDownloader) DownloadPiece(d *DownloadPieceRequest) (io.ReadCloser,
 	resp, err := p.httpClient.Do(p.buildHTTPRequest(d))
 	if err != nil {
 		logger.Errorf("task id: %s, piece num: %d, dst: %s, download piece failed: %s",
-			d.TaskID, d.PieceNum, d.DstAddr, err)
+			d.TaskID, d.piece.PieceNum, d.DstAddr, err)
 		return nil, err
 	}
 	if resp.StatusCode > 299 {
@@ -107,6 +109,6 @@ func (p *pieceDownloader) buildHTTPRequest(d *DownloadPieceRequest) *http.Reques
 
 	// TODO use string.Builder
 	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d",
-		d.RangeStart, d.RangeStart+uint64(d.RangeSize)-1))
+		d.piece.RangeStart, d.piece.RangeStart+uint64(d.piece.RangeSize)-1))
 	return req
 }

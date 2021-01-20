@@ -18,7 +18,6 @@ package peer
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"time"
 
@@ -71,15 +70,15 @@ func WithLimiter(limiter *rate.Limiter) func(*pieceManager) {
 }
 
 func (pm *pieceManager) PullPieces(pt PeerTask, piecePacket *base.PiecePacket) {
-	for _, p := range piecePacket.PieceTasks {
+	for _, piece := range piecePacket.PieceInfos {
 		logger.Debugf("peer manager receive piece task, "+
 			"peer id: %s, piece num: %d, range start: %d, range size: %d",
-			pt.GetPeerID(), p.PieceNum, p.RangeStart, p.RangeSize)
-		go pm.pullPiece(pt, p)
+			pt.GetPeerID(), piece.PieceNum, piece.RangeStart, piece.RangeSize)
+		go pm.pullPiece(pt, piecePacket.DstPid, piecePacket.DstAddr, piece)
 	}
 }
 
-func (pm *pieceManager) pullPiece(pt PeerTask, pieceTask *base.PieceTask) {
+func (pm *pieceManager) pullPiece(pt PeerTask, dstPid, dstAddr string, pieceTask *base.PieceInfo) {
 	var (
 		success bool
 		start   = time.Now().UnixNano()
@@ -87,9 +86,9 @@ func (pm *pieceManager) pullPiece(pt PeerTask, pieceTask *base.PieceTask) {
 	)
 	defer func() {
 		if success {
-			pm.pushSuccessResult(pt, pieceTask, start, end)
+			pm.pushSuccessResult(pt, dstPid, dstAddr, pieceTask, start, end)
 		} else {
-			pm.pushFailResult(pt, pieceTask, start, end)
+			pm.pushFailResult(pt, dstPid, dstAddr, pieceTask, start, end)
 		}
 	}()
 
@@ -101,8 +100,10 @@ func (pm *pieceManager) pullPiece(pt PeerTask, pieceTask *base.PieceTask) {
 		}
 	}
 	rc, err := pm.DownloadPiece(&DownloadPieceRequest{
-		TaskID:    pt.GetTaskID(),
-		PieceTask: pieceTask,
+		TaskID:  pt.GetTaskID(),
+		DstPid:  dstPid,
+		DstAddr: dstAddr,
+		piece:   pieceTask,
 	})
 	if err != nil {
 		logger.Errorf("download piece failed, piece num: %d, error: %s", pieceTask.PieceNum, err)
@@ -135,40 +136,40 @@ func (pm *pieceManager) pullPiece(pt PeerTask, pieceTask *base.PieceTask) {
 	success = true
 }
 
-func (pm *pieceManager) pushSuccessResult(peerTask PeerTask, pieceTask *base.PieceTask, start int64, end int64) {
-	err := peerTask.PushPieceResult(
+func (pm *pieceManager) pushSuccessResult(peerTask PeerTask, dstPid, dstAddr string, piece *base.PieceInfo, start int64, end int64) {
+	err := peerTask.ReportPieceResult(
+		piece,
 		&scheduler.PieceResult{
-			PieceNum: pieceTask.PieceNum,
-			PieceRange: fmt.Sprintf("bytes=%d-%d", pieceTask.RangeStart,
-				pieceTask.RangeStart+uint64(pieceTask.RangeSize)-1),
-
-			TaskId:    peerTask.GetTaskID(),
-			SrcPid:    pieceTask.SrcPid,
-			DstPid:    pieceTask.DstPid,
-			Success:   true,
-			Code:      base.Code_SUCCESS,
-			BeginTime: uint64(start),
-			EndTime:   uint64(end),
+			TaskId:        peerTask.GetTaskID(),
+			SrcPid:        peerTask.GetPeerID(),
+			DstPid:        dstPid,
+			PieceNum:      piece.PieceNum,
+			BeginTime:     uint64(start),
+			EndTime:       uint64(end),
+			Success:       true,
+			Code:          base.Code_SUCCESS,
+			HostLoad:      nil,
+			FinishedCount: 0,
 		})
 	if err != nil {
 		logger.Errorf("report piece task error: %v", err)
 	}
 }
 
-func (pm *pieceManager) pushFailResult(peerTask PeerTask, pieceTask *base.PieceTask, start int64, end int64) {
-	err := peerTask.PushPieceResult(
+func (pm *pieceManager) pushFailResult(peerTask PeerTask, dstPid, dstAddr string, piece *base.PieceInfo, start int64, end int64) {
+	err := peerTask.ReportPieceResult(
+		piece,
 		&scheduler.PieceResult{
-			PieceNum: pieceTask.PieceNum,
-			PieceRange: fmt.Sprintf("bytes=%d-%d", pieceTask.RangeStart,
-				pieceTask.RangeStart+uint64(pieceTask.RangeSize)-1),
-
-			TaskId:    peerTask.GetTaskID(),
-			SrcPid:    pieceTask.SrcPid,
-			DstPid:    pieceTask.DstPid,
-			Success:   false,
-			Code:      base.Code_CLIENT_ERROR,
-			BeginTime: uint64(start),
-			EndTime:   uint64(end),
+			TaskId:        peerTask.GetTaskID(),
+			SrcPid:        peerTask.GetPeerID(),
+			DstPid:        dstPid,
+			PieceNum:      piece.PieceNum,
+			BeginTime:     uint64(start),
+			EndTime:       uint64(end),
+			Success:       false,
+			Code:          base.Code_CLIENT_ERROR,
+			HostLoad:      nil,
+			FinishedCount: 0,
 		})
 	if err != nil {
 		logger.Errorf("report piece task error: %v", err)
