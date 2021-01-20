@@ -19,6 +19,7 @@ package rpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
@@ -39,7 +40,7 @@ import (
 type RegisterFunc func(*grpc.Server, interface{})
 
 var (
-	rf         RegisterFunc
+	register   RegisterFunc
 	tcpServer  *grpc.Server
 	unixServer *grpc.Server
 	mutex      = sync.Mutex{}
@@ -53,21 +54,21 @@ func SetRegister(f RegisterFunc) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
-	if rf != nil {
+	if register != nil {
 		panic("duplicated service register")
 	}
 
-	rf = f
+	register = f
 }
 
 var serverOpts = []grpc.ServerOption{
 	grpc.ConnectionTimeout(10 * time.Second),
-	grpc.InitialConnWindowSize(4 * 1024 * 1024),
+	grpc.InitialConnWindowSize(8 * 1024 * 1024),
 	grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 		MinTime: 10 * time.Minute,
 	}),
 	grpc.KeepaliveParams(keepalive.ServerParameters{
-		MaxConnectionIdle: 3 * time.Minute,
+		MaxConnectionIdle: 5 * time.Minute,
 	}),
 	grpc.MaxConcurrentStreams(100),
 	grpc.StreamInterceptor(streamServerInterceptor),
@@ -78,7 +79,7 @@ var sp = struct {
 	port int
 	ch   chan struct{}
 	once sync.Once
-}{ch: make(chan struct{}, 1)}
+}{ch: make(chan struct{})}
 
 func GetTcpServerPort() int {
 	sp.once.Do(func() {
@@ -97,10 +98,10 @@ func StartTcpServer(incrementPort int, upLimit int, impl interface{}, opts ...gr
 
 		netAddr := dfnet.NetAddr{
 			Type: dfnet.TCP,
-			Addr: ":" + strconv.Itoa(incrementPort),
+			Addr: fmt.Sprintf(":%d", incrementPort),
 		}
 
-		if err := startServer(netAddr, impl, opts...); err != nil && !isErrAddrInuse(err) {
+		if err := startServer(netAddr, impl, opts); err != nil && !isErrAddrInuse(err) {
 			panic(err)
 		} else if err == nil {
 			return
@@ -110,21 +111,21 @@ func StartTcpServer(incrementPort int, upLimit int, impl interface{}, opts ...gr
 	}
 }
 
-func StartUnixServer(path string, impl interface{}, opts ...grpc.ServerOption) {
-	_ = fileutils.DeleteFile(path)
+func StartUnixServer(sockPath string, impl interface{}, opts ...grpc.ServerOption) {
+	_ = fileutils.DeleteFile(sockPath)
 
 	netAddr := dfnet.NetAddr{
 		Type: dfnet.UNIX,
-		Addr: path,
+		Addr: sockPath,
 	}
 
-	if err := startServer(netAddr, impl, opts...); err != nil {
+	if err := startServer(netAddr, impl, opts); err != nil {
 		panic(err)
 	}
 }
 
 // start server with addr and register source
-func startServer(netAddr dfnet.NetAddr, impl interface{}, opts ...grpc.ServerOption) error {
+func startServer(netAddr dfnet.NetAddr, impl interface{}, opts []grpc.ServerOption) error {
 	lis, err := net.Listen(string(netAddr.Type), netAddr.Addr)
 
 	if err != nil {
@@ -144,11 +145,11 @@ func startServer(netAddr dfnet.NetAddr, impl interface{}, opts ...grpc.ServerOpt
 			return err
 		} else {
 			sp.port = p
-			sp.ch <- struct{}{}
+			close(sp.ch)
 		}
 	}
 
-	rf(server, impl)
+	register(server, impl)
 
 	return server.Serve(lis)
 }
@@ -163,18 +164,6 @@ func StopServer() {
 	}
 }
 
-func ConvertServerError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	if status.Code(err) == codes.Unknown {
-		return status.Error(codes.Aborted, err.Error())
-	} else {
-		return err
-	}
-}
-
 func isErrAddrInuse(err error) bool {
 	if ope, ok := err.(*net.OpError); ok {
 		if sse, ok := ope.Err.(*os.SyscallError); ok {
@@ -185,6 +174,18 @@ func isErrAddrInuse(err error) bool {
 	}
 
 	return false
+}
+
+func ConvertServerError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	if status.Code(err) == codes.Unknown {
+		return status.Error(codes.Aborted, err.Error())
+	} else {
+		return err
+	}
 }
 
 type wrappedServerStream struct {
