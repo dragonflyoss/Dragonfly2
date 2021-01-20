@@ -86,7 +86,7 @@ func (cs *configStream) initStream() error {
 		err = cs.replaceClient(err)
 	} else {
 		cs.stream = stream.(manager.Manager_KeepAliveClient)
-		cs.Times = 1
+		cs.StreamTimes = 1
 	}
 
 	return err
@@ -115,7 +115,7 @@ func (cs *configStream) retryRecv(cause error) (*manager.ManagementConfig, error
 }
 
 func (cs *configStream) replaceStream() error {
-	if cs.Times >= cs.MaxAttempts {
+	if cs.StreamTimes >= cs.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
 
@@ -125,7 +125,7 @@ func (cs *configStream) replaceStream() error {
 
 	if err == nil {
 		cs.stream = stream.(manager.Manager_KeepAliveClient)
-		cs.Times++
+		cs.StreamTimes++
 	}
 
 	return err
@@ -147,7 +147,7 @@ func (cs *configStream) replaceClient(cause error) error {
 		return cs.replaceClient(err)
 	} else {
 		cs.stream = stream.(manager.Manager_KeepAliveClient)
-		cs.Times = 1
+		cs.StreamTimes = 1
 	}
 
 	return err

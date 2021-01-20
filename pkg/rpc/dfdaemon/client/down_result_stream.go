@@ -73,7 +73,7 @@ func (drs *downResultStream) initStream() error {
 		err = drs.replaceClient(err)
 	} else {
 		drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
-		drs.Times = 1
+		drs.StreamTimes = 1
 	}
 
 	return err
@@ -110,7 +110,7 @@ func (drs *downResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error
 }
 
 func (drs *downResultStream) replaceStream() error {
-	if drs.Times >= drs.MaxAttempts {
+	if drs.StreamTimes >= drs.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
 
@@ -120,7 +120,7 @@ func (drs *downResultStream) replaceStream() error {
 
 	if err == nil {
 		drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
-		drs.Times++
+		drs.StreamTimes++
 	}
 
 	return err
@@ -142,7 +142,7 @@ func (drs *downResultStream) replaceClient(cause error) error {
 		err = drs.replaceClient(err)
 	} else {
 		drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
-		drs.Times = 1
+		drs.StreamTimes = 1
 	}
 
 	return err

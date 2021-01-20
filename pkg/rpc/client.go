@@ -65,8 +65,8 @@ var clientOpts = []grpc.DialOption{
 }
 
 func BuildClient(client interface{}, init InitClientFunc, addrs []dfnet.NetAddr, opts []grpc.DialOption) (interface{}, error) {
-	if len(addrs) == 0 || len(addrs) > 10 {
-		return nil, errors.New("addrs are empty or greater than 10")
+	if len(addrs) == 0 {
+		return nil, errors.New("addrs are empty")
 	}
 
 	conn := &Connection{
@@ -86,7 +86,7 @@ func BuildClient(client interface{}, init InitClientFunc, addrs []dfnet.NetAddr,
 
 func (c *Connection) connect() error {
 	if c.nextNum >= len(c.NetAddrs) {
-		return errors.New("available addr is not found in the candidates")
+		return errors.New("no addrs available")
 	}
 
 	if c.Ref == nil {
@@ -95,10 +95,11 @@ func (c *Connection) connect() error {
 
 	var cc *grpc.ClientConn
 	var err error
+	opts := append(clientOpts, c.opts...)
 
 	for ; c.nextNum < len(c.NetAddrs); {
-		ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
-		cc, err = grpc.DialContext(ctx, c.NetAddrs[c.nextNum].GetEndpoint(), append(clientOpts, c.opts...)...)
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+		cc, err = grpc.DialContext(ctx, c.NetAddrs[c.nextNum].GetEndpoint(), opts...)
 
 		c.nextNum++
 

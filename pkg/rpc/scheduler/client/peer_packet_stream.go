@@ -135,14 +135,14 @@ func (pps *peerPacketStream) initStream() error {
 		err = pps.replaceClient(err)
 	} else {
 		pps.stream = stream.(scheduler.Scheduler_ReportPieceResultClient)
-		pps.Times = 1
+		pps.StreamTimes = 1
 	}
 
 	return err
 }
 
 func (pps *peerPacketStream) replaceStream() error {
-	if pps.Times >= pps.MaxAttempts {
+	if pps.StreamTimes >= pps.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
 
@@ -152,7 +152,7 @@ func (pps *peerPacketStream) replaceStream() error {
 
 	if err == nil {
 		pps.stream = res.(scheduler.Scheduler_ReportPieceResultClient)
-		pps.Times++
+		pps.StreamTimes++
 	}
 
 	return err
@@ -184,7 +184,7 @@ func (pps *peerPacketStream) replaceClient(cause error) error {
 		err = pps.replaceClient(err)
 	} else {
 		pps.stream = stream.(scheduler.Scheduler_ReportPieceResultClient)
-		pps.Times = 1
+		pps.StreamTimes = 1
 	}
 
 	return err

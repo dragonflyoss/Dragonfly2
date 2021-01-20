@@ -100,7 +100,7 @@ func (pss *pieceSeedStream) initStream() error {
 		err = pss.replaceClient(err)
 	} else {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
-		pss.Times = 1
+		pss.StreamTimes = 1
 	}
 
 	statSeedStart(pss.sr, pss.target, err == nil)
@@ -131,7 +131,7 @@ func (pss *pieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error)
 }
 
 func (pss *pieceSeedStream) replaceStream() error {
-	if pss.Times >= pss.MaxAttempts {
+	if pss.StreamTimes >= pss.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
 
@@ -141,7 +141,7 @@ func (pss *pieceSeedStream) replaceStream() error {
 
 	if err == nil {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
-		pss.Times++
+		pss.StreamTimes++
 	}
 
 	return err
@@ -163,7 +163,7 @@ func (pss *pieceSeedStream) replaceClient(cause error) error {
 		return pss.replaceClient(err)
 	} else {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
-		pss.Times = 1
+		pss.StreamTimes = 1
 	}
 
 	return err
