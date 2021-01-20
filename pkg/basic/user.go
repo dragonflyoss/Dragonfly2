@@ -17,7 +17,7 @@
 package basic
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/asserts"
+	"github.com/dragonflyoss/Dragonfly2/pkg/asserts"
 	"os"
 	"os/user"
 	"strings"

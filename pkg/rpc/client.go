@@ -45,8 +45,8 @@ type Connection struct {
 }
 
 type RetryMeta struct {
-	Times       int     // times of replacing stream on a client
-	MaxAttempts int     // limit count for retry
+	StreamTimes int     // times of replacing stream on the current client
+	MaxAttempts int     // limit times for execute
 	InitBackoff float64 // second
 	MaxBackOff  float64 // second
 }
@@ -54,13 +54,11 @@ type RetryMeta struct {
 var clientOpts = []grpc.DialOption{
 	grpc.FailOnNonTempDialError(true),
 	grpc.WithBlock(),
-	grpc.WithInitialConnWindowSize(4 * 1024 * 1024),
+	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
 	grpc.WithInsecure(),
-
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:                2 * time.Hour,
-		Timeout:             10 * time.Second,
-		PermitWithoutStream: true,
+		Time:    3 * time.Minute,
+		Timeout: 10 * time.Second,
 	}),
 	grpc.WithStreamInterceptor(streamClientInterceptor),
 	grpc.WithUnaryInterceptor(unaryClientInterceptor),
@@ -188,25 +186,28 @@ type wrappedClientStream struct {
 func (w *wrappedClientStream) RecvMsg(m interface{}) error {
 	err := w.ClientStream.RecvMsg(m)
 	if err != nil {
-		logger.GrpcLogger.Errorf("client receive a message:%T error:%v for method:%s target:%s conn:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
+		logger.GrpcLogger.Errorf("client receive a message:%T error:%v for method:%s target:%s connState:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
+
 	return err
 }
 
 func (w *wrappedClientStream) SendMsg(m interface{}) error {
 	err := w.ClientStream.SendMsg(m)
 	if err != nil {
-		logger.GrpcLogger.Errorf("client send a message:%T error:%v for method:%s target:%s conn:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
+		logger.GrpcLogger.Errorf("client send a message:%T error:%v for method:%s target:%s connState:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
+
 	return err
 }
 
 func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 	s, err := streamer(ctx, desc, cc, method, opts...)
 	if err != nil {
-		logger.GrpcLogger.Errorf("create client stream error:%v for method:%s target:%s conn:%s", err, method, cc.Target(), cc.GetState().String())
+		logger.GrpcLogger.Errorf("create client stream error:%v for method:%s target:%s connState:%s", err, method, cc.Target(), cc.GetState().String())
 		return nil, err
 	}
+	
 	return &wrappedClientStream{
 		ClientStream: s,
 		method:       method,
@@ -217,7 +218,8 @@ func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grp
 func unaryClientInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	if err != nil {
-		logger.GrpcLogger.Errorf("do unary client error:%v for method:%s target:%s conn:%s", err, method, cc.Target(), cc.GetState().String())
+		logger.GrpcLogger.Errorf("do unary client error:%v for method:%s target:%s connState:%s", err, method, cc.Target(), cc.GetState().String())
 	}
+
 	return err
 }
