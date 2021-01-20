@@ -141,9 +141,9 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 		return
 	}
 
-	logger.Debugf("[%s][%s]: begin do schedule", peerTask.Task.TaskId, peerTask.Pid)
+	logger.Debugf("[%s][%s]: begin do schedule [%d]", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus())
 	defer func() {
-		logger.Debugf("[%s][%s]: end do schedule", peerTask.Task.TaskId, peerTask.Pid)
+		logger.Debugf("[%s][%s]: end do schedule [%d]", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus())
 	}()
 
 	switch peerTask.GetNodeStatus() {
@@ -162,8 +162,8 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 			logger.Debugf("[%s][%s]: schedule children failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
 			return
 		}
-		for _, child := range children {
-			w.sendScheduleResult(child)
+		for i := range children {
+			w.sendScheduleResult(children[i])
 		}
 		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
 
@@ -173,8 +173,8 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 			logger.Debugf("[%s][%s]: schedule bad node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
 			return
 		}
-		for _, node := range adjustNodes {
-			w.sendScheduleResult(node)
+		for i := range adjustNodes {
+			w.sendScheduleResult(adjustNodes[i])
 		}
 		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
 
@@ -194,8 +194,8 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 				logger.Debugf("[%s][%s]: schedule bad node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
 				return
 			}
-			for _, node := range adjustNodes {
-				w.sendScheduleResult(node)
+			for i := range adjustNodes {
+				w.sendScheduleResult(adjustNodes[i])
 			}
 			peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
 		} else if w.scheduler.NeedAdjustParent(peerTask) {
@@ -217,6 +217,16 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 		if parent != nil {
 			parent.SetNodeStatus(types.PeerTaskStatusNeedChildren)
 			w.sendJob(parent)
+		}
+
+	case types.PeerTaskStatusLeaveNode:
+		adjustNodes, err := w.scheduler.SchedulerLeaveNode(peerTask)
+		if err != nil {
+			logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
+			return
+		}
+		for i := range adjustNodes {
+			w.sendScheduleResult(adjustNodes[i])
 		}
 	}
 	return

@@ -2,9 +2,11 @@ package mgr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"hash/crc32"
@@ -14,6 +16,8 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/net"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 )
+
+const TinyFileSize = 128
 
 type CDNManager struct {
 	cdnList []*CDNClient
@@ -85,7 +89,11 @@ func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
 			if !ok {
 				break
 			} else if ps != nil {
-				logger.Debugf("receive a pieceSeed from cdn: taskId[%s]-%d done [%v]", task.TaskId, ps.PieceNum, ps.Done)
+				pieceNum := int32(-1)
+				if ps.PieceInfo != nil {
+					pieceNum = ps.PieceInfo.PieceNum
+				}
+				logger.Debugf("receive a pieceSeed from cdn: taskId[%s]-%d done [%v]", task.TaskId, pieceNum, ps.Done)
 				c.processPieceSeed(task, ps)
 			}
 		}
@@ -96,7 +104,7 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 	hostId := c.getHostUuid(ps)
 	host, ok := GetHostManager().GetHost(hostId)
 	if !ok {
-		ip, port, _ := net.ParseAddress(ps.SeedAddr)
+		ip, port, _ := net.ParseAddress(ps.SeederName)
 		host = &types.Host{
 			Type:     types.HostTypeCdn,
 			PeerHost: scheduler.PeerHost{
@@ -108,7 +116,7 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		}
 		host = GetHostManager().AddHost(host)
 	}
-	pid := c.getPeerId(task, ps)
+	pid := ps.PeerId
 	peerTask, _ := GetPeerTaskManager().GetPeerTask(pid)
 	if peerTask == nil {
 		peerTask = GetPeerTaskManager().AddPeerTask(pid, task, host)
@@ -121,34 +129,71 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		task.ContentLength = ps.ContentLength
 		peerTask.Success = true
 
-		// process waiting peerTask for done
+		//
+		if task.PieceTotal == 1 {
+			if task.ContentLength <= TinyFileSize {
+				content, er := c.getTinyFileContent(task)
+				if er == nil && len(content) == int(task.ContentLength) {
+					task.SizeScope = base.SizeScope_TINY
+					task.DirectPiece = &scheduler.RegisterResult_PieceContent{
+						PieceContent : content,
+					}
+					return
+				}
+			}
+			// other wise scheduler as a small file
+			task.SizeScope = base.SizeScope_SMALL
+			return
+		}
+
+		task.SizeScope = base.SizeScope_NORMAL
 		return
 	}
 
 	task.AddPiece(c.createPiece(task, ps, peerTask))
 
 	peerTask.AddPieceStatus(&types.PieceStatus{
-		PieceNum: ps.PieceNum,
+		PieceNum: ps.PieceInfo.PieceNum,
 		Success:  true,
 	})
 
 	return
 }
 
-func (c *CDNClient) getPeerId(task *types.Task, ps *cdnsystem.PieceSeed) string {
-	return fmt.Sprintf("cdn:%s:%s", ps.SeedAddr, task.TaskId)
-}
+
 
 func (c *CDNClient) getHostUuid(ps *cdnsystem.PieceSeed) string {
-	return fmt.Sprintf("cdn:%s", ps.SeedAddr)
+	return fmt.Sprintf("cdn:%s", ps.PeerId)
 }
 
 func (c *CDNClient) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *types.PeerTask) *types.Piece {
-	p := task.GetOrCreatePiece(ps.PieceNum)
-
-	p.PieceOffset = ps.PieceOffset
-	p.PieceStyle = ps.PieceStyle
+	p := task.GetOrCreatePiece(ps.PieceInfo.PieceNum)
+	p.PieceInfo= *ps.PieceInfo
 	return p
 }
+
+func (c *CDNClient) getTinyFileContent(task *types.Task) (content []byte, err error) {
+	resp, err := c.GetPieceTasks(context.TODO(), &base.PieceTaskRequest{
+		TaskId: task.TaskId,
+		StartNum: 0,
+		Limit: 2,
+	})
+	if err != nil {
+		return
+	}
+	if resp == nil || len(resp.PieceInfos) != 1 || resp.TotalPiece != 1 || resp.ContentLength > TinyFileSize {
+		err = errors.New("not a tiny file")
+	}
+
+	// TODO download the tiny file
+
+	return
+}
+
+
+
+
+
+
 
 

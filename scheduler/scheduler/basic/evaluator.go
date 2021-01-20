@@ -64,7 +64,13 @@ func (e *Evaluator) GetMaxUsableHostValue() float64 {
 }
 
 func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
+	if peer == nil {
+		return
+	}
 	mgr.GetPeerTaskManager().Walker(func(pt *types.PeerTask)bool {
+		if pt == nil || peer.Task != pt.Task {
+			return true
+		}
 		if pt.Pid == peer.Pid {
 			return true
 		} else if peer.GetParent() != nil && peer.GetParent().DstPeerTask == pt {
@@ -81,7 +87,13 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 }
 
 func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
-	mgr.GetPeerTaskManager().Walker(func(pt *types.PeerTask)bool {
+	if peer == nil {
+		return
+	}
+	mgr.GetPeerTaskManager().Walker(func(pt *types.PeerTask) bool {
+		if pt == nil || peer.Task != pt.Task {
+			return true
+		}
 		if pt.Pid == peer.Pid {
 			return true
 		} else if peer.GetParent() != nil {

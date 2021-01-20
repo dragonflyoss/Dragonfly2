@@ -36,7 +36,7 @@ var _ = Describe("PeerTask GC Test", func() {
 			if peerTask == nil {
 				tl.Fatalf("peer task deleted before gc")
 			}
-			time.Sleep(time.Second / 2)
+			time.Sleep(time.Second)
 			peerTask, _ = peertaskMgr.GetPeerTask(pid)
 			if peerTask != nil {
 				tl.Fatalf("peer task should be gc by peer task manager")

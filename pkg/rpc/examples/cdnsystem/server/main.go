@@ -43,14 +43,17 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 			default:
 				if i < 0 {
 					psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"),
-						SeedAddr:      "localhost:12345",
+						SeederName:      "localhost:12345",
 						Done:          true,
 						ContentLength: 100,
-						TotalTraffic:  100,
 					}
 					return
 				}
-				psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"), SeedAddr: "localhost:12345", PieceNum: pieceNum}
+				psc <- &cdnsystem.PieceSeed{
+					State: base.NewState(base.Code_SUCCESS, "success"),
+					SeederName: "localhost:12345",
+					PieceInfo: &base.PieceInfo{PieceNum: pieceNum},
+				}
 				time.Sleep(1 * time.Second)
 				i--
 				pieceNum++

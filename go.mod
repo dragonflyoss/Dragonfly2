@@ -3,9 +3,9 @@ module github.com/dragonflyoss/Dragonfly2
 go 1.15
 
 require (
-	github.com/Azure/go-autorest/autorest v0.11.15 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.9.10 // indirect
 	github.com/golang/protobuf v1.4.3
+	github.com/google/uuid v1.1.5
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.7.0
 	github.com/pborman/uuid v1.2.1

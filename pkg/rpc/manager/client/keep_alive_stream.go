@@ -19,7 +19,6 @@ package client
 import (
 	"context"
 	"errors"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager"
 	"google.golang.org/grpc"
@@ -118,8 +117,6 @@ func (cs *configStream) retryRecv(cause error) (*manager.ManagementConfig, error
 func (cs *configStream) replaceStream() error {
 	if cs.Times >= cs.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
-	} else if cs.mc.NetAddrs[cs.nextNum-1].Type == basic.UNIX {
-		return errors.New("unix socket skips replacing stream")
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {

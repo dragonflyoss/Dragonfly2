@@ -1,6 +1,7 @@
 package test
 
 import (
+	_ "net/http/pprof"
 	"testing"
 )
 

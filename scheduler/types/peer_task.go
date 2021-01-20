@@ -18,6 +18,7 @@ const (
 	PeerTaskStatusNeedAdjustNode PeerTaskStatus = 4
 	PeerTaskStatusNeedCheckNode  PeerTaskStatus = 5
 	PeerTaskStatusDone           PeerTaskStatus = 6
+	PeerTaskStatusLeaveNode      PeerTaskStatus = 7
 )
 
 type PeerTask struct {
@@ -39,7 +40,7 @@ type PeerTask struct {
 	// the client of peer task, which used for send and receive msg
 	client scheduler.Scheduler_ReportPieceResultServer
 
-	Traffic uint64
+	Traffic int64
 	Cost    uint32
 	Success bool
 	Code    base.Code
@@ -242,7 +243,7 @@ func (pt *PeerTask) SetUp() {
 	pt.Touch()
 }
 
-func (pt *PeerTask) SetStatus(traffic uint64, cost uint32, success bool, code base.Code) {
+func (pt *PeerTask) SetStatus(traffic int64, cost uint32, success bool, code base.Code) {
 	pt.Traffic = traffic
 	pt.Cost = cost
 	pt.Success = success
@@ -257,6 +258,10 @@ func (pt *PeerTask) SetClient(client scheduler.Scheduler_ReportPieceResultServer
 func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 	// if pt != nil && pt.client != nil {
 	pkg = &scheduler.PeerPacket{
+		State:  &base.ResponseState{
+			Success: true,
+			Code: base.Code_SUCCESS,
+		},
 		TaskId: pt.Task.TaskId,
 		// source peer id
 		SrcPid: pt.Pid,
@@ -268,7 +273,7 @@ func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 		pkg.MainPeer = &scheduler.PeerPacket_DestPeer{
 			Ip : peerHost.Ip,
 			RpcPort: peerHost.RpcPort,
-			PeerId: pt.Pid,
+			PeerId: pt.parent.DstPeerTask.Pid,
 		}
 	}
 	// TODO select StealPeers

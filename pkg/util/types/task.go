@@ -15,15 +15,17 @@ func GenerateTaskId(rawUrl string, filter string) (taskId string) {
 		taskId = fmt.Sprintf("%x", sha1.Sum([]byte(rawUrl)))
 		return
 	}
-	queries := taskUrl.Query()
-	fields := strings.Split(filter, "&")
-	if len(fields) > 0 {
-		queries = url.Values{}
-		for _, key := range fields {
-			queries.Add(key, taskUrl.Query().Get(key))
+	if filter != "" {
+		queries := taskUrl.Query()
+		fields := strings.Split(filter, "&")
+		if len(fields) > 0 {
+			queries = url.Values{}
+			for _, key := range fields {
+				queries.Add(key, taskUrl.Query().Get(key))
+			}
 		}
+		taskUrl.RawQuery = queries.Encode()
 	}
-	taskUrl.RawQuery = queries.Encode()
 	taskId = fmt.Sprintf("%x", sha1.Sum([]byte(taskUrl.String())))
 	return
 }

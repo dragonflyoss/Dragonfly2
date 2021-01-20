@@ -42,32 +42,23 @@ func init() {
 	statPeerLogger := logger.CreateLogger(logDir+"/stat/peer.log", 300, 30, 0, true, true)
 	logger.SetStatPeerLogger(statPeerLogger)
 
-	statSeedLogger := logger.CreateLogger(logDir+"/stat/seed.log", 300, 30, 0, true, true)
-	logger.SetStatSeedLogger(statSeedLogger)
-
 	// set register with server implementation.
 	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
 		scheduler.RegisterSchedulerServer(s, &proxy{server: impl.(SchedulerServer)})
 	})
 }
 
-type SchedulerServer interface {
-	// RegisterPeerTask registers a peer into one task
-	// and returns a peer packet immediately if task resource is enough.
-	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error)
-	// ReportPieceResult reports piece results and receives peer packets.
-	// when migrating to another scheduler,
-	// it will send the last piece result to the new scheduler.
-	ReportPieceResult(scheduler.Scheduler_ReportPieceResultServer) error
-	// ReportPeerResult reports downloading result for the peer task.
-	ReportPeerResult(context.Context, *scheduler.PeerResult) (*base.ResponseState, error)
-	// LeaveTask makes the peer leaving from scheduling overlay for the task.
-	LeaveTask(context.Context, *scheduler.PeerTarget) (*base.ResponseState, error)
-}
-
 type proxy struct {
 	server SchedulerServer
 	scheduler.UnimplementedSchedulerServer
+}
+
+// see scheduler.SchedulerServer
+type SchedulerServer interface {
+	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error)
+	ReportPieceResult(scheduler.Scheduler_ReportPieceResultServer) error
+	ReportPeerResult(context.Context, *scheduler.PeerResult) (*base.ResponseState, error)
+	LeaveTask(context.Context, *scheduler.PeerTarget) (*base.ResponseState, error)
 }
 
 func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (rr *scheduler.RegisterResult, err error) {
@@ -96,6 +87,7 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 		zap.String("securityDomain", peerHost.SecurityDomain),
 		zap.String("idc", peerHost.Idc),
 		zap.String("schedulerIp", basic.LocalIp),
+		zap.String("schedulerName", basic.HostName),
 		zap.Int32("code", int32(code)))
 
 	return
@@ -116,6 +108,7 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 		zap.String("securityDomain", pr.SecurityDomain),
 		zap.String("idc", pr.Idc),
 		zap.String("schedulerIp", basic.LocalIp),
+		zap.String("schedulerName", basic.HostName),
 		zap.Int64("contentLength", pr.ContentLength),
 		zap.Uint64("traffic", uint64(pr.Traffic)),
 		zap.Uint32("cost", pr.Cost),

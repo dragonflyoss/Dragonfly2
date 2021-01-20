@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-var clientNum = int32(0)
+var clientNum = map[string]*int32{}
 
 var clientMap = make(map[string]IDownloadClient)
 var clientMapLock = new(sync.RWMutex)
@@ -31,13 +31,17 @@ func RegisterClient(id string, downloadClient IDownloadClient) {
 	clientMapLock.Unlock()
 }
 
+func UnregisterClient(id string) {
+	clientMapLock.Lock()
+	delete(clientMap, id)
+	clientMapLock.Unlock()
+}
+
 func GetClient(id string) IDownloadClient {
 	clientMapLock.RLock()
 	defer clientMapLock.RUnlock()
 	return clientMap[id]
 }
-
-
 
 type IDownloadClient interface {
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
@@ -50,10 +54,11 @@ type MockClient struct {
 	replyFinished chan struct{}
 	in            chan<- *scheduler.PieceResult
 	out           <-chan *scheduler.PeerPacket
+	url           string
 	pid           string
 	taskId        string
 	waitStop      chan struct{}
-	pieceTaskList []*base.PieceTask
+	pieceInfoList []*base.PieceInfo
 	parentId      string
 	TotalPiece    int32 `protobuf:"varint,6,opt,name=total_piece,json=totalPiece,proto3" json:"total_piece,omitempty"`
 	ContentLength int64 `protobuf:"varint,7,opt,name=content_length,json=contentLength,proto3" json:"content_length,omitempty"`
@@ -61,19 +66,24 @@ type MockClient struct {
 	PieceMd5Sign string `protobuf:"bytes,8,opt,name=piece_md5_sign,json=pieceMd5Sign,proto3" json:"piece_md5_sign,omitempty"`
 }
 
-func NewMockClient(addr string, logger common.TestLogger) *MockClient {
+func NewMockClient(addr string, url string, group string, logger common.TestLogger) *MockClient {
 	c, err := client.CreateClient([]basic.NetAddr{{Type: basic.TCP, Addr: addr}})
 	if err != nil {
 		panic(err)
 	}
-	pid := atomic.AddInt32(&clientNum, 1)
+	if clientNum[group] == nil {
+		clientNum[group] = new(int32)
+	}
+	pid := atomic.AddInt32(clientNum[group], 1)
 	mc := &MockClient{
 		cli:           c,
-		pid:           fmt.Sprintf("%04d", pid),
+		pid:           fmt.Sprintf("%s%02d", group, pid),
+		url:           url,
 		logger:        logger,
 		replyChan:     make(chan *scheduler.PieceResult, 1000),
 		waitStop:      make(chan struct{}),
 		replyFinished: make(chan struct{}),
+		TotalPiece:    -1,
 	}
 	RegisterClient(mc.pid, mc)
 	logger.Logf("NewMockClient %s", mc.pid)
@@ -98,9 +108,10 @@ func (mc *MockClient) GetStopChan() chan struct{} {
 
 func (mc *MockClient) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	return &base.PiecePacket{
-		TaskId:     mc.taskId,
-		TotalPiece : mc.TotalPiece,
+		TaskId:        mc.taskId,
+		TotalPiece:    mc.TotalPiece,
 		ContentLength: mc.ContentLength,
+		PieceInfos:    mc.pieceInfoList,
 		// sha256 code of all piece md5
 		PieceMd5Sign: mc.PieceMd5Sign,
 	}, nil
@@ -108,7 +119,7 @@ func (mc *MockClient) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*b
 
 func (mc *MockClient) registerPeerTask() (err error) {
 	request := &scheduler.PeerTaskRequest{
-		Url:    "http://dragonfly.com/test-multi",
+		Url:    mc.url,
 		Filter: "",
 		BizId:  "12345",
 		UrlMata: &base.UrlMeta{
@@ -119,12 +130,13 @@ func (mc *MockClient) registerPeerTask() (err error) {
 		PeerHost: &scheduler.PeerHost{
 			Uuid:           fmt.Sprintf("%s", mc.pid),
 			Ip:             "127.0.0.1",
-			RpcPort:           23456,
+			RpcPort:        23456,
+			DownPort:       23457,
 			HostName:       fmt.Sprintf("host%s", mc.pid),
 			SecurityDomain: "",
 			Location:       "",
 			Idc:            "",
-			NetTopology:         "",
+			NetTopology:    "",
 		},
 	}
 	pkg, err := mc.cli.RegisterPeerTask(context.TODO(), request)
@@ -137,8 +149,16 @@ func (mc *MockClient) registerPeerTask() (err error) {
 		return
 	}
 	mc.taskId = pkg.TaskId
-	if pkg.MainPeer != nil {
-		mc.parentId = pkg.MainPeer.PeerId
+
+	if pkg.DirectPiece != nil {
+		switch pkg.DirectPiece.(type) {
+		case *scheduler.RegisterResult_SinglePiece:
+		case *scheduler.RegisterResult_PieceContent:
+		default:
+			panic("direct piece type error")
+		}
+		close(mc.waitStop)
+		return
 	}
 
 	wait := make(chan bool)
@@ -165,7 +185,7 @@ func (mc *MockClient) registerPeerTask() (err error) {
 			}
 			if resp == nil {
 				mc.logger.Logf("client[%s] download finished", mc.pid)
-			 	break
+				break
 			}
 		}
 		<-mc.replyFinished
@@ -181,11 +201,11 @@ func (mc *MockClient) replyMessage() {
 		close(mc.replyFinished)
 	}()
 	var t *scheduler.PieceResult
-	for  {
+	for {
 		select {
 		case t = <-mc.replyChan:
 		case <-mc.waitStop:
-			break
+			return
 		}
 		var pr *scheduler.PieceResult
 		if t == nil {
@@ -197,8 +217,9 @@ func (mc *MockClient) replyMessage() {
 		} else {
 			pr = t
 		}
-		time.Sleep(time.Millisecond * time.Duration(rand.Intn(1000)))
+		time.Sleep(time.Millisecond * time.Duration(rand.Intn(10)))
 		mc.in <- pr
+		mc.logger.Logf("[%s][%s] send a pieceResult %d", mc.taskId, mc.pid, pr.PieceNum)
 	}
 }
 
@@ -214,19 +235,22 @@ func (mc *MockClient) downloadPieces() {
 			time.Sleep(time.Second)
 			continue
 		}
-		pieces, _ := cli.GetPieceTasks(nil, nil)
+		pieces, _ := cli.GetPieceTasks(nil, &base.PieceTaskRequest{
+			TaskId: mc.taskId,
+		})
 		if pieces != nil {
-			if pieces.TotalPiece >= 0 && len(pieces.PieceTasks) == len(mc.pieceTaskList) {
+			if pieces.TotalPiece >= 0 && len(pieces.PieceInfos) == len(mc.pieceInfoList) {
 				mc.TotalPiece = pieces.TotalPiece
 				mc.ContentLength = pieces.ContentLength
 				mc.PieceMd5Sign = pieces.PieceMd5Sign
-				mc.logger.Logf("client[%s] download finished from [%s]", mc.pid, mc.parentId)
+				mc.logger.Logf("client[%s] download finished from [%s], TotalPiece[%d]", mc.pid, mc.parentId, mc.TotalPiece)
 				close(mc.waitStop)
 				return
 			}
-			for _, p := range pieces.PieceTasks {
+			same := true
+			for _, p := range pieces.PieceInfos {
 				has := false
-				for _, lp := range mc.pieceTaskList {
+				for _, lp := range mc.pieceInfoList {
 					if p.PieceNum == lp.PieceNum {
 						has = true
 						break
@@ -234,24 +258,24 @@ func (mc *MockClient) downloadPieces() {
 				}
 				if !has {
 					pr := &scheduler.PieceResult{
-						TaskId:     mc.taskId,
-						SrcPid:     mc.pid,
-						DstPid:     mc.parentId,
-						PieceNum:   p.PieceNum,
-						PieceRange: fmt.Sprintf("%d,%d", p.RangeStart, p.RangeStart+uint64(p.RangeSize)),
-						Success:    true,
-						Code:       base.Code_SUCCESS,
-						BeginTime:  uint64(time.Now().UnixNano() / int64(time.Millisecond)),
+						TaskId:    mc.taskId,
+						SrcPid:    mc.pid,
+						DstPid:    mc.parentId,
+						PieceNum:  p.PieceNum,
+						Success:   true,
+						Code:      base.Code_SUCCESS,
+						BeginTime: uint64(time.Now().UnixNano() / int64(time.Millisecond)),
 					}
-					time.Sleep(time.Millisecond * time.Duration(rand.Intn(1000)+100))
+					time.Sleep(time.Millisecond * time.Duration(rand.Intn(40)+10))
 					pr.EndTime = uint64(time.Now().UnixNano() / int64(time.Millisecond))
-					mc.pieceTaskList = append(mc.pieceTaskList, p)
+					mc.pieceInfoList = append(mc.pieceInfoList, p)
 					mc.logger.Logf("client[%s] download a piece [%d] from [%s]", mc.pid, p.PieceNum, mc.parentId)
 					mc.replyChan <- pr
-					break
-				} else {
-					time.Sleep(time.Second)
+					same = false
 				}
+			}
+			if same {
+				time.Sleep(time.Second / 2)
 			}
 		}
 	}

@@ -7,14 +7,14 @@ import (
 type WaitingType int
 
 type Piece struct {
-	base.PieceTask
+	base.PieceInfo
 
 	Task *Task
 }
 
 func newEmptyPiece(pieceNum int32, task *Task) *Piece {
 	return &Piece{
-		PieceTask: base.PieceTask{PieceNum: pieceNum},
+		PieceInfo: base.PieceInfo{PieceNum: pieceNum},
 		Task:      task,
 	}
 }

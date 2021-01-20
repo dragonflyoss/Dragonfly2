@@ -6,12 +6,14 @@ import (
 )
 
 type Scheduler struct {
-	evaluator IPeerTaskEvaluator
+	factory *evaluatorFactory
 }
 
 func CreateScheduler() *Scheduler {
+	RegisterEvaluator("default", basic.NewEvaluator())
+	RegisterGetEvaluatorFunc(0, func(*types.Task)(string, bool){return "default", true})
 	return &Scheduler{
-		evaluator: basic.NewEvaluator(),
+		factory: factory,
 	}
 }
 
@@ -21,13 +23,13 @@ func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.P
 		return
 	}
 	freeLoad := peer.GetFreeLoad()
-	candidates := s.evaluator.SelectChildCandidates(peer)
+	candidates := s.factory.getEvaluator(peer.Task).SelectChildCandidates(peer)
 	schedulerResult := make(map[*types.PeerTask]int8)
 	for freeLoad > 0 {
 		var chosen *types.PeerTask
 		value := 0.0
 		for _, child := range candidates {
-			val, _ := s.evaluator.Evaluate(peer, child)
+			val, _ := s.factory.getEvaluator(peer.Task).Evaluate(peer, child)
 			if val > value {
 				value = val
 				chosen = child
@@ -51,10 +53,10 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) ( primary *types.PeerT
 	if peer == nil {
 		return
 	}
-	candidates := s.evaluator.SelectParentCandidates(peer)
+	candidates := s.factory.getEvaluator(peer.Task).SelectParentCandidates(peer)
 	value := 0.0
 	for _, parent := range candidates {
-		val, _ := s.evaluator.Evaluate(parent, peer)
+		val, _ := s.factory.getEvaluator(peer.Task).Evaluate(parent, peer)
 		if val > value {
 			value = val
 			primary = parent
@@ -68,6 +70,20 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) ( primary *types.PeerT
 }
 
 func (s *Scheduler) SchedulerBadNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
+	adjustNodes, err = s.SchedulerLeaveNode(peer)
+	if err != nil {
+		return
+	}
+
+	children, _ := s.SchedulerChildren(peer)
+	for _, child := range children {
+		adjustNodes = append(adjustNodes, child)
+	}
+
+	return
+}
+
+func (s *Scheduler) SchedulerLeaveNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
 	peer.DeleteParent()
 	s.SchedulerParent(peer)
 	adjustNodes = append(adjustNodes, peer)
@@ -76,11 +92,6 @@ func (s *Scheduler) SchedulerBadNode(peer *types.PeerTask) (adjustNodes []*types
 		child.SrcPeerTask.DeleteParent()
 		s.SchedulerParent(child.SrcPeerTask)
 		adjustNodes = append(adjustNodes, child.SrcPeerTask)
-	}
-
-	children, _ := s.SchedulerChildren(peer)
-	for _, child := range children {
-		adjustNodes = append(adjustNodes, child)
 	}
 
 	return
@@ -106,11 +117,11 @@ func (s *Scheduler) SchedulerDone(peer *types.PeerTask) (parent *types.PeerTask,
 
 
 func (s *Scheduler) NeedAdjustParent(peer *types.PeerTask) bool {
-	return s.evaluator.NeedAdjustParent(peer)
+	return s.factory.getEvaluator(peer.Task).NeedAdjustParent(peer)
 }
 
 func (s *Scheduler) IsNodeBad(peer *types.PeerTask) bool {
-	return s.evaluator.IsNodeBad(peer)
+	return s.factory.getEvaluator(peer.Task).IsNodeBad(peer)
 }
 
 

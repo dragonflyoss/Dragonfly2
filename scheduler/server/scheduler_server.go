@@ -95,6 +95,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		return
 	}
 
+	// case base.SizeScope_SMALL
 	// do scheduler piece
 	parent, _, err := s.svc.SchedulerParent(peerTask)
 	if err != nil {
@@ -111,9 +112,9 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 			// destination peer id
 			DstPid : parent.Pid,
 			// download address(ip:port)
-			DstAddr: parent.DstAddr,
+			DstAddr: fmt.Sprintf("%s:%d", parent.Host.Ip, parent.Host.DownPort),
 			// one piece task
-			PieceTask: &task.PieceList[0].PieceTask,
+			PieceInfo: &task.PieceList[0].PieceInfo,
 		},
 	}
 
@@ -180,8 +181,16 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 	}()
 
 	pid := target.PeerId
+	peerTask, err := s.svc.GetPeerTask(pid)
+	if err != nil {
+		return
+	}
+
+	if peerTask != nil {
+		peerTask.SetNodeStatus(types.PeerTaskStatusLeaveNode)
+		s.worker.ReceiveJob(peerTask)
+	}
 
 	err = s.svc.DeletePeerTask(pid)
-
 	return
 }

@@ -46,7 +46,9 @@ type NavigatorRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Ip       string `protobuf:"bytes,1,opt,name=ip,proto3" json:"ip,omitempty"`
+	// client ip
+	Ip string `protobuf:"bytes,1,opt,name=ip,proto3" json:"ip,omitempty"`
+	// client host name
 	HostName string `protobuf:"bytes,2,opt,name=host_name,json=hostName,proto3" json:"host_name,omitempty"`
 	// json format: {vpcId:xxx,sn:xxx,group:xxx,...}
 	HostTag string `protobuf:"bytes,3,opt,name=host_tag,json=hostTag,proto3" json:"host_tag,omitempty"`
@@ -105,19 +107,19 @@ func (x *NavigatorRequest) GetHostTag() string {
 	return ""
 }
 
-type SchedulerHosts struct {
+type SchedulerNodes struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	State      *base.ResponseState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
-	Ips        []string            `protobuf:"bytes,2,rep,name=ips,proto3" json:"ips,omitempty"`
-	RpcPort    int32               `protobuf:"varint,3,opt,name=rpc_port,json=rpcPort,proto3" json:"rpc_port,omitempty"`
-	ClientHost *HostInfo           `protobuf:"bytes,4,opt,name=client_host,json=clientHost,proto3" json:"client_host,omitempty"`
+	State *base.ResponseState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	// ip:port
+	Addrs      []string  `protobuf:"bytes,2,rep,name=addrs,proto3" json:"addrs,omitempty"`
+	ClientHost *HostInfo `protobuf:"bytes,3,opt,name=client_host,json=clientHost,proto3" json:"client_host,omitempty"`
 }
 
-func (x *SchedulerHosts) Reset() {
-	*x = SchedulerHosts{}
+func (x *SchedulerNodes) Reset() {
+	*x = SchedulerNodes{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -125,13 +127,13 @@ func (x *SchedulerHosts) Reset() {
 	}
 }
 
-func (x *SchedulerHosts) String() string {
+func (x *SchedulerNodes) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SchedulerHosts) ProtoMessage() {}
+func (*SchedulerNodes) ProtoMessage() {}
 
-func (x *SchedulerHosts) ProtoReflect() protoreflect.Message {
+func (x *SchedulerNodes) ProtoReflect() protoreflect.Message {
 	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -143,37 +145,270 @@ func (x *SchedulerHosts) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SchedulerHosts.ProtoReflect.Descriptor instead.
-func (*SchedulerHosts) Descriptor() ([]byte, []int) {
+// Deprecated: Use SchedulerNodes.ProtoReflect.Descriptor instead.
+func (*SchedulerNodes) Descriptor() ([]byte, []int) {
 	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SchedulerHosts) GetState() *base.ResponseState {
+func (x *SchedulerNodes) GetState() *base.ResponseState {
 	if x != nil {
 		return x.State
 	}
 	return nil
 }
 
-func (x *SchedulerHosts) GetIps() []string {
+func (x *SchedulerNodes) GetAddrs() []string {
 	if x != nil {
-		return x.Ips
+		return x.Addrs
 	}
 	return nil
 }
 
-func (x *SchedulerHosts) GetRpcPort() int32 {
+func (x *SchedulerNodes) GetClientHost() *HostInfo {
+	if x != nil {
+		return x.ClientHost
+	}
+	return nil
+}
+
+type HeartRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// identify servers with hostname
+	HostName string `protobuf:"bytes,1,opt,name=host_name,json=hostName,proto3" json:"host_name,omitempty"`
+	// Types that are assignable to From:
+	//	*HeartRequest_Scheduler
+	//	*HeartRequest_Cdn
+	From isHeartRequest_From `protobuf_oneof:"from"`
+}
+
+func (x *HeartRequest) Reset() {
+	*x = HeartRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *HeartRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HeartRequest) ProtoMessage() {}
+
+func (x *HeartRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HeartRequest.ProtoReflect.Descriptor instead.
+func (*HeartRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *HeartRequest) GetHostName() string {
+	if x != nil {
+		return x.HostName
+	}
+	return ""
+}
+
+func (m *HeartRequest) GetFrom() isHeartRequest_From {
+	if m != nil {
+		return m.From
+	}
+	return nil
+}
+
+func (x *HeartRequest) GetScheduler() bool {
+	if x, ok := x.GetFrom().(*HeartRequest_Scheduler); ok {
+		return x.Scheduler
+	}
+	return false
+}
+
+func (x *HeartRequest) GetCdn() bool {
+	if x, ok := x.GetFrom().(*HeartRequest_Cdn); ok {
+		return x.Cdn
+	}
+	return false
+}
+
+type isHeartRequest_From interface {
+	isHeartRequest_From()
+}
+
+type HeartRequest_Scheduler struct {
+	Scheduler bool `protobuf:"varint,2,opt,name=scheduler,proto3,oneof"`
+}
+
+type HeartRequest_Cdn struct {
+	Cdn bool `protobuf:"varint,3,opt,name=cdn,proto3,oneof"`
+}
+
+func (*HeartRequest_Scheduler) isHeartRequest_From() {}
+
+func (*HeartRequest_Cdn) isHeartRequest_From() {}
+
+type ManagementConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	State *base.ResponseState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	// Types that are assignable to Config:
+	//	*ManagementConfig_SchedulerConfig_
+	//	*ManagementConfig_CdnConfig_
+	Config isManagementConfig_Config `protobuf_oneof:"config"`
+}
+
+func (x *ManagementConfig) Reset() {
+	*x = ManagementConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ManagementConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManagementConfig) ProtoMessage() {}
+
+func (x *ManagementConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManagementConfig.ProtoReflect.Descriptor instead.
+func (*ManagementConfig) Descriptor() ([]byte, []int) {
+	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ManagementConfig) GetState() *base.ResponseState {
+	if x != nil {
+		return x.State
+	}
+	return nil
+}
+
+func (m *ManagementConfig) GetConfig() isManagementConfig_Config {
+	if m != nil {
+		return m.Config
+	}
+	return nil
+}
+
+func (x *ManagementConfig) GetSchedulerConfig() *ManagementConfig_SchedulerConfig {
+	if x, ok := x.GetConfig().(*ManagementConfig_SchedulerConfig_); ok {
+		return x.SchedulerConfig
+	}
+	return nil
+}
+
+func (x *ManagementConfig) GetCdnConfig() *ManagementConfig_CdnConfig {
+	if x, ok := x.GetConfig().(*ManagementConfig_CdnConfig_); ok {
+		return x.CdnConfig
+	}
+	return nil
+}
+
+type isManagementConfig_Config interface {
+	isManagementConfig_Config()
+}
+
+type ManagementConfig_SchedulerConfig_ struct {
+	SchedulerConfig *ManagementConfig_SchedulerConfig `protobuf:"bytes,2,opt,name=scheduler_config,json=schedulerConfig,proto3,oneof"`
+}
+
+type ManagementConfig_CdnConfig_ struct {
+	CdnConfig *ManagementConfig_CdnConfig `protobuf:"bytes,3,opt,name=cdn_config,json=cdnConfig,proto3,oneof"`
+}
+
+func (*ManagementConfig_SchedulerConfig_) isManagementConfig_Config() {}
+
+func (*ManagementConfig_CdnConfig_) isManagementConfig_Config() {}
+
+type ServerInfo struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	HostInfo *HostInfo `protobuf:"bytes,1,opt,name=host_info,json=hostInfo,proto3" json:"host_info,omitempty"`
+	RpcPort  int32     `protobuf:"varint,2,opt,name=rpc_port,json=rpcPort,proto3" json:"rpc_port,omitempty"`
+	DownPort int32     `protobuf:"varint,3,opt,name=down_port,json=downPort,proto3" json:"down_port,omitempty"`
+}
+
+func (x *ServerInfo) Reset() {
+	*x = ServerInfo{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ServerInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ServerInfo) ProtoMessage() {}
+
+func (x *ServerInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ServerInfo.ProtoReflect.Descriptor instead.
+func (*ServerInfo) Descriptor() ([]byte, []int) {
+	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ServerInfo) GetHostInfo() *HostInfo {
+	if x != nil {
+		return x.HostInfo
+	}
+	return nil
+}
+
+func (x *ServerInfo) GetRpcPort() int32 {
 	if x != nil {
 		return x.RpcPort
 	}
 	return 0
 }
 
-func (x *SchedulerHosts) GetClientHost() *HostInfo {
+func (x *ServerInfo) GetDownPort() int32 {
 	if x != nil {
-		return x.ClientHost
+		return x.DownPort
 	}
-	return nil
+	return 0
 }
 
 type HostInfo struct {
@@ -194,7 +429,7 @@ type HostInfo struct {
 func (x *HostInfo) Reset() {
 	*x = HostInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[2]
+		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -207,7 +442,7 @@ func (x *HostInfo) String() string {
 func (*HostInfo) ProtoMessage() {}
 
 func (x *HostInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[2]
+	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -220,7 +455,7 @@ func (x *HostInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HostInfo.ProtoReflect.Descriptor instead.
 func (*HostInfo) Descriptor() ([]byte, []int) {
-	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{2}
+	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *HostInfo) GetIp() string {
@@ -265,34 +500,29 @@ func (x *HostInfo) GetNetTopology() string {
 	return ""
 }
 
-type CdnHosts struct {
+type ManagementConfig_ClientConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
-
-	State    *base.ResponseState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
-	RpcPort  int32               `protobuf:"varint,2,opt,name=rpc_port,json=rpcPort,proto3" json:"rpc_port,omitempty"`
-	DownPort int32               `protobuf:"varint,3,opt,name=down_port,json=downPort,proto3" json:"down_port,omitempty"`
-	CdnHosts []*HostInfo         `protobuf:"bytes,4,rep,name=cdn_hosts,json=cdnHosts,proto3" json:"cdn_hosts,omitempty"`
 }
 
-func (x *CdnHosts) Reset() {
-	*x = CdnHosts{}
+func (x *ManagementConfig_ClientConfig) Reset() {
+	*x = ManagementConfig_ClientConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[3]
+		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *CdnHosts) String() string {
+func (x *ManagementConfig_ClientConfig) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CdnHosts) ProtoMessage() {}
+func (*ManagementConfig_ClientConfig) ProtoMessage() {}
 
-func (x *CdnHosts) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[3]
+func (x *ManagementConfig_ClientConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -303,67 +533,89 @@ func (x *CdnHosts) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CdnHosts.ProtoReflect.Descriptor instead.
-func (*CdnHosts) Descriptor() ([]byte, []int) {
-	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use ManagementConfig_ClientConfig.ProtoReflect.Descriptor instead.
+func (*ManagementConfig_ClientConfig) Descriptor() ([]byte, []int) {
+	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{3, 0}
 }
 
-func (x *CdnHosts) GetState() *base.ResponseState {
+type ManagementConfig_SchedulerConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ClientConfig *ManagementConfig_ClientConfig `protobuf:"bytes,1,opt,name=client_config,json=clientConfig,proto3" json:"client_config,omitempty"`
+	CdnHosts     []*ServerInfo                  `protobuf:"bytes,2,rep,name=cdn_hosts,json=cdnHosts,proto3" json:"cdn_hosts,omitempty"` //......
+}
+
+func (x *ManagementConfig_SchedulerConfig) Reset() {
+	*x = ManagementConfig_SchedulerConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ManagementConfig_SchedulerConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ManagementConfig_SchedulerConfig) ProtoMessage() {}
+
+func (x *ManagementConfig_SchedulerConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ManagementConfig_SchedulerConfig.ProtoReflect.Descriptor instead.
+func (*ManagementConfig_SchedulerConfig) Descriptor() ([]byte, []int) {
+	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{3, 1}
+}
+
+func (x *ManagementConfig_SchedulerConfig) GetClientConfig() *ManagementConfig_ClientConfig {
 	if x != nil {
-		return x.State
+		return x.ClientConfig
 	}
 	return nil
 }
 
-func (x *CdnHosts) GetRpcPort() int32 {
-	if x != nil {
-		return x.RpcPort
-	}
-	return 0
-}
-
-func (x *CdnHosts) GetDownPort() int32 {
-	if x != nil {
-		return x.DownPort
-	}
-	return 0
-}
-
-func (x *CdnHosts) GetCdnHosts() []*HostInfo {
+func (x *ManagementConfig_SchedulerConfig) GetCdnHosts() []*ServerInfo {
 	if x != nil {
 		return x.CdnHosts
 	}
 	return nil
 }
 
-type HeartRequest struct {
+type ManagementConfig_CdnConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
-
-	Ip          string `protobuf:"bytes,1,opt,name=ip,proto3" json:"ip,omitempty"`
-	HostName    string `protobuf:"bytes,2,opt,name=host_name,json=hostName,proto3" json:"host_name,omitempty"`
-	IsScheduler bool   `protobuf:"varint,3,opt,name=is_scheduler,json=isScheduler,proto3" json:"is_scheduler,omitempty"`
-	IsCdn       bool   `protobuf:"varint,4,opt,name=is_cdn,json=isCdn,proto3" json:"is_cdn,omitempty"`
 }
 
-func (x *HeartRequest) Reset() {
-	*x = HeartRequest{}
+func (x *ManagementConfig_CdnConfig) Reset() {
+	*x = ManagementConfig_CdnConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[4]
+		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *HeartRequest) String() string {
+func (x *ManagementConfig_CdnConfig) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HeartRequest) ProtoMessage() {}
+func (*ManagementConfig_CdnConfig) ProtoMessage() {}
 
-func (x *HeartRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[4]
+func (x *ManagementConfig_CdnConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -374,84 +626,9 @@ func (x *HeartRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HeartRequest.ProtoReflect.Descriptor instead.
-func (*HeartRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *HeartRequest) GetIp() string {
-	if x != nil {
-		return x.Ip
-	}
-	return ""
-}
-
-func (x *HeartRequest) GetHostName() string {
-	if x != nil {
-		return x.HostName
-	}
-	return ""
-}
-
-func (x *HeartRequest) GetIsScheduler() bool {
-	if x != nil {
-		return x.IsScheduler
-	}
-	return false
-}
-
-func (x *HeartRequest) GetIsCdn() bool {
-	if x != nil {
-		return x.IsCdn
-	}
-	return false
-}
-
-type ManagementConfig struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	State *base.ResponseState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
-}
-
-func (x *ManagementConfig) Reset() {
-	*x = ManagementConfig{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_pkg_rpc_manager_manager_proto_msgTypes[5]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ManagementConfig) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ManagementConfig) ProtoMessage() {}
-
-func (x *ManagementConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_rpc_manager_manager_proto_msgTypes[5]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ManagementConfig.ProtoReflect.Descriptor instead.
-func (*ManagementConfig) Descriptor() ([]byte, []int) {
-	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *ManagementConfig) GetState() *base.ResponseState {
-	if x != nil {
-		return x.State
-	}
-	return nil
+// Deprecated: Use ManagementConfig_CdnConfig.ProtoReflect.Descriptor instead.
+func (*ManagementConfig_CdnConfig) Descriptor() ([]byte, []int) {
+	return file_pkg_rpc_manager_manager_proto_rawDescGZIP(), []int{3, 2}
 }
 
 var File_pkg_rpc_manager_manager_proto protoreflect.FileDescriptor
@@ -466,17 +643,55 @@ var file_pkg_rpc_manager_manager_proto_rawDesc = []byte{
 	0x09, 0x52, 0x02, 0x69, 0x70, 0x12, 0x1b, 0x0a, 0x09, 0x68, 0x6f, 0x73, 0x74, 0x5f, 0x6e, 0x61,
 	0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x68, 0x6f, 0x73, 0x74, 0x4e, 0x61,
 	0x6d, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x68, 0x6f, 0x73, 0x74, 0x5f, 0x74, 0x61, 0x67, 0x18, 0x03,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x68, 0x6f, 0x73, 0x74, 0x54, 0x61, 0x67, 0x22, 0x9c, 0x01,
-	0x0a, 0x0e, 0x53, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x72, 0x48, 0x6f, 0x73, 0x74, 0x73,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x68, 0x6f, 0x73, 0x74, 0x54, 0x61, 0x67, 0x22, 0x85, 0x01,
+	0x0a, 0x0e, 0x53, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x72, 0x4e, 0x6f, 0x64, 0x65, 0x73,
 	0x12, 0x29, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
 	0x13, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x53,
-	0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x69,
-	0x70, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x03, 0x69, 0x70, 0x73, 0x12, 0x19, 0x0a,
-	0x08, 0x72, 0x70, 0x63, 0x5f, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x52,
-	0x07, 0x72, 0x70, 0x63, 0x50, 0x6f, 0x72, 0x74, 0x12, 0x32, 0x0a, 0x0b, 0x63, 0x6c, 0x69, 0x65,
-	0x6e, 0x74, 0x5f, 0x68, 0x6f, 0x73, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e,
-	0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x2e, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f,
-	0x52, 0x0a, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x48, 0x6f, 0x73, 0x74, 0x22, 0xb1, 0x01, 0x0a,
+	0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x61,
+	0x64, 0x64, 0x72, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x05, 0x61, 0x64, 0x64, 0x72,
+	0x73, 0x12, 0x32, 0x0a, 0x0b, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x68, 0x6f, 0x73, 0x74,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72,
+	0x2e, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x0a, 0x63, 0x6c, 0x69, 0x65, 0x6e,
+	0x74, 0x48, 0x6f, 0x73, 0x74, 0x22, 0x67, 0x0a, 0x0c, 0x48, 0x65, 0x61, 0x72, 0x74, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1b, 0x0a, 0x09, 0x68, 0x6f, 0x73, 0x74, 0x5f, 0x6e, 0x61,
+	0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x68, 0x6f, 0x73, 0x74, 0x4e, 0x61,
+	0x6d, 0x65, 0x12, 0x1e, 0x0a, 0x09, 0x73, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x72, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x08, 0x48, 0x00, 0x52, 0x09, 0x73, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c,
+	0x65, 0x72, 0x12, 0x12, 0x0a, 0x03, 0x63, 0x64, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x48,
+	0x00, 0x52, 0x03, 0x63, 0x64, 0x6e, 0x42, 0x06, 0x0a, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x22, 0x95,
+	0x03, 0x0a, 0x10, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x12, 0x29, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x13, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x12, 0x56,
+	0x0a, 0x10, 0x73, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x72, 0x5f, 0x63, 0x6f, 0x6e, 0x66,
+	0x69, 0x67, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x29, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67,
+	0x65, 0x72, 0x2e, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x2e, 0x53, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x72, 0x43, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x48, 0x00, 0x52, 0x0f, 0x73, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x72,
+	0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x44, 0x0a, 0x0a, 0x63, 0x64, 0x6e, 0x5f, 0x63, 0x6f,
+	0x6e, 0x66, 0x69, 0x67, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x6d, 0x61, 0x6e,
+	0x61, 0x67, 0x65, 0x72, 0x2e, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x43,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x43, 0x64, 0x6e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x48,
+	0x00, 0x52, 0x09, 0x63, 0x64, 0x6e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x1a, 0x0e, 0x0a, 0x0c,
+	0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x1a, 0x90, 0x01, 0x0a,
+	0x0f, 0x53, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x72, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
+	0x12, 0x4b, 0x0a, 0x0d, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65,
+	0x72, 0x2e, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66,
+	0x69, 0x67, 0x2e, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52,
+	0x0c, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x30, 0x0a,
+	0x09, 0x63, 0x64, 0x6e, 0x5f, 0x68, 0x6f, 0x73, 0x74, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b,
+	0x32, 0x13, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x2e, 0x53, 0x65, 0x72, 0x76, 0x65,
+	0x72, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x08, 0x63, 0x64, 0x6e, 0x48, 0x6f, 0x73, 0x74, 0x73, 0x1a,
+	0x0b, 0x0a, 0x09, 0x43, 0x64, 0x6e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x42, 0x08, 0x0a, 0x06,
+	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x74, 0x0a, 0x0a, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72,
+	0x49, 0x6e, 0x66, 0x6f, 0x12, 0x2e, 0x0a, 0x09, 0x68, 0x6f, 0x73, 0x74, 0x5f, 0x69, 0x6e, 0x66,
+	0x6f, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65,
+	0x72, 0x2e, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x08, 0x68, 0x6f, 0x73, 0x74,
+	0x49, 0x6e, 0x66, 0x6f, 0x12, 0x19, 0x0a, 0x08, 0x72, 0x70, 0x63, 0x5f, 0x70, 0x6f, 0x72, 0x74,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x72, 0x70, 0x63, 0x50, 0x6f, 0x72, 0x74, 0x12,
+	0x1b, 0x0a, 0x09, 0x64, 0x6f, 0x77, 0x6e, 0x5f, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x05, 0x52, 0x08, 0x64, 0x6f, 0x77, 0x6e, 0x50, 0x6f, 0x72, 0x74, 0x22, 0xb1, 0x01, 0x0a,
 	0x08, 0x48, 0x6f, 0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x70, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x70, 0x12, 0x1b, 0x0a, 0x09, 0x68, 0x6f, 0x73,
 	0x74, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x68, 0x6f,
@@ -488,45 +703,20 @@ var file_pkg_rpc_manager_manager_proto_rawDesc = []byte{
 	0x64, 0x63, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x69, 0x64, 0x63, 0x12, 0x21, 0x0a,
 	0x0c, 0x6e, 0x65, 0x74, 0x5f, 0x74, 0x6f, 0x70, 0x6f, 0x6c, 0x6f, 0x67, 0x79, 0x18, 0x06, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x0b, 0x6e, 0x65, 0x74, 0x54, 0x6f, 0x70, 0x6f, 0x6c, 0x6f, 0x67, 0x79,
-	0x22, 0x9d, 0x01, 0x0a, 0x08, 0x43, 0x64, 0x6e, 0x48, 0x6f, 0x73, 0x74, 0x73, 0x12, 0x29, 0x0a,
-	0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x62,
-	0x61, 0x73, 0x65, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x53, 0x74, 0x61, 0x74,
-	0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x12, 0x19, 0x0a, 0x08, 0x72, 0x70, 0x63, 0x5f,
-	0x70, 0x6f, 0x72, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x72, 0x70, 0x63, 0x50,
-	0x6f, 0x72, 0x74, 0x12, 0x1b, 0x0a, 0x09, 0x64, 0x6f, 0x77, 0x6e, 0x5f, 0x70, 0x6f, 0x72, 0x74,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x64, 0x6f, 0x77, 0x6e, 0x50, 0x6f, 0x72, 0x74,
-	0x12, 0x2e, 0x0a, 0x09, 0x63, 0x64, 0x6e, 0x5f, 0x68, 0x6f, 0x73, 0x74, 0x73, 0x18, 0x04, 0x20,
-	0x03, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x2e, 0x48, 0x6f,
-	0x73, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x08, 0x63, 0x64, 0x6e, 0x48, 0x6f, 0x73, 0x74, 0x73,
-	0x22, 0x75, 0x0a, 0x0c, 0x48, 0x65, 0x61, 0x72, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x12, 0x0e, 0x0a, 0x02, 0x69, 0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x70,
-	0x12, 0x1b, 0x0a, 0x09, 0x68, 0x6f, 0x73, 0x74, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x08, 0x68, 0x6f, 0x73, 0x74, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x21, 0x0a,
-	0x0c, 0x69, 0x73, 0x5f, 0x73, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x72, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x08, 0x52, 0x0b, 0x69, 0x73, 0x53, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x72,
-	0x12, 0x15, 0x0a, 0x06, 0x69, 0x73, 0x5f, 0x63, 0x64, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08,
-	0x52, 0x05, 0x69, 0x73, 0x43, 0x64, 0x6e, 0x22, 0x3d, 0x0a, 0x10, 0x4d, 0x61, 0x6e, 0x61, 0x67,
-	0x65, 0x6d, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x29, 0x0a, 0x05, 0x73,
-	0x74, 0x61, 0x74, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x62, 0x61, 0x73,
-	0x65, 0x2e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52,
-	0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x32, 0xd4, 0x01, 0x0a, 0x07, 0x4d, 0x61, 0x6e, 0x61, 0x67,
-	0x65, 0x72, 0x12, 0x45, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x53, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c,
-	0x65, 0x72, 0x73, 0x12, 0x19, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x2e, 0x4e, 0x61,
-	0x76, 0x69, 0x67, 0x61, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x17,
-	0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x2e, 0x53, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c,
-	0x65, 0x72, 0x48, 0x6f, 0x73, 0x74, 0x73, 0x22, 0x00, 0x12, 0x3d, 0x0a, 0x0b, 0x47, 0x65, 0x74,
-	0x43, 0x64, 0x6e, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x12, 0x19, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67,
-	0x65, 0x72, 0x2e, 0x4e, 0x61, 0x76, 0x69, 0x67, 0x61, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x11, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x2e, 0x43, 0x64,
-	0x6e, 0x48, 0x6f, 0x73, 0x74, 0x73, 0x22, 0x00, 0x12, 0x43, 0x0a, 0x09, 0x4b, 0x65, 0x65, 0x70,
-	0x41, 0x6c, 0x69, 0x76, 0x65, 0x12, 0x15, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x2e,
-	0x48, 0x65, 0x61, 0x72, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e, 0x6d,
-	0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x2e, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x6d, 0x65, 0x6e,
-	0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x22, 0x00, 0x28, 0x01, 0x30, 0x01, 0x42, 0x34, 0x5a,
-	0x32, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x64, 0x72, 0x61, 0x67,
-	0x6f, 0x6e, 0x66, 0x6c, 0x79, 0x6f, 0x73, 0x73, 0x2f, 0x44, 0x72, 0x61, 0x67, 0x6f, 0x6e, 0x66,
-	0x6c, 0x79, 0x32, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x72, 0x70, 0x63, 0x2f, 0x6d, 0x61, 0x6e, 0x61,
-	0x67, 0x65, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x32, 0x95, 0x01, 0x0a, 0x07, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x12, 0x45, 0x0a, 0x0d,
+	0x47, 0x65, 0x74, 0x53, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x72, 0x73, 0x12, 0x19, 0x2e,
+	0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x2e, 0x4e, 0x61, 0x76, 0x69, 0x67, 0x61, 0x74, 0x6f,
+	0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x17, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67,
+	0x65, 0x72, 0x2e, 0x53, 0x63, 0x68, 0x65, 0x64, 0x75, 0x6c, 0x65, 0x72, 0x4e, 0x6f, 0x64, 0x65,
+	0x73, 0x22, 0x00, 0x12, 0x43, 0x0a, 0x09, 0x4b, 0x65, 0x65, 0x70, 0x41, 0x6c, 0x69, 0x76, 0x65,
+	0x12, 0x15, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x2e, 0x48, 0x65, 0x61, 0x72, 0x74,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65,
+	0x72, 0x2e, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x43, 0x6f, 0x6e, 0x66,
+	0x69, 0x67, 0x22, 0x00, 0x28, 0x01, 0x30, 0x01, 0x42, 0x34, 0x5a, 0x32, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x64, 0x72, 0x61, 0x67, 0x6f, 0x6e, 0x66, 0x6c, 0x79,
+	0x6f, 0x73, 0x73, 0x2f, 0x44, 0x72, 0x61, 0x67, 0x6f, 0x6e, 0x66, 0x6c, 0x79, 0x32, 0x2f, 0x70,
+	0x6b, 0x67, 0x2f, 0x72, 0x70, 0x63, 0x2f, 0x6d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -541,33 +731,37 @@ func file_pkg_rpc_manager_manager_proto_rawDescGZIP() []byte {
 	return file_pkg_rpc_manager_manager_proto_rawDescData
 }
 
-var file_pkg_rpc_manager_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_pkg_rpc_manager_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_pkg_rpc_manager_manager_proto_goTypes = []interface{}{
-	(*NavigatorRequest)(nil),   // 0: manager.NavigatorRequest
-	(*SchedulerHosts)(nil),     // 1: manager.SchedulerHosts
-	(*HostInfo)(nil),           // 2: manager.HostInfo
-	(*CdnHosts)(nil),           // 3: manager.CdnHosts
-	(*HeartRequest)(nil),       // 4: manager.HeartRequest
-	(*ManagementConfig)(nil),   // 5: manager.ManagementConfig
-	(*base.ResponseState)(nil), // 6: base.ResponseState
+	(*NavigatorRequest)(nil),                 // 0: manager.NavigatorRequest
+	(*SchedulerNodes)(nil),                   // 1: manager.SchedulerNodes
+	(*HeartRequest)(nil),                     // 2: manager.HeartRequest
+	(*ManagementConfig)(nil),                 // 3: manager.ManagementConfig
+	(*ServerInfo)(nil),                       // 4: manager.ServerInfo
+	(*HostInfo)(nil),                         // 5: manager.HostInfo
+	(*ManagementConfig_ClientConfig)(nil),    // 6: manager.ManagementConfig.ClientConfig
+	(*ManagementConfig_SchedulerConfig)(nil), // 7: manager.ManagementConfig.SchedulerConfig
+	(*ManagementConfig_CdnConfig)(nil),       // 8: manager.ManagementConfig.CdnConfig
+	(*base.ResponseState)(nil),               // 9: base.ResponseState
 }
 var file_pkg_rpc_manager_manager_proto_depIdxs = []int32{
-	6, // 0: manager.SchedulerHosts.state:type_name -> base.ResponseState
-	2, // 1: manager.SchedulerHosts.client_host:type_name -> manager.HostInfo
-	6, // 2: manager.CdnHosts.state:type_name -> base.ResponseState
-	2, // 3: manager.CdnHosts.cdn_hosts:type_name -> manager.HostInfo
-	6, // 4: manager.ManagementConfig.state:type_name -> base.ResponseState
-	0, // 5: manager.Manager.GetSchedulers:input_type -> manager.NavigatorRequest
-	0, // 6: manager.Manager.GetCdnNodes:input_type -> manager.NavigatorRequest
-	4, // 7: manager.Manager.KeepAlive:input_type -> manager.HeartRequest
-	1, // 8: manager.Manager.GetSchedulers:output_type -> manager.SchedulerHosts
-	3, // 9: manager.Manager.GetCdnNodes:output_type -> manager.CdnHosts
-	5, // 10: manager.Manager.KeepAlive:output_type -> manager.ManagementConfig
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	9,  // 0: manager.SchedulerNodes.state:type_name -> base.ResponseState
+	5,  // 1: manager.SchedulerNodes.client_host:type_name -> manager.HostInfo
+	9,  // 2: manager.ManagementConfig.state:type_name -> base.ResponseState
+	7,  // 3: manager.ManagementConfig.scheduler_config:type_name -> manager.ManagementConfig.SchedulerConfig
+	8,  // 4: manager.ManagementConfig.cdn_config:type_name -> manager.ManagementConfig.CdnConfig
+	5,  // 5: manager.ServerInfo.host_info:type_name -> manager.HostInfo
+	6,  // 6: manager.ManagementConfig.SchedulerConfig.client_config:type_name -> manager.ManagementConfig.ClientConfig
+	4,  // 7: manager.ManagementConfig.SchedulerConfig.cdn_hosts:type_name -> manager.ServerInfo
+	0,  // 8: manager.Manager.GetSchedulers:input_type -> manager.NavigatorRequest
+	2,  // 9: manager.Manager.KeepAlive:input_type -> manager.HeartRequest
+	1,  // 10: manager.Manager.GetSchedulers:output_type -> manager.SchedulerNodes
+	3,  // 11: manager.Manager.KeepAlive:output_type -> manager.ManagementConfig
+	10, // [10:12] is the sub-list for method output_type
+	8,  // [8:10] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_pkg_rpc_manager_manager_proto_init() }
@@ -589,7 +783,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 			}
 		}
 		file_pkg_rpc_manager_manager_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SchedulerHosts); i {
+			switch v := v.(*SchedulerNodes); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -601,30 +795,6 @@ func file_pkg_rpc_manager_manager_proto_init() {
 			}
 		}
 		file_pkg_rpc_manager_manager_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*HostInfo); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CdnHosts); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*HeartRequest); i {
 			case 0:
 				return &v.state
@@ -636,7 +806,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ManagementConfig); i {
 			case 0:
 				return &v.state
@@ -648,6 +818,74 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
+		file_pkg_rpc_manager_manager_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ServerInfo); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pkg_rpc_manager_manager_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*HostInfo); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pkg_rpc_manager_manager_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ManagementConfig_ClientConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pkg_rpc_manager_manager_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ManagementConfig_SchedulerConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pkg_rpc_manager_manager_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ManagementConfig_CdnConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
+	file_pkg_rpc_manager_manager_proto_msgTypes[2].OneofWrappers = []interface{}{
+		(*HeartRequest_Scheduler)(nil),
+		(*HeartRequest_Cdn)(nil),
+	}
+	file_pkg_rpc_manager_manager_proto_msgTypes[3].OneofWrappers = []interface{}{
+		(*ManagementConfig_SchedulerConfig_)(nil),
+		(*ManagementConfig_CdnConfig_)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -655,7 +893,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_pkg_rpc_manager_manager_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

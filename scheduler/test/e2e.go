@@ -1,7 +1,10 @@
 package test
 
 import (
+	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
+	"github.com/dragonflyoss/Dragonfly2/scheduler/server"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
+	"github.com/dragonflyoss/Dragonfly2/scheduler/test/mock_cdn"
 	"testing"
 	"time"
 
@@ -26,16 +29,26 @@ func RunE2ETests(t *testing.T) {
 	ginkgo.RunSpecs(&tester{time.Now(), t}, "Scheduler e2e suite")
 }
 
-var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
-	// Run only on Ginkgo node 1
-	return nil
+var (
+	cdn        *mock_cdn.MockCDN
+	svr    *server.Server
+	ss     *server.SchedulerServer
+)
 
-}, func(data []byte) {
-	// Run on all Ginkgo nodes
+var _ = ginkgo.BeforeSuite(func(){
+	cdn = mock_cdn.NewMockCDN("localhost:12345", common.NewE2ELogger())
+	cdn.Start()
+	time.Sleep(time.Second/2)
+	mgr.GetCDNManager().InitCDNClient()
+	svr        = server.NewServer()
+	ss         = svr.GetServer()
+	go svr.Start()
+	time.Sleep(time.Second/2)
 })
 
-var _ = ginkgo.SynchronizedAfterSuite(func() {
-
-}, func() {
-
+var _ = ginkgo.AfterSuite(func(){
+	svr.Stop()
+	if cdn != nil {
+		cdn.Stop()
+	}
 })

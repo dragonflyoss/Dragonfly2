@@ -72,11 +72,14 @@ func (s *Sender) doSend() {
 		select {
 		case job := <-s.jobChan:
 			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(*job)
+			if peerTask == nil {
+				break
+			}
 			err := peerTask.Send()
 			if err != nil {
 				//TODO error
 				logger.Errorf("[%s][%s]: send result failed : %v", peerTask.Task, peerTask.Pid, err.Error())
-				return
+				break
 			} else {
 				logger.Debugf("[%s][%s]: send result success", peerTask.Task.TaskId, peerTask.Pid)
 			}

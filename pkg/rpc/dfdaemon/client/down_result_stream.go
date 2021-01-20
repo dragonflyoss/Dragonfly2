@@ -19,7 +19,6 @@ package client
 import (
 	"context"
 	"errors"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
 	"google.golang.org/grpc"
@@ -51,8 +50,8 @@ func newDownResultStream(dc *daemonClient, ctx context.Context, req *dfdaemon.Do
 
 		RetryMeta: rpc.RetryMeta{
 			MaxAttempts: 5,
-			MaxBackOff:  4.0,
-			InitBackoff: 0.5,
+			MaxBackOff:  5.0,
+			InitBackoff: 1.0,
 		},
 	}
 	xc, _, nextNum := dc.GetClientSafely()
@@ -63,13 +62,6 @@ func newDownResultStream(dc *daemonClient, ctx context.Context, req *dfdaemon.Do
 	} else {
 		return drs, nil
 	}
-}
-
-func (drs *downResultStream) recv() (dr *dfdaemon.DownResult, err error) {
-	if dr, err = drs.stream.Recv(); err != nil {
-		dr, err = drs.retryRecv(err)
-	}
-	return
 }
 
 func (drs *downResultStream) initStream() error {
@@ -85,6 +77,14 @@ func (drs *downResultStream) initStream() error {
 	}
 
 	return err
+}
+
+func (drs *downResultStream) recv() (dr *dfdaemon.DownResult, err error) {
+	if dr, err = drs.stream.Recv(); err != nil {
+		dr, err = drs.retryRecv(err)
+	}
+
+	return
 }
 
 func (drs *downResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error) {
@@ -112,8 +112,6 @@ func (drs *downResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error
 func (drs *downResultStream) replaceStream() error {
 	if drs.Times >= drs.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
-	} else if drs.dc.NetAddrs[drs.nextNum-1].Type == basic.UNIX {
-		return errors.New("unix socket skips replacing stream")
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
@@ -141,7 +139,7 @@ func (drs *downResultStream) replaceClient(cause error) error {
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts)
 
 	if err != nil {
-		return drs.replaceClient(err)
+		err = drs.replaceClient(err)
 	} else {
 		drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
 		drs.Times = 1

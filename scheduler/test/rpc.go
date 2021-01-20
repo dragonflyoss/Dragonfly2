@@ -5,26 +5,18 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/server"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
 	. "github.com/onsi/ginkgo"
+	"math/rand"
 	"time"
 )
 
 var _ = Describe("Scheduler RPC Test", func() {
 	tl := common.NewE2ELogger()
 	var (
-		svr    = server.NewServer()
-		ss     = svr.GetServer()
 		taskId string
 		url    = "http://dragonfly.com/test1"
 	)
-
-	Describe("start scheduler", func() {
-		It("start scheduler", func() {
-			svr.GetWorker().Start()
-		})
-	})
 
 	Describe("Scheduler RPC Client Test", func() {
 
@@ -38,16 +30,17 @@ var _ = Describe("Scheduler RPC Test", func() {
 					Md5:   "",
 					Range: "",
 				},
-				PeerId: "001",
+				PeerId: "rpc001",
 				PeerHost: &scheduler.PeerHost{
 					Uuid:           "host001",
 					Ip:             "127.0.0.1",
-					Port:           23456,
+					RpcPort:        23457,
+					DownPort:       23456,
 					HostName:       "host001",
 					SecurityDomain: "",
 					Location:       "",
 					Idc:            "",
-					Switch:         "",
+					NetTopology:    "",
 				},
 			}
 			pkg, err := ss.RegisterPeerTask(ctx, request)
@@ -96,16 +89,17 @@ var _ = Describe("Scheduler RPC Test", func() {
 					Md5:   "",
 					Range: "",
 				},
-				PeerId: "002",
+				PeerId: "rpc002",
 				PeerHost: &scheduler.PeerHost{
 					Uuid:           "host002",
 					Ip:             "127.0.0.1",
-					Port:           22456,
+					RpcPort:        22457,
+					DownPort:       22456,
 					HostName:       "host002",
 					SecurityDomain: "",
 					Location:       "",
 					Idc:            "",
-					Switch:         "",
+					NetTopology:    "",
 				},
 			}
 			pkg, err := ss.RegisterPeerTask(ctx, request)
@@ -123,19 +117,20 @@ var _ = Describe("Scheduler RPC Test", func() {
 			}
 
 			p := peerTask.Task.GetOrCreatePiece(0)
-			p.PieceRange = "0,100"
+			p.RangeStart = 0
+			p.RangeSize = 100
 			p.PieceMd5 = ""
 			p.PieceOffset = 10
-			p.PieceStyle = base.PieceStyle_PLAIN_UNSPECIFIED
+			p.PieceStyle = base.PieceStyle_PLAIN
 
 			svr.GetWorker().ReceiveUpdatePieceResult(&scheduler.PieceResult{
-				TaskId:     taskId,
-				SrcPid:     "001",
-				PieceNum:   0,
-				PieceRange: "0,100",
-				Success:    true,
-				Code:  base.Code_SUCCESS,
-				BeginTime:       uint64(time.Now().UnixNano() / int64(time.Millisecond)),
+				TaskId:    taskId,
+				SrcPid:    "prc001",
+				PieceNum:  0,
+				Success:   true,
+				Code:      base.Code_SUCCESS,
+				BeginTime: uint64(time.Now().UnixNano() / int64(time.Millisecond)),
+				EndTime:   uint64(time.Now().UnixNano()/int64(time.Millisecond)) + uint64(rand.Int63n(1000)),
 			})
 
 			time.Sleep(time.Second)
@@ -148,7 +143,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 				return
 			}
 
-			if peerTask.GetParent()  == nil {
+			if peerTask.GetParent() == nil {
 				tl.Fatalf("scheduler failed parent is null")
 			}
 		})
@@ -157,15 +152,15 @@ var _ = Describe("Scheduler RPC Test", func() {
 			ctx := context.TODO()
 			var result = &scheduler.PeerResult{
 				TaskId:         taskId,
-				PeerId:            "001",
-				SrcIp:          "001",
+				PeerId:         "prc001",
+				SrcIp:          "prc001",
 				SecurityDomain: "",
 				Idc:            "",
 				ContentLength:  20,
 				Traffic:        20,
 				Cost:           20,
 				Success:        true,
-				Code:      base.Code_SUCCESS,
+				Code:           base.Code_SUCCESS,
 			}
 			_, err := ss.ReportPeerResult(ctx, result)
 			if err != nil {
@@ -183,13 +178,13 @@ var _ = Describe("Scheduler RPC Test", func() {
 			ctx := context.TODO()
 			var target = &scheduler.PeerTarget{
 				TaskId: taskId,
-				PeerId:    "001",
+				PeerId: "prc001",
 			}
 			resp, err := ss.LeaveTask(ctx, target)
 			if err != nil {
 				tl.Fatalf(err.Error())
 			}
-			if !resp.Success {
+			if resp == nil || !resp.Success {
 				tl.Fatalf("leave task Failed")
 				return
 			}
@@ -208,12 +203,6 @@ var _ = Describe("Scheduler RPC Test", func() {
 				tl.Fatalf("peerTask do not delete from host")
 				return
 			}
-		})
-	})
-
-	Describe("stop scheduler", func() {
-		It("start scheduler", func() {
-			svr.GetWorker().Stop()
 		})
 	})
 })

@@ -173,7 +173,7 @@ func (m *PeerTaskManager) printDebugInfo() string {
 			return
 		}
 		nPath := append(path, fmt.Sprintf("%s(%d)", node.Pid, node.GetSubTreeNodesNum()))
-		msgs = append(msgs, node.Pid + ":"+strings.Join(nPath, "-"))
+		msgs = append(msgs, node.Pid + " || "+strings.Join(nPath, "-"))
 		for _, child := range node.GetChildren() {
 			if child == nil || child.SrcPeerTask == nil {
 				continue
@@ -211,7 +211,7 @@ func (m *PeerTaskManager) downloadMonitorWorkingLoop() {
 		if m.downloadMonitorCallBack != nil {
 			pt, _ := v.(*types.PeerTask)
 			if pt != nil  {
-				if !pt.IsWaiting() {
+				if pt.GetParent() == nil || !pt.IsWaiting() {
 					m.downloadMonitorCallBack(pt)
 				}
 				if !pt.Success {
