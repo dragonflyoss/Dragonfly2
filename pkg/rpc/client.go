@@ -207,7 +207,7 @@ func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grp
 		logger.GrpcLogger.Errorf("create client stream error:%v for method:%s target:%s connState:%s", err, method, cc.Target(), cc.GetState().String())
 		return nil, err
 	}
-	
+
 	return &wrappedClientStream{
 		ClientStream: s,
 		method:       method,
