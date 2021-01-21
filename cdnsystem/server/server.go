@@ -27,6 +27,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -86,8 +87,8 @@ func (s *Server) Start() (err error) {
 			err = errors.New(fmt.Sprintf("%v", err))
 		}
 	}()
-	lisAddr := basic.NetAddr{
-		Type: basic.TCP,
+	lisAddr := dfnet.NetAddr{
+		Type: dfnet.TCP,
 		Addr: fmt.Sprintf(":%d", s.Config.ListenPort),
 	}
 	seedServer, err := service.NewCdnSeedServer(s.Config, s.TaskMgr)
@@ -96,7 +97,7 @@ func (s *Server) Start() (err error) {
 	}
 	// start gc
 	s.GCMgr.StartGC(context.Background())
-	err = rpc.StartServer(lisAddr, seedServer)
+	err = rpc.StartTcpServer(lisAddr, seedServer)
 	if err != nil {
 		return errors.Wrap(err, "start seedServer fail")
 	}

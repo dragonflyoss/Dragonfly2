@@ -100,7 +100,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		return errors.Wrapf(err, "register seed task fail, registerRequest:%+v", registerRequest)
 	}
 	hostName, _ := os.Hostname()
-	peerId := fmt.Sprintf("%s-%s-%s", hostName, req.TaskId, "CDN")
+	peerId := fmt.Sprintf("%s-%s-%s", hostName, req.TaskId, strconv.Itoa(os.Getpid())+"_CDN")
 	for piece := range pieceChan {
 
 		switch piece.Type {
