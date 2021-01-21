@@ -160,7 +160,7 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 outer:
 	for i := 0; i < maxAttempts; i++ {
 		if i > 0 {
-			time.Sleep(math.RandBackoff(initBackoff, 2.0, maxBackoff, i))
+			time.Sleep(maths.RandBackoff(initBackoff, 2.0, maxBackoff, i))
 		}
 
 		res, err = f()
