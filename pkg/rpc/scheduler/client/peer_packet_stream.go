@@ -104,6 +104,10 @@ func (pps *peerPacketStream) recv() (pp *scheduler.PeerPacket, err error) {
 			rr, err := pps.client.RegisterPeerTask(timeCtx, pps.ptr)
 			if err == nil && rr.State.Success {
 				pps.prc <- pps.lastPieceResult
+			} else {
+				if err == nil {
+					err = errors.New(rr.State.Msg)
+				}
 			}
 			return rr, err
 		}, pps.InitBackoff, pps.MaxBackOff, pps.MaxAttempts)
