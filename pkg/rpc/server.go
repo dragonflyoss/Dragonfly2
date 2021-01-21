@@ -43,7 +43,7 @@ var (
 	register   RegisterFunc
 	tcpServer  *grpc.Server
 	unixServer *grpc.Server
-	mutex      = sync.Mutex{}
+	mutex      sync.Mutex
 )
 
 func SetRegister(f RegisterFunc) {
