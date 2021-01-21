@@ -19,6 +19,7 @@ package server
 import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
@@ -86,8 +87,8 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 		zap.String("peerIp", peerHost.Ip),
 		zap.String("securityDomain", peerHost.SecurityDomain),
 		zap.String("idc", peerHost.Idc),
-		zap.String("schedulerIp", basic.LocalIp),
-		zap.String("schedulerName", basic.HostName),
+		zap.String("schedulerIp", dfnet.HostIp),
+		zap.String("schedulerName", dfnet.HostName),
 		zap.Int32("code", int32(code)))
 
 	return
@@ -107,8 +108,8 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 		zap.String("peerIp", pr.SrcIp),
 		zap.String("securityDomain", pr.SecurityDomain),
 		zap.String("idc", pr.Idc),
-		zap.String("schedulerIp", basic.LocalIp),
-		zap.String("schedulerName", basic.HostName),
+		zap.String("schedulerIp", dfnet.HostIp),
+		zap.String("schedulerName", dfnet.HostName),
 		zap.Int64("contentLength", pr.ContentLength),
 		zap.Int64("traffic", pr.Traffic),
 		zap.Uint32("cost", pr.Cost),
