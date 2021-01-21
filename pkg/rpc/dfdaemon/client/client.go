@@ -17,20 +17,15 @@
 package client
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"context"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
-)
-
-import (
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
-)
-
-import (
-	"context"
 )
 
 func init() {
@@ -42,10 +37,11 @@ func init() {
 	logger.SetGrpcLogger(log)
 }
 
+// see dfdaemon.DaemonClient
 type DaemonClient interface {
-	// download content by dragonfly
 	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, error)
-	// close the conn
+	GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
+	CheckHealth(ctx context.Context, opts ...grpc.CallOption) (*base.ResponseState, error)
 	Close() error
 }
 
@@ -54,15 +50,14 @@ type daemonClient struct {
 	Client dfdaemon.DaemonClient
 }
 
-// init client info excepting connection
 var initClientFunc = func(c *rpc.Connection) {
 	dc := c.Ref.(*daemonClient)
 	dc.Client = dfdaemon.NewDaemonClient(c.Conn)
 	dc.Connection = c
 }
 
-func CreateClient(netAddrs []basic.NetAddr) (DaemonClient, error) {
-	if client, err := rpc.BuildClient(&daemonClient{}, initClientFunc, netAddrs); err != nil {
+func CreateClient(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
+	if client, err := rpc.BuildClient(&daemonClient{}, initClientFunc, netAddrs, opts); err != nil {
 		return nil, err
 	} else {
 		return client.(*daemonClient), nil
@@ -70,6 +65,8 @@ func CreateClient(netAddrs []basic.NetAddr) (DaemonClient, error) {
 }
 
 func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, error) {
+	req.Uuid = uuid.New().String()
+
 	drc := make(chan *dfdaemon.DownResult, 4)
 
 	drs, err := newDownResultStream(dc, ctx, req, opts)
@@ -80,6 +77,22 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 	go receive(drs, drc)
 
 	return drc, nil
+}
+
+func (dc *daemonClient) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		return dc.Client.GetPieceTasks(ctx, ptr, opts...)
+	}, 0.2, 1.0, 3)
+
+	if err == nil {
+		return res.(*base.PiecePacket), nil
+	}
+
+	return nil, err
+}
+
+func (dc *daemonClient) CheckHealth(ctx context.Context, opts ...grpc.CallOption) (*base.ResponseState, error) {
+	return dc.Client.CheckHealth(ctx, &base.EmptyRequest{}, opts...)
 }
 
 func receive(drs *downResultStream, drc chan *dfdaemon.DownResult) {

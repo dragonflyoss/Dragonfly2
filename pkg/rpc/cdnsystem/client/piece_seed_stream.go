@@ -32,21 +32,16 @@ import (
 )
 
 type pieceSeedStream struct {
-	sc   *seederClient
-	ctx  context.Context
-	sr   *cdnsystem.SeedRequest
-	opts []grpc.CallOption
-
-	// client for one target
-	client  cdnsystem.SeederClient
-	nextNum int
-	target  string
-	// stream for one client
-	stream cdnsystem.Seeder_ObtainSeedsClient
-
+	sc         *seederClient
+	ctx        context.Context
+	sr         *cdnsystem.SeedRequest
+	opts       []grpc.CallOption
+	client     cdnsystem.SeederClient 			  // client for one target
+	nextNum    int
+	target     string
+	stream     cdnsystem.Seeder_ObtainSeedsClient // stream for one client
 	begin      time.Time
 	onceFinish sync.Once
-
 	rpc.RetryMeta
 }
 
@@ -85,7 +80,7 @@ func (pss *pieceSeedStream) recv() (ps *cdnsystem.PieceSeed, err error) {
 		pss.onceFinish.Do(func() {
 			var last *cdnsystem.PieceSeed
 			if err != nil {
-				last = &cdnsystem.PieceSeed{State: base.NewState(base.Code_UNKNOWN_ERROR, err.Error()), SeedAddr: pss.target}
+				last = &cdnsystem.PieceSeed{State: base.NewState(base.Code_UNKNOWN_ERROR, err.Error())}
 			} else {
 				last = ps
 			}
@@ -105,7 +100,7 @@ func (pss *pieceSeedStream) initStream() error {
 		err = pss.replaceClient(err)
 	} else {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
-		pss.Times = 1
+		pss.StreamTimes = 1
 	}
 
 	statSeedStart(pss.sr, pss.target, err == nil)
@@ -136,7 +131,7 @@ func (pss *pieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error)
 }
 
 func (pss *pieceSeedStream) replaceStream() error {
-	if pss.Times >= pss.MaxAttempts {
+	if pss.StreamTimes >= pss.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
 
@@ -146,7 +141,7 @@ func (pss *pieceSeedStream) replaceStream() error {
 
 	if err == nil {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
-		pss.Times++
+		pss.StreamTimes++
 	}
 
 	return err
@@ -168,7 +163,7 @@ func (pss *pieceSeedStream) replaceClient(cause error) error {
 		return pss.replaceClient(err)
 	} else {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
-		pss.Times = 1
+		pss.StreamTimes = 1
 	}
 
 	return err
@@ -187,7 +182,7 @@ func statSeedFinish(last *cdnsystem.PieceSeed, taskId string, url string, begin 
 		zap.Bool("success", last.State.Success),
 		zap.String("taskId", taskId),
 		zap.String("url", url),
-		zap.String("seeder", last.SeedAddr),
+		//zap.String("seeder", last.SeedAddr),
 		zap.Int64("cost", time.Now().Sub(begin).Milliseconds()),
 		zap.Int64("contentLength", last.ContentLength),
 		zap.Int("code", int(last.State.Code)))

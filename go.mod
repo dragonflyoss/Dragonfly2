@@ -7,7 +7,7 @@ require (
 	github.com/emirpasic/gods v1.12.0
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.3
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.1.5
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.4.0
 	github.com/pkg/errors v0.9.1

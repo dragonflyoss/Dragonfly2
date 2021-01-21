@@ -23,6 +23,9 @@ import (
 	"reflect"
 )
 
+var END_OF_PIECE = int32(1) << 30
+var ZERO_OF_PIECE = int32(-1)
+
 func NewState(code Code, msg interface{}) *ResponseState {
 	if msg == nil {
 		msg = ""

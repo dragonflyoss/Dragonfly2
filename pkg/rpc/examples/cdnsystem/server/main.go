@@ -16,12 +16,12 @@
 
 package main
 
-import _ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
+import (
+	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
+)
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
@@ -42,13 +42,12 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 			default:
 				if i < 0 {
 					psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"),
-						SeedAddr:      "localhost:12345",
 						Done:          true,
 						ContentLength: 100,
 					}
 					return
 				}
-				psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"), SeedAddr: "localhost:12345"}
+				psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success")}
 				time.Sleep(1 * time.Second)
 				i--
 			}
@@ -58,19 +57,15 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 	return
 }
 
-func (hs helloSeeder) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
-	return nil, nil
-}
-
 func main() {
-	lisAddr := basic.NetAddr{
-		Type: basic.TCP,
-		Addr: ":8003",
-	}
-
-	err := rpc.StartServer(lisAddr, &helloSeeder{})
-
-	if err != nil {
-		fmt.Printf("finish error:%v\n", err)
-	}
+	//lisAddr := dfnet.NetAddr{
+	//	Type: dfnet.TCP,
+	//	Addr: ":12345",
+	//}
+	//
+	//err := rpc.StartTcpServer(lisAddr, &helloSeeder{})
+	//
+	//if err != nil {
+	//	fmt.Printf("finish error:%v\n", err)
+	//}
 }

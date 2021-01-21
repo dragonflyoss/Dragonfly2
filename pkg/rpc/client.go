@@ -19,9 +19,9 @@ package rpc
 import (
 	"context"
 	"errors"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/math"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/maths"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
@@ -37,15 +37,16 @@ type Connection struct {
 	rwMutex   *sync.RWMutex
 	curTarget string
 	nextNum   int
-	NetAddrs  []basic.NetAddr
+	NetAddrs  []dfnet.NetAddr
 	Conn      *grpc.ClientConn
 	Ref       interface{}
 	init      InitClientFunc
+	opts      []grpc.DialOption
 }
 
 type RetryMeta struct {
-	Times       int     // current replace times for one client
-	MaxAttempts int     // limit count for retry
+	StreamTimes int     // times of replacing stream on the current client
+	MaxAttempts int     // limit times for execute
 	InitBackoff float64 // second
 	MaxBackOff  float64 // second
 }
@@ -53,21 +54,19 @@ type RetryMeta struct {
 var clientOpts = []grpc.DialOption{
 	grpc.FailOnNonTempDialError(true),
 	grpc.WithBlock(),
-	grpc.WithInitialConnWindowSize(4 * 1024 * 1024),
+	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
 	grpc.WithInsecure(),
-
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:                2 * time.Hour,
-		Timeout:             10 * time.Second,
-		PermitWithoutStream: true,
+		Time:    3 * time.Minute,
+		Timeout: 10 * time.Second,
 	}),
 	grpc.WithStreamInterceptor(streamClientInterceptor),
 	grpc.WithUnaryInterceptor(unaryClientInterceptor),
 }
 
-func BuildClient(client interface{}, init InitClientFunc, addrs []basic.NetAddr) (interface{}, error) {
-	if len(addrs) == 0 || len(addrs) > 10 {
-		return nil, errors.New("addrs are empty or greater than 10")
+func BuildClient(client interface{}, init InitClientFunc, addrs []dfnet.NetAddr, opts []grpc.DialOption) (interface{}, error) {
+	if len(addrs) == 0 {
+		return nil, errors.New("addrs are empty")
 	}
 
 	conn := &Connection{
@@ -75,6 +74,7 @@ func BuildClient(client interface{}, init InitClientFunc, addrs []basic.NetAddr)
 		NetAddrs: addrs,
 		Ref:      client,
 		init:     init,
+		opts:     opts,
 	}
 
 	if err := conn.connect(); err != nil {
@@ -86,7 +86,7 @@ func BuildClient(client interface{}, init InitClientFunc, addrs []basic.NetAddr)
 
 func (c *Connection) connect() error {
 	if c.nextNum >= len(c.NetAddrs) {
-		return errors.New("available addr is not found in the candidates")
+		return errors.New("no addrs available")
 	}
 
 	if c.Ref == nil {
@@ -95,10 +95,11 @@ func (c *Connection) connect() error {
 
 	var cc *grpc.ClientConn
 	var err error
+	opts := append(clientOpts, c.opts...)
 
 	for ; c.nextNum < len(c.NetAddrs); {
-		ctx, _ := context.WithTimeout(context.Background(), 15*time.Second)
-		cc, err = grpc.DialContext(ctx, c.NetAddrs[c.nextNum].GetEndpoint(), clientOpts...)
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+		cc, err = grpc.DialContext(ctx, c.NetAddrs[c.nextNum].GetEndpoint(), opts...)
 
 		c.nextNum++
 
@@ -186,25 +187,28 @@ type wrappedClientStream struct {
 func (w *wrappedClientStream) RecvMsg(m interface{}) error {
 	err := w.ClientStream.RecvMsg(m)
 	if err != nil {
-		logger.GrpcLogger.Errorf("client receive a message:%T error:%v for method:%s target:%s conn:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
+		logger.GrpcLogger.Errorf("client receive a message:%T error:%v for method:%s target:%s connState:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
+
 	return err
 }
 
 func (w *wrappedClientStream) SendMsg(m interface{}) error {
 	err := w.ClientStream.SendMsg(m)
 	if err != nil {
-		logger.GrpcLogger.Errorf("client send a message:%T error:%v for method:%s target:%s conn:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
+		logger.GrpcLogger.Errorf("client send a message:%T error:%v for method:%s target:%s connState:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
+
 	return err
 }
 
 func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 	s, err := streamer(ctx, desc, cc, method, opts...)
 	if err != nil {
-		logger.GrpcLogger.Errorf("create client stream error:%v for method:%s target:%s conn:%s", err, method, cc.Target(), cc.GetState().String())
+		logger.GrpcLogger.Errorf("create client stream error:%v for method:%s target:%s connState:%s", err, method, cc.Target(), cc.GetState().String())
 		return nil, err
 	}
+
 	return &wrappedClientStream{
 		ClientStream: s,
 		method:       method,
@@ -215,7 +219,8 @@ func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grp
 func unaryClientInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	if err != nil {
-		logger.GrpcLogger.Errorf("do unary client error:%v for method:%s target:%s conn:%s", err, method, cc.Target(), cc.GetState().String())
+		logger.GrpcLogger.Errorf("do unary client error:%v for method:%s target:%s connState:%s", err, method, cc.Target(), cc.GetState().String())
 	}
+
 	return err
 }

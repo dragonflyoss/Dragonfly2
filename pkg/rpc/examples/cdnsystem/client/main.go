@@ -17,40 +17,31 @@
 package main
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/server"
 )
 
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/client"
+	"github.com/google/uuid"
 )
 
 func main() {
-	c, err := client.CreateClient([]basic.NetAddr{{Type: basic.TCP, Addr: "localhost:8003"}})
+	c, err := client.CreateClient([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: "localhost:12345"}})
 	if err != nil {
 		panic(err)
 	}
 
-	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-		TaskId: "111111",
-		//Url:    "http://www.baidu.com",
-		Url:    "https://download.jetbrains.8686c.com/go/goland-2020.2.3.dmg",
-		Filter: []string{""},
-		UrlMeta: &base.UrlMeta{
-			Md5:   "1111111",
-			Range: "",
-		},
-	})
+	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{TaskId: uuid.New().String()})
 	if err != nil {
 		panic(err)
 	}
 
 	for pieceSeed := range psc {
-		fmt.Printf("response:%+v\n", pieceSeed)
+		fmt.Printf("response:%v\n", pieceSeed)
 	}
 
 	fmt.Println("client finish")
