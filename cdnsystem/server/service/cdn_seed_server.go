@@ -82,7 +82,6 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			logger.Named(req.TaskId).Errorf("failed to obtain seeds, req=%+v: %v", req, err)
 		}
 	}()
-	return errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	if err := validateSeedRequestParams(req); err != nil {
 		return errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
@@ -92,7 +91,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		URL:     req.Url,
 		Md5:     headers["md5"],
 		TaskID:  req.TaskId,
-		Filter:  req.Filter,
+		Filter:  strings.Split(req.Filter, "&"),
 	}
 	// register task
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
@@ -100,16 +99,18 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	if err != nil {
 		return errors.Wrapf(err, "register seed task fail, registerRequest:%+v", registerRequest)
 	}
-
+	hostName, _ := os.Hostname()
+	peerId := fmt.Sprintf("%s-%s-%s", hostName, req.TaskId, "CDN")
 	for piece := range pieceChan {
+
 		switch piece.Type {
 		case types.PieceType:
 			psc <- &cdnsystem.PieceSeed{
-				State:       base.NewState(base.Code_SUCCESS, "success"),
-				//SeedAddr:    fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
-				PieceStyle:  base.PieceStyle(piece.PieceStyle),
-				PieceNum:    piece.PieceNum,
-				Done:        false,
+				State:      base.NewState(base.Code_SUCCESS, "success"),
+				PeerId:     peerId,
+				SeederName: hostName,
+				PieceInfo:  nil,
+				Done:       false,
 			}
 		case types.TaskType:
 			var state *base.ResponseState
@@ -120,7 +121,8 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			}
 			psc <- &cdnsystem.PieceSeed{
 				State:         state,
-				//SeedAddr:      fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.ListenPort),
+				PeerId:        peerId,
+				SeederName:    hostName,
 				Done:          true,
 				ContentLength: piece.ContentLength,
 			}
@@ -140,26 +142,24 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	}()
 	if err := validateGetPieceTasksRequestParams(req); err != nil {
 		return &base.PiecePacket{
-			State:      base.NewState(base.Code_PARAM_INVALID, err),
-			TaskId:     req.TaskId,
-			PieceTasks: nil,
+			State:  base.NewState(base.Code_PARAM_INVALID, err),
+			TaskId: req.TaskId,
 		}, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
 		return &base.PiecePacket{
-			State:      base.NewState(base.Code_CDN_ERROR, err),
-			TaskId:     req.TaskId,
-			PieceTasks: nil,
+			State:  base.NewState(base.Code_CDN_ERROR, err),
+			TaskId: req.TaskId,
 		}, errors.Wrapf(err, "failed to get pieces from cdn")
 	}
-	pieceTasks := make([]*base.PieceTask, 0)
+	pieceInfos := make([]*base.PieceInfo, 0)
 	for _, piece := range pieces {
 		var count int32 = 0
 		if piece.PieceNum >= req.StartNum && count < req.Limit {
 			pieceRange := strings.Split(piece.PieceRange, "-")
 			pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
-			pieceTasks = append(pieceTasks, &base.PieceTask{
+			pieceInfos = append(pieceInfos, &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
 				RangeStart:  pieceStart,
 				RangeSize:   piece.PieceLen,
@@ -174,9 +174,9 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	return &base.PiecePacket{
 		State:         base.NewState(base.Code_SUCCESS, "success"),
 		TaskId:        req.TaskId,
-		DstPid:        fmt.Sprintf("%s-%s-%s", hostName, css.cfg.AdvertiseIP, req.TaskId),
+		DstPid:        fmt.Sprintf("%s-%s-%s", hostName, req.TaskId, "CDN"),
 		DstAddr:       fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.DownloadPort),
-		PieceTasks:    pieceTasks,
+		PieceInfos:    pieceInfos,
 		TotalPiece:    0,
 		ContentLength: 0,
 		PieceMd5Sign:  "",
