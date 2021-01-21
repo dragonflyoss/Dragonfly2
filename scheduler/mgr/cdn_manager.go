@@ -152,15 +152,15 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 
 	task.AddPiece(c.createPiece(task, ps, peerTask))
 
-	peerTask.AddPieceStatus(&types.PieceStatus{
+	peerTask.AddPieceStatus(&scheduler.PieceResult{
 		PieceNum: ps.PieceInfo.PieceNum,
 		Success:  true,
+		// currently completed piece count
+		FinishedCount: ps.PieceInfo.PieceNum+1,
 	})
 
 	return
 }
-
-
 
 func (c *CDNClient) getHostUuid(ps *cdnsystem.PieceSeed) string {
 	return fmt.Sprintf("cdn:%s", ps.PeerId)

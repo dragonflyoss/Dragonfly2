@@ -91,7 +91,7 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 			default:
 				if i < 0 {
 					ps := &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"),
-						PeerId: fmt.Sprintf("cdn:%s", mc.addr),
+						PeerId: mc.getPeerId(mc.addr, req.TaskId),
 						// cdn node host name
 						SeederName:    mc.addr,
 						Done:          true,
@@ -150,8 +150,6 @@ func (mc *MockCDN) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seede
 	go send(psc, closePsc, stream, errChan)
 
 	err = <-errChan
-
-	mock_client.UnregisterClient(mc.getPeerId(mc.addr, sr.TaskId))
 
 	return
 }

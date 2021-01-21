@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/scheduler/basic"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 )
@@ -64,6 +65,8 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) ( primary *types.PeerT
 	}
 	if primary != nil {
 		peer.AddParent(primary, 1)
+	} else {
+		logger.Debugf("[%s][%s]SchedulerParent scheduler a empty parent", peer.Task.TaskId, peer.Pid)
 	}
 
 	return

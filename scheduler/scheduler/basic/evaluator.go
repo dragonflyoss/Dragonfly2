@@ -129,15 +129,16 @@ func (e *Evaluator) Evaluate(dst *types.PeerTask, src *types.PeerTask) (result f
 		return
 	}
 
-	result = (profits+1) * (1 + load + dist)
+	result = profits * load * dist
 	return
 }
 
 // GetProfits 0.0~unlimited larger and better
 func (e *Evaluator) GetProfits(dst *types.PeerTask, src *types.PeerTask)  float64 {
 	diff := src.GetDiffPieceNum(dst)
+	deep := dst.GetDeep()
 
-	return float64((diff+1) * src.GetSubTreeNodesNum()) / float64(dst.GetDeep())
+	return float64((diff+1) * src.GetSubTreeNodesNum()) / float64(deep*deep)
 }
 
 // GetHostLoad 0.0~1.0 larger and better
@@ -151,10 +152,14 @@ func (e *Evaluator) GetDistance(dst *types.PeerTask, src *types.PeerTask) (dist 
 	hostDist := 40.0
 	if dst.Host == src.Host {
 		hostDist = 0.0
-	} else if dst.Host.NetTopology == src.Host.NetTopology && src.Host.NetTopology != "" {
-		hostDist = 10.0
-	} else if dst.Host.Idc == src.Host.Idc && src.Host.Idc != "" {
-		hostDist = 20.0
+	} else if dst.Host != nil && src.Host != nil {
+		if dst.Host.NetTopology == src.Host.NetTopology && src.Host.NetTopology != "" {
+			hostDist = 10.0
+		} else if dst.Host.Idc == src.Host.Idc && src.Host.Idc != "" {
+			hostDist = 20.0
+		} else if dst.Host.SecurityDomain != src.Host.SecurityDomain {
+			hostDist = 80.0
+		}
 	}
 
 	return 1.0 - hostDist/80.0, nil

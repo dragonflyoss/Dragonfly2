@@ -34,7 +34,7 @@ type PeerTask struct {
 	touch           func(*PeerTask)
 
 	parent          *PeerEdge               // primary download provider
-	children        map[*PeerTask]*PeerEdge // all primary download consumers
+	children        *sync.Map // all primary download consumers
 	subTreeNodesNum int32                   // node number of subtree and current node is root of the subtree
 
 	// the client of peer task, which used for send and receive msg
@@ -65,15 +65,6 @@ func (pe *PeerEdge) AddCost(cost int32) {
 	}
 }
 
-type PieceStatus struct {
-	PieceNum int32
-	SrcPid   string
-	DstPid   string
-	Success  bool
-	Code     base.Code
-	Cost     uint32
-}
-
 func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *PeerTask {
 	pt := &PeerTask{
 		Pid:             pid,
@@ -84,7 +75,7 @@ func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *Pee
 		lock:            new(sync.Mutex),
 		lastActiveTime:  time.Now().UnixNano(),
 		subTreeNodesNum: 1,
-		children:        make(map[*PeerTask]*PeerEdge),
+		children:        new(sync.Map),
 		touch:           touch,
 	}
 	if host != nil {
@@ -105,7 +96,7 @@ func (pt *PeerTask) AddParent(parent *PeerTask, concurrency int8) {
 		Concurrency: concurrency,
 	}
 	pt.parent = pe
-	parent.children[pt] = pe
+	parent.children.Store(pt, pe)
 
 	// modify subTreeNodesNum of all ancestor
 	p := parent
@@ -116,8 +107,9 @@ func (pt *PeerTask) AddParent(parent *PeerTask, concurrency int8) {
 		}
 		p = p.parent.DstPeerTask
 	}
-
-	pt.Host.AddDownloadLoad(int32(concurrency))
+	if pt.Host != nil {
+		pt.Host.AddDownloadLoad(int32(concurrency))
+	}
 	if parent.Host != nil {
 		parent.Host.AddUploadLoad(int32(concurrency))
 	}
@@ -139,8 +131,11 @@ func (pt *PeerTask) GetCost() int32 {
 }
 
 func (pt *PeerTask) GetChildren() (children []*PeerEdge) {
-	for _, child := range pt.children {
-		children = append(children, child)
+	if pt.children != nil {
+		pt.children.Range(func(k, v interface{})bool{
+			children = append(children, v.(*PeerEdge))
+			return true
+		})
 	}
 	return children
 }
@@ -156,8 +151,12 @@ func (pt *PeerTask) AddConcurrency(parent *PeerTask, delta int8) {
 
 	pt.parent.Concurrency += delta
 
-	pt.Host.AddDownloadLoad(int32(delta))
-	parent.Host.AddUploadLoad(int32(delta))
+	if pt.Host != nil {
+		pt.Host.AddDownloadLoad(int32(delta))
+	}
+	if parent.Host != nil {
+		parent.Host.AddUploadLoad(int32(delta))
+	}
 }
 
 func (pt *PeerTask) DeleteParent() {
@@ -166,7 +165,9 @@ func (pt *PeerTask) DeleteParent() {
 	}
 
 	parent := pt.parent.DstPeerTask
-	delete(pt.parent.DstPeerTask.children, pt)
+	if pt.parent.DstPeerTask != nil && pt.parent.DstPeerTask.children != nil {
+		pt.parent.DstPeerTask.children.Delete(pt)
+	}
 	pt.parent = nil
 
 	p := parent
@@ -178,8 +179,12 @@ func (pt *PeerTask) DeleteParent() {
 		p = p.parent.DstPeerTask
 	}
 
-	pt.Host.AddDownloadLoad(-1)
-	parent.Host.AddUploadLoad(-1)
+	if pt.Host != nil {
+		pt.Host.AddDownloadLoad(-1)
+	}
+	if parent.Host != nil {
+		parent.Host.AddUploadLoad(-1)
+	}
 }
 
 func (pt *PeerTask) GetFreeLoad() int32 {
@@ -202,7 +207,7 @@ func (pt *PeerTask) GetPieceStatusList() *sync.Map {
 	return pt.pieceStatusList
 }
 
-func (pt *PeerTask) AddPieceStatus(ps *PieceStatus) {
+func (pt *PeerTask) AddPieceStatus(ps *scheduler.PieceResult) {
 	pt.lock.Lock()
 	defer pt.lock.Unlock()
 
@@ -211,7 +216,7 @@ func (pt *PeerTask) AddPieceStatus(ps *PieceStatus) {
 	}
 	old, loaded := pt.pieceStatusList.LoadOrStore(ps.PieceNum, ps)
 	if loaded {
-		oldPs, _ := old.(*PieceStatus)
+		oldPs, _ := old.(*scheduler.PieceResult)
 		if oldPs != nil && oldPs.Success {
 			return
 		}
@@ -222,10 +227,11 @@ func (pt *PeerTask) AddPieceStatus(ps *PieceStatus) {
 	if !ps.Success {
 		return
 	}
-	pt.finishedNum++
+
+	pt.finishedNum = ps.FinishedCount
 
 	if pt.parent != nil {
-		pt.parent.AddCost(int32(ps.Cost))
+		pt.parent.AddCost(int32(ps.EndTime - ps.BeginTime))
 	}
 }
 

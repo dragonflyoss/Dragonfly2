@@ -39,6 +39,9 @@ func (h *Host) AddPeerTask(peerTask *PeerTask) {
 }
 
 func (h *Host) DeletePeerTask(peerTaskId string) {
+	if h == nil || h.peerTaskMap == nil {
+		return
+	}
 	h.peerTaskMap.Delete(peerTaskId)
 }
 

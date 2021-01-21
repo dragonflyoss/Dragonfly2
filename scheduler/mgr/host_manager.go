@@ -43,11 +43,11 @@ func (m *HostManager) GetHost(uuid string) (h *types.Host, ok bool) {
 
 func (m *HostManager) CalculateLoad(host *types.Host) {
 	if host.Type == types.HostTypePeer {
-		host.SetTotalUploadLoad(2)
-		host.SetTotalDownloadLoad(2)
-	} else {
 		host.SetTotalUploadLoad(3)
 		host.SetTotalDownloadLoad(3)
+	} else {
+		host.SetTotalUploadLoad(4)
+		host.SetTotalDownloadLoad(4)
 	}
 	return
 }

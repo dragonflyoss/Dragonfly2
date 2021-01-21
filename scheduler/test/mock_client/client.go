@@ -262,6 +262,7 @@ func (mc *MockClient) downloadPieces() {
 						SrcPid:    mc.pid,
 						DstPid:    mc.parentId,
 						PieceNum:  p.PieceNum,
+						FinishedCount: int32(len(mc.pieceInfoList)+1),
 						Success:   true,
 						Code:      base.Code_SUCCESS,
 						BeginTime: uint64(time.Now().UnixNano() / int64(time.Millisecond)),
@@ -276,6 +277,15 @@ func (mc *MockClient) downloadPieces() {
 			}
 			if same {
 				time.Sleep(time.Second / 2)
+			} else {
+				if pieces.TotalPiece >= 0 && len(pieces.PieceInfos) == len(mc.pieceInfoList) {
+					mc.TotalPiece = pieces.TotalPiece
+					mc.ContentLength = pieces.ContentLength
+					mc.PieceMd5Sign = pieces.PieceMd5Sign
+					mc.logger.Logf("client[%s] download finished from [%s], TotalPiece[%d]", mc.pid, mc.parentId, mc.TotalPiece)
+					close(mc.waitStop)
+					return
+				}
 			}
 		}
 	}

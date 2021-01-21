@@ -89,8 +89,8 @@ func (wg *WorkerGroup) ReceiveUpdatePieceResult(pr *scheduler2.PieceResult) {
 	}
 	var choiceWorkerId uint32
 	pt, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
-	if pt.Host == nil {
-		choiceWorkerId = crc32.ChecksumIEEE([]byte(pt.Pid)) % uint32(wg.workerNum)
+	if pt == nil || pt.Host == nil {
+		choiceWorkerId = crc32.ChecksumIEEE([]byte(pr.SrcPid)) % uint32(wg.workerNum)
 	} else {
 		choiceWorkerId = crc32.ChecksumIEEE([]byte(pt.Host.Uuid)) % uint32(wg.workerNum)
 	}

@@ -12,7 +12,7 @@ var _ = Describe("Multi Client Download Test", func() {
 	tl := common.NewE2ELogger()
 
 	var (
-		clientNum  = 20
+		clientNum  = 40
 		stopChList []chan struct{}
 	)
 

@@ -71,12 +71,18 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 	if pr == nil {
 		return
 	}
+
 	ptMgr := mgr.GetPeerTaskManager()
 	peerTask, _ = ptMgr.GetPeerTask(pr.SrcPid)
 	if peerTask == nil {
-		err = fmt.Errorf("[%s][%s]: peer task not exited", pr.TaskId, pr.SrcPid)
-		logger.Errorf(err.Error())
-		return
+		task, _ := mgr.GetTaskManager().GetTask(pr.TaskId)
+		if task != nil {
+			peerTask = ptMgr.AddFakePeerTask(pr.SrcPid, task)
+		} else {
+			err = fmt.Errorf("[%s][%s]: task not exited", pr.TaskId, pr.SrcPid)
+			logger.Errorf(err.Error())
+			return
+		}
 	}
 	if pr.DstPid == "" {
 		if peerTask.GetParent() == nil {
@@ -99,14 +105,7 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 		return
 	}
 
-	peerTask.AddPieceStatus(&types.PieceStatus{
-		PieceNum: pr.PieceNum,
-		SrcPid:   pr.SrcPid,
-		DstPid:   pr.DstPid,
-		Success:  pr.Success,
-		Code:     pr.Code,
-		Cost:     uint32(pr.EndTime - pr.BeginTime),
-	})
+	peerTask.AddPieceStatus(pr)
 	if w.scheduler.IsNodeBad(peerTask) {
 		peerTask.SetNodeStatus(types.PeerTaskStatusBadNode)
 		needSchedule = true
