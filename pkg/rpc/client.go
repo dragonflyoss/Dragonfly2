@@ -34,7 +34,7 @@ import (
 type InitClientFunc func(*Connection)
 
 type Connection struct {
-	rwMutex   *sync.RWMutex
+	rwMutex   sync.RWMutex
 	curTarget string
 	nextNum   int
 	NetAddrs  []dfnet.NetAddr
@@ -66,11 +66,10 @@ var clientOpts = []grpc.DialOption{
 
 func BuildClient(client interface{}, init InitClientFunc, addrs []dfnet.NetAddr, opts []grpc.DialOption) (interface{}, error) {
 	if len(addrs) == 0 {
-		return nil, errors.New("addrs are empty")
+		return nil, errors.New("addresses are empty")
 	}
 
 	conn := &Connection{
-		rwMutex:  new(sync.RWMutex),
 		NetAddrs: addrs,
 		Ref:      client,
 		init:     init,
@@ -86,7 +85,7 @@ func BuildClient(client interface{}, init InitClientFunc, addrs []dfnet.NetAddr,
 
 func (c *Connection) connect() error {
 	if c.nextNum >= len(c.NetAddrs) {
-		return errors.New("no addrs available")
+		return errors.New("no address available")
 	}
 
 	if c.Ref == nil {
