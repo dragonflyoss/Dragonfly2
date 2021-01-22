@@ -28,15 +28,17 @@ type MockCDN struct {
 	pieceInfoList map[string][]*base.PieceInfo
 	hostId        string
 	finished      map[string]bool
+	cdnName       string
 }
 
 func NewMockCDN(addr string, tl common.TestLogger) *MockCDN {
 	cdn := &MockCDN{
-		logger: tl,
-		addr:   addr,
-		hostId: "cdn:" + addr,
+		logger:        tl,
+		addr:          addr,
+		hostId:        "cdn:" + addr,
 		pieceInfoList: make(map[string][]*base.PieceInfo),
-		finished: make(map[string]bool),
+		finished:      make(map[string]bool),
+		cdnName:       "cdn",
 	}
 	return cdn
 }
@@ -93,7 +95,7 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 					ps := &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"),
 						PeerId: mc.getPeerId(mc.addr, req.TaskId),
 						// cdn node host name
-						SeederName:    mc.addr,
+						SeederName:    mc.cdnName,
 						Done:          true,
 						ContentLength: 100,
 					}
@@ -120,11 +122,9 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 	return
 }
 
-
 func (mc *MockCDN) getPeerId(addr string, taskId string) string {
 	return fmt.Sprintf("cdn:%s:%s", addr, taskId)
 }
-
 
 func (mc *MockCDN) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
 	ctx, cancel := context.WithCancel(stream.Context())
@@ -153,7 +153,6 @@ func (mc *MockCDN) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seede
 
 	return
 }
-
 
 func send(psc chan *cdnsystem.PieceSeed, closePsc func(), stream cdnsystem.Seeder_ObtainSeedsServer, errChan chan error) {
 	err := safe.Call(func() {
@@ -189,4 +188,3 @@ func call(ctx context.Context, psc chan *cdnsystem.PieceSeed, p *MockCDN, sr *cd
 		errChan <- status.Error(codes.FailedPrecondition, err.Error())
 	}
 }
-

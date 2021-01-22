@@ -19,9 +19,6 @@ type Config struct {
 }
 
 type schedulerConfig struct {
-	MaxUsableValue      float64 `yaml:"max-usable-value"`
-	MaxUploadPieceNum   int32   `yaml:"max-upload-piece-num"`
-	MaxDownloadPieceNum int32   `yaml:"max-download-piece-num"`
 }
 
 type serverConfig struct {
@@ -36,8 +33,15 @@ type schedulerWorkerConfig struct {
 	SenderJobPoolSize int `yaml:"sender-job-pool-size"`
 }
 
+type CdnServerConfig struct {
+	CdnName      string `yaml:"cdn-name"`
+	IP           string `yaml:"ip",omitempty`
+	RpcPort      int    `yaml:"cdn-port"`
+	DownloadPort int    `yaml:"download-port"`
+}
+
 type cdnConfig struct {
-	List [][]serverConfig `yaml:"list"`
+	List [][]CdnServerConfig `yaml:"list"`
 }
 
 type gcConfig struct {
@@ -64,16 +68,14 @@ func createDefaultConfig() *Config {
 			SenderNum:         50,
 			SenderJobPoolSize: 10000,
 		},
-		Scheduler: schedulerConfig{
-			MaxUsableValue:      100,
-			MaxUploadPieceNum:   5,
-			MaxDownloadPieceNum: 5,
-		},
+		Scheduler: schedulerConfig{},
 		CDN: cdnConfig{
-			List: [][]serverConfig{
+			List: [][]CdnServerConfig{
 				{{
-					IP:   "127.0.0.1",
-					Port: 12345,
+					CdnName:      "cdn",
+					IP:           "127.0.0.1",
+					RpcPort:      12345,
+					DownloadPort: 12345,
 				}},
 			},
 		},

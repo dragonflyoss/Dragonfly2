@@ -78,15 +78,6 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.Int("port", defaultBaseProperties.Server.Port,
 		"port is the port that scheduler server listens on")
 
-	flagSet.Int32("max-download-piece-num", defaultBaseProperties.Scheduler.MaxDownloadPieceNum,
-		"max-download-piece-num is the max number of download piece number at the same time for a peer")
-
-	flagSet.Int32("max-upload-piece-num", defaultBaseProperties.Scheduler.MaxUploadPieceNum,
-		"max-upload-piece-num is the max number of upload piece number at the same time for a peer")
-
-	flagSet.Float64("max-usable-value", defaultBaseProperties.Scheduler.MaxUsableValue,
-		"max-usable-value is used for scheduler and do not change it")
-
 	flagSet.Int("worker-num", defaultBaseProperties.Worker.WorkerNum,
 		"worker-num is used for scheduler and do not change it")
 
@@ -115,18 +106,6 @@ func bindRootFlags(v *viper.Viper) error {
 		{
 			key:  "server.port",
 			flag: "port",
-		},
-		{
-			key:  "scheduler.max-download-piece-num",
-			flag: "max-download-piece-num",
-		},
-		{
-			key:  "scheduler.max-upload-piece-num",
-			flag: "max-upload-piece-num",
-		},
-		{
-			key:  "scheduler.max-usable-value",
-			flag: "max-usable-value",
 		},
 		{
 			key:  "worker.worker-num",

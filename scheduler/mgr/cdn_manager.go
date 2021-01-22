@@ -13,18 +13,20 @@ import (
 
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/client"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/net"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 )
 
 const TinyFileSize = 128
 
 type CDNManager struct {
-	cdnList []*CDNClient
+	cdnList    []*CDNClient
+	cdnInfoMap map[string]*config.CdnServerConfig
 }
 
 func createCDNManager() *CDNManager {
-	cdnMgr := &CDNManager{}
+	cdnMgr := &CDNManager{
+		cdnInfoMap: make(map[string]*config.CdnServerConfig),
+	}
 	return cdnMgr
 }
 
@@ -35,17 +37,18 @@ func (cm *CDNManager) InitCDNClient() {
 			continue
 		}
 		var addrs []basic.NetAddr
-		for _, cdn := range cdns {
+		for i, cdn := range cdns {
 			addrs = append(addrs, basic.NetAddr{
 				Type: basic.TCP,
-				Addr: fmt.Sprintf("%s:%d", cdn.IP, cdn.Port),
+				Addr: fmt.Sprintf("%s:%d", cdn.IP, cdn.RpcPort),
 			})
+			cm.cdnInfoMap[cdn.CdnName] = &cdns[i]
 		}
 		seederClient, err := client.CreateClient(addrs)
 		if err != nil {
 			logger.Errorf("create cdn client failed main addr [%s]", addrs[0])
 		}
-		cm.cdnList = append(cm.cdnList, &CDNClient{SeederClient: seederClient})
+		cm.cdnList = append(cm.cdnList, &CDNClient{SeederClient: seederClient, mgr: cm})
 	}
 }
 
@@ -78,8 +81,13 @@ func (cm *CDNManager) getCDNClient(task *types.Task) (cli *CDNClient, err error)
 	return
 }
 
+func (cm *CDNManager) getCdnInfo(seederName string) *config.CdnServerConfig {
+	return cm.cdnInfoMap[seederName]
+}
+
 type CDNClient struct {
 	client.SeederClient
+	mgr *CDNManager
 }
 
 func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
@@ -104,14 +112,19 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 	hostId := c.getHostUuid(ps)
 	host, ok := GetHostManager().GetHost(hostId)
 	if !ok {
-		ip, port, _ := net.ParseAddress(ps.SeederName)
+		ip, rpcPort, downPort := "", 0, 0
+		cdnInfo := c.mgr.getCdnInfo(ps.SeederName)
+		if cdnInfo != nil {
+			ip, rpcPort, downPort = cdnInfo.IP, cdnInfo.RpcPort, cdnInfo.DownloadPort
+		}
 		host = &types.Host{
-			Type:     types.HostTypeCdn,
+			Type: types.HostTypeCdn,
 			PeerHost: scheduler.PeerHost{
 				Uuid:     hostId,
 				HostName: hostId,
 				Ip:       ip,
-				RpcPort:     int32(port),
+				RpcPort:  int32(rpcPort),
+				DownPort: int32(downPort),
 			},
 		}
 		host = GetHostManager().AddHost(host)
@@ -136,7 +149,7 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 				if er == nil && len(content) == int(task.ContentLength) {
 					task.SizeScope = base.SizeScope_TINY
 					task.DirectPiece = &scheduler.RegisterResult_PieceContent{
-						PieceContent : content,
+						PieceContent: content,
 					}
 					return
 				}
@@ -156,7 +169,7 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		PieceNum: ps.PieceInfo.PieceNum,
 		Success:  true,
 		// currently completed piece count
-		FinishedCount: ps.PieceInfo.PieceNum+1,
+		FinishedCount: ps.PieceInfo.PieceNum + 1,
 	})
 
 	return
@@ -168,15 +181,15 @@ func (c *CDNClient) getHostUuid(ps *cdnsystem.PieceSeed) string {
 
 func (c *CDNClient) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *types.PeerTask) *types.Piece {
 	p := task.GetOrCreatePiece(ps.PieceInfo.PieceNum)
-	p.PieceInfo= *ps.PieceInfo
+	p.PieceInfo = *ps.PieceInfo
 	return p
 }
 
 func (c *CDNClient) getTinyFileContent(task *types.Task) (content []byte, err error) {
 	resp, err := c.GetPieceTasks(context.TODO(), &base.PieceTaskRequest{
-		TaskId: task.TaskId,
+		TaskId:   task.TaskId,
 		StartNum: 0,
-		Limit: 2,
+		Limit:    2,
 	})
 	if err != nil {
 		return
@@ -189,11 +202,3 @@ func (c *CDNClient) getTinyFileContent(task *types.Task) (content []byte, err er
 
 	return
 }
-
-
-
-
-
-
-
-

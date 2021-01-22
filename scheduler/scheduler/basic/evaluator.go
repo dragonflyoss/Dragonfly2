@@ -1,18 +1,15 @@
 package basic
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 )
 
 type Evaluator struct {
-	maxUsableHostValue float64
 }
 
 func NewEvaluator() *Evaluator {
 	e := &Evaluator{
-		maxUsableHostValue: config.GetConfig().Scheduler.MaxUsableValue,
 	}
 	return e
 }
@@ -57,10 +54,6 @@ func (e *Evaluator) IsNodeBad(peer *types.PeerTask) bool {
 	totalCost -= lastCost
 
 	return (totalCost * 4 / int32(len(costHistory)-1)) < lastCost
-}
-
-func (e *Evaluator) GetMaxUsableHostValue() float64 {
-	return e.maxUsableHostValue
 }
 
 func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.PeerTask) {

@@ -8,9 +8,6 @@ server:
   port: 8002
 
 scheduler:
-  max-usable-value: 100.0
-  max-upload-piece-num: 3
-  max-download-piece-num: 3
 
 worker:
   worker-num: 5
@@ -21,6 +18,8 @@ worker:
 cdn:
   list:
     -
-      - ip: "127.0.0.1"
-        port: 12345
+      - cdn-name : "cdn"
+        ip: "127.0.0.1"
+        rpcPort: 12345
+        download-port: 12345
 
