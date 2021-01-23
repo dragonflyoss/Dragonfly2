@@ -19,14 +19,17 @@ package server
 import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"sync"
 )
@@ -49,10 +52,9 @@ func init() {
 	})
 }
 
+// see cdnsystem.SeederServer
 type SeederServer interface {
-	// generate seeds and return to scheduler
 	ObtainSeeds(context.Context, *cdnsystem.SeedRequest, chan<- *cdnsystem.PieceSeed) error
-	// get piece tasks from cdn
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
 }
 
@@ -64,6 +66,12 @@ type proxy struct {
 func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
+
+	peerAddr := "unknown"
+	if pe, ok := peer.FromContext(ctx); ok {
+		peerAddr = pe.Addr.String()
+	}
+	logger.Infof("trigger obtain seed for taskId:%s,url:%s,from:%s", sr.TaskId, sr.Url, peerAddr)
 
 	errChan := make(chan error, 10)
 	psc := make(chan *cdnsystem.PieceSeed, 4)
@@ -124,4 +132,26 @@ func call(ctx context.Context, psc chan *cdnsystem.PieceSeed, p *proxy, sr *cdns
 	if err != nil {
 		errChan <- status.Error(codes.FailedPrecondition, err.Error())
 	}
+}
+
+func StatSeedStart(taskId, url string) {
+	logger.StatSeedLogger.Info("trigger seed making",
+		zap.String("taskId", taskId),
+		zap.String("url", url),
+		zap.String("seederIp", dfnet.HostIp),
+		zap.String("seederName", dfnet.HostName))
+}
+
+func StatSeedFinish(taskId, url string, success bool, code base.Code, cost uint32, traffic, contentLength int64) {
+	logger.StatSeedLogger.Info("seed making finish",
+		zap.Bool("success", success),
+		zap.String("taskId", taskId),
+		zap.String("url", url),
+		zap.String("seederIp", dfnet.HostIp),
+		zap.String("seederName", dfnet.HostName),
+		// Millisecond
+		zap.Uint32("cost", cost),
+		zap.Int64("traffic", traffic),
+		zap.Int64("contentLength", contentLength),
+		zap.Int("code", int(code)))
 }
