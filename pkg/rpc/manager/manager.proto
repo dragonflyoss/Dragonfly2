@@ -48,12 +48,12 @@ message HeartRequest{
   }
 }
 
+message ClientConfig{
+  //......
+}
+
 message ManagementConfig{
   base.ResponseState state = 1;
-
-  message ClientConfig{
-    //......
-  }
 
   message SchedulerConfig{
     ClientConfig client_config = 1;
@@ -99,5 +99,5 @@ service Manager{
   // 3. manager actively triggers fresh
   rpc GetSchedulers(NavigatorRequest)returns(SchedulerNodes){}
   // keep alive for cdn or scheduler and receives management configuration
-  rpc KeepAlive(stream HeartRequest)returns(stream ManagementConfig){}
+  rpc KeepAlive(HeartRequest)returns(ManagementConfig){}
 }
