@@ -253,7 +253,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 		Finish:        true,
 		Success:       isSuccess,
 		SourceRealMd5: sourceMd5,
-		PieceMd5Sign : "",
+		PieceMd5Sign : cm.progressMgr.GetPieceMd5Sign(task.TaskID),
 		CdnFileLength: cdnFileLength,
 		SourceFileLen: sourceFileLen,
 	}); err != nil {

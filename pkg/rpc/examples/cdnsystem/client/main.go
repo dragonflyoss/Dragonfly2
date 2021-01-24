@@ -30,7 +30,7 @@ import (
 )
 
 func main() {
-	c, err := client.CreateClient([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: "localhost:12345"}})
+	c, err := client.CreateClient([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: "localhost:8003"}})
 	if err != nil {
 		panic(err)
 	}

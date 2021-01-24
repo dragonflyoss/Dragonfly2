@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/HuKeping/rbtree v0.0.0-20200208030951-29f0b79e84ed
+	github.com/cskr/pubsub v1.0.2
 	github.com/emirpasic/gods v1.12.0
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.3

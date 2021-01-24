@@ -100,17 +100,26 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		return errors.Wrapf(err, "register seed task fail, registerRequest:%+v", registerRequest)
 	}
 	hostName, _ := os.Hostname()
-	peerId := fmt.Sprintf("%s-%s-%s", hostName, req.TaskId, strconv.Itoa(os.Getpid())+"_CDN")
+	peerId := fmt.Sprintf("%s-%s_%s", hostName, req.TaskId, "CDN")
 	for piece := range pieceChan {
-
+		pieceRange := strings.Split(piece.PieceRange, "-")
+		pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
 		switch piece.Type {
 		case types.PieceType:
 			psc <- &cdnsystem.PieceSeed{
-				State:      base.NewState(base.Code_SUCCESS, "success"),
-				PeerId:     peerId,
-				SeederName: hostName,
-				PieceInfo:  nil,
-				Done:       false,
+				State:         base.NewState(base.Code_SUCCESS, "success"),
+				PeerId:        peerId,
+				SeederName:    hostName,
+				PieceInfo:     &base.PieceInfo{
+					PieceNum:    piece.PieceNum,
+					RangeStart:  pieceStart,
+					RangeSize:   piece.PieceLen,
+					PieceMd5:    piece.PieceMd5,
+					PieceOffset: piece.PieceOffset,
+					PieceStyle:  base.PieceStyle(piece.PieceStyle),
+				},
+				Done:          false,
+				ContentLength: 0,
 			}
 		case types.TaskType:
 			var state *base.ResponseState
@@ -146,6 +155,13 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 			TaskId: req.TaskId,
 		}, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
+	task, err := css.taskMgr.Get(ctx, req.TaskId)
+	if err != nil {
+		return &base.PiecePacket{
+			State:  base.NewState(base.Code_CDN_ERROR, err),
+			TaskId: req.TaskId,
+		}, errors.Wrapf(err, "failed to get task from cdn")
+	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
 		return &base.PiecePacket{
@@ -171,14 +187,15 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 		}
 	}
 	hostName, _ := os.Hostname()
+
 	return &base.PiecePacket{
 		State:         base.NewState(base.Code_SUCCESS, "success"),
 		TaskId:        req.TaskId,
-		DstPid:        fmt.Sprintf("%s-%s-%s", hostName, req.TaskId, "CDN"),
+		DstPid:        fmt.Sprintf("%s-%s_%s", hostName, req.TaskId, "CDN"),
 		DstAddr:       fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.DownloadPort),
 		PieceInfos:    pieceInfos,
-		TotalPiece:    0,
-		ContentLength: 0,
+		TotalPiece:    task.PieceTotal,
+		ContentLength: task.SourceFileLength,
 		PieceMd5Sign:  "",
 	}, nil
 }

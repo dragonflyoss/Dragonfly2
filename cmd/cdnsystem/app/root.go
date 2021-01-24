@@ -82,7 +82,7 @@ var rootCmd = &cobra.Command{
 		logger.Infof("success to init local ip of cdn, use ip: %s", cfg.AdvertiseIP)
 
 		logger.Debugf("get cdn config: %+v", cfg)
-		logger.Info("start to run cdn system")
+		logger.Infof("start to run cdn system")
 
 		d, err := daemon.New(cfg)
 		if err != nil {

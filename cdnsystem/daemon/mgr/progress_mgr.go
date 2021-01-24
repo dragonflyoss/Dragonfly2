@@ -24,22 +24,26 @@ import (
 // SeedProgressMgr as an interface defines all operations about seed progress
 type SeedProgressMgr interface {
 
-	// InitSeedProgress
+	// InitSeedProgress init task seed progress
 	InitSeedProgress(ctx context.Context, taskID string) error
 
-	// WatchSeedProgress watch seed progress
+	// WatchSeedProgress watch task seed progress
 	WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error)
 
-	// UnWatchSeedProgress unwatch seed progress
+	// UnWatchSeedProgress unwatch task seed progress
 	UnWatchSeedProgress(seedSubscriber chan *types.SeedPiece, taskID string) error
 
-	// PublishPiece publish seedPiece
+	// PublishPiece publish piece seed
 	PublishPiece(taskID string, record *types.SeedPiece) error
 
+	// PublishTask publish task seed
 	PublishTask(taskID string, record *types.SeedPiece) error
 
-	// GetPieceMetaRecordsByTaskID
+	// GetPieceMetaRecordsByTaskID get pieces by taskId
 	GetPieceMetaRecordsByTaskID(taskID string) (records []*types.SeedPiece, err error)
+
+	//
+	GetPieceMd5Sign(taskID string)(md5Sign string)
 
 	// Clear
 	Clear(taskID string) error

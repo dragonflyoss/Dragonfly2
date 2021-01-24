@@ -35,6 +35,7 @@ type SeedTask struct {
 	PieceTotal       int32             `json:"pieceTotal,omitempty"`
 	RequestMd5       string            `json:"requestMd5,omitempty"`
 	SourceRealMd5    string            `json:"sourceRealMd5,omitempty"`
+	PieceMd5Sign     string            `json:"pieceMd5Sign,omitempty"`
 }
 
 const (

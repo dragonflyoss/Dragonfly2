@@ -21,8 +21,10 @@ import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/digest"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/pkg/errors"
 	"sync"
@@ -38,6 +40,7 @@ type Manager struct {
 	seedSubscribers      *syncmap.SyncMap
 	taskPieceMetaRecords *syncmap.SyncMap
 	progress             *syncmap.SyncMap
+	mu                   *util.LockerPool
 	buffer               int
 }
 
@@ -46,24 +49,40 @@ func NewManager() *Manager {
 		seedSubscribers:      syncmap.NewSyncMap(),
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
 		progress:             syncmap.NewSyncMap(),
-		buffer:               64,
+		mu:                   util.NewLockerPool(),
 	}
 }
 
 func (pm *Manager) InitSeedProgress(ctx context.Context, taskID string) error {
+	pm.mu.GetLock(taskID, true)
+	if _, err := pm.seedSubscribers.Get(taskID); err == nil {
+		pm.mu.ReleaseLock(taskID, true)
+		return errors.New("corresponding seedSubscribers already exists")
+	}
+	if _, err := pm.taskPieceMetaRecords.Get(taskID); err == nil {
+		pm.mu.ReleaseLock(taskID, true)
+		return errors.New("corresponding taskPieceMetaRecords already exists")
+	}
+	pm.mu.ReleaseLock(taskID, true)
 	chanList := list.New()
 	pieceRecords := syncmap.NewSyncMap()
+	pm.mu.GetLock(taskID, false)
 	if err := pm.seedSubscribers.Add(taskID, chanList); err != nil {
+		pm.mu.ReleaseLock(taskID, false)
 		return errors.Wrap(err, "failed to add seed subscribers map")
 	}
 	if err := pm.taskPieceMetaRecords.Add(taskID, pieceRecords); err != nil {
+		pm.mu.ReleaseLock(taskID, false)
 		return errors.Wrap(err, "failed to add task piece meta records map")
 	}
+	pm.mu.ReleaseLock(taskID, false)
 	return nil
 }
 
 func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error) {
 	logger.Debugf("watch seed progress begin for taskID:%s", taskID)
+	pm.mu.GetLock(taskID, true)
+	defer pm.mu.ReleaseLock(taskID, true)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get seed subscribers")
@@ -75,16 +94,19 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 	ch := make(chan *types.SeedPiece, pm.buffer)
 	task, _ := pm.progress.Get(taskID)
 	if task != nil {
+		// seed progress has been done
 		go func(seedCh chan *types.SeedPiece) {
 			for _, pieceMetaRecord := range pieceMetaDataRecords {
 				logger.Debugf("seed piece meta record %s", pieceMetaRecord)
 				seedCh <- pieceMetaRecord
 			}
-
+			// publish task info
 			seedCh <- task.(*types.SeedPiece)
 		}(ch)
 	} else {
+		pm.mu.GetLock(taskID+"_push", false)
 		chanList.PushBack(ch)
+		pm.mu.ReleaseLock(taskID+"_push", false)
 		go func(seedCh chan *types.SeedPiece) {
 			for _, pieceMetaRecord := range pieceMetaDataRecords {
 				logger.Debugf("seed piece meta record %s", pieceMetaRecord)
@@ -96,6 +118,8 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 }
 
 func (pm *Manager) UnWatchSeedProgress(sub chan *types.SeedPiece, taskID string) error {
+	pm.mu.GetLock(taskID, false)
+	defer pm.mu.ReleaseLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get seed subscribers")
@@ -113,7 +137,9 @@ func (pm *Manager) UnWatchSeedProgress(sub chan *types.SeedPiece, taskID string)
 // Publish publish seedPiece
 func (pm *Manager) PublishPiece(taskID string, record *types.SeedPiece) error {
 	logger.Debugf("seed piece meta record %s", record)
+	pm.mu.GetLock(taskID, true)
 	err := pm.setPieceMetaRecord(taskID, record)
+	pm.mu.ReleaseLock(taskID, true)
 	if err != nil {
 		errors.Wrap(err, "failed to set piece meta record")
 	}
@@ -136,6 +162,8 @@ func (pm *Manager) PublishPiece(taskID string, record *types.SeedPiece) error {
 
 func (pm *Manager) PublishTask(taskID string, taskRecord *types.SeedPiece) error {
 	logger.Debugf("seed task record %s", taskRecord)
+	pm.mu.GetLock(taskID, true)
+	defer pm.mu.ReleaseLock(taskID, true)
 	err := pm.progress.Add(taskID, taskRecord)
 	if err != nil {
 		errors.Wrap(err, "failed to add task record")
@@ -145,6 +173,7 @@ func (pm *Manager) PublishTask(taskID string, taskRecord *types.SeedPiece) error
 		return errors.Wrap(err, "failed to get seed subscribers")
 	}
 	var wg sync.WaitGroup
+	// unwatch
 	for e := chanList.Front(); e != nil; e = e.Next() {
 		wg.Add(1)
 		sub := e.Value.(chan *types.SeedPiece)
@@ -159,6 +188,8 @@ func (pm *Manager) PublishTask(taskID string, taskRecord *types.SeedPiece) error
 }
 
 func (pm *Manager) Clear(taskID string) error {
+	pm.mu.GetLock(taskID, false)
+	defer pm.mu.ReleaseLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
 		return errors.Wrap(err, "failed to get seed subscribers")
@@ -171,6 +202,7 @@ func (pm *Manager) Clear(taskID string) error {
 			close(sub)
 			chanList.Remove(e)
 		}
+		chanList = nil
 	}
 	err = pm.seedSubscribers.Remove(taskID)
 	if err != nil && !dferrors.IsDataNotFound(err) {
@@ -188,5 +220,18 @@ func (pm *Manager) Clear(taskID string) error {
 }
 
 func (pm *Manager) GetPieceMetaRecordsByTaskID(taskID string) (records []*types.SeedPiece, err error) {
+	pm.mu.GetLock(taskID, true)
+	defer pm.mu.ReleaseLock(taskID, true)
 	return pm.getPieceMetaRecordsByTaskID(taskID)
+}
+
+func (pm *Manager) GetPieceMd5Sign(taskID string) (md5Sign string) {
+	pm.mu.GetLock(taskID, true)
+	defer pm.mu.ReleaseLock(taskID, true)
+	pieces, _ := pm.getPieceMetaRecordsByTaskID(taskID)
+	var pieceMd5 []string
+	for _, piece := range pieces {
+		pieceMd5 = append(pieceMd5, piece.PieceMd5)
+	}
+	return digest.Sha1(pieceMd5)
 }

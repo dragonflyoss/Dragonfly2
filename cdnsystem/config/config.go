@@ -17,7 +17,6 @@
 package config
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/mitchellh/go-homedir"
@@ -188,5 +187,4 @@ type BaseProperties struct {
 	// default: 1
 	CleanRatio int `yaml:"cleanRatio"`
 
-	LogConfig logger.LogConfig `yaml:"logConfig" json:"logConfig"`
 }

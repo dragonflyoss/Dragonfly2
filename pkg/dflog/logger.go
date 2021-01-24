@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	bizLogger      *zap.SugaredLogger
+	BizLogger      *zap.SugaredLogger
 	GrpcLogger     *zap.SugaredLogger
 	GcLogger       *zap.SugaredLogger
 	StatPeerLogger *zap.Logger
@@ -91,23 +91,8 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 	return zap.New(core, opts...)
 }
 
-// LogConfig holds all configurable properties of log.
-type LogConfig struct {
-	// MaxSize is the maximum size in megabytes of the log file before it gets rotated.
-	// It defaults to 40 megabytes.
-	MaxSize int `yaml:"maxSize" json:"maxSize"`
-	// MaxAge
-	MaxAge int `yaml:"maxAge" json:"maxAge"`
-	// MaxBackups is the maximum number of old log files to retain.
-	// The default value is 1.
-	MaxBackups int `yaml:"maxBackups" json:"maxBackups"`
-	// Path is the location of log file
-	// The default value is logs/dfdaemon.log
-	Path string `yaml:"path" json:"path"`
-}
-
 func SetBizLogger(log *zap.SugaredLogger) {
-	bizLogger = log
+	BizLogger = log
 }
 
 func SetGcLogger(log *zap.SugaredLogger) {
@@ -127,61 +112,56 @@ func SetGrpcLogger(log *zap.SugaredLogger) {
 	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
 }
 
-func With(args ...interface{}) *zap.SugaredLogger {
-	return bizLogger.With(args...)
+func With(args ...interface{}) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: args,
+	}
 }
 
 func Named(name string) *zap.SugaredLogger {
-	return bizLogger.With("taskID", name)
-}
-
-func Infof(fmt string, args ...interface{}) {
-	bizLogger.Infof(fmt, args...)
-}
-
-func Info(args ...interface{}) {
-	bizLogger.Info(args)
-}
-
-func Warnf(fmt string, args ...interface{}) {
-	bizLogger.Warnf(fmt, args...)
+	return BizLogger.With("taskID", name)
 }
 
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
-	bizLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
+	BizLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
-	bizLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
+	BizLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
-	bizLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
+	BizLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
-	bizLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
+	BizLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func Infof(template string, args ...interface{}) {
+	BizLogger.Infof(template, args...)
+}
+
+func Warnf(template string, args ...interface{}) {
+	BizLogger.Warnf(template, args...)
 }
 
 func Errorf(template string, args ...interface{}) {
-	bizLogger.Errorf(template, args...)
+	BizLogger.Errorf(template, args...)
 }
 
-func Error(args ...interface{}) {
-	bizLogger.Error(args)
+func Debugf(template string, args ...interface{}) {
+	BizLogger.Debugf(template, args...)
 }
 
-func Debugf(fmt string, args ...interface{}) {
-	bizLogger.Debugf(fmt, args...)
+func Fatalf(template string, args ...interface{}) {
+	BizLogger.Fatalf(template, args...)
 }
 
 func Fatal(args ...interface{}) {
-	bizLogger.Fatal(args)
+	BizLogger.Fatal(args...)
 }
 
-func Fatalf(fmt string, args ...interface{}) {
-	bizLogger.Fatalf(fmt, args)
-}
 
 type zapGrpc struct {
 	*zap.SugaredLogger

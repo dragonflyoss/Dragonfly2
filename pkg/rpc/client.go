@@ -57,7 +57,7 @@ var clientOpts = []grpc.DialOption{
 	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
 	grpc.WithInsecure(),
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:    3 * time.Minute,
+		Time:    2 * time.Minute,
 		Timeout: 10 * time.Second,
 	}),
 	grpc.WithStreamInterceptor(streamClientInterceptor),
@@ -85,7 +85,7 @@ func BuildClient(client interface{}, init InitClientFunc, addrs []dfnet.NetAddr,
 		}
 
 		return client, nil
-	}, 0.5, 5.0, 5)
+	}, 0.5, 3.0, 3)
 }
 
 func (c *Connection) connect() error {
