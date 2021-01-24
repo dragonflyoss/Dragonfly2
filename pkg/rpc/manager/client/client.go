@@ -18,110 +18,159 @@ package client
 
 import (
 	"context"
+	"errors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager"
-	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
+	"sync"
+	"time"
 )
 
-func init() {
-	logDir := "/var/log/dragonfly"
-
-	bizLogger := logger.CreateLogger(logDir+"/managerClient.log", 300, -1, -1, false, false)
-	log := bizLogger.Sugar()
-	logger.SetBizLogger(log)
-	logger.SetGrpcLogger(log)
+// see manager.ManagerClient
+type ManagerClient interface {
+	GetSchedulers(ctx context.Context, req *manager.NavigatorRequest, opts ...grpc.CallOption) (*manager.SchedulerNodes, error)
+	// only call once
+	KeepAlive(ctx context.Context, req *KeepAliveRequest, opts ...grpc.CallOption) error
+	// GetLatestConfig return latest management config and cdn host map with host name key
+	GetLatestConfig() (*manager.ManagementConfig_SchedulerConfig, map[string]*manager.ServerInfo, *manager.ManagementConfig_CdnConfig)
+	Close() error
 }
 
-// ManagerClient
-type ManagerClient interface {
-	// GetSchedulers
-	GetSchedulers(context.Context, *manager.NavigatorRequest, ...grpc.CallOption) (*manager.SchedulerNodes, error)
-	// KeepAlive
-	KeepAlive(context.Context, ...grpc.CallOption) (<-chan *manager.HeartRequest, chan<- *manager.ManagementConfig, error)
-	// close the conn
-	Close() error
+// it is mutually exclusive between IsCdn and IsScheduler
+type KeepAliveRequest struct {
+	IsCdn       bool
+	IsScheduler bool
+	// keep alive interval(second), default is 3s
+	Interval int
 }
 
 type managerClient struct {
 	*rpc.Connection
 	Client manager.ManagerClient
+
+	schedulerConfig *manager.ManagementConfig_SchedulerConfig
+	cdnConfig       *manager.ManagementConfig_CdnConfig
+	cdns            map[string]*manager.ServerInfo
+
+	rwMutex   sync.RWMutex
+	ch        chan struct{}
+	closeDone bool
 }
 
-// init client info excepting connection
 var initClientFunc = func(c *rpc.Connection) {
-	dc := c.Ref.(*managerClient)
-	dc.Client = manager.NewManagerClient(c.Conn)
-	dc.Connection = c
+	mc := c.Ref.(*managerClient)
+	mc.Client = manager.NewManagerClient(c.Conn)
+	mc.Connection = c
 }
 
 func CreateClient(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerClient, error) {
-	if client, err := rpc.BuildClient(&managerClient{}, initClientFunc, netAddrs, opts); err != nil {
+	if client, err := rpc.BuildClient(&managerClient{ch: make(chan struct{})}, initClientFunc, netAddrs, opts); err != nil {
 		return nil, err
 	} else {
 		return client.(*managerClient), nil
 	}
 }
 
-func (dc *managerClient) GetSchedulers(ctx context.Context, req *manager.NavigatorRequest, opts ...grpc.CallOption) (shs *manager.SchedulerNodes, err error) {
-	xc, _, nextNum := dc.GetClientSafely()
-	client := xc.(manager.ManagerClient)
-
+func (mc *managerClient) GetSchedulers(ctx context.Context, req *manager.NavigatorRequest, opts ...grpc.CallOption) (sns *manager.SchedulerNodes, err error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return client.GetSchedulers(ctx, req, opts...)
+		return mc.Client.GetSchedulers(ctx, req, opts...)
 	}, 0.5, 5.0, 5)
 
 	if err == nil {
-		shs = res.(*manager.SchedulerNodes)
+		sns = res.(*manager.SchedulerNodes)
 	}
 
-	if err != nil {
-		if err = dc.TryMigrate(nextNum, err); err == nil {
-			return dc.GetSchedulers(ctx, req, opts...)
-		}
-	}
 	return
 }
 
-func (dc *managerClient) KeepAlive(ctx context.Context, opts ...grpc.CallOption) (<-chan *manager.HeartRequest, chan<- *manager.ManagementConfig, error) {
-	heartReqChan := make(<-chan *manager.HeartRequest, 4)
-	configChan := make(chan<- *manager.ManagementConfig, 4)
-
-	pts, err := newConfigStream(dc, ctx, opts)
-	if err != nil {
-		return nil, nil, err
+func (mc *managerClient) KeepAlive(ctx context.Context, req *KeepAliveRequest, opts ...grpc.CallOption) error {
+	if (req.IsCdn && req.IsScheduler) || (!req.IsCdn && !req.IsScheduler) {
+		return errors.New("IsCdn and IsScheduler must be exclusive")
 	}
 
-	go send(pts, heartReqChan)
+	if req.Interval <= 0 {
+		req.Interval = 3
+	} else if req.Interval > 30 {
+		req.Interval = 30
+	}
 
-	go receive(pts, configChan)
+	hr := &manager.HeartRequest{
+		HostName: dfnet.HostName,
+	}
+	if req.IsCdn {
+		hr.From = &manager.HeartRequest_Cdn{Cdn: true}
+	} else {
+		hr.From = &manager.HeartRequest_Scheduler{Scheduler: true}
+	}
 
-	return heartReqChan, configChan, nil
-}
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				logger.Errorf("keep alive exit:%v", err)
+			}
+		}()
 
-func send(cs *configStream, prc <-chan *manager.HeartRequest) {
-	safe.Call(func() {
-		defer cs.closeSend()
-		for v := range prc {
-			_ = cs.send(v)
-		}
-	})
-}
+		logger.Infof("trigger keep alive per %ds", req.Interval)
 
-func receive(cs *configStream, mcc chan<- *manager.ManagementConfig) {
-	safe.Call(func() {
-		defer close(mcc)
 		for {
-			config, err := cs.recv()
-			if err == nil {
-				mcc <- config
+			config, err := mc.Client.KeepAlive(ctx, hr, opts...)
+			if err == nil && config.State.Success {
+				fillConfig(mc, config)
 			} else {
-				mcc <- base.NewResWithErr(config, err).(*manager.ManagementConfig)
-				return
+				if err == nil {
+					err = errors.New(config.State.Msg)
+				}
+
+				logger.Errorf("do keep alive error:%v", err)
+			}
+
+			time.Sleep(time.Duration(req.Interval) * time.Second)
+		}
+	}()
+
+	return nil
+}
+
+func (mc *managerClient) GetLatestConfig() (*manager.ManagementConfig_SchedulerConfig, map[string]*manager.ServerInfo, *manager.ManagementConfig_CdnConfig) {
+	if mc.schedulerConfig == nil && mc.cdnConfig == nil {
+		<-mc.ch
+	}
+
+	mc.rwMutex.RLock()
+	defer mc.rwMutex.RUnlock()
+	return mc.schedulerConfig, mc.cdns, mc.cdnConfig
+}
+
+func fillConfig(mc *managerClient, config *manager.ManagementConfig) {
+	mc.rwMutex.Lock()
+	defer mc.rwMutex.Unlock()
+
+	switch v := config.Config.(type) {
+	case *manager.ManagementConfig_SchedulerConfig_:
+		if v.SchedulerConfig != nil {
+			mc.schedulerConfig = v.SchedulerConfig
+			if mc.schedulerConfig.CdnHosts != nil {
+				cdns := make(map[string]*manager.ServerInfo)
+				for _, one := range mc.schedulerConfig.CdnHosts {
+					cdns[one.HostInfo.HostName] = one
+				}
+				mc.cdns = cdns
 			}
 		}
-	})
+	case *manager.ManagementConfig_CdnConfig_:
+		if v.CdnConfig != nil {
+			mc.cdnConfig = v.CdnConfig
+		}
+	default:
+		break
+	}
+
+	if mc.schedulerConfig != nil || mc.cdnConfig != nil {
+		if !mc.closeDone {
+			close(mc.ch)
+			mc.closeDone = true
+		}
+	}
 }

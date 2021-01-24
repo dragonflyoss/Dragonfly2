@@ -140,7 +140,7 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return client.LeaveTask(ctx, pt, opts...)
-	}, 0.5, 5.0, 5)
+	}, 0.5, 5.0, 3)
 
 	var suc bool
 	var code base.Code

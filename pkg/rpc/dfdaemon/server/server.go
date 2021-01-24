@@ -26,6 +26,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"sync"
 )
@@ -39,7 +40,7 @@ func init() {
 	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 100, 7, 14, false, false)
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	gcLogger := logger.CreateLogger(logDir+"/gc.log", 100, 3, 6, false, false)
+	gcLogger := logger.CreateLogger(logDir+"/gc.log", 100, 7, 14, false, false)
 	logger.SetGcLogger(gcLogger.Sugar())
 
 	// set register with server implementation.
@@ -63,6 +64,12 @@ type DaemonServer interface {
 func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_DownloadServer) (err error) {
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
+
+	peerAddr := "unknown"
+	if pe, ok := peer.FromContext(ctx); ok {
+		peerAddr = pe.Addr.String()
+	}
+	logger.Infof("trigger download for url:%s,from:%s,uuid:%s", req.Url, peerAddr, req.Uuid)
 
 	errChan := make(chan error, 10)
 	drc := make(chan *dfdaemon.DownResult, 4)

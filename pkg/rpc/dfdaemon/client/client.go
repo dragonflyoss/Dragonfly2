@@ -82,7 +82,7 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return dc.Client.GetPieceTasks(ctx, ptr, opts...)
-	}, 0.2, 1.0, 3)
+	}, 0.2, 2.0, 3)
 
 	if err == nil {
 		return res.(*base.PiecePacket), nil

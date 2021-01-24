@@ -176,6 +176,8 @@ func isErrAddrInuse(err error) bool {
 	return false
 }
 
+// ConvertServerError converts err to grpc error to decide how client does retry and migration,
+// it is not available for bidirectional stream.
 func ConvertServerError(err error) error {
 	if err == nil {
 		return nil

@@ -76,11 +76,16 @@ func BuildClient(client interface{}, init InitClientFunc, addrs []dfnet.NetAddr,
 		opts:     opts,
 	}
 
-	if err := conn.connect(); err != nil {
-		return nil, err
-	}
+	return ExecuteWithRetry(func() (interface{}, error) {
+		conn.nextNum = 0
+		conn.curTarget = ""
 
-	return client, nil
+		if err := conn.connect(); err != nil {
+			return nil, err
+		}
+
+		return client, nil
+	}, 0.5, 5.0, 5)
 }
 
 func (c *Connection) connect() error {

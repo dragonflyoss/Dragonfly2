@@ -26,14 +26,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+// see cdnsystem.SeederClient
 type SeederClient interface {
-	// generate seeds and return to scheduler
 	ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (<-chan *cdnsystem.PieceSeed, error)
-
-	// GetPieceTasks
 	GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
-
-	// Close
 	Close() error
 }
 
@@ -42,14 +38,12 @@ type seederClient struct {
 	Client cdnsystem.SeederClient
 }
 
-// init client info excepting connection
 var initClientFunc = func(c *rpc.Connection) {
 	sc := c.Ref.(*seederClient)
 	sc.Client = cdnsystem.NewSeederClient(c.Conn)
 	sc.Connection = c
 }
 
-// netAddrs are used to connect and migrate
 func CreateClient(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (SeederClient, error) {
 	if client, err := rpc.BuildClient(&seederClient{}, initClientFunc, netAddrs, opts); err != nil {
 		return nil, err
@@ -71,6 +65,18 @@ func (sc *seederClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedReque
 	return psc, nil
 }
 
+func (sc *seederClient) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		return sc.Client.GetPieceTasks(ctx, req, opts...)
+	}, 0.2, 2.0, 3)
+
+	if err == nil {
+		return res.(*base.PiecePacket), nil
+	}
+
+	return nil, err
+}
+
 func receive(pss *pieceSeedStream, psc chan *cdnsystem.PieceSeed) {
 	safe.Call(func() {
 		defer close(psc)
@@ -79,7 +85,6 @@ func receive(pss *pieceSeedStream, psc chan *cdnsystem.PieceSeed) {
 			pieceSeed, err := pss.recv()
 			if err == nil {
 				psc <- pieceSeed
-
 				if pieceSeed.Done {
 					return
 				}
@@ -89,26 +94,4 @@ func receive(pss *pieceSeedStream, psc chan *cdnsystem.PieceSeed) {
 			}
 		}
 	})
-}
-
-func (sc *seederClient) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest, opts ...grpc.CallOption) (pp *base.PiecePacket, err error) {
-	xc, target, nextNum := sc.GetClientSafely()
-	client := xc.(cdnsystem.SeederClient)
-
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return client.GetPieceTasks(ctx, req, opts...)
-	}, 0.5, 5.0, 5)
-	// todo log
-	println(target, res)
-	if err == nil {
-		pp = res.(*base.PiecePacket)
-	}
-
-	if err != nil {
-		if err = sc.TryMigrate(nextNum, err); err == nil {
-			return sc.GetPieceTasks(ctx, req, opts...)
-		}
-	}
-
-	return
 }
