@@ -26,6 +26,9 @@ import (
 var END_OF_PIECE = int32(1) << 30
 var ZERO_OF_PIECE = int32(-1)
 
+// cdn peer id suffix
+var CDN_SUFFIX = "_CDN"
+
 func NewState(code Code, msg interface{}) *ResponseState {
 	if msg == nil {
 		msg = ""

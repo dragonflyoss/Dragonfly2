@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	bizLogger      *zap.SugaredLogger
+	BizLogger      *zap.SugaredLogger
 	GrpcLogger     *zap.SugaredLogger
 	GcLogger       *zap.SugaredLogger
 	StatPeerLogger *zap.Logger
@@ -92,7 +92,7 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 }
 
 func SetBizLogger(log *zap.SugaredLogger) {
-	bizLogger = log
+	BizLogger = log
 }
 
 func SetGcLogger(log *zap.SugaredLogger) {
@@ -119,35 +119,35 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 }
 
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
-	bizLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
+	BizLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
-	bizLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
+	BizLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
-	bizLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
+	BizLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
-	bizLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
+	BizLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func Infof(template string, args ...interface{}) {
-	bizLogger.Infof(template, args...)
+	BizLogger.Infof(template, args...)
 }
 
 func Warnf(template string, args ...interface{}) {
-	bizLogger.Warnf(template, args...)
+	BizLogger.Warnf(template, args...)
 }
 
 func Errorf(template string, args ...interface{}) {
-	bizLogger.Errorf(template, args...)
+	BizLogger.Errorf(template, args...)
 }
 
 func Debugf(template string, args ...interface{}) {
-	bizLogger.Debugf(template, args...)
+	BizLogger.Debugf(template, args...)
 }
 
 type zapGrpc struct {
