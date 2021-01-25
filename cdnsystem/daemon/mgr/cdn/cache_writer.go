@@ -39,6 +39,7 @@ type downloadMetadata struct {
 	realCdnFileLength    int64 // the actual length of the stored file
 	realSourceFileLength int64 // actually read the length of the source
 	pieceTotalCount      int32 // piece total count
+	pieceMd5Sign         string
 }
 
 type cacheWriter struct {
@@ -132,10 +133,16 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get cdn file length")
 	}
+
+	pieceMd5Sign, err := cw.metaDataMgr.getPieceMd5Sign(ctx, task.TaskID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to piece md5 sign")
+	}
 	return &downloadMetadata{
 		backSourceLength:     backSourceFileLength,
 		realCdnFileLength:    storageInfo.Size,
 		realSourceFileLength: currentSourceFileLength + backSourceFileLength,
 		pieceTotalCount:      curPieceNum,
+		pieceMd5Sign:         pieceMd5Sign,
 	}, nil
 }

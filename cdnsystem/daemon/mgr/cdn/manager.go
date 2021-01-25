@@ -139,7 +139,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	if detectResult.breakNum == -1 {
 		logger.Named(task.TaskID).Infof("cache full hit on local")
 		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
-		seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceRealMd5, detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength)
+		seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceRealMd5, detectResult.fileMetaData.PieceMd5Sign, detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength)
 		return seedTask, nil
 	}
 	// third: start to download the source file
@@ -176,7 +176,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
 		return seedTask, err
 	}
-	seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, sourceMD5, downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength)
+	seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, sourceMD5, downloadMetadata.pieceMd5Sign, downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength)
 	return seedTask, nil
 }
 
@@ -201,7 +201,7 @@ func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error 
 	if force {
 		err := deleteTaskFiles(ctx, cm.cacheStore, taskID)
 		if err != nil {
-			return errors.Wrap(err,"failed to delete task files")
+			return errors.Wrap(err, "failed to delete task files")
 		}
 	}
 	err := cm.progressMgr.Clear(taskID)
@@ -211,7 +211,7 @@ func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error 
 	return nil
 }
 
-func (cm *Manager) InitSeedProgress(ctx context.Context, taskID string) error  {
+func (cm *Manager) InitSeedProgress(ctx context.Context, taskID string) error {
 	return cm.progressMgr.InitSeedProgress(ctx, taskID)
 }
 
@@ -245,6 +245,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 		sourceFileLen = downloadMetadata.realSourceFileLength
 	}
 	cdnFileLength := downloadMetadata.realCdnFileLength
+	pieceMd5Sign := downloadMetadata.pieceMd5Sign
 	// if validate fail
 	if !isSuccess {
 		cdnFileLength = 0
@@ -253,7 +254,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 		Finish:        true,
 		Success:       isSuccess,
 		SourceRealMd5: sourceMd5,
-		PieceMd5Sign : cm.progressMgr.GetPieceMd5Sign(task.TaskID),
+		PieceMd5Sign:  pieceMd5Sign,
 		CdnFileLength: cdnFileLength,
 		SourceFileLen: sourceFileLen,
 	}); err != nil {

@@ -163,7 +163,10 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 		task.SourceRealMd5 = updateTaskInfo.SourceRealMd5
 	}
 
-	var pieceTotal int32
+	if !stringutils.IsEmptyStr(updateTaskInfo.PieceMd5Sign) {
+		task.PieceMd5Sign = updateTaskInfo.PieceMd5Sign
+	}
+ 	var pieceTotal int32
 	if updateTaskInfo.SourceFileLength > 0 {
 		pieceTotal = int32((updateTaskInfo.SourceFileLength + int64(task.PieceSize-1)) / int64(task.PieceSize))
 		task.SourceFileLength = updateTaskInfo.SourceFileLength

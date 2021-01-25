@@ -156,6 +156,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 		}, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
 	task, err := css.taskMgr.Get(ctx, req.TaskId)
+	logger.Debugf("task:%+v",task)
 	if err != nil {
 		return &base.PiecePacket{
 			State:  base.NewState(base.Code_CDN_ERROR, err),
@@ -170,8 +171,8 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 		}, errors.Wrapf(err, "failed to get pieces from cdn")
 	}
 	pieceInfos := make([]*base.PieceInfo, 0)
+	var count int32 = 0
 	for _, piece := range pieces {
-		var count int32 = 0
 		if piece.PieceNum >= req.StartNum && count < req.Limit {
 			pieceRange := strings.Split(piece.PieceRange, "-")
 			pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
@@ -196,7 +197,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 		PieceInfos:    pieceInfos,
 		TotalPiece:    task.PieceTotal,
 		ContentLength: task.SourceFileLength,
-		PieceMd5Sign:  "",
+		PieceMd5Sign:  task.PieceMd5Sign,
 	}, nil
 }
 

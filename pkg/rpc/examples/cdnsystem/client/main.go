@@ -30,7 +30,7 @@ import (
 )
 
 func main2() {
-	c, err := client.CreateClient([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: "localhost:8003"}})
+	c, err := client.CreateClient([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: "127.0.0.1:8003"}})
 	if err != nil {
 		panic(err)
 	}
@@ -60,8 +60,8 @@ func main() {
 	psc, err := c.GetPieceTasks(context.TODO(), &base.PieceTaskRequest{
 		TaskId:   "test",
 		SrcIp:    "11.11.11.11",
-		StartNum: 0,
-		Limit:    3,
+		StartNum: 1,
+		Limit:    4,
 	})
 	if err != nil {
 		fmt.Printf("%v",err)

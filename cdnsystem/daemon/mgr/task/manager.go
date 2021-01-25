@@ -156,7 +156,10 @@ func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	// update accessTime for taskID
+	if err := tm.accessTimeMap.Add(taskID, time.Now()); err != nil {
+		logger.Named(taskID).Warnf("failed to update accessTime: %v", err)
+	}
 	// type assertion
 	if info, ok := v.(*types.SeedTask); ok {
 		return info, nil
@@ -165,6 +168,7 @@ func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
 }
 
 func (tm Manager) Get(ctx context.Context, taskID string) (*types.SeedTask, error) {
+	// todo locker
 	return tm.getTask(taskID)
 }
 

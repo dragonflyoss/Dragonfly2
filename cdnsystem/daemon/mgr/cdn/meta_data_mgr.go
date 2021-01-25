@@ -169,6 +169,9 @@ func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskID str
 		if !stringutils.IsEmptyStr(metaData.SourceRealMd5) {
 			originMetaData.SourceRealMd5 = metaData.SourceRealMd5
 		}
+		if !stringutils.IsEmptyStr(metaData.PieceMd5Sign) {
+			originMetaData.PieceMd5Sign = metaData.PieceMd5Sign
+		}
 	}
 	return mm.writeFileMetaData(ctx, originMetaData)
 }
@@ -257,3 +260,16 @@ func (pmm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context
 	}
 	return result, nil
 }
+
+func (pm *metaDataManager) getPieceMd5Sign(ctx context.Context, taskID string) (md5Sign string, err error) {
+	pieceMetaRecords, err := pm.readPieceMetaRecordsWithoutCheck(ctx, taskID)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to read piece meta file")
+	}
+	var pieceMd5 []string
+	for _, piece := range pieceMetaRecords {
+		pieceMd5 = append(pieceMd5, piece.Md5)
+	}
+	return digest.Sha1(pieceMd5),nil
+}
+

@@ -24,7 +24,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/digest"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/pkg/errors"
 	"sync"
@@ -212,15 +211,4 @@ func (pm *Manager) GetPieceMetaRecordsByTaskID(taskID string) (records []*types.
 	pm.mu.GetLock(taskID, true)
 	defer pm.mu.ReleaseLock(taskID, true)
 	return pm.getPieceMetaRecordsByTaskID(taskID)
-}
-
-func (pm *Manager) GetPieceMd5Sign(taskID string) (md5Sign string) {
-	pm.mu.GetLock(taskID, true)
-	defer pm.mu.ReleaseLock(taskID, true)
-	pieces, _ := pm.getPieceMetaRecordsByTaskID(taskID)
-	var pieceMd5 []string
-	for _, piece := range pieces {
-		pieceMd5 = append(pieceMd5, piece.PieceMd5)
-	}
-	return digest.Sha1(pieceMd5)
 }

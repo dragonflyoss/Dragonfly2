@@ -42,9 +42,6 @@ type SeedProgressMgr interface {
 	// GetPieceMetaRecordsByTaskID get pieces by taskId
 	GetPieceMetaRecordsByTaskID(taskID string) (records []*types.SeedPiece, err error)
 
-	//
-	GetPieceMd5Sign(taskID string)(md5Sign string)
-
 	// Clear
 	Clear(taskID string) error
 }
