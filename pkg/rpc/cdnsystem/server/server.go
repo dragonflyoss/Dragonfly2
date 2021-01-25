@@ -83,7 +83,7 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 	return
 }
 
-func (p *proxy) PullPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	return p.server.GetPieceTasks(ctx, ptr)
 }
 
