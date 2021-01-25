@@ -18,9 +18,9 @@ import (
 )
 
 type simpleLocalTaskStore struct {
-	persistentPeerTaskMetadata
+	persistentMetadata
 
-	lock sync.Locker
+	*sync.RWMutex
 
 	dataDir string
 
@@ -64,16 +64,16 @@ func (e simpleLocalTaskStoreExecutor) LoadTask(meta PeerTaskMetaData) (TaskStora
 func (e simpleLocalTaskStoreExecutor) CreateTask(req RegisterTaskRequest) error {
 	logger.Debugf("init local task storage, peer id: %s, task id: %s", req.PeerID, req.TaskID)
 
-	dataDir := path.Join(e.opt.DataPath, string(SimpleLocalTaskStoreDriver), req.TaskID)
+	dataDir := path.Join(e.opt.DataPath, string(SimpleLocalTaskStoreDriver), req.TaskID, req.PeerID)
 	t := &simpleLocalTaskStore{
-		persistentPeerTaskMetadata: persistentPeerTaskMetadata{
+		persistentMetadata: persistentMetadata{
 			TaskID:        req.TaskID,
 			TaskMeta:      map[string]string{},
 			ContentLength: req.ContentLength,
 			PeerID:        req.PeerID,
 			Pieces:        map[int32]PieceMetaData{},
 		},
-		lock:             &sync.Mutex{},
+		RWMutex:          &sync.RWMutex{},
 		dataDir:          dataDir,
 		metadataFilePath: path.Join(dataDir, taskMetaData),
 		dataFilePath:     path.Join(dataDir, taskData),
@@ -94,47 +94,82 @@ func (e simpleLocalTaskStoreExecutor) ReloadPersistentTask(gcCallback GCCallback
 	if err != nil {
 		return err
 	}
-	var loadErrs []error
+	var (
+		loadErrs    []error
+		loadErrDirs []string
+	)
 	for _, dir := range dirs {
 		taskID := dir.Name()
-		dataDir := path.Join(e.opt.DataPath, string(SimpleLocalTaskStoreDriver), taskID)
-		t := &simpleLocalTaskStore{
-			persistentPeerTaskMetadata: persistentPeerTaskMetadata{
-				TaskID:   taskID,
-				TaskMeta: map[string]string{},
-				Pieces:   map[int32]PieceMetaData{},
-			},
-			lock:             &sync.Mutex{},
-			dataDir:          dataDir,
-			metadataFilePath: path.Join(dataDir, taskMetaData),
-			dataFilePath:     path.Join(dataDir, taskData),
-			expireTime:       e.opt.TaskExpireTime,
-			lastAccess:       time.Now(),
-			gcCallback:       gcCallback,
-		}
-		if err0 := t.init(); err0 != nil {
-			loadErrs = append(loadErrs, err0)
-			logger.With("action", "reload", "stage", "init", "taskID", taskID).
-				Warnf("load task from disk error: %s", err0)
+		peerDirs, err := ioutil.ReadDir(path.Join(e.opt.DataPath, string(SimpleLocalTaskStoreDriver), taskID))
+		if err != nil {
 			continue
 		}
+		for _, peerDir := range peerDirs {
+			peerID := peerDir.Name()
+			dataDir := path.Join(e.opt.DataPath, string(SimpleLocalTaskStoreDriver), taskID, peerID)
+			t := &simpleLocalTaskStore{
+				persistentMetadata: persistentMetadata{
+					TaskID:   taskID,
+					PeerID:   peerID,
+					TaskMeta: map[string]string{},
+					Pieces:   map[int32]PieceMetaData{},
+				},
+				RWMutex:          &sync.RWMutex{},
+				dataDir:          dataDir,
+				metadataFilePath: path.Join(dataDir, taskMetaData),
+				dataFilePath:     path.Join(dataDir, taskData),
+				expireTime:       e.opt.TaskExpireTime,
+				lastAccess:       time.Now(),
+				gcCallback:       gcCallback,
+			}
+			if err0 := t.init(); err0 != nil {
+				loadErrs = append(loadErrs, err0)
+				loadErrDirs = append(loadErrDirs, dataDir)
+				logger.With("action", "reload", "stage", "init", "taskID", taskID, "peerID", peerID).
+					Warnf("load task from disk error: %s", err0)
+				continue
+			}
 
-		bytes, err0 := ioutil.ReadAll(t.metadataFile)
-		if err0 != nil {
-			loadErrs = append(loadErrs, err0)
-			logger.With("action", "reload", "stage", "read metadata", "taskID", taskID).
-				Warnf("load task from disk error: %s", err0)
-			continue
-		}
+			bytes, err0 := ioutil.ReadAll(t.metadataFile)
+			if err0 != nil {
+				loadErrs = append(loadErrs, err0)
+				loadErrDirs = append(loadErrDirs, dataDir)
+				logger.With("action", "reload", "stage", "read metadata", "taskID", taskID, "peerID", peerID).
+					Warnf("load task from disk error: %s", err0)
+				continue
+			}
 
-		if err0 = json.Unmarshal(bytes, &t.persistentPeerTaskMetadata); err0 != nil {
-			loadErrs = append(loadErrs, err0)
-			logger.With("action", "reload", "stage", "parse metadata", "taskID", taskID).
-				Warnf("load task from disk error: %s", err0)
-			continue
+			if err0 = json.Unmarshal(bytes, &t.persistentMetadata); err0 != nil {
+				loadErrs = append(loadErrs, err0)
+				loadErrDirs = append(loadErrDirs, dataDir)
+				logger.With("action", "reload", "stage", "parse metadata", "taskID", taskID, "peerID", peerID).
+					Warnf("load task from disk error: %s", err0)
+				continue
+			}
+			logger.Debugf("load task %s/%s metadata from %s",
+				t.persistentMetadata.TaskID, t.persistentMetadata.PeerID, t.metadataFilePath)
+			e.tasks.Store(PeerTaskMetaData{
+				PeerID: peerID,
+				TaskID: taskID,
+			}, t)
 		}
-		logger.Debugf("load task %s metadata from %s", t.persistentPeerTaskMetadata.TaskID, t.metadataFilePath)
-		e.tasks.Store(taskID, t)
+	}
+	// remove load error peer tasks
+	for _, dir := range loadErrDirs {
+		if err = os.Remove(path.Join(dir, taskMetaData)); err != nil {
+			logger.Warnf("remove load error file %s error: %s", path.Join(dir, taskMetaData), err)
+		}
+		logger.Warnf("remove load error file %s ok", path.Join(dir, taskMetaData))
+
+		if err = os.Remove(path.Join(dir, taskData)); err != nil {
+			logger.Warnf("remove load error file %s error: %s", path.Join(dir, taskData), err)
+		}
+		logger.Warnf("remove load error file %s ok", path.Join(dir, taskData))
+
+		if err = os.Remove(dir); err != nil {
+			logger.Warnf("remove load error directory %s error: %s", dir, err)
+		}
+		logger.Warnf("remove load error directory %s ok", dir)
 	}
 	if len(loadErrs) > 0 {
 		var sb strings.Builder
@@ -191,9 +226,12 @@ func (t *simpleLocalTaskStore) WritePiece(ctx context.Context, req *WritePieceRe
 	t.touch()
 
 	// piece already exists
+	t.RLock()
 	if _, ok := t.Pieces[req.Num]; ok {
+		t.RUnlock()
 		return nil
 	}
+	t.RUnlock()
 
 	file, err := os.OpenFile(t.dataFilePath, os.O_RDWR, defaultFileMode)
 	if err != nil {
@@ -209,8 +247,8 @@ func (t *simpleLocalTaskStore) WritePiece(ctx context.Context, req *WritePieceRe
 	}
 	logger.Debugf("task %s wrote %d bytes to file %s, piece %d, start %d, length: %d",
 		t.TaskID, n, t.dataFilePath, req.Num, req.Range.Start, req.Range.Length)
-	t.lock.Lock()
-	defer t.lock.Unlock()
+	t.Lock()
+	defer t.Unlock()
 	// double check
 	if _, ok := t.Pieces[req.Num]; ok {
 		return nil
@@ -273,6 +311,8 @@ func (t *simpleLocalTaskStore) Store(ctx context.Context, req *StoreRequest) err
 
 func (t *simpleLocalTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	var pieces []*base.PieceInfo
+	t.RLock()
+	defer t.RUnlock()
 	for i := int32(0); i < req.Limit; i++ {
 		if piece, ok := t.Pieces[req.StartNum+i]; ok {
 			pieces = append(pieces, &base.PieceInfo{
@@ -341,15 +381,18 @@ func (t *simpleLocalTaskStore) TryGC() (bool, error) {
 			return false, err
 		}
 		log.Infof("purged task work directory: %s", t.dataDir)
+
+		// TODO gc task dir
 		return true, nil
 	}
 	return false, nil
 }
 
 func (t *simpleLocalTaskStore) saveMetadata() error {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	data, err := json.Marshal(t.persistentPeerTaskMetadata)
+	t.RLock()
+	io.Pipe()
+	defer t.RUnlock()
+	data, err := json.Marshal(t.persistentMetadata)
 	if err != nil {
 		return err
 	}

@@ -107,13 +107,13 @@ func (e advanceLocalTaskStoreExecutor) CreateTask(req RegisterTaskRequest) error
 
 	dataDir := path.Join(e.opt.DataPath, string(AdvanceLocalTaskStoreDriver), req.TaskID)
 	t := &simpleLocalTaskStore{
-		persistentPeerTaskMetadata: persistentPeerTaskMetadata{
+		persistentMetadata: persistentMetadata{
 			TaskID:   req.TaskID,
 			TaskMeta: map[string]string{},
 			PeerID:   req.PeerID,
 			Pieces:   map[int32]PieceMetaData{},
 		},
-		lock:             &sync.Mutex{},
+		RWMutex:          &sync.RWMutex{},
 		dataDir:          dataDir,
 		metadataFilePath: path.Join(dataDir, taskMetaData),
 		dataFilePath:     dataFilePath,

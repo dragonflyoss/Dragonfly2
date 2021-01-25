@@ -178,7 +178,7 @@ func TestSimpleLocalTaskStore_StoreTaskData(t *testing.T) {
 	assert.Nil(err, "open test meta data")
 	defer matadata.Close()
 	ts := simpleLocalTaskStore{
-		persistentPeerTaskMetadata: persistentPeerTaskMetadata{
+		persistentMetadata: persistentMetadata{
 			TaskID: "test",
 		},
 		lock:         &sync.Mutex{},
