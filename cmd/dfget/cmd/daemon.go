@@ -27,6 +27,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/phayes/freeport"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon"
@@ -42,6 +43,7 @@ var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Launch a peer daemon for downloading and uploading files.",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		logger.InitDaemon()
 		lock := flock.New(flagDaemonOpt.lockFile)
 		if ok, err := lock.TryLock(); err != nil {
 			return err
@@ -60,7 +62,7 @@ func init() {
 
 func runDaemon() error {
 	if flagDaemonOpt.verbose {
-		//logger.SetLevel(logrus.DebugLevel)
+		logger.LogLevel.SetLevel(zapcore.DebugLevel)
 		go func() {
 			// enable go pprof and statsview
 			port, _ := freeport.GetFreePort()

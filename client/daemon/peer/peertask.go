@@ -23,11 +23,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"google.golang.org/grpc"
-
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
+	dfclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/client"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	schedulerclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/client"
 )
@@ -67,9 +66,9 @@ type filePeerTask struct {
 	// peerPacket in the fly
 	peerPacket *scheduler.PeerPacket
 
-	peerClient      dfdaemon.DaemonClient
-	peerClientConn  *grpc.ClientConn
-	peerClientInfo  *scheduler.PeerPacket_DestPeer
+	peerClient dfdaemon.DaemonClient
+	//peerClientConn  *grpc.ClientConn
+	//peerClientInfo  *scheduler.PeerPacket_DestPeer
 	peerClientReady chan bool
 
 	pieceParallelCount int32
@@ -188,9 +187,11 @@ WaitScheduler:
 			continue
 		}
 		pt.peerPacket = peerPacket
-		if updated := pt.updateAvailablePeerClient(); updated {
-			pt.peerClientReady <- true
-		}
+		pt.pieceParallelCount = pt.peerPacket.ParallelCount
+		pt.peerClientReady <- true
+		//if updated := pt.updateAvailablePeerClient(); updated {
+		//	pt.peerClientReady <- true
+		//}
 	}
 }
 
@@ -221,17 +222,18 @@ getPiecesTasks:
 		default:
 		}
 
-		piecePacket, err := pt.peerClient.GetPieceTasks(pt.ctx, &base.PieceTaskRequest{
-			TaskId:   pt.taskId,
-			SrcIp:    "",
-			StartNum: num,
-			Limit:    limit,
-		})
+		piecePacket, err := pt.getPieceTasks(
+			&base.PieceTaskRequest{
+				TaskId:   pt.taskId,
+				SrcIp:    "",
+				StartNum: num,
+				Limit:    limit,
+			})
 		if err != nil || !piecePacket.State.Success {
 			// FIXME(jim): push failed result to scheduler
 			pt.log.Errorf("get piece task error: %s, try to find available peer", err)
 			<-pt.peerClientReady
-			pt.log.Infof("find new available peer %s:%d", pt.peerClientInfo.Ip, pt.peerClientInfo.RpcPort)
+			//pt.log.Infof("find new available peer %s:%d", pt.peerClientInfo.Ip, pt.peerClientInfo.RpcPort)
 		}
 
 		if !initialized {
@@ -245,10 +247,10 @@ getPiecesTasks:
 		pt.pieceManager.PullPieces(pt, piecePacket)
 	}
 
-	err := pt.peerClientConn.Close()
-	if err != nil {
-		pt.log.Warnf("close grpc client error: %s", err)
-	}
+	//err := pt.peerClientConn.Close()
+	//if err != nil {
+	//	pt.log.Warnf("close grpc client error: %s", err)
+	//}
 	//close(pt.schedPieceResultCh)
 }
 
@@ -344,56 +346,74 @@ func (pt *filePeerTask) isCompleted() bool {
 	return pt.completedLength == pt.contentLength
 }
 
-func (pt *filePeerTask) updateAvailablePeerClient() bool {
-	pt.lock.Lock()
-	defer pt.lock.Unlock()
-	// close old grpc conn
-	if pt.peerClientConn != nil {
-		pt.peerClientConn.Close()
+//func (pt *filePeerTask) updateAvailablePeerClient() bool {
+//	pt.lock.Lock()
+//	defer pt.lock.Unlock()
+//	// close old grpc conn
+//	if pt.peerClientConn != nil {
+//		pt.peerClientConn.Close()
+//	}
+//	// try main peer when current peer client is not main peer
+//	if err := pt.connectPeerClient(pt.peerPacket.MainPeer); err == nil {
+//		pt.pieceParallelCount = pt.peerPacket.ParallelCount
+//		return true
+//	} else {
+//		pt.log.Warnf("connect main peer from scheduler error: %s", err)
+//	}
+//	// try other peers
+//	for _, peer := range pt.peerPacket.StealPeers {
+//		err := pt.connectPeerClient(peer)
+//		if err == nil {
+//			pt.pieceParallelCount = pt.peerPacket.ParallelCount
+//			return true
+//		}
+//	}
+//	return false
+//}
+
+func (pt *filePeerTask) getPieceTasks(request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	pt.pieceParallelCount = pt.peerPacket.ParallelCount
+	p, err := dfclient.GetPieceTasks(pt.peerPacket.MainPeer, pt.ctx, request)
+	if err == nil {
+		return p, nil
 	}
-	// try main peer when current peer client is not main peer
-	if err := pt.connectPeerClient(pt.peerPacket.MainPeer); err == nil {
-		pt.pieceParallelCount = pt.peerPacket.ParallelCount
-		return true
-	} else {
-		pt.log.Warnf("connect main peer from scheduler error: %s", err)
-	}
-	// try other peers
+	pt.log.Errorf("get piece task from main peer(%s) error: %s", err, pt.peerPacket.MainPeer.PeerId)
 	for _, peer := range pt.peerPacket.StealPeers {
-		err := pt.connectPeerClient(peer)
+		p, err = dfclient.GetPieceTasks(peer, pt.ctx, request)
 		if err == nil {
-			pt.pieceParallelCount = pt.peerPacket.ParallelCount
-			return true
+			return p, nil
 		}
+		pt.log.Errorf("get piece task from peer(%s) error: %s", err, peer.PeerId)
 	}
-	return false
+	// TODO report no peer available error
+	return nil, fmt.Errorf("no peer available")
 }
 
-func (pt *filePeerTask) connectPeerClient(peer *scheduler.PeerPacket_DestPeer) error {
-	if peer == nil {
-		return fmt.Errorf("nil dest peer")
-	}
-	if pt.peerClientInfo != nil && pt.peerClientInfo.PeerId == peer.PeerId {
-		return fmt.Errorf("same dest peer with current connected")
-	}
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", peer.Ip, peer.RpcPort),
-		grpc.WithInsecure())
-	if err != nil {
-		return err
-	}
-	daemonClient := dfdaemon.NewDaemonClient(conn)
-	r, err := daemonClient.CheckHealth(context.Background(), &base.EmptyRequest{})
-	if err == nil && r.Success {
-		pt.peerClient = daemonClient
-		pt.peerClientConn = conn
-		pt.peerClientInfo = peer
-		return nil
-	}
-	if err != nil {
-		pt.log.Errorf("check daemon client failed: %s", err)
-	}
-	if r != nil {
-		pt.log.Errorf("check daemon client failed, response: %#v", r)
-	}
-	return fmt.Errorf("connect to peer error: %s", err)
-}
+//func (pt *filePeerTask) connectPeerClient(peer *scheduler.PeerPacket_DestPeer) error {
+//	if peer == nil {
+//		return fmt.Errorf("nil dest peer")
+//	}
+//	if pt.peerClientInfo != nil && pt.peerClientInfo.PeerId == peer.PeerId {
+//		return fmt.Errorf("same dest peer with current connected")
+//	}
+//	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", peer.Ip, peer.RpcPort),
+//		grpc.WithInsecure())
+//	if err != nil {
+//		return err
+//	}
+//	daemonClient := dfdaemon.NewDaemonClient(conn)
+//	r, err := daemonClient.CheckHealth(context.Background(), &base.EmptyRequest{})
+//	if err == nil && r.Success {
+//		pt.peerClient = daemonClient
+//		pt.peerClientConn = conn
+//		pt.peerClientInfo = peer
+//		return nil
+//	}
+//	if err != nil {
+//		pt.log.Errorf("check daemon client failed: %s", err)
+//	}
+//	if r != nil {
+//		pt.log.Errorf("check daemon client failed, response: %#v", r)
+//	}
+//	return fmt.Errorf("connect to peer error: %s", err)
+//}
