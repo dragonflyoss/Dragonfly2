@@ -7,7 +7,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 )
 
-type persistentPeerTaskMetadata struct {
+type persistentMetadata struct {
 	TaskID        string                  `json:"taskID"`
 	TaskMeta      map[string]string       `json:"taskMeta"`
 	ContentLength int64                   `json:"contentLength"`
