@@ -104,6 +104,8 @@ func (p *pieceDownloader) buildHTTPRequest(d *DownloadPieceRequest) *http.Reques
 	b.Write([]byte(d.TaskID)[:3])
 	b.Write([]byte("/"))
 	b.WriteString(d.TaskID)
+	b.Write([]byte("?peerId="))
+	b.WriteString(d.DstPid)
 
 	req, _ := http.NewRequest(http.MethodGet, b.String(), nil)
 

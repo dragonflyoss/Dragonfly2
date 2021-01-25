@@ -38,6 +38,7 @@ type CommonTaskRequest struct {
 type RegisterTaskRequest struct {
 	CommonTaskRequest
 	ContentLength int64
+	GCCallback    func(CommonTaskRequest)
 }
 
 type WritePieceRequest struct {

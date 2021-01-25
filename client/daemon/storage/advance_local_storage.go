@@ -24,7 +24,8 @@ type advanceLocalTaskStorage struct {
 	*sync.Mutex
 	taskID string
 	// key: peerID
-	peerTasks map[string]*simpleLocalTaskStore
+	peerTasks  map[string]*simpleLocalTaskStore
+	gcCallback func(CommonTaskRequest)
 }
 
 func init() {
@@ -58,10 +59,10 @@ func NewAdvanceLocalTaskStoreExecutor(opt *Option) (TaskStorageExecutor, error) 
 	}, nil
 }
 
-func (e advanceLocalTaskStoreExecutor) LoadTask(taskID string, peerID string) (TaskStorageDriver, bool) {
-	d, ok := e.tasks.Load(taskID)
-	if peerID != "" {
-		_, ok := d.(*advanceLocalTaskStorage).peerTasks[peerID]
+func (e advanceLocalTaskStoreExecutor) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool) {
+	d, ok := e.tasks.Load(meta.TaskID)
+	if meta.PeerID != "" {
+		_, ok := d.(*advanceLocalTaskStorage).peerTasks[meta.PeerID]
 		if !ok {
 			return nil, ok
 		}
@@ -152,7 +153,7 @@ func (e advanceLocalTaskStoreExecutor) CreateTask(req RegisterTaskRequest) error
 	return nil
 }
 
-func (e advanceLocalTaskStoreExecutor) ReloadPersistentTask() error {
+func (e advanceLocalTaskStoreExecutor) ReloadPersistentTask(gcCallback GCCallback) error {
 	//stat, err := os.Stat(path.Join(opt.DataPath, string(AdvanceLocalTaskStoreDriver)))
 	//if err != nil {
 	//	return err
@@ -267,6 +268,12 @@ func (a advanceLocalTaskStorage) TryGC() (bool, error) {
 
 func (a advanceLocalTaskStorage) tryGC(t *simpleLocalTaskStore) (bool, error) {
 	if t.lastAccess.Add(t.expireTime).Before(time.Now()) {
+		if t.gcCallback != nil {
+			t.gcCallback(CommonTaskRequest{
+				PeerID: t.PeerID,
+				TaskID: t.TaskID,
+			})
+		}
 		log := logger.With("gc", AdvanceLocalTaskStoreDriver, "task", t.TaskID)
 		log.Infof("start gc task data")
 		var err error

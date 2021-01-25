@@ -34,6 +34,7 @@ type simpleLocalTaskStore struct {
 
 	expireTime time.Duration
 	lastAccess time.Time
+	gcCallback func(CommonTaskRequest)
 }
 
 func init() {
@@ -52,8 +53,8 @@ func NewSimpleLocalTaskStoreExecutor(opt *Option) (TaskStorageExecutor, error) {
 	}, nil
 }
 
-func (e simpleLocalTaskStoreExecutor) LoadTask(taskID string, _ string) (TaskStorageDriver, bool) {
-	d, ok := e.tasks.Load(taskID)
+func (e simpleLocalTaskStoreExecutor) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool) {
+	d, ok := e.tasks.Load(meta)
 	if !ok {
 		return nil, false
 	}
@@ -81,11 +82,14 @@ func (e simpleLocalTaskStoreExecutor) CreateTask(req RegisterTaskRequest) error 
 	if err := t.init(); err != nil {
 		return err
 	}
-	e.tasks.Store(req.TaskID, t)
+	e.tasks.Store(PeerTaskMetaData{
+		PeerID: req.PeerID,
+		TaskID: req.TaskID,
+	}, t)
 	return nil
 }
 
-func (e simpleLocalTaskStoreExecutor) ReloadPersistentTask() error {
+func (e simpleLocalTaskStoreExecutor) ReloadPersistentTask(gcCallback GCCallback) error {
 	dirs, err := ioutil.ReadDir(path.Join(e.opt.DataPath, string(SimpleLocalTaskStoreDriver)))
 	if err != nil {
 		return err
@@ -106,6 +110,7 @@ func (e simpleLocalTaskStoreExecutor) ReloadPersistentTask() error {
 			dataFilePath:     path.Join(dataDir, taskData),
 			expireTime:       e.opt.TaskExpireTime,
 			lastAccess:       time.Now(),
+			gcCallback:       gcCallback,
 		}
 		if err0 := t.init(); err0 != nil {
 			loadErrs = append(loadErrs, err0)
@@ -142,14 +147,14 @@ func (e simpleLocalTaskStoreExecutor) ReloadPersistentTask() error {
 }
 
 func (e simpleLocalTaskStoreExecutor) TryGC() (bool, error) {
-	var tasks []string
+	var tasks []PeerTaskMetaData
 	e.tasks.Range(func(key, value interface{}) bool {
 		ok, err := value.(gc.GC).TryGC()
 		if err != nil {
 			logger.Errorf("gc task store %s error: %s", key, value)
 		}
 		if ok {
-			tasks = append(tasks, key.(string))
+			tasks = append(tasks, key.(PeerTaskMetaData))
 			logger.Infof("gc task store %s ok", key)
 		}
 		return true
@@ -298,6 +303,12 @@ func (t *simpleLocalTaskStore) GetPieces(ctx context.Context, req *base.PieceTas
 
 func (t *simpleLocalTaskStore) TryGC() (bool, error) {
 	if t.lastAccess.Add(t.expireTime).Before(time.Now()) {
+		if t.gcCallback != nil {
+			t.gcCallback(CommonTaskRequest{
+				PeerID: t.PeerID,
+				TaskID: t.TaskID,
+			})
+		}
 		log := logger.With("gc", SimpleLocalTaskStoreDriver, "task", t.TaskID)
 		log.Infof("start gc task data")
 		var err error

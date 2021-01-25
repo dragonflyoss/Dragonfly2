@@ -216,6 +216,7 @@ getPiecesTasks:
 			limit = 1
 		case <-pt.ctx.Done():
 			pt.log.Debugf("context done due to %s", pt.ctx.Err())
+			pt.callback.Fail(pt, pt.ctx.Err().Error())
 			break getPiecesTasks
 		default:
 		}
@@ -234,8 +235,8 @@ getPiecesTasks:
 		}
 
 		if !initialized {
-			pt.callback.Init(piecePacket.ContentLength)
 			pt.contentLength = piecePacket.ContentLength
+			_ = pt.callback.Init(pt)
 			initialized = true
 		}
 
@@ -305,7 +306,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 		pt.schedPieceResultCh <- scheduler.NewEndPieceResult(pt.bitmap.Settled(), pt.taskId, pt.peerId)
 		pt.log.Debugf("end piece result sent")
 		// callback to store data to output
-		if err = pt.callback.Done(); err != nil {
+		if err = pt.callback.Done(pt); err != nil {
 			pt.progressCh <- &PeerTaskProgress{
 				State: &base.ResponseState{
 					Success: false,

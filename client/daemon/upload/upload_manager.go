@@ -67,7 +67,7 @@ func WithLimiter(limiter *rate.Limiter) func(*uploadManager) {
 
 func (u *uploadManager) initRouter() {
 	r := mux.NewRouter()
-	r.HandleFunc(PeerDownloadHTTPPathPrefix+"{taskPrefix:.*}/"+"{task:.*}", u.handleUpload).Methods("GET")
+	r.HandleFunc(PeerDownloadHTTPPathPrefix+"{taskPrefix:.*}/"+"{task:.*}", u.handleUpload).Queries("peerId", "{.*}").Methods("GET")
 	u.Server.Handler = r
 }
 
@@ -84,6 +84,7 @@ func (u *uploadManager) Stop() error {
 func (u *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 	var (
 		task = mux.Vars(r)["task"]
+		peer = r.FormValue("peerId")
 		//cdnSource = r.Header.Get("X-Dragonfly-CDN-Source")
 	)
 
@@ -103,6 +104,7 @@ func (u *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 		&storage.ReadPieceRequest{
 			PeerTaskMetaData: storage.PeerTaskMetaData{
 				TaskID: task,
+				PeerID: peer,
 			},
 			PieceMetaData: storage.PieceMetaData{
 				Range: rg[0],
