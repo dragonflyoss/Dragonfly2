@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/client"
-	"github.com/google/uuid"
 )
 
 func main() {
@@ -35,7 +34,11 @@ func main() {
 		panic(err)
 	}
 
-	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{TaskId: uuid.New().String()})
+	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+		TaskId: "test",
+		Url: "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
+		Filter: "",
+	})
 	if err != nil {
 		panic(err)
 	}

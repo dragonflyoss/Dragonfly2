@@ -123,7 +123,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			}
 		case types.TaskType:
 			var state *base.ResponseState
-			if piece.Result.Success {
+			if !piece.Result.Success {
 				state = base.NewState(base.Code_CDN_ERROR, piece.Result.Msg)
 			} else {
 				state = base.NewState(base.Code_SUCCESS, "success")

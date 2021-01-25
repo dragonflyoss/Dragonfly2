@@ -97,7 +97,7 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 		// seed progress has been done
 		go func(seedCh chan *types.SeedPiece) {
 			for _, pieceMetaRecord := range pieceMetaDataRecords {
-				logger.Debugf("seed piece meta record %s", pieceMetaRecord)
+				logger.Debugf("seed piece meta record %+v", pieceMetaRecord)
 				seedCh <- pieceMetaRecord
 			}
 			// publish task info
@@ -109,7 +109,7 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 		pm.mu.ReleaseLock(taskID+"_push", false)
 		go func(seedCh chan *types.SeedPiece) {
 			for _, pieceMetaRecord := range pieceMetaDataRecords {
-				logger.Debugf("seed piece meta record %s", pieceMetaRecord)
+				logger.Debugf("seed piece meta record %+v", pieceMetaRecord)
 				seedCh <- pieceMetaRecord
 			}
 		}(ch)
@@ -136,7 +136,7 @@ func (pm *Manager) UnWatchSeedProgress(sub chan *types.SeedPiece, taskID string)
 
 // Publish publish seedPiece
 func (pm *Manager) PublishPiece(taskID string, record *types.SeedPiece) error {
-	logger.Debugf("seed piece meta record %s", record)
+	logger.Debugf("seed piece meta record %+v", record)
 	pm.mu.GetLock(taskID, true)
 	err := pm.setPieceMetaRecord(taskID, record)
 	pm.mu.ReleaseLock(taskID, true)
@@ -161,7 +161,7 @@ func (pm *Manager) PublishPiece(taskID string, record *types.SeedPiece) error {
 }
 
 func (pm *Manager) PublishTask(taskID string, taskRecord *types.SeedPiece) error {
-	logger.Debugf("seed task record %s", taskRecord)
+	logger.Debugf("seed task record %+v", taskRecord)
 	pm.mu.GetLock(taskID, true)
 	defer pm.mu.ReleaseLock(taskID, true)
 	err := pm.progress.Add(taskID, taskRecord)
