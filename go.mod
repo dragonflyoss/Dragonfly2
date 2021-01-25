@@ -4,13 +4,14 @@ go 1.15
 
 require (
 	github.com/HuKeping/rbtree v0.0.0-20200208030951-29f0b79e84ed
-	github.com/cskr/pubsub v1.0.2
 	github.com/emirpasic/gods v1.12.0
+	github.com/go-echarts/statsview v0.3.4
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.5
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.4.0
+	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.8.0
 	github.com/spf13/cobra v1.1.1
