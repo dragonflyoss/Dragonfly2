@@ -95,6 +95,10 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 		if dstPeerTask == nil {
 			ptMgr.AddFakePeerTask(pr.DstPid, peerTask.Task)
 			peerTask.AddParent(dstPeerTask, 1)
+		} else {
+			if peerTask.GetParent() == nil {
+				peerTask.AddParent(dstPeerTask, 1)
+			}
 		}
 	}
 

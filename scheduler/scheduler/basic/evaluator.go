@@ -17,6 +17,10 @@ func NewEvaluator() *Evaluator {
 func (e *Evaluator) NeedAdjustParent(peer *types.PeerTask) bool {
 	parent := peer.GetParent()
 
+	if parent == nil {
+		return true
+	}
+
 	costHistory := parent.CostHistory
 
 	if len(costHistory) < 4 {
