@@ -16,14 +16,7 @@
 
 package stringutils
 
-<<<<<<< HEAD:pkg/error/error.go
-import (
-	"errors"
-	"fmt"
-)
-=======
 import "unicode"
->>>>>>> framework:pkg/util/stringutils/stringutils.go
 
 // SubString returns the subString of {str} which begins at {start} and end at {end - 1}.
 func SubString(str string, start, end int) string {
@@ -35,21 +28,6 @@ func SubString(str string, start, end int) string {
 		return ""
 	}
 
-<<<<<<< HEAD:pkg/error/error.go
-var AddressReused = errors.New("address is reused")
-
-type codeError struct {
-	Code int32
-	Msg  string
-}
-
-func (e *codeError) Error() string {
-	return fmt.Sprintf("%d:%s", e.Code, e.Msg)
-}
-
-func NewCodeError(code int32, msg string) *codeError {
-	return &codeError{Code: code, Msg: msg}
-=======
 	return string(runes[start:end])
 }
 
@@ -61,5 +39,4 @@ func IsEmptyStr(s string) bool {
 		}
 	}
 	return true
->>>>>>> framework:pkg/util/stringutils/stringutils.go
 }
