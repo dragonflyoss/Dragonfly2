@@ -19,7 +19,6 @@ package client
 import (
 	"context"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
@@ -27,15 +26,6 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 )
-
-func init() {
-	logDir := "/var/log/dragonfly"
-
-	bizLogger := logger.CreateLogger(logDir+"/dfget.log", 300, -1, -1, false, false)
-	log := bizLogger.Sugar()
-	logger.SetBizLogger(log)
-	logger.SetGrpcLogger(log)
-}
 
 // see dfdaemon.DaemonClient
 type DaemonClient interface {

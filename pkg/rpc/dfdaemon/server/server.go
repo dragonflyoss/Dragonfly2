@@ -32,17 +32,6 @@ import (
 )
 
 func init() {
-	logDir := "/var/log/dragonfly"
-
-	bizLogger := logger.CreateLogger(logDir+"/daemon.log", 100, 7, 14, false, false)
-	logger.SetBizLogger(bizLogger.Sugar())
-
-	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 100, 7, 14, false, false)
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	gcLogger := logger.CreateLogger(logDir+"/gc.log", 100, 7, 14, false, false)
-	logger.SetGcLogger(gcLogger.Sugar())
-
 	// set register with server implementation.
 	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
 		dfdaemon.RegisterDaemonServer(s, &proxy{server: impl.(DaemonServer)})

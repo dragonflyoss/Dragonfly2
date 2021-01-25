@@ -18,25 +18,12 @@ package server
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager"
 	"google.golang.org/grpc"
 )
 
 func init() {
-	logDir := basic.HomeDir + "/logs/dragonfly"
-
-	bizLogger := logger.CreateLogger(logDir+"/manager.log", 300, 30, 0, false, false)
-	logger.SetBizLogger(bizLogger.Sugar())
-
-	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	gcLogger := logger.CreateLogger(logDir+"/gc.log", 300, 7, 0, false, false)
-	logger.SetGcLogger(gcLogger.Sugar())
-
 	// set register with server implementation.
 	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
 		manager.RegisterManagerServer(s, &proxy{server: impl.(ManagerServer)})
