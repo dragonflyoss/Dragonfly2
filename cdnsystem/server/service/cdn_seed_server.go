@@ -204,7 +204,7 @@ func validateGetPieceTasksRequestParams(req *base.PieceTaskRequest) error {
 	if stringutils.IsEmptyStr(req.TaskId) {
 		return errors.Wrap(dferrors.ErrEmptyValue, "taskId")
 	}
-	if netutils.IsValidIP(req.SrcIp) {
+	if !netutils.IsValidIP(req.SrcIp) {
 		return errors.Wrapf(dferrors.ErrInvalidValue, "invalid ip %s", req.SrcIp)
 	}
 	if req.StartNum < 0 {
