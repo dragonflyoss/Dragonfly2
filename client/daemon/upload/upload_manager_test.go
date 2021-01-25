@@ -64,21 +64,25 @@ func TestUploadManager_Serve(t *testing.T) {
 
 	tests := []struct {
 		taskID          string
+		peerID          string
 		pieceRange      string
 		targetPieceData []byte
 	}{
 		{
 			taskID:          "task-0",
+			peerID:          "peer-0",
 			pieceRange:      "bytes=0-9",
 			targetPieceData: testData[0:10],
 		},
 		{
 			taskID:          "task-1",
+			peerID:          "peer-1",
 			pieceRange:      fmt.Sprintf("bytes=512-%d", len(testData)-1),
 			targetPieceData: testData[512:],
 		},
 		{
 			taskID:          "task-2",
+			peerID:          "peer-2",
 			pieceRange:      "bytes=512-1023",
 			targetPieceData: testData[512:1024],
 		},
@@ -86,7 +90,7 @@ func TestUploadManager_Serve(t *testing.T) {
 
 	for _, tt := range tests {
 		req, _ := http.NewRequest(http.MethodGet,
-			fmt.Sprintf("http://%s%s%s/%s", addr, PeerDownloadHTTPPathPrefix, "666", tt.taskID), nil)
+			fmt.Sprintf("http://%s%s%s/%s?peerId=%s", addr, PeerDownloadHTTPPathPrefix, "666", tt.taskID, tt.peerID), nil)
 		req.Header.Add("Range", tt.pieceRange)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -94,6 +98,6 @@ func TestUploadManager_Serve(t *testing.T) {
 
 		data, _ := ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
-		assert.Equal(data, tt.targetPieceData)
+		assert.Equal(tt.targetPieceData, data)
 	}
 }

@@ -17,6 +17,7 @@
 package daemon
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -124,17 +125,22 @@ type StorageOption struct {
 }
 
 func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error) {
-	storageManager, err := storage.NewStorageManager(opt.Storage.Driver, &opt.Storage.Option)
+	sched, err := schedulerclient.CreateClient(opt.Schedulers)
+	if err != nil {
+		return nil, err
+	}
+
+	storageManager, err := storage.NewStorageManager(opt.Storage.Driver, &opt.Storage.Option, func(request storage.CommonTaskRequest) {
+		sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
+			TaskId: request.TaskID,
+			PeerId: request.PeerID,
+		})
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	pieceManager, err := peer.NewPieceManager(storageManager, peer.WithLimiter(rate.NewLimiter(opt.Server.RateLimit, int(opt.Server.RateLimit))))
-	if err != nil {
-		return nil, err
-	}
-
-	sched, err := schedulerclient.CreateClient(opt.Schedulers)
 	if err != nil {
 		return nil, err
 	}

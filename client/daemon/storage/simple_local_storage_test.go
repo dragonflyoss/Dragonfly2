@@ -69,7 +69,10 @@ func TestSimpleLocalTaskStore_PutAndGetPiece(t *testing.T) {
 			ContentLength: int64(len(testBytes)),
 		})
 	assert.Nil(err, "create task storage")
-	ts, ok := executor.LoadTask(taskID, peerID)
+	ts, ok := executor.LoadTask(PeerTaskMetaData{
+		PeerID: peerID,
+		TaskID: taskID,
+	})
 	assert.True(ok, "")
 
 	var pieces []struct {

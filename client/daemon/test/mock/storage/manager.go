@@ -230,44 +230,44 @@ func (mr *MockTaskStorageExecutorMockRecorder) TryGC() *gomock.Call {
 }
 
 // LoadTask mocks base method
-func (m *MockTaskStorageExecutor) LoadTask(taskID, peerID string) (storage.TaskStorageDriver, bool) {
+func (m *MockTaskStorageExecutor) LoadTask(meta storage.PeerTaskMetaData) (storage.TaskStorageDriver, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadTask", taskID, peerID)
+	ret := m.ctrl.Call(m, "LoadTask", meta)
 	ret0, _ := ret[0].(storage.TaskStorageDriver)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // LoadTask indicates an expected call of LoadTask
-func (mr *MockTaskStorageExecutorMockRecorder) LoadTask(taskID, peerID interface{}) *gomock.Call {
+func (mr *MockTaskStorageExecutorMockRecorder) LoadTask(meta interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).LoadTask), taskID, peerID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).LoadTask), meta)
 }
 
 // CreateTask mocks base method
-func (m *MockTaskStorageExecutor) CreateTask(arg0 storage.RegisterTaskRequest) error {
+func (m *MockTaskStorageExecutor) CreateTask(request storage.RegisterTaskRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateTask", arg0)
+	ret := m.ctrl.Call(m, "CreateTask", request)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateTask indicates an expected call of CreateTask
-func (mr *MockTaskStorageExecutorMockRecorder) CreateTask(arg0 interface{}) *gomock.Call {
+func (mr *MockTaskStorageExecutorMockRecorder) CreateTask(request interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).CreateTask), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).CreateTask), request)
 }
 
 // ReloadPersistentTask mocks base method
-func (m *MockTaskStorageExecutor) ReloadPersistentTask() error {
+func (m *MockTaskStorageExecutor) ReloadPersistentTask(gcCallback storage.GCCallback) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReloadPersistentTask")
+	ret := m.ctrl.Call(m, "ReloadPersistentTask", gcCallback)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ReloadPersistentTask indicates an expected call of ReloadPersistentTask
-func (mr *MockTaskStorageExecutorMockRecorder) ReloadPersistentTask() *gomock.Call {
+func (mr *MockTaskStorageExecutorMockRecorder) ReloadPersistentTask(gcCallback interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReloadPersistentTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).ReloadPersistentTask))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReloadPersistentTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).ReloadPersistentTask), gcCallback)
 }

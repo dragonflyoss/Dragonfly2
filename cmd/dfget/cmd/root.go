@@ -85,7 +85,7 @@ func init() {
 func runDfget() error {
 	var addr = dfnet.NetAddr{
 		Type: dfnet.UNIX,
-		Addr: flagDfGetOption.daemonSock,
+		Addr: flagDfGetOpt.daemonSock,
 	}
 
 	// check df daemon state, start a new daemon if necessary
@@ -129,6 +129,9 @@ func runDfget() error {
 func checkParameters() error {
 	if len(os.Args) < 2 {
 		return dferrors.New(-1, "Please use the command 'help' to show the help information.")
+	}
+	if len(flagDfGetOpt.schedulers) < 1 {
+		return dferrors.New(-1, "Empty schedulers. Please use the command 'help' to show the help information.")
 	}
 	return nil
 }
@@ -232,7 +235,7 @@ download SUCCESS cost:0.026s length:141898 reason:0
 
 func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 	// check pid
-	if ok, err := pidfile.IsProcessExistsByPIDFile(flagDfGetOption.daemonPid); err != nil || !ok {
+	if ok, err := pidfile.IsProcessExistsByPIDFile(flagDfGetOpt.daemonPid); err != nil || !ok {
 		if err = spawnDaemon(); err != nil {
 			return nil, fmt.Errorf("start daemon error: %s", err)
 		}
@@ -283,7 +286,7 @@ func spawnDaemon() error {
 		"--grpc-port", strconv.Itoa(cfg.RV.PeerPort),
 		"--expire-time", cfg.RV.DataExpireTime.String(),
 		"--alive-time", cfg.RV.DaemonAliveTime.String(),
-		"--schedulers", "127.0.0.1:65221"}
+		"--schedulers", strings.Join(flagDfGetOpt.schedulers, ",")}
 	logger.Infof("start daemon with cmd: %s %s", os.Args[0], strings.Join(args, " "))
 	cmd := exec.Command(os.Args[0], args...)
 	if cfg.Verbose {

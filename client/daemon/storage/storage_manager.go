@@ -61,11 +61,11 @@ type Option struct {
 type TaskStorageExecutor interface {
 	gc.GC
 	// LoadTask loads TaskStorageDriver from memory for task operations
-	LoadTask(taskID string, peerID string) (TaskStorageDriver, bool)
+	LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool)
 	// CreateTask creates a new TaskStorageDriver
-	CreateTask(RegisterTaskRequest) error
+	CreateTask(request RegisterTaskRequest) error
 	// ReloadPersistentTask
-	ReloadPersistentTask() error
+	ReloadPersistentTask(gcCallback GCCallback) error
 }
 
 var (
@@ -79,20 +79,22 @@ const (
 )
 
 type storageManager struct {
-	lock         sync.Locker
+	sync.Locker
 	executor     TaskStorageExecutor
 	driverOption *Option
+	lastAccess   time.Time
 }
 
 type Driver string
+type GCCallback func(request CommonTaskRequest)
 
 func Register(driver Driver, exec func(opt *Option) (TaskStorageExecutor, error)) {
 	drivers[driver] = exec
 }
 
-func NewStorageManager(driver Driver, opt *Option, moreOpts ...func(*storageManager) error) (Manager, error) {
+func NewStorageManager(driver Driver, opt *Option, gcCallback GCCallback, moreOpts ...func(*storageManager) error) (Manager, error) {
 	s := &storageManager{
-		lock:         &sync.Mutex{},
+		Locker:       &sync.Mutex{},
 		driverOption: opt,
 	}
 	for _, o := range moreOpts {
@@ -116,13 +118,11 @@ func NewStorageManager(driver Driver, opt *Option, moreOpts ...func(*storageMana
 	} else {
 		s.executor = executor
 	}
-	if err := s.executor.ReloadPersistentTask(); err != nil {
+	if err := s.executor.ReloadPersistentTask(gcCallback); err != nil {
 		logger.Warnf("reload tasks error: %s", err)
 	}
 
-	// TODO
 	gc.Register(GCName, s)
-	// TODO reload tasks from local storage
 	return s, nil
 }
 
@@ -140,12 +140,28 @@ func WithStorageOption(opt *Option) func(*storageManager) error {
 	}
 }
 
+func (s *storageManager) touch() {
+	s.lastAccess = time.Now()
+}
+
 func (s *storageManager) RegisterTask(ctx context.Context, req RegisterTaskRequest) error {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	// double check if task store exists
-	// if ok, just unlock and return
-	if _, ok := s.executor.LoadTask(req.TaskID, req.PeerID); !ok {
+	s.touch()
+	if _, ok := s.executor.LoadTask(
+		PeerTaskMetaData{
+			PeerID: req.PeerID,
+			TaskID: req.TaskID,
+		}); !ok {
+		// double check if task store exists
+		// if ok, just unlock and return
+		s.Lock()
+		defer s.Unlock()
+		if _, ok := s.executor.LoadTask(
+			PeerTaskMetaData{
+				PeerID: req.PeerID,
+				TaskID: req.TaskID,
+			}); ok {
+			return nil
+		}
 		// still not exist, create a new task store
 		return s.executor.CreateTask(req)
 	}
@@ -153,7 +169,12 @@ func (s *storageManager) RegisterTask(ctx context.Context, req RegisterTaskReque
 }
 
 func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest) error {
-	t, ok := s.executor.LoadTask(req.TaskID, req.PeerID)
+	s.touch()
+	t, ok := s.executor.LoadTask(
+		PeerTaskMetaData{
+			PeerID: req.PeerID,
+			TaskID: req.TaskID,
+		})
 	if !ok {
 		return ErrTaskNotFound
 	}
@@ -161,7 +182,12 @@ func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest)
 }
 
 func (s *storageManager) ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error) {
-	t, ok := s.executor.LoadTask(req.TaskID, req.PeerID)
+	s.touch()
+	t, ok := s.executor.LoadTask(
+		PeerTaskMetaData{
+			PeerID: req.PeerID,
+			TaskID: req.TaskID,
+		})
 	if !ok {
 		// TODO recover for local task persistentMetadata data
 		return nil, nil, ErrTaskNotFound
@@ -170,7 +196,12 @@ func (s *storageManager) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 }
 
 func (s *storageManager) Store(ctx context.Context, req *StoreRequest) error {
-	t, ok := s.executor.LoadTask(req.TaskID, req.PeerID)
+	s.touch()
+	t, ok := s.executor.LoadTask(
+		PeerTaskMetaData{
+			PeerID: req.PeerID,
+			TaskID: req.TaskID,
+		})
 	if !ok {
 		// TODO recover for local task persistentMetadata data
 		return ErrTaskNotFound
@@ -179,7 +210,12 @@ func (s *storageManager) Store(ctx context.Context, req *StoreRequest) error {
 }
 
 func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
-	t, ok := s.executor.LoadTask(req.TaskId, "")
+	s.touch()
+	t, ok := s.executor.LoadTask(
+		PeerTaskMetaData{
+			TaskID: req.TaskId,
+			PeerID: req.DstPid,
+		})
 	if !ok {
 		// TODO recover for local task persistentMetadata data
 		return nil, ErrTaskNotFound

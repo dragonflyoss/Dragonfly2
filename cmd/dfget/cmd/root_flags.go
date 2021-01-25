@@ -21,6 +21,7 @@ import "github.com/dragonflyoss/Dragonfly2/client/config"
 type dfgetOption struct {
 	daemonSock string
 	daemonPid  string
+	schedulers []string
 }
 
 func initRootFlags() {
@@ -94,6 +95,7 @@ func initRootFlags() {
 	flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")
 	flagSet.MarkDeprecated("notbs", "please use '--notbacksource' instead")
 
-	flagSet.StringVar(&flagDfGetOption.daemonSock, "daemon-sock", flagDfGetOption.daemonSock, "the unix domain socket address for grpc with daemon")
-	flagSet.StringVar(&flagDfGetOption.daemonPid, "daemon-pid", flagDfGetOption.daemonPid, "the daemon pid")
+	flagSet.StringVar(&flagDfGetOpt.daemonSock, "daemon-sock", flagDfGetOpt.daemonSock, "the unix domain socket address for grpc with daemon")
+	flagSet.StringVar(&flagDfGetOpt.daemonPid, "daemon-pid", flagDfGetOpt.daemonPid, "the daemon pid")
+	flagSet.StringArrayVar(&flagDfGetOpt.schedulers, "schedulers", flagDfGetOpt.schedulers, "the scheduler addresses")
 }

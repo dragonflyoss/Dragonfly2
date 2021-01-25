@@ -102,7 +102,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreDriver, &storage.Option{
 		DataPath:       test.DataDir,
 		TaskExpireTime: -1 * time.Second,
-	})
+	}, func(request storage.CommonTaskRequest) {})
 	defer storageManager.(gc.GC).TryGC()
 
 	testBytes, err := ioutil.ReadFile(test.File)
