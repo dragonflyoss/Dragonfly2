@@ -87,7 +87,7 @@ var rootCmd = &cobra.Command{
 		logger.Debugf("get cdn config: %+v", cfg)
 		logger.Infof("start to run cdn system")
 
-		if cfg.Debug {
+		if !cfg.Debug {
 			go func() {
 				// enable go pprof and statsview
 				port, _ := freeport.GetFreePort()

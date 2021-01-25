@@ -118,8 +118,8 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 }
 
 func (pm *Manager) UnWatchSeedProgress(sub chan *types.SeedPiece, taskID string) error {
-	pm.mu.GetLock(taskID, false)
-	defer pm.mu.ReleaseLock(taskID, false)
+	//pm.mu.GetLock(taskID, false)
+	//defer pm.mu.ReleaseLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get seed subscribers")
