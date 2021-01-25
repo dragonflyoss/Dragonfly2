@@ -118,20 +118,9 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 }
 
 func (pm *Manager) UnWatchSeedProgress(sub chan *types.SeedPiece, taskID string) error {
-	//pm.mu.GetLock(taskID, false)
-	//defer pm.mu.ReleaseLock(taskID, false)
-	chanList, err := pm.seedSubscribers.GetAsList(taskID)
-	if err != nil {
-		return errors.Wrap(err, "failed to get seed subscribers")
-	}
-	for e := chanList.Front(); e != nil; e = e.Next() {
-		if e.Value.(chan *types.SeedPiece) == sub {
-			chanList.Remove(e)
-			break
-		}
-	}
-	close(sub)
-	return nil
+	pm.mu.GetLock(taskID, false)
+	defer pm.mu.ReleaseLock(taskID, false)
+	return pm.unWatchSeedProgress(sub, taskID)
 }
 
 // Publish publish seedPiece
@@ -180,7 +169,7 @@ func (pm *Manager) PublishTask(taskID string, taskRecord *types.SeedPiece) error
 		go func(sub chan *types.SeedPiece, record *types.SeedPiece) {
 			defer wg.Done()
 			sub <- record
-			pm.UnWatchSeedProgress(sub, taskID)
+			pm.unWatchSeedProgress(sub, taskID)
 		}(sub, taskRecord)
 	}
 	wg.Wait()

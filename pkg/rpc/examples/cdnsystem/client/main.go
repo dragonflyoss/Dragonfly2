@@ -18,6 +18,7 @@ package main
 
 import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/server"
 )
 
@@ -28,7 +29,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/client"
 )
 
-func main() {
+func main2() {
 	c, err := client.CreateClient([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: "localhost:8003"}})
 	if err != nil {
 		panic(err)
@@ -48,4 +49,23 @@ func main() {
 	}
 
 	fmt.Println("client finish")
+}
+
+func main() {
+	c, err := client.CreateClient([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: "localhost:8003"}})
+	if err != nil {
+		panic(err)
+	}
+
+	psc, err := c.GetPieceTasks(context.TODO(), &base.PieceTaskRequest{
+		TaskId:   "test",
+		SrcIp:    "11.11.11.11",
+		StartNum: 0,
+		Limit:    3,
+	})
+	if err != nil {
+		fmt.Printf("%v",err)
+	}
+
+	fmt.Printf("client finish:%v", psc)
 }
