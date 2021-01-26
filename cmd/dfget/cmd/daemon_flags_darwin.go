@@ -41,7 +41,7 @@ var flagDaemonOpt = daemonOption{
 	proxyPort:       65001,
 	downloadRate:    "100Mi",
 	uploadRate:      "100Mi",
-	storageDriver:   string(storage.SimpleLocalTaskStoreDriver),
+	storeStrategy:   string(storage.SimpleLocalTaskStoreStrategy),
 	dataExpireTime:  config.DataExpireTime,
 	daemonAliveTime: config.DaemonAliveTime,
 	gcInterval:      time.Minute,

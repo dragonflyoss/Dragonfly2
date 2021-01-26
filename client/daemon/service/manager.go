@@ -27,6 +27,7 @@ import (
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	dfdaemongrpc "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
@@ -119,7 +120,7 @@ func (m *manager) Download(ctx context.Context,
 		Output: req.Output,
 	}
 
-	peerTaskProgress, err := m.peerTaskManager.StartFilePeerTask(context.Background(), peerTask)
+	peerTaskProgress, err := m.peerTaskManager.StartFilePeerTask(ctx, peerTask)
 	if err != nil {
 		return err
 	}
@@ -147,6 +148,7 @@ loop:
 				CompletedLength: 0,
 				Done:            true,
 			}
+			logger.Infof("context done due to %s", ctx.Err())
 			return ctx.Err()
 		}
 	}

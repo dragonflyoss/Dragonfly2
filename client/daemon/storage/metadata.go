@@ -8,6 +8,7 @@ import (
 )
 
 type persistentMetadata struct {
+	StoreStrategy string
 	TaskID        string                  `json:"taskID"`
 	TaskMeta      map[string]string       `json:"taskMeta"`
 	ContentLength int64                   `json:"contentLength"`

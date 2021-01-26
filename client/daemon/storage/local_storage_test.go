@@ -26,6 +26,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -35,11 +36,17 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/test"
 	"github.com/dragonflyoss/Dragonfly2/client/util"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
 )
 
-func TestSimpleLocalTaskStore_PutAndGetPiece(t *testing.T) {
+func TestMain(m *testing.M) {
+	logger.InitDaemon()
+	m.Run()
+}
+
+func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 	assert := testifyassert.New(t)
 	testBytes, err := ioutil.ReadFile(test.File)
 	assert.Nil(err, "load test file")
@@ -52,14 +59,14 @@ func TestSimpleLocalTaskStore_PutAndGetPiece(t *testing.T) {
 		peerID    = "peer-d4bb1c273a9889fea14abd4651994fe8"
 		pieceSize = 512
 	)
-	executor := &simpleLocalTaskStoreExecutor{
-		tasks: &sync.Map{},
-		opt: &Option{
-			DataPath:       test.DataDir,
-			TaskExpireTime: time.Minute,
-		},
-	}
-	err = executor.CreateTask(
+	sm, err := NewStorageManager(SimpleLocalTaskStoreStrategy, &Option{
+		DataPath:       test.DataDir,
+		TaskExpireTime: time.Minute,
+	}, func(request CommonTaskRequest) {
+	})
+	var s = sm.(*storageManager)
+
+	err = s.CreateTask(
 		RegisterTaskRequest{
 			CommonTaskRequest: CommonTaskRequest{
 				PeerID:      peerID,
@@ -69,7 +76,7 @@ func TestSimpleLocalTaskStore_PutAndGetPiece(t *testing.T) {
 			ContentLength: int64(len(testBytes)),
 		})
 	assert.Nil(err, "create task storage")
-	ts, ok := executor.LoadTask(PeerTaskMetaData{
+	ts, ok := s.LoadTask(PeerTaskMetaData{
 		PeerID: peerID,
 		TaskID: taskID,
 	})
@@ -121,7 +128,7 @@ func TestSimpleLocalTaskStore_PutAndGetPiece(t *testing.T) {
 	}
 
 	md5Test, _ := calcFileMd5(test.File)
-	md5TaskData, _ := calcFileMd5(path.Join(ts.(*simpleLocalTaskStore).dataDir, taskData))
+	md5TaskData, _ := calcFileMd5(path.Join(ts.(*localTaskStore).dataDir, taskData))
 	assert.Equal(md5Test, md5TaskData, "md5 must match")
 
 	// shuffle again for get all pieces
@@ -151,13 +158,13 @@ func TestSimpleLocalTaskStore_PutAndGetPiece(t *testing.T) {
 	}
 
 	// clean up test data
-	ts.(*simpleLocalTaskStore).lastAccess = time.Now().Add(-1 * time.Hour)
+	ts.(*localTaskStore).lastAccess = time.Now().Add(-1 * time.Hour)
 	ok, err = ts.(gc.GC).TryGC()
 	assert.Nil(err, "task gc")
 	assert.True(ok, "task should gc")
 }
 
-func TestSimpleLocalTaskStore_StoreTaskData(t *testing.T) {
+func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 	assert := testifyassert.New(t)
 	src := path.Join(test.DataDir, taskData)
 	dst := path.Join(test.DataDir, taskData+".copy")
@@ -177,14 +184,13 @@ func TestSimpleLocalTaskStore_StoreTaskData(t *testing.T) {
 	matadata, err := os.OpenFile(meta, os.O_RDWR|os.O_CREATE, defaultFileMode)
 	assert.Nil(err, "open test meta data")
 	defer matadata.Close()
-	ts := simpleLocalTaskStore{
+	ts := localTaskStore{
+		RWMutex: &sync.RWMutex{},
 		persistentMetadata: persistentMetadata{
 			TaskID: "test",
 		},
-		lock:         &sync.Mutex{},
 		dataDir:      test.DataDir,
 		metadataFile: matadata,
-		dataFile:     data,
 	}
 	err = ts.Store(context.Background(), &StoreRequest{
 		TaskID:      ts.TaskID,
@@ -196,11 +202,134 @@ func TestSimpleLocalTaskStore_StoreTaskData(t *testing.T) {
 	assert.Equal(testData, bs, "data must match")
 }
 
-func TestSimpleLocalTaskStore_saveMeta(t *testing.T) {
+func TestLocalTaskStore_ReloadPersistentTask_Simple(t *testing.T) {
 
 }
 
-func TestSimpleLocalTaskStoreExecutor_ReloadPersistentTask(t *testing.T) {
+func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
+	assert := testifyassert.New(t)
+	testBytes, err := ioutil.ReadFile(test.File)
+	assert.Nil(err, "load test file")
+
+	dst := path.Join(test.DataDir, taskData+".copy")
+	dst, _ = filepath.Abs(dst)
+	defer os.Remove(dst)
+
+	var (
+		taskID    = "task-d4bb1c273a9889fea14abd4651994fe8"
+		peerID    = "peer-d4bb1c273a9889fea14abd4651994fe8"
+		pieceSize = 512
+	)
+	sm, err := NewStorageManager(AdvanceLocalTaskStoreStrategy, &Option{
+		DataPath:       test.DataDir,
+		TaskExpireTime: time.Minute,
+	}, func(request CommonTaskRequest) {
+	})
+	var s = sm.(*storageManager)
+
+	err = s.CreateTask(
+		RegisterTaskRequest{
+			CommonTaskRequest: CommonTaskRequest{
+				PeerID:      peerID,
+				TaskID:      taskID,
+				Destination: dst,
+			},
+			ContentLength: int64(len(testBytes)),
+		})
+	assert.Nil(err, "create task storage")
+	ts, ok := s.LoadTask(PeerTaskMetaData{
+		PeerID: peerID,
+		TaskID: taskID,
+	})
+	assert.True(ok, "")
+
+	var pieces []struct {
+		index int
+		start int
+		end   int // not contain in data
+	}
+	for i := 0; i*pieceSize < len(testBytes); i++ {
+		start := i * pieceSize
+		end := start + pieceSize
+		if end > len(testBytes) {
+			end = len(testBytes)
+		}
+		pieces = append(pieces, struct {
+			index int
+			start int
+			end   int
+		}{
+			index: i,
+			start: start,
+			end:   end,
+		})
+	}
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(pieces), func(i, j int) { pieces[i], pieces[j] = pieces[j], pieces[i] })
+
+	// random put all pieces
+	for _, p := range pieces {
+		err = ts.WritePiece(context.Background(), &WritePieceRequest{
+			PeerTaskMetaData: PeerTaskMetaData{
+				TaskID: taskID,
+			},
+			PieceMetaData: PieceMetaData{
+				Num:    int32(p.index),
+				Md5:    "",
+				Offset: uint64(p.start),
+				Range: util.Range{
+					Start:  int64(p.start),
+					Length: int64(p.end - p.start),
+				},
+				Style: base.PieceStyle_PLAIN,
+			},
+			Reader: bytes.NewBuffer(testBytes[p.start:p.end]),
+		})
+		assert.Nil(err, "put piece")
+	}
+
+	md5Test, _ := calcFileMd5(test.File)
+	md5TaskData, _ := calcFileMd5(path.Join(ts.(*localTaskStore).dataDir, taskData))
+	assert.Equal(md5Test, md5TaskData, "md5 must match")
+
+	// shuffle again for get all pieces
+	rand.Shuffle(len(pieces), func(i, j int) { pieces[i], pieces[j] = pieces[j], pieces[i] })
+	for _, p := range pieces {
+		rd, cl, err := ts.ReadPiece(context.Background(), &ReadPieceRequest{
+			PeerTaskMetaData: PeerTaskMetaData{
+				TaskID: taskID,
+			},
+			PieceMetaData: PieceMetaData{
+				Num:    int32(p.index),
+				Md5:    "",
+				Offset: uint64(p.start),
+				Range: util.Range{
+					Start:  int64(p.start),
+					Length: int64(p.end - p.start),
+				},
+				Style: base.PieceStyle_PLAIN,
+			},
+		})
+		assert.Nil(err, "get piece should be ok")
+		data, err := ioutil.ReadAll(rd)
+		cl.Close()
+		assert.Nil(err, "read piece should be ok")
+		assert.Equal(p.end-p.start, len(data), "piece length should match")
+		assert.Equal(testBytes[p.start:p.end], data, "piece data should match")
+	}
+
+	// clean up test data
+	ts.(*localTaskStore).lastAccess = time.Now().Add(-1 * time.Hour)
+	ok, err = ts.(gc.GC).TryGC()
+	assert.Nil(err, "task gc")
+	assert.True(ok, "task should gc")
+}
+
+func TestLocalTaskStore_StoreTaskData_Advance(t *testing.T) {
+
+}
+
+func TestLocalTaskStore_ReloadPersistentTask_Advance(t *testing.T) {
 
 }
 

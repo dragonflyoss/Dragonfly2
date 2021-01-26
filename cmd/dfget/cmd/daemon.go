@@ -40,8 +40,9 @@ import (
 )
 
 var daemonCmd = &cobra.Command{
-	Use:   "daemon",
-	Short: "Launch a peer daemon for downloading and uploading files.",
+	Use:          "daemon",
+	Short:        "Launch a peer daemon for downloading and uploading files.",
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		logger.InitDaemon()
 		lock := flock.New(flagDaemonOpt.lockFile)
@@ -188,7 +189,7 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 				DataPath:       flagDaemonOpt.dataDir,
 				TaskExpireTime: flagDaemonOpt.dataExpireTime,
 			},
-			Driver: storage.Driver(flagDaemonOpt.storageDriver),
+			StoreStrategy: storage.StoreStrategy(flagDaemonOpt.storeStrategy),
 		},
 	}
 	return option, nil

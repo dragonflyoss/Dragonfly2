@@ -66,6 +66,7 @@ limit, transmission encryption and so on.`
 var rootCmd = &cobra.Command{
 	Use:               "dfget",
 	Short:             "client of Dragonfly used to download and upload files",
+	SilenceUsage:      true,
 	Long:              dfgetDescription,
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	Example:           dfgetExample(),
@@ -95,9 +96,13 @@ func runDfget() error {
 		// FIXME(jim): back source
 		return err
 	}
+	output, err := filepath.Abs(cfg.Output)
+	if err != nil {
+		return err
+	}
 	request := &dfdaemongrpc.DownRequest{
 		Url:    cfg.URL,
-		Output: cfg.Output,
+		Output: output,
 		BizId:  "d7s/dfget",
 		Filter: filter,
 	}

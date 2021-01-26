@@ -15,6 +15,7 @@ import (
 	mock_peer "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/peer"
 	mock_storage "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/storage"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	dfdaemongrpc "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
@@ -22,6 +23,11 @@ import (
 	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 )
+
+func TestMain(m *testing.M) {
+	logger.InitDaemon()
+	m.Run()
+}
 
 func TestDownloadManager_ServeDownload(t *testing.T) {
 	assert := testifyassert.New(t)

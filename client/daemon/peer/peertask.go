@@ -58,6 +58,7 @@ type StreamPeerTask interface {
 
 type filePeerTask struct {
 	ctx          context.Context
+	host         *scheduler.PeerHost
 	pieceManager PieceManager
 
 	schedPieceResultCh chan<- *scheduler.PieceResult
@@ -66,9 +67,7 @@ type filePeerTask struct {
 	// peerPacket in the fly
 	peerPacket *scheduler.PeerPacket
 
-	peerClient dfdaemon.DaemonClient
-	//peerClientConn  *grpc.ClientConn
-	//peerClientInfo  *scheduler.PeerPacket_DestPeer
+	peerClient      dfdaemon.DaemonClient
 	peerClientReady chan bool
 
 	pieceParallelCount int32
@@ -105,6 +104,7 @@ type PeerTaskProgress struct {
 }
 
 func NewFilePeerTask(ctx context.Context,
+	host *scheduler.PeerHost,
 	schedulerClient schedulerclient.SchedulerClient,
 	pieceManager PieceManager,
 	request *scheduler.PeerTaskRequest) (*filePeerTask, error) {
@@ -124,6 +124,7 @@ func NewFilePeerTask(ctx context.Context,
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 	return &filePeerTask{
 		ctx:                ctx,
+		host:               host,
 		schedPieceResultCh: schedPieceResultCh,
 		schedPeerPacketCh:  schedPeerPacketCh,
 		pieceManager:       pieceManager,
@@ -164,7 +165,6 @@ func (pt *filePeerTask) receivePeerPacket() {
 		peerPacket *scheduler.PeerPacket
 		ok         bool
 	)
-	defer close(pt.peerClientReady)
 WaitScheduler:
 	for {
 		select {
@@ -188,11 +188,15 @@ WaitScheduler:
 		}
 		pt.peerPacket = peerPacket
 		pt.pieceParallelCount = pt.peerPacket.ParallelCount
-		pt.peerClientReady <- true
+
+		// use close to avoid waiting
+		close(pt.peerClientReady)
+		pt.peerClientReady = make(chan bool)
 		//if updated := pt.updateAvailablePeerClient(); updated {
 		//	pt.peerClientReady <- true
 		//}
 	}
+	close(pt.peerClientReady)
 }
 
 // TODO when main peer is not available, switch to steel peers
@@ -225,15 +229,23 @@ getPiecesTasks:
 		piecePacket, err := pt.getPieceTasks(
 			&base.PieceTaskRequest{
 				TaskId:   pt.taskId,
-				SrcIp:    "",
+				SrcIp:    pt.host.Ip,
 				StartNum: num,
 				Limit:    limit,
 			})
 		if err != nil || !piecePacket.State.Success {
 			// FIXME(jim): push failed result to scheduler
-			pt.log.Errorf("get piece task error: %s, try to find available peer", err)
-			<-pt.peerClientReady
-			//pt.log.Infof("find new available peer %s:%d", pt.peerClientInfo.Ip, pt.peerClientInfo.RpcPort)
+			pt.log.Warnf("get piece task error: %s, try to find available peer", err)
+			select {
+			case <-pt.ctx.Done():
+				pt.log.Debugf("context done due to %s", pt.ctx.Err())
+				pt.callback.Fail(pt, pt.ctx.Err().Error())
+				break getPiecesTasks
+			case <-pt.peerClientReady:
+				pt.log.Infof("new peer client ready")
+			}
+
+			continue
 		}
 
 		if !initialized {
@@ -242,16 +254,13 @@ getPiecesTasks:
 			initialized = true
 		}
 
-		// TODO(jim): next round start piece num
-		num += limit
+		num = pt.getNextPieceNum(num, limit)
+		if num == -1 {
+			pt.log.Infof("peer task done, stop get pieces from peer")
+			break getPiecesTasks
+		}
 		pt.pieceManager.PullPieces(pt, piecePacket)
 	}
-
-	//err := pt.peerClientConn.Close()
-	//if err != nil {
-	//	pt.log.Warnf("close grpc client error: %s", err)
-	//}
-	//close(pt.schedPieceResultCh)
 }
 
 func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
@@ -346,74 +355,36 @@ func (pt *filePeerTask) isCompleted() bool {
 	return pt.completedLength == pt.contentLength
 }
 
-//func (pt *filePeerTask) updateAvailablePeerClient() bool {
-//	pt.lock.Lock()
-//	defer pt.lock.Unlock()
-//	// close old grpc conn
-//	if pt.peerClientConn != nil {
-//		pt.peerClientConn.Close()
-//	}
-//	// try main peer when current peer client is not main peer
-//	if err := pt.connectPeerClient(pt.peerPacket.MainPeer); err == nil {
-//		pt.pieceParallelCount = pt.peerPacket.ParallelCount
-//		return true
-//	} else {
-//		pt.log.Warnf("connect main peer from scheduler error: %s", err)
-//	}
-//	// try other peers
-//	for _, peer := range pt.peerPacket.StealPeers {
-//		err := pt.connectPeerClient(peer)
-//		if err == nil {
-//			pt.pieceParallelCount = pt.peerPacket.ParallelCount
-//			return true
-//		}
-//	}
-//	return false
-//}
-
 func (pt *filePeerTask) getPieceTasks(request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	pt.pieceParallelCount = pt.peerPacket.ParallelCount
-	p, err := dfclient.GetPieceTasks(pt.peerPacket.MainPeer, pt.ctx, request)
-	if err == nil {
-		return p, nil
-	}
-	pt.log.Errorf("get piece task from main peer(%s) error: %s", err, pt.peerPacket.MainPeer.PeerId)
-	for _, peer := range pt.peerPacket.StealPeers {
-		p, err = dfclient.GetPieceTasks(peer, pt.ctx, request)
+	if pt.peerPacket.MainPeer != nil {
+		p, err := dfclient.GetPieceTasks(pt.peerPacket.MainPeer, pt.ctx, request)
 		if err == nil {
 			return p, nil
 		}
-		pt.log.Errorf("get piece task from peer(%s) error: %s", err, peer.PeerId)
+		pt.log.Errorf("get piece task from main peer(%s) error: %s", err, pt.peerPacket.MainPeer.PeerId)
+	}
+	for _, peer := range pt.peerPacket.StealPeers {
+		if peer == nil {
+			continue
+		}
+		p, err := dfclient.GetPieceTasks(peer, pt.ctx, request)
+		if err != nil {
+			pt.log.Errorf("get piece task from peer(%s) error: %s", err, peer.PeerId)
+			continue
+		}
+		return p, nil
 	}
 	// TODO report no peer available error
-	return nil, fmt.Errorf("no peer available")
+	return nil, fmt.Errorf("no peers available")
 }
 
-//func (pt *filePeerTask) connectPeerClient(peer *scheduler.PeerPacket_DestPeer) error {
-//	if peer == nil {
-//		return fmt.Errorf("nil dest peer")
-//	}
-//	if pt.peerClientInfo != nil && pt.peerClientInfo.PeerId == peer.PeerId {
-//		return fmt.Errorf("same dest peer with current connected")
-//	}
-//	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", peer.Ip, peer.RpcPort),
-//		grpc.WithInsecure())
-//	if err != nil {
-//		return err
-//	}
-//	daemonClient := dfdaemon.NewDaemonClient(conn)
-//	r, err := daemonClient.CheckHealth(context.Background(), &base.EmptyRequest{})
-//	if err == nil && r.Success {
-//		pt.peerClient = daemonClient
-//		pt.peerClientConn = conn
-//		pt.peerClientInfo = peer
-//		return nil
-//	}
-//	if err != nil {
-//		pt.log.Errorf("check daemon client failed: %s", err)
-//	}
-//	if r != nil {
-//		pt.log.Errorf("check daemon client failed, response: %#v", r)
-//	}
-//	return fmt.Errorf("connect to peer error: %s", err)
-//}
+func (pt *filePeerTask) getNextPieceNum(cur, limit int32) int32 {
+	if pt.isCompleted() {
+		return -1
+	}
+	i := cur + limit
+	for ; pt.bitmap.IsSet(i); i++ {
+	}
+	return i
+}

@@ -44,7 +44,7 @@ type daemonOption struct {
 	downloadRate string
 	uploadRate   string
 
-	storageDriver string
+	storeStrategy string
 
 	dataExpireTime  time.Duration
 	daemonAliveTime time.Duration
@@ -90,7 +90,7 @@ func initDaemonFlags() {
 	flagSet.IntVar(&flagDaemonOpt.uploadPortEnd, "upload-port-end", flagDaemonOpt.uploadPort, "the address that daemon will listen on for peer upload")
 	flagSet.StringVar(&flagDaemonOpt.downloadRate, "download-rate", flagDaemonOpt.downloadRate, "download rate limit for other peers and back source")
 	flagSet.StringVar(&flagDaemonOpt.uploadRate, "upload-rate", flagDaemonOpt.uploadRate, "upload rate limit for other peers")
-	flagSet.StringVar(&flagDaemonOpt.storageDriver, "storage-driver", flagDaemonOpt.storageDriver,
+	flagSet.StringVar(&flagDaemonOpt.storeStrategy, "store-strategy", flagDaemonOpt.storeStrategy,
 		"storage driver: io.d7y.storage.v2.simple, io.d7y.storage.v2.advance")
 	flagSet.StringVar(&flagDaemonOpt.pidFile, "pid", flagDaemonOpt.pidFile, "dfdaemon pid file location")
 	flagSet.StringVar(&flagDaemonOpt.lockFile, "lock", flagDaemonOpt.lockFile, "dfdaemon lock file location")

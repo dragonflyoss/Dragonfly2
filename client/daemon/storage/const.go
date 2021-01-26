@@ -9,6 +9,6 @@ const (
 	defaultFileMode      = os.FileMode(0644)
 	defaultDirectoryMode = os.FileMode(0755)
 
-	SimpleLocalTaskStoreDriver  = Driver("io.d7y.storage.v2.simple")
-	AdvanceLocalTaskStoreDriver = Driver("io.d7y.storage.v2.advance")
+	SimpleLocalTaskStoreStrategy  = StoreStrategy("io.d7y.storage.v2.simple")
+	AdvanceLocalTaskStoreStrategy = StoreStrategy("io.d7y.storage.v2.advance")
 )

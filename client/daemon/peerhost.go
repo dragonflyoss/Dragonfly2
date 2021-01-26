@@ -121,7 +121,7 @@ type SecurityOption struct {
 
 type StorageOption struct {
 	storage.Option
-	Driver storage.Driver
+	StoreStrategy storage.StoreStrategy
 }
 
 func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error) {
@@ -130,7 +130,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 		return nil, err
 	}
 
-	storageManager, err := storage.NewStorageManager(opt.Storage.Driver, &opt.Storage.Option, func(request storage.CommonTaskRequest) {
+	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage.Option, func(request storage.CommonTaskRequest) {
 		sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
 			TaskId: request.TaskID,
 			PeerId: request.PeerID,
@@ -144,7 +144,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 	if err != nil {
 		return nil, err
 	}
-	peerTaskManager, err := peer.NewPeerTaskManager(pieceManager, storageManager, sched)
+	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched)
 	if err != nil {
 		return nil, err
 	}

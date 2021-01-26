@@ -38,6 +38,7 @@ import (
 	mock_daemon "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/daemon"
 	mock_scheduler "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	daemonserver "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
@@ -45,6 +46,11 @@ import (
 )
 
 var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)
+
+func TestMain(m *testing.M) {
+	logger.InitDaemon()
+	m.Run()
+}
 
 func setupDaemonServer(ctrl *gomock.Controller, contentLength int64, pieceSize int32) (port int32) {
 	port = int32(freeport.GetPort())
@@ -99,7 +105,7 @@ func setupDaemonServer(ctrl *gomock.Controller, contentLength int64, pieceSize i
 func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
-	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreDriver, &storage.Option{
+	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
 		DataPath:       test.DataDir,
 		TaskExpireTime: -1 * time.Second,
 	}, func(request storage.CommonTaskRequest) {})
@@ -183,6 +189,17 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	})
 
 	ptm := &peerTaskManager{
+		host: &scheduler.PeerHost{
+			Uuid:           "",
+			Ip:             "127.0.0.1",
+			RpcPort:        0,
+			DownPort:       0,
+			HostName:       "",
+			SecurityDomain: "",
+			Location:       "",
+			Idc:            "",
+			NetTopology:    "",
+		},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
 			storageManager:  storageManager,

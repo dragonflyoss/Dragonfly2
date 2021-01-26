@@ -55,6 +55,7 @@ type PeerTaskCallback interface {
 }
 
 type peerTaskManager struct {
+	host           *scheduler.PeerHost
 	scheduler      schedulerclient.SchedulerClient
 	pieceManager   PieceManager
 	storageManager storage.Manager
@@ -89,8 +90,9 @@ func (p *peerTaskCallback) Fail(pt PeerTask, reason string) error {
 	return nil
 }
 
-func NewPeerTaskManager(pieceManager PieceManager, storageManager storage.Manager, schedulerClient schedulerclient.SchedulerClient) (PeerTaskManager, error) {
+func NewPeerTaskManager(host *scheduler.PeerHost, pieceManager PieceManager, storageManager storage.Manager, schedulerClient schedulerclient.SchedulerClient) (PeerTaskManager, error) {
 	ptm := &peerTaskManager{
+		host:             host,
 		runningPeerTasks: sync.Map{},
 		pieceManager:     pieceManager,
 		storageManager:   storageManager,
@@ -101,7 +103,7 @@ func NewPeerTaskManager(pieceManager PieceManager, storageManager storage.Manage
 
 func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *PeerTaskProgress, error) {
 	// TODO ensure scheduler is ok first
-	pt, err := NewFilePeerTask(ctx, ptm.scheduler, ptm.pieceManager, &req.PeerTaskRequest)
+	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, &req.PeerTaskRequest)
 	if err != nil {
 		return nil, err
 	}
