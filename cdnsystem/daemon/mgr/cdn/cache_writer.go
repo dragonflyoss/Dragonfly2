@@ -78,7 +78,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	for {
 		n, err := reader.Read(buf)
 		if n > 0 {
-			logger.Named(task.TaskID).Debugf("success read content with length(%d) from source", n)
+			logger.WithTaskID(task.TaskID).Debugf("success read content with length(%d) from source", n)
 			backSourceFileLength += int64(n)
 			if int(pieceContLeft) <= n {
 				bb.Write(buf[:pieceContLeft])
@@ -89,7 +89,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 					pieceContent: bb,
 				}
 				jobCh <- pc
-				logger.Named(task.TaskID).Debugf("send protocolContent to jobCh, pieceNum: %d", curPieceNum)
+				logger.WithTaskID(task.TaskID).Debugf("send protocolContent to jobCh, pieceNum: %d", curPieceNum)
 				curPieceNum++
 
 				// write the data left to a new buffer
@@ -115,9 +115,9 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 				}
 				jobCh <- pc
 				curPieceNum++
-				logger.Named(task.TaskID).Debugf("send the protocolContent, pieceNum: %d", curPieceNum)
+				logger.WithTaskID(task.TaskID).Debugf("send the protocolContent, pieceNum: %d", curPieceNum)
 			}
-			logger.Named(task.TaskID).Info("send all protocolContents and wait for cdnWriter")
+			logger.WithTaskID(task.TaskID).Info("send all protocolContents and wait for cdnWriter")
 			break
 		}
 		if err != nil {

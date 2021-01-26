@@ -104,7 +104,7 @@ func deleteTaskFiles(ctx context.Context, cacheStore *store.Store, taskID string
 	// try to clean the parent bucket
 	if err := cacheStore.Remove(ctx, getParentRaw(taskID)); err != nil &&
 		!store.IsKeyNotFound(err) {
-		logger.Named(taskID).Warnf("failed to remove parent bucket:%v", err)
+		logger.WithTaskID(taskID).Warnf("failed to remove parent bucket:%v", err)
 	}
 	return nil
 }

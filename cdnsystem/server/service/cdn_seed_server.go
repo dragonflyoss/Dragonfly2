@@ -22,6 +22,8 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
@@ -75,11 +77,11 @@ func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
 func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Named(req.TaskId).Errorf("failed to obtain seeds, req=%+v: %v", req, r)
+			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds, req=%+v: %v", req, r)
 		}
 
 		if err != nil {
-			logger.Named(req.TaskId).Errorf("failed to obtain seeds, req=%+v: %v", req, err)
+			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds, req=%+v: %v", req, err)
 		}
 	}()
 	if err := validateSeedRequestParams(req); err != nil {
@@ -99,17 +101,16 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	if err != nil {
 		return errors.Wrapf(err, "register seed task fail, registerRequest:%+v", registerRequest)
 	}
-	hostName, _ := os.Hostname()
-	peerId := fmt.Sprintf("%s-%s_%s", hostName, req.TaskId, "CDN")
+	peerId := fmt.Sprintf("%s-%s_%s", dfnet.HostName, req.TaskId, "CDN")
 	for piece := range pieceChan {
 		pieceRange := strings.Split(piece.PieceRange, "-")
 		pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
 		switch piece.Type {
 		case types.PieceType:
 			psc <- &cdnsystem.PieceSeed{
-				State:         base.NewState(base.Code_SUCCESS, "success"),
+				State:         base.NewState(dfcodes.SUCCESS, "success"),
 				PeerId:        peerId,
-				SeederName:    hostName,
+				SeederName:    dfnet.HostName,
 				PieceInfo:     &base.PieceInfo{
 					PieceNum:    piece.PieceNum,
 					RangeStart:  pieceStart,
@@ -124,14 +125,14 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		case types.TaskType:
 			var state *base.ResponseState
 			if !piece.Result.Success {
-				state = base.NewState(base.Code_CDN_ERROR, piece.Result.Msg)
+				state = base.NewState(dfcodes.CDN_ERROR, piece.Result.Msg)
 			} else {
-				state = base.NewState(base.Code_SUCCESS, "success")
+				state = base.NewState(dfcodes.SUCCESS, "success")
 			}
 			psc <- &cdnsystem.PieceSeed{
 				State:         state,
 				PeerId:        peerId,
-				SeederName:    hostName,
+				SeederName:    dfnet.HostName,
 				Done:          true,
 				ContentLength: piece.ContentLength,
 			}
@@ -143,15 +144,15 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (piecePacket *base.PiecePacket, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Named(req.TaskId).Errorf("failed to get piece tasks, req=%+v: %v", req, r)
+			logger.WithTaskID(req.TaskId).Errorf("failed to get piece tasks, req=%+v: %v", req, r)
 		}
 		if err != nil {
-			logger.Named(req.TaskId).Errorf("failed to get piece tasks, req=%+v :%v", req, err)
+			logger.WithTaskID(req.TaskId).Errorf("failed to get piece tasks, req=%+v :%v", req, err)
 		}
 	}()
 	if err := validateGetPieceTasksRequestParams(req); err != nil {
 		return &base.PiecePacket{
-			State:  base.NewState(base.Code_PARAM_INVALID, err),
+			State:  base.NewState(dfcodes.PARAM_INVALID, err),
 			TaskId: req.TaskId,
 		}, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
@@ -159,14 +160,14 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	logger.Debugf("task:%+v",task)
 	if err != nil {
 		return &base.PiecePacket{
-			State:  base.NewState(base.Code_CDN_ERROR, err),
+			State:  base.NewState(dfcodes.CDN_ERROR, err),
 			TaskId: req.TaskId,
 		}, errors.Wrapf(err, "failed to get task from cdn")
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
 		return &base.PiecePacket{
-			State:  base.NewState(base.Code_CDN_ERROR, err),
+			State:  base.NewState(dfcodes.CDN_ERROR, err),
 			TaskId: req.TaskId,
 		}, errors.Wrapf(err, "failed to get pieces from cdn")
 	}
@@ -190,7 +191,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	hostName, _ := os.Hostname()
 
 	return &base.PiecePacket{
-		State:         base.NewState(base.Code_SUCCESS, "success"),
+		State:         base.NewState(dfcodes.SUCCESS, "success"),
 		TaskId:        req.TaskId,
 		DstPid:        fmt.Sprintf("%s-%s_%s", hostName, req.TaskId, "CDN"),
 		DstAddr:       fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.DownloadPort),

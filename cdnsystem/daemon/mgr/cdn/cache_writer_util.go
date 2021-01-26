@@ -68,7 +68,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				pieceStyle := types.PlainUnspecified
 
 				if err := cw.writeToFile(ctx, job.taskID, waitToWriteContent, int64(job.pieceNum)*int64(job.pieceSize), pieceMd5); err != nil {
-					logger.Named(job.taskID).Errorf("failed to write file, pieceNum %d: %v", job.pieceNum, err)
+					logger.WithTaskID(job.taskID).Errorf("failed to write file, pieceNum %d: %v", job.pieceNum, err)
 					// todo redo the job?
 					continue
 				}
@@ -88,14 +88,14 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 					defer wg.Done()
 					// todo 可以先塞入channel，然后启动单独goroutine顺序写文件
 					if err := cw.metaDataMgr.appendPieceMetaDataToFile(ctx, job.taskID, record); err != nil {
-						logger.Named(job.taskID).Errorf("failed to append piece meta data to file:%v", err)
+						logger.WithTaskID(job.taskID).Errorf("failed to append piece meta data to file:%v", err)
 					}
 				}(pieceRecord)
 
 				if cw.cdnReporter != nil {
 					if err := cw.cdnReporter.reportPieceMetaRecord(job.taskID, pieceRecord); err != nil {
 						// NOTE: should we do this job again?
-						logger.Named(job.taskID).Errorf("failed to report piece status, pieceNum %d pieceMetaRecord %s: %v", job.pieceNum, pieceRecord, err)
+						logger.WithTaskID(job.taskID).Errorf("failed to report piece status, pieceNum %d pieceMetaRecord %s: %v", job.pieceNum, pieceRecord, err)
 						continue
 					}
 				}

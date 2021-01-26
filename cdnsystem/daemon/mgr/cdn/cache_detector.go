@@ -30,16 +30,16 @@ import (
 	"sort"
 )
 
-// cacheDetector detect cache
+// cacheDetector detect task cache
 type cacheDetector struct {
 	cacheStore      *store.Store
 	metaDataManager *metaDataManager
 	resourceClient  source.ResourceClient
 }
 
-// cacheResult detect cache result
+// cacheResult cache result of detect
 type cacheResult struct {
-	breakNum         int32              // break-point
+	breakNum         int32              // break-point of task file
 	pieceMetaRecords []*pieceMetaRecord // piece meta data records of task
 	fileMetaData     *fileMetaData      // file meta data of task
 	fileMd5          hash.Hash          // md5 of file content that has been downloaded
@@ -57,9 +57,9 @@ func newCacheDetector(cacheStore *store.Store, metaDataManager *metaDataManager,
 // detectCache detect cache which has been downloaded and stored on cacheStore
 func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) (*cacheResult, error) {
 	detectResult, err := cd.doDetect(ctx, task)
-	logger.Named(task.TaskID).Debugf("detects cache result:%v", detectResult)
+	logger.WithTaskID(task.TaskID).Debugf("detects cache result:%v", detectResult)
 	if err != nil {
-		logger.Named(task.TaskID).Errorf("failed to detect cache:%v", err)
+		logger.WithTaskID(task.TaskID).Errorf("failed to detect cache:%v", err)
 		metaData, err := cd.resetRepo(ctx, task)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to reset repo")
@@ -71,15 +71,15 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) 
 			fileMd5:          nil,
 		}
 	} else {
-		logger.Named(task.TaskID).Debugf("start to update access time")
+		logger.WithTaskID(task.TaskID).Debugf("start to update access time")
 		if err := cd.metaDataManager.updateAccessTime(ctx, task.TaskID, getCurrentTimeMillisFunc()); err != nil {
-			logger.Named(task.TaskID).Warnf("failed to update task access time ")
+			logger.WithTaskID(task.TaskID).Warnf("failed to update task access time ")
 		}
 	}
 	return detectResult, nil
 }
 
-// doDetect do detect action which detects file metaData and pieces metaData of specific task
+// doDetect the actual detect action which detects file metaData and pieces metaData of specific task
 func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (*cacheResult, error) {
 	fileMetaData, err := cd.metaDataManager.readFileMetaData(ctx, task.TaskID)
 	if err != nil {
@@ -92,7 +92,7 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (*c
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check if the task expired")
 	}
-	logger.Named(task.TaskID).Debugf("success to get expired result: %t", expired)
+	logger.WithTaskID(task.TaskID).Debugf("success to get expired result: %t", expired)
 	if expired {
 		return nil, errors.Wrapf(dferrors.ErrResourceExpired, "url:%s, expireInfo:%+v", task.Url, fileMetaData.ExpireInfo)
 	}
@@ -165,7 +165,7 @@ func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskID string, met
 		}
 		// read content
 		if err := checkPieceContent(reader, record, fileMd5); err != nil {
-			logger.Named(taskID).Errorf("failed to read content of pieceNum %d: %v", record.PieceNum, err)
+			logger.WithTaskID(taskID).Errorf("failed to read content of pieceNum %d: %v", record.PieceNum, err)
 			breakIndex = index
 			break
 		}
@@ -182,9 +182,9 @@ func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskID string, met
 
 // resetRepo
 func (cd *cacheDetector) resetRepo(ctx context.Context, task *types.SeedTask) (*fileMetaData, error) {
-	logger.Named(task.TaskID).Info("reset repo for task")
+	logger.WithTaskID(task.TaskID).Info("reset repo for task")
 	if err := deleteTaskFiles(ctx, cd.cacheStore, task.TaskID); err != nil {
-		logger.Named(task.TaskID).Errorf("reset repo: failed to delete task files: %v", err)
+		logger.WithTaskID(task.TaskID).Errorf("reset repo: failed to delete task files: %v", err)
 	}
 	// initialize meta data file
 	return cd.metaDataManager.writeFileMetaDataByTask(ctx, task)

@@ -43,7 +43,7 @@ func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (*t
 			headers["Range"] = httputils.ConstructRangeStr(breakRange)
 		}
 	}
-	logger.Named(task.TaskID).Infof("start to download with url: %s header: %+v", task.Url, task.Headers)
+	logger.WithTaskID(task.TaskID).Infof("start to download with url: %s header: %+v", task.Url, task.Headers)
 	return cm.resourceClient.Download(task.Url, headers)
 }
 

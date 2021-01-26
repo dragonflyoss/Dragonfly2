@@ -131,15 +131,5 @@ func StatSeedStart(taskId, url string) {
 }
 
 func StatSeedFinish(taskId, url string, success bool, code base.Code, cost uint32, traffic, contentLength int64) {
-	logger.StatSeedLogger.Info("seed making finish",
-		zap.Bool("success", success),
-		zap.String("taskId", taskId),
-		zap.String("url", url),
-		zap.String("seederIp", dfnet.HostIp),
-		zap.String("seederName", dfnet.HostName),
-		// Millisecond
-		zap.Uint32("cost", cost),
-		zap.Int64("traffic", traffic),
-		zap.Int64("contentLength", contentLength),
-		zap.Int("code", int(code)))
+
 }

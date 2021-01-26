@@ -100,7 +100,7 @@ func (mm *metaDataManager) writeFileMetaData(ctx context.Context, metaData *file
 	return mm.fileStore.PutBytes(ctx, getTaskMetaDataRawFunc(metaData.TaskID), data)
 }
 
-// readFileMetaData returns the fileMetaData info according to the taskID.
+// readFileMetaData read task metadata information according to taskId
 func (mm *metaDataManager) readFileMetaData(ctx context.Context, taskID string) (*fileMetaData, error) {
 	bytes, err := mm.fileStore.GetBytes(ctx, getTaskMetaDataRawFunc(taskID))
 	if err != nil {
@@ -111,8 +111,7 @@ func (mm *metaDataManager) readFileMetaData(ctx context.Context, taskID string) 
 	if err := json.Unmarshal(bytes, metaData); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal metadata bytes")
 	}
-	logger.Named(taskID).Debugf("success to read metadata: %+v ", metaData)
-
+	logger.WithTaskID(taskID).Debugf("success to read metadata: %+v ", metaData)
 	return metaData, nil
 }
 
@@ -129,7 +128,7 @@ func (mm *metaDataManager) updateAccessTime(ctx context.Context, taskID string, 
 	interval := accessTime - originMetaData.AccessTime
 	originMetaData.Interval = interval
 	if interval <= 0 {
-		logger.Named(taskID).Warnf("file hit interval:%d", interval)
+		logger.WithTaskID(taskID).Warnf("file hit interval:%d", interval)
 		originMetaData.Interval = 0
 	}
 

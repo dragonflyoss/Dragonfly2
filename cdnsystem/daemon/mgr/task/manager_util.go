@@ -75,7 +75,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	// get sourceContentLength with req.Headers
 	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Headers)
 	if err != nil {
-		logger.Named(task.TaskID).Errorf("failed to get url (%s) content length from http client:%v", task.Url, err)
+		logger.WithTaskID(task.TaskID).Errorf("failed to get url (%s) content length from http client:%v", task.Url, err)
 
 		if dferrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskId, time.Now())
@@ -101,7 +101,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 	// if not support file length header request ,return -1
 	task.SourceFileLength = sourceFileLength
-	logger.Named(taskId).Infof("get file content length: %d", sourceFileLength)
+	logger.WithTaskID(taskId).Infof("get file content length: %d", sourceFileLength)
 
 	// if success to get the information successfully with the req.Headers then update the task.Headers to req.Headers.
 	if request.Headers != nil {

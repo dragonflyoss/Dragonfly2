@@ -126,18 +126,18 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
 	if err != nil {
-		logger.Named(task.TaskID).Errorf("failed to detect cache, reset detectResult:%v", err)
+		logger.WithTaskID(task.TaskID).Errorf("failed to detect cache, reset detectResult:%v", err)
 		detectResult = &cacheResult{} // reset cacheResult
 	}
 	// second: report detect result
 	err = cm.cdnReporter.reportCache(task.TaskID, detectResult)
 	if err != nil {
-		logger.Named(task.TaskID).Errorf("failed to report cache, reset detectResult:%v", err)
+		logger.WithTaskID(task.TaskID).Errorf("failed to report cache, reset detectResult:%v", err)
 		detectResult = &cacheResult{} // reset cacheResult
 	}
 	// full cache
 	if detectResult.breakNum == -1 {
-		logger.Named(task.TaskID).Infof("cache full hit on local")
+		logger.WithTaskID(task.TaskID).Infof("cache full hit on local")
 		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
 		seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceRealMd5, detectResult.fileMetaData.PieceMd5Sign, detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength)
 		return seedTask, nil
@@ -162,12 +162,24 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
 	if err != nil {
-		logger.Named(task.TaskID).Errorf("failed to write for task: %v", err)
+		logger.WithTaskID(task.TaskID).Errorf("failed to write for task: %v", err)
 		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
 		return seedTask, err
 	}
 	// back source length
 	cm.metrics.cdnDownloadBytes.WithLabelValues().Add(float64(downloadMetadata.backSourceLength))
+
+	//logger.StatSeedLogger.Info("seed making finish",
+	//	zap.Bool("success", success),
+	//	zap.String("taskId", task.TaskID),
+	//	zap.String("url", task.TaskUrl),
+	//	zap.String("seederIp", dfnet.HostIp),
+	//	zap.String("seederName", dfnet.HostName),
+	//	// Millisecond
+	//	zap.Uint32("cost", cost),
+	//	zap.Int64("traffic", traffic),
+	//	zap.Int64("contentLength", downloadMetadata.realSourceFileLength),
+	//	zap.Int("code", int(code)))
 
 	sourceMD5 := reader.Md5()
 	// fifth: handle CDN result
@@ -228,16 +240,16 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 	var isSuccess = true
 	// check md5
 	if !stringutils.IsEmptyStr(task.RequestMd5) && task.RequestMd5 != sourceMd5 {
-		logger.Named(task.TaskID).Errorf("file md5 not match expected:%s real:%s", task.RequestMd5, sourceMd5)
+		logger.WithTaskID(task.TaskID).Errorf("file md5 not match expected:%s real:%s", task.RequestMd5, sourceMd5)
 		isSuccess = false
 	}
 	// check source length
 	if isSuccess && task.SourceFileLength >= 0 && task.SourceFileLength != downloadMetadata.realSourceFileLength {
-		logger.Named(task.TaskID).Errorf("file length not match expected:%d real:%d", task.SourceFileLength, downloadMetadata.realSourceFileLength)
+		logger.WithTaskID(task.TaskID).Errorf("file length not match expected:%d real:%d", task.SourceFileLength, downloadMetadata.realSourceFileLength)
 		isSuccess = false
 	}
 	if isSuccess && task.PieceTotal > 0 && downloadMetadata.pieceTotalCount != task.PieceTotal {
-		logger.Named(task.TaskID).Errorf("task total piece count not match expected:%d real:%d", task.PieceTotal, downloadMetadata.pieceTotalCount)
+		logger.WithTaskID(task.TaskID).Errorf("task total piece count not match expected:%d real:%d", task.PieceTotal, downloadMetadata.pieceTotalCount)
 		isSuccess = false
 	}
 	sourceFileLen := task.SourceFileLength
@@ -265,7 +277,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 		return false, nil
 	}
 
-	logger.Named(task.TaskID).Infof("success to get task, downloadMetadata:%+v realMd5: %s", downloadMetadata, sourceMd5)
+	logger.WithTaskID(task.TaskID).Infof("success to get task, downloadMetadata:%+v realMd5: %s", downloadMetadata, sourceMd5)
 
 	if err := cm.metaDataManager.appendPieceMetaIntegrityData(ctx, task.TaskID, sourceMd5); err != nil {
 		return false, err
@@ -275,7 +287,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 
 func (cm *Manager) updateExpireInfo(ctx context.Context, taskID string, expireInfo map[string]string) {
 	if err := cm.metaDataManager.updateExpireInfo(ctx, taskID, expireInfo); err != nil {
-		logger.Named(taskID).Errorf("failed to update expireInfo(%s): %v", expireInfo, err)
+		logger.WithTaskID(taskID).Errorf("failed to update expireInfo(%s): %v", expireInfo, err)
 	}
-	logger.Named(taskID).Infof("success to update expireInfo(%s)", expireInfo)
+	logger.WithTaskID(taskID).Infof("success to update expireInfo(%s)", expireInfo)
 }

@@ -118,8 +118,8 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 	}
 }
 
-func Named(name string) *zap.SugaredLogger {
-	return BizLogger.With("taskID", name)
+func WithTaskID(taskID string) *zap.SugaredLogger {
+	return BizLogger.With("taskID", taskID)
 }
 
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
