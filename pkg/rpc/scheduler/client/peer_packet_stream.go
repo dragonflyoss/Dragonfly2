@@ -81,7 +81,7 @@ func (pps *peerPacketStream) send(pr *scheduler.PieceResult) (err error) {
 
 	err = pps.stream.Send(pr)
 
-	if pr.PieceNum == base.END_OF_PIECE {
+	if pr.PieceNum == base.EndOfPiece {
 		return
 	}
 
@@ -99,7 +99,7 @@ func (pps *peerPacketStream) closeSend() error {
 func (pps *peerPacketStream) recv() (pp *scheduler.PeerPacket, err error) {
 	pp, err = pps.stream.Recv()
 
-	if err == nil && pp.State.Code == dfcodes.PEER_TASK_NOT_REGISTERED {
+	if err == nil && pp.State.Code == dfcodes.PeerTaskNotRegistered {
 		_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
 			timeCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			rr, err := pps.client.RegisterPeerTask(timeCtx, pps.ptr)

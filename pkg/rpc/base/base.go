@@ -24,11 +24,11 @@ import (
 	"reflect"
 )
 
-var END_OF_PIECE = int32(1) << 30
-var ZERO_OF_PIECE = int32(-1)
+var EndOfPiece = int32(1) << 30
+var ZeroOfPiece = int32(-1)
 
 // cdn peer id suffix
-var CDN_SUFFIX = "_CDN"
+var CdnSuffix = "_CDN"
 
 func NewState(code Code, msg interface{}) *ResponseState {
 	if msg == nil {
@@ -37,7 +37,7 @@ func NewState(code Code, msg interface{}) *ResponseState {
 
 	return &ResponseState{
 		Code:    code,
-		Success: code >= dfcodes.SUCCESS && code < (dfcodes.SUCCESS+100),
+		Success: code >= dfcodes.Success && code < (dfcodes.Success+100),
 		Msg:     fmt.Sprintf("%v", msg),
 	}
 }
@@ -59,11 +59,11 @@ func NewResWithErr(ptr interface{}, err error) interface{} {
 	var code Code
 	switch st.Code() {
 	case codes.DeadlineExceeded:
-		code = dfcodes.REQUEST_TIME_OUT
+		code = dfcodes.RequestTimeOut
 	case codes.OK:
-		code = dfcodes.SUCCESS
+		code = dfcodes.Success
 	default:
-		code = dfcodes.UNKNOWN_ERROR
+		code = dfcodes.UnknownError
 	}
 	return NewResWithCodeAndMsg(ptr, code, st.Message())
 }

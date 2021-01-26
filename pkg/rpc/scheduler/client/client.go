@@ -181,7 +181,7 @@ func send(stream *peerPacketStream, prc chan *scheduler.PieceResult, ppc chan *s
 		for v := range prc {
 			if err := stream.send(v); err != nil {
 				return
-			} else if v.PieceNum == base.END_OF_PIECE {
+			} else if v.PieceNum == base.EndOfPiece {
 				return
 			}
 		}

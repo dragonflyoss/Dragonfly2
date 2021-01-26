@@ -79,7 +79,7 @@ func init() {
 func GetPieceTasks(destPeer *scheduler.PeerPacket_DestPeer, ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	destAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)
 	peerId := destPeer.PeerId
-	toCdn := strings.HasSuffix(peerId, base.CDN_SUFFIX)
+	toCdn := strings.HasSuffix(peerId, base.CdnSuffix)
 
 	var client interface{}
 	var err error

@@ -22,7 +22,7 @@ func NewZeroPieceResult(taskId, peerId string) *PieceResult {
 	return &PieceResult{
 		TaskId:   taskId,
 		SrcPid:   peerId,
-		PieceNum: base.ZERO_OF_PIECE,
+		PieceNum: base.ZeroOfPiece,
 	}
 }
 
@@ -30,7 +30,7 @@ func NewEndPieceResult(finishedCount int32, taskId, peerId string) *PieceResult 
 	return &PieceResult{
 		TaskId:        taskId,
 		SrcPid:        peerId,
-		PieceNum:      base.END_OF_PIECE,
+		PieceNum:      base.EndOfPiece,
 		FinishedCount: finishedCount,
 	}
 }
