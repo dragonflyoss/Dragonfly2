@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	types2 "github.com/dragonflyoss/Dragonfly2/pkg/util/types"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 )
@@ -11,6 +12,9 @@ func (s *SchedulerService) GenerateTaskId(url string, filter string) (taskId str
 
 func (s *SchedulerService) GetTask(taskId string) (task *types.Task, err error) {
 	task, _ = s.taskMgr.GetTask(taskId)
+	if task == nil {
+		err = errors.New("peer task not exited: " + taskId)
+	}
 	return
 }
 

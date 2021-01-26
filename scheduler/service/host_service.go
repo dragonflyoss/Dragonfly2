@@ -1,9 +1,15 @@
 package service
 
-import "github.com/dragonflyoss/Dragonfly2/scheduler/types"
+import (
+	"errors"
+	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+)
 
-func (s *SchedulerService) GetHost(hostId string) (task *types.Host, err error) {
-	task, _ = s.hostMgr.GetHost(hostId)
+func (s *SchedulerService) GetHost(hostId string) (host *types.Host, err error) {
+	host, _ = s.hostMgr.GetHost(hostId)
+	if host == nil {
+		err = errors.New("peer task not exited: " + hostId)
+	}
 	return
 }
 
