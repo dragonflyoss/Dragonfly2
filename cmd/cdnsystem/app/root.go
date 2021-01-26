@@ -62,6 +62,9 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := logger.InitCdnSystem(); err != nil {
+			return errors.Wrapf(err, "init log fail")
+		}
 		// load config file into the given viper instance.
 		if err := readConfigFile(cdnNodeViper, cmd); err != nil {
 			return errors.Wrap(err, "read config file")
