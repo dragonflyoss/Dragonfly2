@@ -18,6 +18,7 @@ package base
 
 import (
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"reflect"
@@ -36,7 +37,7 @@ func NewState(code Code, msg interface{}) *ResponseState {
 
 	return &ResponseState{
 		Code:    code,
-		Success: code >= Code_SUCCESS && code < (Code_SUCCESS+100),
+		Success: code >= dfcodes.SUCCESS && code < (dfcodes.SUCCESS+100),
 		Msg:     fmt.Sprintf("%v", msg),
 	}
 }
@@ -58,11 +59,11 @@ func NewResWithErr(ptr interface{}, err error) interface{} {
 	var code Code
 	switch st.Code() {
 	case codes.DeadlineExceeded:
-		code = Code_REQUEST_TIME_OUT
+		code = dfcodes.REQUEST_TIME_OUT
 	case codes.OK:
-		code = Code_SUCCESS
+		code = dfcodes.SUCCESS
 	default:
-		code = Code_UNKNOWN_ERROR
+		code = dfcodes.UNKNOWN_ERROR
 	}
 	return NewResWithCodeAndMsg(ptr, code, st.Message())
 }
