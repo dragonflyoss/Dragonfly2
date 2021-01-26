@@ -121,7 +121,7 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 			Type: types.HostTypeCdn,
 			PeerHost: scheduler.PeerHost{
 				Uuid:     hostId,
-				HostName: hostId,
+				HostName: ps.SeederName,
 				Ip:       ip,
 				RpcPort:  int32(rpcPort),
 				DownPort: int32(downPort),

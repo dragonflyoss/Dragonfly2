@@ -36,6 +36,9 @@ func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.P
 				chosen = child
 			}
 		}
+		if chosen == nil {
+			break
+		}
 		if schedulerResult[chosen] == 0 {
 			children = append(children, chosen)
 		}
