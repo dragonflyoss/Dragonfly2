@@ -18,7 +18,6 @@ package server
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
@@ -35,17 +34,6 @@ import (
 )
 
 func init() {
-	logDir := basic.HomeDir + "/logs/dragonfly"
-
-	bizLogger := logger.CreateLogger(logDir+"/cdnsystem.log", 300, 30, 0, false, false)
-	logger.SetBizLogger(bizLogger.Sugar())
-
-	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	gcLogger := logger.CreateLogger(logDir+"/gc.log", 300, 7, 0, false, false)
-	logger.SetGcLogger(gcLogger.Sugar())
-
 	// set register with server implementation.
 	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
 		cdnsystem.RegisterSeederServer(s, &proxy{server: impl.(SeederServer)})

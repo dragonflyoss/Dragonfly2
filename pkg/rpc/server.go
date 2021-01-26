@@ -90,10 +90,10 @@ func GetTcpServerPort() int {
 }
 
 // for client, start tcp first and then start unix on server process
-func StartTcpServer(incrementPort int, upLimit int, impl interface{}, opts ...grpc.ServerOption) {
+func StartTcpServer(incrementPort int, upLimit int, impl interface{}, opts ...grpc.ServerOption) error {
 	for {
 		if incrementPort > upLimit {
-			panic(errors.New("no ports available"))
+			return errors.New("no ports available")
 		}
 
 		netAddr := dfnet.NetAddr{
@@ -102,16 +102,16 @@ func StartTcpServer(incrementPort int, upLimit int, impl interface{}, opts ...gr
 		}
 
 		if err := startServer(netAddr, impl, opts); err != nil && !isErrAddrInuse(err) {
-			panic(err)
+			return err
 		} else if err == nil {
-			return
+			return nil
 		}
 
 		incrementPort++
 	}
 }
 
-func StartUnixServer(sockPath string, impl interface{}, opts ...grpc.ServerOption) {
+func StartUnixServer(sockPath string, impl interface{}, opts ...grpc.ServerOption) error {
 	_ = fileutils.DeleteFile(sockPath)
 
 	netAddr := dfnet.NetAddr{
@@ -120,7 +120,9 @@ func StartUnixServer(sockPath string, impl interface{}, opts ...grpc.ServerOptio
 	}
 
 	if err := startServer(netAddr, impl, opts); err != nil {
-		panic(err)
+		return err
+	} else {
+		return nil
 	}
 }
 

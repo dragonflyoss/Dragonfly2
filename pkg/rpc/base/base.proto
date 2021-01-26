@@ -91,10 +91,11 @@ message HostLoad{
 message PieceTaskRequest{
   string task_id = 1;
   string src_ip = 2;
+  string dst_pid = 3;
   // piece number
-  int32 start_num = 3;
+  int32 start_num = 4;
   // expected piece count
-  int32 limit = 4;
+  int32 limit = 5;
 }
 
 message PieceInfo{
