@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 	"errors"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
@@ -98,7 +99,7 @@ func (pps *peerPacketStream) closeSend() error {
 func (pps *peerPacketStream) recv() (pp *scheduler.PeerPacket, err error) {
 	pp, err = pps.stream.Recv()
 
-	if err == nil && pp.State.Code == base.Code_PEER_TASK_NOT_REGISTERED {
+	if err == nil && pp.State.Code == dfcodes.PEER_TASK_NOT_REGISTERED {
 		_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
 			timeCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			rr, err := pps.client.RegisterPeerTask(timeCtx, pps.ptr)
