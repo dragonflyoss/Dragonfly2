@@ -10,6 +10,9 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
 	"hash/crc32"
+	"io/ioutil"
+	"net/http"
+	"time"
 
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/client"
@@ -145,7 +148,7 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		//
 		if task.PieceTotal == 1 {
 			if task.ContentLength <= TinyFileSize {
-				content, er := c.getTinyFileContent(task)
+				content, er := c.getTinyFileContent(task, host)
 				if er == nil && len(content) == int(task.ContentLength) {
 					task.SizeScope = base.SizeScope_TINY
 					task.DirectPiece = &scheduler.RegisterResult_PieceContent{
@@ -185,7 +188,7 @@ func (c *CDNClient) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *t
 	return p
 }
 
-func (c *CDNClient) getTinyFileContent(task *types.Task) (content []byte, err error) {
+func (c *CDNClient) getTinyFileContent(task *types.Task, cdnHost *types.Host) (content []byte, err error) {
 	resp, err := c.GetPieceTasks(context.TODO(), &base.PieceTaskRequest{
 		TaskId:   task.TaskId,
 		StartNum: 0,
@@ -199,6 +202,23 @@ func (c *CDNClient) getTinyFileContent(task *types.Task) (content []byte, err er
 	}
 
 	// TODO download the tiny file
+	// http://host:port/download/{taskId 前3位}/{taskId}?peerId={peerId};
+	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
+		cdnHost.Ip, cdnHost.DownPort, task.TaskId[:3], task.TaskId)
+	client := &http.Client{
+		Timeout: time.Second*5,
+	}
+	response, err := client.Get(url)
+	if err != nil {
+		return
+	}
+	defer response.Body.Close()
+	content, err = ioutil.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
 
 	return
 }
+
+
