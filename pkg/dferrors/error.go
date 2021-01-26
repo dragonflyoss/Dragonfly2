@@ -18,12 +18,22 @@ package dferrors
 
 import (
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/pkg/errors"
 )
 
 var (
 	ErrEndOfStream = errors.New("end of stream")
+
+	ErrClientError           = &DfError{dfcodes.ClientError, "client error"}
+	ErrSchedulerError        = &DfError{dfcodes.SchedulerError, "scheduler error"}
+	ErrPeerTaskNotRegistered = &DfError{dfcodes.PeerTaskNotRegistered, "peer task is not registered"}
+	ErrCdnError              = &DfError{dfcodes.CdnError, "cdn error"}
+	ErrManagerError          = &DfError{dfcodes.ManagerError, "manager error"}
+	ErrUnknownError          = &DfError{dfcodes.UnknownError, "unknown error"}
+	ErrInvalidArgument       = &DfError{dfcodes.InvalidArgument, "invalid argument"}
+	ErrRequestTimeOut        = &DfError{dfcodes.RequestTimeOut, "request time out"}
 )
 
 type DfError struct {
