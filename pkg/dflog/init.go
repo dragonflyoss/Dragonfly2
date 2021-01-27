@@ -103,7 +103,7 @@ func InitCdnSystem() error {
 }
 
 func InitDaemon() error {
-	logDir := basic.HomeDir + "/logs/dragonfly"
+	logDir := "/var/log/dragonfly"
 
 	if bizLogger, err := CreateLogger(logDir+"/daemon.log", 100, 7, 14, false, false); err != nil {
 		return err
