@@ -6,7 +6,6 @@ require (
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0
-	github.com/dragonflyoss/Dragonfly v1.0.6
 	github.com/go-echarts/statsview v0.3.4
 	github.com/gofrs/flock v0.8.0
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
@@ -39,5 +38,4 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/warnings.v0 v0.1.2
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
-	knative.dev/serving v0.20.0 // indirect
 )
