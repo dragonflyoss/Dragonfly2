@@ -29,7 +29,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	"github.com/dragonflyoss/Dragonfly/version"
 	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
@@ -101,7 +100,6 @@ func newDirectHandler() *http.ServeMux {
 	s := http.DefaultServeMux
 	s.HandleFunc("/args", getArgs)
 	s.HandleFunc("/env", getEnv)
-	s.HandleFunc("/debug/version", version.Handler)
 	s.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
 	return s
 }
