@@ -46,7 +46,8 @@ const (
 )
 
 const (
-	DefaultYamlConfigFile  = "/etc/dragonfly/dfget.yml"
+	DefaultYamlConfigFile = "/etc/dragonfly/dfget.yml"
+	ProxyYamlConfigFile   = "/etc/dragonfly/proxy.yml"
 	// Deprecated
 	DefaultIniConfigFile   = "/etc/dragonfly.conf"
 	DefaultLocalLimit      = 20 * rate.MB
