@@ -209,7 +209,7 @@ func (w *wrappedClientStream) RecvMsg(m interface{}) error {
 
 func (w *wrappedClientStream) SendMsg(m interface{}) error {
 	err := w.ClientStream.SendMsg(m)
-	if err != nil && err != io.EOF {
+	if err != nil {
 		logger.GrpcLogger.Errorf("client send a message:%T error:%v for method:%s target:%s connState:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
 
