@@ -99,6 +99,16 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 	if err != nil {
 		return nil, nil, err
 	}
+	if req.Num != -1 {
+		t.RLock()
+		if piece, ok := t.persistentMetadata.Pieces[req.Num]; ok {
+			t.RUnlock()
+			req.Range = piece.Range
+		} else {
+			t.RUnlock()
+			return nil, nil, ErrPieceNotFound
+		}
+	}
 	// who call ReadPiece, who close the io.ReadCloser
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
 		return nil, nil, err

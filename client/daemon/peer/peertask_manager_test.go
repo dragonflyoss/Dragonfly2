@@ -232,3 +232,121 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	assert.Nil(err, "load output file")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }
+
+func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
+	assert := testifyassert.New(t)
+	ctrl := gomock.NewController(t)
+	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
+		DataPath:       test.DataDir,
+		TaskExpireTime: -1 * time.Second,
+	}, func(request storage.CommonTaskRequest) {})
+	defer storageManager.(gc.GC).TryGC()
+
+	testBytes, err := ioutil.ReadFile(test.File)
+	assert.Nil(err, "load test file")
+
+	var (
+		pieceParallelCount = int32(4)
+		pieceSize          = 1024
+
+		mockContentLength = len(testBytes)
+		//mockPieceCount    = int(math.Ceil(float64(mockContentLength) / float64(pieceSize)))
+
+		peerID = "peer-0"
+		taskID = "task-0"
+	)
+	port := setupDaemonServer(ctrl, int64(mockContentLength), int32(pieceSize))
+	time.Sleep(100 * time.Millisecond)
+	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
+	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
+		return &scheduler.RegisterResult{
+			State: &base.ResponseState{
+				Success: true,
+				Code:    base.Code_SUCCESS,
+				Msg:     "",
+			},
+			TaskId:      taskID,
+			SizeScope:   base.SizeScope_NORMAL,
+			DirectPiece: nil,
+		}, nil
+	})
+	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, error) {
+		resultCh := make(chan *scheduler.PieceResult)
+		peerPacketCh := make(chan *scheduler.PeerPacket)
+		go func() {
+			for {
+				select {
+				case <-resultCh:
+				}
+			}
+		}()
+		go func() {
+			peerPacketCh <- &scheduler.PeerPacket{
+				State: &base.ResponseState{
+					Success: true,
+					Code:    base.Code_SUCCESS,
+					Msg:     "progress by mockSchedulerClient",
+				},
+				TaskId:        taskID,
+				SrcPid:        "127.0.0.1",
+				ParallelCount: pieceParallelCount,
+				MainPeer: &scheduler.PeerPacket_DestPeer{
+					Ip:      "127.0.0.1",
+					RpcPort: port,
+					PeerId:  "",
+				},
+				StealPeers: nil,
+			}
+		}()
+		return resultCh, peerPacketCh, nil
+	})
+	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) (*base.ResponseState, error) {
+		return &base.ResponseState{
+			Success: true,
+			Code:    base.Code_SUCCESS,
+			Msg:     "progress by mockSchedulerClient",
+		}, nil
+	})
+
+	downloader := NewMockPieceDownloader(ctrl)
+	downloader.EXPECT().DownloadPiece(gomock.Any()).AnyTimes().DoAndReturn(func(task *DownloadPieceRequest) (io.ReadCloser, error) {
+		return ioutil.NopCloser(
+			bytes.NewBuffer(
+				testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
+			)), nil
+	})
+
+	ptm := &peerTaskManager{
+		host: &scheduler.PeerHost{
+			Uuid:           "",
+			Ip:             "127.0.0.1",
+			RpcPort:        0,
+			DownPort:       0,
+			HostName:       "",
+			SecurityDomain: "",
+			Location:       "",
+			Idc:            "",
+			NetTopology:    "",
+		},
+		runningPeerTasks: sync.Map{},
+		pieceManager: &pieceManager{
+			storageManager:  storageManager,
+			pieceDownloader: downloader,
+		},
+		storageManager: storageManager,
+		scheduler:      sched,
+	}
+	r, _, err := ptm.StartStreamPeerTask(context.Background(), &scheduler.PeerTaskRequest{
+		Url:      "http://localhost/test/data",
+		Filter:   "",
+		BizId:    "d7s-test",
+		UrlMata:  nil,
+		PeerId:   peerID,
+		PeerHost: &scheduler.PeerHost{},
+	})
+	assert.Nil(err, "start stream peer task")
+
+	outputBytes, err := ioutil.ReadAll(r)
+	assert.Nil(err, "load read data")
+	assert.Equal(testBytes, outputBytes, "output and desired output must match")
+}

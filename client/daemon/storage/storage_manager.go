@@ -76,7 +76,8 @@ type TaskStorageExecutor interface {
 }
 
 var (
-	ErrTaskNotFound = errors.New("task not found")
+	ErrTaskNotFound  = errors.New("task not found")
+	ErrPieceNotFound = errors.New("piece not found")
 )
 
 const (

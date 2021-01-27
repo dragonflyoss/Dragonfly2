@@ -33,6 +33,7 @@ import (
 type PieceManager interface {
 	PieceDownloader
 	PullPieces(peerTask PeerTask, piecePacket *base.PiecePacket)
+	ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error)
 }
 
 type pieceManager struct {
@@ -148,8 +149,8 @@ func (pm *pieceManager) pushSuccessResult(peerTask PeerTask, dstPid, dstAddr str
 			EndTime:       uint64(end),
 			Success:       true,
 			Code:          base.Code_SUCCESS,
-			HostLoad:      nil,
-			FinishedCount: 0,
+			HostLoad:      nil, // TODO(jim): update host load
+			FinishedCount: 0,   // update by peer task
 		})
 	if err != nil {
 		logger.Errorf("report piece task error: %v", err)
@@ -178,4 +179,8 @@ func (pm *pieceManager) pushFailResult(peerTask PeerTask, dstPid, dstAddr string
 
 func (pm *pieceManager) DownloadPiece(req *DownloadPieceRequest) (io.ReadCloser, error) {
 	return pm.pieceDownloader.DownloadPiece(req)
+}
+
+func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error) {
+	return pm.storageManager.ReadPiece(ctx, req)
 }

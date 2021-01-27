@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	schedulerclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/client"
@@ -47,6 +46,15 @@ type PeerTaskManager interface {
 	Stop(ctx context.Context) error
 }
 
+// PeerTask represents common interface to operate a peer task
+type PeerTask interface {
+	ReportPieceResult(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error
+	GetPeerID() string
+	GetTaskID() string
+	GetContentLength() int64
+	SetCallback(PeerTaskCallback)
+}
+
 // PeerTaskCallback inserts some operations for peer task download lifecycle
 type PeerTaskCallback interface {
 	Init(pt PeerTask) error
@@ -61,33 +69,6 @@ type peerTaskManager struct {
 	storageManager storage.Manager
 
 	runningPeerTasks sync.Map
-}
-
-type peerTaskCallback struct {
-	FailFunc func(pt PeerTask, reason string) error
-	DoneFunc func(pt PeerTask) error
-	InitFunc func(pt PeerTask) error
-}
-
-func (p *peerTaskCallback) Done(pt PeerTask) error {
-	if p.DoneFunc != nil {
-		return p.DoneFunc(pt)
-	}
-	return nil
-}
-
-func (p *peerTaskCallback) Init(pt PeerTask) error {
-	if p.InitFunc != nil {
-		return p.InitFunc(pt)
-	}
-	return nil
-}
-
-func (p *peerTaskCallback) Fail(pt PeerTask, reason string) error {
-	if p.FailFunc != nil {
-		return p.FailFunc(pt, reason)
-	}
-	return nil
 }
 
 func NewPeerTaskManager(host *scheduler.PeerHost, pieceManager PieceManager, storageManager storage.Manager, schedulerClient schedulerclient.SchedulerClient) (PeerTaskManager, error) {
@@ -107,72 +88,11 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	if err != nil {
 		return nil, err
 	}
-	var start = time.Now()
-	// when peer task done, call peer task manager to store data
-	pt.SetCallback(&peerTaskCallback{
-		InitFunc: func(pt PeerTask) error {
-			// prepare storage
-			err = ptm.storageManager.RegisterTask(ctx,
-				storage.RegisterTaskRequest{
-					CommonTaskRequest: storage.CommonTaskRequest{
-						PeerID:      pt.GetPeerID(),
-						TaskID:      pt.GetTaskID(),
-						Destination: req.Output,
-					},
-					ContentLength: pt.GetContentLength(),
-				})
-			if err != nil {
-				logger.Errorf("register task to storage manager failed: %s", err)
-			}
-			return err
-		},
-		DoneFunc: func(pt PeerTask) error {
-			e := ptm.storageManager.Store(
-				context.Background(),
-				&storage.StoreRequest{
-					PeerID:      pt.GetPeerID(),
-					TaskID:      pt.GetTaskID(),
-					Destination: req.Output,
-				})
-			if e != nil {
-				return e
-			}
-			ptm.PeerTaskDone(req.PeerId)
-			var end = time.Now()
-			ptm.scheduler.ReportPeerResult(ctx, &scheduler.PeerResult{
-				TaskId:         pt.GetTaskID(),
-				PeerId:         pt.GetPeerID(),
-				SrcIp:          "",
-				SecurityDomain: "",
-				Idc:            "",
-				Url:            "",
-				ContentLength:  pt.GetContentLength(),
-				Traffic:        0,
-				Cost:           uint32(end.Sub(start).Milliseconds()),
-				Success:        true,
-				Code:           base.Code_SUCCESS,
-			})
-			return nil
-		},
-		FailFunc: func(pt PeerTask, reason string) error {
-			ptm.PeerTaskDone(req.PeerId)
-
-			var end = time.Now()
-			ptm.scheduler.ReportPeerResult(ctx, &scheduler.PeerResult{
-				TaskId:         pt.GetTaskID(),
-				PeerId:         pt.GetPeerID(),
-				SrcIp:          "",
-				SecurityDomain: "",
-				Idc:            "",
-				Url:            "",
-				ContentLength:  pt.GetContentLength(),
-				Traffic:        0,
-				Cost:           uint32(end.Sub(start).Milliseconds()),
-				Success:        false,
-				Code:           base.Code_CLIENT_ERROR,
-			})
-			return nil
-		},
+	pt.SetCallback(&filePeerTaskCallback{
+		ctx:   ctx,
+		ptm:   ptm,
+		req:   req,
+		start: time.Now(),
 	})
 
 	ptm.runningPeerTasks.Store(req.PeerId, pt)
@@ -184,8 +104,25 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	return pt.Start(ctx)
 }
 
-func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (reader io.Reader, attribute map[string]string, err error) {
-	panic("implement me")
+func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (reader io.Reader, attribute map[string]string, err error) {
+	pt, err := NewStreamPeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, req)
+	if err != nil {
+		return nil, nil, err
+	}
+	pt.SetCallback(&streamPeerTaskCallback{
+		ctx:   ctx,
+		ptm:   ptm,
+		req:   req,
+		start: time.Now(),
+	})
+
+	ptm.runningPeerTasks.Store(req.PeerId, pt)
+
+	// FIXME 1. merge same task id
+	// FIXME 2. when failed due to schedulerClient error, relocate schedulerClient and retry
+	//go pt.pullPiecesFromPeers()
+
+	return pt.Start(ctx)
 }
 
 func (ptm *peerTaskManager) Stop(ctx context.Context) error {

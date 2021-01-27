@@ -107,8 +107,8 @@ func (u *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 				PeerID: peer,
 			},
 			PieceMetaData: storage.PieceMetaData{
+				Num:   -1,
 				Range: rg[0],
-				Style: 0,
 			},
 		})
 	if err != nil {
