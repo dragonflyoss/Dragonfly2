@@ -18,22 +18,22 @@ package dferrors
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/pkg/errors"
 )
 
+// errors used only on local
 var (
-	ErrEndOfStream = errors.New("end of stream")
-
-	ErrClientError           = &DfError{dfcodes.ClientError, "client error"}
-	ErrSchedulerError        = &DfError{dfcodes.SchedulerError, "scheduler error"}
-	ErrPeerTaskNotRegistered = &DfError{dfcodes.PeerTaskNotRegistered, "peer task is not registered"}
-	ErrCdnError              = &DfError{dfcodes.CdnError, "cdn error"}
-	ErrManagerError          = &DfError{dfcodes.ManagerError, "manager error"}
-	ErrInvalidArgument       = &DfError{dfcodes.InvalidArgument, "invalid argument"}
-	ErrRequestTimeOut        = &DfError{dfcodes.RequestTimeOut, "request time out"}
+	ErrEndOfStream     = errors.New("end of stream")
+	ErrInvalidArgument = errors.New("invalid argument")
+	ErrDataNotFound    = errors.New("data not found")
+	ErrEmptyValue      = errors.New("empty value")
+	ErrConvertFailed   = errors.New("convert failed")
 )
+
+func IsEndOfStream(err error) bool {
+	return err == ErrEndOfStream
+}
 
 type DfError struct {
 	Code    base.Code
@@ -63,22 +63,7 @@ func CheckError(err error, code base.Code) bool {
 		return false
 	}
 
-	e, ok := errors.Cause(err).(*DfError)
+	e, ok := err.(*DfError)
 
 	return ok && e.Code == code
-}
-
-func IsDfError(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	_, ok := errors.Cause(err).(*DfError)
-
-	return ok
-
-}
-
-func IsEndOfStream(err error) bool {
-	return err == ErrEndOfStream
 }

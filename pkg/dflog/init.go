@@ -26,10 +26,10 @@ const (
 func InitManager() error {
 	logDir := basic.HomeDir + "/logs/dragonfly/"
 
-	if bizLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
+	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
-		SetBizLogger(bizLogger.Sugar())
+		SetCoreLogger(coreLogger.Sugar())
 	}
 
 	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
@@ -50,10 +50,10 @@ func InitManager() error {
 func InitScheduler() error {
 	logDir := basic.HomeDir + "/logs/dragonfly/"
 
-	if bizLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
+	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
-		SetBizLogger(bizLogger.Sugar())
+		SetCoreLogger(coreLogger.Sugar())
 	}
 
 	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
@@ -80,10 +80,10 @@ func InitScheduler() error {
 func InitCdnSystem() error {
 	logDir := basic.HomeDir + "/logs/dragonfly/"
 
-	if bizLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
+	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
-		SetBizLogger(bizLogger.Sugar())
+		SetCoreLogger(coreLogger.Sugar())
 	}
 
 	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
@@ -110,10 +110,10 @@ func InitCdnSystem() error {
 func InitDaemon() error {
 	logDir := "/var/log/dragonfly/"
 
-	if bizLogger, err := CreateLogger(logDir+CoreLogFileName, 100, 7, 14, false, false); err != nil {
+	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
-		SetBizLogger(bizLogger.Sugar())
+		SetCoreLogger(coreLogger.Sugar())
 	}
 
 	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 100, 7, 14, false, false); err != nil {
@@ -134,11 +134,11 @@ func InitDaemon() error {
 func InitDfget() error {
 	logDir := "/var/log/dragonfly/"
 
-	if bizLogger, err := CreateLogger(logDir+"dfget.log", 300, -1, -1, false, false); err != nil {
+	if dfgetLogger, err := CreateLogger(logDir+"dfget.log", 300, -1, -1, false, false); err != nil {
 		return err
 	} else {
-		log := bizLogger.Sugar()
-		SetBizLogger(log)
+		log := dfgetLogger.Sugar()
+		SetCoreLogger(log)
 		SetGrpcLogger(log)
 	}
 

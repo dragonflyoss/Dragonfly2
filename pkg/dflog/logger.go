@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	BizLogger      *zap.SugaredLogger
+	CoreLogger     *zap.SugaredLogger
 	GrpcLogger     *zap.SugaredLogger
 	GcLogger       *zap.SugaredLogger
 	StatPeerLogger *zap.Logger
@@ -108,8 +108,8 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 	return zap.New(core, opts...), nil
 }
 
-func SetBizLogger(log *zap.SugaredLogger) {
-	BizLogger = log
+func SetCoreLogger(log *zap.SugaredLogger) {
+	CoreLogger = log
 }
 
 func SetGcLogger(log *zap.SugaredLogger) {
@@ -136,35 +136,35 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 }
 
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
-	BizLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
+	CoreLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
-	BizLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
+	CoreLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
-	BizLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
+	CoreLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
-	BizLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
+	CoreLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func Infof(template string, args ...interface{}) {
-	BizLogger.Infof(template, args...)
+	CoreLogger.Infof(template, args...)
 }
 
 func Warnf(template string, args ...interface{}) {
-	BizLogger.Warnf(template, args...)
+	CoreLogger.Warnf(template, args...)
 }
 
 func Errorf(template string, args ...interface{}) {
-	BizLogger.Errorf(template, args...)
+	CoreLogger.Errorf(template, args...)
 }
 
 func Debugf(template string, args ...interface{}) {
-	BizLogger.Debugf(template, args...)
+	CoreLogger.Debugf(template, args...)
 }
 
 type zapGrpc struct {
