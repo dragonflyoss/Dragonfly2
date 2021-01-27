@@ -26,7 +26,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/dragonflyoss/Dragonfly/dfdaemon/exception"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 )
 
@@ -105,7 +104,7 @@ func (roundTripper *DFRoundTripper) RoundTrip(req *http.Request) (*http.Response
 		// result for different requests
 		req.Header.Del("Accept-Encoding")
 		logrus.Debugf("round trip with dfget: %s", req.URL.String())
-		if res, err := roundTripper.download(req, req.URL.String()); err == nil || exception.IsAuthError(err) {
+		if res, err := roundTripper.download(req, req.URL.String()); err == nil {
 			return res, err
 		}
 	}
