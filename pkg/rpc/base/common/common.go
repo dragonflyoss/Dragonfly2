@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package base
+package common
 
 import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"reflect"
@@ -30,12 +31,12 @@ var ZeroOfPiece = int32(-1)
 // cdn peer id suffix
 var CdnSuffix = "_CDN"
 
-func NewState(code Code, msg interface{}) *ResponseState {
+func NewState(code base.Code, msg interface{}) *base.ResponseState {
 	if msg == nil {
 		msg = ""
 	}
 
-	return &ResponseState{
+	return &base.ResponseState{
 		Code:    code,
 		Success: code >= dfcodes.Success && code < (dfcodes.Success+100),
 		Msg:     fmt.Sprintf("%v", msg),
@@ -44,7 +45,7 @@ func NewState(code Code, msg interface{}) *ResponseState {
 
 // NewResWithCodeAndMsg returns a response ptr with code and msg,
 // ptr is a expected type ptr.
-func NewResWithCodeAndMsg(ptr interface{}, code Code, msg string) interface{} {
+func NewResWithCodeAndMsg(ptr interface{}, code base.Code, msg string) interface{} {
 	typ := reflect.TypeOf(ptr)
 	v := reflect.New(typ.Elem())
 
@@ -56,7 +57,7 @@ func NewResWithCodeAndMsg(ptr interface{}, code Code, msg string) interface{} {
 
 func NewResWithErr(ptr interface{}, err error) interface{} {
 	st := status.Convert(err)
-	var code Code
+	var code base.Code
 	switch st.Code() {
 	case codes.DeadlineExceeded:
 		code = dfcodes.RequestTimeOut

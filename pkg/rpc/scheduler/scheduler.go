@@ -16,13 +16,15 @@
 
 package scheduler
 
-import "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+import (
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
+)
 
 func NewZeroPieceResult(taskId, peerId string) *PieceResult {
 	return &PieceResult{
 		TaskId:   taskId,
 		SrcPid:   peerId,
-		PieceNum: base.ZeroOfPiece,
+		PieceNum: common.ZeroOfPiece,
 	}
 }
 
@@ -30,7 +32,7 @@ func NewEndPieceResult(finishedCount int32, taskId, peerId string) *PieceResult 
 	return &PieceResult{
 		TaskId:        taskId,
 		SrcPid:        peerId,
-		PieceNum:      base.EndOfPiece,
+		PieceNum:      common.EndOfPiece,
 		FinishedCount: finishedCount,
 	}
 }

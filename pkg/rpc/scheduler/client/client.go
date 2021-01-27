@@ -22,6 +22,7 @@ import (
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
@@ -63,7 +64,7 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return client.RegisterPeerTask(ctx, ptr, opts...)
-	}, 0.5, 5.0, 5)
+	}, 0.5, 5.0, 5, nil)
 
 	var taskId = "unknown"
 	var suc bool
@@ -102,6 +103,9 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string,
 		return nil, nil, err
 	}
 
+	// trigger scheduling
+	prc <- scheduler.NewZeroPieceResult(taskId, ptr.PeerId)
+
 	go send(pps, prc, ppc)
 
 	go receive(pps, ppc)
@@ -115,7 +119,7 @@ func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.P
 
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return client.ReportPeerResult(ctx, pr, opts...)
-	}, 0.5, 5.0, 5)
+	}, 0.5, 5.0, 5, nil)
 
 	if err != nil {
 		if err = sc.TryMigrate(nextNum, err); err == nil {
@@ -140,7 +144,7 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return client.LeaveTask(ctx, pt, opts...)
-	}, 0.5, 5.0, 3)
+	}, 0.5, 5.0, 3, nil)
 
 	var suc bool
 	var code base.Code
@@ -164,7 +168,7 @@ func receive(stream *peerPacketStream, ppc chan *scheduler.PeerPacket) {
 				ppc <- peerPacket
 			} else {
 				// return error and check ppc
-				ppc <- base.NewResWithErr(peerPacket, err).(*scheduler.PeerPacket)
+				ppc <- common.NewResWithErr(peerPacket, err).(*scheduler.PeerPacket)
 				time.Sleep(200 * time.Millisecond)
 			}
 		}
@@ -181,7 +185,7 @@ func send(stream *peerPacketStream, prc chan *scheduler.PieceResult, ppc chan *s
 		for v := range prc {
 			if err := stream.send(v); err != nil {
 				return
-			} else if v.PieceNum == base.EndOfPiece {
+			} else if v.PieceNum == common.EndOfPiece {
 				return
 			}
 		}

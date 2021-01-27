@@ -26,6 +26,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var (
@@ -36,7 +37,16 @@ var (
 	StatSeedLogger *zap.Logger
 )
 
-var LogLevel = zap.NewAtomicLevel()
+var coreLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+var grpcLevel = zap.NewAtomicLevelAt(zapcore.WarnLevel)
+
+func SetCoreLevel(level zapcore.Level) {
+	coreLevel.SetLevel(level)
+}
+
+func SetGrpcLevel(level zapcore.Level) {
+	grpcLevel.SetLevel(level)
+}
 
 type SugaredLoggerOnWith struct {
 	withArgs []interface{}
@@ -77,10 +87,17 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
 
+	level := zap.NewAtomicLevel()
+	if strings.HasSuffix(filePath, GrpcLogFileName) {
+		level = grpcLevel
+	} else if strings.HasSuffix(filePath, CoreLogFileName) {
+		level = coreLevel
+	}
+
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
 		syncer,
-		LogLevel,
+		level,
 	)
 
 	var opts []zap.Option

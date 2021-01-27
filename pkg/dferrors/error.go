@@ -69,6 +69,17 @@ func CheckError(err error, code base.Code) bool {
 	return ok && e.Code == code
 }
 
+func IsDfError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	_, ok := errors.Cause(err).(*DfError)
+
+	return ok
+
+}
+
 func IsEndOfStream(err error) bool {
 	return err == ErrEndOfStream
 }

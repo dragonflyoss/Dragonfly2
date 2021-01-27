@@ -25,9 +25,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/status"
 	"sync"
 )
 
@@ -110,18 +108,18 @@ func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon
 	})
 
 	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
+		errChan <- err
 	}
 }
 
 func call(ctx context.Context, drc chan *dfdaemon.DownResult, p *proxy, req *dfdaemon.DownRequest, errChan chan error) {
 	err := safe.Call(func() {
 		if err := p.server.Download(ctx, req, drc); err != nil {
-			errChan <- rpc.ConvertServerError(err)
+			errChan <- err
 		}
 	})
 
 	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
+		errChan <- err
 	}
 }

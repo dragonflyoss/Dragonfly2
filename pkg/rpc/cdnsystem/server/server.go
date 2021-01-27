@@ -27,9 +27,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/status"
 	"sync"
 )
 
@@ -106,19 +104,19 @@ func send(psc chan *cdnsystem.PieceSeed, closePsc func(), stream cdnsystem.Seede
 	})
 
 	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
+		errChan <- err
 	}
 }
 
 func call(ctx context.Context, psc chan *cdnsystem.PieceSeed, p *proxy, sr *cdnsystem.SeedRequest, errChan chan error) {
 	err := safe.Call(func() {
 		if err := p.server.ObtainSeeds(ctx, sr, psc); err != nil {
-			errChan <- rpc.ConvertServerError(err)
+			errChan <- err
 		}
 	})
 
 	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
+		errChan <- err
 	}
 }
 
@@ -130,15 +128,15 @@ func StatSeedStart(taskId, url string) {
 		zap.String("seederName", dfnet.HostName))
 }
 
-func StatSeedFinish(taskId, url string, success bool, code base.Code, cost uint32, traffic, contentLength int64) {
+func StatSeedFinish(taskId, url string, success bool, code base.Code, beginTime, endTime uint64, traffic, contentLength int64) {
 	logger.StatSeedLogger.Info("seed making finish",
 		zap.Bool("success", success),
 		zap.String("taskId", taskId),
 		zap.String("url", url),
 		zap.String("seederIp", dfnet.HostIp),
 		zap.String("seederName", dfnet.HostName),
-		// Millisecond
-		zap.Uint32("cost", cost),
+		zap.Uint64("beginTime", beginTime),
+		zap.Uint64("endTime", endTime),
 		zap.Int64("traffic", traffic),
 		zap.Int64("contentLength", contentLength),
 		zap.Int("code", int(code)))

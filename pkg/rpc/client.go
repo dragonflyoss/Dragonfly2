@@ -20,12 +20,11 @@ import (
 	"context"
 	"errors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/maths"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
-	"google.golang.org/grpc/status"
 	"reflect"
 	"sync"
 	"time"
@@ -85,7 +84,7 @@ func BuildClient(client interface{}, init InitClientFunc, addrs []dfnet.NetAddr,
 		}
 
 		return client, nil
-	}, 0.5, 3.0, 3)
+	}, 0.5, 3.0, 3, nil)
 }
 
 func (c *Connection) connect() error {
@@ -136,7 +135,7 @@ func (c *Connection) Close() error {
 }
 
 func (c *Connection) TryMigrate(nextNum int, cause error) error {
-	if status.Code(cause) == codes.Aborted {
+	if dferrors.IsDfError(cause) {
 		return cause
 	}
 
@@ -159,11 +158,14 @@ func (c *Connection) TryMigrate(nextNum int, cause error) error {
 	return nil
 }
 
-func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int) (interface{}, error) {
+func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {
 	var res interface{}
 	var err error
-outer:
 	for i := 0; i < maxAttempts; i++ {
+		if dferrors.IsDfError(cause) {
+			return nil, cause
+		}
+
 		if i > 0 {
 			time.Sleep(maths.RandBackoff(initBackoff, 2.0, maxBackoff, i))
 		}
@@ -171,11 +173,6 @@ outer:
 		res, err = f()
 		if err == nil {
 			break
-		} else {
-			switch status.Code(err) {
-			case codes.Aborted, codes.FailedPrecondition:
-				break outer
-			}
 		}
 	}
 
