@@ -93,8 +93,8 @@ func (drs *downResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error
 		return nil, cause
 	}
 
-	if cause = drs.replaceStream(cause); cause != nil {
-		if cause = drs.replaceClient(cause); cause != nil {
+	if err := drs.replaceStream(cause); err != nil {
+		if err := drs.replaceClient(cause); err != nil {
 			return nil, cause
 		}
 	}
@@ -107,16 +107,16 @@ func (drs *downResultStream) replaceStream(cause error) error {
 		return errors.New("times of replacing stream reaches limit")
 	}
 
-	stream, cause := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return drs.client.Download(drs.ctx, drs.req, drs.opts...)
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
 
-	if cause == nil {
+	if err == nil {
 		drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
 		drs.StreamTimes++
 	}
 
-	return cause
+	return err
 }
 
 func (drs *downResultStream) replaceClient(cause error) error {
@@ -127,16 +127,16 @@ func (drs *downResultStream) replaceClient(cause error) error {
 	xc, _, nextNum := drs.dc.GetClientSafely()
 	drs.client, drs.nextNum = xc.(dfdaemon.DaemonClient), nextNum
 
-	stream, cause := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return drs.client.Download(drs.ctx, drs.req, drs.opts...)
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
 
-	if cause != nil {
-		cause = drs.replaceClient(cause)
+	if err != nil {
+		err = drs.replaceClient(cause)
 	} else {
 		drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
 		drs.StreamTimes = 1
 	}
 
-	return cause
+	return err
 }

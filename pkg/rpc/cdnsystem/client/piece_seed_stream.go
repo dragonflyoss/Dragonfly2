@@ -94,8 +94,8 @@ func (pss *pieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error)
 		return nil, cause
 	}
 
-	if cause = pss.replaceStream(cause); cause != nil {
-		if cause = pss.replaceClient(cause); cause != nil {
+	if err := pss.replaceStream(cause); err != nil {
+		if err := pss.replaceClient(cause); err != nil {
 			return nil, cause
 		}
 	}
@@ -108,36 +108,36 @@ func (pss *pieceSeedStream) replaceStream(cause error) error {
 		return errors.New("times of replacing stream reaches limit")
 	}
 
-	stream, cause := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return pss.client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
 
-	if cause == nil {
+	if err == nil {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
 		pss.StreamTimes++
 	}
 
-	return cause
+	return err
 }
 
 func (pss *pieceSeedStream) replaceClient(cause error) error {
-	if cause = pss.sc.TryMigrate(pss.nextNum, cause); cause != nil {
-		return cause
+	if err := pss.sc.TryMigrate(pss.nextNum, cause); err != nil {
+		return err
 	}
 
 	xc, _, nextNum := pss.sc.GetClientSafely()
 	pss.client, pss.nextNum = xc.(cdnsystem.SeederClient), nextNum
 
-	stream, cause := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return pss.client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
 
-	if cause != nil {
-		cause = pss.replaceClient(cause)
+	if err != nil {
+		err = pss.replaceClient(cause)
 	} else {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
 		pss.StreamTimes = 1
 	}
 
-	return cause
+	return err
 }

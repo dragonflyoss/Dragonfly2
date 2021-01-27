@@ -82,7 +82,7 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 			suc, int32(code), taskId, ptr.Url, ph.Ip, ph.SecurityDomain, ph.Idc, target)
 
 	if err != nil {
-		if err = sc.TryMigrate(nextNum, err); err == nil {
+		if err := sc.TryMigrate(nextNum, err); err == nil {
 			return sc.RegisterPeerTask(ctx, ptr, opts...)
 		}
 	}
@@ -122,7 +122,7 @@ func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.P
 	}, 0.5, 5.0, 5, nil)
 
 	if err != nil {
-		if err = sc.TryMigrate(nextNum, err); err == nil {
+		if err := sc.TryMigrate(nextNum, err); err == nil {
 			return sc.ReportPeerResult(ctx, pr, opts...)
 		}
 	}

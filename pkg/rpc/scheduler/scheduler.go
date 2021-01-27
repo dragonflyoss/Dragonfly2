@@ -28,7 +28,7 @@ func NewZeroPieceResult(taskId, peerId string) *PieceResult {
 	}
 }
 
-func NewEndPieceResult(finishedCount int32, taskId, peerId string) *PieceResult {
+func NewEndPieceResult(taskId, peerId string, finishedCount int32) *PieceResult {
 	return &PieceResult{
 		TaskId:        taskId,
 		SrcPid:        peerId,
