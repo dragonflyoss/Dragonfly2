@@ -66,6 +66,7 @@ func (g gcManager) Start() {
 				}
 			case <-g.done:
 				logger.Infof("gc exited")
+				return
 			}
 		}
 	}()

@@ -17,6 +17,7 @@
 package upload
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"math"
@@ -33,7 +34,7 @@ import (
 
 type Manager interface {
 	Serve(lis net.Listener) error
-	Stop() error
+	Stop()
 }
 
 type uploadManager struct {
@@ -75,9 +76,8 @@ func (u *uploadManager) Serve(lis net.Listener) error {
 	return u.Server.Serve(lis)
 }
 
-func (u *uploadManager) Stop() error {
-	logger.Warnf("TODO not implement")
-	return nil
+func (u *uploadManager) Stop() {
+	_ = u.Server.Shutdown(context.Background())
 }
 
 // handleUpload uses to upload a task file when other peers download from it.

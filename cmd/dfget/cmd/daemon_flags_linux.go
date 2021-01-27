@@ -34,8 +34,9 @@ var flagDaemonOpt = daemonOption{
 	downloadRate:    "100Mi",
 	uploadRate:      "100Mi",
 	storeStrategy:   string(storage.SimpleLocalTaskStoreStrategy),
-	dataExpireTime:  config.DataExpireTime,
-	daemonAliveTime: config.DaemonAliveTime,
+	dataExpireTime:  3 * time.Minute,
+	daemonAliveTime: 5 * time.Minute,
+	keepStorage:     false,
 	gcInterval:      time.Minute,
 	verbose:         false,
 }

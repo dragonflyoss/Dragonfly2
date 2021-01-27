@@ -38,7 +38,7 @@ type Manager interface {
 	ServeDownload(listener net.Listener) error
 	ServePeer(listener net.Listener) error
 	ServeProxy(listener net.Listener) error
-	Stop() error
+	Stop()
 }
 
 type manager struct {
@@ -76,9 +76,9 @@ func (m *manager) ServeProxy(lis net.Listener) error {
 	return nil
 }
 
-func (m *manager) Stop() error {
-	// TODO stop proxy
-	return nil
+func (m *manager) Stop() {
+	m.peerServer.GracefulStop()
+	m.downloadServer.GracefulStop()
 }
 
 func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {

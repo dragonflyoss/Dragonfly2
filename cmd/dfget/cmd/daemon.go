@@ -19,6 +19,9 @@ package cmd
 import (
 	"fmt"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/docker/go-units"
 	"github.com/go-echarts/statsview"
@@ -118,6 +121,7 @@ func runDaemon() error {
 		logger.Errorf("init peer host failed: %s", err)
 		return err
 	}
+	setupSignalHandler(ph)
 	return ph.Serve()
 }
 
@@ -132,7 +136,9 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 		return nil, fmt.Errorf("upload rate %q parse error: %s", flagDaemonOpt.uploadRate, err)
 	}
 	option := &daemon.PeerHostOption{
-		GCInterval: flagDaemonOpt.gcInterval,
+		AliveTime:   flagDaemonOpt.daemonAliveTime,
+		GCInterval:  flagDaemonOpt.gcInterval,
+		KeepStorage: flagDaemonOpt.keepStorage,
 		// FIXME(jim): parse []basic.NetAddr from flagDaemonOpt.schedulers
 		Schedulers: []dfnet.NetAddr{
 			{
@@ -140,7 +146,6 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 				Addr: flagDaemonOpt.schedulers[0],
 			},
 		},
-		AliveTime: flagDaemonOpt.daemonAliveTime,
 		Server: daemon.ServerOption{
 			RateLimit: rate.Limit(dr),
 			DownloadGRPC: daemon.ListenOption{
@@ -193,4 +198,26 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 		},
 	}
 	return option, nil
+}
+
+func setupSignalHandler(ph daemon.PeerHost) {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	// This goroutine executes a blocking receive for
+	// signals. When it gets one it'll print it out
+	// and then notify the program that it can finish.
+	go func() {
+		var done bool
+		for {
+			select {
+			case sig := <-sigs:
+				logger.Infof("receive %s signal", sig)
+				if !done {
+					ph.Stop()
+					done = true
+				}
+			}
+		}
+	}()
 }

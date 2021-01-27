@@ -23,7 +23,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -49,7 +51,8 @@ type PeerHost interface {
 }
 
 type peerHost struct {
-	started chan bool
+	once *sync.Once
+	done chan bool
 
 	schedPeerHost *scheduler.PeerHost
 
@@ -73,6 +76,8 @@ type PeerHostOption struct {
 	// TODO keepalive detect
 	AliveTime  time.Duration
 	GCInterval time.Duration
+
+	KeepStorage bool
 
 	Server  ServerOption
 	Upload  UploadOption
@@ -178,7 +183,8 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 	}
 
 	return &peerHost{
-		started:       make(chan bool),
+		once:          &sync.Once{},
+		done:          make(chan bool),
 		schedPeerHost: host,
 		Option:        opt,
 
@@ -339,17 +345,43 @@ func (ph *peerHost) Serve() error {
 	g.Go(func() error {
 		logger.Infof("serve upload service at %s://%s", uploadListener.Addr().Network(), uploadListener.Addr().String())
 		ph.schedPeerHost.DownPort = int32(uploadPort)
-		if err = ph.UploadManager.Serve(uploadListener); err != nil {
+		if err = ph.UploadManager.Serve(uploadListener); err != nil && err != http.ErrServerClosed {
 			logger.Errorf("failed to serve for upload service: %v", err)
 			return err
+		} else if err == http.ErrServerClosed {
+			logger.Infof("upload service closed")
 		}
 		return nil
 	})
+
+	if ph.Option.AliveTime > 0 {
+		g.Go(func() error {
+			select {
+			case <-time.After(ph.Option.AliveTime):
+				if !ph.StorageManager.KeepAlive(ph.Option.AliveTime) {
+					ph.Stop()
+					logger.Infof("alive time reached, stop daemon")
+				}
+			case <-ph.done:
+				logger.Infof("peer host done, stop watch alive time")
+			}
+			return nil
+		})
+	}
 
 	return g.Wait()
 }
 
 func (ph *peerHost) Stop() {
+	ph.once.Do(func() {
+		close(ph.done)
+	})
+	ph.GCManager.Stop()
 	ph.ServiceManager.Stop()
 	ph.UploadManager.Stop()
+
+	if !ph.Option.KeepStorage {
+		logger.Infof("keep storage disabled")
+		ph.StorageManager.Clean()
+	}
 }

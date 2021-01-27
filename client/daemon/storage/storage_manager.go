@@ -52,8 +52,12 @@ type TaskStorageDriver interface {
 
 type Manager interface {
 	TaskStorageDriver
+	// KeepAlive tests if storage is used in given time duration
+	KeepAlive(time.Duration) bool
 	// RegisterTask registers a task in storage driver
 	RegisterTask(ctx context.Context, req RegisterTaskRequest) error
+	// Clean cleans all data
+	Clean()
 }
 
 type Option struct {
@@ -62,17 +66,6 @@ type Option struct {
 	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
 	// after this period cache file will be gc
 	TaskExpireTime time.Duration
-}
-
-// TaskStorageBuilder creates a TaskStorageDriver for a task, lock free by storage manager
-type TaskStorageExecutor interface {
-	gc.GC
-	// LoadTask loads TaskStorageDriver from memory for task operations
-	LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool)
-	// CreateTask creates a new TaskStorageDriver
-	CreateTask(request RegisterTaskRequest) error
-	// ReloadPersistentTask
-	ReloadPersistentTask(gcCallback GCCallback) error
 }
 
 var (
@@ -155,8 +148,11 @@ func (s *storageManager) touch() {
 	s.lastAccess = time.Now()
 }
 
+func (s *storageManager) KeepAlive(alive time.Duration) bool {
+	return s.lastAccess.Add(alive).After(time.Now())
+}
+
 func (s *storageManager) RegisterTask(ctx context.Context, req RegisterTaskRequest) error {
-	s.touch()
 	if _, ok := s.LoadTask(
 		PeerTaskMetaData{
 			PeerID: req.PeerID,
@@ -180,7 +176,6 @@ func (s *storageManager) RegisterTask(ctx context.Context, req RegisterTaskReque
 }
 
 func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest) error {
-	s.touch()
 	t, ok := s.LoadTask(
 		PeerTaskMetaData{
 			PeerID: req.PeerID,
@@ -193,7 +188,6 @@ func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest)
 }
 
 func (s *storageManager) ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error) {
-	s.touch()
 	t, ok := s.LoadTask(
 		PeerTaskMetaData{
 			PeerID: req.PeerID,
@@ -207,7 +201,6 @@ func (s *storageManager) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 }
 
 func (s *storageManager) Store(ctx context.Context, req *StoreRequest) error {
-	s.touch()
 	t, ok := s.LoadTask(
 		PeerTaskMetaData{
 			PeerID: req.PeerID,
@@ -221,7 +214,6 @@ func (s *storageManager) Store(ctx context.Context, req *StoreRequest) error {
 }
 
 func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
-	s.touch()
 	t, ok := s.LoadTask(
 		PeerTaskMetaData{
 			TaskID: req.TaskId,
@@ -235,6 +227,7 @@ func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskReque
 }
 
 func (s storageManager) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool) {
+	s.touch()
 	d, ok := s.tasks.Load(meta)
 	if !ok {
 		return nil, false
@@ -427,6 +420,30 @@ func (s storageManager) TryGC() (bool, error) {
 	var tasks []PeerTaskMetaData
 	s.tasks.Range(func(key, value interface{}) bool {
 		ok, err := value.(gc.GC).TryGC()
+		if err != nil {
+			logger.Errorf("gc task store %s error: %s", key, value)
+		}
+		if ok {
+			tasks = append(tasks, key.(PeerTaskMetaData))
+			logger.Infof("gc task store %s ok", key)
+		}
+		return true
+	})
+	for _, task := range tasks {
+		s.tasks.Delete(task)
+	}
+	return true, nil
+}
+
+func (s storageManager) Clean() {
+	_, _ = s.forceGC()
+}
+
+func (s storageManager) forceGC() (bool, error) {
+	var tasks []PeerTaskMetaData
+	s.tasks.Range(func(key, value interface{}) bool {
+		value.(*localTaskStore).lastAccess = time.Now().Add(-365 * 24 * time.Hour)
+		ok, err := value.(*localTaskStore).TryGC()
 		if err != nil {
 			logger.Errorf("gc task store %s error: %s", key, value)
 		}

@@ -49,6 +49,7 @@ type daemonOption struct {
 	dataExpireTime  time.Duration
 	daemonAliveTime time.Duration
 	gcInterval      time.Duration
+	keepStorage     bool
 
 	securityDomain string
 	location       string
@@ -76,6 +77,7 @@ func initDaemonFlags() {
 	flagSet.DurationVar(&flagDaemonOpt.dataExpireTime, "expire-time", flagDaemonOpt.dataExpireTime, "caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
 	flagSet.DurationVar(&flagDaemonOpt.daemonAliveTime, "alive-time", flagDaemonOpt.daemonAliveTime, "alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
 	flagSet.DurationVar(&flagDaemonOpt.gcInterval, "gc-interval", flagDaemonOpt.gcInterval, "gc interval")
+	flagSet.BoolVar(&flagDaemonOpt.keepStorage, "keep-storage", flagDaemonOpt.keepStorage, "keep storage after daemon exit")
 
 	flagSet.BoolVar(&flagDaemonOpt.verbose, "verbose", flagDaemonOpt.verbose, "print verbose log and enable golang debug info")
 
