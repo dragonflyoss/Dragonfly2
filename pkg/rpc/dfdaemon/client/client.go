@@ -21,6 +21,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"github.com/google/uuid"
@@ -72,7 +73,7 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return dc.Client.GetPieceTasks(ctx, ptr, opts...)
-	}, 0.2, 2.0, 3)
+	}, 0.2, 2.0, 3, nil)
 
 	if err == nil {
 		return res.(*base.PiecePacket), nil
@@ -97,7 +98,7 @@ func receive(drs *downResultStream, drc chan *dfdaemon.DownResult) {
 					return
 				}
 			} else {
-				drc <- base.NewResWithErr(downResult, err).(*dfdaemon.DownResult)
+				drc <- common.NewResWithErr(downResult, err).(*dfdaemon.DownResult)
 				return
 			}
 		}

@@ -18,6 +18,8 @@ package fileutils
 
 import (
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	"github.com/pkg/errors"
 	"regexp"
 	"strconv"
 )
@@ -70,12 +72,12 @@ func ParseSize(fsize string) (Fsize, error) {
 	}
 
 	if n < 0 {
-		return 0, fmt.Errorf("not a valid fsize string: %d, only non-negative values are supported", n)
+		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "not a valid fsize string: %d, only non-negative values are supported", fsize)
 	}
 
 	matches := sizeRE.FindStringSubmatch(fsize)
 	if len(matches) != 3 {
-		return 0, fmt.Errorf("not a valid fsize string: %q, supported format: G(B)/g/M(B)/m/K(B)/k/B or pure number", fsize)
+		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
 	}
 	n, _ = strconv.Atoi(matches[1])
 	switch unit := matches[2]; {
@@ -88,7 +90,7 @@ func ParseSize(fsize string) (Fsize, error) {
 	case unit == "B":
 		// Value already correct
 	default:
-		return 0, fmt.Errorf("invalid unit in fsize string: %q, supported format: G(B)/g/M(B)/m/K(B)/k/B or pure number", unit)
+		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
 	}
 	return Fsize(n), nil
 }

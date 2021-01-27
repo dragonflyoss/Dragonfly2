@@ -16,21 +16,23 @@
 
 package scheduler
 
-import "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+import (
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
+)
 
 func NewZeroPieceResult(taskId, peerId string) *PieceResult {
 	return &PieceResult{
 		TaskId:   taskId,
 		SrcPid:   peerId,
-		PieceNum: base.ZERO_OF_PIECE,
+		PieceNum: common.ZeroOfPiece,
 	}
 }
 
-func NewEndPieceResult(finishedCount int32, taskId, peerId string) *PieceResult {
+func NewEndPieceResult(taskId, peerId string, finishedCount int32) *PieceResult {
 	return &PieceResult{
 		TaskId:        taskId,
 		SrcPid:        peerId,
-		PieceNum:      base.END_OF_PIECE,
+		PieceNum:      common.EndOfPiece,
 		FinishedCount: finishedCount,
 	}
 }

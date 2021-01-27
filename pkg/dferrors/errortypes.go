@@ -17,36 +17,30 @@
 // Package errors defines all exceptions happened in dragonfly.
 package dferrors
 
-import (
-	"fmt"
-
-	"github.com/pkg/errors"
-)
-
 var (
 	// ErrDataNotFound represents the data cannot be found.
-	ErrDataNotFound = DfError{codeDataNotFound, "data not found"}
-
-	// ErrEmptyValue represents the value is empty or nil.
-	ErrEmptyValue = DfError{codeEmptyValue, "empty value"}
-
-	// ErrInvalidValue represents the value is invalid.
-	ErrInvalidValue = DfError{codeInvalidValue, "invalid value"}
-
-	// ErrNotInitialized represents the object is not initialized.
-	ErrNotInitialized = DfError{codeNotInitialized, "not initialized"}
-
-	// ErrConvertFailed represents failed to convert.
-	ErrConvertFailed = DfError{codeConvertFailed, "convert failed"}
-
-	// ErrRangeNotSatisfiable represents the length of file is insufficient.
-	ErrRangeNotSatisfiable = DfError{codeRangeNotSatisfiable, "range not satisfiable"}
-
-	// ErrEndOfStream represents end of stream
-	ErrEndOfStream = DfError{codeEndOfStream,"end of stream"}
-
-	// ErrAddressReused represents address is reused
-	ErrAddressReused = DfError{codeAddressReused, "address is reused"}
+	//ErrDataNotFound = DfError{codeDataNotFound, "data not found"}
+	//
+	//// ErrEmptyValue represents the value is empty or nil.
+	//ErrEmptyValue = DfError{codeEmptyValue, "empty value"}
+	//
+	//// ErrInvalidValue represents the value is invalid.
+	//ErrInvalidValue = DfError{codeInvalidValue, "invalid value"}
+	//
+	//// ErrNotInitialized represents the object is not initialized.
+	//ErrNotInitialized = DfError{codeNotInitialized, "not initialized"}
+	//
+	//// ErrConvertFailed represents failed to convert.
+	//ErrConvertFailed = DfError{codeConvertFailed, "convert failed"}
+	//
+	//// ErrRangeNotSatisfiable represents the length of file is insufficient.
+	//ErrRangeNotSatisfiable = DfError{codeRangeNotSatisfiable, "range not satisfiable"}
+	//
+	//// ErrEndOfStream represents end of stream
+	//ErrEndOfStream = DfError{codeEndOfStream,"end of stream"}
+	//
+	//// ErrAddressReused represents address is reused
+	//ErrAddressReused = DfError{codeAddressReused, "address is reused"}
 )
 
 const (
@@ -60,105 +54,105 @@ const (
 	codeAddressReused
 )
 
-// DfError represents a Dragonfly error.
-type DfError struct {
-	Code int
-	Msg  string
-}
-
-type ErrAssertFunc func(err error) bool
-
-// New function creates a DfError.
-func New(code int, msg string) *DfError {
-	return &DfError{
-		Code: code,
-		Msg:  msg,
-	}
-}
+//// DfError represents a Dragonfly error.
+//type DfError struct {
+//	Code int
+//	Msg  string
+//}
+//
+//type ErrAssertFunc func(err error) bool
+//
+//// New function creates a DfError.
+//func New(code int, msg string) *DfError {
+//	return &DfError{
+//		Code: code,
+//		Msg:  msg,
+//	}
+//}
 
 // Newf function creates a DfError with a message according to
 // a format specifier.
-func Newf(code int, format string, a ...interface{}) *DfError {
-	return &DfError{
-		Code: code,
-		Msg:  fmt.Sprintf(format, a...),
-	}
-}
-
-func (s DfError) Error() string {
-	return fmt.Sprintf("{\"Code\":%d,\"Msg\":\"%s\"}", s.Code, s.Msg)
-}
-
-// IsNilError checks the error is nil or not.
-func IsNilError(err error) bool {
-	return err == nil
-}
-
-// IsDataNotFound checks the error is the data cannot be found.
-func IsDataNotFound(err error) bool {
-	return checkError(err, codeDataNotFound)
-}
-
-// IsEmptyValue checks the error is the value is empty or nil.
-func IsEmptyValue(err error) bool {
-	return checkError(err, codeEmptyValue)
-}
-
-// IsInvalidValue checks the error is the value is invalid or not.
-func IsInvalidValue(err error) bool {
-	return checkError(err, codeInvalidValue)
-}
-
-// IsNotInitialized checks the error is the object is not initialized or not.
-func IsNotInitialized(err error) bool {
-	return checkError(err, codeNotInitialized)
-}
-
-// IsConvertFailed checks the error is a conversion error or not.
-func IsConvertFailed(err error) bool {
-	return checkError(err, codeConvertFailed)
-}
-
-// IsRangeNotSatisfiable checks the error is a
-// range not exist error or not.
-func IsRangeNotSatisfiable(err error) bool {
-	return checkError(err, codeRangeNotSatisfiable)
-}
-
-// IsEndOfStream checks the error is a end of stream error or not
-func IsEndOfStream(err error) bool {
-	return checkError(err, codeEndOfStream)
-}
-
-// IsAddressReused checks the error is a address reused error or not
-func IsAddressReused(err error) bool {
-	return checkError(err, codeAddressReused)
-}
-
-func checkError(err error, code int) bool {
-	e, ok := errors.Cause(err).(DfError)
-	return ok && e.Code == code
-}
-
-type HTTPError struct {
-	Code int
-	Msg  string
-}
-
-// NewHTTPError function creates a HTTPError.
-func NewHTTPError(code int, msg string) *HTTPError {
-	return &HTTPError{
-		Code: code,
-		Msg:  msg,
-	}
-}
-
-// Error function implements the interface of error.Error().
-func (s HTTPError) Error() string {
-	return fmt.Sprintf("{\"Code\":%d,\"Msg\":\"%s\"}", s.Code, s.Msg)
-}
-
-// HTTPCode return the http code.
-func (s HTTPError) HTTPCode() int {
-	return s.Code
-}
+//func Newf(code int, format string, a ...interface{}) *DfError {
+//	return &DfError{
+//		Code: code,
+//		Msg:  fmt.Sprintf(format, a...),
+//	}
+//}
+//
+//func (s DfError) Error() string {
+//	return fmt.Sprintf("{\"Code\":%d,\"Msg\":\"%s\"}", s.Code, s.Msg)
+//}
+//
+//// IsNilError checks the error is nil or not.
+//func IsNilError(err error) bool {
+//	return err == nil
+//}
+//
+//// IsDataNotFound checks the error is the data cannot be found.
+//func IsDataNotFound(err error) bool {
+//	return checkError(err, codeDataNotFound)
+//}
+//
+//// IsEmptyValue checks the error is the value is empty or nil.
+//func IsEmptyValue(err error) bool {
+//	return checkError(err, codeEmptyValue)
+//}
+//
+//// IsInvalidValue checks the error is the value is invalid or not.
+//func IsInvalidValue(err error) bool {
+//	return checkError(err, codeInvalidValue)
+//}
+//
+//// IsNotInitialized checks the error is the object is not initialized or not.
+//func IsNotInitialized(err error) bool {
+//	return checkError(err, codeNotInitialized)
+//}
+//
+//// IsConvertFailed checks the error is a conversion error or not.
+//func IsConvertFailed(err error) bool {
+//	return checkError(err, codeConvertFailed)
+//}
+//
+//// IsRangeNotSatisfiable checks the error is a
+//// range not exist error or not.
+//func IsRangeNotSatisfiable(err error) bool {
+//	return checkError(err, codeRangeNotSatisfiable)
+//}
+//
+//// IsEndOfStream checks the error is a end of stream error or not
+//func IsEndOfStream(err error) bool {
+//	return checkError(err, codeEndOfStream)
+//}
+//
+//// IsAddressReused checks the error is a address reused error or not
+//func IsAddressReused(err error) bool {
+//	return checkError(err, codeAddressReused)
+//}
+//
+//func checkError(err error, code int) bool {
+//	e, ok := errors.Cause(err).(DfError)
+//	return ok && e.Code == code
+//}
+//
+//type HTTPError struct {
+//	Code int
+//	Msg  string
+//}
+//
+//// NewHTTPError function creates a HTTPError.
+//func NewHTTPError(code int, msg string) *HTTPError {
+//	return &HTTPError{
+//		Code: code,
+//		Msg:  msg,
+//	}
+//}
+//
+//// Error function implements the interface of error.Error().
+//func (s HTTPError) Error() string {
+//	return fmt.Sprintf("{\"Code\":%d,\"Msg\":\"%s\"}", s.Code, s.Msg)
+//}
+//
+//// HTTPCode return the http code.
+//func (s HTTPError) HTTPCode() int {
+//	return s.Code
+//}

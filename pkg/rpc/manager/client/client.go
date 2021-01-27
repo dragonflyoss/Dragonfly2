@@ -76,7 +76,7 @@ func CreateClient(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerCli
 func (mc *managerClient) GetSchedulers(ctx context.Context, req *manager.NavigatorRequest, opts ...grpc.CallOption) (sns *manager.SchedulerNodes, err error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return mc.Client.GetSchedulers(ctx, req, opts...)
-	}, 0.5, 5.0, 5)
+	}, 0.5, 5.0, 5, nil)
 
 	if err == nil {
 		sns = res.(*manager.SchedulerNodes)

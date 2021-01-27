@@ -21,6 +21,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
@@ -68,7 +69,7 @@ func (sc *seederClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedReque
 func (sc *seederClient) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return sc.Client.GetPieceTasks(ctx, req, opts...)
-	}, 0.2, 2.0, 3)
+	}, 0.2, 2.0, 3, nil)
 
 	if err == nil {
 		return res.(*base.PiecePacket), nil
@@ -89,7 +90,7 @@ func receive(pss *pieceSeedStream, psc chan *cdnsystem.PieceSeed) {
 					return
 				}
 			} else {
-				psc <- base.NewResWithErr(pieceSeed, err).(*cdnsystem.PieceSeed)
+				psc <- common.NewResWithErr(pieceSeed, err).(*cdnsystem.PieceSeed)
 				return
 			}
 		}
