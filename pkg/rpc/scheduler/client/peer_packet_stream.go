@@ -101,7 +101,8 @@ func (pps *peerPacketStream) recv() (pp *scheduler.PeerPacket, err error) {
 
 	if err == nil && pp.State.Code == dfcodes.PeerTaskNotRegistered {
 		_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
-			timeCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+			timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
 			rr, err := pps.client.RegisterPeerTask(timeCtx, pps.ptr)
 			if err == nil && rr.State.Success {
 				pps.prc <- pps.lastPieceResult
@@ -172,7 +173,8 @@ func (pps *peerPacketStream) replaceClient(cause error) error {
 	pps.client, pps.nextNum = xc.(scheduler.SchedulerClient), nextNum
 
 	stream, cause := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		timeCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 		rr, err := pps.client.RegisterPeerTask(timeCtx, pps.ptr)
 
 		if err == nil && rr.State.Success {

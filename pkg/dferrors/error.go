@@ -31,7 +31,6 @@ var (
 	ErrPeerTaskNotRegistered = &DfError{dfcodes.PeerTaskNotRegistered, "peer task is not registered"}
 	ErrCdnError              = &DfError{dfcodes.CdnError, "cdn error"}
 	ErrManagerError          = &DfError{dfcodes.ManagerError, "manager error"}
-	ErrUnknownError          = &DfError{dfcodes.UnknownError, "unknown error"}
 	ErrInvalidArgument       = &DfError{dfcodes.InvalidArgument, "invalid argument"}
 	ErrRequestTimeOut        = &DfError{dfcodes.RequestTimeOut, "request time out"}
 )

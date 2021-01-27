@@ -20,11 +20,15 @@ import (
 	"context"
 	"errors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/maths"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/status"
+	"io"
 	"reflect"
 	"sync"
 	"time"
@@ -77,7 +81,6 @@ func BuildClient(client interface{}, init InitClientFunc, addrs []dfnet.NetAddr,
 
 	return ExecuteWithRetry(func() (interface{}, error) {
 		conn.nextNum = 0
-		conn.curTarget = ""
 
 		if err := conn.connect(); err != nil {
 			return nil, err
@@ -98,20 +101,26 @@ func (c *Connection) connect() error {
 
 	var cc *grpc.ClientConn
 	var err error
+	var ok bool
 	opts := append(clientOpts, c.opts...)
 
-	for ; c.nextNum < len(c.NetAddrs); {
-		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-		cc, err = grpc.DialContext(ctx, c.NetAddrs[c.nextNum].GetEndpoint(), opts...)
+	for ; !ok && c.nextNum < len(c.NetAddrs); {
+		ok = func() bool {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			cc, err = grpc.DialContext(ctx, c.NetAddrs[c.nextNum].GetEndpoint(), opts...)
 
-		c.nextNum++
+			c.nextNum++
 
-		if err == nil {
-			c.Conn = cc
-			c.curTarget = c.NetAddrs[c.nextNum-1].Addr
-			c.init(c)
-			break
-		}
+			if err == nil {
+				c.Conn = cc
+				c.curTarget = c.NetAddrs[c.nextNum-1].Addr
+				c.init(c)
+				return true
+			}
+
+			return false
+		}()
 	}
 
 	return err
@@ -135,8 +144,10 @@ func (c *Connection) Close() error {
 }
 
 func (c *Connection) TryMigrate(nextNum int, cause error) error {
-	if dferrors.IsDfError(cause) {
-		return cause
+	if e, ok := cause.(*dferrors.DfError); ok {
+		if e.Code != dfcodes.ResourceLacked && e.Code != dfcodes.UnknownError {
+			return cause
+		}
 	}
 
 	c.rwMutex.Lock()
@@ -160,23 +171,24 @@ func (c *Connection) TryMigrate(nextNum int, cause error) error {
 
 func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {
 	var res interface{}
-	var err error
 	for i := 0; i < maxAttempts; i++ {
-		if dferrors.IsDfError(cause) {
-			return nil, cause
+		if e, ok := cause.(*dferrors.DfError); ok {
+			if e.Code != dfcodes.UnknownError {
+				return nil, cause
+			}
 		}
 
 		if i > 0 {
 			time.Sleep(maths.RandBackoff(initBackoff, 2.0, maxBackoff, i))
 		}
 
-		res, err = f()
-		if err == nil {
+		res, cause = f()
+		if cause == nil {
 			break
 		}
 	}
 
-	return res, err
+	return res, cause
 }
 
 type wrappedClientStream struct {
@@ -187,7 +199,8 @@ type wrappedClientStream struct {
 
 func (w *wrappedClientStream) RecvMsg(m interface{}) error {
 	err := w.ClientStream.RecvMsg(m)
-	if err != nil {
+	if err != nil && err != io.EOF {
+		err = convertClientError(err)
 		logger.GrpcLogger.Errorf("client receive a message:%T error:%v for method:%s target:%s connState:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
 
@@ -196,7 +209,7 @@ func (w *wrappedClientStream) RecvMsg(m interface{}) error {
 
 func (w *wrappedClientStream) SendMsg(m interface{}) error {
 	err := w.ClientStream.SendMsg(m)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		logger.GrpcLogger.Errorf("client send a message:%T error:%v for method:%s target:%s connState:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
 
@@ -220,7 +233,25 @@ func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grp
 func unaryClientInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	if err != nil {
+		err = convertClientError(err)
 		logger.GrpcLogger.Errorf("do unary client error:%v for method:%s target:%s connState:%s", err, method, cc.Target(), cc.GetState().String())
+	}
+
+	return err
+}
+
+func convertClientError(err error) error {
+	s := status.Convert(err)
+	if s != nil {
+		for _, d := range s.Details() {
+			switch internal := d.(type) {
+			case *base.ResponseState:
+				return &dferrors.DfError{
+					Code:    internal.Code,
+					Message: internal.Msg,
+				}
+			}
+		}
 	}
 
 	return err

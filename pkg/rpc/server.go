@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
+	"io"
 	"net"
 	"os"
 	"strconv"
@@ -187,7 +188,7 @@ type wrappedServerStream struct {
 
 func (w *wrappedServerStream) RecvMsg(m interface{}) error {
 	err := w.ServerStream.RecvMsg(m)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		logger.GrpcLogger.Errorf("server receive a message:%T error:%v for method:%s", m, err, w.method)
 	}
 
@@ -209,7 +210,7 @@ func streamServerInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.S
 		method:       info.FullMethod,
 	})
 	if err != nil {
-		err = convertError(err)
+		err = convertServerError(err)
 		logger.GrpcLogger.Errorf("do stream server error:%v for method:%s", err, info.FullMethod)
 	}
 
@@ -219,14 +220,14 @@ func streamServerInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.S
 func unaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	m, err := handler(ctx, req)
 	if err != nil {
-		err = convertError(err)
+		err = convertServerError(err)
 		logger.GrpcLogger.Errorf("do unary server error:%v for method:%s", err, info.FullMethod)
 	}
 
 	return m, err
 }
 
-func convertError(err error) error {
+func convertServerError(err error) error {
 	if v, ok := err.(*dferrors.DfError); ok {
 		if s, e := status.Convert(err).WithDetails(common.NewState(v.Code, v.Message)); e == nil {
 			err = s.Err()

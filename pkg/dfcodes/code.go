@@ -28,6 +28,8 @@ const (
 	// scheduler processing error 500-599
 	SchedulerError        base.Code = 500
 	PeerTaskNotRegistered base.Code = 501
+	// client can be migrated to another scheduler
+	ResourceLacked base.Code = 502
 
 	// cdnsystem processing error 600-699
 	CdnError base.Code = 600
