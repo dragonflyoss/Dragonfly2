@@ -136,6 +136,9 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 	if err != nil {
 		return nil, fmt.Errorf("upload rate %q parse error: %s", flagDaemonOpt.uploadRate, err)
 	}
+
+	exp, _ := config.NewRegexp("blobs/sha256.*")
+
 	option := &daemon.PeerHostOption{
 		AliveTime:   flagDaemonOpt.daemonAliveTime,
 		GCInterval:  flagDaemonOpt.gcInterval,
@@ -172,7 +175,7 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 				},
 			},
 		},
-		Proxy: daemon.ProxyOption{
+		Proxy: &daemon.ProxyOption{
 			ListenOption: &daemon.ListenOption{
 				// TODO
 				Security: daemon.SecurityOption{
@@ -192,7 +195,7 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 			},
 			Proxies: []*config.Proxy{
 				{
-					Regx: &"blobs/sha256.*",
+					Regx: exp,
 				},
 			},
 			HijackHTTPS: nil,

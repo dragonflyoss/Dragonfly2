@@ -40,6 +40,7 @@ type daemonOption struct {
 	uploadPort     int
 	uploadPortEnd  int
 	proxyPort      int
+	proxyPortEnd   int
 
 	downloadRate string
 	uploadRate   string
@@ -88,6 +89,7 @@ func initDaemonFlags() {
 	flagSet.IntVar(&flagDaemonOpt.peerPort, "grpc-port", flagDaemonOpt.peerPort, "the listen address for grpc with other peers")
 	flagSet.IntVar(&flagDaemonOpt.peerPortEnd, "grpc-port-end", flagDaemonOpt.peerPort, "the listen address for grpc with other peers")
 	flagSet.IntVar(&flagDaemonOpt.proxyPort, "proxy-port", flagDaemonOpt.proxyPort, "the address that daemon will listen on for proxy service")
+	flagSet.IntVar(&flagDaemonOpt.proxyPortEnd, "proxy-port-end", flagDaemonOpt.proxyPortEnd, "the address that daemon will listen on for proxy service")
 	flagSet.IntVar(&flagDaemonOpt.uploadPort, "upload-port", flagDaemonOpt.uploadPort, "the address that daemon will listen on for peer upload")
 	flagSet.IntVar(&flagDaemonOpt.uploadPortEnd, "upload-port-end", flagDaemonOpt.uploadPort, "the address that daemon will listen on for peer upload")
 	flagSet.StringVar(&flagDaemonOpt.downloadRate, "download-rate", flagDaemonOpt.downloadRate, "download rate limit for other peers and back source")

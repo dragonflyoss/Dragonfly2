@@ -84,7 +84,7 @@ type PeerHostOption struct {
 	KeepStorage bool
 
 	Server  ServerOption
-	Proxy   ProxyOption
+	Proxy   *ProxyOption
 	Upload  UploadOption
 	Storage StorageOption
 }

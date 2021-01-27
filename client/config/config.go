@@ -324,9 +324,9 @@ func certPoolFromFiles(files ...string) (*x509.CertPool, error) {
 
 // Proxy describes a regular expression matching rule for how to proxy a request.
 type Proxy struct {
-	Regx     *regexp.Regexp `yaml:"regx" json:"regx"`
-	UseHTTPS bool           `yaml:"use_https" json:"use_https"`
-	Direct   bool           `yaml:"direct" json:"direct"`
+	Regx     *Regexp `yaml:"regx" json:"regx"`
+	UseHTTPS bool    `yaml:"use_https" json:"use_https"`
+	Direct   bool    `yaml:"direct" json:"direct"`
 	// Redirect is the host to redirect to, if not empty
 	Redirect string `yaml:"redirect" json:"redirect"`
 }
@@ -334,6 +334,52 @@ type Proxy struct {
 // Match checks if the given url matches the rule.
 func (r *Proxy) Match(url string) bool {
 	return r.Regx != nil && r.Regx.MatchString(url)
+}
+
+// Regexp is a simple wrapper around regexp. Regexp to make it unmarshallable from a string.
+type Regexp struct {
+	*regexp.Regexp
+}
+
+// NewRegexp returns a new Regexp instance compiled from the given string.
+func NewRegexp(exp string) (*Regexp, error) {
+	r, err := regexp.Compile(exp)
+	if err != nil {
+		return nil, err
+	}
+	return &Regexp{r}, nil
+}
+
+// UnmarshalYAML implements yaml.Unmarshaller.
+func (r *Regexp) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return r.unmarshal(unmarshal)
+}
+
+// UnmarshalJSON implements json.Unmarshaller.
+func (r *Regexp) UnmarshalJSON(b []byte) error {
+	return r.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
+}
+
+func (r *Regexp) unmarshal(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	exp, err := regexp.Compile(s)
+	if err == nil {
+		r.Regexp = exp
+	}
+	return err
+}
+
+// MarshalJSON implements json.Marshaller to print the regexp.
+func (r *Regexp) MarshalJSON() ([]byte, error) {
+	return json.Marshal(r.String())
+}
+
+// MarshalYAML implements yaml.Marshaller to print the regexp.
+func (r *Regexp) MarshalYAML() (interface{}, error) {
+	return r.String(), nil
 }
 
 // Config holds all the runtime config information.
