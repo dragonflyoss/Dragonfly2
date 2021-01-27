@@ -184,8 +184,8 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 				TCPListen: &daemon.TCPListenOption{
 					Listen: flagDaemonOpt.listenIP.String(),
 					PortRange: daemon.TCPListenPortRange{
-						Start: flagDaemonOpt.uploadPort,
-						End:   flagDaemonOpt.uploadPortEnd,
+						Start: flagDaemonOpt.proxyPort,
+						End:   flagDaemonOpt.proxyPortEnd,
 					},
 				},
 			},
