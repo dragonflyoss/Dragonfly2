@@ -27,7 +27,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 )
 
 type LeafCertSpec struct {
@@ -47,7 +47,7 @@ func genLeafCert(ca *tls.Certificate, leafCertSpec *LeafCertSpec, host string) (
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		logrus.Errorf("failed to generate serial number: %s", err)
+		logger.Errorf("failed to generate serial number: %s", err)
 		return nil, err
 	}
 	tmpl := &x509.Certificate{
@@ -67,7 +67,7 @@ func genLeafCert(ca *tls.Certificate, leafCertSpec *LeafCertSpec, host string) (
 	}
 	newCert, err := x509.CreateCertificate(rand.Reader, tmpl, ca.Leaf, leafCertSpec.publicKey, ca.PrivateKey)
 	if err != nil {
-		logrus.Errorf("failed to generate leaf cert %s", err)
+		logger.Errorf("failed to generate leaf cert %s", err)
 		return nil, err
 	}
 	cert := new(tls.Certificate)

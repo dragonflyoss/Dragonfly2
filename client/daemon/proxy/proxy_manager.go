@@ -26,7 +26,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
 	"github.com/dragonflyoss/Dragonfly2/client/config"
@@ -50,10 +49,10 @@ func NewProxyManager(registry *config.RegistryMirror, proxies []*config.Proxy, h
 		WithRegistryMirror(registry),
 	}
 
-	logrus.Infof("registry mirror: %s", registry.Remote)
+	logger.Infof("registry mirror: %s", registry.Remote)
 
 	if len(proxies) > 0 {
-		logrus.Infof("%d proxy rules loaded", len(proxies))
+		logger.Infof("%d proxy rules loaded", len(proxies))
 		for i, r := range proxies {
 			method := "with dfget"
 			if r.Direct {
@@ -63,7 +62,7 @@ func NewProxyManager(registry *config.RegistryMirror, proxies []*config.Proxy, h
 			if r.UseHTTPS {
 				scheme = "and force https"
 			}
-			logrus.Infof("[%d] proxy %s %s %s", i+1, r.Regx, method, scheme)
+			logger.Infof("[%d] proxy %s %s %s", i+1, r.Regx, method, scheme)
 		}
 	}
 
@@ -106,9 +105,9 @@ func newDirectHandler() *http.ServeMux {
 
 // getEnv returns the environments of dfdaemon.
 func getEnv(w http.ResponseWriter, r *http.Request) {
-	logrus.Debugf("access:%s", r.URL.String())
+	logger.Debugf("access:%s", r.URL.String())
 	if err := json.NewEncoder(w).Encode(ensureStringKey(viper.AllSettings())); err != nil {
-		logrus.Errorf("failed to encode env json: %v", err)
+		logger.Errorf("failed to encode env json: %v", err)
 	}
 }
 
@@ -136,14 +135,14 @@ func ensureStringKey(obj interface{}) interface{} {
 
 // getArgs returns all the arguments of command-line except the program name.
 func getArgs(w http.ResponseWriter, r *http.Request) {
-	logrus.Debugf("access:%s", r.URL.String())
+	logger.Debugf("access:%s", r.URL.String())
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain;charset=utf-8")
 	for index, value := range os.Args {
 		if index > 0 {
 			if _, err := w.Write([]byte(value + " ")); err != nil {
-				logrus.Errorf("failed to respond information: %v", err)
+				logger.Errorf("failed to respond information: %v", err)
 			}
 		}
 

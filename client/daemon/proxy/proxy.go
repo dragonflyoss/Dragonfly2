@@ -29,9 +29,9 @@ import (
 
 	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/golang/groupcache/lru"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Proxy is an http proxy handler. It proxies requests with dfget
@@ -80,7 +80,7 @@ func WithCertFromFile(certFile, keyFile string) ProxyOption {
 		if err != nil {
 			return errors.Wrap(err, "load cert")
 		}
-		logrus.Infof("use self-signed certificate (%s, %s) for https hijacking", certFile, keyFile)
+		logger.Infof("use self-signed certificate (%s, %s) for https hijacking", certFile, keyFile)
 		leaf, err := x509.ParseCertificate(cert.Certificate[0])
 		if err != nil {
 			return errors.Wrap(err, "load leaf cert")
@@ -115,7 +115,7 @@ func NewProxy(peerTaskManager peer.PeerTaskManager, opts ...ProxyOption) (*Proxy
 	}
 	for _, opt := range opts {
 		if err := opt(proxy); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "apply options")
 		}
 	}
 
@@ -146,7 +146,7 @@ func (proxy *Proxy) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 	if _, err := io.Copy(w, resp.Body); err != nil {
-		logrus.Errorf("failed to write http body: %v", err)
+		logger.Errorf("failed to write http body: %v", err)
 	}
 }
 
@@ -162,14 +162,14 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logrus.Debugln("hijack https request to", r.Host)
+	logger.Debugln("hijack https request to", r.Host)
 
 	sConfig := new(tls.Config)
 	if proxy.cert.Leaf != nil && proxy.cert.Leaf.IsCA {
 		if proxy.certCache == nil { // Initialize proxy.certCache on first access. (Lazy init)
 			proxy.certCache = lru.New(100) // Default max entries size = 100
 		}
-		logrus.Debugf("hijack https request with CA <%s>", proxy.cert.Leaf.Subject.CommonName)
+		logger.Debugf("hijack https request with CA <%s>", proxy.cert.Leaf.Subject.CommonName)
 		leafCertSpec := LeafCertSpec{
 			proxy.cert.Leaf.PublicKey,
 			proxy.cert.PrivateKey,
@@ -177,12 +177,12 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 		host, _, _ := net.SplitHostPort(r.Host)
 		sConfig.GetCertificate = func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			cConfig.ServerName = host
-			logrus.Debugf("Generate temporal leaf TLS cert for ServerName <%s>, host <%s>", hello.ServerName, host)
+			logger.Debugf("Generate temporal leaf TLS cert for ServerName <%s>, host <%s>", hello.ServerName, host)
 			// It's assumed that `hello.ServerName` is always same as `host`, in practice.
 			cacheKey := host
 			cached, hit := proxy.certCache.Get(cacheKey)
 			if hit && time.Now().Before(cached.(*tls.Certificate).Leaf.NotAfter) { // If cache hit and the cert is not expired
-				logrus.Debugf("TLS Cache hit, cacheKey = <%s>", cacheKey)
+				logger.Debugf("TLS Cache hit, cacheKey = <%s>", cacheKey)
 				return cached.(*tls.Certificate), nil
 			}
 			cert, err := genLeafCert(proxy.cert, &leafCertSpec, host)
@@ -200,14 +200,14 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 
 	sConn, err := handshake(w, sConfig)
 	if err != nil {
-		logrus.Errorf("handshake failed for %s: %v", r.Host, err)
+		logger.Errorf("handshake failed for %s: %v", r.Host, err)
 		return
 	}
 	defer sConn.Close()
 
 	cConn, err := tls.Dial("tcp", r.Host, cConfig)
 	if err != nil {
-		logrus.Errorf("dial failed for %s: %v", r.Host, err)
+		logger.Errorf("dial failed for %s: %v", r.Host, err)
 		return
 	}
 	cConn.Close()
@@ -225,7 +225,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 	wg.Add(1)
 	// NOTE: http.Serve always returns a non-nil error
 	if err := http.Serve(&singleUseListener{&customCloseConn{sConn, wg.Done}}, rp); err != errServerClosed && err != http.ErrServerClosed {
-		logrus.Errorf("failed to accept incoming HTTP connections: %v", err)
+		logger.Errorf("failed to accept incoming HTTP connections: %v", err)
 	}
 	wg.Wait()
 }
@@ -307,7 +307,7 @@ func (proxy *Proxy) shouldUseDfgetForMirror(req *http.Request) bool {
 // tunnelHTTPS handles a CONNECT request and proxy an https request through an
 // http tunnel.
 func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
-	logrus.Debugf("Tunneling https request for %s", r.Host)
+	logger.Debugf("Tunneling https request for %s", r.Host)
 	dst, err := net.DialTimeout("tcp", r.Host, 10*time.Second)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)

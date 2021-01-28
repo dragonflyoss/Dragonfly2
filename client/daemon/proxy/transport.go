@@ -18,15 +18,17 @@ package proxy
 
 import (
 	"crypto/tls"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"regexp"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 )
 
 var (
@@ -79,6 +81,55 @@ func NewTransport(peerTaskManager peer.PeerTaskManager, opts ...DFRoundTripperOp
 	return rt, nil
 }
 
+// RoundTrip only process first redirect at present
+// fix resource release
+func (roundTripper *DFRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if roundTripper.ShouldUseDfget(req) {
+		// delete the Accept-Encoding header to avoid returning the same cached
+		// result for different requests
+		req.Header.Del("Accept-Encoding")
+		logger.Debugf("round trip with dfget: %s", req.URL.String())
+		if res, err := roundTripper.download(req, req.URL.String()); err == nil {
+			return res, err
+		}
+	}
+	logger.Debugf("round trip directly: %s %s", req.Method, req.URL.String())
+	req.Host = req.URL.Host
+	req.Header.Set("Host", req.Host)
+	res, err := roundTripper.Round.RoundTrip(req)
+	return res, err
+}
+
+// download uses dfget to download.
+func (roundTripper *DFRoundTripper) download(req *http.Request, urlString string) (*http.Response, error) {
+	url := req.URL.String()
+	logger.Infof("start download url:%s", url)
+
+	r, _, err := roundTripper.peerTaskManager.StartStreamPeerTask(
+		req.Context(),
+		&scheduler.PeerTaskRequest{
+			Url:   url,
+			BizId: "d7s/dfget",
+		},
+	)
+	if err != nil {
+		logger.Errorf("download fail: %v", err)
+		return nil, err
+	}
+
+	resp := &http.Response{
+		StatusCode: 200,
+		Body:       ioutil.NopCloser(r),
+	}
+	return resp, nil
+}
+
+// needUseGetter is the default value for ShouldUseDfget, which downloads all
+// images layers with dfget.
+func NeedUseGetter(req *http.Request) bool {
+	return req.Method == http.MethodGet && layerReg.MatchString(req.URL.Path)
+}
+
 func defaultHTTPTransport(cfg *tls.Config) *http.Transport {
 	if cfg == nil {
 		cfg = &tls.Config{InsecureSkipVerify: true}
@@ -94,34 +145,4 @@ func defaultHTTPTransport(cfg *tls.Config) *http.Transport {
 		ExpectContinueTimeout: 1 * time.Second,
 		TLSClientConfig:       cfg,
 	}
-}
-
-// RoundTrip only process first redirect at present
-// fix resource release
-func (roundTripper *DFRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	if roundTripper.ShouldUseDfget(req) {
-		// delete the Accept-Encoding header to avoid returning the same cached
-		// result for different requests
-		req.Header.Del("Accept-Encoding")
-		logrus.Debugf("round trip with dfget: %s", req.URL.String())
-		if res, err := roundTripper.download(req, req.URL.String()); err == nil {
-			return res, err
-		}
-	}
-	logrus.Debugf("round trip directly: %s %s", req.Method, req.URL.String())
-	req.Host = req.URL.Host
-	req.Header.Set("Host", req.Host)
-	res, err := roundTripper.Round.RoundTrip(req)
-	return res, err
-}
-
-// download uses dfget to download.
-func (roundTripper *DFRoundTripper) download(req *http.Request, urlString string) (*http.Response, error) {
-	return &http.Response{}, nil
-}
-
-// needUseGetter is the default value for ShouldUseDfget, which downloads all
-// images layers with dfget.
-func NeedUseGetter(req *http.Request) bool {
-	return req.Method == http.MethodGet && layerReg.MatchString(req.URL.Path)
 }
