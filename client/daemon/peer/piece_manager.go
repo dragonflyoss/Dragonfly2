@@ -114,7 +114,7 @@ func (pm *pieceManager) pullPiece(pt PeerTask, dstPid, dstAddr string, pieceTask
 	defer rc.Close()
 
 	// 2. save to storage
-	err = pm.storageManager.WritePiece(context.Background(), &storage.WritePieceRequest{
+	n, err := pm.storageManager.WritePiece(context.Background(), &storage.WritePieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
@@ -130,8 +130,10 @@ func (pm *pieceManager) pullPiece(pt PeerTask, dstPid, dstAddr string, pieceTask
 		},
 		Reader: rc,
 	})
+	pt.AddTraffic(n)
 	if err != nil {
-		logger.Errorf("put piece to storage failed, piece num: %d, error: %s", pieceTask.PieceNum, err)
+		logger.Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s",
+			pieceTask.PieceNum, n, err)
 		return
 	}
 	success = true

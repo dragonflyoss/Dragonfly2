@@ -56,11 +56,10 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 		Idc:            p.ptm.host.Idc,
 		Url:            p.req.Url,
 		ContentLength:  pt.GetContentLength(),
-		// TODO(jim): update traffic
-		Traffic: 0,
-		Cost:    uint32(end.Sub(p.start).Milliseconds()),
-		Success: true,
-		Code:    base.Code_SUCCESS,
+		Traffic:        pt.GetTraffic(),
+		Cost:           uint32(end.Sub(p.start).Milliseconds()),
+		Success:        true,
+		Code:           base.Code_SUCCESS,
 	})
 	return nil
 }
@@ -72,12 +71,12 @@ func (p *filePeerTaskCallback) Fail(pt PeerTask, reason string) error {
 	p.ptm.scheduler.ReportPeerResult(p.ctx, &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
-		SrcIp:          "",
-		SecurityDomain: "",
-		Idc:            "",
-		Url:            "",
+		SrcIp:          p.ptm.host.Ip,
+		SecurityDomain: p.ptm.host.SecurityDomain,
+		Idc:            p.ptm.host.Idc,
+		Url:            p.req.Url,
 		ContentLength:  pt.GetContentLength(),
-		Traffic:        0,
+		Traffic:        pt.GetTraffic(),
 		Cost:           uint32(end.Sub(p.start).Milliseconds()),
 		Success:        false,
 		Code:           base.Code_CLIENT_ERROR,

@@ -62,7 +62,7 @@ func (g gcManager) Start() {
 					if err != nil {
 						log.Errorf("gc error: %s", name, err)
 					}
-					log.Infof("gc done")
+					log.Debugf("gc done")
 				}
 			case <-g.done:
 				logger.Infof("gc exited")

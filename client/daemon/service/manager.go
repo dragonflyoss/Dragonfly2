@@ -27,6 +27,7 @@ import (
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
+	"github.com/dragonflyoss/Dragonfly2/client/util"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
@@ -35,6 +36,7 @@ import (
 )
 
 type Manager interface {
+	util.KeepAlive
 	ServeDownload(listener net.Listener) error
 	ServePeer(listener net.Listener) error
 	ServeProxy(listener net.Listener) error
@@ -42,6 +44,7 @@ type Manager interface {
 }
 
 type manager struct {
+	util.KeepAlive
 	peerHost        *scheduler.PeerHost
 	peerTaskManager peer.PeerTaskManager
 	storageManager  storage.Manager
@@ -53,6 +56,7 @@ type manager struct {
 
 func NewManager(peerHost *scheduler.PeerHost, peerTaskManager peer.PeerTaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Manager, error) {
 	mgr := &manager{
+		KeepAlive:       util.NewKeepAlive("service manager"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
@@ -82,11 +86,12 @@ func (m *manager) Stop() {
 }
 
 func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	m.Keep()
 	p, err := m.storageManager.GetPieces(ctx, request)
 	if err != nil {
 		return &base.PiecePacket{
 			State: &base.ResponseState{
-				Success: true,
+				Success: false,
 				Code:    base.Code_CLIENT_ERROR,
 				Msg:     fmt.Sprintf("get pieces error: %s", err),
 			},
@@ -98,6 +103,7 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 }
 
 func (m *manager) CheckHealth(context.Context) (*base.ResponseState, error) {
+	m.Keep()
 	return &base.ResponseState{
 		Success: true,
 		Code:    base.Code_SUCCESS,
@@ -107,6 +113,7 @@ func (m *manager) CheckHealth(context.Context) (*base.ResponseState, error) {
 
 func (m *manager) Download(ctx context.Context,
 	req *dfdaemongrpc.DownRequest, results chan<- *dfdaemongrpc.DownResult) error {
+	m.Keep()
 	// init peer task request, peer download request uses different peer id
 	peerTask := &peer.FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{

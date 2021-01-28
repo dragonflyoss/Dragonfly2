@@ -11,6 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	io "io"
 	reflect "reflect"
+	time "time"
 )
 
 // MockTaskStorageDriver is a mock of TaskStorageDriver interface
@@ -37,11 +38,12 @@ func (m *MockTaskStorageDriver) EXPECT() *MockTaskStorageDriverMockRecorder {
 }
 
 // WritePiece mocks base method
-func (m *MockTaskStorageDriver) WritePiece(ctx context.Context, req *storage.WritePieceRequest) error {
+func (m *MockTaskStorageDriver) WritePiece(ctx context.Context, req *storage.WritePieceRequest) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WritePiece", ctx, req)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // WritePiece indicates an expected call of WritePiece
@@ -119,11 +121,12 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 }
 
 // WritePiece mocks base method
-func (m *MockManager) WritePiece(ctx context.Context, req *storage.WritePieceRequest) error {
+func (m *MockManager) WritePiece(ctx context.Context, req *storage.WritePieceRequest) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WritePiece", ctx, req)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // WritePiece indicates an expected call of WritePiece
@@ -177,6 +180,20 @@ func (mr *MockManagerMockRecorder) Store(ctx, req interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockManager)(nil).Store), ctx, req)
 }
 
+// KeepAlive mocks base method
+func (m *MockManager) KeepAlive(arg0 time.Duration) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "KeepAlive", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// KeepAlive indicates an expected call of KeepAlive
+func (mr *MockManagerMockRecorder) KeepAlive(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockManager)(nil).KeepAlive), arg0)
+}
+
 // RegisterTask mocks base method
 func (m *MockManager) RegisterTask(ctx context.Context, req storage.RegisterTaskRequest) error {
 	m.ctrl.T.Helper()
@@ -191,83 +208,14 @@ func (mr *MockManagerMockRecorder) RegisterTask(ctx, req interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterTask", reflect.TypeOf((*MockManager)(nil).RegisterTask), ctx, req)
 }
 
-// MockTaskStorageExecutor is a mock of TaskStorageExecutor interface
-type MockTaskStorageExecutor struct {
-	ctrl     *gomock.Controller
-	recorder *MockTaskStorageExecutorMockRecorder
-}
-
-// MockTaskStorageExecutorMockRecorder is the mock recorder for MockTaskStorageExecutor
-type MockTaskStorageExecutorMockRecorder struct {
-	mock *MockTaskStorageExecutor
-}
-
-// NewMockTaskStorageExecutor creates a new mock instance
-func NewMockTaskStorageExecutor(ctrl *gomock.Controller) *MockTaskStorageExecutor {
-	mock := &MockTaskStorageExecutor{ctrl: ctrl}
-	mock.recorder = &MockTaskStorageExecutorMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockTaskStorageExecutor) EXPECT() *MockTaskStorageExecutorMockRecorder {
-	return m.recorder
-}
-
-// TryGC mocks base method
-func (m *MockTaskStorageExecutor) TryGC() (bool, error) {
+// Clean mocks base method
+func (m *MockManager) Clean() {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TryGC")
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	m.ctrl.Call(m, "Clean")
 }
 
-// TryGC indicates an expected call of TryGC
-func (mr *MockTaskStorageExecutorMockRecorder) TryGC() *gomock.Call {
+// Clean indicates an expected call of Clean
+func (mr *MockManagerMockRecorder) Clean() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryGC", reflect.TypeOf((*MockTaskStorageExecutor)(nil).TryGC))
-}
-
-// LoadTask mocks base method
-func (m *MockTaskStorageExecutor) LoadTask(meta storage.PeerTaskMetaData) (storage.TaskStorageDriver, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadTask", meta)
-	ret0, _ := ret[0].(storage.TaskStorageDriver)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// LoadTask indicates an expected call of LoadTask
-func (mr *MockTaskStorageExecutorMockRecorder) LoadTask(meta interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).LoadTask), meta)
-}
-
-// CreateTask mocks base method
-func (m *MockTaskStorageExecutor) CreateTask(request storage.RegisterTaskRequest) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateTask", request)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateTask indicates an expected call of CreateTask
-func (mr *MockTaskStorageExecutorMockRecorder) CreateTask(request interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).CreateTask), request)
-}
-
-// ReloadPersistentTask mocks base method
-func (m *MockTaskStorageExecutor) ReloadPersistentTask(gcCallback storage.GCCallback) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReloadPersistentTask", gcCallback)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ReloadPersistentTask indicates an expected call of ReloadPersistentTask
-func (mr *MockTaskStorageExecutorMockRecorder) ReloadPersistentTask(gcCallback interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReloadPersistentTask", reflect.TypeOf((*MockTaskStorageExecutor)(nil).ReloadPersistentTask), gcCallback)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clean", reflect.TypeOf((*MockManager)(nil).Clean))
 }

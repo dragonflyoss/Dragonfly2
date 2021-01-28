@@ -38,6 +38,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/service"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/upload"
+	"github.com/dragonflyoss/Dragonfly2/client/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
@@ -357,7 +358,17 @@ func (ph *peerHost) Serve() error {
 		g.Go(func() error {
 			select {
 			case <-time.After(ph.Option.AliveTime):
-				if !ph.StorageManager.KeepAlive(ph.Option.AliveTime) {
+				var keepalives = []util.KeepAlive{
+					ph.StorageManager,
+					ph.ServiceManager,
+				}
+				var keep bool
+				for _, keepalive := range keepalives {
+					if keepalive.Alive(ph.Option.AliveTime) {
+						keep = true
+					}
+				}
+				if !keep {
 					ph.Stop()
 					logger.Infof("alive time reached, stop daemon")
 				}

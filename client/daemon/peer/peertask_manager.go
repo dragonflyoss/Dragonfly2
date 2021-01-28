@@ -53,6 +53,8 @@ type PeerTask interface {
 	GetTaskID() string
 	GetContentLength() int64
 	SetCallback(PeerTaskCallback)
+	AddTraffic(int64)
+	GetTraffic() int64
 }
 
 // PeerTaskCallback inserts some operations for peer task download lifecycle

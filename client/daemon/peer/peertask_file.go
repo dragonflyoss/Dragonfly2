@@ -60,6 +60,7 @@ type filePeerTask struct {
 	taskId          string
 	contentLength   int64
 	completedLength int64
+	usedTraffic     int64
 
 	failedPieceCh chan int32
 	progressCh    chan *PeerTaskProgress
@@ -119,6 +120,7 @@ func NewFilePeerTask(ctx context.Context,
 		log:                logger.With("peer", request.PeerId, "task", result.TaskId, "component", "filePeerTask"),
 		failedPieceCh:      make(chan int32, 4),
 		progressCh:         make(chan *PeerTaskProgress),
+		contentLength:      -1,
 	}, nil
 }
 
@@ -132,6 +134,14 @@ func (pt *filePeerTask) GetTaskID() string {
 
 func (pt *filePeerTask) GetContentLength() int64 {
 	return pt.contentLength
+}
+
+func (pt *filePeerTask) AddTraffic(n int64) {
+	atomic.AddInt64(&pt.usedTraffic, n)
+}
+
+func (pt *filePeerTask) GetTraffic() int64 {
+	return pt.usedTraffic
 }
 
 func (pt *filePeerTask) Start(ctx context.Context) (chan *PeerTaskProgress, error) {
@@ -206,26 +216,25 @@ getPiecesTasks:
 		case <-pt.done:
 			pt.log.Infof("peer task done, stop get pieces from peer")
 			break getPiecesTasks
-		case failed := <-pt.failedPieceCh:
-			pt.log.Warnf("download piece/%d failed, retry", failed)
-			num = failed
-			limit = 1
 		case <-pt.ctx.Done():
 			pt.log.Debugf("context done due to %s", pt.ctx.Err())
 			pt.callback.Fail(pt, pt.ctx.Err().Error())
 			break getPiecesTasks
+		case failed := <-pt.failedPieceCh:
+			pt.log.Warnf("download piece/%d failed, retry", failed)
+			num = failed
+			limit = 1
 		default:
 		}
 
-		piecePacket, err := pt.getPieceTasks(
+		piecePacket, err := pt.preparePieceTasks(
 			&base.PieceTaskRequest{
 				TaskId:   pt.taskId,
 				SrcIp:    pt.host.Ip,
 				StartNum: num,
 				Limit:    limit,
 			})
-		if err != nil || !piecePacket.State.Success {
-			// FIXME(jim): push failed result to scheduler
+		if err != nil {
 			pt.log.Warnf("get piece task error: %s, wait available peers from scheduler", err)
 			select {
 			case <-pt.ctx.Done():
@@ -235,7 +244,6 @@ getPiecesTasks:
 			case <-pt.peerClientReady:
 				pt.log.Infof("new peer client ready")
 			}
-
 			continue
 		}
 
@@ -247,7 +255,7 @@ getPiecesTasks:
 
 		num = pt.getNextPieceNum(num, limit)
 		if num == -1 {
-			pt.log.Infof("peer task done, stop get pieces from peer")
+			pt.log.Infof("no more pieces, stop get pieces from peer")
 			break getPiecesTasks
 		}
 		pt.pieceManager.PullPieces(pti, piecePacket)
@@ -261,7 +269,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 	// FIXME goroutine safe for channel and send on closed channel
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Warnf("recover from %s", r)
+			pt.log.Warnf("recover from %s", r)
 		}
 	}()
 	// retry failed piece
@@ -314,28 +322,60 @@ func (pt *filePeerTask) isCompleted() bool {
 	return pt.completedLength == pt.contentLength
 }
 
-func (pt *filePeerTask) getPieceTasks(request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (pt *filePeerTask) preparePieceTasks(request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	pt.pieceParallelCount = pt.peerPacket.ParallelCount
-	if pt.peerPacket.MainPeer != nil {
-		p, err := dfclient.GetPieceTasks(pt.peerPacket.MainPeer, pt.ctx, request)
+	var failedPeers []*scheduler.PeerPacket_DestPeer
+	p, err := pt.preparePieceTasksByPeer(pt.peerPacket.MainPeer, request)
+	if err == nil {
+		return p, nil
+	}
+	failedPeers = append(failedPeers, pt.peerPacket.MainPeer)
+	for _, peer := range pt.peerPacket.StealPeers {
+		p, err = pt.preparePieceTasksByPeer(peer, request)
 		if err == nil {
 			return p, nil
 		}
-		pt.log.Errorf("get piece task from main peer(%s) error: %s", err, pt.peerPacket.MainPeer.PeerId)
+		failedPeers = append(failedPeers, peer)
 	}
-	for _, peer := range pt.peerPacket.StealPeers {
-		if peer == nil {
-			continue
+	if len(failedPeers) == 0 {
+		pt.schedPieceResultCh <- &scheduler.PieceResult{
+			TaskId:        pt.taskId,
+			SrcPid:        pt.peerId,
+			DstPid:        "",
+			Success:       false,
+			Code:          401,
+			HostLoad:      nil,
+			FinishedCount: 0,
 		}
-		p, err := dfclient.GetPieceTasks(peer, pt.ctx, request)
-		if err != nil {
-			pt.log.Errorf("get piece task from peer(%s) error: %s", err, peer.PeerId)
-			continue
+	} else {
+		// TODO(jim): report all not available peers
+		pt.schedPieceResultCh <- &scheduler.PieceResult{
+			TaskId:        pt.taskId,
+			SrcPid:        pt.peerId,
+			DstPid:        failedPeers[0].PeerId,
+			Success:       false,
+			Code:          401,
+			HostLoad:      nil,
+			FinishedCount: 0,
 		}
+	}
+	return nil, fmt.Errorf("no peers available")
+}
+
+func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestPeer, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	if peer == nil {
+		return nil, fmt.Errorf("empty peer")
+	}
+	p, err := dfclient.GetPieceTasks(peer, pt.ctx, request)
+	if err != nil {
+		pt.log.Errorf("get piece task from peer(%s) error: %s", peer.PeerId, err)
+		return nil, err
+	}
+	if p.State.Success {
 		return p, nil
 	}
-	// TODO report no peer available error
-	return nil, fmt.Errorf("no peers available")
+	pt.log.Warnf("get piece task from peer(%s) failed: %d/%s", peer.PeerId, p.State.Code, p.State.Msg)
+	return nil, fmt.Errorf("get piece failed: %d/%s", p.State.Code, p.State.Msg)
 }
 
 func (pt *filePeerTask) getNextPieceNum(cur, limit int32) int32 {
@@ -354,7 +394,7 @@ func (pt *filePeerTask) finish() error {
 	pt.doneOnce.Do(func() {
 		// send EOF piece result to scheduler
 		pt.schedPieceResultCh <- scheduler.NewEndPieceResult(pt.bitmap.Settled(), pt.taskId, pt.peerId)
-		pt.log.Debugf("end piece result sent")
+		pt.log.Debugf("finish end piece result sent")
 
 		pt.progressCh <- &PeerTaskProgress{
 			State: &base.ResponseState{
@@ -393,7 +433,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 	pt.doneOnce.Do(func() {
 		// send EOF piece result to scheduler
 		pt.schedPieceResultCh <- scheduler.NewEndPieceResult(pt.bitmap.Settled(), pt.taskId, pt.peerId)
-		pt.log.Debugf("end piece result sent")
+		pt.log.Debugf("clean up end piece result sent")
 
 		pt.progressCh <- &PeerTaskProgress{
 			State: &base.ResponseState{

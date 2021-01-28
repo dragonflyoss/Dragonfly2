@@ -32,13 +32,14 @@ import (
 	"time"
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
+	"github.com/dragonflyoss/Dragonfly2/client/util"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 )
 
 type TaskStorageDriver interface {
 	// WritePiece put a piece of a task to storage
-	WritePiece(ctx context.Context, req *WritePieceRequest) error
+	WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error)
 
 	// ReadPiece get a piece data reader of a task from storage
 	// return a Reader and a Closer from task data with seeked, caller should read bytes and close it.
@@ -53,7 +54,7 @@ type TaskStorageDriver interface {
 type Manager interface {
 	TaskStorageDriver
 	// KeepAlive tests if storage is used in given time duration
-	KeepAlive(time.Duration) bool
+	util.KeepAlive
 	// RegisterTask registers a task in storage driver
 	RegisterTask(ctx context.Context, req RegisterTaskRequest) error
 	// Clean cleans all data
@@ -79,10 +80,10 @@ const (
 
 type storageManager struct {
 	sync.Locker
+	util.KeepAlive
 	storeStrategy StoreStrategy
 	storeOption   *Option
 	tasks         *sync.Map
-	lastAccess    time.Time
 	dataPathStat  *syscall.Stat_t
 }
 
@@ -116,6 +117,7 @@ func NewStorageManager(storeStrategy StoreStrategy, opt *Option, gcCallback GCCa
 	}
 
 	s := &storageManager{
+		KeepAlive:     util.NewKeepAlive("storage manager"),
 		storeStrategy: storeStrategy,
 		Locker:        &sync.Mutex{},
 		storeOption:   opt,
@@ -144,14 +146,6 @@ func WithStorageOption(opt *Option) func(*storageManager) error {
 	}
 }
 
-func (s *storageManager) touch() {
-	s.lastAccess = time.Now()
-}
-
-func (s *storageManager) KeepAlive(alive time.Duration) bool {
-	return s.lastAccess.Add(alive).After(time.Now())
-}
-
 func (s *storageManager) RegisterTask(ctx context.Context, req RegisterTaskRequest) error {
 	if _, ok := s.LoadTask(
 		PeerTaskMetaData{
@@ -175,14 +169,14 @@ func (s *storageManager) RegisterTask(ctx context.Context, req RegisterTaskReque
 	return nil
 }
 
-func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest) error {
+func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
 	t, ok := s.LoadTask(
 		PeerTaskMetaData{
 			PeerID: req.PeerID,
 			TaskID: req.TaskID,
 		})
 	if !ok {
-		return ErrTaskNotFound
+		return 0, ErrTaskNotFound
 	}
 	return t.(TaskStorageDriver).WritePiece(ctx, req)
 }
@@ -227,7 +221,7 @@ func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskReque
 }
 
 func (s storageManager) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool) {
-	s.touch()
+	s.Keep()
 	d, ok := s.tasks.Load(meta)
 	if !ok {
 		return nil, false

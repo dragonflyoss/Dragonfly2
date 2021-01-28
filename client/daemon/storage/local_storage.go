@@ -59,28 +59,28 @@ func (t *localTaskStore) touch() {
 	t.lastAccess = time.Now()
 }
 
-func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) error {
+func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
 	t.touch()
 
 	// piece already exists
 	t.RLock()
 	if _, ok := t.Pieces[req.Num]; ok {
 		t.RUnlock()
-		return nil
+		return 0, nil
 	}
 	t.RUnlock()
 
 	file, err := os.OpenFile(t.dataFilePath, os.O_RDWR, defaultFileMode)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer file.Close()
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
-		return err
+		return 0, err
 	}
 	n, err := io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
 	if err != nil {
-		return err
+		return 0, err
 	}
 	t.log.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",
 		n, t.dataFilePath, req.Num, req.Range.Start, req.Range.Length)
@@ -88,10 +88,10 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	defer t.Unlock()
 	// double check
 	if _, ok := t.Pieces[req.Num]; ok {
-		return nil
+		return n, nil
 	}
 	t.Pieces[req.Num] = req.PieceMetaData
-	return nil
+	return n, nil
 }
 
 // GetPiece get a LimitReadCloser from task data with seeked, caller should read bytes and close it.

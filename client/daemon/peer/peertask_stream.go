@@ -63,6 +63,7 @@ func NewStreamPeerTask(ctx context.Context,
 			lock:               &sync.Mutex{},
 			log:                logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 			failedPieceCh:      make(chan int32, 4),
+			contentLength:      -1,
 		},
 		successPieceCh: make(chan int32, 4),
 	}, nil
@@ -82,6 +83,14 @@ func (s *streamPeerTask) GetContentLength() int64 {
 
 func (s *streamPeerTask) SetCallback(callback PeerTaskCallback) {
 	s.base.SetCallback(callback)
+}
+
+func (s *streamPeerTask) AddTraffic(n int64) {
+	s.base.AddTraffic(n)
+}
+
+func (s *streamPeerTask) GetTraffic() int64 {
+	return s.base.GetTraffic()
 }
 
 func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
