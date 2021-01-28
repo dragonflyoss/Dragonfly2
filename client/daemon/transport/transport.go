@@ -124,6 +124,12 @@ func (roundTripper *DFRoundTripper) RoundTrip(req *http.Request) (*http.Response
 	return res, err
 }
 
+// needUseGetter is the default value for ShouldUseDfget, which downloads all
+// images layers with dfget.
+func NeedUseGetter(req *http.Request) bool {
+	return req.Method == http.MethodGet && layerReg.MatchString(req.URL.Path)
+}
+
 // download uses dfget to download.
 func (roundTripper *DFRoundTripper) download(req *http.Request) (*http.Response, error) {
 	urlString := req.URL.String()
@@ -149,12 +155,6 @@ func (roundTripper *DFRoundTripper) download(req *http.Request) (*http.Response,
 		Body:       ioutil.NopCloser(r),
 	}
 	return resp, nil
-}
-
-// needUseGetter is the default value for ShouldUseDfget, which downloads all
-// images layers with dfget.
-func NeedUseGetter(req *http.Request) bool {
-	return req.Method == http.MethodGet && layerReg.MatchString(req.URL.Path)
 }
 
 func defaultHTTPTransport(cfg *tls.Config) *http.Transport {

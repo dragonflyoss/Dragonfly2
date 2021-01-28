@@ -35,6 +35,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
+
 // Proxy is an http proxy handler. It proxies requests with dfget
 // if any defined proxy rules is matched
 type Proxy struct {
@@ -324,7 +326,7 @@ func (proxy *Proxy) shouldUseDfget(req *http.Request) bool {
 // shouldUseDfgetForMirror returns whether we should use dfget to proxy a request
 // when we use registry mirror.
 func (proxy *Proxy) shouldUseDfgetForMirror(req *http.Request) bool {
-	return proxy.registry != nil && !proxy.registry.Direct && NeedUseGetter(req)
+	return proxy.registry != nil && !proxy.registry.Direct && transport.NeedUseGetter(req)
 }
 
 // tunnelHTTPS handles a CONNECT request and proxy an https request through an
@@ -367,8 +369,6 @@ func copyHeader(dst, src http.Header) {
 		}
 	}
 }
-
-var okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
 
 // handshake hijacks w's underlying net.Conn, responds to the CONNECT request
 // and manually performs the TLS handshake.
