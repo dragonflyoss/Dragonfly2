@@ -26,7 +26,7 @@ type ManagerClient interface {
 	// 3. manager actively triggers fresh
 	GetSchedulers(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerNodes, error)
 	// keep alive for cdn or scheduler and receives management configuration
-	KeepAlive(ctx context.Context, opts ...grpc.CallOption) (Manager_KeepAliveClient, error)
+	KeepAlive(ctx context.Context, in *HeartRequest, opts ...grpc.CallOption) (*ManagementConfig, error)
 }
 
 type managerClient struct {
@@ -46,35 +46,13 @@ func (c *managerClient) GetSchedulers(ctx context.Context, in *NavigatorRequest,
 	return out, nil
 }
 
-func (c *managerClient) KeepAlive(ctx context.Context, opts ...grpc.CallOption) (Manager_KeepAliveClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Manager_serviceDesc.Streams[0], "/manager.Manager/KeepAlive", opts...)
+func (c *managerClient) KeepAlive(ctx context.Context, in *HeartRequest, opts ...grpc.CallOption) (*ManagementConfig, error) {
+	out := new(ManagementConfig)
+	err := c.cc.Invoke(ctx, "/manager.Manager/KeepAlive", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &managerKeepAliveClient{stream}
-	return x, nil
-}
-
-type Manager_KeepAliveClient interface {
-	Send(*HeartRequest) error
-	Recv() (*ManagementConfig, error)
-	grpc.ClientStream
-}
-
-type managerKeepAliveClient struct {
-	grpc.ClientStream
-}
-
-func (x *managerKeepAliveClient) Send(m *HeartRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *managerKeepAliveClient) Recv() (*ManagementConfig, error) {
-	m := new(ManagementConfig)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // ManagerServer is the server API for Manager service.
@@ -90,7 +68,7 @@ type ManagerServer interface {
 	// 3. manager actively triggers fresh
 	GetSchedulers(context.Context, *NavigatorRequest) (*SchedulerNodes, error)
 	// keep alive for cdn or scheduler and receives management configuration
-	KeepAlive(Manager_KeepAliveServer) error
+	KeepAlive(context.Context, *HeartRequest) (*ManagementConfig, error)
 	mustEmbedUnimplementedManagerServer()
 }
 
@@ -101,8 +79,8 @@ type UnimplementedManagerServer struct {
 func (UnimplementedManagerServer) GetSchedulers(context.Context, *NavigatorRequest) (*SchedulerNodes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSchedulers not implemented")
 }
-func (UnimplementedManagerServer) KeepAlive(Manager_KeepAliveServer) error {
-	return status.Errorf(codes.Unimplemented, "method KeepAlive not implemented")
+func (UnimplementedManagerServer) KeepAlive(context.Context, *HeartRequest) (*ManagementConfig, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method KeepAlive not implemented")
 }
 func (UnimplementedManagerServer) mustEmbedUnimplementedManagerServer() {}
 
@@ -135,30 +113,22 @@ func _Manager_GetSchedulers_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_KeepAlive_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ManagerServer).KeepAlive(&managerKeepAliveServer{stream})
-}
-
-type Manager_KeepAliveServer interface {
-	Send(*ManagementConfig) error
-	Recv() (*HeartRequest, error)
-	grpc.ServerStream
-}
-
-type managerKeepAliveServer struct {
-	grpc.ServerStream
-}
-
-func (x *managerKeepAliveServer) Send(m *ManagementConfig) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *managerKeepAliveServer) Recv() (*HeartRequest, error) {
-	m := new(HeartRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _Manager_KeepAlive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HeartRequest)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(ManagerServer).KeepAlive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/manager.Manager/KeepAlive",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServer).KeepAlive(ctx, req.(*HeartRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Manager_serviceDesc = grpc.ServiceDesc{
@@ -169,14 +139,11 @@ var _Manager_serviceDesc = grpc.ServiceDesc{
 			MethodName: "GetSchedulers",
 			Handler:    _Manager_GetSchedulers_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "KeepAlive",
-			Handler:       _Manager_KeepAlive_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
+			MethodName: "KeepAlive",
+			Handler:    _Manager_KeepAlive_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "pkg/rpc/manager/manager.proto",
 }

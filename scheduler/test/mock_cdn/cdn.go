@@ -2,8 +2,9 @@ package mock_cdn
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
+	common2 "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/test/mock_client"
 	"google.golang.org/grpc"
@@ -44,7 +45,7 @@ func NewMockCDN(addr string, tl common.TestLogger) *MockCDN {
 }
 
 func (mc *MockCDN) Start() {
-	lis, err := net.Listen(string(basic.TCP), mc.addr)
+	lis, err := net.Listen(string(dfnet.TCP), mc.addr)
 	if err != nil {
 		mc.logger.Errorf(err.Error())
 		return
@@ -92,7 +93,7 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 				return
 			default:
 				if i < 0 {
-					ps := &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"),
+					ps := &cdnsystem.PieceSeed{State: common2.NewState(dfcodes.Success, "success"),
 						PeerId: mc.getPeerId(mc.addr, req.TaskId),
 						// cdn node host name
 						SeederName:    mc.cdnName,
@@ -104,7 +105,7 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 					return
 				}
 				ps := &cdnsystem.PieceSeed{
-					State:     base.NewState(base.Code_SUCCESS, "success"),
+					State:     common2.NewState(dfcodes.Success, "success"),
 					PieceInfo: &base.PieceInfo{PieceNum: pieceNum},
 					PeerId:    mc.getPeerId(mc.addr, taskId),
 					// cdn node host name
@@ -180,7 +181,7 @@ func send(psc chan *cdnsystem.PieceSeed, closePsc func(), stream cdnsystem.Seede
 func call(ctx context.Context, psc chan *cdnsystem.PieceSeed, p *MockCDN, sr *cdnsystem.SeedRequest, errChan chan error) {
 	err := safe.Call(func() {
 		if err := p.doObtainSeeds(ctx, sr, psc); err != nil {
-			errChan <- rpc.ConvertServerError(err)
+			errChan <- err
 		}
 	})
 

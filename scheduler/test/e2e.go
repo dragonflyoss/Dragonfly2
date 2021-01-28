@@ -1,6 +1,7 @@
 package test
 
 import (
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/server"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
@@ -36,6 +37,7 @@ var (
 )
 
 var _ = ginkgo.BeforeSuite(func(){
+	logger.InitScheduler()
 	cdn = mock_cdn.NewMockCDN("localhost:12345", common.NewE2ELogger())
 	cdn.Start()
 	time.Sleep(time.Second/2)

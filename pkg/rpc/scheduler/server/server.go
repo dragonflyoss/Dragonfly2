@@ -18,7 +18,7 @@ package server
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
@@ -28,20 +28,6 @@ import (
 )
 
 func init() {
-	logDir := basic.HomeDir + "/logs/dragonfly"
-
-	bizLogger := logger.CreateLogger(logDir+"/scheduler.log", 300, 30, 0, false, false)
-	logger.SetBizLogger(bizLogger.Sugar())
-
-	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	gcLogger := logger.CreateLogger(logDir+"/gc.log", 300, 7, 0, false, false)
-	logger.SetGcLogger(gcLogger.Sugar())
-
-	statPeerLogger := logger.CreateLogger(logDir+"/stat/peer.log", 300, 30, 0, true, true)
-	logger.SetStatPeerLogger(statPeerLogger)
-
 	// set register with server implementation.
 	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
 		scheduler.RegisterSchedulerServer(s, &proxy{server: impl.(SchedulerServer)})
@@ -63,7 +49,6 @@ type SchedulerServer interface {
 
 func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (rr *scheduler.RegisterResult, err error) {
 	rr, err = p.server.RegisterPeerTask(ctx, ptr)
-	err = rpc.ConvertServerError(err)
 
 	var taskId = "unknown"
 	var suc bool
@@ -86,8 +71,8 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 		zap.String("peerIp", peerHost.Ip),
 		zap.String("securityDomain", peerHost.SecurityDomain),
 		zap.String("idc", peerHost.Idc),
-		zap.String("schedulerIp", basic.LocalIp),
-		zap.String("schedulerName", basic.HostName),
+		zap.String("schedulerIp", dfnet.HostIp),
+		zap.String("schedulerName", dfnet.HostName),
 		zap.Int32("code", int32(code)))
 
 	return
@@ -107,17 +92,16 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 		zap.String("peerIp", pr.SrcIp),
 		zap.String("securityDomain", pr.SecurityDomain),
 		zap.String("idc", pr.Idc),
-		zap.String("schedulerIp", basic.LocalIp),
-		zap.String("schedulerName", basic.HostName),
+		zap.String("schedulerIp", dfnet.HostIp),
+		zap.String("schedulerName", dfnet.HostName),
 		zap.Int64("contentLength", pr.ContentLength),
 		zap.Uint64("traffic", uint64(pr.Traffic)),
 		zap.Uint32("cost", pr.Cost),
 		zap.Int32("code", int32(pr.Code)))
 
-	return rs, rpc.ConvertServerError(err)
+	return rs, err
 }
 
 func (p *proxy) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget) (*base.ResponseState, error) {
-	rs, err := p.server.LeaveTask(ctx, pt)
-	return rs, rpc.ConvertServerError(err)
+	return p.server.LeaveTask(ctx, pt)
 }

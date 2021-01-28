@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/server"
@@ -28,12 +29,12 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		}
 		pkg.State = new(base.ResponseState)
 		if err != nil {
-			pkg.State.Code = base.Code_SCHEDULER_ERROR
+			pkg.State.Code = dfcodes.SchedulerError
 			pkg.State.Msg = err.Error()
 			pkg.State.Success = false
 			err = nil
 		} else {
-			pkg.State.Code = base.Code_SUCCESS
+			pkg.State.Code = dfcodes.Success
 			pkg.State.Success = true
 		}
 		return
@@ -134,12 +135,12 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 			return
 		}
 		if err != nil {
-			ret.Code = base.Code_SCHEDULER_ERROR
+			ret.Code = dfcodes.SchedulerError
 			ret.Msg = err.Error()
 			ret.Success = false
 			err = nil
 		} else {
-			ret.Code = base.Code_SUCCESS
+			ret.Code = dfcodes.Success
 			ret.Success = true
 		}
 		return
@@ -169,12 +170,12 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 			return
 		}
 		if err != nil {
-			ret.Code = base.Code_SCHEDULER_ERROR
+			ret.Code = dfcodes.SchedulerError
 			ret.Msg = err.Error()
 			ret.Success = false
 			err = nil
 		} else {
-			ret.Code = base.Code_SUCCESS
+			ret.Code = dfcodes.Success
 			ret.Success = true
 		}
 		return

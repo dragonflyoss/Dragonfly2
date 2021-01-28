@@ -18,7 +18,7 @@ package queue
 
 import (
 	"container/list"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/assert"
+	"github.com/dragonflyoss/Dragonfly2/pkg/asserts"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -72,7 +72,7 @@ type infiniteQueue struct {
 var _ Queue = &infiniteQueue{}
 
 func (q *infiniteQueue) Put(item interface{}) {
-	if assert.IsNil(item) {
+	if asserts.IsNil(item) {
 		return
 	}
 	q.Lock()
@@ -86,7 +86,7 @@ func (q *infiniteQueue) Put(item interface{}) {
 
 func (q *infiniteQueue) PutTimeout(item interface{}, timeout time.Duration) bool {
 	q.Put(item)
-	return !assert.IsNil(item)
+	return !asserts.IsNil(item)
 }
 
 func (q *infiniteQueue) Poll() interface{} {
@@ -159,14 +159,14 @@ type finiteQueue struct {
 }
 
 func (q *finiteQueue) Put(item interface{}) {
-	if assert.IsNil(item) {
+	if asserts.IsNil(item) {
 		return
 	}
 	q.store <- item
 }
 
 func (q *finiteQueue) PutTimeout(item interface{}, timeout time.Duration) bool {
-	if assert.IsNil(item) {
+	if asserts.IsNil(item) {
 		return false
 	}
 	if timeout <= 0 {

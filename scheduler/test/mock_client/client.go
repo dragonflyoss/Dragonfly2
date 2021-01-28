@@ -3,7 +3,8 @@ package mock_client
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/client"
@@ -67,7 +68,7 @@ type MockClient struct {
 }
 
 func NewMockClient(addr string, url string, group string, logger common.TestLogger) *MockClient {
-	c, err := client.CreateClient([]basic.NetAddr{{Type: basic.TCP, Addr: addr}})
+	c, err := client.CreateClient([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: addr}})
 	if err != nil {
 		panic(err)
 	}
@@ -264,7 +265,7 @@ func (mc *MockClient) downloadPieces() {
 						PieceNum:  p.PieceNum,
 						FinishedCount: int32(len(mc.pieceInfoList)+1),
 						Success:   true,
-						Code:      base.Code_SUCCESS,
+						Code:      dfcodes.Success,
 						BeginTime: uint64(time.Now().UnixNano() / int64(time.Millisecond)),
 					}
 					time.Sleep(time.Millisecond * time.Duration(rand.Intn(40)+10))

@@ -192,7 +192,9 @@ func (m *PeerTaskManager) printDebugInfo() string {
 }
 
 func (m *PeerTaskManager) RefreshDownloadMonitor(pt *types.PeerTask) {
-	if pt.IsWaiting() {
+	if pt.GetNodeStatus() != types.PeerTaskStatusHealth {
+		m.downloadMonitorQueue.AddAfter(pt, time.Second * 2)
+	} else if pt.IsWaiting() {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second * 2)
 	} else {
 		m.downloadMonitorQueue.AddAfter(pt, time.Millisecond * time.Duration(pt.GetCost()*2))
@@ -212,7 +214,8 @@ func (m *PeerTaskManager) downloadMonitorWorkingLoop() {
 		if m.downloadMonitorCallBack != nil {
 			pt, _ := v.(*types.PeerTask)
 			if pt != nil  {
-				if pt.GetParent() == nil || !pt.IsWaiting() {
+				if pt.GetNodeStatus() != types.PeerTaskStatusHealth ||
+					pt.GetParent() == nil || !pt.IsWaiting() {
 					m.downloadMonitorCallBack(pt)
 				}
 				if !pt.Success {

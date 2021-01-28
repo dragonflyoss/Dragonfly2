@@ -18,41 +18,29 @@ package server
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/peer"
 	"sync"
 )
 
 func init() {
-	logDir := basic.HomeDir + "/logs/dragonfly"
-
-	bizLogger := logger.CreateLogger(logDir+"/cdnsystem.log", 300, 30, 0, false, false)
-	logger.SetBizLogger(bizLogger.Sugar())
-
-	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 300, 30, 0, false, false)
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	gcLogger := logger.CreateLogger(logDir+"/gc.log", 300, 7, 0, false, false)
-	logger.SetGcLogger(gcLogger.Sugar())
-
 	// set register with server implementation.
 	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
 		cdnsystem.RegisterSeederServer(s, &proxy{server: impl.(SeederServer)})
 	})
 }
 
+// see cdnsystem.SeederServer
 type SeederServer interface {
-	// generate seeds and return to scheduler
 	ObtainSeeds(context.Context, *cdnsystem.SeedRequest, chan<- *cdnsystem.PieceSeed) error
-	// get piece tasks from cdn
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
 }
 
@@ -64,6 +52,12 @@ type proxy struct {
 func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
+
+	peerAddr := "unknown"
+	if pe, ok := peer.FromContext(ctx); ok {
+		peerAddr = pe.Addr.String()
+	}
+	logger.Infof("trigger obtain seed for taskId:%s,url:%s,from:%s", sr.TaskId, sr.Url, peerAddr)
 
 	errChan := make(chan error, 10)
 	psc := make(chan *cdnsystem.PieceSeed, 4)
@@ -87,7 +81,7 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 	return
 }
 
-func (p *proxy) PullPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	return p.server.GetPieceTasks(ctx, ptr)
 }
 
@@ -110,18 +104,40 @@ func send(psc chan *cdnsystem.PieceSeed, closePsc func(), stream cdnsystem.Seede
 	})
 
 	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
+		errChan <- err
 	}
 }
 
 func call(ctx context.Context, psc chan *cdnsystem.PieceSeed, p *proxy, sr *cdnsystem.SeedRequest, errChan chan error) {
 	err := safe.Call(func() {
 		if err := p.server.ObtainSeeds(ctx, sr, psc); err != nil {
-			errChan <- rpc.ConvertServerError(err)
+			errChan <- err
 		}
 	})
 
 	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
+		errChan <- err
 	}
+}
+
+func StatSeedStart(taskId, url string) {
+	logger.StatSeedLogger.Info("trigger seed making",
+		zap.String("taskId", taskId),
+		zap.String("url", url),
+		zap.String("seederIp", dfnet.HostIp),
+		zap.String("seederName", dfnet.HostName))
+}
+
+func StatSeedFinish(taskId, url string, success bool, code base.Code, beginTime, endTime uint64, traffic, contentLength int64) {
+	logger.StatSeedLogger.Info("seed making finish",
+		zap.Bool("success", success),
+		zap.String("taskId", taskId),
+		zap.String("url", url),
+		zap.String("seederIp", dfnet.HostIp),
+		zap.String("seederName", dfnet.HostName),
+		zap.Uint64("beginTime", beginTime),
+		zap.Uint64("endTime", endTime),
+		zap.Int64("traffic", traffic),
+		zap.Int64("contentLength", contentLength),
+		zap.Int("code", int(code)))
 }

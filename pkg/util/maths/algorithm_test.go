@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package math
+package maths
 
 import (
 	"math/rand"

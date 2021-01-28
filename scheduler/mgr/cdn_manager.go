@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
@@ -39,10 +39,10 @@ func (cm *CDNManager) InitCDNClient() {
 		if len(cdns) < 1 {
 			continue
 		}
-		var addrs []basic.NetAddr
+		var addrs []dfnet.NetAddr
 		for i, cdn := range cdns {
-			addrs = append(addrs, basic.NetAddr{
-				Type: basic.TCP,
+			addrs = append(addrs, dfnet.NetAddr{
+				Type: dfnet.TCP,
 				Addr: fmt.Sprintf("%s:%d", cdn.IP, cdn.RpcPort),
 			})
 			cm.cdnInfoMap[cdn.CdnName] = &cdns[i]

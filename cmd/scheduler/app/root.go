@@ -37,8 +37,13 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		err := logger.InitScheduler()
+		if err != nil {
+			return errors.Wrap(err, "init scheduler logger")
+		}
+
 		// load config file.
-		if err := readConfigFile(schedulerViper, cmd); err != nil {
+		if err = readConfigFile(schedulerViper, cmd); err != nil {
 			return errors.Wrap(err, "read config file")
 		}
 

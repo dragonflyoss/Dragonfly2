@@ -93,12 +93,12 @@ func StringToFSize(fsize string) (Fsize, error) {
 		return Fsize(n), nil
 	}
 	if n < 0 {
-		return 0, errors.Wrapf(dferrors.ErrInvalidValue, "%s is not a negative value fsize", fsize)
+		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "%s is not a negative value fsize", fsize)
 	}
 
 	matches := fsizeRegex.FindStringSubmatch(fsize)
 	if len(matches) != 3 {
-		return 0, errors.Wrapf(dferrors.ErrInvalidValue, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
+		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
 	}
 	n, _ = strconv.Atoi(matches[1])
 	switch unit := matches[2]; {
@@ -111,7 +111,7 @@ func StringToFSize(fsize string) (Fsize, error) {
 	case unit == "B":
 		// Value already correct
 	default:
-		return 0, errors.Wrapf(dferrors.ErrInvalidValue, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
+		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
 	}
 	return Fsize(n), nil
 }

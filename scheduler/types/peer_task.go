@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"sync"
@@ -266,7 +267,7 @@ func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 	pkg = &scheduler.PeerPacket{
 		State:  &base.ResponseState{
 			Success: true,
-			Code: base.Code_SUCCESS,
+			Code: dfcodes.Success,
 		},
 		TaskId: pt.Task.TaskId,
 		// source peer id

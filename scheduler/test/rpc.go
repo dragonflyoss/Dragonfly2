@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
@@ -128,7 +129,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 				SrcPid:    "prc001",
 				PieceNum:  0,
 				Success:   true,
-				Code:      base.Code_SUCCESS,
+				Code:      dfcodes.Success,
 				BeginTime: uint64(time.Now().UnixNano() / int64(time.Millisecond)),
 				EndTime:   uint64(time.Now().UnixNano()/int64(time.Millisecond)) + uint64(rand.Int63n(1000)),
 			})
@@ -160,7 +161,7 @@ var _ = Describe("Scheduler RPC Test", func() {
 				Traffic:        20,
 				Cost:           20,
 				Success:        true,
-				Code:           base.Code_SUCCESS,
+				Code:           dfcodes.Success,
 			}
 			_, err := ss.ReportPeerResult(ctx, result)
 			if err != nil {

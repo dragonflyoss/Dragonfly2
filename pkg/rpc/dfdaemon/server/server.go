@@ -25,23 +25,11 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/peer"
 	"sync"
 )
 
 func init() {
-	logDir := "/var/log/dragonfly"
-
-	bizLogger := logger.CreateLogger(logDir+"/daemon.log", 100, 7, 14, false, false)
-	logger.SetBizLogger(bizLogger.Sugar())
-
-	grpcLogger := logger.CreateLogger(logDir+"/grpc.log", 100, 7, 14, false, false)
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	gcLogger := logger.CreateLogger(logDir+"/gc.log", 100, 3, 6, false, false)
-	logger.SetGcLogger(gcLogger.Sugar())
-
 	// set register with server implementation.
 	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
 		dfdaemon.RegisterDaemonServer(s, &proxy{server: impl.(DaemonServer)})
@@ -63,6 +51,12 @@ type DaemonServer interface {
 func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_DownloadServer) (err error) {
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
+
+	peerAddr := "unknown"
+	if pe, ok := peer.FromContext(ctx); ok {
+		peerAddr = pe.Addr.String()
+	}
+	logger.Infof("trigger download for url:%s,from:%s,uuid:%s", req.Url, peerAddr, req.Uuid)
 
 	errChan := make(chan error, 10)
 	drc := make(chan *dfdaemon.DownResult, 4)
@@ -114,18 +108,18 @@ func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon
 	})
 
 	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
+		errChan <- err
 	}
 }
 
 func call(ctx context.Context, drc chan *dfdaemon.DownResult, p *proxy, req *dfdaemon.DownRequest, errChan chan error) {
 	err := safe.Call(func() {
 		if err := p.server.Download(ctx, req, drc); err != nil {
-			errChan <- rpc.ConvertServerError(err)
+			errChan <- err
 		}
 	})
 
 	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
+		errChan <- err
 	}
 }

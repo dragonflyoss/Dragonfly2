@@ -127,6 +127,10 @@ func (w *Worker) ReceiveJob(peerTask *types.PeerTask) {
 	w.scheduleQueue.Add(peerTask)
 }
 
+func (w *Worker) sendJobLater(peerTask *types.PeerTask) {
+	mgr.GetPeerTaskManager().RefreshDownloadMonitor(peerTask)
+}
+
 func (w *Worker) doScheduleWorker() {
 	for {
 		job, shutdown := w.scheduleQueue.Get()
@@ -151,13 +155,17 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 
 	switch peerTask.GetNodeStatus() {
 	case types.PeerTaskStatusNeedParent:
-		_, _, err := w.scheduler.SchedulerParent(peerTask)
+		parent, _, err := w.scheduler.SchedulerParent(peerTask)
 		if err != nil {
 			logger.Debugf("[%s][%s]: schedule parent failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
-			return
 		}
-		w.sendScheduleResult(peerTask)
-		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+		// retry scheduler parent later when this is no parent
+		if parent == nil || err != nil {
+			w.sendJobLater(peerTask)
+		} else {
+			w.sendScheduleResult(peerTask)
+			peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+		}
 
 	case types.PeerTaskStatusNeedChildren:
 		children, err := w.scheduler.SchedulerChildren(peerTask)
@@ -166,7 +174,12 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 			return
 		}
 		for i := range children {
-			w.sendScheduleResult(children[i])
+			if children[i].GetParent() != nil {
+				w.sendScheduleResult(children[i])
+			} else {
+				children[i].SetNodeStatus(types.PeerTaskStatusNeedParent)
+				w.sendJob(children[i])
+			}
 		}
 		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
 
@@ -174,17 +187,27 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 		adjustNodes, err := w.scheduler.SchedulerBadNode(peerTask)
 		if err != nil {
 			logger.Debugf("[%s][%s]: schedule bad node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
+			w.sendJobLater(peerTask)
 			return
 		}
 		for i := range adjustNodes {
-			w.sendScheduleResult(adjustNodes[i])
+			if adjustNodes[i].GetParent() != nil {
+				w.sendScheduleResult(adjustNodes[i])
+			} else {
+				adjustNodes[i].SetNodeStatus(types.PeerTaskStatusNeedParent)
+				w.sendJob(adjustNodes[i])
+			}
 		}
-		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+		if peerTask.GetParent() == nil {
+			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
+			w.sendJobLater(peerTask)
+		}
 
 	case types.PeerTaskStatusNeedAdjustNode:
 		_, _, err := w.scheduler.SchedulerAdjustParentNode(peerTask)
 		if err != nil {
 			logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
+			w.sendJobLater(peerTask)
 			return
 		}
 		w.sendScheduleResult(peerTask)
@@ -195,10 +218,17 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 			adjustNodes, err := w.scheduler.SchedulerBadNode(peerTask)
 			if err != nil {
 				logger.Debugf("[%s][%s]: schedule bad node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
+				peerTask.SetNodeStatus(types.PeerTaskStatusBadNode)
+				w.sendJobLater(peerTask)
 				return
 			}
 			for i := range adjustNodes {
-				w.sendScheduleResult(adjustNodes[i])
+				if adjustNodes[i].GetParent() != nil {
+					w.sendScheduleResult(adjustNodes[i])
+				} else {
+					adjustNodes[i].SetNodeStatus(types.PeerTaskStatusNeedParent)
+					w.sendJob(adjustNodes[i])
+				}
 			}
 			peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
 		} else if w.scheduler.NeedAdjustParent(peerTask) {
@@ -215,6 +245,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 		parent, err := w.scheduler.SchedulerDone(peerTask)
 		if err != nil {
 			logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
+			w.sendJobLater(peerTask)
 			return
 		}
 		if parent != nil {
@@ -226,10 +257,16 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 		adjustNodes, err := w.scheduler.SchedulerLeaveNode(peerTask)
 		if err != nil {
 			logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
+			w.sendJobLater(peerTask)
 			return
 		}
 		for i := range adjustNodes {
-			w.sendScheduleResult(adjustNodes[i])
+			if adjustNodes[i].GetParent() != nil {
+				w.sendScheduleResult(adjustNodes[i])
+			} else {
+				adjustNodes[i].SetNodeStatus(types.PeerTaskStatusNeedParent)
+				w.sendJob(adjustNodes[i])
+			}
 		}
 	}
 	return

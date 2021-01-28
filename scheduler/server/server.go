@@ -1,8 +1,6 @@
 package server
 
 import (
-	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
@@ -28,22 +26,14 @@ func NewServer() *Server {
 }
 
 func (s *Server) Start() (err error) {
-	typ := basic.TCP
-	addr := fmt.Sprintf("%s:%d", config.GetConfig().Server.IP,
-		config.GetConfig().Server.Port)
+	port := config.GetConfig().Server.Port
 
-	if err != nil {
-		return
-	}
 	go s.worker.Start()
 	defer s.worker.Stop()
-	lisAddr := basic.NetAddr{
-		Type: typ,
-		Addr: addr,
-	}
+
 	s.running = true
-	logger.Infof("start server at %s:%s", typ, addr)
-	err = rpc.StartServer(lisAddr, s.server)
+	logger.Infof("start server at port %s", port)
+	err = rpc.StartTcpServer(port, port, s.server)
 	return
 }
 

@@ -26,33 +26,43 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var (
-	bizLogger      *zap.SugaredLogger
+	CoreLogger     *zap.SugaredLogger
 	GrpcLogger     *zap.SugaredLogger
 	GcLogger       *zap.SugaredLogger
 	StatPeerLogger *zap.Logger
 	StatSeedLogger *zap.Logger
 )
 
-var LogLevel = zap.NewAtomicLevel()
+var coreLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+var grpcLevel = zap.NewAtomicLevelAt(zapcore.WarnLevel)
+
+func SetCoreLevel(level zapcore.Level) {
+	coreLevel.SetLevel(level)
+}
+
+func SetGrpcLevel(level zapcore.Level) {
+	grpcLevel.SetLevel(level)
+}
 
 type SugaredLoggerOnWith struct {
 	withArgs []interface{}
 }
 
-func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, compress bool, stats bool) *zap.Logger {
+func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, compress bool, stats bool) (*zap.Logger, error) {
 	if os.Getenv(env.ActiveProfile) == "local" {
 		log, _ := zap.NewDevelopment(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
-		return log
+		return log, nil
 	}
 
 	var syncer zapcore.WriteSyncer
 
 	if maxAge < 0 || maxBackups < 0 {
 		if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
-			panic(err)
+			return nil, err
 		}
 		fileInfo, err := os.Stat(filePath)
 		if err == nil && fileInfo.Size() >= int64(maxSize*1024*1024) {
@@ -60,7 +70,7 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 			_ = os.Truncate(filePath, 0)
 		}
 		if syncer, _, err = zap.Open(filePath); err != nil {
-			panic(err)
+			return nil, err
 		}
 	} else {
 		rotateConfig := &lumberjack.Logger{
@@ -77,10 +87,17 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
 
+	level := zap.NewAtomicLevel()
+	if strings.HasSuffix(filePath, GrpcLogFileName) {
+		level = grpcLevel
+	} else if strings.HasSuffix(filePath, CoreLogFileName) {
+		level = coreLevel
+	}
+
 	core := zapcore.NewCore(
 		zapcore.NewJSONEncoder(encoderConfig),
 		syncer,
-		LogLevel,
+		level,
 	)
 
 	var opts []zap.Option
@@ -88,11 +105,11 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 		opts = append(opts, zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
 	}
 
-	return zap.New(core, opts...)
+	return zap.New(core, opts...), nil
 }
 
-func SetBizLogger(log *zap.SugaredLogger) {
-	bizLogger = log
+func SetCoreLogger(log *zap.SugaredLogger) {
+	CoreLogger = log
 }
 
 func SetGcLogger(log *zap.SugaredLogger) {
@@ -119,35 +136,35 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 }
 
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
-	bizLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
+	CoreLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
-	bizLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
+	CoreLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
-	bizLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
+	CoreLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
-	bizLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
+	CoreLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func Infof(template string, args ...interface{}) {
-	bizLogger.Infof(template, args...)
+	CoreLogger.Infof(template, args...)
 }
 
 func Warnf(template string, args ...interface{}) {
-	bizLogger.Warnf(template, args...)
+	CoreLogger.Warnf(template, args...)
 }
 
 func Errorf(template string, args ...interface{}) {
-	bizLogger.Errorf(template, args...)
+	CoreLogger.Errorf(template, args...)
 }
 
 func Debugf(template string, args ...interface{}) {
-	bizLogger.Debugf(template, args...)
+	CoreLogger.Debugf(template, args...)
 }
 
 type zapGrpc struct {
