@@ -331,6 +331,21 @@ type Proxy struct {
 	Redirect string `yaml:"redirect" json:"redirect"`
 }
 
+// NewProxy returns a new proxy rule with given attributes.
+func NewProxy(regx string, useHTTPS bool, direct bool, redirect string) (*Proxy, error) {
+	exp, err := NewRegexp(regx)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid regexp")
+	}
+
+	return &Proxy{
+		Regx:     exp,
+		UseHTTPS: useHTTPS,
+		Direct:   direct,
+		Redirect: redirect,
+	}, nil
+}
+
 // Match checks if the given url matches the rule.
 func (r *Proxy) Match(url string) bool {
 	return r.Regx != nil && r.Regx.MatchString(url)
