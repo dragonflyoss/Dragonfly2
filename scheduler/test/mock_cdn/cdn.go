@@ -30,6 +30,7 @@ type MockCDN struct {
 	hostId        string
 	finished      map[string]bool
 	cdnName       string
+	lock *sync.Mutex
 }
 
 func NewMockCDN(addr string, tl common.TestLogger) *MockCDN {
@@ -40,6 +41,7 @@ func NewMockCDN(addr string, tl common.TestLogger) *MockCDN {
 		pieceInfoList: make(map[string][]*base.PieceInfo),
 		finished:      make(map[string]bool),
 		cdnName:       "cdn",
+		lock: new(sync.Mutex),
 	}
 	return cdn
 }
@@ -70,6 +72,8 @@ func (mc *MockCDN) GetHostId() string {
 }
 
 func (mc *MockCDN) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	mc.lock.Lock()
+	defer mc.lock.Unlock()
 	pp := &base.PiecePacket{
 		TaskId:     ptr.TaskId,
 		PieceInfos: mc.pieceInfoList[ptr.TaskId],
@@ -101,7 +105,9 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 						ContentLength: 100,
 					}
 					psc <- ps
+					mc.lock.Lock()
 					mc.finished[taskId] = true
+					mc.lock.Unlock()
 					return
 				}
 				ps := &cdnsystem.PieceSeed{
@@ -112,7 +118,9 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 					SeederName: mc.addr,
 				}
 				psc <- ps
+				mc.lock.Lock()
 				mc.pieceInfoList[taskId] = append(mc.pieceInfoList[taskId], ps.PieceInfo)
+				mc.lock.Unlock()
 				time.Sleep(time.Millisecond * time.Duration(rand.Intn(1000)))
 				i--
 				pieceNum++

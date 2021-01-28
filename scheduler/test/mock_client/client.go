@@ -50,6 +50,7 @@ type IDownloadClient interface {
 
 type MockClient struct {
 	cli           client.SchedulerClient
+	lock *sync.Mutex
 	logger        common.TestLogger
 	replyChan     chan *scheduler.PieceResult
 	replyFinished chan struct{}
@@ -78,6 +79,7 @@ func NewMockClient(addr string, url string, group string, logger common.TestLogg
 	pid := atomic.AddInt32(clientNum[group], 1)
 	mc := &MockClient{
 		cli:           c,
+		lock: new(sync.Mutex),
 		pid:           fmt.Sprintf("%s%02d", group, pid),
 		url:           url,
 		logger:        logger,
@@ -108,6 +110,8 @@ func (mc *MockClient) GetStopChan() chan struct{} {
 }
 
 func (mc *MockClient) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	mc.lock.Lock()
+	defer mc.lock.Unlock()
 	return &base.PiecePacket{
 		TaskId:        mc.taskId,
 		TotalPiece:    mc.TotalPiece,
@@ -178,7 +182,9 @@ func (mc *MockClient) registerPeerTask() (err error) {
 		for {
 			resp := <-mc.out
 			if resp.MainPeer != nil {
+				mc.lock.Lock()
 				mc.parentId = resp.MainPeer.PeerId
+				mc.lock.Unlock()
 				logMsg := fmt.Sprintf("[%s] recieve a parent: %s", mc.pid, mc.parentId)
 				mc.logger.Log(logMsg)
 			} else {
@@ -231,7 +237,9 @@ func (mc *MockClient) downloadPieces() {
 			return
 		default:
 		}
+		mc.lock.Lock()
 		cli := GetClient(mc.parentId)
+		mc.lock.Unlock()
 		if cli == nil {
 			time.Sleep(time.Second)
 			continue

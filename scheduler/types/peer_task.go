@@ -90,6 +90,8 @@ func (pt *PeerTask) AddParent(parent *PeerTask, concurrency int8) {
 	if pt == nil || parent == nil {
 		return
 	}
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
 
 	pe := &PeerEdge{
 		SrcPeerTask: pt,     // child
@@ -117,6 +119,8 @@ func (pt *PeerTask) AddParent(parent *PeerTask, concurrency int8) {
 }
 
 func (pt *PeerTask) GetParent() *PeerEdge {
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
 	return pt.parent
 }
 
@@ -201,6 +205,8 @@ func (pt *PeerTask) Touch() {
 }
 
 func (pt *PeerTask) GetFinishedNum() int32 {
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
 	return pt.finishedNum
 }
 
@@ -353,6 +359,8 @@ func (pt *PeerTask) SetNodeStatus(status PeerTaskStatus) {
 }
 
 func (pt *PeerTask) IsWaiting() bool {
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
 	if pt == nil || pt.parent == nil || pt.parent.DstPeerTask == nil {
 		return false
 	}
