@@ -17,6 +17,8 @@
 package proxy
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -30,6 +32,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 )
 
 type Manager interface {
@@ -42,8 +45,10 @@ type proxyManager struct {
 	*Proxy
 }
 
-func NewProxyManager(registry *config.RegistryMirror, proxies []*config.Proxy, hijackHTTPS *config.HijackConfig, peerTaskManager peer.PeerTaskManager) (Manager, error) {
-	opts := []ProxyOption{
+func NewProxyManager(peerHost *scheduler.PeerHost, registry *config.RegistryMirror, proxies []*config.Proxy, hijackHTTPS *config.HijackConfig, peerTaskManager peer.PeerTaskManager) (Manager, error) {
+	options := []ProxyOption{
+		WithPeerHost(peerHost),
+		WithPeerTaskManager(peerTaskManager),
 		WithRules(proxies),
 		WithRegistryMirror(registry),
 	}
@@ -66,13 +71,18 @@ func NewProxyManager(registry *config.RegistryMirror, proxies []*config.Proxy, h
 	}
 
 	if hijackHTTPS != nil {
-		opts = append(opts, WithHTTPSHosts(hijackHTTPS.Hosts...))
+		options = append(options, WithHTTPSHosts(hijackHTTPS.Hosts...))
 		if hijackHTTPS.Cert != "" && hijackHTTPS.Key != "" {
-			opts = append(opts, WithCertFromFile(hijackHTTPS.Cert, hijackHTTPS.Key))
+			cert, err := certFromFile(hijackHTTPS.Cert, hijackHTTPS.Key)
+			if err != nil {
+				return nil, errors.Wrap(err, "cert from file")
+			}
+
+			options = append(options, WithCert(cert))
 		}
 	}
 
-	p, err := NewProxy(peerTaskManager, opts...)
+	p, err := NewProxy(options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "create proxy")
 	}
@@ -145,4 +155,18 @@ func getArgs(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
+}
+
+func certFromFile(certFile string, keyFile string) (*tls.Certificate, error) {
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "load cert")
+	}
+	logger.Infof("use self-signed certificate (%s, %s) for https hijacking", certFile, keyFile)
+	leaf, err := x509.ParseCertificate(cert.Certificate[0])
+	if err != nil {
+		return nil, errors.Wrap(err, "load leaf cert")
+	}
+	cert.Leaf = leaf
+	return &cert, nil
 }

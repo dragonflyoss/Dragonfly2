@@ -36,6 +36,9 @@ type FilePeerTaskRequest struct {
 // PeerTaskManager processes all peer tasks request
 type PeerTaskManager interface {
 	// StartFilePeerTask starts a peer task to download a file
+	// return a progress channel for request download progress
+	StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (
+		chan *PeerTaskProgress, error)
 	// StartStreamPeerTask starts a peer task with stream io for reading directly without once more disk io
 	StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (
 		reader io.Reader, attribute map[string]string, err error)

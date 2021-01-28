@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package proxy
+package transport
 
 import (
 	"crypto/tls"
@@ -23,8 +23,6 @@ import (
 	"net/http"
 	"regexp"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
@@ -40,42 +38,68 @@ var (
 // It uses http.fileTransport to serve requests that need to use dfget,
 // and uses http.Transport to serve the other requests.
 type DFRoundTripper struct {
-	Round           *http.Transport
-	ShouldUseDfget  func(req *http.Request) bool
+	// Round is an implementation of RoundTripper that supports HTTP
+	Round *http.Transport
+
+	// ShouldUseDfget is used to determine the use of dfget to download resources
+	ShouldUseDfget func(req *http.Request) bool
+
+	// peerTaskManager is the peer task manager
 	peerTaskManager peer.PeerTaskManager
+
+	// peerHost is the peer host info
+	peerHost *scheduler.PeerHost
 }
 
 // Option is functional config for DFRoundTripper.
-type DFRoundTripperOption func(rt *DFRoundTripper) error
+type DFRoundTripperOption func(rt *DFRoundTripper) *DFRoundTripper
+
+// WithHTTPSHosts sets the rules for hijacking https requests
+func WithPeerHost(peerHost *scheduler.PeerHost) DFRoundTripperOption {
+	return func(rt *DFRoundTripper) *DFRoundTripper {
+		rt.peerHost = peerHost
+		return rt
+	}
+}
+
+// WithHTTPSHosts sets the rules for hijacking https requests
+func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) DFRoundTripperOption {
+	return func(rt *DFRoundTripper) *DFRoundTripper {
+		rt.peerTaskManager = peerTaskManager
+		return rt
+	}
+}
 
 // WithTLS configures TLS config used for http transport.
 func WithTLS(cfg *tls.Config) DFRoundTripperOption {
-	return func(rt *DFRoundTripper) error {
+	return func(rt *DFRoundTripper) *DFRoundTripper {
 		rt.Round = defaultHTTPTransport(cfg)
-		return nil
+		return rt
 	}
 }
 
 // WithCondition configures how to decide whether to use dfget or not.
 func WithCondition(c func(r *http.Request) bool) DFRoundTripperOption {
-	return func(rt *DFRoundTripper) error {
+	return func(rt *DFRoundTripper) *DFRoundTripper {
 		rt.ShouldUseDfget = c
-		return nil
+		return rt
 	}
 }
 
 // New returns the default DFRoundTripper.
-func NewTransport(peerTaskManager peer.PeerTaskManager, opts ...DFRoundTripperOption) (*DFRoundTripper, error) {
+func NewDFRoundTripper(options ...DFRoundTripperOption) (*DFRoundTripper, error) {
+	return NewDFRoundTripperWithOptions(options...)
+}
+
+// NewDFRoundTripperWithOptions constructs a new instance of a DFRoundTripper with additional options.
+func NewDFRoundTripperWithOptions(options ...DFRoundTripperOption) (*DFRoundTripper, error) {
 	rt := &DFRoundTripper{
-		Round:           defaultHTTPTransport(nil),
-		ShouldUseDfget:  NeedUseGetter,
-		peerTaskManager: peerTaskManager,
+		Round:          defaultHTTPTransport(nil),
+		ShouldUseDfget: NeedUseGetter,
 	}
 
-	for _, opt := range opts {
-		if err := opt(rt); err != nil {
-			return nil, errors.Wrap(err, "apply options")
-		}
+	for _, opt := range options {
+		opt(rt)
 	}
 
 	return rt, nil
@@ -89,7 +113,7 @@ func (roundTripper *DFRoundTripper) RoundTrip(req *http.Request) (*http.Response
 		// result for different requests
 		req.Header.Del("Accept-Encoding")
 		logger.Debugf("round trip with dfget: %s", req.URL.String())
-		if res, err := roundTripper.download(req, req.URL.String()); err == nil {
+		if res, err := roundTripper.download(req); err == nil {
 			return res, err
 		}
 	}
@@ -101,15 +125,18 @@ func (roundTripper *DFRoundTripper) RoundTrip(req *http.Request) (*http.Response
 }
 
 // download uses dfget to download.
-func (roundTripper *DFRoundTripper) download(req *http.Request, urlString string) (*http.Response, error) {
-	url := req.URL.String()
-	logger.Infof("start download url:%s", url)
+func (roundTripper *DFRoundTripper) download(req *http.Request) (*http.Response, error) {
+	urlString := req.URL.String()
+	logger.Infof("start download url: %s", urlString)
 
 	r, _, err := roundTripper.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
 		&scheduler.PeerTaskRequest{
-			Url:   url,
+			Url:   urlString,
 			BizId: "d7s/dfget",
+			// TODO
+			PeerId:   "peerId",
+			PeerHost: roundTripper.peerHost,
 		},
 	)
 	if err != nil {
@@ -134,6 +161,7 @@ func defaultHTTPTransport(cfg *tls.Config) *http.Transport {
 	if cfg == nil {
 		cfg = &tls.Config{InsecureSkipVerify: true}
 	}
+
 	return &http.Transport{
 		DialContext: (&net.Dialer{
 			Timeout:   10 * time.Second,

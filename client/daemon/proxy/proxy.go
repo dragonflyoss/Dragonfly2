@@ -18,7 +18,6 @@ package proxy
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
 	"net"
@@ -29,7 +28,9 @@ import (
 
 	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
+	"github.com/dragonflyoss/Dragonfly2/client/daemon/transport"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/golang/groupcache/lru"
 	"github.com/pkg/errors"
 )
@@ -39,84 +40,104 @@ import (
 type Proxy struct {
 	// reverse proxy upstream url for the default registry
 	registry *config.RegistryMirror
+
 	// proxy rules
 	rules []*config.Proxy
+
 	// httpsHosts is the list of hosts whose https requests will be hijacked
 	httpsHosts []*config.HijackHost
+
 	// cert is the certificate used to hijack https proxy requests
 	cert *tls.Certificate
+
 	// certCache is a in-memory cache store for TLS certs used in HTTPS hijack. Lazy init.
 	certCache *lru.Cache
+
 	// directHandler are used to handle non proxy requests
 	directHandler http.Handler
+
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.PeerTaskManager
+
+	// peerHost is the peer host info
+	peerHost *scheduler.PeerHost
 }
 
 // Option is a functional option for configuring the proxy
-type ProxyOption func(p *Proxy) error
+type ProxyOption func(p *Proxy) *Proxy
+
+// WithHTTPSHosts sets the rules for hijacking https requests
+func WithPeerHost(peerHost *scheduler.PeerHost) ProxyOption {
+	return func(p *Proxy) *Proxy {
+		p.peerHost = peerHost
+		return p
+	}
+}
+
+// WithHTTPSHosts sets the rules for hijacking https requests
+func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) ProxyOption {
+	return func(p *Proxy) *Proxy {
+		p.peerTaskManager = peerTaskManager
+		return p
+	}
+}
 
 // WithHTTPSHosts sets the rules for hijacking https requests
 func WithHTTPSHosts(hosts ...*config.HijackHost) ProxyOption {
-	return func(p *Proxy) error {
+	return func(p *Proxy) *Proxy {
 		p.httpsHosts = hosts
-		return nil
+		return p
 	}
 }
 
 // WithRegistryMirror sets the registry mirror for the proxy
 func WithRegistryMirror(r *config.RegistryMirror) ProxyOption {
-	return func(p *Proxy) error {
+	return func(p *Proxy) *Proxy {
 		p.registry = r
-		return nil
+		return p
 	}
 }
 
 // WithCertFromFile is a convenient wrapper for WithCert, to read certificate from
 // the given file
-func WithCertFromFile(certFile, keyFile string) ProxyOption {
-	return func(p *Proxy) error {
-		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-		if err != nil {
-			return errors.Wrap(err, "load cert")
-		}
-		logger.Infof("use self-signed certificate (%s, %s) for https hijacking", certFile, keyFile)
-		leaf, err := x509.ParseCertificate(cert.Certificate[0])
-		if err != nil {
-			return errors.Wrap(err, "load leaf cert")
-		}
-		cert.Leaf = leaf
-		p.cert = &cert
-		return nil
+func WithCert(cert *tls.Certificate) ProxyOption {
+	return func(p *Proxy) *Proxy {
+		p.cert = cert
+		return p
 	}
 }
 
 // WithDirectHandler sets the handler for non-proxy requests
 func WithDirectHandler(h *http.ServeMux) ProxyOption {
-	return func(p *Proxy) error {
+	return func(p *Proxy) *Proxy {
 		// Make sure the root handler of the given server mux is the
 		// registry mirror reverse proxy
 		h.HandleFunc("/", p.mirrorRegistry)
 		p.directHandler = h
-		return nil
+		return p
 	}
 }
 
 // WithRules sets the proxy rules
 func WithRules(rules []*config.Proxy) ProxyOption {
-	return func(p *Proxy) error { return p.setRules(rules) }
+	return func(p *Proxy) *Proxy {
+		p.rules = rules
+		return p
+	}
 }
 
 // NewFromConfig returns a new transparent proxy from the given properties
-func NewProxy(peerTaskManager peer.PeerTaskManager, opts ...ProxyOption) (*Proxy, error) {
+func NewProxy(options ...ProxyOption) (*Proxy, error) {
+	return NewProxyWithOptions(options...)
+}
+
+// NewProxyWithOptions constructs a new instance of a Proxy with additional options.
+func NewProxyWithOptions(options ...ProxyOption) (*Proxy, error) {
 	proxy := &Proxy{
-		directHandler:   http.NewServeMux(),
-		peerTaskManager: peerTaskManager,
+		directHandler: http.NewServeMux(),
 	}
-	for _, opt := range opts {
-		if err := opt(proxy); err != nil {
-			return nil, errors.Wrap(err, "apply options")
-		}
+	for _, opt := range options {
+		opt(proxy)
 	}
 
 	return proxy, nil
@@ -162,7 +183,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Debugln("hijack https request to", r.Host)
+	logger.Debugf("hijack https request to %s", r.Host)
 
 	sConfig := new(tls.Config)
 	if proxy.cert.Leaf != nil && proxy.cert.Leaf.IsCA {
@@ -231,20 +252,22 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (proxy *Proxy) roundTripper(tlsConfig *tls.Config) http.RoundTripper {
-	rt, _ := NewTransport(
-		proxy.peerTaskManager,
-		WithTLS(tlsConfig),
-		WithCondition(proxy.shouldUseDfget),
+	rt, _ := transport.NewDFRoundTripper(
+		transport.WithPeerHost(proxy.peerHost),
+		transport.WithPeerTaskManager(proxy.peerTaskManager),
+		transport.WithTLS(tlsConfig),
+		transport.WithCondition(proxy.shouldUseDfget),
 	)
 	return rt
 }
 
 func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 	reverseProxy := httputil.NewSingleHostReverseProxy(proxy.registry.Remote.URL)
-	t, err := NewTransport(
-		proxy.peerTaskManager,
-		WithTLS(proxy.registry.TLSConfig()),
-		WithCondition(proxy.shouldUseDfgetForMirror),
+	t, err := transport.NewDFRoundTripper(
+		transport.WithPeerHost(proxy.peerHost),
+		transport.WithPeerTaskManager(proxy.peerTaskManager),
+		transport.WithTLS(proxy.registry.TLSConfig()),
+		transport.WithCondition(proxy.shouldUseDfgetForMirror),
 	)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get transport: %v", err), http.StatusInternalServerError)

@@ -187,7 +187,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 		return nil, err
 	}
 
-	proxyManager, err := proxy.NewProxyManager(opt.Proxy.RegistryMirror, opt.Proxy.Proxies, opt.Proxy.HijackHTTPS, peerTaskManager)
+	proxyManager, err := proxy.NewProxyManager(host, opt.Proxy.RegistryMirror, opt.Proxy.Proxies, opt.Proxy.HijackHTTPS, peerTaskManager)
 	if err != nil {
 		return nil, err
 	}
@@ -311,6 +311,13 @@ func (ph *peerHost) Serve() error {
 	}
 	ph.schedPeerHost.RpcPort = int32(peerPort)
 
+	// prepare peer service listen
+	proxyListener, proxyPort, err := ph.prepareTCPListener(*ph.Option.Proxy.ListenOption, true)
+	if err != nil {
+		logger.Errorf("failed to listen for proxy service: %v", err)
+		return err
+	}
+
 	// prepare upload service listen
 	uploadListener, uploadPort, err := ph.prepareTCPListener(ph.Option.Upload.ListenOption, true)
 	if err != nil {
@@ -341,22 +348,14 @@ func (ph *peerHost) Serve() error {
 	})
 
 	// serve proxy service
-	if ph.Option.Proxy != nil {
-		g.Go(func() error {
-			listener, port, err := ph.prepareTCPListener(*ph.Option.Proxy.ListenOption, true)
-			if err != nil {
-				logger.Errorf("failed to listen for proxy service: %v", err)
-				return err
-			}
-
-			logger.Infof("serve proxy at tcp://%s:%d", ph.Option.Proxy.TCPListen.Listen, port)
-			if err = ph.ProxyManager.Serve(listener); err != nil {
-				logger.Errorf("failed to serve for proxy service: %v", err)
-				return err
-			}
-			return nil
-		})
-	}
+	g.Go(func() error {
+		logger.Infof("serve proxy at tcp://%s:%d", ph.Option.Proxy.TCPListen.Listen, proxyPort)
+		if err = ph.ProxyManager.Serve(proxyListener); err != nil {
+			logger.Errorf("failed to serve for proxy service: %v", err)
+			return err
+		}
+		return nil
+	})
 
 	// serve upload service
 	g.Go(func() error {
