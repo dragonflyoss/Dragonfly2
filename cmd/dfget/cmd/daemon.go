@@ -83,7 +83,7 @@ func runDaemon() error {
 
 	pid, err := pidfile.New(flagDaemonOpt.pidFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("check pid failed: %s, please check %s", err, flagDaemonOpt.pidFile)
 	}
 	defer pid.Remove()
 
@@ -103,7 +103,7 @@ func runDaemon() error {
 	if ip == "" || ip == "0.0.0.0" {
 		return fmt.Errorf("unable to autodetect peer ip for scheduler, please set it via --advertise-ip")
 	}
-	logger.Infof("peer ip: %s", ip)
+	logger.Infof("use %s as peer ip", ip)
 
 	host := &scheduler.PeerHost{
 		Uuid:           uuid.New().String(),
@@ -204,9 +204,6 @@ func setupSignalHandler(ph daemon.PeerHost) {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	// This goroutine executes a blocking receive for
-	// signals. When it gets one it'll print it out
-	// and then notify the program that it can finish.
 	go func() {
 		var done bool
 		for {

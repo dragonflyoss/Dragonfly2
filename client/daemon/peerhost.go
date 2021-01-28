@@ -306,7 +306,7 @@ func (ph *peerHost) Serve() error {
 	// serve download grpc service
 	g.Go(func() error {
 		logger.Infof("serve download grpc at unix://%s", ph.Option.Server.DownloadGRPC.UnixListen.Socket)
-		if err = ph.ServiceManager.ServeDownload(downloadListener); err != nil {
+		if err := ph.ServiceManager.ServeDownload(downloadListener); err != nil {
 			logger.Errorf("failed to serve for download grpc service: %v", err)
 			return err
 		}
@@ -316,7 +316,7 @@ func (ph *peerHost) Serve() error {
 	// serve peer grpc service
 	g.Go(func() error {
 		logger.Infof("serve peer grpc at %s://%s", peerListener.Addr().Network(), peerListener.Addr().String())
-		if err = ph.ServiceManager.ServePeer(peerListener); err != nil {
+		if err := ph.ServiceManager.ServePeer(peerListener); err != nil {
 			logger.Errorf("failed to serve for peer grpc service: %v", err)
 			return err
 		}
@@ -344,8 +344,7 @@ func (ph *peerHost) Serve() error {
 	// serve upload service
 	g.Go(func() error {
 		logger.Infof("serve upload service at %s://%s", uploadListener.Addr().Network(), uploadListener.Addr().String())
-		ph.schedPeerHost.DownPort = int32(uploadPort)
-		if err = ph.UploadManager.Serve(uploadListener); err != nil && err != http.ErrServerClosed {
+		if err := ph.UploadManager.Serve(uploadListener); err != nil && err != http.ErrServerClosed {
 			logger.Errorf("failed to serve for upload service: %v", err)
 			return err
 		} else if err == http.ErrServerClosed {

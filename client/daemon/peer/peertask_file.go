@@ -116,7 +116,7 @@ func NewFilePeerTask(ctx context.Context,
 		doneOnce:           sync.Once{},
 		bitmap:             NewBitmap(),
 		lock:               &sync.Mutex{},
-		log:                logger.With("peer", request.PeerId, "task", result.TaskId),
+		log:                logger.With("peer", request.PeerId, "task", result.TaskId, "component", "filePeerTask"),
 		failedPieceCh:      make(chan int32, 4),
 		progressCh:         make(chan *PeerTaskProgress),
 	}, nil
@@ -136,7 +136,7 @@ func (pt *filePeerTask) GetContentLength() int64 {
 
 func (pt *filePeerTask) Start(ctx context.Context) (chan *PeerTaskProgress, error) {
 	go pt.receivePeerPacket()
-	go pt.pullPiecesFromPeers(pt)
+	go pt.pullPiecesFromPeers(pt, pt.cleanUnfinished)
 	// return a progress channel for request download progress
 	return pt.progressCh, nil
 }
@@ -164,23 +164,34 @@ WaitScheduler:
 			break
 		}
 		if peerPacket == nil {
-			pt.log.Warnf("scheduler piece client send nil PeerPacket")
+			pt.log.Warnf("scheduler client send nil PeerPacket")
+			continue
+		}
+		pt.log.Debugf("receive peer packet: %#v", peerPacket)
+		if peerPacket.MainPeer == nil && peerPacket.StealPeers == nil {
+			pt.log.Warnf("scheduler client send a PeerPacket will empty peers")
 			continue
 		}
 		pt.peerPacket = peerPacket
 		pt.pieceParallelCount = pt.peerPacket.ParallelCount
 
-		// use close to avoid waiting
-		//close(pt.peerClientReady)
-		//pt.peerClientReady = make(chan bool)
-		pt.peerClientReady <- true
+		select {
+		case pt.peerClientReady <- true:
+		case <-pt.ctx.Done():
+			pt.log.Debugf("context done due to %s", pt.ctx.Err())
+			break WaitScheduler
+		case <-pt.done:
+			pt.log.Infof("peer task done, stop wait peer packet from scheduler")
+			break WaitScheduler
+		default:
+		}
 	}
 	close(pt.peerClientReady)
 }
 
 // TODO when main peer is not available, switch to steel peers
 // piece manager need peer task interface, pti make it compatibility for stream peer task
-func (pt *filePeerTask) pullPiecesFromPeers(pti PeerTask) {
+func (pt *filePeerTask) pullPiecesFromPeers(pti PeerTask, cleanFunc func()) {
 	// wait available peer daemon
 	<-pt.peerClientReady
 	var (
@@ -241,6 +252,9 @@ getPiecesTasks:
 		}
 		pt.pieceManager.PullPieces(pti, piecePacket)
 	}
+	close(pt.failedPieceCh)
+
+	cleanFunc()
 }
 
 func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
@@ -372,4 +386,28 @@ func (pt *filePeerTask) finish() error {
 		close(pt.progressCh)
 	})
 	return err
+}
+
+func (pt *filePeerTask) cleanUnfinished() {
+	// send last progress
+	pt.doneOnce.Do(func() {
+		// send EOF piece result to scheduler
+		pt.schedPieceResultCh <- scheduler.NewEndPieceResult(pt.bitmap.Settled(), pt.taskId, pt.peerId)
+		pt.log.Debugf("end piece result sent")
+
+		pt.progressCh <- &PeerTaskProgress{
+			State: &base.ResponseState{
+				Success: false,
+				Code:    base.Code_CLIENT_ERROR,
+				Msg:     "",
+			},
+			TaskId:          pt.taskId,
+			PeerID:          pt.peerId,
+			ContentLength:   pt.contentLength,
+			CompletedLength: pt.completedLength,
+			Done:            true,
+		}
+		close(pt.done)
+		close(pt.progressCh)
+	})
 }

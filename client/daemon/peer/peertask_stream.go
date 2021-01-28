@@ -61,7 +61,7 @@ func NewStreamPeerTask(ctx context.Context,
 			doneOnce:           sync.Once{},
 			bitmap:             NewBitmap(),
 			lock:               &sync.Mutex{},
-			log:                logger.With("peer", request.PeerId, "task", result.TaskId),
+			log:                logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 			failedPieceCh:      make(chan int32, 4),
 		},
 		successPieceCh: make(chan int32, 4),
@@ -127,7 +127,7 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 
 func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]string, error) {
 	go s.base.receivePeerPacket()
-	go s.base.pullPiecesFromPeers(s)
+	go s.base.pullPiecesFromPeers(s, s.cleanUnfinished)
 	r, w := io.Pipe()
 	go func() {
 		var (
@@ -202,6 +202,16 @@ func (s *streamPeerTask) finish() error {
 		close(s.base.done)
 	})
 	return err
+}
+
+func (s *streamPeerTask) cleanUnfinished() {
+	// send last progress
+	s.base.doneOnce.Do(func() {
+		// send EOF piece result to scheduler
+		s.base.schedPieceResultCh <- scheduler.NewEndPieceResult(s.base.bitmap.Settled(), s.base.taskId, s.base.peerId)
+		s.base.log.Debugf("end piece result sent")
+		close(s.base.done)
+	})
 }
 
 func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {

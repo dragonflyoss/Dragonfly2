@@ -36,8 +36,10 @@ func IsProcessExistsByPIDFile(path string) (bool, error) {
 
 // New creates a PIDfile using the specified path.
 func New(path string) (*PIDFile, error) {
-	if ok, err := IsProcessExistsByPIDFile(path); ok || err != nil {
-		return nil, fmt.Errorf("process already exists or with error %v", err)
+	if ok, err := IsProcessExistsByPIDFile(path); ok {
+		return nil, fmt.Errorf("process already exists")
+	} else if err != nil {
+		return nil, err
 	}
 	// Note MkdirAll returns nil if a directory already exists
 	if err := os.MkdirAll(filepath.Dir(path), os.FileMode(0755)); err != nil {
