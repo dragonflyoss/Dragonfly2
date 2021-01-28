@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 
+	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
@@ -135,6 +136,9 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 	if err != nil {
 		return nil, fmt.Errorf("upload rate %q parse error: %s", flagDaemonOpt.uploadRate, err)
 	}
+
+	exp, _ := config.NewRegexp("blobs/sha256.*")
+
 	option := &daemon.PeerHostOption{
 		AliveTime:   flagDaemonOpt.daemonAliveTime,
 		GCInterval:  flagDaemonOpt.gcInterval,
@@ -170,8 +174,31 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 					},
 				},
 			},
+		},
+		Proxy: &daemon.ProxyOption{
+			ListenOption: &daemon.ListenOption{
+				// TODO
+				Security: daemon.SecurityOption{
+					Insecure: true,
+				},
+				TCPListen: &daemon.TCPListenOption{
+					Listen: flagDaemonOpt.listenIP.String(),
+					PortRange: daemon.TCPListenPortRange{
+						Start: flagDaemonOpt.proxyPort,
+						End:   flagDaemonOpt.proxyPortEnd,
+					},
+				},
+			},
 			// TODO
-			Proxy: nil,
+			RegistryMirror: &config.RegistryMirror{
+				Insecure: false,
+			},
+			Proxies: []*config.Proxy{
+				{
+					Regx: exp,
+				},
+			},
+			HijackHTTPS: nil,
 		},
 		Upload: daemon.UploadOption{
 			ListenOption: daemon.ListenOption{

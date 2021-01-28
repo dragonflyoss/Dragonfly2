@@ -18,18 +18,22 @@
 package config
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"gopkg.in/gcfg.v1"
 	"gopkg.in/warnings.v0"
 
@@ -38,6 +42,8 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 )
+
+var fs = afero.NewOsFs()
 
 // GlobalConfig holds all configurable config.
 // Properties holds all configurable Properties.
@@ -82,6 +88,19 @@ type GlobalConfig struct {
 	// WorkHome work home path,
 	// default: `$HOME/.small-dragonfly`.
 	WorkHome string `yaml:"workHome" json:"workHome,omitempty"`
+
+	// Registry mirror settings
+	RegistryMirror *RegistryMirror `yaml:"registry_mirror" json:"registry_mirror"`
+
+	// Proxies is the list of rules for the transparent proxy. If no rules
+	// are provided, all requests will be proxied directly. Request will be
+	// proxied with the first matching rule.
+	Proxies []*Proxy `yaml:"proxies" json:"proxies"`
+
+	// HijackHTTPS is the list of hosts whose https requests should be hijacked
+	// by dfdaemon. Dfdaemon will be able to proxy requests from them with dfget
+	// if the url matches the proxy rules. The first matched rule will be used.
+	HijackHTTPS *HijackConfig `yaml:"hijack_https" json:"hijack_https"`
 }
 
 // NewGlobalConfig creates a new GlobalConfig with default values.
@@ -144,6 +163,238 @@ func (p *GlobalConfig) fileType(path string) string {
 	default:
 		return v
 	}
+}
+
+// RegistryMirror configures the mirror of the official docker registry
+type RegistryMirror struct {
+	// Remote url for the registry mirror, default is https://index.docker.io
+	Remote *URL `yaml:"remote" json:"remote"`
+
+	// Optional certificates if the mirror uses self-signed certificates
+	Certs *CertPool `yaml:"certs" json:"certs"`
+
+	// Whether to ignore certificates errors for the registry
+	Insecure bool `yaml:"insecure" json:"insecure"`
+
+	// Request the remote registry directly.
+	Direct bool `yaml:"direct" json:"direct"`
+}
+
+// TLSConfig returns the tls.Config used to communicate with the mirror.
+func (r *RegistryMirror) TLSConfig() *tls.Config {
+	if r == nil {
+		return nil
+	}
+
+	cfg := &tls.Config{
+		InsecureSkipVerify: r.Insecure,
+	}
+
+	if r.Certs != nil {
+		cfg.RootCAs = r.Certs.CertPool
+	}
+
+	return cfg
+}
+
+// HijackConfig represents how dfdaemon hijacks http requests.
+type HijackConfig struct {
+	Cert  string        `yaml:"cert" json:"cert"`
+	Key   string        `yaml:"key" json:"key"`
+	Hosts []*HijackHost `yaml:"hosts" json:"hosts"`
+}
+
+// HijackHost is a hijack rule for the hosts that matches Regx.
+type HijackHost struct {
+	Regx     *regexp.Regexp `yaml:"regx" json:"regx"`
+	Insecure bool           `yaml:"insecure" json:"insecure"`
+	Certs    *CertPool      `yaml:"certs" json:"certs"`
+}
+
+// URL is simple wrapper around url.URL to make it unmarshallable from a string.
+type URL struct {
+	*url.URL
+}
+
+// NewURL parses url from the given string.
+func NewURL(s string) (*URL, error) {
+	u, err := url.Parse(s)
+	if err != nil {
+		return nil, err
+	}
+
+	return &URL{u}, nil
+}
+
+// UnmarshalYAML implements yaml.Unmarshaller.
+func (u *URL) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return u.unmarshal(unmarshal)
+}
+
+// UnmarshalJSON implements json.Unmarshaller.
+func (u *URL) UnmarshalJSON(b []byte) error {
+	return u.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
+}
+
+func (u *URL) unmarshal(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+
+	parsed, err := url.Parse(s)
+	if err != nil {
+		return err
+	}
+
+	u.URL = parsed
+	return nil
+}
+
+// MarshalJSON implements json.Marshaller to print the url.
+func (u *URL) MarshalJSON() ([]byte, error) {
+	return json.Marshal(u.String())
+}
+
+// MarshalYAML implements yaml.Marshaller to print the url.
+func (u *URL) MarshalYAML() (interface{}, error) {
+	return u.String(), nil
+}
+
+// CertPool is a wrapper around x509.CertPool, which can be unmarshalled and
+// constructed from a list of filenames.
+type CertPool struct {
+	Files []string
+	*x509.CertPool
+}
+
+// UnmarshalYAML implements yaml.Unmarshaller.
+func (cp *CertPool) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return cp.unmarshal(unmarshal)
+}
+
+// UnmarshalJSON implements json.Unmarshaller.
+func (cp *CertPool) UnmarshalJSON(b []byte) error {
+	return cp.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
+}
+
+func (cp *CertPool) unmarshal(unmarshal func(interface{}) error) error {
+	if err := unmarshal(&cp.Files); err != nil {
+		return err
+	}
+
+	pool, err := certPoolFromFiles(cp.Files...)
+	if err != nil {
+		return err
+	}
+
+	cp.CertPool = pool
+	return nil
+}
+
+// MarshalJSON implements json.Marshaller to print the cert pool.
+func (cp *CertPool) MarshalJSON() ([]byte, error) {
+	return json.Marshal(cp.Files)
+}
+
+// MarshalYAML implements yaml.Marshaller to print the cert pool.
+func (cp *CertPool) MarshalYAML() (interface{}, error) {
+	return cp.Files, nil
+}
+
+// certPoolFromFiles returns an *x509.CertPool constructed from the given files.
+// If no files are given, (nil, nil) will be returned.
+func certPoolFromFiles(files ...string) (*x509.CertPool, error) {
+	if len(files) == 0 {
+		return nil, nil
+	}
+
+	roots := x509.NewCertPool()
+	for _, f := range files {
+		cert, err := afero.ReadFile(fs, f)
+		if err != nil {
+			return nil, errors.Wrapf(err, "read cert file %s", f)
+		}
+		if !roots.AppendCertsFromPEM(cert) {
+			return nil, errors.Errorf("invalid cert: %s", f)
+		}
+	}
+	return roots, nil
+}
+
+// Proxy describes a regular expression matching rule for how to proxy a request.
+type Proxy struct {
+	Regx     *Regexp `yaml:"regx" json:"regx"`
+	UseHTTPS bool    `yaml:"use_https" json:"use_https"`
+	Direct   bool    `yaml:"direct" json:"direct"`
+	// Redirect is the host to redirect to, if not empty
+	Redirect string `yaml:"redirect" json:"redirect"`
+}
+
+// NewProxy returns a new proxy rule with given attributes.
+func NewProxy(regx string, useHTTPS bool, direct bool, redirect string) (*Proxy, error) {
+	exp, err := NewRegexp(regx)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid regexp")
+	}
+
+	return &Proxy{
+		Regx:     exp,
+		UseHTTPS: useHTTPS,
+		Direct:   direct,
+		Redirect: redirect,
+	}, nil
+}
+
+// Match checks if the given url matches the rule.
+func (r *Proxy) Match(url string) bool {
+	return r.Regx != nil && r.Regx.MatchString(url)
+}
+
+// Regexp is a simple wrapper around regexp. Regexp to make it unmarshallable from a string.
+type Regexp struct {
+	*regexp.Regexp
+}
+
+// NewRegexp returns a new Regexp instance compiled from the given string.
+func NewRegexp(exp string) (*Regexp, error) {
+	r, err := regexp.Compile(exp)
+	if err != nil {
+		return nil, err
+	}
+	return &Regexp{r}, nil
+}
+
+// UnmarshalYAML implements yaml.Unmarshaller.
+func (r *Regexp) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return r.unmarshal(unmarshal)
+}
+
+// UnmarshalJSON implements json.Unmarshaller.
+func (r *Regexp) UnmarshalJSON(b []byte) error {
+	return r.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
+}
+
+func (r *Regexp) unmarshal(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	exp, err := regexp.Compile(s)
+	if err == nil {
+		r.Regexp = exp
+	}
+	return err
+}
+
+// MarshalJSON implements json.Marshaller to print the regexp.
+func (r *Regexp) MarshalJSON() ([]byte, error) {
+	return json.Marshal(r.String())
+}
+
+// MarshalYAML implements yaml.Marshaller to print the regexp.
+func (r *Regexp) MarshalYAML() (interface{}, error) {
+	return r.String(), nil
 }
 
 // Config holds all the runtime config information.
@@ -273,7 +524,7 @@ func NewConfig() *Config {
 		StartTime:        time.Now(),
 		PeerID:           uuid.New().String(),
 		User:             currentUser.Username,
-		ConfigFiles:      []string{DefaultYamlConfigFile, DefaultIniConfigFile},
+		ConfigFiles:      []string{ProxyYamlConfigFile, DefaultYamlConfigFile, DefaultIniConfigFile},
 		RV:               RuntimeVariable{},
 		BackSourceReason: 0,
 	}
