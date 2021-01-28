@@ -60,7 +60,7 @@ func init() {
 					if time.Now().Sub(value.(time.Time))/time.Second >= 10 {
 						if v, loaded := pieceTaskPuller.clients.LoadAndDelete(key); loaded {
 							err := reflect.ValueOf(v).MethodByName("Close").Call([]reflect.Value{})
-							if err != nil && logger.BizLogger != nil {
+							if err != nil && logger.CoreLogger != nil {
 								logger.Errorf("close client connected to %v error:%v on piece task puller", key, err)
 							}
 						}
