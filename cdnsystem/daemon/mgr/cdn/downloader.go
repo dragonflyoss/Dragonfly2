@@ -18,7 +18,6 @@ package cdn
 
 import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/httputils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/maputils"
@@ -36,7 +35,7 @@ func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (*t
 	if detectResult.breakNum > 0 {
 		breakRange, err := rangeutils.CalculateBreakRange(detectResult.breakNum, task.PieceSize, task.SourceFileLength)
 		if err != nil {
-			return nil, errors.Wrapf(dferrors.ErrInvalidValue, "failed to calculate the breakRange: %v", err)
+			return nil, errors.Wrapf(err, "failed to calculate the breakRange")
 		}
 		// check if Range in header? if Range already in Header, priority use this range
 		if !hasRange(headers) {
