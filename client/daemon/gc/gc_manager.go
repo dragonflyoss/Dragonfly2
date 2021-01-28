@@ -60,7 +60,7 @@ func (g gcManager) Start() {
 					log.Debugf("start gc")
 					_, err := gc.TryGC()
 					if err != nil {
-						log.Errorf("gc error: %s", name, err)
+						log.Errorf("gc %s error: %s", name, err)
 					}
 					log.Debugf("gc done")
 				}

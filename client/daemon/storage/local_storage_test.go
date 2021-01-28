@@ -108,7 +108,7 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 
 	// random put all pieces
 	for _, p := range pieces {
-		err = ts.WritePiece(context.Background(), &WritePieceRequest{
+		_, err = ts.WritePiece(context.Background(), &WritePieceRequest{
 			PeerTaskMetaData: PeerTaskMetaData{
 				TaskID: taskID,
 			},
@@ -185,12 +185,14 @@ func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 	assert.Nil(err, "open test meta data")
 	defer matadata.Close()
 	ts := localTaskStore{
-		RWMutex: &sync.RWMutex{},
+		SugaredLoggerOnWith: logger.With("test", "localTaskStore"),
 		persistentMetadata: persistentMetadata{
 			TaskID: "test",
 		},
+		RWMutex:      &sync.RWMutex{},
 		dataDir:      test.DataDir,
 		metadataFile: matadata,
+		lastAccess:   time.Time{},
 	}
 	err = ts.Store(context.Background(), &StoreRequest{
 		TaskID:      ts.TaskID,
@@ -269,7 +271,7 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 
 	// random put all pieces
 	for _, p := range pieces {
-		err = ts.WritePiece(context.Background(), &WritePieceRequest{
+		_, err = ts.WritePiece(context.Background(), &WritePieceRequest{
 			PeerTaskMetaData: PeerTaskMetaData{
 				TaskID: taskID,
 			},

@@ -8,6 +8,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	net "net"
 	reflect "reflect"
+	time "time"
 )
 
 // MockManager is a mock of Manager interface
@@ -31,6 +32,32 @@ func NewMockManager(ctrl *gomock.Controller) *MockManager {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
+}
+
+// Keep mocks base method
+func (m *MockManager) Keep() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Keep")
+}
+
+// Keep indicates an expected call of Keep
+func (mr *MockManagerMockRecorder) Keep() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Keep", reflect.TypeOf((*MockManager)(nil).Keep))
+}
+
+// Alive mocks base method
+func (m *MockManager) Alive(alive time.Duration) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Alive", alive)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Alive indicates an expected call of Alive
+func (mr *MockManagerMockRecorder) Alive(alive interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Alive", reflect.TypeOf((*MockManager)(nil).Alive), alive)
 }
 
 // ServeDownload mocks base method
@@ -76,11 +103,9 @@ func (mr *MockManagerMockRecorder) ServeProxy(listener interface{}) *gomock.Call
 }
 
 // Stop mocks base method
-func (m *MockManager) Stop() error {
+func (m *MockManager) Stop() {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stop")
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "Stop")
 }
 
 // Stop indicates an expected call of Stop

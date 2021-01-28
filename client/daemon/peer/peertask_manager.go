@@ -28,10 +28,6 @@ import (
 	schedulerclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/client"
 )
 
-type FilePeerTaskRequest struct {
-	scheduler.PeerTaskRequest
-	Output string
-}
 
 // PeerTaskManager processes all peer tasks request
 type PeerTaskManager interface {

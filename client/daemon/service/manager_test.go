@@ -14,6 +14,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	mock_peer "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/peer"
 	mock_storage "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/storage"
+	"github.com/dragonflyoss/Dragonfly2/client/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
@@ -58,6 +59,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 			return ch, nil
 		})
 	m := &manager{
+		KeepAlive:       util.NewKeepAlive("test"),
 		peerHost:        &scheduler.PeerHost{},
 		peerTaskManager: mockPeerTaskManager,
 	}
@@ -87,7 +89,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 
 	var result *dfdaemongrpc.DownResult
 	for result = range down {
-		assert.Equal(result.GetState().Success, true)
+		assert.Equal(true, result.GetState().Success)
 	}
 	assert.NotNil(result)
 	assert.True(result.Done)
@@ -131,6 +133,7 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 		}, nil
 	})
 	m := &manager{
+		KeepAlive:      util.NewKeepAlive("test"),
 		peerHost:       &scheduler.PeerHost{},
 		storageManager: mockStorageManger,
 	}

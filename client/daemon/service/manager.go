@@ -32,6 +32,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	dfdaemongrpc "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
+	dfdaemonserver "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 )
 
@@ -53,6 +54,8 @@ type manager struct {
 	peerServer     rpc.Server
 	uploadAddr     string
 }
+
+var _ dfdaemonserver.DaemonServer = &manager{}
 
 func NewManager(peerHost *scheduler.PeerHost, peerTaskManager peer.PeerTaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Manager, error) {
 	mgr := &manager{

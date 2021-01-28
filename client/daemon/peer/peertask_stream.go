@@ -49,21 +49,22 @@ func NewStreamPeerTask(ctx context.Context,
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 	return &streamPeerTask{
 		base: filePeerTask{
-			ctx:                ctx,
-			host:               host,
-			schedPieceResultCh: schedPieceResultCh,
-			schedPeerPacketCh:  schedPeerPacketCh,
-			pieceManager:       pieceManager,
-			peerClientReady:    make(chan bool),
-			peerId:             request.PeerId,
-			taskId:             result.TaskId,
-			done:               make(chan struct{}),
-			doneOnce:           sync.Once{},
-			bitmap:             NewBitmap(),
-			lock:               &sync.Mutex{},
-			log:                logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
-			failedPieceCh:      make(chan int32, 4),
-			contentLength:      -1,
+			ctx:             ctx,
+			host:            host,
+			pieceResultCh:   schedPieceResultCh,
+			peerPacketCh:    schedPeerPacketCh,
+			pieceManager:    pieceManager,
+			peerPacketReady: make(chan bool),
+			peerId:          request.PeerId,
+			taskId:          result.TaskId,
+			done:            make(chan struct{}),
+			once:            sync.Once{},
+			bitmap:          NewBitmap(),
+			lock:            &sync.Mutex{},
+			failedPieceCh:   make(chan int32, 4),
+			contentLength:   -1,
+
+			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
 		successPieceCh: make(chan int32, 4),
 	}, nil
@@ -102,17 +103,17 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 	}()
 	// retry failed piece
 	if !pieceResult.Success {
-		s.base.schedPieceResultCh <- pieceResult
+		s.base.pieceResultCh <- pieceResult
 		s.base.failedPieceCh <- pieceResult.PieceNum
 		return nil
 	}
 	pieceResult.FinishedCount = s.base.bitmap.Settled()
-	s.base.schedPieceResultCh <- pieceResult
+	s.base.pieceResultCh <- pieceResult
 	s.successPieceCh <- piece.PieceNum
-	s.base.log.Debugf("success piece %d sent", piece.PieceNum)
+	s.base.Debugf("success piece %d sent", piece.PieceNum)
 	select {
 	case <-s.base.ctx.Done():
-		s.base.log.Warnf("peer task context done due to %s", s.base.ctx.Err())
+		s.base.Warnf("peer task context done due to %s", s.base.ctx.Err())
 		return s.base.ctx.Err()
 	default:
 	}
@@ -120,7 +121,7 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 	s.base.lock.Lock()
 	defer s.base.lock.Unlock()
 	if s.base.bitmap.IsSet(pieceResult.PieceNum) {
-		s.base.log.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
+		s.base.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
 		return nil
 	}
 	// mark piece processed
@@ -156,23 +157,23 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 					}
 					wrote, err = s.writeTo(w, desired)
 					if err != nil {
-						s.base.log.Errorf("write to pipe error: %s", err)
+						s.base.Errorf("write to pipe error: %s", err)
 						_ = w.CloseWithError(err)
 						return
 					}
-					s.base.log.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
+					s.base.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
 					desired++
 				}
 			case num, ok := <-s.successPieceCh:
 				if !ok {
-					s.base.log.Warnf("successPieceCh closed")
+					s.base.Warnf("successPieceCh closed")
 					continue
 				}
 				// not desired piece, cache it
 				if desired != num {
 					cache[num] = true
 					if num < desired {
-						s.base.log.Warnf("piece number should be equal or greater than %d, received piece number: %d",
+						s.base.Warnf("piece number should be equal or greater than %d, received piece number: %d",
 							desired, num)
 					}
 					continue
@@ -180,11 +181,11 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 				for {
 					wrote, err = s.writeTo(w, desired)
 					if err != nil {
-						s.base.log.Errorf("write to pipe error: %s", err)
+						s.base.Errorf("write to pipe error: %s", err)
 						_ = w.CloseWithError(err)
 						return
 					}
-					s.base.log.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
+					s.base.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
 					desired++
 					cached := cache[desired]
 					if !cached {
@@ -202,10 +203,10 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 func (s *streamPeerTask) finish() error {
 	var err error
 	// send last progress
-	s.base.doneOnce.Do(func() {
+	s.base.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.base.schedPieceResultCh <- scheduler.NewEndPieceResult(s.base.bitmap.Settled(), s.base.taskId, s.base.peerId)
-		s.base.log.Debugf("end piece result sent")
+		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.bitmap.Settled(), s.base.taskId, s.base.peerId)
+		s.base.Debugf("end piece result sent")
 		// callback to store data to output
 		err = s.base.callback.Done(s)
 		close(s.base.done)
@@ -215,10 +216,10 @@ func (s *streamPeerTask) finish() error {
 
 func (s *streamPeerTask) cleanUnfinished() {
 	// send last progress
-	s.base.doneOnce.Do(func() {
+	s.base.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.base.schedPieceResultCh <- scheduler.NewEndPieceResult(s.base.bitmap.Settled(), s.base.taskId, s.base.peerId)
-		s.base.log.Debugf("end piece result sent")
+		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.bitmap.Settled(), s.base.taskId, s.base.peerId)
+		s.base.Debugf("end piece result sent")
 		close(s.base.done)
 	})
 }

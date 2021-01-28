@@ -246,7 +246,8 @@ func (s storageManager) CreateTask(req RegisterTaskRequest) error {
 		dataDir:          dataDir,
 		metadataFilePath: path.Join(dataDir, taskMetaData),
 		expireTime:       s.storeOption.TaskExpireTime,
-		log:              logger.With("task", req.TaskID, "peer", req.PeerID, "component", "localTaskStore"),
+
+		SugaredLoggerOnWith: logger.With("task", req.TaskID, "peer", req.PeerID, "component", "localTaskStore"),
 	}
 	switch t.StoreStrategy {
 	case string(SimpleLocalTaskStoreStrategy):

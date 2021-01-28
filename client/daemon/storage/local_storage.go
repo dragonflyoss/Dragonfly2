@@ -15,6 +15,7 @@ import (
 )
 
 type localTaskStore struct {
+	*logger.SugaredLoggerOnWith
 	persistentMetadata
 
 	*sync.RWMutex
@@ -32,8 +33,6 @@ type localTaskStore struct {
 	expireTime time.Duration
 	lastAccess time.Time
 	gcCallback func(CommonTaskRequest)
-
-	log *logger.SugaredLoggerOnWith
 }
 
 func (t *localTaskStore) init() error {
@@ -82,7 +81,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if err != nil {
 		return 0, err
 	}
-	t.log.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",
+	t.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",
 		n, t.dataFilePath, req.Num, req.Range.Start, req.Range.Length)
 	t.Lock()
 	defer t.Unlock()
@@ -121,7 +120,7 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 	err := t.saveMetadata()
 	if err != nil {
-		t.log.Warnf("save task metadata error: %s", err)
+		t.Warnf("save task metadata error: %s", err)
 		return err
 	}
 	switch t.StoreStrategy {
@@ -134,39 +133,39 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 	_, err = os.Stat(req.Destination)
 	if err == nil {
 		// remove exist file
-		t.log.Infof("destination file %q exists, purge it first", req.Destination)
+		t.Infof("destination file %q exists, purge it first", req.Destination)
 		os.Remove(req.Destination)
 	}
 	// 1. try to link
 	err = os.Link(path.Join(t.dataDir, taskData), req.Destination)
 	if err == nil {
-		t.log.Infof("task data link to file %q success", req.Destination)
+		t.Infof("task data link to file %q success", req.Destination)
 		return nil
 	}
-	t.log.Warnf("task data link to file %q error: %s", req.Destination, err)
+	t.Warnf("task data link to file %q error: %s", req.Destination, err)
 	// 2. link failed, copy it
 	file, err := os.Open(t.dataFilePath)
 	if err != nil {
-		t.log.Debugf("open tasks data error: %s", err)
+		t.Debugf("open tasks data error: %s", err)
 		return err
 	}
 	defer file.Close()
 
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
-		t.log.Debugf("task seek file error: %s", err)
+		t.Debugf("task seek file error: %s", err)
 		return err
 	}
 	dstFile, err := os.OpenFile(req.Destination, os.O_CREATE|os.O_RDWR|os.O_TRUNC, defaultFileMode)
 	if err != nil {
-		t.log.Errorf("open tasks destination file error: %s", err)
+		t.Errorf("open tasks destination file error: %s", err)
 		return err
 	}
 	defer dstFile.Close()
 	// copy_file_range is valid in linux
 	// https://go-review.googlesource.com/c/go/+/229101/
 	n, err := io.Copy(dstFile, file)
-	t.log.Debugf("copied tasks data %d bytes to %s", n, req.Destination)
+	t.Debugf("copied tasks data %d bytes to %s", n, req.Destination)
 	return err
 }
 

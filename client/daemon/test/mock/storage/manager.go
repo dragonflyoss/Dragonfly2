@@ -180,18 +180,30 @@ func (mr *MockManagerMockRecorder) Store(ctx, req interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockManager)(nil).Store), ctx, req)
 }
 
-// KeepAlive mocks base method
-func (m *MockManager) KeepAlive(arg0 time.Duration) bool {
+// Keep mocks base method
+func (m *MockManager) Keep() {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KeepAlive", arg0)
+	m.ctrl.Call(m, "Keep")
+}
+
+// Keep indicates an expected call of Keep
+func (mr *MockManagerMockRecorder) Keep() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Keep", reflect.TypeOf((*MockManager)(nil).Keep))
+}
+
+// Alive mocks base method
+func (m *MockManager) Alive(alive time.Duration) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Alive", alive)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
-// KeepAlive indicates an expected call of KeepAlive
-func (mr *MockManagerMockRecorder) KeepAlive(arg0 interface{}) *gomock.Call {
+// Alive indicates an expected call of Alive
+func (mr *MockManagerMockRecorder) Alive(alive interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockManager)(nil).KeepAlive), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Alive", reflect.TypeOf((*MockManager)(nil).Alive), alive)
 }
 
 // RegisterTask mocks base method

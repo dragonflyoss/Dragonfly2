@@ -33,8 +33,14 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/test"
 	mock_storage "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/storage"
+	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
 )
+
+func TestMain(m *testing.M) {
+	logger.InitDaemon()
+	m.Run()
+}
 
 func TestUploadManager_Serve(t *testing.T) {
 	ctrl := gomock.NewController(t)
