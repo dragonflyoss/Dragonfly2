@@ -21,32 +21,19 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/peer"
 	"sync"
 )
 
 func init() {
-	logDir := "/var/log/dragonfly"
-
-	bizLogger := logger.CreateLogger(logDir+"/daemon.log", 100, 7, 15, false, false)
-	log := bizLogger.Sugar()
-	logger.SetBizLogger(log)
-	logger.SetGrpcLogger(log)
-
 	// set register with server implementation.
 	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
 		dfdaemon.RegisterDaemonServer(s, &proxy{server: impl.(DaemonServer)})
 	})
-}
-
-// DaemonServer is the server API for Daemon service.
-type DaemonServer interface {
-	// download content by dragonfly
-	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
 }
 
 type proxy struct {
@@ -54,11 +41,24 @@ type proxy struct {
 	dfdaemon.UnimplementedDaemonServer
 }
 
+// see dfdaemon.DaemonServer
+type DaemonServer interface {
+	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
+	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
+	CheckHealth(context.Context) (*base.ResponseState, error)
+}
+
 func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_DownloadServer) (err error) {
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
 
-	errChan := make(chan error, 8)
+	peerAddr := "unknown"
+	if pe, ok := peer.FromContext(ctx); ok {
+		peerAddr = pe.Addr.String()
+	}
+	logger.Infof("trigger download for url:%s,from:%s,uuid:%s", req.Url, peerAddr, req.Uuid)
+
+	errChan := make(chan error, 10)
 	drc := make(chan *dfdaemon.DownResult, 4)
 
 	once := new(sync.Once)
@@ -80,6 +80,15 @@ func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_Downl
 	return
 }
 
+func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	return p.server.GetPieceTasks(ctx, ptr)
+}
+
+func (p *proxy) CheckHealth(ctx context.Context, req *base.EmptyRequest) (*base.ResponseState, error) {
+	_ = req
+	return p.server.CheckHealth(ctx)
+}
+
 func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon_DownloadServer, errChan chan error) {
 	err := safe.Call(func() {
 		defer closeDrc()
@@ -99,18 +108,18 @@ func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon
 	})
 
 	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
+		errChan <- err
 	}
 }
 
 func call(ctx context.Context, drc chan *dfdaemon.DownResult, p *proxy, req *dfdaemon.DownRequest, errChan chan error) {
 	err := safe.Call(func() {
 		if err := p.server.Download(ctx, req, drc); err != nil {
-			errChan <- rpc.ConvertServerError(err)
+			errChan <- err
 		}
 	})
 
 	if err != nil {
-		errChan <- status.Error(codes.FailedPrecondition, err.Error())
+		errChan <- err
 	}
 }

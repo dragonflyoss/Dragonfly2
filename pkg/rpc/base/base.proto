@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// basic structure for request and response
-
 syntax = "proto3";
 
 package base;
@@ -24,30 +22,19 @@ option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base";
 
 enum Code{
   X_UNSPECIFIED = 0;
-
-  // no problem 200-299
-  SUCCESS = 200;
-
-  // client processing error 400-499
-  CLIENT_ERROR = 400;
-
-  // scheduler processing error 500-599
-  SCHEDULER_ERROR = 500;
-
-  // cdnsystem processing error 600-699
-  CDN_ERROR = 600;
-
-  // manager processing error 700-799
-  MANAGER_ERROR = 700;
-
-  // shared error 1000-1099
-  UNKNOWN_ERROR = 1000;
-  PARAM_INVALID = 1001;
-  REQUEST_TIME_OUT = 1002;
 }
 
 enum PieceStyle{
-  PLAIN_UNSPECIFIED = 0;
+  PLAIN = 0;
+}
+
+enum SizeScope{
+  // size > one piece size
+  NORMAL = 0;
+  // 128 byte < size <= one piece size and be plain type
+  SMALL = 1;
+  // size <= 128 byte and be plain type
+  TINY = 2;
 }
 
 message ResponseState{
@@ -56,7 +43,60 @@ message ResponseState{
   string msg = 3;
 }
 
+message EmptyRequest{
+
+}
+
 message UrlMeta{
-  string md5 = 1; // md5 of content downloaded from url
-  string range = 2; // downloading range for single file
+  // used as follows:
+  //
+  // 1. check whether downloaded content is consistent with the source file
+  //
+  // 2. generate different task ids for same url
+  string md5 = 1;
+  // downloaded range for url
+  string range = 2;
+}
+
+message HostLoad{
+  // cpu usage
+  float cpu_ratio = 1;
+  // memory usage
+  float mem_ratio = 2;
+  // disk space usage
+  float disk_ratio = 3;
+}
+
+message PieceTaskRequest{
+  string task_id = 1;
+  string src_ip = 2;
+  string dst_pid = 3;
+  // piece number
+  int32 start_num = 4;
+  // expected piece count
+  int32 limit = 5;
+}
+
+message PieceInfo{
+  int32 piece_num = 1;
+  uint64 range_start = 2;
+  int32 range_size = 3;
+  string piece_md5 = 4;
+  uint64 piece_offset = 5;
+  base.PieceStyle piece_style = 6;
+}
+
+message PiecePacket{
+  base.ResponseState state = 1;
+
+  string task_id = 2;
+  string dst_pid = 3;
+  // ip:port
+  string dst_addr = 4;
+  repeated PieceInfo piece_infos = 5;
+  // total piece count for url
+  int32 total_piece = 6;
+  int64 content_length = 7;
+  // sha256 code of all piece md5
+  string piece_md5_sign = 8;
 }

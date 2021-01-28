@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-// manage and schedule download tasks
-// core model: peerHost->peers->peerTask->pieceTasks and task->peerTasks
-
 syntax = "proto3";
 
 package scheduler;
@@ -26,63 +23,116 @@ import "pkg/rpc/base/base.proto";
 option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler";
 
 message PeerTaskRequest{
+  // universal resource locator for different kind of storage
   string url = 1;
-  // regex format, used for task id generator, assimilating different urls
+  // filter is a regular expression
+  // used to generate same task id for different urls
   string filter = 2;
-  // biz_id and md5 are used for task id generator to distinguish the same urls
-  // md5 is also used to check consistency about file content
-  string biz_id = 3; // caller's biz id that can be any string
-  base.UrlMeta url_mata = 4; // downloaded file content md5
-  string peer_id = 5; // peer id
-  PeerHost peer_host = 6; // peer host info
+  // biz id is used to generate different task ids for same url
+  string biz_id = 3;
+  // url meta info
+  base.UrlMeta url_mata = 4;
+  // peer's id and must be global uniqueness
+  string peer_id = 5;
+  // peer host info
+  PeerHost peer_host = 6;
+  // current host load
+  base.HostLoad host_load = 7;
+  // whether this request is caused by migration
+  bool is_migrating = 8;
+}
+
+message RegisterResult{
+  base.ResponseState state = 1;
+
+  // task id
+  string task_id = 2;
+  // file content length scope for the url
+  base.SizeScope size_scope = 3;
+  // download the only piece directly for small or tiny file
+  oneof direct_piece{
+    // for small file
+    SinglePiece single_piece = 4;
+    // for tiny file
+    bytes piece_content = 5;
+  }
+}
+
+message SinglePiece{
+  // destination peer id
+  string dst_pid = 1;
+  // download address(ip:port)
+  string dst_addr = 2;
+  // one piece info
+  base.PieceInfo piece_info = 3;
 }
 
 message PeerHost{
-  // different uuid is different peer host
-  // to avoid conflict, need check other information(ip、port...)
+  // each time the daemon starts, it will generate a different uuid
   string uuid = 1;
+  // peer host ip
   string ip = 2;
-  int32 port = 3; // peer server http port
-  string host_name = 4;
-  string security_domain = 5; // security isolation domain for network
-  string location = 6; // area|country|province|city|...
-  string idc = 7;
-  string switch = 8; // network device construct, xx|yy|zz
-}
-
-message PiecePackage{
-  message PieceTask{
-    int32 piece_num = 1;
-    string piece_range = 2;
-    string piece_md5 = 3;
-    string src_pid = 4;
-    string dst_pid = 5;
-    string dst_addr = 6; // ip:port
-    uint64 piece_offset = 7;
-    base.PieceStyle piece_style = 8;
-  }
-
-  base.ResponseState state = 1;
-  string task_id = 2;
-  string peer_id = 3; // equals to src peer id
-  repeated PieceTask piece_tasks = 4;
-  // whether or not peer task is finish, piece_tasks is empty if true
-  bool done = 5;
-  int64 content_length = 6;
+  // rpc service port for peer
+  int32 rpc_port = 3;
+  // piece downloading port for peer
+  int32 down_port = 4;
+  // peer host name
+  string host_name = 5;
+  // security isolation domain for network
+  string security_domain = 6;
+  // location path: area|country|province|city|...
+  string location = 7;
+  // idc where the peer host is located
+  string idc = 8;
+  // network device path: switch|router|...
+  string net_topology = 9;
 }
 
 message PieceResult{
+  // task id
   string task_id = 1;
+  // source peer id
   string src_pid = 2;
+  // dest peer id
   string dst_pid = 3;
+  // piece number
   int32 piece_num = 4;
-  string piece_range = 5;
-  bool success = 6;
-  base.Code error_code = 7; // for success is false
-  uint32 cost = 8; // millisecond unit
+  // begin time for the piece downloading
+  uint64 begin_time = 5;
+  // end time for the piece downloading
+  uint64 end_time = 6;
+  // whether the piece downloading is successfully
+  bool success = 7;
+  // result code
+  base.Code code = 8;
+  // current host resource usage
+  base.HostLoad host_load = 9;
+  // currently completed piece count
+  int32 finished_count = 10;
 }
 
-// with these, scheduler can analyze registered peer task and finished peer task
+message PeerPacket{
+  base.ResponseState state = 1;
+
+  message DestPeer{
+    // dest ip
+    string ip = 1;
+    // rpc service port for dest peer
+    int32 rpc_port = 2;
+    // dest peer id
+    string peer_id = 3;
+  }
+
+  string task_id = 2;
+  // source peer id
+  string src_pid = 3;
+
+  // concurrent downloading count from main peer
+  int32 parallel_count = 4;
+  DestPeer main_peer = 5;
+  repeated DestPeer steal_peers = 6;
+}
+
 message PeerResult{
   string task_id = 1;
   string peer_id = 2;
@@ -90,11 +140,16 @@ message PeerResult{
   string security_domain = 4;
   string idc = 5;
   string url = 6;
-  int64 content_length = 7; // total content length(byte)
-  int64 traffic = 8; // network traffic usage(byte)
-  uint32 cost = 9; // millisecond unit
+  // total content length(byte)
+  int64 content_length = 7;
+  // total network traffic(byte)
+  int64 traffic = 8;
+  // total time(millisecond) consumed
+  uint32 cost = 9;
+  // whether peer downloading file is successfully
   bool success = 10;
-  base.Code error_code = 11;
+  // result code
+  base.Code code = 11;
 }
 
 message PeerTarget{
@@ -102,17 +157,19 @@ message PeerTarget{
   string peer_id = 2;
 }
 
-// scheduling life cycle for the peer task
+// Scheduler System RPC Service
 service Scheduler{
-  // register task for specified peer
-  rpc RegisterPeerTask(PeerTaskRequest)returns(PiecePackage){}
+  // RegisterPeerTask registers a peer into one task.
+  rpc RegisterPeerTask(PeerTaskRequest)returns(RegisterResult){}
 
-  // push piece result and pull piece tasks
-  rpc PullPieceTasks(stream PieceResult)returns(stream PiecePackage){}
+  // ReportPieceResult reports piece results and receives peer packets.
+  // when migrating to another scheduler,
+  // it will send the last piece result to the new scheduler.
+  rpc ReportPieceResult(stream PieceResult)returns(stream PeerPacket){}
 
-  // report whole file's downloading result for the peer
+  // ReportPeerResult reports downloading result for the peer task.
   rpc ReportPeerResult(PeerResult)returns(base.ResponseState){}
 
-  // make peer leaving from scheduling overlay
+  // LeaveTask makes the peer leaving from scheduling overlay for the task.
   rpc LeaveTask(PeerTarget)returns(base.ResponseState){}
 }

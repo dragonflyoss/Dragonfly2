@@ -10,7 +10,8 @@ if protoc -I="$SRC" \
   "$SRC"/pkg/rpc/base/*.proto \
   "$SRC"/pkg/rpc/cdnsystem/*.proto \
   "$SRC"/pkg/rpc/dfdaemon/*.proto \
-  "$SRC"/pkg/rpc/scheduler/*.proto; then
+  "$SRC"/pkg/rpc/scheduler/*.proto \
+  "$SRC"/pkg/rpc/manager/*.proto; then
   echo "generate grpc code success"
   if cd "$SRC" && go mod tidy; then
     echo "go mod tidy success"

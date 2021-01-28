@@ -18,13 +18,15 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SchedulerClient interface {
-	// register task for specified peer
-	RegisterPeerTask(ctx context.Context, in *PeerTaskRequest, opts ...grpc.CallOption) (*PiecePackage, error)
-	// push piece result and pull piece tasks
-	PullPieceTasks(ctx context.Context, opts ...grpc.CallOption) (Scheduler_PullPieceTasksClient, error)
-	// report whole file's downloading result for the peer
+	// RegisterPeerTask registers a peer into one task.
+	RegisterPeerTask(ctx context.Context, in *PeerTaskRequest, opts ...grpc.CallOption) (*RegisterResult, error)
+	// ReportPieceResult reports piece results and receives peer packets.
+	// when migrating to another scheduler,
+	// it will send the last piece result to the new scheduler.
+	ReportPieceResult(ctx context.Context, opts ...grpc.CallOption) (Scheduler_ReportPieceResultClient, error)
+	// ReportPeerResult reports downloading result for the peer task.
 	ReportPeerResult(ctx context.Context, in *PeerResult, opts ...grpc.CallOption) (*base.ResponseState, error)
-	// make peer leaving from scheduling overlay
+	// LeaveTask makes the peer leaving from scheduling overlay for the task.
 	LeaveTask(ctx context.Context, in *PeerTarget, opts ...grpc.CallOption) (*base.ResponseState, error)
 }
 
@@ -36,8 +38,8 @@ func NewSchedulerClient(cc grpc.ClientConnInterface) SchedulerClient {
 	return &schedulerClient{cc}
 }
 
-func (c *schedulerClient) RegisterPeerTask(ctx context.Context, in *PeerTaskRequest, opts ...grpc.CallOption) (*PiecePackage, error) {
-	out := new(PiecePackage)
+func (c *schedulerClient) RegisterPeerTask(ctx context.Context, in *PeerTaskRequest, opts ...grpc.CallOption) (*RegisterResult, error) {
+	out := new(RegisterResult)
 	err := c.cc.Invoke(ctx, "/scheduler.Scheduler/RegisterPeerTask", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -45,31 +47,31 @@ func (c *schedulerClient) RegisterPeerTask(ctx context.Context, in *PeerTaskRequ
 	return out, nil
 }
 
-func (c *schedulerClient) PullPieceTasks(ctx context.Context, opts ...grpc.CallOption) (Scheduler_PullPieceTasksClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Scheduler_serviceDesc.Streams[0], "/scheduler.Scheduler/PullPieceTasks", opts...)
+func (c *schedulerClient) ReportPieceResult(ctx context.Context, opts ...grpc.CallOption) (Scheduler_ReportPieceResultClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Scheduler_serviceDesc.Streams[0], "/scheduler.Scheduler/ReportPieceResult", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &schedulerPullPieceTasksClient{stream}
+	x := &schedulerReportPieceResultClient{stream}
 	return x, nil
 }
 
-type Scheduler_PullPieceTasksClient interface {
+type Scheduler_ReportPieceResultClient interface {
 	Send(*PieceResult) error
-	Recv() (*PiecePackage, error)
+	Recv() (*PeerPacket, error)
 	grpc.ClientStream
 }
 
-type schedulerPullPieceTasksClient struct {
+type schedulerReportPieceResultClient struct {
 	grpc.ClientStream
 }
 
-func (x *schedulerPullPieceTasksClient) Send(m *PieceResult) error {
+func (x *schedulerReportPieceResultClient) Send(m *PieceResult) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *schedulerPullPieceTasksClient) Recv() (*PiecePackage, error) {
-	m := new(PiecePackage)
+func (x *schedulerReportPieceResultClient) Recv() (*PeerPacket, error) {
+	m := new(PeerPacket)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -98,13 +100,15 @@ func (c *schedulerClient) LeaveTask(ctx context.Context, in *PeerTarget, opts ..
 // All implementations must embed UnimplementedSchedulerServer
 // for forward compatibility
 type SchedulerServer interface {
-	// register task for specified peer
-	RegisterPeerTask(context.Context, *PeerTaskRequest) (*PiecePackage, error)
-	// push piece result and pull piece tasks
-	PullPieceTasks(Scheduler_PullPieceTasksServer) error
-	// report whole file's downloading result for the peer
+	// RegisterPeerTask registers a peer into one task.
+	RegisterPeerTask(context.Context, *PeerTaskRequest) (*RegisterResult, error)
+	// ReportPieceResult reports piece results and receives peer packets.
+	// when migrating to another scheduler,
+	// it will send the last piece result to the new scheduler.
+	ReportPieceResult(Scheduler_ReportPieceResultServer) error
+	// ReportPeerResult reports downloading result for the peer task.
 	ReportPeerResult(context.Context, *PeerResult) (*base.ResponseState, error)
-	// make peer leaving from scheduling overlay
+	// LeaveTask makes the peer leaving from scheduling overlay for the task.
 	LeaveTask(context.Context, *PeerTarget) (*base.ResponseState, error)
 	mustEmbedUnimplementedSchedulerServer()
 }
@@ -113,11 +117,11 @@ type SchedulerServer interface {
 type UnimplementedSchedulerServer struct {
 }
 
-func (UnimplementedSchedulerServer) RegisterPeerTask(context.Context, *PeerTaskRequest) (*PiecePackage, error) {
+func (UnimplementedSchedulerServer) RegisterPeerTask(context.Context, *PeerTaskRequest) (*RegisterResult, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterPeerTask not implemented")
 }
-func (UnimplementedSchedulerServer) PullPieceTasks(Scheduler_PullPieceTasksServer) error {
-	return status.Errorf(codes.Unimplemented, "method PullPieceTasks not implemented")
+func (UnimplementedSchedulerServer) ReportPieceResult(Scheduler_ReportPieceResultServer) error {
+	return status.Errorf(codes.Unimplemented, "method ReportPieceResult not implemented")
 }
 func (UnimplementedSchedulerServer) ReportPeerResult(context.Context, *PeerResult) (*base.ResponseState, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReportPeerResult not implemented")
@@ -156,25 +160,25 @@ func _Scheduler_RegisterPeerTask_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Scheduler_PullPieceTasks_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(SchedulerServer).PullPieceTasks(&schedulerPullPieceTasksServer{stream})
+func _Scheduler_ReportPieceResult_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(SchedulerServer).ReportPieceResult(&schedulerReportPieceResultServer{stream})
 }
 
-type Scheduler_PullPieceTasksServer interface {
-	Send(*PiecePackage) error
+type Scheduler_ReportPieceResultServer interface {
+	Send(*PeerPacket) error
 	Recv() (*PieceResult, error)
 	grpc.ServerStream
 }
 
-type schedulerPullPieceTasksServer struct {
+type schedulerReportPieceResultServer struct {
 	grpc.ServerStream
 }
 
-func (x *schedulerPullPieceTasksServer) Send(m *PiecePackage) error {
+func (x *schedulerReportPieceResultServer) Send(m *PeerPacket) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *schedulerPullPieceTasksServer) Recv() (*PieceResult, error) {
+func (x *schedulerReportPieceResultServer) Recv() (*PieceResult, error) {
 	m := new(PieceResult)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -237,8 +241,8 @@ var _Scheduler_serviceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "PullPieceTasks",
-			Handler:       _Scheduler_PullPieceTasks_Handler,
+			StreamName:    "ReportPieceResult",
+			Handler:       _Scheduler_ReportPieceResult_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

@@ -4,6 +4,7 @@ package cdnsystem
 
 import (
 	context "context"
+	base "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -19,6 +20,8 @@ const _ = grpc.SupportPackageIsVersion7
 type SeederClient interface {
 	// generate seeds and return to scheduler
 	ObtainSeeds(ctx context.Context, in *SeedRequest, opts ...grpc.CallOption) (Seeder_ObtainSeedsClient, error)
+	// get piece tasks from cdn
+	GetPieceTasks(ctx context.Context, in *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 }
 
 type seederClient struct {
@@ -61,12 +64,23 @@ func (x *seederObtainSeedsClient) Recv() (*PieceSeed, error) {
 	return m, nil
 }
 
+func (c *seederClient) GetPieceTasks(ctx context.Context, in *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
+	out := new(base.PiecePacket)
+	err := c.cc.Invoke(ctx, "/cdnsystem.Seeder/GetPieceTasks", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SeederServer is the server API for Seeder service.
 // All implementations must embed UnimplementedSeederServer
 // for forward compatibility
 type SeederServer interface {
 	// generate seeds and return to scheduler
 	ObtainSeeds(*SeedRequest, Seeder_ObtainSeedsServer) error
+	// get piece tasks from cdn
+	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
 	mustEmbedUnimplementedSeederServer()
 }
 
@@ -76,6 +90,9 @@ type UnimplementedSeederServer struct {
 
 func (UnimplementedSeederServer) ObtainSeeds(*SeedRequest, Seeder_ObtainSeedsServer) error {
 	return status.Errorf(codes.Unimplemented, "method ObtainSeeds not implemented")
+}
+func (UnimplementedSeederServer) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPieceTasks not implemented")
 }
 func (UnimplementedSeederServer) mustEmbedUnimplementedSeederServer() {}
 
@@ -111,10 +128,33 @@ func (x *seederObtainSeedsServer) Send(m *PieceSeed) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Seeder_GetPieceTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(base.PieceTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SeederServer).GetPieceTasks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/cdnsystem.Seeder/GetPieceTasks",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SeederServer).GetPieceTasks(ctx, req.(*base.PieceTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Seeder_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cdnsystem.Seeder",
 	HandlerType: (*SeederServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetPieceTasks",
+			Handler:    _Seeder_GetPieceTasks_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "ObtainSeeds",

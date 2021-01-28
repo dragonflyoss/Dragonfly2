@@ -1,0 +1,103 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package manager;
+
+import "pkg/rpc/base/base.proto";
+
+option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager";
+
+message NavigatorRequest{
+  // client ip
+  string ip = 1;
+  // client host name
+  string host_name = 2;
+  // json format: {vpcId:xxx,sn:xxx,group:xxx,...}
+  string host_tag = 3;
+}
+
+message SchedulerNodes{
+  base.ResponseState state = 1;
+
+  // ip:port
+  repeated string addrs = 2;
+  HostInfo client_host = 3;
+}
+
+message HeartRequest{
+  // identify servers with hostname
+  string host_name = 1;
+  oneof from{
+    bool scheduler = 2;
+    bool cdn = 3;
+  }
+}
+
+message ClientConfig{
+  //......
+}
+
+message ManagementConfig{
+  base.ResponseState state = 1;
+
+  message SchedulerConfig{
+    ClientConfig client_config = 1;
+    repeated ServerInfo cdn_hosts = 2;
+    //......
+  }
+
+  message CdnConfig{
+    //......
+  }
+
+  oneof config{
+    SchedulerConfig scheduler_config = 2;
+    CdnConfig cdn_config = 3;
+  }
+}
+
+message ServerInfo{
+  HostInfo host_info = 1;
+  int32 rpc_port = 2;
+  int32 down_port = 3;
+}
+
+message HostInfo{
+  string ip = 1;
+  string host_name = 2;
+  // security isolation domain for network
+  string security_domain = 3;
+  // area|country|province|city|...
+  string location = 4;
+  string idc = 5;
+  string net_topology = 6;
+}
+
+// Manager System RPC Service
+service Manager{
+  // get scheduler server list, using scene as follows:
+  // 1. scheduler servers are not exist in local config
+  //
+  // 2. connection is fail for all servers from config,
+  // so need retry one times to get latest servers
+  //
+  // 3. manager actively triggers fresh
+  rpc GetSchedulers(NavigatorRequest)returns(SchedulerNodes){}
+  // keep alive for cdn or scheduler and receives management configuration
+  rpc KeepAlive(HeartRequest)returns(ManagementConfig){}
+}

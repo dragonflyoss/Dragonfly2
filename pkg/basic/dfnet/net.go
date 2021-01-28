@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package basic
+package dfnet
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ const (
 	UNIX NetworkType = "unix"
 )
 
-var LocalIp string
+var HostIp string
 var HostName, _ = os.Hostname()
 
 func init() {
@@ -42,13 +42,13 @@ func init() {
 		if ipNet, ok := value.(*net.IPNet); ok &&
 			!ipNet.IP.IsLoopback() && !ipNet.IP.IsUnspecified() {
 			if ip := ipNet.IP.To4(); ip != nil {
-				LocalIp = ip.String()
+				HostIp = ip.String()
 				break
 			}
 		}
 	}
 
-	if LocalIp == "" {
+	if HostIp == "" {
 		panic("host ip is not exist")
 	}
 
