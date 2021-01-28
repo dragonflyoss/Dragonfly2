@@ -18,6 +18,7 @@ package dfcodes
 
 import "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 
+// rpc response code
 const (
 	// no problem 200-299
 	Success base.Code = 200
