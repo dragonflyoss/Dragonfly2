@@ -18,6 +18,10 @@ package client
 
 import (
 	"context"
+	"time"
+
+	"google.golang.org/grpc"
+
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
@@ -25,8 +29,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
-	"google.golang.org/grpc"
-	"time"
 )
 
 // see scheduler.SchedulerClient
@@ -109,6 +111,9 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string,
 	go send(pps, prc, ppc)
 
 	go receive(pps, ppc)
+
+	// trigger scheduling
+	prc <- scheduler.NewZeroPieceResult(taskId, ptr.PeerId)
 
 	return prc, ppc, nil
 }
