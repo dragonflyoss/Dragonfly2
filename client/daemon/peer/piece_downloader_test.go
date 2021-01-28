@@ -11,9 +11,9 @@ import (
 
 	testifyassert "github.com/stretchr/testify/assert"
 
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/test"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/upload"
-	"github.com/dragonflyoss/Dragonfly2/client/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
 )
@@ -45,7 +45,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		{
 			handleFunc: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(upload.PeerDownloadHTTPPathPrefix+"tas/"+"task-1", r.URL.Path)
-				rg := util.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
+				rg := clientutil.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
 				w.Write(testData[rg.Start : rg.Start+rg.Length])
 			},
 			taskID:          "task-1",
@@ -57,7 +57,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		{
 			handleFunc: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(upload.PeerDownloadHTTPPathPrefix+"tas/"+"task-2", r.URL.Path)
-				rg := util.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
+				rg := clientutil.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
 				w.Write(testData[rg.Start : rg.Start+rg.Length])
 			},
 			taskID:          "task-2",
@@ -69,7 +69,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		{
 			handleFunc: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(upload.PeerDownloadHTTPPathPrefix+"tas/"+"task-3", r.URL.Path)
-				rg := util.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
+				rg := clientutil.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
 				w.Write(testData[rg.Start : rg.Start+rg.Length])
 			},
 			taskID:          "task-3",

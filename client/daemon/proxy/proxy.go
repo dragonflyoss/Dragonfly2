@@ -26,13 +26,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/groupcache/lru"
+	"github.com/pkg/errors"
+
 	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/transport"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	"github.com/golang/groupcache/lru"
-	"github.com/pkg/errors"
 )
 
 var okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
@@ -254,7 +255,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (proxy *Proxy) roundTripper(tlsConfig *tls.Config) http.RoundTripper {
-	rt, _ := transport.NewDFRoundTripper(
+	rt, _ := transport.New(
 		transport.WithPeerHost(proxy.peerHost),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(tlsConfig),
@@ -265,7 +266,7 @@ func (proxy *Proxy) roundTripper(tlsConfig *tls.Config) http.RoundTripper {
 
 func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 	reverseProxy := httputil.NewSingleHostReverseProxy(proxy.registry.Remote.URL)
-	t, err := transport.NewDFRoundTripper(
+	t, err := transport.New(
 		transport.WithPeerHost(proxy.peerHost),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(proxy.registry.TLSConfig()),

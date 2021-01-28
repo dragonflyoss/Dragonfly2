@@ -33,6 +33,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
 	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
@@ -40,7 +41,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/service"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/upload"
-	"github.com/dragonflyoss/Dragonfly2/client/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
@@ -373,7 +373,7 @@ func (ph *peerHost) Serve() error {
 		g.Go(func() error {
 			select {
 			case <-time.After(ph.Option.AliveTime):
-				var keepalives = []util.KeepAlive{
+				var keepalives = []clientutil.KeepAlive{
 					ph.StorageManager,
 					ph.ServiceManager,
 				}

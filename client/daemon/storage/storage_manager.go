@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
-	"github.com/dragonflyoss/Dragonfly2/client/util"
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 )
@@ -54,7 +54,7 @@ type TaskStorageDriver interface {
 type Manager interface {
 	TaskStorageDriver
 	// KeepAlive tests if storage is used in given time duration
-	util.KeepAlive
+	clientutil.KeepAlive
 	// RegisterTask registers a task in storage driver
 	RegisterTask(ctx context.Context, req RegisterTaskRequest) error
 	// Clean cleans all data
@@ -80,7 +80,7 @@ const (
 
 type storageManager struct {
 	sync.Locker
-	util.KeepAlive
+	clientutil.KeepAlive
 	storeStrategy StoreStrategy
 	storeOption   *Option
 	tasks         *sync.Map
@@ -117,7 +117,7 @@ func NewStorageManager(storeStrategy StoreStrategy, opt *Option, gcCallback GCCa
 	}
 
 	s := &storageManager{
-		KeepAlive:     util.NewKeepAlive("storage manager"),
+		KeepAlive:     clientutil.NewKeepAlive("storage manager"),
 		storeStrategy: storeStrategy,
 		Locker:        &sync.Mutex{},
 		storeOption:   opt,

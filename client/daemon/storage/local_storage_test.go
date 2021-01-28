@@ -35,7 +35,7 @@ import (
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/test"
-	"github.com/dragonflyoss/Dragonfly2/client/util"
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
@@ -116,7 +116,7 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),
-				Range: util.Range{
+				Range: clientutil.Range{
 					Start:  int64(p.start),
 					Length: int64(p.end - p.start),
 				},
@@ -142,7 +142,7 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),
-				Range: util.Range{
+				Range: clientutil.Range{
 					Start:  int64(p.start),
 					Length: int64(p.end - p.start),
 				},
@@ -279,7 +279,7 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),
-				Range: util.Range{
+				Range: clientutil.Range{
 					Start:  int64(p.start),
 					Length: int64(p.end - p.start),
 				},
@@ -305,7 +305,7 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),
-				Range: util.Range{
+				Range: clientutil.Range{
 					Start:  int64(p.start),
 					Length: int64(p.end - p.start),
 				},

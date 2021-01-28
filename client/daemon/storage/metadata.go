@@ -3,7 +3,7 @@ package storage
 import (
 	"io"
 
-	"github.com/dragonflyoss/Dragonfly2/client/util"
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 )
 
@@ -23,11 +23,11 @@ type PeerTaskMetaData struct {
 }
 
 type PieceMetaData struct {
-	Num    int32           `json:"num,omitempty"`
-	Md5    string          `json:"md5,omitempty"`
-	Offset uint64          `json:"offset,omitempty"`
-	Range  util.Range      `json:"range,omitempty"`
-	Style  base.PieceStyle `json:"style,omitempty"`
+	Num    int32            `json:"num,omitempty"`
+	Md5    string           `json:"md5,omitempty"`
+	Offset uint64           `json:"offset,omitempty"`
+	Range  clientutil.Range `json:"range,omitempty"`
+	Style  base.PieceStyle  `json:"style,omitempty"`
 }
 
 type CommonTaskRequest struct {

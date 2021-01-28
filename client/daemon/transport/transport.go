@@ -24,8 +24,10 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 )
 
@@ -34,15 +36,15 @@ var (
 	layerReg = regexp.MustCompile("^.+/blobs/sha256.*$")
 )
 
-// DFRoundTripper implements RoundTripper for dfget.
+// transport implements RoundTripper for dfget.
 // It uses http.fileTransport to serve requests that need to use dfget,
 // and uses http.Transport to serve the other requests.
-type DFRoundTripper struct {
-	// Round is an implementation of RoundTripper that supports HTTP
-	Round *http.Transport
+type transport struct {
+	// baseRoundTripper is an implementation of RoundTripper that supports HTTP
+	baseRoundTripper http.RoundTripper
 
-	// ShouldUseDfget is used to determine the use of dfget to download resources
-	ShouldUseDfget func(req *http.Request) bool
+	// shouldUseDfget is used to determine the use of dfget to download resources
+	shouldUseDfget func(req *http.Request) bool
 
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.PeerTaskManager
@@ -51,51 +53,46 @@ type DFRoundTripper struct {
 	peerHost *scheduler.PeerHost
 }
 
-// Option is functional config for DFRoundTripper.
-type DFRoundTripperOption func(rt *DFRoundTripper) *DFRoundTripper
+// Option is functional config for transport.
+type Option func(rt *transport) *transport
 
 // WithHTTPSHosts sets the rules for hijacking https requests
-func WithPeerHost(peerHost *scheduler.PeerHost) DFRoundTripperOption {
-	return func(rt *DFRoundTripper) *DFRoundTripper {
+func WithPeerHost(peerHost *scheduler.PeerHost) Option {
+	return func(rt *transport) *transport {
 		rt.peerHost = peerHost
 		return rt
 	}
 }
 
 // WithHTTPSHosts sets the rules for hijacking https requests
-func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) DFRoundTripperOption {
-	return func(rt *DFRoundTripper) *DFRoundTripper {
+func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) Option {
+	return func(rt *transport) *transport {
 		rt.peerTaskManager = peerTaskManager
 		return rt
 	}
 }
 
 // WithTLS configures TLS config used for http transport.
-func WithTLS(cfg *tls.Config) DFRoundTripperOption {
-	return func(rt *DFRoundTripper) *DFRoundTripper {
-		rt.Round = defaultHTTPTransport(cfg)
+func WithTLS(cfg *tls.Config) Option {
+	return func(rt *transport) *transport {
+		rt.baseRoundTripper = defaultHTTPTransport(cfg)
 		return rt
 	}
 }
 
 // WithCondition configures how to decide whether to use dfget or not.
-func WithCondition(c func(r *http.Request) bool) DFRoundTripperOption {
-	return func(rt *DFRoundTripper) *DFRoundTripper {
-		rt.ShouldUseDfget = c
+func WithCondition(c func(r *http.Request) bool) Option {
+	return func(rt *transport) *transport {
+		rt.shouldUseDfget = c
 		return rt
 	}
 }
 
-// New returns the default DFRoundTripper.
-func NewDFRoundTripper(options ...DFRoundTripperOption) (*DFRoundTripper, error) {
-	return NewDFRoundTripperWithOptions(options...)
-}
-
-// NewDFRoundTripperWithOptions constructs a new instance of a DFRoundTripper with additional options.
-func NewDFRoundTripperWithOptions(options ...DFRoundTripperOption) (*DFRoundTripper, error) {
-	rt := &DFRoundTripper{
-		Round:          defaultHTTPTransport(nil),
-		ShouldUseDfget: NeedUseGetter,
+// New constructs a new instance of a RoundTripper with additional options.
+func New(options ...Option) (http.RoundTripper, error) {
+	rt := &transport{
+		baseRoundTripper: defaultHTTPTransport(nil),
+		shouldUseDfget:   NeedUseGetter,
 	}
 
 	for _, opt := range options {
@@ -107,52 +104,68 @@ func NewDFRoundTripperWithOptions(options ...DFRoundTripperOption) (*DFRoundTrip
 
 // RoundTrip only process first redirect at present
 // fix resource release
-func (roundTripper *DFRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	if roundTripper.ShouldUseDfget(req) {
+func (rt *transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if rt.shouldUseDfget(req) {
 		// delete the Accept-Encoding header to avoid returning the same cached
 		// result for different requests
 		req.Header.Del("Accept-Encoding")
 		logger.Debugf("round trip with dfget: %s", req.URL.String())
-		if res, err := roundTripper.download(req); err == nil {
+		if res, err := rt.download(req); err == nil {
 			return res, err
 		}
 	}
 	logger.Debugf("round trip directly: %s %s", req.Method, req.URL.String())
 	req.Host = req.URL.Host
 	req.Header.Set("Host", req.Host)
-	res, err := roundTripper.Round.RoundTrip(req)
+	res, err := rt.baseRoundTripper.RoundTrip(req)
 	return res, err
 }
 
-// needUseGetter is the default value for ShouldUseDfget, which downloads all
+// needUseGetter is the default value for shouldUseDfget, which downloads all
 // images layers with dfget.
 func NeedUseGetter(req *http.Request) bool {
 	return req.Method == http.MethodGet && layerReg.MatchString(req.URL.Path)
 }
 
 // download uses dfget to download.
-func (roundTripper *DFRoundTripper) download(req *http.Request) (*http.Response, error) {
-	urlString := req.URL.String()
-	logger.Infof("start download url: %s", urlString)
+func (rt *transport) download(req *http.Request) (*http.Response, error) {
+	url := req.URL.String()
+	logger.Infof("start download with url: %s", url)
 
-	r, _, err := roundTripper.peerTaskManager.StartStreamPeerTask(
+	var meta *base.UrlMeta
+	if rg := req.Header.Get("Range"); len(rg) > 0 {
+		meta = &base.UrlMeta{
+			Md5:   "",
+			Range: rg,
+		}
+	}
+	r, attr, err := rt.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
 		&scheduler.PeerTaskRequest{
-			Url:   urlString,
-			BizId: "d7s/dfget",
-			// TODO
-			PeerId:   "peerId",
-			PeerHost: roundTripper.peerHost,
+			Url: url,
+			// FIXME(jim): read filter from config or from request header
+			Filter:      "",
+			BizId:       "d7s/dfget-proxy",
+			UrlMata:     meta,
+			PeerId:      clientutil.GenPeerID(rt.peerHost),
+			PeerHost:    rt.peerHost,
+			HostLoad:    nil,
+			IsMigrating: false,
 		},
 	)
 	if err != nil {
 		logger.Errorf("download fail: %v", err)
 		return nil, err
 	}
+	var hdr = http.Header{}
+	for k, v := range attr {
+		hdr.Set(k, v)
+	}
 
 	resp := &http.Response{
 		StatusCode: 200,
 		Body:       ioutil.NopCloser(r),
+		Header:     hdr,
 	}
 	return resp, nil
 }

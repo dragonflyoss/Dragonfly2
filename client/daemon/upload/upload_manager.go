@@ -28,7 +28,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly2/client/util"
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 )
 
@@ -88,7 +88,7 @@ func (u *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 		//cdnSource = r.Header.Get("X-Dragonfly-CDN-Source")
 	)
 
-	rg, err := util.ParseRange(r.Header.Get("Range"), math.MaxInt64)
+	rg, err := clientutil.ParseRange(r.Header.Get("Range"), math.MaxInt64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
