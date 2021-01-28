@@ -311,7 +311,7 @@ func (ph *peerHost) Serve() error {
 	}
 	ph.schedPeerHost.RpcPort = int32(peerPort)
 
-	// prepare peer service listen
+	// prepare proxy service listen
 	proxyListener, proxyPort, err := ph.prepareTCPListener(*ph.Option.Proxy.ListenOption, true)
 	if err != nil {
 		logger.Errorf("failed to listen for proxy service: %v", err)
