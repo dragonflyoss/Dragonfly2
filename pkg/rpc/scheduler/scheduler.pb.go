@@ -771,9 +771,9 @@ func (x *PeerResult) GetContentLength() int64 {
 	return 0
 }
 
-func (x *PeerResult) GetTraffic() int64 {
+func (x *PeerResult) GetTraffic() uint64 {
 	if x != nil {
-		return x.Traffic
+		return uint64(x.Traffic)
 	}
 	return 0
 }

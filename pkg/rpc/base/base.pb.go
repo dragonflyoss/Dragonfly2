@@ -579,6 +579,7 @@ type PiecePacket struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+
 	State  *ResponseState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
 	TaskId string         `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	DstPid string         `protobuf:"bytes,3,opt,name=dst_pid,json=dstPid,proto3" json:"dst_pid,omitempty"`

@@ -1,0 +1,53 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// dfdaemon is responsible for transporting/saving blocks between peers
+// and managing client download requests
+
+syntax = "proto3";
+
+package dfdaemon;
+
+import "pkg/grpc/base/base.proto";
+
+option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/grpc/dfdaemon";
+
+message DownRequest{
+  // download content with the url, but not only for http protocol
+  string url = 1;
+  // blocks will be written to output path directly,
+  // at the same time, dfdaemon workspace also makes soft link to the output
+  string output = 2;
+  base.UrlMeta url_meta = 3;
+  // caller business id
+  string biz_id = 4;
+  // regex format
+  string filter = 5;
+}
+
+message DownResult{
+  base.ResponseState state = 1;
+  string task_id = 2;
+  uint64 completed_length = 3;
+  bool done = 4; // done with success or fail
+}
+
+service Downloader{
+  // download content by dragonfly
+  rpc Get(DownRequest) returns(stream DownResult) {}
+}
+
+

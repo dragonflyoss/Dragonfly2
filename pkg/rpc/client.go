@@ -104,7 +104,7 @@ func (c *Connection) connect() error {
 	var ok bool
 	opts := append(clientOpts, c.opts...)
 
-	for ; !ok && c.nextNum < len(c.NetAddrs); {
+	for !ok && c.nextNum < len(c.NetAddrs) {
 		ok = func() bool {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
