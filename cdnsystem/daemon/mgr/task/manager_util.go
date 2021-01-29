@@ -19,6 +19,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
@@ -43,7 +44,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if key, err := tm.taskURLUnReachableStore.Get(taskId); err == nil {
 		if unReachableStartTime, ok := key.(time.Time); ok &&
 			time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
-			return nil, errors.Wrapf(dferrors.ErrURLNotReachable,
+			return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable,
 				"task hit unReachable cache and interval less than %d, url: %s", tm.cfg.FailAccessInterval, request.URL)
 		}
 		tm.taskURLUnReachableStore.Delete(taskId)
@@ -62,7 +63,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if v, err := tm.taskStore.Get(taskId); err == nil {
 		task = v.(*types.SeedTask)
 		if !equalsTask(task, newTask) {
-			return nil, dferrors.ErrTaskIDDuplicate
+			return nil, cdnerrors.ErrTaskIDDuplicate
 		}
 	} else {
 		task = newTask
@@ -77,11 +78,11 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if err != nil {
 		logger.WithTaskID(task.TaskID).Errorf("failed to get url (%s) content length from http client:%v", task.Url, err)
 
-		if dferrors.IsURLNotReachable(err) {
+		if cdnerrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskId, time.Now())
 			return nil, err
 		}
-		if dferrors.IsAuthenticationRequired(err) {
+		if cdnerrors.IsAuthenticationRequired(err) {
 			return nil, err
 		}
 	}

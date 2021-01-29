@@ -18,7 +18,7 @@ package httputils
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/pkg/errors"
 	"strconv"
 	"strings"
@@ -49,7 +49,7 @@ func GetRangeSE(rangeHTTPHeader string, length int64) ([]*RangeStruct, error) {
 	if strings.ContainsAny(rangeHTTPHeader, "=") {
 		rangeSlice := strings.Split(rangeHTTPHeader, "=")
 		if len(rangeSlice) != 2 {
-			return nil, errors.Wrapf(dferrors.ErrInvalidValue, "invalid range: %s, should be like bytes=0-1023", rangeStr)
+			return nil, errors.Wrapf(cdnerrors.ErrInvalidValue, "invalid range: %s, should be like bytes=0-1023", rangeStr)
 		}
 		rangeStr = rangeSlice[1]
 	}
@@ -68,7 +68,7 @@ func GetRangeSE(rangeHTTPHeader string, length int64) ([]*RangeStruct, error) {
 
 	for i := 0; i < rangeCount; i++ {
 		if strings.Count(rangeArr[i], "-") != 1 {
-			return nil, errors.Wrapf(dferrors.ErrInvalidValue, "invalid range: %s, should be like 0-1023", rangeArr[i])
+			return nil, errors.Wrapf(cdnerrors.ErrInvalidValue, "invalid range: %s, should be like 0-1023", rangeArr[i])
 		}
 
 		// -{length}
@@ -103,11 +103,11 @@ func GetRangeSE(rangeHTTPHeader string, length int64) ([]*RangeStruct, error) {
 func handlePrefixRange(rangeStr string, length int64) (*RangeStruct, error) {
 	downLength, err := strconv.ParseInt(strings.TrimPrefix(rangeStr, "-"), 10, 64)
 	if err != nil || downLength < 0 {
-		return nil, errors.Wrapf(dferrors.ErrInvalidValue, "failed to parse range: %s to int: %v", rangeStr, err)
+		return nil, errors.Wrapf(cdnerrors.ErrInvalidValue, "failed to parse range: %s to int: %v", rangeStr, err)
 	}
 
 	if downLength > length {
-		return nil, errors.Wrapf(dferrors.ErrRangeNotSatisfiable, "range: %s", rangeStr)
+		return nil, errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "range: %s", rangeStr)
 	}
 
 	return &RangeStruct{
@@ -119,11 +119,11 @@ func handlePrefixRange(rangeStr string, length int64) (*RangeStruct, error) {
 func handleSuffixRange(rangeStr string, length int64) (*RangeStruct, error) {
 	startIndex, err := strconv.ParseInt(strings.TrimSuffix(rangeStr, "-"), 10, 64)
 	if err != nil || startIndex < 0 {
-		return nil, errors.Wrapf(dferrors.ErrInvalidValue, "failed to parse range: %s to int: %v", rangeStr, err)
+		return nil, errors.Wrapf(cdnerrors.ErrInvalidValue, "failed to parse range: %s to int: %v", rangeStr, err)
 	}
 
 	if startIndex > length {
-		return nil, errors.Wrapf(dferrors.ErrRangeNotSatisfiable, "range: %s", rangeStr)
+		return nil, errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "range: %s", rangeStr)
 	}
 
 	return &RangeStruct{
@@ -137,22 +137,22 @@ func handlePairRange(rangeStr string, length int64) (*RangeStruct, error) {
 
 	startIndex, err := strconv.ParseInt(rangePair[0], 10, 64)
 	if err != nil || startIndex < 0 {
-		return nil, errors.Wrapf(dferrors.ErrInvalidValue, "failed to parse range: %s to int: %v", rangeStr, err)
+		return nil, errors.Wrapf(cdnerrors.ErrInvalidValue, "failed to parse range: %s to int: %v", rangeStr, err)
 	}
 	if startIndex > length {
-		return nil, errors.Wrapf(dferrors.ErrRangeNotSatisfiable, "range: %s", rangeStr)
+		return nil, errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "range: %s", rangeStr)
 	}
 
 	endIndex, err := strconv.ParseInt(rangePair[1], 10, 64)
 	if err != nil || endIndex < 0 {
-		return nil, errors.Wrapf(dferrors.ErrInvalidValue, "failed to parse range: %s to int: %v", rangeStr, err)
+		return nil, errors.Wrapf(cdnerrors.ErrInvalidValue, "failed to parse range: %s to int: %v", rangeStr, err)
 	}
 	if endIndex > length {
-		return nil, errors.Wrapf(dferrors.ErrRangeNotSatisfiable, "range: %s", rangeStr)
+		return nil, errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "range: %s", rangeStr)
 	}
 
 	if endIndex < startIndex {
-		return nil, errors.Wrapf(dferrors.ErrInvalidValue, "range: %s, the start is larger the end", rangeStr)
+		return nil, errors.Wrapf(cdnerrors.ErrInvalidValue, "range: %s, the start is larger the end", rangeStr)
 	}
 
 	return &RangeStruct{

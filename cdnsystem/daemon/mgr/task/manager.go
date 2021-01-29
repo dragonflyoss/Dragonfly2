@@ -18,11 +18,11 @@ package task
 
 import (
 	"context"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
@@ -149,7 +149,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 
 func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
 	if stringutils.IsEmptyStr(taskID) {
-		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskID is empty")
+		return nil, errors.Wrap(cdnerrors.ErrEmptyValue, "taskID is empty")
 	}
 
 	v, err := tm.taskStore.Get(taskID)
@@ -164,7 +164,7 @@ func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
 	if info, ok := v.(*types.SeedTask); ok {
 		return info, nil
 	}
-	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "taskID %s: %v", taskID, v)
+	return nil, errors.Wrapf(cdnerrors.ErrConvertFailed, "taskID %s: %v", taskID, v)
 }
 
 func (tm Manager) Get(ctx context.Context, taskID string) (*types.SeedTask, error) {

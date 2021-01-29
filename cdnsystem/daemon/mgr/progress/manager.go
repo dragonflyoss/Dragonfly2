@@ -19,10 +19,10 @@ package progress
 import (
 	"container/list"
 	"context"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/pkg/errors"
@@ -179,7 +179,7 @@ func (pm *Manager) Clear(taskID string) error {
 	pm.mu.GetLock(taskID, false)
 	defer pm.mu.ReleaseLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
-	if err != nil && !dferrors.IsDataNotFound(err) {
+	if err != nil && !cdnerrors.IsDataNotFound(err) {
 		return errors.Wrap(err, "failed to get seed subscribers")
 	}
 	if chanList != nil {
@@ -193,15 +193,15 @@ func (pm *Manager) Clear(taskID string) error {
 		chanList = nil
 	}
 	err = pm.seedSubscribers.Remove(taskID)
-	if err != nil && !dferrors.IsDataNotFound(err) {
+	if err != nil && !cdnerrors.IsDataNotFound(err) {
 		return errors.Wrap(err, "failed to clear seed subscribes")
 	}
 	err = pm.taskPieceMetaRecords.Remove(taskID)
-	if err != nil && !dferrors.IsDataNotFound(err) {
+	if err != nil && !cdnerrors.IsDataNotFound(err) {
 		return errors.Wrap(err, "failed to clear piece meta records")
 	}
 	err = pm.progress.Remove(taskID)
-	if err != nil && !dferrors.IsDataNotFound(err) {
+	if err != nil && !cdnerrors.IsDataNotFound(err) {
 		return errors.Wrap(err, "failed to clear progress record")
 	}
 	return nil

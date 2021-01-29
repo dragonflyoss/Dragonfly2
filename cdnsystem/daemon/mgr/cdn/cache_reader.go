@@ -19,7 +19,7 @@ package cdn
 import (
 	"crypto/md5"
 	"encoding/binary"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/pkg/errors"
@@ -79,7 +79,7 @@ func checkPieceContent(reader io.Reader, pieceRecord *pieceMetaRecord, fileMd5 h
 	realPieceMd5 := fileutils.GetMd5Sum(pieceMd5, nil)
 	// check piece content
 	if realPieceMd5 != pieceRecord.Md5 {
-		return errors.Wrapf(dferrors.ErrPieceMd5CheckFail, "realPieceMd5 md5 (%s), expected md5 (%s)", realPieceMd5, pieceRecord.Md5)
+		return errors.Wrapf(cdnerrors.ErrPieceMd5CheckFail, "realPieceMd5 md5 (%s), expected md5 (%s)", realPieceMd5, pieceRecord.Md5)
 	}
 	return nil
 }

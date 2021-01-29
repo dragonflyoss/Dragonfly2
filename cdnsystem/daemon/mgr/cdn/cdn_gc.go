@@ -18,10 +18,10 @@ package cdn
 
 import (
 	"context"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
@@ -80,7 +80,7 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 		walkTaskIDs[taskID] = true
 
 		// we should return directly when we success to get info which means it is being used
-		if _, err := taskMgr.Get(ctx, taskID); err == nil || !dferrors.IsDataNotFound(err) {
+		if _, err := taskMgr.Get(ctx, taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
 			if err != nil {
 				logger.GcLogger.Errorf("failed to get taskID(%s): %v", taskID, err)
 			}

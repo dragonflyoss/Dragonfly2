@@ -18,8 +18,8 @@ package gc
 
 import (
 	"context"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 )
 
@@ -51,7 +51,7 @@ func (gcm *Manager) deleteTaskDisk(ctx context.Context, gcTaskIDs []string) {
 		util.GetLock(taskID, false)
 
 		// try to ensure the taskID is not using again
-		if _, err := gcm.taskMgr.Get(ctx, taskID); err == nil || !dferrors.IsDataNotFound(err) {
+		if _, err := gcm.taskMgr.Get(ctx, taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
 			if err != nil {
 				logger.GcLogger.Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
 			}

@@ -27,6 +27,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
@@ -66,10 +67,10 @@ func constructRequestHeader(meta *base.UrlMeta) map[string]string {
 // validateSeedRequestParams validates the params of SeedRequest.
 func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
 	if !netutils.IsValidURL(req.Url) {
-		return errors.Wrapf(dferrors.ErrInvalidValue, "resource url: %s", req.Url)
+		return errors.New( "resource url is invalid")
 	}
 	if stringutils.IsEmptyStr(req.TaskId) {
-		return errors.Wrapf(dferrors.ErrEmptyValue, "taskId")
+		return errors.New("taskId is empty")
 	}
 	return nil
 }
@@ -108,7 +109,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		switch piece.Type {
 		case types.PieceType:
 			psc <- &cdnsystem.PieceSeed{
-				State:         base.NewState(dfcodes.SUCCESS, "success"),
+				State:         common.NewState(dfcodes.Success, "success"),
 				PeerId:        peerId,
 				SeederName:    dfnet.HostName,
 				PieceInfo:     &base.PieceInfo{
@@ -125,9 +126,9 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		case types.TaskType:
 			var state *base.ResponseState
 			if !piece.Result.Success {
-				state = base.NewState(dfcodes.CDN_ERROR, piece.Result.Msg)
+				state = common.NewState(dfcodes.CdnError, piece.Result.Msg)
 			} else {
-				state = base.NewState(dfcodes.SUCCESS, "success")
+				state = common.NewState(dfcodes.Success, "success")
 			}
 			psc <- &cdnsystem.PieceSeed{
 				State:         state,
@@ -152,7 +153,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	}()
 	if err := validateGetPieceTasksRequestParams(req); err != nil {
 		return &base.PiecePacket{
-			State:  base.NewState(dfcodes.PARAM_INVALID, err),
+			State:  common.NewState(dfcodes.BadRequest, err),
 			TaskId: req.TaskId,
 		}, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
@@ -160,14 +161,14 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	logger.Debugf("task:%+v",task)
 	if err != nil {
 		return &base.PiecePacket{
-			State:  base.NewState(dfcodes.CDN_ERROR, err),
+			State:  common.NewState(dfcodes.CdnError, err),
 			TaskId: req.TaskId,
 		}, errors.Wrapf(err, "failed to get task from cdn")
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
 		return &base.PiecePacket{
-			State:  base.NewState(dfcodes.CDN_ERROR, err),
+			State:  common.NewState(dfcodes.CdnError, err),
 			TaskId: req.TaskId,
 		}, errors.Wrapf(err, "failed to get pieces from cdn")
 	}
@@ -191,7 +192,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	hostName, _ := os.Hostname()
 
 	return &base.PiecePacket{
-		State:         base.NewState(dfcodes.SUCCESS, "success"),
+		State:         common.NewState(dfcodes.Success, "success"),
 		TaskId:        req.TaskId,
 		DstPid:        fmt.Sprintf("%s-%s_%s", hostName, req.TaskId, "CDN"),
 		DstAddr:       fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.DownloadPort),
@@ -207,13 +208,13 @@ func validateGetPieceTasksRequestParams(req *base.PieceTaskRequest) error {
 		return errors.Wrap(dferrors.ErrEmptyValue, "taskId")
 	}
 	if !netutils.IsValidIP(req.SrcIp) {
-		return errors.Wrapf(dferrors.ErrInvalidValue, "invalid ip %s", req.SrcIp)
+		return errors.Wrapf(dferrors.ErrInvalidArgument, "invalid ip %s", req.SrcIp)
 	}
 	if req.StartNum < 0 {
-		return errors.Wrapf(dferrors.ErrInvalidValue, "invalid starNum %d", req.StartNum)
+		return errors.Wrapf(dferrors.ErrInvalidArgument, "invalid starNum %d", req.StartNum)
 	}
 	if req.Limit < 0 {
-		return errors.Wrapf(dferrors.ErrInvalidValue, "invalid limit %d", req.Limit)
+		return errors.Wrapf(dferrors.ErrInvalidArgument, "invalid limit %d", req.Limit)
 	}
 	return nil
 }

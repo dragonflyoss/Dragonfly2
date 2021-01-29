@@ -19,6 +19,7 @@ package cdn
 import (
 	"context"
 	"crypto/md5"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/progress"
@@ -26,7 +27,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate/limitreader"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate/ratelimiter"
@@ -217,7 +217,7 @@ func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error 
 		}
 	}
 	err := cm.progressMgr.Clear(taskID)
-	if err != nil && !dferrors.IsDataNotFound(err) {
+	if err != nil && !cdnerrors.IsDataNotFound(err) {
 		return errors.Wrap(err, "failed to clear progress")
 	}
 	return nil

@@ -19,9 +19,9 @@ package httpprotocol
 import (
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/maputils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
@@ -95,12 +95,12 @@ func (client *httpSourceClient) GetContentLength(url string, headers map[string]
 	}
 
 	if code == http.StatusUnauthorized || code == http.StatusProxyAuthRequired {
-		return -1, errors.Wrapf(dferrors.ErrAuthenticationRequired, "url: %s, response code: %d", url, code)
+		return -1, errors.Wrapf(cdnerrors.ErrAuthenticationRequired, "url: %s, response code: %d", url, code)
 	}
 	if code != http.StatusOK && code != http.StatusPartialContent {
 		logger.Warnf("failed to get http file length with unexpected code: %d", code)
 		if code == http.StatusNotFound {
-			return -1, dferrors.ErrURLNotReachable
+			return -1, cdnerrors.ErrURLNotReachable
 		}
 		return -1, nil
 	}
@@ -125,7 +125,7 @@ func (client *httpSourceClient) IsSupportRange(url string, headers map[string]st
 		return true, nil
 	}
 	if resp.StatusCode == http.StatusNotFound {
-		return false, dferrors.ErrURLNotReachable
+		return false, cdnerrors.ErrURLNotReachable
 	}
 	return false, nil
 }

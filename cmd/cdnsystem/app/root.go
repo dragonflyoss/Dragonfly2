@@ -18,10 +18,10 @@ package app
 
 import (
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon"
 	"github.com/dragonflyoss/Dragonfly2/pkg/cmd"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
@@ -309,11 +309,11 @@ func setAdvertiseIP(cfg *config.Config) error {
 	// use the first non-loop address if the AdvertiseIP is empty
 	ipList, err := netutils.GetAllIPs()
 	if err != nil {
-		return errors.Wrapf(dferrors.ErrSystemError, "failed to get ip list: %v", err)
+		return errors.Wrapf(cdnerrors.ErrSystemError, "failed to get ip list: %v", err)
 	}
 	if len(ipList) == 0 {
 		logger.Errorf("get empty system's unicast interface addresses")
-		return errors.Wrapf(dferrors.ErrSystemError, "Unable to autodetect advertiser ip, please set it via --advertise-ip")
+		return errors.Wrapf(cdnerrors.ErrSystemError, "Unable to autodetect advertiser ip, please set it via --advertise-ip")
 	}
 
 	cfg.AdvertiseIP = ipList[0]

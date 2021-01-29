@@ -136,7 +136,7 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 }
 
 func WithTaskID(taskID string) *zap.SugaredLogger {
-	return BizLogger.With("taskID", taskID)
+	return CoreLogger.With("taskID", taskID)
 }
 
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
@@ -172,11 +172,11 @@ func Debugf(template string, args ...interface{}) {
 }
 
 func Fatalf(template string, args ...interface{}) {
-	BizLogger.Fatalf(template, args...)
+	CoreLogger.Fatalf(template, args...)
 }
 
 func Fatal(args ...interface{}) {
-	BizLogger.Fatal(args...)
+	CoreLogger.Fatal(args...)
 }
 
 

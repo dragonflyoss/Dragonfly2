@@ -19,10 +19,10 @@ package cdn
 import (
 	"context"
 	"crypto/md5"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"github.com/pkg/errors"
@@ -94,7 +94,7 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (*c
 	}
 	logger.WithTaskID(task.TaskID).Debugf("success to get expired result: %t", expired)
 	if expired {
-		return nil, errors.Wrapf(dferrors.ErrResourceExpired, "url:%s, expireInfo:%+v", task.Url, fileMetaData.ExpireInfo)
+		return nil, errors.Wrapf(cdnerrors.ErrResourceExpired, "url:%s, expireInfo:%+v", task.Url, fileMetaData.ExpireInfo)
 	}
 	// not expired
 	if fileMetaData.Finish {
@@ -107,7 +107,7 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (*c
 		return nil, errors.Wrapf(err, "failed to check if url(%s) support range request", task.Url)
 	}
 	if !supportRange {
-		return nil, errors.Wrapf(dferrors.ErrResourceNotSupportRangeRequest, "url:%s", task.Url)
+		return nil, errors.Wrapf(cdnerrors.ErrResourceNotSupportRangeRequest, "url:%s", task.Url)
 	}
 	return cd.parseByReadFile(ctx, task.TaskID, fileMetaData)
 }
@@ -115,14 +115,14 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (*c
 // parseByReadMetaFile detect cache by read meta and pieceMeta files of task
 func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskID string, fileMetaData *fileMetaData) (*cacheResult, error) {
 	if !fileMetaData.Success {
-		return nil, errors.Wrapf(dferrors.ErrDownloadFail, "success property flag is false")
+		return nil, errors.Wrapf(cdnerrors.ErrDownloadFail, "success property flag is false")
 	}
 	pieceMetaRecords, err := cd.metaDataManager.readAndCheckPieceMetaRecords(ctx, taskID, fileMetaData.SourceRealMd5)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read piece meta data from storage")
 	}
 	if fileMetaData.TotalPieceCount > 0 && len(pieceMetaRecords) != int(fileMetaData.TotalPieceCount) {
-		return nil, errors.Wrapf(dferrors.ErrPieceCountNotEqual, "piece meta file piece count(%d), meta file piece count(%d)", len(pieceMetaRecords), fileMetaData.TotalPieceCount)
+		return nil, errors.Wrapf(cdnerrors.ErrPieceCountNotEqual, "piece meta file piece count(%d), meta file piece count(%d)", len(pieceMetaRecords), fileMetaData.TotalPieceCount)
 	}
 	storageInfo, err := cd.cacheStore.Stat(ctx, getDownloadRawFunc(taskID))
 	if err != nil {
@@ -130,7 +130,7 @@ func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskID string,
 	}
 	// check file data integrity by file size
 	if fileMetaData.CdnFileLength != storageInfo.Size {
-		return nil, errors.Wrapf(dferrors.ErrFileLengthNotEqual, "meta size %d, disk size %d", fileMetaData.CdnFileLength, storageInfo.Size)
+		return nil, errors.Wrapf(cdnerrors.ErrFileLengthNotEqual, "meta size %d, disk size %d", fileMetaData.CdnFileLength, storageInfo.Size)
 	}
 	return &cacheResult{
 		breakNum:         -1,
