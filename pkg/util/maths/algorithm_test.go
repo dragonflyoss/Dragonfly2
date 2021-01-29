@@ -17,11 +17,10 @@
 package maths
 
 import (
+	"github.com/stretchr/testify/suite"
 	"math/rand"
 	"sort"
 	"testing"
-
-	"github.com/stretchr/testify/suite"
 )
 
 func TestSuite(t *testing.T) {

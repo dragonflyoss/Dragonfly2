@@ -128,6 +128,7 @@ func StatSeedStart(taskId, url string) {
 		zap.String("seederName", dfnet.HostName))
 }
 
+
 func StatSeedFinish(taskId, url string, success bool, code base.Code, beginTime, endTime uint64, traffic, contentLength int64) {
 	logger.StatSeedLogger.Info("seed making finish",
 		zap.Bool("success", success),

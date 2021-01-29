@@ -8,13 +8,21 @@ require (
 	github.com/go-echarts/statsview v0.3.4
 	github.com/gofrs/flock v0.8.0
 	github.com/golang/mock v1.4.4
+	github.com/emirpasic/gods v1.12.0
+	github.com/go-echarts/statsview v0.3.4
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.5
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.7.0
 	github.com/pborman/uuid v1.2.1
+	github.com/mitchellh/go-homedir v1.1.0
+	github.com/mitchellh/mapstructure v1.4.1
+	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
+	github.com/spf13/cobra v1.1.1
+	github.com/spf13/viper v1.7.1
+	github.com/prometheus/client_golang v1.9.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1

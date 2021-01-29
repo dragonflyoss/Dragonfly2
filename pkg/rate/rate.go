@@ -35,7 +35,7 @@ const (
 	GB      = 1024 * MB
 )
 
-// Set implements pflag/flag.Value
+// Set implements pflag.Value
 func (d *Rate) Set(s string) error {
 	var err error
 	*d, err = ParseRate(s)
@@ -45,6 +45,31 @@ func (d *Rate) Set(s string) error {
 // Type implements pflag.Value
 func (d *Rate) Type() string {
 	return "rate"
+}
+
+// String returns the rate with an uppercase unit.
+func (d Rate) String() string {
+	var (
+		n      = int64(d)
+		symbol = "B"
+		unit   = B
+	)
+	if n == 0 {
+		return "0B"
+	}
+
+	switch int64(0) {
+	case n % int64(GB):
+		symbol = "GB"
+		unit = GB
+	case n % int64(MB):
+		symbol = "MB"
+		unit = MB
+	case n % int64(KB):
+		symbol = "KB"
+		unit = KB
+	}
+	return fmt.Sprintf("%v%v", n/int64(unit), symbol)
 }
 
 var rateRE = regexp.MustCompile("^([0-9]+)(MB?|m|KB?|k|GB?|g|B)$")
@@ -79,31 +104,6 @@ func ParseRate(rateStr string) (Rate, error) {
 		return 0, fmt.Errorf("invalid unit in rate string: %q, supported format: G(B)/g/M(B)/m/K(B)/k/B or pure number", unit)
 	}
 	return Rate(n), nil
-}
-
-// String returns the rate with an uppercase unit.
-func (d Rate) String() string {
-	var (
-		n      = int64(d)
-		symbol = "B"
-		unit   = B
-	)
-	if n == 0 {
-		return "0B"
-	}
-
-	switch int64(0) {
-	case n % int64(GB):
-		symbol = "GB"
-		unit = GB
-	case n % int64(MB):
-		symbol = "MB"
-		unit = MB
-	case n % int64(KB):
-		symbol = "KB"
-		unit = KB
-	}
-	return fmt.Sprintf("%v%v", n/int64(unit), symbol)
 }
 
 // MarshalYAML implements the yaml.Marshaler interface.

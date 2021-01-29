@@ -16,11 +16,14 @@
 
 package main
 
-import _ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
+import (
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
+	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
+)
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
@@ -42,7 +45,7 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 				return
 			default:
 				if i < 0 {
-					psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"),
+					psc <- &cdnsystem.PieceSeed{State: common.NewState(dfcodes.Success, "success"),
 						SeederName:      "localhost:12345",
 						Done:          true,
 						ContentLength: 100,
@@ -50,13 +53,16 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 					return
 				}
 				psc <- &cdnsystem.PieceSeed{
-					State: base.NewState(base.Code_SUCCESS, "success"),
+					State: common.NewState(dfcodes.Success, "success"),
 					SeederName: "localhost:12345",
 					PieceInfo: &base.PieceInfo{PieceNum: pieceNum},
 				}
 				time.Sleep(1 * time.Second)
 				i--
 				pieceNum++
+				psc <- &cdnsystem.PieceSeed{State: common.NewState(dfcodes.Success, "success")}
+				time.Sleep(1 * time.Second)
+				i--
 			}
 		}
 	})
@@ -65,12 +71,8 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 }
 
 func main() {
-	lisAddr := basic.NetAddr{
-		Type: basic.TCP,
-		Addr: ":12345",
-	}
 
-	err := rpc.StartServer(lisAddr, &helloSeeder{})
+	err := rpc.StartTcpServer(12345, 12345, &helloSeeder{})
 
 	if err != nil {
 		fmt.Printf("finish error:%v\n", err)

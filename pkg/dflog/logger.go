@@ -135,6 +135,10 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 	}
 }
 
+func WithTaskID(taskID string) *zap.SugaredLogger {
+	return CoreLogger.With("taskID", taskID)
+}
+
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
 	CoreLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }
@@ -166,6 +170,15 @@ func Errorf(template string, args ...interface{}) {
 func Debugf(template string, args ...interface{}) {
 	CoreLogger.Debugf(template, args...)
 }
+
+func Fatalf(template string, args ...interface{}) {
+	CoreLogger.Fatalf(template, args...)
+}
+
+func Fatal(args ...interface{}) {
+	CoreLogger.Fatal(args...)
+}
+
 
 type zapGrpc struct {
 	*zap.SugaredLogger

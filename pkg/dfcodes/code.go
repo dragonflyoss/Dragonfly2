@@ -23,20 +23,21 @@ const (
 	// no problem 200-299
 	Success base.Code = 200
 
+	ErrInvalidValue
 	// client processing error 400-499
-	ClientError base.Code = 400
+	BadRequest base.Code = 400
 
-	// scheduler processing error 500-599
-	SchedulerError        base.Code = 500
-	PeerTaskNotRegistered base.Code = 501
+	// scheduler processing error 5000-5999
+	SchedulerError        base.Code = 5000
+	PeerTaskNotRegistered base.Code = 5001
 	// client can be migrated to another scheduler
-	ResourceLacked base.Code = 502
+	ResourceLacked base.Code = 5002
 
-	// cdnsystem processing error 600-699
-	CdnError base.Code = 600
+	// cdnsystem processing error 6000-6999
+	CdnError base.Code = 6000
 
-	// manager processing error 700-799
-	ManagerError base.Code = 700
+	// manager processing error 7000-7999
+	ManagerError base.Code = 7000
 
 	// shared error 1000-1099
 	UnknownError    base.Code = 1000
