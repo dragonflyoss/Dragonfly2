@@ -17,12 +17,13 @@
 package main
 
 import (
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
 	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
 )
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"time"
@@ -41,13 +42,13 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 				return
 			default:
 				if i < 0 {
-					psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success"),
+					psc <- &cdnsystem.PieceSeed{State: common.NewState(dfcodes.Success, "success"),
 						Done:          true,
 						ContentLength: 100,
 					}
 					return
 				}
-				psc <- &cdnsystem.PieceSeed{State: base.NewState(base.Code_SUCCESS, "success")}
+				psc <- &cdnsystem.PieceSeed{State: common.NewState(dfcodes.Success, "success")}
 				time.Sleep(1 * time.Second)
 				i--
 			}

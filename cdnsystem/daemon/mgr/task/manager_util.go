@@ -18,7 +18,6 @@ package task
 
 import (
 	"context"
-	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
@@ -84,20 +83,6 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		}
 		if cdnerrors.IsAuthenticationRequired(err) {
 			return nil, err
-		}
-	}
-	// source cdn
-	if tm.cfg.CDNPattern == config.CDNPatternSource {
-		if sourceFileLength <= 0 {
-			return nil, fmt.Errorf("taskID: %s failed to get file length and it is required in source CDN pattern", task.TaskID)
-		}
-		// check whether support range
-		supportRange, err := tm.resourceClient.IsSupportRange(task.Url, task.Headers)
-		if err != nil {
-			return nil, errors.Wrapf(err, "taskID: %s failed to check whether the url(%s) supports partial requests", task.TaskID, task.Url)
-		}
-		if !supportRange {
-			return nil, fmt.Errorf("taskID: %s the task URL should support range request in source CDN pattern", task.TaskID)
 		}
 	}
 	// if not support file length header request ,return -1

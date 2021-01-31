@@ -18,36 +18,9 @@ package mgr
 
 import (
 	"context"
-	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
-type CDNBuilder func(cfg *config.Config, cacheStore *store.Store,
-	resourceClient source.ResourceClient, register prometheus.Registerer) (CDNMgr, error)
-
-var cdnBuilderMap = make(map[config.CDNPattern]CDNBuilder)
-
-func Register(name config.CDNPattern, builder CDNBuilder) {
-	cdnBuilderMap[name] = builder
-}
-
-// get an implementation of the interface of CDNMgr
-func GetCDNManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (CDNMgr, error) {
-	cdnPattern := cfg.CDNPattern
-	if cdnPattern.String() == "" {
-		cdnPattern = config.CDNPatternLocal
-	}
-
-	cdnBuilder, ok := cdnBuilderMap[cdnPattern]
-	if !ok {
-		return nil, fmt.Errorf("unexpected cdn pattern(%s) which must be in [\"local\", \"source\"]", cdnPattern)
-	}
-	return cdnBuilder(cfg, cacheStore, resourceClient, register)
-}
 
 // CDNMgr as an interface defines all operations against CDN and
 // operates on the underlying files stored on the local disk, etc.

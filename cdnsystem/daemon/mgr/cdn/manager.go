@@ -38,14 +38,9 @@ import (
 )
 
 func init() {
-
-}
-
-func init() {
 	// Ensure that Manager implements the CDNMgr interface
 	var manager *Manager = nil
 	var _ mgr.CDNMgr = manager
-	mgr.Register(config.CDNPatternLocal, NewManager)
 }
 
 type metrics struct {
@@ -88,13 +83,9 @@ type Manager struct {
 
 // NewManager returns a new Manager.
 func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (mgr.CDNMgr, error) {
-	return newManager(cfg, cacheStore, resourceClient, register)
-}
-
-func newManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
-	publisher := progress.NewManager()
+	publisher := progress.NewManager(register)
 	cdnReporter := newReporter(publisher)
 	return &Manager{
 		cfg:             cfg,
@@ -144,6 +135,10 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	}
 	// third: start to download the source file
 	resp, err := cm.download(task, detectResult)
+	if err != nil {
+		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
+		return seedTask, err
+	}
 	defer resp.Body.Close()
 	cm.metrics.cdnDownloadCount.WithLabelValues().Inc()
 	// download fail

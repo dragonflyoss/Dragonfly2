@@ -38,17 +38,13 @@ const (
 )
 
 func init() {
-	sourceClient, err := newHttpSourceClient()
-	if err != nil {
-		logger.Errorf("failed to create http/https source client:%v", err)
-		return
-	}
-	source.Register(HttpClient, sourceClient)
-	source.Register(HttpsClient, sourceClient)
+	httpSourceClient := NewHttpSourceClient()
+	source.Register(HttpClient, httpSourceClient)
+	source.Register(HttpsClient, httpSourceClient)
 }
 
 // NewHttpSourceClient returns a new HttpSourceClient.
-func newHttpSourceClient() (source.ResourceClient, error) {
+func NewHttpSourceClient() source.ResourceClient {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
@@ -64,7 +60,7 @@ func newHttpSourceClient() (source.ResourceClient, error) {
 		httpClient: &http.Client{
 			Transport: transport,
 		},
-	}, nil
+	}
 }
 
 // httpSourceClient is an implementation of the interface of SourceClient.

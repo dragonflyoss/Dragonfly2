@@ -24,10 +24,7 @@ import (
 const ossClient = "oss"
 
 func init() {
-	sourceClient, err := newOSSSourceClient()
-	if err != nil {
-
-	}
+	sourceClient := NewOSSSourceClient()
 	source.Register(ossClient, sourceClient)
 }
 
@@ -52,6 +49,6 @@ func (o ossSourceClient) Download(url string, headers map[string]string) (*types
 	panic("implement me")
 }
 
-func newOSSSourceClient() (source.ResourceClient, error) {
-	return nil, nil
+func NewOSSSourceClient() source.ResourceClient {
+	return nil
 }

@@ -23,13 +23,6 @@ import (
 )
 
 const (
-	//CDNPatternLocal
-	CDNPatternLocal CDNPattern = "local"
-	//CDNPatternSource
-	CDNPatternSource CDNPattern = "source"
-)
-
-const (
 	// RepoHome is the directory where store data
 	RepoHome = "repo"
 	// DownloadHome is the parent directory where the downloaded files are stored
@@ -52,10 +45,6 @@ const (
 	DefaultListenPort = 8003
   	// DefaultDownloadPort is the default port for download files from cdn.
 	DefaultDownloadPort = 8001
-)
-
-const (
-	DefaultCDNPattern = CDNPatternLocal
 )
 
 const (

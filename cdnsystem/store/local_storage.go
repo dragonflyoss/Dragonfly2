@@ -19,6 +19,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stat"
@@ -349,7 +350,7 @@ func (ls *localStorage) statPath(bucket, key string) (string, os.FileInfo, error
 	f, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil, errors.Wrapf(ErrKeyNotFound, "bucket(%s) key(%s)", bucket, key)
+			return "", nil, errors.Wrapf(cdnerrors.ErrKeyNotFound, "bucket(%s) key(%s)", bucket, key)
 		}
 		return "", nil, err
 	}
@@ -363,22 +364,22 @@ func getLockKey(path string, offset int64) string {
 
 func checkGetRaw(raw *Raw, fileLength int64) error {
 	if fileLength < raw.Offset {
-		return errors.Wrapf(ErrRangeNotSatisfiable, "the offset: %d is lager than the file length: %d", raw.Offset, fileLength)
+		return errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "the offset: %d is lager than the file length: %d", raw.Offset, fileLength)
 	}
 
 	if raw.Length < 0 {
-		return errors.Wrapf(ErrInvalidValue, "the length: %d is not a positive integer", raw.Length)
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the length: %d is not a positive integer", raw.Length)
 	}
 
 	if fileLength < (raw.Offset + raw.Length) {
-		return errors.Wrapf(ErrRangeNotSatisfiable, "the offset: %d and length: %d is lager than the file length: %d", raw.Offset, raw.Length, fileLength)
+		return errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "the offset: %d and length: %d is lager than the file length: %d", raw.Offset, raw.Length, fileLength)
 	}
 	return nil
 }
 
 func checkPutRaw(raw *Raw) error {
 	if raw.Length < 0 {
-		return errors.Wrapf(ErrInvalidValue, "the length: %d should not be a negative integer", raw.Length)
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the length: %d should not be a negative integer", raw.Length)
 	}
 	return nil
 }

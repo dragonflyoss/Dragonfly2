@@ -18,6 +18,7 @@ package cdn
 
 import (
 	"context"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
@@ -88,22 +89,22 @@ func getHomeRaw() *store.Raw {
 func deleteTaskFiles(ctx context.Context, cacheStore *store.Store, taskID string) error {
 	// delete task meta data
 	if err := cacheStore.Remove(ctx, getTaskMetaDataRaw(taskID)); err != nil &&
-		!store.IsKeyNotFound(err) {
+		!cdnerrors.IsKeyNotFound(err) {
 		return err
 	}
 	// delete piece meta data
 	if err := cacheStore.Remove(ctx, getPieceMetaDataRaw(taskID)); err != nil &&
-		!store.IsKeyNotFound(err) {
+		!cdnerrors.IsKeyNotFound(err) {
 		return err
 	}
 	// delete task file data
 	if err := cacheStore.Remove(ctx, getDownloadRaw(taskID)); err != nil &&
-		!store.IsKeyNotFound(err) {
+		!cdnerrors.IsKeyNotFound(err) {
 		return err
 	}
 	// try to clean the parent bucket
 	if err := cacheStore.Remove(ctx, getParentRaw(taskID)); err != nil &&
-		!store.IsKeyNotFound(err) {
+		!cdnerrors.IsKeyNotFound(err) {
 		logger.WithTaskID(taskID).Warnf("failed to remove parent bucket:%v", err)
 	}
 	return nil
