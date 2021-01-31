@@ -60,7 +60,6 @@ func NewBaseProperties() *BaseProperties {
 		home = filepath.Join(string(filepath.Separator), "home", "admin","cdn-system")
 	}
 	return &BaseProperties{
-		CDNPattern:              DefaultCDNPattern,
 		ListenPort:              DefaultListenPort,
 		DownloadPort:            DefaultDownloadPort,
 		HomeDir:                 home,
@@ -68,7 +67,6 @@ func NewBaseProperties() *BaseProperties {
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
 		MaxBandwidth:            DefaultMaxBandwidth,
 		EnableProfiler:          false,
-		Debug:                   false,
 		FailAccessInterval:      DefaultFailAccessInterval,
 		GCInitialDelay:          DefaultGCInitialDelay,
 		GCMetaInterval:          DefaultGCMetaInterval,
@@ -81,25 +79,8 @@ func NewBaseProperties() *BaseProperties {
 	}
 }
 
-type CDNPattern string
-
-func (p *CDNPattern) Set(val string) error {
-	*p = CDNPattern(val)
-	return nil
-}
-func (p *CDNPattern) Type() string {
-	return "cdnPattern"
-}
-
-func (p *CDNPattern) String() string {
-	return string(*p)
-}
-
 // BaseProperties contains all basic properties of cdn system.
 type BaseProperties struct {
-	// CDNPattern cdn pattern which must be in ["local", "source"].
-	// default: CDNPatternLocal
-	CDNPattern CDNPattern `yaml:"cdnPattern"`
 
 	StorageDriver string `yaml:"storageDriver"`
 
@@ -129,10 +110,6 @@ type BaseProperties struct {
 	// Whether to enable profiler
 	// default: false
 	EnableProfiler bool `yaml:"enableProfiler"`
-
-	// Whether to open DEBUG level
-	// default: false
-	Debug bool `yaml:"debug"`
 
 	// AdvertiseIP is used to set the ip that we advertise to other peer in the p2p-network.
 	// By default, the first non-loop address is advertised.

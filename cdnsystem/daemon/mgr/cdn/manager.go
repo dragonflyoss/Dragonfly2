@@ -19,6 +19,7 @@ package cdn
 import (
 	"context"
 	"crypto/md5"
+	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
@@ -38,14 +39,9 @@ import (
 )
 
 func init() {
-
-}
-
-func init() {
 	// Ensure that Manager implements the CDNMgr interface
 	var manager *Manager = nil
 	var _ mgr.CDNMgr = manager
-	mgr.Register(config.CDNPatternLocal, NewManager)
 }
 
 type metrics struct {
@@ -88,13 +84,9 @@ type Manager struct {
 
 // NewManager returns a new Manager.
 func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (mgr.CDNMgr, error) {
-	return newManager(cfg, cacheStore, resourceClient, register)
-}
-
-func newManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
-	publisher := progress.NewManager()
+	publisher := progress.NewManager(register)
 	cdnReporter := newReporter(publisher)
 	return &Manager{
 		cfg:             cfg,
@@ -144,6 +136,10 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	}
 	// third: start to download the source file
 	resp, err := cm.download(task, detectResult)
+	if err != nil {
+		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
+		return seedTask, err
+	}
 	defer resp.Body.Close()
 	cm.metrics.cdnDownloadCount.WithLabelValues().Inc()
 	// download fail
@@ -169,17 +165,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// back source length
 	cm.metrics.cdnDownloadBytes.WithLabelValues().Add(float64(downloadMetadata.backSourceLength))
 
-	//logger.StatSeedLogger.Info("seed making finish",
-	//	zap.Bool("success", success),
-	//	zap.String("taskId", task.TaskID),
-	//	zap.String("url", task.TaskUrl),
-	//	zap.String("seederIp", dfnet.HostIp),
-	//	zap.String("seederName", dfnet.HostName),
-	//	// Millisecond
-	//	zap.Uint32("cost", cost),
-	//	zap.Int64("traffic", traffic),
-	//	zap.Int64("contentLength", downloadMetadata.realSourceFileLength),
-	//	zap.Int("code", int(code)))
+	//todo log
+	// server.StatSeedFinish()
 
 	sourceMD5 := reader.Md5()
 	// fifth: handle CDN result
@@ -238,19 +225,23 @@ func (cm *Manager) GetPieces(ctx context.Context, taskID string) ([]*types.SeedP
 // handleCDNResult
 func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, sourceMd5 string, downloadMetadata *downloadMetadata) (bool, error) {
 	var isSuccess = true
+	var errorMsg string
 	// check md5
 	if !stringutils.IsEmptyStr(task.RequestMd5) && task.RequestMd5 != sourceMd5 {
-		logger.WithTaskID(task.TaskID).Errorf("file md5 not match expected:%s real:%s", task.RequestMd5, sourceMd5)
+		errorMsg = fmt.Sprintf("file md5 not match expected:%s real:%s", task.RequestMd5, sourceMd5)
 		isSuccess = false
 	}
 	// check source length
 	if isSuccess && task.SourceFileLength >= 0 && task.SourceFileLength != downloadMetadata.realSourceFileLength {
-		logger.WithTaskID(task.TaskID).Errorf("file length not match expected:%d real:%d", task.SourceFileLength, downloadMetadata.realSourceFileLength)
+		errorMsg = fmt.Sprintf("file length not match expected:%d real:%d", task.SourceFileLength, downloadMetadata.realSourceFileLength)
 		isSuccess = false
 	}
 	if isSuccess && task.PieceTotal > 0 && downloadMetadata.pieceTotalCount != task.PieceTotal {
-		logger.WithTaskID(task.TaskID).Errorf("task total piece count not match expected:%d real:%d", task.PieceTotal, downloadMetadata.pieceTotalCount)
+		errorMsg = fmt.Sprintf("task total piece count not match expected:%d real:%d", task.PieceTotal, downloadMetadata.pieceTotalCount)
 		isSuccess = false
+	}
+	if !stringutils.IsEmptyStr(errorMsg) {
+		logger.WithTaskID(task.TaskID).Error(errorMsg)
 	}
 	sourceFileLen := task.SourceFileLength
 	if isSuccess && task.SourceFileLength <= 0 {
@@ -270,17 +261,17 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 		CdnFileLength: cdnFileLength,
 		SourceFileLen: sourceFileLen,
 	}); err != nil {
-		return false, err
+		return false, errors.Wrap(err, "failed to update task status and result")
 	}
 
 	if !isSuccess {
-		return false, nil
+		return false, errors.New(errorMsg)
 	}
 
 	logger.WithTaskID(task.TaskID).Infof("success to get task, downloadMetadata:%+v realMd5: %s", downloadMetadata, sourceMd5)
 
 	if err := cm.metaDataManager.appendPieceMetaIntegrityData(ctx, task.TaskID, sourceMd5); err != nil {
-		return false, err
+		return false, errors.Wrap(err," failed to append piece meta integrity data")
 	}
 	return true, nil
 }

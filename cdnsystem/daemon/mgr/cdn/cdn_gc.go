@@ -40,7 +40,7 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 
 	freeDisk, err := cm.cacheStore.GetAvailSpace(ctx, getHomeRawFunc())
 	if err != nil {
-		if store.IsKeyNotFound(err) {
+		if cdnerrors.IsKeyNotFound(err) {
 			return nil, nil
 		}
 		return nil, errors.Wrapf(err, "failed to get avail space")

@@ -21,7 +21,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/maputils"
-	ht "net/http"
 	"reflect"
 	"testing"
 )
@@ -65,7 +64,6 @@ func Test_httpSourceClient_Download(t *testing.T) {
 	type args struct {
 		url       string
 		headers   map[string]string
-		checkCode source.StatusCodeChecker
 	}
 	tests := []struct {
 		name    string
@@ -77,7 +75,6 @@ func Test_httpSourceClient_Download(t *testing.T) {
 			name: "t1",
 			args: args{
 				url:       "https://download.jetbrains.8686c.com/go/goland-2020.2.3.dmg",
-				checkCode: checkStatusCode([]int{ht.StatusOK, ht.StatusPartialContent}),
 			},
 			want: &types.DownloadResponse{
 				Body:       nil,
@@ -86,13 +83,10 @@ func Test_httpSourceClient_Download(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	client, err := newHttpSourceClient()
-	if err != nil {
-		t.Errorf("create http source client error = %+v", err)
-	}
+	client := NewHttpSourceClient()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := client.Download(tt.args.url, tt.args.headers, tt.args.checkCode)
+			got, err := client.Download(tt.args.url, tt.args.headers)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Download() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -126,10 +120,7 @@ func Test_httpSourceClient_GetContentLength(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	client, err := newHttpSourceClient()
-	if err != nil {
-		t.Errorf("create http source client error = %+v", err)
-	}
+	client := NewHttpSourceClient()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := client.GetContentLength(tt.args.url, tt.args.headers)
@@ -166,10 +157,7 @@ func Test_httpSourceClient_IsExpired(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	client, err := newHttpSourceClient()
-	if err != nil {
-		t.Errorf("create http source client error = %+v", err)
-	}
+	client := NewHttpSourceClient()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := client.IsExpired(tt.args.url, tt.args.headers, tt.args.expireInfo)
@@ -214,10 +202,7 @@ func Test_httpSourceClient_IsSupportRange(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	client, err := newHttpSourceClient()
-	if err != nil {
-		t.Errorf("create http source client error = %+v", err)
-	}
+	client := NewHttpSourceClient()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := client.IsSupportRange(tt.args.url, tt.args.headers)
@@ -242,11 +227,7 @@ func Test_newHttpSourceClient(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newHttpSourceClient()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("newHttpSourceClient() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := NewHttpSourceClient()
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("newHttpSourceClient() got = %v, want %v", got, tt.want)
 			}

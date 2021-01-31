@@ -60,6 +60,12 @@ var (
 	// ErrDataNotFound represents the data cannot be found.
 	ErrDataNotFound = errors.New("data not found")
 
+	// ErrKeyNotFound is an error which will be returned when the key can not be found.
+	ErrKeyNotFound = errors.New("the key not found")
+
+	// ErrEmptyKey represents the key is empty or nil.
+	ErrEmptyKey = errors.New("empty key")
+
 	// ErrEmptyValue represents the value is empty or nil.
 	ErrEmptyValue = errors.New("empty value")
 
@@ -75,15 +81,11 @@ var (
 	// ErrRangeNotSatisfiable represents the length of file is insufficient.
 	ErrRangeNotSatisfiable = errors.New("range not satisfiable")
 
-	// ErrEndOfStream represents end of stream
-	ErrEndOfStream = errors.New("end of stream")
-
 	// ErrAddressReused represents address is reused
 	ErrAddressReused = errors.New("address is reused")
 
 	// ErrUnknownError represents the error should not happen and the cause of that is unknown.
 	ErrUnknownError = errors.New("unknown error")
-
 )
 
 // IsSystemError checks the error is a system error or not.
@@ -120,7 +122,19 @@ func IsDataNotFound(err error) bool {
 	return errors.Cause(err) == ErrDataNotFound
 }
 
+// IsKeyNotFound
+func IsKeyNotFound(err error) bool {
+	return errors.Cause(err) == ErrKeyNotFound
+}
+
+// IsEmptyKey
+func IsEmptyKey(err error) bool {
+	return errors.Cause(err) == ErrEmptyKey
+}
+
 // IsUnknownError checks the error is UnknownError or not.
 func IsUnknownError(err error) bool {
 	return errors.Cause(err) == ErrUnknownError
 }
+
+

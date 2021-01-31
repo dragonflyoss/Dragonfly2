@@ -12,8 +12,8 @@ base:
   downloadPort: 8001
 
   # HomeDir is working directory of cdn.
-  # default: /home/admin/cdn
-  homeDir: /home/admin/cdn
+  # default: /tmp/cdn
+  homeDir: /tmp/cdn
 
   # SystemReservedBandwidth is the network bandwidth reserved for system software.
   # default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
@@ -26,10 +26,6 @@ base:
   # Whether to enable profiler
   # default: false
   enableProfiler: false
-
-  # Whether to open DEBUG level
-  # default: false
-  debug: false
 
   # FailAccessInterval is the interval time after failed to access the URL.
   # If a task failed to be downloaded from the source, it will not be retried in the time since the last failure.
@@ -72,3 +68,13 @@ base:
   # CleanRatio is the ratio to clean the disk and it is based on 10.
   # It means the value of CleanRatio should be [1-10].
   CleanRatio: 1
+
+plugins:
+  storage:
+    - name: local
+      enabled: true
+      config: "baseDir: /tmp/cdnsystem/"
+  sourceClient:
+    - name: http
+      enable: true
+

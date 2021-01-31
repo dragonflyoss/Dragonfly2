@@ -37,6 +37,7 @@ import (
 	"strings"
 )
 
+
 // CdnSeedServer is used to implement cdnsystem.SeederServer.
 type CdnSeedServer struct {
 	taskMgr mgr.SeedTaskMgr
@@ -67,7 +68,7 @@ func constructRequestHeader(meta *base.UrlMeta) map[string]string {
 // validateSeedRequestParams validates the params of SeedRequest.
 func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
 	if !netutils.IsValidURL(req.Url) {
-		return errors.New( "resource url is invalid")
+		return errors.Errorf( "resource url:%s is invalid", req.Url)
 	}
 	if stringutils.IsEmptyStr(req.TaskId) {
 		return errors.New("taskId is empty")
@@ -78,15 +79,15 @@ func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
 func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds, req=%+v: %v", req, r)
+			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds: %v", r)
 		}
 
 		if err != nil {
-			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds, req=%+v: %v", req, err)
+			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds: %v", err)
 		}
 	}()
 	if err := validateSeedRequestParams(req); err != nil {
-		return errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
+		return dferrors.Newf(dfcodes.BadRequest,"validate seed request fail: %v", err)
 	}
 	headers := constructRequestHeader(req.GetUrlMeta())
 	registerRequest := &types.TaskRegisterRequest{
@@ -100,7 +101,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
 
 	if err != nil {
-		return errors.Wrapf(err, "register seed task fail, registerRequest:%+v", registerRequest)
+		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "register seed task fail, registerRequest:%+v:%v", registerRequest, err)
 	}
 	peerId := fmt.Sprintf("%s-%s_%s", dfnet.HostName, req.TaskId, "CDN")
 	for piece := range pieceChan {

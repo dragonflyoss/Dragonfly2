@@ -26,6 +26,7 @@ import (
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"sync"
 )
 
@@ -35,20 +36,32 @@ func init() {
 	var _ mgr.SeedProgressMgr = manager
 }
 
+type metrics struct {
+
+}
+
+func newMetrics(register prometheus.Registerer) *metrics {
+	return &metrics{
+
+	}
+}
+
 type Manager struct {
 	seedSubscribers      *syncmap.SyncMap
 	taskPieceMetaRecords *syncmap.SyncMap
 	progress             *syncmap.SyncMap
 	mu                   *util.LockerPool
 	buffer               int
+	metrics              *metrics
 }
 
-func NewManager() *Manager {
+func NewManager(register prometheus.Registerer) *Manager {
 	return &Manager{
 		seedSubscribers:      syncmap.NewSyncMap(),
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
 		progress:             syncmap.NewSyncMap(),
 		mu:                   util.NewLockerPool(),
+		metrics:              newMetrics(register),
 	}
 }
 

@@ -18,14 +18,13 @@ package main
 
 import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
 	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
 )
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
 	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"time"
@@ -37,7 +36,6 @@ type helloSeeder struct {
 func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
 	safe.Call(func() {
 		fmt.Printf("req:%v\n", req)
-		var pieceNum = int32(0)
 		var i = 5
 		for {
 			select {
@@ -46,20 +44,11 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 			default:
 				if i < 0 {
 					psc <- &cdnsystem.PieceSeed{State: common.NewState(dfcodes.Success, "success"),
-						SeederName:      "localhost:12345",
 						Done:          true,
 						ContentLength: 100,
 					}
 					return
 				}
-				psc <- &cdnsystem.PieceSeed{
-					State: common.NewState(dfcodes.Success, "success"),
-					SeederName: "localhost:12345",
-					PieceInfo: &base.PieceInfo{PieceNum: pieceNum},
-				}
-				time.Sleep(1 * time.Second)
-				i--
-				pieceNum++
 				psc <- &cdnsystem.PieceSeed{State: common.NewState(dfcodes.Success, "success")}
 				time.Sleep(1 * time.Second)
 				i--

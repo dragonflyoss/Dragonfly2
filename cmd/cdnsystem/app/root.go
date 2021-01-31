@@ -85,12 +85,11 @@ var rootCmd = &cobra.Command{
 				return err
 			}
 		}
-		logger.Infof("success to init local ip of cdn, use ip: %s", cfg.AdvertiseIP)
-
 		logger.Debugf("get cdn config: %+v", cfg)
-		logger.Infof("start to run cdn system")
 
-		if !cfg.Debug {
+		logger.Infof("success to init local ip of cdn, start to run cdn system, use ip: %s", cfg.AdvertiseIP)
+
+		if cfg.EnableProfiler {
 			go func() {
 				// enable go pprof and statsview
 				port, _ := freeport.GetFreePort()
@@ -131,9 +130,6 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.String("config", config.DefaultCdnConfigFilePath,
 		"the path of cdn configuration file")
 
-	flagSet.Var(&defaultBaseProperties.CDNPattern, "cdn-pattern",
-		"cdn pattern, must be in [\"local\", \"source\"]. Default: local")
-
 	flagSet.Int("port", defaultBaseProperties.ListenPort,
 		"listenPort is the port that cdn server listens on")
 
@@ -151,9 +147,6 @@ func setupFlags(cmd *cobra.Command) {
 
 	flagSet.Bool("profiler", defaultBaseProperties.EnableProfiler,
 		"profiler sets whether cdnNode HTTP server setups profiler")
-
-	flagSet.BoolP("debug", "D", defaultBaseProperties.Debug,
-		"switch daemon log level to DEBUG mode")
 
 	flagSet.String("advertise-ip", "",
 		"the cdn node ip is the ip we advertise to other peers in the p2p-network")
@@ -192,9 +185,6 @@ func bindRootFlags(v *viper.Viper) error {
 			key:  "config",
 			flag: "config",
 		}, {
-			key:  "base.CDNPattern",
-			flag: "cdn-pattern",
-		}, {
 			key:  "base.listenPort",
 			flag: "port",
 		}, {
@@ -212,9 +202,6 @@ func bindRootFlags(v *viper.Viper) error {
 		}, {
 			key:  "base.enableProfiler",
 			flag: "profiler",
-		}, {
-			key:  "base.debug",
-			flag: "debug",
 		}, {
 			key:  "base.advertiseIP",
 			flag: "advertise-ip",
@@ -278,7 +265,6 @@ func getConfigFromViper(v *viper.Viper) (*config.Config, error) {
 			reflect.TypeOf(time.Second),
 			reflect.TypeOf(rate.B),
 			reflect.TypeOf(fileutils.B),
-			reflect.TypeOf(config.DefaultCDNPattern),
 		)
 	}); err != nil {
 		return nil, errors.Wrap(err, "unmarshal yaml")

@@ -19,6 +19,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
@@ -108,7 +109,7 @@ func (s *Store) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
 func (s *Store) Remove(ctx context.Context, raw *Raw) error {
 	if raw == nil || (stringutils.IsEmptyStr(raw.Key) &&
 		stringutils.IsEmptyStr(raw.Bucket)) {
-		return errors.Wrapf(ErrEmptyKey, "cannot set both key and bucket empty at the same time")
+		return errors.Wrapf(cdnerrors.ErrEmptyValue, "cannot set both key and bucket empty at the same time")
 	}
 	return s.driver.Remove(ctx, raw)
 }
@@ -136,7 +137,7 @@ func (s *Store) Walk(ctx context.Context, raw *Raw) error {
 
 func checkEmptyKey(raw *Raw) error {
 	if raw == nil || stringutils.IsEmptyStr(raw.Key) {
-		return ErrEmptyKey
+		return cdnerrors.ErrEmptyKey
 	}
 
 	return nil
