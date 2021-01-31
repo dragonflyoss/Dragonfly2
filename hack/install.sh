@@ -21,13 +21,13 @@ install() {
 }
 
 install-cdn(){
-    local installSuperDir="${INSTALL_HOME}/${INSTALL_SUPERNODE_PATH}"
-    echo "install: ${installSuperDir}"
-    createDir "${installSuperDir}"
+    local installCdnDir="${INSTALL_HOME}/${INSTALL_CDN_PATH}"
+    echo "install: ${installCdnDir}"
+    createDir "${installCdnDir}"
 
-    cp "${BIN_DIR}/${GOOS}_${GOARCH}/${SUPERNODE_BINARY_NAME}"  "${installSuperDir}"
+    cp "${BIN_DIR}/${GOOS}_${GOARCH}/${CDN_BINARY_NAME}"  "${installCdnDir}"
 
-    createLink "${installSuperDir}/${SUPERNODE_BINARY_NAME}" /usr/local/bin/supernode
+    createLink "${installCdnDir}/${CDN_BINARY_NAME}" /usr/local/bin/cdn
 }
 
 uninstall-cdn() {
