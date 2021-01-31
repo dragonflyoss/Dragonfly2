@@ -35,6 +35,7 @@ const (
 
 	// cdnsystem processing error 6000-6999
 	CdnError base.Code = 6000
+	CdnTaskRegistryFail base.Code = 6001
 
 	// manager processing error 7000-7999
 	ManagerError base.Code = 7000

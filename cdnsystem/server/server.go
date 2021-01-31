@@ -16,6 +16,9 @@
 
 package server
 
+import _ "github.com/dragonflyoss/Dragonfly2/cdnsystem/source/httpprotocol"
+import _ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
+
 import (
 	"context"
 	"fmt"
