@@ -95,6 +95,9 @@ func (s *Server) Start() (err error) {
 	}
 	// start gc
 	s.GCMgr.StartGC(context.Background())
-	rpc.StartTcpServer(s.Config.ListenPort, s.Config.ListenPort, seedServer)
+	err = rpc.StartTcpServer(s.Config.ListenPort, s.Config.ListenPort, seedServer)
+	if err != nil {
+		return errors.Wrap(err, "failed to start tcp server")
+	}
 	return nil
 }
