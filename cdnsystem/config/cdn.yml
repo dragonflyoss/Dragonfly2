@@ -1,0 +1,80 @@
+# This file is the template of cdn system configuration file.
+# You can configure your cdn system by change the parameter according your requirement.
+---
+base:
+  # listenPort is the port cdn server listens on.
+  # default: 8003
+  listenPort: 8003
+
+  # DownloadPort is the port for download files from cdn.
+  # And you should start a file server firstly which listens on the download port.
+  # default: 8001
+  downloadPort: 8001
+
+  # HomeDir is working directory of cdn.
+  # default: /tmp/cdn
+  homeDir: /tmp/cdn
+
+  # SystemReservedBandwidth is the network bandwidth reserved for system software.
+  # default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
+  systemReservedBandwidth: 20M
+
+  # MaxBandwidth is the network bandwidth that cdn can use.
+  # default: 200 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
+  maxBandwidth: 200M
+
+  # Whether to enable profiler
+  # default: false
+  enableProfiler: false
+
+  # FailAccessInterval is the interval time after failed to access the URL.
+  # If a task failed to be downloaded from the source, it will not be retried in the time since the last failure.
+  # default: 3m
+  failAccessInterval: 3m
+
+  # gc related
+
+  # GCInitialDelay is the delay time from the start to the first GC execution.
+  # default: 6s
+  gcInitialDelay: 6s
+
+  # GCMetaInterval is the interval time to execute GC meta.
+  # default: 2m0s
+  gcMetaInterval: 2m
+
+  # TaskExpireTime when a task is not accessed within the taskExpireTime,
+  # and it will be treated to be expired.
+  # default: 3m0s
+  taskExpireTime: 3m
+
+  # GCDiskInterval is the interval time to execute GC disk.
+  # default: 15s
+  gcDiskInterval: 15s
+
+  # YoungGCThreshold if the available disk space is more than YoungGCThreshold
+  # and there is no need to GC disk.
+  # default: 100GB
+  youngGCThreshold: 100G
+
+  #  FullGCThreshold if the available disk space is less than FullGCThreshold
+  #  and the cdn system should gc all task files which are not being used.
+  #  default: 5GB
+  fullGCThreshold: 5G
+
+  # IntervalThreshold is the threshold of the interval at which the task file is accessed.
+  # default: 2h0m0s
+  IntervalThreshold: 2h
+
+  # CleanRatio is the ratio to clean the disk and it is based on 10.
+  # It means the value of CleanRatio should be [1-10].
+  CleanRatio: 1
+
+plugins:
+  storage:
+    - name: local
+      enabled: true
+      config: "baseDir: /tmp/cdnsystem/"
+  sourceClient:
+    - name: http
+      enable: true
+

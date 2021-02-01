@@ -22,6 +22,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
 	cdnclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/client"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"google.golang.org/grpc"
@@ -59,7 +60,7 @@ func init() {
 					if time.Now().Sub(value.(time.Time))/time.Second >= 10 {
 						if v, loaded := pieceTaskPuller.clients.LoadAndDelete(key); loaded {
 							err := reflect.ValueOf(v).MethodByName("Close").Call([]reflect.Value{})
-							if err != nil && logger.BizLogger != nil {
+							if err != nil && logger.CoreLogger != nil {
 								logger.Errorf("close client connected to %v error:%v on piece task puller", key, err)
 							}
 						}
@@ -79,7 +80,7 @@ func init() {
 func GetPieceTasks(destPeer *scheduler.PeerPacket_DestPeer, ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	destAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)
 	peerId := destPeer.PeerId
-	toCdn := strings.HasSuffix(peerId, base.CDN_SUFFIX)
+	toCdn := strings.HasSuffix(peerId, common.CdnSuffix)
 
 	var client interface{}
 	var err error

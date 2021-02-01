@@ -18,11 +18,10 @@ package limitreader
 
 import (
 	"crypto/md5"
-	"hash"
-	"io"
-
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate/ratelimiter"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
+	"hash"
+	"io"
 )
 
 // NewLimitReader creates a LimitReader.

@@ -49,7 +49,6 @@ type SchedulerServer interface {
 
 func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (rr *scheduler.RegisterResult, err error) {
 	rr, err = p.server.RegisterPeerTask(ctx, ptr)
-	err = rpc.ConvertServerError(err)
 
 	var taskId = "unknown"
 	var suc bool
@@ -96,14 +95,13 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 		zap.String("schedulerIp", dfnet.HostIp),
 		zap.String("schedulerName", dfnet.HostName),
 		zap.Int64("contentLength", pr.ContentLength),
-		zap.Int64("traffic", pr.Traffic),
+		zap.Uint64("traffic", uint64(pr.Traffic)),
 		zap.Uint32("cost", pr.Cost),
 		zap.Int32("code", int32(pr.Code)))
 
-	return rs, rpc.ConvertServerError(err)
+	return rs, err
 }
 
 func (p *proxy) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget) (*base.ResponseState, error) {
-	rs, err := p.server.LeaveTask(ctx, pt)
-	return rs, rpc.ConvertServerError(err)
+	return p.server.LeaveTask(ctx, pt)
 }

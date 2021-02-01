@@ -21,13 +21,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
+	"io"
 	"net"
 	"os"
 	"strconv"
@@ -141,6 +143,7 @@ func startServer(netAddr dfnet.NetAddr, impl interface{}, opts []grpc.ServerOpti
 		unixServer = server
 	case dfnet.TCP:
 		tcpServer = server
+
 		addr := lis.Addr().String()
 		index := strings.LastIndex(addr, ":")
 		if p, err := strconv.Atoi(stringutils.SubString(addr, index+1, len(addr))); err != nil {
@@ -178,20 +181,6 @@ func isErrAddrInuse(err error) bool {
 	return false
 }
 
-// ConvertServerError converts err to grpc error to decide how client does retry and migration,
-// it is not available for bidirectional stream.
-func ConvertServerError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	if status.Code(err) == codes.Unknown {
-		return status.Error(codes.Aborted, err.Error())
-	} else {
-		return err
-	}
-}
-
 type wrappedServerStream struct {
 	grpc.ServerStream
 	method string
@@ -199,7 +188,7 @@ type wrappedServerStream struct {
 
 func (w *wrappedServerStream) RecvMsg(m interface{}) error {
 	err := w.ServerStream.RecvMsg(m)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		logger.GrpcLogger.Errorf("server receive a message:%T error:%v for method:%s", m, err, w.method)
 	}
 
@@ -221,7 +210,8 @@ func streamServerInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.S
 		method:       info.FullMethod,
 	})
 	if err != nil {
-		logger.GrpcLogger.Errorf("create server stream error:%v for method:%s", err, info.FullMethod)
+		err = convertServerError(err)
+		logger.GrpcLogger.Errorf("do stream server error:%v for method:%s", err, info.FullMethod)
 	}
 
 	return err
@@ -230,8 +220,19 @@ func streamServerInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.S
 func unaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	m, err := handler(ctx, req)
 	if err != nil {
+		err = convertServerError(err)
 		logger.GrpcLogger.Errorf("do unary server error:%v for method:%s", err, info.FullMethod)
 	}
 
 	return m, err
+}
+
+func convertServerError(err error) error {
+	if v, ok := err.(*dferrors.DfError); ok {
+		if s, e := status.Convert(err).WithDetails(common.NewState(v.Code, v.Message)); e == nil {
+			err = s.Err()
+		}
+	}
+
+	return err
 }

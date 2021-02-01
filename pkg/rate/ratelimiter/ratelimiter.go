@@ -30,8 +30,7 @@ type RateLimiter struct {
 	ratePerWindow int64
 	window        int64
 	last          int64
-
-	mu sync.Mutex
+	mu            sync.Mutex
 }
 
 // NewRateLimiter creates a RateLimiter instance.
@@ -135,7 +134,7 @@ func (rl *RateLimiter) blocking(requiredToken int64) {
 	if requiredToken <= 0 {
 		return
 	}
-	windowCount := int64(asserts.Max(requiredToken/rl.ratePerWindow, 1))
+	windowCount := asserts.Max(requiredToken/rl.ratePerWindow, 1)
 	time.Sleep(time.Duration(windowCount * rl.window * time.Millisecond.Nanoseconds()))
 }
 

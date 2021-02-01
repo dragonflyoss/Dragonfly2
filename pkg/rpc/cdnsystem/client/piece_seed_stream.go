@@ -68,7 +68,7 @@ func newPieceSeedStream(sc *seederClient, ctx context.Context, sr *cdnsystem.See
 func (pss *pieceSeedStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return pss.client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
-	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts)
+	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, nil)
 
 	if err != nil {
 		err = pss.replaceClient(err)
@@ -90,34 +90,27 @@ func (pss *pieceSeedStream) recv() (ps *cdnsystem.PieceSeed, err error) {
 
 func (pss *pieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error) {
 	code := status.Code(cause)
-	if code == codes.DeadlineExceeded || code == codes.Aborted {
+	if code == codes.DeadlineExceeded {
 		return nil, cause
 	}
 
-	var needMig = code == codes.FailedPrecondition
-	if !needMig {
-		if cause = pss.replaceStream(); cause != nil {
-			needMig = true
-		}
-	}
-
-	if needMig {
+	if err := pss.replaceStream(cause); err != nil {
 		if err := pss.replaceClient(cause); err != nil {
-			return nil, err
+			return nil, cause
 		}
 	}
 
 	return pss.recv()
 }
 
-func (pss *pieceSeedStream) replaceStream() error {
+func (pss *pieceSeedStream) replaceStream(cause error) error {
 	if pss.StreamTimes >= pss.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return pss.client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
-	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts)
+	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
 
 	if err == nil {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
@@ -137,10 +130,10 @@ func (pss *pieceSeedStream) replaceClient(cause error) error {
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return pss.client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
-	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts)
+	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
 
 	if err != nil {
-		err = pss.replaceClient(err)
+		err = pss.replaceClient(cause)
 	} else {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
 		pss.StreamTimes = 1

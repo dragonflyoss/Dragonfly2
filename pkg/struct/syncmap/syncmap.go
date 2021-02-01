@@ -2,6 +2,7 @@
 package syncmap
 
 import (
+	"container/list"
 	"strconv"
 	"sync"
 	"time"
@@ -13,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// SyncMap is a thread-safe map.
+// SyncMap is a thread-safe map providing generic support
 type SyncMap struct {
 	*sync.Map
 }
@@ -62,6 +63,18 @@ func (mmap *SyncMap) GetAsMap(key string) (*SyncMap, error) {
 	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
 }
 
+// GetAsList returns result as list
+// The ErrConvertFailed error will be returned if the assertion fails.
+func (mmap *SyncMap) GetAsList(key string)(*list.List, error)  {
+	v, err := mmap.Get(key)
+	if err != nil {
+		return list.New(), errors.Wrapf(err, "failed to get key %s from map", key)
+	}
+	if value, ok := v.(*list.List); ok {
+		return value, nil
+	}
+	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
+}
 // GetAsInt returns result as int.
 // The ErrConvertFailed error will be returned if the assertion fails.
 func (mmap *SyncMap) GetAsInt(key string) (int, error) {
