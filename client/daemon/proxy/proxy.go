@@ -38,7 +38,7 @@ import (
 
 var okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
 
-// Proxy is an http proxy handler. It proxies requests with dfget
+// Proxy is an http proxy handler. It proxies requests with dragonfly
 // if any defined proxy rules is matched
 type Proxy struct {
 	// reverse proxy upstream url for the default registry
@@ -67,10 +67,10 @@ type Proxy struct {
 }
 
 // Option is a functional option for configuring the proxy
-type ProxyOption func(p *Proxy) *Proxy
+type Option func(p *Proxy) *Proxy
 
 // WithHTTPSHosts sets the rules for hijacking https requests
-func WithPeerHost(peerHost *scheduler.PeerHost) ProxyOption {
+func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerHost = peerHost
 		return p
@@ -78,7 +78,7 @@ func WithPeerHost(peerHost *scheduler.PeerHost) ProxyOption {
 }
 
 // WithHTTPSHosts sets the rules for hijacking https requests
-func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) ProxyOption {
+func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerTaskManager = peerTaskManager
 		return p
@@ -86,7 +86,7 @@ func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) ProxyOption {
 }
 
 // WithHTTPSHosts sets the rules for hijacking https requests
-func WithHTTPSHosts(hosts ...*config.HijackHost) ProxyOption {
+func WithHTTPSHosts(hosts ...*config.HijackHost) Option {
 	return func(p *Proxy) *Proxy {
 		p.httpsHosts = hosts
 		return p
@@ -94,7 +94,7 @@ func WithHTTPSHosts(hosts ...*config.HijackHost) ProxyOption {
 }
 
 // WithRegistryMirror sets the registry mirror for the proxy
-func WithRegistryMirror(r *config.RegistryMirror) ProxyOption {
+func WithRegistryMirror(r *config.RegistryMirror) Option {
 	return func(p *Proxy) *Proxy {
 		p.registry = r
 		return p
@@ -103,7 +103,7 @@ func WithRegistryMirror(r *config.RegistryMirror) ProxyOption {
 
 // WithCertFromFile is a convenient wrapper for WithCert, to read certificate from
 // the given file
-func WithCert(cert *tls.Certificate) ProxyOption {
+func WithCert(cert *tls.Certificate) Option {
 	return func(p *Proxy) *Proxy {
 		p.cert = cert
 		return p
@@ -111,7 +111,7 @@ func WithCert(cert *tls.Certificate) ProxyOption {
 }
 
 // WithDirectHandler sets the handler for non-proxy requests
-func WithDirectHandler(h *http.ServeMux) ProxyOption {
+func WithDirectHandler(h *http.ServeMux) Option {
 	return func(p *Proxy) *Proxy {
 		// Make sure the root handler of the given server mux is the
 		// registry mirror reverse proxy
@@ -122,7 +122,7 @@ func WithDirectHandler(h *http.ServeMux) ProxyOption {
 }
 
 // WithRules sets the proxy rules
-func WithRules(rules []*config.Proxy) ProxyOption {
+func WithRules(rules []*config.Proxy) Option {
 	return func(p *Proxy) *Proxy {
 		p.rules = rules
 		return p
@@ -130,12 +130,12 @@ func WithRules(rules []*config.Proxy) ProxyOption {
 }
 
 // NewFromConfig returns a new transparent proxy from the given properties
-func NewProxy(options ...ProxyOption) (*Proxy, error) {
+func NewProxy(options ...Option) (*Proxy, error) {
 	return NewProxyWithOptions(options...)
 }
 
 // NewProxyWithOptions constructs a new instance of a Proxy with additional options.
-func NewProxyWithOptions(options ...ProxyOption) (*Proxy, error) {
+func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 	proxy := &Proxy{
 		directHandler: http.NewServeMux(),
 	}
@@ -161,7 +161,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (proxy *Proxy) handleHTTP(w http.ResponseWriter, req *http.Request) {
-	resp, err := proxy.roundTripper(nil).RoundTrip(req)
+	resp, err := proxy.newTransport(nil).RoundTrip(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -241,7 +241,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 			r.URL.Host = r.Host
 			r.URL.Scheme = "https"
 		},
-		Transport: proxy.roundTripper(cConfig),
+		Transport: proxy.newTransport(cConfig),
 	}
 
 	// We have to wait until the connection is closed
@@ -254,12 +254,12 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 	wg.Wait()
 }
 
-func (proxy *Proxy) roundTripper(tlsConfig *tls.Config) http.RoundTripper {
+func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 	rt, _ := transport.New(
 		transport.WithPeerHost(proxy.peerHost),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(tlsConfig),
-		transport.WithCondition(proxy.shouldUseDfget),
+		transport.WithCondition(proxy.shouldUseDragonfly),
 	)
 	return rt
 }
@@ -270,7 +270,7 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 		transport.WithPeerHost(proxy.peerHost),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(proxy.registry.TLSConfig()),
-		transport.WithCondition(proxy.shouldUseDfgetForMirror),
+		transport.WithCondition(proxy.shouldUseDragonflyForMirror),
 	)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get transport: %v", err), http.StatusInternalServerError)
@@ -301,10 +301,10 @@ func (proxy *Proxy) setRules(rules []*config.Proxy) error {
 	return nil
 }
 
-// shouldUseDfget returns whether we should use dfget to proxy a request. It
+// shouldUseDragonfly returns whether we should use dragonfly to proxy a request. It
 // also change the scheme of the given request if the matched rule has
 // UseHTTPS = true
-func (proxy *Proxy) shouldUseDfget(req *http.Request) bool {
+func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 	if req.Method != http.MethodGet {
 		return false
 	}
@@ -324,10 +324,10 @@ func (proxy *Proxy) shouldUseDfget(req *http.Request) bool {
 	return false
 }
 
-// shouldUseDfgetForMirror returns whether we should use dfget to proxy a request
+// shouldUseDragonflyForMirror returns whether we should use dragonfly to proxy a request
 // when we use registry mirror.
-func (proxy *Proxy) shouldUseDfgetForMirror(req *http.Request) bool {
-	return proxy.registry != nil && !proxy.registry.Direct && transport.NeedUseGetter(req)
+func (proxy *Proxy) shouldUseDragonflyForMirror(req *http.Request) bool {
+	return proxy.registry != nil && !proxy.registry.Direct && transport.NeedUseDragonfly(req)
 }
 
 // tunnelHTTPS handles a CONNECT request and proxy an https request through an

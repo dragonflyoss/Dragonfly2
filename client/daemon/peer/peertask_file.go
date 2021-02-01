@@ -341,12 +341,14 @@ func (pt *filePeerTask) isCompleted() bool {
 func (pt *filePeerTask) preparePieceTasks(request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	pt.pieceParallelCount = pt.peerPacket.ParallelCount
 	var failedPeers []*scheduler.PeerPacket_DestPeer
+	request.DstPid = pt.peerPacket.MainPeer.PeerId
 	p, err := pt.preparePieceTasksByPeer(pt.peerPacket.MainPeer, request)
 	if err == nil {
 		return p, nil
 	}
 	failedPeers = append(failedPeers, pt.peerPacket.MainPeer)
 	for _, peer := range pt.peerPacket.StealPeers {
+		request.DstPid = peer.PeerId
 		p, err = pt.preparePieceTasksByPeer(peer, request)
 		if err == nil {
 			return p, nil

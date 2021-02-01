@@ -17,6 +17,7 @@
 package proxy
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -46,19 +47,21 @@ type proxyManager struct {
 }
 
 func NewProxyManager(peerHost *scheduler.PeerHost, registry *config.RegistryMirror, proxies []*config.Proxy, hijackHTTPS *config.HijackConfig, peerTaskManager peer.PeerTaskManager) (Manager, error) {
-	options := []ProxyOption{
+	options := []Option{
 		WithPeerHost(peerHost),
 		WithPeerTaskManager(peerTaskManager),
 		WithRules(proxies),
-		WithRegistryMirror(registry),
 	}
 
-	logger.Infof("registry mirror: %s", registry.Remote)
+	if registry != nil {
+		logger.Infof("registry mirror: %s", registry.Remote)
+		options = append(options, WithRegistryMirror(registry))
+	}
 
 	if len(proxies) > 0 {
-		logger.Infof("%d proxy rules loaded", len(proxies))
+		logger.Infof("load %d proxy rules", len(proxies))
 		for i, r := range proxies {
-			method := "with dfget"
+			method := "with dragonfly"
 			if r.Direct {
 				method = "directly"
 			}
@@ -100,8 +103,7 @@ func (pm *proxyManager) Serve(lis net.Listener) error {
 }
 
 func (pm *proxyManager) Stop() error {
-	logger.Warnf("TODO not implement")
-	return nil
+	return pm.Server.Shutdown(context.Background())
 }
 
 func newDirectHandler() *http.ServeMux {

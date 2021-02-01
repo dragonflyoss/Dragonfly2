@@ -36,15 +36,15 @@ var (
 	layerReg = regexp.MustCompile("^.+/blobs/sha256.*$")
 )
 
-// transport implements RoundTripper for dfget.
-// It uses http.fileTransport to serve requests that need to use dfget,
+// transport implements RoundTripper for dragonfly.
+// It uses http.fileTransport to serve requests that need to use dragonfly,
 // and uses http.Transport to serve the other requests.
 type transport struct {
 	// baseRoundTripper is an implementation of RoundTripper that supports HTTP
 	baseRoundTripper http.RoundTripper
 
-	// shouldUseDfget is used to determine the use of dfget to download resources
-	shouldUseDfget func(req *http.Request) bool
+	// shouldUseDragonfly is used to determine to download resources with or without dragonfly
+	shouldUseDragonfly func(req *http.Request) bool
 
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.PeerTaskManager
@@ -80,10 +80,10 @@ func WithTLS(cfg *tls.Config) Option {
 	}
 }
 
-// WithCondition configures how to decide whether to use dfget or not.
+// WithCondition configures how to decide whether to use dragonfly or not.
 func WithCondition(c func(r *http.Request) bool) Option {
 	return func(rt *transport) *transport {
-		rt.shouldUseDfget = c
+		rt.shouldUseDragonfly = c
 		return rt
 	}
 }
@@ -91,8 +91,8 @@ func WithCondition(c func(r *http.Request) bool) Option {
 // New constructs a new instance of a RoundTripper with additional options.
 func New(options ...Option) (http.RoundTripper, error) {
 	rt := &transport{
-		baseRoundTripper: defaultHTTPTransport(nil),
-		shouldUseDfget:   NeedUseGetter,
+		baseRoundTripper:   defaultHTTPTransport(nil),
+		shouldUseDragonfly: NeedUseDragonfly,
 	}
 
 	for _, opt := range options {
@@ -105,11 +105,11 @@ func New(options ...Option) (http.RoundTripper, error) {
 // RoundTrip only process first redirect at present
 // fix resource release
 func (rt *transport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if rt.shouldUseDfget(req) {
+	if rt.shouldUseDragonfly(req) {
 		// delete the Accept-Encoding header to avoid returning the same cached
 		// result for different requests
 		req.Header.Del("Accept-Encoding")
-		logger.Debugf("round trip with dfget: %s", req.URL.String())
+		logger.Debugf("round trip with dragonfly: %s", req.URL.String())
 		if res, err := rt.download(req); err == nil {
 			return res, err
 		}
@@ -121,13 +121,13 @@ func (rt *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return res, err
 }
 
-// needUseGetter is the default value for shouldUseDfget, which downloads all
-// images layers with dfget.
-func NeedUseGetter(req *http.Request) bool {
+// needUseGetter is the default value for shouldUseDragonfly, which downloads all
+// images layers with dragonfly.
+func NeedUseDragonfly(req *http.Request) bool {
 	return req.Method == http.MethodGet && layerReg.MatchString(req.URL.Path)
 }
 
-// download uses dfget to download.
+// download uses dragonfly to download.
 func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
 	logger.Infof("start download with url: %s", url)
@@ -145,7 +145,7 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 			Url: url,
 			// FIXME(jim): read filter from config or from request header
 			Filter:      "",
-			BizId:       "d7s/dfget-proxy",
+			BizId:       "d7s/proxy",
 			UrlMata:     meta,
 			PeerId:      clientutil.GenPeerID(rt.peerHost),
 			PeerHost:    rt.peerHost,

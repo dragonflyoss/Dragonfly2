@@ -88,7 +88,7 @@ func (tc *testCase) Test(t *testing.T) {
 		if !a.Nil(err) {
 			continue
 		}
-		if !a.Equal(tp.shouldUseDfget(req), !item.Direct) {
+		if !a.Equal(tp.shouldUseDragonfly(req), !item.Direct) {
 			fmt.Println(item.URL)
 		}
 		if item.UseHTTPS {
@@ -116,7 +116,7 @@ func (tc *testCase) TestMirror(t *testing.T) {
 		if !a.Nil(err) {
 			continue
 		}
-		if !a.Equal(tp.shouldUseDfgetForMirror(req), !item.Direct) {
+		if !a.Equal(tp.shouldUseDragonflyForMirror(req), !item.Direct) {
 			fmt.Println(item.URL)
 		}
 	}

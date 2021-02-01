@@ -25,7 +25,7 @@ func NewKeepAlive(name string) KeepAlive {
 
 func (k keepAlive) Keep() {
 	k.access = time.Now()
-	logger.Debugf("update %s keepalive access time: %s", k.access.Format(time.RFC3339))
+	logger.Debugf("update %s keepalive access time: %s", k.name, k.access.Format(time.RFC3339))
 }
 
 func (k keepAlive) Alive(alive time.Duration) bool {

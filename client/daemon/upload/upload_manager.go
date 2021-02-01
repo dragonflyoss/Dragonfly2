@@ -27,14 +27,14 @@ import (
 	"github.com/gorilla/mux"
 	"golang.org/x/time/rate"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
 	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
+	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 )
 
 type Manager interface {
 	Serve(lis net.Listener) error
-	Stop()
+	Stop() error
 }
 
 type uploadManager struct {
@@ -76,8 +76,8 @@ func (u *uploadManager) Serve(lis net.Listener) error {
 	return u.Server.Serve(lis)
 }
 
-func (u *uploadManager) Stop() {
-	_ = u.Server.Shutdown(context.Background())
+func (u *uploadManager) Stop() error {
+	return u.Server.Shutdown(context.Background())
 }
 
 // handleUpload uses to upload a task file when other peers download from it.
@@ -99,7 +99,7 @@ func (u *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	//w.Header().Add("X-Dragonfly-CDN-Source", "")
 
-	logger.Debugf("upload piece for task %s to %s, request header: %#v", task, r.RemoteAddr, r.Header)
+	logger.Debugf("upload piece for task %s/%s to %s, request header: %#v", task, peer, r.RemoteAddr, r.Header)
 	reader, closer, err := u.StorageManager.ReadPiece(r.Context(),
 		&storage.ReadPieceRequest{
 			PeerTaskMetaData: storage.PeerTaskMetaData{

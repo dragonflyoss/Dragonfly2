@@ -350,9 +350,11 @@ func (ph *peerHost) Serve() error {
 	// serve proxy service
 	g.Go(func() error {
 		logger.Infof("serve proxy at tcp://%s:%d", ph.Option.Proxy.TCPListen.Listen, proxyPort)
-		if err = ph.ProxyManager.Serve(proxyListener); err != nil {
+		if err = ph.ProxyManager.Serve(proxyListener); err != nil && err != http.ErrServerClosed {
 			logger.Errorf("failed to serve for proxy service: %v", err)
 			return err
+		} else if err == http.ErrServerClosed {
+			logger.Infof("proxy service closed")
 		}
 		return nil
 	})
@@ -404,6 +406,7 @@ func (ph *peerHost) Stop() {
 	ph.GCManager.Stop()
 	ph.ServiceManager.Stop()
 	ph.UploadManager.Stop()
+	ph.ProxyManager.Stop()
 
 	if !ph.Option.KeepStorage {
 		logger.Infof("keep storage disabled")
