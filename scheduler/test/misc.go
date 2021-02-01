@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 )
 
-var _ = FDescribe("Scheduler Misc Test", func() {
+var _ = Describe("Scheduler Misc Test", func() {
 	tl := common.NewE2ELogger()
 
 	Describe("Scheduler TaskId Generate Test", func() {

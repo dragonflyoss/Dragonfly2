@@ -8,7 +8,8 @@ import (
 )
 
 type TaskManager struct {
-	data        *sync.Map
+	lock        *sync.RWMutex
+	data        map[string]*types.Task
 	gcDelayTime time.Duration
 }
 
@@ -18,48 +19,60 @@ func createTaskManager() *TaskManager {
 		delay = time.Duration(config.GetConfig().GC.TaskDelay) * time.Millisecond
 	}
 	tm := &TaskManager{
-		data:        new(sync.Map),
+		lock:        new(sync.RWMutex),
+		data:        make(map[string]*types.Task),
 		gcDelayTime: delay,
 	}
 	go tm.gcWorkingLoop()
 	return tm
 }
 
-func (m *TaskManager) AddTask(task *types.Task) *types.Task {
-	v, ok := m.data.Load(task.TaskId)
+func (m *TaskManager) AddTask(task *types.Task) (*types.Task, bool) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	v, ok := m.data[task.TaskId]
 	if ok {
-		return v.(*types.Task)
+		return v, false
 	}
 
 	copyTask := types.CopyTask(task)
 
-	m.data.Store(task.TaskId, copyTask)
-	return copyTask
+	m.data[task.TaskId] = copyTask
+	return copyTask, true
 }
 
 func (m *TaskManager) DeleteTask(taskId string) {
-	m.data.Delete(taskId)
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	delete(m.data, taskId)
 	return
 }
 
 func (m *TaskManager) GetTask(taskId string) (h *types.Task, ok bool) {
-	data, ok := m.data.Load(taskId)
-	if !ok {
-		return
-	}
-	h = data.(*types.Task)
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	h, ok = m.data[taskId]
 	return
 }
 
 func (m *TaskManager) gcWorkingLoop() {
 	for {
 		time.Sleep(time.Hour)
-		m.data.Range(func(key interface{}, value interface{}) bool {
-			task, _ := value.(*types.Task)
+		var needDeleteKeys []string
+		m.lock.RLock()
+		for taskId, task := range m.data {
 			if task != nil && time.Now().After(task.CreateTime.Add(m.gcDelayTime)) {
-				m.data.Delete(key)
+				needDeleteKeys = append(needDeleteKeys, taskId)
 			}
-			return true
-		})
+		}
+		m.lock.RUnlock()
+
+		if len(needDeleteKeys) > 0 {
+			m.lock.Lock()
+			for _, taskId := range needDeleteKeys {
+				delete(m.data, taskId)
+			}
+			m.lock.Unlock()
+		}
 	}
 }
