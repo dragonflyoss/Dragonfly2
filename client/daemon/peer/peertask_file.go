@@ -172,15 +172,15 @@ func (pt *filePeerTask) receivePeerPacket() {
 		peerPacket *scheduler.PeerPacket
 		ok         bool
 	)
-Loop:
+loop:
 	for {
 		select {
 		case <-pt.ctx.Done():
 			pt.Debugf("context done due to %s", pt.ctx.Err())
-			break Loop
+			break loop
 		case <-pt.done:
 			pt.Infof("peer task done, stop wait peer packet from scheduler")
-			break Loop
+			break loop
 		default:
 		}
 
@@ -205,10 +205,10 @@ Loop:
 		case pt.peerPacketReady <- true:
 		case <-pt.ctx.Done():
 			pt.Debugf("context done due to %s", pt.ctx.Err())
-			break Loop
+			break loop
 		case <-pt.done:
 			pt.Infof("peer task done, stop wait peer packet from scheduler")
-			break Loop
+			break loop
 		default:
 		}
 	}
@@ -225,17 +225,17 @@ func (pt *filePeerTask) pullPiecesFromPeers(pti PeerTask, cleanFunc func()) {
 		limit       int32
 		initialized bool
 	)
-Loop:
+loop:
 	for {
 		limit = pt.pieceParallelCount
 		select {
 		case <-pt.done:
 			pt.Infof("peer task done, stop get pieces from peer")
-			break Loop
+			break loop
 		case <-pt.ctx.Done():
 			pt.Debugf("context done due to %s", pt.ctx.Err())
 			pt.callback.Fail(pt, pt.ctx.Err().Error())
-			break Loop
+			break loop
 		case failed := <-pt.failedPieceCh:
 			pt.Warnf("download piece/%d failed, retry", failed)
 			num = failed
@@ -256,7 +256,7 @@ Loop:
 			case <-pt.ctx.Done():
 				pt.Debugf("context done due to %s", pt.ctx.Err())
 				pt.callback.Fail(pt, pt.ctx.Err().Error())
-				break Loop
+				break loop
 			case <-pt.peerPacketReady:
 				pt.Infof("new peer client ready")
 			}
@@ -272,7 +272,7 @@ Loop:
 		num = pt.getNextPieceNum(num, limit)
 		if num == -1 {
 			pt.Infof("no more pieces, stop get pieces from peer")
-			break Loop
+			break loop
 		}
 		pt.pieceManager.PullPieces(pti, piecePacket)
 	}
@@ -341,12 +341,14 @@ func (pt *filePeerTask) isCompleted() bool {
 func (pt *filePeerTask) preparePieceTasks(request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	pt.pieceParallelCount = pt.peerPacket.ParallelCount
 	var failedPeers []*scheduler.PeerPacket_DestPeer
+	request.DstPid = pt.peerPacket.MainPeer.PeerId
 	p, err := pt.preparePieceTasksByPeer(pt.peerPacket.MainPeer, request)
 	if err == nil {
 		return p, nil
 	}
 	failedPeers = append(failedPeers, pt.peerPacket.MainPeer)
 	for _, peer := range pt.peerPacket.StealPeers {
+		request.DstPid = peer.PeerId
 		p, err = pt.preparePieceTasksByPeer(peer, request)
 		if err == nil {
 			return p, nil
