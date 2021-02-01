@@ -2,12 +2,13 @@ package service
 
 import (
 	"errors"
+	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	types2 "github.com/dragonflyoss/Dragonfly2/pkg/util/types"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 )
 
-func (s *SchedulerService) GenerateTaskId(url string, filter string) (taskId string) {
-	return types2.GenerateTaskId(url, filter)
+func (s *SchedulerService) GenerateTaskId(url string, filter string, meta *base.UrlMeta) (taskId string) {
+	return types2.GenerateTaskId(url, filter, meta)
 }
 
 func (s *SchedulerService) GetTask(taskId string) (task *types.Task, err error) {
