@@ -137,7 +137,32 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 		return nil, fmt.Errorf("upload rate %q parse error: %s", flagDaemonOpt.uploadRate, err)
 	}
 
-	exp, _ := config.NewRegexp("blobs/sha256.*")
+	var proxyOption *daemon.ProxyOption
+	if flagDaemonOpt.enableProxy {
+		exp, _ := config.NewRegexp("blobs/sha256.*")
+		proxyOption = &daemon.ProxyOption{
+			ListenOption: &daemon.ListenOption{
+				Security: daemon.SecurityOption{
+					Insecure: true,
+				},
+				TCPListen: &daemon.TCPListenOption{
+					Listen: flagDaemonOpt.listenIP.String(),
+					PortRange: daemon.TCPListenPortRange{
+						Start: flagDaemonOpt.proxyPort,
+						End:   flagDaemonOpt.proxyPortEnd,
+					},
+				},
+			},
+			// TODO
+			RegistryMirror: nil,
+			Proxies: []*config.Proxy{
+				{
+					Regx: exp,
+				},
+			},
+			HijackHTTPS: nil,
+		}
+	}
 
 	option := &daemon.PeerHostOption{
 		AliveTime:   flagDaemonOpt.daemonAliveTime,
@@ -175,31 +200,7 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 				},
 			},
 		},
-		Proxy: &daemon.ProxyOption{
-			ListenOption: &daemon.ListenOption{
-				// TODO
-				Security: daemon.SecurityOption{
-					Insecure: true,
-				},
-				TCPListen: &daemon.TCPListenOption{
-					Listen: flagDaemonOpt.listenIP.String(),
-					PortRange: daemon.TCPListenPortRange{
-						Start: flagDaemonOpt.proxyPort,
-						End:   flagDaemonOpt.proxyPortEnd,
-					},
-				},
-			},
-			// TODO
-			RegistryMirror: &config.RegistryMirror{
-				Insecure: false,
-			},
-			Proxies: []*config.Proxy{
-				{
-					Regx: exp,
-				},
-			},
-			HijackHTTPS: nil,
-		},
+		Proxy: proxyOption,
 		Upload: daemon.UploadOption{
 			ListenOption: daemon.ListenOption{
 				// TODO

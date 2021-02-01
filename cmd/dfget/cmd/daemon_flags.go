@@ -35,6 +35,7 @@ type daemonOption struct {
 	advertiseIP    net.IP
 	listenIP       net.IP
 	downloadSocket string
+	enableProxy    bool
 	peerPort       int
 	peerPortEnd    int
 	uploadPort     int
@@ -88,6 +89,7 @@ func initDaemonFlags() {
 	flagSet.StringVar(&flagDaemonOpt.downloadSocket, "grpc-unix-listen", flagDaemonOpt.downloadSocket, "the local unix domain socket listen address for grpc with dfget")
 	flagSet.IntVar(&flagDaemonOpt.peerPort, "grpc-port", flagDaemonOpt.peerPort, "the listen address for grpc with other peers")
 	flagSet.IntVar(&flagDaemonOpt.peerPortEnd, "grpc-port-end", flagDaemonOpt.peerPort, "the listen address for grpc with other peers")
+	flagSet.BoolVar(&flagDaemonOpt.enableProxy, "proxy", flagDaemonOpt.enableProxy, "enable proxy service")
 	flagSet.IntVar(&flagDaemonOpt.proxyPort, "proxy-port", flagDaemonOpt.proxyPort, "the address that daemon will listen on for proxy service")
 	flagSet.IntVar(&flagDaemonOpt.proxyPortEnd, "proxy-port-end", flagDaemonOpt.proxyPort, "the address that daemon will listen on for proxy service")
 	flagSet.IntVar(&flagDaemonOpt.uploadPort, "upload-port", flagDaemonOpt.uploadPort, "the address that daemon will listen on for peer upload")

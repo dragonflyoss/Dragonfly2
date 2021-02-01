@@ -187,9 +187,12 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 		return nil, err
 	}
 
-	proxyManager, err := proxy.NewProxyManager(host, opt.Proxy.RegistryMirror, opt.Proxy.Proxies, opt.Proxy.HijackHTTPS, peerTaskManager)
-	if err != nil {
-		return nil, err
+	var proxyManager proxy.Manager
+	if opt.Proxy != nil {
+		proxyManager, err = proxy.NewProxyManager(host, opt.Proxy.RegistryMirror, opt.Proxy.Proxies, opt.Proxy.HijackHTTPS, peerTaskManager)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	uploadManager, err := upload.NewUploadManager(storageManager,
@@ -311,13 +314,6 @@ func (ph *peerHost) Serve() error {
 	}
 	ph.schedPeerHost.RpcPort = int32(peerPort)
 
-	// prepare proxy service listen
-	proxyListener, proxyPort, err := ph.prepareTCPListener(*ph.Option.Proxy.ListenOption, true)
-	if err != nil {
-		logger.Errorf("failed to listen for proxy service: %v", err)
-		return err
-	}
-
 	// prepare upload service listen
 	uploadListener, uploadPort, err := ph.prepareTCPListener(ph.Option.Upload.ListenOption, true)
 	if err != nil {
@@ -347,17 +343,25 @@ func (ph *peerHost) Serve() error {
 		return nil
 	})
 
-	// serve proxy service
-	g.Go(func() error {
-		logger.Infof("serve proxy at tcp://%s:%d", ph.Option.Proxy.TCPListen.Listen, proxyPort)
-		if err = ph.ProxyManager.Serve(proxyListener); err != nil && err != http.ErrServerClosed {
-			logger.Errorf("failed to serve for proxy service: %v", err)
+	if ph.Option.Proxy != nil {
+		// prepare proxy service listen
+		proxyListener, proxyPort, err := ph.prepareTCPListener(*ph.Option.Proxy.ListenOption, true)
+		if err != nil {
+			logger.Errorf("failed to listen for proxy service: %v", err)
 			return err
-		} else if err == http.ErrServerClosed {
-			logger.Infof("proxy service closed")
 		}
-		return nil
-	})
+		// serve proxy service
+		g.Go(func() error {
+			logger.Infof("serve proxy at tcp://%s:%d", ph.Option.Proxy.TCPListen.Listen, proxyPort)
+			if err = ph.ProxyManager.Serve(proxyListener); err != nil && err != http.ErrServerClosed {
+				logger.Errorf("failed to serve for proxy service: %v", err)
+				return err
+			} else if err == http.ErrServerClosed {
+				logger.Infof("proxy service closed")
+			}
+			return nil
+		})
+	}
 
 	// serve upload service
 	g.Go(func() error {
