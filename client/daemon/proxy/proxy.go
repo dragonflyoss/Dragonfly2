@@ -29,7 +29,7 @@ import (
 	"github.com/golang/groupcache/lru"
 	"github.com/pkg/errors"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon"
+	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/transport"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
@@ -42,13 +42,13 @@ var okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
 // if any defined proxy rules is matched
 type Proxy struct {
 	// reverse proxy upstream url for the default registry
-	registry *daemon.RegistryMirror
+	registry *config.RegistryMirror
 
 	// proxy rules
-	rules []*daemon.Proxy
+	rules []*config.Proxy
 
 	// httpsHosts is the list of hosts whose https requests will be hijacked
-	httpsHosts []*daemon.HijackHost
+	httpsHosts []*config.HijackHost
 
 	// cert is the certificate used to hijack https proxy requests
 	cert *tls.Certificate
@@ -86,7 +86,7 @@ func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) Option {
 }
 
 // WithHTTPSHosts sets the rules for hijacking https requests
-func WithHTTPSHosts(hosts ...*daemon.HijackHost) Option {
+func WithHTTPSHosts(hosts ...*config.HijackHost) Option {
 	return func(p *Proxy) *Proxy {
 		p.httpsHosts = hosts
 		return p
@@ -94,7 +94,7 @@ func WithHTTPSHosts(hosts ...*daemon.HijackHost) Option {
 }
 
 // WithRegistryMirror sets the registry mirror for the proxy
-func WithRegistryMirror(r *daemon.RegistryMirror) Option {
+func WithRegistryMirror(r *config.RegistryMirror) Option {
 	return func(p *Proxy) *Proxy {
 		p.registry = r
 		return p
@@ -122,7 +122,7 @@ func WithDirectHandler(h *http.ServeMux) Option {
 }
 
 // WithRules sets the proxy rules
-func WithRules(rules []*daemon.Proxy) Option {
+func WithRules(rules []*config.Proxy) Option {
 	return func(p *Proxy) *Proxy {
 		p.rules = rules
 		return p
@@ -296,7 +296,7 @@ func (proxy *Proxy) remoteConfig(host string) *tls.Config {
 }
 
 // setRules changes the rule lists of the proxy to the given rules.
-func (proxy *Proxy) setRules(rules []*daemon.Proxy) error {
+func (proxy *Proxy) setRules(rules []*config.Proxy) error {
 	proxy.rules = rules
 	return nil
 }

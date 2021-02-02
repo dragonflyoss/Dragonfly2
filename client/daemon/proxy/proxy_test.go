@@ -22,9 +22,8 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/dragonflyoss/Dragonfly2/client/daemon"
 )
 
 type testItem struct {
@@ -36,8 +35,8 @@ type testItem struct {
 
 type testCase struct {
 	Error          error
-	Rules          []*daemon.Proxy
-	RegistryMirror *daemon.RegistryMirror
+	Rules          []*config.Proxy
+	RegistryMirror *config.RegistryMirror
 	Items          []testItem
 }
 
@@ -50,8 +49,8 @@ func (tc *testCase) WithRule(regx string, direct bool, useHTTPS bool, redirect s
 		return tc
 	}
 
-	var r *daemon.Proxy
-	r, tc.Error = daemon.NewProxy(regx, useHTTPS, direct, redirect)
+	var r *config.Proxy
+	r, tc.Error = config.NewProxy(regx, useHTTPS, direct, redirect)
 	tc.Rules = append(tc.Rules, r)
 	return tc
 }
@@ -63,8 +62,8 @@ func (tc *testCase) WithRegistryMirror(rawUrl string, direct bool) *testCase {
 
 	var url *url.URL
 	url, tc.Error = url.Parse(rawUrl)
-	tc.RegistryMirror = &daemon.RegistryMirror{
-		Remote: &daemon.URL{url},
+	tc.RegistryMirror = &config.RegistryMirror{
+		Remote: &config.URL{url},
 		Direct: direct,
 	}
 	return tc

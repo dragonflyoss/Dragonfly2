@@ -17,222 +17,79 @@
 package config
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"os/user"
-	"path/filepath"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-
-	"github.com/sirupsen/logrus"
-	"gopkg.in/check.v1"
+	"gopkg.in/yaml.v3"
 )
 
-var cfg = NewClientConfig()
+func Test_UnmarshalJSON(t *testing.T) {
+	bytes := []byte(`{
+		"tls": {
+			"key": "../daemon/test/testdata/certs/sca.key",
+			"cert": "../daemon/test/testdata/certs/sca.crt",
+			"ca_cert": "../daemon/test/testdata/certs/mca.crt"
+		},
+		"url": "https://d7y.io",
+    "certs": [
+			"../daemon/test/testdata/certs/ca.crt",
+			"../daemon/test/testdata/certs/mca.crt",
+			"../daemon/test/testdata/certs/sca.crt"
+    ],
+		"regx": "blobs/sha256.*",
+		"port1": 1001,
+		"port2": {
+			"start": 1002,
+			"end": 1003
+		},
+		"timeout": "3m",
+		"limit": "2Mib"
+}`)
 
-func Test(t *testing.T) {
-	check.TestingT(t)
+	var s = struct {
+		TLSConfig *TLSConfig         `json:"tls"`
+		URL       *URL               `json:"url"`
+		Certs     *CertPool          `json:"certs"`
+		Regx      *Regexp            `json:"regx"`
+		Port1     TCPListenPortRange `json:"port1"`
+		Port2     TCPListenPortRange `json:"port2"`
+		Timeout   Duration           `json:"timeout"`
+		Limit     RateLimit          `json:"limit"`
+	}{}
+	json.Unmarshal(bytes, &s)
+	t.Logf("%#v", s)
 }
 
-type ConfigSuite struct{}
+func Test_UnmarshalYAML(t *testing.T) {
+	bytes := []byte(`
+tls:
+  key: ../daemon/test/testdata/certs/sca.key
+  cert: ../daemon/test/testdata/certs/sca.crt
+  ca_cert: ../daemon/test/testdata/certs/mca.crt
+url: https://d7y.io
+certs: ["../daemon/test/testdata/certs/ca.crt", "../daemon/test/testdata/certs/mca.crt", "../daemon/test/testdata/certs/sca.crt"]
+regx: blobs/sha256.*
+port1: 1001 
+port2:
+  start: 1002
+  end: 1003
+timeout: 3m
+limit: 2Mib
+`)
 
-func init() {
-	check.Suite(&ConfigSuite{})
-}
-
-func (suite *ConfigSuite) SetUpTest(c *check.C) {
-
-}
-
-func (suite *ConfigSuite) TestConfig_String(c *check.C) {
-	cfg := NewClientConfig()
-	expected := "{\"url\":\"\",\"output\":\"\""
-	c.Assert(strings.Contains(cfg.String(), expected), check.Equals, true)
-	cfg.LocalLimit = 20 * rate.MB
-	cfg.MinRate = 64 * rate.KB
-	cfg.Pattern = "p2p"
-	expected = "\"url\":\"\",\"output\":\"\",\"pattern\":\"p2p\"," +
-		"\"localLimit\":\"20MB\",\"minRate\":\"64KB\""
-	c.Assert(strings.Contains(cfg.String(), expected), check.Equals, true)
-}
-
-func (suite *ConfigSuite) TestNewConfig(c *check.C) {
-	before := time.Now()
-	time.Sleep(time.Millisecond)
-	cfg := NewClientConfig()
-	time.Sleep(time.Millisecond)
-	after := time.Now()
-
-	c.Assert(cfg.StartTime.After(before), check.Equals, true)
-	c.Assert(cfg.StartTime.Before(after), check.Equals, true)
-
-	if curUser, err := user.Current(); err != nil {
-		c.Assert(cfg.User, check.Equals, curUser.Username)
-		c.Assert(cfg.WorkHome, check.Equals, filepath.Join(curUser.HomeDir, ".small-dragonfly"))
+	var s = struct {
+		TLSConfig *TLSConfig         `yaml:"tls"`
+		URL       *URL               `yaml:"url"`
+		Certs     *CertPool          `yaml:"certs"`
+		Regx      *Regexp            `yaml:"regx"`
+		Port1     TCPListenPortRange `yaml:"port1"`
+		Port2     TCPListenPortRange `yaml:"port2"`
+		Timeout   Duration           `yaml:"timeout"`
+		Limit     RateLimit          `yaml:"limit"`
+	}{}
+	err := yaml.Unmarshal(bytes, &s)
+	if err != nil {
+		t.Fatal(err)
 	}
-}
-
-func (suite *ConfigSuite) TestAssertConfig(c *check.C) {
-	var (
-		clog = logrus.StandardLogger()
-		buf  = &bytes.Buffer{}
-	)
-	clog.Out = buf
-
-	var cases = []struct {
-		clog      *logrus.Logger
-		url       string
-		output    string
-		checkFunc func(err error) bool
-	}{
-		{clog: clog, checkFunc: dferrors.IsInvalidValue},
-		{clog: clog, url: "htt://a", checkFunc: dferrors.IsInvalidValue},
-		{clog: clog, url: "htt://a.b.com", checkFunc: dferrors.IsInvalidValue},
-		{clog: clog, url: "http://a.b.com", output: "/tmp/output", checkFunc: dferrors.IsNilError},
-		{clog: clog, url: "http://a.b.com", output: "./root", checkFunc: dferrors.IsNilError},
-		{clog: clog, url: "http://a.b.com", output: "/root", checkFunc: dferrors.IsInvalidValue},
-		{clog: clog, url: "http://a.b.com", output: "/", checkFunc: dferrors.IsInvalidValue},
-	}
-
-	var f = func() (err error) {
-		return CheckConfig(cfg)
-	}
-
-	for _, v := range cases {
-		cfg.URL = v.url
-		cfg.Output = v.output
-		actual := f()
-		expected := v.checkFunc(actual)
-		c.Assert(expected, check.Equals, true,
-			check.Commentf("actual:[%s] expected:[%t]", actual, expected))
-	}
-}
-
-func (suite *ConfigSuite) TestCheckOutput(c *check.C) {
-	type tester struct {
-		url      string
-		output   string
-		expected string
-	}
-	curDir, _ := filepath.Abs(".")
-
-	var j = func(p string) string { return filepath.Join(curDir, p) }
-	var cases = []tester{
-		{"http://www.taobao.com", "", j("www.taobao.com")},
-		{"http://www.taobao.com", "/tmp/zj.test", "/tmp/zj.test"},
-		{"www.taobao.com", "", ""},
-		{"www.taobao.com", "/tmp/zj.test", "/tmp/zj.test"},
-		{"", "/tmp/zj.test", "/tmp/zj.test"},
-		{"", "zj.test", j("zj.test")},
-		{"", "/tmp", ""},
-		{"", "/tmp/a/b/c/d/e/zj.test", "/tmp/a/b/c/d/e/zj.test"},
-		{"", "/", ""},
-	}
-
-	if cfg.User != "root" {
-		cases = append(cases, tester{url: "", output: "/root/zj.test", expected: ""})
-	}
-	for _, v := range cases {
-		cfg.URL = v.url
-		cfg.Output = v.output
-		if stringutils.IsEmptyStr(v.expected) {
-			c.Assert(checkOutput(cfg), check.NotNil, check.Commentf("%v", v))
-		} else {
-			c.Assert(checkOutput(cfg), check.IsNil, check.Commentf("%v", v))
-			c.Assert(cfg.Output, check.Equals, v.expected, check.Commentf("%v", v))
-		}
-	}
-}
-
-func (suite *ConfigSuite) TestProperties_Load(c *check.C) {
-	dirName, _ := ioutil.TempDir("/tmp", "dfget-TestProperties_Load-")
-	defer os.RemoveAll(dirName)
-
-	var cases = []struct {
-		create   bool
-		ext      string
-		content  string
-		errMsg   string
-		expected *DaemonConfig
-	}{
-		{create: false, ext: "x", errMsg: "extension of"},
-		{create: false, ext: "yaml", errMsg: "no such file or directory", expected: nil},
-		{create: true, ext: "yaml",
-			content: "nodes:\n\t- 10.10.10.1", errMsg: "yaml", expected: nil},
-		{create: true, ext: "yaml",
-			content: "nodes:\n  - 10.10.10.1\n  - 10.10.10.2\n",
-			errMsg:  "", expected: &DaemonConfig{Supernodes: []*NodeWeight{
-			{"10.10.10.1:8002", 1},
-			{"10.10.10.2:8002", 1},
-		}}},
-		{create: true, ext: "yaml",
-			content: "totalLimit: 10M",
-			errMsg:  "", expected: &DaemonConfig{TotalLimit: 10 * rate.MB}},
-		{create: false, ext: "ini", content: "[node]\naddress=1.1.1.1", errMsg: "read ini config"},
-		{create: true, ext: "ini", content: "[node]\naddress=1.1.1.1",
-			expected: &DaemonConfig{Supernodes: []*NodeWeight{
-				{"1.1.1.1:8002", 1},
-			}}},
-		{create: true, ext: "conf", content: "[node]\naddress=1.1.1.1",
-			expected: &DaemonConfig{Supernodes: []*NodeWeight{
-				{"1.1.1.1:8002", 1},
-			}}},
-		{create: true, ext: "conf", content: "[node]\naddress=1.1.1.1,1.1.1.2",
-			expected: &DaemonConfig{Supernodes: []*NodeWeight{
-				{"1.1.1.1:8002", 1},
-				{"1.1.1.2:8002", 1},
-			}}},
-		{create: true, ext: "conf", content: "[node]\naddress=1.1.1.1\n[totalLimit]",
-			expected: &DaemonConfig{Supernodes: []*NodeWeight{
-				{"1.1.1.1:8002", 1},
-			}}},
-	}
-
-	for idx, v := range cases {
-		filename := filepath.Join(dirName, fmt.Sprintf("%d.%s", idx, v.ext))
-		if v.create {
-			err := ioutil.WriteFile(filename, []byte(v.content), os.ModePerm)
-			c.Assert(err, check.IsNil)
-		}
-		p := &DaemonConfig{}
-		err := p.Load(filename)
-		if v.expected != nil {
-			c.Assert(err, check.IsNil)
-			c.Assert(p, check.DeepEquals, v.expected)
-		} else {
-			c.Assert(err, check.NotNil)
-			c.Assert(strings.Contains(err.Error(), v.errMsg), check.Equals, true,
-				check.Commentf("error:%v expected:%s", err, v.errMsg))
-		}
-	}
-}
-
-func (suite *ConfigSuite) TestProperties_String(c *check.C) {
-	p := NewDaemonConfig()
-	str := p.String()
-
-	actual := &DaemonConfig{}
-	e := json.Unmarshal([]byte(str), actual)
-	c.Assert(e, check.IsNil)
-	c.Assert(actual, check.DeepEquals, p)
-}
-
-func (suite *ConfigSuite) TestRuntimeVariable_String(c *check.C) {
-	rv := RuntimeVariable{
-		LocalIP: "127.0.0.1",
-	}
-	c.Assert(strings.Contains(rv.String(), "127.0.0.1"), check.Equals, true)
-
-	jRv := &RuntimeVariable{}
-	e := json.Unmarshal([]byte(rv.String()), jRv)
-	c.Assert(e, check.IsNil)
-	c.Assert(jRv.LocalIP, check.Equals, rv.LocalIP)
+	t.Logf("%#v", s)
 }

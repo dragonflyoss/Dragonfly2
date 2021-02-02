@@ -34,6 +34,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
+	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/proxy"
@@ -58,7 +59,7 @@ type peerHost struct {
 
 	schedPeerHost *scheduler.PeerHost
 
-	Option PeerHostOption
+	Option config.PeerHostOption
 
 	ServiceManager service.Manager
 	UploadManager  upload.Manager
@@ -70,7 +71,7 @@ type peerHost struct {
 	PieceManager    peer.PieceManager
 }
 
-func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error) {
+func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost, error) {
 	sched, err := schedulerclient.CreateClient(opt.Schedulers)
 	if err != nil {
 		return nil, err
@@ -126,7 +127,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 	}
 
 	uploadManager, err := upload.NewUploadManager(storageManager,
-		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit, int(opt.Upload.RateLimit))))
+		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit.Limit, int(opt.Upload.RateLimit.Limit))))
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +148,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 	}, nil
 }
 
-func loadGPRCTLSCredentials(opt SecurityOption) (credentials.TransportCredentials, error) {
+func loadGPRCTLSCredentials(opt config.SecurityOption) (credentials.TransportCredentials, error) {
 	// Load certificate of the CA who signed client's certificate
 	pemClientCA, err := ioutil.ReadFile(opt.CACert)
 	if err != nil {
@@ -181,7 +182,7 @@ func loadGPRCTLSCredentials(opt SecurityOption) (credentials.TransportCredential
 	return credentials.NewTLS(opt.TLSConfig), nil
 }
 
-func (ph *peerHost) prepareTCPListener(opt ListenOption, withTLS bool) (net.Listener, int, error) {
+func (ph *peerHost) prepareTCPListener(opt config.ListenOption, withTLS bool) (net.Listener, int, error) {
 	var (
 		ln   net.Listener
 		port int
