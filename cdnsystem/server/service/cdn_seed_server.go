@@ -19,6 +19,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
@@ -161,10 +162,14 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	task, err := css.taskMgr.Get(ctx, req.TaskId)
 	logger.Debugf("task:%+v",task)
 	if err != nil {
-		return &base.PiecePacket{
-			State:  common.NewState(dfcodes.CdnError, err),
+		state := common.NewState(dfcodes.CdnError, err)
+		if cdnerrors.IsDataNotFound(err) {
+			state = common.NewState(dfcodes.CdnTaskNotFound, err)
+			return &base.PiecePacket{
+			State: state,
 			TaskId: req.TaskId,
 		}, errors.Wrapf(err, "failed to get task from cdn")
+		}
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
