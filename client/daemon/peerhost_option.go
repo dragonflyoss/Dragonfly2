@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"io/ioutil"
+	"net/url"
 	"strings"
 	"time"
 
@@ -274,6 +275,27 @@ func (f *FileString) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
+
+	file, err := ioutil.ReadFile(s)
+	if err != nil {
+		return err
+	}
+	val := strings.TrimSpace(string(file))
+	*f = FileString(val)
+	return nil
+}
+
+func (f *FileString) UnmarshalYAML(node *yaml.Node) error {
+	var s string
+	switch node.Kind {
+	case yaml.ScalarNode:
+		if err := node.Decode(&s); err != nil {
+			return err
+		}
+	default:
+		return errors.New("invalid filestring")
+	}
+
 	file, err := ioutil.ReadFile(s)
 	if err != nil {
 		return err
@@ -311,5 +333,69 @@ func (t *TLSConfig) UnmarshalJSON(b []byte) error {
 		RootCAs:      pool,
 		Certificates: []tls.Certificate{cert},
 	}
+	return nil
+}
+
+type RegistryMirror struct {
+	Remote   *URL      `yaml:"url" json:"url"`
+	Certs    *CertPool `yaml:"certs" json:"certs"`
+	Insecure bool      `yaml:"insecure" json:"insecure"`
+	Direct   bool      `yaml:"direct" json:"direct"`
+}
+
+type URL struct {
+	*url.URL
+}
+
+func (u *URL) UnmarshalJSON(b []byte) error {
+	return u.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
+}
+
+func (u *URL) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return u.unmarshal(unmarshal)
+}
+
+func (u *URL) unmarshal(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+
+	parsed, err := url.Parse(s)
+	if err != nil {
+		return err
+	}
+
+	u.URL = parsed
+	return nil
+}
+
+type CertPool struct {
+	Files []string
+	*x509.CertPool
+}
+
+func (cp *CertPool) UnmarshalJSON(b []byte) error {
+	return cp.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
+}
+
+func (cp *CertPool) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return cp.unmarshal(unmarshal)
+}
+
+func (cp *CertPool) unmarshal(unmarshal func(interface{}) error) error {
+	var cf []FileString
+	if err := unmarshal(&cf); err != nil {
+		return err
+	}
+
+	pool := x509.NewCertPool()
+	for _, cert := range cf {
+		if !pool.AppendCertsFromPEM([]byte(cert)) {
+			return errors.Errorf("invalid cert: %s", cert)
+		}
+	}
+
+	cp.CertPool = pool
 	return nil
 }
