@@ -67,7 +67,7 @@ func init() {
 
 func runDaemon() error {
 	if flagDaemonOpt.verbose {
-		logger.LogLevel.SetLevel(zapcore.DebugLevel)
+		logger.SetCoreLevel(zapcore.DebugLevel)
 		go func() {
 			// enable go pprof and statsview
 			port, _ := freeport.GetFreePort()
@@ -127,12 +127,12 @@ func runDaemon() error {
 }
 
 func initDaemonOption() (*daemon.PeerHostOption, error) {
-	dr, err := units.FromHumanSize(flagDaemonOpt.downloadRate)
+	dr, err := units.RAMInBytes(flagDaemonOpt.downloadRate)
 	if err != nil {
 		return nil, fmt.Errorf("download rate %q parse error: %s", flagDaemonOpt.downloadRate, err)
 	}
 
-	ur, err := units.FromHumanSize(flagDaemonOpt.uploadRate)
+	ur, err := units.RAMInBytes(flagDaemonOpt.uploadRate)
 	if err != nil {
 		return nil, fmt.Errorf("upload rate %q parse error: %s", flagDaemonOpt.uploadRate, err)
 	}
@@ -141,7 +141,7 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 	if flagDaemonOpt.enableProxy {
 		exp, _ := config.NewRegexp("blobs/sha256.*")
 		proxyOption = &daemon.ProxyOption{
-			ListenOption: &daemon.ListenOption{
+			ListenOption: daemon.ListenOption{
 				Security: daemon.SecurityOption{
 					Insecure: true,
 				},
@@ -165,8 +165,8 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 	}
 
 	option := &daemon.PeerHostOption{
-		AliveTime:   flagDaemonOpt.daemonAliveTime,
-		GCInterval:  flagDaemonOpt.gcInterval,
+		AliveTime:   daemon.Duration{Duration: flagDaemonOpt.daemonAliveTime},
+		GCInterval:  daemon.Duration{Duration: flagDaemonOpt.gcInterval},
 		KeepStorage: flagDaemonOpt.keepStorage,
 		// FIXME(jim): parse []basic.NetAddr from flagDaemonOpt.schedulers
 		Schedulers: []dfnet.NetAddr{
@@ -175,8 +175,10 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 				Addr: flagDaemonOpt.schedulers[0],
 			},
 		},
-		Server: daemon.ServerOption{
-			RateLimit: rate.Limit(dr),
+		Download: daemon.DownloadOption{
+			RateLimit: daemon.RateLimit{
+				Limit: rate.Limit(dr),
+			},
 			DownloadGRPC: daemon.ListenOption{
 				// TODO
 				Security: daemon.SecurityOption{
@@ -215,7 +217,9 @@ func initDaemonOption() (*daemon.PeerHostOption, error) {
 					},
 				},
 			},
-			RateLimit: rate.Limit(ur),
+			RateLimit: daemon.RateLimit{
+				Limit: rate.Limit(ur),
+			},
 		},
 		Storage: daemon.StorageOption{
 			Option: storage.Option{

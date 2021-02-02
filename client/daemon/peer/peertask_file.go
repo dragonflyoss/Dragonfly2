@@ -22,6 +22,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	dfclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/client"
@@ -411,13 +412,13 @@ func (pt *filePeerTask) finish() error {
 	// send last progress
 	pt.once.Do(func() {
 		// send EOF piece result to scheduler
-		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.bitmap.Settled(), pt.taskId, pt.peerId)
+		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.bitmap.Settled())
 		pt.Debugf("finish end piece result sent")
 
 		pt.progressCh <- &PeerTaskProgress{
 			State: &base.ResponseState{
 				Success: true,
-				Code:    base.Code_SUCCESS,
+				Code:    dfcodes.Success,
 			},
 			TaskId:          pt.taskId,
 			PeerID:          pt.peerId,
@@ -430,7 +431,7 @@ func (pt *filePeerTask) finish() error {
 			pt.progressCh <- &PeerTaskProgress{
 				State: &base.ResponseState{
 					Success: false,
-					Code:    base.Code_CLIENT_ERROR,
+					Code:    dfcodes.UnknownError,
 					Msg:     fmt.Sprintf("peer task callback failed: %s", err),
 				},
 				TaskId:          pt.taskId,
@@ -450,13 +451,13 @@ func (pt *filePeerTask) cleanUnfinished() {
 	// send last progress
 	pt.once.Do(func() {
 		// send EOF piece result to scheduler
-		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.bitmap.Settled(), pt.taskId, pt.peerId)
+		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.bitmap.Settled())
 		pt.Debugf("clean up end piece result sent")
 
 		pt.progressCh <- &PeerTaskProgress{
 			State: &base.ResponseState{
 				Success: false,
-				Code:    base.Code_CLIENT_ERROR,
+				Code:    dfcodes.UnknownError,
 				Msg:     "",
 			},
 			TaskId:          pt.taskId,

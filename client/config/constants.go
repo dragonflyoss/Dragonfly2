@@ -48,12 +48,8 @@ const (
 const (
 	DefaultYamlConfigFile = "/etc/dragonfly/dfget.yml"
 	ProxyYamlConfigFile   = "/etc/dragonfly/proxy.yml"
-	// Deprecated
-	DefaultIniConfigFile   = "/etc/dragonfly.conf"
-	DefaultLocalLimit      = 20 * rate.MB
-	DefaultMinRate         = 64 * rate.KB
-	DefaultClientQueueSize = 6
-	DefaultSupernodeWeight = 1
+	DefaultLocalLimit     = 20 * rate.MB
+	DefaultMinRate        = 64 * rate.KB
 )
 
 /* http headers */

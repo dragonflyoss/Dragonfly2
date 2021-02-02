@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package config holds all GlobalConfig of dfget.
+// Package config holds all DaemonConfig of dfget.
 package config
 
 import (
@@ -24,18 +24,14 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"os/user"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
-	"gopkg.in/gcfg.v1"
-	"gopkg.in/warnings.v0"
 
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
@@ -45,49 +41,37 @@ import (
 
 var fs = afero.NewOsFs()
 
-// GlobalConfig holds all configurable config.
-// Properties holds all configurable Properties.
-// Support INI(or conf) and YAML(since 0.3.0).
-// Before 0.3.0, only support INI config and only have one property(node):
-// 		[node]
-// 		address=127.0.0.1,10.10.10.1
-// Since 0.2.0, the INI config is just to be compatible with previous versions.
-// The YAML config will have more config:
-//       nodes:
-//       - 127.0.0.1=1
-//       - 10.10.10.1:8002=2
-//       localLimit: 20M
-//       totalLimit: 20M
-//       clientQueueSize: 6
-type GlobalConfig struct {
-	// Supernodes specify supernodes with weight.
-	// The type of weight must be integer.
-	// All weights will be divided by the greatest common divisor in the end.
-	//
-	// E.g. ["192.168.33.21=1", "192.168.33.22=2"]
-	Supernodes []*NodeWeight `yaml:"nodes,omitempty" json:"nodes,omitempty"`
+// DaemonConfig holds all configurable config of daemon.
+type DaemonConfig struct {
+	// DataExpireTime specifies the caching duration for which
+	// cached files keep no accessed by any process.
+	// After this period, the cached files will be deleted.
+	DataExpireTime time.Duration
+
+	// DaemonAliveTime specifies the alive duration for which
+	// uploader keeps no accessing by any uploading requests.
+	// After this period, the uploader will automatically exit.
+	DaemonAliveTime time.Duration
+
+	// Schedulers specify schedulers.
+	// E.g. ["192.168.33.21:8002", "192.168.33.22:8002"]
+	Schedulers []string `yaml:"schedulers,omitempty" json:"schedulers,omitempty"`
 
 	// LocalLimit rate limit about a single download task, format: G(B)/g/M(B)/m/K(B)/k/B
 	// pure number will also be parsed as Byte.
-	LocalLimit rate.Rate `yaml:"localLimit,omitempty" json:"localLimit,omitempty"`
+	LocalLimit rate.Rate `yaml:"local_limit,omitempty" json:"local_limit,omitempty"`
 
 	// Minimal rate about a single download task, format: G(B)/g/M(B)/m/K(B)/k/B
 	// pure number will also be parsed as Byte.
-	MinRate rate.Rate `yaml:"minRate,omitempty" json:"minRate,omitempty"`
+	MinRate rate.Rate `yaml:"min_rate,omitempty" json:"min_rate,omitempty"`
 
 	// TotalLimit rate limit about the whole host, format: G(B)/g/M(B)/m/K(B)/k/B
 	// pure number will also be parsed as Byte.
-	TotalLimit rate.Rate `yaml:"totalLimit,omitempty" json:"totalLimit,omitempty"`
-
-	// ClientQueueSize is the size of client queue
-	// which controls the number of pieces that can be processed simultaneously.
-	// It is only useful when the Pattern equals "source".
-	// The default value is 6.
-	ClientQueueSize int `yaml:"clientQueueSize" json:"clientQueueSize,omitempty"`
+	TotalLimit rate.Rate `yaml:"total_limit,omitempty" json:"total_limit,omitempty"`
 
 	// WorkHome work home path,
 	// default: `$HOME/.small-dragonfly`.
-	WorkHome string `yaml:"workHome" json:"workHome,omitempty"`
+	WorkHome string `yaml:"work_home" json:"work_home,omitempty"`
 
 	// Registry mirror settings
 	RegistryMirror *RegistryMirror `yaml:"registry_mirror" json:"registry_mirror"`
@@ -103,61 +87,37 @@ type GlobalConfig struct {
 	HijackHTTPS *HijackConfig `yaml:"hijack_https" json:"hijack_https"`
 }
 
-// NewGlobalConfig creates a new GlobalConfig with default values.
-func NewGlobalConfig() *GlobalConfig {
+// NewDaemonConfig creates a new DaemonConfig with default values.
+func NewDaemonConfig() *DaemonConfig {
 	// don't set Supernodes as default value, the SupernodeLocator will
 	// do this in a better way.
-	return &GlobalConfig{
-		LocalLimit:      DefaultLocalLimit,
-		MinRate:         DefaultMinRate,
-		ClientQueueSize: DefaultClientQueueSize,
+	return &DaemonConfig{
+		LocalLimit: DefaultLocalLimit,
+		MinRate:    DefaultMinRate,
 	}
 }
 
-func (p *GlobalConfig) String() string {
+func (p *DaemonConfig) String() string {
 	str, _ := json.Marshal(p)
 	return string(str)
 }
 
 // Load loads properties from config file.
-func (p *GlobalConfig) Load(path string) error {
+func (p *DaemonConfig) Load(path string) error {
 	switch p.fileType(path) {
-	case "ini":
-		return p.loadFromIni(path)
+	case "json":
+		panic("TODO")
 	case "yaml":
 		return fileutils.LoadYaml(path, p)
 	}
-	return fmt.Errorf("extension of %s is not in 'conf/ini/yaml/yml'", path)
+	return fmt.Errorf("extension of %s is not in 'json/yaml/yml'", path)
 }
 
-// loadFromIni to be compatible with previous versions(before 0.2.0).
-func (p *GlobalConfig) loadFromIni(path string) error {
-	oldConfig := struct {
-		Node struct {
-			Address string
-		}
-	}{}
-
-	if err := gcfg.ReadFileInto(&oldConfig, path); err != nil {
-		// only fail on a fatal error occurred
-		if e, ok := err.(warnings.List); !ok || e.Fatal != nil {
-			return fmt.Errorf("read ini config from %s error: %v", path, err)
-		}
-	}
-
-	nodes, err := ParseNodesString(oldConfig.Node.Address)
-	if err != nil {
-		return errors.Wrapf(err, "failed to handle nodes")
-	}
-	p.Supernodes = nodes
-	return err
-}
-
-func (p *GlobalConfig) fileType(path string) string {
+func (p *DaemonConfig) fileType(path string) string {
 	ext := filepath.Ext(path)
 	switch v := strings.ToLower(ext); v {
-	case ".conf", ".ini":
-		return "ini"
+	case ".json":
+		return "json"
 	case ".yaml", ".yml":
 		return "yaml"
 	default:
@@ -397,10 +357,10 @@ func (r *Regexp) MarshalYAML() (interface{}, error) {
 	return r.String(), nil
 }
 
-// Config holds all the runtime config information.
-type Config struct {
+// ClientConfig holds all the runtime config information.
+type ClientConfig struct {
 	// Embedded GlobalConfig holds all configurable properties.
-	GlobalConfig
+	DaemonConfig
 
 	// URL download URL.
 	URL string `json:"url"`
@@ -446,9 +406,6 @@ type Config struct {
 	// NotBackSource indicates whether to not back source to download when p2p fails.
 	NotBackSource bool `json:"notBackSource,omitempty"`
 
-	// DFDaemon indicates whether the caller is from dfdaemon
-	DFDaemon bool `json:"dfdaemon,omitempty"`
-
 	// Insecure indicates whether skip secure verify when supernode interact with the source.
 	Insecure bool `json:"insecure,omitempty"`
 
@@ -462,15 +419,6 @@ type Config struct {
 	// If set true, log level will be 'debug'.
 	Verbose bool `json:"verbose,omitempty"`
 
-	// Nodes specify supernodes.
-	Nodes []string `json:"-"`
-
-	// Start time.
-	StartTime time.Time `json:"-"`
-
-	// PeerID is uuid, it is unique for downloading task, and is used for debugging.
-	PeerID string `json:"-"`
-
 	// Username of the system currently logged in.
 	User string `json:"-"`
 
@@ -479,69 +427,50 @@ type Config struct {
 	//
 	// NOTE: It is recommended to use `/etc/dragonfly/dfget.yml` as default,
 	// and the `/etc/dragonfly.conf` is just to ensure compatibility with previous versions.
-	ConfigFiles []string `json:"-"`
-
-	// RV stores the variables that are initialized and used at downloading task executing.
-	RV RuntimeVariable `json:"-"`
-
-	// The reason of backing to source.
-	BackSourceReason int `json:"-"`
+	//ConfigFiles []string `json:"-"`
 }
 
-func (cfg *Config) String() string {
+func (cfg *ClientConfig) String() string {
 	js, _ := json.Marshal(cfg)
 	return string(js)
 }
 
-// NewConfig creates and initializes a Config.
-func NewConfig() *Config {
-	currentUser, err := user.Current()
-	if err != nil {
-		os.Exit(CodeGetUserError)
-	}
-
-	return &Config{
-		GlobalConfig:     GlobalConfig{},
-		URL:              "",
-		Output:           "",
-		Timeout:          0,
-		Md5:              "",
-		DigestMethod:     "",
-		DigestValue:      "",
-		Identifier:       "",
-		CallSystem:       "",
-		Pattern:          "",
-		Cacerts:          nil,
-		Filter:           nil,
-		Header:           nil,
-		NotBackSource:    false,
-		DFDaemon:         false,
-		Insecure:         false,
-		ShowBar:          false,
-		Console:          false,
-		Verbose:          false,
-		Nodes:            nil,
-		StartTime:        time.Now(),
-		PeerID:           uuid.New().String(),
-		User:             currentUser.Username,
-		ConfigFiles:      []string{ProxyYamlConfigFile, DefaultYamlConfigFile, DefaultIniConfigFile},
-		RV:               RuntimeVariable{},
-		BackSourceReason: 0,
+// NewClientConfig creates and initializes a ClientConfig.
+func NewClientConfig() *ClientConfig {
+	return &ClientConfig{
+		DaemonConfig:  DaemonConfig{},
+		URL:           "",
+		Output:        "",
+		Timeout:       0,
+		Md5:           "",
+		DigestMethod:  "",
+		DigestValue:   "",
+		Identifier:    "",
+		CallSystem:    "",
+		Pattern:       "",
+		Cacerts:       nil,
+		Filter:        nil,
+		Header:        nil,
+		NotBackSource: false,
+		Insecure:      false,
+		ShowBar:       false,
+		Console:       false,
+		Verbose:       false,
 	}
 }
 
-// AssertConfig checks the config and return errors.
-func AssertConfig(cfg *Config) (err error) {
+// CheckConfig checks the config and return errors.
+func CheckConfig(cfg *ClientConfig) (err error) {
 	if cfg == nil {
-		return errors.Wrap(dferrors.ErrNotInitialized, "runtime config")
+		return errors.Wrap(dferrors.ErrInvalidArgument, "runtime config")
 	}
 
 	if !IsValidURL(cfg.URL) {
-		return errors.Wrapf(dferrors.ErrInvalidValue, "url: %v", cfg.URL)
+		return errors.Wrapf(dferrors.ErrInvalidArgument, "url: %v", cfg.URL)
 	}
 
-	if err := checkOutput(cfg); err != nil {
-		return errors.Wrapf(dferrors.ErrInvalidValue, "output: %v", err)
+	if err = checkOutput(cfg); err != nil {
+		return errors.Wrapf(dferrors.ErrInvalidArgument, "output: %v", err)
 	}
 	return nil
 }
@@ -559,7 +488,7 @@ func IsValidURL(urlStr string) bool {
 }
 
 // This function must be called after checkURL
-func checkOutput(cfg *Config) error {
+func checkOutput(cfg *ClientConfig) error {
 	if stringutils.IsEmptyStr(cfg.Output) {
 		url := strings.TrimRight(cfg.URL, "/")
 		idx := strings.LastIndexByte(url, '/')
@@ -594,7 +523,7 @@ func checkOutput(cfg *Config) error {
 
 // RuntimeVariable stores the variables that are initialized and used
 // at downloading task executing.
-type RuntimeVariable struct {
+type DeprecatedRuntimeVariable struct {
 	// MetaPath specify the path of meta file which store the meta info of the peer that should be persisted.
 	// Only server port information is stored currently.
 	MetaPath string
@@ -633,19 +562,4 @@ type RuntimeVariable struct {
 
 	// FileLength the length of the file to download.
 	FileLength int64
-
-	// DataExpireTime specifies the caching duration for which
-	// cached files keep no accessed by any process.
-	// After this period, the cached files will be deleted.
-	DataExpireTime time.Duration
-
-	// DaemonAliveTime specifies the alive duration for which
-	// uploader keeps no accessing by any uploading requests.
-	// After this period, the uploader will automatically exit.
-	DaemonAliveTime time.Duration
-}
-
-func (rv *RuntimeVariable) String() string {
-	js, _ := json.Marshal(rv)
-	return string(js)
 }

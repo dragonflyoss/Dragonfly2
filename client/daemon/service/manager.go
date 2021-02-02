@@ -23,9 +23,10 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
@@ -87,7 +88,7 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 		return &base.PiecePacket{
 			State: &base.ResponseState{
 				Success: false,
-				Code:    base.Code_CLIENT_ERROR,
+				Code:    dfcodes.UnknownError,
 				Msg:     fmt.Sprintf("get pieces error: %s", err),
 			},
 			TaskId: request.TaskId,
@@ -101,7 +102,7 @@ func (m *manager) CheckHealth(context.Context) (*base.ResponseState, error) {
 	m.Keep()
 	return &base.ResponseState{
 		Success: true,
-		Code:    base.Code_SUCCESS,
+		Code:    dfcodes.Success,
 		Msg:     "Running",
 	}, nil
 }
@@ -144,7 +145,7 @@ loop:
 			results <- &dfdaemongrpc.DownResult{
 				State: &base.ResponseState{
 					Success: false,
-					Code:    base.Code_REQUEST_TIME_OUT,
+					Code:    dfcodes.RequestTimeOut,
 					Msg:     fmt.Sprintf("%s", ctx.Err()),
 				},
 				CompletedLength: 0,

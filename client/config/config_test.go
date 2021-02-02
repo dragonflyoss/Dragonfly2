@@ -36,7 +36,7 @@ import (
 	"gopkg.in/check.v1"
 )
 
-var cfg = NewConfig()
+var cfg = NewClientConfig()
 
 func Test(t *testing.T) {
 	check.TestingT(t)
@@ -53,7 +53,7 @@ func (suite *ConfigSuite) SetUpTest(c *check.C) {
 }
 
 func (suite *ConfigSuite) TestConfig_String(c *check.C) {
-	cfg := NewConfig()
+	cfg := NewClientConfig()
 	expected := "{\"url\":\"\",\"output\":\"\""
 	c.Assert(strings.Contains(cfg.String(), expected), check.Equals, true)
 	cfg.LocalLimit = 20 * rate.MB
@@ -67,7 +67,7 @@ func (suite *ConfigSuite) TestConfig_String(c *check.C) {
 func (suite *ConfigSuite) TestNewConfig(c *check.C) {
 	before := time.Now()
 	time.Sleep(time.Millisecond)
-	cfg := NewConfig()
+	cfg := NewClientConfig()
 	time.Sleep(time.Millisecond)
 	after := time.Now()
 
@@ -103,7 +103,7 @@ func (suite *ConfigSuite) TestAssertConfig(c *check.C) {
 	}
 
 	var f = func() (err error) {
-		return AssertConfig(cfg)
+		return CheckConfig(cfg)
 	}
 
 	for _, v := range cases {
@@ -161,7 +161,7 @@ func (suite *ConfigSuite) TestProperties_Load(c *check.C) {
 		ext      string
 		content  string
 		errMsg   string
-		expected *GlobalConfig
+		expected *DaemonConfig
 	}{
 		{create: false, ext: "x", errMsg: "extension of"},
 		{create: false, ext: "yaml", errMsg: "no such file or directory", expected: nil},
@@ -169,29 +169,29 @@ func (suite *ConfigSuite) TestProperties_Load(c *check.C) {
 			content: "nodes:\n\t- 10.10.10.1", errMsg: "yaml", expected: nil},
 		{create: true, ext: "yaml",
 			content: "nodes:\n  - 10.10.10.1\n  - 10.10.10.2\n",
-			errMsg:  "", expected: &GlobalConfig{Supernodes: []*NodeWeight{
+			errMsg:  "", expected: &DaemonConfig{Supernodes: []*NodeWeight{
 			{"10.10.10.1:8002", 1},
 			{"10.10.10.2:8002", 1},
 		}}},
 		{create: true, ext: "yaml",
 			content: "totalLimit: 10M",
-			errMsg:  "", expected: &GlobalConfig{TotalLimit: 10 * rate.MB}},
+			errMsg:  "", expected: &DaemonConfig{TotalLimit: 10 * rate.MB}},
 		{create: false, ext: "ini", content: "[node]\naddress=1.1.1.1", errMsg: "read ini config"},
 		{create: true, ext: "ini", content: "[node]\naddress=1.1.1.1",
-			expected: &GlobalConfig{Supernodes: []*NodeWeight{
+			expected: &DaemonConfig{Supernodes: []*NodeWeight{
 				{"1.1.1.1:8002", 1},
 			}}},
 		{create: true, ext: "conf", content: "[node]\naddress=1.1.1.1",
-			expected: &GlobalConfig{Supernodes: []*NodeWeight{
+			expected: &DaemonConfig{Supernodes: []*NodeWeight{
 				{"1.1.1.1:8002", 1},
 			}}},
 		{create: true, ext: "conf", content: "[node]\naddress=1.1.1.1,1.1.1.2",
-			expected: &GlobalConfig{Supernodes: []*NodeWeight{
+			expected: &DaemonConfig{Supernodes: []*NodeWeight{
 				{"1.1.1.1:8002", 1},
 				{"1.1.1.2:8002", 1},
 			}}},
 		{create: true, ext: "conf", content: "[node]\naddress=1.1.1.1\n[totalLimit]",
-			expected: &GlobalConfig{Supernodes: []*NodeWeight{
+			expected: &DaemonConfig{Supernodes: []*NodeWeight{
 				{"1.1.1.1:8002", 1},
 			}}},
 	}
@@ -202,7 +202,7 @@ func (suite *ConfigSuite) TestProperties_Load(c *check.C) {
 			err := ioutil.WriteFile(filename, []byte(v.content), os.ModePerm)
 			c.Assert(err, check.IsNil)
 		}
-		p := &GlobalConfig{}
+		p := &DaemonConfig{}
 		err := p.Load(filename)
 		if v.expected != nil {
 			c.Assert(err, check.IsNil)
@@ -216,10 +216,10 @@ func (suite *ConfigSuite) TestProperties_Load(c *check.C) {
 }
 
 func (suite *ConfigSuite) TestProperties_String(c *check.C) {
-	p := NewGlobalConfig()
+	p := NewDaemonConfig()
 	str := p.String()
 
-	actual := &GlobalConfig{}
+	actual := &DaemonConfig{}
 	e := json.Unmarshal([]byte(str), actual)
 	c.Assert(e, check.IsNil)
 	c.Assert(actual, check.DeepEquals, p)

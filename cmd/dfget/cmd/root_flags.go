@@ -60,17 +60,17 @@ func initRootFlags() {
 			"\nin this way, different but actually the same URLs can reuse the same downloading task")
 	flagSet.StringArrayVar(&cfg.Header, "header", nil,
 		"http header, eg: --header='Accept: *' --header='Host: abc'")
-	flagSet.VarP(config.NewSupernodesValue(&cfg.Supernodes, nil), "node", "n",
-		"specify the addresses(host:port=weight) of supernodes where the host is necessary, the port(default: 8002) and the weight(default:1) are optional. And the type of weight must be integer")
+	//flagSet.VarP(config.NewSupernodesValue(&cfg.Supernodes, nil), "node", "n",
+	//	"specify the addresses(host:port=weight) of supernodes where the host is necessary, the port(default: 8002) and the weight(default:1) are optional. And the type of weight must be integer")
 	flagSet.BoolVar(&cfg.NotBackSource, "notbacksource", false,
 		"disable back source downloading for requested file when p2p fails to download it")
 
-	flagSet.BoolVar(&cfg.DFDaemon, "dfdaemon", false,
-		"identify whether the request is from dfdaemon")
+	//flagSet.BoolVar(&cfg.DFDaemon, "dfdaemon", false,
+	//	"identify whether the request is from dfdaemon")
 	flagSet.BoolVar(&cfg.Insecure, "insecure", false,
 		"identify whether supernode should skip secure verify when interact with the source.")
-	flagSet.IntVar(&cfg.ClientQueueSize, "clientqueue", config.DefaultClientQueueSize,
-		"specify the size of client queue which controls the number of pieces that can be processed simultaneously")
+	//flagSet.IntVar(&cfg.ClientQueueSize, "clientqueue", config.DefaultClientQueueSize,
+	//	"specify the size of client queue which controls the number of pieces that can be processed simultaneously")
 
 	// others
 	flagSet.BoolVarP(&cfg.ShowBar, "showbar", "b", false,
@@ -83,13 +83,13 @@ func initRootFlags() {
 		"the work home directory of dfget")
 
 	// pass to peer server which as a uploader server
-	flagSet.StringVar(&cfg.RV.LocalIP, "ip", "",
-		"IP address that server will listen on")
-	flagSet.IntVar(&cfg.RV.PeerPort, "port", 0,
-		"port number that server will listen on")
-	flagSet.DurationVar(&cfg.RV.DataExpireTime, "expiretime", config.DataExpireTime,
+	//flagSet.StringVar(&cfg.RV.LocalIP, "ip", "",
+	//	"IP address that server will listen on")
+	//flagSet.IntVar(&cfg.RV.PeerPort, "port", 0,
+	//	"port number that server will listen on")
+	flagSet.DurationVar(&cfg.DataExpireTime, "expiretime", config.DataExpireTime,
 		"caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
-	flagSet.DurationVar(&cfg.RV.DaemonAliveTime, "alivetime", config.DaemonAliveTime,
+	flagSet.DurationVar(&cfg.DaemonAliveTime, "alivetime", config.DaemonAliveTime,
 		"alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
 
 	flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")

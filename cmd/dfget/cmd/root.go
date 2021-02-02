@@ -21,12 +21,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/avast/retry-go"
 	"github.com/gofrs/flock"
@@ -34,26 +31,25 @@ import (
 
 	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
 	dfdaemongrpc "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
 	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/client"
 	dfclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/client"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/pidfile"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/progressbar"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 )
 
 type loadGlobalConfigResult struct {
-	prop     *config.GlobalConfig
+	prop     *config.DaemonConfig
 	fileName string
 	err      error
 }
 
 var filter string
 
-var cfg = config.NewConfig()
+var cfg = config.NewClientConfig()
 
 // dfgetDescription is used to describe dfget command in details.
 var dfgetDescription = `dfget is the client of Dragonfly which takes a role of peer in a P2P network.
@@ -121,7 +117,7 @@ func runDfget() error {
 			continue
 		}
 		switch result.State.Code {
-		case base.Code_SUCCESS:
+		case dfcodes.Success:
 			pb.Finish()
 			return nil
 		default:
@@ -140,81 +136,6 @@ func checkParameters() error {
 		return dferrors.New(-1, "Empty schedulers. Please use the command 'help' to show the help information.")
 	}
 	return nil
-}
-
-// initGlobalConfig loads config from files.
-func initGlobalConfig() ([]*loadGlobalConfigResult, error) {
-	var results []*loadGlobalConfigResult
-	properties := config.NewGlobalConfig()
-	for _, v := range cfg.ConfigFiles {
-		err := properties.Load(v)
-		if err == nil {
-			break
-		}
-		results = append(results, &loadGlobalConfigResult{
-			prop:     properties,
-			fileName: v,
-			err:      err,
-		})
-	}
-
-	supernodes := cfg.Supernodes
-	if supernodes == nil {
-		supernodes = properties.Supernodes
-	}
-	if supernodes != nil {
-		cfg.Nodes = config.NodeWeightSlice2StringSlice(supernodes)
-	}
-
-	if cfg.LocalLimit == 0 {
-		cfg.LocalLimit = properties.LocalLimit
-	}
-
-	if cfg.MinRate == 0 {
-		cfg.MinRate = properties.MinRate
-	}
-
-	if cfg.TotalLimit == 0 {
-		cfg.TotalLimit = properties.TotalLimit
-	}
-
-	if cfg.ClientQueueSize == 0 {
-		cfg.ClientQueueSize = properties.ClientQueueSize
-	}
-
-	currentUser, err := user.Current()
-	if err != nil {
-		os.Exit(config.CodeGetUserError)
-	}
-	cfg.User = currentUser.Username
-	if cfg.WorkHome == "" {
-		cfg.WorkHome = properties.WorkHome
-		if cfg.WorkHome == "" {
-			cfg.WorkHome = filepath.Join(currentUser.HomeDir, ".small-dragonfly")
-		}
-	}
-	cfg.RV.MetaPath = filepath.Join(cfg.WorkHome, "meta", "host.meta")
-	cfg.RV.SystemDataDir = filepath.Join(cfg.WorkHome, "data")
-	cfg.RV.FileLength = -1
-
-	return results, nil
-}
-
-func transFilter(filter string) []string {
-	if stringutils.IsEmptyStr(filter) {
-		return nil
-	}
-	return strings.Split(filter, "&")
-}
-
-func resultMsg(cfg *config.Config, end time.Time, e *dferrors.DfError) string {
-	if e != nil {
-		return fmt.Sprintf("download FAIL(%d) cost:%.3fs length:%d reason:%d error:%v",
-			e.Code, end.Sub(cfg.StartTime).Seconds(), cfg.RV.FileLength,
-			cfg.BackSourceReason, e)
-	}
-	return fmt.Sprintf("download SUCCESS cost:%.3fs length:%d reason:%d",
-		end.Sub(cfg.StartTime).Seconds(), cfg.RV.FileLength, cfg.BackSourceReason)
 }
 
 // Execute will process dfget.
@@ -289,9 +210,9 @@ func spawnDaemon() error {
 	// FIXME(jim): customize by config file or flag
 	var args = []string{
 		"daemon",
-		"--grpc-port", strconv.Itoa(cfg.RV.PeerPort),
-		"--expire-time", cfg.RV.DataExpireTime.String(),
-		"--alive-time", cfg.RV.DaemonAliveTime.String(),
+		"--grpc-port", "0",
+		"--expire-time", cfg.DataExpireTime.String(),
+		"--alive-time", cfg.DaemonAliveTime.String(),
 		"--schedulers", strings.Join(flagDfGetOpt.schedulers, ",")}
 	logger.Infof("start daemon with cmd: %s %s", os.Args[0], strings.Join(args, " "))
 	cmd := exec.Command(os.Args[0], args...)

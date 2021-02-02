@@ -205,7 +205,7 @@ func (s *streamPeerTask) finish() error {
 	// send last progress
 	s.base.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.bitmap.Settled(), s.base.taskId, s.base.peerId)
+		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.bitmap.Settled())
 		s.base.Debugf("end piece result sent")
 		// callback to store data to output
 		err = s.base.callback.Done(s)
@@ -218,7 +218,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 	// send last progress
 	s.base.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.bitmap.Settled(), s.base.taskId, s.base.peerId)
+		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.bitmap.Settled())
 		s.base.Debugf("end piece result sent")
 		close(s.base.done)
 	})

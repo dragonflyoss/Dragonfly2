@@ -17,14 +17,18 @@
 package basic
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/asserts"
 	"os"
 	"os/user"
 	"strings"
+
+	"github.com/dragonflyoss/Dragonfly2/pkg/asserts"
 )
 
-var HomeDir string
-var TmpDir string
+var (
+	HomeDir string
+	TmpDir  string
+	User    string
+)
 
 func init() {
 	u, err := user.Current()
@@ -34,6 +38,7 @@ func init() {
 	}
 
 	HomeDir = u.HomeDir
+	User = u.Name
 	if len(HomeDir) > 1 {
 		HomeDir = strings.TrimRight(HomeDir, "/")
 		if HomeDir == "" {
