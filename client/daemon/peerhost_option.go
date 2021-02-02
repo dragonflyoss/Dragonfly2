@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
 
-	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 )
@@ -45,9 +45,9 @@ type DownloadOption struct {
 
 type ProxyOption struct {
 	ListenOption   `yaml:",inline"`
-	RegistryMirror *config.RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
-	Proxies        []*config.Proxy        `json:"proxies" yaml:"proxies"`
-	HijackHTTPS    *config.HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
+	RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
+	Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
+	HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
 }
 
 type UploadOption struct {
@@ -343,6 +343,19 @@ type RegistryMirror struct {
 	Direct   bool      `yaml:"direct" json:"direct"`
 }
 
+func (r *RegistryMirror) TLSConfig() *tls.Config {
+	if r == nil {
+		return nil
+	}
+	cfg := &tls.Config{
+		InsecureSkipVerify: r.Insecure,
+	}
+	if r.Certs != nil {
+		cfg.RootCAs = r.Certs.CertPool
+	}
+	return cfg
+}
+
 type URL struct {
 	*url.URL
 }
@@ -398,4 +411,69 @@ func (cp *CertPool) unmarshal(unmarshal func(interface{}) error) error {
 
 	cp.CertPool = pool
 	return nil
+}
+
+type Proxy struct {
+	Regx     *Regexp `yaml:"regx" json:"regx"`
+	UseHTTPS bool    `yaml:"use_https" json:"use_https"`
+	Direct   bool    `yaml:"direct" json:"direct"`
+	Redirect string  `yaml:"redirect" json:"redirect"`
+}
+
+func NewProxy(regx string, useHTTPS bool, direct bool, redirect string) (*Proxy, error) {
+	exp, err := NewRegexp(regx)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid regexp")
+	}
+
+	return &Proxy{
+		Regx:     exp,
+		UseHTTPS: useHTTPS,
+		Direct:   direct,
+		Redirect: redirect,
+	}, nil
+}
+
+type Regexp struct {
+	*regexp.Regexp
+}
+
+func NewRegexp(exp string) (*Regexp, error) {
+	r, err := regexp.Compile(exp)
+	if err != nil {
+		return nil, err
+	}
+	return &Regexp{r}, nil
+}
+
+func (r *Regexp) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	return r.unmarshal(unmarshal)
+}
+
+func (r *Regexp) UnmarshalJSON(b []byte) error {
+	return r.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
+}
+
+func (r *Regexp) unmarshal(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	exp, err := regexp.Compile(s)
+	if err == nil {
+		r.Regexp = exp
+	}
+	return err
+}
+
+type HijackConfig struct {
+	Cert  string        `yaml:"cert" json:"cert"`
+	Key   string        `yaml:"key" json:"key"`
+	Hosts []*HijackHost `yaml:"hosts" json:"hosts"`
+}
+
+type HijackHost struct {
+	Regx     *regexp.Regexp `yaml:"regx" json:"regx"`
+	Insecure bool           `yaml:"insecure" json:"insecure"`
+	Certs    *CertPool      `yaml:"certs" json:"certs"`
 }

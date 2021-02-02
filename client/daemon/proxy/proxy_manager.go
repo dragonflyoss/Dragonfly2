@@ -30,7 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
-	"github.com/dragonflyoss/Dragonfly2/client/config"
+	"github.com/dragonflyoss/Dragonfly2/client/daemon"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
@@ -46,7 +46,7 @@ type proxyManager struct {
 	*Proxy
 }
 
-func NewProxyManager(peerHost *scheduler.PeerHost, registry *config.RegistryMirror, proxies []*config.Proxy, hijackHTTPS *config.HijackConfig, peerTaskManager peer.PeerTaskManager) (Manager, error) {
+func NewProxyManager(peerHost *scheduler.PeerHost, registry *daemon.RegistryMirror, proxies []*daemon.Proxy, hijackHTTPS *daemon.HijackConfig, peerTaskManager peer.PeerTaskManager) (Manager, error) {
 	options := []Option{
 		WithPeerHost(peerHost),
 		WithPeerTaskManager(peerTaskManager),

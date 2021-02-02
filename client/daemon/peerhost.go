@@ -86,7 +86,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 		return nil, err
 	}
 
-	pieceManager, err := peer.NewPieceManager(storageManager, peer.WithLimiter(rate.NewLimiter(opt.Download.RateLimit, int(opt.Download.RateLimit))))
+	pieceManager, err := peer.NewPieceManager(storageManager, peer.WithLimiter(rate.NewLimiter(opt.Download.RateLimit.Limit, int(opt.Download.RateLimit.Limit))))
 	if err != nil {
 		return nil, err
 	}
