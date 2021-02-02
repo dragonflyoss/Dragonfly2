@@ -33,12 +33,14 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
+	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
+	"github.com/dragonflyoss/Dragonfly2/client/daemon/proxy"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/service"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/upload"
-	"github.com/dragonflyoss/Dragonfly2/client/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
@@ -61,6 +63,7 @@ type peerHost struct {
 
 	ServiceManager service.Manager
 	UploadManager  upload.Manager
+	ProxyManager   proxy.Manager
 	StorageManager storage.Manager
 	GCManager      gc.Manager
 
@@ -81,6 +84,7 @@ type PeerHostOption struct {
 	KeepStorage bool
 
 	Server  ServerOption
+	Proxy   *ProxyOption
 	Upload  UploadOption
 	Storage StorageOption
 }
@@ -89,7 +93,13 @@ type ServerOption struct {
 	RateLimit    rate.Limit
 	DownloadGRPC ListenOption
 	PeerGRPC     ListenOption
-	Proxy        *ListenOption
+}
+
+type ProxyOption struct {
+	*ListenOption
+	RegistryMirror *config.RegistryMirror
+	Proxies        []*config.Proxy
+	HijackHTTPS    *config.HijackConfig
 }
 
 type UploadOption struct {
@@ -177,6 +187,14 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 		return nil, err
 	}
 
+	var proxyManager proxy.Manager
+	if opt.Proxy != nil {
+		proxyManager, err = proxy.NewProxyManager(host, opt.Proxy.RegistryMirror, opt.Proxy.Proxies, opt.Proxy.HijackHTTPS, peerTaskManager)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	uploadManager, err := upload.NewUploadManager(storageManager,
 		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit, int(opt.Upload.RateLimit))))
 	if err != nil {
@@ -192,6 +210,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 		ServiceManager:  serviceManager,
 		PeerTaskManager: peerTaskManager,
 		PieceManager:    pieceManager,
+		ProxyManager:    proxyManager,
 		UploadManager:   uploadManager,
 		StorageManager:  storageManager,
 		GCManager:       gc.NewManager(opt.GCInterval),
@@ -324,19 +343,21 @@ func (ph *peerHost) Serve() error {
 		return nil
 	})
 
-	// serve proxy service
-	if ph.Option.Server.Proxy != nil {
+	if ph.Option.Proxy != nil {
+		// prepare proxy service listen
+		proxyListener, proxyPort, err := ph.prepareTCPListener(*ph.Option.Proxy.ListenOption, true)
+		if err != nil {
+			logger.Errorf("failed to listen for proxy service: %v", err)
+			return err
+		}
+		// serve proxy service
 		g.Go(func() error {
-			listener, port, err := ph.prepareTCPListener(*ph.Option.Server.Proxy, true)
-			if err != nil {
-				logger.Errorf("failed to listen for proxy service: %v", err)
-				return err
-			}
-
-			logger.Infof("serve proxy at tcp://%s:%d", ph.Option.Server.Proxy.TCPListen.Listen, port)
-			if err = ph.ServiceManager.ServeProxy(listener); err != nil {
+			logger.Infof("serve proxy at tcp://%s:%d", ph.Option.Proxy.TCPListen.Listen, proxyPort)
+			if err = ph.ProxyManager.Serve(proxyListener); err != nil && err != http.ErrServerClosed {
 				logger.Errorf("failed to serve for proxy service: %v", err)
 				return err
+			} else if err == http.ErrServerClosed {
+				logger.Infof("proxy service closed")
 			}
 			return nil
 		})
@@ -358,7 +379,7 @@ func (ph *peerHost) Serve() error {
 		g.Go(func() error {
 			select {
 			case <-time.After(ph.Option.AliveTime):
-				var keepalives = []util.KeepAlive{
+				var keepalives = []clientutil.KeepAlive{
 					ph.StorageManager,
 					ph.ServiceManager,
 				}
@@ -389,6 +410,7 @@ func (ph *peerHost) Stop() {
 	ph.GCManager.Stop()
 	ph.ServiceManager.Stop()
 	ph.UploadManager.Stop()
+	ph.ProxyManager.Stop()
 
 	if !ph.Option.KeepStorage {
 		logger.Infof("keep storage disabled")

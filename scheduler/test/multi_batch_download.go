@@ -8,18 +8,38 @@ import (
 	"time"
 )
 
-var _ = Describe("Multi Client Download Test", func() {
+var _ = FDescribe("Multi Client Multi Batch Download Test", func() {
 	tl := common.NewE2ELogger()
 
 	var (
-		clientNum  = 40
+		clientNum  = 20
 		stopChList []chan struct{}
 	)
 
 	Describe("Create Multi Client", func() {
-		It("create multi client should be successfully", func() {
+		It("create first batch client should be successfully", func() {
 			for i := 0; i < clientNum; i++ {
-				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi", "m", tl)
+				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
+				go client.Start()
+				stopCh := client.GetStopChan()
+				stopChList = append(stopChList, stopCh)
+			}
+		})
+
+		It("create second batch client should be successfully", func() {
+			time.Sleep(time.Second * 5)
+			for i := 0; i < clientNum; i++ {
+				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
+				go client.Start()
+				stopCh := client.GetStopChan()
+				stopChList = append(stopChList, stopCh)
+			}
+		})
+
+		It("create third batch client should be successfully", func() {
+			time.Sleep(time.Second * 5)
+			for i := 0; i < clientNum; i++ {
+				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
 				go client.Start()
 				stopCh := client.GetStopChan()
 				stopChList = append(stopChList, stopCh)
@@ -29,6 +49,7 @@ var _ = Describe("Multi Client Download Test", func() {
 
 	Describe("Wait Clients Finish", func() {
 		It("all clients should be stopped successfully", func() {
+			time.Sleep(time.Second*5)
 			timer := time.After(time.Minute * 10)
 			caseList := []reflect.SelectCase{
 				{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(timer), Send: reflect.Value{}},
@@ -49,7 +70,7 @@ var _ = Describe("Multi Client Download Test", func() {
 					}
 				}
 			}
-			tl.Log("all client download file finished")
+			tl.Log("multiple batch all client download file finished")
 		})
 	})
 })

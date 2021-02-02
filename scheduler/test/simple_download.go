@@ -16,7 +16,7 @@ var _ = Describe("One Client Download Test", func() {
 
 	Describe("One Client Download a file Test", func() {
 		It("should be download a file successfully", func() {
-			client = mock_client.NewMockClient("127.0.0.1:8002", "http://www.badu.com?type=single", "s", tl)
+			client = mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=single", "s", tl)
 			go client.Start()
 			stopCh := client.GetStopChan()
 			select {

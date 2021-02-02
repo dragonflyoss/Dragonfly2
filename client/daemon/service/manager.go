@@ -20,14 +20,12 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
-	"time"
 
 	"google.golang.org/grpc"
 
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly2/client/util"
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
@@ -37,15 +35,14 @@ import (
 )
 
 type Manager interface {
-	util.KeepAlive
+	clientutil.KeepAlive
 	ServeDownload(listener net.Listener) error
 	ServePeer(listener net.Listener) error
-	ServeProxy(listener net.Listener) error
 	Stop()
 }
 
 type manager struct {
-	util.KeepAlive
+	clientutil.KeepAlive
 	peerHost        *scheduler.PeerHost
 	peerTaskManager peer.PeerTaskManager
 	storageManager  storage.Manager
@@ -59,7 +56,7 @@ var _ dfdaemonserver.DaemonServer = &manager{}
 
 func NewManager(peerHost *scheduler.PeerHost, peerTaskManager peer.PeerTaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Manager, error) {
 	mgr := &manager{
-		KeepAlive:       util.NewKeepAlive("service manager"),
+		KeepAlive:       clientutil.NewKeepAlive("service manager"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
@@ -76,11 +73,6 @@ func (m *manager) ServeDownload(listener net.Listener) error {
 func (m *manager) ServePeer(listener net.Listener) error {
 	m.uploadAddr = fmt.Sprintf("%s:%d", m.peerHost.Ip, m.peerHost.DownPort)
 	return m.peerServer.Serve(listener)
-}
-
-func (m *manager) ServeProxy(lis net.Listener) error {
-	// TODO
-	return nil
 }
 
 func (m *manager) Stop() {
@@ -124,7 +116,7 @@ func (m *manager) Download(ctx context.Context,
 			Filter:   req.Filter,
 			BizId:    req.BizId,
 			UrlMata:  req.UrlMeta,
-			PeerId:   m.GenPeerID(),
+			PeerId:   clientutil.GenPeerID(m.peerHost),
 			PeerHost: m.peerHost,
 		},
 		Output: req.Output,
@@ -163,10 +155,4 @@ loop:
 		}
 	}
 	return nil
-}
-
-func (m *manager) GenPeerID() string {
-	// FIXME review peer id format
-	return fmt.Sprintf("%s-%d-%d-%d",
-		m.peerHost.Ip, m.peerHost.RpcPort, os.Getpid(), time.Now().UnixNano())
 }
