@@ -17,12 +17,42 @@
 package dfnet
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
+
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 )
 
 type NetworkType string
+
+func (n *NetworkType) UnmarshalJSON(b []byte) error {
+	var t string
+	err := json.Unmarshal(b, &t)
+	if err != nil {
+		return err
+	}
+
+	*n = NetworkType(t)
+	return nil
+}
+
+func (n *NetworkType) UnmarshalYAML(node *yaml.Node) error {
+	var t string
+	switch node.Kind {
+	case yaml.ScalarNode:
+		if err := node.Decode(&t); err != nil {
+			return err
+		}
+	default:
+		return errors.New("invalid filestring")
+	}
+
+	*n = NetworkType(t)
+	return nil
+}
 
 const (
 	TCP  NetworkType = "tcp"
@@ -58,8 +88,8 @@ func init() {
 }
 
 type NetAddr struct {
-	Type NetworkType
-	Addr string // see https://github.com/grpc/grpc/blob/master/doc/naming.md
+	Type NetworkType `json:"type" yaml:"type"`
+	Addr string      `json:"addr" yaml:"addr"` // see https://github.com/grpc/grpc/blob/master/doc/naming.md
 }
 
 func (na *NetAddr) GetEndpoint() string {
