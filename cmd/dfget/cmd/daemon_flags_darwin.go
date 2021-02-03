@@ -38,7 +38,7 @@ var flagDaemonOpt = config.PeerHostOption{
 	KeepStorage: false,
 	Verbose:     false,
 	Host: config.HostOption{
-		AdvertiseIP:    net.IPv4zero,
+		AdvertiseIP:    net.IPv4zero.String(),
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",
