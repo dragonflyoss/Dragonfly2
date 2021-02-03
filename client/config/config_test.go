@@ -170,9 +170,9 @@ func (suite *ConfigSuite) TestProperties_Load(c *check.C) {
 		{create: true, ext: "yaml",
 			content: "nodes:\n  - 10.10.10.1\n  - 10.10.10.2\n",
 			errMsg:  "", expected: &DaemonConfig{Supernodes: []*NodeWeight{
-			{"10.10.10.1:8002", 1},
-			{"10.10.10.2:8002", 1},
-		}}},
+				{"10.10.10.1:8002", 1},
+				{"10.10.10.2:8002", 1},
+			}}},
 		{create: true, ext: "yaml",
 			content: "totalLimit: 10M",
 			errMsg:  "", expected: &DaemonConfig{TotalLimit: 10 * rate.MB}},

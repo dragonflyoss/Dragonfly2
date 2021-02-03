@@ -16,8 +16,6 @@
 
 package cmd
 
-import "github.com/dragonflyoss/Dragonfly2/client/config"
-
 type dfgetOption struct {
 	daemonSock string
 	daemonPid  string
@@ -34,12 +32,12 @@ func initRootFlags() {
 		"destination path which is used to store the requested downloading file. It must contain detailed directory and specific filename, for example, '/tmp/file.mp4'")
 
 	// localLimit & minRate & totalLimit & timeout
-	flagSet.VarP(&cfg.LocalLimit, "locallimit", "s",
-		"network bandwidth rate limit for single download task, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
-	flagSet.Var(&cfg.MinRate, "minrate",
-		"minimal network bandwidth rate for downloading a file, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
-	flagSet.Var(&cfg.TotalLimit, "totallimit",
-		"network bandwidth rate limit for the whole host, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
+	// flagSet.VarP(&cfg.LocalLimit, "locallimit", "s",
+	// "network bandwidth rate limit for single download task, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
+	// flagSet.Var(&cfg.MinRate, "minrate",
+	// "minimal network bandwidth rate for downloading a file, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
+	// flagSet.Var(&cfg.TotalLimit, "totallimit",
+	// "network bandwidth rate limit for the whole host, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
 	flagSet.DurationVarP(&cfg.Timeout, "timeout", "e", 0,
 		"timeout set for file downloading task. If dfget has not finished downloading all pieces of file before --timeout, the dfget will throw an error and exit")
 
@@ -79,18 +77,18 @@ func initRootFlags() {
 		"show log on console, it's conflict with '--showbar'")
 	flagSet.BoolVar(&cfg.Verbose, "verbose", false,
 		"enable verbose mode, all debug log will be display")
-	flagSet.StringVar(&cfg.WorkHome, "home", cfg.WorkHome,
-		"the work home directory of dfget")
+	// flagSet.StringVar(&cfg.WorkHome, "home", cfg.WorkHome,
+	// "the work home directory of dfget")
 
 	// pass to peer server which as a uploader server
 	//flagSet.StringVar(&cfg.RV.LocalIP, "ip", "",
 	//	"IP address that server will listen on")
 	//flagSet.IntVar(&cfg.RV.PeerPort, "port", 0,
 	//	"port number that server will listen on")
-	flagSet.DurationVar(&cfg.DataExpireTime, "expiretime", config.DataExpireTime,
-		"caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
-	flagSet.DurationVar(&cfg.DaemonAliveTime, "alivetime", config.DaemonAliveTime,
-		"alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
+	// flagSet.DurationVar(&cfg.DataExpireTime, "expiretime", config.DataExpireTime,
+	// "caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
+	// flagSet.DurationVar(&cfg.DaemonAliveTime, "alivetime", config.DaemonAliveTime,
+	// "alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
 
 	flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")
 	flagSet.MarkDeprecated("notbs", "please use '--notbacksource' instead")
