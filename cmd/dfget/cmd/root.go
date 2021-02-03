@@ -41,12 +41,6 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/progressbar"
 )
 
-type loadGlobalConfigResult struct {
-	prop     *config.DaemonConfig
-	fileName string
-	err      error
-}
-
 var filter string
 
 var cfg = config.NewClientConfig()
