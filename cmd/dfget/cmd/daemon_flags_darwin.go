@@ -55,6 +55,7 @@ var flagDaemonOpt = config.PeerHostOption{
 		},
 		PeerGRPC: config.ListenOption{
 			TCPListen: &config.TCPListenOption{
+				Listen: net.IPv4zero.String(),
 				PortRange: config.TCPListenPortRange{
 					Start: 65000,
 					End:   65000,
@@ -68,6 +69,7 @@ var flagDaemonOpt = config.PeerHostOption{
 		},
 		ListenOption: config.ListenOption{
 			TCPListen: &config.TCPListenOption{
+				Listen: net.IPv4zero.String(),
 				PortRange: config.TCPListenPortRange{
 					Start: 65002,
 					End:   65002,
@@ -78,6 +80,7 @@ var flagDaemonOpt = config.PeerHostOption{
 	Proxy: &config.ProxyOption{
 		ListenOption: config.ListenOption{
 			TCPListen: &config.TCPListenOption{
+				Listen: net.IPv4zero.String(),
 				PortRange: config.TCPListenPortRange{
 					Start: 65001,
 					End:   65001,
