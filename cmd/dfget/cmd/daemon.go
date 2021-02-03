@@ -85,8 +85,8 @@ func runDaemon() error {
 	defer pid.Remove()
 
 	var ip string
-	if !net.IPv4zero.Equal(flagDaemonOpt.Host.AdvertiseIP) {
-		ip = flagDaemonOpt.Host.AdvertiseIP.String()
+	if !net.IPv4zero.Equal(net.ParseIP(flagDaemonOpt.Host.AdvertiseIP)) {
+		ip = flagDaemonOpt.Host.AdvertiseIP
 	} else {
 		ip = dfnet.HostIp
 	}

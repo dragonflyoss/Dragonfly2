@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/url"
 	"path/filepath"
 	"regexp"
@@ -74,7 +73,7 @@ type HostOption struct {
 	// Peerhost net topology for scheduler
 	NetTopology string `json:"net_topology" yaml:"net_topology"`
 	// The ip report to scheduler, normal same with listen ip
-	AdvertiseIP net.IP `json:"advertise_ip" yaml:"advertise_ip"`
+	AdvertiseIP string `json:"advertise_ip" yaml:"advertise_ip"`
 }
 
 type DownloadOption struct {
