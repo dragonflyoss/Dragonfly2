@@ -48,6 +48,10 @@ func init() {
 	check.Suite(&ConfigSuite{})
 }
 
+func (suite *ConfigSuite) SetUpTest(c *check.C) {
+
+}
+
 func (suite *ConfigSuite) TestConfig_String(c *check.C) {
 	cfg := NewClientConfig()
 	expected := "{\"url\":\"\",\"output\":\"\""

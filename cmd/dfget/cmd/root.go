@@ -205,8 +205,8 @@ func spawnDaemon() error {
 	var args = []string{
 		"daemon",
 		"--grpc-port", "0",
-		"--expire-time", cfg.DataExpireTime.String(),
-		"--alive-time", cfg.DaemonAliveTime.String(),
+		"--expire-time", "0",
+		"--alive-time", "0",
 		"--schedulers", strings.Join(flagDfGetOpt.schedulers, ",")}
 	logger.Infof("start daemon with cmd: %s %s", os.Args[0], strings.Join(args, " "))
 	cmd := exec.Command(os.Args[0], args...)

@@ -21,8 +21,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"net"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -37,8 +40,6 @@ import (
 )
 
 type PeerHostOption struct {
-	Schedulers []dfnet.NetAddr `json:"schedulers" yaml:"schedulers"`
-
 	// AliveTime indicates alive duration for which daemon keeps no accessing by any uploading and download requests,
 	// after this period daemon will automatically exit
 	// when AliveTime == 0, will run infinitely
@@ -46,12 +47,34 @@ type PeerHostOption struct {
 	AliveTime  Duration `json:"alive_time" yaml:"alive_time"`
 	GCInterval Duration `json:"gc_interval" yaml:"gc_interval"`
 
-	KeepStorage bool `json:"keep_storage" yaml:"keep_storage"`
+	// Pid file location
+	PidFile string `json:"pid_file" yaml:"pid_file"`
+	// Lock file location
+	LockFile string `json:"lock_file" yaml:"lock_file"`
 
+	DataDir     string          `json:"data_dir" yaml:"data_dir"`
+	WorkHome    string          `json:"work_home" yaml:"work_home"`
+	KeepStorage bool            `json:"keep_storage" yaml:"keep_storage"`
+	Schedulers  []dfnet.NetAddr `json:"schedulers" yaml:"schedulers"`
+	Verbose     bool            `yaml:"verbose" json:"verbose"`
+
+	Host     HostOption     `json:"host" yaml:"host"`
 	Download DownloadOption `json:"download" yaml:"download"`
 	Proxy    *ProxyOption   `json:"proxy,omitempty" yaml:"proxy,omitempty"`
 	Upload   UploadOption   `json:"upload" yaml:"upload"`
 	Storage  StorageOption  `json:"storage" yaml:"storage"`
+}
+
+type HostOption struct {
+	SecurityDomain string `json:"security_domain" yaml:"security_domain"`
+	// Peerhost location for scheduler
+	Location string `json:"location" yaml:"location"`
+	// Peerhost idc for scheduler
+	IDC string `json:"idc" yaml:"idc"`
+	// Peerhost net topology for scheduler
+	NetTopology string `json:"net_topology" yaml:"net_topology"`
+	// The ip report to scheduler, normal same with listen ip
+	AdvertiseIP net.IP `json:"advertise_ip" yaml:"advertise_ip"`
 }
 
 type DownloadOption struct {
@@ -76,6 +99,29 @@ type ListenOption struct {
 	Security   SecurityOption    `json:"security" yaml:"security"`
 	TCPListen  *TCPListenOption  `json:"tcp_listen,omitempty" yaml:"tcp_listen,omitempty"`
 	UnixListen *UnixListenOption `json:"unix_listen,omitempty" yaml:"unix_listen,omitempty"`
+}
+
+func (p *PeerHostOption) Load(path string) error {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("unable to load peer host configuration from %q [%v]", path, err)
+	}
+
+	switch filepath.Ext(path)[1:] {
+	case "json":
+		err := json.Unmarshal(data, &p)
+		if err != nil {
+			return err
+		}
+		return nil
+	case "yml", "yaml":
+		err := yaml.Unmarshal(data, &p)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("extension of %s is not in 'yml/yaml/json'", path)
 }
 
 type TCPListenOption struct {

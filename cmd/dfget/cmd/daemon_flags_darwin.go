@@ -22,28 +22,73 @@ import (
 	"net"
 	"time"
 
+	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
+	"golang.org/x/time/rate"
 )
 
-var flagDaemonOpt = daemonOption{
-	dataDir:  "",
-	workHome: "",
-
-	schedulers:      nil,
-	pidFile:         "/tmp/dfdaemon.pid",
-	lockFile:        "/tmp/dfdaemon.lock",
-	advertiseIP:     net.IPv4zero,
-	listenIP:        net.IPv4zero,
-	downloadSocket:  "/tmp/dfdamon.sock",
-	peerPort:        65000,
-	uploadPort:      65002,
-	proxyPort:       65001,
-	downloadRate:    "100Mi",
-	uploadRate:      "100Mi",
-	storeStrategy:   string(storage.SimpleLocalTaskStoreStrategy),
-	dataExpireTime:  3 * time.Minute,
-	daemonAliveTime: 5 * time.Minute,
-	keepStorage:     false,
-	gcInterval:      time.Minute,
-	verbose:         false,
+var flagDaemonOpt = config.PeerHostOption{
+	DataDir:     "",
+	WorkHome:    "",
+	AliveTime:   config.Duration{Duration: 5 * time.Minute},
+	GCInterval:  config.Duration{Duration: 1 * time.Minute},
+	Schedulers:  nil,
+	PidFile:     "/tmp/dfdaemon.pid",
+	LockFile:    "/tmp/dfdaemon.lock",
+	KeepStorage: false,
+	Verbose:     false,
+	Host: config.HostOption{
+		AdvertiseIP:    net.IPv4zero,
+		SecurityDomain: "",
+		Location:       "",
+		IDC:            "",
+		NetTopology:    "",
+	},
+	Download: config.DownloadOption{
+		RateLimit: config.RateLimit{
+			Limit: rate.Limit(104857600),
+		},
+		DownloadGRPC: config.ListenOption{
+			UnixListen: &config.UnixListenOption{
+				Socket: "/tmp/dfdamon.sock",
+			},
+		},
+		PeerGRPC: config.ListenOption{
+			TCPListen: &config.TCPListenOption{
+				PortRange: config.TCPListenPortRange{
+					Start: 65000,
+					End:   65000,
+				},
+			},
+		},
+	},
+	Upload: config.UploadOption{
+		RateLimit: config.RateLimit{
+			Limit: rate.Limit(104857600),
+		},
+		ListenOption: config.ListenOption{
+			TCPListen: &config.TCPListenOption{
+				PortRange: config.TCPListenPortRange{
+					Start: 65002,
+					End:   65002,
+				},
+			},
+		},
+	},
+	Proxy: &config.ProxyOption{
+		ListenOption: config.ListenOption{
+			TCPListen: &config.TCPListenOption{
+				PortRange: config.TCPListenPortRange{
+					Start: 65001,
+					End:   65001,
+				},
+			},
+		},
+	},
+	Storage: config.StorageOption{
+		Option: storage.Option{
+			TaskExpireTime: 3 * time.Minute,
+		},
+		StoreStrategy: storage.StoreStrategy(string(storage.SimpleLocalTaskStoreStrategy)),
+	},
 }
