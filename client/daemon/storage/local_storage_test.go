@@ -33,12 +33,12 @@ import (
 
 	testifyassert "github.com/stretchr/testify/assert"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/test"
-	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
+	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/gc"
+	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/test"
+	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	_ "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
 func TestMain(m *testing.M) {

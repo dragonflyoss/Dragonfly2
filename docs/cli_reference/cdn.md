@@ -1,15 +1,18 @@
-## cdn
-
-the data cache server of Dragonfly used for avoiding downloading the same files from source repeatedly
-
-### Synopsis
+## CDN
 
 CDN is a long-running process which caches downloaded data from source to avoid downloading the same files from source repeatedly
 
+## Try it
 ```
-cdn [flags]
+go run cmd/cdnsystem/main.go [Option]
 ```
+## Log configuration
+set environment variable DF_ACTIVE_PROFILE=local if you want to print logs to Terminal
 
+## Runtime metrics monitoring 
+```
+go run cmd/cdnsystem/main.go --profiler
+```
 ### Options
 
 ```

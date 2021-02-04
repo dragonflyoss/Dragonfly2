@@ -1,9 +1,9 @@
 package app
 
 import (
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/server"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/config"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/server"
 	"github.com/mitchellh/mapstructure"
 	"os"
 	"reflect"

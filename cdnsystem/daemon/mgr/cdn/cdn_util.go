@@ -18,8 +18,8 @@ package cdn
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/timeutils"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/timeutils"
 	"github.com/pkg/errors"
 	"strconv"
 	"strings"

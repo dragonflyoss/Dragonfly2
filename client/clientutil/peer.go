@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func GenPeerID(peerHost *scheduler.PeerHost) string {

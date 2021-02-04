@@ -19,9 +19,9 @@ package cdn
 import (
 	"bytes"
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/store"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/types"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
 	"github.com/pkg/errors"
 	"io"
 	"sync"

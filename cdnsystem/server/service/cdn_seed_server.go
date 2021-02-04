@@ -19,18 +19,19 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/cdnerrors"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/daemon/mgr"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dferrors"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base/common"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/netutils"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"os"
 	"strconv"
@@ -161,10 +162,14 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	task, err := css.taskMgr.Get(ctx, req.TaskId)
 	logger.Debugf("task:%+v",task)
 	if err != nil {
-		return &base.PiecePacket{
-			State:  common.NewState(dfcodes.CdnError, err),
+		state := common.NewState(dfcodes.CdnError, err)
+		if cdnerrors.IsDataNotFound(err) {
+			state = common.NewState(dfcodes.CdnTaskNotFound, err)
+			return &base.PiecePacket{
+			State: state,
 			TaskId: req.TaskId,
 		}, errors.Wrapf(err, "failed to get task from cdn")
+		}
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {

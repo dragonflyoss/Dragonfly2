@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
 )
 
 type localTaskStore struct {

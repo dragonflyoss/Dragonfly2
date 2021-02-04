@@ -2,10 +2,10 @@ package mgr
 
 import (
 	"fmt"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/workqueue"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/workqueue"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/config"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/types"
 	"sort"
 	"strings"
 	"sync"

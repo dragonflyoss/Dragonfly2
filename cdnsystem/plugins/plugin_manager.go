@@ -17,7 +17,7 @@
 package plugins
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/config"
 	"sync"
 )
 

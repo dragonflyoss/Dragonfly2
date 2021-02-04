@@ -22,13 +22,13 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base/common"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/safe"
 )
 
 // see scheduler.SchedulerClient

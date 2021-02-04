@@ -3,12 +3,13 @@ package types
 import (
 	"crypto/sha1"
 	"fmt"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
 	"net/url"
 	"strings"
 )
 
-func GenerateTaskId(rawUrl string, filter string) (taskId string) {
+func GenerateTaskId(rawUrl string, filter string, meta *base.UrlMeta) (taskId string) {
 	taskUrl, err := url.Parse(rawUrl)
 	if err != nil {
 		logger.Warnf("GenerateTaskId rawUrl[%s] is invalid url", rawUrl)
@@ -19,13 +20,16 @@ func GenerateTaskId(rawUrl string, filter string) (taskId string) {
 		queries := taskUrl.Query()
 		fields := strings.Split(filter, "&")
 		if len(fields) > 0 {
-			queries = url.Values{}
 			for _, key := range fields {
-				queries.Add(key, taskUrl.Query().Get(key))
+				queries.Del(key)
 			}
 		}
 		taskUrl.RawQuery = queries.Encode()
 	}
-	taskId = fmt.Sprintf("%x", sha1.Sum([]byte(taskUrl.String())))
+	taskRawString := taskUrl.String()
+	if meta != nil {
+		taskRawString += "_" + meta.Range + "_" + meta.Md5
+	}
+	taskId = fmt.Sprintf("%x", sha1.Sum([]byte(taskRawString)))
 	return
 }

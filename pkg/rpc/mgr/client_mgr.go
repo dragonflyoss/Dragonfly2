@@ -17,8 +17,8 @@
 package mgr
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	cdnclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/client"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
+	cdnclient "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"github.com/serialx/hashring"
 	"sync"
 )

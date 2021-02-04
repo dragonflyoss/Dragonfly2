@@ -2,7 +2,7 @@ package service
 
 import (
 	"errors"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/types"
 )
 
 func (s *SchedulerService) GetPeerTask(peerTaskId string) (peerTask *types.PeerTask, err error) {

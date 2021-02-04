@@ -24,11 +24,11 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly2/client/config"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
+	"github.com/dragonflyoss/Dragonfly/v2/client/config"
+	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
 )
 
 var (

@@ -1,10 +1,10 @@
 package schedule_worker
 
 import (
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
-	scheduler2 "github.com/dragonflyoss/Dragonfly2/scheduler/scheduler"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/mgr"
+	scheduler2 "github.com/dragonflyoss/Dragonfly/v2/scheduler/scheduler"
 	"io"
 )
 

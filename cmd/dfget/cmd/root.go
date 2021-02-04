@@ -29,16 +29,16 @@ import (
 	"github.com/gofrs/flock"
 	"github.com/spf13/cobra"
 
-	"github.com/dragonflyoss/Dragonfly2/client/config"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	dfdaemongrpc "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
-	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/client"
-	dfclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/client"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/pidfile"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/progressbar"
+	"github.com/dragonflyoss/Dragonfly/v2/client/config"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dferrors"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	dfdaemongrpc "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon"
+	_ "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon/client"
+	dfclient "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon/client"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/pidfile"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/progressbar"
 )
 
 var filter string

@@ -11,10 +11,10 @@ import (
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/test"
-	mock_peer "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/peer"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/test"
+	mock_peer "github.com/dragonflyoss/Dragonfly/v2/client/daemon/test/mock/peer"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func TestMain(m *testing.M) {

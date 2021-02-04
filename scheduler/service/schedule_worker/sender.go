@@ -1,10 +1,10 @@
 package schedule_worker
 
 import (
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/config"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/mgr"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/types"
 	"hash/crc32"
 )
 

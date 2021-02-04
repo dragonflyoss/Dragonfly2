@@ -17,8 +17,8 @@
 package ossprotocol
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/source"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/types"
 )
 
 const ossClient = "oss"

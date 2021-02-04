@@ -18,12 +18,12 @@ package server
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
-	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dferrors"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/safe"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 	"sync"

@@ -16,7 +16,7 @@
 
 package dfcodes
 
-import "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+import "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
 
 // rpc response code
 const (
@@ -36,6 +36,7 @@ const (
 	// cdnsystem processing error 6000-6999
 	CdnError base.Code = 6000
 	CdnTaskRegistryFail base.Code = 6001
+	CdnTaskNotFound base.Code = 6404
 
 	// manager processing error 7000-7999
 	ManagerError base.Code = 7000

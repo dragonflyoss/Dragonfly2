@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
 )
 
 // Listen wraps net.Listen with dfnet.NetAddr

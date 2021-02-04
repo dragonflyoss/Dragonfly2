@@ -17,7 +17,7 @@
 package progress
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/types"
 	"github.com/pkg/errors"
 	"sort"
 	"strconv"
