@@ -124,7 +124,7 @@ func (p *PeerHostOption) Load(path string) error {
 
 type TCPListenOption struct {
 	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1
-	Listen string `json:"listen"`
+	Listen string `json:"listen" yaml:"listen"`
 
 	// PortRange stands listen port
 	// yaml example 1:
@@ -133,7 +133,7 @@ type TCPListenOption struct {
 	//   port:
 	//     start: 12345
 	//     end: 12346
-	PortRange TCPListenPortRange `json:"port"`
+	PortRange TCPListenPortRange `json:"port" yaml:"port"`
 }
 
 type TCPListenPortRange struct {
@@ -335,12 +335,12 @@ type URL struct {
 	*url.URL
 }
 
-// UnmarshalJSON implements json.Unmarshaller.
+// UnmarshalJSON implements json.Unmarshaler.
 func (u *URL) UnmarshalJSON(b []byte) error {
 	return u.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
 }
 
-// UnmarshalYAML implements yaml.Unmarshaller.
+// UnmarshalYAML implements yaml.Unmarshaler.
 func (u *URL) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return u.unmarshal(unmarshal)
 }
@@ -377,12 +377,12 @@ type CertPool struct {
 	*x509.CertPool
 }
 
-// UnmarshalJSON implements json.Unmarshaller.
+// UnmarshalJSON implements json.Unmarshaler.
 func (cp *CertPool) UnmarshalJSON(b []byte) error {
 	return cp.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
 }
 
-// UnmarshalYAML implements yaml.Unmarshaller.
+// UnmarshalYAML implements yaml.Unmarshaler.
 func (cp *CertPool) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return cp.unmarshal(unmarshal)
 }
@@ -457,12 +457,12 @@ func NewRegexp(exp string) (*Regexp, error) {
 	return &Regexp{r}, nil
 }
 
-// UnmarshalYAML implements yaml.Unmarshaller.
+// UnmarshalYAML implements yaml.Unmarshaler.
 func (r *Regexp) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return r.unmarshal(unmarshal)
 }
 
-// UnmarshalJSON implements json.Unmarshaller.
+// UnmarshalJSON implements json.Unmarshaler.
 func (r *Regexp) UnmarshalJSON(b []byte) error {
 	return r.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
 }

@@ -63,10 +63,10 @@ type Manager interface {
 
 type Option struct {
 	// DataPath indicates directory which stores temporary files for p2p uploading
-	DataPath string
+	DataPath string `json:"data_path" yaml:"data_path"`
 	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
 	// after this period cache file will be gc
-	TaskExpireTime clientutil.Duration
+	TaskExpireTime clientutil.Duration `json:"task_expire_time" yaml:"task_expire_time"`
 }
 
 var (
