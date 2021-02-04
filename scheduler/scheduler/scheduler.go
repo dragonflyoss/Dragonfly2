@@ -76,14 +76,18 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) ( primary *types.PeerT
 }
 
 func (s *Scheduler) SchedulerBadNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
+	logger.Debugf("[%s][%s]SchedulerBadNode scheduler node is bad", peer.Task.TaskId, peer.Pid)
 	adjustNodes, err = s.SchedulerLeaveNode(peer)
 	if err != nil {
 		return
 	}
 
-	children, _ := s.SchedulerChildren(peer)
-	for _, child := range children {
-		adjustNodes = append(adjustNodes, child)
+	s.SchedulerParent(peer)
+	adjustNodes = append(adjustNodes, peer)
+
+	for _, node := range adjustNodes {
+		logger.Debugf("[%s][%s]SchedulerBadNode [%s] scheduler a new parent [%s]", peer.Task.TaskId, peer.Pid,
+			node.Pid, node.GetParent().DstPeerTask.Pid)
 	}
 
 	return
@@ -91,8 +95,7 @@ func (s *Scheduler) SchedulerBadNode(peer *types.PeerTask) (adjustNodes []*types
 
 func (s *Scheduler) SchedulerLeaveNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
 	peer.DeleteParent()
-	s.SchedulerParent(peer)
-	adjustNodes = append(adjustNodes, peer)
+	peer.SetDown()
 
 	for _, child := range peer.GetChildren() {
 		child.SrcPeerTask.DeleteParent()

@@ -1,9 +1,5 @@
 package config
 
-import (
-	"runtime"
-)
-
 const (
 	DefaultConfigFilePath string = "conf/scheduler.yml"
 )
@@ -63,9 +59,9 @@ func createDefaultConfig() *Config {
 			Port: 8002,
 		},
 		Worker: schedulerWorkerConfig{
-			WorkerNum:         runtime.GOMAXPROCS(0),
+			WorkerNum:         1,
 			WorkerJobPoolSize: 10000,
-			SenderNum:         50,
+			SenderNum:         10,
 			SenderJobPoolSize: 10000,
 		},
 		Scheduler: schedulerConfig{},
@@ -74,8 +70,8 @@ func createDefaultConfig() *Config {
 				{{
 					CdnName:      "cdn",
 					IP:           "127.0.0.1",
-					RpcPort:      12345,
-					DownloadPort: 12345,
+					RpcPort:      8003,
+					DownloadPort: 8002,
 				}},
 			},
 		},

@@ -34,9 +34,9 @@ type PeerTask struct {
 	lastActiveTime  int64
 	touch           func(*PeerTask)
 
-	parent          *PeerEdge               // primary download provider
+	parent          *PeerEdge // primary download provider
 	children        *sync.Map // all primary download consumers
-	subTreeNodesNum int32                   // node number of subtree and current node is root of the subtree
+	subTreeNodesNum int32     // node number of subtree and current node is root of the subtree
 
 	// the client of peer task, which used for send and receive msg
 	client scheduler.Scheduler_ReportPieceResultServer
@@ -75,9 +75,9 @@ func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *Pee
 		isDown:          false,
 		lock:            new(sync.Mutex),
 		lastActiveTime:  time.Now().UnixNano(),
-		subTreeNodesNum: 1,
-		children:        new(sync.Map),
 		touch:           touch,
+		children:        new(sync.Map),
+		subTreeNodesNum: 1,
 	}
 	if host != nil {
 		host.AddPeerTask(pt)
@@ -137,7 +137,7 @@ func (pt *PeerTask) GetCost() int32 {
 
 func (pt *PeerTask) GetChildren() (children []*PeerEdge) {
 	if pt.children != nil {
-		pt.children.Range(func(k, v interface{})bool{
+		pt.children.Range(func(k, v interface{}) bool {
 			children = append(children, v.(*PeerEdge))
 			return true
 		})
@@ -178,7 +178,8 @@ func (pt *PeerTask) DeleteParent() {
 	p := parent
 	for p != nil {
 		atomic.AddInt32(&p.subTreeNodesNum, -pt.subTreeNodesNum)
-		if p.parent == nil || p.parent.DstPeerTask == nil {
+		if p.parent == nil || p.parent.DstPeerTask == nil ||
+			(p.Host != nil && p.Host.Type == HostTypeCdn) {
 			break
 		}
 		p = p.parent.DstPeerTask
@@ -271,9 +272,9 @@ func (pt *PeerTask) SetClient(client scheduler.Scheduler_ReportPieceResultServer
 func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 	// if pt != nil && pt.client != nil {
 	pkg = &scheduler.PeerPacket{
-		State:  &base.ResponseState{
+		State: &base.ResponseState{
 			Success: true,
-			Code: dfcodes.Success,
+			Code:    dfcodes.Success,
 		},
 		TaskId: pt.Task.TaskId,
 		// source peer id
@@ -284,9 +285,9 @@ func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 		pkg.ParallelCount = int32(pt.parent.Concurrency)
 		peerHost := pt.parent.DstPeerTask.Host.PeerHost
 		pkg.MainPeer = &scheduler.PeerPacket_DestPeer{
-			Ip : peerHost.Ip,
+			Ip:      peerHost.Ip,
 			RpcPort: peerHost.RpcPort,
-			PeerId: pt.parent.DstPeerTask.Pid,
+			PeerId:  pt.parent.DstPeerTask.Pid,
 		}
 	}
 	// TODO select StealPeers
@@ -318,8 +319,9 @@ func (pt *PeerTask) GetDeep() int32 {
 	deep := int32(0)
 	node := pt
 	for node != nil {
-		deep ++
-		if node.parent == nil || node.parent.DstPeerTask == nil {
+		deep++
+		if node.parent == nil || node.parent.DstPeerTask == nil ||
+			(node.Host != nil && node.Host.Type == HostTypeCdn) {
 			break
 		}
 		node = node.parent.DstPeerTask
@@ -332,12 +334,32 @@ func (pt *PeerTask) GetRoot() *PeerTask {
 	defer pt.lock.Unlock()
 	node := pt
 	for node != nil {
-		if node.parent == nil || node.parent.DstPeerTask == nil {
+		if node.parent == nil || node.parent.DstPeerTask == nil ||
+			(node.Host != nil && node.Host.Type == HostTypeCdn) {
 			break
 		}
 		node = node.parent.DstPeerTask
 	}
 	return node
+}
+
+func (pt *PeerTask) IsAncestor(a *PeerTask) bool {
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
+	if a == nil {
+		return false
+	}
+	node := pt
+	for node != nil {
+		if node.parent == nil || node.parent.DstPeerTask == nil ||
+			(node.Host != nil && node.Host.Type == HostTypeCdn) {
+			return false
+		} else if node.Pid == a.Pid {
+			return true
+		}
+		node = node.parent.DstPeerTask
+	}
+	return false
 }
 
 func (pt *PeerTask) GetSubTreeNodesNum() int32 {
@@ -365,4 +387,10 @@ func (pt *PeerTask) IsWaiting() bool {
 		return false
 	}
 	return pt.finishedNum >= pt.parent.DstPeerTask.finishedNum
+}
+
+func (pt *PeerTask) GetLastActiveTime() int64 {
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
+	return pt.lastActiveTime
 }

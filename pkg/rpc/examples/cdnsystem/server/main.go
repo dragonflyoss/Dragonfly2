@@ -61,7 +61,7 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 
 func main() {
 
-	err := rpc.StartTcpServer(12345, 12345, &helloSeeder{})
+	err := rpc.StartTcpServer(8003, 8003, &helloSeeder{})
 
 	if err != nil {
 		fmt.Printf("finish error:%v\n", err)

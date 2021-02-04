@@ -3,6 +3,7 @@ package basic
 import (
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	"time"
 )
 
 type Evaluator struct {
@@ -38,26 +39,41 @@ func (e *Evaluator) NeedAdjustParent(peer *types.PeerTask) bool {
 }
 
 func (e *Evaluator) IsNodeBad(peer *types.PeerTask) bool {
+	if peer.IsDown() {
+		return true
+	}
+
 	parent := peer.GetParent()
 
 	if parent == nil {
 		return false
 	}
 
-	costHistory := parent.CostHistory
+	if peer.IsWaiting() {
+		return false
+	}
 
+	lastActiveTime := peer.GetLastActiveTime()
+	expired := time.Unix(lastActiveTime/int64(time.Second), lastActiveTime%int64(time.Second)).
+		Add(time.Second * 5)
+	if time.Now().After(expired) {
+		return true
+	}
+
+	costHistory := parent.CostHistory
 	if len(costHistory) < 4 {
 		return false
 	}
 
+	lastCost := costHistory[len(costHistory)-1]
 	totalCost := int32(0)
 	for _, cost := range costHistory {
 		totalCost += cost
 	}
-	lastCost := costHistory[len(costHistory)-1]
+
 	totalCost -= lastCost
 
-	return (totalCost * 4 / int32(len(costHistory)-1)) < lastCost
+	return (totalCost * 10 / int32(len(costHistory)-1)) < lastCost
 }
 
 func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
@@ -73,6 +89,8 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 		} else if peer.GetParent() != nil && peer.GetParent().DstPeerTask == pt {
 			return true
 		} else if peer.GetFreeLoad() < 1{
+			return true
+		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
 			return true
 		} else if pt.GetParent() != nil {
 			return true
@@ -96,6 +114,8 @@ func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.
 		} else if peer.GetParent() != nil {
 			return true
 		} else if pt.GetParent() != nil && pt.GetParent().DstPeerTask == peer {
+			return true
+		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
 			return true
 		} else if pt.GetFreeLoad() < 1 {
 			return true

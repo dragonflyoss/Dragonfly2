@@ -78,7 +78,7 @@ func (s *Sender) doSend() {
 			err := peerTask.Send()
 			if err != nil {
 				//TODO error
-				logger.Errorf("[%s][%s]: send result failed : %v", peerTask.Task, peerTask.Pid, err.Error())
+				logger.Errorf("[%s][%s]: send result failed : %v", peerTask.Task.TaskId, peerTask.Pid, err.Error())
 				break
 			} else {
 				logger.Debugf("[%s][%s]: send result success", peerTask.Task.TaskId, peerTask.Pid)

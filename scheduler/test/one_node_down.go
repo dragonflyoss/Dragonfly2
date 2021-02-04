@@ -8,38 +8,42 @@ import (
 	"time"
 )
 
-var _ = Describe("Multi Client Multi Batch Download Test", func() {
+var _ = FDescribe("One Client Down While Downloading Test", func() {
 	tl := common.NewE2ELogger()
 
 	var (
 		clientNum  = 20
 		stopChList []chan struct{}
+		badClient *mock_client.MockClient
 	)
 
 	Describe("Create Multi Client", func() {
+
+		It("create bad client should be successfully", func() {
+			badClient = mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
+			go badClient.Start()
+			stopCh := badClient.GetStopChan()
+			stopChList = append(stopChList, stopCh)
+		})
+
 		It("create first batch client should be successfully", func() {
 			for i := 0; i < clientNum; i++ {
-				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
+				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
 				go client.Start()
 				stopCh := client.GetStopChan()
 				stopChList = append(stopChList, stopCh)
 			}
+		})
+
+		It("set bad client down successfully", func() {
+			time.Sleep(time.Second)
+			badClient.SetDone()
 		})
 
 		It("create second batch client should be successfully", func() {
 			time.Sleep(time.Second * 5)
 			for i := 0; i < clientNum; i++ {
-				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
-				go client.Start()
-				stopCh := client.GetStopChan()
-				stopChList = append(stopChList, stopCh)
-			}
-		})
-
-		It("create third batch client should be successfully", func() {
-			time.Sleep(time.Second * 5)
-			for i := 0; i < clientNum; i++ {
-				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
+				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
 				go client.Start()
 				stopCh := client.GetStopChan()
 				stopChList = append(stopChList, stopCh)
@@ -70,7 +74,8 @@ var _ = Describe("Multi Client Multi Batch Download Test", func() {
 					}
 				}
 			}
-			tl.Log("multiple batch all client download file finished")
+			tl.Log("bad client test all client download file finished")
+			time.Sleep(time.Minute*10)
 		})
 	})
 })

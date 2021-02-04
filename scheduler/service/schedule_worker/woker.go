@@ -2,6 +2,7 @@ package schedule_worker
 
 import (
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	scheduler2 "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
@@ -69,6 +70,10 @@ func (w *Worker) doUpdatePieceResultWorker() {
 
 func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.PeerTask, needSchedule bool, err error) {
 	if pr == nil {
+		return
+	}
+
+	if w.processErrorCode(pr) {
 		return
 	}
 
@@ -277,3 +282,16 @@ func (w *Worker) sendScheduleResult(peerTask *types.PeerTask) {
 	w.sender.Send(peerTask)
 	return
 }
+
+func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
+	code := pr.Code
+
+	switch code {
+	case dfcodes.Success:
+		return
+	}
+
+	return
+}
+
+

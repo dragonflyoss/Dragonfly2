@@ -105,6 +105,11 @@ func (mc *MockClient) Start() {
 	go mc.replyMessage()
 }
 
+
+func (mc *MockClient) SetDone() {
+	close(mc.waitStop)
+}
+
 func (mc *MockClient) GetStopChan() chan struct{} {
 	return mc.waitStop
 }
@@ -178,9 +183,15 @@ func (mc *MockClient) registerPeerTask() (err error) {
 		}
 		wait <- true
 		mc.replyChan <- nil
+		var resp *scheduler.PeerPacket
 
 		for {
-			resp := <-mc.out
+			select {
+			case resp = <-mc.out:
+			case <-mc.waitStop:
+				mc.logger.Logf("client[%s] is down", mc.pid)
+				return
+			}
 			if resp.MainPeer != nil {
 				mc.lock.Lock()
 				mc.parentId = resp.MainPeer.PeerId
@@ -189,10 +200,6 @@ func (mc *MockClient) registerPeerTask() (err error) {
 				mc.logger.Log(logMsg)
 			} else {
 				mc.logger.Logf("[%s] receive a empty parent\n", mc.pid)
-			}
-			if resp == nil {
-				mc.logger.Logf("client[%s] download finished", mc.pid)
-				break
 			}
 		}
 		<-mc.replyFinished
@@ -212,7 +219,11 @@ func (mc *MockClient) replyMessage() {
 		select {
 		case t = <-mc.replyChan:
 		case <-mc.waitStop:
-			return
+			select {
+			case t = <-mc.replyChan:
+			default:
+				return
+			}
 		}
 		var pr *scheduler.PieceResult
 		if t == nil {
@@ -292,7 +303,14 @@ func (mc *MockClient) downloadPieces() {
 					mc.ContentLength = pieces.ContentLength
 					mc.PieceMd5Sign = pieces.PieceMd5Sign
 					mc.logger.Logf("client[%s] download finished from [%s], TotalPiece[%d]", mc.pid, mc.parentId, mc.TotalPiece)
-					close(mc.waitStop)
+					select {
+					case _, ok := <-mc.waitStop:
+						if ok {
+							close(mc.waitStop)
+						}
+					default:
+						close(mc.waitStop)
+					}
 					return
 				}
 			}
