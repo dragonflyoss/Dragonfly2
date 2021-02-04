@@ -130,8 +130,8 @@ func getClient(destAddr string, toCdn bool) (interface{}, error) {
 	}
 
 	if toCdn {
-		return cdnclient.CreateClient([]dfnet.NetAddr{netAddr})
+		return cdnclient.GetClientByAddr(netAddr)
 	} else {
-		return CreateClient([]dfnet.NetAddr{netAddr})
+		return GetClientByAddr(netAddr)
 	}
 }

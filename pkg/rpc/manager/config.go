@@ -14,12 +14,24 @@
  * limitations under the License.
  */
 
-package rpc
+package manager
 
-type ClientMgr interface {
-	GetClient(url string) Client
+func GetLatestCdnConfig() *ManagementConfig_CdnConfig {
+	return nil
 }
 
-type Client struct {
+func GetLatestSchedulerConfig() *ManagementConfig_SchedulerConfig {
+	return nil
+}
 
+func GetLatestClientConfig() *ClientConfig {
+	return nil
+}
+
+func GetLatestCdnHosts() []string {
+	return nil
+}
+
+func GetLatestSchedulerHosts() []string {
+	return nil
 }

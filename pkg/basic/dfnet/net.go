@@ -62,6 +62,11 @@ type NetAddr struct {
 	Addr string // see https://github.com/grpc/grpc/blob/master/doc/naming.md
 }
 
+type NetAddrs struct {
+	Type  NetworkType
+	Addrs []string
+}
+
 func (na *NetAddr) GetEndpoint() string {
 	switch na.Type {
 	case UNIX:

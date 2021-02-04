@@ -18,33 +18,43 @@ package rpc
 
 import (
 	"context"
-	"errors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/lockerutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/maths"
+	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 	"io"
-	"reflect"
 	"sync"
 	"time"
 )
 
-type InitClientFunc func(*Connection)
+const (
+	// gcConnectionsTimeout specifies the timeout for clientConn gc.
+	// If the actual execution time exceeds this threshold, a warning will be thrown.
+	gcConnectionsTimeout = 1.0 * time.Second
+
+	// gcConnectionsInterval
+	gcConnectionsInterval = 60 * time.Second
+
+	connExpireTime = 5 * time.Minute
+)
 
 type Connection struct {
-	rwMutex   sync.RWMutex
-	curTarget string
-	nextNum   int
-	NetAddrs  []dfnet.NetAddr
-	Conn      *grpc.ClientConn
-	Ref       interface{}
-	init      InitClientFunc
-	opts      []grpc.DialOption
+	rwMutex        *lockerutils.LockerPool
+	opts           []grpc.DialOption
+	key2NodeMap    sync.Map // key -> node(many to one)
+	node2ClientMap sync.Map // node -> clientConn(one to one)
+	HashRing       *hashring.HashRing
+	networkType    dfnet.NetworkType
+	accessNodeMap  *syncmap.SyncMap
+	ConnExpireTime time.Duration
 }
 
 type RetryMeta struct {
@@ -52,6 +62,25 @@ type RetryMeta struct {
 	MaxAttempts int     // limit times for execute
 	InitBackoff float64 // second
 	MaxBackOff  float64 // second
+}
+
+func NewConnection(addrs dfnet.NetAddrs, opts ...grpc.DialOption) *Connection {
+	opts = append(clientOpts, opts...)
+	if addrs.Type == "" {
+		addrs.Type = dfnet.TCP
+	}
+	return &Connection{
+		rwMutex:        lockerutils.NewLockerPool(),
+		opts:           opts,
+		HashRing:       hashring.New(addrs.Addrs),
+		networkType:    addrs.Type,
+		accessNodeMap:  syncmap.NewSyncMap(),
+		ConnExpireTime: connExpireTime,
+	}
+}
+
+func (conn *Connection) update(addrs dfnet.NetAddrs) {
+
 }
 
 var clientOpts = []grpc.DialOption{
@@ -67,106 +96,75 @@ var clientOpts = []grpc.DialOption{
 	grpc.WithUnaryInterceptor(unaryClientInterceptor),
 }
 
-func BuildClient(client interface{}, init InitClientFunc, addrs []dfnet.NetAddr, opts []grpc.DialOption) (interface{}, error) {
-	if len(addrs) == 0 {
-		return nil, errors.New("addresses are empty")
-	}
-
-	conn := &Connection{
-		NetAddrs: addrs,
-		Ref:      client,
-		init:     init,
-		opts:     opts,
-	}
-
-	return ExecuteWithRetry(func() (interface{}, error) {
-		conn.nextNum = 0
-
-		if err := conn.connect(); err != nil {
-			return nil, err
+func (conn *Connection) StartGC(ctx context.Context) {
+	logger.GrpcLogger.Debugf("start the gc connections job")
+	// execute the GC by fixed delay
+	ticker := time.NewTicker(gcConnectionsInterval)
+	for range ticker.C {
+		removedConnCount := 0
+		startTime := time.Now()
+		// range all connections and determine whether they are expired
+		nodes := conn.accessNodeMap.ListKeyAsStringSlice()
+		totalNodeSize := len(nodes)
+		for _, node := range nodes {
+			atime, err := conn.accessNodeMap.GetAsTime(node)
+			if err != nil {
+				logger.GrpcLogger.Errorf("gc connections: failed to get access time node(%s): %v", node, err)
+				continue
+			}
+			if time.Since(atime) < conn.ConnExpireTime {
+				continue
+			}
+			conn.gcConn(ctx, node)
+			removedConnCount++
 		}
 
-		return client, nil
-	}, 0.5, 3.0, 3, nil)
-}
-
-func (c *Connection) connect() error {
-	if c.nextNum >= len(c.NetAddrs) {
-		return errors.New("no address available")
+		// slow GC detected, report it with a log warning
+		if timeDuring := time.Since(startTime); timeDuring > gcConnectionsTimeout {
+			logger.GrpcLogger.Warnf("gc connections:%d cost:%.3f", removedConnCount, timeDuring.Seconds())
+		}
+		logger.GrpcLogger.Infof("gc connections: success to gc clientConn count(%d), remainder count(%d)", removedConnCount, totalNodeSize-removedConnCount)
 	}
+}
 
-	if c.Ref == nil {
-		return errors.New("client has already been closed")
+// GetClient
+func (conn *Connection) GetClientConn(key string) *grpc.ClientConn {
+	node, ok := conn.key2NodeMap.Load(key)
+	if ok {
+		client, ok := conn.node2ClientMap.Load(node)
+		if ok {
+			conn.accessNodeMap.Store(node, time.Now())
+			return client.(*grpc.ClientConn)
+		}
 	}
-
-	var cc *grpc.ClientConn
-	var err error
-	var ok bool
-	opts := append(clientOpts, c.opts...)
-
-	for ; !ok && c.nextNum < len(c.NetAddrs); {
-		ok = func() bool {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-			cc, err = grpc.DialContext(ctx, c.NetAddrs[c.nextNum].GetEndpoint(), opts...)
-
-			c.nextNum++
-
-			if err == nil {
-				c.Conn = cc
-				c.curTarget = c.NetAddrs[c.nextNum-1].Addr
-				c.init(c)
-				return true
-			}
-
-			return false
-		}()
-	}
-
-	return err
+	client := conn.findCandidateClientConn(key)
+	conn.key2NodeMap.Store(key, client.node)
+	conn.node2ClientMap.Store(client.node, client.Ref)
+	conn.accessNodeMap.Store(client.node, time.Now())
+	return client.Ref.(*grpc.ClientConn)
 }
 
-// GetClientSafely returns client,target,nextNum
-func (c *Connection) GetClientSafely() (interface{}, string, int) {
-	c.rwMutex.RLock()
-	defer c.rwMutex.RUnlock()
-
-	return reflect.ValueOf(c.Ref).Elem().FieldByName("Client").Interface(), c.curTarget, c.nextNum
-}
-
-func (c *Connection) Close() error {
-	c.rwMutex.Lock()
-	defer c.rwMutex.Unlock()
-
-	c.Ref = nil
-
-	return c.Conn.Close()
-}
-
-func (c *Connection) TryMigrate(nextNum int, cause error) error {
+// TryMigrate migrate key to another hash node other than exclusiveNodes
+func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes ...string) error {
+	// todo recover findCandidateClientConn error
 	if e, ok := cause.(*dferrors.DfError); ok {
 		if e.Code != dfcodes.ResourceLacked && e.Code != dfcodes.UnknownError {
 			return cause
 		}
 	}
-
-	c.rwMutex.Lock()
-	defer c.rwMutex.Unlock()
-
-	if nextNum != c.nextNum {
-		return nil
-	}
-
-	previousConn := c.Conn
-	if err := c.connect(); err != nil {
-		return err
-	}
-
-	if previousConn != nil {
-		_ = previousConn.Close()
-	}
-
+	conn.rwMutex.Lock()
+	defer conn.rwMutex.Unlock()
+	client := conn.findCandidateClientConn(key, exclusiveNodes...)
+	conn.key2NodeMap.Store(key, client.node)
+	conn.node2ClientMap.Store(client.node, client.Ref)
 	return nil
+}
+
+func (conn *Connection) Close() error {
+	conn.rwMutex.Lock()
+	defer conn.rwMutex.Unlock()
+
+	return conn.Close()
 }
 
 func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {

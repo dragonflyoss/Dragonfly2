@@ -28,6 +28,27 @@ import (
 	"time"
 )
 
+func GetClientByAddrs(addrs dfnet.NetAddrs) (ManagerClient, error) {
+	// user specify
+	return newManagerClient(addrs)
+}
+
+func GetClientByAddr(addr dfnet.NetAddr) (ManagerClient, error) {
+	return newManagerClient(dfnet.NetAddrs{
+		Type:  addr.Type,
+		Addrs: []string{addr.Addr},
+	})
+}
+
+func newManagerClient(addrs dfnet.NetAddrs, opts ...grpc.DialOption) (ManagerClient, error) {
+	if len(addrs.Addrs) == 0 {
+		return nil, errors.New("address list of cdn is empty")
+	}
+	return &managerClient{
+		Connection: rpc.NewConnection(addrs, opts...),
+	}, nil
+}
+
 // see manager.ManagerClient
 type ManagerClient interface {
 	GetSchedulers(ctx context.Context, req *manager.NavigatorRequest, opts ...grpc.CallOption) (*manager.SchedulerNodes, error)
@@ -35,7 +56,6 @@ type ManagerClient interface {
 	KeepAlive(ctx context.Context, req *KeepAliveRequest, opts ...grpc.CallOption) error
 	// GetLatestConfig return latest management config and cdn host map with host name key
 	GetLatestConfig() (*manager.ManagementConfig_SchedulerConfig, map[string]*manager.ServerInfo, *manager.ManagementConfig_CdnConfig)
-	Close() error
 }
 
 // it is mutually exclusive between IsCdn and IsScheduler
@@ -43,7 +63,7 @@ type KeepAliveRequest struct {
 	IsCdn       bool
 	IsScheduler bool
 	// keep alive interval(second), default is 3s
-	Interval int
+	Interval time.Duration
 }
 
 type managerClient struct {
@@ -57,20 +77,6 @@ type managerClient struct {
 	rwMutex   sync.RWMutex
 	ch        chan struct{}
 	closeDone bool
-}
-
-var initClientFunc = func(c *rpc.Connection) {
-	mc := c.Ref.(*managerClient)
-	mc.Client = manager.NewManagerClient(c.Conn)
-	mc.Connection = c
-}
-
-func CreateClient(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerClient, error) {
-	if client, err := rpc.BuildClient(&managerClient{ch: make(chan struct{})}, initClientFunc, netAddrs, opts); err != nil {
-		return nil, err
-	} else {
-		return client.(*managerClient), nil
-	}
 }
 
 func (mc *managerClient) GetSchedulers(ctx context.Context, req *manager.NavigatorRequest, opts ...grpc.CallOption) (sns *manager.SchedulerNodes, err error) {
@@ -91,9 +97,9 @@ func (mc *managerClient) KeepAlive(ctx context.Context, req *KeepAliveRequest, o
 	}
 
 	if req.Interval <= 0 {
-		req.Interval = 3
-	} else if req.Interval > 30 {
-		req.Interval = 30
+		req.Interval = 3 * time.Second
+	} else if req.Interval > 30*time.Second {
+		req.Interval = 30 * time.Second
 	}
 
 	hr := &manager.HeartRequest{
@@ -126,7 +132,7 @@ func (mc *managerClient) KeepAlive(ctx context.Context, req *KeepAliveRequest, o
 				logger.Errorf("do keep alive error:%v", err)
 			}
 
-			time.Sleep(time.Duration(req.Interval) * time.Second)
+			time.Sleep(req.Interval)
 		}
 	}()
 
