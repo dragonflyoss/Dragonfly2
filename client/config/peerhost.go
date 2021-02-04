@@ -123,58 +123,14 @@ func (p *ProxyOption) UnmarshalJSON(b []byte) error {
 		if err != nil {
 			return err
 		}
-
 		if err := json.Unmarshal(file, &p); err != nil {
 			return err
 		}
 		return nil
 	case map[string]interface{}:
-		m := v.(map[string]interface{})
-		mb := make(map[string][]byte)
-		for k, v := range m {
-			b, err := json.Marshal(v)
-			if err != nil {
-				return err
-			}
-			mb[k] = b
+		if err := p.unmarshal(json.Unmarshal, v.(map[string]interface{})); err != nil {
+			return err
 		}
-
-		// ListenOption
-		if mb["listen_option"] != nil {
-			var l ListenOption
-			if err := json.Unmarshal(mb["listen_option"], &l); err != nil {
-				return err
-			}
-			p.ListenOption = l
-		}
-
-		// RegistryMirror
-		if mb["registry_mirror"] != nil {
-			var r RegistryMirror
-			if err := json.Unmarshal(mb["registry_mirror"], &r); err != nil {
-				return err
-			}
-			p.RegistryMirror = &r
-		}
-
-		// Proxies
-		if mb["proxies"] != nil {
-			var ps []*Proxy
-			if err := json.Unmarshal(mb["proxies"], &ps); err != nil {
-				return err
-			}
-			p.Proxies = ps
-		}
-
-		// HijackHTTPS
-		if mb["hijack_https"] != nil {
-			var h HijackConfig
-			if err := json.Unmarshal(mb["hijack_https"], &h); err != nil {
-				return err
-			}
-			p.HijackHTTPS = &h
-		}
-
 		return nil
 	default:
 		return errors.New("invalid proxy")
@@ -183,67 +139,6 @@ func (p *ProxyOption) UnmarshalJSON(b []byte) error {
 
 func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 	switch node.Kind {
-	case yaml.MappingNode:
-		var m = make(map[string]interface{})
-		for i := 0; i < len(node.Content); i += 2 {
-			var (
-				key   string
-				value int
-			)
-			if err := node.Content[i].Decode(&key); err != nil {
-				return err
-			}
-			if err := node.Content[i+1].Decode(&value); err != nil {
-				return err
-			}
-			m[key] = value
-		}
-
-		mb := make(map[string][]byte)
-		for k, v := range m {
-			b, err := json.Marshal(v)
-			if err != nil {
-				return err
-			}
-			mb[k] = b
-		}
-
-		// ListenOption
-		if mb["listen_option"] != nil {
-			var l ListenOption
-			if err := yaml.Unmarshal(mb["listen_option"], &l); err != nil {
-				return err
-			}
-			p.ListenOption = l
-		}
-
-		// RegistryMirror
-		if mb["registry_mirror"] != nil {
-			var r RegistryMirror
-			if err := yaml.Unmarshal(mb["registry_mirror"], &r); err != nil {
-				return err
-			}
-			p.RegistryMirror = &r
-		}
-
-		// Proxies
-		if mb["proxies"] != nil {
-			var ps []*Proxy
-			if err := yaml.Unmarshal(mb["proxies"], &ps); err != nil {
-				return err
-			}
-			p.Proxies = ps
-		}
-
-		// HijackHTTPS
-		if mb["hijack_https"] != nil {
-			var h HijackConfig
-			if err := yaml.Unmarshal(mb["hijack_https"], &h); err != nil {
-				return err
-			}
-			p.HijackHTTPS = &h
-		}
-		return nil
 	case yaml.ScalarNode:
 		var path string
 		if err := node.Decode(&path); err != nil {
@@ -254,14 +149,81 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 		if err != nil {
 			return err
 		}
-
 		if err := yaml.Unmarshal(file, &p); err != nil {
+			return err
+		}
+		return nil
+	case yaml.MappingNode:
+		var m = make(map[string]interface{})
+		for i := 0; i < len(node.Content); i += 2 {
+			var (
+				key   string
+				value interface{}
+			)
+			if err := node.Content[i].Decode(&key); err != nil {
+				return err
+			}
+			if err := node.Content[i+1].Decode(&value); err != nil {
+				return err
+			}
+			m[key] = value
+		}
+		if err := p.unmarshal(yaml.Unmarshal, m); err != nil {
 			return err
 		}
 		return nil
 	default:
 		return errors.New("invalid proxy")
 	}
+}
+
+func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), m map[string]interface{}) error {
+	mb := make(map[string][]byte)
+	for key, value := range m {
+		result, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+		mb[key] = result
+	}
+
+	// ListenOption
+	if mb["listen_option"] != nil {
+		var l ListenOption
+		if err := unmarshal(mb["listen_option"], &l); err != nil {
+			return err
+		}
+		p.ListenOption = l
+	}
+
+	// RegistryMirror
+	if mb["registry_mirror"] != nil {
+		var r RegistryMirror
+		if err := unmarshal(mb["registry_mirror"], &r); err != nil {
+			return err
+		}
+		p.RegistryMirror = &r
+	}
+
+	// Proxies
+	if mb["proxies"] != nil {
+		var ps []*Proxy
+		if err := unmarshal(mb["proxies"], &ps); err != nil {
+			return err
+		}
+		p.Proxies = ps
+	}
+
+	// HijackHTTPS
+	if mb["hijack_https"] != nil {
+		var h HijackConfig
+		if err := unmarshal(mb["hijack_https"], &h); err != nil {
+			return err
+		}
+		p.HijackHTTPS = &h
+	}
+
+	return nil
 }
 
 type UploadOption struct {
