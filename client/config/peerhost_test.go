@@ -48,9 +48,7 @@ func Test_UnmarshalJSON(t *testing.T) {
 		"timeout": "3m",
 		"limit": "2Mib",
 		"type": "tcp",
-		"proxy1": {
-			"file_path": "../daemon/test/testdata/config/proxy.json"
-		},
+		"proxy1": "../daemon/test/testdata/config/proxy.json",
 		"proxy2": {
 			"registry_mirror": {
 				"remote": "https://index.docker.io"
@@ -69,9 +67,10 @@ func Test_UnmarshalJSON(t *testing.T) {
 		Limit     clientutil.RateLimit          `json:"limit"`
 		Type      dfnet.NetworkType  `json:"type"`
 		Proxy1    ProxyOption        `json:"proxy1"`
+		Proxy2    ProxyOption        `json:"proxy2"`
 	}{}
 	json.Unmarshal(bytes, &s)
-	t.Logf("%#v", s.Proxy1)
+	t.Logf("%#v\n", s)
 }
 
 func Test_UnmarshalYAML(t *testing.T) {
@@ -113,5 +112,5 @@ proxy2:
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("%#v", s)
+	t.Logf("%#v\n", s)
 }

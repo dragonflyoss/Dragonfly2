@@ -111,40 +111,77 @@ type ProxyOption struct {
 	HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
 }
 
-// func (p *ProxyOption) UnmarshalJSON(b []byte) error {
-// var v interface{}
-// if err := json.Unmarshal(b, &v); err != nil {
-// return err
-// }
+func (p *ProxyOption) UnmarshalJSON(b []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
 
-// fmt.Printf("1111: %v\n", v)
+	switch value := v.(type) {
+	case string:
+		file, err := ioutil.ReadFile(value)
+		if err != nil {
+			return err
+		}
 
-// switch value := v.(type) {
-// case string:
-// file, err := ioutil.ReadFile(value)
-// if err != nil {
-// return err
-// }
+		if err := json.Unmarshal(file, &p); err != nil {
+			return err
+		}
+		return nil
+	case map[string]interface{}:
+		m := v.(map[string]interface{})
+		mb := make(map[string][]byte)
+		for k, v := range m {
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			mb[k] = b
+		}
 
-// if err := json.Unmarshal(file, &p); err != nil {
-// return err
-// }
-// fmt.Printf("2222: %v\n", p)
-// return nil
-// case map[string]interface{}:
-// fmt.Printf("33333333: %v\n", v)
-// if err := json.Unmarshal(b, &p); err != nil {
-// return err
-// }
-// fmt.Printf("4444444: %v\n", p)
-// return nil
-// default:
-// return errors.New("invalid port")
-// }
-// }
+		// ListenOption
+		if mb["listen_option"] != nil {
+			var l ListenOption
+			if err := json.Unmarshal(mb["listen_option"], &l); err != nil {
+				return err
+			}
+			p.ListenOption = l
+		}
+
+		// RegistryMirror
+		if mb["registry_mirror"] != nil {
+			var r RegistryMirror
+			if err := json.Unmarshal(mb["registry_mirror"], &r); err != nil {
+				return err
+			}
+			p.RegistryMirror = &r
+		}
+
+		// Proxies
+		if mb["proxies"] != nil {
+			var ps []*Proxy
+			if err := json.Unmarshal(mb["proxies"], &ps); err != nil {
+				return err
+			}
+			p.Proxies = ps
+		}
+
+		// HijackHTTPS
+		if mb["hijack_https"] != nil {
+			var h HijackConfig
+			if err := json.Unmarshal(mb["hijack_https"], &h); err != nil {
+				return err
+			}
+			p.HijackHTTPS = &h
+		}
+
+		return nil
+	default:
+		return errors.New("invalid proxy")
+	}
+}
 
 func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
-	var v interface{}
 	switch node.Kind {
 	case yaml.MappingNode:
 		var m = make(map[string]interface{})
@@ -161,42 +198,71 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 			}
 			m[key] = value
 		}
-		v = m
+
+		mb := make(map[string][]byte)
+		for k, v := range m {
+			b, err := json.Marshal(v)
+			if err != nil {
+				return err
+			}
+			mb[k] = b
+		}
+
+		// ListenOption
+		if mb["listen_option"] != nil {
+			var l ListenOption
+			if err := yaml.Unmarshal(mb["listen_option"], &l); err != nil {
+				return err
+			}
+			p.ListenOption = l
+		}
+
+		// RegistryMirror
+		if mb["registry_mirror"] != nil {
+			var r RegistryMirror
+			if err := yaml.Unmarshal(mb["registry_mirror"], &r); err != nil {
+				return err
+			}
+			p.RegistryMirror = &r
+		}
+
+		// Proxies
+		if mb["proxies"] != nil {
+			var ps []*Proxy
+			if err := yaml.Unmarshal(mb["proxies"], &ps); err != nil {
+				return err
+			}
+			p.Proxies = ps
+		}
+
+		// HijackHTTPS
+		if mb["hijack_https"] != nil {
+			var h HijackConfig
+			if err := yaml.Unmarshal(mb["hijack_https"], &h); err != nil {
+				return err
+			}
+			p.HijackHTTPS = &h
+		}
+		return nil
 	case yaml.ScalarNode:
-		var i int
-		if err := node.Decode(&i); err != nil {
+		var path string
+		if err := node.Decode(&path); err != nil {
 			return err
 		}
-		v = i
+
+		file, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		if err := yaml.Unmarshal(file, &p); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.New("invalid proxy")
 	}
 }
-
-// func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
-// var v interface{}
-// if err := unmarshal(b, &v); err != nil {
-// return err
-// }
-
-// fmt.Printf("1111: %v\n", v)
-
-// switch value := v.(type) {
-// case string:
-// file, err := ioutil.ReadFile(value)
-// if err != nil {
-// return err
-// }
-
-// if err := json.Unmarshal(file, &p); err != nil {
-// return err
-// }
-// fmt.Printf("2222: %v\n", p)
-// return nil
-// case map[string]interface{}:
-// return nil
-// default:
-// return errors.New("invalid port")
-// }
-// }
 
 type UploadOption struct {
 	ListenOption `yaml:",inline"`
@@ -585,7 +651,7 @@ type HijackConfig struct {
 
 // HijackHost is a hijack rule for the hosts that matches Regx.
 type HijackHost struct {
-	Regx     *regexp.Regexp `yaml:"regx" json:"regx"`
-	Insecure bool           `yaml:"insecure" json:"insecure"`
-	Certs    *CertPool      `yaml:"certs" json:"certs"`
+	Regx     *Regexp   `yaml:"regx" json:"regx"`
+	Insecure bool      `yaml:"insecure" json:"insecure"`
+	Certs    *CertPool `yaml:"certs" json:"certs"`
 }
