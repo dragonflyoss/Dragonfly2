@@ -18,7 +18,7 @@ package dferrors
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
 	"github.com/pkg/errors"
 )
 

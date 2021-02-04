@@ -1,9 +1,9 @@
 package test
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/types"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/types"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/test/common"
 	. "github.com/onsi/ginkgo"
 )
 

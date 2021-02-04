@@ -22,15 +22,15 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/types"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
 	"github.com/pkg/errors"
 	"hash"
 	"sync"
 
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/store"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/fileutils"
 )
 
 // calculateRoutineCount calculate how many goroutines are needed to execute write goroutine

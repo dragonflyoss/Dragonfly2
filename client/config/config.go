@@ -37,10 +37,10 @@ import (
 	"gopkg.in/gcfg.v1"
 	"gopkg.in/warnings.v0"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dferrors"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rate"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/fileutils"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/stringutils"
 )
 
 var fs = afero.NewOsFs()

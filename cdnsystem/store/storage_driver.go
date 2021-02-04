@@ -18,7 +18,7 @@ package store
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/fileutils"
 	"io"
 	"path/filepath"
 	"time"

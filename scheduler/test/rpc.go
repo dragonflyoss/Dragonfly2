@@ -2,11 +2,11 @@ package test
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/mgr"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/test/common"
 	. "github.com/onsi/ginkgo"
 	"math/rand"
 	"time"

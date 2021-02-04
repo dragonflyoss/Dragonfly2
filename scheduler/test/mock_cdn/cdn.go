@@ -2,11 +2,11 @@ package mock_cdn
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
-	common2 "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/mock_client"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
+	common2 "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base/common"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/test/common"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/test/mock_client"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,9 +15,9 @@ import (
 	"sync"
 
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
-	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/safe"
 	"time"
 )
 

@@ -9,8 +9,8 @@ import (
 	io "io"
 	reflect "reflect"
 
-	peer "github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
-	scheduler "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	peer "github.com/dragonflyoss/Dragonfly/v2/client/daemon/peer"
+	scheduler "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
 )
 

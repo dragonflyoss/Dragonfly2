@@ -4,19 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/config"
 	"hash/crc32"
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/client"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/types"
 )
 
 const TinyFileSize = 128

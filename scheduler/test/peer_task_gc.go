@@ -1,10 +1,10 @@
 package test
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/mgr"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/test/common"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/types"
 	. "github.com/onsi/ginkgo"
 	"time"
 )

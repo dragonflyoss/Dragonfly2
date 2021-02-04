@@ -20,7 +20,7 @@ import (
 	"container/list"
 	"sync"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dferrors"
 )
 
 // cQElementData is the value of list.Element.Value.

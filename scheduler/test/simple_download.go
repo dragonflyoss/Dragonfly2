@@ -1,8 +1,8 @@
 package test
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/mock_client"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/test/common"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/test/mock_client"
 	. "github.com/onsi/ginkgo"
 	"time"
 )

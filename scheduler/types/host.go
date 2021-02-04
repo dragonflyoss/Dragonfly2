@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
 	"sync"
 )
 

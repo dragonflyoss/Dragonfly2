@@ -19,8 +19,8 @@ package client
 import (
 	"context"
 	"errors"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

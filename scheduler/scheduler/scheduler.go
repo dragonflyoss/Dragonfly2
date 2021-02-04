@@ -1,9 +1,9 @@
 package scheduler
 
 import (
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/scheduler/basic"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/scheduler/basic"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/types"
 )
 
 type Scheduler struct {

@@ -3,13 +3,13 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/server"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/service"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/service/schedule_worker"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler/server"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/service"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/service/schedule_worker"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/types"
 )
 
 var _ server.SchedulerServer = &SchedulerServer{}

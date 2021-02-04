@@ -6,8 +6,8 @@ package mock_scheduler
 
 import (
 	context "context"
-	base "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	scheduler "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	base "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	scheduler "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	reflect "reflect"

@@ -18,8 +18,8 @@ package server
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/manager"
 	"google.golang.org/grpc"
 )
 

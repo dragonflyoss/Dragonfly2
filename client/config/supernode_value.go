@@ -24,8 +24,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/algorithm"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dferrors"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/algorithm"
 )
 
 const weightSeparator = '='

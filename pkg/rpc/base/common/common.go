@@ -18,8 +18,8 @@ package common
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"reflect"

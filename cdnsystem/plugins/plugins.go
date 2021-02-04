@@ -18,8 +18,8 @@ package plugins
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/config"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
 )
 
 var mgr = NewManager()

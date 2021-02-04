@@ -18,11 +18,11 @@ package cdn
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/cdnerrors"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/daemon/mgr"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/store"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
 	"github.com/pkg/errors"

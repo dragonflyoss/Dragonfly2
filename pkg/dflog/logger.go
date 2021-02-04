@@ -18,8 +18,8 @@ package logger
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/env"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/env"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/fileutils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc/grpclog"

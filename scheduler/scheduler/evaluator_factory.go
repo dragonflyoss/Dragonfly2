@@ -1,7 +1,7 @@
 package scheduler
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	"github.com/dragonflyoss/Dragonfly/v2/scheduler/types"
 	"sort"
 	"sync"
 	"time"

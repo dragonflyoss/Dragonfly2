@@ -5,7 +5,7 @@
 package mock_peer
 
 import (
-	peer "github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
+	peer "github.com/dragonflyoss/Dragonfly/v2/client/daemon/peer"
 	gomock "github.com/golang/mock/gomock"
 	io "io"
 	reflect "reflect"

@@ -31,10 +31,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
-	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/gc"
+	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
 )
 
 type TaskStorageDriver interface {

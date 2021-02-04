@@ -19,7 +19,7 @@ package netutils
 import (
 	"bufio"
 	"fmt"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
 	"net"
 	"net/http"
 	"net/url"
@@ -31,9 +31,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/httputils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rate"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/httputils"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/stringutils"
 )
 
 const (

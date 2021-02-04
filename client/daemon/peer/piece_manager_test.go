@@ -17,5 +17,5 @@
 package peer
 
 import (
-	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
+	_ "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon/server"
 )

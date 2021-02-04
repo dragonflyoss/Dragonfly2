@@ -19,10 +19,10 @@ package store
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/cdnerrors"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/fileutils"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"io"
 )

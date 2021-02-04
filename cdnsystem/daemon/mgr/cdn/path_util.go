@@ -18,11 +18,11 @@ package cdn
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/cdnerrors"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/store"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/stringutils"
 	"path"
 )
 //get download path

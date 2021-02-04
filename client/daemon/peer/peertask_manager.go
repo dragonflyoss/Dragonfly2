@@ -22,10 +22,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	schedulerclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/client"
+	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 

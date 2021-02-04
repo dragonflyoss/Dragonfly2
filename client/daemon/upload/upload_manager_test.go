@@ -30,11 +30,11 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"golang.org/x/time/rate"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/test"
-	mock_storage "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/storage"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
+	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
+	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/test"
+	mock_storage "github.com/dragonflyoss/Dragonfly/v2/client/daemon/test/mock/storage"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	_ "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
 func TestMain(m *testing.M) {

@@ -22,11 +22,11 @@ import (
 	"sync"
 	"sync/atomic"
 
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	dfclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/client"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	schedulerclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/client"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	dfclient "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon/client"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 type FilePeerTaskRequest struct {

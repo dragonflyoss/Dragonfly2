@@ -20,7 +20,7 @@ package cdnsystem;
 
 import "pkg/rpc/base/base.proto";
 
-option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem";
+option go_package = "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem";
 
 message SeedRequest{
   string task_id = 1;

@@ -27,7 +27,7 @@ import (
 	"net"
 	"time"
 
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
 )
 
 type LeafCertSpec struct {

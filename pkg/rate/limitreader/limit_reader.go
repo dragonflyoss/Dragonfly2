@@ -18,8 +18,8 @@ package limitreader
 
 import (
 	"crypto/md5"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rate/ratelimiter"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rate/ratelimiter"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/fileutils"
 	"hash"
 	"io"
 )

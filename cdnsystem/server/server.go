@@ -16,21 +16,21 @@
 
 package server
 
-import _ "github.com/dragonflyoss/Dragonfly2/cdnsystem/source/httpprotocol"
-import _ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
+import _ "github.com/dragonflyoss/Dragonfly/v2/cdnsystem/source/httpprotocol"
+import _ "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem/server"
 
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/cdn"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/gc"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/task"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/server/service"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/config"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/daemon/mgr"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/daemon/mgr/cdn"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/daemon/mgr/gc"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/daemon/mgr/task"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/server/service"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/source"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/store"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 )

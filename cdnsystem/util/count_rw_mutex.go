@@ -17,7 +17,7 @@
 package util
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/struct/atomiccount"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/struct/atomiccount"
 	"sync"
 )
 

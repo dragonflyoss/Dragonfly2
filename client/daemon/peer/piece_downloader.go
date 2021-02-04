@@ -24,9 +24,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/upload"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/upload"
+	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
 )
 
 type DownloadPieceRequest struct {

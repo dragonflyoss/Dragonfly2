@@ -18,8 +18,8 @@ package source
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dferrors"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/stringutils"
 	"strings"
 )
 

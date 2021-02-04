@@ -4,7 +4,7 @@ package scheduler
 
 import (
 	context "context"
-	base "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	base "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"

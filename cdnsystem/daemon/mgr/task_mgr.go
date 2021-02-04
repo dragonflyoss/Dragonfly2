@@ -18,8 +18,8 @@ package mgr
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/struct/syncmap"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/types"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/struct/syncmap"
 )
 
 // SeedTaskMgr as an interface defines all operations against SeedTask.

@@ -18,7 +18,7 @@ package httputils
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
+	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/cdnerrors"
 	"github.com/pkg/errors"
 	"strconv"
 	"strings"

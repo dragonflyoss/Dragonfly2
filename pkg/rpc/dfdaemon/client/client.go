@@ -18,12 +18,12 @@ package client
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
-	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base/common"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/safe"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 )
