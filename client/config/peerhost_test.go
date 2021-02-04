@@ -47,7 +47,15 @@ func Test_UnmarshalJSON(t *testing.T) {
 		},
 		"timeout": "3m",
 		"limit": "2Mib",
-		"type": "tcp"
+		"type": "tcp",
+		"proxy1": {
+			"file_path": "../daemon/test/testdata/config/proxy.json"
+		},
+		"proxy2": {
+			"registry_mirror": {
+				"remote": "https://index.docker.io"
+			}
+		}
 }`)
 
 	var s = struct {
@@ -60,9 +68,10 @@ func Test_UnmarshalJSON(t *testing.T) {
 		Timeout   clientutil.Duration           `json:"timeout"`
 		Limit     clientutil.RateLimit          `json:"limit"`
 		Type      dfnet.NetworkType  `json:"type"`
+		Proxy1    ProxyOption        `json:"proxy1"`
 	}{}
 	json.Unmarshal(bytes, &s)
-	t.Logf("%#v", s)
+	t.Logf("%#v", s.Proxy1)
 }
 
 func Test_UnmarshalYAML(t *testing.T) {
@@ -81,6 +90,10 @@ port2:
 timeout: 3m
 limit: 2Mib
 type: tcp
+proxy1: ../daemon/test/testdata/config/proxy.yml
+proxy2: 
+  registry_mirror:
+    remote: https://index.docker.io
 `)
 
 	var s = struct {
@@ -93,6 +106,8 @@ type: tcp
 		Timeout   clientutil.Duration           `yaml:"timeout"`
 		Limit     clientutil.RateLimit          `yaml:"limit"`
 		Type      dfnet.NetworkType  `yaml:"type"`
+		Proxy1    ProxyOption        `yaml:"proxy1"`
+		Proxy2    ProxyOption        `yaml:"proxy2"`
 	}{}
 	err := yaml.Unmarshal(bytes, &s)
 	if err != nil {

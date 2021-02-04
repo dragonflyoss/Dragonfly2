@@ -61,6 +61,29 @@ type PeerHostOption struct {
 	Storage  StorageOption  `json:"storage" yaml:"storage"`
 }
 
+func (p *PeerHostOption) Load(path string) error {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("unable to load peer host configuration from %q [%v]", path, err)
+	}
+
+	switch filepath.Ext(path)[1:] {
+	case "json":
+		err := json.Unmarshal(data, &p)
+		if err != nil {
+			return err
+		}
+		return nil
+	case "yml", "yaml":
+		err := yaml.Unmarshal(data, &p)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("extension of %s is not in 'yml/yaml/json'", path)
+}
+
 type HostOption struct {
 	SecurityDomain string `json:"security_domain" yaml:"security_domain"`
 	// Peerhost location for scheduler
@@ -88,6 +111,93 @@ type ProxyOption struct {
 	HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
 }
 
+// func (p *ProxyOption) UnmarshalJSON(b []byte) error {
+// var v interface{}
+// if err := json.Unmarshal(b, &v); err != nil {
+// return err
+// }
+
+// fmt.Printf("1111: %v\n", v)
+
+// switch value := v.(type) {
+// case string:
+// file, err := ioutil.ReadFile(value)
+// if err != nil {
+// return err
+// }
+
+// if err := json.Unmarshal(file, &p); err != nil {
+// return err
+// }
+// fmt.Printf("2222: %v\n", p)
+// return nil
+// case map[string]interface{}:
+// fmt.Printf("33333333: %v\n", v)
+// if err := json.Unmarshal(b, &p); err != nil {
+// return err
+// }
+// fmt.Printf("4444444: %v\n", p)
+// return nil
+// default:
+// return errors.New("invalid port")
+// }
+// }
+
+func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
+	var v interface{}
+	switch node.Kind {
+	case yaml.MappingNode:
+		var m = make(map[string]interface{})
+		for i := 0; i < len(node.Content); i += 2 {
+			var (
+				key   string
+				value int
+			)
+			if err := node.Content[i].Decode(&key); err != nil {
+				return err
+			}
+			if err := node.Content[i+1].Decode(&value); err != nil {
+				return err
+			}
+			m[key] = value
+		}
+		v = m
+	case yaml.ScalarNode:
+		var i int
+		if err := node.Decode(&i); err != nil {
+			return err
+		}
+		v = i
+	}
+}
+
+// func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
+// var v interface{}
+// if err := unmarshal(b, &v); err != nil {
+// return err
+// }
+
+// fmt.Printf("1111: %v\n", v)
+
+// switch value := v.(type) {
+// case string:
+// file, err := ioutil.ReadFile(value)
+// if err != nil {
+// return err
+// }
+
+// if err := json.Unmarshal(file, &p); err != nil {
+// return err
+// }
+// fmt.Printf("2222: %v\n", p)
+// return nil
+// case map[string]interface{}:
+// return nil
+// default:
+// return errors.New("invalid port")
+// }
+// }
+
 type UploadOption struct {
 	ListenOption `yaml:",inline"`
 	RateLimit    clientutil.RateLimit `json:"rate_limit" yaml:"rate_limit"`
@@ -97,29 +207,6 @@ type ListenOption struct {
 	Security   SecurityOption    `json:"security" yaml:"security"`
 	TCPListen  *TCPListenOption  `json:"tcp_listen,omitempty" yaml:"tcp_listen,omitempty"`
 	UnixListen *UnixListenOption `json:"unix_listen,omitempty" yaml:"unix_listen,omitempty"`
-}
-
-func (p *PeerHostOption) Load(path string) error {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("unable to load peer host configuration from %q [%v]", path, err)
-	}
-
-	switch filepath.Ext(path)[1:] {
-	case "json":
-		err := json.Unmarshal(data, &p)
-		if err != nil {
-			return err
-		}
-		return nil
-	case "yml", "yaml":
-		err := yaml.Unmarshal(data, &p)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	return fmt.Errorf("extension of %s is not in 'yml/yaml/json'", path)
 }
 
 type TCPListenOption struct {
