@@ -6,8 +6,8 @@ package mock_storage
 
 import (
 	context "context"
-	storage "github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
-	base "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	storage "d7y.io/dragonfly/v2/client/daemon/storage"
+	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	gomock "github.com/golang/mock/gomock"
 	io "io"
 	reflect "reflect"

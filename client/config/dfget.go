@@ -29,9 +29,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/dferrors"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 // ClientConfig holds all the runtime config information.

@@ -33,12 +33,12 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v3"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	_ "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/pidfile"
+	"d7y.io/dragonfly/v2/client/daemon"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/pidfile"
 )
 
 var daemonCmd = &cobra.Command{

@@ -3,8 +3,8 @@ package types
 import (
 	"crypto/sha1"
 	"fmt"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"net/url"
 	"strings"
 )

@@ -17,16 +17,16 @@
 package main
 
 import (
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
-	_ "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler/server"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 )
 
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 )
 
 func main2() {

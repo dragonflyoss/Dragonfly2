@@ -19,7 +19,7 @@ package logger
 import (
 	"path"
 
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/basic"
 )
 
 const (

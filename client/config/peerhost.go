@@ -31,9 +31,9 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
 type PeerHostOption struct {
@@ -335,12 +335,12 @@ type URL struct {
 	*url.URL
 }
 
-// UnmarshalJSON implements json.Unmarshaller.
+// UnmarshalJSON implements json.Unmarshaler.
 func (u *URL) UnmarshalJSON(b []byte) error {
 	return u.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
 }
 
-// UnmarshalYAML implements yaml.Unmarshaller.
+// UnmarshalYAML implements yaml.Unmarshaler.
 func (u *URL) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return u.unmarshal(unmarshal)
 }
@@ -377,12 +377,12 @@ type CertPool struct {
 	*x509.CertPool
 }
 
-// UnmarshalJSON implements json.Unmarshaller.
+// UnmarshalJSON implements json.Unmarshaler.
 func (cp *CertPool) UnmarshalJSON(b []byte) error {
 	return cp.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
 }
 
-// UnmarshalYAML implements yaml.Unmarshaller.
+// UnmarshalYAML implements yaml.Unmarshaler.
 func (cp *CertPool) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return cp.unmarshal(unmarshal)
 }
@@ -457,12 +457,12 @@ func NewRegexp(exp string) (*Regexp, error) {
 	return &Regexp{r}, nil
 }
 
-// UnmarshalYAML implements yaml.Unmarshaller.
+// UnmarshalYAML implements yaml.Unmarshaler.
 func (r *Regexp) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return r.unmarshal(unmarshal)
 }
 
-// UnmarshalJSON implements json.Unmarshaller.
+// UnmarshalJSON implements json.Unmarshaler.
 func (r *Regexp) UnmarshalJSON(b []byte) error {
 	return r.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
 }

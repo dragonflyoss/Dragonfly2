@@ -17,11 +17,11 @@
 package cdn
 
 import (
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/types"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/httputils"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/maputils"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/rangeutils"
+	"d7y.io/dragonfly/v2/cdnsystem/types"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/util/httputils"
+	"d7y.io/dragonfly/v2/pkg/util/maputils"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"github.com/pkg/errors"
 )
 
