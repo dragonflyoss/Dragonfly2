@@ -21,7 +21,9 @@ import (
 )
 
 var deprecatedFlags struct {
-	dfdaemon    bool
+	// Deprecated: not used any more
+	dfdaemon bool
+	// Deprecated: not used any more
 	clientQueue int
 	nodes       config.SupernodesValue
 }

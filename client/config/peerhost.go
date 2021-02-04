@@ -124,7 +124,7 @@ func (p *PeerHostOption) Load(path string) error {
 
 type TCPListenOption struct {
 	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1
-	Listen string `json:"listen"`
+	Listen string `json:"listen" yaml:"listen"`
 
 	// PortRange stands listen port
 	// yaml example 1:
@@ -133,7 +133,7 @@ type TCPListenOption struct {
 	//   port:
 	//     start: 12345
 	//     end: 12346
-	PortRange TCPListenPortRange `json:"port"`
+	PortRange TCPListenPortRange `json:"port" yaml:"port"`
 }
 
 type TCPListenPortRange struct {
