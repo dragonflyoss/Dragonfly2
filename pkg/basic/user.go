@@ -21,7 +21,7 @@ import (
 	"os/user"
 	"strings"
 
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/asserts"
+	"d7y.io/dragonfly/v2/pkg/asserts"
 )
 
 var (

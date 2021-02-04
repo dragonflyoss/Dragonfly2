@@ -18,10 +18,10 @@ package gc
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/daemon/mgr"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/metricsutils"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/util/metricsutils"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
 )

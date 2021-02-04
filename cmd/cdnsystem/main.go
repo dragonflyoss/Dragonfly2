@@ -17,7 +17,7 @@
 package main
 
 import (
-	"github.com/dragonflyoss/Dragonfly/v2/cmd/cdnsystem/app"
+	"d7y.io/dragonfly/v2/cmd/cdnsystem/app"
 )
 
 func main() {

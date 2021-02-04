@@ -24,8 +24,8 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/config"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
 )
 
 var (

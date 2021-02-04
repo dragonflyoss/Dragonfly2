@@ -1,8 +1,8 @@
 package basic
 
 import (
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/mgr"
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/mgr"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type Evaluator struct {

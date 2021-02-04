@@ -16,7 +16,7 @@
 
 package dfcodes
 
-import "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+import "d7y.io/dragonfly/v2/pkg/rpc/base"
 
 // rpc response code
 const (

@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type filePeerTaskCallback struct {
