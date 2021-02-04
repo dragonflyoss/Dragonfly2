@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
 // SchedulersValue implements the pflag.Value interface.

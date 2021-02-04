@@ -24,11 +24,11 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/peer"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/daemon/peer"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 var (

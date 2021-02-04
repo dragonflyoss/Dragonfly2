@@ -23,16 +23,16 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/peer"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
-	dfdaemongrpc "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon"
-	dfdaemonserver "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type Manager interface {

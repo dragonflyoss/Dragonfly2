@@ -31,10 +31,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/gc"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/daemon/gc"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 type TaskStorageDriver interface {
@@ -63,10 +63,10 @@ type Manager interface {
 
 type Option struct {
 	// DataPath indicates directory which stores temporary files for p2p uploading
-	DataPath string
+	DataPath string `json:"data_path" yaml:"data_path"`
 	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
 	// after this period cache file will be gc
-	TaskExpireTime clientutil.Duration
+	TaskExpireTime clientutil.Duration `json:"task_expire_time" yaml:"task_expire_time"`
 }
 
 var (
