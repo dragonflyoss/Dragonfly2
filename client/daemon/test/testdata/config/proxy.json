@@ -1,6 +1,6 @@
 {
   "registry_mirror": {
-    "remote": "https://index.docker.io",
+    "url": "https://index.docker.io",
     "insecure": false,
     "certs": [],
     "direct": false
