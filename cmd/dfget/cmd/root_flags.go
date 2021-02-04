@@ -17,11 +17,13 @@
 package cmd
 
 import (
-	"github.com/dragonflyoss/Dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/config"
 )
 
 var deprecatedFlags struct {
-	dfdaemon    bool
+	// Deprecated: not used any more
+	dfdaemon bool
+	// Deprecated: not used any more
 	clientQueue int
 	nodes       config.SupernodesValue
 }

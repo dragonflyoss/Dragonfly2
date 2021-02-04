@@ -1,14 +1,14 @@
 package test
 
 import (
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/test/common"
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/test/mock_client"
+	"d7y.io/dragonfly/v2/scheduler/test/common"
+	"d7y.io/dragonfly/v2/scheduler/test/mock_client"
 	. "github.com/onsi/ginkgo"
 	"reflect"
 	"time"
 )
 
-var _ = FDescribe("Multi Client Multi Batch Download Test", func() {
+var _ = Describe("Multi Client Multi Batch Download Test", func() {
 	tl := common.NewE2ELogger()
 
 	var (

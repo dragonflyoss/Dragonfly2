@@ -1,0 +1,124 @@
+# daemon alive time, when sets 0s, daemon will not auto exit
+alive_time: 0s
+
+# daemon gc task running interval
+gc_interval: 1m0s
+
+# daemon pid location
+pid_file: /tmp/dfdaemon.pid
+
+# daemon lock file location
+# some lock file will only allow to run one daemon service
+lock_file: /tmp/dfdaemon.lock
+
+# daemon data directory
+data_dir: /tmp/dragonfly/dfdaemon/
+
+# daemon work directory, daemon will change current working directory to this
+work_home: /tmp/dragonfly/dfdaemon/
+
+# when daemon exit, keep peer task data or not
+# it is usefully when upgrade daemon service, all local cache will be saved
+keep_storage: false
+
+# all addresses of all schedulers
+# the schedulers of all daemons should be same in one region or zone.
+# daemon will send tasks to a fixed scheduler by hashing the task url and meta data
+# caution: only tcp is supported
+schedulers:
+# below example is a stand address
+- type: tcp
+  addr: 127.0.0.1:8002
+# below example is the short address format
+#- 127.0.0.1:8002
+#- tcp://127.0.0.1:8002
+
+# when enable, pprof will be enabled,
+verbose: true
+
+# current host info used for scheduler
+host:
+  # tcp service listen address
+  # port should be set by other options
+  listen_ip: 0.0.0.0
+  # access ip for other peers
+  # when local ip is different with access ip, advertise_ip should be set
+  advertise_ip: 0.0.0.0
+  # geographical location and network topology
+  location: ""
+  idc: ""
+  security_domain: ""
+  net_topology: ""
+
+# download service option
+download:
+  # download limit  per second
+  rate_limit: 200Mi
+  # download grpc option
+  download_grpc:
+    # security option
+    security:
+      insecure: true
+      cacert: ""
+      cert: ""
+      key: ""
+      tls_config: null
+    # download service listen address
+    # current, only support unix domain socket
+    unix_listen:
+      socket: /tmp/dfdamon.sock
+  # peer grpc option
+  # peer grpc service send pieces info to other peers
+  peer_grpc:
+    security:
+      insecure: true
+      cacert: ""
+      cert: ""
+      key: ""
+    tcp_listen:
+      # listen address
+      listen: 0.0.0.0
+      # listen port, daemon will try to listen
+      # when this port is not available, daemon will try next port
+      port: 65000
+      # if want to limit upper port, please use blow format
+#     port:
+#       start: 65000
+#       end: 65009
+
+# proxy config file location or detail config
+# proxy: ""
+
+# upload service option
+upload:
+  # upload limit per second
+  rate_limit: 100Mi
+  security:
+    insecure: true
+    cacert: ""
+    cert: ""
+    key: ""
+  tcp_listen:
+    # listen address
+    listen: 0.0.0.0
+    # listen port, daemon will try to listen
+    # when this port is not available, daemon will try next port
+    port: 65002
+    # if want to limit upper port, please use blow format
+#   port:
+#     start: 65020
+#     end: 65029
+
+# peer task storage option
+storage:
+  # task data expire time
+  # when there is no access to a task data, this task will be gc.
+  task_expire_time: 3m0s
+  # storage strategy when process task data
+  # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
+  #                           the download file in date directory will be the peer data for uploading to other peers
+  # io.d7y.storage.v2.advance: download file directly to output path, avoid copy to output path
+  #                            fast than simple strategy, but:
+  #                            the output file will be the peer data for uploading to other peers
+  #                            when user delete or change this file, this peer data will be corrupted
+  strategy: io.d7y.storage.v2.simple

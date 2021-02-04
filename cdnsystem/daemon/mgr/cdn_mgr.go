@@ -18,7 +18,7 @@ package mgr
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/cdnsystem/types"
 )
 
 

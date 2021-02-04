@@ -22,8 +22,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
 func Test_UnmarshalJSON(t *testing.T) {

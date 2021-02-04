@@ -19,9 +19,9 @@ package cdn
 import (
 	"crypto/md5"
 	"encoding/binary"
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/cdnerrors"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/util"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/pkg/util"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"github.com/pkg/errors"
 	"hash"
 	"io"

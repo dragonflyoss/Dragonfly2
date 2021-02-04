@@ -3,8 +3,8 @@ package storage
 import (
 	"io"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 type persistentMetadata struct {

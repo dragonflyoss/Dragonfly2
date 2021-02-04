@@ -20,7 +20,7 @@ package scheduler;
 
 import "pkg/rpc/base/base.proto";
 
-option go_package = "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler";
+option go_package = "d7y.io/dragonfly/v2/pkg/rpc/scheduler";
 
 message PeerTaskRequest{
   // universal resource locator for different kind of storage

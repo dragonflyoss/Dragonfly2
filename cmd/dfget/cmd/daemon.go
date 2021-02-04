@@ -31,13 +31,14 @@ import (
 	"github.com/phayes/freeport"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/yaml.v3"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	_ "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/pidfile"
+	"d7y.io/dragonfly/v2/client/daemon"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/pidfile"
 )
 
 var daemonCmd = &cobra.Command{
@@ -78,6 +79,14 @@ func runDaemon() error {
 	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
 
 	if flagDaemonOpt.Verbose {
+		// TODO (jim): update json marshal function
+		s, _ := json.MarshalIndent(flagDaemonOpt, "", "  ")
+		logger.Debugf("daemon json option(debug only, should not use as config):\n%s", string(s))
+
+		// TODO (jim): update yaml marshal function
+		s, _ = yaml.Marshal(flagDaemonOpt)
+		logger.Debugf("daemon yaml option(debug only, should not use as config):\n%s", string(s))
+
 		logger.SetCoreLevel(zapcore.DebugLevel)
 		go func() {
 			// enable go pprof and statsview
