@@ -11,11 +11,11 @@ import (
 
 	testifyassert "github.com/stretchr/testify/assert"
 
-	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/test"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/upload"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/daemon/test"
+	"d7y.io/dragonfly/v2/client/daemon/upload"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
 func TestPieceDownloader_DownloadPiece(t *testing.T) {

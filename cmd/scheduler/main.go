@@ -1,6 +1,6 @@
 package main
 
-import "github.com/dragonflyoss/Dragonfly2/cmd/scheduler/app"
+import "d7y.io/dragonfly/v2/cmd/scheduler/app"
 
 func main() {
 	app.Execute()

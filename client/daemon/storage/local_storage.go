@@ -10,8 +10,9 @@ import (
 	"sync"
 	"time"
 
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 type localTaskStore struct {
@@ -188,8 +189,7 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	return &base.PiecePacket{
 		State: &base.ResponseState{
 			Success: true,
-			Code:    base.Code_SUCCESS,
-			Msg:     "",
+			Code:    dfcodes.Success,
 		},
 		TaskId: req.TaskId,
 		DstPid: t.PeerID,

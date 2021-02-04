@@ -7,11 +7,11 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	schedulerclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 // StreamPeerTask represents a peer task with stream io for reading directly without once more disk io
@@ -205,7 +205,7 @@ func (s *streamPeerTask) finish() error {
 	// send last progress
 	s.base.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.bitmap.Settled(), s.base.taskId, s.base.peerId)
+		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.bitmap.Settled())
 		s.base.Debugf("end piece result sent")
 		// callback to store data to output
 		err = s.base.callback.Done(s)
@@ -218,7 +218,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 	// send last progress
 	s.base.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.bitmap.Settled(), s.base.taskId, s.base.peerId)
+		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.bitmap.Settled())
 		s.base.Debugf("end piece result sent")
 		close(s.base.done)
 	})

@@ -17,16 +17,16 @@
 package main
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
-	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 )
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
-	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/pkg/safe"
 	"time"
 )
 

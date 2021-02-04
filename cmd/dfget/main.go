@@ -16,7 +16,7 @@
 
 package main
 
-import "github.com/dragonflyoss/Dragonfly2/cmd/dfget/cmd"
+import "d7y.io/dragonfly/v2/cmd/dfget/cmd"
 
 func main() {
 	cmd.Execute()

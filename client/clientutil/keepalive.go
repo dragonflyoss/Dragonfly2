@@ -3,7 +3,7 @@ package clientutil
 import (
 	"time"
 
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
 
 type KeepAlive interface {

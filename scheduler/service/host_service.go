@@ -2,7 +2,7 @@ package service
 
 import (
 	"errors"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 func (s *SchedulerService) GetHost(hostId string) (host *types.Host, err error) {

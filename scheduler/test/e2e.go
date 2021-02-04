@@ -1,14 +1,15 @@
 package test
 
 import (
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/scheduler/mgr"
+	"d7y.io/dragonfly/v2/scheduler/server"
+	"d7y.io/dragonfly/v2/scheduler/test/common"
+	"d7y.io/dragonfly/v2/scheduler/test/mock_cdn"
 	"fmt"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/server"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/mock_cdn"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
+	"go.uber.org/zap"
 	"testing"
 	"time"
 
@@ -42,6 +43,8 @@ var (
 
 var _ = ginkgo.BeforeSuite(func(){
 	logger.InitScheduler()
+	logger.SetGcLogger(zap.NewNop().Sugar())
+	logger.SetGrpcLogger(zap.NewNop().Sugar())
 	cdn = mock_cdn.NewMockCDN("localhost:8003", common.NewE2ELogger())
 	cdn.Start()
 	time.Sleep(time.Second/2)

@@ -1,13 +1,13 @@
 package schedule_worker
 
 import (
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/mgr"
+	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/types"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	scheduler2 "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -219,7 +219,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
 
 	case types.PeerTaskStatusNeedCheckNode:
-		if w.scheduler.IsNodeBad(peerTask) {
+		if w.scheduler.IsNodeBad(peerTask) && peerTask.GetSubTreeNodesNum() > 1 {
 			adjustNodes, err := w.scheduler.SchedulerBadNode(peerTask)
 			if err != nil {
 				logger.Debugf("[%s][%s]: schedule bad node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)

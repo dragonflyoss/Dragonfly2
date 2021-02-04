@@ -32,17 +32,17 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/test"
-	mock_daemon "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/daemon"
-	mock_scheduler "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	daemonserver "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/client/daemon/gc"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/daemon/test"
+	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
+	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)

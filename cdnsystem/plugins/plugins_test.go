@@ -19,7 +19,7 @@ package plugins
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"github.com/stretchr/testify/suite"
 	"reflect"
 	"testing"

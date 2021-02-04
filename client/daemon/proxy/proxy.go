@@ -29,11 +29,11 @@ import (
 	"github.com/golang/groupcache/lru"
 	"github.com/pkg/errors"
 
-	"github.com/dragonflyoss/Dragonfly2/client/config"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/transport"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/transport"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 var okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")

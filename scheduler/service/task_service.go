@@ -2,9 +2,9 @@ package service
 
 import (
 	"errors"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	types2 "github.com/dragonflyoss/Dragonfly2/pkg/util/types"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	types2 "d7y.io/dragonfly/v2/pkg/util/types"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 func (s *SchedulerService) GenerateTaskId(url string, filter string, meta *base.UrlMeta) (taskId string) {

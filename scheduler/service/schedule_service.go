@@ -1,6 +1,6 @@
 package service
 
-import "github.com/dragonflyoss/Dragonfly2/scheduler/types"
+import "d7y.io/dragonfly/v2/scheduler/types"
 
 func (s *SchedulerService) SchedulerParent(task *types.PeerTask)  ( primary *types.PeerTask,
 	secondary []*types.PeerTask, err error) {

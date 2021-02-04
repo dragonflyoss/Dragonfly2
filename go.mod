@@ -1,4 +1,4 @@
-module github.com/dragonflyoss/Dragonfly2
+module d7y.io/dragonfly/v2
 
 go 1.15
 
@@ -26,8 +26,7 @@ require (
 	github.com/prometheus/client_golang v1.9.0
 	github.com/serialx/hashring v0.0.0-20200727003509-22c0c7ab6b1b
 	github.com/shirou/gopsutil/v3 v3.20.12
-	github.com/sirupsen/logrus v1.6.0
-	github.com/spf13/afero v1.2.2
+	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
@@ -39,8 +38,7 @@ require (
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
-	gopkg.in/gcfg.v1 v1.2.3
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/warnings.v0 v0.1.2
 	gopkg.in/yaml.v2 v2.3.0

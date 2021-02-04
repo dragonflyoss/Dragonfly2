@@ -1,8 +1,8 @@
 package mgr
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/types"
 	"sync"
 	"time"
 )

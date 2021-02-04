@@ -22,7 +22,7 @@ const (
 	dfgetLockFile = "/var/run/dfget.lock"
 )
 
-var flagDfGetOpt = dfgetOption{
-	daemonSock: "/var/run/dfdamon.sock",
-	daemonPid:  "/var/run/dfdaemon.pid",
-}
+//var flagDfGetOpt = dfgetOption{
+//	daemonSock: "/var/run/dfdamon.sock",
+//	daemonPid:  "/var/run/dfdaemon.pid",
+//}

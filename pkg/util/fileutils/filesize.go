@@ -18,7 +18,7 @@ package fileutils
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/pkg/errors"
 	"regexp"
 	"strconv"

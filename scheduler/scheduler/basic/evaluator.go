@@ -1,8 +1,9 @@
 package basic
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/types"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/scheduler/mgr"
+	"d7y.io/dragonfly/v2/scheduler/types"
 	"time"
 )
 
@@ -38,8 +39,9 @@ func (e *Evaluator) NeedAdjustParent(peer *types.PeerTask) bool {
 	return (totalCost * 2 / int32(len(costHistory)-1)) < lastCost
 }
 
-func (e *Evaluator) IsNodeBad(peer *types.PeerTask) bool {
+func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
 	if peer.IsDown() {
+		logger.Debugf("IsNodeBad [%s]: node is down ", peer.Pid)
 		return true
 	}
 
@@ -57,6 +59,7 @@ func (e *Evaluator) IsNodeBad(peer *types.PeerTask) bool {
 	expired := time.Unix(lastActiveTime/int64(time.Second), lastActiveTime%int64(time.Second)).
 		Add(time.Second * 5)
 	if time.Now().After(expired) {
+		logger.Debugf("IsNodeBad [%s]: node is expired", peer.Pid)
 		return true
 	}
 
@@ -73,7 +76,12 @@ func (e *Evaluator) IsNodeBad(peer *types.PeerTask) bool {
 
 	totalCost -= lastCost
 
-	return (totalCost * 10 / int32(len(costHistory)-1)) < lastCost
+	if (totalCost * 10 / int32(len(costHistory)-1)) < lastCost {
+		logger.Debugf("IsNodeBad [%s]: node cost is too long", peer.Pid)
+		return true
+	}
+
+	return false
 }
 
 func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.PeerTask) {

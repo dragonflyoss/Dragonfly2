@@ -1,11 +1,11 @@
 package server
 
 import (
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/config"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/service"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/service/schedule_worker"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/service"
+	"d7y.io/dragonfly/v2/scheduler/service/schedule_worker"
 )
 
 type Server struct {

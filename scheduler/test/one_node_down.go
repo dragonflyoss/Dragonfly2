@@ -1,8 +1,8 @@
 package test
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/mock_client"
+	"d7y.io/dragonfly/v2/scheduler/test/common"
+	"d7y.io/dragonfly/v2/scheduler/test/mock_client"
 	. "github.com/onsi/ginkgo"
 	"reflect"
 	"time"
@@ -12,18 +12,16 @@ var _ = FDescribe("One Client Down While Downloading Test", func() {
 	tl := common.NewE2ELogger()
 
 	var (
-		clientNum  = 20
+		clientNum  = 5
 		stopChList []chan struct{}
 		badClient *mock_client.MockClient
 	)
 
 	Describe("Create Multi Client", func() {
-
 		It("create bad client should be successfully", func() {
 			badClient = mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
 			go badClient.Start()
-			stopCh := badClient.GetStopChan()
-			stopChList = append(stopChList, stopCh)
+			time.Sleep(time.Second)
 		})
 
 		It("create first batch client should be successfully", func() {
@@ -75,7 +73,6 @@ var _ = FDescribe("One Client Down While Downloading Test", func() {
 				}
 			}
 			tl.Log("bad client test all client download file finished")
-			time.Sleep(time.Minute*10)
 		})
 	})
 })

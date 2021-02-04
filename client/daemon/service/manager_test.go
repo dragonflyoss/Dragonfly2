@@ -11,18 +11,19 @@ import (
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
-	mock_peer "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/peer"
-	mock_storage "github.com/dragonflyoss/Dragonfly2/client/daemon/test/mock/storage"
-	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	dfdaemongrpc "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon"
-	dfclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/client"
-	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/dfdaemon/server"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/daemon/peer"
+	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
+	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func TestMain(m *testing.M) {
@@ -44,7 +45,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 					ch <- &peer.PeerTaskProgress{
 						State: &base.ResponseState{
 							Success: true,
-							Code:    base.Code_SUCCESS,
+							Code:    dfcodes.Success,
 							Msg:     "test ok",
 						},
 						TaskId:          "",
@@ -120,7 +121,7 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 		return &base.PiecePacket{
 			State: &base.ResponseState{
 				Success: true,
-				Code:    base.Code_SUCCESS,
+				Code:    dfcodes.Success,
 				Msg:     "",
 			},
 			TaskId:        "",

@@ -20,7 +20,7 @@ package manager;
 
 import "pkg/rpc/base/base.proto";
 
-option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager";
+option go_package = "d7y.io/dragonfly/v2/pkg/rpc/manager";
 
 message NavigatorRequest{
   // client ip

@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/scheduler/mgr"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/mgr"
+	"d7y.io/dragonfly/v2/scheduler/scheduler"
 )
 
 type SchedulerService struct {

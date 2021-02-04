@@ -19,11 +19,12 @@ package proxy
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/dragonflyoss/Dragonfly2/client/config"
+	"d7y.io/dragonfly/v2/client/config"
 )
 
 type testItem struct {
@@ -55,15 +56,15 @@ func (tc *testCase) WithRule(regx string, direct bool, useHTTPS bool, redirect s
 	return tc
 }
 
-func (tc *testCase) WithRegistryMirror(url string, direct bool) *testCase {
+func (tc *testCase) WithRegistryMirror(rawUrl string, direct bool) *testCase {
 	if tc.Error != nil {
 		return tc
 	}
 
-	var remote *config.URL
-	remote, tc.Error = config.NewURL(url)
+	var url *url.URL
+	url, tc.Error = url.Parse(rawUrl)
 	tc.RegistryMirror = &config.RegistryMirror{
-		Remote: remote,
+		Remote: &config.URL{url},
 		Direct: direct,
 	}
 	return tc

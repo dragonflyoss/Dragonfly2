@@ -18,10 +18,10 @@ package daemon
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/server"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
+	"d7y.io/dragonfly/v2/cdnsystem/server"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/prometheus/client_golang/prometheus"
 	"os"
 )

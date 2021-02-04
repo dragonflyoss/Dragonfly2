@@ -3,12 +3,12 @@ package mock_client
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/client"
-	"github.com/dragonflyoss/Dragonfly2/scheduler/test/common"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/scheduler/test/common"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -175,7 +175,10 @@ func (mc *MockClient) registerPeerTask() (err error) {
 
 	go func() {
 		ctx, cancel := context.WithCancel(context.TODO())
-		defer cancel()
+		defer func() {
+			time.Sleep(time.Second*3)
+			cancel()
+		}()
 		mc.in, mc.out, err = mc.cli.ReportPieceResult(ctx, mc.taskId, request)
 		if err != nil {
 			mc.logger.Errorf("[%s] PullPieceTasks failed: %e", mc.pid, err)

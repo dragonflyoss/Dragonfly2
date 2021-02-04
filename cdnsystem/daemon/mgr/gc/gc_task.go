@@ -18,8 +18,8 @@ package gc
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
-	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"d7y.io/dragonfly/v2/cdnsystem/util"
+	"d7y.io/dragonfly/v2/pkg/dflog"
 	"sync"
 	"time"
 )

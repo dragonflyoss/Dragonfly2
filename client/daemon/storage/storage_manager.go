@@ -31,10 +31,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
-	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/daemon/gc"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 type TaskStorageDriver interface {
@@ -66,7 +66,7 @@ type Option struct {
 	DataPath string
 	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
 	// after this period cache file will be gc
-	TaskExpireTime time.Duration
+	TaskExpireTime clientutil.Duration
 }
 
 var (
@@ -245,7 +245,7 @@ func (s storageManager) CreateTask(req RegisterTaskRequest) error {
 		RWMutex:          &sync.RWMutex{},
 		dataDir:          dataDir,
 		metadataFilePath: path.Join(dataDir, taskMetaData),
-		expireTime:       s.storeOption.TaskExpireTime,
+		expireTime:       s.storeOption.TaskExpireTime.Duration,
 
 		SugaredLoggerOnWith: logger.With("task", req.TaskID, "peer", req.PeerID, "component", "localTaskStore"),
 	}
@@ -293,6 +293,9 @@ func (s storageManager) CreateTask(req RegisterTaskRequest) error {
 
 func (s storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 	dirs, err := ioutil.ReadDir(path.Join(s.storeOption.DataPath, string(s.storeStrategy)))
+	if os.IsNotExist(err) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
@@ -321,7 +324,7 @@ func (s storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 				dataDir:          dataDir,
 				metadataFilePath: path.Join(dataDir, taskMetaData),
 				dataFilePath:     path.Join(dataDir, taskData),
-				expireTime:       s.storeOption.TaskExpireTime,
+				expireTime:       s.storeOption.TaskExpireTime.Duration,
 				lastAccess:       time.Now(),
 				gcCallback:       gcCallback,
 			}

@@ -17,8 +17,8 @@
 package config
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/rate"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/rate"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"time"
 )
 

@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type filePeerTaskCallback struct {
@@ -59,7 +59,7 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 		Traffic:        pt.GetTraffic(),
 		Cost:           uint32(end.Sub(p.start).Milliseconds()),
 		Success:        true,
-		Code:           base.Code_SUCCESS,
+		Code:           dfcodes.Success,
 	})
 	return nil
 }
@@ -79,7 +79,7 @@ func (p *filePeerTaskCallback) Fail(pt PeerTask, reason string) error {
 		Traffic:        pt.GetTraffic(),
 		Cost:           uint32(end.Sub(p.start).Milliseconds()),
 		Success:        false,
-		Code:           base.Code_CLIENT_ERROR,
+		Code:           dfcodes.UnknownError,
 	})
 	return nil
 }

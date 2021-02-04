@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package base;
 
-option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base";
+option go_package = "d7y.io/dragonfly/v2/pkg/rpc/base";
 
 enum Code{
   X_UNSPECIFIED = 0;

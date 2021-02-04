@@ -28,24 +28,25 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly2/client/config"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/gc"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/peer"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/proxy"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/service"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/upload"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
-	schedulerclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/gc"
+	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/proxy"
+	"d7y.io/dragonfly/v2/client/daemon/service"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/daemon/upload"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 type PeerHost interface {
@@ -59,7 +60,7 @@ type peerHost struct {
 
 	schedPeerHost *scheduler.PeerHost
 
-	Option PeerHostOption
+	Option config.PeerHostOption
 
 	ServiceManager service.Manager
 	UploadManager  upload.Manager
@@ -71,76 +72,7 @@ type peerHost struct {
 	PieceManager    peer.PieceManager
 }
 
-type PeerHostOption struct {
-	Schedulers []dfnet.NetAddr
-
-	// AliveTime indicates alive duration for which daemon keeps no accessing by any uploading and download requests,
-	// after this period daemon will automatically exit
-	// when AliveTime == 0, will run infinitely
-	// TODO keepalive detect
-	AliveTime  time.Duration
-	GCInterval time.Duration
-
-	KeepStorage bool
-
-	Server  ServerOption
-	Proxy   *ProxyOption
-	Upload  UploadOption
-	Storage StorageOption
-}
-
-type ServerOption struct {
-	RateLimit    rate.Limit
-	DownloadGRPC ListenOption
-	PeerGRPC     ListenOption
-}
-
-type ProxyOption struct {
-	*ListenOption
-	RegistryMirror *config.RegistryMirror
-	Proxies        []*config.Proxy
-	HijackHTTPS    *config.HijackConfig
-}
-
-type UploadOption struct {
-	ListenOption
-	RateLimit rate.Limit
-}
-
-type ListenOption struct {
-	Security   SecurityOption
-	TCPListen  *TCPListenOption
-	UnixListen *UnixListenOption
-}
-
-type TCPListenOption struct {
-	Listen    string
-	PortRange TCPListenPortRange
-}
-
-type TCPListenPortRange struct {
-	Start int
-	End   int
-}
-
-type UnixListenOption struct {
-	Socket string
-}
-
-type SecurityOption struct {
-	Insecure  bool
-	CACert    string
-	Cert      string
-	Key       string
-	TLSConfig *tls.Config
-}
-
-type StorageOption struct {
-	storage.Option
-	StoreStrategy storage.StoreStrategy
-}
-
-func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error) {
+func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost, error) {
 	sched, err := schedulerclient.CreateClient(opt.Schedulers)
 	if err != nil {
 		return nil, err
@@ -156,7 +88,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 		return nil, err
 	}
 
-	pieceManager, err := peer.NewPieceManager(storageManager, peer.WithLimiter(rate.NewLimiter(opt.Server.RateLimit, int(opt.Server.RateLimit))))
+	pieceManager, err := peer.NewPieceManager(storageManager, peer.WithLimiter(rate.NewLimiter(opt.Download.RateLimit.Limit, int(opt.Download.RateLimit.Limit))))
 	if err != nil {
 		return nil, err
 	}
@@ -167,16 +99,16 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 
 	// TODO(jim): more server options
 	var downloadServerOption []grpc.ServerOption
-	if !opt.Server.DownloadGRPC.Security.Insecure {
-		tlsCredentials, err := loadGPRCTLSCredentials(opt.Server.DownloadGRPC.Security)
+	if !opt.Download.DownloadGRPC.Security.Insecure {
+		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.DownloadGRPC.Security)
 		if err != nil {
 			return nil, err
 		}
 		downloadServerOption = append(downloadServerOption, grpc.Creds(tlsCredentials))
 	}
 	var peerServerOption []grpc.ServerOption
-	if !opt.Server.PeerGRPC.Security.Insecure {
-		tlsCredentials, err := loadGPRCTLSCredentials(opt.Server.PeerGRPC.Security)
+	if !opt.Download.PeerGRPC.Security.Insecure {
+		tlsCredentials, err := loadGPRCTLSCredentials(opt.Download.PeerGRPC.Security)
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +128,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 	}
 
 	uploadManager, err := upload.NewUploadManager(storageManager,
-		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit, int(opt.Upload.RateLimit))))
+		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit.Limit, int(opt.Upload.RateLimit.Limit))))
 	if err != nil {
 		return nil, err
 	}
@@ -213,11 +145,11 @@ func NewPeerHost(host *scheduler.PeerHost, opt PeerHostOption) (PeerHost, error)
 		ProxyManager:    proxyManager,
 		UploadManager:   uploadManager,
 		StorageManager:  storageManager,
-		GCManager:       gc.NewManager(opt.GCInterval),
+		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 	}, nil
 }
 
-func loadGPRCTLSCredentials(opt SecurityOption) (credentials.TransportCredentials, error) {
+func loadGPRCTLSCredentials(opt config.SecurityOption) (credentials.TransportCredentials, error) {
 	// Load certificate of the CA who signed client's certificate
 	pemClientCA, err := ioutil.ReadFile(opt.CACert)
 	if err != nil {
@@ -251,7 +183,7 @@ func loadGPRCTLSCredentials(opt SecurityOption) (credentials.TransportCredential
 	return credentials.NewTLS(opt.TLSConfig), nil
 }
 
-func (ph *peerHost) prepareTCPListener(opt ListenOption, withTLS bool) (net.Listener, int, error) {
+func (ph *peerHost) prepareTCPListener(opt config.ListenOption, withTLS bool) (net.Listener, int, error) {
 	var (
 		ln   net.Listener
 		port int
@@ -268,7 +200,11 @@ func (ph *peerHost) prepareTCPListener(opt ListenOption, withTLS bool) (net.List
 		return ln, port, err
 	}
 
-	// Create the TLS Config with the CA pool and enable Client certificate validation
+	if opt.Security.Cert == "" || opt.Security.Key == "" {
+		return nil, -1, errors.New("empty cert or key for tls")
+	}
+
+	// Create the TLS ClientConfig with the CA pool and enable Client certificate validation
 	if opt.Security.TLSConfig == nil {
 		opt.Security.TLSConfig = &tls.Config{}
 	}
@@ -296,10 +232,10 @@ func (ph *peerHost) Serve() error {
 	ph.GCManager.Start()
 
 	// prepare download service listen
-	_ = os.Remove(ph.Option.Server.DownloadGRPC.UnixListen.Socket)
+	_ = os.Remove(ph.Option.Download.DownloadGRPC.UnixListen.Socket)
 	downloadListener, err := rpc.Listen(dfnet.NetAddr{
 		Type: dfnet.UNIX,
-		Addr: ph.Option.Server.DownloadGRPC.UnixListen.Socket,
+		Addr: ph.Option.Download.DownloadGRPC.UnixListen.Socket,
 	})
 	if err != nil {
 		logger.Errorf("failed to listen for download grpc service: %v", err)
@@ -307,7 +243,7 @@ func (ph *peerHost) Serve() error {
 	}
 
 	// prepare peer service listen
-	peerListener, peerPort, err := ph.prepareTCPListener(ph.Option.Server.PeerGRPC, false)
+	peerListener, peerPort, err := ph.prepareTCPListener(ph.Option.Download.PeerGRPC, false)
 	if err != nil {
 		logger.Errorf("failed to listen for peer grpc service: %v", err)
 		return err
@@ -325,7 +261,7 @@ func (ph *peerHost) Serve() error {
 	g := errgroup.Group{}
 	// serve download grpc service
 	g.Go(func() error {
-		logger.Infof("serve download grpc at unix://%s", ph.Option.Server.DownloadGRPC.UnixListen.Socket)
+		logger.Infof("serve download grpc at unix://%s", ph.Option.Download.DownloadGRPC.UnixListen.Socket)
 		if err := ph.ServiceManager.ServeDownload(downloadListener); err != nil {
 			logger.Errorf("failed to serve for download grpc service: %v", err)
 			return err
@@ -345,7 +281,7 @@ func (ph *peerHost) Serve() error {
 
 	if ph.Option.Proxy != nil {
 		// prepare proxy service listen
-		proxyListener, proxyPort, err := ph.prepareTCPListener(*ph.Option.Proxy.ListenOption, true)
+		proxyListener, proxyPort, err := ph.prepareTCPListener(ph.Option.Proxy.ListenOption, true)
 		if err != nil {
 			logger.Errorf("failed to listen for proxy service: %v", err)
 			return err
@@ -375,17 +311,17 @@ func (ph *peerHost) Serve() error {
 		return nil
 	})
 
-	if ph.Option.AliveTime > 0 {
+	if ph.Option.AliveTime.Duration > 0 {
 		g.Go(func() error {
 			select {
-			case <-time.After(ph.Option.AliveTime):
+			case <-time.After(ph.Option.AliveTime.Duration):
 				var keepalives = []clientutil.KeepAlive{
 					ph.StorageManager,
 					ph.ServiceManager,
 				}
 				var keep bool
 				for _, keepalive := range keepalives {
-					if keepalive.Alive(ph.Option.AliveTime) {
+					if keepalive.Alive(ph.Option.AliveTime.Duration) {
 						keep = true
 					}
 				}

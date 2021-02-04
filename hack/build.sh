@@ -5,7 +5,7 @@ set -o errexit
 set -o pipefail
 
 CDN_BINARY_NAME=cdn
-PKG=github.com/dragonflyoss/Dragonfly2
+PKG=d7y.io/dragonfly/v2
 BUILD_IMAGE=golang:1.12.10
 VERSION=$(git describe --tags "$(git rev-list --tags --max-count=1)")
 REVISION=$(git rev-parse --short HEAD)
