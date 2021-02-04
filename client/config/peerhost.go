@@ -34,7 +34,6 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/util/jsonutils"
 )
 
 type PeerHostOption struct {
@@ -70,13 +69,13 @@ func (p *PeerHostOption) Load(path string) error {
 
 	switch filepath.Ext(path)[1:] {
 	case "json":
-		err := json.Unmarshal(data, &p)
+		err := json.Unmarshal(data, p)
 		if err != nil {
 			return err
 		}
 		return nil
 	case "yml", "yaml":
-		err := yaml.Unmarshal(data, &p)
+		err := yaml.Unmarshal(data, p)
 		if err != nil {
 			return err
 		}
@@ -129,7 +128,7 @@ func (p *ProxyOption) UnmarshalJSON(b []byte) error {
 		}
 		return nil
 	case map[string]interface{}:
-		if err := p.unmarshal(json.Unmarshal, v.(map[string]interface{})); err != nil {
+		if err := p.unmarshal(json.Unmarshal, b); err != nil {
 			return err
 		}
 		return nil
@@ -169,7 +168,13 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 			}
 			m[key] = value
 		}
-		if err := p.unmarshal(yaml.Unmarshal, m); err != nil {
+
+		b, err := yaml.Marshal(m)
+		if err != nil {
+			return err
+		}
+
+		if err := p.unmarshal(yaml.Unmarshal, b); err != nil {
 			return err
 		}
 		return nil
@@ -178,47 +183,22 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 	}
 }
 
-func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), m map[string]interface{}) error {
-	mb, err := jsonutils.MarshalMap(m)
-	if err != nil {
+func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
+	pt := struct {
+		ListenOption   `yaml:",inline"`
+		RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
+		Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
+		HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
+	}{}
+
+	if err := unmarshal(b, &pt); err != nil {
 		return err
 	}
 
-	// ListenOption
-	if mb["listen_option"] != nil {
-		var l ListenOption
-		if err := unmarshal(mb["listen_option"], &l); err != nil {
-			return err
-		}
-		p.ListenOption = l
-	}
-
-	// RegistryMirror
-	if mb["registry_mirror"] != nil {
-		var r RegistryMirror
-		if err := unmarshal(mb["registry_mirror"], &r); err != nil {
-			return err
-		}
-		p.RegistryMirror = &r
-	}
-
-	// Proxies
-	if mb["proxies"] != nil {
-		var ps []*Proxy
-		if err := unmarshal(mb["proxies"], &ps); err != nil {
-			return err
-		}
-		p.Proxies = ps
-	}
-
-	// HijackHTTPS
-	if mb["hijack_https"] != nil {
-		var h HijackConfig
-		if err := unmarshal(mb["hijack_https"], &h); err != nil {
-			return err
-		}
-		p.HijackHTTPS = &h
-	}
+	p.ListenOption = pt.ListenOption
+	p.RegistryMirror = pt.RegistryMirror
+	p.Proxies = pt.Proxies
+	p.HijackHTTPS = pt.HijackHTTPS
 
 	return nil
 }

@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -26,7 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
-func Test_UnmarshalJSON(t *testing.T) {
+func TestUnmarshalJSON(t *testing.T) {
 	bytes := []byte(`{
 		"tls": {
 			"key": "../daemon/test/testdata/certs/sca.key",
@@ -76,11 +77,15 @@ func Test_UnmarshalJSON(t *testing.T) {
 		Schedulers1 []dfnet.NetAddr      `json:"schedulers1" yaml:"schedulers1"`
 		Schedulers2 []dfnet.NetAddr      `json:"schedulers2" yaml:"schedulers2"`
 	}{}
-	json.Unmarshal(bytes, &s)
+
+	if err := json.Unmarshal(bytes, &s); err != nil {
+		t.Fatal(err)
+	}
+
 	t.Logf("%#v\n", s)
 }
 
-func Test_UnmarshalYAML(t *testing.T) {
+func TestUnmarshalYAML(t *testing.T) {
 	bytes := []byte(`
 tls:
   key: ../daemon/test/testdata/certs/sca.key
@@ -123,9 +128,23 @@ schedulers2:
 		Schedulers1 []dfnet.NetAddr      `json:"schedulers1" yaml:"schedulers1"`
 		Schedulers2 []dfnet.NetAddr      `json:"schedulers2" yaml:"schedulers2"`
 	}{}
-	err := yaml.Unmarshal(bytes, &s)
-	if err != nil {
+
+	if err := yaml.Unmarshal(bytes, &s); err != nil {
 		t.Fatal(err)
 	}
+
 	t.Logf("%#v\n", s)
+}
+
+func TestPeerHostOption_Load(t *testing.T) {
+	p := &PeerHostOption{}
+
+	if err := p.Load("../../docs/config/dfget-daemon.yaml"); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("%#v\n", p)
+
+	s, _ := json.MarshalIndent(p, "", "\t")
+	fmt.Printf("%s", s)
 }

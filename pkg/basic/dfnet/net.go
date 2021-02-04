@@ -22,7 +22,6 @@ import (
 	"net"
 	"os"
 
-	"d7y.io/dragonfly/v2/pkg/util/jsonutils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
@@ -105,7 +104,7 @@ func (n *NetAddr) UnmarshalJSON(b []byte) error {
 		n.Addr = value
 		return nil
 	case map[string]interface{}:
-		if err := n.unmarshal(json.Unmarshal, v.(map[string]interface{})); err != nil {
+		if err := n.unmarshal(json.Unmarshal, b); err != nil {
 			return err
 		}
 		return nil
@@ -139,7 +138,13 @@ func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
 			}
 			m[key] = value
 		}
-		if err := n.unmarshal(yaml.Unmarshal, m); err != nil {
+
+		b, err := yaml.Marshal(m)
+		if err != nil {
+			return err
+		}
+
+		if err := n.unmarshal(yaml.Unmarshal, b); err != nil {
 			return err
 		}
 		return nil
@@ -148,29 +153,18 @@ func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
 	}
 }
 
-func (n *NetAddr) unmarshal(unmarshal func(in []byte, out interface{}) (err error), m map[string]interface{}) error {
-	mb, err := jsonutils.MarshalMap(m)
-	if err != nil {
+func (n *NetAddr) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
+	nt := struct {
+		Type NetworkType `json:"type" yaml:"type"`
+		Addr string      `json:"addr" yaml:"addr"` // see https://github.com/grpc/grpc/blob/master/doc/naming.md
+	}{}
+
+	if err := unmarshal(b, &nt); err != nil {
 		return err
 	}
 
-	// Type
-	if mb["type"] != nil {
-		var nt NetworkType
-		if err := unmarshal(mb["type"], &nt); err != nil {
-			return err
-		}
-		n.Type = nt
-	}
-
-	// Addr
-	if mb["addr"] != nil {
-		var a string
-		if err := unmarshal(mb["addr"], &a); err != nil {
-			return err
-		}
-		n.Addr = a
-	}
+	n.Type = nt.Type
+	n.Addr = nt.Addr
 
 	return nil
 }
