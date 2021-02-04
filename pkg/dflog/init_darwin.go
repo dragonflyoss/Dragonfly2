@@ -18,6 +18,6 @@
 
 package logger
 
-import "github.com/dragonflyoss/Dragonfly2/pkg/basic"
+import "github.com/dragonflyoss/Dragonfly/v2/pkg/basic"
 
 var clientLogDir = basic.HomeDir + "/logs/dragonfly"

@@ -11,11 +11,12 @@ import (
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
 
+	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
 	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/peer"
 	mock_peer "github.com/dragonflyoss/Dragonfly/v2/client/daemon/test/mock/peer"
 	mock_storage "github.com/dragonflyoss/Dragonfly/v2/client/daemon/test/mock/storage"
-	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
 	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
 	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc"
 	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
@@ -44,7 +45,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 					ch <- &peer.PeerTaskProgress{
 						State: &base.ResponseState{
 							Success: true,
-							Code:    base.Code_SUCCESS,
+							Code:    dfcodes.Success,
 							Msg:     "test ok",
 						},
 						TaskId:          "",
@@ -120,7 +121,7 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 		return &base.PiecePacket{
 			State: &base.ResponseState{
 				Success: true,
-				Code:    base.Code_SUCCESS,
+				Code:    dfcodes.Success,
 				Msg:     "",
 			},
 			TaskId:        "",

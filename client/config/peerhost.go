@@ -31,9 +31,9 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
-	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
+	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
 )
 
 type PeerHostOption struct {
