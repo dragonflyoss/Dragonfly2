@@ -22,6 +22,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/jsonutils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
@@ -90,6 +91,88 @@ func init() {
 type NetAddr struct {
 	Type NetworkType `json:"type" yaml:"type"`
 	Addr string      `json:"addr" yaml:"addr"` // see https://github.com/grpc/grpc/blob/master/doc/naming.md
+}
+
+func (n *NetAddr) UnmarshalJSON(b []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+
+	switch value := v.(type) {
+	case string:
+		n.Type = TCP
+		n.Addr = value
+		return nil
+	case map[string]interface{}:
+		if err := n.unmarshal(json.Unmarshal, v.(map[string]interface{})); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.New("invalid proxy")
+	}
+}
+
+func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
+	switch node.Kind {
+	case yaml.ScalarNode:
+		var addr string
+		if err := node.Decode(&addr); err != nil {
+			return err
+		}
+		n.Type = TCP
+		n.Addr = addr
+		return nil
+	case yaml.MappingNode:
+		var m = make(map[string]interface{})
+		for i := 0; i < len(node.Content); i += 2 {
+			var (
+				key   string
+				value interface{}
+			)
+			if err := node.Content[i].Decode(&key); err != nil {
+				return err
+			}
+			if err := node.Content[i+1].Decode(&value); err != nil {
+				return err
+			}
+			m[key] = value
+		}
+		if err := n.unmarshal(yaml.Unmarshal, m); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.New("invalid proxy")
+	}
+}
+
+func (n *NetAddr) unmarshal(unmarshal func(in []byte, out interface{}) (err error), m map[string]interface{}) error {
+	mb, err := jsonutils.MarshalMap(m)
+	if err != nil {
+		return err
+	}
+
+	// Type
+	if mb["type"] != nil {
+		var nt NetworkType
+		if err := unmarshal(mb["type"], &nt); err != nil {
+			return err
+		}
+		n.Type = nt
+	}
+
+	// Addr
+	if mb["addr"] != nil {
+		var a string
+		if err := unmarshal(mb["addr"], &a); err != nil {
+			return err
+		}
+		n.Addr = a
+	}
+
+	return nil
 }
 
 func (na *NetAddr) GetEndpoint() string {
