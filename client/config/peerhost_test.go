@@ -53,21 +53,28 @@ func Test_UnmarshalJSON(t *testing.T) {
 			"registry_mirror": {
 				"remote": "https://index.docker.io"
 			}
-		}
+		},
+		"schedulers1": [ "0.0.0.0", "0.0.0.1" ],
+		"schedulers2": [{
+			"type": "tcp",
+			"addr": "0.0.0.0"
+		}]
 }`)
 
 	var s = struct {
-		TLSConfig *TLSConfig         `json:"tls"`
-		URL       *URL               `json:"url"`
-		Certs     *CertPool          `json:"certs"`
-		Regx      *Regexp            `json:"regx"`
-		Port1     TCPListenPortRange `json:"port1"`
-		Port2     TCPListenPortRange `json:"port2"`
-		Timeout   clientutil.Duration           `json:"timeout"`
-		Limit     clientutil.RateLimit          `json:"limit"`
-		Type      dfnet.NetworkType  `json:"type"`
-		Proxy1    ProxyOption        `json:"proxy1"`
-		Proxy2    ProxyOption        `json:"proxy2"`
+		TLSConfig   *TLSConfig           `json:"tls"`
+		URL         *URL                 `json:"url"`
+		Certs       *CertPool            `json:"certs"`
+		Regx        *Regexp              `json:"regx"`
+		Port1       TCPListenPortRange   `json:"port1"`
+		Port2       TCPListenPortRange   `json:"port2"`
+		Timeout     clientutil.Duration  `json:"timeout"`
+		Limit       clientutil.RateLimit `json:"limit"`
+		Type        dfnet.NetworkType    `json:"type"`
+		Proxy1      ProxyOption          `json:"proxy1"`
+		Proxy2      ProxyOption          `json:"proxy2"`
+		Schedulers1 []dfnet.NetAddr      `json:"schedulers1" yaml:"schedulers1"`
+		Schedulers2 []dfnet.NetAddr      `json:"schedulers2" yaml:"schedulers2"`
 	}{}
 	json.Unmarshal(bytes, &s)
 	t.Logf("%#v\n", s)
@@ -93,20 +100,28 @@ proxy1: ../daemon/test/testdata/config/proxy.yml
 proxy2: 
   registry_mirror:
     remote: https://index.docker.io
+schedulers1:
+- 0.0.0.0
+- 0.0.0.1
+schedulers2:
+- type: tcp
+  addr: 0.0.0.0
 `)
 
 	var s = struct {
-		TLSConfig *TLSConfig         `yaml:"tls"`
-		URL       *URL               `yaml:"url"`
-		Certs     *CertPool          `yaml:"certs"`
-		Regx      *Regexp            `yaml:"regx"`
-		Port1     TCPListenPortRange `yaml:"port1"`
-		Port2     TCPListenPortRange `yaml:"port2"`
-		Timeout   clientutil.Duration           `yaml:"timeout"`
-		Limit     clientutil.RateLimit          `yaml:"limit"`
-		Type      dfnet.NetworkType  `yaml:"type"`
-		Proxy1    ProxyOption        `yaml:"proxy1"`
-		Proxy2    ProxyOption        `yaml:"proxy2"`
+		TLSConfig   *TLSConfig           `yaml:"tls"`
+		URL         *URL                 `yaml:"url"`
+		Certs       *CertPool            `yaml:"certs"`
+		Regx        *Regexp              `yaml:"regx"`
+		Port1       TCPListenPortRange   `yaml:"port1"`
+		Port2       TCPListenPortRange   `yaml:"port2"`
+		Timeout     clientutil.Duration  `yaml:"timeout"`
+		Limit       clientutil.RateLimit `yaml:"limit"`
+		Type        dfnet.NetworkType    `yaml:"type"`
+		Proxy1      ProxyOption          `yaml:"proxy1"`
+		Proxy2      ProxyOption          `yaml:"proxy2"`
+		Schedulers1 []dfnet.NetAddr      `json:"schedulers1" yaml:"schedulers1"`
+		Schedulers2 []dfnet.NetAddr      `json:"schedulers2" yaml:"schedulers2"`
 	}{}
 	err := yaml.Unmarshal(bytes, &s)
 	if err != nil {

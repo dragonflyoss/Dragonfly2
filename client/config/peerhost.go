@@ -34,6 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/util/jsonutils"
 )
 
 type PeerHostOption struct {
@@ -178,13 +179,9 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), m map[string]interface{}) error {
-	mb := make(map[string][]byte)
-	for key, value := range m {
-		result, err := json.Marshal(value)
-		if err != nil {
-			return err
-		}
-		mb[key] = result
+	mb, err := jsonutils.MarshalMap(m)
+	if err != nil {
+		return err
 	}
 
 	// ListenOption
