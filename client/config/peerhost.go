@@ -123,7 +123,7 @@ func (p *ProxyOption) UnmarshalJSON(b []byte) error {
 		if err != nil {
 			return err
 		}
-		if err := json.Unmarshal(file, &p); err != nil {
+		if err := json.Unmarshal(file, p); err != nil {
 			return err
 		}
 		return nil
@@ -149,7 +149,7 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 		if err != nil {
 			return err
 		}
-		if err := yaml.Unmarshal(file, &p); err != nil {
+		if err := yaml.Unmarshal(file, p); err != nil {
 			return err
 		}
 		return nil
