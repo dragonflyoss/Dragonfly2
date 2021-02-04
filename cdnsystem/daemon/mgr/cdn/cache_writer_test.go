@@ -18,7 +18,7 @@ package cdn
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/store"
+	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"github.com/stretchr/testify/suite"
 	"io/ioutil"
 	"os"

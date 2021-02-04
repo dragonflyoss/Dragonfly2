@@ -6,8 +6,8 @@ package mock_daemon
 
 import (
 	context "context"
-	base "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
-	dfdaemon "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon"
+	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	dfdaemon "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )

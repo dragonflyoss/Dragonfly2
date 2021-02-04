@@ -18,8 +18,8 @@ package store
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/plugins"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"path/filepath"
 	"sync"
 )

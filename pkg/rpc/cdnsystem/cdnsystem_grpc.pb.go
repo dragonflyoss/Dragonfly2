@@ -4,7 +4,7 @@ package cdnsystem
 
 import (
 	context "context"
-	base "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
+	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"

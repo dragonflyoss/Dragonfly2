@@ -4,19 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"hash/crc32"
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/cdnsystem/client"
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 const TinyFileSize = 128
@@ -99,13 +99,17 @@ func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
 		case ps, ok := <-ch:
 			if !ok {
 				break
-			} else if ps != nil {
+			} else if ps == nil || ps.State == nil {
+				logger.Warnf("receive a nil pieceSeed or state from cdn: taskId[%s]", task.TaskId)
+			} else if !ps.State.Success {
+				logger.Warnf("receive a failure state from cdn: taskId[%s] Code[%d]:%s", task.TaskId, ps.State.Code, ps.State.Msg)
+			} else {
 				pieceNum := int32(-1)
 				if ps.PieceInfo != nil {
 					pieceNum = ps.PieceInfo.PieceNum
+					c.processPieceSeed(task, ps)
 				}
 				logger.Debugf("receive a pieceSeed from cdn: taskId[%s]-%d done [%v]", task.TaskId, pieceNum, ps.Done)
-				c.processPieceSeed(task, ps)
 			}
 		}
 	}

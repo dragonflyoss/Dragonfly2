@@ -1,11 +1,11 @@
 package test
 
 import (
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/mgr"
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/server"
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/test/common"
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/test/mock_cdn"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/scheduler/mgr"
+	"d7y.io/dragonfly/v2/scheduler/server"
+	"d7y.io/dragonfly/v2/scheduler/test/common"
+	"d7y.io/dragonfly/v2/scheduler/test/mock_cdn"
 	"testing"
 	"time"
 

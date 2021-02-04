@@ -34,19 +34,19 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
-	"github.com/dragonflyoss/Dragonfly/v2/client/config"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/gc"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/peer"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/proxy"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/service"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/upload"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
-	schedulerclient "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/gc"
+	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/proxy"
+	"d7y.io/dragonfly/v2/client/daemon/service"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/daemon/upload"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 type PeerHost interface {
@@ -78,6 +78,8 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 		return nil, err
 	}
 
+	// Storage.Option.DataPath is same with PeerHost DataDir
+	opt.Storage.Option.DataPath = opt.DataDir
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage.Option, func(request storage.CommonTaskRequest) {
 		sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
 			TaskId: request.TaskID,

@@ -17,8 +17,8 @@
 package source
 
 import (
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/types"
 )
 
 var clients = make(map[string]ResourceClient)

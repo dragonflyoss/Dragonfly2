@@ -2,11 +2,11 @@ package schedule_worker
 
 import (
 	"fmt"
-	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
-	scheduler2 "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/mgr"
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/scheduler"
-	"github.com/dragonflyoss/Dragonfly/v2/scheduler/types"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/mgr"
+	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/types"
 	"k8s.io/client-go/util/workqueue"
 )
 

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/config"
 )
 
 func init() {
@@ -60,4 +60,6 @@ func initDaemonFlags() {
 	flagSet.Var(config.NewLimitRateValue(&flagDaemonOpt.Download.RateLimit), "download-rate", "download rate limit for other peers and back source")
 	flagSet.Var(config.NewLimitRateValue(&flagDaemonOpt.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
 	flagSet.VarP(config.NewSchedulersValue(&flagDaemonOpt), "schedulers", "s", "schedulers")
+
+	flagSet.StringVar(&peerHostConfigPath, "config", "c", "daemon config file location")
 }

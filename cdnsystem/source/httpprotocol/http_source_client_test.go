@@ -18,9 +18,9 @@ package httpprotocol
 
 import (
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/source"
-	"github.com/dragonflyoss/Dragonfly/v2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/maputils"
+	"d7y.io/dragonfly/v2/cdnsystem/source"
+	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/pkg/util/maputils"
 	"reflect"
 	"testing"
 )

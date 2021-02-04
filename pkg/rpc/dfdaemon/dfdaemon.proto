@@ -20,7 +20,7 @@ package dfdaemon;
 
 import "pkg/rpc/base/base.proto";
 
-option go_package = "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon";
+option go_package = "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon";
 
 message DownRequest{
   // download content with the url, but not only for http protocol

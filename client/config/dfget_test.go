@@ -28,9 +28,9 @@ package config
 //	"testing"
 //	"time"
 //
-//	"github.com/dragonflyoss/Dragonfly/v2/pkg/dferrors"
-//	"github.com/dragonflyoss/Dragonfly/v2/pkg/rate"
-//	"github.com/dragonflyoss/Dragonfly/v2/pkg/util/stringutils"
+//	"d7y.io/dragonfly/v2/pkg/dferrors"
+//	"d7y.io/dragonfly/v2/pkg/rate"
+//	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 //
 //	"github.com/sirupsen/logrus"
 //	"gopkg.in/check.v1"
