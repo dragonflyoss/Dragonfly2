@@ -18,91 +18,46 @@ package cmd
 
 import (
 	"fmt"
-	"net"
 	"os"
-	"time"
+
+	"github.com/dragonflyoss/Dragonfly/v2/client/config"
 )
-
-type daemonOption struct {
-	dataDir  string
-	workHome string
-
-	schedulers []string
-
-	pidFile  string
-	lockFile string
-
-	advertiseIP    net.IP
-	listenIP       net.IP
-	downloadSocket string
-	enableProxy    bool
-	peerPort       int
-	peerPortEnd    int
-	uploadPort     int
-	uploadPortEnd  int
-	proxyPort      int
-	proxyPortEnd   int
-
-	downloadRate string
-	uploadRate   string
-
-	storeStrategy string
-
-	dataExpireTime  time.Duration
-	daemonAliveTime time.Duration
-	gcInterval      time.Duration
-	keepStorage     bool
-
-	securityDomain string
-	location       string
-	idc            string
-	netTopology    string
-
-	verbose bool
-}
 
 func init() {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		homeDir = os.TempDir()
 	}
-	flagDaemonOpt.workHome = fmt.Sprintf("%s/.small-dragonfly/dfdaemon/", homeDir)
-	flagDaemonOpt.dataDir = flagDaemonOpt.workHome
+	flagDaemonOpt.WorkHome = fmt.Sprintf("%s/.small-dragonfly/dfdaemon/", homeDir)
+	flagDaemonOpt.DataDir = flagDaemonOpt.WorkHome
 }
 
 func initDaemonFlags() {
 	flagSet := daemonCmd.Flags()
+	flagSet.StringVar(&flagDaemonOpt.DataDir, "data", flagDaemonOpt.DataDir, "local directory which stores temporary files for p2p uploading")
+	flagSet.StringVar(&flagDaemonOpt.WorkHome, "home", flagDaemonOpt.WorkHome, "the work home directory of dfget daemon")
+	flagSet.DurationVar(&flagDaemonOpt.Storage.Option.TaskExpireTime.Duration, "expire-time", flagDaemonOpt.Storage.Option.TaskExpireTime.Duration, "caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
+	flagSet.DurationVar(&flagDaemonOpt.AliveTime.Duration, "alive-time", flagDaemonOpt.AliveTime.Duration, "alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
+	flagSet.DurationVar(&flagDaemonOpt.GCInterval.Duration, "gc-interval", flagDaemonOpt.GCInterval.Duration, "gc interval")
+	flagSet.BoolVar(&flagDaemonOpt.KeepStorage, "keep-storage", flagDaemonOpt.KeepStorage, "keep storage after daemon exit")
+	flagSet.BoolVar(&flagDaemonOpt.Verbose, "verbose", flagDaemonOpt.Verbose, "print verbose log and enable golang debug info")
+	flagSet.StringVar(&flagDaemonOpt.Host.AdvertiseIP, "advertise-ip", flagDaemonOpt.Host.AdvertiseIP, "the ip report to scheduler, normal same with listen ip")
+	flagSet.StringVar(&flagDaemonOpt.Host.ListenIP, "listen", flagDaemonOpt.Host.ListenIP, "the listen ip")
+	flagSet.StringVar(&flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket, "grpc-unix-listen", flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket, "the local unix domain socket listen address for grpc with dfget")
+	flagSet.IntVar(&flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.Start, "grpc-port", flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.Start, "the listen address for grpc with other peers")
+	flagSet.IntVar(&flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.End, "grpc-port-end", flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.End, "the listen address for grpc with other peers")
+	flagSet.IntVar(&flagDaemonOpt.Proxy.ListenOption.TCPListen.PortRange.Start, "proxy-port", flagDaemonOpt.Proxy.ListenOption.TCPListen.PortRange.Start, "the address that daemon will listen on for proxy service")
+	flagSet.IntVar(&flagDaemonOpt.Proxy.ListenOption.TCPListen.PortRange.End, "proxy-port-end", flagDaemonOpt.Proxy.ListenOption.TCPListen.PortRange.End, "the address that daemon will listen on for proxy service")
+	flagSet.IntVar(&flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start, "upload-port", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start, "the address that daemon will listen on for peer upload")
+	flagSet.IntVar(&flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.End, "upload-port-end", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.End, "the address that daemon will listen on for peer upload")
+	flagSet.StringVar(&flagDaemonOpt.PidFile, "pid", flagDaemonOpt.PidFile, "dfdaemon pid file location")
+	flagSet.StringVar(&flagDaemonOpt.LockFile, "lock", flagDaemonOpt.LockFile, "dfdaemon lock file location")
+	flagSet.StringVar(&flagDaemonOpt.Host.SecurityDomain, "security-domain", "", "peer security domain for scheduler")
+	flagSet.StringVar(&flagDaemonOpt.Host.Location, "location", flagDaemonOpt.Host.Location, "peer location for scheduler")
+	flagSet.StringVar(&flagDaemonOpt.Host.IDC, "idc", flagDaemonOpt.Host.IDC, "peer idc for scheduler")
+	flagSet.StringVar(&flagDaemonOpt.Host.NetTopology, "net-topology", flagDaemonOpt.Host.NetTopology, "peer net topology for scheduler")
 
-	flagSet.StringVar(&flagDaemonOpt.dataDir, "data", flagDaemonOpt.dataDir, "local directory which stores temporary files for p2p uploading")
-	flagSet.StringVar(&flagDaemonOpt.workHome, "home", flagDaemonOpt.workHome, "the work home directory of dfget daemon")
-
-	flagSet.DurationVar(&flagDaemonOpt.dataExpireTime, "expire-time", flagDaemonOpt.dataExpireTime, "caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
-	flagSet.DurationVar(&flagDaemonOpt.daemonAliveTime, "alive-time", flagDaemonOpt.daemonAliveTime, "alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
-	flagSet.DurationVar(&flagDaemonOpt.gcInterval, "gc-interval", flagDaemonOpt.gcInterval, "gc interval")
-	flagSet.BoolVar(&flagDaemonOpt.keepStorage, "keep-storage", flagDaemonOpt.keepStorage, "keep storage after daemon exit")
-
-	flagSet.BoolVar(&flagDaemonOpt.verbose, "verbose", flagDaemonOpt.verbose, "print verbose log and enable golang debug info")
-
-	flagSet.IPVar(&flagDaemonOpt.advertiseIP, "advertise-ip", flagDaemonOpt.advertiseIP, "the ip report to scheduler, normal same with listen ip")
-	flagSet.IPVar(&flagDaemonOpt.listenIP, "listen-ip", flagDaemonOpt.listenIP, "local listen ip address")
-	flagSet.StringArrayVar(&flagDaemonOpt.schedulers, "schedulers", []string{""}, "scheduler addresses")
-	flagSet.StringVar(&flagDaemonOpt.downloadSocket, "grpc-unix-listen", flagDaemonOpt.downloadSocket, "the local unix domain socket listen address for grpc with dfget")
-	flagSet.IntVar(&flagDaemonOpt.peerPort, "grpc-port", flagDaemonOpt.peerPort, "the listen address for grpc with other peers")
-	flagSet.IntVar(&flagDaemonOpt.peerPortEnd, "grpc-port-end", flagDaemonOpt.peerPort, "the listen address for grpc with other peers")
-	flagSet.BoolVar(&flagDaemonOpt.enableProxy, "proxy", flagDaemonOpt.enableProxy, "enable proxy service")
-	flagSet.IntVar(&flagDaemonOpt.proxyPort, "proxy-port", flagDaemonOpt.proxyPort, "the address that daemon will listen on for proxy service")
-	flagSet.IntVar(&flagDaemonOpt.proxyPortEnd, "proxy-port-end", flagDaemonOpt.proxyPort, "the address that daemon will listen on for proxy service")
-	flagSet.IntVar(&flagDaemonOpt.uploadPort, "upload-port", flagDaemonOpt.uploadPort, "the address that daemon will listen on for peer upload")
-	flagSet.IntVar(&flagDaemonOpt.uploadPortEnd, "upload-port-end", flagDaemonOpt.uploadPort, "the address that daemon will listen on for peer upload")
-	flagSet.StringVar(&flagDaemonOpt.downloadRate, "download-rate", flagDaemonOpt.downloadRate, "download rate limit for other peers and back source")
-	flagSet.StringVar(&flagDaemonOpt.uploadRate, "upload-rate", flagDaemonOpt.uploadRate, "upload rate limit for other peers")
-	flagSet.StringVar(&flagDaemonOpt.storeStrategy, "store-strategy", flagDaemonOpt.storeStrategy,
-		"storage driver: io.d7y.storage.v2.simple, io.d7y.storage.v2.advance")
-	flagSet.StringVar(&flagDaemonOpt.pidFile, "pid", flagDaemonOpt.pidFile, "dfdaemon pid file location")
-	flagSet.StringVar(&flagDaemonOpt.lockFile, "lock", flagDaemonOpt.lockFile, "dfdaemon lock file location")
-
-	flagSet.StringVar(&flagDaemonOpt.securityDomain, "security-domain", "", "peer security domain for scheduler")
-	flagSet.StringVar(&flagDaemonOpt.location, "location", "", "peer location for scheduler")
-	flagSet.StringVar(&flagDaemonOpt.idc, "idc", "", "peer idc for scheduler")
-	flagSet.StringVar(&flagDaemonOpt.netTopology, "net-topology", "", "peer switch for scheduler")
+	flagSet.Var(config.NewLimitRateValue(&flagDaemonOpt.Download.RateLimit), "download-rate", "download rate limit for other peers and back source")
+	flagSet.Var(config.NewLimitRateValue(&flagDaemonOpt.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
+	flagSet.VarP(config.NewSchedulersValue(&flagDaemonOpt), "schedulers", "s", "schedulers")
 }

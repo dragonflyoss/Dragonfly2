@@ -17,13 +17,13 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/docker/go-units"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/gofrs/flock"
@@ -31,11 +31,8 @@ import (
 	"github.com/phayes/freeport"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/time/rate"
 
-	"github.com/dragonflyoss/Dragonfly/v2/client/config"
 	"github.com/dragonflyoss/Dragonfly/v2/client/daemon"
-	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
 	"github.com/dragonflyoss/Dragonfly/v2/pkg/basic/dfnet"
 	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
 	_ "github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -48,12 +45,23 @@ var daemonCmd = &cobra.Command{
 	Short:        "Launch a peer daemon for downloading and uploading files.",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// load from default config file
+		_, err := os.Stat(peerHostConfigPath)
+		if err == nil {
+			err := flagDaemonOpt.Load(peerHostConfigPath)
+			if err != nil {
+				return err
+			}
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+
 		logger.InitDaemon()
-		lock := flock.New(flagDaemonOpt.lockFile)
+		lock := flock.New(flagDaemonOpt.LockFile)
 		if ok, err := lock.TryLock(); err != nil {
 			return err
 		} else if !ok {
-			return fmt.Errorf("lock file %s failed, other daemon is already running", flagDaemonOpt.lockFile)
+			return fmt.Errorf("lock file %s failed, other daemon is already running", flagDaemonOpt.LockFile)
 		}
 		defer lock.Unlock()
 		return runDaemon()
@@ -66,8 +74,11 @@ func init() {
 }
 
 func runDaemon() error {
-	if flagDaemonOpt.verbose {
-		logger.LogLevel.SetLevel(zapcore.DebugLevel)
+	s, _ := json.MarshalIndent(flagDaemonOpt, "", "  ")
+	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
+
+	if flagDaemonOpt.Verbose {
+		logger.SetCoreLevel(zapcore.DebugLevel)
 		go func() {
 			// enable go pprof and statsview
 			port, _ := freeport.GetFreePort()
@@ -82,22 +93,15 @@ func runDaemon() error {
 		}()
 	}
 
-	pid, err := pidfile.New(flagDaemonOpt.pidFile)
+	pid, err := pidfile.New(flagDaemonOpt.PidFile)
 	if err != nil {
-		return fmt.Errorf("check pid failed: %s, please check %s", err, flagDaemonOpt.pidFile)
+		return fmt.Errorf("check pid failed: %s, please check %s", err, flagDaemonOpt.PidFile)
 	}
 	defer pid.Remove()
 
-	option, err := initDaemonOption()
-	if err != nil {
-		return err
-	}
-
 	var ip string
-	if !net.IPv4zero.Equal(flagDaemonOpt.advertiseIP) {
-		ip = flagDaemonOpt.advertiseIP.String()
-	} else if !net.IPv4zero.Equal(flagDaemonOpt.listenIP) {
-		ip = flagDaemonOpt.advertiseIP.String()
+	if !net.IPv4zero.Equal(net.ParseIP(flagDaemonOpt.Host.AdvertiseIP)) {
+		ip = flagDaemonOpt.Host.AdvertiseIP
 	} else {
 		ip = dfnet.HostIp
 	}
@@ -109,123 +113,22 @@ func runDaemon() error {
 	host := &scheduler.PeerHost{
 		Uuid:           uuid.New().String(),
 		Ip:             ip,
-		RpcPort:        int32(flagDaemonOpt.peerPort),
+		RpcPort:        int32(flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
 		HostName:       dfnet.HostName,
-		SecurityDomain: flagDaemonOpt.securityDomain,
-		Location:       flagDaemonOpt.location,
-		Idc:            flagDaemonOpt.idc,
-		NetTopology:    flagDaemonOpt.netTopology,
+		SecurityDomain: flagDaemonOpt.Host.SecurityDomain,
+		Location:       flagDaemonOpt.Host.Location,
+		Idc:            flagDaemonOpt.Host.IDC,
+		NetTopology:    flagDaemonOpt.Host.NetTopology,
 	}
-	ph, err := daemon.NewPeerHost(host, *option)
+
+	ph, err := daemon.NewPeerHost(host, flagDaemonOpt)
 	if err != nil {
 		logger.Errorf("init peer host failed: %s", err)
 		return err
 	}
 	setupSignalHandler(ph)
 	return ph.Serve()
-}
-
-func initDaemonOption() (*daemon.PeerHostOption, error) {
-	dr, err := units.FromHumanSize(flagDaemonOpt.downloadRate)
-	if err != nil {
-		return nil, fmt.Errorf("download rate %q parse error: %s", flagDaemonOpt.downloadRate, err)
-	}
-
-	ur, err := units.FromHumanSize(flagDaemonOpt.uploadRate)
-	if err != nil {
-		return nil, fmt.Errorf("upload rate %q parse error: %s", flagDaemonOpt.uploadRate, err)
-	}
-
-	var proxyOption *daemon.ProxyOption
-	if flagDaemonOpt.enableProxy {
-		exp, _ := config.NewRegexp("blobs/sha256.*")
-		proxyOption = &daemon.ProxyOption{
-			ListenOption: &daemon.ListenOption{
-				Security: daemon.SecurityOption{
-					Insecure: true,
-				},
-				TCPListen: &daemon.TCPListenOption{
-					Listen: flagDaemonOpt.listenIP.String(),
-					PortRange: daemon.TCPListenPortRange{
-						Start: flagDaemonOpt.proxyPort,
-						End:   flagDaemonOpt.proxyPortEnd,
-					},
-				},
-			},
-			// TODO
-			RegistryMirror: nil,
-			Proxies: []*config.Proxy{
-				{
-					Regx: exp,
-				},
-			},
-			HijackHTTPS: nil,
-		}
-	}
-
-	option := &daemon.PeerHostOption{
-		AliveTime:   flagDaemonOpt.daemonAliveTime,
-		GCInterval:  flagDaemonOpt.gcInterval,
-		KeepStorage: flagDaemonOpt.keepStorage,
-		// FIXME(jim): parse []basic.NetAddr from flagDaemonOpt.schedulers
-		Schedulers: []dfnet.NetAddr{
-			{
-				Type: dfnet.TCP,
-				Addr: flagDaemonOpt.schedulers[0],
-			},
-		},
-		Server: daemon.ServerOption{
-			RateLimit: rate.Limit(dr),
-			DownloadGRPC: daemon.ListenOption{
-				// TODO
-				Security: daemon.SecurityOption{
-					Insecure: true,
-				},
-				UnixListen: &daemon.UnixListenOption{
-					Socket: flagDaemonOpt.downloadSocket,
-				},
-			},
-			PeerGRPC: daemon.ListenOption{
-				// TODO
-				Security: daemon.SecurityOption{
-					Insecure: true,
-				},
-				TCPListen: &daemon.TCPListenOption{
-					Listen: flagDaemonOpt.listenIP.String(),
-					PortRange: daemon.TCPListenPortRange{
-						Start: flagDaemonOpt.peerPort,
-						End:   flagDaemonOpt.peerPortEnd,
-					},
-				},
-			},
-		},
-		Proxy: proxyOption,
-		Upload: daemon.UploadOption{
-			ListenOption: daemon.ListenOption{
-				// TODO
-				Security: daemon.SecurityOption{
-					Insecure: true,
-				},
-				TCPListen: &daemon.TCPListenOption{
-					Listen: flagDaemonOpt.listenIP.String(),
-					PortRange: daemon.TCPListenPortRange{
-						Start: flagDaemonOpt.uploadPort,
-						End:   flagDaemonOpt.uploadPortEnd,
-					},
-				},
-			},
-			RateLimit: rate.Limit(ur),
-		},
-		Storage: daemon.StorageOption{
-			Option: storage.Option{
-				DataPath:       flagDaemonOpt.dataDir,
-				TaskExpireTime: flagDaemonOpt.dataExpireTime,
-			},
-			StoreStrategy: storage.StoreStrategy(flagDaemonOpt.storeStrategy),
-		},
-	}
-	return option, nil
 }
 
 func setupSignalHandler(ph daemon.PeerHost) {

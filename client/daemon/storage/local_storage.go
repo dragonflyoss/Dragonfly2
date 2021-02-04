@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
 	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
 )
@@ -188,8 +189,7 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	return &base.PiecePacket{
 		State: &base.ResponseState{
 			Success: true,
-			Code:    base.Code_SUCCESS,
-			Msg:     "",
+			Code:    dfcodes.Success,
 		},
 		TaskId: req.TaskId,
 		DstPid: t.PeerID,

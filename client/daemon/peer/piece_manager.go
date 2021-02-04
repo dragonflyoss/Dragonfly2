@@ -25,6 +25,7 @@ import (
 
 	"github.com/dragonflyoss/Dragonfly/v2/client/clientutil"
 	"github.com/dragonflyoss/Dragonfly/v2/client/daemon/storage"
+	"github.com/dragonflyoss/Dragonfly/v2/pkg/dfcodes"
 	logger "github.com/dragonflyoss/Dragonfly/v2/pkg/dflog"
 	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/base"
 	"github.com/dragonflyoss/Dragonfly/v2/pkg/rpc/scheduler"
@@ -150,7 +151,7 @@ func (pm *pieceManager) pushSuccessResult(peerTask PeerTask, dstPid, dstAddr str
 			BeginTime:     uint64(start),
 			EndTime:       uint64(end),
 			Success:       true,
-			Code:          base.Code_SUCCESS,
+			Code:          dfcodes.Success,
 			HostLoad:      nil, // TODO(jim): update host load
 			FinishedCount: 0,   // update by peer task
 		})
@@ -170,7 +171,7 @@ func (pm *pieceManager) pushFailResult(peerTask PeerTask, dstPid, dstAddr string
 			BeginTime:     uint64(start),
 			EndTime:       uint64(end),
 			Success:       false,
-			Code:          base.Code_CLIENT_ERROR,
+			Code:          dfcodes.UnknownError,
 			HostLoad:      nil,
 			FinishedCount: 0,
 		})
