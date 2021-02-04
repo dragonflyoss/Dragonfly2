@@ -22,38 +22,53 @@ import (
 	"net"
 	"time"
 
+	"golang.org/x/time/rate"
+
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
 	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	"golang.org/x/time/rate"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
+)
+
+var (
+	peerHostConfigPath = basic.HomeDir + "/.small-dragonfly/dfdaemon/peerhost.yml"
 )
 
 var flagDaemonOpt = config.PeerHostOption{
 	DataDir:     "",
 	WorkHome:    "",
-	AliveTime:   config.Duration{Duration: 5 * time.Minute},
-	GCInterval:  config.Duration{Duration: 1 * time.Minute},
+	AliveTime:   clientutil.Duration{Duration: 5 * time.Minute},
+	GCInterval:  clientutil.Duration{Duration: 1 * time.Minute},
 	Schedulers:  nil,
 	PidFile:     "/tmp/dfdaemon.pid",
 	LockFile:    "/tmp/dfdaemon.lock",
 	KeepStorage: false,
 	Verbose:     false,
 	Host: config.HostOption{
-		AdvertiseIP:    net.IPv4zero.String(),
+		ListenIP:       net.IPv4zero.String(),
+		AdvertiseIP:    dfnet.HostIp,
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",
 		NetTopology:    "",
 	},
 	Download: config.DownloadOption{
-		RateLimit: config.RateLimit{
+		RateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(104857600),
 		},
 		DownloadGRPC: config.ListenOption{
+			Security: config.SecurityOption{
+				Insecure: true,
+			},
 			UnixListen: &config.UnixListenOption{
 				Socket: "/tmp/dfdamon.sock",
 			},
 		},
 		PeerGRPC: config.ListenOption{
+			Security: config.SecurityOption{
+				Insecure: true,
+			},
 			TCPListen: &config.TCPListenOption{
 				Listen: net.IPv4zero.String(),
 				PortRange: config.TCPListenPortRange{
@@ -64,10 +79,13 @@ var flagDaemonOpt = config.PeerHostOption{
 		},
 	},
 	Upload: config.UploadOption{
-		RateLimit: config.RateLimit{
+		RateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(104857600),
 		},
 		ListenOption: config.ListenOption{
+			Security: config.SecurityOption{
+				Insecure: true,
+			},
 			TCPListen: &config.TCPListenOption{
 				Listen: net.IPv4zero.String(),
 				PortRange: config.TCPListenPortRange{
@@ -79,6 +97,9 @@ var flagDaemonOpt = config.PeerHostOption{
 	},
 	Proxy: &config.ProxyOption{
 		ListenOption: config.ListenOption{
+			Security: config.SecurityOption{
+				Insecure: true,
+			},
 			TCPListen: &config.TCPListenOption{
 				Listen: net.IPv4zero.String(),
 				PortRange: config.TCPListenPortRange{
@@ -90,8 +111,10 @@ var flagDaemonOpt = config.PeerHostOption{
 	},
 	Storage: config.StorageOption{
 		Option: storage.Option{
-			TaskExpireTime: 3 * time.Minute,
+			TaskExpireTime: clientutil.Duration{
+				Duration: 3 * time.Minute,
+			},
 		},
-		StoreStrategy: storage.StoreStrategy(string(storage.SimpleLocalTaskStoreStrategy)),
+		StoreStrategy: storage.SimpleLocalTaskStoreStrategy,
 	},
 }

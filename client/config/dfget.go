@@ -29,6 +29,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
 	"github.com/dragonflyoss/Dragonfly2/pkg/dferrors"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
 )
@@ -49,16 +50,16 @@ type ClientConfig struct {
 	Md5 string `json:"md5,omitempty"`
 
 	// DigestMethod indicates digest method, like md5, sha256
-	DigestMethod string `json:"digestMethod,omitempty"`
+	DigestMethod string `json:"digest_method,omitempty"`
 
 	// DigestValue indicates digest value
-	DigestValue string `json:"digestValue,omitempty"`
+	DigestValue string `json:"digest_value,omitempty"`
 
 	// Identifier identify download task, it is available merely when md5 param not exist.
 	Identifier string `json:"identifier,omitempty"`
 
 	// CallSystem system name that executes dfget.
-	CallSystem string `json:"callSystem,omitempty"`
+	CallSystem string `json:"call_system,omitempty"`
 
 	// Pattern download pattern, must be 'p2p' or 'cdn' or 'source',
 	// default:`p2p`.
@@ -77,13 +78,13 @@ type ClientConfig struct {
 	Header []string `json:"header,omitempty"`
 
 	// NotBackSource indicates whether to not back source to download when p2p fails.
-	NotBackSource bool `json:"notBackSource,omitempty"`
+	NotBackSource bool `json:"not_back_source,omitempty"`
 
 	// Insecure indicates whether skip secure verify when supernode interact with the source.
 	Insecure bool `json:"insecure,omitempty"`
 
 	// ShowBar shows progress bar, it's conflict with `--console`.
-	ShowBar bool `json:"showBar,omitempty"`
+	ShowBar bool `json:"show_bar,omitempty"`
 
 	// Console shows log on console, it's conflict with `--showbar`.
 	Console bool `json:"console,omitempty"`
@@ -92,15 +93,15 @@ type ClientConfig struct {
 	// If set true, log level will be 'debug'.
 	Verbose bool `json:"verbose,omitempty"`
 
-	// Username of the system currently logged in.
-	User string `json:"-"`
-
 	// Config file paths,
 	// default:["/etc/dragonfly/dfget.yml","/etc/dragonfly.conf"].
 	//
 	// NOTE: It is recommended to use `/etc/dragonfly/dfget.yml` as default,
 	// and the `/etc/dragonfly.conf` is just to ensure compatibility with previous versions.
 	//ConfigFiles []string `json:"-"`
+
+	// MoreDaemonOptions indicates more options passed to daemon by command line.
+	MoreDaemonOptions string `json:"more_daemon_options,omitempty"`
 }
 
 func (cfg *ClientConfig) String() string {
@@ -187,51 +188,8 @@ func checkOutput(cfg *ClientConfig) error {
 		if err := syscall.Access(dir, syscall.O_RDWR); err == nil {
 			break
 		} else if os.IsPermission(err) || dir == "/" {
-			return fmt.Errorf("user[%s] path[%s] %v", cfg.User, cfg.Output, err)
+			return fmt.Errorf("user[%s] path[%s] %v", basic.User, cfg.Output, err)
 		}
 	}
 	return nil
-}
-
-// RuntimeVariable stores the variables that are initialized and used
-// at downloading task executing.
-type DeprecatedRuntimeVariable struct {
-	// MetaPath specify the path of meta file which store the meta info of the peer that should be persisted.
-	// Only server port information is stored currently.
-	MetaPath string
-
-	// SystemDataDir specifies a default directory to store temporary files.
-	SystemDataDir string
-
-	// DataDir specifies a directory to store temporary files.
-	// For now, the value of `DataDir` always equals `SystemDataDir`,
-	// and there is no difference between them.
-	// TODO: If there is insufficient disk space, we should set it to the `TargetDir`.
-	DataDir string
-
-	// RealTarget specifies the full target path whose value is equal to the `Output`.
-	RealTarget string
-
-	// TargetDir is the directory of the RealTarget path.
-	TargetDir string
-
-	// TempTarget is a temp file path that try to determine
-	// whether the `TargetDir` and the `DataDir` belong to the same disk by making a hard link.
-	TempTarget string
-
-	// TaskURL is generated from rawURL which may contains some queries or parameter.
-	// Dfget will filter some volatile queries such as timestamps via --filter parameter of dfget.
-	TaskURL string
-
-	// TaskFileName is a string composed of `the last element of RealTarget path + "-" + sign`.
-	TaskFileName string
-
-	// LocalIP is the native IP which can connect supernode successfully.
-	LocalIP string
-
-	// PeerPort is the TCP port on which the file upload service listens as a peer node.
-	PeerPort int
-
-	// FileLength the length of the file to download.
-	FileLength int64
 }

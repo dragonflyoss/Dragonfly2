@@ -20,8 +20,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 	"gopkg.in/yaml.v3"
+
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 )
 
 func Test_UnmarshalJSON(t *testing.T) {
@@ -55,8 +57,8 @@ func Test_UnmarshalJSON(t *testing.T) {
 		Regx      *Regexp            `json:"regx"`
 		Port1     TCPListenPortRange `json:"port1"`
 		Port2     TCPListenPortRange `json:"port2"`
-		Timeout   Duration           `json:"timeout"`
-		Limit     RateLimit          `json:"limit"`
+		Timeout   clientutil.Duration           `json:"timeout"`
+		Limit     clientutil.RateLimit          `json:"limit"`
 		Type      dfnet.NetworkType  `json:"type"`
 	}{}
 	json.Unmarshal(bytes, &s)
@@ -88,8 +90,8 @@ type: tcp
 		Regx      *Regexp            `yaml:"regx"`
 		Port1     TCPListenPortRange `yaml:"port1"`
 		Port2     TCPListenPortRange `yaml:"port2"`
-		Timeout   Duration           `yaml:"timeout"`
-		Limit     RateLimit          `yaml:"limit"`
+		Timeout   clientutil.Duration           `yaml:"timeout"`
+		Limit     clientutil.RateLimit          `yaml:"limit"`
 		Type      dfnet.NetworkType  `yaml:"type"`
 	}{}
 	err := yaml.Unmarshal(bytes, &s)

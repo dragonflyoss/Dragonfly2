@@ -17,6 +17,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -44,6 +45,17 @@ var daemonCmd = &cobra.Command{
 	Short:        "Launch a peer daemon for downloading and uploading files.",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// load from default config file
+		_, err := os.Stat(peerHostConfigPath)
+		if err == nil {
+			err := flagDaemonOpt.Load(peerHostConfigPath)
+			if err != nil {
+				return err
+			}
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+
 		logger.InitDaemon()
 		lock := flock.New(flagDaemonOpt.LockFile)
 		if ok, err := lock.TryLock(); err != nil {
@@ -62,6 +74,9 @@ func init() {
 }
 
 func runDaemon() error {
+	s, _ := json.MarshalIndent(flagDaemonOpt, "", "  ")
+	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
+
 	if flagDaemonOpt.Verbose {
 		logger.SetCoreLevel(zapcore.DebugLevel)
 		go func() {

@@ -16,7 +16,11 @@
 
 package logger
 
-import "github.com/dragonflyoss/Dragonfly2/pkg/basic"
+import (
+	"path"
+
+	"github.com/dragonflyoss/Dragonfly2/pkg/basic"
+)
 
 const (
 	CoreLogFileName = "core.log"
@@ -108,21 +112,19 @@ func InitCdnSystem() error {
 }
 
 func InitDaemon() error {
-	logDir := "/var/log/dragonfly/"
-
-	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 100, 7, 14, false, false); err != nil {
+	if coreLogger, err := CreateLogger(path.Join(clientLogDir, CoreLogFileName), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
 		SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 100, 7, 14, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(path.Join(clientLogDir, GrpcLogFileName), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
 		SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(logDir+"gc.log", 100, 7, 14, false, false); err != nil {
+	if gcLogger, err := CreateLogger(path.Join(clientLogDir, "gc.log"), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
 		SetGcLogger(gcLogger.Sugar())
@@ -132,9 +134,7 @@ func InitDaemon() error {
 }
 
 func InitDfget() error {
-	logDir := "/var/log/dragonfly/"
-
-	if dfgetLogger, err := CreateLogger(logDir+"dfget.log", 300, -1, -1, false, false); err != nil {
+	if dfgetLogger, err := CreateLogger(path.Join(clientLogDir, "dfget.log"), 300, -1, -1, false, false); err != nil {
 		return err
 	} else {
 		log := dfgetLogger.Sugar()

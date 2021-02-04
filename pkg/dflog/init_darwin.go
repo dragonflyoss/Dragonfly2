@@ -16,13 +16,8 @@
 
 // +build darwin
 
-package cmd
+package logger
 
-const (
-	dfgetLockFile = "/tmp/dfget.lock"
-)
+import "github.com/dragonflyoss/Dragonfly2/pkg/basic"
 
-//var flagDfGetOpt = dfgetOption{
-//	daemonSock: "/tmp/dfdamon.sock",
-//	daemonPid:  "/tmp/dfdaemon.pid",
-//}
+var clientLogDir = basic.HomeDir + "/logs/dragonfly"

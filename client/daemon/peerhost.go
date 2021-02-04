@@ -28,6 +28,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
@@ -197,6 +198,10 @@ func (ph *peerHost) prepareTCPListener(opt config.ListenOption, withTLS bool) (n
 	// when use grpc, tls config is in server option
 	if !withTLS || opt.Security.Insecure {
 		return ln, port, err
+	}
+
+	if opt.Security.Cert == "" || opt.Security.Key == "" {
+		return nil, -1, errors.New("empty cert or key for tls")
 	}
 
 	// Create the TLS ClientConfig with the CA pool and enable Client certificate validation

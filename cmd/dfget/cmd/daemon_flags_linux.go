@@ -22,9 +22,14 @@ import (
 	"net"
 	"time"
 
+	"golang.org/x/time/rate"
+
 	"github.com/dragonflyoss/Dragonfly2/client/config"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
-	"golang.org/x/time/rate"
+)
+
+var (
+	peerHostConfigPath = "/etc/dragonfly/peerhost.yml"
 )
 
 var flagDaemonOpt = config.PeerHostOption{
@@ -38,7 +43,8 @@ var flagDaemonOpt = config.PeerHostOption{
 	KeepStorage: false,
 	Verbose:     false,
 	Host: config.HostOption{
-		AdvertiseIP:    net.IPv4zero,
+		ListenIP:       "0.0.0.0",
+		AdvertiseIP:    dfnet.HostIp,
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",
@@ -49,11 +55,17 @@ var flagDaemonOpt = config.PeerHostOption{
 			Limit: rate.Limit(104857600),
 		},
 		DownloadGRPC: config.ListenOption{
+			Security: config.SecurityOption{
+				Insecure: true,
+			},
 			UnixListen: &config.UnixListenOption{
 				Socket: "/var/run/dfdamon.sock",
 			},
 		},
 		PeerGRPC: config.ListenOption{
+			Security: config.SecurityOption{
+				Insecure: true,
+			},
 			TCPListen: &config.TCPListenOption{
 				PortRange: config.TCPListenPortRange{
 					Start: 65000,
@@ -67,6 +79,9 @@ var flagDaemonOpt = config.PeerHostOption{
 			Limit: rate.Limit(104857600),
 		},
 		ListenOption: config.ListenOption{
+			Security: config.SecurityOption{
+				Insecure: true,
+			},
 			TCPListen: &config.TCPListenOption{
 				PortRange: config.TCPListenPortRange{
 					Start: 65002,
@@ -77,7 +92,11 @@ var flagDaemonOpt = config.PeerHostOption{
 	},
 	Proxy: &config.ProxyOption{
 		ListenOption: config.ListenOption{
+			Security: config.SecurityOption{
+				Insecure: true,
+			},
 			TCPListen: &config.TCPListenOption{
+				Listen: net.IPv4zero.String(),
 				PortRange: config.TCPListenPortRange{
 					Start: 65001,
 					End:   65001,
@@ -87,8 +106,10 @@ var flagDaemonOpt = config.PeerHostOption{
 	},
 	Storage: config.StorageOption{
 		Option: storage.Option{
-			TaskExpireTime: 3 * time.Minute,
+			TaskExpireTime: clientutil.Duration{
+				Duration: 3 * time.Minute,
+			},
 		},
-		StoreStrategy: storage.StoreStrategy(string(storage.SimpleLocalTaskStoreStrategy)),
+		StoreStrategy: storage.SimpleLocalTaskStoreStrategy,
 	},
 }

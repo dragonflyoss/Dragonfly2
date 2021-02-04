@@ -27,13 +27,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
-	"github.com/docker/go-units"
 	"github.com/pkg/errors"
-	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
 
+	"github.com/dragonflyoss/Dragonfly2/client/clientutil"
 	"github.com/dragonflyoss/Dragonfly2/client/daemon/storage"
 	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
 )
@@ -42,9 +40,8 @@ type PeerHostOption struct {
 	// AliveTime indicates alive duration for which daemon keeps no accessing by any uploading and download requests,
 	// after this period daemon will automatically exit
 	// when AliveTime == 0, will run infinitely
-	// TODO keepalive detect
-	AliveTime  Duration `json:"alive_time" yaml:"alive_time"`
-	GCInterval Duration `json:"gc_interval" yaml:"gc_interval"`
+	AliveTime  clientutil.Duration `json:"alive_time" yaml:"alive_time"`
+	GCInterval clientutil.Duration `json:"gc_interval" yaml:"gc_interval"`
 
 	// Pid file location
 	PidFile string `json:"pid_file" yaml:"pid_file"`
@@ -72,14 +69,16 @@ type HostOption struct {
 	IDC string `json:"idc" yaml:"idc"`
 	// Peerhost net topology for scheduler
 	NetTopology string `json:"net_topology" yaml:"net_topology"`
+	// The listen ip for all tcp services of daemon
+	ListenIP string `json:"listen_ip" yaml:"listen_ip"`
 	// The ip report to scheduler, normal same with listen ip
 	AdvertiseIP string `json:"advertise_ip" yaml:"advertise_ip"`
 }
 
 type DownloadOption struct {
-	RateLimit    RateLimit    `json:"rate_limit" yaml:"rate_limit"`
-	DownloadGRPC ListenOption `json:"download_grpc" yaml:"download_grpc"`
-	PeerGRPC     ListenOption `json:"peer_grpc" yaml:"peer_grpc"`
+	RateLimit    clientutil.RateLimit `json:"rate_limit" yaml:"rate_limit"`
+	DownloadGRPC ListenOption         `json:"download_grpc" yaml:"download_grpc"`
+	PeerGRPC     ListenOption         `json:"peer_grpc" yaml:"peer_grpc"`
 }
 
 type ProxyOption struct {
@@ -91,7 +90,7 @@ type ProxyOption struct {
 
 type UploadOption struct {
 	ListenOption `yaml:",inline"`
-	RateLimit    RateLimit `json:"rate_limit" yaml:"rate_limit"`
+	RateLimit    clientutil.RateLimit `json:"rate_limit" yaml:"rate_limit"`
 }
 
 type ListenOption struct {
@@ -231,102 +230,6 @@ type SecurityOption struct {
 type StorageOption struct {
 	storage.Option `yaml:",inline"`
 	StoreStrategy  storage.StoreStrategy `json:"strategy" yaml:"strategy"`
-}
-
-// RateLimit is a wrapper for rate.Limit, support json and yaml unmarshal function
-// yaml example 1:
-//   rate_limit: 2097152 # 2MiB
-// yaml example 2:
-//   rate_limit: 2MiB
-type RateLimit struct {
-	rate.Limit
-}
-
-func (r *RateLimit) UnmarshalJSON(b []byte) error {
-	return r.unmarshal(json.Unmarshal, b)
-}
-
-func (r *RateLimit) UnmarshalYAML(node *yaml.Node) error {
-	return r.unmarshal(yaml.Unmarshal, []byte(node.Value))
-}
-
-func (r *RateLimit) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
-	var v interface{}
-	if err := unmarshal(b, &v); err != nil {
-		return err
-	}
-	switch value := v.(type) {
-	case float64:
-		r.Limit = rate.Limit(value)
-		return nil
-	case string:
-		limit, err := units.RAMInBytes(value)
-		if err != nil {
-			return errors.WithMessage(err, "invalid port")
-		}
-		r.Limit = rate.Limit(limit)
-		return nil
-	default:
-		return errors.New("invalid port")
-	}
-}
-
-type Duration struct {
-	time.Duration
-}
-
-func (d *Duration) UnmarshalJSON(b []byte) error {
-	var v interface{}
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	return d.unmarshal(v)
-}
-
-func (d *Duration) UnmarshalYAML(node *yaml.Node) error {
-	var v interface{}
-	switch node.Kind {
-	case yaml.ScalarNode:
-		switch node.Tag {
-		case "!!int":
-			var i int
-			if err := node.Decode(&i); err != nil {
-				return err
-			}
-			v = i
-		case "!!str":
-			var i string
-			if err := node.Decode(&i); err != nil {
-				return err
-			}
-			v = i
-		default:
-			return errors.New("invalid duration")
-		}
-	default:
-		return errors.New("invalid duration")
-	}
-	return d.unmarshal(v)
-}
-
-func (d *Duration) unmarshal(v interface{}) error {
-	switch value := v.(type) {
-	case float64:
-		d.Duration = time.Duration(value)
-		return nil
-	case int:
-		d.Duration = time.Duration(value)
-		return nil
-	case string:
-		var err error
-		d.Duration, err = time.ParseDuration(value)
-		if err != nil {
-			return err
-		}
-		return nil
-	default:
-		return errors.New("invalid duration")
-	}
 }
 
 type FileString string
