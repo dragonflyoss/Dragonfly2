@@ -28,6 +28,7 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 
 	"github.com/dragonflyoss/Dragonfly/v2/client/config"
@@ -110,6 +111,7 @@ func newDirectHandler() *http.ServeMux {
 	s := http.DefaultServeMux
 	s.HandleFunc("/args", getArgs)
 	s.HandleFunc("/env", getEnv)
+	s.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
 	return s
 }
 
