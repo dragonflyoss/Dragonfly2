@@ -51,7 +51,7 @@ func Test_UnmarshalJSON(t *testing.T) {
 		"proxy1": "../daemon/test/testdata/config/proxy.json",
 		"proxy2": {
 			"registry_mirror": {
-				"remote": "https://index.docker.io"
+				"url": "https://index.docker.io"
 			}
 		},
 		"schedulers1": [ "0.0.0.0", "0.0.0.1" ],
@@ -99,7 +99,7 @@ type: tcp
 proxy1: ../daemon/test/testdata/config/proxy.yml
 proxy2: 
   registry_mirror:
-    remote: https://index.docker.io
+    url: https://index.docker.io
 schedulers1:
 - 0.0.0.0
 - 0.0.0.1

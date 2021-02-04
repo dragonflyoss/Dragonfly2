@@ -1,6 +1,8 @@
 package jsonutils
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 func MarshalMap(m map[string]interface{}) (map[string][]byte, error) {
 	mb := make(map[string][]byte)

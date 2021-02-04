@@ -1,6 +1,6 @@
 registry_mirror:
   # url for the registry mirror
-  remote: https://index.docker.io
+  url: https://index.docker.io
   # whether to ignore https certificate errors
   insecure: false
   # optional certificates if the remote server uses self-signed certificates

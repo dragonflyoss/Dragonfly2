@@ -195,11 +195,11 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 
 	// RegistryMirror
 	if mb["registry_mirror"] != nil {
-		var r RegistryMirror
+		var r *RegistryMirror
 		if err := unmarshal(mb["registry_mirror"], &r); err != nil {
 			return err
 		}
-		p.RegistryMirror = &r
+		p.RegistryMirror = r
 	}
 
 	// Proxies
@@ -213,11 +213,11 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 
 	// HijackHTTPS
 	if mb["hijack_https"] != nil {
-		var h HijackConfig
+		var h *HijackConfig
 		if err := unmarshal(mb["hijack_https"], &h); err != nil {
 			return err
 		}
-		p.HijackHTTPS = &h
+		p.HijackHTTPS = h
 	}
 
 	return nil
