@@ -23,20 +23,18 @@ download:
   download_grpc:
     security:
       insecure: true
-      ca_cert: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.crt
-      cert: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt
-      key: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.key
-      # TODO
+      ca_cert: ca_cert
+      cert: cert
+      key: key
       tls_config: null
     unix_listen:
       socket: /tmp/dfdamon.sock
   peer_grpc:
     security:
       insecure: true
-      ca_cert: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.crt
-      cert: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt
-      key: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.key
-      # TODO
+      ca_cert: ca_cert
+      cert: cert
+      key: key
       tls_config: null
     tcp_listen:
       listen: 0.0.0.0
@@ -46,9 +44,9 @@ upload:
   rate_limit: 100Mi
   security:
     insecure: true
-    ca_cert: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.crt
-    cert: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt
-    key: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.key
+    ca_cert: ca_cert
+    cert: cert
+    key: key
   tcp_listen:
     listen: 0.0.0.0
     port: 65002
@@ -61,10 +59,9 @@ storage:
 proxy:
   security:
     insecure: true
-    ca_cert: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.crt
-    cert: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt
-    key: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.key
-    # TODO
+    ca_cert: ca_cert
+    cert: cert
+    key: key
     tls_config: null
   tcp_listen:
     listen: 0.0.0.0
@@ -72,10 +69,7 @@ proxy:
   registry_mirror:
     url: https://index.docker.io
     insecure: false
-    certs:
-      [
-        /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt,
-      ]
+    certs: [../daemon/test/testdata/certs/mca.crt]
     direct: false
   proxies:
     - regx: blobs/sha256.*
@@ -83,12 +77,9 @@ proxy:
       direct: false
       redirect: d7s.io
   hijack_https:
-    cert: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.crt
-    key: /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.key
+    cert: cert
+    key: key
     hosts:
       - regx: mirror.aliyuncs.com:443
         insecure: false
-        certs:
-          [
-            /Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt,
-          ]
+        certs: [../daemon/test/testdata/certs/mca.crt]
