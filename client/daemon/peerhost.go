@@ -78,6 +78,8 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 		return nil, err
 	}
 
+	// Storage.Option.DataPath is same with PeerHost DataDir
+	opt.Storage.Option.DataPath = opt.DataDir
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage.Option, func(request storage.CommonTaskRequest) {
 		sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
 			TaskId: request.TaskID,

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var _ = FDescribe("Multi Client Multi Batch Download Test", func() {
+var _ = Describe("Multi Client Multi Batch Download Test", func() {
 	tl := common.NewE2ELogger()
 
 	var (

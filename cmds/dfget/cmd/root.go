@@ -122,7 +122,17 @@ func runDfget() error {
 	return nil
 }
 
+func convertDeprecatedFlags() {
+	for _, node := range deprecatedFlags.nodes.Nodes {
+		flagDaemonOpt.Schedulers = append(flagDaemonOpt.Schedulers, dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: node,
+		})
+	}
+}
+
 func checkParameters() error {
+	convertDeprecatedFlags()
 	if len(os.Args) < 2 {
 		return dferrors.New(-1, "Please use the command 'help' to show the help information.")
 	}
