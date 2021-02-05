@@ -312,10 +312,10 @@ type UnixListenOption struct {
 }
 
 type SecurityOption struct {
-	Insecure  bool        `json:"insecure"`
-	CACert    string      `json:"ca_cert"`
-	Cert      string      `json:"cert"`
-	Key       string      `json:"key"`
+	Insecure  bool        `json:"insecure" yaml:"insecure"`
+	CACert    string      `json:"ca_cert" yaml:"ca_cert"`
+	Cert      string      `json:"cert" yaml:"cert"`
+	Key       string      `json:"key" yaml:"key"`
 	TLSConfig *tls.Config `json:"tls_config" yaml:"tls_config"`
 }
 

@@ -26,9 +26,9 @@
     "download_grpc": {
       "security": {
         "insecure": true,
-        "ca_cert": "",
-        "cert": "",
-        "key": "",
+        "ca_cert": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.crt",
+        "cert": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt",
+        "key": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.key",
         "tls_config": null
       },
       "unix_listen": {
@@ -38,9 +38,9 @@
     "peer_grpc": {
       "security": {
         "insecure": true,
-        "cacert": "",
-        "cert": "",
-        "key": "",
+        "ca_cert": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.crt",
+        "cert": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt",
+        "key": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.key",
         "tls_config": null
       },
       "tcp_listen": {
@@ -53,9 +53,9 @@
     "rate_limit": "100Mi",
     "security": {
       "insecure": true,
-      "cacert": "",
-      "cert": "",
-      "key": ""
+      "ca_cert": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.crt",
+      "cert": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt",
+      "key": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.key"
     },
     "tcp_listen": {
       "listen": "0.0.0.0",
@@ -63,41 +63,48 @@
     }
   },
   "storage": {
+    "data_path": "/tmp/storage/data",
     "task_expire_time": "3m0s",
     "strategy": "io.d7y.storage.v2.simple"
   },
   "proxy": {
+    "security": {
+      "insecure": true,
+      "ca_cert": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.crt",
+      "cert": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt",
+      "key": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.key",
+      "tls_config": null
+    },
+    "tcp_listen": {
+      "listen": "0.0.0.0",
+      "port": 65001
+    },
     "registry_mirror": {
       "url": "https://index.docker.io",
       "insecure": false,
-      "certs": [],
+      "certs": [
+        "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt"
+      ],
       "direct": false
     },
     "proxies": [
       {
-        "regx": "blobs/sha256.*"
-      },
-      {
-        "regx": "some-registry/",
-        "use_https": true
-      },
-      {
-        "regx": "no-proxy-reg",
-        "direct": true
-      },
-      {
-        "regx": "some-registry",
-        "redirect": "another-registry"
+        "regx": "blobs/sha256.*",
+        "use_https": false,
+        "direct": false,
+        "redirect": "d7s.io"
       }
     ],
     "hijack_https": {
-      "cert": "",
-      "key": "",
+      "cert": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.crt",
+      "key": "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/ca.key",
       "hosts": [
         {
           "regx": "mirror.aliyuncs.com:443",
           "insecure": false,
-          "certs": []
+          "certs": [
+            "/Users/qiwenbo/Work/github.com/dragonflyoss/Dragonfly2/client/daemon/test/testdata/certs/mca.crt"
+          ]
         }
       ]
     }
