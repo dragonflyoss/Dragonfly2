@@ -67,7 +67,7 @@ func (p *PeerHostOption) Load(path string) error {
 		return fmt.Errorf("unable to load peer host configuration from %q [%v]", path, err)
 	}
 
-	switch filepath.Ext(path)[1:] {
+	switch p.fileType(path) {
 	case "json":
 		err := json.Unmarshal(data, p)
 		if err != nil {
@@ -82,6 +82,18 @@ func (p *PeerHostOption) Load(path string) error {
 		return nil
 	}
 	return fmt.Errorf("extension of %s is not in 'yml/yaml/json'", path)
+}
+
+func (p *PeerHostOption) fileType(path string) string {
+	ext := filepath.Ext(path)
+	switch v := strings.ToLower(ext); v {
+	case ".json":
+		return "json"
+	case ".yaml", ".yml":
+		return "yaml"
+	default:
+		return v
+	}
 }
 
 type HostOption struct {
