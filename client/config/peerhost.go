@@ -67,14 +67,14 @@ func (p *PeerHostOption) Load(path string) error {
 		return fmt.Errorf("unable to load peer host configuration from %q [%v]", path, err)
 	}
 
-	switch filepath.Ext(path)[1:] {
-	case "json":
+	switch filepath.Ext(path) {
+	case ".json":
 		err := json.Unmarshal(data, p)
 		if err != nil {
 			return err
 		}
 		return nil
-	case "yml", "yaml":
+	case ".yml", ".yaml":
 		err := yaml.Unmarshal(data, p)
 		if err != nil {
 			return err
@@ -312,10 +312,10 @@ type UnixListenOption struct {
 }
 
 type SecurityOption struct {
-	Insecure  bool        `json:"insecure"`
-	CACert    string      `json:"ca_cert"`
-	Cert      string      `json:"cert"`
-	Key       string      `json:"key"`
+	Insecure  bool        `json:"insecure" yaml:"insecure"`
+	CACert    string      `json:"ca_cert" yaml:"ca_cert"`
+	Cert      string      `json:"cert" yaml:"cert"`
+	Key       string      `json:"key" yaml:"key"`
 	TLSConfig *tls.Config `json:"tls_config" yaml:"tls_config"`
 }
 

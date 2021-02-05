@@ -17,14 +17,18 @@
 package config
 
 import (
+	"crypto/x509"
 	"encoding/json"
-	"fmt"
+	"io/ioutil"
+	"net/url"
 	"testing"
 
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	testifyassert "github.com/stretchr/testify/assert"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
@@ -137,14 +141,164 @@ schedulers2:
 }
 
 func TestPeerHostOption_Load(t *testing.T) {
-	p := &PeerHostOption{}
+	assert := testifyassert.New(t)
 
-	if err := p.Load("../../docs/config/dfget-daemon.yaml"); err != nil {
-		t.Fatal(err)
+	proxyExp, _ := NewRegexp("blobs/sha256.*")
+	hijackExp, _ := NewRegexp("mirror.aliyuncs.com:443")
+
+	certPool := x509.NewCertPool()
+	ca, _ := ioutil.ReadFile("../daemon/test/testdata/certs/mca.crt")
+	certPool.AppendCertsFromPEM(ca)
+
+	peerHostOption := &PeerHostOption{
+		AliveTime: clientutil.Duration{
+			Duration: 0,
+		},
+		GCInterval: clientutil.Duration{
+			Duration: 60000000000,
+		},
+		PidFile:     "/tmp/dfdaemon.pid",
+		LockFile:    "/tmp/dfdaemon.lock",
+		DataDir:     "/tmp/dragonfly/dfdaemon/",
+		WorkHome:    "/tmp/dragonfly/dfdaemon/",
+		KeepStorage: false,
+		Verbose:     true,
+		Schedulers: []dfnet.NetAddr{
+			{
+				Type: dfnet.TCP,
+				Addr: "127.0.0.1:8002",
+			},
+		},
+		Host: HostOption{
+			SecurityDomain: "d7y.io",
+			Location:       "0.0.0.0",
+			IDC:            "d7y",
+			NetTopology:    "d7y",
+			ListenIP:       "0.0.0.0",
+			AdvertiseIP:    "0.0.0.0",
+		},
+		Download: DownloadOption{
+			RateLimit: clientutil.RateLimit{
+				Limit: 209715200,
+			},
+			DownloadGRPC: ListenOption{
+				Security: SecurityOption{
+					Insecure: true,
+					CACert:   "ca_cert",
+					Cert:     "cert",
+					Key:      "key",
+				},
+				UnixListen: &UnixListenOption{
+					Socket: "/tmp/dfdamon.sock",
+				},
+			},
+			PeerGRPC: ListenOption{
+				Security: SecurityOption{
+					Insecure: true,
+					CACert:   "ca_cert",
+					Cert:     "cert",
+					Key:      "key",
+				},
+				TCPListen: &TCPListenOption{
+					Listen: "0.0.0.0",
+					PortRange: TCPListenPortRange{
+						Start: 65000,
+						End:   0,
+					},
+				},
+			},
+		},
+		Upload: UploadOption{
+			RateLimit: clientutil.RateLimit{
+				Limit: 104857600,
+			},
+			ListenOption: ListenOption{
+				Security: SecurityOption{
+					Insecure: true,
+					CACert:   "ca_cert",
+					Cert:     "cert",
+					Key:      "key",
+				},
+				TCPListen: &TCPListenOption{
+					Listen: "0.0.0.0",
+					PortRange: TCPListenPortRange{
+						Start: 65002,
+						End:   0,
+					},
+				},
+			},
+		},
+		Storage: StorageOption{
+			Option: storage.Option{
+				DataPath: "/tmp/storage/data",
+				TaskExpireTime: clientutil.Duration{
+					Duration: 180000000000,
+				},
+			},
+			StoreStrategy: storage.StoreStrategy("io.d7y.storage.v2.simple"),
+		},
+		Proxy: &ProxyOption{
+			ListenOption: ListenOption{
+				Security: SecurityOption{
+					Insecure: true,
+					CACert:   "ca_cert",
+					Cert:     "cert",
+					Key:      "key",
+				},
+				TCPListen: &TCPListenOption{
+					Listen: "0.0.0.0",
+					PortRange: TCPListenPortRange{
+						Start: 65001,
+						End:   0,
+					},
+				},
+			},
+			RegistryMirror: &RegistryMirror{
+				Remote: &URL{
+					&url.URL{
+						Host:   "index.docker.io",
+						Scheme: "https",
+					},
+				},
+				Certs: &CertPool{
+					CertPool: certPool,
+				},
+				Insecure: false,
+				Direct:   false,
+			},
+			Proxies: []*Proxy{
+				{
+					Regx:     proxyExp,
+					UseHTTPS: false,
+					Direct:   false,
+					Redirect: "d7s.io",
+				},
+			},
+			HijackHTTPS: &HijackConfig{
+				Cert: "cert",
+				Key:  "key",
+				Hosts: []*HijackHost{
+					{
+						Regx:     hijackExp,
+						Insecure: false,
+						Certs: &CertPool{
+							CertPool: certPool,
+						},
+					},
+				},
+			},
+		},
 	}
 
-	t.Logf("%#v\n", p)
+	peerHostOptionYAML := &PeerHostOption{}
+	if err := peerHostOptionYAML.Load("../daemon/test/testdata/config/daemon.yml"); err != nil {
+		t.Fatal(err)
+	}
+	assert.EqualValues(peerHostOption, peerHostOptionYAML)
 
-	s, _ := json.MarshalIndent(p, "", "\t")
-	fmt.Printf("%s", s)
+	peerHostOptionJSON := &PeerHostOption{}
+	if err := peerHostOptionJSON.Load("../daemon/test/testdata/config/daemon.json"); err != nil {
+		t.Fatal(err)
+	}
+	assert.EqualValues(peerHostOption, peerHostOptionJSON)
 }
