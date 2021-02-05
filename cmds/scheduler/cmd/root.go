@@ -1,4 +1,4 @@
-package app
+package cmd
 
 import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
