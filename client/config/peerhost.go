@@ -61,6 +61,29 @@ type PeerHostOption struct {
 	Storage  StorageOption  `json:"storage" yaml:"storage"`
 }
 
+func (p *PeerHostOption) Load(path string) error {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("unable to load peer host configuration from %q [%v]", path, err)
+	}
+
+	switch filepath.Ext(path)[1:] {
+	case "json":
+		err := json.Unmarshal(data, p)
+		if err != nil {
+			return err
+		}
+		return nil
+	case "yml", "yaml":
+		err := yaml.Unmarshal(data, p)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("extension of %s is not in 'yml/yaml/json'", path)
+}
+
 type HostOption struct {
 	SecurityDomain string `json:"security_domain" yaml:"security_domain"`
 	// Peerhost location for scheduler
@@ -88,6 +111,98 @@ type ProxyOption struct {
 	HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
 }
 
+func (p *ProxyOption) UnmarshalJSON(b []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+
+	switch value := v.(type) {
+	case string:
+		file, err := ioutil.ReadFile(value)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(file, p); err != nil {
+			return err
+		}
+		return nil
+	case map[string]interface{}:
+		if err := p.unmarshal(json.Unmarshal, b); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.New("invalid proxy")
+	}
+}
+
+func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
+	switch node.Kind {
+	case yaml.ScalarNode:
+		var path string
+		if err := node.Decode(&path); err != nil {
+			return err
+		}
+
+		file, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if err := yaml.Unmarshal(file, p); err != nil {
+			return err
+		}
+		return nil
+	case yaml.MappingNode:
+		var m = make(map[string]interface{})
+		for i := 0; i < len(node.Content); i += 2 {
+			var (
+				key   string
+				value interface{}
+			)
+			if err := node.Content[i].Decode(&key); err != nil {
+				return err
+			}
+			if err := node.Content[i+1].Decode(&value); err != nil {
+				return err
+			}
+			m[key] = value
+		}
+
+		b, err := yaml.Marshal(m)
+		if err != nil {
+			return err
+		}
+
+		if err := p.unmarshal(yaml.Unmarshal, b); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.New("invalid proxy")
+	}
+}
+
+func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
+	pt := struct {
+		ListenOption   `yaml:",inline"`
+		RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
+		Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
+		HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
+	}{}
+
+	if err := unmarshal(b, &pt); err != nil {
+		return err
+	}
+
+	p.ListenOption = pt.ListenOption
+	p.RegistryMirror = pt.RegistryMirror
+	p.Proxies = pt.Proxies
+	p.HijackHTTPS = pt.HijackHTTPS
+
+	return nil
+}
+
 type UploadOption struct {
 	ListenOption `yaml:",inline"`
 	RateLimit    clientutil.RateLimit `json:"rate_limit" yaml:"rate_limit"`
@@ -97,29 +212,6 @@ type ListenOption struct {
 	Security   SecurityOption    `json:"security" yaml:"security"`
 	TCPListen  *TCPListenOption  `json:"tcp_listen,omitempty" yaml:"tcp_listen,omitempty"`
 	UnixListen *UnixListenOption `json:"unix_listen,omitempty" yaml:"unix_listen,omitempty"`
-}
-
-func (p *PeerHostOption) Load(path string) error {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("unable to load peer host configuration from %q [%v]", path, err)
-	}
-
-	switch filepath.Ext(path)[1:] {
-	case "json":
-		err := json.Unmarshal(data, &p)
-		if err != nil {
-			return err
-		}
-		return nil
-	case "yml", "yaml":
-		err := yaml.Unmarshal(data, &p)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	return fmt.Errorf("extension of %s is not in 'yml/yaml/json'", path)
 }
 
 type TCPListenOption struct {
@@ -498,7 +590,7 @@ type HijackConfig struct {
 
 // HijackHost is a hijack rule for the hosts that matches Regx.
 type HijackHost struct {
-	Regx     *regexp.Regexp `yaml:"regx" json:"regx"`
-	Insecure bool           `yaml:"insecure" json:"insecure"`
-	Certs    *CertPool      `yaml:"certs" json:"certs"`
+	Regx     *Regexp   `yaml:"regx" json:"regx"`
+	Insecure bool      `yaml:"insecure" json:"insecure"`
+	Certs    *CertPool `yaml:"certs" json:"certs"`
 }

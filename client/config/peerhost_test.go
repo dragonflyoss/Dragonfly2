@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -26,7 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
-func Test_UnmarshalJSON(t *testing.T) {
+func TestUnmarshalJSON(t *testing.T) {
 	bytes := []byte(`{
 		"tls": {
 			"key": "../daemon/test/testdata/certs/sca.key",
@@ -47,25 +48,44 @@ func Test_UnmarshalJSON(t *testing.T) {
 		},
 		"timeout": "3m",
 		"limit": "2Mib",
-		"type": "tcp"
+		"type": "tcp",
+		"proxy1": "../daemon/test/testdata/config/proxy.json",
+		"proxy2": {
+			"registry_mirror": {
+				"url": "https://index.docker.io"
+			}
+		},
+		"schedulers1": [ "0.0.0.0", "0.0.0.1" ],
+		"schedulers2": [{
+			"type": "tcp",
+			"addr": "0.0.0.0"
+		}]
 }`)
 
 	var s = struct {
-		TLSConfig *TLSConfig         `json:"tls"`
-		URL       *URL               `json:"url"`
-		Certs     *CertPool          `json:"certs"`
-		Regx      *Regexp            `json:"regx"`
-		Port1     TCPListenPortRange `json:"port1"`
-		Port2     TCPListenPortRange `json:"port2"`
-		Timeout   clientutil.Duration           `json:"timeout"`
-		Limit     clientutil.RateLimit          `json:"limit"`
-		Type      dfnet.NetworkType  `json:"type"`
+		TLSConfig   *TLSConfig           `json:"tls"`
+		URL         *URL                 `json:"url"`
+		Certs       *CertPool            `json:"certs"`
+		Regx        *Regexp              `json:"regx"`
+		Port1       TCPListenPortRange   `json:"port1"`
+		Port2       TCPListenPortRange   `json:"port2"`
+		Timeout     clientutil.Duration  `json:"timeout"`
+		Limit       clientutil.RateLimit `json:"limit"`
+		Type        dfnet.NetworkType    `json:"type"`
+		Proxy1      ProxyOption          `json:"proxy1"`
+		Proxy2      ProxyOption          `json:"proxy2"`
+		Schedulers1 []dfnet.NetAddr      `json:"schedulers1" yaml:"schedulers1"`
+		Schedulers2 []dfnet.NetAddr      `json:"schedulers2" yaml:"schedulers2"`
 	}{}
-	json.Unmarshal(bytes, &s)
-	t.Logf("%#v", s)
+
+	if err := json.Unmarshal(bytes, &s); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("%#v\n", s)
 }
 
-func Test_UnmarshalYAML(t *testing.T) {
+func TestUnmarshalYAML(t *testing.T) {
 	bytes := []byte(`
 tls:
   key: ../daemon/test/testdata/certs/sca.key
@@ -81,22 +101,50 @@ port2:
 timeout: 3m
 limit: 2Mib
 type: tcp
+proxy1: ../daemon/test/testdata/config/proxy.yml
+proxy2: 
+  registry_mirror:
+    url: https://index.docker.io
+schedulers1:
+- 0.0.0.0
+- 0.0.0.1
+schedulers2:
+- type: tcp
+  addr: 0.0.0.0
 `)
 
 	var s = struct {
-		TLSConfig *TLSConfig         `yaml:"tls"`
-		URL       *URL               `yaml:"url"`
-		Certs     *CertPool          `yaml:"certs"`
-		Regx      *Regexp            `yaml:"regx"`
-		Port1     TCPListenPortRange `yaml:"port1"`
-		Port2     TCPListenPortRange `yaml:"port2"`
-		Timeout   clientutil.Duration           `yaml:"timeout"`
-		Limit     clientutil.RateLimit          `yaml:"limit"`
-		Type      dfnet.NetworkType  `yaml:"type"`
+		TLSConfig   *TLSConfig           `yaml:"tls"`
+		URL         *URL                 `yaml:"url"`
+		Certs       *CertPool            `yaml:"certs"`
+		Regx        *Regexp              `yaml:"regx"`
+		Port1       TCPListenPortRange   `yaml:"port1"`
+		Port2       TCPListenPortRange   `yaml:"port2"`
+		Timeout     clientutil.Duration  `yaml:"timeout"`
+		Limit       clientutil.RateLimit `yaml:"limit"`
+		Type        dfnet.NetworkType    `yaml:"type"`
+		Proxy1      ProxyOption          `yaml:"proxy1"`
+		Proxy2      ProxyOption          `yaml:"proxy2"`
+		Schedulers1 []dfnet.NetAddr      `json:"schedulers1" yaml:"schedulers1"`
+		Schedulers2 []dfnet.NetAddr      `json:"schedulers2" yaml:"schedulers2"`
 	}{}
-	err := yaml.Unmarshal(bytes, &s)
-	if err != nil {
+
+	if err := yaml.Unmarshal(bytes, &s); err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("%#v", s)
+
+	t.Logf("%#v\n", s)
+}
+
+func TestPeerHostOption_Load(t *testing.T) {
+	p := &PeerHostOption{}
+
+	if err := p.Load("../../docs/config/dfget-daemon.yaml"); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("%#v\n", p)
+
+	s, _ := json.MarshalIndent(p, "", "\t")
+	fmt.Printf("%s", s)
 }

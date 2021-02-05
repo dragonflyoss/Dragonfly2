@@ -92,6 +92,83 @@ type NetAddr struct {
 	Addr string      `json:"addr" yaml:"addr"` // see https://github.com/grpc/grpc/blob/master/doc/naming.md
 }
 
+func (n *NetAddr) UnmarshalJSON(b []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+
+	switch value := v.(type) {
+	case string:
+		n.Type = TCP
+		n.Addr = value
+		return nil
+	case map[string]interface{}:
+		if err := n.unmarshal(json.Unmarshal, b); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.New("invalid proxy")
+	}
+}
+
+func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
+	switch node.Kind {
+	case yaml.ScalarNode:
+		var addr string
+		if err := node.Decode(&addr); err != nil {
+			return err
+		}
+		n.Type = TCP
+		n.Addr = addr
+		return nil
+	case yaml.MappingNode:
+		var m = make(map[string]interface{})
+		for i := 0; i < len(node.Content); i += 2 {
+			var (
+				key   string
+				value interface{}
+			)
+			if err := node.Content[i].Decode(&key); err != nil {
+				return err
+			}
+			if err := node.Content[i+1].Decode(&value); err != nil {
+				return err
+			}
+			m[key] = value
+		}
+
+		b, err := yaml.Marshal(m)
+		if err != nil {
+			return err
+		}
+
+		if err := n.unmarshal(yaml.Unmarshal, b); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.New("invalid proxy")
+	}
+}
+
+func (n *NetAddr) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
+	nt := struct {
+		Type NetworkType `json:"type" yaml:"type"`
+		Addr string      `json:"addr" yaml:"addr"` // see https://github.com/grpc/grpc/blob/master/doc/naming.md
+	}{}
+
+	if err := unmarshal(b, &nt); err != nil {
+		return err
+	}
+
+	n.Type = nt.Type
+	n.Addr = nt.Addr
+
+	return nil
+}
+
 func (na *NetAddr) GetEndpoint() string {
 	switch na.Type {
 	case UNIX:
