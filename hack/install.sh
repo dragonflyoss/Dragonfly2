@@ -6,6 +6,7 @@ set -o pipefail
 
 BIN_DIR="../bin"
 CDN_BINARY_NAME=cdn
+DFGET_BINARY_NAME=dfget
 
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}" || return
@@ -14,18 +15,21 @@ cd "${curDir}" || return
 
 install() {
     case "${1-}" in
-        cdn)
-            install-cdn
+    cdn)
+        install-cdn
+        ;;
+    dfget)
+        install-dfget
         ;;
     esac
 }
 
-install-cdn(){
+install-cdn() {
     local installCdnDir="${INSTALL_HOME}/${INSTALL_CDN_PATH}"
     echo "install: ${installCdnDir}"
     createDir "${installCdnDir}"
 
-    cp "${BIN_DIR}/${GOOS}_${GOARCH}/${CDN_BINARY_NAME}"  "${installCdnDir}"
+    cp "${BIN_DIR}/${GOOS}_${GOARCH}/${CDN_BINARY_NAME}" "${installCdnDir}"
 
     createLink "${installCdnDir}/${CDN_BINARY_NAME}" /usr/local/bin/cdn
 }
@@ -33,6 +37,21 @@ install-cdn(){
 uninstall-cdn() {
     echo "unlink /usr/local/bin/cdn"
     test -e /usr/local/bin/cdn && unlink /usr/local/bin/cdn
+}
+
+install-dfget() {
+    local bin="${INSTALL_HOME}/${INSTALL_BIN_PATH}"
+    echo "install: ${bin}"
+    mkdir -p "${bin}"
+
+    cp "${BIN_DIR}/${GOOS}_${GOARCH}/${DFGET_BINARY_NAME}" "${bin}"
+
+    createLink "${bin}/${DFGET_BINARY_NAME}" /usr/local/bin/dfget
+}
+
+uninstall-dfget() {
+    echo "unlink /usr/local/bin/dfget"
+    test -e /usr/local/bin/dfget && unlink /usr/local/bin/dfget
 }
 
 createLink() {
@@ -51,14 +70,14 @@ createDir() {
 
 main() {
     case "${1-}" in
-        install)
-            install "${2-}"
+    install)
+        install "${2-}"
         ;;
-        uninstall)
-            uninstall "${2-}"
+    uninstall)
+        uninstall "${2-}"
         ;;
-        *)
-            echo "You must specify the subcommand 'install' or 'uninstall'."
+    *)
+        echo "You must specify the subcommand 'install' or 'uninstall'."
         ;;
     esac
 }
