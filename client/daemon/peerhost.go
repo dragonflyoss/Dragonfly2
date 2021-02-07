@@ -122,11 +122,9 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 	}
 
 	var proxyManager proxy.Manager
-	if opt.Proxy != nil {
-		proxyManager, err = proxy.NewProxyManager(host, opt.Proxy.RegistryMirror, opt.Proxy.Proxies, opt.Proxy.HijackHTTPS, peerTaskManager)
-		if err != nil {
-			return nil, err
-		}
+	proxyManager, err = proxy.NewProxyManager(host, peerTaskManager, opt.Proxy)
+	if err != nil {
+		return nil, err
 	}
 
 	uploadManager, err := upload.NewUploadManager(storageManager,
@@ -292,7 +290,7 @@ func (ph *peerHost) Serve() error {
 		return nil
 	})
 
-	if ph.Option.Proxy != nil {
+	if ph.ProxyManager.IsEnabled() {
 		// prepare proxy service listen
 		if ph.Option.Proxy.TCPListen == nil {
 			return errors.New("proxy tcp listen option is empty")
@@ -365,7 +363,10 @@ func (ph *peerHost) Stop() {
 		ph.GCManager.Stop()
 		ph.ServiceManager.Stop()
 		ph.UploadManager.Stop()
-		ph.ProxyManager.Stop()
+
+		if ph.ProxyManager.IsEnabled() {
+			ph.ProxyManager.Stop()
+		}
 
 		if !ph.Option.KeepStorage {
 			logger.Infof("keep storage disabled")

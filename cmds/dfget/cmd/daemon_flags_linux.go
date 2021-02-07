@@ -24,8 +24,10 @@ import (
 
 	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
 var (
@@ -83,10 +85,7 @@ var flagDaemonOpt = config.PeerHostOption{
 				Insecure: true,
 			},
 			TCPListen: &config.TCPListenOption{
-				PortRange: config.TCPListenPortRange{
-					Start: 65002,
-					End:   65002,
-				},
+				PortRange: config.TCPListenPortRange{},
 			},
 		},
 	},
@@ -96,11 +95,8 @@ var flagDaemonOpt = config.PeerHostOption{
 				Insecure: true,
 			},
 			TCPListen: &config.TCPListenOption{
-				Listen: net.IPv4zero.String(),
-				PortRange: config.TCPListenPortRange{
-					Start: 65001,
-					End:   65001,
-				},
+				Listen:    net.IPv4zero.String(),
+				PortRange: config.TCPListenPortRange{},
 			},
 		},
 	},
