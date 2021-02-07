@@ -272,6 +272,7 @@ func (ph *peerHost) Serve() error {
 	g := errgroup.Group{}
 	// serve download grpc service
 	g.Go(func() error {
+		defer downloadListener.Close()
 		logger.Infof("serve download grpc at unix://%s", ph.Option.Download.DownloadGRPC.UnixListen.Socket)
 		if err := ph.ServiceManager.ServeDownload(downloadListener); err != nil {
 			logger.Errorf("failed to serve for download grpc service: %v", err)
@@ -282,6 +283,7 @@ func (ph *peerHost) Serve() error {
 
 	// serve peer grpc service
 	g.Go(func() error {
+		defer peerListener.Close()
 		logger.Infof("serve peer grpc at %s://%s", peerListener.Addr().Network(), peerListener.Addr().String())
 		if err := ph.ServiceManager.ServePeer(peerListener); err != nil {
 			logger.Errorf("failed to serve for peer grpc service: %v", err)
@@ -302,6 +304,7 @@ func (ph *peerHost) Serve() error {
 		}
 		// serve proxy service
 		g.Go(func() error {
+			defer proxyListener.Close()
 			logger.Infof("serve proxy at tcp://%s:%d", ph.Option.Proxy.TCPListen.Listen, proxyPort)
 			if err = ph.ProxyManager.Serve(proxyListener); err != nil && err != http.ErrServerClosed {
 				logger.Errorf("failed to serve for proxy service: %v", err)
@@ -315,6 +318,7 @@ func (ph *peerHost) Serve() error {
 
 	// serve upload service
 	g.Go(func() error {
+		defer uploadListener.Close()
 		logger.Infof("serve upload service at %s://%s", uploadListener.Addr().Network(), uploadListener.Addr().String())
 		if err := ph.UploadManager.Serve(uploadListener); err != nil && err != http.ErrServerClosed {
 			logger.Errorf("failed to serve for upload service: %v", err)
@@ -350,20 +354,22 @@ func (ph *peerHost) Serve() error {
 		})
 	}
 
-	return g.Wait()
+	werr := g.Wait()
+	ph.Stop()
+	return werr
 }
 
 func (ph *peerHost) Stop() {
 	ph.once.Do(func() {
 		close(ph.done)
-	})
-	ph.GCManager.Stop()
-	ph.ServiceManager.Stop()
-	ph.UploadManager.Stop()
-	ph.ProxyManager.Stop()
+		ph.GCManager.Stop()
+		ph.ServiceManager.Stop()
+		ph.UploadManager.Stop()
+		ph.ProxyManager.Stop()
 
-	if !ph.Option.KeepStorage {
-		logger.Infof("keep storage disabled")
-		ph.StorageManager.Clean()
-	}
+		if !ph.Option.KeepStorage {
+			logger.Infof("keep storage disabled")
+			ph.StorageManager.Clean()
+		}
+	})
 }
