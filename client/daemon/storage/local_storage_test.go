@@ -33,9 +33,9 @@ import (
 
 	testifyassert "github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/client/clientutil"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -60,8 +60,10 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 		pieceSize = 512
 	)
 	sm, err := NewStorageManager(SimpleLocalTaskStoreStrategy, &Option{
-		DataPath:       test.DataDir,
-		TaskExpireTime: time.Minute,
+		DataPath: test.DataDir,
+		TaskExpireTime: clientutil.Duration{
+			Duration: time.Minute,
+		},
 	}, func(request CommonTaskRequest) {
 	})
 	var s = sm.(*storageManager)
@@ -223,8 +225,10 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 		pieceSize = 512
 	)
 	sm, err := NewStorageManager(AdvanceLocalTaskStoreStrategy, &Option{
-		DataPath:       test.DataDir,
-		TaskExpireTime: time.Minute,
+		DataPath: test.DataDir,
+		TaskExpireTime: clientutil.Duration{
+			Duration: time.Minute,
+		},
 	}, func(request CommonTaskRequest) {
 	})
 	var s = sm.(*storageManager)
