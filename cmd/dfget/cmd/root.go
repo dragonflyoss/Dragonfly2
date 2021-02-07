@@ -221,8 +221,8 @@ func spawnDaemon() error {
 
 	var args = []string{
 		"daemon",
-		"--grpc-port", fmt.Sprintf("%d", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start),
-		"--upload-port", fmt.Sprintf("%d", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start),
+		"--grpc-port", fmt.Sprintf("%d", flagDaemonOpt.Download.DownloadGRPC.TCPListen.PortRange.Start),
+		"--upload-port", fmt.Sprintf("%d", flagDaemonOpt.Upload.TCPListen.PortRange.Start),
 		"--home", flagDaemonOpt.WorkHome,
 		"--listen", flagDaemonOpt.Host.ListenIP,
 		"--expire-time", flagDaemonOpt.Storage.TaskExpireTime.String(),
