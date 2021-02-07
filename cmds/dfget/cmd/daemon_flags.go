@@ -46,8 +46,6 @@ func initDaemonFlags() {
 	flagSet.StringVar(&flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket, "grpc-unix-listen", flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket, "the local unix domain socket listen address for grpc with dfget")
 	flagSet.IntVar(&flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.Start, "grpc-port", flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.Start, "the listen address for grpc with other peers")
 	flagSet.IntVar(&flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.End, "grpc-port-end", flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.End, "the listen address for grpc with other peers")
-	flagSet.IntVar(&flagDaemonOpt.Proxy.ListenOption.TCPListen.PortRange.Start, "proxy-port", flagDaemonOpt.Proxy.ListenOption.TCPListen.PortRange.Start, "the address that daemon will listen on for proxy service")
-	flagSet.IntVar(&flagDaemonOpt.Proxy.ListenOption.TCPListen.PortRange.End, "proxy-port-end", flagDaemonOpt.Proxy.ListenOption.TCPListen.PortRange.End, "the address that daemon will listen on for proxy service")
 	flagSet.IntVar(&flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start, "upload-port", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start, "the address that daemon will listen on for peer upload")
 	flagSet.IntVar(&flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.End, "upload-port-end", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.End, "the address that daemon will listen on for peer upload")
 	flagSet.StringVar(&flagDaemonOpt.PidFile, "pid", flagDaemonOpt.PidFile, "dfdaemon pid file location")
@@ -61,5 +59,5 @@ func initDaemonFlags() {
 	flagSet.Var(config.NewLimitRateValue(&flagDaemonOpt.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
 	flagSet.VarP(config.NewSchedulersValue(&flagDaemonOpt), "schedulers", "s", "schedulers")
 
-	flagSet.StringVar(&peerHostConfigPath, "config", "c", "daemon config file location")
+	flagSet.StringVar(&peerHostConfigPath, "config", peerHostConfigPath, "daemon config file location")
 }
