@@ -21,6 +21,11 @@ docker-build-cdn:  ## Build cdn image
 	./hack/docker-build.sh cdn
 .PHONY: docker-build-cdn
 
+docker-build-dfdaemon:  ## Build dfdaemon image
+	@echo "Begin to use docker build dfdaemon image."
+	./hack/docker-build.sh dfdaemon
+.PHONY: docker-build-dfdaemon
+
 build-cdn: build-dirs  ## Build cdn
 	@echo "Begin to build cdn."
 	./hack/build.sh cdn
@@ -35,3 +40,8 @@ install-cdn:  ## Install cdn
 	@echo "Begin to install cdn."
 	./hack/install.sh install cdn
 .PHONY: install-cdn
+
+install-dfget:  ## Install cdn
+	@echo "Begin to install dfget."
+	./hack/install.sh install dfget
+.PHONY: install-dfget
