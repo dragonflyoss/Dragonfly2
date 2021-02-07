@@ -62,7 +62,7 @@ var rootCmd = &cobra.Command{
 	Example:           dfgetExample(),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		logger.InitDfget()
-		if err := checkParameters(); err != nil {
+		if err := checkClientOptions(); err != nil {
 			return err
 		}
 		return runDfget()
@@ -131,7 +131,7 @@ func convertDeprecatedFlags() {
 	}
 }
 
-func checkParameters() error {
+func checkClientOptions() error {
 	convertDeprecatedFlags()
 	if len(os.Args) < 2 {
 		return dferrors.New(-1, "Please use the command 'help' to show the help information.")
