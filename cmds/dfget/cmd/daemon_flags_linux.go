@@ -85,6 +85,7 @@ var flagDaemonOpt = config.PeerHostOption{
 				Insecure: true,
 			},
 			TCPListen: &config.TCPListenOption{
+				Listen:    net.IPv4zero.String(),
 				PortRange: config.TCPListenPortRange{},
 			},
 		},
