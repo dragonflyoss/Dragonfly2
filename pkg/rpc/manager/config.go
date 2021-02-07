@@ -16,11 +16,11 @@
 
 package manager
 
-func GetLatestCdnConfig() *ManagementConfig_CdnConfig {
+func GetLatestCdnConfig() *CdnConfig {
 	return nil
 }
 
-func GetLatestSchedulerConfig() *ManagementConfig_SchedulerConfig {
+func GetLatestSchedulerConfig() *SchedulerConfig {
 	return nil
 }
 
