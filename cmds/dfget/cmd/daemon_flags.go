@@ -48,6 +48,7 @@ func initDaemonFlags() {
 	flagSet.IntVar(&flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.End, "grpc-port-end", flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.End, "the listen address for grpc with other peers")
 	flagSet.IntVar(&flagDaemonOpt.Proxy.ListenOption.TCPListen.PortRange.Start, "proxy-port", 0, "the address that daemon will listen on for proxy service")
 	flagSet.IntVar(&flagDaemonOpt.Proxy.ListenOption.TCPListen.PortRange.End, "proxy-port-end", 0, "the address that daemon will listen on for proxy service")
+	flagSet.IntVar(&flagDaemonOpt.Proxy.ListenOption.TCPListen.PortRange.End, "proxy-port-end", 0, "the address that daemon will listen on for proxy service")
 	flagSet.IntVar(&flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start, "upload-port", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start, "the address that daemon will listen on for peer upload")
 	flagSet.IntVar(&flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.End, "upload-port-end", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.End, "the address that daemon will listen on for peer upload")
 	flagSet.StringVar(&flagDaemonOpt.PidFile, "pid", flagDaemonOpt.PidFile, "dfdaemon pid file location")
