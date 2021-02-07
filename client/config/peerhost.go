@@ -133,7 +133,7 @@ func (p *ProxyOption) UnmarshalJSON(b []byte) error {
 		}
 		return nil
 	default:
-		return errors.New("invalid proxy")
+		return errors.New("invalid proxy option")
 	}
 }
 
@@ -312,6 +312,7 @@ type UnixListenOption struct {
 }
 
 type SecurityOption struct {
+	// Insecure indicate enable tls or not
 	Insecure  bool        `json:"insecure" yaml:"insecure"`
 	CACert    string      `json:"ca_cert" yaml:"ca_cert"`
 	Cert      string      `json:"cert" yaml:"cert"`

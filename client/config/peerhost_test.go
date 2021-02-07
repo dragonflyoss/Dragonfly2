@@ -21,15 +21,136 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/url"
+	"reflect"
 	"testing"
+	"time"
 
 	"gopkg.in/yaml.v3"
+
+	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	testifyassert "github.com/stretchr/testify/assert"
 )
+
+func Test_AllUnmarshalYAML(t *testing.T) {
+	assert := testifyassert.New(t)
+	var cases = []struct {
+		text   string
+		target interface{}
+	}{
+		{
+			text: `
+"port": 1234
+`,
+			target: &struct {
+				Port TCPListenPortRange `yaml:"port"`
+			}{
+				Port: TCPListenPortRange{
+					Start: 1234,
+				},
+			},
+		},
+		{
+			text: `
+port:
+  start: 1234
+  end: 1235
+`,
+			target: &struct {
+				Port TCPListenPortRange `yaml:"port"`
+			}{
+				Port: TCPListenPortRange{
+					Start: 1234,
+					End:   1235,
+				},
+			},
+		},
+		{
+			text: `
+timeout: 1000000000
+`,
+			target: &struct {
+				Timeout clientutil.Duration `yaml:"timeout"`
+			}{
+				Timeout: clientutil.Duration{
+					Duration: time.Second,
+				},
+			},
+		},
+		{
+			text: `
+timeout: 1s
+`,
+			target: &struct {
+				Timeout clientutil.Duration `yaml:"timeout"`
+			}{
+				Timeout: clientutil.Duration{
+					Duration: time.Second,
+				},
+			},
+		},
+		{
+			text: `
+limit: 100Mi
+`,
+			target: &struct {
+				Limit clientutil.RateLimit `yaml:"limit"`
+			}{
+				Limit: clientutil.RateLimit{
+					Limit: 100 * 1024 * 1024,
+				},
+			},
+		},
+		{
+			text: `
+limit: 2097152
+`,
+			target: &struct {
+				Limit clientutil.RateLimit `yaml:"limit"`
+			}{
+				Limit: clientutil.RateLimit{
+					Limit: 2 * 1024 * 1024,
+				},
+			},
+		},
+		{
+			text: `
+addr: 127.0.0.1:8002
+`,
+			target: &struct {
+				Addr dfnet.NetAddr `yaml:"addr"`
+			}{
+				Addr: dfnet.NetAddr{
+					Type: dfnet.TCP,
+					Addr: "127.0.0.1:8002",
+				},
+			},
+		},
+		{
+			text: `
+listen:
+  type: tcp
+  addr: 127.0.0.1:8002
+`,
+			target: &struct {
+				Listen dfnet.NetAddr `yaml:"listen"`
+			}{
+				Listen: dfnet.NetAddr{
+					Type: dfnet.TCP,
+					Addr: "127.0.0.1:8002",
+				},
+			},
+		},
+	}
+	for _, c := range cases {
+		actual := reflect.New(reflect.TypeOf(c.target).Elem()).Interface()
+		err := yaml.Unmarshal([]byte(c.text), actual)
+		assert.Nil(err, "yaml.Unmarshal should return nil")
+		assert.EqualValues(c.target, actual)
+	}
+}
 
 func TestUnmarshalJSON(t *testing.T) {
 	bytes := []byte(`{

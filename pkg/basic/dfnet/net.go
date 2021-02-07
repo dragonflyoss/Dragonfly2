@@ -169,11 +169,11 @@ func (n *NetAddr) unmarshal(unmarshal func(in []byte, out interface{}) (err erro
 	return nil
 }
 
-func (na *NetAddr) GetEndpoint() string {
-	switch na.Type {
+func (n *NetAddr) GetEndpoint() string {
+	switch n.Type {
 	case UNIX:
-		return "unix://" + na.Addr
+		return "unix://" + n.Addr
 	default:
-		return "dns:///" + na.Addr
+		return "dns:///" + n.Addr
 	}
 }
