@@ -194,6 +194,10 @@ loop:
 			pt.Warnf("scheduler client send nil PeerPacket")
 			continue
 		}
+		if !peerPacket.State.Success {
+			pt.Errorf("receive peer packet with error: %d/%s", peerPacket.State.Code, peerPacket.State.Msg)
+			continue
+		}
 		pt.Debugf("receive peer packet: %#v", peerPacket)
 		if peerPacket.MainPeer == nil && peerPacket.StealPeers == nil {
 			pt.Warnf("scheduler client send a PeerPacket will empty peers")

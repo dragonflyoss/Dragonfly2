@@ -234,6 +234,9 @@ func (ph *peerHost) Serve() error {
 	ph.GCManager.Start()
 
 	// prepare download service listen
+	if ph.Option.Download.DownloadGRPC.UnixListen == nil {
+		return errors.New("download grpc unix listen option is empty")
+	}
 	_ = os.Remove(ph.Option.Download.DownloadGRPC.UnixListen.Socket)
 	downloadListener, err := rpc.Listen(dfnet.NetAddr{
 		Type: dfnet.UNIX,
@@ -245,6 +248,9 @@ func (ph *peerHost) Serve() error {
 	}
 
 	// prepare peer service listen
+	if ph.Option.Download.PeerGRPC.TCPListen == nil {
+		return errors.New("peer grpc tcp listen option is empty")
+	}
 	peerListener, peerPort, err := ph.prepareTCPListener(ph.Option.Download.PeerGRPC, false)
 	if err != nil {
 		logger.Errorf("failed to listen for peer grpc service: %v", err)
@@ -253,6 +259,9 @@ func (ph *peerHost) Serve() error {
 	ph.schedPeerHost.RpcPort = int32(peerPort)
 
 	// prepare upload service listen
+	if ph.Option.Upload.TCPListen == nil {
+		return errors.New("upload tcp listen option is empty")
+	}
 	uploadListener, uploadPort, err := ph.prepareTCPListener(ph.Option.Upload.ListenOption, true)
 	if err != nil {
 		logger.Errorf("failed to listen for upload service: %v", err)
@@ -283,6 +292,9 @@ func (ph *peerHost) Serve() error {
 
 	if ph.Option.Proxy != nil {
 		// prepare proxy service listen
+		if ph.Option.Proxy.TCPListen == nil {
+			return errors.New("proxy tcp listen option is empty")
+		}
 		proxyListener, proxyPort, err := ph.prepareTCPListener(ph.Option.Proxy.ListenOption, true)
 		if err != nil {
 			logger.Errorf("failed to listen for proxy service: %v", err)

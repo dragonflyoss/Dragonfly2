@@ -32,12 +32,14 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -58,7 +60,7 @@ func setupDaemonServer(ctrl *gomock.Controller, contentLength int64, pieceSize i
 	daemon.EXPECT().CheckHealth(gomock.Any()).DoAndReturn(func(ctx context.Context) (*base.ResponseState, error) {
 		return &base.ResponseState{
 			Success: true,
-			Code:    base.Code_SUCCESS,
+			Code:    dfcodes.Success,
 			Msg:     "",
 		}, nil
 	})
@@ -86,7 +88,7 @@ func setupDaemonServer(ctrl *gomock.Controller, contentLength int64, pieceSize i
 		return &base.PiecePacket{
 			State: &base.ResponseState{
 				Success: true,
-				Code:    base.Code_SUCCESS,
+				Code:    dfcodes.Success,
 				Msg:     "",
 			},
 			TaskId:        request.TaskId,
@@ -106,8 +108,10 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
 	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
-		DataPath:       test.DataDir,
-		TaskExpireTime: -1 * time.Second,
+		DataPath: test.DataDir,
+		TaskExpireTime: clientutil.Duration{
+			Duration: -1 * time.Second,
+		},
 	}, func(request storage.CommonTaskRequest) {})
 	defer storageManager.(gc.GC).TryGC()
 
@@ -134,7 +138,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 		return &scheduler.RegisterResult{
 			State: &base.ResponseState{
 				Success: true,
-				Code:    base.Code_SUCCESS,
+				Code:    dfcodes.Success,
 				Msg:     "",
 			},
 			TaskId:      taskID,
@@ -156,7 +160,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 			peerPacketCh <- &scheduler.PeerPacket{
 				State: &base.ResponseState{
 					Success: true,
-					Code:    base.Code_SUCCESS,
+					Code:    dfcodes.Success,
 					Msg:     "progress by mockSchedulerClient",
 				},
 				TaskId:        taskID,
@@ -175,7 +179,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) (*base.ResponseState, error) {
 		return &base.ResponseState{
 			Success: true,
-			Code:    base.Code_SUCCESS,
+			Code:    dfcodes.Success,
 			Msg:     "progress by mockSchedulerClient",
 		}, nil
 	})
@@ -237,8 +241,10 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
 	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
-		DataPath:       test.DataDir,
-		TaskExpireTime: -1 * time.Second,
+		DataPath: test.DataDir,
+		TaskExpireTime: clientutil.Duration{
+			Duration: -1 * time.Second,
+		},
 	}, func(request storage.CommonTaskRequest) {})
 	defer storageManager.(gc.GC).TryGC()
 
@@ -262,7 +268,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		return &scheduler.RegisterResult{
 			State: &base.ResponseState{
 				Success: true,
-				Code:    base.Code_SUCCESS,
+				Code:    dfcodes.Success,
 				Msg:     "",
 			},
 			TaskId:      taskID,
@@ -284,7 +290,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 			peerPacketCh <- &scheduler.PeerPacket{
 				State: &base.ResponseState{
 					Success: true,
-					Code:    base.Code_SUCCESS,
+					Code:    dfcodes.Success,
 					Msg:     "progress by mockSchedulerClient",
 				},
 				TaskId:        taskID,
@@ -303,7 +309,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) (*base.ResponseState, error) {
 		return &base.ResponseState{
 			Success: true,
-			Code:    base.Code_SUCCESS,
+			Code:    dfcodes.Success,
 			Msg:     "progress by mockSchedulerClient",
 		}, nil
 	})
