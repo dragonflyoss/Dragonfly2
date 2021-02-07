@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package scheduler
 
 import (
@@ -12,7 +28,7 @@ type Scheduler struct {
 
 func CreateScheduler() *Scheduler {
 	RegisterEvaluator("default", basic.NewEvaluator())
-	RegisterGetEvaluatorFunc(0, func(*types.Task)(string, bool){return "default", true})
+	RegisterGetEvaluatorFunc(0, func(*types.Task) (string, bool) { return "default", true })
 	return &Scheduler{
 		factory: factory,
 	}
@@ -53,7 +69,7 @@ func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.P
 }
 
 // scheduler a parent to a peer
-func (s *Scheduler) SchedulerParent(peer *types.PeerTask) ( primary *types.PeerTask, secondary []*types.PeerTask, err error) {
+func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTask, secondary []*types.PeerTask, err error) {
 	if peer == nil {
 		return
 	}
@@ -124,7 +140,6 @@ func (s *Scheduler) SchedulerDone(peer *types.PeerTask) (parent *types.PeerTask,
 	return
 }
 
-
 func (s *Scheduler) NeedAdjustParent(peer *types.PeerTask) bool {
 	return s.factory.getEvaluator(peer.Task).NeedAdjustParent(peer)
 }
@@ -132,5 +147,3 @@ func (s *Scheduler) NeedAdjustParent(peer *types.PeerTask) bool {
 func (s *Scheduler) IsNodeBad(peer *types.PeerTask) bool {
 	return s.factory.getEvaluator(peer.Task).IsNodeBad(peer)
 }
-
-

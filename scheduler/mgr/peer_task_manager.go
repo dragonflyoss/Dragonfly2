@@ -1,11 +1,27 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package mgr
 
 import (
-	"fmt"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/workqueue"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -13,10 +29,10 @@ import (
 )
 
 type PeerTaskManager struct {
-	data        *sync.Map
-	gcQueue     workqueue.DelayingInterface
-	gcDelayTime time.Duration
-	downloadMonitorQueue     workqueue.DelayingInterface
+	data                    *sync.Map
+	gcQueue                 workqueue.DelayingInterface
+	gcDelayTime             time.Duration
+	downloadMonitorQueue    workqueue.DelayingInterface
 	downloadMonitorCallBack func(*types.PeerTask)
 }
 
@@ -26,10 +42,10 @@ func createPeerTaskManager() *PeerTaskManager {
 		delay = time.Duration(config.GetConfig().GC.PeerTaskDelay) * time.Millisecond
 	}
 	ptm := &PeerTaskManager{
-		data:        new(sync.Map),
-		downloadMonitorQueue:     workqueue.NewDelayingQueue(),
-		gcQueue:     workqueue.NewDelayingQueue(),
-		gcDelayTime: delay,
+		data:                 new(sync.Map),
+		downloadMonitorQueue: workqueue.NewDelayingQueue(),
+		gcQueue:              workqueue.NewDelayingQueue(),
+		gcDelayTime:          delay,
 	}
 
 	go ptm.downloadMonitorWorkingLoop()
@@ -156,7 +172,7 @@ func (m *PeerTaskManager) printDebugInfo() string {
 			roots = append(roots, peerTask)
 		}
 		msgMap[peerTask.Pid] = fmt.Sprintf("%s: finishedNum[%2d] hostLoad[%d]",
-			peerTask.Pid, peerTask.GetFinishedNum(),peerTask.GetFreeLoad())
+			peerTask.Pid, peerTask.GetFinishedNum(), peerTask.GetFreeLoad())
 		return
 	})
 	var keys, msgs []string
@@ -174,7 +190,7 @@ func (m *PeerTaskManager) printDebugInfo() string {
 			return
 		}
 		nPath := append(path, fmt.Sprintf("%s(%d)", node.Pid, node.GetSubTreeNodesNum()))
-		msgs = append(msgs, node.Pid + " || "+strings.Join(nPath, "-"))
+		msgs = append(msgs, node.Pid+" || "+strings.Join(nPath, "-"))
 		for _, child := range node.GetChildren() {
 			if child == nil || child.SrcPeerTask == nil {
 				continue
@@ -182,7 +198,7 @@ func (m *PeerTaskManager) printDebugInfo() string {
 			printTree(child.SrcPeerTask, nPath)
 		}
 	}
-	
+
 	for _, root := range roots {
 		printTree(root, nil)
 	}
@@ -193,11 +209,11 @@ func (m *PeerTaskManager) printDebugInfo() string {
 
 func (m *PeerTaskManager) RefreshDownloadMonitor(pt *types.PeerTask) {
 	if pt.GetNodeStatus() != types.PeerTaskStatusHealth {
-		m.downloadMonitorQueue.AddAfter(pt, time.Second * 2)
+		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
 	} else if pt.IsWaiting() {
-		m.downloadMonitorQueue.AddAfter(pt, time.Second * 2)
+		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
 	} else {
-		m.downloadMonitorQueue.AddAfter(pt, time.Millisecond * time.Duration(pt.GetCost()*2))
+		m.downloadMonitorQueue.AddAfter(pt, time.Millisecond*time.Duration(pt.GetCost()*2))
 	}
 }
 
@@ -213,7 +229,7 @@ func (m *PeerTaskManager) downloadMonitorWorkingLoop() {
 		}
 		if m.downloadMonitorCallBack != nil {
 			pt, _ := v.(*types.PeerTask)
-			if pt != nil  {
+			if pt != nil {
 				if pt.GetNodeStatus() != types.PeerTaskStatusHealth ||
 					pt.GetParent() == nil || !pt.IsWaiting() {
 					m.downloadMonitorCallBack(pt)

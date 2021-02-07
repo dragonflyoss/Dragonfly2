@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package config
 
 const (
@@ -7,11 +23,11 @@ const (
 var config = createDefaultConfig()
 
 type Config struct {
-	Scheduler schedulerConfig       `yaml:"scheduler"`
-	Server    serverConfig          `yaml:"server"`
-	Worker    schedulerWorkerConfig `yaml:"worker"`
-	CDN       cdnConfig             `yaml:"cdn"`
-	GC        gcConfig              `yaml:"gc"`
+	Scheduler schedulerConfig       `yaml:"scheduler" mapstructure:",squash"`
+	Server    serverConfig          `yaml:"server" mapstructure:",squash"`
+	Worker    schedulerWorkerConfig `yaml:"worker" mapstructure:",squash"`
+	CDN       cdnConfig             `yaml:"cdn" mapstructure:",squash"`
+	GC        gcConfig              `yaml:"gc" mapstructure:",squash"`
 }
 
 type schedulerConfig struct {
@@ -32,12 +48,12 @@ type schedulerWorkerConfig struct {
 type CdnServerConfig struct {
 	CdnName      string `yaml:"cdn-name"`
 	IP           string `yaml:"ip",omitempty`
-	RpcPort      int    `yaml:"cdn-port"`
+	RpcPort      int    `yaml:"rpc-port"`
 	DownloadPort int    `yaml:"download-port"`
 }
 
 type cdnConfig struct {
-	List [][]CdnServerConfig `yaml:"list"`
+	List [][]CdnServerConfig `yaml:"list" mapstructure:",squash"`
 }
 
 type gcConfig struct {

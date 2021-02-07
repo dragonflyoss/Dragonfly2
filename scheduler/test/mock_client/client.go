@@ -1,14 +1,30 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package mock_client
 
 import (
 	"context"
-	"fmt"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/scheduler/test/common"
+	"fmt"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -50,7 +66,7 @@ type IDownloadClient interface {
 
 type MockClient struct {
 	cli           client.SchedulerClient
-	lock *sync.Mutex
+	lock          *sync.Mutex
 	logger        common.TestLogger
 	replyChan     chan *scheduler.PieceResult
 	replyFinished chan struct{}
@@ -79,7 +95,7 @@ func NewMockClient(addr string, url string, group string, logger common.TestLogg
 	pid := atomic.AddInt32(clientNum[group], 1)
 	mc := &MockClient{
 		cli:           c,
-		lock: new(sync.Mutex),
+		lock:          new(sync.Mutex),
 		pid:           fmt.Sprintf("%s%02d", group, pid),
 		url:           url,
 		logger:        logger,
@@ -104,7 +120,6 @@ func (mc *MockClient) Start() {
 
 	go mc.replyMessage()
 }
-
 
 func (mc *MockClient) SetDone() {
 	close(mc.waitStop)
@@ -176,7 +191,7 @@ func (mc *MockClient) registerPeerTask() (err error) {
 	go func() {
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer func() {
-			time.Sleep(time.Second*3)
+			time.Sleep(time.Second * 3)
 			cancel()
 		}()
 		mc.in, mc.out, err = mc.cli.ReportPieceResult(ctx, mc.taskId, request)
@@ -281,14 +296,14 @@ func (mc *MockClient) downloadPieces() {
 				}
 				if !has {
 					pr := &scheduler.PieceResult{
-						TaskId:    mc.taskId,
-						SrcPid:    mc.pid,
-						DstPid:    mc.parentId,
-						PieceNum:  p.PieceNum,
-						FinishedCount: int32(len(mc.pieceInfoList)+1),
-						Success:   true,
-						Code:      dfcodes.Success,
-						BeginTime: uint64(time.Now().UnixNano() / int64(time.Millisecond)),
+						TaskId:        mc.taskId,
+						SrcPid:        mc.pid,
+						DstPid:        mc.parentId,
+						PieceNum:      p.PieceNum,
+						FinishedCount: int32(len(mc.pieceInfoList) + 1),
+						Success:       true,
+						Code:          dfcodes.Success,
+						BeginTime:     uint64(time.Now().UnixNano() / int64(time.Millisecond)),
 					}
 					time.Sleep(time.Millisecond * time.Duration(rand.Intn(40)+10))
 					pr.EndTime = uint64(time.Now().UnixNano() / int64(time.Millisecond))

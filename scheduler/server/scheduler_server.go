@@ -1,8 +1,23 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package server
 
 import (
 	"context"
-	"fmt"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -10,6 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/service/schedule_worker"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"fmt"
 )
 
 var _ server.SchedulerServer = &SchedulerServer{}
@@ -64,7 +80,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	host, _ := s.svc.GetHost(hostId)
 	if host == nil {
 		host = &types.Host{
-			Type:           types.HostTypePeer,
+			Type:     types.HostTypePeer,
 			PeerHost: *request.PeerHost,
 		}
 		host, err = s.svc.AddHost(host)
@@ -111,7 +127,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	pkg.DirectPiece = &scheduler.RegisterResult_SinglePiece{
 		SinglePiece: &scheduler.SinglePiece{
 			// destination peer id
-			DstPid : parent.Pid,
+			DstPid: parent.Pid,
 			// download address(ip:port)
 			DstAddr: fmt.Sprintf("%s:%d", parent.Host.Ip, parent.Host.DownPort),
 			// one piece task
