@@ -39,14 +39,20 @@ import (
 type Manager interface {
 	Serve(lis net.Listener) error
 	Stop() error
+	IsEnabled() bool
 }
 
 type proxyManager struct {
 	*http.Server
 	*Proxy
+	config.ListenOption
 }
 
-func NewProxyManager(peerHost *scheduler.PeerHost, registry *config.RegistryMirror, proxies []*config.Proxy, hijackHTTPS *config.HijackConfig, peerTaskManager peer.PeerTaskManager) (Manager, error) {
+func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.PeerTaskManager, opts *config.ProxyOption) (Manager, error) {
+	registry := opts.RegistryMirror
+	proxies := opts.Proxies
+	hijackHTTPS := opts.HijackHTTPS
+
 	options := []Option{
 		WithPeerHost(peerHost),
 		WithPeerTaskManager(peerTaskManager),
@@ -91,8 +97,9 @@ func NewProxyManager(peerHost *scheduler.PeerHost, registry *config.RegistryMirr
 	}
 
 	return &proxyManager{
-		Server: &http.Server{},
-		Proxy:  p,
+		Server:       &http.Server{},
+		Proxy:        p,
+		ListenOption: opts.ListenOption,
 	}, nil
 }
 
@@ -104,6 +111,10 @@ func (pm *proxyManager) Serve(lis net.Listener) error {
 
 func (pm *proxyManager) Stop() error {
 	return pm.Server.Shutdown(context.Background())
+}
+
+func (pm *proxyManager) IsEnabled() bool {
+	return pm.ListenOption.TCPListen.PortRange.Start != 0
 }
 
 func newDirectHandler() *http.ServeMux {

@@ -7,6 +7,7 @@ set -o pipefail
 BIN_DIR="../bin"
 CDN_BINARY_NAME=cdn
 DFGET_BINARY_NAME=dfget
+SCHEDULER_BINARY_NAME=scheduler
 
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}" || return
@@ -20,6 +21,9 @@ install() {
         ;;
     dfget)
         install-dfget
+        ;;
+    scheduler)
+        install-scheduler
         ;;
     esac
 }
@@ -52,6 +56,21 @@ install-dfget() {
 uninstall-dfget() {
     echo "unlink /usr/local/bin/dfget"
     test -e /usr/local/bin/dfget && unlink /usr/local/bin/dfget
+}
+
+install-scheduler() {
+    local bin="${INSTALL_HOME}/${INSTALL_BIN_PATH}"
+    echo "install: ${bin}"
+    mkdir -p "${bin}"
+
+    cp "${BIN_DIR}/${GOOS}_${GOARCH}/${SCHEDULER_BINARY_NAME}" "${bin}"
+
+    createLink "${bin}/${SCHEDULER_BINARY_NAME}" /usr/local/bin/scheduler
+}
+
+uninstall-scheduler() {
+    echo "unlink /usr/local/bin/scheduler"
+    test -e /usr/local/bin/scheduler && unlink /usr/local/bin/scheduler
 }
 
 createLink() {

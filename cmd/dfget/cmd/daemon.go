@@ -29,6 +29,7 @@ import (
 	"github.com/gofrs/flock"
 	"github.com/google/uuid"
 	"github.com/phayes/freeport"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v3"
@@ -58,6 +59,10 @@ var daemonCmd = &cobra.Command{
 		}
 
 		logger.InitDaemon()
+		if err := checkDaemonOptions(); err != nil {
+			return err
+		}
+
 		lock := flock.New(flagDaemonOpt.LockFile)
 		if ok, err := lock.TryLock(); err != nil {
 			return err
@@ -72,6 +77,13 @@ var daemonCmd = &cobra.Command{
 func init() {
 	initDaemonFlags()
 	rootCmd.AddCommand(daemonCmd)
+}
+
+func checkDaemonOptions() error {
+	if len(flagDaemonOpt.Schedulers) == 0 {
+		return errors.New("empty schedulers")
+	}
+	return nil
 }
 
 func runDaemon() error {
