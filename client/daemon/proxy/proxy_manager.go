@@ -114,7 +114,7 @@ func (pm *proxyManager) Stop() error {
 }
 
 func (pm *proxyManager) IsEnabled() bool {
-	return pm.ListenOption.TCPListen.PortRange.Start != 0
+	return pm.ListenOption.TCPListen != nil && pm.ListenOption.TCPListen.PortRange.Start != 0
 }
 
 func newDirectHandler() *http.ServeMux {
