@@ -38,7 +38,7 @@ create-dirs() {
 
 build-local() {
     test -f "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1" && rm -f "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
-    cd "${BUILD_SOURCE_HOME}/cmds/$2" || return
+    cd "${BUILD_SOURCE_HOME}/cmd/$2" || return
     go build -o "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1" -ldflags "${LDFLAGS}"
     chmod a+x "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     echo "BUILD: $2 in ${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
@@ -73,7 +73,7 @@ build-docker() {
         -e GOPROXY="${GOPROXY}" \
         -w /go/src/${PKG} \
         ${BUILD_IMAGE} \
-        go build -o "/go/bin/$1" -ldflags "${LDFLAGS}" ./cmds/"$2"
+        go build -o "/go/bin/$1" -ldflags "${LDFLAGS}" ./cmd/"$2"
     echo "BUILD: $1 in ${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
 }
 
