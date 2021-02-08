@@ -136,11 +136,6 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	}
 	// third: start to download the source file
 	resp, err := cm.download(task, detectResult)
-	if err != nil {
-		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
-		return seedTask, err
-	}
-	defer resp.Body.Close()
 	cm.metrics.cdnDownloadCount.WithLabelValues().Inc()
 	// download fail
 	if err != nil {
@@ -148,6 +143,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusSOURCEERROR)
 		return seedTask, err
 	}
+	defer resp.Body.Close()
+
 	// update Expire info
 	cm.updateExpireInfo(ctx, task.TaskID, resp.ExpireInfo)
 	fileMd5 := md5.New()

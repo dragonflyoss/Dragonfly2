@@ -172,6 +172,7 @@ func (client *httpSourceClient) Download(url string, headers map[string]string) 
 			},
 		}, nil
 	}
+	resp.Body.Close()
 	return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 }
 
