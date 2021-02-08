@@ -19,13 +19,14 @@ package client
 import (
 	"context"
 	"errors"
+	"sync"
+	"time"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"google.golang.org/grpc"
-	"sync"
-	"time"
 )
 
 // see manager.ManagerClient
@@ -34,7 +35,7 @@ type ManagerClient interface {
 	// only call once
 	KeepAlive(ctx context.Context, req *KeepAliveRequest, opts ...grpc.CallOption) error
 	// GetLatestConfig return latest management config and cdn host map with host name key
-	GetLatestConfig() (*manager.ManagementConfig_SchedulerConfig, map[string]*manager.ServerInfo, *manager.ManagementConfig_CdnConfig)
+	GetLatestConfig() (*manager.SchedulerConfig, map[string]*manager.ServerInfo, *manager.CdnConfig)
 	Close() error
 }
 
@@ -50,8 +51,8 @@ type managerClient struct {
 	*rpc.Connection
 	Client manager.ManagerClient
 
-	schedulerConfig *manager.ManagementConfig_SchedulerConfig
-	cdnConfig       *manager.ManagementConfig_CdnConfig
+	schedulerConfig *manager.SchedulerConfig
+	cdnConfig       *manager.CdnConfig
 	cdns            map[string]*manager.ServerInfo
 
 	rwMutex   sync.RWMutex
@@ -133,7 +134,7 @@ func (mc *managerClient) KeepAlive(ctx context.Context, req *KeepAliveRequest, o
 	return nil
 }
 
-func (mc *managerClient) GetLatestConfig() (*manager.ManagementConfig_SchedulerConfig, map[string]*manager.ServerInfo, *manager.ManagementConfig_CdnConfig) {
+func (mc *managerClient) GetLatestConfig() (*manager.SchedulerConfig, map[string]*manager.ServerInfo, *manager.CdnConfig) {
 	if mc.schedulerConfig == nil && mc.cdnConfig == nil {
 		<-mc.ch
 	}
@@ -148,7 +149,7 @@ func fillConfig(mc *managerClient, config *manager.ManagementConfig) {
 	defer mc.rwMutex.Unlock()
 
 	switch v := config.Config.(type) {
-	case *manager.ManagementConfig_SchedulerConfig_:
+	case *manager.ManagementConfig_SchedulerConfig:
 		if v.SchedulerConfig != nil {
 			mc.schedulerConfig = v.SchedulerConfig
 			if mc.schedulerConfig.CdnHosts != nil {
@@ -159,7 +160,7 @@ func fillConfig(mc *managerClient, config *manager.ManagementConfig) {
 				mc.cdns = cdns
 			}
 		}
-	case *manager.ManagementConfig_CdnConfig_:
+	case *manager.ManagementConfig_CdnConfig:
 		if v.CdnConfig != nil {
 			mc.cdnConfig = v.CdnConfig
 		}
