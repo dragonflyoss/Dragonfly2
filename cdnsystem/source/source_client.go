@@ -17,7 +17,6 @@
 package source
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 )
 
@@ -27,9 +26,8 @@ func Register(schema string, resourceClient ResourceClient) {
 	clients[schema] = resourceClient
 }
 
-func NewSourceClient(cfg *config.Config) (ResourceClient, error) {
+func NewSourceClient() (ResourceClient, error) {
 	return &ResourceClientAdaptor{
-		cfg:     cfg,
 		clients: clients,
 	}, nil
 }
@@ -52,7 +50,6 @@ type ResourceClient interface {
 
 type ResourceClientAdaptor struct {
 	clients map[string]ResourceClient
-	cfg     *config.Config
 }
 
 func (s *ResourceClientAdaptor) GetContentLength(url string, headers map[string]string) (int64, error) {
