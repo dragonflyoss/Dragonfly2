@@ -192,6 +192,8 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debugf("hijack https request to %s", r.Host)
 
+	fmt.Printf("Proxy Cert: %+v\n", proxy.cert.Leaf.IsCA)
+
 	sConfig := new(tls.Config)
 	if proxy.cert.Leaf != nil && proxy.cert.Leaf.IsCA {
 		if proxy.certCache == nil { // Initialize proxy.certCache on first access. (Lazy init)

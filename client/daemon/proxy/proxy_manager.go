@@ -171,15 +171,20 @@ func getArgs(w http.ResponseWriter, r *http.Request) {
 }
 
 func certFromFile(certFile string, keyFile string) (*tls.Certificate, error) {
+
+	// cert.Certificate is a chain of one or more certificates, leaf first.
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "load cert")
 	}
 	logger.Infof("use self-signed certificate (%s, %s) for https hijacking", certFile, keyFile)
+
+	// leaf is CA cert or server cert
 	leaf, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
 		return nil, errors.Wrap(err, "load leaf cert")
 	}
+
 	cert.Leaf = leaf
 	return &cert, nil
 }

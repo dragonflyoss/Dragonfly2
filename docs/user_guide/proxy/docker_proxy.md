@@ -10,17 +10,48 @@ in order to do so, we need to use HTTP proxy for docker daemon.
 Generate a CA certificate private key.
 
 ```bash
-openssl genrsa -out ca.key 4096
+openssl genrsa -out ca.key 2048
 ```
 
-Generate the CA certificate. Adapt the values in the -subj option to reflect your organization.
-FQDN needs to match your private registry domain.
+Open openssl config file `openssl.conf`. Note set `basicConstraints` to true, that you can modify the values.
+
+```text
+[ req ]
+#default_bits		= 2048
+#default_md		= sha256
+#default_keyfile 	= privkey.pem
+distinguished_name	= req_distinguished_name
+attributes		= req_attributes
+extensions               = v3_ca
+req_extensions           = v3_ca
+
+[ req_distinguished_name ]
+countryName			= Country Name (2 letter code)
+countryName_min			= 2
+countryName_max			= 2
+stateOrProvinceName		= State or Province Name (full name)
+localityName			= Locality Name (eg, city)
+0.organizationName		= Organization Name (eg, company)
+organizationalUnitName		= Organizational Unit Name (eg, section)
+commonName			= Common Name (eg, fully qualified host name)
+commonName_max			= 64
+emailAddress			= Email Address
+emailAddress_max		= 64
+
+[ req_attributes ]
+challengePassword		= A challenge password
+challengePassword_min		= 4
+challengePassword_max		= 20
+
+[ v3_ca ]
+basicConstraints         = CA:TRUE
+```
+
+Generate the CA certificate.
 
 ```bash
-openssl req -x509 -new -nodes -sha512 -days 36500 \
- -subj "/C=CN/ST=Zhejiang/L=Hangzhou/O=Alibaba/OU=Personal/CN=your.private.registry" \
- -key ca.key \
- -out ca.crt
+openssl req -new -key ca.key -nodes -out ca.csr -config openssl.conf
+openssl x509 -req -days 36500 -extfile openssl.conf -extensions v3_ca -in ca.csr -signkey ca.key -out ca.crt
 ```
 
 ### Step 2: Configure Dfdaemon
@@ -58,7 +89,7 @@ Add your private registry to `insecure-registries` in
 
 ### Step 4: Configure Docker daemon
 
-Set dfdaemon as HTTP_PROXY and HTTPS_PROXY for docker daemon in
+Set dfdaemon as `HTTP_PROXY` and `HTTPS_PROXY` for docker daemon in
 `/etc/systemd/system/docker.service.d/http-proxy.conf`:
 
 ```
@@ -76,6 +107,7 @@ And you can pull the image as usual, for example:
 ```bash
 docker pull your.private.registry/namespace/image:latest
 ```
+
 ## Custom assets
 
 ### Registry uses a self-signed certificate
