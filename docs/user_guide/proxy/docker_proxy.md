@@ -3,7 +3,9 @@
 Currently, docker doesn't support private registries with `registry-mirrors`,
 in order to do so, we need to use HTTP proxy for docker daemon.
 
-## Step 1: Generate CA certificate for HTTP proxy
+## Quick Start
+
+### Step 1: Generate CA certificate for HTTP proxy
 
 Generate a CA certificate private key.
 
@@ -21,7 +23,7 @@ openssl req -x509 -new -nodes -sha512 -days 36500 \
  -out ca.crt
 ```
 
-## Step 2: Configure Dfdaemon
+### Step 2: Configure Dfdaemon
 
 To use dfdaemon as HTTP proxy, first you need to append a proxy rule in
 `$HOME/.small-dragonfly/dfdaemon/peerhost.yml`, This will proxy `your.private.registry`'s requests for image layers:
@@ -43,40 +45,7 @@ proxy:
       - regx: your.private.registry
 ```
 
-By default, only HTTP requests are proxied with dfget. If you're using an HTTPS
-enabled private registry, you need to add the following HTTPS configuration to
-`/etc/dragonfly/dfdaemon.yml`:
-
-```yaml
-hijack_https:
-  cert: df.crt
-  key: df.key
-  hosts:
-    - regx: your.private.registry
-```
-
-If your registry uses a self-signed certificate, you can either choose to
-ignore the certificate error with:
-
-```yaml
-hosts:
-  - regx: your.private.registry
-    insecure: true
-```
-
-Or provide a certificate with:
-
-```yaml
-hosts:
-  - regx: your.private.registry
-    certs: ["server.crt"]
-```
-
-You can get the certificate of your server with:
-
-```
-openssl x509 -in <(openssl s_client -showcerts -servername xxx -connect xxx:443 -prexit 2>/dev/null)
-```
+### Step 3: Configure Docker daemon
 
 Add your private registry to `insecure-registries` in
 `/etc/docker/daemon.json`, in order to ignore the certificate error:
@@ -87,6 +56,8 @@ Add your private registry to `insecure-registries` in
 }
 ```
 
+### Step 4: Configure Docker daemon
+
 Set dfdaemon as HTTP_PROXY and HTTPS_PROXY for docker daemon in
 `/etc/systemd/system/docker.service.d/http-proxy.conf`:
 
@@ -96,9 +67,62 @@ Environment="HTTP_PROXY=http://127.0.0.1:65001"
 Environment="HTTPS_PROXY=http://127.0.0.1:65001"
 ```
 
-Read [Control Docker with systemd](https://docs.docker.com/config/daemon/systemd/#httphttps-proxy) for more details. If you're not running docker daemon with systemd, you need to set the environment variables manually.
+### Step 5: Pull images with proxy
 
-Finally you can restart docker daemon and pull images as you normally would.
+Through the above steps, we can start to validate if Dragonfly works as expected.
 
-More details on dfdaemon's proxy configuration can be found
-[here](../proxy.md).
+And you can pull the image as usual, for example:
+
+```bash
+docker pull your.private.registry/namespace/image:latest
+```
+## Custom assets
+
+### Registry uses a self-signed certificate
+
+If your registry uses a self-signed certificate, you can either choose to
+ignore the certificate error with:
+
+```yaml
+proxy:
+  security:
+    insecure: true
+  tcp_listen:
+    listen: 0.0.0.0
+    port: 65001
+  proxies:
+    - regx: blobs/sha256.*
+  hijack_https:
+    # CA certificate's path used to hijack https requests
+    cert: ca.crt
+    key: ca.key
+    hosts:
+      - regx: your.private.registry
+        insecure: true
+```
+
+Or provide a certificate with:
+
+```yaml
+proxy:
+  security:
+    insecure: true
+  tcp_listen:
+    listen: 0.0.0.0
+    port: 65001
+  proxies:
+    - regx: blobs/sha256.*
+  hijack_https:
+    # CA certificate's path used to hijack https requests
+    cert: ca.crt
+    key: ca.key
+    hosts:
+      - regx: your.private.registry
+        certs: ["server.crt"]
+```
+
+You can get the certificate of your server with:
+
+```
+openssl x509 -in <(openssl s_client -showcerts -servername xxx -connect xxx:443 -prexit 2>/dev/null)
+```
