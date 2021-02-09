@@ -21,8 +21,11 @@ import (
 	"io"
 	"time"
 
+	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
@@ -32,8 +35,8 @@ import (
 )
 
 type PieceManager interface {
-	PieceDownloader
-	PullPieces(peerTask PeerTask, piecePacket *base.PiecePacket)
+	DownloadSource(ctx context.Context, pt PeerTask, url string, headers map[string]string) error
+	DownloadPieces(peerTask PeerTask, piecePacket *base.PiecePacket)
 	ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error)
 }
 
@@ -41,11 +44,17 @@ type pieceManager struct {
 	*rate.Limiter
 	storageManager  storage.TaskStorageDriver
 	pieceDownloader PieceDownloader
+	resourceClient  source.ResourceClient
 }
 
 func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (PieceManager, error) {
+	resourceClient, err := source.NewSourceClient()
+	if err != nil {
+		return nil, err
+	}
 	pm := &pieceManager{
 		storageManager: s,
+		resourceClient: resourceClient,
 	}
 	for _, opt := range opts {
 		opt(pm)
@@ -71,16 +80,16 @@ func WithLimiter(limiter *rate.Limiter) func(*pieceManager) {
 	}
 }
 
-func (pm *pieceManager) PullPieces(pt PeerTask, piecePacket *base.PiecePacket) {
+func (pm *pieceManager) DownloadPieces(pt PeerTask, piecePacket *base.PiecePacket) {
 	for _, piece := range piecePacket.PieceInfos {
 		logger.Debugf("peer manager receive piece task, "+
 			"peer id: %s, piece num: %d, range start: %d, range size: %d",
 			pt.GetPeerID(), piece.PieceNum, piece.RangeStart, piece.RangeSize)
-		go pm.pullPiece(pt, piecePacket.DstPid, piecePacket.DstAddr, piece)
+		go pm.downloadPiece(pt, piecePacket.DstPid, piecePacket.DstAddr, piece)
 	}
 }
 
-func (pm *pieceManager) pullPiece(pt PeerTask, dstPid, dstAddr string, pieceTask *base.PieceInfo) {
+func (pm *pieceManager) downloadPiece(pt PeerTask, dstPid, dstAddr string, pieceTask *base.PieceInfo) {
 	var (
 		success bool
 		start   = time.Now().UnixNano()
@@ -88,9 +97,9 @@ func (pm *pieceManager) pullPiece(pt PeerTask, dstPid, dstAddr string, pieceTask
 	)
 	defer func() {
 		if success {
-			pm.pushSuccessResult(pt, dstPid, dstAddr, pieceTask, start, end)
+			pm.pushSuccessResult(pt, dstPid, pieceTask, start, end)
 		} else {
-			pm.pushFailResult(pt, dstPid, dstAddr, pieceTask, start, end)
+			pm.pushFailResult(pt, dstPid, pieceTask, start, end)
 		}
 	}()
 
@@ -140,7 +149,7 @@ func (pm *pieceManager) pullPiece(pt PeerTask, dstPid, dstAddr string, pieceTask
 	success = true
 }
 
-func (pm *pieceManager) pushSuccessResult(peerTask PeerTask, dstPid, dstAddr string, piece *base.PieceInfo, start int64, end int64) {
+func (pm *pieceManager) pushSuccessResult(peerTask PeerTask, dstPid string, piece *base.PieceInfo, start int64, end int64) {
 	err := peerTask.ReportPieceResult(
 		piece,
 		&scheduler.PieceResult{
@@ -160,7 +169,7 @@ func (pm *pieceManager) pushSuccessResult(peerTask PeerTask, dstPid, dstAddr str
 	}
 }
 
-func (pm *pieceManager) pushFailResult(peerTask PeerTask, dstPid, dstAddr string, piece *base.PieceInfo, start int64, end int64) {
+func (pm *pieceManager) pushFailResult(peerTask PeerTask, dstPid string, piece *base.PieceInfo, start int64, end int64) {
 	err := peerTask.ReportPieceResult(
 		piece,
 		&scheduler.PieceResult{
@@ -186,4 +195,175 @@ func (pm *pieceManager) DownloadPiece(req *DownloadPieceRequest) (io.ReadCloser,
 
 func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error) {
 	return pm.storageManager.ReadPiece(ctx, req)
+}
+
+func (pm *pieceManager) processPieceFromSource(pt PeerTask,
+	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize int32) (int64, error) {
+	var (
+		success bool
+		start   = time.Now().UnixNano()
+		end     int64
+	)
+
+	var (
+		size          = pieceSize
+		unknownLength = contentLength == - 1
+	)
+
+	defer func() {
+		if success {
+			pm.pushSuccessResult(pt, pt.GetPeerID(),
+				&base.PieceInfo{
+					PieceNum:    pieceNum,
+					RangeStart:  pieceOffset,
+					RangeSize:   size,
+					PieceMd5:    "",
+					PieceOffset: pieceOffset,
+					PieceStyle:  0,
+				}, start, end)
+		} else {
+			pm.pushFailResult(pt, pt.GetPeerID(),
+				&base.PieceInfo{
+					PieceNum:    pieceNum,
+					RangeStart:  pieceOffset,
+					RangeSize:   size,
+					PieceMd5:    "",
+					PieceOffset: pieceOffset,
+					PieceStyle:  0,
+				}, start, end)
+		}
+	}()
+
+	if pm.Limiter != nil {
+		if err := pm.Limiter.WaitN(context.Background(), int(size)); err != nil {
+			logger.Errorf("require rate limit access error: %s", err)
+			return 0, err
+		}
+	}
+	pieceReader := io.LimitReader(reader, int64(size))
+	n, err := pm.storageManager.WritePiece(
+		context.Background(),
+		&storage.WritePieceRequest{
+			UnknownLength: unknownLength,
+			PeerTaskMetaData: storage.PeerTaskMetaData{
+				PeerID: pt.GetPeerID(),
+				TaskID: pt.GetTaskID(),
+			},
+			PieceMetaData: storage.PieceMetaData{
+				Num:    pieceNum,
+				Md5:    "",
+				Offset: pieceOffset,
+				Range: clientutil.Range{
+					Start:  int64(pieceOffset),
+					Length: int64(size),
+				},
+			},
+			Reader: pieceReader,
+		})
+	if n != int64(size) {
+		size = int32(n)
+	}
+	end = time.Now().UnixNano()
+	pt.AddTraffic(n)
+	if err != nil {
+		logger.Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s", pieceNum, n, err)
+		return n, err
+	}
+	success = true
+	return n, nil
+}
+
+func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, url string, headers map[string]string) error {
+	contentLength, err := pm.resourceClient.GetContentLength(url, headers)
+	log := logger.With("peer", pt.GetPeerID(), "task", pt.GetTaskID())
+	if err != nil {
+		log.Warnf("can not get content length for %s", url)
+		contentLength = - 1
+	} else {
+		pm.storageManager.UpdateTask(ctx,
+			&storage.UpdateTaskRequest{
+				PeerTaskMetaData: storage.PeerTaskMetaData{
+					PeerID: pt.GetPeerID(),
+					TaskID: pt.GetTaskID(),
+				},
+				ContentLength: contentLength,
+			})
+	}
+	log.Debugf("get content length: %d", contentLength)
+	// 1. download piece from source
+	response, err := pm.resourceClient.Download(url, headers)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	// 2. save to storage
+	pieceSize := computePieceSize(contentLength)
+	// handle resource which content length is unknown
+	if contentLength == -1 {
+		var (
+			n  int64
+			er error
+		)
+		for pieceNum := int32(0); ; pieceNum++ {
+			size := pieceSize
+			offset := uint64(pieceNum) * uint64(pieceSize)
+
+			n, er = pm.processPieceFromSource(pt, response.Body, contentLength, pieceNum, offset, size)
+			if er != nil {
+				return err
+			}
+			if n != int64(size) {
+				contentLength = int64(pieceNum*pieceSize + size)
+				pm.storageManager.UpdateTask(ctx,
+					&storage.UpdateTaskRequest{
+						PeerTaskMetaData: storage.PeerTaskMetaData{
+							PeerID: pt.GetPeerID(),
+							TaskID: pt.GetTaskID(),
+						},
+						ContentLength: contentLength,
+					})
+				return pt.SetContentLength(contentLength)
+			}
+		}
+		//return nil
+	}
+
+	maxPieceNum := int32(contentLength/int64(pieceSize) +
+		int64(pieceSize)*(contentLength%int64(pieceSize)))
+	for pieceNum := int32(0); pieceNum < maxPieceNum; pieceNum++ {
+		size := pieceSize
+		offset := uint64(pieceNum) * uint64(pieceSize)
+		// calculate piece size for last piece
+		if contentLength > 0 && int64(offset)+int64(size) > contentLength {
+			size = int32(contentLength - int64(offset))
+		}
+
+		n, er := pm.processPieceFromSource(pt, response.Body, contentLength, pieceNum, offset, size)
+		if er != nil {
+			return er
+		}
+		if n != int64(size) {
+			return errors.New("short read")
+		}
+	}
+	return nil
+}
+
+// TODO copy from cdnsystem/daemon/mgr/task/manager_util.go
+// computePieceSize computes the piece size with specified fileLength.
+//
+// If the fileLength<=0, which means failed to get fileLength
+// and then use the DefaultPieceSize.
+func computePieceSize(length int64) int32 {
+	if length <= 0 || length <= 200*1024*1024 {
+		return config.DefaultPieceSize
+	}
+
+	gapCount := length / int64(100*1024*1024)
+	mpSize := (gapCount-2)*1024*1024 + config.DefaultPieceSize
+	if mpSize > config.DefaultPieceSizeLimit {
+		return config.DefaultPieceSizeLimit
+	}
+	return int32(mpSize)
 }

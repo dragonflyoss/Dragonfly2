@@ -6,12 +6,14 @@ package mock_storage
 
 import (
 	context "context"
-	storage "d7y.io/dragonfly/v2/client/daemon/storage"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
-	gomock "github.com/golang/mock/gomock"
 	io "io"
 	reflect "reflect"
 	time "time"
+
+	gomock "github.com/golang/mock/gomock"
+
+	storage "d7y.io/dragonfly/v2/client/daemon/storage"
+	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 // MockTaskStorageDriver is a mock of TaskStorageDriver interface
@@ -118,6 +120,19 @@ func NewMockManager(ctrl *gomock.Controller) *MockManager {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
+}
+
+func (m *MockManager) UpdateTask(ctx context.Context, req *storage.UpdateTaskRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateTask", ctx, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WritePiece indicates an expected call of WritePiece
+func (mr *MockManagerMockRecorder) UpdateTask(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTask", reflect.TypeOf((*MockManager)(nil).UpdateTask), ctx, req)
 }
 
 // WritePiece mocks base method

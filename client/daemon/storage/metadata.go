@@ -45,7 +45,8 @@ type RegisterTaskRequest struct {
 type WritePieceRequest struct {
 	PeerTaskMetaData
 	PieceMetaData
-	Reader io.Reader
+	UnknownLength bool
+	Reader        io.Reader
 }
 
 type StoreRequest = CommonTaskRequest
@@ -53,4 +54,9 @@ type StoreRequest = CommonTaskRequest
 type ReadPieceRequest struct {
 	PeerTaskMetaData
 	PieceMetaData
+}
+
+type UpdateTaskRequest struct {
+	PeerTaskMetaData
+	ContentLength int64
 }

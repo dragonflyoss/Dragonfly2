@@ -7,7 +7,10 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/pkg/errors"
+
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -51,6 +54,8 @@ func NewStreamPeerTask(ctx context.Context,
 		base: filePeerTask{
 			ctx:             ctx,
 			host:            host,
+			backSource:      result.State.Code == dfcodes.BackSource,
+			request:         request,
 			pieceResultCh:   schedPieceResultCh,
 			peerPacketCh:    schedPeerPacketCh,
 			pieceManager:    pieceManager,
@@ -136,8 +141,21 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 }
 
 func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]string, error) {
-	go s.base.receivePeerPacket()
-	go s.base.pullPiecesFromPeers(s, s.cleanUnfinished)
+	if s.base.backSource {
+		go func() {
+			hdr := make(map[string]string)
+			hdr["Range"] = s.base.request.UrlMata.Range
+			err := s.base.pieceManager.DownloadSource(ctx, s, s.base.request.Url, hdr)
+			if err != nil {
+				s.base.Errorf("download from source error: %s", err)
+			} else {
+				s.base.Errorf("download from source ok")
+			}
+		}()
+	} else {
+		go s.base.receivePeerPacket()
+		go s.base.pullPiecesFromPeers(s, s.cleanUnfinished)
+	}
 	r, w := io.Pipe()
 	go func() {
 		var (
@@ -222,6 +240,14 @@ func (s *streamPeerTask) cleanUnfinished() {
 		s.base.Debugf("end piece result sent")
 		close(s.base.done)
 	})
+}
+
+func (s *streamPeerTask) SetContentLength(i int64) error {
+	s.base.contentLength = i
+	if !s.base.isCompleted() {
+		return errors.New("SetContentLength should call after task completed")
+	}
+	return s.finish()
 }
 
 func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
