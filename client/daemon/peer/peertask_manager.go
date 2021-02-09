@@ -28,7 +28,6 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
-
 // PeerTaskManager processes all peer tasks request
 type PeerTaskManager interface {
 	// StartFilePeerTask starts a peer task to download a file
@@ -48,6 +47,7 @@ type PeerTask interface {
 	GetPeerID() string
 	GetTaskID() string
 	GetContentLength() int64
+	SetContentLength(int64) error
 	SetCallback(PeerTaskCallback)
 	AddTraffic(int64)
 	GetTraffic() int64

@@ -19,7 +19,6 @@ package storage
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -30,6 +29,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
@@ -46,6 +47,8 @@ type TaskStorageDriver interface {
 	ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error)
 
 	GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error)
+
+	UpdateTask(ctx context.Context, req *UpdateTaskRequest) error
 
 	// Store stores task data to the target path
 	Store(ctx context.Context, req *StoreRequest) error
@@ -214,7 +217,6 @@ func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskReque
 			PeerID: req.DstPid,
 		})
 	if !ok {
-		// TODO recover for local task persistentMetadata data
 		return nil, ErrTaskNotFound
 	}
 	return t.(TaskStorageDriver).GetPieces(ctx, req)
@@ -227,6 +229,18 @@ func (s storageManager) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool
 		return nil, false
 	}
 	return d.(TaskStorageDriver), ok
+}
+
+func (s storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {
+	t, ok := s.LoadTask(
+		PeerTaskMetaData{
+			TaskID: req.TaskID,
+			PeerID: req.PeerID,
+		})
+	if !ok {
+		return ErrTaskNotFound
+	}
+	return t.(TaskStorageDriver).UpdateTask(ctx, req)
 }
 
 func (s storageManager) CreateTask(req RegisterTaskRequest) error {

@@ -32,11 +32,13 @@ const (
 	PeerTaskNotRegistered base.Code = 5001
 	// client can be migrated to another scheduler
 	ResourceLacked base.Code = 5002
+	// client should try to download from source
+	BackSource base.Code = 5003
 
 	// cdnsystem processing error 6000-6999
-	CdnError base.Code = 6000
+	CdnError            base.Code = 6000
 	CdnTaskRegistryFail base.Code = 6001
-	CdnTaskNotFound base.Code = 6404
+	CdnTaskNotFound     base.Code = 6404
 
 	// manager processing error 7000-7999
 	ManagerError base.Code = 7000

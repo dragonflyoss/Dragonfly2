@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	pkgerrors "github.com/pkg/errors"
+
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -79,8 +81,20 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 		return 0, err
 	}
 	n, err := io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return 0, err
+	}
+	if n != req.Range.Length {
+		if req.UnknownLength {
+			// when back source, and can not detect content length, we need update real length
+			req.Range.Length = n
+			// when n == 0, skip
+			if n == 0 {
+				return 0, nil
+			}
+		} else {
+			return n, pkgerrors.New("short read")
+		}
 	}
 	t.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",
 		n, t.dataFilePath, req.Num, req.Range.Start, req.Range.Length)
@@ -92,6 +106,13 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	}
 	t.Pieces[req.Num] = req.PieceMetaData
 	return n, nil
+}
+
+func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {
+	t.Lock()
+	defer t.Unlock()
+	t.persistentMetadata.ContentLength = req.ContentLength
+	return nil
 }
 
 // GetPiece get a LimitReadCloser from task data with seeked, caller should read bytes and close it.
