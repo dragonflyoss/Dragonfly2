@@ -334,13 +334,14 @@ func (s storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 					TaskMeta:      map[string]string{},
 					Pieces:        map[int32]PieceMetaData{},
 				},
-				RWMutex:          &sync.RWMutex{},
-				dataDir:          dataDir,
-				metadataFilePath: path.Join(dataDir, taskMetaData),
-				dataFilePath:     path.Join(dataDir, taskData),
-				expireTime:       s.storeOption.TaskExpireTime.Duration,
-				lastAccess:       time.Now(),
-				gcCallback:       gcCallback,
+				RWMutex:             &sync.RWMutex{},
+				dataDir:             dataDir,
+				metadataFilePath:    path.Join(dataDir, taskMetaData),
+				dataFilePath:        path.Join(dataDir, taskData),
+				expireTime:          s.storeOption.TaskExpireTime.Duration,
+				lastAccess:          time.Now(),
+				gcCallback:          gcCallback,
+				SugaredLoggerOnWith: logger.With("task", taskID, "peer", peerID, "component", s.storeStrategy),
 			}
 			switch t.StoreStrategy {
 			case string(SimpleLocalTaskStoreStrategy):

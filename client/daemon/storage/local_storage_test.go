@@ -197,8 +197,10 @@ func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 		lastAccess:   time.Time{},
 	}
 	err = ts.Store(context.Background(), &StoreRequest{
-		TaskID:      ts.TaskID,
-		Destination: dst,
+		CommonTaskRequest: CommonTaskRequest{
+			TaskID:      ts.TaskID,
+			Destination: dst,
+		},
 	})
 	assert.Nil(err, "store test data")
 	bs, err := ioutil.ReadFile(dst)

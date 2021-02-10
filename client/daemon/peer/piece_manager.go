@@ -19,13 +19,14 @@ package peer
 import (
 	"context"
 	"io"
+	"math"
 	"time"
 
-	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
+	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
@@ -42,9 +43,10 @@ type PieceManager interface {
 
 type pieceManager struct {
 	*rate.Limiter
-	storageManager  storage.TaskStorageDriver
-	pieceDownloader PieceDownloader
-	resourceClient  source.ResourceClient
+	storageManager   storage.TaskStorageDriver
+	pieceDownloader  PieceDownloader
+	resourceClient   source.ResourceClient
+	computePieceSize func(length int64) int32
 }
 
 func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (PieceManager, error) {
@@ -53,8 +55,9 @@ func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (
 		return nil, err
 	}
 	pm := &pieceManager{
-		storageManager: s,
-		resourceClient: resourceClient,
+		storageManager:   s,
+		resourceClient:   resourceClient,
+		computePieceSize: computePieceSize,
 	}
 	for _, opt := range opts {
 		opt(pm)
@@ -298,7 +301,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, url str
 	defer response.Body.Close()
 
 	// 2. save to storage
-	pieceSize := computePieceSize(contentLength)
+	pieceSize := pm.computePieceSize(contentLength)
 	// handle resource which content length is unknown
 	if contentLength == -1 {
 		var (
@@ -329,8 +332,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, url str
 		//return nil
 	}
 
-	maxPieceNum := int32(contentLength/int64(pieceSize) +
-		int64(pieceSize)*(contentLength%int64(pieceSize)))
+	maxPieceNum := int32(math.Ceil(float64(contentLength) / float64(pieceSize)))
 	for pieceNum := int32(0); pieceNum < maxPieceNum; pieceNum++ {
 		size := pieceSize
 		offset := uint64(pieceNum) * uint64(pieceSize)
@@ -344,7 +346,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, url str
 			return er
 		}
 		if n != int64(size) {
-			return errors.New("short read")
+			return storage.ErrShortRead
 		}
 	}
 	return nil
