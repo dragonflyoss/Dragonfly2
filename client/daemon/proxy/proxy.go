@@ -148,17 +148,13 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("ServeHTTP: %s-%+v\n", r.Method, r.URL)
 	if r.Method == http.MethodConnect {
-		fmt.Println("Handle HTTPS:")
 		// handle https proxy requests
 		proxy.handleHTTPS(w, r)
 	} else if r.URL.Scheme == "" {
-		fmt.Println("Direct Handler:")
 		// handle direct requests
 		proxy.directHandler.ServeHTTP(w, r)
 	} else {
-		fmt.Println("Handle HTTP:")
 		// handle http proxy requests
 		proxy.handleHTTP(w, r)
 	}
@@ -191,8 +187,6 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Debugf("hijack https request to %s", r.Host)
-
-	fmt.Printf("Proxy Cert: %+v\n", proxy.cert.Leaf.IsCA)
 
 	sConfig := new(tls.Config)
 	if proxy.cert.Leaf != nil && proxy.cert.Leaf.IsCA {
@@ -271,9 +265,6 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 }
 
 func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("Request: %+v\n\n", r)
-	fmt.Println("------------------------------------")
-
 	reverseProxy := httputil.NewSingleHostReverseProxy(proxy.registry.Remote.URL)
 	t, err := transport.New(
 		transport.WithPeerHost(proxy.peerHost),

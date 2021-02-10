@@ -18,7 +18,6 @@ package transport
 
 import (
 	"crypto/tls"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -121,9 +120,6 @@ func (rt *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	res, err := rt.baseRoundTripper.RoundTrip(req)
 
-	fmt.Printf("Response: %+v\n\n", res)
-	fmt.Printf("Response Body: %#v\n\n", res.StatusCode)
-	fmt.Println("------------------------------------")
 	return res, err
 }
 
