@@ -157,13 +157,12 @@ func TestUnmarshalJSON(t *testing.T) {
 		"tls": {
 			"key": "../daemon/test/testdata/certs/sca.key",
 			"cert": "../daemon/test/testdata/certs/sca.crt",
-			"ca_cert": "../daemon/test/testdata/certs/mca.crt"
+			"ca_cert": "../daemon/test/testdata/certs/ca.crt"
 		},
 		"url": "https://d7y.io",
     "certs": [
 			"../daemon/test/testdata/certs/ca.crt",
-			"../daemon/test/testdata/certs/mca.crt",
-			"../daemon/test/testdata/certs/sca.crt"
+			"../daemon/test/testdata/certs/sca.crt",
     ],
 		"regx": "blobs/sha256.*",
 		"port1": 1001,
@@ -215,9 +214,9 @@ func TestUnmarshalYAML(t *testing.T) {
 tls:
   key: ../daemon/test/testdata/certs/sca.key
   cert: ../daemon/test/testdata/certs/sca.crt
-  ca_cert: ../daemon/test/testdata/certs/mca.crt
+  ca_cert: ../daemon/test/testdata/certs/ca.crt
 url: https://d7y.io
-certs: ["../daemon/test/testdata/certs/ca.crt", "../daemon/test/testdata/certs/mca.crt", "../daemon/test/testdata/certs/sca.crt"]
+certs: ["../daemon/test/testdata/certs/ca.crt", "../daemon/test/testdata/certs/sca.crt"]
 regx: blobs/sha256.*
 port1: 1001 
 port2:
@@ -268,7 +267,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 	hijackExp, _ := NewRegexp("mirror.aliyuncs.com:443")
 
 	certPool := x509.NewCertPool()
-	ca, _ := ioutil.ReadFile("../daemon/test/testdata/certs/mca.crt")
+	ca, _ := ioutil.ReadFile("../daemon/test/testdata/certs/ca.crt")
 	certPool.AppendCertsFromPEM(ca)
 
 	peerHostOption := &PeerHostOption{
