@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store/local"
 	"path/filepath"
 	"sync"
 )
@@ -56,7 +57,7 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 func (sm *Manager) Get(name string) (*Store, error) {
 	v := plugins.GetPlugin(config.StoragePlugin, name)
 	if v == nil {
-		if name == LocalStorageDriver {
+		if name == local.LocalStorageDriver {
 			return sm.getDefaultStorage()
 		}
 		return nil, fmt.Errorf("not existed storage: %s", name)
@@ -84,7 +85,7 @@ func (sm *Manager) getDefaultStorage() (*Store, error) {
 		return nil, fmt.Errorf("cannot init local storage without home path")
 	}
 	cfg := fmt.Sprintf("baseDir: %s", filepath.Join(sm.cfg.HomeDir, config.RepoHome))
-	s, err := NewStore(LocalStorageDriver, NewLocalStorage, cfg)
+	s, err := NewStore(local.LocalStorageDriver, local.NewLocalStorage, cfg)
 	if err != nil {
 		return nil, err
 	}

@@ -16,7 +16,10 @@
 
 package server
 
-import _ "github.com/dragonflyoss/Dragonfly2/cdnsystem/source/httpprotocol"
+import (
+	_ "github.com/dragonflyoss/Dragonfly2/cdnsystem/source/httpprotocol"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store/local"
+)
 import _ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
 
 import (
@@ -50,7 +53,7 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 		return nil, err
 	}
 
-	storeLocal, err := storeMgr.Get(store.LocalStorageDriver)
+	storeLocal, err := storeMgr.Get(local.LocalStorageDriver)
 	if err != nil {
 		return nil, err
 	}
