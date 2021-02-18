@@ -91,12 +91,7 @@ func (wg *WorkerGroup) ReceiveJob(job *types.PeerTask) {
 	if job == nil {
 		return
 	}
-	var choiceWorkerId uint32
-	if job.Host == nil {
-		choiceWorkerId = crc32.ChecksumIEEE([]byte(job.Pid)) % uint32(wg.workerNum)
-	} else {
-		choiceWorkerId = crc32.ChecksumIEEE([]byte(job.Host.Uuid)) % uint32(wg.workerNum)
-	}
+	choiceWorkerId := crc32.ChecksumIEEE([]byte(job.Task.TaskId)) % uint32(wg.workerNum)
 	wg.workerList[choiceWorkerId].ReceiveJob(job)
 }
 
@@ -104,12 +99,6 @@ func (wg *WorkerGroup) ReceiveUpdatePieceResult(pr *scheduler2.PieceResult) {
 	if pr == nil {
 		return
 	}
-	var choiceWorkerId uint32
-	pt, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
-	if pt == nil || pt.Host == nil {
-		choiceWorkerId = crc32.ChecksumIEEE([]byte(pr.SrcPid)) % uint32(wg.workerNum)
-	} else {
-		choiceWorkerId = crc32.ChecksumIEEE([]byte(pt.Host.Uuid)) % uint32(wg.workerNum)
-	}
+	choiceWorkerId := crc32.ChecksumIEEE([]byte(pr.SrcPid)) % uint32(wg.workerNum)
 	wg.workerList[choiceWorkerId].ReceiveUpdatePieceResult(pr)
 }

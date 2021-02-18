@@ -48,7 +48,7 @@ func (s *Server) Start() (err error) {
 	defer s.worker.Stop()
 
 	s.running = true
-	logger.Infof("start server at port %s", port)
+	logger.Infof("start server at port %d", port)
 	err = rpc.StartTcpServer(port, port, s.server)
 	return
 }

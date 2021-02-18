@@ -75,7 +75,7 @@ func (w *Worker) doUpdatePieceResultWorker() {
 		}
 		peerTask, needSchedule, err := w.UpdatePieceResult(pr)
 		if needSchedule {
-			w.ReceiveJob(peerTask)
+			w.sendJob(peerTask)
 		}
 
 		if err != nil {
@@ -105,6 +105,7 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 			return
 		}
 	}
+	var dstPeerTask *types.PeerTask
 	if pr.DstPid == "" {
 		if peerTask.GetParent() == nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
@@ -112,14 +113,9 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 			return
 		}
 	} else {
-		dstPeerTask, _ := ptMgr.GetPeerTask(pr.DstPid)
+		dstPeerTask, _ = ptMgr.GetPeerTask(pr.DstPid)
 		if dstPeerTask == nil {
-			ptMgr.AddFakePeerTask(pr.DstPid, peerTask.Task)
-			peerTask.AddParent(dstPeerTask, 1)
-		} else {
-			if peerTask.GetParent() == nil {
-				peerTask.AddParent(dstPeerTask, 1)
-			}
+			dstPeerTask = ptMgr.AddFakePeerTask(pr.DstPid, peerTask.Task)
 		}
 	}
 
@@ -131,7 +127,10 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 	}
 
 	peerTask.AddPieceStatus(pr)
-	if w.scheduler.IsNodeBad(peerTask) {
+	if dstPeerTask != nil && peerTask.GetParent() == nil {
+		peerTask.SetNodeStatus(types.PeerTaskStatusAddParent, dstPeerTask)
+		needSchedule = true
+	} else if w.scheduler.IsNodeBad(peerTask) {
 		peerTask.SetNodeStatus(types.PeerTaskStatusBadNode)
 		needSchedule = true
 	} else if w.scheduler.NeedAdjustParent(peerTask) {
@@ -175,6 +174,15 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 	}()
 
 	switch peerTask.GetNodeStatus() {
+	case types.PeerTaskStatusAddParent:
+		parent, _ := peerTask.GetJobData().(*types.PeerTask)
+		if parent == nil {
+			peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+			return
+		}
+		peerTask.AddParent(parent, 1)
+		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+		return
 	case types.PeerTaskStatusNeedParent:
 		parent, _, err := w.scheduler.SchedulerParent(peerTask)
 		if err != nil {

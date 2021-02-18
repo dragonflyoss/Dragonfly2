@@ -22,6 +22,7 @@ const (
 )
 
 var (
+	cdnList string
 	schedulerViper = viper.GetViper()
 )
 
@@ -94,6 +95,9 @@ func setupFlags(cmd *cobra.Command) {
 
 	flagSet.Int("sender-job-pool-size", defaultBaseProperties.Worker.WorkerJobPoolSize,
 		"sender-job-pool-size is used for scheduler and do not change it")
+
+	flagSet.Var(config.NewCdnValue(&defaultBaseProperties.CDN), "cdn-list",
+		"cdn list with format of [CdnName1]:[ip1]:[rpcPort1]:[downloadPort1]|[CdnName2]:[ip2]:[rpcPort2]:[downloadPort2]")
 
 	exitOnError(bindRootFlags(schedulerViper), "bind root command flags")
 }
@@ -171,6 +175,7 @@ func getConfigFromViper(v *viper.Viper) (*config.Config, error) {
 
 	if err := v.Unmarshal(cfg, func(dc *mapstructure.DecoderConfig) {
 		dc.TagName = "yaml"
+		dc.Squash = true
 		dc.DecodeHook = decodeWithYAML(
 			reflect.TypeOf(time.Second),
 		)

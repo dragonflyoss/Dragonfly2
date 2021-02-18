@@ -16,6 +16,8 @@
 
 package config
 
+import "runtime"
+
 const (
 	DefaultConfigFilePath string = "conf/scheduler.yml"
 )
@@ -75,7 +77,7 @@ func createDefaultConfig() *Config {
 			Port: 8002,
 		},
 		Worker: schedulerWorkerConfig{
-			WorkerNum:         1,
+			WorkerNum:         runtime.GOMAXPROCS(0),
 			WorkerJobPoolSize: 10000,
 			SenderNum:         10,
 			SenderJobPoolSize: 10000,

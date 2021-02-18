@@ -90,7 +90,6 @@ func TestParseRange(t *testing.T) {
 	}
 }
 
-
 func TestGetRange(t *testing.T) {
 	if GetContentRange(100, 200, -1) != "bytes 100-200/*" {
 		t.Fail()

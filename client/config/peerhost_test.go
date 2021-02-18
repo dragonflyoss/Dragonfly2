@@ -51,15 +51,15 @@ func Test_UnmarshalJSON(t *testing.T) {
 }`)
 
 	var s = struct {
-		TLSConfig *TLSConfig         `json:"tls"`
-		URL       *URL               `json:"url"`
-		Certs     *CertPool          `json:"certs"`
-		Regx      *Regexp            `json:"regx"`
-		Port1     TCPListenPortRange `json:"port1"`
-		Port2     TCPListenPortRange `json:"port2"`
-		Timeout   clientutil.Duration           `json:"timeout"`
-		Limit     clientutil.RateLimit          `json:"limit"`
-		Type      dfnet.NetworkType  `json:"type"`
+		TLSConfig *TLSConfig           `json:"tls"`
+		URL       *URL                 `json:"url"`
+		Certs     *CertPool            `json:"certs"`
+		Regx      *Regexp              `json:"regx"`
+		Port1     TCPListenPortRange   `json:"port1"`
+		Port2     TCPListenPortRange   `json:"port2"`
+		Timeout   clientutil.Duration  `json:"timeout"`
+		Limit     clientutil.RateLimit `json:"limit"`
+		Type      dfnet.NetworkType    `json:"type"`
 	}{}
 	json.Unmarshal(bytes, &s)
 	t.Logf("%#v", s)
@@ -84,15 +84,15 @@ type: tcp
 `)
 
 	var s = struct {
-		TLSConfig *TLSConfig         `yaml:"tls"`
-		URL       *URL               `yaml:"url"`
-		Certs     *CertPool          `yaml:"certs"`
-		Regx      *Regexp            `yaml:"regx"`
-		Port1     TCPListenPortRange `yaml:"port1"`
-		Port2     TCPListenPortRange `yaml:"port2"`
-		Timeout   clientutil.Duration           `yaml:"timeout"`
-		Limit     clientutil.RateLimit          `yaml:"limit"`
-		Type      dfnet.NetworkType  `yaml:"type"`
+		TLSConfig *TLSConfig           `yaml:"tls"`
+		URL       *URL                 `yaml:"url"`
+		Certs     *CertPool            `yaml:"certs"`
+		Regx      *Regexp              `yaml:"regx"`
+		Port1     TCPListenPortRange   `yaml:"port1"`
+		Port2     TCPListenPortRange   `yaml:"port2"`
+		Timeout   clientutil.Duration  `yaml:"timeout"`
+		Limit     clientutil.RateLimit `yaml:"limit"`
+		Type      dfnet.NetworkType    `yaml:"type"`
 	}{}
 	err := yaml.Unmarshal(bytes, &s)
 	if err != nil {

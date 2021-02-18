@@ -36,6 +36,7 @@ const (
 	PeerTaskStatusNeedCheckNode  PeerTaskStatus = 5
 	PeerTaskStatusDone           PeerTaskStatus = 6
 	PeerTaskStatusLeaveNode      PeerTaskStatus = 7
+	PeerTaskStatusAddParent      PeerTaskStatus = 8
 )
 
 type PeerTask struct {
@@ -62,7 +63,8 @@ type PeerTask struct {
 	Success bool
 	Code    base.Code
 
-	status PeerTaskStatus
+	status  PeerTaskStatus
+	jobData interface{}
 }
 
 type PeerEdge struct {
@@ -390,10 +392,21 @@ func (pt *PeerTask) GetNodeStatus() PeerTaskStatus {
 	return pt.status
 }
 
-func (pt *PeerTask) SetNodeStatus(status PeerTaskStatus) {
+func (pt *PeerTask) GetJobData() interface{} {
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
+	return pt.jobData
+}
+
+func (pt *PeerTask) SetNodeStatus(status PeerTaskStatus, data ...interface{}) {
 	pt.lock.Lock()
 	defer pt.lock.Unlock()
 	pt.status = status
+	if len(data) > 0 {
+		pt.jobData = data[0]
+	} else {
+		pt.jobData = nil
+	}
 }
 
 func (pt *PeerTask) IsWaiting() bool {
