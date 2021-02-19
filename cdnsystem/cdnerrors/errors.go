@@ -63,6 +63,9 @@ var (
 	// ErrKeyNotFound is an error which will be returned when the key can not be found.
 	ErrKeyNotFound = errors.New("the key not found")
 
+	// ErrFileNotExist represents the file is not exists
+	ErrFileNotExist = errors.New("file not exist")
+
 	// ErrEmptyKey represents the key is empty or nil.
 	ErrEmptyKey = errors.New("empty key")
 
@@ -86,6 +89,7 @@ var (
 
 	// ErrUnknownError represents the error should not happen and the cause of that is unknown.
 	ErrUnknownError = errors.New("unknown error")
+
 )
 
 // IsSystemError checks the error is a system error or not.
@@ -118,6 +122,30 @@ func IsAuthenticationRequired(err error) bool {
 	return errors.Cause(err) == ErrAuthenticationRequired
 }
 
+func IsPieceCountNotEqual(err error) bool {
+	return errors.Cause(err) == ErrPieceCountNotEqual
+}
+
+func IsFileLengthNotEqual(err error) bool {
+	return errors.Cause(err) == ErrFileLengthNotEqual
+}
+
+func IsDownloadFail(err error) bool {
+	return errors.Cause(err) == ErrDownloadFail
+}
+
+func IsResourceExpired(err error) bool {
+	return errors.Cause(err) == ErrResourceExpired
+}
+
+func IsResourceNotSupportRangeRequest(err error) bool {
+	return errors.Cause(err) == ErrResourceNotSupportRangeRequest
+}
+
+func IsPieceMd5CheckFail(err error) bool {
+	return errors.Cause(err) == ErrPieceMd5CheckFail
+}
+
 func IsDataNotFound(err error) bool {
 	return errors.Cause(err) == ErrDataNotFound
 }
@@ -132,9 +160,36 @@ func IsEmptyKey(err error) bool {
 	return errors.Cause(err) == ErrEmptyKey
 }
 
+func IsEmptyValue(err error) bool {
+	return errors.Cause(err) == ErrEmptyValue
+}
+
+func IsInvalidValue(err error) bool {
+	return errors.Cause(err) == ErrInvalidValue
+}
+
+func IsNotInitialized(err error) bool {
+	return errors.Cause(err) == ErrNotInitialized
+}
+
+func IsConvertFailed(err error) bool {
+	return errors.Cause(err) == ErrConvertFailed
+}
+
+func IsRangeNotSatisfiable(err error) bool {
+	return errors.Cause(err) == ErrRangeNotSatisfiable
+}
+
+func IsAddressReused(err error) bool {
+	return errors.Cause(err) == ErrAddressReused
+}
+
 // IsUnknownError checks the error is UnknownError or not.
 func IsUnknownError(err error) bool {
 	return errors.Cause(err) == ErrUnknownError
 }
 
+func IsNilError(err error) bool {
+	return errors.Cause(err) == nil
+}
 

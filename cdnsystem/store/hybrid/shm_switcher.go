@@ -14,12 +14,31 @@
  * limitations under the License.
  */
 
-package util
+package hybrid
 
-import (
-	"testing"
-)
+import "sync"
 
-func TestLang(t *testing.T) {
+type ShmSwitcherService struct {
+	switcher        bool
+	whiteList       []string
+	useShmThreshold int64
+	sync.Mutex
+}
 
+func NewShmSwitcher() *ShmSwitcherService {
+	return &ShmSwitcherService{
+		switcher:        false,
+		whiteList:       nil,
+		useShmThreshold: 1024 * 1024 * 1024,
+		Mutex:           sync.Mutex{},
+	}
+}
+
+func UpdateSwitcher(shmSwitcher string) {
+
+}
+
+// check Check if SHM can be used
+func check(url string, fileLength int64) bool {
+	return false
 }

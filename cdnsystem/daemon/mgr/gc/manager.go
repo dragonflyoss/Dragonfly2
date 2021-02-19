@@ -21,6 +21,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
 	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
+	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
@@ -96,6 +97,32 @@ func (gcm *Manager) StartGC(ctx context.Context) {
 			gcm.gcDisk(ctx)
 		}
 	}()
+
+	go func() {
+		if !fileutils.PathExist(config.ShmHome) {
+			return
+		}
+		fsize, err := fileutils.GetTotalSpace(config.ShmHome)
+		if err != nil {
+			logger.CoreLogger.Error()
+			return
+		}
+		diff := fileutils.Fsize(0)
+		if fsize < 72 * 1024 * 1024 * 1024 {
+			diff = fileutils.Fsize(72 * 1024 * 1024 * 1024) - fsize
+		}
+		if diff >= fsize {
+			return
+		}
+
+		time.Sleep(gcm.cfg.GCInitialDelay)
+
+		// execute the GC by fixed delay
+		ticker := time.NewTicker(gcm.cfg.GCShmInterval)
+		for range ticker.C {
+			gcm.gcShm(ctx)
+		}
+	}()
 }
 
 // GCTask is used to do the gc job with specified taskID.
@@ -103,3 +130,4 @@ func (gcm *Manager) StartGC(ctx context.Context) {
 func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) {
 	gcm.gcTask(ctx, taskID, full)
 }
+

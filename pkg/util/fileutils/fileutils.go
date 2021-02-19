@@ -243,6 +243,25 @@ func GetFreeSpace(path string) (Fsize, error) {
 	return Fsize(fs.Bavail * uint64(fs.Bsize)), nil
 }
 
+// GetTotalSpace
+func GetTotalSpace(path string) (Fsize, error) {
+	fs := syscall.Statfs_t{}
+	if err := syscall.Statfs(path, &fs); err != nil {
+		return 0, err
+	}
+
+	return Fsize(fs.Blocks * uint64(fs.Bsize)), nil
+}
+
+// GetUsedSpace
+func GetUsedSpace(path string) (Fsize, error) {
+	fs := syscall.Statfs_t{}
+	if err := syscall.Statfs(path, &fs); err != nil {
+		return 0, err
+	}
+	return Fsize((fs.Blocks - fs.Bavail) * uint64(fs.Bsize)), nil
+}
+
 // IsEmptyDir check whether the directory is empty.
 func IsEmptyDir(path string) (bool, error) {
 	f, err := os.Open(path)
@@ -258,7 +277,7 @@ func IsEmptyDir(path string) (bool, error) {
 }
 
 func GetFileContentSize(path string) (int64, error) {
-	fi, err := os.Stat("water")
+	fi, err := os.Stat(path)
 	if err != nil {
 		return 0, err
 	}

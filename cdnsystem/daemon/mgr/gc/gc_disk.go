@@ -23,6 +23,7 @@ import (
 	"github.com/dragonflyoss/Dragonfly2/pkg/dflog"
 )
 
+// gcDisk
 func (gcm *Manager) gcDisk(ctx context.Context) {
 	gcTaskIDs, err := gcm.cdnMgr.GetGCTaskIDs(ctx, gcm.taskMgr)
 	if err != nil {
@@ -38,6 +39,7 @@ func (gcm *Manager) gcDisk(ctx context.Context) {
 	gcm.deleteTaskDisk(ctx, gcTaskIDs)
 }
 
+// deleteTaskDisk
 func (gcm *Manager) deleteTaskDisk(ctx context.Context, gcTaskIDs []string) {
 	// NOTE: We only gc a certain percentage of tasks which calculated by the config.CleanRatio.
 	gcLen := (len(gcTaskIDs)*gcm.cfg.CleanRatio + 9) / 10

@@ -20,13 +20,12 @@ import (
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store/local"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store/disk"
 	"path/filepath"
 	"sync"
 )
 
-// StorageBuilder is a function that creates a new storage plugin instant
-// with the giving conf.
+// StorageBuilder is a function that creates a new storage plugin instant with the giving conf.
 type StorageBuilder func(conf string) (StorageDriver, error)
 
 // Register defines an interface to register a driver with specified name.
@@ -57,7 +56,7 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 func (sm *Manager) Get(name string) (*Store, error) {
 	v := plugins.GetPlugin(config.StoragePlugin, name)
 	if v == nil {
-		if name == local.LocalStorageDriver {
+		if name == disk.StorageDriver {
 			return sm.getDefaultStorage()
 		}
 		return nil, fmt.Errorf("not existed storage: %s", name)
@@ -84,8 +83,8 @@ func (sm *Manager) getDefaultStorage() (*Store, error) {
 	if sm.cfg == nil {
 		return nil, fmt.Errorf("cannot init local storage without home path")
 	}
-	cfg := fmt.Sprintf("baseDir: %s", filepath.Join(sm.cfg.HomeDir, config.RepoHome))
-	s, err := NewStore(local.LocalStorageDriver, local.NewLocalStorage, cfg)
+	cfg := fmt.Sprintf("baseDir: %s", filepath.Join(sm.cfg.DownloadPath, config.RepoHome))
+	s, err := NewStore(disk.StorageDriver, disk.NewStorage, cfg)
 	if err != nil {
 		return nil, err
 	}

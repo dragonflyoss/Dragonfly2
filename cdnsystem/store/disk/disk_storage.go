@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package local
+package disk
 
 import (
 	"context"
@@ -32,16 +32,15 @@ import (
 	"path/filepath"
 )
 
-const LocalStorageDriver = "local"
+const StorageDriver = "disk"
 
 var fileLocker = util.NewLockerPool()
 
 func init() {
-	store.Register(LocalStorageDriver, NewLocalStorage)
+	store.Register(StorageDriver, NewStorage)
 }
 
 func lock(path string, offset int64, ro bool) {
-	// todo confirm
 	if offset != -1 {
 		fileLocker.GetLock(getLockKey(path, -1), true)
 	}
@@ -57,16 +56,16 @@ func unLock(path string, offset int64, ro bool) {
 	fileLocker.ReleaseLock(getLockKey(path, offset), ro)
 }
 
-// localStorage is one of the implementations of StorageDriver using local file system.
-type localStorage struct {
+// diskStorage is one of the implementations of StorageDriver using local disk file system.
+type diskStorage struct {
 	// BaseDir is the dir that local storage driver will store content based on it.
 	BaseDir string `yaml:"baseDir"`
 }
 
-// NewLocalStorage performs initialization for localStorage and return a StorageDriver.
-func NewLocalStorage(conf string) (store.StorageDriver, error) {
+// NewStorage performs initialization for disk Storage and return a StorageDriver.
+func NewStorage(conf string) (store.StorageDriver, error) {
 	// type assertion for config
-	cfg := &localStorage{}
+	cfg := &diskStorage{}
 	if err := yaml.Unmarshal([]byte(conf), cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %v", err)
 	}
@@ -79,19 +78,19 @@ func NewLocalStorage(conf string) (store.StorageDriver, error) {
 		return nil, err
 	}
 
-	return &localStorage{
+	return &diskStorage{
 		BaseDir: cfg.BaseDir,
 	}, nil
 }
 
 // Get the content of key from storage and return in io stream.
-func (ls *localStorage) Get(ctx context.Context, raw *store.Raw) (io.Reader, error) {
+func (ls *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.Reader, error) {
 	path, info, err := ls.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := checkGetRaw(raw, info.Size()); err != nil {
+	if err := store.CheckGetRaw(raw, info.Size()); err != nil {
 		return nil, err
 	}
 
@@ -118,18 +117,17 @@ func (ls *localStorage) Get(ctx context.Context, raw *store.Raw) (io.Reader, err
 		buf := make([]byte, 256*1024)
 		io.CopyBuffer(w, reader, buf)
 	}()
-
 	return r, nil
 }
 
 // GetBytes gets the content of key from storage and return in bytes.
-func (ls *localStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []byte, err error) {
+func (ls *diskStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []byte, err error) {
 	path, info, err := ls.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := checkGetRaw(raw, info.Size()); err != nil {
+	if err := store.CheckGetRaw(raw, info.Size()); err != nil {
 		return nil, err
 	}
 
@@ -157,8 +155,8 @@ func (ls *localStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []by
 }
 
 // Put reads the content from reader and put it into storage.
-func (ls *localStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) error {
-	if err := checkPutRaw(raw); err != nil {
+func (ls *diskStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) error {
+	if err := store.CheckPutRaw(raw); err != nil {
 		return err
 	}
 
@@ -202,8 +200,8 @@ func (ls *localStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader)
 }
 
 // PutBytes puts the content of key from storage with bytes.
-func (ls *localStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte) error {
-	if err := checkPutRaw(raw); err != nil {
+func (ls *diskStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte) error {
+	if err := store.CheckPutRaw(raw); err != nil {
 		return err
 	}
 
@@ -240,8 +238,8 @@ func (ls *localStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byt
 }
 
 // AppendBytes append the content of key from storage with bytes.
-func (ls *localStorage) AppendBytes(ctx context.Context, raw *store.Raw, data []byte) error {
-	if err := checkPutRaw(raw); err != nil {
+func (ls *diskStorage) AppendBytes(ctx context.Context, raw *store.Raw, data []byte) error {
+	if err := store.CheckPutRaw(raw); err != nil {
 		return err
 	}
 
@@ -258,14 +256,21 @@ func (ls *localStorage) AppendBytes(ctx context.Context, raw *store.Raw, data []
 		return err
 	}
 	defer f.Close()
-	if _, err := f.Write(data); err != nil {
+	if raw.Length == 0 {
+		if _, err := f.Write(data); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if _, err := f.Write(data[:raw.Length]); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Stat determines whether the file exists.
-func (ls *localStorage) Stat(ctx context.Context, raw *store.Raw) (*store.StorageInfo, error) {
+func (ls *diskStorage) Stat(ctx context.Context, raw *store.Raw) (*store.StorageInfo, error) {
 	_, fileInfo, err := ls.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
@@ -285,7 +290,7 @@ func (ls *localStorage) Stat(ctx context.Context, raw *store.Raw) (*store.Storag
 
 // Remove deletes a file or dir.
 // It will force delete the file or dir when the raw.Trunc is true.
-func (ls *localStorage) Remove(ctx context.Context, raw *store.Raw) error {
+func (ls *diskStorage) Remove(ctx context.Context, raw *store.Raw) error {
 	path, info, err := ls.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
@@ -304,8 +309,8 @@ func (ls *localStorage) Remove(ctx context.Context, raw *store.Raw) error {
 	return err
 }
 
-// GetAvailSpace returns the available disk space in B.
-func (ls *localStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
+// GetAvailSpace returns the available disk space in Byte.
+func (ls *diskStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
 	path, _, err := ls.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return 0, err
@@ -318,7 +323,7 @@ func (ls *localStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (file
 
 // Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 // calling walkFn for each file or directory in the tree, including root.
-func (ls *localStorage) Walk(ctx context.Context, raw *store.Raw) error {
+func (ls *diskStorage) Walk(ctx context.Context, raw *store.Raw) error {
 	path, _, err := ls.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
@@ -333,7 +338,7 @@ func (ls *localStorage) Walk(ctx context.Context, raw *store.Raw) error {
 // helper function
 
 // preparePath gets the target path and creates the upper directory if it does not exist.
-func (ls *localStorage) preparePath(bucket, key string) (string, error) {
+func (ls *diskStorage) preparePath(bucket, key string) (string, error) {
 	dir := filepath.Join(ls.BaseDir, bucket)
 
 	if err := fileutils.CreateDirectory(dir); err != nil {
@@ -345,12 +350,12 @@ func (ls *localStorage) preparePath(bucket, key string) (string, error) {
 }
 
 // statPath determines whether the target file exists and returns an fileMutex if so.
-func (ls *localStorage) statPath(bucket, key string) (string, os.FileInfo, error) {
+func (ls *diskStorage) statPath(bucket, key string) (string, os.FileInfo, error) {
 	filePath := filepath.Join(ls.BaseDir, bucket, key)
 	f, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil, errors.Wrapf(cdnerrors.ErrKeyNotFound, "bucket(%s) key(%s)", bucket, key)
+			return "", nil, errors.Wrapf(cdnerrors.ErrFileNotExist, "bucket(%s) key(%s)", bucket, key)
 		}
 		return "", nil, err
 	}
@@ -360,26 +365,4 @@ func (ls *localStorage) statPath(bucket, key string) (string, os.FileInfo, error
 
 func getLockKey(path string, offset int64) string {
 	return fmt.Sprintf("%s:%d", path, offset)
-}
-
-func checkGetRaw(raw *store.Raw, fileLength int64) error {
-	if fileLength < raw.Offset {
-		return errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "the offset: %d is lager than the file length: %d", raw.Offset, fileLength)
-	}
-
-	if raw.Length < 0 {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the length: %d is not a positive integer", raw.Length)
-	}
-
-	if fileLength < (raw.Offset + raw.Length) {
-		return errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "the offset: %d and length: %d is lager than the file length: %d", raw.Offset, raw.Length, fileLength)
-	}
-	return nil
-}
-
-func checkPutRaw(raw *store.Raw) error {
-	if raw.Length < 0 {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the length: %d should not be a negative integer", raw.Length)
-	}
-	return nil
 }

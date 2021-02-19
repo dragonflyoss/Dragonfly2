@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package memory
+package hybrid
 
 import (
 	"context"
 	"fmt"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store/disk"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/util"
 	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
-	statutims "github.com/dragonflyoss/Dragonfly2/pkg/util/stat"
+	statutils "github.com/dragonflyoss/Dragonfly2/pkg/util/stat"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -33,12 +32,12 @@ import (
 	"path/filepath"
 )
 
-const StorageDriver = "memory"
+const StorageDriver = "hybrid"
 
 var fileLocker = util.NewLockerPool()
 
 func init() {
-	store.Register(StorageDriver, disk.NewStorage)
+	store.Register(StorageDriver, NewStorage)
 }
 
 func lock(path string, offset int64, ro bool) {
@@ -57,16 +56,16 @@ func unLock(path string, offset int64, ro bool) {
 	fileLocker.ReleaseLock(getLockKey(path, offset), ro)
 }
 
-// memoryStorage is one of the implementations of StorageDriver using memory file system.
-type memoryStorage struct {
-	// BaseDir is the dir that memory storage driver will store content based on it.
+// hybridStorage is one of the implementations of StorageDriver using local disk and memory file system.
+type hybridStorage struct {
+	// BaseDir is the dir that hybrid storage driver will store content based on it.
 	BaseDir string `yaml:"baseDir"`
 }
 
-// NewStorage performs initialization for memoryStorage and return a StorageDriver.
+// NewStorage performs initialization for hybridStorage and return a StorageDriver.
 func NewStorage(conf string) (store.StorageDriver, error) {
 	// type assertion for config
-	cfg := &memoryStorage{}
+	cfg := &hybridStorage{}
 	if err := yaml.Unmarshal([]byte(conf), cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %v", err)
 	}
@@ -79,14 +78,14 @@ func NewStorage(conf string) (store.StorageDriver, error) {
 		return nil, err
 	}
 
-	return &memoryStorage{
+	return &hybridStorage{
 		BaseDir: cfg.BaseDir,
 	}, nil
 }
 
 // Get the content of key from storage and return in io stream.
-func (ms *memoryStorage) Get(ctx context.Context, raw *store.Raw) (io.Reader, error) {
-	path, info, err := ms.statPath(raw.Bucket, raw.Key)
+func (hs *hybridStorage) Get(ctx context.Context, raw *store.Raw) (io.Reader, error) {
+	path, info, err := hs.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -123,8 +122,8 @@ func (ms *memoryStorage) Get(ctx context.Context, raw *store.Raw) (io.Reader, er
 }
 
 // GetBytes gets the content of key from storage and return in bytes.
-func (ms *memoryStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []byte, err error) {
-	path, info, err := ms.statPath(raw.Bucket, raw.Key)
+func (hs *hybridStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []byte, err error) {
+	path, info, err := hs.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -157,12 +156,12 @@ func (ms *memoryStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []b
 }
 
 // Put reads the content from reader and put it into storage.
-func (ms *memoryStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) error {
+func (hs *hybridStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) error {
 	if err := checkPutRaw(raw); err != nil {
 		return err
 	}
 
-	path, err := ms.preparePath(raw.Bucket, raw.Key)
+	path, err := hs.preparePath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -202,12 +201,12 @@ func (ms *memoryStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader
 }
 
 // PutBytes puts the content of key from storage with bytes.
-func (ms *memoryStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte) error {
+func (hs *hybridStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte) error {
 	if err := checkPutRaw(raw); err != nil {
 		return err
 	}
 
-	path, err := ms.preparePath(raw.Bucket, raw.Key)
+	path, err := hs.preparePath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -241,12 +240,12 @@ func (ms *memoryStorage) PutBytes(ctx context.Context, raw *store.Raw, data []by
 }
 
 // AppendBytes append the content of key from storage with bytes.
-func (ms *memoryStorage) AppendBytes(ctx context.Context, raw *store.Raw, data []byte) error {
+func (hs *hybridStorage) AppendBytes(ctx context.Context, raw *store.Raw, data []byte) error {
 	if err := checkPutRaw(raw); err != nil {
 		return err
 	}
 
-	path, err := ms.preparePath(raw.Bucket, raw.Key)
+	path, err := hs.preparePath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -266,8 +265,8 @@ func (ms *memoryStorage) AppendBytes(ctx context.Context, raw *store.Raw, data [
 }
 
 // Stat determines whether the file exists.
-func (ms *memoryStorage) Stat(ctx context.Context, raw *store.Raw) (*store.StorageInfo, error) {
-	_, fileInfo, err := ms.statPath(raw.Bucket, raw.Key)
+func (hs *hybridStorage) Stat(ctx context.Context, raw *store.Raw) (*store.StorageInfo, error) {
+	_, fileInfo, err := hs.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -279,15 +278,15 @@ func (ms *memoryStorage) Stat(ctx context.Context, raw *store.Raw) (*store.Stora
 	return &store.StorageInfo{
 		Path:       filepath.Join(raw.Bucket, raw.Key),
 		Size:       fileInfo.Size(),
-		CreateTime: statutims.Ctime(sys),
+		CreateTime: statutils.Ctime(sys),
 		ModTime:    fileInfo.ModTime(),
 	}, nil
 }
 
 // Remove deletes a file or dir.
 // It will force delete the file or dir when the raw.Trunc is true.
-func (ms *memoryStorage) Remove(ctx context.Context, raw *store.Raw) error {
-	path, info, err := ms.statPath(raw.Bucket, raw.Key)
+func (hs *hybridStorage) Remove(ctx context.Context, raw *store.Raw) error {
+	path, info, err := hs.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -305,9 +304,9 @@ func (ms *memoryStorage) Remove(ctx context.Context, raw *store.Raw) error {
 	return err
 }
 
-// GetAvaimspace returns the available disk space in B.
-func (ms *memoryStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
-	path, _, err := ms.statPath(raw.Bucket, raw.Key)
+// GetAvailSpace returns the available disk space in B.
+func (hs *hybridStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
+	path, _, err := hs.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return 0, err
 	}
@@ -319,8 +318,8 @@ func (ms *memoryStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fil
 
 // Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 // calling walkFn for each file or directory in the tree, including root.
-func (ms *memoryStorage) Walk(ctx context.Context, raw *store.Raw) error {
-	path, _, err := ms.statPath(raw.Bucket, raw.Key)
+func (hs *hybridStorage) Walk(ctx context.Context, raw *store.Raw) error {
+	path, _, err := hs.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -334,8 +333,8 @@ func (ms *memoryStorage) Walk(ctx context.Context, raw *store.Raw) error {
 // helper function
 
 // preparePath gets the target path and creates the upper directory if it does not exist.
-func (ms *memoryStorage) preparePath(bucket, key string) (string, error) {
-	dir := filepath.Join(ms.BaseDir, bucket)
+func (hs *hybridStorage) preparePath(bucket, key string) (string, error) {
+	dir := filepath.Join(hs.BaseDir, bucket)
 
 	if err := fileutils.CreateDirectory(dir); err != nil {
 		return "", err
@@ -346,8 +345,8 @@ func (ms *memoryStorage) preparePath(bucket, key string) (string, error) {
 }
 
 // statPath determines whether the target file exists and returns an fileMutex if so.
-func (ms *memoryStorage) statPath(bucket, key string) (string, os.FileInfo, error) {
-	filePath := filepath.Join(ms.BaseDir, bucket, key)
+func (hs *hybridStorage) statPath(bucket, key string) (string, os.FileInfo, error) {
+	filePath := filepath.Join(hs.BaseDir, bucket, key)
 	f, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {

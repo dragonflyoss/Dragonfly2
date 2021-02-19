@@ -23,14 +23,6 @@ import (
 )
 
 const (
-	// RepoHome is the directory where store data
-	RepoHome = "repo"
-	// DownloadHome is the parent directory where the downloaded files are stored
-	// which is a relative path.
-	DownloadHome = "download"
-)
-
-const (
 	// CDNWriterRoutineLimit 4
 	CDNWriterRoutineLimit = 4
 )
@@ -38,6 +30,16 @@ const (
 const (
 	// SubsystemCdnNode represents metrics from cdn system.
 	SubsystemCdnSystem = "cdnSystem"
+)
+
+const (
+	// RepoHome is the directory where store data
+	RepoHome = "repo"
+	// DownloadHome is the parent directory where the downloaded files are stored
+	// which is a relative path.
+	DownloadHome = "download"
+
+	ShmHome = "/dev/shm/dragonfly/"
 )
 
 const (

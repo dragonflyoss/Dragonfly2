@@ -40,7 +40,7 @@ type CacheWriterTestSuite struct {
 func (s *CacheWriterTestSuite) SetupSuite() {
 	s.workHome, _ = ioutil.TempDir("/tmp", "cdn-CacheWriterTestSuite-")
 	s.config = "baseDir: " + s.workHome
-	fileStore, err := store.NewStore(local.LocalStorageDriver, local.NewLocalStorage, s.config)
+	fileStore, err := store.NewStore(disk.LocalStorageDriver, disk.NewLocalStorage, s.config)
 	s.Nil(err)
 	s.writer = newCacheWriter(fileStore, nil, nil)
 }

@@ -59,11 +59,12 @@ func NewBaseProperties() *BaseProperties {
 	if err != nil {
 		home = filepath.Join(string(filepath.Separator), "home", "admin","cdn-system")
 	}
+
 	return &BaseProperties{
 		ListenPort:              DefaultListenPort,
 		DownloadPort:            DefaultDownloadPort,
-		HomeDir:                 home,
-		DownloadPath:            filepath.Join(home, RepoHome, DownloadHome),
+		//HomeDir:                 home,
+		//DownloadPath:            filepath.Join(home, DefaultRepoHome, DefaultDownloadHome),
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
 		MaxBandwidth:            DefaultMaxBandwidth,
 		EnableProfiler:          false,
@@ -93,7 +94,7 @@ type BaseProperties struct {
 	DownloadPort int `yaml:"downloadPort"`
 
 	// HomeDir is working directory of cdn.
-	// default: /home/admin/cdn
+	// default: /home/admin/cdn-system
 	HomeDir string `yaml:"homeDir"`
 
 	// DownloadPath specifies the path where to store downloaded files from source address.
@@ -138,6 +139,8 @@ type BaseProperties struct {
 	// GCDiskInterval is the interval time to execute GC disk.
 	// default: 15s
 	GCDiskInterval time.Duration `yaml:"gcDiskInterval"`
+
+	GCShmInterval time.Duration `yaml:"gcShmInterval"`
 
 	// YoungGCThreshold if the available disk space is more than YoungGCThreshold
 	// and there is no need to GC disk.

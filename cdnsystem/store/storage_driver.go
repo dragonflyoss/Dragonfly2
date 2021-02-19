@@ -63,7 +63,7 @@ type StorageDriver interface {
 
 	// Stat determines whether the data exists based on raw information.
 	// If that, and return some info that in the form of struct StorageInfo.
-	// If not, return the ErrNotFound.
+	// If not, return the ErrFileNotExist.
 	Stat(ctx context.Context, raw *Raw) (*StorageInfo, error)
 
 	// GetAvailSpace returns the available disk space in B.

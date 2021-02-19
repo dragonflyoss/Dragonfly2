@@ -98,6 +98,7 @@ func (s *Store) PutBytes(ctx context.Context, raw *Raw, data []byte) error {
 	return s.driver.PutBytes(ctx, raw, data)
 }
 
+// AppendBytes append data into storage in bytes.
 func (s *Store) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
 	if err := checkEmptyKey(raw); err != nil {
 		return err
@@ -107,9 +108,8 @@ func (s *Store) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
 
 // Remove the data from the storage based on raw information.
 func (s *Store) Remove(ctx context.Context, raw *Raw) error {
-	if raw == nil || (stringutils.IsEmptyStr(raw.Key) &&
-		stringutils.IsEmptyStr(raw.Bucket)) {
-		return errors.Wrapf(cdnerrors.ErrEmptyValue, "cannot set both key and bucket empty at the same time")
+	if raw == nil || (stringutils.IsEmptyStr(raw.Key) && stringutils.IsEmptyStr(raw.Bucket)) {
+		return errors.Wrapf(cdnerrors.ErrEmptyValue, "raw's bucket and key cannot be empty at the same time")
 	}
 	return s.driver.Remove(ctx, raw)
 }

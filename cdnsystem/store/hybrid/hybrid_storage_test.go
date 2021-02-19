@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package local
+package hybrid
 
 import (
 	"context"
 	"fmt"
+	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
 	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
@@ -35,21 +36,21 @@ import (
 )
 
 func Test(t *testing.T) {
-	suite.Run(t, new(LocalStorageSuite))
+	suite.Run(t, new(StorageSuite))
 }
 
-type LocalStorageSuite struct {
-	workHome   string
-	storeLocal *store.Store
+type StorageSuite struct {
+	workHome string
+	store    store.StorageDriver
 	suite.Suite
 }
 
-func (s *LocalStorageSuite) SetupSuite() {
+func (s *StorageSuite) SetupSuite() {
 	s.workHome, _ = ioutil.TempDir("/tmp", "cdn-storageDriver-StoreTestSuite-")
 	pluginProps := map[config.PluginType][]*config.PluginProperties{
 		config.StoragePlugin: {
 			&config.PluginProperties{
-				Name:    LocalStorageDriver,
+				Name:    StorageDriver,
 				Enabled: true,
 				Config:  "baseDir: " + filepath.Join(s.workHome, "repo"),
 			},
@@ -65,11 +66,11 @@ func (s *LocalStorageSuite) SetupSuite() {
 	s.Nil(err)
 
 	// init store with local storage
-	s.storeLocal, err = sm.Get(LocalStorageDriver)
+	s.store, err = sm.Get(StorageDriver)
 	s.Nil(err)
 }
 
-func (s *LocalStorageSuite) TearDownSuite() {
+func (s *StorageSuite) TearDownSuite() {
 	if s.workHome != "" {
 		if err := os.RemoveAll(s.workHome); err != nil {
 			fmt.Printf("remove path:%s error", s.workHome)
@@ -77,7 +78,7 @@ func (s *LocalStorageSuite) TearDownSuite() {
 	}
 }
 
-func (s *LocalStorageSuite) TestGetPutBytes() {
+func (s *StorageSuite) TestGetPutBytes() {
 	var cases = []struct {
 		putRaw      *store.Raw
 		getRaw      *store.Raw
@@ -93,7 +94,7 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 				Key: "foo1",
 			},
 			data:        []byte("hello foo"),
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			expected:    "hello foo",
 		},
 		{
@@ -105,7 +106,7 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 				Offset: 0,
 				Length: 5,
 			},
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			data:        []byte("hello foo"),
 			expected:    "hello",
 		},
@@ -118,7 +119,7 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 				Offset: 0,
 				Length: -1,
 			},
-			getErrCheck: IsInvalidValue,
+			getErrCheck: cdnerrors.IsInvalidValue,
 			data:        []byte("hello foo"),
 			expected:    "",
 		},
@@ -132,7 +133,7 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 				Bucket: "download",
 				Key:    "foo4",
 			},
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			data:        []byte("hello foo"),
 			expected:    "hello",
 		},
@@ -146,18 +147,18 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 				Key:    "foo0/foo.txt",
 			},
 			data:        []byte("hello foo"),
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			expected:    "hello foo",
 		},
 	}
 
 	for _, v := range cases {
 		// put
-		err := s.storeLocal.PutBytes(context.Background(), v.putRaw, v.data)
+		err := s.store.PutBytes(context.Background(), v.putRaw, v.data)
 		s.Nil(err)
 
 		// get
-		result, err := s.storeLocal.GetBytes(context.Background(), v.getRaw)
+		result, err := s.store.GetBytes(context.Background(), v.getRaw)
 		s.Equal(v.getErrCheck(err), true)
 		if err == nil {
 			s.Equal(string(result), v.expected)
@@ -172,7 +173,7 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 
 }
 
-func (s *LocalStorageSuite) TestGetPut() {
+func (s *StorageSuite) TestGetPut() {
 	var cases = []struct {
 		putRaw      *store.Raw
 		getRaw      *store.Raw
@@ -189,7 +190,7 @@ func (s *LocalStorageSuite) TestGetPut() {
 				Key: "foo0.meta",
 			},
 			data:        strings.NewReader("hello meta file"),
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			expected:    "hello meta file",
 		},
 		{
@@ -200,7 +201,7 @@ func (s *LocalStorageSuite) TestGetPut() {
 				Key: "foo1.meta",
 			},
 			data:        strings.NewReader("hello meta file"),
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			expected:    "hello meta file",
 		},
 		{
@@ -213,7 +214,7 @@ func (s *LocalStorageSuite) TestGetPut() {
 				Length: 5,
 			},
 			data:        strings.NewReader("hello meta file"),
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			expected:    "llo m",
 		},
 		{
@@ -225,7 +226,7 @@ func (s *LocalStorageSuite) TestGetPut() {
 				Offset: 2,
 				Length: -1,
 			},
-			getErrCheck: IsInvalidValue,
+			getErrCheck: cdnerrors.IsInvalidValue,
 			data:        strings.NewReader("hello meta file"),
 			expected:    "llo meta file",
 		},
@@ -238,7 +239,7 @@ func (s *LocalStorageSuite) TestGetPut() {
 				Offset: 30,
 				Length: 5,
 			},
-			getErrCheck: IsRangeNotSatisfiable,
+			getErrCheck: cdnerrors.IsRangeNotSatisfiable,
 			data:        strings.NewReader("hello meta file"),
 			expected:    "",
 		},
@@ -246,10 +247,10 @@ func (s *LocalStorageSuite) TestGetPut() {
 
 	for _, v := range cases {
 		// put
-		s.storeLocal.Put(context.Background(), v.putRaw, v.data)
+		s.store.Put(context.Background(), v.putRaw, v.data)
 
 		// get
-		r, err := s.storeLocal.Get(context.Background(), v.getRaw)
+		r, err := s.store.Get(context.Background(), v.getRaw)
 		s.Equal(v.getErrCheck(err), true)
 		if err == nil {
 			result, err := ioutil.ReadAll(r)
@@ -266,7 +267,7 @@ func (s *LocalStorageSuite) TestGetPut() {
 
 }
 
-func (s *LocalStorageSuite) TestPutTrunc() {
+func (s *StorageSuite) TestPutTrunc() {
 	originRaw := &store.Raw{
 		Key:    "fooTrunc.meta",
 		Offset: 0,
@@ -287,7 +288,7 @@ func (s *LocalStorageSuite) TestPutTrunc() {
 				Trunc:  true,
 			},
 			data:         strings.NewReader("hello"),
-			getErrCheck:  IsNilError,
+			getErrCheck:  cdnerrors.IsNilError,
 			expectedData: "hello",
 		},
 		{
@@ -297,7 +298,7 @@ func (s *LocalStorageSuite) TestPutTrunc() {
 				Trunc:  true,
 			},
 			data:         strings.NewReader("golang"),
-			getErrCheck:  IsNilError,
+			getErrCheck:  cdnerrors.IsNilError,
 			expectedData: "\x00\x00\x00\x00\x00\x00golang",
 		},
 		{
@@ -307,7 +308,7 @@ func (s *LocalStorageSuite) TestPutTrunc() {
 				Trunc:  false,
 			},
 			data:         strings.NewReader("foo"),
-			getErrCheck:  IsNilError,
+			getErrCheck:  cdnerrors.IsNilError,
 			expectedData: "foolo world",
 		},
 		{
@@ -317,19 +318,19 @@ func (s *LocalStorageSuite) TestPutTrunc() {
 				Trunc:  false,
 			},
 			data:         strings.NewReader("foo"),
-			getErrCheck:  IsNilError,
+			getErrCheck:  cdnerrors.IsNilError,
 			expectedData: "hello foold",
 		},
 	}
 
 	for _, v := range cases {
-		err := s.storeLocal.Put(context.Background(), originRaw, strings.NewReader(originData))
+		err := s.store.Put(context.Background(), originRaw, strings.NewReader(originData))
 		s.Nil(err)
 
-		err = s.storeLocal.Put(context.Background(), v.truncRaw, v.data)
+		err = s.store.Put(context.Background(), v.truncRaw, v.data)
 		s.Nil(err)
 
-		r, err := s.storeLocal.Get(context.Background(), &store.Raw{
+		r, err := s.store.Get(context.Background(), &store.Raw{
 			Key: "fooTrunc.meta",
 		})
 		s.Nil(err)
@@ -342,7 +343,7 @@ func (s *LocalStorageSuite) TestPutTrunc() {
 	}
 }
 
-func (s *LocalStorageSuite) TestPutParallel() {
+func (s *StorageSuite) TestPutParallel() {
 	var key = "fooPutParallel"
 	var routineCount = 4
 	var testStr = "hello"
@@ -353,7 +354,7 @@ func (s *LocalStorageSuite) TestPutParallel() {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			s.storeLocal.Put(context.TODO(), &store.Raw{
+			s.store.Put(context.TODO(), &store.Raw{
 				Key:    key,
 				Offset: int64(i) * int64(testStrLength),
 			}, strings.NewReader(testStr))
@@ -361,18 +362,18 @@ func (s *LocalStorageSuite) TestPutParallel() {
 	}
 	wg.Wait()
 
-	info, err := s.storeLocal.Stat(context.TODO(), &store.Raw{Key: key})
+	info, err := s.store.Stat(context.TODO(), &store.Raw{Key: key})
 	s.Nil(err)
 	s.Equal(info.Size, int64(routineCount)*int64(testStrLength))
 }
 
-func (s *LocalStorageSuite) BenchmarkPutParallel() {
+func (s *StorageSuite) BenchmarkPutParallel() {
 	var wg sync.WaitGroup
 	for k := 0; k < 1000; k++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			s.storeLocal.Put(context.Background(), &store.Raw{
+			s.store.Put(context.Background(), &store.Raw{
 				Key:    "foo.bech",
 				Offset: int64(i) * 5,
 			}, strings.NewReader("hello"))
@@ -381,43 +382,23 @@ func (s *LocalStorageSuite) BenchmarkPutParallel() {
 	wg.Wait()
 }
 
-func (s *LocalStorageSuite) BenchmarkPutSerial() {
+func (s *StorageSuite) BenchmarkPutSerial() {
 	for k := 0; k < 1000; k++ {
-		s.storeLocal.Put(context.Background(), &store.Raw{
+		s.store.Put(context.Background(), &store.Raw{
 			Key:    "foo1.bech",
 			Offset: int64(k) * 5,
 		}, strings.NewReader("hello"))
 	}
 }
 
-func (s *LocalStorageSuite) TestManager_Get() {
-	cfg := &config.Config{
-		BaseProperties: &config.BaseProperties{
-			HomeDir: filepath.Join(s.workHome, "test_mgr"),
-		},
-	}
-	mgr, _ := store.NewManager(cfg)
-
-	st, err := mgr.Get(LocalStorageDriver)
-	s.Nil(err)
-	s.NotNil(st)
-	_, ok := st.driver.(*localStorage)
-	s.Equal(ok, true)
-
-	st, err = mgr.Get("testMgr")
-	s.NotNil(err)
-	s.Nil(st)
-}
-
 // -----------------------------------------------------------------------------
 // helper function
 
-func (s *LocalStorageSuite) checkStat(raw *store.Raw) {
-	info, err := s.storeLocal.Stat(context.Background(), raw)
-	s.Equal(IsNilError(err), true)
+func (s *StorageSuite) checkStat(raw *store.Raw) {
+	info, err := s.store.Stat(context.Background(), raw)
+	s.Equal(cdnerrors.IsNilError(err), true)
 
-	driver := s.storeLocal.driver.(*localStorage)
-	pathTemp := filepath.Join(driver.BaseDir, raw.Bucket, raw.Key)
+	pathTemp := filepath.Join(".BaseDir", raw.Bucket, raw.Key)
 	f, _ := os.Stat(pathTemp)
 	sys, _ := fileutils.GetSys(f)
 
@@ -429,10 +410,10 @@ func (s *LocalStorageSuite) checkStat(raw *store.Raw) {
 	})
 }
 
-func (s *LocalStorageSuite) checkRemove(raw *store.Raw) {
-	err := s.storeLocal.Remove(context.Background(), raw)
-	s.Equal(IsNilError(err), true)
+func (s *StorageSuite) checkRemove(raw *store.Raw) {
+	err := s.store.Remove(context.Background(), raw)
+	s.Equal(cdnerrors.IsNilError(err), true)
 
-	_, err = s.storeLocal.Stat(context.Background(), raw)
-	s.Equal(IsKeyNotFound(err), true)
+	_, err = s.store.Stat(context.Background(), raw)
+	s.Equal(cdnerrors.IsKeyNotFound(err), true)
 }
