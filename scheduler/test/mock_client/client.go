@@ -122,7 +122,14 @@ func (mc *MockClient) Start() {
 }
 
 func (mc *MockClient) SetDone() {
-	close(mc.waitStop)
+	select {
+	case _, ok := <- mc.waitStop:
+		if !ok {
+			return
+		}
+	default:
+		close(mc.waitStop)
+	}
 }
 
 func (mc *MockClient) GetStopChan() chan struct{} {

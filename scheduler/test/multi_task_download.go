@@ -24,40 +24,36 @@ import (
 	"time"
 )
 
-var _ = Describe("One Client Down While Downloading Test", func() {
+var _ = Describe("Multi Client Multi Task Download Test", func() {
 	tl := common.NewE2ELogger()
 
 	var (
-		clientNum  = 5
+		clientNum  = 20
 		stopChList []chan struct{}
-		badClient  *mock_client.MockClient
 	)
 
 	Describe("Create Multi Client", func() {
-		It("create bad client should be successfully", func() {
-			badClient = mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
-			go badClient.Start()
-			time.Sleep(time.Second)
-		})
-
-		It("create first batch client should be successfully", func() {
+		It("create first task client should be successfully", func() {
 			for i := 0; i < clientNum; i++ {
-				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
+				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_1", "mt1", tl)
 				go client.Start()
 				stopCh := client.GetStopChan()
 				stopChList = append(stopChList, stopCh)
 			}
 		})
 
-		It("set bad client down successfully", func() {
-			time.Sleep(time.Second)
-			badClient.SetDone()
+		It("create second task client should be successfully", func() {
+			for i := 0; i < clientNum; i++ {
+				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_2", "mt2", tl)
+				go client.Start()
+				stopCh := client.GetStopChan()
+				stopChList = append(stopChList, stopCh)
+			}
 		})
 
-		It("create second batch client should be successfully", func() {
-			time.Sleep(time.Second * 5)
+		It("create third task client should be successfully", func() {
 			for i := 0; i < clientNum; i++ {
-				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
+				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_3", "mt3", tl)
 				go client.Start()
 				stopCh := client.GetStopChan()
 				stopChList = append(stopChList, stopCh)
@@ -88,7 +84,7 @@ var _ = Describe("One Client Down While Downloading Test", func() {
 					}
 				}
 			}
-			tl.Log("bad client test all client download file finished")
+			tl.Log("multiple task all client download file finished")
 		})
 	})
 })
