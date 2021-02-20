@@ -35,6 +35,18 @@ func (p *streamPeerTaskCallback) Init(pt PeerTask) error {
 }
 
 func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
+	e := p.ptm.storageManager.Store(
+		context.Background(),
+		&storage.StoreRequest{
+			CommonTaskRequest: storage.CommonTaskRequest{
+				PeerID: pt.GetPeerID(),
+				TaskID: pt.GetTaskID(),
+			},
+			MetadataOnly: true,
+		})
+	if e != nil {
+		return e
+	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	// TODO error handling

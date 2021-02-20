@@ -219,17 +219,20 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 }
 
 func (s *streamPeerTask) finish() error {
-	var err error
 	// send last progress
 	s.base.once.Do(func() {
 		// send EOF piece result to scheduler
 		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.bitmap.Settled())
 		s.base.Debugf("end piece result sent")
-		// callback to store data to output
-		err = s.base.callback.Done(s)
+		// async callback to store meta data
+		go func() {
+			if err := s.base.callback.Done(s); err != nil {
+				s.base.Errorf("callback done error: %s", err)
+			}
+		}()
 		close(s.base.done)
 	})
-	return err
+	return nil
 }
 
 func (s *streamPeerTask) cleanUnfinished() {

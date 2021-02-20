@@ -17,5 +17,155 @@
 package peer
 
 import (
+	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/golang/mock/gomock"
+	testifyassert "github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/daemon/gc"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/daemon/test"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
+
+func TestPieceManager_DownloadSource(t *testing.T) {
+	assert := testifyassert.New(t)
+	ctrl := gomock.NewController(t)
+
+	testBytes, err := ioutil.ReadFile(test.File)
+	assert.Nil(err, "load test file")
+
+	var (
+		peerID = "peer0"
+		taskID = "task0"
+		output = "../test/testdata/test.output"
+	)
+
+	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
+		DataPath: test.DataDir,
+		TaskExpireTime: clientutil.Duration{
+			Duration: -1 * time.Second,
+		},
+	}, func(request storage.CommonTaskRequest) {})
+	defer storageManager.(gc.GC).TryGC()
+
+	testCases := []struct {
+		name              string
+		pieceSize         int32
+		withContentLength bool
+	}{
+		//{
+		//	name:              "multiple pieces with content length",
+		//	pieceSize:         1024,
+		//	withContentLength: true,
+		//},
+		//{
+		//	name:              "multiple pieces without content length",
+		//	pieceSize:         1024,
+		//	withContentLength: false,
+		//},
+		{
+			name:              "one pieces with content length case 1",
+			pieceSize:         int32(len(testBytes)),
+			withContentLength: true,
+		},
+		{
+			name:              "one pieces without content length case 1",
+			pieceSize:         int32(len(testBytes)),
+			withContentLength: false,
+		},
+		{
+			name:              "one pieces with content length case 2",
+			pieceSize:         int32(len(testBytes)) + 1,
+			withContentLength: true,
+		},
+		{
+			name:              "one pieces without content length case 2",
+			pieceSize:         int32(len(testBytes)) + 1,
+			withContentLength: false,
+		},
+	}
+	for _, tc := range testCases {
+		func() {
+			/********** prepare test start **********/
+			mockPeerTask := NewMockPeerTask(ctrl)
+			mockPeerTask.EXPECT().SetContentLength(gomock.Any()).DoAndReturn(
+				func(arg0 int64) error {
+					return nil
+				})
+			mockPeerTask.EXPECT().GetPeerID().AnyTimes().DoAndReturn(
+				func() string {
+					return peerID
+				})
+			mockPeerTask.EXPECT().GetTaskID().AnyTimes().DoAndReturn(
+				func() string {
+					return taskID
+				})
+			mockPeerTask.EXPECT().AddTraffic(gomock.Any()).AnyTimes().DoAndReturn(func(int642 int64) {})
+			mockPeerTask.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+				func(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
+					return nil
+				})
+			err = storageManager.RegisterTask(context.Background(),
+				storage.RegisterTaskRequest{
+					CommonTaskRequest: storage.CommonTaskRequest{
+						PeerID:      mockPeerTask.GetPeerID(),
+						TaskID:      mockPeerTask.GetTaskID(),
+						Destination: output,
+					},
+					ContentLength: int64(len(testBytes)),
+				})
+			assert.Nil(err)
+			defer storageManager.(gc.GC).TryGC()
+			defer os.Remove(output)
+			/********** prepare test end **********/
+
+			t.Logf("test case: %s", tc.name)
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tc.withContentLength {
+					w.Header().Set("Content-Length",
+						fmt.Sprintf("%d", len(testBytes)))
+				}
+				n, err := io.Copy(w, bytes.NewBuffer(testBytes))
+				assert.Nil(err)
+				assert.Equal(int64(len(testBytes)), n)
+			}))
+			defer ts.Close()
+
+			pm, err := NewPieceManager(storageManager)
+			assert.Nil(err)
+			pm.(*pieceManager).computePieceSize = func(length int64) int32 {
+				return tc.pieceSize
+			}
+
+			err = pm.DownloadSource(context.Background(), mockPeerTask, ts.URL, nil)
+			assert.Nil(err)
+
+			err = storageManager.Store(context.Background(),
+				&storage.StoreRequest{
+					CommonTaskRequest: storage.CommonTaskRequest{
+						PeerID:      peerID,
+						TaskID:      taskID,
+						Destination: output,
+					},
+				})
+			assert.Nil(err)
+
+			outputBytes, err := ioutil.ReadFile(output)
+			assert.Nil(err, "load output file")
+			assert.Equal(testBytes, outputBytes, "output and desired output must match")
+		}()
+	}
+}

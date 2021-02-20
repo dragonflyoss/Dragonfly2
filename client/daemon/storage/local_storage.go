@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	pkgerrors "github.com/pkg/errors"
-
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -93,7 +91,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 				return 0, nil
 			}
 		} else {
-			return n, pkgerrors.New("short read")
+			return n, ErrShortRead
 		}
 	}
 	t.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",
@@ -144,6 +142,9 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 	if err != nil {
 		t.Warnf("save task metadata error: %s", err)
 		return err
+	}
+	if req.MetadataOnly {
+		return nil
 	}
 	switch t.StoreStrategy {
 	case string(SimpleLocalTaskStoreStrategy):

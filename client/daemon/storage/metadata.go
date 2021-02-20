@@ -49,7 +49,10 @@ type WritePieceRequest struct {
 	Reader        io.Reader
 }
 
-type StoreRequest = CommonTaskRequest
+type StoreRequest struct {
+	CommonTaskRequest
+	MetadataOnly bool
+}
 
 type ReadPieceRequest struct {
 	PeerTaskMetaData

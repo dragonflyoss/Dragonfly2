@@ -171,6 +171,7 @@ func (pt *filePeerTask) GetTraffic() int64 {
 
 func (pt *filePeerTask) Start(ctx context.Context) (chan *PeerTaskProgress, error) {
 	if pt.backSource {
+		_ = pt.callback.Init(pt)
 		go func() {
 			hdr := make(map[string]string)
 			hdr["Range"] = pt.request.UrlMata.Range
