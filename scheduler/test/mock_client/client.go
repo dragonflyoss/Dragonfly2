@@ -82,6 +82,7 @@ type MockClient struct {
 	ContentLength int64 `protobuf:"varint,7,opt,name=content_length,json=contentLength,proto3" json:"content_length,omitempty"`
 	// sha256 code of all piece md5
 	PieceMd5Sign string `protobuf:"bytes,8,opt,name=piece_md5_sign,json=pieceMd5Sign,proto3" json:"piece_md5_sign,omitempty"`
+	downloadPieceCallback func(pieceNum int)
 }
 
 func NewMockClient(addr string, url string, group string, logger common.TestLogger) *MockClient {
@@ -119,6 +120,10 @@ func (mc *MockClient) Start() {
 	go mc.downloadPieces()
 
 	go mc.replyMessage()
+}
+
+func (mc *MockClient) SetDownloadPieceCallback(f func(int)) {
+	mc.downloadPieceCallback = f
 }
 
 func (mc *MockClient) SetDone() {
@@ -318,6 +323,9 @@ func (mc *MockClient) downloadPieces() {
 					mc.logger.Logf("client[%s] download a piece [%d] from [%s]", mc.pid, p.PieceNum, mc.parentId)
 					mc.replyChan <- pr
 					same = false
+					if mc.downloadPieceCallback != nil {
+						mc.downloadPieceCallback(int(p.PieceNum))
+					}
 				}
 			}
 			if same {

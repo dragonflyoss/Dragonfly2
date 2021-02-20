@@ -32,7 +32,14 @@ func (suite *SchedulerTestSuite) Test601OneClientDown() {
 		badClient  *mock_client.MockClient
 	)
 	badClient = mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
-	go badClient.Start()
+	go func() {
+		badClient.SetDownloadPieceCallback(func(pieceNum int){
+			if pieceNum == 3 {
+				badClient.SetDone()
+			}
+		})
+		badClient.Start()
+	}()
 	time.Sleep(time.Second)
 	for i := 0; i < clientNum; i++ {
 		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
@@ -40,8 +47,6 @@ func (suite *SchedulerTestSuite) Test601OneClientDown() {
 		stopCh := client.GetStopChan()
 		stopChList = append(stopChList, stopCh)
 	}
-	time.Sleep(time.Second)
-	badClient.SetDone()
 	time.Sleep(time.Second * 5)
 	for i := 0; i < clientNum; i++ {
 		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
