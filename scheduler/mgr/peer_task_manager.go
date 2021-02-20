@@ -234,7 +234,7 @@ func (m *PeerTaskManager) downloadMonitorWorkingLoop() {
 					pt.GetParent() == nil || !pt.IsWaiting() {
 					m.downloadMonitorCallBack(pt)
 				}
-				if !pt.Success {
+				if _, ok := m.GetPeerTask(pt.Pid); ok && !pt.Success {
 					m.RefreshDownloadMonitor(pt)
 				}
 			}

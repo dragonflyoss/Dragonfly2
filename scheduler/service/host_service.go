@@ -24,7 +24,7 @@ import (
 func (s *SchedulerService) GetHost(hostId string) (host *types.Host, err error) {
 	host, _ = s.hostMgr.GetHost(hostId)
 	if host == nil {
-		err = errors.New("peer task not exited: " + hostId)
+		err = errors.New("host not exited: " + hostId)
 	}
 	return
 }
