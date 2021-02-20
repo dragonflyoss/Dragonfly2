@@ -19,12 +19,11 @@ package test
 import (
 	"d7y.io/dragonfly/v2/scheduler/test/common"
 	"d7y.io/dragonfly/v2/scheduler/test/mock_client"
-	. "github.com/onsi/ginkgo"
 	"reflect"
 	"time"
 )
 
-var _ = Describe("Multi Client Multi Task Download With Bad Node Test", func() {
+func (suite *SchedulerTestSuite) Test801MultiTaskDownload() {
 	tl := common.NewE2ELogger()
 
 	var (
@@ -32,69 +31,51 @@ var _ = Describe("Multi Client Multi Task Download With Bad Node Test", func() {
 		stopChList []chan struct{}
 		badClient  *mock_client.MockClient
 	)
-
-	Describe("Create Multi Client", func() {
-		It("create first task client should be successfully", func() {
-			badClient = mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_1", "mtb1_", tl)
-			go badClient.Start()
-			time.Sleep(time.Second)
-			for i := 0; i < clientNum; i++ {
-				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_1", "mtb1_", tl)
-				go client.Start()
-				stopCh := client.GetStopChan()
-				stopChList = append(stopChList, stopCh)
+	badClient = mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_1", "mtb1_", tl)
+	go badClient.Start()
+	time.Sleep(time.Second)
+	for i := 0; i < clientNum; i++ {
+		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_1", "mtb1_", tl)
+		go client.Start()
+		stopCh := client.GetStopChan()
+		stopChList = append(stopChList, stopCh)
+	}
+	for i := 0; i < clientNum; i++ {
+		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_2", "mtb2_", tl)
+		go client.Start()
+		stopCh := client.GetStopChan()
+		stopChList = append(stopChList, stopCh)
+	}
+	time.Sleep(time.Second)
+	badClient.SetDone()
+	for i := 0; i < clientNum; i++ {
+		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_3", "mtb3_", tl)
+		go client.Start()
+		stopCh := client.GetStopChan()
+		stopChList = append(stopChList, stopCh)
+	}
+	time.Sleep(time.Second * 5)
+	timer := time.After(time.Minute * 10)
+	caseList := []reflect.SelectCase{
+		{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(timer), Send: reflect.Value{}},
+	}
+	for _, stopCh := range stopChList {
+		caseList = append(caseList, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(stopCh), Send: reflect.Value{}})
+	}
+	closedNumber := 0
+	for {
+		selIndex, _, _ := reflect.Select(caseList)
+		caseList = append(caseList[:selIndex], caseList[selIndex+1:]...)
+		if selIndex == 0 {
+			suite.Fail("download file failed")
+			tl.Fatalf("download file failed")
+		} else {
+			closedNumber++
+			if closedNumber >= clientNum {
+				break
 			}
-		})
-
-		It("create second task client should be successfully", func() {
-			for i := 0; i < clientNum; i++ {
-				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_2", "mtb2_", tl)
-				go client.Start()
-				stopCh := client.GetStopChan()
-				stopChList = append(stopChList, stopCh)
-			}
-		})
-
-		It("set bad client down successfully", func() {
-			time.Sleep(time.Second)
-			badClient.SetDone()
-		})
-
-		It("create third task client should be successfully", func() {
-			for i := 0; i < clientNum; i++ {
-				client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_3", "mtb3_", tl)
-				go client.Start()
-				stopCh := client.GetStopChan()
-				stopChList = append(stopChList, stopCh)
-			}
-		})
-	})
-
-	Describe("Wait Clients Finish", func() {
-		It("all clients should be stopped successfully", func() {
-			time.Sleep(time.Second * 5)
-			timer := time.After(time.Minute * 10)
-			caseList := []reflect.SelectCase{
-				{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(timer), Send: reflect.Value{}},
-			}
-			for _, stopCh := range stopChList {
-				caseList = append(caseList, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(stopCh), Send: reflect.Value{}})
-			}
-			closedNumber := 0
-			for {
-				selIndex, _, _ := reflect.Select(caseList)
-				caseList = append(caseList[:selIndex], caseList[selIndex+1:]...)
-				if selIndex == 0 {
-					tl.Fatalf("download file failed")
-				} else {
-					closedNumber++
-					if closedNumber >= clientNum {
-						break
-					}
-				}
-			}
-			tl.Log("multiple task with bad node all client download file finished")
-			time.Sleep(time.Second*5)
-		})
-	})
-})
+		}
+	}
+	tl.Log("multiple task with bad node all client download file finished")
+	time.Sleep(time.Second*5)
+}

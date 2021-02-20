@@ -17,9 +17,10 @@
 package test
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 )
 
 func TestE2E(t *testing.T) {
-	RunE2ETests(t)
+	suite.Run(t, new(SchedulerTestSuite))
 }

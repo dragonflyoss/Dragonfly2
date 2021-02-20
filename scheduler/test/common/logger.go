@@ -18,10 +18,9 @@ package common
 
 import (
 	"fmt"
+	"os"
 	"time"
 
-	"github.com/onsi/ginkgo"   //nolint:stylecheck
-	. "github.com/onsi/gomega" //nolint:stylecheck
 	"github.com/pborman/uuid"
 )
 
@@ -79,7 +78,8 @@ func nowStamp() string {
 }
 
 func log(level string, format string, args ...interface{}) {
-	fmt.Fprintf(ginkgo.GinkgoWriter, nowStamp()+": "+level+": "+format+"\n", args...)
+	// fmt.Fprintf(ginkgo.GinkgoWriter, nowStamp()+": "+level+": "+format+"\n", args...)
+	fmt.Fprintf(os.Stdout, nowStamp()+": "+level+": "+format+"\n", args...)
 }
 
 func Errorf(format string, args ...interface{}) {
@@ -100,25 +100,6 @@ func FailfWithOffset(offset int, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	log("INFO", msg)
 	Fail(nowStamp()+": "+msg, 1+offset)
-}
-
-func Skipf(format string, args ...interface{}) {
-	msg := fmt.Sprintf(format, args...)
-	log("INFO", msg)
-	Skip(nowStamp() + ": " + msg)
-}
-
-func ExpectNoError(err error, explain ...interface{}) {
-	ExpectNoErrorWithOffset(1, err, explain...)
-}
-
-// ExpectNoErrorWithOffset checks if "err" is set, and if so, fails assertion while logging the error at "offset" levels above its caller
-// (for example, for call chain f -> g -> ExpectNoErrorWithOffset(1, ...) error would be logged for "f").
-func ExpectNoErrorWithOffset(offset int, err error, explain ...interface{}) {
-	if err != nil {
-		Logf("Unexpected error occurred: %v", err)
-	}
-	ExpectWithOffset(1+offset, err).NotTo(HaveOccurred(), explain...)
 }
 
 // SetUp is likely to be fixture-specific, but TearDown needs to be

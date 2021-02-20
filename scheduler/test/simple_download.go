@@ -19,28 +19,19 @@ package test
 import (
 	"d7y.io/dragonfly/v2/scheduler/test/common"
 	"d7y.io/dragonfly/v2/scheduler/test/mock_client"
-	. "github.com/onsi/ginkgo"
 	"time"
 )
 
-var _ = Describe("One Client Download Test", func() {
+func (suite *SchedulerTestSuite) Test301SimpleDownload() {
 	tl := common.NewE2ELogger()
-
-	var (
-		client *mock_client.MockClient
-	)
-
-	Describe("One Client Download a file Test", func() {
-		It("should be download a file successfully", func() {
-			client = mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=single", "s", tl)
-			go client.Start()
-			stopCh := client.GetStopChan()
-			select {
-			case <-stopCh:
-				tl.Log("client download file finished")
-			case <-time.After(time.Minute):
-				tl.Fatalf("download file failed")
-			}
-		})
-	})
-})
+	client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=single", "s", tl)
+	go client.Start()
+	stopCh := client.GetStopChan()
+	select {
+	case <-stopCh:
+		tl.Log("client download file finished")
+	case <-time.After(time.Minute):
+		suite.Fail("download file failed")
+		tl.Fatalf("download file failed")
+	}
+}
