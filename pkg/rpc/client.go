@@ -129,15 +129,20 @@ func (conn *Connection) StartGC(ctx context.Context) {
 
 // GetClient
 func (conn *Connection) GetClientConn(key string) *grpc.ClientConn {
+	conn.rwMutex.GetLock(key, true)
 	node, ok := conn.key2NodeMap.Load(key)
 	if ok {
 		client, ok := conn.node2ClientMap.Load(node)
 		if ok {
 			conn.accessNodeMap.Store(node, time.Now())
+			conn.rwMutex.ReleaseLock(key, true)
 			return client.(*grpc.ClientConn)
 		}
 	}
 	client := conn.findCandidateClientConn(key)
+	conn.rwMutex.ReleaseLock(key, true)
+	conn.rwMutex.GetLock(key, false)
+	defer conn.rwMutex.ReleaseLock(key, false)
 	conn.key2NodeMap.Store(key, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
@@ -152,8 +157,8 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes ...st
 			return cause
 		}
 	}
-	conn.rwMutex.Lock()
-	defer conn.rwMutex.Unlock()
+	conn.rwMutex.GetLock(key, true)
+	defer conn.rwMutex.ReleaseLock(key, true)
 	client := conn.findCandidateClientConn(key, exclusiveNodes...)
 	conn.key2NodeMap.Store(key, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
