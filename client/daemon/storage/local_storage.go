@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -92,6 +93,12 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 			}
 		} else {
 			return n, ErrShortRead
+		}
+	}
+	// when Md5 is empty, try to get md5 from reader
+	if req.PieceMetaData.Md5 == "" {
+		if get, ok := req.Reader.(clientutil.DigestReader); ok {
+			req.PieceMetaData.Md5 = get.Digest()
 		}
 	}
 	t.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",
