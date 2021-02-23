@@ -14,12 +14,4 @@
  * limitations under the License.
  */
 
-package rpc
-
-type ClientMgr interface {
-	GetClient(url string) Client
-}
-
-type Client struct {
-
-}
+package hdfs

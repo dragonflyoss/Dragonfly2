@@ -33,7 +33,7 @@ const (
 	// client can be migrated to another scheduler
 	ResourceLacked base.Code = 5002
 
-	// cdnsystem processing error 6000-6999
+	// cdnSystem processing error 6000-6999
 	CdnError base.Code = 6000
 	CdnTaskRegistryFail base.Code = 6001
 	CdnTaskNotFound base.Code = 6404

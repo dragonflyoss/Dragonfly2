@@ -38,7 +38,6 @@ import (
 	"strings"
 )
 
-
 // CdnSeedServer is used to implement cdnsystem.SeederServer.
 type CdnSeedServer struct {
 	taskMgr mgr.SeedTaskMgr
@@ -53,17 +52,24 @@ func NewCdnSeedServer(cfg *config.Config, taskMgr mgr.SeedTaskMgr) (*CdnSeedServ
 	}, nil
 }
 
-func constructRequestHeader(meta *base.UrlMeta) map[string]string {
-	header := make(map[string]string)
+func constructRequestHeader(req *cdnsystem.SeedRequest) *types.TaskRegisterRequest {
+	meta := req.UrlMeta
+	headers := make(map[string]string)
 	if meta != nil {
 		if !stringutils.IsEmptyStr(meta.Md5) {
-			header["md5"] = meta.Md5
+			headers["md5"] = meta.Md5
 		}
 		if !stringutils.IsEmptyStr(meta.Range) {
-			header["range"] = meta.Range
+			headers["range"] = meta.Range
 		}
 	}
-	return header
+	return &types.TaskRegisterRequest{
+		Headers: headers,
+		URL:     req.Url,
+		Md5:     headers["md5"],
+		TaskID:  req.TaskId,
+		Filter:  strings.Split(req.Filter, "&"),
+	}
 }
 
 // validateSeedRequestParams validates the params of SeedRequest.
@@ -81,6 +87,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	defer func() {
 		if r := recover(); r != nil {
 			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds: %v", r)
+			err = dferrors.Newf(dfcodes.UnknownError, "a panic error was encountered: %v", r)
 		}
 
 		if err != nil {
@@ -88,21 +95,15 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		}
 	}()
 	if err := validateSeedRequestParams(req); err != nil {
-		return dferrors.Newf(dfcodes.BadRequest,"validate seed request fail: %v", err)
+		return dferrors.Newf(dfcodes.BadRequest,"bad seed request: %v", err)
 	}
-	headers := constructRequestHeader(req.GetUrlMeta())
-	registerRequest := &types.TaskRegisterRequest{
-		Headers: headers,
-		URL:     req.Url,
-		Md5:     headers["md5"],
-		TaskID:  req.TaskId,
-		Filter:  strings.Split(req.Filter, "&"),
-	}
+	registerRequest := constructRequestHeader(req)
+
 	// register task
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
 
 	if err != nil {
-		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "register seed task fail, registerRequest:%+v:%v", registerRequest, err)
+		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "failed to register seed task, registerRequest:%+v:%v", registerRequest, err)
 	}
 	peerId := fmt.Sprintf("%s-%s_%s", dfnet.HostName, req.TaskId, "CDN")
 	for piece := range pieceChan {
