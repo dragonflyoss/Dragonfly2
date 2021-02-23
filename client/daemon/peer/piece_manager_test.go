@@ -19,6 +19,8 @@ package peer
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -61,21 +63,40 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 	}, func(request storage.CommonTaskRequest) {})
 	defer storageManager.(gc.GC).TryGC()
 
+	hash := md5.New()
+	hash.Write(testBytes)
+	digest := hex.EncodeToString(hash.Sum(nil)[:16])
+
 	testCases := []struct {
 		name              string
 		pieceSize         int32
 		withContentLength bool
+		checkDigest       bool
 	}{
-		//{
-		//	name:              "multiple pieces with content length",
-		//	pieceSize:         1024,
-		//	withContentLength: true,
-		//},
-		//{
-		//	name:              "multiple pieces without content length",
-		//	pieceSize:         1024,
-		//	withContentLength: false,
-		//},
+		{
+			name:              "multiple pieces with content length",
+			pieceSize:         1024,
+			checkDigest:       true,
+			withContentLength: true,
+		},
+		{
+			name:              "multiple pieces with content length",
+			pieceSize:         1024,
+			checkDigest:       false,
+			withContentLength: true,
+		},
+		{
+			name:              "multiple pieces without content length",
+			pieceSize:         1024,
+			checkDigest:       true,
+			withContentLength: false,
+		},
+		{
+			name:              "multiple pieces without content length",
+			pieceSize:         1024,
+			checkDigest:       false,
+			withContentLength: false,
+		},
 		{
 			name:              "one pieces with content length case 1",
 			pieceSize:         int32(len(testBytes)),
@@ -150,7 +171,19 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				return tc.pieceSize
 			}
 
-			err = pm.DownloadSource(context.Background(), mockPeerTask, ts.URL, nil)
+			request := &scheduler.PeerTaskRequest{
+				Url: ts.URL,
+				UrlMata: &base.UrlMeta{
+					Md5:    "",
+					Range:  "",
+					Header: nil,
+				},
+			}
+			if tc.checkDigest {
+				request.UrlMata.Md5 = digest
+			}
+
+			err = pm.DownloadSource(context.Background(), mockPeerTask, request)
 			assert.Nil(err)
 
 			err = storageManager.Store(context.Background(),

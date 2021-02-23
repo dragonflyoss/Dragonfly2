@@ -5,9 +5,10 @@
 package peer
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	io "io"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockPieceDownloader is a mock of PieceDownloader interface
@@ -34,12 +35,13 @@ func (m *MockPieceDownloader) EXPECT() *MockPieceDownloaderMockRecorder {
 }
 
 // DownloadPiece mocks base method
-func (m *MockPieceDownloader) DownloadPiece(arg0 *DownloadPieceRequest) (io.ReadCloser, error) {
+func (m *MockPieceDownloader) DownloadPiece(arg0 *DownloadPieceRequest) (io.Reader, io.Closer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadPiece", arg0)
-	ret0, _ := ret[0].(io.ReadCloser)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(io.Reader)
+	ret1, _ := ret[1].(io.Closer)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // DownloadPiece indicates an expected call of DownloadPiece

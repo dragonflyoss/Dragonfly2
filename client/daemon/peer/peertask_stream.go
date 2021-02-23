@@ -143,9 +143,7 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]string, error) {
 	if s.base.backSource {
 		go func() {
-			hdr := make(map[string]string)
-			hdr["Range"] = s.base.request.UrlMata.Range
-			err := s.base.pieceManager.DownloadSource(ctx, s, s.base.request.Url, hdr)
+			err := s.base.pieceManager.DownloadSource(ctx, s, s.base.request)
 			if err != nil {
 				s.base.Errorf("download from source error: %s", err)
 			} else {

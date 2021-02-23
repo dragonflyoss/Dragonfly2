@@ -173,9 +173,7 @@ func (pt *filePeerTask) Start(ctx context.Context) (chan *PeerTaskProgress, erro
 	if pt.backSource {
 		_ = pt.callback.Init(pt)
 		go func() {
-			hdr := make(map[string]string)
-			hdr["Range"] = pt.request.UrlMata.Range
-			err := pt.pieceManager.DownloadSource(ctx, pt, pt.request.Url, hdr)
+			err := pt.pieceManager.DownloadSource(ctx, pt, pt.request)
 			if err != nil {
 				pt.Errorf("download from source error: %s", err)
 			} else {

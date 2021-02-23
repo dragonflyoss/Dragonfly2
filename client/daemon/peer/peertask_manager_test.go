@@ -185,11 +185,12 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	})
 
 	downloader := NewMockPieceDownloader(ctrl)
-	downloader.EXPECT().DownloadPiece(gomock.Any()).AnyTimes().DoAndReturn(func(task *DownloadPieceRequest) (io.ReadCloser, error) {
-		return ioutil.NopCloser(
+	downloader.EXPECT().DownloadPiece(gomock.Any()).AnyTimes().DoAndReturn(func(task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
+		rc := ioutil.NopCloser(
 			bytes.NewBuffer(
 				testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
-			)), nil
+			))
+		return rc, rc, nil
 	})
 
 	ptm := &peerTaskManager{
@@ -315,11 +316,12 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	})
 
 	downloader := NewMockPieceDownloader(ctrl)
-	downloader.EXPECT().DownloadPiece(gomock.Any()).AnyTimes().DoAndReturn(func(task *DownloadPieceRequest) (io.ReadCloser, error) {
-		return ioutil.NopCloser(
+	downloader.EXPECT().DownloadPiece(gomock.Any()).AnyTimes().DoAndReturn(func(task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
+		rc := ioutil.NopCloser(
 			bytes.NewBuffer(
 				testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
-			)), nil
+			))
+		return rc, rc, nil
 	})
 
 	ptm := &peerTaskManager{

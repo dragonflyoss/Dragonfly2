@@ -1,6 +1,8 @@
 package peer
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -84,24 +86,29 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(tt.handleFunc))
 		addr, _ := url.Parse(server.URL)
 		pd, _ := NewPieceDownloader()
-		rc, err := pd.DownloadPiece(&DownloadPieceRequest{
-			TaskID:  tt.taskID,
-			DstPid:  "",
-			DstAddr: addr.Host,
+
+		hash := md5.New()
+		hash.Write(tt.targetPieceData)
+		digest := hex.EncodeToString(hash.Sum(nil)[:16])
+		r, c, err := pd.DownloadPiece(&DownloadPieceRequest{
+			TaskID:     tt.taskID,
+			DstPid:     "",
+			DstAddr:    addr.Host,
+			CalcDigest: true,
 			piece: &base.PieceInfo{
 				PieceNum:    0,
 				RangeStart:  tt.rangeStart,
 				RangeSize:   tt.rangeSize,
-				PieceMd5:    "TODO",
+				PieceMd5:    digest,
 				PieceOffset: tt.rangeStart,
 				PieceStyle:  base.PieceStyle_PLAIN,
 			},
 		})
 		assert.Nil(err, "downloaded piece should success")
 
-		data, err := ioutil.ReadAll(rc)
+		data, err := ioutil.ReadAll(r)
 		assert.Nil(err, "read piece data should success")
-		rc.Close()
+		c.Close()
 
 		assert.Equal(data, tt.targetPieceData, "downloaded piece data should match")
 		server.Close()
