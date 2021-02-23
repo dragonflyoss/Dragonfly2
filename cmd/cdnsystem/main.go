@@ -17,9 +17,9 @@
 package main
 
 import (
-	"d7y.io/dragonfly/v2/cmd/cdnsystem/app"
+	"d7y.io/dragonfly/v2/cmd/cdnsystem/cmd"
 )
 
 func main() {
-	app.Execute()
+	cmd.Execute()
 }

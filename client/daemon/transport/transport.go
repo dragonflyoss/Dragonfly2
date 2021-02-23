@@ -117,7 +117,9 @@ func (rt *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	logger.Debugf("round trip directly: %s %s", req.Method, req.URL.String())
 	req.Host = req.URL.Host
 	req.Header.Set("Host", req.Host)
+
 	res, err := rt.baseRoundTripper.RoundTrip(req)
+
 	return res, err
 }
 
@@ -139,6 +141,7 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 			Range: rg,
 		}
 	}
+
 	r, attr, err := rt.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
 		&scheduler.PeerTaskRequest{

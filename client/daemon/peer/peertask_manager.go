@@ -47,6 +47,7 @@ type PeerTask interface {
 	GetPeerID() string
 	GetTaskID() string
 	GetContentLength() int64
+	SetContentLength(int64) error
 	SetCallback(PeerTaskCallback)
 	AddTraffic(int64)
 	GetTraffic() int64

@@ -78,6 +78,8 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 		return nil, err
 	}
 
+	// Storage.Option.DataPath is same with PeerHost DataDir
+	opt.Storage.Option.DataPath = opt.DataDir
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage.Option, func(request storage.CommonTaskRequest) {
 		sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
 			TaskId: request.TaskID,
@@ -120,11 +122,9 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 	}
 
 	var proxyManager proxy.Manager
-	if opt.Proxy != nil {
-		proxyManager, err = proxy.NewProxyManager(host, opt.Proxy.RegistryMirror, opt.Proxy.Proxies, opt.Proxy.HijackHTTPS, peerTaskManager)
-		if err != nil {
-			return nil, err
-		}
+	proxyManager, err = proxy.NewProxyManager(host, peerTaskManager, opt.Proxy)
+	if err != nil {
+		return nil, err
 	}
 
 	uploadManager, err := upload.NewUploadManager(storageManager,
@@ -232,6 +232,9 @@ func (ph *peerHost) Serve() error {
 	ph.GCManager.Start()
 
 	// prepare download service listen
+	if ph.Option.Download.DownloadGRPC.UnixListen == nil {
+		return errors.New("download grpc unix listen option is empty")
+	}
 	_ = os.Remove(ph.Option.Download.DownloadGRPC.UnixListen.Socket)
 	downloadListener, err := rpc.Listen(dfnet.NetAddr{
 		Type: dfnet.UNIX,
@@ -243,6 +246,9 @@ func (ph *peerHost) Serve() error {
 	}
 
 	// prepare peer service listen
+	if ph.Option.Download.PeerGRPC.TCPListen == nil {
+		return errors.New("peer grpc tcp listen option is empty")
+	}
 	peerListener, peerPort, err := ph.prepareTCPListener(ph.Option.Download.PeerGRPC, false)
 	if err != nil {
 		logger.Errorf("failed to listen for peer grpc service: %v", err)
@@ -251,6 +257,9 @@ func (ph *peerHost) Serve() error {
 	ph.schedPeerHost.RpcPort = int32(peerPort)
 
 	// prepare upload service listen
+	if ph.Option.Upload.TCPListen == nil {
+		return errors.New("upload tcp listen option is empty")
+	}
 	uploadListener, uploadPort, err := ph.prepareTCPListener(ph.Option.Upload.ListenOption, true)
 	if err != nil {
 		logger.Errorf("failed to listen for upload service: %v", err)
@@ -261,6 +270,7 @@ func (ph *peerHost) Serve() error {
 	g := errgroup.Group{}
 	// serve download grpc service
 	g.Go(func() error {
+		defer downloadListener.Close()
 		logger.Infof("serve download grpc at unix://%s", ph.Option.Download.DownloadGRPC.UnixListen.Socket)
 		if err := ph.ServiceManager.ServeDownload(downloadListener); err != nil {
 			logger.Errorf("failed to serve for download grpc service: %v", err)
@@ -271,6 +281,7 @@ func (ph *peerHost) Serve() error {
 
 	// serve peer grpc service
 	g.Go(func() error {
+		defer peerListener.Close()
 		logger.Infof("serve peer grpc at %s://%s", peerListener.Addr().Network(), peerListener.Addr().String())
 		if err := ph.ServiceManager.ServePeer(peerListener); err != nil {
 			logger.Errorf("failed to serve for peer grpc service: %v", err)
@@ -279,8 +290,11 @@ func (ph *peerHost) Serve() error {
 		return nil
 	})
 
-	if ph.Option.Proxy != nil {
+	if ph.ProxyManager.IsEnabled() {
 		// prepare proxy service listen
+		if ph.Option.Proxy.TCPListen == nil {
+			return errors.New("proxy tcp listen option is empty")
+		}
 		proxyListener, proxyPort, err := ph.prepareTCPListener(ph.Option.Proxy.ListenOption, true)
 		if err != nil {
 			logger.Errorf("failed to listen for proxy service: %v", err)
@@ -288,6 +302,7 @@ func (ph *peerHost) Serve() error {
 		}
 		// serve proxy service
 		g.Go(func() error {
+			defer proxyListener.Close()
 			logger.Infof("serve proxy at tcp://%s:%d", ph.Option.Proxy.TCPListen.Listen, proxyPort)
 			if err = ph.ProxyManager.Serve(proxyListener); err != nil && err != http.ErrServerClosed {
 				logger.Errorf("failed to serve for proxy service: %v", err)
@@ -301,6 +316,7 @@ func (ph *peerHost) Serve() error {
 
 	// serve upload service
 	g.Go(func() error {
+		defer uploadListener.Close()
 		logger.Infof("serve upload service at %s://%s", uploadListener.Addr().Network(), uploadListener.Addr().String())
 		if err := ph.UploadManager.Serve(uploadListener); err != nil && err != http.ErrServerClosed {
 			logger.Errorf("failed to serve for upload service: %v", err)
@@ -336,20 +352,25 @@ func (ph *peerHost) Serve() error {
 		})
 	}
 
-	return g.Wait()
+	werr := g.Wait()
+	ph.Stop()
+	return werr
 }
 
 func (ph *peerHost) Stop() {
 	ph.once.Do(func() {
 		close(ph.done)
-	})
-	ph.GCManager.Stop()
-	ph.ServiceManager.Stop()
-	ph.UploadManager.Stop()
-	ph.ProxyManager.Stop()
+		ph.GCManager.Stop()
+		ph.ServiceManager.Stop()
+		ph.UploadManager.Stop()
 
-	if !ph.Option.KeepStorage {
-		logger.Infof("keep storage disabled")
-		ph.StorageManager.Clean()
-	}
+		if ph.ProxyManager.IsEnabled() {
+			ph.ProxyManager.Stop()
+		}
+
+		if !ph.Option.KeepStorage {
+			logger.Infof("keep storage disabled")
+			ph.StorageManager.Clean()
+		}
+	})
 }

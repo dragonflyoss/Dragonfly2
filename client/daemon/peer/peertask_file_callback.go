@@ -38,9 +38,12 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 	e := p.ptm.storageManager.Store(
 		context.Background(),
 		&storage.StoreRequest{
-			PeerID:      pt.GetPeerID(),
-			TaskID:      pt.GetTaskID(),
-			Destination: p.req.Output,
+			CommonTaskRequest: storage.CommonTaskRequest{
+				PeerID:      pt.GetPeerID(),
+				TaskID:      pt.GetTaskID(),
+				Destination: p.req.Output,
+			},
+			MetadataOnly: false,
 		})
 	if e != nil {
 		return e

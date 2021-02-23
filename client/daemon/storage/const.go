@@ -1,6 +1,10 @@
 package storage
 
-import "os"
+import (
+	"os"
+
+	"github.com/pkg/errors"
+)
 
 const (
 	taskData     = "data"
@@ -11,4 +15,8 @@ const (
 
 	SimpleLocalTaskStoreStrategy  = StoreStrategy("io.d7y.storage.v2.simple")
 	AdvanceLocalTaskStoreStrategy = StoreStrategy("io.d7y.storage.v2.advance")
+)
+
+var (
+	ErrShortRead = errors.New("short read")
 )

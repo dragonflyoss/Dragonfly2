@@ -29,8 +29,10 @@ import (
 	"github.com/gofrs/flock"
 	"github.com/google/uuid"
 	"github.com/phayes/freeport"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/daemon"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
@@ -57,6 +59,10 @@ var daemonCmd = &cobra.Command{
 		}
 
 		logger.InitDaemon()
+		if err := checkDaemonOptions(); err != nil {
+			return err
+		}
+
 		lock := flock.New(flagDaemonOpt.LockFile)
 		if ok, err := lock.TryLock(); err != nil {
 			return err
@@ -73,11 +79,26 @@ func init() {
 	rootCmd.AddCommand(daemonCmd)
 }
 
+func checkDaemonOptions() error {
+	if len(flagDaemonOpt.Schedulers) == 0 {
+		return errors.New("empty schedulers")
+	}
+	return nil
+}
+
 func runDaemon() error {
 	s, _ := json.MarshalIndent(flagDaemonOpt, "", "  ")
 	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
 
 	if flagDaemonOpt.Verbose {
+		// TODO (jim): update json marshal function
+		s, _ := json.MarshalIndent(flagDaemonOpt, "", "  ")
+		logger.Debugf("daemon json option(debug only, should not use as config):\n%s", string(s))
+
+		// TODO (jim): update yaml marshal function
+		s, _ = yaml.Marshal(flagDaemonOpt)
+		logger.Debugf("daemon yaml option(debug only, should not use as config):\n%s", string(s))
+
 		logger.SetCoreLevel(zapcore.DebugLevel)
 		go func() {
 			// enable go pprof and statsview

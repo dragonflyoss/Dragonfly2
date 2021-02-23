@@ -24,8 +24,10 @@ import (
 
 	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
 var (
@@ -35,8 +37,8 @@ var (
 var flagDaemonOpt = config.PeerHostOption{
 	DataDir:     "",
 	WorkHome:    "",
-	AliveTime:   config.Duration{Duration: 5 * time.Minute},
-	GCInterval:  config.Duration{Duration: 1 * time.Minute},
+	AliveTime:   clientutil.Duration{Duration: 5 * time.Minute},
+	GCInterval:  clientutil.Duration{Duration: 1 * time.Minute},
 	Schedulers:  nil,
 	PidFile:     "/var/run/dfdaemon.pid",
 	LockFile:    "/var/run/dfdaemon.lock",
@@ -51,7 +53,7 @@ var flagDaemonOpt = config.PeerHostOption{
 		NetTopology:    "",
 	},
 	Download: config.DownloadOption{
-		RateLimit: config.RateLimit{
+		RateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(104857600),
 		},
 		DownloadGRPC: config.ListenOption{
@@ -69,13 +71,13 @@ var flagDaemonOpt = config.PeerHostOption{
 			TCPListen: &config.TCPListenOption{
 				PortRange: config.TCPListenPortRange{
 					Start: 65000,
-					End:   65000,
+					End:   65535,
 				},
 			},
 		},
 	},
 	Upload: config.UploadOption{
-		RateLimit: config.RateLimit{
+		RateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(104857600),
 		},
 		ListenOption: config.ListenOption{
@@ -83,9 +85,10 @@ var flagDaemonOpt = config.PeerHostOption{
 				Insecure: true,
 			},
 			TCPListen: &config.TCPListenOption{
+				Listen: net.IPv4zero.String(),
 				PortRange: config.TCPListenPortRange{
 					Start: 65002,
-					End:   65002,
+					End:   65535,
 				},
 			},
 		},
@@ -96,11 +99,8 @@ var flagDaemonOpt = config.PeerHostOption{
 				Insecure: true,
 			},
 			TCPListen: &config.TCPListenOption{
-				Listen: net.IPv4zero.String(),
-				PortRange: config.TCPListenPortRange{
-					Start: 65001,
-					End:   65001,
-				},
+				Listen:    net.IPv4zero.String(),
+				PortRange: config.TCPListenPortRange{},
 			},
 		},
 	},

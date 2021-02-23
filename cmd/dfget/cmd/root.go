@@ -62,7 +62,7 @@ var rootCmd = &cobra.Command{
 	Example:           dfgetExample(),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		logger.InitDfget()
-		if err := checkParameters(); err != nil {
+		if err := checkClientOptions(); err != nil {
 			return err
 		}
 		return runDfget()
@@ -122,7 +122,17 @@ func runDfget() error {
 	return nil
 }
 
-func checkParameters() error {
+func convertDeprecatedFlags() {
+	for _, node := range deprecatedFlags.nodes.Nodes {
+		flagDaemonOpt.Schedulers = append(flagDaemonOpt.Schedulers, dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: node,
+		})
+	}
+}
+
+func checkClientOptions() error {
+	convertDeprecatedFlags()
 	if len(os.Args) < 2 {
 		return dferrors.New(-1, "Please use the command 'help' to show the help information.")
 	}
@@ -211,8 +221,8 @@ func spawnDaemon() error {
 
 	var args = []string{
 		"daemon",
-		"--grpc-port", fmt.Sprintf("%d", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start),
-		"--upload-port", fmt.Sprintf("%d", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start),
+		"--grpc-port", fmt.Sprintf("%d", flagDaemonOpt.Download.DownloadGRPC.TCPListen.PortRange.Start),
+		"--upload-port", fmt.Sprintf("%d", flagDaemonOpt.Upload.TCPListen.PortRange.Start),
 		"--home", flagDaemonOpt.WorkHome,
 		"--listen", flagDaemonOpt.Host.ListenIP,
 		"--expire-time", flagDaemonOpt.Storage.TaskExpireTime.String(),

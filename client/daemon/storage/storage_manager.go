@@ -19,7 +19,6 @@ package storage
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -30,6 +29,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
@@ -47,6 +48,8 @@ type TaskStorageDriver interface {
 
 	GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error)
 
+	UpdateTask(ctx context.Context, req *UpdateTaskRequest) error
+
 	// Store stores task data to the target path
 	Store(ctx context.Context, req *StoreRequest) error
 }
@@ -63,10 +66,10 @@ type Manager interface {
 
 type Option struct {
 	// DataPath indicates directory which stores temporary files for p2p uploading
-	DataPath string
+	DataPath string `json:"data_path" yaml:"data_path"`
 	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
 	// after this period cache file will be gc
-	TaskExpireTime clientutil.Duration
+	TaskExpireTime clientutil.Duration `json:"task_expire_time" yaml:"task_expire_time"`
 }
 
 var (
@@ -214,7 +217,6 @@ func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskReque
 			PeerID: req.DstPid,
 		})
 	if !ok {
-		// TODO recover for local task persistentMetadata data
 		return nil, ErrTaskNotFound
 	}
 	return t.(TaskStorageDriver).GetPieces(ctx, req)
@@ -227,6 +229,18 @@ func (s storageManager) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool
 		return nil, false
 	}
 	return d.(TaskStorageDriver), ok
+}
+
+func (s storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {
+	t, ok := s.LoadTask(
+		PeerTaskMetaData{
+			TaskID: req.TaskID,
+			PeerID: req.PeerID,
+		})
+	if !ok {
+		return ErrTaskNotFound
+	}
+	return t.(TaskStorageDriver).UpdateTask(ctx, req)
 }
 
 func (s storageManager) CreateTask(req RegisterTaskRequest) error {
@@ -320,13 +334,14 @@ func (s storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 					TaskMeta:      map[string]string{},
 					Pieces:        map[int32]PieceMetaData{},
 				},
-				RWMutex:          &sync.RWMutex{},
-				dataDir:          dataDir,
-				metadataFilePath: path.Join(dataDir, taskMetaData),
-				dataFilePath:     path.Join(dataDir, taskData),
-				expireTime:       s.storeOption.TaskExpireTime.Duration,
-				lastAccess:       time.Now(),
-				gcCallback:       gcCallback,
+				RWMutex:             &sync.RWMutex{},
+				dataDir:             dataDir,
+				metadataFilePath:    path.Join(dataDir, taskMetaData),
+				dataFilePath:        path.Join(dataDir, taskData),
+				expireTime:          s.storeOption.TaskExpireTime.Duration,
+				lastAccess:          time.Now(),
+				gcCallback:          gcCallback,
+				SugaredLoggerOnWith: logger.With("task", taskID, "peer", peerID, "component", s.storeStrategy),
 			}
 			switch t.StoreStrategy {
 			case string(SimpleLocalTaskStoreStrategy):

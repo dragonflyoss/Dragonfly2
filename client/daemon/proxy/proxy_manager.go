@@ -39,14 +39,20 @@ import (
 type Manager interface {
 	Serve(lis net.Listener) error
 	Stop() error
+	IsEnabled() bool
 }
 
 type proxyManager struct {
 	*http.Server
 	*Proxy
+	config.ListenOption
 }
 
-func NewProxyManager(peerHost *scheduler.PeerHost, registry *config.RegistryMirror, proxies []*config.Proxy, hijackHTTPS *config.HijackConfig, peerTaskManager peer.PeerTaskManager) (Manager, error) {
+func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.PeerTaskManager, opts *config.ProxyOption) (Manager, error) {
+	registry := opts.RegistryMirror
+	proxies := opts.Proxies
+	hijackHTTPS := opts.HijackHTTPS
+
 	options := []Option{
 		WithPeerHost(peerHost),
 		WithPeerTaskManager(peerTaskManager),
@@ -91,8 +97,9 @@ func NewProxyManager(peerHost *scheduler.PeerHost, registry *config.RegistryMirr
 	}
 
 	return &proxyManager{
-		Server: &http.Server{},
-		Proxy:  p,
+		Server:       &http.Server{},
+		Proxy:        p,
+		ListenOption: opts.ListenOption,
 	}, nil
 }
 
@@ -104,6 +111,10 @@ func (pm *proxyManager) Serve(lis net.Listener) error {
 
 func (pm *proxyManager) Stop() error {
 	return pm.Server.Shutdown(context.Background())
+}
+
+func (pm *proxyManager) IsEnabled() bool {
+	return pm.ListenOption.TCPListen != nil && pm.ListenOption.TCPListen.PortRange.Start != 0
 }
 
 func newDirectHandler() *http.ServeMux {
@@ -160,15 +171,20 @@ func getArgs(w http.ResponseWriter, r *http.Request) {
 }
 
 func certFromFile(certFile string, keyFile string) (*tls.Certificate, error) {
+
+	// cert.Certificate is a chain of one or more certificates, leaf first.
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "load cert")
 	}
 	logger.Infof("use self-signed certificate (%s, %s) for https hijacking", certFile, keyFile)
+
+	// leaf is CA cert or server cert
 	leaf, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
 		return nil, errors.Wrap(err, "load leaf cert")
 	}
+
 	cert.Leaf = leaf
 	return &cert, nil
 }

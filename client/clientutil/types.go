@@ -36,15 +36,18 @@ func (r *RateLimit) unmarshal(unmarshal func(in []byte, out interface{}) (err er
 	case float64:
 		r.Limit = rate.Limit(value)
 		return nil
+	case int:
+		r.Limit = rate.Limit(value)
+		return nil
 	case string:
 		limit, err := units.RAMInBytes(value)
 		if err != nil {
-			return errors.WithMessage(err, "invalid port")
+			return errors.WithMessage(err, "invalid rate limit")
 		}
 		r.Limit = rate.Limit(limit)
 		return nil
 	default:
-		return errors.New("invalid port")
+		return errors.New("invalid rate limit")
 	}
 }
 

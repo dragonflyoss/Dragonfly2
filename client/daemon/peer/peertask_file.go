@@ -22,6 +22,8 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/pkg/errors"
+
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -45,6 +47,10 @@ type FilePeerTask interface {
 type filePeerTask struct {
 	*logger.SugaredLoggerOnWith
 	ctx context.Context
+
+	// backSource indicates downloading resource from instead of other peers
+	backSource bool
+	request    *scheduler.PeerTaskRequest
 
 	// pieceManager will be used for downloading piece
 	pieceManager PieceManager
@@ -123,6 +129,8 @@ func NewFilePeerTask(ctx context.Context,
 	return &filePeerTask{
 		ctx:             ctx,
 		host:            host,
+		backSource:      result.State.Code == dfcodes.BackSource,
+		request:         request,
 		pieceResultCh:   schedPieceResultCh,
 		peerPacketCh:    schedPeerPacketCh,
 		pieceManager:    pieceManager,
@@ -162,6 +170,20 @@ func (pt *filePeerTask) GetTraffic() int64 {
 }
 
 func (pt *filePeerTask) Start(ctx context.Context) (chan *PeerTaskProgress, error) {
+	if pt.backSource {
+		_ = pt.callback.Init(pt)
+		go func() {
+			hdr := make(map[string]string)
+			hdr["Range"] = pt.request.UrlMata.Range
+			err := pt.pieceManager.DownloadSource(ctx, pt, pt.request.Url, hdr)
+			if err != nil {
+				pt.Errorf("download from source error: %s", err)
+			} else {
+				pt.Errorf("download from source ok")
+			}
+		}()
+		return pt.progressCh, nil
+	}
 	go pt.receivePeerPacket()
 	go pt.pullPiecesFromPeers(pt, pt.cleanUnfinished)
 	// return a progress channel for request download progress
@@ -192,6 +214,10 @@ loop:
 		}
 		if peerPacket == nil {
 			pt.Warnf("scheduler client send nil PeerPacket")
+			continue
+		}
+		if !peerPacket.State.Success {
+			pt.Errorf("receive peer packet with error: %d/%s", peerPacket.State.Code, peerPacket.State.Msg)
 			continue
 		}
 		pt.Debugf("receive peer packet: %#v", peerPacket)
@@ -275,7 +301,7 @@ loop:
 			pt.Infof("no more pieces, stop get pieces from peer")
 			break loop
 		}
-		pt.pieceManager.PullPieces(pti, piecePacket)
+		pt.pieceManager.DownloadPieces(pti, piecePacket)
 	}
 	close(pt.failedPieceCh)
 
@@ -469,4 +495,13 @@ func (pt *filePeerTask) cleanUnfinished() {
 		close(pt.done)
 		close(pt.progressCh)
 	})
+}
+
+func (pt *filePeerTask) SetContentLength(i int64) error {
+	pt.contentLength = i
+	if !pt.isCompleted() {
+		return errors.New("SetContentLength should call after task completed")
+	}
+
+	return pt.finish()
 }

@@ -60,8 +60,10 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 		pieceSize = 512
 	)
 	sm, err := NewStorageManager(SimpleLocalTaskStoreStrategy, &Option{
-		DataPath:       test.DataDir,
-		TaskExpireTime: time.Minute,
+		DataPath: test.DataDir,
+		TaskExpireTime: clientutil.Duration{
+			Duration: time.Minute,
+		},
 	}, func(request CommonTaskRequest) {
 	})
 	var s = sm.(*storageManager)
@@ -195,8 +197,10 @@ func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 		lastAccess:   time.Time{},
 	}
 	err = ts.Store(context.Background(), &StoreRequest{
-		TaskID:      ts.TaskID,
-		Destination: dst,
+		CommonTaskRequest: CommonTaskRequest{
+			TaskID:      ts.TaskID,
+			Destination: dst,
+		},
 	})
 	assert.Nil(err, "store test data")
 	bs, err := ioutil.ReadFile(dst)
@@ -223,8 +227,10 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 		pieceSize = 512
 	)
 	sm, err := NewStorageManager(AdvanceLocalTaskStoreStrategy, &Option{
-		DataPath:       test.DataDir,
-		TaskExpireTime: time.Minute,
+		DataPath: test.DataDir,
+		TaskExpireTime: clientutil.Duration{
+			Duration: time.Minute,
+		},
 	}, func(request CommonTaskRequest) {
 	})
 	var s = sm.(*storageManager)
