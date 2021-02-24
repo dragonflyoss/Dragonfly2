@@ -43,6 +43,7 @@ const (
 	// gcConnectionsInterval
 	gcConnectionsInterval = 60 * time.Second
 
+	// connExpireTime
 	connExpireTime = 5 * time.Minute
 )
 
@@ -54,7 +55,7 @@ type Connection struct {
 	HashRing       *hashring.HashRing
 	networkType    dfnet.NetworkType
 	accessNodeMap  *syncmap.SyncMap
-	ConnExpireTime time.Duration
+	connExpireTime time.Duration
 }
 
 type RetryMeta struct {
@@ -75,7 +76,22 @@ func NewConnection(addrs dfnet.NetAddrs, opts ...grpc.DialOption) *Connection {
 		HashRing:       hashring.New(addrs.Addrs),
 		networkType:    addrs.Type,
 		accessNodeMap:  syncmap.NewSyncMap(),
-		ConnExpireTime: connExpireTime,
+		connExpireTime: connExpireTime,
+	}
+}
+
+func (conn *Connection) UpdateAccessNodeMap(key string) {
+	node, ok := conn.key2NodeMap.Load(key)
+	if ok {
+		_, ok := conn.node2ClientMap.Load(node)
+		if ok {
+			conn.accessNodeMap.Store(node, time.Now())
+			return
+		} else {
+			logger.GrpcLogger.Warnf("failed to get node(%s) from node2ClientMap", node)
+		}
+	} else {
+		logger.GrpcLogger.Warnf("failed to get key(%s) from key2NodeMap", key)
 	}
 }
 
@@ -106,13 +122,15 @@ func (conn *Connection) StartGC(ctx context.Context) {
 		// range all connections and determine whether they are expired
 		nodes := conn.accessNodeMap.ListKeyAsStringSlice()
 		totalNodeSize := len(nodes)
+		conn.rwMutex.Lock()
+		defer conn.rwMutex.Unlock()
 		for _, node := range nodes {
 			atime, err := conn.accessNodeMap.GetAsTime(node)
 			if err != nil {
 				logger.GrpcLogger.Errorf("gc connections: failed to get access time node(%s): %v", node, err)
 				continue
 			}
-			if time.Since(atime) < conn.ConnExpireTime {
+			if time.Since(atime) < conn.connExpireTime {
 				continue
 			}
 			conn.gcConn(ctx, node)
@@ -129,20 +147,17 @@ func (conn *Connection) StartGC(ctx context.Context) {
 
 // GetClient
 func (conn *Connection) GetClientConn(key string) *grpc.ClientConn {
-	conn.rwMutex.GetLock(key, true)
 	node, ok := conn.key2NodeMap.Load(key)
 	if ok {
 		client, ok := conn.node2ClientMap.Load(node)
 		if ok {
 			conn.accessNodeMap.Store(node, time.Now())
-			conn.rwMutex.ReleaseLock(key, true)
 			return client.(*grpc.ClientConn)
 		}
 	}
 	client := conn.findCandidateClientConn(key)
-	conn.rwMutex.ReleaseLock(key, true)
-	conn.rwMutex.GetLock(key, false)
-	defer conn.rwMutex.ReleaseLock(key, false)
+	conn.rwMutex.GetLock(client.node, false)
+	defer conn.rwMutex.ReleaseLock(client.node, false)
 	conn.key2NodeMap.Store(key, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
@@ -157,9 +172,9 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes ...st
 			return cause
 		}
 	}
-	conn.rwMutex.GetLock(key, true)
-	defer conn.rwMutex.ReleaseLock(key, true)
 	client := conn.findCandidateClientConn(key, exclusiveNodes...)
+	conn.rwMutex.GetLock(client.node, false)
+	defer conn.rwMutex.ReleaseLock(client.node, false)
 	conn.key2NodeMap.Store(key, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	return nil
