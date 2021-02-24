@@ -17,16 +17,20 @@
 package main
 
 import (
+	"d7y.io/dragonfly/v2/pkg/basic/env"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+	"os"
 )
 import (
 	"context"
-	"fmt"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/safe"
+	"fmt"
 	"time"
 )
 
@@ -59,8 +63,13 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 	return
 }
 
-func main() {
+func (hs *helloSeeder) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	return nil, nil
+}
 
+func main() {
+	os.Setenv(env.ActiveProfile, "local")
+	logger.InitCdnSystem()
 	err := rpc.StartTcpServer(12345, 12345, &helloSeeder{})
 
 	if err != nil {

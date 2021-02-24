@@ -87,11 +87,6 @@ func init() {
 	}
 }
 
-type NetAddr struct {
-	Type NetworkType `json:"type" yaml:"type"`
-	Addr string      `json:"addr" yaml:"addr"` // see https://github.com/grpc/grpc/blob/master/doc/naming.md
-}
-
 func (n *NetAddr) UnmarshalJSON(b []byte) error {
 	var v interface{}
 	if err := json.Unmarshal(b, &v); err != nil {
@@ -167,6 +162,16 @@ func (n *NetAddr) unmarshal(unmarshal func(in []byte, out interface{}) (err erro
 	n.Addr = nt.Addr
 
 	return nil
+}
+
+type NetAddr struct {
+	Type NetworkType `json:"type" yaml:"type"`
+	Addr string      `json:"addr" yaml:"addr"` // see https://github.com/grpc/grpc/blob/master/doc/naming.md
+}
+
+type NetAddrs struct {
+	Type  NetworkType
+	Addrs []string
 }
 
 func (n *NetAddr) GetEndpoint() string {

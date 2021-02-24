@@ -18,19 +18,24 @@ package main
 
 import (
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/basic/env"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
+	"os"
 )
 
 import (
 	"context"
-	"fmt"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"fmt"
 )
 
-func main2() {
-	c, err := client.CreateClient([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: "127.0.0.1:8003"}})
+func main() {
+	os.Setenv(env.ActiveProfile, "local")
+	logger.InitCdnSystem()
+	c, err := client.GetClientByAddr(dfnet.NetAddr{Type: dfnet.TCP, Addr: "127.0.0.1:12345"})
 	if err != nil {
 		panic(err)
 	}
@@ -51,8 +56,8 @@ func main2() {
 	fmt.Println("client finish")
 }
 
-func main() {
-	c, err := client.CreateClient([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: "localhost:8003"}})
+func main2() {
+	c, err := client.GetClientByAddr(dfnet.NetAddr{Type: dfnet.TCP, Addr: "localhost:12345"})
 	if err != nil {
 		panic(err)
 	}

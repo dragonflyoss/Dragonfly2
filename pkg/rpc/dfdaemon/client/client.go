@@ -24,43 +24,61 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/safe"
+	"errors"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 )
 
+func GetClient() (DaemonClient, error) {
+	// 从本地文件/manager读取addrs
+	return newDaemonClient(dfnet.NetAddrs{})
+}
+
+func GetClientByAddrs(addrs dfnet.NetAddrs) (DaemonClient, error) {
+	// user specify
+	return newDaemonClient(addrs)
+}
+
+func GetClientByAddr(addr dfnet.NetAddr) (DaemonClient, error) {
+	return newDaemonClient(dfnet.NetAddrs{
+		Type:  addr.Type,
+		Addrs: []string{addr.Addr},
+	})
+}
+
+func newDaemonClient(addrs dfnet.NetAddrs, opts ...grpc.DialOption) (DaemonClient, error) {
+	if len(addrs.Addrs) == 0 {
+		return nil, errors.New("address list of cdn is empty")
+	}
+	return &daemonClient{
+		rpc.NewConnection(addrs, opts...),
+	}, nil
+}
+
 // see dfdaemon.DaemonClient
 type DaemonClient interface {
+
 	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, error)
+
 	GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
+
 	CheckHealth(ctx context.Context, opts ...grpc.CallOption) (*base.ResponseState, error)
-	Close() error
 }
 
 type daemonClient struct {
 	*rpc.Connection
-	Client dfdaemon.DaemonClient
 }
 
-var initClientFunc = func(c *rpc.Connection) {
-	dc := c.Ref.(*daemonClient)
-	dc.Client = dfdaemon.NewDaemonClient(c.Conn)
-	dc.Connection = c
-}
-
-func CreateClient(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
-	if client, err := rpc.BuildClient(&daemonClient{}, initClientFunc, netAddrs, opts); err != nil {
-		return nil, err
-	} else {
-		return client.(*daemonClient), nil
-	}
+func (sc *daemonClient) getDaemonClient(key string) dfdaemon.DaemonClient{
+	return dfdaemon.NewDaemonClient(sc.Connection.GetClientConn(key))
 }
 
 func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, error) {
 	req.Uuid = uuid.New().String()
 
 	drc := make(chan *dfdaemon.DownResult, 4)
-
-	drs, err := newDownResultStream(dc, ctx, req, opts)
+	// todo 替换taskId
+	drs, err := newDownResultStream(dc, ctx, req.Url, req, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +90,7 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return dc.Client.GetPieceTasks(ctx, ptr, opts...)
+		return dc.getDaemonClient(ptr.TaskId).GetPieceTasks(ctx, ptr, opts...)
 	}, 0.2, 2.0, 3, nil)
 
 	if err == nil {
@@ -83,8 +101,10 @@ func (dc *daemonClient) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRe
 }
 
 func (dc *daemonClient) CheckHealth(ctx context.Context, opts ...grpc.CallOption) (*base.ResponseState, error) {
-	return dc.Client.CheckHealth(ctx, &base.EmptyRequest{}, opts...)
+	// todo 需要添加taskId
+	return dc.getDaemonClient("").CheckHealth(ctx, &base.EmptyRequest{}, opts...)
 }
+
 
 func receive(drs *downResultStream, drc chan *dfdaemon.DownResult) {
 	safe.Call(func() {
