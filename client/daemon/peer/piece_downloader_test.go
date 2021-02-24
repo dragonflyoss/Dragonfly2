@@ -91,32 +91,39 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 	for _, tt := range tests {
 		server := httptest.NewServer(http.HandlerFunc(tt.handleFunc))
 		addr, _ := url.Parse(server.URL)
-		pd, _ := NewPieceDownloader()
+		factories := []func() (PieceDownloader, error){
+			func() (PieceDownloader, error) {
+				return NewPieceDownloader()
+			}, func() (PieceDownloader, error) {
+				return NewOptimizedPieceDownloader()
+			}}
+		for _, factory := range factories {
+			pd, _ := factory()
+			hash := md5.New()
+			hash.Write(tt.targetPieceData)
+			digest := hex.EncodeToString(hash.Sum(nil)[:16])
+			r, c, err := pd.DownloadPiece(&DownloadPieceRequest{
+				TaskID:     tt.taskID,
+				DstPid:     "",
+				DstAddr:    addr.Host,
+				CalcDigest: true,
+				piece: &base.PieceInfo{
+					PieceNum:    0,
+					RangeStart:  tt.rangeStart,
+					RangeSize:   tt.rangeSize,
+					PieceMd5:    digest,
+					PieceOffset: tt.rangeStart,
+					PieceStyle:  base.PieceStyle_PLAIN,
+				},
+			})
+			assert.Nil(err, "downloaded piece should success")
 
-		hash := md5.New()
-		hash.Write(tt.targetPieceData)
-		digest := hex.EncodeToString(hash.Sum(nil)[:16])
-		r, c, err := pd.DownloadPiece(&DownloadPieceRequest{
-			TaskID:     tt.taskID,
-			DstPid:     "",
-			DstAddr:    addr.Host,
-			CalcDigest: true,
-			piece: &base.PieceInfo{
-				PieceNum:    0,
-				RangeStart:  tt.rangeStart,
-				RangeSize:   tt.rangeSize,
-				PieceMd5:    digest,
-				PieceOffset: tt.rangeStart,
-				PieceStyle:  base.PieceStyle_PLAIN,
-			},
-		})
-		assert.Nil(err, "downloaded piece should success")
+			data, err := ioutil.ReadAll(r)
+			assert.Nil(err, "read piece data should success")
+			c.Close()
 
-		data, err := ioutil.ReadAll(r)
-		assert.Nil(err, "read piece data should success")
-		c.Close()
-
-		assert.Equal(data, tt.targetPieceData, "downloaded piece data should match")
+			assert.Equal(data, tt.targetPieceData, "downloaded piece data should match")
+		}
 		server.Close()
 	}
 }

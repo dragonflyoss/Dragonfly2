@@ -51,7 +51,6 @@ func (o optimizedPieceDownloader) DownloadPiece(request *DownloadPieceRequest) (
 		return nil, nil, errors.New("can not get ContentLength")
 	}
 	conn, buf := client.Hijack()
-	// TODO when there is buffer data ?
 	if buf.Buffered() > 0 {
 		logger.Warnf("buffer size is not 0, addr: %s, task: %s, peer: %s, piece: %d",
 			request.TaskID, request.DstAddr, request.DstPid, request.piece.PieceNum)
