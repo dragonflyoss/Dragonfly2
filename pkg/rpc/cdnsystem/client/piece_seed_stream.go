@@ -74,6 +74,7 @@ func (pss *pieceSeedStream) initStream() error {
 }
 
 func (pss *pieceSeedStream) recv() (ps *cdnsystem.PieceSeed, err error) {
+	pss.sc.UpdateAccessNodeMap(pss.hashKey)
 	if ps, err = pss.stream.Recv(); err != nil {
 		ps, err = pss.retryRecv(err)
 	}

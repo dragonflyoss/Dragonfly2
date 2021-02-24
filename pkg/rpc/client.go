@@ -95,6 +95,18 @@ func (conn *Connection) UpdateAccessNodeMap(key string) {
 	}
 }
 
+func (conn *Connection) Recv(stream interface{}) (item interface{}, err error) {
+	//streamValue := reflect.ValueOf(stream)
+	//hashKey := streamValue.FieldByName("HashKey")
+	//item = streamValue.MethodByName("Recv").Call([]reflect.Value{})
+	//conn.UpdateAccessNodeMap(hashKey.Interface().(string))
+	return nil, nil
+}
+
+func (conn *Connection) Send() {
+
+}
+
 func (conn *Connection) update(addrs dfnet.NetAddrs) {
 
 }
@@ -177,6 +189,7 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes ...st
 	defer conn.rwMutex.ReleaseLock(client.node, false)
 	conn.key2NodeMap.Store(key, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
+	conn.accessNodeMap.Store(client.node, time.Now())
 	return nil
 }
 
