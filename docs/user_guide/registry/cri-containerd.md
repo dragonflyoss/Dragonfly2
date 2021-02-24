@@ -24,7 +24,7 @@ proxy:
 Then, enable mirrors in containerd registries configuration in
 `/etc/containers/registries.conf`:
 
-```yaml
+```toml
 [plugins.cri.registry.mirrors."docker.io"]
   endpoint = ["http://127.0.0.1:65001"]
 ```

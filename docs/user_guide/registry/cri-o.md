@@ -24,7 +24,7 @@ This will proxy all requests for image layers with dfget.
 Then, enable mirrors in CRI-O registries configuration in
 `/etc/containers/registries.conf`:
 
-```yaml
+```toml
 [[registry]]
 location = "docker.io"
   [[registry.mirror]]
