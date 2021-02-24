@@ -79,10 +79,29 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
 		return 0, err
 	}
-	n, err := io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
+	var (
+		r  *io.LimitedReader
+		ok bool
+		bn int64 // copied bytes from BufferedReader.B
+	)
+	if r, ok = req.Reader.(*io.LimitedReader); ok {
+		// by jim: drain buffer and use raw reader(normally tcp connection) for using optimised operator, like splice
+		if br, bok := r.R.(*clientutil.BufferedReader); bok {
+			bn, err := io.CopyN(file, br.B, int64(br.B.Buffered()))
+			if err != nil && err != io.EOF {
+				return 0, err
+			}
+			r = io.LimitReader(br.R, r.N-bn).(*io.LimitedReader)
+		}
+	} else {
+		r = io.LimitReader(req.Reader, req.Range.Length).(*io.LimitedReader)
+	}
+	n, err := io.Copy(file, r)
 	if err != nil && err != io.EOF {
 		return 0, err
 	}
+	// update copied bytes from BufferedReader.B
+	n += bn
 	if n != req.Range.Length {
 		if req.UnknownLength {
 			// when back source, and can not detect content length, we need update real length
