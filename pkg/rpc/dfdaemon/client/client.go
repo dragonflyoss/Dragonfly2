@@ -34,15 +34,11 @@ func GetClient() (DaemonClient, error) {
 	return newDaemonClient(dfnet.NetAddrs{})
 }
 
-func GetClientByAddrs(addrs dfnet.NetAddrs) (DaemonClient, error) {
+func GetClientByAddr(connType dfnet.NetworkType, addrs ...string) (DaemonClient, error) {
 	// user specify
-	return newDaemonClient(addrs)
-}
-
-func GetClientByAddr(addr dfnet.NetAddr) (DaemonClient, error) {
 	return newDaemonClient(dfnet.NetAddrs{
-		Type:  addr.Type,
-		Addrs: []string{addr.Addr},
+		Type:  connType,
+		Addrs: addrs,
 	})
 }
 

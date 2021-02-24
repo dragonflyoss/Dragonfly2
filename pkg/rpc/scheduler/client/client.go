@@ -36,15 +36,11 @@ func GetClient() (SchedulerClient, error) {
 	return newSchedulerClient(dfnet.NetAddrs{})
 }
 
-func GetClientByAddrs(addrs dfnet.NetAddrs) (SchedulerClient, error) {
+func GetClientByAddr(connType dfnet.NetworkType, addrs ...string) (SchedulerClient, error) {
 	// user specify
-	return newSchedulerClient(addrs)
-}
-
-func GetClientByAddr(addr dfnet.NetAddr) (SchedulerClient, error) {
 	return newSchedulerClient(dfnet.NetAddrs{
-		Type:  addr.Type,
-		Addrs: []string{addr.Addr},
+		Type:  connType,
+		Addrs: addrs,
 	})
 }
 

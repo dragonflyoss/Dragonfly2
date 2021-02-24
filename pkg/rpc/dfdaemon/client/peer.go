@@ -124,14 +124,10 @@ func GetPieceTasks(destPeer *scheduler.PeerPacket_DestPeer, ctx context.Context,
 }
 
 func getClient(destAddr string, toCdn bool) (interface{}, error) {
-	netAddr := dfnet.NetAddr{
-		Type: dfnet.TCP,
-		Addr: destAddr,
-	}
 
 	if toCdn {
-		return cdnclient.GetClientByAddr(netAddr)
+		return cdnclient.GetClientByAddr(dfnet.TCP, destAddr)
 	} else {
-		return GetClientByAddr(netAddr)
+		return GetClientByAddr(dfnet.TCP, destAddr)
 	}
 }

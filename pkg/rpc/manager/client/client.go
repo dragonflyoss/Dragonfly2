@@ -33,10 +33,11 @@ func GetClientByAddrs(addrs dfnet.NetAddrs) (ManagerClient, error) {
 	return newManagerClient(addrs)
 }
 
-func GetClientByAddr(addr dfnet.NetAddr) (ManagerClient, error) {
+func GetClientByAddr(connType dfnet.NetworkType, addrs ...string) (ManagerClient, error) {
+	// user specify
 	return newManagerClient(dfnet.NetAddrs{
-		Type:  addr.Type,
-		Addrs: []string{addr.Addr},
+		Type:  connType,
+		Addrs: addrs,
 	})
 }
 

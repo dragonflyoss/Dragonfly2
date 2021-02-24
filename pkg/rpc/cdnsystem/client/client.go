@@ -35,15 +35,11 @@ func GetClient() (SeederClient, error) {
 	return newCdnClient(dfnet.NetAddrs{})
 }
 
-func GetClientByAddrs(addrs dfnet.NetAddrs) (SeederClient, error) {
+func GetClientByAddr(connType dfnet.NetworkType, addrs ...string) (SeederClient, error) {
 	// user specify
-	return newCdnClient(addrs)
-}
-
-func GetClientByAddr(addr dfnet.NetAddr) (SeederClient, error) {
 	return newCdnClient(dfnet.NetAddrs{
-		Type:  addr.Type,
-		Addrs: []string{addr.Addr},
+		Type:  connType,
+		Addrs: addrs,
 	})
 }
 
