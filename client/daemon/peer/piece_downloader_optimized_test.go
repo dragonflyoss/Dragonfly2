@@ -21,7 +21,7 @@ import (
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
-func TestPieceDownloader_DownloadPiece(t *testing.T) {
+func TestOptimizedPieceDownloader_DownloadPiece(t *testing.T) {
 	assert := testifyassert.New(t)
 	testData, err := ioutil.ReadFile(test.File)
 	assert.Nil(err, "load test file")
@@ -91,7 +91,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 	for _, tt := range tests {
 		server := httptest.NewServer(http.HandlerFunc(tt.handleFunc))
 		addr, _ := url.Parse(server.URL)
-		pd, _ := NewPieceDownloader()
+		pd, _ := NewOptimizedPieceDownloader()
 
 		hash := md5.New()
 		hash.Write(tt.targetPieceData)
