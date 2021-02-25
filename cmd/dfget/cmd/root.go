@@ -100,7 +100,7 @@ func runDfget() error {
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	//defer client.Close()
 	var result *dfdaemongrpc.DownResult
 	pb := progressbar.DefaultBytes(-1, "downloading")
 	for result = range down {
@@ -193,17 +193,17 @@ func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 }
 
 func probeDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
-	dc, err := dfclient.CreateClient([]dfnet.NetAddr{addr})
+	dc, err := dfclient.GetClientByAddr([]dfnet.NetAddr{addr})
 	if err != nil {
 		return nil, err
 	}
 	state, err := dc.CheckHealth(context.Background())
 	if err != nil {
-		dc.Close()
+		//dc.Close()
 		return nil, err
 	}
 	if !state.Success {
-		dc.Close()
+		//dc.Close()
 		return nil, fmt.Errorf("check health error: %s/%s", state.Code, state.Msg)
 	}
 	return dc, nil

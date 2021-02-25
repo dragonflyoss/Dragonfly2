@@ -69,7 +69,7 @@ type MockClient struct {
 }
 
 func NewMockClient(addr string, url string, group string, logger common.TestLogger) *MockClient {
-	c, err := client.CreateClient([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: addr}})
+	c, err := client.GetClientByAddr([]dfnet.NetAddr{{Type: dfnet.TCP, Addr: addr}})
 	if err != nil {
 		panic(err)
 	}
