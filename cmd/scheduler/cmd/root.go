@@ -1,13 +1,14 @@
 package cmd
 
 import (
+	"os"
+	"reflect"
+	"time"
+
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/server"
 	"github.com/mitchellh/mapstructure"
-	"os"
-	"reflect"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

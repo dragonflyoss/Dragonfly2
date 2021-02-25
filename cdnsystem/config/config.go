@@ -17,12 +17,13 @@
 package config
 
 import (
+	"path/filepath"
+	"time"
+
 	"d7y.io/dragonfly/v2/pkg/rate"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v3"
-	"path/filepath"
-	"time"
 )
 
 // NewConfig creates an instant with default values.
@@ -57,7 +58,7 @@ func NewBaseProperties() *BaseProperties {
 	var home string
 	home = filepath.Join(string(filepath.Separator), userHome, "cdn-system")
 	if err != nil {
-		home = filepath.Join(string(filepath.Separator), "home", "admin","cdn-system")
+		home = filepath.Join(string(filepath.Separator), "home", "admin", "cdn-system")
 	}
 	return &BaseProperties{
 		ListenPort:              DefaultListenPort,
@@ -81,7 +82,6 @@ func NewBaseProperties() *BaseProperties {
 
 // BaseProperties contains all basic properties of cdn system.
 type BaseProperties struct {
-
 	StorageDriver string `yaml:"storageDriver"`
 
 	// ListenPort is the port cdn server listens on.
@@ -163,5 +163,4 @@ type BaseProperties struct {
 	//
 	// default: 1
 	CleanRatio int `yaml:"cleanRatio"`
-
 }
