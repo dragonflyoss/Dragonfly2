@@ -18,11 +18,10 @@ package memory
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"d7y.io/dragonfly/v2/pkg/util/stat"
 	"fmt"
 	"github.com/stretchr/testify/suite"
 	"io"
@@ -93,7 +92,7 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 				Key: "foo1",
 			},
 			data:        []byte("hello foo"),
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			expected:    "hello foo",
 		},
 		{
@@ -105,7 +104,7 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 				Offset: 0,
 				Length: 5,
 			},
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			data:        []byte("hello foo"),
 			expected:    "hello",
 		},
@@ -118,7 +117,7 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 				Offset: 0,
 				Length: -1,
 			},
-			getErrCheck: IsInvalidValue,
+			getErrCheck: cdnerrors.IsInvalidValue,
 			data:        []byte("hello foo"),
 			expected:    "",
 		},
@@ -132,7 +131,7 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 				Bucket: "download",
 				Key:    "foo4",
 			},
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			data:        []byte("hello foo"),
 			expected:    "hello",
 		},
@@ -146,7 +145,7 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 				Key:    "foo0/foo.txt",
 			},
 			data:        []byte("hello foo"),
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			expected:    "hello foo",
 		},
 	}
@@ -163,11 +162,6 @@ func (s *LocalStorageSuite) TestGetPutBytes() {
 			s.Equal(string(result), v.expected)
 		}
 
-		// stat
-		s.checkStat(v.putRaw)
-
-		// remove
-		s.checkRemove(v.putRaw)
 	}
 
 }
@@ -189,7 +183,7 @@ func (s *LocalStorageSuite) TestGetPut() {
 				Key: "foo0.meta",
 			},
 			data:        strings.NewReader("hello meta file"),
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			expected:    "hello meta file",
 		},
 		{
@@ -200,7 +194,7 @@ func (s *LocalStorageSuite) TestGetPut() {
 				Key: "foo1.meta",
 			},
 			data:        strings.NewReader("hello meta file"),
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			expected:    "hello meta file",
 		},
 		{
@@ -213,7 +207,7 @@ func (s *LocalStorageSuite) TestGetPut() {
 				Length: 5,
 			},
 			data:        strings.NewReader("hello meta file"),
-			getErrCheck: IsNilError,
+			getErrCheck: cdnerrors.IsNilError,
 			expected:    "llo m",
 		},
 		{
@@ -225,7 +219,7 @@ func (s *LocalStorageSuite) TestGetPut() {
 				Offset: 2,
 				Length: -1,
 			},
-			getErrCheck: IsInvalidValue,
+			getErrCheck: cdnerrors.IsInvalidValue,
 			data:        strings.NewReader("hello meta file"),
 			expected:    "llo meta file",
 		},
@@ -238,7 +232,7 @@ func (s *LocalStorageSuite) TestGetPut() {
 				Offset: 30,
 				Length: 5,
 			},
-			getErrCheck: IsRangeNotSatisfiable,
+			getErrCheck: cdnerrors.IsRangeNotSatisfiable,
 			data:        strings.NewReader("hello meta file"),
 			expected:    "",
 		},
@@ -257,11 +251,6 @@ func (s *LocalStorageSuite) TestGetPut() {
 			s.Equal(string(result[:]), v.expected)
 		}
 
-		// stat
-		s.checkStat(v.putRaw)
-
-		// remove
-		s.checkRemove(v.putRaw)
 	}
 
 }
@@ -287,7 +276,7 @@ func (s *LocalStorageSuite) TestPutTrunc() {
 				Trunc:  true,
 			},
 			data:         strings.NewReader("hello"),
-			getErrCheck:  IsNilError,
+			getErrCheck:  cdnerrors.IsNilError,
 			expectedData: "hello",
 		},
 		{
@@ -297,7 +286,7 @@ func (s *LocalStorageSuite) TestPutTrunc() {
 				Trunc:  true,
 			},
 			data:         strings.NewReader("golang"),
-			getErrCheck:  IsNilError,
+			getErrCheck:  cdnerrors.IsNilError,
 			expectedData: "\x00\x00\x00\x00\x00\x00golang",
 		},
 		{
@@ -307,7 +296,7 @@ func (s *LocalStorageSuite) TestPutTrunc() {
 				Trunc:  false,
 			},
 			data:         strings.NewReader("foo"),
-			getErrCheck:  IsNilError,
+			getErrCheck:  cdnerrors.IsNilError,
 			expectedData: "foolo world",
 		},
 		{
@@ -317,7 +306,7 @@ func (s *LocalStorageSuite) TestPutTrunc() {
 				Trunc:  false,
 			},
 			data:         strings.NewReader("foo"),
-			getErrCheck:  IsNilError,
+			getErrCheck:  cdnerrors.IsNilError,
 			expectedData: "hello foold",
 		},
 	}
@@ -388,51 +377,4 @@ func (s *LocalStorageSuite) BenchmarkPutSerial() {
 			Offset: int64(k) * 5,
 		}, strings.NewReader("hello"))
 	}
-}
-
-func (s *LocalStorageSuite) TestManager_Get() {
-	cfg := &config.Config{
-		BaseProperties: &config.BaseProperties{
-			HomeDir: filepath.Join(s.workHome, "test_mgr"),
-		},
-	}
-	mgr, _ := store.NewManager(cfg)
-
-	st, err := mgr.Get(LocalStorageDriver)
-	s.Nil(err)
-	s.NotNil(st)
-	_, ok := st.driver.(*localStorage)
-	s.Equal(ok, true)
-
-	st, err = mgr.Get("testMgr")
-	s.NotNil(err)
-	s.Nil(st)
-}
-
-// -----------------------------------------------------------------------------
-// helper function
-
-func (s *LocalStorageSuite) checkStat(raw *store.Raw) {
-	info, err := s.storeLocal.Stat(context.Background(), raw)
-	s.Equal(IsNilError(err), true)
-
-	driver := s.storeLocal.driver.(*localStorage)
-	pathTemp := filepath.Join(driver.BaseDir, raw.Bucket, raw.Key)
-	f, _ := os.Stat(pathTemp)
-	sys, _ := fileutils.GetSys(f)
-
-	s.EqualValues(info, &store.StorageInfo{
-		Path:       filepath.Join(raw.Bucket, raw.Key),
-		Size:       f.Size(),
-		ModTime:    f.ModTime(),
-		CreateTime: statutils.Ctime(sys),
-	})
-}
-
-func (s *LocalStorageSuite) checkRemove(raw *store.Raw) {
-	err := s.storeLocal.Remove(context.Background(), raw)
-	s.Equal(IsNilError(err), true)
-
-	_, err = s.storeLocal.Stat(context.Background(), raw)
-	s.Equal(IsKeyNotFound(err), true)
 }
