@@ -48,6 +48,11 @@ message DownResult{
   bool done = 5;
 }
 
+message CheckHealthRequest {
+  // ip:port
+  string target = 1;
+}
+
 // Daemon Client RPC Service
 service Daemon{
   // trigger client to download file
@@ -55,7 +60,7 @@ service Daemon{
   // get piece tasks from other peers
   rpc GetPieceTasks(base.PieceTaskRequest)returns(base.PiecePacket){}
   // check daemon health
-  rpc CheckHealth(base.EmptyRequest)returns(base.ResponseState){}
+  rpc CheckHealth(CheckHealthRequest)returns(base.ResponseState){}
 }
 
 

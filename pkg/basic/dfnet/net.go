@@ -169,11 +169,6 @@ type NetAddr struct {
 	Addr string      `json:"addr" yaml:"addr"` // see https://github.com/grpc/grpc/blob/master/doc/naming.md
 }
 
-type NetAddrs struct {
-	Type  NetworkType
-	Addrs []string
-}
-
 func (n *NetAddr) GetEndpoint() string {
 	switch n.Type {
 	case UNIX:

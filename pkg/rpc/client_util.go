@@ -18,7 +18,6 @@ package rpc
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"fmt"
 	"google.golang.org/grpc"
@@ -56,10 +55,7 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 				Ref:  client,
 			}
 		}
-		if clientConn, err := conn.createClient(&dfnet.NetAddr{
-			Type: conn.networkType,
-			Addr: candidateNode,
-		}, append(clientOpts, conn.opts...)...); err == nil {
+		if clientConn, err := conn.createClient(candidateNode, append(clientOpts, conn.opts...)...); err == nil {
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  clientConn,
@@ -71,11 +67,11 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 	panic(fmt.Sprintf("failed to create candidate client for key: %s", key))
 }
 
-func (conn *Connection) createClient(netAddr *dfnet.NetAddr, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+func (conn *Connection) createClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	// should not retry
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	return grpc.DialContext(ctx, netAddr.GetEndpoint(), opts...)
+	return grpc.DialContext(ctx, target, opts...)
 }
 
 func (conn *Connection) gcConn(ctx context.Context, node string) {

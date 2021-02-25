@@ -33,19 +33,16 @@ import (
 
 func GetClient() (SchedulerClient, error) {
 	// 从本地文件/manager读取addrs
-	return newSchedulerClient(dfnet.NetAddrs{})
+	return newSchedulerClient([]dfnet.NetAddr{})
 }
 
-func GetClientByAddr(connType dfnet.NetworkType, addrs ...string) (SchedulerClient, error) {
+func GetClientByAddr(addrs []dfnet.NetAddr) (SchedulerClient, error) {
 	// user specify
-	return newSchedulerClient(dfnet.NetAddrs{
-		Type:  connType,
-		Addrs: addrs,
-	})
+	return newSchedulerClient(addrs)
 }
 
-func newSchedulerClient(addrs dfnet.NetAddrs, opts ...grpc.DialOption) (SchedulerClient, error) {
-	if len(addrs.Addrs) == 0 {
+func newSchedulerClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
+	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
 	return &schedulerClient{

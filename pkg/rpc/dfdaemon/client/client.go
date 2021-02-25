@@ -24,6 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/safe"
+	"d7y.io/dragonfly/v2/pkg/util/types"
 	"errors"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
@@ -31,19 +32,16 @@ import (
 
 func GetClient() (DaemonClient, error) {
 	// 从本地文件/manager读取addrs
-	return newDaemonClient(dfnet.NetAddrs{})
+	return newDaemonClient([]dfnet.NetAddr{})
 }
 
-func GetClientByAddr(connType dfnet.NetworkType, addrs ...string) (DaemonClient, error) {
+func GetClientByAddr(addrs []dfnet.NetAddr) (DaemonClient, error) {
 	// user specify
-	return newDaemonClient(dfnet.NetAddrs{
-		Type:  connType,
-		Addrs: addrs,
-	})
+	return newDaemonClient(addrs)
 }
 
-func newDaemonClient(addrs dfnet.NetAddrs, opts ...grpc.DialOption) (DaemonClient, error) {
-	if len(addrs.Addrs) == 0 {
+func newDaemonClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
+	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
 	return &daemonClient{
@@ -73,8 +71,9 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 	req.Uuid = uuid.New().String()
 
 	drc := make(chan *dfdaemon.DownResult, 4)
-	// todo 替换taskId
-	drs, err := newDownResultStream(dc, ctx, req.Url, req, opts)
+	// 生成taskId
+	taskId := types.GenerateTaskId(req.Url, req.Filter, req.UrlMeta)
+	drs, err := newDownResultStream(dc, ctx, taskId, req, opts)
 	if err != nil {
 		return nil, err
 	}

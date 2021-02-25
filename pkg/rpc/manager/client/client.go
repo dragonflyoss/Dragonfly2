@@ -28,21 +28,13 @@ import (
 	"time"
 )
 
-func GetClientByAddrs(addrs dfnet.NetAddrs) (ManagerClient, error) {
+func GetClientByAddr(addrs []dfnet.NetAddr) (ManagerClient, error) {
 	// user specify
 	return newManagerClient(addrs)
 }
 
-func GetClientByAddr(connType dfnet.NetworkType, addrs ...string) (ManagerClient, error) {
-	// user specify
-	return newManagerClient(dfnet.NetAddrs{
-		Type:  connType,
-		Addrs: addrs,
-	})
-}
-
-func newManagerClient(addrs dfnet.NetAddrs, opts ...grpc.DialOption) (ManagerClient, error) {
-	if len(addrs.Addrs) == 0 {
+func newManagerClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerClient, error) {
+	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
 	return &managerClient{

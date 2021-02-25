@@ -35,7 +35,12 @@ import (
 func main() {
 	os.Setenv(env.ActiveProfile, "local")
 	logger.InitCdnSystem()
-	c, err := client.GetClientByAddr(dfnet.TCP, "127.0.0.1:12345")
+	c, err := client.GetClientByAddr([]dfnet.NetAddr{
+		{
+			Type: dfnet.TCP,
+			Addr: "localhost:12345",
+		},
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -57,7 +62,12 @@ func main() {
 }
 
 func main2() {
-	c, err := client.GetClientByAddr(dfnet.TCP,"localhost:12345")
+	c, err := client.GetClientByAddr([]dfnet.NetAddr{
+		{
+			Type: dfnet.TCP,
+			Addr: "localhost:12345",
+		},
+	})
 	if err != nil {
 		panic(err)
 	}

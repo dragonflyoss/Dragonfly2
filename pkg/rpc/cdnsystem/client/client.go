@@ -32,19 +32,15 @@ var cdnClient SeederClient
 
 func GetClient() (SeederClient, error) {
 	// 从本地文件/manager读取addrs
-	return newCdnClient(dfnet.NetAddrs{})
+	return newCdnClient([]dfnet.NetAddr{})
 }
 
-func GetClientByAddr(connType dfnet.NetworkType, addrs ...string) (SeederClient, error) {
-	// user specify
-	return newCdnClient(dfnet.NetAddrs{
-		Type:  connType,
-		Addrs: addrs,
-	})
+func GetClientByAddr(addr []dfnet.NetAddr) (SeederClient, error) {
+	return newCdnClient(addr)
 }
 
-func newCdnClient(addrs dfnet.NetAddrs, opts ...grpc.DialOption) (SeederClient, error) {
-	if len(addrs.Addrs) == 0 {
+func newCdnClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SeederClient, error) {
+	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
 	return &seederClient{
@@ -54,7 +50,6 @@ func newCdnClient(addrs dfnet.NetAddrs, opts ...grpc.DialOption) (SeederClient, 
 
 // see cdnsystem.SeederClient
 type SeederClient interface {
-
 	ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (<-chan *cdnsystem.PieceSeed, error)
 
 	GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)

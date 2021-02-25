@@ -53,7 +53,6 @@ type Connection struct {
 	key2NodeMap    sync.Map // key -> node(many to one)
 	node2ClientMap sync.Map // node -> clientConn(one to one)
 	HashRing       *hashring.HashRing
-	networkType    dfnet.NetworkType
 	accessNodeMap  *syncmap.SyncMap
 	connExpireTime time.Duration
 }
@@ -65,16 +64,16 @@ type RetryMeta struct {
 	MaxBackOff  float64 // second
 }
 
-func NewConnection(addrs dfnet.NetAddrs, opts ...grpc.DialOption) *Connection {
+func NewConnection(addrs []dfnet.NetAddr, opts ...grpc.DialOption) *Connection {
 	opts = append(clientOpts, opts...)
-	if addrs.Type == "" {
-		addrs.Type = dfnet.TCP
+	addresses := make([]string, 0, len(addrs))
+	for _, addr := range addrs {
+		addresses = append(addresses, addr.GetEndpoint())
 	}
 	return &Connection{
 		rwMutex:        lockerutils.NewLockerPool(),
 		opts:           opts,
-		HashRing:       hashring.New(addrs.Addrs),
-		networkType:    addrs.Type,
+		HashRing:       hashring.New(addresses),
 		accessNodeMap:  syncmap.NewSyncMap(),
 		connExpireTime: connExpireTime,
 	}
@@ -107,7 +106,7 @@ func (conn *Connection) Send() {
 
 }
 
-func (conn *Connection) update(addrs dfnet.NetAddrs) {
+func (conn *Connection) update(addrs []dfnet.NetAddr) {
 
 }
 
