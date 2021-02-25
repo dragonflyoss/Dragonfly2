@@ -22,7 +22,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"github.com/pkg/errors"
 	"github.com/valyala/fasthttp"
 	"io"

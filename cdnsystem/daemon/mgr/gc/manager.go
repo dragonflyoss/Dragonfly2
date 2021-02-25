@@ -18,11 +18,11 @@ package gc
 
 import (
 	"context"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/metricsutils"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/metricsutils"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
 )
@@ -130,4 +130,3 @@ func (gcm *Manager) StartGC(ctx context.Context) {
 func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) {
 	gcm.gcTask(ctx, taskID, full)
 }
-

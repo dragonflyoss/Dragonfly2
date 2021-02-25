@@ -20,7 +20,7 @@ package manager;
 
 import "pkg/rpc/base/base.proto";
 
-option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager";
+option go_package = "d7y.io/dragonfly/v2/pkg/rpc/manager";
 
 message NavigatorRequest{
   // client ip
@@ -37,6 +37,7 @@ message SchedulerNodes{
   // ip:port
   repeated string addrs = 2;
   HostInfo client_host = 3;
+  ClientConfig client_config = 4;
 }
 
 message HeartRequest{
@@ -52,18 +53,18 @@ message ClientConfig{
   //......
 }
 
+message CdnConfig{
+  //......
+}
+
+message SchedulerConfig{
+  ClientConfig client_config = 1;
+  repeated ServerInfo cdn_hosts = 2;
+  //......
+}
+
 message ManagementConfig{
   base.ResponseState state = 1;
-
-  message SchedulerConfig{
-    ClientConfig client_config = 1;
-    repeated ServerInfo cdn_hosts = 2;
-    //......
-  }
-
-  message CdnConfig{
-    //......
-  }
 
   oneof config{
     SchedulerConfig scheduler_config = 2;

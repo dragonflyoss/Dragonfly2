@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package base;
 
-option go_package = "github.com/dragonflyoss/Dragonfly2/pkg/rpc/base";
+option go_package = "d7y.io/dragonfly/v2/pkg/rpc/base";
 
 enum Code{
   X_UNSPECIFIED = 0;
@@ -56,6 +56,9 @@ message UrlMeta{
   string md5 = 1;
   // downloaded range for url
   string range = 2;
+  // other attributes for url
+  // eg, when url is http protocol, header is used as http header
+  map<string, string> header = 3;
 }
 
 message HostLoad{

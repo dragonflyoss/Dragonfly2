@@ -17,7 +17,7 @@
 package ratelimiter
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/asserts"
+	"d7y.io/dragonfly/v2/pkg/asserts"
 	"sync"
 	"time"
 )

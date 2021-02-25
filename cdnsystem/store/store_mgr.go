@@ -17,10 +17,10 @@
 package store
 
 import (
+	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store/disk"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"path/filepath"
 	"sync"
 )

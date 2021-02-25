@@ -18,15 +18,29 @@ package client
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"errors"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/manager"
 	"google.golang.org/grpc"
 	"sync"
 	"time"
 )
+
+func GetClientByAddr(addrs []dfnet.NetAddr) (ManagerClient, error) {
+	// user specify
+	return newManagerClient(addrs)
+}
+
+func newManagerClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerClient, error) {
+	if len(addrs) == 0 {
+		return nil, errors.New("address list of cdn is empty")
+	}
+	return &managerClient{
+		Connection: rpc.NewConnection(addrs, opts...),
+	}, nil
+}
 
 // see manager.ManagerClient
 type ManagerClient interface {
@@ -34,8 +48,7 @@ type ManagerClient interface {
 	// only call once
 	KeepAlive(ctx context.Context, req *KeepAliveRequest, opts ...grpc.CallOption) error
 	// GetLatestConfig return latest management config and cdn host map with host name key
-	GetLatestConfig() (*manager.ManagementConfig_SchedulerConfig, map[string]*manager.ServerInfo, *manager.ManagementConfig_CdnConfig)
-	Close() error
+	GetLatestConfig() (*manager.SchedulerConfig, map[string]*manager.ServerInfo, *manager.CdnConfig)
 }
 
 // it is mutually exclusive between IsCdn and IsScheduler
@@ -43,34 +56,20 @@ type KeepAliveRequest struct {
 	IsCdn       bool
 	IsScheduler bool
 	// keep alive interval(second), default is 3s
-	Interval int
+	Interval time.Duration
 }
 
 type managerClient struct {
 	*rpc.Connection
 	Client manager.ManagerClient
 
-	schedulerConfig *manager.ManagementConfig_SchedulerConfig
-	cdnConfig       *manager.ManagementConfig_CdnConfig
+	schedulerConfig *manager.SchedulerConfig
+	cdnConfig       *manager.CdnConfig
 	cdns            map[string]*manager.ServerInfo
 
 	rwMutex   sync.RWMutex
 	ch        chan struct{}
 	closeDone bool
-}
-
-var initClientFunc = func(c *rpc.Connection) {
-	mc := c.Ref.(*managerClient)
-	mc.Client = manager.NewManagerClient(c.Conn)
-	mc.Connection = c
-}
-
-func CreateClient(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerClient, error) {
-	if client, err := rpc.BuildClient(&managerClient{ch: make(chan struct{})}, initClientFunc, netAddrs, opts); err != nil {
-		return nil, err
-	} else {
-		return client.(*managerClient), nil
-	}
 }
 
 func (mc *managerClient) GetSchedulers(ctx context.Context, req *manager.NavigatorRequest, opts ...grpc.CallOption) (sns *manager.SchedulerNodes, err error) {
@@ -91,9 +90,9 @@ func (mc *managerClient) KeepAlive(ctx context.Context, req *KeepAliveRequest, o
 	}
 
 	if req.Interval <= 0 {
-		req.Interval = 3
-	} else if req.Interval > 30 {
-		req.Interval = 30
+		req.Interval = 3 * time.Second
+	} else if req.Interval > 30*time.Second {
+		req.Interval = 30 * time.Second
 	}
 
 	hr := &manager.HeartRequest{
@@ -126,14 +125,14 @@ func (mc *managerClient) KeepAlive(ctx context.Context, req *KeepAliveRequest, o
 				logger.Errorf("do keep alive error:%v", err)
 			}
 
-			time.Sleep(time.Duration(req.Interval) * time.Second)
+			time.Sleep(req.Interval)
 		}
 	}()
 
 	return nil
 }
 
-func (mc *managerClient) GetLatestConfig() (*manager.ManagementConfig_SchedulerConfig, map[string]*manager.ServerInfo, *manager.ManagementConfig_CdnConfig) {
+func (mc *managerClient) GetLatestConfig() (*manager.SchedulerConfig, map[string]*manager.ServerInfo, *manager.CdnConfig) {
 	if mc.schedulerConfig == nil && mc.cdnConfig == nil {
 		<-mc.ch
 	}
@@ -148,7 +147,7 @@ func fillConfig(mc *managerClient, config *manager.ManagementConfig) {
 	defer mc.rwMutex.Unlock()
 
 	switch v := config.Config.(type) {
-	case *manager.ManagementConfig_SchedulerConfig_:
+	case *manager.ManagementConfig_SchedulerConfig:
 		if v.SchedulerConfig != nil {
 			mc.schedulerConfig = v.SchedulerConfig
 			if mc.schedulerConfig.CdnHosts != nil {
@@ -159,7 +158,7 @@ func fillConfig(mc *managerClient, config *manager.ManagementConfig) {
 				mc.cdns = cdns
 			}
 		}
-	case *manager.ManagementConfig_CdnConfig_:
+	case *manager.ManagementConfig_CdnConfig:
 		if v.CdnConfig != nil {
 			mc.cdnConfig = v.CdnConfig
 		}

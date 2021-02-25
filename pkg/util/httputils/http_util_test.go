@@ -21,7 +21,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"github.com/stretchr/testify/suite"
 	"github.com/valyala/fasthttp"
 	"io/ioutil"

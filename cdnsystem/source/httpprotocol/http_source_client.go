@@ -19,17 +19,20 @@ package httpprotocol
 import (
 	"context"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/cdnerrors"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/maputils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/netutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/stringutils"
-	"github.com/pkg/errors"
 	"net"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/source"
+	"d7y.io/dragonfly/v2/cdnsystem/types"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/util/maputils"
+	"d7y.io/dragonfly/v2/pkg/util/netutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 const (
@@ -164,12 +167,17 @@ func (client *httpSourceClient) Download(url string, headers map[string]string) 
 		return nil, err
 	}
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPartialContent {
+		hdr := make(map[string]string)
+		for k, v := range resp.Header {
+			hdr[k] = strings.Join(v, " ")
+		}
 		return &types.DownloadResponse{
 			Body: resp.Body,
 			ExpireInfo: map[string]string{
 				"Last-Modified": resp.Header.Get("Last-Modified"),
 				"Etag":          resp.Header.Get("Etag"),
 			},
+			Header: hdr,
 		}, nil
 	}
 	resp.Body.Close()

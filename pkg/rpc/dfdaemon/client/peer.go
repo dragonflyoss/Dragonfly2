@@ -18,13 +18,13 @@ package client
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/basic/dfnet"
-	logger "github.com/dragonflyoss/Dragonfly2/pkg/dflog"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
-	cdnclient "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/client"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/scheduler"
 	"google.golang.org/grpc"
 	"reflect"
 	"strings"
@@ -130,8 +130,8 @@ func getClient(destAddr string, toCdn bool) (interface{}, error) {
 	}
 
 	if toCdn {
-		return cdnclient.CreateClient([]dfnet.NetAddr{netAddr})
+		return cdnclient.GetClientByAddr([]dfnet.NetAddr{netAddr})
 	} else {
-		return CreateClient([]dfnet.NetAddr{netAddr})
+		return GetClientByAddr([]dfnet.NetAddr{netAddr})
 	}
 }

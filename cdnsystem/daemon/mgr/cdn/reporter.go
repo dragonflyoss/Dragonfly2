@@ -17,8 +17,8 @@
 package cdn
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"github.com/pkg/errors"
 )
 

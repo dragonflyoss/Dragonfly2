@@ -18,7 +18,7 @@ package queue
 
 import (
 	"container/list"
-	"github.com/dragonflyoss/Dragonfly2/pkg/asserts"
+	"d7y.io/dragonfly/v2/pkg/asserts"
 	"sync"
 	"sync/atomic"
 	"time"

@@ -17,15 +17,20 @@
 package main
 
 import (
-	"github.com/dragonflyoss/Dragonfly2/pkg/dfcodes"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/base/common"
-	_ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
+	"d7y.io/dragonfly/v2/pkg/basic/env"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+	"os"
 )
 import (
 	"context"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/pkg/safe"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem"
-	"github.com/dragonflyoss/Dragonfly2/pkg/safe"
 	"time"
 )
 
@@ -58,15 +63,16 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 	return
 }
 
+func (hs *helloSeeder) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	return nil, nil
+}
+
 func main() {
-	//lisAddr := dfnet.NetAddr{
-	//	Type: dfnet.TCP,
-	//	Addr: ":12345",
-	//}
-	//
-	//err := rpc.StartTcpServer(lisAddr, &helloSeeder{})
-	//
-	//if err != nil {
-	//	fmt.Printf("finish error:%v\n", err)
-	//}
+	os.Setenv(env.ActiveProfile, "local")
+	logger.InitCdnSystem()
+	err := rpc.StartTcpServer(12345, 12345, &helloSeeder{})
+
+	if err != nil {
+		fmt.Printf("finish error:%v\n", err)
+	}
 }

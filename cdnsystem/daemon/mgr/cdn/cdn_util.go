@@ -17,9 +17,9 @@
 package cdn
 
 import (
+	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/types"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/timeutils"
 	"github.com/pkg/errors"
 	"strconv"
 	"strings"

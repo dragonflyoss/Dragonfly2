@@ -18,8 +18,8 @@
 package plugins
 
 import (
+	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
 	"github.com/stretchr/testify/suite"
 	"reflect"
 	"testing"

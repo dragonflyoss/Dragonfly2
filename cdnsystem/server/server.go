@@ -17,23 +17,23 @@
 package server
 
 import (
-	_ "github.com/dragonflyoss/Dragonfly2/cdnsystem/source/httpprotocol"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store/disk"
+	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 )
-import _ "github.com/dragonflyoss/Dragonfly2/pkg/rpc/cdnsystem/server"
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/task"
+	"d7y.io/dragonfly/v2/cdnsystem/server/service"
+	"d7y.io/dragonfly/v2/cdnsystem/source"
+	"d7y.io/dragonfly/v2/cdnsystem/store"
+	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/cdn"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/gc"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/daemon/mgr/task"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/server/service"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/source"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/pkg/rpc"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -58,7 +58,7 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 		return nil, err
 	}
 
-	sourceClient, err := source.NewSourceClient(cfg)
+	sourceClient, err := source.NewSourceClient()
 	if err != nil {
 		return nil, err
 	}

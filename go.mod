@@ -1,9 +1,8 @@
-module github.com/dragonflyoss/Dragonfly2
+module d7y.io/dragonfly/v2
 
 go 1.15
 
 require (
-	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/emirpasic/gods v1.12.0
 	github.com/go-echarts/statsview v0.3.4
 	github.com/golang/protobuf v1.4.3

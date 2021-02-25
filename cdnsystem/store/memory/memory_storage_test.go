@@ -18,12 +18,12 @@ package memory
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
+	"d7y.io/dragonfly/v2/cdnsystem/store"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/stat"
 	"fmt"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/config"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/plugins"
-	"github.com/dragonflyoss/Dragonfly2/cdnsystem/store"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/fileutils"
-	"github.com/dragonflyoss/Dragonfly2/pkg/util/stat"
 	"github.com/stretchr/testify/suite"
 	"io"
 	"io/ioutil"
@@ -49,7 +49,7 @@ func (s *LocalStorageSuite) SetupSuite() {
 	pluginProps := map[config.PluginType][]*config.PluginProperties{
 		config.StoragePlugin: {
 			&config.PluginProperties{
-				Name:    LocalStorageDriver,
+				Name:    StorageDriver,
 				Enabled: true,
 				Config:  "baseDir: " + filepath.Join(s.workHome, "repo"),
 			},
@@ -65,7 +65,7 @@ func (s *LocalStorageSuite) SetupSuite() {
 	s.Nil(err)
 
 	// init store with local storage
-	s.storeLocal, err = sm.Get(LocalStorageDriver)
+	s.storeLocal, err = sm.Get(StorageDriver)
 	s.Nil(err)
 }
 
