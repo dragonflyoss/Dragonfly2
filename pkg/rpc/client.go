@@ -195,13 +195,19 @@ func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, er
 }
 
 // TryMigrate migrate key to another hash node other than exclusiveNodes
-// todo 在迁移时需要把之前连接过的节点排除
-func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes ...string) error {
+// preNode node before the migration
+func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []string) (preNode string, err error) {
 	// todo recover findCandidateClientConn error
 	if e, ok := cause.(*dferrors.DfError); ok {
 		if e.Code != dfcodes.ResourceLacked && e.Code != dfcodes.UnknownError {
-			return cause
+			return "", cause
 		}
+	}
+	if currentNode, ok := conn.key2NodeMap.Load(key); ok {
+		preNode = currentNode.(string)
+		exclusiveNodes = append(exclusiveNodes, currentNode.(string))
+	} else {
+		logger.GrpcLogger.Warnf("failed to find server node for key %s", key)
 	}
 	client := conn.findCandidateClientConn(key, exclusiveNodes...)
 	conn.rwMutex.GetLock(client.node, false)
@@ -209,7 +215,7 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes ...st
 	conn.key2NodeMap.Store(key, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
-	return nil
+	return
 }
 
 func (conn *Connection) Close() error {

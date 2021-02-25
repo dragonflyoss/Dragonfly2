@@ -72,6 +72,10 @@ func (sc *schedulerClient) getSchedulerClient(key string) scheduler.SchedulerCli
 }
 
 func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (rr *scheduler.RegisterResult, err error) {
+	return sc.doRegisterPeerTask(ctx, ptr, []string{}, opts)
+}
+
+func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, exclusiveNodes []string, opts []grpc.CallOption) (rr *scheduler.RegisterResult, err error) {
 	key := fmt.Sprintf("%s,%s,%s", ptr.Url, ptr.Filter, ptr.BizId)
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return sc.getSchedulerClient(key).RegisterPeerTask(ctx, ptr, opts...)
@@ -93,8 +97,9 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 			suc, int32(code), taskId, ptr.Url, ph.Ip, ph.SecurityDomain, ph.Idc, sc.GetClientConn(key).Target())
 
 	if err != nil {
-		if err := sc.TryMigrate(key, err); err == nil {
-			return sc.RegisterPeerTask(ctx, ptr, opts...)
+		if preNode, err := sc.TryMigrate(key, err, exclusiveNodes); err == nil {
+			exclusiveNodes = append(exclusiveNodes, preNode)
+			return sc.doRegisterPeerTask(ctx, ptr, exclusiveNodes, opts)
 		}
 	}
 
@@ -128,13 +133,18 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string,
 }
 
 func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) (rs *base.ResponseState, err error) {
+	return sc.doReportPeerResult(ctx, pr, []string{}, opts)
+}
+
+func (sc *schedulerClient) doReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, exclusiveNodes []string, opts []grpc.CallOption) (rs *base.ResponseState, err error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return sc.getSchedulerClient(pr.TaskId).ReportPeerResult(ctx, pr, opts...)
 	}, 0.5, 5.0, 5, nil)
 
 	if err != nil {
-		if err := sc.TryMigrate(pr.TaskId, err); err == nil {
-			return sc.ReportPeerResult(ctx, pr, opts...)
+		if preNode, err := sc.TryMigrate(pr.TaskId, err, exclusiveNodes); err == nil {
+			exclusiveNodes = append(exclusiveNodes, preNode)
+			return sc.doReportPeerResult(ctx, pr, exclusiveNodes, opts)
 		}
 	}
 
