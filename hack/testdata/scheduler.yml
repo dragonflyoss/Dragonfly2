@@ -12,8 +12,7 @@ worker:
 
 cdn:
   list:
-    -
-      - cdn-name : "cdn"
+    - - cdn-name: "cdn"
         ip: "cdn"
         rpcPort: 8003
         download-port: 8001
