@@ -13,8 +13,6 @@ services:
       - 65001:65001
     volumes:
       - ./hack/testdata/dfget-daemon.yml:/etc/dragonfly/peerhost.yml
-    links:
-      - scheduler
 
   scheduler:
     build:
@@ -24,10 +22,6 @@ services:
       - cdn
     container_name: scheduler
     hostname: scheduler
-    ports:
-      - 8002:8002
-    links:
-      - cdn
 
   cdn:
     build:
@@ -35,7 +29,3 @@ services:
       dockerfile: Dockerfile.cdn
     container_name: cdn
     hostname: cdn
-    ports:
-      - 8001:8001
-      - 8003:8003
-    
