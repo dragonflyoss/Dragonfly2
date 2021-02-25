@@ -25,8 +25,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/pkg/util/types"
-	"errors"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
 
@@ -51,20 +51,27 @@ func newDaemonClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 
 // see dfdaemon.DaemonClient
 type DaemonClient interface {
-
 	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, error)
 
 	GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
-	CheckHealth(ctx context.Context, opts ...grpc.CallOption) (*base.ResponseState, error)
+	CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (*base.ResponseState, error)
 }
 
 type daemonClient struct {
 	*rpc.Connection
 }
 
-func (sc *daemonClient) getDaemonClient(key string) dfdaemon.DaemonClient{
-	return dfdaemon.NewDaemonClient(sc.Connection.GetClientConn(key))
+func (dc *daemonClient) getDaemonClient(key string) dfdaemon.DaemonClient {
+	return dfdaemon.NewDaemonClient(dc.Connection.GetClientConn(key))
+}
+
+func (dc *daemonClient) getDaemonClientWithTarget(target string) (dfdaemon.DaemonClient, error) {
+	conn, err := dc.Connection.GetClientConnByTarget(target)
+	if err != nil {
+		return nil, err
+	}
+	return dfdaemon.NewDaemonClient(conn), nil
 }
 
 func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, error) {
@@ -95,11 +102,19 @@ func (dc *daemonClient) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRe
 	return nil, err
 }
 
-func (dc *daemonClient) CheckHealth(ctx context.Context, opts ...grpc.CallOption) (*base.ResponseState, error) {
-	// todo 需要添加taskId
-	return dc.getDaemonClient("").CheckHealth(ctx, &base.EmptyRequest{}, opts...)
+func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (*base.ResponseState, error) {
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		if client, err := dc.getDaemonClientWithTarget(target.GetEndpoint()); err != nil {
+			return nil, errors.Wrapf(err, "failed to connect server %s", target.GetEndpoint())
+		} else {
+			return client.CheckHealth(ctx, &base.EmptyRequest{}, opts...)
+		}
+	}, 0.2, 2.0, 3, nil)
+	if err == nil {
+		return res.(*base.ResponseState), nil
+	}
+	return nil, err
 }
-
 
 func receive(drs *downResultStream, drc chan *dfdaemon.DownResult) {
 	safe.Call(func() {

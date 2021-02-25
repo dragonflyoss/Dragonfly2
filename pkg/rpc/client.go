@@ -131,10 +131,9 @@ func (conn *Connection) StartGC(ctx context.Context) {
 		removedConnCount := 0
 		startTime := time.Now()
 		// range all connections and determine whether they are expired
+		conn.rwMutex.Lock()
 		nodes := conn.accessNodeMap.ListKeyAsStringSlice()
 		totalNodeSize := len(nodes)
-		conn.rwMutex.Lock()
-		defer conn.rwMutex.Unlock()
 		for _, node := range nodes {
 			atime, err := conn.accessNodeMap.GetAsTime(node)
 			if err != nil {
@@ -147,7 +146,7 @@ func (conn *Connection) StartGC(ctx context.Context) {
 			conn.gcConn(ctx, node)
 			removedConnCount++
 		}
-
+		conn.rwMutex.Unlock()
 		// slow GC detected, report it with a log warning
 		if timeDuring := time.Since(startTime); timeDuring > gcConnectionsTimeout {
 			logger.GrpcLogger.Warnf("gc connections:%d cost:%.3f", removedConnCount, timeDuring.Seconds())
@@ -157,25 +156,46 @@ func (conn *Connection) StartGC(ctx context.Context) {
 }
 
 // GetClient
-func (conn *Connection) GetClientConn(key string) *grpc.ClientConn {
-	node, ok := conn.key2NodeMap.Load(key)
+func (conn *Connection) GetClientConn(hashKey string) *grpc.ClientConn {
+	node, ok := conn.key2NodeMap.Load(hashKey)
 	if ok {
+		conn.accessNodeMap.Store(node, time.Now())
 		client, ok := conn.node2ClientMap.Load(node)
 		if ok {
-			conn.accessNodeMap.Store(node, time.Now())
 			return client.(*grpc.ClientConn)
 		}
 	}
-	client := conn.findCandidateClientConn(key)
+	client := conn.findCandidateClientConn(hashKey)
 	conn.rwMutex.GetLock(client.node, false)
 	defer conn.rwMutex.ReleaseLock(client.node, false)
-	conn.key2NodeMap.Store(key, client.node)
+	conn.key2NodeMap.Store(hashKey, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
 	return client.Ref.(*grpc.ClientConn)
 }
 
+func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, error) {
+	conn.accessNodeMap.Store(node, time.Now())
+	client, ok := conn.node2ClientMap.Load(node)
+	if ok {
+		return client.(*grpc.ClientConn), nil
+	}
+	conn.rwMutex.GetLock(node, false)
+	defer conn.rwMutex.ReleaseLock(node, false)
+	// double confirm
+	client, ok = conn.node2ClientMap.Load(node)
+	if ok {
+		return client.(*grpc.ClientConn), nil
+	}
+	clientConn, err := conn.createClient(node, append(clientOpts, conn.opts...)...)
+	if err != nil {
+		conn.node2ClientMap.Store(node, clientConn)
+	}
+	return clientConn, nil
+}
+
 // TryMigrate migrate key to another hash node other than exclusiveNodes
+// todo 在迁移时需要把之前连接过的节点排除
 func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes ...string) error {
 	// todo recover findCandidateClientConn error
 	if e, ok := cause.(*dferrors.DfError); ok {

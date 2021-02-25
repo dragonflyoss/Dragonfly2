@@ -197,7 +197,7 @@ func probeDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	state, err := dc.CheckHealth(context.Background())
+	state, err := dc.CheckHealth(context.Background(), addr)
 	if err != nil {
 		//dc.Close()
 		return nil, err
