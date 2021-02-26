@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -78,10 +79,29 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
 		return 0, err
 	}
-	n, err := io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
-	if err != nil && err != io.EOF {
+	var (
+		r  *io.LimitedReader
+		ok bool
+		bn int64 // copied bytes from BufferedReader.B
+	)
+	if r, ok = req.Reader.(*io.LimitedReader); ok {
+		// by jim: drain buffer and use raw reader(normally tcp connection) for using optimised operator, like splice
+		if br, bok := r.R.(*clientutil.BufferedReader); bok {
+			bn, err := io.CopyN(file, br.B, int64(br.B.Buffered()))
+			if err != nil && err != io.EOF {
+				return 0, err
+			}
+			r = io.LimitReader(br.R, r.N-bn).(*io.LimitedReader)
+		}
+	} else {
+		r = io.LimitReader(req.Reader, req.Range.Length).(*io.LimitedReader)
+	}
+	n, err := io.Copy(file, r)
+	if err != nil {
 		return 0, err
 	}
+	// update copied bytes from BufferedReader.B
+	n += bn
 	if n != req.Range.Length {
 		if req.UnknownLength {
 			// when back source, and can not detect content length, we need update real length
@@ -92,6 +112,12 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 			}
 		} else {
 			return n, ErrShortRead
+		}
+	}
+	// when Md5 is empty, try to get md5 from reader
+	if req.PieceMetaData.Md5 == "" {
+		if get, ok := req.Reader.(clientutil.DigestReader); ok {
+			req.PieceMetaData.Md5 = get.Digest()
 		}
 	}
 	t.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",

@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/go-http-utils/headers"
 	"github.com/gorilla/mux"
 	"golang.org/x/time/rate"
 
@@ -88,7 +89,7 @@ func (u *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 		//cdnSource = r.Header.Get("X-Dragonfly-CDN-Source")
 	)
 
-	rg, err := clientutil.ParseRange(r.Header.Get("Range"), math.MaxInt64)
+	rg, err := clientutil.ParseRange(r.Header.Get(headers.Range), math.MaxInt64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -97,8 +98,9 @@ func (u *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid range", http.StatusBadRequest)
 		return
 	}
-	//w.Header().Add("X-Dragonfly-CDN-Source", "")
 
+	// add header "Content-Length" to avoid chunked body in http client
+	w.Header().Add(headers.ContentLength, fmt.Sprintf("%d", rg[0].Length))
 	logger.Debugf("upload piece for task %s/%s to %s, request header: %#v", task, peer, r.RemoteAddr, r.Header)
 	reader, closer, err := u.StorageManager.ReadPiece(r.Context(),
 		&storage.ReadPieceRequest{

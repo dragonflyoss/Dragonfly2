@@ -8,6 +8,7 @@ require (
 	github.com/docker/go-units v0.4.0
 	github.com/emirpasic/gods v1.12.0
 	github.com/go-echarts/statsview v0.3.4
+	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
 	github.com/gofrs/flock v0.8.0
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/mock v1.4.4
@@ -28,6 +29,7 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
+	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a

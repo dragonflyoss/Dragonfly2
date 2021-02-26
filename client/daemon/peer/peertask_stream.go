@@ -141,16 +141,20 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 }
 
 func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]string, error) {
+	s.base.ctx, s.base.cancel = context.WithCancel(ctx)
 	if s.base.backSource {
 		go func() {
-			hdr := make(map[string]string)
-			hdr["Range"] = s.base.request.UrlMata.Range
-			err := s.base.pieceManager.DownloadSource(ctx, s, s.base.request.Url, hdr)
+			s.base.contentLength = - 1
+			_ = s.base.callback.Init(s)
+			err := s.base.pieceManager.DownloadSource(ctx, s, s.base.request)
 			if err != nil {
+				s.base.cancel()
 				s.base.Errorf("download from source error: %s", err)
-			} else {
-				s.base.Errorf("download from source ok")
+				s.cleanUnfinished()
+				return
 			}
+			s.base.Debugf("download from source ok")
+			s.finish()
 		}()
 	} else {
 		go s.base.receivePeerPacket()
@@ -166,6 +170,12 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		)
 		for {
 			select {
+			case <-s.base.ctx.Done():
+				s.base.Errorf("ctx.Done due to: %s", s.base.ctx.Err())
+				if err := w.CloseWithError(s.base.ctx.Err()); err != nil {
+					s.base.Errorf("CloseWithError failed: %s", err)
+				}
+				return
 			case <-s.base.done:
 				for {
 					// all data is wrote to local storage, and all data is wrote to pipe write

@@ -24,20 +24,22 @@ import (
 	"strings"
 	"time"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 type DownloadPieceRequest struct {
-	TaskID  string
-	DstPid  string
-	DstAddr string
-	piece   *base.PieceInfo
+	TaskID     string
+	DstPid     string
+	DstAddr    string
+	CalcDigest bool
+	piece      *base.PieceInfo
 }
 
 type PieceDownloader interface {
-	DownloadPiece(*DownloadPieceRequest) (io.ReadCloser, error)
+	DownloadPiece(*DownloadPieceRequest) (io.Reader, io.Closer, error)
 }
 
 type pieceDownloader struct {
@@ -83,20 +85,25 @@ func WithTransport(rt http.RoundTripper) func(*pieceDownloader) error {
 	}
 }
 
-func (p *pieceDownloader) DownloadPiece(d *DownloadPieceRequest) (io.ReadCloser, error) {
-	resp, err := p.httpClient.Do(p.buildHTTPRequest(d))
+func (p *pieceDownloader) DownloadPiece(d *DownloadPieceRequest) (io.Reader, io.Closer, error) {
+	resp, err := p.httpClient.Do(buildDownloadPieceHTTPRequest(d))
 	if err != nil {
 		logger.Errorf("task id: %s, piece num: %d, dst: %s, download piece failed: %s",
 			d.TaskID, d.piece.PieceNum, d.DstAddr, err)
-		return nil, err
+		return nil, nil, err
 	}
 	if resp.StatusCode > 299 {
-		return nil, fmt.Errorf("download piece failed with http code: %s", resp.Status)
+		return nil, nil, fmt.Errorf("download piece failed with http code: %s", resp.Status)
 	}
-	return resp.Body, nil
+	r := resp.Body.(io.Reader)
+	c := resp.Body.(io.Closer)
+	if d.CalcDigest {
+		r = clientutil.NewDigestReader(io.LimitReader(resp.Body, int64(d.piece.RangeSize)), d.piece.PieceMd5)
+	}
+	return r, c, nil
 }
 
-func (p *pieceDownloader) buildHTTPRequest(d *DownloadPieceRequest) *http.Request {
+func buildDownloadPieceHTTPRequest(d *DownloadPieceRequest) *http.Request {
 	b := strings.Builder{}
 	b.WriteString("http://")
 	b.WriteString(d.DstAddr)

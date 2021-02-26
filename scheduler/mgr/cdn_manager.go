@@ -63,7 +63,7 @@ func (cm *CDNManager) InitCDNClient() {
 			})
 			cm.cdnInfoMap[cdn.CdnName] = &cdns[i]
 		}
-		seederClient, err := client.CreateClient(addrs)
+		seederClient, err := client.GetClientByAddr(addrs)
 		if err != nil {
 			logger.Errorf("create cdn client failed main addr [%s]", addrs[0])
 		}

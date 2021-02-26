@@ -19,6 +19,6 @@ cdn:
     -
       - cdn-name : "cdn"
         ip: "127.0.0.1"
-        rpc-port: 12345
+        rpc-port: 12346
         download-port: 8002
 
