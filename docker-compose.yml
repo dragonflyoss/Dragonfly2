@@ -1,0 +1,36 @@
+version: "3"
+services:
+  dfdaemon:
+    build:
+      context: .
+      dockerfile: Dockerfile.dfdaemon
+    depends_on:
+      - scheduler
+      - cdn
+    container_name: dfdaemon
+    hostname: dfdaemon
+    ports:
+      - 65001:65001
+    volumes:
+      - ./hack/testdata/dfget-daemon.yml:/etc/dragonfly/peerhost.yml
+      - ./log/dragonfly/dfdaemon:/var/log/dragonfly
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    depends_on:
+      - cdn
+    container_name: scheduler
+    hostname: scheduler
+    volumes:
+      - ./log/dragonfly/scheduler:/root/logs/dragonfly
+
+  cdn:
+    build:
+      context: .
+      dockerfile: Dockerfile.cdn
+    container_name: cdn
+    hostname: cdn
+    volumes:
+      - ./log/dragonfly/cdn:/root/logs/dragonfly

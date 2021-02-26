@@ -74,8 +74,8 @@ func createDefaultConfig() *Config {
 				{{
 					CdnName:      "cdn",
 					IP:           "127.0.0.1",
-					RpcPort:      12345,
-					DownloadPort: 12345,
+					RpcPort:      8003,
+					DownloadPort: 8001,
 				}},
 			},
 		},
