@@ -60,15 +60,16 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 	// using the existing task if it already exists corresponding to taskID
 	if v, err := tm.taskStore.Get(taskId); err == nil {
-		task = v.(*types.SeedTask)
-		if !equalsTask(task, newTask) {
-			return nil, cdnerrors.ErrTaskIDDuplicate
+		existTask := v.(*types.SeedTask)
+		if !isSameTask(existTask, newTask) {
+			return nil, errors.Wrapf(cdnerrors.ErrTaskIDDuplicate, "newTask:%+v, existTask:%+v", newTask, existTask)
 		}
+		task = existTask
 	} else {
 		task = newTask
 	}
 
-	if task.SourceFileLength != 0 {
+	if task.SourceFileLength > 0 {
 		return task, nil
 	}
 
@@ -82,6 +83,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 			return nil, err
 		}
 		if cdnerrors.IsAuthenticationRequired(err) {
+			// todo 增加授权失败容器，后续需要授权的地方需要先校验是否通过再对源发起请求
 			return nil, err
 		}
 	}
@@ -95,10 +97,11 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 
 	// calculate piece size and update the PieceSize and PieceTotal
-	pieceSize := computePieceSize(task.SourceFileLength)
-	task.PieceSize = pieceSize
-	task.PieceTotal = int32((sourceFileLength + (int64(pieceSize) - 1)) / int64(pieceSize))
-
+	if task.PieceSize <= 0 {
+		pieceSize := computePieceSize(task.SourceFileLength)
+		task.PieceSize = pieceSize
+		task.PieceTotal = int32((sourceFileLength + (int64(pieceSize) - 1)) / int64(pieceSize))
+	}
 	tm.taskStore.Add(task.TaskID, task)
 	tm.metrics.tasks.WithLabelValues(task.CdnStatus).Inc()
 	return task, nil
@@ -166,20 +169,23 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 	return task, nil
 }
 
-// equalsTask check whether the two task provided are the same
-func equalsTask(existTask, newTask *types.SeedTask) bool {
-	if existTask.TaskUrl != newTask.TaskUrl {
+// isSameTask check whether the two task provided are the same
+func isSameTask(task1, task2 *types.SeedTask) bool {
+	if task1 == task2 {
+		return true
+	}
+	if task1.TaskUrl != task2.TaskUrl {
 		return false
 	}
 
-	if !stringutils.IsEmptyStr(existTask.RequestMd5) && !stringutils.IsEmptyStr(newTask.RequestMd5) {
-		if existTask.RequestMd5 != newTask.RequestMd5 {
+	if !stringutils.IsEmptyStr(task1.RequestMd5) && !stringutils.IsEmptyStr(task2.RequestMd5) {
+		if task1.RequestMd5 != task2.RequestMd5 {
 			return false
 		}
 	}
 
-	if !stringutils.IsEmptyStr(newTask.RequestMd5) && !stringutils.IsEmptyStr(existTask.SourceRealMd5) {
-		return existTask.SourceRealMd5 == newTask.RequestMd5
+	if !stringutils.IsEmptyStr(task1.RequestMd5) && !stringutils.IsEmptyStr(task2.SourceRealMd5) {
+		return task1.SourceRealMd5 == task2.RequestMd5
 	}
 
 	return true

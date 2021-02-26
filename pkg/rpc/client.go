@@ -221,7 +221,7 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 func (conn *Connection) Close() error {
 	conn.rwMutex.Lock()
 	defer conn.rwMutex.Unlock()
-
+	conn.node2ClientMap
 	return conn.Close()
 }
 
