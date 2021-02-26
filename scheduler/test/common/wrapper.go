@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package common
 
 import (
@@ -7,8 +23,6 @@ import (
 	"runtime"
 	"runtime/debug"
 	"strings"
-
-	"github.com/onsi/ginkgo"
 )
 
 // FailurePanic is the value that will be panicked from Fail.
@@ -20,7 +34,10 @@ type FailurePanic struct {
 }
 
 // String makes FailurePanic look like the old Ginkgo panic when printed.
-func (FailurePanic) String() string { return ginkgo.GINKGO_PANIC }
+func (FailurePanic) String() string {
+	return "panic"
+	// return ginkgo.GINKGO_PANIC
+}
 
 // Fail wraps ginkgo.Fail so that it panics with more useful
 // information about the failure. This function will panic with a
@@ -46,7 +63,7 @@ func Fail(message string, callerSkip ...int) {
 		}
 	}()
 
-	ginkgo.Fail(message, skip)
+	//ginkgo.Fail(message, skip)
 }
 
 // SkipPanic is the value that will be panicked from Skip.
@@ -58,7 +75,10 @@ type SkipPanic struct {
 }
 
 // String makes SkipPanic look like the old Ginkgo panic when printed.
-func (SkipPanic) String() string { return ginkgo.GINKGO_PANIC }
+func (SkipPanic) String() string {
+	return "panic"
+	//return ginkgo.GINKGO_PANIC
+}
 
 // Skip wraps ginkgo.Skip so that it panics with more useful
 // information about why the test is being skipped. This function will
@@ -84,7 +104,7 @@ func Skip(message string, callerSkip ...int) {
 		}
 	}()
 
-	ginkgo.Skip(message, skip)
+	// ginkgo.Skip(message, skip)
 }
 
 // ginkgo adds a lot of test running infrastructure to the stack, so

@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package schedule_worker
 
 import (
@@ -75,12 +91,7 @@ func (wg *WorkerGroup) ReceiveJob(job *types.PeerTask) {
 	if job == nil {
 		return
 	}
-	var choiceWorkerId uint32
-	if job.Host == nil {
-		choiceWorkerId = crc32.ChecksumIEEE([]byte(job.Pid)) % uint32(wg.workerNum)
-	} else {
-		choiceWorkerId = crc32.ChecksumIEEE([]byte(job.Host.Uuid)) % uint32(wg.workerNum)
-	}
+	choiceWorkerId := crc32.ChecksumIEEE([]byte(job.Task.TaskId)) % uint32(wg.workerNum)
 	wg.workerList[choiceWorkerId].ReceiveJob(job)
 }
 
@@ -88,12 +99,6 @@ func (wg *WorkerGroup) ReceiveUpdatePieceResult(pr *scheduler2.PieceResult) {
 	if pr == nil {
 		return
 	}
-	var choiceWorkerId uint32
-	pt, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
-	if pt == nil || pt.Host == nil {
-		choiceWorkerId = crc32.ChecksumIEEE([]byte(pr.SrcPid)) % uint32(wg.workerNum)
-	} else {
-		choiceWorkerId = crc32.ChecksumIEEE([]byte(pt.Host.Uuid)) % uint32(wg.workerNum)
-	}
+	choiceWorkerId := crc32.ChecksumIEEE([]byte(pr.SrcPid)) % uint32(wg.workerNum)
 	wg.workerList[choiceWorkerId].ReceiveUpdatePieceResult(pr)
 }

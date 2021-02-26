@@ -1,12 +1,29 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package schedule_worker
 
 import (
-	"fmt"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"fmt"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -58,7 +75,7 @@ func (w *Worker) doUpdatePieceResultWorker() {
 		}
 		peerTask, needSchedule, err := w.UpdatePieceResult(pr)
 		if needSchedule {
-			w.ReceiveJob(peerTask)
+			w.sendJob(peerTask)
 		}
 
 		if err != nil {
@@ -69,6 +86,10 @@ func (w *Worker) doUpdatePieceResultWorker() {
 
 func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.PeerTask, needSchedule bool, err error) {
 	if pr == nil {
+		return
+	}
+
+	if w.processErrorCode(pr) {
 		return
 	}
 
@@ -84,6 +105,7 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 			return
 		}
 	}
+	var dstPeerTask *types.PeerTask
 	if pr.DstPid == "" {
 		if peerTask.GetParent() == nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
@@ -91,14 +113,9 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 			return
 		}
 	} else {
-		dstPeerTask, _ := ptMgr.GetPeerTask(pr.DstPid)
+		dstPeerTask, _ = ptMgr.GetPeerTask(pr.DstPid)
 		if dstPeerTask == nil {
-			ptMgr.AddFakePeerTask(pr.DstPid, peerTask.Task)
-			peerTask.AddParent(dstPeerTask, 1)
-		} else {
-			if peerTask.GetParent() == nil {
-				peerTask.AddParent(dstPeerTask, 1)
-			}
+			dstPeerTask = ptMgr.AddFakePeerTask(pr.DstPid, peerTask.Task)
 		}
 	}
 
@@ -110,7 +127,10 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 	}
 
 	peerTask.AddPieceStatus(pr)
-	if w.scheduler.IsNodeBad(peerTask) {
+	if dstPeerTask != nil && peerTask.GetParent() == nil {
+		peerTask.SetNodeStatus(types.PeerTaskStatusAddParent, dstPeerTask)
+		needSchedule = true
+	} else if w.scheduler.IsNodeBad(peerTask) {
 		peerTask.SetNodeStatus(types.PeerTaskStatusBadNode)
 		needSchedule = true
 	} else if w.scheduler.NeedAdjustParent(peerTask) {
@@ -154,6 +174,15 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 	}()
 
 	switch peerTask.GetNodeStatus() {
+	case types.PeerTaskStatusAddParent:
+		parent, _ := peerTask.GetJobData().(*types.PeerTask)
+		if parent == nil {
+			peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+			return
+		}
+		peerTask.AddParent(parent, 1)
+		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+		return
 	case types.PeerTaskStatusNeedParent:
 		parent, _, err := w.scheduler.SchedulerParent(peerTask)
 		if err != nil {
@@ -214,7 +243,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
 
 	case types.PeerTaskStatusNeedCheckNode:
-		if w.scheduler.IsNodeBad(peerTask) {
+		if w.scheduler.IsNodeBad(peerTask) && peerTask.GetSubTreeNodesNum() > 1 {
 			adjustNodes, err := w.scheduler.SchedulerBadNode(peerTask)
 			if err != nil {
 				logger.Debugf("[%s][%s]: schedule bad node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
@@ -275,5 +304,16 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 func (w *Worker) sendScheduleResult(peerTask *types.PeerTask) {
 	logger.Debugf("[%s][%s]: sendScheduleResult", peerTask.Task.TaskId, peerTask.Pid)
 	w.sender.Send(peerTask)
+	return
+}
+
+func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
+	code := pr.Code
+
+	switch code {
+	case dfcodes.Success:
+		return
+	}
+
 	return
 }

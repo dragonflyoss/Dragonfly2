@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package test
 
 import (
@@ -6,51 +22,52 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/test/common"
 	"d7y.io/dragonfly/v2/scheduler/test/mock_cdn"
-	"testing"
+	"fmt"
+	"github.com/go-echarts/statsview"
+	"github.com/go-echarts/statsview/viewer"
+	"github.com/stretchr/testify/suite"
+	"go.uber.org/zap"
 	"time"
-
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
 )
 
-type tester struct {
-	start time.Time
-	t     *testing.T
+type SchedulerTestSuite struct {
+	suite.Suite
+	cdn *mock_cdn.MockCDN
+	svr *server.Server
+	ss  *server.SchedulerServer
 }
 
-func (t *tester) Fail() {
-	t.t.Logf("--- FAIL: TestE2E(%f)", time.Since(t.start).Round(1*time.Millisecond).Seconds())
-}
-
-// RunE2ETests checks configuration parameters (specified through flags) and then runs
-// E2E tests using the Ginkgo runner.
-// This function is called on each Ginkgo node in parallel mode.
-func RunE2ETests(t *testing.T) {
-	gomega.RegisterFailHandler(common.Fail)
-	ginkgo.RunSpecs(&tester{time.Now(), t}, "Scheduler e2e suite")
-}
-
-var (
-	cdn        *mock_cdn.MockCDN
-	svr    *server.Server
-	ss     *server.SchedulerServer
-)
-
-var _ = ginkgo.BeforeSuite(func(){
+func (suite *SchedulerTestSuite) SetupSuite() {
 	logger.InitScheduler()
-	cdn = mock_cdn.NewMockCDN("localhost:12345", common.NewE2ELogger())
-	cdn.Start()
-	time.Sleep(time.Second/2)
-	mgr.GetCDNManager().InitCDNClient()
-	svr        = server.NewServer()
-	ss         = svr.GetServer()
-	go svr.Start()
-	time.Sleep(time.Second/2)
-})
+	logger.SetGcLogger(zap.NewNop().Sugar())
+	logger.SetGrpcLogger(zap.NewNop().Sugar())
 
-var _ = ginkgo.AfterSuite(func(){
-	svr.Stop()
-	if cdn != nil {
-		cdn.Stop()
+	suite.cdn= mock_cdn.NewMockCDN("localhost:8003", common.NewE2ELogger())
+	suite.cdn.Start()
+	time.Sleep(time.Second / 2)
+	mgr.GetCDNManager().InitCDNClient()
+	suite.svr = server.NewServer()
+	suite.ss = suite.svr.GetServer()
+	go suite.svr.Start()
+	time.Sleep(time.Second / 2)
+	go func() {
+		// enable go pprof and statsview
+		// port, _ := freeport.GetFreePort()
+		port := 8888
+		debugListen := fmt.Sprintf("localhost:%d", port)
+		viewer.SetConfiguration(viewer.WithAddr(debugListen))
+		logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
+			"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
+			Infof("enable debug at http://%s", debugListen)
+		if err := statsview.New().Start(); err != nil {
+			logger.Warnf("serve go pprof error: %s", err)
+		}
+	}()
+}
+
+func (suite *SchedulerTestSuite) TearDownSuite() {
+	suite.svr.Stop()
+	if suite.cdn != nil {
+		suite.cdn.Stop()
 	}
-})
+}

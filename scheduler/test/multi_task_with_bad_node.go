@@ -23,34 +23,43 @@ import (
 	"time"
 )
 
-func (suite *SchedulerTestSuite) Test501MultiBatchDownload() {
+func (suite *SchedulerTestSuite) Test801MultiTaskWithBadNodeDownload() {
 	tl := common.NewE2ELogger()
 
 	var (
 		clientNum  = 20
 		stopChList []chan struct{}
+		badClient  *mock_client.MockClient
 	)
+	badClient = mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_bad_1", "mtb1_", tl)
+	go func() {
+		badClient.SetDownloadPieceCallback(func(pieceNum int){
+			if pieceNum == 2 {
+				badClient.SetDone()
+			}
+		})
+		badClient.Start()
+	}()
+	time.Sleep(time.Second)
 	for i := 0; i < clientNum; i++ {
-		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
+		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_bad_1", "mtb1_", tl)
 		go client.Start()
 		stopCh := client.GetStopChan()
 		stopChList = append(stopChList, stopCh)
 	}
-	time.Sleep(time.Second * 5)
 	for i := 0; i < clientNum; i++ {
-		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
-		go client.Start()
-		stopCh := client.GetStopChan()
-		stopChList = append(stopChList, stopCh)
-	}
-	time.Sleep(time.Second * 5)
-	for i := 0; i < clientNum; i++ {
-		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
+		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_bad_2", "mtb2_", tl)
 		go client.Start()
 		stopCh := client.GetStopChan()
 		stopChList = append(stopChList, stopCh)
 	}
 
+	for i := 0; i < clientNum; i++ {
+		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_bad_3", "mtb3_", tl)
+		go client.Start()
+		stopCh := client.GetStopChan()
+		stopChList = append(stopChList, stopCh)
+	}
 	time.Sleep(time.Second * 5)
 	timer := time.After(time.Minute * 10)
 	caseList := []reflect.SelectCase{
@@ -73,5 +82,6 @@ func (suite *SchedulerTestSuite) Test501MultiBatchDownload() {
 			}
 		}
 	}
-	tl.Log("multiple batch all client download file finished")
+	tl.Log("multiple task with bad node all client download file finished")
+	time.Sleep(time.Second*5)
 }
