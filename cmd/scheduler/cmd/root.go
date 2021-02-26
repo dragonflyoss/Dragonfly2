@@ -4,6 +4,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/server"
+	"d7y.io/dragonfly/v2/version"
 	"github.com/mitchellh/mapstructure"
 	"os"
 	"reflect"
@@ -26,14 +27,14 @@ var (
 	schedulerViper = viper.GetViper()
 )
 
-// supernodeDescription is used to describe supernode command in details.
-var supernodeDescription = `scheduler is a long-running process with two primary responsibilities:
+// schedulerDescription is used to describe supernode command in details.
+var schedulerDescription = `scheduler is a long-running process with two primary responsibilities:
 It's the tracker and scheduler in the P2P network that choose appropriate downloading net-path for each peer.`
 
-var rootCmd = &cobra.Command{
+var SchedulerCmd = &cobra.Command{
 	Use:               "scheduler",
 	Short:             "the central control server of Dragonfly used for scheduling",
-	Long:              supernodeDescription,
+	Long:              schedulerDescription,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
@@ -63,7 +64,8 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	setupFlags(rootCmd)
+	SchedulerCmd.AddCommand(version.VersionCmd)
+	setupFlags(SchedulerCmd)
 }
 
 // setupFlags setups flags for command line.
@@ -135,7 +137,7 @@ func bindRootFlags(v *viper.Viper) error {
 	}
 
 	for _, f := range flags {
-		if err := v.BindPFlag(f.key, rootCmd.Flag(f.flag)); err != nil {
+		if err := v.BindPFlag(f.key, SchedulerCmd.Flag(f.flag)); err != nil {
 			return err
 		}
 	}
@@ -203,7 +205,7 @@ func decodeWithYAML(types ...reflect.Type) mapstructure.DecodeHookFunc {
 
 // Execute will process supernode.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := SchedulerCmd.Execute(); err != nil {
 		logger.Errorf(err.Error())
 		os.Exit(1)
 	}
