@@ -136,10 +136,10 @@ func TestMatch(t *testing.T) {
 		WithRule("/a", false, false, "").
 		WithRule("/a/c", true, false, "").
 		WithRule("/a/e", false, true, "").
-		WithTest("http://h/a", false, false, ""). // should match /a
-		WithTest("http://h/a/b", true, false, ""). // should match /a/b
+		WithTest("http://h/a", false, false, "").   // should match /a
+		WithTest("http://h/a/b", true, false, "").  // should match /a/b
 		WithTest("http://h/a/c", false, false, ""). // should match /a, not /a/c
-		WithTest("http://h/a/d", false, true, ""). // should match /a/d and use https
+		WithTest("http://h/a/d", false, true, "").  // should match /a/d and use https
 		WithTest("http://h/a/e", false, false, ""). // should match /a, not /a/e
 		Test(t)
 

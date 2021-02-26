@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-func (suite *SchedulerTestSuite) Test501MultiBatchDownload() {
+func (suite *SchedulerTestSuite) Test701MultiTaskDownload() {
 	tl := common.NewE2ELogger()
 
 	var (
@@ -31,21 +31,19 @@ func (suite *SchedulerTestSuite) Test501MultiBatchDownload() {
 		stopChList []chan struct{}
 	)
 	for i := 0; i < clientNum; i++ {
-		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
+		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_1", "mt1", tl)
 		go client.Start()
 		stopCh := client.GetStopChan()
 		stopChList = append(stopChList, stopCh)
 	}
-	time.Sleep(time.Second * 5)
 	for i := 0; i < clientNum; i++ {
-		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
+		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_2", "mt2", tl)
 		go client.Start()
 		stopCh := client.GetStopChan()
 		stopChList = append(stopChList, stopCh)
 	}
-	time.Sleep(time.Second * 5)
 	for i := 0; i < clientNum; i++ {
-		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
+		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_task_3", "mt3", tl)
 		go client.Start()
 		stopCh := client.GetStopChan()
 		stopChList = append(stopChList, stopCh)
@@ -73,5 +71,5 @@ func (suite *SchedulerTestSuite) Test501MultiBatchDownload() {
 			}
 		}
 	}
-	tl.Log("multiple batch all client download file finished")
+	tl.Log("multiple task all client download file finished")
 }

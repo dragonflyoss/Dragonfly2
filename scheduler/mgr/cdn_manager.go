@@ -1,14 +1,30 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package mgr
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"errors"
+	"fmt"
 	"hash/crc32"
 	"io/ioutil"
 	"net/http"
@@ -210,7 +226,7 @@ func (c *CDNClient) getTinyFileContent(task *types.Task, cdnHost *types.Host) (c
 	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
 		cdnHost.Ip, cdnHost.DownPort, task.TaskId[:3], task.TaskId)
 	client := &http.Client{
-		Timeout: time.Second*5,
+		Timeout: time.Second * 5,
 	}
 	response, err := client.Get(url)
 	if err != nil {
@@ -224,5 +240,3 @@ func (c *CDNClient) getTinyFileContent(task *types.Task, cdnHost *types.Host) (c
 
 	return
 }
-
-
