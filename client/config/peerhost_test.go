@@ -391,7 +391,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 					Regx:     proxyExp,
 					UseHTTPS: false,
 					Direct:   false,
-					Redirect: "d7s.io",
+					Redirect: "d7y.io",
 				},
 			},
 			HijackHTTPS: &HijackConfig{

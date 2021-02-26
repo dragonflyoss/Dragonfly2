@@ -46,7 +46,8 @@ type FilePeerTask interface {
 
 type filePeerTask struct {
 	*logger.SugaredLoggerOnWith
-	ctx context.Context
+	ctx    context.Context
+	cancel context.CancelFunc
 
 	// backSource indicates downloading resource from instead of other peers
 	backSource bool
@@ -127,7 +128,6 @@ func NewFilePeerTask(ctx context.Context,
 	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 	return &filePeerTask{
-		ctx:             ctx,
 		host:            host,
 		backSource:      result.State.Code == dfcodes.BackSource,
 		request:         request,
@@ -170,15 +170,20 @@ func (pt *filePeerTask) GetTraffic() int64 {
 }
 
 func (pt *filePeerTask) Start(ctx context.Context) (chan *PeerTaskProgress, error) {
+	pt.ctx, pt.cancel = context.WithCancel(ctx)
 	if pt.backSource {
+		pt.contentLength = - 1
 		_ = pt.callback.Init(pt)
 		go func() {
 			err := pt.pieceManager.DownloadSource(ctx, pt, pt.request)
 			if err != nil {
+				pt.cancel()
 				pt.Errorf("download from source error: %s", err)
-			} else {
-				pt.Errorf("download from source ok")
+				pt.cleanUnfinished()
+				return
 			}
+			pt.Errorf("download from source ok")
+			pt.finish()
 		}()
 		return pt.progressCh, nil
 	}

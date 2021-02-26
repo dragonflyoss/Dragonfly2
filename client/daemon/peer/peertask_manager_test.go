@@ -45,6 +45,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)
@@ -54,8 +55,14 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func setupDaemonServer(ctrl *gomock.Controller, contentLength int64, pieceSize int32) (port int32) {
-	port = int32(freeport.GetPort())
+func setupPeerTaskManagerComponents(
+	ctrl *gomock.Controller,
+	taskID string,
+	contentLength int64,
+	pieceSize, pieceParallelCount int32) (
+	schedulerclient.SchedulerClient, storage.Manager) {
+	port := int32(freeport.GetPort())
+	// 1. setup a mock daemon server for uploading pieces info
 	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
 	daemon.EXPECT().CheckHealth(gomock.Any()).DoAndReturn(func(ctx context.Context) (*base.ResponseState, error) {
 		return &base.ResponseState{
@@ -101,38 +108,9 @@ func setupDaemonServer(ctrl *gomock.Controller, contentLength int64, pieceSize i
 		Addr: fmt.Sprintf("0.0.0.0:%d", port),
 	})
 	go rpc.NewServer(daemon).Serve(ln)
-	return port
-}
-
-func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
-	assert := testifyassert.New(t)
-	ctrl := gomock.NewController(t)
-	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
-		DataPath: test.DataDir,
-		TaskExpireTime: clientutil.Duration{
-			Duration: -1 * time.Second,
-		},
-	}, func(request storage.CommonTaskRequest) {})
-	defer storageManager.(gc.GC).TryGC()
-
-	testBytes, err := ioutil.ReadFile(test.File)
-	assert.Nil(err, "load test file")
-
-	var (
-		pieceParallelCount = int32(4)
-		pieceSize          = 1024
-
-		mockContentLength = len(testBytes)
-		//mockPieceCount    = int(math.Ceil(float64(mockContentLength) / float64(pieceSize)))
-
-		peerID = "peer-0"
-		taskID = "task-0"
-
-		output = "../test/testdata/test.output"
-	)
-	defer os.Remove(output)
-	port := setupDaemonServer(ctrl, int64(mockContentLength), int32(pieceSize))
 	time.Sleep(100 * time.Millisecond)
+
+	// 2. setup a scheduler
 	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
 		return &scheduler.RegisterResult{
@@ -183,6 +161,38 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 			Msg:     "progress by mockSchedulerClient",
 		}, nil
 	})
+	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
+		DataPath: test.DataDir,
+		TaskExpireTime: clientutil.Duration{
+			Duration: -1 * time.Second,
+		},
+	}, func(request storage.CommonTaskRequest) {})
+	return sched, storageManager
+}
+
+func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
+	assert := testifyassert.New(t)
+	ctrl := gomock.NewController(t)
+
+	testBytes, err := ioutil.ReadFile(test.File)
+	assert.Nil(err, "load test file")
+
+	var (
+		pieceParallelCount = int32(4)
+		pieceSize          = 1024
+
+		mockContentLength = len(testBytes)
+		//mockPieceCount    = int(math.Ceil(float64(mockContentLength) / float64(pieceSize)))
+
+		peerID = "peer-0"
+		taskID = "task-0"
+
+		output = "../test/testdata/test.output"
+	)
+	defer os.Remove(output)
+
+	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	defer storageManager.(gc.GC).TryGC()
 
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any()).AnyTimes().DoAndReturn(func(task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
@@ -195,15 +205,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 
 	ptm := &peerTaskManager{
 		host: &scheduler.PeerHost{
-			Uuid:           "",
-			Ip:             "127.0.0.1",
-			RpcPort:        0,
-			DownPort:       0,
-			HostName:       "",
-			SecurityDomain: "",
-			Location:       "",
-			Idc:            "",
-			NetTopology:    "",
+			Ip: "127.0.0.1",
 		},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
@@ -211,13 +213,13 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 			pieceDownloader: downloader,
 		},
 		storageManager: storageManager,
-		scheduler:      sched,
+		scheduler:      schedulerClient,
 	}
 	progress, err := ptm.StartFilePeerTask(context.Background(), &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url:      "http://localhost/test/data",
 			Filter:   "",
-			BizId:    "d7s-test",
+			BizId:    "d7y-test",
 			UrlMata:  nil,
 			PeerId:   peerID,
 			PeerHost: &scheduler.PeerHost{},
@@ -241,13 +243,6 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
-	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
-		DataPath: test.DataDir,
-		TaskExpireTime: clientutil.Duration{
-			Duration: -1 * time.Second,
-		},
-	}, func(request storage.CommonTaskRequest) {})
-	defer storageManager.(gc.GC).TryGC()
 
 	testBytes, err := ioutil.ReadFile(test.File)
 	assert.Nil(err, "load test file")
@@ -262,58 +257,8 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		peerID = "peer-0"
 		taskID = "task-0"
 	)
-	port := setupDaemonServer(ctrl, int64(mockContentLength), int32(pieceSize))
-	time.Sleep(100 * time.Millisecond)
-	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
-	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
-		return &scheduler.RegisterResult{
-			State: &base.ResponseState{
-				Success: true,
-				Code:    dfcodes.Success,
-				Msg:     "",
-			},
-			TaskId:      taskID,
-			SizeScope:   base.SizeScope_NORMAL,
-			DirectPiece: nil,
-		}, nil
-	})
-	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, error) {
-		resultCh := make(chan *scheduler.PieceResult)
-		peerPacketCh := make(chan *scheduler.PeerPacket)
-		go func() {
-			for {
-				select {
-				case <-resultCh:
-				}
-			}
-		}()
-		go func() {
-			peerPacketCh <- &scheduler.PeerPacket{
-				State: &base.ResponseState{
-					Success: true,
-					Code:    dfcodes.Success,
-					Msg:     "progress by mockSchedulerClient",
-				},
-				TaskId:        taskID,
-				SrcPid:        "127.0.0.1",
-				ParallelCount: pieceParallelCount,
-				MainPeer: &scheduler.PeerPacket_DestPeer{
-					Ip:      "127.0.0.1",
-					RpcPort: port,
-					PeerId:  "",
-				},
-				StealPeers: nil,
-			}
-		}()
-		return resultCh, peerPacketCh, nil
-	})
-	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) (*base.ResponseState, error) {
-		return &base.ResponseState{
-			Success: true,
-			Code:    dfcodes.Success,
-			Msg:     "progress by mockSchedulerClient",
-		}, nil
-	})
+	sched, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	defer storageManager.(gc.GC).TryGC()
 
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any()).AnyTimes().DoAndReturn(func(task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
@@ -326,15 +271,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 
 	ptm := &peerTaskManager{
 		host: &scheduler.PeerHost{
-			Uuid:           "",
-			Ip:             "127.0.0.1",
-			RpcPort:        0,
-			DownPort:       0,
-			HostName:       "",
-			SecurityDomain: "",
-			Location:       "",
-			Idc:            "",
-			NetTopology:    "",
+			Ip: "127.0.0.1",
 		},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
@@ -347,7 +284,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	r, _, err := ptm.StartStreamPeerTask(context.Background(), &scheduler.PeerTaskRequest{
 		Url:      "http://localhost/test/data",
 		Filter:   "",
-		BizId:    "d7s-test",
+		BizId:    "d7y-test",
 		UrlMata:  nil,
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
