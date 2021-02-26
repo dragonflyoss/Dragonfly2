@@ -18,11 +18,11 @@ package disk
 
 import (
 	"context"
-	"fmt"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/stat"
+	"fmt"
 	"github.com/stretchr/testify/suite"
 	"io"
 	"io/ioutil"

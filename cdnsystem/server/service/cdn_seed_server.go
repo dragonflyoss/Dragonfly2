@@ -30,6 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/util/netutils"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"fmt"
 	"github.com/pkg/errors"
@@ -75,7 +76,7 @@ func constructRequestHeader(req *cdnsystem.SeedRequest) *types.TaskRegisterReque
 // validateSeedRequestParams validates the params of SeedRequest.
 func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
 	if !netutils.IsValidURL(req.Url) {
-		return errors.Errorf( "resource url:%s is invalid", req.Url)
+		return errors.Errorf("resource url:%s is invalid", req.Url)
 	}
 	if stringutils.IsEmptyStr(req.TaskId) {
 		return errors.New("taskId is empty")
@@ -95,7 +96,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		}
 	}()
 	if err := validateSeedRequestParams(req); err != nil {
-		return dferrors.Newf(dfcodes.BadRequest,"bad seed request: %v", err)
+		return dferrors.Newf(dfcodes.BadRequest, "bad seed request: %v", err)
 	}
 	registerRequest := constructRequestHeader(req)
 
@@ -107,17 +108,19 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	}
 	peerId := fmt.Sprintf("%s-%s_%s", dfnet.HostName, req.TaskId, "CDN")
 	for piece := range pieceChan {
-		pieceRange := strings.Split(piece.PieceRange, "-")
-		pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
+		pieceStart, _, err := rangeutils.ParsePieceIndex(piece.PieceRange)
+		if err != nil {
+			return err
+		}
 		switch piece.Type {
 		case types.PieceType:
 			psc <- &cdnsystem.PieceSeed{
-				State:         common.NewState(dfcodes.Success, "success"),
-				PeerId:        peerId,
-				SeederName:    dfnet.HostName,
-				PieceInfo:     &base.PieceInfo{
+				State:      common.NewState(dfcodes.Success, "success"),
+				PeerId:     peerId,
+				SeederName: dfnet.HostName,
+				PieceInfo: &base.PieceInfo{
 					PieceNum:    piece.PieceNum,
-					RangeStart:  pieceStart,
+					RangeStart:  uint64(pieceStart),
 					RangeSize:   piece.PieceLen,
 					PieceMd5:    piece.PieceMd5,
 					PieceOffset: piece.PieceOffset,
@@ -161,15 +164,15 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 		}, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
 	task, err := css.taskMgr.Get(ctx, req.TaskId)
-	logger.Debugf("task:%+v",task)
+	logger.Debugf("task:%+v", task)
 	if err != nil {
 		state := common.NewState(dfcodes.CdnError, err)
 		if cdnerrors.IsDataNotFound(err) {
 			state = common.NewState(dfcodes.CdnTaskNotFound, err)
 			return &base.PiecePacket{
-			State: state,
-			TaskId: req.TaskId,
-		}, errors.Wrapf(err, "failed to get task from cdn")
+				State:  state,
+				TaskId: req.TaskId,
+			}, errors.Wrapf(err, "failed to get task from cdn")
 		}
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)

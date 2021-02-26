@@ -18,12 +18,12 @@ package disk
 
 import (
 	"context"
-	"fmt"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/stat"
+	"fmt"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -31,6 +31,12 @@ import (
 	"os"
 	"path/filepath"
 )
+
+func init() {
+	// Ensure that storage implements the StorageDriver interface
+	var storage *diskStorage = nil
+	var _ store.StorageDriver = storage
+}
 
 const StorageDriver = "disk"
 
@@ -84,8 +90,8 @@ func NewStorage(conf string) (store.StorageDriver, error) {
 }
 
 // Get the content of key from storage and return in io stream.
-func (ls *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.Reader, error) {
-	path, info, err := ls.statPath(raw.Bucket, raw.Key)
+func (ds *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.Reader, error) {
+	path, info, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -121,8 +127,8 @@ func (ls *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.Reader, erro
 }
 
 // GetBytes gets the content of key from storage and return in bytes.
-func (ls *diskStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []byte, err error) {
-	path, info, err := ls.statPath(raw.Bucket, raw.Key)
+func (ds *diskStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []byte, err error) {
+	path, info, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -155,12 +161,12 @@ func (ls *diskStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []byt
 }
 
 // Put reads the content from reader and put it into storage.
-func (ls *diskStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) error {
+func (ds *diskStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) error {
 	if err := store.CheckPutRaw(raw); err != nil {
 		return err
 	}
 
-	path, err := ls.preparePath(raw.Bucket, raw.Key)
+	path, err := ds.preparePath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -200,12 +206,12 @@ func (ls *diskStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) 
 }
 
 // PutBytes puts the content of key from storage with bytes.
-func (ls *diskStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte) error {
+func (ds *diskStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte) error {
 	if err := store.CheckPutRaw(raw); err != nil {
 		return err
 	}
 
-	path, err := ls.preparePath(raw.Bucket, raw.Key)
+	path, err := ds.preparePath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -238,12 +244,12 @@ func (ls *diskStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte
 }
 
 // AppendBytes append the content of key from storage with bytes.
-func (ls *diskStorage) AppendBytes(ctx context.Context, raw *store.Raw, data []byte) error {
+func (ds *diskStorage) AppendBytes(ctx context.Context, raw *store.Raw, data []byte) error {
 	if err := store.CheckPutRaw(raw); err != nil {
 		return err
 	}
 
-	path, err := ls.preparePath(raw.Bucket, raw.Key)
+	path, err := ds.preparePath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -270,8 +276,8 @@ func (ls *diskStorage) AppendBytes(ctx context.Context, raw *store.Raw, data []b
 }
 
 // Stat determines whether the file exists.
-func (ls *diskStorage) Stat(ctx context.Context, raw *store.Raw) (*store.StorageInfo, error) {
-	_, fileInfo, err := ls.statPath(raw.Bucket, raw.Key)
+func (ds *diskStorage) Stat(ctx context.Context, raw *store.Raw) (*store.StorageInfo, error) {
+	_, fileInfo, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -290,8 +296,8 @@ func (ls *diskStorage) Stat(ctx context.Context, raw *store.Raw) (*store.Storage
 
 // Remove deletes a file or dir.
 // It will force delete the file or dir when the raw.Trunc is true.
-func (ls *diskStorage) Remove(ctx context.Context, raw *store.Raw) error {
-	path, info, err := ls.statPath(raw.Bucket, raw.Key)
+func (ds *diskStorage) Remove(ctx context.Context, raw *store.Raw) error {
+	path, info, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -310,8 +316,8 @@ func (ls *diskStorage) Remove(ctx context.Context, raw *store.Raw) error {
 }
 
 // GetAvailSpace returns the available disk space in Byte.
-func (ls *diskStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
-	path, _, err := ls.statPath(raw.Bucket, raw.Key)
+func (ds *diskStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
+	path, _, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return 0, err
 	}
@@ -323,8 +329,8 @@ func (ls *diskStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileu
 
 // Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 // calling walkFn for each file or directory in the tree, including root.
-func (ls *diskStorage) Walk(ctx context.Context, raw *store.Raw) error {
-	path, _, err := ls.statPath(raw.Bucket, raw.Key)
+func (ds *diskStorage) Walk(ctx context.Context, raw *store.Raw) error {
+	path, _, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -338,8 +344,8 @@ func (ls *diskStorage) Walk(ctx context.Context, raw *store.Raw) error {
 // helper function
 
 // preparePath gets the target path and creates the upper directory if it does not exist.
-func (ls *diskStorage) preparePath(bucket, key string) (string, error) {
-	dir := filepath.Join(ls.BaseDir, bucket)
+func (ds *diskStorage) preparePath(bucket, key string) (string, error) {
+	dir := filepath.Join(ds.BaseDir, bucket)
 
 	if err := fileutils.CreateDirectory(dir); err != nil {
 		return "", err
@@ -350,8 +356,8 @@ func (ls *diskStorage) preparePath(bucket, key string) (string, error) {
 }
 
 // statPath determines whether the target file exists and returns an fileMutex if so.
-func (ls *diskStorage) statPath(bucket, key string) (string, os.FileInfo, error) {
-	filePath := filepath.Join(ls.BaseDir, bucket, key)
+func (ds *diskStorage) statPath(bucket, key string) (string, os.FileInfo, error) {
+	filePath := filepath.Join(ds.BaseDir, bucket, key)
 	f, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {

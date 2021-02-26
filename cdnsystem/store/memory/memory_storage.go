@@ -18,13 +18,13 @@ package memory
 
 import (
 	"context"
-	"fmt"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	statutims "d7y.io/dragonfly/v2/pkg/util/stat"
+	"d7y.io/dragonfly/v2/pkg/util/stat"
+	"fmt"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -32,6 +32,12 @@ import (
 	"os"
 	"path/filepath"
 )
+
+func init() {
+	// Ensure that storage implements the StorageDriver interface
+	var storage *memoryStorage = nil
+	var _ store.StorageDriver = storage
+}
 
 const StorageDriver = "memory"
 
@@ -279,7 +285,7 @@ func (ms *memoryStorage) Stat(ctx context.Context, raw *store.Raw) (*store.Stora
 	return &store.StorageInfo{
 		Path:       filepath.Join(raw.Bucket, raw.Key),
 		Size:       fileInfo.Size(),
-		CreateTime: statutims.Ctime(sys),
+		CreateTime: statutils.Ctime(sys),
 		ModTime:    fileInfo.ModTime(),
 	}, nil
 }

@@ -60,7 +60,6 @@ const (
 )
 
 var HostIp string
-
 var HostName, _ = os.Hostname()
 
 func init() {

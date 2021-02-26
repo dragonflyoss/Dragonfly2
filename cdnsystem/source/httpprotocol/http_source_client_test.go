@@ -17,10 +17,10 @@
 package httpprotocol
 
 import (
-	"fmt"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/util/maputils"
+	"fmt"
 	"reflect"
 	"testing"
 )

@@ -63,6 +63,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				var pieceMd5 = md5.New()
 				// todo 后续压缩等特性通过waitToWriteContent 和 pieceStyle 实现
 				waitToWriteContent := job.pieceContent
+				// 要写盘数据的长度
 				pieceLen := waitToWriteContent.Len()
 				pieceStyle := types.PlainUnspecified
 

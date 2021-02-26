@@ -115,13 +115,14 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 				}
 				jobCh <- pc
 				curPieceNum++
-				logger.WithTaskID(task.TaskID).Debugf("send the protocolContent, pieceNum: %d", curPieceNum)
+				logger.WithTaskID(task.TaskID).Debugf("send the last protocolContent, pieceNum: %d", curPieceNum)
 			}
 			logger.WithTaskID(task.TaskID).Info("send all protocolContents and wait for cdnWriter")
 			break
 		}
 		if err != nil {
 			close(jobCh)
+			// download fail
 			return &downloadMetadata{backSourceLength: backSourceFileLength}, err
 		}
 	}

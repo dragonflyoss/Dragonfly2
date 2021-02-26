@@ -18,13 +18,13 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/cdnsystem/store/hybrid"
 	"d7y.io/dragonfly/v2/cdnsystem/store/memory"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"fmt"
 	"github.com/stretchr/testify/suite"
 	"io"
 	"io/ioutil"

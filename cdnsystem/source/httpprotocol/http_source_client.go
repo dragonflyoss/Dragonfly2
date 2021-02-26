@@ -18,14 +18,6 @@ package httpprotocol
 
 import (
 	"context"
-	"fmt"
-	"net"
-	"net/http"
-	"strings"
-	"time"
-
-	"github.com/pkg/errors"
-
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -33,6 +25,12 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"fmt"
+	"github.com/pkg/errors"
+	"net"
+	"net/http"
+	"strings"
+	"time"
 )
 
 const (

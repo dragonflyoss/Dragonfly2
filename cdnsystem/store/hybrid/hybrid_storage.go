@@ -32,6 +32,12 @@ import (
 	"path/filepath"
 )
 
+func init() {
+	// Ensure that storage implements the StorageDriver interface
+	var storage *hybridStorage = nil
+	var _ store.StorageDriver = storage
+}
+
 const StorageDriver = "hybrid"
 
 var fileLocker = util.NewLockerPool()

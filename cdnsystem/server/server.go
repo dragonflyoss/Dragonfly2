@@ -46,7 +46,6 @@ type Server struct {
 
 // New creates a brand new server instance.
 func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
-	var err error
 
 	storeMgr, err := store.NewManager(cfg)
 	if err != nil {
@@ -58,7 +57,7 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 		return nil, err
 	}
 
-	sourceClient, err := source.NewSourceClient()
+	sourceClient, err := source.NewSourceClient(cfg)
 	if err != nil {
 		return nil, err
 	}
