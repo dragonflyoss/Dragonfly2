@@ -24,6 +24,7 @@ services:
     container_name: scheduler
     hostname: scheduler
     volumes:
+      - ./hack/testdata/scheduler.yml:/etc/dragonfly/scheduler.yml
       - ./log/dragonfly/scheduler:/root/logs/dragonfly
 
   cdn:
@@ -33,4 +34,5 @@ services:
     container_name: cdn
     hostname: cdn
     volumes:
+      - ./hack/testdata/cdn.yml:/etc/dragonfly/cdn.yml
       - ./log/dragonfly/cdn:/root/logs/dragonfly
