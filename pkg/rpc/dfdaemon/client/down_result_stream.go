@@ -18,35 +18,33 @@ package client
 
 import (
 	"context"
-	"errors"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	"errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type downResultStream struct {
-	dc   *daemonClient
-	ctx  context.Context
-	req  *dfdaemon.DownRequest
-	opts []grpc.CallOption
-
-	// client for one target
-	client  dfdaemon.DaemonClient
-	nextNum int
+	dc      *daemonClient
+	ctx     context.Context
+	hashKey string
+	req     *dfdaemon.DownRequest
+	opts    []grpc.CallOption
 	// stream for one client
 	stream dfdaemon.Daemon_DownloadClient
 
 	rpc.RetryMeta
 }
 
-func newDownResultStream(dc *daemonClient, ctx context.Context, req *dfdaemon.DownRequest, opts []grpc.CallOption) (*downResultStream, error) {
+func newDownResultStream(dc *daemonClient, ctx context.Context, hashKey string, req *dfdaemon.DownRequest, opts []grpc.CallOption) (*downResultStream, error) {
 	drs := &downResultStream{
-		dc:   dc,
-		ctx:  ctx,
-		req:  req,
-		opts: opts,
+		dc:      dc,
+		ctx:     ctx,
+		hashKey: hashKey,
+		req:     req,
+		opts:    opts,
 
 		RetryMeta: rpc.RetryMeta{
 			MaxAttempts: 5,
@@ -54,8 +52,6 @@ func newDownResultStream(dc *daemonClient, ctx context.Context, req *dfdaemon.Do
 			InitBackoff: 1.0,
 		},
 	}
-	xc, _, nextNum := dc.GetClientSafely()
-	drs.client, drs.nextNum = xc.(dfdaemon.DaemonClient), nextNum
 
 	if err := drs.initStream(); err != nil {
 		return nil, err
@@ -66,7 +62,7 @@ func newDownResultStream(dc *daemonClient, ctx context.Context, req *dfdaemon.Do
 
 func (drs *downResultStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return drs.client.Download(drs.ctx, drs.req, drs.opts...)
+		return drs.dc.getDaemonClient(drs.hashKey).Download(drs.ctx, drs.req, drs.opts...)
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, nil)
 
 	if err != nil {
@@ -80,6 +76,7 @@ func (drs *downResultStream) initStream() error {
 }
 
 func (drs *downResultStream) recv() (dr *dfdaemon.DownResult, err error) {
+	drs.dc.UpdateAccessNodeMap(drs.hashKey)
 	if dr, err = drs.stream.Recv(); err != nil {
 		dr, err = drs.retryRecv(err)
 	}
@@ -108,7 +105,7 @@ func (drs *downResultStream) replaceStream(cause error) error {
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return drs.client.Download(drs.ctx, drs.req, drs.opts...)
+		return drs.dc.getDaemonClient(drs.hashKey).Download(drs.ctx, drs.req, drs.opts...)
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
 
 	if err == nil {
@@ -120,15 +117,12 @@ func (drs *downResultStream) replaceStream(cause error) error {
 }
 
 func (drs *downResultStream) replaceClient(cause error) error {
-	if err := drs.dc.TryMigrate(drs.nextNum, cause); err != nil {
+	if err := drs.dc.TryMigrate(drs.hashKey, cause); err != nil {
 		return err
 	}
 
-	xc, _, nextNum := drs.dc.GetClientSafely()
-	drs.client, drs.nextNum = xc.(dfdaemon.DaemonClient), nextNum
-
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return drs.client.Download(drs.ctx, drs.req, drs.opts...)
+		return drs.dc.getDaemonClient(drs.hashKey).Download(drs.ctx, drs.req, drs.opts...)
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
 
 	if err != nil {

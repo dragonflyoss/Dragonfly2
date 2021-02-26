@@ -97,7 +97,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 		r = io.LimitReader(req.Reader, req.Range.Length).(*io.LimitedReader)
 	}
 	n, err := io.Copy(file, r)
-	if err != nil && err != io.EOF {
+	if err != nil {
 		return 0, err
 	}
 	// update copied bytes from BufferedReader.B
