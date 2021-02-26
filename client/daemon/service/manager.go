@@ -85,10 +85,14 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 	m.Keep()
 	p, err := m.storageManager.GetPieces(ctx, request)
 	if err != nil {
+		code := dfcodes.UnknownError
+		if err == storage.ErrTaskNotFound {
+			code = dfcodes.PeerTaskNotFound
+		}
 		return &base.PiecePacket{
 			State: &base.ResponseState{
 				Success: false,
-				Code:    dfcodes.UnknownError,
+				Code:    code,
 				Msg:     fmt.Sprintf("get pieces error: %s", err),
 			},
 			TaskId: request.TaskId,
