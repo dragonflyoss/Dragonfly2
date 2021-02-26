@@ -39,9 +39,6 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-<<<<<<< HEAD
-)
-=======
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
