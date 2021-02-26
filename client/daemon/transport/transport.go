@@ -148,7 +148,7 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 			Url: url,
 			// FIXME(jim): read filter from config or from request header
 			Filter:      "",
-			BizId:       "d7s/proxy",
+			BizId:       "d7y/proxy",
 			UrlMata:     meta,
 			PeerId:      clientutil.GenPeerID(rt.peerHost),
 			PeerHost:    rt.peerHost,
