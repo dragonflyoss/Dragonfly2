@@ -1,12 +1,28 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package mock_cdn
 
 import (
-	"fmt"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	common2 "d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/scheduler/test/common"
 	"d7y.io/dragonfly/v2/scheduler/test/mock_client"
+	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -30,7 +46,7 @@ type MockCDN struct {
 	hostId        string
 	finished      map[string]bool
 	cdnName       string
-	lock *sync.Mutex
+	lock          *sync.Mutex
 }
 
 func NewMockCDN(addr string, tl common.TestLogger) *MockCDN {
@@ -41,7 +57,7 @@ func NewMockCDN(addr string, tl common.TestLogger) *MockCDN {
 		pieceInfoList: make(map[string][]*base.PieceInfo),
 		finished:      make(map[string]bool),
 		cdnName:       "cdn",
-		lock: new(sync.Mutex),
+		lock:          new(sync.Mutex),
 	}
 	return cdn
 }

@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package types
 
 import (
@@ -17,7 +33,7 @@ type Task struct {
 	BizId   string        `json:"biz_id,omitempty"`   // caller's biz id that can be any string
 	UrlMata *base.UrlMeta `json:"url_mata,omitempty"` // downloaded file content md5
 
-	SizeScope base.SizeScope
+	SizeScope   base.SizeScope
 	DirectPiece *scheduler.RegisterResult_PieceContent
 
 	CreateTime    time.Time

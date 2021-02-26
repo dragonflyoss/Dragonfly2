@@ -1,16 +1,33 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package basic
 
 import (
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"time"
 )
 
 type Evaluator struct {
 }
 
 func NewEvaluator() *Evaluator {
-	e := &Evaluator{
-	}
+	e := &Evaluator{}
 	return e
 }
 
@@ -37,34 +54,56 @@ func (e *Evaluator) NeedAdjustParent(peer *types.PeerTask) bool {
 	return (totalCost * 2 / int32(len(costHistory)-1)) < lastCost
 }
 
-func (e *Evaluator) IsNodeBad(peer *types.PeerTask) bool {
+func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
+	if peer.IsDown() {
+		logger.Debugf("IsNodeBad [%s]: node is down ", peer.Pid)
+		return true
+	}
+
 	parent := peer.GetParent()
 
 	if parent == nil {
 		return false
 	}
 
-	costHistory := parent.CostHistory
+	if peer.IsWaiting() {
+		return false
+	}
 
+	lastActiveTime := peer.GetLastActiveTime()
+	expired := time.Unix(lastActiveTime/int64(time.Second), lastActiveTime%int64(time.Second)).
+		Add(time.Second * 5)
+	if time.Now().After(expired) {
+		logger.Debugf("IsNodeBad [%s]: node is expired", peer.Pid)
+		return true
+	}
+
+	costHistory := parent.CostHistory
 	if len(costHistory) < 4 {
 		return false
 	}
 
+	lastCost := costHistory[len(costHistory)-1]
 	totalCost := int32(0)
 	for _, cost := range costHistory {
 		totalCost += cost
 	}
-	lastCost := costHistory[len(costHistory)-1]
+
 	totalCost -= lastCost
 
-	return (totalCost * 4 / int32(len(costHistory)-1)) < lastCost
+	if (totalCost * 10 / int32(len(costHistory)-1)) < lastCost {
+		logger.Debugf("IsNodeBad [%s]: node cost is too long", peer.Pid)
+		return true
+	}
+
+	return false
 }
 
 func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
 	if peer == nil {
 		return
 	}
-	mgr.GetPeerTaskManager().Walker(func(pt *types.PeerTask)bool {
+	mgr.GetPeerTaskManager().Walker(func(pt *types.PeerTask) bool {
 		if pt == nil || peer.Task != pt.Task {
 			return true
 		}
@@ -72,7 +111,9 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 			return true
 		} else if peer.GetParent() != nil && peer.GetParent().DstPeerTask == pt {
 			return true
-		} else if peer.GetFreeLoad() < 1{
+		} else if peer.GetFreeLoad() < 1 {
+			return true
+		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
 			return true
 		} else if pt.GetParent() != nil {
 			return true
@@ -96,6 +137,8 @@ func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.
 		} else if peer.GetParent() != nil {
 			return true
 		} else if pt.GetParent() != nil && pt.GetParent().DstPeerTask == peer {
+			return true
+		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
 			return true
 		} else if pt.GetFreeLoad() < 1 {
 			return true
@@ -131,11 +174,11 @@ func (e *Evaluator) Evaluate(dst *types.PeerTask, src *types.PeerTask) (result f
 }
 
 // GetProfits 0.0~unlimited larger and better
-func (e *Evaluator) GetProfits(dst *types.PeerTask, src *types.PeerTask)  float64 {
+func (e *Evaluator) GetProfits(dst *types.PeerTask, src *types.PeerTask) float64 {
 	diff := src.GetDiffPieceNum(dst)
 	deep := dst.GetDeep()
 
-	return float64((diff+1) * src.GetSubTreeNodesNum()) / float64(deep*deep)
+	return float64((diff+1)*src.GetSubTreeNodesNum()) / float64(deep*deep)
 }
 
 // GetHostLoad 0.0~1.0 larger and better

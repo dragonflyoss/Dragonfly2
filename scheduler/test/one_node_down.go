@@ -23,29 +23,33 @@ import (
 	"time"
 )
 
-func (suite *SchedulerTestSuite) Test501MultiBatchDownload() {
+func (suite *SchedulerTestSuite) Test601OneClientDown() {
 	tl := common.NewE2ELogger()
 
 	var (
-		clientNum  = 20
+		clientNum  = 5
 		stopChList []chan struct{}
+		badClient  *mock_client.MockClient
 	)
+	badClient = mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
+	go func() {
+		badClient.SetDownloadPieceCallback(func(pieceNum int){
+			if pieceNum == 3 {
+				badClient.SetDone()
+			}
+		})
+		badClient.Start()
+	}()
+	time.Sleep(time.Second)
 	for i := 0; i < clientNum; i++ {
-		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
+		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
 		go client.Start()
 		stopCh := client.GetStopChan()
 		stopChList = append(stopChList, stopCh)
 	}
 	time.Sleep(time.Second * 5)
 	for i := 0; i < clientNum; i++ {
-		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
-		go client.Start()
-		stopCh := client.GetStopChan()
-		stopChList = append(stopChList, stopCh)
-	}
-	time.Sleep(time.Second * 5)
-	for i := 0; i < clientNum; i++ {
-		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=multi_batch", "mb", tl)
+		client := mock_client.NewMockClient("127.0.0.1:8002", "http://dragonfly.com?type=bad_client", "bc", tl)
 		go client.Start()
 		stopCh := client.GetStopChan()
 		stopChList = append(stopChList, stopCh)
@@ -73,5 +77,5 @@ func (suite *SchedulerTestSuite) Test501MultiBatchDownload() {
 			}
 		}
 	}
-	tl.Log("multiple batch all client download file finished")
+	tl.Log("bad client test all client download file finished")
 }
