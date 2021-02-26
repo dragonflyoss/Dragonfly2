@@ -13,8 +13,6 @@ RUN make build-cdn && make install-cdn
 
 FROM dragonflyoss/nginx:apline
 
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
-
 RUN apk --no-cache add ca-certificates bash
 
 COPY --from=builder /go/src/d7y.io/dragonfly/v2/hack/start-cdn.sh /root/start.sh
