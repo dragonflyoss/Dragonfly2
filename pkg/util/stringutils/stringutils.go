@@ -16,7 +16,10 @@
 
 package stringutils
 
-import "unicode"
+import (
+	"encoding/json"
+	"unicode"
+)
 
 // SubString returns the subString of {str} which begins at {start} and end at {end - 1}.
 func SubString(str string, start, end int) string {
@@ -39,4 +42,12 @@ func IsEmptyStr(s string) bool {
 		}
 	}
 	return true
+}
+
+// JSONString returns json string of the v.
+func JSONString(v interface{}) string {
+	if str, e := json.Marshal(v); e == nil {
+		return string(str)
+	}
+	return ""
 }
