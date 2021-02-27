@@ -39,10 +39,11 @@ func init() {
 }
 
 type metrics struct {
-	tasks               *prometheus.GaugeVec
-	tasksRegisterCount  *prometheus.CounterVec
-	triggerCdnCount     *prometheus.CounterVec
-	triggerCdnFailCount *prometheus.CounterVec
+	tasks                  *prometheus.GaugeVec
+	tasksRegisterCount     *prometheus.CounterVec
+	tasksRegisterFailCount *prometheus.CounterVec
+	triggerCdnCount        *prometheus.CounterVec
+	triggerCdnFailCount    *prometheus.CounterVec
 }
 
 func newMetrics(register prometheus.Registerer) *metrics {
@@ -50,8 +51,11 @@ func newMetrics(register prometheus.Registerer) *metrics {
 		tasks: metricsutils.NewGauge(config.SubsystemCdnSystem, "tasks",
 			"Current status of cdn tasks", []string{"taskStatus"}, register),
 
-		tasksRegisterCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "seed_tasks_registered_total",
+		tasksRegisterCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "seed_tasks_register_total",
 			"Total times of registering tasks", []string{}, register),
+
+		tasksRegisterFailCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "seed_tasks_register_failed_total",
+			"Total failure times of registering tasks", []string{}, register),
 
 		triggerCdnCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_trigger_total",
 			"Total times of triggering cdn", []string{}, register),
@@ -70,10 +74,11 @@ type Manager struct {
 	taskURLUnReachableStore *syncmap.SyncMap
 	resourceClient          source.ResourceClient
 	cdnMgr                  mgr.CDNMgr
+	progressMgr             mgr.SeedProgressMgr
 }
 
 // NewManager returns a new Manager Object.
-func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
+func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgressMgr, resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
 	return &Manager{
 		cfg:                     cfg,
 		metrics:                 newMetrics(register),
@@ -82,11 +87,20 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, resourceClient source.Res
 		taskURLUnReachableStore: syncmap.NewSyncMap(),
 		resourceClient:          resourceClient,
 		cdnMgr:                  cdnMgr,
+		progressMgr:             progressMgr,
 	}, nil
 }
 
-// Register register seed task
-func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceCh <-chan *types.SeedPiece, err error) {
+func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.SeedPiece, err error) {
+	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
+	pieceChan, err = tm.doRegister(ctx, req)
+	if err != nil {
+		tm.metrics.tasksRegisterFailCount.WithLabelValues().Inc()
+	}
+	return
+}
+
+func (tm *Manager) doRegister(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.SeedPiece, err error) {
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
 		logger.WithTaskID(req.TaskID).Infof("failed to add or update task with req %+v: %v", req, err)
@@ -96,7 +110,6 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
 		logger.WithTaskID(task.TaskID).Warnf("failed to update accessTime: %v", err)
 	}
-	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
 	logger.WithTaskID(task.TaskID).Debugf("success to get task info: %+v", task)
 
 	// trigger CDN
@@ -104,7 +117,7 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 		return nil, errors.Wrapf(err, "failed to trigger cdn")
 	}
 	// watch seed progress
-	return tm.cdnMgr.WatchSeedProgress(ctx, task.TaskID)
+	return tm.progressMgr.WatchSeedProgress(ctx, task.TaskID)
 }
 
 // triggerCdnSyncAction
@@ -114,10 +127,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		return nil
 	}
 	if isWait(task.CdnStatus) {
-		err := tm.cdnMgr.InitSeedProgress(ctx, task.TaskID)
-		if err != nil {
-			return errors.Wrap(err, "failed to init seed progress")
-		}
+		tm.progressMgr.InitSeedProgress(ctx, task.TaskID)
 		logger.WithTaskID(task.TaskID).Infof("success to init seed progress")
 	}
 
@@ -129,12 +139,13 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 	}
 	// triggerCDN goroutine
 	go func() {
-		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(ctx, task)
 		tm.metrics.triggerCdnCount.WithLabelValues().Inc()
+		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(ctx, task)
 		if err != nil {
 			tm.metrics.triggerCdnFailCount.WithLabelValues().Inc()
 			logger.WithTaskID(task.TaskID).Errorf("trigger cdn get error: %v", err)
 		}
+		go tm.progressMgr.PublishTask(ctx, task.TaskID, updateTaskInfo)
 		updatedTask, err = tm.updateTask(task.TaskID, updateTaskInfo)
 		if err != nil {
 			logger.WithTaskID(task.TaskID).Errorf("update task fail:%v", err)
@@ -143,7 +154,6 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		}
 	}()
 	logger.WithTaskID(task.TaskID).Infof("success to start cdn trigger")
-
 	return nil
 }
 
@@ -184,5 +194,5 @@ func (tm Manager) Delete(ctx context.Context, taskID string) error {
 }
 
 func (tm *Manager) GetPieces(ctx context.Context, taskID string) (pieces []*types.SeedPiece, err error) {
-	return tm.cdnMgr.GetPieces(ctx, taskID)
+	return tm.progressMgr.GetPieces(ctx, taskID)
 }

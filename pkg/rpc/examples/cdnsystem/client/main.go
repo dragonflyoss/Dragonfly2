@@ -38,7 +38,7 @@ func main() {
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
-			Addr: "localhost:12345",
+			Addr: "localhost:8003",
 		},
 	})
 	if err != nil {

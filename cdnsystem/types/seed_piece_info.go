@@ -18,30 +18,15 @@ package types
 
 // SeedPiece
 type SeedPiece struct {
-	Type             ItemType    // 1: piece 0: task
 	PieceStyle       PieceFormat // 0: PlainUnspecified
 	PieceNum         int32
 	PieceMd5         string
 	PieceRange       string
 	PieceOffset      uint64
 	PieceLen         int32
-	Last             bool
-	ContentLength    int64
-	BackSourceLength int64
-	Result           Result
-}
-
-type Result struct {
-	Success bool
-	Msg     string
 }
 
 type ItemType int8
-
-const (
-	PieceType ItemType = 1
-	TaskType  ItemType = 2
-)
 
 type PieceFormat int8
 

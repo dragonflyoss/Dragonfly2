@@ -30,6 +30,9 @@ import (
 	"strings"
 )
 
+const (
+	FieldSeparator string = ":"
+)
 // fileMetaData
 type fileMetaData struct {
 	TaskID          string            `json:"taskID"`
@@ -100,7 +103,7 @@ func (mm *metaDataManager) writeFileMetaData(ctx context.Context, metaData *file
 	return mm.fileStore.PutBytes(ctx, getTaskMetaDataRawFunc(metaData.TaskID), data)
 }
 
-// readFileMetaData read task metadata information according to taskId
+// readFileMetaData read task metadata information according to taskID
 func (mm *metaDataManager) readFileMetaData(ctx context.Context, taskID string) (*fileMetaData, error) {
 	bytes, err := mm.fileStore.GetBytes(ctx, getTaskMetaDataRawFunc(taskID))
 	if err != nil {
@@ -176,19 +179,19 @@ func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskID str
 }
 
 // appendPieceMetaDataToFile append piece meta info to storage
-func (pmm *metaDataManager) appendPieceMetaDataToFile(ctx context.Context, taskID string, record *pieceMetaRecord) error {
+func (mm *metaDataManager) appendPieceMetaDataToFile(ctx context.Context, taskID string, record *pieceMetaRecord) error {
 	pieceMeta := getPieceMetaValue(record)
-	pmm.pieceMetaLocker.GetLock(taskID, false)
-	defer pmm.pieceMetaLocker.ReleaseLock(taskID, false)
+	mm.pieceMetaLocker.GetLock(taskID, false)
+	defer mm.pieceMetaLocker.ReleaseLock(taskID, false)
 	// write to the storage
-	return pmm.fileStore.AppendBytes(ctx, getPieceMetaDataRawFunc(taskID), []byte(pieceMeta+"\n"))
+	return mm.fileStore.AppendBytes(ctx, getPieceMetaDataRawFunc(taskID), []byte(pieceMeta+"\n"))
 }
 
 // writePieceMetaRecords writes the piece meta data to storage.
-func (pmm *metaDataManager) appendPieceMetaIntegrityData(ctx context.Context, taskID, fileMD5 string) error {
-	pmm.pieceMetaLocker.GetLock(taskID, false)
-	defer pmm.pieceMetaLocker.ReleaseLock(taskID, false)
-	pieceMetaRecords, err := pmm.readPieceMetaRecordsWithoutCheck(ctx, taskID)
+func (mm *metaDataManager) appendPieceMetaIntegrityData(ctx context.Context, taskID, fileMD5 string) error {
+	mm.pieceMetaLocker.GetLock(taskID, false)
+	defer mm.pieceMetaLocker.ReleaseLock(taskID, false)
+	pieceMetaRecords, err := mm.readPieceMetaRecordsWithoutCheck(ctx, taskID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read piece meta records")
 	}
@@ -198,15 +201,15 @@ func (pmm *metaDataManager) appendPieceMetaIntegrityData(ctx context.Context, ta
 	}
 	pieceMetaStrs = append(pieceMetaStrs, fileMD5)
 	pieceStr := strings.Join([]string{fileMD5, digest.Sha1(pieceMetaStrs)}, "\n")
-	return pmm.fileStore.AppendBytes(ctx, getPieceMetaDataRawFunc(taskID), []byte(pieceStr))
+	return mm.fileStore.AppendBytes(ctx, getPieceMetaDataRawFunc(taskID), []byte(pieceStr))
 }
 
 // readAndCheckPieceMetaRecords reads pieceMetaRecords from storage and check data integrity by the md5 file of the taskID
-func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskID, fileMD5 string) ([]*pieceMetaRecord, error) {
-	pmm.pieceMetaLocker.GetLock(taskID, true)
-	defer pmm.pieceMetaLocker.ReleaseLock(taskID, true)
+func (mm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskID, fileMD5 string) ([]*pieceMetaRecord, error) {
+	mm.pieceMetaLocker.GetLock(taskID, true)
+	defer mm.pieceMetaLocker.ReleaseLock(taskID, true)
 
-	bytes, err := pmm.fileStore.GetBytes(ctx, getPieceMetaDataRawFunc(taskID))
+	bytes, err := mm.fileStore.GetBytes(ctx, getPieceMetaDataRawFunc(taskID))
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +231,7 @@ func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, ta
 	}
 	var result = make([]*pieceMetaRecord, 0, piecesLength-2)
 	for _, pieceStr := range pieceMetaRecords[:piecesLength-2] {
-		record, err := getPieceMetaRecord(pieceStr)
+		record, err := parsePieceMetaRecord(pieceStr)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get piece meta record")
 		}
@@ -238,8 +241,8 @@ func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, ta
 }
 
 // readPieceMetaRecordsWithoutCheck reads pieceMetaRecords from storage and without check data integrity
-func (pmm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context, taskID string) ([]*pieceMetaRecord, error) {
-	bytes, err := pmm.fileStore.GetBytes(ctx, getPieceMetaDataRawFunc(taskID))
+func (mm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context, taskID string) ([]*pieceMetaRecord, error) {
+	bytes, err := mm.fileStore.GetBytes(ctx, getPieceMetaDataRawFunc(taskID))
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +253,11 @@ func (pmm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context
 	}
 	var result = make([]*pieceMetaRecord, 0, len(pieceMetaRecords))
 	for _, pieceRecord := range pieceMetaRecords {
-		record, err := getPieceMetaRecord(pieceRecord)
+		if len(strings.Split(pieceRecord, FieldSeparator)) == 0 {
+			// 如果是签名或者文件md5则忽略
+			continue
+		}
+		record, err := parsePieceMetaRecord(pieceRecord)
 		if err != nil {
 			return nil, err
 		} else {
@@ -260,8 +267,8 @@ func (pmm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context
 	return result, nil
 }
 
-func (pm *metaDataManager) getPieceMd5Sign(ctx context.Context, taskID string) (md5Sign string, err error) {
-	pieceMetaRecords, err := pm.readPieceMetaRecordsWithoutCheck(ctx, taskID)
+func (mm *metaDataManager) getPieceMd5Sign(ctx context.Context, taskID string) (md5Sign string, err error) {
+	pieceMetaRecords, err := mm.readPieceMetaRecordsWithoutCheck(ctx, taskID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to read piece meta file")
 	}

@@ -31,7 +31,7 @@ import (
 func checkPieceContent(reader io.Reader, pieceRecord *pieceMetaRecord, fileMd5 hash.Hash) error {
 	bufSize := int32(256 * 1024)
 	pieceLen := pieceRecord.PieceLen
-	if pieceLen < bufSize {
+	if pieceLen >0 && pieceLen < bufSize {
 		bufSize = pieceLen
 	}
 	// todo 针对分片格式解析出原始数据来计算fileMd5

@@ -56,7 +56,6 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		Url:        request.URL,
 		TaskUrl:    taskURL,
 		CdnStatus:  types.TaskInfoCdnStatusWAITING,
-		PieceTotal: -1,
 	}
 	// using the existing task if it already exists corresponding to taskID
 	if v, err := tm.taskStore.Get(taskId); err == nil {
@@ -100,7 +99,6 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if task.PieceSize <= 0 {
 		pieceSize := computePieceSize(task.SourceFileLength)
 		task.PieceSize = pieceSize
-		task.PieceTotal = int32((sourceFileLength + (int64(pieceSize) - 1)) / int64(pieceSize))
 	}
 	tm.taskStore.Add(task.TaskID, task)
 	tm.metrics.tasks.WithLabelValues(task.CdnStatus).Inc()

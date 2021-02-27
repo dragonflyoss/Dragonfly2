@@ -27,6 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/progress"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/task"
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
@@ -61,13 +62,19 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	progressMgr, err := progress.NewManager(cfg, register)
+	if err != nil {
+		return nil, err
+	}
+
 	// cdn manager
-	cdnMgr, err := cdn.NewManager(cfg, storage, sourceClient, register)
+	cdnMgr, err := cdn.NewManager(cfg, storage, progressMgr, sourceClient, register)
 	if err != nil {
 		return nil, err
 	}
 	// task manager
-	taskMgr, err := task.NewManager(cfg, cdnMgr, sourceClient, register)
+	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr ,sourceClient, register)
 	if err != nil {
 		return nil, err
 	}

@@ -43,13 +43,4 @@ type CDNMgr interface {
 	// Delete the cdn meta with specified taskID.
 	// The file on the disk will be deleted when the force is true.
 	Delete(ctx context.Context, taskID string, force bool) error
-
-	// InitSeedProgress
-	InitSeedProgress(ctx context.Context, taskID string) error
-
-	// WatchSeedProgress
-	WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error)
-
-	// GetPieces
-	GetPieces(ctx context.Context, taskID string) ([]*types.SeedPiece, error)
 }

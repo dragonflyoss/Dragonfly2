@@ -102,7 +102,6 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 
 	// register task
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
-
 	if err != nil {
 		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "failed to register seed task, registerRequest:%+v:%v", registerRequest, err)
 	}
@@ -112,38 +111,36 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		if err != nil {
 			return err
 		}
-		switch piece.Type {
-		case types.PieceType:
-			psc <- &cdnsystem.PieceSeed{
-				State:      common.NewState(dfcodes.Success, "success"),
-				PeerId:     peerId,
-				SeederName: dfnet.HostName,
-				PieceInfo: &base.PieceInfo{
-					PieceNum:    piece.PieceNum,
-					RangeStart:  uint64(pieceStart),
-					RangeSize:   piece.PieceLen,
-					PieceMd5:    piece.PieceMd5,
-					PieceOffset: piece.PieceOffset,
-					PieceStyle:  base.PieceStyle(piece.PieceStyle),
-				},
-				Done:          false,
-				ContentLength: 0,
-			}
-		case types.TaskType:
-			var state *base.ResponseState
-			if !piece.Result.Success {
-				state = common.NewState(dfcodes.CdnError, piece.Result.Msg)
-			} else {
-				state = common.NewState(dfcodes.Success, "success")
-			}
-			psc <- &cdnsystem.PieceSeed{
-				State:         state,
-				PeerId:        peerId,
-				SeederName:    dfnet.HostName,
-				Done:          true,
-				ContentLength: piece.ContentLength,
-			}
+		psc <- &cdnsystem.PieceSeed{
+			State:      common.NewState(dfcodes.Success, "success"),
+			PeerId:     peerId,
+			SeederName: dfnet.HostName,
+			PieceInfo: &base.PieceInfo{
+				PieceNum:    piece.PieceNum,
+				RangeStart:  uint64(pieceStart),
+				RangeSize:   piece.PieceLen,
+				PieceMd5:    piece.PieceMd5,
+				PieceOffset: piece.PieceOffset,
+				PieceStyle:  base.PieceStyle(piece.PieceStyle),
+			},
+			Done:          false,
+			ContentLength: 0,
 		}
+
+	}
+	task, err := css.taskMgr.Get(ctx, req.TaskId)
+	if err != nil {
+		return dferrors.Newf(dfcodes.CdnError, "failed to get task: %v", err)
+	}
+	if task.CdnStatus != types.TaskInfoCdnStatusSUCCESS {
+		return dferrors.Newf(dfcodes.CdnTaskDownloadFail, "task status %s", task.CdnStatus)
+	}
+	psc <-&cdnsystem.PieceSeed{
+		State:         common.NewState(dfcodes.Success, "success"),
+		PeerId:        peerId,
+		SeederName:    dfnet.HostName,
+		Done:          true,
+		ContentLength: task.CdnFileLength,
 	}
 	return nil
 }

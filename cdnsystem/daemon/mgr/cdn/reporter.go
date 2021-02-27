@@ -17,27 +17,27 @@
 package cdn
 
 import (
+	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"github.com/pkg/errors"
 )
 
 type reporter struct {
-	publisher mgr.SeedProgressMgr
+	progress mgr.SeedProgressMgr
 }
 
 func newReporter(publisher mgr.SeedProgressMgr) *reporter {
 	return &reporter{
-		publisher: publisher,
+		progress: publisher,
 	}
 }
 
 // report cache result
-func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error {
+func (re *reporter) reportCache(ctx context.Context, taskID string, detectResult *cacheResult) error {
 	// report cache pieces status
 	if detectResult != nil && detectResult.pieceMetaRecords != nil {
 		for _, record := range detectResult.pieceMetaRecords {
-			if err := re.publisher.PublishPiece(taskID, convertPieceMeta2SeedPiece(record)); err != nil {
+			if err := re.progress.PublishPiece(ctx, taskID, convertPieceMeta2SeedPiece(record)); err != nil {
 				return errors.Wrapf(err, "failed to publish pieceMetaRecord:%v, seedPiece:%v", record, convertPieceMeta2SeedPiece(record))
 			}
 		}
@@ -46,12 +46,7 @@ func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error 
 }
 
 // reportPieceMetaRecord
-func (re *reporter) reportPieceMetaRecord(taskID string, record *pieceMetaRecord) error {
+func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskID string, record *pieceMetaRecord) error {
 	// report cache pieces status
-	return re.publisher.PublishPiece(taskID, convertPieceMeta2SeedPiece(record))
-}
-
-// reportTask
-func (re *reporter) reportTask(taskID string, task *types.SeedTask, msg string) error {
-	return re.publisher.PublishTask(taskID, convertTaskInfo2SeedPiece(task, msg))
+	return re.progress.PublishPiece(ctx, taskID, convertPieceMeta2SeedPiece(record))
 }

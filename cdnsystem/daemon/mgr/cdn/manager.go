@@ -22,7 +22,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/progress"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -83,11 +82,11 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore *store.Store, progressMgr mgr.SeedProgressMgr, resourceClient source.ResourceClient,
+	register prometheus.Registerer) (mgr.CDNMgr, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
-	publisher := progress.NewManager(register)
-	cdnReporter := newReporter(publisher)
+	cdnReporter := newReporter(progressMgr)
 	return &Manager{
 		cfg:             cfg,
 		cacheStore:      cacheStore,
@@ -95,7 +94,7 @@ func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient sour
 		cdnLocker:       util.NewLockerPool(),
 		metaDataManager: metaDataManager,
 		cdnReporter:     cdnReporter,
-		progressMgr:     publisher,
+		progressMgr:     progressMgr,
 		detector:        newCacheDetector(cacheStore, metaDataManager, resourceClient),
 		resourceClient:  resourceClient,
 		writer:          newCacheWriter(cacheStore, cdnReporter, metaDataManager),
@@ -107,14 +106,6 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// obtain taskID write lock
 	cm.cdnLocker.GetLock(task.TaskID, false)
 	defer cm.cdnLocker.ReleaseLock(task.TaskID, false)
-	defer func() {
-		// report task status
-		var msg = "success"
-		if err != nil {
-			msg = err.Error()
-		}
-		cm.cdnReporter.reportTask(task.TaskID, seedTask, msg)
-	}()
 	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
 	if err != nil {
@@ -122,7 +113,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		detectResult = &cacheResult{} // reset cacheResult
 	}
 	// second: report detect result
-	err = cm.cdnReporter.reportCache(task.TaskID, detectResult)
+	err = cm.cdnReporter.reportCache(ctx, task.TaskID, detectResult)
 	if err != nil {
 		logger.WithTaskID(task.TaskID).Errorf("failed to report cache, reset detectResult:%v", err)
 		detectResult = &cacheResult{} // reset cacheResult
@@ -131,7 +122,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	if detectResult.breakNum == -1 {
 		logger.WithTaskID(task.TaskID).Infof("cache full hit on local")
 		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
-		seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceRealMd5, detectResult.fileMetaData.PieceMd5Sign, detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength)
+		seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceRealMd5,
+			detectResult.fileMetaData.PieceMd5Sign, detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength)
 		return seedTask, nil
 	}
 	// third: start to download the source file
@@ -172,7 +164,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
 		return seedTask, err
 	}
-	seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, sourceMD5, downloadMetadata.pieceMd5Sign, downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength)
+	seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, sourceMD5, downloadMetadata.pieceMd5Sign,
+		downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength)
 	return seedTask, nil
 }
 
@@ -200,23 +193,11 @@ func (cm *Manager) Delete(ctx context.Context, taskID string, force bool) error 
 			return errors.Wrap(err, "failed to delete task files")
 		}
 	}
-	err := cm.progressMgr.Clear(taskID)
+	err := cm.progressMgr.Clear(ctx, taskID)
 	if err != nil && !cdnerrors.IsDataNotFound(err) {
 		return errors.Wrap(err, "failed to clear progress")
 	}
 	return nil
-}
-
-func (cm *Manager) InitSeedProgress(ctx context.Context, taskID string) error {
-	return cm.progressMgr.InitSeedProgress(ctx, taskID)
-}
-
-func (cm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error) {
-	return cm.progressMgr.WatchSeedProgress(ctx, taskID)
-}
-
-func (cm *Manager) GetPieces(ctx context.Context, taskID string) ([]*types.SeedPiece, error) {
-	return cm.progressMgr.GetPieceMetaRecordsByTaskID(taskID)
 }
 
 // handleCDNResult
@@ -268,7 +249,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 	logger.WithTaskID(task.TaskID).Infof("success to get task, downloadMetadata:%+v realMd5: %s", downloadMetadata, sourceMd5)
 
 	if err := cm.metaDataManager.appendPieceMetaIntegrityData(ctx, task.TaskID, sourceMd5); err != nil {
-		return false, errors.Wrap(err," failed to append piece meta integrity data")
+		return false, errors.Wrap(err, " failed to append piece meta integrity data")
 	}
 	return true, nil
 }

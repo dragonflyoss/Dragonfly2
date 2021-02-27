@@ -93,7 +93,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				}(pieceRecord)
 
 				if cw.cdnReporter != nil {
-					if err := cw.cdnReporter.reportPieceMetaRecord(job.taskID, pieceRecord); err != nil {
+					if err := cw.cdnReporter.reportPieceMetaRecord(ctx, job.taskID, pieceRecord); err != nil {
 						// NOTE: should we do this job again?
 						logger.WithTaskID(job.taskID).Errorf("failed to report piece status, pieceNum %d pieceMetaRecord %s: %v", job.pieceNum, pieceRecord, err)
 						continue

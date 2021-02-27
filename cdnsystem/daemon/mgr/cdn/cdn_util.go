@@ -45,19 +45,31 @@ func getPieceMetaValue(record *pieceMetaRecord) string {
 	return fmt.Sprintf("%d:%d:%s:%s:%d:%d", record.PieceNum, record.PieceLen, record.Md5, record.Range, record.Offset, record.PieceStyle)
 }
 
-func getPieceMetaRecord(value string) (record *pieceMetaRecord, err error) {
+func parsePieceMetaRecord(value string) (record *pieceMetaRecord, err error) {
 	defer func() {
 		if msg := recover(); msg != nil {
 			err = errors.Errorf("%v", msg)
 		}
 	}()
-	fields := strings.Split(value, ":")
-	pieceNum, _ := strconv.Atoi(fields[0])
-	pieceLen, _ := strconv.Atoi(fields[1])
+	fields := strings.Split(value, FieldSeparator)
+	pieceNum, err := strconv.Atoi(fields[0])
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid pieceNum:%s", fields[0])
+	}
+	pieceLen, err := strconv.Atoi(fields[1])
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid pieceLen:%s", fields[1])
+	}
 	md5 := fields[2]
 	rangeStr := fields[3]
-	offSet, _ := strconv.ParseUint(fields[4], 10, 64)
-	pieceStyle, _ := strconv.Atoi(fields[5])
+	offSet, err := strconv.ParseUint(fields[4], 10, 64)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid offset:%s", fields[4])
+	}
+	pieceStyle, err := strconv.Atoi(fields[5])
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid pieceStyle:%s", fields[5])
+	}
 	return &pieceMetaRecord{
 		PieceNum:   int32(pieceNum),
 		PieceLen:   int32(pieceLen),
@@ -70,25 +82,11 @@ func getPieceMetaRecord(value string) (record *pieceMetaRecord, err error) {
 
 func convertPieceMeta2SeedPiece(record *pieceMetaRecord) *types.SeedPiece {
 	return &types.SeedPiece{
-		Type:        types.PieceType,
 		PieceStyle:  record.PieceStyle,
 		PieceNum:    record.PieceNum,
 		PieceMd5:    record.Md5,
 		PieceRange:  record.Range,
 		PieceOffset: record.Offset,
 		PieceLen:    record.PieceLen,
-		Last:        false,
-	}
-}
-
-func convertTaskInfo2SeedPiece(task *types.SeedTask, msg string) *types.SeedPiece {
-	return &types.SeedPiece{
-		Type:          types.TaskType,
-		Last:          true,
-		ContentLength: task.CdnFileLength,
-		Result: types.Result{
-			Success: task.CdnStatus == types.TaskInfoCdnStatusSUCCESS,
-			Msg:     msg,
-		},
 	}
 }

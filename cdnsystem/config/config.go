@@ -63,8 +63,8 @@ func NewBaseProperties() *BaseProperties {
 	return &BaseProperties{
 		ListenPort:              DefaultListenPort,
 		DownloadPort:            DefaultDownloadPort,
-		//HomeDir:                 home,
-		//DownloadPath:            filepath.Join(home, DefaultRepoHome, DefaultDownloadHome),
+		HomeDir:                 home,
+		DownloadPath:            filepath.Join(home, RepoHome, DownloadHome),
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
 		MaxBandwidth:            DefaultMaxBandwidth,
 		EnableProfiler:          false,

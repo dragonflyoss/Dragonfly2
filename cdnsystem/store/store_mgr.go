@@ -19,9 +19,7 @@ package store
 import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
-	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"fmt"
-	"path/filepath"
 	"sync"
 )
 
@@ -56,9 +54,9 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 func (sm *Manager) Get(name string) (*Store, error) {
 	v := plugins.GetPlugin(config.StoragePlugin, name)
 	if v == nil {
-		if name == disk.StorageDriver {
-			return sm.getDefaultStorage()
-		}
+		//if name == disk.StorageDriver {
+		//	return sm.getDefaultStorage()
+		//}
 		return nil, fmt.Errorf("not existed storage: %s", name)
 	}
 	if store, ok := v.(*Store); ok {
@@ -67,27 +65,27 @@ func (sm *Manager) Get(name string) (*Store, error) {
 	return nil, fmt.Errorf("get store error: unknown reason")
 }
 
-func (sm *Manager) getDefaultStorage() (*Store, error) {
-	if sm.defaultStorage != nil {
-		return sm.defaultStorage, nil
-	}
-
-	sm.mutex.Lock()
-	defer sm.mutex.Unlock()
-
-	// check again to avoid initializing repeatedly
-	if sm.defaultStorage != nil {
-		return sm.defaultStorage, nil
-	}
-
-	if sm.cfg == nil {
-		return nil, fmt.Errorf("cannot init local storage without home path")
-	}
-	cfg := fmt.Sprintf("baseDir: %s", filepath.Join(sm.cfg.DownloadPath, config.RepoHome))
-	s, err := NewStore(disk.StorageDriver, disk.NewStorage, cfg)
-	if err != nil {
-		return nil, err
-	}
-	sm.defaultStorage = s
-	return sm.defaultStorage, nil
-}
+//func (sm *Manager) getDefaultStorage() (*Store, error) {
+//	if sm.defaultStorage != nil {
+//		return sm.defaultStorage, nil
+//	}
+//
+//	sm.mutex.Lock()
+//	defer sm.mutex.Unlock()
+//
+//	// check again to avoid initializing repeatedly
+//	if sm.defaultStorage != nil {
+//		return sm.defaultStorage, nil
+//	}
+//
+//	if sm.cfg == nil {
+//		return nil, fmt.Errorf("cannot init local storage without home path")
+//	}
+//	cfg := fmt.Sprintf("baseDir: %s", filepath.Join(sm.cfg.DownloadPath, config.RepoHome))
+//	s, err := NewStore(disk.StorageDriver, disk.NewStorage, cfg)
+//	if err != nil {
+//		return nil, err
+//	}
+//	sm.defaultStorage = s
+//	return sm.defaultStorage, nil
+//}
