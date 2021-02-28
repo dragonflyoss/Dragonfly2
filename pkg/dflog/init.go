@@ -102,6 +102,12 @@ func InitCdnSystem() error {
 		SetGcLogger(gcLogger.Sugar())
 	}
 
+	if downloaderLogger, err := CreateLogger(logDir+"downloader.log", 300, 7, 0, false, false); err != nil {
+		return err
+	} else {
+		SetDownloadLogger(downloaderLogger)
+	}
+
 	if statSeedLogger, err := CreateLogger(logDir+"stat/seed.log", 300, 30, 0, true, true); err != nil {
 		return err
 	} else {

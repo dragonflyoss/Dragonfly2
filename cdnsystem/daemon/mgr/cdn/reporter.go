@@ -19,12 +19,19 @@ package cdn
 import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type reporter struct {
 	progress mgr.SeedProgressMgr
 }
+
+const (
+	CacheReport      = "cache"
+	DownloaderReport = "download"
+)
 
 func newReporter(publisher mgr.SeedProgressMgr) *reporter {
 	return &reporter{
@@ -37,7 +44,7 @@ func (re *reporter) reportCache(ctx context.Context, taskID string, detectResult
 	// report cache pieces status
 	if detectResult != nil && detectResult.pieceMetaRecords != nil {
 		for _, record := range detectResult.pieceMetaRecords {
-			if err := re.progress.PublishPiece(ctx, taskID, convertPieceMeta2SeedPiece(record)); err != nil {
+			if err := re.reportPieceMetaRecord(ctx, taskID, record, CacheReport); err != nil {
 				return errors.Wrapf(err, "failed to publish pieceMetaRecord:%v, seedPiece:%v", record, convertPieceMeta2SeedPiece(record))
 			}
 		}
@@ -46,7 +53,12 @@ func (re *reporter) reportCache(ctx context.Context, taskID string, detectResult
 }
 
 // reportPieceMetaRecord
-func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskID string, record *pieceMetaRecord) error {
+func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskID string, record *pieceMetaRecord,
+	from string) error {
 	// report cache pieces status
+	logger.DownloaderLogger.Info(taskID,
+		zap.Int32("pieceNum", record.PieceNum),
+		zap.String("md5", record.Md5),
+		zap.String("from", from))
 	return re.progress.PublishPiece(ctx, taskID, convertPieceMeta2SeedPiece(record))
 }

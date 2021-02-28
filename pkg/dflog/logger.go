@@ -17,9 +17,9 @@
 package logger
 
 import (
-	"fmt"
 	"d7y.io/dragonfly/v2/pkg/basic/env"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc/grpclog"
@@ -30,11 +30,12 @@ import (
 )
 
 var (
-	CoreLogger     *zap.SugaredLogger
-	GrpcLogger     *zap.SugaredLogger
-	GcLogger       *zap.SugaredLogger
-	StatPeerLogger *zap.Logger
-	StatSeedLogger *zap.Logger
+	CoreLogger       *zap.SugaredLogger
+	GrpcLogger       *zap.SugaredLogger
+	GcLogger         *zap.SugaredLogger
+	StatPeerLogger   *zap.Logger
+	StatSeedLogger   *zap.Logger
+	DownloaderLogger *zap.Logger
 )
 
 var coreLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)
@@ -124,6 +125,10 @@ func SetStatSeedLogger(log *zap.Logger) {
 	StatSeedLogger = log
 }
 
+func SetDownloadLogger(log *zap.Logger) {
+	DownloaderLogger = log
+}
+
 func SetGrpcLogger(log *zap.SugaredLogger) {
 	GrpcLogger = log
 	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
@@ -178,7 +183,6 @@ func Fatalf(template string, args ...interface{}) {
 func Fatal(args ...interface{}) {
 	CoreLogger.Fatal(args...)
 }
-
 
 type zapGrpc struct {
 	*zap.SugaredLogger
