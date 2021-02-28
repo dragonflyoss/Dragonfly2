@@ -19,7 +19,7 @@ package queue
 import (
 	"container/list"
 
-	"d7y.io/dragonfly/v2/pkg/util/comparator"
+	"d7y.io/dragonfly/v2/pkg/util/ifaceutils"
 
 	"sync"
 	"sync/atomic"
@@ -74,7 +74,7 @@ type infiniteQueue struct {
 var _ Queue = &infiniteQueue{}
 
 func (q *infiniteQueue) Put(item interface{}) {
-	if comparator.IsNil(item) {
+	if ifaceutils.IsNil(item) {
 		return
 	}
 	q.Lock()
@@ -88,7 +88,7 @@ func (q *infiniteQueue) Put(item interface{}) {
 
 func (q *infiniteQueue) PutTimeout(item interface{}, timeout time.Duration) bool {
 	q.Put(item)
-	return !comparator.IsNil(item)
+	return !ifaceutils.IsNil(item)
 }
 
 func (q *infiniteQueue) Poll() interface{} {
@@ -161,14 +161,14 @@ type finiteQueue struct {
 }
 
 func (q *finiteQueue) Put(item interface{}) {
-	if comparator.IsNil(item) {
+	if ifaceutils.IsNil(item) {
 		return
 	}
 	q.store <- item
 }
 
 func (q *finiteQueue) PutTimeout(item interface{}, timeout time.Duration) bool {
-	if comparator.IsNil(item) {
+	if ifaceutils.IsNil(item) {
 		return false
 	}
 	if timeout <= 0 {

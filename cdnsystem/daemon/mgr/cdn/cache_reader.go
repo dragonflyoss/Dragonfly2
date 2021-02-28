@@ -23,8 +23,8 @@ import (
 	"io"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/pkg/util/comparator"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/ifaceutils"
 	"github.com/pkg/errors"
 )
 
@@ -50,7 +50,7 @@ func checkPieceContent(reader io.Reader, pieceRecord *pieceMetaRecord, fileMd5 h
 				return errors.Wrapf(err, "write piece content md5 err")
 			}
 
-			if !comparator.IsNil(fileMd5) {
+			if !ifaceutils.IsNil(fileMd5) {
 				// todo 应该存放原始文件的md5
 				if _, err := fileMd5.Write(pieceContent); err != nil {
 					return errors.Wrapf(err, "write file content md5 error")
@@ -66,7 +66,7 @@ func checkPieceContent(reader io.Reader, pieceRecord *pieceMetaRecord, fileMd5 h
 			if _, err := pieceMd5.Write(pieceContent[:readLen]); err != nil {
 				return errors.Wrapf(err, "write piece content md5 err")
 			}
-			if !comparator.IsNil(fileMd5) {
+			if !ifaceutils.IsNil(fileMd5) {
 				// todo 应该存放原始文件的md5
 				if _, err := fileMd5.Write(pieceContent[:readLen]); err != nil {
 					return errors.Wrapf(err, "write file content md5 err")

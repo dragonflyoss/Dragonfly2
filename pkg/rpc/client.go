@@ -18,6 +18,10 @@ package rpc
 
 import (
 	"context"
+	"io"
+	"sync"
+	"time"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -25,14 +29,11 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/struct/syncmap"
 	"d7y.io/dragonfly/v2/pkg/util/lockerutils"
-	"d7y.io/dragonfly/v2/pkg/util/maths"
+	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
-	"io"
-	"sync"
-	"time"
 )
 
 const (
@@ -235,7 +236,7 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 		}
 
 		if i > 0 {
-			time.Sleep(maths.RandBackoff(initBackoff, 2.0, maxBackoff, i))
+			time.Sleep(mathutils.RandBackoff(initBackoff, 2.0, maxBackoff, i))
 		}
 
 		res, cause = f()

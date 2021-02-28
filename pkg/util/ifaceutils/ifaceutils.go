@@ -14,26 +14,11 @@
  * limitations under the License.
  */
 
-package comparator
+package ifaceutils
 
 import (
 	"reflect"
-	"strconv"
 )
-
-func Max(x, y int64) int64 {
-	if x > y {
-		return x
-	}
-	return y
-}
-
-func Min(x, y int64) int64 {
-	if x < y {
-		return x
-	}
-	return y
-}
 
 func IsNil(value interface{}) bool {
 	if value == nil {
@@ -53,26 +38,4 @@ func IsZero(value interface{}) bool {
 		return true
 	}
 	return reflect.ValueOf(value).IsZero()
-}
-
-func IsTrue(value bool) bool {
-	return value
-}
-
-func IsPositive(value int64) bool {
-	return value > 0
-}
-
-func IsNatural(value string) bool {
-	if v, err := strconv.ParseInt(value, 0, 64); err == nil {
-		return v >= 0
-	}
-	return false
-}
-
-func IsInteger(value string) bool {
-	if _, err := strconv.ParseInt(value, 0, 64); err == nil {
-		return true
-	}
-	return false
 }
