@@ -144,7 +144,7 @@ package config
 //	for _, v := range cases {
 //		cfg.URL = v.url
 //		cfg.Output = v.output
-//		if stringutils.IsEmptyStr(v.expected) {
+//		if stringutils.IsBlank(v.expected) {
 //			c.Assert(checkOutput(cfg), check.NotNil, check.Commentf("%v", v))
 //		} else {
 //			c.Assert(checkOutput(cfg), check.IsNil, check.Commentf("%v", v))
