@@ -47,21 +47,25 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 			candidateNodes = append(candidateNodes, ringNode)
 		}
 	}
+	logger.GrpcLogger.Debugf("all server node list:%v, exclusiveNodes node list:%v, candidate node list:%v", ringNodes, exclusiveNodes, candidateNodes)
 	for _, candidateNode := range candidateNodes {
 		// Check whether there is a corresponding mapping client in the node2ClientMap
 		if client, ok := conn.node2ClientMap.Load(candidateNode); ok {
+			logger.GrpcLogger.Debugf("hit cache candidateNode: %s", candidateNode)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  client,
 			}
 		}
+		logger.GrpcLogger.Debugf("attempt to connect candidateNode: %s", candidateNode)
 		if clientConn, err := conn.createClient(candidateNode, append(clientOpts, conn.opts...)...); err == nil {
+			logger.GrpcLogger.Debugf("success connect to candidateNode: %s", candidateNode)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  clientConn,
 			}
 		} else {
-			logger.GrpcLogger.Warnf("failed to create client for %s: %v", candidateNode, err)
+			logger.GrpcLogger.Warnf("failed to connect candidateNode: %s: %v", candidateNode, err)
 		}
 	}
 	panic(fmt.Sprintf("failed to create candidate client for key: %s", key))

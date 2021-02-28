@@ -219,13 +219,6 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	return
 }
 
-func (conn *Connection) Close() error {
-	conn.rwMutex.Lock()
-	defer conn.rwMutex.Unlock()
-
-	return conn.Close()
-}
-
 func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {
 	var res interface{}
 	for i := 0; i < maxAttempts; i++ {
