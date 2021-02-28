@@ -17,15 +17,22 @@
 package timeutils
 
 import (
+	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// GetCurrentTimeMillis returns the time in millis for now.
-func GetCurrentTimeMillis() int64 {
-	return time.Now().UnixNano() / time.Millisecond.Nanoseconds()
+func TestCurrentTimeMillis(t *testing.T) {
+	v1 := CurrentTimeMillis()
+	time.Sleep(time.Millisecond * 500)
+	v2 := CurrentTimeMillis()
+	assert.LessOrEqual(t, v1, v2)
 }
 
-// SinceInMilliseconds gets the time since the specified start in milliseconds.
-func SinceInMilliseconds(start time.Time) float64 {
-	return float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond.Nanoseconds())
+func TestSinceInMilliseconds(t *testing.T) {
+	tim := time.Now()
+	time.Sleep(500 * time.Millisecond)
+
+	assert.GreaterOrEqual(t, SinceInMilliseconds(tim), int64(500))
 }
