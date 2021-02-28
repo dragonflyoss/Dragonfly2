@@ -236,7 +236,7 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 		}
 
 		if i > 0 {
-			time.Sleep(mathutils.RandBackoff(initBackoff, 2.0, maxBackoff, i))
+			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))
 		}
 
 		res, cause = f()

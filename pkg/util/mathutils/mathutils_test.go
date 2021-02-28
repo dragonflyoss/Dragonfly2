@@ -17,19 +17,23 @@
 package mathutils
 
 import (
-	"math"
-	"math/rand"
-	"time"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
+func TestIsInteger(t *testing.T) {
+	assert.True(t, IsInteger("123"))
+
+	assert.True(t, IsInteger("-123"))
+
+	assert.False(t, IsInteger(""))
+
+	assert.False(t, IsInteger("x"))
 }
 
-func RandBackoff(initBackoff float64, maxBackoff float64, base float64, exp int) time.Duration {
-	v1 := math.Pow(base, float64(exp))
+func TestIsNatural(t *testing.T) {
+	assert.True(t, IsNatural("123"))
 
-	v2 := math.Max(initBackoff, rand.Float64()*math.Min(v1*initBackoff, maxBackoff))
-
-	return time.Duration(v2 * float64(time.Second))
+	assert.False(t, IsNatural("-1"))
 }

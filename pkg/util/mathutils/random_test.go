@@ -17,19 +17,25 @@
 package mathutils
 
 import (
-	"math"
-	"math/rand"
+	"fmt"
+	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
+func TestRandBackoff(t *testing.T) {
+	initBackOff := 0.1
+	maxBackOff := 3.0
 
-func RandBackoff(initBackoff float64, maxBackoff float64, base float64, exp int) time.Duration {
-	v1 := math.Pow(base, float64(exp))
+	v1 := RandBackoff(initBackOff, maxBackOff, 2, 5)
+	fmt.Printf("rand v1:%v\n", v1)
 
-	v2 := math.Max(initBackoff, rand.Float64()*math.Min(v1*initBackoff, maxBackoff))
+	assert.True(t, v1 <= time.Duration(maxBackOff*float64(time.Second)))
+	assert.True(t, v1 >= time.Duration(initBackOff*float64(time.Second)))
 
-	return time.Duration(v2 * float64(time.Second))
+	v2 := RandBackoff(initBackOff, maxBackOff, 2, 5)
+	fmt.Printf("rand v2:%v\n", v2)
+
+	assert.NotEqual(t, v1, v2)
 }

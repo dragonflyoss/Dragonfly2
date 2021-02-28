@@ -14,22 +14,32 @@
  * limitations under the License.
  */
 
-package mathutils
+package jsonutils
 
 import (
-	"math"
-	"math/rand"
-	"time"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
+func TestMarshal(t *testing.T) {
+	v, err := Marshal("hello")
+	assert.NoError(t, err)
+	assert.Equal(t, "\"hello\"", v)
 
-func RandBackoff(initBackoff float64, maxBackoff float64, base float64, exp int) time.Duration {
-	v1 := math.Pow(base, float64(exp))
+	v, err = Marshal(1)
+	fmt.Printf("int value:%s\n", v)
+	assert.NoError(t, err)
+	assert.Equal(t, "1", v)
 
-	v2 := math.Max(initBackoff, rand.Float64()*math.Min(v1*initBackoff, maxBackoff))
+	v, err = Marshal(struct {
+		A int
+		B string
+	}{100, "welcome您!"})
 
-	return time.Duration(v2 * float64(time.Second))
+	assert.NoError(t, err)
+	fmt.Printf("struct value:%s\n", v)
+	assert.NotEmpty(t, v)
+
 }

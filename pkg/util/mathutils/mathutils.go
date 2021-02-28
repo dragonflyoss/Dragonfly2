@@ -14,23 +14,50 @@
  * limitations under the License.
  */
 
+// Package mathutils provides utilities supplementing the standard 'math' and 'math/rand' packages.
 package mathutils
 
 import (
 	"strconv"
 )
 
+func MaxInt32(a, b int32) int32 {
+	if a > b {
+		return a
+	}
 
+	return b
+}
 
+func MinInt32(a, b int32) int32 {
+	if a < b {
+		return a
+	}
 
-func IsPositive(value int64) bool {
-	return value > 0
+	return b
+}
+
+func MaxInt64(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+
+	return b
+}
+
+func MinInt64(a, b int64) int64 {
+	if a < b {
+		return a
+	}
+
+	return b
 }
 
 func IsNatural(value string) bool {
 	if v, err := strconv.ParseInt(value, 0, 64); err == nil {
 		return v >= 0
 	}
+
 	return false
 }
 
@@ -38,5 +65,6 @@ func IsInteger(value string) bool {
 	if _, err := strconv.ParseInt(value, 0, 64); err == nil {
 		return true
 	}
+
 	return false
 }

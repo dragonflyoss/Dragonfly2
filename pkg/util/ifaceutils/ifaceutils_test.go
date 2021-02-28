@@ -14,22 +14,40 @@
  * limitations under the License.
  */
 
-package mathutils
+package ifaceutils
 
 import (
-	"math"
-	"math/rand"
-	"time"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
+func TestIsNil(t *testing.T) {
+	var eface interface{} = nil
+	assert.True(t, IsNil(eface))
+
+	var fun func() = nil
+	assert.True(t, IsNil(fun))
+
+	var ch chan int = nil
+	assert.True(t, IsNil(ch))
+
+	var pt *int = nil
+	assert.True(t, IsNil(pt))
+
+	assert.False(t, IsNil(1))
 }
 
-func RandBackoff(initBackoff float64, maxBackoff float64, base float64, exp int) time.Duration {
-	v1 := math.Pow(base, float64(exp))
+func TestIsZero(t *testing.T) {
+	var in int = 0
+	assert.True(t, IsZero(in))
 
-	v2 := math.Max(initBackoff, rand.Float64()*math.Min(v1*initBackoff, maxBackoff))
+	var st = struct {
+		x int
+		y string
+	}{}
 
-	return time.Duration(v2 * float64(time.Second))
+	assert.True(t, IsZero(st))
+
+	assert.False(t, IsZero(1))
 }

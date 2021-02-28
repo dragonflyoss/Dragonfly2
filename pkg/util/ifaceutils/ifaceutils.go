@@ -37,5 +37,6 @@ func IsZero(value interface{}) bool {
 	if value == nil {
 		return true
 	}
+
 	return reflect.ValueOf(value).IsZero()
 }

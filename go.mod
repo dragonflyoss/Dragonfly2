@@ -15,6 +15,7 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/mux v1.7.3
+	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-runewidth v0.0.2
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/mitchellh/go-homedir v1.1.0
@@ -44,5 +45,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 	k8s.io/apimachinery v0.20.1
 	k8s.io/client-go v11.0.0+incompatible
-	modernc.org/mathutil v1.2.2
 )
