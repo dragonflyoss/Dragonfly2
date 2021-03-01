@@ -62,7 +62,11 @@ func newDownResultStream(dc *daemonClient, ctx context.Context, hashKey string, 
 
 func (drs *downResultStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return drs.dc.getDaemonClient(drs.hashKey).Download(drs.ctx, drs.req, drs.opts...)
+		if client, err := drs.dc.getDaemonClient(drs.hashKey); err != nil {
+			return nil, err
+		} else {
+			return client.Download(drs.ctx, drs.req, drs.opts...)
+		}
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, nil)
 
 	if err != nil {
@@ -105,7 +109,11 @@ func (drs *downResultStream) replaceStream(cause error) error {
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return drs.dc.getDaemonClient(drs.hashKey).Download(drs.ctx, drs.req, drs.opts...)
+		if client, err := drs.dc.getDaemonClient(drs.hashKey); err != nil {
+			return nil, err
+		} else {
+			return client.Download(drs.ctx, drs.req, drs.opts...)
+		}
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
 
 	if err == nil {
@@ -124,7 +132,11 @@ func (drs *downResultStream) replaceClient(cause error) error {
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return drs.dc.getDaemonClient(drs.hashKey).Download(drs.ctx, drs.req, drs.opts...)
+		if client, err := drs.dc.getDaemonClient(drs.hashKey); err != nil {
+			return nil, err
+		} else {
+			return client.Download(drs.ctx, drs.req, drs.opts...)
+		}
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
 
 	if err != nil {
