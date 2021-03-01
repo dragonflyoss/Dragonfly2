@@ -5,7 +5,11 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/server"
 	"d7y.io/dragonfly/v2/version"
+	"fmt"
+	"github.com/go-echarts/statsview"
+	"github.com/go-echarts/statsview/viewer"
 	"github.com/mitchellh/mapstructure"
+	"github.com/phayes/freeport"
 	"os"
 	"reflect"
 	"time"
@@ -54,6 +58,19 @@ var SchedulerCmd = &cobra.Command{
 		if err != nil {
 			return errors.Wrap(err, "get config from viper")
 		}
+
+		go func() {
+			// enable go pprof and statsview
+			port, _ := freeport.GetFreePort()
+			debugListen := fmt.Sprintf("localhost:%d", port)
+			viewer.SetConfiguration(viewer.WithAddr(debugListen))
+			logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
+				"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
+				Infof("enable debug at http://%s", debugListen)
+			if err := statsview.New().Start(); err != nil {
+				logger.Warnf("serve go pprof error: %s", err)
+			}
+		}()
 
 		logger.Debugf("get scheduler config: %+v", cfg)
 		logger.Infof("start to run scheduler")

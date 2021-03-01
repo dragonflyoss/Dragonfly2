@@ -148,7 +148,7 @@ func (suite *SchedulerTestSuite) Test102SchedulerPeerTask() {
 
 func (suite *SchedulerTestSuite) Test103ReportResult() {
 	ctx := context.TODO()
-	taskId := types.GenerateTaskId("http://dragonfly.com/test1", "", nil)
+	taskId := types.GenerateTaskId("http://dragonfly.com/test1", "", nil, "")
 	var result = &scheduler.PeerResult{
 		TaskId:         taskId,
 		PeerId:         "prc001",
@@ -174,7 +174,7 @@ func (suite *SchedulerTestSuite) Test103ReportResult() {
 
 func (suite *SchedulerTestSuite) Test104LeaveTask() {
 	ctx := context.TODO()
-	taskId := types.GenerateTaskId("http://dragonfly.com/test1", "", nil)
+	taskId := types.GenerateTaskId("http://dragonfly.com/test1", "", nil, "")
 	var target = &scheduler.PeerTarget{
 		TaskId: taskId,
 		PeerId: "prc001",

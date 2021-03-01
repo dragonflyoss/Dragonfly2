@@ -17,8 +17,8 @@ worker:
 cdn:
   list:
     -
-      - cdn-name : "cdn"
+      - cdn-name : "B-M75UMD6M-2153.local"
         ip: "127.0.0.1"
-        rpc-port: 12346
-        download-port: 8002
+        rpc-port: 8003
+        download-port: 8001
 
