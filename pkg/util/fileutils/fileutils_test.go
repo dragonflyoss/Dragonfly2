@@ -38,16 +38,8 @@ type FileUtilTestSuite struct {
 }
 
 func TestDeleteFile(t *testing.T) {
-	fl,err  :=NewFileLock("/Users/zuozheng.hzz/test/test123")
-	if err ==nil{
-		err = fl.Lock()
-		f2,_  :=NewFileLock("/Users/zuozheng.hzz/test/test123")
-		err = f2.Unlock()
-		err = fl.Unlock()
-		err = f2.Lock()
-
-	}
-fmt.Println("hello")
+	x := 567102234234 * B
+	fmt.Println(x.String())
 
 
 }
