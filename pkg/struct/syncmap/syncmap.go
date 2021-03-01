@@ -27,7 +27,7 @@ func NewSyncMap() *SyncMap {
 // Add adds a key-value pair into the *sync.Map.
 // The ErrEmptyValue error will be returned if the key is empty.
 func (mmap *SyncMap) Add(key string, value interface{}) error {
-	if stringutils.IsEmptyStr(key) {
+	if stringutils.IsBlank(key) {
 		return errors.Wrap(dferrors.ErrEmptyValue, "key")
 	}
 	mmap.Store(key, value)
@@ -38,7 +38,7 @@ func (mmap *SyncMap) Add(key string, value interface{}) error {
 // The ErrEmptyValue error will be returned if the key is empty.
 // And the ErrDataNotFound error will be returned if the key cannot be found.
 func (mmap *SyncMap) Get(key string) (interface{}, error) {
-	if stringutils.IsEmptyStr(key) {
+	if stringutils.IsBlank(key) {
 		return nil, errors.Wrap(dferrors.ErrEmptyValue, "key")
 	}
 
@@ -163,7 +163,7 @@ func (mmap *SyncMap) GetAsTime(key string) (time.Time, error) {
 // The ErrEmptyValue error will be returned if the key is empty.
 // And the ErrDataNotFound error will be returned if the key cannot be found.
 func (mmap *SyncMap) Remove(key string) error {
-	if stringutils.IsEmptyStr(key) {
+	if stringutils.IsBlank(key) {
 		return errors.Wrap(dferrors.ErrEmptyValue, "key")
 	}
 

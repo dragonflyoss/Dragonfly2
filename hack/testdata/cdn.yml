@@ -1,0 +1,25 @@
+base:
+  listenPort: 8003
+  downloadPort: 8001
+  homeDir: /tmp/cdn
+  systemReservedBandwidth: 20M
+  maxBandwidth: 200M
+  enableProfiler: false
+  failAccessInterval: 3m
+  gcInitialDelay: 6s
+  gcMetaInterval: 2m
+  taskExpireTime: 3m
+  gcDiskInterval: 15s
+  youngGCThreshold: 100G
+  fullGCThreshold: 5G
+  IntervalThreshold: 2h
+  CleanRatio: 1
+
+plugins:
+  storage:
+    - name: local
+      enabled: true
+      config: "baseDir: /tmp/cdnsystem/"
+  sourceClient:
+    - name: http
+      enable: true

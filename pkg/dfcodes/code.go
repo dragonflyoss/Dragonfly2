@@ -25,7 +25,8 @@ const (
 
 	ErrInvalidValue
 	// client processing error 400-499
-	BadRequest base.Code = 400
+	BadRequest       base.Code = 400
+	PeerTaskNotFound base.Code = 404
 
 	// scheduler processing error 5000-5999
 	SchedulerError        base.Code = 5000
@@ -34,6 +35,8 @@ const (
 	ResourceLacked base.Code = 5002
 	// client should try to download from source
 	BackSource base.Code = 5003
+	// get piece task from other peer error
+	GetPieceTasksError base.Code = 5004
 
 	// cdnsystem processing error 6000-6999
 	CdnError            base.Code = 6000

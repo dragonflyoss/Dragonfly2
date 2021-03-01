@@ -19,6 +19,12 @@ package service
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/pkg/errors"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
@@ -32,12 +38,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
-	"os"
-	"strconv"
-	"strings"
 )
-
 
 // CdnSeedServer is used to implement cdnsystem.SeederServer.
 type CdnSeedServer struct {
@@ -56,11 +57,14 @@ func NewCdnSeedServer(cfg *config.Config, taskMgr mgr.SeedTaskMgr) (*CdnSeedServ
 func constructRequestHeader(meta *base.UrlMeta) map[string]string {
 	header := make(map[string]string)
 	if meta != nil {
-		if !stringutils.IsEmptyStr(meta.Md5) {
+		if !stringutils.IsBlank(meta.Md5) {
 			header["md5"] = meta.Md5
 		}
-		if !stringutils.IsEmptyStr(meta.Range) {
+		if !stringutils.IsBlank(meta.Range) {
 			header["range"] = meta.Range
+		}
+		for k, v := range meta.Header {
+			header[k] = v
 		}
 	}
 	return header
@@ -69,9 +73,9 @@ func constructRequestHeader(meta *base.UrlMeta) map[string]string {
 // validateSeedRequestParams validates the params of SeedRequest.
 func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
 	if !netutils.IsValidURL(req.Url) {
-		return errors.Errorf( "resource url:%s is invalid", req.Url)
+		return errors.Errorf("resource url:%s is invalid", req.Url)
 	}
-	if stringutils.IsEmptyStr(req.TaskId) {
+	if stringutils.IsBlank(req.TaskId) {
 		return errors.New("taskId is empty")
 	}
 	return nil
@@ -88,7 +92,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		}
 	}()
 	if err := validateSeedRequestParams(req); err != nil {
-		return dferrors.Newf(dfcodes.BadRequest,"validate seed request fail: %v", err)
+		return dferrors.Newf(dfcodes.BadRequest, "validate seed request fail: %v", err)
 	}
 	headers := constructRequestHeader(req.GetUrlMeta())
 	registerRequest := &types.TaskRegisterRequest{
@@ -111,10 +115,10 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		switch piece.Type {
 		case types.PieceType:
 			psc <- &cdnsystem.PieceSeed{
-				State:         common.NewState(dfcodes.Success, "success"),
-				PeerId:        peerId,
-				SeederName:    dfnet.HostName,
-				PieceInfo:     &base.PieceInfo{
+				State:      common.NewState(dfcodes.Success, "success"),
+				PeerId:     peerId,
+				SeederName: dfnet.HostName,
+				PieceInfo: &base.PieceInfo{
 					PieceNum:    piece.PieceNum,
 					RangeStart:  pieceStart,
 					RangeSize:   piece.PieceLen,
@@ -160,15 +164,15 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 		}, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
 	}
 	task, err := css.taskMgr.Get(ctx, req.TaskId)
-	logger.Debugf("task:%+v",task)
+	logger.Debugf("task:%+v", task)
 	if err != nil {
 		state := common.NewState(dfcodes.CdnError, err)
 		if cdnerrors.IsDataNotFound(err) {
 			state = common.NewState(dfcodes.CdnTaskNotFound, err)
 			return &base.PiecePacket{
-			State: state,
-			TaskId: req.TaskId,
-		}, errors.Wrapf(err, "failed to get task from cdn")
+				State:  state,
+				TaskId: req.TaskId,
+			}, errors.Wrapf(err, "failed to get task from cdn")
 		}
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
@@ -210,7 +214,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 }
 
 func validateGetPieceTasksRequestParams(req *base.PieceTaskRequest) error {
-	if stringutils.IsEmptyStr(req.TaskId) {
+	if stringutils.IsBlank(req.TaskId) {
 		return errors.Wrap(dferrors.ErrEmptyValue, "taskId")
 	}
 	if !netutils.IsValidIP(req.SrcIp) {

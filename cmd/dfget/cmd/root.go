@@ -223,13 +223,15 @@ func spawnDaemon() error {
 
 	var args = []string{
 		"daemon",
-		"--grpc-port", fmt.Sprintf("%d", flagDaemonOpt.Download.DownloadGRPC.TCPListen.PortRange.Start),
+		"--download-rate", fmt.Sprintf("%d", flagDaemonOpt.Download.RateLimit.Limit),
 		"--upload-port", fmt.Sprintf("%d", flagDaemonOpt.Upload.TCPListen.PortRange.Start),
 		"--home", flagDaemonOpt.WorkHome,
 		"--listen", flagDaemonOpt.Host.ListenIP,
 		"--expire-time", flagDaemonOpt.Storage.TaskExpireTime.String(),
 		"--alive-time", flagDaemonOpt.AliveTime.String(),
+		"--grpc-unix-listen", flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket,
 		"--schedulers", strings.Join(schedulers, ","),
+		"--pid", flagDaemonOpt.PidFile,
 	}
 	if flagClientOpt.MoreDaemonOptions != "" {
 		args = append(args, strings.Split(flagClientOpt.MoreDaemonOptions, " ")...)

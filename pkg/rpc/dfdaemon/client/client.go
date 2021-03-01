@@ -62,8 +62,12 @@ type daemonClient struct {
 	*rpc.Connection
 }
 
-func (dc *daemonClient) getDaemonClient(key string) dfdaemon.DaemonClient {
-	return dfdaemon.NewDaemonClient(dc.Connection.GetClientConn(key))
+func (dc *daemonClient) getDaemonClient(key string) (dfdaemon.DaemonClient, error) {
+	if clientConn, err := dc.Connection.GetClientConn(key); err != nil {
+		return nil, err
+	} else {
+		return dfdaemon.NewDaemonClient(clientConn), nil
+	}
 }
 
 func (dc *daemonClient) getDaemonClientWithTarget(target string) (dfdaemon.DaemonClient, error) {
@@ -92,7 +96,11 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return dc.getDaemonClient(ptr.TaskId).GetPieceTasks(ctx, ptr, opts...)
+		if client, err := dc.getDaemonClient(ptr.TaskId); err != nil {
+			return nil, err
+		} else {
+			return client.GetPieceTasks(ctx, ptr, opts...)
+		}
 	}, 0.2, 2.0, 3, nil)
 
 	if err == nil {

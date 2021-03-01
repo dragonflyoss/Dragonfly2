@@ -18,8 +18,8 @@ package rpc
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"fmt"
 	"google.golang.org/grpc"
 	"time"
 )
@@ -30,10 +30,10 @@ type candidateClient struct {
 }
 
 // findCandidateClientConn find candidate node client conn other than exclusiveNodes
-func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...string) *candidateClient {
+func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...string) (*candidateClient, error) {
 	ringNodes, ok := conn.HashRing.GetNodes(key, conn.HashRing.Size())
 	if !ok {
-		panic(fmt.Sprintf("failed to get hash node list for key: %s", key))
+		return nil, dferrors.ErrNoCandidateNode
 	}
 	candidateNodes := make([]string, 0, 0)
 	for _, ringNode := range ringNodes {
@@ -47,24 +47,28 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 			candidateNodes = append(candidateNodes, ringNode)
 		}
 	}
+	logger.GrpcLogger.Debugf("all server node list:%v, exclusiveNodes node list:%v, candidate node list:%v", ringNodes, exclusiveNodes, candidateNodes)
 	for _, candidateNode := range candidateNodes {
 		// Check whether there is a corresponding mapping client in the node2ClientMap
 		if client, ok := conn.node2ClientMap.Load(candidateNode); ok {
+			logger.GrpcLogger.Debugf("hit cache candidateNode: %s", candidateNode)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  client,
-			}
+			}, nil
 		}
+		logger.GrpcLogger.Debugf("attempt to connect candidateNode: %s", candidateNode)
 		if clientConn, err := conn.createClient(candidateNode, append(clientOpts, conn.opts...)...); err == nil {
+			logger.GrpcLogger.Debugf("success connect to candidateNode: %s", candidateNode)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  clientConn,
-			}
+			}, nil
 		} else {
-			logger.GrpcLogger.Warnf("failed to create client for %s: %v", candidateNode, err)
+			logger.GrpcLogger.Warnf("failed to connect candidateNode: %s: %v", candidateNode, err)
 		}
 	}
-	panic(fmt.Sprintf("failed to create candidate client for key: %s", key))
+	return nil, dferrors.ErrNoCandidateNode
 }
 
 func (conn *Connection) createClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {

@@ -14,33 +14,28 @@
  * limitations under the License.
  */
 
-// Package stringutils provides utilities supplementing the standard 'strings' package.
-package stringutils
+package mathutils
 
 import (
-	"unicode"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func SubString(str string, start, end int) string {
-	runes := []rune(str)
-	length := len(runes)
-	if start < 0 || start >= length || end <= 0 || end > length || start >= end {
-		return ""
-	}
+func TestRandBackoff(t *testing.T) {
+	initBackOff := 0.1
+	maxBackOff := 3.0
 
-	return string(runes[start:end])
-}
+	v1 := RandBackoff(initBackOff, maxBackOff, 2, 5)
+	fmt.Printf("rand v1:%v\n", v1)
 
-func IsBlank(str string) bool {
-	for _, c := range str {
-		if !unicode.IsSpace(c) {
-			return false
-		}
-	}
+	assert.True(t, v1 <= time.Duration(maxBackOff*float64(time.Second)))
+	assert.True(t, v1 >= time.Duration(initBackOff*float64(time.Second)))
 
-	return true
-}
+	v2 := RandBackoff(initBackOff, maxBackOff, 2, 5)
+	fmt.Printf("rand v2:%v\n", v2)
 
-func IsEmpty(str string) bool {
-	return str == ""
+	assert.NotEqual(t, v1, v2)
 }
