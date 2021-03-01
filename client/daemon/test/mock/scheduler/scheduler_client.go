@@ -6,11 +6,12 @@ package mock_scheduler
 
 import (
 	context "context"
+	reflect "reflect"
+
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	reflect "reflect"
 )
 
 // MockSchedulerClient is a mock of SchedulerClient interface

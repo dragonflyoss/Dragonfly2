@@ -172,7 +172,7 @@ func (pt *filePeerTask) GetTraffic() int64 {
 func (pt *filePeerTask) Start(ctx context.Context) (chan *PeerTaskProgress, error) {
 	pt.ctx, pt.cancel = context.WithCancel(ctx)
 	if pt.backSource {
-		pt.contentLength = - 1
+		pt.contentLength = -1
 		_ = pt.callback.Init(pt)
 		go func() {
 			err := pt.pieceManager.DownloadSource(ctx, pt, pt.request)

@@ -144,7 +144,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	s.base.ctx, s.base.cancel = context.WithCancel(ctx)
 	if s.base.backSource {
 		go func() {
-			s.base.contentLength = - 1
+			s.base.contentLength = -1
 			_ = s.base.callback.Init(s)
 			err := s.base.pieceManager.DownloadSource(ctx, s, s.base.request)
 			if err != nil {

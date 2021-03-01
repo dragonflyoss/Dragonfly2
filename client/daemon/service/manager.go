@@ -143,6 +143,7 @@ loop:
 				Done:            p.Done,
 			}
 			if p.Done {
+				logger.Infof("task %s done", p.TaskId)
 				break loop
 			}
 		case <-ctx.Done():
