@@ -168,10 +168,10 @@ func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskID str
 	if originMetaData.Success {
 		originMetaData.CdnFileLength = metaData.CdnFileLength
 		originMetaData.SourceFileLen = metaData.SourceFileLen
-		if !stringutils.IsEmptyStr(metaData.SourceRealMd5) {
+		if !stringutils.IsBlank(metaData.SourceRealMd5) {
 			originMetaData.SourceRealMd5 = metaData.SourceRealMd5
 		}
-		if !stringutils.IsEmptyStr(metaData.PieceMd5Sign) {
+		if !stringutils.IsBlank(metaData.PieceMd5Sign) {
 			originMetaData.PieceMd5Sign = metaData.PieceMd5Sign
 		}
 	}

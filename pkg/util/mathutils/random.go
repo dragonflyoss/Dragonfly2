@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package timeutils
+package mathutils
 
 import (
+	"math"
+	"math/rand"
 	"time"
 )
 
-// GetCurrentTimeMillis returns the time in millis for now.
-func GetCurrentTimeMillis() int64 {
-	return time.Now().UnixNano() / time.Millisecond.Nanoseconds()
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
 
-// SinceInMilliseconds gets the time since the specified start in milliseconds.
-func SinceInMilliseconds(start time.Time) float64 {
-	return float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond.Nanoseconds())
+func RandBackoff(initBackoff float64, maxBackoff float64, base float64, exp int) time.Duration {
+	v1 := math.Pow(base, float64(exp))
+
+	v2 := math.Max(initBackoff, rand.Float64()*math.Min(v1*initBackoff, maxBackoff))
+
+	return time.Duration(v2 * float64(time.Second))
 }

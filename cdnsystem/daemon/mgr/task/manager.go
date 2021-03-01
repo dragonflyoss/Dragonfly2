@@ -158,7 +158,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 }
 
 func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
-	if stringutils.IsEmptyStr(taskID) {
+	if stringutils.IsBlank(taskID) {
 		return nil, errors.Wrap(cdnerrors.ErrEmptyValue, "taskID is empty")
 	}
 

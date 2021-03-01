@@ -14,33 +14,40 @@
  * limitations under the License.
  */
 
-// Package stringutils provides utilities supplementing the standard 'strings' package.
-package stringutils
+package ifaceutils
 
 import (
-	"unicode"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func SubString(str string, start, end int) string {
-	runes := []rune(str)
-	length := len(runes)
-	if start < 0 || start >= length || end <= 0 || end > length || start >= end {
-		return ""
-	}
+func TestIsNil(t *testing.T) {
+	var eface interface{} = nil
+	assert.True(t, IsNil(eface))
 
-	return string(runes[start:end])
+	var fun func() = nil
+	assert.True(t, IsNil(fun))
+
+	var ch chan int = nil
+	assert.True(t, IsNil(ch))
+
+	var pt *int = nil
+	assert.True(t, IsNil(pt))
+
+	assert.False(t, IsNil(1))
 }
 
-func IsBlank(str string) bool {
-	for _, c := range str {
-		if !unicode.IsSpace(c) {
-			return false
-		}
-	}
+func TestIsZero(t *testing.T) {
+	var in int = 0
+	assert.True(t, IsZero(in))
 
-	return true
-}
+	var st = struct {
+		x int
+		y string
+	}{}
 
-func IsEmpty(str string) bool {
-	return str == ""
+	assert.True(t, IsZero(st))
+
+	assert.False(t, IsZero(1))
 }

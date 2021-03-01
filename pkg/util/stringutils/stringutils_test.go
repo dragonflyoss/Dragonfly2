@@ -17,40 +17,31 @@
 package stringutils
 
 import (
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func Test(t *testing.T) {
-	suite.Run(t, new(StringUtilSuite))
+func TestSubString(t *testing.T) {
+	var str = "hello,world"
+
+	assert.Equal(t, SubString(str, 0, 5), "hello")
+
+	assert.Equal(t, SubString(str, 1, 5), "ello")
+
+	assert.Equal(t, SubString(str, 1, 1), "")
 }
 
-type StringUtilSuite struct {
-	suite.Suite
+func TestIsBlank(t *testing.T) {
+	assert.True(t, IsBlank(""))
+
+	assert.True(t, IsBlank("	  "))
+
+	assert.False(t, IsBlank("x"))
 }
 
-func (suite *StringUtilSuite) TestSubString() {
-	var cases = []struct {
-		str      string
-		start    int
-		end      int
-		expected string
-	}{
-		{"abcdef", 0, 3, "abc"},
-		{"abcdef", 0, 6, "abcdef"},
-		{"abcdef", -1, 3, ""},
-		{"abcdef", 0, 7, ""},
-		{"abcdef", 3, 1, ""},
-	}
+func TestIsEmpty(t *testing.T) {
+	assert.True(t, IsEmpty(""))
 
-	for _, v := range cases {
-		suite.Equal(SubString(v.str, v.start, v.end), v.expected)
-	}
-}
-
-func (suite *StringUtilSuite) TestIsEmptyStr() {
-	suite.Equal(IsEmptyStr(""),true)
-	suite.Equal(IsEmptyStr("  "), true)
-	suite.Equal(IsEmptyStr("\n  "), true)
-	suite.Equal(IsEmptyStr("x"), false)
+	assert.False(t, IsEmpty(" "))
 }

@@ -25,7 +25,7 @@ import (
 	"strings"
 )
 
-var getCurrentTimeMillisFunc = timeutils.GetCurrentTimeMillis
+var getCurrentTimeMillisFunc = timeutils.CurrentTimeMillis
 
 // getUpdateTaskInfoWithStatusOnly
 func getUpdateTaskInfoWithStatusOnly(cdnStatus string) *types.SeedTask {

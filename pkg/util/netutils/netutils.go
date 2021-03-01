@@ -131,7 +131,7 @@ func ExtractHost(hostAndPort string) string {
 // It will return defaultPort as the value of port
 // when the node is a string without port or with an illegal port.
 func GetIPAndPortFromNode(node string, defaultPort int) (string, int) {
-	if stringutils.IsEmptyStr(node) {
+	if stringutils.IsBlank(node) {
 		return "", defaultPort
 	}
 
@@ -191,7 +191,7 @@ func IsValidURL(urlStr string) bool {
 	reg := regexp.MustCompile(`(` +
 		httputils.GetValidURLSchemas() +
 		`)://([\w_]+:[\w_]+@)?([\w-]+\.)*[\w-]+(/[\w- ./?%&=]*)?`)
-	if result := reg.FindString(urlStr); stringutils.IsEmptyStr(result) {
+	if result := reg.FindString(urlStr); stringutils.IsBlank(result) {
 		return false
 	}
 	return true

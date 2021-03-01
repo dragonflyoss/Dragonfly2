@@ -18,11 +18,15 @@ package transport
 
 import (
 	"crypto/tls"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"regexp"
 	"time"
+
+	"github.com/go-http-utils/headers"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
@@ -134,12 +138,24 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
 	logger.Infof("start download with url: %s", url)
 
-	var meta *base.UrlMeta
+	meta := &base.UrlMeta{Header: map[string]string{}}
 	if rg := req.Header.Get("Range"); len(rg) > 0 {
 		meta = &base.UrlMeta{
-			Md5:   "",
-			Range: rg,
+			Md5:    "",
+			Range:  rg,
+			Header: map[string]string{},
 		}
+	}
+
+	// copy header
+	for k, v := range req.Header {
+		// TODO only use first value currently
+		meta.Header[k] = v[0]
+	}
+
+	// remove hop by hop header
+	for _, h := range hopHeaders {
+		delete(meta.Header, h)
 	}
 
 	r, attr, err := rt.peerTaskManager.StartStreamPeerTask(
@@ -163,6 +179,13 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	var hdr = http.Header{}
 	for k, v := range attr {
 		hdr.Set(k, v)
+	}
+
+	// when r is *io.LimitedReader, set content length
+	if lr, ok := r.(*io.LimitedReader); ok {
+		hdr.Set(headers.ContentLength, fmt.Sprintf("%d", lr.N))
+	} else {
+		hdr.Set(headers.TransferEncoding, "chunked")
 	}
 
 	resp := &http.Response{
@@ -189,4 +212,22 @@ func defaultHTTPTransport(cfg *tls.Config) *http.Transport {
 		ExpectContinueTimeout: 1 * time.Second,
 		TLSClientConfig:       cfg,
 	}
+}
+
+// Hop-by-hop headers. These are removed when sent to the backend.
+// As of RFC 7230, hop-by-hop headers are required to appear in the
+// Connection header field. These are the headers defined by the
+// obsoleted RFC 2616 (section 13.5.1) and are used for backward
+// compatibility.
+// copy from net/http/httputil/reverseproxy.go
+var hopHeaders = []string{
+	"Connection",
+	"Proxy-Connection", // non-standard but still sent by libcurl and rejected by e.g. google
+	"Keep-Alive",
+	"Proxy-Authenticate",
+	"Proxy-Authorization",
+	"Te",      // canonicalized version of "TE"
+	"Trailer", // not Trailers per URL above; https://www.rfc-editor.org/errata_search.php?eid=4522
+	"Transfer-Encoding",
+	"Upgrade",
 }

@@ -29,6 +29,7 @@ var (
 	ErrDataNotFound    = errors.New("data not found")
 	ErrEmptyValue      = errors.New("empty value")
 	ErrConvertFailed   = errors.New("convert failed")
+	ErrNoCandidateNode = errors.New("candidate server node not found")
 )
 
 func IsEndOfStream(err error) bool {

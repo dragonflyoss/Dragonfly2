@@ -205,7 +205,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 	var isSuccess = true
 	var errorMsg string
 	// check md5
-	if !stringutils.IsEmptyStr(task.RequestMd5) && task.RequestMd5 != sourceMd5 {
+	if !stringutils.IsBlank(task.RequestMd5) && task.RequestMd5 != sourceMd5 {
 		errorMsg = fmt.Sprintf("file md5 not match expected:%s real:%s", task.RequestMd5, sourceMd5)
 		isSuccess = false
 	}
@@ -218,7 +218,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 		errorMsg = fmt.Sprintf("task total piece count not match expected:%d real:%d", task.PieceTotal, downloadMetadata.pieceTotalCount)
 		isSuccess = false
 	}
-	if !stringutils.IsEmptyStr(errorMsg) {
+	if !stringutils.IsBlank(errorMsg) {
 		logger.WithTaskID(task.TaskID).Error(errorMsg)
 	}
 	sourceFileLen := task.SourceFileLength
