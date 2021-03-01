@@ -24,7 +24,7 @@ import (
 )
 
 func (s *ResourceClientAdaptor) getSchema(url string) (string, error) {
-	if stringutils.IsEmptyStr(url) {
+	if stringutils.IsBlank(url) {
 		return "", dferrors.ErrEmptyValue
 	}
 	parts := strings.Split(url, ":")

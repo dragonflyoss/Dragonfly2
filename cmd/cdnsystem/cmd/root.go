@@ -80,7 +80,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// set cdn node advertise ip
-		if stringutils.IsEmptyStr(cfg.AdvertiseIP) {
+		if stringutils.IsBlank(cfg.AdvertiseIP) {
 			if err := setAdvertiseIP(cfg); err != nil {
 				return err
 			}

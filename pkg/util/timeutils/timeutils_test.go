@@ -14,33 +14,25 @@
  * limitations under the License.
  */
 
-// Package stringutils provides utilities supplementing the standard 'strings' package.
-package stringutils
+package timeutils
 
 import (
-	"unicode"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func SubString(str string, start, end int) string {
-	runes := []rune(str)
-	length := len(runes)
-	if start < 0 || start >= length || end <= 0 || end > length || start >= end {
-		return ""
-	}
-
-	return string(runes[start:end])
+func TestCurrentTimeMillis(t *testing.T) {
+	v1 := CurrentTimeMillis()
+	time.Sleep(time.Millisecond * 500)
+	v2 := CurrentTimeMillis()
+	assert.LessOrEqual(t, v1, v2)
 }
 
-func IsBlank(str string) bool {
-	for _, c := range str {
-		if !unicode.IsSpace(c) {
-			return false
-		}
-	}
+func TestSinceInMilliseconds(t *testing.T) {
+	tim := time.Now()
+	time.Sleep(500 * time.Millisecond)
 
-	return true
-}
-
-func IsEmpty(str string) bool {
-	return str == ""
+	assert.GreaterOrEqual(t, SinceInMilliseconds(tim), int64(500))
 }

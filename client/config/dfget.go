@@ -162,7 +162,7 @@ func IsValidURL(urlStr string) bool {
 
 // This function must be called after checkURL
 func checkOutput(cfg *ClientConfig) error {
-	if stringutils.IsEmptyStr(cfg.Output) {
+	if stringutils.IsBlank(cfg.Output) {
 		url := strings.TrimRight(cfg.URL, "/")
 		idx := strings.LastIndexByte(url, '/')
 		if idx < 0 {
@@ -184,7 +184,7 @@ func checkOutput(cfg *ClientConfig) error {
 	}
 
 	// check permission
-	for dir := cfg.Output; !stringutils.IsEmptyStr(dir); dir = filepath.Dir(dir) {
+	for dir := cfg.Output; !stringutils.IsBlank(dir); dir = filepath.Dir(dir) {
 		if err := syscall.Access(dir, syscall.O_RDWR); err == nil {
 			break
 		} else if os.IsPermission(err) || dir == "/" {

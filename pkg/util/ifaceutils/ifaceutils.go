@@ -14,33 +14,29 @@
  * limitations under the License.
  */
 
-// Package stringutils provides utilities supplementing the standard 'strings' package.
-package stringutils
+package ifaceutils
 
 import (
-	"unicode"
+	"reflect"
 )
 
-func SubString(str string, start, end int) string {
-	runes := []rune(str)
-	length := len(runes)
-	if start < 0 || start >= length || end <= 0 || end > length || start >= end {
-		return ""
+func IsNil(value interface{}) bool {
+	if value == nil {
+		return true
 	}
 
-	return string(runes[start:end])
-}
-
-func IsBlank(str string) bool {
-	for _, c := range str {
-		if !unicode.IsSpace(c) {
-			return false
-		}
+	switch v := reflect.ValueOf(value); v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.UnsafePointer, reflect.Slice:
+		return v.IsNil()
 	}
 
-	return true
+	return false
 }
 
-func IsEmpty(str string) bool {
-	return str == ""
+func IsZero(value interface{}) bool {
+	if value == nil {
+		return true
+	}
+
+	return reflect.ValueOf(value).IsZero()
 }

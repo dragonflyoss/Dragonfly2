@@ -14,33 +14,17 @@
  * limitations under the License.
  */
 
-// Package stringutils provides utilities supplementing the standard 'strings' package.
-package stringutils
+// Package timeutils provides utilities supplementing the standard 'time' package.
+package timeutils
 
 import (
-	"unicode"
+	"time"
 )
 
-func SubString(str string, start, end int) string {
-	runes := []rune(str)
-	length := len(runes)
-	if start < 0 || start >= length || end <= 0 || end > length || start >= end {
-		return ""
-	}
-
-	return string(runes[start:end])
+func CurrentTimeMillis() int64 {
+	return time.Now().UnixNano() / time.Millisecond.Nanoseconds()
 }
 
-func IsBlank(str string) bool {
-	for _, c := range str {
-		if !unicode.IsSpace(c) {
-			return false
-		}
-	}
-
-	return true
-}
-
-func IsEmpty(str string) bool {
-	return str == ""
+func SinceInMilliseconds(start time.Time) int64 {
+	return time.Since(start).Nanoseconds() / time.Millisecond.Nanoseconds()
 }
