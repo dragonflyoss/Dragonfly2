@@ -18,6 +18,13 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/pkg/errors"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
@@ -62,6 +69,9 @@ func constructRequestHeader(req *cdnsystem.SeedRequest) *types.TaskRegisterReque
 		}
 		if !stringutils.IsBlank(meta.Range) {
 			headers["range"] = meta.Range
+		}
+		for k, v := range meta.Header {
+			headers[k] = v
 		}
 	}
 	return &types.TaskRegisterRequest{

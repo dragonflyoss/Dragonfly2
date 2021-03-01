@@ -33,6 +33,9 @@ type Config struct {
 }
 
 type schedulerConfig struct {
+	ABTest     bool
+	AScheduler string
+	BScheduler string
 }
 
 type serverConfig struct {
@@ -82,7 +85,9 @@ func createDefaultConfig() *Config {
 			SenderNum:         10,
 			SenderJobPoolSize: 10000,
 		},
-		Scheduler: schedulerConfig{},
+		Scheduler: schedulerConfig{
+			ABTest: false,
+		},
 		CDN: cdnConfig{
 			List: [][]CdnServerConfig{
 				{{

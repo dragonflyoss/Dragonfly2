@@ -226,7 +226,7 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	}
 	client, err := conn.findCandidateClientConn(key, exclusiveNodes...)
 	if err != nil {
-		errors.Wrapf(err, "failed to find candidate client conn")
+		return "", errors.Wrapf(err, "failed to find candidate client conn")
 	}
 	conn.rwMutex.GetLock(client.node, false)
 	defer conn.rwMutex.ReleaseLock(client.node, false)

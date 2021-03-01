@@ -26,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly/v2/version"
 	"fmt"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
@@ -115,6 +116,7 @@ func init() {
 	setupFlags(rootCmd)
 
 	// add sub commands
+	rootCmd.AddCommand(version.VersionCmd)
 	rootCmd.AddCommand(cmd.NewGenDocCommand("cdn"))
 	rootCmd.AddCommand(cmd.NewConfigCommand("cdn", getDefaultConfig))
 }

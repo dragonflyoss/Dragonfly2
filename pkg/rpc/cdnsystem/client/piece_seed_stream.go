@@ -63,7 +63,11 @@ func newPieceSeedStream(sc *seederClient, ctx context.Context, hashKey string, s
 
 func (pss *pieceSeedStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return pss.sc.getSeederClient(pss.hashKey).ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
+		if client, err := pss.sc.getSeederClient(pss.hashKey); err != nil {
+			return nil, err
+		} else {
+			return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
+		}
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, nil)
 	if err != nil {
 		err = pss.replaceClient(pss.hashKey, err)
@@ -103,7 +107,11 @@ func (pss *pieceSeedStream) replaceStream(key string, cause error) error {
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return pss.sc.getSeederClient(key).ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
+		if client, err := pss.sc.getSeederClient(key); err != nil {
+			return nil, err
+		} else {
+			return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
+		}
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
 
 	if err == nil {
@@ -121,7 +129,11 @@ func (pss *pieceSeedStream) replaceClient(key string, cause error) error {
 		pss.failedServers = append(pss.failedServers, preNode)
 	}
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return pss.sc.getSeederClient(key).ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
+		if client, err := pss.sc.getSeederClient(key); err != nil {
+			return nil, err
+		} else {
+			return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
+		}
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
 
 	if err != nil {

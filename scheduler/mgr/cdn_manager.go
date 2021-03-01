@@ -114,7 +114,7 @@ func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
 		select {
 		case ps, ok := <-ch:
 			if !ok {
-				break
+				return
 			} else if ps == nil || ps.State == nil {
 				logger.Warnf("receive a nil pieceSeed or state from cdn: taskId[%s]", task.TaskId)
 			} else if !ps.State.Success {
