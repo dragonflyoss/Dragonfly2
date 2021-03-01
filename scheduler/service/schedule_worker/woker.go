@@ -313,7 +313,26 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 	switch code {
 	case dfcodes.Success:
 		return
+	case dfcodes.GetPieceTasksError:
+		peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
+		if peerTask != nil {
+			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
+			w.sendJobLater(peerTask)
+		}
+		return true
+	case dfcodes.CdnTaskNotFound:
+		peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
+		if peerTask != nil {
+			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
+			w.sendJobLater(peerTask)
+			task := peerTask.Task
+			if task != nil {
+				mgr.GetCDNManager().TriggerTask(task)
+			}
+		}
+		return true
 	}
+
 
 	return
 }

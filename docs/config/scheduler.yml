@@ -1,6 +1,8 @@
 # This file is the template of scheduler configuration file.
 # You can configure your scheduler by change the parameter according your requirement.
 ---
+debug: true
+
 server:
   # ListenPort is the ip and port supernode server listens on.
   # default: 8002
@@ -17,8 +19,8 @@ worker:
 cdn:
   list:
     -
-      - cdn-name : "cdn"
+      - cdn-name : "B-M75UMD6M-2153.local"
         ip: "127.0.0.1"
-        rpc-port: 12346
-        download-port: 8002
+        rpc-port: 8003
+        download-port: 8001
 

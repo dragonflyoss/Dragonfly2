@@ -19,6 +19,7 @@ package types
 import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"sync"
 	"time"
 )
@@ -41,6 +42,7 @@ type Task struct {
 	PieceList     map[int32]*Piece // Piece list
 	PieceTotal    int32            // the total number of Pieces, set > 0 when cdn finished
 	ContentLength int64
+	Statistic     *metrics.TaskStatistic
 }
 
 func CopyTask(t *Task) *Task {
@@ -50,6 +52,9 @@ func CopyTask(t *Task) *Task {
 		copyTask.rwLock = new(sync.RWMutex)
 		copyTask.CreateTime = time.Now()
 		copyTask.SizeScope = base.SizeScope_NORMAL
+		copyTask.Statistic = &metrics.TaskStatistic{
+			StartTime: time.Now(),
+		}
 	}
 	return &copyTask
 }

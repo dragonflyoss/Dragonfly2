@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/version"
 	"fmt"
 	"os"
 	"os/exec"
@@ -70,6 +71,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	rootCmd.AddCommand(version.VersionCmd)
 	initRootFlags()
 }
 

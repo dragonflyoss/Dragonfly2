@@ -4,7 +4,12 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/server"
+	"d7y.io/dragonfly/v2/version"
+	"fmt"
+	"github.com/go-echarts/statsview"
+	"github.com/go-echarts/statsview/viewer"
 	"github.com/mitchellh/mapstructure"
+	"github.com/phayes/freeport"
 	"os"
 	"reflect"
 	"time"
@@ -26,14 +31,14 @@ var (
 	schedulerViper = viper.GetViper()
 )
 
-// supernodeDescription is used to describe supernode command in details.
-var supernodeDescription = `scheduler is a long-running process with two primary responsibilities:
+// schedulerDescription is used to describe supernode command in details.
+var schedulerDescription = `scheduler is a long-running process with two primary responsibilities:
 It's the tracker and scheduler in the P2P network that choose appropriate downloading net-path for each peer.`
 
-var rootCmd = &cobra.Command{
+var SchedulerCmd = &cobra.Command{
 	Use:               "scheduler",
 	Short:             "the central control server of Dragonfly used for scheduling",
-	Long:              supernodeDescription,
+	Long:              schedulerDescription,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
@@ -54,6 +59,19 @@ var rootCmd = &cobra.Command{
 			return errors.Wrap(err, "get config from viper")
 		}
 
+		go func() {
+			// enable go pprof and statsview
+			port, _ := freeport.GetFreePort()
+			debugListen := fmt.Sprintf("localhost:%d", port)
+			viewer.SetConfiguration(viewer.WithAddr(debugListen))
+			logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
+				"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
+				Infof("enable debug at http://%s", debugListen)
+			if err := statsview.New().Start(); err != nil {
+				logger.Warnf("serve go pprof error: %s", err)
+			}
+		}()
+
 		logger.Debugf("get scheduler config: %+v", cfg)
 		logger.Infof("start to run scheduler")
 
@@ -63,7 +81,8 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	setupFlags(rootCmd)
+	SchedulerCmd.AddCommand(version.VersionCmd)
+	setupFlags(SchedulerCmd)
 }
 
 // setupFlags setups flags for command line.
@@ -77,6 +96,9 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet := cmd.Flags()
 
 	defaultBaseProperties := config.GetConfig()
+
+	flagSet.Bool("debug", defaultBaseProperties.Debug,
+		"debug")
 
 	flagSet.String("config", config.DefaultConfigFilePath,
 		"the path of scheduler's configuration file")
@@ -109,6 +131,10 @@ func bindRootFlags(v *viper.Viper) error {
 		flag string
 	}{
 		{
+			key:  "debug",
+			flag: "debug",
+		},
+		{
 			key:  "config",
 			flag: "config",
 		},
@@ -135,7 +161,7 @@ func bindRootFlags(v *viper.Viper) error {
 	}
 
 	for _, f := range flags {
-		if err := v.BindPFlag(f.key, rootCmd.Flag(f.flag)); err != nil {
+		if err := v.BindPFlag(f.key, SchedulerCmd.Flag(f.flag)); err != nil {
 			return err
 		}
 	}
@@ -203,7 +229,7 @@ func decodeWithYAML(types ...reflect.Type) mapstructure.DecodeHookFunc {
 
 // Execute will process supernode.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := SchedulerCmd.Execute(); err != nil {
 		logger.Errorf(err.Error())
 		os.Exit(1)
 	}

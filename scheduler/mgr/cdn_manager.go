@@ -114,7 +114,7 @@ func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
 		select {
 		case ps, ok := <-ch:
 			if !ok {
-				break
+				return
 			} else if ps == nil || ps.State == nil {
 				logger.Warnf("receive a nil pieceSeed or state from cdn: taskId[%s]", task.TaskId)
 			} else if !ps.State.Success {
@@ -139,6 +139,8 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		cdnInfo := c.mgr.getCdnInfo(ps.SeederName)
 		if cdnInfo != nil {
 			ip, rpcPort, downPort = cdnInfo.IP, cdnInfo.RpcPort, cdnInfo.DownloadPort
+		} else {
+			logger.Errorf("get cdn by SeederName[%s] failed", ps.SeederName)
 		}
 		host = &types.Host{
 			Type: types.HostTypeCdn,

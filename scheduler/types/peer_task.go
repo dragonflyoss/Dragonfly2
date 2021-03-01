@@ -48,6 +48,7 @@ type PeerTask struct {
 	pieceStatusList *sync.Map
 	lock            *sync.Mutex
 	finishedNum     int32 // download finished piece number
+	startTime       int64
 	lastActiveTime  int64
 	touch           func(*PeerTask)
 
@@ -92,6 +93,7 @@ func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *Pee
 		pieceStatusList: new(sync.Map),
 		isDown:          false,
 		lock:            new(sync.Mutex),
+		startTime:       time.Now().UnixNano(),
 		lastActiveTime:  time.Now().UnixNano(),
 		touch:           touch,
 		children:        new(sync.Map),
@@ -101,6 +103,9 @@ func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *Pee
 		host.AddPeerTask(pt)
 	}
 	pt.Touch()
+	if task != nil {
+		task.Statistic.AddPeerTaskStart()
+	}
 	return pt
 }
 
@@ -276,11 +281,17 @@ func (pt *PeerTask) SetUp() {
 }
 
 func (pt *PeerTask) SetStatus(traffic int64, cost uint32, success bool, code base.Code) {
+	if pt == nil {
+		return
+	}
 	pt.Traffic = traffic
 	pt.Cost = cost
 	pt.Success = success
 	pt.Code = code
 	pt.Touch()
+	if pt.Success && pt.Task != nil {
+		pt.Task.Statistic.AddPeerTaskDown(int32((time.Now().UnixNano()-pt.startTime) / int64(time.Millisecond)))
+	}
 }
 
 func (pt *PeerTask) SetClient(client scheduler.Scheduler_ReportPieceResultServer) {
