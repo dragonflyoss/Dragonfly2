@@ -38,7 +38,7 @@ func GenerateABTestTaskId(rawUrl string, filter string, meta *base.UrlMeta, bizI
 	taskId = GenerateTaskId(rawUrl, filter, meta, bizId)
 	b := sha1.Sum([]byte(peerId))[sha1.Size-1]
 	if b & 1 == 1 {
-		taskId += "B"
+		taskId += "TB"
 	}
 	return
 }

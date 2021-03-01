@@ -24,7 +24,7 @@ import (
 func (s *SchedulerService) GetPeerTask(peerTaskId string) (peerTask *types.PeerTask, err error) {
 	peerTask, _ = s.peerTaskMgr.GetPeerTask(peerTaskId)
 	if peerTask == nil {
-		err = errors.New("peer task not exited: " + peerTaskId)
+		err = errors.New("peer task do not exist: " + peerTaskId)
 	}
 	return
 }

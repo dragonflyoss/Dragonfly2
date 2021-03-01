@@ -17,8 +17,10 @@
 package scheduler
 
 import (
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -51,12 +53,35 @@ func (ef *evaluatorFactory) getEvaluator(task *types.Task) IPeerTaskEvaluator {
 		return evaluator
 	}
 
+	if config.GetConfig().Scheduler.ABTest {
+		name := ""
+		if strings.HasSuffix(task.TaskId, "TB") {
+			if config.GetConfig().Scheduler.BScheduler != "" {
+				name = config.GetConfig().Scheduler.BScheduler
+			}
+		} else {
+			if config.GetConfig().Scheduler.AScheduler != "" {
+				name = config.GetConfig().Scheduler.AScheduler
+			}
+		}
+		if name != "" {
+			evaluator, ok = ef.evaluators[name]
+			if ok {
+				ef.lock.RUnlock()
+				ef.lock.Lock()
+				ef.cache[task] = evaluator
+				ef.lock.Unlock()
+				return evaluator
+			}
+		}
+	}
+
 	for _, fun := range ef.getEvaluatorFuncPriorityList {
 		name, ok := fun(task)
 		if !ok {
 			continue
 		}
-		evaluator, ok := ef.evaluators[name]
+		evaluator, ok = ef.evaluators[name]
 		if !ok {
 			continue
 		}
