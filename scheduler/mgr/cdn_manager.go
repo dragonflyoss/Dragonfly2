@@ -139,6 +139,8 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		cdnInfo := c.mgr.getCdnInfo(ps.SeederName)
 		if cdnInfo != nil {
 			ip, rpcPort, downPort = cdnInfo.IP, cdnInfo.RpcPort, cdnInfo.DownloadPort
+		} else {
+			logger.Errorf("get cdn by SeederName[%s] failed", ps.SeederName)
 		}
 		host = &types.Host{
 			Type: types.HostTypeCdn,

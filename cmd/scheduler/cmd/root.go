@@ -97,6 +97,9 @@ func setupFlags(cmd *cobra.Command) {
 
 	defaultBaseProperties := config.GetConfig()
 
+	flagSet.Bool("debug", defaultBaseProperties.Debug,
+		"debug")
+
 	flagSet.String("config", config.DefaultConfigFilePath,
 		"the path of scheduler's configuration file")
 
@@ -127,6 +130,10 @@ func bindRootFlags(v *viper.Viper) error {
 		key  string
 		flag string
 	}{
+		{
+			key:  "debug",
+			flag: "debug",
+		},
 		{
 			key:  "config",
 			flag: "config",

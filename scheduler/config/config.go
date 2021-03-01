@@ -25,6 +25,7 @@ const (
 var config = createDefaultConfig()
 
 type Config struct {
+	Debug     bool                  `yaml:"debug" mapstructure:",squash"`
 	Scheduler schedulerConfig       `yaml:"scheduler" mapstructure:",squash"`
 	Server    serverConfig          `yaml:"server" mapstructure:",squash"`
 	Worker    schedulerWorkerConfig `yaml:"worker" mapstructure:",squash"`
@@ -76,6 +77,7 @@ func SetConfig(cfg *Config) {
 
 func createDefaultConfig() *Config {
 	return &Config{
+		Debug: false,
 		Server: serverConfig{
 			Port: 8002,
 		},
