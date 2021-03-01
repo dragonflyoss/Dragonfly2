@@ -18,13 +18,6 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"strconv"
-	"strings"
-
-	"github.com/pkg/errors"
-
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
