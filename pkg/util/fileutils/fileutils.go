@@ -59,6 +59,10 @@ func DeleteFile(filePath string) error {
 	return os.Remove(filePath)
 }
 
+func DeleteIfExists(filepath string) error {
+	os.Remove(filepath)
+}
+
 // DeleteFiles deletes all the given files.
 func DeleteFiles(filePaths ...string) {
 	if len(filePaths) > 0 {
@@ -252,6 +256,16 @@ func GetTotalSpace(path string) (Fsize, error) {
 	}
 
 	return Fsize(fs.Blocks * uint64(fs.Bsize)), nil
+}
+
+func GetTotalAndFreeSpace(path string) (Fsize, Fsize, error) {
+	fs := syscall.Statfs_t{}
+	if err := syscall.Statfs(path, &fs); err != nil {
+		return 0, 0, err
+	}
+	total := Fsize(fs.Blocks * uint64(fs.Bsize))
+	free := Fsize(fs.Bavail * uint64(fs.Bsize))
+	return total, free, nil
 }
 
 // GetUsedSpace
