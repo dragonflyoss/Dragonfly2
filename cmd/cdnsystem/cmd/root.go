@@ -36,7 +36,6 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 	"os"
-	"path/filepath"
 	"reflect"
 	"time"
 )
@@ -271,7 +270,7 @@ func getConfigFromViper(v *viper.Viper) (*config.Config, error) {
 	}
 
 	// set dynamic configuration
-	cfg.DownloadPath = filepath.Join(cfg.HomeDir, "repo", "download")
+	//cfg.DownloadPath = filepath.Join(cfg.HomeDir, "repo", "download")
 
 	return cfg, nil
 }

@@ -72,6 +72,9 @@ type StorageDriver interface {
 	// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 	// calling walkFn for each file or directory in the tree, including root.
 	Walk(ctx context.Context, raw *Raw) error
+
+	// GetPath
+	GetPath(ctx context.Context, raw *Raw) string
 }
 
 // Raw identifies a piece of data uniquely.

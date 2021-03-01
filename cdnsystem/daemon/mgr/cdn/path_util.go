@@ -57,6 +57,20 @@ func getDownloadRaw(taskID string) *store.Raw {
 	}
 }
 
+func getUploadRaw(taskID string) *store.Raw {
+	return &store.Raw {
+		Bucket: config.UploadHome,
+		Key: getDownloadKey(taskID),
+	}
+}
+
+func getHardLinkRaw(taskID string) *store.Raw {
+	return &store.Raw {
+		Bucket: config.DownloadHome,
+		Key: getDownloadKey(taskID) + ".hard",
+	}
+}
+
 func getTaskMetaDataRaw(taskID string) *store.Raw {
 	return &store.Raw{
 		Bucket: config.DownloadHome,

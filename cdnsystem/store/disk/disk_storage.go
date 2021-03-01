@@ -341,6 +341,10 @@ func (ds *diskStorage) Walk(ctx context.Context, raw *store.Raw) error {
 	return filepath.Walk(path, raw.WalkFn)
 }
 
+func (ds *diskStorage) GetPath(ctx context.Context, raw *store.Raw) string {
+	return filepath.Join(ds.BaseDir, raw.Bucket, raw.Key)
+}
+
 // helper function
 
 // preparePath gets the target path and creates the upper directory if it does not exist.

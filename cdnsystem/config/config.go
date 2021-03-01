@@ -64,7 +64,7 @@ func NewBaseProperties() *BaseProperties {
 		ListenPort:              DefaultListenPort,
 		DownloadPort:            DefaultDownloadPort,
 		HomeDir:                 home,
-		DownloadPath:            filepath.Join(home, RepoHome, DownloadHome),
+		//DownloadPath:            filepath.Join(home, RepoHome, DownloadHome),
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
 		MaxBandwidth:            DefaultMaxBandwidth,
 		EnableProfiler:          false,
@@ -98,7 +98,7 @@ type BaseProperties struct {
 	HomeDir string `yaml:"homeDir"`
 
 	// DownloadPath specifies the path where to store downloaded files from source address.
-	DownloadPath string `yaml:"downloadPath"`
+	//DownloadPath string `yaml:"downloadPath"`
 
 	// SystemReservedBandwidth is the network bandwidth reserved for system software.
 	// default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.

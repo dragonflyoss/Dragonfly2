@@ -59,10 +59,6 @@ func DeleteFile(filePath string) error {
 	return os.Remove(filePath)
 }
 
-func DeleteIfExists(filepath string) error {
-	os.Remove(filepath)
-}
-
 // DeleteFiles deletes all the given files.
 func DeleteFiles(filePaths ...string) {
 	if len(filePaths) > 0 {

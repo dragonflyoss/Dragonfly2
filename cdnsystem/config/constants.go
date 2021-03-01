@@ -39,6 +39,8 @@ const (
 	// which is a relative path.
 	DownloadHome = "download"
 
+	UploadHome = "upload"
+
 	ShmHome = "/dev/shm/dragonfly/"
 )
 
