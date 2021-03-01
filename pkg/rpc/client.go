@@ -26,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/struct/syncmap"
 	"d7y.io/dragonfly/v2/pkg/util/lockerutils"
 	"d7y.io/dragonfly/v2/pkg/util/maths"
+	"github.com/pkg/errors"
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -156,22 +157,34 @@ func (conn *Connection) StartGC(ctx context.Context) {
 }
 
 // GetClient
-func (conn *Connection) GetClientConn(hashKey string) *grpc.ClientConn {
+func (conn *Connection) GetServerNode(hashKey string) string {
+	node, ok := conn.key2NodeMap.Load(hashKey)
+	if ok {
+		return node.(string)
+	}
+	return "unknown"
+}
+
+// GetClient
+func (conn *Connection) GetClientConn(hashKey string) (*grpc.ClientConn, error) {
 	node, ok := conn.key2NodeMap.Load(hashKey)
 	if ok {
 		conn.accessNodeMap.Store(node, time.Now())
 		client, ok := conn.node2ClientMap.Load(node)
 		if ok {
-			return client.(*grpc.ClientConn)
+			return client.(*grpc.ClientConn), nil
 		}
 	}
-	client := conn.findCandidateClientConn(hashKey)
+	client, err := conn.findCandidateClientConn(hashKey)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find candidate client conn")
+	}
 	conn.rwMutex.GetLock(client.node, false)
 	defer conn.rwMutex.ReleaseLock(client.node, false)
 	conn.key2NodeMap.Store(hashKey, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
-	return client.Ref.(*grpc.ClientConn)
+	return client.Ref.(*grpc.ClientConn), nil
 }
 
 func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, error) {
@@ -189,8 +202,9 @@ func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, er
 	}
 	clientConn, err := conn.createClient(node, append(clientOpts, conn.opts...)...)
 	if err != nil {
-		conn.node2ClientMap.Store(node, clientConn)
+		return nil, err
 	}
+	conn.node2ClientMap.Store(node, clientConn)
 	return clientConn, nil
 }
 
@@ -209,7 +223,10 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	} else {
 		logger.GrpcLogger.Warnf("failed to find server node for key %s", key)
 	}
-	client := conn.findCandidateClientConn(key, exclusiveNodes...)
+	client, err := conn.findCandidateClientConn(key, exclusiveNodes...)
+	if err != nil {
+		errors.Wrapf(err, "failed to find candidate client conn")
+	}
 	conn.rwMutex.GetLock(client.node, false)
 	defer conn.rwMutex.ReleaseLock(client.node, false)
 	conn.key2NodeMap.Store(key, client.node)

@@ -66,9 +66,12 @@ type schedulerClient struct {
 	*rpc.Connection
 }
 
-func (sc *schedulerClient) getSchedulerClient(key string) scheduler.SchedulerClient{
-	conn := sc.Connection.GetClientConn(key)
-	return scheduler.NewSchedulerClient(conn)
+func (sc *schedulerClient) getSchedulerClient(key string) (scheduler.SchedulerClient, error){
+	if conn, err := sc.Connection.GetClientConn(key); err != nil {
+		return nil, err
+	} else {
+		return scheduler.NewSchedulerClient(conn), nil
+	}
 }
 
 func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (rr *scheduler.RegisterResult, err error) {
@@ -78,7 +81,11 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, exclusiveNodes []string, opts []grpc.CallOption) (rr *scheduler.RegisterResult, err error) {
 	key := fmt.Sprintf("%s,%s,%s", ptr.Url, ptr.Filter, ptr.BizId)
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return sc.getSchedulerClient(key).RegisterPeerTask(ctx, ptr, opts...)
+		client, err := sc.getSchedulerClient(key)
+		if err != nil {
+			return nil, err
+		}
+		return client.RegisterPeerTask(ctx, ptr, opts...)
 	}, 0.5, 5.0, 5, nil)
 
 	var taskId = "unknown"
@@ -94,7 +101,7 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 	ph := ptr.PeerHost
 	logger.With("peerId", ptr.PeerId, "errMsg", err).
 		Infof("register peer task result:%t[%d] for taskId:%s,url:%s,peerIp:%s,securityDomain:%s,idc:%s,scheduler:%s",
-			suc, int32(code), taskId, ptr.Url, ph.Ip, ph.SecurityDomain, ph.Idc, sc.GetClientConn(key).Target())
+			suc, int32(code), taskId, ptr.Url, ph.Ip, ph.SecurityDomain, ph.Idc, sc.GetServerNode(key))
 
 	if err != nil {
 		if preNode, err := sc.TryMigrate(key, err, exclusiveNodes); err == nil {
@@ -138,7 +145,11 @@ func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.P
 
 func (sc *schedulerClient) doReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, exclusiveNodes []string, opts []grpc.CallOption) (rs *base.ResponseState, err error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return sc.getSchedulerClient(pr.TaskId).ReportPeerResult(ctx, pr, opts...)
+		if client, err := sc.getSchedulerClient(pr.TaskId); err != nil {
+			return nil, err
+		} else {
+			return client.ReportPeerResult(ctx, pr, opts...)
+		}
 	}, 0.5, 5.0, 5, nil)
 
 	if err != nil {
@@ -154,14 +165,19 @@ func (sc *schedulerClient) doReportPeerResult(ctx context.Context, pr *scheduler
 
 	logger.With("peerId", pr.PeerId, "errMsg", err).
 		Infof("peer task down result:%t[%d] for taskId:%s,url:%s,scheduler:%s,length:%d,traffic:%d,cost:%d",
-			pr.Success, int32(pr.Code), pr.TaskId, pr.Url, sc.GetClientConn(pr.TaskId).Target(), pr.ContentLength, pr.Traffic, pr.Cost)
+			pr.Success, int32(pr.Code), pr.TaskId, pr.Url, sc.GetServerNode(pr.TaskId), pr.ContentLength, pr.Traffic,
+			pr.Cost)
 
 	return
 }
 
 func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) (rs *base.ResponseState, err error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return sc.getSchedulerClient(pt.TaskId).LeaveTask(ctx, pt, opts...)
+		if client, err := sc.getSchedulerClient(pt.TaskId); err != nil {
+			return nil, err
+		} else {
+			return client.LeaveTask(ctx, pt, opts...)
+		}
 	}, 0.5, 5.0, 3, nil)
 
 	var suc bool
@@ -174,7 +190,7 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 
 	logger.With("peerId", pt.PeerId, "errMsg", err).
 		Infof("leave from task result:%t[%d] for taskId:%s,scheduler:%s",
-			suc, int32(code), pt.TaskId, sc.GetClientConn(pt.TaskId).Target())
+			suc, int32(code), pt.TaskId, sc.GetServerNode(pt.TaskId))
 
 	return
 }

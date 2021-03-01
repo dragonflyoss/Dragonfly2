@@ -59,8 +59,12 @@ type seederClient struct {
 	*rpc.Connection
 }
 
-func (sc *seederClient) getSeederClient(key string) cdnsystem.SeederClient {
-	return cdnsystem.NewSeederClient(sc.Connection.GetClientConn(key))
+func (sc *seederClient) getSeederClient(key string) (cdnsystem.SeederClient, error) {
+	clientConn, err := sc.Connection.GetClientConn(key)
+	if err != nil {
+		return nil, err
+	}
+	return cdnsystem.NewSeederClient(clientConn), nil
 }
 
 func (sc *seederClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (<-chan *cdnsystem.PieceSeed, error) {
@@ -77,7 +81,11 @@ func (sc *seederClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedReque
 
 func (sc *seederClient) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return sc.getSeederClient(req.TaskId).GetPieceTasks(ctx, req, opts...)
+		if client, err := sc.getSeederClient(req.TaskId); err != nil {
+			return nil, err
+		} else {
+			return client.GetPieceTasks(ctx, req, opts...)
+		}
 	}, 0.2, 2.0, 3, nil)
 
 	if err == nil {

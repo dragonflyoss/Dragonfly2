@@ -18,8 +18,8 @@ package rpc
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"fmt"
 	"google.golang.org/grpc"
 	"time"
 )
@@ -30,10 +30,10 @@ type candidateClient struct {
 }
 
 // findCandidateClientConn find candidate node client conn other than exclusiveNodes
-func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...string) *candidateClient {
+func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...string) (*candidateClient, error) {
 	ringNodes, ok := conn.HashRing.GetNodes(key, conn.HashRing.Size())
 	if !ok {
-		panic(fmt.Sprintf("failed to get hash node list for key: %s", key))
+		return nil, dferrors.ErrNoCandidateNode
 	}
 	candidateNodes := make([]string, 0, 0)
 	for _, ringNode := range ringNodes {
@@ -55,7 +55,7 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  client,
-			}
+			}, nil
 		}
 		logger.GrpcLogger.Debugf("attempt to connect candidateNode: %s", candidateNode)
 		if clientConn, err := conn.createClient(candidateNode, append(clientOpts, conn.opts...)...); err == nil {
@@ -63,12 +63,12 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  clientConn,
-			}
+			}, nil
 		} else {
 			logger.GrpcLogger.Warnf("failed to connect candidateNode: %s: %v", candidateNode, err)
 		}
 	}
-	panic(fmt.Sprintf("failed to create candidate client for key: %s", key))
+	return nil, dferrors.ErrNoCandidateNode
 }
 
 func (conn *Connection) createClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
