@@ -40,7 +40,7 @@ type peerPacketStream struct {
 
 	// stream for one client
 	stream scheduler.Scheduler_ReportPieceResultClient
-
+	failedServers []string
 	lastPieceResult *scheduler.PieceResult
 
 	rpc.RetryMeta
@@ -162,8 +162,10 @@ func (pps *peerPacketStream) replaceStream(cause error) error {
 }
 
 func (pps *peerPacketStream) replaceClient(cause error) error {
-	if err := pps.sc.TryMigrate(pps.hashKey, cause); err != nil {
+	if preNode, err := pps.sc.TryMigrate(pps.hashKey, cause, pps.failedServers); err != nil {
 		return err
+	} else {
+		pps.failedServers = append(pps.failedServers, preNode)
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {

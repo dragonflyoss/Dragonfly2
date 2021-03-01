@@ -18,6 +18,10 @@ package rpc
 
 import (
 	"context"
+	"io"
+	"sync"
+	"time"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -25,14 +29,11 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/struct/syncmap"
 	"d7y.io/dragonfly/v2/pkg/util/lockerutils"
-	"d7y.io/dragonfly/v2/pkg/util/maths"
+	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
-	"io"
-	"sync"
-	"time"
 )
 
 const (
@@ -195,13 +196,19 @@ func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, er
 }
 
 // TryMigrate migrate key to another hash node other than exclusiveNodes
-// todo 在迁移时需要把之前连接过的节点排除
-func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes ...string) error {
+// preNode node before the migration
+func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []string) (preNode string, err error) {
 	// todo recover findCandidateClientConn error
 	if e, ok := cause.(*dferrors.DfError); ok {
 		if e.Code != dfcodes.ResourceLacked && e.Code != dfcodes.UnknownError {
-			return cause
+			return "", cause
 		}
+	}
+	if currentNode, ok := conn.key2NodeMap.Load(key); ok {
+		preNode = currentNode.(string)
+		exclusiveNodes = append(exclusiveNodes, currentNode.(string))
+	} else {
+		logger.GrpcLogger.Warnf("failed to find server node for key %s", key)
 	}
 	client := conn.findCandidateClientConn(key, exclusiveNodes...)
 	conn.rwMutex.GetLock(client.node, false)
@@ -209,14 +216,7 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes ...st
 	conn.key2NodeMap.Store(key, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
-	return nil
-}
-
-func (conn *Connection) Close() error {
-	conn.rwMutex.Lock()
-	defer conn.rwMutex.Unlock()
-
-	return conn.Close()
+	return
 }
 
 func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {
@@ -229,7 +229,7 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 		}
 
 		if i > 0 {
-			time.Sleep(maths.RandBackoff(initBackoff, 2.0, maxBackoff, i))
+			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))
 		}
 
 		res, cause = f()

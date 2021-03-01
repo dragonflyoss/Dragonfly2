@@ -12,9 +12,10 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
+ */
 
 package config
+
 //
 //import (
 //	"bytes"
@@ -143,7 +144,7 @@ package config
 //	for _, v := range cases {
 //		cfg.URL = v.url
 //		cfg.Output = v.output
-//		if stringutils.IsEmptyStr(v.expected) {
+//		if stringutils.IsBlank(v.expected) {
 //			c.Assert(checkOutput(cfg), check.NotNil, check.Commentf("%v", v))
 //		} else {
 //			c.Assert(checkOutput(cfg), check.IsNil, check.Commentf("%v", v))

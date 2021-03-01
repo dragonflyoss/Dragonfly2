@@ -35,7 +35,8 @@ type pieceSeedStream struct {
 	opts    []grpc.CallOption
 	// stream for one client
 	stream cdnsystem.Seeder_ObtainSeedsClient
-
+	// server list which cannot serve
+	failedServers []string
 	rpc.RetryMeta
 }
 
@@ -114,8 +115,10 @@ func (pss *pieceSeedStream) replaceStream(key string, cause error) error {
 }
 
 func (pss *pieceSeedStream) replaceClient(key string, cause error) error {
-	if err := pss.sc.TryMigrate(key, cause); err != nil {
+	if preNode, err := pss.sc.TryMigrate(key, cause, pss.failedServers); err != nil {
 		return err
+	} else {
+		pss.failedServers = append(pss.failedServers, preNode)
 	}
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		return pss.sc.getSeederClient(key).ObtainSeeds(pss.ctx, pss.sr, pss.opts...)

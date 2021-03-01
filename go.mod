@@ -15,12 +15,11 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/mux v1.7.3
+	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-runewidth v0.0.2
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.4.1
-	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.7.0
 	github.com/pborman/uuid v1.2.1
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1

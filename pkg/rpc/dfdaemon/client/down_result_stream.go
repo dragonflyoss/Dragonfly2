@@ -34,7 +34,7 @@ type downResultStream struct {
 	opts    []grpc.CallOption
 	// stream for one client
 	stream dfdaemon.Daemon_DownloadClient
-
+	failedServers []string
 	rpc.RetryMeta
 }
 
@@ -117,8 +117,10 @@ func (drs *downResultStream) replaceStream(cause error) error {
 }
 
 func (drs *downResultStream) replaceClient(cause error) error {
-	if err := drs.dc.TryMigrate(drs.hashKey, cause); err != nil {
+	if preNode, err := drs.dc.TryMigrate(drs.hashKey, cause, drs.failedServers); err != nil {
 		return err
+	} else {
+		drs.failedServers = append(drs.failedServers, preNode)
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {

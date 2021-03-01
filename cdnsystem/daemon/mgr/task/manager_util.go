@@ -106,7 +106,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 
 // updateTask
 func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*types.SeedTask, error) {
-	if stringutils.IsEmptyStr(taskID) {
+	if stringutils.IsBlank(taskID) {
 		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskID")
 	}
 
@@ -114,7 +114,7 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 		return nil, errors.Wrap(dferrors.ErrEmptyValue, "Update TaskInfo")
 	}
 	// the expected new CDNStatus is not nil
-	if stringutils.IsEmptyStr(updateTaskInfo.CdnStatus) {
+	if stringutils.IsBlank(updateTaskInfo.CdnStatus) {
 		return nil, errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
 	}
 	util.GetLock(taskID, false)
@@ -145,11 +145,11 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 		task.CdnFileLength = updateTaskInfo.CdnFileLength
 	}
 
-	if !stringutils.IsEmptyStr(updateTaskInfo.SourceRealMd5) {
+	if !stringutils.IsBlank(updateTaskInfo.SourceRealMd5) {
 		task.SourceRealMd5 = updateTaskInfo.SourceRealMd5
 	}
 
-	if !stringutils.IsEmptyStr(updateTaskInfo.PieceMd5Sign) {
+	if !stringutils.IsBlank(updateTaskInfo.PieceMd5Sign) {
 		task.PieceMd5Sign = updateTaskInfo.PieceMd5Sign
 	}
  	var pieceTotal int32
@@ -172,13 +172,13 @@ func equalsTask(existTask, newTask *types.SeedTask) bool {
 		return false
 	}
 
-	if !stringutils.IsEmptyStr(existTask.RequestMd5) && !stringutils.IsEmptyStr(newTask.RequestMd5) {
+	if !stringutils.IsBlank(existTask.RequestMd5) && !stringutils.IsBlank(newTask.RequestMd5) {
 		if existTask.RequestMd5 != newTask.RequestMd5 {
 			return false
 		}
 	}
 
-	if !stringutils.IsEmptyStr(newTask.RequestMd5) && !stringutils.IsEmptyStr(existTask.SourceRealMd5) {
+	if !stringutils.IsBlank(newTask.RequestMd5) && !stringutils.IsBlank(existTask.SourceRealMd5) {
 		return existTask.SourceRealMd5 == newTask.RequestMd5
 	}
 

@@ -17,4 +17,4 @@ bin/
 .idea
 .cache
 *.DS_Store
-log
+target/

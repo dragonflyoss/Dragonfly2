@@ -17,7 +17,8 @@
 package ratelimiter
 
 import (
-	"d7y.io/dragonfly/v2/pkg/asserts"
+	"d7y.io/dragonfly/v2/pkg/util/mathutils"
+
 	"sync"
 	"time"
 )
@@ -73,14 +74,14 @@ func (rl *RateLimiter) acquire(token int64, blocking bool) int64 {
 	if rl.capacity <= 0 || token < 1 {
 		return token
 	}
-	tmpCapacity := asserts.Max(rl.capacity, token)
+	tmpCapacity := mathutils.MaxInt64(rl.capacity, token)
 
 	var process func() int64
 	process = func() int64 {
 		now := time.Now().UnixNano()
 
 		newTokens := rl.createTokens(now)
-		curTotal := asserts.Min(newTokens+rl.bucket, tmpCapacity)
+		curTotal := mathutils.MinInt64(newTokens+rl.bucket, tmpCapacity)
 
 		if curTotal >= token {
 			rl.bucket = curTotal - token
@@ -134,7 +135,7 @@ func (rl *RateLimiter) blocking(requiredToken int64) {
 	if requiredToken <= 0 {
 		return
 	}
-	windowCount := asserts.Max(requiredToken/rl.ratePerWindow, 1)
+	windowCount := mathutils.MaxInt64(requiredToken/rl.ratePerWindow, 1)
 	time.Sleep(time.Duration(windowCount * rl.window * time.Millisecond.Nanoseconds()))
 }
 

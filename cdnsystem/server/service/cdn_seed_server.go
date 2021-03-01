@@ -56,10 +56,10 @@ func NewCdnSeedServer(cfg *config.Config, taskMgr mgr.SeedTaskMgr) (*CdnSeedServ
 func constructRequestHeader(meta *base.UrlMeta) map[string]string {
 	header := make(map[string]string)
 	if meta != nil {
-		if !stringutils.IsEmptyStr(meta.Md5) {
+		if !stringutils.IsBlank(meta.Md5) {
 			header["md5"] = meta.Md5
 		}
-		if !stringutils.IsEmptyStr(meta.Range) {
+		if !stringutils.IsBlank(meta.Range) {
 			header["range"] = meta.Range
 		}
 	}
@@ -71,7 +71,7 @@ func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
 	if !netutils.IsValidURL(req.Url) {
 		return errors.Errorf( "resource url:%s is invalid", req.Url)
 	}
-	if stringutils.IsEmptyStr(req.TaskId) {
+	if stringutils.IsBlank(req.TaskId) {
 		return errors.New("taskId is empty")
 	}
 	return nil
@@ -210,7 +210,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 }
 
 func validateGetPieceTasksRequestParams(req *base.PieceTaskRequest) error {
-	if stringutils.IsEmptyStr(req.TaskId) {
+	if stringutils.IsBlank(req.TaskId) {
 		return errors.Wrap(dferrors.ErrEmptyValue, "taskId")
 	}
 	if !netutils.IsValidIP(req.SrcIp) {

@@ -17,7 +17,6 @@
 package cmd
 
 import (
-	"fmt"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon"
@@ -27,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"fmt"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/mitchellh/mapstructure"
@@ -80,7 +80,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// set cdn node advertise ip
-		if stringutils.IsEmptyStr(cfg.AdvertiseIP) {
+		if stringutils.IsBlank(cfg.AdvertiseIP) {
 			if err := setAdvertiseIP(cfg); err != nil {
 				return err
 			}

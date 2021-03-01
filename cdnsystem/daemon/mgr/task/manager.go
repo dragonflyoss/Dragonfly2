@@ -89,7 +89,7 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, resourceClient source.Res
 func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceCh <-chan *types.SeedPiece, err error) {
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
-		logger.WithTaskID(task.TaskID).Infof("failed to add or update task with req %+v: %v", req, err)
+		logger.WithTaskID(req.TaskID).Infof("failed to add or update task with req %+v: %v", req, err)
 		return nil, err
 	}
 	// update accessTime for taskID
@@ -148,7 +148,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 }
 
 func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
-	if stringutils.IsEmptyStr(taskID) {
+	if stringutils.IsBlank(taskID) {
 		return nil, errors.Wrap(cdnerrors.ErrEmptyValue, "taskID is empty")
 	}
 

@@ -14,29 +14,33 @@
  * limitations under the License.
  */
 
+// Package stringutils provides utilities supplementing the standard 'strings' package.
 package stringutils
 
-import "unicode"
+import (
+	"unicode"
+)
 
-// SubString returns the subString of {str} which begins at {start} and end at {end - 1}.
 func SubString(str string, start, end int) string {
 	runes := []rune(str)
 	length := len(runes)
-	if start < 0 || start >= length ||
-		end <= 0 || end > length ||
-		start > end {
+	if start < 0 || start >= length || end <= 0 || end > length || start >= end {
 		return ""
 	}
 
 	return string(runes[start:end])
 }
 
-// IsEmptyStr returns whether the string s is empty.
-func IsEmptyStr(s string) bool {
-	for _, v := range s {
-		if !unicode.IsSpace(v) {
+func IsBlank(str string) bool {
+	for _, c := range str {
+		if !unicode.IsSpace(c) {
 			return false
 		}
 	}
+
 	return true
+}
+
+func IsEmpty(str string) bool {
+	return str == ""
 }

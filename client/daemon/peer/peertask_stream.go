@@ -160,57 +160,55 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		go s.base.receivePeerPacket()
 		go s.base.pullPiecesFromPeers(s, s.cleanUnfinished)
 	}
-	r, w := io.Pipe()
-	go func() {
+
+	// wait first piece to get content length and attribute (eg, response header for http/https)
+	var firstPiece int32
+	select {
+	case <-s.base.ctx.Done():
+		err := errors.Errorf("ctx.Done due to: %s", s.base.ctx.Err())
+		s.base.Errorf("%s", err)
+		return nil, nil, err
+	case <-s.base.done:
+		err := errors.New("early done")
+		return nil, nil, err
+	case num, ok := <-s.successPieceCh:
+		if !ok {
+			err := errors.New("early done")
+			s.base.Warnf("successPieceCh closed")
+			return nil, nil, err
+		}
+		firstPiece = num
+	}
+
+	pr, pw := io.Pipe()
+	var reader io.Reader = pr
+	var writer io.Writer = pw
+	if s.base.contentLength != -1 {
+		reader = io.LimitReader(pr, s.base.contentLength).(io.Reader)
+	} else {
+		// FIXME may be should not use ChunkedWriter
+		//writer = httputil.NewChunkedWriter(pw)
+	}
+	go func(first int32) {
 		var (
 			desired int32
+			cur     int32
 			wrote   int64
 			err     error
+			ok      bool
 			cache   = make(map[int32]bool)
 		)
+		// update first piece to cache and check cur with desired
+		cache[first] = true
+		cur = first
 		for {
-			select {
-			case <-s.base.ctx.Done():
-				s.base.Errorf("ctx.Done due to: %s", s.base.ctx.Err())
-				if err := w.CloseWithError(s.base.ctx.Err()); err != nil {
-					s.base.Errorf("CloseWithError failed: %s", err)
-				}
-				return
-			case <-s.base.done:
+			if desired == cur {
 				for {
-					// all data is wrote to local storage, and all data is wrote to pipe write
-					if s.base.bitmap.Settled() == desired {
-						w.Close()
-						return
-					}
-					wrote, err = s.writeTo(w, desired)
+					delete(cache, desired)
+					wrote, err = s.writeTo(writer, desired)
 					if err != nil {
 						s.base.Errorf("write to pipe error: %s", err)
-						_ = w.CloseWithError(err)
-						return
-					}
-					s.base.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
-					desired++
-				}
-			case num, ok := <-s.successPieceCh:
-				if !ok {
-					s.base.Warnf("successPieceCh closed")
-					continue
-				}
-				// not desired piece, cache it
-				if desired != num {
-					cache[num] = true
-					if num < desired {
-						s.base.Warnf("piece number should be equal or greater than %d, received piece number: %d",
-							desired, num)
-					}
-					continue
-				}
-				for {
-					wrote, err = s.writeTo(w, desired)
-					if err != nil {
-						s.base.Errorf("write to pipe error: %s", err)
-						_ = w.CloseWithError(err)
+						_ = pw.CloseWithError(err)
 						return
 					}
 					s.base.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
@@ -219,13 +217,50 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 					if !cached {
 						break
 					}
-					delete(cache, desired)
+				}
+			} else {
+				// not desired piece, cache it
+				cache[cur] = true
+				if cur < desired {
+					s.base.Warnf("piece number should be equal or greater than %d, received piece number: %d",
+						desired, cur)
+				}
+			}
+
+			select {
+			case <-s.base.ctx.Done():
+				s.base.Errorf("ctx.Done due to: %s", s.base.ctx.Err())
+				if err := pw.CloseWithError(s.base.ctx.Err()); err != nil {
+					s.base.Errorf("CloseWithError failed: %s", err)
+				}
+				return
+			case <-s.base.done:
+				for {
+					// all data is wrote to local storage, and all data is wrote to pipe write
+					if s.base.bitmap.Settled() == desired {
+						pw.Close()
+						return
+					}
+					wrote, err = s.writeTo(pw, desired)
+					if err != nil {
+						s.base.Errorf("write to pipe error: %s", err)
+						_ = pw.CloseWithError(err)
+						return
+					}
+					s.base.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
+					desired++
+				}
+			case cur, ok = <-s.successPieceCh:
+				if !ok {
+					s.base.Warnf("successPieceCh closed")
+					continue
 				}
 			}
 		}
-	}()
+	}(firstPiece)
+
 	// FIXME(jim) update attribute
-	return r, nil, nil
+	return reader, nil, nil
 }
 
 func (s *streamPeerTask) finish() error {
@@ -258,7 +293,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 func (s *streamPeerTask) SetContentLength(i int64) error {
 	s.base.contentLength = i
 	if !s.base.isCompleted() {
-		return errors.New("SetContentLength should call after task completed")
+		return nil
 	}
 	return s.finish()
 }
