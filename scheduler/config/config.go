@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	DefaultConfigFilePath string = "/etc/dragonfly/cdn.yml"
+	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yml"
 )
 
 var config = createDefaultConfig()
