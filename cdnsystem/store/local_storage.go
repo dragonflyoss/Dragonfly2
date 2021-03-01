@@ -74,7 +74,7 @@ func NewLocalStorage(conf string) (StorageDriver, error) {
 	if !filepath.IsAbs(cfg.BaseDir) {
 		return nil, fmt.Errorf("not absolute path: %s", cfg.BaseDir)
 	}
-	if err := fileutils.CreateDirectory(cfg.BaseDir); err != nil {
+	if err := fileutils.MkdirAll(cfg.BaseDir); err != nil {
 		return nil, err
 	}
 
@@ -336,7 +336,7 @@ func (ls *localStorage) Walk(ctx context.Context, raw *Raw) error {
 func (ls *localStorage) preparePath(bucket, key string) (string, error) {
 	dir := filepath.Join(ls.BaseDir, bucket)
 
-	if err := fileutils.CreateDirectory(dir); err != nil {
+	if err := fileutils.MkdirAll(dir); err != nil {
 		return "", err
 	}
 

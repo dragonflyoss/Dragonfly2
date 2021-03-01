@@ -72,7 +72,7 @@ func ParseSize(fsize string) (Fsize, error) {
 	}
 
 	if n < 0 {
-		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "not a valid fsize string: %d, only non-negative values are supported", fsize)
+		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "not a valid fsize string: %s, only non-negative values are supported", fsize)
 	}
 
 	matches := sizeRE.FindStringSubmatch(fsize)

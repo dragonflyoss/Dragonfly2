@@ -18,12 +18,13 @@ package fileutils
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/suite"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
 func Test(t *testing.T) {
@@ -34,6 +35,21 @@ type FileUtilTestSuite struct {
 	tmpDir   string
 	username string
 	suite.Suite
+}
+
+func TestDeleteFile(t *testing.T) {
+	fl,err  :=NewFileLock("/Users/zuozheng.hzz/test/test123")
+	if err ==nil{
+		err = fl.Lock()
+		f2,_  :=NewFileLock("/Users/zuozheng.hzz/test/test123")
+		err = f2.Unlock()
+		err = fl.Unlock()
+		err = f2.Lock()
+
+	}
+fmt.Println("hello")
+
+
 }
 
 func (s *FileUtilTestSuite) SetupSuite() {
@@ -53,16 +69,16 @@ func (s *FileUtilTestSuite) TeardownSuite() {
 
 func (s *FileUtilTestSuite) TestCreateDirectory() {
 	dirPath := filepath.Join(s.tmpDir, "TestCreateDirectory")
-	err := CreateDirectory(dirPath)
+	err := MkdirAll(dirPath)
 	s.Nil(err)
 
 	f, _ := os.Create(filepath.Join(dirPath, "createFile"))
-	err = CreateDirectory(f.Name())
+	err = MkdirAll(f.Name())
 	s.NotNil(err)
 
 	os.Chmod(dirPath, 0555)
 	defer os.Chmod(dirPath, 0755)
-	err = CreateDirectory(filepath.Join(dirPath, "1"))
+	err = MkdirAll(filepath.Join(dirPath, "1"))
 	if s.username != "root" {
 		s.NotNil(err)
 	} else {
@@ -104,14 +120,6 @@ func (s *FileUtilTestSuite) TestDeleteFile() {
 	f := filepath.Join(s.tmpDir, "test", "empty", "file")
 	err = DeleteFile(f)
 	s.NotNil(err)
-}
-
-func (s *FileUtilTestSuite) TestDeleteFiles() {
-	f1 := filepath.Join(s.tmpDir, "TestDeleteFile001")
-	f2 := filepath.Join(s.tmpDir, "TestDeleteFile002")
-	os.Create(f1)
-	DeleteFiles(f1, f2)
-	s.Equal(PathExist(f1) || PathExist(f2), false)
 }
 
 func (s *FileUtilTestSuite) TestMoveFile() {
@@ -181,7 +189,7 @@ func (s *FileUtilTestSuite) TestSymbolicLink() {
 	linkStr := filepath.Join(s.tmpDir, "TestSymLinkNameFileNonExist")
 	err := SymbolicLink(pathStr, linkStr)
 	s.NotNil(err)
-	s.Equal(PathExist(linkStr),false)
+	s.Equal(PathExist(linkStr), false)
 
 	pathStr = filepath.Join(s.tmpDir, "TestSymLinkDir")
 	os.Mkdir(pathStr, 0755)
@@ -225,26 +233,7 @@ func (s *FileUtilTestSuite) TestCopyFile() {
 	s.Nil(err)
 }
 
-func (s *FileUtilTestSuite) TestMoveFileAfterCheckMd5() {
-	srcPath := filepath.Join(s.tmpDir, "TestMoveFileAfterCheckMd5Src")
-	dstPath := filepath.Join(s.tmpDir, "TestMoveFileAfterCheckMd5Dst")
-	os.Create(srcPath)
-	ioutil.WriteFile(srcPath, []byte("Test move file after check md5"), 0755)
-	srcPathMd5 := Md5Sum(srcPath)
-	err := MoveFileAfterCheckMd5(srcPath, dstPath, srcPathMd5)
-	s.Nil(err)
-	dstPathMd5 := Md5Sum(dstPath)
-	s.Equal(srcPathMd5, dstPathMd5)
 
-	ioutil.WriteFile(srcPath, []byte("Test move file afte md5, change content"), 0755)
-	err = MoveFileAfterCheckMd5(srcPath, dstPath, srcPathMd5)
-	s.NotNil(err)
-
-	srcPath = filepath.Join(s.tmpDir, "TestMoveFileAfterCheckMd5Dir")
-	os.Mkdir(srcPath, 0755)
-	err = MoveFileAfterCheckMd5(srcPath, dstPath, srcPathMd5)
-	s.NotNil(err)
-}
 
 func (s *FileUtilTestSuite) TestMd5sum() {
 	pathStr := filepath.Join(s.tmpDir, "TestMd5Sum")

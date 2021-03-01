@@ -75,7 +75,7 @@ var rootCmd = &cobra.Command{
 			return errors.Wrap(err, "get config from viper")
 		}
 		// create home dir
-		if err := fileutils.CreateDirectory(cdnNodeViper.GetString("base.homeDir")); err != nil {
+		if err := fileutils.MkdirAll(cdnNodeViper.GetString("base.homeDir")); err != nil {
 			return fmt.Errorf("failed to create home dir %s: %v", cdnNodeViper.GetString("base.homeDir"), err)
 		}
 

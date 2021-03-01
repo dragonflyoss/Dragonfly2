@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+// Package fileutils provides utilities supplementing the standard 'os' and 'path' package.
 package fileutils
 
 import (
@@ -27,45 +28,26 @@ import (
 	"path/filepath"
 	"syscall"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
 
-// BufferSize defines the buffer size when reading and writing file.
-const BufferSize = 8 * 1024 * 1024
-
-// CreateDirectory creates directory recursively.
-func CreateDirectory(dirPath string) error {
-	f, e := os.Stat(dirPath)
-	if e != nil {
-		if os.IsNotExist(e) {
-			return os.MkdirAll(dirPath, 0755)
-		}
-		return fmt.Errorf("failed to create dir %s: %v", dirPath, e)
-	}
-	if !f.IsDir() {
-		return fmt.Errorf("failed to create dir %s: dir path already exists and is not a directory", dirPath)
-	}
-	return e
+// MkdirAll creates a directory named path on perm(0755).
+func MkdirAll(path string) error {
+	return os.MkdirAll(path, 0755)
 }
 
-// DeleteFile deletes a file not a directory.
-func DeleteFile(filePath string) error {
-	if !PathExist(filePath) {
-		return fmt.Errorf("failed to delete file %s: file not exist", filePath)
-	}
-	if IsDir(filePath) {
-		return fmt.Errorf("failed to delete file %s: file path is a directory rather than a file", filePath)
-	}
-	return os.Remove(filePath)
-}
-
-// DeleteFiles deletes all the given files.
-func DeleteFiles(filePaths ...string) {
-	if len(filePaths) > 0 {
-		for _, f := range filePaths {
-			DeleteFile(f)
+// DeleteFile deletes a regular file not a directory.
+func DeleteFile(path string) error {
+	if PathExist(path) {
+		if IsDir(path) {
+			return errors.Errorf("delete %s: not a regular file", path)
 		}
+
+		return os.Remove(path)
 	}
+
+	return nil
 }
 
 // OpenFile opens a file. If the parent directory of the file isn't exist,
@@ -74,42 +56,45 @@ func OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
 	if PathExist(path) {
 		return os.OpenFile(path, flag, perm)
 	}
-	if err := CreateDirectory(filepath.Dir(path)); err != nil {
+
+	if err := MkdirAll(filepath.Dir(path)); err != nil {
 		return nil, err
 	}
 
 	return os.OpenFile(path, flag, perm)
 }
 
-// Link creates a hard link pointing to src named linkName for a file.
-func Link(src string, linkName string) error {
-	if PathExist(linkName) {
-		if IsDir(linkName) {
-			return fmt.Errorf("failed to link %s to %s: link name already exists and is a directory", linkName, src)
-		}
-		if err := DeleteFile(linkName); err != nil {
-			return fmt.Errorf("failed to link %s to %s when deleting target file: %v", linkName, src, err)
+// Link creates a hard link pointing to oldname named newname for a file.
+func Link(oldname string, newname string) error {
+	if PathExist(newname) {
+		if IsDir(newname) {
+			return errors.Errorf("link %s to %s: link name already exists and is a directory", newname, oldname)
 		}
 
+		if err := DeleteFile(newname); err != nil {
+			return errors.Errorf("link %s to %s: link name already exists and deleting fail: %v", newname, oldname, err)
+		}
 	}
-	return os.Link(src, linkName)
+
+	return os.Link(oldname, newname)
 }
 
-// SymbolicLink creates target as a symbolic link to src.
-func SymbolicLink(src string, target string) error {
-	if !PathExist(src) {
-		return fmt.Errorf("failed to symlink %s to %s: src no such file or directory", target, src)
+// SymbolicLink creates newname as a symbolic link to oldname.
+func SymbolicLink(oldname string, newname string) error {
+	if !PathExist(oldname) {
+		return errors.Errorf("symlink %s to %s: src no such file or directory", newname, oldname)
 	}
-	if PathExist(target) {
-		if IsDir(target) {
-			return fmt.Errorf("failed to symlink %s to %s: link name already exists and is a directory", target, src)
-		}
-		if err := DeleteFile(target); err != nil {
-			return fmt.Errorf("failed to symlink %s to %s when deleting target file: %v", target, src, err)
-		}
 
+	if PathExist(newname) {
+		if IsDir(newname) {
+			return fmt.Errorf("failed to symlink %s to %s: link name already exists and is a directory", newname, oldname)
+		}
+		if err := DeleteFile(newname); err != nil {
+			return fmt.Errorf("failed to symlink %s to %s when deleting target file: %v", newname, oldname, err)
+		}
 	}
-	return os.Symlink(src, target)
+
+	return os.Symlink(oldname, newname)
 }
 
 // CopyFile copies the file src to dst.
@@ -151,19 +136,6 @@ func MoveFile(src string, dst string) error {
 	return os.Rename(src, dst)
 }
 
-// MoveFileAfterCheckMd5 will check whether the file's md5 is equals to the param md5
-// before move the file src to dst.
-func MoveFileAfterCheckMd5(src string, dst string, md5 string) error {
-	if !IsRegularFile(src) {
-		return fmt.Errorf("failed to move file with md5 check %s to %s: src is not a regular file", src, dst)
-	}
-	m := Md5Sum(src)
-	if m != md5 {
-		return fmt.Errorf("failed to move file with md5 check %s to %s: md5 of source file doesn't match against the given md5 value", src, dst)
-	}
-	return MoveFile(src, dst)
-}
-
 // PathExist reports whether the path is exist.
 // Any error get from os.Stat, it will return false.
 func PathExist(name string) bool {
@@ -187,6 +159,7 @@ func IsRegularFile(name string) bool {
 	if e != nil {
 		return false
 	}
+
 	return f.Mode().IsRegular()
 }
 
@@ -200,7 +173,7 @@ func Md5Sum(name string) string {
 		return ""
 	}
 	defer f.Close()
-	r := bufio.NewReaderSize(f, BufferSize)
+	r := bufio.NewReaderSize(f, 8*1024*1024)
 	h := md5.New()
 
 	_, err = io.Copy(h, r)
@@ -256,12 +229,4 @@ func IsEmptyDir(path string) (bool, error) {
 		return true, nil
 	}
 	return false, err
-}
-
-func GetFileContentSize(path string) (int64, error) {
-	fi, err := os.Stat("water")
-	if err != nil {
-		return 0, err
-	}
-	return fi.Size(), nil
 }

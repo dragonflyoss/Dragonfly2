@@ -17,62 +17,56 @@
 package fileutils
 
 import (
-	"fmt"
 	"os"
 	"syscall"
 
 	"github.com/pkg/errors"
 )
 
-// FileLock defines a file lock implemented by syscall.Flock
+// FileLock defines a file lock implemented by syscall.Flock.
+// Locks created by flock() are associated with an open file
+// description.  This means that duplicate file
+// descriptors (created by, for example, fork or dup) refer to
+// the same lock, and this lock may be modified or released using
+// any of these file descriptors. Furthermore, the lock is released
+// either by an explicit LOCK_UN operation on any of these duplicate
+// file descriptors, or when all such file descriptors have been closed.
 type FileLock struct {
 	fileName string
-	fd       *os.File
+	ofile    *os.File
 }
 
-// NewFileLock create a FileLock instance
-func NewFileLock(name string) *FileLock {
+func NewFileLock(path string) (*FileLock, error) {
+	ofile, err := OpenFile(path, syscall.O_CREAT|syscall.O_RDONLY, 0755)
+	if err != nil {
+		return nil, err
+	}
 	return &FileLock{
-		fileName: name,
-	}
+		fileName: path,
+		ofile:    ofile,
+	}, nil
 }
 
-// Lock locks file.
-// If the file is already locked, the calling goroutine blocks until the file is unlocked.
-// If lock has been invoked without unlock, lock again will return an error.
-func (l *FileLock) Lock() error {
-	var (
-		fd  *os.File
-		err error
-	)
-
-	if l.fd != nil {
-		return fmt.Errorf("file %s has already been locked", l.fileName)
+func (locker *FileLock) Lock() error {
+	if locker.ofile == nil {
+		return errors.New("lock file is not opened")
 	}
 
-	if fd, err = os.Open(l.fileName); err != nil {
-		return err
+	if err := syscall.Flock(int(locker.ofile.Fd()), syscall.LOCK_EX); err != nil {
+		return errors.Wrapf(err, "failed to lock file %s", locker.fileName)
 	}
-	l.fd = fd
 
-	if err := syscall.Flock(int(l.fd.Fd()), syscall.LOCK_EX); err != nil {
-		return errors.Wrapf(err, "file %s lock failed", l.fileName)
-	}
 	return nil
 }
 
-// Unlock unlocks file.
-// If lock has not been invoked before unlock, unlock will return an error.
-func (l *FileLock) Unlock() error {
-	if l.fd == nil {
-		return fmt.Errorf("file %s descriptor is nil", l.fileName)
+func (locker *FileLock) Unlock() error {
+	if locker.ofile == nil {
+		return nil
 	}
-	fd := l.fd
-	l.fd = nil
 
-	defer fd.Close()
-	if err := syscall.Flock(int(fd.Fd()), syscall.LOCK_UN); err != nil {
-		return errors.Wrapf(err, "file %s unlock failed", l.fileName)
+	if err := syscall.Flock(int(locker.ofile.Fd()), syscall.LOCK_UN); err != nil {
+		return errors.Wrapf(err, "failed to unlock file %s", locker.fileName)
 	}
+
 	return nil
 }
