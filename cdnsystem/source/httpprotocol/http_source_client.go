@@ -136,7 +136,7 @@ func (client *httpSourceClient) IsExpired(url string, headers, expireInfo map[st
 		return true, err
 	}
 	eTag := expireInfo["eTag"]
-	if lastModified <= 0 && stringutils.IsEmptyStr(eTag) {
+	if lastModified <= 0 && stringutils.IsBlank(eTag) {
 		return true, nil
 	}
 
@@ -145,7 +145,7 @@ func (client *httpSourceClient) IsExpired(url string, headers, expireInfo map[st
 	if lastModified > 0 {
 		copied["If-Modified-Since"] = expireInfo["Last-Modified"]
 	}
-	if !stringutils.IsEmptyStr(eTag) {
+	if !stringutils.IsBlank(eTag) {
 		copied["If-None-Match"] = eTag
 	}
 

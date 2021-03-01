@@ -14,33 +14,32 @@
  * limitations under the License.
  */
 
-// Package stringutils provides utilities supplementing the standard 'strings' package.
-package stringutils
+package jsonutils
 
 import (
-	"unicode"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func SubString(str string, start, end int) string {
-	runes := []rune(str)
-	length := len(runes)
-	if start < 0 || start >= length || end <= 0 || end > length || start >= end {
-		return ""
-	}
+func TestMarshal(t *testing.T) {
+	v, err := Marshal("hello")
+	assert.NoError(t, err)
+	assert.Equal(t, "\"hello\"", v)
 
-	return string(runes[start:end])
-}
+	v, err = Marshal(1)
+	fmt.Printf("int value:%s\n", v)
+	assert.NoError(t, err)
+	assert.Equal(t, "1", v)
 
-func IsBlank(str string) bool {
-	for _, c := range str {
-		if !unicode.IsSpace(c) {
-			return false
-		}
-	}
+	v, err = Marshal(struct {
+		A int
+		B string
+	}{100, "welcome您!"})
 
-	return true
-}
+	assert.NoError(t, err)
+	fmt.Printf("struct value:%s\n", v)
+	assert.NotEmpty(t, v)
 
-func IsEmpty(str string) bool {
-	return str == ""
 }

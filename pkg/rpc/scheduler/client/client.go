@@ -67,10 +67,10 @@ type schedulerClient struct {
 }
 
 func (sc *schedulerClient) getSchedulerClient(key string) (scheduler.SchedulerClient, error){
-	if conn, err := sc.Connection.GetClientConn(key); err != nil {
+	if clientConn, err := sc.Connection.GetClientConn(key); err != nil {
 		return nil, err
 	} else {
-		return scheduler.NewSchedulerClient(conn), nil
+		return scheduler.NewSchedulerClient(clientConn), nil
 	}
 }
 

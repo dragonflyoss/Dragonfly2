@@ -14,33 +14,26 @@
  * limitations under the License.
  */
 
-// Package stringutils provides utilities supplementing the standard 'strings' package.
-package stringutils
+package mathutils
 
 import (
-	"unicode"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func SubString(str string, start, end int) string {
-	runes := []rune(str)
-	length := len(runes)
-	if start < 0 || start >= length || end <= 0 || end > length || start >= end {
-		return ""
-	}
+func TestIsInteger(t *testing.T) {
+	assert.True(t, IsInteger("123"))
 
-	return string(runes[start:end])
+	assert.True(t, IsInteger("-123"))
+
+	assert.False(t, IsInteger(""))
+
+	assert.False(t, IsInteger("x"))
 }
 
-func IsBlank(str string) bool {
-	for _, c := range str {
-		if !unicode.IsSpace(c) {
-			return false
-		}
-	}
+func TestIsNatural(t *testing.T) {
+	assert.True(t, IsNatural("123"))
 
-	return true
-}
-
-func IsEmpty(str string) bool {
-	return str == ""
+	assert.False(t, IsNatural("-1"))
 }
