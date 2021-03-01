@@ -19,7 +19,7 @@ package config
 import "runtime"
 
 const (
-	DefaultConfigFilePath string = "conf/scheduler.yml"
+	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yml"
 )
 
 var config = createDefaultConfig()
@@ -89,7 +89,7 @@ func createDefaultConfig() *Config {
 					CdnName:      "cdn",
 					IP:           "127.0.0.1",
 					RpcPort:      8003,
-					DownloadPort: 8002,
+					DownloadPort: 8001,
 				}},
 			},
 		},

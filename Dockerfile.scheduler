@@ -17,6 +17,6 @@ ENV PATH=/opt/dragonfly/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/s
 
 COPY --from=builder /opt/dragonfly/bin/scheduler /opt/dragonfly/bin/scheduler
 
-EXPOSE 8001
+EXPOSE 8002
 
 ENTRYPOINT ["/opt/dragonfly/bin/scheduler"]
