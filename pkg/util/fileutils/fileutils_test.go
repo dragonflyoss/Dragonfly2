@@ -19,6 +19,7 @@ package fileutils
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -38,8 +39,9 @@ type FileUtilTestSuite struct {
 }
 
 func TestDeleteFile(t *testing.T) {
-	x := 567102234234 * B
-	fmt.Println(x.String())
+	fmt.Println(math.MaxInt64)
+
+
 
 
 }
@@ -301,27 +303,27 @@ func (s *FileUtilTestSuite) TestIsEmptyDir() {
 	pathStr := filepath.Join(s.tmpDir, "TestIsEmptyDir")
 
 	// not exist
-	empty, err := IsEmptyDir(pathStr)
+	empty, err := EmptyDir(pathStr)
 	s.Equal(empty, false)
 	s.NotNil(err)
 
 	// not a directory
 	_, _ = os.Create(pathStr)
-	empty, err = IsEmptyDir(pathStr)
+	empty, err = EmptyDir(pathStr)
 	s.Equal(empty, false)
 	s.NotNil(err)
 	_ = os.Remove(pathStr)
 
 	// empty
 	_ = os.Mkdir(pathStr, 0755)
-	empty, err = IsEmptyDir(pathStr)
+	empty, err = EmptyDir(pathStr)
 	s.Equal(empty, true)
 	s.Nil(err)
 
 	// not empty
 	childPath := filepath.Join(pathStr, "child")
 	_ = os.Mkdir(childPath, 0755)
-	empty, err = IsEmptyDir(pathStr)
+	empty, err = EmptyDir(pathStr)
 	s.Equal(empty, false)
 	s.Nil(err)
 	_ = os.Remove(pathStr)

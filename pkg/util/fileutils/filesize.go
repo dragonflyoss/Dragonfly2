@@ -29,8 +29,12 @@ const (
 	GB       = 1024 * MB
 )
 
-func (f Fsize) Number() int64 {
+func (f Fsize) ToNumber() int64 {
 	return int64(f)
+}
+
+func ToFsize(size int64) Fsize {
+	return Fsize(size)
 }
 
 func (f Fsize) String() string {

@@ -297,7 +297,7 @@ func (ls *localStorage) Remove(ctx context.Context, raw *Raw) error {
 	if raw.Trunc || !info.IsDir() {
 		return os.RemoveAll(path)
 	}
-	empty, err := fileutils.IsEmptyDir(path)
+	empty, err := fileutils.EmptyDir(path)
 	if empty {
 		return os.RemoveAll(path)
 	}
@@ -313,7 +313,7 @@ func (ls *localStorage) GetAvailSpace(ctx context.Context, raw *Raw) (fileutils.
 
 	lock(path, -1, true)
 	defer unLock(path, -1, true)
-	return fileutils.GetFreeSpace(path)
+	return fileutils.FreeSpace(path)
 }
 
 // Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,

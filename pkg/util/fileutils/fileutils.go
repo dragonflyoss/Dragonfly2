@@ -207,18 +207,16 @@ func LoadYaml(path string, out interface{}) error {
 	return nil
 }
 
-// GetFreeSpace gets the free disk space of the path.
-func GetFreeSpace(path string) (Fsize, error) {
-	fs := syscall.Statfs_t{}
-	if err := syscall.Statfs(path, &fs); err != nil {
-		return 0, err
+func FreeSpace(diskPath string) (Fsize, error) {
+	fs := &syscall.Statfs_t{}
+	if err := syscall.Statfs(diskPath, fs); err != nil {
+		return ToFsize(0), err
 	}
 
-	return Fsize(fs.Bavail * uint64(fs.Bsize)), nil
+	return ToFsize(int64(fs.Bavail) * int64(fs.Bsize)), nil
 }
 
-// IsEmptyDir check whether the directory is empty.
-func IsEmptyDir(path string) (bool, error) {
+func EmptyDir(path string) (bool, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return false, err
@@ -228,5 +226,6 @@ func IsEmptyDir(path string) (bool, error) {
 	if _, err = f.Readdirnames(1); err == io.EOF {
 		return true, nil
 	}
+
 	return false, err
 }
