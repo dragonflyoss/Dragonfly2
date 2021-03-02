@@ -19,16 +19,19 @@ package fileutils
 import (
 	"fmt"
 	"io/ioutil"
-	"math"
 	"os"
 	"os/user"
 	"path/filepath"
 	"testing"
 
+	"d7y.io/dragonfly/v2/pkg/basic/env"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/stretchr/testify/suite"
 )
 
 func Test(t *testing.T) {
+	os.Setenv(env.ActiveProfile,"local")
+	logger.InitCdnSystem()
 	suite.Run(t, new(FileUtilTestSuite))
 }
 
@@ -39,7 +42,7 @@ type FileUtilTestSuite struct {
 }
 
 func TestDeleteFile(t *testing.T) {
-	fmt.Println(math.MaxInt64)
+	os.Remove("/Users/zuozheng.hzz/yyyyyy")
 
 
 
@@ -116,35 +119,7 @@ func (s *FileUtilTestSuite) TestDeleteFile() {
 	s.NotNil(err)
 }
 
-func (s *FileUtilTestSuite) TestMoveFile() {
 
-	f1 := filepath.Join(s.tmpDir, "TestMovefileSrc01")
-	f2 := filepath.Join(s.tmpDir, "TestMovefileDstExist")
-	os.Create(f1)
-	os.Create(f2)
-	ioutil.WriteFile(f1, []byte("Test move file src"), 0755)
-	f1Md5 := Md5Sum(f1)
-	err := MoveFile(f1, f2)
-	s.Nil(err)
-
-	f2Md5 := Md5Sum(f2)
-	s.Equal(f1Md5, f2Md5)
-
-	f3 := filepath.Join(s.tmpDir, "TestMovefileSrc02")
-	f4 := filepath.Join(s.tmpDir, "TestMovefileDstNonExist")
-	os.Create(f3)
-	ioutil.WriteFile(f3, []byte("Test move file src when dst not exist"), 0755)
-	f3Md5 := Md5Sum(f3)
-	err = MoveFile(f3, f4)
-	s.Nil(err)
-	f4Md5 := Md5Sum(f4)
-	s.Equal(f3Md5, f4Md5)
-
-	f1 = filepath.Join(s.tmpDir, "TestMovefileSrcDir")
-	os.Mkdir(f1, 0755)
-	err = MoveFile(f1, f2)
-	s.NotNil(err)
-}
 
 func (s *FileUtilTestSuite) TestOpenFile() {
 	f1 := filepath.Join(s.tmpDir, "dir1", "TestOpenFile")
@@ -229,73 +204,18 @@ func (s *FileUtilTestSuite) TestCopyFile() {
 
 
 
-func (s *FileUtilTestSuite) TestMd5sum() {
-	pathStr := filepath.Join(s.tmpDir, "TestMd5Sum")
-	_, _ = OpenFile(pathStr, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0000)
-	pathStrMd5 := Md5Sum(pathStr)
-	if s.username != "root" {
-		s.Equal(pathStrMd5, "")
-	} else {
-		s.Equal(pathStrMd5, "d41d8cd98f00b204e9800998ecf8427e")
-	}
-
-	pathStr = filepath.Join(s.tmpDir, "TestMd5SumDir")
-	os.Mkdir(pathStr, 0755)
-	pathStrMd5 = Md5Sum(pathStr)
-	s.Equal(pathStrMd5, "")
-}
-
-func (s *FileUtilTestSuite) TestLoadYaml() {
-	type T struct {
-		A int    `yaml:"a"`
-		B string `yaml:"b"`
-	}
-	var cases = []struct {
-		create   bool
-		content  string
-		errMsg   string
-		expected *T
-	}{
-		{create: false, content: "", errMsg: ".*no such file or directory", expected: nil},
-		{create: true, content: "a: x",
-			errMsg: ".*yaml: unmarshal.*(\n.*)*", expected: nil},
-		{create: true, content: "a: 1", errMsg: "", expected: &T{1, ""}},
-		{
-			create:   true,
-			content:  "a: 1\nb: x",
-			errMsg:   "",
-			expected: &T{1, "x"},
-		},
-	}
-
-	for idx, v := range cases {
-		filename := filepath.Join(s.tmpDir, fmt.Sprintf("test-%d", idx))
-		if v.create {
-			ioutil.WriteFile(filename, []byte(v.content), os.ModePerm)
-		}
-		var t T
-		err := LoadYaml(filename, &t)
-		if v.expected == nil {
-			s.Error(err)
-		} else {
-			s.Nil(err)
-			s.Equal(&t, v.expected)
-		}
-
-	}
-}
 
 func (s *FileUtilTestSuite) TestIsRegularFile() {
 	pathStr := filepath.Join(s.tmpDir, "TestIsRegularFile")
-	s.Equal(IsRegularFile(pathStr), false)
+	s.Equal(IsRegular(pathStr), false)
 
 	os.Create(pathStr)
-	s.Equal(IsRegularFile(pathStr), true)
+	s.Equal(IsRegular(pathStr), true)
 	os.Remove(pathStr)
 
 	// Don't set mode to create a non-regular file
 	os.OpenFile(pathStr, 0, 0666)
-	s.Equal(IsRegularFile(pathStr), false)
+	s.Equal(IsRegular(pathStr), false)
 	os.Remove(pathStr)
 }
 
@@ -303,27 +223,27 @@ func (s *FileUtilTestSuite) TestIsEmptyDir() {
 	pathStr := filepath.Join(s.tmpDir, "TestIsEmptyDir")
 
 	// not exist
-	empty, err := EmptyDir(pathStr)
+	empty, err := IsEmptyDir(pathStr)
 	s.Equal(empty, false)
 	s.NotNil(err)
 
 	// not a directory
 	_, _ = os.Create(pathStr)
-	empty, err = EmptyDir(pathStr)
+	empty, err = IsEmptyDir(pathStr)
 	s.Equal(empty, false)
 	s.NotNil(err)
 	_ = os.Remove(pathStr)
 
 	// empty
 	_ = os.Mkdir(pathStr, 0755)
-	empty, err = EmptyDir(pathStr)
+	empty, err = IsEmptyDir(pathStr)
 	s.Equal(empty, true)
 	s.Nil(err)
 
 	// not empty
 	childPath := filepath.Join(pathStr, "child")
 	_ = os.Mkdir(childPath, 0755)
-	empty, err = EmptyDir(pathStr)
+	empty, err = IsEmptyDir(pathStr)
 	s.Equal(empty, false)
 	s.Nil(err)
 	_ = os.Remove(pathStr)

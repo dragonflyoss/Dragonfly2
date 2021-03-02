@@ -418,7 +418,7 @@ func (s *LocalStorageSuite) checkStat(raw *Raw) {
 	driver := s.storeLocal.driver.(*localStorage)
 	pathTemp := filepath.Join(driver.BaseDir, raw.Bucket, raw.Key)
 	f, _ := os.Stat(pathTemp)
-	sys, _ := fileutils.GetSys(f)
+	sys, _ := fileutils.GetSysStat(f)
 
 	s.EqualValues(info, &StorageInfo{
 		Path:       filepath.Join(raw.Bucket, raw.Key),

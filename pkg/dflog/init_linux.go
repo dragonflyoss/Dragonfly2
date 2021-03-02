@@ -2,4 +2,4 @@
 
 package logger
 
-const clientLogDir = "/var/log/dragonfly"
+const clientLogDir = "/var/log/dragonfly/"

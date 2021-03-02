@@ -37,7 +37,7 @@ type FileLock struct {
 }
 
 func NewFileLock(path string) (*FileLock, error) {
-	ofile, err := OpenFile(path, syscall.O_CREAT|syscall.O_RDONLY, 0755)
+	ofile, err := OpenFile(path, syscall.O_CREAT|syscall.O_RDONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func NewFileLock(path string) (*FileLock, error) {
 
 func (locker *FileLock) Lock() error {
 	if locker.ofile == nil {
-		return errors.New("lock file is not opened")
+		return errors.Errorf("lock file %s: not open", locker.fileName)
 	}
 
 	if err := syscall.Flock(int(locker.ofile.Fd()), syscall.LOCK_EX); err != nil {

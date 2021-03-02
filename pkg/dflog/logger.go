@@ -18,15 +18,16 @@ package logger
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"d7y.io/dragonfly/v2/pkg/basic/env"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/filerw"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc/grpclog"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 var (
@@ -66,8 +67,8 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 		}
 		fileInfo, err := os.Stat(filePath)
 		if err == nil && fileInfo.Size() >= int64(maxSize*1024*1024) {
-			_, _ = fileutils.CopyFile(filePath+".old", filePath)
-			_ = os.Truncate(filePath, 0)
+			_, _ = filerw.CopyFile(filePath, filePath+".old")
+			_ = filerw.CleanFile(filePath)
 		}
 		if syncer, _, err = zap.Open(filePath); err != nil {
 			return nil, err
@@ -178,7 +179,6 @@ func Fatalf(template string, args ...interface{}) {
 func Fatal(args ...interface{}) {
 	CoreLogger.Fatal(args...)
 }
-
 
 type zapGrpc struct {
 	*zap.SugaredLogger

@@ -19,6 +19,7 @@ package config
 import (
 	"d7y.io/dragonfly/v2/pkg/rate"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/yamlutils"
 	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v3"
 	"path/filepath"
@@ -41,7 +42,7 @@ type Config struct {
 
 // Load loads config properties from the giving file.
 func (c *Config) Load(path string) error {
-	return fileutils.LoadYaml(path, c)
+	return yamlutils.LoadYaml(path, c)
 }
 
 func (c *Config) String() string {

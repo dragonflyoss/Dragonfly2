@@ -1,4 +1,4 @@
- /*
+/*
  *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,16 +19,17 @@ package store
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/stat"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
-	"io"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 )
 
 const LocalStorageDriver = "local"
@@ -271,8 +272,8 @@ func (ls *localStorage) Stat(ctx context.Context, raw *Raw) (*StorageInfo, error
 		return nil, err
 	}
 
-	sys, ok := fileutils.GetSys(fileInfo)
-	if !ok {
+	sys := fileutils.GetSysStat(fileInfo)
+	if sys == nil {
 		return nil, fmt.Errorf("get create time error")
 	}
 	return &StorageInfo{
@@ -297,7 +298,7 @@ func (ls *localStorage) Remove(ctx context.Context, raw *Raw) error {
 	if raw.Trunc || !info.IsDir() {
 		return os.RemoveAll(path)
 	}
-	empty, err := fileutils.EmptyDir(path)
+	empty, err := fileutils.IsEmptyDir(path)
 	if empty {
 		return os.RemoveAll(path)
 	}

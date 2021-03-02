@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,24 @@
  * limitations under the License.
  */
 
-// +build darwin
+package yamlutils
 
-package logger
+import (
+	"fmt"
+	"io/ioutil"
 
-import "d7y.io/dragonfly/v2/pkg/basic"
+	"gopkg.in/yaml.v3"
+)
 
-var clientLogDir = basic.HomeDir + "/logs/dragonfly/"
+func LoadYaml(path string, out interface{}) error {
+	content, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to load yaml %s when reading file: %v", path, err)
+	}
+
+	if err = yaml.Unmarshal(content, out); err != nil {
+		return fmt.Errorf("failed to load yaml %s: %v", path, err)
+	}
+
+	return nil
+}
