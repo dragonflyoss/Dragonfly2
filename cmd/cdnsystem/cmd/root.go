@@ -29,10 +29,11 @@ import (
 	"d7y.io/dragonfly/v2/pkg/cmd"
 	"d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/rate"
+	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly/v2/version"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/mitchellh/mapstructure"
@@ -118,6 +119,7 @@ func init() {
 	setupFlags(rootCmd)
 
 	// add sub commands
+	rootCmd.AddCommand(version.VersionCmd)
 	rootCmd.AddCommand(cmd.NewGenDocCommand("cdn"))
 	rootCmd.AddCommand(cmd.NewConfigCommand("cdn", getDefaultConfig))
 }

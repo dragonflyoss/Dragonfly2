@@ -99,7 +99,11 @@ func (pps *peerPacketStream) recv() (pp *scheduler.PeerPacket, err error) {
 			_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
 				timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()
-				rr, err := pps.sc.getSchedulerClient(pps.hashKey).RegisterPeerTask(timeCtx, pps.ptr)
+				client, err := pps.sc.getSchedulerClient(pps.hashKey)
+				if err != nil {
+					return nil, err
+				}
+				rr, err := client.RegisterPeerTask(timeCtx, pps.ptr)
 				if err == nil && rr.State.Success {
 					pps.prc <- pps.lastPieceResult
 				} else {
@@ -131,7 +135,11 @@ func (pps *peerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) e
 
 func (pps *peerPacketStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return pps.sc.getSchedulerClient(pps.hashKey).ReportPieceResult(pps.ctx, pps.opts...)
+		if client, err := pps.sc.getSchedulerClient(pps.hashKey); err != nil {
+			return nil, err
+		} else {
+			return client.ReportPieceResult(pps.ctx, pps.opts...)
+		}
 	}, pps.InitBackoff, pps.MaxBackOff, pps.MaxAttempts, nil)
 
 	if err != nil {
@@ -150,7 +158,11 @@ func (pps *peerPacketStream) replaceStream(cause error) error {
 	}
 
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return pps.sc.getSchedulerClient(pps.hashKey).ReportPieceResult(pps.ctx, pps.opts...)
+		if client, err := pps.sc.getSchedulerClient(pps.hashKey); err != nil {
+			return nil, err
+		} else {
+			return client.ReportPieceResult(pps.ctx, pps.opts...)
+		}
 	}, pps.InitBackoff, pps.MaxBackOff, pps.MaxAttempts, cause)
 
 	if err == nil {
@@ -171,10 +183,14 @@ func (pps *peerPacketStream) replaceClient(cause error) error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		rr, err := pps.sc.getSchedulerClient(pps.hashKey).RegisterPeerTask(timeCtx, pps.ptr)
+		client, err := pps.sc.getSchedulerClient(pps.hashKey)
+		if err != nil {
+			return nil, err
+		}
+		rr, err := client.RegisterPeerTask(timeCtx, pps.ptr)
 
 		if err == nil && rr.State.Success {
-			return pps.sc.getSchedulerClient(pps.hashKey).ReportPieceResult(pps.ctx, pps.opts...)
+			return client.ReportPieceResult(pps.ctx, pps.opts...)
 		} else {
 			if err == nil {
 				err = errors.New(rr.State.Msg)

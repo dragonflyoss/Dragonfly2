@@ -19,12 +19,12 @@ package client
 import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/idutils"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/safe"
-	"d7y.io/dragonfly/v2/pkg/util/types"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -62,8 +62,12 @@ type daemonClient struct {
 	*rpc.Connection
 }
 
-func (dc *daemonClient) getDaemonClient(key string) dfdaemon.DaemonClient {
-	return dfdaemon.NewDaemonClient(dc.Connection.GetClientConn(key))
+func (dc *daemonClient) getDaemonClient(key string) (dfdaemon.DaemonClient, error) {
+	if clientConn, err := dc.Connection.GetClientConn(key); err != nil {
+		return nil, err
+	} else {
+		return dfdaemon.NewDaemonClient(clientConn), nil
+	}
 }
 
 func (dc *daemonClient) getDaemonClientWithTarget(target string) (dfdaemon.DaemonClient, error) {
@@ -79,7 +83,7 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 
 	drc := make(chan *dfdaemon.DownResult, 4)
 	// 生成taskId
-	taskId := idutils.GenerateTaskId(req.Url, req.Filter, req.UrlMeta)
+	taskId := idutils.GenerateTaskId(req.Url, req.Filter, req.UrlMeta,req.BizId)
 	drs, err := newDownResultStream(dc, ctx, taskId, req, opts)
 	if err != nil {
 		return nil, err
@@ -92,7 +96,11 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return dc.getDaemonClient(ptr.TaskId).GetPieceTasks(ctx, ptr, opts...)
+		if client, err := dc.getDaemonClient(ptr.TaskId); err != nil {
+			return nil, err
+		} else {
+			return client.GetPieceTasks(ctx, ptr, opts...)
+		}
 	}, 0.2, 2.0, 3, nil)
 
 	if err == nil {

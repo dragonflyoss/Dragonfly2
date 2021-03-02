@@ -150,8 +150,10 @@ func (m *PeerTaskManager) gcWorkingLoop() {
 
 func (m *PeerTaskManager) printDebugInfoLoop() {
 	for {
-		time.Sleep(time.Second * 3)
-		logger.Debugf(m.printDebugInfo())
+		time.Sleep(time.Second * 10)
+		if config.GetConfig().Debug {
+			logger.Debugf(m.printDebugInfo())
+		}
 	}
 }
 

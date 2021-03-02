@@ -19,9 +19,9 @@ package test
 import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/idutils"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/types"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"math/rand"
 	"time"

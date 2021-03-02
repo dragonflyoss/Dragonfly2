@@ -221,9 +221,11 @@ loop:
 		}
 		if !peerPacket.State.Success {
 			pt.Errorf("receive peer packet with error: %d/%s", peerPacket.State.Code, peerPacket.State.Msg)
+			// when receive error, cancel
+			// pt.cancel()
 			continue
 		}
-		pt.Debugf("receive peer packet: %#v", peerPacket)
+		pt.Debugf("receive peer packet: %#v, main peer: %#v", peerPacket, peerPacket.MainPeer)
 		if peerPacket.MainPeer == nil && peerPacket.StealPeers == nil {
 			pt.Warnf("scheduler client send a PeerPacket will empty peers")
 			continue
@@ -288,6 +290,7 @@ loop:
 				pt.callback.Fail(pt, pt.ctx.Err().Error())
 				break loop
 			case <-pt.peerPacketReady:
+				// preparePieceTasksByPeer func already send piece result with error
 				pt.Infof("new peer client ready")
 			}
 			continue
@@ -370,41 +373,16 @@ func (pt *filePeerTask) isCompleted() bool {
 
 func (pt *filePeerTask) preparePieceTasks(request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	pt.pieceParallelCount = pt.peerPacket.ParallelCount
-	var failedPeers []*scheduler.PeerPacket_DestPeer
 	request.DstPid = pt.peerPacket.MainPeer.PeerId
 	p, err := pt.preparePieceTasksByPeer(pt.peerPacket.MainPeer, request)
 	if err == nil {
 		return p, nil
 	}
-	failedPeers = append(failedPeers, pt.peerPacket.MainPeer)
 	for _, peer := range pt.peerPacket.StealPeers {
 		request.DstPid = peer.PeerId
 		p, err = pt.preparePieceTasksByPeer(peer, request)
 		if err == nil {
 			return p, nil
-		}
-		failedPeers = append(failedPeers, peer)
-	}
-	if len(failedPeers) == 0 {
-		pt.pieceResultCh <- &scheduler.PieceResult{
-			TaskId:        pt.taskId,
-			SrcPid:        pt.peerId,
-			DstPid:        "",
-			Success:       false,
-			Code:          401,
-			HostLoad:      nil,
-			FinishedCount: 0,
-		}
-	} else {
-		// TODO(jim): report all not available peers
-		pt.pieceResultCh <- &scheduler.PieceResult{
-			TaskId:        pt.taskId,
-			SrcPid:        pt.peerId,
-			DstPid:        failedPeers[0].PeerId,
-			Success:       false,
-			Code:          401,
-			HostLoad:      nil,
-			FinishedCount: 0,
 		}
 	}
 	return nil, fmt.Errorf("no peers available")
@@ -421,6 +399,15 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 	}
 	if p.State.Success {
 		return p, nil
+	}
+	pt.pieceResultCh <- &scheduler.PieceResult{
+		TaskId:        pt.taskId,
+		SrcPid:        pt.peerId,
+		DstPid:        peer.PeerId,
+		Success:       false,
+		Code:          p.State.Code,
+		HostLoad:      nil,
+		FinishedCount: -1,
 	}
 	pt.Warnf("get piece task from peer(%s) failed: %d/%s", peer.PeerId, p.State.Code, p.State.Msg)
 	return nil, fmt.Errorf("get piece failed: %d/%s", p.State.Code, p.State.Msg)

@@ -26,7 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
-func GenerateTaskId(rawUrl string, filter string, meta *base.UrlMeta) (taskId string) {
+func GenerateTaskId(rawUrl string, filter string, meta *base.UrlMeta, bizId string) (taskId string) {
 	taskUrl, err := url.Parse(rawUrl)
 	if err != nil {
 		logger.Warnf("GenerateTaskId rawUrl[%s] is invalid url", rawUrl)
@@ -45,8 +45,17 @@ func GenerateTaskId(rawUrl string, filter string, meta *base.UrlMeta) (taskId st
 	}
 	taskRawString := taskUrl.String()
 	if meta != nil {
-		taskRawString += "_" + meta.Range + "_" + meta.Md5
+		taskRawString += "_" + meta.Range + "_" + meta.Md5 + "_" + bizId
 	}
 	taskId = fmt.Sprintf("%x", sha1.Sum([]byte(taskRawString)))
+	return
+}
+
+func GenerateABTestTaskId(rawUrl string, filter string, meta *base.UrlMeta, bizId string, peerId string) (taskId string) {
+	taskId = GenerateTaskId(rawUrl, filter, meta, bizId)
+	b := sha1.Sum([]byte(peerId))[sha1.Size-1]
+	if b & 1 == 1 {
+		taskId += "TB"
+	}
 	return
 }

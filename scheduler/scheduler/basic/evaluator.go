@@ -142,6 +142,9 @@ func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.
 			return true
 		} else if pt.GetFreeLoad() < 1 {
 			return true
+		} else if pt.GetNodeStatus() == types.PeerTaskStatusNeedParent &&
+			peer.GetParent() != nil && peer.GetParent().DstPeerTask != nil && peer.GetParent().DstPeerTask.Pid == pt.Pid {
+			return true
 		}
 		if pt.Success {
 			list = append(list, pt)

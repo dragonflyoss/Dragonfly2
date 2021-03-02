@@ -19,12 +19,13 @@ package config
 import "runtime"
 
 const (
-	DefaultConfigFilePath string = "conf/scheduler.yml"
+	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yml"
 )
 
 var config = createDefaultConfig()
 
 type Config struct {
+	Debug     bool                  `yaml:"debug" mapstructure:",squash"`
 	Scheduler schedulerConfig       `yaml:"scheduler" mapstructure:",squash"`
 	Server    serverConfig          `yaml:"server" mapstructure:",squash"`
 	Worker    schedulerWorkerConfig `yaml:"worker" mapstructure:",squash"`
@@ -33,6 +34,9 @@ type Config struct {
 }
 
 type schedulerConfig struct {
+	ABTest     bool
+	AScheduler string
+	BScheduler string
 }
 
 type serverConfig struct {
@@ -73,6 +77,7 @@ func SetConfig(cfg *Config) {
 
 func createDefaultConfig() *Config {
 	return &Config{
+		Debug: false,
 		Server: serverConfig{
 			Port: 8002,
 		},
@@ -82,14 +87,16 @@ func createDefaultConfig() *Config {
 			SenderNum:         10,
 			SenderJobPoolSize: 10000,
 		},
-		Scheduler: schedulerConfig{},
+		Scheduler: schedulerConfig{
+			ABTest: false,
+		},
 		CDN: cdnConfig{
 			List: [][]CdnServerConfig{
 				{{
 					CdnName:      "cdn",
 					IP:           "127.0.0.1",
 					RpcPort:      8003,
-					DownloadPort: 8002,
+					DownloadPort: 8001,
 				}},
 			},
 		},

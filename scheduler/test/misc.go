@@ -64,8 +64,8 @@ func (suite *SchedulerTestSuite) Test001TaskIdGenerate() {
 	}}
 
 	for i, test := range testers {
-		taskId1 := idutils.GenerateTaskId(test.url1, test.filter, test.mate1)
-		taskId2 := idutils.GenerateTaskId(test.url2, test.filter, test.mate2)
+		taskId1 := idutils.GenerateTaskId(test.url1, test.filter, test.mate1,"")
+		taskId2 := idutils.GenerateTaskId(test.url2, test.filter, test.mate2,"")
 		suite.Equal(test.expect, taskId1 == taskId2, fmt.Sprintf("generate task id test failed case[%d]", i))
 	}
 }

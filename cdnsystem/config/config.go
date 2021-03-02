@@ -17,7 +17,7 @@
 package config
 
 import (
-	"d7y.io/dragonfly/v2/pkg/rate"
+	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/yamlutils"
 	"github.com/mitchellh/go-homedir"
