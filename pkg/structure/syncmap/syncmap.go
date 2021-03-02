@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/dferrors"
-	"d7y.io/dragonfly/v2/pkg/struct/atomiccount"
+	"d7y.io/dragonfly/v2/pkg/structure/atomiccount"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 
 	"github.com/pkg/errors"

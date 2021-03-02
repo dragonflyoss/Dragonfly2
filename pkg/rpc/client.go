@@ -27,7 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/struct/syncmap"
+	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/util/lockerutils"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 	"github.com/pkg/errors"
