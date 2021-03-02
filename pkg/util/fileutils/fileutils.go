@@ -31,7 +31,10 @@ import (
 )
 
 // BufferSize defines the buffer size when reading and writing file.
-const BufferSize = 8 * 1024 * 1024
+const (
+	BufferSize = 8 * 1024 * 1024
+	DefaultFilePerm = os.FileMode(0644)
+)
 
 // CreateDirectory creates directory recursively.
 func CreateDirectory(dirPath string) error {
@@ -48,6 +51,10 @@ func CreateDirectory(dirPath string) error {
 	return e
 }
 
+func CreateFile(path string) (*os.File, error) {
+	return OpenFile(path, os.O_RDWR|os.O_CREATE, DefaultFilePerm)
+}
+
 // DeleteFile deletes a file not a directory.
 func DeleteFile(filePath string) error {
 	if !PathExist(filePath) {
@@ -57,6 +64,11 @@ func DeleteFile(filePath string) error {
 		return fmt.Errorf("failed to delete file %s: file path is a directory rather than a file", filePath)
 	}
 	return os.Remove(filePath)
+}
+
+
+func DeleteIfExists(filepath string) error {
+	return os.Remove(filepath)
 }
 
 // DeleteFiles deletes all the given files.
@@ -96,21 +108,29 @@ func Link(src string, linkName string) error {
 }
 
 // SymbolicLink creates target as a symbolic link to src.
-func SymbolicLink(src string, target string) error {
-	if !PathExist(src) {
-		return fmt.Errorf("failed to symlink %s to %s: src no such file or directory", target, src)
+func SymbolicLink(src string, link string) error {
+	if PathExist(link) && IsSymbolicLink(link) && PathExist(src){
+		srcFile, err := os.Stat(src)
+		linkFile, err := os.Stat(link)
+		if err != nil {
+			return err
+		}
+		if os.SameFile(srcFile, linkFile) {
+			return nil
+		}
 	}
-	if PathExist(target) {
-		if IsDir(target) {
-			return fmt.Errorf("failed to symlink %s to %s: link name already exists and is a directory", target, src)
+	if PathExist(link) {
+		if err := os.Remove(link); err != nil {
+			return fmt.Errorf("failed to symlink %s to %s when deleting target file: %v", link, src, err)
 		}
-		if err := DeleteFile(target); err != nil {
-			return fmt.Errorf("failed to symlink %s to %s when deleting target file: %v", target, src, err)
-		}
+	}
 
+	if err := CreateDirectory(filepath.Dir(link)); err != nil {
+		return err
 	}
-	return os.Symlink(src, target)
+	return os.Symlink(src, link)
 }
+
 
 // CopyFile copies the file src to dst.
 func CopyFile(dst string, src string) (written int64, err error) {
@@ -188,6 +208,14 @@ func IsRegularFile(name string) bool {
 		return false
 	}
 	return f.Mode().IsRegular()
+}
+
+func IsSymbolicLink(name string) bool {
+	f, e := os.Stat(name)
+	if e != nil {
+		return false
+	}
+	return f.Mode() & os.ModeSymlink != 0
 }
 
 // Md5Sum generates md5 for a given file.

@@ -136,6 +136,10 @@ func (s *Store) Walk(ctx context.Context, raw *Raw) error {
 	return s.driver.Walk(ctx, raw)
 }
 
+func (s *Store) GetPath(raw *Raw) string {
+	return s.driver.GetPath(raw)
+}
+
 func checkEmptyKey(raw *Raw) error {
 	if raw == nil || stringutils.IsBlank(raw.Key) {
 		return cdnerrors.ErrEmptyKey

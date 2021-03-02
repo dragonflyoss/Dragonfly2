@@ -19,8 +19,8 @@ package cdn
 import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/emirpasic/gods/maps/treemap"
@@ -31,14 +31,15 @@ import (
 	"time"
 )
 
-// GetGCTaskIDs returns the taskIDs that should exec GC operations as a string slice.
+// GetGCTaskIds returns the TaskIds that should exec GC operations as a string slice.
 //
 // It should return nil when the free disk of cdn storage is lager than config.YoungGCThreshold.
-// It should return all taskIDs that are not running when the free disk of cdn storage is less than config.FullGCThreshold.
-func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([]string, error) {
-	var gcTaskIDs []string
+// It should return all TaskIds that are not running when the free disk of cdn storage is less than
+// config.FullGCThreshold.
+func (cm *Manager) GetGCTaskIds(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([]string, error) {
+	var gcTaskIds []string
 
-	freeDisk, err := cm.cacheStore.GetAvailSpace(ctx, getHomeRawFunc())
+	freeDisk, err := cm.cacheStore.GetAvailSpace(ctx, storage.GetDownloadHomeRaw())
 	if err != nil {
 		if cdnerrors.IsKeyNotFound(err) {
 			return nil, nil
@@ -58,9 +59,9 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 	gapTasks := treemap.NewWith(godsutils.Int64Comparator)
 	intervalTasks := treemap.NewWith(godsutils.Int64Comparator)
 
-	// walkTaskIDs is used to avoid processing multiple times for the same taskID
+	// walkTaskIds is used to avoid processing multiple times for the same taskId
 	// which is extracted from file name.
-	walkTaskIDs := make(map[string]bool)
+	walkTaskIds := make(map[string]bool)
 	walkFn := func(path string, info os.FileInfo, err error) error {
 		logger.GcLogger.Debugf("start to walk path(%s)", path)
 
@@ -71,35 +72,35 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 		if info.IsDir() {
 			return nil
 		}
-		taskID := strings.Split(info.Name(), ".")[0]
+		taskId := strings.Split(info.Name(), ".")[0]
 
-		// If the taskID has been handled, and no need to do that again.
-		if walkTaskIDs[taskID] {
+		// If the taskId has been handled, and no need to do that again.
+		if walkTaskIds[taskId] {
 			return nil
 		}
-		walkTaskIDs[taskID] = true
+		walkTaskIds[taskId] = true
 
 		// we should return directly when we success to get info which means it is being used
-		if _, err := taskMgr.Get(ctx, taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
+		if _, err := taskMgr.Get(ctx, taskId); err == nil || !cdnerrors.IsDataNotFound(err) {
 			if err != nil {
-				logger.GcLogger.Errorf("failed to get taskID(%s): %v", taskID, err)
+				logger.GcLogger.Errorf("failed to get TaskId(%s): %v", taskId, err)
 			}
 			return nil
 		}
 
-		// add taskID to gcTaskIDs slice directly when fullGC equals true.
+		// add taskId to gcTaskIds slice directly when fullGC equals true.
 		if fullGC {
-			gcTaskIDs = append(gcTaskIDs, taskID)
+			gcTaskIds = append(gcTaskIds, taskId)
 			return nil
 		}
 
-		metaData, err := cm.metaDataManager.readFileMetaData(ctx, taskID)
+		metaData, err := cm.metaDataManager.readFileMetaData(ctx, taskId)
 		if err != nil || metaData == nil {
-			logger.GcLogger.Debugf("taskID: %s, failed to get metadata: %v", taskID, err)
+			logger.GcLogger.Debugf("TaskId: %s, failed to get metadata: %v", taskId, err)
 			// TODO: delete the file when failed to get metadata
 			return nil
 		}
-		// put taskID into gapTasks or intervalTasks which will sort by some rules
+		// put TaskId into gapTasks or intervalTasks which will sort by some rules
 		if err := cm.sortInert(ctx, gapTasks, intervalTasks, metaData); err != nil {
 			logger.GcLogger.Errorf("failed to parse inert metaData(%+v): %v", metaData, err)
 		}
@@ -108,18 +109,19 @@ func (cm *Manager) GetGCTaskIDs(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 	}
 
 	raw := &store.Raw{
-		Bucket: config.DownloadHome,
+		Bucket: storage.DownloadHome,
 		WalkFn: walkFn,
 	}
+	// todo gc
 	if err := cm.cacheStore.Walk(ctx, raw); err != nil {
 		return nil, err
 	}
 
 	if !fullGC {
-		gcTaskIDs = append(gcTaskIDs, getGCTasks(gapTasks, intervalTasks)...)
+		gcTaskIds = append(gcTaskIds, getGCTasks(gapTasks, intervalTasks)...)
 	}
 
-	return gcTaskIDs, nil
+	return gcTaskIds, nil
 }
 
 func (cm *Manager) sortInert(ctx context.Context, gapTasks, intervalTasks *treemap.Map, metaData *fileMetaData) error {
@@ -127,7 +129,7 @@ func (cm *Manager) sortInert(ctx context.Context, gapTasks, intervalTasks *treem
 
 	if metaData.Interval > 0 &&
 		gap <= metaData.Interval+(int64(cm.cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
-		info, err := cm.cacheStore.Stat(ctx, getDownloadRaw(metaData.TaskID))
+		info, err := cm.cacheStore.StatDownloadFile(ctx, metaData.TaskId)
 		if err != nil {
 			return err
 		}
@@ -137,7 +139,7 @@ func (cm *Manager) sortInert(ctx context.Context, gapTasks, intervalTasks *treem
 			v = make([]string, 0)
 		}
 		tasks := v.([]string)
-		tasks = append(tasks, metaData.TaskID)
+		tasks = append(tasks, metaData.TaskId)
 		intervalTasks.Put(info.Size, tasks)
 		return nil
 	}
@@ -147,7 +149,7 @@ func (cm *Manager) sortInert(ctx context.Context, gapTasks, intervalTasks *treem
 		v = make([]string, 0)
 	}
 	tasks := v.([]string)
-	tasks = append(tasks, metaData.TaskID)
+	tasks = append(tasks, metaData.TaskId)
 	gapTasks.Put(gap, tasks)
 	return nil
 }
@@ -156,14 +158,14 @@ func getGCTasks(gapTasks, intervalTasks *treemap.Map) []string {
 	var gcTasks = make([]string, 0)
 
 	for _, v := range gapTasks.Values() {
-		if taskIDs, ok := v.([]string); ok {
-			gcTasks = append(gcTasks, taskIDs...)
+		if TaskIds, ok := v.([]string); ok {
+			gcTasks = append(gcTasks, TaskIds...)
 		}
 	}
 
 	for _, v := range intervalTasks.Values() {
-		if taskIDs, ok := v.([]string); ok {
-			gcTasks = append(gcTasks, taskIDs...)
+		if TaskIds, ok := v.([]string); ok {
+			gcTasks = append(gcTasks, TaskIds...)
 		}
 	}
 

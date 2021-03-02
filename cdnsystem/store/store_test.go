@@ -21,7 +21,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
-	"d7y.io/dragonfly/v2/cdnsystem/store/hybrid"
 	"d7y.io/dragonfly/v2/cdnsystem/store/memory"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"fmt"
@@ -57,11 +56,6 @@ func (s *StoreSuite) SetupSuite() {
 			},
 			&config.PluginProperties{
 				Name:    memory.StorageDriver,
-				Enabled: true,
-				Config:  "baseDir: " + filepath.Join(s.workHome, "repo"),
-			},
-			&config.PluginProperties{
-				Name:    hybrid.StorageDriver,
 				Enabled: true,
 				Config:  "baseDir: " + filepath.Join(s.workHome, "repo"),
 			},
@@ -171,39 +165,6 @@ func TestManager_Get(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Get() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestManager_getDefaultStorage(t *testing.T) {
-	type fields struct {
-		cfg            *config.Config
-		defaultStorage *Store
-		mutex          sync.Mutex
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		want    *Store
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sm := &Manager{
-				cfg:            tt.fields.cfg,
-				defaultStorage: tt.fields.defaultStorage,
-				mutex:          tt.fields.mutex,
-			}
-			got, err := sm.getDefaultStorage()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getDefaultStorage() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getDefaultStorage() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

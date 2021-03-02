@@ -33,8 +33,8 @@ var (
 	// ErrURLNotReachable represents the url is a not reachable.
 	ErrURLNotReachable = errors.New("url not reachable")
 
-	// ErrTaskIDDuplicate represents the task id is in conflict.
-	ErrTaskIDDuplicate = errors.New("taskId conflict")
+	// ErrTaskIdDuplicate represents the task id is in conflict.
+	ErrTaskIdDuplicate = errors.New("taskId conflict")
 
 	// ErrAuthenticationRequired represents the authentication is required.
 	ErrAuthenticationRequired = errors.New("authentication required")
@@ -114,7 +114,7 @@ func IsURLNotReachable(err error) bool {
 
 // IsTaskIDDuplicate checks the error is a TaskIDDuplicate error or not.
 func IsTaskIDDuplicate(err error) bool {
-	return errors.Cause(err) == ErrTaskIDDuplicate
+	return errors.Cause(err) == ErrTaskIdDuplicate
 }
 
 // IsAuthenticationRequired checks the error is an AuthenticationRequired error or not.

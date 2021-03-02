@@ -17,6 +17,7 @@
 package server
 
 import (
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 )
@@ -31,8 +32,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/task"
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
-	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"fmt"
 	"github.com/pkg/errors"
@@ -47,41 +46,39 @@ type Server struct {
 
 // New creates a brand new server instance.
 func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
-
-	storeMgr, err := store.NewManager(cfg)
-	if err != nil {
-		return nil, err
+	sb := storage.Get(cfg.StoragePattern, true)
+	if sb == nil {
+		return nil, fmt.Errorf("could not get storage for pattern: %s", cfg.StoragePattern)
 	}
-
-	storage, err := storeMgr.Get(disk.StorageDriver)
+	storage, err := sb.Build()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to build storage: %v", err)
 	}
 
 	sourceClient, err := source.NewSourceClient(cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create source client: %v", err)
 	}
 
 	progressMgr, err := progress.NewManager(cfg, register)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create progress manager: %v", err)
 	}
 
 	// cdn manager
 	cdnMgr, err := cdn.NewManager(cfg, storage, progressMgr, sourceClient, register)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create cdn manager: %v", err)
 	}
 	// task manager
 	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr ,sourceClient, register)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create task manager: %v", err)
 	}
 	// gc manager
 	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, register)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create gc manager: %v", err)
 	}
 
 	return &Server{

@@ -40,12 +40,13 @@ func newReporter(publisher mgr.SeedProgressMgr) *reporter {
 }
 
 // report cache result
-func (re *reporter) reportCache(ctx context.Context, taskID string, detectResult *cacheResult) error {
+func (re *reporter) reportCache(ctx context.Context, taskId string, detectResult *cacheResult) error {
 	// report cache pieces status
 	if detectResult != nil && detectResult.pieceMetaRecords != nil {
 		for _, record := range detectResult.pieceMetaRecords {
-			if err := re.reportPieceMetaRecord(ctx, taskID, record, CacheReport); err != nil {
-				return errors.Wrapf(err, "failed to publish pieceMetaRecord:%v, seedPiece:%v", record, convertPieceMeta2SeedPiece(record))
+			if err := re.reportPieceMetaRecord(ctx, taskId, record, CacheReport); err != nil {
+				return errors.Wrapf(err, "failed to publish pieceMetaRecord:%v, seedPiece:%v", record,
+					convertPieceMeta2SeedPiece(record))
 			}
 		}
 	}
@@ -53,12 +54,12 @@ func (re *reporter) reportCache(ctx context.Context, taskID string, detectResult
 }
 
 // reportPieceMetaRecord
-func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskID string, record *pieceMetaRecord,
+func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskId string, record *pieceMetaRecord,
 	from string) error {
 	// report cache pieces status
-	logger.DownloaderLogger.Info(taskID,
+	logger.DownloaderLogger.Info(taskId,
 		zap.Int32("pieceNum", record.PieceNum),
 		zap.String("md5", record.Md5),
 		zap.String("from", from))
-	return re.progress.PublishPiece(ctx, taskID, convertPieceMeta2SeedPiece(record))
+	return re.progress.PublishPiece(ctx, taskId, convertPieceMeta2SeedPiece(record))
 }

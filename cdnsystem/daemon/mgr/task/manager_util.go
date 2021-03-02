@@ -37,7 +37,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if request.Filter != nil {
 		taskURL = netutils.FilterURLParam(request.URL, request.Filter)
 	}
-	taskId := request.TaskID
+	taskId := request.TaskId
 	util.GetLock(taskId, false)
 	defer util.ReleaseLock(taskId, false)
 	if key, err := tm.taskURLUnReachableStore.Get(taskId); err == nil {
@@ -50,18 +50,18 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 	var task *types.SeedTask
 	newTask := &types.SeedTask{
-		TaskID:     taskId,
+		TaskId:     taskId,
 		Headers:    request.Headers,
 		RequestMd5: request.Md5,
 		Url:        request.URL,
 		TaskUrl:    taskURL,
 		CdnStatus:  types.TaskInfoCdnStatusWAITING,
 	}
-	// using the existing task if it already exists corresponding to taskID
+	// using the existing task if it already exists corresponding to taskId
 	if v, err := tm.taskStore.Get(taskId); err == nil {
 		existTask := v.(*types.SeedTask)
 		if !isSameTask(existTask, newTask) {
-			return nil, errors.Wrapf(cdnerrors.ErrTaskIDDuplicate, "newTask:%+v, existTask:%+v", newTask, existTask)
+			return nil, errors.Wrapf(cdnerrors.ErrTaskIdDuplicate, "newTask:%+v, existTask:%+v", newTask, existTask)
 		}
 		task = existTask
 	} else {
@@ -75,7 +75,8 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	// get sourceContentLength with req.Headers
 	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Headers)
 	if err != nil {
-		logger.WithTaskID(task.TaskID).Errorf("failed to get url (%s) content length from http client:%v", task.Url, err)
+		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length from http client:%v", task.Url,
+			err)
 
 		if cdnerrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskId, time.Now())
@@ -100,15 +101,15 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		pieceSize := computePieceSize(task.SourceFileLength)
 		task.PieceSize = pieceSize
 	}
-	tm.taskStore.Add(task.TaskID, task)
+	tm.taskStore.Add(task.TaskId, task)
 	tm.metrics.tasks.WithLabelValues(task.CdnStatus).Inc()
 	return task, nil
 }
 
 // updateTask
-func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*types.SeedTask, error) {
-	if stringutils.IsBlank(taskID) {
-		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskID")
+func (tm *Manager) updateTask(taskId string, updateTaskInfo *types.SeedTask) (*types.SeedTask, error) {
+	if stringutils.IsBlank(taskId) {
+		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskId")
 	}
 
 	if updateTaskInfo == nil {
@@ -118,10 +119,10 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 	if stringutils.IsBlank(updateTaskInfo.CdnStatus) {
 		return nil, errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
 	}
-	util.GetLock(taskID, false)
-	util.ReleaseLock(taskID, false)
+	util.GetLock(taskId, false)
+	util.ReleaseLock(taskId, false)
 	// get origin task
-	task, err := tm.getTask(taskID)
+	task, err := tm.getTask(taskId)
 	if err != nil {
 		return nil, err
 	}

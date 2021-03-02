@@ -68,6 +68,10 @@ type diskStorage struct {
 	BaseDir string `yaml:"baseDir"`
 }
 
+func (ds *diskStorage) MoveFile(src string, dst string) {
+	fileutils.MoveFile(src, dst)
+}
+
 // NewStorage performs initialization for disk Storage and return a StorageDriver.
 func NewStorage(conf string) (store.StorageDriver, error) {
 	// type assertion for config
@@ -341,7 +345,7 @@ func (ds *diskStorage) Walk(ctx context.Context, raw *store.Raw) error {
 	return filepath.Walk(path, raw.WalkFn)
 }
 
-func (ds *diskStorage) GetPath(ctx context.Context, raw *store.Raw) string {
+func (ds *diskStorage) GetPath(raw *store.Raw) string {
 	return filepath.Join(ds.BaseDir, raw.Bucket, raw.Key)
 }
 
@@ -365,7 +369,7 @@ func (ds *diskStorage) statPath(bucket, key string) (string, os.FileInfo, error)
 	f, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil, errors.Wrapf(cdnerrors.ErrFileNotExist, "bucket(%s) key(%s)", bucket, key)
+			return "", nil, errors.Wrapf(cdnerrors.ErrKeyNotFound, "bucket(%s) key(%s)", bucket, key)
 		}
 		return "", nil, err
 	}

@@ -80,7 +80,8 @@ func checkPieceContent(reader io.Reader, pieceRecord *pieceMetaRecord, fileMd5 h
 	realPieceMd5 := fileutils.GetMd5Sum(pieceMd5, nil)
 	// check piece content
 	if realPieceMd5 != pieceRecord.Md5 {
-		return errors.Wrapf(cdnerrors.ErrPieceMd5CheckFail, "realPieceMd5 md5 (%s), expected md5 (%s)", realPieceMd5, pieceRecord.Md5)
+		return errors.Wrapf(cdnerrors.ErrPieceMd5CheckFail, "realPieceMd5 md5 (%s), expected md5 (%s)",
+			realPieceMd5, pieceRecord.Md5)
 	}
 	return nil
 }

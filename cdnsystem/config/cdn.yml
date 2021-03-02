@@ -69,6 +69,8 @@ base:
   # It means the value of CleanRatio should be [1-10].
   CleanRatio: 1
 
+  StoragePattern: hybrid
+
 plugins:
   storage:
     - name: disk

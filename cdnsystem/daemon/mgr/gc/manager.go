@@ -21,7 +21,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/metricsutils"
 	"github.com/prometheus/client_golang/prometheus"
 	"time"
@@ -86,7 +85,7 @@ func (gcm *Manager) StartGC(ctx context.Context) {
 		}
 	}()
 
-	// start a goroutine to gc the disks
+	// start a goroutine to gc the storage
 	go func() {
 		// delay to execute GC after gcm.initialDelay
 		time.Sleep(gcm.cfg.GCInitialDelay)
@@ -94,33 +93,7 @@ func (gcm *Manager) StartGC(ctx context.Context) {
 		// execute the GC by fixed delay
 		ticker := time.NewTicker(gcm.cfg.GCDiskInterval)
 		for range ticker.C {
-			gcm.gcDisk(ctx)
-		}
-	}()
-
-	go func() {
-		if !fileutils.PathExist(config.ShmHome) {
-			return
-		}
-		fsize, err := fileutils.GetTotalSpace(config.ShmHome)
-		if err != nil {
-			logger.CoreLogger.Error()
-			return
-		}
-		diff := fileutils.Fsize(0)
-		if fsize < 72 * 1024 * 1024 * 1024 {
-			diff = fileutils.Fsize(72 * 1024 * 1024 * 1024) - fsize
-		}
-		if diff >= fsize {
-			return
-		}
-
-		time.Sleep(gcm.cfg.GCInitialDelay)
-
-		// execute the GC by fixed delay
-		ticker := time.NewTicker(gcm.cfg.GCShmInterval)
-		for range ticker.C {
-			gcm.gcShm(ctx)
+			gcm.gcStorage(ctx)
 		}
 	}()
 }
@@ -130,3 +103,29 @@ func (gcm *Manager) StartGC(ctx context.Context) {
 func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) {
 	gcm.gcTask(ctx, taskID, full)
 }
+
+//go func() {
+//	if !fileutils.PathExist(config.ShmHome) {
+//		return
+//	}
+//	fsize, err := fileutils.GetTotalSpace(config.ShmHome)
+//	if err != nil {
+//		logger.CoreLogger.Error()
+//		return
+//	}
+//	diff := fileutils.Fsize(0)
+//	if fsize < 72 * 1024 * 1024 * 1024 {
+//		diff = fileutils.Fsize(72 * 1024 * 1024 * 1024) - fsize
+//	}
+//	if diff >= fsize {
+//		return
+//	}
+//
+//	time.Sleep(gcm.cfg.GCInitialDelay)
+//
+//	// execute the GC by fixed delay
+//	ticker := time.NewTicker(gcm.cfg.GCShmInterval)
+//	for range ticker.C {
+//		gcm.gcShm(ctx)
+//	}
+//}()

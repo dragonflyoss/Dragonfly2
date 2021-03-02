@@ -71,7 +71,7 @@ func constructRequestHeader(req *cdnsystem.SeedRequest) *types.TaskRegisterReque
 		Headers: headers,
 		URL:     req.Url,
 		Md5:     headers["md5"],
-		TaskID:  req.TaskId,
+		TaskId:  req.TaskId,
 		Filter:  strings.Split(req.Filter, "&"),
 	}
 }

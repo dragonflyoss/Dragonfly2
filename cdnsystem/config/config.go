@@ -57,13 +57,14 @@ func NewBaseProperties() *BaseProperties {
 	var home string
 	home = filepath.Join(string(filepath.Separator), userHome, "cdn-system")
 	if err != nil {
-		home = filepath.Join(string(filepath.Separator), "home", "admin","cdn-system")
+		home = filepath.Join(string(filepath.Separator), "home", "admin", "cdn-system")
 	}
 
 	return &BaseProperties{
 		ListenPort:              DefaultListenPort,
 		DownloadPort:            DefaultDownloadPort,
 		HomeDir:                 home,
+		StoragePattern:          DefaultStoragePattern,
 		//DownloadPath:            filepath.Join(home, RepoHome, DownloadHome),
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
 		MaxBandwidth:            DefaultMaxBandwidth,
@@ -82,8 +83,8 @@ func NewBaseProperties() *BaseProperties {
 
 // BaseProperties contains all basic properties of cdn system.
 type BaseProperties struct {
-
-	StorageDriver string `yaml:"storageDriver"`
+	// disk/hybrid/memory
+	StoragePattern string `yaml:"storagePattern"`
 
 	// ListenPort is the port cdn server listens on.
 	// default: 8002
@@ -166,5 +167,4 @@ type BaseProperties struct {
 	//
 	// default: 1
 	CleanRatio int `yaml:"cleanRatio"`
-
 }

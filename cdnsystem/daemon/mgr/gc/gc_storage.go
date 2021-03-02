@@ -24,28 +24,28 @@ import (
 )
 
 // gcDisk
-func (gcm *Manager) gcDisk(ctx context.Context) {
-	gcTaskIDs, err := gcm.cdnMgr.GetGCTaskIDs(ctx, gcm.taskMgr)
+func (gcm *Manager) gcStorage(ctx context.Context) {
+	gcTaskIds, err := gcm.cdnMgr.GetGCTaskIds(ctx, gcm.taskMgr)
 	if err != nil {
 		logger.GcLogger.Errorf("gc disk: failed to get gc tasks: %v", err)
 		return
 	}
 
-	if len(gcTaskIDs) == 0 {
+	if len(gcTaskIds) == 0 {
 		return
 	}
 
-	logger.GcLogger.Debugf("gc disk: success to get gcTaskIDs(%d)", len(gcTaskIDs))
-	gcm.deleteTaskDisk(ctx, gcTaskIDs)
+	logger.GcLogger.Debugf("gc disk: success to get gcTaskIds(%d)", len(gcTaskIds))
+	gcm.deleteTaskStorage(ctx, gcTaskIds)
 }
 
 // deleteTaskDisk
-func (gcm *Manager) deleteTaskDisk(ctx context.Context, gcTaskIDs []string) {
+func (gcm *Manager) deleteTaskStorage(ctx context.Context, gcTaskIds []string) {
 	// NOTE: We only gc a certain percentage of tasks which calculated by the config.CleanRatio.
-	gcLen := (len(gcTaskIDs)*gcm.cfg.CleanRatio + 9) / 10
+	gcLen := (len(gcTaskIds)*gcm.cfg.CleanRatio + 9) / 10
 
 	count := 0
-	for _, taskID := range gcTaskIDs {
+	for _, taskID := range gcTaskIds {
 		if count >= gcLen {
 			break
 		}
@@ -72,5 +72,5 @@ func (gcm *Manager) deleteTaskDisk(ctx context.Context, gcTaskIDs []string) {
 	gcm.metrics.gcDisksCount.WithLabelValues().Add(float64(count))
 	gcm.metrics.lastGCDisksTime.WithLabelValues().SetToCurrentTime()
 
-	logger.GcLogger.Debugf("gc disk: success to gc task count(%d), remainder count(%d)", count, len(gcTaskIDs)-count)
+	logger.GcLogger.Debugf("gc disk: success to gc task count(%d), remainder count(%d)", count, len(gcTaskIds)-count)
 }

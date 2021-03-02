@@ -74,7 +74,9 @@ type StorageDriver interface {
 	Walk(ctx context.Context, raw *Raw) error
 
 	// GetPath
-	GetPath(ctx context.Context, raw *Raw) string
+	GetPath(raw *Raw) string
+
+	MoveFile(src string, dst string)
 }
 
 // Raw identifies a piece of data uniquely.

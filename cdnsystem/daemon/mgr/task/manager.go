@@ -78,7 +78,8 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager Object.
-func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgressMgr, resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
+func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgressMgr,
+	resourceClient source.ResourceClient,  register prometheus.Registerer) (*Manager, error) {
 	return &Manager{
 		cfg:                     cfg,
 		metrics:                 newMetrics(register),
@@ -91,7 +92,8 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgr
 	}, nil
 }
 
-func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.SeedPiece, err error) {
+func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.SeedPiece,
+	err error) {
 	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
 	pieceChan, err = tm.doRegister(ctx, req)
 	if err != nil {
@@ -100,38 +102,39 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 	return
 }
 
-func (tm *Manager) doRegister(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.SeedPiece, err error) {
+func (tm *Manager) doRegister(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.
+	SeedPiece, err error) {
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
-		logger.WithTaskID(req.TaskID).Infof("failed to add or update task with req %+v: %v", req, err)
+		logger.WithTaskID(req.TaskId).Infof("failed to add or update task with req %+v: %v", req, err)
 		return nil, err
 	}
-	// update accessTime for taskID
-	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
-		logger.WithTaskID(task.TaskID).Warnf("failed to update accessTime: %v", err)
+	// update accessTime for taskId
+	if err := tm.accessTimeMap.Add(task.TaskId, time.Now()); err != nil {
+		logger.WithTaskID(task.TaskId).Warnf("failed to update accessTime: %v", err)
 	}
-	logger.WithTaskID(task.TaskID).Debugf("success to get task info: %+v", task)
+	logger.WithTaskID(task.TaskId).Debugf("success to get task info: %+v", task)
 
 	// trigger CDN
 	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
 		return nil, errors.Wrapf(err, "failed to trigger cdn")
 	}
 	// watch seed progress
-	return tm.progressMgr.WatchSeedProgress(ctx, task.TaskID)
+	return tm.progressMgr.WatchSeedProgress(ctx, task.TaskId)
 }
 
 // triggerCdnSyncAction
 func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTask) error {
 	if !isFrozen(task.CdnStatus) {
-		logger.WithTaskID(task.TaskID).Infof("seedTask is running or has been downloaded successfully, status:%s", task.CdnStatus)
+		logger.WithTaskID(task.TaskId).Infof("seedTask is running or has been downloaded successfully, status:%s", task.CdnStatus)
 		return nil
 	}
 	if isWait(task.CdnStatus) {
-		tm.progressMgr.InitSeedProgress(ctx, task.TaskID)
-		logger.WithTaskID(task.TaskID).Infof("success to init seed progress")
+		tm.progressMgr.InitSeedProgress(ctx, task.TaskId)
+		logger.WithTaskID(task.TaskId).Infof("success to init seed progress")
 	}
 
-	updatedTask, err := tm.updateTask(task.TaskID, &types.SeedTask{
+	updatedTask, err := tm.updateTask(task.TaskId, &types.SeedTask{
 		CdnStatus: types.TaskInfoCdnStatusRUNNING,
 	})
 	if err != nil {
@@ -143,56 +146,56 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(ctx, task)
 		if err != nil {
 			tm.metrics.triggerCdnFailCount.WithLabelValues().Inc()
-			logger.WithTaskID(task.TaskID).Errorf("trigger cdn get error: %v", err)
+			logger.WithTaskID(task.TaskId).Errorf("trigger cdn get error: %v", err)
 		}
-		go tm.progressMgr.PublishTask(ctx, task.TaskID, updateTaskInfo)
-		updatedTask, err = tm.updateTask(task.TaskID, updateTaskInfo)
+		go tm.progressMgr.PublishTask(ctx, task.TaskId, updateTaskInfo)
+		updatedTask, err = tm.updateTask(task.TaskId, updateTaskInfo)
 		if err != nil {
-			logger.WithTaskID(task.TaskID).Errorf("update task fail:%v", err)
+			logger.WithTaskID(task.TaskId).Errorf("update task fail:%v", err)
 		} else {
-			logger.WithTaskID(task.TaskID).Infof("success to update task cdn updatedTask:%+v", updatedTask)
+			logger.WithTaskID(task.TaskId).Infof("success to update task cdn updatedTask:%+v", updatedTask)
 		}
 	}()
-	logger.WithTaskID(task.TaskID).Infof("success to start cdn trigger")
+	logger.WithTaskID(task.TaskId).Infof("success to start cdn trigger")
 	return nil
 }
 
-func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
-	if stringutils.IsBlank(taskID) {
-		return nil, errors.Wrap(cdnerrors.ErrEmptyValue, "taskID is empty")
+func (tm *Manager) getTask(taskId string) (*types.SeedTask, error) {
+	if stringutils.IsBlank(taskId) {
+		return nil, errors.Wrap(cdnerrors.ErrEmptyValue, "taskId is empty")
 	}
 
-	v, err := tm.taskStore.Get(taskID)
+	v, err := tm.taskStore.Get(taskId)
 	if err != nil {
 		return nil, err
 	}
-	// update accessTime for taskID
-	if err := tm.accessTimeMap.Add(taskID, time.Now()); err != nil {
-		logger.WithTaskID(taskID).Warnf("failed to update accessTime: %v", err)
+	// update accessTime for taskId
+	if err := tm.accessTimeMap.Add(taskId, time.Now()); err != nil {
+		logger.WithTaskID(taskId).Warnf("failed to update accessTime: %v", err)
 	}
 	// type assertion
 	if info, ok := v.(*types.SeedTask); ok {
 		return info, nil
 	}
-	return nil, errors.Wrapf(cdnerrors.ErrConvertFailed, "taskID %s: %v", taskID, v)
+	return nil, errors.Wrapf(cdnerrors.ErrConvertFailed, "taskId %s: %v", taskId, v)
 }
 
-func (tm Manager) Get(ctx context.Context, taskID string) (*types.SeedTask, error) {
+func (tm Manager) Get(ctx context.Context, taskId string) (*types.SeedTask, error) {
 	// todo locker
-	return tm.getTask(taskID)
+	return tm.getTask(taskId)
 }
 
 func (tm Manager) GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error) {
 	return tm.accessTimeMap, nil
 }
 
-func (tm Manager) Delete(ctx context.Context, taskID string) error {
-	tm.accessTimeMap.Delete(taskID)
-	tm.taskURLUnReachableStore.Delete(taskID)
-	tm.taskStore.Delete(taskID)
+func (tm Manager) Delete(ctx context.Context, taskId string) error {
+	tm.accessTimeMap.Delete(taskId)
+	tm.taskURLUnReachableStore.Delete(taskId)
+	tm.taskStore.Delete(taskId)
 	return nil
 }
 
-func (tm *Manager) GetPieces(ctx context.Context, taskID string) (pieces []*types.SeedPiece, err error) {
-	return tm.progressMgr.GetPieces(ctx, taskID)
+func (tm *Manager) GetPieces(ctx context.Context, taskId string) (pieces []*types.SeedPiece, err error) {
+	return tm.progressMgr.GetPieces(ctx, taskId)
 }

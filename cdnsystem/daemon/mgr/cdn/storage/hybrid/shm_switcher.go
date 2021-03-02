@@ -16,29 +16,38 @@
 
 package hybrid
 
-import "sync"
+import (
+	"go.uber.org/atomic"
+	"regexp"
+)
 
-type ShmSwitcherService struct {
-	switcher        bool
+type shmSwitcher struct {
+	off             *atomic.Bool
 	whiteList       []string
-	useShmThreshold int64
-	sync.Mutex
+	useShmThreshold *atomic.Int64
 }
 
-func NewShmSwitcher() *ShmSwitcherService {
-	return &ShmSwitcherService{
-		switcher:        false,
+func newShmSwitcherService() *shmSwitcher {
+	return &shmSwitcher{
+		off:             &atomic.Bool{},
 		whiteList:       nil,
-		useShmThreshold: 1024 * 1024 * 1024,
-		Mutex:           sync.Mutex{},
+		useShmThreshold: atomic.NewInt64(1024 * 1024 * 1024),
 	}
 }
 
-func UpdateSwitcher(shmSwitcher string) {
-
-}
-
-// check Check if SHM can be used
-func check(url string, fileLength int64) bool {
+func (switcher *shmSwitcher) check(url string, fileLength int64) bool {
+	if !switcher.off.Load() {
+		if fileLength == 0 || fileLength < switcher.useShmThreshold.Load() {
+			return false
+		}
+		if len(switcher.whiteList) == 0 {
+			return true
+		}
+		for _, reg := range switcher.whiteList {
+			if matched, err := regexp.MatchString(reg, url); err == nil && matched {
+				return true
+			}
+		}
+	}
 	return false
 }

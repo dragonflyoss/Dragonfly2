@@ -18,7 +18,7 @@ package cdn
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -30,12 +30,9 @@ import (
 	"strings"
 )
 
-const (
-	FieldSeparator string = ":"
-)
 // fileMetaData
 type fileMetaData struct {
-	TaskID          string            `json:"taskID"`
+	TaskId          string            `json:"taskId"`
 	TaskURL         string            `json:"taskUrl"`
 	PieceSize       int32             `json:"pieceSize"`
 	SourceFileLen   int64             `json:"sourceFileLen"`
@@ -60,14 +57,14 @@ type pieceMetaRecord struct {
 	PieceStyle types.PieceFormat `json:"pieceStyle"` // 1: PlainUnspecified
 }
 
-// fileMetaDataManager manages the meta file and piece meta file of each taskID.
+// fileMetaDataManager manages the meta file and piece meta file of each TaskId.
 type metaDataManager struct {
-	fileStore       *store.Store
+	fileStore       storage.Storage
 	fileMetaLocker  *util.LockerPool
 	pieceMetaLocker *util.LockerPool
 }
 
-func newFileMetaDataManager(store *store.Store) *metaDataManager {
+func newFileMetaDataManager(store storage.Storage) *metaDataManager {
 	return &metaDataManager{
 		fileStore:       store,
 		fileMetaLocker:  util.NewLockerPool(),
@@ -78,7 +75,7 @@ func newFileMetaDataManager(store *store.Store) *metaDataManager {
 // writeFileMetaDataByTask stores the metadata of task by task to storage.
 func (mm *metaDataManager) writeFileMetaDataByTask(ctx context.Context, task *types.SeedTask) (*fileMetaData, error) {
 	metaData := &fileMetaData{
-		TaskID:          task.TaskID,
+		TaskId:          task.TaskId,
 		TaskURL:         task.TaskUrl,
 		PieceSize:       task.PieceSize,
 		SourceFileLen:   task.SourceFileLength,
@@ -94,18 +91,18 @@ func (mm *metaDataManager) writeFileMetaDataByTask(ctx context.Context, task *ty
 	return metaData, nil
 }
 
-// writeFileMetaData stores the metadata of taskID to storage.
+// writeFileMetaData stores the metadata of TaskId to storage.
 func (mm *metaDataManager) writeFileMetaData(ctx context.Context, metaData *fileMetaData) error {
 	data, err := json.Marshal(metaData)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal metadata")
 	}
-	return mm.fileStore.PutBytes(ctx, getTaskMetaDataRawFunc(metaData.TaskID), data)
+	return mm.fileStore.WriteFileMetaDataBytes(ctx, metaData.TaskId, data)
 }
 
-// readFileMetaData read task metadata information according to taskID
-func (mm *metaDataManager) readFileMetaData(ctx context.Context, taskID string) (*fileMetaData, error) {
-	bytes, err := mm.fileStore.GetBytes(ctx, getTaskMetaDataRawFunc(taskID))
+// readFileMetaData read task metadata information according to TaskId
+func (mm *metaDataManager) readFileMetaData(ctx context.Context, taskId string) (*fileMetaData, error) {
+	bytes, err := mm.fileStore.ReadFileMetaDataBytes(ctx, taskId)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get metadata bytes")
 	}
@@ -114,16 +111,16 @@ func (mm *metaDataManager) readFileMetaData(ctx context.Context, taskID string) 
 	if err := json.Unmarshal(bytes, metaData); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal metadata bytes")
 	}
-	logger.WithTaskID(taskID).Debugf("success to read metadata: %+v ", metaData)
+	logger.WithTaskID(taskId).Debugf("success to read metadata: %+v ", metaData)
 	return metaData, nil
 }
 
 // updateAccessTime update access and interval
-func (mm *metaDataManager) updateAccessTime(ctx context.Context, taskID string, accessTime int64) error {
-	mm.fileMetaLocker.GetLock(taskID, false)
-	defer mm.fileMetaLocker.ReleaseLock(taskID, false)
+func (mm *metaDataManager) updateAccessTime(ctx context.Context, taskId string, accessTime int64) error {
+	mm.fileMetaLocker.GetLock(taskId, false)
+	defer mm.fileMetaLocker.ReleaseLock(taskId, false)
 
-	originMetaData, err := mm.readFileMetaData(ctx, taskID)
+	originMetaData, err := mm.readFileMetaData(ctx, taskId)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get origin metaData")
 	}
@@ -131,7 +128,7 @@ func (mm *metaDataManager) updateAccessTime(ctx context.Context, taskID string, 
 	interval := accessTime - originMetaData.AccessTime
 	originMetaData.Interval = interval
 	if interval <= 0 {
-		logger.WithTaskID(taskID).Warnf("file hit interval:%d", interval)
+		logger.WithTaskID(taskId).Warnf("file hit interval:%d", interval)
 		originMetaData.Interval = 0
 	}
 
@@ -140,11 +137,11 @@ func (mm *metaDataManager) updateAccessTime(ctx context.Context, taskID string, 
 	return mm.writeFileMetaData(ctx, originMetaData)
 }
 
-func (mm *metaDataManager) updateExpireInfo(ctx context.Context, taskID string, expireInfo map[string]string) error {
-	mm.fileMetaLocker.GetLock(taskID, false)
-	defer mm.fileMetaLocker.ReleaseLock(taskID, false)
+func (mm *metaDataManager) updateExpireInfo(ctx context.Context, taskId string, expireInfo map[string]string) error {
+	mm.fileMetaLocker.GetLock(taskId, false)
+	defer mm.fileMetaLocker.ReleaseLock(taskId, false)
 
-	originMetaData, err := mm.readFileMetaData(ctx, taskID)
+	originMetaData, err := mm.readFileMetaData(ctx, taskId)
 	if err != nil {
 		return err
 	}
@@ -154,11 +151,11 @@ func (mm *metaDataManager) updateExpireInfo(ctx context.Context, taskID string, 
 	return mm.writeFileMetaData(ctx, originMetaData)
 }
 
-func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskID string, metaData *fileMetaData) error {
-	mm.fileMetaLocker.GetLock(taskID, false)
-	defer mm.fileMetaLocker.ReleaseLock(taskID, false)
+func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskId string, metaData *fileMetaData) error {
+	mm.fileMetaLocker.GetLock(taskId, false)
+	defer mm.fileMetaLocker.ReleaseLock(taskId, false)
 
-	originMetaData, err := mm.readFileMetaData(ctx, taskID)
+	originMetaData, err := mm.readFileMetaData(ctx, taskId)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get origin metadata")
 	}
@@ -179,19 +176,20 @@ func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskID str
 }
 
 // appendPieceMetaDataToFile append piece meta info to storage
-func (mm *metaDataManager) appendPieceMetaDataToFile(ctx context.Context, taskID string, record *pieceMetaRecord) error {
+func (mm *metaDataManager) appendPieceMetaDataToFile(ctx context.Context, taskId string,
+	record *pieceMetaRecord) error {
 	pieceMeta := getPieceMetaValue(record)
-	mm.pieceMetaLocker.GetLock(taskID, false)
-	defer mm.pieceMetaLocker.ReleaseLock(taskID, false)
+	mm.pieceMetaLocker.GetLock(taskId, false)
+	defer mm.pieceMetaLocker.ReleaseLock(taskId, false)
 	// write to the storage
-	return mm.fileStore.AppendBytes(ctx, getPieceMetaDataRawFunc(taskID), []byte(pieceMeta+"\n"))
+	return mm.fileStore.AppendPieceMetaDataBytes(ctx, taskId, []byte(pieceMeta+"\n"))
 }
 
 // writePieceMetaRecords writes the piece meta data to storage.
-func (mm *metaDataManager) appendPieceMetaIntegrityData(ctx context.Context, taskID, fileMD5 string) error {
-	mm.pieceMetaLocker.GetLock(taskID, false)
-	defer mm.pieceMetaLocker.ReleaseLock(taskID, false)
-	pieceMetaRecords, err := mm.readPieceMetaRecordsWithoutCheck(ctx, taskID)
+func (mm *metaDataManager) appendPieceMetaIntegrityData(ctx context.Context, taskId, fileMD5 string) error {
+	mm.pieceMetaLocker.GetLock(taskId, false)
+	defer mm.pieceMetaLocker.ReleaseLock(taskId, false)
+	pieceMetaRecords, err := mm.readPieceMetaRecordsWithoutCheck(ctx, taskId)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read piece meta records")
 	}
@@ -201,15 +199,16 @@ func (mm *metaDataManager) appendPieceMetaIntegrityData(ctx context.Context, tas
 	}
 	pieceMetaStrs = append(pieceMetaStrs, fileMD5)
 	pieceStr := strings.Join([]string{fileMD5, digest.Sha1(pieceMetaStrs)}, "\n")
-	return mm.fileStore.AppendBytes(ctx, getPieceMetaDataRawFunc(taskID), []byte(pieceStr))
+	return mm.fileStore.AppendPieceMetaDataBytes(ctx, taskId, []byte(pieceStr))
 }
 
-// readAndCheckPieceMetaRecords reads pieceMetaRecords from storage and check data integrity by the md5 file of the taskID
-func (mm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskID, fileMD5 string) ([]*pieceMetaRecord, error) {
-	mm.pieceMetaLocker.GetLock(taskID, true)
-	defer mm.pieceMetaLocker.ReleaseLock(taskID, true)
+// readAndCheckPieceMetaRecords reads pieceMetaRecords from storage and check data integrity by the md5 file of the TaskId
+func (mm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskId,
+	fileMD5 string) ([]*pieceMetaRecord, error) {
+	mm.pieceMetaLocker.GetLock(taskId, true)
+	defer mm.pieceMetaLocker.ReleaseLock(taskId, true)
 
-	bytes, err := mm.fileStore.GetBytes(ctx, getPieceMetaDataRawFunc(taskID))
+	bytes, err := mm.fileStore.ReadPieceMetaBytes(ctx, taskId)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +226,8 @@ func (mm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, tas
 	expectedSha1Value := digest.Sha1(piecesWithoutSha1Value)
 	realSha1Value := pieceMetaRecords[piecesLength-1]
 	if expectedSha1Value != realSha1Value {
-		return nil, errors.Errorf("failed to validate the SHA-1 checksum of piece meta records, expected: %s, real: %s", expectedSha1Value, realSha1Value)
+		return nil, errors.Errorf("failed to validate the SHA-1 checksum of piece meta records, expected: %s, " +
+			"real: %s", expectedSha1Value, realSha1Value)
 	}
 	var result = make([]*pieceMetaRecord, 0, piecesLength-2)
 	for _, pieceStr := range pieceMetaRecords[:piecesLength-2] {
@@ -241,8 +241,8 @@ func (mm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, tas
 }
 
 // readPieceMetaRecordsWithoutCheck reads pieceMetaRecords from storage and without check data integrity
-func (mm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context, taskID string) ([]*pieceMetaRecord, error) {
-	bytes, err := mm.fileStore.GetBytes(ctx, getPieceMetaDataRawFunc(taskID))
+func (mm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context, taskId string) ([]*pieceMetaRecord, error) {
+	bytes, err := mm.fileStore.ReadPieceMetaBytes(ctx, taskId)
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +253,7 @@ func (mm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context,
 	}
 	var result = make([]*pieceMetaRecord, 0, len(pieceMetaRecords))
 	for _, pieceRecord := range pieceMetaRecords {
-		if len(strings.Split(pieceRecord, FieldSeparator)) == 0 {
+		if len(strings.Split(pieceRecord, storage.FieldSeparator)) == 0 {
 			// 如果是签名或者文件md5则忽略
 			continue
 		}
@@ -267,8 +267,8 @@ func (mm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context,
 	return result, nil
 }
 
-func (mm *metaDataManager) getPieceMd5Sign(ctx context.Context, taskID string) (md5Sign string, err error) {
-	pieceMetaRecords, err := mm.readPieceMetaRecordsWithoutCheck(ctx, taskID)
+func (mm *metaDataManager) getPieceMd5Sign(ctx context.Context, taskId string) (md5Sign string, err error) {
+	pieceMetaRecords, err := mm.readPieceMetaRecordsWithoutCheck(ctx, taskId)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to read piece meta file")
 	}

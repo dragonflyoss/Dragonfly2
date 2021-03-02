@@ -140,6 +140,9 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.String("home-dir", defaultBaseProperties.HomeDir,
 		"homeDir is the working directory of cdnNode")
 
+	flagSet.String("storagePattern", defaultBaseProperties.StoragePattern,
+		"storagePattern is the pattern of storage")
+
 	flagSet.Var(&defaultBaseProperties.SystemReservedBandwidth, "system-bandwidth",
 		"network rate reserved for system")
 

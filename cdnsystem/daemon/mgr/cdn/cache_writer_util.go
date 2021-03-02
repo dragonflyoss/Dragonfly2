@@ -21,7 +21,6 @@ import (
 	"context"
 	"crypto/md5"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
@@ -54,7 +53,8 @@ func calculateRoutineCount(remainingFileLength int64, pieceSize int32) int {
 }
 
 // writerPool
-func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, writeRoutineCount int, jobCh chan *protocolContent) {
+func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, writeRoutineCount int,
+	jobCh chan *protocolContent) {
 	for i := 0; i < writeRoutineCount; i++ {
 		wg.Add(1)
 		go func() {
@@ -67,8 +67,9 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				pieceLen := waitToWriteContent.Len()
 				pieceStyle := types.PlainUnspecified
 
-				if err := cw.writeToFile(ctx, job.taskID, waitToWriteContent, int64(job.pieceNum)*int64(job.pieceSize), pieceMd5); err != nil {
-					logger.WithTaskID(job.taskID).Errorf("failed to write file, pieceNum %d: %v", job.pieceNum, err)
+				if err := cw.writeToFile(ctx, job.TaskId, waitToWriteContent,
+					int64(job.pieceNum)*int64(job.pieceSize), pieceMd5); err != nil {
+					logger.WithTaskID(job.TaskId).Errorf("failed to write file, pieceNum %d: %v", job.pieceNum, err)
 					// todo redo the job?
 					continue
 				}
@@ -87,15 +88,17 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				go func(record *pieceMetaRecord) {
 					defer wg.Done()
 					// todo 可以先塞入channel，然后启动单独goroutine顺序写文件
-					if err := cw.metaDataMgr.appendPieceMetaDataToFile(ctx, job.taskID, record); err != nil {
-						logger.WithTaskID(job.taskID).Errorf("failed to append piece meta data to file:%v", err)
+					if err := cw.metaDataMgr.appendPieceMetaDataToFile(ctx, job.TaskId, record); err != nil {
+						logger.WithTaskID(job.TaskId).Errorf("failed to append piece meta data to file:%v", err)
 					}
 				}(pieceRecord)
 
 				if cw.cdnReporter != nil {
-					if err := cw.cdnReporter.reportPieceMetaRecord(ctx, job.taskID, pieceRecord, DownloaderReport); err != nil {
+					if err := cw.cdnReporter.reportPieceMetaRecord(ctx, job.TaskId, pieceRecord,
+						DownloaderReport); err != nil {
 						// NOTE: should we do this job again?
-						logger.WithTaskID(job.taskID).Errorf("failed to report piece status, pieceNum %d pieceMetaRecord %s: %v", job.pieceNum, pieceRecord, err)
+						logger.WithTaskID(job.TaskId).Errorf("failed to report piece status, " +
+							"pieceNum %d pieceMetaRecord %s: %v", job.pieceNum, pieceRecord, err)
 						continue
 					}
 				}
@@ -105,7 +108,8 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 }
 
 // writeToFile
-func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuffer *bytes.Buffer, offset int64, pieceMd5 hash.Hash) error {
+func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuffer *bytes.Buffer, offset int64,
+	pieceMd5 hash.Hash) error {
 	var resultBuf = &bytes.Buffer{}
 	// write piece content
 	var pieceContent []byte
@@ -126,10 +130,5 @@ func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuff
 		}
 	}
 	// write to the storage
-	return cw.cdnStore.Put(ctx, &store.Raw{
-		Bucket: config.DownloadHome,
-		Key:    getDownloadKey(taskID),
-		Offset: offset,
-		Length: int64(pieceContLen),
-	}, resultBuf)
+	return cw.cdnStore.WriteDownloadFile(ctx, taskID, offset, int64(pieceContLen), resultBuf)
 }

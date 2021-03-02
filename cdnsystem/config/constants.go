@@ -33,18 +33,6 @@ const (
 )
 
 const (
-	// RepoHome is the directory where store data
-	RepoHome = "repo"
-	// DownloadHome is the parent directory where the downloaded files are stored
-	// which is a relative path.
-	DownloadHome = "download"
-
-	UploadHome = "upload"
-
-	ShmHome = "/dev/shm/dragonfly/"
-)
-
-const (
 	// DefaultListenPort is the default port cdn server listens on.
 	DefaultListenPort = 8003
   	// DefaultDownloadPort is the default port for download files from cdn.
@@ -54,6 +42,7 @@ const (
 const (
 	// DefaultCdnConfigFilePath the default cdn config path.
 	DefaultCdnConfigFilePath = "/etc/dragonfly/cdn.yml"
+	DefaultStoragePattern = "disk"
 )
 
 const (
