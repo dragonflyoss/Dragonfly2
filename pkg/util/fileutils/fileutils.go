@@ -90,7 +90,7 @@ func SymbolicLink(oldname string, newname string) error {
 		if IsDir(newname) {
 			return errors.Errorf("symlink %s to %s: src already exists and is a directory", newname, oldname)
 		}
-		
+
 		if err := DeleteFile(newname); err != nil {
 			return errors.Wrapf(err, "failed to symlink %s to %s", newname, oldname)
 		}
