@@ -33,7 +33,7 @@ import (
 func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (*types.DownloadResponse, error) {
 	headers := maputils.DeepCopyMap(nil, task.Headers)
 	if detectResult.breakNum > 0 {
-		breakRange, err := rangeutils.CalculateBreakRange(detectResult.breakNum, task.PieceSize, task.SourceFileLength)
+		breakRange, err := rangecal.CalculateBreakRange(detectResult.breakNum, task.PieceSize, task.SourceFileLength)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to calculate the breakRange")
 		}

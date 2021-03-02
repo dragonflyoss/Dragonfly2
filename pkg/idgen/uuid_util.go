@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package idutils
+package idgen
 
 import "github.com/google/uuid"
 

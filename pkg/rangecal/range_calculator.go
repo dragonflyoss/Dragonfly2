@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package rangeutils
+package rangecal
 
 import (
 	"fmt"
