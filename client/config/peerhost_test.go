@@ -162,7 +162,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		"url": "https://d7y.io",
     "certs": [
 			"../daemon/test/testdata/certs/ca.crt",
-			"../daemon/test/testdata/certs/sca.crt",
+			"../daemon/test/testdata/certs/sca.crt"
     ],
 		"regx": "blobs/sha256.*",
 		"port1": 1001,
@@ -267,7 +267,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 	hijackExp, _ := NewRegexp("mirror.aliyuncs.com:443")
 
 	certPool := x509.NewCertPool()
-	ca, _ := ioutil.ReadFile("../daemon/test/testdata/certs/ca.crt")
+	ca, _ := ioutil.ReadFile("../daemon/test/testdata/certs/sca.crt")
 	certPool.AppendCertsFromPEM(ca)
 
 	peerHostOption := &PeerHostOption{
@@ -383,7 +383,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 				Certs: &CertPool{
 					CertPool: certPool,
 				},
-				Insecure: false,
+				Insecure: true,
 				Direct:   false,
 			},
 			Proxies: []*Proxy{
@@ -400,7 +400,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 				Hosts: []*HijackHost{
 					{
 						Regx:     hijackExp,
-						Insecure: false,
+						Insecure: true,
 						Certs: &CertPool{
 							CertPool: certPool,
 						},
@@ -414,6 +414,11 @@ func TestPeerHostOption_Load(t *testing.T) {
 	if err := peerHostOptionYAML.Load("../daemon/test/testdata/config/daemon.yml"); err != nil {
 		t.Fatal(err)
 	}
+	// s1, _ := json.MarshalIndent(peerHostOption, "", "\t")
+	// fmt.Printf("aaa: %s", s1)
+
+	// s2, _ := json.MarshalIndent(peerHostOptionYAML, "", "\t")
+	// fmt.Printf("bbb: %s", s2)
 	assert.EqualValues(peerHostOption, peerHostOptionYAML)
 
 	peerHostOptionJSON := &PeerHostOption{}
