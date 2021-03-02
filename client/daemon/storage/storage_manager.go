@@ -88,6 +88,7 @@ type storageManager struct {
 	storeOption   *Option
 	tasks         *sync.Map
 	dataPathStat  *syscall.Stat_t
+	gcCallback    func(CommonTaskRequest)
 }
 
 type StoreStrategy string
@@ -126,6 +127,7 @@ func NewStorageManager(storeStrategy StoreStrategy, opt *Option, gcCallback GCCa
 		storeOption:   opt,
 		tasks:         &sync.Map{},
 		dataPathStat:  stat.Sys().(*syscall.Stat_t),
+		gcCallback:    gcCallback,
 	}
 
 	for _, o := range moreOpts {
@@ -256,6 +258,7 @@ func (s storageManager) CreateTask(req RegisterTaskRequest) error {
 			PeerID:        req.PeerID,
 			Pieces:        map[int32]PieceMetaData{},
 		},
+		gcCallback:       s.gcCallback,
 		RWMutex:          &sync.RWMutex{},
 		dataDir:          dataDir,
 		metadataFilePath: path.Join(dataDir, taskMetaData),

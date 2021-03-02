@@ -392,11 +392,13 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 	if peer == nil {
 		return nil, fmt.Errorf("empty peer")
 	}
+	pt.Debugf("get piece task from peer %s, request: %#v", peer.PeerId, request)
 	p, err := dfclient.GetPieceTasks(peer, pt.ctx, request)
 	if err != nil {
 		pt.Errorf("get piece task from peer(%s) error: %s", peer.PeerId, err)
 		return nil, err
 	}
+	pt.Debugf("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
 	if p.State.Success {
 		return p, nil
 	}
