@@ -18,13 +18,14 @@ package cmd
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/version"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"d7y.io/dragonfly/v2/version"
 
 	"github.com/avast/retry-go"
 	"github.com/gofrs/flock"
@@ -92,6 +93,14 @@ func runDfget() error {
 	if err != nil {
 		return err
 	}
+	var (
+		ctx    = context.Background()
+		cancel context.CancelFunc
+	)
+	if flagClientOpt.Timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, flagClientOpt.Timeout)
+		defer cancel()
+	}
 	request := &dfdaemongrpc.DownRequest{
 		Url:    flagClientOpt.URL,
 		Output: output,
@@ -102,26 +111,29 @@ func runDfget() error {
 	if err != nil {
 		return err
 	}
-	//defer client.Close()
 	var result *dfdaemongrpc.DownResult
 	pb := progressbar.DefaultBytes(-1, "downloading")
-	for result = range down {
-		if result.CompletedLength > 0 {
-			pb.Set64(int64(result.CompletedLength))
+	for {
+		select {
+		case result = <-down:
+			if result.CompletedLength > 0 {
+				pb.Set64(int64(result.CompletedLength))
+			}
+			if !result.Done {
+				continue
+			}
+			switch result.State.Code {
+			case dfcodes.Success:
+				pb.Finish()
+				return nil
+			default:
+				return fmt.Errorf("%s", result.State.GetMsg())
+			}
+		case <-ctx.Done():
+			logger.Errorf("content done due to: %s", ctx.Err())
+			return ctx.Err()
 		}
-		if !result.Done {
-			continue
-		}
-		switch result.State.Code {
-		case dfcodes.Success:
-			pb.Finish()
-			return nil
-		default:
-			return fmt.Errorf("%s", result.State.GetMsg())
-		}
-		break
 	}
-	return nil
 }
 
 func convertDeprecatedFlags() {
@@ -223,7 +235,7 @@ func spawnDaemon() error {
 
 	var args = []string{
 		"daemon",
-		"--download-rate", fmt.Sprintf("%d", flagDaemonOpt.Download.RateLimit.Limit),
+		"--download-rate", fmt.Sprintf("%f", flagDaemonOpt.Download.RateLimit.Limit),
 		"--upload-port", fmt.Sprintf("%d", flagDaemonOpt.Upload.TCPListen.PortRange.Start),
 		"--home", flagDaemonOpt.WorkHome,
 		"--listen", flagDaemonOpt.Host.ListenIP,

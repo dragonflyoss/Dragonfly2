@@ -45,7 +45,7 @@ func initRootFlags() {
 	flagSet.Var(config.NewLimitRateValue(&flagDaemonOpt.Download.RateLimit), "totallimit",
 		"network bandwidth rate limit for the whole host, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
 	flagSet.DurationVarP(&flagClientOpt.Timeout, "timeout", "e", 0,
-		"timeout set for file downloading task. If dfget has not finished downloading all pieces of file before --timeout, the dfget will throw an error and exit")
+		"timeout for file downloading task. If dfget has not finished downloading all pieces of file before --timeout, the dfget will throw an error and exit")
 
 	// md5 & identifier
 	flagSet.StringVarP(&flagClientOpt.Md5, "md5", "m", "",
