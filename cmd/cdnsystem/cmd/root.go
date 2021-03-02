@@ -265,7 +265,7 @@ func getConfigFromViper(v *viper.Viper) (*config.Config, error) {
 		dc.TagName = "yaml"
 		dc.DecodeHook = decodeWithYAML(
 			reflect.TypeOf(time.Second),
-			reflect.TypeOf(rate.B),
+			reflect.TypeOf(ratelimiter.B),
 			reflect.TypeOf(fileutils.B),
 		)
 	}); err != nil {

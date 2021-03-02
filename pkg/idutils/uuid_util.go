@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package util
+package idutils
 
-import (
-	"testing"
-)
+import "github.com/google/uuid"
 
-func TestLang(t *testing.T) {
-
+func UUIDString() string {
+	return uuid.New().String()
 }

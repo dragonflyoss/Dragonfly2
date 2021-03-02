@@ -20,6 +20,8 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"path"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
@@ -29,13 +31,12 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/metricsutils"
 	"d7y.io/dragonfly/v2/pkg/rate/limitreader"
 	"d7y.io/dragonfly/v2/pkg/rate/ratelimiter"
-	"d7y.io/dragonfly/v2/pkg/util/metricsutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"path"
 )
 
 func init() {
@@ -53,16 +54,16 @@ type metrics struct {
 
 func newMetrics(register prometheus.Registerer) *metrics {
 	return &metrics{
-		cdnCacheHitCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_cache_hit_total",
+		cdnCacheHitCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_cache_hit_total",
 			"Total times of hitting cdn cache", []string{}, register),
 
-		cdnDownloadCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_download_total",
+		cdnDownloadCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_download_total",
 			"Total times of cdn download", []string{}, register),
 
-		cdnDownloadBytes: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_download_size_bytes_total",
+		cdnDownloadBytes: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_download_size_bytes_total",
 			"total file size of cdn downloaded from source in bytes", []string{}, register,
 		),
-		cdnDownloadFailCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_download_failed_total",
+		cdnDownloadFailCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_download_failed_total",
 			"Total failure times of cdn download", []string{}, register),
 	}
 }

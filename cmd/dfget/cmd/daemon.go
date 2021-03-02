@@ -40,7 +40,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/pidfile"
+	"d7y.io/dragonfly/v2/client/pidfile"
 )
 
 var daemonCmd = &cobra.Command{

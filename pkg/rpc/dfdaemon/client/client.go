@@ -79,7 +79,7 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 
 	drc := make(chan *dfdaemon.DownResult, 4)
 	// 生成taskId
-	taskId := types.GenerateTaskId(req.Url, req.Filter, req.UrlMeta)
+	taskId := idutils.GenerateTaskId(req.Url, req.Filter, req.UrlMeta)
 	drs, err := newDownResultStream(dc, ctx, taskId, req, opts)
 	if err != nil {
 		return nil, err

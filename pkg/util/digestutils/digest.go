@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package digest
+package digestutils
 
 import (
 	"bufio"

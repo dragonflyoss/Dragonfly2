@@ -91,8 +91,8 @@ const (
 const (
 	// DefaultSystemReservedBandwidth is the default network bandwidth reserved for system software.
 	// unit: MB/s
-	DefaultSystemReservedBandwidth = 20 * rate.MB
+	DefaultSystemReservedBandwidth = 20 * ratelimiter.MB
 	// DefaultMaxBandwidth is the default network bandwidth that cdn can use.
 	// unit: MB/s
-	DefaultMaxBandwidth = 200 * rate.MB
+	DefaultMaxBandwidth = 200 * ratelimiter.MB
 )

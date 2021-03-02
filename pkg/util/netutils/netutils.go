@@ -19,7 +19,6 @@ package netutils
 import (
 	"bufio"
 	"fmt"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"net"
 	"net/http"
 	"net/url"
@@ -31,8 +30,9 @@ import (
 	"strings"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+
 	"d7y.io/dragonfly/v2/pkg/rate"
-	"d7y.io/dragonfly/v2/pkg/util/httputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
@@ -42,10 +42,10 @@ const (
 )
 
 // default rate limit is 20M.
-var defaultRateLimit = 20 * rate.MB
+var defaultRateLimit = 20 * ratelimiter.MB
 
 // NetLimit parse speed of interface that it has prefix of eth.
-func NetLimit() *rate.Rate {
+func NetLimit() *ratelimiter.Rate {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.Errorf("parse default net limit error:%v", err)
@@ -114,7 +114,7 @@ func NetLimit() *rate.Rate {
 	}
 
 	if maxInterfaceLimit > 0 {
-		r := rate.Rate(maxInterfaceLimit) * rate.MB
+		r := ratelimiter.Rate(maxInterfaceLimit) * ratelimiter.MB
 		return &r
 	}
 
@@ -189,7 +189,7 @@ func IsValidURL(urlStr string) bool {
 
 	// with custom schemas, url like "x://y/z" is valid
 	reg := regexp.MustCompile(`(` +
-		httputils.GetValidURLSchemas() +
+		"https?|HTTPS?" +
 		`)://([\w_]+:[\w_]+@)?([\w-]+\.)*[\w-]+(/[\w- ./?%&=]*)?`)
 	if result := reg.FindString(urlStr); stringutils.IsBlank(result) {
 		return false
@@ -272,7 +272,7 @@ func isExist(mmap map[string]bool, key string) bool {
 // CalculateTimeout calculates the timeout(in seconds) according to the fileLength and the min rate of network.
 //
 // The 0 will be returned when both minRate and defaultMinRate both are <=0.
-func CalculateTimeout(fileLength int64, minRate, defaultMinRate rate.Rate, reservedTime time.Duration) time.Duration {
+func CalculateTimeout(fileLength int64, minRate, defaultMinRate ratelimiter.Rate, reservedTime time.Duration) time.Duration {
 	// ensure the minRate to avoid trigger panic when minRate equals zero
 	if fileLength <= 0 ||
 		(minRate <= 0 && defaultMinRate <= 0) {

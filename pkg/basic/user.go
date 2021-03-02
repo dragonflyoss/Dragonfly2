@@ -21,7 +21,7 @@ import (
 	"os/user"
 	"strings"
 
-	"d7y.io/dragonfly/v2/pkg/asserts"
+	"d7y.io/dragonfly/v2/pkg/util/asserts"
 )
 
 var (
@@ -45,7 +45,7 @@ func init() {
 			HomeDir = "/"
 		}
 	}
-	asserts.PAssert(len(HomeDir) > 0, "home dir is empty")
+	assertutils.PAssert(len(HomeDir) > 0, "home dir is empty")
 
 	TmpDir = os.TempDir()
 	if TmpDir == "" {

@@ -18,9 +18,31 @@ package fileutils
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
+
+	"d7y.io/dragonfly/v2/pkg/dferrors"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/pkg/errors"
 )
 
 type Fsize int64
+
+var sizeRegexp = regexp.MustCompile("^([0-9]+)(MB?|m|KB?|k|GB?|g|B)$")
+
+func (f *Fsize) Set(s string) (err error) {
+	if stringutils.IsBlank(s) {
+		*f = ToFsize(0)
+	} else {
+		*f, err = ParseSize(s)
+	}
+
+	return
+}
+
+func (f Fsize) Type() string {
+	return "FileSize"
+}
 
 const (
 	B  Fsize = 1
@@ -58,4 +80,36 @@ func (f Fsize) String() string {
 	}
 
 	return fmt.Sprintf("%.1f%s", float64(f)/float64(unit), symbol)
+}
+
+// ParseSize parses a string into a int64.
+func ParseSize(fsize string) (Fsize, error) {
+	var n int
+	n, err := strconv.Atoi(fsize)
+	if err == nil && n >= 0 {
+		return Fsize(n), nil
+	}
+
+	if n < 0 {
+		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "not a valid fsize string: %d, only non-negative values are supported", fsize)
+	}
+
+	matches := sizeRegexp.FindStringSubmatch(fsize)
+	if len(matches) != 3 {
+		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
+	}
+	n, _ = strconv.Atoi(matches[1])
+	switch unit := matches[2]; {
+	case unit == "g" || unit == "G" || unit == "GB":
+		n *= int(GB)
+	case unit == "m" || unit == "M" || unit == "MB":
+		n *= int(MB)
+	case unit == "k" || unit == "K" || unit == "KB":
+		n *= int(KB)
+	case unit == "B":
+		// Value already correct
+	default:
+		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
+	}
+	return Fsize(n), nil
 }

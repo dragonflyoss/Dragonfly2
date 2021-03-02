@@ -14,27 +14,22 @@
  * limitations under the License.
  */
 
-package digest
+package assertutils
 
 import (
-	"github.com/stretchr/testify/suite"
-	"testing"
+	"errors"
 )
 
-func TestSuite(t *testing.T) {
-	suite.Run(t, new(DigestUtilSuite))
+func Assert(cond bool, message string) error {
+	if cond {
+		return nil
+	} else {
+		return errors.New(message)
+	}
 }
 
-type DigestUtilSuite struct{
-	suite.Suite
-}
-
-func (suite *DigestUtilSuite) TestSha256() {
-	result := Sha256("test")
-	suite.Equal(result, "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
-}
-
-func (suite *DigestUtilSuite) TestSha1() {
-	result := Sha1([]string{"test1", "test2"})
-	suite.Equal(result, "dff964f6e3c1761b6288f5c75c319d36fb09b2b9")
+func PAssert(cond bool, message string) {
+	if !cond {
+		panic(message)
+	}
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package metricsutils
+package prometrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"

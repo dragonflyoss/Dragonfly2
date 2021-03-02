@@ -27,7 +27,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/digest"
+	"d7y.io/dragonfly/v2/pkg/util/digest"
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
@@ -74,7 +74,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 					continue
 				}
 				// report piece status
-				pieceMd5Sum := digest.Md5SumBytes(pieceMd5, nil)
+				pieceMd5Sum := digestutils.Md5SumBytes(pieceMd5, nil)
 				pieceRecord := &pieceMetaRecord{
 					PieceNum:   job.pieceNum,
 					PieceLen:   int32(pieceLen),

@@ -18,7 +18,7 @@ package mgr
 
 import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/util/workqueue"
+	"d7y.io/dragonfly/v2/pkg/struct/workqueue"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"fmt"

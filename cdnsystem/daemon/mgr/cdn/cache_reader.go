@@ -23,7 +23,7 @@ import (
 	"io"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/pkg/digest"
+	"d7y.io/dragonfly/v2/pkg/util/digest"
 	"d7y.io/dragonfly/v2/pkg/util/ifaceutils"
 	"github.com/pkg/errors"
 )
@@ -77,7 +77,7 @@ func checkPieceContent(reader io.Reader, pieceRecord *pieceMetaRecord, fileMd5 h
 			break
 		}
 	}
-	realPieceMd5 := digest.Md5SumBytes(pieceMd5, nil)
+	realPieceMd5 := digestutils.Md5SumBytes(pieceMd5, nil)
 	// check piece content
 	if realPieceMd5 != pieceRecord.Md5 {
 		return errors.Wrapf(cdnerrors.ErrPieceMd5CheckFail, "realPieceMd5 md5 (%s), expected md5 (%s)", realPieceMd5, pieceRecord.Md5)

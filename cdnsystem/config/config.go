@@ -102,11 +102,11 @@ type BaseProperties struct {
 
 	// SystemReservedBandwidth is the network bandwidth reserved for system software.
 	// default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	SystemReservedBandwidth rate.Rate `yaml:"systemReservedBandwidth"`
+	SystemReservedBandwidth ratelimiter.Rate `yaml:"systemReservedBandwidth"`
 
 	// MaxBandwidth is the network bandwidth that cdn system can use.
 	// default: 200 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	MaxBandwidth rate.Rate `yaml:"maxBandwidth"`
+	MaxBandwidth ratelimiter.Rate `yaml:"maxBandwidth"`
 
 	// Whether to enable profiler
 	// default: false

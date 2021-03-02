@@ -18,18 +18,19 @@ package task
 
 import (
 	"context"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/prometrics"
 	"d7y.io/dragonfly/v2/pkg/struct/syncmap"
-	"d7y.io/dragonfly/v2/pkg/util/metricsutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"time"
 )
 
 func init() {
@@ -47,16 +48,16 @@ type metrics struct {
 
 func newMetrics(register prometheus.Registerer) *metrics {
 	return &metrics{
-		tasks: metricsutils.NewGauge(config.SubsystemCdnSystem, "tasks",
+		tasks: prometrics.NewGauge(config.SubsystemCdnSystem, "tasks",
 			"Current status of cdn tasks", []string{"taskStatus"}, register),
 
-		tasksRegisterCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "seed_tasks_registered_total",
+		tasksRegisterCount: prometrics.NewCounter(config.SubsystemCdnSystem, "seed_tasks_registered_total",
 			"Total times of registering tasks", []string{}, register),
 
-		triggerCdnCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_trigger_total",
+		triggerCdnCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_trigger_total",
 			"Total times of triggering cdn", []string{}, register),
 
-		triggerCdnFailCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "cdn_trigger_failed_total",
+		triggerCdnFailCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_trigger_failed_total",
 			"Total failure times of triggering cdn", []string{}, register),
 	}
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package rate
+package ratelimiter
 
 import (
 	"encoding/json"
