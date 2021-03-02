@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/pkg/progressbar"
 	"d7y.io/dragonfly/v2/version"
 	"fmt"
 	"os"
@@ -40,7 +41,6 @@ import (
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/client/pidfile"
-	"d7y.io/dragonfly/v2/pkg/util/progressbar"
 )
 
 var filter string

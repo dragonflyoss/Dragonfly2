@@ -23,7 +23,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/pkg/struct/maputils"
+	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 )
 
 func TestCopyHeader(t *testing.T) {

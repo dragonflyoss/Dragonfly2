@@ -27,7 +27,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/util/digest"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"

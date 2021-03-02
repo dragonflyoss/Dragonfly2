@@ -17,8 +17,9 @@
 package util
 
 import (
-	"d7y.io/dragonfly/v2/pkg/struct/atomiccount"
 	"sync"
+
+	"d7y.io/dragonfly/v2/pkg/structure/atomiccount"
 )
 
 // countRWMutex

@@ -24,13 +24,13 @@ import (
 	"strings"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/struct/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )

@@ -23,7 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/metricsutils"
+	"d7y.io/dragonfly/v2/pkg/prometrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

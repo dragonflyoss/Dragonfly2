@@ -19,7 +19,7 @@ package config
 import (
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rate"
+	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 )
 
 /* the reason of backing to source */

@@ -23,7 +23,7 @@ import (
 	"io"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/pkg/util/digest"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/ifaceutils"
 	"github.com/pkg/errors"
 )

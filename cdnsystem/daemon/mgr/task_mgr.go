@@ -19,7 +19,7 @@ package mgr
 import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/pkg/struct/syncmap"
+	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 )
 
 // SeedTaskMgr as an interface defines all operations against SeedTask.

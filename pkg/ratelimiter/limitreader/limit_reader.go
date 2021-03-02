@@ -21,8 +21,8 @@ import (
 	"hash"
 	"io"
 
-	"d7y.io/dragonfly/v2/pkg/rate/ratelimiter"
-	"d7y.io/dragonfly/v2/pkg/util/digest"
+	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 // NewLimitReader creates a LimitReader.

@@ -78,12 +78,20 @@ func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
 	CoreLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
+func (log *SugaredLoggerOnWith) Info(args ...interface{}) {
+	CoreLogger.Info(append(args, log.withArgs...)...)
+}
+
 func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
 	CoreLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
 	CoreLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func (log *SugaredLoggerOnWith) Error(args ...interface{}) {
+	CoreLogger.Error(append(args, log.withArgs...)...)
 }
 
 func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {

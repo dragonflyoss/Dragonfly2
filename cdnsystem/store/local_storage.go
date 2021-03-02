@@ -27,7 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"d7y.io/dragonfly/v2/pkg/util/stat"
+	"d7y.io/dragonfly/v2/pkg/util/statutils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
