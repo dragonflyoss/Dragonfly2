@@ -17,11 +17,36 @@
 package assertutils
 
 import (
-	"errors"
+	"d7y.io/dragonfly/v2/pkg/util/ifaceutils"
+	"github.com/pkg/errors"
 )
 
-func Assert(cond bool, message string) error {
+func AssertTrue(cond bool, message string) error {
 	if cond {
+		return nil
+	} else {
+		return errors.New(message)
+	}
+}
+
+func AssertFalse(cond bool, message string) error {
+	if !cond {
+		return nil
+	} else {
+		return errors.New(message)
+	}
+}
+
+func AssertNil(v interface{}, message string) error {
+	if ifaceutils.IsNil(v) {
+		return nil
+	} else {
+		return errors.New(message)
+	}
+}
+
+func AssertNotNil(v interface{}, message string) error {
+	if !ifaceutils.IsNil(v) {
 		return nil
 	} else {
 		return errors.New(message)
