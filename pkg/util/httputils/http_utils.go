@@ -18,10 +18,11 @@ package httputils
 
 import (
 	"fmt"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"github.com/pkg/errors"
 	"strconv"
 	"strings"
+
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"github.com/pkg/errors"
 )
 
 // ConstructRangeStr wraps the rangeStr as a HTTP Range header value.
@@ -160,4 +161,3 @@ func handlePairRange(rangeStr string, length int64) (*RangeStruct, error) {
 		EndIndex:   endIndex,
 	}, nil
 }
-
