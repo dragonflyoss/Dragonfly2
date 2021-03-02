@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package cmdconfig
+package cmdutils
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"

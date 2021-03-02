@@ -36,17 +36,17 @@ func LoadYaml(path string, out interface{}) error {
 	return nil
 }
 
-func (n *NetworkType) UnmarshalYAML(node *yaml.Node) error {
-	var t string
-	switch node.Kind {
-	case yaml.ScalarNode:
-		if err := node.Decode(&t); err != nil {
-			return err
-		}
-	default:
-		return errors.New("invalid filestring")
-	}
-
-	*n = NetworkType(t)
-	return nil
-}
+//func (n *NetworkType) UnmarshalYAML(node *yaml.Node) error {
+//	var t string
+//	switch node.Kind {
+//	case yaml.ScalarNode:
+//		if err := node.Decode(&t); err != nil {
+//			return err
+//		}
+//	default:
+//		return errors.New("invalid filestring")
+//	}
+//
+//	*n = NetworkType(t)
+//	return nil
+//}
