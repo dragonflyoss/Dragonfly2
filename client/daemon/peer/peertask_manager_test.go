@@ -27,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -40,7 +41,6 @@ import (
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -51,7 +51,7 @@ import (
 var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)
 
 func TestMain(m *testing.M) {
-	logger.InitDaemon()
+	logcore.InitDaemon()
 	m.Run()
 }
 

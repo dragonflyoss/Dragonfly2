@@ -14,45 +14,6 @@
  * limitations under the License.
  */
 
-package basic
+package logcore
 
-import (
-	"os"
-	"os/user"
-	"strings"
-
-	"d7y.io/dragonfly/v2/pkg/asserts"
-)
-
-var (
-	HomeDir string
-	TmpDir  string
-	Username    string
-)
-
-func init() {
-	u, err := user.Current()
-
-	if err != nil {
-		panic(err.Error())
-	}
-
-	HomeDir = u.HomeDir
-	Username = u.Username
-	if len(HomeDir) > 1 {
-		HomeDir = strings.TrimRight(HomeDir, "/")
-		if HomeDir == "" {
-			HomeDir = "/"
-		}
-	}
-	asserts.PAssert(len(HomeDir) > 0, "home dir is empty")
-
-	TmpDir = os.TempDir()
-	if TmpDir == "" {
-		TmpDir = "/tmp"
-	}
-
-	if len(TmpDir) > 1 {
-		TmpDir = strings.TrimRight(TmpDir, "/")
-	}
-}
+const clientLogDir = "/var/log/dragonfly/"

@@ -188,7 +188,7 @@ func checkOutput(cfg *ClientConfig) error {
 		if err := syscall.Access(dir, syscall.O_RDWR); err == nil {
 			break
 		} else if os.IsPermission(err) || dir == "/" {
-			return fmt.Errorf("user[%s] path[%s] %v", basic.User, cfg.Output, err)
+			return fmt.Errorf("user[%s] path[%s] %v", basic.Username, cfg.Output, err)
 		}
 	}
 	return nil

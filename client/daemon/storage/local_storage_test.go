@@ -31,6 +31,7 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -42,7 +43,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	logger.InitDaemon()
+	logcore.InitDaemon()
 	m.Run()
 }
 

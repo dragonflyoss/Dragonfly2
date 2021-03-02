@@ -17,24 +17,26 @@
 package main
 
 import (
+	"os"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/basic/env"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
-	"os"
 )
 
 import (
 	"context"
+	"fmt"
+
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
-	"fmt"
 )
 
 func main() {
 	os.Setenv(env.ActiveProfile, "local")
-	logger.InitCdnSystem()
+	logcore.InitCdnSystem()
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,

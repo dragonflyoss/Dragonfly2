@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"testing"
 
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 	"golang.org/x/time/rate"
@@ -33,12 +34,11 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
 func TestMain(m *testing.M) {
-	logger.InitDaemon()
+	logcore.InitDaemon()
 	m.Run()
 }
 

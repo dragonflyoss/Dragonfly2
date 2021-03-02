@@ -24,6 +24,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/gofrs/flock"
@@ -58,7 +59,7 @@ var daemonCmd = &cobra.Command{
 			return err
 		}
 
-		logger.InitDaemon()
+		logcore.InitDaemon()
 		if err := checkDaemonOptions(); err != nil {
 			return err
 		}
@@ -99,7 +100,7 @@ func runDaemon() error {
 		s, _ = yaml.Marshal(flagDaemonOpt)
 		logger.Debugf("daemon yaml option(debug only, should not use as config):\n%s", string(s))
 
-		logger.SetCoreLevel(zapcore.DebugLevel)
+		logcore.SetCoreLevel(zapcore.DebugLevel)
 		go func() {
 			// enable go pprof and statsview
 			port, _ := freeport.GetFreePort()

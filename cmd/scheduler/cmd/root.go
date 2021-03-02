@@ -1,13 +1,15 @@
 package cmd
 
 import (
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/server"
-	"github.com/mitchellh/mapstructure"
 	"os"
 	"reflect"
 	"time"
+
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/server"
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -38,7 +40,7 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := logger.InitScheduler()
+		err := logcore.InitScheduler()
 		if err != nil {
 			return errors.Wrap(err, "init scheduler logger")
 		}

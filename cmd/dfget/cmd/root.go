@@ -25,6 +25,7 @@ import (
 	"strings"
 	"syscall"
 
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"github.com/avast/retry-go"
 	"github.com/gofrs/flock"
 	"github.com/spf13/cobra"
@@ -61,7 +62,7 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	Example:           dfgetExample(),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		logger.InitDfget()
+		logcore.InitDfget()
 		if err := checkClientOptions(); err != nil {
 			return err
 		}

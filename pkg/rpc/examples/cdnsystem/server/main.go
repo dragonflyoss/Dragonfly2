@@ -17,21 +17,23 @@
 package main
 
 import (
+	"os"
+
 	"d7y.io/dragonfly/v2/pkg/basic/env"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
-	"os"
 )
 import (
 	"context"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"d7y.io/dragonfly/v2/pkg/safe"
 	"fmt"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/pkg/safe"
 )
 
 type helloSeeder struct {
@@ -69,7 +71,7 @@ func (hs *helloSeeder) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*
 
 func main() {
 	os.Setenv(env.ActiveProfile, "local")
-	logger.InitCdnSystem()
+	logcore.InitCdnSystem()
 	err := rpc.StartTcpServer(12345, 12345, &helloSeeder{})
 
 	if err != nil {

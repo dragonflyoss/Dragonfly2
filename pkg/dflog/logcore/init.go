@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package logger
+package logcore
 
 import (
 	"path"
 
 	"d7y.io/dragonfly/v2/pkg/basic"
-)
-
-const (
-	CoreLogFileName = "core.log"
-	GrpcLogFileName = "grpc.log"
+	"d7y.io/dragonfly/v2/pkg/dflog"
 )
 
 func InitManager() error {
@@ -33,19 +29,19 @@ func InitManager() error {
 	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
-		SetCoreLogger(coreLogger.Sugar())
+		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
 	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
-		SetGrpcLogger(grpcLogger.Sugar())
+		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
 	if gcLogger, err := CreateLogger(logDir+"gc.log", 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
-		SetGcLogger(gcLogger.Sugar())
+		logger.SetGcLogger(gcLogger.Sugar())
 	}
 
 	return nil
@@ -57,25 +53,25 @@ func InitScheduler() error {
 	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
-		SetCoreLogger(coreLogger.Sugar())
+		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
 	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
-		SetGrpcLogger(grpcLogger.Sugar())
+		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
 	if gcLogger, err := CreateLogger(logDir+"gc.log", 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
-		SetGcLogger(gcLogger.Sugar())
+		logger.SetGcLogger(gcLogger.Sugar())
 	}
 
 	if statPeerLogger, err := CreateLogger(logDir+"stat/peer.log", 300, 30, 0, true, true); err != nil {
 		return err
 	} else {
-		SetStatPeerLogger(statPeerLogger)
+		logger.SetStatPeerLogger(statPeerLogger)
 	}
 
 	return nil
@@ -87,25 +83,25 @@ func InitCdnSystem() error {
 	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
-		SetCoreLogger(coreLogger.Sugar())
+		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
 	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
-		SetGrpcLogger(grpcLogger.Sugar())
+		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
 	if gcLogger, err := CreateLogger(logDir+"gc.log", 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
-		SetGcLogger(gcLogger.Sugar())
+		logger.SetGcLogger(gcLogger.Sugar())
 	}
 
 	if statSeedLogger, err := CreateLogger(logDir+"stat/seed.log", 300, 30, 0, true, true); err != nil {
 		return err
 	} else {
-		SetStatSeedLogger(statSeedLogger)
+		logger.SetStatSeedLogger(statSeedLogger)
 	}
 
 	return nil
@@ -115,19 +111,19 @@ func InitDaemon() error {
 	if coreLogger, err := CreateLogger(path.Join(clientLogDir, CoreLogFileName), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
-		SetCoreLogger(coreLogger.Sugar())
+		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
 	if grpcLogger, err := CreateLogger(path.Join(clientLogDir, GrpcLogFileName), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
-		SetGrpcLogger(grpcLogger.Sugar())
+		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
 	if gcLogger, err := CreateLogger(path.Join(clientLogDir, "gc.log"), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
-		SetGcLogger(gcLogger.Sugar())
+		logger.SetGcLogger(gcLogger.Sugar())
 	}
 
 	return nil
@@ -138,8 +134,8 @@ func InitDfget() error {
 		return err
 	} else {
 		log := dfgetLogger.Sugar()
-		SetCoreLogger(log)
-		SetGrpcLogger(log)
+		logger.SetCoreLogger(log)
+		logger.SetGrpcLogger(log)
 	}
 
 	return nil

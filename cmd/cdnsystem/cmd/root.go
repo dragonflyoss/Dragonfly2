@@ -17,16 +17,22 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	"d7y.io/dragonfly/v2/pkg/cmd"
 	"d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rate"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"fmt"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/mitchellh/mapstructure"
@@ -35,10 +41,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
-	"os"
-	"path/filepath"
-	"reflect"
-	"time"
 )
 
 const (
@@ -62,7 +64,7 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := logger.InitCdnSystem(); err != nil {
+		if err := logcore.InitCdnSystem(); err != nil {
 			return errors.Wrapf(err, "init log fail")
 		}
 		// load config file into the given viper instance.
