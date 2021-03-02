@@ -34,4 +34,6 @@ func TestAssert(t *testing.T) {
 
 	err = AssertNotNil(struct{}{}, "is nil")
 	assert.Nil(t, err)
+
+	assert.Panics(t, func() { PAssert(false, "not true") })
 }
