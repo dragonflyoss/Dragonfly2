@@ -68,18 +68,18 @@ proxy:
     port: 65001
   registry_mirror:
     url: https://index.docker.io
-    insecure: false
-    certs: [../daemon/test/testdata/certs/mca.crt]
+    insecure: true
+    certs: [../daemon/test/testdata/certs/sca.crt]
     direct: false
   proxies:
     - regx: blobs/sha256.*
       use_https: false
       direct: false
-      redirect: d7s.io
+      redirect: d7y.io
   hijack_https:
     cert: cert
     key: key
     hosts:
       - regx: mirror.aliyuncs.com:443
-        insecure: false
-        certs: [../daemon/test/testdata/certs/mca.crt]
+        insecure: true
+        certs: [../daemon/test/testdata/certs/sca.crt]
