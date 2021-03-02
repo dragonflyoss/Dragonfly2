@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package lockerutils
+package synclock
 
 import (
 	"sync"

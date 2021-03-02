@@ -16,7 +16,7 @@
 
 // Package printer carries a stdout fd. It helps caller to print message on console
 // even if it has set the log fd redirect.
-package cmd
+package cmdconfig
 
 import (
 	"fmt"

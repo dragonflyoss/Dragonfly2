@@ -28,7 +28,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
-	"d7y.io/dragonfly/v2/pkg/util/lockerutils"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 	"github.com/pkg/errors"
 	"github.com/serialx/hashring"
@@ -50,7 +50,7 @@ const (
 )
 
 type Connection struct {
-	rwMutex        *lockerutils.LockerPool
+	rwMutex        *synclock.LockerPool
 	opts           []grpc.DialOption
 	key2NodeMap    sync.Map // key -> node(many to one)
 	node2ClientMap sync.Map // node -> clientConn(one to one)
@@ -73,7 +73,7 @@ func NewConnection(addrs []dfnet.NetAddr, opts ...grpc.DialOption) *Connection {
 		addresses = append(addresses, addr.GetEndpoint())
 	}
 	return &Connection{
-		rwMutex:        lockerutils.NewLockerPool(),
+		rwMutex:        synclock.NewLockerPool(),
 		opts:           opts,
 		HashRing:       hashring.New(addresses),
 		accessNodeMap:  syncmap.NewSyncMap(),

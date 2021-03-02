@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package lockerutils
+package synclock
 
 import (
-	"go.uber.org/atomic"
 	"sync"
+
+	"go.uber.org/atomic"
 )
 
 type countRWMutex struct {

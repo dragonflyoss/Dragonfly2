@@ -30,3 +30,14 @@ func Marshal(v interface{}) (string, error) {
 		return "", err
 	}
 }
+
+func (n *NetworkType) UnmarshalJSON(b []byte) error {
+	var t string
+	err := json.Unmarshal(b, &t)
+	if err != nil {
+		return err
+	}
+
+	*n = NetworkType(t)
+	return nil
+}
