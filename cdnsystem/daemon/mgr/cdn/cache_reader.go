@@ -77,7 +77,7 @@ func checkPieceContent(reader io.Reader, pieceRecord *pieceMetaRecord, fileMd5 h
 			break
 		}
 	}
-	realPieceMd5 := digestutils.Md5SumBytes(pieceMd5, nil)
+	realPieceMd5 := digestutils.ToHashString(pieceMd5)
 	// check piece content
 	if realPieceMd5 != pieceRecord.Md5 {
 		return errors.Wrapf(cdnerrors.ErrPieceMd5CheckFail, "realPieceMd5 md5 (%s), expected md5 (%s)", realPieceMd5, pieceRecord.Md5)

@@ -17,25 +17,48 @@
 package digestutils
 
 import (
+	"crypto/md5"
+	"strings"
+	"syscall"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestSuite(t *testing.T) {
-	suite.Run(t, new(DigestUtilSuite))
+func TestSha256(t *testing.T) {
+	var expected = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+	assert.Equal(t, expected, Sha256("hello"))
 }
 
-type DigestUtilSuite struct{
-	suite.Suite
+func TestMd5Bytes(t *testing.T) {
+	var expected = "5d41402abc4b2a76b9719d911017c592"
+	assert.Equal(t, expected, Md5Bytes([]byte("hello")))
 }
 
-func (suite *DigestUtilSuite) TestSha256() {
-	result := Sha256("test")
-	suite.Equal(result, "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
+func TestToHashString(t *testing.T) {
+	var expected = "5d41402abc4b2a76b9719d911017c592"
+	h := md5.New()
+	h.Write([]byte("hello"))
+	assert.Equal(t, expected, ToHashString(h))
 }
 
-func (suite *DigestUtilSuite) TestSha1() {
-	result := Sha1([]string{"test1", "test2"})
-	suite.Equal(result, "dff964f6e3c1761b6288f5c75c319d36fb09b2b9")
+func TestMd5Reader(t *testing.T) {
+	var expected = "5d41402abc4b2a76b9719d911017c592"
+	assert.Equal(t, expected, Md5Reader(strings.NewReader("hello")))
+}
+
+func TestMd5File(t *testing.T) {
+	var expected = "5d41402abc4b2a76b9719d911017c592"
+
+	path := basic.TmpDir + "/" + uuid.New().String()
+	f, err := fileutils.OpenFile(path, syscall.O_CREAT|syscall.O_TRUNC|syscall.O_RDWR, 0644)
+	assert.Nil(t, err)
+
+	f.Write([]byte("hello"))
+	f.Close()
+
+	assert.Equal(t, expected, Md5File(path))
 }

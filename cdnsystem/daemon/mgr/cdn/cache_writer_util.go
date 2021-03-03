@@ -74,7 +74,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 					continue
 				}
 				// report piece status
-				pieceMd5Sum := digestutils.Md5SumBytes(pieceMd5, nil)
+				pieceMd5Sum := digestutils.ToHashString(pieceMd5)
 				pieceRecord := &pieceMetaRecord{
 					PieceNum:   job.pieceNum,
 					PieceLen:   int32(pieceLen),

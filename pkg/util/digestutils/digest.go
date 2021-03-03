@@ -19,55 +19,68 @@ package digestutils
 import (
 	"bufio"
 	"crypto/md5"
-	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"hash"
 	"io"
-	"os"
 
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
-// Sha256 returns the SHA-256 checksum of the data.
-func Sha256(value string) string {
-	h := sha256.New()
-	h.Write([]byte(value))
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-// Sha1 returns the SHA-1 checksum of the contents.
-func Sha1(contents []string) string {
-	h := sha1.New()
-	for _, content := range contents {
-		io.WriteString(h, content)
+func Sha256(values ...string) string {
+	if len(values) == 0 {
+		return ""
 	}
-	return hex.EncodeToString(h.Sum(nil))
+
+	h := sha256.New()
+	for _, content := range values {
+		if _, err := h.Write([]byte(content)); err != nil {
+			return ""
+		}
+	}
+
+	return ToHashString(h)
 }
 
-// GetMd5Sum gets md5 sum as a string and appends the current hash to b.
-func Md5SumBytes(md5 hash.Hash, b []byte) string {
-	return fmt.Sprintf("%x", md5.Sum(b))
+func Md5Reader(reader io.Reader) string {
+	h := md5.New()
+	if _, err := io.Copy(h, reader); err != nil {
+		return ""
+	}
+
+	return ToHashString(h)
 }
 
-// Md5SumBytes generates md5 for a given file.
-func Md5SumFile(name string) string {
+func Md5Bytes(bytes []byte) string {
+	h := md5.New()
+	h.Write(bytes)
+	return ToHashString(h)
+}
+
+func Md5File(name string) string {
 	if !fileutils.IsRegular(name) {
 		return ""
 	}
-	f, err := os.Open(name)
+
+	f, err := fileutils.Open(name)
 	if err != nil {
 		return ""
 	}
+
 	defer f.Close()
-	r := bufio.NewReaderSize(f, 8*1024*1024)
+
 	h := md5.New()
+
+	r := bufio.NewReaderSize(f, int(4*fileutils.MB))
 
 	_, err = io.Copy(h, r)
 	if err != nil {
 		return ""
 	}
 
-	return Md5SumBytes(h, nil)
+	return ToHashString(h)
+}
+
+func ToHashString(h hash.Hash) string {
+	return hex.EncodeToString(h.Sum(nil))
 }

@@ -93,7 +93,7 @@ func (lr *LimitReader) Read(p []byte) (n int, err error) {
 // Md5 calculates the md5 of all contents read.
 func (lr *LimitReader) Md5() string {
 	if lr.md5sum != nil {
-		return digestutils.Md5SumBytes(lr.md5sum, nil)
+		return digestutils.ToHashString(lr.md5sum)
 	}
 	return ""
 }

@@ -52,11 +52,17 @@ func OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
 		return os.OpenFile(path, flag, perm)
 	}
 
-	if err := MkdirAll(filepath.Dir(path)); err != nil {
-		return nil, errors.Wrapf(err, "failed to open file %s", path)
+	if (flag & syscall.O_CREAT) > 0 {
+		if err := MkdirAll(filepath.Dir(path)); err != nil {
+			return nil, errors.Wrapf(err, "failed to open file %s", path)
+		}
 	}
 
 	return os.OpenFile(path, flag, perm)
+}
+
+func Open(path string) (*os.File, error) {
+	return OpenFile(path, syscall.O_RDONLY, 0)
 }
 
 // Link creates a hard link pointing to oldname named newname for a file.
