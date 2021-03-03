@@ -29,7 +29,6 @@ import (
 var (
 	m              = make(map[string]Builder)
 	defaultStorage = "disk"
-	FieldSeparator = ":"
 )
 
 func Register(b Builder) {
@@ -48,9 +47,14 @@ func Get(name string, defaultIfAbsent bool) Builder {
 
 // Builder creates a storage
 type Builder interface {
-	Build() (Storage, error)
+
+	Build([]store.StorageDriver, BuildOptions) (Storage, error)
 
 	Name() string
+}
+
+type BuildOptions interface {
+
 }
 
 type Storage interface {
@@ -64,6 +68,7 @@ type Storage interface {
 
 	// GetAvailSpace returns the available disk space in B.
 	GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error)
+
 
 	CreateUploadLink(taskId string) error
 

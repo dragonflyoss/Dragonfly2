@@ -30,6 +30,8 @@ import (
 	"strings"
 )
 
+const FieldSeparator = ":"
+
 // fileMetaData
 type fileMetaData struct {
 	TaskId          string            `json:"taskId"`
@@ -231,7 +233,7 @@ func (mm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, tas
 	}
 	var result = make([]*pieceMetaRecord, 0, piecesLength-2)
 	for _, pieceStr := range pieceMetaRecords[:piecesLength-2] {
-		record, err := parsePieceMetaRecord(pieceStr)
+		record, err := parsePieceMetaRecord(pieceStr, FieldSeparator)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get piece meta record")
 		}
@@ -253,11 +255,11 @@ func (mm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context,
 	}
 	var result = make([]*pieceMetaRecord, 0, len(pieceMetaRecords))
 	for _, pieceRecord := range pieceMetaRecords {
-		if len(strings.Split(pieceRecord, storage.FieldSeparator)) == 0 {
+		if len(strings.Split(pieceRecord, FieldSeparator)) == 0 {
 			// 如果是签名或者文件md5则忽略
 			continue
 		}
-		record, err := parsePieceMetaRecord(pieceRecord)
+		record, err := parsePieceMetaRecord(pieceRecord, FieldSeparator)
 		if err != nil {
 			return nil, err
 		} else {

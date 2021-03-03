@@ -84,14 +84,15 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) 
 
 // doDetect the actual detect action which detects file metaData and pieces metaData of specific task
 func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (*cacheResult, error) {
+	logger.Debugf("create upload symbol link")
+	// todo 创建上传目录
+	err := cd.cacheStore.CreateUploadLink(task.TaskId)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create upload symbol link")
+	}
 	fileMetaData, err := cd.metaDataManager.readFileMetaData(ctx, task.TaskId)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read file meta data from store")
-	}
-	// todo 创建上传目录
-	err = cd.cacheStore.CreateUploadLink(task.TaskId)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create upload symbol link")
 	}
 	if err := checkSameFile(task, fileMetaData); err != nil {
 		return nil, errors.Wrapf(err, "task does not match meta information of task file ")

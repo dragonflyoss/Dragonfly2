@@ -22,7 +22,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
-	underDisk "d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"github.com/pkg/errors"
@@ -35,10 +34,9 @@ const name = "disk"
 type diskBuilder struct {
 }
 
-func (*diskBuilder) Build() (storage.Storage, error) {
-	underStore, _ := underDisk.NewStorage("baseDir: /tmp/cdnsystem/")
+func (*diskBuilder) Build(underlyingStores []store.StorageDriver, buildOpts storage.BuildOptions) (storage.Storage, error) {
 	storage := &diskStorage{
-		diskStore: underStore,
+		diskStore: underlyingStores[0],
 	}
 	return storage, nil
 }

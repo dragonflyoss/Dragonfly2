@@ -17,7 +17,6 @@
 package cdn
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"fmt"
@@ -46,13 +45,13 @@ func getPieceMetaValue(record *pieceMetaRecord) string {
 	return fmt.Sprintf("%d:%d:%s:%s:%d:%d", record.PieceNum, record.PieceLen, record.Md5, record.Range, record.Offset, record.PieceStyle)
 }
 
-func parsePieceMetaRecord(value string) (record *pieceMetaRecord, err error) {
+func parsePieceMetaRecord(value, fieldSeparator string) (record *pieceMetaRecord, err error) {
 	defer func() {
 		if msg := recover(); msg != nil {
 			err = errors.Errorf("%v", msg)
 		}
 	}()
-	fields := strings.Split(value, storage.FieldSeparator)
+	fields := strings.Split(value, fieldSeparator)
 	pieceNum, err := strconv.Atoi(fields[0])
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid pieceNum:%s", fields[0])

@@ -34,10 +34,11 @@ const name = "hybrid"
 type diskBuilder struct {
 }
 
-func (*diskBuilder) Build() (storage.Storage, error) {
+func (*diskBuilder) Build(underlyingStores []store.StorageDriver, buildOpts storage.BuildOptions) (storage.Storage,
+	error) {
 	storage := &hybridStorage{
-		memoryStore: nil,
-		diskStore:   nil,
+		memoryStore: underlyingStores[0],
+		diskStore:   underlyingStores[1],
 		shmMgr:      newShareMemManager(),
 	}
 	return storage, nil
