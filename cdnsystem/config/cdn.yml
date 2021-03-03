@@ -69,12 +69,12 @@ base:
   # It means the value of CleanRatio should be [1-10].
   CleanRatio: 1
 
-plugins:
-  storage:
-    - name: local
-      enabled: true
-      config: "baseDir: /tmp/cdnsystem/"
-  sourceClient:
-    - name: http
-      enable: true
+#plugins:
+#  storage:
+#    - name: local
+#      enabled: true
+#      config: "baseDir: /tmp/cdnsystem/"
+#  sourceClient:
+#    - name: http
+#      enable: true
 

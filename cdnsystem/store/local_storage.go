@@ -31,7 +31,7 @@ import (
 	"path/filepath"
 )
 
-const LocalStorageDriver = "local"
+const LocalStorageDriver = "disk"
 
 var fileLocker = util.NewLockerPool()
 

@@ -21,7 +21,6 @@ import _ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 
 import (
 	"context"
-	"fmt"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
@@ -31,6 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 )
