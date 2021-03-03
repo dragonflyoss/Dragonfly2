@@ -125,3 +125,22 @@ func (s *FileUtilsTestSuite) TestSymbolicLink() {
 
 	s.Require().True(fileutils.PathExist(s.testFile))
 }
+
+func (s *FileUtilsTestSuite) TestTryLock() {
+	f1, err := fileutils.NewFileLock(s.testFile)
+	s.Require().Nil(err)
+
+	f2, err := fileutils.NewFileLock(s.testFile)
+	s.Require().Nil(err)
+
+	f1.Lock()
+
+	err = f2.TryLock()
+	s.Require().NotNil(err)
+
+	f1.Unlock()
+
+	err = f2.TryLock()
+	s.Require().Nil(err)
+
+}

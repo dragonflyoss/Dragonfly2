@@ -110,7 +110,7 @@ func SymbolicLink(oldname string, newname string) error {
 // PathExist reports whether the path is exist.
 // Any error, from stat(), will return false.
 func PathExist(path string) bool {
-	_, err := stat(path)
+	_, err := os.Stat(path)
 	return err == nil
 }
 

@@ -59,6 +59,14 @@ func (locker *FileLock) Lock() error {
 	return nil
 }
 
+func (locker *FileLock) TryLock() error {
+	if locker.ofile == nil {
+		return errors.Errorf("try lock file %s: not open", locker.fileName)
+	}
+
+	return syscall.Flock(int(locker.ofile.Fd()), syscall.LOCK_NB|syscall.LOCK_EX)
+}
+
 func (locker *FileLock) Unlock() error {
 	if locker.ofile == nil {
 		return nil
