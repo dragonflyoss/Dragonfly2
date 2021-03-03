@@ -26,10 +26,10 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon"
+	"d7y.io/dragonfly/v2/cmd/common"
 	"d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
-	"d7y.io/dragonfly/v2/pkg/util/cmdutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -120,8 +120,8 @@ func init() {
 
 	// add sub commands
 	rootCmd.AddCommand(version.VersionCmd)
-	rootCmd.AddCommand(cmdutils.NewGenDocCommand("cdn"))
-	rootCmd.AddCommand(cmdutils.NewConfigCommand("cdn", getDefaultConfig))
+	rootCmd.AddCommand(common.NewGenDocCommand("cdn"))
+	rootCmd.AddCommand(common.NewConfigCommand("cdn", getDefaultConfig))
 }
 
 // setupFlags setups flags for command line.

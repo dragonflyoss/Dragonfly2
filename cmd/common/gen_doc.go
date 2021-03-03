@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cmdutils
+package common
 
 import (
 	"fmt"
