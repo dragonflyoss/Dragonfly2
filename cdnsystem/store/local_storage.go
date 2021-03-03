@@ -27,6 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/statutils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -306,7 +307,7 @@ func (ls *localStorage) Remove(ctx context.Context, raw *Raw) error {
 }
 
 // GetAvailSpace returns the available disk space in B.
-func (ls *localStorage) GetAvailSpace(ctx context.Context, raw *Raw) (fileutils.Fsize, error) {
+func (ls *localStorage) GetAvailSpace(ctx context.Context, raw *Raw) (fsize.Size, error) {
 	path, _, err := ls.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return 0, err

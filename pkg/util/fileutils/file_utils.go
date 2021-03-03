@@ -24,6 +24,7 @@ import (
 	"syscall"
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"github.com/pkg/errors"
 )
 
@@ -141,13 +142,13 @@ func GetSysStat(info os.FileInfo) *syscall.Stat_t {
 	}
 }
 
-func FreeSpace(diskPath string) (Fsize, error) {
+func FreeSpace(diskPath string) (fsize.Size, error) {
 	fs := &syscall.Statfs_t{}
 	if err := syscall.Statfs(diskPath, fs); err != nil {
-		return ToFsize(0), err
+		return fsize.ToFsize(0), err
 	}
 
-	return ToFsize(int64(fs.Bavail) * int64(fs.Bsize)), nil
+	return fsize.ToFsize(int64(fs.Bavail) * int64(fs.Bsize)), nil
 }
 
 func IsEmptyDir(path string) (bool, error) {

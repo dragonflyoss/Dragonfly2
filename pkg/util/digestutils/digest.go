@@ -25,6 +25,7 @@ import (
 	"io"
 
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 )
 
 func Sha256(values ...string) string {
@@ -71,7 +72,7 @@ func Md5File(name string) string {
 
 	h := md5.New()
 
-	r := bufio.NewReaderSize(f, int(4*fileutils.MB))
+	r := bufio.NewReaderSize(f, int(4*fsize.MB))
 
 	_, err = io.Copy(h, r)
 	if err != nil {

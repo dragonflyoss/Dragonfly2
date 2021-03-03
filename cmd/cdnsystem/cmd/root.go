@@ -31,6 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/version"
@@ -268,7 +269,7 @@ func getConfigFromViper(v *viper.Viper) (*config.Config, error) {
 		dc.DecodeHook = decodeWithYAML(
 			reflect.TypeOf(time.Second),
 			reflect.TypeOf(ratelimiter.B),
-			reflect.TypeOf(fileutils.B),
+			reflect.TypeOf(fsize.B),
 		)
 	}); err != nil {
 		return nil, errors.Wrap(err, "unmarshal yaml")

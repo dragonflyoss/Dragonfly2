@@ -17,13 +17,14 @@
 package config
 
 import (
+	"path/filepath"
+	"time"
+
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/yamlutils"
 	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v3"
-	"path/filepath"
-	"time"
 )
 
 // NewConfig creates an instant with default values.
@@ -144,16 +145,16 @@ type BaseProperties struct {
 	// and there is no need to GC disk.
 	//
 	// default: 100GB
-	YoungGCThreshold fileutils.Fsize `yaml:"youngGCThreshold"`
+	YoungGCThreshold fsize.Size `yaml:"youngGCThreshold"`
 
 	// FullGCThreshold if the available disk space is less than FullGCThreshold
 	// and the cdn system should gc all task files which are not being used.
 	//
 	// default: 5GB
-	FullGCThreshold fileutils.Fsize `yaml:"fullGCThreshold"`
+	FullGCThreshold fsize.Size `yaml:"fullGCThreshold"`
 
 	// MaxStorageThreshold if the currently used disk space is greater than MaxStorageThreshold, clean disk up
-	MaxStorageThreshold fileutils.Fsize
+	MaxStorageThreshold fsize.Size
 
 	// IntervalThreshold is the threshold of the interval at which the task file is accessed.
 	// default: 2h

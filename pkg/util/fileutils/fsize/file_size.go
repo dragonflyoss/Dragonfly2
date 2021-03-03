@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package fileutils
+package fsize
 
 import (
 	"fmt"
@@ -26,11 +26,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Fsize int64
+type Size int64
 
 var sizeRegexp = regexp.MustCompile("^([0-9]+)(MB?|m|KB?|k|GB?|g|B)$")
 
-func (f *Fsize) Set(s string) (err error) {
+func (f *Size) Set(s string) (err error) {
 	if stringutils.IsBlank(s) {
 		*f = ToFsize(0)
 	} else {
@@ -40,29 +40,29 @@ func (f *Fsize) Set(s string) (err error) {
 	return
 }
 
-func (f Fsize) Type() string {
+func (f Size) Type() string {
 	return "FileSize"
 }
 
 const (
-	B  Fsize = 1
-	KB       = 1024 * B
-	MB       = 1024 * KB
-	GB       = 1024 * MB
+	B  Size = 1
+	KB      = 1024 * B
+	MB      = 1024 * KB
+	GB      = 1024 * MB
 )
 
-func (f Fsize) ToNumber() int64 {
+func (f Size) ToNumber() int64 {
 	return int64(f)
 }
 
-func ToFsize(size int64) Fsize {
-	return Fsize(size)
+func ToFsize(size int64) Size {
+	return Size(size)
 }
 
-func (f Fsize) String() string {
+func (f Size) String() string {
 	var (
 		symbol string
-		unit   Fsize
+		unit   Size
 	)
 
 	if f >= GB {
@@ -83,11 +83,11 @@ func (f Fsize) String() string {
 }
 
 // ParseSize parses a string into a int64.
-func ParseSize(fsize string) (Fsize, error) {
+func ParseSize(fsize string) (Size, error) {
 	var n int
 	n, err := strconv.Atoi(fsize)
 	if err == nil && n >= 0 {
-		return Fsize(n), nil
+		return Size(n), nil
 	}
 
 	if n < 0 {
@@ -111,5 +111,5 @@ func ParseSize(fsize string) (Fsize, error) {
 	default:
 		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
 	}
-	return Fsize(n), nil
+	return Size(n), nil
 }
