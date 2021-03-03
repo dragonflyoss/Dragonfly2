@@ -29,8 +29,8 @@ import (
 )
 
 // MkdirAll creates a directory named path with 0755 perm.
-func MkdirAll(path string) error {
-	return os.MkdirAll(path, 0755)
+func MkdirAll(dir string) error {
+	return os.MkdirAll(dir, 0755)
 }
 
 // DeleteFile deletes a regular file not a directory.
@@ -49,11 +49,7 @@ func DeleteFile(path string) error {
 // OpenFile opens a file. If the parent directory of the file isn't exist,
 // it will create the directory.
 func OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
-	if PathExist(path) {
-		return os.OpenFile(path, flag, perm)
-	}
-
-	if (flag & syscall.O_CREAT) > 0 {
+	if !PathExist(path) && (flag&syscall.O_CREAT > 0) {
 		if err := MkdirAll(filepath.Dir(path)); err != nil {
 			return nil, errors.Wrapf(err, "failed to open file %s", path)
 		}
@@ -109,7 +105,7 @@ func SymbolicLink(oldname string, newname string) error {
 }
 
 // PathExist reports whether the path is exist.
-// Any error, from stat(), will return false.
+// Any error, from os.Stat, will return false.
 func PathExist(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
