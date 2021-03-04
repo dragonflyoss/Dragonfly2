@@ -241,7 +241,7 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 	for i := 0; i < maxAttempts; i++ {
 		if e, ok := cause.(*dferrors.DfError); ok {
 			if e.Code != dfcodes.UnknownError {
-				return nil, cause
+				return res, cause
 			}
 		}
 
