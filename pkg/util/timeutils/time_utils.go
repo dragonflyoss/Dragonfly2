@@ -18,6 +18,7 @@
 package timeutils
 
 import (
+	"net/http"
 	"time"
 )
 
@@ -27,4 +28,14 @@ func CurrentTimeMillis() int64 {
 
 func SinceInMilliseconds(start time.Time) int64 {
 	return time.Since(start).Nanoseconds() / time.Millisecond.Nanoseconds()
+}
+
+// ConvertTimeStringToInt converts a string time to an int64 timestamp.
+func ConvertTimeStringToInt(timeStr string) (int64, error) {
+	formatTime, err := time.ParseInLocation(http.TimeFormat, timeStr, time.UTC)
+	if err != nil {
+		return 0, err
+	}
+
+	return formatTime.Unix() * int64(1000), nil
 }

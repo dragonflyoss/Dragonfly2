@@ -25,13 +25,13 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
+	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
@@ -131,7 +131,7 @@ func (client *httpSourceClient) IsSupportRange(url string, headers map[string]st
 
 // IsExpired checks if a resource received or stored is the same.
 func (client *httpSourceClient) IsExpired(url string, headers, expireInfo map[string]string) (bool, error) {
-	lastModified, err := netutils.ConvertTimeStringToInt(expireInfo["Last-Modified"])
+	lastModified, err := timeutils.ConvertTimeStringToInt(expireInfo["Last-Modified"])
 	if err != nil {
 		return true, err
 	}
