@@ -17,26 +17,51 @@
 package statutils
 
 import (
+	"os"
 	"syscall"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 )
 
 // Atime returns the last access time in time.Time.
-func Atime(stat *syscall.Stat_t) time.Time {
+func Atime(info os.FileInfo) time.Time {
+	stat := GetSysStat(info)
 	return time.Unix(stat.Atim.Sec, stat.Atim.Nsec)
 }
 
 // AtimeSec returns the last access time in seconds.
-func AtimeSec(stat *syscall.Stat_t) int64 {
+func AtimeSec(info os.FileInfo) int64 {
+	stat := GetSysStat(info)
 	return stat.Atim.Sec
 }
 
 // Ctime returns the create time in time.Time.
-func Ctime(stat *syscall.Stat_t) time.Time {
+func Ctime(info os.FileInfo) time.Time {
+	stat := GetSysStat(info)
 	return time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec)
 }
 
 // CtimeSec returns the create time in seconds.
-func CtimeSec(stat *syscall.Stat_t) int64 {
+func CtimeSec(info os.FileInfo) int64 {
+	stat := GetSysStat(info)
 	return stat.Ctim.Sec
+}
+
+// GetSysStat returns underlying data source of the os.FileInfo.
+func GetSysStat(info os.FileInfo) *syscall.Stat_t {
+	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+		return stat
+	} else {
+		return nil
+	}
+}
+
+func FreeSpace(diskPath string) (fsize.Size, error) {
+	fs := &syscall.Statfs_t{}
+	if err := syscall.Statfs(diskPath, fs); err != nil {
+		return 0, err
+	}
+
+	return fsize.ToFsize(int64(fs.Bavail) * fs.Bsize), nil
 }

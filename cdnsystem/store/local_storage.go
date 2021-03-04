@@ -273,14 +273,10 @@ func (ls *localStorage) Stat(ctx context.Context, raw *Raw) (*StorageInfo, error
 		return nil, err
 	}
 
-	sys := fileutils.GetSysStat(fileInfo)
-	if sys == nil {
-		return nil, fmt.Errorf("get create time error")
-	}
 	return &StorageInfo{
 		Path:       filepath.Join(raw.Bucket, raw.Key),
 		Size:       fileInfo.Size(),
-		CreateTime: statutils.Ctime(sys),
+		CreateTime: statutils.Ctime(fileInfo),
 		ModTime:    fileInfo.ModTime(),
 	}, nil
 }
@@ -315,7 +311,7 @@ func (ls *localStorage) GetAvailSpace(ctx context.Context, raw *Raw) (fsize.Size
 
 	lock(path, -1, true)
 	defer unLock(path, -1, true)
-	return fileutils.FreeSpace(path)
+	return statutils.FreeSpace(path)
 }
 
 // Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,

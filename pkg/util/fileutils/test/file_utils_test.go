@@ -30,6 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/filerw"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
+	"d7y.io/dragonfly/v2/pkg/util/statutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -100,7 +101,7 @@ func (s *FileUtilsTestSuite) TestLink() {
 
 	info, err := os.Stat(s.testFile + ".link")
 	s.Require().Nil(err)
-	st := fileutils.GetSysStat(info)
+	st := statutils.GetSysStat(info)
 	s.Require().NotNil(st)
 
 	s.Require().Equal(uint16(2), st.Nlink)
@@ -120,7 +121,7 @@ func (s *FileUtilsTestSuite) TestSymbolicLink() {
 	info, err := os.Lstat(s.testFile + ".symbol")
 	s.Require().Nil(err)
 
-	st := fileutils.GetSysStat(info)
+	st := statutils.GetSysStat(info)
 	s.Require().NotNil(st)
 
 	err = fileutils.DeleteFile(s.testFile + ".symbol")
