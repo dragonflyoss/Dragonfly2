@@ -7,6 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -144,7 +145,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	s.base.ctx, s.base.cancel = context.WithCancel(ctx)
 	if s.base.backSource {
 		go func() {
-			s.base.contentLength = - 1
+			s.base.contentLength = -1
 			_ = s.base.callback.Init(s)
 			err := s.base.pieceManager.DownloadSource(ctx, s, s.base.request)
 			if err != nil {
@@ -181,14 +182,15 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	}
 
 	pr, pw := io.Pipe()
+	attr := map[string]string{}
 	var reader io.Reader = pr
 	var writer io.Writer = pw
 	if s.base.contentLength != -1 {
-		reader = io.LimitReader(pr, s.base.contentLength).(io.Reader)
+		attr[headers.ContentLength] = fmt.Sprintf("%d", s.base.contentLength)
 	} else {
-		// FIXME may be should not use ChunkedWriter
-		//writer = httputil.NewChunkedWriter(pw)
+		attr[headers.TransferEncoding] = "chunked"
 	}
+
 	go func(first int32) {
 		var (
 			desired int32
@@ -259,8 +261,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		}
 	}(firstPiece)
 
-	// FIXME(jim) update attribute
-	return reader, nil, nil
+	return reader, attr, nil
 }
 
 func (s *streamPeerTask) finish() error {

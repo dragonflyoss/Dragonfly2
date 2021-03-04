@@ -6,10 +6,11 @@ package mock_daemon
 
 import (
 	context "context"
+	reflect "reflect"
+
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemon "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // MockDaemonServer is a mock of DaemonServer interface

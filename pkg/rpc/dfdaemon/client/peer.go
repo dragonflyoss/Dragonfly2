@@ -18,16 +18,16 @@ package client
 
 import (
 	"context"
+	"fmt"
+	"strings"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"fmt"
 	"google.golang.org/grpc"
-	"strings"
 )
-
 
 func GetPieceTasks(destPeer *scheduler.PeerPacket_DestPeer, ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	destAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)

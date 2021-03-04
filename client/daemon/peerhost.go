@@ -80,11 +80,12 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 
 	// Storage.Option.DataPath is same with PeerHost DataDir
 	opt.Storage.Option.DataPath = opt.DataDir
-	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage.Option, func(request storage.CommonTaskRequest) {
-		sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
+	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage.Option, /* gc callback */ func(request storage.CommonTaskRequest) {
+		state, err := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
 			TaskId: request.TaskID,
 			PeerId: request.PeerID,
 		})
+		logger.Debugf("leave task %s/%d state: %#v, error: %v", request.TaskID, request.PeerID, state, err)
 	})
 	if err != nil {
 		return nil, err

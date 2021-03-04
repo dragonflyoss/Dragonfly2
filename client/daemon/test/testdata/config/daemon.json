@@ -81,9 +81,9 @@
     },
     "registry_mirror": {
       "url": "https://index.docker.io",
-      "insecure": false,
+      "insecure": true,
       "certs": [
-        "../daemon/test/testdata/certs/mca.crt"
+        "../daemon/test/testdata/certs/sca.crt"
       ],
       "direct": false
     },
@@ -92,7 +92,7 @@
         "regx": "blobs/sha256.*",
         "use_https": false,
         "direct": false,
-        "redirect": "d7s.io"
+        "redirect": "d7y.io"
       }
     ],
     "hijack_https": {
@@ -101,9 +101,9 @@
       "hosts": [
         {
           "regx": "mirror.aliyuncs.com:443",
-          "insecure": false,
+          "insecure": true,
           "certs": [
-            "../daemon/test/testdata/certs/mca.crt"
+            "../daemon/test/testdata/certs/sca.crt"
           ]
         }
       ]

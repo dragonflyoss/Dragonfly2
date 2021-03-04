@@ -221,7 +221,7 @@ func (pm *pieceManager) processPieceFromSource(log *logger.SugaredLoggerOnWith, 
 
 	var (
 		size          = pieceSize
-		unknownLength = contentLength == - 1
+		unknownLength = contentLength == -1
 		md5           = ""
 	)
 
