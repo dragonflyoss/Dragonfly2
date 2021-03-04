@@ -141,7 +141,7 @@ func GetSysStat(info os.FileInfo) *syscall.Stat_t {
 func FreeSpace(diskPath string) (fsize.Size, error) {
 	fs := &syscall.Statfs_t{}
 	if err := syscall.Statfs(diskPath, fs); err != nil {
-		return fsize.ToFsize(0), err
+		return 0, err
 	}
 
 	return fsize.ToFsize(int64(fs.Bavail) * int64(fs.Bsize)), nil

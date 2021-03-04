@@ -29,8 +29,10 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/filerw"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -172,5 +174,12 @@ func (s *FileUtilsTestSuite) TestTryLock() {
 
 	err = f2.TryLock()
 	s.Require().Nil(err)
+}
 
+func TestFSizeSet(t *testing.T) {
+	var num = fsize.ToFsize(0)
+	var sizePtr = &num
+	err := sizePtr.Set("11m")
+	assert.Nil(t, err)
+	assert.Equal(t, 11*fsize.MB, *sizePtr)
 }

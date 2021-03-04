@@ -20,29 +20,13 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
 
 type Size int64
-
-var sizeRegexp = regexp.MustCompile("^([0-9]+)(MB?|m|KB?|k|GB?|g|B)$")
-
-func (f *Size) Set(s string) (err error) {
-	if stringutils.IsBlank(s) {
-		*f = ToFsize(0)
-	} else {
-		*f, err = ParseSize(s)
-	}
-
-	return
-}
-
-func (f Size) Type() string {
-	return "FileSize"
-}
 
 const (
 	B  Size = 1
@@ -57,6 +41,20 @@ func (f Size) ToNumber() int64 {
 
 func ToFsize(size int64) Size {
 	return Size(size)
+}
+
+func (f *Size) Set(s string) (err error) {
+	if stringutils.IsBlank(s) {
+		*f = 0
+	} else {
+		*f, err = parseSize(s)
+	}
+
+	return
+}
+
+func (f Size) Type() string {
+	return "FileSize"
 }
 
 func (f Size) String() string {
@@ -82,34 +80,35 @@ func (f Size) String() string {
 	return fmt.Sprintf("%.1f%s", float64(f)/float64(unit), symbol)
 }
 
-// ParseSize parses a string into a int64.
-func ParseSize(fsize string) (Size, error) {
-	var n int
-	n, err := strconv.Atoi(fsize)
-	if err == nil && n >= 0 {
-		return Size(n), nil
-	}
+var sizeRegexp = regexp.MustCompile(`^([0-9]+)(\.0*)?(MB?|m|KB?|k|GB?|g|B)?$`)
 
-	if n < 0 {
-		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "not a valid fsize string: %d, only non-negative values are supported", fsize)
+func parseSize(fsize string) (Size, error) {
+	fsize = strings.TrimSpace(fsize)
+	if stringutils.IsBlank(fsize) {
+		return 0, nil
 	}
 
 	matches := sizeRegexp.FindStringSubmatch(fsize)
-	if len(matches) != 3 {
-		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
+	if len(matches) == 0 {
+		return 0, errors.Errorf("parse size %s: invalid format", fsize)
 	}
-	n, _ = strconv.Atoi(matches[1])
-	switch unit := matches[2]; {
-	case unit == "g" || unit == "G" || unit == "GB":
-		n *= int(GB)
-	case unit == "m" || unit == "M" || unit == "MB":
-		n *= int(MB)
-	case unit == "k" || unit == "K" || unit == "KB":
-		n *= int(KB)
-	case unit == "B":
-		// Value already correct
+
+	var unit Size
+	switch matches[3] {
+	case "k", "K", "KB":
+		unit = KB
+	case "m", "M", "MB":
+		unit = MB
+	case "g", "G", "GB":
+		unit = GB
 	default:
-		return 0, errors.Wrapf(dferrors.ErrInvalidArgument, "%s and supported format: G(B)/M(B)/K(B)/B or pure number", fsize)
+		unit = B
 	}
-	return Size(n), nil
+
+	num, err := strconv.ParseInt(matches[1], 0, 64)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to parse size:%s", fsize)
+	}
+
+	return ToFsize(num) * unit, nil
 }
