@@ -24,6 +24,10 @@ import (
 
 // FilterURLParam excludes queries in url with filters.
 func FilterURLParam(str string, filters []string) string {
+	if len(filters) == 0 {
+		return str
+	}
+
 	u, err := url.Parse(str)
 	if err != nil {
 		return ""
