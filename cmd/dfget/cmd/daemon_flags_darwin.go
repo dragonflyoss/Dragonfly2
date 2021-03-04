@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	peerHostConfigPath = basic.HomeDir + "/.small-dragonfly/dfdaemon/peerhost.yml"
+	peerHostConfigPath = basic.HomeDir + "/.dragonfly/dfget-daemon.yml"
 )
 
 var flagDaemonOpt = config.PeerHostOption{

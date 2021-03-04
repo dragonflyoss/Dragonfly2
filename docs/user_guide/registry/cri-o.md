@@ -2,7 +2,7 @@
 
 ## Step 1: Validate Dragonfly Configuration
 
-To use dfdaemon as Registry Mirror, first you need to ensure configuration in `$HOME/.small-dragonfly/dfdaemon/peerhost.yml`:
+To use dfdaemon as Registry Mirror, first you need to ensure configuration in `$HOME/.dragonfly/dfget-daemon.yml`:
 
 ```yaml
 proxy:

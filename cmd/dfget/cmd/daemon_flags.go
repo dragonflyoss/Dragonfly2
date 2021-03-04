@@ -28,7 +28,7 @@ func init() {
 	if err != nil {
 		homeDir = os.TempDir()
 	}
-	flagDaemonOpt.WorkHome = fmt.Sprintf("%s/.small-dragonfly/dfdaemon/", homeDir)
+	flagDaemonOpt.WorkHome = fmt.Sprintf("%s/.dragonfly/dfdaemon/", homeDir)
 	flagDaemonOpt.DataDir = flagDaemonOpt.WorkHome
 }
 
