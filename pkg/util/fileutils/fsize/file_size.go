@@ -43,6 +43,7 @@ func ToFsize(size int64) Size {
 	return Size(size)
 }
 
+// Set is used for command flag var
 func (f *Size) Set(s string) (err error) {
 	if stringutils.IsBlank(s) {
 		*f = 0
