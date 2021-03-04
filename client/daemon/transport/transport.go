@@ -18,15 +18,11 @@ package transport
 
 import (
 	"crypto/tls"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"regexp"
 	"time"
-
-	"github.com/go-http-utils/headers"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
@@ -179,13 +175,6 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	var hdr = http.Header{}
 	for k, v := range attr {
 		hdr.Set(k, v)
-	}
-
-	// when r is *io.LimitedReader, set content length
-	if lr, ok := r.(*io.LimitedReader); ok {
-		hdr.Set(headers.ContentLength, fmt.Sprintf("%d", lr.N))
-	} else {
-		hdr.Set(headers.TransferEncoding, "chunked")
 	}
 
 	resp := &http.Response{

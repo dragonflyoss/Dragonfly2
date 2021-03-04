@@ -18,3 +18,4 @@ bin/
 .cache
 *.DS_Store
 target/
+log

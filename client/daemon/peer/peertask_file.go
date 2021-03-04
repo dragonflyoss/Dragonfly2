@@ -282,6 +282,7 @@ loop:
 				StartNum: num,
 				Limit:    limit,
 			})
+
 		if err != nil {
 			pt.Warnf("get piece task error: %s, wait available peers from scheduler", err)
 			select {
