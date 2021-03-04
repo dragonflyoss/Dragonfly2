@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	peerHostConfigPath = "/etc/dragonfly/peerhost.yml"
+	peerHostConfigPath = "/etc/dragonfly/dfget-daemon.yml"
 )
 
 var flagDaemonOpt = config.PeerHostOption{

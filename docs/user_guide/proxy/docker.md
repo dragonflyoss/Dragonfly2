@@ -57,7 +57,7 @@ openssl x509 -req -days 36500 -extfile openssl.conf -extensions v3_ca -in ca.csr
 ### Step 2: Configure Dfdaemon
 
 To use dfdaemon as HTTP proxy, first you need to append a proxy rule in
-`$HOME/.small-dragonfly/dfdaemon/peerhost.yml`, This will proxy `your.private.registry`'s requests for image layers:
+`$HOME/.dragonfly/dfget-daemon.yml`, This will proxy `your.private.registry`'s requests for image layers:
 
 ```yaml
 proxy:

@@ -40,7 +40,7 @@ set environment variable DF_ACTIVE_PROFILE=local if you want to print logs to Te
                                      in this way, different but actually the same URLs can reuse the same downloading task
       --header stringArray           http header, eg: --header='Accept: *' --header='Host: abc'
   -h, --help                         help for dfget
-      --home string                  the work home directory of dfget (default "/Users/jim/.small-dragonfly/dfdaemon/")
+      --home string                  the work home directory of dfget (default "/Users/jim/.dragonfly/dfdaemon/")
   -i, --identifier string            the usage of identifier is making different downloading tasks generate different downloading task IDs even if they have the same URLs. conflict with --md5.
       --insecure                     identify whether supernode should skip secure verify when interact with the source.
       --ip string                    IP address that server will listen on (default "0.0.0.0")

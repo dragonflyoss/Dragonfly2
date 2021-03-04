@@ -18,13 +18,14 @@ package cmd
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/version"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"d7y.io/dragonfly/v2/version"
 
 	"github.com/avast/retry-go"
 	"github.com/gofrs/flock"
@@ -161,7 +162,7 @@ func dfgetExample() string {
 $ dfget -u https://www.taobao.com -o /tmp/test/b.test --notbs --expiretime 20s
 --2019-02-02 18:56:34--  https://www.taobao.com
 dfget version:0.3.0
-workspace:/root/.small-dragonfly
+workspace:/root/.dragonfly
 sign:96414-1549104994.143
 client:127.0.0.1 connected to node:127.0.0.1
 start download by dragonfly...
