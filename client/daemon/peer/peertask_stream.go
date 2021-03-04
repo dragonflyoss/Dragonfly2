@@ -190,6 +190,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	} else {
 		attr[headers.TransferEncoding] = "chunked"
 	}
+
 	go func(first int32) {
 		var (
 			desired int32
@@ -260,7 +261,6 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		}
 	}(firstPiece)
 
-	// FIXME(jim) update attribute
 	return reader, attr, nil
 }
 

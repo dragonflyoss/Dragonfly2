@@ -176,6 +176,7 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	for k, v := range attr {
 		hdr.Set(k, v)
 	}
+	logger.Infof("download stream attribute: %v", hdr)
 
 	resp := &http.Response{
 		StatusCode: 200,
