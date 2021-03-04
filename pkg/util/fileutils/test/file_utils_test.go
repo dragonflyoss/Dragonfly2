@@ -126,6 +126,18 @@ func (s *FileUtilsTestSuite) TestSymbolicLink() {
 	s.Require().True(fileutils.PathExist(s.testFile))
 }
 
+func (s *FileUtilsTestSuite) TestIsEmptyDir() {
+	_, err := fileutils.IsEmptyDir(s.testFile)
+	s.Require().NotNil(err)
+	_, err = fileutils.IsEmptyDir(s.testDir)
+	s.Require().NotNil(err)
+
+	fileutils.MkdirAll(s.testDir)
+	b, err := fileutils.IsEmptyDir(s.testDir)
+	s.Require().Nil(err)
+	s.Require().True(b)
+}
+
 func (s *FileUtilsTestSuite) TestTryLock() {
 	f1, err := fileutils.NewFileLock(s.testFile)
 	s.Require().Nil(err)
