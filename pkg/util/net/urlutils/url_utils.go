@@ -18,65 +18,43 @@ package urlutils
 
 import (
 	"net/url"
-	"regexp"
-	"strings"
 
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
-// FilterURLParam filters request queries in URL.
-// Eg:
-// If you pass parameters as follows:
-//     url: http://a.b.com/locate?key1=value1&key2=value2&key3=value3
-//     filter: key2
-// and then you will get the following value as the return:
-//     http://a.b.com/locate?key1=value1&key3=value3
-func FilterURLParam(url string, filters []string) string {
-	rawUrls := strings.SplitN(url, "?", 2)
-	if len(filters) <= 0 || len(rawUrls) != 2 || strings.TrimSpace(rawUrls[1]) == "" {
-		return url
+// FilterURLParam excludes queries in url with filters.
+func FilterURLParam(str string, filters []string) string {
+	u, err := url.Parse(str)
+	if err != nil {
+		return ""
 	}
-	filtersMap := slice2Map(filters)
 
-	var params []string
-	for _, param := range strings.Split(rawUrls[1], separator) {
-		kv := strings.SplitN(param, "=", 2)
-		if !(len(kv) >= 1 && isExist(filtersMap, kv[0])) {
-			params = append(params, param)
+	var values = make(url.Values)
+	for k, v := range u.Query() {
+		if !stringutils.ContainsFold(filters, k) {
+			values[k] = v
 		}
 	}
-	if len(params) > 0 {
-		return rawUrls[0] + "?" + strings.Join(params, separator)
-	}
-	return rawUrls[0]
+
+	u.RawQuery = values.Encode()
+
+	return u.String()
 }
 
-// IsValidURL returns whether the string url is a valid HTTP URL.
-func IsValidURL(urlStr string) bool {
-	u, err := url.Parse(urlStr)
+// IsValidURL returns whether the string url is a valid URL.
+func IsValidURL(str string) bool {
+	u, err := url.Parse(str)
 	if err != nil {
 		return false
 	}
-	if len(u.Host) == 0 || len(u.Scheme) == 0 {
+
+	if stringutils.IsBlank(u.Scheme) {
 		return false
 	}
 
-	// with custom schemas, url like "x://y/z" is valid
-	reg := regexp.MustCompile(`(` +
-		"https?|HTTPS?" +
-		`)://([\w_]+:[\w_]+@)?([\w-]+\.)*[\w-]+(/[\w- ./?%&=]*)?`)
-	if result := reg.FindString(urlStr); stringutils.IsBlank(result) {
+	if stringutils.IsBlank(u.Host) {
 		return false
 	}
+
 	return true
-}
-
-// slice2Map translates a slice to a map with
-// the value in slice as the key and true as the value.
-func slice2Map(value []string) map[string]bool {
-	mmap := make(map[string]bool)
-	for _, v := range value {
-		mmap[v] = true
-	}
-	return mmap
 }

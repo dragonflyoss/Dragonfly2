@@ -45,3 +45,8 @@ func TestIsEmpty(t *testing.T) {
 
 	assert.False(t, IsEmpty(" "))
 }
+
+func TestContains(t *testing.T) {
+	assert.True(t, ContainsFold([]string{"a", "B"}, "b"))
+	assert.False(t, Contains([]string{"a", "B"}, "b"))
+}

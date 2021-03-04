@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-package iputils
+package urlutils
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsIPv4(t *testing.T) {
-	assert.True(t, IsIPv4("30.225.24.222"))
-	assert.False(t, IsIPv4("30.225.24.2222"))
+func TestIsValidURL(t *testing.T) {
+	assert.True(t, IsValidURL("http://www.x.yy"))
+	assert.True(t, IsValidURL("http://www.x.yy/path"))
+	assert.False(t, IsValidURL("http:///path"))
 }
 
-func TestExternalIPv4(t *testing.T) {
-	ip, err := ExternalIPv4()
-	assert.Nil(t, err)
-
-	fmt.Println(ip)
-
-	assert.NotEmpty(t, ip)
+func TestFilterURLParam(t *testing.T) {
+	url := "http://www.xx.yy/path?u=f&x=y&m=z&x=s#size"
+	assert.Equal(t, "http://www.xx.yy/path?u=f#size", FilterURLParam(url, []string{"x", "m"}))
 }

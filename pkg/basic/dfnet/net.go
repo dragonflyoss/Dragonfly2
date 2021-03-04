@@ -18,10 +18,9 @@ package dfnet
 
 import (
 	"encoding/json"
-	"fmt"
-	"net"
 	"os"
 
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
@@ -63,21 +62,7 @@ var HostIp string
 var HostName, _ = os.Hostname()
 
 func init() {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		panic(fmt.Sprintf("%v", err))
-	}
-
-	for _, value := range addrs {
-		if ipNet, ok := value.(*net.IPNet); ok &&
-			!ipNet.IP.IsLoopback() && !ipNet.IP.IsUnspecified() {
-			if ip := ipNet.IP.To4(); ip != nil {
-				HostIp = ip.String()
-				break
-			}
-		}
-	}
-
+	HostIp, _ := iputils.ExternalIPv4()
 	if HostIp == "" {
 		panic("host ip is not exist")
 	}

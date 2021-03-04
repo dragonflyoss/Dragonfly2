@@ -18,6 +18,7 @@
 package stringutils
 
 import (
+	"strings"
 	"unicode"
 )
 
@@ -43,4 +44,24 @@ func IsBlank(str string) bool {
 
 func IsEmpty(str string) bool {
 	return str == ""
+}
+
+func ContainsFold(slice []string, ele string) bool {
+	for _, one := range slice {
+		if strings.EqualFold(one, ele) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func Contains(slice []string, ele string) bool {
+	for _, one := range slice {
+		if one == ele {
+			return true
+		}
+	}
+
+	return false
 }
