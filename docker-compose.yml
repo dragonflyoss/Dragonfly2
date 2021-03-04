@@ -12,7 +12,7 @@ services:
     ports:
       - 65001:65001
     volumes:
-      - ./hack/testdata/dfget-daemon.yml:/etc/dragonfly/peerhost.yml
+      - ./hack/testdata/dfget-daemon.yml:/etc/dragonfly/dfget-daemon.yml
       - ./log/dragonfly/dfdaemon:/var/log/dragonfly
 
   scheduler:

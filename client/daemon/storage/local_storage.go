@@ -251,12 +251,10 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 
 func (t *localTaskStore) TryGC() (bool, error) {
 	if t.lastAccess.Add(t.expireTime).Before(time.Now()) {
-		if t.gcCallback != nil {
-			t.gcCallback(CommonTaskRequest{
-				PeerID: t.PeerID,
-				TaskID: t.TaskID,
-			})
-		}
+		t.gcCallback(CommonTaskRequest{
+			PeerID: t.PeerID,
+			TaskID: t.TaskID,
+		})
 		log := logger.With("gc", t.StoreStrategy, "task", t.TaskID)
 		log.Infof("start gc task data")
 		var err error

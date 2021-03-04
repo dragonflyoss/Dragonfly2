@@ -19,7 +19,7 @@ package test
 import (
 	"fmt"
 
-	"d7y.io/dragonfly/v2/pkg/idutils"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 

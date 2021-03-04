@@ -172,7 +172,7 @@ func (pt *filePeerTask) GetTraffic() int64 {
 func (pt *filePeerTask) Start(ctx context.Context) (chan *PeerTaskProgress, error) {
 	pt.ctx, pt.cancel = context.WithCancel(ctx)
 	if pt.backSource {
-		pt.contentLength = - 1
+		pt.contentLength = -1
 		_ = pt.callback.Init(pt)
 		go func() {
 			err := pt.pieceManager.DownloadSource(ctx, pt, pt.request)
@@ -282,6 +282,7 @@ loop:
 				StartNum: num,
 				Limit:    limit,
 			})
+
 		if err != nil {
 			pt.Warnf("get piece task error: %s, wait available peers from scheduler", err)
 			select {
@@ -392,11 +393,13 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 	if peer == nil {
 		return nil, fmt.Errorf("empty peer")
 	}
+	pt.Debugf("get piece task from peer %s, request: %#v", peer.PeerId, request)
 	p, err := dfclient.GetPieceTasks(peer, pt.ctx, request)
 	if err != nil {
 		pt.Errorf("get piece task from peer(%s) error: %s", peer.PeerId, err)
 		return nil, err
 	}
+	pt.Debugf("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
 	if p.State.Success {
 		return p, nil
 	}

@@ -89,15 +89,18 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 		if err == storage.ErrTaskNotFound {
 			code = dfcodes.PeerTaskNotFound
 		}
+		logger.Errorf("receive get piece tasks request: %#v, error: %s, code: %v", request, err, code)
 		return &base.PiecePacket{
 			State: &base.ResponseState{
 				Success: false,
 				Code:    code,
-				Msg:     fmt.Sprintf("get pieces error: %s", err),
+				Msg:     fmt.Sprintf("%s", err),
 			},
 			TaskId: request.TaskId,
 		}, nil
 	}
+
+	logger.Debugf("receive get piece tasks request: %#v, piece packet: %#v, length: %d", request, p, len(p.PieceInfos))
 	p.DstAddr = m.uploadAddr
 	return p, nil
 }
@@ -143,6 +146,7 @@ loop:
 				Done:            p.Done,
 			}
 			if p.Done {
+				logger.Infof("task %s done", p.TaskId)
 				break loop
 			}
 		case <-ctx.Done():

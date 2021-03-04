@@ -50,8 +50,7 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
-	// TODO error handling
-	p.ptm.scheduler.ReportPeerResult(p.ctx, &scheduler.PeerResult{
+	state, err := p.ptm.scheduler.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
@@ -64,14 +63,14 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 		Success:        true,
 		Code:           dfcodes.Success,
 	})
+	logger.Debugf("task %s/%s report peer result, state: %#v, %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
 	return nil
 }
 
 func (p *filePeerTaskCallback) Fail(pt PeerTask, reason string) error {
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
-	// TODO error handling
-	p.ptm.scheduler.ReportPeerResult(p.ctx, &scheduler.PeerResult{
+	state, err := p.ptm.scheduler.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
@@ -84,5 +83,6 @@ func (p *filePeerTaskCallback) Fail(pt PeerTask, reason string) error {
 		Success:        false,
 		Code:           dfcodes.UnknownError,
 	})
+	logger.Debugf("task %s/%s report peer result, state: %#v, %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
 	return nil
 }

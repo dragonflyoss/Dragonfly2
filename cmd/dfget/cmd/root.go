@@ -29,6 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/version"
 
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+
 	"github.com/avast/retry-go"
 	"github.com/gofrs/flock"
 	"github.com/spf13/cobra"
@@ -94,6 +95,14 @@ func runDfget() error {
 	if err != nil {
 		return err
 	}
+	var (
+		ctx    = context.Background()
+		cancel context.CancelFunc
+	)
+	if flagClientOpt.Timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, flagClientOpt.Timeout)
+		defer cancel()
+	}
 	request := &dfdaemongrpc.DownRequest{
 		Url:    flagClientOpt.URL,
 		Output: output,
@@ -104,26 +113,29 @@ func runDfget() error {
 	if err != nil {
 		return err
 	}
-	//defer client.Close()
 	var result *dfdaemongrpc.DownResult
 	pb := progressbar.DefaultBytes(-1, "downloading")
-	for result = range down {
-		if result.CompletedLength > 0 {
-			pb.Set64(int64(result.CompletedLength))
+	for {
+		select {
+		case result = <-down:
+			if result.CompletedLength > 0 {
+				pb.Set64(int64(result.CompletedLength))
+			}
+			if !result.Done {
+				continue
+			}
+			switch result.State.Code {
+			case dfcodes.Success:
+				pb.Finish()
+				return nil
+			default:
+				return fmt.Errorf("%s", result.State.GetMsg())
+			}
+		case <-ctx.Done():
+			logger.Errorf("content done due to: %s", ctx.Err())
+			return ctx.Err()
 		}
-		if !result.Done {
-			continue
-		}
-		switch result.State.Code {
-		case dfcodes.Success:
-			pb.Finish()
-			return nil
-		default:
-			return fmt.Errorf("%s", result.State.GetMsg())
-		}
-		break
 	}
-	return nil
 }
 
 func convertDeprecatedFlags() {
@@ -163,7 +175,7 @@ func dfgetExample() string {
 $ dfget -u https://www.taobao.com -o /tmp/test/b.test --notbs --expiretime 20s
 --2019-02-02 18:56:34--  https://www.taobao.com
 dfget version:0.3.0
-workspace:/root/.small-dragonfly
+workspace:/root/.dragonfly
 sign:96414-1549104994.143
 client:127.0.0.1 connected to node:127.0.0.1
 start download by dragonfly...
@@ -225,7 +237,7 @@ func spawnDaemon() error {
 
 	var args = []string{
 		"daemon",
-		"--download-rate", fmt.Sprintf("%d", flagDaemonOpt.Download.RateLimit.Limit),
+		"--download-rate", fmt.Sprintf("%f", flagDaemonOpt.Download.RateLimit.Limit),
 		"--upload-port", fmt.Sprintf("%d", flagDaemonOpt.Upload.TCPListen.PortRange.Start),
 		"--home", flagDaemonOpt.WorkHome,
 		"--listen", flagDaemonOpt.Host.ListenIP,
