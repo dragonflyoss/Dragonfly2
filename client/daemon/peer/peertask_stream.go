@@ -261,7 +261,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	}(firstPiece)
 
 	// FIXME(jim) update attribute
-	return reader, nil, nil
+	return reader, attr, nil
 }
 
 func (s *streamPeerTask) finish() error {
