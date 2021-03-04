@@ -31,8 +31,8 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 
-	"d7y.io/dragonfly/v2/pkg/rate"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
