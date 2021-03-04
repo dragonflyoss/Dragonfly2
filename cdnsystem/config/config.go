@@ -17,12 +17,13 @@
 package config
 
 import (
+	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-	"d7y.io/dragonfly/v2/pkg/util/yamlutils"
 	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v3"
 )
@@ -43,7 +44,16 @@ type Config struct {
 
 // Load loads config properties from the giving file.
 func (c *Config) Load(path string) error {
-	return yamlutils.LoadYaml(path, c)
+	content, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to load yaml %s when reading file: %v", path, err)
+	}
+
+	if err = yaml.Unmarshal(content, c); err != nil {
+		return fmt.Errorf("failed to load yaml %s: %v", path, err)
+	}
+
+	return nil
 }
 
 func (c *Config) String() string {
@@ -59,7 +69,7 @@ func NewBaseProperties() *BaseProperties {
 	var home string
 	home = filepath.Join(string(filepath.Separator), userHome, "cdn-system")
 	if err != nil {
-		home = filepath.Join(string(filepath.Separator), "home", "admin","cdn-system")
+		home = filepath.Join(string(filepath.Separator), "home", "admin", "cdn-system")
 	}
 	return &BaseProperties{
 		ListenPort:              DefaultListenPort,
@@ -83,7 +93,6 @@ func NewBaseProperties() *BaseProperties {
 
 // BaseProperties contains all basic properties of cdn system.
 type BaseProperties struct {
-
 	StorageDriver string `yaml:"storageDriver"`
 
 	// ListenPort is the port cdn server listens on.
@@ -165,5 +174,4 @@ type BaseProperties struct {
 	//
 	// default: 1
 	CleanRatio int `yaml:"cleanRatio"`
-
 }
