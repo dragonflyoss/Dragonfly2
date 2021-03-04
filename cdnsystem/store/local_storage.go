@@ -33,7 +33,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const LocalStorageDriver = "local"
+const LocalStorageDriver = "disk"
 
 var fileLocker = util.NewLockerPool()
 
