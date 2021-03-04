@@ -131,10 +131,8 @@ func (client *httpSourceClient) IsSupportRange(url string, headers map[string]st
 
 // IsExpired checks if a resource received or stored is the same.
 func (client *httpSourceClient) IsExpired(url string, headers, expireInfo map[string]string) (bool, error) {
-	lastModified, err := timeutils.ConvertTimeStringToInt(expireInfo["Last-Modified"])
-	if err != nil {
-		return true, err
-	}
+	lastModified := timeutils.UnixMillis(expireInfo["Last-Modified"])
+
 	eTag := expireInfo["eTag"]
 	if lastModified <= 0 && stringutils.IsBlank(eTag) {
 		return true, nil

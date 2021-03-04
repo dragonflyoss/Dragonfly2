@@ -30,12 +30,12 @@ func SinceInMilliseconds(start time.Time) int64 {
 	return time.Since(start).Nanoseconds() / time.Millisecond.Nanoseconds()
 }
 
-// ConvertTimeStringToInt converts a string time to an int64 timestamp.
-func ConvertTimeStringToInt(timeStr string) (int64, error) {
-	formatTime, err := time.ParseInLocation(http.TimeFormat, timeStr, time.UTC)
+// UnixMillis converts a {Mon, 02 Jan 2006 15:04:05 GMT} time to an int64 milliseconds.
+func UnixMillis(timeString string) int64 {
+	t, err := time.ParseInLocation(http.TimeFormat, timeString, time.UTC)
 	if err != nil {
-		return 0, err
+		return 0
 	}
 
-	return formatTime.Unix() * int64(1000), nil
+	return t.UnixNano() / time.Millisecond.Nanoseconds()
 }
