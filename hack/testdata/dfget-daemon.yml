@@ -60,6 +60,4 @@ proxy:
     listen: 0.0.0.0
     port: 65001
   registry_mirror:
-    url: https://harbor.home.jim.plus:33333
-  proxies:
-    - regx: blobs/sha256.*
+    url: https://index.docker.io
