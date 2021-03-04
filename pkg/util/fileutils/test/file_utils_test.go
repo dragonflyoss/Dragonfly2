@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic/env"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/filerw"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
@@ -136,6 +137,23 @@ func (s *FileUtilsTestSuite) TestIsEmptyDir() {
 	b, err := fileutils.IsEmptyDir(s.testDir)
 	s.Require().Nil(err)
 	s.Require().True(b)
+}
+
+func (s *FileUtilsTestSuite) TestCopyFile() {
+	_, err := filerw.CopyFile(s.testFile, s.testFile+".new")
+	s.Require().NotNil(err)
+
+	f, err := fileutils.OpenFile(s.testFile, syscall.O_WRONLY|syscall.O_CREAT, 0644)
+	s.Require().Nil(err)
+	f.WriteString("hello,world")
+	f.Close()
+
+	_, err = filerw.CopyFile(s.testFile, s.testFile+".new")
+	s.Require().Nil(err)
+
+	content, err := ioutil.ReadFile(s.testFile + ".new")
+	s.Require().Nil(err)
+	s.Require().Equal("hello,world", string(content))
 }
 
 func (s *FileUtilsTestSuite) TestTryLock() {

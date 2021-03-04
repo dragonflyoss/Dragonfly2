@@ -35,6 +35,18 @@ type SugaredLoggerOnWith struct {
 	withArgs []interface{}
 }
 
+func init() {
+	log, err := zap.NewDevelopment(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
+	if err == nil {
+		sugar := log.Sugar()
+		SetCoreLogger(sugar)
+		SetGrpcLogger(sugar)
+		SetGcLogger(sugar)
+		SetStatPeerLogger(log)
+		SetStatSeedLogger(log)
+	}
+}
+
 func SetCoreLogger(log *zap.SugaredLogger) {
 	CoreLogger = log
 }
@@ -103,9 +115,7 @@ func Infof(template string, args ...interface{}) {
 }
 
 func Warnf(template string, args ...interface{}) {
-	if CoreLogger != nil {
-		CoreLogger.Warnf(template, args...)
-	}
+	CoreLogger.Warnf(template, args...)
 }
 
 func Errorf(template string, args ...interface{}) {

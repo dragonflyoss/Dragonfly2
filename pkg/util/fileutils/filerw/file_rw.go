@@ -35,14 +35,14 @@ func CopyFile(src, dst string) (written int64, err error) {
 		return 0, errors.Errorf("copy %s to %s: src is not a regular file", src, dst)
 	}
 
+	if fileutils.IsDir(dst) {
+		return 0, errors.Errorf("copy %s to %s: dst is a directory", src, dst)
+	}
+
 	if s, err = os.Open(src); err != nil {
 		return 0, errors.Wrapf(err, "failed to copy %s to %s", src, dst)
 	}
 	defer s.Close()
-
-	if fileutils.IsDir(dst) {
-		return 0, errors.Errorf("copy %s to %s: dst is a directory", src, dst)
-	}
 
 	if d, err = fileutils.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644); err != nil {
 		return 0, errors.Wrapf(err, "failed to copy %s to %s", src, dst)
