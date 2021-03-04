@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
@@ -36,7 +38,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
@@ -72,7 +73,7 @@ func constructRequestHeader(meta *base.UrlMeta) map[string]string {
 
 // validateSeedRequestParams validates the params of SeedRequest.
 func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
-	if !netutils.IsValidURL(req.Url) {
+	if !urlutils.IsValidURL(req.Url) {
 		return errors.Errorf("resource url:%s is invalid", req.Url)
 	}
 	if stringutils.IsBlank(req.TaskId) {
@@ -217,7 +218,7 @@ func validateGetPieceTasksRequestParams(req *base.PieceTaskRequest) error {
 	if stringutils.IsBlank(req.TaskId) {
 		return errors.Wrap(dferrors.ErrEmptyValue, "taskId")
 	}
-	if !netutils.IsValidIP(req.SrcIp) {
+	if !iputils.IsIPv4(req.SrcIp) {
 		return errors.Wrapf(dferrors.ErrInvalidArgument, "invalid ip %s", req.SrcIp)
 	}
 	if req.StartNum < 0 {

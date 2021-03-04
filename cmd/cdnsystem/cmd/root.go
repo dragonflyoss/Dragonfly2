@@ -32,7 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-	"d7y.io/dragonfly/v2/pkg/util/netutils"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/version"
 	"github.com/go-echarts/statsview"
@@ -298,16 +298,12 @@ func decodeWithYAML(types ...reflect.Type) mapstructure.DecodeHookFunc {
 
 func setAdvertiseIP(cfg *config.Config) error {
 	// use the first non-loop address if the AdvertiseIP is empty
-	ipList, err := netutils.GetAllIPs()
+	ip, err := iputils.ExternalIPv4()
 	if err != nil {
 		return errors.Wrapf(cdnerrors.ErrSystemError, "failed to get ip list: %v", err)
 	}
-	if len(ipList) == 0 {
-		logger.Errorf("get empty system's unicast interface addresses")
-		return errors.Wrapf(cdnerrors.ErrSystemError, "Unable to autodetect advertiser ip, please set it via --advertise-ip")
-	}
 
-	cfg.AdvertiseIP = ipList[0]
+	cfg.AdvertiseIP = ip
 
 	return nil
 }

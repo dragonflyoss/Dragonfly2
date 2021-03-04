@@ -18,15 +18,17 @@ package task
 
 import (
 	"context"
+
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/util/netutils"
+	urlutils2 "d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -35,7 +37,7 @@ import (
 func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegisterRequest) (*types.SeedTask, error) {
 	taskURL := request.URL
 	if request.Filter != nil {
-		taskURL = netutils.FilterURLParam(request.URL, request.Filter)
+		taskURL = urlutils2.FilterURLParam(request.URL, request.Filter)
 	}
 	taskId := request.TaskID
 	util.GetLock(taskId, false)

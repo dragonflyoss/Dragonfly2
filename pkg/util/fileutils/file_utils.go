@@ -49,7 +49,7 @@ func DeleteFile(path string) error {
 // OpenFile opens a file. If the parent directory of the file isn't exist,
 // it will create the directory.
 func OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
-	if !PathExist(path) && (flag&syscall.O_CREAT > 0) {
+	if !PathExist(path) && (flag&syscall.O_CREAT != 0) {
 		if err := MkdirAll(filepath.Dir(path)); err != nil {
 			return nil, errors.Wrapf(err, "failed to open file %s", path)
 		}

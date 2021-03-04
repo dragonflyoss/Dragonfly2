@@ -14,26 +14,15 @@
  * limitations under the License.
  */
 
-package netutils
+package urlutils
 
 import (
-	"net"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
-	"time"
-
-	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
-
-const (
-	separator = "&"
-	layoutGMT = "GMT"
-)
-
 
 // FilterURLParam filters request queries in URL.
 // Eg:
@@ -80,42 +69,6 @@ func IsValidURL(urlStr string) bool {
 		return false
 	}
 	return true
-}
-
-// IsValidIP returns whether the string ip is a valid IP Address.
-func IsValidIP(ip string) bool {
-	if strings.TrimSpace(ip) == "" {
-		return false
-	}
-
-	// str is a regex which matches a digital
-	// greater than or equal to 0 and less than or equal to 255
-	str := "(?:25[0-5]|2[0-4]\\d|[01]?\\d?\\d)"
-	result, err := regexp.MatchString("^(?:"+str+"\\.){3}"+str+"$", ip)
-	if err != nil {
-		return false
-	}
-
-	return result
-}
-
-// GetAllIPs returns all non-loopback IPV4 addresses.
-func GetAllIPs() (ipList []string, err error) {
-	// get all system's unicast interface addresses.
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		return nil, err
-	}
-
-	// filter all loopback addresses.
-	for _, v := range addrs {
-		if ipNet, ok := v.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
-			if ipNet.IP.To4() != nil {
-				ipList = append(ipList, ipNet.IP.String())
-			}
-		}
-	}
-	return
 }
 
 // slice2Map translates a slice to a map with
