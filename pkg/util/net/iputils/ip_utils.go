@@ -28,7 +28,7 @@ var HostIp string
 var HostName string
 
 func init() {
-	HostIp, _ := externalIPv4()
+	HostIp, _ = externalIPv4()
 	if HostIp == "" {
 		panic("host ip is not exist")
 	}
