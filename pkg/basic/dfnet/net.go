@@ -18,9 +18,7 @@ package dfnet
 
 import (
 	"encoding/json"
-	"os"
 
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
@@ -57,20 +55,6 @@ const (
 	TCP  NetworkType = "tcp"
 	UNIX NetworkType = "unix"
 )
-
-var HostIp string
-var HostName, _ = os.Hostname()
-
-func init() {
-	HostIp, _ := iputils.ExternalIPv4()
-	if HostIp == "" {
-		panic("host ip is not exist")
-	}
-
-	if HostName == "" {
-		panic("host name is not exist")
-	}
-}
 
 func (n *NetAddr) UnmarshalJSON(b []byte) error {
 	var v interface{}

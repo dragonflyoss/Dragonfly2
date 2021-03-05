@@ -25,6 +25,7 @@ import (
 	"syscall"
 
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/gofrs/flock"
@@ -36,11 +37,10 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/daemon"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/client/pidfile"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/client/pidfile"
 )
 
 var daemonCmd = &cobra.Command{
@@ -125,7 +125,7 @@ func runDaemon() error {
 	if !net.IPv4zero.Equal(net.ParseIP(flagDaemonOpt.Host.AdvertiseIP)) {
 		ip = flagDaemonOpt.Host.AdvertiseIP
 	} else {
-		ip = dfnet.HostIp
+		ip = iputils.HostIp
 	}
 	if ip == "" || ip == "0.0.0.0" {
 		return fmt.Errorf("unable to autodetect peer ip for scheduler, please set it via --advertise-ip")
@@ -137,7 +137,7 @@ func runDaemon() error {
 		Ip:             ip,
 		RpcPort:        int32(flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
-		HostName:       dfnet.HostName,
+		HostName:       iputils.HostName,
 		SecurityDomain: flagDaemonOpt.Host.SecurityDomain,
 		Location:       flagDaemonOpt.Host.Location,
 		Idc:            flagDaemonOpt.Host.IDC,

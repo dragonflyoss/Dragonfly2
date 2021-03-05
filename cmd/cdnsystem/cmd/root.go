@@ -23,13 +23,12 @@ import (
 	"reflect"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	"d7y.io/dragonfly/v2/cmd/common"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -298,12 +297,7 @@ func decodeWithYAML(types ...reflect.Type) mapstructure.DecodeHookFunc {
 
 func setAdvertiseIP(cfg *config.Config) error {
 	// use the first non-loop address if the AdvertiseIP is empty
-	ip, err := iputils.ExternalIPv4()
-	if err != nil {
-		return errors.Wrapf(cdnerrors.ErrSystemError, "failed to get ip list: %v", err)
-	}
-
-	cfg.AdvertiseIP = ip
+	cfg.AdvertiseIP = iputils.HostIp
 
 	return nil
 }

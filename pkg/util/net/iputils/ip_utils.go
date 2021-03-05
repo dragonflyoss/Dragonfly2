@@ -18,10 +18,26 @@ package iputils
 
 import (
 	"net"
+	"os"
 	"sort"
 
 	"github.com/pkg/errors"
 )
+
+var HostIp string
+var HostName string
+
+func init() {
+	HostIp, _ := externalIPv4()
+	if HostIp == "" {
+		panic("host ip is not exist")
+	}
+
+	HostName, _ = os.Hostname()
+	if HostName == "" {
+		panic("host name is not exist")
+	}
+}
 
 // IsIPv4 returns whether the ip is a valid IPv4 Address.
 func IsIPv4(ip string) bool {
@@ -33,8 +49,8 @@ func IsIPv4(ip string) bool {
 	return false
 }
 
-// ExternalIPv4 returns the first IPv4 available.
-func ExternalIPv4() (string, error) {
+// externalIPv4 returns the first IPv4 available.
+func externalIPv4() (string, error) {
 	ips, err := ipAddrs()
 
 	if err != nil {

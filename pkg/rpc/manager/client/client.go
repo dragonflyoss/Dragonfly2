@@ -23,6 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"errors"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"google.golang.org/grpc"
 	"sync"
 	"time"
@@ -96,7 +97,7 @@ func (mc *managerClient) KeepAlive(ctx context.Context, req *KeepAliveRequest, o
 	}
 
 	hr := &manager.HeartRequest{
-		HostName: dfnet.HostName,
+		HostName: iputils.HostName,
 	}
 	if req.IsCdn {
 		hr.From = &manager.HeartRequest_Cdn{Cdn: true}

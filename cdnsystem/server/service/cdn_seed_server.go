@@ -31,7 +31,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -109,7 +108,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	if err != nil {
 		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "register seed task fail, registerRequest:%+v:%v", registerRequest, err)
 	}
-	peerId := fmt.Sprintf("%s-%s_%s", dfnet.HostName, req.TaskId, "CDN")
+	peerId := fmt.Sprintf("%s-%s_%s", iputils.HostName, req.TaskId, "CDN")
 	for piece := range pieceChan {
 		pieceRange := strings.Split(piece.PieceRange, "-")
 		pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
@@ -118,7 +117,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			psc <- &cdnsystem.PieceSeed{
 				State:      common.NewState(dfcodes.Success, "success"),
 				PeerId:     peerId,
-				SeederName: dfnet.HostName,
+				SeederName: iputils.HostName,
 				PieceInfo: &base.PieceInfo{
 					PieceNum:    piece.PieceNum,
 					RangeStart:  pieceStart,
@@ -140,7 +139,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			psc <- &cdnsystem.PieceSeed{
 				State:         state,
 				PeerId:        peerId,
-				SeederName:    dfnet.HostName,
+				SeederName:    iputils.HostName,
 				Done:          true,
 				ContentLength: piece.ContentLength,
 			}

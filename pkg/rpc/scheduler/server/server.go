@@ -18,11 +18,12 @@ package server
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+
 	"d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -71,8 +72,8 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 		zap.String("peerIp", peerHost.Ip),
 		zap.String("securityDomain", peerHost.SecurityDomain),
 		zap.String("idc", peerHost.Idc),
-		zap.String("schedulerIp", dfnet.HostIp),
-		zap.String("schedulerName", dfnet.HostName),
+		zap.String("schedulerIp", iputils.HostIp),
+		zap.String("schedulerName", iputils.HostName),
 		zap.Int32("code", int32(code)))
 
 	return
@@ -92,8 +93,8 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 		zap.String("peerIp", pr.SrcIp),
 		zap.String("securityDomain", pr.SecurityDomain),
 		zap.String("idc", pr.Idc),
-		zap.String("schedulerIp", dfnet.HostIp),
-		zap.String("schedulerName", dfnet.HostName),
+		zap.String("schedulerIp", iputils.HostIp),
+		zap.String("schedulerName", iputils.HostName),
 		zap.Int64("contentLength", pr.ContentLength),
 		zap.Uint64("traffic", uint64(pr.Traffic)),
 		zap.Uint32("cost", pr.Cost),

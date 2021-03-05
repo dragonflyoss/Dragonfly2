@@ -18,17 +18,18 @@ package server
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"sync"
+
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/safe"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
-	"sync"
 )
 
 func init() {
@@ -124,8 +125,8 @@ func StatSeedStart(taskId, url string) {
 	logger.StatSeedLogger.Info("trigger seed making",
 		zap.String("taskId", taskId),
 		zap.String("url", url),
-		zap.String("seederIp", dfnet.HostIp),
-		zap.String("seederName", dfnet.HostName))
+		zap.String("seederIp", iputils.HostIp),
+		zap.String("seederName", iputils.HostName))
 }
 
 
@@ -134,8 +135,8 @@ func StatSeedFinish(taskId, url string, success bool, code base.Code, beginTime,
 		zap.Bool("success", success),
 		zap.String("taskId", taskId),
 		zap.String("url", url),
-		zap.String("seederIp", dfnet.HostIp),
-		zap.String("seederName", dfnet.HostName),
+		zap.String("seederIp", iputils.HostIp),
+		zap.String("seederName", iputils.HostName),
 		zap.Uint64("beginTime", beginTime),
 		zap.Uint64("endTime", endTime),
 		zap.Int64("traffic", traffic),
