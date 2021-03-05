@@ -69,6 +69,22 @@ type memoryStorage struct {
 	BaseDir string `yaml:"baseDir"`
 }
 
+func (ms *memoryStorage) GetTotalAndFreeSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, fileutils.Fsize, error) {
+	panic("implement me")
+}
+
+func (ms *memoryStorage) CreateFile(ctx context.Context, path string) (*os.File, error) {
+	panic("implement me")
+}
+
+func (ms *memoryStorage) MoveFile(src string, dst string) error {
+	panic("implement me")
+}
+
+func (ms *memoryStorage) Exits(ctx context.Context, raw *store.Raw) bool {
+	panic("implement me")
+}
+
 // NewStorage performs initialization for memoryStorage and return a StorageDriver.
 func NewStorage(conf string) (store.StorageDriver, error) {
 	// type assertion for config

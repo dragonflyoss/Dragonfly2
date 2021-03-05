@@ -20,7 +20,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"fmt"
-	"sync"
+	"strings"
 )
 
 // StorageBuilder is a function that creates a new storage plugin instant with the giving conf.
@@ -29,6 +29,7 @@ type StorageBuilder func(conf string) (StorageDriver, error)
 // Register defines an interface to register a driver with specified name.
 // All drivers should call this function to register itself to the driverFactory.
 func Register(name string, builder StorageBuilder) {
+	name = strings.ToLower(name)
 	// plugin builder
 	var f plugins.Builder = func(conf string) (plugin plugins.Plugin, e error) {
 		return NewStore(name, builder, conf)
@@ -36,27 +37,24 @@ func Register(name string, builder StorageBuilder) {
 	plugins.RegisterPlugin(config.StoragePlugin, name, f)
 }
 
-// Manager manages stores.
-type Manager struct {
-	cfg            *config.Config
-	defaultStorage *Store
-	mutex          sync.Mutex
-}
-
-// NewManager creates a store manager.
-func NewManager(cfg *config.Config) (*Manager, error) {
-	return &Manager{
-		cfg: cfg,
-	}, nil
-}
+//// Manager manages stores.
+//type Manager struct {
+//	cfg            *config.Config
+//	defaultStorage *Store
+//	mutex          sync.Mutex
+//}
+//
+//// NewManager creates a store manager.
+//func NewManager(cfg *config.Config) *Manager {
+//	return &Manager{
+//		cfg: cfg,
+//	}
+//}
 
 // Get a store from manager with specified name.
-func (sm *Manager) Get(name string) (*Store, error) {
-	v := plugins.GetPlugin(config.StoragePlugin, name)
+func Get(name string) (*Store, error) {
+	v := plugins.GetPlugin(config.StoragePlugin, strings.ToLower(name))
 	if v == nil {
-		//if name == disk.StorageDriver {
-		//	return sm.getDefaultStorage()
-		//}
 		return nil, fmt.Errorf("not existed storage: %s", name)
 	}
 	if store, ok := v.(*Store); ok {

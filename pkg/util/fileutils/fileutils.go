@@ -52,7 +52,7 @@ func CreateDirectory(dirPath string) error {
 }
 
 func CreateFile(path string) (*os.File, error) {
-	return OpenFile(path, os.O_RDWR|os.O_CREATE, DefaultFilePerm)
+	return os.Create(path)
 }
 
 // DeleteFile deletes a file not a directory.

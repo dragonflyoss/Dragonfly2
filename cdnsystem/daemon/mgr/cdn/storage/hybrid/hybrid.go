@@ -20,8 +20,11 @@ import (
 	"bytes"
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
+	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
@@ -31,66 +34,82 @@ import (
 
 const name = "hybrid"
 
-type diskBuilder struct {
+type hybridBuilder struct {
 }
 
-func (*diskBuilder) Build(underlyingStores []store.StorageDriver, buildOpts storage.BuildOptions) (storage.Storage,
+func (*hybridBuilder) Build(buildOpts storage.BuildOptions) (storage.Storage,
 	error) {
+	diskStore, err := store.Get(disk.StorageDriver)
+	if err != nil {
+		return nil, err
+	}
+	memoryStore, err := store.Get(disk.MemoryStorageDriver)
+	if err != nil {
+		return nil, err
+	}
 	storage := &hybridStorage{
-		memoryStore: underlyingStores[0],
-		diskStore:   underlyingStores[1],
-		shmMgr:      newShareMemManager(),
+		memoryStore: memoryStore,
+		diskStore:   diskStore,
 	}
 	return storage, nil
 }
 
-func (*diskBuilder) Name() string {
+func (*hybridBuilder) Name() string {
 	return name
 }
 
 type hybridStorage struct {
-	memoryStore store.StorageDriver
-	diskStore   store.StorageDriver
-	switcher    *shmSwitcher
+	memoryStore *store.Store
+	diskStore   *store.Store
 	shmMgr      *ShareMemManager
+	cfg         config.Config
 }
 
-func (h hybridStorage) Walk(ctx context.Context, raw *store.Raw) error {
+func (h *hybridStorage) Gc(ctx context.Context) {
 	panic("implement me")
 }
 
-func (h hybridStorage) WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64, buf *bytes.Buffer) error {
+func (h *hybridStorage) SetTaskMgr(taskMgr mgr.SeedTaskMgr) {
+	h.shmMgr = newShareMemManager(taskMgr, h.memoryStore)
+}
+
+func (h *hybridStorage) Walk(ctx context.Context, raw *store.Raw) error {
+	return nil
+}
+
+func (h *hybridStorage) WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64,
+	buf *bytes.Buffer) error {
 	raw := storage.GetDownloadRaw(taskId)
 	raw.Offset = offset
 	raw.Length = len
 	return h.diskStore.Put(ctx, raw, buf)
 }
 
-func (h hybridStorage) DeleteTask(ctx context.Context, taskId string) error {
+func (h *hybridStorage) DeleteTask(ctx context.Context, taskId string) error {
 	return h.deleteTaskFiles(ctx, taskId, true, true)
 }
 
-func (h hybridStorage) ReadDownloadFile(ctx context.Context, taskId string) (io.Reader, error) {
+func (h *hybridStorage) ReadDownloadFile(ctx context.Context, taskId string) (io.Reader, error) {
 	return h.diskStore.Get(ctx, storage.GetDownloadRaw(taskId))
 }
 
-func (h hybridStorage) ReadPieceMetaBytes(ctx context.Context, taskId string) ([]byte, error) {
+func (h *hybridStorage) ReadPieceMetaBytes(ctx context.Context, taskId string) ([]byte, error) {
 	return h.diskStore.GetBytes(ctx, storage.GetPieceMetaDataRaw(taskId))
 }
 
-func (h hybridStorage) ReadFileMetaDataBytes(ctx context.Context, taskId string) ([]byte, error) {
+func (h *hybridStorage) ReadFileMetaDataBytes(ctx context.Context, taskId string) ([]byte, error) {
 	return h.diskStore.GetBytes(ctx, storage.GetTaskMetaDataRaw(taskId))
 }
 
-func (h hybridStorage) AppendPieceMetaDataBytes(ctx context.Context, taskId string, bytes []byte) error {
+func (h *hybridStorage) AppendPieceMetaDataBytes(ctx context.Context, taskId string, bytes []byte) error {
 	return h.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), bytes)
 }
 
-func (h hybridStorage) WriteFileMetaDataBytes(ctx context.Context, taskId string, data []byte) error {
+func (h *hybridStorage) WriteFileMetaDataBytes(ctx context.Context, taskId string, data []byte) error {
 	return h.diskStore.PutBytes(ctx, storage.GetTaskMetaDataRaw(taskId), data)
 }
 
-func (h hybridStorage) CreateUploadLink(taskId string) error {
+func (h *hybridStorage) CreateUploadLink(taskId string) error {
 	// create a soft link from the upload file to the download file
 	if err := fileutils.SymbolicLink(h.diskStore.GetPath(storage.GetDownloadRaw(taskId)),
 		h.diskStore.GetPath(storage.GetUploadRaw(taskId))); err != nil {
@@ -99,7 +118,7 @@ func (h hybridStorage) CreateUploadLink(taskId string) error {
 	return nil
 }
 
-func (h hybridStorage) ResetRepo(ctx context.Context, task *types.SeedTask) error {
+func (h *hybridStorage) ResetRepo(ctx context.Context, task *types.SeedTask) error {
 	if err := h.deleteTaskFiles(ctx, task.TaskId, false, true); err != nil {
 		logger.WithTaskID(task.TaskId).Errorf("reset repo: failed to delete task files: %v", err)
 	}
@@ -109,7 +128,7 @@ func (h hybridStorage) ResetRepo(ctx context.Context, task *types.SeedTask) erro
 		fileutils.SymbolicLink(shmPath, h.diskStore.GetPath(storage.GetDownloadRaw(task.TaskId)))
 	} else {
 		// 创建 download文件
-		_, err := fileutils.CreateFile(h.diskStore.GetPath(storage.GetDownloadRaw(task.TaskId)))
+		_, err := h.diskStore.CreateFile(ctx, h.diskStore.GetPath(storage.GetDownloadRaw(task.TaskId)))
 		if err != nil {
 			return errors.Wrap(err, "failed to create download file")
 		}
@@ -117,16 +136,16 @@ func (h hybridStorage) ResetRepo(ctx context.Context, task *types.SeedTask) erro
 	return nil
 }
 
-func (h hybridStorage) GetDownloadPath(rawFunc *store.Raw) string {
+func (h *hybridStorage) GetDownloadPath(rawFunc *store.Raw) string {
 	return h.diskStore.GetPath(rawFunc)
 }
 
-func (h hybridStorage) StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error) {
+func (h *hybridStorage) StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error) {
 	return h.diskStore.Stat(ctx, storage.GetDownloadRaw(taskId))
 }
 
-func (h hybridStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
-	panic("implement me")
+func (h *hybridStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
+	return fileutils.Fsize(100000), nil
 }
 
 func (h *hybridStorage) deleteTaskFiles(ctx context.Context, taskId string, deleteUploadPath bool, deleteHardLink bool) error {
@@ -144,8 +163,8 @@ func (h *hybridStorage) deleteTaskFiles(ctx context.Context, taskId string, dele
 			return err
 		}
 	}
-	_, err := h.diskStore.Stat(ctx, getHardLinkRaw(taskId))
-	if !deleteHardLink && err == nil {
+	exists := h.diskStore.Exits(ctx, getHardLinkRaw(taskId))
+	if !deleteHardLink && exists {
 		h.diskStore.MoveFile(h.diskStore.GetPath(getHardLinkRaw(taskId)), h.diskStore.GetPath(storage.GetDownloadRaw(
 			taskId)))
 	} else {
@@ -176,5 +195,5 @@ func getHardLinkRaw(taskId string) *store.Raw {
 }
 
 func init() {
-	storage.Register(&diskBuilder{})
+	storage.Register(&hybridBuilder{})
 }

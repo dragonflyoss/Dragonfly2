@@ -33,7 +33,7 @@ func SetManager(m Manager) {
 func Initialize(cfg *config.Config) error {
 	for pt, value := range cfg.Plugins {
 		for _, v := range value {
-			if !v.Enabled {
+			if !v.Enable {
 				logger.Infof("plugin[%s][%s] is disabled", pt, v.Name)
 				continue
 			}

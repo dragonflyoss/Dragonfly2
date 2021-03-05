@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package cdn
+package hybrid
 
 import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
 	"github.com/pkg/errors"
@@ -36,22 +38,22 @@ import (
 // It should return nil when the free disk of cdn storage is lager than config.YoungGCThreshold.
 // It should return all TaskIds that are not running when the free disk of cdn storage is less than
 // config.FullGCThreshold.
-func (cm *Manager) GetGCTaskIds(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([]string, error) {
+func (h *hybridStorage) GetGCTaskIds(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([]string, error) {
 	var gcTaskIds []string
 
-	freeDisk, err := cm.cacheStore.GetAvailSpace(ctx, storage.GetDownloadHomeRaw())
+	freeDisk, err := h.GetAvailSpace(ctx, storage.GetDownloadHomeRaw())
 	if err != nil {
 		if cdnerrors.IsKeyNotFound(err) {
 			return nil, nil
 		}
 		return nil, errors.Wrapf(err, "failed to get avail space")
 	}
-	if freeDisk > cm.cfg.YoungGCThreshold {
+	if freeDisk > h.cfg.YoungGCThreshold {
 		return nil, nil
 	}
 
 	fullGC := false
-	if freeDisk <= cm.cfg.FullGCThreshold {
+	if freeDisk <= h.cfg.FullGCThreshold {
 		fullGC = true
 	}
 	logger.GcLogger.Debugf("start to exec gc with fullGC: %t", fullGC)
@@ -94,14 +96,14 @@ func (cm *Manager) GetGCTaskIds(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 			return nil
 		}
 
-		metaData, err := cm.metaDataManager.readFileMetaData(ctx, taskId)
+		metaData, err := h.ReadFileMetaDataBytes(ctx, taskId)
 		if err != nil || metaData == nil {
 			logger.GcLogger.Debugf("TaskId: %s, failed to get metadata: %v", taskId, err)
 			// TODO: delete the file when failed to get metadata
 			return nil
 		}
 		// put TaskId into gapTasks or intervalTasks which will sort by some rules
-		if err := cm.sortInert(ctx, gapTasks, intervalTasks, metaData); err != nil {
+		if err := h.sortInert(ctx, gapTasks, intervalTasks, metaData); err != nil {
 			logger.GcLogger.Errorf("failed to parse inert metaData(%+v): %v", metaData, err)
 		}
 
@@ -113,7 +115,7 @@ func (cm *Manager) GetGCTaskIds(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 		WalkFn: walkFn,
 	}
 	// todo gc
-	if err := cm.cacheStore.Walk(ctx, raw); err != nil {
+	if err := h.Walk(ctx, raw); err != nil {
 		return nil, err
 	}
 
@@ -124,12 +126,12 @@ func (cm *Manager) GetGCTaskIds(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 	return gcTaskIds, nil
 }
 
-func (cm *Manager) sortInert(ctx context.Context, gapTasks, intervalTasks *treemap.Map, metaData *fileMetaData) error {
-	gap := getCurrentTimeMillisFunc() - metaData.AccessTime
+func (h *hybridStorage) sortInert(ctx context.Context, gapTasks, intervalTasks *treemap.Map, metaData *cdn.fileMetaData) error {
+	gap := timeutils.CurrentTimeMillis() - metaData.AccessTime
 
 	if metaData.Interval > 0 &&
-		gap <= metaData.Interval+(int64(cm.cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
-		info, err := cm.cacheStore.StatDownloadFile(ctx, metaData.TaskId)
+		gap <= metaData.Interval+(int64(h.cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
+		info, err := h.StatDownloadFile(ctx, metaData.TaskId)
 		if err != nil {
 			return err
 		}

@@ -19,7 +19,7 @@ plugins:
   storage:
     - name: local
       enabled: true
-      config: "baseDir: /tmp/cdnsystem/"
+      config: "baseDir: /tmp2222/cdnsystem/"
   sourceClient:
     - name: http
       enable: true

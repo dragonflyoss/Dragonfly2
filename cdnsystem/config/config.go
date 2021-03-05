@@ -19,9 +19,7 @@ package config
 import (
 	"d7y.io/dragonfly/v2/pkg/rate"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"github.com/mitchellh/go-homedir"
 	"gopkg.in/yaml.v3"
-	"path/filepath"
 	"time"
 )
 
@@ -53,17 +51,9 @@ func (c *Config) String() string {
 
 // NewBaseProperties creates an instant with default values.
 func NewBaseProperties() *BaseProperties {
-	userHome, err := homedir.Dir()
-	var home string
-	home = filepath.Join(string(filepath.Separator), userHome, "cdn-system")
-	if err != nil {
-		home = filepath.Join(string(filepath.Separator), "home", "admin", "cdn-system")
-	}
-
 	return &BaseProperties{
 		ListenPort:              DefaultListenPort,
 		DownloadPort:            DefaultDownloadPort,
-		HomeDir:                 home,
 		StoragePattern:          DefaultStoragePattern,
 		//DownloadPath:            filepath.Join(home, RepoHome, DownloadHome),
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
@@ -93,10 +83,6 @@ type BaseProperties struct {
 	// DownloadPort is the port for download files from cdn.
 	// default: 8001
 	DownloadPort int `yaml:"downloadPort"`
-
-	// HomeDir is working directory of cdn.
-	// default: /home/admin/cdn-system
-	HomeDir string `yaml:"homeDir"`
 
 	// DownloadPath specifies the path where to store downloaded files from source address.
 	//DownloadPath string `yaml:"downloadPath"`

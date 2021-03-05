@@ -21,7 +21,6 @@ import (
 	"crypto/md5"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/hybrid"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -36,7 +35,6 @@ type cacheDetector struct {
 	cacheStore      storage.Storage
 	metaDataManager *metaDataManager
 	resourceClient  source.ResourceClient
-	shmMgr          hybrid.ShareMemManager
 }
 
 // cacheResult cache result of detect
@@ -62,7 +60,7 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) 
 	detectResult, err := cd.doDetect(ctx, task)
 	logger.WithTaskID(task.TaskId).Debugf("detects cache result:%v", detectResult)
 	if err != nil {
-		logger.WithTaskID(task.TaskId).Errorf("detect cache encounter an error: %v", err)
+		logger.WithTaskID(task.TaskId).Warnf("detect cache encounter an error: %v", err)
 		metaData, err := cd.resetRepo(ctx, task)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to reset repo")
@@ -85,11 +83,6 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) 
 // doDetect the actual detect action which detects file metaData and pieces metaData of specific task
 func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (*cacheResult, error) {
 	logger.Debugf("create upload symbol link")
-	// todo 创建上传目录
-	err := cd.cacheStore.CreateUploadLink(task.TaskId)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create upload symbol link")
-	}
 	fileMetaData, err := cd.metaDataManager.readFileMetaData(ctx, task.TaskId)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read file meta data from store")

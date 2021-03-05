@@ -20,6 +20,7 @@ import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"io"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -69,14 +70,19 @@ type StorageDriver interface {
 	// GetAvailSpace returns the available disk space in B.
 	GetAvailSpace(ctx context.Context, raw *Raw) (fileutils.Fsize, error)
 
+ 	GetTotalAndFreeSpace(ctx context.Context, raw *Raw) (fileutils.Fsize, fileutils.Fsize, error)
+
 	// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 	// calling walkFn for each file or directory in the tree, including root.
 	Walk(ctx context.Context, raw *Raw) error
 
+	CreateFile(ctx context.Context, path string) (*os.File, error)
 	// GetPath
 	GetPath(raw *Raw) string
 
-	MoveFile(src string, dst string)
+	MoveFile(src string, dst string) error
+
+	Exits(ctx context.Context, raw *Raw) bool
 }
 
 // Raw identifies a piece of data uniquely.

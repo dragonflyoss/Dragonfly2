@@ -25,7 +25,14 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"io"
+	"os"
 )
+
+func init() {
+	// Ensure that storage implements the StorageDriver interface
+	var storage *Store = nil
+	var _ StorageDriver = storage
+}
 
 // Store is a wrapper of the storage which implements the interface of StorageDriver.
 type Store struct {
@@ -35,6 +42,18 @@ type Store struct {
 	config interface{}
 	// driver holds a storage which implements the interface of StorageDriver.
 	driver StorageDriver
+}
+
+func (s *Store) Exits(ctx context.Context, raw *Raw) bool {
+	return s.driver.Exits(ctx, raw)
+}
+
+func (s *Store) GetTotalAndFreeSpace(ctx context.Context, raw *Raw) (fileutils.Fsize, fileutils.Fsize, error) {
+	return s.driver.GetTotalAndFreeSpace(ctx, raw)
+}
+
+func (s *Store) CreateFile(ctx context.Context, path string) (*os.File, error) {
+	return s.driver.CreateFile(ctx, path)
 }
 
 // NewStore creates a new Store instance.
@@ -138,6 +157,10 @@ func (s *Store) Walk(ctx context.Context, raw *Raw) error {
 
 func (s *Store) GetPath(raw *Raw) string {
 	return s.driver.GetPath(raw)
+}
+
+func (s *Store) MoveFile(src string, dst string) error {
+	return s.driver.MoveFile(src, dst)
 }
 
 func checkEmptyKey(raw *Raw) error {

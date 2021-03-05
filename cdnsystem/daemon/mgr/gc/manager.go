@@ -20,6 +20,7 @@ import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/metricsutils"
 	"github.com/prometheus/client_golang/prometheus"
@@ -57,14 +58,17 @@ type Manager struct {
 	taskMgr mgr.SeedTaskMgr
 	cdnMgr  mgr.CDNMgr
 	metrics *metrics
+	storage storage.Storage
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr, register prometheus.Registerer) (*Manager, error) {
+func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr,
+	storage storage.Storage, register prometheus.Registerer) (*Manager, error) {
 	return &Manager{
 		cfg:     cfg,
 		taskMgr: taskMgr,
 		cdnMgr:  cdnMgr,
+		storage: storage,
 		metrics: newMetrics(register),
 	}, nil
 }
@@ -93,7 +97,7 @@ func (gcm *Manager) StartGC(ctx context.Context) {
 		// execute the GC by fixed delay
 		ticker := time.NewTicker(gcm.cfg.GCDiskInterval)
 		for range ticker.C {
-			gcm.gcStorage(ctx)
+			gcm.storage.Gc(ctx)
 		}
 	}()
 }

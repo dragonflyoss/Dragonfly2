@@ -39,11 +39,13 @@ func init() {
 }
 
 const StorageDriver = "disk"
+const MemoryStorageDriver = "memory"
 
 var fileLocker = util.NewLockerPool()
 
 func init() {
 	store.Register(StorageDriver, NewStorage)
+	store.Register(MemoryStorageDriver, NewStorage)
 }
 
 func lock(path string, offset int64, ro bool) {
@@ -68,8 +70,12 @@ type diskStorage struct {
 	BaseDir string `yaml:"baseDir"`
 }
 
-func (ds *diskStorage) MoveFile(src string, dst string) {
-	fileutils.MoveFile(src, dst)
+func (ds *diskStorage) CreateFile(ctx context.Context, path string) (*os.File, error) {
+	return os.Create(path)
+}
+
+func (ds *diskStorage) MoveFile(src string, dst string) error{
+	return fileutils.MoveFile(src, dst)
 }
 
 // NewStorage performs initialization for disk Storage and return a StorageDriver.
@@ -298,6 +304,12 @@ func (ds *diskStorage) Stat(ctx context.Context, raw *store.Raw) (*store.Storage
 	}, nil
 }
 
+func (ds *diskStorage) Exits(ctx context.Context, raw *store.Raw) bool {
+	filePath := filepath.Join(ds.BaseDir, raw.Bucket, raw.Key)
+	_, err := os.Stat(filePath)
+	return !os.IsNotExist(err)
+}
+
 // Remove deletes a file or dir.
 // It will force delete the file or dir when the raw.Trunc is true.
 func (ds *diskStorage) Remove(ctx context.Context, raw *store.Raw) error {
@@ -329,6 +341,17 @@ func (ds *diskStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileu
 	lock(path, -1, true)
 	defer unLock(path, -1, true)
 	return fileutils.GetFreeSpace(path)
+}
+
+func (ds *diskStorage) GetTotalAndFreeSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, fileutils.Fsize, error) {
+	path, _, err := ds.statPath(raw.Bucket, raw.Key)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	lock(path, -1, true)
+	defer unLock(path, -1, true)
+	return fileutils.GetTotalAndFreeSpace(path)
 }
 
 // Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,

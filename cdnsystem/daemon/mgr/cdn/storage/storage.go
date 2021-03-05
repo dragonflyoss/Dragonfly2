@@ -19,6 +19,7 @@ package storage
 import (
 	"bytes"
 	"context"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
@@ -48,7 +49,7 @@ func Get(name string, defaultIfAbsent bool) Builder {
 // Builder creates a storage
 type Builder interface {
 
-	Build([]store.StorageDriver, BuildOptions) (Storage, error)
+	Build(BuildOptions) (Storage, error)
 
 	Name() string
 }
@@ -69,7 +70,6 @@ type Storage interface {
 	// GetAvailSpace returns the available disk space in B.
 	GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error)
 
-
 	CreateUploadLink(taskId string) error
 
 	ReadFileMetaDataBytes(ctx context.Context, taskId string) ([]byte, error)
@@ -87,4 +87,8 @@ type Storage interface {
 	WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64, buf *bytes.Buffer) error
 
 	Walk(ctx context.Context, raw *store.Raw) error
+
+	SetTaskMgr(mgr.SeedTaskMgr)
+
+	Gc(ctx context.Context)
 }

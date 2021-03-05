@@ -20,8 +20,10 @@ import (
 	"bytes"
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
+	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"github.com/pkg/errors"
@@ -31,12 +33,21 @@ import (
 
 const name = "disk"
 
+func init() {
+	var builder *diskBuilder = nil
+	var _ storage.Builder = builder
+}
+
 type diskBuilder struct {
 }
 
-func (*diskBuilder) Build(underlyingStores []store.StorageDriver, buildOpts storage.BuildOptions) (storage.Storage, error) {
+func (*diskBuilder) Build(buildOpts storage.BuildOptions) (storage.Storage, error) {
+	diskStore, err := store.Get(disk.StorageDriver)
+	if err != nil {
+		return nil, err
+	}
 	storage := &diskStorage{
-		diskStore: underlyingStores[0],
+		diskStore: diskStore,
 	}
 	return storage, nil
 }
@@ -46,7 +57,16 @@ func (*diskBuilder) Name() string {
 }
 
 type diskStorage struct {
-	diskStore store.StorageDriver
+	diskStore *store.Store
+	taskMgr mgr.SeedTaskMgr
+}
+
+func (s *diskStorage) Gc(ctx context.Context) {
+	panic("implement me")
+}
+
+func (s *diskStorage) SetTaskMgr(mgr mgr.SeedTaskMgr) {
+	s.taskMgr = mgr
 }
 
 func (s *diskStorage) Walk(ctx context.Context, raw *store.Raw) error {

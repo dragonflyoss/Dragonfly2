@@ -25,6 +25,10 @@ type shmSpaceGcTimer struct {
 	 */
 	hasShm bool
 }
+
+func newShmSpaceGc() *shmSpaceGcTimer {
+	return &shmSpaceGcTimer{hasShm: true}
+}
 func (ssGcTimer *shmSpaceGcTimer) canUseShm() bool {
 	return ssGcTimer.hasShm
 }

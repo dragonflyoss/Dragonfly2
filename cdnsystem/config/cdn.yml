@@ -74,12 +74,12 @@ base:
 plugins:
   storage:
     - name: disk
-      enabled: true
-      config: "baseDir: /tmp/cdnsystem/"
-    - name: hybrid
       enable: true
-      config: ""
+      config: "baseDir: /tmp/cdnsystem/"
+    - name: memory
+      enable: true
+      config: "baseDir: /Users/sunweipeng1/dragonflycdn"
   sourceClient:
     - name: http
-      enable: true
+      enable: false
 

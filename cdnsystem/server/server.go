@@ -17,7 +17,6 @@
 package server
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 )
@@ -27,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/progress"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/task"
@@ -50,7 +50,7 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 	if sb == nil {
 		return nil, fmt.Errorf("could not get storage for pattern: %s", cfg.StoragePattern)
 	}
-	storage, err := sb.Build(nil, nil)
+	storage, err := sb.Build(nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build storage: %v", err)
 	}
@@ -75,8 +75,9 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task manager: %v", err)
 	}
+	storage.SetTaskMgr(taskMgr)
 	// gc manager
-	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, register)
+	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, storage, register)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create gc manager: %v", err)
 	}

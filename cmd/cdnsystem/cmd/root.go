@@ -75,9 +75,9 @@ var rootCmd = &cobra.Command{
 			return errors.Wrap(err, "get config from viper")
 		}
 		// create home dir
-		if err := fileutils.CreateDirectory(cdnNodeViper.GetString("base.homeDir")); err != nil {
-			return fmt.Errorf("failed to create home dir %s: %v", cdnNodeViper.GetString("base.homeDir"), err)
-		}
+		//if err := fileutils.CreateDirectory(cdnNodeViper.GetString("base.homeDir")); err != nil {
+		//	return fmt.Errorf("failed to create home dir %s: %v", cdnNodeViper.GetString("base.homeDir"), err)
+		//}
 
 		// set cdn node advertise ip
 		if stringutils.IsBlank(cfg.AdvertiseIP) {
@@ -137,9 +137,6 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.Int("download-port", defaultBaseProperties.DownloadPort,
 		"downloadPort is the port for download files from cdnNode")
 
-	flagSet.String("home-dir", defaultBaseProperties.HomeDir,
-		"homeDir is the working directory of cdnNode")
-
 	flagSet.String("storagePattern", defaultBaseProperties.StoragePattern,
 		"storagePattern is the pattern of storage")
 
@@ -194,9 +191,6 @@ func bindRootFlags(v *viper.Viper) error {
 		}, {
 			key:  "base.downloadPort",
 			flag: "download-port",
-		}, {
-			key:  "base.homeDir",
-			flag: "home-dir",
 		}, {
 			key:  "base.systemReservedBandwidth",
 			flag: "system-bandwidth",

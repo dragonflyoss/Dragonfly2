@@ -113,8 +113,12 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
 	if err != nil {
-		logger.WithTaskID(task.TaskId).Errorf("failed to detect cache, reset detectResult:%v", err)
+		logger.WithTaskID(task.TaskId).Warnf("failed to detect cache, reset detectResult:%v", err)
 		detectResult = &cacheResult{} // reset cacheResult
+	}
+	err = cm.cacheStore.CreateUploadLink(task.TaskId)
+	if err != nil {
+		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), errors.Wrapf(err, "failed to create upload symbol link")
 	}
 	// second: report detect result
 	err = cm.cdnReporter.reportCache(ctx, task.TaskId, detectResult)
@@ -126,9 +130,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	if detectResult.breakNum == -1 {
 		logger.WithTaskID(task.TaskId).Infof("cache full hit on local")
 		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
-		seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceRealMd5,
-			detectResult.fileMetaData.PieceMd5Sign, detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength)
-		return seedTask, nil
+		return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceRealMd5,
+			detectResult.fileMetaData.PieceMd5Sign, detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength), nil
 	}
 	// third: start to download the source file
 	resp, err := cm.download(task, detectResult)
@@ -136,8 +139,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// download fail
 	if err != nil {
 		cm.metrics.cdnDownloadFailCount.WithLabelValues().Inc()
-		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusSOURCEERROR)
-		return seedTask, err
+		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusSOURCEERROR), err
 	}
 	defer resp.Body.Close()
 
@@ -152,8 +154,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
 	if err != nil {
 		logger.WithTaskID(task.TaskId).Errorf("failed to write for task: %v", err)
-		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
-		return seedTask, err
+		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
 	}
 	// back source length
 	cm.metrics.cdnDownloadBytes.WithLabelValues().Add(float64(downloadMetadata.backSourceLength))
@@ -165,12 +166,10 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// fifth: handle CDN result
 	success, err := cm.handleCDNResult(ctx, task, sourceMD5, downloadMetadata)
 	if err != nil || !success {
-		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
-		return seedTask, err
+		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
 	}
-	seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, sourceMD5, downloadMetadata.pieceMd5Sign,
-		downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength)
-	return seedTask, nil
+	return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, sourceMD5, downloadMetadata.pieceMd5Sign,
+		downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength), nil
 }
 
 // Delete the cdn meta with specified TaskId.

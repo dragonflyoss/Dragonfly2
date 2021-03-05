@@ -35,6 +35,6 @@ var PluginTypes = []PluginType{
 // PluginProperties the properties of a plugin.
 type PluginProperties struct {
 	Name    string `yaml:"name"`
-	Enabled bool   `yaml:"enabled"`
+	Enable bool   `yaml:"enable"`
 	Config  string `yaml:"config"`
 }
