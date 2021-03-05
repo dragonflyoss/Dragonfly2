@@ -28,14 +28,18 @@ var HostIp string
 var HostName string
 
 func init() {
-	HostIp, _ = externalIPv4()
-	if HostIp == "" {
-		panic("host ip is not exist")
+	ip, err := externalIPv4()
+	if ip == "" {
+		panic(err)
+	} else {
+		HostIp = ip
 	}
 
-	HostName, _ = os.Hostname()
-	if HostName == "" {
-		panic("host name is not exist")
+	name, err := os.Hostname()
+	if name == "" {
+		panic(err)
+	} else {
+		HostName = name
 	}
 }
 
