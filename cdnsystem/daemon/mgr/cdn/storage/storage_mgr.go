@@ -20,9 +20,9 @@ import (
 	"bytes"
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"io"
 	"strings"
 )
@@ -49,7 +49,7 @@ func Get(name string, defaultIfAbsent bool) Builder {
 // Builder creates a storage
 type Builder interface {
 
-	Build(BuildOptions) (Storage, error)
+	Build(BuildOptions) (StorageMgr, error)
 
 	Name() string
 }
@@ -58,35 +58,29 @@ type BuildOptions interface {
 
 }
 
-type Storage interface {
+type StorageMgr interface {
 
 	ResetRepo(ctx context.Context, task *types.SeedTask) error
 
-	// Stat determines whether the data exists based on raw information.
-	// If that, and return some info that in the form of struct StorageInfo.
-	// If not, return the ErrFileNotExist.
 	StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error)
-
-	// GetAvailSpace returns the available disk space in B.
-	GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error)
-
-	CreateUploadLink(taskId string) error
-
-	ReadFileMetaDataBytes(ctx context.Context, taskId string) ([]byte, error)
-
-	WriteFileMetaDataBytes(ctx context.Context, taskId string, data []byte) error
-
-	AppendPieceMetaDataBytes(ctx context.Context, taskId string, bytes []byte) error
-
-	ReadPieceMetaBytes(ctx context.Context, taskId string) ([]byte, error)
-
-	ReadDownloadFile(ctx context.Context, taskId string) (io.Reader, error)
-
-	DeleteTask(ctx context.Context, taskId string) error
 
 	WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64, buf *bytes.Buffer) error
 
-	Walk(ctx context.Context, raw *store.Raw) error
+	ReadDownloadFile(ctx context.Context, taskId string) (io.Reader, error)
+
+	CreateUploadLink(taskId string) error
+
+	ReadFileMetaData(ctx context.Context, taskId string) (*cdn.FileMetaData, error)
+
+	WriteFileMetaData(ctx context.Context, taskId string, data *cdn.FileMetaData) error
+
+	AppendPieceMetaData(ctx context.Context, taskId string, pieceRecord *cdn.PieceMetaRecord) error
+
+	AppendPieceMetaIntegrityData(ctx context.Context, taskId, fileMd5 string) error
+
+	ReadPieceMetaRecords(ctx context.Context, taskId, fileMD5 string) ([]*cdn.PieceMetaRecord, error)
+
+	DeleteTask(ctx context.Context, taskId string) error
 
 	SetTaskMgr(mgr.SeedTaskMgr)
 

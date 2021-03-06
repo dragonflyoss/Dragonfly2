@@ -72,7 +72,7 @@ func newMetrics(register prometheus.Registerer) *metrics {
 // Manager is an implementation of the interface of CDNMgr.
 type Manager struct {
 	cfg             *config.Config
-	cacheStore      storage.Storage
+	cacheStore      storage.StorageMgr
 	limiter         *ratelimiter.RateLimiter
 	cdnLocker       *util.LockerPool
 	metaDataManager *metaDataManager
@@ -84,8 +84,12 @@ type Manager struct {
 	metrics         *metrics
 }
 
+func (cm *Manager) GetGCTaskIds(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([]string, error) {
+	panic("implement me")
+}
+
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore storage.Storage, progressMgr mgr.SeedProgressMgr,
+func NewManager(cfg *config.Config, cacheStore storage.StorageMgr, progressMgr mgr.SeedProgressMgr,
 	resourceClient source.ResourceClient,
 	register prometheus.Registerer) (mgr.CDNMgr, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
@@ -220,7 +224,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 	if !isSuccess {
 		cdnFileLength = 0
 	}
-	if err := cm.metaDataManager.updateStatusAndResult(ctx, task.TaskId, &fileMetaData{
+	if err := cm.metaDataManager.updateStatusAndResult(ctx, task.TaskId, &FileMetaData{
 		Finish:        true,
 		Success:       isSuccess,
 		SourceRealMd5: sourceMd5,

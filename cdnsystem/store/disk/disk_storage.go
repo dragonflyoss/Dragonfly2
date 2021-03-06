@@ -70,6 +70,10 @@ type diskStorage struct {
 	BaseDir string `yaml:"baseDir"`
 }
 
+func (ds *diskStorage) CreateDir(ctx context.Context, path string) error {
+	return os.MkdirAll(path, os.ModePerm)
+}
+
 func (ds *diskStorage) CreateFile(ctx context.Context, path string) (*os.File, error) {
 	return os.Create(path)
 }

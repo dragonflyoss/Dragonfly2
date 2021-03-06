@@ -40,8 +40,8 @@ type cacheDetector struct {
 // cacheResult cache result of detect
 type cacheResult struct {
 	breakNum         int32              // break-point of task file
-	pieceMetaRecords []*pieceMetaRecord // piece meta data records of task
-	fileMetaData     *fileMetaData      // file meta data of task
+	pieceMetaRecords []*PieceMetaRecord // piece meta data records of task
+	fileMetaData     *FileMetaData      // file meta data of task
 	fileMd5          hash.Hash          // md5 of file content that has been downloaded
 }
 
@@ -85,7 +85,7 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (*c
 	logger.Debugf("create upload symbol link")
 	fileMetaData, err := cd.metaDataManager.readFileMetaData(ctx, task.TaskId)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read file meta data from store")
+		return nil, errors.Wrapf(err, "failed to read file meta data")
 	}
 	if err := checkSameFile(task, fileMetaData); err != nil {
 		return nil, errors.Wrapf(err, "task does not match meta information of task file ")
@@ -118,7 +118,7 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (*c
 
 // parseByReadMetaFile detect cache by read meta and pieceMeta files of task
 func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskId string,
-	fileMetaData *fileMetaData) (*cacheResult, error) {
+	fileMetaData *FileMetaData) (*cacheResult, error) {
 	if !fileMetaData.Success {
 		return nil, errors.Wrapf(cdnerrors.ErrDownloadFail, "success flag of meta is false")
 	}
@@ -148,7 +148,8 @@ func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskId string,
 }
 
 // parseByReadFile detect cache by read pieceMeta and data files of task
-func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskId string, metaData *fileMetaData) (*cacheResult, error) {
+func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskId string, metaData *FileMetaData) (*cacheResult,
+	error) {
 	reader, err := cd.cacheStore.ReadDownloadFile(ctx, taskId)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read file")
@@ -188,7 +189,7 @@ func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskId string, met
 }
 
 // resetRepo
-func (cd *cacheDetector) resetRepo(ctx context.Context, task *types.SeedTask) (*fileMetaData, error) {
+func (cd *cacheDetector) resetRepo(ctx context.Context, task *types.SeedTask) (*FileMetaData, error) {
 	logger.WithTaskID(task.TaskId).Info("reset repo for task")
 	err := cd.cacheStore.ResetRepo(ctx, task)
 	if err != nil {
@@ -199,7 +200,7 @@ func (cd *cacheDetector) resetRepo(ctx context.Context, task *types.SeedTask) (*
 }
 
 // checkSameFile check whether meta file is modified
-func checkSameFile(task *types.SeedTask, metaData *fileMetaData) error {
+func checkSameFile(task *types.SeedTask, metaData *FileMetaData) error {
 	if task == nil || metaData == nil {
 		return errors.Errorf("task or metaData is nil, task:%v, metaData:%v", task, metaData)
 	}

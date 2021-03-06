@@ -50,7 +50,7 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 	if sb == nil {
 		return nil, fmt.Errorf("could not get storage for pattern: %s", cfg.StoragePattern)
 	}
-	storage, err := sb.Build(nil)
+	storageMgr, err := sb.Build(nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build storage: %v", err)
 	}
@@ -66,7 +66,7 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 	}
 
 	// cdn manager
-	cdnMgr, err := cdn.NewManager(cfg, storage, progressMgr, sourceClient, register)
+	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr, sourceClient, register)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cdn manager: %v", err)
 	}
@@ -77,7 +77,7 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 	}
 	storage.SetTaskMgr(taskMgr)
 	// gc manager
-	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, storage, register)
+	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, storageMgr, register)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create gc manager: %v", err)
 	}

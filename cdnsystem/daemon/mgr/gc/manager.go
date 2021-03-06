@@ -58,12 +58,12 @@ type Manager struct {
 	taskMgr mgr.SeedTaskMgr
 	cdnMgr  mgr.CDNMgr
 	metrics *metrics
-	storage storage.Storage
+	storage storage.StorageMgr
 }
 
 // NewManager returns a new Manager.
 func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr,
-	storage storage.Storage, register prometheus.Registerer) (*Manager, error) {
+	storage storage.StorageMgr, register prometheus.Registerer) (*Manager, error) {
 	return &Manager{
 		cfg:     cfg,
 		taskMgr: taskMgr,
@@ -107,29 +107,3 @@ func (gcm *Manager) StartGC(ctx context.Context) {
 func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) {
 	gcm.gcTask(ctx, taskID, full)
 }
-
-//go func() {
-//	if !fileutils.PathExist(config.ShmHome) {
-//		return
-//	}
-//	fsize, err := fileutils.GetTotalSpace(config.ShmHome)
-//	if err != nil {
-//		logger.CoreLogger.Error()
-//		return
-//	}
-//	diff := fileutils.Fsize(0)
-//	if fsize < 72 * 1024 * 1024 * 1024 {
-//		diff = fileutils.Fsize(72 * 1024 * 1024 * 1024) - fsize
-//	}
-//	if diff >= fsize {
-//		return
-//	}
-//
-//	time.Sleep(gcm.cfg.GCInitialDelay)
-//
-//	// execute the GC by fixed delay
-//	ticker := time.NewTicker(gcm.cfg.GCShmInterval)
-//	for range ticker.C {
-//		gcm.gcShm(ctx)
-//	}
-//}()

@@ -54,7 +54,7 @@ func (re *reporter) reportCache(ctx context.Context, taskId string, detectResult
 }
 
 // reportPieceMetaRecord
-func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskId string, record *pieceMetaRecord,
+func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskId string, record *PieceMetaRecord,
 	from string) error {
 	// report cache pieces status
 	logger.DownloaderLogger.Info(taskId,

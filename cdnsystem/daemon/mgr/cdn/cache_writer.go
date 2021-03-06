@@ -43,12 +43,12 @@ type downloadMetadata struct {
 }
 
 type cacheWriter struct {
-	cdnStore    storage.Storage
+	cdnStore    storage.StorageMgr
 	cdnReporter *reporter
 	metaDataMgr *metaDataManager
 }
 
-func newCacheWriter(cdnStore storage.Storage, cdnReporter *reporter, metaDataMgr *metaDataManager) *cacheWriter {
+func newCacheWriter(cdnStore storage.StorageMgr, cdnReporter *reporter, metaDataMgr *metaDataManager) *cacheWriter {
 	return &cacheWriter{
 		cdnStore:    cdnStore,
 		cdnReporter: cdnReporter,

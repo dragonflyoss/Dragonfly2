@@ -143,7 +143,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		PeerId:        peerId,
 		SeederName:    dfnet.HostName,
 		Done:          true,
-		ContentLength: task.CdnFileLength,
+		ContentLength: task.SourceFileLength,
 	}
 	return nil
 }

@@ -21,11 +21,13 @@ import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"encoding/json"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -41,7 +43,7 @@ func init() {
 type diskBuilder struct {
 }
 
-func (*diskBuilder) Build(buildOpts storage.BuildOptions) (storage.Storage, error) {
+func (*diskBuilder) Build(buildOpts storage.BuildOptions) (storage.StorageMgr, error) {
 	diskStore, err := store.Get(disk.StorageDriver)
 	if err != nil {
 		return nil, err
@@ -80,11 +82,24 @@ func (s *diskStorage) WriteDownloadFile(ctx context.Context, taskId string, offs
 	return s.diskStore.Put(ctx, raw, buf)
 }
 
-func (s *diskStorage) ReadFileMetaDataBytes(ctx context.Context, taskId string) ([]byte, error) {
-	return s.diskStore.GetBytes(ctx, storage.GetTaskMetaDataRaw(taskId))
+func (s *diskStorage) ReadFileMetaData(ctx context.Context, taskId string) (*cdn.FileMetaData, error) {
+	bytes, err := s.diskStore.GetBytes(ctx, storage.GetTaskMetaDataRaw(taskId))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get metadata bytes")
+	}
+
+	metaData := &cdn.FileMetaData{}
+	if err := json.Unmarshal(bytes, metaData); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal metadata bytes")
+	}
+	return metaData, nil
 }
 
-func (s *diskStorage) WriteFileMetaDataBytes(ctx context.Context, taskId string, data []byte) error {
+func (s *diskStorage) WriteFileMetaData(ctx context.Context, taskId string, metaData *cdn.FileMetaData) error {
+	data, err := json.Marshal(metaData)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal metadata")
+	}
 	return s.diskStore.PutBytes(ctx, storage.GetTaskMetaDataRaw(taskId), data)
 }
 
@@ -102,10 +117,6 @@ func (s *diskStorage) ReadDownloadFile(ctx context.Context, taskId string) (io.R
 
 func (s *diskStorage) StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error) {
 	return s.diskStore.Stat(ctx, storage.GetDownloadRaw(taskId))
-}
-
-func (s *diskStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
-	return s.diskStore.GetAvailSpace(ctx, raw)
 }
 
 func (s *diskStorage) CreateUploadLink(taskId string) error {

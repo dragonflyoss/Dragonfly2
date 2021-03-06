@@ -22,14 +22,20 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	"io"
+	"strings"
 )
 
 const name = "hybrid"
@@ -37,7 +43,7 @@ const name = "hybrid"
 type hybridBuilder struct {
 }
 
-func (*hybridBuilder) Build(buildOpts storage.BuildOptions) (storage.Storage,
+func (*hybridBuilder) Build(buildOpts storage.BuildOptions) (storage.StorageMgr,
 	error) {
 	diskStore, err := store.Get(disk.StorageDriver)
 	if err != nil {
@@ -63,6 +69,21 @@ type hybridStorage struct {
 	diskStore   *store.Store
 	shmMgr      *ShareMemManager
 	cfg         config.Config
+}
+
+func (h *hybridStorage) AppendPieceMetaIntegrityData(ctx context.Context, taskId, fileMd5 string) error {
+
+	pieceMetaRecords, err := mm.readPieceMetaRecordsWithoutCheck(ctx, taskId)
+	if err != nil {
+		return errors.Wrapf(err, "failed to read piece meta records")
+	}
+	pieceMetaStrs := make([]string, 0, len(pieceMetaRecords)+2)
+	for _, record := range pieceMetaRecords {
+		pieceMetaStrs = append(pieceMetaStrs, getPieceMetaValue(record))
+	}
+	pieceMetaStrs = append(pieceMetaStrs, fileMD5)
+	pieceStr := strings.Join([]string{fileMD5, digest.Sha1(pieceMetaStrs)}, "\n")
+	panic("implement me")
 }
 
 func (h *hybridStorage) Gc(ctx context.Context) {
@@ -93,19 +114,67 @@ func (h *hybridStorage) ReadDownloadFile(ctx context.Context, taskId string) (io
 	return h.diskStore.Get(ctx, storage.GetDownloadRaw(taskId))
 }
 
-func (h *hybridStorage) ReadPieceMetaBytes(ctx context.Context, taskId string) ([]byte, error) {
-	return h.diskStore.GetBytes(ctx, storage.GetPieceMetaDataRaw(taskId))
+func (h *hybridStorage) ReadPieceMetaRecords(ctx context.Context, taskId, fileMD5 string) ([]*cdn.PieceMetaRecord, error) {
+	bytes, err := h.diskStore.GetBytes(ctx, storage.GetPieceMetaDataRaw(taskId))
+	if err != nil {
+		return nil, err
+	}
+	pieceMetaRecords := strings.Split(strings.TrimSpace(string(bytes)), "\n")
+	piecesLength := len(pieceMetaRecords)
+	if !stringutils.IsBlank(fileMD5) {
+		if piecesLength < 3 {
+			return nil, fmt.Errorf("piece meta file content line count is invalid, at least 3, but actually only %d",
+				piecesLength)
+		}
+		// validate the fileMD5
+		realFileMD5 := pieceMetaRecords[piecesLength-2]
+		if realFileMD5 != fileMD5 {
+			return nil, fmt.Errorf("failed to check the fileMD5, expected: %s, real: %s", fileMD5, realFileMD5)
+		}
+
+		piecesWithoutSha1Value := pieceMetaRecords[:piecesLength-1]
+		expectedSha1Value := digest.Sha1(piecesWithoutSha1Value)
+		realSha1Value := pieceMetaRecords[piecesLength-1]
+		if expectedSha1Value != realSha1Value {
+			return nil, fmt.Errorf("failed to validate the SHA-1 checksum of piece meta records, expected: %s, "+
+				"real: %s", expectedSha1Value, realSha1Value)
+		}
+		pieceMetaRecords = pieceMetaRecords[:piecesLength-2]
+	}
+	var result = make([]*cdn.PieceMetaRecord, 0, len(pieceMetaRecords))
+	for _, pieceStr := range pieceMetaRecords {
+		record, err := parsePieceMetaRecord(pieceStr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get piece meta record:%v", pieceStr)
+		}
+		result = append(result, record)
+	}
+	return result, nil
 }
 
-func (h *hybridStorage) ReadFileMetaDataBytes(ctx context.Context, taskId string) ([]byte, error) {
-	return h.diskStore.GetBytes(ctx, storage.GetTaskMetaDataRaw(taskId))
+func (h *hybridStorage) ReadFileMetaData(ctx context.Context, taskId string) (*cdn.FileMetaData, error) {
+	bytes, err := h.diskStore.GetBytes(ctx, storage.GetTaskMetaDataRaw(taskId))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get metadata bytes")
+	}
+
+	metaData := &cdn.FileMetaData{}
+	if err := json.Unmarshal(bytes, metaData); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal metadata bytes")
+	}
+	return metaData, nil
 }
 
-func (h *hybridStorage) AppendPieceMetaDataBytes(ctx context.Context, taskId string, bytes []byte) error {
-	return h.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), bytes)
+func (h *hybridStorage) AppendPieceMetaData(ctx context.Context, taskId string, record *cdn.PieceMetaRecord) error {
+	data := getPieceMetaValue(record)
+	return h.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), data+"\n")
 }
 
-func (h *hybridStorage) WriteFileMetaDataBytes(ctx context.Context, taskId string, data []byte) error {
+func (h *hybridStorage) WriteFileMetaData(ctx context.Context, taskId string, metaData *cdn.FileMetaData) error {
+	data, err := json.Marshal(metaData)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal metadata")
+	}
 	return h.diskStore.PutBytes(ctx, storage.GetTaskMetaDataRaw(taskId), data)
 }
 
@@ -142,10 +211,6 @@ func (h *hybridStorage) GetDownloadPath(rawFunc *store.Raw) string {
 
 func (h *hybridStorage) StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error) {
 	return h.diskStore.Stat(ctx, storage.GetDownloadRaw(taskId))
-}
-
-func (h *hybridStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
-	return fileutils.Fsize(100000), nil
 }
 
 func (h *hybridStorage) deleteTaskFiles(ctx context.Context, taskId string, deleteUploadPath bool, deleteHardLink bool) error {

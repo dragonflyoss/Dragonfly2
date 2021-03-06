@@ -75,7 +75,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				}
 				// report piece status
 				pieceMd5Sum := fileutils.GetMd5Sum(pieceMd5, nil)
-				pieceRecord := &pieceMetaRecord{
+				pieceRecord := &PieceMetaRecord{
 					PieceNum:   job.pieceNum,
 					PieceLen:   int32(pieceLen),
 					Md5:        pieceMd5Sum,
@@ -85,10 +85,10 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				}
 				wg.Add(1)
 				// write piece meta to storage
-				go func(record *pieceMetaRecord) {
+				go func(record *PieceMetaRecord) {
 					defer wg.Done()
 					// todo 可以先塞入channel，然后启动单独goroutine顺序写文件
-					if err := cw.metaDataMgr.appendPieceMetaDataToFile(ctx, job.TaskId, record); err != nil {
+					if err := cw.metaDataMgr.appendPieceMetaData(ctx, job.TaskId, record); err != nil {
 						logger.WithTaskID(job.TaskId).Errorf("failed to append piece meta data to file:%v", err)
 					}
 				}(pieceRecord)

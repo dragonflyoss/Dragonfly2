@@ -44,6 +44,10 @@ type Store struct {
 	driver StorageDriver
 }
 
+func (s *Store) CreateDir(ctx context.Context, path string) error {
+	return s.driver.CreateDir(ctx, path)
+}
+
 func (s *Store) Exits(ctx context.Context, raw *Raw) bool {
 	return s.driver.Exits(ctx, raw)
 }

@@ -77,6 +77,9 @@ type StorageDriver interface {
 	Walk(ctx context.Context, raw *Raw) error
 
 	CreateFile(ctx context.Context, path string) (*os.File, error)
+
+	CreateDir(ctx context.Context, path string) error
+
 	// GetPath
 	GetPath(raw *Raw) string
 

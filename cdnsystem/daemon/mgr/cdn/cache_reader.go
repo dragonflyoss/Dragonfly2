@@ -29,7 +29,7 @@ import (
 )
 
 //checkPieceContent read piece content from reader and check data integrity by pieceMetaRecord
-func checkPieceContent(reader io.Reader, pieceRecord *pieceMetaRecord, fileMd5 hash.Hash) error {
+func checkPieceContent(reader io.Reader, pieceRecord *PieceMetaRecord, fileMd5 hash.Hash) error {
 	bufSize := int32(256 * 1024)
 	pieceLen := pieceRecord.PieceLen
 	if pieceLen >0 && pieceLen < bufSize {
