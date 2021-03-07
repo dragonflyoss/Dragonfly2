@@ -52,6 +52,6 @@ const (
 	// TaskInfoCdnStatusSUCCESS captures enum value "SUCCESS"
 	TaskInfoCdnStatusSUCCESS string = "SUCCESS"
 
-	// TaskInfoCdnStatusSOURCEERROR captures enum value "SOURCE_ERROR"
-	TaskInfoCdnStatusSOURCEERROR string = "SOURCE_ERROR"
+	// TaskInfoCdnStatusSourceERROR captures enum value "SOURCE_ERROR"
+	TaskInfoCdnStatusSourceERROR string = "SOURCE_ERROR"
 )

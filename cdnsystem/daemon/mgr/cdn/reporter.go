@@ -19,13 +19,15 @@ package cdn
 import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
 type reporter struct {
-	progress mgr.SeedProgressMgr
+	progress   mgr.SeedProgressMgr
+	cacheStore storage.StorageMgr
 }
 
 const (
@@ -33,9 +35,10 @@ const (
 	DownloaderReport = "download"
 )
 
-func newReporter(publisher mgr.SeedProgressMgr) *reporter {
+func newReporter(publisher mgr.SeedProgressMgr, cacheStore storage.StorageMgr) *reporter {
 	return &reporter{
-		progress: publisher,
+		progress:   publisher,
+		cacheStore: cacheStore,
 	}
 }
 
@@ -54,7 +57,7 @@ func (re *reporter) reportCache(ctx context.Context, taskId string, detectResult
 }
 
 // reportPieceMetaRecord
-func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskId string, record *PieceMetaRecord,
+func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskId string, record *storage.PieceMetaRecord,
 	from string) error {
 	// report cache pieces status
 	logger.DownloaderLogger.Info(taskId,

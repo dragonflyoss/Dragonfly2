@@ -136,9 +136,9 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 		return nil, errors.Wrapf(err, "failed to get cdn file length")
 	}
 
-	pieceMd5Sign, err := cw.metaDataMgr.getPieceMd5Sign(ctx, task.TaskId)
+	pieceMd5Sign, _, err := cw.metaDataMgr.getPieceMd5Sign(ctx, task.TaskId)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to piece md5 sign")
+		return nil, errors.Wrapf(err, "failed to get piece md5 sign")
 	}
 	return &downloadMetadata{
 		backSourceLength:     backSourceFileLength,

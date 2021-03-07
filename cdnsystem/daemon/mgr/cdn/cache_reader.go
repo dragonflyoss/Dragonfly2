@@ -18,6 +18,7 @@ package cdn
 
 import (
 	"crypto/md5"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"encoding/binary"
 	"hash"
 	"io"
@@ -29,7 +30,7 @@ import (
 )
 
 //checkPieceContent read piece content from reader and check data integrity by pieceMetaRecord
-func checkPieceContent(reader io.Reader, pieceRecord *PieceMetaRecord, fileMd5 hash.Hash) error {
+func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, fileMd5 hash.Hash) error {
 	bufSize := int32(256 * 1024)
 	pieceLen := pieceRecord.PieceLen
 	if pieceLen >0 && pieceLen < bufSize {

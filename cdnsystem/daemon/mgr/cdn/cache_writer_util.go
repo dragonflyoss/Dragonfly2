@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/md5"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
@@ -75,7 +76,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				}
 				// report piece status
 				pieceMd5Sum := fileutils.GetMd5Sum(pieceMd5, nil)
-				pieceRecord := &PieceMetaRecord{
+				pieceRecord := &storage.PieceMetaRecord{
 					PieceNum:   job.pieceNum,
 					PieceLen:   int32(pieceLen),
 					Md5:        pieceMd5Sum,
@@ -85,7 +86,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				}
 				wg.Add(1)
 				// write piece meta to storage
-				go func(record *PieceMetaRecord) {
+				go func(record *storage.PieceMetaRecord) {
 					defer wg.Done()
 					// todo 可以先塞入channel，然后启动单独goroutine顺序写文件
 					if err := cw.metaDataMgr.appendPieceMetaData(ctx, job.TaskId, record); err != nil {

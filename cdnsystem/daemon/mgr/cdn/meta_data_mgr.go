@@ -21,39 +21,12 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"fmt"
 	"github.com/pkg/errors"
 )
-
-// fileMetaData
-type FileMetaData struct {
-	TaskId          string            `json:"taskId"`
-	TaskURL         string            `json:"taskUrl"`
-	PieceSize       int32             `json:"pieceSize"`
-	SourceFileLen   int64             `json:"sourceFileLen"`
-	AccessTime      int64             `json:"accessTime"`
-	Interval        int64             `json:"interval"`
-	CdnFileLength   int64             `json:"cdnFileLength"`
-	SourceRealMd5   string            `json:"sourceRealMd5"`
-	PieceMd5Sign    string            `json:"pieceMd5Sign"`
-	ExpireInfo      map[string]string `json:"expireInfo"`
-	Finish          bool              `json:"finish"`
-	Success         bool              `json:"success"`
-	TotalPieceCount int32             `json:"totalPieceCount"`
-}
-
-// pieceMetaRecord
-type PieceMetaRecord struct {
-	PieceNum   int32             `json:"pieceNum"`   // piece Num start from 0
-	PieceLen   int32             `json:"pieceLen"`   // 下载存储的真实长度
-	Md5        string            `json:"md5"`        // piece content md5
-	Range      string            `json:"range"`      // 下载存储到磁盘的range，不一定是origin source的range
-	Offset     uint64            `json:"offset"`     // offset
-	PieceStyle types.PieceFormat `json:"pieceStyle"` // 1: PlainUnspecified
-}
 
 // fileMetaDataManager manages the meta file and piece meta file of each TaskId.
 type metaDataManager struct {
@@ -71,8 +44,9 @@ func newFileMetaDataManager(storeMgr storage.StorageMgr) *metaDataManager {
 }
 
 // writeFileMetaDataByTask stores the metadata of task by task to storage.
-func (mm *metaDataManager) writeFileMetaDataByTask(ctx context.Context, task *types.SeedTask) (*FileMetaData, error) {
-	metaData := &FileMetaData{
+func (mm *metaDataManager) writeFileMetaDataByTask(ctx context.Context, task *types.SeedTask) (*storage.FileMetaData,
+	error) {
+	metaData := &storage.FileMetaData{
 		TaskId:          task.TaskId,
 		TaskURL:         task.TaskUrl,
 		PieceSize:       task.PieceSize,
@@ -125,7 +99,8 @@ func (mm *metaDataManager) updateExpireInfo(ctx context.Context, taskId string, 
 	return mm.fileStore.WriteFileMetaData(ctx, taskId, originMetaData)
 }
 
-func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskId string, metaData *FileMetaData) error {
+func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskId string,
+	metaData *storage.FileMetaData) error {
 	mm.fileMetaLocker.GetLock(taskId, false)
 	defer mm.fileMetaLocker.ReleaseLock(taskId, false)
 
@@ -139,6 +114,9 @@ func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskId str
 	if originMetaData.Success {
 		originMetaData.CdnFileLength = metaData.CdnFileLength
 		originMetaData.SourceFileLen = metaData.SourceFileLen
+		if metaData.TotalPieceCount > 0 {
+			originMetaData.TotalPieceCount = metaData.TotalPieceCount
+		}
 		if !stringutils.IsBlank(metaData.SourceRealMd5) {
 			originMetaData.SourceRealMd5 = metaData.SourceRealMd5
 		}
@@ -149,56 +127,52 @@ func (mm *metaDataManager) updateStatusAndResult(ctx context.Context, taskId str
 	return mm.fileStore.WriteFileMetaData(ctx, taskId, originMetaData)
 }
 
-// appendPieceMetaDataToFile append piece meta info to storage
+// appendPieceMetaData append piece meta info to storage
 func (mm *metaDataManager) appendPieceMetaData(ctx context.Context, taskId string,
-	record *PieceMetaRecord) error {
+	record *storage.PieceMetaRecord) error {
 	mm.pieceMetaLocker.GetLock(taskId, false)
 	defer mm.pieceMetaLocker.ReleaseLock(taskId, false)
 	// write to the storage
 	return mm.fileStore.AppendPieceMetaData(ctx, taskId, record)
 }
 
-func (mm *metaDataManager) appendPieceMetaIntegrityData(ctx context.Context, taskId, fileMD5 string) error {
-	mm.pieceMetaLocker.GetLock(taskId, false)
-	defer mm.pieceMetaLocker.ReleaseLock(taskId, false)
-	return mm.fileStore.AppendPieceMetaIntegrityData(ctx, taskId, fileMD5)
-}
-
 // readAndCheckPieceMetaRecords reads pieceMetaRecords from storage and check data integrity by the md5 file of the TaskId
-func (mm *metaDataManager) readPieceMetaRecords(ctx context.Context, taskId,
-	fileMD5 string) ([]*PieceMetaRecord, error) {
+func (mm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskId,
+	pieceMd5Sign string) ([]*storage.PieceMetaRecord, error) {
 	mm.pieceMetaLocker.GetLock(taskId, true)
 	defer mm.pieceMetaLocker.ReleaseLock(taskId, true)
-	return mm.fileStore.ReadPieceMetaRecords(ctx, taskId, fileMD5)
-}
-
-// readPieceMetaRecordsWithoutCheck reads pieceMetaRecords from storage and without check data integrity
-func (mm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context, taskId string) ([]*PieceMetaRecord,
-	error) {
-	pieceMetaRecords, err := mm.fileStore.ReadPieceMetaRecords(ctx, taskId, "")
+	md5Sign, pieceMetaRecords , err := mm.getPieceMd5Sign(ctx, taskId)
 	if err != nil {
 		return nil, err
 	}
-
-	if len(pieceMetaRecords) == 0 {
-		return nil, dferrors.ErrDataNotFound
+	if md5Sign != pieceMd5Sign {
+		return nil, fmt.Errorf("check piece meta data integrity fail, expectMd5Sign:%s, actualMd5Sign:%s", pieceMd5Sign,
+			md5Sign)
 	}
 	return pieceMetaRecords, nil
 }
 
-func (mm *metaDataManager) getPieceMd5Sign(ctx context.Context, taskId string) (md5Sign string, err error) {
-	pieceMetaRecords, err := mm.readPieceMetaRecordsWithoutCheck(ctx, taskId)
+// readPieceMetaRecordsWithoutCheck reads pieceMetaRecords from storage and without check data integrity
+func (mm *metaDataManager) readPieceMetaRecordsWithoutCheck(ctx context.Context,
+	taskId string) ([]*storage.PieceMetaRecord, error) {
+	mm.pieceMetaLocker.GetLock(taskId, true)
+	defer mm.pieceMetaLocker.ReleaseLock(taskId, true)
+	return mm.fileStore.ReadPieceMetaRecords(ctx, taskId)
+}
+
+func (mm *metaDataManager) getPieceMd5Sign(ctx context.Context, taskId string) (string, []*storage.PieceMetaRecord, error) {
+	pieceMetaRecords, err := mm.fileStore.ReadPieceMetaRecords(ctx, taskId)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to read piece meta file")
+		return "", nil, errors.Wrapf(err, "failed to read piece meta file")
 	}
 	var pieceMd5 []string
 	for _, piece := range pieceMetaRecords {
 		pieceMd5 = append(pieceMd5, piece.Md5)
 	}
-	return digest.Sha1(pieceMd5), nil
+	return digest.Sha1(pieceMd5), pieceMetaRecords , nil
 }
 
-func (mm *metaDataManager) readFileMetaData(ctx context.Context, taskId string) (*FileMetaData, error) {
+func (mm *metaDataManager) readFileMetaData(ctx context.Context, taskId string) (*storage.FileMetaData, error) {
 	if fileMeta, err := mm.fileStore.ReadFileMetaData(ctx, taskId); err != nil {
 		return nil, errors.Wrapf(err, "failed to read file metadata from storage")
 	} else {

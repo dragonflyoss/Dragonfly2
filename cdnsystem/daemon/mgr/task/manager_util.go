@@ -216,7 +216,7 @@ func isSuccessCDN(CDNStatus string) bool {
 func isFrozen(CDNStatus string) bool {
 	return CDNStatus == types.TaskInfoCdnStatusFAILED ||
 		CDNStatus == types.TaskInfoCdnStatusWAITING ||
-		CDNStatus == types.TaskInfoCdnStatusSOURCEERROR
+		CDNStatus == types.TaskInfoCdnStatusSourceERROR
 }
 
 func isWait(CDNStatus string) bool {
@@ -226,5 +226,5 @@ func isWait(CDNStatus string) bool {
 // isErrorCDN
 func isErrorCDN(CDNStatus string) bool {
 	return CDNStatus == types.TaskInfoCdnStatusFAILED ||
-		CDNStatus == types.TaskInfoCdnStatusSOURCEERROR
+		CDNStatus == types.TaskInfoCdnStatusSourceERROR
 }

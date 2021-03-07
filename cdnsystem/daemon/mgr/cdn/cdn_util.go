@@ -17,6 +17,7 @@
 package cdn
 
 import (
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 )
@@ -37,7 +38,7 @@ func getUpdateTaskInfo(cdnStatus, realMD5 , pieceMd5Sign string, sourceFileLengt
 	}
 }
 
-func convertPieceMeta2SeedPiece(record *PieceMetaRecord) *types.SeedPiece {
+func convertPieceMeta2SeedPiece(record *storage.PieceMetaRecord) *types.SeedPiece {
 	return &types.SeedPiece{
 		PieceStyle:  record.PieceStyle,
 		PieceNum:    record.PieceNum,

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package hybrid
+package disk
 
 import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"

@@ -23,15 +23,11 @@ import (
 )
 
 const (
-	// RepoHome is the directory where store data
-	RepoHome = "repo"
 	// DownloadHome is the parent directory where the downloaded files are stored
 	// which is a relative path.
 	DownloadHome = "download"
 
 	UploadHome = "upload"
-
-	ShmHome = "/private/var/vm/dragonfly/"
 )
 
 func getDownloadKey(taskId string) string {
@@ -89,5 +85,11 @@ func GetParentRaw(taskId string) *store.Raw {
 func GetDownloadHomeRaw() *store.Raw {
 	return &store.Raw{
 		Bucket: DownloadHome,
+	}
+}
+
+func GetUploadHomeRaw() *store.Raw {
+	return &store.Raw{
+		Bucket: UploadHome,
 	}
 }

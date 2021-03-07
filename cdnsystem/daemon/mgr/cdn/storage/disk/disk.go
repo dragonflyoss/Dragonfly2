@@ -21,7 +21,6 @@ import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
@@ -31,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"io"
+	"strings"
 )
 
 const name = "disk"
@@ -38,12 +38,15 @@ const name = "disk"
 func init() {
 	var builder *diskBuilder = nil
 	var _ storage.Builder = builder
+
+	var diskStorage *diskStorage = nil
+	var _ storage.StorageMgr = diskStorage
 }
 
 type diskBuilder struct {
 }
 
-func (*diskBuilder) Build(buildOpts storage.BuildOptions) (storage.StorageMgr, error) {
+func (*diskBuilder) Build() (storage.StorageMgr, error) {
 	diskStore, err := store.Get(disk.StorageDriver)
 	if err != nil {
 		return nil, err
@@ -63,16 +66,34 @@ type diskStorage struct {
 	taskMgr mgr.SeedTaskMgr
 }
 
+func (s *diskStorage) AppendPieceMetaData(ctx context.Context, taskId string, pieceRecord *storage.PieceMetaRecord) error {
+	data := getPieceMetaValue(pieceRecord)
+	return s.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), []byte(data+"\n"))
+}
+
+func (s *diskStorage) ReadPieceMetaRecords(ctx context.Context, taskId string) ([]*storage.PieceMetaRecord, error) {
+	bytes, err := s.diskStore.GetBytes(ctx, storage.GetPieceMetaDataRaw(taskId))
+	if err != nil {
+		return nil, err
+	}
+	pieceMetaRecords := strings.Split(strings.TrimSpace(string(bytes)), "\n")
+	var result = make([]*storage.PieceMetaRecord, 0)
+	for _, pieceStr := range pieceMetaRecords {
+		record, err := parsePieceMetaRecord(pieceStr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get piece meta record:%v", pieceStr)
+		}
+		result = append(result, record)
+	}
+	return result, nil
+}
+
 func (s *diskStorage) Gc(ctx context.Context) {
 	panic("implement me")
 }
 
 func (s *diskStorage) SetTaskMgr(mgr mgr.SeedTaskMgr) {
 	s.taskMgr = mgr
-}
-
-func (s *diskStorage) Walk(ctx context.Context, raw *store.Raw) error {
-	panic("implement me")
 }
 
 func (s *diskStorage) WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64, buf *bytes.Buffer) error {
@@ -82,20 +103,20 @@ func (s *diskStorage) WriteDownloadFile(ctx context.Context, taskId string, offs
 	return s.diskStore.Put(ctx, raw, buf)
 }
 
-func (s *diskStorage) ReadFileMetaData(ctx context.Context, taskId string) (*cdn.FileMetaData, error) {
+func (s *diskStorage) ReadFileMetaData(ctx context.Context, taskId string) (*storage.FileMetaData, error) {
 	bytes, err := s.diskStore.GetBytes(ctx, storage.GetTaskMetaDataRaw(taskId))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get metadata bytes")
 	}
 
-	metaData := &cdn.FileMetaData{}
+	metaData := &storage.FileMetaData{}
 	if err := json.Unmarshal(bytes, metaData); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal metadata bytes")
 	}
 	return metaData, nil
 }
 
-func (s *diskStorage) WriteFileMetaData(ctx context.Context, taskId string, metaData *cdn.FileMetaData) error {
+func (s *diskStorage) WriteFileMetaData(ctx context.Context, taskId string, metaData *storage.FileMetaData) error {
 	data, err := json.Marshal(metaData)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal metadata")
@@ -119,7 +140,7 @@ func (s *diskStorage) StatDownloadFile(ctx context.Context, taskId string) (*sto
 	return s.diskStore.Stat(ctx, storage.GetDownloadRaw(taskId))
 }
 
-func (s *diskStorage) CreateUploadLink(taskId string) error {
+func (s *diskStorage) CreateUploadLink(ctx context.Context, taskId string) error {
 	// create a soft link from the upload file to the download file
 	if err := fileutils.SymbolicLink(s.diskStore.GetPath(storage.GetDownloadRaw(taskId)),
 		s.diskStore.GetPath(storage.GetUploadRaw(taskId))); err != nil {

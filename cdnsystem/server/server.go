@@ -18,6 +18,7 @@ package server
 
 import (
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 )
 
@@ -50,7 +51,8 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 	if sb == nil {
 		return nil, fmt.Errorf("could not get storage for pattern: %s", cfg.StoragePattern)
 	}
-	storageMgr, err := sb.Build(nil)
+	logger.Debugf("storage pattern is %s", sb.Name())
+	storageMgr, err := sb.Build()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build storage: %v", err)
 	}
@@ -59,7 +61,7 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create source client: %v", err)
 	}
-
+	// progress manager
 	progressMgr, err := progress.NewManager(cfg, register)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create progress manager: %v", err)
@@ -70,12 +72,14 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cdn manager: %v", err)
 	}
+
 	// task manager
 	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr ,sourceClient, register)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task manager: %v", err)
 	}
-	storage.SetTaskMgr(taskMgr)
+	storageMgr.SetTaskMgr(taskMgr)
+
 	// gc manager
 	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, storageMgr, register)
 	if err != nil {

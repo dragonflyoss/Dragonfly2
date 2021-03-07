@@ -25,6 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/struct/syncmap"
+	"d7y.io/dragonfly/v2/pkg/util/lockerutils"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"sync"
@@ -49,9 +50,10 @@ type Manager struct {
 	seedSubscribers      *syncmap.SyncMap
 	taskPieceMetaRecords *syncmap.SyncMap
 	progress             *syncmap.SyncMap
-	buffer               int
+	mu                   *lockerutils.LockerPool
 	metrics              *metrics
 	cfg                  *config.Config
+	buffer               int
 }
 
 func NewManager(cfg *config.Config, register prometheus.Registerer) (*Manager, error) {
@@ -60,6 +62,7 @@ func NewManager(cfg *config.Config, register prometheus.Registerer) (*Manager, e
 		seedSubscribers:      syncmap.NewSyncMap(),
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
 		progress:             syncmap.NewSyncMap(),
+		mu:                   lockerutils.NewLockerPool(),
 		metrics:              newMetrics(register),
 	}, nil
 }
@@ -75,8 +78,8 @@ func (pm *Manager) InitSeedProgress(ctx context.Context, taskId string) {
 
 func (pm *Manager) WatchSeedProgress(ctx context.Context, taskId string) (<-chan *types.SeedPiece, error) {
 	logger.Debugf("watch seed progress begin for taskId:%s", taskId)
-	//pm.mu.GetLock(taskID, true)
-	//defer pm.mu.ReleaseLock(taskID, true)
+	//pm.mu.GetLock(taskId, true)
+	//defer pm.mu.ReleaseLock(taskId, true)
 	chanList, err := pm.seedSubscribers.GetAsList(taskId)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get seed subscribers")

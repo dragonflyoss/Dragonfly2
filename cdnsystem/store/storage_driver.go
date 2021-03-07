@@ -68,7 +68,7 @@ type StorageDriver interface {
 	Stat(ctx context.Context, raw *Raw) (*StorageInfo, error)
 
 	// GetAvailSpace returns the available disk space in B.
-	GetAvailSpace(ctx context.Context, raw *Raw) (fileutils.Fsize, error)
+	GetAvailSpace(ctx context.Context) (fileutils.Fsize, error)
 
  	GetTotalAndFreeSpace(ctx context.Context, raw *Raw) (fileutils.Fsize, fileutils.Fsize, error)
 
@@ -86,6 +86,8 @@ type StorageDriver interface {
 	MoveFile(src string, dst string) error
 
 	Exits(ctx context.Context, raw *Raw) bool
+
+	GetHomePath(ctx context.Context) string
 }
 
 // Raw identifies a piece of data uniquely.

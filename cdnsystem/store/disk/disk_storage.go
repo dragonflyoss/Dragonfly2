@@ -70,6 +70,10 @@ type diskStorage struct {
 	BaseDir string `yaml:"baseDir"`
 }
 
+func (ds *diskStorage) GetHomePath(ctx context.Context) string {
+	return ds.BaseDir
+}
+
 func (ds *diskStorage) CreateDir(ctx context.Context, path string) error {
 	return os.MkdirAll(path, os.ModePerm)
 }
@@ -336,12 +340,8 @@ func (ds *diskStorage) Remove(ctx context.Context, raw *store.Raw) error {
 }
 
 // GetAvailSpace returns the available disk space in Byte.
-func (ds *diskStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
-	path, _, err := ds.statPath(raw.Bucket, raw.Key)
-	if err != nil {
-		return 0, err
-	}
-
+func (ds *diskStorage) GetAvailSpace(ctx context.Context) (fileutils.Fsize, error) {
+	path := ds.BaseDir
 	lock(path, -1, true)
 	defer unLock(path, -1, true)
 	return fileutils.GetFreeSpace(path)
