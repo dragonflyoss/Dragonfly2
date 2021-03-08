@@ -28,52 +28,50 @@ import (
 )
 
 var (
-	m              = make(map[string]Builder)
+	builderMap     = make(map[string]Builder)
 	defaultStorage = "disk"
 )
 
 func Register(b Builder) {
-	m[strings.ToLower(b.Name())] = b
+	builderMap[strings.ToLower(b.Name())] = b
 }
 
 func Get(name string, defaultIfAbsent bool) Builder {
-	if b, ok := m[strings.ToLower(name)]; ok {
+	if b, ok := builderMap[strings.ToLower(name)]; ok {
 		return b
 	}
 	if stringutils.IsBlank(name) && defaultIfAbsent {
-		return m[defaultStorage]
+		return builderMap[defaultStorage]
 	}
 	return nil
 }
 
 // Builder creates a storage
 type Builder interface {
-
 	Build() (StorageMgr, error)
 
 	Name() string
 }
 
 type BuildOptions interface {
-
 }
 
 // fileMetaData
 type FileMetaData struct {
-	TaskId            string            `json:"taskId"`
-	TaskURL           string            `json:"taskUrl"`
-	PieceSize         int32             `json:"pieceSize"`
-	SourceFileLen     int64             `json:"sourceFileLen"`
-	AccessTime        int64             `json:"accessTime"`
-	Interval          int64             `json:"interval"`
-	CdnFileLength     int64             `json:"cdnFileLength"`
-	SourceRealMd5     string            `json:"sourceRealMd5"`
-	PieceMd5Sign      string            `json:"pieceMd5Sign"`
+	TaskId        string `json:"taskId"`
+	TaskURL       string `json:"taskUrl"`
+	PieceSize     int32  `json:"pieceSize"`
+	SourceFileLen int64  `json:"sourceFileLen"`
+	AccessTime    int64  `json:"accessTime"`
+	Interval      int64  `json:"interval"`
+	CdnFileLength int64  `json:"cdnFileLength"`
+	SourceRealMd5 string `json:"sourceRealMd5"`
+	PieceMd5Sign  string `json:"pieceMd5Sign"`
 	//PieceMetaDataSign string            `json:"pieceMetaDataSign"`
-	ExpireInfo        map[string]string `json:"expireInfo"`
-	Finish            bool              `json:"finish"`
-	Success           bool              `json:"success"`
-	TotalPieceCount   int32             `json:"totalPieceCount"`
+	ExpireInfo      map[string]string `json:"expireInfo"`
+	Finish          bool              `json:"finish"`
+	Success         bool              `json:"success"`
+	TotalPieceCount int32             `json:"totalPieceCount"`
 }
 
 // pieceMetaRecord

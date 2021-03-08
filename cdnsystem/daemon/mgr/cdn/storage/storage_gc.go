@@ -22,7 +22,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
@@ -32,21 +31,14 @@ import (
 	"time"
 )
 
-type GcConfig struct {
-	YoungGCThreshold  fileutils.Fsize
-	FullGCThreshold   fileutils.Fsize
-	CleanRatio        int
-	IntervalThreshold time.Duration
-}
-
 type Cleaner struct {
-	Cfg        *GcConfig
+	Cfg        *store.GcConfig
 	Store      store.StorageDriver
 	StorageMgr StorageMgr
 	TaskMgr    mgr.SeedTaskMgr
 }
 
-func NewStorageCleaner(gcConfig *GcConfig, store store.StorageDriver, storageMgr StorageMgr,
+func NewStorageCleaner(gcConfig *store.GcConfig, store store.StorageDriver, storageMgr StorageMgr,
 	taskMgr mgr.SeedTaskMgr) *Cleaner {
 	return &Cleaner{
 		Cfg:        gcConfig,

@@ -19,6 +19,7 @@ package hybrid
 import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
@@ -31,7 +32,7 @@ import (
 
 const fieldSeparator = ":"
 
-func (h *hybridStorage) getDiskDefaultGcConfig() *storage.GcConfig {
+func (h *hybridStorage) getDiskDefaultGcConfig() *store.GcConfig {
 	totalSpace, err := h.diskStore.GetTotalSpace(context.TODO())
 	if err != nil {
 		logger.GcLogger.Errorf("failed to get total space of disk: %v", err)
@@ -40,7 +41,7 @@ func (h *hybridStorage) getDiskDefaultGcConfig() *storage.GcConfig {
 	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
 		yongGcThreshold = totalSpace / 4
 	}
-	return &storage.GcConfig{
+	return &store.GcConfig{
 		YoungGCThreshold:  yongGcThreshold,
 		FullGCThreshold:   25 * fileutils.GB,
 		IntervalThreshold: 2 * time.Hour,
@@ -48,7 +49,7 @@ func (h *hybridStorage) getDiskDefaultGcConfig() *storage.GcConfig {
 	}
 }
 
-func (h *hybridStorage) getMemoryDefaultGcConfig() *storage.GcConfig {
+func (h *hybridStorage) getMemoryDefaultGcConfig() *store.GcConfig {
 	diff := fileutils.Fsize(0)
 	totalSpace, err := h.memoryStore.GetTotalSpace(context.TODO())
 	if err != nil {
@@ -60,7 +61,7 @@ func (h *hybridStorage) getMemoryDefaultGcConfig() *storage.GcConfig {
 	if diff >= totalSpace {
 		h.hasShm = false
 	}
-	return &storage.GcConfig{
+	return &store.GcConfig{
 		YoungGCThreshold:  10*fileutils.GB + diff,
 		FullGCThreshold:   2*fileutils.GB + diff,
 		CleanRatio:        3,

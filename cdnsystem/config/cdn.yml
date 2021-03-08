@@ -75,10 +75,18 @@ plugins:
   storage:
     - name: disk
       enable: true
-      config: "baseDir: /tmp/cdnsystem/"
+      config: "baseDir: /tmp/cdnsystem\ngcConfig:\n
+        youngGCThreshold: 100G\n
+        fullGCThreshold: 5G\n
+        cleanRatio: 1\n
+        intervalThreshold: 3s"
     - name: memory
       enable: true
-      config: "baseDir: /Users/sunweipeng1/dragonflycdn"
+      config: "baseDir: /Users/sunweipeng1/dragonflycdn\ngcConfig:\n
+        youngGCThreshold: 100G\n
+        fullGCThreshold: 5G\n
+        cleanRatio: 1\n
+        intervalThreshold: 3s"
   sourceClient:
     - name: http
       enable: false

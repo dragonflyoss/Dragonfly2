@@ -175,6 +175,10 @@ func (s *Store) GetHomePath(ctx context.Context) string {
 	return s.driver.GetHomePath(ctx)
 }
 
+func (s *Store) GetGcConfig(ctx context.Context) *GcConfig {
+	return s.driver.GetGcConfig(ctx)
+}
+
 func checkEmptyKey(raw *Raw) error {
 	if raw == nil || stringutils.IsBlank(raw.Key) {
 		return cdnerrors.ErrEmptyKey

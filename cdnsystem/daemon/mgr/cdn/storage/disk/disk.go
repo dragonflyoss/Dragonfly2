@@ -69,7 +69,7 @@ type diskStorage struct {
 	taskMgr          mgr.SeedTaskMgr
 }
 
-func (s *diskStorage) getDiskDefaultGcConfig() *storage.GcConfig {
+func (s *diskStorage) getDiskDefaultGcConfig() *store.GcConfig {
 	totalSpace, err := s.diskStore.GetTotalSpace(context.TODO())
 	if err != nil {
 		logger.GcLogger.Errorf("failed to get total space of disk: %v", err)
@@ -78,7 +78,7 @@ func (s *diskStorage) getDiskDefaultGcConfig() *storage.GcConfig {
 	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
 		yongGcThreshold = totalSpace / 4
 	}
-	return &storage.GcConfig{
+	return &store.GcConfig{
 		YoungGCThreshold:  yongGcThreshold,
 		FullGCThreshold:   25 * fileutils.GB,
 		IntervalThreshold: 2 * time.Hour,

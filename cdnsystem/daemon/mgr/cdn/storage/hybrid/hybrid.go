@@ -88,24 +88,25 @@ func (h *hybridStorage) SetTaskMgr(taskMgr mgr.SeedTaskMgr) {
 }
 
 func (h *hybridStorage) InitializeCleaners() {
-	h.getDiskDefaultGcConfig()
+	diskGcConfig := h.diskStore.GetGcConfig(context.TODO())
+	if diskGcConfig == nil {
+		diskGcConfig = h.getDiskDefaultGcConfig()
+		logger.GcLogger.Warnf("disk gc config is nil, use default gcConfig: %v", diskGcConfig)
+	}
+
 	h.diskStoreCleaner = &storage.Cleaner{
-		Cfg: &storage.GcConfig{
-			YoungGCThreshold:  0,
-			FullGCThreshold:   0,
-			IntervalThreshold: 0,
-		},
+		Cfg:        diskGcConfig,
 		Store:      h.diskStore,
 		StorageMgr: h,
 		TaskMgr:    h.taskMgr,
 	}
-	h.getMemoryDefaultGcConfig()
+	memoryGcConfig := h.memoryStore.GetGcConfig(context.TODO())
+	if memoryGcConfig == nil {
+		memoryGcConfig = h.getMemoryDefaultGcConfig()
+		logger.GcLogger.Warnf("memory gc config is nil, use default gcConfig: %v", diskGcConfig)
+	}
 	h.memoryStoreCleaner = &storage.Cleaner{
-		Cfg: &storage.GcConfig{
-			YoungGCThreshold:  0,
-			FullGCThreshold:   0,
-			IntervalThreshold: 0,
-		},
+		Cfg:        memoryGcConfig,
 		Store:      h.memoryStore,
 		StorageMgr: h,
 		TaskMgr:    h.taskMgr,

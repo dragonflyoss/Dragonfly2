@@ -67,7 +67,8 @@ func unLock(path string, offset int64, ro bool) {
 // diskStorage is one of the implementations of StorageDriver using local disk file system.
 type diskStorage struct {
 	// BaseDir is the dir that local storage driver will store content based on it.
-	BaseDir string `yaml:"baseDir"`
+	BaseDir  string          `yaml:"baseDir"`
+	GcConfig *store.GcConfig `yaml:"gcConfig"`
 }
 
 func (ds *diskStorage) GetTotalSpace(ctx context.Context) (fileutils.Fsize, error) {
@@ -81,6 +82,10 @@ func (ds *diskStorage) GetHomePath(ctx context.Context) string {
 	return ds.BaseDir
 }
 
+func (ds *diskStorage) GetGcConfig(ctx context.Context) *store.GcConfig {
+	return ds.GcConfig
+}
+
 func (ds *diskStorage) CreateDir(ctx context.Context, path string) error {
 	return os.MkdirAll(path, os.ModePerm)
 }
@@ -89,7 +94,7 @@ func (ds *diskStorage) CreateFile(ctx context.Context, path string) (*os.File, e
 	return os.Create(path)
 }
 
-func (ds *diskStorage) MoveFile(src string, dst string) error{
+func (ds *diskStorage) MoveFile(src string, dst string) error {
 	return fileutils.MoveFile(src, dst)
 }
 
@@ -110,7 +115,8 @@ func NewStorage(conf string) (store.StorageDriver, error) {
 	}
 
 	return &diskStorage{
-		BaseDir: cfg.BaseDir,
+		BaseDir:  cfg.BaseDir,
+		GcConfig: cfg.GcConfig,
 	}, nil
 }
 

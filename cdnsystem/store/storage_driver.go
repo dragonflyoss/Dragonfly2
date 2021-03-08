@@ -70,7 +70,7 @@ type StorageDriver interface {
 	// GetAvailSpace returns the available disk space in B.
 	GetAvailSpace(ctx context.Context) (fileutils.Fsize, error)
 
- 	GetTotalAndFreeSpace(ctx context.Context) (fileutils.Fsize, fileutils.Fsize, error)
+	GetTotalAndFreeSpace(ctx context.Context) (fileutils.Fsize, fileutils.Fsize, error)
 
 	GetTotalSpace(ctx context.Context) (fileutils.Fsize, error)
 	// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
@@ -89,6 +89,8 @@ type StorageDriver interface {
 	Exits(ctx context.Context, raw *Raw) bool
 
 	GetHomePath(ctx context.Context) string
+
+	GetGcConfig(ctx context.Context) *GcConfig
 }
 
 // Raw identifies a piece of data uniquely.
@@ -108,4 +110,11 @@ type StorageInfo struct {
 	Size       int64     // file size
 	CreateTime time.Time // create time
 	ModTime    time.Time // modified time
+}
+
+type GcConfig struct {
+	YoungGCThreshold  fileutils.Fsize `yaml:"youngGCThreshold"`
+	FullGCThreshold   fileutils.Fsize `yaml:"fullGCThreshold"`
+	CleanRatio        int             `yaml:"cleanRatio"`
+	IntervalThreshold time.Duration   `yaml:"intervalThreshold"`
 }
