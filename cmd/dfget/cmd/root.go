@@ -25,7 +25,7 @@ import (
 	"strings"
 	"syscall"
 
-	"d7y.io/dragonfly/v2/pkg/progressbar"
+	"d7y.io/dragonfly/v2/cmd/common/progressbar"
 	"d7y.io/dragonfly/v2/version"
 
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"

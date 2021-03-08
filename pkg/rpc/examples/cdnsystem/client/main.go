@@ -17,10 +17,7 @@
 package main
 
 import (
-	"os"
-
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/basic/env"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
@@ -35,7 +32,6 @@ import (
 )
 
 func main() {
-	os.Setenv(env.ActiveProfile, "local")
 	logcore.InitCdnSystem()
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
@@ -49,7 +45,7 @@ func main() {
 
 	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 		TaskId: "test",
-		Url: "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
+		Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
 		Filter: "",
 	})
 	if err != nil {
@@ -81,7 +77,7 @@ func main2() {
 		Limit:    4,
 	})
 	if err != nil {
-		fmt.Printf("%v",err)
+		fmt.Printf("%v", err)
 	}
 
 	fmt.Printf("client finish:%v", psc)

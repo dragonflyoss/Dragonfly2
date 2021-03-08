@@ -14,9 +14,26 @@
  * limitations under the License.
  */
 
-package env
+package dfnet
+
+type NetworkType string
 
 const (
-	// local、default(online)
-	ActiveProfile = "DF_ACTIVE_PROFILE"
+	TCP  NetworkType = "tcp"
+	UNIX NetworkType = "unix"
 )
+
+type NetAddr struct {
+	Type NetworkType `json:"type" yaml:"type"`
+	// see https://github.com/grpc/grpc/blob/master/doc/naming.md
+	Addr string `json:"addr" yaml:"addr"`
+}
+
+func (n NetAddr) GetEndpoint() string {
+	switch n.Type {
+	case UNIX:
+		return "unix://" + n.Addr
+	default:
+		return "dns:///" + n.Addr
+	}
+}
