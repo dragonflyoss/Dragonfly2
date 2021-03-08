@@ -17,7 +17,6 @@
 package idgen
 
 import (
-	"hash/crc32"
 	"strings"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -59,7 +58,7 @@ func GenerateTaskId(url string, filter string, meta *base.UrlMeta, bizId string)
 func GenerateTwinsTaskId(url string, filter string, meta *base.UrlMeta, bizId, peerId string) string {
 	taskId := GenerateTaskId(url, filter, meta, bizId)
 
-	if crc32.ChecksumIEEE([]byte(peerId))&1 == 0 {
+	if digestutils.CheckSum(peerId)&1 == 0 {
 		taskId += "_A"
 	} else {
 		taskId += "_B"
