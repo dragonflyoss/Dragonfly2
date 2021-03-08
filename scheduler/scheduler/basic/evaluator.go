@@ -134,16 +134,9 @@ func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.
 		}
 		if pt.Pid == peer.Pid {
 			return true
-		} else if peer.GetParent() != nil {
-			return true
-		} else if pt.GetParent() != nil && pt.GetParent().DstPeerTask == peer {
-			return true
 		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
 			return true
 		} else if pt.GetFreeLoad() < 1 {
-			return true
-		} else if pt.GetNodeStatus() == types.PeerTaskStatusNeedParent &&
-			peer.GetParent() != nil && peer.GetParent().DstPeerTask != nil && peer.GetParent().DstPeerTask.Pid == pt.Pid {
 			return true
 		}
 		if pt.Success {
