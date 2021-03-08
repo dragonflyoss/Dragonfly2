@@ -55,7 +55,7 @@ func NewStreamPeerTask(ctx context.Context,
 		base: filePeerTask{
 			ctx:             ctx,
 			host:            host,
-			backSource:      result.State.Code == dfcodes.BackSource,
+			backSource:      result.State.Code == dfcodes.SchedNeedBackSource,
 			request:         request,
 			pieceResultCh:   schedPieceResultCh,
 			peerPacketCh:    schedPeerPacketCh,

@@ -45,7 +45,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		}
 		pkg.State = new(base.ResponseState)
 		if err != nil {
-			pkg.State.Code = dfcodes.SchedulerError
+			pkg.State.Code = dfcodes.SchedError
 			pkg.State.Msg = err.Error()
 			pkg.State.Success = false
 			err = nil
@@ -151,7 +151,7 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 			return
 		}
 		if err != nil {
-			ret.Code = dfcodes.SchedulerError
+			ret.Code = dfcodes.SchedError
 			ret.Msg = err.Error()
 			ret.Success = false
 			err = nil
@@ -186,7 +186,7 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 			return
 		}
 		if err != nil {
-			ret.Code = dfcodes.SchedulerError
+			ret.Code = dfcodes.SchedError
 			ret.Msg = err.Error()
 			ret.Success = false
 			err = nil
