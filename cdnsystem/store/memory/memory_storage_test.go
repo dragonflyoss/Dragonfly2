@@ -49,7 +49,7 @@ func (s *LocalStorageSuite) SetupSuite() {
 		config.StoragePlugin: {
 			&config.PluginProperties{
 				Name:    StorageDriver,
-				Enabled: true,
+				Enable: true,
 				Config:  "baseDir: " + filepath.Join(s.workHome, "repo"),
 			},
 		},
@@ -58,14 +58,6 @@ func (s *LocalStorageSuite) SetupSuite() {
 		Plugins: pluginProps,
 	}
 	plugins.Initialize(cfg)
-
-	// init StorageManager
-	sm, err := store.NewManager(nil)
-	s.Nil(err)
-
-	// init store with local storage
-	s.storeLocal, err = sm.Get(StorageDriver)
-	s.Nil(err)
 }
 
 func (s *LocalStorageSuite) TearDownSuite() {

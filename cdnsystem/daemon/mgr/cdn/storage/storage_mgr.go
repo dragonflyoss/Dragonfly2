@@ -110,5 +110,7 @@ type StorageMgr interface {
 
 	SetTaskMgr(mgr.SeedTaskMgr)
 
+	InitializeCleaners()
+
 	Gc(ctx context.Context)
 }

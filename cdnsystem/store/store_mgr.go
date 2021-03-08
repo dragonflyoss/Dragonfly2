@@ -37,20 +37,6 @@ func Register(name string, builder StorageBuilder) {
 	plugins.RegisterPlugin(config.StoragePlugin, name, f)
 }
 
-//// Manager manages stores.
-//type Manager struct {
-//	cfg            *config.Config
-//	defaultStorage *Store
-//	mutex          sync.Mutex
-//}
-//
-//// NewManager creates a store manager.
-//func NewManager(cfg *config.Config) *Manager {
-//	return &Manager{
-//		cfg: cfg,
-//	}
-//}
-
 // Get a store from manager with specified name.
 func Get(name string) (*Store, error) {
 	v := plugins.GetPlugin(config.StoragePlugin, strings.ToLower(name))
@@ -62,28 +48,3 @@ func Get(name string) (*Store, error) {
 	}
 	return nil, fmt.Errorf("get store error: unknown reason")
 }
-
-//func (sm *Manager) getDefaultStorage() (*Store, error) {
-//	if sm.defaultStorage != nil {
-//		return sm.defaultStorage, nil
-//	}
-//
-//	sm.mutex.Lock()
-//	defer sm.mutex.Unlock()
-//
-//	// check again to avoid initializing repeatedly
-//	if sm.defaultStorage != nil {
-//		return sm.defaultStorage, nil
-//	}
-//
-//	if sm.cfg == nil {
-//		return nil, fmt.Errorf("cannot init local storage without home path")
-//	}
-//	cfg := fmt.Sprintf("baseDir: %s", filepath.Join(sm.cfg.DownloadPath, config.RepoHome))
-//	s, err := NewStore(disk.StorageDriver, disk.NewStorage, cfg)
-//	if err != nil {
-//		return nil, err
-//	}
-//	sm.defaultStorage = s
-//	return sm.defaultStorage, nil
-//}

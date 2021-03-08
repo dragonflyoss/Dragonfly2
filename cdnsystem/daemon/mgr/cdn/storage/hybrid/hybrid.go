@@ -31,11 +31,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"go.uber.org/atomic"
 	"io"
+	"os"
+	"path"
 	"strings"
 )
 
 const name = "hybrid"
+
+const SecureLevel = 500 * fileutils.MB
 
 type hybridBuilder struct {
 }
@@ -52,6 +57,7 @@ func (*hybridBuilder) Build() (storage.StorageMgr, error) {
 	return &hybridStorage{
 		memoryStore: memoryStore,
 		diskStore:   diskStore,
+		shmSwitcher: newShmSwitcherService(),
 	}, nil
 }
 
@@ -63,20 +69,47 @@ type hybridStorage struct {
 	cfg                config.Config
 	memoryStore        store.StorageDriver
 	diskStore          store.StorageDriver
-	shmMgr             *ShareMemManager
 	taskMgr            mgr.SeedTaskMgr
-	diskStoreCleaner   storage.StorageCleaner
-	memoryStoreCleaner storage.StorageCleaner
+	diskStoreCleaner   *storage.Cleaner
+	memoryStoreCleaner *storage.Cleaner
+	shmSwitcher        *shmSwitcher
+	hasShm             bool
 }
 
 func (h *hybridStorage) Gc(ctx context.Context) {
-	fmt.Println("gc storage")
+	go h.diskStoreCleaner.Gc(ctx, false)
+	if h.hasShm {
+		go h.memoryStoreCleaner.Gc(ctx, false)
+	}
 }
 
 func (h *hybridStorage) SetTaskMgr(taskMgr mgr.SeedTaskMgr) {
 	h.taskMgr = taskMgr
-	h.shmMgr = newShareMemManager(h.taskMgr, h.memoryStore)
-	//h.diskStoreCleaner = storage.NewStorageCleaner(nil, diskStore, tak),
+}
+
+func (h *hybridStorage) InitializeCleaners() {
+	h.getDiskDefaultGcConfig()
+	h.diskStoreCleaner = &storage.Cleaner{
+		Cfg: &storage.GcConfig{
+			YoungGCThreshold:  0,
+			FullGCThreshold:   0,
+			IntervalThreshold: 0,
+		},
+		Store:      h.diskStore,
+		StorageMgr: h,
+		TaskMgr:    h.taskMgr,
+	}
+	h.getMemoryDefaultGcConfig()
+	h.memoryStoreCleaner = &storage.Cleaner{
+		Cfg: &storage.GcConfig{
+			YoungGCThreshold:  0,
+			FullGCThreshold:   0,
+			IntervalThreshold: 0,
+		},
+		Store:      h.memoryStore,
+		StorageMgr: h,
+		TaskMgr:    h.taskMgr,
+	}
 }
 
 func (h *hybridStorage) WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64,
@@ -152,17 +185,10 @@ func (h *hybridStorage) ResetRepo(ctx context.Context, task *types.SeedTask) err
 		logger.WithTaskID(task.TaskId).Errorf("reset repo: failed to delete task files: %v", err)
 	}
 	// 判断是否有足够空间存放
-	shmPath, err := h.shmMgr.tryShmSpace(ctx, task.Url, task.TaskId, task.SourceFileLength)
+	shmPath, err := h.tryShmSpace(ctx, task.Url, task.TaskId, task.SourceFileLength)
 	if err == nil {
 		return fileutils.SymbolicLink(shmPath, h.diskStore.GetPath(storage.GetDownloadRaw(task.TaskId)))
 	}
-	//else {
-	//	// 创建 download文件
-	//	_, err := h.diskStore.CreateFile(ctx, h.diskStore.GetPath(storage.GetDownloadRaw(task.TaskId)))
-	//	if err != nil {
-	//		return errors.Wrap(err, "failed to create download file")
-	//	}
-	//}
 	return nil
 }
 
@@ -212,6 +238,71 @@ func (h *hybridStorage) deleteTaskFiles(ctx context.Context, taskId string, dele
 		logger.WithTaskID(taskId).Warnf("failed to remove parent bucket:%v", err)
 	}
 	return nil
+}
+
+func (h *hybridStorage) tryShmSpace(ctx context.Context, url, taskId string, fileLength int64) (string, error) {
+	if h.shmSwitcher.check(url, fileLength) && h.hasShm {
+		remainder := atomic.NewInt64(0)
+		h.memoryStore.Walk(ctx, &store.Raw{
+			WalkFn: func(filePath string, info os.FileInfo, err error) error {
+				if fileutils.IsRegularFile(filePath) {
+					taskId := path.Base(filePath)
+					task, err := h.taskMgr.Get(ctx, taskId)
+					if err == nil {
+						var totalLen int64 = 0
+						if task.CdnFileLength > 0 {
+							totalLen = task.CdnFileLength
+						} else {
+							totalLen = task.SourceFileLength
+						}
+						if totalLen > 0 {
+							remainder.Add(totalLen - info.Size())
+						}
+					} else {
+						logger.Warnf("")
+					}
+				}
+				return nil
+			},
+		})
+		usableSpace, err := h.getUsableSpace(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed to get usable space")
+		}
+		useShm := usableSpace-fileutils.Fsize(remainder.Load())-SecureLevel >= fileutils.Fsize(fileLength)
+		if !useShm {
+			// 如果剩余空间过小，则强制执行一次fullgc后在检查是否满足
+			h.memoryStoreCleaner.Gc(ctx, true)
+			useShm = usableSpace-fileutils.Fsize(remainder.Load())-SecureLevel >= fileutils.Fsize(fileLength)
+		}
+		if useShm { // 创建shm
+			raw := &store.Raw{
+				Key: taskId,
+			}
+			return h.memoryStore.GetPath(raw), nil
+		}
+		return "", fmt.Errorf("not enough free space left")
+	}
+	return "", fmt.Errorf("shared memory is not allowed")
+}
+
+func (h *hybridStorage) getUsableSpace(ctx context.Context) (fileutils.Fsize, error) {
+	totalSize, freeSize, err := h.memoryStore.GetTotalAndFreeSpace(ctx)
+	if err != nil {
+		return 0, err
+	}
+	// 如果文件所在分区的总容量大于等于 72G，则返回磁盘的剩余可用空间
+	threshold := 72 * fileutils.GB
+	if totalSize >= fileutils.Fsize(threshold) {
+		return freeSize, nil
+	}
+	// 如果总容量小于72G， 如40G容量，则可用空间为 当前可用空间 - 32G： 最大可用空间为8G，50G容量，则可用空间为 当前可用空间 - 22G：最大可用空间为28G
+
+	usableSpace := freeSize - (72*fileutils.GB - totalSize)
+	if usableSpace > 0 {
+		return usableSpace, nil
+	}
+	return 0, nil
 }
 
 func getHardLinkRaw(taskId string) *store.Raw {

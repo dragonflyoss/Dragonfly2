@@ -79,7 +79,7 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 		return nil, fmt.Errorf("failed to create task manager: %v", err)
 	}
 	storageMgr.SetTaskMgr(taskMgr)
-
+	storageMgr.InitializeCleaners()
 	// gc manager
 	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, storageMgr, register)
 	if err != nil {

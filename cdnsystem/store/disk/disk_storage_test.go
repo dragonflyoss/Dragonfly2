@@ -511,7 +511,7 @@ func Test_diskStorage_GetAvailSpace(t *testing.T) {
 			ls := &diskStorage{
 				BaseDir: tt.fields.BaseDir,
 			}
-			got, err := ls.GetAvailSpace(tt.args.ctx, tt.args.raw)
+			got, err := ls.GetAvailSpace(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAvailSpace() error = %v, wantErr %v", err, tt.wantErr)
 				return

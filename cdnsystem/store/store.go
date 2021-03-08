@@ -44,6 +44,10 @@ type Store struct {
 	driver StorageDriver
 }
 
+func (s *Store) GetTotalSpace(ctx context.Context) (fileutils.Fsize, error) {
+	return s.driver.GetTotalSpace(ctx)
+}
+
 func (s *Store) CreateDir(ctx context.Context, path string) error {
 	return s.driver.CreateDir(ctx, path)
 }
@@ -52,8 +56,8 @@ func (s *Store) Exits(ctx context.Context, raw *Raw) bool {
 	return s.driver.Exits(ctx, raw)
 }
 
-func (s *Store) GetTotalAndFreeSpace(ctx context.Context, raw *Raw) (fileutils.Fsize, fileutils.Fsize, error) {
-	return s.driver.GetTotalAndFreeSpace(ctx, raw)
+func (s *Store) GetTotalAndFreeSpace(ctx context.Context) (fileutils.Fsize, fileutils.Fsize, error) {
+	return s.driver.GetTotalAndFreeSpace(ctx)
 }
 
 func (s *Store) CreateFile(ctx context.Context, path string) (*os.File, error) {

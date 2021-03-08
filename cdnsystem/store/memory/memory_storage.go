@@ -69,7 +69,19 @@ type memoryStorage struct {
 	BaseDir string `yaml:"baseDir"`
 }
 
-func (ms *memoryStorage) GetTotalAndFreeSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, fileutils.Fsize, error) {
+func (ms *memoryStorage) GetTotalSpace(ctx context.Context) (fileutils.Fsize, error) {
+	panic("implement me")
+}
+
+func (ms *memoryStorage) CreateDir(ctx context.Context, path string) error {
+	panic("implement me")
+}
+
+func (ms *memoryStorage) GetHomePath(ctx context.Context) string {
+	panic("implement me")
+}
+
+func (ms *memoryStorage) GetTotalAndFreeSpace(ctx context.Context) (fileutils.Fsize, fileutils.Fsize, error) {
 	panic("implement me")
 }
 
@@ -328,12 +340,8 @@ func (ms *memoryStorage) Remove(ctx context.Context, raw *store.Raw) error {
 }
 
 // GetAvaimspace returns the available disk space in B.
-func (ms *memoryStorage) GetAvailSpace(ctx context.Context, raw *store.Raw) (fileutils.Fsize, error) {
-	path, _, err := ms.statPath(raw.Bucket, raw.Key)
-	if err != nil {
-		return 0, err
-	}
-
+func (ms *memoryStorage) GetAvailSpace(ctx context.Context) (fileutils.Fsize, error) {
+	path := ms.BaseDir
 	lock(path, -1, true)
 	defer unLock(path, -1, true)
 	return fileutils.GetFreeSpace(path)

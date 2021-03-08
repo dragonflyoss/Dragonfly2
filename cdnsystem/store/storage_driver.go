@@ -70,8 +70,9 @@ type StorageDriver interface {
 	// GetAvailSpace returns the available disk space in B.
 	GetAvailSpace(ctx context.Context) (fileutils.Fsize, error)
 
- 	GetTotalAndFreeSpace(ctx context.Context, raw *Raw) (fileutils.Fsize, fileutils.Fsize, error)
+ 	GetTotalAndFreeSpace(ctx context.Context) (fileutils.Fsize, fileutils.Fsize, error)
 
+	GetTotalSpace(ctx context.Context) (fileutils.Fsize, error)
 	// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 	// calling walkFn for each file or directory in the tree, including root.
 	Walk(ctx context.Context, raw *Raw) error

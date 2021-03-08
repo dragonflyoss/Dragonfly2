@@ -17,15 +17,56 @@
 package hybrid
 
 import (
+	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"fmt"
 	"github.com/pkg/errors"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const fieldSeparator = ":"
+
+func (h *hybridStorage) getDiskDefaultGcConfig() *storage.GcConfig {
+	totalSpace, err := h.diskStore.GetTotalSpace(context.TODO())
+	if err != nil {
+		logger.GcLogger.Errorf("failed to get total space of disk: %v", err)
+	}
+	yongGcThreshold := 200 * fileutils.GB
+	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
+		yongGcThreshold = totalSpace / 4
+	}
+	return &storage.GcConfig{
+		YoungGCThreshold:  yongGcThreshold,
+		FullGCThreshold:   25 * fileutils.GB,
+		IntervalThreshold: 2 * time.Hour,
+		CleanRatio:        1,
+	}
+}
+
+func (h *hybridStorage) getMemoryDefaultGcConfig() *storage.GcConfig {
+	diff := fileutils.Fsize(0)
+	totalSpace, err := h.memoryStore.GetTotalSpace(context.TODO())
+	if err != nil {
+		logger.GcLogger.Errorf("failed to get total space of memory: %v", err)
+	}
+	if totalSpace < 72*fileutils.GB {
+		diff = 72*fileutils.GB - totalSpace
+	}
+	if diff >= totalSpace {
+		h.hasShm = false
+	}
+	return &storage.GcConfig{
+		YoungGCThreshold:  10*fileutils.GB + diff,
+		FullGCThreshold:   2*fileutils.GB + diff,
+		CleanRatio:        3,
+		IntervalThreshold: 2 * time.Hour,
+	}
+}
 
 func getPieceMetaValue(record *storage.PieceMetaRecord) string {
 	return fmt.Sprintf("%d:%d:%s:%s:%d:%d", record.PieceNum, record.PieceLen, record.Md5, record.Range, record.Offset, record.PieceStyle)

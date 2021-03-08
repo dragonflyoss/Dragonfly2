@@ -25,12 +25,14 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"encoding/json"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"io"
 	"strings"
+	"time"
 )
 
 const name = "disk"
@@ -62,8 +64,32 @@ func (*diskBuilder) Name() string {
 }
 
 type diskStorage struct {
-	diskStore *store.Store
-	taskMgr mgr.SeedTaskMgr
+	diskStore        *store.Store
+	diskStoreCleaner *storage.Cleaner
+	taskMgr          mgr.SeedTaskMgr
+}
+
+func (s *diskStorage) getDiskDefaultGcConfig() *storage.GcConfig {
+	totalSpace, err := s.diskStore.GetTotalSpace(context.TODO())
+	if err != nil {
+		logger.GcLogger.Errorf("failed to get total space of disk: %v", err)
+	}
+	yongGcThreshold := 200 * fileutils.GB
+	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
+		yongGcThreshold = totalSpace / 4
+	}
+	return &storage.GcConfig{
+		YoungGCThreshold:  yongGcThreshold,
+		FullGCThreshold:   25 * fileutils.GB,
+		IntervalThreshold: 2 * time.Hour,
+		CleanRatio:        1,
+	}
+}
+
+func (s *diskStorage) InitializeCleaners() {
+	s.diskStoreCleaner = &storage.Cleaner{
+		Cfg: s.getDiskDefaultGcConfig(),
+	}
 }
 
 func (s *diskStorage) AppendPieceMetaData(ctx context.Context, taskId string, pieceRecord *storage.PieceMetaRecord) error {

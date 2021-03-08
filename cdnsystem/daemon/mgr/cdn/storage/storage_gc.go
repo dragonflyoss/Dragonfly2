@@ -32,49 +32,49 @@ import (
 	"time"
 )
 
-type gcConfig struct {
+type GcConfig struct {
 	YoungGCThreshold  fileutils.Fsize
 	FullGCThreshold   fileutils.Fsize
-	cleanRatio        int
+	CleanRatio        int
 	IntervalThreshold time.Duration
 }
 
-type StorageCleaner struct {
-	cfg        *gcConfig
-	store      store.StorageDriver
-	storageMgr StorageMgr
-	taskMgr    mgr.SeedTaskMgr
+type Cleaner struct {
+	Cfg        *GcConfig
+	Store      store.StorageDriver
+	StorageMgr StorageMgr
+	TaskMgr    mgr.SeedTaskMgr
 }
 
-func NewStorageCleaner(gcConfig *gcConfig, store store.StorageDriver, storageMgr StorageMgr,
-	taskMgr mgr.SeedTaskMgr) *StorageCleaner {
-	return &StorageCleaner{
-		cfg:        gcConfig,
-		store:      store,
-		storageMgr: storageMgr,
-		taskMgr:    taskMgr,
+func NewStorageCleaner(gcConfig *GcConfig, store store.StorageDriver, storageMgr StorageMgr,
+	taskMgr mgr.SeedTaskMgr) *Cleaner {
+	return &Cleaner{
+		Cfg:        gcConfig,
+		Store:      store,
+		StorageMgr: storageMgr,
+		TaskMgr:    taskMgr,
 	}
 }
 
-func (cleaner *StorageCleaner) Gc(ctx context.Context, force bool) ([]string, error) {
-	freeSpace, err := cleaner.store.GetAvailSpace(ctx)
+func (cleaner *Cleaner) Gc(ctx context.Context, force bool) ([]string, error) {
+	freeSpace, err := cleaner.Store.GetAvailSpace(ctx)
 	if err != nil {
 		if cdnerrors.IsKeyNotFound(err) {
-			err = cleaner.store.CreateDir(ctx, cleaner.store.GetHomePath(ctx))
+			err = cleaner.Store.CreateDir(ctx, cleaner.Store.GetHomePath(ctx))
 			if err != nil {
 				return nil, err
 			}
-			freeSpace, err = cleaner.store.GetAvailSpace(ctx)
+			freeSpace, err = cleaner.Store.GetAvailSpace(ctx)
 		} else {
 			return nil, errors.Wrapf(err, "failed to get avail space")
 		}
 	}
 	fullGC := force
 	if !fullGC {
-		if freeSpace > cleaner.cfg.YoungGCThreshold {
+		if freeSpace > cleaner.Cfg.YoungGCThreshold {
 			return nil, nil
 		}
-		if freeSpace <= cleaner.cfg.FullGCThreshold {
+		if freeSpace <= cleaner.Cfg.FullGCThreshold {
 			fullGC = true
 		}
 	}
@@ -107,7 +107,7 @@ func (cleaner *StorageCleaner) Gc(ctx context.Context, force bool) ([]string, er
 		walkTaskIds[taskId] = true
 
 		// we should return directly when we success to get info which means it is being used
-		if _, err := cleaner.taskMgr.Get(ctx, taskId); err == nil || !cdnerrors.IsDataNotFound(err) {
+		if _, err := cleaner.TaskMgr.Get(ctx, taskId); err == nil || !cdnerrors.IsDataNotFound(err) {
 			if err != nil {
 				logger.GcLogger.Errorf("failed to get taskId(%s): %v", taskId, err)
 			}
@@ -120,7 +120,7 @@ func (cleaner *StorageCleaner) Gc(ctx context.Context, force bool) ([]string, er
 			return nil
 		}
 
-		metaData, err := cleaner.storageMgr.ReadFileMetaData(ctx, taskId)
+		metaData, err := cleaner.StorageMgr.ReadFileMetaData(ctx, taskId)
 		if err != nil || metaData == nil {
 			logger.GcLogger.Debugf("taskId: %s, failed to get metadata: %v", taskId, err)
 			gcTaskIDs = append(gcTaskIDs, taskId)
@@ -134,7 +134,7 @@ func (cleaner *StorageCleaner) Gc(ctx context.Context, force bool) ([]string, er
 		return nil
 	}
 
-	if err := cleaner.store.Walk(ctx, &store.Raw{
+	if err := cleaner.Store.Walk(ctx, &store.Raw{
 		WalkFn: walkFn,
 	}); err != nil {
 		return nil, err
@@ -147,13 +147,13 @@ func (cleaner *StorageCleaner) Gc(ctx context.Context, force bool) ([]string, er
 	return gcTaskIDs, nil
 }
 
-func (cleaner *StorageCleaner) sortInert(ctx context.Context, gapTasks, intervalTasks *treemap.Map,
+func (cleaner *Cleaner) sortInert(ctx context.Context, gapTasks, intervalTasks *treemap.Map,
 	metaData *FileMetaData) error {
 	gap := timeutils.CurrentTimeMillis() - metaData.AccessTime
 
 	if metaData.Interval > 0 &&
-		gap <= metaData.Interval+(int64(cleaner.cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
-		info, err := cleaner.storageMgr.StatDownloadFile(ctx, metaData.TaskId)
+		gap <= metaData.Interval+(int64(cleaner.Cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
+		info, err := cleaner.StorageMgr.StatDownloadFile(ctx, metaData.TaskId)
 		if err != nil {
 			return err
 		}
