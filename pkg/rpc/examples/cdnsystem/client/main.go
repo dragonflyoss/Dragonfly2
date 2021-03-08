@@ -23,6 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"os"
+	"time"
 )
 
 import (
@@ -44,20 +45,21 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	for i:=0;i<5;i++ {
+		psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+			TaskId: "test",
+			Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
+			Filter: "",
+		})
+		if err != nil {
+			panic(err)
+		}
 
-	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-		TaskId: "test",
-		Url: "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
-		Filter: "",
-	})
-	if err != nil {
-		panic(err)
+		for pieceSeed := range psc {
+			fmt.Printf("response:%v\n", pieceSeed)
+		}
+		time.Sleep(3 * time.Second)
 	}
-
-	for pieceSeed := range psc {
-		fmt.Printf("response:%v\n", pieceSeed)
-	}
-
 	fmt.Println("client finish")
 }
 

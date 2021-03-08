@@ -109,6 +109,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "failed to register seed task, registerRequest:%+v:%v", registerRequest, err)
 	}
 	peerId := fmt.Sprintf("%s-%s_%s", dfnet.HostName, req.TaskId, "CDN")
+	task, err := css.taskMgr.Get(ctx, req.TaskId)
 	for piece := range pieceChan {
 		pieceStart, _, err := rangeutils.ParsePieceIndex(piece.PieceRange)
 		if err != nil {
@@ -127,11 +128,10 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 				PieceStyle:  base.PieceStyle(piece.PieceStyle),
 			},
 			Done:          false,
-			ContentLength: 0,
+			ContentLength: task.SourceFileLength,
 		}
 
 	}
-	task, err := css.taskMgr.Get(ctx, req.TaskId)
 	if err != nil {
 		return dferrors.Newf(dfcodes.CdnError, "failed to get task: %v", err)
 	}

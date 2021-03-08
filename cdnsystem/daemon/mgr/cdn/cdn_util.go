@@ -26,12 +26,13 @@ var getCurrentTimeMillisFunc = timeutils.CurrentTimeMillis
 
 // getUpdateTaskInfoWithStatusOnly
 func getUpdateTaskInfoWithStatusOnly(cdnStatus string) *types.SeedTask {
-	return getUpdateTaskInfo(cdnStatus, "", "",0, 0)
+	return getUpdateTaskInfo(cdnStatus, "", "", 0, 0)
 }
 
-func getUpdateTaskInfo(cdnStatus, realMD5 , pieceMd5Sign string, sourceFileLength, cdnFileLength int64) *types.SeedTask {
+func getUpdateTaskInfo(cdnStatus, realMD5, pieceMd5Sign string, sourceFileLength, cdnFileLength int64) *types.SeedTask {
 	return &types.SeedTask{
 		CdnStatus:        cdnStatus,
+		PieceMd5Sign:     pieceMd5Sign,
 		SourceRealMd5:    realMD5,
 		SourceFileLength: sourceFileLength,
 		CdnFileLength:    cdnFileLength,
