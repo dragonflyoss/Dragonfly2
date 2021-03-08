@@ -24,21 +24,21 @@ import (
 )
 
 func InitManager() error {
-	logDir := basic.HomeDir + "/logs/dragonfly/"
+	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
 
-	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
+	if coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(logDir+"gc.log", 300, 7, 0, false, false); err != nil {
+	if gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGcLogger(gcLogger.Sugar())
@@ -48,27 +48,27 @@ func InitManager() error {
 }
 
 func InitScheduler() error {
-	logDir := basic.HomeDir + "/logs/dragonfly/"
+	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
 
-	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
+	if coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(logDir+"gc.log", 300, 7, 0, false, false); err != nil {
+	if gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGcLogger(gcLogger.Sugar())
 	}
 
-	if statPeerLogger, err := CreateLogger(logDir+"stat/peer.log", 300, 30, 0, true, true); err != nil {
+	if statPeerLogger, err := CreateLogger(path.Join(logDir, "stat/peer.log"), 300, 30, 0, true, true); err != nil {
 		return err
 	} else {
 		logger.SetStatPeerLogger(statPeerLogger)
@@ -78,27 +78,27 @@ func InitScheduler() error {
 }
 
 func InitCdnSystem() error {
-	logDir := basic.HomeDir + "/logs/dragonfly/"
+	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
 
-	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
+	if coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(logDir+"gc.log", 300, 7, 0, false, false); err != nil {
+	if gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGcLogger(gcLogger.Sugar())
 	}
 
-	if statSeedLogger, err := CreateLogger(logDir+"stat/seed.log", 300, 30, 0, true, true); err != nil {
+	if statSeedLogger, err := CreateLogger(path.Join(logDir, "stat/seed.log"), 300, 30, 0, true, true); err != nil {
 		return err
 	} else {
 		logger.SetStatSeedLogger(statSeedLogger)

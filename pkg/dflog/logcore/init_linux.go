@@ -16,4 +16,4 @@
 
 package logcore
 
-const clientLogDir = "/var/log/dragonfly/"
+const clientLogDir = "/var/log/dragonfly"
