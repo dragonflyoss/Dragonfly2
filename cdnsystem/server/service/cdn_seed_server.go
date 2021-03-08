@@ -23,20 +23,20 @@ import (
 	"strconv"
 	"strings"
 
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"d7y.io/dragonfly/v2/pkg/util/netutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
@@ -72,7 +72,7 @@ func constructRequestHeader(meta *base.UrlMeta) map[string]string {
 
 // validateSeedRequestParams validates the params of SeedRequest.
 func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
-	if !netutils.IsValidURL(req.Url) {
+	if !urlutils.IsValidURL(req.Url) {
 		return errors.Errorf("resource url:%s is invalid", req.Url)
 	}
 	if stringutils.IsBlank(req.TaskId) {
@@ -108,7 +108,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	if err != nil {
 		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "register seed task fail, registerRequest:%+v:%v", registerRequest, err)
 	}
-	peerId := fmt.Sprintf("%s-%s_%s", dfnet.HostName, req.TaskId, "CDN")
+	peerId := fmt.Sprintf("%s-%s_%s", iputils.HostName, req.TaskId, "CDN")
 	for piece := range pieceChan {
 		pieceRange := strings.Split(piece.PieceRange, "-")
 		pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
@@ -117,7 +117,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			psc <- &cdnsystem.PieceSeed{
 				State:      common.NewState(dfcodes.Success, "success"),
 				PeerId:     peerId,
-				SeederName: dfnet.HostName,
+				SeederName: iputils.HostName,
 				PieceInfo: &base.PieceInfo{
 					PieceNum:    piece.PieceNum,
 					RangeStart:  pieceStart,
@@ -139,7 +139,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			psc <- &cdnsystem.PieceSeed{
 				State:         state,
 				PeerId:        peerId,
-				SeederName:    dfnet.HostName,
+				SeederName:    iputils.HostName,
 				Done:          true,
 				ContentLength: piece.ContentLength,
 			}
@@ -217,7 +217,7 @@ func validateGetPieceTasksRequestParams(req *base.PieceTaskRequest) error {
 	if stringutils.IsBlank(req.TaskId) {
 		return errors.Wrap(dferrors.ErrEmptyValue, "taskId")
 	}
-	if !netutils.IsValidIP(req.SrcIp) {
+	if !iputils.IsIPv4(req.SrcIp) {
 		return errors.Wrapf(dferrors.ErrInvalidArgument, "invalid ip %s", req.SrcIp)
 	}
 	if req.StartNum < 0 {

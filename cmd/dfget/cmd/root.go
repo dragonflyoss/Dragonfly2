@@ -25,13 +25,17 @@ import (
 	"strings"
 	"syscall"
 
+	"d7y.io/dragonfly/v2/cmd/common/progressbar"
 	"d7y.io/dragonfly/v2/version"
+
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 
 	"github.com/avast/retry-go"
 	"github.com/gofrs/flock"
 	"github.com/spf13/cobra"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/pidfile"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -39,8 +43,6 @@ import (
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	"d7y.io/dragonfly/v2/pkg/util/pidfile"
-	"d7y.io/dragonfly/v2/pkg/util/progressbar"
 )
 
 var filter string
@@ -63,7 +65,7 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	Example:           dfgetExample(),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		logger.InitDfget()
+		logcore.InitDfget()
 		if err := checkClientOptions(); err != nil {
 			return err
 		}

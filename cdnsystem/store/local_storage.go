@@ -1,4 +1,4 @@
- /*
+/*
  *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,19 +19,21 @@ package store
 import (
 	"context"
 	"fmt"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"d7y.io/dragonfly/v2/pkg/util/stat"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/util"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
+	"d7y.io/dragonfly/v2/pkg/util/statutils"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 )
 
-const LocalStorageDriver = "local"
+const LocalStorageDriver = "disk"
 
 var fileLocker = util.NewLockerPool()
 
@@ -74,7 +76,7 @@ func NewLocalStorage(conf string) (StorageDriver, error) {
 	if !filepath.IsAbs(cfg.BaseDir) {
 		return nil, fmt.Errorf("not absolute path: %s", cfg.BaseDir)
 	}
-	if err := fileutils.CreateDirectory(cfg.BaseDir); err != nil {
+	if err := fileutils.MkdirAll(cfg.BaseDir); err != nil {
 		return nil, err
 	}
 
@@ -271,14 +273,10 @@ func (ls *localStorage) Stat(ctx context.Context, raw *Raw) (*StorageInfo, error
 		return nil, err
 	}
 
-	sys, ok := fileutils.GetSys(fileInfo)
-	if !ok {
-		return nil, fmt.Errorf("get create time error")
-	}
 	return &StorageInfo{
 		Path:       filepath.Join(raw.Bucket, raw.Key),
 		Size:       fileInfo.Size(),
-		CreateTime: statutils.Ctime(sys),
+		CreateTime: statutils.Ctime(fileInfo),
 		ModTime:    fileInfo.ModTime(),
 	}, nil
 }
@@ -305,7 +303,7 @@ func (ls *localStorage) Remove(ctx context.Context, raw *Raw) error {
 }
 
 // GetAvailSpace returns the available disk space in B.
-func (ls *localStorage) GetAvailSpace(ctx context.Context, raw *Raw) (fileutils.Fsize, error) {
+func (ls *localStorage) GetAvailSpace(ctx context.Context, raw *Raw) (fsize.Size, error) {
 	path, _, err := ls.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return 0, err
@@ -313,7 +311,7 @@ func (ls *localStorage) GetAvailSpace(ctx context.Context, raw *Raw) (fileutils.
 
 	lock(path, -1, true)
 	defer unLock(path, -1, true)
-	return fileutils.GetFreeSpace(path)
+	return statutils.FreeSpace(path)
 }
 
 // Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
@@ -336,7 +334,7 @@ func (ls *localStorage) Walk(ctx context.Context, raw *Raw) error {
 func (ls *localStorage) preparePath(bucket, key string) (string, error) {
 	dir := filepath.Join(ls.BaseDir, bucket)
 
-	if err := fileutils.CreateDirectory(dir); err != nil {
+	if err := fileutils.MkdirAll(dir); err != nil {
 		return "", err
 	}
 

@@ -19,12 +19,12 @@ package client
 import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/safe"
-	"d7y.io/dragonfly/v2/pkg/util/types"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -83,7 +83,7 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 
 	drc := make(chan *dfdaemon.DownResult, 4)
 	// 生成taskId
-	taskId := types.GenerateTaskId(req.Url, req.Filter, req.UrlMeta, req.BizId)
+	taskId := idgen.GenerateTaskId(req.Url, req.Filter, req.UrlMeta,req.BizId)
 	drs, err := newDownResultStream(dc, ctx, taskId, req, opts)
 	if err != nil {
 		return nil, err

@@ -1,23 +1,26 @@
 package cmd
 
 import (
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/server"
-	"d7y.io/dragonfly/v2/version"
-	"fmt"
-	"github.com/go-echarts/statsview"
-	"github.com/go-echarts/statsview/viewer"
-	"github.com/mitchellh/mapstructure"
-	"github.com/phayes/freeport"
 	"os"
 	"reflect"
 	"time"
 
+	"fmt"
+
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/server"
+	"d7y.io/dragonfly/v2/version"
+	"github.com/go-echarts/statsview"
+	"github.com/go-echarts/statsview/viewer"
+	"github.com/mitchellh/mapstructure"
+	"github.com/phayes/freeport"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -27,7 +30,7 @@ const (
 )
 
 var (
-	cdnList string
+	cdnList        string
 	schedulerViper = viper.GetViper()
 )
 
@@ -43,7 +46,7 @@ var SchedulerCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := logger.InitScheduler()
+		err := logcore.InitScheduler()
 		if err != nil {
 			return errors.Wrap(err, "init scheduler logger")
 		}

@@ -24,7 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/struct/syncmap"
+	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"sync"

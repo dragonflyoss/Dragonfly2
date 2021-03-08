@@ -18,12 +18,13 @@ package gc
 
 import (
 	"context"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/util/metricsutils"
+	"d7y.io/dragonfly/v2/pkg/prometrics"
 	"github.com/prometheus/client_golang/prometheus"
-	"time"
 )
 
 func init() {
@@ -40,13 +41,13 @@ type metrics struct {
 
 func newMetrics(register prometheus.Registerer) *metrics {
 	return &metrics{
-		gcTasksCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "gc_tasks_total",
+		gcTasksCount: prometrics.NewCounter(config.SubsystemCdnSystem, "gc_tasks_total",
 			"Total number of tasks that have been garbage collected", []string{}, register),
 
-		gcDisksCount: metricsutils.NewCounter(config.SubsystemCdnSystem, "gc_disks_total",
+		gcDisksCount: prometrics.NewCounter(config.SubsystemCdnSystem, "gc_disks_total",
 			"Total number of garbage collecting the task data in disks", []string{}, register),
 
-		lastGCDisksTime: metricsutils.NewGauge(config.SubsystemCdnSystem, "last_gc_disks_timestamp_seconds",
+		lastGCDisksTime: prometrics.NewGauge(config.SubsystemCdnSystem, "last_gc_disks_timestamp_seconds",
 			"Timestamp of the last disk gc", []string{}, register),
 	}
 }

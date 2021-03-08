@@ -22,12 +22,12 @@ import (
 	"net"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
 var (
@@ -46,7 +46,7 @@ var flagDaemonOpt = config.PeerHostOption{
 	Verbose:     false,
 	Host: config.HostOption{
 		ListenIP:       "0.0.0.0",
-		AdvertiseIP:    dfnet.HostIp,
+		AdvertiseIP:    iputils.HostIp,
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",

@@ -8,17 +8,17 @@ import (
 	"net/http"
 	"testing"
 
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func TestMain(m *testing.M) {
-	logger.InitDaemon()
+	logcore.InitDaemon()
 	m.Run()
 }
 

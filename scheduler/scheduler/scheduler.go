@@ -76,7 +76,17 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTa
 	candidates := s.factory.getEvaluator(peer.Task).SelectParentCandidates(peer)
 	value := 0.0
 	for _, parent := range candidates {
+		if parent == nil {
+			continue
+		}
 		val, _ := s.factory.getEvaluator(peer.Task).Evaluate(parent, peer)
+
+		// scheduler the same parent, value reduce a half
+		if peer.GetParent() != nil && peer.GetParent().DstPeerTask!=nil &&
+			peer.GetParent().DstPeerTask.Pid == parent.Pid {
+			val = val / 2.0
+		}
+
 		if val > value {
 			value = val
 			primary = parent

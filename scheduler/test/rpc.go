@@ -19,9 +19,9 @@ package test
 import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/types"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"math/rand"
 	"time"
@@ -148,7 +148,7 @@ func (suite *SchedulerTestSuite) Test102SchedulerPeerTask() {
 
 func (suite *SchedulerTestSuite) Test103ReportResult() {
 	ctx := context.TODO()
-	taskId := types.GenerateTaskId("http://dragonfly.com/test1", "", nil, "")
+	taskId := idgen.GenerateTaskId("http://dragonfly.com/test1", "", nil,"")
 	var result = &scheduler.PeerResult{
 		TaskId:         taskId,
 		PeerId:         "prc001",
@@ -174,7 +174,7 @@ func (suite *SchedulerTestSuite) Test103ReportResult() {
 
 func (suite *SchedulerTestSuite) Test104LeaveTask() {
 	ctx := context.TODO()
-	taskId := types.GenerateTaskId("http://dragonfly.com/test1", "", nil, "")
+	taskId := idgen.GenerateTaskId("http://dragonfly.com/test1", "", nil,"")
 	var target = &scheduler.PeerTarget{
 		TaskId: taskId,
 		PeerId: "prc001",

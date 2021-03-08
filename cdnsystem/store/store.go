@@ -19,12 +19,13 @@ package store
 import (
 	"context"
 	"fmt"
+	"io"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
-	"io"
 )
 
 // Store is a wrapper of the storage which implements the interface of StorageDriver.
@@ -125,7 +126,7 @@ func (s *Store) Stat(ctx context.Context, raw *Raw) (*StorageInfo, error) {
 }
 
 // GetAvailSpace returns the available disk space in B.
-func (s *Store) GetAvailSpace(ctx context.Context, raw *Raw) (fileutils.Fsize, error) {
+func (s *Store) GetAvailSpace(ctx context.Context, raw *Raw) (fsize.Size, error) {
 	return s.driver.GetAvailSpace(ctx, raw)
 }
 

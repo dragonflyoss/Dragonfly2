@@ -28,7 +28,6 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/basic"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
 var (
@@ -47,7 +46,7 @@ var flagDaemonOpt = config.PeerHostOption{
 	Verbose:     false,
 	Host: config.HostOption{
 		ListenIP:       net.IPv4zero.String(),
-		AdvertiseIP:    dfnet.HostIp,
+		AdvertiseIP:    iputils.HostIp,
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",

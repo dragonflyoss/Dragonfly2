@@ -17,17 +17,19 @@
 package test
 
 import (
+	"fmt"
+	"time"
+
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"d7y.io/dragonfly/v2/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/test/common"
 	"d7y.io/dragonfly/v2/scheduler/test/mock_cdn"
-	"fmt"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
-	"time"
 )
 
 type SchedulerTestSuite struct {
@@ -38,7 +40,7 @@ type SchedulerTestSuite struct {
 }
 
 func (suite *SchedulerTestSuite) SetupSuite() {
-	logger.InitScheduler()
+	logcore.InitScheduler()
 	logger.SetGcLogger(zap.NewNop().Sugar())
 	logger.SetGrpcLogger(zap.NewNop().Sugar())
 

@@ -17,8 +17,8 @@
 package service
 
 import (
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	types2 "d7y.io/dragonfly/v2/pkg/util/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"errors"
@@ -26,9 +26,9 @@ import (
 
 func (s *SchedulerService) GenerateTaskId(url string, filter string, meta *base.UrlMeta, bizId string, peerId string) (taskId string) {
 	if config.GetConfig().Scheduler.ABTest {
-		return types2.GenerateABTestTaskId(url, filter, meta, bizId, peerId)
+		return idgen.GenerateABTestTaskId(url, filter, meta, bizId, peerId)
 	}
-	return types2.GenerateTaskId(url, filter, meta, bizId)
+	return idgen.GenerateTaskId(url, filter, meta, bizId)
 }
 
 func (s *SchedulerService) GetTask(taskId string) (task *types.Task, err error) {

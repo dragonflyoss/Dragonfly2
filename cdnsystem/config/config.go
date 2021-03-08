@@ -17,12 +17,15 @@
 package config
 
 import (
-	"d7y.io/dragonfly/v2/pkg/rate"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"github.com/mitchellh/go-homedir"
-	"gopkg.in/yaml.v3"
+	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/ratelimiter"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
+	"github.com/mitchellh/go-homedir"
+	"gopkg.in/yaml.v3"
 )
 
 // NewConfig creates an instant with default values.
@@ -41,7 +44,16 @@ type Config struct {
 
 // Load loads config properties from the giving file.
 func (c *Config) Load(path string) error {
-	return fileutils.LoadYaml(path, c)
+	content, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to load yaml %s when reading file: %v", path, err)
+	}
+
+	if err = yaml.Unmarshal(content, c); err != nil {
+		return fmt.Errorf("failed to load yaml %s: %v", path, err)
+	}
+
+	return nil
 }
 
 func (c *Config) String() string {
@@ -57,7 +69,7 @@ func NewBaseProperties() *BaseProperties {
 	var home string
 	home = filepath.Join(string(filepath.Separator), userHome, "cdn-system")
 	if err != nil {
-		home = filepath.Join(string(filepath.Separator), "home", "admin","cdn-system")
+		home = filepath.Join(string(filepath.Separator), "home", "admin", "cdn-system")
 	}
 	return &BaseProperties{
 		ListenPort:              DefaultListenPort,
@@ -81,7 +93,6 @@ func NewBaseProperties() *BaseProperties {
 
 // BaseProperties contains all basic properties of cdn system.
 type BaseProperties struct {
-
 	StorageDriver string `yaml:"storageDriver"`
 
 	// ListenPort is the port cdn server listens on.
@@ -101,11 +112,11 @@ type BaseProperties struct {
 
 	// SystemReservedBandwidth is the network bandwidth reserved for system software.
 	// default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	SystemReservedBandwidth rate.Rate `yaml:"systemReservedBandwidth"`
+	SystemReservedBandwidth ratelimiter.Rate `yaml:"systemReservedBandwidth"`
 
 	// MaxBandwidth is the network bandwidth that cdn system can use.
 	// default: 200 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	MaxBandwidth rate.Rate `yaml:"maxBandwidth"`
+	MaxBandwidth ratelimiter.Rate `yaml:"maxBandwidth"`
 
 	// Whether to enable profiler
 	// default: false
@@ -143,16 +154,16 @@ type BaseProperties struct {
 	// and there is no need to GC disk.
 	//
 	// default: 100GB
-	YoungGCThreshold fileutils.Fsize `yaml:"youngGCThreshold"`
+	YoungGCThreshold fsize.Size `yaml:"youngGCThreshold"`
 
 	// FullGCThreshold if the available disk space is less than FullGCThreshold
 	// and the cdn system should gc all task files which are not being used.
 	//
 	// default: 5GB
-	FullGCThreshold fileutils.Fsize `yaml:"fullGCThreshold"`
+	FullGCThreshold fsize.Size `yaml:"fullGCThreshold"`
 
 	// MaxStorageThreshold if the currently used disk space is greater than MaxStorageThreshold, clean disk up
-	MaxStorageThreshold fileutils.Fsize
+	MaxStorageThreshold fsize.Size
 
 	// IntervalThreshold is the threshold of the interval at which the task file is accessed.
 	// default: 2h
@@ -163,5 +174,4 @@ type BaseProperties struct {
 	//
 	// default: 1
 	CleanRatio int `yaml:"cleanRatio"`
-
 }

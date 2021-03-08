@@ -19,7 +19,7 @@ package config
 import (
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rate"
+	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 )
 
 /* the reason of backing to source */
@@ -48,8 +48,8 @@ const (
 const (
 	DefaultYamlConfigFile = "/etc/dragonfly/dfget.yml"
 	ProxyYamlConfigFile   = "/etc/dragonfly/proxy.yml"
-	DefaultLocalLimit     = 20 * rate.MB
-	DefaultMinRate        = 64 * rate.KB
+	DefaultLocalLimit     = 20 * ratelimiter.MB
+	DefaultMinRate        = 64 * ratelimiter.KB
 )
 
 /* http headers */

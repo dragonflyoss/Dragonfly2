@@ -18,7 +18,9 @@ package store
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
+
 	"io"
 	"path/filepath"
 	"time"
@@ -67,7 +69,7 @@ type StorageDriver interface {
 	Stat(ctx context.Context, raw *Raw) (*StorageInfo, error)
 
 	// GetAvailSpace returns the available disk space in B.
-	GetAvailSpace(ctx context.Context, raw *Raw) (fileutils.Fsize, error)
+	GetAvailSpace(ctx context.Context, raw *Raw) (fsize.Size, error)
 
 	// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 	// calling walkFn for each file or directory in the tree, including root.

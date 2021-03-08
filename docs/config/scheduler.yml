@@ -1,7 +1,7 @@
 # This file is the template of scheduler configuration file.
 # You can configure your scheduler by change the parameter according your requirement.
 ---
-debug: true
+debug: false
 
 server:
   # ListenPort is the ip and port supernode server listens on.

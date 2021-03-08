@@ -18,15 +18,9 @@ package logger
 
 import (
 	"fmt"
-	"d7y.io/dragonfly/v2/pkg/basic/env"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc/grpclog"
-	"gopkg.in/natefinch/lumberjack.v2"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 var (
@@ -37,75 +31,20 @@ var (
 	StatSeedLogger *zap.Logger
 )
 
-var coreLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)
-var grpcLevel = zap.NewAtomicLevelAt(zapcore.WarnLevel)
-
-func SetCoreLevel(level zapcore.Level) {
-	coreLevel.SetLevel(level)
-}
-
-func SetGrpcLevel(level zapcore.Level) {
-	grpcLevel.SetLevel(level)
-}
-
 type SugaredLoggerOnWith struct {
 	withArgs []interface{}
 }
 
-func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, compress bool, stats bool) (*zap.Logger, error) {
-	if os.Getenv(env.ActiveProfile) == "local" {
-		log, _ := zap.NewDevelopment(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
-		return log, nil
+func init() {
+	log, err := zap.NewDevelopment(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
+	if err == nil {
+		sugar := log.Sugar()
+		SetCoreLogger(sugar)
+		SetGrpcLogger(sugar)
+		SetGcLogger(sugar)
+		SetStatPeerLogger(log)
+		SetStatSeedLogger(log)
 	}
-
-	var syncer zapcore.WriteSyncer
-
-	if maxAge < 0 || maxBackups < 0 {
-		if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
-			return nil, err
-		}
-		fileInfo, err := os.Stat(filePath)
-		if err == nil && fileInfo.Size() >= int64(maxSize*1024*1024) {
-			_, _ = fileutils.CopyFile(filePath+".old", filePath)
-			_ = os.Truncate(filePath, 0)
-		}
-		if syncer, _, err = zap.Open(filePath); err != nil {
-			return nil, err
-		}
-	} else {
-		rotateConfig := &lumberjack.Logger{
-			Filename:   filePath,
-			MaxSize:    maxSize,
-			MaxAge:     maxAge,
-			MaxBackups: maxBackups,
-			LocalTime:  true,
-			Compress:   compress,
-		}
-		syncer = zapcore.AddSync(rotateConfig)
-	}
-
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
-
-	level := zap.NewAtomicLevel()
-	if strings.HasSuffix(filePath, GrpcLogFileName) {
-		level = grpcLevel
-	} else if strings.HasSuffix(filePath, CoreLogFileName) {
-		level = coreLevel
-	}
-
-	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		syncer,
-		level,
-	)
-
-	var opts []zap.Option
-	if !stats {
-		opts = append(opts, zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
-	}
-
-	return zap.New(core, opts...), nil
 }
 
 func SetCoreLogger(log *zap.SugaredLogger) {
@@ -135,12 +74,24 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 	}
 }
 
-func WithTaskID(taskID string) *zap.SugaredLogger {
-	return CoreLogger.With("taskID", taskID)
+func WithTaskID(taskID string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []interface{}{"taskID", taskID},
+	}
+}
+
+func WithPeerID(peerId string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []interface{}{"peerId", peerId},
+	}
 }
 
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
 	CoreLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func (log *SugaredLoggerOnWith) Info(args ...interface{}) {
+	CoreLogger.Info(append(args, log.withArgs...)...)
 }
 
 func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
@@ -149,6 +100,10 @@ func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
 
 func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
 	CoreLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func (log *SugaredLoggerOnWith) Error(args ...interface{}) {
+	CoreLogger.Error(append(args, log.withArgs...)...)
 }
 
 func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
@@ -178,7 +133,6 @@ func Fatalf(template string, args ...interface{}) {
 func Fatal(args ...interface{}) {
 	CoreLogger.Fatal(args...)
 }
-
 
 type zapGrpc struct {
 	*zap.SugaredLogger

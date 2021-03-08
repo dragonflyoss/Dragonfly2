@@ -19,15 +19,16 @@ package cdn
 import (
 	"context"
 	"encoding/json"
+	"strings"
+
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/digest"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
-	"strings"
 )
 
 // fileMetaData
@@ -197,7 +198,7 @@ func (pmm *metaDataManager) appendPieceMetaIntegrityData(ctx context.Context, ta
 		pieceMetaStrs = append(pieceMetaStrs, getPieceMetaValue(record))
 	}
 	pieceMetaStrs = append(pieceMetaStrs, fileMD5)
-	pieceStr := strings.Join([]string{fileMD5, digest.Sha1(pieceMetaStrs)}, "\n")
+	pieceStr := strings.Join([]string{fileMD5, digestutils.Sha256(pieceMetaStrs...)}, "\n")
 	return pmm.fileStore.AppendBytes(ctx, getPieceMetaDataRawFunc(taskID), []byte(pieceStr))
 }
 
@@ -221,7 +222,7 @@ func (pmm *metaDataManager) readAndCheckPieceMetaRecords(ctx context.Context, ta
 		return nil, errors.Errorf("failed to check the fileMD5, expected: %s, real: %s", fileMD5, realFileMD5)
 	}
 	piecesWithoutSha1Value := pieceMetaRecords[:piecesLength-1]
-	expectedSha1Value := digest.Sha1(piecesWithoutSha1Value)
+	expectedSha1Value := digestutils.Sha256(piecesWithoutSha1Value...)
 	realSha1Value := pieceMetaRecords[piecesLength-1]
 	if expectedSha1Value != realSha1Value {
 		return nil, errors.Errorf("failed to validate the SHA-1 checksum of piece meta records, expected: %s, real: %s", expectedSha1Value, realSha1Value)
@@ -269,6 +270,6 @@ func (pm *metaDataManager) getPieceMd5Sign(ctx context.Context, taskID string) (
 	for _, piece := range pieceMetaRecords {
 		pieceMd5 = append(pieceMd5, piece.Md5)
 	}
-	return digest.Sha1(pieceMd5),nil
+	return digestutils.Sha256(pieceMd5...),nil
 }
 

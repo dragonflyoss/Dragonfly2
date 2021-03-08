@@ -17,8 +17,9 @@
 package config
 
 import (
-	"d7y.io/dragonfly/v2/pkg/rate"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/ratelimiter"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
+
 	"time"
 )
 
@@ -77,9 +78,9 @@ const (
 	// and it will be treated to be expired.
 	DefaultTaskExpireTime = 3 * time.Minute
 
-	DefaultYoungGCThreshold = 100 * fileutils.GB
+	DefaultYoungGCThreshold = 100 * fsize.GB
 
-	DefaultFullGCThreshold = 5 * fileutils.GB
+	DefaultFullGCThreshold = 5 * fsize.GB
 
 	DefaultIntervalThreshold = 2 * time.Hour
 
@@ -91,8 +92,8 @@ const (
 const (
 	// DefaultSystemReservedBandwidth is the default network bandwidth reserved for system software.
 	// unit: MB/s
-	DefaultSystemReservedBandwidth = 20 * rate.MB
+	DefaultSystemReservedBandwidth = 20 * ratelimiter.MB
 	// DefaultMaxBandwidth is the default network bandwidth that cdn can use.
 	// unit: MB/s
-	DefaultMaxBandwidth = 200 * rate.MB
+	DefaultMaxBandwidth = 200 * ratelimiter.MB
 )

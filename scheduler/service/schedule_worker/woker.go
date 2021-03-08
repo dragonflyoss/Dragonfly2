@@ -302,7 +302,11 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 }
 
 func (w *Worker) sendScheduleResult(peerTask *types.PeerTask) {
-	logger.Debugf("[%s][%s]: sendScheduleResult", peerTask.Task.TaskId, peerTask.Pid)
+	parent := "nil"
+	if peerTask != nil && peerTask.GetParent() != nil && peerTask.GetParent().DstPeerTask != nil {
+		parent = peerTask.GetParent().DstPeerTask.Pid
+	}
+	logger.Debugf("[%s][%s]: sendScheduleResult parent[%s]", peerTask.Task.TaskId, peerTask.Pid, parent)
 	w.sender.Send(peerTask)
 	return
 }
@@ -313,7 +317,7 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 	switch code {
 	case dfcodes.Success:
 		return
-	case dfcodes.GetPieceTasksError:
+	case dfcodes.PeerTaskNotFound, dfcodes.GetPieceTasksError:
 		peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
 		if peerTask != nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)

@@ -22,15 +22,16 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"fmt"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"github.com/pkg/errors"
 	"hash"
 	"sync"
 
+	"d7y.io/dragonfly/v2/cdnsystem/types"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"github.com/pkg/errors"
+
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
 // calculateRoutineCount calculate how many goroutines are needed to execute write goroutine
@@ -73,7 +74,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 					continue
 				}
 				// report piece status
-				pieceMd5Sum := fileutils.GetMd5Sum(pieceMd5, nil)
+				pieceMd5Sum := digestutils.ToHashString(pieceMd5)
 				pieceRecord := &pieceMetaRecord{
 					PieceNum:   job.pieceNum,
 					PieceLen:   int32(pieceLen),

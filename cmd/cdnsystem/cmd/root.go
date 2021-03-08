@@ -23,14 +23,15 @@ import (
 	"reflect"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon"
-	"d7y.io/dragonfly/v2/pkg/cmd"
+	"d7y.io/dragonfly/v2/cmd/common"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rate"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"d7y.io/dragonfly/v2/pkg/util/netutils"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/version"
 	"github.com/go-echarts/statsview"
@@ -64,7 +65,7 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := logger.InitCdnSystem(); err != nil {
+		if err := logcore.InitCdnSystem(); err != nil {
 			return errors.Wrapf(err, "init log fail")
 		}
 		// load config file into the given viper instance.
@@ -77,7 +78,7 @@ var rootCmd = &cobra.Command{
 			return errors.Wrap(err, "get config from viper")
 		}
 		// create home dir
-		if err := fileutils.CreateDirectory(cdnNodeViper.GetString("base.homeDir")); err != nil {
+		if err := fileutils.MkdirAll(cdnNodeViper.GetString("base.homeDir")); err != nil {
 			return fmt.Errorf("failed to create home dir %s: %v", cdnNodeViper.GetString("base.homeDir"), err)
 		}
 
@@ -119,8 +120,8 @@ func init() {
 
 	// add sub commands
 	rootCmd.AddCommand(version.VersionCmd)
-	rootCmd.AddCommand(cmd.NewGenDocCommand("cdn"))
-	rootCmd.AddCommand(cmd.NewConfigCommand("cdn", getDefaultConfig))
+	rootCmd.AddCommand(common.NewGenDocCommand("cdn"))
+	rootCmd.AddCommand(common.NewConfigCommand("cdn", getDefaultConfig))
 }
 
 // setupFlags setups flags for command line.
@@ -266,8 +267,8 @@ func getConfigFromViper(v *viper.Viper) (*config.Config, error) {
 		dc.TagName = "yaml"
 		dc.DecodeHook = decodeWithYAML(
 			reflect.TypeOf(time.Second),
-			reflect.TypeOf(rate.B),
-			reflect.TypeOf(fileutils.B),
+			reflect.TypeOf(ratelimiter.B),
+			reflect.TypeOf(fsize.B),
 		)
 	}); err != nil {
 		return nil, errors.Wrap(err, "unmarshal yaml")
@@ -296,16 +297,7 @@ func decodeWithYAML(types ...reflect.Type) mapstructure.DecodeHookFunc {
 
 func setAdvertiseIP(cfg *config.Config) error {
 	// use the first non-loop address if the AdvertiseIP is empty
-	ipList, err := netutils.GetAllIPs()
-	if err != nil {
-		return errors.Wrapf(cdnerrors.ErrSystemError, "failed to get ip list: %v", err)
-	}
-	if len(ipList) == 0 {
-		logger.Errorf("get empty system's unicast interface addresses")
-		return errors.Wrapf(cdnerrors.ErrSystemError, "Unable to autodetect advertiser ip, please set it via --advertise-ip")
-	}
-
-	cfg.AdvertiseIP = ipList[0]
+	cfg.AdvertiseIP = iputils.HostIp
 
 	return nil
 }
