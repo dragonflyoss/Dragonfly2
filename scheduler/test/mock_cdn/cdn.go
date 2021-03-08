@@ -148,7 +148,7 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 }
 
 func (mc *MockCDN) getPeerId(addr string, taskId string) string {
-	return fmt.Sprintf("cdn:%s:%s", addr, taskId)
+	return fmt.Sprintf("%s:%s_CDN", addr, taskId)
 }
 
 func (mc *MockCDN) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
