@@ -42,6 +42,7 @@ const (
 	CdnError            base.Code = 6000
 	CdnTaskRegistryFail base.Code = 6001
 	CdnTaskNotFound     base.Code = 6404
+	CdnGetPiecesFail    base.Code = 6405
 
 	// manager response error 7000-7999
 	MgrError base.Code = 7000
