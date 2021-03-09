@@ -44,13 +44,6 @@ func init() {
 	var _ mgr.CDNMgr = manager
 }
 
-type metrics struct {
-	cdnCacheHitCount     *prometheus.CounterVec
-	cdnDownloadCount     *prometheus.CounterVec
-	cdnDownloadBytes     *prometheus.CounterVec
-	cdnDownloadFailCount *prometheus.CounterVec
-}
-
 // Manager is an implementation of the interface of CDNMgr.
 type Manager struct {
 	cfg             *config.Config
@@ -63,7 +56,6 @@ type Manager struct {
 	detector        *cacheDetector
 	resourceClient  source.ResourceClient
 	writer          *cacheWriter
-	metrics         *metrics
 }
 
 // NewManager returns a new Manager.
@@ -113,16 +105,13 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// full cache
 	if detectResult.breakNum == -1 {
 		logger.WithTaskID(task.TaskID).Infof("cache full hit on local")
-		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
 		seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceRealMd5, detectResult.fileMetaData.PieceMd5Sign, detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength)
 		return seedTask, nil
 	}
 	// third: start to download the source file
 	resp, err := cm.download(task, detectResult)
-	cm.metrics.cdnDownloadCount.WithLabelValues().Inc()
 	// download fail
 	if err != nil {
-		cm.metrics.cdnDownloadFailCount.WithLabelValues().Inc()
 		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusSOURCEERROR)
 		return seedTask, err
 	}
@@ -142,8 +131,6 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
 		return seedTask, err
 	}
-	// back source length
-	cm.metrics.cdnDownloadBytes.WithLabelValues().Add(float64(downloadMetadata.backSourceLength))
 
 	//todo log
 	// server.StatSeedFinish()

@@ -32,12 +32,6 @@ func init() {
 	var _ mgr.GCMgr = manager
 }
 
-type metrics struct {
-	gcTasksCount    *prometheus.CounterVec
-	gcDisksCount    *prometheus.CounterVec
-	lastGCDisksTime *prometheus.GaugeVec
-}
-
 // Manager is an implementation of the interface of GCMgr.
 type Manager struct {
 	cfg     *config.Config

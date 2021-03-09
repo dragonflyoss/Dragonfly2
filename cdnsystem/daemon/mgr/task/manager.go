@@ -38,17 +38,9 @@ func init() {
 	var _ mgr.SeedTaskMgr = manager
 }
 
-type metrics struct {
-	tasks               *prometheus.GaugeVec
-	tasksRegisterCount  *prometheus.CounterVec
-	triggerCdnCount     *prometheus.CounterVec
-	triggerCdnFailCount *prometheus.CounterVec
-}
-
 // Manager is an implementation of the interface of TaskMgr.
 type Manager struct {
 	cfg                     *config.Config
-	metrics                 *metrics
 	taskStore               *syncmap.SyncMap
 	accessTimeMap           *syncmap.SyncMap
 	taskURLUnReachableStore *syncmap.SyncMap
@@ -79,7 +71,6 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
 		logger.WithTaskID(task.TaskID).Warnf("failed to update accessTime: %v", err)
 	}
-	tm.metrics.tasksRegisterCount.WithLabelValues().Inc()
 	logger.WithTaskID(task.TaskID).Debugf("success to get task info: %+v", task)
 
 	// trigger CDN
@@ -113,9 +104,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 	// triggerCDN goroutine
 	go func() {
 		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(ctx, task)
-		tm.metrics.triggerCdnCount.WithLabelValues().Inc()
 		if err != nil {
-			tm.metrics.triggerCdnFailCount.WithLabelValues().Inc()
 			logger.WithTaskID(task.TaskID).Errorf("trigger cdn get error: %v", err)
 		}
 		updatedTask, err = tm.updateTask(task.TaskID, updateTaskInfo)

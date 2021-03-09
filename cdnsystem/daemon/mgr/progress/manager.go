@@ -36,15 +36,6 @@ func init() {
 	var _ mgr.SeedProgressMgr = manager
 }
 
-type metrics struct {
-
-}
-
-func newMetrics(register prometheus.Registerer) *metrics {
-	return &metrics{
-
-	}
-}
 
 type Manager struct {
 	seedSubscribers      *syncmap.SyncMap
@@ -52,7 +43,6 @@ type Manager struct {
 	progress             *syncmap.SyncMap
 	mu                   *util.LockerPool
 	buffer               int
-	metrics              *metrics
 }
 
 func NewManager(register prometheus.Registerer) *Manager {
@@ -61,7 +51,6 @@ func NewManager(register prometheus.Registerer) *Manager {
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
 		progress:             syncmap.NewSyncMap(),
 		mu:                   util.NewLockerPool(),
-		metrics:              newMetrics(register),
 	}
 }
 
