@@ -135,7 +135,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	if err != nil {
 		return dferrors.Newf(dfcodes.CdnError, "failed to get task: %v", err)
 	}
-	if task.CdnStatus != types.TaskInfoCdnStatusSUCCESS {
+	if task.CdnStatus != types.TaskInfoCdnStatusSuccess {
 		return dferrors.Newf(dfcodes.CdnTaskDownloadFail, "task status %s", task.CdnStatus)
 	}
 	psc <-&cdnsystem.PieceSeed{
