@@ -29,7 +29,7 @@ func TestIsIPv4(t *testing.T) {
 }
 
 func TestExternalIPv4(t *testing.T) {
-	ip, err := ExternalIPv4()
+	ip, err := externalIPv4()
 	assert.Nil(t, err)
 
 	fmt.Println(ip)

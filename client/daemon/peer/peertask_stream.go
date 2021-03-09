@@ -6,6 +6,7 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
@@ -36,7 +37,8 @@ func NewStreamPeerTask(ctx context.Context,
 	host *scheduler.PeerHost,
 	schedulerClient schedulerclient.SchedulerClient,
 	pieceManager PieceManager,
-	request *scheduler.PeerTaskRequest) (StreamPeerTask, error) {
+	request *scheduler.PeerTaskRequest,
+	scheduleTimeout time.Duration) (StreamPeerTask, error) {
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	if err != nil {
 		logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
@@ -69,6 +71,8 @@ func NewStreamPeerTask(ctx context.Context,
 			lock:            &sync.Mutex{},
 			failedPieceCh:   make(chan int32, 4),
 			contentLength:   -1,
+			totalPiece:      -1,
+			scheduleTimeout: scheduleTimeout,
 
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
@@ -98,6 +102,10 @@ func (s *streamPeerTask) AddTraffic(n int64) {
 
 func (s *streamPeerTask) GetTraffic() int64 {
 	return s.base.GetTraffic()
+}
+
+func (s *streamPeerTask) GetTotalPieces() int32 {
+	return s.base.totalPiece
 }
 
 func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
@@ -149,13 +157,12 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 			_ = s.base.callback.Init(s)
 			err := s.base.pieceManager.DownloadSource(ctx, s, s.base.request)
 			if err != nil {
-				s.base.cancel()
 				s.base.Errorf("download from source error: %s", err)
 				s.cleanUnfinished()
 				return
 			}
 			s.base.Debugf("download from source ok")
-			s.finish()
+			_ = s.finish()
 		}()
 	} else {
 		go s.base.receivePeerPacket()
@@ -170,7 +177,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		s.base.Errorf("%s", err)
 		return nil, nil, err
 	case <-s.base.done:
-		err := errors.New("early done")
+		err := errors.New("stream peer task early done")
 		return nil, nil, err
 	case num, ok := <-s.successPieceCh:
 		if !ok {
@@ -192,6 +199,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	}
 
 	go func(first int32) {
+		defer s.base.cancel()
 		var (
 			desired int32
 			cur     int32

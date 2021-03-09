@@ -255,6 +255,7 @@ func (s storageManager) CreateTask(req RegisterTaskRequest) error {
 			TaskID:        req.TaskID,
 			TaskMeta:      map[string]string{},
 			ContentLength: req.ContentLength,
+			TotalPieces:   req.TotalPieces,
 			PeerID:        req.PeerID,
 			Pieces:        map[int32]PieceMetaData{},
 		},

@@ -17,14 +17,17 @@
 package hashcircler
 
 import (
-	"github.com/stretchr/testify/suite"
 	"math"
 	"math/rand"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
 func TestSuite(t *testing.T) {
-	suite.Run(t, new(hashCirclerSuite))
+	suite.Run(t, &hashCirclerSuite{
+		hashMap: map[string]uint64{},
+	})
 }
 
 type hashCirclerSuite struct {
