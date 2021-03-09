@@ -31,7 +31,7 @@ type candidateClient struct {
 
 // findCandidateClientConn find candidate node client conn other than exclusiveNodes
 func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...string) (*candidateClient, error) {
-	ringNodes, ok := conn.HashRing.GetNodes(key, conn.HashRing.Size())
+	ringNodes, ok := conn.hashRing.GetNodes(key, conn.hashRing.Size())
 	if !ok {
 		return nil, dferrors.ErrNoCandidateNode
 	}
