@@ -32,7 +32,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"fmt"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Server struct {
@@ -42,7 +41,7 @@ type Server struct {
 }
 
 // New creates a brand new server instance.
-func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
+func New(cfg *config.Config) (*Server, error) {
 	var err error
 
 	storeMgr, err := store.NewManager(cfg)
@@ -60,17 +59,17 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 		return nil, err
 	}
 	// cdn manager
-	cdnMgr, err := cdn.NewManager(cfg, storeLocal, sourceClient, register)
+	cdnMgr, err := cdn.NewManager(cfg, storeLocal, sourceClient)
 	if err != nil {
 		return nil, err
 	}
 	// task manager
-	taskMgr, err := task.NewManager(cfg, cdnMgr, sourceClient, register)
+	taskMgr, err := task.NewManager(cfg, cdnMgr, sourceClient)
 	if err != nil {
 		return nil, err
 	}
 	// gc manager
-	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, register)
+	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr)
 	if err != nil {
 		return nil, err
 	}

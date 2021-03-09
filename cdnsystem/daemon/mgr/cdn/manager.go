@@ -35,7 +35,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 func init() {
@@ -59,10 +58,10 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient) (mgr.CDNMgr, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
-	publisher := progress.NewManager(register)
+	publisher := progress.NewManager()
 	cdnReporter := newReporter(publisher)
 	return &Manager{
 		cfg:             cfg,

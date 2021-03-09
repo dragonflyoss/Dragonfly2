@@ -29,7 +29,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 func init() {
@@ -49,7 +48,7 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager Object.
-func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
+func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, resourceClient source.ResourceClient) (*Manager, error) {
 	return &Manager{
 		cfg:                     cfg,
 		taskStore:               syncmap.NewSyncMap(),

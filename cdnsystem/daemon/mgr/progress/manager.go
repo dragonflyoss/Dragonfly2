@@ -26,7 +26,6 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 	"sync"
 )
 
@@ -45,7 +44,7 @@ type Manager struct {
 	buffer               int
 }
 
-func NewManager(register prometheus.Registerer) *Manager {
+func NewManager() *Manager {
 	return &Manager{
 		seedSubscribers:      syncmap.NewSyncMap(),
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
