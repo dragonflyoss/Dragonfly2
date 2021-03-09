@@ -260,6 +260,11 @@ func (pt *PeerTask) AddPieceStatus(ps *scheduler.PieceResult) {
 		return
 	}
 
+	// peer as cdn set up
+	if pt.Host.Type == HostTypeCdn && pt.isDown {
+		pt.isDown = false
+	}
+
 	pt.finishedNum = ps.FinishedCount
 
 	if pt.parent != nil {
