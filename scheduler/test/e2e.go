@@ -40,7 +40,7 @@ type SchedulerTestSuite struct {
 }
 
 func (suite *SchedulerTestSuite) SetupSuite() {
-	logcore.InitScheduler()
+	logcore.InitScheduler(true)
 	logger.SetGcLogger(zap.NewNop().Sugar())
 	logger.SetGrpcLogger(zap.NewNop().Sugar())
 

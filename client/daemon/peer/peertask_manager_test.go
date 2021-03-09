@@ -27,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -51,7 +50,6 @@ import (
 var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)
 
 func TestMain(m *testing.M) {
-	logcore.InitDaemon()
 	m.Run()
 }
 
