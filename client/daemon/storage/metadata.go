@@ -12,6 +12,7 @@ type persistentMetadata struct {
 	TaskID        string                  `json:"taskID"`
 	TaskMeta      map[string]string       `json:"taskMeta"`
 	ContentLength int64                   `json:"contentLength"`
+	TotalPieces   int32                   `json:"totalPieces"`
 	PeerID        string                  `json:"peerID"`
 	Pieces        map[int32]PieceMetaData `json:"pieces"`
 	PieceMd5Sign  string
@@ -39,6 +40,7 @@ type CommonTaskRequest struct {
 type RegisterTaskRequest struct {
 	CommonTaskRequest
 	ContentLength int64
+	TotalPieces   int32
 	GCCallback    func(CommonTaskRequest)
 }
 
@@ -52,6 +54,7 @@ type WritePieceRequest struct {
 type StoreRequest struct {
 	CommonTaskRequest
 	MetadataOnly bool
+	TotalPieces  int32
 }
 
 type ReadPieceRequest struct {

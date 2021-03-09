@@ -95,7 +95,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 	if err != nil {
 		return nil, err
 	}
-	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched)
+	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.ScheduleTimeout.Duration)
 	if err != nil {
 		return nil, err
 	}

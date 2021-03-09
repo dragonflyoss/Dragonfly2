@@ -27,6 +27,7 @@ func (p *streamPeerTaskCallback) Init(pt PeerTask) error {
 				Destination: "",
 			},
 			ContentLength: pt.GetContentLength(),
+			TotalPieces:   pt.GetTotalPieces(),
 		})
 	if err != nil {
 		logger.Errorf("register task to storage manager failed: %s", err)
@@ -43,6 +44,7 @@ func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
 				TaskID: pt.GetTaskID(),
 			},
 			MetadataOnly: true,
+			TotalPieces:  pt.GetTotalPieces(),
 		})
 	if e != nil {
 		return e
