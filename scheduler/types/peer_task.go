@@ -20,6 +20,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -325,11 +326,18 @@ func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 }
 
 func (pt *PeerTask) Send() error {
-	// if pt != nil && pt.client != nil {
+	if pt == nil {
+		return nil
+	}
 	if pt.client != nil {
+		err := pt.client.Context().Err()
+		if err != nil {
+			pt.client = nil
+			return err
+		}
 		return pt.client.Send(pt.GetSendPkg())
 	}
-	return nil
+	return errors.New("empty client")
 }
 
 func (pt *PeerTask) GetDiffPieceNum(dst *PeerTask) int32 {
