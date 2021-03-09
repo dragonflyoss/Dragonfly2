@@ -135,7 +135,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	if detectResult.breakNum == -1 {
 		logger.WithTaskID(task.TaskId).Infof("cache full hit on local")
 		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
-		return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceRealMd5,
+		return getUpdateTaskInfo(types.TaskInfoCdnStatusSuccess, detectResult.fileMetaData.SourceRealMd5,
 			detectResult.fileMetaData.PieceMd5Sign, detectResult.fileMetaData.SourceFileLen,
 			detectResult.fileMetaData.CdnFileLength), nil
 	}
@@ -174,7 +174,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	if err != nil || !success {
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
 	}
-	return getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, sourceMD5, downloadMetadata.pieceMd5Sign,
+	return getUpdateTaskInfo(types.TaskInfoCdnStatusSuccess, sourceMD5, downloadMetadata.pieceMd5Sign,
 		downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength), nil
 }
 
