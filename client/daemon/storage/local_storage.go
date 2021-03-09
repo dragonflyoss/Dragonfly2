@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"golang.org/x/exp/mmap"
 )
 
 type localTaskStore struct {
@@ -142,10 +144,11 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 // GetPiece get a LimitReadCloser from task data with seeked, caller should read bytes and close it.
 func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error) {
 	t.touch()
-	file, err := os.Open(t.dataFilePath)
+	data, err := mmap.Open(t.dataFilePath)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	if req.Num != -1 {
 		t.RLock()
 		if piece, ok := t.persistentMetadata.Pieces[req.Num]; ok {
@@ -156,11 +159,13 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 			return nil, nil, ErrPieceNotFound
 		}
 	}
-	// who call ReadPiece, who close the io.ReadCloser
-	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
+
+	buf := make([]byte, req.Range.Length)
+	if _, err := data.ReadAt(buf, req.Range.Start); err != nil {
 		return nil, nil, err
 	}
-	return io.LimitReader(file, req.Range.Length), file, nil
+
+	return bytes.NewReader(buf), data, nil
 }
 
 func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
