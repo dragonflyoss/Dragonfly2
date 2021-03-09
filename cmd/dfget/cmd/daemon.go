@@ -24,8 +24,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/gofrs/flock"
@@ -39,8 +37,10 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon"
 	"d7y.io/dragonfly/v2/client/pidfile"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var daemonCmd = &cobra.Command{

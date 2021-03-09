@@ -46,6 +46,7 @@ type PeerTask interface {
 	ReportPieceResult(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error
 	GetPeerID() string
 	GetTaskID() string
+	GetTotalPieces() int32
 	GetContentLength() int64
 	SetContentLength(int64) error
 	SetCallback(PeerTaskCallback)
@@ -61,28 +62,36 @@ type PeerTaskCallback interface {
 }
 
 type peerTaskManager struct {
-	host           *scheduler.PeerHost
-	scheduler      schedulerclient.SchedulerClient
-	pieceManager   PieceManager
-	storageManager storage.Manager
+	host            *scheduler.PeerHost
+	scheduler       schedulerclient.SchedulerClient
+	scheduleTimeout time.Duration
+	pieceManager    PieceManager
+	storageManager  storage.Manager
 
 	runningPeerTasks sync.Map
 }
 
-func NewPeerTaskManager(host *scheduler.PeerHost, pieceManager PieceManager, storageManager storage.Manager, schedulerClient schedulerclient.SchedulerClient) (PeerTaskManager, error) {
+func NewPeerTaskManager(
+	host *scheduler.PeerHost,
+	pieceManager PieceManager,
+	storageManager storage.Manager,
+	schedulerClient schedulerclient.SchedulerClient,
+	scheduleTimeout time.Duration) (PeerTaskManager, error) {
+
 	ptm := &peerTaskManager{
 		host:             host,
 		runningPeerTasks: sync.Map{},
 		pieceManager:     pieceManager,
 		storageManager:   storageManager,
 		scheduler:        schedulerClient,
+		scheduleTimeout:  scheduleTimeout,
 	}
 	return ptm, nil
 }
 
 func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *PeerTaskProgress, error) {
 	// TODO ensure scheduler is ok first
-	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, &req.PeerTaskRequest)
+	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, &req.PeerTaskRequest, ptm.scheduleTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +112,7 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 }
 
 func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (reader io.Reader, attribute map[string]string, err error) {
-	pt, err := NewStreamPeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, req)
+	pt, err := NewStreamPeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, req, ptm.scheduleTimeout)
 	if err != nil {
 		return nil, nil, err
 	}

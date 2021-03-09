@@ -13,10 +13,9 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/client/daemon/test/mock/source"
-
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/test"
+	"d7y.io/dragonfly/v2/client/daemon/test/mock/source"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -95,7 +94,8 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 				return int32(pieceSize)
 			},
 		},
-		req)
+		req,
+		time.Second)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
 		ctx:   ctx,
@@ -188,7 +188,8 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 				return int32(pieceSize)
 			},
 		},
-		req)
+		req,
+		time.Second)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
 		ctx:   ctx,
