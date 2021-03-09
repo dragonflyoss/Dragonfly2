@@ -17,9 +17,6 @@
 package main
 
 import (
-	"os"
-
-	"d7y.io/dragonfly/v2/pkg/basic/env"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -70,8 +67,7 @@ func (hs *helloSeeder) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*
 }
 
 func main() {
-	os.Setenv(env.ActiveProfile, "local")
-	logcore.InitCdnSystem()
+	logcore.InitCdnSystem(false)
 	err := rpc.StartTcpServer(12345, 12345, &helloSeeder{})
 
 	if err != nil {

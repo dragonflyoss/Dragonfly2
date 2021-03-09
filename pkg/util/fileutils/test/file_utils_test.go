@@ -25,8 +25,6 @@ import (
 	"testing"
 
 	"d7y.io/dragonfly/v2/pkg/basic"
-	"d7y.io/dragonfly/v2/pkg/basic/env"
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/filerw"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
@@ -50,9 +48,6 @@ func Test(t *testing.T) {
 }
 
 func (s *FileUtilsTestSuite) SetupSuite() {
-	_ = os.Setenv(env.ActiveProfile, "local")
-	_ = logcore.InitDfget()
-
 	s.workDir, _ = ioutil.TempDir(basic.TmpDir, "DF-FileUtilsTestSuite-")
 	s.username = basic.Username
 }

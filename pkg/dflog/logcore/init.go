@@ -23,22 +23,26 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dflog"
 )
 
-func InitManager() error {
-	logDir := basic.HomeDir + "/logs/dragonfly/"
+func InitManager(console bool) error {
+	if console {
+		return nil
+	}
 
-	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
+	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
+
+	if coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(logDir+"gc.log", 300, 7, 0, false, false); err != nil {
+	if gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGcLogger(gcLogger.Sugar())
@@ -47,28 +51,32 @@ func InitManager() error {
 	return nil
 }
 
-func InitScheduler() error {
-	logDir := basic.HomeDir + "/logs/dragonfly/"
+func InitScheduler(console bool) error {
+	if console {
+		return nil
+	}
 
-	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
+	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
+
+	if coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(logDir+"gc.log", 300, 7, 0, false, false); err != nil {
+	if gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGcLogger(gcLogger.Sugar())
 	}
 
-	if statPeerLogger, err := CreateLogger(logDir+"stat/peer.log", 300, 30, 0, true, true); err != nil {
+	if statPeerLogger, err := CreateLogger(path.Join(logDir, "stat/peer.log"), 300, 30, 0, true, true); err != nil {
 		return err
 	} else {
 		logger.SetStatPeerLogger(statPeerLogger)
@@ -77,28 +85,32 @@ func InitScheduler() error {
 	return nil
 }
 
-func InitCdnSystem() error {
-	logDir := basic.HomeDir + "/logs/dragonfly/"
+func InitCdnSystem(console bool) error {
+	if console {
+		return nil
+	}
 
-	if coreLogger, err := CreateLogger(logDir+CoreLogFileName, 300, 30, 0, false, false); err != nil {
+	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
+
+	if coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(logDir+GrpcLogFileName, 300, 30, 0, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(logDir+"gc.log", 300, 7, 0, false, false); err != nil {
+	if gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGcLogger(gcLogger.Sugar())
 	}
 
-	if statSeedLogger, err := CreateLogger(logDir+"stat/seed.log", 300, 30, 0, true, true); err != nil {
+	if statSeedLogger, err := CreateLogger(path.Join(logDir, "stat/seed.log"), 300, 30, 0, true, true); err != nil {
 		return err
 	} else {
 		logger.SetStatSeedLogger(statSeedLogger)
@@ -107,7 +119,11 @@ func InitCdnSystem() error {
 	return nil
 }
 
-func InitDaemon() error {
+func InitDaemon(console bool) error {
+	if console {
+		return nil
+	}
+
 	if coreLogger, err := CreateLogger(path.Join(clientLogDir, CoreLogFileName), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
@@ -129,7 +145,11 @@ func InitDaemon() error {
 	return nil
 }
 
-func InitDfget() error {
+func InitDfget(console bool) error {
+	if console {
+		return nil
+	}
+
 	if dfgetLogger, err := CreateLogger(path.Join(clientLogDir, "dfget.log"), 300, -1, -1, false, false); err != nil {
 		return err
 	} else {

@@ -22,12 +22,12 @@ import (
 	"net"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var (
@@ -35,15 +35,16 @@ var (
 )
 
 var flagDaemonOpt = config.PeerHostOption{
-	DataDir:     "",
-	WorkHome:    "",
-	AliveTime:   clientutil.Duration{Duration: 5 * time.Minute},
-	GCInterval:  clientutil.Duration{Duration: 1 * time.Minute},
-	Schedulers:  nil,
-	PidFile:     "/var/run/dfdaemon.pid",
-	LockFile:    "/var/run/dfdaemon.lock",
-	KeepStorage: false,
-	Verbose:     false,
+	DataDir:         "",
+	WorkHome:        "",
+	AliveTime:       clientutil.Duration{Duration: 5 * time.Minute},
+	GCInterval:      clientutil.Duration{Duration: 1 * time.Minute},
+	Schedulers:      nil,
+	ScheduleTimeout: clientutil.Duration{Duration: 3 * time.Second},
+	PidFile:         "/var/run/dfdaemon.pid",
+	LockFile:        "/var/run/dfdaemon.lock",
+	KeepStorage:     false,
+	Verbose:         true,
 	Host: config.HostOption{
 		ListenIP:       "0.0.0.0",
 		AdvertiseIP:    iputils.HostIp,

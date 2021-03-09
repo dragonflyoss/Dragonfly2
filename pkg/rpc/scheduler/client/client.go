@@ -126,9 +126,6 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string,
 		return nil, nil, err
 	}
 
-	// trigger scheduling
-	prc <- scheduler.NewZeroPieceResult(taskId, ptr.PeerId)
-
 	go send(pps, prc, ppc)
 
 	go receive(pps, ppc)

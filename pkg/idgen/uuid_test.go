@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-package rpc
+package idgen
 
-type ClientMgr interface {
-	GetClient(url string) Client
-}
+import (
+	"testing"
 
-type Client struct {
+	"github.com/stretchr/testify/assert"
+)
 
+func TestUUIDString(t *testing.T) {
+	uuid1 := UUIDString()
+	uuid2 := UUIDString()
+	assert.False(t, uuid1 == uuid2)
 }

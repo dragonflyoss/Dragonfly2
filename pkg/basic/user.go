@@ -21,38 +21,40 @@ import (
 	"os/user"
 	"strings"
 
-	"d7y.io/dragonfly/v2/pkg/util/assertutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 var (
-	HomeDir string
-	TmpDir  string
-	Username    string
+	HomeDir  string
+	TmpDir   string
+	Username string
 )
 
 func init() {
 	u, err := user.Current()
-
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
+
+	Username = u.Username
 
 	HomeDir = u.HomeDir
-	Username = u.Username
-	if len(HomeDir) > 1 {
-		HomeDir = strings.TrimRight(HomeDir, "/")
-		if HomeDir == "" {
-			HomeDir = "/"
-		}
+	HomeDir = strings.TrimSpace(HomeDir)
+	if stringutils.IsBlank(HomeDir) {
+		panic("home dir is empty")
 	}
-	assertutils.PAssert(len(HomeDir) > 0, "home dir is empty")
+	HomeDir = strings.TrimRight(HomeDir, "/")
+	if stringutils.IsBlank(HomeDir) {
+		HomeDir = "/"
+	}
 
 	TmpDir = os.TempDir()
-	if TmpDir == "" {
+	TmpDir = strings.TrimSpace(TmpDir)
+	if stringutils.IsBlank(TmpDir) {
 		TmpDir = "/tmp"
 	}
-
-	if len(TmpDir) > 1 {
-		TmpDir = strings.TrimRight(TmpDir, "/")
+	TmpDir = strings.TrimRight(TmpDir, "/")
+	if stringutils.IsBlank(TmpDir) {
+		TmpDir = "/"
 	}
 }

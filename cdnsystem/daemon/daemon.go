@@ -22,7 +22,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/server"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
 	"os"
 )
 
@@ -38,7 +37,7 @@ func New(cfg *config.Config) (*Daemon, error) {
 	if err := plugins.Initialize(cfg); err != nil {
 		return nil, err
 	}
-	s, err := server.New(cfg, prometheus.DefaultRegisterer)
+	s, err := server.New(cfg)
 	if err != nil {
 		return nil, err
 	}

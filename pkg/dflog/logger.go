@@ -31,12 +31,10 @@ var (
 	StatSeedLogger *zap.Logger
 )
 
-type SugaredLoggerOnWith struct {
-	withArgs []interface{}
-}
-
 func init() {
-	log, err := zap.NewDevelopment(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
+	config := zap.NewDevelopmentConfig()
+	config.Level = zap.NewAtomicLevel()
+	log, err := config.Build(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
 	if err == nil {
 		sugar := log.Sugar()
 		SetCoreLogger(sugar)
@@ -66,6 +64,10 @@ func SetStatSeedLogger(log *zap.Logger) {
 func SetGrpcLogger(log *zap.SugaredLogger) {
 	GrpcLogger = log
 	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
+}
+
+type SugaredLoggerOnWith struct {
+	withArgs []interface{}
 }
 
 func With(args ...interface{}) *SugaredLoggerOnWith {
@@ -114,12 +116,20 @@ func Infof(template string, args ...interface{}) {
 	CoreLogger.Infof(template, args...)
 }
 
+func Info(args ...interface{}) {
+	CoreLogger.Info(args...)
+}
+
 func Warnf(template string, args ...interface{}) {
 	CoreLogger.Warnf(template, args...)
 }
 
 func Errorf(template string, args ...interface{}) {
 	CoreLogger.Errorf(template, args...)
+}
+
+func Error(args ...interface{}) {
+	CoreLogger.Error(args...)
 }
 
 func Debugf(template string, args ...interface{}) {
@@ -162,6 +172,6 @@ func (z *zapGrpc) Fatalln(args ...interface{}) {
 	z.SugaredLogger.Fatal(args...)
 }
 
-func (z *zapGrpc) V(l int) bool {
-	return true
+func (z *zapGrpc) V(level int) bool {
+	return level > 0
 }

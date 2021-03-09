@@ -18,36 +18,32 @@ package dfcodes
 
 import "d7y.io/dragonfly/v2/pkg/rpc/base"
 
-// rpc response code
+// rpc code
 const (
-	// no problem 200-299
+	// success code 200-299
 	Success base.Code = 200
 
-	ErrInvalidValue
-	// client processing error 400-499
-	BadRequest       base.Code = 400
-	PeerTaskNotFound base.Code = 404
+	// common response error 1000-1999
+	ResourceLacked   base.Code = 1000 // client can be migrated to another scheduler
+	BadRequest       base.Code = 1400
+	PeerTaskNotFound base.Code = 1404
+	UnknownError     base.Code = 1500
+	RequestTimeOut   base.Code = 1504
 
-	// scheduler processing error 5000-5999
-	SchedulerError        base.Code = 5000
-	PeerTaskNotRegistered base.Code = 5001
-	// client can be migrated to another scheduler
-	ResourceLacked base.Code = 5002
-	// client should try to download from source
-	BackSource base.Code = 5003
-	// get piece task from other peer error
-	GetPieceTasksError base.Code = 5004
+	// client response error 4000-4999
+	ClientError                base.Code = 4000
+	ClientPieceTaskRequestFail base.Code = 4001 // get piece task from other peer error
 
-	// cdnsystem processing error 6000-6999
+	// scheduler response error 5000-5999
+	SchedError          base.Code = 5000
+	SchedNeedBackSource base.Code = 5001 // client should try to download from source
+
+	// cdnsystem response error 6000-6999
 	CdnError            base.Code = 6000
 	CdnTaskRegistryFail base.Code = 6001
+	CdnTaskStatusError  base.Code = 6002
 	CdnTaskNotFound     base.Code = 6404
 
-	// manager processing error 7000-7999
-	ManagerError base.Code = 7000
-
-	// shared error 1000-1099
-	UnknownError    base.Code = 1000
-	InvalidArgument base.Code = 1001
-	RequestTimeOut  base.Code = 1002
+	// manager response error 7000-7999
+	MgrError base.Code = 7000
 )

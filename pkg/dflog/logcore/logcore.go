@@ -21,9 +21,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"d7y.io/dragonfly/v2/pkg/basic/env"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/filerw"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -38,11 +38,6 @@ var coreLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)
 var grpcLevel = zap.NewAtomicLevelAt(zapcore.WarnLevel)
 
 func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, compress bool, stats bool) (*zap.Logger, error) {
-	if os.Getenv(env.ActiveProfile) == "local" {
-		log, _ := zap.NewDevelopment(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
-		return log, nil
-	}
-
 	var syncer zapcore.WriteSyncer
 
 	if maxAge < 0 || maxBackups < 0 {
@@ -50,7 +45,7 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 			return nil, err
 		}
 		fileInfo, err := os.Stat(filePath)
-		if err == nil && fileInfo.Size() >= int64(maxSize*1024*1024) {
+		if err == nil && fileInfo.Size() >= int64(maxSize)*fsize.MB.ToNumber() {
 			_, _ = filerw.CopyFile(filePath, filePath+".old")
 			_ = filerw.CleanFile(filePath)
 		}

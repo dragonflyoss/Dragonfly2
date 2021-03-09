@@ -16,6 +16,10 @@
 
 package logcore
 
-import "d7y.io/dragonfly/v2/pkg/basic"
+import (
+	"path"
 
-var clientLogDir = basic.HomeDir + "/logs/dragonfly/"
+	"d7y.io/dragonfly/v2/pkg/basic"
+)
+
+var clientLogDir = path.Join(basic.HomeDir, "logs/dragonfly")

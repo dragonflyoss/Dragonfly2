@@ -25,36 +25,25 @@ import (
 
 type NetworkType string
 
-func (n *NetworkType) UnmarshalJSON(b []byte) error {
-	var t string
-	err := json.Unmarshal(b, &t)
-	if err != nil {
-		return err
-	}
-
-	*n = NetworkType(t)
-	return nil
-}
-
-func (n *NetworkType) UnmarshalYAML(node *yaml.Node) error {
-	var t string
-	switch node.Kind {
-	case yaml.ScalarNode:
-		if err := node.Decode(&t); err != nil {
-			return err
-		}
-	default:
-		return errors.New("invalid filestring")
-	}
-
-	*n = NetworkType(t)
-	return nil
-}
-
 const (
 	TCP  NetworkType = "tcp"
 	UNIX NetworkType = "unix"
 )
+
+type NetAddr struct {
+	Type NetworkType `json:"type" yaml:"type"`
+	// see https://github.com/grpc/grpc/blob/master/doc/naming.md
+	Addr string `json:"addr" yaml:"addr"`
+}
+
+func (n NetAddr) GetEndpoint() string {
+	switch n.Type {
+	case UNIX:
+		return "unix://" + n.Addr
+	default:
+		return "dns:///" + n.Addr
+	}
+}
 
 func (n *NetAddr) UnmarshalJSON(b []byte) error {
 	var v interface{}
@@ -73,7 +62,7 @@ func (n *NetAddr) UnmarshalJSON(b []byte) error {
 		}
 		return nil
 	default:
-		return errors.New("invalid proxy")
+		return errors.New("invalid net addr")
 	}
 }
 
@@ -113,7 +102,7 @@ func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
 		}
 		return nil
 	default:
-		return errors.New("invalid proxy")
+		return errors.New("invalid net addr")
 	}
 }
 
@@ -131,18 +120,4 @@ func (n *NetAddr) unmarshal(unmarshal func(in []byte, out interface{}) (err erro
 	n.Addr = nt.Addr
 
 	return nil
-}
-
-type NetAddr struct {
-	Type NetworkType `json:"type" yaml:"type"`
-	Addr string      `json:"addr" yaml:"addr"` // see https://github.com/grpc/grpc/blob/master/doc/naming.md
-}
-
-func (n *NetAddr) GetEndpoint() string {
-	switch n.Type {
-	case UNIX:
-		return "unix://" + n.Addr
-	default:
-		return "dns:///" + n.Addr
-	}
 }

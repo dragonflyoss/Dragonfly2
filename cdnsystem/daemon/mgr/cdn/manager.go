@@ -31,41 +31,16 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/prometrics"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 func init() {
 	// Ensure that Manager implements the CDNMgr interface
 	var manager *Manager = nil
 	var _ mgr.CDNMgr = manager
-}
-
-type metrics struct {
-	cdnCacheHitCount     *prometheus.CounterVec
-	cdnDownloadCount     *prometheus.CounterVec
-	cdnDownloadBytes     *prometheus.CounterVec
-	cdnDownloadFailCount *prometheus.CounterVec
-}
-
-func newMetrics(register prometheus.Registerer) *metrics {
-	return &metrics{
-		cdnCacheHitCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_cache_hit_total",
-			"Total times of hitting cdn cache", []string{}, register),
-
-		cdnDownloadCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_download_total",
-			"Total times of cdn download", []string{}, register),
-
-		cdnDownloadBytes: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_download_size_bytes_total",
-			"total file size of cdn downloaded from source in bytes", []string{}, register,
-		),
-		cdnDownloadFailCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_download_failed_total",
-			"Total failure times of cdn download", []string{}, register),
-	}
 }
 
 // Manager is an implementation of the interface of CDNMgr.
@@ -80,14 +55,13 @@ type Manager struct {
 	detector        *cacheDetector
 	resourceClient  source.ResourceClient
 	writer          *cacheWriter
-	metrics         *metrics
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient) (mgr.CDNMgr, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
-	publisher := progress.NewManager(register)
+	publisher := progress.NewManager()
 	cdnReporter := newReporter(publisher)
 	return &Manager{
 		cfg:             cfg,
@@ -100,7 +74,6 @@ func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient sour
 		detector:        newCacheDetector(cacheStore, metaDataManager, resourceClient),
 		resourceClient:  resourceClient,
 		writer:          newCacheWriter(cacheStore, cdnReporter, metaDataManager),
-		metrics:         newMetrics(register),
 	}, nil
 }
 
@@ -131,16 +104,13 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// full cache
 	if detectResult.breakNum == -1 {
 		logger.WithTaskID(task.TaskID).Infof("cache full hit on local")
-		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
 		seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceRealMd5, detectResult.fileMetaData.PieceMd5Sign, detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength)
 		return seedTask, nil
 	}
 	// third: start to download the source file
 	resp, err := cm.download(task, detectResult)
-	cm.metrics.cdnDownloadCount.WithLabelValues().Inc()
 	// download fail
 	if err != nil {
-		cm.metrics.cdnDownloadFailCount.WithLabelValues().Inc()
 		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusSOURCEERROR)
 		return seedTask, err
 	}
@@ -160,8 +130,6 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
 		return seedTask, err
 	}
-	// back source length
-	cm.metrics.cdnDownloadBytes.WithLabelValues().Add(float64(downloadMetadata.backSourceLength))
 
 	//todo log
 	// server.StatSeedFinish()
