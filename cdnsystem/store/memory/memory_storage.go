@@ -69,6 +69,10 @@ type memoryStorage struct {
 	BaseDir string `yaml:"baseDir"`
 }
 
+func (ms *memoryStorage) GetGcConfig(ctx context.Context) *store.GcConfig {
+	panic("implement me")
+}
+
 func (ms *memoryStorage) GetTotalSpace(ctx context.Context) (fileutils.Fsize, error) {
 	panic("implement me")
 }

@@ -40,7 +40,6 @@ func Test(t *testing.T) {
 
 type StoreSuite struct {
 	workHome string
-	mgr      *Manager
 	suite.Suite
 }
 
@@ -51,12 +50,12 @@ func (s *StoreSuite) SetupSuite() {
 		config.StoragePlugin: {
 			&config.PluginProperties{
 				Name:    disk.StorageDriver,
-				Enabled: true,
+				Enable: true,
 				Config:  "baseDir: " + filepath.Join(s.workHome, "repo"),
 			},
 			&config.PluginProperties{
 				Name:    memory.StorageDriver,
-				Enabled: true,
+				Enable: true,
 				Config:  "baseDir: " + filepath.Join(s.workHome, "repo"),
 			},
 		},
@@ -65,9 +64,6 @@ func (s *StoreSuite) SetupSuite() {
 		Plugins: pluginProps,
 	}
 	plugins.Initialize(cfg)
-	mgr, err := NewManager(cfg)
-	s.Nil(err)
-	s.NotNil(mgr)
 }
 
 func (s *StoreSuite) TearDownSuite() {
@@ -153,44 +149,13 @@ func TestManager_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sm := &Manager{
-				cfg:            tt.fields.cfg,
-				defaultStorage: tt.fields.defaultStorage,
-				mutex:          tt.fields.mutex,
-			}
-			got, err := sm.Get(tt.args.name)
+			got, err := Get(tt.args.name)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Get() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestNewManager(t *testing.T) {
-	type args struct {
-		cfg *config.Config
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *Manager
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewManager(tt.args.cfg)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewManager() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewManager() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -338,7 +303,7 @@ func TestStore_GetAvailSpace(t *testing.T) {
 				config:     tt.fields.config,
 				driver:     tt.fields.driver,
 			}
-			got, err := s.GetAvailSpace(tt.args.ctx, tt.args.raw)
+			got, err := s.GetAvailSpace(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetAvailSpace() error = %v, wantErr %v", err, tt.wantErr)
 				return

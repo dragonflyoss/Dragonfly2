@@ -40,7 +40,7 @@ func (s *CacheWriterTestSuite) SetupSuite() {
 	s.workHome, _ = ioutil.TempDir("/tmp", "cdn-CacheWriterTestSuite-")
 	s.config = "baseDir: " + s.workHome
 	sb := storage.Get("disk", true)
-	storage, _ := sb.Build(nil)
+	storage, _ := sb.Build()
 	s.writer = newCacheWriter(storage, nil, nil)
 }
 
