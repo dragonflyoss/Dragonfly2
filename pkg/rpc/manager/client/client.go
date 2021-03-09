@@ -23,154 +23,283 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"errors"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"google.golang.org/grpc"
 	"sync"
 	"time"
 )
 
-func GetClientByAddr(addrs []dfnet.NetAddr) (ManagerClient, error) {
-	// user specify
-	return newManagerClient(addrs)
-}
-
-func newManagerClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerClient, error) {
-	if len(addrs) == 0 {
-		return nil, errors.New("address list of cdn is empty")
-	}
-	return &managerClient{
-		Connection: rpc.NewConnection(addrs, opts...),
-	}, nil
-}
-
 // see manager.ManagerClient
 type ManagerClient interface {
-	GetSchedulers(ctx context.Context, req *manager.NavigatorRequest, opts ...grpc.CallOption) (*manager.SchedulerNodes, error)
-	// only call once
-	KeepAlive(ctx context.Context, req *KeepAliveRequest, opts ...grpc.CallOption) error
-	// GetLatestConfig return latest management config and cdn host map with host name key
-	GetLatestConfig() (*manager.SchedulerConfig, map[string]*manager.ServerInfo, *manager.CdnConfig)
-}
+	AddConfig(ctx context.Context, req *manager.AddConfigRequest, opts ...grpc.CallOption) (rep *manager.AddConfigResponse, err error)
+	DeleteConfig(ctx context.Context, req *manager.DeleteConfigRequest, opts ...grpc.CallOption) (rep *manager.DeleteConfigResponse, err error)
+	UpdateConfig(ctx context.Context, req *manager.UpdateConfigRequest, opts ...grpc.CallOption) (rep *manager.UpdateConfigResponse, err error)
+	GetConfig(ctx context.Context, req *manager.GetConfigRequest, opts ...grpc.CallOption) (rep *manager.GetConfigResponse, err error)
+	ListConfigs(ctx context.Context, req *manager.ListConfigsRequest, opts ...grpc.CallOption) (rep *manager.ListConfigsResponse, err error)
 
-// it is mutually exclusive between IsCdn and IsScheduler
-type KeepAliveRequest struct {
-	IsCdn       bool
-	IsScheduler bool
-	// keep alive interval(second), default is 3s
-	Interval time.Duration
+	KeepAlive(ctx context.Context, req *manager.KeepAliveRequest, opts ...grpc.CallOption) (rep *manager.KeepAliveResponse, err error)
+	ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest, opts ...grpc.CallOption) (rep *manager.ListSchedulersResponse, err error)
+
+	NewKeepAliveRoutine(object string, objType manager.ObjType, intervalSecond uint32) (chan struct{}, error)
 }
 
 type managerClient struct {
 	*rpc.Connection
-	Client manager.ManagerClient
 
 	schedulerConfig *manager.SchedulerConfig
 	cdnConfig       *manager.CdnConfig
 	cdns            map[string]*manager.ServerInfo
 
-	rwMutex   sync.RWMutex
+	mu        sync.Mutex
 	ch        chan struct{}
 	closeDone bool
 }
 
-func (mc *managerClient) GetSchedulers(ctx context.Context, req *manager.NavigatorRequest, opts ...grpc.CallOption) (sns *manager.SchedulerNodes, err error) {
+func (mc *managerClient) getManagerClient(key string) (manager.ManagerClient, error) {
+	if clientConn, err := mc.Connection.GetClientConn(key); err != nil {
+		return nil, err
+	} else {
+		return manager.NewManagerClient(clientConn), nil
+	}
+}
+
+func CreateClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerClient, error) {
+	if len(addrs) == 0 {
+		return nil, errors.New("address list of cdn is empty")
+	}
+	return &managerClient{
+		Connection: rpc.NewConnection(addrs, opts...),
+		cdns:       make(map[string]*manager.ServerInfo),
+		ch:         make(chan struct{}),
+		closeDone:  false,
+	}, nil
+}
+
+func (mc *managerClient) AddConfig(ctx context.Context, req *manager.AddConfigRequest, opts ...grpc.CallOption) (rep *manager.AddConfigResponse, err error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		return mc.Client.GetSchedulers(ctx, req, opts...)
+		if client, err := mc.getManagerClient(req.GetConfig().GetObject()); err != nil {
+			return nil, err
+		} else {
+			return client.AddConfig(ctx, req, opts...)
+		}
 	}, 0.5, 5.0, 5, nil)
 
-	if err == nil {
-		sns = res.(*manager.SchedulerNodes)
+	if err != nil {
+		logger.Errorf("add config: object %s, objType %s",
+			req.Config.GetObject(),
+			req.Config.GetObjType().String())
+	} else {
+		rep = res.(*manager.AddConfigResponse)
+		logger.Infof("add config: object %s, objType %s, id %s, state %s",
+			req.Config.GetObject(),
+			req.Config.GetObjType().String(),
+			rep.GetId(),
+			rep.GetState().String())
 	}
 
 	return
 }
 
-func (mc *managerClient) KeepAlive(ctx context.Context, req *KeepAliveRequest, opts ...grpc.CallOption) error {
-	if (req.IsCdn && req.IsScheduler) || (!req.IsCdn && !req.IsScheduler) {
-		return errors.New("IsCdn and IsScheduler must be exclusive")
-	}
+func (mc *managerClient) DeleteConfig(ctx context.Context, req *manager.DeleteConfigRequest, opts ...grpc.CallOption) (rep *manager.DeleteConfigResponse, err error) {
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		if client, err := mc.getManagerClient(req.GetId()); err != nil {
+			return nil, err
+		} else {
+			return client.DeleteConfig(ctx, req, opts...)
+		}
+	}, 0.5, 5.0, 5, nil)
 
-	if req.Interval <= 0 {
-		req.Interval = 3 * time.Second
-	} else if req.Interval > 30*time.Second {
-		req.Interval = 30 * time.Second
-	}
-
-	hr := &manager.HeartRequest{
-		HostName: iputils.HostName,
-	}
-	if req.IsCdn {
-		hr.From = &manager.HeartRequest_Cdn{Cdn: true}
+	if err != nil {
+		logger.Errorf("delete config: id %s", req.GetId())
 	} else {
-		hr.From = &manager.HeartRequest_Scheduler{Scheduler: true}
+		rep = res.(*manager.DeleteConfigResponse)
+		logger.Infof("delete config: id %s, state %s",
+			req.GetId(),
+			rep.GetState().String())
 	}
 
+	return
+}
+
+func (mc *managerClient) UpdateConfig(ctx context.Context, req *manager.UpdateConfigRequest, opts ...grpc.CallOption) (rep *manager.UpdateConfigResponse, err error) {
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		if client, err := mc.getManagerClient(req.GetId()); err != nil {
+			return nil, err
+		} else {
+			return client.UpdateConfig(ctx, req, opts...)
+		}
+	}, 0.5, 5.0, 5, nil)
+
+	if err != nil {
+		logger.Errorf("update config: object %s, objType %s, id %s",
+			req.Config.GetObject(),
+			req.Config.GetObjType().String(),
+			req.GetId())
+	} else {
+		rep = res.(*manager.UpdateConfigResponse)
+		logger.Infof("update config: object %s, objType %s, id %s, state %s",
+			req.Config.GetObject(),
+			req.Config.GetObjType().String(),
+			req.GetId(),
+			rep.GetState().String())
+	}
+
+	return
+}
+
+func (mc *managerClient) GetConfig(ctx context.Context, req *manager.GetConfigRequest, opts ...grpc.CallOption) (rep *manager.GetConfigResponse, err error) {
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		if client, err := mc.getManagerClient(req.GetId()); err != nil {
+			return nil, err
+		} else {
+			return client.GetConfig(ctx, req, opts...)
+		}
+	}, 0.5, 5.0, 5, nil)
+
+	if err != nil {
+		logger.Errorf("get config: id %s", req.GetId())
+	} else {
+		rep = res.(*manager.GetConfigResponse)
+		logger.Infof("get config: object %s, objType %s, id %s, state %s",
+			rep.Config.GetObject(),
+			rep.Config.GetObjType().String(),
+			req.GetId(),
+			rep.GetState().String())
+	}
+
+	return
+}
+
+func (mc *managerClient) ListConfigs(ctx context.Context, req *manager.ListConfigsRequest, opts ...grpc.CallOption) (rep *manager.ListConfigsResponse, err error) {
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		if client, err := mc.getManagerClient(req.GetObject()); err != nil {
+			return nil, err
+		} else {
+			return client.ListConfigs(ctx, req, opts...)
+		}
+	}, 0.5, 5.0, 5, nil)
+
+	if err != nil {
+		logger.Errorf("list configs: object %s", req.GetObject())
+	} else {
+		rep = res.(*manager.ListConfigsResponse)
+		logger.Infof("list configs: object %s, state %s",
+			req.GetObject(),
+			rep.GetState().String())
+	}
+
+	return
+}
+
+func (mc *managerClient) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest, opts ...grpc.CallOption) (rep *manager.KeepAliveResponse, err error) {
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		if client, err := mc.getManagerClient(req.GetObject()); err != nil {
+			return nil, err
+		} else {
+			return client.KeepAlive(ctx, req, opts...)
+		}
+	}, 0.5, 5.0, 5, nil)
+
+	if err != nil {
+		logger.Errorf("keepalive: object %s, objType %s",
+			req.GetObject(),
+			req.GetObjType().String())
+	} else {
+		rep = res.(*manager.KeepAliveResponse)
+		logger.Infof("keepalive: object %s, objType %s, version %s, state %s",
+			req.GetObject(),
+			req.GetObjType().String(),
+			rep.Config.GetVersion(),
+			rep.GetState().String())
+	}
+
+	return
+}
+
+func (mc *managerClient) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest, opts ...grpc.CallOption) (rep *manager.ListSchedulersResponse, err error) {
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		if client, err := mc.getManagerClient(req.GetHostName()); err != nil {
+			return nil, err
+		} else {
+			return client.ListSchedulers(ctx, req, opts...)
+		}
+	}, 0.5, 5.0, 5, nil)
+
+	if err != nil {
+		logger.Errorf("list configs: ip %s, host %s, hostTag",
+			req.GetIp(),
+			req.GetHostName(),
+			req.GetHostTag())
+	} else {
+		rep = res.(*manager.ListSchedulersResponse)
+		logger.Infof("list configs: ip %s, host %s, hostTag",
+			req.GetIp(),
+			req.GetHostName(),
+			req.GetHostTag())
+	}
+
+	return
+}
+
+func (mc *managerClient) NewKeepAliveRoutine(object string, objType manager.ObjType, intervalSecond uint32) (chan struct{}, error) {
+	if (objType != manager.ObjType_Scheduler) && (objType != manager.ObjType_Cdn) {
+		return nil, errors.New("")
+	}
+
+	if intervalSecond == 0 {
+		return nil, errors.New("")
+	}
+
+	close := make(chan struct{})
+	ticker := time.NewTicker(time.Duration(intervalSecond) * time.Second)
 	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				logger.Errorf("keep alive exit:%v", err)
-			}
-		}()
-
-		logger.Infof("trigger keep alive per %ds", req.Interval)
-
 		for {
-			config, err := mc.Client.KeepAlive(ctx, hr, opts...)
-			if err == nil && config.State.Success {
-				fillConfig(mc, config)
-			} else {
-				if err == nil {
-					err = errors.New(config.State.Msg)
+			select {
+			case <-close:
+				return
+			case <-ticker.C:
+				rep, err := mc.KeepAlive(context.TODO(), &manager.KeepAliveRequest{
+					Object:  object,
+					ObjType: objType,
+				})
+
+				if err != nil {
+					logger.Errorf("keepalive error:%+v", err)
+					continue
 				}
 
-				logger.Errorf("do keep alive error:%v", err)
+				if rep.GetState().Success {
+					mc.fillBackConfig(rep.GetConfig())
+				} else {
+					err = errors.New(rep.GetState().GetMsg())
+					logger.Errorf("keepalive error:%+v", err)
+				}
 			}
-
-			time.Sleep(req.Interval)
 		}
 	}()
 
-	return nil
+	return close, nil
 }
 
-func (mc *managerClient) GetLatestConfig() (*manager.SchedulerConfig, map[string]*manager.ServerInfo, *manager.CdnConfig) {
-	if mc.schedulerConfig == nil && mc.cdnConfig == nil {
-		<-mc.ch
-	}
+func (mc *managerClient) fillBackConfig(config *manager.Config) {
+	mc.mu.Lock()
+	defer mc.mu.Unlock()
 
-	mc.rwMutex.RLock()
-	defer mc.rwMutex.RUnlock()
-	return mc.schedulerConfig, mc.cdns, mc.cdnConfig
-}
-
-func fillConfig(mc *managerClient, config *manager.ManagementConfig) {
-	mc.rwMutex.Lock()
-	defer mc.rwMutex.Unlock()
-
-	switch v := config.Config.(type) {
-	case *manager.ManagementConfig_SchedulerConfig:
-		if v.SchedulerConfig != nil {
-			mc.schedulerConfig = v.SchedulerConfig
+	switch config.ObjType {
+	case manager.ObjType_Scheduler:
+		if config.GetSchedulerConfig() != nil {
+			mc.schedulerConfig = config.GetSchedulerConfig()
 			if mc.schedulerConfig.CdnHosts != nil {
-				cdns := make(map[string]*manager.ServerInfo)
-				for _, one := range mc.schedulerConfig.CdnHosts {
-					cdns[one.HostInfo.HostName] = one
+				mc.cdns = make(map[string]*manager.ServerInfo)
+				for _, h := range mc.schedulerConfig.CdnHosts {
+					mc.cdns[h.HostInfo.HostName] = h
 				}
-				mc.cdns = cdns
 			}
 		}
-	case *manager.ManagementConfig_CdnConfig:
-		if v.CdnConfig != nil {
-			mc.cdnConfig = v.CdnConfig
+	case manager.ObjType_Cdn:
+		if config.GetCdnConfig() != nil {
+			mc.cdnConfig = config.GetCdnConfig()
 		}
 	default:
 		break
-	}
-
-	if mc.schedulerConfig != nil || mc.cdnConfig != nil {
-		if !mc.closeDone {
-			close(mc.ch)
-			mc.closeDone = true
-		}
 	}
 }
