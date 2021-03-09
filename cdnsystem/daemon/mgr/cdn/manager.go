@@ -31,7 +31,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/prometrics"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -50,22 +49,6 @@ type metrics struct {
 	cdnDownloadCount     *prometheus.CounterVec
 	cdnDownloadBytes     *prometheus.CounterVec
 	cdnDownloadFailCount *prometheus.CounterVec
-}
-
-func newMetrics(register prometheus.Registerer) *metrics {
-	return &metrics{
-		cdnCacheHitCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_cache_hit_total",
-			"Total times of hitting cdn cache", []string{}, register),
-
-		cdnDownloadCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_download_total",
-			"Total times of cdn download", []string{}, register),
-
-		cdnDownloadBytes: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_download_size_bytes_total",
-			"total file size of cdn downloaded from source in bytes", []string{}, register,
-		),
-		cdnDownloadFailCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_download_failed_total",
-			"Total failure times of cdn download", []string{}, register),
-	}
 }
 
 // Manager is an implementation of the interface of CDNMgr.
@@ -100,7 +83,6 @@ func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient sour
 		detector:        newCacheDetector(cacheStore, metaDataManager, resourceClient),
 		resourceClient:  resourceClient,
 		writer:          newCacheWriter(cacheStore, cdnReporter, metaDataManager),
-		metrics:         newMetrics(register),
 	}, nil
 }
 

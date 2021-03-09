@@ -26,7 +26,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/prometrics"
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
@@ -46,22 +45,6 @@ type metrics struct {
 	triggerCdnFailCount *prometheus.CounterVec
 }
 
-func newMetrics(register prometheus.Registerer) *metrics {
-	return &metrics{
-		tasks: prometrics.NewGauge(config.SubsystemCdnSystem, "tasks",
-			"Current status of cdn tasks", []string{"taskStatus"}, register),
-
-		tasksRegisterCount: prometrics.NewCounter(config.SubsystemCdnSystem, "seed_tasks_registered_total",
-			"Total times of registering tasks", []string{}, register),
-
-		triggerCdnCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_trigger_total",
-			"Total times of triggering cdn", []string{}, register),
-
-		triggerCdnFailCount: prometrics.NewCounter(config.SubsystemCdnSystem, "cdn_trigger_failed_total",
-			"Total failure times of triggering cdn", []string{}, register),
-	}
-}
-
 // Manager is an implementation of the interface of TaskMgr.
 type Manager struct {
 	cfg                     *config.Config
@@ -77,7 +60,6 @@ type Manager struct {
 func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
 	return &Manager{
 		cfg:                     cfg,
-		metrics:                 newMetrics(register),
 		taskStore:               syncmap.NewSyncMap(),
 		accessTimeMap:           syncmap.NewSyncMap(),
 		taskURLUnReachableStore: syncmap.NewSyncMap(),

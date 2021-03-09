@@ -95,7 +95,7 @@ func (pps *peerPacketStream) recv() (pp *scheduler.PeerPacket, err error) {
 	pp, err = pps.stream.Recv()
 
 	if err != nil {
-		if e, ok := err.(*dferrors.DfError); ok && e.Code == dfcodes.PeerTaskNotRegistered {
+		if e, ok := err.(*dferrors.DfError); ok && e.Code == dfcodes.PeerTaskNotFound {
 			_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
 				timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				defer cancel()

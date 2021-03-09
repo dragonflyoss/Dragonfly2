@@ -26,7 +26,7 @@ import (
 
 func (s *SchedulerService) GenerateTaskId(url string, filter string, meta *base.UrlMeta, bizId string, peerId string) (taskId string) {
 	if config.GetConfig().Scheduler.ABTest {
-		return idgen.GenerateABTestTaskId(url, filter, meta, bizId, peerId)
+		return idgen.GenerateTwinsTaskId(url, filter, meta, bizId, peerId)
 	}
 	return idgen.GenerateTaskId(url, filter, meta, bizId)
 }

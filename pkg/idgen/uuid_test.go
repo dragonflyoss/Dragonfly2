@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-package logcore
+package idgen
 
 import (
-	"path"
+	"testing"
 
-	"d7y.io/dragonfly/v2/pkg/basic"
+	"github.com/stretchr/testify/assert"
 )
 
-var clientLogDir = path.Join(basic.HomeDir, "logs/dragonfly")
+func TestUUIDString(t *testing.T) {
+	uuid1 := UUIDString()
+	uuid2 := UUIDString()
+	assert.False(t, uuid1 == uuid2)
+}

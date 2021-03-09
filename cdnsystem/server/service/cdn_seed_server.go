@@ -81,7 +81,8 @@ func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
 	return nil
 }
 
-func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
+func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest,
+	psc chan<- *cdnsystem.PieceSeed) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds: %v", r)
@@ -106,7 +107,8 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
 
 	if err != nil {
-		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "register seed task fail, registerRequest:%+v:%v", registerRequest, err)
+		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "register seed task fail, registerRequest:%+v:%v",
+			registerRequest, err)
 	}
 	peerId := fmt.Sprintf("%s-%s_%s", iputils.HostName, req.TaskId, "CDN")
 	for piece := range pieceChan {
@@ -132,7 +134,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		case types.TaskType:
 			var state *base.ResponseState
 			if !piece.Result.Success {
-				state = common.NewState(dfcodes.CdnError, piece.Result.Msg)
+				state = common.NewState(dfcodes.CdnStatusError, piece.Result.Msg)
 			} else {
 				state = common.NewState(dfcodes.Success, "success")
 			}
@@ -158,29 +160,19 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 		}
 	}()
 	if err := validateGetPieceTasksRequestParams(req); err != nil {
-		return &base.PiecePacket{
-			State:  common.NewState(dfcodes.BadRequest, err),
-			TaskId: req.TaskId,
-		}, errors.Wrapf(err, "validate seed request fail, seedReq:%v", req)
+		return nil, dferrors.Newf(dfcodes.BadRequest, "validate seed request fail, seedReq: %v, err: %v", req, err)
 	}
 	task, err := css.taskMgr.Get(ctx, req.TaskId)
 	logger.Debugf("task:%+v", task)
 	if err != nil {
-		state := common.NewState(dfcodes.CdnError, err)
 		if cdnerrors.IsDataNotFound(err) {
-			state = common.NewState(dfcodes.CdnTaskNotFound, err)
-			return &base.PiecePacket{
-				State:  state,
-				TaskId: req.TaskId,
-			}, errors.Wrapf(err, "failed to get task from cdn")
+			return nil, dferrors.Newf(dfcodes.CdnTaskNotFound, "failed to get task from cdn: %v", err)
 		}
+		return nil, dferrors.Newf(dfcodes.CdnError, "failed to get task from cdn: %v", err)
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
-		return &base.PiecePacket{
-			State:  common.NewState(dfcodes.CdnError, err),
-			TaskId: req.TaskId,
-		}, errors.Wrapf(err, "failed to get pieces from cdn")
+		return nil, dferrors.Newf(dfcodes.CdnError, "failed to get pieces from cdn: %v", err)
 	}
 	pieceInfos := make([]*base.PieceInfo, 0)
 	var count int32 = 0

@@ -129,7 +129,7 @@ func NewFilePeerTask(ctx context.Context,
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 	return &filePeerTask{
 		host:            host,
-		backSource:      result.State.Code == dfcodes.BackSource,
+		backSource:      result.State.Code == dfcodes.SchedNeedBackSource,
 		request:         request,
 		pieceResultCh:   schedPieceResultCh,
 		peerPacketCh:    schedPeerPacketCh,

@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-package rpc
+package idgen
 
-type ClientMgr interface {
-	GetClient(url string) Client
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestGenerateTaskId(t *testing.T) {
+	taskId := GenerateTaskId("http://alibaba.com/path/xx", "", nil, "")
+	assert.NotEmpty(t, taskId)
 }
 
-type Client struct {
-
+func TestGenerateTwinsTaskId(t *testing.T) {
+	taskId := GenerateTwinsTaskId("http://alibaba.com/path/xx", "", nil, "", "peerId")
+	assert.NotEmpty(t, taskId)
 }

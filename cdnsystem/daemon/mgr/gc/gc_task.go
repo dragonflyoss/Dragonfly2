@@ -63,8 +63,6 @@ func (gcm *Manager) gcTasks(ctx context.Context) {
 		logger.GcLogger.Warnf("gc tasks:%d cost:%.3f", removedTaskCount, timeDuring.Seconds())
 	}
 
-	gcm.metrics.gcTasksCount.WithLabelValues().Add(float64(removedTaskCount))
-
 	logger.GcLogger.Infof("gc tasks: success to full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
 }
 

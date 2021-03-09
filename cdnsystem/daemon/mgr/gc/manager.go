@@ -23,7 +23,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/prometrics"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -39,25 +38,11 @@ type metrics struct {
 	lastGCDisksTime *prometheus.GaugeVec
 }
 
-func newMetrics(register prometheus.Registerer) *metrics {
-	return &metrics{
-		gcTasksCount: prometrics.NewCounter(config.SubsystemCdnSystem, "gc_tasks_total",
-			"Total number of tasks that have been garbage collected", []string{}, register),
-
-		gcDisksCount: prometrics.NewCounter(config.SubsystemCdnSystem, "gc_disks_total",
-			"Total number of garbage collecting the task data in disks", []string{}, register),
-
-		lastGCDisksTime: prometrics.NewGauge(config.SubsystemCdnSystem, "last_gc_disks_timestamp_seconds",
-			"Timestamp of the last disk gc", []string{}, register),
-	}
-}
-
 // Manager is an implementation of the interface of GCMgr.
 type Manager struct {
 	cfg     *config.Config
 	taskMgr mgr.SeedTaskMgr
 	cdnMgr  mgr.CDNMgr
-	metrics *metrics
 }
 
 // NewManager returns a new Manager.
@@ -66,7 +51,6 @@ func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr, 
 		cfg:     cfg,
 		taskMgr: taskMgr,
 		cdnMgr:  cdnMgr,
-		metrics: newMetrics(register),
 	}, nil
 }
 
