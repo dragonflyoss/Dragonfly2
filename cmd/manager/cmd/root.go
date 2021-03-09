@@ -4,7 +4,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/server"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"github.com/mitchellh/mapstructure"
 	"os"
 	"reflect"
@@ -13,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -27,8 +26,8 @@ var (
 )
 
 // supernodeDescription is used to describe supernode command in details.
-var supernodeDescription = `scheduler is a long-running process with two primary responsibilities:
-It's the tracker and scheduler in the P2P network that choose appropriate downloading net-path for each peer.`
+var supernodeDescription = `manager is a long-running process which has these primary responsibilities:
+1. auto dispatch configs to schedulers and cdns.`
 
 var rootCmd = &cobra.Command{
 	Use:               "manager",
@@ -38,7 +37,7 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := logcore.InitManager()
+		err := logger.InitManager()
 		if err != nil {
 			return errors.Wrap(err, "init manager logger")
 		}
@@ -75,29 +74,13 @@ func setupFlags(cmd *cobra.Command) {
 
 	defaultBaseProperties := config.GetConfig()
 
+	flagSet.Bool("console", false, "print log in console or not")
+
 	flagSet.String("config", config.DefaultConfigFilePath,
 		"the path of manager's configuration file")
 
 	flagSet.Int("port", defaultBaseProperties.Server.Port,
 		"port is the port that manager server listens on")
-
-	flagSet.String("mysql-ip", defaultBaseProperties.Stores.Mysql.IP,
-		"mysql-ip is the ip of mysql which is used as storage service")
-
-	flagSet.Int("mysql-port", defaultBaseProperties.Store.Mysql.Port,
-		"mysql-port is the port of mysql which is used as storage service")
-
-	flagSet.String("mysql-username", defaultBaseProperties.Store.Mysql.Username,
-		"mysql-username is the username of mysql which is used as storage service")
-
-	flagSet.String("mysql-password", defaultBaseProperties.Store.Mysql.Password,
-		"mysql-password is the password of mysql which is used as storage service")
-
-	flagSet.String("config-store-type", defaultBaseProperties.ConfigService.StoreType,
-		"config-store-type is the type of storage service")
-
-	flagSet.String("config-store-obj", defaultBaseProperties.ConfigService.StoreObj,
-		"config-store-obj is the type of storage service")
 
 	exitOnError(bindRootFlags(managerViper), "bind root command flags")
 }
@@ -109,36 +92,16 @@ func bindRootFlags(v *viper.Viper) error {
 		flag string
 	}{
 		{
+			key: "console",
+			flag: "console",
+		},
+		{
 			key:  "config",
 			flag: "config",
 		},
 		{
 			key:  "server.port",
 			flag: "port",
-		},
-		{
-			key:  "store.mysql.ip",
-			flag: "mysql-ip",
-		},
-		{
-			key:  "store.mysql.port",
-			flag: "mysql-port",
-		},
-		{
-			key:  "store.mysql.username",
-			flag: "mysql-username",
-		},
-		{
-			key:  "store.mysql.password",
-			flag: "mysql-password",
-		},
-		{
-			key:  "config-service.store-type",
-			flag: "config-store-type",
-		},
-		{
-			key:  "config-service.store-obj",
-			flag: "config-store-obj",
 		},
 	}
 
