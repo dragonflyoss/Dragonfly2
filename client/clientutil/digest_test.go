@@ -7,12 +7,10 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	testifyassert "github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
-	logcore.InitDaemon()
 	m.Run()
 }
 

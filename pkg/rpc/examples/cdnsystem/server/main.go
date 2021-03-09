@@ -67,7 +67,7 @@ func (hs *helloSeeder) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*
 }
 
 func main() {
-	logcore.InitCdnSystem()
+	logcore.InitCdnSystem(false)
 	err := rpc.StartTcpServer(12345, 12345, &helloSeeder{})
 
 	if err != nil {

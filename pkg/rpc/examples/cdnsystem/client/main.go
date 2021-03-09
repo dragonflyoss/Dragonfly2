@@ -32,7 +32,7 @@ import (
 )
 
 func main2() {
-	logcore.InitCdnSystem()
+	logcore.InitCdnSystem(true)
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,

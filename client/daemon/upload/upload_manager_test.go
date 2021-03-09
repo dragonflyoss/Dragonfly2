@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"testing"
 
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 	"golang.org/x/time/rate"
@@ -38,7 +37,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	logcore.InitDaemon()
 	m.Run()
 }
 

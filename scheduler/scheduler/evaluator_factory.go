@@ -17,12 +17,14 @@
 package scheduler
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/types"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type GetEvaluatorFunc func(task *types.Task) (string, bool)
@@ -55,7 +57,7 @@ func (ef *evaluatorFactory) getEvaluator(task *types.Task) IPeerTaskEvaluator {
 
 	if config.GetConfig().Scheduler.ABTest {
 		name := ""
-		if strings.HasSuffix(task.TaskId, "TB") {
+		if strings.HasSuffix(task.TaskId, idgen.TwinsB) {
 			if config.GetConfig().Scheduler.BScheduler != "" {
 				name = config.GetConfig().Scheduler.BScheduler
 			}

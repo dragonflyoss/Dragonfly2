@@ -18,7 +18,7 @@ package dfcodes
 
 import "d7y.io/dragonfly/v2/pkg/rpc/base"
 
-// rpc response code
+// rpc code
 const (
 	// success code 200-299
 	Success base.Code = 200
