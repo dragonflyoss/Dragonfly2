@@ -134,7 +134,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		case types.TaskType:
 			var state *base.ResponseState
 			if !piece.Result.Success {
-				state = common.NewState(dfcodes.CdnError, piece.Result.Msg)
+				state = common.NewState(dfcodes.CdnStatusError, piece.Result.Msg)
 			} else {
 				state = common.NewState(dfcodes.Success, "success")
 			}
@@ -172,7 +172,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
-		return nil, dferrors.Newf(dfcodes.CdnGetPiecesFail, "failed to get pieces from cdn: %v", err)
+		return nil, dferrors.Newf(dfcodes.CdnError, "failed to get pieces from cdn: %v", err)
 	}
 	pieceInfos := make([]*base.PieceInfo, 0)
 	var count int32 = 0
