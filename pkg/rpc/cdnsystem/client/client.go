@@ -87,11 +87,9 @@ func (sc *seederClient) GetPieceTasks(ctx context.Context, req *base.PieceTaskRe
 			return client.GetPieceTasks(ctx, req, opts...)
 		}
 	}, 0.2, 2.0, 3, nil)
-
 	if err == nil {
-		return res.(*base.PiecePacket), nil
+		return res.(*base.PiecePacket), err
 	}
-
 	return nil, err
 }
 

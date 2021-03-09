@@ -31,7 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 )
 
-func main() {
+func main2() {
 	logcore.InitCdnSystem()
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
@@ -59,7 +59,7 @@ func main() {
 	fmt.Println("client finish")
 }
 
-func main2() {
+func main() {
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
