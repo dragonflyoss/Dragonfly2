@@ -38,20 +38,7 @@ func CalculatePieceSize(rangeStr string) int64 {
 	return endIndex - startIndex + 1
 }
 
-// CalculatePieceNum calculates the number of piece
-// according to the parameter range.
-func CalculatePieceNum(rangeStr string) int {
-	startIndex, endIndex, err := ParsePieceIndex(rangeStr)
-	if err != nil {
-		return -1
-	}
-
-	pieceSize := endIndex - startIndex + 1
-
-	return int(startIndex / pieceSize)
-}
-
-// ParsePieceIndex parses the start and end index ​​according to range string.
+// ParsePieceIndex parses the start and end index according to range string.
 // rangeStr: "start-end"
 func ParsePieceIndex(rangeStr string) (start, end int64, err error) {
 	ranges := strings.Split(rangeStr, separator)

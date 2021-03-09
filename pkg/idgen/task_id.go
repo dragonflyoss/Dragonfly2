@@ -25,6 +25,11 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
+const (
+	TwinsA = "_A"
+	TwinsB = "_B"
+)
+
 // GenerateTaskId generates a taskId.
 // filter is separated by & character.
 func GenerateTaskId(url string, filter string, meta *base.UrlMeta, bizId string) string {
@@ -59,9 +64,9 @@ func GenerateTwinsTaskId(url string, filter string, meta *base.UrlMeta, bizId, p
 	taskId := GenerateTaskId(url, filter, meta, bizId)
 
 	if digestutils.CheckSum(peerId)&1 == 0 {
-		taskId += "_A"
+		taskId += TwinsA
 	} else {
-		taskId += "_B"
+		taskId += TwinsB
 	}
 
 	return taskId
