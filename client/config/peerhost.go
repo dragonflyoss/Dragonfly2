@@ -52,13 +52,14 @@ type PeerHostOption struct {
 	WorkHome    string `json:"work_home" yaml:"work_home"`
 	KeepStorage bool   `json:"keep_storage" yaml:"keep_storage"`
 	Verbose     bool   `yaml:"verbose" json:"verbose"`
+	Console     bool   `json:"console" yaml:"console"`
 
 	Schedulers      []dfnet.NetAddr     `json:"schedulers" yaml:"schedulers"`
 	ScheduleTimeout clientutil.Duration `json:"schedule_timeout" yaml:"schedule_timeout"`
 
 	Host     HostOption     `json:"host" yaml:"host"`
 	Download DownloadOption `json:"download" yaml:"download"`
-	Proxy    *ProxyOption   `json:"proxy,omitempty" yaml:"proxy,omitempty"`
+	Proxy    *ProxyOption   `json:"proxy" yaml:"proxy"`
 	Upload   UploadOption   `json:"upload" yaml:"upload"`
 	Storage  StorageOption  `json:"storage" yaml:"storage"`
 }

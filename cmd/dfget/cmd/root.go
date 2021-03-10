@@ -68,7 +68,8 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	Example:           dfgetExample(),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		logcore.InitDfget(false)
+		// init logger
+		logcore.InitDfget(flagClientOpt.Console)
 		if err := checkClientOptions(); err != nil {
 			return err
 		}

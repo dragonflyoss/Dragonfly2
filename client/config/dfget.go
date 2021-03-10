@@ -87,7 +87,7 @@ type ClientConfig struct {
 	ShowBar bool `json:"show_bar,omitempty"`
 
 	// Console shows log on console, it's conflict with `--showbar`.
-	Console bool `json:"console,omitempty"`
+	Console bool `json:"console,omitempty" yaml:"console,omitempty"`
 
 	// Verbose indicates whether to be verbose.
 	// If set true, log level will be 'debug'.

@@ -32,6 +32,10 @@ const (
 )
 
 const (
+	DefaultConsole = false
+)
+
+const (
 	// CDNWriterRoutineLimit 4
 	CDNWriterRoutineLimit = 4
 )
@@ -44,7 +48,7 @@ const (
 const (
 	// DefaultListenPort is the default port cdn server listens on.
 	DefaultListenPort = 8003
-  	// DefaultDownloadPort is the default port for download files from cdn.
+	// DefaultDownloadPort is the default port for download files from cdn.
 	DefaultDownloadPort = 8001
 )
 

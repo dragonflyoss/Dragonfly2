@@ -46,6 +46,7 @@ var flagDaemonOpt = config.PeerHostOption{
 	LockFile:        "/tmp/dfdaemon.lock",
 	KeepStorage:     false,
 	Verbose:         true,
+	Console:         false,
 	Host: config.HostOption{
 		ListenIP:       net.IPv4zero.String(),
 		AdvertiseIP:    iputils.HostIp,
