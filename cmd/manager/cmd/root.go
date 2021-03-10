@@ -4,6 +4,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/server"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"github.com/mitchellh/mapstructure"
 	"os"
 	"reflect"
@@ -37,7 +38,7 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := logger.InitManager()
+		err := logcore.InitManager(managerViper.GetBool("console"))
 		if err != nil {
 			return errors.Wrap(err, "init manager logger")
 		}
@@ -53,13 +54,18 @@ var rootCmd = &cobra.Command{
 			return errors.Wrap(err, "get config from viper")
 		}
 
-		logger.Debugf("get manager config: %+v", cfg)
-		logger.Infof("start to run manager")
+		logger.Infof("manager config: %+v", cfg)
 
 		if server, err := server.NewServer(cfg); err != nil {
 			return errors.Wrap(err, "failed to initialize daemon in manager")
 		} else {
-			return server.Start()
+			if err = server.Start(); err != nil {
+				logger.Errorf("failed to start manager: %+v", err)
+				return nil
+			} else {
+				logger.Infof("start manager success")
+				return err
+			}
 		}
 	},
 }
@@ -92,7 +98,7 @@ func bindRootFlags(v *viper.Viper) error {
 		flag string
 	}{
 		{
-			key: "console",
+			key:  "console",
 			flag: "console",
 		},
 		{

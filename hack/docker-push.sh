@@ -24,6 +24,8 @@ main() {
     scheduler)
         docker-push scheduler
         ;;
+    manager)
+        docker-push manager
     esac
 }
 

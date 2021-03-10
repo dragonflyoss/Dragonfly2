@@ -1,0 +1,17 @@
+server:
+  ip: ""
+  port: 8004
+
+config-service:
+  store-name: "store1"
+
+stores:
+  -
+    name: "store1"
+    type: "mysql"
+    mysql:
+      username: "root"
+      password: "root1234"
+      ip: "db"
+      port: 3306
+      dbname: "config_db"

@@ -1,7 +1,7 @@
 package config
 
 const (
-	DefaultConfigFilePath string = "conf/manager.yml"
+	DefaultConfigFilePath string = "/etc/dragonfly/manager.yml"
 )
 
 type Config struct {
@@ -47,11 +47,11 @@ func GetConfig() *Config {
 			Port: 8004,
 		},
 		ConfigService: &ConfigServiceConfig{
-			StoreName: "config_db",
+			StoreName: "store1",
 		},
 		Stores: []*StoreConfig{
 			{
-				Name: "config_db",
+				Name: "store1",
 				Type: "mysql",
 				Mysql: &MysqlConfig{
 					Username: "root",

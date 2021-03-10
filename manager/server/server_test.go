@@ -48,7 +48,6 @@ func genTestCdnConfig() *manager.CdnConfig {
 func (suite *ServerTestSuite) memoryConfig() *config.Config {
 	return &config.Config{
 		Server: &config.ServerConfig{
-			IP:   "127.0.0.1",
 			Port: 8004,
 		},
 		Stores: []*config.StoreConfig{
@@ -72,11 +71,11 @@ func (suite *ServerTestSuite) mysqlConfig() *config.Config {
 			Port: 8004,
 		},
 		ConfigService: &config.ConfigServiceConfig{
-			StoreName: "config_db",
+			StoreName: "store1",
 		},
 		Stores: []*config.StoreConfig{
 			{
-				Name: "config_db",
+				Name: "store1",
 				Type: "mysql",
 				Mysql: &config.MysqlConfig{
 					Username: "root",
