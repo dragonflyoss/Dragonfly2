@@ -70,6 +70,7 @@ func NewStreamPeerTask(ctx context.Context,
 			bitmap:          NewBitmap(),
 			lock:            &sync.Mutex{},
 			failedPieceCh:   make(chan int32, 4),
+			failedReason:    "unknown",
 			contentLength:   -1,
 			totalPiece:      -1,
 			scheduleTimeout: scheduleTimeout,
@@ -173,7 +174,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	var firstPiece int32
 	select {
 	case <-s.base.ctx.Done():
-		err := errors.Errorf("ctx.Done due to: %s", s.base.ctx.Err())
+		err := errors.Errorf("ctx.PeerTaskDone due to: %s", s.base.ctx.Err())
 		s.base.Errorf("%s", err)
 		return nil, nil, err
 	case <-s.base.done:
@@ -181,9 +182,8 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		return nil, nil, err
 	case num, ok := <-s.successPieceCh:
 		if !ok {
-			err := errors.New("early done")
-			s.base.Warnf("successPieceCh closed")
-			return nil, nil, err
+			s.base.Warnf("successPieceCh closed unexpect")
+			return nil, nil, errors.New("early done")
 		}
 		firstPiece = num
 	}
@@ -239,7 +239,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 
 			select {
 			case <-s.base.ctx.Done():
-				s.base.Errorf("ctx.Done due to: %s", s.base.ctx.Err())
+				s.base.Errorf("ctx.PeerTaskDone due to: %s", s.base.ctx.Err())
 				if err := pw.CloseWithError(s.base.ctx.Err()); err != nil {
 					s.base.Errorf("CloseWithError failed: %s", err)
 				}
@@ -285,6 +285,7 @@ func (s *streamPeerTask) finish() error {
 			}
 		}()
 		close(s.base.done)
+		close(s.successPieceCh)
 	})
 	return nil
 }
@@ -296,6 +297,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.bitmap.Settled())
 		s.base.Debugf("end piece result sent")
 		close(s.base.done)
+		close(s.successPieceCh)
 	})
 }
 
