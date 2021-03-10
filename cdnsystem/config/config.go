@@ -88,6 +88,7 @@ func NewBaseProperties() *BaseProperties {
 		IntervalThreshold:       DefaultIntervalThreshold,
 		TaskExpireTime:          DefaultTaskExpireTime,
 		CleanRatio:              DefaultCleanRatio,
+		Console:                 DefaultConsole,
 	}
 }
 
@@ -174,4 +175,7 @@ type BaseProperties struct {
 	//
 	// default: 1
 	CleanRatio int `yaml:"cleanRatio"`
+
+	// Console shows log on console
+	Console bool `yaml:"console"`
 }

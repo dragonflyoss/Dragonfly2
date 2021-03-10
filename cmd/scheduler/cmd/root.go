@@ -46,13 +46,8 @@ var SchedulerCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := logcore.InitScheduler(false)
-		if err != nil {
-			return errors.Wrap(err, "init scheduler logger")
-		}
-
 		// load config file.
-		if err = readConfigFile(schedulerViper, cmd); err != nil {
+		if err := readConfigFile(schedulerViper, cmd); err != nil {
 			return errors.Wrap(err, "read config file")
 		}
 
@@ -60,6 +55,11 @@ var SchedulerCmd = &cobra.Command{
 		cfg, err := getConfigFromViper(schedulerViper)
 		if err != nil {
 			return errors.Wrap(err, "get config from viper")
+		}
+
+		// init logger
+		if err := logcore.InitScheduler(cfg.Console); err != nil {
+			return errors.Wrap(err, "init scheduler logger")
 		}
 
 		go func() {
@@ -103,6 +103,9 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.Bool("debug", defaultBaseProperties.Debug,
 		"debug")
 
+	flagSet.Bool("console", defaultBaseProperties.Console,
+		"console")
+
 	flagSet.String("config", config.DefaultConfigFilePath,
 		"the path of scheduler's configuration file")
 
@@ -136,6 +139,10 @@ func bindRootFlags(v *viper.Viper) error {
 		{
 			key:  "debug",
 			flag: "debug",
+		},
+		{
+			key:  "console",
+			flag: "console",
 		},
 		{
 			key:  "config",
