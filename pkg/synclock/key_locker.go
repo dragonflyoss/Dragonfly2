@@ -75,6 +75,7 @@ func (l *KeyLocker) UnLock(key string, rLock bool) {
 	locker.unlock(rLock)
 
 	if locker.dec() <= 0 {
+		locker.reset()
 		l.syncPool.Put(locker)
 		delete(l.lockerMap, key)
 	}

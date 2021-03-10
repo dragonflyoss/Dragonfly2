@@ -30,6 +30,10 @@ func newCountRWMutex() *countRWMutex {
 	return &countRWMutex{}
 }
 
+func (cm *countRWMutex) reset() {
+	atomic.StoreInt32(&cm.c, 0)
+}
+
 func (cm *countRWMutex) inc() int32 {
 	return atomic.AddInt32(&cm.c, 1)
 }
