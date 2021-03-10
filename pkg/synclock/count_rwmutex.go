@@ -14,25 +14,42 @@
  * limitations under the License.
  */
 
-package iputils
+package synclock
 
 import (
-	"fmt"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	"sync"
+	"sync/atomic"
 )
 
-func TestIsIPv4(t *testing.T) {
-	assert.True(t, IsIPv4("30.225.24.222"))
-	assert.False(t, IsIPv4("30.225.24.2222"))
+type countRWMutex struct {
+	sync.RWMutex
+	c int32
 }
 
-func TestExternalIPv4(t *testing.T) {
-	ip, err := externalIPv4()
-	assert.Nil(t, err)
+func newCountRWMutex() *countRWMutex {
+	return &countRWMutex{}
+}
 
-	fmt.Println(ip)
+func (cm *countRWMutex) inc() int32 {
+	return atomic.AddInt32(&cm.c, 1)
+}
 
-	assert.NotEmpty(t, ip)
+func (cm *countRWMutex) dec() int32 {
+	return atomic.AddInt32(&cm.c, -1)
+}
+
+func (cm *countRWMutex) lock(rLock bool) {
+	if rLock {
+		cm.RLock()
+	} else {
+		cm.Lock()
+	}
+}
+
+func (cm *countRWMutex) unlock(rLock bool) {
+	if rLock {
+		cm.RUnlock()
+	} else {
+		cm.Unlock()
+	}
 }

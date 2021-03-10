@@ -17,46 +17,28 @@
 package synclock
 
 import (
+	"fmt"
 	"sync"
-
-	"go.uber.org/atomic"
+	"testing"
+	"time"
 )
 
-type countRWMutex struct {
-	count *atomic.Int32
-	sync.RWMutex
-}
+func TestLock(t *testing.T){
+	l := &sync.Mutex{}
+	go func(){
+		l.Lock()
+		time.Sleep(10*time.Second)
+	}()
+	time.Sleep(1*time.Second)
 
-func newCountRWMutex() *countRWMutex {
-	return &countRWMutex{
-		count: atomic.NewInt32(0),
-	}
-}
+	go func(){
+		l.Unlock()
+		l.Lock()
+		fmt.Println("hello")
+	}()
 
-func (cr *countRWMutex) reset() {
-	cr.count.Store(0)
-}
+	time.Sleep(1*time.Second)
+	l.Unlock()
+	fmt.Println("world")
 
-func (cr *countRWMutex) increaseCount() int32 {
-	return cr.count.Inc()
-}
-
-func (cr *countRWMutex) decreaseCount() int32 {
-	return cr.count.Dec()
-}
-
-func (cr *countRWMutex) lock(ro bool) {
-	if ro {
-		cr.RLock()
-		return
-	}
-	cr.Lock()
-}
-
-func (cr *countRWMutex) unlock(ro bool) {
-	if ro {
-		cr.RUnlock()
-		return
-	}
-	cr.Unlock()
 }
