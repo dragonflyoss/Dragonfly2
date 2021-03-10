@@ -113,3 +113,23 @@ func parseSize(fsize string) (Size, error) {
 
 	return ToFsize(num) * unit, nil
 }
+
+func (f Size) MarshalYAML() (interface{}, error) {
+	result := f.String()
+	return result, nil
+}
+
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
+func (f *Size) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var fsizeStr string
+	if err := unmarshal(&fsizeStr); err != nil {
+		return err
+	}
+
+	fsize, err := parseSize(fsizeStr)
+	if err != nil {
+		return err
+	}
+	*f = fsize
+	return nil
+}
