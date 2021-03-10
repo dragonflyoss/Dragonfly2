@@ -72,7 +72,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		task, err = s.svc.AddTask(task)
 		if err != nil {
 			dferror, _ := err.(*dferrors.DfError)
-			if dferror.Code == dfcodes.SchedNeedBackSource {
+			if dferror != nil && dferror.Code == dfcodes.SchedNeedBackSource {
 				isCdn = true
 			} else {
 				return
