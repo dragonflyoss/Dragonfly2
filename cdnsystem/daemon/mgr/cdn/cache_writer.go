@@ -79,7 +79,6 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	for {
 		n, err := reader.Read(buf)
 		if n > 0 {
-			logger.WithTaskID(task.TaskId).Debugf("success read content with length(%d) from source", n)
 			backSourceFileLength += int64(n)
 			if int(pieceContLeft) <= n {
 				bb.Write(buf[:pieceContLeft])

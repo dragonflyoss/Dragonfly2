@@ -127,7 +127,6 @@ type BaseProperties struct {
 	// default: 15s
 	GCDiskInterval time.Duration `yaml:"gcDiskInterval"`
 
-	GCShmInterval time.Duration `yaml:"gcShmInterval"`
 
 	// YoungGCThreshold if the available disk space is more than YoungGCThreshold
 	// and there is no need to GC disk.
@@ -141,8 +140,6 @@ type BaseProperties struct {
 	// default: 5GB
 	FullGCThreshold fileutils.Fsize `yaml:"fullGCThreshold"`
 
-	// MaxStorageThreshold if the currently used disk space is greater than MaxStorageThreshold, clean disk up
-	MaxStorageThreshold fileutils.Fsize
 
 	// IntervalThreshold is the threshold of the interval at which the task file is accessed.
 	// default: 2h

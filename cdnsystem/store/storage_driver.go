@@ -113,8 +113,8 @@ type StorageInfo struct {
 }
 
 type GcConfig struct {
-	YoungGCThreshold  fileutils.Fsize `yaml:"youngGCThreshold"`
-	FullGCThreshold   fileutils.Fsize `yaml:"fullGCThreshold"`
-	CleanRatio        int             `yaml:"cleanRatio"`
-	IntervalThreshold time.Duration   `yaml:"intervalThreshold"`
+	YoungGCThreshold  fileutils.Fsize
+	FullGCThreshold   fileutils.Fsize
+	CleanRatio        int
+	IntervalThreshold time.Duration
 }

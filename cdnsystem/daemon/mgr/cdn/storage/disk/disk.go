@@ -87,8 +87,16 @@ func (s *diskStorage) getDiskDefaultGcConfig() *store.GcConfig {
 }
 
 func (s *diskStorage) InitializeCleaners() {
+	diskGcConfig := s.diskStore.GetGcConfig(context.TODO())
+	if diskGcConfig == nil {
+		diskGcConfig = s.getDiskDefaultGcConfig()
+		logger.GcLogger.Warnf("disk gc config is nil, use default gcConfig: %v", diskGcConfig)
+	}
 	s.diskStoreCleaner = &storage.Cleaner{
-		Cfg: s.getDiskDefaultGcConfig(),
+		Cfg:        diskGcConfig,
+		Store:      s.diskStore,
+		StorageMgr: s,
+		TaskMgr:    s.taskMgr,
 	}
 }
 
@@ -115,7 +123,9 @@ func (s *diskStorage) ReadPieceMetaRecords(ctx context.Context, taskId string) (
 }
 
 func (s *diskStorage) Gc(ctx context.Context) {
-	panic("implement me")
+	go func() {
+		_, _ = s.diskStoreCleaner.Gc(ctx, false)
+	}()
 }
 
 func (s *diskStorage) SetTaskMgr(mgr mgr.SeedTaskMgr) {

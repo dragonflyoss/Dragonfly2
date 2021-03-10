@@ -31,6 +31,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
+	"time"
 )
 
 func init() {
@@ -68,8 +70,8 @@ func unLock(path string, offset int64, ro bool) {
 // diskStorage is one of the implementations of StorageDriver using local disk file system.
 type diskStorage struct {
 	// BaseDir is the dir that local storage driver will store content based on it.
-	BaseDir  string          `yaml:"baseDir"`
-	GcConfig store.GcConfig `yaml:"gcConfig"`
+	BaseDir  string
+	GcConfig *store.GcConfig
 }
 
 func (ds *diskStorage) GetTotalSpace(ctx context.Context) (fileutils.Fsize, error) {
@@ -84,7 +86,7 @@ func (ds *diskStorage) GetHomePath(ctx context.Context) string {
 }
 
 func (ds *diskStorage) GetGcConfig(ctx context.Context) *store.GcConfig {
-	return &ds.GcConfig
+	return ds.GcConfig
 }
 
 func (ds *diskStorage) CreateDir(ctx context.Context, path string) error {
@@ -99,23 +101,41 @@ func (ds *diskStorage) MoveFile(src string, dst string) error {
 	return fileutils.MoveFile(src, dst)
 }
 
+func decodeHock(types ...reflect.Type) mapstructure.DecodeHookFunc {
+	return func(f, t reflect.Type, data interface{}) (interface{}, error) {
+		for _, typ := range types {
+			if t == typ {
+				b, _ := yaml.Marshal(data)
+				v := reflect.New(t)
+				return v.Interface(), yaml.Unmarshal(b, v.Interface())
+			}
+		}
+		return data, nil
+	}
+}
+
 // NewStorage performs initialization for disk Storage and return a StorageDriver.
 func NewStorage(conf interface{}) (store.StorageDriver, error) {
 	cfg := &diskStorage{}
-	// type assertion for config
-	confMap := conf.(map[interface{}]interface{})
-	cfg.BaseDir = confMap["baseDir"].(string)
-	mapstructure.Decode(confMap["gcConfig"].(map), cfg.GcConfig)
-	if err := yaml.Unmarshal([]byte(conf.(string)), cfg); err != nil {
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig {
+		DecodeHook : decodeHock(
+			reflect.TypeOf(time.Second),
+			reflect.TypeOf(fileutils.B)),
+			Result: cfg,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create decoder: %v", err)
+	}
+	err = decoder.Decode(conf)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %v", err)
 	}
-
 	// prepare the base dir
 	if !filepath.IsAbs(cfg.BaseDir) {
 		return nil, fmt.Errorf("not absolute path: %s", cfg.BaseDir)
 	}
 	if err := fileutils.CreateDirectory(cfg.BaseDir); err != nil {
-		return nil, fmt.Errorf("failed to create baseDir%s: %v",cfg.BaseDir, err)
+		return nil, fmt.Errorf("failed to create baseDir%s: %v", cfg.BaseDir, err)
 	}
 
 	return &diskStorage{
@@ -331,8 +351,7 @@ func (ds *diskStorage) Stat(ctx context.Context, raw *store.Raw) (*store.Storage
 
 func (ds *diskStorage) Exits(ctx context.Context, raw *store.Raw) bool {
 	filePath := filepath.Join(ds.BaseDir, raw.Bucket, raw.Key)
-	_, err := os.Stat(filePath)
-	return !os.IsNotExist(err)
+	return fileutils.PathExist(filePath)
 }
 
 // Remove deletes a file or dir.

@@ -116,7 +116,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	defer cm.cdnLocker.ReleaseLock(task.TaskId, false)
 	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
-	logger.WithTaskID(task.TaskId).Debugf("detects cache result:%v", detectResult)
+	logger.WithTaskID(task.TaskId).Debugf("detects cache result:%+v", detectResult)
 	if err != nil {
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), errors.Wrapf(err,
 			"failed to detect cache")

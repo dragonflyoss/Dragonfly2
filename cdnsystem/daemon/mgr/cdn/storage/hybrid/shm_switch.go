@@ -19,54 +19,48 @@ package hybrid
 import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"go.uber.org/atomic"
+	"regexp"
 )
 
-type shmSwitcher struct {
+type shmSwitch struct {
 	off             *atomic.Bool
 	whiteList       []string
 	useShmThreshold *atomic.Int64
 }
 
-func newShmSwitcherService() *shmSwitcher {
-	return &shmSwitcher{
+func newShmSwitch() *shmSwitch {
+	return &shmSwitch{
 		off:             atomic.NewBool(false),
 		whiteList:       nil,
 		useShmThreshold: atomic.NewInt64(1024 * 1024 * 1024),
 	}
 }
 
-func (s *shmSwitcher) updateWhiteList(newWhiteList []string) {
-
+func (s *shmSwitch) updateWhiteList(newWhiteList []string) {
+	logger.Infof("shm whiteList changed to {}", s.whiteList)
 }
 
-func (s *shmSwitcher) updateSwitcher(switcher string) {
-	//if s.off.Load() ^ strings.EqualFold("off", strings.ToLower(switcher)) {
-	//	s.off.Store() = !s.off
-	//}
+func (s *shmSwitch) updateSwitcher(switcher string) {
 	logger.Infof("shm off-switcher changed to {}", s.off)
 }
 
-func (s *shmSwitcher) updateThreshold(threshold int) {
-	//if threshold == nil || s.useShmThreshold == (threshold * 1024 * 1024) {
-	//return;
-	//}
-	//s.useShmThreshold = threshold * 1024 * 1024
-	logger.Infof("shm threshold changed to %d MB", threshold)
+func (s *shmSwitch) updateThreshold(threshold int) {
+	logger.Infof("shm threshold changed to %d MB", s.useShmThreshold)
 }
 
-func (s *shmSwitcher) check(url string, fileLength int64) bool {
-	//if !s.off.Load() {
-	//	if fileLength == 0 || fileLength < s.useShmThreshold.Load() {
-	//		return false
-	//	}
-	//	if len(s.whiteList) == 0 {
-	//		return true
-	//	}
-	//	for _, reg := range s.whiteList {
-	//		if matched, err := regexp.MatchString(reg, url); err == nil && matched {
-	//			return true
-	//		}
-	//	}
-	//}
+func (s *shmSwitch) check(url string, fileLength int64) bool {
+	if !s.off.Load() {
+		if fileLength == 0 || fileLength < s.useShmThreshold.Load() {
+			return false
+		}
+		if len(s.whiteList) == 0 {
+			return true
+		}
+		for _, reg := range s.whiteList {
+			if matched, err := regexp.MatchString(reg, url); err == nil && matched {
+				return true
+			}
+		}
+	}
 	return true
 }

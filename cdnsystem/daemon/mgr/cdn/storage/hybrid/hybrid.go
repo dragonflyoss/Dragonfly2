@@ -57,7 +57,7 @@ func (*hybridBuilder) Build() (storage.StorageMgr, error) {
 	return &hybridStorage{
 		memoryStore: memoryStore,
 		diskStore:   diskStore,
-		shmSwitcher: newShmSwitcherService(),
+		shmSwitch:   newShmSwitch(),
 	}, nil
 }
 
@@ -72,7 +72,7 @@ type hybridStorage struct {
 	taskMgr            mgr.SeedTaskMgr
 	diskStoreCleaner   *storage.Cleaner
 	memoryStoreCleaner *storage.Cleaner
-	shmSwitcher        *shmSwitcher
+	shmSwitch          *shmSwitch
 	hasShm             bool
 }
 
@@ -111,6 +111,7 @@ func (h *hybridStorage) InitializeCleaners() {
 		StorageMgr: h,
 		TaskMgr:    h.taskMgr,
 	}
+	logger.GcLogger.Info("success initialize hybrid cleaners")
 }
 
 func (h *hybridStorage) WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64,
@@ -242,7 +243,7 @@ func (h *hybridStorage) deleteTaskFiles(ctx context.Context, taskId string, dele
 }
 
 func (h *hybridStorage) tryShmSpace(ctx context.Context, url, taskId string, fileLength int64) (string, error) {
-	if h.shmSwitcher.check(url, fileLength) && h.hasShm {
+	if h.shmSwitch.check(url, fileLength) && h.hasShm {
 		remainder := atomic.NewInt64(0)
 		h.memoryStore.Walk(ctx, &store.Raw{
 			WalkFn: func(filePath string, info os.FileInfo, err error) error {
@@ -260,23 +261,20 @@ func (h *hybridStorage) tryShmSpace(ctx context.Context, url, taskId string, fil
 							remainder.Add(totalLen - info.Size())
 						}
 					} else {
-						logger.Warnf("")
+						logger.Warnf("failed to get task:%s: %v", taskId, err)
 					}
 				}
 				return nil
 			},
 		})
-		usableSpace, err := h.getUsableSpace(ctx)
-		if err != nil {
-			return "", fmt.Errorf("failed to get usable space")
-		}
-		useShm := usableSpace-fileutils.Fsize(remainder.Load())-SecureLevel >= fileutils.Fsize(fileLength)
-		if !useShm {
+		canUseShm := h.getMemoryUsableSpace(ctx)-fileutils.Fsize(remainder.Load())-SecureLevel >= fileutils.Fsize(
+			fileLength)
+		if !canUseShm {
 			// 如果剩余空间过小，则强制执行一次fullgc后在检查是否满足
 			h.memoryStoreCleaner.Gc(ctx, true)
-			useShm = usableSpace-fileutils.Fsize(remainder.Load())-SecureLevel >= fileutils.Fsize(fileLength)
+			canUseShm = h.getMemoryUsableSpace(ctx)-fileutils.Fsize(remainder.Load())-SecureLevel >= fileutils.Fsize(fileLength)
 		}
-		if useShm { // 创建shm
+		if canUseShm { // 创建shm
 			raw := &store.Raw{
 				Key: taskId,
 			}
@@ -287,23 +285,24 @@ func (h *hybridStorage) tryShmSpace(ctx context.Context, url, taskId string, fil
 	return "", fmt.Errorf("shared memory is not allowed")
 }
 
-func (h *hybridStorage) getUsableSpace(ctx context.Context) (fileutils.Fsize, error) {
+func (h *hybridStorage) getMemoryUsableSpace(ctx context.Context) fileutils.Fsize {
 	totalSize, freeSize, err := h.memoryStore.GetTotalAndFreeSpace(ctx)
 	if err != nil {
-		return 0, err
+		logger.GcLogger.Errorf("failed to get total and free space of memory: %v", err)
+		return 0
 	}
-	// 如果文件所在分区的总容量大于等于 72G，则返回磁盘的剩余可用空间
+	// 如果内存总容量大于等于 72G，则返回内存的剩余可用空间
 	threshold := 72 * fileutils.GB
-	if totalSize >= fileutils.Fsize(threshold) {
-		return freeSize, nil
+	if totalSize >= threshold {
+		return freeSize
 	}
 	// 如果总容量小于72G， 如40G容量，则可用空间为 当前可用空间 - 32G： 最大可用空间为8G，50G容量，则可用空间为 当前可用空间 - 22G：最大可用空间为28G
 
 	usableSpace := freeSize - (72*fileutils.GB - totalSize)
 	if usableSpace > 0 {
-		return usableSpace, nil
+		return usableSpace
 	}
-	return 0, nil
+	return 0
 }
 
 func getHardLinkRaw(taskId string) *store.Raw {

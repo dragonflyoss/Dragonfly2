@@ -38,7 +38,7 @@ const (
 
 // CreateDirectory creates directory recursively.
 func CreateDirectory(dirPath string) error {
-	f, e := os.Stat(dirPath)
+	f, e := os.Lstat(dirPath)
 	if e != nil {
 		if os.IsNotExist(e) {
 			return os.MkdirAll(dirPath, 0755)
@@ -110,12 +110,11 @@ func Link(src string, linkName string) error {
 // SymbolicLink creates target as a symbolic link to src.
 func SymbolicLink(src string, link string) error {
 	if PathExist(link) && IsSymbolicLink(link) && PathExist(src){
-		srcFile, err := os.Stat(src)
-		linkFile, err := os.Stat(link)
+		dstPath, err := os.Readlink(link)
 		if err != nil {
 			return err
 		}
-		if os.SameFile(srcFile, linkFile) {
+		if dstPath == src {
 			return nil
 		}
 	}
@@ -185,9 +184,9 @@ func MoveFileAfterCheckMd5(src string, dst string, md5 string) error {
 }
 
 // PathExist reports whether the path is exist.
-// Any error get from os.Stat, it will return false.
+// Any error get from os.Lstat, it will return false.
 func PathExist(name string) bool {
-	_, err := os.Stat(name)
+	_, err := os.Lstat(name)
 	return err == nil
 }
 
@@ -203,7 +202,7 @@ func IsDir(name string) bool {
 // IsRegularFile reports whether the file is a regular file.
 // If the given file is a symbol link, it will follow the link.
 func IsRegularFile(name string) bool {
-	f, e := os.Stat(name)
+	f, e := os.Lstat(name)
 	if e != nil {
 		return false
 	}
@@ -211,7 +210,7 @@ func IsRegularFile(name string) bool {
 }
 
 func IsSymbolicLink(name string) bool {
-	f, e := os.Stat(name)
+	f, e := os.Lstat(name)
 	if e != nil {
 		return false
 	}

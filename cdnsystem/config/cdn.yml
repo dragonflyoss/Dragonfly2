@@ -11,10 +11,6 @@ base:
   # default: 8001
   downloadPort: 8001
 
-  #  # HomeDir is working directory of cdn.
-  #  # default: /home/admin/cdn-system
-  #  homeDir: /tmp/cdn
-
   # SystemReservedBandwidth is the network bandwidth reserved for system software.
   # default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
   systemReservedBandwidth: 20M
@@ -69,6 +65,7 @@ base:
   # It means the value of CleanRatio should be [1-10].
   CleanRatio: 1
 
+  # StoragePattern is the pattern of storage policy, [disk/hybrid]
   StoragePattern: disk
 
 plugins:
@@ -81,16 +78,16 @@ plugins:
           youngGCThreshold: 100G
           fullGCThreshold: 5G
           cleanRatio: 1
-          intervalThreshold: 3s
+          intervalThreshold: 2h
     - name: memory
       enable: true
       config:
-        baseDir: /Users/sunweipeng1/dragonflycdn
+        baseDir: /tmp/memory/dragonfly
         gcConfig:
           youngGCThreshold: 100G
           fullGCThreshold: 5G
           cleanRatio: 3
           intervalThreshold: 3s
-  sourceClient:
-    - name: http
-      enable: false
+#  sourceClient:
+#    - name: http
+#      enable: false
