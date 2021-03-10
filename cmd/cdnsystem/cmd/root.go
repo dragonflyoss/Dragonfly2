@@ -65,9 +65,6 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := logcore.InitCdnSystem(false); err != nil {
-			return errors.Wrapf(err, "init log fail")
-		}
 		// load config file into the given viper instance.
 		if err := readConfigFile(cdnNodeViper, cmd); err != nil {
 			return errors.Wrap(err, "read config file")
@@ -77,6 +74,12 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return errors.Wrap(err, "get config from viper")
 		}
+
+		// init logger
+		if err := logcore.InitCdnSystem(cfg.Console); err != nil {
+			return errors.Wrapf(err, "init log fail")
+		}
+
 		// create home dir
 		if err := fileutils.MkdirAll(cdnNodeViper.GetString("base.homeDir")); err != nil {
 			return fmt.Errorf("failed to create home dir %s: %v", cdnNodeViper.GetString("base.homeDir"), err)
@@ -152,6 +155,8 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.Bool("profiler", defaultBaseProperties.EnableProfiler,
 		"profiler sets whether cdnNode HTTP server setups profiler")
 
+	flagSet.Bool("console", defaultBaseProperties.Console, "console shows log on console")
+
 	flagSet.String("advertise-ip", "",
 		"the cdn node ip is the ip we advertise to other peers in the p2p-network")
 
@@ -221,6 +226,9 @@ func bindRootFlags(v *viper.Viper) error {
 		}, {
 			key:  "base.taskExpireTime",
 			flag: "task-expire-time",
+		}, {
+			key:  "base.Console",
+			flag: "console",
 		},
 	}
 
