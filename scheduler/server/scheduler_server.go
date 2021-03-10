@@ -186,6 +186,9 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 	if peerTask.Success {
 		peerTask.SetNodeStatus(types.PeerTaskStatusDone)
 		s.worker.ReceiveJob(peerTask)
+	} else {
+		peerTask.SetNodeStatus(types.PeerTaskStatusLeaveNode)
+		s.worker.ReceiveJob(peerTask)
 	}
 
 	return
