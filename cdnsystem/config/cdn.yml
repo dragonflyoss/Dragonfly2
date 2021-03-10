@@ -69,25 +69,28 @@ base:
   # It means the value of CleanRatio should be [1-10].
   CleanRatio: 1
 
-  StoragePattern: hybrid
+  StoragePattern: disk
 
 plugins:
   storage:
     - name: disk
       enable: true
-      config: "baseDir: /tmp/cdnsystem\ngcConfig:\n
-        youngGCThreshold: 100G\n
-        fullGCThreshold: 5G\n
-        cleanRatio: 1\n
-        intervalThreshold: 3s"
+      config:
+        baseDir: /tmp/cdnsystem
+        gcConfig:
+          youngGCThreshold: 100G
+          fullGCThreshold: 5G
+          cleanRatio: 1
+          intervalThreshold: 3s
     - name: memory
       enable: true
-      config: "baseDir: /Users/sunweipeng1/dragonflycdn\ngcConfig:\n
-        youngGCThreshold: 100G\n
-        fullGCThreshold: 5G\n
-        cleanRatio: 1\n
-        intervalThreshold: 3s"
+      config:
+        baseDir: /Users/sunweipeng1/dragonflycdn
+        gcConfig:
+          youngGCThreshold: 100G
+          fullGCThreshold: 5G
+          cleanRatio: 3
+          intervalThreshold: 3s
   sourceClient:
     - name: http
       enable: false
-

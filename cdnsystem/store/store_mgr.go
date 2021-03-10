@@ -24,14 +24,14 @@ import (
 )
 
 // StorageBuilder is a function that creates a new storage plugin instant with the giving conf.
-type StorageBuilder func(conf string) (StorageDriver, error)
+type StorageBuilder func(conf interface{}) (StorageDriver, error)
 
 // Register defines an interface to register a driver with specified name.
 // All drivers should call this function to register itself to the driverFactory.
 func Register(name string, builder StorageBuilder) {
 	name = strings.ToLower(name)
 	// plugin builder
-	var f plugins.Builder = func(conf string) (plugin plugins.Plugin, e error) {
+	var f plugins.Builder = func(conf interface{}) (plugin plugins.Plugin, e error) {
 		return NewStore(name, builder, conf)
 	}
 	plugins.RegisterPlugin(config.StoragePlugin, name, f)

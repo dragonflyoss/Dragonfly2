@@ -67,7 +67,7 @@ type Plugin interface {
 }
 
 // Builder is a function that creates a new plugin instant with the giving conf.
-type Builder func(conf string) (Plugin, error)
+type Builder func(conf interface{}) (Plugin, error)
 
 // Repository stores data related to plugin.
 type Repository interface {

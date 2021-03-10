@@ -65,7 +65,7 @@ func (s *Store) CreateFile(ctx context.Context, path string) (*os.File, error) {
 }
 
 // NewStore creates a new Store instance.
-func NewStore(name string, builder StorageBuilder, cfg string) (*Store, error) {
+func NewStore(name string, builder StorageBuilder, cfg interface{}) (*Store, error) {
 	if name == "" || builder == nil {
 		return nil, fmt.Errorf("plugin name or builder cannot be nil")
 	}

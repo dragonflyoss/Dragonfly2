@@ -24,6 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/stat"
 	"fmt"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -68,7 +69,7 @@ func unLock(path string, offset int64, ro bool) {
 type diskStorage struct {
 	// BaseDir is the dir that local storage driver will store content based on it.
 	BaseDir  string          `yaml:"baseDir"`
-	GcConfig *store.GcConfig `yaml:"gcConfig"`
+	GcConfig store.GcConfig `yaml:"gcConfig"`
 }
 
 func (ds *diskStorage) GetTotalSpace(ctx context.Context) (fileutils.Fsize, error) {
@@ -83,7 +84,7 @@ func (ds *diskStorage) GetHomePath(ctx context.Context) string {
 }
 
 func (ds *diskStorage) GetGcConfig(ctx context.Context) *store.GcConfig {
-	return ds.GcConfig
+	return &ds.GcConfig
 }
 
 func (ds *diskStorage) CreateDir(ctx context.Context, path string) error {
@@ -99,10 +100,13 @@ func (ds *diskStorage) MoveFile(src string, dst string) error {
 }
 
 // NewStorage performs initialization for disk Storage and return a StorageDriver.
-func NewStorage(conf string) (store.StorageDriver, error) {
-	// type assertion for config
+func NewStorage(conf interface{}) (store.StorageDriver, error) {
 	cfg := &diskStorage{}
-	if err := yaml.Unmarshal([]byte(conf), cfg); err != nil {
+	// type assertion for config
+	confMap := conf.(map[interface{}]interface{})
+	cfg.BaseDir = confMap["baseDir"].(string)
+	mapstructure.Decode(confMap["gcConfig"].(map), cfg.GcConfig)
+	if err := yaml.Unmarshal([]byte(conf.(string)), cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %v", err)
 	}
 
@@ -111,7 +115,7 @@ func NewStorage(conf string) (store.StorageDriver, error) {
 		return nil, fmt.Errorf("not absolute path: %s", cfg.BaseDir)
 	}
 	if err := fileutils.CreateDirectory(cfg.BaseDir); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create baseDir%s: %v",cfg.BaseDir, err)
 	}
 
 	return &diskStorage{

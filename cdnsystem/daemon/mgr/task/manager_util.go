@@ -209,7 +209,7 @@ func computePieceSize(length int64) int32 {
 
 // isSuccessCDN determines that whether the CDNStatus is success.
 func isSuccessCDN(CDNStatus string) bool {
-	return CDNStatus == types.TaskInfoCdnStatusSUCCESS
+	return CDNStatus == types.TaskInfoCdnStatusSuccess
 }
 
 // isFrozen
