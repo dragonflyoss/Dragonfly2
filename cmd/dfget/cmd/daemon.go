@@ -59,6 +59,7 @@ var daemonCmd = &cobra.Command{
 			return err
 		}
 
+		// init logger
 		logcore.InitDaemon(flagDaemonOpt.Console)
 		if err := checkDaemonOptions(); err != nil {
 			return err

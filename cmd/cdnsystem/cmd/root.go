@@ -69,6 +69,7 @@ var rootCmd = &cobra.Command{
 		if err := readConfigFile(cdnNodeViper, cmd); err != nil {
 			return errors.Wrap(err, "read config file")
 		}
+
 		// get config from viper.
 		cfg, err := getConfigFromViper(cdnNodeViper)
 		if err != nil {

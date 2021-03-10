@@ -57,6 +57,7 @@ var SchedulerCmd = &cobra.Command{
 			return errors.Wrap(err, "get config from viper")
 		}
 
+		// init logger
 		if err := logcore.InitScheduler(cfg.Console); err != nil {
 			return errors.Wrap(err, "init scheduler logger")
 		}
