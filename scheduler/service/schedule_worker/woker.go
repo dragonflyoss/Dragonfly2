@@ -282,7 +282,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 			w.sendJob(parent)
 		}
 
-	case types.PeerTaskStatusLeaveNode:
+	case types.PeerTaskStatusLeaveNode, types.PeerTaskStatusNodeGone:
 		adjustNodes, err := w.scheduler.SchedulerLeaveNode(peerTask)
 		if err != nil {
 			logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
@@ -334,6 +334,8 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 				mgr.GetCDNManager().TriggerTask(task)
 			}
 		}
+		return true
+	case dfcodes.UnknownError:
 		return true
 	}
 

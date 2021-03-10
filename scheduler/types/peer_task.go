@@ -18,6 +18,7 @@ package types
 
 import (
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"errors"
@@ -38,6 +39,7 @@ const (
 	PeerTaskStatusDone           PeerTaskStatus = 6
 	PeerTaskStatusLeaveNode      PeerTaskStatus = 7
 	PeerTaskStatusAddParent      PeerTaskStatus = 8
+	PeerTaskStatusNodeGone       PeerTaskStatus = 9
 )
 
 type PeerTask struct {
@@ -270,6 +272,8 @@ func (pt *PeerTask) AddPieceStatus(ps *scheduler.PieceResult) {
 	if pt.parent != nil {
 		pt.parent.AddCost(int32(ps.EndTime - ps.BeginTime))
 	}
+
+	pt.Touch()
 }
 
 func (pt *PeerTask) IsDown() (ok bool) {
@@ -296,7 +300,7 @@ func (pt *PeerTask) SetStatus(traffic int64, cost uint32, success bool, code bas
 	pt.Code = code
 	pt.Touch()
 	if pt.Success && pt.Task != nil {
-		pt.Task.Statistic.AddPeerTaskDown(int32((time.Now().UnixNano()-pt.startTime) / int64(time.Millisecond)))
+		pt.Task.Statistic.AddPeerTaskDown(int32((time.Now().UnixNano() - pt.startTime) / int64(time.Millisecond)))
 	}
 }
 
@@ -341,6 +345,28 @@ func (pt *PeerTask) Send() error {
 			return err
 		}
 		return pt.client.Send(pt.GetSendPkg())
+	}
+	return errors.New("empty client")
+}
+
+func (pt *PeerTask) SendError(dfError *dferrors.DfError) error {
+	if pt == nil {
+		return nil
+	}
+	if pt.client != nil {
+		err := pt.client.Context().Err()
+		if err != nil {
+			pt.client = nil
+			return err
+		}
+		pkg := &scheduler.PeerPacket{
+			State: &base.ResponseState{
+				Success: false,
+				Code:    dfError.Code,
+				Msg: dfError.Message,
+			},
+		}
+		return pt.client.Send(pkg)
 	}
 	return errors.New("empty client")
 }
