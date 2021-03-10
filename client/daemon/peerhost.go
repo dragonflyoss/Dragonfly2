@@ -85,7 +85,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 			TaskId: request.TaskID,
 			PeerId: request.PeerID,
 		})
-		logger.Debugf("leave task %s/%d state: %#v, error: %v", request.TaskID, request.PeerID, state, err)
+		logger.Debugf("leave task %s/%s state: %#v, error: %v", request.TaskID, request.PeerID, state, err)
 	})
 	if err != nil {
 		return nil, err

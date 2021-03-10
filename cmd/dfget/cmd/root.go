@@ -33,9 +33,9 @@ import (
 
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/client/clientutil/progressbar"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/pidfile"
-	"d7y.io/dragonfly/v2/cmd/common/progressbar"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -105,6 +105,9 @@ func runDfget() error {
 	if flagClientOpt.Timeout > 0 {
 		ctx, cancel = context.WithTimeout(ctx, flagClientOpt.Timeout)
 		defer cancel()
+	} else {
+		ctx, cancel = context.WithCancel(ctx)
+		defer cancel()
 	}
 	request := &dfdaemongrpc.DownRequest{
 		Url: flagClientOpt.URL,
@@ -117,7 +120,7 @@ func runDfget() error {
 		BizId:  flagClientOpt.CallSystem,
 		Filter: filter,
 	}
-	down, err := daemonClient.Download(context.Background(), request)
+	down, err := daemonClient.Download(ctx, request)
 	if err != nil {
 		return err
 	}

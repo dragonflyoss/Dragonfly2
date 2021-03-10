@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -137,16 +138,25 @@ func (m *manager) Download(ctx context.Context,
 loop:
 	for {
 		select {
-		case p := <-peerTaskProgress:
+		case p, ok := <-peerTaskProgress:
+			if !ok {
+				err = errors.New("progress closed unexpected")
+				logger.Errorf(err.Error())
+				return err
+			}
 			results <- &dfdaemongrpc.DownResult{
 				State:           p.State,
 				TaskId:          p.TaskId,
 				PeerId:          p.PeerID,
 				CompletedLength: uint64(p.CompletedLength),
-				Done:            p.Done,
+				Done:            p.PeerTaskDone,
 			}
-			if p.Done {
+
+			if p.PeerTaskDone && p.State.Success {
 				logger.Infof("task %s done", p.TaskId)
+				if p.ProgressDone != nil {
+					p.ProgressDone()
+				}
 				break loop
 			}
 		case <-ctx.Done():

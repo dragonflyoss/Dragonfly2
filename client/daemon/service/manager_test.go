@@ -52,7 +52,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 						PeerID:          "",
 						ContentLength:   100,
 						CompletedLength: int64(i),
-						Done:            i == 100,
+						PeerTaskDone:    i == 100,
 					}
 				}
 				close(ch)

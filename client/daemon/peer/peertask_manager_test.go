@@ -234,7 +234,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 		assert.True(p.State.Success)
 	}
 	assert.NotNil(p)
-	assert.True(p.Done)
+	assert.True(p.PeerTaskDone)
 
 	outputBytes, err := ioutil.ReadFile(output)
 	assert.Nil(err, "load output file")
