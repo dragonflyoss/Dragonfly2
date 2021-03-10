@@ -54,8 +54,8 @@ type Connection struct {
 	opts           []grpc.DialOption
 	key2NodeMap    sync.Map // key -> node(many to one)
 	node2ClientMap sync.Map // node -> clientConn(one to one)
-	HashRing       *hashring.HashRing
-	accessNodeMap  *syncmap.SyncMap
+	hashRing       *hashring.HashRing // server hash ring
+	accessNodeMap  *syncmap.SyncMap // clientConn access time
 	connExpireTime time.Duration
 }
 
@@ -75,7 +75,7 @@ func NewConnection(addrs []dfnet.NetAddr, opts ...grpc.DialOption) *Connection {
 	return &Connection{
 		rwMutex:        synclock.NewKeyLocker(),
 		opts:           opts,
-		HashRing:       hashring.New(addresses),
+		hashRing:       hashring.New(addresses),
 		accessNodeMap:  syncmap.NewSyncMap(),
 		connExpireTime: connExpireTime,
 	}

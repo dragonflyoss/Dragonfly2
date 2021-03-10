@@ -48,11 +48,13 @@ type PeerHostOption struct {
 	// Lock file location
 	LockFile string `json:"lock_file" yaml:"lock_file"`
 
-	DataDir     string          `json:"data_dir" yaml:"data_dir"`
-	WorkHome    string          `json:"work_home" yaml:"work_home"`
-	KeepStorage bool            `json:"keep_storage" yaml:"keep_storage"`
-	Schedulers  []dfnet.NetAddr `json:"schedulers" yaml:"schedulers"`
-	Verbose     bool            `yaml:"verbose" json:"verbose"`
+	DataDir     string `json:"data_dir" yaml:"data_dir"`
+	WorkHome    string `json:"work_home" yaml:"work_home"`
+	KeepStorage bool   `json:"keep_storage" yaml:"keep_storage"`
+	Verbose     bool   `yaml:"verbose" json:"verbose"`
+
+	Schedulers      []dfnet.NetAddr     `json:"schedulers" yaml:"schedulers"`
+	ScheduleTimeout clientutil.Duration `json:"schedule_timeout" yaml:"schedule_timeout"`
 
 	Host     HostOption     `json:"host" yaml:"host"`
 	Download DownloadOption `json:"download" yaml:"download"`

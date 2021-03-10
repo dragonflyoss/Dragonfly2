@@ -19,6 +19,8 @@ package mgr
 import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -93,7 +95,7 @@ func (cm *CDNManager) TriggerTask(task *types.Task) (err error) {
 
 func (cm *CDNManager) getCDNClient(task *types.Task) (cli *CDNClient, err error) {
 	if len(cm.cdnList) < 1 {
-		return
+		return nil, dferrors.New(dfcodes.SchedNeedBackSource, "there is no cdn")
 	}
 	pos := crc32.ChecksumIEEE([]byte(task.Url)) % uint32(len(cm.cdnList))
 	cli = cm.cdnList[int(pos)]

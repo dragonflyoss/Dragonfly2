@@ -102,7 +102,6 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	task.PieceTotal = int32((sourceFileLength + (int64(pieceSize) - 1)) / int64(pieceSize))
 
 	tm.taskStore.Add(task.TaskID, task)
-	tm.metrics.tasks.WithLabelValues(task.CdnStatus).Inc()
 	return task, nil
 }
 
@@ -135,8 +134,6 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 
 		// only update the task CdnStatus when the new task CDNStatus and
 		// the origin CDNStatus both not equals success
-		tm.metrics.tasks.WithLabelValues(task.CdnStatus).Dec()
-		tm.metrics.tasks.WithLabelValues(updateTaskInfo.CdnStatus).Inc()
 		task.CdnStatus = updateTaskInfo.CdnStatus
 		return task, nil
 	}
@@ -162,8 +159,6 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 	if pieceTotal != 0 {
 		task.PieceTotal = pieceTotal
 	}
-	tm.metrics.tasks.WithLabelValues(task.CdnStatus).Dec()
-	tm.metrics.tasks.WithLabelValues(updateTaskInfo.CdnStatus).Inc()
 	task.CdnStatus = updateTaskInfo.CdnStatus
 	return task, nil
 }

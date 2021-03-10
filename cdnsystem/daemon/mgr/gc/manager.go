@@ -23,19 +23,12 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 func init() {
 	// Ensure that Manager implements the GCMgr interface
 	var manager *Manager = nil
 	var _ mgr.GCMgr = manager
-}
-
-type metrics struct {
-	gcTasksCount    *prometheus.CounterVec
-	gcDisksCount    *prometheus.CounterVec
-	lastGCDisksTime *prometheus.GaugeVec
 }
 
 // Manager is an implementation of the interface of GCMgr.
@@ -46,7 +39,7 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr, register prometheus.Registerer) (*Manager, error) {
+func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr) (*Manager, error) {
 	return &Manager{
 		cfg:     cfg,
 		taskMgr: taskMgr,

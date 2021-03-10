@@ -134,7 +134,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		case types.TaskType:
 			var state *base.ResponseState
 			if !piece.Result.Success {
-				state = common.NewState(dfcodes.CdnStatusError, piece.Result.Msg)
+				state = common.NewState(dfcodes.CdnTaskStatusError, piece.Result.Msg)
 			} else {
 				state = common.NewState(dfcodes.Success, "success")
 			}
