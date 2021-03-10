@@ -40,8 +40,8 @@ type PeerHostOption struct {
 	// AliveTime indicates alive duration for which daemon keeps no accessing by any uploading and download requests,
 	// after this period daemon will automatically exit
 	// when AliveTime == 0, will run infinitely
-	AliveTime  clientutil.Duration `json:"alive_time" yaml:"alive_time"`
-	GCInterval clientutil.Duration `json:"gc_interval" yaml:"gc_interval"`
+	AliveTime  clientutil.Duration `json:"alive_time,omitempty" yaml:"alive_time,omitempty"`
+	GCInterval clientutil.Duration `json:"gc_interval,omitempty" yaml:"gc_interval,omitempty"`
 
 	// Pid file location
 	PidFile string `json:"pid_file" yaml:"pid_file"`
@@ -51,7 +51,7 @@ type PeerHostOption struct {
 	DataDir     string `json:"data_dir" yaml:"data_dir"`
 	WorkHome    string `json:"work_home" yaml:"work_home"`
 	KeepStorage bool   `json:"keep_storage" yaml:"keep_storage"`
-	Verbose     bool   `yaml:"verbose" json:"verbose"`
+	Verbose     bool   `yaml:"verbose,omitempty" json:"verbose,omitempty"`
 	Console     bool   `json:"console,omitempty" yaml:"console,omitempty"`
 
 	Schedulers      []dfnet.NetAddr     `json:"schedulers" yaml:"schedulers"`
