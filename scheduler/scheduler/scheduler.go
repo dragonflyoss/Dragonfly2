@@ -47,7 +47,7 @@ func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.P
 		value := 0.0
 		for _, child := range candidates {
 			val, _ := s.factory.getEvaluator(peer.Task).Evaluate(peer, child)
-			if val > value {
+			if val > value && schedulerResult[child] == 0 {
 				value = val
 				chosen = child
 			}
@@ -57,13 +57,12 @@ func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.P
 		}
 		if schedulerResult[chosen] == 0 {
 			children = append(children, chosen)
+			schedulerResult[chosen]++
+			freeLoad--
 		}
-		schedulerResult[chosen]++
-		freeLoad--
 	}
 	for _, child := range children {
-		concurrency := schedulerResult[child]
-		child.AddParent(peer, concurrency)
+		child.AddParent(peer, 1)
 	}
 	return
 }

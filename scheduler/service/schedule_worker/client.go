@@ -17,6 +17,7 @@
 package schedule_worker
 
 import (
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"io"
 
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
@@ -29,6 +30,7 @@ import (
 
 type Client struct {
 	client    scheduler.Scheduler_ReportPieceResultServer
+	stop      bool
 	worker    IWorker
 	scheduler *scheduler2.Scheduler
 }
@@ -41,6 +43,7 @@ func CreateClient(client scheduler.Scheduler_ReportPieceResultServer, worker IWo
 	}
 	return c
 }
+
 
 func (c *Client) Start() error {
 	return c.doWork()
@@ -67,11 +70,15 @@ func (c *Client) doWork() error {
 		c.client.Send(peerResult)
 		return nil
 	}
-	peerTask.SetClient(c.client)
+	peerTask.SetClient(c)
 
-	for {
+	for !c.stop {
 		if pr != nil {
-			logger.Debugf("[%s][%s]: receive a pieceResult %v - %v", pr.TaskId, pr.SrcPid, pr.PieceNum, pr.Code)
+			logger.Infof("[%s][%s]: receive a pieceResult %v - %v", pr.TaskId, pr.SrcPid, pr.PieceNum, pr.Code)
+		}
+		if pr.PieceNum == common.EndOfPiece {
+			logger.Infof("[%s][%s]: client closed", pr.TaskId, pr.SrcPid)
+			return nil
 		}
 		c.worker.ReceiveUpdatePieceResult(pr)
 		pr, err = c.client.Recv()
@@ -82,4 +89,28 @@ func (c *Client) doWork() error {
 			return nil
 		}
 	}
+	return nil
+}
+
+func (c *Client) Send (p *scheduler.PeerPacket) error {
+	return c.client.Send(p)
+}
+
+func (c *Client) Recv() (*scheduler.PieceResult, error) {
+	return c.client.Recv()
+}
+
+func (c *Client) Close() {
+	c.stop = true
+}
+
+func (c *Client) IsClosed() bool {
+	if c.stop {
+		return true
+	}
+	err := c.client.Context().Err()
+	if err != nil {
+		return true
+	}
+	return false
 }
