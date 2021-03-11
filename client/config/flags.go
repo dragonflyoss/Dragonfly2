@@ -23,7 +23,7 @@ func NewSchedulersValue(ph *PeerHostOption) *SchedulersValue {
 
 func (sv *SchedulersValue) String() string {
 	var result []string
-	for _, v := range sv.ph.Schedulers {
+	for _, v := range sv.ph.Scheduler.NetAddrs {
 		result = append(result, v.Addr)
 	}
 	return strings.Join(result, ",")
@@ -39,7 +39,7 @@ func (sv *SchedulersValue) Set(value string) error {
 		if len(vv) == 1 {
 			address = fmt.Sprintf("%s:%d", address, DefaultSupernodePort)
 		}
-		sv.ph.Schedulers = append(sv.ph.Schedulers,
+		sv.ph.Scheduler.NetAddrs = append(sv.ph.Scheduler.NetAddrs,
 			dfnet.NetAddr{
 				Type: dfnet.TCP,
 				Addr: address,

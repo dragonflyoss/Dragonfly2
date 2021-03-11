@@ -52,7 +52,7 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
-	state, err := p.ptm.scheduler.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	state, err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
@@ -72,7 +72,7 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 func (p *filePeerTaskCallback) Fail(pt PeerTask, reason string) error {
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
-	state, err := p.ptm.scheduler.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	state, err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
