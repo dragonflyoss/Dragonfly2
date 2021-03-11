@@ -40,7 +40,6 @@ import (
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -49,10 +48,6 @@ import (
 )
 
 var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)
-
-func TestMain(m *testing.M) {
-	m.Run()
-}
 
 func setupPeerTaskManagerComponents(
 	ctrl *gomock.Controller,
@@ -231,6 +226,10 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	var p *PeerTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
+		if p.PeerTaskDone {
+			p.ProgressDone()
+			break
+		}
 	}
 	assert.NotNil(p)
 	assert.True(p.PeerTaskDone)

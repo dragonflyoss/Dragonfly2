@@ -152,10 +152,12 @@ loop:
 				Done:            p.PeerTaskDone,
 			}
 
-			if p.PeerTaskDone && p.State.Success {
+			// peer task sets PeerTaskDone to true only once
+			if p.PeerTaskDone {
 				logger.Infof("task %s done", p.TaskId)
-				if p.ProgressDone != nil {
-					p.ProgressDone()
+				p.ProgressDone()
+				if !p.State.Success {
+					logger.Errorf("task %s failed: %d/%s", p.TaskId, p.State.Code, p.State.Msg)
 				}
 				break loop
 			}
