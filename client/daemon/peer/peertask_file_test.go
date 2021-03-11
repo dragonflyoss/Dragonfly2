@@ -14,6 +14,8 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/client/daemon/test/mock/source"
@@ -75,8 +77,12 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 		},
-		storageManager: storageManager,
-		scheduler:      schedulerClient,
+		storageManager:  storageManager,
+		schedulerClient: schedulerClient,
+		schedulerOption: config.SchedulerOption{
+			RequestTimeout:  clientutil.Duration{Duration: 3 * time.Second},
+			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+		},
 	}
 	req := &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
@@ -90,7 +96,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		Output: output,
 	}
 	ctx := context.Background()
-	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, &req.PeerTaskRequest, time.Second)
+	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	assert.Nil(err, "new file peer task")
 
 	pt.SetCallback(&filePeerTaskCallback{
@@ -170,8 +176,12 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 		},
-		storageManager: storageManager,
-		scheduler:      schedulerClient,
+		storageManager:  storageManager,
+		schedulerClient: schedulerClient,
+		schedulerOption: config.SchedulerOption{
+			RequestTimeout:  clientutil.Duration{Duration: 3 * time.Second},
+			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+		},
 	}
 	req := &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
@@ -185,7 +195,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		Output: output,
 	}
 	ctx := context.Background()
-	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, &req.PeerTaskRequest, time.Second)
+	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	assert.Nil(err, "new file peer task")
 
 	pt.SetCallback(&filePeerTaskCallback{

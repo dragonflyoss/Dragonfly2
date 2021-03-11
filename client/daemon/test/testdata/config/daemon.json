@@ -6,12 +6,16 @@
   "data_dir": "/tmp/dragonfly/dfdaemon/",
   "work_home": "/tmp/dragonfly/dfdaemon/",
   "keep_storage": false,
-  "schedulers": [
-    {
-      "type": "tcp",
-      "addr": "127.0.0.1:8002"
-    }
-  ],
+  "scheduler": {
+    "net_addrs": [
+      {
+        "type": "tcp",
+        "addr": "127.0.0.1:8002"
+      }
+    ],
+    "request_timeout": 0,
+    "schedule_timeout": 0
+  },
   "verbose": true,
   "host": {
     "listen_ip": "0.0.0.0",
