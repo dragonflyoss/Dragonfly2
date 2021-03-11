@@ -79,9 +79,6 @@ func NewPeerTaskManager(
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption) (PeerTaskManager, error) {
 
-	if scheduleTimeout == 0 {
-		scheduleTimeout = 3 * time.Second
-	}
 	ptm := &peerTaskManager{
 		host:             host,
 		runningPeerTasks: sync.Map{},
