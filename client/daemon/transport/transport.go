@@ -110,17 +110,13 @@ func (rt *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		// result for different requests
 		req.Header.Del("Accept-Encoding")
 		logger.Debugf("round trip with dragonfly: %s", req.URL.String())
-		if res, err := rt.download(req); err == nil {
-			return res, err
-		}
+		return rt.download(req)
 	}
 	logger.Debugf("round trip directly: %s %s", req.Method, req.URL.String())
 	req.Host = req.URL.Host
 	req.Header.Set("Host", req.Host)
 
-	res, err := rt.baseRoundTripper.RoundTrip(req)
-
-	return res, err
+	return rt.baseRoundTripper.RoundTrip(req)
 }
 
 // needUseGetter is the default value for shouldUseDragonfly, which downloads all
