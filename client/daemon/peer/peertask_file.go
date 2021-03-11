@@ -240,24 +240,23 @@ loop:
 			pt.Debugf("scheduler client close PeerPacket channel")
 			break
 		}
-		if peerPacket == nil {
-			pt.Warnf("scheduler client send nil PeerPacket")
-			continue
-		}
+
 		if !peerPacket.State.Success {
 			pt.Errorf("receive peer packet with error: %d/%s", peerPacket.State.Code, peerPacket.State.Msg)
 			// when receive error, cancel
-			// pt.cancel()
+			pt.cancel()
 			continue
 		}
-		pt.Debugf("receive peer packet: %#v, main peer: %#v", peerPacket, peerPacket.MainPeer)
-		if peerPacket.MainPeer == nil && peerPacket.StealPeers == nil {
-			pt.Warnf("scheduler client send a PeerPacket will empty peers")
+
+		if peerPacket == nil || (peerPacket.MainPeer == nil && peerPacket.StealPeers == nil) {
+			pt.Warnf("scheduler client send a peerPacket will empty peers")
 			continue
 		}
+
+		pt.Debugf("receive peer packet: %#v, main peer: %#v, steal peers: %#v", peerPacket, peerPacket.MainPeer, peerPacket.StealPeers)
+
 		pt.peerPacket = peerPacket
 		pt.pieceParallelCount = pt.peerPacket.ParallelCount
-
 		select {
 		case pt.peerPacketReady <- true:
 		case <-pt.ctx.Done():
@@ -453,12 +452,14 @@ func (pt *filePeerTask) preparePieceTasks(request *base.PieceTaskRequest) (p *ba
 			err = fmt.Errorf("%v", rerr)
 		}
 	}()
+
 	pt.pieceParallelCount = pt.peerPacket.ParallelCount
 	request.DstPid = pt.peerPacket.MainPeer.PeerId
 	p, err = pt.preparePieceTasksByPeer(pt.peerPacket.MainPeer, request)
 	if err == nil {
 		return
 	}
+
 	for _, peer := range pt.peerPacket.StealPeers {
 		request.DstPid = peer.PeerId
 		p, err = pt.preparePieceTasksByPeer(peer, request)
@@ -466,6 +467,7 @@ func (pt *filePeerTask) preparePieceTasks(request *base.PieceTaskRequest) (p *ba
 			return
 		}
 	}
+
 	err = fmt.Errorf("no peers available")
 	return
 }
@@ -475,6 +477,7 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 		return nil, fmt.Errorf("empty peer")
 	}
 	pt.Debugf("get piece task from peer %s, request: %#v", peer.PeerId, request)
+
 	p, err := dfclient.GetPieceTasks(peer, pt.ctx, request)
 	if err != nil {
 		// context canceled, just exit
@@ -482,6 +485,7 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 			pt.Debugf("get piece task from peer(%s) canceled: %s", peer.PeerId, err)
 			return nil, err
 		}
+
 		code := dfcodes.ClientPieceTaskRequestFail
 		// not grpc error
 		if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
@@ -501,21 +505,23 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 		pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
 		return nil, err
 	}
-	pt.Debugf("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
-	if p.State.Success {
-		return p, nil
+	pt.Debugf("get piece task from peer(%s) ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
+
+	if !p.State.Success {
+		pt.pieceResultCh <- &scheduler.PieceResult{
+			TaskId:        pt.taskId,
+			SrcPid:        pt.peerId,
+			DstPid:        peer.PeerId,
+			Success:       false,
+			Code:          p.State.Code,
+			HostLoad:      nil,
+			FinishedCount: -1,
+		}
+		pt.Warnf("get piece task from peer(%s) failed: %d/%s", peer.PeerId, p.State.Code, p.State.Msg)
+		return nil, fmt.Errorf("get piece failed: %d/%s", p.State.Code, p.State.Msg)
 	}
-	pt.pieceResultCh <- &scheduler.PieceResult{
-		TaskId:        pt.taskId,
-		SrcPid:        pt.peerId,
-		DstPid:        peer.PeerId,
-		Success:       false,
-		Code:          p.State.Code,
-		HostLoad:      nil,
-		FinishedCount: -1,
-	}
-	pt.Warnf("get piece task from peer(%s) failed: %d/%s", peer.PeerId, p.State.Code, p.State.Msg)
-	return nil, fmt.Errorf("get piece failed: %d/%s", p.State.Code, p.State.Msg)
+
+	return p, nil
 }
 
 func (pt *filePeerTask) getNextPieceNum(cur, limit int32) int32 {
