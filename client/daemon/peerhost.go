@@ -73,20 +73,22 @@ type peerHost struct {
 }
 
 func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost, error) {
-	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs)
+	sched, err := schedulerclient.GetClientByAddr(opt.Schedulers)
 	if err != nil {
 		return nil, err
 	}
 
 	// Storage.Option.DataPath is same with PeerHost DataDir
 	opt.Storage.Option.DataPath = opt.DataDir
-	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage.Option /* gc callback */, func(request storage.CommonTaskRequest) {
-		state, err := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
-			TaskId: request.TaskID,
-			PeerId: request.PeerID,
+	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage.Option,
+		/* gc callback */
+		func(request storage.CommonTaskRequest) {
+			state, err := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
+				TaskId: request.TaskID,
+				PeerId: request.PeerID,
+			})
+			logger.Infof("leave task %s/%s state: %#v, error: %v", request.TaskID, request.PeerID, state, err)
 		})
-		logger.Debugf("leave task %s/%s state: %#v, error: %v", request.TaskID, request.PeerID, state, err)
-	})
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +97,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 	if err != nil {
 		return nil, err
 	}
-	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler)
+	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.ScheduleTimeout.Duration)
 	if err != nil {
 		return nil, err
 	}

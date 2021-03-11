@@ -103,7 +103,8 @@ type filePeerTask struct {
 	// failedReason will be set when peer task failed
 	failedReason string
 	// progressCh holds progress status
-	progressCh chan *PeerTaskProgress
+	progressCh     chan *PeerTaskProgress
+	progressStopCh chan bool
 	// progressDone will be true when peer task done and caller call ProgressDone func in progress channel
 	progressDone bool
 
@@ -164,6 +165,7 @@ func NewFilePeerTask(ctx context.Context,
 		failedPieceCh:   make(chan int32, 4),
 		failedReason:    "unknown",
 		progressCh:      make(chan *PeerTaskProgress),
+		progressStopCh:  make(chan bool),
 		contentLength:   -1,
 		totalPiece:      -1,
 		schedulerOption: schedulerOption,
@@ -286,7 +288,7 @@ func (pt *filePeerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc fu
 		pt.Infof("new peer client ready")
 	case <-time.After(pt.schedulerOption.RequestTimeout.Duration):
 		pt.failedReason = reasonSchedulerTimeout
-		pt.Errorf(pt.failedReason)
+		pt.Errorf("wait first peer packet timeout from scheduler")
 		return
 	}
 	var (
@@ -335,7 +337,6 @@ loop:
 			case <-pt.ctx.Done():
 				pt.Debugf("context done due to %s", pt.ctx.Err())
 				if !pt.progressDone {
-					pt.callback.Fail(pt, pt.ctx.Err().Error())
 					pt.failedReason = reasonContextCanceled
 				}
 				break loop
@@ -376,7 +377,6 @@ loop:
 			case <-pt.ctx.Done():
 				pt.Debugf("context done due to %s", pt.ctx.Err())
 				if !pt.progressDone {
-					pt.callback.Fail(pt, pt.ctx.Err().Error())
 					pt.failedReason = reasonContextCanceled
 				}
 				break loop
@@ -390,7 +390,7 @@ loop:
 }
 
 func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
-	// FIXME goroutine safe for channel and send on closed channel
+	// goroutine safe for channel and send on closed channel
 	defer func() {
 		if r := recover(); r != nil {
 			pt.Warnf("recover from %s", r)
@@ -398,10 +398,23 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 	}()
 	// retry failed piece
 	if !pieceResult.Success {
+		pieceResult.FinishedCount = pt.bitmap.Settled()
 		pt.pieceResultCh <- pieceResult
 		pt.failedPieceCh <- pieceResult.PieceNum
 		return nil
 	}
+
+	pt.lock.Lock()
+	if pt.bitmap.IsSet(pieceResult.PieceNum) {
+		pt.lock.Unlock()
+		pt.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
+		return nil
+	}
+	// mark piece processed
+	pt.bitmap.Set(pieceResult.PieceNum)
+	atomic.AddInt64(&pt.completedLength, int64(piece.RangeSize))
+	pt.lock.Unlock()
+
 	pieceResult.FinishedCount = pt.bitmap.Settled()
 	pt.pieceResultCh <- pieceResult
 	// send progress first to avoid close channel panic
@@ -409,31 +422,23 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 		State: &base.ResponseState{
 			Success: pieceResult.Success,
 			Code:    pieceResult.Code,
-			Msg:     "",
+			Msg:     "downloading",
 		},
 		TaskId:          pt.taskId,
 		PeerID:          pt.peerId,
 		ContentLength:   pt.contentLength,
-		CompletedLength: pt.completedLength + int64(piece.RangeSize),
+		CompletedLength: pt.completedLength,
 		PeerTaskDone:    false,
 	}
+
 	select {
+	case <-pt.progressStopCh:
 	case pt.progressCh <- p:
 		pt.Debugf("progress sent, %d/%d", p.CompletedLength, p.ContentLength)
 	case <-pt.ctx.Done():
 		pt.Warnf("send progress failed, peer task context done due to %s", pt.ctx.Err())
 		return pt.ctx.Err()
 	}
-
-	pt.lock.Lock()
-	defer pt.lock.Unlock()
-	if pt.bitmap.IsSet(pieceResult.PieceNum) {
-		pt.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
-		return nil
-	}
-	// mark piece processed
-	pt.bitmap.Set(pieceResult.PieceNum)
-	atomic.AddInt64(&pt.completedLength, int64(piece.RangeSize))
 
 	if !pt.isCompleted() {
 		return nil
@@ -506,6 +511,7 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 		pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
 		return nil, err
 	}
+  
 	pt.Debugf("get piece task from peer(%s) ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
 
 	if !p.State.Success {
@@ -542,14 +548,35 @@ func (pt *filePeerTask) finish() error {
 	var err error
 	// send last progress
 	pt.once.Do(func() {
+		defer func() {
+			if rerr := recover(); rerr != nil {
+				pt.Errorf("finish recover from: %s", rerr)
+				err = fmt.Errorf("%v", rerr)
+			}
+		}()
 		// send EOF piece result to scheduler
 		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.bitmap.Settled())
 		pt.Debugf("finish end piece result sent")
 
+		var (
+			success = true
+			code    = dfcodes.Success
+			message = "Success"
+		)
+
+		// callback to store data to output
+		if err = pt.callback.Done(pt); err != nil {
+			pt.Errorf("peer task done callback failed: %s", err)
+			success = false
+			code = dfcodes.UnknownError
+			message = err.Error()
+		}
+
 		pg := &PeerTaskProgress{
 			State: &base.ResponseState{
-				Success: true,
-				Code:    dfcodes.Success,
+				Success: success,
+				Code:    code,
+				Msg:     message,
 			},
 			TaskId:          pt.taskId,
 			PeerID:          pt.peerId,
@@ -558,21 +585,27 @@ func (pt *filePeerTask) finish() error {
 			PeerTaskDone:    true,
 			ProgressDone: func() {
 				pt.progressDone = true
+				close(pt.progressStopCh)
 			},
 		}
+
+		// wait client received progress
+		pt.Infof("try to send finish progress: %#v, state: %#v", pg, pg.State)
 		select {
 		case pt.progressCh <- pg:
-			pt.Debugf("progress sent: %#v, state: %#v", pg, pg.State)
+			pt.Infof("finish progress sent")
 		case <-pt.ctx.Done():
-			pt.Warnf("progress sent failed: %#v, context done", pg)
+			pt.Warnf("finish progress sent failed: %#v, context done", pg)
 		}
-		// callback to store data to output
-		if err = pt.callback.Done(pt); err != nil {
-			pt.Errorf("peer task callback failed: %s", err)
+		// wait progress stopped
+		select {
+		case <-pt.progressStopCh:
+			pt.Infof("progress stopped")
+		case <-pt.ctx.Done():
+			pt.Warnf("wait progress stopped failed: %#v, context done", pg)
 		}
 		pt.Debugf("finished: close done and progress channel")
 		close(pt.done)
-		close(pt.progressCh)
 	})
 	return err
 }
@@ -582,6 +615,11 @@ func (pt *filePeerTask) cleanUnfinished() {
 
 	// send last progress
 	pt.once.Do(func() {
+		defer func() {
+			if err := recover(); err != nil {
+				pt.Errorf("cleanUnfinished recover from: %s", err)
+			}
+		}()
 		// send EOF piece result to scheduler
 		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.bitmap.Settled())
 		pt.Debugf("clean up end piece result sent")
@@ -597,17 +635,33 @@ func (pt *filePeerTask) cleanUnfinished() {
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,
 			PeerTaskDone:    true,
+			ProgressDone: func() {
+				pt.progressDone = true
+				close(pt.progressStopCh)
+			},
 		}
+
+		// wait client received progress
 		select {
 		case pt.progressCh <- pg:
-			pt.Debugf("progress sent: %#v, state: %#v", pg, pg.State)
+			pt.Debugf("unfinished progress sent: %#v, state: %#v", pg, pg.State)
 		case <-pt.ctx.Done():
-			pt.Debugf("send progress failed: %#v, context done: %v", pg, pt.ctx.Err())
+			pt.Debugf("send unfinished progress failed: %#v, context done: %v", pg, pt.ctx.Err())
+		}
+		// wait progress stopped
+		select {
+		case <-pt.progressStopCh:
+			pt.Infof("progress stopped")
+		case <-pt.ctx.Done():
+			pt.Warnf("wait progress stopped failed: %#v, context done", pg)
+		}
+
+		if err := pt.callback.Fail(pt, pt.failedReason); err != nil {
+			pt.Errorf("peer task fail callback failed: %s", err)
 		}
 
 		pt.Debugf("clean unfinished: close done and progress channel")
 		close(pt.done)
-		close(pt.progressCh)
 	})
 }
 

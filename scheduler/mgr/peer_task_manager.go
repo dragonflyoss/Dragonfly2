@@ -17,6 +17,8 @@
 package mgr
 
 import (
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/workqueue"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -26,6 +28,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
+
+const (
+	PeerGoneTimeout = int64(time.Second * 10)
 )
 
 type PeerTaskManager struct {
@@ -232,11 +238,19 @@ func (m *PeerTaskManager) downloadMonitorWorkingLoop() {
 		if m.downloadMonitorCallBack != nil {
 			pt, _ := v.(*types.PeerTask)
 			if pt != nil {
-				if pt.GetNodeStatus() != types.PeerTaskStatusHealth ||
-					pt.GetParent() == nil || !pt.IsWaiting() {
+				if pt.GetNodeStatus() != types.PeerTaskStatusHealth {
+					// peer do not report for a long time, peer gone
+					if time.Now().UnixNano() > pt.GetLastActiveTime() + PeerGoneTimeout {
+						pt.SetNodeStatus(types.PeerTaskStatusNodeGone)
+						pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report time out"))
+					}
+					m.downloadMonitorCallBack(pt)
+				} else if !pt.IsWaiting() {
 					m.downloadMonitorCallBack(pt)
 				}
-				if _, ok := m.GetPeerTask(pt.Pid); ok && !pt.Success {
+				_, ok := m.GetPeerTask(pt.Pid)
+				status := pt.GetNodeStatus()
+				if  ok && !pt.Success && status != types.PeerTaskStatusNodeGone && status != types.PeerTaskStatusLeaveNode{
 					m.RefreshDownloadMonitor(pt)
 				}
 			}

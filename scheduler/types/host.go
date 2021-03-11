@@ -17,6 +17,7 @@
 package types
 
 import (
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"sync"
 )
@@ -87,6 +88,7 @@ func (h *Host) SetTotalUploadLoad(load int32) {
 func (h *Host) AddUploadLoad(delta int32) {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
+	logger.Infof("host[%s] type[%d] add UploadLoad [%d]", h.Uuid, h.Type, delta)
 	h.currentUploadLoad += delta
 }
 

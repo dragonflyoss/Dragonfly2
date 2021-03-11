@@ -20,6 +20,7 @@ import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
@@ -72,7 +73,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		task, err = s.svc.AddTask(task)
 		if err != nil {
 			dferror, _ := err.(*dferrors.DfError)
-			if dferror.Code == dfcodes.SchedNeedBackSource {
+			if dferror != nil && dferror.Code == dfcodes.SchedNeedBackSource {
 				isCdn = true
 			} else {
 				return
@@ -176,6 +177,8 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 		return
 	}()
 
+	logger.Infof("[%s][%s]: receive a peer result [%+v]", result.TaskId, result.PeerId, *result)
+
 	pid := result.PeerId
 	peerTask, err := s.svc.GetPeerTask(pid)
 	if err != nil {
@@ -185,6 +188,9 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 
 	if peerTask.Success {
 		peerTask.SetNodeStatus(types.PeerTaskStatusDone)
+		s.worker.ReceiveJob(peerTask)
+	} else {
+		peerTask.SetNodeStatus(types.PeerTaskStatusLeaveNode)
 		s.worker.ReceiveJob(peerTask)
 	}
 

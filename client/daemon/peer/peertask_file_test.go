@@ -112,6 +112,10 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	var p *PeerTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
+		if p.PeerTaskDone {
+			p.ProgressDone()
+			break
+		}
 	}
 	assert.NotNil(p)
 	assert.True(p.PeerTaskDone)
@@ -211,6 +215,10 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	var p *PeerTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
+		if p.PeerTaskDone {
+			p.ProgressDone()
+			break
+		}
 	}
 	assert.NotNil(p)
 	assert.True(p.PeerTaskDone)

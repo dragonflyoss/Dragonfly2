@@ -18,6 +18,7 @@ package types
 
 import (
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"errors"
@@ -38,6 +39,7 @@ const (
 	PeerTaskStatusDone           PeerTaskStatus = 6
 	PeerTaskStatusLeaveNode      PeerTaskStatus = 7
 	PeerTaskStatusAddParent      PeerTaskStatus = 8
+	PeerTaskStatusNodeGone       PeerTaskStatus = 9
 )
 
 type PeerTask struct {
@@ -58,7 +60,7 @@ type PeerTask struct {
 	subTreeNodesNum int32     // node number of subtree and current node is root of the subtree
 
 	// the client of peer task, which used for send and receive msg
-	client scheduler.Scheduler_ReportPieceResultServer
+	client IClient
 
 	Traffic int64
 	Cost    uint32
@@ -193,10 +195,12 @@ func (pt *PeerTask) DeleteParent() {
 		return
 	}
 
+
 	parent := pt.parent.DstPeerTask
 	if pt.parent.DstPeerTask != nil && pt.parent.DstPeerTask.children != nil {
 		pt.parent.DstPeerTask.children.Delete(pt)
 	}
+	concurency := int32(pt.parent.Concurrency)
 	pt.parent = nil
 
 	p := parent
@@ -210,10 +214,10 @@ func (pt *PeerTask) DeleteParent() {
 	}
 
 	if pt.Host != nil {
-		pt.Host.AddDownloadLoad(-1)
+		pt.Host.AddDownloadLoad(-concurency)
 	}
 	if parent.Host != nil {
-		parent.Host.AddUploadLoad(-1)
+		parent.Host.AddUploadLoad(-concurency)
 	}
 }
 
@@ -270,6 +274,8 @@ func (pt *PeerTask) AddPieceStatus(ps *scheduler.PieceResult) {
 	if pt.parent != nil {
 		pt.parent.AddCost(int32(ps.EndTime - ps.BeginTime))
 	}
+
+	pt.Touch()
 }
 
 func (pt *PeerTask) IsDown() (ok bool) {
@@ -296,11 +302,11 @@ func (pt *PeerTask) SetStatus(traffic int64, cost uint32, success bool, code bas
 	pt.Code = code
 	pt.Touch()
 	if pt.Success && pt.Task != nil {
-		pt.Task.Statistic.AddPeerTaskDown(int32((time.Now().UnixNano()-pt.startTime) / int64(time.Millisecond)))
+		pt.Task.Statistic.AddPeerTaskDown(int32((time.Now().UnixNano() - pt.startTime) / int64(time.Millisecond)))
 	}
 }
 
-func (pt *PeerTask) SetClient(client scheduler.Scheduler_ReportPieceResultServer) {
+func (pt *PeerTask) SetClient(client IClient) {
 	pt.client = client
 }
 
@@ -335,12 +341,35 @@ func (pt *PeerTask) Send() error {
 		return nil
 	}
 	if pt.client != nil {
-		err := pt.client.Context().Err()
-		if err != nil {
+		if pt.client.IsClosed() {
 			pt.client = nil
-			return err
+			return errors.New("client closed")
 		}
 		return pt.client.Send(pt.GetSendPkg())
+	}
+	return errors.New("empty client")
+}
+
+func (pt *PeerTask) SendError(dfError *dferrors.DfError) error {
+	if pt == nil {
+		return nil
+	}
+	if pt.client != nil {
+		if pt.client.IsClosed() {
+			pt.client = nil
+			return errors.New("client closed")
+		}
+		pkg := &scheduler.PeerPacket{
+			State: &base.ResponseState{
+				Success: false,
+				Code:    dfError.Code,
+				Msg: dfError.Message,
+			},
+		}
+		if dfError.Code == dfcodes.SchedPeerGone {
+			defer pt.client.Close()
+		}
+		return pt.client.Send(pkg)
 	}
 	return errors.New("empty client")
 }
