@@ -13,6 +13,8 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/client/daemon/test/mock/source"
@@ -71,8 +73,12 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 		},
-		storageManager: storageManager,
-		scheduler:      schedulerClient,
+		storageManager:  storageManager,
+		schedulerClient: schedulerClient,
+		schedulerOption: config.SchedulerOption{
+			RequestTimeout:  clientutil.Duration{Duration: 3 * time.Second},
+			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+		},
 	}
 	req := &scheduler.PeerTaskRequest{
 		Url:      url,
@@ -85,7 +91,6 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	ctx := context.Background()
 	pt, err := NewStreamPeerTask(ctx,
 		ptm.host,
-		schedulerClient,
 		&pieceManager{
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
@@ -95,7 +100,8 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 			},
 		},
 		req,
-		time.Second)
+		ptm.schedulerClient,
+		ptm.schedulerOption)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
 		ctx:   ctx,
@@ -165,8 +171,12 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 		},
-		storageManager: storageManager,
-		scheduler:      schedulerClient,
+		storageManager:  storageManager,
+		schedulerClient: schedulerClient,
+		schedulerOption: config.SchedulerOption{
+			RequestTimeout:  clientutil.Duration{Duration: 3 * time.Second},
+			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+		},
 	}
 	req := &scheduler.PeerTaskRequest{
 		Url:      url,
@@ -179,7 +189,6 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	ctx := context.Background()
 	pt, err := NewStreamPeerTask(ctx,
 		ptm.host,
-		schedulerClient,
 		&pieceManager{
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
@@ -189,7 +198,8 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			},
 		},
 		req,
-		time.Second)
+		schedulerClient,
+		ptm.schedulerOption)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
 		ctx:   ctx,
