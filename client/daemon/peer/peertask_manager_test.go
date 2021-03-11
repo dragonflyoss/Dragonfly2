@@ -50,10 +50,6 @@ import (
 
 var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)
 
-func TestMain(m *testing.M) {
-	m.Run()
-}
-
 func setupPeerTaskManagerComponents(
 	ctrl *gomock.Controller,
 	taskID string,
@@ -234,6 +230,10 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	var p *PeerTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
+		if p.PeerTaskDone {
+			p.ProgressDone()
+			break
+		}
 	}
 	assert.NotNil(p)
 	assert.True(p.PeerTaskDone)
