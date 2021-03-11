@@ -18,7 +18,6 @@ package config
 
 import (
 	"d7y.io/dragonfly/v2/pkg/rate"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"time"
 )
 
@@ -70,15 +69,10 @@ const (
 	// and it will be treated to be expired.
 	DefaultTaskExpireTime = 3 * time.Minute
 
-	DefaultYoungGCThreshold = 100 * fileutils.GB
-
-	DefaultFullGCThreshold = 5 * fileutils.GB
-
 	DefaultIntervalThreshold = 2 * time.Hour
 
-	DefaultGCDiskInterval = 15 * time.Second
+	DefaultGCStorageInterval = 15 * time.Second
 
-	DefaultCleanRatio = 1
 )
 
 const (

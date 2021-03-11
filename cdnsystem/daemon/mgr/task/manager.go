@@ -21,14 +21,18 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/cdnsystem/util"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/struct/syncmap"
 	"d7y.io/dragonfly/v2/pkg/util/metricsutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"fmt"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"sync"
 	"time"
 )
 
@@ -36,6 +40,7 @@ func init() {
 	// Ensure that Manager implements the SeedTaskMgr interface
 	var manager *Manager = nil
 	var _ mgr.SeedTaskMgr = manager
+	var _ gc.Executor = manager
 }
 
 type metrics struct {
@@ -79,8 +84,8 @@ type Manager struct {
 
 // NewManager returns a new Manager Object.
 func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgressMgr,
-	resourceClient source.ResourceClient,  register prometheus.Registerer) (*Manager, error) {
-	return &Manager{
+	resourceClient source.ResourceClient, register prometheus.Registerer) (*Manager, error) {
+	taskMgr := &Manager{
 		cfg:                     cfg,
 		metrics:                 newMetrics(register),
 		taskStore:               syncmap.NewSyncMap(),
@@ -89,7 +94,13 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgr
 		resourceClient:          resourceClient,
 		cdnMgr:                  cdnMgr,
 		progressMgr:             progressMgr,
-	}, nil
+	}
+	gc.Register("task", &gc.ExecutorWrapper{
+		GCInitialDelay: cfg.GCInitialDelay,
+		GCInterval:     cfg.GCMetaInterval,
+		Instance:       taskMgr,
+	})
+	return taskMgr, nil
 }
 
 func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.SeedPiece,
@@ -103,7 +114,7 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 }
 
 func (tm *Manager) doRegister(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.
-	SeedPiece, err error) {
+SeedPiece, err error) {
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
 		logger.WithTaskID(req.TaskId).Infof("failed to add or update task with req %+v: %v", req, err)
@@ -197,5 +208,86 @@ func (tm Manager) Delete(ctx context.Context, taskId string) error {
 }
 
 func (tm *Manager) GetPieces(ctx context.Context, taskId string) (pieces []*types.SeedPiece, err error) {
+	util.GetLock(taskId, true)
+	defer util.ReleaseLock(taskId, true)
 	return tm.progressMgr.GetPieces(ctx, taskId)
+}
+
+const (
+	// gcTasksTimeout specifies the timeout for tasks gc.
+	// If the actual execution time exceeds this threshold, a warning will be thrown.
+	gcTasksTimeout = 2.0 * time.Second
+)
+
+func (tm *Manager) GC(ctx context.Context) error {
+	logger.Debugf("start the meta gc job")
+	var removedTaskCount int
+	startTime := time.Now()
+	// get all taskIDs and the corresponding accessTime
+	taskAccessMap, err := tm.GetAccessTime(ctx)
+	if err != nil {
+		return fmt.Errorf("gc tasks: failed to get task accessTime map for GC: %v", err)
+	}
+
+	// range all tasks and determine whether they are expired
+	taskIDs := taskAccessMap.ListKeyAsStringSlice()
+	totalTaskNums := len(taskIDs)
+	for _, taskID := range taskIDs {
+		atime, err := taskAccessMap.GetAsTime(taskID)
+		if err != nil {
+			logger.GcLogger.Errorf("gc tasks: failed to get access time taskID(%s): %v", taskID, err)
+			continue
+		}
+		if time.Since(atime) < tm.cfg.TaskExpireTime {
+			continue
+		}
+		// gc task memory data
+		tm.gcTask(ctx, taskID, false)
+		removedTaskCount++
+	}
+
+	// slow GC detected, report it with a log warning
+	if timeDuring := time.Since(startTime); timeDuring > gcTasksTimeout {
+		logger.GcLogger.Warnf("gc tasks:%d cost:%.3f", removedTaskCount, timeDuring.Seconds())
+	}
+	logger.GcLogger.Infof("gc tasks: success to full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
+	return nil
+}
+
+// gcTask
+func (tm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
+	logger.GcLogger.Infof("gc task: start to deal with task: %s", taskID)
+
+	util.GetLock(taskID, false)
+	defer util.ReleaseLock(taskID, false)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func(wg *sync.WaitGroup) {
+		tm.gcCDNByTaskID(ctx, taskID, full)
+		wg.Done()
+	}(&wg)
+
+	// delete memory data
+	go func(wg *sync.WaitGroup) {
+		tm.gcTaskByTaskID(ctx, taskID)
+		wg.Done()
+	}(&wg)
+
+	wg.Wait()
+}
+
+// gcCDNByTaskID
+func (tm *Manager) gcCDNByTaskID(ctx context.Context, taskID string, force bool) {
+	if err := tm.cdnMgr.Delete(ctx, taskID, force); err != nil {
+		logger.GcLogger.Errorf("gc task: failed to gc cdn meta taskID(%s): %v", taskID, err)
+	}
+}
+
+// gcTaskByTaskID
+func (tm *Manager) gcTaskByTaskID(ctx context.Context, taskID string) {
+	if err := tm.Delete(ctx, taskID); err != nil {
+		logger.GcLogger.Errorf("gc task: failed to gc task info taskID(%s): %v", taskID, err)
+	}
 }

@@ -41,7 +41,7 @@ func init() {
 	var builder *diskBuilder = nil
 	var _ storage.Builder = builder
 
-	var diskStorage *diskStorage = nil
+	var diskStorage *diskStorageMgr = nil
 	var _ storage.StorageMgr = diskStorage
 }
 
@@ -53,7 +53,7 @@ func (*diskBuilder) Build() (storage.StorageMgr, error) {
 	if err != nil {
 		return nil, err
 	}
-	storage := &diskStorage{
+	storage := &diskStorageMgr{
 		diskStore: diskStore,
 	}
 	return storage, nil
@@ -63,13 +63,13 @@ func (*diskBuilder) Name() string {
 	return name
 }
 
-type diskStorage struct {
+type diskStorageMgr struct {
 	diskStore        *store.Store
 	diskStoreCleaner *storage.Cleaner
 	taskMgr          mgr.SeedTaskMgr
 }
 
-func (s *diskStorage) getDiskDefaultGcConfig() *store.GcConfig {
+func (s *diskStorageMgr) getDiskDefaultGcConfig() *store.GcConfig {
 	totalSpace, err := s.diskStore.GetTotalSpace(context.TODO())
 	if err != nil {
 		logger.GcLogger.Errorf("failed to get total space of disk: %v", err)
@@ -86,7 +86,7 @@ func (s *diskStorage) getDiskDefaultGcConfig() *store.GcConfig {
 	}
 }
 
-func (s *diskStorage) InitializeCleaners() {
+func (s *diskStorageMgr) InitializeCleaners() {
 	diskGcConfig := s.diskStore.GetGcConfig(context.TODO())
 	if diskGcConfig == nil {
 		diskGcConfig = s.getDiskDefaultGcConfig()
@@ -100,12 +100,12 @@ func (s *diskStorage) InitializeCleaners() {
 	}
 }
 
-func (s *diskStorage) AppendPieceMetaData(ctx context.Context, taskId string, pieceRecord *storage.PieceMetaRecord) error {
+func (s *diskStorageMgr) AppendPieceMetaData(ctx context.Context, taskId string, pieceRecord *storage.PieceMetaRecord) error {
 	data := getPieceMetaValue(pieceRecord)
 	return s.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), []byte(data+"\n"))
 }
 
-func (s *diskStorage) ReadPieceMetaRecords(ctx context.Context, taskId string) ([]*storage.PieceMetaRecord, error) {
+func (s *diskStorageMgr) ReadPieceMetaRecords(ctx context.Context, taskId string) ([]*storage.PieceMetaRecord, error) {
 	bytes, err := s.diskStore.GetBytes(ctx, storage.GetPieceMetaDataRaw(taskId))
 	if err != nil {
 		return nil, err
@@ -122,24 +122,24 @@ func (s *diskStorage) ReadPieceMetaRecords(ctx context.Context, taskId string) (
 	return result, nil
 }
 
-func (s *diskStorage) Gc(ctx context.Context) {
+func (s *diskStorageMgr) Gc(ctx context.Context) {
 	go func() {
 		_, _ = s.diskStoreCleaner.Gc(ctx, false)
 	}()
 }
 
-func (s *diskStorage) SetTaskMgr(mgr mgr.SeedTaskMgr) {
+func (s *diskStorageMgr) SetTaskMgr(mgr mgr.SeedTaskMgr) {
 	s.taskMgr = mgr
 }
 
-func (s *diskStorage) WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64, buf *bytes.Buffer) error {
+func (s *diskStorageMgr) WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64, buf *bytes.Buffer) error {
 	raw := storage.GetDownloadRaw(taskId)
 	raw.Offset = offset
 	raw.Length = len
 	return s.diskStore.Put(ctx, raw, buf)
 }
 
-func (s *diskStorage) ReadFileMetaData(ctx context.Context, taskId string) (*storage.FileMetaData, error) {
+func (s *diskStorageMgr) ReadFileMetaData(ctx context.Context, taskId string) (*storage.FileMetaData, error) {
 	bytes, err := s.diskStore.GetBytes(ctx, storage.GetTaskMetaDataRaw(taskId))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get metadata bytes")
@@ -152,7 +152,7 @@ func (s *diskStorage) ReadFileMetaData(ctx context.Context, taskId string) (*sto
 	return metaData, nil
 }
 
-func (s *diskStorage) WriteFileMetaData(ctx context.Context, taskId string, metaData *storage.FileMetaData) error {
+func (s *diskStorageMgr) WriteFileMetaData(ctx context.Context, taskId string, metaData *storage.FileMetaData) error {
 	data, err := json.Marshal(metaData)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal metadata")
@@ -160,23 +160,23 @@ func (s *diskStorage) WriteFileMetaData(ctx context.Context, taskId string, meta
 	return s.diskStore.PutBytes(ctx, storage.GetTaskMetaDataRaw(taskId), data)
 }
 
-func (s *diskStorage) AppendPieceMetaDataBytes(ctx context.Context, taskId string, bytes []byte) error {
+func (s *diskStorageMgr) AppendPieceMetaDataBytes(ctx context.Context, taskId string, bytes []byte) error {
 	return s.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), bytes)
 }
 
-func (s *diskStorage) ReadPieceMetaBytes(ctx context.Context, taskId string) ([]byte, error) {
+func (s *diskStorageMgr) ReadPieceMetaBytes(ctx context.Context, taskId string) ([]byte, error) {
 	return s.diskStore.GetBytes(ctx, storage.GetPieceMetaDataRaw(taskId))
 }
 
-func (s *diskStorage) ReadDownloadFile(ctx context.Context, taskId string) (io.Reader, error) {
+func (s *diskStorageMgr) ReadDownloadFile(ctx context.Context, taskId string) (io.Reader, error) {
 	return s.diskStore.Get(ctx, storage.GetDownloadRaw(taskId))
 }
 
-func (s *diskStorage) StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error) {
+func (s *diskStorageMgr) StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error) {
 	return s.diskStore.Stat(ctx, storage.GetDownloadRaw(taskId))
 }
 
-func (s *diskStorage) CreateUploadLink(ctx context.Context, taskId string) error {
+func (s *diskStorageMgr) CreateUploadLink(ctx context.Context, taskId string) error {
 	// create a soft link from the upload file to the download file
 	if err := fileutils.SymbolicLink(s.diskStore.GetPath(storage.GetDownloadRaw(taskId)),
 		s.diskStore.GetPath(storage.GetUploadRaw(taskId))); err != nil {
@@ -185,7 +185,7 @@ func (s *diskStorage) CreateUploadLink(ctx context.Context, taskId string) error
 	return nil
 }
 
-func (s *diskStorage) DeleteTask(ctx context.Context, taskId string) error {
+func (s *diskStorageMgr) DeleteTask(ctx context.Context, taskId string) error {
 	if err := s.diskStore.Remove(ctx, storage.GetTaskMetaDataRaw(taskId)); err != nil && !cdnerrors.IsKeyNotFound(err) {
 		errors.Cause(err)
 		return err
@@ -206,7 +206,7 @@ func (s *diskStorage) DeleteTask(ctx context.Context, taskId string) error {
 	return nil
 }
 
-func (s *diskStorage) ResetRepo(ctx context.Context, task *types.SeedTask) error {
+func (s *diskStorageMgr) ResetRepo(ctx context.Context, task *types.SeedTask) error {
 	return s.DeleteTask(ctx, task.TaskId)
 }
 

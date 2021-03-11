@@ -164,14 +164,9 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.Duration("task-expire-time", defaultBaseProperties.TaskExpireTime,
 		"task expire time is the time that a task is treated expired if the task is not accessed within the time")
 
-	flagSet.Duration("gc-disk-interval", defaultBaseProperties.GCDiskInterval,
-		"gc disk interval is the interval time to execute GC disk.")
+	flagSet.Duration("gc-storage-interval", defaultBaseProperties.GCStorageInterval,
+		"gc storage interval is the interval time to execute GC storage.")
 
-	flagSet.Var(&defaultBaseProperties.YoungGCThreshold, "young-gc-threshold",
-		"gc disk interval is the interval time to execute GC disk.")
-
-	flagSet.Int("clean-ratio", defaultBaseProperties.CleanRatio,
-		"CleanRatio is the ratio to clean the disk and it is based on 10. the value of CleanRatio should be [1-10]")
 
 	exitOnError(bindRootFlags(cdnNodeViper), "bind root command flags")
 }
@@ -213,6 +208,9 @@ func bindRootFlags(v *viper.Viper) error {
 			key:  "base.gcMetaInterval",
 			flag: "gc-meta-interval",
 		}, {
+			key:  "base.gcStorageInterval",
+			flag: "gc-storage-interval",
+		},{
 			key:  "base.taskExpireTime",
 			flag: "task-expire-time",
 		},

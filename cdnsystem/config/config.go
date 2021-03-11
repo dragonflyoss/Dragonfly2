@@ -55,19 +55,14 @@ func NewBaseProperties() *BaseProperties {
 		ListenPort:              DefaultListenPort,
 		DownloadPort:            DefaultDownloadPort,
 		StoragePattern:          DefaultStoragePattern,
-		//DownloadPath:            filepath.Join(home, RepoHome, DownloadHome),
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
 		MaxBandwidth:            DefaultMaxBandwidth,
 		EnableProfiler:          false,
 		FailAccessInterval:      DefaultFailAccessInterval,
 		GCInitialDelay:          DefaultGCInitialDelay,
 		GCMetaInterval:          DefaultGCMetaInterval,
-		GCDiskInterval:          DefaultGCDiskInterval,
-		YoungGCThreshold:        DefaultYoungGCThreshold,
-		FullGCThreshold:         DefaultFullGCThreshold,
-		IntervalThreshold:       DefaultIntervalThreshold,
+		GCStorageInterval:       DefaultGCStorageInterval,
 		TaskExpireTime:          DefaultTaskExpireTime,
-		CleanRatio:              DefaultCleanRatio,
 	}
 }
 
@@ -123,31 +118,7 @@ type BaseProperties struct {
 	// default: 3min
 	TaskExpireTime time.Duration `yaml:"taskExpireTime"`
 
-	// GCDiskInterval is the interval time to execute GC disk.
+	// GCStorageInterval is the interval time to execute GC storage.
 	// default: 15s
-	GCDiskInterval time.Duration `yaml:"gcDiskInterval"`
-
-
-	// YoungGCThreshold if the available disk space is more than YoungGCThreshold
-	// and there is no need to GC disk.
-	//
-	// default: 100GB
-	YoungGCThreshold fileutils.Fsize `yaml:"youngGCThreshold"`
-
-	// FullGCThreshold if the available disk space is less than FullGCThreshold
-	// and the cdn system should gc all task files which are not being used.
-	//
-	// default: 5GB
-	FullGCThreshold fileutils.Fsize `yaml:"fullGCThreshold"`
-
-
-	// IntervalThreshold is the threshold of the interval at which the task file is accessed.
-	// default: 2h
-	IntervalThreshold time.Duration `yaml:"IntervalThreshold"`
-
-	// CleanRatio is the ratio to clean the disk and it is based on 10.
-	// It means the value of CleanRatio should be [1-10].
-	//
-	// default: 1
-	CleanRatio int `yaml:"cleanRatio"`
+	GCStorageInterval time.Duration `yaml:"gcStorageInterval"`
 }

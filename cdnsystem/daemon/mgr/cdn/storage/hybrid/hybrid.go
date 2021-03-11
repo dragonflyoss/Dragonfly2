@@ -26,21 +26,33 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/cdnsystem/util"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
 	"io"
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 const name = "hybrid"
 
 const SecureLevel = 500 * fileutils.MB
+
+func init() {
+	var builder *hybridBuilder = nil
+	var _ storage.Builder = builder
+
+	var hybrid *hybridStorageMgr = nil
+	var _ storage.StorageMgr = hybrid
+}
 
 type hybridBuilder struct {
 }
@@ -54,7 +66,7 @@ func (*hybridBuilder) Build() (storage.StorageMgr, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &hybridStorage{
+	return &hybridStorageMgr{
 		memoryStore: memoryStore,
 		diskStore:   diskStore,
 		shmSwitch:   newShmSwitch(),
@@ -65,7 +77,7 @@ func (*hybridBuilder) Name() string {
 	return name
 }
 
-type hybridStorage struct {
+type hybridStorageMgr struct {
 	cfg                config.Config
 	memoryStore        store.StorageDriver
 	diskStore          store.StorageDriver
@@ -76,45 +88,69 @@ type hybridStorage struct {
 	hasShm             bool
 }
 
-func (h *hybridStorage) Gc(ctx context.Context) {
-	go h.diskStoreCleaner.Gc(ctx, false)
+func (h *hybridStorageMgr) Gc(ctx context.Context) {
+	go func() {
+		gcTaskIDs, err := h.diskStoreCleaner.Gc(ctx, false)
+		if err != nil {
+
+		}
+		gcLen := (len(gcTaskIDs)*h.diskStoreCleaner.Cfg.CleanRatio + 9)/10
+		count := 0
+		for _, taskID := range gcTaskIDs {
+			if count >= gcLen {
+				break
+			}
+
+			util.GetLock(taskID, false)
+
+			// try to ensure the taskID is not using again
+			if _, err := h.taskMgr.Get(ctx, taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
+				if err != nil {
+					logrus.Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
+				}
+				util.ReleaseLock(taskID, false)
+				continue
+			}
+
+			if err := h.diskStore.Delete(ctx, taskID, true); err != nil {
+				logrus.Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
+				util.ReleaseLock(taskID, false)
+				continue
+			}
+			util.ReleaseLock(taskID, false)
+			count++
+		}
+		logrus.Debugf("gc disk: success to gc task count(%d), remainder count(%d)", count, len(gcTaskIDs)-count)
+	}()
 	if h.hasShm {
-		go h.memoryStoreCleaner.Gc(ctx, false)
+		go func() {
+			h.memoryStoreCleaner.Gc(ctx, false)
+		}()
 	}
 }
 
-func (h *hybridStorage) SetTaskMgr(taskMgr mgr.SeedTaskMgr) {
+func (h *hybridStorageMgr) SetTaskMgr(taskMgr mgr.SeedTaskMgr) {
 	h.taskMgr = taskMgr
 }
 
-func (h *hybridStorage) InitializeCleaners() {
+func (h *hybridStorageMgr) InitializeCleaners() {
 	diskGcConfig := h.diskStore.GetGcConfig(context.TODO())
 	if diskGcConfig == nil {
 		diskGcConfig = h.getDiskDefaultGcConfig()
 		logger.GcLogger.Warnf("disk gc config is nil, use default gcConfig: %v", diskGcConfig)
 	}
 
-	h.diskStoreCleaner = &storage.Cleaner{
-		Cfg:        diskGcConfig,
-		Store:      h.diskStore,
-		StorageMgr: h,
-		TaskMgr:    h.taskMgr,
-	}
+	h.diskStoreCleaner = storage.NewStorageCleaner(diskGcConfig, h.diskStore, h, h.taskMgr)
 	memoryGcConfig := h.memoryStore.GetGcConfig(context.TODO())
 	if memoryGcConfig == nil {
 		memoryGcConfig = h.getMemoryDefaultGcConfig()
 		logger.GcLogger.Warnf("memory gc config is nil, use default gcConfig: %v", diskGcConfig)
 	}
-	h.memoryStoreCleaner = &storage.Cleaner{
-		Cfg:        memoryGcConfig,
-		Store:      h.memoryStore,
-		StorageMgr: h,
-		TaskMgr:    h.taskMgr,
-	}
+	h.memoryStoreCleaner = storage.NewStorageCleaner(memoryGcConfig, h.memoryStore, h, h.taskMgr)
 	logger.GcLogger.Info("success initialize hybrid cleaners")
 }
 
-func (h *hybridStorage) WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64,
+func (h *hybridStorageMgr) WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64,
 	buf *bytes.Buffer) error {
 	raw := storage.GetDownloadRaw(taskId)
 	raw.Offset = offset
@@ -122,15 +158,15 @@ func (h *hybridStorage) WriteDownloadFile(ctx context.Context, taskId string, of
 	return h.diskStore.Put(ctx, raw, buf)
 }
 
-func (h *hybridStorage) DeleteTask(ctx context.Context, taskId string) error {
+func (h *hybridStorageMgr) DeleteTask(ctx context.Context, taskId string) error {
 	return h.deleteTaskFiles(ctx, taskId, true, true)
 }
 
-func (h *hybridStorage) ReadDownloadFile(ctx context.Context, taskId string) (io.Reader, error) {
+func (h *hybridStorageMgr) ReadDownloadFile(ctx context.Context, taskId string) (io.Reader, error) {
 	return h.diskStore.Get(ctx, storage.GetDownloadRaw(taskId))
 }
 
-func (h *hybridStorage) ReadPieceMetaRecords(ctx context.Context, taskId string) ([]*storage.PieceMetaRecord, error) {
+func (h *hybridStorageMgr) ReadPieceMetaRecords(ctx context.Context, taskId string) ([]*storage.PieceMetaRecord, error) {
 	bytes, err := h.diskStore.GetBytes(ctx, storage.GetPieceMetaDataRaw(taskId))
 	if err != nil {
 		return nil, err
@@ -147,7 +183,7 @@ func (h *hybridStorage) ReadPieceMetaRecords(ctx context.Context, taskId string)
 	return result, nil
 }
 
-func (h *hybridStorage) ReadFileMetaData(ctx context.Context, taskId string) (*storage.FileMetaData, error) {
+func (h *hybridStorageMgr) ReadFileMetaData(ctx context.Context, taskId string) (*storage.FileMetaData, error) {
 	bytes, err := h.diskStore.GetBytes(ctx, storage.GetTaskMetaDataRaw(taskId))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get metadata bytes")
@@ -160,12 +196,12 @@ func (h *hybridStorage) ReadFileMetaData(ctx context.Context, taskId string) (*s
 	return metaData, nil
 }
 
-func (h *hybridStorage) AppendPieceMetaData(ctx context.Context, taskId string, record *storage.PieceMetaRecord) error {
+func (h *hybridStorageMgr) AppendPieceMetaData(ctx context.Context, taskId string, record *storage.PieceMetaRecord) error {
 	data := getPieceMetaValue(record)
 	return h.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), []byte(data+"\n"))
 }
 
-func (h *hybridStorage) WriteFileMetaData(ctx context.Context, taskId string, metaData *storage.FileMetaData) error {
+func (h *hybridStorageMgr) WriteFileMetaData(ctx context.Context, taskId string, metaData *storage.FileMetaData) error {
 	data, err := json.Marshal(metaData)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal metadata")
@@ -173,7 +209,7 @@ func (h *hybridStorage) WriteFileMetaData(ctx context.Context, taskId string, me
 	return h.diskStore.PutBytes(ctx, storage.GetTaskMetaDataRaw(taskId), data)
 }
 
-func (h *hybridStorage) CreateUploadLink(ctx context.Context, taskId string) error {
+func (h *hybridStorageMgr) CreateUploadLink(ctx context.Context, taskId string) error {
 	// create a soft link from the upload file to the download file
 	if err := fileutils.SymbolicLink(h.diskStore.GetPath(storage.GetDownloadRaw(taskId)),
 		h.diskStore.GetPath(storage.GetUploadRaw(taskId))); err != nil {
@@ -182,7 +218,7 @@ func (h *hybridStorage) CreateUploadLink(ctx context.Context, taskId string) err
 	return nil
 }
 
-func (h *hybridStorage) ResetRepo(ctx context.Context, task *types.SeedTask) error {
+func (h *hybridStorageMgr) ResetRepo(ctx context.Context, task *types.SeedTask) error {
 	if err := h.deleteTaskFiles(ctx, task.TaskId, false, true); err != nil {
 		logger.WithTaskID(task.TaskId).Errorf("reset repo: failed to delete task files: %v", err)
 	}
@@ -194,15 +230,15 @@ func (h *hybridStorage) ResetRepo(ctx context.Context, task *types.SeedTask) err
 	return nil
 }
 
-func (h *hybridStorage) GetDownloadPath(rawFunc *store.Raw) string {
+func (h *hybridStorageMgr) GetDownloadPath(rawFunc *store.Raw) string {
 	return h.diskStore.GetPath(rawFunc)
 }
 
-func (h *hybridStorage) StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error) {
+func (h *hybridStorageMgr) StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error) {
 	return h.diskStore.Stat(ctx, storage.GetDownloadRaw(taskId))
 }
 
-func (h *hybridStorage) deleteTaskFiles(ctx context.Context, taskId string, deleteUploadPath bool, deleteHardLink bool) error {
+func (h *hybridStorageMgr) deleteTaskFiles(ctx context.Context, taskId string, deleteUploadPath bool, deleteHardLink bool) error {
 	// delete task file data
 	if err := h.diskStore.Remove(ctx, storage.GetDownloadRaw(taskId)); err != nil && !cdnerrors.IsKeyNotFound(err) {
 		return err
@@ -242,7 +278,7 @@ func (h *hybridStorage) deleteTaskFiles(ctx context.Context, taskId string, dele
 	return nil
 }
 
-func (h *hybridStorage) tryShmSpace(ctx context.Context, url, taskId string, fileLength int64) (string, error) {
+func (h *hybridStorageMgr) tryShmSpace(ctx context.Context, url, taskId string, fileLength int64) (string, error) {
 	if h.shmSwitch.check(url, fileLength) && h.hasShm {
 		remainder := atomic.NewInt64(0)
 		h.memoryStore.Walk(ctx, &store.Raw{
@@ -285,7 +321,44 @@ func (h *hybridStorage) tryShmSpace(ctx context.Context, url, taskId string, fil
 	return "", fmt.Errorf("shared memory is not allowed")
 }
 
-func (h *hybridStorage) getMemoryUsableSpace(ctx context.Context) fileutils.Fsize {
+func (h *hybridStorageMgr) getDiskDefaultGcConfig() *store.GcConfig {
+	totalSpace, err := h.diskStore.GetTotalSpace(context.TODO())
+	if err != nil {
+		logger.GcLogger.Errorf("failed to get total space of disk: %v", err)
+	}
+	yongGcThreshold := 200 * fileutils.GB
+	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
+		yongGcThreshold = totalSpace / 4
+	}
+	return &store.GcConfig{
+		YoungGCThreshold:  yongGcThreshold,
+		FullGCThreshold:   25 * fileutils.GB,
+		IntervalThreshold: 2 * time.Hour,
+		CleanRatio:        1,
+	}
+}
+
+func (h *hybridStorageMgr) getMemoryDefaultGcConfig() *store.GcConfig {
+	diff := fileutils.Fsize(0)
+	totalSpace, err := h.memoryStore.GetTotalSpace(context.TODO())
+	if err != nil {
+		logger.GcLogger.Errorf("failed to get total space of memory: %v", err)
+	}
+	if totalSpace < 72*fileutils.GB {
+		diff = 72*fileutils.GB - totalSpace
+	}
+	if diff >= totalSpace {
+		h.hasShm = false
+	}
+	return &store.GcConfig{
+		YoungGCThreshold:  10*fileutils.GB + diff,
+		FullGCThreshold:   2*fileutils.GB + diff,
+		CleanRatio:        3,
+		IntervalThreshold: 2 * time.Hour,
+	}
+}
+
+func (h *hybridStorageMgr) getMemoryUsableSpace(ctx context.Context) fileutils.Fsize {
 	totalSize, freeSize, err := h.memoryStore.GetTotalAndFreeSpace(ctx)
 	if err != nil {
 		logger.GcLogger.Errorf("failed to get total and free space of memory: %v", err)

@@ -40,4 +40,5 @@ type SeedTaskMgr interface {
 	Delete(ctx context.Context, taskID string) error
 
 	GetPieces(ctx context.Context, taskID string) (pieces []*types.SeedPiece, err error)
+
 }
