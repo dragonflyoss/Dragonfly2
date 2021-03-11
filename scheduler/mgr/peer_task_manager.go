@@ -216,6 +216,7 @@ func (m *PeerTaskManager) printDebugInfo() string {
 }
 
 func (m *PeerTaskManager) RefreshDownloadMonitor(pt *types.PeerTask) {
+	logger.Debugf("[%s][%s] downloadMonitorWorkingLoop refresh ", pt.Task.TaskId, pt.Pid)
 	if pt.GetNodeStatus() != types.PeerTaskStatusHealth {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
 	} else if pt.IsWaiting() {
@@ -238,6 +239,7 @@ func (m *PeerTaskManager) downloadMonitorWorkingLoop() {
 		if m.downloadMonitorCallBack != nil {
 			pt, _ := v.(*types.PeerTask)
 			if pt != nil {
+				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", pt.Task.TaskId, pt.Pid, pt.GetNodeStatus())
 				if pt.GetNodeStatus() != types.PeerTaskStatusHealth {
 					// peer do not report for a long time, peer gone
 					if time.Now().UnixNano() > pt.GetLastActiveTime() + PeerGoneTimeout {
