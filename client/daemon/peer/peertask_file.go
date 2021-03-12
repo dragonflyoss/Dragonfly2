@@ -243,24 +243,22 @@ loop:
 			pt.Debugf("scheduler client close PeerPacket channel")
 			break
 		}
-		if peerPacket == nil {
-			pt.Warnf("scheduler client send nil PeerPacket")
-			continue
-		}
+
 		if !peerPacket.State.Success {
 			pt.Errorf("receive peer packet with error: %d/%s", peerPacket.State.Code, peerPacket.State.Msg)
 			// when receive error, cancel
-			// pt.cancel()
+			pt.cancel()
 			continue
 		}
 		pt.Debugf("receive peer packet: %#v, main peer: %#v", peerPacket, peerPacket.MainPeer)
-		if peerPacket.MainPeer == nil && peerPacket.StealPeers == nil {
+
+		if peerPacket == nil || (peerPacket.MainPeer == nil && peerPacket.StealPeers == nil) {
 			pt.Warnf("scheduler client send a PeerPacket will empty peers")
 			continue
 		}
+
 		pt.peerPacket = peerPacket
 		pt.pieceParallelCount = pt.peerPacket.ParallelCount
-
 		select {
 		case pt.peerPacketReady <- true:
 		case <-pt.ctx.Done():
