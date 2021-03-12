@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -63,8 +64,8 @@ type PeerTaskCallback interface {
 
 type peerTaskManager struct {
 	host            *scheduler.PeerHost
-	scheduler       schedulerclient.SchedulerClient
-	scheduleTimeout time.Duration
+	schedulerClient schedulerclient.SchedulerClient
+	schedulerOption config.SchedulerOption
 	pieceManager    PieceManager
 	storageManager  storage.Manager
 
@@ -76,25 +77,22 @@ func NewPeerTaskManager(
 	pieceManager PieceManager,
 	storageManager storage.Manager,
 	schedulerClient schedulerclient.SchedulerClient,
-	scheduleTimeout time.Duration) (PeerTaskManager, error) {
+	schedulerOption config.SchedulerOption) (PeerTaskManager, error) {
 
-	if scheduleTimeout == 0 {
-		scheduleTimeout = 3 * time.Second
-	}
 	ptm := &peerTaskManager{
 		host:             host,
 		runningPeerTasks: sync.Map{},
 		pieceManager:     pieceManager,
 		storageManager:   storageManager,
-		scheduler:        schedulerClient,
-		scheduleTimeout:  scheduleTimeout,
+		schedulerClient:  schedulerClient,
+		schedulerOption:  schedulerOption,
 	}
 	return ptm, nil
 }
 
 func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *PeerTaskProgress, error) {
 	// TODO ensure scheduler is ok first
-	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, &req.PeerTaskRequest, ptm.scheduleTimeout)
+	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +113,7 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 }
 
 func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (reader io.Reader, attribute map[string]string, err error) {
-	pt, err := NewStreamPeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, req, ptm.scheduleTimeout)
+	pt, err := NewStreamPeerTask(ctx, ptm.host, ptm.pieceManager, req, ptm.schedulerClient, ptm.schedulerOption)
 	if err != nil {
 		return nil, nil, err
 	}

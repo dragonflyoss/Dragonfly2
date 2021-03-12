@@ -54,14 +54,12 @@ type PeerHostOption struct {
 	Verbose     bool   `yaml:"verbose" json:"verbose"`
 	Console     bool   `json:"console" yaml:"console"`
 
-	Schedulers      []dfnet.NetAddr     `json:"schedulers" yaml:"schedulers"`
-	ScheduleTimeout clientutil.Duration `json:"schedule_timeout" yaml:"schedule_timeout"`
-
-	Host     HostOption     `json:"host" yaml:"host"`
-	Download DownloadOption `json:"download" yaml:"download"`
-	Proxy    *ProxyOption   `json:"proxy" yaml:"proxy"`
-	Upload   UploadOption   `json:"upload" yaml:"upload"`
-	Storage  StorageOption  `json:"storage" yaml:"storage"`
+	Scheduler SchedulerOption `json:"scheduler" yaml:"scheduler"`
+	Host      HostOption      `json:"host" yaml:"host"`
+	Download  DownloadOption  `json:"download" yaml:"download"`
+	Proxy     *ProxyOption    `json:"proxy" yaml:"proxy"`
+	Upload    UploadOption    `json:"upload" yaml:"upload"`
+	Storage   StorageOption   `json:"storage" yaml:"storage"`
 }
 
 func (p *PeerHostOption) Load(path string) error {
@@ -85,6 +83,14 @@ func (p *PeerHostOption) Load(path string) error {
 		return nil
 	}
 	return fmt.Errorf("extension of %s is not in 'yml/yaml/json'", path)
+}
+
+type SchedulerOption struct {
+	// NetAddrs is scheduler addresses.
+	NetAddrs []dfnet.NetAddr `json:"net_addrs" yaml:"net_addrs"`
+
+	// ScheduleTimeout is request timeout.
+	ScheduleTimeout clientutil.Duration `json:"schedule_timeout" yaml:"schedule_timeout"`
 }
 
 type HostOption struct {

@@ -25,16 +25,13 @@ keep_storage: false
 # the schedulers of all daemons should be same in one region or zone.
 # daemon will send tasks to a fixed scheduler by hashing the task url and meta data
 # caution: only tcp is supported
-schedulers:
-# below example is a stand address
-- type: tcp
-  addr: 127.0.0.1:8002
-# below example is the short address format
-#- 127.0.0.1:8002
-#- tcp://127.0.0.1:8002
-
-# schedule timeout
-schedule_timeout: 60s
+scheduler:
+  # below example is a stand address
+  net_addrs:
+    - type: tcp
+      addr: 127.0.0.1:8002
+  # schedule timeout
+  schedule_timeout: 5m
 
 # when enable, pprof will be enabled,
 verbose: true
@@ -149,30 +146,30 @@ proxy:
     # whether to ignore https certificate errors
     insecure: true
     # optional certificates if the remote server uses self-signed certificates
-    certs: [ ]
+    certs: []
     # whether to request the remote registry directly
     direct: false
 
   proxies:
-  # proxy all http image layer download requests with dfget
-  - regx: blobs/sha256.*
-  # change http requests to some-registry to https and proxy them with dfget
-  - regx: some-registry/
-    use_https: true
-  # proxy requests directly, without dfget
-  - regx: no-proxy-reg
-    direct: true
-  # proxy requests with redirect
-  - regx: some-registry
-    redirect: another-registry
+    # proxy all http image layer download requests with dfget
+    - regx: blobs/sha256.*
+    # change http requests to some-registry to https and proxy them with dfget
+    - regx: some-registry/
+      use_https: true
+    # proxy requests directly, without dfget
+    - regx: no-proxy-reg
+      direct: true
+    # proxy requests with redirect
+    - regx: some-registry
+      redirect: another-registry
 
   hijack_https:
     # key pair used to hijack https requests
     cert: ""
     key: ""
     hosts:
-    - regx: mirror.aliyuncs.com:443 # regexp to match request hosts
-      # whether to ignore https certificate errors
-      insecure: true
-      # optional certificates if the host uses self-signed certificates
-      certs: [ ]
+      - regx: mirror.aliyuncs.com:443 # regexp to match request hosts
+        # whether to ignore https certificate errors
+        insecure: true
+        # optional certificates if the host uses self-signed certificates
+        certs: []

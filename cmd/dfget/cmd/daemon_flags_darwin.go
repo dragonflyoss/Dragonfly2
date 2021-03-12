@@ -36,17 +36,19 @@ var (
 )
 
 var flagDaemonOpt = config.PeerHostOption{
-	DataDir:         "",
-	WorkHome:        "",
-	AliveTime:       clientutil.Duration{Duration: 5 * time.Minute},
-	GCInterval:      clientutil.Duration{Duration: 1 * time.Minute},
-	Schedulers:      nil,
-	ScheduleTimeout: clientutil.Duration{Duration: 3 * time.Second},
-	PidFile:         "/tmp/dfdaemon.pid",
-	LockFile:        "/tmp/dfdaemon.lock",
-	KeepStorage:     false,
-	Verbose:         true,
-	Console:         false,
+	DataDir:     "",
+	WorkHome:    "",
+	AliveTime:   clientutil.Duration{Duration: 5 * time.Minute},
+	GCInterval:  clientutil.Duration{Duration: 1 * time.Minute},
+	PidFile:     "/tmp/dfdaemon.pid",
+	LockFile:    "/tmp/dfdaemon.lock",
+	KeepStorage: false,
+	Verbose:     true,
+	Console:     false,
+	Scheduler: config.SchedulerOption{
+		NetAddrs:        nil,
+		ScheduleTimeout: clientutil.Duration{Duration: 1 * time.Minute},
+	},
 	Host: config.HostOption{
 		ListenIP:       net.IPv4zero.String(),
 		AdvertiseIP:    iputils.HostIp,

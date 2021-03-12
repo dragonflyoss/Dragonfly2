@@ -179,11 +179,17 @@ func TestUnmarshalJSON(t *testing.T) {
 				"url": "https://index.docker.io"
 			}
 		},
-		"schedulers1": [ "0.0.0.0", "0.0.0.1" ],
-		"schedulers2": [{
-			"type": "tcp",
-			"addr": "0.0.0.0"
-		}]
+		"schedulers1": {
+			"net_addrs": [ "0.0.0.0", "0.0.0.1" ],
+			"schedule_timeout": "3m"
+		},
+		"schedulers2": {
+			"net_addrs": [{
+				"type": "tcp",
+				"addr": "0.0.0.0"
+			}],
+			"schedule_timeout": "3m"
+		}
 }`)
 
 	var s = struct {
@@ -198,8 +204,8 @@ func TestUnmarshalJSON(t *testing.T) {
 		Type        dfnet.NetworkType    `json:"type"`
 		Proxy1      ProxyOption          `json:"proxy1"`
 		Proxy2      ProxyOption          `json:"proxy2"`
-		Schedulers1 []dfnet.NetAddr      `json:"schedulers1" yaml:"schedulers1"`
-		Schedulers2 []dfnet.NetAddr      `json:"schedulers2" yaml:"schedulers2"`
+		Schedulers1 SchedulerOption      `json:"schedulers1" yaml:"schedulers1"`
+		Schedulers2 SchedulerOption      `json:"schedulers2" yaml:"schedulers2"`
 	}{}
 
 	if err := json.Unmarshal(bytes, &s); err != nil {
@@ -230,11 +236,15 @@ proxy2:
   registry_mirror:
     url: https://index.docker.io
 schedulers1:
-- 0.0.0.0
-- 0.0.0.1
+  net_addrs:
+    - 0.0.0.0
+    - 0.0.0.1
+  schedule_timeout: 0
 schedulers2:
-- type: tcp
-  addr: 0.0.0.0
+  net_addrs:
+    - type: tcp
+      addr: 0.0.0.0
+  schedule_timeout: 0
 `)
 
 	var s = struct {
@@ -249,8 +259,8 @@ schedulers2:
 		Type        dfnet.NetworkType    `yaml:"type"`
 		Proxy1      ProxyOption          `yaml:"proxy1"`
 		Proxy2      ProxyOption          `yaml:"proxy2"`
-		Schedulers1 []dfnet.NetAddr      `json:"schedulers1" yaml:"schedulers1"`
-		Schedulers2 []dfnet.NetAddr      `json:"schedulers2" yaml:"schedulers2"`
+		Schedulers1 SchedulerOption      `json:"schedulers1" yaml:"schedulers1"`
+		Schedulers2 SchedulerOption      `json:"schedulers2" yaml:"schedulers2"`
 	}{}
 
 	if err := yaml.Unmarshal(bytes, &s); err != nil {
@@ -283,10 +293,15 @@ func TestPeerHostOption_Load(t *testing.T) {
 		WorkHome:    "/tmp/dragonfly/dfdaemon/",
 		KeepStorage: false,
 		Verbose:     true,
-		Schedulers: []dfnet.NetAddr{
-			{
-				Type: dfnet.TCP,
-				Addr: "127.0.0.1:8002",
+		Scheduler: SchedulerOption{
+			NetAddrs: []dfnet.NetAddr{
+				{
+					Type: dfnet.TCP,
+					Addr: "127.0.0.1:8002",
+				},
+			},
+			ScheduleTimeout: clientutil.Duration{
+				Duration: 0,
 			},
 		},
 		Host: HostOption{

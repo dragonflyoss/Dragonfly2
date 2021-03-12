@@ -6,11 +6,11 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -35,10 +35,10 @@ type streamPeerTask struct {
 
 func NewStreamPeerTask(ctx context.Context,
 	host *scheduler.PeerHost,
-	schedulerClient schedulerclient.SchedulerClient,
 	pieceManager PieceManager,
 	request *scheduler.PeerTaskRequest,
-	scheduleTimeout time.Duration) (StreamPeerTask, error) {
+	schedulerClient schedulerclient.SchedulerClient,
+	schedulerOption config.SchedulerOption) (StreamPeerTask, error) {
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	if err != nil {
 		logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
@@ -73,7 +73,7 @@ func NewStreamPeerTask(ctx context.Context,
 			failedReason:    "unknown",
 			contentLength:   -1,
 			totalPiece:      -1,
-			scheduleTimeout: scheduleTimeout,
+			schedulerOption: schedulerOption,
 
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
