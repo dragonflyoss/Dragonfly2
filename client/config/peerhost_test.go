@@ -324,7 +324,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 					Key:      "key",
 				},
 				UnixListen: &UnixListenOption{
-					Socket: "/tmp/dfdamon.sock",
+					Socket: "/tmp/dfdaemon.sock",
 				},
 			},
 			PeerGRPC: ListenOption{

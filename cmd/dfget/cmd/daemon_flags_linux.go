@@ -65,7 +65,7 @@ var flagDaemonOpt = config.PeerHostOption{
 				Insecure: true,
 			},
 			UnixListen: &config.UnixListenOption{
-				Socket: "/var/run/dfdamon.sock",
+				Socket: "/var/run/dfdaemon.sock",
 			},
 		},
 		PeerGRPC: config.ListenOption{
