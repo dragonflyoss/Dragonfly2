@@ -45,9 +45,9 @@ const (
 	CdnTaskNotFound     base.Code = 6404
 
 	// manager response error 7000-7999
-	ManagerError base.Code = 7000
-	InvalidObjType base.Code = 7001
-	ManagerOrmStoreError base.Code = 7002
-	ManagerMemoryStoreError base.Code = 7003
-	ManagerConfigError base.Code = 7004
+	ManagerError          base.Code = 7000
+	InvalidObjType        base.Code = 7001
+	ManagerStoreError     base.Code = 7002
+	ManagerConfigError    base.Code = 7003
+	ManagerConfigNotFound base.Code = 7004
 )

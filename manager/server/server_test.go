@@ -5,7 +5,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"fmt"
@@ -100,9 +99,9 @@ func (suite *ServerTestSuite) TestAddConfig() {
 		addReq := &manager.AddConfigRequest{
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Scheduler,
+				Type:    manager.ObjType_Scheduler.String(),
 				Version: 0,
-				Body:    &manager.Config_SchedulerConfig{SchedulerConfig: genTestSchedulerConfig("192.168.0.10", hostName)},
+				Data:    []byte(hostName),
 			},
 		}
 
@@ -119,18 +118,19 @@ func (suite *ServerTestSuite) TestAddConfig() {
 
 		assert.Equal(addRep.GetId(), getReq.GetId())
 		assert.Equal(object, getRep.Config.GetObject())
-		assert.Equal(manager.ObjType_Scheduler, getRep.Config.GetObjType())
-		assert.Equal(hostName, getRep.Config.GetSchedulerConfig().GetCdnHosts()[0].GetHostInfo().GetHostName())
+		assert.Equal(manager.ObjType_Scheduler.String(), getRep.Config.GetType())
+		assert.Equal(hostName, string(getRep.Config.Data))
 	}
 
 	for i := 1000; i < 2000; i++ {
 		object := fmt.Sprintf("objcet%d", i)
+		hostName := fmt.Sprintf("hostName%d", i)
 		addReq := &manager.AddConfigRequest{
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Cdn,
+				Type:    manager.ObjType_Cdn.String(),
 				Version: 0,
-				Body:    &manager.Config_CdnConfig{CdnConfig: genTestCdnConfig()},
+				Data:    []byte(hostName),
 			},
 		}
 
@@ -148,7 +148,8 @@ func (suite *ServerTestSuite) TestAddConfig() {
 		assert.Equal(addRep.GetId(), getReq.GetId())
 		assert.Equal(addRep.GetId(), getReq.GetId())
 		assert.Equal(object, getRep.Config.GetObject())
-		assert.Equal(manager.ObjType_Cdn, getRep.Config.GetObjType())
+		assert.Equal(manager.ObjType_Cdn.String(), getRep.Config.GetType())
+		assert.Equal(hostName, string(getRep.Config.Data))
 	}
 }
 
@@ -161,9 +162,9 @@ func (suite *ServerTestSuite) TestDeleteConfig() {
 		addReq := &manager.AddConfigRequest{
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Scheduler,
+				Type:    manager.ObjType_Scheduler.String(),
 				Version: 0,
-				Body:    &manager.Config_SchedulerConfig{SchedulerConfig: genTestSchedulerConfig("192.168.0.10", hostName)},
+				Data:    []byte(hostName),
 			},
 		}
 
@@ -197,12 +198,13 @@ func (suite *ServerTestSuite) TestDeleteConfig() {
 
 	for i := 1000; i < 2000; i++ {
 		object := fmt.Sprintf("objcet%d", i)
+		hostName := fmt.Sprintf("hostName%d", i)
 		addReq := &manager.AddConfigRequest{
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Cdn,
+				Type:    manager.ObjType_Cdn.String(),
 				Version: 0,
-				Body:    &manager.Config_CdnConfig{CdnConfig: genTestCdnConfig()},
+				Data:    []byte(hostName),
 			},
 		}
 
@@ -244,9 +246,9 @@ func (suite *ServerTestSuite) TestUpdateConfig() {
 		addReq := &manager.AddConfigRequest{
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Scheduler,
+				Type:    manager.ObjType_Scheduler.String(),
 				Version: 0,
-				Body:    &manager.Config_SchedulerConfig{SchedulerConfig: genTestSchedulerConfig("192.168.0.10", hostName)},
+				Data:    []byte(hostName),
 			},
 		}
 
@@ -264,8 +266,8 @@ func (suite *ServerTestSuite) TestUpdateConfig() {
 
 		assert.Equal(addRep.GetId(), getReq.GetId())
 		assert.Equal(object, getRep.Config.GetObject())
-		assert.Equal(manager.ObjType_Scheduler, getRep.Config.GetObjType())
-		assert.Equal(hostName, getRep.Config.GetSchedulerConfig().GetCdnHosts()[0].GetHostInfo().GetHostName())
+		assert.Equal(manager.ObjType_Scheduler.String(), getRep.Config.GetType())
+		assert.Equal(hostName, string(getRep.Config.Data))
 
 		/* update */
 		hostName = fmt.Sprintf("hostName_%d", i)
@@ -273,9 +275,9 @@ func (suite *ServerTestSuite) TestUpdateConfig() {
 			Id: addRep.GetId(),
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Scheduler,
+				Type:    manager.ObjType_Scheduler.String(),
 				Version: 1,
-				Body:    &manager.Config_SchedulerConfig{SchedulerConfig: genTestSchedulerConfig("192.168.0.10", hostName)},
+				Data:    []byte(hostName),
 			},
 		}
 
@@ -289,19 +291,20 @@ func (suite *ServerTestSuite) TestUpdateConfig() {
 
 		assert.Equal(addRep.GetId(), getReq.GetId())
 		assert.Equal(object, getRep.Config.GetObject())
-		assert.Equal(manager.ObjType_Scheduler, getRep.Config.GetObjType())
+		assert.Equal(manager.ObjType_Scheduler.String(), getRep.Config.GetType())
 		assert.Equal(uint64(1), getRep.Config.GetVersion())
-		assert.Equal(hostName, getRep.Config.GetSchedulerConfig().GetCdnHosts()[0].GetHostInfo().GetHostName())
+		assert.Equal(hostName, string(getRep.Config.Data))
 	}
 
 	for i := 1000; i < 2000; i++ {
 		object := fmt.Sprintf("objcet%d", i)
+		hostName := fmt.Sprintf("hostName_%d", i)
 		addReq := &manager.AddConfigRequest{
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Cdn,
+				Type:    manager.ObjType_Cdn.String(),
 				Version: 0,
-				Body:    &manager.Config_CdnConfig{CdnConfig: genTestCdnConfig()},
+				Data:    []byte(hostName),
 			},
 		}
 
@@ -319,17 +322,16 @@ func (suite *ServerTestSuite) TestUpdateConfig() {
 
 		assert.Equal(addRep.GetId(), getReq.GetId())
 		assert.Equal(object, getRep.Config.GetObject())
-		assert.Equal(manager.ObjType_Cdn, getRep.Config.GetObjType())
+		assert.Equal(manager.ObjType_Cdn.String(), getRep.Config.GetType())
 
 		/* update */
-		hostName := fmt.Sprintf("hostName%d", i)
 		updateReq := &manager.UpdateConfigRequest{
 			Id: addRep.GetId(),
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Scheduler,
+				Type:    manager.ObjType_Scheduler.String(),
 				Version: 1,
-				Body:    &manager.Config_SchedulerConfig{SchedulerConfig: genTestSchedulerConfig("192.168.0.10", hostName)},
+				Data:    []byte(hostName),
 			},
 		}
 
@@ -343,9 +345,9 @@ func (suite *ServerTestSuite) TestUpdateConfig() {
 
 		assert.Equal(addRep.GetId(), getReq.GetId())
 		assert.Equal(object, getRep.Config.GetObject())
-		assert.Equal(manager.ObjType_Scheduler, getRep.Config.GetObjType())
+		assert.Equal(manager.ObjType_Scheduler.String(), getRep.Config.GetType())
 		assert.Equal(uint64(1), getRep.Config.GetVersion())
-		assert.Equal(hostName, getRep.Config.GetSchedulerConfig().GetCdnHosts()[0].GetHostInfo().GetHostName())
+		assert.Equal(hostName, string(getRep.Config.Data))
 	}
 }
 
@@ -359,9 +361,9 @@ func (suite *ServerTestSuite) TestListConfig() {
 		addReq := &manager.AddConfigRequest{
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Scheduler,
+				Type:    manager.ObjType_Scheduler.String(),
 				Version: 0,
-				Body:    &manager.Config_SchedulerConfig{SchedulerConfig: genTestSchedulerConfig("192.168.0.10", hostName)},
+				Data:    []byte(hostName),
 			},
 		}
 
@@ -383,9 +385,9 @@ func (suite *ServerTestSuite) TestListConfig() {
 		addReq := &manager.AddConfigRequest{
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Cdn,
+				Type:    manager.ObjType_Cdn.String(),
 				Version: 0,
-				Body:    &manager.Config_CdnConfig{CdnConfig: genTestCdnConfig()},
+				Data:    []byte{},
 			},
 		}
 
@@ -434,9 +436,9 @@ func (suite *ServerTestSuite) TestKeepAlive() {
 		addReq := &manager.AddConfigRequest{
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Scheduler,
+				Type:    manager.ObjType_Scheduler.String(),
 				Version: uint64(i),
-				Body:    &manager.Config_SchedulerConfig{SchedulerConfig: genTestSchedulerConfig("192.168.0.10", hostName)},
+				Data:    []byte(hostName),
 			},
 		}
 
@@ -456,14 +458,14 @@ func (suite *ServerTestSuite) TestKeepAlive() {
 
 	{
 		keepaliveReq := &manager.KeepAliveRequest{
-			Object:  object,
-			ObjType: manager.ObjType_Scheduler,
+			Object: object,
+			Type:   manager.ObjType_Scheduler.String(),
 		}
 
 		keepaliveRep, err := suite.client.KeepAlive(context.TODO(), keepaliveReq)
 		assert.Nil(err)
 		assert.Equal(object, keepaliveRep.GetConfig().GetObject())
-		assert.Equal(manager.ObjType_Scheduler, keepaliveRep.GetConfig().GetObjType())
+		assert.Equal(manager.ObjType_Scheduler.String(), keepaliveRep.GetConfig().GetType())
 		assert.NotNil(99, keepaliveRep.GetConfig().GetVersion())
 	}
 
@@ -471,9 +473,9 @@ func (suite *ServerTestSuite) TestKeepAlive() {
 		addReq := &manager.AddConfigRequest{
 			Config: &manager.Config{
 				Object:  object,
-				ObjType: manager.ObjType_Cdn,
+				Type:    manager.ObjType_Cdn.String(),
 				Version: uint64(i),
-				Body:    &manager.Config_CdnConfig{CdnConfig: genTestCdnConfig()},
+				Data:    []byte{},
 			},
 		}
 
@@ -493,14 +495,14 @@ func (suite *ServerTestSuite) TestKeepAlive() {
 
 	{
 		keepaliveReq := &manager.KeepAliveRequest{
-			Object:  object,
-			ObjType: manager.ObjType_Cdn,
+			Object: object,
+			Type:   manager.ObjType_Cdn.String(),
 		}
 
 		keepaliveRep, err := suite.client.KeepAlive(context.TODO(), keepaliveReq)
 		assert.Nil(err)
 		assert.Equal(object, keepaliveRep.GetConfig().GetObject())
-		assert.Equal(manager.ObjType_Cdn, keepaliveRep.GetConfig().GetObjType())
+		assert.Equal(manager.ObjType_Cdn.String(), keepaliveRep.GetConfig().GetType())
 		assert.NotNil(199, keepaliveRep.GetConfig().GetVersion())
 	}
 
@@ -529,10 +531,11 @@ func (suite *ServerTestSuite) SetupSuite() {
 	assert := assert.New(suite.T())
 
 	_ = logcore.InitManager(false)
-	cfg := suite.memoryConfig()
+	cfg := suite.mysqlConfig()
 	server, err := NewServer(cfg)
 	assert.Nil(err)
 	assert.NotNil(server)
+	suite.server = server
 
 	go server.Start()
 
@@ -549,7 +552,7 @@ func (suite *ServerTestSuite) SetupSuite() {
 }
 
 func (suite *ServerTestSuite) TearDownSuite() {
-	rpc.StopServer()
+	suite.server.Stop()
 }
 
 func TestServerTestSuite(t *testing.T) {

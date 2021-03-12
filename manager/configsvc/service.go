@@ -6,7 +6,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	"github.com/golang/protobuf/jsonpb"
 )
 
 type hostInfo struct {
@@ -23,54 +22,40 @@ func NewConfigSvc(store Store) *ConfigSvc {
 	};
 }
 
+func protoConfig2InnerConfig(config *manager.Config) *Config {
+	return &Config{
+		ID:      config.GetId(),
+		Object:  config.GetObject(),
+		Type:    config.GetType(),
+		Version: config.GetVersion(),
+		Data:    config.GetData(),
+	}
+}
+
+func InnerConfig2ProtoConfig(config *Config) *manager.Config {
+	return &manager.Config{
+		Id:       config.ID,
+		Object:   config.Object,
+		Type:     config.Type,
+		Version:  config.Version,
+		Data:     config.Data,
+		CreateAt: config.CreateAt.String(),
+		UpdateAt: config.UpdateAt.String(),
+	}
+}
+
 func (svc *ConfigSvc) AddConfig(ctx context.Context, req *manager.AddConfigRequest) (*manager.AddConfigResponse, error) {
-	if manager.ObjType_Scheduler == req.Config.GetObjType() {
-		marshal := jsonpb.Marshaler{}
-		strConfig, err := marshal.MarshalToString(req.Config.GetSchedulerConfig())
-		if err != nil {
-			return nil, dferrors.Newf(dfcodes.ManagerError, "failed to add Config, req=%+v", req)
-		}
-
-		id := NewConfigID()
-		_, err = svc.configs.AddConfig(ctx, id, &Config{
-			Object:  req.Config.GetObject(),
-			ObjType: req.Config.GetObjType().String(),
-			Version: req.Config.GetVersion(),
-			Body:    []byte(strConfig),
-		})
-
-		if err != nil {
+	switch req.Config.GetType() {
+	case manager.ObjType_Scheduler.String(), manager.ObjType_Cdn.String():
+		if config, err := svc.configs.AddConfig(ctx, NewConfigID(), protoConfig2InnerConfig(req.GetConfig())); err != nil {
 			return nil, err
 		} else {
 			return &manager.AddConfigResponse{
 				State: common.NewState(dfcodes.Success, "success"),
-				Id:    id,
+				Id:    config.ID,
 			}, nil
 		}
-	} else if manager.ObjType_Cdn == req.Config.GetObjType() {
-		marshal := jsonpb.Marshaler{}
-		strConfig, err := marshal.MarshalToString(req.Config.GetCdnConfig())
-		if err != nil {
-			return nil, dferrors.Newf(dfcodes.ManagerError, "failed to add Config, req=%+v", req)
-		}
-
-		id := NewConfigID()
-		_, err = svc.configs.AddConfig(ctx, id, &Config{
-			Object:  req.Config.GetObject(),
-			ObjType: req.Config.GetObjType().String(),
-			Version: req.Config.GetVersion(),
-			Body:    []byte(strConfig),
-		})
-
-		if err != nil {
-			return nil, err
-		} else {
-			return &manager.AddConfigResponse{
-				State: common.NewState(dfcodes.Success, "success"),
-				Id:    id,
-			}, nil
-		}
-	} else {
+	default:
 		return nil, dferrors.Newf(dfcodes.InvalidObjType, "failed to add Config, req=%+v", req)
 	}
 }
@@ -84,85 +69,30 @@ func (svc *ConfigSvc) DeleteConfig(ctx context.Context, req *manager.DeleteConfi
 }
 
 func (svc *ConfigSvc) UpdateConfig(ctx context.Context, req *manager.UpdateConfigRequest) (*manager.UpdateConfigResponse, error) {
-	if manager.ObjType_Scheduler == req.Config.GetObjType() {
-		marshal := jsonpb.Marshaler{}
-		config, err := marshal.MarshalToString(req.Config.GetSchedulerConfig())
-		if err != nil {
-			return nil, dferrors.Newf(dfcodes.ManagerError, "failed to update Config, req=%+v", req)
-		}
-
-		_, err = svc.configs.UpdateConfig(ctx, req.GetId(), &Config{
-			Object:  req.Config.GetObject(),
-			ObjType: req.Config.GetObjType().String(),
-			Version: req.Config.GetVersion(),
-			Body:    []byte(config),
-		})
-
-		if err != nil {
+	switch req.Config.GetType() {
+	case manager.ObjType_Scheduler.String(), manager.ObjType_Cdn.String():
+		if _, err := svc.configs.UpdateConfig(ctx, req.GetId(), protoConfig2InnerConfig(req.GetConfig())); err != nil {
 			return nil, err
 		} else {
 			return &manager.UpdateConfigResponse{
 				State: common.NewState(dfcodes.Success, "success"),
 			}, nil
 		}
-	} else if manager.ObjType_Cdn == req.Config.GetObjType() {
-		marshal := jsonpb.Marshaler{}
-		config, err := marshal.MarshalToString(req.Config.GetCdnConfig())
-		if err != nil {
-			return nil, dferrors.Newf(dfcodes.ManagerError, "failed to update Config, req=%+v", req)
-		}
-
-		_, err = svc.configs.UpdateConfig(ctx, req.GetId(), &Config{
-			Object:  req.Config.GetObject(),
-			ObjType: req.Config.GetObjType().String(),
-			Version: req.Config.GetVersion(),
-			Body:    []byte(config),
-		})
-
-		if err != nil {
-			return nil, err
-		} else {
-			return &manager.UpdateConfigResponse{
-				State: common.NewState(dfcodes.Success, "success"),
-			}, nil
-		}
-	} else {
+	default:
 		return nil, dferrors.Newf(dfcodes.InvalidObjType, "failed to update Config, req=%+v", req)
 	}
 }
 
 func (svc *ConfigSvc) GetConfig(ctx context.Context, req *manager.GetConfigRequest) (*manager.GetConfigResponse, error) {
-	config, err := svc.configs.GetConfig(ctx, req.GetId())
-	if err != nil {
+	if config, err := svc.configs.GetConfig(ctx, req.GetId()); err != nil {
 		return nil, err
-	}
-
-	if manager.ObjType_Scheduler.String() == config.ObjType {
-		protoConfig := &manager.SchedulerConfig{}
-		if err := jsonpb.UnmarshalString(string(config.Body), protoConfig); err != nil {
-			return nil, dferrors.Newf(dfcodes.ManagerError, "failed to get Config, req=%+v", req)
-		} else {
-			return &manager.GetConfigResponse{State: common.NewState(dfcodes.Success, "success"), Config: &manager.Config{
-				Object:  config.Object,
-				ObjType: manager.ObjType_Scheduler,
-				Version: config.Version,
-				Body:    &manager.Config_SchedulerConfig{SchedulerConfig: protoConfig},
-			}}, nil
-		}
-	} else if manager.ObjType_Cdn.String() == config.ObjType {
-		protoConfig := &manager.CdnConfig{}
-		if err := jsonpb.UnmarshalString(string(config.Body), protoConfig); err != nil {
-			return nil, dferrors.Newf(dfcodes.ManagerError, "failed to get Config, req=%+v", req)
-		} else {
-			return &manager.GetConfigResponse{State: common.NewState(dfcodes.Success, "success"), Config: &manager.Config{
-				Object:  config.Object,
-				ObjType: manager.ObjType_Cdn,
-				Version: config.Version,
-				Body:    &manager.Config_CdnConfig{CdnConfig: protoConfig},
-			}}, nil
-		}
 	} else {
-		return nil, dferrors.Newf(dfcodes.InvalidObjType, "failed to get Config, req=%+v", req)
+		switch config.Type {
+		case manager.ObjType_Scheduler.String(), manager.ObjType_Cdn.String():
+			return &manager.GetConfigResponse{State: common.NewState(dfcodes.Success, "success"), Config: InnerConfig2ProtoConfig(config)}, nil
+		default:
+			return nil, dferrors.Newf(dfcodes.InvalidObjType, "failed to get Config, req=%+v", req)
+		}
 	}
 }
 
@@ -173,85 +103,34 @@ func (svc *ConfigSvc) ListConfigs(ctx context.Context, req *manager.ListConfigsR
 	}
 
 	var protoConfigs []*manager.Config
-
 	for _, config := range configs {
-		if manager.ObjType_Scheduler.String() == config.ObjType {
-			protoConfig := &manager.SchedulerConfig{}
-			if err := jsonpb.UnmarshalString(string(config.Body), protoConfig); err != nil {
-				return nil, dferrors.Newf(dfcodes.ManagerError, "failed to list configs, req=%+v", req)
-			} else {
-				protoConfigs = append(protoConfigs, &manager.Config{
-					Id:      config.ID,
-					Object:  config.Object,
-					ObjType: manager.ObjType_Scheduler,
-					Version: config.Version,
-					Body:    &manager.Config_SchedulerConfig{SchedulerConfig: protoConfig},
-				})
-			}
-		} else {
-			protoConfig := &manager.CdnConfig{}
-			if err := jsonpb.UnmarshalString(string(config.Body), protoConfig); err != nil {
-				return nil, dferrors.Newf(dfcodes.ManagerError, "failed to list configs, req=%+v", req)
-			} else {
-				protoConfigs = append(protoConfigs, &manager.Config{
-					Id:      config.ID,
-					Object:  config.Object,
-					ObjType: manager.ObjType_Scheduler,
-					Version: config.Version,
-					Body:    &manager.Config_CdnConfig{CdnConfig: protoConfig},
-				})
-			}
+		switch config.Type {
+		case manager.ObjType_Scheduler.String(), manager.ObjType_Cdn.String():
+			protoConfigs = append(protoConfigs, InnerConfig2ProtoConfig(config))
+		default:
+			return nil, dferrors.Newf(dfcodes.ManagerError, "failed to list configs, req=%+v", req)
 		}
 	}
 
-	if len(protoConfigs) == 0 {
-		return &manager.ListConfigsResponse{
-			State:   common.NewState(dfcodes.Success, "success"),
-			Configs: nil,
-		}, nil
-	} else {
-		return &manager.ListConfigsResponse{
-			State:   common.NewState(dfcodes.Success, "success"),
-			Configs: protoConfigs,
-		}, nil
-	}
+	return &manager.ListConfigsResponse{
+		State:   common.NewState(dfcodes.Success, "success"),
+		Configs: protoConfigs,
+	}, nil
 }
 
 func (svc *ConfigSvc) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) (*manager.KeepAliveResponse, error) {
-	config, err := svc.configs.LatestConfig(ctx, req.GetObject(), req.GetObjType().String())
+	config, err := svc.configs.LatestConfig(ctx, req.GetObject(), req.GetType())
 	if err != nil {
 		return nil, err
 	}
 
-	if manager.ObjType_Scheduler.String() == config.ObjType {
-		protoConfig := &manager.SchedulerConfig{}
-		if err := jsonpb.UnmarshalString(string(config.Body), protoConfig); err != nil {
-			return nil, dferrors.Newf(dfcodes.ManagerError, "failed to keepalive, req=%+v", req)
-		} else {
-			return &manager.KeepAliveResponse{
-				State: common.NewState(dfcodes.Success, "success"),
-				Config: &manager.Config{
-					Object:  config.Object,
-					ObjType: manager.ObjType_Scheduler,
-					Version: config.Version,
-					Body:    &manager.Config_SchedulerConfig{SchedulerConfig: protoConfig},
-				},
-			}, nil
-		}
-	} else {
-		protoConfig := &manager.CdnConfig{}
-		if err := jsonpb.UnmarshalString(string(config.Body), protoConfig); err != nil {
-			return nil, dferrors.Newf(dfcodes.ManagerError, "failed to keepalive, req=%+v", req)
-		} else {
-			return &manager.KeepAliveResponse{
-				State: common.NewState(dfcodes.Success, "success"),
-				Config: &manager.Config{
-					Object:  config.Object,
-					ObjType: manager.ObjType_Cdn,
-					Version: config.Version,
-					Body:    &manager.Config_CdnConfig{CdnConfig: protoConfig},
-				},
-			}, nil
-		}
+	switch config.Type {
+	case manager.ObjType_Scheduler.String(), manager.ObjType_Cdn.String():
+		return &manager.KeepAliveResponse{
+			State:  common.NewState(dfcodes.Success, "success"),
+			Config: InnerConfig2ProtoConfig(config),
+		}, nil
+	default:
+		return nil, dferrors.Newf(dfcodes.ManagerError, "failed to keepalive, req=%+v", req)
 	}
 }

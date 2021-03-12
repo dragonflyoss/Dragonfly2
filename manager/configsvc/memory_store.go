@@ -26,7 +26,7 @@ func (memory *memoryStore) AddConfig(ctx context.Context, id string, config *Con
 	defer memory.mu.Unlock()
 
 	if _, exist := memory.configs[id]; exist {
-		return nil, dferrors.Newf(dfcodes.ManagerMemoryStoreError, "add config error: id %s", id)
+		return nil, dferrors.Newf(dfcodes.ManagerStoreError, "add config error: id %s", id)
 	} else {
 		config.ID = id
 		memory.configs[id] = config
@@ -68,7 +68,7 @@ func (memory *memoryStore) UpdateConfig(ctx context.Context, id string, config *
 	defer memory.mu.Unlock()
 
 	if _, exist := memory.configs[id]; !exist {
-		return nil, dferrors.Newf(dfcodes.ManagerMemoryStoreError, "update config error: id %s", id)
+		return nil, dferrors.Newf(dfcodes.ManagerConfigNotFound, "update config error: id %s", id)
 	} else {
 		config.ID = id
 		memory.configs[id] = config
@@ -90,7 +90,7 @@ func (memory *memoryStore) GetConfig(ctx context.Context, id string) (*Config, e
 	if config, exist := memory.configs[id]; exist {
 		return config, nil
 	} else {
-		return nil, dferrors.Newf(dfcodes.ManagerMemoryStoreError, "get config error: id %s", id)
+		return nil, dferrors.Newf(dfcodes.ManagerConfigNotFound, "get config error: id %s", id)
 	}
 }
 
@@ -114,10 +114,10 @@ func (memory *memoryStore) LatestConfig(ctx context.Context, object string, objT
 		memory.objects[object] = configs[0]
 		return configs[0], nil
 	} else {
-		if config.ObjType == objType {
+		if config.Type == objType {
 			return config, nil
 		} else {
-			return nil, dferrors.Newf(dfcodes.ManagerMemoryStoreError, "latest config error: object %s, objType %s", object, objType)
+			return nil, dferrors.Newf(dfcodes.ManagerStoreError, "latest config error: object %s, objType %s", object, objType)
 		}
 	}
 }
@@ -131,7 +131,7 @@ func (memory *memoryStore) listSortedConfig(ctx context.Context, object string, 
 	}
 
 	if len(configs) <= 0 {
-		return nil, dferrors.Newf(dfcodes.ManagerMemoryStoreError, "list sorted config error: object %s, maxLen %d", object, maxLen)
+		return nil, dferrors.Newf(dfcodes.ManagerConfigNotFound, "list sorted config error: object %s, maxLen %d", object, maxLen)
 	}
 
 	sort.Sort(SortConfig(configs))

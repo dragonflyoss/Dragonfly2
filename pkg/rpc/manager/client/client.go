@@ -19,10 +19,13 @@ package client
 import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"errors"
+	"github.com/golang/protobuf/jsonpb"
 	"google.golang.org/grpc"
 	"sync"
 	"time"
@@ -39,7 +42,7 @@ type ManagerClient interface {
 	KeepAlive(ctx context.Context, req *manager.KeepAliveRequest, opts ...grpc.CallOption) (rep *manager.KeepAliveResponse, err error)
 	ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest, opts ...grpc.CallOption) (rep *manager.ListSchedulersResponse, err error)
 
-	NewKeepAliveRoutine(object string, objType manager.ObjType, intervalSecond uint32) (chan struct{}, error)
+	NewKeepAliveRoutine(object string, objType string, intervalSecond uint32) (chan struct{}, error)
 }
 
 type managerClient struct {
@@ -86,12 +89,12 @@ func (mc *managerClient) AddConfig(ctx context.Context, req *manager.AddConfigRe
 	if err != nil {
 		logger.Errorf("add config: object %s, objType %s",
 			req.Config.GetObject(),
-			req.Config.GetObjType().String())
+			req.Config.GetType())
 	} else {
 		rep = res.(*manager.AddConfigResponse)
 		logger.Infof("add config: object %s, objType %s, id %s, state %s",
 			req.Config.GetObject(),
-			req.Config.GetObjType().String(),
+			req.Config.GetType(),
 			rep.GetId(),
 			rep.GetState().String())
 	}
@@ -132,13 +135,13 @@ func (mc *managerClient) UpdateConfig(ctx context.Context, req *manager.UpdateCo
 	if err != nil {
 		logger.Errorf("update config: object %s, objType %s, id %s",
 			req.Config.GetObject(),
-			req.Config.GetObjType().String(),
+			req.Config.GetType(),
 			req.GetId())
 	} else {
 		rep = res.(*manager.UpdateConfigResponse)
 		logger.Infof("update config: object %s, objType %s, id %s, state %s",
 			req.Config.GetObject(),
-			req.Config.GetObjType().String(),
+			req.Config.GetType(),
 			req.GetId(),
 			rep.GetState().String())
 	}
@@ -161,7 +164,7 @@ func (mc *managerClient) GetConfig(ctx context.Context, req *manager.GetConfigRe
 		rep = res.(*manager.GetConfigResponse)
 		logger.Infof("get config: object %s, objType %s, id %s, state %s",
 			rep.Config.GetObject(),
-			rep.Config.GetObjType().String(),
+			rep.Config.GetType(),
 			req.GetId(),
 			rep.GetState().String())
 	}
@@ -202,12 +205,12 @@ func (mc *managerClient) KeepAlive(ctx context.Context, req *manager.KeepAliveRe
 	if err != nil {
 		logger.Errorf("keepalive: object %s, objType %s",
 			req.GetObject(),
-			req.GetObjType().String())
+			req.GetType())
 	} else {
 		rep = res.(*manager.KeepAliveResponse)
 		logger.Infof("keepalive: object %s, objType %s, version %s, state %s",
 			req.GetObject(),
-			req.GetObjType().String(),
+			req.GetType(),
 			rep.Config.GetVersion(),
 			rep.GetState().String())
 	}
@@ -240,13 +243,13 @@ func (mc *managerClient) ListSchedulers(ctx context.Context, req *manager.ListSc
 	return
 }
 
-func (mc *managerClient) NewKeepAliveRoutine(object string, objType manager.ObjType, intervalSecond uint32) (chan struct{}, error) {
-	if (objType != manager.ObjType_Scheduler) && (objType != manager.ObjType_Cdn) {
-		return nil, errors.New("")
+func (mc *managerClient) NewKeepAliveRoutine(object string, objType string, intervalSecond uint32) (chan struct{}, error) {
+	if (objType != manager.ObjType_Scheduler.String()) && (objType != manager.ObjType_Cdn.String()) {
+		return nil, dferrors.Newf(dfcodes.InvalidObjType, "Invalid objType %s", objType)
 	}
 
 	if intervalSecond == 0 {
-		return nil, errors.New("")
+		intervalSecond = 5
 	}
 
 	close := make(chan struct{})
@@ -259,7 +262,7 @@ func (mc *managerClient) NewKeepAliveRoutine(object string, objType manager.ObjT
 			case <-ticker.C:
 				rep, err := mc.KeepAlive(context.TODO(), &manager.KeepAliveRequest{
 					Object:  object,
-					ObjType: objType,
+					Type: objType,
 				})
 
 				if err != nil {
@@ -284,10 +287,13 @@ func (mc *managerClient) fillBackConfig(config *manager.Config) {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
 
-	switch config.ObjType {
-	case manager.ObjType_Scheduler:
-		if config.GetSchedulerConfig() != nil {
-			mc.schedulerConfig = config.GetSchedulerConfig()
+	switch config.GetType() {
+	case manager.ObjType_Scheduler.String():
+		protoConfig := &manager.SchedulerConfig{}
+		if err := jsonpb.UnmarshalString(string(config.GetData()), protoConfig); err != nil {
+			logger.Errorf("scheduler config data unmarshal error:%+v", err)
+		} else {
+			mc.schedulerConfig = protoConfig
 			if mc.schedulerConfig.CdnHosts != nil {
 				mc.cdns = make(map[string]*manager.ServerInfo)
 				for _, h := range mc.schedulerConfig.CdnHosts {
@@ -295,9 +301,12 @@ func (mc *managerClient) fillBackConfig(config *manager.Config) {
 				}
 			}
 		}
-	case manager.ObjType_Cdn:
-		if config.GetCdnConfig() != nil {
-			mc.cdnConfig = config.GetCdnConfig()
+	case manager.ObjType_Cdn.String():
+		protoConfig := &manager.CdnConfig{}
+		if err := jsonpb.UnmarshalString(string(config.GetData()), protoConfig); err != nil {
+			logger.Errorf("cdn config data unmarshal error:%+v", err)
+		} else {
+			mc.cdnConfig = protoConfig
 		}
 	default:
 		break

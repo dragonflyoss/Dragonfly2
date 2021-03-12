@@ -16,35 +16,76 @@
 
 package server
 
-import _ "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
-
 import (
+	"context"
 	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/manager/server/service"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
 	"github.com/pkg/errors"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 type Server struct {
-	cfg *config.Config
-	ms  *ManagerServer
+	cfg        *config.Config
+	ms         *service.ManagerServer
+	httpServer *http.Server
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
-	if ms := NewManagerServer(cfg); ms != nil {
+	if ms := service.NewManagerServer(cfg); ms != nil {
+		router, err := InitRouter(ms)
+		if err != nil {
+			return nil, err
+		}
+
 		return &Server{
 			cfg: cfg,
 			ms:  ms,
+			httpServer: &http.Server{
+				Addr:    ":8080",
+				Handler: router,
+			},
 		}, nil
 	} else {
 		return nil, errors.New("failed to create manager server")
 	}
 }
 
-func (s *Server) Start() (err error) {
+func (s *Server) Start() (error) {
 	port := s.cfg.Server.Port
-	if err = rpc.StartTcpServer(port, port, s.ms); err != nil {
+	err := rpc.StartTcpServer(port, port, s.ms)
+	if err != nil {
 		return errors.Wrap(err, "failed to start manager tcp server")
-	} else {
-		return nil
+	}
+
+	go func() {
+		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Errorf("failed to start manager http server: %+v", err)
+		}
+	}()
+
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		<-quit
+		s.Stop()
+	}()
+
+	return nil
+}
+
+func (s *Server) Stop() {
+	rpc.StopServer()
+
+	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancel()
+	if err := s.httpServer.Shutdown(ctx); err != nil {
+		logger.Errorf("failed to stop manager http server: %+v", err)
 	}
 }

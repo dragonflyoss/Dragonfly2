@@ -2,14 +2,17 @@ package configsvc
 
 import (
 	"context"
+	"time"
 )
 
 type Config struct {
-	ID      string
-	Object  string
-	ObjType string
-	Version uint64
-	Body    []byte
+	ID       string
+	Object   string
+	Type     string
+	Version  uint64
+	Data     []byte
+	CreateAt time.Time
+	UpdateAt time.Time
 }
 
 type Store interface {

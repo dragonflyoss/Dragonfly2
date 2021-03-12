@@ -46,7 +46,7 @@ service Manager {
 message KeepAliveRequest {
     // identify servers with hostname
     string object = 1;
-    ObjType obj_type = 2;
+    string type = 2;
 }
 
 message KeepAliveResponse {
@@ -124,12 +124,11 @@ enum ObjType {
 message Config {
     string id = 1;
     string object = 2;
-    ObjType obj_type = 3;
+    string type = 3;
     uint64 version = 4;
-    oneof body {
-        SchedulerConfig scheduler_config = 5;
-        CdnConfig cdn_config = 6;
-    }
+    bytes data = 5;
+    string create_at = 6;
+    string update_at = 7;
 }
 
 message ClientConfig {

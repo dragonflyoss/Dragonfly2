@@ -5,6 +5,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
+	"errors"
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -19,11 +20,36 @@ type ormStore struct {
 type OrmConfig struct {
 	ID        string    `gorm:"primary_key"`
 	Object    string    `gorm:"size:255"`
-	ObjType   string    `gorm:"size:255"`
+	Type      string    `gorm:"size:255"`
 	Version   uint64    `gorm:"index:order_version"`
-	Body      []byte    `gorm:"body"`
-	CreatedAt time.Time `gorm:"-"`
-	UpdatedAt time.Time `gorm:"-"`
+	Data      []byte    `gorm:"data"`
+	CreatedAt time.Time `gorm:"create_at"`
+	UpdatedAt time.Time `gorm:"update_at"`
+}
+
+func ormConfig2InnerConfig(config *OrmConfig) *Config {
+	return &Config{
+		ID:       config.ID,
+		Object:   config.Object,
+		Type:     config.Type,
+		Version:  config.Version,
+		Data:     config.Data,
+		CreateAt: config.CreatedAt,
+		UpdateAt: config.UpdatedAt,
+	}
+}
+
+func innerConfig2OrmConfig(config *Config) *OrmConfig {
+	now := time.Now()
+	return &OrmConfig{
+		ID:        config.ID,
+		Object:    config.Object,
+		Type:      config.Type,
+		Version:   config.Version,
+		Data:      config.Data,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
 }
 
 func NewOrmStore(cfg *config.StoreConfig) (Store, error) {
@@ -42,29 +68,14 @@ func NewOrmStore(cfg *config.StoreConfig) (Store, error) {
 }
 
 func (orm *ormStore) AddConfig(ctx context.Context, id string, config *Config) (*Config, error) {
-	now := time.Now()
-	cfg := &OrmConfig{
-		ID:        id,
-		Object:    config.Object,
-		ObjType:   config.ObjType,
-		Version:   config.Version,
-		Body:      config.Body,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
+	cfg := innerConfig2OrmConfig(config)
+	cfg.ID = id
 
 	tx := orm.db.Create(cfg)
-
 	if tx.Error != nil {
-		return nil, dferrors.Newf(dfcodes.ManagerOrmStoreError, "add config error: %s", tx.Error.Error())
+		return nil, dferrors.Newf(dfcodes.ManagerStoreError, "add config error: %s", tx.Error.Error())
 	} else {
-		return &Config{
-			ID:      cfg.ID,
-			Object:  cfg.Object,
-			ObjType: cfg.ObjType,
-			Version: cfg.Version,
-			Body:    cfg.Body,
-		}, nil
+		return ormConfig2InnerConfig(cfg), nil
 	}
 }
 
@@ -74,39 +85,26 @@ func (orm *ormStore) DeleteConfig(ctx context.Context, id string) (*Config, erro
 	}
 
 	tx := orm.db.Delete(cfg)
-	if tx.Error != nil {
-		return nil, dferrors.Newf(dfcodes.ManagerOrmStoreError, "delete config error: %s", tx.Error.Error())
+	if err := tx.Error; errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	} else if err != nil {
+		return nil, dferrors.Newf(dfcodes.ManagerStoreError, "delete config error: %s", err.Error())
 	} else {
-		return &Config{
-			ID:      cfg.ID,
-			Object:  cfg.Object,
-			ObjType: cfg.ObjType,
-			Version: cfg.Version,
-			Body:    cfg.Body,
-		}, nil
+		return ormConfig2InnerConfig(cfg), nil
 	}
 }
 
 func (orm *ormStore) UpdateConfig(ctx context.Context, id string, config *Config) (*Config, error) {
-	cfg := OrmConfig{
-		ID:      id,
-		Object:  config.Object,
-		ObjType: config.ObjType,
-		Version: config.Version,
-		Body:    config.Body,
-	}
+	cfg := innerConfig2OrmConfig(config)
+	cfg.ID = id
 
 	tx := orm.db.Updates(cfg)
-	if tx.Error != nil {
-		return nil, dferrors.Newf(dfcodes.ManagerOrmStoreError, "update config error: %s", tx.Error.Error())
+	if err := tx.Error; errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, dferrors.Newf(dfcodes.ManagerConfigNotFound, "update config error: %s", err.Error())
+	} else if err != nil {
+		return nil, dferrors.Newf(dfcodes.ManagerStoreError, "update config error: %s", err.Error())
 	} else {
-		return &Config{
-			ID:      cfg.ID,
-			Object:  cfg.Object,
-			ObjType: cfg.ObjType,
-			Version: cfg.Version,
-			Body:    cfg.Body,
-		}, nil
+		return ormConfig2InnerConfig(cfg), nil
 	}
 }
 
@@ -116,16 +114,12 @@ func (orm *ormStore) GetConfig(ctx context.Context, id string) (*Config, error) 
 	}
 
 	tx := orm.db.Find(cfg)
-	if tx.Error != nil {
-		return nil, dferrors.Newf(dfcodes.ManagerOrmStoreError, "get config error: %s", tx.Error.Error())
+	if err := tx.Error; errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, dferrors.Newf(dfcodes.ManagerConfigNotFound, "get config error: %s", err.Error())
+	} else if err != nil {
+		return nil, dferrors.Newf(dfcodes.ManagerStoreError, "get config error: %s", err.Error())
 	} else {
-		return &Config{
-			ID:      id,
-			Object:  cfg.Object,
-			ObjType: cfg.ObjType,
-			Version: cfg.Version,
-			Body:    cfg.Body,
-		}, nil
+		return ormConfig2InnerConfig(cfg), nil
 	}
 }
 
@@ -147,22 +141,18 @@ func (orm *ormStore) listSortedConfig(ctx context.Context, object string, maxLen
 	configs := make([]*Config, 0)
 
 	tx := orm.db.Where("object = ?", object).Find(&ormConfigs)
-	if tx.Error != nil {
-		return nil, dferrors.Newf(dfcodes.ManagerOrmStoreError, "list sorted config error: %s", tx.Error.Error())
+	if err := tx.Error; errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, dferrors.Newf(dfcodes.ManagerConfigNotFound, "list sorted config error %s, object %s, maxLen %d%s", object, maxLen, err.Error())
+	} else if err != nil {
+		return nil, dferrors.Newf(dfcodes.ManagerStoreError, "list sorted config error %s, object %s, maxLen %d", object, maxLen, err.Error())
 	} else {
 		for _, cfg := range ormConfigs {
-			configs = append(configs, &Config{
-				ID:      cfg.ID,
-				Object:  cfg.Object,
-				ObjType: cfg.ObjType,
-				Version: cfg.Version,
-				Body:    cfg.Body,
-			})
+			configs = append(configs, ormConfig2InnerConfig(&cfg))
 		}
 	}
 
 	if len(configs) <= 0 {
-		return nil, dferrors.Newf(dfcodes.ManagerOrmStoreError, "config not exist, object %s, maxLen %d", object, maxLen)
+		return nil, dferrors.Newf(dfcodes.ManagerConfigNotFound, "list sorted config empty, object %s, maxLen %d", object, maxLen)
 	}
 
 	sort.Sort(SortConfig(configs))

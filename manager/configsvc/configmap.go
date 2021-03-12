@@ -87,7 +87,7 @@ func (cm *ConfigMap) latestFromCache(ctx context.Context, object string, objType
 	defer cm.mu.Unlock()
 
 	if config, exist := cm.objects[object]; exist {
-		if config.ObjType == objType {
+		if config.Type == objType {
 			return config, true
 		}
 	}

@@ -12,6 +12,6 @@ stores:
     mysql:
       username: "root"
       password: "root1234"
-      ip: "db"
+      ip: "127.0.0.1"
       port: 3306
       dbname: "config_db"

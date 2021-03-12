@@ -6,5 +6,5 @@ import (
 )
 
 func NewConfigID() string {
-	return fmt.Sprintf("config-%d", idgen.UUIDString())
+	return fmt.Sprintf("config-%s", idgen.UUIDString())
 }
