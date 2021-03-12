@@ -82,7 +82,7 @@ func init() {
 }
 
 func checkDaemonOptions() error {
-	if len(flagDaemonOpt.Schedulers) == 0 {
+	if len(flagDaemonOpt.Scheduler.NetAddrs) == 0 {
 		return errors.New("empty schedulers")
 	}
 	return nil

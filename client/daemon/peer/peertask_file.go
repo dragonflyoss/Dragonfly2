@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -69,8 +70,8 @@ type filePeerTask struct {
 	// callback holds some actions, like init, done, fail actions
 	callback PeerTaskCallback
 
-	// schedule timeout
-	scheduleTimeout time.Duration
+	// schedule options
+	schedulerOption config.SchedulerOption
 
 	// peer task meta info
 	peerId          string
@@ -129,10 +130,10 @@ type PeerTaskProgress struct {
 
 func NewFilePeerTask(ctx context.Context,
 	host *scheduler.PeerHost,
-	schedulerClient schedulerclient.SchedulerClient,
 	pieceManager PieceManager,
 	request *scheduler.PeerTaskRequest,
-	scheduleTimeout time.Duration) (FilePeerTask, error) {
+	schedulerClient schedulerclient.SchedulerClient,
+	schedulerOption config.SchedulerOption) (FilePeerTask, error) {
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	if err != nil {
 		logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
@@ -167,7 +168,7 @@ func NewFilePeerTask(ctx context.Context,
 		progressStopCh:  make(chan bool),
 		contentLength:   -1,
 		totalPiece:      -1,
-		scheduleTimeout: scheduleTimeout,
+		schedulerOption: schedulerOption,
 
 		SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "filePeerTask"),
 	}, nil
@@ -242,24 +243,28 @@ loop:
 			pt.Debugf("scheduler client close PeerPacket channel")
 			break
 		}
+
 		if peerPacket == nil {
-			pt.Warnf("scheduler client send nil PeerPacket")
+			pt.Warnf("scheduler client send a empty peerPacket")
 			continue
 		}
+
 		if !peerPacket.State.Success {
 			pt.Errorf("receive peer packet with error: %d/%s", peerPacket.State.Code, peerPacket.State.Msg)
 			// when receive error, cancel
 			// pt.cancel()
 			continue
 		}
+
 		pt.Debugf("receive peer packet: %#v, main peer: %#v", peerPacket, peerPacket.MainPeer)
+
 		if peerPacket.MainPeer == nil && peerPacket.StealPeers == nil {
-			pt.Warnf("scheduler client send a PeerPacket will empty peers")
+			pt.Warnf("scheduler client send a peerPacket with empty peers")
 			continue
 		}
+
 		pt.peerPacket = peerPacket
 		pt.pieceParallelCount = pt.peerPacket.ParallelCount
-
 		select {
 		case pt.peerPacketReady <- true:
 		case <-pt.ctx.Done():
@@ -286,7 +291,7 @@ func (pt *filePeerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc fu
 	case <-pt.peerPacketReady:
 		// preparePieceTasksByPeer func already send piece result with error
 		pt.Infof("new peer client ready")
-	case <-time.After(pt.scheduleTimeout):
+	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		pt.failedReason = reasonSchedulerTimeout
 		pt.Errorf("wait first peer packet timeout from scheduler")
 		return
@@ -343,7 +348,7 @@ loop:
 			case <-pt.peerPacketReady:
 				// preparePieceTasksByPeer func already send piece result with error
 				pt.Infof("new peer client ready")
-			case <-time.After(pt.scheduleTimeout):
+			case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 				pt.failedReason = reasonSchedulerTimeout
 				pt.Errorf(pt.failedReason)
 			}
