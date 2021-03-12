@@ -9,7 +9,6 @@ scheduler:
   net_addrs:
     - type: tcp
       addr: 127.0.0.1:8002
-  request_timeout: 0
   schedule_timeout: 0
 verbose: true
 

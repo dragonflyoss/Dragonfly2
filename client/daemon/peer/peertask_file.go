@@ -244,16 +244,22 @@ loop:
 			break
 		}
 
+		if peerPacket == nil {
+			pt.Warnf("scheduler client send a peerPacket is nil")
+			continue
+		}
+
 		if !peerPacket.State.Success {
 			pt.Errorf("receive peer packet with error: %d/%s", peerPacket.State.Code, peerPacket.State.Msg)
 			// when receive error, cancel
-			pt.cancel()
+			// pt.cancel()
 			continue
 		}
+
 		pt.Debugf("receive peer packet: %#v, main peer: %#v", peerPacket, peerPacket.MainPeer)
 
-		if peerPacket == nil || (peerPacket.MainPeer == nil && peerPacket.StealPeers == nil) {
-			pt.Warnf("scheduler client send a PeerPacket will empty peers")
+		if peerPacket.MainPeer == nil && peerPacket.StealPeers == nil {
+			pt.Warnf("scheduler client send a peerPacket will empty peers")
 			continue
 		}
 
