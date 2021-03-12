@@ -110,6 +110,7 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 		if peerTask.GetParent() == nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
 			needSchedule = true
+			mgr.GetPeerTaskManager().RefreshDownloadMonitor(peerTask)
 			return
 		}
 	} else {
