@@ -657,8 +657,11 @@ func (pt *filePeerTask) cleanUnfinished() {
 		case <-pt.progressStopCh:
 			pt.Infof("progress stopped")
 		case <-pt.ctx.Done():
-			pt.Warnf("wait progress stopped failed: %#v, context done", pg)
-			pt.Debugf("pt.progressDone: %b", pt.progressDone)
+			if pt.progressDone {
+				pt.Debugf("progress stopped and context done")
+			} else {
+				pt.Warnf("wait progress stopped failed: %#v, context done, but progress not stopped", pg)
+			}
 		}
 
 		if err := pt.callback.Fail(pt, pt.failedReason); err != nil {
