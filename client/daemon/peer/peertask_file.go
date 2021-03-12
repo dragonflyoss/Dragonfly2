@@ -50,8 +50,9 @@ type FilePeerTask interface {
 }
 
 const (
-	reasonSchedulerTimeout = "wait available peers from scheduler timeout"
-	reasonContextCanceled  = "context canceled"
+	reasonScheduleTimeout   = "wait first peer packet from scheduler timeout"
+	reasonReScheduleTimeout = "wait more available peers from scheduler timeout"
+	reasonContextCanceled   = "context canceled"
 )
 
 type filePeerTask struct {
@@ -292,8 +293,8 @@ func (pt *filePeerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc fu
 		// preparePieceTasksByPeer func already send piece result with error
 		pt.Infof("new peer client ready")
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
-		pt.failedReason = reasonSchedulerTimeout
-		pt.Errorf("wait first peer packet timeout from scheduler")
+		pt.failedReason = reasonScheduleTimeout
+		pt.Errorf(pt.failedReason)
 		return
 	}
 	var (
@@ -349,7 +350,7 @@ loop:
 				// preparePieceTasksByPeer func already send piece result with error
 				pt.Infof("new peer client ready")
 			case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
-				pt.failedReason = reasonSchedulerTimeout
+				pt.failedReason = reasonReScheduleTimeout
 				pt.Errorf(pt.failedReason)
 			}
 			continue
