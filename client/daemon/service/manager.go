@@ -154,8 +154,8 @@ loop:
 
 			// peer task sets PeerTaskDone to true only once
 			if p.PeerTaskDone {
-				logger.Infof("task %s done", p.TaskId)
 				p.ProgressDone()
+				logger.Infof("task %s done", p.TaskId)
 				if !p.State.Success {
 					logger.Errorf("task %s failed: %d/%s", p.TaskId, p.State.Code, p.State.Msg)
 				}

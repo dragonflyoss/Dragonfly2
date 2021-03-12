@@ -375,9 +375,11 @@ loop:
 				pt.Infof("peer task done, stop get pieces from peer")
 				break loop
 			case <-pt.ctx.Done():
-				pt.Debugf("context done due to %s", pt.ctx.Err())
 				if !pt.progressDone {
 					pt.failedReason = reasonContextCanceled
+					pt.Errorf("context done due to %s, progress is not done", pt.ctx.Err())
+				} else {
+					pt.Debugf("context done due to %s, progress is already done", pt.ctx.Err())
 				}
 				break loop
 			case failed := <-pt.failedPieceCh:
@@ -594,9 +596,13 @@ func (pt *filePeerTask) finish() error {
 		case <-pt.progressStopCh:
 			pt.Infof("progress stopped")
 		case <-pt.ctx.Done():
-			pt.Warnf("wait progress stopped failed: %#v, context done", pg)
+			if pt.progressDone {
+				pt.Debugf("progress stopped and context done")
+			} else {
+				pt.Warnf("wait progress stopped failed: %#v, context done, but progress not stopped", pg)
+			}
 		}
-		pt.Debugf("finished: close done and progress channel")
+		pt.Debugf("finished: close done channel")
 		close(pt.done)
 	})
 	return err
@@ -646,13 +652,14 @@ func (pt *filePeerTask) cleanUnfinished() {
 			pt.Infof("progress stopped")
 		case <-pt.ctx.Done():
 			pt.Warnf("wait progress stopped failed: %#v, context done", pg)
+			pt.Debugf("pt.progressDone: %b", pt.progressDone)
 		}
 
 		if err := pt.callback.Fail(pt, pt.failedReason); err != nil {
 			pt.Errorf("peer task fail callback failed: %s", err)
 		}
 
-		pt.Debugf("clean unfinished: close done and progress channel")
+		pt.Debugf("clean unfinished: close done channel")
 		close(pt.done)
 	})
 }
