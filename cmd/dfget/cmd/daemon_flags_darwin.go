@@ -47,7 +47,6 @@ var flagDaemonOpt = config.PeerHostOption{
 	Console:     false,
 	Scheduler: config.SchedulerOption{
 		NetAddrs:        nil,
-		RequestTimeout:  clientutil.Duration{Duration: 3 * time.Second},
 		ScheduleTimeout: clientutil.Duration{Duration: 1 * time.Minute},
 	},
 	Host: config.HostOption{

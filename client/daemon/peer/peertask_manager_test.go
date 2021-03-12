@@ -210,7 +210,6 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
 		schedulerOption: config.SchedulerOption{
-			RequestTimeout:  clientutil.Duration{Duration: 3 * time.Second},
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},
 	}
@@ -284,7 +283,6 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		storageManager:  storageManager,
 		schedulerClient: sched,
 		schedulerOption: config.SchedulerOption{
-			RequestTimeout:  clientutil.Duration{Duration: 3 * time.Second},
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},
 	}

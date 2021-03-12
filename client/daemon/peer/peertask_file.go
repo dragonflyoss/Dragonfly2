@@ -285,7 +285,7 @@ func (pt *filePeerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc fu
 	case <-pt.peerPacketReady:
 		// preparePieceTasksByPeer func already send piece result with error
 		pt.Infof("new peer client ready")
-	case <-time.After(pt.schedulerOption.RequestTimeout.Duration):
+	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		pt.failedReason = reasonSchedulerTimeout
 		pt.Errorf("wait first peer packet timeout from scheduler")
 		return
@@ -342,7 +342,7 @@ loop:
 			case <-pt.peerPacketReady:
 				// preparePieceTasksByPeer func already send piece result with error
 				pt.Infof("new peer client ready")
-			case <-time.After(pt.schedulerOption.RequestTimeout.Duration):
+			case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 				pt.failedReason = reasonSchedulerTimeout
 				pt.Errorf(pt.failedReason)
 			}

@@ -80,7 +80,6 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
 		schedulerOption: config.SchedulerOption{
-			RequestTimeout:  clientutil.Duration{Duration: 3 * time.Second},
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},
 	}
@@ -183,7 +182,6 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
 		schedulerOption: config.SchedulerOption{
-			RequestTimeout:  clientutil.Duration{Duration: 3 * time.Second},
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},
 	}

@@ -153,7 +153,7 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 }
 
 func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]string, error) {
-	s.base.ctx, s.base.cancel = context.WithTimeout(ctx, s.base.schedulerOption.ScheduleTimeout.Duration)
+	s.base.ctx, s.base.cancel = context.WithCancel(ctx)
 	if s.base.backSource {
 		go func() {
 			s.base.contentLength = -1

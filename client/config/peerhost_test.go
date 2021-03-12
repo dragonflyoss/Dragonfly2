@@ -181,7 +181,6 @@ func TestUnmarshalJSON(t *testing.T) {
 		},
 		"schedulers1": {
 			"net_addrs": [ "0.0.0.0", "0.0.0.1" ],
-			"request_timeout": "3m",
 			"schedule_timeout": "3m"
 		},
 		"schedulers2": {
@@ -189,7 +188,6 @@ func TestUnmarshalJSON(t *testing.T) {
 				"type": "tcp",
 				"addr": "0.0.0.0"
 			}],
-			"request_timeout": "3m",
 			"schedule_timeout": "3m"
 		}
 }`)
@@ -241,13 +239,11 @@ schedulers1:
   net_addrs:
     - 0.0.0.0
     - 0.0.0.1
-  request_timeout: 0
   schedule_timeout: 0
 schedulers2:
   net_addrs:
     - type: tcp
       addr: 0.0.0.0
-  request_timeout: 0
   schedule_timeout: 0
 `)
 
@@ -303,9 +299,6 @@ func TestPeerHostOption_Load(t *testing.T) {
 					Type: dfnet.TCP,
 					Addr: "127.0.0.1:8002",
 				},
-			},
-			RequestTimeout: clientutil.Duration{
-				Duration: 0,
 			},
 			ScheduleTimeout: clientutil.Duration{
 				Duration: 0,

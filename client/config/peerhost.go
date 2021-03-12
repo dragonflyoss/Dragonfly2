@@ -89,11 +89,8 @@ type SchedulerOption struct {
 	// NetAddrs is scheduler addresses.
 	NetAddrs []dfnet.NetAddr `json:"net_addrs" yaml:"net_addrs"`
 
-	// RequestTimeout is request timeout.
-	RequestTimeout clientutil.Duration `json:"request_timeout" yaml:"request_timeout"`
-
 	// ScheduleTimeout is request timeout.
-	ScheduleTimeout clientutil.Duration `json:"scheduler_timeout" yaml:"scheduler_timeout"`
+	ScheduleTimeout clientutil.Duration `json:"schedule_timeout" yaml:"schedule_timeout"`
 }
 
 type HostOption struct {
