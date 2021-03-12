@@ -245,7 +245,7 @@ loop:
 		}
 
 		if peerPacket == nil {
-			pt.Warnf("scheduler client send a peerPacket is nil")
+			pt.Warnf("scheduler client send a empty peerPacket")
 			continue
 		}
 
@@ -259,7 +259,7 @@ loop:
 		pt.Debugf("receive peer packet: %#v, main peer: %#v", peerPacket, peerPacket.MainPeer)
 
 		if peerPacket.MainPeer == nil && peerPacket.StealPeers == nil {
-			pt.Warnf("scheduler client send a peerPacket will empty peers")
+			pt.Warnf("scheduler client send a peerPacket with empty peers")
 			continue
 		}
 
