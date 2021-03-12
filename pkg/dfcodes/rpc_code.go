@@ -37,7 +37,7 @@ const (
 	// scheduler response error 5000-5999
 	SchedError          base.Code = 5000
 	SchedNeedBackSource base.Code = 5001 // client should try to download from source
-	SchedPeerGone       base.Code = 5001 // client should disconnect from scheduler
+	SchedPeerGone       base.Code = 5002 // client should disconnect from scheduler
 
 	// cdnsystem response error 6000-6999
 	CdnError            base.Code = 6000
