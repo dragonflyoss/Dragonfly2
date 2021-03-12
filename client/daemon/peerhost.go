@@ -73,7 +73,7 @@ type peerHost struct {
 }
 
 func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost, error) {
-	sched, err := schedulerclient.GetClientByAddr(opt.Schedulers)
+	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 	if err != nil {
 		return nil, err
 	}
-	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.ScheduleTimeout.Duration)
+	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler)
 	if err != nil {
 		return nil, err
 	}
