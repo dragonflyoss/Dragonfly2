@@ -35,6 +35,23 @@ func (p *filePeerTaskCallback) Init(pt PeerTask) error {
 	return err
 }
 
+func (p *filePeerTaskCallback) Update(pt PeerTask) error {
+	// update storage
+	err := p.ptm.storageManager.UpdateTask(p.ctx,
+		&storage.UpdateTaskRequest{
+			PeerTaskMetaData: storage.PeerTaskMetaData{
+				PeerID: pt.GetPeerID(),
+				TaskID: pt.GetTaskID(),
+			},
+			ContentLength: pt.GetContentLength(),
+			TotalPieces:   pt.GetTotalPieces(),
+		})
+	if err != nil {
+		logger.Errorf("update task to storage manager failed: %s", err)
+	}
+	return err
+}
+
 func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 	e := p.ptm.storageManager.Store(
 		context.Background(),

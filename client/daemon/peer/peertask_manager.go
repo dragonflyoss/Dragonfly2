@@ -59,6 +59,7 @@ type PeerTask interface {
 type PeerTaskCallback interface {
 	Init(pt PeerTask) error
 	Done(pt PeerTask) error
+	Update(pt PeerTask) error
 	Fail(pt PeerTask, reason string) error
 }
 

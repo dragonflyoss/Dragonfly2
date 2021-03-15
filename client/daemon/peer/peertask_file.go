@@ -338,6 +338,7 @@ loop:
 		default:
 		}
 
+		pt.Debugf("try to get pieces, number: %d, limit: %d", num, limit)
 		piecePacket, err := pt.preparePieceTasks(
 			&base.PieceTaskRequest{
 				TaskId:   pt.taskId,
@@ -376,12 +377,16 @@ loop:
 			_ = pt.callback.Init(pt)
 			initialized = true
 		}
+
+		// trigger DownloadPieces
 		if len(piecePacket.PieceInfos) > 0 {
 			pt.pieceManager.DownloadPieces(pti, piecePacket)
 		}
 
-		if piecePacket.TotalPiece > 0 {
+		// update total piece
+		if piecePacket.TotalPiece > pt.totalPiece {
 			pt.totalPiece = piecePacket.TotalPiece
+			_ = pt.callback.Update(pt)
 		}
 
 		num = pt.getNextPieceNum(num, limit)
@@ -530,25 +535,12 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 		pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
 		return nil, err
 	}
-	if p.State.Success {
-		pt.Debugf("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
-		if len(p.PieceInfos) == 0 {
-			pt.Errorf("peer %s returns success state with empty pieces", peer.PeerId)
-			return nil, dferrors.ErrEmptyValue
-		}
-		return p, nil
+	pt.Debugf("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
+	if len(p.PieceInfos) == 0 {
+		pt.Errorf("peer %s returns success state with empty pieces", peer.PeerId)
+		return nil, dferrors.ErrEmptyValue
 	}
-	pt.pieceResultCh <- &scheduler.PieceResult{
-		TaskId:        pt.taskId,
-		SrcPid:        pt.peerId,
-		DstPid:        peer.PeerId,
-		Success:       false,
-		Code:          p.State.Code,
-		HostLoad:      nil,
-		FinishedCount: -1,
-	}
-	pt.Warnf("get piece task from peer(%s) failed: %d/%s", peer.PeerId, p.State.Code, p.State.Msg)
-	return nil, fmt.Errorf("get piece failed: %d/%s", p.State.Code, p.State.Msg)
+	return p, nil
 }
 
 func (pt *filePeerTask) getNextPieceNum(cur, limit int32) int32 {
@@ -559,7 +551,12 @@ func (pt *filePeerTask) getNextPieceNum(cur, limit int32) int32 {
 	for ; pt.bitmap.IsSet(i); i++ {
 	}
 	if pt.totalPiece > 0 && i >= pt.totalPiece {
-		return -1
+		// double check, re-search not success or not requested pieces
+		for i = int32(0); pt.bitmap.IsSet(i); i++ {
+		}
+		if pt.totalPiece > 0 && i >= pt.totalPiece {
+			return -1
+		}
 	}
 	return i
 }
