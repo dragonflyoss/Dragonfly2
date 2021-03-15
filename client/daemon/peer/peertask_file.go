@@ -50,9 +50,10 @@ type FilePeerTask interface {
 }
 
 const (
-	reasonScheduleTimeout   = "wait first peer packet from scheduler timeout"
-	reasonReScheduleTimeout = "wait more available peers from scheduler timeout"
-	reasonContextCanceled   = "context canceled"
+	reasonScheduleTimeout       = "wait first peer packet from scheduler timeout"
+	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
+	reasonContextCanceled       = "context canceled"
+	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
 )
 
 type filePeerTask struct {
@@ -103,6 +104,8 @@ type filePeerTask struct {
 	failedPieceCh chan int32
 	// failedReason will be set when peer task failed
 	failedReason string
+	// failedReason will be set when peer task failed
+	failedCode base.Code
 	// progressCh holds progress status
 	progressCh     chan *PeerTaskProgress
 	progressStopCh chan bool
@@ -165,6 +168,7 @@ func NewFilePeerTask(ctx context.Context,
 		lock:            &sync.Mutex{},
 		failedPieceCh:   make(chan int32, 4),
 		failedReason:    "unknown",
+		failedCode:      dfcodes.UnknownError,
 		progressCh:      make(chan *PeerTaskProgress),
 		progressStopCh:  make(chan bool),
 		contentLength:   -1,
@@ -249,10 +253,17 @@ loop:
 			pt.Warnf("scheduler client send a empty peerPacket")
 			continue
 		}
+		if peerPacket.State.Code == dfcodes.SchedPeerGone {
+			pt.failedReason = reasonPeerGoneFromScheduler
+			pt.failedCode = dfcodes.SchedPeerGone
+			pt.cancel()
+			pt.Errorf(pt.failedReason)
+			break
+		}
 
 		if !peerPacket.State.Success {
 			pt.Errorf("receive peer packet with error: %d/%s", peerPacket.State.Code, peerPacket.State.Msg)
-			// when receive error, cancel
+			// TODO when receive error, cancel ?
 			// pt.cancel()
 			continue
 		}
@@ -294,6 +305,7 @@ func (pt *filePeerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc fu
 		pt.Infof("new peer client ready")
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		pt.failedReason = reasonScheduleTimeout
+		pt.failedCode = dfcodes.ClientScheduleTimeout
 		pt.Errorf(pt.failedReason)
 		return
 	}
@@ -316,6 +328,7 @@ loop:
 			if !pt.progressDone {
 				pt.callback.Fail(pt, pt.ctx.Err().Error())
 				pt.failedReason = reasonContextCanceled
+				pt.failedCode = dfcodes.ClientContextCanceled
 			}
 			break loop
 		case failed := <-pt.failedPieceCh:
@@ -344,6 +357,7 @@ loop:
 				pt.Debugf("context done due to %s", pt.ctx.Err())
 				if !pt.progressDone {
 					pt.failedReason = reasonContextCanceled
+					pt.failedCode = dfcodes.ClientContextCanceled
 				}
 				break loop
 			case <-pt.peerPacketReady:
@@ -351,6 +365,7 @@ loop:
 				pt.Infof("new peer client ready")
 			case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 				pt.failedReason = reasonReScheduleTimeout
+				pt.failedCode = dfcodes.ClientScheduleTimeout
 				pt.Errorf(pt.failedReason)
 			}
 			continue
@@ -383,6 +398,7 @@ loop:
 			case <-pt.ctx.Done():
 				if !pt.progressDone {
 					pt.failedReason = reasonContextCanceled
+					pt.failedCode = dfcodes.ClientContextCanceled
 					pt.Errorf("context done due to %s, progress is not done", pt.ctx.Err())
 				} else {
 					pt.Debugf("context done due to %s, progress is already done", pt.ctx.Err())
@@ -516,6 +532,10 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 	}
 	if p.State.Success {
 		pt.Debugf("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
+		if len(p.PieceInfos) == 0 {
+			pt.Errorf("peer %s returns success state with empty pieces", peer.PeerId)
+			return nil, dferrors.ErrEmptyValue
+		}
 		return p, nil
 	}
 	pt.pieceResultCh <- &scheduler.PieceResult{
@@ -631,7 +651,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 		pg := &PeerTaskProgress{
 			State: &base.ResponseState{
 				Success: false,
-				Code:    dfcodes.UnknownError,
+				Code:    pt.failedCode,
 				Msg:     pt.failedReason,
 			},
 			TaskId:          pt.taskId,
