@@ -50,9 +50,10 @@ type FilePeerTask interface {
 }
 
 const (
-	reasonScheduleTimeout   = "wait first peer packet from scheduler timeout"
-	reasonReScheduleTimeout = "wait more available peers from scheduler timeout"
-	reasonContextCanceled   = "context canceled"
+	reasonScheduleTimeout       = "wait first peer packet from scheduler timeout"
+	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
+	reasonContextCanceled       = "context canceled"
+	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
 )
 
 type filePeerTask struct {
@@ -253,12 +254,16 @@ loop:
 			continue
 		}
 		if peerPacket.State.Code == dfcodes.SchedPeerGone {
-
+			pt.failedReason = reasonPeerGoneFromScheduler
+			pt.failedCode = dfcodes.SchedPeerGone
+			pt.cancel()
+			pt.Errorf(pt.failedReason)
+			break
 		}
 
 		if !peerPacket.State.Success {
 			pt.Errorf("receive peer packet with error: %d/%s", peerPacket.State.Code, peerPacket.State.Msg)
-			// when receive error, cancel
+			// TODO when receive error, cancel ?
 			// pt.cancel()
 			continue
 		}
