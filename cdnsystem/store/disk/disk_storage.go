@@ -89,12 +89,8 @@ func (ds *diskStorage) GetGcConfig(ctx context.Context) *store.GcConfig {
 	return ds.GcConfig
 }
 
-func (ds *diskStorage) CreateDir(ctx context.Context, path string) error {
-	return os.MkdirAll(path, os.ModePerm)
-}
-
-func (ds *diskStorage) CreateFile(ctx context.Context, path string) (*os.File, error) {
-	return os.Create(path)
+func (ds *diskStorage) CreateBaseDir(ctx context.Context) error {
+	return os.MkdirAll(ds.BaseDir, os.ModePerm)
 }
 
 func (ds *diskStorage) MoveFile(src string, dst string) error {

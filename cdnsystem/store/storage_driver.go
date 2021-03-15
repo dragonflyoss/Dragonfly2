@@ -20,7 +20,6 @@ import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"io"
-	"os"
 	"path/filepath"
 	"time"
 )
@@ -77,9 +76,7 @@ type StorageDriver interface {
 	// calling walkFn for each file or directory in the tree, including root.
 	Walk(ctx context.Context, raw *Raw) error
 
-	CreateFile(ctx context.Context, path string) (*os.File, error)
-
-	CreateDir(ctx context.Context, path string) error
+	CreateBaseDir(ctx context.Context) error
 
 	// GetPath
 	GetPath(raw *Raw) string

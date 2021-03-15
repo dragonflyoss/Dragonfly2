@@ -19,6 +19,7 @@ package storage
 import (
 	"bytes"
 	"context"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -48,7 +49,7 @@ func Get(name string, defaultIfAbsent bool) Builder {
 
 // Builder creates a storage
 type Builder interface {
-	Build() (StorageMgr, error)
+	Build(cfg *config.Config) (StorageMgr, error)
 
 	Name() string
 }
@@ -110,5 +111,5 @@ type StorageMgr interface {
 
 	InitializeCleaners()
 
-	Gc(ctx context.Context)
+	GC(ctx context.Context) error
 }

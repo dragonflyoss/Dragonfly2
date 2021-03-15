@@ -20,11 +20,13 @@ import (
 	"bytes"
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/cdnsystem/util"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"encoding/json"
@@ -48,7 +50,7 @@ func init() {
 type diskBuilder struct {
 }
 
-func (*diskBuilder) Build() (storage.StorageMgr, error) {
+func (*diskBuilder) Build(cfg *config.Config) (storage.StorageMgr, error) {
 	diskStore, err := store.Get(disk.StorageDriver)
 	if err != nil {
 		return nil, err
@@ -122,10 +124,29 @@ func (s *diskStorageMgr) ReadPieceMetaRecords(ctx context.Context, taskId string
 	return result, nil
 }
 
-func (s *diskStorageMgr) Gc(ctx context.Context) {
-	go func() {
-		_, _ = s.diskStoreCleaner.Gc(ctx, false)
-	}()
+func (s *diskStorageMgr) GC(ctx context.Context) error {
+	gcTaskIDs, err := s.diskStoreCleaner.Gc(ctx, false)
+	if err != nil {
+		logger.GcLogger.Error("gc disk: failed to get gcTaskIds")
+	}
+	for _, taskID := range gcTaskIDs {
+		util.GetLock(taskID, false)
+		// try to ensure the taskID is not using again
+		if _, err := s.taskMgr.Get(ctx, taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
+			if err != nil {
+				logger.GcLogger.Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
+			}
+			util.ReleaseLock(taskID, false)
+			continue
+		}
+		if err := s.DeleteTask(ctx, taskID); err != nil {
+			logger.GcLogger.Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
+			util.ReleaseLock(taskID, false)
+			continue
+		}
+		util.ReleaseLock(taskID, false)
+	}
+	return nil
 }
 
 func (s *diskStorageMgr) SetTaskMgr(mgr mgr.SeedTaskMgr) {

@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"io"
-	"os"
 )
 
 func init() {
@@ -48,8 +47,8 @@ func (s *Store) GetTotalSpace(ctx context.Context) (fileutils.Fsize, error) {
 	return s.driver.GetTotalSpace(ctx)
 }
 
-func (s *Store) CreateDir(ctx context.Context, path string) error {
-	return s.driver.CreateDir(ctx, path)
+func (s *Store) CreateBaseDir(ctx context.Context) error {
+	return s.driver.CreateBaseDir(ctx)
 }
 
 func (s *Store) Exits(ctx context.Context, raw *Raw) bool {
@@ -58,10 +57,6 @@ func (s *Store) Exits(ctx context.Context, raw *Raw) bool {
 
 func (s *Store) GetTotalAndFreeSpace(ctx context.Context) (fileutils.Fsize, fileutils.Fsize, error) {
 	return s.driver.GetTotalAndFreeSpace(ctx)
-}
-
-func (s *Store) CreateFile(ctx context.Context, path string) (*os.File, error) {
-	return s.driver.CreateFile(ctx, path)
 }
 
 // NewStore creates a new Store instance.

@@ -52,7 +52,7 @@ func New(cfg *config.Config, register prometheus.Registerer) (*Server, error) {
 		return nil, fmt.Errorf("could not get storage for pattern: %s", cfg.StoragePattern)
 	}
 	logger.Debugf("storage pattern is %s", sb.Name())
-	storageMgr, err := sb.Build()
+	storageMgr, err := sb.Build(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build storage: %v", err)
 	}

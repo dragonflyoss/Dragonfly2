@@ -52,7 +52,7 @@ func (cleaner *Cleaner) Gc(ctx context.Context, force bool) ([]string, error) {
 	freeSpace, err := cleaner.Store.GetAvailSpace(ctx)
 	if err != nil {
 		if cdnerrors.IsKeyNotFound(err) {
-			err = cleaner.Store.CreateDir(ctx, cleaner.Store.GetHomePath(ctx))
+			err = cleaner.Store.CreateBaseDir(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -91,7 +91,6 @@ func (cleaner *Cleaner) Gc(ctx context.Context, force bool) ([]string, error) {
 			return nil
 		}
 		taskId := strings.Split(info.Name(), ".")[0]
-
 		// If the taskId has been handled, and no need to do that again.
 		if walkTaskIds[taskId] {
 			return nil
@@ -133,7 +132,7 @@ func (cleaner *Cleaner) Gc(ctx context.Context, force bool) ([]string, error) {
 	}
 
 	if !fullGC {
-		gcTaskIDs = append(gcTaskIDs, getGCTasks(gapTasks, intervalTasks)...)
+		gcTaskIDs = append(gcTaskIDs, cleaner.getGCTasks(gapTasks, intervalTasks)...)
 	}
 
 	return gcTaskIDs, nil
@@ -170,7 +169,7 @@ func (cleaner *Cleaner) sortInert(ctx context.Context, gapTasks, intervalTasks *
 	return nil
 }
 
-func getGCTasks(gapTasks, intervalTasks *treemap.Map) []string {
+func (cleaner *Cleaner) getGCTasks(gapTasks, intervalTasks *treemap.Map) []string {
 	var gcTasks = make([]string, 0)
 
 	for _, v := range gapTasks.Values() {
@@ -185,5 +184,6 @@ func getGCTasks(gapTasks, intervalTasks *treemap.Map) []string {
 		}
 	}
 
-	return gcTasks
+	gcLen := (len(gcTasks)*cleaner.Cfg.CleanRatio + 9)/10
+	return gcTasks[0:gcLen]
 }
