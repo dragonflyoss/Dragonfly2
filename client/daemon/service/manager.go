@@ -23,6 +23,8 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
@@ -91,14 +93,7 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 			code = dfcodes.PeerTaskNotFound
 		}
 		logger.Errorf("receive get piece tasks request: %#v, error: %s, code: %v", request, err, code)
-		return &base.PiecePacket{
-			State: &base.ResponseState{
-				Success: false,
-				Code:    code,
-				Msg:     fmt.Sprintf("%s", err),
-			},
-			TaskId: request.TaskId,
-		}, nil
+		return nil, status.Error(codes.Code(code), err.Error())
 	}
 
 	logger.Debugf("receive get piece tasks request: %#v, piece packet: %#v, length: %d", request, p, len(p.PieceInfos))

@@ -365,23 +365,23 @@ loop:
 			// when peer task without content length or total pieces count, match here
 			case <-pt.done:
 				pt.Infof("peer task done, stop get pieces from peer")
-				break loop
 			case <-pt.ctx.Done():
 				pt.Debugf("context done due to %s", pt.ctx.Err())
 				if !pt.progressDone {
 					pt.failedReason = reasonContextCanceled
 					pt.failedCode = dfcodes.ClientContextCanceled
 				}
-				break loop
 			case <-pt.peerPacketReady:
 				// preparePieceTasksByPeer func already send piece result with error
 				pt.Infof("new peer client ready")
+				continue loop
 			case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 				pt.failedReason = reasonReScheduleTimeout
 				pt.failedCode = dfcodes.ClientScheduleTimeout
 				pt.Errorf(pt.failedReason)
 			}
-			continue
+			// only <-pt.peerPacketReady continue loop, others break
+			break loop
 		}
 
 		if !initialized {
