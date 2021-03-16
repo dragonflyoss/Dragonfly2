@@ -172,7 +172,21 @@ func (conn *Connection) GetServerNode(hashKey string) string {
 
 // GetClient
 func (conn *Connection) GetClientConn(hashKey string) (*grpc.ClientConn, error) {
+	conn.rwMutex.Lock(hashKey, true)
 	node, ok := conn.key2NodeMap.Load(hashKey)
+	if ok {
+		conn.accessNodeMap.Store(node, time.Now())
+		client, ok := conn.node2ClientMap.Load(node)
+		if ok {
+			conn.rwMutex.UnLock(hashKey, true)
+			return client.(*grpc.ClientConn), nil
+		}
+	}
+	conn.rwMutex.UnLock(hashKey, true)
+	// reconfirm
+	conn.rwMutex.Lock(hashKey, false)
+	defer conn.rwMutex.UnLock(hashKey, false)
+	node, ok = conn.key2NodeMap.Load(hashKey)
 	if ok {
 		conn.accessNodeMap.Store(node, time.Now())
 		client, ok := conn.node2ClientMap.Load(node)
