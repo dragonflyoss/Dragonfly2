@@ -549,11 +549,20 @@ func (pt *filePeerTask) getPieceTasks(peer *scheduler.PeerPacket_DestPeer, reque
 		}
 		// by santong: when peer return empty, retry later
 		if len(pp.PieceInfos) == 0 {
+			pt.pieceResultCh <- &scheduler.PieceResult{
+				TaskId:        pt.taskId,
+				SrcPid:        pt.peerId,
+				DstPid:        peer.PeerId,
+				Success:       false,
+				Code:          dfcodes.ClientWaitPieceReady,
+				HostLoad:      nil,
+				FinishedCount: pt.bitmap.Settled(),
+			}
 			pt.Warnf("peer %s returns success but with empty pieces, retry later", peer.PeerId)
 			return nil, dferrors.ErrEmptyValue
 		}
 		return pp, nil
-	}, 1, 4, 8, nil)
+	}, 1, 8, 8, nil)
 	if err == nil {
 		return p.(*base.PiecePacket), nil
 	}
