@@ -31,6 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -509,38 +510,54 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 		return nil, fmt.Errorf("empty peer")
 	}
 	pt.Debugf("get piece task from peer %s, request: %#v", peer.PeerId, request)
-	p, err := dfclient.GetPieceTasks(peer, pt.ctx, request)
-	if err != nil {
-		// context canceled, just exit
-		if status.Code(err) == codes.Canceled {
-			pt.Debugf("get piece task from peer(%s) canceled: %s", peer.PeerId, err)
-			return nil, err
-		}
-		code := dfcodes.ClientPieceTaskRequestFail
-		// not grpc error
-		if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
-			code = de.Code
-		}
-		// may be panic here due to unknown content length or total piece count
-		// recover by preparePieceTasks
-		pt.pieceResultCh <- &scheduler.PieceResult{
-			TaskId:        pt.taskId,
-			SrcPid:        pt.peerId,
-			DstPid:        peer.PeerId,
-			Success:       false,
-			Code:          code,
-			HostLoad:      nil,
-			FinishedCount: -1,
-		}
-		pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
+	p, err := pt.getPieceTasks(peer, request)
+	if err == nil {
+		pt.Infof("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
+		return p, nil
+	}
+
+	// context canceled, just exit
+	if status.Code(err) == codes.Canceled {
+		pt.Warnf("get piece task from peer(%s) canceled: %s", peer.PeerId, err)
 		return nil, err
 	}
-	pt.Debugf("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
-	if len(p.PieceInfos) == 0 {
-		pt.Errorf("peer %s returns success state with empty pieces", peer.PeerId)
-		return nil, dferrors.ErrEmptyValue
+	code := dfcodes.ClientPieceTaskRequestFail
+	// not grpc error
+	if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
+		code = de.Code
 	}
-	return p, nil
+	// may be panic here due to unknown content length or total piece count
+	// recover by preparePieceTasks
+	pt.pieceResultCh <- &scheduler.PieceResult{
+		TaskId:        pt.taskId,
+		SrcPid:        pt.peerId,
+		DstPid:        peer.PeerId,
+		Success:       false,
+		Code:          code,
+		HostLoad:      nil,
+		FinishedCount: -1,
+	}
+	pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
+	return nil, err
+}
+
+func (pt *filePeerTask) getPieceTasks(peer *scheduler.PeerPacket_DestPeer, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	p, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		pp, getErr := dfclient.GetPieceTasks(peer, pt.ctx, request)
+		if getErr != nil {
+			return nil, getErr
+		}
+		// by santong: when peer return empty, retry later
+		if len(pp.PieceInfos) == 0 {
+			pt.Warnf("peer %s returns success but with empty pieces, retry later", peer.PeerId)
+			return nil, dferrors.ErrEmptyValue
+		}
+		return pp, nil
+	}, 1, 4, 8, nil)
+	if err == nil {
+		return p.(*base.PiecePacket), nil
+	}
+	return nil, err
 }
 
 func (pt *filePeerTask) getNextPieceNum(cur, limit int32) int32 {
