@@ -72,6 +72,8 @@ func (m *PeerTaskManager) AddPeerTask(pid string, task *types.Task, host *types.
 	pt := types.NewPeerTask(pid, task, host, m.addToGCQueue)
 	m.data.Store(pid, pt)
 
+	GetTaskManager().TouchTask(task.TaskId)
+
 	return pt
 }
 
@@ -107,7 +109,21 @@ func (m *PeerTaskManager) Walker(walker func(pt *types.PeerTask) bool) {
 	}
 	m.data.Range(func(key interface{}, value interface{}) bool {
 		pt, _ := value.(*types.PeerTask)
+		if pt != nil && pt.Task.Removed {
+			m.data.Delete(pt.Pid)
+			return true
+		}
 		return walker(pt)
+	})
+}
+
+func (m *PeerTaskManager) ClearPeerTask() {
+	m.data.Range(func(key interface{}, value interface{}) bool {
+		pt, _ := value.(*types.PeerTask)
+		if pt != nil && pt.Task != nil && pt.Task.Removed {
+			m.data.Delete(pt.Pid)
+		}
+		return  true
 	})
 }
 

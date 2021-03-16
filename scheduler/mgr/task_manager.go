@@ -71,14 +71,26 @@ func (m *TaskManager) GetTask(taskId string) (h *types.Task, ok bool) {
 	return
 }
 
+func (m *TaskManager) TouchTask(taskId string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	t, _ := m.data[taskId]
+	if t != nil {
+		t.LastActive = time.Now()
+	}
+	return
+}
+
+
 func (m *TaskManager) gcWorkingLoop() {
 	for {
 		time.Sleep(time.Hour)
 		var needDeleteKeys []string
 		m.lock.RLock()
 		for taskId, task := range m.data {
-			if task != nil && time.Now().After(task.CreateTime.Add(m.gcDelayTime)) {
+			if task != nil && time.Now().After(task.LastActive.Add(m.gcDelayTime)) {
 				needDeleteKeys = append(needDeleteKeys, taskId)
+				task.Removed = true
 			}
 		}
 		m.lock.RUnlock()
@@ -90,5 +102,8 @@ func (m *TaskManager) gcWorkingLoop() {
 			}
 			m.lock.Unlock()
 		}
+
+		// clear peer task
+		GetPeerTaskManager().ClearPeerTask()
 	}
 }
