@@ -10,8 +10,9 @@ stores:
     name: "store1"
     type: "mysql"
     mysql:
-      username: "root"
+      user: "root"
       password: "root1234"
-      ip: "127.0.0.1"
+      ip: "db"
       port: 3306
-      dbname: "config_db"
+      db: "config_db"
+      table: "config_table"
