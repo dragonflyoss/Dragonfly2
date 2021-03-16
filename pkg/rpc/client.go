@@ -72,13 +72,15 @@ func NewConnection(addrs []dfnet.NetAddr, opts ...grpc.DialOption) *Connection {
 	for _, addr := range addrs {
 		addresses = append(addresses, addr.GetEndpoint())
 	}
-	return &Connection{
+	conn := &Connection{
 		rwMutex:        synclock.NewKeyLocker(),
 		opts:           opts,
 		hashRing:       hashring.New(addresses),
 		accessNodeMap:  syncmap.NewSyncMap(),
 		connExpireTime: connExpireTime,
 	}
+	go conn.startGC(context.TODO())
+	return conn
 }
 
 func (conn *Connection) UpdateAccessNodeMap(key string) {
@@ -125,7 +127,7 @@ var clientOpts = []grpc.DialOption{
 	grpc.WithUnaryInterceptor(unaryClientInterceptor),
 }
 
-func (conn *Connection) StartGC(ctx context.Context) {
+func (conn *Connection) startGC(ctx context.Context) {
 	logger.GrpcLogger.Debugf("start the gc connections job")
 	// execute the GC by fixed delay
 	ticker := time.NewTicker(gcConnectionsInterval)

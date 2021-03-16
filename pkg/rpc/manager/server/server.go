@@ -37,14 +37,39 @@ type proxy struct {
 
 // see manager.ManagerServer
 type ManagerServer interface {
-	GetSchedulers(context.Context, *manager.NavigatorRequest) (*manager.SchedulerNodes, error)
-	KeepAlive(context.Context, *manager.HeartRequest) (*manager.ManagementConfig, error)
+	AddConfig(context.Context, *manager.AddConfigRequest) (*manager.AddConfigResponse, error)
+	DeleteConfig(context.Context, *manager.DeleteConfigRequest) (*manager.DeleteConfigResponse, error)
+	UpdateConfig(context.Context, *manager.UpdateConfigRequest) (*manager.UpdateConfigResponse, error)
+	GetConfig(context.Context, *manager.GetConfigRequest) (*manager.GetConfigResponse, error)
+	ListConfigs(context.Context, *manager.ListConfigsRequest) (*manager.ListConfigsResponse, error)
+	KeepAlive(context.Context, *manager.KeepAliveRequest) (*manager.KeepAliveResponse, error)
+	ListSchedulers(context.Context, *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
 }
 
-func (p *proxy) GetSchedulers(ctx context.Context, req *manager.NavigatorRequest) (*manager.SchedulerNodes, error) {
-	return p.server.GetSchedulers(ctx, req)
+func (p *proxy) AddConfig(ctx context.Context, req *manager.AddConfigRequest) (*manager.AddConfigResponse, error) {
+	return p.server.AddConfig(ctx, req)
 }
 
-func (p *proxy) KeepAlive(ctx context.Context, req *manager.HeartRequest) (*manager.ManagementConfig, error) {
+func (p *proxy) DeleteConfig(ctx context.Context, req *manager.DeleteConfigRequest) (*manager.DeleteConfigResponse, error) {
+	return p.server.DeleteConfig(ctx, req)
+}
+
+func (p *proxy) UpdateConfig(ctx context.Context, req *manager.UpdateConfigRequest) (*manager.UpdateConfigResponse, error) {
+	return p.server.UpdateConfig(ctx, req)
+}
+
+func (p *proxy) GetConfig(ctx context.Context, req *manager.GetConfigRequest) (*manager.GetConfigResponse, error) {
+	return p.server.GetConfig(ctx, req)
+}
+
+func (p *proxy) ListConfigs(ctx context.Context, req *manager.ListConfigsRequest) (*manager.ListConfigsResponse, error) {
+	return p.server.ListConfigs(ctx, req)
+}
+
+func (p *proxy) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) (*manager.KeepAliveResponse, error) {
 	return p.server.KeepAlive(ctx, req)
+}
+
+func (p *proxy) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
+	return p.server.ListSchedulers(ctx, req)
 }

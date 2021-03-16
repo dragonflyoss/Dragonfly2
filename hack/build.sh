@@ -7,6 +7,7 @@ set -o pipefail
 CDN_BINARY_NAME=cdn
 DFGET_BINARY_NAME=dfget
 SCHEDULER_BINARY_NAME=scheduler
+MANAGER_BINARY_NAME=manager
 
 PKG=d7y.io/dragonfly/v2
 BUILD_IMAGE=golang:1.15.8
@@ -56,6 +57,10 @@ build-scheduler-local() {
     build-local ${SCHEDULER_BINARY_NAME} scheduler
 }
 
+build-manager-local() {
+    build-local ${MANAGER_BINARY_NAME} manager
+}
+
 build-docker() {
     cd "${BUILD_SOURCE_HOME}" || return
     docker run \
@@ -89,6 +94,10 @@ build-scheduler-docker() {
     build-docker ${scheduler_BINARY_NAME} scheduler
 }
 
+build-manager-docker() {
+    build-docker ${MANAGER_BINARY_NAME} manager
+}
+
 main() {
     create-dirs
     if [[ "1" == "${USE_DOCKER}" ]]; then
@@ -103,10 +112,14 @@ main() {
         scheduler)
             build-scheduler-docker
             ;;
+        manager)
+            build-manager-docker
+            ;;
         *)
             build-dfget-docker
             build-cdn-docker
             build-scheduler-docker
+            build-manager-docker
             ;;
         esac
     else
@@ -121,10 +134,14 @@ main() {
         scheduler)
             build-scheduler-local
             ;;
+        manager)
+            build-manager-local
+            ;;
         *)
             build-dfget-local
             build-cdn-local
             build-scheduler-local
+            build-manager-local
             ;;
         esac
     fi

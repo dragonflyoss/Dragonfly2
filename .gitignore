@@ -20,3 +20,4 @@ bin/
 target/
 log
 scheduler/test/misc
+mysql
