@@ -22,12 +22,12 @@ import (
 	"net"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var (
@@ -39,11 +39,15 @@ var flagDaemonOpt = config.PeerHostOption{
 	WorkHome:    "",
 	AliveTime:   clientutil.Duration{Duration: 5 * time.Minute},
 	GCInterval:  clientutil.Duration{Duration: 1 * time.Minute},
-	Schedulers:  nil,
 	PidFile:     "/var/run/dfdaemon.pid",
 	LockFile:    "/var/run/dfdaemon.lock",
 	KeepStorage: false,
-	Verbose:     false,
+	Verbose:     true,
+	Console:     false,
+	Scheduler: config.SchedulerOption{
+		NetAddrs:        nil,
+		ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+	},
 	Host: config.HostOption{
 		ListenIP:       "0.0.0.0",
 		AdvertiseIP:    iputils.HostIp,
@@ -61,7 +65,7 @@ var flagDaemonOpt = config.PeerHostOption{
 				Insecure: true,
 			},
 			UnixListen: &config.UnixListenOption{
-				Socket: "/var/run/dfdamon.sock",
+				Socket: "/var/run/dfdaemon.sock",
 			},
 		},
 		PeerGRPC: config.ListenOption{

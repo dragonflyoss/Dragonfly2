@@ -41,6 +41,7 @@ func initDaemonFlags() {
 	flagSet.DurationVar(&flagDaemonOpt.GCInterval.Duration, "gc-interval", flagDaemonOpt.GCInterval.Duration, "gc interval")
 	flagSet.BoolVar(&flagDaemonOpt.KeepStorage, "keep-storage", flagDaemonOpt.KeepStorage, "keep storage after daemon exit")
 	flagSet.BoolVar(&flagDaemonOpt.Verbose, "verbose", flagDaemonOpt.Verbose, "print verbose log and enable golang debug info")
+	flagSet.BoolVar(&flagDaemonOpt.Console, "console", flagDaemonOpt.Console, "console shows log on console")
 	flagSet.StringVar(&flagDaemonOpt.Host.AdvertiseIP, "advertise-ip", flagDaemonOpt.Host.AdvertiseIP, "the ip report to scheduler, normal same with listen ip")
 	flagSet.StringVar(&flagDaemonOpt.Host.ListenIP, "listen", flagDaemonOpt.Host.ListenIP, "the listen ip")
 	flagSet.StringVar(&flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket, "grpc-unix-listen", flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket, "the local unix domain socket listen address for grpc with dfget")
@@ -58,6 +59,7 @@ func initDaemonFlags() {
 	flagSet.Var(config.NewLimitRateValue(&flagDaemonOpt.Download.RateLimit), "download-rate", "download rate limit for other peers and back source")
 	flagSet.Var(config.NewLimitRateValue(&flagDaemonOpt.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
 	flagSet.VarP(config.NewSchedulersValue(&flagDaemonOpt), "schedulers", "s", "schedulers")
+	flagSet.DurationVar(&flagDaemonOpt.Scheduler.ScheduleTimeout.Duration, "schedule-timeout", flagDaemonOpt.Scheduler.ScheduleTimeout.Duration, "schedule timeout")
 
 	flagSet.StringVar(&peerHostConfigPath, "config", peerHostConfigPath, "daemon config file location")
 }

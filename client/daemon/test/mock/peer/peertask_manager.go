@@ -240,7 +240,7 @@ func (m *MockPeerTaskCallback) EXPECT() *MockPeerTaskCallbackMockRecorder {
 // Done mocks base method.
 func (m *MockPeerTaskCallback) Done(pt peer.PeerTask) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Done", pt)
+	ret := m.ctrl.Call(m, "PeerTaskDone", pt)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
@@ -248,7 +248,7 @@ func (m *MockPeerTaskCallback) Done(pt peer.PeerTask) error {
 // Done indicates an expected call of Done.
 func (mr *MockPeerTaskCallbackMockRecorder) Done(pt interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Done", reflect.TypeOf((*MockPeerTaskCallback)(nil).Done), pt)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerTaskDone", reflect.TypeOf((*MockPeerTaskCallback)(nil).Done), pt)
 }
 
 // Fail mocks base method.

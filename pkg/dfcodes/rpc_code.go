@@ -33,15 +33,19 @@ const (
 	// client response error 4000-4999
 	ClientError                base.Code = 4000
 	ClientPieceTaskRequestFail base.Code = 4001 // get piece task from other peer error
+	ClientScheduleTimeout      base.Code = 4002 // wait scheduler response timeout
+	ClientContextCanceled      base.Code = 4003
+	ClientWaitPieceReady       base.Code = 4004 // when target peer downloads from source slowly, should wait
 
 	// scheduler response error 5000-5999
 	SchedError          base.Code = 5000
 	SchedNeedBackSource base.Code = 5001 // client should try to download from source
+	SchedPeerGone       base.Code = 5002 // client should disconnect from scheduler
 
 	// cdnsystem response error 6000-6999
 	CdnError            base.Code = 6000
 	CdnTaskRegistryFail base.Code = 6001
-	CdnStatusError      base.Code = 6002
+	CdnTaskStatusError  base.Code = 6002
 	CdnTaskNotFound     base.Code = 6404
 
 	// manager response error 7000-7999

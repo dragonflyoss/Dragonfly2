@@ -35,20 +35,12 @@ import (
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 func init() {
 	// Ensure that Manager implements the CDNMgr interface
 	var manager *Manager = nil
 	var _ mgr.CDNMgr = manager
-}
-
-type metrics struct {
-	cdnCacheHitCount     *prometheus.CounterVec
-	cdnDownloadCount     *prometheus.CounterVec
-	cdnDownloadBytes     *prometheus.CounterVec
-	cdnDownloadFailCount *prometheus.CounterVec
 }
 
 // Manager is an implementation of the interface of CDNMgr.
@@ -63,14 +55,13 @@ type Manager struct {
 	detector        *cacheDetector
 	resourceClient  source.ResourceClient
 	writer          *cacheWriter
-	metrics         *metrics
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient, register prometheus.Registerer) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore *store.Store, resourceClient source.ResourceClient) (mgr.CDNMgr, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	metaDataManager := newFileMetaDataManager(cacheStore)
-	publisher := progress.NewManager(register)
+	publisher := progress.NewManager()
 	cdnReporter := newReporter(publisher)
 	return &Manager{
 		cfg:             cfg,
@@ -113,16 +104,13 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// full cache
 	if detectResult.breakNum == -1 {
 		logger.WithTaskID(task.TaskID).Infof("cache full hit on local")
-		cm.metrics.cdnCacheHitCount.WithLabelValues().Inc()
 		seedTask = getUpdateTaskInfo(types.TaskInfoCdnStatusSUCCESS, detectResult.fileMetaData.SourceRealMd5, detectResult.fileMetaData.PieceMd5Sign, detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength)
 		return seedTask, nil
 	}
 	// third: start to download the source file
 	resp, err := cm.download(task, detectResult)
-	cm.metrics.cdnDownloadCount.WithLabelValues().Inc()
 	// download fail
 	if err != nil {
-		cm.metrics.cdnDownloadFailCount.WithLabelValues().Inc()
 		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusSOURCEERROR)
 		return seedTask, err
 	}
@@ -142,8 +130,6 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		seedTask = getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED)
 		return seedTask, err
 	}
-	// back source length
-	cm.metrics.cdnDownloadBytes.WithLabelValues().Add(float64(downloadMetadata.backSourceLength))
 
 	//todo log
 	// server.StatSeedFinish()

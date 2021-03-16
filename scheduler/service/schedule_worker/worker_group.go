@@ -63,7 +63,9 @@ func (wg *WorkerGroup) Start() {
 
 	mgr.GetPeerTaskManager().SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
 		if pt.GetNodeStatus() != types.PeerTaskStatusHealth {
-		} else if pt.GetParent() == nil {
+		} else if pt.Success || pt.Host.Type == types.HostTypeCdn {
+			return
+		} else if pt.GetParent() == nil  {
 			pt.SetNodeStatus(types.PeerTaskStatusNeedParent)
 		} else {
 			pt.SetNodeStatus(types.PeerTaskStatusNeedCheckNode)

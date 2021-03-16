@@ -24,8 +24,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/gofrs/flock"
@@ -39,8 +37,10 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon"
 	"d7y.io/dragonfly/v2/client/pidfile"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var daemonCmd = &cobra.Command{
@@ -59,7 +59,8 @@ var daemonCmd = &cobra.Command{
 			return err
 		}
 
-		logcore.InitDaemon(false)
+		// init logger
+		logcore.InitDaemon(flagDaemonOpt.Console)
 		if err := checkDaemonOptions(); err != nil {
 			return err
 		}
@@ -81,7 +82,7 @@ func init() {
 }
 
 func checkDaemonOptions() error {
-	if len(flagDaemonOpt.Schedulers) == 0 {
+	if len(flagDaemonOpt.Scheduler.NetAddrs) == 0 {
 		return errors.New("empty schedulers")
 	}
 	return nil
@@ -92,6 +93,8 @@ func runDaemon() error {
 	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
 
 	if flagDaemonOpt.Verbose {
+		logcore.SetCoreLevel(zapcore.DebugLevel)
+
 		// TODO (jim): update json marshal function
 		s, _ := json.MarshalIndent(flagDaemonOpt, "", "  ")
 		logger.Debugf("daemon json option(debug only, should not use as config):\n%s", string(s))
@@ -100,7 +103,6 @@ func runDaemon() error {
 		s, _ = yaml.Marshal(flagDaemonOpt)
 		logger.Debugf("daemon yaml option(debug only, should not use as config):\n%s", string(s))
 
-		logcore.SetCoreLevel(zapcore.DebugLevel)
 		go func() {
 			// enable go pprof and statsview
 			port, _ := freeport.GetFreePort()

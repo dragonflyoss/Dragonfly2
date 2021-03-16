@@ -19,30 +19,33 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
 
-	"d7y.io/dragonfly/v2/cmd/common/progressbar"
-	"d7y.io/dragonfly/v2/version"
-
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-
 	"github.com/avast/retry-go"
+	"github.com/go-http-utils/headers"
 	"github.com/gofrs/flock"
 	"github.com/spf13/cobra"
 
+	"d7y.io/dragonfly/v2/cdnsystem/source"
+	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/client/clientutil/progressbar"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/pidfile"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	"d7y.io/dragonfly/v2/version"
 )
 
 var filter string
@@ -65,7 +68,8 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	Example:           dfgetExample(),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		logcore.InitDfget(false)
+		// init logger
+		logcore.InitDfget(flagClientOpt.Console)
 		if err := checkClientOptions(); err != nil {
 			return err
 		}
@@ -84,63 +88,122 @@ func runDfget() error {
 		Type: dfnet.UNIX,
 		Addr: flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket,
 	}
+	var (
+		ctx    = context.Background()
+		cancel context.CancelFunc
+		hdr    = parseHeader(flagClientOpt.Header)
+	)
 
 	// check df daemon state, start a new daemon if necessary
-	client, err := checkAndSpawnDaemon(addr)
+	daemonClient, err := checkAndSpawnDaemon(addr)
 	if err != nil {
-		// FIXME(jim): back source
-		return err
+		return downloadFromSource(hdr)
 	}
 	output, err := filepath.Abs(flagClientOpt.Output)
 	if err != nil {
 		return err
 	}
-	var (
-		ctx    = context.Background()
-		cancel context.CancelFunc
-	)
 	if flagClientOpt.Timeout > 0 {
 		ctx, cancel = context.WithTimeout(ctx, flagClientOpt.Timeout)
 		defer cancel()
+	} else {
+		ctx, cancel = context.WithCancel(ctx)
+		defer cancel()
 	}
 	request := &dfdaemongrpc.DownRequest{
-		Url:    flagClientOpt.URL,
+		Url: flagClientOpt.URL,
+		UrlMeta: &base.UrlMeta{
+			Md5:    flagClientOpt.Md5,
+			Range:  hdr[headers.Range],
+			Header: hdr,
+		},
 		Output: output,
 		BizId:  flagClientOpt.CallSystem,
 		Filter: filter,
 	}
-	down, err := client.Download(context.Background(), request)
+	down, err := daemonClient.Download(ctx, request)
 	if err != nil {
 		return err
 	}
-	var result *dfdaemongrpc.DownResult
+	var (
+		result *dfdaemongrpc.DownResult
+		ok     bool
+	)
 	pb := progressbar.DefaultBytes(-1, "downloading")
+download:
 	for {
 		select {
-		case result = <-down:
+		case result, ok = <-down:
+			if !ok && request == nil {
+				err = fmt.Errorf("progress channel closed unexpected")
+				break download
+			}
 			if result.CompletedLength > 0 {
 				pb.Set64(int64(result.CompletedLength))
 			}
-			if !result.Done {
-				continue
+			if result.State.Code != dfcodes.Success {
+				err = fmt.Errorf("dragonfly daemon returns error code %d/%s",
+					result.State.Code, result.State.Msg)
+				break download
 			}
-			switch result.State.Code {
-			case dfcodes.Success:
+			if result.Done {
 				pb.Finish()
-				return nil
-			default:
-				return fmt.Errorf("%s", result.State.GetMsg())
+				break download
 			}
 		case <-ctx.Done():
 			logger.Errorf("content done due to: %s", ctx.Err())
 			return ctx.Err()
 		}
 	}
+	if err != nil {
+		logger.Errorf("download by dragonfly error: %s", err)
+		if !flagClientOpt.NotBackSource {
+			return downloadFromSource(hdr)
+		} else {
+			logger.Warnf("back source disabled")
+		}
+	}
+	return err
+}
+
+func downloadFromSource(hdr map[string]string) (err error) {
+	logger.Infof("try to download from source")
+	var (
+		resourceClient source.ResourceClient
+		target         *os.File
+		response       *types.DownloadResponse
+		written        int64
+	)
+
+	resourceClient, err = source.NewSourceClient()
+	if err != nil {
+		logger.Errorf("init source client error: %s", err)
+		return err
+	}
+	response, err = resourceClient.Download(flagClientOpt.URL, hdr)
+	if err != nil {
+		logger.Errorf("download from source error: %s", err)
+		return err
+	}
+	defer response.Body.Close()
+	target, err = os.OpenFile(flagClientOpt.Output, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		logger.Errorf("open %s error: %s", flagClientOpt.Output)
+		return err
+	}
+	written, err = io.Copy(target, response.Body)
+	if err != nil {
+		logger.Errorf("copied %d bytes to %s, with error: %s",
+			written, flagClientOpt.Output, err)
+	} else {
+		logger.Infof("copied %d bytes to %s", written, flagClientOpt.Output)
+	}
+	return err
 }
 
 func convertDeprecatedFlags() {
 	for _, node := range deprecatedFlags.nodes.Nodes {
-		flagDaemonOpt.Schedulers = append(flagDaemonOpt.Schedulers, dfnet.NetAddr{
+		flagDaemonOpt.Scheduler.NetAddrs = append(flagDaemonOpt.Scheduler.NetAddrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
 			Addr: node,
 		})
@@ -155,7 +218,7 @@ func checkClientOptions() error {
 	if err := config.CheckConfig(flagClientOpt); err != nil {
 		return err
 	}
-	if len(flagDaemonOpt.Schedulers) < 1 {
+	if len(flagDaemonOpt.Scheduler.NetAddrs) < 1 {
 		return dferrors.New(-1, "Empty schedulers. Please use the command 'help' to show the help information.")
 	}
 	return nil
@@ -231,7 +294,7 @@ func spawnDaemon() error {
 	defer lock.Unlock()
 
 	var schedulers []string
-	for _, s := range flagDaemonOpt.Schedulers {
+	for _, s := range flagDaemonOpt.Scheduler.NetAddrs {
 		schedulers = append(schedulers, s.Addr)
 	}
 
@@ -261,4 +324,15 @@ func spawnDaemon() error {
 	cmd.Stderr = nil
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	return cmd.Start()
+}
+
+func parseHeader(s []string) map[string]string {
+	hdr := map[string]string{}
+	for _, h := range s {
+		idx := strings.Index(h, ":")
+		if idx > 0 {
+			hdr[h[:idx]] = strings.TrimLeft(h[idx:], " ")
+		}
+	}
+	return hdr
 }

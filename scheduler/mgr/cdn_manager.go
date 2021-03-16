@@ -19,6 +19,8 @@ package mgr
 import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -93,7 +95,7 @@ func (cm *CDNManager) TriggerTask(task *types.Task) (err error) {
 
 func (cm *CDNManager) getCDNClient(task *types.Task) (cli *CDNClient, err error) {
 	if len(cm.cdnList) < 1 {
-		return
+		return nil, dferrors.New(dfcodes.SchedNeedBackSource, "there is no cdn")
 	}
 	pos := crc32.ChecksumIEEE([]byte(task.Url)) % uint32(len(cm.cdnList))
 	cli = cm.cdnList[int(pos)]
@@ -123,8 +125,8 @@ func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
 				pieceNum := int32(-1)
 				if ps.PieceInfo != nil {
 					pieceNum = ps.PieceInfo.PieceNum
-					c.processPieceSeed(task, ps)
 				}
+				c.processPieceSeed(task, ps)
 				logger.Debugf("receive a pieceSeed from cdn: taskId[%s]-%d done [%v]", task.TaskId, pieceNum, ps.Done)
 			}
 		}
@@ -188,15 +190,16 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		return
 	}
 
-	task.AddPiece(c.createPiece(task, ps, peerTask))
+	if ps.PieceInfo != nil {
+		task.AddPiece(c.createPiece(task, ps, peerTask))
 
-	peerTask.AddPieceStatus(&scheduler.PieceResult{
-		PieceNum: ps.PieceInfo.PieceNum,
-		Success:  true,
-		// currently completed piece count
-		FinishedCount: ps.PieceInfo.PieceNum + 1,
-	})
-
+		peerTask.AddPieceStatus(&scheduler.PieceResult{
+			PieceNum: ps.PieceInfo.PieceNum,
+			Success:  true,
+			// currently completed piece count
+			FinishedCount: ps.PieceInfo.PieceNum + 1,
+		})
+	}
 	return
 }
 

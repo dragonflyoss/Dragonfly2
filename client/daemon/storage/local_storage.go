@@ -136,6 +136,9 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	t.Lock()
 	defer t.Unlock()
 	t.persistentMetadata.ContentLength = req.ContentLength
+	if t.TotalPieces == 0 {
+		t.TotalPieces = req.TotalPieces
+	}
 	return nil
 }
 
@@ -164,6 +167,9 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 }
 
 func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
+	if req.TotalPieces > 0 {
+		t.TotalPieces = req.TotalPieces
+	}
 	err := t.saveMetadata()
 	if err != nil {
 		t.Warnf("save task metadata error: %s", err)
@@ -243,7 +249,7 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 		DstPid: t.PeerID,
 		//DstAddr:       "", // filled by peer service
 		PieceInfos:    pieces,
-		TotalPiece:    int32(len(t.Pieces)),
+		TotalPiece:    t.TotalPieces,
 		ContentLength: t.ContentLength,
 		PieceMd5Sign:  t.PieceMd5Sign,
 	}, nil

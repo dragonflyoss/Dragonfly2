@@ -33,7 +33,7 @@ var (
 
 func init() {
 	config := zap.NewDevelopmentConfig()
-	config.Level = zap.NewAtomicLevel()
+	config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	log, err := config.Build(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
 	if err == nil {
 		sugar := log.Sugar()

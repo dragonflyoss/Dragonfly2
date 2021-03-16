@@ -14,7 +14,7 @@ import (
 	"github.com/mitchellh/colorstring"
 	"golang.org/x/crypto/ssh/terminal"
 )
-// todo 直接使用第三方库
+
 // ProgressBar is a simple progress bar
 type ProgressBar struct {
 	state  state

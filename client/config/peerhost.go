@@ -48,17 +48,18 @@ type PeerHostOption struct {
 	// Lock file location
 	LockFile string `json:"lock_file" yaml:"lock_file"`
 
-	DataDir     string          `json:"data_dir" yaml:"data_dir"`
-	WorkHome    string          `json:"work_home" yaml:"work_home"`
-	KeepStorage bool            `json:"keep_storage" yaml:"keep_storage"`
-	Schedulers  []dfnet.NetAddr `json:"schedulers" yaml:"schedulers"`
-	Verbose     bool            `yaml:"verbose" json:"verbose"`
+	DataDir     string `json:"data_dir" yaml:"data_dir"`
+	WorkHome    string `json:"work_home" yaml:"work_home"`
+	KeepStorage bool   `json:"keep_storage" yaml:"keep_storage"`
+	Verbose     bool   `yaml:"verbose" json:"verbose"`
+	Console     bool   `json:"console" yaml:"console"`
 
-	Host     HostOption     `json:"host" yaml:"host"`
-	Download DownloadOption `json:"download" yaml:"download"`
-	Proxy    *ProxyOption   `json:"proxy,omitempty" yaml:"proxy,omitempty"`
-	Upload   UploadOption   `json:"upload" yaml:"upload"`
-	Storage  StorageOption  `json:"storage" yaml:"storage"`
+	Scheduler SchedulerOption `json:"scheduler" yaml:"scheduler"`
+	Host      HostOption      `json:"host" yaml:"host"`
+	Download  DownloadOption  `json:"download" yaml:"download"`
+	Proxy     *ProxyOption    `json:"proxy" yaml:"proxy"`
+	Upload    UploadOption    `json:"upload" yaml:"upload"`
+	Storage   StorageOption   `json:"storage" yaml:"storage"`
 }
 
 func (p *PeerHostOption) Load(path string) error {
@@ -82,6 +83,14 @@ func (p *PeerHostOption) Load(path string) error {
 		return nil
 	}
 	return fmt.Errorf("extension of %s is not in 'yml/yaml/json'", path)
+}
+
+type SchedulerOption struct {
+	// NetAddrs is scheduler addresses.
+	NetAddrs []dfnet.NetAddr `json:"net_addrs" yaml:"net_addrs"`
+
+	// ScheduleTimeout is request timeout.
+	ScheduleTimeout clientutil.Duration `json:"schedule_timeout" yaml:"schedule_timeout"`
 }
 
 type HostOption struct {

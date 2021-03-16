@@ -110,6 +110,7 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 		if peerTask.GetParent() == nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
 			needSchedule = true
+			mgr.GetPeerTaskManager().RefreshDownloadMonitor(peerTask)
 			return
 		}
 	} else {
@@ -144,6 +145,7 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 }
 
 func (w *Worker) ReceiveJob(peerTask *types.PeerTask) {
+	logger.Debugf("doScheduleWorker begin add [%s]", peerTask.Pid)
 	w.scheduleQueue.Add(peerTask)
 }
 
@@ -152,14 +154,19 @@ func (w *Worker) sendJobLater(peerTask *types.PeerTask) {
 }
 
 func (w *Worker) doScheduleWorker() {
+	defer logger.Debugf("doScheduleWorker return")
 	for {
+		logger.Debugf("doScheduleWorker begin get")
 		job, shutdown := w.scheduleQueue.Get()
+		logger.Debugf("doScheduleWorker end get")
 		if shutdown {
 			return
 		}
 		peerTask, _ := job.(*types.PeerTask)
 		w.doSchedule(peerTask)
+		logger.Debugf("doScheduleWorker begin done [%s]", peerTask.Pid)
 		w.scheduleQueue.Done(job)
+		logger.Debugf("doScheduleWorker end done [%s]", peerTask.Pid)
 	}
 }
 
@@ -170,6 +177,10 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 
 	logger.Debugf("[%s][%s]: begin do schedule [%d]", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus())
 	defer func() {
+		err := recover()
+		if err != nil {
+			logger.Errorf("[%s][%s]: do schedule panic: %v", peerTask.Task.TaskId, peerTask.Pid, err)
+		}
 		logger.Debugf("[%s][%s]: end do schedule [%d]", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus())
 	}()
 
@@ -282,13 +293,15 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 			w.sendJob(parent)
 		}
 
-	case types.PeerTaskStatusLeaveNode:
+	case types.PeerTaskStatusLeaveNode, types.PeerTaskStatusNodeGone:
 		adjustNodes, err := w.scheduler.SchedulerLeaveNode(peerTask)
 		if err != nil {
 			logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskId, peerTask.Pid, err)
 			w.sendJobLater(peerTask)
 			return
 		}
+		mgr.GetPeerTaskManager().DeletePeerTask(peerTask.Pid)
+		logger.Debugf("[%s][%s]: PeerTaskStatusLeaveNode", peerTask.Task.TaskId, peerTask.Pid)
 		for i := range adjustNodes {
 			if adjustNodes[i].GetParent() != nil {
 				w.sendScheduleResult(adjustNodes[i])
@@ -324,7 +337,7 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 			w.sendJobLater(peerTask)
 		}
 		return true
-	case dfcodes.CdnTaskNotFound:
+	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskStatusError:
 		peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
 		if peerTask != nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
@@ -334,6 +347,8 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 				mgr.GetCDNManager().TriggerTask(task)
 			}
 		}
+		return true
+	case dfcodes.UnknownError:
 		return true
 	}
 

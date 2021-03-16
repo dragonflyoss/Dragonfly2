@@ -19,6 +19,8 @@ package server
 import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
@@ -57,6 +59,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	}()
 
 	// get or create task
+	var isCdn = false
 	pkg.TaskId = s.svc.GenerateTaskId(request.Url, request.Filter, request.UrlMata, request.BizId, request.PeerId)
 	task, _ := s.svc.GetTask(pkg.TaskId)
 	if task == nil {
@@ -69,7 +72,12 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		}
 		task, err = s.svc.AddTask(task)
 		if err != nil {
-			return
+			dferror, _ := err.(*dferrors.DfError)
+			if dferror != nil && dferror.Code == dfcodes.SchedNeedBackSource {
+				isCdn = true
+			} else {
+				return
+			}
 		}
 	}
 	pkg.TaskId = task.TaskId
@@ -82,6 +90,9 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		host = &types.Host{
 			Type:     types.HostTypePeer,
 			PeerHost: *request.PeerHost,
+		}
+		if isCdn {
+			host.Type = types.HostTypeCdn
 		}
 		host, err = s.svc.AddHost(host)
 		if err != nil {
@@ -100,7 +111,11 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	} else if peerTask.Host == nil {
 		peerTask.Host = host
 	}
-	if peerTask.IsDown() {
+	if isCdn {
+		peerTask.SetDown()
+		err = dferrors.New(dfcodes.SchedNeedBackSource, "there is no cdn")
+		return
+	} else if peerTask.IsDown() {
 		peerTask.SetUp()
 	}
 
@@ -162,7 +177,9 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 		return
 	}()
 
-	pid := result.SrcIp
+	logger.Infof("[%s][%s]: receive a peer result [%+v]", result.TaskId, result.PeerId, *result)
+
+	pid := result.PeerId
 	peerTask, err := s.svc.GetPeerTask(pid)
 	if err != nil {
 		return
@@ -171,6 +188,9 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 
 	if peerTask.Success {
 		peerTask.SetNodeStatus(types.PeerTaskStatusDone)
+		s.worker.ReceiveJob(peerTask)
+	} else {
+		peerTask.SetNodeStatus(types.PeerTaskStatusLeaveNode)
 		s.worker.ReceiveJob(peerTask)
 	}
 

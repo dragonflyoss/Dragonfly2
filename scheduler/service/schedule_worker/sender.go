@@ -92,9 +92,12 @@ func (s *Sender) doSend() {
 				break
 			}
 			err := peerTask.Send()
-			if err != nil {
+			if err != nil && err.Error() == "empty client" {
+				logger.Warnf("[%s][%s]: client is empty : %v", peerTask.Task.TaskId, peerTask.Pid, err.Error())
+				break
+			} else if err != nil {
 				//TODO error
-				logger.Errorf("[%s][%s]: send result failed : %v", peerTask.Task.TaskId, peerTask.Pid, err.Error())
+				logger.Warnf("[%s][%s]: send result failed : %v", peerTask.Task.TaskId, peerTask.Pid, err.Error())
 				break
 			} else {
 				logger.Debugf("[%s][%s]: send result success", peerTask.Task.TaskId, peerTask.Pid)

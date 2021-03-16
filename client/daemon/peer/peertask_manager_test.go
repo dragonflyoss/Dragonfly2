@@ -33,6 +33,7 @@ import (
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
@@ -48,10 +49,6 @@ import (
 )
 
 var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)
-
-func TestMain(m *testing.M) {
-	m.Run()
-}
 
 func setupPeerTaskManagerComponents(
 	ctrl *gomock.Controller,
@@ -210,8 +207,11 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 		},
-		storageManager: storageManager,
-		scheduler:      schedulerClient,
+		storageManager:  storageManager,
+		schedulerClient: schedulerClient,
+		schedulerOption: config.SchedulerOption{
+			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+		},
 	}
 	progress, err := ptm.StartFilePeerTask(context.Background(), &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
@@ -229,9 +229,13 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	var p *PeerTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
+		if p.PeerTaskDone {
+			p.ProgressDone()
+			break
+		}
 	}
 	assert.NotNil(p)
-	assert.True(p.Done)
+	assert.True(p.PeerTaskDone)
 
 	outputBytes, err := ioutil.ReadFile(output)
 	assert.Nil(err, "load output file")
@@ -276,9 +280,13 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 		},
-		storageManager: storageManager,
-		scheduler:      sched,
+		storageManager:  storageManager,
+		schedulerClient: sched,
+		schedulerOption: config.SchedulerOption{
+			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+		},
 	}
+
 	r, _, err := ptm.StartStreamPeerTask(context.Background(), &scheduler.PeerTaskRequest{
 		Url:      "http://localhost/test/data",
 		Filter:   "",

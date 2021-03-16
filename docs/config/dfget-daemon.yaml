@@ -25,13 +25,13 @@ keep_storage: false
 # the schedulers of all daemons should be same in one region or zone.
 # daemon will send tasks to a fixed scheduler by hashing the task url and meta data
 # caution: only tcp is supported
-schedulers:
+scheduler:
   # below example is a stand address
-  - type: tcp
-    addr: 127.0.0.1:8002
-# below example is the short address format
-#- 127.0.0.1:8002
-#- tcp://127.0.0.1:8002
+  net_addrs:
+    - type: tcp
+      addr: 127.0.0.1:8002
+  # schedule timeout
+  schedule_timeout: 5m
 
 # when enable, pprof will be enabled,
 verbose: true
@@ -66,7 +66,7 @@ download:
     # download service listen address
     # current, only support unix domain socket
     unix_listen:
-      socket: /tmp/dfdamon.sock
+      socket: /tmp/dfdaemon.sock
   # peer grpc option
   # peer grpc service send pieces info to other peers
   peer_grpc:

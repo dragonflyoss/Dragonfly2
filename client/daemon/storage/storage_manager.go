@@ -255,6 +255,7 @@ func (s storageManager) CreateTask(req RegisterTaskRequest) error {
 			TaskID:        req.TaskID,
 			TaskMeta:      map[string]string{},
 			ContentLength: req.ContentLength,
+			TotalPieces:   req.TotalPieces,
 			PeerID:        req.PeerID,
 			Pieces:        map[int32]PieceMetaData{},
 		},
@@ -443,6 +444,9 @@ func (s storageManager) TryGC() (bool, error) {
 		if ok {
 			tasks = append(tasks, key.(PeerTaskMetaData))
 			logger.Infof("gc task store %s ok", key)
+		} else {
+			logger.Debugf("task %s/%s not reach gc time",
+				key.(PeerTaskMetaData).TaskID, key.(PeerTaskMetaData).PeerID)
 		}
 		return true
 	})

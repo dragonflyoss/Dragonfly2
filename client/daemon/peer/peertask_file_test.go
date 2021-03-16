@@ -14,6 +14,8 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/client/daemon/test/mock/source"
@@ -75,8 +77,11 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 		},
-		storageManager: storageManager,
-		scheduler:      schedulerClient,
+		storageManager:  storageManager,
+		schedulerClient: schedulerClient,
+		schedulerOption: config.SchedulerOption{
+			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+		},
 	}
 	req := &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
@@ -90,7 +95,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		Output: output,
 	}
 	ctx := context.Background()
-	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, &req.PeerTaskRequest)
+	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	assert.Nil(err, "new file peer task")
 
 	pt.SetCallback(&filePeerTaskCallback{
@@ -106,9 +111,13 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	var p *PeerTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
+		if p.PeerTaskDone {
+			p.ProgressDone()
+			break
+		}
 	}
 	assert.NotNil(p)
-	assert.True(p.Done)
+	assert.True(p.PeerTaskDone)
 
 	outputBytes, err := ioutil.ReadFile(output)
 	assert.Nil(err, "load output file")
@@ -170,8 +179,11 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 		},
-		storageManager: storageManager,
-		scheduler:      schedulerClient,
+		storageManager:  storageManager,
+		schedulerClient: schedulerClient,
+		schedulerOption: config.SchedulerOption{
+			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+		},
 	}
 	req := &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
@@ -185,7 +197,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		Output: output,
 	}
 	ctx := context.Background()
-	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.scheduler, ptm.pieceManager, &req.PeerTaskRequest)
+	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	assert.Nil(err, "new file peer task")
 
 	pt.SetCallback(&filePeerTaskCallback{
@@ -201,9 +213,13 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	var p *PeerTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
+		if p.PeerTaskDone {
+			p.ProgressDone()
+			break
+		}
 	}
 	assert.NotNil(p)
-	assert.True(p.Done)
+	assert.True(p.PeerTaskDone)
 
 	outputBytes, err := ioutil.ReadFile(output)
 	assert.Nil(err, "load output file")

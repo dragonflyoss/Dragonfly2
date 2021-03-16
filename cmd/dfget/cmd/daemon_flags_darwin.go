@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var (
@@ -39,11 +40,15 @@ var flagDaemonOpt = config.PeerHostOption{
 	WorkHome:    "",
 	AliveTime:   clientutil.Duration{Duration: 5 * time.Minute},
 	GCInterval:  clientutil.Duration{Duration: 1 * time.Minute},
-	Schedulers:  nil,
 	PidFile:     "/tmp/dfdaemon.pid",
 	LockFile:    "/tmp/dfdaemon.lock",
 	KeepStorage: false,
-	Verbose:     false,
+	Verbose:     true,
+	Console:     false,
+	Scheduler: config.SchedulerOption{
+		NetAddrs:        nil,
+		ScheduleTimeout: clientutil.Duration{Duration: 1 * time.Minute},
+	},
 	Host: config.HostOption{
 		ListenIP:       net.IPv4zero.String(),
 		AdvertiseIP:    iputils.HostIp,
@@ -61,7 +66,7 @@ var flagDaemonOpt = config.PeerHostOption{
 				Insecure: true,
 			},
 			UnixListen: &config.UnixListenOption{
-				Socket: "/tmp/dfdamon.sock",
+				Socket: "/tmp/dfdaemon.sock",
 			},
 		},
 		PeerGRPC: config.ListenOption{

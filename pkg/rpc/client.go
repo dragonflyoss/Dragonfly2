@@ -50,12 +50,12 @@ const (
 )
 
 type Connection struct {
-	rwMutex        *synclock.LockerPool
+	rwMutex        *synclock.KeyLocker
 	opts           []grpc.DialOption
 	key2NodeMap    sync.Map // key -> node(many to one)
 	node2ClientMap sync.Map // node -> clientConn(one to one)
-	HashRing       *hashring.HashRing
-	accessNodeMap  *syncmap.SyncMap
+	hashRing       *hashring.HashRing // server hash ring
+	accessNodeMap  *syncmap.SyncMap // clientConn access time
 	connExpireTime time.Duration
 }
 
@@ -73,9 +73,9 @@ func NewConnection(addrs []dfnet.NetAddr, opts ...grpc.DialOption) *Connection {
 		addresses = append(addresses, addr.GetEndpoint())
 	}
 	return &Connection{
-		rwMutex:        synclock.NewLockerPool(),
+		rwMutex:        synclock.NewKeyLocker(),
 		opts:           opts,
-		HashRing:       hashring.New(addresses),
+		hashRing:       hashring.New(addresses),
 		accessNodeMap:  syncmap.NewSyncMap(),
 		connExpireTime: connExpireTime,
 	}
@@ -133,7 +133,8 @@ func (conn *Connection) StartGC(ctx context.Context) {
 		removedConnCount := 0
 		startTime := time.Now()
 		// range all connections and determine whether they are expired
-		conn.rwMutex.Lock()
+		// todo use anther locker, @santong
+		//conn.rwMutex.Lock()
 		nodes := conn.accessNodeMap.ListKeyAsStringSlice()
 		totalNodeSize := len(nodes)
 		for _, node := range nodes {
@@ -148,7 +149,8 @@ func (conn *Connection) StartGC(ctx context.Context) {
 			conn.gcConn(ctx, node)
 			removedConnCount++
 		}
-		conn.rwMutex.Unlock()
+		// todo use anther locker, @santong
+		//conn.rwMutex.Unlock()
 		// slow GC detected, report it with a log warning
 		if timeDuring := time.Since(startTime); timeDuring > gcConnectionsTimeout {
 			logger.GrpcLogger.Warnf("gc connections:%d cost:%.3f", removedConnCount, timeDuring.Seconds())
@@ -180,8 +182,8 @@ func (conn *Connection) GetClientConn(hashKey string) (*grpc.ClientConn, error) 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find candidate client conn")
 	}
-	conn.rwMutex.GetLock(client.node, false)
-	defer conn.rwMutex.ReleaseLock(client.node, false)
+	conn.rwMutex.Lock(client.node, false)
+	defer conn.rwMutex.UnLock(client.node, false)
 	conn.key2NodeMap.Store(hashKey, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
@@ -194,8 +196,8 @@ func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, er
 	if ok {
 		return client.(*grpc.ClientConn), nil
 	}
-	conn.rwMutex.GetLock(node, false)
-	defer conn.rwMutex.ReleaseLock(node, false)
+	conn.rwMutex.Lock(node, false)
+	defer conn.rwMutex.UnLock(node, false)
 	// double confirm
 	client, ok = conn.node2ClientMap.Load(node)
 	if ok {
@@ -228,8 +230,8 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to find candidate client conn")
 	}
-	conn.rwMutex.GetLock(client.node, false)
-	defer conn.rwMutex.ReleaseLock(client.node, false)
+	conn.rwMutex.Lock(client.node, false)
+	defer conn.rwMutex.UnLock(client.node, false)
 	conn.key2NodeMap.Store(key, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
