@@ -6,11 +6,11 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -35,10 +35,10 @@ type streamPeerTask struct {
 
 func NewStreamPeerTask(ctx context.Context,
 	host *scheduler.PeerHost,
-	schedulerClient schedulerclient.SchedulerClient,
 	pieceManager PieceManager,
 	request *scheduler.PeerTaskRequest,
-	scheduleTimeout time.Duration) (StreamPeerTask, error) {
+	schedulerClient schedulerclient.SchedulerClient,
+	schedulerOption config.SchedulerOption) (StreamPeerTask, error) {
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	if err != nil {
 		logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
@@ -71,9 +71,10 @@ func NewStreamPeerTask(ctx context.Context,
 			lock:            &sync.Mutex{},
 			failedPieceCh:   make(chan int32, 4),
 			failedReason:    "unknown",
+			failedCode:      dfcodes.UnknownError,
 			contentLength:   -1,
 			totalPiece:      -1,
-			scheduleTimeout: scheduleTimeout,
+			schedulerOption: schedulerOption,
 
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
@@ -122,6 +123,18 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 		s.base.failedPieceCh <- pieceResult.PieceNum
 		return nil
 	}
+
+	s.base.lock.Lock()
+	if s.base.bitmap.IsSet(pieceResult.PieceNum) {
+		s.base.lock.Unlock()
+		s.base.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
+		return nil
+	}
+	// mark piece processed
+	s.base.bitmap.Set(pieceResult.PieceNum)
+	atomic.AddInt64(&s.base.completedLength, int64(piece.RangeSize))
+	s.base.lock.Unlock()
+
 	pieceResult.FinishedCount = s.base.bitmap.Settled()
 	s.base.pieceResultCh <- pieceResult
 	s.successPieceCh <- piece.PieceNum
@@ -132,16 +145,6 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 		return s.base.ctx.Err()
 	default:
 	}
-
-	s.base.lock.Lock()
-	defer s.base.lock.Unlock()
-	if s.base.bitmap.IsSet(pieceResult.PieceNum) {
-		s.base.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
-		return nil
-	}
-	// mark piece processed
-	s.base.bitmap.Set(pieceResult.PieceNum)
-	atomic.AddInt64(&s.base.completedLength, int64(piece.RangeSize))
 
 	if !s.base.isCompleted() {
 		return nil
@@ -180,12 +183,12 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	case <-s.base.done:
 		err := errors.New("stream peer task early done")
 		return nil, nil, err
-	case num, ok := <-s.successPieceCh:
-		if !ok {
-			s.base.Warnf("successPieceCh closed unexpect")
-			return nil, nil, errors.New("early done")
-		}
-		firstPiece = num
+	case first := <-s.successPieceCh:
+		//if !ok {
+		//	s.base.Warnf("successPieceCh closed unexpect")
+		//	return nil, nil, errors.New("early done")
+		//}
+		firstPiece = first
 	}
 
 	pr, pw := io.Pipe()
@@ -205,8 +208,8 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 			cur     int32
 			wrote   int64
 			err     error
-			ok      bool
-			cache   = make(map[int32]bool)
+			//ok      bool
+			cache = make(map[int32]bool)
 		)
 		// update first piece to cache and check cur with desired
 		cache[first] = true
@@ -260,11 +263,12 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 					s.base.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
 					desired++
 				}
-			case cur, ok = <-s.successPieceCh:
-				if !ok {
-					s.base.Warnf("successPieceCh closed")
-					continue
-				}
+			case cur = <-s.successPieceCh:
+				continue
+				//if !ok {
+				//	s.base.Warnf("successPieceCh closed")
+				//	continue
+				//}
 			}
 		}
 	}(firstPiece)
@@ -278,14 +282,11 @@ func (s *streamPeerTask) finish() error {
 		// send EOF piece result to scheduler
 		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.bitmap.Settled())
 		s.base.Debugf("end piece result sent")
-		// async callback to store meta data
-		go func() {
-			if err := s.base.callback.Done(s); err != nil {
-				s.base.Errorf("callback done error: %s", err)
-			}
-		}()
 		close(s.base.done)
-		close(s.successPieceCh)
+		//close(s.successPieceCh)
+		if err := s.base.callback.Done(s); err != nil {
+			s.base.Errorf("done callback error: %s", err)
+		}
 	})
 	return nil
 }
@@ -297,7 +298,10 @@ func (s *streamPeerTask) cleanUnfinished() {
 		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.bitmap.Settled())
 		s.base.Debugf("end piece result sent")
 		close(s.base.done)
-		close(s.successPieceCh)
+		//close(s.successPieceCh)
+		if err := s.base.callback.Fail(s, s.base.failedReason); err != nil {
+			s.base.Errorf("fail callback error: %s", err)
+		}
 	})
 }
 

@@ -203,7 +203,7 @@ func downloadFromSource(hdr map[string]string) (err error) {
 
 func convertDeprecatedFlags() {
 	for _, node := range deprecatedFlags.nodes.Nodes {
-		flagDaemonOpt.Schedulers = append(flagDaemonOpt.Schedulers, dfnet.NetAddr{
+		flagDaemonOpt.Scheduler.NetAddrs = append(flagDaemonOpt.Scheduler.NetAddrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
 			Addr: node,
 		})
@@ -218,7 +218,7 @@ func checkClientOptions() error {
 	if err := config.CheckConfig(flagClientOpt); err != nil {
 		return err
 	}
-	if len(flagDaemonOpt.Schedulers) < 1 {
+	if len(flagDaemonOpt.Scheduler.NetAddrs) < 1 {
 		return dferrors.New(-1, "Empty schedulers. Please use the command 'help' to show the help information.")
 	}
 	return nil
@@ -294,7 +294,7 @@ func spawnDaemon() error {
 	defer lock.Unlock()
 
 	var schedulers []string
-	for _, s := range flagDaemonOpt.Schedulers {
+	for _, s := range flagDaemonOpt.Scheduler.NetAddrs {
 		schedulers = append(schedulers, s.Addr)
 	}
 

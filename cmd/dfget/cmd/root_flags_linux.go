@@ -23,6 +23,6 @@ const (
 )
 
 //var flagDfGetOpt = dfgetOption{
-//	daemonSock: "/var/run/dfdamon.sock",
+//	daemonSock: "/var/run/dfdaemon.sock",
 //	daemonPid:  "/var/run/dfdaemon.pid",
 //}

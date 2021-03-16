@@ -8,6 +8,7 @@ BIN_DIR="../bin"
 CDN_BINARY_NAME=cdn
 DFGET_BINARY_NAME=dfget
 SCHEDULER_BINARY_NAME=scheduler
+MANAGER_BINARY_NAME=manager
 
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}" || return
@@ -25,6 +26,8 @@ install() {
     scheduler)
         install-scheduler
         ;;
+    manager)
+        install-manager
     esac
 }
 
@@ -71,6 +74,21 @@ install-scheduler() {
 uninstall-scheduler() {
     echo "unlink /usr/local/bin/scheduler"
     test -e /usr/local/bin/scheduler && unlink /usr/local/bin/scheduler
+}
+
+install-manager() {
+    local bin="${INSTALL_HOME}/${INSTALL_BIN_PATH}"
+    echo "install: ${bin}"
+    mkdir -p "${bin}"
+
+    cp "${BIN_DIR}/${GOOS}_${GOARCH}/${MANAGER_BINARY_NAME}" "${bin}"
+
+    createLink "${bin}/${MANAGER_BINARY_NAME}" /usr/local/bin/manager
+}
+
+uninstall-manager() {
+    echo "unlink /usr/local/bin/manager"
+    test -e /usr/local/bin/manager && unlink /usr/local/bin/manager
 }
 
 createLink() {

@@ -14,24 +14,12 @@
  * limitations under the License.
  */
 
-package manager
+package main
 
-func GetLatestCdnConfig() *CdnConfig {
-	return nil
-}
+import (
+	"d7y.io/dragonfly/v2/cmd/manager/cmd"
+)
 
-func GetLatestSchedulerConfig() *SchedulerConfig {
-	return nil
-}
-
-func GetLatestClientConfig() *ClientConfig {
-	return nil
-}
-
-func GetLatestCdnHosts() []string {
-	return nil
-}
-
-func GetLatestSchedulerHosts() []string {
-	return nil
+func main() {
+	cmd.Execute()
 }

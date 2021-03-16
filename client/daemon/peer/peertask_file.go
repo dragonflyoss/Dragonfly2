@@ -27,9 +27,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -49,8 +51,10 @@ type FilePeerTask interface {
 }
 
 const (
-	reasonSchedulerTimeout = "wait available peers from scheduler timeout"
-	reasonContextCanceled  = "context canceled"
+	reasonScheduleTimeout       = "wait first peer packet from scheduler timeout"
+	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
+	reasonContextCanceled       = "context canceled"
+	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
 )
 
 type filePeerTask struct {
@@ -69,8 +73,8 @@ type filePeerTask struct {
 	// callback holds some actions, like init, done, fail actions
 	callback PeerTaskCallback
 
-	// schedule timeout
-	scheduleTimeout time.Duration
+	// schedule options
+	schedulerOption config.SchedulerOption
 
 	// peer task meta info
 	peerId          string
@@ -101,8 +105,11 @@ type filePeerTask struct {
 	failedPieceCh chan int32
 	// failedReason will be set when peer task failed
 	failedReason string
+	// failedReason will be set when peer task failed
+	failedCode base.Code
 	// progressCh holds progress status
-	progressCh chan *PeerTaskProgress
+	progressCh     chan *PeerTaskProgress
+	progressStopCh chan bool
 	// progressDone will be true when peer task done and caller call ProgressDone func in progress channel
 	progressDone bool
 
@@ -128,10 +135,10 @@ type PeerTaskProgress struct {
 
 func NewFilePeerTask(ctx context.Context,
 	host *scheduler.PeerHost,
-	schedulerClient schedulerclient.SchedulerClient,
 	pieceManager PieceManager,
 	request *scheduler.PeerTaskRequest,
-	scheduleTimeout time.Duration) (FilePeerTask, error) {
+	schedulerClient schedulerclient.SchedulerClient,
+	schedulerOption config.SchedulerOption) (FilePeerTask, error) {
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	if err != nil {
 		logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
@@ -162,10 +169,12 @@ func NewFilePeerTask(ctx context.Context,
 		lock:            &sync.Mutex{},
 		failedPieceCh:   make(chan int32, 4),
 		failedReason:    "unknown",
+		failedCode:      dfcodes.UnknownError,
 		progressCh:      make(chan *PeerTaskProgress),
+		progressStopCh:  make(chan bool),
 		contentLength:   -1,
 		totalPiece:      -1,
-		scheduleTimeout: scheduleTimeout,
+		schedulerOption: schedulerOption,
 
 		SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "filePeerTask"),
 	}, nil
@@ -240,24 +249,35 @@ loop:
 			pt.Debugf("scheduler client close PeerPacket channel")
 			break
 		}
+
 		if peerPacket == nil {
-			pt.Warnf("scheduler client send nil PeerPacket")
+			pt.Warnf("scheduler client send a empty peerPacket")
 			continue
 		}
+		if peerPacket.State.Code == dfcodes.SchedPeerGone {
+			pt.failedReason = reasonPeerGoneFromScheduler
+			pt.failedCode = dfcodes.SchedPeerGone
+			pt.cancel()
+			pt.Errorf(pt.failedReason)
+			break
+		}
+
 		if !peerPacket.State.Success {
 			pt.Errorf("receive peer packet with error: %d/%s", peerPacket.State.Code, peerPacket.State.Msg)
-			// when receive error, cancel
+			// TODO when receive error, cancel ?
 			// pt.cancel()
 			continue
 		}
+
 		pt.Debugf("receive peer packet: %#v, main peer: %#v", peerPacket, peerPacket.MainPeer)
+
 		if peerPacket.MainPeer == nil && peerPacket.StealPeers == nil {
-			pt.Warnf("scheduler client send a PeerPacket will empty peers")
+			pt.Warnf("scheduler client send a peerPacket with empty peers")
 			continue
 		}
+
 		pt.peerPacket = peerPacket
 		pt.pieceParallelCount = pt.peerPacket.ParallelCount
-
 		select {
 		case pt.peerPacketReady <- true:
 		case <-pt.ctx.Done():
@@ -284,8 +304,9 @@ func (pt *filePeerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc fu
 	case <-pt.peerPacketReady:
 		// preparePieceTasksByPeer func already send piece result with error
 		pt.Infof("new peer client ready")
-	case <-time.After(pt.scheduleTimeout):
-		pt.failedReason = reasonSchedulerTimeout
+	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
+		pt.failedReason = reasonScheduleTimeout
+		pt.failedCode = dfcodes.ClientScheduleTimeout
 		pt.Errorf(pt.failedReason)
 		return
 	}
@@ -308,6 +329,7 @@ loop:
 			if !pt.progressDone {
 				pt.callback.Fail(pt, pt.ctx.Err().Error())
 				pt.failedReason = reasonContextCanceled
+				pt.failedCode = dfcodes.ClientContextCanceled
 			}
 			break loop
 		case failed := <-pt.failedPieceCh:
@@ -317,6 +339,7 @@ loop:
 		default:
 		}
 
+		pt.Debugf("try to get pieces, number: %d, limit: %d", num, limit)
 		piecePacket, err := pt.preparePieceTasks(
 			&base.PieceTaskRequest{
 				TaskId:   pt.taskId,
@@ -335,15 +358,16 @@ loop:
 			case <-pt.ctx.Done():
 				pt.Debugf("context done due to %s", pt.ctx.Err())
 				if !pt.progressDone {
-					pt.callback.Fail(pt, pt.ctx.Err().Error())
 					pt.failedReason = reasonContextCanceled
+					pt.failedCode = dfcodes.ClientContextCanceled
 				}
 				break loop
 			case <-pt.peerPacketReady:
 				// preparePieceTasksByPeer func already send piece result with error
 				pt.Infof("new peer client ready")
-			case <-time.After(pt.scheduleTimeout):
-				pt.failedReason = reasonSchedulerTimeout
+			case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
+				pt.failedReason = reasonReScheduleTimeout
+				pt.failedCode = dfcodes.ClientScheduleTimeout
 				pt.Errorf(pt.failedReason)
 			}
 			continue
@@ -354,12 +378,16 @@ loop:
 			_ = pt.callback.Init(pt)
 			initialized = true
 		}
+
+		// trigger DownloadPieces
 		if len(piecePacket.PieceInfos) > 0 {
 			pt.pieceManager.DownloadPieces(pti, piecePacket)
 		}
 
-		if piecePacket.TotalPiece > 0 {
+		// update total piece
+		if piecePacket.TotalPiece > pt.totalPiece {
 			pt.totalPiece = piecePacket.TotalPiece
+			_ = pt.callback.Update(pt)
 		}
 
 		num = pt.getNextPieceNum(num, limit)
@@ -374,10 +402,12 @@ loop:
 				pt.Infof("peer task done, stop get pieces from peer")
 				break loop
 			case <-pt.ctx.Done():
-				pt.Debugf("context done due to %s", pt.ctx.Err())
 				if !pt.progressDone {
-					pt.callback.Fail(pt, pt.ctx.Err().Error())
 					pt.failedReason = reasonContextCanceled
+					pt.failedCode = dfcodes.ClientContextCanceled
+					pt.Errorf("context done due to %s, progress is not done", pt.ctx.Err())
+				} else {
+					pt.Debugf("context done due to %s, progress is already done", pt.ctx.Err())
 				}
 				break loop
 			case failed := <-pt.failedPieceCh:
@@ -390,7 +420,7 @@ loop:
 }
 
 func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
-	// FIXME goroutine safe for channel and send on closed channel
+	// goroutine safe for channel and send on closed channel
 	defer func() {
 		if r := recover(); r != nil {
 			pt.Warnf("recover from %s", r)
@@ -398,10 +428,23 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 	}()
 	// retry failed piece
 	if !pieceResult.Success {
+		pieceResult.FinishedCount = pt.bitmap.Settled()
 		pt.pieceResultCh <- pieceResult
 		pt.failedPieceCh <- pieceResult.PieceNum
 		return nil
 	}
+
+	pt.lock.Lock()
+	if pt.bitmap.IsSet(pieceResult.PieceNum) {
+		pt.lock.Unlock()
+		pt.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
+		return nil
+	}
+	// mark piece processed
+	pt.bitmap.Set(pieceResult.PieceNum)
+	atomic.AddInt64(&pt.completedLength, int64(piece.RangeSize))
+	pt.lock.Unlock()
+
 	pieceResult.FinishedCount = pt.bitmap.Settled()
 	pt.pieceResultCh <- pieceResult
 	// send progress first to avoid close channel panic
@@ -409,31 +452,23 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 		State: &base.ResponseState{
 			Success: pieceResult.Success,
 			Code:    pieceResult.Code,
-			Msg:     "",
+			Msg:     "downloading",
 		},
 		TaskId:          pt.taskId,
 		PeerID:          pt.peerId,
 		ContentLength:   pt.contentLength,
-		CompletedLength: pt.completedLength + int64(piece.RangeSize),
+		CompletedLength: pt.completedLength,
 		PeerTaskDone:    false,
 	}
+
 	select {
+	case <-pt.progressStopCh:
 	case pt.progressCh <- p:
 		pt.Debugf("progress sent, %d/%d", p.CompletedLength, p.ContentLength)
 	case <-pt.ctx.Done():
 		pt.Warnf("send progress failed, peer task context done due to %s", pt.ctx.Err())
 		return pt.ctx.Err()
 	}
-
-	pt.lock.Lock()
-	defer pt.lock.Unlock()
-	if pt.bitmap.IsSet(pieceResult.PieceNum) {
-		pt.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
-		return nil
-	}
-	// mark piece processed
-	pt.bitmap.Set(pieceResult.PieceNum)
-	atomic.AddInt64(&pt.completedLength, int64(piece.RangeSize))
 
 	if !pt.isCompleted() {
 		return nil
@@ -475,47 +510,63 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 		return nil, fmt.Errorf("empty peer")
 	}
 	pt.Debugf("get piece task from peer %s, request: %#v", peer.PeerId, request)
-	p, err := dfclient.GetPieceTasks(peer, pt.ctx, request)
-	if err != nil {
-		// context canceled, just exit
-		if status.Code(err) == codes.Canceled {
-			pt.Debugf("get piece task from peer(%s) canceled: %s", peer.PeerId, err)
-			return nil, err
-		}
-		code := dfcodes.ClientPieceTaskRequestFail
-		// not grpc error
-		if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
-			code = de.Code
-		}
-		// may be panic here due to unknown content length or total piece count
-		// recover by preparePieceTasks
-		pt.pieceResultCh <- &scheduler.PieceResult{
-			TaskId:        pt.taskId,
-			SrcPid:        pt.peerId,
-			DstPid:        peer.PeerId,
-			Success:       false,
-			Code:          code,
-			HostLoad:      nil,
-			FinishedCount: -1,
-		}
-		pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
-		return nil, err
-	}
-	pt.Debugf("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
-	if p.State.Success {
+	p, err := pt.getPieceTasks(peer, request)
+	if err == nil {
+		pt.Infof("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
 		return p, nil
 	}
+
+	// context canceled, just exit
+	if status.Code(err) == codes.Canceled {
+		pt.Warnf("get piece task from peer(%s) canceled: %s", peer.PeerId, err)
+		return nil, err
+	}
+	code := dfcodes.ClientPieceTaskRequestFail
+	// not grpc error
+	if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
+		code = de.Code
+	}
+	// may be panic here due to unknown content length or total piece count
+	// recover by preparePieceTasks
 	pt.pieceResultCh <- &scheduler.PieceResult{
 		TaskId:        pt.taskId,
 		SrcPid:        pt.peerId,
 		DstPid:        peer.PeerId,
 		Success:       false,
-		Code:          p.State.Code,
+		Code:          code,
 		HostLoad:      nil,
 		FinishedCount: -1,
 	}
-	pt.Warnf("get piece task from peer(%s) failed: %d/%s", peer.PeerId, p.State.Code, p.State.Msg)
-	return nil, fmt.Errorf("get piece failed: %d/%s", p.State.Code, p.State.Msg)
+	pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
+	return nil, err
+}
+
+func (pt *filePeerTask) getPieceTasks(peer *scheduler.PeerPacket_DestPeer, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	p, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		pp, getErr := dfclient.GetPieceTasks(peer, pt.ctx, request)
+		if getErr != nil {
+			return nil, getErr
+		}
+		// by santong: when peer return empty, retry later
+		if len(pp.PieceInfos) == 0 {
+			pt.pieceResultCh <- &scheduler.PieceResult{
+				TaskId:        pt.taskId,
+				SrcPid:        pt.peerId,
+				DstPid:        peer.PeerId,
+				Success:       false,
+				Code:          dfcodes.ClientWaitPieceReady,
+				HostLoad:      nil,
+				FinishedCount: pt.bitmap.Settled(),
+			}
+			pt.Warnf("peer %s returns success but with empty pieces, retry later", peer.PeerId)
+			return nil, dferrors.ErrEmptyValue
+		}
+		return pp, nil
+	}, 1, 8, 8, nil)
+	if err == nil {
+		return p.(*base.PiecePacket), nil
+	}
+	return nil, err
 }
 
 func (pt *filePeerTask) getNextPieceNum(cur, limit int32) int32 {
@@ -526,7 +577,12 @@ func (pt *filePeerTask) getNextPieceNum(cur, limit int32) int32 {
 	for ; pt.bitmap.IsSet(i); i++ {
 	}
 	if pt.totalPiece > 0 && i >= pt.totalPiece {
-		return -1
+		// double check, re-search not success or not requested pieces
+		for i = int32(0); pt.bitmap.IsSet(i); i++ {
+		}
+		if pt.totalPiece > 0 && i >= pt.totalPiece {
+			return -1
+		}
 	}
 	return i
 }
@@ -535,14 +591,35 @@ func (pt *filePeerTask) finish() error {
 	var err error
 	// send last progress
 	pt.once.Do(func() {
+		defer func() {
+			if rerr := recover(); rerr != nil {
+				pt.Errorf("finish recover from: %s", rerr)
+				err = fmt.Errorf("%v", rerr)
+			}
+		}()
 		// send EOF piece result to scheduler
 		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.bitmap.Settled())
 		pt.Debugf("finish end piece result sent")
 
+		var (
+			success = true
+			code    = dfcodes.Success
+			message = "Success"
+		)
+
+		// callback to store data to output
+		if err = pt.callback.Done(pt); err != nil {
+			pt.Errorf("peer task done callback failed: %s", err)
+			success = false
+			code = dfcodes.UnknownError
+			message = err.Error()
+		}
+
 		pg := &PeerTaskProgress{
 			State: &base.ResponseState{
-				Success: true,
-				Code:    dfcodes.Success,
+				Success: success,
+				Code:    code,
+				Msg:     message,
 			},
 			TaskId:          pt.taskId,
 			PeerID:          pt.peerId,
@@ -551,21 +628,31 @@ func (pt *filePeerTask) finish() error {
 			PeerTaskDone:    true,
 			ProgressDone: func() {
 				pt.progressDone = true
+				close(pt.progressStopCh)
 			},
 		}
+
+		// wait client received progress
+		pt.Infof("try to send finish progress: %#v, state: %#v", pg, pg.State)
 		select {
 		case pt.progressCh <- pg:
-			pt.Debugf("progress sent: %#v, state: %#v", pg, pg.State)
+			pt.Infof("finish progress sent")
 		case <-pt.ctx.Done():
-			pt.Warnf("progress sent failed: %#v, context done", pg)
+			pt.Warnf("finish progress sent failed: %#v, context done", pg)
 		}
-		// callback to store data to output
-		if err = pt.callback.Done(pt); err != nil {
-			pt.Errorf("peer task callback failed: %s", err)
+		// wait progress stopped
+		select {
+		case <-pt.progressStopCh:
+			pt.Infof("progress stopped")
+		case <-pt.ctx.Done():
+			if pt.progressDone {
+				pt.Debugf("progress stopped and context done")
+			} else {
+				pt.Warnf("wait progress stopped failed: %#v, context done, but progress not stopped", pg)
+			}
 		}
-		pt.Debugf("finished: close done and progress channel")
+		pt.Debugf("finished: close done channel")
 		close(pt.done)
-		close(pt.progressCh)
 	})
 	return err
 }
@@ -575,6 +662,11 @@ func (pt *filePeerTask) cleanUnfinished() {
 
 	// send last progress
 	pt.once.Do(func() {
+		defer func() {
+			if err := recover(); err != nil {
+				pt.Errorf("cleanUnfinished recover from: %s", err)
+			}
+		}()
 		// send EOF piece result to scheduler
 		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.bitmap.Settled())
 		pt.Debugf("clean up end piece result sent")
@@ -582,7 +674,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 		pg := &PeerTaskProgress{
 			State: &base.ResponseState{
 				Success: false,
-				Code:    dfcodes.UnknownError,
+				Code:    pt.failedCode,
 				Msg:     pt.failedReason,
 			},
 			TaskId:          pt.taskId,
@@ -590,17 +682,37 @@ func (pt *filePeerTask) cleanUnfinished() {
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,
 			PeerTaskDone:    true,
-		}
-		select {
-		case pt.progressCh <- pg:
-			pt.Debugf("progress sent: %#v, state: %#v", pg, pg.State)
-		case <-pt.ctx.Done():
-			pt.Debugf("send progress failed: %#v, context done: %v", pg, pt.ctx.Err())
+			ProgressDone: func() {
+				pt.progressDone = true
+				close(pt.progressStopCh)
+			},
 		}
 
-		pt.Debugf("clean unfinished: close done and progress channel")
+		// wait client received progress
+		select {
+		case pt.progressCh <- pg:
+			pt.Debugf("unfinished progress sent: %#v, state: %#v", pg, pg.State)
+		case <-pt.ctx.Done():
+			pt.Debugf("send unfinished progress failed: %#v, context done: %v", pg, pt.ctx.Err())
+		}
+		// wait progress stopped
+		select {
+		case <-pt.progressStopCh:
+			pt.Infof("progress stopped")
+		case <-pt.ctx.Done():
+			if pt.progressDone {
+				pt.Debugf("progress stopped and context done")
+			} else {
+				pt.Warnf("wait progress stopped failed: %#v, context done, but progress not stopped", pg)
+			}
+		}
+
+		if err := pt.callback.Fail(pt, pt.failedReason); err != nil {
+			pt.Errorf("peer task fail callback failed: %s", err)
+		}
+
+		pt.Debugf("clean unfinished: close done channel")
 		close(pt.done)
-		close(pt.progressCh)
 	})
 }
 

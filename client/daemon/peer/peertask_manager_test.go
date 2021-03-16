@@ -33,6 +33,7 @@ import (
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
@@ -40,7 +41,6 @@ import (
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -49,10 +49,6 @@ import (
 )
 
 var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)
-
-func TestMain(m *testing.M) {
-	m.Run()
-}
 
 func setupPeerTaskManagerComponents(
 	ctrl *gomock.Controller,
@@ -212,8 +208,10 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 			pieceDownloader: downloader,
 		},
 		storageManager:  storageManager,
-		scheduler:       schedulerClient,
-		scheduleTimeout: time.Second,
+		schedulerClient: schedulerClient,
+		schedulerOption: config.SchedulerOption{
+			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+		},
 	}
 	progress, err := ptm.StartFilePeerTask(context.Background(), &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
@@ -231,6 +229,10 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	var p *PeerTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
+		if p.PeerTaskDone {
+			p.ProgressDone()
+			break
+		}
 	}
 	assert.NotNil(p)
 	assert.True(p.PeerTaskDone)
@@ -279,9 +281,12 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 			pieceDownloader: downloader,
 		},
 		storageManager:  storageManager,
-		scheduler:       sched,
-		scheduleTimeout: time.Second,
+		schedulerClient: sched,
+		schedulerOption: config.SchedulerOption{
+			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+		},
 	}
+
 	r, _, err := ptm.StartStreamPeerTask(context.Background(), &scheduler.PeerTaskRequest{
 		Url:      "http://localhost/test/data",
 		Filter:   "",

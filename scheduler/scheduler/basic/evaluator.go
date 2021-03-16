@@ -109,6 +109,12 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 		}
 		if pt.Pid == peer.Pid {
 			return true
+		} else if pt.IsDown() {
+			return true
+		} else if pt.Success {
+			return true
+		} else if pt.Host.Type == types.HostTypeCdn{
+			return true
 		} else if peer.GetParent() != nil && peer.GetParent().DstPeerTask == pt {
 			return true
 		} else if peer.GetFreeLoad() < 1 {
@@ -131,8 +137,9 @@ func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.
 	mgr.GetPeerTaskManager().Walker(func(pt *types.PeerTask) bool {
 		if pt == nil || peer.Task != pt.Task {
 			return true
-		}
-		if pt.Pid == peer.Pid {
+		} else if pt.IsDown() {
+			return true
+		} else if pt.Pid == peer.Pid {
 			return true
 		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
 			return true

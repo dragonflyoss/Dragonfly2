@@ -35,6 +35,23 @@ func (p *streamPeerTaskCallback) Init(pt PeerTask) error {
 	return err
 }
 
+func (p *streamPeerTaskCallback) Update(pt PeerTask) error {
+	// update storage
+	err := p.ptm.storageManager.UpdateTask(p.ctx,
+		&storage.UpdateTaskRequest{
+			PeerTaskMetaData: storage.PeerTaskMetaData{
+				PeerID: pt.GetPeerID(),
+				TaskID: pt.GetTaskID(),
+			},
+			ContentLength: pt.GetContentLength(),
+			TotalPieces:   pt.GetTotalPieces(),
+		})
+	if err != nil {
+		logger.Errorf("update task to storage manager failed: %s", err)
+	}
+	return err
+}
+
 func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
 	e := p.ptm.storageManager.Store(
 		context.Background(),
@@ -51,8 +68,7 @@ func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
-	// TODO error handling
-	state, err := p.ptm.scheduler.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	state, err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
@@ -65,15 +81,14 @@ func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
 		Success:        true,
 		Code:           dfcodes.Success,
 	})
-	logger.Debugf("task %s/%s report peer result, state: %#v, %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
+	logger.Debugf("task %s/%s report successful peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
 	return nil
 }
 
 func (p *streamPeerTaskCallback) Fail(pt PeerTask, reason string) error {
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
-	// TODO error handling
-	state, err := p.ptm.scheduler.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	state, err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
@@ -86,6 +101,6 @@ func (p *streamPeerTaskCallback) Fail(pt PeerTask, reason string) error {
 		Success:        false,
 		Code:           dfcodes.UnknownError,
 	})
-	logger.Debugf("task %s/%s report peer result, state: %#v, %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
+	logger.Debugf("task %s/%s report failed peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
 	return nil
 }

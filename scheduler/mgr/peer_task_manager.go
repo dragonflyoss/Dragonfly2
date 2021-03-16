@@ -216,6 +216,7 @@ func (m *PeerTaskManager) printDebugInfo() string {
 }
 
 func (m *PeerTaskManager) RefreshDownloadMonitor(pt *types.PeerTask) {
+	logger.Debugf("[%s][%s] downloadMonitorWorkingLoop refresh ", pt.Task.TaskId, pt.Pid)
 	if pt.GetNodeStatus() != types.PeerTaskStatusHealth {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
 	} else if pt.IsWaiting() {
@@ -238,20 +239,25 @@ func (m *PeerTaskManager) downloadMonitorWorkingLoop() {
 		if m.downloadMonitorCallBack != nil {
 			pt, _ := v.(*types.PeerTask)
 			if pt != nil {
-				if pt.GetNodeStatus() != types.PeerTaskStatusHealth {
-					// peer do not report for a long time, peer gone
-					if time.Now().UnixNano() > pt.GetLastActiveTime() + PeerGoneTimeout {
-						pt.SetNodeStatus(types.PeerTaskStatusNodeGone)
-						pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report time out"))
+				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", pt.Task.TaskId, pt.Pid, pt.GetNodeStatus())
+				if pt.Success || pt.Host.Type == types.HostTypeCdn {
+					// clear from monitor
+				} else {
+					if pt.GetNodeStatus() != types.PeerTaskStatusHealth {
+						// peer do not report for a long time, peer gone
+						if time.Now().UnixNano() > pt.GetLastActiveTime()+PeerGoneTimeout {
+							pt.SetNodeStatus(types.PeerTaskStatusNodeGone)
+							pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report time out"))
+						}
+						m.downloadMonitorCallBack(pt)
+					} else if !pt.IsWaiting() {
+						m.downloadMonitorCallBack(pt)
 					}
-					m.downloadMonitorCallBack(pt)
-				} else if !pt.IsWaiting() {
-					m.downloadMonitorCallBack(pt)
-				}
-				_, ok := m.GetPeerTask(pt.Pid)
-				status := pt.GetNodeStatus()
-				if  ok && !pt.Success && status != types.PeerTaskStatusNodeGone && status != types.PeerTaskStatusLeaveNode{
-					m.RefreshDownloadMonitor(pt)
+					_, ok := m.GetPeerTask(pt.Pid)
+					status := pt.GetNodeStatus()
+					if ok && !pt.Success && status != types.PeerTaskStatusNodeGone && status != types.PeerTaskStatusLeaveNode {
+						m.RefreshDownloadMonitor(pt)
+					}
 				}
 			}
 		}

@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"github.com/pkg/errors"
 	"sync"
+	"time"
 )
 
 func init() {
@@ -36,13 +37,13 @@ func init() {
 	var _ mgr.SeedProgressMgr = manager
 }
 
-
 type Manager struct {
+	cfg                  *config.Config
 	seedSubscribers      *syncmap.SyncMap
 	taskPieceMetaRecords *syncmap.SyncMap
 	progress             *syncmap.SyncMap
 	mu                   *util.LockerPool
-	cfg                  *config.Config
+	timeout              time.Duration
 	buffer               int
 }
 
@@ -53,6 +54,8 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
 		progress:             syncmap.NewSyncMap(),
 		mu:                   util.NewLockerPool(),
+		timeout:              3 * time.Second,
+		buffer:               4,
 	}, nil
 }
 
@@ -82,7 +85,10 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskId string) (<-chan
 	go func(seedCh chan *types.SeedPiece, ele *list.Element) {
 		for _, pieceMetaRecord := range pieceMetaDataRecords {
 			logger.Debugf("seed piece meta record %+v", pieceMetaRecord)
-			seedCh <- pieceMetaRecord
+			select {
+			case seedCh <- pieceMetaRecord:
+			case <-time.After(pm.timeout):
+			}
 		}
 		if _, err := pm.progress.Get(taskId); err == nil {
 			close(seedCh)
@@ -111,7 +117,11 @@ func (pm *Manager) PublishPiece(ctx context.Context, taskId string, record *type
 		sub := e.Value.(chan *types.SeedPiece)
 		go func(sub chan *types.SeedPiece, record *types.SeedPiece) {
 			defer wg.Done()
-			sub <- record
+			select {
+			case sub <- record:
+			case <-time.After(pm.timeout):
+			}
+
 		}(sub, record)
 	}
 	wg.Wait()
@@ -179,6 +189,10 @@ func (pm *Manager) Clear(ctx context.Context, taskID string) error {
 
 func (pm *Manager) GetPieces(ctx context.Context, taskID string) (records []*types.SeedPiece, err error) {
 	pm.mu.GetLock(taskID, true)
-	defer pm.mu.ReleaseLock(taskID, true)
+	logger.Debugf("lock locker:5")
+	defer func() {
+		logger.Debugf("lock release:5")
+		pm.mu.ReleaseLock(taskID, true)
+	}()
 	return pm.getPieceMetaRecordsByTaskId(taskID)
 }

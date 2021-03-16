@@ -82,7 +82,7 @@ func init() {
 }
 
 func checkDaemonOptions() error {
-	if len(flagDaemonOpt.Schedulers) == 0 {
+	if len(flagDaemonOpt.Scheduler.NetAddrs) == 0 {
 		return errors.New("empty schedulers")
 	}
 	return nil
@@ -93,6 +93,8 @@ func runDaemon() error {
 	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
 
 	if flagDaemonOpt.Verbose {
+		logcore.SetCoreLevel(zapcore.DebugLevel)
+
 		// TODO (jim): update json marshal function
 		s, _ := json.MarshalIndent(flagDaemonOpt, "", "  ")
 		logger.Debugf("daemon json option(debug only, should not use as config):\n%s", string(s))
@@ -101,7 +103,6 @@ func runDaemon() error {
 		s, _ = yaml.Marshal(flagDaemonOpt)
 		logger.Debugf("daemon yaml option(debug only, should not use as config):\n%s", string(s))
 
-		logcore.SetCoreLevel(zapcore.DebugLevel)
 		go func() {
 			// enable go pprof and statsview
 			port, _ := freeport.GetFreePort()
