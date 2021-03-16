@@ -67,7 +67,8 @@ func NewStreamPeerTask(ctx context.Context,
 			taskId:          result.TaskId,
 			done:            make(chan struct{}),
 			once:            sync.Once{},
-			bitmap:          NewBitmap(),
+			readyPieces:     NewBitmap(),
+			requestedPieces: NewBitmap(),
 			lock:            &sync.Mutex{},
 			failedPieceCh:   make(chan int32, 4),
 			failedReason:    "unknown",
@@ -110,6 +111,14 @@ func (s *streamPeerTask) GetTotalPieces() int32 {
 	return s.base.totalPiece
 }
 
+func (s *streamPeerTask) GetContext() context.Context {
+	return s.base.ctx
+}
+
+func (s *streamPeerTask) Log() *logger.SugaredLoggerOnWith {
+	return s.base.SugaredLoggerOnWith
+}
+
 func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
 	// FIXME goroutine safe for channel and send on closed channel
 	defer func() {
@@ -125,17 +134,17 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 	}
 
 	s.base.lock.Lock()
-	if s.base.bitmap.IsSet(pieceResult.PieceNum) {
+	if s.base.readyPieces.IsSet(pieceResult.PieceNum) {
 		s.base.lock.Unlock()
 		s.base.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
 		return nil
 	}
 	// mark piece processed
-	s.base.bitmap.Set(pieceResult.PieceNum)
+	s.base.readyPieces.Set(pieceResult.PieceNum)
 	atomic.AddInt64(&s.base.completedLength, int64(piece.RangeSize))
 	s.base.lock.Unlock()
 
-	pieceResult.FinishedCount = s.base.bitmap.Settled()
+	pieceResult.FinishedCount = s.base.readyPieces.Settled()
 	s.base.pieceResultCh <- pieceResult
 	s.successPieceCh <- piece.PieceNum
 	s.base.Debugf("success piece %d sent", piece.PieceNum)
@@ -250,7 +259,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 			case <-s.base.done:
 				for {
 					// all data is wrote to local storage, and all data is wrote to pipe write
-					if s.base.bitmap.Settled() == desired {
+					if s.base.readyPieces.Settled() == desired {
 						pw.Close()
 						return
 					}
@@ -280,7 +289,7 @@ func (s *streamPeerTask) finish() error {
 	// send last progress
 	s.base.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.bitmap.Settled())
+		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.readyPieces.Settled())
 		s.base.Debugf("end piece result sent")
 		close(s.base.done)
 		//close(s.successPieceCh)
@@ -295,7 +304,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 	// send last progress
 	s.base.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.bitmap.Settled())
+		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.readyPieces.Settled())
 		s.base.Debugf("end piece result sent")
 		close(s.base.done)
 		//close(s.successPieceCh)

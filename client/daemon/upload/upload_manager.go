@@ -50,8 +50,8 @@ const (
 
 func NewUploadManager(s storage.Manager, opts ...func(*uploadManager)) (Manager, error) {
 	u := &uploadManager{
-		StorageManager: s,
 		Server:         &http.Server{},
+		StorageManager: s,
 	}
 	u.initRouter()
 	for _, opt := range opts {
@@ -67,42 +67,45 @@ func WithLimiter(limiter *rate.Limiter) func(*uploadManager) {
 	}
 }
 
-func (u *uploadManager) initRouter() {
+func (um *uploadManager) initRouter() {
 	r := mux.NewRouter()
-	r.HandleFunc(PeerDownloadHTTPPathPrefix+"{taskPrefix:.*}/"+"{task:.*}", u.handleUpload).Queries("peerId", "{.*}").Methods("GET")
-	u.Server.Handler = r
+	r.HandleFunc(PeerDownloadHTTPPathPrefix+"{taskPrefix:.*}/"+"{task:.*}", um.handleUpload).Queries("peerId", "{.*}").Methods("GET")
+	um.Server.Handler = r
 }
 
-func (u *uploadManager) Serve(lis net.Listener) error {
-	return u.Server.Serve(lis)
+func (um *uploadManager) Serve(lis net.Listener) error {
+	return um.Server.Serve(lis)
 }
 
-func (u *uploadManager) Stop() error {
-	return u.Server.Shutdown(context.Background())
+func (um *uploadManager) Stop() error {
+	return um.Server.Shutdown(context.Background())
 }
 
 // handleUpload uses to upload a task file when other peers download from it.
-func (u *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
+func (um *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 	var (
 		task = mux.Vars(r)["task"]
 		peer = r.FormValue("peerId")
 		//cdnSource = r.Header.Get("X-Dragonfly-CDN-Source")
 	)
 
+	log := logger.With("peer", peer, "task", task, "component", "uploadManager")
+	log.Debugf("upload piece for task %s/%s to %s, request header: %#v", task, peer, r.RemoteAddr, r.Header)
 	rg, err := clientutil.ParseRange(r.Header.Get(headers.Range), math.MaxInt64)
 	if err != nil {
+		log.Error("parse range with error: %s", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if len(rg) != 1 {
+		log.Error("multi range parsed, not support")
 		http.Error(w, "invalid range", http.StatusBadRequest)
 		return
 	}
 
 	// add header "Content-Length" to avoid chunked body in http client
 	w.Header().Add(headers.ContentLength, fmt.Sprintf("%d", rg[0].Length))
-	logger.Debugf("upload piece for task %s/%s to %s, request header: %#v", task, peer, r.RemoteAddr, r.Header)
-	reader, closer, err := u.StorageManager.ReadPiece(r.Context(),
+	reader, closer, err := um.StorageManager.ReadPiece(r.Context(),
 		&storage.ReadPieceRequest{
 			PeerTaskMetaData: storage.PeerTaskMetaData{
 				TaskID: task,
@@ -114,29 +117,27 @@ func (u *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 	if err != nil {
-		logger.Errorf("get task %s data failed: %s", task, err)
+		log.Errorf("get task data failed: %s", err)
 		http.Error(w, fmt.Sprintf("get piece data error: %s", err), http.StatusInternalServerError)
 		return
 	}
 	defer closer.Close()
-	if u.Limiter != nil {
-		if err = u.Limiter.WaitN(r.Context(), int(rg[0].Length)); err != nil {
-			logger.Errorf("get limit for %s failed: %s", task, err)
+	if um.Limiter != nil {
+		if err = um.Limiter.WaitN(r.Context(), int(rg[0].Length)); err != nil {
+			log.Errorf("get limit failed: %s", err)
 			http.Error(w, fmt.Sprintf("get limit error: %s", err), http.StatusInternalServerError)
 			return
 		}
 	}
 
 	// if w is a socket, golang will use sendfile or splice syscall for zero copy feature
+	// when start to transfer data, we could not call http.Error with header
 	if n, err := io.Copy(w, reader); err != nil {
-		logger.Errorf("transfer task %s data failed: %s", task, err)
-		http.Error(w, fmt.Sprintf("tranfer piece data error: %s", err), http.StatusInternalServerError)
+		log.Errorf("transfer data failed: %s", err)
 		return
 	} else if n != rg[0].Length {
-		logger.Errorf("transferred task %s data length not match request, request: %d, transferred: %d",
-			task, rg[0].Length, n)
-		http.Error(w, fmt.Sprintf("piece data length not match request, request: %d, transfered: %d",
-			rg[0].Length, n), http.StatusInternalServerError)
+		log.Errorf("transferred data length not match request, request: %d, transferred: %d",
+			rg[0].Length, n)
 		return
 	}
 }
