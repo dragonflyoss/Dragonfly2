@@ -113,6 +113,8 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 			return true
 		} else if pt.Success {
 			return true
+		} else if pt.Host.Type == types.HostTypeCdn{
+			return true
 		} else if peer.GetParent() != nil && peer.GetParent().DstPeerTask == pt {
 			return true
 		} else if peer.GetFreeLoad() < 1 {

@@ -19,3 +19,4 @@ bin/
 *.DS_Store
 target/
 log
+scheduler/test/misc
