@@ -19,4 +19,4 @@ COPY --from=builder /opt/dragonfly/bin/dfget /opt/dragonfly/bin/dfget
 
 EXPOSE 65001
 
-ENTRYPOINT ["/opt/dragonfly/bin/dfget", "daemon"]
+ENTRYPOINT ["/opt/dragonfly/bin/dfget", "daemon", "--config", "/etc/dragonfly/dfdaemon.yaml"]

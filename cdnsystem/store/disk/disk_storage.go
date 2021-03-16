@@ -14,35 +14,45 @@
  * limitations under the License.
  */
 
-package store
+package disk
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/statutils"
+	"fmt"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"reflect"
+	"time"
 )
 
-const LocalStorageDriver = "disk"
+func init() {
+	// Ensure that storage implements the StorageDriver interface
+	var storage *diskStorage = nil
+	var _ store.StorageDriver = storage
+}
+
+const StorageDriver = "disk"
+const MemoryStorageDriver = "memory"
 
 var fileLocker = util.NewLockerPool()
 
 func init() {
-	Register(LocalStorageDriver, NewLocalStorage)
+	store.Register(StorageDriver, NewStorage)
+	store.Register(MemoryStorageDriver, NewStorage)
 }
 
 func lock(path string, offset int64, ro bool) {
-	// todo confirm
 	if offset != -1 {
 		fileLocker.GetLock(getLockKey(path, -1), true)
 	}
@@ -58,41 +68,87 @@ func unLock(path string, offset int64, ro bool) {
 	fileLocker.ReleaseLock(getLockKey(path, offset), ro)
 }
 
-// localStorage is one of the implementations of StorageDriver using local file system.
-type localStorage struct {
+// diskStorage is one of the implementations of StorageDriver using local disk file system.
+type diskStorage struct {
 	// BaseDir is the dir that local storage driver will store content based on it.
-	BaseDir string `yaml:"baseDir"`
+	BaseDir  string
+	GcConfig *store.GcConfig
 }
 
-// NewLocalStorage performs initialization for localStorage and return a StorageDriver.
-func NewLocalStorage(conf string) (StorageDriver, error) {
-	// type assertion for config
-	cfg := &localStorage{}
-	if err := yaml.Unmarshal([]byte(conf), cfg); err != nil {
+func (ds *diskStorage) GetTotalSpace(ctx context.Context) (fsize.Size, error) {
+	path := ds.BaseDir
+	lock(path, -1, true)
+	defer unLock(path, -1, true)
+	return fileutils.GetTotalSpace(path)
+}
+
+func (ds *diskStorage) GetHomePath(ctx context.Context) string {
+	return ds.BaseDir
+}
+
+func (ds *diskStorage) GetGcConfig(ctx context.Context) *store.GcConfig {
+	return ds.GcConfig
+}
+
+func (ds *diskStorage) CreateBaseDir(ctx context.Context) error {
+	return os.MkdirAll(ds.BaseDir, os.ModePerm)
+}
+
+func (ds *diskStorage) MoveFile(src string, dst string) error {
+	return fileutils.MoveFile(src, dst)
+}
+
+func decodeHock(types ...reflect.Type) mapstructure.DecodeHookFunc {
+	return func(f, t reflect.Type, data interface{}) (interface{}, error) {
+		for _, typ := range types {
+			if t == typ {
+				b, _ := yaml.Marshal(data)
+				v := reflect.New(t)
+				return v.Interface(), yaml.Unmarshal(b, v.Interface())
+			}
+		}
+		return data, nil
+	}
+}
+
+// NewStorage performs initialization for disk Storage and return a StorageDriver.
+func NewStorage(conf interface{}) (store.StorageDriver, error) {
+	cfg := &diskStorage{}
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig {
+		DecodeHook : decodeHock(
+			reflect.TypeOf(time.Second),
+			reflect.TypeOf(fsize.B)),
+			Result: cfg,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create decoder: %v", err)
+	}
+	err = decoder.Decode(conf)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %v", err)
 	}
-
 	// prepare the base dir
 	if !filepath.IsAbs(cfg.BaseDir) {
 		return nil, fmt.Errorf("not absolute path: %s", cfg.BaseDir)
 	}
 	if err := fileutils.MkdirAll(cfg.BaseDir); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create baseDir%s: %v", cfg.BaseDir, err)
 	}
 
-	return &localStorage{
-		BaseDir: cfg.BaseDir,
+	return &diskStorage{
+		BaseDir:  cfg.BaseDir,
+		GcConfig: cfg.GcConfig,
 	}, nil
 }
 
 // Get the content of key from storage and return in io stream.
-func (ls *localStorage) Get(ctx context.Context, raw *Raw) (io.Reader, error) {
-	path, info, err := ls.statPath(raw.Bucket, raw.Key)
+func (ds *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.Reader, error) {
+	path, info, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := checkGetRaw(raw, info.Size()); err != nil {
+	if err := store.CheckGetRaw(raw, info.Size()); err != nil {
 		return nil, err
 	}
 
@@ -119,18 +175,17 @@ func (ls *localStorage) Get(ctx context.Context, raw *Raw) (io.Reader, error) {
 		buf := make([]byte, 256*1024)
 		io.CopyBuffer(w, reader, buf)
 	}()
-
 	return r, nil
 }
 
 // GetBytes gets the content of key from storage and return in bytes.
-func (ls *localStorage) GetBytes(ctx context.Context, raw *Raw) (data []byte, err error) {
-	path, info, err := ls.statPath(raw.Bucket, raw.Key)
+func (ds *diskStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []byte, err error) {
+	path, info, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := checkGetRaw(raw, info.Size()); err != nil {
+	if err := store.CheckGetRaw(raw, info.Size()); err != nil {
 		return nil, err
 	}
 
@@ -158,12 +213,12 @@ func (ls *localStorage) GetBytes(ctx context.Context, raw *Raw) (data []byte, er
 }
 
 // Put reads the content from reader and put it into storage.
-func (ls *localStorage) Put(ctx context.Context, raw *Raw, data io.Reader) error {
-	if err := checkPutRaw(raw); err != nil {
+func (ds *diskStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) error {
+	if err := store.CheckPutRaw(raw); err != nil {
 		return err
 	}
 
-	path, err := ls.preparePath(raw.Bucket, raw.Key)
+	path, err := ds.preparePath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -203,12 +258,12 @@ func (ls *localStorage) Put(ctx context.Context, raw *Raw, data io.Reader) error
 }
 
 // PutBytes puts the content of key from storage with bytes.
-func (ls *localStorage) PutBytes(ctx context.Context, raw *Raw, data []byte) error {
-	if err := checkPutRaw(raw); err != nil {
+func (ds *diskStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte) error {
+	if err := store.CheckPutRaw(raw); err != nil {
 		return err
 	}
 
-	path, err := ls.preparePath(raw.Bucket, raw.Key)
+	path, err := ds.preparePath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -226,7 +281,6 @@ func (ls *localStorage) PutBytes(ctx context.Context, raw *Raw, data []byte) err
 		return err
 	}
 	defer f.Close()
-
 	f.Seek(raw.Offset, 0)
 	if raw.Length == 0 {
 		if _, err := f.Write(data); err != nil {
@@ -242,12 +296,12 @@ func (ls *localStorage) PutBytes(ctx context.Context, raw *Raw, data []byte) err
 }
 
 // AppendBytes append the content of key from storage with bytes.
-func (ls *localStorage) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
-	if err := checkPutRaw(raw); err != nil {
+func (ds *diskStorage) AppendBytes(ctx context.Context, raw *store.Raw, data []byte) error {
+	if err := store.CheckPutRaw(raw); err != nil {
 		return err
 	}
 
-	path, err := ls.preparePath(raw.Bucket, raw.Key)
+	path, err := ds.preparePath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -260,20 +314,26 @@ func (ls *localStorage) AppendBytes(ctx context.Context, raw *Raw, data []byte) 
 		return err
 	}
 	defer f.Close()
-	if _, err := f.Write(data); err != nil {
+	if raw.Length == 0 {
+		if _, err := f.Write(data); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if _, err := f.Write(data[:raw.Length]); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Stat determines whether the file exists.
-func (ls *localStorage) Stat(ctx context.Context, raw *Raw) (*StorageInfo, error) {
-	_, fileInfo, err := ls.statPath(raw.Bucket, raw.Key)
+func (ds *diskStorage) Stat(ctx context.Context, raw *store.Raw) (*store.StorageInfo, error) {
+	_, fileInfo, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
-
-	return &StorageInfo{
+	return &store.StorageInfo{
 		Path:       filepath.Join(raw.Bucket, raw.Key),
 		Size:       fileInfo.Size(),
 		CreateTime: statutils.Ctime(fileInfo),
@@ -281,10 +341,15 @@ func (ls *localStorage) Stat(ctx context.Context, raw *Raw) (*StorageInfo, error
 	}, nil
 }
 
+func (ds *diskStorage) Exits(ctx context.Context, raw *store.Raw) bool {
+	filePath := filepath.Join(ds.BaseDir, raw.Bucket, raw.Key)
+	return fileutils.PathExist(filePath)
+}
+
 // Remove deletes a file or dir.
 // It will force delete the file or dir when the raw.Trunc is true.
-func (ls *localStorage) Remove(ctx context.Context, raw *Raw) error {
-	path, info, err := ls.statPath(raw.Bucket, raw.Key)
+func (ds *diskStorage) Remove(ctx context.Context, raw *store.Raw) error {
+	path, info, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -302,22 +367,25 @@ func (ls *localStorage) Remove(ctx context.Context, raw *Raw) error {
 	return err
 }
 
-// GetAvailSpace returns the available disk space in B.
-func (ls *localStorage) GetAvailSpace(ctx context.Context, raw *Raw) (fsize.Size, error) {
-	path, _, err := ls.statPath(raw.Bucket, raw.Key)
-	if err != nil {
-		return 0, err
-	}
-
+// GetAvailSpace returns the available disk space in Byte.
+func (ds *diskStorage) GetAvailSpace(ctx context.Context) (fsize.Size, error) {
+	path := ds.BaseDir
 	lock(path, -1, true)
 	defer unLock(path, -1, true)
-	return statutils.FreeSpace(path)
+	return fileutils.GetFreeSpace(path)
+}
+
+func (ds *diskStorage) GetTotalAndFreeSpace(ctx context.Context) (fsize.Size, fsize.Size, error) {
+	path := ds.BaseDir
+	lock(path, -1, true)
+	defer unLock(path, -1, true)
+	return fileutils.GetTotalAndFreeSpace(path)
 }
 
 // Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 // calling walkFn for each file or directory in the tree, including root.
-func (ls *localStorage) Walk(ctx context.Context, raw *Raw) error {
-	path, _, err := ls.statPath(raw.Bucket, raw.Key)
+func (ds *diskStorage) Walk(ctx context.Context, raw *store.Raw) error {
+	path, _, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
 	}
@@ -328,11 +396,15 @@ func (ls *localStorage) Walk(ctx context.Context, raw *Raw) error {
 	return filepath.Walk(path, raw.WalkFn)
 }
 
+func (ds *diskStorage) GetPath(raw *store.Raw) string {
+	return filepath.Join(ds.BaseDir, raw.Bucket, raw.Key)
+}
+
 // helper function
 
 // preparePath gets the target path and creates the upper directory if it does not exist.
-func (ls *localStorage) preparePath(bucket, key string) (string, error) {
-	dir := filepath.Join(ls.BaseDir, bucket)
+func (ds *diskStorage) preparePath(bucket, key string) (string, error) {
+	dir := filepath.Join(ds.BaseDir, bucket)
 
 	if err := fileutils.MkdirAll(dir); err != nil {
 		return "", err
@@ -343,8 +415,8 @@ func (ls *localStorage) preparePath(bucket, key string) (string, error) {
 }
 
 // statPath determines whether the target file exists and returns an fileMutex if so.
-func (ls *localStorage) statPath(bucket, key string) (string, os.FileInfo, error) {
-	filePath := filepath.Join(ls.BaseDir, bucket, key)
+func (ds *diskStorage) statPath(bucket, key string) (string, os.FileInfo, error) {
+	filePath := filepath.Join(ds.BaseDir, bucket, key)
 	f, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -358,26 +430,4 @@ func (ls *localStorage) statPath(bucket, key string) (string, os.FileInfo, error
 
 func getLockKey(path string, offset int64) string {
 	return fmt.Sprintf("%s:%d", path, offset)
-}
-
-func checkGetRaw(raw *Raw, fileLength int64) error {
-	if fileLength < raw.Offset {
-		return errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "the offset: %d is lager than the file length: %d", raw.Offset, fileLength)
-	}
-
-	if raw.Length < 0 {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the length: %d is not a positive integer", raw.Length)
-	}
-
-	if fileLength < (raw.Offset + raw.Length) {
-		return errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "the offset: %d and length: %d is lager than the file length: %d", raw.Offset, raw.Length, fileLength)
-	}
-	return nil
-}
-
-func checkPutRaw(raw *Raw) error {
-	if raw.Length < 0 {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the length: %d should not be a negative integer", raw.Length)
-	}
-	return nil
 }

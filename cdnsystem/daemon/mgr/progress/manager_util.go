@@ -32,8 +32,8 @@ func (pm *Manager) setPieceMetaRecord(taskID string, record *types.SeedPiece) er
 	return pieceRecords.Add(strconv.Itoa(int(record.PieceNum)), record)
 }
 
-// getPieceMetaRecordsByTaskID
-func (pm *Manager) getPieceMetaRecordsByTaskID(taskID string) (records []*types.SeedPiece, err error) {
+// getPieceMetaRecordsByTaskId
+func (pm *Manager) getPieceMetaRecordsByTaskId(taskID string) (records []*types.SeedPiece, err error) {
 	pieceRecords, err := pm.taskPieceMetaRecords.GetAsMap(taskID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get piece meta records")
@@ -49,19 +49,19 @@ func (pm *Manager) getPieceMetaRecordsByTaskID(taskID string) (records []*types.
 	return records, nil
 }
 
-func (pm *Manager) unWatchSeedProgress(sub chan *types.SeedPiece, taskID string) error {
-	chanList, err := pm.seedSubscribers.GetAsList(taskID)
-	if err != nil {
-		return errors.Wrap(err, "failed to get seed subscribers")
-	}
-	for e := chanList.Front(); e != nil; e = e.Next() {
-		if e.Value.(chan *types.SeedPiece) == sub {
-			chanList.Remove(e)
-			break
-		}
-	}
-	close(sub)
-	return nil
-}
+//func (pm *Manager) unWatchSeedProgress(sub chan *types.SeedPiece, taskID string) error {
+//	chanList, err := pm.seedSubscribers.GetAsList(taskID)
+//	if err != nil {
+//		return errors.Wrap(err, "failed to get seed subscribers")
+//	}
+//	for e := chanList.Front(); e != nil; e = e.Next() {
+//		if e.Value.(chan *types.SeedPiece) == sub {
+//			chanList.Remove(e)
+//			break
+//		}
+//	}
+//	close(sub)
+//	return nil
+//}
 
 

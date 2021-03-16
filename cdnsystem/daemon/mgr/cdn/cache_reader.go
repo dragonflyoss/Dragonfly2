@@ -18,6 +18,7 @@ package cdn
 
 import (
 	"crypto/md5"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"encoding/binary"
 	"hash"
 	"io"
@@ -29,10 +30,10 @@ import (
 )
 
 //checkPieceContent read piece content from reader and check data integrity by pieceMetaRecord
-func checkPieceContent(reader io.Reader, pieceRecord *pieceMetaRecord, fileMd5 hash.Hash) error {
+func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, fileMd5 hash.Hash) error {
 	bufSize := int32(256 * 1024)
 	pieceLen := pieceRecord.PieceLen
-	if pieceLen < bufSize {
+	if pieceLen >0 && pieceLen < bufSize {
 		bufSize = pieceLen
 	}
 	// todo 针对分片格式解析出原始数据来计算fileMd5
@@ -80,7 +81,8 @@ func checkPieceContent(reader io.Reader, pieceRecord *pieceMetaRecord, fileMd5 h
 	realPieceMd5 := digestutils.ToHashString(pieceMd5)
 	// check piece content
 	if realPieceMd5 != pieceRecord.Md5 {
-		return errors.Wrapf(cdnerrors.ErrPieceMd5CheckFail, "realPieceMd5 md5 (%s), expected md5 (%s)", realPieceMd5, pieceRecord.Md5)
+		return errors.Wrapf(cdnerrors.ErrPieceMd5CheckFail, "realPieceMd5 md5 (%s), expected md5 (%s)",
+			realPieceMd5, pieceRecord.Md5)
 	}
 	return nil
 }

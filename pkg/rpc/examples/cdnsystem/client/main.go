@@ -21,6 +21,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
+	"time"
 )
 
 import (
@@ -31,39 +32,40 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 )
 
-func main2() {
+func main() {
 	logcore.InitCdnSystem(true)
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
-			Addr: "localhost:12345",
+			Addr: "localhost:8003",
 		},
 	})
 	if err != nil {
 		panic(err)
 	}
+	for i:=0;i<5;i++ {
+		psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+			TaskId: "test",
+			Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
+			Filter: "",
+		})
+		if err != nil {
+			panic(err)
+		}
 
-	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-		TaskId: "test",
-		Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
-		Filter: "",
-	})
-	if err != nil {
-		panic(err)
+		for pieceSeed := range psc {
+			fmt.Printf("response:%v\n", pieceSeed)
+		}
+		time.Sleep(3 * time.Second)
 	}
-
-	for pieceSeed := range psc {
-		fmt.Printf("response:%v\n", pieceSeed)
-	}
-
 	fmt.Println("client finish")
 }
 
-func main() {
+func main2() {
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
-			Addr: "localhost:12345",
+			Addr: "localhost:8003",
 		},
 	})
 	if err != nil {

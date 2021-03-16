@@ -42,7 +42,7 @@ const (
 	// cdnsystem response error 6000-6999
 	CdnError            base.Code = 6000
 	CdnTaskRegistryFail base.Code = 6001
-	CdnTaskStatusError  base.Code = 6002
+	CdnTaskDownloadFail base.Code = 6002
 	CdnTaskNotFound     base.Code = 6404
 
 	// manager response error 7000-7999

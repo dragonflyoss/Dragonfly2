@@ -14,22 +14,4 @@
  * limitations under the License.
  */
 
-package types
-
-// SeedPiece
-type SeedPiece struct {
-	PieceStyle       PieceFormat // 0: PlainUnspecified
-	PieceNum         int32
-	PieceMd5         string
-	PieceRange       string
-	PieceOffset      uint64
-	PieceLen         int32
-}
-
-type ItemType int8
-
-type PieceFormat int8
-
-const (
-	PlainUnspecified PieceFormat = 1
-)
+package hdfs

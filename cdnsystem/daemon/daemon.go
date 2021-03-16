@@ -17,6 +17,10 @@
 package daemon
 
 import (
+	_ "d7y.io/dragonfly/v2/cdnsystem/store/disk"
+)
+
+import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/server"

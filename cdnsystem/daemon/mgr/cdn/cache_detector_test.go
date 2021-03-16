@@ -18,8 +18,8 @@ package cdn
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"reflect"
 	"testing"
@@ -27,7 +27,7 @@ import (
 
 func Test_cacheDetector_detectCache(t *testing.T) {
 	type fields struct {
-		cacheStore      *store.Store
+		cacheStore      storage.StorageMgr
 		metaDataManager *metaDataManager
 		resourceClient  source.ResourceClient
 	}
@@ -65,7 +65,7 @@ func Test_cacheDetector_detectCache(t *testing.T) {
 
 func Test_cacheDetector_doDetect(t *testing.T) {
 	type fields struct {
-		cacheStore      *store.Store
+		cacheStore      storage.StorageMgr
 		metaDataManager *metaDataManager
 		resourceClient  source.ResourceClient
 	}
@@ -103,14 +103,14 @@ func Test_cacheDetector_doDetect(t *testing.T) {
 
 func Test_cacheDetector_parseByReadFile(t *testing.T) {
 	type fields struct {
-		cacheStore      *store.Store
+		cacheStore      storage.StorageMgr
 		metaDataManager *metaDataManager
 		resourceClient  source.ResourceClient
 	}
 	type args struct {
 		ctx      context.Context
 		taskID   string
-		metaData *fileMetaData
+		metaData *storage.FileMetaData
 	}
 	tests := []struct {
 		name    string
@@ -142,14 +142,14 @@ func Test_cacheDetector_parseByReadFile(t *testing.T) {
 
 func Test_cacheDetector_parseByReadMetaFile(t *testing.T) {
 	type fields struct {
-		cacheStore      *store.Store
+		cacheStore      storage.StorageMgr
 		metaDataManager *metaDataManager
 		resourceClient  source.ResourceClient
 	}
 	type args struct {
 		ctx          context.Context
 		taskID       string
-		fileMetaData *fileMetaData
+		fileMetaData *storage.FileMetaData
 	}
 	tests := []struct {
 		name    string
@@ -181,7 +181,7 @@ func Test_cacheDetector_parseByReadMetaFile(t *testing.T) {
 
 func Test_cacheDetector_resetRepo(t *testing.T) {
 	type fields struct {
-		cacheStore      *store.Store
+		cacheStore      storage.StorageMgr
 		metaDataManager *metaDataManager
 		resourceClient  source.ResourceClient
 	}
@@ -193,7 +193,7 @@ func Test_cacheDetector_resetRepo(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *fileMetaData
+		want    *storage.FileMetaData
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -220,7 +220,7 @@ func Test_cacheDetector_resetRepo(t *testing.T) {
 func Test_checkSameFile(t *testing.T) {
 	type args struct {
 		task     *types.SeedTask
-		metaData *fileMetaData
+		metaData *storage.FileMetaData
 	}
 	tests := []struct {
 		name    string
@@ -240,7 +240,7 @@ func Test_checkSameFile(t *testing.T) {
 
 func Test_newCacheDetector(t *testing.T) {
 	type args struct {
-		cacheStore      *store.Store
+		cacheStore      storage.StorageMgr
 		metaDataManager *metaDataManager
 		resourceClient  source.ResourceClient
 	}

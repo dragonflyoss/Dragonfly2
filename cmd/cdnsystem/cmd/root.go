@@ -19,7 +19,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"reflect"
 	"time"
 
@@ -29,7 +28,6 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -79,11 +77,6 @@ var rootCmd = &cobra.Command{
 		// init logger
 		if err := logcore.InitCdnSystem(cfg.Console); err != nil {
 			return errors.Wrapf(err, "init log fail")
-		}
-
-		// create home dir
-		if err := fileutils.MkdirAll(cdnNodeViper.GetString("base.homeDir")); err != nil {
-			return fmt.Errorf("failed to create home dir %s: %v", cdnNodeViper.GetString("base.homeDir"), err)
 		}
 
 		// set cdn node advertise ip
@@ -144,8 +137,8 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.Int("download-port", defaultBaseProperties.DownloadPort,
 		"downloadPort is the port for download files from cdnNode")
 
-	flagSet.String("home-dir", defaultBaseProperties.HomeDir,
-		"homeDir is the working directory of cdnNode")
+	flagSet.String("storagePattern", defaultBaseProperties.StoragePattern,
+		"storagePattern is the pattern of storage")
 
 	flagSet.Var(&defaultBaseProperties.SystemReservedBandwidth, "system-bandwidth",
 		"network rate reserved for system")
@@ -173,14 +166,9 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.Duration("task-expire-time", defaultBaseProperties.TaskExpireTime,
 		"task expire time is the time that a task is treated expired if the task is not accessed within the time")
 
-	flagSet.Duration("gc-disk-interval", defaultBaseProperties.GCDiskInterval,
-		"gc disk interval is the interval time to execute GC disk.")
+	flagSet.Duration("gc-storage-interval", defaultBaseProperties.GCStorageInterval,
+		"gc storage interval is the interval time to execute GC storage.")
 
-	flagSet.Var(&defaultBaseProperties.YoungGCThreshold, "young-gc-threshold",
-		"gc disk interval is the interval time to execute GC disk.")
-
-	flagSet.Int("clean-ratio", defaultBaseProperties.CleanRatio,
-		"CleanRatio is the ratio to clean the disk and it is based on 10. the value of CleanRatio should be [1-10]")
 
 	exitOnError(bindRootFlags(cdnNodeViper), "bind root command flags")
 }
@@ -200,9 +188,6 @@ func bindRootFlags(v *viper.Viper) error {
 		}, {
 			key:  "base.downloadPort",
 			flag: "download-port",
-		}, {
-			key:  "base.homeDir",
-			flag: "home-dir",
 		}, {
 			key:  "base.systemReservedBandwidth",
 			flag: "system-bandwidth",
@@ -225,6 +210,9 @@ func bindRootFlags(v *viper.Viper) error {
 			key:  "base.gcMetaInterval",
 			flag: "gc-meta-interval",
 		}, {
+			key:  "base.gcStorageInterval",
+			flag: "gc-storage-interval",
+		},{
 			key:  "base.taskExpireTime",
 			flag: "task-expire-time",
 		}, {
@@ -284,7 +272,7 @@ func getConfigFromViper(v *viper.Viper) (*config.Config, error) {
 	}
 
 	// set dynamic configuration
-	cfg.DownloadPath = filepath.Join(cfg.HomeDir, "repo", "download")
+	//cfg.DownloadPath = filepath.Join(cfg.HomeDir, "repo", "download")
 
 	return cfg, nil
 }

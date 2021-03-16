@@ -16,19 +16,23 @@
 
 package server
 
-import _ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
-import _ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+import (
+	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+)
 
 import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/progress"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/task"
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"fmt"
 	"github.com/pkg/errors"
@@ -42,36 +46,43 @@ type Server struct {
 
 // New creates a brand new server instance.
 func New(cfg *config.Config) (*Server, error) {
-	var err error
-
-	storeMgr, err := store.NewManager(cfg)
-	if err != nil {
-		return nil, err
+	sb := storage.Get(cfg.StoragePattern, true)
+	if sb == nil {
+		return nil, fmt.Errorf("could not get storage for pattern: %s", cfg.StoragePattern)
 	}
-
-	storeLocal, err := storeMgr.Get(store.LocalStorageDriver)
+	logger.Debugf("storage pattern is %s", sb.Name())
+	storageMgr, err := sb.Build(cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to build storage: %v", err)
 	}
 
 	sourceClient, err := source.NewSourceClient()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create source client: %v", err)
 	}
+	// progress manager
+	progressMgr, err := progress.NewManager(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create progress manager: %v", err)
+	}
+
 	// cdn manager
-	cdnMgr, err := cdn.NewManager(cfg, storeLocal, sourceClient)
+	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr, sourceClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create cdn manager: %v", err)
 	}
+
 	// task manager
-	taskMgr, err := task.NewManager(cfg, cdnMgr, sourceClient)
+	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr ,sourceClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create task manager: %v", err)
 	}
+	storageMgr.SetTaskMgr(taskMgr)
+	storageMgr.InitializeCleaners()
 	// gc manager
-	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr)
+	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, storageMgr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create gc manager: %v", err)
 	}
 
 	return &Server{

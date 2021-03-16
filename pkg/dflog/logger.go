@@ -24,11 +24,12 @@ import (
 )
 
 var (
-	CoreLogger     *zap.SugaredLogger
-	GrpcLogger     *zap.SugaredLogger
-	GcLogger       *zap.SugaredLogger
-	StatPeerLogger *zap.Logger
-	StatSeedLogger *zap.Logger
+	CoreLogger       *zap.SugaredLogger
+	GrpcLogger       *zap.SugaredLogger
+	GcLogger         *zap.SugaredLogger
+	StatPeerLogger   *zap.Logger
+	StatSeedLogger   *zap.Logger
+	DownloaderLogger *zap.Logger
 )
 
 func init() {
@@ -42,6 +43,7 @@ func init() {
 		SetGcLogger(sugar)
 		SetStatPeerLogger(log)
 		SetStatSeedLogger(log)
+		SetDownloadLogger(log)
 	}
 }
 
@@ -59,6 +61,10 @@ func SetStatPeerLogger(log *zap.Logger) {
 
 func SetStatSeedLogger(log *zap.Logger) {
 	StatSeedLogger = log
+}
+
+func SetDownloadLogger(log *zap.Logger) {
+	DownloaderLogger = log
 }
 
 func SetGrpcLogger(log *zap.SugaredLogger) {

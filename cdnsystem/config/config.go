@@ -17,15 +17,12 @@
 package config
 
 import (
-	"fmt"
-	"io/ioutil"
-	"path/filepath"
-	"time"
-
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-	"github.com/mitchellh/go-homedir"
+	"fmt"
 	"gopkg.in/yaml.v3"
+	"io/ioutil"
+	"time"
 )
 
 // NewConfig creates an instant with default values.
@@ -65,36 +62,26 @@ func (c *Config) String() string {
 
 // NewBaseProperties creates an instant with default values.
 func NewBaseProperties() *BaseProperties {
-	userHome, err := homedir.Dir()
-	var home string
-	home = filepath.Join(string(filepath.Separator), userHome, "cdn-system")
-	if err != nil {
-		home = filepath.Join(string(filepath.Separator), "home", "admin", "cdn-system")
-	}
 	return &BaseProperties{
 		ListenPort:              DefaultListenPort,
 		DownloadPort:            DefaultDownloadPort,
-		HomeDir:                 home,
-		DownloadPath:            filepath.Join(home, RepoHome, DownloadHome),
+		StoragePattern:          DefaultStoragePattern,
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
 		MaxBandwidth:            DefaultMaxBandwidth,
 		EnableProfiler:          false,
 		FailAccessInterval:      DefaultFailAccessInterval,
 		GCInitialDelay:          DefaultGCInitialDelay,
 		GCMetaInterval:          DefaultGCMetaInterval,
-		GCDiskInterval:          DefaultGCDiskInterval,
-		YoungGCThreshold:        DefaultYoungGCThreshold,
-		FullGCThreshold:         DefaultFullGCThreshold,
-		IntervalThreshold:       DefaultIntervalThreshold,
+		GCStorageInterval:       DefaultGCStorageInterval,
 		TaskExpireTime:          DefaultTaskExpireTime,
-		CleanRatio:              DefaultCleanRatio,
 		Console:                 DefaultConsole,
 	}
 }
 
 // BaseProperties contains all basic properties of cdn system.
 type BaseProperties struct {
-	StorageDriver string `yaml:"storageDriver"`
+	// disk/hybrid/memory
+	StoragePattern string `yaml:"storagePattern"`
 
 	// ListenPort is the port cdn server listens on.
 	// default: 8002
@@ -104,12 +91,8 @@ type BaseProperties struct {
 	// default: 8001
 	DownloadPort int `yaml:"downloadPort"`
 
-	// HomeDir is working directory of cdn.
-	// default: /home/admin/cdn
-	HomeDir string `yaml:"homeDir"`
-
 	// DownloadPath specifies the path where to store downloaded files from source address.
-	DownloadPath string `yaml:"downloadPath"`
+	//DownloadPath string `yaml:"downloadPath"`
 
 	// SystemReservedBandwidth is the network bandwidth reserved for system software.
 	// default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
@@ -147,9 +130,9 @@ type BaseProperties struct {
 	// default: 3min
 	TaskExpireTime time.Duration `yaml:"taskExpireTime"`
 
-	// GCDiskInterval is the interval time to execute GC disk.
+	// GCStorageInterval is the interval time to execute GC storage.
 	// default: 15s
-	GCDiskInterval time.Duration `yaml:"gcDiskInterval"`
+	GCStorageInterval time.Duration `yaml:"gcStorageInterval"`
 
 	// YoungGCThreshold if the available disk space is more than YoungGCThreshold
 	// and there is no need to GC disk.
@@ -169,12 +152,6 @@ type BaseProperties struct {
 	// IntervalThreshold is the threshold of the interval at which the task file is accessed.
 	// default: 2h
 	IntervalThreshold time.Duration `yaml:"IntervalThreshold"`
-
-	// CleanRatio is the ratio to clean the disk and it is based on 10.
-	// It means the value of CleanRatio should be [1-10].
-	//
-	// default: 1
-	CleanRatio int `yaml:"cleanRatio"`
 
 	// Console shows log on console
 	Console bool `yaml:"console"`

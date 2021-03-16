@@ -17,8 +17,8 @@
 package cdn
 
 import (
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"fmt"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"github.com/stretchr/testify/suite"
 	"io/ioutil"
 	"os"
@@ -39,9 +39,9 @@ type CacheWriterTestSuite struct {
 func (s *CacheWriterTestSuite) SetupSuite() {
 	s.workHome, _ = ioutil.TempDir("/tmp", "cdn-CacheWriterTestSuite-")
 	s.config = "baseDir: " + s.workHome
-	fileStore, err := store.NewStore(store.LocalStorageDriver, store.NewLocalStorage, s.config)
-	s.Nil(err)
-	s.writer = newCacheWriter(fileStore, nil, nil)
+	sb := storage.Get("disk", true)
+	storage, _ := sb.Build()
+	s.writer = newCacheWriter(storage, nil, nil)
 }
 
 func (s *CacheWriterTestSuite) TeardownSuite() {

@@ -17,13 +17,12 @@
 package httpprotocol
 
 import (
-	"fmt"
-	"reflect"
-	"testing"
-
 	"d7y.io/dragonfly/v2/cdnsystem/source"
+	"fmt"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
+	"reflect"
+	"testing"
 )
 
 func TestCopyHeader(t *testing.T) {

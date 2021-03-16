@@ -116,6 +116,12 @@ func InitCdnSystem(console bool) error {
 		logger.SetStatSeedLogger(statSeedLogger)
 	}
 
+	if downloaderLogger, err := CreateLogger(path.Join(logDir, "downloader.log"), 300, 7, 0, false, false); err != nil {
+		return err
+	} else {
+		logger.SetDownloadLogger(downloaderLogger)
+	}
+
 	return nil
 }
 

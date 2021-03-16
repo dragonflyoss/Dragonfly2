@@ -19,7 +19,7 @@ package cdn
 import (
 	"bytes"
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/pkg/errors"
@@ -28,7 +28,7 @@ import (
 )
 
 type protocolContent struct {
-	taskID       string
+	TaskId       string
 	pieceNum     int32
 	pieceSize    int32
 	pieceContent *bytes.Buffer
@@ -43,12 +43,12 @@ type downloadMetadata struct {
 }
 
 type cacheWriter struct {
-	cdnStore    *store.Store
+	cdnStore    storage.StorageMgr
 	cdnReporter *reporter
 	metaDataMgr *metaDataManager
 }
 
-func newCacheWriter(cdnStore *store.Store, cdnReporter *reporter, metaDataMgr *metaDataManager) *cacheWriter {
+func newCacheWriter(cdnStore storage.StorageMgr, cdnReporter *reporter, metaDataMgr *metaDataManager) *cacheWriter {
 	return &cacheWriter{
 		cdnStore:    cdnStore,
 		cdnReporter: cdnReporter,
@@ -57,7 +57,8 @@ func newCacheWriter(cdnStore *store.Store, cdnReporter *reporter, metaDataMgr *m
 }
 
 // startWriter writes the stream data from the reader to the underlying storage.
-func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *types.SeedTask, detectResult *cacheResult) (*downloadMetadata, error) {
+func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *types.SeedTask,
+	detectResult *cacheResult) (*downloadMetadata, error) {
 	// currentSourceFileLength is used to calculate the source file Length dynamically
 	currentSourceFileLength := int64(detectResult.breakNum) * int64(task.PieceSize)
 	// backSourceFileLength back source length
@@ -78,18 +79,17 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	for {
 		n, err := reader.Read(buf)
 		if n > 0 {
-			logger.WithTaskID(task.TaskID).Debugf("success read content with length(%d) from source", n)
 			backSourceFileLength += int64(n)
 			if int(pieceContLeft) <= n {
 				bb.Write(buf[:pieceContLeft])
 				pc := &protocolContent{
-					taskID:       task.TaskID,
+					TaskId:       task.TaskId,
 					pieceNum:     curPieceNum,
 					pieceSize:    task.PieceSize,
 					pieceContent: bb,
 				}
 				jobCh <- pc
-				logger.WithTaskID(task.TaskID).Debugf("send protocolContent to jobCh, pieceNum: %d", curPieceNum)
+				logger.WithTaskID(task.TaskId).Debugf("send protocolContent to jobCh, pieceNum: %d", curPieceNum)
 				curPieceNum++
 
 				// write the data left to a new buffer
@@ -108,20 +108,21 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 		if err == io.EOF {
 			if bb.Len() > 0 {
 				pc := &protocolContent{
-					taskID:       task.TaskID,
+					TaskId:       task.TaskId,
 					pieceNum:     curPieceNum,
 					pieceSize:    task.PieceSize,
 					pieceContent: bb,
 				}
 				jobCh <- pc
 				curPieceNum++
-				logger.WithTaskID(task.TaskID).Debugf("send the protocolContent, pieceNum: %d", curPieceNum)
+				logger.WithTaskID(task.TaskId).Debugf("send the last protocolContent, pieceNum: %d", curPieceNum)
 			}
-			logger.WithTaskID(task.TaskID).Info("send all protocolContents and wait for cdnWriter")
+			logger.WithTaskID(task.TaskId).Info("send all protocolContents and wait for cdnWriter")
 			break
 		}
 		if err != nil {
 			close(jobCh)
+			// download fail
 			return &downloadMetadata{backSourceLength: backSourceFileLength}, err
 		}
 	}
@@ -129,14 +130,14 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	close(jobCh)
 	wg.Wait()
 
-	storageInfo, err := cw.cdnStore.Stat(ctx, getDownloadRawFunc(task.TaskID))
+	storageInfo, err := cw.cdnStore.StatDownloadFile(ctx, task.TaskId)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get cdn file length")
 	}
 
-	pieceMd5Sign, err := cw.metaDataMgr.getPieceMd5Sign(ctx, task.TaskID)
+	pieceMd5Sign, _, err := cw.metaDataMgr.getPieceMd5Sign(ctx, task.TaskId)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to piece md5 sign")
+		return nil, errors.Wrapf(err, "failed to get piece md5 sign")
 	}
 	return &downloadMetadata{
 		backSourceLength:     backSourceFileLength,

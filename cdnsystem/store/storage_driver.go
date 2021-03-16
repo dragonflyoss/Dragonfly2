@@ -18,9 +18,7 @@ package store
 
 import (
 	"context"
-
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-
 	"io"
 	"path/filepath"
 	"time"
@@ -65,15 +63,31 @@ type StorageDriver interface {
 
 	// Stat determines whether the data exists based on raw information.
 	// If that, and return some info that in the form of struct StorageInfo.
-	// If not, return the ErrNotFound.
+	// If not, return the ErrFileNotExist.
 	Stat(ctx context.Context, raw *Raw) (*StorageInfo, error)
 
 	// GetAvailSpace returns the available disk space in B.
-	GetAvailSpace(ctx context.Context, raw *Raw) (fsize.Size, error)
+	GetAvailSpace(ctx context.Context) (fsize.Size, error)
 
+	GetTotalAndFreeSpace(ctx context.Context) (fsize.Size, fsize.Size, error)
+
+	GetTotalSpace(ctx context.Context) (fsize.Size, error)
 	// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 	// calling walkFn for each file or directory in the tree, including root.
 	Walk(ctx context.Context, raw *Raw) error
+
+	CreateBaseDir(ctx context.Context) error
+
+	// GetPath
+	GetPath(raw *Raw) string
+
+	MoveFile(src string, dst string) error
+
+	Exits(ctx context.Context, raw *Raw) bool
+
+	GetHomePath(ctx context.Context) string
+
+	GetGcConfig(ctx context.Context) *GcConfig
 }
 
 // Raw identifies a piece of data uniquely.
@@ -93,4 +107,11 @@ type StorageInfo struct {
 	Size       int64     // file size
 	CreateTime time.Time // create time
 	ModTime    time.Time // modified time
+}
+
+type GcConfig struct {
+	YoungGCThreshold  fsize.Size
+	FullGCThreshold   fsize.Size
+	CleanRatio        int
+	IntervalThreshold time.Duration
 }
