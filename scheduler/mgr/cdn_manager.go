@@ -125,8 +125,8 @@ func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
 				pieceNum := int32(-1)
 				if ps.PieceInfo != nil {
 					pieceNum = ps.PieceInfo.PieceNum
-					c.processPieceSeed(task, ps)
 				}
+				c.processPieceSeed(task, ps)
 				logger.Debugf("receive a pieceSeed from cdn: taskId[%s]-%d done [%v]", task.TaskId, pieceNum, ps.Done)
 			}
 		}
@@ -190,15 +190,16 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		return
 	}
 
-	task.AddPiece(c.createPiece(task, ps, peerTask))
+	if ps.PieceInfo != nil {
+		task.AddPiece(c.createPiece(task, ps, peerTask))
 
-	peerTask.AddPieceStatus(&scheduler.PieceResult{
-		PieceNum: ps.PieceInfo.PieceNum,
-		Success:  true,
-		// currently completed piece count
-		FinishedCount: ps.PieceInfo.PieceNum + 1,
-	})
-
+		peerTask.AddPieceStatus(&scheduler.PieceResult{
+			PieceNum: ps.PieceInfo.PieceNum,
+			Success:  true,
+			// currently completed piece count
+			FinishedCount: ps.PieceInfo.PieceNum + 1,
+		})
+	}
 	return
 }
 

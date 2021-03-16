@@ -95,7 +95,7 @@ func WithLimiter(limiter *rate.Limiter) func(*pieceManager) {
 
 func (pm *pieceManager) DownloadPieces(pt PeerTask, piecePacket *base.PiecePacket) {
 	for _, piece := range piecePacket.PieceInfos {
-		logger.Debugf("peer manager receive piece task, "+
+		pt.Log().Debugf("peer manager receive piece task, "+
 			"peer id: %s, piece num: %d, range start: %d, range size: %d",
 			pt.GetPeerID(), piece.PieceNum, piece.RangeStart, piece.RangeSize)
 		go pm.downloadPiece(pt, piecePacket.DstPid, piecePacket.DstAddr, piece)
@@ -118,8 +118,8 @@ func (pm *pieceManager) downloadPiece(pt PeerTask, dstPid, dstAddr string, piece
 
 	// 1. download piece from other peers
 	if pm.Limiter != nil {
-		if err := pm.Limiter.WaitN(context.Background(), int(pieceTask.RangeSize)); err != nil {
-			logger.Errorf("require rate limit access error: %s", err)
+		if err := pm.Limiter.WaitN(pt.GetContext(), int(pieceTask.RangeSize)); err != nil {
+			pt.Log().Errorf("require rate limit access error: %s", err)
 			return
 		}
 	}
@@ -132,7 +132,7 @@ func (pm *pieceManager) downloadPiece(pt PeerTask, dstPid, dstAddr string, piece
 		CalcDigest: pm.calculateDigest && pieceTask.PieceMd5 != "",
 	})
 	if err != nil {
-		logger.Errorf("download piece failed, piece num: %d, error: %s", pieceTask.PieceNum, err)
+		pt.Log().Errorf("download piece failed, piece num: %d, error: %s", pieceTask.PieceNum, err)
 		return
 	}
 
@@ -141,7 +141,7 @@ func (pm *pieceManager) downloadPiece(pt PeerTask, dstPid, dstAddr string, piece
 	defer c.Close()
 
 	// 2. save to storage
-	n, err := pm.storageManager.WritePiece(context.Background(), &storage.WritePieceRequest{
+	n, err := pm.storageManager.WritePiece(pt.GetContext(), &storage.WritePieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
@@ -159,7 +159,7 @@ func (pm *pieceManager) downloadPiece(pt PeerTask, dstPid, dstAddr string, piece
 	})
 	pt.AddTraffic(n)
 	if err != nil {
-		logger.Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s",
+		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s",
 			pieceTask.PieceNum, n, err)
 		return
 	}
@@ -182,7 +182,7 @@ func (pm *pieceManager) pushSuccessResult(peerTask PeerTask, dstPid string, piec
 			FinishedCount: 0,   // update by peer task
 		})
 	if err != nil {
-		logger.Errorf("report piece task error: %v", err)
+		peerTask.Log().Errorf("report piece task error: %v", err)
 	}
 }
 
@@ -202,7 +202,7 @@ func (pm *pieceManager) pushFailResult(peerTask PeerTask, dstPid string, piece *
 			FinishedCount: 0,
 		})
 	if err != nil {
-		logger.Errorf("report piece task error: %v", err)
+		peerTask.Log().Errorf("report piece task error: %v", err)
 	}
 }
 
@@ -214,7 +214,7 @@ func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceReq
 	return pm.storageManager.ReadPiece(ctx, req)
 }
 
-func (pm *pieceManager) processPieceFromSource(log *logger.SugaredLoggerOnWith, pt PeerTask,
+func (pm *pieceManager) processPieceFromSource(pt PeerTask,
 	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize int32) (int64, error) {
 	var (
 		success bool
@@ -253,8 +253,8 @@ func (pm *pieceManager) processPieceFromSource(log *logger.SugaredLoggerOnWith, 
 	}()
 
 	if pm.Limiter != nil {
-		if err := pm.Limiter.WaitN(context.Background(), int(size)); err != nil {
-			log.Errorf("require rate limit access error: %s", err)
+		if err := pm.Limiter.WaitN(pt.GetContext(), int(size)); err != nil {
+			pt.Log().Errorf("require rate limit access error: %s", err)
 			return 0, err
 		}
 	}
@@ -262,7 +262,7 @@ func (pm *pieceManager) processPieceFromSource(log *logger.SugaredLoggerOnWith, 
 		reader = clientutil.NewDigestReader(reader, "")
 	}
 	n, err := pm.storageManager.WritePiece(
-		context.Background(),
+		pt.GetContext(),
 		&storage.WritePieceRequest{
 			UnknownLength: unknownLength,
 			PeerTaskMetaData: storage.PeerTaskMetaData{
@@ -287,7 +287,7 @@ func (pm *pieceManager) processPieceFromSource(log *logger.SugaredLoggerOnWith, 
 	end = time.Now().UnixNano()
 	pt.AddTraffic(n)
 	if err != nil {
-		log.Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s", pieceNum, n, err)
+		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s", pieceNum, n, err)
 		return n, err
 	}
 	if pm.calculateDigest {
@@ -308,7 +308,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, request
 	if request.UrlMata.Range != "" {
 		request.UrlMata.Header["Range"] = request.UrlMata.Range
 	}
-	log := logger.With("peer", pt.GetPeerID(), "task", pt.GetTaskID())
+	log := pt.Log()
 	log.Infof("start to download from source")
 	contentLength, err := pm.resourceClient.GetContentLength(request.Url, request.UrlMata.Header)
 	if err != nil {
@@ -352,7 +352,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, request
 			size := pieceSize
 			offset := uint64(pieceNum) * uint64(pieceSize)
 			log.Debugf("download piece %d", pieceNum)
-			n, err = pm.processPieceFromSource(log, pt, reader, contentLength, pieceNum, offset, size)
+			n, err = pm.processPieceFromSource(pt, reader, contentLength, pieceNum, offset, size)
 			if err != nil {
 				log.Errorf("download piece %d error: %s", pieceNum, err)
 				return err
@@ -385,7 +385,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, request
 		}
 
 		log.Debugf("download piece %d", pieceNum)
-		n, er := pm.processPieceFromSource(log, pt, reader, contentLength, pieceNum, offset, size)
+		n, er := pm.processPieceFromSource(pt, reader, contentLength, pieceNum, offset, size)
 		if er != nil {
 			log.Errorf("download piece %d error: %s", pieceNum, err)
 			return er

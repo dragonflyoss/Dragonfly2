@@ -113,9 +113,11 @@ type filePeerTask struct {
 	// progressDone will be true when peer task done and caller call ProgressDone func in progress channel
 	progressDone bool
 
-	// bitmap stands all pieces download status
-	bitmap *Bitmap
-	// lock used by piece result manage, when update bitmap, lock first
+	// readyPieces stands all pieces download status
+	readyPieces *Bitmap
+	// requestedPieces stands all pieces requested from peers
+	requestedPieces *Bitmap
+	// lock used by piece result manage, when update readyPieces, lock first
 	lock sync.Locker
 }
 
@@ -165,7 +167,8 @@ func NewFilePeerTask(ctx context.Context,
 		taskId:          result.TaskId,
 		done:            make(chan struct{}),
 		once:            sync.Once{},
-		bitmap:          NewBitmap(),
+		readyPieces:     NewBitmap(),
+		requestedPieces: NewBitmap(),
 		lock:            &sync.Mutex{},
 		failedPieceCh:   make(chan int32, 4),
 		failedReason:    "unknown",
@@ -202,6 +205,14 @@ func (pt *filePeerTask) GetTraffic() int64 {
 
 func (pt *filePeerTask) GetTotalPieces() int32 {
 	return pt.totalPiece
+}
+
+func (pt *filePeerTask) GetContext() context.Context {
+	return pt.ctx
+}
+
+func (pt *filePeerTask) Log() *logger.SugaredLoggerOnWith {
+	return pt.SugaredLoggerOnWith
 }
 
 func (pt *filePeerTask) Start(ctx context.Context) (chan *PeerTaskProgress, error) {
@@ -389,6 +400,13 @@ loop:
 			_ = pt.callback.Update(pt)
 		}
 
+		for _, p := range piecePacket.PieceInfos {
+			pt.Infof("get piece %d from %s", p.PieceNum, piecePacket.DstPid)
+			if !pt.requestedPieces.IsSet(p.PieceNum) {
+				pt.requestedPieces.Set(p.PieceNum)
+			}
+		}
+
 		num = pt.getNextPieceNum(num, limit)
 		if num == -1 {
 			pt.Infof("all pieces requests send, just wait failed pieces")
@@ -427,24 +445,24 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 	}()
 	// retry failed piece
 	if !pieceResult.Success {
-		pieceResult.FinishedCount = pt.bitmap.Settled()
+		pieceResult.FinishedCount = pt.readyPieces.Settled()
 		pt.pieceResultCh <- pieceResult
 		pt.failedPieceCh <- pieceResult.PieceNum
 		return nil
 	}
 
 	pt.lock.Lock()
-	if pt.bitmap.IsSet(pieceResult.PieceNum) {
+	if pt.readyPieces.IsSet(pieceResult.PieceNum) {
 		pt.lock.Unlock()
 		pt.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
 		return nil
 	}
 	// mark piece processed
-	pt.bitmap.Set(pieceResult.PieceNum)
+	pt.readyPieces.Set(pieceResult.PieceNum)
 	atomic.AddInt64(&pt.completedLength, int64(piece.RangeSize))
 	pt.lock.Unlock()
 
-	pieceResult.FinishedCount = pt.bitmap.Settled()
+	pieceResult.FinishedCount = pt.readyPieces.Settled()
 	pt.pieceResultCh <- pieceResult
 	// send progress first to avoid close channel panic
 	p := &PeerTaskProgress{
@@ -554,7 +572,7 @@ func (pt *filePeerTask) getPieceTasks(peer *scheduler.PeerPacket_DestPeer, reque
 				Success:       false,
 				Code:          dfcodes.ClientWaitPieceReady,
 				HostLoad:      nil,
-				FinishedCount: pt.bitmap.Settled(),
+				FinishedCount: pt.readyPieces.Settled(),
 			}
 			pt.Warnf("peer %s returns success but with empty pieces, retry later", peer.PeerId)
 			return nil, dferrors.ErrEmptyValue
@@ -572,11 +590,11 @@ func (pt *filePeerTask) getNextPieceNum(cur, limit int32) int32 {
 		return -1
 	}
 	i := cur + limit
-	for ; pt.bitmap.IsSet(i); i++ {
+	for ; pt.requestedPieces.IsSet(i); i++ {
 	}
 	if pt.totalPiece > 0 && i >= pt.totalPiece {
 		// double check, re-search not success or not requested pieces
-		for i = int32(0); pt.bitmap.IsSet(i); i++ {
+		for i = int32(0); pt.requestedPieces.IsSet(i); i++ {
 		}
 		if pt.totalPiece > 0 && i >= pt.totalPiece {
 			return -1
@@ -596,7 +614,7 @@ func (pt *filePeerTask) finish() error {
 			}
 		}()
 		// send EOF piece result to scheduler
-		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.bitmap.Settled())
+		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled())
 		pt.Debugf("finish end piece result sent")
 
 		var (
@@ -666,7 +684,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			}
 		}()
 		// send EOF piece result to scheduler
-		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.bitmap.Settled())
+		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled())
 		pt.Debugf("clean up end piece result sent")
 
 		pg := &PeerTaskProgress{

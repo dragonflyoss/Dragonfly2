@@ -300,6 +300,8 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 			w.sendJobLater(peerTask)
 			return
 		}
+		mgr.GetPeerTaskManager().DeletePeerTask(peerTask.Pid)
+		logger.Debugf("[%s][%s]: PeerTaskStatusLeaveNode", peerTask.Task.TaskId, peerTask.Pid)
 		for i := range adjustNodes {
 			if adjustNodes[i].GetParent() != nil {
 				w.sendScheduleResult(adjustNodes[i])
