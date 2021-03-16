@@ -35,6 +35,7 @@ type Server struct {
 	cfg        *config.Config
 	ms         *service.ManagerServer
 	httpServer *http.Server
+	stop       chan struct{}
 }
 
 func NewServer(cfg *config.Config) (*Server, error) {
@@ -51,6 +52,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 				Addr:    ":8080",
 				Handler: router,
 			},
+			stop: make(chan struct{}),
 		}, nil
 	} else {
 		return nil, errors.New("failed to create manager server")
@@ -58,24 +60,32 @@ func NewServer(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) Start() (error) {
-	port := s.cfg.Server.Port
-	err := rpc.StartTcpServer(port, port, s.ms)
-	if err != nil {
-		return errors.Wrap(err, "failed to start manager tcp server")
-	}
+	go func() {
+		port := s.cfg.Server.Port
+		err := rpc.StartTcpServer(port, port, s.ms)
+		if err != nil {
+			logger.Errorf("failed to start manager tcp server: %+v", err)
+		}
+
+		s.stop <- struct{}{}
+	}()
 
 	go func() {
 		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Errorf("failed to start manager http server: %+v", err)
 		}
+
+		s.stop <- struct{}{}
 	}()
 
-	go func() {
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-		<-quit
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	select {
+	case <-s.stop:
 		s.Stop()
-	}()
+	case <-quit:
+		s.Stop()
+	}
 
 	return nil
 }

@@ -20,11 +20,12 @@ type ConfigServiceConfig struct {
 }
 
 type MysqlConfig struct {
-	Username string `yaml:"username"`
+	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	IP       string `yaml:"ip"`
 	Port     int    `yaml:"port"`
-	DbName   string `yaml:"dbname"`
+	Db       string `yaml:"db"`
+	Table    string `yaml:"table"`
 }
 
 type OssConfig struct {
@@ -54,11 +55,12 @@ func GetConfig() *Config {
 				Name: "store1",
 				Type: "mysql",
 				Mysql: &MysqlConfig{
-					Username: "root",
+					User:     "root",
 					Password: "root1234",
 					IP:       "127.0.0.1",
 					Port:     3306,
-					DbName:   "config_db",
+					Db:       "config_db",
+					Table:    "config_table",
 				},
 				Oss:    nil,
 				Memory: nil,

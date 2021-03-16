@@ -65,29 +65,7 @@ func (suite *ServerTestSuite) memoryConfig() *config.Config {
 }
 
 func (suite *ServerTestSuite) mysqlConfig() *config.Config {
-	return &config.Config{
-		Server: &config.ServerConfig{
-			Port: 8004,
-		},
-		ConfigService: &config.ConfigServiceConfig{
-			StoreName: "store1",
-		},
-		Stores: []*config.StoreConfig{
-			{
-				Name: "store1",
-				Type: "mysql",
-				Mysql: &config.MysqlConfig{
-					Username: "root",
-					Password: "root1234",
-					IP:       "127.0.0.1",
-					Port:     3306,
-					DbName:   "config_db",
-				},
-				Oss:    nil,
-				Memory: nil,
-			},
-		},
-	}
+	return config.GetConfig()
 }
 
 func (suite *ServerTestSuite) TestAddConfig() {

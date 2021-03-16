@@ -1,8 +1,8 @@
 package server
 
 import (
-	_ "d7y.io/dragonfly/v2/api/v2/manager"
-	"d7y.io/dragonfly/v2/manager/apis/v2manager/handler"
+	_ "d7y.io/dragonfly/v2/api/v2/manager/docs"
+	"d7y.io/dragonfly/v2/manager/apis/v2/handler"
 	"d7y.io/dragonfly/v2/manager/server/service"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"

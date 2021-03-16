@@ -14,17 +14,19 @@ import (
 )
 
 type ormStore struct {
-	db *gorm.DB
+	db    *gorm.DB
+	table string
 }
 
 type OrmConfig struct {
-	ID        string    `gorm:"primary_key"`
-	Object    string    `gorm:"size:255"`
-	Type      string    `gorm:"size:255"`
-	Version   uint64    `gorm:"index:order_version"`
-	Data      []byte    `gorm:"data"`
-	CreatedAt time.Time `gorm:"create_at"`
-	UpdatedAt time.Time `gorm:"update_at"`
+	ID        string         `gorm:"primary_key"`
+	Object    string         `gorm:"size:255"`
+	Type      string         `gorm:"size:255"`
+	Version   uint64         `gorm:"index:order_version"`
+	Data      []byte         `gorm:"data"`
+	CreatedAt time.Time      `gorm:"create_at"`
+	UpdatedAt time.Time      `gorm:"update_at"`
+	Deleted   gorm.DeletedAt `gorm:"index"`
 }
 
 func ormConfig2InnerConfig(config *OrmConfig) *Config {
@@ -54,16 +56,29 @@ func innerConfig2OrmConfig(config *Config) *OrmConfig {
 
 func NewOrmStore(cfg *config.StoreConfig) (Store, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		cfg.Mysql.Username, cfg.Mysql.Password, cfg.Mysql.IP, cfg.Mysql.Port, cfg.Mysql.DbName)
+		cfg.Mysql.User, cfg.Mysql.Password, cfg.Mysql.IP, cfg.Mysql.Port, cfg.Mysql.Db)
 
 	if db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{}); err != nil {
 		return nil, err
 	} else {
-		if err := db.AutoMigrate(&OrmConfig{}); err != nil {
+		orm := &ormStore{
+			db:    db,
+			table: cfg.Mysql.Table,
+		}
+
+		if err := orm.withTable().AutoMigrate(&OrmConfig{}); err != nil {
 			return nil, err
 		} else {
-			return &ormStore{db: db}, nil
+			return orm, nil
 		}
+	}
+}
+
+func (orm *ormStore) withTable() (tx *gorm.DB) {
+	if orm.table != "" {
+		return orm.db.Table(orm.table)
+	} else {
+		return orm.db
 	}
 }
 
@@ -71,7 +86,7 @@ func (orm *ormStore) AddConfig(ctx context.Context, id string, config *Config) (
 	cfg := innerConfig2OrmConfig(config)
 	cfg.ID = id
 
-	tx := orm.db.Create(cfg)
+	tx := orm.withTable().Create(cfg)
 	if tx.Error != nil {
 		return nil, dferrors.Newf(dfcodes.ManagerStoreError, "add config error: %s", tx.Error.Error())
 	} else {
@@ -84,7 +99,7 @@ func (orm *ormStore) DeleteConfig(ctx context.Context, id string) (*Config, erro
 		ID: id,
 	}
 
-	tx := orm.db.Delete(cfg)
+	tx := orm.withTable().Delete(cfg)
 	if err := tx.Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	} else if err != nil {
@@ -98,7 +113,7 @@ func (orm *ormStore) UpdateConfig(ctx context.Context, id string, config *Config
 	cfg := innerConfig2OrmConfig(config)
 	cfg.ID = id
 
-	tx := orm.db.Updates(cfg)
+	tx := orm.withTable().Updates(cfg)
 	if err := tx.Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, dferrors.Newf(dfcodes.ManagerConfigNotFound, "update config error: %s", err.Error())
 	} else if err != nil {
@@ -113,7 +128,7 @@ func (orm *ormStore) GetConfig(ctx context.Context, id string) (*Config, error) 
 		ID: id,
 	}
 
-	tx := orm.db.Find(cfg)
+	tx := orm.withTable().Find(cfg)
 	if err := tx.Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, dferrors.Newf(dfcodes.ManagerConfigNotFound, "get config error: %s", err.Error())
 	} else if err != nil {
@@ -140,7 +155,7 @@ func (orm *ormStore) listSortedConfig(ctx context.Context, object string, maxLen
 	var ormConfigs []OrmConfig
 	configs := make([]*Config, 0)
 
-	tx := orm.db.Where("object = ?", object).Find(&ormConfigs)
+	tx := orm.withTable().Where("object = ?", object).Find(&ormConfigs)
 	if err := tx.Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, dferrors.Newf(dfcodes.ManagerConfigNotFound, "list sorted config error %s, object %s, maxLen %d%s", object, maxLen, err.Error())
 	} else if err != nil {

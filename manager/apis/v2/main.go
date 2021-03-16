@@ -1,7 +1,7 @@
 package main
 
 import (
-	"d7y.io/dragonfly/v2/manager/apis/v2manager/handler"
+	"d7y.io/dragonfly/v2/manager/apis/v2/handler"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/server/service"
 	"github.com/gin-gonic/gin"
@@ -23,7 +23,7 @@ import (
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host petstore.swagger.io:8080
+// @host localhost:8080
 // @BasePath /api/v2
 func main() {
 	server := service.NewManagerServer(config.GetConfig())
@@ -37,7 +37,7 @@ func main() {
 			configs.POST("", handler.AddConfig)
 			configs.DELETE(":id", handler.DeleteConfig)
 			configs.POST(":id", handler.UpdateConfig)
-			configs.GET("/:id", handler.GetConfig)
+			configs.GET(":id", handler.GetConfig)
 			configs.GET("", handler.ListConfigs)
 		}
 	}

@@ -2,10 +2,11 @@ package handler
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/manager/apis/v2manager/types"
+	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	proto "d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -24,7 +25,12 @@ import (
 // @Router /configs [post]
 func (handler *Handler) AddConfig(ctx *gin.Context) {
 	var cfg types.Config
-	if err := ctx.ShouldBindJSON(cfg); err != nil {
+	if err := ctx.ShouldBindJSON(&cfg); err != nil {
+		NewError(ctx, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := checkTypeConfigValidate(&cfg); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
@@ -63,8 +69,14 @@ func (handler *Handler) AddConfig(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /configs/{id} [delete]
 func (handler *Handler) DeleteConfig(ctx *gin.Context) {
+	id := ctx.Param("id")
+	if id == "" {
+		NewError(ctx, http.StatusBadRequest, errors.New("must set id of config you want delete in path of http protocol"))
+		return
+	}
+
 	req := &proto.DeleteConfigRequest{
-		Id: ctx.Param("id"),
+		Id: id,
 	}
 
 	_, err := handler.server.DeleteConfig(context.TODO(), req)
@@ -93,15 +105,26 @@ func (handler *Handler) DeleteConfig(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /configs/{id} [post]
 func (handler *Handler) UpdateConfig(ctx *gin.Context) {
+	id := ctx.Param("id")
+	if id == "" {
+		NewError(ctx, http.StatusBadRequest, errors.New("must set id of config you want update in path of http protocol"))
+		return
+	}
+
 	var cfg types.Config
-	if err := ctx.ShouldBindJSON(cfg); err != nil {
+	if err := ctx.ShouldBindJSON(&cfg); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	cfg.Id = ctx.Param("id")
+	if err := checkTypeConfigValidate(&cfg); err != nil {
+		NewError(ctx, http.StatusBadRequest, err)
+		return
+	}
+
+	cfg.Id = id
 	req := &proto.UpdateConfigRequest{
-		Id:     cfg.Id,
+		Id:     id,
 		Config: typeConfig2protoConfig(cfg),
 	}
 
@@ -130,8 +153,14 @@ func (handler *Handler) UpdateConfig(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /configs/{id} [get]
 func (handler *Handler) GetConfig(ctx *gin.Context) {
+	id := ctx.Param("id")
+	if id == "" {
+		NewError(ctx, http.StatusBadRequest, errors.New("must set id of config you want get in path of http protocol"))
+		return
+	}
+
 	req := &proto.GetConfigRequest{
-		Id: ctx.Param("id"),
+		Id: id,
 	}
 
 	rep, err := handler.server.GetConfig(context.TODO(), req)
@@ -159,8 +188,14 @@ func (handler *Handler) GetConfig(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /configs [get]
 func (handler *Handler) ListConfigs(ctx *gin.Context) {
+	object := ctx.Query("object")
+	if object == "" {
+		NewError(ctx, http.StatusBadRequest, errors.New("must set object you want list in query of http protocol"))
+		return
+	}
+
 	req := &proto.ListConfigsRequest{
-		Object: ctx.Query("object"),
+		Object: object,
 	}
 
 	rep, err := handler.server.ListConfigs(context.TODO(), req)
@@ -201,4 +236,27 @@ func typeConfig2protoConfig(config types.Config) *proto.Config {
 		CreateAt: config.CreateAt,
 		UpdateAt: config.UpdateAt,
 	}
+}
+
+func checkTypeConfigValidate(config *types.Config) (err error) {
+	if config.Object == "" {
+		err = errors.New("object in config must be set")
+		return
+	}
+
+	if config.Type != proto.ObjType_Scheduler.String() && config.Type != proto.ObjType_Cdn.String() {
+		err = errors.New(`type in config must be one of "Cdn" or "Scheduler"`)
+		return
+	}
+
+	if config.Version == 0 {
+		err = errors.New("version in config must be not-zero")
+		return
+	}
+
+	if len(config.Data) <= 0 {
+		err = errors.New("data in config must be set")
+	}
+
+	return nil
 }

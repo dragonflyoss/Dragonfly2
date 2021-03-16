@@ -19,9 +19,7 @@ definitions:
       create_at:
         type: string
       data:
-        items:
-          type: integer
-        type: array
+        type: string
       id:
         type: string
       object:
@@ -33,10 +31,10 @@ definitions:
       version:
         type: integer
     required:
-    - data
-    - object
-    - type
-    - version
+      - data
+      - object
+      - type
+      - version
     type: object
   types.GetConfigResponse:
     properties:
@@ -50,7 +48,7 @@ definitions:
           $ref: '#/definitions/types.Config'
         type: array
     type: object
-host: petstore.swagger.io:8080
+host: localhost:8080
 info:
   contact:
     email: support@swagger.io
@@ -67,16 +65,16 @@ paths:
   /configs:
     get:
       consumes:
-      - application/json
+        - application/json
       description: get configs
       parameters:
-      - description: configs search by object
-        in: query
-        name: object
-        required: true
-        type: string
+        - description: configs search by object
+          in: query
+          name: object
+          required: true
+          type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
@@ -96,20 +94,20 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: List configs
       tags:
-      - configs
+        - configs
     post:
       consumes:
-      - application/json
+        - application/json
       description: add by json config
       parameters:
-      - description: Add config
-        in: body
-        name: config
-        required: true
-        schema:
-          $ref: '#/definitions/types.Config'
+        - description: Add config
+          in: body
+          name: config
+          required: true
+          schema:
+            $ref: '#/definitions/types.Config'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
@@ -129,20 +127,20 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Add a config
       tags:
-      - configs
+        - configs
   /configs/{id}:
     delete:
       consumes:
-      - application/json
+        - application/json
       description: Delete by config ID
       parameters:
-      - description: Config ID
-        in: path
-        name: id
-        required: true
-        type: string
+        - description: Config ID
+          in: path
+          name: id
+          required: true
+          type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
@@ -162,19 +160,19 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Delete a config
       tags:
-      - configs
+        - configs
     get:
       consumes:
-      - application/json
+        - application/json
       description: get a config by Config ID
       parameters:
-      - description: Config ID
-        in: path
-        name: id
-        required: true
-        type: string
+        - description: Config ID
+          in: path
+          name: id
+          required: true
+          type: string
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
@@ -194,25 +192,25 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Get a config
       tags:
-      - configs
+        - configs
     post:
       consumes:
-      - application/json
+        - application/json
       description: Update by json config
       parameters:
-      - description: Config ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Update Config
-        in: body
-        name: Config
-        required: true
-        schema:
-          $ref: '#/definitions/types.Config'
+        - description: Config ID
+          in: path
+          name: id
+          required: true
+          type: string
+        - description: Update Config
+          in: body
+          name: Config
+          required: true
+          schema:
+            $ref: '#/definitions/types.Config'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: OK
@@ -232,5 +230,5 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Update a config
       tags:
-      - configs
+        - configs
 swagger: "2.0"
