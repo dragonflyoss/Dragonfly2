@@ -11,6 +11,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 
+	dflog "d7y.io/dragonfly/v2/pkg/dflog"
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -204,6 +205,30 @@ func (mr *MockPeerTaskMockRecorder) GetTraffic() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTraffic", reflect.TypeOf((*MockPeerTask)(nil).GetTraffic))
 }
 
+// GetContext mocks base method
+func (m *MockPeerTask) GetContext() context.Context {
+	ret := m.ctrl.Call(m, "GetContext")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// GetContext indicates an expected call of GetContext
+func (mr *MockPeerTaskMockRecorder) GetContext() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContext", reflect.TypeOf((*MockPeerTask)(nil).GetContext))
+}
+
+// Log mocks base method
+func (m *MockPeerTask) Log() *dflog.SugaredLoggerOnWith {
+	ret := m.ctrl.Call(m, "Log")
+	ret0, _ := ret[0].(*dflog.SugaredLoggerOnWith)
+	return ret0
+}
+
+// Log indicates an expected call of Log
+func (mr *MockPeerTaskMockRecorder) Log() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockPeerTask)(nil).Log))
+}
+
 // MockPeerTaskCallback is a mock of PeerTaskCallback interface
 type MockPeerTaskCallback struct {
 	ctrl     *gomock.Controller
@@ -241,14 +266,26 @@ func (mr *MockPeerTaskCallbackMockRecorder) Init(pt interface{}) *gomock.Call {
 
 // Done mocks base method
 func (m *MockPeerTaskCallback) Done(pt PeerTask) error {
-	ret := m.ctrl.Call(m, "PeerTaskDone", pt)
+	ret := m.ctrl.Call(m, "Done", pt)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Done indicates an expected call of Done
 func (mr *MockPeerTaskCallbackMockRecorder) Done(pt interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerTaskDone", reflect.TypeOf((*MockPeerTaskCallback)(nil).Done), pt)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Done", reflect.TypeOf((*MockPeerTaskCallback)(nil).Done), pt)
+}
+
+// Update mocks base method
+func (m *MockPeerTaskCallback) Update(pt PeerTask) error {
+	ret := m.ctrl.Call(m, "Update", pt)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update
+func (mr *MockPeerTaskCallbackMockRecorder) Update(pt interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockPeerTaskCallback)(nil).Update), pt)
 }
 
 // Fail mocks base method

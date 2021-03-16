@@ -37,6 +37,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -139,6 +140,12 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				func(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
 					return nil
 				})
+			mockPeerTask.EXPECT().GetContext().AnyTimes().DoAndReturn(func() context.Context {
+				return context.Background()
+			})
+			mockPeerTask.EXPECT().Log().AnyTimes().DoAndReturn(func() *logger.SugaredLoggerOnWith {
+				return logger.With("test case", tc.name)
+			})
 			err = storageManager.RegisterTask(context.Background(),
 				storage.RegisterTaskRequest{
 					CommonTaskRequest: storage.CommonTaskRequest{
