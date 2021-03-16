@@ -136,6 +136,9 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	t.Lock()
 	defer t.Unlock()
 	t.persistentMetadata.ContentLength = req.ContentLength
+	if t.TotalPieces == 0 {
+		t.TotalPieces = req.TotalPieces
+	}
 	return nil
 }
 

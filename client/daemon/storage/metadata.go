@@ -65,4 +65,5 @@ type ReadPieceRequest struct {
 type UpdateTaskRequest struct {
 	PeerTaskMetaData
 	ContentLength int64
+	TotalPieces   int32
 }
