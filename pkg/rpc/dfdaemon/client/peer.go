@@ -33,14 +33,16 @@ func GetPieceTasks(destPeer *scheduler.PeerPacket_DestPeer, ctx context.Context,
 	destAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)
 	peerId := destPeer.PeerId
 	toCdn := strings.HasSuffix(peerId, common.CdnSuffix)
-	var err error
+
 	client, err := getClient(destAddr, toCdn)
 	if err != nil {
 		return nil, err
 	}
+
 	if toCdn {
 		return client.(cdnclient.SeederClient).GetPieceTasks(ctx, ptr, opts...)
 	}
+
 	return client.(DaemonClient).GetPieceTasks(ctx, ptr, opts...)
 }
 
@@ -52,7 +54,7 @@ func getClient(destAddr string, toCdn bool) (interface{}, error) {
 
 	if toCdn {
 		return cdnclient.GetClientByAddr([]dfnet.NetAddr{netAddr})
-	} else {
-		return GetClientByAddr([]dfnet.NetAddr{netAddr})
 	}
+
+	return GetClientByAddr([]dfnet.NetAddr{netAddr})
 }

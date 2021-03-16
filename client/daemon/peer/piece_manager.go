@@ -123,6 +123,7 @@ func (pm *pieceManager) downloadPiece(pt PeerTask, dstPid, dstAddr string, piece
 			return
 		}
 	}
+
 	r, c, err := pm.DownloadPiece(&DownloadPieceRequest{
 		TaskID:     pt.GetTaskID(),
 		DstPid:     dstPid,
@@ -134,6 +135,8 @@ func (pm *pieceManager) downloadPiece(pt PeerTask, dstPid, dstAddr string, piece
 		logger.Errorf("download piece failed, piece num: %d, error: %s", pieceTask.PieceNum, err)
 		return
 	}
+
+	logger.Debugf("download piece success, piece num: %d", pieceTask.PieceNum)
 	end = time.Now().UnixNano()
 	defer c.Close()
 

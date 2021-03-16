@@ -253,6 +253,7 @@ loop:
 			pt.Warnf("scheduler client send a empty peerPacket")
 			continue
 		}
+
 		if peerPacket.State.Code == dfcodes.SchedPeerGone {
 			pt.failedReason = reasonPeerGoneFromScheduler
 			pt.failedCode = dfcodes.SchedPeerGone
@@ -379,9 +380,7 @@ loop:
 		}
 
 		// trigger DownloadPieces
-		if len(piecePacket.PieceInfos) > 0 {
-			pt.pieceManager.DownloadPieces(pti, piecePacket)
-		}
+		pt.pieceManager.DownloadPieces(pti, piecePacket)
 
 		// update total piece
 		if piecePacket.TotalPiece > pt.totalPiece {
@@ -487,12 +486,17 @@ func (pt *filePeerTask) preparePieceTasks(request *base.PieceTaskRequest) (p *ba
 			err = fmt.Errorf("%v", rerr)
 		}
 	}()
+
 	pt.pieceParallelCount = pt.peerPacket.ParallelCount
 	request.DstPid = pt.peerPacket.MainPeer.PeerId
+
+	// main peer
 	p, err = pt.preparePieceTasksByPeer(pt.peerPacket.MainPeer, request)
 	if err == nil {
 		return
 	}
+
+	// steal peers
 	for _, peer := range pt.peerPacket.StealPeers {
 		request.DstPid = peer.PeerId
 		p, err = pt.preparePieceTasksByPeer(peer, request)
@@ -508,6 +512,7 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 	if peer == nil {
 		return nil, fmt.Errorf("empty peer")
 	}
+
 	pt.Debugf("get piece task from peer %s, request: %#v", peer.PeerId, request)
 	p, err := dfclient.GetPieceTasks(peer, pt.ctx, request)
 	if err != nil {
@@ -517,25 +522,22 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 			return nil, err
 		}
 		code := dfcodes.ClientPieceTaskRequestFail
+
 		// not grpc error
 		if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
 			code = de.Code
 		}
+
 		// may be panic here due to unknown content length or total piece count
 		// recover by preparePieceTasks
-		pt.pieceResultCh <- &scheduler.PieceResult{
-			TaskId:        pt.taskId,
-			SrcPid:        pt.peerId,
-			DstPid:        peer.PeerId,
-			Success:       false,
-			Code:          code,
-			HostLoad:      nil,
-			FinishedCount: -1,
-		}
+		pt.pieceResultCh <- scheduler.NewErrorPieceResult(pt.taskId, pt.peerId, code)
 		pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
 		return nil, err
 	}
+
 	pt.Debugf("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
+
+	// pieceInfos is empty
 	if len(p.PieceInfos) == 0 {
 		pt.Errorf("peer %s returns success state with empty pieces", peer.PeerId)
 		return nil, dferrors.ErrEmptyValue

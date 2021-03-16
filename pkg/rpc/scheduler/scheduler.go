@@ -17,6 +17,7 @@
 package scheduler
 
 import (
+	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 )
 
@@ -34,5 +35,15 @@ func NewEndPieceResult(taskId, peerId string, finishedCount int32) *PieceResult 
 		SrcPid:        peerId,
 		PieceNum:      common.EndOfPiece,
 		FinishedCount: finishedCount,
+	}
+}
+
+func NewErrorPieceResult(taskId, peerId string, code base.Code) *PieceResult {
+	return &PieceResult{
+		TaskId:        taskId,
+		SrcPid:        peerId,
+		Success:       false,
+		Code:          code,
+		FinishedCount: -1,
 	}
 }
