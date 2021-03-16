@@ -61,6 +61,11 @@ build-scheduler: build-dirs ## Build scheduler
 	./hack/build.sh scheduler
 .PHONY: build-scheduler
 
+build-manager: build-dirs ## Build manager
+	@echo "Begin to build manager."
+	./hack/build.sh manager
+.PHONY: build-manager
+
 install-cdn: ## Install cdn
 	@echo "Begin to install cdn."
 	./hack/install.sh install cdn
@@ -75,3 +80,8 @@ install-scheduler: ## Install scheduler
 	@echo "Begin to install scheduler."
 	./hack/install.sh install scheduler
 .PHONY: install-scheduler
+
+install-manager: ## Install manager
+	@echo "Begin to install manager."
+	./hack/install.sh install manager
+.PHONY: install-manager

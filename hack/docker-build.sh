@@ -21,6 +21,10 @@ docker-build::build-scheduler() {
     docker build --build-arg GOPROXY="${GOPROXY}" -t "${D7Y_REGISTRY}"/scheduler:"${D7Y_VERSION}" -f Dockerfile.scheduler .
 }
 
+docker-build::build-manager() {
+    docker build --build-arg GOPROXY="${GOPROXY}" -t "${D7Y_REGISTRY}"/manager:"${D7Y_VERSION}" -f Dockerfile.manager .
+}
+
 main() {
     case "${1-}" in
     cdn)
@@ -32,6 +36,8 @@ main() {
     scheduler)
         docker-build::build-scheduler
         ;;
+    manager)
+        docker-build::build-manager
     esac
 }
 
