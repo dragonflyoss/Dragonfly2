@@ -228,6 +228,5 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 		s.worker.ReceiveJob(peerTask)
 	}
 
-	err = s.svc.DeletePeerTask(pid)
 	return
 }

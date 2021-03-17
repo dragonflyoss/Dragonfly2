@@ -310,6 +310,11 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 				w.sendJob(adjustNodes[i])
 			}
 		}
+
+		// delete from manager
+		mgr.GetPeerTaskManager().DeletePeerTask(peerTask.Pid)
+		// delete from host
+		peerTask.Host.DeletePeerTask(peerTask.Pid)
 	}
 	return
 }
