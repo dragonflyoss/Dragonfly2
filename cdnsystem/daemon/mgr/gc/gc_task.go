@@ -55,6 +55,7 @@ func (gcm *Manager) gcTasks(ctx context.Context) {
 			continue
 		}
 		// gc task memory data
+		// todo 删除upload文件
 		gcm.gcTask(ctx, taskID, false)
 		removedTaskCount++
 	}

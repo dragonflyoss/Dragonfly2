@@ -23,6 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
 	"d7y.io/dragonfly/v2/cdnsystem/store"
 	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -56,10 +57,15 @@ func (*diskBuilder) Build(cfg *config.Config) (storage.StorageMgr, error) {
 	if err != nil {
 		return nil, err
 	}
-	storage := &diskStorageMgr{
+	storageMgr := &diskStorageMgr{
 		diskStore: diskStore,
 	}
-	return storage, nil
+	gc.Register("task", &gc.ExecutorWrapper{
+		GCInitialDelay: cfg.GCInitialDelay,
+		GCInterval:     cfg.GCStorageInterval,
+		Instance:       storageMgr,
+	})
+	return storageMgr, nil
 }
 
 func (*diskBuilder) Name() string {

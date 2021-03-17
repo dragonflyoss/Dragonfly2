@@ -75,7 +75,7 @@ func (client *httpSourceClient) getHTTPFileLength(url string, headers map[string
 	// send request
 	resp, err := client.httpWithHeaders(http.MethodGet, url, headers, 4*time.Second)
 	if err != nil {
-		return 0, 0, err
+		return -1, 0, err
 	}
 	resp.Body.Close()
 

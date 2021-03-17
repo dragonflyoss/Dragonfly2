@@ -60,11 +60,23 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 }
 
 func (pm *Manager) InitSeedProgress(ctx context.Context, taskId string) {
+	pm.mu.GetLock(taskId, true)
+	if _, ok := pm.seedSubscribers.Load(taskId); ok {
+		logger.WithTaskID(taskId).Debugf("the task seedSubscribers already exist")
+		if _, ok := pm.taskPieceMetaRecords.Load(taskId); ok {
+			logger.WithTaskID(taskId).Debugf("the task taskPieceMetaRecords already exist")
+			pm.mu.ReleaseLock(taskId, true)
+			return
+		}
+	}
+	pm.mu.ReleaseLock(taskId, true)
+	pm.mu.GetLock(taskId, false)
+	defer pm.mu.ReleaseLock(taskId, false)
 	if _, loaded := pm.seedSubscribers.LoadOrStore(taskId, list.New()); loaded {
-		logger.Warnf("the task seedSubscribers already exist")
+		logger.WithTaskID(taskId).Info("the task seedSubscribers already exist")
 	}
 	if _, loaded := pm.taskPieceMetaRecords.LoadOrStore(taskId, syncmap.NewSyncMap()); loaded {
-		logger.Warnf("the task taskPieceMetaRecords already exist")
+		logger.WithTaskID(taskId).Info("the task taskPieceMetaRecords already exist")
 	}
 }
 

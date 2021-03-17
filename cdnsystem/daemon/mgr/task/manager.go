@@ -95,15 +95,17 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 
 // triggerCdnSyncAction
 func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTask) error {
+	util.GetLock(task.TaskId, true)
 	if !isFrozen(task.CdnStatus) {
 		logger.WithTaskID(task.TaskId).Infof("seedTask is running or has been downloaded successfully, status:%s", task.CdnStatus)
+		util.ReleaseLock(task.TaskId, true)
 		return nil
 	}
 	if isWait(task.CdnStatus) {
 		tm.progressMgr.InitSeedProgress(ctx, task.TaskId)
 		logger.WithTaskID(task.TaskId).Infof("success to init seed progress")
 	}
-
+	util.ReleaseLock(task.TaskId, true)
 	updatedTask, err := tm.updateTask(task.TaskId, &types.SeedTask{
 		CdnStatus: types.TaskInfoCdnStatusRUNNING,
 	})

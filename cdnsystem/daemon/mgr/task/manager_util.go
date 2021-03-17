@@ -78,6 +78,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 
 	// get sourceContentLength with req.Headers
 	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Headers)
+	// todo 需要做些操作避免不支持contentLength的源每次都要去获取长度
 	if err != nil {
 		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length from http client:%v", task.Url,
 			err)

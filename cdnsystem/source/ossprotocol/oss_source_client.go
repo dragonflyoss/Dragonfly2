@@ -19,6 +19,7 @@ package ossprotocol
 import (
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 const ossClient = "oss"
@@ -28,12 +29,18 @@ func init() {
 	source.Register(ossClient, sourceClient)
 }
 
+func NewOSSSourceClient() source.ResourceClient {
+	return nil
+}
+
 
 // httpSourceClient is an implementation of the interface of SourceClient.
 type ossSourceClient struct {
+	ossClient oss.Client
 }
 
 func (o ossSourceClient) GetContentLength(url string, headers map[string]string) (int64, error) {
+	//oss.New()
 	panic("implement me")
 }
 
@@ -47,8 +54,4 @@ func (o ossSourceClient) IsExpired(url string, headers, expireInfo map[string]st
 
 func (o ossSourceClient) Download(url string, headers map[string]string) (*types.DownloadResponse, error) {
 	panic("implement me")
-}
-
-func NewOSSSourceClient() source.ResourceClient {
-	return nil
 }

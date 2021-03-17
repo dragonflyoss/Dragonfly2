@@ -21,7 +21,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
-	"time"
+	"sync"
 )
 
 import (
@@ -37,27 +37,32 @@ func main() {
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
-			Addr: "localhost:8003",
+			Addr: "127.0.0.1:8003",
 		},
 	})
 	if err != nil {
 		panic(err)
 	}
-	for i:=0;i<5;i++ {
-		psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-			TaskId: "test",
-			Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
-			Filter: "",
-		})
-		if err != nil {
-			panic(err)
-		}
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+				TaskId: "test",
+				Url:    "http://www.baidu.com",
+				Filter: "",
+			})
+			if err != nil {
+				panic(err)
+			}
 
-		for pieceSeed := range psc {
-			fmt.Printf("response:%v\n", pieceSeed)
-		}
-		time.Sleep(3 * time.Second)
+			for pieceSeed := range psc {
+				fmt.Printf("response:%v\n", pieceSeed)
+			}
+		}()
 	}
+	wg.Wait()
 	fmt.Println("client finish")
 }
 
