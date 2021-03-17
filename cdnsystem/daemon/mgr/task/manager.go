@@ -18,6 +18,7 @@ package task
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
@@ -125,6 +126,9 @@ func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
 
 	v, err := tm.taskStore.Get(taskID)
 	if err != nil {
+		if errors.Cause(err) == dferrors.ErrDataNotFound {
+			return nil, errors.Wrapf(cdnerrors.ErrDataNotFound,"task not found")
+		}
 		return nil, err
 	}
 	// update accessTime for taskID
