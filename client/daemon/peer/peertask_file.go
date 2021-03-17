@@ -55,6 +55,8 @@ const (
 	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
 	reasonContextCanceled       = "context canceled"
 	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
+
+	failedCodeNotSet = 0
 )
 
 type filePeerTask struct {
@@ -338,9 +340,13 @@ loop:
 		case <-pt.ctx.Done():
 			pt.Debugf("context done due to %s", pt.ctx.Err())
 			if !pt.progressDone {
-				pt.callback.Fail(pt, pt.ctx.Err().Error())
-				pt.failedReason = reasonContextCanceled
-				pt.failedCode = dfcodes.ClientContextCanceled
+				if pt.failedCode == failedCodeNotSet {
+					pt.failedReason = reasonContextCanceled
+					pt.failedCode = dfcodes.ClientContextCanceled
+					pt.callback.Fail(pt, pt.ctx.Err().Error())
+				} else {
+					pt.callback.Fail(pt, pt.failedReason)
+				}
 			}
 			break loop
 		case failed := <-pt.failedPieceCh:
@@ -368,8 +374,10 @@ loop:
 			case <-pt.ctx.Done():
 				pt.Debugf("context done due to %s", pt.ctx.Err())
 				if !pt.progressDone {
-					pt.failedReason = reasonContextCanceled
-					pt.failedCode = dfcodes.ClientContextCanceled
+					if pt.failedCode == failedCodeNotSet {
+						pt.failedReason = reasonContextCanceled
+						pt.failedCode = dfcodes.ClientContextCanceled
+					}
 				}
 			case <-pt.peerPacketReady:
 				// preparePieceTasksByPeer func already send piece result with error
@@ -386,8 +394,12 @@ loop:
 
 		if !initialized {
 			pt.contentLength = piecePacket.ContentLength
-			_ = pt.callback.Init(pt)
 			initialized = true
+			if err = pt.callback.Init(pt); err != nil {
+				pt.failedReason = err.Error()
+				pt.failedCode = dfcodes.ClientError
+				break loop
+			}
 		}
 
 		// trigger DownloadPieces
@@ -421,8 +433,10 @@ loop:
 				break loop
 			case <-pt.ctx.Done():
 				if !pt.progressDone {
-					pt.failedReason = reasonContextCanceled
-					pt.failedCode = dfcodes.ClientContextCanceled
+					if pt.failedCode == failedCodeNotSet {
+						pt.failedReason = reasonContextCanceled
+						pt.failedCode = dfcodes.ClientContextCanceled
+					}
 					pt.Errorf("context done due to %s, progress is not done", pt.ctx.Err())
 				} else {
 					pt.Debugf("context done due to %s, progress is already done", pt.ctx.Err())
@@ -629,7 +643,7 @@ func (pt *filePeerTask) finish() error {
 		if err = pt.callback.Done(pt); err != nil {
 			pt.Errorf("peer task done callback failed: %s", err)
 			success = false
-			code = dfcodes.UnknownError
+			code = dfcodes.ClientError
 			message = err.Error()
 		}
 
