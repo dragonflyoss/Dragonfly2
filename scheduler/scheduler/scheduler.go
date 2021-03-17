@@ -119,9 +119,11 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTa
 
 func (s *Scheduler) SchedulerBadNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
 	logger.Debugf("[%s][%s]SchedulerBadNode scheduler node is bad", peer.Task.TaskId, peer.Pid)
-	adjustNodes, err = s.SchedulerLeaveNode(peer)
-	if err != nil {
-		return
+	peer.DeleteParent()
+	for _, child := range peer.GetChildren() {
+		child.SrcPeerTask.DeleteParent()
+		s.SchedulerParent(child.SrcPeerTask)
+		adjustNodes = append(adjustNodes, child.SrcPeerTask)
 	}
 
 	s.SchedulerParent(peer)

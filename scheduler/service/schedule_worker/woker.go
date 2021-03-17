@@ -128,6 +128,9 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 	}
 
 	peerTask.AddPieceStatus(pr)
+	if peerTask.Success || peerTask.GetNodeStatus() == types.PeerTaskStatusDone || peerTask.IsDown() {
+		return
+	}
 	if dstPeerTask != nil && peerTask.GetParent() == nil {
 		peerTask.SetNodeStatus(types.PeerTaskStatusAddParent, dstPeerTask)
 		needSchedule = true
