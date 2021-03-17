@@ -191,7 +191,6 @@ func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, er
 	conn.rwMutex.Lock(node, false)
 	defer conn.rwMutex.UnLock(node, false)
 	if client, ok := conn.node2ClientMap.Load(node); ok {
-		conn.rwMutex.UnLock(node, true)
 		return client.(*grpc.ClientConn), nil
 	}
 	conn.hashRing = conn.hashRing.AddNode(node)
