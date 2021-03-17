@@ -17,6 +17,7 @@
 package mgr
 
 import (
+	"bytes"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -24,7 +25,8 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"fmt"
-	"sort"
+	"github.com/olekukonko/tablewriter"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -180,9 +182,14 @@ func (m *PeerTaskManager) printDebugInfoLoop() {
 }
 
 func (m *PeerTaskManager) printDebugInfo() string {
-	msgMap := make(map[string]string)
 	var task *types.Task
 	var roots []*types.PeerTask
+
+	buffer := bytes.NewBuffer([]byte{})
+	table := tablewriter.NewWriter(buffer)
+	table.SetHeader([]string{"PeerId", "Finished Piece Num", "Download Finished", "Free Load", "Peer Down"})
+
+
 	m.data.Range(func(key interface{}, value interface{}) (ok bool) {
 		ok = true
 		peerTask, _ := value.(*types.PeerTask)
@@ -195,18 +202,14 @@ func (m *PeerTaskManager) printDebugInfo() string {
 		if peerTask.GetParent() == nil {
 			roots = append(roots, peerTask)
 		}
-		msgMap[peerTask.Pid] = fmt.Sprintf("%s: finishedNum[%2d] hostLoad[%d]",
-			peerTask.Pid, peerTask.GetFinishedNum(), peerTask.GetFreeLoad())
+		table.Append([]string{peerTask.Pid, strconv.Itoa(int(peerTask.GetFinishedNum())),
+			strconv.FormatBool(peerTask.Success), strconv.Itoa(int(peerTask.GetFreeLoad())), strconv.FormatBool(peerTask.IsDown())})
 		return
 	})
-	var keys, msgs []string
-	for key := range msgMap {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		msgs = append(msgs, msgMap[key])
-	}
+	table.Render()
+
+	var msgs []string
+	msgs = append(msgs, buffer.String())
 
 	var printTree func(node *types.PeerTask, path []string)
 	printTree = func(node *types.PeerTask, path []string) {

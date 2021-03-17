@@ -77,7 +77,10 @@ func main2() {
 		panic(err)
 	}
 
-	psc, err := c.GetPieceTasks(context.TODO(), &base.PieceTaskRequest{
+	psc, err := c.GetPieceTasks(context.TODO(), dfnet.NetAddr{
+		Type: dfnet.TCP,
+		Addr: "localhost:8003",
+	}, &base.PieceTaskRequest{
 		TaskId:   "test",
 		SrcIp:    "11.11.11.11",
 		StartNum: 1,

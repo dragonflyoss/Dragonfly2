@@ -53,7 +53,7 @@ func (e *Evaluator) NeedAdjustParent(peer *types.PeerTask) bool {
 	lastCost := costHistory[len(costHistory)-1]
 	totalCost -= lastCost
 
-	return (totalCost * 2 / int32(len(costHistory)-1)) < lastCost
+	return (totalCost * 4 / int32(len(costHistory)-1)) < lastCost
 }
 
 func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
@@ -93,7 +93,7 @@ func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
 
 	totalCost -= lastCost
 
-	if (totalCost * 10 / int32(len(costHistory)-1)) < lastCost {
+	if (totalCost * 20 / int32(len(costHistory)-1)) < lastCost {
 		logger.Debugf("IsNodeBad [%s]: node cost is too long", peer.Pid)
 		return true
 	}
@@ -169,7 +169,7 @@ func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.
 		return true
 	})
 	if len(list) == 0 {
-		logger.Debugf("[%s][%s] %s", peer.Task.TaskId, peer.Pid, strings.Join(msg, "\n"))
+		logger.Debugf("[%s][%s] scheduler failed: \n%s", peer.Task.TaskId, peer.Pid, strings.Join(msg, "\n"))
 	}
 
 	return

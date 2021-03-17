@@ -25,6 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -137,6 +138,9 @@ func (tm *Manager) getTask(taskId string) (*types.SeedTask, error) {
 
 	v, err := tm.taskStore.Get(taskId)
 	if err != nil {
+		if errors.Cause(err) == dferrors.ErrDataNotFound {
+			return nil, errors.Wrapf(cdnerrors.ErrDataNotFound,"task not found")
+		}
 		return nil, err
 	}
 	// update accessTime for taskId

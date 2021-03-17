@@ -28,32 +28,44 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"sync"
 )
 
 func GetClient() (DaemonClient, error) {
 	// 从本地文件/manager读取addrs
-	return newDaemonClient([]dfnet.NetAddr{})
+	return dc, nil
+}
+
+var dc *daemonClient
+
+var once sync.Once
+
+func init()  {
+	once.Do(func() {
+		dc = &daemonClient{
+			rpc.NewConnection(make([]dfnet.NetAddr, 0)),
+		}
+	})
 }
 
 func GetClientByAddr(addrs []dfnet.NetAddr) (DaemonClient, error) {
-	// user specify
-	return newDaemonClient(addrs)
-}
-
-func newDaemonClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
-	return &daemonClient{
-		rpc.NewConnection(addrs, opts...),
-	}, nil
+	err := dc.Connection.AddNodes(addrs)
+	if err != nil {
+		return nil, err
+	}
+	return dc, nil
 }
+
 
 // see dfdaemon.DaemonClient
 type DaemonClient interface {
 	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, error)
 
-	GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
+	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest,
+		opts ...grpc.CallOption) (*base.PiecePacket, error)
 
 	CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (*base.ResponseState, error)
 }
@@ -94,9 +106,10 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 	return drc, nil
 }
 
-func (dc *daemonClient) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
+func (dc *daemonClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest,
+	opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		if client, err := dc.getDaemonClient(ptr.TaskId); err != nil {
+		if client, err := dc.getDaemonClient(addr.GetEndpoint()); err != nil {
 			return nil, err
 		} else {
 			return client.GetPieceTasks(ctx, ptr, opts...)

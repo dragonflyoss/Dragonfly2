@@ -28,27 +28,47 @@ import (
 	"errors"
 	"fmt"
 	"google.golang.org/grpc"
+	"sync"
 	"time"
 )
 
 func GetClient() (SchedulerClient, error) {
 	// 从本地文件/manager读取addrs
-	return newSchedulerClient([]dfnet.NetAddr{})
+	return sc, nil
 }
+
+var sc *schedulerClient
+
+var once sync.Once
+
+func init()  {
+	once.Do(func() {
+		sc = &schedulerClient{
+			rpc.NewConnection(make([]dfnet.NetAddr, 0)),
+		}
+	})
+}
+
 
 func GetClientByAddr(addrs []dfnet.NetAddr) (SchedulerClient, error) {
-	// user specify
-	return newSchedulerClient(addrs)
-}
-
-func newSchedulerClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
-	return &schedulerClient{
-		rpc.NewConnection(addrs, opts...),
-	}, nil
+	err := sc.Connection.AddNodes(addrs)
+	if err != nil {
+		return nil, err
+	}
+	return sc, nil
 }
+
+//func newSchedulerClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
+//	if len(addrs) == 0 {
+//		return nil, errors.New("address list of cdn is empty")
+//	}
+//	return &schedulerClient{
+//		rpc.NewConnection(addrs, opts...),
+//	}, nil
+//}
 
 // see scheduler.SchedulerClient
 type SchedulerClient interface {
