@@ -38,11 +38,13 @@ type Task struct {
 	DirectPiece *scheduler.RegisterResult_PieceContent
 
 	CreateTime    time.Time
+	LastActive    time.Time
 	rwLock        *sync.RWMutex
 	PieceList     map[int32]*Piece // Piece list
 	PieceTotal    int32            // the total number of Pieces, set > 0 when cdn finished
 	ContentLength int64
 	Statistic     *metrics.TaskStatistic
+	Removed       bool
 }
 
 func CopyTask(t *Task) *Task {
@@ -51,6 +53,7 @@ func CopyTask(t *Task) *Task {
 		copyTask.PieceList = make(map[int32]*Piece)
 		copyTask.rwLock = new(sync.RWMutex)
 		copyTask.CreateTime = time.Now()
+		copyTask.LastActive = copyTask.CreateTime
 		copyTask.SizeScope = base.SizeScope_NORMAL
 		copyTask.Statistic = &metrics.TaskStatistic{
 			StartTime: time.Now(),

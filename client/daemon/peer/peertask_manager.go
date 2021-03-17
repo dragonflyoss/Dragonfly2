@@ -24,6 +24,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -53,6 +54,8 @@ type PeerTask interface {
 	SetCallback(PeerTaskCallback)
 	AddTraffic(int64)
 	GetTraffic() int64
+	GetContext() context.Context
+	Log() *logger.SugaredLoggerOnWith
 }
 
 // PeerTaskCallback inserts some operations for peer task download lifecycle

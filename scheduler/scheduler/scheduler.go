@@ -111,8 +111,12 @@ func (s *Scheduler) SchedulerBadNode(peer *types.PeerTask) (adjustNodes []*types
 	adjustNodes = append(adjustNodes, peer)
 
 	for _, node := range adjustNodes {
+		parentId := ""
+		if node.GetParent() != nil {
+			parentId = node.GetParent().DstPeerTask.Pid
+		}
 		logger.Debugf("[%s][%s]SchedulerBadNode [%s] scheduler a new parent [%s]", peer.Task.TaskId, peer.Pid,
-			node.Pid, node.GetParent().DstPeerTask.Pid)
+			node.Pid, parentId)
 	}
 
 	return

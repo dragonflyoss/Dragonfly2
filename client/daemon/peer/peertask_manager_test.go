@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"os"
 	"sync"
 	"testing"
@@ -59,13 +60,13 @@ func setupPeerTaskManagerComponents(
 	port := int32(freeport.GetPort())
 	// 1. setup a mock daemon server for uploading pieces info
 	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
-	daemon.EXPECT().CheckHealth(gomock.Any()).DoAndReturn(func(ctx context.Context) (*base.ResponseState, error) {
-		return &base.ResponseState{
-			Success: true,
-			Code:    dfcodes.Success,
-			Msg:     "",
-		}, nil
-	})
+	//daemon.EXPECT().CheckHealth(gomock.Any()).DoAndReturn(func(ctx context.Context) (*base.ResponseState, error) {
+	//	return &base.ResponseState{
+	//		Success: true,
+	//		Code:    dfcodes.Success,
+	//		Msg:     "",
+	//	}, nil
+	//})
 	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var tasks []*base.PieceInfo
 		for i := int32(0); i < request.Limit; i++ {
@@ -168,6 +169,7 @@ func setupPeerTaskManagerComponents(
 func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
 	testBytes, err := ioutil.ReadFile(test.File)
 	assert.Nil(err, "load test file")
@@ -190,7 +192,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	defer storageManager.(gc.GC).TryGC()
 
 	downloader := NewMockPieceDownloader(ctrl)
-	downloader.EXPECT().DownloadPiece(gomock.Any()).AnyTimes().DoAndReturn(func(task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
+	downloader.EXPECT().DownloadPiece(gomock.Any()).Times(int(math.Ceil(float64(len(testBytes)) / float64(pieceSize)))).DoAndReturn(func(task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
 		rc := ioutil.NopCloser(
 			bytes.NewBuffer(
 				testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
@@ -245,6 +247,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
 	testBytes, err := ioutil.ReadFile(test.File)
 	assert.Nil(err, "load test file")
