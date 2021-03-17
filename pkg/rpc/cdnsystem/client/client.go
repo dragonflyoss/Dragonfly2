@@ -26,33 +26,43 @@ import (
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"errors"
 	"google.golang.org/grpc"
+	"sync"
 )
-
-var cdnClient SeederClient
 
 func GetClient() (SeederClient, error) {
 	// 从本地文件/manager读取addrs
-	return newCdnClient([]dfnet.NetAddr{})
+	return sc, nil
 }
 
-func GetClientByAddr(addr []dfnet.NetAddr) (SeederClient, error) {
-	return newCdnClient(addr)
+var sc *seederClient
+
+var once sync.Once
+
+func init()  {
+	once.Do(func() {
+		sc = &seederClient{
+			rpc.NewConnection(make([]dfnet.NetAddr, 0)),
+		}
+	})
 }
 
-func newCdnClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SeederClient, error) {
+func GetClientByAddr(addrs []dfnet.NetAddr) (SeederClient, error) {
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
-	return &seederClient{
-		rpc.NewConnection(addrs, opts...),
-	}, nil
+	err := sc.Connection.AddNodes(addrs)
+	if err != nil {
+		return nil, err
+	}
+	return sc, nil
 }
 
 // see cdnsystem.SeederClient
 type SeederClient interface {
 	ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (<-chan *cdnsystem.PieceSeed, error)
 
-	GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
+	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest,
+		opts ...grpc.CallOption) (*base.PiecePacket, error)
 }
 
 type seederClient struct {
@@ -67,6 +77,14 @@ func (sc *seederClient) getSeederClient(key string) (cdnsystem.SeederClient, err
 	return cdnsystem.NewSeederClient(clientConn), nil
 }
 
+func (sc *seederClient) getSeederClientWithTarget(target string) (cdnsystem.SeederClient, error) {
+	conn, err := sc.Connection.GetClientConnByTarget(target)
+	if err != nil {
+		return nil, err
+	}
+	return cdnsystem.NewSeederClient(conn), nil
+}
+
 func (sc *seederClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (<-chan *cdnsystem.PieceSeed, error) {
 	psc := make(chan *cdnsystem.PieceSeed, 4)
 	pss, err := newPieceSeedStream(sc, ctx, sr.TaskId, sr, opts)
@@ -79,9 +97,10 @@ func (sc *seederClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedReque
 	return psc, nil
 }
 
-func (sc *seederClient) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
+func (sc *seederClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest,
+	opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		if client, err := sc.getSeederClient(req.TaskId); err != nil {
+		if client, err := sc.getSeederClientWithTarget(addr.GetEndpoint()); err != nil {
 			return nil, err
 		} else {
 			return client.GetPieceTasks(ctx, req, opts...)

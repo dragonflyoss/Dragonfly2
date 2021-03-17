@@ -34,22 +34,21 @@ func GetPieceTasks(destPeer *scheduler.PeerPacket_DestPeer, ctx context.Context,
 	peerId := destPeer.PeerId
 	toCdn := strings.HasSuffix(peerId, common.CdnSuffix)
 	var err error
-	client, err := getClient(destAddr, toCdn)
-	if err != nil {
-		return nil, err
-	}
-	if toCdn {
-		return client.(cdnclient.SeederClient).GetPieceTasks(ctx, ptr, opts...)
-	}
-	return client.(DaemonClient).GetPieceTasks(ctx, ptr, opts...)
-}
-
-func getClient(destAddr string, toCdn bool) (interface{}, error) {
 	netAddr := dfnet.NetAddr{
 		Type: dfnet.TCP,
 		Addr: destAddr,
 	}
+	client, err := getClient(netAddr, toCdn)
+	if err != nil {
+		return nil, err
+	}
+	if toCdn {
+		return client.(cdnclient.SeederClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
+	}
+	return client.(DaemonClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
+}
 
+func getClient(netAddr dfnet.NetAddr, toCdn bool) (interface{}, error) {
 	if toCdn {
 		return cdnclient.GetClientByAddr([]dfnet.NetAddr{netAddr})
 	} else {

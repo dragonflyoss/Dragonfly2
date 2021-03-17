@@ -50,12 +50,13 @@ const (
 )
 
 type Connection struct {
+	lock           sync.Mutex
 	rwMutex        *synclock.KeyLocker
 	opts           []grpc.DialOption
-	key2NodeMap    sync.Map // key -> node(many to one)
-	node2ClientMap sync.Map // node -> clientConn(one to one)
+	key2NodeMap    sync.Map           // key -> node(many to one)
+	node2ClientMap sync.Map           // node -> clientConn(one to one)
 	hashRing       *hashring.HashRing // server hash ring
-	accessNodeMap  *syncmap.SyncMap // clientConn access time
+	accessNodeMap  *syncmap.SyncMap   // clientConn access time
 	connExpireTime time.Duration
 }
 
@@ -110,8 +111,14 @@ func (conn *Connection) Send() {
 
 }
 
-func (conn *Connection) update(addrs []dfnet.NetAddr) {
-
+func (conn *Connection) AddNodes(addrs []dfnet.NetAddr) error {
+	conn.lock.Lock()
+	defer conn.lock.Unlock()
+	for _, addr := range addrs {
+		conn.hashRing = conn.hashRing.AddNode(addr.GetEndpoint())
+		logger.Debugf("success add %s to server node list", addr)
+	}
+	return nil
 }
 
 var clientOpts = []grpc.DialOption{
@@ -128,6 +135,7 @@ var clientOpts = []grpc.DialOption{
 }
 
 func (conn *Connection) startGC(ctx context.Context) {
+	// todo 从hashing环中删除频繁失败的节点
 	logger.GrpcLogger.Debugf("start the gc connections job")
 	// execute the GC by fixed delay
 	ticker := time.NewTicker(gcConnectionsInterval)
@@ -170,6 +178,31 @@ func (conn *Connection) GetServerNode(hashKey string) string {
 	return "unknown"
 }
 
+func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, error) {
+	conn.rwMutex.Lock(node, true)
+	conn.accessNodeMap.Store(node, time.Now())
+	if client, ok := conn.node2ClientMap.Load(node); ok {
+		conn.rwMutex.UnLock(node, true)
+		return client.(*grpc.ClientConn), nil
+	}
+	conn.rwMutex.UnLock(node, true)
+
+	// reconfirm
+	conn.rwMutex.Lock(node, false)
+	defer conn.rwMutex.UnLock(node, false)
+	if client, ok := conn.node2ClientMap.Load(node); ok {
+		conn.rwMutex.UnLock(node, true)
+		return client.(*grpc.ClientConn), nil
+	}
+	conn.hashRing = conn.hashRing.AddNode(node)
+	clientConn, err := conn.createClient(node, append(clientOpts, conn.opts...)...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find candidate client conn")
+	}
+	conn.node2ClientMap.Store(node, clientConn)
+	return clientConn, nil
+}
+
 // GetClient
 func (conn *Connection) GetClientConn(hashKey string) (*grpc.ClientConn, error) {
 	conn.rwMutex.Lock(hashKey, true)
@@ -204,27 +237,6 @@ func (conn *Connection) GetClientConn(hashKey string) (*grpc.ClientConn, error) 
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
 	return client.Ref.(*grpc.ClientConn), nil
-}
-
-func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, error) {
-	conn.accessNodeMap.Store(node, time.Now())
-	client, ok := conn.node2ClientMap.Load(node)
-	if ok {
-		return client.(*grpc.ClientConn), nil
-	}
-	conn.rwMutex.Lock(node, false)
-	defer conn.rwMutex.UnLock(node, false)
-	// double confirm
-	client, ok = conn.node2ClientMap.Load(node)
-	if ok {
-		return client.(*grpc.ClientConn), nil
-	}
-	clientConn, err := conn.createClient(node, append(clientOpts, conn.opts...)...)
-	if err != nil {
-		return nil, err
-	}
-	conn.node2ClientMap.Store(node, clientConn)
-	return clientConn, nil
 }
 
 // TryMigrate migrate key to another hash node other than exclusiveNodes
