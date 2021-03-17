@@ -20,6 +20,8 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -51,7 +53,7 @@ func (e *Evaluator) NeedAdjustParent(peer *types.PeerTask) bool {
 	lastCost := costHistory[len(costHistory)-1]
 	totalCost -= lastCost
 
-	return (totalCost * 2 / int32(len(costHistory)-1)) < lastCost
+	return (totalCost * 4 / int32(len(costHistory)-1)) < lastCost
 }
 
 func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
@@ -91,7 +93,7 @@ func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
 
 	totalCost -= lastCost
 
-	if (totalCost * 10 / int32(len(costHistory)-1)) < lastCost {
+	if (totalCost * 20 / int32(len(costHistory)-1)) < lastCost {
 		logger.Debugf("IsNodeBad [%s]: node cost is too long", peer.Pid)
 		return true
 	}
@@ -132,18 +134,26 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 
 func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
 	if peer == nil {
+		logger.Debugf("peerTask is nil")
 		return
 	}
+	var msg []string
 	mgr.GetPeerTaskManager().Walker(func(pt *types.PeerTask) bool {
-		if pt == nil || peer.Task != pt.Task {
+		if pt == nil {
+			return true
+		} else if peer.Task != pt.Task {
+			msg = append(msg, fmt.Sprintf("%s task[%s] not same", pt.Pid, pt.Task.TaskId))
 			return true
 		} else if pt.IsDown() {
+			msg = append(msg, fmt.Sprintf("%s is down", pt.Pid))
 			return true
 		} else if pt.Pid == peer.Pid {
 			return true
 		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
+			msg = append(msg, fmt.Sprintf("%s has relation", pt.Pid))
 			return true
 		} else if pt.GetFreeLoad() < 1 {
+			msg = append(msg, fmt.Sprintf("%s no load", pt.Pid))
 			return true
 		}
 		if pt.Success {
@@ -152,10 +162,16 @@ func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.
 			root := pt.GetRoot()
 			if root != nil && root.Host != nil && root.Host.Type == types.HostTypeCdn {
 				list = append(list, pt)
+			} else {
+				msg = append(msg, fmt.Sprintf("%s not finished and root is not cdn", pt.Pid))
 			}
 		}
 		return true
 	})
+	if len(list) == 0 {
+		logger.Debugf("[%s][%s] scheduler failed: \n%s", peer.Task.TaskId, peer.Pid, strings.Join(msg, "\n"))
+	}
+
 	return
 }
 

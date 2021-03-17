@@ -62,6 +62,13 @@ func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.P
 		}
 	}
 	for _, child := range children {
+		if child.GetParent() != nil {
+			if child.GetParent().DstPeerTask == peer {
+				continue
+			} else {
+				child.DeleteParent()
+			}
+		}
 		child.AddParent(peer, 1)
 	}
 	return
@@ -72,6 +79,12 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTa
 	if peer == nil {
 		return
 	}
+
+	var oldParent *types.PeerTask
+	if peer.GetParent() != nil && peer.GetParent().DstPeerTask != nil {
+		oldParent = peer.GetParent().DstPeerTask
+	}
+
 	candidates := s.factory.getEvaluator(peer.Task).SelectParentCandidates(peer)
 	value := 0.0
 	for _, parent := range candidates {
@@ -92,6 +105,10 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTa
 		}
 	}
 	if primary != nil {
+		if primary == oldParent {
+			return
+		}
+		peer.DeleteParent()
 		peer.AddParent(primary, 1)
 	} else {
 		logger.Debugf("[%s][%s]SchedulerParent scheduler a empty parent", peer.Task.TaskId, peer.Pid)
