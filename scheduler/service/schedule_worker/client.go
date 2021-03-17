@@ -74,7 +74,7 @@ func (c *Client) doWork() error {
 
 	for !c.stop {
 		if pr != nil {
-			logger.Infof("[%s][%s]: receive a pieceResult %v - %v", pr.TaskId, pr.SrcPid, pr.PieceNum, pr.Code)
+			logger.Infof("[%s][%s]: receive a pieceResult %v - %v cost[%d]", pr.TaskId, pr.SrcPid, pr.PieceNum, pr.Code, pr.EndTime - pr.BeginTime)
 		}
 		if pr.PieceNum == common.EndOfPiece {
 			logger.Infof("[%s][%s]: client closed", pr.TaskId, pr.SrcPid)
