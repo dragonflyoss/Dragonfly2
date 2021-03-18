@@ -41,16 +41,12 @@ var sc *schedulerClient
 
 var once sync.Once
 
-func init()  {
+func GetClientByAddr(addrs []dfnet.NetAddr) (SchedulerClient, error) {
 	once.Do(func() {
 		sc = &schedulerClient{
 			rpc.NewConnection(make([]dfnet.NetAddr, 0)),
 		}
 	})
-}
-
-
-func GetClientByAddr(addrs []dfnet.NetAddr) (SchedulerClient, error) {
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
