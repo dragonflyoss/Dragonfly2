@@ -202,7 +202,7 @@ func (suite *SchedulerTestSuite) Test902CDNDownReschedulePeer() {
 		assert.Fail("scheduler failed")
 	}
 
-	code := dfcodes.ClientPieceTaskRequestFail
+	code := dfcodes.ClientPieceRequestFail
 	isCDN := strings.HasSuffix(peerPacket.MainPeer.PeerId, rpccommon.CdnSuffix)
 	if isCDN {
 		code = dfcodes.CdnTaskNotFound

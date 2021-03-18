@@ -37,7 +37,7 @@ import (
 
 type PieceManager interface {
 	DownloadSource(ctx context.Context, pt PeerTask, request *scheduler.PeerTaskRequest) error
-	DownloadPieces(peerTask PeerTask, piecePacket *base.PiecePacket)
+	DownloadPiece(peerTask PeerTask, request *DownloadPieceRequest)
 	ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error)
 }
 
@@ -93,16 +93,7 @@ func WithLimiter(limiter *rate.Limiter) func(*pieceManager) {
 	}
 }
 
-func (pm *pieceManager) DownloadPieces(pt PeerTask, piecePacket *base.PiecePacket) {
-	for _, piece := range piecePacket.PieceInfos {
-		pt.Log().Debugf("peer manager receive piece task, "+
-			"peer id: %s, piece num: %d, range start: %d, range size: %d",
-			pt.GetPeerID(), piece.PieceNum, piece.RangeStart, piece.RangeSize)
-		go pm.downloadPiece(pt, piecePacket.DstPid, piecePacket.DstAddr, piece)
-	}
-}
-
-func (pm *pieceManager) downloadPiece(pt PeerTask, dstPid, dstAddr string, pieceTask *base.PieceInfo) {
+func (pm *pieceManager) DownloadPiece(pt PeerTask, request *DownloadPieceRequest) {
 	var (
 		success bool
 		start   = time.Now().UnixNano()
@@ -110,28 +101,23 @@ func (pm *pieceManager) downloadPiece(pt PeerTask, dstPid, dstAddr string, piece
 	)
 	defer func() {
 		if success {
-			pm.pushSuccessResult(pt, dstPid, pieceTask, start, end)
+			pm.pushSuccessResult(pt, request.DstPid, request.piece, start, end)
 		} else {
-			pm.pushFailResult(pt, dstPid, pieceTask, start, end)
+			pm.pushFailResult(pt, request.DstPid, request.piece, start, end)
 		}
 	}()
 
 	// 1. download piece from other peers
 	if pm.Limiter != nil {
-		if err := pm.Limiter.WaitN(pt.GetContext(), int(pieceTask.RangeSize)); err != nil {
+		if err := pm.Limiter.WaitN(pt.GetContext(), int(request.piece.RangeSize)); err != nil {
 			pt.Log().Errorf("require rate limit access error: %s", err)
 			return
 		}
 	}
-	r, c, err := pm.DownloadPiece(&DownloadPieceRequest{
-		TaskID:     pt.GetTaskID(),
-		DstPid:     dstPid,
-		DstAddr:    dstAddr,
-		piece:      pieceTask,
-		CalcDigest: pm.calculateDigest && pieceTask.PieceMd5 != "",
-	})
+	request.CalcDigest = pm.calculateDigest && request.piece.PieceMd5 != ""
+	r, c, err := pm.pieceDownloader.DownloadPiece(request)
 	if err != nil {
-		pt.Log().Errorf("download piece failed, piece num: %d, error: %s", pieceTask.PieceNum, err)
+		pt.Log().Errorf("download piece failed, piece num: %d, error: %s", request.piece.PieceNum, err)
 		return
 	}
 	end = time.Now().UnixNano()
@@ -144,12 +130,12 @@ func (pm *pieceManager) downloadPiece(pt PeerTask, dstPid, dstAddr string, piece
 			TaskID: pt.GetTaskID(),
 		},
 		PieceMetaData: storage.PieceMetaData{
-			Num:    pieceTask.PieceNum,
-			Md5:    pieceTask.PieceMd5,
-			Offset: pieceTask.PieceOffset,
+			Num:    request.piece.PieceNum,
+			Md5:    request.piece.PieceMd5,
+			Offset: request.piece.PieceOffset,
 			Range: clientutil.Range{
-				Start:  int64(pieceTask.RangeStart),
-				Length: int64(pieceTask.RangeSize),
+				Start:  int64(request.piece.RangeStart),
+				Length: int64(request.piece.RangeSize),
 			},
 		},
 		Reader: r,
@@ -157,7 +143,7 @@ func (pm *pieceManager) downloadPiece(pt PeerTask, dstPid, dstAddr string, piece
 	pt.AddTraffic(n)
 	if err != nil {
 		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s",
-			pieceTask.PieceNum, n, err)
+			request.piece.PieceNum, n, err)
 		return
 	}
 	success = true
@@ -201,10 +187,6 @@ func (pm *pieceManager) pushFailResult(peerTask PeerTask, dstPid string, piece *
 	if err != nil {
 		peerTask.Log().Errorf("report piece task error: %v", err)
 	}
-}
-
-func (pm *pieceManager) DownloadPiece(req *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-	return pm.pieceDownloader.DownloadPiece(req)
 }
 
 func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error) {

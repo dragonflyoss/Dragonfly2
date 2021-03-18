@@ -31,11 +31,11 @@ const (
 	RequestTimeOut   base.Code = 1504
 
 	// client response error 4000-4999
-	ClientError                base.Code = 4000
-	ClientPieceTaskRequestFail base.Code = 4001 // get piece task from other peer error
-	ClientScheduleTimeout      base.Code = 4002 // wait scheduler response timeout
-	ClientContextCanceled      base.Code = 4003
-	ClientWaitPieceReady       base.Code = 4004 // when target peer downloads from source slowly, should wait
+	ClientError            base.Code = 4000
+	ClientPieceRequestFail base.Code = 4001 // get piece task from other peer error
+	ClientScheduleTimeout  base.Code = 4002 // wait scheduler response timeout
+	ClientContextCanceled  base.Code = 4003
+	ClientWaitPieceReady   base.Code = 4004 // when target peer downloads from source slowly, should wait
 
 	// scheduler response error 5000-5999
 	SchedError          base.Code = 5000
