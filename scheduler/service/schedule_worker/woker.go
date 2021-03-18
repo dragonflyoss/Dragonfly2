@@ -338,7 +338,7 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 	switch code {
 	case dfcodes.Success:
 		return
-	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceTaskRequestFail:
+	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail:
 		peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
 		if peerTask != nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)

@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/avast/retry-go"
 	"github.com/go-http-utils/headers"
@@ -121,6 +122,10 @@ func runDfget() error {
 		BizId:  flagClientOpt.CallSystem,
 		Filter: filter,
 	}
+	var (
+		start = time.Now()
+		end time.Time
+	)
 	down, err := daemonClient.Download(ctx, request)
 	if err != nil {
 		return err
@@ -148,6 +153,8 @@ download:
 			}
 			if result.Done {
 				pb.Finish()
+				end = time.Now()
+				fmt.Printf("time cost: %dms\n", end.Sub(start).Milliseconds())
 				break download
 			}
 		case <-ctx.Done():
@@ -156,6 +163,7 @@ download:
 		}
 	}
 	if err != nil {
+		start = time.Now()
 		logger.Errorf("download by dragonfly error: %s", err)
 		if !flagClientOpt.NotBackSource {
 			return downloadFromSource(hdr)

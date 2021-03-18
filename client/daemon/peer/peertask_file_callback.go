@@ -6,6 +6,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -85,7 +86,7 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 	return nil
 }
 
-func (p *filePeerTaskCallback) Fail(pt PeerTask, reason string) error {
+func (p *filePeerTaskCallback) Fail(pt PeerTask, code base.Code, reason string) error {
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	state, err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
@@ -99,7 +100,7 @@ func (p *filePeerTaskCallback) Fail(pt PeerTask, reason string) error {
 		Traffic:        pt.GetTraffic(),
 		Cost:           uint32(end.Sub(p.start).Milliseconds()),
 		Success:        false,
-		Code:           dfcodes.UnknownError,
+		Code:           code,
 	})
 	pt.Log().Debugf("task %s/%s report fail peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
 	return nil

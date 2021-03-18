@@ -63,7 +63,7 @@ type PeerTaskCallback interface {
 	Init(pt PeerTask) error
 	Done(pt PeerTask) error
 	Update(pt PeerTask) error
-	Fail(pt PeerTask, reason string) error
+	Fail(pt PeerTask, code base.Code, reason string) error
 }
 
 type peerTaskManager struct {
