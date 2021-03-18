@@ -68,7 +68,7 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) 
 	}
 	result, err := cd.doDetect(ctx, task)
 	if err != nil {
-		logger.WithTaskID(task.TaskId).Warnf("failed to detect cache, reset cache, err: %v", err)
+		logger.WithTaskID(task.TaskId).Warnf("failed to detect cache, reset cache: %v", err)
 		metaData, err := cd.resetCache(ctx, task)
 		if err == nil {
 			result = &cacheResult{
@@ -94,7 +94,7 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (re
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check if the task expired")
 	}
-	logger.WithTaskID(task.TaskId).Debugf("success to get expired result: %t", expired)
+	logger.WithTaskID(task.TaskId).Debugf("task expired result: %t", expired)
 	if expired {
 		return nil, errors.Wrapf(cdnerrors.ErrResourceExpired, "url:%s, expireInfo:%+v", task.Url,
 			fileMetaData.ExpireInfo)

@@ -93,7 +93,6 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), errors.Wrapf(err,
 			"failed to detect cache")
 	} else {
-		logger.WithTaskID(task.TaskId).Debugf("start to update access time")
 		if err := cm.metaDataManager.updateAccessTime(ctx, task.TaskId, getCurrentTimeMillisFunc()); err != nil {
 			logger.WithTaskID(task.TaskId).Warnf("failed to update task access time ")
 		}

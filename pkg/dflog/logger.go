@@ -84,7 +84,7 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 
 func WithTaskID(taskID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskID", taskID},
+		withArgs: []interface{}{"taskId", taskID},
 	}
 }
 

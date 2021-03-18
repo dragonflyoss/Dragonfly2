@@ -18,19 +18,23 @@ package task
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/cdnsystem/util"
 
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	urlutils2 "d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 
 	"github.com/pkg/errors"
+)
+
+const (
+	IllegalHttpFileLen = -100
 )
 
 // addOrUpdateTask add a new task or update exist task
@@ -49,6 +53,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 				"task hit unReachable cache and interval less than %d, url: %s", tm.cfg.FailAccessInterval, request.URL)
 		}
 		tm.taskURLUnReachableStore.Delete(taskId)
+		logger.Debugf("delete taskId:%s from url unReach store", taskId)
 	}
 	var task *types.SeedTask
 	newTask := &types.SeedTask{
@@ -58,8 +63,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		Url:              request.URL,
 		TaskUrl:          taskURL,
 		CdnStatus:        types.TaskInfoCdnStatusWAITING,
-		SourceFileLength: -1,
-		PieceTotal:       -1,
+		SourceFileLength: IllegalHttpFileLen,
 	}
 	// using the existing task if it already exists corresponding to taskId
 	if v, err := tm.taskStore.Get(taskId); err == nil {
@@ -68,20 +72,21 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 			return nil, errors.Wrapf(cdnerrors.ErrTaskIdDuplicate, "newTask:%+v, existTask:%+v", newTask, existTask)
 		}
 		task = existTask
+		logger.Debugf("get exist task for taskId:%s", taskId)
 	} else {
+		logger.Debugf("get new task for taskId:%s", taskId)
 		task = newTask
 	}
 
-	if task.SourceFileLength > 0 {
+	if task.SourceFileLength != IllegalHttpFileLen {
 		return task, nil
 	}
 
 	// get sourceContentLength with req.Headers
 	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Headers)
-	// todo 需要做些操作避免不支持contentLength的源每次都要去获取长度
 	if err != nil {
-		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length from http client:%v", task.Url,
-			err)
+		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length from http client:%v",
+			task.Url, err)
 
 		if cdnerrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskId, time.Now())
@@ -94,7 +99,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 	// if not support file length header request ,return -1
 	task.SourceFileLength = sourceFileLength
-	logger.WithTaskID(taskId).Infof("get file content length: %d", sourceFileLength)
+	logger.WithTaskID(taskId).Debugf("get file content length: %d", sourceFileLength)
 
 	// if success to get the information successfully with the req.Headers then update the task.Headers to req.Headers.
 	if request.Headers != nil {
@@ -107,6 +112,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		task.PieceSize = pieceSize
 	}
 	tm.taskStore.Add(task.TaskId, task)
+	logger.Debugf("success add task:%+v into taskStore", task)
 	return task, nil
 }
 
@@ -123,8 +129,6 @@ func (tm *Manager) updateTask(taskId string, updateTaskInfo *types.SeedTask) (*t
 	if stringutils.IsBlank(updateTaskInfo.CdnStatus) {
 		return nil, errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
 	}
-	util.GetLock(taskId, false)
-	util.ReleaseLock(taskId, false)
 	// get origin task
 	task, err := tm.getTask(taskId)
 	if err != nil {

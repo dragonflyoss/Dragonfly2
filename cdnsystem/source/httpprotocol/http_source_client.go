@@ -168,6 +168,7 @@ func (client *httpSourceClient) Download(url string, headers map[string]string) 
 		for k, v := range resp.Header {
 			hdr[k] = strings.Join(v, " ")
 		}
+		// todo 考虑 expire，类似访问baidu网页是没有last-modified的
 		return &types.DownloadResponse{
 			Body: resp.Body,
 			ExpireInfo: map[string]string{

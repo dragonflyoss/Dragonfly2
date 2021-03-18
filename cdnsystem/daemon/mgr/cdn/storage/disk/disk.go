@@ -132,6 +132,7 @@ func (s *diskStorageMgr) ReadPieceMetaRecords(ctx context.Context, taskId string
 }
 
 func (s *diskStorageMgr) GC(ctx context.Context) error {
+	logger.Debugf("start the disk gc job")
 	gcTaskIDs, err := s.diskStoreCleaner.Gc(ctx, false)
 	if err != nil {
 		logger.GcLogger.Error("gc disk: failed to get gcTaskIds")

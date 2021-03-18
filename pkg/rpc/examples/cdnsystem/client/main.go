@@ -49,8 +49,10 @@ func main() {
 		go func() {
 			defer wg.Done()
 			psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+				//TaskId: "test1",
+				//Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
 				TaskId: "test",
-				Url:    "http://www.baidu.com",
+				Url: "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
 				Filter: "",
 			})
 			if err != nil {

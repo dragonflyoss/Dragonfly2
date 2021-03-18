@@ -420,7 +420,7 @@ func (ds *diskStorage) statPath(bucket, key string) (string, os.FileInfo, error)
 	f, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil, errors.Wrapf(cdnerrors.ErrKeyNotFound, "bucket(%s) key(%s)", bucket, key)
+			return "", nil, errors.Wrapf(cdnerrors.ErrKeyNotFound, "filePath:%s not exists", filePath)
 		}
 		return "", nil, err
 	}
