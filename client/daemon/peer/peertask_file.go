@@ -548,14 +548,19 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 		return p, nil
 	}
 
-	// context canceled, just exit
-	if status.Code(err) == codes.Canceled {
-		pt.Warnf("get piece task from peer(%s) canceled: %s", peer.PeerId, err)
-		return nil, err
+	// grpc error
+	if se, ok := err.(interface{ GRPCStatus() *status.Status }); ok {
+		pt.Debugf("get piece task with grpc error, code: %d", se.GRPCStatus().Code())
+		// context canceled, just exit
+		if se.GRPCStatus().Code() == codes.Canceled {
+			pt.Warnf("get piece task from peer(%s) canceled: %s", peer.PeerId, err)
+			return nil, err
+		}
 	}
 	code := dfcodes.ClientPieceTaskRequestFail
 	// not grpc error
 	if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
+		pt.Debugf("get piece task with df error, code: %d", de.Code)
 		code = de.Code
 	}
 	// may be panic here due to unknown content length or total piece count
