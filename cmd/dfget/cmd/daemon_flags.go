@@ -18,48 +18,40 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"d7y.io/dragonfly/v2/client/config"
 )
 
-func init() {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		homeDir = os.TempDir()
-	}
-	flagDaemonOpt.WorkHome = fmt.Sprintf("%s/.dragonfly/dfdaemon/", homeDir)
-	flagDaemonOpt.DataDir = flagDaemonOpt.WorkHome
-}
-
-func initDaemonFlags() {
+func addDaemonFlags() {
 	flagSet := daemonCmd.Flags()
-	flagSet.StringVar(&flagDaemonOpt.DataDir, "data", flagDaemonOpt.DataDir, "local directory which stores temporary files for p2p uploading")
-	flagSet.StringVar(&flagDaemonOpt.WorkHome, "home", flagDaemonOpt.WorkHome, "the work home directory of dfget daemon")
-	flagSet.DurationVar(&flagDaemonOpt.Storage.Option.TaskExpireTime.Duration, "expire-time", flagDaemonOpt.Storage.Option.TaskExpireTime.Duration, "caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
-	flagSet.DurationVar(&flagDaemonOpt.AliveTime.Duration, "alive-time", flagDaemonOpt.AliveTime.Duration, "alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
-	flagSet.DurationVar(&flagDaemonOpt.GCInterval.Duration, "gc-interval", flagDaemonOpt.GCInterval.Duration, "gc interval")
-	flagSet.BoolVar(&flagDaemonOpt.KeepStorage, "keep-storage", flagDaemonOpt.KeepStorage, "keep storage after daemon exit")
-	flagSet.BoolVar(&flagDaemonOpt.Verbose, "verbose", flagDaemonOpt.Verbose, "print verbose log and enable golang debug info")
-	flagSet.BoolVar(&flagDaemonOpt.Console, "console", flagDaemonOpt.Console, "console shows log on console")
-	flagSet.StringVar(&flagDaemonOpt.Host.AdvertiseIP, "advertise-ip", flagDaemonOpt.Host.AdvertiseIP, "the ip report to scheduler, normal same with listen ip")
-	flagSet.StringVar(&flagDaemonOpt.Host.ListenIP, "listen", flagDaemonOpt.Host.ListenIP, "the listen ip")
-	flagSet.StringVar(&flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket, "grpc-unix-listen", flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket, "the local unix domain socket listen address for grpc with dfget")
-	flagSet.IntVar(&flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.Start, "grpc-port", flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.Start, "the listen address for grpc with other peers")
-	flagSet.IntVar(&flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.End, "grpc-port-end", flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.End, "the listen address for grpc with other peers")
-	flagSet.IntVar(&flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start, "upload-port", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start, "the address that daemon will listen on for peer upload")
-	flagSet.IntVar(&flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.End, "upload-port-end", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.End, "the address that daemon will listen on for peer upload")
-	flagSet.StringVar(&flagDaemonOpt.PidFile, "pid", flagDaemonOpt.PidFile, "dfdaemon pid file location")
-	flagSet.StringVar(&flagDaemonOpt.LockFile, "lock", flagDaemonOpt.LockFile, "dfdaemon lock file location")
-	flagSet.StringVar(&flagDaemonOpt.Host.SecurityDomain, "security-domain", "", "peer security domain for scheduler")
-	flagSet.StringVar(&flagDaemonOpt.Host.Location, "location", flagDaemonOpt.Host.Location, "peer location for scheduler")
-	flagSet.StringVar(&flagDaemonOpt.Host.IDC, "idc", flagDaemonOpt.Host.IDC, "peer idc for scheduler")
-	flagSet.StringVar(&flagDaemonOpt.Host.NetTopology, "net-topology", flagDaemonOpt.Host.NetTopology, "peer net topology for scheduler")
+	flagSet.StringVar(&daemonConfig.DataDir, "data", daemonConfig.DataDir, "local directory which stores temporary files for p2p uploading")
+	flagSet.StringVar(&daemonConfig.WorkHome, "home", daemonConfig.WorkHome, "the work home directory of dfget daemon")
+	flagSet.DurationVar(&daemonConfig.Storage.Option.TaskExpireTime.Duration, "expire-time", daemonConfig.Storage.Option.TaskExpireTime.Duration, "caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
+	flagSet.DurationVar(&daemonConfig.AliveTime.Duration, "alive-time", daemonConfig.AliveTime.Duration, "alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
+	flagSet.DurationVar(&daemonConfig.GCInterval.Duration, "gc-interval", daemonConfig.GCInterval.Duration, "gc interval")
+	flagSet.BoolVar(&daemonConfig.KeepStorage, "keep-storage", daemonConfig.KeepStorage, "keep storage after daemon exit")
+	flagSet.BoolVar(&daemonConfig.Verbose, "verbose", daemonConfig.Verbose, "print verbose log and enable golang debug info")
+	flagSet.BoolVar(&daemonConfig.Console, "console", daemonConfig.Console, "console shows log on console")
+	flagSet.StringVar(&daemonConfig.Host.AdvertiseIP, "advertise-ip", daemonConfig.Host.AdvertiseIP, "the ip report to scheduler, normal same with listen ip")
+	flagSet.StringVar(&daemonConfig.Host.ListenIP, "listen", daemonConfig.Host.ListenIP, "the listen ip")
+	flagSet.StringVar(&daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "grpc-unix-listen", daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "the local unix domain socket listen address for grpc with dfget")
+	flagSet.IntVar(&daemonConfig.Download.PeerGRPC.TCPListen.PortRange.Start, "grpc-port", daemonConfig.Download.PeerGRPC.TCPListen.PortRange.Start, "the listen address for grpc with other peers")
+	flagSet.IntVar(&daemonConfig.Download.PeerGRPC.TCPListen.PortRange.End, "grpc-port-end", daemonConfig.Download.PeerGRPC.TCPListen.PortRange.End, "the listen address for grpc with other peers")
+	flagSet.IntVar(&daemonConfig.Upload.ListenOption.TCPListen.PortRange.Start, "upload-port", daemonConfig.Upload.ListenOption.TCPListen.PortRange.Start, "the address that daemon will listen on for peer upload")
+	flagSet.IntVar(&daemonConfig.Upload.ListenOption.TCPListen.PortRange.End, "upload-port-end", daemonConfig.Upload.ListenOption.TCPListen.PortRange.End, "the address that daemon will listen on for peer upload")
+	flagSet.StringVar(&daemonConfig.PidFile, "pid", daemonConfig.PidFile, "dfdaemon pid file location")
+	flagSet.StringVar(&daemonConfig.LockFile, "lock", daemonConfig.LockFile, "dfdaemon lock file location")
+	flagSet.StringVar(&daemonConfig.Host.SecurityDomain, "security-domain", "", "peer security domain for scheduler")
+	flagSet.StringVar(&daemonConfig.Host.Location, "location", daemonConfig.Host.Location, "peer location for scheduler")
+	flagSet.StringVar(&daemonConfig.Host.IDC, "idc", daemonConfig.Host.IDC, "peer idc for scheduler")
+	flagSet.StringVar(&daemonConfig.Host.NetTopology, "net-topology", daemonConfig.Host.NetTopology, "peer net topology for scheduler")
+	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.RateLimit), "download-rate", "download rate limit for other peers and back source")
+	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
+	flagSet.VarP(config.NewNetAddrsValue(&daemonConfig.Scheduler.NetAddrs), "schedulers", "s", "schedulers")
+	flagSet.DurationVar(&daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule-timeout", daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule timeout")
+	flagSet.StringVar(&daemonConfigPath, "config", daemonConfigPath, "daemon config file location")
 
-	flagSet.Var(config.NewLimitRateValue(&flagDaemonOpt.Download.RateLimit), "download-rate", "download rate limit for other peers and back source")
-	flagSet.Var(config.NewLimitRateValue(&flagDaemonOpt.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
-	flagSet.VarP(config.NewSchedulersValue(&flagDaemonOpt), "schedulers", "s", "schedulers")
-	flagSet.DurationVar(&flagDaemonOpt.Scheduler.ScheduleTimeout.Duration, "schedule-timeout", flagDaemonOpt.Scheduler.ScheduleTimeout.Duration, "schedule timeout")
-
-	flagSet.StringVar(&peerHostConfigPath, "config", peerHostConfigPath, "daemon config file location")
+	fmt.Println("1111111111111")
+	fmt.Println(daemonCmd.Flags().Lookup("verbose").Value)
+	fmt.Println("1111111111111")
 }

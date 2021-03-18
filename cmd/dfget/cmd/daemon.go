@@ -19,7 +19,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"os"
 	"os/signal"
 	"strconv"
@@ -30,11 +29,10 @@ import (
 	"github.com/gofrs/flock"
 	"github.com/google/uuid"
 	"github.com/phayes/freeport"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap/zapcore"
-	"gopkg.in/yaml.v3"
 
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon"
 	"d7y.io/dragonfly/v2/client/pidfile"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -44,120 +42,131 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
+var daemonConfig *config.PeerHostOption
+var daemonConfigPath string
+
 var daemonCmd = &cobra.Command{
 	Use:          "daemon",
 	Short:        "Launch a peer daemon for downloading and uploading files.",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// load from default config file
-		_, err := os.Stat(peerHostConfigPath)
-		if err == nil {
-			err := flagDaemonOpt.Load(peerHostConfigPath)
-			if err != nil {
-				return err
-			}
-		} else if !os.IsNotExist(err) {
+		// Validate daemon config
+		if err := daemonConfig.Validate(); err != nil {
 			return err
 		}
 
-		// init logger
-		logcore.InitDaemon(flagDaemonOpt.Console)
-		if err := checkDaemonOptions(); err != nil {
-			return err
-		}
+		// Initialize logger
+		logcore.InitDaemon(daemonConfig.Console)
 
-		lock := flock.New(flagDaemonOpt.LockFile)
-		if ok, err := lock.TryLock(); err != nil {
-			return err
-		} else if !ok {
-			return fmt.Errorf("lock file %s failed, other daemon is already running", flagDaemonOpt.LockFile)
-		}
-		defer lock.Unlock()
-		return runDaemon()
+		// Start daemon
+		return runDaemon(daemonConfig)
 	},
 }
 
 func init() {
-	initDaemonFlags()
+	// Initialize default config
+	daemonConfig = &config.PeerHostConfig
+
+	// Initialize cobra
+	cobra.OnInitialize(initDaemonConfig)
+
+	// Add flags
+	addDaemonFlags()
+
+	// Add command
 	rootCmd.AddCommand(daemonCmd)
 }
 
-func checkDaemonOptions() error {
-	if len(flagDaemonOpt.Scheduler.NetAddrs) == 0 {
-		return errors.New("empty schedulers")
+// initConfig reads in config file if set
+func initDaemonConfig() {
+	// Initialize config path
+	if daemonConfigPath == "" {
+		daemonConfigPath = config.PeerHostConfigPath
 	}
-	return nil
+
+	_, err := os.Stat(daemonConfigPath)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// Load from config file
+	if err := daemonConfig.Load(daemonConfigPath); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
-func runDaemon() error {
-	s, _ := json.MarshalIndent(flagDaemonOpt, "", "  ")
+func runDaemon(cfg *config.PeerHostOption) error {
+	// TODO(Gaius): remove
+	s, _ := json.MarshalIndent(cfg, "", "  ")
 	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
 
-	if flagDaemonOpt.Verbose {
-		logcore.SetCoreLevel(zapcore.DebugLevel)
-		logcore.SetGrpcLevel(zapcore.DebugLevel)
-
-		// TODO (jim): update json marshal function
-		s, _ := json.MarshalIndent(flagDaemonOpt, "", "  ")
-		logger.Debugf("daemon json option(debug only, should not use as config):\n%s", string(s))
-
-		// TODO (jim): update yaml marshal function
-		s, _ = yaml.Marshal(flagDaemonOpt)
-		logger.Debugf("daemon yaml option(debug only, should not use as config):\n%s", string(s))
-
-		go func() {
-			// enable go pprof and statsview
-			port, _ := strconv.Atoi(os.Getenv("D7Y_PPROF_PORT"))
-			if port == 0 {
-				port, _ = freeport.GetFreePort()
-			}
-			debugListen := fmt.Sprintf("localhost:%d", port)
-			viewer.SetConfiguration(viewer.WithAddr(debugListen))
-			logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
-				"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
-				Infof("enable debug at http://%s", debugListen)
-			if err := statsview.New().Start(); err != nil {
-				logger.Warnf("serve go pprof error: %s", err)
-			}
-		}()
+	// Initialize lock file
+	lock := flock.New(cfg.LockFile)
+	if ok, err := lock.TryLock(); err != nil {
+		return err
+	} else if !ok {
+		return fmt.Errorf("lock file %s failed, other daemon is already running", daemonConfig.LockFile)
 	}
+	defer lock.Unlock()
 
-	pid, err := pidfile.New(flagDaemonOpt.PidFile)
+	// Initialize pid file
+	pid, err := pidfile.New(cfg.PidFile)
 	if err != nil {
-		return fmt.Errorf("check pid failed: %s, please check %s", err, flagDaemonOpt.PidFile)
+		return fmt.Errorf("check pid failed: %s, please check %s", err, cfg.PidFile)
 	}
 	defer pid.Remove()
 
-	var ip string
-	if !net.IPv4zero.Equal(net.ParseIP(flagDaemonOpt.Host.AdvertiseIP)) {
-		ip = flagDaemonOpt.Host.AdvertiseIP
-	} else {
-		ip = iputils.HostIp
-	}
-	if ip == "" || ip == "0.0.0.0" {
-		return fmt.Errorf("unable to autodetect peer ip for scheduler, please set it via --advertise-ip")
-	}
-	logger.Infof("use %s as peer ip", ip)
+	// Initialize verbose mode
+	initVerboseMode(cfg.Verbose)
 
-	host := &scheduler.PeerHost{
+	ph, err := daemon.NewPeerHost(&scheduler.PeerHost{
 		Uuid:           uuid.New().String(),
-		Ip:             ip,
-		RpcPort:        int32(flagDaemonOpt.Download.PeerGRPC.TCPListen.PortRange.Start),
+		Ip:             cfg.Host.AdvertiseIP,
+		RpcPort:        int32(cfg.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
 		HostName:       iputils.HostName,
-		SecurityDomain: flagDaemonOpt.Host.SecurityDomain,
-		Location:       flagDaemonOpt.Host.Location,
-		Idc:            flagDaemonOpt.Host.IDC,
-		NetTopology:    flagDaemonOpt.Host.NetTopology,
-	}
-
-	ph, err := daemon.NewPeerHost(host, flagDaemonOpt)
+		SecurityDomain: cfg.Host.SecurityDomain,
+		Location:       cfg.Host.Location,
+		Idc:            cfg.Host.IDC,
+		NetTopology:    cfg.Host.NetTopology,
+	}, *cfg)
 	if err != nil {
 		logger.Errorf("init peer host failed: %s", err)
 		return err
 	}
+
 	setupSignalHandler(ph)
 	return ph.Serve()
+}
+
+func initVerboseMode(verbose bool) {
+	if !verbose {
+		return
+	}
+
+	logcore.SetCoreLevel(zapcore.DebugLevel)
+	logcore.SetGrpcLevel(zapcore.DebugLevel)
+
+	go func() {
+		// enable go pprof and statsview
+		port, _ := strconv.Atoi(os.Getenv("D7Y_PPROF_PORT"))
+		if port == 0 {
+			port, _ = freeport.GetFreePort()
+		}
+
+		debugListen := fmt.Sprintf("localhost:%d", port)
+		viewer.SetConfiguration(viewer.WithAddr(debugListen))
+
+		logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
+			"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
+			Infof("enable debug at http://%s", debugListen)
+
+		if err := statsview.New().Start(); err != nil {
+			logger.Warnf("serve go pprof error: %s", err)
+		}
+	}()
 }
 
 func setupSignalHandler(ph daemon.PeerHost) {
