@@ -30,6 +30,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/serialx/hashring v0.0.0-20200727003509-22c0c7ab6b1b
 	github.com/shirou/gopsutil/v3 v3.20.12
+	github.com/sirupsen/logrus v1.2.0
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1

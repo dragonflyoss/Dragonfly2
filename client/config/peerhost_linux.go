@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-// +build darwin
+// +build linux
 
-package cmd
+package config
 
 import (
 	"net"
@@ -25,92 +25,92 @@ import (
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var (
-	peerHostConfigPath = basic.HomeDir + "/.dragonfly/dfget-daemon.yml"
+	PeerHostConfigPath = "/etc/dragonfly/dfget-daemon.yml"
+
+	peerHostWorkHome = "/etc/dragonfly/dfdaemon/"
+	peerHostDataDir  = peerHostWorkHome
 )
 
-var flagDaemonOpt = config.PeerHostOption{
-	DataDir:     "",
-	WorkHome:    "",
+var PeerHostConfig = PeerHostOption{
+	DataDir:     peerHostDataDir,
+	WorkHome:    peerHostWorkHome,
 	AliveTime:   clientutil.Duration{Duration: 5 * time.Minute},
 	GCInterval:  clientutil.Duration{Duration: 1 * time.Minute},
-	PidFile:     "/tmp/dfdaemon.pid",
-	LockFile:    "/tmp/dfdaemon.lock",
+	PidFile:     "/var/run/dfdaemon.pid",
+	LockFile:    "/var/run/dfdaemon.lock",
 	KeepStorage: false,
 	Verbose:     true,
 	Console:     false,
-	Scheduler: config.SchedulerOption{
+	Scheduler: SchedulerOption{
 		NetAddrs:        nil,
-		ScheduleTimeout: clientutil.Duration{Duration: 1 * time.Minute},
+		ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 	},
-	Host: config.HostOption{
-		ListenIP:       net.IPv4zero.String(),
+	Host: HostOption{
+		ListenIP:       "0.0.0.0",
 		AdvertiseIP:    iputils.HostIp,
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",
 		NetTopology:    "",
 	},
-	Download: config.DownloadOption{
+	Download: DownloadOption{
 		RateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(104857600),
 		},
-		DownloadGRPC: config.ListenOption{
-			Security: config.SecurityOption{
+		DownloadGRPC: ListenOption{
+			Security: SecurityOption{
 				Insecure: true,
 			},
-			UnixListen: &config.UnixListenOption{
-				Socket: "/tmp/dfdaemon.sock",
+			UnixListen: &UnixListenOption{
+				Socket: "/var/run/dfdaemon.sock",
 			},
 		},
-		PeerGRPC: config.ListenOption{
-			Security: config.SecurityOption{
+		PeerGRPC: ListenOption{
+			Security: SecurityOption{
 				Insecure: true,
 			},
-			TCPListen: &config.TCPListenOption{
-				Listen: net.IPv4zero.String(),
-				PortRange: config.TCPListenPortRange{
+			TCPListen: &TCPListenOption{
+				PortRange: TCPListenPortRange{
 					Start: 65000,
 					End:   65535,
 				},
 			},
 		},
 	},
-	Upload: config.UploadOption{
+	Upload: UploadOption{
 		RateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(104857600),
 		},
-		ListenOption: config.ListenOption{
-			Security: config.SecurityOption{
+		ListenOption: ListenOption{
+			Security: SecurityOption{
 				Insecure: true,
 			},
-			TCPListen: &config.TCPListenOption{
+			TCPListen: &TCPListenOption{
 				Listen: net.IPv4zero.String(),
-				PortRange: config.TCPListenPortRange{
+				PortRange: TCPListenPortRange{
 					Start: 65002,
 					End:   65535,
 				},
 			},
 		},
 	},
-	Proxy: &config.ProxyOption{
-		ListenOption: config.ListenOption{
-			Security: config.SecurityOption{
+	Proxy: &ProxyOption{
+		ListenOption: ListenOption{
+			Security: SecurityOption{
 				Insecure: true,
 			},
-			TCPListen: &config.TCPListenOption{
+			TCPListen: &TCPListenOption{
 				Listen:    net.IPv4zero.String(),
-				PortRange: config.TCPListenPortRange{},
+				PortRange: TCPListenPortRange{},
 			},
 		},
 	},
-	Storage: config.StorageOption{
+	Storage: StorageOption{
 		Option: storage.Option{
 			TaskExpireTime: clientutil.Duration{
 				Duration: 3 * time.Minute,

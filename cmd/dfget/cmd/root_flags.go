@@ -42,7 +42,7 @@ func initRootFlags() {
 	//"network bandwidth rate limit for single download task, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
 	//flagSet.Var(&flagClientOpt.MinRate, "minrate",
 	//"minimal network bandwidth rate for downloading a file, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
-	flagSet.Var(config.NewLimitRateValue(&flagDaemonOpt.Download.RateLimit), "totallimit",
+	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.RateLimit), "totallimit",
 		"network bandwidth rate limit for the whole host, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
 	flagSet.DurationVarP(&flagClientOpt.Timeout, "timeout", "e", 0,
 		"timeout for file downloading task. If dfget has not finished downloading all pieces of file before --timeout, the dfget will throw an error and exit")
@@ -84,26 +84,26 @@ func initRootFlags() {
 	flagSet.BoolVar(&flagClientOpt.Verbose, "verbose", false,
 		"enable verbose mode, all debug log will be display")
 
-	flagSet.StringVar(&flagDaemonOpt.WorkHome, "home", flagDaemonOpt.WorkHome,
+	flagSet.StringVar(&daemonConfig.WorkHome, "home", daemonConfig.WorkHome,
 		"the work home directory of dfget")
 
 	//pass to peer server which as a uploader server
-	flagSet.StringVar(&flagDaemonOpt.Host.ListenIP, "ip", flagDaemonOpt.Host.ListenIP,
+	flagSet.StringVar(&daemonConfig.Host.ListenIP, "ip", daemonConfig.Host.ListenIP,
 		"IP address that server will listen on")
-	flagSet.IntVar(&flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start, "port", flagDaemonOpt.Upload.ListenOption.TCPListen.PortRange.Start,
+	flagSet.IntVar(&daemonConfig.Upload.ListenOption.TCPListen.PortRange.Start, "port", daemonConfig.Upload.ListenOption.TCPListen.PortRange.Start,
 		"port number that server will listen on")
-	flagSet.DurationVar(&flagDaemonOpt.Storage.Option.TaskExpireTime.Duration, "expiretime", flagDaemonOpt.Storage.Option.TaskExpireTime.Duration,
+	flagSet.DurationVar(&daemonConfig.Storage.Option.TaskExpireTime.Duration, "expiretime", daemonConfig.Storage.Option.TaskExpireTime.Duration,
 		"caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
-	flagSet.DurationVar(&flagDaemonOpt.AliveTime.Duration, "alivetime", flagDaemonOpt.AliveTime.Duration,
+	flagSet.DurationVar(&daemonConfig.AliveTime.Duration, "alivetime", daemonConfig.AliveTime.Duration,
 		"alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
 
 	flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")
 	//flagSet.MarkDeprecated("notbs", "please use '--notbacksource' instead")
 
-	flagSet.StringVar(&flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket, "daemon-sock",
-		flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket, "the unix domain socket address for grpc with daemon")
-	flagSet.StringVar(&flagDaemonOpt.PidFile, "daemon-pid", flagDaemonOpt.PidFile, "the daemon pid")
-	flagSet.Var(config.NewSchedulersValue(&flagDaemonOpt), "schedulers", "the scheduler addresses")
+	flagSet.StringVar(&daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "daemon-sock",
+		daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "the unix domain socket address for grpc with daemon")
+	flagSet.StringVar(&daemonConfig.PidFile, "daemon-pid", daemonConfig.PidFile, "the daemon pid")
+	flagSet.Var(config.NewNetAddrsValue(&daemonConfig.Scheduler.NetAddrs), "schedulers", "the scheduler addresses")
 
 	flagSet.StringVar(&flagClientOpt.MoreDaemonOptions, "more-daemon-options", "",
 		"more options passed to daemon by command line, please confirm your options with \"dfget daemon --help\"")

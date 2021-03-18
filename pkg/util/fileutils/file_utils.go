@@ -21,11 +21,17 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/pkg/errors"
 )
+
+// FileNameWithoutExtTrimSuffix get filename without extension.
+func FileNameWithoutExtTrimSuffix(fileName string) string {
+	return strings.TrimSuffix(fileName, filepath.Ext(fileName))
+}
 
 // MkdirAll creates a directory named path with 0755 perm.
 func MkdirAll(dir string) error {

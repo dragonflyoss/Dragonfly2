@@ -86,7 +86,7 @@ func init() {
 func runDfget() error {
 	var addr = dfnet.NetAddr{
 		Type: dfnet.UNIX,
-		Addr: flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket,
+		Addr: daemonConfig.Download.DownloadGRPC.UnixListen.Socket,
 	}
 	var (
 		ctx    = context.Background()
@@ -203,7 +203,7 @@ func downloadFromSource(hdr map[string]string) (err error) {
 
 func convertDeprecatedFlags() {
 	for _, node := range deprecatedFlags.nodes.Nodes {
-		flagDaemonOpt.Scheduler.NetAddrs = append(flagDaemonOpt.Scheduler.NetAddrs, dfnet.NetAddr{
+		daemonConfig.Scheduler.NetAddrs = append(daemonConfig.Scheduler.NetAddrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
 			Addr: node,
 		})
@@ -218,7 +218,7 @@ func checkClientOptions() error {
 	if err := config.CheckConfig(flagClientOpt); err != nil {
 		return err
 	}
-	if len(flagDaemonOpt.Scheduler.NetAddrs) < 1 {
+	if len(daemonConfig.Scheduler.NetAddrs) < 1 {
 		return dferrors.New(-1, "Empty schedulers. Please use the command 'help' to show the help information.")
 	}
 	return nil
@@ -248,7 +248,7 @@ download SUCCESS cost:0.026s length:141898 reason:0
 
 func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 	// check pid
-	if ok, err := pidfile.IsProcessExistsByPIDFile(flagDaemonOpt.PidFile); err != nil || !ok {
+	if ok, err := pidfile.IsProcessExistsByPIDFile(daemonConfig.PidFile); err != nil || !ok {
 		if err = spawnDaemon(); err != nil {
 			return nil, fmt.Errorf("start daemon error: %s", err)
 		}
@@ -294,21 +294,21 @@ func spawnDaemon() error {
 	defer lock.Unlock()
 
 	var schedulers []string
-	for _, s := range flagDaemonOpt.Scheduler.NetAddrs {
+	for _, s := range daemonConfig.Scheduler.NetAddrs {
 		schedulers = append(schedulers, s.Addr)
 	}
 
 	var args = []string{
 		"daemon",
-		"--download-rate", fmt.Sprintf("%f", flagDaemonOpt.Download.RateLimit.Limit),
-		"--upload-port", fmt.Sprintf("%d", flagDaemonOpt.Upload.TCPListen.PortRange.Start),
-		"--home", flagDaemonOpt.WorkHome,
-		"--listen", flagDaemonOpt.Host.ListenIP,
-		"--expire-time", flagDaemonOpt.Storage.TaskExpireTime.String(),
-		"--alive-time", flagDaemonOpt.AliveTime.String(),
-		"--grpc-unix-listen", flagDaemonOpt.Download.DownloadGRPC.UnixListen.Socket,
+		"--download-rate", fmt.Sprintf("%f", daemonConfig.Download.RateLimit.Limit),
+		"--upload-port", fmt.Sprintf("%d", daemonConfig.Upload.TCPListen.PortRange.Start),
+		"--home", daemonConfig.WorkHome,
+		"--listen", daemonConfig.Host.ListenIP,
+		"--expire-time", daemonConfig.Storage.TaskExpireTime.String(),
+		"--alive-time", daemonConfig.AliveTime.String(),
+		"--grpc-unix-listen", daemonConfig.Download.DownloadGRPC.UnixListen.Socket,
 		"--schedulers", strings.Join(schedulers, ","),
-		"--pid", flagDaemonOpt.PidFile,
+		"--pid", daemonConfig.PidFile,
 	}
 	if flagClientOpt.MoreDaemonOptions != "" {
 		args = append(args, strings.Split(flagClientOpt.MoreDaemonOptions, " ")...)
