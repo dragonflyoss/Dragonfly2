@@ -6,7 +6,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -30,7 +30,7 @@ func (p *filePeerTaskCallback) Init(pt PeerTask) error {
 			TotalPieces:   pt.GetTotalPieces(),
 		})
 	if err != nil {
-		logger.Errorf("register task to storage manager failed: %s", err)
+		pt.Log().Errorf("register task to storage manager failed: %s", err)
 	}
 	return err
 }
@@ -47,7 +47,7 @@ func (p *filePeerTaskCallback) Update(pt PeerTask) error {
 			TotalPieces:   pt.GetTotalPieces(),
 		})
 	if err != nil {
-		logger.Errorf("update task to storage manager failed: %s", err)
+		pt.Log().Errorf("update task to storage manager failed: %s", err)
 	}
 	return err
 }
@@ -82,11 +82,11 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 		Success:        true,
 		Code:           dfcodes.Success,
 	})
-	logger.Debugf("task %s/%s report successful peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
+	pt.Log().Debugf("task %s/%s report successful peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
 	return nil
 }
 
-func (p *filePeerTaskCallback) Fail(pt PeerTask, reason string) error {
+func (p *filePeerTaskCallback) Fail(pt PeerTask, code base.Code, reason string) error {
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	state, err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
@@ -100,8 +100,8 @@ func (p *filePeerTaskCallback) Fail(pt PeerTask, reason string) error {
 		Traffic:        pt.GetTraffic(),
 		Cost:           uint32(end.Sub(p.start).Milliseconds()),
 		Success:        false,
-		Code:           dfcodes.UnknownError,
+		Code:           code,
 	})
-	logger.Debugf("task %s/%s report fail peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
+	pt.Log().Debugf("task %s/%s report fail peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
 	return nil
 }

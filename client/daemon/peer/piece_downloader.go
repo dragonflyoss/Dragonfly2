@@ -19,6 +19,7 @@ package peer
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
@@ -93,6 +94,8 @@ func (p *pieceDownloader) DownloadPiece(d *DownloadPieceRequest) (io.Reader, io.
 		return nil, nil, err
 	}
 	if resp.StatusCode > 299 {
+		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		_ = resp.Body.Close()
 		return nil, nil, fmt.Errorf("download piece failed with http code: %s", resp.Status)
 	}
 	r := resp.Body.(io.Reader)

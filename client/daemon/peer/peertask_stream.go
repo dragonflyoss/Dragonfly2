@@ -308,7 +308,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 		s.base.Debugf("end piece result sent")
 		close(s.base.done)
 		//close(s.successPieceCh)
-		if err := s.base.callback.Fail(s, s.base.failedReason); err != nil {
+		if err := s.base.callback.Fail(s, s.base.failedCode, s.base.failedReason); err != nil {
 			s.base.Errorf("fail callback error: %s", err)
 		}
 	})
