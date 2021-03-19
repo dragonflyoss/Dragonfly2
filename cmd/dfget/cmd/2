@@ -162,8 +162,16 @@ func init() {
 	flagSet.StringVar(&dfgetConfig.MoreDaemonOptions, "more-daemon-options", "",
 		"more options passed to daemon by command line, please confirm your options with \"dfget daemon --help\"")
 
+	fmt.Println("11111111111")
+	fmt.Println(flagSet.Lookup("schedulers").Value)
+	fmt.Println(flagSet.Lookup("verbose").Value)
+	fmt.Println(flagSet.Lookup("console").Value)
+	fmt.Println(daemonConfig.Scheduler.NetAddrs)
+	fmt.Println("11111111111")
+
 	// Add command
 	rootCmd.AddCommand(version.VersionCmd)
+	rootCmd.AddCommand(daemonCmd)
 }
 
 // runDfget does some init operations and starts to download.

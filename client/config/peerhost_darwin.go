@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	PeerHostConfigPath = basic.HomeDir + "/.dragonfly/dfget-daemon.yml"
+	PeerHostConfigPath = basic.HomeDir + "/.dragonfly/dfget-daemon.yaml"
 
 	peerHostWorkHome = basic.HomeDir + "/.dragonfly/dfdaemon/"
 	peerHostDataDir  = peerHostWorkHome
@@ -45,7 +45,7 @@ var PeerHostConfig = PeerHostOption{
 	PidFile:     "/tmp/dfdaemon.pid",
 	LockFile:    "/tmp/dfdaemon.lock",
 	KeepStorage: false,
-	Verbose:     true,
+	Verbose:     false,
 	Console:     false,
 	Scheduler: SchedulerOption{
 		NetAddrs:        nil,
