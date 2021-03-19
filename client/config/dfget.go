@@ -34,10 +34,13 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
-// ClientConfig holds all the runtime config information.
-type ClientConfig struct {
+// ClientOption holds all the runtime config information.
+type ClientOption struct {
 	// URL download URL.
 	URL string `json:"url"`
+
+	// Lock file location
+	LockFile string `json:"lock_file" yaml:"lock_file"`
 
 	// Output full output path.
 	Output string `json:"output"`
@@ -104,36 +107,13 @@ type ClientConfig struct {
 	MoreDaemonOptions string `json:"more_daemon_options,omitempty"`
 }
 
-func (cfg *ClientConfig) String() string {
+func (cfg *ClientOption) String() string {
 	js, _ := json.Marshal(cfg)
 	return string(js)
 }
 
-// NewClientConfig creates and initializes a ClientConfig.
-func NewClientConfig() *ClientConfig {
-	return &ClientConfig{
-		URL:           "",
-		Output:        "",
-		Timeout:       0,
-		Md5:           "",
-		DigestMethod:  "",
-		DigestValue:   "",
-		Identifier:    "",
-		CallSystem:    "",
-		Pattern:       "",
-		Cacerts:       nil,
-		Filter:        nil,
-		Header:        nil,
-		NotBackSource: false,
-		Insecure:      false,
-		ShowBar:       false,
-		Console:       false,
-		Verbose:       false,
-	}
-}
-
 // CheckConfig checks the config and return errors.
-func CheckConfig(cfg *ClientConfig) (err error) {
+func CheckConfig(cfg *ClientOption) (err error) {
 	if cfg == nil {
 		return errors.Wrap(dferrors.ErrInvalidArgument, "runtime config")
 	}
@@ -161,7 +141,7 @@ func IsValidURL(urlStr string) bool {
 }
 
 // This function must be called after checkURL
-func checkOutput(cfg *ClientConfig) error {
+func checkOutput(cfg *ClientOption) error {
 	if stringutils.IsBlank(cfg.Output) {
 		url := strings.TrimRight(cfg.URL, "/")
 		idx := strings.LastIndexByte(url, '/')

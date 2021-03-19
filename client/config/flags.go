@@ -5,17 +5,19 @@ import (
 	"strings"
 
 	"github.com/docker/go-units"
+	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
+// SchedulersValue implements the pflag.Value interface.
+
 type NetAddrsValue struct {
 	n *[]dfnet.NetAddr
 }
 
-// NetAddrsValue implements the pflag.Value interface.
 func NewNetAddrsValue(n *[]dfnet.NetAddr) *NetAddrsValue {
 	return &NetAddrsValue{n: n}
 }
@@ -25,14 +27,27 @@ func (nv *NetAddrsValue) String() string {
 	for _, v := range *nv.n {
 		result = append(result, v.Addr)
 	}
+
 	return strings.Join(result, ",")
 }
 
 func (nv *NetAddrsValue) Set(value string) error {
-	*nv.n = append(*nv.n, dfnet.NetAddr{
-		Type: dfnet.TCP,
-		Addr: value,
-	})
+	addresses := strings.Split(value, ",")
+	for _, address := range addresses {
+		vv := strings.Split(address, ":")
+		if len(vv) > 2 || len(vv) == 0 {
+			return errors.New("invalid schedulers")
+		}
+		if len(vv) == 1 {
+			address = fmt.Sprintf("%s:%d", address, DefaultSupernodePort)
+		}
+		*nv.n = append(*nv.n,
+			dfnet.NetAddr{
+				Type: dfnet.TCP,
+				Addr: address,
+			})
+	}
+
 	return nil
 }
 
