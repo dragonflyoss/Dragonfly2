@@ -17,14 +17,16 @@
 package schedule_worker
 
 import (
+	"fmt"
+
+	"k8s.io/client-go/util/workqueue"
+
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/types"
-	"fmt"
-	"k8s.io/client-go/util/workqueue"
 )
 
 type JobType int8
@@ -338,7 +340,7 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 	switch code {
 	case dfcodes.Success:
 		return
-	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail:
+	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
 		peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
 		if peerTask != nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
@@ -359,7 +361,6 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 	case dfcodes.UnknownError:
 		return true
 	}
-
 
 	return
 }

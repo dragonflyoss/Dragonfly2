@@ -467,13 +467,15 @@ func (pt *filePeerTask) downloadPieceWorker(id int32, pti PeerTask, requests cha
 		select {
 		case request := <-requests:
 			pt.Debugf("peer download worker #%d receive piece task, "+
-				"peer id: %s, piece num: %d, range start: %d, range size: %d",
-				id, pt.GetPeerID(), request.piece.PieceNum, request.piece.RangeStart, request.piece.RangeSize)
+				"dest peer id: %s, piece num: %d, range start: %d, range size: %d",
+				id, request.DstPid, request.piece.PieceNum, request.piece.RangeStart, request.piece.RangeSize)
 			pt.pieceManager.DownloadPiece(pti, request)
 		case <-pt.done:
 			pt.Debugf("pt.done, peer download worker #%d exit", id)
+			return
 		case <-pt.ctx.Done():
 			pt.Debugf("pt.ctx.Done(), peer download worker #%d exit", id)
+			return
 		}
 	}
 }
@@ -485,11 +487,14 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 			pt.Warnf("recover from %s", r)
 		}
 	}()
+	pt.Debugf("report piece #%d result, success: %b", piece.PieceNum, pieceResult.Success)
+
 	// retry failed piece
 	if !pieceResult.Success {
 		pieceResult.FinishedCount = pt.readyPieces.Settled()
 		pt.pieceResultCh <- pieceResult
 		pt.failedPieceCh <- pieceResult.PieceNum
+		pt.Errorf("%d download failed, retry later", piece.PieceNum)
 		return nil
 	}
 

@@ -180,9 +180,9 @@ func (pm *pieceManager) pushFailResult(peerTask PeerTask, dstPid string, piece *
 			BeginTime:     uint64(start),
 			EndTime:       uint64(end),
 			Success:       false,
-			Code:          dfcodes.UnknownError,
+			Code:          dfcodes.ClientPieceDownloadFail,
 			HostLoad:      nil,
-			FinishedCount: 0,
+			FinishedCount: 0, // update by peer task
 		})
 	if err != nil {
 		peerTask.Log().Errorf("report piece task error: %v", err)
