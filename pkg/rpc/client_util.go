@@ -47,25 +47,26 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 			candidateNodes = append(candidateNodes, ringNode)
 		}
 	}
-	logger.GrpcLogger.Debugf("all server node list:%v, exclusiveNodes node list:%v, candidate node list:%v", ringNodes, exclusiveNodes, candidateNodes)
+	logger.GrpcLogger.Debugf("conn:%s all server node list:%v, exclusiveNodes node list:%v, " +
+		"candidate node list:%v", conn.name, ringNodes, exclusiveNodes, candidateNodes)
 	for _, candidateNode := range candidateNodes {
 		// Check whether there is a corresponding mapping client in the node2ClientMap
 		if client, ok := conn.node2ClientMap.Load(candidateNode); ok {
-			logger.GrpcLogger.Debugf("hit cache candidateNode: %s", candidateNode)
+			logger.GrpcLogger.Debugf("conn:%s hit cache candidateNode: %s", conn.name, candidateNode)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  client,
 			}, nil
 		}
-		logger.GrpcLogger.Debugf("attempt to connect candidateNode: %s", candidateNode)
+		logger.GrpcLogger.Debugf("conn:%s attempt to connect candidateNode: %s", conn.name, candidateNode)
 		if clientConn, err := conn.createClient(candidateNode, append(clientOpts, conn.opts...)...); err == nil {
-			logger.GrpcLogger.Debugf("success connect to candidateNode: %s", candidateNode)
+			logger.GrpcLogger.Debugf("conn:%s success connect to candidateNode: %s", conn.name, candidateNode)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  clientConn,
 			}, nil
 		} else {
-			logger.GrpcLogger.Warnf("failed to connect candidateNode: %s: %v", candidateNode, err)
+			logger.GrpcLogger.Warnf("conn:%s failed to connect candidateNode: %s: %v", conn.name, candidateNode, err)
 		}
 	}
 	return nil, dferrors.ErrNoCandidateNode
@@ -85,11 +86,12 @@ func (conn *Connection) gcConn(ctx context.Context, node string) {
 		clientCon.Close()
 		conn.node2ClientMap.Delete(node)
 	} else {
-		logger.GrpcLogger.Warnf("")
+		logger.GrpcLogger.Warnf("conn:%s node:%s dose not found", conn.name, node)
 	}
 	conn.key2NodeMap.Range(func(key, value interface{}) bool {
 		if value == node {
 			conn.key2NodeMap.Delete(key)
+			logger.GrpcLogger.Infof("conn:%s success gc node:%s", conn.name, key)
 		}
 		return true
 	})
