@@ -21,7 +21,9 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"fmt"
 	"hash/crc32"
+	"runtime/debug"
 )
 
 type ISender interface {
@@ -84,6 +86,7 @@ func (s *Sender) Start() {
 }
 
 func (s *Sender) doSend() {
+	var err error
 	for {
 		select {
 		case job := <-s.jobChan:
@@ -91,7 +94,16 @@ func (s *Sender) doSend() {
 			if peerTask == nil {
 				break
 			}
-			err := peerTask.Send()
+			func () {
+				defer func() {
+					e := recover()
+					if e != nil {
+						debug.PrintStack()
+						err = fmt.Errorf("%v", e)
+					}
+				} ()
+				err = peerTask.Send()
+			} ()
 			if err != nil && err.Error() == "empty client" {
 				logger.Warnf("[%s][%s]: client is empty : %v", peerTask.Task.TaskId, peerTask.Pid, err.Error())
 				break
@@ -105,6 +117,7 @@ func (s *Sender) doSend() {
 			if peerTask.Success {
 				break
 			}
+
 		case <-s.stopCh:
 			return
 		}

@@ -322,6 +322,8 @@ func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 		SrcPid: pt.Pid,
 		// concurrent downloading count from main peer
 	}
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
 	if pt.parent != nil && pt.parent.DstPeerTask != nil && pt.parent.DstPeerTask.Host != nil {
 		pkg.ParallelCount = int32(pt.parent.Concurrency)
 		peerHost := pt.parent.DstPeerTask.Host.PeerHost

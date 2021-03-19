@@ -18,6 +18,7 @@ package schedule_worker
 
 import (
 	"fmt"
+	"time"
 
 	"k8s.io/client-go/util/workqueue"
 
@@ -180,13 +181,14 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 		return
 	}
 
+	startTm := time.Now()
 	logger.Debugf("[%s][%s]: begin do schedule [%d]", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus())
 	defer func() {
 		err := recover()
 		if err != nil {
 			logger.Errorf("[%s][%s]: do schedule panic: %v", peerTask.Task.TaskId, peerTask.Pid, err)
 		}
-		logger.Debugf("[%s][%s]: end do schedule [%d]", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus())
+		logger.Debugf("[%s][%s]: end do schedule [%d] cost: %d", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus(), time.Now().Sub(startTm).Nanoseconds())
 	}()
 
 	switch peerTask.GetNodeStatus() {
