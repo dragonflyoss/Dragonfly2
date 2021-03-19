@@ -422,12 +422,12 @@ loop:
 			pt.Infof("get piece %d from %s", piece.PieceNum, piecePacket.DstPid)
 			if !pt.requestedPieces.IsSet(piece.PieceNum) {
 				pt.requestedPieces.Set(piece.PieceNum)
-				pieceRequestCh <- &DownloadPieceRequest{
-					TaskID:  pt.GetTaskID(),
-					DstPid:  piecePacket.DstPid,
-					DstAddr: piecePacket.DstAddr,
-					piece:   piece,
-				}
+			}
+			pieceRequestCh <- &DownloadPieceRequest{
+				TaskID:  pt.GetTaskID(),
+				DstPid:  piecePacket.DstPid,
+				DstAddr: piecePacket.DstAddr,
+				piece:   piece,
 			}
 		}
 
