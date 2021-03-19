@@ -41,7 +41,7 @@ var once sync.Once
 func GetClientByAddr(addrs []dfnet.NetAddr) (SeederClient, error) {
 	once.Do(func() {
 		sc = &seederClient{
-			rpc.NewConnection(make([]dfnet.NetAddr, 0)),
+			rpc.NewConnection("cdn", make([]dfnet.NetAddr, 0)),
 		}
 	})
 	if len(addrs) == 0 {

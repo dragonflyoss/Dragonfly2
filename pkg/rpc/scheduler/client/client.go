@@ -44,7 +44,7 @@ var once sync.Once
 func GetClientByAddr(addrs []dfnet.NetAddr) (SchedulerClient, error) {
 	once.Do(func() {
 		sc = &schedulerClient{
-			rpc.NewConnection(make([]dfnet.NetAddr, 0)),
+			rpc.NewConnection("scheduler", make([]dfnet.NetAddr, 0)),
 		}
 	})
 	if len(addrs) == 0 {
