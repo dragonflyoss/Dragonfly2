@@ -17,34 +17,36 @@
 package cdn
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/httputils"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rangecal"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+	"fmt"
 	"github.com/pkg/errors"
+	"io"
 )
+
+const RangeHeaderName = "Range"
 
 // download downloads the file from the original address and
 // sets the "Range" header to the unDownloaded file range.
 //
 // If the returned error is nil, the Response will contain a non-nil
 // Body which the caller is expected to close.
-func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (*types.DownloadResponse, error) {
+func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, error) {
 	headers := maputils.DeepCopyMap(nil, task.Headers)
-	if detectResult.breakNum > 0 {
-		breakRange, err := rangecal.CalculateBreakRange(detectResult.breakNum, task.PieceSize, task.SourceFileLength)
+	if detectResult.breakPoint > 0 {
+		breakRange, err := rangeutils.GetBreakRange(detectResult.breakPoint, task.SourceFileLength)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to calculate the breakRange")
 		}
 		// check if Range in header? if Range already in Header, priority use this range
 		if !hasRange(headers) {
-			headers["Range"] = httputils.ConstructRangeStr(breakRange)
+			headers[RangeHeaderName] = fmt.Sprintf("bytes=%s", breakRange)
 		}
 	}
-	logger.WithTaskID(task.TaskId).Infof("start from pieceNum %d to download with url: %s header: %+v",
-		detectResult.breakNum, task.Url,
-		task.Headers)
+	logger.WithTaskID(task.TaskId).Infof("start download url %s at range:%d-%d: %s with header: %+v", task.Url, detectResult.breakPoint,
+		task.SourceFileLength, task.Headers)
 	return cm.resourceClient.Download(task.Url, headers)
 }
 

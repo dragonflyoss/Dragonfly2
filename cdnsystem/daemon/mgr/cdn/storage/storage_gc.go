@@ -51,7 +51,7 @@ func NewStorageCleaner(gcConfig *store.GcConfig, store store.StorageDriver, stor
 func (cleaner *Cleaner) Gc(ctx context.Context, force bool) ([]string, error) {
 	freeSpace, err := cleaner.Store.GetAvailSpace(ctx)
 	if err != nil {
-		if cdnerrors.IsKeyNotFound(err) {
+		if cdnerrors.IsFileNotExist(err) {
 			err = cleaner.Store.CreateBaseDir(ctx)
 			if err != nil {
 				return nil, err

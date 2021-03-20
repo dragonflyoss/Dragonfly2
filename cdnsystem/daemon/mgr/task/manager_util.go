@@ -92,10 +92,6 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 			tm.taskURLUnReachableStore.Add(taskId, time.Now())
 			return nil, err
 		}
-		if cdnerrors.IsAuthenticationRequired(err) {
-			// todo 增加授权失败容器，后续需要授权的地方需要先校验是否通过再对源发起请求
-			return nil, err
-		}
 	}
 	// if not support file length header request ,return -1
 	task.SourceFileLength = sourceFileLength

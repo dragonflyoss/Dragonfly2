@@ -19,7 +19,6 @@ package cdn
 import (
 	"bytes"
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/pkg/errors"
@@ -43,28 +42,25 @@ type downloadMetadata struct {
 }
 
 type cacheWriter struct {
-	cdnStore    storage.StorageMgr
-	cdnReporter *reporter
-	metaDataMgr *metaDataManager
+	cdnReporter      *reporter
+	cacheDataManager *cacheDataManager
 }
 
-func newCacheWriter(cdnStore storage.StorageMgr, cdnReporter *reporter, metaDataMgr *metaDataManager) *cacheWriter {
+func newCacheWriter(cdnReporter *reporter, cacheDataManager *cacheDataManager) *cacheWriter {
 	return &cacheWriter{
-		cdnStore:    cdnStore,
-		cdnReporter: cdnReporter,
-		metaDataMgr: metaDataMgr,
+		cdnReporter:      cdnReporter,
+		cacheDataManager: cacheDataManager,
 	}
 }
 
 // startWriter writes the stream data from the reader to the underlying storage.
-func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *types.SeedTask,
-	detectResult *cacheResult) (*downloadMetadata, error) {
+func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *types.SeedTask, detectResult *cacheResult) (*downloadMetadata, error) {
 	// currentSourceFileLength is used to calculate the source file Length dynamically
-	currentSourceFileLength := int64(detectResult.breakNum) * int64(task.PieceSize)
+	currentSourceFileLength := detectResult.breakPoint
 	// backSourceFileLength back source length
 	var backSourceFileLength int64 = 0
 	// the pieceNum currently processed
-	curPieceNum := detectResult.breakNum
+	curPieceNum := int32(len(detectResult.pieceMetaRecords))
 	// the left size of data for a complete piece
 	pieceContLeft := task.PieceSize
 	buf := make([]byte, 256*1024)
@@ -130,12 +126,12 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	close(jobCh)
 	wg.Wait()
 
-	storageInfo, err := cw.cdnStore.StatDownloadFile(ctx, task.TaskId)
+	storageInfo, err := cw.cacheDataManager.statDownloadFile(ctx, task.TaskId)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get cdn file length")
 	}
 
-	pieceMd5Sign, _, err := cw.metaDataMgr.getPieceMd5Sign(ctx, task.TaskId)
+	pieceMd5Sign, _, err := cw.cacheDataManager.getPieceMd5Sign(ctx, task.TaskId)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get piece md5 sign")
 	}

@@ -25,7 +25,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rangecal"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
@@ -35,7 +34,6 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -112,7 +110,6 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	peerId := fmt.Sprintf("%s-%s_%s", iputils.HostName, req.TaskId, "CDN")
 	task, err := css.taskMgr.Get(ctx, req.TaskId)
 	for piece := range pieceChan {
-		pieceStart, _, err := rangecal.ParsePieceIndex(piece.PieceRange)
 		if err != nil {
 			return err
 		}
@@ -122,10 +119,10 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			SeederName: iputils.HostName,
 			PieceInfo: &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
-				RangeStart:  uint64(pieceStart),
+				RangeStart:  piece.PieceRange.StartIndex,
 				RangeSize:   piece.PieceLen,
 				PieceMd5:    piece.PieceMd5,
-				PieceOffset: piece.PieceOffset,
+				PieceOffset: piece.OriginRange.StartIndex,
 				PieceStyle:  base.PieceStyle(piece.PieceStyle),
 			},
 			Done:          false,
@@ -177,14 +174,12 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	var count int32 = 0
 	for _, piece := range pieces {
 		if piece.PieceNum >= req.StartNum && count < req.Limit {
-			pieceRange := strings.Split(piece.PieceRange, "-")
-			pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
 			pieceInfos = append(pieceInfos, &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
-				RangeStart:  pieceStart,
+				RangeStart:  piece.PieceRange.StartIndex,
 				RangeSize:   piece.PieceLen,
 				PieceMd5:    piece.PieceMd5,
-				PieceOffset: piece.PieceOffset,
+				PieceOffset: piece.OriginRange.StartIndex,
 				PieceStyle:  base.PieceStyle(piece.PieceStyle),
 			})
 			count++

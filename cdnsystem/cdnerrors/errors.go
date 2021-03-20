@@ -36,9 +36,6 @@ var (
 	// ErrTaskIdDuplicate represents the task id is in conflict.
 	ErrTaskIdDuplicate = errors.New("taskId conflict")
 
-	// ErrAuthenticationRequired represents the authentication is required.
-	ErrAuthenticationRequired = errors.New("authentication required")
-
 	// ErrPieceCountNotEqual
 	ErrPieceCountNotEqual = errors.New("inconsistent number of pieces")
 
@@ -64,7 +61,7 @@ var (
 	ErrKeyNotFound = errors.New("the key not found")
 
 	// ErrFileNotExist represents the file is not exists
-	ErrFileNotExist = errors.New("file not exist")
+	ErrFileNotExist = errors.New("file or directory not exist")
 
 	// ErrEmptyKey represents the key is empty or nil.
 	ErrEmptyKey = errors.New("empty key")
@@ -115,11 +112,6 @@ func IsURLNotReachable(err error) bool {
 // IsTaskIDDuplicate checks the error is a TaskIDDuplicate error or not.
 func IsTaskIDDuplicate(err error) bool {
 	return errors.Cause(err) == ErrTaskIdDuplicate
-}
-
-// IsAuthenticationRequired checks the error is an AuthenticationRequired error or not.
-func IsAuthenticationRequired(err error) bool {
-	return errors.Cause(err) == ErrAuthenticationRequired
 }
 
 func IsPieceCountNotEqual(err error) bool {
@@ -191,5 +183,9 @@ func IsUnknownError(err error) bool {
 
 func IsNilError(err error) bool {
 	return errors.Cause(err) == nil
+}
+
+func IsFileNotExist(err error) bool {
+	return errors.Cause(err) == ErrFileNotExist
 }
 

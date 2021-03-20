@@ -16,14 +16,16 @@
 
 package types
 
+import "d7y.io/dragonfly/v2/pkg/util/rangeutils"
+
 // SeedPiece
 type SeedPiece struct {
-	PieceStyle       PieceFormat // 0: PlainUnspecified
-	PieceNum         int32
-	PieceMd5         string
-	PieceRange       string
-	PieceOffset      uint64
-	PieceLen         int32
+	PieceStyle  PieceFormat // 0: PlainUnspecified
+	PieceNum    int32
+	PieceMd5    string
+	PieceRange  *rangeutils.Range
+	OriginRange *rangeutils.Range
+	PieceLen    int32
 }
 
 type ItemType int8

@@ -44,16 +44,18 @@ func main() {
 		panic(err)
 	}
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-				//TaskId: "test1",
-				//Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
-				TaskId: "test",
-				Url: "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
-				Filter: "",
+				TaskId: "test1",
+				Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
+				//TaskId: "test",
+				//Url: "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
+				//TaskId: "test",
+				//Url: "http://www.baidu.com",
+				//Filter: "",
 			})
 			if err != nil {
 				panic(err)

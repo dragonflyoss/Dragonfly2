@@ -90,7 +90,7 @@ func (s *Store) Name() string {
 }
 
 // Get the data from the storage driver in io stream.
-func (s *Store) Get(ctx context.Context, raw *Raw) (io.Reader, error) {
+func (s *Store) Get(ctx context.Context, raw *Raw) (io.ReadCloser, error) {
 	if err := checkEmptyKey(raw); err != nil {
 		return nil, err
 	}

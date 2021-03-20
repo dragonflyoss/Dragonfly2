@@ -142,7 +142,7 @@ func NewStorage(conf interface{}) (store.StorageDriver, error) {
 }
 
 // Get the content of key from storage and return in io stream.
-func (ds *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.Reader, error) {
+func (ds *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.ReadCloser, error) {
 	path, info, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
@@ -420,7 +420,7 @@ func (ds *diskStorage) statPath(bucket, key string) (string, os.FileInfo, error)
 	f, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil, errors.Wrapf(cdnerrors.ErrKeyNotFound, "filePath:%s not exists", filePath)
+			return "", nil, errors.Wrapf(cdnerrors.ErrFileNotExist, "no such file or directory:%s exists", filePath)
 		}
 		return "", nil, err
 	}

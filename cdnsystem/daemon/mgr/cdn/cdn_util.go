@@ -45,7 +45,7 @@ func convertPieceMeta2SeedPiece(record *storage.PieceMetaRecord) *types.SeedPiec
 		PieceNum:    record.PieceNum,
 		PieceMd5:    record.Md5,
 		PieceRange:  record.Range,
-		PieceOffset: record.Offset,
+		OriginRange: record.OriginRange,
 		PieceLen:    record.PieceLen,
 	}
 }

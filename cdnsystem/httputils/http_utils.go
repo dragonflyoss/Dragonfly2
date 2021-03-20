@@ -367,11 +367,6 @@ func RegisterProtocolOnTransport(tr *http.Transport) {
 		})
 }
 
-// ConstructRangeStr wraps the rangeStr as a HTTP Range header value.
-func ConstructRangeStr(rangeStr string) string {
-	return fmt.Sprintf("bytes=%s", rangeStr)
-}
-
 func GetValidURLSchemas() string {
 	return validURLSchemas
 }

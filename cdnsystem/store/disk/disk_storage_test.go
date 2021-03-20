@@ -396,7 +396,7 @@ func (s *StorageSuite) checkRemove(raw *store.Raw) {
 	s.Equal(cdnerrors.IsNilError(err), true)
 
 	_, err = s.store.Stat(context.Background(), raw)
-	s.Equal(cdnerrors.IsKeyNotFound(err), true)
+	s.Equal(cdnerrors.IsFileNotExist(err), true)
 }
 
 func TestNewStorage(t *testing.T) {

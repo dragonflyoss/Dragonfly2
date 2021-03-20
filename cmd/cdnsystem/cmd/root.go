@@ -89,7 +89,7 @@ var rootCmd = &cobra.Command{
 
 		logger.Infof("success to init local ip of cdn, start to run cdn system, use ip: %s", cfg.AdvertiseIP)
 
-		if cfg.EnableProfiler {
+		if cfg.EnableProfiler || cfg.Console {
 			go func() {
 				// enable go pprof and statsview
 				port, _ := freeport.GetFreePort()
@@ -211,13 +211,13 @@ func bindRootFlags(v *viper.Viper) error {
 		}, {
 			key:  "base.gcStorageInterval",
 			flag: "gc-storage-interval",
-		},{
+		}, {
 			key:  "base.taskExpireTime",
 			flag: "task-expire-time",
 		}, {
-			key: "base.storagePattern",
+			key:  "base.storagePattern",
 			flag: "storagePattern",
-		},{
+		}, {
 			key:  "base.Console",
 			flag: "console",
 		},

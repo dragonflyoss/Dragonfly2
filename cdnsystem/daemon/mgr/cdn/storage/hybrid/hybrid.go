@@ -177,7 +177,7 @@ func (h *hybridStorageMgr) DeleteTask(ctx context.Context, taskId string) error 
 	return h.deleteTaskFiles(ctx, taskId, true, true)
 }
 
-func (h *hybridStorageMgr) ReadDownloadFile(ctx context.Context, taskId string) (io.Reader, error) {
+func (h *hybridStorageMgr) ReadDownloadFile(ctx context.Context, taskId string) (io.ReadCloser, error) {
 	return h.diskStore.Get(ctx, storage.GetDownloadRaw(taskId))
 }
 
@@ -189,7 +189,7 @@ func (h *hybridStorageMgr) ReadPieceMetaRecords(ctx context.Context, taskId stri
 	pieceMetaRecords := strings.Split(strings.TrimSpace(string(bytes)), "\n")
 	var result = make([]*storage.PieceMetaRecord, 0)
 	for _, pieceStr := range pieceMetaRecords {
-		record, err := parsePieceMetaRecord(pieceStr)
+		record, err := storage.ParsePieceMetaRecord(pieceStr)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get piece meta record:%v", pieceStr)
 		}
@@ -212,8 +212,7 @@ func (h *hybridStorageMgr) ReadFileMetaData(ctx context.Context, taskId string) 
 }
 
 func (h *hybridStorageMgr) AppendPieceMetaData(ctx context.Context, taskId string, record *storage.PieceMetaRecord) error {
-	data := getPieceMetaValue(record)
-	return h.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), []byte(data+"\n"))
+	return h.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), []byte(record.String()+"\n"))
 }
 
 func (h *hybridStorageMgr) WriteFileMetaData(ctx context.Context, taskId string, metaData *storage.FileMetaData) error {
@@ -222,6 +221,15 @@ func (h *hybridStorageMgr) WriteFileMetaData(ctx context.Context, taskId string,
 		return errors.Wrapf(err, "failed to marshal metadata")
 	}
 	return h.diskStore.PutBytes(ctx, storage.GetTaskMetaDataRaw(taskId), data)
+}
+
+
+func (h *hybridStorageMgr) WritePieceMetaRecords(ctx context.Context, taskId string, records []*storage.PieceMetaRecord) error {
+	recordStrs := make([]string, 0, len(records))
+	for i := range records {
+		recordStrs = append(recordStrs, records[i].String())
+	}
+	return h.diskStore.PutBytes(ctx, storage.GetPieceMetaDataRaw(taskId), []byte(strings.Join(recordStrs, "\n")))
 }
 
 func (h *hybridStorageMgr) CreateUploadLink(ctx context.Context, taskId string) error {
@@ -263,16 +271,16 @@ func (h *hybridStorageMgr) deleteMemoryFiles(ctx context.Context, taskId string)
 
 func (h *hybridStorageMgr) deleteTaskFiles(ctx context.Context, taskId string, deleteUploadPath bool, deleteHardLink bool) error {
 	// delete task file data
-	if err := h.diskStore.Remove(ctx, storage.GetDownloadRaw(taskId)); err != nil && !cdnerrors.IsKeyNotFound(err) {
+	if err := h.diskStore.Remove(ctx, storage.GetDownloadRaw(taskId)); err != nil && !cdnerrors.IsFileNotExist(err) {
 		return err
 	}
 	// delete memory file
-	if err := h.memoryStore.Remove(ctx, storage.GetDownloadRaw(taskId)); err != nil && !cdnerrors.IsKeyNotFound(err) {
+	if err := h.memoryStore.Remove(ctx, storage.GetDownloadRaw(taskId)); err != nil && !cdnerrors.IsFileNotExist(err) {
 		return err
 	}
 
 	if deleteUploadPath {
-		if err := h.diskStore.Remove(ctx, storage.GetUploadRaw(taskId)); err != nil && !cdnerrors.IsKeyNotFound(err) {
+		if err := h.diskStore.Remove(ctx, storage.GetUploadRaw(taskId)); err != nil && !cdnerrors.IsFileNotExist(err) {
 			return err
 		}
 	}
@@ -281,21 +289,21 @@ func (h *hybridStorageMgr) deleteTaskFiles(ctx context.Context, taskId string, d
 		h.diskStore.MoveFile(h.diskStore.GetPath(getHardLinkRaw(taskId)), h.diskStore.GetPath(storage.GetDownloadRaw(
 			taskId)))
 	} else {
-		if err := h.diskStore.Remove(ctx, getHardLinkRaw(taskId)); err != nil && !cdnerrors.IsKeyNotFound(err) {
+		if err := h.diskStore.Remove(ctx, getHardLinkRaw(taskId)); err != nil && !cdnerrors.IsFileNotExist(err) {
 			return err
 		}
 		// deleteTaskFiles delete files associated with taskId
-		if err := h.diskStore.Remove(ctx, storage.GetTaskMetaDataRaw(taskId)); err != nil && !cdnerrors.IsKeyNotFound(err) {
+		if err := h.diskStore.Remove(ctx, storage.GetTaskMetaDataRaw(taskId)); err != nil && !cdnerrors.IsFileNotExist(err) {
 			return err
 		}
 		// delete piece meta data
-		if err := h.diskStore.Remove(ctx, storage.GetPieceMetaDataRaw(taskId)); err != nil && !cdnerrors.IsKeyNotFound(err) {
+		if err := h.diskStore.Remove(ctx, storage.GetPieceMetaDataRaw(taskId)); err != nil && !cdnerrors.IsFileNotExist(err) {
 			return err
 		}
 	}
 	// try to clean the parent bucket
 	if err := h.diskStore.Remove(ctx, storage.GetParentRaw(taskId)); err != nil &&
-		!cdnerrors.IsKeyNotFound(err) {
+		!cdnerrors.IsFileNotExist(err) {
 		logger.WithTaskID(taskId).Warnf("failed to remove parent bucket:%v", err)
 	}
 	return nil

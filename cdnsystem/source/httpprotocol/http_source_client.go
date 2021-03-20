@@ -18,19 +18,16 @@ package httpprotocol
 
 import (
 	"context"
-
-	"d7y.io/dragonfly/v2/pkg/structure/maputils"
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"fmt"
 	"github.com/pkg/errors"
+	"io"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -70,40 +67,31 @@ type httpSourceClient struct {
 	httpClient *http.Client
 }
 
-// getHTTPFileLength sends a head request to get http content length.
-func (client *httpSourceClient) getHTTPFileLength(url string, headers map[string]string) (int64, int, error) {
-	// send request
-	resp, err := client.httpWithHeaders(http.MethodGet, url, headers, 4*time.Second)
-	if err != nil {
-		return -1, 0, err
-	}
-	resp.Body.Close()
-
-	return resp.ContentLength, resp.StatusCode, nil
-}
-
 // GetContentLength get length of source
 // return -l if request fail
-// return -1 if response status is StatusUnauthorized or StatusProxyAuthRequired
 // return -1 if response status is not StatusOK and StatusPartialContent
 func (client *httpSourceClient) GetContentLength(url string, headers map[string]string) (int64, error) {
-	fileLength, code, err := client.getHTTPFileLength(url, headers)
+	resp, err := client.requestWithHeader(http.MethodHead, url, headers, 4*time.Second)
 	if err != nil {
-		return -1, errors.Wrap(err, "failed to get http file Length")
+		return -1, errors.Wrapf(cdnerrors.ErrURLNotReachable, "failed to get http header meta data:%v", err)
 	}
+	// todo 待讨论，这里如果是其他状态码是否要加入到 ErrURLNotReachable 中,如果不加入会下载404/频繁下载403
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
+		// todo 这种情况是否要和 err的情况作区分，类似于提出一种其他的错误类型用于表示这种错误是可以与url进行交互，但是状态码不符合预期
+		return -1, errors.Wrapf(cdnerrors.ErrURLNotReachable, "failed to get http file length with unexpected code: %d", resp.StatusCode)
+	}
+	return resp.ContentLength, nil
+}
 
-	if code == http.StatusUnauthorized || code == http.StatusProxyAuthRequired {
-		return -1, errors.Wrapf(cdnerrors.ErrAuthenticationRequired, "url: %s, response code: %d", url, code)
+func (client *httpSourceClient) GetExpireInfo(url string, headers map[string]string) (map[string]string, error) {
+	resp, err := client.requestWithHeader(http.MethodHead, url, headers, 4*time.Second)
+	if err != nil {
+		return nil, err
 	}
-	if code != http.StatusOK && code != http.StatusPartialContent {
-		logger.Warnf("failed to get http file length with unexpected code: %d", code)
-		if code == http.StatusNotFound {
-			return -1, cdnerrors.ErrURLNotReachable
-		}
-		return -1, nil
-	}
-
-	return fileLength, nil
+	return map[string]string{
+		"Last-Modified": resp.Header.Get("Last-Modified"),
+		"Etag":          resp.Header.Get("Etag"),
+	}, nil
 }
 
 // IsSupportRange checks if the source url support partial requests.
@@ -113,21 +101,14 @@ func (client *httpSourceClient) IsSupportRange(url string, headers map[string]st
 	copied["Range"] = "bytes=0-0"
 
 	// send request
-	resp, err := client.httpWithHeaders(http.MethodGet, url, copied, 4*time.Second)
+	resp, err := client.requestWithHeader(http.MethodHead, url, copied, 4*time.Second)
 	if err != nil {
 		return false, err
 	}
-	_ = resp.Body.Close()
-
-	if resp.StatusCode == http.StatusPartialContent {
-		return true, nil
-	}
-	if resp.StatusCode == http.StatusNotFound {
-		return false, cdnerrors.ErrURLNotReachable
-	}
-	return false, nil
+	return resp.StatusCode == http.StatusPartialContent, nil
 }
 
+// todo 考虑 expire，类似访问baidu网页是没有last-modified的
 // IsExpired checks if a resource received or stored is the same.
 func (client *httpSourceClient) IsExpired(url string, headers, expireInfo map[string]string) (bool, error) {
 	lastModified := timeutils.UnixMillis(expireInfo["Last-Modified"])
@@ -147,56 +128,41 @@ func (client *httpSourceClient) IsExpired(url string, headers, expireInfo map[st
 	}
 
 	// send request
-	resp, err := client.httpWithHeaders(http.MethodGet, url, copied, 4*time.Second)
+	resp, err := client.requestWithHeader(http.MethodHead, url, copied, 4*time.Second)
 	if err != nil {
+		// 如果获取失败，则认为没有过期，防止打爆源
 		return false, err
 	}
-	resp.Body.Close()
-
 	return resp.StatusCode != http.StatusNotModified, nil
 }
 
 // Download downloads the file from the original address
-func (client *httpSourceClient) Download(url string, headers map[string]string) (*types.DownloadResponse, error) {
-	// TODO: add timeout
-	resp, err := client.httpWithHeaders(http.MethodGet, url, headers, 0)
+func (client *httpSourceClient) Download(url string, headers map[string]string) (io.ReadCloser, error) {
+	resp, err := client.requestWithHeader(http.MethodGet, url, headers, 0)
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPartialContent {
-		hdr := make(map[string]string)
-		for k, v := range resp.Header {
-			hdr[k] = strings.Join(v, " ")
-		}
-		// todo 考虑 expire，类似访问baidu网页是没有last-modified的
-		return &types.DownloadResponse{
-			Body: resp.Body,
-			ExpireInfo: map[string]string{
-				"Last-Modified": resp.Header.Get("Last-Modified"),
-				"Etag":          resp.Header.Get("Etag"),
-			},
-			Header: hdr,
-		}, nil
+		return resp.Body, nil
 	}
 	resp.Body.Close()
 	return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 }
 
-// HTTPWithHeaders uses host-matched client to request the origin resource.
-func (client *httpSourceClient) httpWithHeaders(method, url string, headers map[string]string, timeout time.Duration) (*http.Response, error) {
+func (client *httpSourceClient) requestWithHeader(method string, url string, headers map[string]string,
+	timeout time.Duration) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	if timeout > 0 {
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		req = req.WithContext(ctx)
-		defer cancel()
-	}
-
 	for k, v := range headers {
 		req.Header.Add(k, v)
+	}
+	if timeout > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		req = req.WithContext(ctx)
+
 	}
 	return client.httpClient.Do(req)
 }

@@ -17,7 +17,7 @@
 package source
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"io"
 )
 
 var clients = make(map[string]ResourceClient)
@@ -38,6 +38,9 @@ type ResourceClient interface {
 	// GetContentLength get content length from source
 	GetContentLength(url string, headers map[string]string) (int64, error)
 
+	// GetExpireInfo
+	GetExpireInfo(url string, headers map[string]string) (map[string]string, error)
+
 	// IsSupportRange checks if source supports breakpoint continuation
 	IsSupportRange(url string, headers map[string]string) (bool, error)
 
@@ -45,11 +48,19 @@ type ResourceClient interface {
 	IsExpired(url string, headers, expireInfo map[string]string) (bool, error)
 
 	// Download download from source
-	Download(url string, headers map[string]string) (*types.DownloadResponse, error)
+	Download(url string, headers map[string]string) (io.ReadCloser, error)
 }
 
 type ResourceClientAdaptor struct {
 	clients map[string]ResourceClient
+}
+
+func (s *ResourceClientAdaptor) GetExpireInfo(url string, headers map[string]string) (map[string]string, error) {
+	sourceClient, err := s.getSourceClient(url)
+	if err != nil {
+		return nil, err
+	}
+	return sourceClient.GetExpireInfo(url, headers)
 }
 
 func (s *ResourceClientAdaptor) GetContentLength(url string, headers map[string]string) (int64, error) {
@@ -76,7 +87,7 @@ func (s *ResourceClientAdaptor) IsExpired(url string, headers, expireInfo map[st
 	return sourceClient.IsExpired(url, headers, expireInfo)
 }
 
-func (s *ResourceClientAdaptor) Download(url string, headers map[string]string) (*types.DownloadResponse, error) {
+func (s *ResourceClientAdaptor) Download(url string, headers map[string]string) (io.ReadCloser, error) {
 	sourceClient, err := s.getSourceClient(url)
 	if err != nil {
 		return nil, err

@@ -19,8 +19,6 @@ package cdn
 import (
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/disk"   // To register diskStorage
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/hybrid" // To register hybridStorage
-	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
-	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
 )
 import (
 	"context"
@@ -33,6 +31,8 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/cdnsystem/util"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
+	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"fmt"
 	"github.com/pkg/errors"
@@ -46,16 +46,16 @@ func init() {
 
 // Manager is an implementation of the interface of CDNMgr.
 type Manager struct {
-	cfg             *config.Config
-	cacheStore      storage.StorageMgr
-	limiter         *ratelimiter.RateLimiter
-	cdnLocker       *util.LockerPool
-	metaDataManager *metaDataManager
-	progressMgr     mgr.SeedProgressMgr
-	cdnReporter     *reporter
-	detector        *cacheDetector
-	resourceClient  source.ResourceClient
-	writer          *cacheWriter
+	cfg              *config.Config
+	cacheStore       storage.StorageMgr
+	limiter          *ratelimiter.RateLimiter
+	cdnLocker        *util.LockerPool
+	cacheDataManager *cacheDataManager
+	progressMgr      mgr.SeedProgressMgr
+	cdnReporter      *reporter
+	detector         *cacheDetector
+	resourceClient   source.ResourceClient
+	writer           *cacheWriter
 }
 
 func (cm *Manager) GetGCTaskIds(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([]string, error) {
@@ -63,22 +63,21 @@ func (cm *Manager) GetGCTaskIds(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore storage.StorageMgr, progressMgr mgr.SeedProgressMgr,
-	resourceClient source.ResourceClient) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore storage.StorageMgr, progressMgr mgr.SeedProgressMgr, resourceClient source.ResourceClient) (mgr.CDNMgr, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
-	metaDataManager := newFileMetaDataManager(cacheStore)
+	cacheDataManager := newCacheDataManager(cacheStore)
 	cdnReporter := newReporter(progressMgr, cacheStore)
 	return &Manager{
-		cfg:             cfg,
-		cacheStore:      cacheStore,
-		limiter:         rateLimiter,
-		cdnLocker:       util.NewLockerPool(),
-		metaDataManager: metaDataManager,
-		cdnReporter:     cdnReporter,
-		progressMgr:     progressMgr,
-		detector:        newCacheDetector(cacheStore, metaDataManager, resourceClient),
-		resourceClient:  resourceClient,
-		writer:          newCacheWriter(cacheStore, cdnReporter, metaDataManager),
+		cfg:              cfg,
+		cacheStore:       cacheStore,
+		limiter:          rateLimiter,
+		cdnLocker:        util.NewLockerPool(),
+		cacheDataManager: cacheDataManager,
+		cdnReporter:      cdnReporter,
+		progressMgr:      progressMgr,
+		detector:         newCacheDetector(cacheDataManager, resourceClient),
+		resourceClient:   resourceClient,
+		writer:           newCacheWriter(cdnReporter, cacheDataManager),
 	}, nil
 }
 
@@ -88,42 +87,37 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	defer cm.cdnLocker.ReleaseLock(task.TaskId, false)
 	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
-	logger.WithTaskID(task.TaskId).Debugf("detects cache result:%+v", detectResult)
 	if err != nil {
-		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), errors.Wrapf(err,
-			"failed to detect cache")
-	} else {
-		if err := cm.metaDataManager.updateAccessTime(ctx, task.TaskId, getCurrentTimeMillisFunc()); err != nil {
-			logger.WithTaskID(task.TaskId).Warnf("failed to update task access time ")
-		}
+		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), errors.Wrapf(err, "failed to detect cache")
 	}
+	logger.WithTaskID(task.TaskId).Debugf("detects cache result: %+v", detectResult)
 	// second: report detect result
 	err = cm.cdnReporter.reportCache(ctx, task.TaskId, detectResult)
 	if err != nil {
 		logger.WithTaskID(task.TaskId).Errorf("failed to report cache, reset detectResult:%v", err)
 	}
 	// full cache
-	if detectResult.breakNum == -1 {
+	if detectResult.breakPoint == -1 {
 		logger.WithTaskID(task.TaskId).Infof("cache full hit on local")
-		return getUpdateTaskInfo(types.TaskInfoCdnStatusSuccess, detectResult.fileMetaData.SourceRealMd5,
-			detectResult.fileMetaData.PieceMd5Sign, detectResult.fileMetaData.SourceFileLen,
-			detectResult.fileMetaData.CdnFileLength), nil
+		return getUpdateTaskInfo(types.TaskInfoCdnStatusSuccess, detectResult.fileMetaData.SourceRealMd5, detectResult.fileMetaData.PieceMd5Sign,
+			detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength), nil
 	}
 	// third: start to download the source file
-	resp, err := cm.download(task, detectResult)
+	body, err := cm.download(task, detectResult)
 	// download fail
 	if err != nil {
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusSourceERROR), err
 	}
-	defer resp.Body.Close()
+	defer body.Close()
 
+	// todo update expireInfo
 	// update Expire info
-	cm.updateExpireInfo(ctx, task.TaskId, resp.ExpireInfo)
+	//cm.updateExpireInfo(ctx, task.TaskId, resp.ExpireInfo)
 	fileMd5 := md5.New()
 	if detectResult.fileMd5 != nil {
 		fileMd5 = detectResult.fileMd5
 	}
-	reader := limitreader.NewLimitReaderWithLimiterAndMD5Sum(resp.Body, cm.limiter, fileMd5)
+	reader := limitreader.NewLimitReaderWithLimiterAndMD5Sum(body, cm.limiter, fileMd5)
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
 	if err != nil {
@@ -161,8 +155,7 @@ func (cm *Manager) Delete(ctx context.Context, TaskId string, force bool) error 
 }
 
 // handleCDNResult
-func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, sourceMd5 string,
-	downloadMetadata *downloadMetadata) (bool, error) {
+func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, sourceMd5 string, downloadMetadata *downloadMetadata) (bool, error) {
 	logger.WithTaskID(task.TaskId).Debugf("handle cdn result, downloadMetaData: %+v", downloadMetadata)
 	var isSuccess = true
 	var errorMsg string
@@ -193,13 +186,13 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 	if !isSuccess {
 		cdnFileLength = 0
 	}
-	if err := cm.metaDataManager.updateStatusAndResult(ctx, task.TaskId, &storage.FileMetaData{
-		Finish:        true,
-		Success:       isSuccess,
-		SourceRealMd5: sourceMd5,
-		PieceMd5Sign:  pieceMd5Sign,
-		CdnFileLength: cdnFileLength,
-		SourceFileLen: sourceFileLen,
+	if err := cm.cacheDataManager.updateStatusAndResult(ctx, task.TaskId, &storage.FileMetaData{
+		Finish:          true,
+		Success:         isSuccess,
+		SourceRealMd5:   sourceMd5,
+		PieceMd5Sign:    pieceMd5Sign,
+		CdnFileLength:   cdnFileLength,
+		SourceFileLen:   sourceFileLen,
 		TotalPieceCount: downloadMetadata.pieceTotalCount,
 	}); err != nil {
 		return false, errors.Wrap(err, "failed to update task status and result")
@@ -215,7 +208,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 }
 
 func (cm *Manager) updateExpireInfo(ctx context.Context, TaskId string, expireInfo map[string]string) {
-	if err := cm.metaDataManager.updateExpireInfo(ctx, TaskId, expireInfo); err != nil {
+	if err := cm.cacheDataManager.updateExpireInfo(ctx, TaskId, expireInfo); err != nil {
 		logger.WithTaskID(TaskId).Errorf("failed to update expireInfo(%s): %v", expireInfo, err)
 	}
 	logger.WithTaskID(TaskId).Infof("success to update expireInfo(%s)", expireInfo)
