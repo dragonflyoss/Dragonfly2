@@ -192,7 +192,13 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		response, err := client.GetPieceTasks(context.Background(), tc.request)
+		response, err := client.GetPieceTasks(
+			context.Background(),
+			dfnet.NetAddr{
+				Type: dfnet.TCP,
+				Addr: fmt.Sprintf("127.0.0.1:%d", port),
+			},
+			tc.request)
 		assert.Nil(err, "client get piece tasks grpc call should be ok")
 		assert.Equal(tc.responsePieceSize, len(response.PieceInfos))
 	}

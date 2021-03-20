@@ -63,7 +63,7 @@ type PeerTaskCallback interface {
 	Init(pt PeerTask) error
 	Done(pt PeerTask) error
 	Update(pt PeerTask) error
-	Fail(pt PeerTask, reason string) error
+	Fail(pt PeerTask, code base.Code, reason string) error
 }
 
 type peerTaskManager struct {
@@ -96,6 +96,8 @@ func NewPeerTaskManager(
 
 func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *PeerTaskProgress, error) {
 	// TODO ensure scheduler is ok first
+
+	start := time.Now()
 	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	if err != nil {
 		return nil, err
@@ -104,19 +106,18 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 		ctx:   ctx,
 		ptm:   ptm,
 		req:   req,
-		start: time.Now(),
+		start: start,
 	})
 
 	ptm.runningPeerTasks.Store(req.PeerId, pt)
 
 	// FIXME 1. merge same task id
 	// FIXME 2. when failed due to schedulerClient error, relocate schedulerClient and retry
-	//go pt.pullPiecesFromPeers()
-
 	return pt.Start(ctx)
 }
 
 func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (reader io.Reader, attribute map[string]string, err error) {
+	start := time.Now()
 	pt, err := NewStreamPeerTask(ctx, ptm.host, ptm.pieceManager, req, ptm.schedulerClient, ptm.schedulerOption)
 	if err != nil {
 		return nil, nil, err
@@ -125,14 +126,13 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 		ctx:   ctx,
 		ptm:   ptm,
 		req:   req,
-		start: time.Now(),
+		start: start,
 	})
 
 	ptm.runningPeerTasks.Store(req.PeerId, pt)
 
 	// FIXME 1. merge same task id
 	// FIXME 2. when failed due to schedulerClient error, relocate schedulerClient and retry
-	//go pt.pullPiecesFromPeers()
 
 	return pt.Start(ctx)
 }

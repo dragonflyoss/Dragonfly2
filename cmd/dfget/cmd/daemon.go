@@ -22,6 +22,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/go-echarts/statsview"
@@ -94,6 +95,7 @@ func runDaemon() error {
 
 	if flagDaemonOpt.Verbose {
 		logcore.SetCoreLevel(zapcore.DebugLevel)
+		logcore.SetGrpcLevel(zapcore.DebugLevel)
 
 		// TODO (jim): update json marshal function
 		s, _ := json.MarshalIndent(flagDaemonOpt, "", "  ")
@@ -105,7 +107,10 @@ func runDaemon() error {
 
 		go func() {
 			// enable go pprof and statsview
-			port, _ := freeport.GetFreePort()
+			port, _ := strconv.Atoi(os.Getenv("D7Y_PPROF_PORT"))
+			if port == 0 {
+				port, _ = freeport.GetFreePort()
+			}
 			debugListen := fmt.Sprintf("localhost:%d", port)
 			viewer.SetConfiguration(viewer.WithAddr(debugListen))
 			logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),

@@ -55,6 +55,8 @@ const (
 	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
 	reasonContextCanceled       = "context canceled"
 	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
+
+	failedCodeNotSet = 0
 )
 
 type filePeerTask struct {
@@ -147,7 +149,7 @@ func NewFilePeerTask(ctx context.Context,
 		return nil, err
 	}
 	if !result.State.Success {
-		return nil, fmt.Errorf("regist error: %s/%s", result.State.Code, result.State.Msg)
+		return nil, fmt.Errorf("register error: %s/%s", result.State.Code, result.State.Msg)
 	}
 	schedPieceResultCh, schedPeerPacketCh, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	if err != nil {
@@ -322,9 +324,10 @@ func (pt *filePeerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc fu
 		return
 	}
 	var (
-		num         int32
-		limit       int32
-		initialized bool
+		num            int32
+		limit          int32
+		initialized    bool
+		pieceRequestCh chan *DownloadPieceRequest
 	)
 loop:
 	for {
@@ -338,9 +341,13 @@ loop:
 		case <-pt.ctx.Done():
 			pt.Debugf("context done due to %s", pt.ctx.Err())
 			if !pt.progressDone {
-				pt.callback.Fail(pt, pt.ctx.Err().Error())
-				pt.failedReason = reasonContextCanceled
-				pt.failedCode = dfcodes.ClientContextCanceled
+				if pt.failedCode == failedCodeNotSet {
+					pt.failedReason = reasonContextCanceled
+					pt.failedCode = dfcodes.ClientContextCanceled
+					pt.callback.Fail(pt, pt.failedCode, pt.ctx.Err().Error())
+				} else {
+					pt.callback.Fail(pt, pt.failedCode, pt.failedReason)
+				}
 			}
 			break loop
 		case failed := <-pt.failedPieceCh:
@@ -368,8 +375,10 @@ loop:
 			case <-pt.ctx.Done():
 				pt.Debugf("context done due to %s", pt.ctx.Err())
 				if !pt.progressDone {
-					pt.failedReason = reasonContextCanceled
-					pt.failedCode = dfcodes.ClientContextCanceled
+					if pt.failedCode == failedCodeNotSet {
+						pt.failedReason = reasonContextCanceled
+						pt.failedCode = dfcodes.ClientContextCanceled
+					}
 				}
 			case <-pt.peerPacketReady:
 				// preparePieceTasksByPeer func already send piece result with error
@@ -386,13 +395,20 @@ loop:
 
 		if !initialized {
 			pt.contentLength = piecePacket.ContentLength
-			_ = pt.callback.Init(pt)
 			initialized = true
-		}
-
-		// trigger DownloadPieces
-		if len(piecePacket.PieceInfos) > 0 {
-			pt.pieceManager.DownloadPieces(pti, piecePacket)
+			if err = pt.callback.Init(pt); err != nil {
+				pt.failedReason = err.Error()
+				pt.failedCode = dfcodes.ClientError
+				break loop
+			}
+			pc := pt.peerPacket.ParallelCount
+			if pc <= 4 {
+				pc = 4
+			}
+			pieceRequestCh = make(chan *DownloadPieceRequest, pc*2)
+			for i := int32(0); i < pc; i++ {
+				go pt.downloadPieceWorker(i, pti, pieceRequestCh)
+			}
 		}
 
 		// update total piece
@@ -401,10 +417,17 @@ loop:
 			_ = pt.callback.Update(pt)
 		}
 
-		for _, p := range piecePacket.PieceInfos {
-			pt.Infof("get piece %d from %s", p.PieceNum, piecePacket.DstPid)
-			if !pt.requestedPieces.IsSet(p.PieceNum) {
-				pt.requestedPieces.Set(p.PieceNum)
+		// trigger DownloadPiece
+		for _, piece := range piecePacket.PieceInfos {
+			pt.Infof("get piece %d from %s", piece.PieceNum, piecePacket.DstPid)
+			if !pt.requestedPieces.IsSet(piece.PieceNum) {
+				pt.requestedPieces.Set(piece.PieceNum)
+			}
+			pieceRequestCh <- &DownloadPieceRequest{
+				TaskID:  pt.GetTaskID(),
+				DstPid:  piecePacket.DstPid,
+				DstAddr: piecePacket.DstAddr,
+				piece:   piece,
 			}
 		}
 
@@ -421,8 +444,10 @@ loop:
 				break loop
 			case <-pt.ctx.Done():
 				if !pt.progressDone {
-					pt.failedReason = reasonContextCanceled
-					pt.failedCode = dfcodes.ClientContextCanceled
+					if pt.failedCode == failedCodeNotSet {
+						pt.failedReason = reasonContextCanceled
+						pt.failedCode = dfcodes.ClientContextCanceled
+					}
 					pt.Errorf("context done due to %s, progress is not done", pt.ctx.Err())
 				} else {
 					pt.Debugf("context done due to %s, progress is already done", pt.ctx.Err())
@@ -437,6 +462,24 @@ loop:
 	}
 }
 
+func (pt *filePeerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *DownloadPieceRequest) {
+	for {
+		select {
+		case request := <-requests:
+			pt.Debugf("peer download worker #%d receive piece task, "+
+				"dest peer id: %s, piece num: %d, range start: %d, range size: %d",
+				id, request.DstPid, request.piece.PieceNum, request.piece.RangeStart, request.piece.RangeSize)
+			pt.pieceManager.DownloadPiece(pti, request)
+		case <-pt.done:
+			pt.Debugf("pt.done, peer download worker #%d exit", id)
+			return
+		case <-pt.ctx.Done():
+			pt.Debugf("pt.ctx.Done(), peer download worker #%d exit", id)
+			return
+		}
+	}
+}
+
 func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
 	// goroutine safe for channel and send on closed channel
 	defer func() {
@@ -444,11 +487,14 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 			pt.Warnf("recover from %s", r)
 		}
 	}()
+	pt.Debugf("report piece #%d result, success: %t", piece.PieceNum, pieceResult.Success)
+
 	// retry failed piece
 	if !pieceResult.Success {
 		pieceResult.FinishedCount = pt.readyPieces.Settled()
 		pt.pieceResultCh <- pieceResult
 		pt.failedPieceCh <- pieceResult.PieceNum
+		pt.Errorf("%d download failed, retry later", piece.PieceNum)
 		return nil
 	}
 
@@ -534,14 +580,19 @@ func (pt *filePeerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestP
 		return p, nil
 	}
 
-	// context canceled, just exit
-	if status.Code(err) == codes.Canceled {
-		pt.Warnf("get piece task from peer(%s) canceled: %s", peer.PeerId, err)
-		return nil, err
+	// grpc error
+	if se, ok := err.(interface{ GRPCStatus() *status.Status }); ok {
+		pt.Debugf("get piece task with grpc error, code: %d", se.GRPCStatus().Code())
+		// context canceled, just exit
+		if se.GRPCStatus().Code() == codes.Canceled {
+			pt.Warnf("get piece task from peer(%s) canceled: %s", peer.PeerId, err)
+			return nil, err
+		}
 	}
-	code := dfcodes.ClientPieceTaskRequestFail
+	code := dfcodes.ClientPieceRequestFail
 	// not grpc error
 	if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
+		pt.Debugf("get piece task with df error, code: %d", de.Code)
 		code = de.Code
 	}
 	// may be panic here due to unknown content length or total piece count
@@ -629,7 +680,7 @@ func (pt *filePeerTask) finish() error {
 		if err = pt.callback.Done(pt); err != nil {
 			pt.Errorf("peer task done callback failed: %s", err)
 			success = false
-			code = dfcodes.UnknownError
+			code = dfcodes.ClientError
 			message = err.Error()
 		}
 
@@ -725,7 +776,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			}
 		}
 
-		if err := pt.callback.Fail(pt, pt.failedReason); err != nil {
+		if err := pt.callback.Fail(pt, pt.failedCode, pt.failedReason); err != nil {
 			pt.Errorf("peer task fail callback failed: %s", err)
 		}
 

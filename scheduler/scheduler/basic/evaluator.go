@@ -41,19 +41,17 @@ func (e *Evaluator) NeedAdjustParent(peer *types.PeerTask) bool {
 	}
 
 	costHistory := parent.CostHistory
-
 	if len(costHistory) < 4 {
 		return false
 	}
 
-	totalCost := int32(0)
-	for _, cost := range costHistory {
-		totalCost += cost
+	avgCost, lastCost := e.getAvgAndLastCost(parent.CostHistory, 4)
+	if avgCost * 40 < lastCost {
+		logger.Debugf("IsNodeBad [%s]: node cost is too long", peer.Pid)
+		return true
 	}
-	lastCost := costHistory[len(costHistory)-1]
-	totalCost -= lastCost
 
-	return (totalCost * 4 / int32(len(costHistory)-1)) < lastCost
+	return (avgCost * 20) < lastCost
 }
 
 func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
@@ -81,24 +79,33 @@ func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
 	}
 
 	costHistory := parent.CostHistory
-	if len(costHistory) < 4 {
+	if int32(len(costHistory)) < 4 {
 		return false
 	}
 
-	lastCost := costHistory[len(costHistory)-1]
-	totalCost := int32(0)
-	for _, cost := range costHistory {
-		totalCost += cost
-	}
+	avgCost, lastCost := e.getAvgAndLastCost(costHistory, 4)
 
-	totalCost -= lastCost
-
-	if (totalCost * 20 / int32(len(costHistory)-1)) < lastCost {
+	if avgCost * 40 < lastCost {
 		logger.Debugf("IsNodeBad [%s]: node cost is too long", peer.Pid)
 		return true
 	}
 
 	return false
+}
+
+func (e *Evaluator) getAvgAndLastCost(list []int32, splitPostition int) (avgCost, lastCost int32) {
+	length := len(list)
+	totalCost := int32(0)
+	for i, cost := range list {
+		totalCost += cost
+		if length - i < splitPostition {
+			lastCost += cost
+		}
+	}
+
+	avgCost = totalCost / int32(length)
+	lastCost = lastCost / int32(splitPostition)
+	return
 }
 
 func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
@@ -223,3 +230,4 @@ func (e *Evaluator) GetDistance(dst *types.PeerTask, src *types.PeerTask) (dist 
 
 	return 1.0 - hostDist/80.0, nil
 }
+

@@ -17,14 +17,17 @@
 package schedule_worker
 
 import (
+	"fmt"
+	"time"
+
+	"k8s.io/client-go/util/workqueue"
+
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/types"
-	"fmt"
-	"k8s.io/client-go/util/workqueue"
 )
 
 type JobType int8
@@ -178,13 +181,14 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 		return
 	}
 
+	startTm := time.Now()
 	logger.Debugf("[%s][%s]: begin do schedule [%d]", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus())
 	defer func() {
 		err := recover()
 		if err != nil {
 			logger.Errorf("[%s][%s]: do schedule panic: %v", peerTask.Task.TaskId, peerTask.Pid, err)
 		}
-		logger.Debugf("[%s][%s]: end do schedule [%d]", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus())
+		logger.Debugf("[%s][%s]: end do schedule [%d] cost: %d", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus(), time.Now().Sub(startTm).Nanoseconds())
 	}()
 
 	switch peerTask.GetNodeStatus() {
@@ -338,7 +342,7 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 	switch code {
 	case dfcodes.Success:
 		return
-	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceTaskRequestFail:
+	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
 		peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
 		if peerTask != nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
@@ -359,7 +363,6 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 	case dfcodes.UnknownError:
 		return true
 	}
-
 
 	return
 }

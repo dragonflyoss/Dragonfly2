@@ -43,7 +43,7 @@ var once sync.Once
 func GetClientByAddr(addrs []dfnet.NetAddr) (DaemonClient, error) {
 	once.Do(func() {
 		dc = &daemonClient{
-			rpc.NewConnection(make([]dfnet.NetAddr, 0)),
+			rpc.NewConnection("dfdaemon", make([]dfnet.NetAddr, 0)),
 		}
 	})
 	if len(addrs) == 0 {

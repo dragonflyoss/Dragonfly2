@@ -70,7 +70,7 @@ func CreateClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerClient
 		return nil, errors.New("address list of cdn is empty")
 	}
 	return &managerClient{
-		Connection: rpc.NewConnection(addrs, opts...),
+		Connection: rpc.NewConnection("management", addrs, opts...),
 		cdns:       make(map[string]*manager.ServerInfo),
 		ch:         make(chan struct{}),
 		closeDone:  false,

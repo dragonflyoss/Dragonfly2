@@ -50,6 +50,7 @@ const (
 )
 
 type Connection struct {
+	name           string
 	lock           sync.Mutex
 	rwMutex        *synclock.KeyLocker
 	opts           []grpc.DialOption
@@ -67,13 +68,14 @@ type RetryMeta struct {
 	MaxBackOff  float64 // second
 }
 
-func NewConnection(addrs []dfnet.NetAddr, opts ...grpc.DialOption) *Connection {
+func NewConnection(name string, addrs []dfnet.NetAddr, opts ...grpc.DialOption) *Connection {
 	opts = append(clientOpts, opts...)
 	addresses := make([]string, 0, len(addrs))
 	for _, addr := range addrs {
 		addresses = append(addresses, addr.GetEndpoint())
 	}
 	conn := &Connection{
+		name:           name,
 		rwMutex:        synclock.NewKeyLocker(),
 		opts:           opts,
 		hashRing:       hashring.New(addresses),
@@ -92,10 +94,10 @@ func (conn *Connection) UpdateAccessNodeMap(key string) {
 			conn.accessNodeMap.Store(node, time.Now())
 			return
 		} else {
-			logger.GrpcLogger.Warnf("failed to get node(%s) from node2ClientMap", node)
+			logger.GrpcLogger.Warnf("conn:%s failed to get node(%s) from node2ClientMap", conn.name, node)
 		}
 	} else {
-		logger.GrpcLogger.Warnf("failed to get key(%s) from key2NodeMap", key)
+		logger.GrpcLogger.Warnf("conn:%s failed to get key(%s) from key2NodeMap", conn.name, key)
 	}
 }
 
@@ -116,7 +118,7 @@ func (conn *Connection) AddNodes(addrs []dfnet.NetAddr) error {
 	defer conn.lock.Unlock()
 	for _, addr := range addrs {
 		conn.hashRing = conn.hashRing.AddNode(addr.GetEndpoint())
-		logger.Debugf("success add %s to server node list", addr)
+		logger.Debugf("conn:%s success add %s to server node list", conn.name, addr)
 	}
 	return nil
 }
@@ -136,7 +138,7 @@ var clientOpts = []grpc.DialOption{
 
 func (conn *Connection) startGC(ctx context.Context) {
 	// todo 从hashing环中删除频繁失败的节点
-	logger.GrpcLogger.Debugf("start the gc connections job")
+	logger.GrpcLogger.Debugf("conn:%s start the gc connections job", conn.name)
 	// execute the GC by fixed delay
 	ticker := time.NewTicker(gcConnectionsInterval)
 	for range ticker.C {
@@ -150,7 +152,8 @@ func (conn *Connection) startGC(ctx context.Context) {
 		for _, node := range nodes {
 			atime, err := conn.accessNodeMap.GetAsTime(node)
 			if err != nil {
-				logger.GrpcLogger.Errorf("gc connections: failed to get access time node(%s): %v", node, err)
+				logger.GrpcLogger.Errorf("conn:%s gc connections: failed to get access time node(%s): %v", conn.name,
+					node, err)
 				continue
 			}
 			if time.Since(atime) < conn.connExpireTime {
@@ -163,9 +166,11 @@ func (conn *Connection) startGC(ctx context.Context) {
 		//conn.rwMutex.Unlock()
 		// slow GC detected, report it with a log warning
 		if timeDuring := time.Since(startTime); timeDuring > gcConnectionsTimeout {
-			logger.GrpcLogger.Warnf("gc connections:%d cost:%.3f", removedConnCount, timeDuring.Seconds())
+			logger.GrpcLogger.Warnf("conn:%s gc connections:%d cost:%.3f", conn.name, removedConnCount,
+				timeDuring.Seconds())
 		}
-		logger.GrpcLogger.Infof("gc connections: success to gc clientConn count(%d), remainder count(%d)", removedConnCount, totalNodeSize-removedConnCount)
+		logger.GrpcLogger.Infof("conn:%s gc connections: success to gc clientConn count(%d), remainder count(%d)",
+			conn.name, removedConnCount, totalNodeSize-removedConnCount)
 	}
 }
 
@@ -196,7 +201,7 @@ func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, er
 	conn.hashRing = conn.hashRing.AddNode(node)
 	clientConn, err := conn.createClient(node, append(clientOpts, conn.opts...)...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find candidate client conn")
+		return nil, errors.Wrapf(err, "conn:%s failed to find candidate client conn", conn.name)
 	}
 	conn.node2ClientMap.Store(node, clientConn)
 	return clientConn, nil
@@ -228,7 +233,7 @@ func (conn *Connection) GetClientConn(hashKey string) (*grpc.ClientConn, error) 
 	}
 	client, err := conn.findCandidateClientConn(hashKey)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find candidate client conn")
+		return nil, errors.Wrapf(err, "conn:%s failed to find candidate client conn", conn.name)
 	}
 	conn.rwMutex.Lock(client.node, false)
 	defer conn.rwMutex.UnLock(client.node, false)
@@ -251,11 +256,11 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 		preNode = currentNode.(string)
 		exclusiveNodes = append(exclusiveNodes, currentNode.(string))
 	} else {
-		logger.GrpcLogger.Warnf("failed to find server node for key %s", key)
+		logger.GrpcLogger.Warnf("conn:%s failed to find server node for key %s", conn.name, key)
 	}
 	client, err := conn.findCandidateClientConn(key, exclusiveNodes...)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to find candidate client conn")
+		return "", errors.Wrapf(err, "conn:%s failed to find candidate client conn", conn.name)
 	}
 	conn.rwMutex.Lock(client.node, false)
 	defer conn.rwMutex.UnLock(client.node, false)
