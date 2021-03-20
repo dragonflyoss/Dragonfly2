@@ -310,7 +310,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, request
 	}
 	log.Debugf("get content length: %d", contentLength)
 	// 1. download piece from source
-	body, err := pm.resourceClient.Download(request.Url, request.UrlMata.Header)
+	body, _, err := pm.resourceClient.Download(request.Url, request.UrlMata.Header)
 	if err != nil {
 		return err
 	}

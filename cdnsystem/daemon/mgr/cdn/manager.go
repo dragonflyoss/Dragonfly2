@@ -103,16 +103,15 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 			detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength), nil
 	}
 	// third: start to download the source file
-	body, err := cm.download(task, detectResult)
+	body, expireInfo, err := cm.download(task, detectResult)
 	// download fail
 	if err != nil {
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusSourceERROR), err
 	}
 	defer body.Close()
 
-	// todo update expireInfo
-	// update Expire info
-	//cm.updateExpireInfo(ctx, task.TaskId, resp.ExpireInfo)
+	//update Expire info
+	cm.updateExpireInfo(ctx, task.TaskId, expireInfo)
 	fileMd5 := md5.New()
 	if detectResult.fileMd5 != nil {
 		fileMd5 = detectResult.fileMd5

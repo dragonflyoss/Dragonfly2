@@ -83,17 +83,6 @@ func (client *httpSourceClient) GetContentLength(url string, headers map[string]
 	return resp.ContentLength, nil
 }
 
-func (client *httpSourceClient) GetExpireInfo(url string, headers map[string]string) (map[string]string, error) {
-	resp, err := client.requestWithHeader(http.MethodHead, url, headers, 4*time.Second)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]string{
-		"Last-Modified": resp.Header.Get("Last-Modified"),
-		"Etag":          resp.Header.Get("Etag"),
-	}, nil
-}
-
 // IsSupportRange checks if the source url support partial requests.
 func (client *httpSourceClient) IsSupportRange(url string, headers map[string]string) (bool, error) {
 	// set headers: headers is a reference to map, should not change it
@@ -137,16 +126,20 @@ func (client *httpSourceClient) IsExpired(url string, headers, expireInfo map[st
 }
 
 // Download downloads the file from the original address
-func (client *httpSourceClient) Download(url string, headers map[string]string) (io.ReadCloser, error) {
+func (client *httpSourceClient) Download(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
 	resp, err := client.requestWithHeader(http.MethodGet, url, headers, 0)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPartialContent {
-		return resp.Body, nil
+		expireInfo := map[string]string{
+			"Last-Modified": resp.Header.Get("Last-Modified"),
+			"Etag":          resp.Header.Get("Etag"),
+		}
+		return resp.Body, expireInfo, nil
 	}
 	resp.Body.Close()
-	return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	return nil, nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 }
 
 func (client *httpSourceClient) requestWithHeader(method string, url string, headers map[string]string,

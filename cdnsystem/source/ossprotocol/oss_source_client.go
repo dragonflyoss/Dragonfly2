@@ -60,10 +60,6 @@ type ossSourceClient struct {
 	accessMap sync.Map
 }
 
-func (osc *ossSourceClient) GetExpireInfo(url string, headers map[string]string) (map[string]string, error) {
-	panic("implement me")
-}
-
 func (osc *ossSourceClient) GetContentLength(url string, headers map[string]string) (int64, error) {
 	resHeader, err := osc.getMeta(url, headers)
 	if err != nil {
@@ -128,42 +124,32 @@ func (osc *ossSourceClient) IsExpired(url string, headers, expireInfo map[string
 	//return resp.StatusCode != http.StatusNotModified, nil
 }
 
-func (osc *ossSourceClient) Download(url string, headers map[string]string) (io.ReadCloser, error) {
+func (osc *ossSourceClient) Download(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
 	ossObject, err := ParseOssObject(url)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse oss object from url:%s", url)
+		return nil, nil, errors.Wrapf(err, "failed to parse oss object from url:%s", url)
 	}
 	client, err := osc.getClient(headers)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get client")
+		return nil, nil, errors.Wrapf(err, "failed to get client")
 	}
 	bucket, err := client.Bucket(ossObject.bucket)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get bucket:%s", ossObject.bucket)
+		return nil, nil, errors.Wrapf(err, "failed to get bucket:%s", ossObject.bucket)
 	}
 	body, err := bucket.GetObject(ossObject.object, getOptions(headers)...)
 	if err != nil {
 		logger.Errorf("Cannot get the specified bucket %s instance: %v", bucket, err)
 		os.Exit(1)
 	}
-	//if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPartialContent {
-	//	hdr := make(map[string]string)
-	//	for k, v := range resp.Header {
-	//		hdr[k] = strings.Join(v, " ")
-	//	}
-	//	// todo 考虑 expire，类似访问baidu网页是没有last-modified的
-	//	return &types.DownloadResponse{
-	//		Body: resp.Body,
-	//		ExpireInfo: map[string]string{
-	//			"Last-Modified": resp.Header.Get("Last-Modified"),
-	//			"Etag":          resp.Header.Get("Etag"),
-	//		},
-	//		Header: hdr,
-	//	}, nil
-	//}
-	//resp.Body.Close()
+	//ExpireInfo:
+	//map[string]string{
+	//	"Last-Modified": resp.Header.Get("Last-Modified"),
+	//	"Etag":          resp.Header.Get("Etag"),
+	//},
+	//	resp.Body.Close()
 	//return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	return body, nil
+	return body, nil, nil
 }
 
 func (osc *ossSourceClient) getClient(header map[string]string) (*oss.Client, error) {
@@ -206,7 +192,7 @@ type ossObject struct {
 	object string
 }
 
-func ParseOssObject(ossUrl string) (*ossObject, error){
+func ParseOssObject(ossUrl string) (*ossObject, error) {
 	parsedUrl, err := url.Parse(ossUrl)
 	if parsedUrl.Scheme != "oss" {
 		return nil, fmt.Errorf("url:%s is not oss object", ossUrl)

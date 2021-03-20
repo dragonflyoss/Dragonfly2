@@ -33,12 +33,12 @@ const RangeHeaderName = "Range"
 //
 // If the returned error is nil, the Response will contain a non-nil
 // Body which the caller is expected to close.
-func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, error) {
+func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, map[string]string, error) {
 	headers := maputils.DeepCopyMap(nil, task.Headers)
 	if detectResult.breakPoint > 0 {
 		breakRange, err := rangeutils.GetBreakRange(detectResult.breakPoint, task.SourceFileLength)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to calculate the breakRange")
+			return nil, nil, errors.Wrapf(err, "failed to calculate the breakRange")
 		}
 		// check if Range in header? if Range already in Header, priority use this range
 		if !hasRange(headers) {
