@@ -18,9 +18,8 @@ package ossprotocol
 
 import (
 	"d7y.io/dragonfly/v2/cdnsystem/source"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"fmt"
-	"github.com/stretchr/testify/assert"
+	"github.com/go-http-utils/headers"
 	"github.com/stretchr/testify/suite"
 	"io/ioutil"
 	"net/http"
@@ -35,11 +34,11 @@ func TestOssSourceClientTestSuite(t *testing.T) {
 
 type OssSourceClientTestSuite struct {
 	suite.Suite
-	client source.ResourceClient
+	source.ResourceClient
 }
 
 func (s *OssSourceClientTestSuite) SetupSuite() {
-	s.client = NewOSSSourceClient()
+	s.ResourceClient = NewOSSSourceClient()
 }
 
 func (s *OssSourceClientTestSuite) TeardownSuite() {
@@ -91,95 +90,96 @@ func (s *OssSourceClientTestSuite) TestParseOssObject() {
 		},
 	}
 	for _, tt := range tests {
-		got, err := ParseOssObject(tt.args.ossUrl)
-		if err != nil {
-			s.Nil(got)
-			s.Equal(err, tt.wantErr)
-		} else {
-			s.EqualValues(got, tt.want)
-		}
+		s.Run(tt.name, func() {
+			got, err := ParseOssObject(tt.args.ossUrl)
+			if err != nil {
+				s.Nil(got)
+				s.Equal(err, tt.wantErr)
+			} else {
+				s.Equal(got, tt.want)
+			}
+		})
 	}
 }
 
-func Test_ossSourceClient_Download(t *testing.T) {
-	type fields struct {
-		clientMap sync.Map
-		accessMap sync.Map
-	}
+func (s *OssSourceClientTestSuite) TestDownload() {
 	type args struct {
-		url     string
-		headers map[string]string
+		url    string
+		header map[string]string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *types.DownloadResponse
-		wantErr bool
+		name       string
+		args       args
+		content    string
+		expireInfo map[string]string
+		wantErr    error
 	}{
 		{
-			name: "test1",
-			fields: fields{
-				clientMap: sync.Map{},
-				accessMap: sync.Map{},
-			},
+			name: "t1",
 			args: args{
 				url: "oss://alimonitor-monitor/server.xml",
-				headers: map[string]string{
+				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
 					"accessKeyID":     "RX8yefyaWDWf15SV",
 					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 				},
 			},
-			want: &types.DownloadResponse{
-				Body:       nil,
-				ExpireInfo: nil,
-				Header:     nil,
+			content: "test",
+			expireInfo: map[string]string{
+				headers.LastModified: "Wed, 16 Sep 2020 11:58:38 GMT",
+				headers.ETag:         "lmW9EEXRsIpgQHKGyHMYFxFZBaJ1",
 			},
+			wantErr: nil,
+		}, {
+			name: "test1",
+			args: args{
+				url: "oss://alimonitor-monitor/server.xml",
+				header: map[string]string{
+					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
+					"accessKeyID":     "RX8yefyaWDWf15SV",
+					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
+				},
+			},
+			content: "test",
+			expireInfo: map[string]string{
+				headers.LastModified: "Wed, 16 Sep 2020 11:58:38 GMT",
+				headers.ETag:         "lmW9EEXRsIpgQHKGyHMYFxFZBaJ1",
+			},
+			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			osc := NewOSSSourceClient()
-			got, err := osc.Download(tt.args.url, tt.args.headers)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Download() error = %v, wantErr %v", err, tt.wantErr)
+		s.Run(tt.name, func() {
+			got, expireInfo, err := s.Download(tt.args.url, tt.args.header)
+			s.Equal(tt.wantErr, err != nil)
+			if err != nil {
 				return
 			}
-			defer got.Body.Close()
-
-			data, err := ioutil.ReadAll(got.Body)
-			assert.Nil(t, err)
+			defer got.Close()
+			data, err := ioutil.ReadAll(got)
+			s.Nil(err)
+			s.Equal(tt.expireInfo, expireInfo)
 			fmt.Println("data:", string(data))
 		})
 	}
 }
 
-func Test_ossSourceClient_GetContentLength(t *testing.T) {
-	type fields struct {
-		clientMap sync.Map
-		accessMap sync.Map
-	}
+func (s *OssSourceClientTestSuite) TestGetContentLength() {
 	type args struct {
-		url     string
-		headers map[string]string
+		url    string
+		header map[string]string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    int64
 		wantErr bool
 	}{
 		{
 			name: "test1",
-			fields: fields{
-				clientMap: sync.Map{},
-				accessMap: sync.Map{},
-			},
 			args: args{
 				url: "oss://alimonitor-monitor/rowkey_20191010144421mYtlKyATuW_app.txt",
-				headers: map[string]string{
+				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
 					"accessKeyID":     "RX8yefyaWDWf15SV",
 					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
@@ -189,56 +189,45 @@ func Test_ossSourceClient_GetContentLength(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			osc := &ossSourceClient{
-				clientMap: tt.fields.clientMap,
-				accessMap: tt.fields.accessMap,
-			}
-			got, err := osc.GetContentLength(tt.args.url, tt.args.headers)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetContentLength() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("GetContentLength() got = %v, want %v", got, tt.want)
-			}
+		s.Run(tt.name, func() {
+			got, err := s.GetContentLength(tt.args.url, tt.args.header)
+			s.Equal(tt.wantErr, err != nil)
+			s.Equal(tt.want, got)
 		})
 	}
 }
 
-func Test_ossSourceClient_IsExpired(t *testing.T) {
-	type fields struct {
-		clientMap sync.Map
-		accessMap sync.Map
-	}
+func (s *OssSourceClientTestSuite) TestsExpired() {
 	type args struct {
 		url        string
-		headers    map[string]string
+		header     map[string]string
 		expireInfo map[string]string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    bool
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "test1",
+			args: args{
+				url: "oss://alimonitor-monitor/rowkey_20191010144421mYtlKyATuW_app.txt",
+				header: map[string]string{
+					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
+					"accessKeyID":     "RX8yefyaWDWf15SV",
+					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
+				},
+				expireInfo: map[string]string{},
+			},
+			want: true,
+		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			osc := &ossSourceClient{
-				clientMap: tt.fields.clientMap,
-				accessMap: tt.fields.accessMap,
-			}
-			got, err := osc.IsExpired(tt.args.url, tt.args.headers, tt.args.expireInfo)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("IsExpired() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("IsExpired() got = %v, want %v", got, tt.want)
-			}
+		s.Run(tt.name, func() {
+			got, err := s.IsExpired(tt.args.url, tt.args.header, tt.args.expireInfo)
+			s.Equal(tt.wantErr, err != nil)
+			s.Equal(tt.want, got)
 		})
 	}
 }

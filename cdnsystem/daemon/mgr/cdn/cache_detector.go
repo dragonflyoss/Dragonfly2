@@ -91,7 +91,7 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (re
 	if err := checkSameFile(task, fileMetaData); err != nil {
 		return nil, errors.Wrapf(err, "task does not match meta information of task file")
 	}
-	expired, err := cd.resourceClient.IsExpired(task.Url, task.Headers, fileMetaData.ExpireInfo)
+	expired, err := cd.resourceClient.IsExpired(task.Url, task.Header, fileMetaData.ExpireInfo)
 	if err != nil {
 		// 如果获取失败，则认为没有过期，防止打爆源
 		logger.WithTaskID(task.TaskId).Errorf("failed to check if the task expired: %v", err)
@@ -108,7 +108,7 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (re
 	}
 	// check if the resource supports range request. if so,
 	// detect the cache situation by reading piece meta and data file
-	supportRange, err := cd.resourceClient.IsSupportRange(task.Url, task.Headers)
+	supportRange, err := cd.resourceClient.IsSupportRange(task.Url, task.Header)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check if url(%s) supports range request", task.Url)
 	}
@@ -167,26 +167,37 @@ func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskId string, met
 		return tempRecords[i].PieceNum < tempRecords[j].PieceNum
 	})
 
-	var breakPoint int64 = 0
+	var breakPoint uint64 = 0
 	pieceMetaRecords := make([]*storage.PieceMetaRecord, 0, 0)
-	for index, record := range tempRecords {
-		if int32(index) != record.PieceNum {
+	for index := range tempRecords {
+		if int32(index) != tempRecords[index].PieceNum {
 			break
 		}
 		// read content
-		if err := checkPieceContent(reader, record, fileMd5); err != nil {
-			logger.WithTaskID(taskId).Errorf("read content of pieceNum %d failed: %v", record.PieceNum, err)
+		if err := checkPieceContent(reader, tempRecords[index], fileMd5); err != nil {
+			logger.WithTaskID(taskId).Errorf("read content of pieceNum %d failed: %v", tempRecords[index].PieceNum, err)
 			break
 		}
-		pieceMetaRecords = append(pieceMetaRecords, record)
+		breakPoint = tempRecords[index].OriginRange.EndIndex + 1
+		pieceMetaRecords = append(pieceMetaRecords, tempRecords[index])
 	}
 	if len(tempRecords) != len(pieceMetaRecords) {
 		if err := cd.cacheDataManager.writePieceMetaRecords(ctx, taskId, pieceMetaRecords); err != nil {
 			return nil, errors.Wrapf(err, "write piece meta records failed")
 		}
 	}
+	// todo already download done
+	//if metaData.SourceFileLen >=0 && int64(breakPoint) == metaData.SourceFileLen {
+	//	return &cacheResult{
+	//		breakPoint:       -1,
+	//		pieceMetaRecords: pieceMetaRecords,
+	//		fileMetaData:     metaData,
+	//		fileMd5:          fileMd5,
+	//	}, nil
+	//}
+	// todo 整理数据文件 truncate breakpoint之后的数据内容
 	return &cacheResult{
-		breakPoint:       breakPoint,
+		breakPoint:       int64(breakPoint),
 		pieceMetaRecords: pieceMetaRecords,
 		fileMetaData:     metaData,
 		fileMd5:          fileMd5,

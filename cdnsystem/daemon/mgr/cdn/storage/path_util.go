@@ -54,7 +54,7 @@ func GetDownloadRaw(taskId string) *store.Raw {
 }
 
 func GetUploadRaw(taskId string) *store.Raw {
-	return &store.Raw {
+	return &store.Raw{
 		Bucket: UploadHome,
 		Key:    getDownloadKey(taskId),
 	}
@@ -72,6 +72,14 @@ func GetPieceMetaDataRaw(taskId string) *store.Raw {
 	return &store.Raw{
 		Bucket: DownloadHome,
 		Key:    getPieceMetaDataKey(taskId),
+	}
+}
+
+func GetAppendPieceMetaDataRaw(taskId string) *store.Raw {
+	return &store.Raw{
+		Bucket: DownloadHome,
+		Key:    getPieceMetaDataKey(taskId),
+		Append: true,
 	}
 }
 

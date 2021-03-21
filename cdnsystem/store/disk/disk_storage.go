@@ -43,6 +43,7 @@ func init() {
 }
 
 const StorageDriver = "disk"
+
 const MemoryStorageDriver = "memory"
 
 var fileLocker = util.NewLockerPool()
@@ -52,27 +53,55 @@ func init() {
 	store.Register(MemoryStorageDriver, NewStorage)
 }
 
-func lock(path string, offset int64, ro bool) {
-	if offset != -1 {
-		fileLocker.GetLock(getLockKey(path, -1), true)
-	}
-
-	fileLocker.GetLock(getLockKey(path, offset), ro)
-}
-
-func unLock(path string, offset int64, ro bool) {
-	if offset != -1 {
-		fileLocker.ReleaseLock(getLockKey(path, -1), true)
-	}
-
-	fileLocker.ReleaseLock(getLockKey(path, offset), ro)
-}
-
 // diskStorage is one of the implementations of StorageDriver using local disk file system.
 type diskStorage struct {
 	// BaseDir is the dir that local storage driver will store content based on it.
-	BaseDir  string
+	BaseDir string
+	// GcConfig
 	GcConfig *store.GcConfig
+}
+
+// NewStorage performs initialization for disk Storage and return a StorageDriver.
+func NewStorage(conf interface{}) (store.StorageDriver, error) {
+	cfg := &diskStorage{}
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		DecodeHook: decodeHock(
+			reflect.TypeOf(time.Second),
+			reflect.TypeOf(fsize.B)),
+		Result: cfg,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create decoder: %v", err)
+	}
+	err = decoder.Decode(conf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config: %v", err)
+	}
+	// prepare the base dir
+	if !filepath.IsAbs(cfg.BaseDir) {
+		return nil, fmt.Errorf("not absolute path: %s", cfg.BaseDir)
+	}
+	if err := fileutils.MkdirAll(cfg.BaseDir); err != nil {
+		return nil, fmt.Errorf("failed to create baseDir%s: %v", cfg.BaseDir, err)
+	}
+
+	return &diskStorage{
+		BaseDir:  cfg.BaseDir,
+		GcConfig: cfg.GcConfig,
+	}, nil
+}
+
+func decodeHock(types ...reflect.Type) mapstructure.DecodeHookFunc {
+	return func(f, t reflect.Type, data interface{}) (interface{}, error) {
+		for _, typ := range types {
+			if t == typ {
+				b, _ := yaml.Marshal(data)
+				v := reflect.New(t)
+				return v.Interface(), yaml.Unmarshal(b, v.Interface())
+			}
+		}
+		return data, nil
+	}
 }
 
 func (ds *diskStorage) GetTotalSpace(ctx context.Context) (fsize.Size, error) {
@@ -98,49 +127,6 @@ func (ds *diskStorage) MoveFile(src string, dst string) error {
 	return fileutils.MoveFile(src, dst)
 }
 
-func decodeHock(types ...reflect.Type) mapstructure.DecodeHookFunc {
-	return func(f, t reflect.Type, data interface{}) (interface{}, error) {
-		for _, typ := range types {
-			if t == typ {
-				b, _ := yaml.Marshal(data)
-				v := reflect.New(t)
-				return v.Interface(), yaml.Unmarshal(b, v.Interface())
-			}
-		}
-		return data, nil
-	}
-}
-
-// NewStorage performs initialization for disk Storage and return a StorageDriver.
-func NewStorage(conf interface{}) (store.StorageDriver, error) {
-	cfg := &diskStorage{}
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig {
-		DecodeHook : decodeHock(
-			reflect.TypeOf(time.Second),
-			reflect.TypeOf(fsize.B)),
-			Result: cfg,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create decoder: %v", err)
-	}
-	err = decoder.Decode(conf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %v", err)
-	}
-	// prepare the base dir
-	if !filepath.IsAbs(cfg.BaseDir) {
-		return nil, fmt.Errorf("not absolute path: %s", cfg.BaseDir)
-	}
-	if err := fileutils.MkdirAll(cfg.BaseDir); err != nil {
-		return nil, fmt.Errorf("failed to create baseDir%s: %v", cfg.BaseDir, err)
-	}
-
-	return &diskStorage{
-		BaseDir:  cfg.BaseDir,
-		GcConfig: cfg.GcConfig,
-	}, nil
-}
-
 // Get the content of key from storage and return in io stream.
 func (ds *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.ReadCloser, error) {
 	path, info, err := ds.statPath(raw.Bucket, raw.Key)
@@ -153,7 +139,7 @@ func (ds *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.ReadCloser, 
 	}
 
 	r, w := io.Pipe()
-	go func() {
+	go func(w *io.PipeWriter) {
 		defer w.Close()
 
 		lock(path, raw.Offset, true)
@@ -165,16 +151,15 @@ func (ds *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.ReadCloser, 
 		}
 		defer f.Close()
 
-		f.Seek(raw.Offset, 0)
+		f.Seek(raw.Offset, io.SeekStart)
 		var reader io.Reader
 		reader = f
 		if raw.Length > 0 {
 			reader = io.LimitReader(f, raw.Length)
 		}
-
 		buf := make([]byte, 256*1024)
 		io.CopyBuffer(w, reader, buf)
-	}()
+	}(w)
 	return r, nil
 }
 
@@ -198,14 +183,13 @@ func (ds *diskStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []byt
 	}
 	defer f.Close()
 
-	f.Seek(raw.Offset, 0)
-	if raw.Length <= 0 {
+	f.Seek(raw.Offset, io.SeekStart)
+	if raw.Length == 0 {
 		data, err = ioutil.ReadAll(f)
 	} else {
 		data = make([]byte, raw.Length)
 		_, err = f.Read(data)
 	}
-
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +216,12 @@ func (ds *diskStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) 
 
 	var f *os.File
 	if raw.Trunc {
+		if err = store.CheckTrunc(raw); err != nil {
+			return err
+		}
 		f, err = fileutils.OpenFile(path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	} else if raw.Append {
+		f, err = fileutils.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	} else {
 		f, err = fileutils.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
 	}
@@ -240,8 +229,12 @@ func (ds *diskStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) 
 		return err
 	}
 	defer f.Close()
-
-	f.Seek(raw.Offset, 0)
+	if raw.Trunc {
+		if err = f.Truncate(raw.TruncSize); err != nil {
+			return err
+		}
+	}
+	f.Seek(raw.Offset, io.SeekStart)
 	if raw.Length > 0 {
 		if _, err = io.CopyN(f, data, raw.Length); err != nil {
 			return err
@@ -274,6 +267,8 @@ func (ds *diskStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte
 	var f *os.File
 	if raw.Trunc {
 		f, err = fileutils.OpenFile(path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	} else if raw.Append {
+		f, err = fileutils.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	} else {
 		f, err = fileutils.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0644)
 	}
@@ -281,51 +276,55 @@ func (ds *diskStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte
 		return err
 	}
 	defer f.Close()
-	f.Seek(raw.Offset, 0)
-	if raw.Length == 0 {
-		if _, err := f.Write(data); err != nil {
+	if raw.Trunc {
+		if err = f.Truncate(raw.TruncSize); err != nil {
+			return err
+		}
+	}
+	f.Seek(raw.Offset, io.SeekStart)
+	if raw.Length > 0 {
+		if _, err := f.Write(data[:raw.Length]); err != nil {
 			return err
 		}
 		return nil
 	}
-
-	if _, err := f.Write(data[:raw.Length]); err != nil {
+	if _, err := f.Write(data); err != nil {
 		return err
 	}
 	return nil
 }
 
-// AppendBytes append the content of key from storage with bytes.
-func (ds *diskStorage) AppendBytes(ctx context.Context, raw *store.Raw, data []byte) error {
-	if err := store.CheckPutRaw(raw); err != nil {
-		return err
-	}
-
-	path, err := ds.preparePath(raw.Bucket, raw.Key)
-	if err != nil {
-		return err
-	}
-
-	lock(path, raw.Offset, false)
-	defer unLock(path, raw.Offset, false)
-
-	f, err := fileutils.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if raw.Length == 0 {
-		if _, err := f.Write(data); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if _, err := f.Write(data[:raw.Length]); err != nil {
-		return err
-	}
-	return nil
-}
+//// AppendBytes append the content to end of storage file.
+//func (ds *diskStorage) AppendBytes(ctx context.Context, raw *store.Raw, data []byte) error {
+//	if err := store.CheckPutRaw(raw); err != nil {
+//		return err
+//	}
+//
+//	path, err := ds.preparePath(raw.Bucket, raw.Key)
+//	if err != nil {
+//		return err
+//	}
+//
+//	lock(path, raw.Offset, false)
+//	defer unLock(path, raw.Offset, false)
+//
+//	f, err := fileutils.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+//	if err != nil {
+//		return err
+//	}
+//	defer f.Close()
+//	if raw.Length == 0 {
+//		if _, err := f.Write(data); err != nil {
+//			return err
+//		}
+//		return nil
+//	}
+//
+//	if _, err := f.Write(data[:raw.Length]); err != nil {
+//		return err
+//	}
+//	return nil
+//}
 
 // Stat determines whether the file exists.
 func (ds *diskStorage) Stat(ctx context.Context, raw *store.Raw) (*store.StorageInfo, error) {
@@ -341,12 +340,13 @@ func (ds *diskStorage) Stat(ctx context.Context, raw *store.Raw) (*store.Storage
 	}, nil
 }
 
+// Exits if filepath exists, include symbol link
 func (ds *diskStorage) Exits(ctx context.Context, raw *store.Raw) bool {
 	filePath := filepath.Join(ds.BaseDir, raw.Bucket, raw.Key)
 	return fileutils.PathExist(filePath)
 }
 
-// Remove deletes a file or dir.
+// Remove delete a file or dir.
 // It will force delete the file or dir when the raw.Trunc is true.
 func (ds *diskStorage) Remove(ctx context.Context, raw *store.Raw) error {
 	path, info, err := ds.statPath(raw.Bucket, raw.Key)
@@ -405,11 +405,9 @@ func (ds *diskStorage) GetPath(raw *store.Raw) string {
 // preparePath gets the target path and creates the upper directory if it does not exist.
 func (ds *diskStorage) preparePath(bucket, key string) (string, error) {
 	dir := filepath.Join(ds.BaseDir, bucket)
-
 	if err := fileutils.MkdirAll(dir); err != nil {
 		return "", err
 	}
-
 	target := filepath.Join(dir, key)
 	return target, nil
 }
@@ -424,8 +422,23 @@ func (ds *diskStorage) statPath(bucket, key string) (string, os.FileInfo, error)
 		}
 		return "", nil, err
 	}
-
 	return filePath, f, nil
+}
+
+func lock(path string, offset int64, ro bool) {
+	if offset != -1 {
+		fileLocker.GetLock(getLockKey(path, -1), true)
+	}
+
+	fileLocker.GetLock(getLockKey(path, offset), ro)
+}
+
+func unLock(path string, offset int64, ro bool) {
+	if offset != -1 {
+		fileLocker.ReleaseLock(getLockKey(path, -1), true)
+	}
+
+	fileLocker.ReleaseLock(getLockKey(path, offset), ro)
 }
 
 func getLockKey(path string, offset int64) string {

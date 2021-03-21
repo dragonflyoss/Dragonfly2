@@ -212,7 +212,7 @@ func (h *hybridStorageMgr) ReadFileMetaData(ctx context.Context, taskId string) 
 }
 
 func (h *hybridStorageMgr) AppendPieceMetaData(ctx context.Context, taskId string, record *storage.PieceMetaRecord) error {
-	return h.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), []byte(record.String()+"\n"))
+	return h.diskStore.PutBytes(ctx, storage.GetAppendPieceMetaDataRaw(taskId), []byte(record.String()+"\n"))
 }
 
 func (h *hybridStorageMgr) WriteFileMetaData(ctx context.Context, taskId string, metaData *storage.FileMetaData) error {
@@ -222,7 +222,6 @@ func (h *hybridStorageMgr) WriteFileMetaData(ctx context.Context, taskId string,
 	}
 	return h.diskStore.PutBytes(ctx, storage.GetTaskMetaDataRaw(taskId), data)
 }
-
 
 func (h *hybridStorageMgr) WritePieceMetaRecords(ctx context.Context, taskId string, records []*storage.PieceMetaRecord) error {
 	recordStrs := make([]string, 0, len(records))

@@ -19,9 +19,9 @@ package httputils
 import (
 	"context"
 	"crypto/tls"
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"encoding/json"
 	"fmt"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"github.com/stretchr/testify/suite"
 	"github.com/valyala/fasthttp"
 	"io/ioutil"
@@ -224,11 +224,6 @@ func (s *HTTPUtilTestSuite) TestConcurrencyPostJson() {
 	wg.Wait()
 }
 
-func (s *HTTPUtilTestSuite) TestConstructRangeStr() {
-	s.Equal(ConstructRangeStr("200-1000"), "bytes=200-1000")
-}
-
-
 // ----------------------------------------------------------------------------
 // helper functions and structures
 
@@ -273,7 +268,7 @@ func (t *testTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 func (s *HTTPUtilTestSuite) TestRegisterProtocol() {
 	protocol := "test"
 	RegisterProtocol(protocol, &testTransport{})
-	resp, err := HTTPWithHeaders(http.MethodGet,
+	resp, err := HTTPWithHeader(http.MethodGet,
 		protocol+"://test/test",
 		map[string]string{
 			"test": "test",

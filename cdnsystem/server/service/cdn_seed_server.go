@@ -53,24 +53,24 @@ func NewCdnSeedServer(cfg *config.Config, taskMgr mgr.SeedTaskMgr) (*CdnSeedServ
 
 func constructRequestHeader(req *cdnsystem.SeedRequest) *types.TaskRegisterRequest {
 	meta := req.UrlMeta
-	headers := make(map[string]string)
+	header := make(map[string]string)
 	if meta != nil {
 		if !stringutils.IsBlank(meta.Md5) {
-			headers["md5"] = meta.Md5
+			header["md5"] = meta.Md5
 		}
 		if !stringutils.IsBlank(meta.Range) {
-			headers["range"] = meta.Range
+			header["range"] = meta.Range
 		}
 		for k, v := range meta.Header {
-			headers[k] = v
+			header[k] = v
 		}
 	}
 	return &types.TaskRegisterRequest{
-		Headers: headers,
-		URL:     req.Url,
-		Md5:     headers["md5"],
-		TaskId:  req.TaskId,
-		Filter:  strings.Split(req.Filter, "&"),
+		Header: header,
+		URL:    req.Url,
+		Md5:    header["md5"],
+		TaskId: req.TaskId,
+		Filter: strings.Split(req.Filter, "&"),
 	}
 }
 
@@ -136,7 +136,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	if task.CdnStatus != types.TaskInfoCdnStatusSuccess {
 		return dferrors.Newf(dfcodes.CdnTaskDownloadFail, "task status %s", task.CdnStatus)
 	}
-	psc <-&cdnsystem.PieceSeed{
+	psc <- &cdnsystem.PieceSeed{
 		State:         common.NewState(dfcodes.Success, "success"),
 		PeerId:        peerId,
 		SeederName:    iputils.HostName,

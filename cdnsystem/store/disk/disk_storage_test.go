@@ -34,34 +34,43 @@ import (
 	"testing"
 )
 
-func Test(t *testing.T) {
-	suite.Run(t, new(StorageSuite))
+func TestStorageSuite(t *testing.T) {
+	suite.Run(t, new(StorageTestSuite))
 }
 
-type StorageSuite struct {
+type StorageTestSuite struct {
 	workHome string
-	store    store.StorageDriver
+	store.StorageDriver
 	suite.Suite
 }
 
-func (s *StorageSuite) SetupSuite() {
-	s.workHome, _ = ioutil.TempDir("/tmp", "cdn-storageDriver-StoreTestSuite-repo")
-	store, err := NewStorage("baseDir: " + s.workHome)
+func (s *StorageTestSuite) SetupSuite() {
+	s.workHome, _ = ioutil.TempDir("/tmp", "cdn-StoreTestSuite-repo")
+	store, err := NewStorage(map[string]interface{}{
+		"baseDir": s.workHome,
+		//"gcConfig": map[string]interface{}{
+		//	"youngGCThreshold":  "100G",
+		//	"fullGCThreshold":   "5G",
+		//	"cleanRatio":        1,
+		//	"intervalThreshold": "2h",
+		//},
+	})
 	s.Nil(err)
 	s.NotNil(store)
-	s.store = store
+	s.StorageDriver = store
 }
 
-func (s *StorageSuite) TearDownSuite() {
+func (s *StorageTestSuite) TeardownSuite() {
 	if s.workHome != "" {
 		if err := os.RemoveAll(s.workHome); err != nil {
-			fmt.Printf("remove path:%s error", s.workHome)
+			fmt.Errorf("remove path:%s error", s.workHome)
 		}
 	}
 }
 
-func (s *StorageSuite) TestGetPutBytes() {
+func (s *StorageTestSuite) TestGetPutBytes() {
 	var cases = []struct {
+		name        string
 		putRaw      *store.Raw
 		getRaw      *store.Raw
 		data        []byte
@@ -70,20 +79,23 @@ func (s *StorageSuite) TestGetPutBytes() {
 	}{
 		{
 			putRaw: &store.Raw{
-				Key: "foo1",
+				Bucket: "GetPut",
+				Key:    "foo1",
 			},
 			getRaw: &store.Raw{
-				Key: "foo1",
+				Bucket: "GetPut",
+				Key:    "foo1",
 			},
 			data:        []byte("hello foo"),
 			getErrCheck: cdnerrors.IsNilError,
 			expected:    "hello foo",
-		},
-		{
+		}, {
 			putRaw: &store.Raw{
-				Key: "foo2",
+				Bucket: "GetPut",
+				Key:    "foo2",
 			},
 			getRaw: &store.Raw{
+				Bucket: "GetPut",
 				Key:    "foo2",
 				Offset: 0,
 				Length: 5,
@@ -91,42 +103,71 @@ func (s *StorageSuite) TestGetPutBytes() {
 			getErrCheck: cdnerrors.IsNilError,
 			data:        []byte("hello foo"),
 			expected:    "hello",
-		},
-		{
+		}, {
 			putRaw: &store.Raw{
-				Key: "foo3",
+				Bucket: "GetPut",
+				Key:    "foo3",
 			},
 			getRaw: &store.Raw{
+				Bucket: "GetPut",
 				Key:    "foo3",
+				Offset: 0,
+				Length: 0,
+			},
+			getErrCheck: cdnerrors.IsNilError,
+			data:        []byte("hello foo"),
+			expected:    "hello foo",
+		}, {
+			putRaw: &store.Raw{
+				Bucket: "GetPut",
+				Key:    "foo4",
+			},
+			getRaw: &store.Raw{
+				Bucket: "GetPut",
+				Key:    "foo4",
 				Offset: 0,
 				Length: -1,
 			},
 			getErrCheck: cdnerrors.IsInvalidValue,
 			data:        []byte("hello foo"),
 			expected:    "",
-		},
-		{
+		}, {
 			putRaw: &store.Raw{
-				Bucket: "download",
-				Key:    "foo4",
+				Bucket: "GetPut",
+				Key:    "foo5",
 				Length: 5,
 			},
 			getRaw: &store.Raw{
-				Bucket: "download",
-				Key:    "foo4",
+				Bucket: "GetPut",
+				Key:    "foo5",
 			},
 			getErrCheck: cdnerrors.IsNilError,
 			data:        []byte("hello foo"),
 			expected:    "hello",
-		},
-		{
+		}, {
 			putRaw: &store.Raw{
-				Bucket: "download",
-				Key:    "foo0/foo.txt",
+				Bucket: "GetPut",
+				Key:    "foo6",
 			},
 			getRaw: &store.Raw{
-				Bucket: "download",
-				Key:    "foo0/foo.txt",
+				Bucket: "GetPut",
+				Key:    "foo6",
+				Offset: -1,
+			},
+			data:        []byte("hello foo"),
+			getErrCheck: cdnerrors.IsInvalidValue,
+			expected:    "",
+		}, {
+			name: "offset不从0开始",
+			putRaw: &store.Raw{
+				Bucket: "GetPut",
+				Key:    "foo7",
+				Offset: 3,
+			},
+			getRaw: &store.Raw{
+				Bucket: "GetPut",
+				Key:    "foo7",
+				Offset: 3,
 			},
 			data:        []byte("hello foo"),
 			getErrCheck: cdnerrors.IsNilError,
@@ -135,28 +176,26 @@ func (s *StorageSuite) TestGetPutBytes() {
 	}
 
 	for _, v := range cases {
-		// put
-		err := s.store.PutBytes(context.Background(), v.putRaw, v.data)
-		s.Nil(err)
+		s.Run(v.name, func() {
+			// put
+			err := s.PutBytes(context.Background(), v.putRaw, v.data)
+			s.Nil(err)
 
-		// get
-		result, err := s.store.GetBytes(context.Background(), v.getRaw)
-		s.Equal(v.getErrCheck(err), true)
-		if err == nil {
-			s.Equal(string(result), v.expected)
-		}
-
-		// stat
-		s.checkStat(v.putRaw)
-
-		// remove
-		s.checkRemove(v.putRaw)
+			// get
+			result, err := s.GetBytes(context.Background(), v.getRaw)
+			s.True(v.getErrCheck(err))
+			s.Equal(v.expected, string(result))
+			// stat
+			s.checkStat(v.getRaw)
+			// remove
+			s.checkRemove(v.putRaw)
+		})
 	}
-
 }
 
-func (s *StorageSuite) TestGetPut() {
+func (s *StorageTestSuite) TestGetPut() {
 	var cases = []struct {
+		name        string
 		putRaw      *store.Raw
 		getRaw      *store.Raw
 		data        io.Reader
@@ -174,8 +213,7 @@ func (s *StorageSuite) TestGetPut() {
 			data:        strings.NewReader("hello meta file"),
 			getErrCheck: cdnerrors.IsNilError,
 			expected:    "hello meta file",
-		},
-		{
+		}, {
 			putRaw: &store.Raw{
 				Key: "foo1.meta",
 			},
@@ -185,71 +223,207 @@ func (s *StorageSuite) TestGetPut() {
 			data:        strings.NewReader("hello meta file"),
 			getErrCheck: cdnerrors.IsNilError,
 			expected:    "hello meta file",
-		},
-		{
+		}, {
 			putRaw: &store.Raw{
-				Key: "foo2.meta",
+				Key:    "foo2.meta",
+				Length: 6,
 			},
 			getRaw: &store.Raw{
-				Key:    "foo2.meta",
-				Offset: 2,
-				Length: 5,
+				Key: "foo2.meta",
 			},
 			data:        strings.NewReader("hello meta file"),
 			getErrCheck: cdnerrors.IsNilError,
-			expected:    "llo m",
-		},
-		{
+			expected:    "hello ",
+		}, {
 			putRaw: &store.Raw{
 				Key: "foo3.meta",
 			},
 			getRaw: &store.Raw{
 				Key:    "foo3.meta",
 				Offset: 2,
-				Length: -1,
+				Length: 5,
 			},
-			getErrCheck: cdnerrors.IsInvalidValue,
 			data:        strings.NewReader("hello meta file"),
-			expected:    "llo meta file",
-		},
-		{
+			getErrCheck: cdnerrors.IsNilError,
+			expected:    "llo m",
+		}, {
 			putRaw: &store.Raw{
 				Key: "foo4.meta",
 			},
 			getRaw: &store.Raw{
 				Key:    "foo4.meta",
+				Offset: 2,
+				Length: -1,
+			},
+			getErrCheck: cdnerrors.IsInvalidValue,
+			data:        strings.NewReader("hello meta file"),
+			expected:    "",
+		}, {
+			putRaw: &store.Raw{
+				Key: "foo5.meta",
+			},
+			getRaw: &store.Raw{
+				Key:    "foo5.meta",
 				Offset: 30,
 				Length: 5,
 			},
-			getErrCheck: cdnerrors.IsRangeNotSatisfiable,
+			getErrCheck: cdnerrors.IsInvalidValue,
 			data:        strings.NewReader("hello meta file"),
 			expected:    "",
 		},
 	}
 
 	for _, v := range cases {
-		// put
-		s.store.Put(context.Background(), v.putRaw, v.data)
-
-		// get
-		r, err := s.store.Get(context.Background(), v.getRaw)
-		s.Equal(v.getErrCheck(err), true)
-		if err == nil {
-			result, err := ioutil.ReadAll(r)
+		s.Run(v.name, func() {
+			// put
+			err := s.Put(context.Background(), v.putRaw, v.data)
 			s.Nil(err)
-			s.Equal(string(result[:]), v.expected)
-		}
+			// get
+			r, err := s.Get(context.Background(), v.getRaw)
+			s.True(v.getErrCheck(err))
+			if err == nil {
+				result, err := ioutil.ReadAll(r)
+				s.Nil(err)
+				s.Equal(v.expected, string(result))
+			}
 
-		// stat
-		s.checkStat(v.putRaw)
+			// stat
+			s.checkStat(v.putRaw)
 
-		// remove
-		s.checkRemove(v.putRaw)
+			// remove
+			s.checkRemove(v.putRaw)
+		})
 	}
-
 }
 
-func (s *StorageSuite) TestPutTrunc() {
+func (s *StorageTestSuite) TestAppendBytes() {
+	var cases = []struct {
+		name        string
+		putRaw      *store.Raw
+		appendRaw   *store.Raw
+		getRaw      *store.Raw
+		data        io.Reader
+		appData     io.Reader
+		getErrCheck func(error) bool
+		expected    string
+	}{
+		{
+			putRaw: &store.Raw{
+				Key:    "foo0.meta",
+				Length: 13,
+			},
+			appendRaw: &store.Raw{
+				Key:    "foo0.meta",
+				Offset: 2,
+				Length: 3,
+				Append: true,
+			},
+			getRaw: &store.Raw{
+				Key: "foo0.meta",
+			},
+			data:        strings.NewReader("hello meta fi"),
+			appData:     strings.NewReader("append data"),
+			getErrCheck: cdnerrors.IsNilError,
+			expected:    "hello meta fiapp",
+		}, {
+			putRaw: &store.Raw{
+				Key: "foo1.meta",
+			},
+			appendRaw: &store.Raw{
+				Key:    "foo1.meta",
+				Offset: 29,
+				Length: 3,
+				Append: true,
+			},
+			getRaw: &store.Raw{
+				Key: "foo1.meta",
+			},
+			data:        strings.NewReader("hello meta file"),
+			appData:     strings.NewReader("append data"),
+			getErrCheck: cdnerrors.IsNilError,
+			expected:    "hello meta fileapp",
+		},
+		//{
+		//	putRaw: &store.Raw{
+		//		Key:    "foo2.meta",
+		//		Length: 6,
+		//	},
+		//	appendRaw: &store.Raw{
+		//		Key:    "foo0.meta",
+		//		Offset: 29,
+		//		Length: 3,
+		//		Append: true,
+		//	},
+		//	getRaw: &store.Raw{
+		//		Key: "foo2.meta",
+		//	},
+		//	data:        strings.NewReader("hello meta file"),
+		//	getErrCheck: cdnerrors.IsNilError,
+		//	expected:    "hello ",
+		//}, {
+		//	putRaw: &store.Raw{
+		//		Key: "foo3.meta",
+		//	},
+		//	getRaw: &store.Raw{
+		//		Key:    "foo3.meta",
+		//		Offset: 2,
+		//		Length: 5,
+		//	},
+		//	data:        strings.NewReader("hello meta file"),
+		//	getErrCheck: cdnerrors.IsNilError,
+		//	expected:    "llo m",
+		//}, {
+		//	putRaw: &store.Raw{
+		//		Key: "foo4.meta",
+		//	},
+		//	getRaw: &store.Raw{
+		//		Key:    "foo4.meta",
+		//		Offset: 2,
+		//		Length: -1,
+		//	},
+		//	getErrCheck: cdnerrors.IsInvalidValue,
+		//	data:        strings.NewReader("hello meta file"),
+		//	expected:    "",
+		//}, {
+		//	putRaw: &store.Raw{
+		//		Key: "foo5.meta",
+		//	},
+		//	getRaw: &store.Raw{
+		//		Key:    "foo5.meta",
+		//		Offset: 30,
+		//		Length: 5,
+		//	},
+		//	getErrCheck: cdnerrors.IsInvalidValue,
+		//	data:        strings.NewReader("hello meta file"),
+		//	expected:    "",
+		//},
+	}
+	for _, v := range cases {
+		s.Run(v.name, func() {
+			// put
+			err := s.Put(context.Background(), v.putRaw, v.data)
+			s.Nil(err)
+			err = s.Put(context.Background(), v.appendRaw, v.appData)
+			s.Nil(err)
+			// get
+			r, err := s.Get(context.Background(), v.getRaw)
+			s.True(v.getErrCheck(err))
+			if err == nil {
+				result, err := ioutil.ReadAll(r)
+				s.Nil(err)
+				s.Equal(v.expected, string(result))
+			}
+
+			// stat
+			s.checkStat(v.putRaw)
+
+			// remove
+			s.checkRemove(v.putRaw)
+		})
+	}
+}
+
+func (s *StorageTestSuite) TestPutTrunc() {
 	originRaw := &store.Raw{
 		Key:    "fooTrunc.meta",
 		Offset: 0,
@@ -272,8 +446,7 @@ func (s *StorageSuite) TestPutTrunc() {
 			data:         strings.NewReader("hello"),
 			getErrCheck:  cdnerrors.IsNilError,
 			expectedData: "hello",
-		},
-		{
+		}, {
 			truncRaw: &store.Raw{
 				Key:    "fooTrunc.meta",
 				Offset: 6,
@@ -282,8 +455,7 @@ func (s *StorageSuite) TestPutTrunc() {
 			data:         strings.NewReader("golang"),
 			getErrCheck:  cdnerrors.IsNilError,
 			expectedData: "\x00\x00\x00\x00\x00\x00golang",
-		},
-		{
+		}, {
 			truncRaw: &store.Raw{
 				Key:    "fooTrunc.meta",
 				Offset: 0,
@@ -292,8 +464,7 @@ func (s *StorageSuite) TestPutTrunc() {
 			data:         strings.NewReader("foo"),
 			getErrCheck:  cdnerrors.IsNilError,
 			expectedData: "foolo world",
-		},
-		{
+		}, {
 			truncRaw: &store.Raw{
 				Key:    "fooTrunc.meta",
 				Offset: 6,
@@ -306,13 +477,13 @@ func (s *StorageSuite) TestPutTrunc() {
 	}
 
 	for _, v := range cases {
-		err := s.store.Put(context.Background(), originRaw, strings.NewReader(originData))
+		err := s.Put(context.Background(), originRaw, strings.NewReader(originData))
 		s.Nil(err)
 
-		err = s.store.Put(context.Background(), v.truncRaw, v.data)
+		err = s.Put(context.Background(), v.truncRaw, v.data)
 		s.Nil(err)
 
-		r, err := s.store.Get(context.Background(), &store.Raw{
+		r, err := s.Get(context.Background(), &store.Raw{
 			Key: "fooTrunc.meta",
 		})
 		s.Nil(err)
@@ -325,7 +496,7 @@ func (s *StorageSuite) TestPutTrunc() {
 	}
 }
 
-func (s *StorageSuite) TestPutParallel() {
+func (s *StorageTestSuite) TestPutParallel() {
 	var key = "fooPutParallel"
 	var routineCount = 4
 	var testStr = "hello"
@@ -336,7 +507,7 @@ func (s *StorageSuite) TestPutParallel() {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			s.store.Put(context.TODO(), &store.Raw{
+			s.Put(context.TODO(), &store.Raw{
 				Key:    key,
 				Offset: int64(i) * int64(testStrLength),
 			}, strings.NewReader(testStr))
@@ -344,277 +515,12 @@ func (s *StorageSuite) TestPutParallel() {
 	}
 	wg.Wait()
 
-	info, err := s.store.Stat(context.TODO(), &store.Raw{Key: key})
+	info, err := s.Stat(context.TODO(), &store.Raw{Key: key})
 	s.Nil(err)
 	s.Equal(info.Size, int64(routineCount)*int64(testStrLength))
 }
 
-func (s *StorageSuite) BenchmarkPutParallel() {
-	var wg sync.WaitGroup
-	for k := 0; k < 1000; k++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			s.store.Put(context.Background(), &store.Raw{
-				Key:    "foo.bech",
-				Offset: int64(i) * 5,
-			}, strings.NewReader("hello"))
-		}(k)
-	}
-	wg.Wait()
-}
-
-func (s *StorageSuite) BenchmarkPutSerial() {
-	for k := 0; k < 1000; k++ {
-		s.store.Put(context.Background(), &store.Raw{
-			Key:    "foo1.bech",
-			Offset: int64(k) * 5,
-		}, strings.NewReader("hello"))
-	}
-}
-
-// -----------------------------------------------------------------------------
-// helper function
-
-func (s *StorageSuite) checkStat(raw *store.Raw) {
-	info, err := s.store.Stat(context.Background(), raw)
-	s.Equal(cdnerrors.IsNilError(err), true)
-
-	pathTemp := filepath.Join(s.workHome, raw.Bucket, raw.Key)
-	f, _ := os.Stat(pathTemp)
-
-	s.EqualValues(info, &store.StorageInfo{
-		Path:       filepath.Join(raw.Bucket, raw.Key),
-		Size:       f.Size(),
-		ModTime:    f.ModTime(),
-		CreateTime: statutils.Ctime(f),
-	})
-}
-
-func (s *StorageSuite) checkRemove(raw *store.Raw) {
-	err := s.store.Remove(context.Background(), raw)
-	s.Equal(cdnerrors.IsNilError(err), true)
-
-	_, err = s.store.Stat(context.Background(), raw)
-	s.Equal(cdnerrors.IsFileNotExist(err), true)
-}
-
-func TestNewStorage(t *testing.T) {
-	type args struct {
-		conf string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    store.StorageDriver
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewStorage(tt.args.conf)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewStorage() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewStorage() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_diskStorage_AppendBytes(t *testing.T) {
-	type fields struct {
-		BaseDir string
-	}
-	type args struct {
-		ctx  context.Context
-		raw  *store.Raw
-		data []byte
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ls := &diskStorage{
-				BaseDir: tt.fields.BaseDir,
-			}
-			if err := ls.AppendBytes(tt.args.ctx, tt.args.raw, tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("AppendBytes() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_diskStorage_Get(t *testing.T) {
-	type fields struct {
-		BaseDir string
-	}
-	type args struct {
-		ctx context.Context
-		raw *store.Raw
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    io.Reader
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ls := &diskStorage{
-				BaseDir: tt.fields.BaseDir,
-			}
-			got, err := ls.Get(tt.args.ctx, tt.args.raw)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Get() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_diskStorage_GetAvailSpace(t *testing.T) {
-	type fields struct {
-		BaseDir string
-	}
-	type args struct {
-		ctx context.Context
-		raw *store.Raw
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    fsize.Size
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ls := &diskStorage{
-				BaseDir: tt.fields.BaseDir,
-			}
-			got, err := ls.GetAvailSpace(tt.args.ctx)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetAvailSpace() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("GetAvailSpace() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_diskStorage_GetBytes(t *testing.T) {
-	type fields struct {
-		BaseDir string
-	}
-	type args struct {
-		ctx context.Context
-		raw *store.Raw
-	}
-	tests := []struct {
-		name     string
-		fields   fields
-		args     args
-		wantData []byte
-		wantErr  bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ls := &diskStorage{
-				BaseDir: tt.fields.BaseDir,
-			}
-			gotData, err := ls.GetBytes(tt.args.ctx, tt.args.raw)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetBytes() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(gotData, tt.wantData) {
-				t.Errorf("GetBytes() gotData = %v, want %v", gotData, tt.wantData)
-			}
-		})
-	}
-}
-
-func Test_diskStorage_Put(t *testing.T) {
-	type fields struct {
-		BaseDir string
-	}
-	type args struct {
-		ctx  context.Context
-		raw  *store.Raw
-		data io.Reader
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ls := &diskStorage{
-				BaseDir: tt.fields.BaseDir,
-			}
-			if err := ls.Put(tt.args.ctx, tt.args.raw, tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("Put() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_diskStorage_PutBytes(t *testing.T) {
-	type fields struct {
-		BaseDir string
-	}
-	type args struct {
-		ctx  context.Context
-		raw  *store.Raw
-		data []byte
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ls := &diskStorage{
-				BaseDir: tt.fields.BaseDir,
-			}
-			if err := ls.PutBytes(tt.args.ctx, tt.args.raw, tt.args.data); (err != nil) != tt.wantErr {
-				t.Errorf("PutBytes() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_diskStorage_Remove(t *testing.T) {
+func (s *StorageTestSuite) TestRemove() {
 	type fields struct {
 		BaseDir string
 	}
@@ -628,21 +534,17 @@ func Test_diskStorage_Remove(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+
+		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ls := &diskStorage{
-				BaseDir: tt.fields.BaseDir,
-			}
-			if err := ls.Remove(tt.args.ctx, tt.args.raw); (err != nil) != tt.wantErr {
-				t.Errorf("Remove() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+		err := s.Remove(tt.args.ctx, tt.args.raw)
+		s.Equal(err != nil, tt.wantErr)
 	}
 }
 
-func Test_diskStorage_Stat(t *testing.T) {
+func (s *StorageTestSuite) TestStat() {
 	type fields struct {
 		BaseDir string
 	}
@@ -657,121 +559,283 @@ func Test_diskStorage_Stat(t *testing.T) {
 		want    *store.StorageInfo
 		wantErr bool
 	}{
+		{
+
+		},
+	}
+	for _, tt := range tests {
+		got, err := s.Stat(tt.args.ctx, tt.args.raw)
+		s.Equal(err, tt.wantErr)
+		s.EqualValues(got, tt.want)
+	}
+}
+
+func Test_diskStorage_CreateBaseDir(t *testing.T) {
+	type fields struct {
+		BaseDir  string
+		GcConfig *store.GcConfig
+	}
+	type args struct {
+		ctx context.Context
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ls := &diskStorage{
-				BaseDir: tt.fields.BaseDir,
+			ds := &diskStorage{
+				BaseDir:  tt.fields.BaseDir,
+				GcConfig: tt.fields.GcConfig,
 			}
-			got, err := ls.Stat(tt.args.ctx, tt.args.raw)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Stat() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Stat() got = %v, want %v", got, tt.want)
+			if err := ds.CreateBaseDir(tt.args.ctx); (err != nil) != tt.wantErr {
+				t.Errorf("CreateBaseDir() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func Test_diskStorage_Walk(t *testing.T) {
+func Test_diskStorage_Exits(t *testing.T) {
 	type fields struct {
-		BaseDir string
+		BaseDir  string
+		GcConfig *store.GcConfig
 	}
 	type args struct {
 		ctx context.Context
 		raw *store.Raw
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name   string
+		fields fields
+		args   args
+		want   bool
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ls := &diskStorage{
-				BaseDir: tt.fields.BaseDir,
+			ds := &diskStorage{
+				BaseDir:  tt.fields.BaseDir,
+				GcConfig: tt.fields.GcConfig,
 			}
-			if err := ls.Walk(tt.args.ctx, tt.args.raw); (err != nil) != tt.wantErr {
-				t.Errorf("Walk() error = %v, wantErr %v", err, tt.wantErr)
+			if got := ds.Exits(tt.args.ctx, tt.args.raw); got != tt.want {
+				t.Errorf("Exits() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_diskStorage_preparePath(t *testing.T) {
+func Test_diskStorage_GetGcConfig(t *testing.T) {
 	type fields struct {
-		BaseDir string
+		BaseDir  string
+		GcConfig *store.GcConfig
 	}
 	type args struct {
-		bucket string
-		key    string
+		ctx context.Context
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    string
-		wantErr bool
+		name   string
+		fields fields
+		args   args
+		want   *store.GcConfig
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ls := &diskStorage{
-				BaseDir: tt.fields.BaseDir,
+			ds := &diskStorage{
+				BaseDir:  tt.fields.BaseDir,
+				GcConfig: tt.fields.GcConfig,
 			}
-			got, err := ls.preparePath(tt.args.bucket, tt.args.key)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("preparePath() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("preparePath() got = %v, want %v", got, tt.want)
+			if got := ds.GetGcConfig(tt.args.ctx); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetGcConfig() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_diskStorage_statPath(t *testing.T) {
+func Test_diskStorage_GetHomePath(t *testing.T) {
 	type fields struct {
-		BaseDir string
+		BaseDir  string
+		GcConfig *store.GcConfig
 	}
 	type args struct {
-		bucket string
-		key    string
+		ctx context.Context
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ds := &diskStorage{
+				BaseDir:  tt.fields.BaseDir,
+				GcConfig: tt.fields.GcConfig,
+			}
+			if got := ds.GetHomePath(tt.args.ctx); got != tt.want {
+				t.Errorf("GetHomePath() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_diskStorage_GetPath(t *testing.T) {
+	type fields struct {
+		BaseDir  string
+		GcConfig *store.GcConfig
+	}
+	type args struct {
+		raw *store.Raw
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ds := &diskStorage{
+				BaseDir:  tt.fields.BaseDir,
+				GcConfig: tt.fields.GcConfig,
+			}
+			if got := ds.GetPath(tt.args.raw); got != tt.want {
+				t.Errorf("GetPath() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_diskStorage_GetTotalAndFreeSpace(t *testing.T) {
+	type fields struct {
+		BaseDir  string
+		GcConfig *store.GcConfig
+	}
+	type args struct {
+		ctx context.Context
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    string
-		want1   os.FileInfo
+		want    fsize.Size
+		want1   fsize.Size
 		wantErr bool
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ls := &diskStorage{
-				BaseDir: tt.fields.BaseDir,
+			ds := &diskStorage{
+				BaseDir:  tt.fields.BaseDir,
+				GcConfig: tt.fields.GcConfig,
 			}
-			got, got1, err := ls.statPath(tt.args.bucket, tt.args.key)
+			got, got1, err := ds.GetTotalAndFreeSpace(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("statPath() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetTotalAndFreeSpace() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("statPath() got = %v, want %v", got, tt.want)
+				t.Errorf("GetTotalAndFreeSpace() got = %v, want %v", got, tt.want)
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("statPath() got1 = %v, want %v", got1, tt.want1)
+			if got1 != tt.want1 {
+				t.Errorf("GetTotalAndFreeSpace() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
+}
+
+func Test_diskStorage_GetTotalSpace(t *testing.T) {
+	type fields struct {
+		BaseDir  string
+		GcConfig *store.GcConfig
+	}
+	type args struct {
+		ctx context.Context
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    fsize.Size
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ds := &diskStorage{
+				BaseDir:  tt.fields.BaseDir,
+				GcConfig: tt.fields.GcConfig,
+			}
+			got, err := ds.GetTotalSpace(tt.args.ctx)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetTotalSpace() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GetTotalSpace() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func (s *StorageTestSuite) BenchmarkPutParallel() {
+	var wg sync.WaitGroup
+	for k := 0; k < 1000; k++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			s.Put(context.Background(), &store.Raw{
+				Key:    "foo.bech",
+				Offset: int64(i) * 5,
+			}, strings.NewReader("hello"))
+		}(k)
+	}
+	wg.Wait()
+}
+
+func (s *StorageTestSuite) BenchmarkPutSerial() {
+	for k := 0; k < 1000; k++ {
+		s.Put(context.Background(), &store.Raw{
+			Key:    "foo1.bech",
+			Offset: int64(k) * 5,
+		}, strings.NewReader("hello"))
+	}
+}
+
+// -----------------------------------------------------------------------------
+// helper function
+
+func (s *StorageTestSuite) checkStat(raw *store.Raw) {
+	info, err := s.Stat(context.Background(), raw)
+	s.Equal(cdnerrors.IsNilError(err), true)
+
+	pathTemp := filepath.Join(s.workHome, raw.Bucket, raw.Key)
+	f, _ := os.Stat(pathTemp)
+
+	s.EqualValues(info, &store.StorageInfo{
+		Path:       filepath.Join(raw.Bucket, raw.Key),
+		Size:       f.Size(),
+		ModTime:    f.ModTime(),
+		CreateTime: statutils.Ctime(f),
+	})
+}
+
+func (s *StorageTestSuite) checkRemove(raw *store.Raw) {
+	err := s.Remove(context.Background(), raw)
+	s.Equal(cdnerrors.IsNilError(err), true)
+
+	_, err = s.Stat(context.Background(), raw)
+	s.Equal(cdnerrors.IsFileNotExist(err), true)
 }

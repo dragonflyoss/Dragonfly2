@@ -60,8 +60,8 @@ type ossSourceClient struct {
 	accessMap sync.Map
 }
 
-func (osc *ossSourceClient) GetContentLength(url string, headers map[string]string) (int64, error) {
-	resHeader, err := osc.getMeta(url, headers)
+func (osc *ossSourceClient) GetContentLength(url string, header map[string]string) (int64, error) {
+	resHeader, err := osc.getMeta(url, header)
 	if err != nil {
 		//return , err
 	}
@@ -69,8 +69,8 @@ func (osc *ossSourceClient) GetContentLength(url string, headers map[string]stri
 	return contentLen, nil
 }
 
-func (osc *ossSourceClient) getMeta(url string, headers map[string]string) (http.Header, error) {
-	client, err := osc.getClient(headers)
+func (osc *ossSourceClient) getMeta(url string, header map[string]string) (http.Header, error) {
+	client, err := osc.getClient(header)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get oss client")
 	}
@@ -90,32 +90,33 @@ func (osc *ossSourceClient) getMeta(url string, headers map[string]string) (http
 	if !isExist {
 		return nil, fmt.Errorf("oss object:%s does not exist", ossObject.object)
 	}
-	return bucket.GetObjectMeta(ossObject.object, getOptions(headers)...)
+	return bucket.GetObjectMeta(ossObject.object, getOptions(header)...)
 }
 
-func (osc *ossSourceClient) IsSupportRange(url string, headers map[string]string) (bool, error) {
+func (osc *ossSourceClient) IsSupportRange(url string, header map[string]string) (bool, error) {
 	return true, nil
 }
 
-func (osc *ossSourceClient) IsExpired(url string, headers, expireInfo map[string]string) (bool, error) {
-	lastModified := timeutils.UnixMillis(expireInfo["Last-Modified"])
+func (osc *ossSourceClient) IsExpired(url string, header, expireInfo map[string]string) (bool, error) {
 
-	eTag := expireInfo["eTag"]
+	lastModified := timeutils.UnixMillis(expireInfo[oss.HTTPHeaderLastModified])
+
+	eTag := expireInfo[oss.HTTPHeaderEtag]
 	if lastModified <= 0 && stringutils.IsBlank(eTag) {
 		return true, nil
 	}
 
-	// set headers: headers is a reference to map, should not change it
-	copied := maputils.DeepCopyMap(nil, headers)
+	// set header: header is a reference to map, should not change it
+	copied := maputils.DeepCopyMap(nil, header)
 	if lastModified > 0 {
-		copied["If-Modified-Since"] = expireInfo["Last-Modified"]
+		copied[oss.HTTPHeaderIfModifiedSince] = expireInfo[oss.HTTPHeaderLastModified]
 	}
 	if !stringutils.IsBlank(eTag) {
-		copied["If-None-Match"] = eTag
+		copied[oss.HTTPHeaderIfNoneMatch] = eTag
 	}
 	return true, nil
 	//// send request
-	//resp, err := osc.clientMap.httpWithHeaders(http.MethodGet, url, copied, 4*time.Second)
+	//resp, err := osc.clientMap.httpWithHeader(http.MethodGet, url, copied, 4*time.Second)
 	//if err != nil {
 	//	return false, err
 	//}
@@ -124,12 +125,12 @@ func (osc *ossSourceClient) IsExpired(url string, headers, expireInfo map[string
 	//return resp.StatusCode != http.StatusNotModified, nil
 }
 
-func (osc *ossSourceClient) Download(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
+func (osc *ossSourceClient) Download(url string, header map[string]string) (io.ReadCloser, map[string]string, error) {
 	ossObject, err := ParseOssObject(url)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to parse oss object from url:%s", url)
 	}
-	client, err := osc.getClient(headers)
+	client, err := osc.getClient(header)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get client")
 	}
@@ -137,7 +138,7 @@ func (osc *ossSourceClient) Download(url string, headers map[string]string) (io.
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get bucket:%s", ossObject.bucket)
 	}
-	body, err := bucket.GetObject(ossObject.object, getOptions(headers)...)
+	body, err := bucket.GetObject(ossObject.object, getOptions(header)...)
 	if err != nil {
 		logger.Errorf("Cannot get the specified bucket %s instance: %v", bucket, err)
 		os.Exit(1)
@@ -176,9 +177,9 @@ func (osc *ossSourceClient) getClient(header map[string]string) (*oss.Client, er
 	return client, nil
 }
 
-func getOptions(headers map[string]string) []oss.Option {
-	opts := make([]oss.Option, 0, len(headers))
-	for key, value := range headers {
+func getOptions(header map[string]string) []oss.Option {
+	opts := make([]oss.Option, 0, len(header))
+	for key, value := range header {
 		if key == endpoint || key == accessKeyID || key == accessKeySecret {
 			continue
 		}

@@ -110,7 +110,7 @@ func (s *diskStorageMgr) InitializeCleaners() {
 }
 
 func (s *diskStorageMgr) AppendPieceMetaData(ctx context.Context, taskId string, pieceRecord *storage.PieceMetaRecord) error {
-	return s.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), []byte(pieceRecord.String()+"\n"))
+	return s.diskStore.PutBytes(ctx, storage.GetAppendPieceMetaDataRaw(taskId), []byte(pieceRecord.String()+"\n"))
 }
 
 func (s *diskStorageMgr) ReadPieceMetaRecords(ctx context.Context, taskId string) ([]*storage.PieceMetaRecord, error) {
@@ -193,11 +193,10 @@ func (s *diskStorageMgr) WritePieceMetaRecords(ctx context.Context, taskId strin
 	for i := range records {
 		recordStrs = append(recordStrs, records[i].String())
 	}
-	return s.diskStore.PutBytes(ctx, storage.GetPieceMetaDataRaw(taskId), []byte(strings.Join(recordStrs, "\n")))
-}
-
-func (s *diskStorageMgr) AppendPieceMetaDataBytes(ctx context.Context, taskId string, bytes []byte) error {
-	return s.diskStore.AppendBytes(ctx, storage.GetPieceMetaDataRaw(taskId), bytes)
+	pieceRaw := storage.GetPieceMetaDataRaw(taskId)
+	pieceRaw.Trunc = true
+	pieceRaw.TruncSize = 0
+	return s.diskStore.PutBytes(ctx, pieceRaw, []byte(strings.Join(recordStrs, "\n")))
 }
 
 func (s *diskStorageMgr) ReadPieceMetaBytes(ctx context.Context, taskId string) ([]byte, error) {

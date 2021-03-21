@@ -23,24 +23,38 @@ import (
 
 // CheckGetRaw check before get Raw
 func CheckGetRaw(raw *Raw, fileLength int64) error {
-	if fileLength < raw.Offset {
-		return errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "the offset: %d is lager than the file length: %d", raw.Offset, fileLength)
+	// if raw.Length < 0 ,read All data
+	if raw.Offset < 0 {
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the offset: %d is a negative integer", raw.Offset)
 	}
-
 	if raw.Length < 0 {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the length: %d is not a positive integer", raw.Length)
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the length: %d is a negative integer", raw.Length)
+	}
+	if fileLength < raw.Offset {
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the offset: %d is lager than the file length: %d", raw.Offset, fileLength)
 	}
 
 	if fileLength < (raw.Offset + raw.Length) {
-		return errors.Wrapf(cdnerrors.ErrRangeNotSatisfiable, "the offset: %d and length: %d is lager than the file length: %d", raw.Offset, raw.Length, fileLength)
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the offset: %d and length: %d is lager than the file length: %d", raw.Offset, raw.Length, fileLength)
 	}
 	return nil
 }
 
 // CheckPutRaw check before put Raw
 func CheckPutRaw(raw *Raw) error {
+	if raw.Offset < 0 {
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the offset: %d is a negative integer", raw.Offset)
+	}
 	if raw.Length < 0 {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the length: %d should not be a negative integer", raw.Length)
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the length: %d is a negative integer", raw.Length)
+	}
+	return nil
+}
+
+// CheckTrunc check before trunc file content
+func CheckTrunc(raw *Raw) error {
+	if raw.Trunc && raw.TruncSize < 0 {
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "the truncSize: %d is a negative integer", raw.Length)
 	}
 	return nil
 }

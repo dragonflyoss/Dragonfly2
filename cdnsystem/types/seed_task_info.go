@@ -30,7 +30,7 @@ type SeedTask struct {
 	SourceFileLength int64             `json:"sourceFileLength,omitempty"`
 	CdnFileLength    int64             `json:"cdnFileLength,omitempty"`
 	PieceSize        int32             `json:"pieceSize,omitempty"`
-	Headers          map[string]string `json:"headers,omitempty"`
+	Header           map[string]string `json:"header,omitempty"`
 	CdnStatus        string            `json:"cdnStatus,omitempty"`
 	PieceTotal       int32             `json:"pieceTotal,omitempty"`
 	RequestMd5       string            `json:"requestMd5,omitempty"`

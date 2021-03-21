@@ -34,7 +34,7 @@ const RangeHeaderName = "Range"
 // If the returned error is nil, the Response will contain a non-nil
 // Body which the caller is expected to close.
 func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, map[string]string, error) {
-	headers := maputils.DeepCopyMap(nil, task.Headers)
+	headers := maputils.DeepCopyMap(nil, task.Header)
 	if detectResult.breakPoint > 0 {
 		breakRange, err := rangeutils.GetBreakRange(detectResult.breakPoint, task.SourceFileLength)
 		if err != nil {
@@ -46,7 +46,7 @@ func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (io
 		}
 	}
 	logger.WithTaskID(task.TaskId).Infof("start download url %s at range:%d-%d: %s with header: %+v", task.Url, detectResult.breakPoint,
-		task.SourceFileLength, task.Headers)
+		task.SourceFileLength, task.Header)
 	return cm.resourceClient.Download(task.Url, headers)
 }
 

@@ -41,10 +41,10 @@ const (
 )
 
 var (
-	// DefaultBuiltInTransport is the transport for HTTPWithHeaders.
+	// DefaultBuiltInTransport is the transport for HTTPWithHeader.
 	DefaultBuiltInTransport *http.Transport
 
-	// DefaultBuiltInHTTPClient is the http client for HTTPWithHeaders.
+	// DefaultBuiltInHTTPClient is the http client for HTTPWithHeader.
 	DefaultBuiltInHTTPClient *http.Client
 
 	// DefaultHTTPClient is the default implementation of SimpleHTTPClient.
@@ -94,17 +94,17 @@ type SimpleHTTPClient interface {
 	// When timeout <= 0, it will block until receiving response from server.
 	Get(url string, timeout time.Duration) (code int, res []byte, e error)
 
-	// GetWithHeaders sends a GET request with headers to server.
+	// GetWithHeader sends a GET request with header to server.
 	// When timeout <= 0, it will block until receiving response from server.
-	GetWithHeaders(url string, headers map[string]string, timeout time.Duration) (code int, resBody []byte, err error)
+	GetWithHeader(url string, header map[string]string, timeout time.Duration) (code int, resBody []byte, err error)
 
 	// PostJSON sends a POST request whose content-type is 'application/json;charset=utf-8' to server.
 	// When timeout <= 0, it will block until receiving response from server.
 	PostJSON(url string, body interface{}, timeout time.Duration) (code int, res []byte, e error)
 
-	// PostJSONWithHeaders sends a POST request with headers whose content-type is 'application/json;charset=utf-8' to server.
+	// PostJSONWithHeader sends a POST request with header whose content-type is 'application/json;charset=utf-8' to server.
 	// When timeout <= 0, it will block until receiving response from server.
-	PostJSONWithHeaders(url string, headers map[string]string, body interface{}, timeout time.Duration) (code int, resBody []byte, err error)
+	PostJSONWithHeader(url string, header map[string]string, body interface{}, timeout time.Duration) (code int, resBody []byte, err error)
 }
 
 // ----------------------------------------------------------------------------
@@ -121,17 +121,17 @@ func (c *defaultHTTPClient) Get(url string, timeout time.Duration) (code int, bo
 	return fasthttp.Get(nil, url)
 }
 
-func (c *defaultHTTPClient) GetWithHeaders(url string, headers map[string]string, timeout time.Duration) (
+func (c *defaultHTTPClient) GetWithHeader(url string, header map[string]string, timeout time.Duration) (
 	code int, body []byte, e error) {
-	return do(url, headers, timeout, nil)
+	return do(url, header, timeout, nil)
 }
 
 func (c *defaultHTTPClient) PostJSON(url string, body interface{}, timeout time.Duration) (
 	code int, resBody []byte, err error) {
-	return c.PostJSONWithHeaders(url, nil, body, timeout)
+	return c.PostJSONWithHeader(url, nil, body, timeout)
 }
 
-func (c *defaultHTTPClient) PostJSONWithHeaders(url string, headers map[string]string, body interface{}, timeout time.Duration) (
+func (c *defaultHTTPClient) PostJSONWithHeader(url string, header map[string]string, body interface{}, timeout time.Duration) (
 	code int, resBody []byte, err error) {
 
 	var jsonByte []byte
@@ -143,7 +143,7 @@ func (c *defaultHTTPClient) PostJSONWithHeaders(url string, headers map[string]s
 		}
 	}
 
-	return do(url, headers, timeout, func(req *fasthttp.Request) error {
+	return do(url, header, timeout, func(req *fasthttp.Request) error {
 		req.SetBody(jsonByte)
 		req.Header.SetMethod("POST")
 		req.Header.SetContentType(ApplicationJSONUtf8Value)
@@ -154,13 +154,13 @@ func (c *defaultHTTPClient) PostJSONWithHeaders(url string, headers map[string]s
 // requestSetFunc a function that will set some values to the *req.
 type requestSetFunc func(req *fasthttp.Request) error
 
-func do(url string, headers map[string]string, timeout time.Duration, rsf requestSetFunc) (statusCode int, body []byte, err error) {
+func do(url string, header map[string]string, timeout time.Duration, rsf requestSetFunc) (statusCode int, body []byte, err error) {
 	// init request and response
 	req := fasthttp.AcquireRequest()
 	defer fasthttp.ReleaseRequest(req)
 
 	req.SetRequestURI(url)
-	for k, v := range headers {
+	for k, v := range header {
 		req.Header.Add(k, v)
 	}
 	// set request
@@ -207,13 +207,13 @@ func Get(url string, timeout time.Duration) (int, []byte, error) {
 
 // PostJSONWithHeaders sends a POST request whose content-type is 'application/json;charset=utf-8'.
 func PostJSONWithHeaders(url string, headers map[string]string, body interface{}, timeout time.Duration) (int, []byte, error) {
-	return DefaultHTTPClient.PostJSONWithHeaders(url, headers, body, timeout)
+	return DefaultHTTPClient.PostJSONWithHeader(url, headers, body, timeout)
 }
 
 // GetWithHeaders sends a GET request to server.
 // When timeout <= 0, it will block until receiving response from server.
 func GetWithHeaders(url string, headers map[string]string, timeout time.Duration) (code int, resBody []byte, err error) {
-	return DefaultHTTPClient.GetWithHeaders(url, headers, timeout)
+	return DefaultHTTPClient.GetWithHeader(url, headers, timeout)
 }
 
 // Do performs the given http request and fills the given http response.
@@ -235,12 +235,12 @@ func Do(url string, headers map[string]string, timeout time.Duration) (string, e
 
 // HTTPGet sends an HTTP GET request with headers.
 func HTTPGet(url string, headers map[string]string) (*http.Response, error) {
-	return HTTPWithHeaders("GET", url, headers, 0, nil)
+	return HTTPWithHeader("GET", url, headers, 0, nil)
 }
 
 // HTTPGetTimeout sends an HTTP GET request with timeout.
 func HTTPGetTimeout(url string, headers map[string]string, timeout time.Duration) (*http.Response, error) {
-	return HTTPWithHeaders("GET", url, headers, timeout, nil)
+	return HTTPWithHeader("GET", url, headers, timeout, nil)
 }
 
 // HTTPGetWithTLS sends an HTTP GET request with TLS config.
@@ -261,11 +261,11 @@ func HTTPGetWithTLS(url string, headers map[string]string, timeout time.Duration
 	if appendSuccess {
 		tlsConfig.RootCAs = roots
 	}
-	return HTTPWithHeaders("GET", url, headers, timeout, tlsConfig)
+	return HTTPWithHeader("GET", url, headers, timeout, tlsConfig)
 }
 
 // HTTPWithHeaders sends an HTTP request with headers and specified method.
-func HTTPWithHeaders(method, url string, headers map[string]string, timeout time.Duration, tlsConfig *tls.Config) (*http.Response, error) {
+func HTTPWithHeader(method, url string, headers map[string]string, timeout time.Duration, tlsConfig *tls.Config) (*http.Response, error) {
 	var (
 		cancel func()
 	)

@@ -41,7 +41,7 @@ func Register(name string, builder StorageBuilder) {
 func Get(name string) (*Store, error) {
 	v := plugins.GetPlugin(config.StoragePlugin, strings.ToLower(name))
 	if v == nil {
-		return nil, fmt.Errorf("not existed storage: %s", name)
+		return nil, fmt.Errorf("storage: %s not existed", name)
 	}
 	if store, ok := v.(*Store); ok {
 		return store, nil

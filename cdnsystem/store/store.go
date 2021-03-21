@@ -18,11 +18,11 @@ package store
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"fmt"
 	"io"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
@@ -44,22 +44,6 @@ type Store struct {
 	driver StorageDriver
 }
 
-func (s *Store) GetTotalSpace(ctx context.Context) (fsize.Size, error) {
-	return s.driver.GetTotalSpace(ctx)
-}
-
-func (s *Store) CreateBaseDir(ctx context.Context) error {
-	return s.driver.CreateBaseDir(ctx)
-}
-
-func (s *Store) Exits(ctx context.Context, raw *Raw) bool {
-	return s.driver.Exits(ctx, raw)
-}
-
-func (s *Store) GetTotalAndFreeSpace(ctx context.Context) (fsize.Size, fsize.Size, error) {
-	return s.driver.GetTotalAndFreeSpace(ctx)
-}
-
 // NewStore creates a new Store instance.
 func NewStore(name string, builder StorageBuilder, cfg interface{}) (*Store, error) {
 	if name == "" || builder == nil {
@@ -79,6 +63,7 @@ func NewStore(name string, builder StorageBuilder, cfg interface{}) (*Store, err
 	}, nil
 }
 
+
 // Type returns the plugin type: StoragePlugin.
 func (s *Store) Type() config.PluginType {
 	return config.StoragePlugin
@@ -87,6 +72,25 @@ func (s *Store) Type() config.PluginType {
 // Name returns the plugin name.
 func (s *Store) Name() string {
 	return s.driverName
+}
+
+// GetTotalSpace
+func (s *Store) GetTotalSpace(ctx context.Context) (fsize.Size, error) {
+	return s.driver.GetTotalSpace(ctx)
+}
+
+// CreateBaseDir
+func (s *Store) CreateBaseDir(ctx context.Context) error {
+	return s.driver.CreateBaseDir(ctx)
+}
+
+
+func (s *Store) Exits(ctx context.Context, raw *Raw) bool {
+	return s.driver.Exits(ctx, raw)
+}
+
+func (s *Store) GetTotalAndFreeSpace(ctx context.Context) (fsize.Size, fsize.Size, error) {
+	return s.driver.GetTotalAndFreeSpace(ctx)
 }
 
 // Get the data from the storage driver in io stream.
@@ -122,12 +126,12 @@ func (s *Store) PutBytes(ctx context.Context, raw *Raw, data []byte) error {
 }
 
 // AppendBytes append data into storage in bytes.
-func (s *Store) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
-	if err := checkEmptyKey(raw); err != nil {
-		return err
-	}
-	return s.driver.AppendBytes(ctx, raw, data)
-}
+//func (s *Store) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
+//	if err := checkEmptyKey(raw); err != nil {
+//		return err
+//	}
+//	return s.driver.AppendBytes(ctx, raw, data)
+//}
 
 // Remove the data from the storage based on raw information.
 func (s *Store) Remove(ctx context.Context, raw *Raw) error {
@@ -179,6 +183,5 @@ func checkEmptyKey(raw *Raw) error {
 	if raw == nil || stringutils.IsBlank(raw.Key) {
 		return cdnerrors.ErrEmptyKey
 	}
-
 	return nil
 }

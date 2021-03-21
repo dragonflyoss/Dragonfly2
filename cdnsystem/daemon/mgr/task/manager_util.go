@@ -58,7 +58,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	var task *types.SeedTask
 	newTask := &types.SeedTask{
 		TaskId:           taskId,
-		Headers:          request.Headers,
+		Header:           request.Header,
 		RequestMd5:       request.Md5,
 		Url:              request.URL,
 		TaskUrl:          taskURL,
@@ -82,8 +82,8 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		return task, nil
 	}
 
-	// get sourceContentLength with req.Headers
-	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Headers)
+	// get sourceContentLength with req.Header
+	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Header)
 	if err != nil {
 		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length from http client:%v",
 			task.Url, err)
@@ -97,9 +97,9 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	task.SourceFileLength = sourceFileLength
 	logger.WithTaskID(taskId).Debugf("get file content length: %d", sourceFileLength)
 
-	// if success to get the information successfully with the req.Headers then update the task.Headers to req.Headers.
-	if request.Headers != nil {
-		task.Headers = request.Headers
+	// if success to get the information successfully with the req.Header then update the task.Header to req.Header.
+	if request.Header != nil {
+		task.Header = request.Header
 	}
 
 	// calculate piece size and update the PieceSize and PieceTotal

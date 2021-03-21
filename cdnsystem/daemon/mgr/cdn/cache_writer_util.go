@@ -64,7 +64,8 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				// todo 后续压缩等特性通过waitToWriteContent 和 pieceStyle 实现
 				waitToWriteContent := job.pieceContent
 				// 要写盘数据的长度
-				pieceLen := waitToWriteContent.Len()
+				originPieceLen := waitToWriteContent.Len() // 未作处理的原始数据长度
+				pieceLen := originPieceLen // 经过处理后写到存储介质的真实长度
 				pieceStyle := types.PlainUnspecified
 
 				if err := cw.writeToFile(ctx, job.TaskId, waitToWriteContent, int64(job.pieceNum)*int64(job.pieceSize), pieceMd5); err != nil {
@@ -84,7 +85,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 					},
 					OriginRange: &rangeutils.Range{
 						StartIndex: uint64(job.pieceNum * job.pieceSize),
-						EndIndex:   uint64(job.pieceNum*job.pieceSize + job.pieceSize - 1),
+						EndIndex:   uint64(job.pieceNum*job.pieceSize + int32(originPieceLen) - 1),
 					},
 					PieceStyle: pieceStyle,
 				}
