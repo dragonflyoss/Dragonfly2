@@ -42,15 +42,11 @@ var daemonCmd = &cobra.Command{
 	Use:          "daemon",
 	Short:        "Launch a peer daemon for downloading and uploading files.",
 	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		// handler config flag
-		cfgPath, err := cmd.Flags().GetString("config")
-		if err != nil {
-			return err
-		}
 
-		if cfgPath != "" {
-			initDaemonConfig(cfgPath)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Init config flag
+		if err := initConfigFlag(cmd); err != nil {
+			return err
 		}
 
 		// Convert config
@@ -106,7 +102,7 @@ func init() {
 	rootCmd.AddCommand(daemonCmd)
 }
 
-// initConfig reads in config file if set
+// initDaemonConfig reads in config file if set
 func initDaemonConfig(cfgPath string) {
 	_, err := os.Stat(cfgPath)
 	if err != nil {
@@ -119,6 +115,21 @@ func initDaemonConfig(cfgPath string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+// initConfigFlag reads config file with flags
+func initConfigFlag(cmd *cobra.Command) error {
+	cfgPath, err := cmd.Flags().GetString("config")
+	if err != nil {
+		return err
+	}
+
+	if cfgPath == config.PeerHostConfigPath {
+		return nil
+	}
+
+	initDaemonConfig(cfgPath)
+	return nil
 }
 
 func runDaemon() error {
