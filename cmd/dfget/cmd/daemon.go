@@ -37,13 +37,22 @@ import (
 )
 
 var daemonConfig *config.PeerHostOption
-var daemonConfigPath string
 
 var daemonCmd = &cobra.Command{
 	Use:          "daemon",
 	Short:        "Launch a peer daemon for downloading and uploading files.",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// handler config flag
+		cfgPath, err := cmd.Flags().GetString("config")
+		if err != nil {
+			return err
+		}
+
+		if cfgPath != "" {
+			initDaemonConfig(cfgPath)
+		}
+
 		// Convert config
 		if err := daemonConfig.Convert(); err != nil {
 			return err
@@ -67,7 +76,7 @@ func init() {
 	daemonConfig = &config.PeerHostConfig
 
 	// Initialize cobra
-	initDaemonConfig()
+	initDaemonConfig(config.PeerHostConfigPath)
 
 	// Add flags
 	flagSet := daemonCmd.Flags()
@@ -91,27 +100,22 @@ func init() {
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.RateLimit), "download-rate", "download rate limit for other peers and back source")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
 	flagSet.DurationVar(&daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule-timeout", daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule timeout")
-	flagSet.StringVar(&daemonConfigPath, "config", daemonConfigPath, "daemon config file location")
+	flagSet.String("config", config.PeerHostConfigPath, "daemon config file location")
 
 	// Add command
 	rootCmd.AddCommand(daemonCmd)
 }
 
 // initConfig reads in config file if set
-func initDaemonConfig() {
-	// Initialize config path
-	if daemonConfigPath == "" {
-		daemonConfigPath = config.PeerHostConfigPath
-	}
-
-	_, err := os.Stat(daemonConfigPath)
+func initDaemonConfig(cfgPath string) {
+	_, err := os.Stat(cfgPath)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	// Load from config file
-	if err := daemonConfig.Load(daemonConfigPath); err != nil {
+	if err := daemonConfig.Load(cfgPath); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
