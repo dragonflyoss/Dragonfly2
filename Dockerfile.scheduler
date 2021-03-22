@@ -1,4 +1,4 @@
-FROM golang:1.15.8-alpine as builder
+FROM golang:1.15.10-alpine as builder
 
 WORKDIR /go/src/d7y.io/dragonfly/v2
 
@@ -11,7 +11,9 @@ RUN make build-scheduler && make install-scheduler
 
 FROM alpine:3.12
 
-RUN apk --no-cache add ca-certificates bash && echo 'hosts: files dns' > /etc/nsswitch.conf
+# TODO hack for China mainland, remove later
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk --no-cache add ca-certificates bash && echo 'hosts: files dns' > /etc/nsswitch.conf
 
 ENV PATH=/opt/dragonfly/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 

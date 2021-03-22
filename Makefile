@@ -16,6 +16,14 @@ build-dirs: ## Prepare required folders for build
 	@mkdir -p ./bin
 .PHONY: build-dirs
 
+docker-build: docker-build-cdn docker-build-dfdaemon docker-build-scheduler
+	@echo "Build image done."
+.PHONY: docker-build
+
+docker-push: docker-push-cdn docker-push-dfdaemon docker-push-scheduler
+	@echo "Push image done."
+.PHONY: docker-push
+
 docker-build-cdn: ## Build cdn image
 	@echo "Begin to use docker build cdn image."
 	./hack/docker-build.sh cdn
