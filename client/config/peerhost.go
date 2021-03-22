@@ -85,6 +85,10 @@ func (p *PeerHostOption) Load(path string) error {
 		return fmt.Errorf("extension of %s is not in 'yml/yaml/json'", path)
 	}
 
+	return nil
+}
+
+func (p *PeerHostOption) Convert() error {
 	// AdvertiseIP
 	ip := net.ParseIP(p.Host.AdvertiseIP)
 	if ip == nil || net.IPv4zero.Equal(ip) {

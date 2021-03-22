@@ -44,7 +44,12 @@ var daemonCmd = &cobra.Command{
 	Short:        "Launch a peer daemon for downloading and uploading files.",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Validate daemon config
+		// Convert config
+		if err := daemonConfig.Convert(); err != nil {
+			return err
+		}
+
+		// Validate config
 		if err := daemonConfig.Validate(); err != nil {
 			return err
 		}

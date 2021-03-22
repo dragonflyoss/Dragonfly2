@@ -101,11 +101,6 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		// Daemon config validate
-		if err := daemonConfig.Validate(); err != nil {
-			return err
-		}
-
 		// Init logger
 		logcore.InitDfget(dfgetConfig.Console)
 
@@ -183,7 +178,7 @@ func init() {
 	flagSet.StringVar(&daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "daemon-sock",
 		daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "the unix domain socket address for grpc with daemon")
 	flagSet.StringVar(&daemonConfig.PidFile, "daemon-pid", daemonConfig.PidFile, "the daemon pid")
-	persistentflagSet.VarP(config.NewNetAddrsValue(&daemonConfig.Scheduler.NetAddrs), "schedulers", "s", "the scheduler addresses")
+	persistentflagSet.VarP(config.NewNetAddrsValue(&daemonConfig.Scheduler.NetAddrs), "scheduler", "s", "the scheduler addresses")
 	flagSet.StringVar(&dfgetConfig.MoreDaemonOptions, "more-daemon-options", "",
 		"more options passed to daemon by command line, please confirm your options with \"dfget daemon --help\"")
 
@@ -191,6 +186,7 @@ func init() {
 	rootCmd.AddCommand(version.VersionCmd)
 }
 
+// Convert flags
 func convertDeprecatedFlags() {
 	for _, node := range deprecatedFlags.nodes.Nodes {
 		daemonConfig.Scheduler.NetAddrs = append(daemonConfig.Scheduler.NetAddrs, dfnet.NetAddr{
@@ -215,15 +211,17 @@ func runDfget() error {
 	// Initialize verbose mode
 	initVerboseMode(dfgetConfig.Verbose)
 
-	// check df daemon state, start a new daemon if necessary
+	// Check df daemon state, start a new daemon if necessary
 	daemonClient, err := checkAndSpawnDaemon(addr)
 	if err != nil {
 		return downloadFromSource(hdr)
 	}
+
 	output, err := filepath.Abs(dfgetConfig.Output)
 	if err != nil {
 		return err
 	}
+
 	if dfgetConfig.Timeout > 0 {
 		ctx, cancel = context.WithTimeout(ctx, dfgetConfig.Timeout)
 		defer cancel()
@@ -231,6 +229,7 @@ func runDfget() error {
 		ctx, cancel = context.WithCancel(ctx)
 		defer cancel()
 	}
+
 	request := &dfdaemongrpc.DownRequest{
 		Url: dfgetConfig.URL,
 		UrlMeta: &base.UrlMeta{
@@ -336,17 +335,20 @@ func downloadFromSource(hdr map[string]string) (err error) {
 		logger.Errorf("init source client error: %s", err)
 		return err
 	}
+
 	response, err = resourceClient.Download(dfgetConfig.URL, hdr)
 	if err != nil {
 		logger.Errorf("download from source error: %s", err)
 		return err
 	}
 	defer response.Body.Close()
+
 	target, err = os.OpenFile(dfgetConfig.Output, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		logger.Errorf("open %s error: %s", dfgetConfig.Output)
 		return err
 	}
+
 	written, err = io.Copy(target, response.Body)
 	if err != nil {
 		logger.Errorf("copied %d bytes to %s, with error: %s",
@@ -358,13 +360,14 @@ func downloadFromSource(hdr map[string]string) (err error) {
 }
 
 func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
-	// check pid
+	// Check pid
 	if ok, err := pidfile.IsProcessExistsByPIDFile(daemonConfig.PidFile); err != nil || !ok {
 		if err = spawnDaemon(); err != nil {
 			return nil, fmt.Errorf("start daemon error: %s", err)
 		}
 	}
-	// check socket
+
+	// Check socket
 	_, err := os.Stat(addr.Addr)
 	if os.IsNotExist(err) {
 		if err = spawnDaemon(); err != nil {
@@ -374,6 +377,7 @@ func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 		return nil, fmt.Errorf("unknown error when stat daemon socket: %s", err)
 	}
 
+	// Check daemon health
 	var dc dfclient.DaemonClient
 	err = retry.Do(func() error {
 		dc, err = probeDaemon(addr)
@@ -387,54 +391,62 @@ func probeDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	state, err := dc.CheckHealth(context.Background(), addr)
 	if err != nil {
 		//dc.Close()
 		return nil, err
 	}
+
 	if !state.Success {
 		//dc.Close()
 		return nil, fmt.Errorf("check health error: %s/%s", state.Code, state.Msg)
 	}
+
 	return dc, nil
 }
 
 func spawnDaemon() error {
+	// Initialize lock file
 	lock := flock.New(dfgetConfig.LockFile)
 	lock.Lock()
 	defer lock.Unlock()
 
-	var schedulers []string
-	for _, s := range daemonConfig.Scheduler.NetAddrs {
-		schedulers = append(schedulers, s.Addr)
-	}
-
+	// Initialize daemon args
 	var args = []string{
 		"daemon",
 		"--download-rate", fmt.Sprintf("%f", daemonConfig.Download.RateLimit.Limit),
 		"--upload-port", fmt.Sprintf("%d", daemonConfig.Upload.TCPListen.PortRange.Start),
 		"--home", daemonConfig.WorkHome,
-		"--listen", daemonConfig.Host.ListenIP,
-		"--expire-time", daemonConfig.Storage.TaskExpireTime.String(),
-		"--alive-time", daemonConfig.AliveTime.String(),
+		"--ip", daemonConfig.Host.ListenIP,
+		"--expiretime", daemonConfig.Storage.TaskExpireTime.String(),
+		"--alivetime", daemonConfig.AliveTime.String(),
 		"--grpc-unix-listen", daemonConfig.Download.DownloadGRPC.UnixListen.Socket,
-		"--schedulers", strings.Join(schedulers, ","),
 		"--pid", daemonConfig.PidFile,
 	}
+
+	// Set more daemon options
 	if dfgetConfig.MoreDaemonOptions != "" {
 		args = append(args, strings.Split(dfgetConfig.MoreDaemonOptions, " ")...)
 	}
-	logger.Infof("start daemon with cmd: %s %s", os.Args[0], strings.Join(args, " "))
-
 	cmd := exec.Command(os.Args[0], args...)
+
+	// Set verbose
 	if dfgetConfig.Verbose {
 		cmd.Args = append(cmd.Args, "--verbose")
 	}
+
+	// Set scheduler
+	for _, s := range daemonConfig.Scheduler.NetAddrs {
+		cmd.Args = append(cmd.Args, "--scheduler "+s.Addr)
+	}
+
 	cmd.Stdin = nil
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 
+	logger.Infof("start daemon with cmd: %s", strings.Join(cmd.Args, " "))
 	return cmd.Start()
 }
 
