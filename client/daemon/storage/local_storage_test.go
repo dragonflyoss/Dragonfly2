@@ -34,7 +34,6 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -160,9 +159,10 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 
 	// clean up test data
 	ts.(*localTaskStore).lastAccess = time.Now().Add(-1 * time.Hour)
-	ok, err = ts.(gc.GC).TryGC()
-	assert.Nil(err, "task gc")
+	ok = ts.(Reclaimer).CanReclaim()
 	assert.True(ok, "task should gc")
+	err = ts.(Reclaimer).Reclaim()
+	assert.Nil(err, "task gc")
 }
 
 func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
@@ -327,9 +327,10 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 
 	// clean up test data
 	ts.(*localTaskStore).lastAccess = time.Now().Add(-1 * time.Hour)
-	ok, err = ts.(gc.GC).TryGC()
-	assert.Nil(err, "task gc")
+	ok = ts.(Reclaimer).CanReclaim()
 	assert.True(ok, "task should gc")
+	err = ts.(Reclaimer).Reclaim()
+	assert.Nil(err, "task gc")
 }
 
 func TestLocalTaskStore_StoreTaskData_Advance(t *testing.T) {

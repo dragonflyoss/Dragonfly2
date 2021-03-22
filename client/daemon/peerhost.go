@@ -373,7 +373,7 @@ func (ph *peerHost) Stop() {
 
 		if !ph.Option.KeepStorage {
 			logger.Infof("keep storage disabled")
-			ph.StorageManager.Clean()
+			ph.StorageManager.CleanUp()
 		}
 	})
 }
