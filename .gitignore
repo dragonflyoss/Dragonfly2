@@ -20,9 +20,11 @@ bin/
 target/
 log
 scheduler/test/misc
+
+# mysql
 mysql
 
-### vscode ###
+# vscode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
