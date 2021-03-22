@@ -34,7 +34,7 @@ func (nv *NetAddrsValue) String() string {
 func (nv *NetAddrsValue) Set(value string) error {
 	vv := strings.Split(value, ":")
 	if len(vv) > 2 || len(vv) == 0 {
-		return errors.New("invalid schedulers")
+		return errors.New("invalid net address")
 	}
 	if len(vv) == 1 {
 		value = fmt.Sprintf("%s:%d", value, DefaultSupernodePort)
