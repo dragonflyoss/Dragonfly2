@@ -17,6 +17,7 @@
 package logcore
 
 import (
+	"fmt"
 	"path"
 
 	"d7y.io/dragonfly/v2/pkg/basic"
@@ -124,13 +125,13 @@ func InitDaemon(console bool) error {
 		return nil
 	}
 
-	if coreLogger, err := CreateLogger(path.Join(clientLogDir, CoreLogFileName), 100, 7, 14, false, false); err != nil {
+	if coreLogger, err := CreateLogger(path.Join(clientLogDir, fmt.Sprintf("dfdaemon-%s", CoreLogFileName)), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(path.Join(clientLogDir, GrpcLogFileName), 100, 7, 14, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(path.Join(clientLogDir, fmt.Sprintf("dfdaemon-%s", GrpcLogFileName)), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
