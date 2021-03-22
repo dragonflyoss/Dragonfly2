@@ -32,21 +32,19 @@ func (nv *NetAddrsValue) String() string {
 }
 
 func (nv *NetAddrsValue) Set(value string) error {
-	addresses := strings.Split(value, ",")
-	for _, address := range addresses {
-		vv := strings.Split(address, ":")
-		if len(vv) > 2 || len(vv) == 0 {
-			return errors.New("invalid schedulers")
-		}
-		if len(vv) == 1 {
-			address = fmt.Sprintf("%s:%d", address, DefaultSupernodePort)
-		}
-		*nv.n = append(*nv.n,
-			dfnet.NetAddr{
-				Type: dfnet.TCP,
-				Addr: address,
-			})
+	vv := strings.Split(value, ":")
+	if len(vv) > 2 || len(vv) == 0 {
+		return errors.New("invalid schedulers")
 	}
+	if len(vv) == 1 {
+		value = fmt.Sprintf("%s:%d", value, DefaultSupernodePort)
+	}
+
+	*nv.n = append(*nv.n,
+		dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: value,
+		})
 
 	return nil
 }
