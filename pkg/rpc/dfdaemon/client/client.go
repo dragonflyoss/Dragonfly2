@@ -40,10 +40,10 @@ var dc *daemonClient
 
 var once sync.Once
 
-func GetClientByAddr(addrs []dfnet.NetAddr) (DaemonClient, error) {
+func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	once.Do(func() {
 		dc = &daemonClient{
-			rpc.NewConnection("dfdaemon", make([]dfnet.NetAddr, 0)),
+			rpc.NewConnection("dfdaemon", make([]dfnet.NetAddr, 0), opts...),
 		}
 	})
 	if len(addrs) == 0 {
@@ -55,7 +55,6 @@ func GetClientByAddr(addrs []dfnet.NetAddr) (DaemonClient, error) {
 	}
 	return dc, nil
 }
-
 
 // see dfdaemon.DaemonClient
 type DaemonClient interface {
@@ -92,7 +91,7 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 
 	drc := make(chan *dfdaemon.DownResult, 4)
 	// 生成taskId
-	taskId := idgen.GenerateTaskId(req.Url, req.Filter, req.UrlMeta,req.BizId)
+	taskId := idgen.GenerateTaskId(req.Url, req.Filter, req.UrlMeta, req.BizId)
 	drs, err := newDownResultStream(dc, ctx, taskId, req, opts)
 	if err != nil {
 		return nil, err
