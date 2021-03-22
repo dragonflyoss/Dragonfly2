@@ -18,6 +18,10 @@ type streamPeerTaskCallback struct {
 	start time.Time
 }
 
+func (p *streamPeerTaskCallback) GetStartTime() time.Time {
+	return p.start
+}
+
 func (p *streamPeerTaskCallback) Init(pt PeerTask) error {
 	// prepare storage
 	err := p.ptm.storageManager.RegisterTask(p.ctx,

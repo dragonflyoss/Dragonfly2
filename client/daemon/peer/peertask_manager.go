@@ -64,6 +64,7 @@ type PeerTaskCallback interface {
 	Done(pt PeerTask) error
 	Update(pt PeerTask) error
 	Fail(pt PeerTask, code base.Code, reason string) error
+	GetStartTime() time.Time
 }
 
 type peerTaskManager struct {

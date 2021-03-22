@@ -35,7 +35,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
@@ -189,7 +188,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	defer os.Remove(output)
 
 	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
-	defer storageManager.(gc.GC).TryGC()
+	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any()).Times(int(math.Ceil(float64(len(testBytes)) / float64(pieceSize)))).DoAndReturn(func(task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
@@ -263,7 +262,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		taskID = "task-0"
 	)
 	sched, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
-	defer storageManager.(gc.GC).TryGC()
+	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any()).AnyTimes().DoAndReturn(func(task *DownloadPieceRequest) (io.Reader, io.Closer, error) {

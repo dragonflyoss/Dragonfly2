@@ -316,7 +316,8 @@ func (pt *filePeerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc fu
 	select {
 	case <-pt.peerPacketReady:
 		// preparePieceTasksByPeer func already send piece result with error
-		pt.Infof("new peer client ready")
+		pt.Infof("new peer client ready, scheduler time cost: %dus",
+			time.Now().Sub(pt.callback.GetStartTime()).Microseconds())
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		pt.failedReason = reasonScheduleTimeout
 		pt.failedCode = dfcodes.ClientScheduleTimeout
