@@ -58,6 +58,8 @@ func (p *streamPeerTaskCallback) Update(pt PeerTask) error {
 }
 
 func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
+	var cost = time.Now().Sub(p.start).Milliseconds()
+	pt.Log().Infof("stream peer task done, cost: %dms, error: %v", cost)
 	e := p.ptm.storageManager.Store(
 		context.Background(),
 		&storage.StoreRequest{
@@ -72,7 +74,6 @@ func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	var end = time.Now()
 	state, err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
@@ -82,11 +83,11 @@ func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
 		Url:            p.req.Url,
 		ContentLength:  pt.GetContentLength(),
 		Traffic:        pt.GetTraffic(),
-		Cost:           uint32(end.Sub(p.start).Milliseconds()),
+		Cost:           uint32(cost),
 		Success:        true,
 		Code:           dfcodes.Success,
 	})
-	logger.Debugf("task %s/%s report successful peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
+	logger.Debugf("report successful peer result, response state: %#v, error: %v", state, err)
 	return nil
 }
 
@@ -106,6 +107,6 @@ func (p *streamPeerTaskCallback) Fail(pt PeerTask, code base.Code, reason string
 		Success:        false,
 		Code:           code,
 	})
-	logger.Debugf("task %s/%s report failed peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
+	logger.Debugf("report failed peer result, response state: %#v, error: %v", state, err)
 	return nil
 }

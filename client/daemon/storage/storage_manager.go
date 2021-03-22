@@ -237,7 +237,7 @@ func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	return t.(TaskStorageDriver).GetPieces(ctx, req)
 }
 
-func (s storageManager) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool) {
+func (s *storageManager) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool) {
 	s.Keep()
 	d, ok := s.tasks.Load(meta)
 	if !ok {
@@ -246,7 +246,7 @@ func (s storageManager) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool
 	return d.(TaskStorageDriver), ok
 }
 
-func (s storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {
+func (s *storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {
 	t, ok := s.LoadTask(
 		PeerTaskMetaData{
 			TaskID: req.TaskID,
@@ -258,7 +258,7 @@ func (s storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest) 
 	return t.(TaskStorageDriver).UpdateTask(ctx, req)
 }
 
-func (s storageManager) CreateTask(req RegisterTaskRequest) error {
+func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 	logger.Debugf("init local task storage, peer id: %s, task id: %s", req.PeerID, req.TaskID)
 
 	dataDir := path.Join(s.storeOption.DataPath, string(s.storeStrategy), req.TaskID, req.PeerID)
@@ -322,7 +322,7 @@ func (s storageManager) CreateTask(req RegisterTaskRequest) error {
 	return nil
 }
 
-func (s storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
+func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 	dirs, err := ioutil.ReadDir(path.Join(s.storeOption.DataPath, string(s.storeStrategy)))
 	if os.IsNotExist(err) {
 		return nil
@@ -447,14 +447,12 @@ func (s storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 	return nil
 }
 
-func (s storageManager) TryGC() (bool, error) {
+func (s *storageManager) TryGC() (bool, error) {
 	var markedTasks []PeerTaskMetaData
 	s.tasks.Range(func(key, task interface{}) bool {
 		// remove from task list first
 		if task.(*localTaskStore).CanReclaim() {
 			task.(*localTaskStore).MarkReclaim()
-			logger.Infof("task %s/%s will be reclaimed, marked",
-				key.(PeerTaskMetaData).TaskID, key.(PeerTaskMetaData).PeerID)
 			markedTasks = append(markedTasks, key.(PeerTaskMetaData))
 		} else {
 			logger.Debugf("task %s/%s not reach gc time",
@@ -476,16 +474,16 @@ func (s storageManager) TryGC() (bool, error) {
 		}
 		logger.Infof("task %s/%s reclaimed", key.TaskID, key.PeerID)
 	}
-	logger.Infof("reclaimed %d task(s)", len(s.markedReclaimTasks))
+	logger.Infof("marked %d task(s), reclaimed %d task(s)", len(markedTasks), len(s.markedReclaimTasks))
 	s.markedReclaimTasks = markedTasks
 	return true, nil
 }
 
-func (s storageManager) CleanUp() {
+func (s *storageManager) CleanUp() {
 	_, _ = s.forceGC()
 }
 
-func (s storageManager) forceGC() (bool, error) {
+func (s *storageManager) forceGC() (bool, error) {
 	s.tasks.Range(func(key, value interface{}) bool {
 		s.tasks.Delete(key.(PeerTaskMetaData))
 		err := value.(*localTaskStore).Reclaim()

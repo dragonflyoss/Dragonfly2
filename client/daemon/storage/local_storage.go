@@ -32,9 +32,10 @@ type localTaskStore struct {
 	//dataFile     *os.File
 	dataFilePath string
 
-	expireTime time.Duration
-	lastAccess time.Time
-	gcCallback func(CommonTaskRequest)
+	expireTime    time.Duration
+	lastAccess    time.Time
+	reclaimMarked bool
+	gcCallback    func(CommonTaskRequest)
 }
 
 func (t *localTaskStore) init() error {
@@ -261,11 +262,16 @@ func (t *localTaskStore) CanReclaim() bool {
 
 // MarkReclaim will try to invoke gcCallback (normal leave peer task)
 func (t *localTaskStore) MarkReclaim() {
+	if t.reclaimMarked {
+		return
+	}
 	// leave task
 	t.gcCallback(CommonTaskRequest{
 		PeerID: t.PeerID,
 		TaskID: t.TaskID,
 	})
+	t.reclaimMarked = true
+	logger.Infof("task %s/%s will be reclaimed, marked", t.TaskID, t.PeerID)
 }
 
 func (t *localTaskStore) Reclaim() error {
