@@ -23,14 +23,19 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/avast/retry-go"
+	"github.com/go-echarts/statsview"
+	"github.com/go-echarts/statsview/viewer"
 	"github.com/go-http-utils/headers"
 	"github.com/gofrs/flock"
+	"github.com/phayes/freeport"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap/zapcore"
 
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -39,7 +44,6 @@ import (
 	"d7y.io/dragonfly/v2/client/pidfile"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -63,7 +67,7 @@ limit, transmission encryption and so on.`
 
 // dfgetExample shows examples in dfget command, and is used in auto-generated cli docs.
 var dfgetExample = `
-$ dfget -u https://www.taobao.com -o /tmp/test/b.test --notbs --expiretime 20s
+$ dfget -u https://www.taobao.com -o /tmp/test/b.test --expiretime 20s
 --2019-02-02 18:56:34--  https://www.taobao.com
 dfget version:0.3.0
 workspace:/root/.dragonfly
@@ -89,21 +93,42 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	Example:           dfgetExample,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// init logger
-		logcore.InitDfget(dfgetConfig.Console)
-		if err := checkClientOptions(); err != nil {
+		// Convent deprecated flags
+		convertDeprecatedFlags()
+
+		// Dfget config validate
+		if err := dfgetConfig.Validate(); err != nil {
 			return err
 		}
+
+		// Daemon config validate
+		if err := daemonConfig.Validate(); err != nil {
+			return err
+		}
+
+		// Init logger
+		logcore.InitDfget(dfgetConfig.Console)
+
+		// Start dfget
 		return runDfget()
 	},
 }
 
+// Execute will process dfget.
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		logger.Errorf("Execute error: %s", err)
+		os.Exit(1)
+	}
+}
+
 func init() {
-	// Initialize default config
+	// Initialize default dfget config
 	dfgetConfig = &config.DfgetConfig
 
 	// Add flags
 	flagSet := rootCmd.Flags()
+	persistentflagSet := rootCmd.PersistentFlags()
 
 	flagSet.StringVarP(&dfgetConfig.URL, "url", "u", "", "URL of user requested downloading file(only HTTP/HTTPs supported)")
 	flagSet.StringVarP(&dfgetConfig.Output, "output", "o", "",
@@ -144,26 +169,35 @@ func init() {
 		"show log on console, it's conflict with '--showbar'")
 	flagSet.BoolVar(&dfgetConfig.Verbose, "verbose", false,
 		"enable verbose mode, all debug log will be display")
-	flagSet.StringVar(&daemonConfig.WorkHome, "home", daemonConfig.WorkHome,
-		"the work home directory of dfget")
-	flagSet.StringVar(&daemonConfig.Host.ListenIP, "ip", daemonConfig.Host.ListenIP,
+	persistentflagSet.StringVar(&daemonConfig.WorkHome, "home", daemonConfig.WorkHome,
+		"the work home directory")
+	persistentflagSet.StringVar(&daemonConfig.Host.ListenIP, "ip", daemonConfig.Host.ListenIP,
 		"IP address that server will listen on")
 	flagSet.IntVar(&daemonConfig.Upload.ListenOption.TCPListen.PortRange.Start, "port", daemonConfig.Upload.ListenOption.TCPListen.PortRange.Start,
 		"port number that server will listen on")
-	flagSet.DurationVar(&daemonConfig.Storage.Option.TaskExpireTime.Duration, "expiretime", daemonConfig.Storage.Option.TaskExpireTime.Duration,
+	persistentflagSet.DurationVar(&daemonConfig.Storage.Option.TaskExpireTime.Duration, "expiretime", daemonConfig.Storage.Option.TaskExpireTime.Duration,
 		"caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
-	flagSet.DurationVar(&daemonConfig.AliveTime.Duration, "alivetime", daemonConfig.AliveTime.Duration,
+	persistentflagSet.DurationVar(&daemonConfig.AliveTime.Duration, "alivetime", daemonConfig.AliveTime.Duration,
 		"alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
 	flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")
 	flagSet.StringVar(&daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "daemon-sock",
 		daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "the unix domain socket address for grpc with daemon")
 	flagSet.StringVar(&daemonConfig.PidFile, "daemon-pid", daemonConfig.PidFile, "the daemon pid")
-	flagSet.Var(config.NewNetAddrsValue(&daemonConfig.Scheduler.NetAddrs), "schedulers", "the scheduler addresses")
+	persistentflagSet.VarP(config.NewNetAddrsValue(&daemonConfig.Scheduler.NetAddrs), "schedulers", "s", "the scheduler addresses")
 	flagSet.StringVar(&dfgetConfig.MoreDaemonOptions, "more-daemon-options", "",
 		"more options passed to daemon by command line, please confirm your options with \"dfget daemon --help\"")
 
 	// Add command
 	rootCmd.AddCommand(version.VersionCmd)
+}
+
+func convertDeprecatedFlags() {
+	for _, node := range deprecatedFlags.nodes.Nodes {
+		daemonConfig.Scheduler.NetAddrs = append(daemonConfig.Scheduler.NetAddrs, dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: node,
+		})
+	}
 }
 
 // runDfget does some init operations and starts to download.
@@ -177,6 +211,9 @@ func runDfget() error {
 		cancel context.CancelFunc
 		hdr    = parseHeader(dfgetConfig.Header)
 	)
+
+	// Initialize verbose mode
+	initVerboseMode(dfgetConfig.Verbose)
 
 	// check df daemon state, start a new daemon if necessary
 	daemonClient, err := checkAndSpawnDaemon(addr)
@@ -257,6 +294,34 @@ download:
 	return err
 }
 
+func initVerboseMode(verbose bool) {
+	if !verbose {
+		return
+	}
+
+	logcore.SetCoreLevel(zapcore.DebugLevel)
+	logcore.SetGrpcLevel(zapcore.DebugLevel)
+
+	go func() {
+		// enable go pprof and statsview
+		port, _ := strconv.Atoi(os.Getenv("D7Y_PPROF_PORT"))
+		if port == 0 {
+			port, _ = freeport.GetFreePort()
+		}
+
+		debugListen := fmt.Sprintf("localhost:%d", port)
+		viewer.SetConfiguration(viewer.WithAddr(debugListen))
+
+		logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
+			"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
+			Infof("enable debug at http://%s", debugListen)
+
+		if err := statsview.New().Start(); err != nil {
+			logger.Warnf("serve go pprof error: %s", err)
+		}
+	}()
+}
+
 func downloadFromSource(hdr map[string]string) (err error) {
 	logger.Infof("try to download from source")
 	var (
@@ -290,37 +355,6 @@ func downloadFromSource(hdr map[string]string) (err error) {
 		logger.Infof("copied %d bytes to %s", written, dfgetConfig.Output)
 	}
 	return err
-}
-
-func convertDeprecatedFlags() {
-	for _, node := range deprecatedFlags.nodes.Nodes {
-		daemonConfig.Scheduler.NetAddrs = append(daemonConfig.Scheduler.NetAddrs, dfnet.NetAddr{
-			Type: dfnet.TCP,
-			Addr: node,
-		})
-	}
-}
-
-func checkClientOptions() error {
-	convertDeprecatedFlags()
-	if len(os.Args) < 2 {
-		return dferrors.New(-1, "Please use the command 'help' to show the help information.")
-	}
-	if err := config.CheckConfig(dfgetConfig); err != nil {
-		return err
-	}
-	if len(daemonConfig.Scheduler.NetAddrs) < 1 {
-		return dferrors.New(-1, "Empty schedulers. Please use the command 'help' to show the help information.")
-	}
-	return nil
-}
-
-// Execute will process dfget.
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		logger.Errorf("Execute error: %s", err)
-		os.Exit(1)
-	}
 }
 
 func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
@@ -391,15 +425,16 @@ func spawnDaemon() error {
 		args = append(args, strings.Split(dfgetConfig.MoreDaemonOptions, " ")...)
 	}
 	logger.Infof("start daemon with cmd: %s %s", os.Args[0], strings.Join(args, " "))
+
 	cmd := exec.Command(os.Args[0], args...)
 	if dfgetConfig.Verbose {
 		cmd.Args = append(cmd.Args, "--verbose")
 	}
-
 	cmd.Stdin = nil
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+
 	return cmd.Start()
 }
 

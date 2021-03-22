@@ -21,3 +21,11 @@ target/
 log
 scheduler/test/misc
 mysql
+
+### vscode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace

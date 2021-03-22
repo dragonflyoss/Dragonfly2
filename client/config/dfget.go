@@ -20,7 +20,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +30,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
+	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
@@ -107,41 +107,29 @@ type ClientOption struct {
 	MoreDaemonOptions string `json:"more_daemon_options,omitempty"`
 }
 
+func (cfg *ClientOption) Validate() error {
+	if cfg == nil {
+		return errors.Wrap(dferrors.ErrInvalidArgument, "runtime config")
+	}
+
+	if !urlutils.IsValidURL(cfg.URL) {
+		return errors.Wrapf(dferrors.ErrInvalidArgument, "url: %v", cfg.URL)
+	}
+
+	if err := cfg.checkOutput(); err != nil {
+		return errors.Wrapf(dferrors.ErrInvalidArgument, "output: %v", err)
+	}
+
+	return nil
+}
+
 func (cfg *ClientOption) String() string {
 	js, _ := json.Marshal(cfg)
 	return string(js)
 }
 
-// CheckConfig checks the config and return errors.
-func CheckConfig(cfg *ClientOption) (err error) {
-	if cfg == nil {
-		return errors.Wrap(dferrors.ErrInvalidArgument, "runtime config")
-	}
-
-	if !IsValidURL(cfg.URL) {
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "url: %v", cfg.URL)
-	}
-
-	if err = checkOutput(cfg); err != nil {
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "output: %v", err)
-	}
-	return nil
-}
-
-// IsValidURL returns whether the string url is a valid HTTP URL.
-func IsValidURL(urlStr string) bool {
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return false
-	}
-	if len(u.Host) == 0 || len(u.Scheme) == 0 {
-		return false
-	}
-	return true
-}
-
 // This function must be called after checkURL
-func checkOutput(cfg *ClientOption) error {
+func (cfg *ClientOption) checkOutput() error {
 	if stringutils.IsBlank(cfg.Output) {
 		url := strings.TrimRight(cfg.URL, "/")
 		idx := strings.LastIndexByte(url, '/')

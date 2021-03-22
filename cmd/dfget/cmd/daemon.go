@@ -17,20 +17,14 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 
-	"github.com/go-echarts/statsview"
-	"github.com/go-echarts/statsview/viewer"
 	"github.com/gofrs/flock"
 	"github.com/google/uuid"
-	"github.com/phayes/freeport"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap/zapcore"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon"
@@ -59,29 +53,25 @@ var daemonCmd = &cobra.Command{
 		logcore.InitDaemon(daemonConfig.Console)
 
 		// Start daemon
-		return runDaemon(daemonConfig)
+		return runDaemon()
 	},
 }
 
 func init() {
-	// Initialize default config
+	// Initialize default daemon config
 	daemonConfig = &config.PeerHostConfig
 
 	// Initialize cobra
-	cobra.OnInitialize(initDaemonConfig)
+	initDaemonConfig()
 
 	// Add flags
 	flagSet := daemonCmd.Flags()
 	flagSet.StringVar(&daemonConfig.DataDir, "data", daemonConfig.DataDir, "local directory which stores temporary files for p2p uploading")
-	flagSet.StringVar(&daemonConfig.WorkHome, "home", daemonConfig.WorkHome, "the work home directory of dfget daemon")
-	flagSet.DurationVar(&daemonConfig.Storage.Option.TaskExpireTime.Duration, "expire-time", daemonConfig.Storage.Option.TaskExpireTime.Duration, "caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
-	flagSet.DurationVar(&daemonConfig.AliveTime.Duration, "alive-time", daemonConfig.AliveTime.Duration, "alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
 	flagSet.DurationVar(&daemonConfig.GCInterval.Duration, "gc-interval", daemonConfig.GCInterval.Duration, "gc interval")
 	flagSet.BoolVar(&daemonConfig.KeepStorage, "keep-storage", daemonConfig.KeepStorage, "keep storage after daemon exit")
 	flagSet.BoolVar(&daemonConfig.Verbose, "verbose", daemonConfig.Verbose, "print verbose log and enable golang debug info")
 	flagSet.BoolVar(&daemonConfig.Console, "console", daemonConfig.Console, "console shows log on console")
 	flagSet.StringVar(&daemonConfig.Host.AdvertiseIP, "advertise-ip", daemonConfig.Host.AdvertiseIP, "the ip report to scheduler, normal same with listen ip")
-	flagSet.StringVar(&daemonConfig.Host.ListenIP, "listen", daemonConfig.Host.ListenIP, "the listen ip")
 	flagSet.StringVar(&daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "grpc-unix-listen", daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "the local unix domain socket listen address for grpc with dfget")
 	flagSet.IntVar(&daemonConfig.Download.PeerGRPC.TCPListen.PortRange.Start, "grpc-port", daemonConfig.Download.PeerGRPC.TCPListen.PortRange.Start, "the listen address for grpc with other peers")
 	flagSet.IntVar(&daemonConfig.Download.PeerGRPC.TCPListen.PortRange.End, "grpc-port-end", daemonConfig.Download.PeerGRPC.TCPListen.PortRange.End, "the listen address for grpc with other peers")
@@ -95,13 +85,11 @@ func init() {
 	flagSet.StringVar(&daemonConfig.Host.NetTopology, "net-topology", daemonConfig.Host.NetTopology, "peer net topology for scheduler")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.RateLimit), "download-rate", "download rate limit for other peers and back source")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
-	flagSet.VarP(config.NewNetAddrsValue(&daemonConfig.Scheduler.NetAddrs), "schedulers", "s", "schedulers")
 	flagSet.DurationVar(&daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule-timeout", daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule timeout")
 	flagSet.StringVar(&daemonConfigPath, "config", daemonConfigPath, "daemon config file location")
 
 	// Add command
 	rootCmd.AddCommand(daemonCmd)
-
 }
 
 // initConfig reads in config file if set
@@ -124,13 +112,9 @@ func initDaemonConfig() {
 	}
 }
 
-func runDaemon(cfg *config.PeerHostOption) error {
-	// TODO(Gaius): remove
-	s, _ := json.MarshalIndent(cfg, "", "  ")
-	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
-
+func runDaemon() error {
 	// Initialize lock file
-	lock := flock.New(cfg.LockFile)
+	lock := flock.New(daemonConfig.LockFile)
 	if ok, err := lock.TryLock(); err != nil {
 		return err
 	} else if !ok {
@@ -139,26 +123,26 @@ func runDaemon(cfg *config.PeerHostOption) error {
 	defer lock.Unlock()
 
 	// Initialize pid file
-	pid, err := pidfile.New(cfg.PidFile)
+	pid, err := pidfile.New(daemonConfig.PidFile)
 	if err != nil {
-		return fmt.Errorf("check pid failed: %s, please check %s", err, cfg.PidFile)
+		return fmt.Errorf("check pid failed: %s, please check %s", err, daemonConfig.PidFile)
 	}
 	defer pid.Remove()
 
 	// Initialize verbose mode
-	initVerboseMode(cfg.Verbose)
+	initVerboseMode(daemonConfig.Verbose)
 
 	ph, err := daemon.NewPeerHost(&scheduler.PeerHost{
 		Uuid:           uuid.New().String(),
-		Ip:             cfg.Host.AdvertiseIP,
-		RpcPort:        int32(cfg.Download.PeerGRPC.TCPListen.PortRange.Start),
+		Ip:             daemonConfig.Host.AdvertiseIP,
+		RpcPort:        int32(daemonConfig.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
 		HostName:       iputils.HostName,
-		SecurityDomain: cfg.Host.SecurityDomain,
-		Location:       cfg.Host.Location,
-		Idc:            cfg.Host.IDC,
-		NetTopology:    cfg.Host.NetTopology,
-	}, *cfg)
+		SecurityDomain: daemonConfig.Host.SecurityDomain,
+		Location:       daemonConfig.Host.Location,
+		Idc:            daemonConfig.Host.IDC,
+		NetTopology:    daemonConfig.Host.NetTopology,
+	}, *daemonConfig)
 	if err != nil {
 		logger.Errorf("init peer host failed: %s", err)
 		return err
@@ -166,34 +150,6 @@ func runDaemon(cfg *config.PeerHostOption) error {
 
 	setupSignalHandler(ph)
 	return ph.Serve()
-}
-
-func initVerboseMode(verbose bool) {
-	if !verbose {
-		return
-	}
-
-	logcore.SetCoreLevel(zapcore.DebugLevel)
-	logcore.SetGrpcLevel(zapcore.DebugLevel)
-
-	go func() {
-		// enable go pprof and statsview
-		port, _ := strconv.Atoi(os.Getenv("D7Y_PPROF_PORT"))
-		if port == 0 {
-			port, _ = freeport.GetFreePort()
-		}
-
-		debugListen := fmt.Sprintf("localhost:%d", port)
-		viewer.SetConfiguration(viewer.WithAddr(debugListen))
-
-		logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
-			"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
-			Infof("enable debug at http://%s", debugListen)
-
-		if err := statsview.New().Start(); err != nil {
-			logger.Warnf("serve go pprof error: %s", err)
-		}
-	}()
 }
 
 func setupSignalHandler(ph daemon.PeerHost) {
