@@ -186,7 +186,7 @@ func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskId string, met
 			return nil, errors.Wrapf(err, "write piece meta records failed")
 		}
 	}
-	// todo already download done
+	// todo already download done, piece 信息已经写完但是meta信息还没有完成更新
 	//if metaData.SourceFileLen >=0 && int64(breakPoint) == metaData.SourceFileLen {
 	//	return &cacheResult{
 	//		breakPoint:       -1,
