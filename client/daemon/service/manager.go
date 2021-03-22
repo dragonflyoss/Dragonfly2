@@ -125,9 +125,13 @@ func (m *manager) Download(ctx context.Context,
 		Output: req.Output,
 	}
 
-	peerTaskProgress, err := m.peerTaskManager.StartFilePeerTask(ctx, peerTask)
+	peerTaskProgress, tiny, err := m.peerTaskManager.StartFilePeerTask(ctx, peerTask)
 	if err != nil {
 		return err
+	}
+	if tiny {
+		logger.Infof("tiny file, wrote to output")
+		return nil
 	}
 loop:
 	for {

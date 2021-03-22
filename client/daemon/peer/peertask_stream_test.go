@@ -87,7 +87,7 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		PeerHost: &scheduler.PeerHost{},
 	}
 	ctx := context.Background()
-	pt, err := NewStreamPeerTask(ctx,
+	pt, _, err := newStreamPeerTask(ctx,
 		ptm.host,
 		&pieceManager{
 			storageManager:  storageManager,
@@ -107,7 +107,7 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		req:   req,
 		start: time.Now(),
 	})
-	pt.(*streamPeerTask).base.backSource = true
+	pt.(*streamPeerTask).backSource = true
 
 	r, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
@@ -184,7 +184,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		PeerHost: &scheduler.PeerHost{},
 	}
 	ctx := context.Background()
-	pt, err := NewStreamPeerTask(ctx,
+	pt, _, err := newStreamPeerTask(ctx,
 		ptm.host,
 		&pieceManager{
 			storageManager:  storageManager,
@@ -204,7 +204,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		req:   req,
 		start: time.Now(),
 	})
-	pt.(*streamPeerTask).base.backSource = true
+	pt.(*streamPeerTask).backSource = true
 
 	r, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")

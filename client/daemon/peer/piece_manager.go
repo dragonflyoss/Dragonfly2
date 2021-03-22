@@ -37,7 +37,7 @@ import (
 
 type PieceManager interface {
 	DownloadSource(ctx context.Context, pt PeerTask, request *scheduler.PeerTaskRequest) error
-	DownloadPiece(peerTask PeerTask, request *DownloadPieceRequest)
+	DownloadPiece(peerTask PeerTask, request *DownloadPieceRequest) bool
 	ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error)
 }
 
@@ -93,11 +93,10 @@ func WithLimiter(limiter *rate.Limiter) func(*pieceManager) {
 	}
 }
 
-func (pm *pieceManager) DownloadPiece(pt PeerTask, request *DownloadPieceRequest) {
+func (pm *pieceManager) DownloadPiece(pt PeerTask, request *DownloadPieceRequest) (success bool) {
 	var (
-		success bool
-		start   = time.Now().UnixNano()
-		end     int64
+		start = time.Now().UnixNano()
+		end   int64
 	)
 	defer func() {
 		if success {
@@ -109,7 +108,7 @@ func (pm *pieceManager) DownloadPiece(pt PeerTask, request *DownloadPieceRequest
 
 	// 1. download piece from other peers
 	if pm.Limiter != nil {
-		if err := pm.Limiter.WaitN(pt.GetContext(), int(request.piece.RangeSize)); err != nil {
+		if err := pm.Limiter.WaitN(pt.Context(), int(request.piece.RangeSize)); err != nil {
 			pt.Log().Errorf("require rate limit access error: %s", err)
 			return
 		}
@@ -124,7 +123,7 @@ func (pm *pieceManager) DownloadPiece(pt PeerTask, request *DownloadPieceRequest
 	defer c.Close()
 
 	// 2. save to storage
-	n, err := pm.storageManager.WritePiece(pt.GetContext(), &storage.WritePieceRequest{
+	n, err := pm.storageManager.WritePiece(pt.Context(), &storage.WritePieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
@@ -147,6 +146,7 @@ func (pm *pieceManager) DownloadPiece(pt PeerTask, request *DownloadPieceRequest
 		return
 	}
 	success = true
+	return
 }
 
 func (pm *pieceManager) pushSuccessResult(peerTask PeerTask, dstPid string, piece *base.PieceInfo, start int64, end int64) {
@@ -232,7 +232,7 @@ func (pm *pieceManager) processPieceFromSource(pt PeerTask,
 	}()
 
 	if pm.Limiter != nil {
-		if err := pm.Limiter.WaitN(pt.GetContext(), int(size)); err != nil {
+		if err := pm.Limiter.WaitN(pt.Context(), int(size)); err != nil {
 			pt.Log().Errorf("require rate limit access error: %s", err)
 			return 0, err
 		}
@@ -241,7 +241,7 @@ func (pm *pieceManager) processPieceFromSource(pt PeerTask,
 		reader = clientutil.NewDigestReader(reader, "")
 	}
 	n, err := pm.storageManager.WritePiece(
-		pt.GetContext(),
+		pt.Context(),
 		&storage.WritePieceRequest{
 			UnknownLength: unknownLength,
 			PeerTaskMetaData: storage.PeerTaskMetaData{

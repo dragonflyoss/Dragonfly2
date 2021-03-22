@@ -94,8 +94,10 @@ func setupPeerTaskManagerComponents(
 				Msg:     "",
 			},
 			TaskId:        request.TaskId,
+			DstPid:        "peer-x",
 			PieceInfos:    tasks,
 			ContentLength: contentLength,
+			TotalPiece:    int32(math.Ceil(float64(contentLength) / float64(pieceSize))),
 		}, nil
 	})
 	ln, _ := rpc.Listen(dfnet.NetAddr{
@@ -142,7 +144,7 @@ func setupPeerTaskManagerComponents(
 				MainPeer: &scheduler.PeerPacket_DestPeer{
 					Ip:      "127.0.0.1",
 					RpcPort: port,
-					PeerId:  "",
+					PeerId:  "peer-x",
 				},
 				StealPeers: nil,
 			}
@@ -214,7 +216,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},
 	}
-	progress, err := ptm.StartFilePeerTask(context.Background(), &FilePeerTaskRequest{
+	progress, _, err := ptm.StartFilePeerTask(context.Background(), &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url:      "http://localhost/test/data",
 			Filter:   "",

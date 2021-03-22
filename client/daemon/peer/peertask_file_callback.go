@@ -58,7 +58,7 @@ func (p *filePeerTaskCallback) Update(pt PeerTask) error {
 
 func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 	var cost = time.Now().Sub(p.start).Milliseconds()
-	pt.Log().Infof("file peer task done, cost: %dms, error: %v", cost)
+	pt.Log().Infof("file peer task done, cost: %dms", cost)
 	e := p.ptm.storageManager.Store(
 		context.Background(),
 		&storage.StoreRequest{
