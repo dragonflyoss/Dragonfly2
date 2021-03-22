@@ -35,7 +35,7 @@
         "tls_config": null
       },
       "unix_listen": {
-        "socket": "/tmp/dfdamon.sock"
+        "socket": "/tmp/dfdaemon.sock"
       }
     },
     "peer_grpc": {
@@ -86,7 +86,7 @@
       "url": "https://index.docker.io",
       "insecure": true,
       "certs": [
-        "../daemon/test/testdata/certs/sca.crt"
+        "./test/testdata/certs/sca.crt"
       ],
       "direct": false
     },
@@ -106,7 +106,7 @@
           "regx": "mirror.aliyuncs.com:443",
           "insecure": true,
           "certs": [
-            "../daemon/test/testdata/certs/sca.crt"
+            "./test/testdata/certs/sca.crt"
           ]
         }
       ]

@@ -30,7 +30,7 @@ download:
       key: key
       tls_config: null
     unix_listen:
-      socket: /tmp/dfdamon.sock
+      socket: /tmp/dfdaemon.sock
   peer_grpc:
     security:
       insecure: true
@@ -71,7 +71,7 @@ proxy:
   registry_mirror:
     url: https://index.docker.io
     insecure: true
-    certs: [../daemon/test/testdata/certs/sca.crt]
+    certs: [./test/testdata/certs/sca.crt]
     direct: false
   proxies:
     - regx: blobs/sha256.*
@@ -84,4 +84,4 @@ proxy:
     hosts:
       - regx: mirror.aliyuncs.com:443
         insecure: true
-        certs: [../daemon/test/testdata/certs/sca.crt]
+        certs: [./test/testdata/certs/sca.crt]
