@@ -56,7 +56,7 @@ plugins:
     - name: disk
       enable: true
       config:
-        baseDir: /tmp/cdnsystem
+        baseDir: /tmp/cdnsystem2
         gcConfig:
           youngGCThreshold: 100G
           fullGCThreshold: 5G
@@ -65,12 +65,12 @@ plugins:
     - name: memory
       enable: true
       config:
-        baseDir: /tmp/memory/dragonfly
+        baseDir: /tmp/memory/dragonfly2
         gcConfig:
           youngGCThreshold: 100G
           fullGCThreshold: 5G
           cleanRatio: 3
-          intervalThreshold: 3s
+          intervalThreshold: 2h
 #  sourceClient:
 #    - name: http
 #      enable: false

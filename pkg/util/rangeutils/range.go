@@ -62,14 +62,14 @@ func ParseRange(rangeStr string) (r *Range, err error) {
 	}, nil
 }
 
-func GetBreakRange(breakPoint int64, rangeLength int64) (*Range, error) {
+func GetBreakRange(breakPoint int64, sourceFileLength int64) (*Range, error) {
 	if breakPoint < 0 {
 		return nil, fmt.Errorf("breakPoint is illegal for value: %d", breakPoint)
 	}
-	if rangeLength < 0 {
-		return nil, fmt.Errorf("rangeLength is illegal for value: %d", rangeLength)
+	if sourceFileLength < 0 {
+		return nil, fmt.Errorf("sourceFileLength is illegal for value: %d", sourceFileLength)
 	}
-	end := rangeLength - 1
+	end := sourceFileLength - 1
 	if breakPoint > end {
 		return nil, fmt.Errorf("start: %d is larger than end: %d", breakPoint, end)
 
