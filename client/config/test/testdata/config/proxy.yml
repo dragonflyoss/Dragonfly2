@@ -23,8 +23,8 @@ proxies:
 
 hijack_https:
   # key pair used to hijack https requests
-  cert: ../certs/sca.crt
-  key: ../certs/sca.key
+  cert: ./test/testdata/certs/sca.crt
+  key: ./test/testdata/certs/sca.key
   hosts:
     - regx: mirror.aliyuncs.com:443 # regexp to match request hosts
       # whether to ignore https certificate errors
