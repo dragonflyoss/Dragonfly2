@@ -101,7 +101,7 @@ func init() {
 func initDaemonConfig(cfgPath string) {
 	var flagPath string
 	for i, v := range os.Args {
-		if v == "--config" {
+		if v == "--config" && i+1 < len(os.Args) {
 			flagPath = os.Args[i+1]
 		}
 	}
@@ -112,6 +112,10 @@ func initDaemonConfig(cfgPath string) {
 
 	_, err := os.Stat(cfgPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		}
+
 		fmt.Println(err)
 		os.Exit(1)
 	}
