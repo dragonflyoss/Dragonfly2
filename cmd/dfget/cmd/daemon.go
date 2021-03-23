@@ -17,6 +17,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -128,6 +129,9 @@ func initDaemonConfig(cfgPath string) {
 }
 
 func runDaemon() error {
+	s, _ := json.MarshalIndent(daemonConfig, "", "  ")
+	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
+
 	// Initialize lock file
 	lock := flock.New(daemonConfig.LockFile)
 	if ok, err := lock.TryLock(); err != nil {
