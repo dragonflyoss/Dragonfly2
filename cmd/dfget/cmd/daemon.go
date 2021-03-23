@@ -44,11 +44,6 @@ var daemonCmd = &cobra.Command{
 	SilenceUsage: true,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Init config flag
-		if err := initConfigFlag(cmd); err != nil {
-			return err
-		}
-
 		// Convert config
 		if err := daemonConfig.Convert(); err != nil {
 			return err
@@ -104,6 +99,17 @@ func init() {
 
 // initDaemonConfig reads in config file if set
 func initDaemonConfig(cfgPath string) {
+	var flagPath string
+	for i, v := range os.Args {
+		if v == "--config" {
+			flagPath = os.Args[i+1]
+		}
+	}
+
+	if flagPath != "" {
+		cfgPath = flagPath
+	}
+
 	_, err := os.Stat(cfgPath)
 	if err != nil {
 		fmt.Println(err)
@@ -115,21 +121,6 @@ func initDaemonConfig(cfgPath string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-}
-
-// initConfigFlag reads config file with flags
-func initConfigFlag(cmd *cobra.Command) error {
-	cfgPath, err := cmd.Flags().GetString("config")
-	if err != nil {
-		return err
-	}
-
-	if cfgPath == config.PeerHostConfigPath {
-		return nil
-	}
-
-	initDaemonConfig(cfgPath)
-	return nil
 }
 
 func runDaemon() error {
