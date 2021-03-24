@@ -33,7 +33,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"d7y.io/dragonfly/v2/cdnsystem/source"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/client/clientutil/progressbar"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/pidfile"
@@ -124,7 +123,7 @@ func runDfget() error {
 	}
 	var (
 		start = time.Now()
-		end time.Time
+		end   time.Time
 	)
 	down, err := daemonClient.Download(ctx, request)
 	if err != nil {
@@ -179,7 +178,7 @@ func downloadFromSource(hdr map[string]string) (err error) {
 	var (
 		resourceClient source.ResourceClient
 		target         *os.File
-		response       *types.DownloadResponse
+		reader         io.ReadCloser
 		written        int64
 	)
 
@@ -188,18 +187,18 @@ func downloadFromSource(hdr map[string]string) (err error) {
 		logger.Errorf("init source client error: %s", err)
 		return err
 	}
-	response, err = resourceClient.Download(flagClientOpt.URL, hdr)
+	reader, _, err = resourceClient.Download(flagClientOpt.URL, hdr)
 	if err != nil {
 		logger.Errorf("download from source error: %s", err)
 		return err
 	}
-	defer response.Body.Close()
+	defer reader.Close()
 	target, err = os.OpenFile(flagClientOpt.Output, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		logger.Errorf("open %s error: %s", flagClientOpt.Output)
 		return err
 	}
-	written, err = io.Copy(target, response.Body)
+	written, err = io.Copy(target, reader)
 	if err != nil {
 		logger.Errorf("copied %d bytes to %s, with error: %s",
 			written, flagClientOpt.Output, err)
