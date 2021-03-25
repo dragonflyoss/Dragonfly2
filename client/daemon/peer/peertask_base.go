@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -19,6 +20,17 @@ import (
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
+
+const (
+	reasonScheduleTimeout       = "wait first peer packet from scheduler timeout"
+	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
+	reasonContextCanceled       = "context canceled"
+	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
+
+	failedCodeNotSet = 0
+)
+
+var errPeerPacketChanged = errors.New("peer packet changed")
 
 type peerTask struct {
 	*logger.SugaredLoggerOnWith
@@ -66,7 +78,7 @@ type peerTask struct {
 	// peerTaskDone will be true after peer task done
 	peerTaskDone bool
 
-	// same actions must be done only once, like close done channel and so son
+	// same actions must be done only once, like close done channel and so on
 	once sync.Once
 
 	// failedPieceCh will hold all pieces which download failed,
@@ -419,17 +431,24 @@ func (pt *peerTask) preparePieceTasks(request *base.PieceTaskRequest) (p *base.P
 			err = fmt.Errorf("%v", rerr)
 		}
 	}()
+prepare:
 	pt.pieceParallelCount = pt.peerPacket.ParallelCount
 	request.DstPid = pt.peerPacket.MainPeer.PeerId
 	p, err = pt.preparePieceTasksByPeer(pt.peerPacket.MainPeer, request)
 	if err == nil {
 		return
 	}
+	if err == errPeerPacketChanged {
+		goto prepare
+	}
 	for _, peer := range pt.peerPacket.StealPeers {
 		request.DstPid = peer.PeerId
 		p, err = pt.preparePieceTasksByPeer(peer, request)
 		if err == nil {
 			return
+		}
+		if err == errPeerPacketChanged {
+			goto prepare
 		}
 	}
 	err = fmt.Errorf("no peers available")
@@ -445,6 +464,9 @@ func (pt *peerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestPeer,
 	if err == nil {
 		pt.Infof("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
 		return p, nil
+	}
+	if err == errPeerPacketChanged {
+		return nil, err
 	}
 
 	// grpc error
@@ -478,9 +500,19 @@ func (pt *peerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestPeer,
 }
 
 func (pt *peerTask) getPieceTasks(peer *scheduler.PeerPacket_DestPeer, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	var (
+		curPeerPacket     = pt.peerPacket
+		peerPacketChanged bool
+	)
 	p, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		pp, getErr := dfclient.GetPieceTasks(peer, pt.ctx, request)
 		if getErr != nil {
+			// fast way to exit retry
+			if curPeerPacket != pt.peerPacket {
+				pt.Warnf("get piece tasks with error: %s, but peer packet changed, switch to new peer packet", getErr)
+				peerPacketChanged = true
+				return nil, nil
+			}
 			return nil, getErr
 		}
 		// by santong: when peer return empty, retry later
@@ -494,11 +526,21 @@ func (pt *peerTask) getPieceTasks(peer *scheduler.PeerPacket_DestPeer, request *
 				HostLoad:      nil,
 				FinishedCount: pt.readyPieces.Settled(),
 			}
+			// fast way to exit retry
+			if curPeerPacket != pt.peerPacket {
+				pt.Warnf("get empty pieces and peer packet changed, switch to new peer packet")
+				peerPacketChanged = true
+				return nil, nil
+			}
 			pt.Warnf("peer %s returns success but with empty pieces, retry later", peer.PeerId)
 			return nil, dferrors.ErrEmptyValue
 		}
 		return pp, nil
-	}, 1, 8, 8, nil)
+	}, 0.25, 1, 8, nil)
+	if peerPacketChanged {
+		return nil, errPeerPacketChanged
+	}
+
 	if err == nil {
 		return p.(*base.PiecePacket), nil
 	}

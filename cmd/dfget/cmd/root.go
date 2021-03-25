@@ -38,7 +38,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"d7y.io/dragonfly/v2/cdnsystem/source"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/client/clientutil/progressbar"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/pidfile"
@@ -326,7 +325,8 @@ func downloadFromSource(hdr map[string]string) (err error) {
 	var (
 		resourceClient source.ResourceClient
 		target         *os.File
-		response       *types.DownloadResponse
+		response       io.ReadCloser
+		_              map[string]string
 		written        int64
 	)
 
@@ -336,12 +336,12 @@ func downloadFromSource(hdr map[string]string) (err error) {
 		return err
 	}
 
-	response, err = resourceClient.Download(dfgetConfig.URL, hdr)
+	response, _, err = resourceClient.Download(dfgetConfig.URL, hdr)
 	if err != nil {
 		logger.Errorf("download from source error: %s", err)
 		return err
 	}
-	defer response.Body.Close()
+	defer response.Close()
 
 	target, err = os.OpenFile(dfgetConfig.Output, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
@@ -349,7 +349,7 @@ func downloadFromSource(hdr map[string]string) (err error) {
 		return err
 	}
 
-	written, err = io.Copy(target, response.Body)
+	written, err = io.Copy(target, response)
 	if err != nil {
 		logger.Errorf("copied %d bytes to %s, with error: %s",
 			written, dfgetConfig.Output, err)

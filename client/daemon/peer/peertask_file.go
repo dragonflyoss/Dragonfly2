@@ -44,15 +44,6 @@ type FilePeerTask interface {
 	Start(ctx context.Context) (chan *PeerTaskProgress, error)
 }
 
-const (
-	reasonScheduleTimeout       = "wait first peer packet from scheduler timeout"
-	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
-	reasonContextCanceled       = "context canceled"
-	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
-
-	failedCodeNotSet = 0
-)
-
 type filePeerTask struct {
 	peerTask
 	// progressCh holds progress status
