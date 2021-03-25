@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/url"
 	"path/filepath"
 	"regexp"
@@ -34,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 type PeerHostOption struct {
@@ -74,15 +76,35 @@ func (p *PeerHostOption) Load(path string) error {
 		if err != nil {
 			return err
 		}
-		return nil
 	case ".yml", ".yaml":
 		err := yaml.Unmarshal(data, p)
 		if err != nil {
 			return err
 		}
-		return nil
+	default:
+		return fmt.Errorf("extension of %s is not in 'yml/yaml/json'", path)
 	}
-	return fmt.Errorf("extension of %s is not in 'yml/yaml/json'", path)
+
+	return nil
+}
+
+func (p *PeerHostOption) Convert() error {
+	// AdvertiseIP
+	ip := net.ParseIP(p.Host.AdvertiseIP)
+	if ip == nil || net.IPv4zero.Equal(ip) {
+		p.Host.AdvertiseIP = iputils.HostIp
+	} else {
+		p.Host.AdvertiseIP = ip.String()
+	}
+
+	return nil
+}
+
+func (p *PeerHostOption) Validate() error {
+	if len(p.Scheduler.NetAddrs) == 0 {
+		return errors.New("empty schedulers")
+	}
+	return nil
 }
 
 type SchedulerOption struct {

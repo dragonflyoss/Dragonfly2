@@ -6,7 +6,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -16,6 +15,10 @@ type streamPeerTaskCallback struct {
 	ptm   *peerTaskManager
 	req   *scheduler.PeerTaskRequest
 	start time.Time
+}
+
+func (p *streamPeerTaskCallback) GetStartTime() time.Time {
+	return p.start
 }
 
 func (p *streamPeerTaskCallback) Init(pt PeerTask) error {
@@ -31,7 +34,7 @@ func (p *streamPeerTaskCallback) Init(pt PeerTask) error {
 			TotalPieces:   pt.GetTotalPieces(),
 		})
 	if err != nil {
-		logger.Errorf("register task to storage manager failed: %s", err)
+		pt.Log().Errorf("register task to storage manager failed: %s", err)
 	}
 	return err
 }
@@ -48,12 +51,14 @@ func (p *streamPeerTaskCallback) Update(pt PeerTask) error {
 			TotalPieces:   pt.GetTotalPieces(),
 		})
 	if err != nil {
-		logger.Errorf("update task to storage manager failed: %s", err)
+		pt.Log().Errorf("update task to storage manager failed: %s", err)
 	}
 	return err
 }
 
 func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
+	var cost = time.Now().Sub(p.start).Milliseconds()
+	pt.Log().Infof("stream peer task done, cost: %dms", cost)
 	e := p.ptm.storageManager.Store(
 		context.Background(),
 		&storage.StoreRequest{
@@ -68,7 +73,6 @@ func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	var end = time.Now()
 	state, err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
@@ -78,11 +82,11 @@ func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
 		Url:            p.req.Url,
 		ContentLength:  pt.GetContentLength(),
 		Traffic:        pt.GetTraffic(),
-		Cost:           uint32(end.Sub(p.start).Milliseconds()),
+		Cost:           uint32(cost),
 		Success:        true,
 		Code:           dfcodes.Success,
 	})
-	logger.Debugf("task %s/%s report successful peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
+	pt.Log().Infof("report successful peer result, response state: %#v, error: %v", state, err)
 	return nil
 }
 
@@ -102,6 +106,6 @@ func (p *streamPeerTaskCallback) Fail(pt PeerTask, code base.Code, reason string
 		Success:        false,
 		Code:           code,
 	})
-	logger.Debugf("task %s/%s report failed peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
+	pt.Log().Warnf("report failed peer result, response state: %#v, error: %v", state, err)
 	return nil
 }

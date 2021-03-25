@@ -36,7 +36,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 
 	mockPeerTaskManager := mock_peer.NewMockPeerTaskManager(ctrl)
 	mockPeerTaskManager.EXPECT().StartFilePeerTask(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(ctx context.Context, req *peer.FilePeerTaskRequest) (chan *peer.PeerTaskProgress, error) {
+		func(ctx context.Context, req *peer.FilePeerTaskRequest) (chan *peer.PeerTaskProgress, bool, error) {
 			ch := make(chan *peer.PeerTaskProgress)
 			go func() {
 				for i := 0; i <= 100; i++ {
@@ -55,7 +55,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 				}
 				close(ch)
 			}()
-			return ch, nil
+			return ch, false, nil
 		})
 	m := &manager{
 		KeepAlive:       clientutil.NewKeepAlive("test"),

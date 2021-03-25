@@ -13,43 +13,44 @@ import (
 )
 
 // SchedulersValue implements the pflag.Value interface.
-type SchedulersValue struct {
-	ph *PeerHostOption
+
+type NetAddrsValue struct {
+	n *[]dfnet.NetAddr
 }
 
-func NewSchedulersValue(ph *PeerHostOption) *SchedulersValue {
-	return &SchedulersValue{ph: ph}
+func NewNetAddrsValue(n *[]dfnet.NetAddr) *NetAddrsValue {
+	return &NetAddrsValue{n: n}
 }
 
-func (sv *SchedulersValue) String() string {
+func (nv *NetAddrsValue) String() string {
 	var result []string
-	for _, v := range sv.ph.Scheduler.NetAddrs {
+	for _, v := range *nv.n {
 		result = append(result, v.Addr)
 	}
+
 	return strings.Join(result, ",")
 }
 
-func (sv *SchedulersValue) Set(value string) error {
-	addresses := strings.Split(value, ",")
-	for _, address := range addresses {
-		vv := strings.Split(address, ":")
-		if len(vv) > 2 || len(vv) == 0 {
-			return errors.New("invalid schedulers")
-		}
-		if len(vv) == 1 {
-			address = fmt.Sprintf("%s:%d", address, DefaultSupernodePort)
-		}
-		sv.ph.Scheduler.NetAddrs = append(sv.ph.Scheduler.NetAddrs,
-			dfnet.NetAddr{
-				Type: dfnet.TCP,
-				Addr: address,
-			})
+func (nv *NetAddrsValue) Set(value string) error {
+	vv := strings.Split(value, ":")
+	if len(vv) > 2 || len(vv) == 0 {
+		return errors.New("invalid net address")
 	}
+	if len(vv) == 1 {
+		value = fmt.Sprintf("%s:%d", value, DefaultSupernodePort)
+	}
+
+	*nv.n = append(*nv.n,
+		dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: value,
+		})
+
 	return nil
 }
 
-func (sv *SchedulersValue) Type() string {
-	return "schedulers"
+func (nv *NetAddrsValue) Type() string {
+	return "netaddrs"
 }
 
 type RateLimitValue struct {
