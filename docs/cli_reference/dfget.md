@@ -70,10 +70,10 @@ set environment variable DF_ACTIVE_PROFILE=local if you want to print logs to Te
 
 ```
       --advertise-ip string       the ip report to scheduler, normal same with listen ip (default "10.15.232.63")
-      --alive-time duration       alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
+      --alivetime duration       alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
       --data string               local directory which stores temporary files for p2p uploading
       --download-rate ratelimit   download rate limit for other peers and back source (default 104857600.000000)
-      --expire-time duration      caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted (default 3m0s)
+      --expiretime duration      caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted (default 3m0s)
       --gc-interval duration      gc interval (default 1m0s)
       --grpc-port int             the listen address for grpc with other peers (default 65000)
       --grpc-port-end int         the listen address for grpc with other peers (default 65000)
@@ -82,7 +82,7 @@ set environment variable DF_ACTIVE_PROFILE=local if you want to print logs to Te
       --home string               the work home directory of dfget daemon
       --idc string                peer idc for scheduler
       --keep-storage              keep storage after daemon exit
-      --listen string             the listen ip (default "0.0.0.0")
+      --ip string                 IP address that server will listen on
       --location string           peer location for scheduler
       --lock string               dfdaemon lock file location (default "/tmp/dfdaemon.lock")
       --net-topology string       peer net topology for scheduler

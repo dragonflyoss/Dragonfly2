@@ -150,15 +150,15 @@ func (mr *MockManagerMockRecorder) Alive(alive interface{}) *gomock.Call {
 }
 
 // Clean mocks base method.
-func (m *MockManager) Clean() {
+func (m *MockManager) CleanUp() {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Clean")
+	m.ctrl.Call(m, "CleanUp")
 }
 
 // Clean indicates an expected call of Clean.
 func (mr *MockManagerMockRecorder) Clean() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clean", reflect.TypeOf((*MockManager)(nil).Clean))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanUp", reflect.TypeOf((*MockManager)(nil).CleanUp))
 }
 
 // GetPieces mocks base method.

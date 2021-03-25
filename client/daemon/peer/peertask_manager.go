@@ -17,10 +17,15 @@
 package peer
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"os"
 	"sync"
 	"time"
+
+	"github.com/go-http-utils/headers"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -34,9 +39,11 @@ import (
 type PeerTaskManager interface {
 	// StartFilePeerTask starts a peer task to download a file
 	// return a progress channel for request download progress
+	// tiny stands task file is tiny and task is done
 	StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (
-		chan *PeerTaskProgress, error)
-	// StartStreamPeerTask starts a peer task with stream io for reading directly without once more disk io
+		progress chan *PeerTaskProgress, tiny bool, err error)
+	// StartStreamPeerTask starts a peer task with stream io
+	// tiny stands task file is tiny and task is done
 	StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (
 		reader io.Reader, attribute map[string]string, err error)
 	// Stop stops the PeerTaskManager
@@ -45,17 +52,18 @@ type PeerTaskManager interface {
 
 // PeerTask represents common interface to operate a peer task
 type PeerTask interface {
+	Context() context.Context
+	Log() *logger.SugaredLoggerOnWith
 	ReportPieceResult(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error
 	GetPeerID() string
 	GetTaskID() string
 	GetTotalPieces() int32
 	GetContentLength() int64
+	// SetContentLength will called after download completed, when download from source without content length
 	SetContentLength(int64) error
 	SetCallback(PeerTaskCallback)
 	AddTraffic(int64)
 	GetTraffic() int64
-	GetContext() context.Context
-	Log() *logger.SugaredLoggerOnWith
 }
 
 // PeerTaskCallback inserts some operations for peer task download lifecycle
@@ -64,6 +72,7 @@ type PeerTaskCallback interface {
 	Done(pt PeerTask) error
 	Update(pt PeerTask) error
 	Fail(pt PeerTask, code base.Code, reason string) error
+	GetStartTime() time.Time
 }
 
 type peerTaskManager struct {
@@ -94,13 +103,34 @@ func NewPeerTaskManager(
 	return ptm, nil
 }
 
-func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *PeerTaskProgress, error) {
+func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *PeerTaskProgress, bool, error) {
 	// TODO ensure scheduler is ok first
 
 	start := time.Now()
-	pt, err := NewFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
+	pt, pieceContent, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	if err != nil {
-		return nil, err
+		return nil, false, err
+	}
+	// tiny file content is returned by scheduler, just write to output
+	if pieceContent != nil {
+		_, err = os.Stat(req.Output)
+		if err == nil {
+			// remove exist file
+			logger.Infof("destination file %q exists, purge it first", req.Output)
+			os.Remove(req.Output)
+		}
+		dstFile, err := os.OpenFile(req.Output, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+		if err != nil {
+			logger.Errorf("open tasks destination file error: %s", err)
+			return nil, true, err
+		}
+		defer dstFile.Close()
+		n, err := dstFile.Write(pieceContent)
+		if err != nil {
+			return nil, true, err
+		}
+		logger.Debugf("copied tasks data %d bytes to %s", n, req.Output)
+		return nil, true, nil
 	}
 	pt.SetCallback(&filePeerTaskCallback{
 		ctx:   ctx,
@@ -113,15 +143,23 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 
 	// FIXME 1. merge same task id
 	// FIXME 2. when failed due to schedulerClient error, relocate schedulerClient and retry
-	return pt.Start(ctx)
+	progress, err := pt.Start(ctx)
+	return progress, false, err
 }
 
 func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (reader io.Reader, attribute map[string]string, err error) {
 	start := time.Now()
-	pt, err := NewStreamPeerTask(ctx, ptm.host, ptm.pieceManager, req, ptm.schedulerClient, ptm.schedulerOption)
+	pt, pieceContent, err := newStreamPeerTask(ctx, ptm.host, ptm.pieceManager, req, ptm.schedulerClient, ptm.schedulerOption)
 	if err != nil {
 		return nil, nil, err
 	}
+	// tiny file content is returned by scheduler, just write to output
+	if pieceContent != nil {
+		return bytes.NewBuffer(pieceContent), map[string]string{
+			headers.ContentLength: fmt.Sprintf("%d", len(pieceContent)),
+		}, nil
+	}
+
 	pt.SetCallback(&streamPeerTaskCallback{
 		ctx:   ctx,
 		ptm:   ptm,
@@ -134,7 +172,8 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 	// FIXME 1. merge same task id
 	// FIXME 2. when failed due to schedulerClient error, relocate schedulerClient and retry
 
-	return pt.Start(ctx)
+	reader, attribute, err = pt.Start(ctx)
+	return reader, attribute, err
 }
 
 func (ptm *peerTaskManager) Stop(ctx context.Context) error {

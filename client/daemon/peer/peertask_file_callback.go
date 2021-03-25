@@ -17,6 +17,10 @@ type filePeerTaskCallback struct {
 	start time.Time
 }
 
+func (p *filePeerTaskCallback) GetStartTime() time.Time {
+	return p.start
+}
+
 func (p *filePeerTaskCallback) Init(pt PeerTask) error {
 	// prepare storage
 	err := p.ptm.storageManager.RegisterTask(p.ctx,
@@ -53,6 +57,8 @@ func (p *filePeerTaskCallback) Update(pt PeerTask) error {
 }
 
 func (p *filePeerTaskCallback) Done(pt PeerTask) error {
+	var cost = time.Now().Sub(p.start).Milliseconds()
+	pt.Log().Infof("file peer task done, cost: %dms", cost)
 	e := p.ptm.storageManager.Store(
 		context.Background(),
 		&storage.StoreRequest{
@@ -68,7 +74,6 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	var end = time.Now()
 	state, err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
@@ -78,11 +83,11 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 		Url:            p.req.Url,
 		ContentLength:  pt.GetContentLength(),
 		Traffic:        pt.GetTraffic(),
-		Cost:           uint32(end.Sub(p.start).Milliseconds()),
+		Cost:           uint32(cost),
 		Success:        true,
 		Code:           dfcodes.Success,
 	})
-	pt.Log().Debugf("task %s/%s report successful peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
+	pt.Log().Infof("report successful peer result, response state: %#v, error: %v", state, err)
 	return nil
 }
 
@@ -102,6 +107,6 @@ func (p *filePeerTaskCallback) Fail(pt PeerTask, code base.Code, reason string) 
 		Success:        false,
 		Code:           code,
 	})
-	pt.Log().Debugf("task %s/%s report fail peer result, response state: %#v, error: %v", pt.GetTaskID(), pt.GetPeerID(), state, err)
+	pt.Log().Warnf("report fail peer result, response state: %#v, error: %v", state, err)
 	return nil
 }

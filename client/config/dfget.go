@@ -20,7 +20,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,13 +30,17 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
+	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
-// ClientConfig holds all the runtime config information.
-type ClientConfig struct {
+// ClientOption holds all the runtime config information.
+type ClientOption struct {
 	// URL download URL.
 	URL string `json:"url"`
+
+	// Lock file location
+	LockFile string `json:"lock_file" yaml:"lock_file"`
 
 	// Output full output path.
 	Output string `json:"output"`
@@ -104,64 +107,29 @@ type ClientConfig struct {
 	MoreDaemonOptions string `json:"more_daemon_options,omitempty"`
 }
 
-func (cfg *ClientConfig) String() string {
-	js, _ := json.Marshal(cfg)
-	return string(js)
-}
-
-// NewClientConfig creates and initializes a ClientConfig.
-func NewClientConfig() *ClientConfig {
-	return &ClientConfig{
-		URL:           "",
-		Output:        "",
-		Timeout:       0,
-		Md5:           "",
-		DigestMethod:  "",
-		DigestValue:   "",
-		Identifier:    "",
-		CallSystem:    "",
-		Pattern:       "",
-		Cacerts:       nil,
-		Filter:        nil,
-		Header:        nil,
-		NotBackSource: false,
-		Insecure:      false,
-		ShowBar:       false,
-		Console:       false,
-		Verbose:       false,
-	}
-}
-
-// CheckConfig checks the config and return errors.
-func CheckConfig(cfg *ClientConfig) (err error) {
+func (cfg *ClientOption) Validate() error {
 	if cfg == nil {
 		return errors.Wrap(dferrors.ErrInvalidArgument, "runtime config")
 	}
 
-	if !IsValidURL(cfg.URL) {
+	if !urlutils.IsValidURL(cfg.URL) {
 		return errors.Wrapf(dferrors.ErrInvalidArgument, "url: %v", cfg.URL)
 	}
 
-	if err = checkOutput(cfg); err != nil {
+	if err := cfg.checkOutput(); err != nil {
 		return errors.Wrapf(dferrors.ErrInvalidArgument, "output: %v", err)
 	}
+
 	return nil
 }
 
-// IsValidURL returns whether the string url is a valid HTTP URL.
-func IsValidURL(urlStr string) bool {
-	u, err := url.Parse(urlStr)
-	if err != nil {
-		return false
-	}
-	if len(u.Host) == 0 || len(u.Scheme) == 0 {
-		return false
-	}
-	return true
+func (cfg *ClientOption) String() string {
+	js, _ := json.Marshal(cfg)
+	return string(js)
 }
 
 // This function must be called after checkURL
-func checkOutput(cfg *ClientConfig) error {
+func (cfg *ClientOption) checkOutput() error {
 	if stringutils.IsBlank(cfg.Output) {
 		url := strings.TrimRight(cfg.URL, "/")
 		idx := strings.LastIndexByte(url, '/')

@@ -91,11 +91,13 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 		if err == storage.ErrTaskNotFound {
 			code = dfcodes.PeerTaskNotFound
 		}
-		logger.Errorf("receive get piece tasks request: %#v, error: %s, code: %v", request, err, code)
+		logger.Errorf("get piece tasks error: %s, code: %v, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
+			err, code, request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 		return nil, dferrors.New(code, err.Error())
 	}
 
-	logger.Debugf("receive get piece tasks request: %#v, piece packet: %#v, length: %d", request, p, len(p.PieceInfos))
+	logger.Debugf("receive get piece tasks request, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d, piece packet: %#v, length: %d",
+		request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit, p, len(p.PieceInfos))
 	p.DstAddr = m.uploadAddr
 	return p, nil
 }
@@ -125,9 +127,13 @@ func (m *manager) Download(ctx context.Context,
 		Output: req.Output,
 	}
 
-	peerTaskProgress, err := m.peerTaskManager.StartFilePeerTask(ctx, peerTask)
+	peerTaskProgress, tiny, err := m.peerTaskManager.StartFilePeerTask(ctx, peerTask)
 	if err != nil {
 		return err
+	}
+	if tiny {
+		logger.Infof("tiny file, wrote to output")
+		return nil
 	}
 loop:
 	for {

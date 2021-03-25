@@ -35,7 +35,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
@@ -95,8 +94,10 @@ func setupPeerTaskManagerComponents(
 				Msg:     "",
 			},
 			TaskId:        request.TaskId,
+			DstPid:        "peer-x",
 			PieceInfos:    tasks,
 			ContentLength: contentLength,
+			TotalPiece:    int32(math.Ceil(float64(contentLength) / float64(pieceSize))),
 		}, nil
 	})
 	ln, _ := rpc.Listen(dfnet.NetAddr{
@@ -143,7 +144,7 @@ func setupPeerTaskManagerComponents(
 				MainPeer: &scheduler.PeerPacket_DestPeer{
 					Ip:      "127.0.0.1",
 					RpcPort: port,
-					PeerId:  "",
+					PeerId:  "peer-x",
 				},
 				StealPeers: nil,
 			}
@@ -189,7 +190,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	defer os.Remove(output)
 
 	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
-	defer storageManager.(gc.GC).TryGC()
+	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any()).Times(int(math.Ceil(float64(len(testBytes)) / float64(pieceSize)))).DoAndReturn(func(task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
@@ -215,7 +216,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},
 	}
-	progress, err := ptm.StartFilePeerTask(context.Background(), &FilePeerTaskRequest{
+	progress, _, err := ptm.StartFilePeerTask(context.Background(), &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url:      "http://localhost/test/data",
 			Filter:   "",
@@ -263,7 +264,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		taskID = "task-0"
 	)
 	sched, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
-	defer storageManager.(gc.GC).TryGC()
+	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any()).AnyTimes().DoAndReturn(func(task *DownloadPieceRequest) (io.Reader, io.Closer, error) {

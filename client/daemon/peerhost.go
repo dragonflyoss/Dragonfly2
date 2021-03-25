@@ -207,7 +207,7 @@ func (ph *peerHost) prepareTCPListener(opt config.ListenOption, withTLS bool) (n
 		return nil, -1, errors.New("empty cert or key for tls")
 	}
 
-	// Create the TLS ClientConfig with the CA pool and enable Client certificate validation
+	// Create the TLS ClientOption with the CA pool and enable Client certificate validation
 	if opt.Security.TLSConfig == nil {
 		opt.Security.TLSConfig = &tls.Config{}
 	}
@@ -373,7 +373,7 @@ func (ph *peerHost) Stop() {
 
 		if !ph.Option.KeepStorage {
 			logger.Infof("keep storage disabled")
-			ph.StorageManager.Clean()
+			ph.StorageManager.CleanUp()
 		}
 	})
 }

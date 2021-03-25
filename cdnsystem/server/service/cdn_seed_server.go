@@ -18,6 +18,12 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/pkg/errors"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
@@ -31,10 +37,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"fmt"
-	"github.com/pkg/errors"
-	"os"
-	"strings"
 )
 
 // CdnSeedServer is used to implement cdnsystem.SeederServer.
@@ -203,8 +205,8 @@ func validateGetPieceTasksRequestParams(req *base.PieceTaskRequest) error {
 	if stringutils.IsBlank(req.TaskId) {
 		return errors.Wrap(dferrors.ErrEmptyValue, "taskId")
 	}
-	if !iputils.IsIPv4(req.SrcIp) {
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "invalid ip %s", req.SrcIp)
+	if stringutils.IsBlank(req.SrcPid) {
+		return errors.Wrapf(dferrors.ErrEmptyValue, "src peer id")
 	}
 	if req.StartNum < 0 {
 		return errors.Wrapf(dferrors.ErrInvalidArgument, "invalid starNum %d", req.StartNum)
