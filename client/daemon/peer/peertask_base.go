@@ -301,7 +301,7 @@ loop:
 		piecePacket, err := pt.preparePieceTasks(
 			&base.PieceTaskRequest{
 				TaskId:   pt.taskId,
-				SrcIp:    pt.host.Ip,
+				SrcPid:    pt.peerId,
 				StartNum: num,
 				Limit:    limit,
 			})

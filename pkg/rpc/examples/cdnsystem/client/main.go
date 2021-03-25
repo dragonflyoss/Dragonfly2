@@ -86,7 +86,7 @@ func main2() {
 		Addr: "localhost:8003",
 	}, &base.PieceTaskRequest{
 		TaskId:   "test",
-		SrcIp:    "11.11.11.11",
+		SrcPid:    "11.11.11.11",
 		StartNum: 1,
 		Limit:    4,
 	})

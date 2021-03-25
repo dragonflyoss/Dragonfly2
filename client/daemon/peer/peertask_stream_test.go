@@ -12,7 +12,6 @@ import (
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
@@ -57,10 +56,8 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 			return int64(len(testBytes)), nil
 		})
 	sourceClient.EXPECT().Download(url, map[string]string{}).DoAndReturn(
-		func(url string, headers map[string]string) (*types.DownloadResponse, error) {
-			return &types.DownloadResponse{
-				Body: ioutil.NopCloser(bytes.NewBuffer(testBytes)),
-			}, nil
+		func(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
+			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
 		})
 
 	ptm := &peerTaskManager{
@@ -154,10 +151,8 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			return -1, nil
 		})
 	sourceClient.EXPECT().Download(url, map[string]string{}).DoAndReturn(
-		func(url string, headers map[string]string) (*types.DownloadResponse, error) {
-			return &types.DownloadResponse{
-				Body: ioutil.NopCloser(bytes.NewBuffer(testBytes)),
-			}, nil
+		func(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
+			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
 		})
 
 	ptm := &peerTaskManager{

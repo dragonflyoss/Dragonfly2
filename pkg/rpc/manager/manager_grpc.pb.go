@@ -329,5 +329,5 @@ var Manager_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "manager.proto",
+	Metadata: "pkg/rpc/manager/manager.proto",
 }
