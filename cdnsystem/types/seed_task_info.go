@@ -16,21 +16,21 @@
 
 package types
 
-type UrlMeta struct {
-	// md5 of file content downloaded from url
-	Md5 string `json:"md5,omitempty"`
-	// downloading range of resource file
-	Range string `json:"range,omitempty"`
-}
+//type UrlMeta struct {
+//	// md5 of file content downloaded from url
+//	Md5 string `json:"md5,omitempty"`
+//	// downloading range of resource file
+//	Range string `json:"range,omitempty"`
+//}
 
 type SeedTask struct {
-	TaskID           string            `json:"taskID,omitempty"`
+	TaskId           string            `json:"taskId,omitempty"`
 	Url              string            `json:"url,omitempty"`
 	TaskUrl          string            `json:"taskUrl,omitempty"`
 	SourceFileLength int64             `json:"sourceFileLength,omitempty"`
 	CdnFileLength    int64             `json:"cdnFileLength,omitempty"`
 	PieceSize        int32             `json:"pieceSize,omitempty"`
-	Headers          map[string]string `json:"headers,omitempty"`
+	Header           map[string]string `json:"header,omitempty"`
 	CdnStatus        string            `json:"cdnStatus,omitempty"`
 	PieceTotal       int32             `json:"pieceTotal,omitempty"`
 	RequestMd5       string            `json:"requestMd5,omitempty"`
@@ -49,9 +49,9 @@ const (
 	// TaskInfoCdnStatusFAILED captures enum value "FAILED"
 	TaskInfoCdnStatusFAILED string = "FAILED"
 
-	// TaskInfoCdnStatusSUCCESS captures enum value "SUCCESS"
-	TaskInfoCdnStatusSUCCESS string = "SUCCESS"
+	// TaskInfoCdnStatusSuccess captures enum value "SUCCESS"
+	TaskInfoCdnStatusSuccess string = "SUCCESS"
 
-	// TaskInfoCdnStatusSOURCEERROR captures enum value "SOURCE_ERROR"
-	TaskInfoCdnStatusSOURCEERROR string = "SOURCE_ERROR"
+	// TaskInfoCdnStatusSourceERROR captures enum value "SOURCE_ERROR"
+	TaskInfoCdnStatusSourceERROR string = "SOURCE_ERROR"
 )

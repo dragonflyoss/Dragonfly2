@@ -18,15 +18,6 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"strconv"
-	"strings"
-
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
-	"github.com/pkg/errors"
-
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
@@ -37,7 +28,13 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"fmt"
+	"github.com/pkg/errors"
+	"os"
+	"strings"
 )
 
 // CdnSeedServer is used to implement cdnsystem.SeederServer.
@@ -54,7 +51,8 @@ func NewCdnSeedServer(cfg *config.Config, taskMgr mgr.SeedTaskMgr) (*CdnSeedServ
 	}, nil
 }
 
-func constructRequestHeader(meta *base.UrlMeta) map[string]string {
+func constructRequestHeader(req *cdnsystem.SeedRequest) *types.TaskRegisterRequest {
+	meta := req.UrlMeta
 	header := make(map[string]string)
 	if meta != nil {
 		if !stringutils.IsBlank(meta.Md5) {
@@ -67,7 +65,13 @@ func constructRequestHeader(meta *base.UrlMeta) map[string]string {
 			header[k] = v
 		}
 	}
-	return header
+	return &types.TaskRegisterRequest{
+		Header: header,
+		URL:    req.Url,
+		Md5:    header["md5"],
+		TaskId: req.TaskId,
+		Filter: strings.Split(req.Filter, "&"),
+	}
 }
 
 // validateSeedRequestParams validates the params of SeedRequest.
@@ -86,6 +90,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	defer func() {
 		if r := recover(); r != nil {
 			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds: %v", r)
+			err = dferrors.Newf(dfcodes.UnknownError, "a panic error was encountered: %v", r)
 		}
 
 		if err != nil {
@@ -93,59 +98,50 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		}
 	}()
 	if err := validateSeedRequestParams(req); err != nil {
-		return dferrors.Newf(dfcodes.BadRequest, "validate seed request fail: %v", err)
+		return dferrors.Newf(dfcodes.BadRequest, "bad seed request: %v", err)
 	}
-	headers := constructRequestHeader(req.GetUrlMeta())
-	registerRequest := &types.TaskRegisterRequest{
-		Headers: headers,
-		URL:     req.Url,
-		Md5:     headers["md5"],
-		TaskID:  req.TaskId,
-		Filter:  strings.Split(req.Filter, "&"),
-	}
+	registerRequest := constructRequestHeader(req)
+
 	// register task
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
-
 	if err != nil {
-		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "register seed task fail, registerRequest:%+v:%v",
-			registerRequest, err)
+		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "failed to register seed task, registerRequest:%+v:%v", registerRequest, err)
 	}
 	peerId := fmt.Sprintf("%s-%s_%s", iputils.HostName, req.TaskId, "CDN")
+	task, err := css.taskMgr.Get(ctx, req.TaskId)
 	for piece := range pieceChan {
-		pieceRange := strings.Split(piece.PieceRange, "-")
-		pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
-		switch piece.Type {
-		case types.PieceType:
-			psc <- &cdnsystem.PieceSeed{
-				State:      common.NewState(dfcodes.Success, "success"),
-				PeerId:     peerId,
-				SeederName: iputils.HostName,
-				PieceInfo: &base.PieceInfo{
-					PieceNum:    piece.PieceNum,
-					RangeStart:  pieceStart,
-					RangeSize:   piece.PieceLen,
-					PieceMd5:    piece.PieceMd5,
-					PieceOffset: piece.PieceOffset,
-					PieceStyle:  base.PieceStyle(piece.PieceStyle),
-				},
-				Done:          false,
-				ContentLength: 0,
-			}
-		case types.TaskType:
-			var state *base.ResponseState
-			if !piece.Result.Success {
-				state = common.NewState(dfcodes.CdnTaskStatusError, piece.Result.Msg)
-			} else {
-				state = common.NewState(dfcodes.Success, "success")
-			}
-			psc <- &cdnsystem.PieceSeed{
-				State:         state,
-				PeerId:        peerId,
-				SeederName:    iputils.HostName,
-				Done:          true,
-				ContentLength: piece.ContentLength,
-			}
+		if err != nil {
+			return err
 		}
+		psc <- &cdnsystem.PieceSeed{
+			State:      common.NewState(dfcodes.Success, "success"),
+			PeerId:     peerId,
+			SeederName: iputils.HostName,
+			PieceInfo: &base.PieceInfo{
+				PieceNum:    piece.PieceNum,
+				RangeStart:  piece.PieceRange.StartIndex,
+				RangeSize:   piece.PieceLen,
+				PieceMd5:    piece.PieceMd5,
+				PieceOffset: piece.OriginRange.StartIndex,
+				PieceStyle:  base.PieceStyle(piece.PieceStyle),
+			},
+			Done:          false,
+			ContentLength: task.SourceFileLength,
+		}
+
+	}
+	if err != nil {
+		return dferrors.Newf(dfcodes.CdnError, "failed to get task: %v", err)
+	}
+	if task.CdnStatus != types.TaskInfoCdnStatusSuccess {
+		return dferrors.Newf(dfcodes.CdnTaskDownloadFail, "task status %s", task.CdnStatus)
+	}
+	psc <- &cdnsystem.PieceSeed{
+		State:         common.NewState(dfcodes.Success, "success"),
+		PeerId:        peerId,
+		SeederName:    iputils.HostName,
+		Done:          true,
+		ContentLength: task.SourceFileLength,
 	}
 	return nil
 }
@@ -178,14 +174,12 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	var count int32 = 0
 	for _, piece := range pieces {
 		if piece.PieceNum >= req.StartNum && count < req.Limit {
-			pieceRange := strings.Split(piece.PieceRange, "-")
-			pieceStart, _ := strconv.ParseUint(pieceRange[0], 10, 64)
 			pieceInfos = append(pieceInfos, &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
-				RangeStart:  pieceStart,
+				RangeStart:  piece.PieceRange.StartIndex,
 				RangeSize:   piece.PieceLen,
 				PieceMd5:    piece.PieceMd5,
-				PieceOffset: piece.PieceOffset,
+				PieceOffset: piece.OriginRange.StartIndex,
 				PieceStyle:  base.PieceStyle(piece.PieceStyle),
 			})
 			count++

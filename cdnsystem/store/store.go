@@ -18,15 +18,21 @@ package store
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"fmt"
 	"io"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
+
+func init() {
+	// Ensure that storage implements the StorageDriver interface
+	var storage *Store = nil
+	var _ StorageDriver = storage
+}
 
 // Store is a wrapper of the storage which implements the interface of StorageDriver.
 type Store struct {
@@ -39,7 +45,7 @@ type Store struct {
 }
 
 // NewStore creates a new Store instance.
-func NewStore(name string, builder StorageBuilder, cfg string) (*Store, error) {
+func NewStore(name string, builder StorageBuilder, cfg interface{}) (*Store, error) {
 	if name == "" || builder == nil {
 		return nil, fmt.Errorf("plugin name or builder cannot be nil")
 	}
@@ -57,6 +63,7 @@ func NewStore(name string, builder StorageBuilder, cfg string) (*Store, error) {
 	}, nil
 }
 
+
 // Type returns the plugin type: StoragePlugin.
 func (s *Store) Type() config.PluginType {
 	return config.StoragePlugin
@@ -67,8 +74,27 @@ func (s *Store) Name() string {
 	return s.driverName
 }
 
+// GetTotalSpace
+func (s *Store) GetTotalSpace(ctx context.Context) (fsize.Size, error) {
+	return s.driver.GetTotalSpace(ctx)
+}
+
+// CreateBaseDir
+func (s *Store) CreateBaseDir(ctx context.Context) error {
+	return s.driver.CreateBaseDir(ctx)
+}
+
+
+func (s *Store) Exits(ctx context.Context, raw *Raw) bool {
+	return s.driver.Exits(ctx, raw)
+}
+
+func (s *Store) GetTotalAndFreeSpace(ctx context.Context) (fsize.Size, fsize.Size, error) {
+	return s.driver.GetTotalAndFreeSpace(ctx)
+}
+
 // Get the data from the storage driver in io stream.
-func (s *Store) Get(ctx context.Context, raw *Raw) (io.Reader, error) {
+func (s *Store) Get(ctx context.Context, raw *Raw) (io.ReadCloser, error) {
 	if err := checkEmptyKey(raw); err != nil {
 		return nil, err
 	}
@@ -99,12 +125,13 @@ func (s *Store) PutBytes(ctx context.Context, raw *Raw, data []byte) error {
 	return s.driver.PutBytes(ctx, raw, data)
 }
 
-func (s *Store) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
-	if err := checkEmptyKey(raw); err != nil {
-		return err
-	}
-	return s.driver.AppendBytes(ctx, raw, data)
-}
+// AppendBytes append data into storage in bytes.
+//func (s *Store) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
+//	if err := checkEmptyKey(raw); err != nil {
+//		return err
+//	}
+//	return s.driver.AppendBytes(ctx, raw, data)
+//}
 
 // Remove the data from the storage based on raw information.
 func (s *Store) Remove(ctx context.Context, raw *Raw) error {
@@ -125,21 +152,36 @@ func (s *Store) Stat(ctx context.Context, raw *Raw) (*StorageInfo, error) {
 	return s.driver.Stat(ctx, raw)
 }
 
-// GetAvailSpace returns the available disk space in B.
-func (s *Store) GetAvailSpace(ctx context.Context, raw *Raw) (fsize.Size, error) {
-	return s.driver.GetAvailSpace(ctx, raw)
-}
-
 // Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 // calling walkFn for each file or directory in the tree, including root.
 func (s *Store) Walk(ctx context.Context, raw *Raw) error {
 	return s.driver.Walk(ctx, raw)
 }
 
+func (s *Store) GetPath(raw *Raw) string {
+	return s.driver.GetPath(raw)
+}
+
+func (s *Store) MoveFile(src string, dst string) error {
+	return s.driver.MoveFile(src, dst)
+}
+
+// GetAvailSpace returns the available disk space in B.
+func (s *Store) GetAvailSpace(ctx context.Context) (fsize.Size, error) {
+	return s.driver.GetAvailSpace(ctx)
+}
+
+func (s *Store) GetHomePath(ctx context.Context) string {
+	return s.driver.GetHomePath(ctx)
+}
+
+func (s *Store) GetGcConfig(ctx context.Context) *GcConfig {
+	return s.driver.GetGcConfig(ctx)
+}
+
 func checkEmptyKey(raw *Raw) error {
 	if raw == nil || stringutils.IsBlank(raw.Key) {
 		return cdnerrors.ErrEmptyKey
 	}
-
 	return nil
 }

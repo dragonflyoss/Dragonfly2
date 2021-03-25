@@ -18,9 +18,7 @@ package store
 
 import (
 	"context"
-
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-
 	"io"
 	"path/filepath"
 	"time"
@@ -37,7 +35,7 @@ type StorageDriver interface {
 	// Get data from the storage based on raw information.
 	// If the length<=0, the driver should return all data from the raw.offset.
 	// Otherwise, just return the data which starts from raw.offset and the length is raw.length.
-	Get(ctx context.Context, raw *Raw) (io.Reader, error)
+	Get(ctx context.Context, raw *Raw) (io.ReadCloser, error)
 
 	// Get data from the storage based on raw information.
 	// The data should be returned in bytes.
@@ -55,36 +53,56 @@ type StorageDriver interface {
 	// If the offset>0, the storage driver should starting at byte raw.offset off.
 	PutBytes(ctx context.Context, raw *Raw, data []byte) error
 
-	// AppendBytes appends the data into the storage with raw information.
-	// The data is passed in bytes.
-	// If the offset>0, the storage driver should starting at byte raw.offset off.
-	AppendBytes(ctx context.Context, raw *Raw, data []byte) error
-
 	// Remove the data from the storage based on raw information.
 	Remove(ctx context.Context, raw *Raw) error
 
 	// Stat determines whether the data exists based on raw information.
 	// If that, and return some info that in the form of struct StorageInfo.
-	// If not, return the ErrNotFound.
+	// If not, return the ErrFileNotExist.
 	Stat(ctx context.Context, raw *Raw) (*StorageInfo, error)
 
 	// GetAvailSpace returns the available disk space in B.
-	GetAvailSpace(ctx context.Context, raw *Raw) (fsize.Size, error)
+	GetAvailSpace(ctx context.Context) (fsize.Size, error)
 
+	// GetTotalAndFreeSpace
+	GetTotalAndFreeSpace(ctx context.Context) (fsize.Size, fsize.Size, error)
+
+	// GetTotalSpace
+	GetTotalSpace(ctx context.Context) (fsize.Size, error)
 	// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 	// calling walkFn for each file or directory in the tree, including root.
 	Walk(ctx context.Context, raw *Raw) error
+
+	// CreateBaseDir
+	CreateBaseDir(ctx context.Context) error
+
+	// GetPath
+	GetPath(raw *Raw) string
+
+	// MoveFile
+	MoveFile(src string, dst string) error
+
+	// Exits
+	Exits(ctx context.Context, raw *Raw) bool
+
+	// GetHomePath
+	GetHomePath(ctx context.Context) string
+
+	// GetGcConfig
+	GetGcConfig(ctx context.Context) *GcConfig
 }
 
 // Raw identifies a piece of data uniquely.
 // If the length<=0, it represents all data.
 type Raw struct {
-	Bucket string
-	Key    string
-	Offset int64
-	Length int64
-	Trunc  bool
-	WalkFn filepath.WalkFunc
+	Bucket    string
+	Key       string
+	Offset    int64
+	Length    int64
+	Trunc     bool
+	TruncSize int64
+	Append    bool
+	WalkFn    filepath.WalkFunc
 }
 
 // StorageInfo includes partial meta information of the data.
@@ -93,4 +111,12 @@ type StorageInfo struct {
 	Size       int64     // file size
 	CreateTime time.Time // create time
 	ModTime    time.Time // modified time
+}
+
+// GcConfig
+type GcConfig struct {
+	YoungGCThreshold  fsize.Size
+	FullGCThreshold   fsize.Size
+	CleanRatio        int
+	IntervalThreshold time.Duration
 }

@@ -17,7 +17,7 @@
 package source
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"io"
 )
 
 var clients = make(map[string]ResourceClient)
@@ -45,7 +45,7 @@ type ResourceClient interface {
 	IsExpired(url string, headers, expireInfo map[string]string) (bool, error)
 
 	// Download download from source
-	Download(url string, headers map[string]string) (*types.DownloadResponse, error)
+	Download(url string, headers map[string]string) (io.ReadCloser, map[string]string, error)
 }
 
 type ResourceClientAdaptor struct {
@@ -76,10 +76,10 @@ func (s *ResourceClientAdaptor) IsExpired(url string, headers, expireInfo map[st
 	return sourceClient.IsExpired(url, headers, expireInfo)
 }
 
-func (s *ResourceClientAdaptor) Download(url string, headers map[string]string) (*types.DownloadResponse, error) {
+func (s *ResourceClientAdaptor) Download(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
 	sourceClient, err := s.getSourceClient(url)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	return sourceClient.Download(url, headers)
 }

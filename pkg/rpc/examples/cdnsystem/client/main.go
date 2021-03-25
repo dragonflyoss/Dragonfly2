@@ -21,6 +21,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
+	"sync"
 )
 
 import (
@@ -31,35 +32,45 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 )
 
-func main2() {
+func main() {
 	logcore.InitCdnSystem(true)
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
-			Addr: "localhost:12345",
+			Addr: "127.0.0.1:8003",
 		},
 	})
 	if err != nil {
 		panic(err)
 	}
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+				TaskId: "test1",
+				Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
+				//TaskId: "test",
+				//Url: "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
+				//TaskId: "test",
+				//Url: "http://www.baidu.com",
+				//Filter: "",
+			})
+			if err != nil {
+				panic(err)
+			}
 
-	psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-		TaskId: "test",
-		Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
-		Filter: "",
-	})
-	if err != nil {
-		panic(err)
+			for pieceSeed := range psc {
+				fmt.Printf("response:%v\n", pieceSeed)
+			}
+		}()
 	}
-
-	for pieceSeed := range psc {
-		fmt.Printf("response:%v\n", pieceSeed)
-	}
-
+	wg.Wait()
 	fmt.Println("client finish")
 }
 
-func main() {
+func main2() {
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,

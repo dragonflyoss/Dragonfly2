@@ -41,10 +41,10 @@ var sc *schedulerClient
 
 var once sync.Once
 
-func GetClientByAddr(addrs []dfnet.NetAddr) (SchedulerClient, error) {
+func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
 	once.Do(func() {
 		sc = &schedulerClient{
-			rpc.NewConnection("scheduler", make([]dfnet.NetAddr, 0)),
+			rpc.NewConnection("scheduler", make([]dfnet.NetAddr, 0), opts...),
 		}
 	})
 	if len(addrs) == 0 {
@@ -68,7 +68,6 @@ func GetClientByAddr(addrs []dfnet.NetAddr) (SchedulerClient, error) {
 
 // see scheduler.SchedulerClient
 type SchedulerClient interface {
-
 	RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error)
 	// IsMigrating of ptr will be set to true
 	ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, error)
@@ -82,7 +81,7 @@ type schedulerClient struct {
 	*rpc.Connection
 }
 
-func (sc *schedulerClient) getSchedulerClient(key string) (scheduler.SchedulerClient, error){
+func (sc *schedulerClient) getSchedulerClient(key string) (scheduler.SchedulerClient, error) {
 	if clientConn, err := sc.Connection.GetClientConn(key); err != nil {
 		return nil, err
 	} else {

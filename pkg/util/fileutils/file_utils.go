@@ -18,6 +18,8 @@
 package fileutils
 
 import (
+	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -78,35 +80,41 @@ func Link(oldname string, newname string) error {
 	return os.Link(oldname, newname)
 }
 
+func IsSymbolicLink(name string) bool {
+	f, e := os.Lstat(name)
+	if e != nil {
+		return false
+	}
+	return f.Mode() & os.ModeSymlink != 0
+}
+
 // SymbolicLink creates newname as a symbolic link to oldname.
 func SymbolicLink(oldname string, newname string) error {
-	if !PathExist(oldname) {
-		return errors.Errorf("symlink %s to %s: no such dst file", newname, oldname)
+	if PathExist(newname) && IsSymbolicLink(newname) && PathExist(oldname){
+		dstPath, err := os.Readlink(newname)
+		if err != nil {
+			return err
+		}
+		if dstPath == oldname {
+			return nil
+		}
 	}
-
-	if IsDir(oldname) {
-		return errors.Errorf("symlink %s to %s: dst is a directory", newname, oldname)
-	}
-
 	if PathExist(newname) {
-		if IsDir(newname) {
-			return errors.Errorf("symlink %s to %s: src already exists and is a directory", newname, oldname)
+		if err := os.Remove(newname); err != nil {
+			return fmt.Errorf("failed to symlink %s to %s when deleting target file: %v", newname, oldname, err)
 		}
+	}
 
-		if err := DeleteFile(newname); err != nil {
-			return errors.Wrapf(err, "failed to symlink %s to %s", newname, oldname)
-		}
-	} else if err := MkdirAll(filepath.Dir(newname)); err != nil {
+	if err := MkdirAll(filepath.Dir(newname)); err != nil {
 		return errors.Wrapf(err, "failed to symlink %s to %s", newname, oldname)
 	}
-
 	return os.Symlink(oldname, newname)
 }
 
 // PathExist reports whether the path is exist.
-// Any error, from os.Stat, will return false.
+// Any error, from os.Lstat, will return false.
 func PathExist(path string) bool {
-	_, err := os.Stat(path)
+	_, err := os.Lstat(path)
 	return err == nil
 }
 
@@ -150,4 +158,56 @@ func stat(path string) (os.FileInfo, error) {
 	}
 
 	return f, err
+}
+
+// GetFreeSpace gets the free disk space of the path.
+func GetFreeSpace(path string) (fsize.Size, error) {
+	fs := syscall.Statfs_t{}
+	if err := syscall.Statfs(path, &fs); err != nil {
+		return 0, err
+	}
+
+	return fsize.Size(fs.Bavail * uint64(fs.Bsize)), nil
+}
+
+// GetTotalSpace
+func GetTotalSpace(path string) (fsize.Size, error) {
+	fs := syscall.Statfs_t{}
+	if err := syscall.Statfs(path, &fs); err != nil {
+		return 0, err
+	}
+
+	return fsize.Size(fs.Blocks * uint64(fs.Bsize)), nil
+}
+
+func GetTotalAndFreeSpace(path string) (fsize.Size, fsize.Size, error) {
+	fs := syscall.Statfs_t{}
+	if err := syscall.Statfs(path, &fs); err != nil {
+		return 0, 0, err
+	}
+	total := fsize.Size(fs.Blocks * uint64(fs.Bsize))
+	free := fsize.Size(fs.Bavail * uint64(fs.Bsize))
+	return total, free, nil
+}
+
+// GetUsedSpace
+func GetUsedSpace(path string) (fsize.Size, error) {
+	fs := syscall.Statfs_t{}
+	if err := syscall.Statfs(path, &fs); err != nil {
+		return 0, err
+	}
+	return fsize.Size((fs.Blocks - fs.Bavail) * uint64(fs.Bsize)), nil
+}
+
+// MoveFile moves the file src to dst.
+func MoveFile(src string, dst string) error {
+	if !IsRegular(src) {
+		return fmt.Errorf("failed to move %s to %s: src is not a regular file", src, dst)
+	}
+	if PathExist(dst) && !IsDir(dst) {
+		if err := DeleteFile(dst); err != nil {
+			return fmt.Errorf("failed to move %s to %s when deleting dst file: %v", src, dst, err)
+		}
+	}
+	return os.Rename(src, dst)
 }

@@ -17,9 +17,9 @@
 package plugins
 
 import (
-	"fmt"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"fmt"
 )
 
 var mgr = NewManager()
@@ -33,7 +33,7 @@ func SetManager(m Manager) {
 func Initialize(cfg *config.Config) error {
 	for pt, value := range cfg.Plugins {
 		for _, v := range value {
-			if !v.Enabled {
+			if !v.Enable {
 				logger.Infof("plugin[%s][%s] is disabled", pt, v.Name)
 				continue
 			}
@@ -55,7 +55,7 @@ func Initialize(cfg *config.Config) error {
 }
 
 // RegisterPlugin register a plugin builder that will be called to create a new
-// plugin instant when cdnNode starts.
+// plugin instant when cdn starts.
 func RegisterPlugin(pt config.PluginType, name string, builder Builder) {
 	mgr.AddBuilder(pt, name, builder)
 }

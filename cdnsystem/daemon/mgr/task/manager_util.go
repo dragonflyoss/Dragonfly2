@@ -18,13 +18,13 @@ package task
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/cdnsystem/util"
 
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	urlutils2 "d7y.io/dragonfly/v2/pkg/util/net/urlutils"
@@ -33,13 +33,17 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	IllegalHttpFileLen = -100
+)
+
 // addOrUpdateTask add a new task or update exist task
 func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegisterRequest) (*types.SeedTask, error) {
 	taskURL := request.URL
 	if request.Filter != nil {
 		taskURL = urlutils2.FilterURLParam(request.URL, request.Filter)
 	}
-	taskId := request.TaskID
+	taskId := request.TaskId
 	util.GetLock(taskId, false)
 	defer util.ReleaseLock(taskId, false)
 	if key, err := tm.taskURLUnReachableStore.Get(taskId); err == nil {
@@ -49,66 +53,69 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 				"task hit unReachable cache and interval less than %d, url: %s", tm.cfg.FailAccessInterval, request.URL)
 		}
 		tm.taskURLUnReachableStore.Delete(taskId)
+		logger.Debugf("delete taskId:%s from url unReach store", taskId)
 	}
 	var task *types.SeedTask
 	newTask := &types.SeedTask{
-		TaskID:     taskId,
-		Headers:    request.Headers,
-		RequestMd5: request.Md5,
-		Url:        request.URL,
-		TaskUrl:    taskURL,
-		CdnStatus:  types.TaskInfoCdnStatusWAITING,
-		PieceTotal: -1,
+		TaskId:           taskId,
+		Header:           request.Header,
+		RequestMd5:       request.Md5,
+		Url:              request.URL,
+		TaskUrl:          taskURL,
+		CdnStatus:        types.TaskInfoCdnStatusWAITING,
+		SourceFileLength: IllegalHttpFileLen,
 	}
-	// using the existing task if it already exists corresponding to taskID
+	// using the existing task if it already exists corresponding to taskId
 	if v, err := tm.taskStore.Get(taskId); err == nil {
-		task = v.(*types.SeedTask)
-		if !equalsTask(task, newTask) {
-			return nil, cdnerrors.ErrTaskIDDuplicate
+		existTask := v.(*types.SeedTask)
+		if !isSameTask(existTask, newTask) {
+			return nil, errors.Wrapf(cdnerrors.ErrTaskIdDuplicate, "newTask:%+v, existTask:%+v", newTask, existTask)
 		}
+		task = existTask
+		logger.Debugf("get exist task for taskId:%s", taskId)
 	} else {
+		logger.Debugf("get new task for taskId:%s", taskId)
 		task = newTask
 	}
 
-	if task.SourceFileLength != 0 {
+	if task.SourceFileLength != IllegalHttpFileLen {
 		return task, nil
 	}
 
-	// get sourceContentLength with req.Headers
-	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Headers)
+	// get sourceContentLength with req.Header
+	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Header)
 	if err != nil {
-		logger.WithTaskID(task.TaskID).Errorf("failed to get url (%s) content length from http client:%v", task.Url, err)
+		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length from http client:%v",
+			task.Url, err)
 
 		if cdnerrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskId, time.Now())
 			return nil, err
 		}
-		if cdnerrors.IsAuthenticationRequired(err) {
-			return nil, err
-		}
 	}
 	// if not support file length header request ,return -1
 	task.SourceFileLength = sourceFileLength
-	logger.WithTaskID(taskId).Infof("get file content length: %d", sourceFileLength)
+	logger.WithTaskID(taskId).Debugf("get file content length: %d", sourceFileLength)
 
-	// if success to get the information successfully with the req.Headers then update the task.Headers to req.Headers.
-	if request.Headers != nil {
-		task.Headers = request.Headers
+	// if success to get the information successfully with the req.Header then update the task.Header to req.Header.
+	if request.Header != nil {
+		task.Header = request.Header
 	}
 
 	// calculate piece size and update the PieceSize and PieceTotal
-	pieceSize := computePieceSize(task.SourceFileLength)
-	task.PieceSize = pieceSize
-	task.PieceTotal = int32((sourceFileLength + (int64(pieceSize) - 1)) / int64(pieceSize))
-
-	tm.taskStore.Add(task.TaskID, task)
+	if task.PieceSize <= 0 {
+		pieceSize := computePieceSize(task.SourceFileLength)
+		task.PieceSize = pieceSize
+	}
+	tm.taskStore.Add(task.TaskId, task)
+	logger.Debugf("success add task:%+v into taskStore", task)
 	return task, nil
 }
 
 // updateTask
-func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*types.SeedTask, error) {
-	if stringutils.IsBlank(taskID) {
-		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskID")
+func (tm *Manager) updateTask(taskId string, updateTaskInfo *types.SeedTask) (*types.SeedTask, error) {
+	if stringutils.IsBlank(taskId) {
+		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskId")
 	}
 
 	if updateTaskInfo == nil {
@@ -118,10 +125,8 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 	if stringutils.IsBlank(updateTaskInfo.CdnStatus) {
 		return nil, errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
 	}
-	util.GetLock(taskID, false)
-	util.ReleaseLock(taskID, false)
 	// get origin task
-	task, err := tm.getTask(taskID)
+	task, err := tm.getTask(taskId)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +156,7 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 	if !stringutils.IsBlank(updateTaskInfo.PieceMd5Sign) {
 		task.PieceMd5Sign = updateTaskInfo.PieceMd5Sign
 	}
- 	var pieceTotal int32
+	var pieceTotal int32
 	if updateTaskInfo.SourceFileLength > 0 {
 		pieceTotal = int32((updateTaskInfo.SourceFileLength + int64(task.PieceSize-1)) / int64(task.PieceSize))
 		task.SourceFileLength = updateTaskInfo.SourceFileLength
@@ -163,20 +168,23 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 	return task, nil
 }
 
-// equalsTask check whether the two task provided are the same
-func equalsTask(existTask, newTask *types.SeedTask) bool {
-	if existTask.TaskUrl != newTask.TaskUrl {
+// isSameTask check whether the two task provided are the same
+func isSameTask(task1, task2 *types.SeedTask) bool {
+	if task1 == task2 {
+		return true
+	}
+	if task1.TaskUrl != task2.TaskUrl {
 		return false
 	}
 
-	if !stringutils.IsBlank(existTask.RequestMd5) && !stringutils.IsBlank(newTask.RequestMd5) {
-		if existTask.RequestMd5 != newTask.RequestMd5 {
+	if !stringutils.IsBlank(task1.RequestMd5) && !stringutils.IsBlank(task2.RequestMd5) {
+		if task1.RequestMd5 != task2.RequestMd5 {
 			return false
 		}
 	}
 
-	if !stringutils.IsBlank(newTask.RequestMd5) && !stringutils.IsBlank(existTask.SourceRealMd5) {
-		return existTask.SourceRealMd5 == newTask.RequestMd5
+	if !stringutils.IsBlank(task1.RequestMd5) && !stringutils.IsBlank(task2.SourceRealMd5) {
+		return task1.SourceRealMd5 == task2.RequestMd5
 	}
 
 	return true
@@ -201,14 +209,14 @@ func computePieceSize(length int64) int32 {
 
 // isSuccessCDN determines that whether the CDNStatus is success.
 func isSuccessCDN(CDNStatus string) bool {
-	return CDNStatus == types.TaskInfoCdnStatusSUCCESS
+	return CDNStatus == types.TaskInfoCdnStatusSuccess
 }
 
 // isFrozen
 func isFrozen(CDNStatus string) bool {
 	return CDNStatus == types.TaskInfoCdnStatusFAILED ||
 		CDNStatus == types.TaskInfoCdnStatusWAITING ||
-		CDNStatus == types.TaskInfoCdnStatusSOURCEERROR
+		CDNStatus == types.TaskInfoCdnStatusSourceERROR
 }
 
 func isWait(CDNStatus string) bool {
@@ -218,5 +226,5 @@ func isWait(CDNStatus string) bool {
 // isErrorCDN
 func isErrorCDN(CDNStatus string) bool {
 	return CDNStatus == types.TaskInfoCdnStatusFAILED ||
-		CDNStatus == types.TaskInfoCdnStatusSOURCEERROR
+		CDNStatus == types.TaskInfoCdnStatusSourceERROR
 }
