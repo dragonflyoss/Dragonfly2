@@ -38,6 +38,29 @@ type SeedTask struct {
 	PieceMd5Sign     string            `json:"pieceMd5Sign,omitempty"`
 }
 
+// IsSuccess determines that whether the CDNStatus is success.
+func (task *SeedTask) IsSuccess() bool {
+	return task.CdnStatus == TaskInfoCdnStatusSuccess
+}
+
+// IsFrozen
+func (task *SeedTask) IsFrozen() bool {
+	return task.CdnStatus == TaskInfoCdnStatusFAILED ||
+		task.CdnStatus == TaskInfoCdnStatusWAITING ||
+		task.CdnStatus == TaskInfoCdnStatusSourceERROR
+}
+
+// IsWait
+func (task *SeedTask) IsWait() bool {
+	return task.CdnStatus == TaskInfoCdnStatusWAITING
+}
+
+// IsError
+func (task *SeedTask) IsError() bool {
+	return task.CdnStatus == TaskInfoCdnStatusFAILED ||
+		task.CdnStatus == TaskInfoCdnStatusSourceERROR
+}
+
 const (
 
 	// TaskInfoCdnStatusWAITING captures enum value "WAITING"

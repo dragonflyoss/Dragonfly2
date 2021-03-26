@@ -58,10 +58,6 @@ type Manager struct {
 	writer           *cacheWriter
 }
 
-func (cm *Manager) GetGCTaskIds(ctx context.Context, taskMgr mgr.SeedTaskMgr) ([]string, error) {
-	panic("implement me")
-}
-
 // NewManager returns a new Manager.
 func NewManager(cfg *config.Config, cacheStore storage.StorageMgr, progressMgr mgr.SeedProgressMgr, resourceClient source.ResourceClient) (mgr.CDNMgr, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)

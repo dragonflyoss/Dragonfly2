@@ -136,8 +136,8 @@ func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
 func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) (err error) {
 	hostId := c.getHostUuid(ps)
 	host, ok := GetHostManager().GetHost(hostId)
-	ip, rpcPort, downPort := "", 0, 0
 	if !ok {
+		ip, rpcPort, downPort := "", 0, 0
 		cdnInfo := c.mgr.getCdnInfo(ps.SeederName)
 		if cdnInfo != nil {
 			ip, rpcPort, downPort = cdnInfo.IP, cdnInfo.RpcPort, cdnInfo.DownloadPort
@@ -172,7 +172,7 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		//
 		if task.PieceTotal == 1 {
 			if task.ContentLength <= TinyFileSize {
-				content, er := c.getTinyFileContent(task, host, ip, downPort)
+				content, er := c.getTinyFileContent(task, host)
 				if er == nil && len(content) == int(task.ContentLength) {
 					task.SizeScope = base.SizeScope_TINY
 					task.DirectPiece = &scheduler.RegisterResult_PieceContent{
@@ -213,9 +213,10 @@ func (c *CDNClient) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *t
 	return p
 }
 
-func (c *CDNClient) getTinyFileContent(task *types.Task, cdnHost *types.Host, ip string, port int) (content []byte, err error) {
-	resp, err := c.GetPieceTasks(context.TODO(), dfnet.NetAddr{Type: dfnet.TCP, Addr: fmt.Sprintf("%s:%d", ip, port) }, &base.PieceTaskRequest{
+func (c *CDNClient) getTinyFileContent(task *types.Task, cdnHost *types.Host) (content []byte, err error) {
+	resp, err := c.GetPieceTasks(context.TODO(), dfnet.NetAddr{Type: dfnet.TCP, Addr: fmt.Sprintf("%s:%d", cdnHost.Ip, cdnHost.RpcPort)}, &base.PieceTaskRequest{
 		TaskId:   task.TaskId,
+		SrcPid:   "scheduler",
 		StartNum: 0,
 		Limit:    2,
 	})

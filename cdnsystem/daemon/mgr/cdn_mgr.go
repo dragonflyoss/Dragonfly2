@@ -29,12 +29,6 @@ type CDNMgr interface {
 	// TriggerCDN will trigger CDN to download the file from sourceUrl.
 	TriggerCDN(ctx context.Context, taskInfo *types.SeedTask) (*types.SeedTask, error)
 
-	// GetGCTaskIds returns the taskIds that should exec GC operations as a string slice.
-	// It should return nil when the free disk of cdn storage is lager than config.YoungGCThreshold.
-	// It should return all taskIds that are not running when the free disk of cdn storage is less than config.
-	//FullGCThreshold.
-	GetGCTaskIds(ctx context.Context, taskMgr SeedTaskMgr) ([]string, error)
-
 	// Delete the cdn meta with specified taskID.
 	// The file on the disk will be deleted when the force is true.
 	Delete(ctx context.Context, taskID string, force bool) error

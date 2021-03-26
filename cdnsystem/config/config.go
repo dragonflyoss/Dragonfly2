@@ -28,7 +28,7 @@ import (
 func NewConfig() *Config {
 	return &Config{
 		BaseProperties: NewBaseProperties(),
-		Plugins:        nil,
+		Plugins:        NewPlugins(),
 	}
 }
 
@@ -61,7 +61,35 @@ func (c *Config) String() string {
 
 func NewPlugins() map[PluginType][]*PluginProperties {
 	// todo 创建默认plugins
-	return nil
+	return map[PluginType][]*PluginProperties{
+		StoragePlugin: {
+			{
+				Name:   "disk",
+				Enable: true,
+				Config: map[string]interface{}{
+					"baseDir": "/tmp/cdnsystem",
+					"gcConfig": map[string]interface{}{
+						"youngGCThreshold":  "100G",
+						"fullGCThreshold":   "5G",
+						"cleanRatio":        1,
+						"intervalThreshold": "2h",
+					},
+				},
+			}, {
+				Name:   "memory",
+				Enable: true,
+				Config: map[string]interface{}{
+					"baseDir": "/tmp/memory/dragonfly",
+					"gcConfig": map[string]interface{}{
+						"youngGCThreshold":  "100G",
+						"fullGCThreshold":   "5G",
+						"cleanRatio":        3,
+						"intervalThreshold": "2h",
+					},
+				},
+			},
+		},
+	}
 }
 
 // NewBaseProperties creates an instant with default values.

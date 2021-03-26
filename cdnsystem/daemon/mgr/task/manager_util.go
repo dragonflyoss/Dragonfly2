@@ -131,9 +131,9 @@ func (tm *Manager) updateTask(taskId string, updateTaskInfo *types.SeedTask) (*t
 		return nil, err
 	}
 
-	if !isSuccessCDN(updateTaskInfo.CdnStatus) {
+	if !updateTaskInfo.IsSuccess() {
 		// when the origin CDNStatus equals success, do not update it to unsuccessful
-		if isSuccessCDN(task.CdnStatus) {
+		if task.IsSuccess() {
 			return task, nil
 		}
 
@@ -205,26 +205,4 @@ func computePieceSize(length int64) int32 {
 		return config.DefaultPieceSizeLimit
 	}
 	return int32(mpSize)
-}
-
-// isSuccessCDN determines that whether the CDNStatus is success.
-func isSuccessCDN(CDNStatus string) bool {
-	return CDNStatus == types.TaskInfoCdnStatusSuccess
-}
-
-// isFrozen
-func isFrozen(CDNStatus string) bool {
-	return CDNStatus == types.TaskInfoCdnStatusFAILED ||
-		CDNStatus == types.TaskInfoCdnStatusWAITING ||
-		CDNStatus == types.TaskInfoCdnStatusSourceERROR
-}
-
-func isWait(CDNStatus string) bool {
-	return CDNStatus == types.TaskInfoCdnStatusWAITING
-}
-
-// isErrorCDN
-func isErrorCDN(CDNStatus string) bool {
-	return CDNStatus == types.TaskInfoCdnStatusFAILED ||
-		CDNStatus == types.TaskInfoCdnStatusSourceERROR
 }
