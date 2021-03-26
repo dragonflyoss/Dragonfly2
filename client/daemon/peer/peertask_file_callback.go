@@ -87,7 +87,12 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 		Success:        true,
 		Code:           dfcodes.Success,
 	})
-	pt.Log().Infof("report successful peer result, response state: %#v, error: %v", state, err)
+	if err != nil {
+		pt.Log().Errorf("report successful peer result, error: %v", err)
+	} else {
+		pt.Log().Infof("report successful peer result, response state: (%t, %d, %s)",
+			state.Success, state.Code, state.Msg)
+	}
 	return nil
 }
 
@@ -107,6 +112,11 @@ func (p *filePeerTaskCallback) Fail(pt PeerTask, code base.Code, reason string) 
 		Success:        false,
 		Code:           code,
 	})
-	pt.Log().Warnf("report fail peer result, response state: %#v, error: %v", state, err)
+	if err != nil {
+		pt.Log().Errorf("report fail peer result, error: %v", err)
+	} else {
+		pt.Log().Infof("report fail peer result, response state: (%t, %d, %s)",
+			state.Success, state.Code, state.Msg)
+	}
 	return nil
 }
