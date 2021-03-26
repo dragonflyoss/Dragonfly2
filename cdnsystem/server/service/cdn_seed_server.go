@@ -168,6 +168,9 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 		}
 		return nil, dferrors.Newf(dfcodes.CdnError, "failed to get task from cdn: %v", err)
 	}
+	if task.IsError() {
+		return nil, dferrors.Newf(dfcodes.CdnTaskDownloadFail, "download fail, cdnStatus: %s", task.CdnStatus)
+	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
 		return nil, dferrors.Newf(dfcodes.CdnError, "failed to get pieces from cdn: %v", err)
