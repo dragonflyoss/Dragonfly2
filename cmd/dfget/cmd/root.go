@@ -438,7 +438,7 @@ func spawnDaemon() error {
 
 	// Set scheduler
 	for _, s := range daemonConfig.Scheduler.NetAddrs {
-		cmd.Args = append(cmd.Args, "--scheduler "+s.Addr)
+		cmd.Args = append(cmd.Args, "--scheduler", s.Addr)
 	}
 
 	cmd.Stdin = nil
