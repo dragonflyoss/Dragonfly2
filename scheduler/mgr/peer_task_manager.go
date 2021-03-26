@@ -38,6 +38,7 @@ const (
 
 type PeerTaskManager struct {
 	data                    *sync.Map
+	dataRanger
 	gcQueue                 workqueue.DelayingInterface
 	gcDelayTime             time.Duration
 	downloadMonitorQueue    workqueue.DelayingInterface
@@ -241,7 +242,7 @@ func (m *PeerTaskManager) RefreshDownloadMonitor(pt *types.PeerTask) {
 	} else if pt.IsWaiting() {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
 	} else {
-		m.downloadMonitorQueue.AddAfter(pt, time.Millisecond*time.Duration(pt.GetCost()*2))
+		m.downloadMonitorQueue.AddAfter(pt, time.Millisecond*time.Duration(pt.GetCost()*10))
 	}
 }
 

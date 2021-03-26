@@ -130,8 +130,8 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 			return true
 		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
 			return true
-		} else if pt.GetParent() != nil {
-			return true
+		//} else if pt.GetParent() != nil {
+		//	return true
 		}
 		list = append(list, pt)
 		return true

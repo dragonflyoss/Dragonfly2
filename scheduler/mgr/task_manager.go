@@ -17,6 +17,7 @@
 package mgr
 
 import (
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"sync"
@@ -60,7 +61,12 @@ func (m *TaskManager) AddTask(task *types.Task) (*types.Task, bool) {
 func (m *TaskManager) DeleteTask(taskId string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	t, _ := m.data[taskId]
+	if t != nil {
+		logger.Infof("Task [%s] Statistic: %+v ", t.TaskId, t.Statistic.GetStatistic())
+	}
 	delete(m.data, taskId)
+
 	return
 }
 
