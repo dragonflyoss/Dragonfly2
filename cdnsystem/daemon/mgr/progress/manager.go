@@ -175,9 +175,7 @@ func (pm *Manager) Clear(ctx context.Context, taskID string) error {
 		return errors.Wrap(err, "failed to get seed subscribers")
 	}
 	if chanList != nil {
-		var next *list.Element
-		for e := chanList.Front(); e != nil; e = next {
-			next = e.Next()
+		for e := chanList.Front(); e != nil; e = e.Next() {
 			sub := e.Value.(chan *types.SeedPiece)
 			close(sub)
 			chanList.Remove(e)
@@ -201,10 +199,6 @@ func (pm *Manager) Clear(ctx context.Context, taskID string) error {
 
 func (pm *Manager) GetPieces(ctx context.Context, taskID string) (records []*types.SeedPiece, err error) {
 	pm.mu.GetLock(taskID, true)
-	logger.Debugf("lock locker:5")
-	defer func() {
-		logger.Debugf("lock release:5")
-		pm.mu.ReleaseLock(taskID, true)
-	}()
+	defer pm.mu.ReleaseLock(taskID, true)
 	return pm.getPieceMetaRecordsByTaskId(taskID)
 }
