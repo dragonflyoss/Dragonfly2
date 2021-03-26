@@ -265,7 +265,7 @@ func (pt *PeerTask) AddPieceStatus(ps *scheduler.PieceResult) {
 	}
 
 	// peer as cdn set up
-	if pt.Host.Type == HostTypeCdn && pt.isDown {
+	if pt.Host != nil && pt.Host.Type == HostTypeCdn && pt.isDown {
 		pt.isDown = false
 	}
 
