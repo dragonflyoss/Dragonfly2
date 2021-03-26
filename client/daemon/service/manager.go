@@ -155,6 +155,15 @@ func (m *manager) Download(ctx context.Context,
 
 	peerTaskProgress, tiny, err := m.peerTaskManager.StartFilePeerTask(ctx, peerTask)
 	if err != nil {
+		results <- &dfdaemongrpc.DownResult{
+			State: &base.ResponseState{
+				Success: false,
+				Code:    dfcodes.UnknownError,
+				Msg:     fmt.Sprintf("%s", err),
+			},
+			CompletedLength: 0,
+			Done:            true,
+		}
 		return err
 	}
 	if tiny != nil {
@@ -179,6 +188,15 @@ loop:
 			if !ok {
 				err = errors.New("progress closed unexpected")
 				logger.Errorf(err.Error())
+				results <- &dfdaemongrpc.DownResult{
+					State: &base.ResponseState{
+						Success: false,
+						Code:    dfcodes.UnknownError,
+						Msg:     fmt.Sprintf("%s", err),
+					},
+					CompletedLength: 0,
+					Done:            true,
+				}
 				return err
 			}
 			results <- &dfdaemongrpc.DownResult{
