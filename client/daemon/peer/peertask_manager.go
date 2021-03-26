@@ -46,6 +46,9 @@ type PeerTaskManager interface {
 	// tiny stands task file is tiny and task is done
 	StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (
 		reader io.Reader, attribute map[string]string, err error)
+
+	IsPeerTaskRunning(pid string) bool
+
 	// Stop stops the PeerTaskManager
 	Stop(ctx context.Context) error
 }
@@ -183,6 +186,9 @@ func (ptm *peerTaskManager) Stop(ctx context.Context) error {
 
 func (ptm *peerTaskManager) PeerTaskDone(pid string) {
 	ptm.runningPeerTasks.Delete(pid)
-	// TODO report peer result
-	// ptm.scheduler.ReportPeerResult()
+}
+
+func (ptm *peerTaskManager) IsPeerTaskRunning(pid string) bool {
+	_, ok := ptm.runningPeerTasks.Load(pid)
+	return ok
 }

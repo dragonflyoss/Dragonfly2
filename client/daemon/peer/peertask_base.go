@@ -193,12 +193,12 @@ loop:
 			continue
 		}
 
-		pt.Debugf("receive peer packet: %#v, main peer: %#v", peerPacket, peerPacket.MainPeer)
-
 		if peerPacket.MainPeer == nil && peerPacket.StealPeers == nil {
 			pt.Warnf("scheduler client send a peerPacket with empty peers")
 			continue
 		}
+		pt.Debugf("receive new peer packet, main peer: %s, parallel count: %d",
+			peerPacket.MainPeer.PeerId, peerPacket.ParallelCount)
 
 		pt.peerPacket = peerPacket
 		pt.pieceParallelCount = pt.peerPacket.ParallelCount
@@ -301,7 +301,7 @@ loop:
 		piecePacket, err := pt.preparePieceTasks(
 			&base.PieceTaskRequest{
 				TaskId:   pt.taskId,
-				SrcPid:    pt.peerId,
+				SrcPid:   pt.peerId,
 				StartNum: num,
 				Limit:    limit,
 			})
@@ -434,7 +434,7 @@ func (pt *peerTask) preparePieceTasks(request *base.PieceTaskRequest) (p *base.P
 prepare:
 	pt.pieceParallelCount = pt.peerPacket.ParallelCount
 	request.DstPid = pt.peerPacket.MainPeer.PeerId
-	p, err = pt.preparePieceTasksByPeer(pt.peerPacket.MainPeer, request)
+	p, err = pt.preparePieceTasksByPeer(pt.peerPacket, pt.peerPacket.MainPeer, request)
 	if err == nil {
 		return
 	}
@@ -443,7 +443,7 @@ prepare:
 	}
 	for _, peer := range pt.peerPacket.StealPeers {
 		request.DstPid = peer.PeerId
-		p, err = pt.preparePieceTasksByPeer(peer, request)
+		p, err = pt.preparePieceTasksByPeer(pt.peerPacket, peer, request)
 		if err == nil {
 			return
 		}
@@ -455,14 +455,15 @@ prepare:
 	return
 }
 
-func (pt *peerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestPeer, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (pt *peerTask) preparePieceTasksByPeer(curPeerPacket *scheduler.PeerPacket, peer *scheduler.PeerPacket_DestPeer, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	if peer == nil {
 		return nil, fmt.Errorf("empty peer")
 	}
-	pt.Debugf("get piece task from peer %s, request: %#v", peer.PeerId, request)
-	p, err := pt.getPieceTasks(peer, request)
+retry6404:
+	pt.Debugf("get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)
+	p, err := pt.getPieceTasks(curPeerPacket, peer, request)
 	if err == nil {
-		pt.Infof("get piece task from peer %s ok, pieces packet: %#v, length: %d", peer.PeerId, p, len(p.PieceInfos))
+		pt.Infof("get piece task from peer %s ok, pieces length: %d", peer.PeerId, len(p.PieceInfos))
 		return p, nil
 	}
 	if err == errPeerPacketChanged {
@@ -481,7 +482,7 @@ func (pt *peerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestPeer,
 	code := dfcodes.ClientPieceRequestFail
 	// not grpc error
 	if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
-		pt.Debugf("get piece task with df error, code: %d", de.Code)
+		pt.Debugf("get piece task from peer %s with df error, code: %d", peer.PeerId, de.Code)
 		code = de.Code
 	}
 	// may be panic here due to unknown content length or total piece count
@@ -496,14 +497,15 @@ func (pt *peerTask) preparePieceTasksByPeer(peer *scheduler.PeerPacket_DestPeer,
 		FinishedCount: -1,
 	}
 	pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
+
+	if code == dfcodes.CdnTaskNotFound && curPeerPacket == pt.peerPacket {
+		goto retry6404
+	}
 	return nil, err
 }
 
-func (pt *peerTask) getPieceTasks(peer *scheduler.PeerPacket_DestPeer, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
-	var (
-		curPeerPacket     = pt.peerPacket
-		peerPacketChanged bool
-	)
+func (pt *peerTask) getPieceTasks(curPeerPacket *scheduler.PeerPacket, peer *scheduler.PeerPacket_DestPeer, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	var peerPacketChanged bool
 	p, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		pp, getErr := dfclient.GetPieceTasks(peer, pt.ctx, request)
 		if getErr != nil {
@@ -536,7 +538,7 @@ func (pt *peerTask) getPieceTasks(peer *scheduler.PeerPacket_DestPeer, request *
 			return nil, dferrors.ErrEmptyValue
 		}
 		return pp, nil
-	}, 0.25, 1, 8, nil)
+	}, 0.05, 0.2, 40, nil)
 	if peerPacketChanged {
 		return nil, errPeerPacketChanged
 	}

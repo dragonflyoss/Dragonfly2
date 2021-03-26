@@ -129,7 +129,7 @@ func init() {
 		"destination path which is used to store the requested downloading file. It must contain detailed directory and specific filename, for example, '/tmp/file.mp4'")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.RateLimit), "totallimit",
 		"network bandwidth rate limit for the whole host, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
-	flagSet.DurationVarP(&dfgetConfig.Timeout, "timeout", "e", 0,
+	flagSet.DurationVarP(&dfgetConfig.Timeout, "timeout", "e", 600*time.Second,
 		"timeout for file downloading task. If dfget has not finished downloading all pieces of file before --timeout, the dfget will throw an error and exit")
 	flagSet.StringVarP(&dfgetConfig.Md5, "md5", "m", "",
 		"md5 value input from user for the requested downloading file to enhance security")
@@ -438,7 +438,7 @@ func spawnDaemon() error {
 
 	// Set scheduler
 	for _, s := range daemonConfig.Scheduler.NetAddrs {
-		cmd.Args = append(cmd.Args, "--scheduler "+s.Addr)
+		cmd.Args = append(cmd.Args, "--scheduler", s.Addr)
 	}
 
 	cmd.Stdin = nil
