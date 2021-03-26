@@ -38,7 +38,7 @@ func newStreamPeerTask(ctx context.Context,
 	pieceManager PieceManager,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
-	schedulerOption config.SchedulerOption) (StreamPeerTask, []byte, error) {
+	schedulerOption config.SchedulerOption) (StreamPeerTask, *TinyData, error) {
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	if err != nil {
 		logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
@@ -58,7 +58,11 @@ func newStreamPeerTask(ctx context.Context,
 	case base.SizeScope_TINY:
 		logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 		if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
-			return nil, piece.PieceContent, nil
+			return nil, &TinyData{
+				TaskId:  result.TaskId,
+				PeerID:  request.PeerId,
+				Content: piece.PieceContent,
+			}, nil
 		}
 		return nil, nil, errors.Errorf("scheduler return tiny piece but can not parse piece content")
 	case base.SizeScope_NORMAL:

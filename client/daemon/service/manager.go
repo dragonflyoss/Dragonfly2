@@ -157,7 +157,18 @@ func (m *manager) Download(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	if tiny {
+	if tiny != nil {
+		results <- &dfdaemongrpc.DownResult{
+			State: &base.ResponseState{
+				Success: true,
+				Code:    dfcodes.Success,
+				Msg:     "Tiny file downloaded",
+			},
+			TaskId:          tiny.TaskId,
+			PeerId:          tiny.PeerID,
+			CompletedLength: uint64(len(tiny.Content)),
+			Done:            true,
+		}
 		logger.Infof("tiny file, wrote to output")
 		return nil
 	}

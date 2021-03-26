@@ -10,11 +10,12 @@ import (
 	reflect "reflect"
 	time "time"
 
+	gomock "github.com/golang/mock/gomock"
+
 	peer "d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	gomock "github.com/golang/mock/gomock"
 )
 
 // MockPeerTaskManager is a mock of PeerTaskManager interface.
@@ -55,11 +56,11 @@ func (mr *MockPeerTaskManagerMockRecorder) IsPeerTaskRunning(pid interface{}) *g
 }
 
 // StartFilePeerTask mocks base method.
-func (m *MockPeerTaskManager) StartFilePeerTask(ctx context.Context, req *peer.FilePeerTaskRequest) (chan *peer.PeerTaskProgress, bool, error) {
+func (m *MockPeerTaskManager) StartFilePeerTask(ctx context.Context, req *peer.FilePeerTaskRequest) (chan *peer.PeerTaskProgress, *peer.TinyData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartFilePeerTask", ctx, req)
 	ret0, _ := ret[0].(chan *peer.PeerTaskProgress)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(*peer.TinyData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
