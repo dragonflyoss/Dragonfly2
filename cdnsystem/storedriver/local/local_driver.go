@@ -20,7 +20,7 @@ import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/statutils"
@@ -46,7 +46,7 @@ const StorageDriver = "disk"
 
 const MemoryStorageDriver = "memory"
 
-var fileLocker = util.NewLockerPool()
+var fileLocker = synclock.NewLockerPool()
 
 func init() {
 	storedriver.Register(StorageDriver, NewStorage)

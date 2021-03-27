@@ -69,6 +69,7 @@ type Driver interface {
 
 	// GetTotalSpace
 	GetTotalSpace(ctx context.Context) (fsize.Size, error)
+
 	// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 	// calling walkFn for each file or directory in the tree, including root.
 	Walk(ctx context.Context, raw *Raw) error
