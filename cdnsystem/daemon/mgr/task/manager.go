@@ -24,10 +24,10 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"fmt"
 	"github.com/pkg/errors"
@@ -96,16 +96,16 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 
 // triggerCdnSyncAction
 func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTask) error {
-	util.GetLock(task.TaskId, true)
+	synclock.Lock(task.TaskId, true)
 	if !task.IsFrozen() {
 		logger.WithTaskID(task.TaskId).Infof("seedTask is running or has been downloaded successfully, status:%s", task.CdnStatus)
-		util.ReleaseLock(task.TaskId, true)
+		synclock.UnLock(task.TaskId, true)
 		return nil
 	}
-	util.ReleaseLock(task.TaskId, true)
+	synclock.UnLock(task.TaskId, true)
 
-	util.GetLock(task.TaskId, false)
-	defer util.ReleaseLock(task.TaskId, false)
+	synclock.Lock(task.TaskId, false)
+	defer synclock.UnLock(task.TaskId, false)
 	// reconfirm
 	if !task.IsFrozen() {
 		logger.WithTaskID(task.TaskId).Infof("reconfirm seedTask is running or has been downloaded successfully, " +
@@ -181,8 +181,8 @@ func (tm Manager) Delete(ctx context.Context, taskId string) error {
 }
 
 func (tm *Manager) GetPieces(ctx context.Context, taskId string) (pieces []*types.SeedPiece, err error) {
-	util.GetLock(taskId, true)
-	defer util.ReleaseLock(taskId, true)
+	synclock.Lock(taskId, true)
+	defer synclock.UnLock(taskId, true)
 	return tm.progressMgr.GetPieces(ctx, taskId)
 }
 
@@ -231,8 +231,8 @@ func (tm *Manager) GC(ctx context.Context) error {
 func (tm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
 	logger.GcLogger.Infof("gc task: start to deal with task: %s", taskID)
 
-	util.GetLock(taskID, false)
-	defer util.ReleaseLock(taskID, false)
+	synclock.Lock(taskID, false)
+	defer synclock.UnLock(taskID, false)
 
 	var wg sync.WaitGroup
 	wg.Add(2)

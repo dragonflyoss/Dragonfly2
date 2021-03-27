@@ -17,7 +17,7 @@
 package storage
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/store"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"path"
 )
@@ -46,58 +46,58 @@ func getParentKey(taskId string) string {
 	return stringutils.SubString(taskId, 0, 3)
 }
 
-func GetDownloadRaw(taskId string) *store.Raw {
-	return &store.Raw{
+func GetDownloadRaw(taskId string) *storedriver.Raw {
+	return &storedriver.Raw{
 		Bucket: DownloadHome,
 		Key:    getDownloadKey(taskId),
 	}
 }
 
-func GetUploadRaw(taskId string) *store.Raw {
-	return &store.Raw{
+func GetUploadRaw(taskId string) *storedriver.Raw {
+	return &storedriver.Raw{
 		Bucket: UploadHome,
 		Key:    getDownloadKey(taskId),
 	}
 }
 
-func GetTaskMetaDataRaw(taskId string) *store.Raw {
-	return &store.Raw{
+func GetTaskMetaDataRaw(taskId string) *storedriver.Raw {
+	return &storedriver.Raw{
 		Bucket: DownloadHome,
 		Key:    getTaskMetaDataKey(taskId),
 		Trunc:  true,
 	}
 }
 
-func GetPieceMetaDataRaw(taskId string) *store.Raw {
-	return &store.Raw{
+func GetPieceMetaDataRaw(taskId string) *storedriver.Raw {
+	return &storedriver.Raw{
 		Bucket: DownloadHome,
 		Key:    getPieceMetaDataKey(taskId),
 	}
 }
 
-func GetAppendPieceMetaDataRaw(taskId string) *store.Raw {
-	return &store.Raw{
+func GetAppendPieceMetaDataRaw(taskId string) *storedriver.Raw {
+	return &storedriver.Raw{
 		Bucket: DownloadHome,
 		Key:    getPieceMetaDataKey(taskId),
 		Append: true,
 	}
 }
 
-func GetParentRaw(taskId string) *store.Raw {
-	return &store.Raw{
+func GetParentRaw(taskId string) *storedriver.Raw {
+	return &storedriver.Raw{
 		Bucket: DownloadHome,
 		Key:    getParentKey(taskId),
 	}
 }
 
-func GetDownloadHomeRaw() *store.Raw {
-	return &store.Raw{
+func GetDownloadHomeRaw() *storedriver.Raw {
+	return &storedriver.Raw{
 		Bucket: DownloadHome,
 	}
 }
 
-func GetUploadHomeRaw() *store.Raw {
-	return &store.Raw{
+func GetUploadHomeRaw() *storedriver.Raw {
+	return &storedriver.Raw{
 		Bucket: UploadHome,
 	}
 }

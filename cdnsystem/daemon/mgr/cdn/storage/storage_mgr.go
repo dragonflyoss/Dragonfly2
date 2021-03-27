@@ -21,7 +21,7 @@ import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -53,7 +53,7 @@ func Get(name string, defaultIfAbsent bool) Builder {
 
 // Builder creates a storage
 type Builder interface {
-	Build(cfg *config.Config) (StorageMgr, error)
+	Build(cfg *config.Config) (Manager, error)
 
 	Name() string
 }
@@ -137,10 +137,11 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 	}, nil
 }
 
-type StorageMgr interface {
+type Manager interface {
+
 	ResetRepo(ctx context.Context, task *types.SeedTask) error
 
-	StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error)
+	StatDownloadFile(ctx context.Context, taskId string) (*storedriver.StorageInfo, error)
 
 	WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64, buf *bytes.Buffer) error
 

@@ -18,7 +18,7 @@ package task
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 
 	"time"
 
@@ -44,8 +44,8 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		taskURL = urlutils2.FilterURLParam(request.URL, request.Filter)
 	}
 	taskId := request.TaskId
-	util.GetLock(taskId, false)
-	defer util.ReleaseLock(taskId, false)
+	synclock.Lock(taskId, false)
+	defer synclock.UnLock(taskId, false)
 	if key, err := tm.taskURLUnReachableStore.Get(taskId); err == nil {
 		if unReachableStartTime, ok := key.(time.Time); ok &&
 			time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {

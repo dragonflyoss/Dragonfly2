@@ -21,8 +21,8 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 	"sync"
 	"time"
 )
@@ -56,14 +56,14 @@ type Manager struct {
 	cfg     *config.Config
 	taskMgr mgr.SeedTaskMgr
 	cdnMgr  mgr.CDNMgr
-	storage storage.StorageMgr
+	storage storage.Manager
 }
 
 func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) {
 	logger.GcLogger.Infof("gc task: start to deal with task: %s", taskID)
 
-	util.GetLock(taskID, false)
-	defer util.ReleaseLock(taskID, false)
+	synclock.Lock(taskID, false)
+	defer synclock.UnLock(taskID, false)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -85,7 +85,7 @@ func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) {
 
 // NewManager returns a new Manager.
 func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr,
-	storage storage.StorageMgr) (*Manager, error) {
+	storage storage.Manager) (*Manager, error) {
 	return &Manager{
 		cfg:     cfg,
 		taskMgr: taskMgr,

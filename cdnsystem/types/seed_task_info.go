@@ -16,13 +16,6 @@
 
 package types
 
-//type UrlMeta struct {
-//	// md5 of file content downloaded from url
-//	Md5 string `json:"md5,omitempty"`
-//	// downloading range of resource file
-//	Range string `json:"range,omitempty"`
-//}
-
 type SeedTask struct {
 	TaskId           string            `json:"taskId,omitempty"`
 	Url              string            `json:"url,omitempty"`

@@ -24,15 +24,15 @@ import (
 	"time"
 )
 
-// NewConfig creates an instant with default values.
-func NewConfig() *Config {
+// NewDefaultConfig creates an instant with default values.
+func NewDefaultConfig() *Config {
 	return &Config{
-		BaseProperties: NewBaseProperties(),
-		Plugins:        NewPlugins(),
+		BaseProperties: NewDefaultBaseProperties(),
+		Plugins:        NewDefaultPlugins(),
 	}
 }
 
-// Config contains all configuration of cdnNode.
+// Config contains all configuration of cdn node.
 type Config struct {
 	*BaseProperties `yaml:"base"`
 	Plugins         map[PluginType][]*PluginProperties `yaml:"plugins"`
@@ -59,8 +59,8 @@ func (c *Config) String() string {
 	return ""
 }
 
-func NewPlugins() map[PluginType][]*PluginProperties {
-	// todo 创建默认plugins
+// NewDefaultPlugins creates a Plugins instant with default values.
+func NewDefaultPlugins() map[PluginType][]*PluginProperties {
 	return map[PluginType][]*PluginProperties{
 		StoragePlugin: {
 			{
@@ -92,14 +92,14 @@ func NewPlugins() map[PluginType][]*PluginProperties {
 	}
 }
 
-// NewBaseProperties creates an instant with default values.
-func NewBaseProperties() *BaseProperties {
+// NewDefaultBaseProperties creates an base properties instant with default values.
+func NewDefaultBaseProperties() *BaseProperties {
 	return &BaseProperties{
 		ListenPort:              DefaultListenPort,
 		DownloadPort:            DefaultDownloadPort,
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
 		MaxBandwidth:            DefaultMaxBandwidth,
-		EnableProfiler:          false,
+		EnableProfiler:          DefaultEnableProfiler,
 		FailAccessInterval:      DefaultFailAccessInterval,
 		GCInitialDelay:          DefaultGCInitialDelay,
 		GCMetaInterval:          DefaultGCMetaInterval,
