@@ -20,7 +20,7 @@ import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"github.com/emirpasic/gods/maps/treemap"
@@ -32,13 +32,13 @@ import (
 )
 
 type Cleaner struct {
-	Cfg        *store.GcConfig
-	Store      store.StorageDriver
-	StorageMgr StorageMgr
+	Cfg        *storedriver.GcConfig
+	Store      storedriver.Driver
+	StorageMgr Manager
 	TaskMgr    mgr.SeedTaskMgr
 }
 
-func NewStorageCleaner(gcConfig *store.GcConfig, store store.StorageDriver, storageMgr StorageMgr,
+func NewStorageCleaner(gcConfig *storedriver.GcConfig, store storedriver.Driver, storageMgr Manager,
 	taskMgr mgr.SeedTaskMgr) *Cleaner {
 	return &Cleaner{
 		Cfg:        gcConfig,
@@ -125,7 +125,7 @@ func (cleaner *Cleaner) Gc(ctx context.Context, force bool) ([]string, error) {
 		return nil
 	}
 
-	if err := cleaner.Store.Walk(ctx, &store.Raw{
+	if err := cleaner.Store.Walk(ctx, &storedriver.Raw{
 		WalkFn: walkFn,
 	}); err != nil {
 		return nil, err
@@ -184,6 +184,6 @@ func (cleaner *Cleaner) getGCTasks(gapTasks, intervalTasks *treemap.Map) []strin
 		}
 	}
 
-	gcLen := (len(gcTasks)*cleaner.Cfg.CleanRatio + 9)/10
+	gcLen := (len(gcTasks)*cleaner.Cfg.CleanRatio + 9) / 10
 	return gcTasks[0:gcLen]
 }

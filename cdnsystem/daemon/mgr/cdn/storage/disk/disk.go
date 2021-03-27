@@ -24,11 +24,11 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
-	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"encoding/json"
@@ -46,14 +46,14 @@ func init() {
 	var _ storage.Builder = builder
 
 	var diskStorage *diskStorageMgr = nil
-	var _ storage.StorageMgr = diskStorage
+	var _ storage.Manager = diskStorage
 }
 
 type diskBuilder struct {
 }
 
-func (*diskBuilder) Build(cfg *config.Config) (storage.StorageMgr, error) {
-	diskStore, err := store.Get(disk.StorageDriver)
+func (*diskBuilder) Build(cfg *config.Config) (storage.Manager, error) {
+	diskStore, err := storedriver.Get(local.StorageDriver)
 	if err != nil {
 		return nil, err
 	}
@@ -73,21 +73,21 @@ func (*diskBuilder) Name() string {
 }
 
 type diskStorageMgr struct {
-	diskStore        *store.Store
+	diskStore        *storedriver.Store
 	diskStoreCleaner *storage.Cleaner
 	taskMgr          mgr.SeedTaskMgr
 }
 
-func (s *diskStorageMgr) getDiskDefaultGcConfig() *store.GcConfig {
+func (s *diskStorageMgr) getDiskDefaultGcConfig() *storedriver.GcConfig {
 	totalSpace, err := s.diskStore.GetTotalSpace(context.TODO())
 	if err != nil {
-		logger.GcLogger.Errorf("failed to get total space of disk: %v", err)
+		logger.GcLogger.Errorf("get total space of disk: %v", err)
 	}
 	yongGcThreshold := 200 * fsize.GB
 	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
 		yongGcThreshold = totalSpace / 4
 	}
-	return &store.GcConfig{
+	return &storedriver.GcConfig{
 		YoungGCThreshold:  yongGcThreshold,
 		FullGCThreshold:   25 * fsize.GB,
 		IntervalThreshold: 2 * time.Hour,
@@ -137,21 +137,21 @@ func (s *diskStorageMgr) GC(ctx context.Context) error {
 		logger.GcLogger.Error("gc disk: failed to get gcTaskIds")
 	}
 	for _, taskID := range gcTaskIDs {
-		util.GetLock(taskID, false)
+		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
 		if _, err := s.taskMgr.Get(ctx, taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
 			if err != nil {
 				logger.GcLogger.Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
 			}
-			util.ReleaseLock(taskID, false)
+			synclock.UnLock(taskID, false)
 			continue
 		}
 		if err := s.DeleteTask(ctx, taskID); err != nil {
 			logger.GcLogger.Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
-			util.ReleaseLock(taskID, false)
+			synclock.UnLock(taskID, false)
 			continue
 		}
-		util.ReleaseLock(taskID, false)
+		synclock.UnLock(taskID, false)
 	}
 	return nil
 }
@@ -207,7 +207,7 @@ func (s *diskStorageMgr) ReadDownloadFile(ctx context.Context, taskId string) (i
 	return s.diskStore.Get(ctx, storage.GetDownloadRaw(taskId))
 }
 
-func (s *diskStorageMgr) StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error) {
+func (s *diskStorageMgr) StatDownloadFile(ctx context.Context, taskId string) (*storedriver.StorageInfo, error) {
 	return s.diskStore.Stat(ctx, storage.GetDownloadRaw(taskId))
 }
 

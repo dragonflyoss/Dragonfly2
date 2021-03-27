@@ -26,7 +26,10 @@ const (
 )
 
 const (
-	// CDNWriterRoutineLimit 4
+	DefaultEnableProfiler = false
+)
+
+const (
 	CDNWriterRoutineLimit = 4
 )
 
@@ -40,6 +43,7 @@ const (
 const (
 	// DefaultCdnConfigFilePath the default cdn config path.
 	DefaultCdnConfigFilePath = "/etc/dragonfly/cdn.yml"
+
 	DefaultStoragePattern = "disk"
 )
 
@@ -64,14 +68,11 @@ const (
 	// DefaultGCMetaInterval is the interval time to execute the GC meta.
 	DefaultGCMetaInterval = 2 * time.Minute
 
+	DefaultGCStorageInterval = 15 * time.Second
+
 	// DefaultTaskExpireTime when a task is not accessed within the taskExpireTime,
 	// and it will be treated to be expired.
 	DefaultTaskExpireTime = 3 * time.Minute
-
-	DefaultIntervalThreshold = 2 * time.Hour
-
-	DefaultGCStorageInterval = 15 * time.Second
-
 )
 
 const (
@@ -80,5 +81,5 @@ const (
 	DefaultSystemReservedBandwidth = 20 * ratelimiter.MB
 	// DefaultMaxBandwidth is the default network bandwidth that cdn can use.
 	// unit: MB/s
-	DefaultMaxBandwidth = 200 * ratelimiter.MB
+	DefaultMaxBandwidth = 1 * ratelimiter.GB
 )

@@ -16,8 +16,8 @@ base:
   systemReservedBandwidth: 20M
 
   # MaxBandwidth is the network bandwidth that cdn can use.
-  # default: 200 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-  maxBandwidth: 200M
+  # default: 1G, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
+  maxBandwidth: 1G
 
   # Whether to enable profiler
   # default: false
