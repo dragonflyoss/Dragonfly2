@@ -18,16 +18,43 @@ package cdn
 
 import (
 	"crypto/md5"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
-	"encoding/binary"
-	"hash"
-	"io"
-
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/ifaceutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"encoding/binary"
 	"github.com/pkg/errors"
+	"hash"
+	"io"
 )
+
+// checkSameFile check whether meta file is modified
+func checkSameFile(task *types.SeedTask, metaData *storage.FileMetaData) error {
+	if task == nil || metaData == nil {
+		return errors.Errorf("task or metaData is nil, task:%v, metaData:%v", task, metaData)
+	}
+
+	if metaData.PieceSize != task.PieceSize {
+		return errors.Errorf("meta piece size(%d) is not equals with task piece size(%d)", metaData.PieceSize,
+			task.PieceSize)
+	}
+
+	if metaData.TaskId != task.TaskId {
+		return errors.Errorf("meta task TaskId(%s) is not equals with task TaskId(%s)", metaData.TaskId, task.TaskId)
+	}
+
+	if metaData.TaskURL != task.TaskUrl {
+		return errors.Errorf("meta task taskUrl(%s) is not equals with task taskUrl(%s)", metaData.TaskURL, task.Url)
+	}
+	if !stringutils.IsBlank(metaData.SourceRealMd5) && !stringutils.IsBlank(task.RequestMd5) &&
+		metaData.SourceRealMd5 != task.RequestMd5 {
+		return errors.Errorf("meta task source md5(%s) is not equals with task request md5(%s)",
+			metaData.SourceRealMd5, task.RequestMd5)
+	}
+	return nil
+}
 
 //checkPieceContent read piece content from reader and check data integrity by pieceMetaRecord
 func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, fileMd5 hash.Hash) error {
