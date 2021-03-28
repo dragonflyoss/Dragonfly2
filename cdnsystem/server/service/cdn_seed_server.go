@@ -53,7 +53,7 @@ func NewCdnSeedServer(cfg *config.Config, taskMgr mgr.SeedTaskMgr) (*CdnSeedServ
 	}, nil
 }
 
-func constructRequestHeader(req *cdnsystem.SeedRequest) *types.TaskRegisterRequest {
+func constructRequest(req *cdnsystem.SeedRequest) *types.TaskRegisterRequest {
 	meta := req.UrlMeta
 	header := make(map[string]string)
 	if meta != nil {
@@ -96,18 +96,18 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		}
 
 		if err != nil {
-			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds: %v", err)
+			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds, request:%+v %v", req, err)
 		}
 	}()
 	if err := validateSeedRequestParams(req); err != nil {
 		return dferrors.Newf(dfcodes.BadRequest, "bad seed request: %v", err)
 	}
-	registerRequest := constructRequestHeader(req)
+	registerRequest := constructRequest(req)
 
 	// register task
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
 	if err != nil {
-		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "failed to register seed task, registerRequest:%+v:%v", registerRequest, err)
+		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "failed to register seed task:%v", err)
 	}
 	peerId := fmt.Sprintf("%s-%s_%s", iputils.HostName, req.TaskId, "CDN")
 	task, err := css.taskMgr.Get(ctx, req.TaskId)
@@ -158,7 +158,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 		}
 	}()
 	if err := validateGetPieceTasksRequestParams(req); err != nil {
-		return nil, dferrors.Newf(dfcodes.BadRequest, "validate seed request fail, seedReq: %v, err: %v", req, err)
+		return nil, dferrors.Newf(dfcodes.BadRequest, "validate seed request fail: %v", err)
 	}
 	task, err := css.taskMgr.Get(ctx, req.TaskId)
 	logger.Debugf("task:%+v", task)
