@@ -44,13 +44,20 @@ func main() {
 		panic(err)
 	}
 	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 				TaskId: "test1",
-				Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/go1.14.4.linux-amd64.tar.gz",
+				Url:    "oss://alimonitor-monitor/serverdd.xml",
+				UrlMeta: &base.UrlMeta{
+					Header: map[string]string{
+						"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
+						"accessKeyID":     "RX8yefyaWDWf15SV",
+						"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
+					},
+				},
 				//TaskId: "test",
 				//Url: "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
 				//TaskId: "test",
@@ -86,7 +93,7 @@ func main2() {
 		Addr: "localhost:8003",
 	}, &base.PieceTaskRequest{
 		TaskId:   "test",
-		SrcPid:    "11.11.11.11",
+		SrcPid:   "11.11.11.11",
 		StartNum: 1,
 		Limit:    4,
 	})

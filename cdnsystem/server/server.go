@@ -18,6 +18,7 @@ package server
 
 import (
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
+	_ "d7y.io/dragonfly/v2/cdnsystem/source/ossprotocol"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 )
@@ -69,11 +70,11 @@ func New(cfg *config.Config) (*Server, error) {
 	// cdn manager
 	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr, sourceClient)
 	if err != nil {
-		return nil, errors.Wrapf(err,"failed to create cdn manager")
+		return nil, errors.Wrapf(err, "failed to create cdn manager")
 	}
 
 	// task manager
-	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr ,sourceClient)
+	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr, sourceClient)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create task manager")
 	}

@@ -22,9 +22,6 @@ import (
 	"github.com/go-http-utils/headers"
 	"github.com/stretchr/testify/suite"
 	"io/ioutil"
-	"net/http"
-	"reflect"
-	"sync"
 	"testing"
 )
 
@@ -72,6 +69,7 @@ func (s *OssSourceClientTestSuite) TestParseOssObject() {
 				bucket: "alimonitor-monitor",
 				object: "rowkey_20191010144421mYtlKyATuW_app.txt",
 			},
+			wantErr: false,
 		}, {
 			name: "test2",
 			args: args{
@@ -81,6 +79,7 @@ func (s *OssSourceClientTestSuite) TestParseOssObject() {
 				bucket: "alimonitor-monitor",
 				object: "aaa/rowkey_20191010144421mYtlKyATuW_app.txt",
 			},
+			wantErr: false,
 		}, {
 			name: "test3",
 			args: args{
@@ -92,12 +91,8 @@ func (s *OssSourceClientTestSuite) TestParseOssObject() {
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
 			got, err := ParseOssObject(tt.args.ossUrl)
-			if err != nil {
-				s.Nil(got)
-				s.Equal(err, tt.wantErr)
-			} else {
-				s.Equal(got, tt.want)
-			}
+			s.Equal(tt.want, got)
+			s.Equal(tt.wantErr, err != nil)
 		})
 	}
 }
@@ -112,40 +107,58 @@ func (s *OssSourceClientTestSuite) TestDownload() {
 		args       args
 		content    string
 		expireInfo map[string]string
-		wantErr    error
+		wantErr    bool
 	}{
 		{
-			name: "t1",
+			name: "full",
 			args: args{
-				url: "oss://alimonitor-monitor/server.xml",
+				url: "oss://alimonitor-monitor/sss/ddd",
 				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
 					"accessKeyID":     "RX8yefyaWDWf15SV",
 					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 				},
 			},
-			content: "test",
+			content: "aaaaa\n",
 			expireInfo: map[string]string{
-				headers.LastModified: "Wed, 16 Sep 2020 11:58:38 GMT",
-				headers.ETag:         "lmW9EEXRsIpgQHKGyHMYFxFZBaJ1",
+				headers.LastModified: "Sun, 28 Mar 2021 11:23:45 GMT",
+				headers.ETag:         "\"4C850C5B3B2756E67A91BAD8E046DDAC\"",
 			},
-			wantErr: nil,
+			wantErr: false,
 		}, {
-			name: "test1",
+			name: "range",
 			args: args{
-				url: "oss://alimonitor-monitor/server.xml",
+				url: "oss://alimonitor-monitor/sss/xxx",
 				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
 					"accessKeyID":     "RX8yefyaWDWf15SV",
 					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
+					"range":           "bytes=0-3",
 				},
 			},
-			content: "test",
+			content: "aaaa",
 			expireInfo: map[string]string{
-				headers.LastModified: "Wed, 16 Sep 2020 11:58:38 GMT",
-				headers.ETag:         "lmW9EEXRsIpgQHKGyHMYFxFZBaJ1",
+				headers.LastModified: "Sun, 28 Mar 2021 11:43:08 GMT",
+				headers.ETag:         "\"D466C9A11362E24DA6420A3AD0421A89\"",
 			},
-			wantErr: nil,
+			wantErr: false,
+		}, {
+			name: "error",
+			args: args{
+				url: "oss://alimonitor-monitor/sss/xxdx",
+				header: map[string]string{
+					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
+					"accessKeyID":     "RX8yefyaWDWf15SV",
+					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
+					"range":           "bytes=0-3",
+				},
+			},
+			content: "aaaa",
+			expireInfo: map[string]string{
+				headers.LastModified: "Sun, 28 Mar 2021 11:43:08 GMT",
+				headers.ETag:         "\"D466C9A11362E24DA6420A3AD0421A89\"",
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -157,9 +170,8 @@ func (s *OssSourceClientTestSuite) TestDownload() {
 			}
 			defer got.Close()
 			data, err := ioutil.ReadAll(got)
-			s.Nil(err)
 			s.Equal(tt.expireInfo, expireInfo)
-			fmt.Println("data:", string(data))
+			s.Equal(tt.content, string(data))
 		})
 	}
 }
@@ -186,6 +198,17 @@ func (s *OssSourceClientTestSuite) TestGetContentLength() {
 				},
 			},
 			want: 287329086,
+		}, {
+			name: "test1",
+			args: args{
+				url: "oss://alimonitor-monitor/sss/ddd",
+				header: map[string]string{
+					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
+					"accessKeyID":     "RX8yefyaWDWf15SV",
+					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
+				},
+			},
+			want: 6,
 		},
 	}
 	for _, tt := range tests {
@@ -212,15 +235,33 @@ func (s *OssSourceClientTestSuite) TestsExpired() {
 		{
 			name: "test1",
 			args: args{
-				url: "oss://alimonitor-monitor/rowkey_20191010144421mYtlKyATuW_app.txt",
+				url: "oss://alimonitor-monitor/sss/ddd",
 				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
 					"accessKeyID":     "RX8yefyaWDWf15SV",
 					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 				},
-				expireInfo: map[string]string{},
+				expireInfo: map[string]string{
+					headers.LastModified: "Sun, 28 Mar 2021 11:23:45 GMT",
+					headers.ETag:         "\"4C850C5B3B2756E67A91BAD8E046DDAC\"",
+				},
 			},
 			want: true,
+		}, {
+			name: "test1",
+			args: args{
+				url: "oss://alimonitor-monitor/sss/ddd",
+				header: map[string]string{
+					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
+					"accessKeyID":     "RX8yefyaWDWf15SV",
+					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
+				},
+				expireInfo: map[string]string{
+					headers.LastModified: "Sun, 283 Mar 2021 11:23:45 GMT",
+					headers.ETag:         "\"4C850C5B3B2756E67A91BAD8E046DDAC\"",
+				},
+			},
+			want: false,
 		},
 	}
 	for _, tt := range tests {
@@ -232,64 +273,19 @@ func (s *OssSourceClientTestSuite) TestsExpired() {
 	}
 }
 
-func Test_ossSourceClient_IsSupportRange(t *testing.T) {
-	type fields struct {
-		clientMap sync.Map
-		accessMap sync.Map
-	}
+func (s *OssSourceClientTestSuite) TestIsSupportRange() {
 	type args struct {
 		url     string
 		headers map[string]string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    bool
 		wantErr bool
 	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			osc := &ossSourceClient{
-				clientMap: tt.fields.clientMap,
-				accessMap: tt.fields.accessMap,
-			}
-			got, err := osc.IsSupportRange(tt.args.url, tt.args.headers)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("IsSupportRange() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("IsSupportRange() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_ossSourceClient_getMeta(t *testing.T) {
-	type fields struct {
-		clientMap sync.Map
-		accessMap sync.Map
-	}
-	type args struct {
-		url     string
-		headers map[string]string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    http.Header
-		wantErr bool
-	}{
 		{
 			name: "test1",
-			fields: fields{
-				clientMap: sync.Map{},
-				accessMap: sync.Map{},
-			},
 			args: args{
 				url: "oss://alimonitor-monitor/rowkey_20191010144421mYtlKyATuW_app.txt",
 				headers: map[string]string{
@@ -298,22 +294,15 @@ func Test_ossSourceClient_getMeta(t *testing.T) {
 					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 				},
 			},
+			want:    true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			osc := &ossSourceClient{
-				clientMap: tt.fields.clientMap,
-				accessMap: tt.fields.accessMap,
-			}
-			got, err := osc.getMeta(tt.args.url, tt.args.headers)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getMeta() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getMeta() got = %v, want %v", got, tt.want)
-			}
+		s.Run(tt.name, func() {
+			got, err := s.IsSupportRange(tt.args.url, tt.args.headers)
+			s.Equal(tt.want, got)
+			s.Equal(tt.wantErr, err != nil)
 		})
 	}
 }
