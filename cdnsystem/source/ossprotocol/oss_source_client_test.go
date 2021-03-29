@@ -115,8 +115,6 @@ func (s *OssSourceClientTestSuite) TestDownload() {
 				url: "oss://alimonitor-monitor/sss/ddd",
 				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
-					"accessKeyID":     "RX8yefyaWDWf15SV",
-					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 				},
 			},
 			content: "aaaaa\n",
@@ -131,8 +129,6 @@ func (s *OssSourceClientTestSuite) TestDownload() {
 				url: "oss://alimonitor-monitor/sss/xxx",
 				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
-					"accessKeyID":     "RX8yefyaWDWf15SV",
-					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 					"range":           "bytes=0-3",
 				},
 			},
@@ -148,8 +144,6 @@ func (s *OssSourceClientTestSuite) TestDownload() {
 				url: "oss://alimonitor-monitor/sss/xxdx",
 				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
-					"accessKeyID":     "RX8yefyaWDWf15SV",
-					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 					"range":           "bytes=0-3",
 				},
 			},
@@ -193,8 +187,6 @@ func (s *OssSourceClientTestSuite) TestGetContentLength() {
 				url: "oss://alimonitor-monitor/rowkey_20191010144421mYtlKyATuW_app.txt",
 				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
-					"accessKeyID":     "RX8yefyaWDWf15SV",
-					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 				},
 			},
 			want: 287329086,
@@ -204,8 +196,6 @@ func (s *OssSourceClientTestSuite) TestGetContentLength() {
 				url: "oss://alimonitor-monitor/sss/ddd",
 				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
-					"accessKeyID":     "RX8yefyaWDWf15SV",
-					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 				},
 			},
 			want: 6,
@@ -238,8 +228,6 @@ func (s *OssSourceClientTestSuite) TestsExpired() {
 				url: "oss://alimonitor-monitor/sss/ddd",
 				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
-					"accessKeyID":     "RX8yefyaWDWf15SV",
-					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 				},
 				expireInfo: map[string]string{
 					headers.LastModified: "Sun, 28 Mar 2021 11:23:45 GMT",
@@ -253,8 +241,6 @@ func (s *OssSourceClientTestSuite) TestsExpired() {
 				url: "oss://alimonitor-monitor/sss/ddd",
 				header: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
-					"accessKeyID":     "RX8yefyaWDWf15SV",
-					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 				},
 				expireInfo: map[string]string{
 					headers.LastModified: "Sun, 283 Mar 2021 11:23:45 GMT",
@@ -290,8 +276,6 @@ func (s *OssSourceClientTestSuite) TestIsSupportRange() {
 				url: "oss://alimonitor-monitor/rowkey_20191010144421mYtlKyATuW_app.txt",
 				headers: map[string]string{
 					"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
-					"accessKeyID":     "RX8yefyaWDWf15SV",
-					"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 				},
 			},
 			want:    true,
