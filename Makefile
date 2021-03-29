@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+VERSION := 2.0.0
+
 build-dirs: ## Prepare required folders for build
 	@mkdir -p ./bin
 .PHONY: build-dirs
@@ -93,3 +95,23 @@ install-manager: ## Install manager
 	@echo "Begin to install manager."
 	./hack/install.sh install manager
 .PHONY: install-manager
+
+# TODO more arch like arm, aarch64
+build-rpm-dfget:
+	@ docker build \
+		-t dfget-rpm-builder \
+		-f hack/packaging/rpm/Dockerfile \
+		.
+	@ docker run --rm \
+		-v ${PWD}/bin/rpm/amd64:/root/rpmbuild/RPMS/x86_64 dfget-rpm-builder \
+		rpmbuild -bb --define "_dfget_version $(VERSION)" /root/rpmbuild/SPECS/dfget.spec
+.PHONY: build-rpm-dfget
+
+build-deb-dfget:
+	@ docker build \
+		-t dfget-deb-builder \
+		-f hack/packaging/deb/Dockerfile \
+		.
+	@ docker run --rm \
+		-v ${PWD}/bin/deb/amd64:/pkg dfget-deb-builder
+.PHONY: build-deb-dfget
