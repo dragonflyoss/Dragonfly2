@@ -42,8 +42,33 @@ func (l *SortedList) Add(data Item) (err error) {
 	l.addItem(key1, key2, data)
 	return
 }
-
 func (l *SortedList) Update(data Item) (err error) {
+	key1, key2 := data.GetSortKeys()
+	if key1 > BucketMaxLength || key1 < 0 {
+		return fmt.Errorf("sorted list key1 out of range")
+	}
+	if key2 > InnerBucketMaxLength || key2 < 0 {
+		return fmt.Errorf("sorted list key2 out of range")
+	}
+
+	l.l.Lock()
+	defer l.l.Unlock()
+	oldKey1, oldKey2, ok := l.getKeyMapKey(data)
+	if !ok {
+		return
+	}
+
+	if key1 == oldKey1 && key2 == oldKey2 {
+		return
+	}
+
+	l.deleteItem(oldKey1, oldKey2, data)
+	l.addItem(key1, key2, data)
+
+	return
+}
+
+func (l *SortedList) UpdateOrAdd(data Item) (err error) {
 	key1, key2 := data.GetSortKeys()
 	if key1 > BucketMaxLength || key1 < 0 {
 		return fmt.Errorf("sorted list key1 out of range")
