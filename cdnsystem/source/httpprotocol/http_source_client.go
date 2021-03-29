@@ -18,18 +18,19 @@ package httpprotocol
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
-	"fmt"
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
-	"io"
-	"net"
-	"net/http"
-	"time"
 )
 
 const (
@@ -72,7 +73,7 @@ type httpSourceClient struct {
 // return -l if request fail
 // return -1 if response status is not StatusOK and StatusPartialContent
 func (client *httpSourceClient) GetContentLength(url string, header map[string]string) (int64, error) {
-	resp, err := client.requestWithHeader(http.MethodHead, url, header, 4*time.Second)
+	resp, err := client.requestWithHeader(http.MethodGet, url, header, 4*time.Second)
 	if err != nil {
 		return -1, errors.Wrapf(cdnerrors.ErrURLNotReachable, "get http header meta data failed:%v", err)
 	}
