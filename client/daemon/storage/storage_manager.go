@@ -54,14 +54,26 @@ type TaskStorageDriver interface {
 	Store(ctx context.Context, req *StoreRequest) error
 }
 
+// Reclaimer stands storage reclaimer
+type Reclaimer interface {
+	// CanReclaim indicates whether the storage can be reclaimed
+	CanReclaim() bool
+
+	// MarkReclaim marks the storage which will be reclaimed
+	MarkReclaim()
+
+	// Reclaim reclaims the storage
+	Reclaim() error
+}
+
 type Manager interface {
 	TaskStorageDriver
 	// KeepAlive tests if storage is used in given time duration
 	clientutil.KeepAlive
 	// RegisterTask registers a task in storage driver
 	RegisterTask(ctx context.Context, req RegisterTaskRequest) error
-	// Clean cleans all data
-	Clean()
+	// CleanUp cleans all storage data
+	CleanUp()
 }
 
 type Option struct {
@@ -84,11 +96,12 @@ const (
 type storageManager struct {
 	sync.Locker
 	clientutil.KeepAlive
-	storeStrategy StoreStrategy
-	storeOption   *Option
-	tasks         *sync.Map
-	dataPathStat  *syscall.Stat_t
-	gcCallback    func(CommonTaskRequest)
+	storeStrategy      StoreStrategy
+	storeOption        *Option
+	tasks              *sync.Map
+	markedReclaimTasks []PeerTaskMetaData
+	dataPathStat       *syscall.Stat_t
+	gcCallback         func(CommonTaskRequest)
 }
 
 type StoreStrategy string
@@ -224,7 +237,7 @@ func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	return t.(TaskStorageDriver).GetPieces(ctx, req)
 }
 
-func (s storageManager) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool) {
+func (s *storageManager) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool) {
 	s.Keep()
 	d, ok := s.tasks.Load(meta)
 	if !ok {
@@ -233,7 +246,7 @@ func (s storageManager) LoadTask(meta PeerTaskMetaData) (TaskStorageDriver, bool
 	return d.(TaskStorageDriver), ok
 }
 
-func (s storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {
+func (s *storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {
 	t, ok := s.LoadTask(
 		PeerTaskMetaData{
 			TaskID: req.TaskID,
@@ -245,7 +258,7 @@ func (s storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest) 
 	return t.(TaskStorageDriver).UpdateTask(ctx, req)
 }
 
-func (s storageManager) CreateTask(req RegisterTaskRequest) error {
+func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 	logger.Debugf("init local task storage, peer id: %s, task id: %s", req.PeerID, req.TaskID)
 
 	dataDir := path.Join(s.storeOption.DataPath, string(s.storeStrategy), req.TaskID, req.PeerID)
@@ -309,7 +322,7 @@ func (s storageManager) CreateTask(req RegisterTaskRequest) error {
 	return nil
 }
 
-func (s storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
+func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 	dirs, err := ioutil.ReadDir(path.Join(s.storeOption.DataPath, string(s.storeStrategy)))
 	if os.IsNotExist(err) {
 		return nil
@@ -434,48 +447,50 @@ func (s storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 	return nil
 }
 
-func (s storageManager) TryGC() (bool, error) {
-	var tasks []PeerTaskMetaData
-	s.tasks.Range(func(key, value interface{}) bool {
-		ok, err := value.(gc.GC).TryGC()
-		if err != nil {
-			logger.Errorf("gc task store %s error: %s", key, value)
-		}
-		if ok {
-			tasks = append(tasks, key.(PeerTaskMetaData))
-			logger.Infof("gc task store %s ok", key)
+func (s *storageManager) TryGC() (bool, error) {
+	var markedTasks []PeerTaskMetaData
+	s.tasks.Range(func(key, task interface{}) bool {
+		// remove from task list first
+		if task.(*localTaskStore).CanReclaim() {
+			task.(*localTaskStore).MarkReclaim()
+			markedTasks = append(markedTasks, key.(PeerTaskMetaData))
 		} else {
 			logger.Debugf("task %s/%s not reach gc time",
 				key.(PeerTaskMetaData).TaskID, key.(PeerTaskMetaData).PeerID)
 		}
 		return true
 	})
-	for _, task := range tasks {
-		s.tasks.Delete(task)
+	for _, key := range s.markedReclaimTasks {
+		task, ok := s.tasks.Load(key)
+		if !ok {
+			logger.Warnf("task %s/%s marked, but not found", key.TaskID, key.PeerID)
+			continue
+		}
+		s.tasks.Delete(key)
+		if err := task.(*localTaskStore).Reclaim(); err != nil {
+			// FIXME: retry later or push to queue
+			logger.Errorf("gc task %s/%s error: %s", key.TaskID, key.PeerID, err)
+			continue
+		}
+		logger.Infof("task %s/%s reclaimed", key.TaskID, key.PeerID)
 	}
+	logger.Infof("marked %d task(s), reclaimed %d task(s)", len(markedTasks), len(s.markedReclaimTasks))
+	s.markedReclaimTasks = markedTasks
 	return true, nil
 }
 
-func (s storageManager) Clean() {
+func (s *storageManager) CleanUp() {
 	_, _ = s.forceGC()
 }
 
-func (s storageManager) forceGC() (bool, error) {
-	var tasks []PeerTaskMetaData
+func (s *storageManager) forceGC() (bool, error) {
 	s.tasks.Range(func(key, value interface{}) bool {
-		value.(*localTaskStore).lastAccess = time.Now().Add(-365 * 24 * time.Hour)
-		ok, err := value.(*localTaskStore).TryGC()
+		s.tasks.Delete(key.(PeerTaskMetaData))
+		err := value.(*localTaskStore).Reclaim()
 		if err != nil {
 			logger.Errorf("gc task store %s error: %s", key, value)
 		}
-		if ok {
-			tasks = append(tasks, key.(PeerTaskMetaData))
-			logger.Infof("gc task store %s ok", key)
-		}
 		return true
 	})
-	for _, task := range tasks {
-		s.tasks.Delete(task)
-	}
 	return true, nil
 }

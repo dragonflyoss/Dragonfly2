@@ -17,6 +17,10 @@
 package daemon
 
 import (
+	_ "d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
+)
+
+import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/server"
@@ -25,7 +29,7 @@ import (
 	"os"
 )
 
-// Daemon is a struct to identify main instance of cdnNode.
+// Daemon is a struct to identify main instance of cdn.
 type Daemon struct {
 	Name   string
 	config *config.Config
@@ -42,7 +46,7 @@ func New(cfg *config.Config) (*Daemon, error) {
 		return nil, err
 	}
 	return &Daemon{
-		Name: fmt.Sprint("CDN:",os.Getpid()),
+		Name:   fmt.Sprint("CDN:", os.Getpid()),
 		config: cfg,
 		server: s,
 	}, nil

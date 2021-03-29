@@ -38,10 +38,10 @@ var sc *seederClient
 
 var once sync.Once
 
-func GetClientByAddr(addrs []dfnet.NetAddr) (SeederClient, error) {
+func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SeederClient, error) {
 	once.Do(func() {
 		sc = &seederClient{
-			rpc.NewConnection("cdn", make([]dfnet.NetAddr, 0)),
+			rpc.NewConnection("cdn", make([]dfnet.NetAddr, 0), opts...),
 		}
 	})
 	if len(addrs) == 0 {

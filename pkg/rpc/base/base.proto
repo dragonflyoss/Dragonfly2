@@ -72,7 +72,7 @@ message HostLoad{
 
 message PieceTaskRequest{
   string task_id = 1;
-  string src_ip = 2;
+  string src_pid = 2;
   string dst_pid = 3;
   // piece number
   int32 start_num = 4;

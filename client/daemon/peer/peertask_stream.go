@@ -29,32 +29,54 @@ type StreamPeerTask interface {
 }
 
 type streamPeerTask struct {
-	base           filePeerTask
+	peerTask
 	successPieceCh chan int32
 }
 
-func NewStreamPeerTask(ctx context.Context,
+func newStreamPeerTask(ctx context.Context,
 	host *scheduler.PeerHost,
 	pieceManager PieceManager,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
-	schedulerOption config.SchedulerOption) (StreamPeerTask, error) {
+	schedulerOption config.SchedulerOption) (StreamPeerTask, *TinyData, error) {
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	if err != nil {
 		logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
-		return nil, err
+		return nil, nil, err
 	}
 	if !result.State.Success {
-		return nil, fmt.Errorf("regist error: %s/%s", result.State.Code, result.State.Msg)
+		return nil, nil, fmt.Errorf("regist error: %s/%s", result.State.Code, result.State.Msg)
 	}
+
+	var singlePiece *scheduler.SinglePiece
+	switch result.SizeScope {
+	case base.SizeScope_SMALL:
+		logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
+		if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
+			singlePiece = piece.SinglePiece
+		}
+	case base.SizeScope_TINY:
+		logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
+		if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
+			return nil, &TinyData{
+				TaskId:  result.TaskId,
+				PeerID:  request.PeerId,
+				Content: piece.PieceContent,
+			}, nil
+		}
+		return nil, nil, errors.Errorf("scheduler return tiny piece but can not parse piece content")
+	case base.SizeScope_NORMAL:
+		logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
+	}
+
 	schedPieceResultCh, schedPeerPacketCh, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 	return &streamPeerTask{
-		base: filePeerTask{
+		peerTask: peerTask{
 			ctx:             ctx,
 			host:            host,
 			backSource:      result.State.Code == dfcodes.SchedNeedBackSource,
@@ -65,6 +87,7 @@ func NewStreamPeerTask(ctx context.Context,
 			peerPacketReady: make(chan bool),
 			peerId:          request.PeerId,
 			taskId:          result.TaskId,
+			singlePiece:     singlePiece,
 			done:            make(chan struct{}),
 			once:            sync.Once{},
 			readyPieces:     NewBitmap(),
@@ -80,43 +103,7 @@ func NewStreamPeerTask(ctx context.Context,
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
 		successPieceCh: make(chan int32, 4),
-	}, nil
-}
-
-func (s *streamPeerTask) GetPeerID() string {
-	return s.base.GetPeerID()
-}
-
-func (s *streamPeerTask) GetTaskID() string {
-	return s.base.GetTaskID()
-}
-
-func (s *streamPeerTask) GetContentLength() int64 {
-	return s.base.GetContentLength()
-}
-
-func (s *streamPeerTask) SetCallback(callback PeerTaskCallback) {
-	s.base.SetCallback(callback)
-}
-
-func (s *streamPeerTask) AddTraffic(n int64) {
-	s.base.AddTraffic(n)
-}
-
-func (s *streamPeerTask) GetTraffic() int64 {
-	return s.base.GetTraffic()
-}
-
-func (s *streamPeerTask) GetTotalPieces() int32 {
-	return s.base.totalPiece
-}
-
-func (s *streamPeerTask) GetContext() context.Context {
-	return s.base.ctx
-}
-
-func (s *streamPeerTask) Log() *logger.SugaredLoggerOnWith {
-	return s.base.SugaredLoggerOnWith
+	}, nil, nil
 }
 
 func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
@@ -128,34 +115,34 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 	}()
 	// retry failed piece
 	if !pieceResult.Success {
-		s.base.pieceResultCh <- pieceResult
-		s.base.failedPieceCh <- pieceResult.PieceNum
+		s.pieceResultCh <- pieceResult
+		s.failedPieceCh <- pieceResult.PieceNum
 		return nil
 	}
 
-	s.base.lock.Lock()
-	if s.base.readyPieces.IsSet(pieceResult.PieceNum) {
-		s.base.lock.Unlock()
-		s.base.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
+	s.lock.Lock()
+	if s.readyPieces.IsSet(pieceResult.PieceNum) {
+		s.lock.Unlock()
+		s.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
 		return nil
 	}
 	// mark piece processed
-	s.base.readyPieces.Set(pieceResult.PieceNum)
-	atomic.AddInt64(&s.base.completedLength, int64(piece.RangeSize))
-	s.base.lock.Unlock()
+	s.readyPieces.Set(pieceResult.PieceNum)
+	atomic.AddInt64(&s.completedLength, int64(piece.RangeSize))
+	s.lock.Unlock()
 
-	pieceResult.FinishedCount = s.base.readyPieces.Settled()
-	s.base.pieceResultCh <- pieceResult
+	pieceResult.FinishedCount = s.readyPieces.Settled()
+	s.pieceResultCh <- pieceResult
 	s.successPieceCh <- piece.PieceNum
-	s.base.Debugf("success piece %d sent", piece.PieceNum)
+	s.Debugf("success piece %d sent", piece.PieceNum)
 	select {
-	case <-s.base.ctx.Done():
-		s.base.Warnf("peer task context done due to %s", s.base.ctx.Err())
-		return s.base.ctx.Err()
+	case <-s.ctx.Done():
+		s.Warnf("peer task context done due to %s", s.ctx.Err())
+		return s.ctx.Err()
 	default:
 	}
 
-	if !s.base.isCompleted() {
+	if !s.isCompleted() {
 		return nil
 	}
 
@@ -163,38 +150,37 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 }
 
 func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]string, error) {
-	s.base.ctx, s.base.cancel = context.WithCancel(ctx)
-	if s.base.backSource {
+	s.ctx, s.cancel = context.WithCancel(ctx)
+	if s.backSource {
 		go func() {
-			s.base.contentLength = -1
-			_ = s.base.callback.Init(s)
-			err := s.base.pieceManager.DownloadSource(ctx, s, s.base.request)
+			s.contentLength = -1
+			_ = s.callback.Init(s)
+			err := s.pieceManager.DownloadSource(ctx, s, s.request)
 			if err != nil {
-				s.base.Errorf("download from source error: %s", err)
+				s.Errorf("download from source error: %s", err)
 				s.cleanUnfinished()
 				return
 			}
-			s.base.Debugf("download from source ok")
+			s.Debugf("download from source ok")
 			_ = s.finish()
 		}()
 	} else {
-		go s.base.receivePeerPacket()
-		go s.base.pullPiecesFromPeers(s, s.cleanUnfinished)
+		s.pullPieces(s, s.cleanUnfinished)
 	}
 
 	// wait first piece to get content length and attribute (eg, response header for http/https)
 	var firstPiece int32
 	select {
-	case <-s.base.ctx.Done():
-		err := errors.Errorf("ctx.PeerTaskDone due to: %s", s.base.ctx.Err())
-		s.base.Errorf("%s", err)
+	case <-s.ctx.Done():
+		err := errors.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
+		s.Errorf("%s", err)
 		return nil, nil, err
-	case <-s.base.done:
+	case <-s.done:
 		err := errors.New("stream peer task early done")
 		return nil, nil, err
 	case first := <-s.successPieceCh:
 		//if !ok {
-		//	s.base.Warnf("successPieceCh closed unexpect")
+		//	s.Warnf("successPieceCh closed unexpect")
 		//	return nil, nil, errors.New("early done")
 		//}
 		firstPiece = first
@@ -204,14 +190,14 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	attr := map[string]string{}
 	var reader io.Reader = pr
 	var writer io.Writer = pw
-	if s.base.contentLength != -1 {
-		attr[headers.ContentLength] = fmt.Sprintf("%d", s.base.contentLength)
+	if s.contentLength != -1 {
+		attr[headers.ContentLength] = fmt.Sprintf("%d", s.contentLength)
 	} else {
 		attr[headers.TransferEncoding] = "chunked"
 	}
 
 	go func(first int32) {
-		defer s.base.cancel()
+		defer s.cancel()
 		var (
 			desired int32
 			cur     int32
@@ -229,11 +215,11 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 					delete(cache, desired)
 					wrote, err = s.writeTo(writer, desired)
 					if err != nil {
-						s.base.Errorf("write to pipe error: %s", err)
+						s.Errorf("write to pipe error: %s", err)
 						_ = pw.CloseWithError(err)
 						return
 					}
-					s.base.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
+					s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
 					desired++
 					cached := cache[desired]
 					if !cached {
@@ -244,38 +230,38 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 				// not desired piece, cache it
 				cache[cur] = true
 				if cur < desired {
-					s.base.Warnf("piece number should be equal or greater than %d, received piece number: %d",
+					s.Warnf("piece number should be equal or greater than %d, received piece number: %d",
 						desired, cur)
 				}
 			}
 
 			select {
-			case <-s.base.ctx.Done():
-				s.base.Errorf("ctx.PeerTaskDone due to: %s", s.base.ctx.Err())
-				if err := pw.CloseWithError(s.base.ctx.Err()); err != nil {
-					s.base.Errorf("CloseWithError failed: %s", err)
+			case <-s.ctx.Done():
+				s.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
+				if err := pw.CloseWithError(s.ctx.Err()); err != nil {
+					s.Errorf("CloseWithError failed: %s", err)
 				}
 				return
-			case <-s.base.done:
+			case <-s.done:
 				for {
 					// all data is wrote to local storage, and all data is wrote to pipe write
-					if s.base.readyPieces.Settled() == desired {
+					if s.readyPieces.Settled() == desired {
 						pw.Close()
 						return
 					}
 					wrote, err = s.writeTo(pw, desired)
 					if err != nil {
-						s.base.Errorf("write to pipe error: %s", err)
+						s.Errorf("write to pipe error: %s", err)
 						_ = pw.CloseWithError(err)
 						return
 					}
-					s.base.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
+					s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
 					desired++
 				}
 			case cur = <-s.successPieceCh:
 				continue
 				//if !ok {
-				//	s.base.Warnf("successPieceCh closed")
+				//	s.Warnf("successPieceCh closed")
 				//	continue
 				//}
 			}
@@ -287,14 +273,14 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 
 func (s *streamPeerTask) finish() error {
 	// send last progress
-	s.base.once.Do(func() {
+	s.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.readyPieces.Settled())
-		s.base.Debugf("end piece result sent")
-		close(s.base.done)
+		s.pieceResultCh <- scheduler.NewEndPieceResult(s.taskId, s.peerId, s.readyPieces.Settled())
+		s.Debugf("end piece result sent")
+		close(s.done)
 		//close(s.successPieceCh)
-		if err := s.base.callback.Done(s); err != nil {
-			s.base.Errorf("done callback error: %s", err)
+		if err := s.callback.Done(s); err != nil {
+			s.Errorf("done callback error: %s", err)
 		}
 	})
 	return nil
@@ -302,31 +288,31 @@ func (s *streamPeerTask) finish() error {
 
 func (s *streamPeerTask) cleanUnfinished() {
 	// send last progress
-	s.base.once.Do(func() {
+	s.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.base.pieceResultCh <- scheduler.NewEndPieceResult(s.base.taskId, s.base.peerId, s.base.readyPieces.Settled())
-		s.base.Debugf("end piece result sent")
-		close(s.base.done)
+		s.pieceResultCh <- scheduler.NewEndPieceResult(s.taskId, s.peerId, s.readyPieces.Settled())
+		s.Debugf("end piece result sent")
+		close(s.done)
 		//close(s.successPieceCh)
-		if err := s.base.callback.Fail(s, s.base.failedCode, s.base.failedReason); err != nil {
-			s.base.Errorf("fail callback error: %s", err)
+		if err := s.callback.Fail(s, s.failedCode, s.failedReason); err != nil {
+			s.Errorf("fail callback error: %s", err)
 		}
 	})
 }
 
 func (s *streamPeerTask) SetContentLength(i int64) error {
-	s.base.contentLength = i
-	if !s.base.isCompleted() {
+	s.contentLength = i
+	if !s.isCompleted() {
 		return nil
 	}
 	return s.finish()
 }
 
 func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
-	pr, pc, err := s.base.pieceManager.ReadPiece(s.base.ctx, &storage.ReadPieceRequest{
+	pr, pc, err := s.pieceManager.ReadPiece(s.ctx, &storage.ReadPieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
-			PeerID: s.base.peerId,
-			TaskID: s.base.taskId,
+			PeerID: s.peerId,
+			TaskID: s.taskId,
 		},
 		PieceMetaData: storage.PieceMetaData{
 			Num: pieceNum,

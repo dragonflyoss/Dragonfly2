@@ -52,7 +52,7 @@ const (
 type Connection struct {
 	name           string
 	lock           sync.Mutex
-	rwMutex        *synclock.KeyLocker
+	rwMutex        *synclock.LockerPool
 	opts           []grpc.DialOption
 	key2NodeMap    sync.Map           // key -> node(many to one)
 	node2ClientMap sync.Map           // node -> clientConn(one to one)
@@ -76,7 +76,7 @@ func NewConnection(name string, addrs []dfnet.NetAddr, opts ...grpc.DialOption) 
 	}
 	conn := &Connection{
 		name:           name,
-		rwMutex:        synclock.NewKeyLocker(),
+		rwMutex:        synclock.NewLockerPool(),
 		opts:           opts,
 		hashRing:       hashring.New(addresses),
 		accessNodeMap:  syncmap.NewSyncMap(),

@@ -29,27 +29,7 @@ type CDNMgr interface {
 	// TriggerCDN will trigger CDN to download the file from sourceUrl.
 	TriggerCDN(ctx context.Context, taskInfo *types.SeedTask) (*types.SeedTask, error)
 
-	// GetHTTPPath returns the http download path of taskID.
-	GetHTTPPath(ctx context.Context, taskInfo *types.SeedTask) (string, error)
-
-	// GetGCTaskIDs returns the taskIDs that should exec GC operations as a string slice.
-	// It should return nil when the free disk of cdn storage is lager than config.YoungGCThreshold.
-	// It should return all taskIDs that are not running when the free disk of cdn storage is less than config.FullGCThreshold.
-	GetGCTaskIDs(ctx context.Context, taskMgr SeedTaskMgr) ([]string, error)
-
-	// CheckFile checks the file whether exists.
-	CheckFileExist(ctx context.Context, taskID string) bool
-
 	// Delete the cdn meta with specified taskID.
 	// The file on the disk will be deleted when the force is true.
 	Delete(ctx context.Context, taskID string, force bool) error
-
-	// InitSeedProgress
-	InitSeedProgress(ctx context.Context, taskID string) error
-
-	// WatchSeedProgress
-	WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error)
-
-	// GetPieces
-	GetPieces(ctx context.Context, taskID string) ([]*types.SeedPiece, error)
 }

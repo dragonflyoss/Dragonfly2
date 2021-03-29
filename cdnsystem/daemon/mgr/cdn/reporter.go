@@ -17,28 +17,39 @@
 package cdn
 
 import (
+	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type reporter struct {
-	publisher mgr.SeedProgressMgr
+	progress   mgr.SeedProgressMgr
+	cacheStore storage.Manager
 }
 
-func newReporter(publisher mgr.SeedProgressMgr) *reporter {
+const (
+	CacheReport      = "cache"
+	DownloaderReport = "download"
+)
+
+func newReporter(publisher mgr.SeedProgressMgr, cacheStore storage.Manager) *reporter {
 	return &reporter{
-		publisher: publisher,
+		progress:   publisher,
+		cacheStore: cacheStore,
 	}
 }
 
 // report cache result
-func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error {
+func (re *reporter) reportCache(ctx context.Context, taskId string, detectResult *cacheResult) error {
 	// report cache pieces status
 	if detectResult != nil && detectResult.pieceMetaRecords != nil {
 		for _, record := range detectResult.pieceMetaRecords {
-			if err := re.publisher.PublishPiece(taskID, convertPieceMeta2SeedPiece(record)); err != nil {
-				return errors.Wrapf(err, "failed to publish pieceMetaRecord:%v, seedPiece:%v", record, convertPieceMeta2SeedPiece(record))
+			if err := re.reportPieceMetaRecord(ctx, taskId, record, CacheReport); err != nil {
+				return errors.Wrapf(err, "failed to publish pieceMetaRecord:%v, seedPiece:%v", record,
+					convertPieceMeta2SeedPiece(record))
 			}
 		}
 	}
@@ -46,12 +57,12 @@ func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error 
 }
 
 // reportPieceMetaRecord
-func (re *reporter) reportPieceMetaRecord(taskID string, record *pieceMetaRecord) error {
+func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskId string, record *storage.PieceMetaRecord,
+	from string) error {
 	// report cache pieces status
-	return re.publisher.PublishPiece(taskID, convertPieceMeta2SeedPiece(record))
-}
-
-// reportTask
-func (re *reporter) reportTask(taskID string, task *types.SeedTask, msg string) error {
-	return re.publisher.PublishTask(taskID, convertTaskInfo2SeedPiece(task, msg))
+	logger.DownloaderLogger.Info(taskId,
+		zap.Int32("pieceNum", record.PieceNum),
+		zap.String("md5", record.Md5),
+		zap.String("from", from))
+	return re.progress.PublishPiece(ctx, taskId, convertPieceMeta2SeedPiece(record))
 }

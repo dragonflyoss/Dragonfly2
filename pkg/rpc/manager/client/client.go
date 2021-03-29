@@ -33,9 +33,6 @@ import (
 
 // see manager.ManagerClient
 type ManagerClient interface {
-	AddConfig(ctx context.Context, req *manager.AddConfigRequest, opts ...grpc.CallOption) (rep *manager.AddConfigResponse, err error)
-	DeleteConfig(ctx context.Context, req *manager.DeleteConfigRequest, opts ...grpc.CallOption) (rep *manager.DeleteConfigResponse, err error)
-	UpdateConfig(ctx context.Context, req *manager.UpdateConfigRequest, opts ...grpc.CallOption) (rep *manager.UpdateConfigResponse, err error)
 	GetConfig(ctx context.Context, req *manager.GetConfigRequest, opts ...grpc.CallOption) (rep *manager.GetConfigResponse, err error)
 	ListConfigs(ctx context.Context, req *manager.ListConfigsRequest, opts ...grpc.CallOption) (rep *manager.ListConfigsResponse, err error)
 

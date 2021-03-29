@@ -17,26 +17,22 @@
 package config
 
 import (
-	"fmt"
-	"io/ioutil"
-	"path/filepath"
-	"time"
-
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-	"github.com/mitchellh/go-homedir"
+	"fmt"
 	"gopkg.in/yaml.v3"
+	"io/ioutil"
+	"time"
 )
 
-// NewConfig creates an instant with default values.
-func NewConfig() *Config {
+// NewDefaultConfig creates an instant with default values.
+func NewDefaultConfig() *Config {
 	return &Config{
-		BaseProperties: NewBaseProperties(),
-		Plugins:        nil,
+		BaseProperties: NewDefaultBaseProperties(),
+		Plugins:        NewDefaultPlugins(),
 	}
 }
 
-// Config contains all configuration of cdnNode.
+// Config contains all configuration of cdn node.
 type Config struct {
 	*BaseProperties `yaml:"base"`
 	Plugins         map[PluginType][]*PluginProperties `yaml:"plugins"`
@@ -63,38 +59,59 @@ func (c *Config) String() string {
 	return ""
 }
 
-// NewBaseProperties creates an instant with default values.
-func NewBaseProperties() *BaseProperties {
-	userHome, err := homedir.Dir()
-	var home string
-	home = filepath.Join(string(filepath.Separator), userHome, "cdn-system")
-	if err != nil {
-		home = filepath.Join(string(filepath.Separator), "home", "admin", "cdn-system")
+// NewDefaultPlugins creates a Plugins instant with default values.
+func NewDefaultPlugins() map[PluginType][]*PluginProperties {
+	return map[PluginType][]*PluginProperties{
+		StoragePlugin: {
+			{
+				Name:   "disk",
+				Enable: true,
+				Config: map[string]interface{}{
+					"baseDir": "/tmp/cdnsystem",
+					"gcConfig": map[string]interface{}{
+						"youngGCThreshold":  "100G",
+						"fullGCThreshold":   "5G",
+						"cleanRatio":        1,
+						"intervalThreshold": "2h",
+					},
+				},
+			}, {
+				Name:   "memory",
+				Enable: true,
+				Config: map[string]interface{}{
+					"baseDir": "/tmp/memory/dragonfly",
+					"gcConfig": map[string]interface{}{
+						"youngGCThreshold":  "100G",
+						"fullGCThreshold":   "5G",
+						"cleanRatio":        3,
+						"intervalThreshold": "2h",
+					},
+				},
+			},
+		},
 	}
+}
+
+// NewDefaultBaseProperties creates an base properties instant with default values.
+func NewDefaultBaseProperties() *BaseProperties {
 	return &BaseProperties{
 		ListenPort:              DefaultListenPort,
 		DownloadPort:            DefaultDownloadPort,
-		HomeDir:                 home,
-		DownloadPath:            filepath.Join(home, RepoHome, DownloadHome),
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
 		MaxBandwidth:            DefaultMaxBandwidth,
-		EnableProfiler:          false,
+		EnableProfiler:          DefaultEnableProfiler,
 		FailAccessInterval:      DefaultFailAccessInterval,
 		GCInitialDelay:          DefaultGCInitialDelay,
 		GCMetaInterval:          DefaultGCMetaInterval,
-		GCDiskInterval:          DefaultGCDiskInterval,
-		YoungGCThreshold:        DefaultYoungGCThreshold,
-		FullGCThreshold:         DefaultFullGCThreshold,
-		IntervalThreshold:       DefaultIntervalThreshold,
+		GCStorageInterval:       DefaultGCStorageInterval,
 		TaskExpireTime:          DefaultTaskExpireTime,
-		CleanRatio:              DefaultCleanRatio,
+		StoragePattern:          DefaultStoragePattern,
 		Console:                 DefaultConsole,
 	}
 }
 
 // BaseProperties contains all basic properties of cdn system.
 type BaseProperties struct {
-	StorageDriver string `yaml:"storageDriver"`
 
 	// ListenPort is the port cdn server listens on.
 	// default: 8002
@@ -103,13 +120,6 @@ type BaseProperties struct {
 	// DownloadPort is the port for download files from cdn.
 	// default: 8001
 	DownloadPort int `yaml:"downloadPort"`
-
-	// HomeDir is working directory of cdn.
-	// default: /home/admin/cdn
-	HomeDir string `yaml:"homeDir"`
-
-	// DownloadPath specifies the path where to store downloaded files from source address.
-	DownloadPath string `yaml:"downloadPath"`
 
 	// SystemReservedBandwidth is the network bandwidth reserved for system software.
 	// default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
@@ -133,7 +143,6 @@ type BaseProperties struct {
 	FailAccessInterval time.Duration `yaml:"failAccessInterval"`
 
 	// gc related
-
 	// GCInitialDelay is the delay time from the start to the first GC execution.
 	// default: 6s
 	GCInitialDelay time.Duration `yaml:"gcInitialDelay"`
@@ -142,39 +151,17 @@ type BaseProperties struct {
 	// default: 2min
 	GCMetaInterval time.Duration `yaml:"gcMetaInterval"`
 
+	// GCStorageInterval is the interval time to execute GC storage.
+	// default: 15s
+	GCStorageInterval time.Duration `yaml:"gcStorageInterval"`
+
 	// TaskExpireTime when a task is not accessed within the taskExpireTime,
 	// and it will be treated to be expired.
 	// default: 3min
 	TaskExpireTime time.Duration `yaml:"taskExpireTime"`
 
-	// GCDiskInterval is the interval time to execute GC disk.
-	// default: 15s
-	GCDiskInterval time.Duration `yaml:"gcDiskInterval"`
-
-	// YoungGCThreshold if the available disk space is more than YoungGCThreshold
-	// and there is no need to GC disk.
-	//
-	// default: 100GB
-	YoungGCThreshold fsize.Size `yaml:"youngGCThreshold"`
-
-	// FullGCThreshold if the available disk space is less than FullGCThreshold
-	// and the cdn system should gc all task files which are not being used.
-	//
-	// default: 5GB
-	FullGCThreshold fsize.Size `yaml:"fullGCThreshold"`
-
-	// MaxStorageThreshold if the currently used disk space is greater than MaxStorageThreshold, clean disk up
-	MaxStorageThreshold fsize.Size
-
-	// IntervalThreshold is the threshold of the interval at which the task file is accessed.
-	// default: 2h
-	IntervalThreshold time.Duration `yaml:"IntervalThreshold"`
-
-	// CleanRatio is the ratio to clean the disk and it is based on 10.
-	// It means the value of CleanRatio should be [1-10].
-	//
-	// default: 1
-	CleanRatio int `yaml:"cleanRatio"`
+	// disk/hybrid/memory
+	StoragePattern string `yaml:"storagePattern"`
 
 	// Console shows log on console
 	Console bool `yaml:"console"`

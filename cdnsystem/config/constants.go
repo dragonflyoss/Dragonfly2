@@ -18,17 +18,7 @@ package config
 
 import (
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-
 	"time"
-)
-
-const (
-	// RepoHome is the directory where store data
-	RepoHome = "repo"
-	// DownloadHome is the parent directory where the downloaded files are stored
-	// which is a relative path.
-	DownloadHome = "download"
 )
 
 const (
@@ -36,13 +26,11 @@ const (
 )
 
 const (
-	// CDNWriterRoutineLimit 4
-	CDNWriterRoutineLimit = 4
+	DefaultEnableProfiler = false
 )
 
 const (
-	// SubsystemCdnNode represents metrics from cdn system.
-	SubsystemCdnSystem = "cdnSystem"
+	CDNWriterRoutineLimit = 4
 )
 
 const (
@@ -55,6 +43,8 @@ const (
 const (
 	// DefaultCdnConfigFilePath the default cdn config path.
 	DefaultCdnConfigFilePath = "/etc/dragonfly/cdn.yml"
+
+	DefaultStoragePattern = "disk"
 )
 
 const (
@@ -78,19 +68,11 @@ const (
 	// DefaultGCMetaInterval is the interval time to execute the GC meta.
 	DefaultGCMetaInterval = 2 * time.Minute
 
+	DefaultGCStorageInterval = 15 * time.Second
+
 	// DefaultTaskExpireTime when a task is not accessed within the taskExpireTime,
 	// and it will be treated to be expired.
 	DefaultTaskExpireTime = 3 * time.Minute
-
-	DefaultYoungGCThreshold = 100 * fsize.GB
-
-	DefaultFullGCThreshold = 5 * fsize.GB
-
-	DefaultIntervalThreshold = 2 * time.Hour
-
-	DefaultGCDiskInterval = 15 * time.Second
-
-	DefaultCleanRatio = 1
 )
 
 const (
@@ -99,5 +81,5 @@ const (
 	DefaultSystemReservedBandwidth = 20 * ratelimiter.MB
 	// DefaultMaxBandwidth is the default network bandwidth that cdn can use.
 	// unit: MB/s
-	DefaultMaxBandwidth = 200 * ratelimiter.MB
+	DefaultMaxBandwidth = 1 * ratelimiter.GB
 )

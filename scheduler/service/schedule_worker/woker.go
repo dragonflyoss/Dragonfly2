@@ -350,11 +350,11 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 			w.sendJobLater(peerTask)
 		}
 		return true
-	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskStatusError:
+	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail:
 		peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
 		if peerTask != nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
-			w.sendJobLater(peerTask)
+			w.sendJob(peerTask)
 			task := peerTask.Task
 			if task != nil {
 				mgr.GetCDNManager().TriggerTask(task)

@@ -52,7 +52,7 @@ const (
 	DefaultMinRate        = 64 * ratelimiter.KB
 )
 
-/* http headers */
+/* http header */
 const (
 	StrRange         = "Range"
 	StrContentLength = "Content-Length"

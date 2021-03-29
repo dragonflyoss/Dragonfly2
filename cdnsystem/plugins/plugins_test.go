@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-
 package plugins
 
 import (
-	"fmt"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"fmt"
 	"github.com/stretchr/testify/suite"
 	"reflect"
 	"testing"
 )
 
-func Test(t *testing.T) {
+func TestPluginsTestSuite(t *testing.T) {
 	suite.Run(t, new(PluginsTestSuite))
 }
-
 
 type PluginsTestSuite struct {
 	suite.Suite
@@ -81,7 +79,7 @@ func (s *PluginsTestSuite) TestInitialize() {
 		errMsg := "build error"
 		name := "test"
 		var createBuilder = func(err bool) Builder {
-			return func(conf string) (plugin Plugin, e error) {
+			return func(conf interface{}) (plugin Plugin, e error) {
 				if err {
 					return nil, fmt.Errorf(errMsg)
 				}
@@ -90,7 +88,7 @@ func (s *PluginsTestSuite) TestInitialize() {
 		}
 		var createConf = func(enabled bool) *config.Config {
 			plugins := make(map[config.PluginType][]*config.PluginProperties)
-			plugins[pt] = []*config.PluginProperties{{Name: name, Enabled: enabled}}
+			plugins[pt] = []*config.PluginProperties{{Name: name, Enable: enabled}}
 			return &config.Config{Plugins: plugins}
 		}
 		testCase(createConf(false), createBuilder(false),
@@ -109,7 +107,7 @@ func (s *PluginsTestSuite) TestInitialize() {
 }
 
 func (s *PluginsTestSuite) TestManagerIml_Builder() {
-	var builder Builder = func(conf string) (plugin Plugin, e error) {
+	var builder Builder = func(conf interface{}) (plugin Plugin, e error) {
 		return nil, nil
 	}
 	manager := NewManager()

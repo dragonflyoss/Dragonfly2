@@ -24,11 +24,12 @@ import (
 )
 
 var (
-	CoreLogger     *zap.SugaredLogger
-	GrpcLogger     *zap.SugaredLogger
-	GcLogger       *zap.SugaredLogger
-	StatPeerLogger *zap.Logger
-	StatSeedLogger *zap.Logger
+	CoreLogger       *zap.SugaredLogger
+	GrpcLogger       *zap.SugaredLogger
+	GcLogger         *zap.SugaredLogger
+	StatPeerLogger   *zap.Logger
+	StatSeedLogger   *zap.Logger
+	DownloaderLogger *zap.Logger
 )
 
 func init() {
@@ -42,6 +43,7 @@ func init() {
 		SetGcLogger(sugar)
 		SetStatPeerLogger(log)
 		SetStatSeedLogger(log)
+		SetDownloadLogger(log)
 	}
 }
 
@@ -61,6 +63,10 @@ func SetStatSeedLogger(log *zap.Logger) {
 	StatSeedLogger = log
 }
 
+func SetDownloadLogger(log *zap.Logger) {
+	DownloaderLogger = log
+}
+
 func SetGrpcLogger(log *zap.SugaredLogger) {
 	GrpcLogger = log
 	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
@@ -78,7 +84,7 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 
 func WithTaskID(taskID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskID", taskID},
+		withArgs: []interface{}{"taskId", taskID},
 	}
 }
 

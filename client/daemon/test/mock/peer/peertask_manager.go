@@ -8,11 +8,14 @@ import (
 	context "context"
 	io "io"
 	reflect "reflect"
+	time "time"
+
+	gomock "github.com/golang/mock/gomock"
 
 	peer "d7y.io/dragonfly/v2/client/daemon/peer"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	gomock "github.com/golang/mock/gomock"
 )
 
 // MockPeerTaskManager is a mock of PeerTaskManager interface.
@@ -38,13 +41,28 @@ func (m *MockPeerTaskManager) EXPECT() *MockPeerTaskManagerMockRecorder {
 	return m.recorder
 }
 
+// IsPeerTaskRunning mocks base method.
+func (m *MockPeerTaskManager) IsPeerTaskRunning(pid string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsPeerTaskRunning", pid)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsPeerTaskRunning indicates an expected call of IsPeerTaskRunning.
+func (mr *MockPeerTaskManagerMockRecorder) IsPeerTaskRunning(pid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPeerTaskRunning", reflect.TypeOf((*MockPeerTaskManager)(nil).IsPeerTaskRunning), pid)
+}
+
 // StartFilePeerTask mocks base method.
-func (m *MockPeerTaskManager) StartFilePeerTask(ctx context.Context, req *peer.FilePeerTaskRequest) (chan *peer.PeerTaskProgress, error) {
+func (m *MockPeerTaskManager) StartFilePeerTask(ctx context.Context, req *peer.FilePeerTaskRequest) (chan *peer.PeerTaskProgress, *peer.TinyData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartFilePeerTask", ctx, req)
 	ret0, _ := ret[0].(chan *peer.PeerTaskProgress)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(*peer.TinyData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // StartFilePeerTask indicates an expected call of StartFilePeerTask.
@@ -118,6 +136,20 @@ func (mr *MockPeerTaskMockRecorder) AddTraffic(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTraffic", reflect.TypeOf((*MockPeerTask)(nil).AddTraffic), arg0)
 }
 
+// Context mocks base method.
+func (m *MockPeerTask) Context() context.Context {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Context")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// Context indicates an expected call of Context.
+func (mr *MockPeerTaskMockRecorder) Context() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockPeerTask)(nil).Context))
+}
+
 // GetContentLength mocks base method.
 func (m *MockPeerTask) GetContentLength() int64 {
 	m.ctrl.T.Helper()
@@ -160,6 +192,20 @@ func (mr *MockPeerTaskMockRecorder) GetTaskID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTaskID", reflect.TypeOf((*MockPeerTask)(nil).GetTaskID))
 }
 
+// GetTotalPieces mocks base method.
+func (m *MockPeerTask) GetTotalPieces() int32 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTotalPieces")
+	ret0, _ := ret[0].(int32)
+	return ret0
+}
+
+// GetTotalPieces indicates an expected call of GetTotalPieces.
+func (mr *MockPeerTaskMockRecorder) GetTotalPieces() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalPieces", reflect.TypeOf((*MockPeerTask)(nil).GetTotalPieces))
+}
+
 // GetTraffic mocks base method.
 func (m *MockPeerTask) GetTraffic() int64 {
 	m.ctrl.T.Helper()
@@ -172,6 +218,20 @@ func (m *MockPeerTask) GetTraffic() int64 {
 func (mr *MockPeerTaskMockRecorder) GetTraffic() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTraffic", reflect.TypeOf((*MockPeerTask)(nil).GetTraffic))
+}
+
+// Log mocks base method.
+func (m *MockPeerTask) Log() *logger.SugaredLoggerOnWith {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Log")
+	ret0, _ := ret[0].(*logger.SugaredLoggerOnWith)
+	return ret0
+}
+
+// Log indicates an expected call of Log.
+func (mr *MockPeerTaskMockRecorder) Log() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockPeerTask)(nil).Log))
 }
 
 // ReportPieceResult mocks base method.
@@ -240,7 +300,7 @@ func (m *MockPeerTaskCallback) EXPECT() *MockPeerTaskCallbackMockRecorder {
 // Done mocks base method.
 func (m *MockPeerTaskCallback) Done(pt peer.PeerTask) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PeerTaskDone", pt)
+	ret := m.ctrl.Call(m, "Done", pt)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
@@ -248,21 +308,35 @@ func (m *MockPeerTaskCallback) Done(pt peer.PeerTask) error {
 // Done indicates an expected call of Done.
 func (mr *MockPeerTaskCallbackMockRecorder) Done(pt interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerTaskDone", reflect.TypeOf((*MockPeerTaskCallback)(nil).Done), pt)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Done", reflect.TypeOf((*MockPeerTaskCallback)(nil).Done), pt)
 }
 
 // Fail mocks base method.
-func (m *MockPeerTaskCallback) Fail(pt peer.PeerTask, reason string) error {
+func (m *MockPeerTaskCallback) Fail(pt peer.PeerTask, code base.Code, reason string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Fail", pt, reason)
+	ret := m.ctrl.Call(m, "Fail", pt, code, reason)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Fail indicates an expected call of Fail.
-func (mr *MockPeerTaskCallbackMockRecorder) Fail(pt, reason interface{}) *gomock.Call {
+func (mr *MockPeerTaskCallbackMockRecorder) Fail(pt, code, reason interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Fail", reflect.TypeOf((*MockPeerTaskCallback)(nil).Fail), pt, reason)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Fail", reflect.TypeOf((*MockPeerTaskCallback)(nil).Fail), pt, code, reason)
+}
+
+// GetStartTime mocks base method.
+func (m *MockPeerTaskCallback) GetStartTime() time.Time {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStartTime")
+	ret0, _ := ret[0].(time.Time)
+	return ret0
+}
+
+// GetStartTime indicates an expected call of GetStartTime.
+func (mr *MockPeerTaskCallbackMockRecorder) GetStartTime() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStartTime", reflect.TypeOf((*MockPeerTaskCallback)(nil).GetStartTime))
 }
 
 // Init mocks base method.
@@ -277,4 +351,18 @@ func (m *MockPeerTaskCallback) Init(pt peer.PeerTask) error {
 func (mr *MockPeerTaskCallbackMockRecorder) Init(pt interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockPeerTaskCallback)(nil).Init), pt)
+}
+
+// Update mocks base method.
+func (m *MockPeerTaskCallback) Update(pt peer.PeerTask) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", pt)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockPeerTaskCallbackMockRecorder) Update(pt interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockPeerTaskCallback)(nil).Update), pt)
 }

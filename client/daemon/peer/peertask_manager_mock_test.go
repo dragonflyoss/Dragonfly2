@@ -206,15 +206,15 @@ func (mr *MockPeerTaskMockRecorder) GetTraffic() *gomock.Call {
 }
 
 // GetContext mocks base method
-func (m *MockPeerTask) GetContext() context.Context {
-	ret := m.ctrl.Call(m, "GetContext")
+func (m *MockPeerTask) Context() context.Context {
+	ret := m.ctrl.Call(m, "Context")
 	ret0, _ := ret[0].(context.Context)
 	return ret0
 }
 
 // GetContext indicates an expected call of GetContext
 func (mr *MockPeerTaskMockRecorder) GetContext() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContext", reflect.TypeOf((*MockPeerTask)(nil).GetContext))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockPeerTask)(nil).Context))
 }
 
 // Log mocks base method

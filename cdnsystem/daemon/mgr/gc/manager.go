@@ -18,11 +18,13 @@ package gc
 
 import (
 	"context"
-	"time"
-
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/synclock"
+	"sync"
+	"time"
 )
 
 func init() {
@@ -31,19 +33,64 @@ func init() {
 	var _ mgr.GCMgr = manager
 }
 
+type Executor interface {
+	GC(ctx context.Context) error
+}
+
+type ExecutorWrapper struct {
+	GCInitialDelay time.Duration
+	GCInterval     time.Duration
+	Instance       Executor
+}
+
+var (
+	gcExecutorWrappers = make(map[string]*ExecutorWrapper)
+)
+
+func Register(name string, gcWrapper *ExecutorWrapper) {
+	gcExecutorWrappers[name] = gcWrapper
+}
+
 // Manager is an implementation of the interface of GCMgr.
 type Manager struct {
 	cfg     *config.Config
 	taskMgr mgr.SeedTaskMgr
 	cdnMgr  mgr.CDNMgr
+	storage storage.Manager
+}
+
+func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) {
+	logger.GcLogger.Infof("gc task: start to deal with task: %s", taskID)
+
+	synclock.Lock(taskID, false)
+	defer synclock.UnLock(taskID, false)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func(wg *sync.WaitGroup) {
+		gcm.gcCDNByTaskID(ctx, taskID, full)
+		wg.Done()
+	}(&wg)
+
+	// delete memory data
+	go func(wg *sync.WaitGroup) {
+		gcm.gcTaskByTaskID(ctx, taskID)
+		wg.Done()
+	}(&wg)
+
+	wg.Wait()
+	gcm.gcTask(ctx, taskID, full)
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr) (*Manager, error) {
+func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr,
+	storage storage.Manager) (*Manager, error) {
 	return &Manager{
 		cfg:     cfg,
 		taskMgr: taskMgr,
 		cdnMgr:  cdnMgr,
+		storage: storage,
 	}, nil
 }
 
@@ -51,33 +98,18 @@ func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr) 
 func (gcm *Manager) StartGC(ctx context.Context) {
 	logger.Debugf("start the gc job")
 
-	// start a goroutine to gc memory
-	go func() {
-		// delay to execute GC after gcm.initialDelay
-		time.Sleep(gcm.cfg.GCInitialDelay)
+	for name, executorWrapper := range gcExecutorWrappers {
+		// start a goroutine to gc memory
+		go func(name string, wrapper *ExecutorWrapper) {
+			logger.Debugf("start the %s gc task", name)
+			// delay to execute GC after gcm.initialDelay
+			time.Sleep(wrapper.GCInitialDelay)
 
-		// execute the GC by fixed delay
-		ticker := time.NewTicker(gcm.cfg.GCMetaInterval)
-		for range ticker.C {
-			gcm.gcTasks(ctx)
-		}
-	}()
-
-	// start a goroutine to gc the disks
-	go func() {
-		// delay to execute GC after gcm.initialDelay
-		time.Sleep(gcm.cfg.GCInitialDelay)
-
-		// execute the GC by fixed delay
-		ticker := time.NewTicker(gcm.cfg.GCDiskInterval)
-		for range ticker.C {
-			gcm.gcDisk(ctx)
-		}
-	}()
-}
-
-// GCTask is used to do the gc job with specified taskID.
-// The CDN file will be deleted when the full is true.
-func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) {
-	gcm.gcTask(ctx, taskID, full)
+			// execute the GC by fixed delay
+			ticker := time.NewTicker(wrapper.GCInterval)
+			for range ticker.C {
+				wrapper.Instance.GC(ctx)
+			}
+		}(name, executorWrapper)
+	}
 }

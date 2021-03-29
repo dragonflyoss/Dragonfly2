@@ -83,11 +83,16 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage.Option,
 		/* gc callback */
 		func(request storage.CommonTaskRequest) {
-			state, err := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
+			state, er := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
 				TaskId: request.TaskID,
 				PeerId: request.PeerID,
 			})
-			logger.Infof("leave task %s/%s state: %#v, error: %v", request.TaskID, request.PeerID, state, err)
+			if er != nil {
+				logger.Errorf("leave task %s/%s, error: %v", request.TaskID, request.PeerID, state, er)
+			} else {
+				logger.Infof("leave task %s/%s state: (%t, %d, %s)",
+					request.TaskID, request.PeerID, state.Success, state.Code, state.Msg)
+			}
 		})
 	if err != nil {
 		return nil, err
@@ -207,7 +212,7 @@ func (ph *peerHost) prepareTCPListener(opt config.ListenOption, withTLS bool) (n
 		return nil, -1, errors.New("empty cert or key for tls")
 	}
 
-	// Create the TLS ClientConfig with the CA pool and enable Client certificate validation
+	// Create the TLS ClientOption with the CA pool and enable Client certificate validation
 	if opt.Security.TLSConfig == nil {
 		opt.Security.TLSConfig = &tls.Config{}
 	}
@@ -373,7 +378,7 @@ func (ph *peerHost) Stop() {
 
 		if !ph.Option.KeepStorage {
 			logger.Infof("keep storage disabled")
-			ph.StorageManager.Clean()
+			ph.StorageManager.CleanUp()
 		}
 	})
 }

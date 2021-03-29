@@ -18,8 +18,8 @@ package gc
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 	"sync"
 	"time"
 )
@@ -30,6 +30,7 @@ const (
 	gcTasksTimeout = 2.0 * time.Second
 )
 
+// gcTasks
 func (gcm *Manager) gcTasks(ctx context.Context) {
 	var removedTaskCount int
 	startTime := time.Now()
@@ -54,6 +55,7 @@ func (gcm *Manager) gcTasks(ctx context.Context) {
 			continue
 		}
 		// gc task memory data
+		// todo 删除upload文件
 		gcm.gcTask(ctx, taskID, false)
 		removedTaskCount++
 	}
@@ -66,11 +68,12 @@ func (gcm *Manager) gcTasks(ctx context.Context) {
 	logger.GcLogger.Infof("gc tasks: success to full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
 }
 
+// gcTask
 func (gcm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
 	logger.GcLogger.Infof("gc task: start to deal with task: %s", taskID)
 
-	util.GetLock(taskID, false)
-	defer util.ReleaseLock(taskID, false)
+	synclock.Lock(taskID, false)
+	defer synclock.UnLock(taskID, false)
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -89,13 +92,14 @@ func (gcm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
 	wg.Wait()
 }
 
-
+// gcCDNByTaskID
 func (gcm *Manager) gcCDNByTaskID(ctx context.Context, taskID string, force bool) {
 	if err := gcm.cdnMgr.Delete(ctx, taskID, force); err != nil {
 		logger.GcLogger.Errorf("gc task: failed to gc cdn meta taskID(%s): %v", taskID, err)
 	}
 }
 
+// gcTaskByTaskID
 func (gcm *Manager) gcTaskByTaskID(ctx context.Context, taskID string) {
 	if err := gcm.taskMgr.Delete(ctx, taskID); err != nil {
 		logger.GcLogger.Errorf("gc task: failed to gc task info taskID(%s): %v", taskID, err)
