@@ -112,7 +112,7 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 	if peer == nil {
 		return
 	}
-	mgr.GetPeerTaskManager().Walker(func(pt *types.PeerTask) bool {
+	mgr.GetPeerTaskManager().WalkerReverse(peer.Task, 10, func(pt *types.PeerTask) bool {
 		if pt == nil || peer.Task != pt.Task {
 			return true
 		}
@@ -145,7 +145,7 @@ func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.
 		return
 	}
 	var msg []string
-	mgr.GetPeerTaskManager().Walker(func(pt *types.PeerTask) bool {
+	mgr.GetPeerTaskManager().Walker(peer.Task, 10, func(pt *types.PeerTask) bool {
 		if pt == nil {
 			return true
 		} else if peer.Task != pt.Task {
