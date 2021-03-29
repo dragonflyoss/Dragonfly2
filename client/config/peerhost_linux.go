@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	PeerHostConfigPath = "/etc/dragonfly/dfget-daemon.yml"
+	PeerHostConfigPath = "/etc/dragonfly/dfget-daemon.yaml"
 
 	peerHostWorkHome = "/etc/dragonfly/dfdaemon/"
 	peerHostDataDir  = peerHostWorkHome

@@ -13,3 +13,4 @@ GOOS=$(go env GOOS)
 GOARCH=$(go env GOARCH)
 export GOOS
 export GOARCH
+export CGO_ENABLED=0

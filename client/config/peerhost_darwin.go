@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	PeerHostConfigPath = basic.HomeDir + "/.dragonfly/dfget-daemon.yml"
+	PeerHostConfigPath = basic.HomeDir + "/.dragonfly/dfget-daemon.yaml"
 
 	peerHostWorkHome = basic.HomeDir + "/.dragonfly/dfdaemon/"
 	peerHostDataDir  = peerHostWorkHome
