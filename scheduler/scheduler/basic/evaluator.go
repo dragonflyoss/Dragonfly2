@@ -112,7 +112,7 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 	if peer == nil {
 		return
 	}
-	mgr.GetPeerTaskManager().Walker(func(pt *types.PeerTask) bool {
+	mgr.GetPeerTaskManager().Walker(peer.Task, 100, func(pt *types.PeerTask) bool {
 		if pt == nil || peer.Task != pt.Task {
 			return true
 		}
@@ -130,10 +130,13 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 			return true
 		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
 			return true
-		} else if pt.GetParent() != nil {
-			return true
+		//} else if pt.GetParent() != nil {
+		//	return true
 		}
 		list = append(list, pt)
+		if len(list) > 10 {
+			return false
+		}
 		return true
 	})
 	return
@@ -145,7 +148,7 @@ func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.
 		return
 	}
 	var msg []string
-	mgr.GetPeerTaskManager().Walker(func(pt *types.PeerTask) bool {
+	mgr.GetPeerTaskManager().WalkerReverse(peer.Task, 100, func(pt *types.PeerTask) bool {
 		if pt == nil {
 			return true
 		} else if peer.Task != pt.Task {
@@ -172,6 +175,9 @@ func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.
 			} else {
 				msg = append(msg, fmt.Sprintf("%s not finished and root is not cdn", pt.Pid))
 			}
+		}
+		if len(list) > 10 {
+			return false
 		}
 		return true
 	})

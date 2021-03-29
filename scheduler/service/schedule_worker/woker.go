@@ -108,12 +108,13 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 			return
 		}
 	}
+	defer ptMgr.UpdatePeerTask(peerTask)
 	var dstPeerTask *types.PeerTask
 	if pr.DstPid == "" {
 		if peerTask.GetParent() == nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
 			needSchedule = true
-			mgr.GetPeerTaskManager().RefreshDownloadMonitor(peerTask)
+			ptMgr.RefreshDownloadMonitor(peerTask)
 			return
 		}
 	} else {
@@ -145,7 +146,7 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 		needSchedule = true
 	}
 
-	mgr.GetPeerTaskManager().RefreshDownloadMonitor(peerTask)
+	ptMgr.RefreshDownloadMonitor(peerTask)
 
 	return
 }

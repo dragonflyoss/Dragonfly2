@@ -21,6 +21,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/pkg/structure/workqueue"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
@@ -38,6 +39,7 @@ const (
 
 type PeerTaskManager struct {
 	data                    *sync.Map
+	dataRanger				*sync.Map
 	gcQueue                 workqueue.DelayingInterface
 	gcDelayTime             time.Duration
 	downloadMonitorQueue    workqueue.DelayingInterface
@@ -51,6 +53,7 @@ func createPeerTaskManager() *PeerTaskManager {
 	}
 	ptm := &PeerTaskManager{
 		data:                 new(sync.Map),
+		dataRanger:                 new(sync.Map),
 		downloadMonitorQueue: workqueue.NewDelayingQueue(),
 		gcQueue:              workqueue.NewDelayingQueue(),
 		gcDelayTime:          delay,
@@ -74,7 +77,16 @@ func (m *PeerTaskManager) AddPeerTask(pid string, task *types.Task, host *types.
 	pt := types.NewPeerTask(pid, task, host, m.addToGCQueue)
 	m.data.Store(pid, pt)
 
+
 	GetTaskManager().TouchTask(task.TaskId)
+
+	r, ok := m.dataRanger.Load(pt.Task)
+	if ok {
+		ranger, ok := r.(*sortedlist.SortedList)
+		if ok {
+			ranger.Add(pt)
+		}
+	}
 
 	return pt
 }
@@ -105,16 +117,64 @@ func (m *PeerTaskManager) GetPeerTask(pid string) (h *types.PeerTask, ok bool) {
 	return
 }
 
-func (m *PeerTaskManager) Walker(walker func(pt *types.PeerTask) bool) {
-	if walker == nil || m.data == nil {
+func (m *PeerTaskManager) AddTask(task *types.Task) {
+	m.dataRanger.LoadOrStore(task, sortedlist.NewSortedList())
+}
+
+func (m *PeerTaskManager) UpdatePeerTask(pt *types.PeerTask) {
+	if pt == nil || m.dataRanger == nil {
 		return
 	}
-	m.data.Range(func(key interface{}, value interface{}) bool {
-		pt, _ := value.(*types.PeerTask)
-		if pt != nil && pt.Task.Removed {
-			m.data.Delete(pt.Pid)
-			return true
-		}
+	v, ok := m.dataRanger.Load(pt.Task)
+	if !ok {
+		return
+	}
+	ranger, ok := v.(*sortedlist.SortedList)
+	if !ok {
+		return
+	}
+
+	status := pt.GetNodeStatus()
+	switch status {
+	case types.PeerTaskStatusLeaveNode, types.PeerTaskStatusNodeGone:
+		ranger.Delete(pt)
+	default:
+		ranger.Update(pt)
+	}
+}
+
+func (m *PeerTaskManager) Walker(task *types.Task, limit int, walker func(pt *types.PeerTask) bool) {
+	if walker == nil || m.dataRanger == nil {
+		return
+	}
+	v, ok := m.dataRanger.Load(task)
+	if !ok {
+		return
+	}
+	ranger, ok := v.(*sortedlist.SortedList)
+	if !ok {
+		return
+	}
+	ranger.RangeLimit(limit, func(data sortedlist.Item) bool {
+		pt, _ := data.(*types.PeerTask)
+		return walker(pt)
+	})
+}
+
+func (m *PeerTaskManager) WalkerReverse(task *types.Task, limit int, walker func(pt *types.PeerTask) bool) {
+	if walker == nil || m.dataRanger == nil {
+		return
+	}
+	v, ok := m.dataRanger.Load(task)
+	if !ok {
+		return
+	}
+	ranger, ok := v.(*sortedlist.SortedList)
+	if !ok {
+		return
+	}
+	ranger.RangeReverseLimit(limit, func(data sortedlist.Item) bool {
+		pt, _ := data.(*types.PeerTask)
 		return walker(pt)
 	})
 }
@@ -241,7 +301,7 @@ func (m *PeerTaskManager) RefreshDownloadMonitor(pt *types.PeerTask) {
 	} else if pt.IsWaiting() {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
 	} else {
-		m.downloadMonitorQueue.AddAfter(pt, time.Millisecond*time.Duration(pt.GetCost()*2))
+		m.downloadMonitorQueue.AddAfter(pt, time.Millisecond*time.Duration(pt.GetCost()*10))
 	}
 }
 

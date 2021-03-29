@@ -83,6 +83,12 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	pkg.TaskId = task.TaskId
 	pkg.SizeScope = task.SizeScope
 
+	// case base.SizeScope_TINY
+	if pkg.SizeScope == base.SizeScope_TINY {
+		pkg.DirectPiece = task.DirectPiece
+		return
+	}
+
 	// get or create host
 	hostId := request.PeerHost.Uuid
 	host, _ := s.svc.GetHost(hostId)
@@ -119,11 +125,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		peerTask.SetUp()
 	}
 
-	switch pkg.SizeScope {
-	case base.SizeScope_NORMAL:
-		return
-	case base.SizeScope_TINY:
-		pkg.DirectPiece = task.DirectPiece
+	if pkg.SizeScope == base.SizeScope_NORMAL {
 		return
 	}
 

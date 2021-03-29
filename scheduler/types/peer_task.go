@@ -265,7 +265,7 @@ func (pt *PeerTask) AddPieceStatus(ps *scheduler.PieceResult) {
 	}
 
 	// peer as cdn set up
-	if pt.Host.Type == HostTypeCdn && pt.isDown {
+	if pt.Host != nil && pt.Host.Type == HostTypeCdn && pt.isDown {
 		pt.isDown = false
 	}
 
@@ -477,4 +477,13 @@ func (pt *PeerTask) GetLastActiveTime() int64 {
 	pt.lock.Lock()
 	defer pt.lock.Unlock()
 	return pt.lastActiveTime
+}
+
+func (pt *PeerTask) GetSortKeys() (key1, key2 int){
+	if pt == nil {
+		return
+	}
+	key1 = int(pt.finishedNum)
+	key2 = int(pt.GetFreeLoad())
+	return
 }
