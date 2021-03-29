@@ -88,16 +88,42 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 	p, err := m.storageManager.GetPieces(ctx, request)
 	if err != nil {
 		code := dfcodes.UnknownError
-		if err == storage.ErrTaskNotFound {
-			code = dfcodes.PeerTaskNotFound
+		if err != storage.ErrTaskNotFound {
+			logger.Errorf("get piece tasks error: %s, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
+				err, request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
+			return nil, dferrors.New(code, err.Error())
 		}
-		logger.Errorf("get piece tasks error: %s, code: %v, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
-			err, code, request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
-		return nil, dferrors.New(code, err.Error())
+		// dst peer is not running
+		if !m.peerTaskManager.IsPeerTaskRunning(request.DstPid) {
+			code = dfcodes.PeerTaskNotFound
+			logger.Errorf("get piece tasks error: peer task not found, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
+				request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
+			return nil, dferrors.New(code, err.Error())
+		}
+
+		logger.Warnf("try to get piece tasks, "+
+			"but target peer task is initializing, "+
+			"there is no available pieces, "+
+			"task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
+			request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
+		// dst peer is running, send empty result, src peer will retry later
+		return &base.PiecePacket{
+			State: &base.ResponseState{
+				Success: true,
+				Code:    dfcodes.Success,
+			},
+			TaskId:        request.TaskId,
+			DstPid:        request.DstPid,
+			DstAddr:       m.uploadAddr,
+			PieceInfos:    nil,
+			TotalPiece:    -1,
+			ContentLength: -1,
+			PieceMd5Sign:  "",
+		}, nil
 	}
 
-	logger.Debugf("receive get piece tasks request, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d, piece packet: %#v, length: %d",
-		request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit, p, len(p.PieceInfos))
+	logger.Debugf("receive get piece tasks request, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d, length: %d",
+		request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit, len(p.PieceInfos))
 	p.DstAddr = m.uploadAddr
 	return p, nil
 }
@@ -131,7 +157,18 @@ func (m *manager) Download(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	if tiny {
+	if tiny != nil {
+		results <- &dfdaemongrpc.DownResult{
+			State: &base.ResponseState{
+				Success: true,
+				Code:    dfcodes.Success,
+				Msg:     "Tiny file downloaded",
+			},
+			TaskId:          tiny.TaskId,
+			PeerId:          tiny.PeerID,
+			CompletedLength: uint64(len(tiny.Content)),
+			Done:            true,
+		}
 		logger.Infof("tiny file, wrote to output")
 		return nil
 	}

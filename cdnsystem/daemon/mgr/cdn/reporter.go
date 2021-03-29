@@ -27,7 +27,7 @@ import (
 
 type reporter struct {
 	progress   mgr.SeedProgressMgr
-	cacheStore storage.StorageMgr
+	cacheStore storage.Manager
 }
 
 const (
@@ -35,7 +35,7 @@ const (
 	DownloaderReport = "download"
 )
 
-func newReporter(publisher mgr.SeedProgressMgr, cacheStore storage.StorageMgr) *reporter {
+func newReporter(publisher mgr.SeedProgressMgr, cacheStore storage.Manager) *reporter {
 	return &reporter{
 		progress:   publisher,
 		cacheStore: cacheStore,

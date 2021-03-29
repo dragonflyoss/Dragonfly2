@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package store
+package storedriver
 
 import (
 	"context"
@@ -31,7 +31,7 @@ import (
 func init() {
 	// Ensure that storage implements the StorageDriver interface
 	var storage *Store = nil
-	var _ StorageDriver = storage
+	var _ Driver = storage
 }
 
 // Store is a wrapper of the storage which implements the interface of StorageDriver.
@@ -41,7 +41,7 @@ type Store struct {
 	// config is used to init storage driver.
 	config interface{}
 	// driver holds a storage which implements the interface of StorageDriver.
-	driver StorageDriver
+	driver Driver
 }
 
 // NewStore creates a new Store instance.
@@ -181,7 +181,7 @@ func (s *Store) GetGcConfig(ctx context.Context) *GcConfig {
 
 func checkEmptyKey(raw *Raw) error {
 	if raw == nil || stringutils.IsBlank(raw.Key) {
-		return cdnerrors.ErrEmptyKey
+		return cdnerrors.ErrEmptyValue
 	}
 	return nil
 }

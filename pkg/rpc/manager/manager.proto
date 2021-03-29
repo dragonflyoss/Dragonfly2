@@ -22,39 +22,7 @@ import "pkg/rpc/base/base.proto";
 
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/manager";
 
-// Manager System RPC Service
-service Manager {
-    rpc AddConfig (AddConfigRequest) returns (AddConfigResponse) {}
-    rpc DeleteConfig (DeleteConfigRequest) returns (DeleteConfigResponse) {}
-    rpc UpdateConfig (UpdateConfigRequest) returns (UpdateConfigResponse) {}
-    rpc GetConfig (GetConfigRequest) returns (GetConfigResponse) {}
-    rpc ListConfigs (ListConfigsRequest) returns (ListConfigsResponse) {}
-
-    // keep alive for cdn or scheduler and receives management configuration
-    rpc KeepAlive (KeepAliveRequest) returns (KeepAliveResponse) {}
-
-    // get scheduler server list, using scene as follows:
-    // 1. scheduler servers are not exist in local config
-    //
-    // 2. connection is fail for all servers from config,
-    // so need retry one times to get latest servers
-    //
-    // 3. manager actively triggers fresh
-    rpc ListSchedulers (ListSchedulersRequest) returns (ListSchedulersResponse) {}
-}
-
-message KeepAliveRequest {
-    // identify servers with hostname
-    string object = 1;
-    string type = 2;
-}
-
-message KeepAliveResponse {
-    base.ResponseState state = 1;
-    Config config = 2;
-}
-
-message ListSchedulersRequest {
+message NavigatorRequest{
     // client ip
     string ip = 1;
     // client host name
@@ -63,7 +31,7 @@ message ListSchedulersRequest {
     string host_tag = 3;
 }
 
-message ListSchedulersResponse {
+message SchedulerNodes{
     base.ResponseState state = 1;
 
     // ip:port
@@ -72,86 +40,45 @@ message ListSchedulersResponse {
     ClientConfig client_config = 4;
 }
 
-message AddConfigRequest {
-    Config config = 1;
+message HeartRequest{
+    // identify servers with hostname
+    string host_name = 1;
+    oneof from{
+        bool scheduler = 2;
+        bool cdn = 3;
+    }
 }
 
-message AddConfigResponse {
-    base.ResponseState state = 1;
-    string id = 2;
-}
-
-message DeleteConfigRequest {
-    string id = 1;
-}
-
-message DeleteConfigResponse {
-    base.ResponseState state = 1;
-}
-
-message UpdateConfigRequest {
-    string id = 1;
-    Config config = 2;
-}
-
-message UpdateConfigResponse {
-    base.ResponseState state = 1;
-}
-
-message GetConfigRequest {
-    string id = 1;
-}
-
-message GetConfigResponse {
-    base.ResponseState state = 1;
-    Config config = 2;
-}
-
-message ListConfigsRequest {
-    string object = 1;
-}
-
-message ListConfigsResponse {
-    base.ResponseState state = 1;
-    repeated Config configs = 2;
-}
-
-enum ObjType {
-    Scheduler = 0;
-    Cdn = 1;
-}
-
-message Config {
-    string id = 1;
-    string object = 2;
-    string type = 3;
-    uint64 version = 4;
-    bytes data = 5;
-    string create_at = 6;
-    string update_at = 7;
-}
-
-message ClientConfig {
+message ClientConfig{
     //......
 }
 
-message CdnConfig {
+message CdnConfig{
     //......
 }
 
-message SchedulerConfig {
+message SchedulerConfig{
     ClientConfig client_config = 1;
     repeated ServerInfo cdn_hosts = 2;
     //......
 }
 
-message ServerInfo {
+message ManagementConfig{
+    base.ResponseState state = 1;
+
+    oneof config{
+        SchedulerConfig scheduler_config = 2;
+        CdnConfig cdn_config = 3;
+    }
+}
+
+message ServerInfo{
     HostInfo host_info = 1;
     int32 rpc_port = 2;
     int32 down_port = 3;
 }
 
-message HostInfo {
+message HostInfo{
     string ip = 1;
     string host_name = 2;
     // security isolation domain for network
@@ -160,4 +87,18 @@ message HostInfo {
     string location = 4;
     string idc = 5;
     string net_topology = 6;
+}
+
+// Manager System RPC Service
+service Manager{
+    // get scheduler server list, using scene as follows:
+    // 1. scheduler servers are not exist in local config
+    //
+    // 2. connection is fail for all servers from config,
+    // so need retry one times to get latest servers
+    //
+    // 3. manager actively triggers fresh
+    rpc GetSchedulers(NavigatorRequest)returns(SchedulerNodes){}
+    // keep alive for cdn or scheduler and receives management configuration
+    rpc KeepAlive(HeartRequest)returns(ManagementConfig){}
 }

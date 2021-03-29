@@ -24,7 +24,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"fmt"
 	"github.com/pkg/errors"
 	"hash"
@@ -212,30 +211,4 @@ func (cd *cacheDetector) resetCache(ctx context.Context, task *types.SeedTask) (
 	}
 	// initialize meta data file
 	return cd.cacheDataManager.writeFileMetaDataByTask(ctx, task)
-}
-
-// checkSameFile check whether meta file is modified
-func checkSameFile(task *types.SeedTask, metaData *storage.FileMetaData) error {
-	if task == nil || metaData == nil {
-		return errors.Errorf("task or metaData is nil, task:%v, metaData:%v", task, metaData)
-	}
-
-	if metaData.PieceSize != task.PieceSize {
-		return errors.Errorf("meta piece size(%d) is not equals with task piece size(%d)", metaData.PieceSize,
-			task.PieceSize)
-	}
-
-	if metaData.TaskId != task.TaskId {
-		return errors.Errorf("meta task TaskId(%s) is not equals with task TaskId(%s)", metaData.TaskId, task.TaskId)
-	}
-
-	if metaData.TaskURL != task.TaskUrl {
-		return errors.Errorf("meta task taskUrl(%s) is not equals with task taskUrl(%s)", metaData.TaskURL, task.Url)
-	}
-	if !stringutils.IsBlank(metaData.SourceRealMd5) && !stringutils.IsBlank(task.RequestMd5) &&
-		metaData.SourceRealMd5 != task.RequestMd5 {
-		return errors.Errorf("meta task source md5(%s) is not equals with task request md5(%s)",
-			metaData.SourceRealMd5, task.RequestMd5)
-	}
-	return nil
 }

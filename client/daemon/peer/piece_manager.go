@@ -81,7 +81,7 @@ func WithPieceDownloader(d PieceDownloader) func(*pieceManager) {
 
 func WithCalculateDigest(enable bool) func(*pieceManager) {
 	return func(pm *pieceManager) {
-		logger.Infof("set calculateDigest to %b for piece manager", enable)
+		logger.Infof("set calculateDigest to %t for piece manager", enable)
 		pm.calculateDigest = enable
 	}
 }

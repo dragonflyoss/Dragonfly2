@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package store
+package storedriver
 
 import (
 	"context"
@@ -24,13 +24,13 @@ import (
 	"time"
 )
 
-// StorageDriver defines an interface to manage the data stored in the driver.
+// Driver defines an interface to manage the data stored in the driver.
 //
 // NOTE:
 // It is recommended that the lock granularity of the driver should be in piece.
 // That means that the storage driver could read and write
 // the different pieces of the same file concurrently.
-type StorageDriver interface {
+type Driver interface {
 
 	// Get data from the storage based on raw information.
 	// If the length<=0, the driver should return all data from the raw.offset.
@@ -69,6 +69,7 @@ type StorageDriver interface {
 
 	// GetTotalSpace
 	GetTotalSpace(ctx context.Context) (fsize.Size, error)
+
 	// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 	// calling walkFn for each file or directory in the tree, including root.
 	Walk(ctx context.Context, raw *Raw) error
@@ -115,8 +116,8 @@ type StorageInfo struct {
 
 // GcConfig
 type GcConfig struct {
-	YoungGCThreshold  fsize.Size
-	FullGCThreshold   fsize.Size
-	CleanRatio        int
-	IntervalThreshold time.Duration
+	YoungGCThreshold  fsize.Size    `yaml:"youngGCThreshold"`
+	FullGCThreshold   fsize.Size    `yaml:"fullGCThreshold"`
+	CleanRatio        int           `yaml:"cleanRatio"`
+	IntervalThreshold time.Duration `yaml:"intervalThreshold"`
 }

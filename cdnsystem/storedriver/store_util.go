@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package store
+package storedriver
 
 import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"

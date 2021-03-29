@@ -28,11 +28,7 @@ import (
 
 const RangeHeaderName = "Range"
 
-// download downloads the file from the original address and
-// sets the "Range" header to the unDownloaded file range.
-//
-// If the returned error is nil, the Response will contain a non-nil
-// Body which the caller is expected to close.
+
 func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, map[string]string, error) {
 	headers := maputils.DeepCopyMap(nil, task.Header)
 	if detectResult.breakPoint > 0 {
@@ -41,19 +37,11 @@ func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (io
 			return nil, nil, errors.Wrapf(err, "failed to calculate the breakRange")
 		}
 		// check if Range in header? if Range already in Header, priority use this range
-		if !hasRange(headers) {
+		if _, ok := headers[RangeHeaderName]; !ok {
 			headers[RangeHeaderName] = fmt.Sprintf("bytes=%s", breakRange)
 		}
 	}
 	logger.WithTaskID(task.TaskId).Infof("start download url %s at range:%d-%d: %s with header: %+v", task.Url, detectResult.breakPoint,
 		task.SourceFileLength, task.Header)
 	return cm.resourceClient.Download(task.Url, headers)
-}
-
-func hasRange(headers map[string]string) bool {
-	if headers == nil {
-		return false
-	}
-	_, ok := headers["Range"]
-	return ok
 }

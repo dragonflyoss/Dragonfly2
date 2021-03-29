@@ -18,8 +18,8 @@ package gc
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
 	"d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 	"sync"
 	"time"
 )
@@ -72,8 +72,8 @@ func (gcm *Manager) gcTasks(ctx context.Context) {
 func (gcm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
 	logger.GcLogger.Infof("gc task: start to deal with task: %s", taskID)
 
-	util.GetLock(taskID, false)
-	defer util.ReleaseLock(taskID, false)
+	synclock.Lock(taskID, false)
+	defer synclock.UnLock(taskID, false)
 
 	var wg sync.WaitGroup
 	wg.Add(2)

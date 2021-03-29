@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package plugins
 
 import (
@@ -25,10 +24,9 @@ import (
 	"testing"
 )
 
-func Test(t *testing.T) {
+func TestPluginsTestSuite(t *testing.T) {
 	suite.Run(t, new(PluginsTestSuite))
 }
-
 
 type PluginsTestSuite struct {
 	suite.Suite

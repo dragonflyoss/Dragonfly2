@@ -66,7 +66,7 @@ func newFilePeerTask(ctx context.Context,
 	pieceManager PieceManager,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
-	schedulerOption config.SchedulerOption) (FilePeerTask, []byte, error) {
+	schedulerOption config.SchedulerOption) (FilePeerTask, *TinyData, error) {
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	if err != nil {
 		logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
@@ -86,7 +86,11 @@ func newFilePeerTask(ctx context.Context,
 	case base.SizeScope_TINY:
 		logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 		if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
-			return nil, piece.PieceContent, nil
+			return nil, &TinyData{
+				TaskId:  result.TaskId,
+				PeerID:  request.PeerId,
+				Content: piece.PieceContent,
+			}, nil
 		}
 		return nil, nil, errors.Errorf("scheduler return tiny piece but can not parse piece content")
 	case base.SizeScope_NORMAL:
@@ -260,12 +264,13 @@ func (pt *filePeerTask) finish() error {
 		}
 
 		// wait client received progress
-		pt.Infof("try to send finish progress: %#v, state: %#v", pg, pg.State)
+		pt.Infof("try to send finish progress, completed length: %d, state: (%t, %d, %s)",
+			pg.CompletedLength, pg.State.Success, pg.State.Code, pg.State.Msg)
 		select {
 		case pt.progressCh <- pg:
 			pt.Infof("finish progress sent")
 		case <-pt.ctx.Done():
-			pt.Warnf("finish progress sent failed: %#v, context done", pg)
+			pt.Warnf("finish progress sent failed, context done")
 		}
 		// wait progress stopped
 		select {
@@ -275,7 +280,7 @@ func (pt *filePeerTask) finish() error {
 			if pt.peerTaskDone {
 				pt.Debugf("progress stopped and context done")
 			} else {
-				pt.Warnf("wait progress stopped failed: %#v, context done, but progress not stopped", pg)
+				pt.Warnf("wait progress stopped failed, context done, but progress not stopped")
 			}
 		}
 		pt.Debugf("finished: close done channel")
@@ -316,11 +321,13 @@ func (pt *filePeerTask) cleanUnfinished() {
 		}
 
 		// wait client received progress
+		pt.Infof("try to send unfinished progress, completed length: %d, state: (%t, %d, %s)",
+			pg.CompletedLength, pg.State.Success, pg.State.Code, pg.State.Msg)
 		select {
 		case pt.progressCh <- pg:
-			pt.Debugf("unfinished progress sent: %#v, state: %#v", pg, pg.State)
+			pt.Debugf("unfinished progress sent")
 		case <-pt.ctx.Done():
-			pt.Debugf("send unfinished progress failed: %#v, context done: %v", pg, pt.ctx.Err())
+			pt.Debugf("send unfinished progress failed, context done: %v", pt.ctx.Err())
 		}
 		// wait progress stopped
 		select {
@@ -330,7 +337,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			if pt.peerTaskDone {
 				pt.Debugf("progress stopped and context done")
 			} else {
-				pt.Warnf("wait progress stopped failed: %#v, context done, but progress not stopped", pg)
+				pt.Warnf("wait progress stopped failed, context done, but progress not stopped")
 			}
 		}
 
