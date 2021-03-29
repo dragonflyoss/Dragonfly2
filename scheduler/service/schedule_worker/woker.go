@@ -343,11 +343,24 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 	switch code {
 	case dfcodes.Success:
 		return
-	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
+	case dfcodes.PeerTaskNotFound:
+		peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
+		if peerTask != nil {
+			parent := peerTask.GetParent()
+			if parent != nil && parent.DstPeerTask != nil {
+				pNode := parent.DstPeerTask
+				pNode.SetNodeStatus(types.PeerTaskStatusLeaveNode)
+				w.sendJob(pNode)
+			}
+			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
+			w.sendJob(peerTask)
+		}
+		return true
+	case dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
 		peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pr.SrcPid)
 		if peerTask != nil {
 			peerTask.SetNodeStatus(types.PeerTaskStatusNeedParent)
-			w.sendJobLater(peerTask)
+			w.sendJob(peerTask)
 		}
 		return true
 	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail:
