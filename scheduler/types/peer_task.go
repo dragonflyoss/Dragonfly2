@@ -48,7 +48,6 @@ type PeerTask struct {
 	Host *Host  // host info
 
 	isDown          bool // is leave scheduler
-	pieceStatusList *sync.Map
 	lock            *sync.Mutex
 	finishedNum     int32 // download finished piece number
 	startTime       int64
@@ -93,7 +92,6 @@ func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *Pee
 		Pid:             pid,
 		Task:            task,
 		Host:            host,
-		pieceStatusList: new(sync.Map),
 		isDown:          false,
 		lock:            new(sync.Mutex),
 		startTime:       time.Now().UnixNano(),
@@ -142,6 +140,10 @@ func (pt *PeerTask) AddParent(parent *PeerTask, concurrency int8) {
 	if parent.Host != nil {
 		parent.Host.AddUploadLoad(int32(concurrency))
 	}
+}
+
+func (pt *PeerTask) GetStartTime() int64 {
+	return pt.startTime
 }
 
 func (pt *PeerTask) GetParent() *PeerEdge {
@@ -239,27 +241,10 @@ func (pt *PeerTask) GetFinishedNum() int32 {
 	return pt.finishedNum
 }
 
-func (pt *PeerTask) GetPieceStatusList() *sync.Map {
-	return pt.pieceStatusList
-}
-
 func (pt *PeerTask) AddPieceStatus(ps *scheduler.PieceResult) {
 	pt.lock.Lock()
 	defer pt.lock.Unlock()
 
-	if pt.pieceStatusList == nil {
-		pt.pieceStatusList = new(sync.Map)
-	}
-	old, loaded := pt.pieceStatusList.LoadOrStore(ps.PieceNum, ps)
-	if loaded {
-		oldPs, _ := old.(*scheduler.PieceResult)
-		if oldPs != nil && oldPs.Success {
-			return
-		}
-		if ps.Success {
-			pt.pieceStatusList.Store(ps.PieceNum, ps)
-		}
-	}
 	if !ps.Success {
 		return
 	}

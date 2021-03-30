@@ -62,7 +62,8 @@ func (wg *WorkerGroup) Start() {
 	wg.stopCh = make(chan struct{})
 
 	mgr.GetPeerTaskManager().SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
-		if pt.GetNodeStatus() != types.PeerTaskStatusHealth {
+		status := pt.GetNodeStatus()
+		if status != types.PeerTaskStatusHealth {
 		//} else if pt.GetNodeStatus() != types.PeerTaskStatusDone{
 		//	return
 		} else if pt.Success || pt.Host.Type == types.HostTypeCdn {
