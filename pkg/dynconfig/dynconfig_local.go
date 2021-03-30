@@ -5,27 +5,36 @@ import (
 )
 
 type dynconfigLocal struct {
-	cache     cache.Cache
-	cachePath string
-	filepath  string
+	cache    cache.Cache
+	filepath string
 }
 
-func newDynconfigLocal(cache cache.Cache, cachePath, filePath string) *dynconfigLocal {
-	return &dynconfigLocal{
-		cache:     cache,
-		cachePath: cachePath,
-		filepath:  filePath,
+func newDynconfigLocal(cache cache.Cache, filePath string) *dynconfigLocal {
+	d := &dynconfigLocal{
+		cache:    cache,
+		filepath: filePath,
 	}
+
+	// d.load()
+
+	return d
 }
 
 func (d *dynconfigLocal) Get() interface{} {
+	// cache.GetWithExpiration
+
+	// expire
+	// d.load()
+
+	// not expire
+	// d.cache.Get()
 	return nil
 }
 
 func (d *dynconfigLocal) load() error {
-	if err := d.cache.LoadFile(d.filepath); err != nil {
-		return err
-	}
+	// viper read from file
+
+	// cache.Set file content
 
 	return nil
 }

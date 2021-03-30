@@ -2,8 +2,6 @@ package dynconfig
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/cache"
@@ -45,7 +43,6 @@ type dynconfig struct {
 	managerClient   managerClient
 	localConfigPath string
 	cache           cache.Cache
-	cachePath       string
 	strategy        strategy
 }
 
@@ -85,26 +82,24 @@ func NewDynconfig(sourceType sourceType, expire time.Duration, options ...Option
 
 	switch sourceType {
 	case ManagerSourceType:
-		d.strategy = newDynconfigManager(d.cache, d.cachePath, d.managerClient)
+		d.strategy, err = newDynconfigManager(d.cache, d.managerClient)
+		if err != nil {
+			return nil, err
+		}
+
 	case LocalSourceType:
-		d.strategy = newDynconfigLocal(d.cache, d.cachePath, d.localConfigPath)
+		d.strategy = newDynconfigLocal(d.cache, d.localConfigPath)
 	default:
-		d.strategy = newDynconfigLocal(d.cache, d.cachePath, d.localConfigPath)
+		d.strategy = newDynconfigLocal(d.cache, d.localConfigPath)
 	}
 	return d, nil
 }
 
 // NewDynconfigWithOptions constructs a new instance of a dynconfig with additional options.
 func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, options ...Option) (*dynconfig, error) {
-	dir, err := os.UserCacheDir()
-	if err != nil {
-		return nil, err
-	}
-
 	d := &dynconfig{
 		sourceType: sourceType,
 		cache:      cache.New(expire, cache.NoCleanup),
-		cachePath:  filepath.Join(dir, "dynconfig"),
 	}
 
 	for _, opt := range options {
