@@ -104,7 +104,21 @@ func (m *PeerTaskManager) AddFakePeerTask(pid string, task *types.Task) *types.P
 }
 
 func (m *PeerTaskManager) DeletePeerTask(pid string) {
-	m.data.Delete(pid)
+	data, ok := m.data.Load(pid)
+	if ok {
+		if pt, ok := data.(*types.PeerTask); ok {
+			v, ok := m.dataRanger.Load(pt.Task)
+			if ok {
+				ranger, ok := v.(*sortedlist.SortedList)
+				if ok {
+					ranger.Delete(pt)
+					return
+				}
+			}
+
+		}
+		m.data.Delete(pid)
+	}
 	return
 }
 
@@ -119,6 +133,10 @@ func (m *PeerTaskManager) GetPeerTask(pid string) (h *types.PeerTask, ok bool) {
 
 func (m *PeerTaskManager) AddTask(task *types.Task) {
 	m.dataRanger.LoadOrStore(task, sortedlist.NewSortedList())
+}
+
+func (m *PeerTaskManager) DeleteTask(task *types.Task) {
+	m.dataRanger.Delete(task)
 }
 
 func (m *PeerTaskManager) UpdatePeerTask(pt *types.PeerTask) {
@@ -301,7 +319,11 @@ func (m *PeerTaskManager) RefreshDownloadMonitor(pt *types.PeerTask) {
 	} else if pt.IsWaiting() {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
 	} else {
-		m.downloadMonitorQueue.AddAfter(pt, time.Millisecond*time.Duration(pt.GetCost()*10))
+		delay := time.Millisecond*time.Duration(pt.GetCost()*10)
+		if delay < time.Millisecond * 20 {
+			delay = time.Millisecond*20
+		}
+		m.downloadMonitorQueue.AddAfter(pt, delay)
 	}
 }
 

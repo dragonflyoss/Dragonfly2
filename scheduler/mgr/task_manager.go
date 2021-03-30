@@ -64,9 +64,9 @@ func (m *TaskManager) DeleteTask(taskId string) {
 	t, _ := m.data[taskId]
 	if t != nil {
 		logger.Infof("Task [%s] Statistic: %+v ", t.TaskId, t.Statistic.GetStatistic())
+		GetPeerTaskManager().DeleteTask(t)
 	}
 	delete(m.data, taskId)
-
 	return
 }
 
@@ -102,11 +102,9 @@ func (m *TaskManager) gcWorkingLoop() {
 		m.lock.RUnlock()
 
 		if len(needDeleteKeys) > 0 {
-			m.lock.Lock()
 			for _, taskId := range needDeleteKeys {
-				delete(m.data, taskId)
+				m.DeleteTask(taskId)
 			}
-			m.lock.Unlock()
 		}
 
 		// clear peer task
