@@ -37,16 +37,6 @@ enum SizeScope{
   TINY = 2;
 }
 
-message ResponseState{
-  bool success = 1;
-  Code code = 2;
-  string msg = 3;
-}
-
-message EmptyRequest{
-
-}
-
 message UrlMeta{
   // used as follows:
   //
@@ -90,8 +80,6 @@ message PieceInfo{
 }
 
 message PiecePacket{
-  base.ResponseState state = 1;
-
   string task_id = 2;
   string dst_pid = 3;
   // ip:port

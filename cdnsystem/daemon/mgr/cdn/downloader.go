@@ -41,7 +41,7 @@ func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (io
 			headers[RangeHeaderName] = fmt.Sprintf("bytes=%s", breakRange)
 		}
 	}
-	logger.WithTaskID(task.TaskId).Infof("start download url %s at range:%d-%d: %s with header: %+v", task.Url, detectResult.breakPoint,
+	logger.WithTaskID(task.TaskId).Infof("start download url %s at range:%d-%d: with header: %+v", task.Url, detectResult.breakPoint,
 		task.SourceFileLength, task.Header)
 	return cm.resourceClient.Download(task.Url, headers)
 }

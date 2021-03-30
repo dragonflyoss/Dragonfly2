@@ -19,17 +19,14 @@ package ossprotocol
 import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"fmt"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"sync"
 )
@@ -63,66 +60,33 @@ type ossSourceClient struct {
 func (osc *ossSourceClient) GetContentLength(url string, header map[string]string) (int64, error) {
 	resHeader, err := osc.getMeta(url, header)
 	if err != nil {
-		//return , err
+		return -1, err
 	}
 	contentLen, err := strconv.ParseInt(resHeader.Get(oss.HTTPHeaderContentLength), 10, 64)
 	return contentLen, nil
 }
 
-func (osc *ossSourceClient) getMeta(url string, header map[string]string) (http.Header, error) {
-	client, err := osc.getClient(header)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get oss client")
-	}
-	ossObject, err := ParseOssObject(url)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse oss object")
-	}
-
-	bucket, err := client.Bucket(ossObject.bucket)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get bucket:%s", ossObject.bucket)
-	}
-	isExist, err := bucket.IsObjectExist(ossObject.object)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to prob object:%s exist", ossObject.object)
-	}
-	if !isExist {
-		return nil, fmt.Errorf("oss object:%s does not exist", ossObject.object)
-	}
-	return bucket.GetObjectMeta(ossObject.object, getOptions(header)...)
-}
-
 func (osc *ossSourceClient) IsSupportRange(url string, header map[string]string) (bool, error) {
+	_, err := osc.getMeta(url, header)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
 func (osc *ossSourceClient) IsExpired(url string, header, expireInfo map[string]string) (bool, error) {
-
-	lastModified := timeutils.UnixMillis(expireInfo[oss.HTTPHeaderLastModified])
-
+	lastModified := expireInfo[oss.HTTPHeaderLastModified]
 	eTag := expireInfo[oss.HTTPHeaderEtag]
-	if lastModified <= 0 && stringutils.IsBlank(eTag) {
+	if stringutils.IsBlank(lastModified) && stringutils.IsBlank(eTag) {
 		return true, nil
 	}
 
-	// set header: header is a reference to map, should not change it
-	copied := maputils.DeepCopyMap(nil, header)
-	if lastModified > 0 {
-		copied[oss.HTTPHeaderIfModifiedSince] = expireInfo[oss.HTTPHeaderLastModified]
+	resHeader, err := osc.getMeta(url, header)
+	if err != nil {
+		return false, err
 	}
-	if !stringutils.IsBlank(eTag) {
-		copied[oss.HTTPHeaderIfNoneMatch] = eTag
-	}
-	return true, nil
-	//// send request
-	//resp, err := osc.clientMap.httpWithHeader(http.MethodGet, url, copied, 4*time.Second)
-	//if err != nil {
-	//	return false, err
-	//}
-	//resp.Body.Close()
-	//
-	//return resp.StatusCode != http.StatusNotModified, nil
+	return resHeader.Get(oss.HTTPHeaderLastModified) == expireInfo[oss.HTTPHeaderLastModified] && resHeader.Get(oss.HTTPHeaderEtag) == expireInfo[oss.
+		HTTPHeaderEtag], nil
 }
 
 func (osc *ossSourceClient) Download(url string, header map[string]string) (io.ReadCloser, map[string]string, error) {
@@ -138,19 +102,20 @@ func (osc *ossSourceClient) Download(url string, header map[string]string) (io.R
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get bucket:%s", ossObject.bucket)
 	}
-	body, err := bucket.GetObject(ossObject.object, getOptions(header)...)
+	res, err := bucket.GetObject(ossObject.object, getOptions(header)...)
 	if err != nil {
-		logger.Errorf("Cannot get the specified bucket %s instance: %v", bucket, err)
-		os.Exit(1)
+		return nil, nil, errors.Wrapf(err, "failed to get oss Object:%s", ossObject.object)
 	}
-	//ExpireInfo:
-	//map[string]string{
-	//	"Last-Modified": resp.Header.Get("Last-Modified"),
-	//	"Etag":          resp.Header.Get("Etag"),
-	//},
-	//	resp.Body.Close()
-	//return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	return body, nil, nil
+	resp := res.(*oss.Response)
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPartialContent {
+		expireInfo := map[string]string{
+			headers.LastModified: resp.Headers.Get(headers.LastModified),
+			headers.ETag:         resp.Headers.Get(headers.ETag),
+		}
+		return resp.Body, expireInfo, nil
+	}
+	resp.Body.Close()
+	return nil, nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 }
 
 func (osc *ossSourceClient) getClient(header map[string]string) (*oss.Client, error) {
@@ -175,6 +140,30 @@ func (osc *ossSourceClient) getClient(header map[string]string) (*oss.Client, er
 	}
 	osc.clientMap.Store(endpoint, client)
 	return client, nil
+}
+
+func (osc *ossSourceClient) getMeta(url string, header map[string]string) (http.Header, error) {
+	client, err := osc.getClient(header)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get oss client")
+	}
+	ossObject, err := ParseOssObject(url)
+	if err != nil {
+		return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable, "failed to parse oss object: %v", err)
+	}
+
+	bucket, err := client.Bucket(ossObject.bucket)
+	if err != nil {
+		return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable, "failed to get bucket:%s: %v", ossObject.bucket, err)
+	}
+	isExist, err := bucket.IsObjectExist(ossObject.object)
+	if err != nil {
+		return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable, "failed to prob object:%s exist: %v", ossObject.object, err)
+	}
+	if !isExist {
+		return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable, "oss object:%s does not exist", ossObject.object)
+	}
+	return bucket.GetObjectMeta(ossObject.object, getOptions(header)...)
 }
 
 func getOptions(header map[string]string) []oss.Option {
