@@ -19,6 +19,7 @@ syntax = "proto3";
 package scheduler;
 
 import "pkg/rpc/base/base.proto";
+import "google/protobuf/empty.proto";
 
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/scheduler";
 
@@ -43,7 +44,6 @@ message PeerTaskRequest{
 }
 
 message RegisterResult{
-  base.ResponseState state = 1;
 
   // task id
   string task_id = 2;
@@ -112,7 +112,6 @@ message PieceResult{
 }
 
 message PeerPacket{
-  base.ResponseState state = 1;
 
   message DestPeer{
     // dest ip
@@ -160,16 +159,16 @@ message PeerTarget{
 // Scheduler System RPC Service
 service Scheduler{
   // RegisterPeerTask registers a peer into one task.
-  rpc RegisterPeerTask(PeerTaskRequest)returns(RegisterResult){}
+  rpc RegisterPeerTask(PeerTaskRequest)returns(RegisterResult);
 
   // ReportPieceResult reports piece results and receives peer packets.
   // when migrating to another scheduler,
   // it will send the last piece result to the new scheduler.
-  rpc ReportPieceResult(stream PieceResult)returns(stream PeerPacket){}
+  rpc ReportPieceResult(stream PieceResult)returns(stream PeerPacket);
 
   // ReportPeerResult reports downloading result for the peer task.
-  rpc ReportPeerResult(PeerResult)returns(base.ResponseState){}
+  rpc ReportPeerResult(PeerResult)returns(google.protobuf.Empty);
 
   // LeaveTask makes the peer leaving from scheduling overlay for the task.
-  rpc LeaveTask(PeerTarget)returns(base.ResponseState){}
+  rpc LeaveTask(PeerTarget)returns(google.protobuf.Empty);
 }
