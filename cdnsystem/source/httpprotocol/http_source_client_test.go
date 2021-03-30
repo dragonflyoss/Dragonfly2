@@ -96,14 +96,14 @@ func (s *HttpSourceClientTestSuite) TestGetContentLength() {
 				url:    "http://www.baidu.com",
 				header: map[string]string{},
 			},
-			want:    277,
+			want:    -1,
 			wantErr: false,
 		}, {
 			name: "t3",
 			args: args{
 				url: "https://help.aliyun.com/document_detail/31984.html?spm=a2c4g.11186623.6.1696.7899c250peWBw5",
 			},
-			want:    -1,
+			want:    -10,
 			wantErr: false,
 		}, {
 			name: "t4",
@@ -112,7 +112,7 @@ func (s *HttpSourceClientTestSuite) TestGetContentLength() {
 					"com/docker/registry/v2/blobs/sha256/58" +
 					"/5801b9bc7d42e7a6df630c5c35a5eed23ae0ecc963eb4314cc6af3fc4e26ab06/data?Expires=1616228977&OSSAccessKeyId=LTAI4GGexraKrucXWXZfDZxd&Signature=zGi2iB3ghBws5edIJVN5wrRmVnw%3D",
 			},
-			want:    -1,
+			want:    -100,
 			wantErr: false,
 		}, {
 			name: "t4",
@@ -120,7 +120,7 @@ func (s *HttpSourceClientTestSuite) TestGetContentLength() {
 				url:    "http://ossproxy.aone.alibaba-inc.com/aone2/build-service/api/v2/ossproxy/download?ns=Staragent&bucketName=staragent-ui&fileId=plugins/linux/2/DeviceWipe/DeviceWipe.zip.md5&fileName=DeviceWipe.zip.md5&md5Sign=06c14c4b95b7d597d87e846dac4f4b43",
 				header: nil,
 			},
-			want:    -1,
+			want:    -1000,
 			wantErr: false,
 		}, {
 			name: "404",
@@ -135,8 +135,8 @@ func (s *HttpSourceClientTestSuite) TestGetContentLength() {
 	}
 	for _, tt := range tests {
 		got, err := s.GetContentLength(tt.args.url, tt.args.header)
-		s.Equal(err != nil, tt.wantErr)
-		s.Equal(got, tt.want)
+		s.Equal(tt.wantErr, err != nil)
+		s.Equal(tt.want, got)
 	}
 }
 
@@ -164,8 +164,8 @@ func (s *HttpSourceClientTestSuite) TestIsExpired() {
 	}
 	for _, tt := range tests {
 		got, err := s.IsExpired(tt.args.url, tt.args.header, tt.args.expireInfo)
-		s.Equal(err != nil, tt.wantErr)
-		s.Equal(got, tt.want)
+		s.Equal(tt.wantErr, err != nil)
+		s.Equal(tt.want, got)
 	}
 }
 
@@ -201,8 +201,8 @@ func (s *HttpSourceClientTestSuite) TestIsSupportRange() {
 	}
 	for _, tt := range tests {
 		got, err := s.IsSupportRange(tt.args.url, tt.args.header)
-		s.Equal(err != nil, tt.wantErr)
-		s.Equal(got, tt.want)
+		s.Equal(tt.wantErr, err != nil)
+		s.Equal(tt.want, got)
 	}
 }
 

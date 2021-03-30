@@ -77,6 +77,7 @@ func (client *httpSourceClient) GetContentLength(url string, header map[string]s
 	if err != nil {
 		return -1, errors.Wrapf(cdnerrors.ErrURLNotReachable, "get http header meta data failed:%v", err)
 	}
+	resp.Body.Close()
 	// todo 待讨论，这里如果是其他状态码是否要加入到 ErrURLNotReachable 中,如果不加入会下载404/频繁下载403
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
 		// todo 这种情况是否要和 err的情况作区分，类似于提出一种其他的错误类型用于表示这种错误是可以与url进行交互，但是状态码不符合预期
@@ -92,10 +93,11 @@ func (client *httpSourceClient) IsSupportRange(url string, header map[string]str
 	copied[headers.Range] = "bytes=0-0"
 
 	// send request
-	resp, err := client.requestWithHeader(http.MethodHead, url, copied, 4*time.Second)
+	resp, err := client.requestWithHeader(http.MethodGet, url, copied, 4*time.Second)
 	if err != nil {
 		return false, err
 	}
+	resp.Body.Close()
 	return resp.StatusCode == http.StatusPartialContent, nil
 }
 
@@ -119,11 +121,12 @@ func (client *httpSourceClient) IsExpired(url string, header, expireInfo map[str
 	}
 
 	// send request
-	resp, err := client.requestWithHeader(http.MethodHead, url, copied, 4*time.Second)
+	resp, err := client.requestWithHeader(http.MethodGet, url, copied, 4*time.Second)
 	if err != nil {
 		// 如果获取失败，则认为没有过期，防止打爆源
 		return false, err
 	}
+	resp.Body.Close()
 	return resp.StatusCode != http.StatusNotModified, nil
 }
 
