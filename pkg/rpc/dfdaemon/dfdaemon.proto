@@ -19,6 +19,7 @@ syntax = "proto3";
 package dfdaemon;
 
 import "pkg/rpc/base/base.proto";
+import "google/protobuf/empty.proto";
 
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon";
 
@@ -53,7 +54,7 @@ service Daemon{
   // get piece tasks from other peers
   rpc GetPieceTasks(base.PieceTaskRequest)returns(base.PiecePacket){}
   // check daemon health
-  rpc CheckHealth(base.EmptyRequest)returns(em){}
+  rpc CheckHealth(google.protobuf.Empty)returns(google.protobuf.Empty){}
 }
 
 

@@ -37,10 +37,6 @@ enum SizeScope{
   TINY = 2;
 }
 
-message EmptyRequest{
-
-}
-
 message UrlMeta{
   // used as follows:
   //
