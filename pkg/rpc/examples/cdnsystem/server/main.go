@@ -17,11 +17,9 @@
 package main
 
 import (
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 )
 import (
@@ -46,13 +44,13 @@ func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedReque
 				return
 			default:
 				if i < 0 {
-					psc <- &cdnsystem.PieceSeed{State: common.NewState(dfcodes.Success, "success"),
+					psc <- &cdnsystem.PieceSeed{
 						Done:          true,
 						ContentLength: 100,
 					}
 					return
 				}
-				psc <- &cdnsystem.PieceSeed{State: common.NewState(dfcodes.Success, "success")}
+				psc <- &cdnsystem.PieceSeed{}
 				time.Sleep(1 * time.Second)
 				i--
 			}

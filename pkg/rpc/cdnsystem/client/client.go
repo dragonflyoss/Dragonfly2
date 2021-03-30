@@ -21,7 +21,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"errors"
@@ -56,7 +55,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SeederClie
 
 // see cdnsystem.SeederClient
 type SeederClient interface {
-	ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (<-chan *cdnsystem.PieceSeed, error)
+	ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (<-chan *cdnsystem.PieceSeed, <-chan error)
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest,
 		opts ...grpc.CallOption) (*base.PiecePacket, error)
@@ -82,16 +81,20 @@ func (sc *seederClient) getSeederClientWithTarget(target string) (cdnsystem.Seed
 	return cdnsystem.NewSeederClient(conn), nil
 }
 
-func (sc *seederClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (<-chan *cdnsystem.PieceSeed, error) {
+func (sc *seederClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (<-chan *cdnsystem.PieceSeed, <-chan error) {
 	psc := make(chan *cdnsystem.PieceSeed, 4)
+	ec := make(chan error)
 	pss, err := newPieceSeedStream(sc, ctx, sr.TaskId, sr, opts)
 	if err != nil {
-		return nil, err
+		defer close(ec)
+		defer close(psc)
+		ec <- err
+		return psc, ec
 	}
 
-	go receive(pss, psc)
+	go receive(pss, psc, ec)
 
-	return psc, nil
+	return psc, ec
 }
 
 func (sc *seederClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest,
@@ -109,9 +112,10 @@ func (sc *seederClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, r
 	return nil, err
 }
 
-func receive(pss *pieceSeedStream, psc chan *cdnsystem.PieceSeed) {
+func receive(pss *pieceSeedStream, psc chan *cdnsystem.PieceSeed, ec chan error) {
 	safe.Call(func() {
 		defer close(psc)
+		defer close(ec)
 		for {
 			pieceSeed, err := pss.recv()
 			if err == nil {
@@ -120,7 +124,7 @@ func receive(pss *pieceSeedStream, psc chan *cdnsystem.PieceSeed) {
 					return
 				}
 			} else {
-				psc <- common.NewResWithErr(pieceSeed, err).(*cdnsystem.PieceSeed)
+				ec <- err
 				return
 			}
 		}

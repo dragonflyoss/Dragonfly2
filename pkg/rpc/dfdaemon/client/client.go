@@ -22,9 +22,9 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/safe"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -58,12 +58,12 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 
 // see dfdaemon.DaemonClient
 type DaemonClient interface {
-	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, error)
+	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, <-chan error)
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest,
 		opts ...grpc.CallOption) (*base.PiecePacket, error)
 
-	CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (*base.ResponseState, error)
+	CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) error
 }
 
 type daemonClient struct {
@@ -86,18 +86,21 @@ func (dc *daemonClient) getDaemonClientWithTarget(target string) (dfdaemon.Daemo
 	return dfdaemon.NewDaemonClient(conn), nil
 }
 
-func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, error) {
+func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, <-chan error) {
 	req.Uuid = uuid.New().String()
 
 	drc := make(chan *dfdaemon.DownResult, 4)
+	errChan := make(chan error)
 	// 生成taskId
 	taskId := idgen.GenerateTaskId(req.Url, req.Filter, req.UrlMeta, req.BizId)
 	drs, err := newDownResultStream(dc, ctx, taskId, req, opts)
 	if err != nil {
-		return nil, err
+		defer close(drc)
+		defer close(errChan)
+		return drc, errChan
 	}
 
-	go receive(drs, drc)
+	go receive(drs, drc, errChan)
 
 	return drc, nil
 }
@@ -119,24 +122,22 @@ func (dc *daemonClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, p
 	return nil, err
 }
 
-func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (*base.ResponseState, error) {
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (err error) {
+	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
 		if client, err := dc.getDaemonClientWithTarget(target.GetEndpoint()); err != nil {
 			return nil, errors.Wrapf(err, "failed to connect server %s", target.GetEndpoint())
 		} else {
-			return client.CheckHealth(ctx, &base.EmptyRequest{}, opts...)
+			return client.CheckHealth(ctx, new(empty.Empty), opts...)
 		}
 	}, 0.2, 2.0, 3, nil)
-	if err == nil {
-		return res.(*base.ResponseState), nil
-	}
-	return nil, err
+
+	return
 }
 
-func receive(drs *downResultStream, drc chan *dfdaemon.DownResult) {
+func receive(drs *downResultStream, drc chan *dfdaemon.DownResult, errChan chan error) {
 	safe.Call(func() {
 		defer close(drc)
-
+		defer close(errChan)
 		for {
 			downResult, err := drs.recv()
 			if err == nil {
@@ -145,7 +146,7 @@ func receive(drs *downResultStream, drc chan *dfdaemon.DownResult) {
 					return
 				}
 			} else {
-				drc <- common.NewResWithErr(downResult, err).(*dfdaemon.DownResult)
+				errChan <- err
 				return
 			}
 		}

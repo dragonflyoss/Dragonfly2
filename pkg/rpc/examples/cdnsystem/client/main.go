@@ -58,26 +58,35 @@ func main() {
 						"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
 					},
 				},
-				//TaskId: "test",
+				//TaskId: "test2",
 				//Url: "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
-				//TaskId: "test",
-				//Url: "http://www.baidu.com",
 				//Filter: "",
 			})
-			if err != nil {
-				panic(err)
+			for {
+				select {
+				case err, ok := <-err:
+					if !ok {
+						fmt.Println("err finish")
+						return
+					}
+					fmt.Println("ddd",err)
+				case pieceSeed, ok := <-psc:
+					if !ok {
+						fmt.Println("seed finish")
+						return
+					}
+					fmt.Printf("response:%v\n", pieceSeed)
+				}
 			}
 
-			for pieceSeed := range psc {
-				fmt.Printf("response:%v\n", pieceSeed)
-			}
 		}()
 	}
 	wg.Wait()
 	fmt.Println("client finish")
 }
 
-func main2() {
+func
+main2() {
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
