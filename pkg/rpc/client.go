@@ -18,6 +18,7 @@ package rpc
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"io"
 	"sync"
 	"time"
@@ -26,7 +27,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
@@ -320,6 +320,7 @@ func (w *wrappedClientStream) SendMsg(m interface{}) error {
 func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 	s, err := streamer(ctx, desc, cc, method, opts...)
 	if err != nil {
+		err = convertClientError(err)
 		logger.GrpcLogger.Errorf("create client stream error:%v for method:%s target:%s connState:%s", err, method, cc.Target(), cc.GetState().String())
 		return nil, err
 	}
@@ -342,18 +343,22 @@ func unaryClientInterceptor(ctx context.Context, method string, req, reply inter
 }
 
 func convertClientError(err error) error {
+	if err == nil {
+		return nil
+	}
 	s := status.Convert(err)
-	if s != nil {
-		for _, d := range s.Details() {
-			switch internal := d.(type) {
-			case *base.ResponseState:
-				return &dferrors.DfError{
-					Code:    internal.Code,
-					Message: internal.Msg,
-				}
+	for _, d := range s.Details() {
+		switch internal := d.(type) {
+		case *base.GrpcDfError:
+			return &dferrors.DfError{
+				Code:    internal.Code,
+				Message: internal.Message,
 			}
 		}
 	}
-
-	return err
+	// grpc framework error
+	return &dferrors.DfError{
+		Code:    base.Code(s.Code()),
+		Message: s.Message(),
+	}
 }

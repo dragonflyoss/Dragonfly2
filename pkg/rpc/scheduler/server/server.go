@@ -18,6 +18,7 @@ package server
 
 import (
 	"context"
+	"github.com/golang/protobuf/ptypes/empty"
 
 	"d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -42,10 +43,14 @@ type proxy struct {
 
 // see scheduler.SchedulerServer
 type SchedulerServer interface {
+	// RegisterPeerTask
 	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error)
+	// ReportPieceResult
 	ReportPieceResult(scheduler.Scheduler_ReportPieceResultServer) error
-	ReportPeerResult(context.Context, *scheduler.PeerResult) (*base.ResponseState, error)
-	LeaveTask(context.Context, *scheduler.PeerTarget) (*base.ResponseState, error)
+	// ReportPeerResult
+	ReportPeerResult(context.Context, *scheduler.PeerResult) error
+	// LeaveTask
+	LeaveTask(context.Context, *scheduler.PeerTarget) error
 }
 
 func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (rr *scheduler.RegisterResult, err error) {
@@ -57,10 +62,6 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 
 	if err == nil && rr != nil {
 		taskId = rr.TaskId
-		if rr.State != nil {
-			suc = rr.State.Success
-			code = rr.State.Code
-		}
 	}
 
 	peerHost := ptr.PeerHost
@@ -83,8 +84,8 @@ func (p *proxy) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultSe
 	return p.server.ReportPieceResult(stream)
 }
 
-func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) (*base.ResponseState, error) {
-	rs, err := p.server.ReportPeerResult(ctx, pr)
+func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) (*empty.Empty, error) {
+	err := p.server.ReportPeerResult(ctx, pr)
 
 	logger.StatPeerLogger.Info("finish peer task",
 		zap.Bool("success", pr.Success),
@@ -100,9 +101,9 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 		zap.Uint32("cost", pr.Cost),
 		zap.Int32("code", int32(pr.Code)))
 
-	return rs, err
+	return nil, err
 }
 
-func (p *proxy) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget) (*base.ResponseState, error) {
-	return p.server.LeaveTask(ctx, pt)
+func (p *proxy) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget) (*empty.Empty, error) {
+	return new(empty.Empty), p.server.LeaveTask(ctx, pt)
 }

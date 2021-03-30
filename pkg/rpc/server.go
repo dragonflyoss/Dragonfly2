@@ -18,14 +18,14 @@ package rpc
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"errors"
+	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
@@ -229,10 +229,10 @@ func unaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.Una
 
 func convertServerError(err error) error {
 	if v, ok := err.(*dferrors.DfError); ok {
-		if s, e := status.Convert(err).WithDetails(common.NewState(v.Code, v.Message)); e == nil {
+		fmt.Println(v.Message)
+		if s, e := status.Convert(err).WithDetails(common.NewGrpcDfError(v.Code, v.Message)); e == nil {
 			err = s.Err()
 		}
 	}
-
 	return err
 }
