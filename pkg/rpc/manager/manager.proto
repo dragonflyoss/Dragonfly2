@@ -32,8 +32,6 @@ message NavigatorRequest{
 }
 
 message SchedulerNodes{
-    base.ResponseState state = 1;
-
     // ip:port
     repeated string addrs = 2;
     HostInfo client_host = 3;
@@ -64,8 +62,6 @@ message SchedulerConfig{
 }
 
 message ManagementConfig{
-    base.ResponseState state = 1;
-
     oneof config{
         SchedulerConfig scheduler_config = 2;
         CdnConfig cdn_config = 3;
