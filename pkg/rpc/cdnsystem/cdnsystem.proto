@@ -32,8 +32,6 @@ message SeedRequest{
 // keep piece meta and data separately
 // check piece md5, md5s sign and total content length
 message PieceSeed{
-  base.ResponseState state = 1;
-
   // peer id for cdn node, need suffix with _CDN
   string peer_id = 2;
   // cdn node host name

@@ -39,8 +39,6 @@ message DownRequest{
 }
 
 message DownResult{
-  base.ResponseState state = 1;
-
   string task_id = 2;
   string peer_id = 3;
   uint64 completed_length = 4;
@@ -55,7 +53,7 @@ service Daemon{
   // get piece tasks from other peers
   rpc GetPieceTasks(base.PieceTaskRequest)returns(base.PiecePacket){}
   // check daemon health
-  rpc CheckHealth(base.EmptyRequest)returns(base.ResponseState){}
+  rpc CheckHealth(base.EmptyRequest)returns(em){}
 }
 
 
