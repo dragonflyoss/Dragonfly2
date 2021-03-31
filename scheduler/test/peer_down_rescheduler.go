@@ -10,6 +10,7 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/scheduler/test/common"
 	"d7y.io/dragonfly/v2/scheduler/test/mock_client"
+	"fmt"
 	testifyassert "github.com/stretchr/testify/assert"
 	"strings"
 	"time"
@@ -60,16 +61,16 @@ func (suite *SchedulerTestSuite) Test901CDNDownRescheduleCDN() {
 	assert.Nil(err)
 
 	task = result.TaskId
-	assert.True(result.State.Success)
 
-	pieceResultCh, peerPacketCh, err := sched.ReportPieceResult(ctx, result.TaskId, request)
-	assert.Nil(err)
+	pieceResultCh, peerPacketCh, errCh := sched.ReportPieceResult(ctx, result.TaskId, request)
 
 	var peerPacket *scheduler.PeerPacket
 	// timeout
 	select {
+	case err = <-errCh:
+		assert.Nil(err, fmt.Sprintf("scheduler failed recieve a error: %v", err))
 	case peerPacket = <-peerPacketCh:
-		assert.True(peerPacket.State.Success)
+		assert.True(peerPacket.Code == dfcodes.Success)
 	case <-time.After(time.Second*5):
 		assert.Fail("scheduler failed")
 	}
@@ -176,7 +177,7 @@ func (suite *SchedulerTestSuite) Test902CDNDownReschedulePeer() {
 	ctx := context.Background()
 	result, err := sched.RegisterPeerTask(ctx, request2)
 	assert.Nil(err)
-	pieceResultCh, peerPacketCh, err := sched.ReportPieceResult(ctx, result.TaskId, request2)
+	pieceResultCh, peerPacketCh, errCh := sched.ReportPieceResult(ctx, result.TaskId, request2)
 
 	pieceResultCh <- scheduler.NewZeroPieceResult(task, peer2)
 	time.Sleep(time.Second)
@@ -186,17 +187,17 @@ func (suite *SchedulerTestSuite) Test902CDNDownReschedulePeer() {
 	assert.Nil(err)
 
 	task = result.TaskId
-	assert.True(result.State.Success)
 
-	pieceResultCh, peerPacketCh, err = sched.ReportPieceResult(ctx, result.TaskId, request1)
-	assert.Nil(err)
+	pieceResultCh, peerPacketCh, errCh = sched.ReportPieceResult(ctx, result.TaskId, request1)
 
 	var peerPacket *scheduler.PeerPacket
 	var oldPeerId string
 	// timeout
 	select {
+	case err = <-errCh:
+		assert.Fail("scheduler failed %v", err)
 	case peerPacket = <-peerPacketCh:
-		assert.True(peerPacket.State.Success)
+		assert.True(peerPacket.Code == dfcodes.Success)
 		oldPeerId = peerPacket.MainPeer.PeerId
 	case <-time.After(time.Second*5):
 		assert.Fail("scheduler failed")

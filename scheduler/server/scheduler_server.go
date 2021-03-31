@@ -42,18 +42,11 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	defer func() {
 		e := recover()
 		if e != nil {
-			err = fmt.Errorf("%v", e)
+			err = dferrors.New(dfcodes.SchedError, fmt.Sprintf("%v", e))
 			return
 		}
-		pkg.State = new(base.ResponseState)
 		if err != nil {
-			pkg.State.Code = dfcodes.SchedError
-			pkg.State.Msg = err.Error()
-			pkg.State.Success = false
-			err = nil
-		} else {
-			pkg.State.Code = dfcodes.Success
-			pkg.State.Success = true
+			err = dferrors.New(dfcodes.SchedError, err.Error())
 		}
 		return
 	}()
@@ -159,22 +152,15 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	return schedule_worker.CreateClient(stream, s.worker, s.svc.GetScheduler()).Start()
 }
 
-func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (ret *base.ResponseState, err error) {
-	ret = new(base.ResponseState)
+func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (err error) {
 	defer func() {
 		e := recover()
 		if e != nil {
-			err = fmt.Errorf("%v", e)
+			err = dferrors.New(dfcodes.SchedError, fmt.Sprintf("%v", e))
 			return
 		}
 		if err != nil {
-			ret.Code = dfcodes.SchedError
-			ret.Msg = err.Error()
-			ret.Success = false
-			err = nil
-		} else {
-			ret.Code = dfcodes.Success
-			ret.Success = true
+			err = dferrors.New(dfcodes.SchedError, err.Error())
 		}
 		return
 	}()
@@ -199,22 +185,15 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 	return
 }
 
-func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (ret *base.ResponseState, err error) {
-	ret = new(base.ResponseState)
+func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (err error) {
 	defer func() {
 		e := recover()
 		if e != nil {
-			err = fmt.Errorf("%v", e)
+			err = dferrors.New(dfcodes.SchedError, fmt.Sprintf("%v", e))
 			return
 		}
 		if err != nil {
-			ret.Code = dfcodes.SchedError
-			ret.Msg = err.Error()
-			ret.Success = false
-			err = nil
-		} else {
-			ret.Code = dfcodes.Success
-			ret.Success = true
+			err = dferrors.New(dfcodes.SchedError, err.Error())
 		}
 		return
 	}()
