@@ -279,8 +279,11 @@ func (m *PeerTaskManager) printDebugInfo() string {
 		if peerTask.GetParent() == nil {
 			roots = append(roots, peerTask)
 		}
-		table.Append([]string{peerTask.Pid, strconv.Itoa(int(peerTask.GetFinishedNum())),
-			strconv.FormatBool(peerTask.Success), strconv.Itoa(int(peerTask.GetFreeLoad())), strconv.FormatBool(peerTask.IsDown())})
+		// do not print finished node witch do not has child
+		if !(peerTask.Success && peerTask.Host != nil && peerTask.Host.GetUploadLoadPercent() > 0.999) {
+			table.Append([]string{peerTask.Pid, strconv.Itoa(int(peerTask.GetFinishedNum())),
+				strconv.FormatBool(peerTask.Success), strconv.Itoa(int(peerTask.GetFreeLoad())), strconv.FormatBool(peerTask.IsDown())})
+		}
 		return
 	})
 	table.Render()
@@ -294,7 +297,9 @@ func (m *PeerTaskManager) printDebugInfo() string {
 			return
 		}
 		nPath := append(path, fmt.Sprintf("%s(%d)", node.Pid, node.GetSubTreeNodesNum()))
-		msgs = append(msgs, node.Pid+" || "+strings.Join(nPath, "-"))
+		if len(path) > 1 {
+			msgs = append(msgs, node.Pid+" || "+strings.Join(nPath, "-"))
+		}
 		for _, child := range node.GetChildren() {
 			if child == nil || child.SrcPeerTask == nil {
 				continue

@@ -46,7 +46,9 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 			return
 		}
 		if err != nil {
-			err = dferrors.New(dfcodes.SchedError, err.Error())
+			if _, ok := err.(*dferrors.DfError); !ok {
+				err = dferrors.New(dfcodes.SchedError, err.Error())
+			}
 		}
 		return
 	}()
@@ -160,7 +162,9 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 			return
 		}
 		if err != nil {
-			err = dferrors.New(dfcodes.SchedError, err.Error())
+			if _, ok := err.(*dferrors.DfError); !ok {
+				err = dferrors.New(dfcodes.SchedError, err.Error())
+			}
 		}
 		return
 	}()
@@ -193,7 +197,9 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 			return
 		}
 		if err != nil {
-			err = dferrors.New(dfcodes.SchedError, err.Error())
+			if _, ok := err.(*dferrors.DfError); !ok {
+				err = dferrors.New(dfcodes.SchedError, err.Error())
+			}
 		}
 		return
 	}()
