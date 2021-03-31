@@ -1,6 +1,7 @@
 package dynconfig
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -27,29 +28,45 @@ func newDynconfigManager(cache cache.Cache, client managerClient) (*dynconfigMan
 		client:    client,
 	}
 
-	// d.load()
-
-	// d.cache.SaveFile()
+	if err := d.cache.LoadFile(d.cachePath); err != nil {
+		if err := d.load(); err != nil {
+			return nil, err
+		}
+	}
 
 	return d, nil
 }
 
-func (d *dynconfigManager) Get() interface{} {
-	// cache.GetWithExpiration
+func (d *dynconfigManager) Get() (interface{}, error) {
+	// Cache has not expired
+	dynconfig, _, found := d.cache.GetWithExpiration(defaultCacheKey)
+	if found {
+		return dynconfig, nil
+	}
 
-	// expire
-	// d.load()
+	// Cache has expired
+	if err := d.load(); err != nil {
+		return nil, err
+	}
 
-	// not expire
-	// d.cache.Get()
-	return nil
+	dynconfig, ok := d.cache.Get(defaultCacheKey)
+	if !ok {
+		return nil, errors.New("can't find the cached data")
+	}
+
+	return dynconfig, nil
 }
 
 func (d *dynconfigManager) load() error {
-	// client.Get config from manager
+	dynconfig, err := d.client.Get()
+	if err != nil {
+		return err
+	}
 
-	// cache.Set config
-
+	d.cache.SetDefault(defaultCacheKey, dynconfig)
+	if err := d.cache.SaveFile(d.cachePath); err != nil {
+		return err
+	}
 	return nil
 }
 

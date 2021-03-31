@@ -7,18 +7,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/cache"
 )
 
-type SchedulerDynconfig struct {
-}
-
-type CDNSystemDynconfig struct {
-}
-
-type DfgetFaemonDynconfig struct {
-}
-
-type Dynconfig struct {
-}
-
 type sourceType string
 
 const (
@@ -29,13 +17,17 @@ const (
 	LocalSourceType sourceType = "local"
 )
 
+const (
+	defaultCacheKey = "dynconfig"
+)
+
 // managerClient is a client of manager
 type managerClient interface {
 	Get() (interface{}, error)
 }
 
 type strategy interface {
-	Get() interface{}
+	Get() (interface{}, error)
 }
 
 type dynconfig struct {
@@ -86,12 +78,15 @@ func NewDynconfig(sourceType sourceType, expire time.Duration, options ...Option
 		if err != nil {
 			return nil, err
 		}
-
 	case LocalSourceType:
-		d.strategy = newDynconfigLocal(d.cache, d.localConfigPath)
+		d.strategy, err = newDynconfigLocal(d.cache, d.localConfigPath)
+		if err != nil {
+			return nil, err
+		}
 	default:
-		d.strategy = newDynconfigLocal(d.cache, d.localConfigPath)
+		return nil, errors.New("unknown source type")
 	}
+
 	return d, nil
 }
 
@@ -110,6 +105,6 @@ func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, option
 	return d, nil
 }
 
-func (d *dynconfig) Get() interface{} {
+func (d *dynconfig) Get() (interface{}, error) {
 	return d.strategy.Get()
 }
