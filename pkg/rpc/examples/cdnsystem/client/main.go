@@ -18,7 +18,6 @@ package main
 
 import (
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
@@ -49,7 +48,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			psc, err := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+			psc, _ := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 				TaskId: "test1",
 				Url:    "oss://alimonitor-monitor/serverdd.xml",
 				UrlMeta: &base.UrlMeta{
@@ -64,22 +63,7 @@ func main() {
 				//Filter: "",
 			})
 			for {
-				select {
-				case err, ok := <-err:
-					if !ok {
-						fmt.Println("err finish")
-						return
-					}
-					e, ok := err.(*dferrors.DfError)
-					fmt.Println("ok:",ok, e)
-					fmt.Println("ddd",err)
-				case pieceSeed, ok := <-psc:
-					if !ok {
-						fmt.Println("seed finish")
-						return
-					}
-					fmt.Printf("response:%v\n", pieceSeed)
-				}
+				psc.Recv()
 			}
 
 		}()
