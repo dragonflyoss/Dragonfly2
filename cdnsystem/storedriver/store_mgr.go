@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package store
+package storedriver
 
 import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
@@ -24,7 +24,7 @@ import (
 )
 
 // StorageBuilder is a function that creates a new storage plugin instant with the giving conf.
-type StorageBuilder func(conf interface{}) (StorageDriver, error)
+type StorageBuilder func(conf interface{}) (Driver, error)
 
 // Register defines an interface to register a driver with specified name.
 // All drivers should call this function to register itself to the driverFactory.

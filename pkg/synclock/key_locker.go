@@ -20,9 +20,10 @@ import (
 	"sync"
 )
 
-var defaultLocker = NewKeyLocker()
+var defaultLocker = NewLockerPool()
 
-type KeyLocker struct {
+// LockerPool is a set of reader/writer mutual exclusion locks.
+type LockerPool struct {
 	// use syncPool to cache allocated but unused *countRWMutex items for later reuse
 	syncPool *sync.Pool
 
@@ -31,8 +32,8 @@ type KeyLocker struct {
 	mutex sync.Mutex
 }
 
-func NewKeyLocker() *KeyLocker {
-	return &KeyLocker{
+func NewLockerPool() *LockerPool {
+	return &LockerPool{
 		syncPool: &sync.Pool{
 			New: func() interface{} {
 				return newCountRWMutex()
@@ -50,7 +51,7 @@ func UnLock(key string, rLock bool) {
 	defaultLocker.UnLock(key, rLock)
 }
 
-func (l *KeyLocker) Lock(key string, rLock bool) {
+func (l *LockerPool) Lock(key string, rLock bool) {
 	l.mutex.Lock()
 	locker, ok := l.lockerMap[key]
 	if !ok {
@@ -63,7 +64,7 @@ func (l *KeyLocker) Lock(key string, rLock bool) {
 	locker.lock(rLock)
 }
 
-func (l *KeyLocker) UnLock(key string, rLock bool) {
+func (l *LockerPool) UnLock(key string, rLock bool) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 

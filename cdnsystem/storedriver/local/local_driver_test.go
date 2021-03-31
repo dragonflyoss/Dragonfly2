@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package disk
+package local
 
 import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/statutils"
 	"fmt"
@@ -40,7 +40,7 @@ func TestStorageSuite(t *testing.T) {
 
 type StorageTestSuite struct {
 	workHome string
-	store.StorageDriver
+	storedriver.Driver
 	suite.Suite
 }
 
@@ -57,7 +57,7 @@ func (s *StorageTestSuite) SetupSuite() {
 	})
 	s.Nil(err)
 	s.NotNil(store)
-	s.StorageDriver = store
+	s.Driver = store
 }
 
 func (s *StorageTestSuite) TeardownSuite() {
@@ -71,58 +71,58 @@ func (s *StorageTestSuite) TeardownSuite() {
 func (s *StorageTestSuite) TestGetPutBytes() {
 	var cases = []struct {
 		name        string
-		putRaw      *store.Raw
-		getRaw      *store.Raw
+		putRaw      *storedriver.Raw
+		getRaw      *storedriver.Raw
 		data        []byte
 		getErrCheck func(error) bool
 		expected    string
 	}{
 		{
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo1",
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo1",
 			},
 			data:        []byte("hello foo"),
-			getErrCheck: cdnerrors.IsNilError,
+			getErrCheck: isNilError,
 			expected:    "hello foo",
 		}, {
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo2",
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo2",
 				Offset: 0,
 				Length: 5,
 			},
-			getErrCheck: cdnerrors.IsNilError,
+			getErrCheck: isNilError,
 			data:        []byte("hello foo"),
 			expected:    "hello",
 		}, {
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo3",
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo3",
 				Offset: 0,
 				Length: 0,
 			},
-			getErrCheck: cdnerrors.IsNilError,
+			getErrCheck: isNilError,
 			data:        []byte("hello foo"),
 			expected:    "hello foo",
 		}, {
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo4",
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo4",
 				Offset: 0,
@@ -132,24 +132,24 @@ func (s *StorageTestSuite) TestGetPutBytes() {
 			data:        []byte("hello foo"),
 			expected:    "",
 		}, {
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo5",
 				Length: 5,
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo5",
 			},
-			getErrCheck: cdnerrors.IsNilError,
+			getErrCheck: isNilError,
 			data:        []byte("hello foo"),
 			expected:    "hello",
 		}, {
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo6",
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo6",
 				Offset: -1,
@@ -159,18 +159,18 @@ func (s *StorageTestSuite) TestGetPutBytes() {
 			expected:    "",
 		}, {
 			name: "offset不从0开始",
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo7",
 				Offset: 3,
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Bucket: "GetPut",
 				Key:    "foo7",
 				Offset: 3,
 			},
 			data:        []byte("hello foo"),
-			getErrCheck: cdnerrors.IsNilError,
+			getErrCheck: isNilError,
 			expected:    "hello foo",
 		},
 	}
@@ -196,61 +196,61 @@ func (s *StorageTestSuite) TestGetPutBytes() {
 func (s *StorageTestSuite) TestGetPut() {
 	var cases = []struct {
 		name        string
-		putRaw      *store.Raw
-		getRaw      *store.Raw
+		putRaw      *storedriver.Raw
+		getRaw      *storedriver.Raw
 		data        io.Reader
 		getErrCheck func(error) bool
 		expected    string
 	}{
 		{
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Key:    "foo0.meta",
 				Length: 15,
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Key: "foo0.meta",
 			},
 			data:        strings.NewReader("hello meta file"),
-			getErrCheck: cdnerrors.IsNilError,
+			getErrCheck: isNilError,
 			expected:    "hello meta file",
 		}, {
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Key: "foo1.meta",
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Key: "foo1.meta",
 			},
 			data:        strings.NewReader("hello meta file"),
-			getErrCheck: cdnerrors.IsNilError,
+			getErrCheck: isNilError,
 			expected:    "hello meta file",
 		}, {
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Key:    "foo2.meta",
 				Length: 6,
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Key: "foo2.meta",
 			},
 			data:        strings.NewReader("hello meta file"),
-			getErrCheck: cdnerrors.IsNilError,
+			getErrCheck: isNilError,
 			expected:    "hello ",
 		}, {
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Key: "foo3.meta",
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Key:    "foo3.meta",
 				Offset: 2,
 				Length: 5,
 			},
 			data:        strings.NewReader("hello meta file"),
-			getErrCheck: cdnerrors.IsNilError,
+			getErrCheck: isNilError,
 			expected:    "llo m",
 		}, {
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Key: "foo4.meta",
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Key:    "foo4.meta",
 				Offset: 2,
 				Length: -1,
@@ -259,10 +259,10 @@ func (s *StorageTestSuite) TestGetPut() {
 			data:        strings.NewReader("hello meta file"),
 			expected:    "",
 		}, {
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Key: "foo5.meta",
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Key:    "foo5.meta",
 				Offset: 30,
 				Length: 5,
@@ -299,48 +299,48 @@ func (s *StorageTestSuite) TestGetPut() {
 func (s *StorageTestSuite) TestAppendBytes() {
 	var cases = []struct {
 		name        string
-		putRaw      *store.Raw
-		appendRaw   *store.Raw
-		getRaw      *store.Raw
+		putRaw      *storedriver.Raw
+		appendRaw   *storedriver.Raw
+		getRaw      *storedriver.Raw
 		data        io.Reader
 		appData     io.Reader
 		getErrCheck func(error) bool
 		expected    string
 	}{
 		{
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Key:    "foo0.meta",
 				Length: 13,
 			},
-			appendRaw: &store.Raw{
+			appendRaw: &storedriver.Raw{
 				Key:    "foo0.meta",
 				Offset: 2,
 				Length: 3,
 				Append: true,
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Key: "foo0.meta",
 			},
 			data:        strings.NewReader("hello meta fi"),
 			appData:     strings.NewReader("append data"),
-			getErrCheck: cdnerrors.IsNilError,
+			getErrCheck: isNilError,
 			expected:    "hello meta fiapp",
 		}, {
-			putRaw: &store.Raw{
+			putRaw: &storedriver.Raw{
 				Key: "foo1.meta",
 			},
-			appendRaw: &store.Raw{
+			appendRaw: &storedriver.Raw{
 				Key:    "foo1.meta",
 				Offset: 29,
 				Length: 3,
 				Append: true,
 			},
-			getRaw: &store.Raw{
+			getRaw: &storedriver.Raw{
 				Key: "foo1.meta",
 			},
 			data:        strings.NewReader("hello meta file"),
 			appData:     strings.NewReader("append data"),
-			getErrCheck: cdnerrors.IsNilError,
+			getErrCheck: isNilError,
 			expected:    "hello meta fileapp",
 		},
 		//{
@@ -358,7 +358,7 @@ func (s *StorageTestSuite) TestAppendBytes() {
 		//		Key: "foo2.meta",
 		//	},
 		//	data:        strings.NewReader("hello meta file"),
-		//	getErrCheck: cdnerrors.IsNilError,
+		//	getErrCheck: isNilError,
 		//	expected:    "hello ",
 		//}, {
 		//	putRaw: &store.Raw{
@@ -370,7 +370,7 @@ func (s *StorageTestSuite) TestAppendBytes() {
 		//		Length: 5,
 		//	},
 		//	data:        strings.NewReader("hello meta file"),
-		//	getErrCheck: cdnerrors.IsNilError,
+		//	getErrCheck: isNilError,
 		//	expected:    "llo m",
 		//}, {
 		//	putRaw: &store.Raw{
@@ -424,7 +424,7 @@ func (s *StorageTestSuite) TestAppendBytes() {
 }
 
 func (s *StorageTestSuite) TestPutTrunc() {
-	originRaw := &store.Raw{
+	originRaw := &storedriver.Raw{
 		Key:    "fooTrunc.meta",
 		Offset: 0,
 		Trunc:  true,
@@ -432,46 +432,46 @@ func (s *StorageTestSuite) TestPutTrunc() {
 	originData := "hello world"
 
 	var cases = []struct {
-		truncRaw     *store.Raw
+		truncRaw     *storedriver.Raw
 		getErrCheck  func(error) bool
 		data         io.Reader
 		expectedData string
 	}{
 		{
-			truncRaw: &store.Raw{
+			truncRaw: &storedriver.Raw{
 				Key:    "fooTrunc.meta",
 				Offset: 0,
 				Trunc:  true,
 			},
 			data:         strings.NewReader("hello"),
-			getErrCheck:  cdnerrors.IsNilError,
+			getErrCheck:  isNilError,
 			expectedData: "hello",
 		}, {
-			truncRaw: &store.Raw{
+			truncRaw: &storedriver.Raw{
 				Key:    "fooTrunc.meta",
 				Offset: 6,
 				Trunc:  true,
 			},
 			data:         strings.NewReader("golang"),
-			getErrCheck:  cdnerrors.IsNilError,
+			getErrCheck:  isNilError,
 			expectedData: "\x00\x00\x00\x00\x00\x00golang",
 		}, {
-			truncRaw: &store.Raw{
+			truncRaw: &storedriver.Raw{
 				Key:    "fooTrunc.meta",
 				Offset: 0,
 				Trunc:  false,
 			},
 			data:         strings.NewReader("foo"),
-			getErrCheck:  cdnerrors.IsNilError,
+			getErrCheck:  isNilError,
 			expectedData: "foolo world",
 		}, {
-			truncRaw: &store.Raw{
+			truncRaw: &storedriver.Raw{
 				Key:    "fooTrunc.meta",
 				Offset: 6,
 				Trunc:  false,
 			},
 			data:         strings.NewReader("foo"),
-			getErrCheck:  cdnerrors.IsNilError,
+			getErrCheck:  isNilError,
 			expectedData: "hello foold",
 		},
 	}
@@ -483,7 +483,7 @@ func (s *StorageTestSuite) TestPutTrunc() {
 		err = s.Put(context.Background(), v.truncRaw, v.data)
 		s.Nil(err)
 
-		r, err := s.Get(context.Background(), &store.Raw{
+		r, err := s.Get(context.Background(), &storedriver.Raw{
 			Key: "fooTrunc.meta",
 		})
 		s.Nil(err)
@@ -507,7 +507,7 @@ func (s *StorageTestSuite) TestPutParallel() {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			s.Put(context.TODO(), &store.Raw{
+			s.Put(context.TODO(), &storedriver.Raw{
 				Key:    key,
 				Offset: int64(i) * int64(testStrLength),
 			}, strings.NewReader(testStr))
@@ -515,7 +515,7 @@ func (s *StorageTestSuite) TestPutParallel() {
 	}
 	wg.Wait()
 
-	info, err := s.Stat(context.TODO(), &store.Raw{Key: key})
+	info, err := s.Stat(context.TODO(), &storedriver.Raw{Key: key})
 	s.Nil(err)
 	s.Equal(info.Size, int64(routineCount)*int64(testStrLength))
 }
@@ -526,7 +526,7 @@ func (s *StorageTestSuite) TestRemove() {
 	}
 	type args struct {
 		ctx context.Context
-		raw *store.Raw
+		raw *storedriver.Raw
 	}
 	tests := []struct {
 		name    string
@@ -550,13 +550,13 @@ func (s *StorageTestSuite) TestStat() {
 	}
 	type args struct {
 		ctx context.Context
-		raw *store.Raw
+		raw *storedriver.Raw
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    *store.StorageInfo
+		want    *storedriver.StorageInfo
 		wantErr bool
 	}{
 		{
@@ -573,7 +573,7 @@ func (s *StorageTestSuite) TestStat() {
 func Test_diskStorage_CreateBaseDir(t *testing.T) {
 	type fields struct {
 		BaseDir  string
-		GcConfig *store.GcConfig
+		GcConfig *storedriver.GcConfig
 	}
 	type args struct {
 		ctx context.Context
@@ -602,11 +602,11 @@ func Test_diskStorage_CreateBaseDir(t *testing.T) {
 func Test_diskStorage_Exits(t *testing.T) {
 	type fields struct {
 		BaseDir  string
-		GcConfig *store.GcConfig
+		GcConfig *storedriver.GcConfig
 	}
 	type args struct {
 		ctx context.Context
-		raw *store.Raw
+		raw *storedriver.Raw
 	}
 	tests := []struct {
 		name   string
@@ -632,7 +632,7 @@ func Test_diskStorage_Exits(t *testing.T) {
 func Test_diskStorage_GetGcConfig(t *testing.T) {
 	type fields struct {
 		BaseDir  string
-		GcConfig *store.GcConfig
+		GcConfig *storedriver.GcConfig
 	}
 	type args struct {
 		ctx context.Context
@@ -641,7 +641,7 @@ func Test_diskStorage_GetGcConfig(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   *store.GcConfig
+		want   *storedriver.GcConfig
 	}{
 		// TODO: Add test cases.
 	}
@@ -661,7 +661,7 @@ func Test_diskStorage_GetGcConfig(t *testing.T) {
 func Test_diskStorage_GetHomePath(t *testing.T) {
 	type fields struct {
 		BaseDir  string
-		GcConfig *store.GcConfig
+		GcConfig *storedriver.GcConfig
 	}
 	type args struct {
 		ctx context.Context
@@ -690,10 +690,10 @@ func Test_diskStorage_GetHomePath(t *testing.T) {
 func Test_diskStorage_GetPath(t *testing.T) {
 	type fields struct {
 		BaseDir  string
-		GcConfig *store.GcConfig
+		GcConfig *storedriver.GcConfig
 	}
 	type args struct {
-		raw *store.Raw
+		raw *storedriver.Raw
 	}
 	tests := []struct {
 		name   string
@@ -719,7 +719,7 @@ func Test_diskStorage_GetPath(t *testing.T) {
 func Test_diskStorage_GetTotalAndFreeSpace(t *testing.T) {
 	type fields struct {
 		BaseDir  string
-		GcConfig *store.GcConfig
+		GcConfig *storedriver.GcConfig
 	}
 	type args struct {
 		ctx context.Context
@@ -758,7 +758,7 @@ func Test_diskStorage_GetTotalAndFreeSpace(t *testing.T) {
 func Test_diskStorage_GetTotalSpace(t *testing.T) {
 	type fields struct {
 		BaseDir  string
-		GcConfig *store.GcConfig
+		GcConfig *storedriver.GcConfig
 	}
 	type args struct {
 		ctx context.Context
@@ -796,7 +796,7 @@ func (s *StorageTestSuite) BenchmarkPutParallel() {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			s.Put(context.Background(), &store.Raw{
+			s.Put(context.Background(), &storedriver.Raw{
 				Key:    "foo.bech",
 				Offset: int64(i) * 5,
 			}, strings.NewReader("hello"))
@@ -807,7 +807,7 @@ func (s *StorageTestSuite) BenchmarkPutParallel() {
 
 func (s *StorageTestSuite) BenchmarkPutSerial() {
 	for k := 0; k < 1000; k++ {
-		s.Put(context.Background(), &store.Raw{
+		s.Put(context.Background(), &storedriver.Raw{
 			Key:    "foo1.bech",
 			Offset: int64(k) * 5,
 		}, strings.NewReader("hello"))
@@ -817,14 +817,14 @@ func (s *StorageTestSuite) BenchmarkPutSerial() {
 // -----------------------------------------------------------------------------
 // helper function
 
-func (s *StorageTestSuite) checkStat(raw *store.Raw) {
+func (s *StorageTestSuite) checkStat(raw *storedriver.Raw) {
 	info, err := s.Stat(context.Background(), raw)
-	s.Equal(cdnerrors.IsNilError(err), true)
+	s.Equal(isNilError(err), true)
 
 	pathTemp := filepath.Join(s.workHome, raw.Bucket, raw.Key)
 	f, _ := os.Stat(pathTemp)
 
-	s.EqualValues(info, &store.StorageInfo{
+	s.EqualValues(info, &storedriver.StorageInfo{
 		Path:       filepath.Join(raw.Bucket, raw.Key),
 		Size:       f.Size(),
 		ModTime:    f.ModTime(),
@@ -832,10 +832,14 @@ func (s *StorageTestSuite) checkStat(raw *store.Raw) {
 	})
 }
 
-func (s *StorageTestSuite) checkRemove(raw *store.Raw) {
+func (s *StorageTestSuite) checkRemove(raw *storedriver.Raw) {
 	err := s.Remove(context.Background(), raw)
-	s.Equal(cdnerrors.IsNilError(err), true)
+	s.Equal(isNilError(err), true)
 
 	_, err = s.Stat(context.Background(), raw)
 	s.Equal(cdnerrors.IsFileNotExist(err), true)
+}
+
+func isNilError(err error) bool {
+	return err == nil
 }

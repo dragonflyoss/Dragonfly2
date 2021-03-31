@@ -19,6 +19,7 @@ package cdn
 import (
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/disk"   // To register diskStorage
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/hybrid" // To register hybridStorage
+	"d7y.io/dragonfly/v2/pkg/synclock"
 )
 import (
 	"context"
@@ -29,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
@@ -47,9 +47,9 @@ func init() {
 // Manager is an implementation of the interface of CDNMgr.
 type Manager struct {
 	cfg              *config.Config
-	cacheStore       storage.StorageMgr
+	cacheStore       storage.Manager
 	limiter          *ratelimiter.RateLimiter
-	cdnLocker        *util.LockerPool
+	cdnLocker        *synclock.LockerPool
 	cacheDataManager *cacheDataManager
 	progressMgr      mgr.SeedProgressMgr
 	cdnReporter      *reporter
@@ -59,7 +59,7 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore storage.StorageMgr, progressMgr mgr.SeedProgressMgr, resourceClient source.ResourceClient) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore storage.Manager, progressMgr mgr.SeedProgressMgr, resourceClient source.ResourceClient) (mgr.CDNMgr, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	cacheDataManager := newCacheDataManager(cacheStore)
 	cdnReporter := newReporter(progressMgr, cacheStore)
@@ -67,7 +67,7 @@ func NewManager(cfg *config.Config, cacheStore storage.StorageMgr, progressMgr m
 		cfg:              cfg,
 		cacheStore:       cacheStore,
 		limiter:          rateLimiter,
-		cdnLocker:        util.NewLockerPool(),
+		cdnLocker:        synclock.NewLockerPool(),
 		cacheDataManager: cacheDataManager,
 		cdnReporter:      cdnReporter,
 		progressMgr:      progressMgr,
@@ -79,8 +79,8 @@ func NewManager(cfg *config.Config, cacheStore storage.StorageMgr, progressMgr m
 
 func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTask *types.SeedTask, err error) {
 	// obtain taskId write lock
-	cm.cdnLocker.GetLock(task.TaskId, false)
-	defer cm.cdnLocker.ReleaseLock(task.TaskId, false)
+	cm.cdnLocker.Lock(task.TaskId, false)
+	defer cm.cdnLocker.UnLock(task.TaskId, false)
 	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
 	if err != nil {

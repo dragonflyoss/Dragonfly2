@@ -11,20 +11,12 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // ManagerClient is the client API for Manager service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ManagerClient interface {
-	AddConfig(ctx context.Context, in *AddConfigRequest, opts ...grpc.CallOption) (*AddConfigResponse, error)
-	DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error)
-	UpdateConfig(ctx context.Context, in *UpdateConfigRequest, opts ...grpc.CallOption) (*UpdateConfigResponse, error)
-	GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
-	ListConfigs(ctx context.Context, in *ListConfigsRequest, opts ...grpc.CallOption) (*ListConfigsResponse, error)
-	// keep alive for cdn or scheduler and receives management configuration
-	KeepAlive(ctx context.Context, in *KeepAliveRequest, opts ...grpc.CallOption) (*KeepAliveResponse, error)
 	// get scheduler server list, using scene as follows:
 	// 1. scheduler servers are not exist in local config
 	//
@@ -32,7 +24,9 @@ type ManagerClient interface {
 	// so need retry one times to get latest servers
 	//
 	// 3. manager actively triggers fresh
-	ListSchedulers(ctx context.Context, in *ListSchedulersRequest, opts ...grpc.CallOption) (*ListSchedulersResponse, error)
+	GetSchedulers(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerNodes, error)
+	// keep alive for cdn or scheduler and receives management configuration
+	KeepAlive(ctx context.Context, in *HeartRequest, opts ...grpc.CallOption) (*ManagementConfig, error)
 }
 
 type managerClient struct {
@@ -43,63 +37,18 @@ func NewManagerClient(cc grpc.ClientConnInterface) ManagerClient {
 	return &managerClient{cc}
 }
 
-func (c *managerClient) AddConfig(ctx context.Context, in *AddConfigRequest, opts ...grpc.CallOption) (*AddConfigResponse, error) {
-	out := new(AddConfigResponse)
-	err := c.cc.Invoke(ctx, "/manager.Manager/AddConfig", in, out, opts...)
+func (c *managerClient) GetSchedulers(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerNodes, error) {
+	out := new(SchedulerNodes)
+	err := c.cc.Invoke(ctx, "/manager.Manager/GetSchedulers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *managerClient) DeleteConfig(ctx context.Context, in *DeleteConfigRequest, opts ...grpc.CallOption) (*DeleteConfigResponse, error) {
-	out := new(DeleteConfigResponse)
-	err := c.cc.Invoke(ctx, "/manager.Manager/DeleteConfig", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *managerClient) UpdateConfig(ctx context.Context, in *UpdateConfigRequest, opts ...grpc.CallOption) (*UpdateConfigResponse, error) {
-	out := new(UpdateConfigResponse)
-	err := c.cc.Invoke(ctx, "/manager.Manager/UpdateConfig", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *managerClient) GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error) {
-	out := new(GetConfigResponse)
-	err := c.cc.Invoke(ctx, "/manager.Manager/GetConfig", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *managerClient) ListConfigs(ctx context.Context, in *ListConfigsRequest, opts ...grpc.CallOption) (*ListConfigsResponse, error) {
-	out := new(ListConfigsResponse)
-	err := c.cc.Invoke(ctx, "/manager.Manager/ListConfigs", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *managerClient) KeepAlive(ctx context.Context, in *KeepAliveRequest, opts ...grpc.CallOption) (*KeepAliveResponse, error) {
-	out := new(KeepAliveResponse)
+func (c *managerClient) KeepAlive(ctx context.Context, in *HeartRequest, opts ...grpc.CallOption) (*ManagementConfig, error) {
+	out := new(ManagementConfig)
 	err := c.cc.Invoke(ctx, "/manager.Manager/KeepAlive", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *managerClient) ListSchedulers(ctx context.Context, in *ListSchedulersRequest, opts ...grpc.CallOption) (*ListSchedulersResponse, error) {
-	out := new(ListSchedulersResponse)
-	err := c.cc.Invoke(ctx, "/manager.Manager/ListSchedulers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -110,13 +59,6 @@ func (c *managerClient) ListSchedulers(ctx context.Context, in *ListSchedulersRe
 // All implementations must embed UnimplementedManagerServer
 // for forward compatibility
 type ManagerServer interface {
-	AddConfig(context.Context, *AddConfigRequest) (*AddConfigResponse, error)
-	DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error)
-	UpdateConfig(context.Context, *UpdateConfigRequest) (*UpdateConfigResponse, error)
-	GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
-	ListConfigs(context.Context, *ListConfigsRequest) (*ListConfigsResponse, error)
-	// keep alive for cdn or scheduler and receives management configuration
-	KeepAlive(context.Context, *KeepAliveRequest) (*KeepAliveResponse, error)
 	// get scheduler server list, using scene as follows:
 	// 1. scheduler servers are not exist in local config
 	//
@@ -124,7 +66,9 @@ type ManagerServer interface {
 	// so need retry one times to get latest servers
 	//
 	// 3. manager actively triggers fresh
-	ListSchedulers(context.Context, *ListSchedulersRequest) (*ListSchedulersResponse, error)
+	GetSchedulers(context.Context, *NavigatorRequest) (*SchedulerNodes, error)
+	// keep alive for cdn or scheduler and receives management configuration
+	KeepAlive(context.Context, *HeartRequest) (*ManagementConfig, error)
 	mustEmbedUnimplementedManagerServer()
 }
 
@@ -132,26 +76,11 @@ type ManagerServer interface {
 type UnimplementedManagerServer struct {
 }
 
-func (UnimplementedManagerServer) AddConfig(context.Context, *AddConfigRequest) (*AddConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddConfig not implemented")
+func (UnimplementedManagerServer) GetSchedulers(context.Context, *NavigatorRequest) (*SchedulerNodes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSchedulers not implemented")
 }
-func (UnimplementedManagerServer) DeleteConfig(context.Context, *DeleteConfigRequest) (*DeleteConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteConfig not implemented")
-}
-func (UnimplementedManagerServer) UpdateConfig(context.Context, *UpdateConfigRequest) (*UpdateConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateConfig not implemented")
-}
-func (UnimplementedManagerServer) GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
-}
-func (UnimplementedManagerServer) ListConfigs(context.Context, *ListConfigsRequest) (*ListConfigsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListConfigs not implemented")
-}
-func (UnimplementedManagerServer) KeepAlive(context.Context, *KeepAliveRequest) (*KeepAliveResponse, error) {
+func (UnimplementedManagerServer) KeepAlive(context.Context, *HeartRequest) (*ManagementConfig, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method KeepAlive not implemented")
-}
-func (UnimplementedManagerServer) ListSchedulers(context.Context, *ListSchedulersRequest) (*ListSchedulersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListSchedulers not implemented")
 }
 func (UnimplementedManagerServer) mustEmbedUnimplementedManagerServer() {}
 
@@ -163,101 +92,29 @@ type UnsafeManagerServer interface {
 }
 
 func RegisterManagerServer(s grpc.ServiceRegistrar, srv ManagerServer) {
-	s.RegisterService(&Manager_ServiceDesc, srv)
+	s.RegisterService(&_Manager_serviceDesc, srv)
 }
 
-func _Manager_AddConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddConfigRequest)
+func _Manager_GetSchedulers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NavigatorRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ManagerServer).AddConfig(ctx, in)
+		return srv.(ManagerServer).GetSchedulers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/manager.Manager/AddConfig",
+		FullMethod: "/manager.Manager/GetSchedulers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).AddConfig(ctx, req.(*AddConfigRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Manager_DeleteConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteConfigRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ManagerServer).DeleteConfig(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/manager.Manager/DeleteConfig",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).DeleteConfig(ctx, req.(*DeleteConfigRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Manager_UpdateConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateConfigRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ManagerServer).UpdateConfig(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/manager.Manager/UpdateConfig",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).UpdateConfig(ctx, req.(*UpdateConfigRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Manager_GetConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetConfigRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ManagerServer).GetConfig(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/manager.Manager/GetConfig",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).GetConfig(ctx, req.(*GetConfigRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Manager_ListConfigs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListConfigsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ManagerServer).ListConfigs(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/manager.Manager/ListConfigs",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).ListConfigs(ctx, req.(*ListConfigsRequest))
+		return srv.(ManagerServer).GetSchedulers(ctx, req.(*NavigatorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Manager_KeepAlive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(KeepAliveRequest)
+	in := new(HeartRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -269,63 +126,22 @@ func _Manager_KeepAlive_Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: "/manager.Manager/KeepAlive",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).KeepAlive(ctx, req.(*KeepAliveRequest))
+		return srv.(ManagerServer).KeepAlive(ctx, req.(*HeartRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_ListSchedulers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListSchedulersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ManagerServer).ListSchedulers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/manager.Manager/ListSchedulers",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).ListSchedulers(ctx, req.(*ListSchedulersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// Manager_ServiceDesc is the grpc.ServiceDesc for Manager service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var Manager_ServiceDesc = grpc.ServiceDesc{
+var _Manager_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "manager.Manager",
 	HandlerType: (*ManagerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "AddConfig",
-			Handler:    _Manager_AddConfig_Handler,
-		},
-		{
-			MethodName: "DeleteConfig",
-			Handler:    _Manager_DeleteConfig_Handler,
-		},
-		{
-			MethodName: "UpdateConfig",
-			Handler:    _Manager_UpdateConfig_Handler,
-		},
-		{
-			MethodName: "GetConfig",
-			Handler:    _Manager_GetConfig_Handler,
-		},
-		{
-			MethodName: "ListConfigs",
-			Handler:    _Manager_ListConfigs_Handler,
+			MethodName: "GetSchedulers",
+			Handler:    _Manager_GetSchedulers_Handler,
 		},
 		{
 			MethodName: "KeepAlive",
 			Handler:    _Manager_KeepAlive_Handler,
-		},
-		{
-			MethodName: "ListSchedulers",
-			Handler:    _Manager_ListSchedulers_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

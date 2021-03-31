@@ -36,15 +36,9 @@ enum SizeScope{
   // size <= 128 byte and be plain type
   TINY = 2;
 }
-
-message ResponseState{
-  bool success = 1;
-  Code code = 2;
-  string msg = 3;
-}
-
-message EmptyRequest{
-
+message GrpcDfError {
+  Code code = 1;
+  string message = 2;
 }
 
 message UrlMeta{
@@ -90,8 +84,6 @@ message PieceInfo{
 }
 
 message PiecePacket{
-  base.ResponseState state = 1;
-
   string task_id = 2;
   string dst_pid = 3;
   // ip:port

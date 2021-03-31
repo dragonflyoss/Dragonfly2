@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package disk
+package local
 
 import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/statutils"
@@ -39,18 +39,18 @@ import (
 func init() {
 	// Ensure that storage implements the StorageDriver interface
 	var storage *diskStorage = nil
-	var _ store.StorageDriver = storage
+	var _ storedriver.Driver = storage
 }
 
 const StorageDriver = "disk"
 
 const MemoryStorageDriver = "memory"
 
-var fileLocker = util.NewLockerPool()
+var fileLocker = synclock.NewLockerPool()
 
 func init() {
-	store.Register(StorageDriver, NewStorage)
-	store.Register(MemoryStorageDriver, NewStorage)
+	storedriver.Register(StorageDriver, NewStorage)
+	storedriver.Register(MemoryStorageDriver, NewStorage)
 }
 
 // diskStorage is one of the implementations of StorageDriver using local disk file system.
@@ -58,11 +58,11 @@ type diskStorage struct {
 	// BaseDir is the dir that local storage driver will store content based on it.
 	BaseDir string
 	// GcConfig
-	GcConfig *store.GcConfig
+	GcConfig *storedriver.GcConfig
 }
 
 // NewStorage performs initialization for disk Storage and return a StorageDriver.
-func NewStorage(conf interface{}) (store.StorageDriver, error) {
+func NewStorage(conf interface{}) (storedriver.Driver, error) {
 	cfg := &diskStorage{}
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		DecodeHook: decodeHock(
@@ -115,7 +115,7 @@ func (ds *diskStorage) GetHomePath(ctx context.Context) string {
 	return ds.BaseDir
 }
 
-func (ds *diskStorage) GetGcConfig(ctx context.Context) *store.GcConfig {
+func (ds *diskStorage) GetGcConfig(ctx context.Context) *storedriver.GcConfig {
 	return ds.GcConfig
 }
 
@@ -128,13 +128,13 @@ func (ds *diskStorage) MoveFile(src string, dst string) error {
 }
 
 // Get the content of key from storage and return in io stream.
-func (ds *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.ReadCloser, error) {
+func (ds *diskStorage) Get(ctx context.Context, raw *storedriver.Raw) (io.ReadCloser, error) {
 	path, info, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.CheckGetRaw(raw, info.Size()); err != nil {
+	if err := storedriver.CheckGetRaw(raw, info.Size()); err != nil {
 		return nil, err
 	}
 
@@ -164,13 +164,13 @@ func (ds *diskStorage) Get(ctx context.Context, raw *store.Raw) (io.ReadCloser, 
 }
 
 // GetBytes gets the content of key from storage and return in bytes.
-func (ds *diskStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []byte, err error) {
+func (ds *diskStorage) GetBytes(ctx context.Context, raw *storedriver.Raw) (data []byte, err error) {
 	path, info, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := store.CheckGetRaw(raw, info.Size()); err != nil {
+	if err := storedriver.CheckGetRaw(raw, info.Size()); err != nil {
 		return nil, err
 	}
 
@@ -197,8 +197,8 @@ func (ds *diskStorage) GetBytes(ctx context.Context, raw *store.Raw) (data []byt
 }
 
 // Put reads the content from reader and put it into storage.
-func (ds *diskStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) error {
-	if err := store.CheckPutRaw(raw); err != nil {
+func (ds *diskStorage) Put(ctx context.Context, raw *storedriver.Raw, data io.Reader) error {
+	if err := storedriver.CheckPutRaw(raw); err != nil {
 		return err
 	}
 
@@ -216,7 +216,7 @@ func (ds *diskStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) 
 
 	var f *os.File
 	if raw.Trunc {
-		if err = store.CheckTrunc(raw); err != nil {
+		if err = storedriver.CheckTrunc(raw); err != nil {
 			return err
 		}
 		f, err = fileutils.OpenFile(path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
@@ -251,8 +251,8 @@ func (ds *diskStorage) Put(ctx context.Context, raw *store.Raw, data io.Reader) 
 }
 
 // PutBytes puts the content of key from storage with bytes.
-func (ds *diskStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte) error {
-	if err := store.CheckPutRaw(raw); err != nil {
+func (ds *diskStorage) PutBytes(ctx context.Context, raw *storedriver.Raw, data []byte) error {
+	if err := storedriver.CheckPutRaw(raw); err != nil {
 		return err
 	}
 
@@ -327,12 +327,12 @@ func (ds *diskStorage) PutBytes(ctx context.Context, raw *store.Raw, data []byte
 //}
 
 // Stat determines whether the file exists.
-func (ds *diskStorage) Stat(ctx context.Context, raw *store.Raw) (*store.StorageInfo, error) {
+func (ds *diskStorage) Stat(ctx context.Context, raw *storedriver.Raw) (*storedriver.StorageInfo, error) {
 	_, fileInfo, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return nil, err
 	}
-	return &store.StorageInfo{
+	return &storedriver.StorageInfo{
 		Path:       filepath.Join(raw.Bucket, raw.Key),
 		Size:       fileInfo.Size(),
 		CreateTime: statutils.Ctime(fileInfo),
@@ -341,14 +341,14 @@ func (ds *diskStorage) Stat(ctx context.Context, raw *store.Raw) (*store.Storage
 }
 
 // Exits if filepath exists, include symbol link
-func (ds *diskStorage) Exits(ctx context.Context, raw *store.Raw) bool {
+func (ds *diskStorage) Exits(ctx context.Context, raw *storedriver.Raw) bool {
 	filePath := filepath.Join(ds.BaseDir, raw.Bucket, raw.Key)
 	return fileutils.PathExist(filePath)
 }
 
 // Remove delete a file or dir.
 // It will force delete the file or dir when the raw.Trunc is true.
-func (ds *diskStorage) Remove(ctx context.Context, raw *store.Raw) error {
+func (ds *diskStorage) Remove(ctx context.Context, raw *storedriver.Raw) error {
 	path, info, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
@@ -384,7 +384,7 @@ func (ds *diskStorage) GetTotalAndFreeSpace(ctx context.Context) (fsize.Size, fs
 
 // Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 // calling walkFn for each file or directory in the tree, including root.
-func (ds *diskStorage) Walk(ctx context.Context, raw *store.Raw) error {
+func (ds *diskStorage) Walk(ctx context.Context, raw *storedriver.Raw) error {
 	path, _, err := ds.statPath(raw.Bucket, raw.Key)
 	if err != nil {
 		return err
@@ -396,7 +396,7 @@ func (ds *diskStorage) Walk(ctx context.Context, raw *store.Raw) error {
 	return filepath.Walk(path, raw.WalkFn)
 }
 
-func (ds *diskStorage) GetPath(raw *store.Raw) string {
+func (ds *diskStorage) GetPath(raw *storedriver.Raw) string {
 	return filepath.Join(ds.BaseDir, raw.Bucket, raw.Key)
 }
 
@@ -427,20 +427,20 @@ func (ds *diskStorage) statPath(bucket, key string) (string, os.FileInfo, error)
 
 func lock(path string, offset int64, ro bool) {
 	if offset != -1 {
-		fileLocker.GetLock(getLockKey(path, -1), true)
+		fileLocker.Lock(LockKey(path, -1), true)
 	}
 
-	fileLocker.GetLock(getLockKey(path, offset), ro)
+	fileLocker.Lock(LockKey(path, offset), ro)
 }
 
 func unLock(path string, offset int64, ro bool) {
 	if offset != -1 {
-		fileLocker.ReleaseLock(getLockKey(path, -1), true)
+		fileLocker.UnLock(LockKey(path, -1), true)
 	}
 
-	fileLocker.ReleaseLock(getLockKey(path, offset), ro)
+	fileLocker.UnLock(LockKey(path, offset), ro)
 }
 
-func getLockKey(path string, offset int64) string {
+func LockKey(path string, offset int64) string {
 	return fmt.Sprintf("%s:%d", path, offset)
 }

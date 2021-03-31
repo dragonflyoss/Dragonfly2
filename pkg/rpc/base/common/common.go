@@ -17,7 +17,6 @@
 package common
 
 import (
-	"fmt"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"google.golang.org/grpc/codes"
@@ -31,15 +30,10 @@ var ZeroOfPiece = int32(-1)
 // cdn peer id suffix
 var CdnSuffix = "_CDN"
 
-func NewState(code base.Code, msg interface{}) *base.ResponseState {
-	if msg == nil {
-		msg = ""
-	}
-
-	return &base.ResponseState{
+func NewGrpcDfError(code base.Code, msg string) *base.GrpcDfError {
+	return &base.GrpcDfError{
 		Code:    code,
-		Success: code >= dfcodes.Success && code < (dfcodes.Success+100),
-		Msg:     fmt.Sprintf("%v", msg),
+		Message: msg,
 	}
 }
 
@@ -48,9 +42,6 @@ func NewState(code base.Code, msg interface{}) *base.ResponseState {
 func NewResWithCodeAndMsg(ptr interface{}, code base.Code, msg string) interface{} {
 	typ := reflect.TypeOf(ptr)
 	v := reflect.New(typ.Elem())
-
-	state := NewState(code, msg)
-	v.Elem().FieldByName("State").Set(reflect.ValueOf(state))
 
 	return v.Interface()
 }

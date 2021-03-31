@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package store
+package storedriver
 
 import (
 	"github.com/stretchr/testify/suite"
@@ -42,7 +42,7 @@ func (s *StoreMgrTestSuite) SetupSuite() {
 			name: "test1",
 			args: args{
 				name: "disk1",
-				builder: func(conf interface{}) (StorageDriver, error) {
+				builder: func(conf interface{}) (Driver, error) {
 					return nil, nil
 				},
 			},
@@ -50,7 +50,7 @@ func (s *StoreMgrTestSuite) SetupSuite() {
 			name: "test2",
 			args: args{
 				name: "memory1",
-				builder: func(conf interface{}) (StorageDriver, error) {
+				builder: func(conf interface{}) (Driver, error) {
 					return nil, nil
 				},
 			},

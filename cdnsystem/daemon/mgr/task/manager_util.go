@@ -18,7 +18,7 @@ package task
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 
 	"time"
 
@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	IllegalHttpFileLen = -100
+	IllegalSourceFileLen = -100
 )
 
 // addOrUpdateTask add a new task or update exist task
@@ -44,8 +44,8 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		taskURL = urlutils2.FilterURLParam(request.URL, request.Filter)
 	}
 	taskId := request.TaskId
-	util.GetLock(taskId, false)
-	defer util.ReleaseLock(taskId, false)
+	synclock.Lock(taskId, false)
+	defer synclock.UnLock(taskId, false)
 	if key, err := tm.taskURLUnReachableStore.Get(taskId); err == nil {
 		if unReachableStartTime, ok := key.(time.Time); ok &&
 			time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
@@ -63,7 +63,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		Url:              request.URL,
 		TaskUrl:          taskURL,
 		CdnStatus:        types.TaskInfoCdnStatusWAITING,
-		SourceFileLength: IllegalHttpFileLen,
+		SourceFileLength: IllegalSourceFileLen,
 	}
 	// using the existing task if it already exists corresponding to taskId
 	if v, err := tm.taskStore.Get(taskId); err == nil {
@@ -78,14 +78,14 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		task = newTask
 	}
 
-	if task.SourceFileLength != IllegalHttpFileLen {
+	if task.SourceFileLength != IllegalSourceFileLen {
 		return task, nil
 	}
 
 	// get sourceContentLength with req.Header
 	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Header)
 	if err != nil {
-		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length from http client:%v",
+		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length: %v",
 			task.Url, err)
 
 		if cdnerrors.IsURLNotReachable(err) {

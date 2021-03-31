@@ -18,8 +18,6 @@ package mock_cdn
 
 import (
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	common2 "d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/scheduler/test/common"
 	"d7y.io/dragonfly/v2/scheduler/test/mock_client"
 	"fmt"
@@ -113,7 +111,7 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 				return
 			default:
 				if i < 0 {
-					ps := &cdnsystem.PieceSeed{State: common2.NewState(dfcodes.Success, "success"),
+					ps := &cdnsystem.PieceSeed{
 						PeerId: mc.getPeerId(mc.addr, req.TaskId),
 						// cdn node host name
 						SeederName:    mc.cdnName,
@@ -127,7 +125,6 @@ func (mc *MockCDN) doObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 					return
 				}
 				ps := &cdnsystem.PieceSeed{
-					State:     common2.NewState(dfcodes.Success, "success"),
 					PieceInfo: &base.PieceInfo{PieceNum: pieceNum},
 					PeerId:    mc.getPeerId(mc.addr, taskId),
 					// cdn node host name

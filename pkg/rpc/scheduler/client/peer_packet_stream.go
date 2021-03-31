@@ -39,8 +39,8 @@ type peerPacketStream struct {
 	prc     chan *scheduler.PieceResult
 
 	// stream for one client
-	stream scheduler.Scheduler_ReportPieceResultClient
-	failedServers []string
+	stream          scheduler.Scheduler_ReportPieceResultClient
+	failedServers   []string
 	lastPieceResult *scheduler.PieceResult
 
 	rpc.RetryMeta
@@ -104,12 +104,8 @@ func (pps *peerPacketStream) recv() (pp *scheduler.PeerPacket, err error) {
 					return nil, err
 				}
 				rr, err := client.RegisterPeerTask(timeCtx, pps.ptr)
-				if err == nil && rr.State.Success {
+				if err == nil {
 					pps.prc <- pps.lastPieceResult
-				} else {
-					if err == nil {
-						err = errors.New(rr.State.Msg)
-					}
 				}
 				return rr, err
 			}, pps.InitBackoff, pps.MaxBackOff, pps.MaxAttempts, nil)
@@ -187,16 +183,12 @@ func (pps *peerPacketStream) replaceClient(cause error) error {
 		if err != nil {
 			return nil, err
 		}
-		rr, err := client.RegisterPeerTask(timeCtx, pps.ptr)
+		_, err = client.RegisterPeerTask(timeCtx, pps.ptr)
 
-		if err == nil && rr.State.Success {
+		if err == nil {
 			return client.ReportPieceResult(pps.ctx, pps.opts...)
-		} else {
-			if err == nil {
-				err = errors.New(rr.State.Msg)
-			}
-			return nil, err
 		}
+		return nil, err
 	}, pps.InitBackoff, pps.MaxBackOff, pps.MaxAttempts, cause)
 
 	if err != nil {

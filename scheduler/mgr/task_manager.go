@@ -17,6 +17,7 @@
 package mgr
 
 import (
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"sync"
@@ -60,6 +61,11 @@ func (m *TaskManager) AddTask(task *types.Task) (*types.Task, bool) {
 func (m *TaskManager) DeleteTask(taskId string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	t, _ := m.data[taskId]
+	if t != nil {
+		logger.Infof("Task [%s] Statistic: %+v ", t.TaskId, t.Statistic.GetStatistic())
+		GetPeerTaskManager().DeleteTask(t)
+	}
 	delete(m.data, taskId)
 	return
 }
@@ -96,11 +102,9 @@ func (m *TaskManager) gcWorkingLoop() {
 		m.lock.RUnlock()
 
 		if len(needDeleteKeys) > 0 {
-			m.lock.Lock()
 			for _, taskId := range needDeleteKeys {
-				delete(m.data, taskId)
+				m.DeleteTask(taskId)
 			}
-			m.lock.Unlock()
 		}
 
 		// clear peer task

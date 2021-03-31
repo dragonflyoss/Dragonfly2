@@ -48,7 +48,6 @@ type PeerTask struct {
 	Host *Host  // host info
 
 	isDown          bool // is leave scheduler
-	pieceStatusList *sync.Map
 	lock            *sync.Mutex
 	finishedNum     int32 // download finished piece number
 	startTime       int64
@@ -93,7 +92,6 @@ func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *Pee
 		Pid:             pid,
 		Task:            task,
 		Host:            host,
-		pieceStatusList: new(sync.Map),
 		isDown:          false,
 		lock:            new(sync.Mutex),
 		startTime:       time.Now().UnixNano(),
@@ -142,6 +140,10 @@ func (pt *PeerTask) AddParent(parent *PeerTask, concurrency int8) {
 	if parent.Host != nil {
 		parent.Host.AddUploadLoad(int32(concurrency))
 	}
+}
+
+func (pt *PeerTask) GetStartTime() int64 {
+	return pt.startTime
 }
 
 func (pt *PeerTask) GetParent() *PeerEdge {
@@ -239,33 +241,16 @@ func (pt *PeerTask) GetFinishedNum() int32 {
 	return pt.finishedNum
 }
 
-func (pt *PeerTask) GetPieceStatusList() *sync.Map {
-	return pt.pieceStatusList
-}
-
 func (pt *PeerTask) AddPieceStatus(ps *scheduler.PieceResult) {
 	pt.lock.Lock()
 	defer pt.lock.Unlock()
 
-	if pt.pieceStatusList == nil {
-		pt.pieceStatusList = new(sync.Map)
-	}
-	old, loaded := pt.pieceStatusList.LoadOrStore(ps.PieceNum, ps)
-	if loaded {
-		oldPs, _ := old.(*scheduler.PieceResult)
-		if oldPs != nil && oldPs.Success {
-			return
-		}
-		if ps.Success {
-			pt.pieceStatusList.Store(ps.PieceNum, ps)
-		}
-	}
 	if !ps.Success {
 		return
 	}
 
 	// peer as cdn set up
-	if pt.Host.Type == HostTypeCdn && pt.isDown {
+	if pt.Host != nil && pt.Host.Type == HostTypeCdn && pt.isDown {
 		pt.isDown = false
 	}
 
@@ -313,10 +298,7 @@ func (pt *PeerTask) SetClient(client IClient) {
 func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 	// if pt != nil && pt.client != nil {
 	pkg = &scheduler.PeerPacket{
-		State: &base.ResponseState{
-			Success: true,
-			Code:    dfcodes.Success,
-		},
+		Code: dfcodes.Success,
 		TaskId: pt.Task.TaskId,
 		// source peer id
 		SrcPid: pt.Pid,
@@ -362,11 +344,7 @@ func (pt *PeerTask) SendError(dfError *dferrors.DfError) error {
 			return errors.New("client closed")
 		}
 		pkg := &scheduler.PeerPacket{
-			State: &base.ResponseState{
-				Success: false,
-				Code:    dfError.Code,
-				Msg: dfError.Message,
-			},
+			Code: dfError.Code,
 		}
 		if dfError.Code == dfcodes.SchedPeerGone {
 			defer pt.client.Close()
@@ -477,4 +455,13 @@ func (pt *PeerTask) GetLastActiveTime() int64 {
 	pt.lock.Lock()
 	defer pt.lock.Unlock()
 	return pt.lastActiveTime
+}
+
+func (pt *PeerTask) GetSortKeys() (key1, key2 int){
+	if pt == nil {
+		return
+	}
+	key1 = int(pt.finishedNum)
+	key2 = int(pt.GetFreeLoad())
+	return
 }

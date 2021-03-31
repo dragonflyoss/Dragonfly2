@@ -17,7 +17,10 @@
 package cmd
 
 import (
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"fmt"
+	"go.uber.org/zap/zapcore"
 	"os"
 	"reflect"
 	"time"
@@ -29,8 +32,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/version"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
@@ -53,7 +54,7 @@ var (
 )
 
 // cdnNodeDescription is used to describe cdn command in details.
-var cdnNodeDescription = `CDN server caches downloaded data from source to avoid downloading the same files from source repeatedly.`
+var cdnNodeDescription = `cdn server caches downloaded data from source to avoid downloading the same files from source repeatedly.`
 
 var rootCmd = &cobra.Command{
 	Use:               "cdn",
@@ -63,53 +64,69 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// load config file into the given viper instance.
-		if err := readConfigFile(cdnNodeViper, cmd); err != nil {
-			return errors.Wrap(err, "read config file")
-		}
-
-		// get config from viper.
-		cfg, err := getConfigFromViper(cdnNodeViper)
-		if err != nil {
-			return errors.Wrap(err, "get config from viper")
-		}
-
-		// init logger
-		if err := logcore.InitCdnSystem(cfg.Console); err != nil {
-			return errors.Wrapf(err, "init log fail")
-		}
-
-		// set cdn node advertise ip
-		if stringutils.IsBlank(cfg.AdvertiseIP) {
-			if err := setAdvertiseIP(cfg); err != nil {
-				return err
-			}
-		}
-		logger.Debugf("get cdn config: %+v", cfg)
-
-		logger.Infof("success to init local ip of cdn, start to run cdn system, use ip: %s", cfg.AdvertiseIP)
-
-		if cfg.EnableProfiler || cfg.Console {
-			go func() {
-				// enable go pprof and statsview
-				port, _ := freeport.GetFreePort()
-				debugListen := fmt.Sprintf("localhost:%d", port)
-				viewer.SetConfiguration(viewer.WithAddr(debugListen))
-				logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
-					"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
-					Infof("enable debug at http://%s", debugListen)
-				if err := statsview.New().Start(); err != nil {
-					logger.Warnf("serve go pprof error: %s", err)
-				}
-			}()
-		}
-		d, err := daemon.New(cfg)
-		if err != nil {
-			logger.Errorf("failed to initialize daemon in cdn: %v", err)
-			return err
-		}
-		return d.Run()
+		return runCdnSystem(cmd, args)
 	},
+}
+
+func runCdnSystem(cmd *cobra.Command, args []string) error {
+	// load config file into the given viper instance.
+	if err := readConfigFile(cdnNodeViper, cmd); err != nil {
+		return errors.Wrap(err, "failed to read config file")
+	}
+
+	// get config from viper.
+	cfg, err := getConfigFromViper(cdnNodeViper)
+	if err != nil {
+		return errors.Wrap(err, "get config from viper")
+	}
+
+	err = initCdnSystem(cfg)
+
+	d, err := daemon.New(cfg)
+	if err != nil {
+		logger.Errorf("failed to initialize daemon in cdn: %v", err)
+		return err
+	}
+	return d.Run()
+}
+
+func initCdnSystem(cfg *config.Config) error {
+	// set cdn node advertise ip
+	if stringutils.IsBlank(cfg.AdvertiseIP) {
+		cfg.AdvertiseIP = iputils.HostIp
+	}
+
+	// init logger
+	if err := logcore.InitCdnSystem(cfg.Console); err != nil {
+		return errors.Wrapf(err, "init log fail")
+	}
+
+	logger.Debugf("cdn config: %+v", cfg)
+
+	logger.Infof("start to run cdn system, use ip: %s", cfg.AdvertiseIP)
+
+	initProfiler(cfg.EnableProfiler)
+	return nil
+}
+
+func initProfiler(enableProfiler bool) {
+	if !enableProfiler {
+		return
+	}
+	logcore.SetCoreLevel(zapcore.DebugLevel)
+	logcore.SetGrpcLevel(zapcore.DebugLevel)
+	go func() {
+		// enable go pprof and statsview
+		port, _ := freeport.GetFreePort()
+		debugListen := fmt.Sprintf("%s:%d", iputils.HostIp, port)
+		viewer.SetConfiguration(viewer.WithAddr(debugListen))
+		logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
+			"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
+			Debugf("enable debug at http://%s", debugListen)
+		if err := statsview.New().Start(); err != nil {
+			logger.Warnf("serve go pprof error: %s", err)
+		}
+	}()
 }
 
 func init() {
@@ -126,7 +143,7 @@ func setupFlags(cmd *cobra.Command) {
 
 	flagSet := cmd.Flags()
 
-	defaultBaseProperties := config.NewBaseProperties()
+	defaultBaseProperties := config.NewDefaultBaseProperties()
 
 	flagSet.String("config", config.DefaultCdnConfigFilePath,
 		"the path of cdn configuration file")
@@ -135,7 +152,7 @@ func setupFlags(cmd *cobra.Command) {
 		"listenPort is the port that cdn server listens on")
 
 	flagSet.Int("download-port", defaultBaseProperties.DownloadPort,
-		"downloadPort is the port for download files from cdnNode")
+		"downloadPort is the port for download files from cdn")
 
 	flagSet.Var(&defaultBaseProperties.SystemReservedBandwidth, "system-bandwidth",
 		"network rate reserved for system")
@@ -144,7 +161,7 @@ func setupFlags(cmd *cobra.Command) {
 		"network rate that cdnNode can use")
 
 	flagSet.Bool("profiler", defaultBaseProperties.EnableProfiler,
-		"profiler sets whether cdnNode HTTP server setups profiler")
+		"profiler sets if cdn HTTP server setups profiler")
 
 	flagSet.String("advertise-ip", defaultBaseProperties.AdvertiseIP,
 		"the cdn node ip is the ip we advertise to other peers in the p2p-network")
@@ -167,12 +184,12 @@ func setupFlags(cmd *cobra.Command) {
 	flagSet.String("storagePattern", defaultBaseProperties.StoragePattern,
 		"storagePattern is the pattern of storage: hybrid/disk/memory")
 
-	flagSet.Bool("console", defaultBaseProperties.Console, "console shows log on console")
+	flagSet.Bool("console", defaultBaseProperties.Console, "console sets if shows log on console")
 
 	exitOnError(bindRootFlags(cdnNodeViper), "bind root command flags")
 }
 
-// bindRootFlags binds flags on rootCmd to the given viper instance.
+// bindRootFlags binds flags on rootCmd and env variable to the given viper instance.
 func bindRootFlags(v *viper.Viper) error {
 	flags := []struct {
 		key  string
@@ -228,7 +245,7 @@ func bindRootFlags(v *viper.Viper) error {
 			return err
 		}
 	}
-
+	// bind env
 	v.SetEnvPrefix(cdnNodeEnvPrefix)
 	v.AutomaticEnv()
 
@@ -260,7 +277,7 @@ func getDefaultConfig() (interface{}, error) {
 
 // getConfigFromViper returns cdn config from the given viper instance
 func getConfigFromViper(v *viper.Viper) (*config.Config, error) {
-	cfg := config.NewConfig()
+	cfg := config.NewDefaultConfig()
 
 	if err := v.Unmarshal(cfg, func(dc *mapstructure.DecoderConfig) {
 		dc.TagName = "yaml"
@@ -272,9 +289,6 @@ func getConfigFromViper(v *viper.Viper) (*config.Config, error) {
 	}); err != nil {
 		return nil, errors.Wrap(err, "unmarshal yaml")
 	}
-
-	// set dynamic configuration
-	//cfg.DownloadPath = filepath.Join(cfg.HomeDir, "repo", "download")
 
 	return cfg, nil
 }
@@ -296,16 +310,13 @@ func decodeWithYAML(types ...reflect.Type) mapstructure.DecodeHookFunc {
 
 func setAdvertiseIP(cfg *config.Config) error {
 	// use the first non-loop address if the AdvertiseIP is empty
-	cfg.AdvertiseIP = iputils.HostIp
 
 	return nil
 }
 
 // Execute will process cdn.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		logger.Fatal(err)
-	}
+	exitOnError(rootCmd.Execute(), "cdn cmd execute")
 }
 
 func exitOnError(err error, msg string) {

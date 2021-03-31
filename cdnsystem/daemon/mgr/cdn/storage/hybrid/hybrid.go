@@ -24,11 +24,11 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
-	"d7y.io/dragonfly/v2/cdnsystem/store"
-	"d7y.io/dragonfly/v2/cdnsystem/store/disk"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/cdnsystem/util"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"encoding/json"
@@ -51,18 +51,18 @@ func init() {
 	var _ storage.Builder = builder
 
 	var hybrid *hybridStorageMgr = nil
-	var _ storage.StorageMgr = hybrid
+	var _ storage.Manager = hybrid
 }
 
 type hybridBuilder struct {
 }
 
-func (*hybridBuilder) Build(cfg *config.Config) (storage.StorageMgr, error) {
-	diskStore, err := store.Get(disk.StorageDriver)
+func (*hybridBuilder) Build(cfg *config.Config) (storage.Manager, error) {
+	diskStore, err := storedriver.Get(local.StorageDriver)
 	if err != nil {
 		return nil, err
 	}
-	memoryStore, err := store.Get(disk.MemoryStorageDriver)
+	memoryStore, err := storedriver.Get(local.MemoryStorageDriver)
 	if err != nil {
 		return nil, err
 	}
@@ -86,8 +86,8 @@ func (*hybridBuilder) Name() string {
 
 type hybridStorageMgr struct {
 	cfg                config.Config
-	memoryStore        store.StorageDriver
-	diskStore          store.StorageDriver
+	memoryStore        storedriver.Driver
+	diskStore          storedriver.Driver
 	taskMgr            mgr.SeedTaskMgr
 	diskStoreCleaner   *storage.Cleaner
 	memoryStoreCleaner *storage.Cleaner
@@ -118,29 +118,29 @@ func (h *hybridStorageMgr) GC(ctx context.Context) error {
 
 func (h *hybridStorageMgr) gcTasks(ctx context.Context, gcTaskIDs []string, isDisk bool) {
 	for _, taskID := range gcTaskIDs {
-		util.GetLock(taskID, false)
+		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
 		if _, err := h.taskMgr.Get(ctx, taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
 			if err != nil {
 				logger.GcLogger.Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
 			}
-			util.ReleaseLock(taskID, false)
+			synclock.UnLock(taskID, false)
 			continue
 		}
 		if isDisk {
 			if err := h.deleteDiskFiles(ctx, taskID); err != nil {
 				logger.GcLogger.Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
-				util.ReleaseLock(taskID, false)
+				synclock.UnLock(taskID, false)
 				continue
 			}
 		} else {
 			if err := h.deleteMemoryFiles(ctx, taskID); err != nil {
 				logger.GcLogger.Errorf("gc memory: failed to delete memory files with taskID(%s): %v", taskID, err)
-				util.ReleaseLock(taskID, false)
+				synclock.UnLock(taskID, false)
 				continue
 			}
 		}
-		util.ReleaseLock(taskID, false)
+		synclock.UnLock(taskID, false)
 	}
 }
 
@@ -252,11 +252,11 @@ func (h *hybridStorageMgr) ResetRepo(ctx context.Context, task *types.SeedTask) 
 	return nil
 }
 
-func (h *hybridStorageMgr) GetDownloadPath(rawFunc *store.Raw) string {
+func (h *hybridStorageMgr) GetDownloadPath(rawFunc *storedriver.Raw) string {
 	return h.diskStore.GetPath(rawFunc)
 }
 
-func (h *hybridStorageMgr) StatDownloadFile(ctx context.Context, taskId string) (*store.StorageInfo, error) {
+func (h *hybridStorageMgr) StatDownloadFile(ctx context.Context, taskId string) (*storedriver.StorageInfo, error) {
 	return h.diskStore.Stat(ctx, storage.GetDownloadRaw(taskId))
 }
 
@@ -311,7 +311,7 @@ func (h *hybridStorageMgr) deleteTaskFiles(ctx context.Context, taskId string, d
 func (h *hybridStorageMgr) tryShmSpace(ctx context.Context, url, taskId string, fileLength int64) (string, error) {
 	if h.shmSwitch.check(url, fileLength) && h.hasShm {
 		remainder := atomic.NewInt64(0)
-		h.memoryStore.Walk(ctx, &store.Raw{
+		h.memoryStore.Walk(ctx, &storedriver.Raw{
 			WalkFn: func(filePath string, info os.FileInfo, err error) error {
 				if fileutils.IsRegular(filePath) {
 					taskId := path.Base(filePath)
@@ -342,7 +342,7 @@ func (h *hybridStorageMgr) tryShmSpace(ctx context.Context, url, taskId string, 
 				fileLength)
 		}
 		if canUseShm { // 创建shm
-			raw := &store.Raw{
+			raw := &storedriver.Raw{
 				Key: taskId,
 			}
 			return h.memoryStore.GetPath(raw), nil
@@ -352,7 +352,7 @@ func (h *hybridStorageMgr) tryShmSpace(ctx context.Context, url, taskId string, 
 	return "", fmt.Errorf("shared memory is not allowed")
 }
 
-func (h *hybridStorageMgr) getDiskDefaultGcConfig() *store.GcConfig {
+func (h *hybridStorageMgr) getDiskDefaultGcConfig() *storedriver.GcConfig {
 	totalSpace, err := h.diskStore.GetTotalSpace(context.TODO())
 	if err != nil {
 		logger.GcLogger.Errorf("failed to get total space of disk: %v", err)
@@ -361,7 +361,7 @@ func (h *hybridStorageMgr) getDiskDefaultGcConfig() *store.GcConfig {
 	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
 		yongGcThreshold = totalSpace / 4
 	}
-	return &store.GcConfig{
+	return &storedriver.GcConfig{
 		YoungGCThreshold:  yongGcThreshold,
 		FullGCThreshold:   25 * fsize.GB,
 		IntervalThreshold: 2 * time.Hour,
@@ -369,7 +369,7 @@ func (h *hybridStorageMgr) getDiskDefaultGcConfig() *store.GcConfig {
 	}
 }
 
-func (h *hybridStorageMgr) getMemoryDefaultGcConfig() *store.GcConfig {
+func (h *hybridStorageMgr) getMemoryDefaultGcConfig() *storedriver.GcConfig {
 	// determine whether the shared cache can be used
 	diff := fsize.Size(0)
 	totalSpace, err := h.memoryStore.GetTotalSpace(context.TODO())
@@ -382,7 +382,7 @@ func (h *hybridStorageMgr) getMemoryDefaultGcConfig() *store.GcConfig {
 	if diff >= totalSpace {
 		h.hasShm = false
 	}
-	return &store.GcConfig{
+	return &storedriver.GcConfig{
 		YoungGCThreshold:  10*fsize.GB + diff,
 		FullGCThreshold:   2*fsize.GB + diff,
 		CleanRatio:        3,
@@ -410,7 +410,7 @@ func (h *hybridStorageMgr) getMemoryUsableSpace(ctx context.Context) fsize.Size 
 	return 0
 }
 
-func getHardLinkRaw(taskId string) *store.Raw {
+func getHardLinkRaw(taskId string) *storedriver.Raw {
 	raw := storage.GetDownloadRaw(taskId)
 	raw.Key = raw.Key + ".hard"
 	return raw

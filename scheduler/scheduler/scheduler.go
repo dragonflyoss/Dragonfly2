@@ -18,6 +18,7 @@ package scheduler
 
 import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"d7y.io/dragonfly/v2/scheduler/scheduler/basic"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -36,9 +37,10 @@ func CreateScheduler() *Scheduler {
 
 // scheduler children to a peer
 func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.PeerTask, err error) {
-	if peer == nil {
+	if peer == nil || peer.IsDown() {
 		return
 	}
+
 	freeLoad := peer.GetFreeLoad()
 	candidates := s.factory.getEvaluator(peer.Task).SelectChildCandidates(peer)
 	schedulerResult := make(map[*types.PeerTask]int8)
@@ -71,12 +73,13 @@ func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.P
 		}
 		child.AddParent(peer, 1)
 	}
+	mgr.GetPeerTaskManager().UpdatePeerTask(peer)
 	return
 }
 
 // scheduler a parent to a peer
 func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTask, secondary []*types.PeerTask, err error) {
-	if peer == nil {
+	if peer == nil || peer.Success || peer.IsDown() {
 		return
 	}
 
@@ -110,6 +113,8 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTa
 		}
 		peer.DeleteParent()
 		peer.AddParent(primary, 1)
+		mgr.GetPeerTaskManager().UpdatePeerTask(primary)
+		mgr.GetPeerTaskManager().UpdatePeerTask(oldParent)
 	} else {
 		logger.Debugf("[%s][%s]SchedulerParent scheduler a empty parent", peer.Task.TaskId, peer.Pid)
 	}
@@ -119,7 +124,13 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTa
 
 func (s *Scheduler) SchedulerBadNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
 	logger.Debugf("[%s][%s]SchedulerBadNode scheduler node is bad", peer.Task.TaskId, peer.Pid)
-	peer.DeleteParent()
+	parent := peer.GetParent()
+	if parent != nil && parent.DstPeerTask != nil {
+		pNode := parent.DstPeerTask
+		peer.DeleteParent()
+		mgr.GetPeerTaskManager().UpdatePeerTask(pNode)
+	}
+
 	for _, child := range peer.GetChildren() {
 		child.SrcPeerTask.DeleteParent()
 		s.SchedulerParent(child.SrcPeerTask)
@@ -142,8 +153,14 @@ func (s *Scheduler) SchedulerBadNode(peer *types.PeerTask) (adjustNodes []*types
 }
 
 func (s *Scheduler) SchedulerLeaveNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
-	peer.DeleteParent()
-	peer.SetDown()
+	parent := peer.GetParent()
+	if parent != nil && parent.DstPeerTask != nil {
+		pNode := parent.DstPeerTask
+		peer.DeleteParent()
+		peer.SetDown()
+		mgr.GetPeerTaskManager().UpdatePeerTask(pNode)
+	}
+	mgr.GetPeerTaskManager().UpdatePeerTask(peer)
 
 	for _, child := range peer.GetChildren() {
 		child.SrcPeerTask.DeleteParent()
@@ -155,7 +172,12 @@ func (s *Scheduler) SchedulerLeaveNode(peer *types.PeerTask) (adjustNodes []*typ
 }
 
 func (s *Scheduler) SchedulerAdjustParentNode(peer *types.PeerTask) (primary *types.PeerTask, secondary []*types.PeerTask, err error) {
-	peer.DeleteParent()
+	parent := peer.GetParent()
+	if parent != nil && parent.DstPeerTask != nil {
+		pNode := parent.DstPeerTask
+		peer.DeleteParent()
+		mgr.GetPeerTaskManager().UpdatePeerTask(pNode)
+	}
 	return s.SchedulerParent(peer)
 }
 
@@ -168,6 +190,7 @@ func (s *Scheduler) SchedulerDone(peer *types.PeerTask) (parent *types.PeerTask,
 		return
 	}
 	peer.DeleteParent()
+	mgr.GetPeerTaskManager().UpdatePeerTask(parent)
 
 	return
 }
