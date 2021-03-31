@@ -24,9 +24,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
 )
 
-type pieceSeedStream struct {
+type PieceSeedStream struct {
 	// client for one target
 	sc      *seederClient
 	ctx     context.Context
@@ -40,8 +41,8 @@ type pieceSeedStream struct {
 	rpc.RetryMeta
 }
 
-func newPieceSeedStream(sc *seederClient, ctx context.Context, hashKey string, sr *cdnsystem.SeedRequest, opts []grpc.CallOption) (*pieceSeedStream, error) {
-	pss := &pieceSeedStream{
+func newPieceSeedStream(sc *seederClient, ctx context.Context, hashKey string, sr *cdnsystem.SeedRequest, opts []grpc.CallOption) (*PieceSeedStream, error) {
+	pss := &PieceSeedStream{
 		sc:      sc,
 		ctx:     ctx,
 		hashKey: hashKey,
@@ -61,7 +62,7 @@ func newPieceSeedStream(sc *seederClient, ctx context.Context, hashKey string, s
 	}
 }
 
-func (pss *pieceSeedStream) initStream() error {
+func (pss *PieceSeedStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		if client, err := pss.sc.getSeederClient(pss.hashKey); err != nil {
 			return nil, err
@@ -78,15 +79,15 @@ func (pss *pieceSeedStream) initStream() error {
 	return err
 }
 
-func (pss *pieceSeedStream) recv() (ps *cdnsystem.PieceSeed, err error) {
+func (pss *PieceSeedStream) Recv() (ps *cdnsystem.PieceSeed, err error) {
 	pss.sc.UpdateAccessNodeMap(pss.hashKey)
-	if ps, err = pss.stream.Recv(); err != nil {
+	if ps, err = pss.stream.Recv(); err != nil && err != io.EOF {
 		ps, err = pss.retryRecv(err)
 	}
 	return
 }
 
-func (pss *pieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error) {
+func (pss *PieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error) {
 	code := status.Code(cause)
 	if code == codes.DeadlineExceeded {
 		return nil, cause
@@ -98,10 +99,10 @@ func (pss *pieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error)
 		}
 	}
 
-	return pss.recv()
+	return pss.Recv()
 }
 
-func (pss *pieceSeedStream) replaceStream(key string, cause error) error {
+func (pss *PieceSeedStream) replaceStream(key string, cause error) error {
 	if pss.StreamTimes >= pss.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
@@ -122,7 +123,7 @@ func (pss *pieceSeedStream) replaceStream(key string, cause error) error {
 	return err
 }
 
-func (pss *pieceSeedStream) replaceClient(key string, cause error) error {
+func (pss *PieceSeedStream) replaceClient(key string, cause error) error {
 	if preNode, err := pss.sc.TryMigrate(key, cause, pss.failedServers); err != nil {
 		return err
 	} else {

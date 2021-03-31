@@ -24,22 +24,23 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
 )
 
-type downResultStream struct {
+type DownResultStream struct {
 	dc      *daemonClient
 	ctx     context.Context
 	hashKey string
 	req     *dfdaemon.DownRequest
 	opts    []grpc.CallOption
 	// stream for one client
-	stream dfdaemon.Daemon_DownloadClient
+	stream        dfdaemon.Daemon_DownloadClient
 	failedServers []string
 	rpc.RetryMeta
 }
 
-func newDownResultStream(dc *daemonClient, ctx context.Context, hashKey string, req *dfdaemon.DownRequest, opts []grpc.CallOption) (*downResultStream, error) {
-	drs := &downResultStream{
+func newDownResultStream(dc *daemonClient, ctx context.Context, hashKey string, req *dfdaemon.DownRequest, opts []grpc.CallOption) (*DownResultStream, error) {
+	drs := &DownResultStream{
 		dc:      dc,
 		ctx:     ctx,
 		hashKey: hashKey,
@@ -60,7 +61,7 @@ func newDownResultStream(dc *daemonClient, ctx context.Context, hashKey string, 
 	}
 }
 
-func (drs *downResultStream) initStream() error {
+func (drs *DownResultStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		if client, err := drs.dc.getDaemonClient(drs.hashKey); err != nil {
 			return nil, err
@@ -79,16 +80,16 @@ func (drs *downResultStream) initStream() error {
 	return err
 }
 
-func (drs *downResultStream) recv() (dr *dfdaemon.DownResult, err error) {
+func (drs *DownResultStream) Recv() (dr *dfdaemon.DownResult, err error) {
 	drs.dc.UpdateAccessNodeMap(drs.hashKey)
-	if dr, err = drs.stream.Recv(); err != nil {
+	if dr, err = drs.stream.Recv(); err != nil && err != io.EOF {
 		dr, err = drs.retryRecv(err)
 	}
 
 	return
 }
 
-func (drs *downResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error) {
+func (drs *DownResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error) {
 	code := status.Code(cause)
 	if code == codes.DeadlineExceeded {
 		return nil, cause
@@ -100,10 +101,10 @@ func (drs *downResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error
 		}
 	}
 
-	return drs.recv()
+	return drs.Recv()
 }
 
-func (drs *downResultStream) replaceStream(cause error) error {
+func (drs *DownResultStream) replaceStream(cause error) error {
 	if drs.StreamTimes >= drs.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
@@ -124,7 +125,7 @@ func (drs *downResultStream) replaceStream(cause error) error {
 	return err
 }
 
-func (drs *downResultStream) replaceClient(cause error) error {
+func (drs *DownResultStream) replaceClient(cause error) error {
 	if preNode, err := drs.dc.TryMigrate(drs.hashKey, cause, drs.failedServers); err != nil {
 		return err
 	} else {

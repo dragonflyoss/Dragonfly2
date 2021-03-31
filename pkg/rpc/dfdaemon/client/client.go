@@ -23,7 +23,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
-	"d7y.io/dragonfly/v2/pkg/safe"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -58,7 +57,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 
 // see dfdaemon.DaemonClient
 type DaemonClient interface {
-	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, <-chan error)
+	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error)
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest,
 		opts ...grpc.CallOption) (*base.PiecePacket, error)
@@ -86,23 +85,11 @@ func (dc *daemonClient) getDaemonClientWithTarget(target string) (dfdaemon.Daemo
 	return dfdaemon.NewDaemonClient(conn), nil
 }
 
-func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (<-chan *dfdaemon.DownResult, <-chan error) {
+func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error) {
 	req.Uuid = uuid.New().String()
-
-	drc := make(chan *dfdaemon.DownResult, 4)
-	errChan := make(chan error)
 	// 生成taskId
 	taskId := idgen.GenerateTaskId(req.Url, req.Filter, req.UrlMeta, req.BizId)
-	drs, err := newDownResultStream(dc, ctx, taskId, req, opts)
-	if err != nil {
-		defer close(drc)
-		defer close(errChan)
-		return drc, errChan
-	}
-
-	go receive(drs, drc, errChan)
-
-	return drc, nil
+	return newDownResultStream(dc, ctx, taskId, req, opts)
 }
 
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest,
@@ -132,23 +119,4 @@ func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, o
 	}, 0.2, 2.0, 3, nil)
 
 	return
-}
-
-func receive(drs *downResultStream, drc chan *dfdaemon.DownResult, errChan chan error) {
-	safe.Call(func() {
-		defer close(drc)
-		defer close(errChan)
-		for {
-			downResult, err := drs.recv()
-			if err == nil {
-				drc <- downResult
-				if downResult.Done {
-					return
-				}
-			} else {
-				errChan <- err
-				return
-			}
-		}
-	})
 }

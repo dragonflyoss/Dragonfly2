@@ -22,14 +22,11 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/safe"
 	"errors"
 	"fmt"
 	"google.golang.org/grpc"
 	"sync"
-	"time"
 )
 
 func GetClient() (SchedulerClient, error) {
@@ -61,8 +58,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 type SchedulerClient interface {
 	RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error)
 	// IsMigrating of ptr will be set to true
-	ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult,
-		<-chan *scheduler.PeerPacket, <-chan error)
+	ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*PeerPacketStream, error)
 
 	ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error
 
@@ -118,31 +114,15 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 	return
 }
 
-func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest,
-	opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, <-chan error) {
-	prc := make(chan *scheduler.PieceResult, 4)
-	ppc := make(chan *scheduler.PeerPacket, 4)
-	errChan := make(chan error)
-	pps, err := newPeerPacketStream(sc, ctx, taskId, ptr, opts, prc)
+func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*PeerPacketStream, error) {
+	pps, err := newPeerPacketStream(sc, ctx, taskId, ptr, opts)
 
 	logger.With("peerId", ptr.PeerId, "errMsg", err).
 		Infof("start to report piece result for taskId:%s", taskId)
 
-	if err != nil {
-		defer close(prc)
-		defer close(ppc)
-		defer close(errChan)
-		return prc, ppc, errChan
-	}
-
-	go send(pps, prc, ppc, errChan)
-
-	go receive(pps, ppc, errChan)
-
 	// trigger scheduling
-	prc <- scheduler.NewZeroPieceResult(taskId, ptr.PeerId)
-
-	return prc, ppc, nil
+	pps.Send(scheduler.NewZeroPieceResult(taskId, ptr.PeerId))
+	return pps, err
 }
 
 func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
@@ -192,36 +172,4 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 			suc, pt.TaskId, sc.GetServerNode(pt.TaskId))
 
 	return
-}
-
-func receive(stream *peerPacketStream, ppc chan *scheduler.PeerPacket, errChan chan error) {
-	safe.Call(func() {
-		for {
-			if peerPacket, err := stream.recv(); err == nil {
-				ppc <- peerPacket
-			} else {
-				// return error and check ppc
-				errChan <- err
-				time.Sleep(200 * time.Millisecond)
-			}
-		}
-	})
-}
-
-// no send no receive
-func send(stream *peerPacketStream, prc chan *scheduler.PieceResult, ppc chan *scheduler.PeerPacket, errChan chan error) {
-	safe.Call(func() {
-		defer close(ppc)
-		defer close(prc)
-		defer close(errChan)
-		defer stream.closeSend()
-
-		for v := range prc {
-			if err := stream.send(v); err != nil {
-				return
-			} else if v.PieceNum == common.EndOfPiece {
-				return
-			}
-		}
-	})
 }
