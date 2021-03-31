@@ -35,6 +35,7 @@ import (
 
 const (
 	PeerGoneTimeout = int64(time.Second * 10)
+	PeerForceGoneTimeout = int64(time.Minute * 2)
 )
 
 type PeerTaskManager struct {
@@ -356,6 +357,12 @@ func (m *PeerTaskManager) downloadMonitorWorkingLoop() {
 						}
 						m.downloadMonitorCallBack(pt)
 					} else if !pt.IsWaiting() {
+						m.downloadMonitorCallBack(pt)
+					} else {
+						if time.Now().UnixNano() > pt.GetLastActiveTime()+PeerForceGoneTimeout {
+							pt.SetNodeStatus(types.PeerTaskStatusNodeGone)
+							pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report fource time out"))
+						}
 						m.downloadMonitorCallBack(pt)
 					}
 					_, ok := m.GetPeerTask(pt.Pid)
