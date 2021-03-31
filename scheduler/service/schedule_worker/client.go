@@ -19,6 +19,7 @@ package schedule_worker
 import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"io"
+	"time"
 
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -72,7 +73,7 @@ func (c *Client) doWork() error {
 			logger.Infof("[%s][%s]: receive a pieceResult %v - %v cost[%d]", pr.TaskId, pr.SrcPid, pr.PieceNum, pr.Code, pr.EndTime - pr.BeginTime)
 		}
 		if pr.PieceNum == common.EndOfPiece {
-			logger.Infof("[%s][%s]: client closed", pr.TaskId, pr.SrcPid)
+			logger.Infof("[%s][%s]: client closed total cost[%d]", pr.TaskId, pr.SrcPid, time.Now().UnixNano()-peerTask.GetStartTime())
 			return nil
 		}
 		c.worker.ReceiveUpdatePieceResult(pr)

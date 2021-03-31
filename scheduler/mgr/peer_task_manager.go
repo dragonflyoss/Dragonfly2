@@ -280,7 +280,7 @@ func (m *PeerTaskManager) printDebugInfo() string {
 			roots = append(roots, peerTask)
 		}
 		// do not print finished node witch do not has child
-		if !(peerTask.Success && peerTask.Host != nil && peerTask.Host.GetUploadLoadPercent() > 0.999) {
+		if !(peerTask.Success && peerTask.Host != nil && peerTask.Host.GetUploadLoadPercent() < 0.001) {
 			table.Append([]string{peerTask.Pid, strconv.Itoa(int(peerTask.GetFinishedNum())),
 				strconv.FormatBool(peerTask.Success), strconv.Itoa(int(peerTask.GetFreeLoad())), strconv.FormatBool(peerTask.IsDown())})
 		}

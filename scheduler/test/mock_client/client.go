@@ -70,6 +70,7 @@ type MockClient struct {
 	logger        common.TestLogger
 	replyChan     chan *scheduler.PieceResult
 	replyFinished chan struct{}
+	stream 		  *client.PeerPacketStream
 	in            chan<- *scheduler.PieceResult
 	out           <-chan *scheduler.PeerPacket
 	url           string
@@ -206,8 +207,7 @@ func (mc *MockClient) registerPeerTask() (err error) {
 			time.Sleep(time.Second * 3)
 			cancel()
 		}()
-		var errCh <-chan error
-		mc.in, mc.out, errCh = mc.cli.ReportPieceResult(ctx, mc.taskId, request)
+		mc.stream,err = mc.cli.ReportPieceResult(ctx, mc.taskId, request)
 		if err != nil {
 			mc.logger.Errorf("[%s] PullPieceTasks failed: %e", mc.pid, err)
 			return
@@ -217,14 +217,17 @@ func (mc *MockClient) registerPeerTask() (err error) {
 		var resp *scheduler.PeerPacket
 
 		for {
-			select {
-			case err = <-errCh:
+
+			resp, err = mc.stream.Recv()
+			if err != nil {
 				mc.logger.Logf("client[%s] receive error %v", err)
 				return
-			case resp = <-mc.out:
+			}
+			select {
 			case <-mc.waitStop:
 				mc.logger.Logf("client[%s] is down", mc.pid)
 				return
+			default:
 			}
 			if resp.MainPeer != nil {
 				mc.lock.Lock()
