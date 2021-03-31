@@ -58,7 +58,35 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 						Name: schedulerName,
 					},
 				}, &d)
-				m.Get().Return(d, nil)
+				m.Get().Return(d, nil).Times(1)
+			},
+			expect: func(t *testing.T, data interface{}) {
+				assert := assert.New(t)
+				var d TestDynConfig
+				mapstructure.Decode(data, &d)
+				assert.EqualValues(d, TestDynConfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				})
+			},
+		},
+		{
+			name:   "get expire dynconfig",
+			expire: 100 * time.Millisecond,
+			dynconfig: TestDynConfig{
+				Scheduler: SchedulerOption{
+					Name: schedulerName,
+				},
+			},
+			mock: func(m *mock_manager_client.MockmanagerClientMockRecorder) {
+				var d map[string]interface{}
+				mapstructure.Decode(TestDynConfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				}, &d)
+				m.Get().Return(d, nil).AnyTimes()
 			},
 			expect: func(t *testing.T, data interface{}) {
 				assert := assert.New(t)
@@ -85,6 +113,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			time.Sleep(300 * time.Millisecond)
 			data, err := d.Get()
 			if err != nil {
 				t.Fatal(err)
