@@ -34,7 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
-func Test_AllUnmarshalYAML(t *testing.T) {
+func TestAllUnmarshalYAML(t *testing.T) {
 	assert := testifyassert.New(t)
 	var cases = []struct {
 		text   string
@@ -425,11 +425,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 	if err := peerHostOptionYAML.Load("./test/testdata/config/daemon.yml"); err != nil {
 		t.Fatal(err)
 	}
-	// s1, _ := json.MarshalIndent(peerHostOption, "", "\t")
-	// fmt.Printf("aaa: %s", s1)
 
-	// s2, _ := json.MarshalIndent(peerHostOptionYAML, "", "\t")
-	// fmt.Printf("bbb: %s", s2)
 	assert.EqualValues(peerHostOption, peerHostOptionYAML)
 
 	peerHostOptionJSON := &PeerHostOption{}
