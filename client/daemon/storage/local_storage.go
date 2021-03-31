@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
@@ -242,10 +241,6 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 		}
 	}
 	return &base.PiecePacket{
-		State: &base.ResponseState{
-			Success: true,
-			Code:    dfcodes.Success,
-		},
 		TaskId: req.TaskId,
 		DstPid: t.PeerID,
 		//DstAddr:       "", // filled by peer service

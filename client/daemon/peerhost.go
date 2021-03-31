@@ -83,15 +83,14 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage.Option,
 		/* gc callback */
 		func(request storage.CommonTaskRequest) {
-			state, er := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
+			er := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
 				TaskId: request.TaskID,
 				PeerId: request.PeerID,
 			})
 			if er != nil {
-				logger.Errorf("leave task %s/%s, error: %v", request.TaskID, request.PeerID, state, er)
+				logger.Errorf("leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
 			} else {
-				logger.Infof("leave task %s/%s state: (%t, %d, %s)",
-					request.TaskID, request.PeerID, state.Success, state.Code, state.Msg)
+				logger.Infof("leave task %s/%s state ok", request.TaskID, request.PeerID)
 			}
 		})
 	if err != nil {

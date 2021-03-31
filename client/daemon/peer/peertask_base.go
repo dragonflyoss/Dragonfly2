@@ -65,7 +65,8 @@ type peerTask struct {
 	// pieceResultCh is the channel for sending piece result to scheduler
 	pieceResultCh chan<- *scheduler.PieceResult
 	// peerPacketCh is the channel for receiving available peers from scheduler
-	peerPacketCh <-chan *scheduler.PeerPacket
+	peerPacketCh    <-chan *scheduler.PeerPacket
+	peerPacketErrCh <-chan error
 	// peerPacket is the latest available peers from peerPacketCh
 	peerPacket *scheduler.PeerPacket
 	// peerPacketReady will receive a ready signal for peerPacket ready
@@ -165,20 +166,27 @@ loop:
 		case <-pt.done:
 			pt.Infof("peer task done, stop wait peer packet from scheduler")
 			break loop
-		default:
-		}
-
-		peerPacket, ok = <-pt.peerPacketCh
-		if !ok {
-			pt.Debugf("scheduler client close PeerPacket channel")
-			break
+		case err := <-pt.peerPacketErrCh:
+			pt.failedCode = dfcodes.UnknownError
+			if de, ok := err.(*dferrors.DfError); ok {
+				pt.failedCode = de.Code
+				pt.failedReason = de.Message
+			}
+			pt.cancel()
+			pt.Errorf(pt.failedReason)
+			break loop
+		case peerPacket, ok = <-pt.peerPacketCh:
+			if !ok {
+				break loop
+			}
 		}
 
 		if peerPacket == nil {
 			pt.Warnf("scheduler client send a empty peerPacket")
 			continue
 		}
-		if peerPacket.State.Code == dfcodes.SchedPeerGone {
+
+		if peerPacket.Code == dfcodes.SchedPeerGone {
 			pt.failedReason = reasonPeerGoneFromScheduler
 			pt.failedCode = dfcodes.SchedPeerGone
 			pt.cancel()
@@ -186,8 +194,8 @@ loop:
 			break
 		}
 
-		if !peerPacket.State.Success {
-			pt.Errorf("receive peer packet with error: %d/%s", peerPacket.State.Code, peerPacket.State.Msg)
+		if peerPacket.Code != dfcodes.Success {
+			pt.Errorf("receive peer packet with error: %d", peerPacket.Code)
 			// TODO when receive error, cancel ?
 			// pt.cancel()
 			continue

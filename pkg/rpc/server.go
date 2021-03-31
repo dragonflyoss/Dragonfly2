@@ -18,17 +18,8 @@ package rpc
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
-	"google.golang.org/grpc/status"
 	"io"
 	"net"
 	"os"
@@ -37,6 +28,17 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/status"
+
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 type RegisterFunc func(*grpc.Server, interface{})
@@ -229,7 +231,7 @@ func unaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.Una
 
 func convertServerError(err error) error {
 	if v, ok := err.(*dferrors.DfError); ok {
-		fmt.Println(v.Message)
+		logger.GrpcLogger.Errorf(v.Message)
 		if s, e := status.Convert(err).WithDetails(common.NewGrpcDfError(v.Code, v.Message)); e == nil {
 			err = s.Err()
 		}

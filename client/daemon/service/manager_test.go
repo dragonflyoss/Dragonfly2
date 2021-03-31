@@ -16,7 +16,6 @@ import (
 	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
 	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
@@ -41,11 +40,6 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 			go func() {
 				for i := 0; i <= 100; i++ {
 					ch <- &peer.PeerTaskProgress{
-						State: &base.ResponseState{
-							Success: true,
-							Code:    dfcodes.Success,
-							Msg:     "test ok",
-						},
 						TaskId:          "",
 						PeerID:          "",
 						ContentLength:   100,
@@ -83,12 +77,11 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 		Output: "./testdata/file1",
 		BizId:  "unit test",
 	}
-	down, err := client.Download(context.Background(), request)
+	down, _ := client.Download(context.Background(), request)
 	assert.Nil(err, "client download grpc call should be ok")
 
 	var result *dfdaemongrpc.DownResult
 	for result = range down {
-		assert.Equal(true, result.GetState().Success)
 	}
 	assert.NotNil(result)
 	assert.True(result.Done)
@@ -117,11 +110,6 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 			})
 		}
 		return &base.PiecePacket{
-			State: &base.ResponseState{
-				Success: true,
-				Code:    dfcodes.Success,
-				Msg:     "",
-			},
 			TaskId:        "",
 			DstPid:        "",
 			DstAddr:       "",

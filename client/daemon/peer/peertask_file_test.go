@@ -70,8 +70,10 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
-			storageManager:  storageManager,
-			pieceDownloader: downloader,
+			storageManager:   storageManager,
+			pieceDownloader:  downloader,
+			resourceClient:   sourceClient,
+			computePieceSize: computePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -93,6 +95,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	ctx := context.Background()
 	pt, _, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	assert.Nil(err, "new file peer task")
+	pt.(*filePeerTask).backSource = true
 
 	pt.SetCallback(&filePeerTaskCallback{
 		ctx:   ctx,
@@ -170,8 +173,10 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
-			storageManager:  storageManager,
-			pieceDownloader: downloader,
+			storageManager:   storageManager,
+			pieceDownloader:  downloader,
+			resourceClient:   sourceClient,
+			computePieceSize: computePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -193,6 +198,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	ctx := context.Background()
 	pt, _, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	assert.Nil(err, "new file peer task")
+	pt.(*filePeerTask).backSource = true
 
 	pt.SetCallback(&filePeerTaskCallback{
 		ctx:   ctx,
