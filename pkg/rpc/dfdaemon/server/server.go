@@ -24,6 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/safe"
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 	"sync"
@@ -45,7 +46,7 @@ type proxy struct {
 type DaemonServer interface {
 	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
-	CheckHealth(context.Context) (*base.ResponseState, error)
+	CheckHealth(context.Context) error
 }
 
 func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_DownloadServer) (err error) {
@@ -84,9 +85,9 @@ func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (
 	return p.server.GetPieceTasks(ctx, ptr)
 }
 
-func (p *proxy) CheckHealth(ctx context.Context, req *base.EmptyRequest) (*base.ResponseState, error) {
+func (p *proxy) CheckHealth(ctx context.Context, req *empty.Empty) (*empty.Empty, error) {
 	_ = req
-	return p.server.CheckHealth(ctx)
+	return new(empty.Empty), p.server.CheckHealth(ctx)
 }
 
 func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon_DownloadServer, errChan chan error) {
