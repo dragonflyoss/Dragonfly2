@@ -62,23 +62,18 @@ func (suite *SchedulerTestSuite) Test901CDNDownRescheduleCDN() {
 
 	task = result.TaskId
 
-	pieceResultCh, peerPacketCh, errCh := sched.ReportPieceResult(ctx, result.TaskId, request)
+	stream, err := sched.ReportPieceResult(ctx, result.TaskId, request)
+	assert.Nil(err, fmt.Sprintf("scheduler failed recieve a error: %v", err))
 
 	var peerPacket *scheduler.PeerPacket
-	// timeout
-	select {
-	case err = <-errCh:
-		assert.Nil(err, fmt.Sprintf("scheduler failed recieve a error: %v", err))
-	case peerPacket = <-peerPacketCh:
-		assert.True(peerPacket.Code == dfcodes.Success)
-	case <-time.After(time.Second*5):
-		assert.Fail("scheduler failed")
-	}
+	peerPacket, err = stream.Recv()
+	assert.Nil(err, fmt.Sprintf("scheduler failed recieve a error: %v", err))
+	assert.True(peerPacket.Code == dfcodes.Success)
 
 	isCDN := strings.HasSuffix(peerPacket.MainPeer.PeerId, rpccommon.CdnSuffix)
 	assert.True(isCDN)
 	if isCDN {
-		pieceResultCh <- &scheduler.PieceResult{
+		stream.Send( &scheduler.PieceResult{
 			TaskId:        task,
 			SrcPid:        peer,
 			DstPid:        peerPacket.MainPeer.PeerId,
@@ -86,13 +81,11 @@ func (suite *SchedulerTestSuite) Test901CDNDownRescheduleCDN() {
 			Code:          dfcodes.CdnTaskNotFound,
 			HostLoad:      nil,
 			FinishedCount: -1,
-		}
-		select {
-			case peerPacket = <-peerPacketCh:
-				tl.Logf("%#v", peerPacket)
-		case <-time.After(time.Second*5):
-			assert.Fail("rescheduler failed")
-		}
+		})
+
+		peerPacket, err = stream.Recv()
+		assert.Nil(err, fmt.Sprintf("scheduler failed recieve a error: %v", err))
+		tl.Logf("%#v", peerPacket)
 	}
 	tl.Log("bad client test all client download file finished")
 }
@@ -177,9 +170,10 @@ func (suite *SchedulerTestSuite) Test902CDNDownReschedulePeer() {
 	ctx := context.Background()
 	result, err := sched.RegisterPeerTask(ctx, request2)
 	assert.Nil(err)
-	pieceResultCh, peerPacketCh, errCh := sched.ReportPieceResult(ctx, result.TaskId, request2)
+	stream, err := sched.ReportPieceResult(ctx, result.TaskId, request2)
+	assert.Nil(err)
 
-	pieceResultCh <- scheduler.NewZeroPieceResult(task, peer2)
+	stream.Send(scheduler.NewZeroPieceResult(task, peer2))
 	time.Sleep(time.Second)
 
 	ctx = context.Background()
@@ -188,20 +182,15 @@ func (suite *SchedulerTestSuite) Test902CDNDownReschedulePeer() {
 
 	task = result.TaskId
 
-	pieceResultCh, peerPacketCh, errCh = sched.ReportPieceResult(ctx, result.TaskId, request1)
+	stream, err = sched.ReportPieceResult(ctx, result.TaskId, request1)
+	assert.Nil(err)
 
 	var peerPacket *scheduler.PeerPacket
 	var oldPeerId string
 	// timeout
-	select {
-	case err = <-errCh:
-		assert.Fail("scheduler failed %v", err)
-	case peerPacket = <-peerPacketCh:
-		assert.True(peerPacket.Code == dfcodes.Success)
-		oldPeerId = peerPacket.MainPeer.PeerId
-	case <-time.After(time.Second*5):
-		assert.Fail("scheduler failed")
-	}
+	peerPacket, err = stream.Recv()
+	assert.Nil(err)
+	assert.True(peerPacket.Code == dfcodes.Success)
 
 	code := dfcodes.ClientPieceRequestFail
 	isCDN := strings.HasSuffix(peerPacket.MainPeer.PeerId, rpccommon.CdnSuffix)
@@ -210,7 +199,7 @@ func (suite *SchedulerTestSuite) Test902CDNDownReschedulePeer() {
 	}
 	time.Sleep(time.Second/20)
 
-	pieceResultCh <- &scheduler.PieceResult{
+	stream.Send(&scheduler.PieceResult{
 		TaskId:        task,
 		SrcPid:        peer1,
 		DstPid:        peerPacket.MainPeer.PeerId,
@@ -218,14 +207,11 @@ func (suite *SchedulerTestSuite) Test902CDNDownReschedulePeer() {
 		Code:          code,
 		HostLoad:      nil,
 		FinishedCount: -1,
-	}
-	select {
-	case peerPacket = <-peerPacketCh:
-		tl.Logf("%#v", peerPacket)
-		assert.Equal(false, peerPacket.MainPeer!=nil && peerPacket.MainPeer.PeerId == oldPeerId, "reschedule the same peer")
-	case <-time.After(time.Second*10):
-		assert.Fail("rescheduler failed")
-	}
+	})
+
+	peerPacket, err = stream.Recv()
+	assert.Nil(err)
+	assert.Equal(false, peerPacket.MainPeer!=nil && peerPacket.MainPeer.PeerId == oldPeerId, "reschedule the same peer")
 
 	tl.Log("bad client test all client download file finished")
 }

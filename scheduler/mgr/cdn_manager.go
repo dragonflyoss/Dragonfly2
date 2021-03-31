@@ -78,14 +78,17 @@ func (cm *CDNManager) TriggerTask(task *types.Task) (err error) {
 	if err != nil {
 		return
 	}
-	seedChan, errCh := cli.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+	stream, err := cli.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 		TaskId:  task.TaskId,
 		Url:     task.Url,
 		Filter:  task.Filter,
 		UrlMeta: task.UrlMata,
 	})
+	if err != nil {
+		logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
+	}
 
-	go cli.Work(task, seedChan, errCh)
+	go cli.Work(task, stream)
 
 	return
 }
@@ -108,26 +111,23 @@ type CDNClient struct {
 	mgr *CDNManager
 }
 
-func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed, errCh <-chan error) {
+func (c *CDNClient) Work(task *types.Task, stream *client.PieceSeedStream) {
 	for {
-		select {
-		case err := <-errCh:
-			if err != nil {
-				logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
+		ps, err := stream.Recv()
+		if err != nil {
+			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
+			return
+		}
+
+		if ps == nil {
+			logger.Warnf("receive a nil pieceSeed or state from cdn: taskId[%s]", task.TaskId)
+		} else {
+			pieceNum := int32(-1)
+			if ps.PieceInfo != nil {
+				pieceNum = ps.PieceInfo.PieceNum
 			}
-		case ps, ok := <-ch:
-			if !ok {
-				return
-			} else if ps == nil {
-				logger.Warnf("receive a nil pieceSeed or state from cdn: taskId[%s]", task.TaskId)
-			} else {
-				pieceNum := int32(-1)
-				if ps.PieceInfo != nil {
-					pieceNum = ps.PieceInfo.PieceNum
-				}
-				c.processPieceSeed(task, ps)
-				logger.Debugf("receive a pieceSeed from cdn: taskId[%s]-%d done [%v]", task.TaskId, pieceNum, ps.Done)
-			}
+			c.processPieceSeed(task, ps)
+			logger.Debugf("receive a pieceSeed from cdn: taskId[%s]-%d done [%v]", task.TaskId, pieceNum, ps.Done)
 		}
 	}
 }
@@ -192,11 +192,16 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 	if ps.PieceInfo != nil {
 		task.AddPiece(c.createPiece(task, ps, peerTask))
 
+		finishedCount := ps.PieceInfo.PieceNum + 1
+		if finishedCount > peerTask.GetFinishedNum() {
+			finishedCount = peerTask.GetFinishedNum()
+		}
+
 		peerTask.AddPieceStatus(&scheduler.PieceResult{
 			PieceNum: ps.PieceInfo.PieceNum,
 			Success:  true,
 			// currently completed piece count
-			FinishedCount: ps.PieceInfo.PieceNum + 1,
+			FinishedCount: finishedCount,
 		})
 	}
 	return

@@ -104,7 +104,7 @@ func createDefaultConfig() *Config {
 		},
 		GC: gcConfig{
 			TaskDelay:     3600 * 1000,
-			PeerTaskDelay: 24 * 3600 * 1000,
+			PeerTaskDelay: 3600 * 1000,
 		},
 	}
 }
