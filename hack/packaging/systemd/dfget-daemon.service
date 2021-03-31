@@ -6,12 +6,15 @@
 
 [Unit]
 Description=Dragonfly dfget daemon
-After=network.target postgresql.service
+After=network.target
 
 [Service]
 Type=simple
+ExecStartPre=/opt/dragonfly/fix.dfget-daemon.cpuset.sh
 ExecStart=/usr/bin/dfget daemon --config /etc/dragonfly/dfget-daemon.yaml
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
+Slice=dragonfly.slice
 
 #EnvironmentFile=/etc/dragonfly/env
 User=root
