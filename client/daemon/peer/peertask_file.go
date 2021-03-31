@@ -26,6 +26,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -51,14 +52,20 @@ type filePeerTask struct {
 	progressStopCh chan bool
 }
 
+type ProgressState struct {
+	Success bool
+	Code    base.Code
+	Msg     string
+}
+
 type PeerTaskProgress struct {
-	State           *base.ResponseState
+	State           *ProgressState
 	TaskId          string
 	PeerID          string
 	ContentLength   int64
 	CompletedLength int64
 	PeerTaskDone    bool
-	ProgressDone    func()
+	DoneCallback    func()
 }
 
 func newFilePeerTask(ctx context.Context,
@@ -68,35 +75,43 @@ func newFilePeerTask(ctx context.Context,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption) (FilePeerTask, *TinyData, error) {
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
+	var backSource bool
 	if err != nil {
-		logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
-		return nil, nil, err
-	}
-	if !result.State.Success {
-		return nil, nil, fmt.Errorf("register error: %s/%s", result.State.Code, result.State.Msg)
+		// check if it is back source error
+		if de, ok := err.(*dferrors.DfError); ok && de.Code == dfcodes.SchedNeedBackSource {
+			backSource = true
+		}
+		// not back source
+		if !backSource {
+			logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
+			return nil, nil, err
+		}
 	}
 
 	var singlePiece *scheduler.SinglePiece
-	switch result.SizeScope {
-	case base.SizeScope_SMALL:
-		logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
-		if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
-			singlePiece = piece.SinglePiece
+	if !backSource {
+		switch result.SizeScope {
+		case base.SizeScope_SMALL:
+			logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
+			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
+				singlePiece = piece.SinglePiece
+			}
+		case base.SizeScope_TINY:
+			logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
+			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
+				return nil, &TinyData{
+					TaskId:  result.TaskId,
+					PeerID:  request.PeerId,
+					Content: piece.PieceContent,
+				}, nil
+			}
+			return nil, nil, errors.Errorf("scheduler return tiny piece but can not parse piece content")
+		case base.SizeScope_NORMAL:
+			logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
-	case base.SizeScope_TINY:
-		logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
-		if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
-			return nil, &TinyData{
-				TaskId:  result.TaskId,
-				PeerID:  request.PeerId,
-				Content: piece.PieceContent,
-			}, nil
-		}
-		return nil, nil, errors.Errorf("scheduler return tiny piece but can not parse piece content")
-	case base.SizeScope_NORMAL:
-		logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
 	}
-	schedPieceResultCh, schedPeerPacketCh, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
+
+	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -106,27 +121,26 @@ func newFilePeerTask(ctx context.Context,
 		progressCh:     make(chan *PeerTaskProgress),
 		progressStopCh: make(chan bool),
 		peerTask: peerTask{
-			host:            host,
-			backSource:      result.State.Code == dfcodes.SchedNeedBackSource,
-			request:         request,
-			pieceResultCh:   schedPieceResultCh,
-			peerPacketCh:    schedPeerPacketCh,
-			pieceManager:    pieceManager,
-			peerPacketReady: make(chan bool),
-			peerId:          request.PeerId,
-			taskId:          result.TaskId,
-			singlePiece:     singlePiece,
-			done:            make(chan struct{}),
-			once:            sync.Once{},
-			readyPieces:     NewBitmap(),
-			requestedPieces: NewBitmap(),
-			lock:            &sync.Mutex{},
-			failedPieceCh:   make(chan int32, 4),
-			failedReason:    "unknown",
-			failedCode:      dfcodes.UnknownError,
-			contentLength:   -1,
-			totalPiece:      -1,
-			schedulerOption: schedulerOption,
+			host:             host,
+			backSource:       backSource,
+			request:          request,
+			peerPacketStream: peerPacketStream,
+			pieceManager:     pieceManager,
+			peerPacketReady:  make(chan bool),
+			peerId:           request.PeerId,
+			taskId:           result.TaskId,
+			singlePiece:      singlePiece,
+			done:             make(chan struct{}),
+			once:             sync.Once{},
+			readyPieces:      NewBitmap(),
+			requestedPieces:  NewBitmap(),
+			lock:             &sync.Mutex{},
+			failedPieceCh:    make(chan int32, 4),
+			failedReason:     "unknown",
+			failedCode:       dfcodes.UnknownError,
+			contentLength:    -1,
+			totalPiece:       -1,
+			schedulerOption:  schedulerOption,
 
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "filePeerTask"),
 		},
@@ -169,7 +183,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 	// retry failed piece
 	if !pieceResult.Success {
 		pieceResult.FinishedCount = pt.readyPieces.Settled()
-		pt.pieceResultCh <- pieceResult
+		_ = pt.peerPacketStream.Send(pieceResult)
 		pt.failedPieceCh <- pieceResult.PieceNum
 		pt.Errorf("%d download failed, retry later", piece.PieceNum)
 		return nil
@@ -187,10 +201,10 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 	pt.lock.Unlock()
 
 	pieceResult.FinishedCount = pt.readyPieces.Settled()
-	pt.pieceResultCh <- pieceResult
+	_ = pt.peerPacketStream.Send(pieceResult)
 	// send progress first to avoid close channel panic
 	p := &PeerTaskProgress{
-		State: &base.ResponseState{
+		State: &ProgressState{
 			Success: pieceResult.Success,
 			Code:    pieceResult.Code,
 			Msg:     "downloading",
@@ -229,7 +243,8 @@ func (pt *filePeerTask) finish() error {
 			}
 		}()
 		// send EOF piece result to scheduler
-		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled())
+		_ = pt.peerPacketStream.Send(
+			scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled()))
 		pt.Debugf("finish end piece result sent")
 
 		var (
@@ -247,7 +262,7 @@ func (pt *filePeerTask) finish() error {
 		}
 
 		pg := &PeerTaskProgress{
-			State: &base.ResponseState{
+			State: &ProgressState{
 				Success: success,
 				Code:    code,
 				Msg:     message,
@@ -257,7 +272,7 @@ func (pt *filePeerTask) finish() error {
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,
 			PeerTaskDone:    true,
-			ProgressDone: func() {
+			DoneCallback: func() {
 				pt.peerTaskDone = true
 				close(pt.progressStopCh)
 			},
@@ -300,11 +315,12 @@ func (pt *filePeerTask) cleanUnfinished() {
 			}
 		}()
 		// send EOF piece result to scheduler
-		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled())
+		_ = pt.peerPacketStream.Send(
+			scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled()))
 		pt.Debugf("clean up end piece result sent")
 
 		pg := &PeerTaskProgress{
-			State: &base.ResponseState{
+			State: &ProgressState{
 				Success: false,
 				Code:    pt.failedCode,
 				Msg:     pt.failedReason,
@@ -314,7 +330,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,
 			PeerTaskDone:    true,
-			ProgressDone: func() {
+			DoneCallback: func() {
 				pt.peerTaskDone = true
 				close(pt.progressStopCh)
 			},

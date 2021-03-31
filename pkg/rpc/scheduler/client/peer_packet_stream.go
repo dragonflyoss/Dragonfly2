@@ -18,20 +18,27 @@ package client
 
 import (
 	"context"
+	"errors"
+	"io"
+	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"errors"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"io"
-	"time"
 )
 
-type PeerPacketStream struct {
+type PeerPacketStream interface {
+	Recv() (pp *scheduler.PeerPacket, err error)
+	Send(pr *scheduler.PieceResult) (err error)
+}
+
+type peerPacketStream struct {
 	sc      *schedulerClient
 	ctx     context.Context
 	hashKey string
@@ -47,10 +54,10 @@ type PeerPacketStream struct {
 	retryMeta rpc.RetryMeta
 }
 
-func newPeerPacketStream(sc *schedulerClient, ctx context.Context, hashKey string, ptr *scheduler.PeerTaskRequest, opts []grpc.CallOption) (*PeerPacketStream, error) {
+func newPeerPacketStream(sc *schedulerClient, ctx context.Context, hashKey string, ptr *scheduler.PeerTaskRequest, opts []grpc.CallOption) (PeerPacketStream, error) {
 	ptr.IsMigrating = true
 
-	pps := &PeerPacketStream{
+	pps := &peerPacketStream{
 		sc:      sc,
 		ctx:     ctx,
 		hashKey: hashKey,
@@ -70,7 +77,7 @@ func newPeerPacketStream(sc *schedulerClient, ctx context.Context, hashKey strin
 	}
 }
 
-func (pps *PeerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
+func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
 	pps.lastPieceResult = pr
 	pps.sc.UpdateAccessNodeMap(pps.hashKey)
 	err = pps.stream.Send(pr)
@@ -88,11 +95,11 @@ func (pps *PeerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
 	return
 }
 
-func (pps *PeerPacketStream) closeSend() error {
+func (pps *peerPacketStream) closeSend() error {
 	return pps.stream.CloseSend()
 }
 
-func (pps *PeerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
+func (pps *peerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
 	pps.sc.UpdateAccessNodeMap(pps.hashKey)
 	pp, err = pps.stream.Recv()
 
@@ -117,7 +124,7 @@ func (pps *PeerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
 	return
 }
 
-func (pps *PeerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) error {
+func (pps *peerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) error {
 	if status.Code(cause) == codes.DeadlineExceeded {
 		return cause
 	}
@@ -131,7 +138,7 @@ func (pps *PeerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) e
 	return pps.Send(pr)
 }
 
-func (pps *PeerPacketStream) initStream() error {
+func (pps *peerPacketStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		if client, err := pps.sc.getSchedulerClient(pps.hashKey); err != nil {
 			return nil, err
@@ -150,7 +157,7 @@ func (pps *PeerPacketStream) initStream() error {
 	return err
 }
 
-func (pps *PeerPacketStream) replaceStream(cause error) error {
+func (pps *peerPacketStream) replaceStream(cause error) error {
 	if pps.retryMeta.StreamTimes >= pps.retryMeta.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
@@ -171,7 +178,7 @@ func (pps *PeerPacketStream) replaceStream(cause error) error {
 	return err
 }
 
-func (pps *PeerPacketStream) replaceClient(cause error) error {
+func (pps *peerPacketStream) replaceClient(cause error) error {
 	if preNode, err := pps.sc.TryMigrate(pps.hashKey, cause, pps.failedServers); err != nil {
 		return err
 	} else {

@@ -88,11 +88,6 @@ func setupPeerTaskManagerComponents(
 				})
 		}
 		return &base.PiecePacket{
-			State: &base.ResponseState{
-				Success: true,
-				Code:    dfcodes.Success,
-				Msg:     "",
-			},
 			TaskId:        request.TaskId,
 			DstPid:        "peer-x",
 			PieceInfos:    tasks,
@@ -108,36 +103,15 @@ func setupPeerTaskManagerComponents(
 	time.Sleep(100 * time.Millisecond)
 
 	// 2. setup a scheduler
-	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
-	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
-		return &scheduler.RegisterResult{
-			State: &base.ResponseState{
-				Success: true,
-				Code:    dfcodes.Success,
-				Msg:     "",
-			},
-			TaskId:      taskID,
-			SizeScope:   base.SizeScope_NORMAL,
-			DirectPiece: nil,
-		}, nil
-	})
-	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, error) {
-		resultCh := make(chan *scheduler.PieceResult)
-		peerPacketCh := make(chan *scheduler.PeerPacket)
-		go func() {
-			for {
-				select {
-				case <-resultCh:
-				}
-			}
-		}()
-		go func() {
-			peerPacketCh <- &scheduler.PeerPacket{
-				State: &base.ResponseState{
-					Success: true,
-					Code:    dfcodes.Success,
-					Msg:     "progress by mockSchedulerClient",
-				},
+	pps := mock_scheduler.NewMockPeerPacketStream(ctrl)
+	pps.EXPECT().Send(gomock.Any()).AnyTimes().DoAndReturn(
+		func(pr *scheduler.PieceResult) error {
+			return nil
+		})
+	pps.EXPECT().Recv().AnyTimes().AnyTimes().DoAndReturn(
+		func() (*scheduler.PeerPacket, error) {
+			return &scheduler.PeerPacket{
+				Code:          dfcodes.Success,
 				TaskId:        taskID,
 				SrcPid:        "127.0.0.1",
 				ParallelCount: pieceParallelCount,
@@ -147,17 +121,25 @@ func setupPeerTaskManagerComponents(
 					PeerId:  "peer-x",
 				},
 				StealPeers: nil,
-			}
-		}()
-		return resultCh, peerPacketCh, nil
-	})
-	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) (*base.ResponseState, error) {
-		return &base.ResponseState{
-			Success: true,
-			Code:    dfcodes.Success,
-			Msg:     "progress by mockSchedulerClient",
-		}, nil
-	})
+			}, nil
+		})
+	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
+	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
+			return &scheduler.RegisterResult{
+				TaskId:      taskID,
+				SizeScope:   base.SizeScope_NORMAL,
+				DirectPiece: nil,
+			}, nil
+		})
+	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (schedulerclient.PeerPacketStream, error) {
+			return pps, nil
+		})
+	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
+			return nil
+		})
 	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
 		DataPath: test.DataDir,
 		TaskExpireTime: clientutil.Duration{
@@ -233,7 +215,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	for p = range progress {
 		assert.True(p.State.Success)
 		if p.PeerTaskDone {
-			p.ProgressDone()
+			p.DoneCallback()
 			break
 		}
 	}

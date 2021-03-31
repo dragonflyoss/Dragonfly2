@@ -42,7 +42,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/pidfile"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -250,34 +250,26 @@ func runDfget() error {
 	}
 	var (
 		result *dfdaemongrpc.DownResult
-		ok     bool
 	)
 	pb := progressbar.DefaultBytes(-1, "downloading")
-download:
 	for {
-		select {
-		case result, ok = <-down:
-			if !ok && request == nil {
-				err = fmt.Errorf("progress channel closed unexpected")
-				break download
+		result, err = down.Recv()
+		if err != nil {
+			if de, ok := err.(*dferrors.DfError); ok {
+				logger.Errorf("dragonfly daemon returns error code %d/%s", de.Code, de.Message)
+			} else {
+				logger.Errorf("dragonfly daemon returns error %s", err)
 			}
-			if result.CompletedLength > 0 {
-				pb.Set64(int64(result.CompletedLength))
-			}
-			if result.State.Code != dfcodes.Success {
-				err = fmt.Errorf("dragonfly daemon returns error code %d/%s",
-					result.State.Code, result.State.Msg)
-				break download
-			}
-			if result.Done {
-				pb.Finish()
-				end = time.Now()
-				fmt.Printf("time cost: %dms\n", end.Sub(start).Milliseconds())
-				break download
-			}
-		case <-ctx.Done():
-			logger.Errorf("content done due to: %s", ctx.Err())
-			return ctx.Err()
+			break
+		}
+		if result.CompletedLength > 0 {
+			pb.Set64(int64(result.CompletedLength))
+		}
+		if result.Done {
+			pb.Finish()
+			end = time.Now()
+			fmt.Printf("time cost: %dms\n", end.Sub(start).Milliseconds())
+			break
 		}
 	}
 	if err != nil {
@@ -392,15 +384,9 @@ func probeDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 		return nil, err
 	}
 
-	state, err := dc.CheckHealth(context.Background(), addr)
+	err = dc.CheckHealth(context.Background(), addr)
 	if err != nil {
-		//dc.Close()
 		return nil, err
-	}
-
-	if !state.Success {
-		//dc.Close()
-		return nil, fmt.Errorf("check health error: %s/%s", state.Code, state.Msg)
 	}
 
 	return dc, nil

@@ -23,6 +23,8 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
@@ -108,10 +110,6 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 			request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 		// dst peer is running, send empty result, src peer will retry later
 		return &base.PiecePacket{
-			State: &base.ResponseState{
-				Success: true,
-				Code:    dfcodes.Success,
-			},
 			TaskId:        request.TaskId,
 			DstPid:        request.DstPid,
 			DstAddr:       m.uploadAddr,
@@ -128,13 +126,9 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 	return p, nil
 }
 
-func (m *manager) CheckHealth(context.Context) (*base.ResponseState, error) {
+func (m *manager) CheckHealth(context.Context) error {
 	m.Keep()
-	return &base.ResponseState{
-		Success: true,
-		Code:    dfcodes.Success,
-		Msg:     "Running",
-	}, nil
+	return nil
 }
 
 func (m *manager) Download(ctx context.Context,
@@ -155,24 +149,10 @@ func (m *manager) Download(ctx context.Context,
 
 	peerTaskProgress, tiny, err := m.peerTaskManager.StartFilePeerTask(ctx, peerTask)
 	if err != nil {
-		results <- &dfdaemongrpc.DownResult{
-			State: &base.ResponseState{
-				Success: false,
-				Code:    dfcodes.UnknownError,
-				Msg:     fmt.Sprintf("%s", err),
-			},
-			CompletedLength: 0,
-			Done:            true,
-		}
-		return err
+		return dferrors.New(dfcodes.UnknownError, fmt.Sprintf("%s", err))
 	}
 	if tiny != nil {
 		results <- &dfdaemongrpc.DownResult{
-			State: &base.ResponseState{
-				Success: true,
-				Code:    dfcodes.Success,
-				Msg:     "Tiny file downloaded",
-			},
 			TaskId:          tiny.TaskId,
 			PeerId:          tiny.PeerID,
 			CompletedLength: uint64(len(tiny.Content)),
@@ -181,54 +161,37 @@ func (m *manager) Download(ctx context.Context,
 		logger.Infof("tiny file, wrote to output")
 		return nil
 	}
-loop:
 	for {
 		select {
 		case p, ok := <-peerTaskProgress:
 			if !ok {
 				err = errors.New("progress closed unexpected")
 				logger.Errorf(err.Error())
-				results <- &dfdaemongrpc.DownResult{
-					State: &base.ResponseState{
-						Success: false,
-						Code:    dfcodes.UnknownError,
-						Msg:     fmt.Sprintf("%s", err),
-					},
-					CompletedLength: 0,
-					Done:            true,
-				}
-				return err
+				return dferrors.New(dfcodes.UnknownError, err.Error())
+			}
+			if !p.State.Success {
+				logger.Errorf("task %s failed: %d/%s", p.TaskId, p.State.Code, p.State.Msg)
+				return dferrors.New(p.State.Code, p.State.Msg)
 			}
 			results <- &dfdaemongrpc.DownResult{
-				State:           p.State,
 				TaskId:          p.TaskId,
 				PeerId:          p.PeerID,
 				CompletedLength: uint64(p.CompletedLength),
 				Done:            p.PeerTaskDone,
 			}
-
 			// peer task sets PeerTaskDone to true only once
 			if p.PeerTaskDone {
-				p.ProgressDone()
+				p.DoneCallback()
 				logger.Infof("task %s done", p.TaskId)
-				if !p.State.Success {
-					logger.Errorf("task %s failed: %d/%s", p.TaskId, p.State.Code, p.State.Msg)
-				}
-				break loop
+				return nil
 			}
 		case <-ctx.Done():
 			results <- &dfdaemongrpc.DownResult{
-				State: &base.ResponseState{
-					Success: false,
-					Code:    dfcodes.RequestTimeOut,
-					Msg:     fmt.Sprintf("%s", ctx.Err()),
-				},
 				CompletedLength: 0,
 				Done:            true,
 			}
 			logger.Infof("context done due to %s", ctx.Err())
-			return ctx.Err()
+			return status.Error(codes.Canceled, ctx.Err().Error())
 		}
 	}
-	return nil
 }

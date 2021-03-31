@@ -74,7 +74,7 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	state, err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
@@ -90,8 +90,7 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 	if err != nil {
 		pt.Log().Errorf("report successful peer result, error: %v", err)
 	} else {
-		pt.Log().Infof("report successful peer result, response state: (%t, %d, %s)",
-			state.Success, state.Code, state.Msg)
+		pt.Log().Infof("report successful peer result ok")
 	}
 	return nil
 }
@@ -99,7 +98,7 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 func (p *filePeerTaskCallback) Fail(pt PeerTask, code base.Code, reason string) error {
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
-	state, err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
@@ -115,8 +114,7 @@ func (p *filePeerTaskCallback) Fail(pt PeerTask, code base.Code, reason string) 
 	if err != nil {
 		pt.Log().Errorf("report fail peer result, error: %v", err)
 	} else {
-		pt.Log().Infof("report fail peer result, response state: (%t, %d, %s)",
-			state.Success, state.Code, state.Msg)
+		pt.Log().Infof("report fail peer result ok")
 	}
 	return nil
 }

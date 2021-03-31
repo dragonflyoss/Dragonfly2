@@ -13,6 +13,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -40,36 +41,43 @@ func newStreamPeerTask(ctx context.Context,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption) (StreamPeerTask, *TinyData, error) {
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
+	var backSource bool
 	if err != nil {
-		logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
-		return nil, nil, err
-	}
-	if !result.State.Success {
-		return nil, nil, fmt.Errorf("regist error: %s/%s", result.State.Code, result.State.Msg)
+		// check if it is back source error
+		if de, ok := err.(*dferrors.DfError); ok && de.Code == dfcodes.SchedNeedBackSource {
+			backSource = true
+		}
+		// not back source
+		if !backSource {
+			logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
+			return nil, nil, err
+		}
 	}
 
 	var singlePiece *scheduler.SinglePiece
-	switch result.SizeScope {
-	case base.SizeScope_SMALL:
-		logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
-		if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
-			singlePiece = piece.SinglePiece
+	if !backSource {
+		switch result.SizeScope {
+		case base.SizeScope_SMALL:
+			logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
+			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
+				singlePiece = piece.SinglePiece
+			}
+		case base.SizeScope_TINY:
+			logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
+			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
+				return nil, &TinyData{
+					TaskId:  result.TaskId,
+					PeerID:  request.PeerId,
+					Content: piece.PieceContent,
+				}, nil
+			}
+			return nil, nil, errors.Errorf("scheduler return tiny piece but can not parse piece content")
+		case base.SizeScope_NORMAL:
+			logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
-	case base.SizeScope_TINY:
-		logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
-		if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
-			return nil, &TinyData{
-				TaskId:  result.TaskId,
-				PeerID:  request.PeerId,
-				Content: piece.PieceContent,
-			}, nil
-		}
-		return nil, nil, errors.Errorf("scheduler return tiny piece but can not parse piece content")
-	case base.SizeScope_NORMAL:
-		logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
 	}
 
-	schedPieceResultCh, schedPeerPacketCh, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
+	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -77,28 +85,27 @@ func newStreamPeerTask(ctx context.Context,
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 	return &streamPeerTask{
 		peerTask: peerTask{
-			ctx:             ctx,
-			host:            host,
-			backSource:      result.State.Code == dfcodes.SchedNeedBackSource,
-			request:         request,
-			pieceResultCh:   schedPieceResultCh,
-			peerPacketCh:    schedPeerPacketCh,
-			pieceManager:    pieceManager,
-			peerPacketReady: make(chan bool),
-			peerId:          request.PeerId,
-			taskId:          result.TaskId,
-			singlePiece:     singlePiece,
-			done:            make(chan struct{}),
-			once:            sync.Once{},
-			readyPieces:     NewBitmap(),
-			requestedPieces: NewBitmap(),
-			lock:            &sync.Mutex{},
-			failedPieceCh:   make(chan int32, 4),
-			failedReason:    "unknown",
-			failedCode:      dfcodes.UnknownError,
-			contentLength:   -1,
-			totalPiece:      -1,
-			schedulerOption: schedulerOption,
+			ctx:              ctx,
+			host:             host,
+			backSource:       backSource,
+			request:          request,
+			peerPacketStream: peerPacketStream,
+			pieceManager:     pieceManager,
+			peerPacketReady:  make(chan bool),
+			peerId:           request.PeerId,
+			taskId:           result.TaskId,
+			singlePiece:      singlePiece,
+			done:             make(chan struct{}),
+			once:             sync.Once{},
+			readyPieces:      NewBitmap(),
+			requestedPieces:  NewBitmap(),
+			lock:             &sync.Mutex{},
+			failedPieceCh:    make(chan int32, 4),
+			failedReason:     "unknown",
+			failedCode:       dfcodes.UnknownError,
+			contentLength:    -1,
+			totalPiece:       -1,
+			schedulerOption:  schedulerOption,
 
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
@@ -115,7 +122,7 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 	}()
 	// retry failed piece
 	if !pieceResult.Success {
-		s.pieceResultCh <- pieceResult
+		_ = s.peerPacketStream.Send(pieceResult)
 		s.failedPieceCh <- pieceResult.PieceNum
 		return nil
 	}
@@ -132,7 +139,7 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 	s.lock.Unlock()
 
 	pieceResult.FinishedCount = s.readyPieces.Settled()
-	s.pieceResultCh <- pieceResult
+	_ = s.peerPacketStream.Send(pieceResult)
 	s.successPieceCh <- piece.PieceNum
 	s.Debugf("success piece %d sent", piece.PieceNum)
 	select {
@@ -275,7 +282,8 @@ func (s *streamPeerTask) finish() error {
 	// send last progress
 	s.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.pieceResultCh <- scheduler.NewEndPieceResult(s.taskId, s.peerId, s.readyPieces.Settled())
+		_ = s.peerPacketStream.Send(
+			scheduler.NewEndPieceResult(s.taskId, s.peerId, s.readyPieces.Settled()))
 		s.Debugf("end piece result sent")
 		close(s.done)
 		//close(s.successPieceCh)
@@ -290,7 +298,8 @@ func (s *streamPeerTask) cleanUnfinished() {
 	// send last progress
 	s.once.Do(func() {
 		// send EOF piece result to scheduler
-		s.pieceResultCh <- scheduler.NewEndPieceResult(s.taskId, s.peerId, s.readyPieces.Settled())
+		_ = s.peerPacketStream.Send(
+			scheduler.NewEndPieceResult(s.taskId, s.peerId, s.readyPieces.Settled()))
 		s.Debugf("end piece result sent")
 		close(s.done)
 		//close(s.successPieceCh)
