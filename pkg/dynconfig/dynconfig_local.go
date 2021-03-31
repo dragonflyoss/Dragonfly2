@@ -12,6 +12,7 @@ type dynconfigLocal struct {
 	filepath string
 }
 
+// newDynconfigLocal returns a new local dynconfig instence
 func newDynconfigLocal(cache cache.Cache, filePath string) (*dynconfigLocal, error) {
 	d := &dynconfigLocal{
 		cache:    cache,
@@ -25,6 +26,7 @@ func newDynconfigLocal(cache cache.Cache, filePath string) (*dynconfigLocal, err
 	return d, nil
 }
 
+// Get dynamic config
 func (d *dynconfigLocal) Get() (interface{}, error) {
 	// Cache has not expired
 	dynconfig, _, found := d.cache.GetWithExpiration(defaultCacheKey)
@@ -45,6 +47,18 @@ func (d *dynconfigLocal) Get() (interface{}, error) {
 	return dynconfig, nil
 }
 
+// Unmarshal unmarshals the config into a Struct. Make sure that the tags
+// on the fields of the structure are properly set.
+func (d *dynconfigLocal) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error {
+	dynconfig, err := d.Get()
+	if err != nil {
+		return errors.New("can't find the cached data")
+	}
+
+	return decode(dynconfig, defaultDecoderConfig(rawVal, opts...))
+}
+
+// Load dynamic config from local file
 func (d *dynconfigLocal) load() error {
 	viper.SetConfigFile(d.filepath)
 

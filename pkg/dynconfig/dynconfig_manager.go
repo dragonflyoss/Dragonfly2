@@ -16,6 +16,7 @@ type dynconfigManager struct {
 	client    managerClient
 }
 
+// newDynconfigManager returns a new manager dynconfig instence
 func newDynconfigManager(cache cache.Cache, client managerClient) (*dynconfigManager, error) {
 	cachePath, err := defaultCacheDir()
 	if err != nil {
@@ -37,6 +38,7 @@ func newDynconfigManager(cache cache.Cache, client managerClient) (*dynconfigMan
 	return d, nil
 }
 
+// Get dynamic config
 func (d *dynconfigManager) Get() (interface{}, error) {
 	// Cache has not expired
 	dynconfig, _, found := d.cache.GetWithExpiration(defaultCacheKey)
@@ -57,6 +59,18 @@ func (d *dynconfigManager) Get() (interface{}, error) {
 	return dynconfig, nil
 }
 
+// Unmarshal unmarshals the config into a Struct. Make sure that the tags
+// on the fields of the structure are properly set.
+func (d *dynconfigManager) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error {
+	dynconfig, err := d.Get()
+	if err != nil {
+		return errors.New("can't find the cached data")
+	}
+
+	return decode(dynconfig, defaultDecoderConfig(rawVal, opts...))
+}
+
+// Load dynamic config from manager
 func (d *dynconfigManager) load() error {
 	dynconfig, err := d.client.Get()
 	if err != nil {
@@ -70,6 +84,7 @@ func (d *dynconfigManager) load() error {
 	return nil
 }
 
+// Get default cache directory
 func defaultCacheDir() (string, error) {
 	dir, err := os.UserCacheDir()
 	if err != nil {

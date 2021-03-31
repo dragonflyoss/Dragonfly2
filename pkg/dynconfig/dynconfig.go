@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/cache"
+	"github.com/mitchellh/mapstructure"
 )
 
 type sourceType string
@@ -28,6 +29,7 @@ type managerClient interface {
 
 type strategy interface {
 	Get() (interface{}, error)
+	Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error
 }
 
 type dynconfig struct {
@@ -105,6 +107,44 @@ func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, option
 	return d, nil
 }
 
+// Get dynamic config
 func (d *dynconfig) Get() (interface{}, error) {
 	return d.strategy.Get()
+}
+
+// Unmarshal unmarshals the config into a Struct. Make sure that the tags
+// on the fields of the structure are properly set.
+func (d *dynconfig) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error {
+	return d.strategy.Unmarshal(rawVal, opts...)
+}
+
+// A DecoderConfigOption can be passed to dynconfig Unmarshal to configure
+// mapstructure.DecoderConfig options
+type DecoderConfigOption func(*mapstructure.DecoderConfig)
+
+// defaultDecoderConfig returns default mapsstructure.DecoderConfig with suppot
+// of time.Duration values & string slices
+func defaultDecoderConfig(output interface{}, opts ...DecoderConfigOption) *mapstructure.DecoderConfig {
+	c := &mapstructure.DecoderConfig{
+		Metadata:         nil,
+		Result:           output,
+		WeaklyTypedInput: true,
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			mapstructure.StringToTimeDurationHookFunc(),
+			mapstructure.StringToSliceHookFunc(","),
+		),
+	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
+}
+
+// A wrapper around mapstructure.Decode that mimics the WeakDecode functionality
+func decode(input interface{}, config *mapstructure.DecoderConfig) error {
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return err
+	}
+	return decoder.Decode(input)
 }
