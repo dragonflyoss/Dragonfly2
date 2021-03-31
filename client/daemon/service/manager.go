@@ -181,7 +181,7 @@ func (m *manager) Download(ctx context.Context,
 			}
 			// peer task sets PeerTaskDone to true only once
 			if p.PeerTaskDone {
-				p.ProgressDone()
+				p.DoneCallback()
 				logger.Infof("task %s done", p.TaskId)
 				return nil
 			}

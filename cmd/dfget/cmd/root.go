@@ -244,40 +244,32 @@ func runDfget() error {
 		start = time.Now()
 		end   time.Time
 	)
-	down, errCh := daemonClient.Download(ctx, request)
+	down, err := daemonClient.Download(ctx, request)
+	if err != nil {
+		return err
+	}
 	var (
 		result *dfdaemongrpc.DownResult
-		ok     bool
 	)
 	pb := progressbar.DefaultBytes(-1, "downloading")
-download:
 	for {
-		select {
-		case err = <-errCh:
-			if err != nil {
-				if de, ok := err.(*dferrors.DfError); ok {
-					logger.Errorf("dragonfly daemon returns error code %d/%s",
-						de.Code, de.Message)
-				}
-				break download
+		result, err = down.Recv()
+		if err != nil {
+			if de, ok := err.(*dferrors.DfError); ok {
+				logger.Errorf("dragonfly daemon returns error code %d/%s", de.Code, de.Message)
+			} else {
+				logger.Errorf("dragonfly daemon returns error %s", err)
 			}
-		case result, ok = <-down:
-			if !ok && result == nil {
-				err = fmt.Errorf("progress channel closed unexpected")
-				break download
-			}
-			if result.CompletedLength > 0 {
-				pb.Set64(int64(result.CompletedLength))
-			}
-			if result.Done {
-				pb.Finish()
-				end = time.Now()
-				fmt.Printf("time cost: %dms\n", end.Sub(start).Milliseconds())
-				break download
-			}
-		case <-ctx.Done():
-			logger.Errorf("content done due to: %s", ctx.Err())
-			return ctx.Err()
+			break
+		}
+		if result.CompletedLength > 0 {
+			pb.Set64(int64(result.CompletedLength))
+		}
+		if result.Done {
+			pb.Finish()
+			end = time.Now()
+			fmt.Printf("time cost: %dms\n", end.Sub(start).Milliseconds())
+			break
 		}
 	}
 	if err != nil {

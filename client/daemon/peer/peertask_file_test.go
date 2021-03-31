@@ -111,7 +111,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	for p = range progress {
 		assert.True(p.State.Success)
 		if p.PeerTaskDone {
-			p.ProgressDone()
+			p.DoneCallback()
 			break
 		}
 	}
@@ -214,7 +214,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	for p = range progress {
 		assert.True(p.State.Success)
 		if p.PeerTaskDone {
-			p.ProgressDone()
+			p.DoneCallback()
 			break
 		}
 	}

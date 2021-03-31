@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"testing"
 	"time"
@@ -40,11 +41,15 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 			go func() {
 				for i := 0; i <= 100; i++ {
 					ch <- &peer.PeerTaskProgress{
+						State: &peer.ProgressState{
+							Success: true,
+						},
 						TaskId:          "",
 						PeerID:          "",
 						ContentLength:   100,
 						CompletedLength: int64(i),
 						PeerTaskDone:    i == 100,
+						DoneCallback:    func() {},
 					}
 				}
 				close(ch)
@@ -77,14 +82,23 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 		Output: "./testdata/file1",
 		BizId:  "unit test",
 	}
-	down, _ := client.Download(context.Background(), request)
+	down, err := client.Download(context.Background(), request)
 	assert.Nil(err, "client download grpc call should be ok")
 
-	var result *dfdaemongrpc.DownResult
-	for result = range down {
+	var (
+		lastResult *dfdaemongrpc.DownResult
+		curResult  *dfdaemongrpc.DownResult
+	)
+	for {
+		curResult, err = down.Recv()
+		if err == io.EOF {
+			break
+		}
+		assert.Nil(err)
+		lastResult = curResult
 	}
-	assert.NotNil(result)
-	assert.True(result.Done)
+	assert.NotNil(lastResult)
+	assert.True(lastResult.Done)
 }
 
 func TestDownloadManager_ServePeer(t *testing.T) {

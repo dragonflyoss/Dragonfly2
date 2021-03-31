@@ -65,7 +65,7 @@ type PeerTaskProgress struct {
 	ContentLength   int64
 	CompletedLength int64
 	PeerTaskDone    bool
-	ProgressDone    func()
+	DoneCallback    func()
 }
 
 func newFilePeerTask(ctx context.Context,
@@ -111,7 +111,7 @@ func newFilePeerTask(ctx context.Context,
 		}
 	}
 
-	schedPieceResultCh, schedPeerPacketCh, errCh := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
+	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -121,28 +121,26 @@ func newFilePeerTask(ctx context.Context,
 		progressCh:     make(chan *PeerTaskProgress),
 		progressStopCh: make(chan bool),
 		peerTask: peerTask{
-			host:            host,
-			backSource:      backSource,
-			request:         request,
-			pieceResultCh:   schedPieceResultCh,
-			peerPacketCh:    schedPeerPacketCh,
-			peerPacketErrCh: errCh,
-			pieceManager:    pieceManager,
-			peerPacketReady: make(chan bool),
-			peerId:          request.PeerId,
-			taskId:          result.TaskId,
-			singlePiece:     singlePiece,
-			done:            make(chan struct{}),
-			once:            sync.Once{},
-			readyPieces:     NewBitmap(),
-			requestedPieces: NewBitmap(),
-			lock:            &sync.Mutex{},
-			failedPieceCh:   make(chan int32, 4),
-			failedReason:    "unknown",
-			failedCode:      dfcodes.UnknownError,
-			contentLength:   -1,
-			totalPiece:      -1,
-			schedulerOption: schedulerOption,
+			host:             host,
+			backSource:       backSource,
+			request:          request,
+			peerPacketStream: peerPacketStream,
+			pieceManager:     pieceManager,
+			peerPacketReady:  make(chan bool),
+			peerId:           request.PeerId,
+			taskId:           result.TaskId,
+			singlePiece:      singlePiece,
+			done:             make(chan struct{}),
+			once:             sync.Once{},
+			readyPieces:      NewBitmap(),
+			requestedPieces:  NewBitmap(),
+			lock:             &sync.Mutex{},
+			failedPieceCh:    make(chan int32, 4),
+			failedReason:     "unknown",
+			failedCode:       dfcodes.UnknownError,
+			contentLength:    -1,
+			totalPiece:       -1,
+			schedulerOption:  schedulerOption,
 
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "filePeerTask"),
 		},
@@ -185,7 +183,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 	// retry failed piece
 	if !pieceResult.Success {
 		pieceResult.FinishedCount = pt.readyPieces.Settled()
-		pt.pieceResultCh <- pieceResult
+		_ = pt.peerPacketStream.Send(pieceResult)
 		pt.failedPieceCh <- pieceResult.PieceNum
 		pt.Errorf("%d download failed, retry later", piece.PieceNum)
 		return nil
@@ -203,7 +201,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 	pt.lock.Unlock()
 
 	pieceResult.FinishedCount = pt.readyPieces.Settled()
-	pt.pieceResultCh <- pieceResult
+	_ = pt.peerPacketStream.Send(pieceResult)
 	// send progress first to avoid close channel panic
 	p := &PeerTaskProgress{
 		State: &ProgressState{
@@ -245,7 +243,8 @@ func (pt *filePeerTask) finish() error {
 			}
 		}()
 		// send EOF piece result to scheduler
-		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled())
+		_ = pt.peerPacketStream.Send(
+			scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled()))
 		pt.Debugf("finish end piece result sent")
 
 		var (
@@ -273,7 +272,7 @@ func (pt *filePeerTask) finish() error {
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,
 			PeerTaskDone:    true,
-			ProgressDone: func() {
+			DoneCallback: func() {
 				pt.peerTaskDone = true
 				close(pt.progressStopCh)
 			},
@@ -316,7 +315,8 @@ func (pt *filePeerTask) cleanUnfinished() {
 			}
 		}()
 		// send EOF piece result to scheduler
-		pt.pieceResultCh <- scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled())
+		_ = pt.peerPacketStream.Send(
+			scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled()))
 		pt.Debugf("clean up end piece result sent")
 
 		pg := &PeerTaskProgress{
@@ -330,7 +330,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,
 			PeerTaskDone:    true,
-			ProgressDone: func() {
+			DoneCallback: func() {
 				pt.peerTaskDone = true
 				close(pt.progressStopCh)
 			},
