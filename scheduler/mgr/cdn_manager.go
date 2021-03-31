@@ -78,17 +78,14 @@ func (cm *CDNManager) TriggerTask(task *types.Task) (err error) {
 	if err != nil {
 		return
 	}
-	seedChan, err := cli.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+	seedChan, errCh := cli.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 		TaskId:  task.TaskId,
 		Url:     task.Url,
 		Filter:  task.Filter,
 		UrlMeta: task.UrlMata,
 	})
-	if err != nil {
-		return
-	}
 
-	go cli.Work(task, seedChan)
+	go cli.Work(task, seedChan, errCh)
 
 	return
 }
@@ -111,16 +108,18 @@ type CDNClient struct {
 	mgr *CDNManager
 }
 
-func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed) {
+func (c *CDNClient) Work(task *types.Task, ch <-chan *cdnsystem.PieceSeed, errCh <-chan error) {
 	for {
 		select {
+		case err := <-errCh:
+			if err != nil {
+				logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
+			}
 		case ps, ok := <-ch:
 			if !ok {
 				return
-			} else if ps == nil || ps.State == nil {
+			} else if ps == nil {
 				logger.Warnf("receive a nil pieceSeed or state from cdn: taskId[%s]", task.TaskId)
-			} else if !ps.State.Success {
-				logger.Warnf("receive a failure state from cdn: taskId[%s] Code[%d]:%s", task.TaskId, ps.State.Code, ps.State.Msg)
 			} else {
 				pieceNum := int32(-1)
 				if ps.PieceInfo != nil {

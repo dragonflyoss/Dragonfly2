@@ -132,16 +132,17 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 	}
 
 	peerTask.AddPieceStatus(pr)
-	if peerTask.Success || peerTask.GetNodeStatus() == types.PeerTaskStatusDone || peerTask.IsDown() {
+	status := peerTask.GetNodeStatus()
+	if peerTask.Success || status == types.PeerTaskStatusDone || peerTask.IsDown() {
 		return
 	}
 	if dstPeerTask != nil && peerTask.GetParent() == nil {
 		peerTask.SetNodeStatus(types.PeerTaskStatusAddParent, dstPeerTask)
 		needSchedule = true
-	} else if w.scheduler.IsNodeBad(peerTask) {
+	} else if status == types.PeerTaskStatusHealth && w.scheduler.IsNodeBad(peerTask) {
 		peerTask.SetNodeStatus(types.PeerTaskStatusBadNode)
 		needSchedule = true
-	} else if w.scheduler.NeedAdjustParent(peerTask) {
+	} else if status == types.PeerTaskStatusHealth && w.scheduler.NeedAdjustParent(peerTask) {
 		peerTask.SetNodeStatus(types.PeerTaskStatusNeedAdjustNode)
 		needSchedule = true
 	}
@@ -183,16 +184,17 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 	}
 
 	startTm := time.Now()
-	logger.Debugf("[%s][%s]: begin do schedule [%d]", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus())
+	status := peerTask.GetNodeStatus()
+	logger.Debugf("[%s][%s]: begin do schedule [%d]", peerTask.Task.TaskId, peerTask.Pid, status)
 	defer func() {
 		err := recover()
 		if err != nil {
 			logger.Errorf("[%s][%s]: do schedule panic: %v", peerTask.Task.TaskId, peerTask.Pid, err)
 		}
-		logger.Debugf("[%s][%s]: end do schedule [%d] cost: %d", peerTask.Task.TaskId, peerTask.Pid, peerTask.GetNodeStatus(), time.Now().Sub(startTm).Nanoseconds())
+		logger.Infof("[%s][%s]: end do schedule [%d] cost: %d", peerTask.Task.TaskId, peerTask.Pid, status, time.Now().Sub(startTm).Nanoseconds())
 	}()
 
-	switch peerTask.GetNodeStatus() {
+	switch status {
 	case types.PeerTaskStatusAddParent:
 		parent, _ := peerTask.GetJobData().(*types.PeerTask)
 		if parent == nil {
@@ -214,7 +216,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 			w.sendScheduleResult(peerTask)
 			peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
 		}
-
+		mgr.GetPeerTaskManager().RefreshDownloadMonitor(peerTask)
 	case types.PeerTaskStatusNeedChildren:
 		children, err := w.scheduler.SchedulerChildren(peerTask)
 		if err != nil {
@@ -328,11 +330,14 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 }
 
 func (w *Worker) sendScheduleResult(peerTask *types.PeerTask) {
+	if peerTask == nil {
+		return
+	}
 	parent := "nil"
-	if peerTask != nil && peerTask.GetParent() != nil && peerTask.GetParent().DstPeerTask != nil {
+	if peerTask.GetParent() != nil && peerTask.GetParent().DstPeerTask != nil {
 		parent = peerTask.GetParent().DstPeerTask.Pid
 	}
-	logger.Debugf("[%s][%s]: sendScheduleResult parent[%s]", peerTask.Task.TaskId, peerTask.Pid, parent)
+	logger.Infof("[%s][%s]: sendScheduleResult parent[%s] active time[%d] deep [%d]", peerTask.Task.TaskId, peerTask.Pid, parent, time.Now().UnixNano()-peerTask.GetStartTime(), peerTask.GetDeep())
 	w.sender.Send(peerTask)
 	return
 }

@@ -22,7 +22,6 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	scheduler2 "d7y.io/dragonfly/v2/scheduler/scheduler"
@@ -61,11 +60,7 @@ func (c *Client) doWork() error {
 	peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pid)
 	if peerTask == nil {
 		peerResult := &scheduler.PeerPacket{
-			State: &base.ResponseState{
-				Success: false,
-				Code:    dfcodes.PeerTaskNotFound,
-				Msg:     "peer task not registered",
-			},
+			Code: dfcodes.PeerTaskNotFound,
 		}
 		c.client.Send(peerResult)
 		return nil

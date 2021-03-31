@@ -20,6 +20,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -64,9 +65,9 @@ func (m *TaskManager) DeleteTask(taskId string) {
 	t, _ := m.data[taskId]
 	if t != nil {
 		logger.Infof("Task [%s] Statistic: %+v ", t.TaskId, t.Statistic.GetStatistic())
+		GetPeerTaskManager().DeleteTask(t)
 	}
 	delete(m.data, taskId)
-
 	return
 }
 
@@ -90,26 +91,32 @@ func (m *TaskManager) TouchTask(taskId string) {
 
 func (m *TaskManager) gcWorkingLoop() {
 	for {
-		time.Sleep(time.Hour)
-		var needDeleteKeys []string
-		m.lock.RLock()
-		for taskId, task := range m.data {
-			if task != nil && time.Now().After(task.LastActive.Add(m.gcDelayTime)) {
-				needDeleteKeys = append(needDeleteKeys, taskId)
-				task.Removed = true
+		func(){
+			time.Sleep(time.Hour)
+			defer func() {
+				e := recover()
+				if e != nil {
+					debug.PrintStack()
+				}
+			}()
+			var needDeleteKeys []string
+			m.lock.RLock()
+			for taskId, task := range m.data {
+				if task != nil && time.Now().After(task.LastActive.Add(m.gcDelayTime)) {
+					needDeleteKeys = append(needDeleteKeys, taskId)
+					task.Removed = true
+				}
 			}
-		}
-		m.lock.RUnlock()
+			m.lock.RUnlock()
 
-		if len(needDeleteKeys) > 0 {
-			m.lock.Lock()
-			for _, taskId := range needDeleteKeys {
-				delete(m.data, taskId)
+			if len(needDeleteKeys) > 0 {
+				for _, taskId := range needDeleteKeys {
+					m.DeleteTask(taskId)
+				}
 			}
-			m.lock.Unlock()
-		}
 
-		// clear peer task
-		GetPeerTaskManager().ClearPeerTask()
+			// clear peer task
+			GetPeerTaskManager().ClearPeerTask()
+		}()
 	}
 }

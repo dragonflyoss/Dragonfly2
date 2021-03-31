@@ -70,6 +70,7 @@ func (t *TaskStatistic) GetStatistic() (info *StatisticInfo) {
 		EndTime: t.EndTime,
 		PeerCount: t.PeerCount,
 		FinishedCount: t.FinishedCount,
+		Costs: make(map[int32]int32),
 	}
 
 	if info.EndTime.IsZero() {

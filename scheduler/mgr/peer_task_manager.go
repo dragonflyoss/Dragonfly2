@@ -104,7 +104,20 @@ func (m *PeerTaskManager) AddFakePeerTask(pid string, task *types.Task) *types.P
 }
 
 func (m *PeerTaskManager) DeletePeerTask(pid string) {
-	m.data.Delete(pid)
+	data, ok := m.data.Load(pid)
+	if ok {
+		if pt, ok := data.(*types.PeerTask); ok {
+			v, ok := m.dataRanger.Load(pt.Task)
+			if ok {
+				ranger, ok := v.(*sortedlist.SortedList)
+				if ok {
+					ranger.Delete(pt)
+				}
+			}
+
+		}
+		m.data.Delete(pid)
+	}
 	return
 }
 
@@ -119,6 +132,10 @@ func (m *PeerTaskManager) GetPeerTask(pid string) (h *types.PeerTask, ok bool) {
 
 func (m *PeerTaskManager) AddTask(task *types.Task) {
 	m.dataRanger.LoadOrStore(task, sortedlist.NewSortedList())
+}
+
+func (m *PeerTaskManager) DeleteTask(task *types.Task) {
+	m.dataRanger.Delete(task)
 }
 
 func (m *PeerTaskManager) UpdatePeerTask(pt *types.PeerTask) {
@@ -262,8 +279,11 @@ func (m *PeerTaskManager) printDebugInfo() string {
 		if peerTask.GetParent() == nil {
 			roots = append(roots, peerTask)
 		}
-		table.Append([]string{peerTask.Pid, strconv.Itoa(int(peerTask.GetFinishedNum())),
-			strconv.FormatBool(peerTask.Success), strconv.Itoa(int(peerTask.GetFreeLoad())), strconv.FormatBool(peerTask.IsDown())})
+		// do not print finished node witch do not has child
+		if !(peerTask.Success && peerTask.Host != nil && peerTask.Host.GetUploadLoadPercent() > 0.999) {
+			table.Append([]string{peerTask.Pid, strconv.Itoa(int(peerTask.GetFinishedNum())),
+				strconv.FormatBool(peerTask.Success), strconv.Itoa(int(peerTask.GetFreeLoad())), strconv.FormatBool(peerTask.IsDown())})
+		}
 		return
 	})
 	table.Render()
@@ -277,7 +297,9 @@ func (m *PeerTaskManager) printDebugInfo() string {
 			return
 		}
 		nPath := append(path, fmt.Sprintf("%s(%d)", node.Pid, node.GetSubTreeNodesNum()))
-		msgs = append(msgs, node.Pid+" || "+strings.Join(nPath, "-"))
+		if len(path) > 1 {
+			msgs = append(msgs, node.Pid+" || "+strings.Join(nPath, "-"))
+		}
 		for _, child := range node.GetChildren() {
 			if child == nil || child.SrcPeerTask == nil {
 				continue
@@ -301,7 +323,11 @@ func (m *PeerTaskManager) RefreshDownloadMonitor(pt *types.PeerTask) {
 	} else if pt.IsWaiting() {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
 	} else {
-		m.downloadMonitorQueue.AddAfter(pt, time.Millisecond*time.Duration(pt.GetCost()*10))
+		delay := time.Millisecond*time.Duration(pt.GetCost()*10)
+		if delay < time.Millisecond * 20 {
+			delay = time.Millisecond*20
+		}
+		m.downloadMonitorQueue.AddAfter(pt, delay)
 	}
 }
 

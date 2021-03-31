@@ -161,7 +161,7 @@ func (suite *SchedulerTestSuite) Test103ReportResult() {
 		Success:        true,
 		Code:           dfcodes.Success,
 	}
-	_, err := suite.ss.ReportPeerResult(ctx, result)
+	err := suite.ss.ReportPeerResult(ctx, result)
 	if !suite.Empty(err) {
 		return
 	}
@@ -179,13 +179,11 @@ func (suite *SchedulerTestSuite) Test104LeaveTask() {
 		TaskId: taskId,
 		PeerId: "prc001",
 	}
-	resp, err := suite.ss.LeaveTask(ctx, target)
+	err := suite.ss.LeaveTask(ctx, target)
 	if !suite.Empty(err) {
 		return
 	}
-	if !suite.Equal(true, resp != nil && resp.Success, "leave task Failed") {
-		return
-	}
+	time.Sleep(time.Millisecond*1000)
 	peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(target.PeerId)
 	if !suite.Empty(peerTask, "leave task failed") {
 		return

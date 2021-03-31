@@ -37,9 +37,10 @@ func CreateScheduler() *Scheduler {
 
 // scheduler children to a peer
 func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.PeerTask, err error) {
-	if peer == nil {
+	if peer == nil || peer.IsDown() {
 		return
 	}
+
 	freeLoad := peer.GetFreeLoad()
 	candidates := s.factory.getEvaluator(peer.Task).SelectChildCandidates(peer)
 	schedulerResult := make(map[*types.PeerTask]int8)
@@ -78,7 +79,7 @@ func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.P
 
 // scheduler a parent to a peer
 func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTask, secondary []*types.PeerTask, err error) {
-	if peer == nil {
+	if peer == nil || peer.Success || peer.IsDown() {
 		return
 	}
 
@@ -159,6 +160,7 @@ func (s *Scheduler) SchedulerLeaveNode(peer *types.PeerTask) (adjustNodes []*typ
 		peer.SetDown()
 		mgr.GetPeerTaskManager().UpdatePeerTask(pNode)
 	}
+	mgr.GetPeerTaskManager().UpdatePeerTask(peer)
 
 	for _, child := range peer.GetChildren() {
 		child.SrcPeerTask.DeleteParent()
