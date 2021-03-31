@@ -492,9 +492,7 @@ retry6404:
 		code = de.Code
 	}
 	pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
-	// may be panic here due to unknown content length or total piece count
-	// recover by preparePieceTasks
-	err = pt.peerPacketStream.Send(&scheduler.PieceResult{
+	perr := pt.peerPacketStream.Send(&scheduler.PieceResult{
 		TaskId:        pt.taskId,
 		SrcPid:        pt.peerId,
 		DstPid:        peer.PeerId,
@@ -503,7 +501,7 @@ retry6404:
 		HostLoad:      nil,
 		FinishedCount: -1,
 	})
-	if err != nil {
+	if perr != nil {
 		pt.Errorf("send piece result error: %s, code: %d", peer.PeerId, err)
 	}
 
