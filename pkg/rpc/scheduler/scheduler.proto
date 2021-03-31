@@ -130,6 +130,8 @@ message PeerPacket{
   int32 parallel_count = 4;
   DestPeer main_peer = 5;
   repeated DestPeer steal_peers = 6;
+  // result code
+  base.Code code = 7;
 }
 
 message PeerResult{
