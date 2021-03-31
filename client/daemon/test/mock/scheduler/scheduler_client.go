@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	client "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -95,17 +96,16 @@ func (mr *MockSchedulerClientMockRecorder) ReportPeerResult(ctx, pr interface{},
 }
 
 // ReportPieceResult mocks base method.
-func (m *MockSchedulerClient) ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, <-chan error) {
+func (m *MockSchedulerClient) ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (client.PeerPacketStream, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, taskId, ptr}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ReportPieceResult", varargs...)
-	ret0, _ := ret[0].(chan<- *scheduler.PieceResult)
-	ret1, _ := ret[1].(<-chan *scheduler.PeerPacket)
-	ret2, _ := ret[2].(<-chan error)
-	return ret0, ret1, ret2
+	ret0, _ := ret[0].(client.PeerPacketStream)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // ReportPieceResult indicates an expected call of ReportPieceResult.

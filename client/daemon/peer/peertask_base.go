@@ -3,6 +3,7 @@ package peer
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 const (
@@ -62,11 +64,8 @@ type peerTask struct {
 	//sizeScope   base.SizeScope
 	singlePiece *scheduler.SinglePiece
 
-	// pieceResultCh is the channel for sending piece result to scheduler
-	pieceResultCh chan<- *scheduler.PieceResult
-	// peerPacketCh is the channel for receiving available peers from scheduler
-	peerPacketCh    <-chan *scheduler.PeerPacket
-	peerPacketErrCh <-chan error
+	// TODO peerPacketStream
+	peerPacketStream schedulerclient.PeerPacketStream
 	// peerPacket is the latest available peers from peerPacketCh
 	peerPacket *scheduler.PeerPacket
 	// peerPacketReady will receive a ready signal for peerPacket ready
@@ -155,7 +154,7 @@ func (pt *peerTask) pullPieces(pti PeerTask, cleanUnfinishedFunc func()) {
 func (pt *peerTask) receivePeerPacket() {
 	var (
 		peerPacket *scheduler.PeerPacket
-		ok         bool
+		err        error
 	)
 loop:
 	for {
@@ -166,7 +165,15 @@ loop:
 		case <-pt.done:
 			pt.Infof("peer task done, stop wait peer packet from scheduler")
 			break loop
-		case err := <-pt.peerPacketErrCh:
+		default:
+		}
+
+		peerPacket, err = pt.peerPacketStream.Recv()
+		if err == io.EOF {
+			pt.Debugf("peerPacketStream closed")
+			break loop
+		}
+		if err != nil {
 			pt.failedCode = dfcodes.UnknownError
 			if de, ok := err.(*dferrors.DfError); ok {
 				pt.failedCode = de.Code
@@ -175,15 +182,6 @@ loop:
 			pt.cancel()
 			pt.Errorf(pt.failedReason)
 			break loop
-		case peerPacket, ok = <-pt.peerPacketCh:
-			if !ok {
-				break loop
-			}
-		}
-
-		if peerPacket == nil {
-			pt.Warnf("scheduler client send a empty peerPacket")
-			continue
 		}
 
 		if peerPacket.Code == dfcodes.SchedPeerGone {
@@ -493,9 +491,10 @@ retry6404:
 		pt.Debugf("get piece task from peer %s with df error, code: %d", peer.PeerId, de.Code)
 		code = de.Code
 	}
+	pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
 	// may be panic here due to unknown content length or total piece count
 	// recover by preparePieceTasks
-	pt.pieceResultCh <- &scheduler.PieceResult{
+	err = pt.peerPacketStream.Send(&scheduler.PieceResult{
 		TaskId:        pt.taskId,
 		SrcPid:        pt.peerId,
 		DstPid:        peer.PeerId,
@@ -503,8 +502,10 @@ retry6404:
 		Code:          code,
 		HostLoad:      nil,
 		FinishedCount: -1,
+	})
+	if err != nil {
+		pt.Errorf("send piece result error: %s, code: %d", peer.PeerId, err)
 	}
-	pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
 
 	if code == dfcodes.CdnTaskNotFound && curPeerPacket == pt.peerPacket {
 		goto retry6404
@@ -527,7 +528,7 @@ func (pt *peerTask) getPieceTasks(curPeerPacket *scheduler.PeerPacket, peer *sch
 		}
 		// by santong: when peer return empty, retry later
 		if len(pp.PieceInfos) == 0 {
-			pt.pieceResultCh <- &scheduler.PieceResult{
+			er := pt.peerPacketStream.Send(&scheduler.PieceResult{
 				TaskId:        pt.taskId,
 				SrcPid:        pt.peerId,
 				DstPid:        peer.PeerId,
@@ -535,6 +536,9 @@ func (pt *peerTask) getPieceTasks(curPeerPacket *scheduler.PeerPacket, peer *sch
 				Code:          dfcodes.ClientWaitPieceReady,
 				HostLoad:      nil,
 				FinishedCount: pt.readyPieces.Settled(),
+			})
+			if er != nil {
+				pt.Errorf("send piece result error: %s, code: %d", peer.PeerId, er)
 			}
 			// fast way to exit retry
 			if curPeerPacket != pt.peerPacket {

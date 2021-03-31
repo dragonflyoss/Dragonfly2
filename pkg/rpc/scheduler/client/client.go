@@ -18,15 +18,17 @@ package client
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"sync"
+
+	"google.golang.org/grpc"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"errors"
-	"fmt"
-	"google.golang.org/grpc"
-	"sync"
 )
 
 func GetClient() (SchedulerClient, error) {
@@ -58,7 +60,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 type SchedulerClient interface {
 	RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error)
 	// IsMigrating of ptr will be set to true
-	ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*PeerPacketStream, error)
+	ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error)
 
 	ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error
 
@@ -114,7 +116,7 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 	return
 }
 
-func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*PeerPacketStream, error) {
+func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error) {
 	pps, err := newPeerPacketStream(sc, ctx, taskId, ptr, opts)
 
 	logger.With("peerId", ptr.PeerId, "errMsg", err).
