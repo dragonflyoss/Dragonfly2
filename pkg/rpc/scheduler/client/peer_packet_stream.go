@@ -27,10 +27,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
 	"time"
 )
 
-type peerPacketStream struct {
+type PeerPacketStream struct {
 	sc      *schedulerClient
 	ctx     context.Context
 	hashKey string
@@ -43,20 +44,19 @@ type peerPacketStream struct {
 	failedServers   []string
 	lastPieceResult *scheduler.PieceResult
 
-	rpc.RetryMeta
+	retryMeta rpc.RetryMeta
 }
 
-func newPeerPacketStream(sc *schedulerClient, ctx context.Context, hashKey string, ptr *scheduler.PeerTaskRequest, opts []grpc.CallOption, prc chan *scheduler.PieceResult) (*peerPacketStream, error) {
+func newPeerPacketStream(sc *schedulerClient, ctx context.Context, hashKey string, ptr *scheduler.PeerTaskRequest, opts []grpc.CallOption) (*PeerPacketStream, error) {
 	ptr.IsMigrating = true
 
-	pps := &peerPacketStream{
+	pps := &PeerPacketStream{
 		sc:      sc,
 		ctx:     ctx,
 		hashKey: hashKey,
 		ptr:     ptr,
 		opts:    opts,
-		prc:     prc,
-		RetryMeta: rpc.RetryMeta{
+		retryMeta: rpc.RetryMeta{
 			MaxAttempts: 5,
 			InitBackoff: 0.5,
 			MaxBackOff:  4.0,
@@ -70,31 +70,33 @@ func newPeerPacketStream(sc *schedulerClient, ctx context.Context, hashKey strin
 	}
 }
 
-func (pps *peerPacketStream) send(pr *scheduler.PieceResult) (err error) {
+func (pps *PeerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
 	pps.lastPieceResult = pr
 	pps.sc.UpdateAccessNodeMap(pps.hashKey)
 	err = pps.stream.Send(pr)
 
 	if pr.PieceNum == common.EndOfPiece {
+		pps.closeSend()
 		return
 	}
 
 	if err != nil {
+		pps.closeSend()
 		err = pps.retrySend(pr, err)
 	}
 
 	return
 }
 
-func (pps *peerPacketStream) closeSend() error {
+func (pps *PeerPacketStream) closeSend() error {
 	return pps.stream.CloseSend()
 }
 
-func (pps *peerPacketStream) recv() (pp *scheduler.PeerPacket, err error) {
+func (pps *PeerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
 	pps.sc.UpdateAccessNodeMap(pps.hashKey)
 	pp, err = pps.stream.Recv()
 
-	if err != nil {
+	if err != nil && err != io.EOF {
 		if e, ok := err.(*dferrors.DfError); ok && e.Code == dfcodes.PeerTaskNotFound {
 			_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
 				timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -108,14 +110,14 @@ func (pps *peerPacketStream) recv() (pp *scheduler.PeerPacket, err error) {
 					pps.prc <- pps.lastPieceResult
 				}
 				return rr, err
-			}, pps.InitBackoff, pps.MaxBackOff, pps.MaxAttempts, nil)
+			}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, nil)
 		}
 	}
 
 	return
 }
 
-func (pps *peerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) error {
+func (pps *PeerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) error {
 	if status.Code(cause) == codes.DeadlineExceeded {
 		return cause
 	}
@@ -126,30 +128,30 @@ func (pps *peerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) e
 		}
 	}
 
-	return pps.send(pr)
+	return pps.Send(pr)
 }
 
-func (pps *peerPacketStream) initStream() error {
+func (pps *PeerPacketStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		if client, err := pps.sc.getSchedulerClient(pps.hashKey); err != nil {
 			return nil, err
 		} else {
 			return client.ReportPieceResult(pps.ctx, pps.opts...)
 		}
-	}, pps.InitBackoff, pps.MaxBackOff, pps.MaxAttempts, nil)
+	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, nil)
 
 	if err != nil {
 		err = pps.replaceClient(err)
 	} else {
 		pps.stream = stream.(scheduler.Scheduler_ReportPieceResultClient)
-		pps.StreamTimes = 1
+		pps.retryMeta.StreamTimes = 1
 	}
 
 	return err
 }
 
-func (pps *peerPacketStream) replaceStream(cause error) error {
-	if pps.StreamTimes >= pps.MaxAttempts {
+func (pps *PeerPacketStream) replaceStream(cause error) error {
+	if pps.retryMeta.StreamTimes >= pps.retryMeta.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
 
@@ -159,17 +161,17 @@ func (pps *peerPacketStream) replaceStream(cause error) error {
 		} else {
 			return client.ReportPieceResult(pps.ctx, pps.opts...)
 		}
-	}, pps.InitBackoff, pps.MaxBackOff, pps.MaxAttempts, cause)
+	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, cause)
 
 	if err == nil {
 		pps.stream = res.(scheduler.Scheduler_ReportPieceResultClient)
-		pps.StreamTimes++
+		pps.retryMeta.StreamTimes++
 	}
 
 	return err
 }
 
-func (pps *peerPacketStream) replaceClient(cause error) error {
+func (pps *PeerPacketStream) replaceClient(cause error) error {
 	if preNode, err := pps.sc.TryMigrate(pps.hashKey, cause, pps.failedServers); err != nil {
 		return err
 	} else {
@@ -189,13 +191,13 @@ func (pps *peerPacketStream) replaceClient(cause error) error {
 			return client.ReportPieceResult(pps.ctx, pps.opts...)
 		}
 		return nil, err
-	}, pps.InitBackoff, pps.MaxBackOff, pps.MaxAttempts, cause)
+	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, cause)
 
 	if err != nil {
 		err = pps.replaceClient(cause)
 	} else {
 		pps.stream = stream.(scheduler.Scheduler_ReportPieceResultClient)
-		pps.StreamTimes = 1
+		pps.retryMeta.StreamTimes = 1
 	}
 
 	return err
