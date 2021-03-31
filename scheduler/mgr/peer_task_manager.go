@@ -112,7 +112,6 @@ func (m *PeerTaskManager) DeletePeerTask(pid string) {
 				ranger, ok := v.(*sortedlist.SortedList)
 				if ok {
 					ranger.Delete(pt)
-					return
 				}
 			}
 

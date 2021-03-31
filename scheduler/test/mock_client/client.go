@@ -206,7 +206,8 @@ func (mc *MockClient) registerPeerTask() (err error) {
 			time.Sleep(time.Second * 3)
 			cancel()
 		}()
-		mc.in, mc.out, err = mc.cli.ReportPieceResult(ctx, mc.taskId, request)
+		var errCh <-chan error
+		mc.in, mc.out, errCh = mc.cli.ReportPieceResult(ctx, mc.taskId, request)
 		if err != nil {
 			mc.logger.Errorf("[%s] PullPieceTasks failed: %e", mc.pid, err)
 			return
@@ -217,6 +218,9 @@ func (mc *MockClient) registerPeerTask() (err error) {
 
 		for {
 			select {
+			case err = <-errCh:
+				mc.logger.Logf("client[%s] receive error %v", err)
+				return
 			case resp = <-mc.out:
 			case <-mc.waitStop:
 				mc.logger.Logf("client[%s] is down", mc.pid)

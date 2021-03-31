@@ -298,10 +298,7 @@ func (pt *PeerTask) SetClient(client IClient) {
 func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 	// if pt != nil && pt.client != nil {
 	pkg = &scheduler.PeerPacket{
-		State: &base.ResponseState{
-			Success: true,
-			Code:    dfcodes.Success,
-		},
+		Code: dfcodes.Success,
 		TaskId: pt.Task.TaskId,
 		// source peer id
 		SrcPid: pt.Pid,
@@ -347,11 +344,7 @@ func (pt *PeerTask) SendError(dfError *dferrors.DfError) error {
 			return errors.New("client closed")
 		}
 		pkg := &scheduler.PeerPacket{
-			State: &base.ResponseState{
-				Success: false,
-				Code:    dfError.Code,
-				Msg: dfError.Message,
-			},
+			Code: dfError.Code,
 		}
 		if dfError.Code == dfcodes.SchedPeerGone {
 			defer pt.client.Close()
