@@ -101,7 +101,7 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 		zap.Uint32("cost", pr.Cost),
 		zap.Int32("code", int32(pr.Code)))
 
-	return nil, err
+	return new(empty.Empty), err
 }
 
 func (p *proxy) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget) (*empty.Empty, error) {
