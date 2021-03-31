@@ -37,7 +37,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
+	"d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
@@ -88,11 +88,6 @@ func setupPeerTaskManagerComponents(
 				})
 		}
 		return &base.PiecePacket{
-			State: &base.ResponseState{
-				Success: true,
-				Code:    dfcodes.Success,
-				Msg:     "",
-			},
 			TaskId:        request.TaskId,
 			DstPid:        "peer-x",
 			PieceInfos:    tasks,
@@ -109,55 +104,45 @@ func setupPeerTaskManagerComponents(
 
 	// 2. setup a scheduler
 	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
-	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
-		return &scheduler.RegisterResult{
-			State: &base.ResponseState{
-				Success: true,
-				Code:    dfcodes.Success,
-				Msg:     "",
-			},
-			TaskId:      taskID,
-			SizeScope:   base.SizeScope_NORMAL,
-			DirectPiece: nil,
-		}, nil
-	})
-	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, error) {
-		resultCh := make(chan *scheduler.PieceResult)
-		peerPacketCh := make(chan *scheduler.PeerPacket)
-		go func() {
-			for {
-				select {
-				case <-resultCh:
+	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
+			return &scheduler.RegisterResult{
+				TaskId:      taskID,
+				SizeScope:   base.SizeScope_NORMAL,
+				DirectPiece: nil,
+			}, nil
+		})
+	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (chan<- *scheduler.PieceResult, <-chan *scheduler.PeerPacket, <-chan error) {
+			resultCh := make(chan *scheduler.PieceResult)
+			peerPacketCh := make(chan *scheduler.PeerPacket)
+			go func() {
+				for {
+					select {
+					case <-resultCh:
+					}
 				}
-			}
-		}()
-		go func() {
-			peerPacketCh <- &scheduler.PeerPacket{
-				State: &base.ResponseState{
-					Success: true,
-					Code:    dfcodes.Success,
-					Msg:     "progress by mockSchedulerClient",
-				},
-				TaskId:        taskID,
-				SrcPid:        "127.0.0.1",
-				ParallelCount: pieceParallelCount,
-				MainPeer: &scheduler.PeerPacket_DestPeer{
-					Ip:      "127.0.0.1",
-					RpcPort: port,
-					PeerId:  "peer-x",
-				},
-				StealPeers: nil,
-			}
-		}()
-		return resultCh, peerPacketCh, nil
-	})
-	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) (*base.ResponseState, error) {
-		return &base.ResponseState{
-			Success: true,
-			Code:    dfcodes.Success,
-			Msg:     "progress by mockSchedulerClient",
-		}, nil
-	})
+			}()
+			go func() {
+				peerPacketCh <- &scheduler.PeerPacket{
+					Code:          dfcodes.Success,
+					TaskId:        taskID,
+					SrcPid:        "127.0.0.1",
+					ParallelCount: pieceParallelCount,
+					MainPeer: &scheduler.PeerPacket_DestPeer{
+						Ip:      "127.0.0.1",
+						RpcPort: port,
+						PeerId:  "peer-x",
+					},
+					StealPeers: nil,
+				}
+			}()
+			return resultCh, peerPacketCh, nil
+		})
+	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
+			return nil
+		})
 	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
 		DataPath: test.DataDir,
 		TaskExpireTime: clientutil.Duration{

@@ -42,7 +42,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/pidfile"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -244,10 +244,7 @@ func runDfget() error {
 		start = time.Now()
 		end   time.Time
 	)
-	down, err := daemonClient.Download(ctx, request)
-	if err != nil {
-		return err
-	}
+	down, errCh := daemonClient.Download(ctx, request)
 	var (
 		result *dfdaemongrpc.DownResult
 		ok     bool
@@ -256,18 +253,21 @@ func runDfget() error {
 download:
 	for {
 		select {
+		case err = <-errCh:
+			if err != nil {
+				if de, ok := err.(*dferrors.DfError); ok {
+					logger.Errorf("dragonfly daemon returns error code %d/%s",
+						de.Code, de.Message)
+				}
+				break download
+			}
 		case result, ok = <-down:
-			if !ok && request == nil {
+			if !ok && result == nil {
 				err = fmt.Errorf("progress channel closed unexpected")
 				break download
 			}
 			if result.CompletedLength > 0 {
 				pb.Set64(int64(result.CompletedLength))
-			}
-			if result.State.Code != dfcodes.Success {
-				err = fmt.Errorf("dragonfly daemon returns error code %d/%s",
-					result.State.Code, result.State.Msg)
-				break download
 			}
 			if result.Done {
 				pb.Finish()
@@ -392,15 +392,9 @@ func probeDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 		return nil, err
 	}
 
-	state, err := dc.CheckHealth(context.Background(), addr)
+	err = dc.CheckHealth(context.Background(), addr)
 	if err != nil {
-		//dc.Close()
 		return nil, err
-	}
-
-	if !state.Success {
-		//dc.Close()
-		return nil, fmt.Errorf("check health error: %s/%s", state.Code, state.Msg)
 	}
 
 	return dc, nil
