@@ -38,11 +38,6 @@ const (
 	defaultCacheKey = "dynconfig"
 )
 
-// managerClient is a client of manager
-type managerClient interface {
-	Get() (interface{}, error)
-}
-
 type strategy interface {
 	Get() (interface{}, error)
 	Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error

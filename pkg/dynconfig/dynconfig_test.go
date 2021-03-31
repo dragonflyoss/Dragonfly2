@@ -20,11 +20,77 @@ import (
 	"testing"
 	"time"
 
+	mock_manager_client "d7y.io/dragonfly/v2/pkg/dynconfig/mocks"
+	"github.com/golang/mock/gomock"
+	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewDynconfig(t *testing.T) {
-	assert := assert.New(t)
+type TestDynConfig struct {
+	Scheduler SchedulerOption
+}
 
-	dynconfig, err := NewDynconfig(ManagerSourceType, 2*time.Second, []Option{WithManagerClient(peerHost)})
+type SchedulerOption struct {
+	Name string
+}
+
+func TestDynconfigGet_ManagerSourceType(t *testing.T) {
+	schedulerName := "scheduler"
+	tests := []struct {
+		name      string
+		expire    time.Duration
+		dynconfig TestDynConfig
+		mock      func(m *mock_manager_client.MockmanagerClientMockRecorder)
+		expect    func(t *testing.T, res interface{})
+	}{
+		{
+			name:   "get dynconfig success",
+			expire: 1 * time.Second,
+			dynconfig: TestDynConfig{
+				Scheduler: SchedulerOption{
+					Name: schedulerName,
+				},
+			},
+			mock: func(m *mock_manager_client.MockmanagerClientMockRecorder) {
+				var d map[string]interface{}
+				mapstructure.Decode(TestDynConfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				}, &d)
+				m.Get().Return(d, nil)
+			},
+			expect: func(t *testing.T, data interface{}) {
+				assert := assert.New(t)
+				var d TestDynConfig
+				mapstructure.Decode(data, &d)
+				assert.EqualValues(d, TestDynConfig{
+					Scheduler: SchedulerOption{
+						Name: schedulerName,
+					},
+				})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			mockManagerClient := mock_manager_client.NewMockmanagerClient(ctl)
+			tc.mock(mockManagerClient.EXPECT())
+
+			d, err := NewDynconfig(ManagerSourceType, tc.expire, []Option{WithManagerClient(mockManagerClient)}...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			data, err := d.Get()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.expect(t, data)
+		})
+	}
 }
