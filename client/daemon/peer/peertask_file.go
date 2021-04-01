@@ -178,7 +178,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 			pt.Warnf("recover from %s", r)
 		}
 	}()
-	pt.Debugf("report piece #%d result, success: %t", piece.PieceNum, pieceResult.Success)
+	pt.Debugf("report piece %d result, success: %t", piece.PieceNum, pieceResult.Success)
 
 	// retry failed piece
 	if !pieceResult.Success {

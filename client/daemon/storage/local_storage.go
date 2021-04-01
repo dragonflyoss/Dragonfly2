@@ -26,34 +26,10 @@ type localTaskStore struct {
 	metadataFile     *os.File
 	metadataFilePath string
 
-	// TODO currently, we open a new *os.File for all operations, we need a cache for it
-	// open file syscall costs about 700ns, while close syscall costs about 800ns
-	//dataFile     *os.File
-	dataFilePath string
-
 	expireTime    time.Duration
 	lastAccess    time.Time
 	reclaimMarked bool
 	gcCallback    func(CommonTaskRequest)
-}
-
-func (t *localTaskStore) init() error {
-	if err := os.MkdirAll(t.dataDir, defaultDirectoryMode); err != nil && !os.IsExist(err) {
-		return err
-	}
-	metadata, err := os.OpenFile(t.metadataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
-	if err != nil {
-		return err
-	}
-	t.metadataFile = metadata
-
-	// just create data file
-	data, err := os.OpenFile(t.dataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
-	if err != nil {
-		return err
-	}
-	//t.dataFile = data
-	return data.Close()
 }
 
 func (t *localTaskStore) touch() {
@@ -71,7 +47,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	}
 	t.RUnlock()
 
-	file, err := os.OpenFile(t.dataFilePath, os.O_RDWR, defaultFileMode)
+	file, err := os.OpenFile(t.DataFilePath, os.O_RDWR, defaultFileMode)
 	if err != nil {
 		return 0, err
 	}
@@ -121,7 +97,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 		}
 	}
 	t.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",
-		n, t.dataFilePath, req.Num, req.Range.Start, req.Range.Length)
+		n, t.DataFilePath, req.Num, req.Range.Start, req.Range.Length)
 	t.Lock()
 	defer t.Unlock()
 	// double check
@@ -145,7 +121,7 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 // GetPiece get a LimitReadCloser from task data with seeked, caller should read bytes and close it.
 func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error) {
 	t.touch()
-	file, err := os.Open(t.dataFilePath)
+	file, err := os.Open(t.DataFilePath)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -178,13 +154,6 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 	if req.MetadataOnly {
 		return nil
 	}
-	switch t.StoreStrategy {
-	case string(SimpleLocalTaskStoreStrategy):
-
-	case string(AdvanceLocalTaskStoreStrategy):
-		// is already done by init
-		return nil
-	}
 	_, err = os.Stat(req.Destination)
 	if err == nil {
 		// remove exist file
@@ -192,14 +161,14 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 		os.Remove(req.Destination)
 	}
 	// 1. try to link
-	err = os.Link(path.Join(t.dataDir, taskData), req.Destination)
+	err = os.Link(t.DataFilePath, req.Destination)
 	if err == nil {
 		t.Infof("task data link to file %q success", req.Destination)
 		return nil
 	}
 	t.Warnf("task data link to file %q error: %s", req.Destination, err)
 	// 2. link failed, copy it
-	file, err := os.Open(t.dataFilePath)
+	file, err := os.Open(t.DataFilePath)
 	if err != nil {
 		t.Debugf("open tasks data error: %s", err)
 		return err
@@ -274,16 +243,35 @@ func (t *localTaskStore) Reclaim() error {
 	log.Infof("start gc task data")
 	var err error
 
-	// close and remove data
-	//if err = t.dataFile.Close(); err != nil {
-	//	log.Warnf("close task data %q error: %s", t.dataFilePath, err)
-	//	return false, err
-	//}
-	if err = os.Remove(path.Join(t.dataDir, taskData)); err != nil && !os.IsNotExist(err) {
-		log.Warnf("remove task data %q error: %s", t.dataFilePath, err)
+	// remove data
+	data := path.Join(t.dataDir, taskData)
+	stat, err := os.Lstat(data)
+	if err != nil {
+		log.Errorf("stat task data %q error: %s", data, err)
 		return err
 	}
-	log.Infof("purged task data: %s", t.dataFilePath)
+	// remove sym link cache file
+	if stat.Mode()&os.ModeSymlink == os.ModeSymlink {
+		dest, err0 := os.Readlink(data)
+		if err0 == nil {
+			if err = os.Remove(dest); err != nil {
+				log.Warnf("remove symlink target file %s error: %s", dest, err)
+			} else {
+				log.Infof("remove data file %s", dest)
+			}
+		}
+	} else { // remove cache file
+		if err = os.Remove(t.DataFilePath); err != nil {
+			log.Errorf("remove data file %s error: %s", data, err)
+			return err
+		}
+	}
+	if err = os.Remove(data); err != nil {
+		log.Errorf("remove data file %s error: %s", data, err)
+		return err
+	}
+	log.Infof("purged task data: %s", data)
+
 	// close and remove metadata
 	if err = t.metadataFile.Close(); err != nil {
 		log.Warnf("close task meta data %q error: %s", t.metadataFilePath, err)
@@ -311,6 +299,8 @@ func (t *localTaskStore) Reclaim() error {
 			if err := os.Remove(taskDir); err != nil {
 				log.Warnf("remove unused task directory %q error: %s", taskDir, err)
 			}
+		} else {
+			log.Warnf("task directory %q is not empty", taskDir)
 		}
 	}
 	return nil
