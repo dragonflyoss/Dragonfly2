@@ -36,7 +36,7 @@ type dynconfigManager struct {
 
 // newDynconfigManager returns a new manager dynconfig instence
 func newDynconfigManager(cache cache.Cache, expire time.Duration, client managerClient) (*dynconfigManager, error) {
-	cachePath, err := defaultCacheDir()
+	cachePath, err := defaultCacheFile()
 	if err != nil {
 		return nil, err
 	}
@@ -66,9 +66,8 @@ func (d *dynconfigManager) Get() (interface{}, error) {
 	}
 
 	// Cache has expired
-	if err := d.load(); err != nil {
-		return nil, err
-	}
+	// Reload and ignore client request error
+	d.load()
 
 	dynconfig, ok := d.cache.Get(defaultCacheKey)
 	if !ok {
@@ -103,8 +102,8 @@ func (d *dynconfigManager) load() error {
 	return nil
 }
 
-// Get default cache directory
-func defaultCacheDir() (string, error) {
+// Get default cache file path
+func defaultCacheFile() (string, error) {
 	dir, err := os.UserCacheDir()
 	if err != nil {
 		return "", err

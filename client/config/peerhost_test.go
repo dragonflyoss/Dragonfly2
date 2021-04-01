@@ -155,14 +155,14 @@ listen:
 func TestUnmarshalJSON(t *testing.T) {
 	bytes := []byte(`{
 		"tls": {
-			"key": "./test/testdata/certs/sca.key",
-			"cert": "./test/testdata/certs/sca.crt",
-			"ca_cert": "./test/testdata/certs/ca.crt"
+			"key": "./testdata/certs/sca.key",
+			"cert": "./testdata/certs/sca.crt",
+			"ca_cert": "./testdata/certs/ca.crt"
 		},
 		"url": "https://d7y.io",
     "certs": [
-			"./test/testdata/certs/ca.crt",
-			"./test/testdata/certs/sca.crt"
+			"./testdata/certs/ca.crt",
+			"./testdata/certs/sca.crt"
     ],
 		"regx": "blobs/sha256.*",
 		"port1": 1001,
@@ -173,7 +173,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		"timeout": "3m",
 		"limit": "2Mib",
 		"type": "tcp",
-		"proxy1": "./test/testdata/config/proxy.json",
+		"proxy1": "./testdata/config/proxy.json",
 		"proxy2": {
 			"registry_mirror": {
 				"url": "https://index.docker.io"
@@ -216,11 +216,11 @@ func TestUnmarshalJSON(t *testing.T) {
 func TestUnmarshalYAML(t *testing.T) {
 	bytes := []byte(`
 tls:
-  key: ./test/testdata/certs/sca.key
-  cert: ./test/testdata/certs/sca.crt
-  ca_cert: ./test/testdata/certs/ca.crt
+  key: ./testdata/certs/sca.key
+  cert: ./testdata/certs/sca.crt
+  ca_cert: ./testdata/certs/ca.crt
 url: https://d7y.io
-certs: ["./test/testdata/certs/ca.crt", "./test/testdata/certs/sca.crt"]
+certs: ["./testdata/certs/ca.crt", "./testdata/certs/sca.crt"]
 regx: blobs/sha256.*
 port1: 1001 
 port2:
@@ -229,7 +229,7 @@ port2:
 timeout: 3m
 limit: 2Mib
 type: tcp
-proxy1: ./test/testdata/config/proxy.yml
+proxy1: ./testdata/config/proxy.yml
 proxy2: 
   registry_mirror:
     url: https://index.docker.io
@@ -273,7 +273,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 	hijackExp, _ := NewRegexp("mirror.aliyuncs.com:443")
 
 	certPool := x509.NewCertPool()
-	ca, _ := ioutil.ReadFile("./test/testdata/certs/sca.crt")
+	ca, _ := ioutil.ReadFile("./testdata/certs/sca.crt")
 	certPool.AppendCertsFromPEM(ca)
 
 	peerHostOption := &PeerHostOption{
@@ -422,14 +422,14 @@ func TestPeerHostOption_Load(t *testing.T) {
 	}
 
 	peerHostOptionYAML := &PeerHostOption{}
-	if err := peerHostOptionYAML.Load("./test/testdata/config/daemon.yml"); err != nil {
+	if err := peerHostOptionYAML.Load("./testdata/config/daemon.yml"); err != nil {
 		t.Fatal(err)
 	}
 
 	assert.EqualValues(peerHostOption, peerHostOptionYAML)
 
 	peerHostOptionJSON := &PeerHostOption{}
-	if err := peerHostOptionJSON.Load("./test/testdata/config/daemon.json"); err != nil {
+	if err := peerHostOptionJSON.Load("./testdata/config/daemon.json"); err != nil {
 		t.Fatal(err)
 	}
 	assert.EqualValues(peerHostOption, peerHostOptionJSON)

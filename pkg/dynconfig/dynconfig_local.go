@@ -18,6 +18,8 @@ package dynconfig
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/cache"
@@ -54,9 +56,8 @@ func (d *dynconfigLocal) Get() (interface{}, error) {
 	}
 
 	// Cache has expired
-	if err := d.load(); err != nil {
-		return nil, err
-	}
+	// Reload and ignore client request error
+	d.load()
 
 	dynconfig, ok := d.cache.Get(defaultCacheKey)
 	if !ok {
@@ -87,4 +88,14 @@ func (d *dynconfigLocal) load() error {
 
 	d.cache.Set(defaultCacheKey, viper.AllSettings(), d.expired)
 	return nil
+}
+
+// Get default config file path
+func defaultConfigFile() (string, error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dir, "dynconfig.yaml"), nil
 }
