@@ -42,7 +42,7 @@ func (s *SchedulerService) GetTask(taskId string) (task *types.Task, err error) 
 func (s *SchedulerService) AddTask(task *types.Task) (ret *types.Task, err error) {
 	ret, added := s.taskMgr.AddTask(task)
 	if added {
-		err = s.cdnMgr.TriggerTask(ret)
+		err = s.cdnMgr.TriggerTask(ret, s.peerTaskMgr.CDNCallback)
 	}
 	s.peerTaskMgr.AddTask(ret)
 	return

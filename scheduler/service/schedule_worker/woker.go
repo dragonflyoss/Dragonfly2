@@ -375,7 +375,7 @@ func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
 			w.sendJob(peerTask)
 			task := peerTask.Task
 			if task != nil {
-				mgr.GetCDNManager().TriggerTask(task)
+				mgr.GetCDNManager().TriggerTask(task, mgr.GetPeerTaskManager().CDNCallback)
 			}
 		}
 		return true

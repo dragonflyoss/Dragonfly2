@@ -319,7 +319,8 @@ func (m *PeerTaskManager) printDebugInfo() string {
 
 func (m *PeerTaskManager) RefreshDownloadMonitor(pt *types.PeerTask) {
 	logger.Debugf("[%s][%s] downloadMonitorWorkingLoop refresh ", pt.Task.TaskId, pt.Pid)
-	if pt.GetNodeStatus() != types.PeerTaskStatusHealth {
+	status := pt.GetNodeStatus()
+	 if status != types.PeerTaskStatusHealth {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
 	} else if pt.IsWaiting() {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
@@ -329,6 +330,14 @@ func (m *PeerTaskManager) RefreshDownloadMonitor(pt *types.PeerTask) {
 			delay = time.Millisecond*20
 		}
 		m.downloadMonitorQueue.AddAfter(pt, delay)
+	}
+}
+
+func (m *PeerTaskManager) CDNCallback(pt *types.PeerTask, err *dferrors.DfError) {
+	if err != nil {
+		pt.SendError(err)
+	} else {
+		m.downloadMonitorQueue.Add(pt)
 	}
 }
 

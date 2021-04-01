@@ -30,6 +30,8 @@ import (
 	"hash/crc32"
 	"io/ioutil"
 	"net/http"
+	"runtime/debug"
+	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
@@ -40,13 +42,19 @@ import (
 const TinyFileSize = 128
 
 type CDNManager struct {
-	cdnList    []*CDNClient
-	cdnInfoMap map[string]*config.CdnServerConfig
+	cdnList      []*CDNClient
+	cdnInfoMap   map[string]*config.CdnServerConfig
+	lock         *sync.Mutex
+	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
+	callbackList map[*types.Task][]*types.PeerTask
 }
 
 func createCDNManager() *CDNManager {
 	cdnMgr := &CDNManager{
-		cdnInfoMap: make(map[string]*config.CdnServerConfig),
+		cdnInfoMap:   make(map[string]*config.CdnServerConfig),
+		lock:         new(sync.Mutex),
+		callbackFns:  make(map[*types.Task]func(*types.PeerTask, *dferrors.DfError)),
+		callbackList: make(map[*types.Task][]*types.PeerTask),
 	}
 	return cdnMgr
 }
@@ -73,7 +81,7 @@ func (cm *CDNManager) InitCDNClient() {
 	}
 }
 
-func (cm *CDNManager) TriggerTask(task *types.Task) (err error) {
+func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error) {
 	cli, err := cm.getCDNClient(task)
 	if err != nil {
 		return
@@ -88,9 +96,47 @@ func (cm *CDNManager) TriggerTask(task *types.Task) (err error) {
 		logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
 	}
 
-	go cli.Work(task, stream)
+	cm.lock.Lock()
+	cm.callbackFns[task] = callback
+	cm.lock.Unlock()
+
+	go cli.Work(task, stream, cm.doCallback)
 
 	return
+}
+
+func (cm *CDNManager) doCallback(task *types.Task, err *dferrors.DfError) {
+	cm.lock.Lock()
+	fn := cm.callbackFns[task]
+	list := cm.callbackList[task]
+	delete(cm.callbackFns, task)
+	delete(cm.callbackList, task)
+	cm.lock.Unlock()
+
+	if list == nil {
+		return
+	}
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				debug.PrintStack()
+			}
+		}()
+		for _, pt := range list {
+			fn(pt, err)
+		}
+	}()
+}
+
+func (cm *CDNManager) AddToCallback(peerTask *types.PeerTask) {
+	if peerTask == nil || peerTask.Task == nil {
+		return
+	}
+	cm.lock.Lock()
+	if _, ok := cm.callbackFns[peerTask.Task]; ok {
+		cm.callbackList[peerTask.Task] = append(cm.callbackList[peerTask.Task], peerTask)
+	}
+	cm.lock.Unlock()
 }
 
 func (cm *CDNManager) getCDNClient(task *types.Task) (cli *CDNClient, err error) {
@@ -111,10 +157,17 @@ type CDNClient struct {
 	mgr *CDNManager
 }
 
-func (c *CDNClient) Work(task *types.Task, stream *client.PieceSeedStream) {
+func (c *CDNClient) Work(task *types.Task, stream *client.PieceSeedStream, callback func(*types.Task, *dferrors.DfError)) {
+	waitCallback := true
 	for {
 		ps, err := stream.Recv()
 		if err != nil {
+			dferr, ok := err.(*dferrors.DfError)
+			if ok {
+				callback(task, dferr)
+			} else {
+				callback(task, dferrors.New(dfcodes.CdnError, err.Error()))
+			}
 			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
 			return
 		}
@@ -128,6 +181,11 @@ func (c *CDNClient) Work(task *types.Task, stream *client.PieceSeedStream) {
 			}
 			c.processPieceSeed(task, ps)
 			logger.Debugf("receive a pieceSeed from cdn: taskId[%s]-%d done [%v]", task.TaskId, pieceNum, ps.Done)
+
+			if waitCallback {
+				waitCallback = false
+				callback(task, nil)
+			}
 		}
 	}
 }
@@ -193,7 +251,7 @@ func (c *CDNClient) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) 
 		task.AddPiece(c.createPiece(task, ps, peerTask))
 
 		finishedCount := ps.PieceInfo.PieceNum + 1
-		if finishedCount > peerTask.GetFinishedNum() {
+		if finishedCount < peerTask.GetFinishedNum() {
 			finishedCount = peerTask.GetFinishedNum()
 		}
 

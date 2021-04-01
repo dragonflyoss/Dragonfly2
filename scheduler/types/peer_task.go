@@ -47,12 +47,12 @@ type PeerTask struct {
 	Task *Task  // task info
 	Host *Host  // host info
 
-	isDown          bool // is leave scheduler
-	lock            *sync.Mutex
-	finishedNum     int32 // download finished piece number
-	startTime       int64
-	lastActiveTime  int64
-	touch           func(*PeerTask)
+	isDown         bool // is leave scheduler
+	lock           *sync.Mutex
+	finishedNum    int32 // download finished piece number
+	startTime      int64
+	lastActiveTime int64
+	touch          func(*PeerTask)
 
 	parent          *PeerEdge // primary download provider
 	children        *sync.Map // all primary download consumers
@@ -197,7 +197,6 @@ func (pt *PeerTask) DeleteParent() {
 		return
 	}
 
-
 	parent := pt.parent.DstPeerTask
 	if pt.parent.DstPeerTask != nil && pt.parent.DstPeerTask.children != nil {
 		pt.parent.DstPeerTask.children.Delete(pt)
@@ -298,7 +297,7 @@ func (pt *PeerTask) SetClient(client IClient) {
 func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 	// if pt != nil && pt.client != nil {
 	pkg = &scheduler.PeerPacket{
-		Code: dfcodes.Success,
+		Code:   dfcodes.Success,
 		TaskId: pt.Task.TaskId,
 		// source peer id
 		SrcPid: pt.Pid,
@@ -457,7 +456,7 @@ func (pt *PeerTask) GetLastActiveTime() int64 {
 	return pt.lastActiveTime
 }
 
-func (pt *PeerTask) GetSortKeys() (key1, key2 int){
+func (pt *PeerTask) GetSortKeys() (key1, key2 int) {
 	if pt == nil {
 		return
 	}
