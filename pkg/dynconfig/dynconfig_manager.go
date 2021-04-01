@@ -20,6 +20,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"time"
 
 	"d7y.io/dragonfly/v2/pkg/cache"
 )
@@ -29,11 +30,12 @@ const ()
 type dynconfigManager struct {
 	cache     cache.Cache
 	cachePath string
+	expire    time.Duration
 	client    managerClient
 }
 
 // newDynconfigManager returns a new manager dynconfig instence
-func newDynconfigManager(cache cache.Cache, client managerClient) (*dynconfigManager, error) {
+func newDynconfigManager(cache cache.Cache, expire time.Duration, client managerClient) (*dynconfigManager, error) {
 	cachePath, err := defaultCacheDir()
 	if err != nil {
 		return nil, err
@@ -42,6 +44,7 @@ func newDynconfigManager(cache cache.Cache, client managerClient) (*dynconfigMan
 	d := &dynconfigManager{
 		cache:     cache,
 		cachePath: cachePath,
+		expire:    expire,
 		client:    client,
 	}
 
@@ -93,7 +96,7 @@ func (d *dynconfigManager) load() error {
 		return err
 	}
 
-	d.cache.SetDefault(defaultCacheKey, dynconfig)
+	d.cache.Set(defaultCacheKey, dynconfig, d.expire)
 	if err := d.cache.SaveFile(d.cachePath); err != nil {
 		return err
 	}

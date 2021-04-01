@@ -18,6 +18,7 @@ package dynconfig
 
 import (
 	"errors"
+	"time"
 
 	"d7y.io/dragonfly/v2/pkg/cache"
 	"github.com/spf13/viper"
@@ -26,13 +27,15 @@ import (
 type dynconfigLocal struct {
 	cache    cache.Cache
 	filepath string
+	expired  time.Duration
 }
 
 // newDynconfigLocal returns a new local dynconfig instence
-func newDynconfigLocal(cache cache.Cache, filePath string) (*dynconfigLocal, error) {
+func newDynconfigLocal(cache cache.Cache, expired time.Duration, filePath string) (*dynconfigLocal, error) {
 	d := &dynconfigLocal{
 		cache:    cache,
 		filepath: filePath,
+		expired:  expired,
 	}
 
 	if err := d.load(); err != nil {
@@ -82,6 +85,6 @@ func (d *dynconfigLocal) load() error {
 		return err
 	}
 
-	d.cache.SetDefault(defaultCacheKey, viper.AllSettings())
+	d.cache.Set(defaultCacheKey, viper.AllSettings(), d.expired)
 	return nil
 }

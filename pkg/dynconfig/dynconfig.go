@@ -48,6 +48,7 @@ type dynconfig struct {
 	managerClient   managerClient
 	localConfigPath string
 	cache           cache.Cache
+	expire          time.Duration
 	strategy        strategy
 }
 
@@ -87,12 +88,12 @@ func NewDynconfig(sourceType sourceType, expire time.Duration, options ...Option
 
 	switch sourceType {
 	case ManagerSourceType:
-		d.strategy, err = newDynconfigManager(d.cache, d.managerClient)
+		d.strategy, err = newDynconfigManager(d.cache, expire, d.managerClient)
 		if err != nil {
 			return nil, err
 		}
 	case LocalSourceType:
-		d.strategy, err = newDynconfigLocal(d.cache, d.localConfigPath)
+		d.strategy, err = newDynconfigLocal(d.cache, expire, d.localConfigPath)
 		if err != nil {
 			return nil, err
 		}
@@ -108,6 +109,7 @@ func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, option
 	d := &dynconfig{
 		sourceType: sourceType,
 		cache:      cache.New(expire, cache.NoCleanup),
+		expire:     expire,
 	}
 
 	for _, opt := range options {
