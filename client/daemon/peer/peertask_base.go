@@ -417,10 +417,10 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *D
 				id, request.DstPid, request.piece.PieceNum, request.piece.RangeStart, request.piece.RangeSize)
 			pt.pieceManager.DownloadPiece(pti, request)
 		case <-pt.done:
-			pt.Debugf("pt.done, peer download worker #%d exit", id)
+			pt.Debugf("peer task done, peer download worker #%d exit", id)
 			return
 		case <-pt.ctx.Done():
-			pt.Debugf("pt.ctx.Done(), peer download worker #%d exit", id)
+			pt.Debugf("peer task context done, peer download worker #%d exit", id)
 			return
 		}
 	}
@@ -475,6 +475,7 @@ retry6404:
 	if err == errPeerPacketChanged {
 		return nil, err
 	}
+	pt.Debugf("get piece task error: %#v", err)
 
 	// grpc error
 	if se, ok := err.(interface{ GRPCStatus() *status.Status }); ok {
