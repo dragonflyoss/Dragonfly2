@@ -112,6 +112,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	} else if peerTask.Host == nil {
 		peerTask.Host = host
 	}
+
 	if isCdn {
 		peerTask.SetDown()
 		err = dferrors.New(dfcodes.SchedNeedBackSource, "there is no cdn")
