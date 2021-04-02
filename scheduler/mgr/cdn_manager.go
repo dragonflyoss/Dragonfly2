@@ -44,7 +44,7 @@ const TinyFileSize = 128
 type CDNManager struct {
 	cdnList      []*CDNClient
 	cdnInfoMap   map[string]*config.CdnServerConfig
-	lock         *sync.Mutex
+	lock         *sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
 	callbackList map[*types.Task][]*types.PeerTask
 }
@@ -52,7 +52,7 @@ type CDNManager struct {
 func createCDNManager() *CDNManager {
 	cdnMgr := &CDNManager{
 		cdnInfoMap:   make(map[string]*config.CdnServerConfig),
-		lock:         new(sync.Mutex),
+		lock:         new(sync.RWMutex),
 		callbackFns:  make(map[*types.Task]func(*types.PeerTask, *dferrors.DfError)),
 		callbackList: make(map[*types.Task][]*types.PeerTask),
 	}
@@ -86,6 +86,13 @@ func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *type
 	if err != nil {
 		return
 	}
+	cm.lock.Lock()
+	_, ok := cm.callbackFns[task]
+	cm.lock.Unlock()
+	if ok {
+		return
+	}
+
 	stream, err := cli.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 		TaskId:  task.TaskId,
 		Url:     task.Url,
@@ -132,6 +139,13 @@ func (cm *CDNManager) AddToCallback(peerTask *types.PeerTask) {
 	if peerTask == nil || peerTask.Task == nil {
 		return
 	}
+	cm.lock.RLock()
+	if _, ok := cm.callbackFns[peerTask.Task]; !ok {
+		cm.lock.RUnlock()
+		return
+	}
+	cm.lock.RUnlock()
+
 	cm.lock.Lock()
 	if _, ok := cm.callbackFns[peerTask.Task]; ok {
 		cm.callbackList[peerTask.Task] = append(cm.callbackList[peerTask.Task], peerTask)
@@ -162,11 +176,13 @@ func (c *CDNClient) Work(task *types.Task, stream *client.PieceSeedStream, callb
 	for {
 		ps, err := stream.Recv()
 		if err != nil {
-			dferr, ok := err.(*dferrors.DfError)
-			if ok {
-				callback(task, dferr)
-			} else {
-				callback(task, dferrors.New(dfcodes.CdnError, err.Error()))
+			if waitCallback {
+				dferr, ok := err.(*dferrors.DfError)
+				if ok {
+					callback(task, dferr)
+				} else {
+					callback(task, dferrors.New(dfcodes.CdnError, err.Error()))
+				}
 			}
 			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
 			return
