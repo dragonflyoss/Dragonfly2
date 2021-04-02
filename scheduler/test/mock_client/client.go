@@ -70,7 +70,7 @@ type MockClient struct {
 	logger        common.TestLogger
 	replyChan     chan *scheduler.PieceResult
 	replyFinished chan struct{}
-	stream 		  *client.PeerPacketStream
+	stream 		  client.PeerPacketStream
 	in            chan<- *scheduler.PieceResult
 	out           <-chan *scheduler.PeerPacket
 	url           string
