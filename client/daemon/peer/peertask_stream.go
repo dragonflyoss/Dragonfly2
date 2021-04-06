@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/attribute"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -39,7 +40,8 @@ func newStreamPeerTask(ctx context.Context,
 	pieceManager PieceManager,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
-	schedulerOption config.SchedulerOption) (StreamPeerTask, *TinyData, error) {
+	schedulerOption config.SchedulerOption) (context.Context, StreamPeerTask, *TinyData, error) {
+	ctx, span := tracer.Start(ctx, "stream-peer-task")
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	var backSource bool
 	if err != nil {
@@ -50,7 +52,7 @@ func newStreamPeerTask(ctx context.Context,
 		// not back source
 		if !backSource {
 			logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
-			return nil, nil, err
+			return ctx, nil, nil, err
 		}
 	}
 
@@ -65,13 +67,13 @@ func newStreamPeerTask(ctx context.Context,
 		case base.SizeScope_TINY:
 			logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
-				return nil, &TinyData{
+				return ctx, nil, &TinyData{
 					TaskId:  result.TaskId,
 					PeerID:  request.PeerId,
 					Content: piece.PieceContent,
 				}, nil
 			}
-			return nil, nil, errors.Errorf("scheduler return tiny piece but can not parse piece content")
+			return ctx, nil, nil, errors.Errorf("scheduler return tiny piece but can not parse piece content")
 		case base.SizeScope_NORMAL:
 			logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
@@ -79,11 +81,14 @@ func newStreamPeerTask(ctx context.Context,
 
 	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	if err != nil {
-		return nil, nil, err
+		return ctx, nil, nil, err
 	}
 	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
-	return &streamPeerTask{
+	span.SetAttributes(attribute.String("host", host.Uuid))
+	span.SetAttributes(attribute.String("peer", request.PeerId))
+	span.SetAttributes(attribute.String("task", result.TaskId))
+	return ctx, &streamPeerTask{
 		peerTask: peerTask{
 			ctx:              ctx,
 			host:             host,
@@ -96,6 +101,7 @@ func newStreamPeerTask(ctx context.Context,
 			taskId:           result.TaskId,
 			singlePiece:      singlePiece,
 			done:             make(chan struct{}),
+			span:             span,
 			once:             sync.Once{},
 			readyPieces:      NewBitmap(),
 			requestedPieces:  NewBitmap(),
@@ -204,7 +210,10 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	}
 
 	go func(first int32) {
-		defer s.cancel()
+		defer func() {
+			s.cancel()
+			s.span.End()
+		}()
 		var (
 			desired int32
 			cur     int32
