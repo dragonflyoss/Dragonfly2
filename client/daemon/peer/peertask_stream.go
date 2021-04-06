@@ -10,6 +10,8 @@ import (
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -41,7 +43,10 @@ func newStreamPeerTask(ctx context.Context,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption) (context.Context, StreamPeerTask, *TinyData, error) {
-	ctx, span := tracer.Start(ctx, "stream-peer-task")
+	ctx, span := tracer.Start(ctx, "stream-peer-task", trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(attribute.String("host", host.Uuid))
+	span.SetAttributes(attribute.String("peer", request.PeerId))
+	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	var backSource bool
 	if err != nil {
@@ -55,16 +60,26 @@ func newStreamPeerTask(ctx context.Context,
 			return ctx, nil, nil, err
 		}
 	}
+	if result == nil {
+		defer span.End()
+		span.RecordError(err)
+		err = errors.Errorf("empty schedule result")
+		return ctx, nil, nil, err
+	}
+	span.SetAttributes(attribute.String("task", result.TaskId))
 
 	var singlePiece *scheduler.SinglePiece
 	if !backSource {
 		switch result.SizeScope {
 		case base.SizeScope_SMALL:
+			span.SetAttributes(attribute.String("size", "small"))
 			logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
 				singlePiece = piece.SinglePiece
 			}
 		case base.SizeScope_TINY:
+			defer span.End()
+			span.SetAttributes(attribute.String("size", "tiny"))
 			logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
 				return ctx, nil, &TinyData{
@@ -73,21 +88,23 @@ func newStreamPeerTask(ctx context.Context,
 					Content: piece.PieceContent,
 				}, nil
 			}
-			return ctx, nil, nil, errors.Errorf("scheduler return tiny piece but can not parse piece content")
+			err = errors.Errorf("scheduler return tiny piece but can not parse piece content")
+			span.RecordError(err)
+			return ctx, nil, nil, err
 		case base.SizeScope_NORMAL:
+			span.SetAttributes(attribute.String("size", "normal"))
 			logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
 	}
 
 	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	if err != nil {
+		defer span.End()
+		span.RecordError(err)
 		return ctx, nil, nil, err
 	}
 	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
-	span.SetAttributes(attribute.String("host", host.Uuid))
-	span.SetAttributes(attribute.String("peer", request.PeerId))
-	span.SetAttributes(attribute.String("task", result.TaskId))
 	return ctx, &streamPeerTask{
 		peerTask: peerTask{
 			ctx:              ctx,
