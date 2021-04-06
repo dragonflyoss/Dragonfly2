@@ -32,7 +32,6 @@ cdnsystem:
 
 client:
   name: client
-  replicas: 2
   image: dragonflyoss/client
   tag: 0.1.0
   pullPolicy: IfNotPresent
