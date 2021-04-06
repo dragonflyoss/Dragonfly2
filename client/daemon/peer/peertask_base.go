@@ -435,7 +435,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *D
 	for {
 		select {
 		case request := <-requests:
-			_, span := tracer.Start(pt.ctx, fmt.Sprintf("piece-downloader-#%d", id))
+			_, span := tracer.Start(pt.ctx, fmt.Sprintf("download-piece-#%d", request.piece.PieceNum))
 
 			pt.Debugf("peer download worker #%d receive piece task, "+
 				"dest peer id: %s, piece num: %d, range start: %d, range size: %d",
@@ -444,6 +444,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *D
 
 			span.SetAttributes(attribute.Bool("success", success))
 			span.SetAttributes(attribute.Int("piece", int(request.piece.PieceNum)))
+			span.SetAttributes(attribute.Int("worker", int(id)))
 			span.End()
 		case <-pt.done:
 			pt.Debugf("peer task done, peer download worker #%d exit", id)
