@@ -93,7 +93,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		Output: output,
 	}
 	ctx := context.Background()
-	pt, _, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
+	_, pt, _, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	assert.Nil(err, "new file peer task")
 	pt.(*filePeerTask).backSource = true
 
@@ -196,7 +196,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		Output: output,
 	}
 	ctx := context.Background()
-	pt, _, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
+	_, pt, _, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	assert.Nil(err, "new file peer task")
 	pt.(*filePeerTask).backSource = true
 

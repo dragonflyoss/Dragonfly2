@@ -266,7 +266,7 @@ func (t *localTaskStore) Reclaim() error {
 			return err
 		}
 	}
-	if err = os.Remove(data); err != nil {
+	if err = os.Remove(data); err != nil && !os.IsNotExist(err) {
 		log.Errorf("remove data file %s error: %s", data, err)
 		return err
 	}

@@ -62,6 +62,7 @@ type PeerHostOption struct {
 	Proxy     *ProxyOption    `json:"proxy" yaml:"proxy"`
 	Upload    UploadOption    `json:"upload" yaml:"upload"`
 	Storage   StorageOption   `json:"storage" yaml:"storage"`
+	Telemetry TelemetryOption `json:"telemetry" yaml:"telemetry"`
 }
 
 func (p *PeerHostOption) Load(path string) error {
@@ -625,4 +626,9 @@ type HijackHost struct {
 	Regx     *Regexp   `yaml:"regx" json:"regx"`
 	Insecure bool      `yaml:"insecure" json:"insecure"`
 	Certs    *CertPool `yaml:"certs" json:"certs"`
+}
+
+// TelemetryOption is the option for telemetry
+type TelemetryOption struct {
+	Jaeger string `json:"jaeger" yaml:"jaeger"`
 }
