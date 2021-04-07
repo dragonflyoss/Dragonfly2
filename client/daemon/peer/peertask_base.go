@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -162,7 +161,7 @@ func (pt *peerTask) receivePeerPacket() {
 		spanDone   bool
 	)
 	// FIXME currently only record first schedule result
-	_, span := tracer.Start(pt.ctx, "scheduler-#1")
+	_, span := tracer.Start(pt.ctx, SpanFirstSchedule)
 	defer func() {
 		if !spanDone {
 			span.End()
@@ -225,7 +224,7 @@ loop:
 			peerPacket.MainPeer.PeerId, peerPacket.ParallelCount)
 		if !spanDone {
 			spanDone = true
-			span.SetAttributes(attribute.String("main-peer", peerPacket.MainPeer.PeerId))
+			span.SetAttributes(AttributeMainPeer.String(peerPacket.MainPeer.PeerId))
 			span.End()
 		}
 
@@ -435,16 +434,16 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *D
 	for {
 		select {
 		case request := <-requests:
-			_, span := tracer.Start(pt.ctx, fmt.Sprintf("download-piece-#%d", request.piece.PieceNum))
+			_, span := tracer.Start(pt.ctx, fmt.Sprintf(SpanDownloadPiece, request.piece.PieceNum))
 
 			pt.Debugf("peer download worker #%d receive piece task, "+
 				"dest peer id: %s, piece num: %d, range start: %d, range size: %d",
 				id, request.DstPid, request.piece.PieceNum, request.piece.RangeStart, request.piece.RangeSize)
 			success := pt.pieceManager.DownloadPiece(pti, request)
 
-			span.SetAttributes(attribute.Bool("success", success))
-			span.SetAttributes(attribute.Int("piece", int(request.piece.PieceNum)))
-			span.SetAttributes(attribute.Int("worker", int(id)))
+			span.SetAttributes(AttributePieceSuccess.Bool(success))
+			span.SetAttributes(AttributePiece.Int(int(request.piece.PieceNum)))
+			span.SetAttributes(AttributePieceWorker.Int(int(id)))
 			span.End()
 		case <-pt.done:
 			pt.Debugf("peer task done, peer download worker #%d exit", id)
@@ -496,8 +495,8 @@ func (pt *peerTask) preparePieceTasksByPeer(curPeerPacket *scheduler.PeerPacket,
 		return nil, fmt.Errorf("empty peer")
 	}
 	var span trace.Span
-	_, span = tracer.Start(pt.ctx, "get-piece-tasks")
-	span.SetAttributes(attribute.String("peer", peer.PeerId))
+	_, span = tracer.Start(pt.ctx, SpanGetPieceTasks)
+	span.SetAttributes(AttributeTargetPeerId.String(peer.PeerId))
 	defer span.End()
 retry6404:
 	pt.Debugf("get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)

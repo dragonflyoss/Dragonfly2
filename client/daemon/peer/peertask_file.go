@@ -23,7 +23,6 @@ import (
 	"sync/atomic"
 
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 
@@ -77,11 +76,18 @@ func newFilePeerTask(ctx context.Context,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption) (context.Context, FilePeerTask, *TinyData, error) {
-	ctx, span := tracer.Start(ctx, "file-peer-task", trace.WithSpanKind(trace.SpanKindClient))
-	span.SetAttributes(attribute.String("host", host.Uuid))
-	span.SetAttributes(attribute.String("peer", request.PeerId))
+	ctx, span := tracer.Start(ctx, SpanFilePeerTask, trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(AttributePeerHost.String(host.Uuid))
+	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
+	span.SetAttributes(AttributePeerId.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
+
+	// trace register
+	_, regSpan := tracer.Start(ctx, SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
+	regSpan.RecordError(err)
+	regSpan.End()
+
 	var backSource bool
 	if err != nil {
 		// check if it is back source error
@@ -102,20 +108,20 @@ func newFilePeerTask(ctx context.Context,
 		err = errors.Errorf("empty schedule result")
 		return ctx, nil, nil, err
 	}
-	span.SetAttributes(attribute.String("task", result.TaskId))
+	span.SetAttributes(AttributeTaskId.String(result.TaskId))
 
 	var singlePiece *scheduler.SinglePiece
 	if !backSource {
 		switch result.SizeScope {
 		case base.SizeScope_SMALL:
-			span.SetAttributes(attribute.String("size", "small"))
+			span.SetAttributes(AttributePeerTaskSizeScope.String("small"))
 			logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
 				singlePiece = piece.SinglePiece
 			}
 		case base.SizeScope_TINY:
 			defer span.End()
-			span.SetAttributes(attribute.String("size", "tiny"))
+			span.SetAttributes(AttributePeerTaskSizeScope.String("tiny"))
 			logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
 				return ctx, nil, &TinyData{
@@ -128,7 +134,7 @@ func newFilePeerTask(ctx context.Context,
 			span.RecordError(err)
 			return ctx, nil, nil, err
 		case base.SizeScope_NORMAL:
-			span.SetAttributes(attribute.String("size", "normal"))
+			span.SetAttributes(AttributePeerTaskSizeScope.String("normal"))
 			logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
 	}
@@ -266,6 +272,7 @@ func (pt *filePeerTask) finish() error {
 				pt.Errorf("finish recover from: %s", rerr)
 				err = fmt.Errorf("%v", rerr)
 			}
+			pt.span.SetAttributes(AttributePeerTaskSuccess.Bool(true))
 			pt.span.End()
 		}()
 		// send EOF piece result to scheduler
@@ -339,6 +346,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			if err := recover(); err != nil {
 				pt.Errorf("cleanUnfinished recover from: %s", err)
 			}
+			pt.span.SetAttributes(AttributePeerTaskSuccess.Bool(false))
 			pt.span.End()
 		}()
 		// send EOF piece result to scheduler

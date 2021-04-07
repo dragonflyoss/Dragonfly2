@@ -108,6 +108,7 @@ func init() {
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.RateLimit), "download-rate", "download rate limit for other peers and back source")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
 	flagSet.DurationVar(&daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule-timeout", daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule timeout")
+	flagSet.StringVar(&daemonConfig.Telemetry.Jaeger, "jaeger", daemonConfig.Telemetry.Jaeger, "jaeger addr, like: http://localhost:14268")
 	flagSet.String("config", config.PeerHostConfigPath, "daemon config file location")
 
 	// Add command
