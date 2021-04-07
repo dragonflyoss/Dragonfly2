@@ -62,7 +62,7 @@ build-cdn: build-dirs ## Build cdn
 .PHONY: build-cdn
 
 build-dfget: build-dirs ## Build dfget
-	@echo "Begin to build cdn."
+	@echo "Begin to build dfget."
 	./hack/build.sh dfget
 .PHONY: build-cdn
 
