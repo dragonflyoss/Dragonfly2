@@ -1,78 +1,86 @@
+{{- range .Values.cdnsystem }}
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   labels:
     app: {{ template "dragonfly.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    component: "{{ .Values.cdnsystem.name }}"
+    component: "{{ .name }}"
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
   name: {{ template "dragonfly.cdnsystem.fullname" . }}
-  {{- if .Values.cdnsystem.deploymentAnnotations }}
+  {{- if .deploymentAnnotations }}
   annotations:
-{{ toYaml .Values.cdnsystem.deploymentAnnotations | indent 4 }}
+{{ toYaml .deploymentAnnotations | indent 4 }}
   {{- end }}
 spec:
-  replicas: {{ .Values.cdnsystem.replicas }}
+  replicas: {{ .replicas }}
   template:
     metadata:
       labels:
         app: {{ template "dragonfly.cdnsystem.fullname" . }}
-        component: "{{ .Values.cdnsystem.name }}"
+        component: "{{ .name }}"
         release: {{ .Release.Name }}
-        {{- if .Values.cdnsystem.podAnnotations }}
+        {{- if .podAnnotations }}
       annotations:
-{{ toYaml .Values.cdnsystem.podAnnotations | indent 8 }}
+{{ toYaml .podAnnotations | indent 8 }}
         {{- end }}
     spec:
-      {{- if .Values.cdnsystem.nodeSelector }}
+      {{- if .nodeSelector }}
       nodeSelector:
-{{ toYaml .Values.cdnsystem.nodeSelector | indent 8 }}
+{{ toYaml .nodeSelector | indent 8 }}
       {{- end }}
-      {{- if .Values.cdnsystem.tolerations }}
+      {{- if .tolerations }}
       tolerations:
-{{ toYaml .Values.cdnsystem.tolerations | indent 8 }}
+{{ toYaml .tolerations | indent 8 }}
       {{- end }}
-      {{- if .Values.cdnsystem.affinity }}
+      {{- if .affinity }}
       affinity:
-{{ toYaml .Values.cdnsystem.affinity | indent 8 }}
+{{ toYaml .affinity | indent 8 }}
       {{- end }}
-      {{- if quote .Values.cdnsystem.terminationGracePeriodSeconds }}
-      terminationGracePeriodSeconds: {{ .Values.cdnsystem.terminationGracePeriodSeconds }}
+      {{- if quote .terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds }}
       {{- end }}
-      {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.Values.cdnsystem.priorityClassName) }}
-      priorityClassName: {{ .Values.cdnsystem.priorityClassName }}
+      {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.priorityClassName) }}
+      priorityClassName: {{ .priorityClassName }}
       {{- end }}
       containers:
       - name: cdnsystem
-        image: "{{ .Values.cdnsystem.image }}:{{ .Values.cdnsystem.tag }}"
-        imagePullPolicy: {{ .Values.cdnsystem.pullPolicy | quote }}
+        image: "{{ .image }}:{{ .tag }}"
+        imagePullPolicy: {{ .pullPolicy | quote }}
         resources:
-{{ toYaml .Values.cdnsystem.resources | indent 12 }}
+{{ toYaml .resources | indent 12 }}
         ports:
-        - containerPort: {{ .Values.cdnsystem.containerPort }}
+        - containerPort: {{ .containerPort }}
           protocol: TCP
         volumeMounts:
         - name: config
-          mountPath: "/etc/dragonfly/cdnsystem.yaml"
-          subPath: cdnsystem.yaml
+          mountPath: "/etc/dragonfly"
       containers:
       - name: nginx
-        image: "{{ .Values.cdnsystem.nginx.image }}:{{ .Values.cdnsystem.nginx.tag }}"
-        imagePullPolicy: {{ .Values.cdnsystem.nginx.pullPolicy | quote }}
+        image: "{{ .nginx.image }}:{{ .nginx.tag }}"
+        imagePullPolicy: {{ .nginx.pullPolicy | quote }}
         resources:
-{{ toYaml .Values.cdnsystem.nginx.resources | indent 12 }}
+{{ toYaml .nginx.resources | indent 12 }}
         ports:
-        - containerPort: {{ .Values.cdnsystem.nginx.containerPort }}
+        - containerPort: {{ .nginx.containerPort }}
           protocol: TCP
         volumeMounts:
-        - name: config
-          mountPath: "/etc/nginx/nginx.conf"
-          subPath: nginx.conf
+        - name: nginx-config
+          mountPath: "/etc/nginx"
       volumes:
       - name: config
         configMap:
           name: {{ template "dragonfly.cdnsystem.fullname" . }}
-      - name: nginx
+          items:
+          - key: scheduler.yaml
+            path: scheduler.yaml
+      - name: nginx-config
         configMap:
           name: {{ template "dragonfly.cdnsystem.nginx.name" . }}
+          items:
+          - key: nginx.conf
+            path: nginx.conf
+              
+---
+{{- end }}
