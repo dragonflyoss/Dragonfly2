@@ -1,3 +1,4 @@
+{{- range .Values.cdnsystem }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,37 +6,46 @@ metadata:
   labels:
     app: {{ template "dragonfly.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    component: "{{ .Values.cdnsystem.name }}"
+    component: "{{ .name }}"
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
-{{- if .Values.cdnsystem.serviceAnnotations }}
+{{- if .serviceAnnotations }}
   annotations:
-{{ toYaml .Values.cdnsystem.serviceAnnotations | indent 4 }}
+{{ toYaml .serviceAnnotations | indent 4 }}
 {{- end }}
 spec:
   ports:
-    - port: {{.Values.cdnsystem.service.port}}
+    - port: {{.service.port}}
       name: http
-      targetPort: {{ .Values.cdnsystem.service.targetPort }}
-      {{- if (and (eq .Values.cdnsystem.service.type "NodePort") (not (empty .Values.cdnsystem.service.nodePort))) }}
-      nodePort: {{.Values.cdnsystem.service.nodePort}}
+      targetPort: {{ .service.targetPort }}
+      {{- if (and (eq .service.type "NodePort") (not (empty .service.nodePort))) }}
+      nodePort: {{.service.nodePort}}
       {{- end }}
-{{- range $index, $port := .Values.cdnsystem.service.extraPorts }}
+    - port: {{.service.nginxPort}}
+      name: http
+      targetPort: {{ .service.nginxTargetPort }}
+      {{- if (and (eq .service.type "NodePort") (not (empty .service.nginxNodePort))) }}
+      nodePort: {{.service.nginxNodePort}}
+      {{- end }}
+{{- range $index, $port := .service.extraPorts }}
     - port: {{ $port.port }}
       name: {{ $port.name }}
       targetPort: {{ $port.port }}
 {{- end }}
   selector:
     app: {{ template "dragonfly.name" . }}
-    component: "{{ .Values.cdnsystem.name }}"
+    component: "{{ .name }}"
     release: {{ .Release.Name }}
-  type: {{.Values.cdnsystem.service.type}}
-  {{if eq .Values.cdnsystem.service.type "LoadBalancer"}}
-{{- if .Values.cdnsystem.service.loadBalancerSourceRanges }}
+  type: {{.service.type}}
+  {{if eq .service.type "LoadBalancer"}}
+{{- if .service.loadBalancerSourceRanges }}
   loadBalancerSourceRanges:
-{{ toYaml .Values.cdnsystem.service.loadBalancerSourceRanges | indent 4 }}
+{{ toYaml .service.loadBalancerSourceRanges | indent 4 }}
 {{- end }}
-  {{if .Values.cdnsystem.service.loadBalancerIP}}
-  loadBalancerIP: {{.Values.cdnsystem.serivice.loadBalancerIP}}
+  {{if .service.loadBalancerIP}}
+  loadBalancerIP: {{.serivice.loadBalancerIP}}
   {{end}}
   {{end}}
+              
+---
+{{- end }}

@@ -13,7 +13,6 @@ metadata:
 {{ toYaml .Values.client.deploymentAnnotations | indent 4 }}
   {{- end }}
 spec:
-  replicas: {{ .Values.client.replicas }}
   template:
     metadata:
       labels:

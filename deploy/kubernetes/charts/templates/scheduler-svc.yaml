@@ -1,3 +1,4 @@
+{{- range .Values.scheduler }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,37 +6,40 @@ metadata:
   labels:
     app: {{ template "dragonfly.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    component: "{{ .Values.scheduler.name }}"
+    component: "{{ .name }}"
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
-{{- if .Values.scheduler.serviceAnnotations }}
+{{- if .serviceAnnotations }}
   annotations:
-{{ toYaml .Values.scheduler.serviceAnnotations | indent 4 }}
+{{ toYaml .serviceAnnotations | indent 4 }}
 {{- end }}
 spec:
   ports:
-    - port: {{.Values.scheduler.service.port}}
+    - port: {{.service.port}}
       name: http
-      targetPort: {{ .Values.scheduler.service.targetPort }}
-      {{- if (and (eq .Values.scheduler.service.type "NodePort") (not (empty .Values.scheduler.service.nodePort))) }}
-      nodePort: {{.Values.scheduler.service.nodePort}}
+      targetPort: {{ .service.targetPort }}
+      {{- if (and (eq .service.type "NodePort") (not (empty .service.nodePort))) }}
+      nodePort: {{.service.nodePort}}
       {{- end }}
-{{- range $index, $port := .Values.scheduler.service.extraPorts }}
+{{- range $index, $port := .service.extraPorts }}
     - port: {{ $port.port }}
       name: {{ $port.name }}
       targetPort: {{ $port.port }}
 {{- end }}
   selector:
     app: {{ template "dragonfly.name" . }}
-    component: "{{ .Values.scheduler.name }}"
+    component: "{{ .name }}"
     release: {{ .Release.Name }}
-  type: {{.Values.scheduler.service.type}}
-  {{if eq .Values.scheduler.service.type "LoadBalancer"}}
-{{- if .Values.scheduler.service.loadBalancerSourceRanges }}
+  type: {{.service.type}}
+  {{if eq .service.type "LoadBalancer"}}
+{{- if .service.loadBalancerSourceRanges }}
   loadBalancerSourceRanges:
-{{ toYaml .Values.scheduler.service.loadBalancerSourceRanges | indent 4 }}
+{{ toYaml .service.loadBalancerSourceRanges | indent 4 }}
 {{- end }}
-  {{if .Values.scheduler.service.loadBalancerIP}}
-  loadBalancerIP: {{.Values.scheduler.serivice.loadBalancerIP}}
+  {{if .service.loadBalancerIP}}
+  loadBalancerIP: {{.serivice.loadBalancerIP}}
   {{end}}
   {{end}}
+              
+---
+{{- end }}
