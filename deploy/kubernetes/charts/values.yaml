@@ -11,8 +11,15 @@ scheduler:
     limits:
       cpu: "512m"
       memory: "512Mi"
+  priorityClassName: ""
+  nodeSelector: {}
+  terminationGracePeriodSeconds:
+  tolerations: []
+  podAnnotations: {}
+  deploymentAnnotations: {}
   service:
     type: ClusterIP
+    annotations: {}
 
 cdnsystem:
   name: cdnsystem
@@ -27,8 +34,27 @@ cdnsystem:
     limits:
       cpu: "512m"
       memory: "512Mi"
+  priorityClassName: ""
+  nodeSelector: {}
+  terminationGracePeriodSeconds:
+  tolerations: []
+  podAnnotations: {}
+  deploymentAnnotations: {}
+  nginx:
+    name: nginx
+    image: nginx
+    tag: stable
+    pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: "512m"
+        memory: "512Mi"
+      limits:
+        cpu: "512m"
+        memory: "512Mi"
   service:
     type: ClusterIP
+    annotations: {}
 
 client:
   name: client
@@ -42,3 +68,9 @@ client:
     limits:
       cpu: "512m"
       memory: "512Mi"
+  priorityClassName: ""
+  nodeSelector: {}
+  terminationGracePeriodSeconds:
+  tolerations: []
+  podAnnotations: {}
+  deploymentAnnotations: {}

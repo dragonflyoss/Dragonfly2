@@ -1,0 +1,78 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ template "dragonfly.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    component: "{{ .Values.cdnsystem.name }}"
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  name: {{ template "dragonfly.cdnsystem.fullname" . }}
+  {{- if .Values.cdnsystem.deploymentAnnotations }}
+  annotations:
+{{ toYaml .Values.cdnsystem.deploymentAnnotations | indent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.cdnsystem.replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "dragonfly.cdnsystem.fullname" . }}
+        component: "{{ .Values.cdnsystem.name }}"
+        release: {{ .Release.Name }}
+        {{- if .Values.cdnsystem.podAnnotations }}
+      annotations:
+{{ toYaml .Values.cdnsystem.podAnnotations | indent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.cdnsystem.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.cdnsystem.nodeSelector | indent 8 }}
+      {{- end }}
+      {{- if .Values.cdnsystem.tolerations }}
+      tolerations:
+{{ toYaml .Values.cdnsystem.tolerations | indent 8 }}
+      {{- end }}
+      {{- if .Values.cdnsystem.affinity }}
+      affinity:
+{{ toYaml .Values.cdnsystem.affinity | indent 8 }}
+      {{- end }}
+      {{- if quote .Values.cdnsystem.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.cdnsystem.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.Values.cdnsystem.priorityClassName) }}
+      priorityClassName: {{ .Values.cdnsystem.priorityClassName }}
+      {{- end }}
+      containers:
+      - name: cdnsystem
+        image: "{{ .Values.cdnsystem.image }}:{{ .Values.cdnsystem.tag }}"
+        imagePullPolicy: {{ .Values.cdnsystem.pullPolicy | quote }}
+        resources:
+{{ toYaml .Values.cdnsystem.resources | indent 12 }}
+        ports:
+        - containerPort: 8002
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: "/etc/dragonfly/cdnsystem.yaml"
+          subPath: cdnsystem.yaml
+      containers:
+      - name: nginx
+        image: "{{ .Values.cdnsystem.nginx.image }}:{{ .Values.cdnsystem.nginx.tag }}"
+        imagePullPolicy: {{ .Values.cdnsystem.nginx.pullPolicy | quote }}
+        resources:
+{{ toYaml .Values.cdnsystem.nginx.resources | indent 12 }}
+        ports:
+        - containerPort: 8001
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: "/etc/nginx/nginx.conf"
+          subPath: nginx.conf
+      volumes:
+      - name: config
+        configMap:
+          name: {{ template "dragonfly.cdnsystem.fullname" . }}
+      - name: nginx
+        configMap:
+          name: {{ template "dragonfly.cdnsystem.nginx.name" . }}

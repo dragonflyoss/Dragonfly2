@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: {{ template "dragonfly.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    component: "{{ .Values.client.name }}"
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  name: {{ template "dragonfly.client.fullname" . }}
+  {{- if .Values.client.deploymentAnnotations }}
+  annotations:
+{{ toYaml .Values.client.deploymentAnnotations | indent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.client.replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "dragonfly.client.fullname" . }}
+        component: "{{ .Values.client.name }}"
+        release: {{ .Release.Name }}
+        {{- if .Values.client.podAnnotations }}
+      annotations:
+{{ toYaml .Values.client.podAnnotations | indent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.client.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.client.nodeSelector | indent 8 }}
+      {{- end }}
+      {{- if .Values.client.tolerations }}
+      tolerations:
+{{ toYaml .Values.client.tolerations | indent 8 }}
+      {{- end }}
+      {{- if .Values.client.affinity }}
+      affinity:
+{{ toYaml .Values.client.affinity | indent 8 }}
+      {{- end }}
+      {{- if quote .Values.client.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.client.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.Values.client.priorityClassName) }}
+      priorityClassName: {{ .Values.client.priorityClassName }}
+      {{- end }}
+      hostNetwork: true
+      containers:
+      - name: client
+        image: "{{ .Values.client.image }}:{{ .Values.client.tag }}"
+        imagePullPolicy: {{ .Values.client.pullPolicy | quote }}
+        resources:
+{{ toYaml .Values.client.resources | indent 12 }}
+        ports:
+        - containerPort: 65001
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: "/etc/dragonfly/dfget-daemon.yaml"
+          subPath: dfget-daemon.yaml
+      volumes:
+      - name: config
+        configMap:
+          name: {{ template "dragonfly.client.fullname" . }}
