@@ -101,6 +101,7 @@ func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *type
 	})
 	if err != nil {
 		logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
+		return
 	}
 
 	cm.lock.Lock()
