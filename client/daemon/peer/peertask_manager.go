@@ -26,6 +26,8 @@ import (
 	"time"
 
 	"github.com/go-http-utils/headers"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -84,6 +86,12 @@ type TinyData struct {
 	Content []byte
 }
 
+var tracer trace.Tracer
+
+func init() {
+	tracer = otel.Tracer("dfget-daemon")
+}
+
 type peerTaskManager struct {
 	host            *scheduler.PeerHost
 	schedulerClient schedulerclient.SchedulerClient
@@ -116,12 +124,14 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	// TODO ensure scheduler is ok first
 
 	start := time.Now()
-	pt, tiny, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
+	ctx, pt, tiny, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
 	if err != nil {
 		return nil, nil, err
 	}
 	// tiny file content is returned by scheduler, just write to output
 	if tiny != nil {
+		// TODO enable trace for tiny peer task
+		//defer pt.Span().End()
 		_, err = os.Stat(req.Output)
 		if err == nil {
 			// remove exist file
@@ -130,12 +140,14 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 		}
 		dstFile, err := os.OpenFile(req.Output, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 		if err != nil {
+			//pt.Span().RecordError(err)
 			logger.Errorf("open tasks destination file error: %s", err)
 			return nil, nil, err
 		}
 		defer dstFile.Close()
 		n, err := dstFile.Write(tiny.Content)
 		if err != nil {
+			//pt.Span().RecordError(err)
 			return nil, nil, err
 		}
 		logger.Debugf("copied tasks data %d bytes to %s", n, req.Output)
@@ -158,7 +170,7 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 
 func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (reader io.Reader, attribute map[string]string, err error) {
 	start := time.Now()
-	pt, tiny, err := newStreamPeerTask(ctx, ptm.host, ptm.pieceManager, req, ptm.schedulerClient, ptm.schedulerOption)
+	ctx, pt, tiny, err := newStreamPeerTask(ctx, ptm.host, ptm.pieceManager, req, ptm.schedulerClient, ptm.schedulerOption)
 	if err != nil {
 		return nil, nil, err
 	}

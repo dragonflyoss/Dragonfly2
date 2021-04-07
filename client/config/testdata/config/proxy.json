@@ -86,7 +86,7 @@
       "url": "https://index.docker.io",
       "insecure": true,
       "certs": [
-        "./test/testdata/certs/sca.crt"
+        "./testdata/certs/sca.crt"
       ],
       "direct": false
     },
@@ -106,7 +106,7 @@
           "regx": "mirror.aliyuncs.com:443",
           "insecure": true,
           "certs": [
-            "./test/testdata/certs/sca.crt"
+            "./testdata/certs/sca.crt"
           ]
         }
       ]

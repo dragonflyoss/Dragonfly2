@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -77,6 +78,8 @@ type peerTask struct {
 	done chan struct{}
 	// peerTaskDone will be true after peer task done
 	peerTaskDone bool
+	// span stands open telemetry trace span
+	span trace.Span
 
 	// same actions must be done only once, like close done channel and so on
 	once sync.Once
@@ -155,7 +158,15 @@ func (pt *peerTask) receivePeerPacket() {
 	var (
 		peerPacket *scheduler.PeerPacket
 		err        error
+		spanDone   bool
 	)
+	// FIXME currently only record first schedule result
+	_, span := tracer.Start(pt.ctx, SpanFirstSchedule)
+	defer func() {
+		if !spanDone {
+			span.End()
+		}
+	}()
 loop:
 	for {
 		select {
@@ -181,6 +192,9 @@ loop:
 			}
 			pt.cancel()
 			pt.Errorf(pt.failedReason)
+			if !spanDone {
+				span.RecordError(err)
+			}
 			break loop
 		}
 
@@ -189,6 +203,9 @@ loop:
 			pt.failedCode = dfcodes.SchedPeerGone
 			pt.cancel()
 			pt.Errorf(pt.failedReason)
+			if !spanDone {
+				span.RecordError(fmt.Errorf(pt.failedReason))
+			}
 			break
 		}
 
@@ -205,6 +222,11 @@ loop:
 		}
 		pt.Debugf("receive new peer packet, main peer: %s, parallel count: %d",
 			peerPacket.MainPeer.PeerId, peerPacket.ParallelCount)
+		if !spanDone {
+			spanDone = true
+			span.SetAttributes(AttributeMainPeer.String(peerPacket.MainPeer.PeerId))
+			span.End()
+		}
 
 		pt.peerPacket = peerPacket
 		pt.pieceParallelCount = pt.peerPacket.ParallelCount
@@ -412,15 +434,22 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *D
 	for {
 		select {
 		case request := <-requests:
+			_, span := tracer.Start(pt.ctx, fmt.Sprintf(SpanDownloadPiece, request.piece.PieceNum))
+
 			pt.Debugf("peer download worker #%d receive piece task, "+
 				"dest peer id: %s, piece num: %d, range start: %d, range size: %d",
 				id, request.DstPid, request.piece.PieceNum, request.piece.RangeStart, request.piece.RangeSize)
-			pt.pieceManager.DownloadPiece(pti, request)
+			success := pt.pieceManager.DownloadPiece(pti, request)
+
+			span.SetAttributes(AttributePieceSuccess.Bool(success))
+			span.SetAttributes(AttributePiece.Int(int(request.piece.PieceNum)))
+			span.SetAttributes(AttributePieceWorker.Int(int(id)))
+			span.End()
 		case <-pt.done:
-			pt.Debugf("pt.done, peer download worker #%d exit", id)
+			pt.Debugf("peer task done, peer download worker #%d exit", id)
 			return
 		case <-pt.ctx.Done():
-			pt.Debugf("pt.ctx.Done(), peer download worker #%d exit", id)
+			pt.Debugf("peer task context done, peer download worker #%d exit", id)
 			return
 		}
 	}
@@ -465,6 +494,10 @@ func (pt *peerTask) preparePieceTasksByPeer(curPeerPacket *scheduler.PeerPacket,
 	if peer == nil {
 		return nil, fmt.Errorf("empty peer")
 	}
+	var span trace.Span
+	_, span = tracer.Start(pt.ctx, SpanGetPieceTasks)
+	span.SetAttributes(AttributeTargetPeerId.String(peer.PeerId))
+	defer span.End()
 retry6404:
 	pt.Debugf("get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)
 	p, err := pt.getPieceTasks(curPeerPacket, peer, request)
@@ -472,15 +505,18 @@ retry6404:
 		pt.Infof("get piece task from peer %s ok, pieces length: %d", peer.PeerId, len(p.PieceInfos))
 		return p, nil
 	}
+	span.RecordError(err)
 	if err == errPeerPacketChanged {
 		return nil, err
 	}
+	pt.Debugf("get piece task error: %#v", err)
 
 	// grpc error
 	if se, ok := err.(interface{ GRPCStatus() *status.Status }); ok {
 		pt.Debugf("get piece task with grpc error, code: %d", se.GRPCStatus().Code())
 		// context canceled, just exit
 		if se.GRPCStatus().Code() == codes.Canceled {
+			span.AddEvent("context canceled")
 			pt.Warnf("get piece task from peer(%s) canceled: %s", peer.PeerId, err)
 			return nil, err
 		}
@@ -502,10 +538,12 @@ retry6404:
 		FinishedCount: -1,
 	})
 	if perr != nil {
+		span.RecordError(perr)
 		pt.Errorf("send piece result error: %s, code: %d", peer.PeerId, err)
 	}
 
 	if code == dfcodes.CdnTaskNotFound && curPeerPacket == pt.peerPacket {
+		span.AddEvent("RetryForCdnTaskNotFound")
 		goto retry6404
 	}
 	return nil, err
