@@ -261,7 +261,7 @@ func (s *storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 	logger.Debugf("init local task storage, peer id: %s, task id: %s", req.PeerID, req.TaskID)
 
-	dataDir := path.Join(s.storeOption.DataPath, string(s.storeStrategy), req.TaskID, req.PeerID)
+	dataDir := path.Join(s.storeOption.DataPath, req.TaskID, req.PeerID)
 	t := &localTaskStore{
 		persistentMetadata: persistentMetadata{
 			StoreStrategy: string(s.storeStrategy),
@@ -338,7 +338,7 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 }
 
 func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
-	dirs, err := ioutil.ReadDir(path.Join(s.storeOption.DataPath, string(s.storeStrategy)))
+	dirs, err := ioutil.ReadDir(s.storeOption.DataPath)
 	if os.IsNotExist(err) {
 		return nil
 	}
@@ -351,13 +351,13 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 	)
 	for _, dir := range dirs {
 		taskID := dir.Name()
-		peerDirs, err := ioutil.ReadDir(path.Join(s.storeOption.DataPath, string(s.storeStrategy), taskID))
+		peerDirs, err := ioutil.ReadDir(path.Join(s.storeOption.DataPath, taskID))
 		if err != nil {
 			continue
 		}
 		for _, peerDir := range peerDirs {
 			peerID := peerDir.Name()
-			dataDir := path.Join(s.storeOption.DataPath, string(s.storeStrategy), taskID, peerID)
+			dataDir := path.Join(s.storeOption.DataPath, taskID, peerID)
 			t := &localTaskStore{
 				RWMutex:             &sync.RWMutex{},
 				dataDir:             dataDir,
