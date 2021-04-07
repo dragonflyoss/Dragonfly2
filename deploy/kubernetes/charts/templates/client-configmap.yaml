@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "dragonfly.client.fullname" . }}
+  labels:
+    app: {{ template "dragonfly.fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+data:
+  dfget-daemon.yaml: |-
+    alive_time: {{ .config.alive_time }}
+    gc_interval: {{ .config.gc_interval }}
+    pid_file: {{ .config.pid_file }}
+    lock_file: {{ .config.lock_file }}
+    data_dir: {{ .config.data_dir }}
+    work_home: {{ .config.work_home }}
+    keep_storage: {{ .config.keep_storage }}
+    verbose: {{ .config.verbose }}
+    scheduler:
+      net_addrs:
+        {{- range $.Values.scheduler }}
+        - type: tcp
+          addr: {{template "dragonfly.scheduler.fullname" . }}-{{ .service.port }}
+        {{- end }}
+      schedule_timeout: 5m
+    host:
+{{ toYaml .config.host | indent 6 }}
+    download:
+{{ toYaml .config.download | indent 6 }}
+    upload:
+{{ toYaml .config.upload | indent 6 }}
+    storage:
+{{ toYaml .config.storage | indent 6 }}
+    proxy:
+{{ toYaml .config.proxy | indent 6 }}
