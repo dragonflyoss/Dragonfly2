@@ -67,6 +67,7 @@ func (c *Client) doWork() error {
 		return nil
 	}
 	peerTask.SetClient(c)
+	mgr.GetCDNManager().AddToCallback(peerTask)
 
 	for !c.stop {
 		if pr != nil {

@@ -74,10 +74,10 @@ type PeerEdge struct {
 	SrcPeerTask *PeerTask // child, consumer
 	DstPeerTask *PeerTask // parent, provider
 	Concurrency int8      // number of thread download from the provider
-	CostHistory []int32   // history of downloading one piece cost from the provider
+	CostHistory []int64   // history of downloading one piece cost from the provider
 }
 
-func (pe *PeerEdge) AddCost(cost int32) {
+func (pe *PeerEdge) AddCost(cost int64) {
 	if pe == nil {
 		return
 	}
@@ -152,15 +152,15 @@ func (pt *PeerTask) GetParent() *PeerEdge {
 	return pt.parent
 }
 
-func (pt *PeerTask) GetCost() int32 {
+func (pt *PeerTask) GetCost() int64 {
 	if pt.parent == nil || len(pt.parent.CostHistory) < 1 {
-		return int32(time.Second / time.Millisecond)
+		return int64(time.Second / time.Millisecond)
 	}
-	totalCost := int32(0)
+	totalCost := int64(0)
 	for _, cost := range pt.parent.CostHistory {
 		totalCost += cost
 	}
-	return totalCost / int32(len(pt.parent.CostHistory))
+	return totalCost / int64(len(pt.parent.CostHistory))
 }
 
 func (pt *PeerTask) GetChildren() (children []*PeerEdge) {
@@ -256,7 +256,7 @@ func (pt *PeerTask) AddPieceStatus(ps *scheduler.PieceResult) {
 	pt.finishedNum = ps.FinishedCount
 
 	if pt.parent != nil {
-		pt.parent.AddCost(int32(ps.EndTime - ps.BeginTime))
+		pt.parent.AddCost(int64(ps.EndTime - ps.BeginTime))
 	}
 
 	pt.Touch()
