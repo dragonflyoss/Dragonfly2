@@ -1,18 +1,19 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
+  name: {{ template "dragonfly.client.fullname" . }}
   labels:
     app: {{ template "dragonfly.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     component: "{{ .Values.client.name }}"
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
-  name: {{ template "dragonfly.client.fullname" . }}
   {{- if .Values.client.deploymentAnnotations }}
   annotations:
 {{ toYaml .Values.client.deploymentAnnotations | indent 4 }}
   {{- end }}
 spec:
+  replicas: {{ .Values.client.replicas }}
   template:
     metadata:
       labels:
@@ -50,13 +51,15 @@ spec:
         resources:
 {{ toYaml .Values.client.resources | indent 12 }}
         ports:
-        - containerPort: {{ .Values.client.containerPort }}
+        - containerPort: 65001
           protocol: TCP
         volumeMounts:
         - name: config
-          mountPath: "/etc/dragonfly/dfget-daemon.yaml"
-          subPath: dfget-daemon.yaml
+          mountPath: "/etc/dragonfly"
       volumes:
       - name: config
         configMap:
           name: {{ template "dragonfly.client.fullname" . }}
+          items:
+          - key: dfget-daemon.yaml
+            path: dfget-daemon.yaml

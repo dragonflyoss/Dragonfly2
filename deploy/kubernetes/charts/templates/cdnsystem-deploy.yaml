@@ -73,8 +73,8 @@ spec:
         configMap:
           name: {{ template "dragonfly.cdnsystem.fullname" . }}
           items:
-          - key: scheduler.yaml
-            path: scheduler.yaml
+          - key: cdn.yaml
+            path: cdn.yaml
       - name: nginx-config
         configMap:
           name: {{ template "dragonfly.cdnsystem.nginx.name" . }}

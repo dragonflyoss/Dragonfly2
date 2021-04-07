@@ -25,17 +25,11 @@ scheduler:
       targetPort: 8002
     config:
       debug: false
-      workder:
+      worker:
         worker-num: 1
         worker-job-pool-size: 10000
         sender-num: 10
         sender-job-pool-size: 10000
-      cdn:
-        list:
-          - - cdn-name: "B-P0V6MD6R-1947.local"
-              ip: "127.0.0.1"
-              rpc-port: 8003
-              download-port: 8001
 
 cdnsystem:
   - name: cdnsystem
@@ -77,6 +71,38 @@ cdnsystem:
       targetPort: 8003
       nginxPort: 8001
       nginxTargetPort: 8001
+    config:
+      base:
+        systemReservedBandwidth: 20M
+        maxBandwidth: 200M
+        enableProfiler: false
+        failAccessInterval: 3m
+        gcInitialDelay: 6s
+        gcMetaInterval: 2m
+        gcStorageInterval: 15s
+        taskExpireTime: 3m
+        storagePattern: disk
+        console: false
+      plugins:
+        storage:
+          - name: disk
+            enable: true
+            config:
+              baseDir: /tmp/cdn
+              gcConfig:
+                youngGCThreshold: 100G
+                fullGCThreshold: 5G
+                cleanRatio: 1
+                intervalThreshold: 2h
+          - name: memory
+            enable: true
+            config:
+              baseDir: /tmp/memory/dragonfly
+              gcConfig:
+                youngGCThreshold: 100G
+                fullGCThreshold: 5G
+                cleanRatio: 3
+                intervalThreshold: 3s
 
 client:
   name: client
@@ -97,3 +123,62 @@ client:
   podAnnotations: {}
   deploymentAnnotations: {}
   containerPort: 65001
+  config:
+    alive_time: 0s
+    gc_interval: 1m0s
+    pid_file: /tmp/dfdaemon.pid
+    lock_file: /tmp/dfdaemon.lock
+    data_dir: /tmp/dragonfly/dfdaemon/
+    work_home: /tmp/dragonfly/dfdaemon/
+    keep_storage: false
+    verbose: false
+    host:
+      listen_ip: 0.0.0.0
+      advertise_ip: 0.0.0.0
+      location: ""
+      idc: ""
+      security_domain: ""
+      net_topology: ""
+    download:
+      rate_limit: 200Mi
+      download_grpc:
+        security:
+          insecure: true
+          cacert: ""
+          cert: ""
+          key: ""
+          tls_config: null
+        unix_listen:
+          socket: /tmp/dfdamon.sock
+      peer_grpc:
+        security:
+          insecure: true
+          cacert: ""
+          cert: ""
+          key: ""
+        tcp_listen:
+          listen: 0.0.0.0
+          port: 65000
+    upload:
+      rate_limit: 100Mi
+      security:
+        insecure: true
+        cacert: ""
+        cert: ""
+        key: ""
+      tcp_listen:
+        listen: 0.0.0.0
+        port: 65002
+    storage:
+      task_expire_time: 3m0s
+      strategy: io.d7y.storage.v2.simple
+    proxy:
+      security:
+        insecure: true
+      tcp_listen:
+        listen: 0.0.0.0
+        port: 65001
+      registry_mirror:
+        url: https://index.docker.io
+      proxies:
+      - regx: blobs/sha256.*
