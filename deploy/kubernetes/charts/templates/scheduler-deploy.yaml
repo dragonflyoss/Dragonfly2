@@ -50,7 +50,7 @@ spec:
         resources:
 {{ toYaml .Values.scheduler.resources | indent 12 }}
         ports:
-        - containerPort: 8002
+        - containerPort: {{ .Values.scheduler.containerPort }}
           protocol: TCP
         volumeMounts:
         - name: config

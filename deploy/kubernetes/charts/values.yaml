@@ -17,9 +17,12 @@ scheduler:
   tolerations: []
   podAnnotations: {}
   deploymentAnnotations: {}
+  containerPort: 8002
   service:
     type: ClusterIP
     annotations: {}
+    port: 8002
+    targetPort: 8002
 
 cdnsystem:
   name: cdnsystem
@@ -40,6 +43,7 @@ cdnsystem:
   tolerations: []
   podAnnotations: {}
   deploymentAnnotations: {}
+  containerPort: 8003
   nginx:
     name: nginx
     image: nginx
@@ -52,9 +56,12 @@ cdnsystem:
       limits:
         cpu: "512m"
         memory: "512Mi"
+    containerPort: 8001
   service:
     type: ClusterIP
     annotations: {}
+    port: 8003
+    targetPort: 8003
 
 client:
   name: client
@@ -74,3 +81,4 @@ client:
   tolerations: []
   podAnnotations: {}
   deploymentAnnotations: {}
+  containerPort: 65001

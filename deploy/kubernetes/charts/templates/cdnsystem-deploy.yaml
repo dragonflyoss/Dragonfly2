@@ -50,7 +50,7 @@ spec:
         resources:
 {{ toYaml .Values.cdnsystem.resources | indent 12 }}
         ports:
-        - containerPort: 8002
+        - containerPort: {{ .Values.cdnsystem.containerPort }}
           protocol: TCP
         volumeMounts:
         - name: config
@@ -63,7 +63,7 @@ spec:
         resources:
 {{ toYaml .Values.cdnsystem.nginx.resources | indent 12 }}
         ports:
-        - containerPort: 8001
+        - containerPort: {{ .Values.cdnsystem.nginx.containerPort }}
           protocol: TCP
         volumeMounts:
         - name: config

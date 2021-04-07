@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{template "dragonfly.fullname" . }}
+  labels:
+    app: {{ template "dragonfly.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    component: "{{ .Values.cdnsystem.name }}"
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+{{- if .Values.cdnsystem.serviceAnnotations }}
+  annotations:
+{{ toYaml .Values.cdnsystem.serviceAnnotations | indent 4 }}
+{{- end }}
+spec:
+  ports:
+    - port: {{.Values.cdnsystem.service.port}}
+      name: http
+      targetPort: {{ .Values.cdnsystem.service.targetPort }}
+      {{- if (and (eq .Values.cdnsystem.service.type "NodePort") (not (empty .Values.cdnsystem.service.nodePort))) }}
+      nodePort: {{.Values.cdnsystem.service.nodePort}}
+      {{- end }}
+{{- range $index, $port := .Values.cdnsystem.service.extraPorts }}
+    - port: {{ $port.port }}
+      name: {{ $port.name }}
+      targetPort: {{ $port.port }}
+{{- end }}
+  selector:
+    app: {{ template "dragonfly.name" . }}
+    component: "{{ .Values.cdnsystem.name }}"
+    release: {{ .Release.Name }}
+  type: {{.Values.cdnsystem.service.type}}
+  {{if eq .Values.cdnsystem.service.type "LoadBalancer"}}
+{{- if .Values.cdnsystem.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+{{ toYaml .Values.cdnsystem.service.loadBalancerSourceRanges | indent 4 }}
+{{- end }}
+  {{if .Values.cdnsystem.service.loadBalancerIP}}
+  loadBalancerIP: {{.Values.cdnsystem.serivice.loadBalancerIP}}
+  {{end}}
+  {{end}}
