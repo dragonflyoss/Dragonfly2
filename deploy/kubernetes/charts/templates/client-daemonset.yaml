@@ -51,7 +51,7 @@ spec:
         resources:
 {{ toYaml .Values.client.resources | indent 12 }}
         ports:
-        - containerPort: 65001
+        - containerPort: {{ .Values.client.containerPort }}
           protocol: TCP
         volumeMounts:
         - name: config
