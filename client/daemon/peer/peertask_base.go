@@ -498,7 +498,9 @@ func (pt *peerTask) preparePieceTasksByPeer(curPeerPacket *scheduler.PeerPacket,
 	_, span = tracer.Start(pt.ctx, SpanGetPieceTasks)
 	span.SetAttributes(AttributeTargetPeerId.String(peer.PeerId))
 	defer span.End()
-retry6404:
+
+	// when cdn returns dfcodes.CdnTaskNotFound, report it to scheduler and wait cdn download it.
+retry:
 	pt.Debugf("get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)
 	p, err := pt.getPieceTasks(curPeerPacket, peer, request)
 	if err == nil {
@@ -544,7 +546,7 @@ retry6404:
 
 	if code == dfcodes.CdnTaskNotFound && curPeerPacket == pt.peerPacket {
 		span.AddEvent("RetryForCdnTaskNotFound")
-		goto retry6404
+		goto retry
 	}
 	return nil, err
 }
