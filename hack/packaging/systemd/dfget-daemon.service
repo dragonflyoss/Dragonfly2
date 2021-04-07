@@ -29,7 +29,7 @@ PrivateDevices=true
 #ProtectControlGroups=true
 
 # https://www.freedesktop.org/software/systemd/man/systemd.exec.html#ProtectHome=
-ProtectHome=true
+ProtectHome=false
 
 # https://www.freedesktop.org/software/systemd/man/systemd.exec.html#ProtectKernelModules=
 #ProtectKernelModules=true

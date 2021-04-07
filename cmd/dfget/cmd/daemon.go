@@ -26,6 +26,11 @@ import (
 	"github.com/gofrs/flock"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/trace/jaeger"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/semconv"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon"
@@ -57,6 +62,17 @@ var daemonCmd = &cobra.Command{
 
 		// Initialize logger
 		logcore.InitDaemon(daemonConfig.Console)
+
+		// Initialize telemetry
+		if daemonConfig.Telemetry.Jaeger != "" {
+			flush, err := initTracer(daemonConfig.Telemetry.Jaeger)
+			if err != nil {
+				logger.Errorf("initialize trace for jaeger error: %s", err)
+			} else {
+				logger.Infof("initialize trace for jaeger at %s", daemonConfig.Telemetry.Jaeger)
+				defer flush()
+			}
+		}
 
 		// Start daemon
 		return runDaemon()
@@ -92,6 +108,7 @@ func init() {
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.RateLimit), "download-rate", "download rate limit for other peers and back source")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
 	flagSet.DurationVar(&daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule-timeout", daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule timeout")
+	flagSet.StringVar(&daemonConfig.Telemetry.Jaeger, "jaeger", daemonConfig.Telemetry.Jaeger, "jaeger addr, like: http://localhost:14268")
 	flagSet.String("config", config.PeerHostConfigPath, "daemon config file location")
 
 	// Add command
@@ -126,6 +143,25 @@ func initDaemonConfig(cfgPath string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+// initTracer creates a new trace provider instance and registers it as global trace provider.
+func initTracer(addr string) (func(), error) {
+	// Create and install Jaeger export pipeline.
+	flush, err := jaeger.InstallNewPipeline(
+		jaeger.WithCollectorEndpoint(fmt.Sprintf("%s/api/traces", addr)),
+		jaeger.WithSDKOptions(
+			sdktrace.WithSampler(sdktrace.AlwaysSample()),
+			sdktrace.WithResource(resource.NewWithAttributes(
+				semconv.ServiceNameKey.String("dragonfly"),
+				attribute.String("exporter", "jaeger"),
+			)),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return flush, nil
 }
 
 func runDaemon() error {

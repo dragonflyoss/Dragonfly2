@@ -2,7 +2,7 @@
 
 Name:    dfget
 Version: %{_dfget_version}
-Release: alpha.3
+Release: alpha.5
 Summary: Dragonfly dfget
 URL:     https://d7y.io/
 License: Apache 2.0

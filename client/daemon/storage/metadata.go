@@ -8,14 +8,15 @@ import (
 )
 
 type persistentMetadata struct {
-	StoreStrategy string
+	StoreStrategy string                  `json:"storeStrategy"`
 	TaskID        string                  `json:"taskID"`
 	TaskMeta      map[string]string       `json:"taskMeta"`
 	ContentLength int64                   `json:"contentLength"`
 	TotalPieces   int32                   `json:"totalPieces"`
 	PeerID        string                  `json:"peerID"`
 	Pieces        map[int32]PieceMetaData `json:"pieces"`
-	PieceMd5Sign  string
+	PieceMd5Sign  string                  `json:"pieceMd5Sign"`
+	DataFilePath  string                  `json:"dataFilePath"`
 }
 
 type PeerTaskMetaData struct {

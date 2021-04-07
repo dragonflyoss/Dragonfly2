@@ -22,5 +22,5 @@ COPY --from=build /go/src/d7y.io/dragonfly/v2/hack/packaging/systemd/dfget-daemo
 COPY --from=build /go/src/d7y.io/dragonfly/v2/hack/packaging/systemd/dfget-daemon.service.d/CPUShares.conf /root/rpmbuild/SOURCES/
 COPY --from=build /go/src/d7y.io/dragonfly/v2/hack/packaging/systemd/dfget-daemon.service.d/MemoryLimit.conf /root/rpmbuild/SOURCES/
 COPY --from=build /go/src/d7y.io/dragonfly/v2/hack/packaging/systemd/fix.dfget-daemon.cpuset.sh /root/rpmbuild/SOURCES/
-COPY --from=build /go/src/d7y.io/dragonfly/v2/docs/config/dfget-daemon.yaml /root/rpmbuild/SOURCES/
+COPY --from=build /go/src/d7y.io/dragonfly/v2/hack/packaging/config/dfget-daemon.yaml /root/rpmbuild/SOURCES/
 COPY --from=build /go/src/d7y.io/dragonfly/v2/hack/packaging/rpm/dfget.spec /root/rpmbuild/SPECS/

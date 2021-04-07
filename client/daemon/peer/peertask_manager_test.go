@@ -59,13 +59,6 @@ func setupPeerTaskManagerComponents(
 	port := int32(freeport.GetPort())
 	// 1. setup a mock daemon server for uploading pieces info
 	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
-	//daemon.EXPECT().CheckHealth(gomock.Any()).DoAndReturn(func(ctx context.Context) (*base.ResponseState, error) {
-	//	return &base.ResponseState{
-	//		Success: true,
-	//		Code:    dfcodes.Success,
-	//		Msg:     "",
-	//	}, nil
-	//})
 	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var tasks []*base.PieceInfo
 		for i := int32(0); i < request.Limit; i++ {
@@ -108,20 +101,26 @@ func setupPeerTaskManagerComponents(
 		func(pr *scheduler.PieceResult) error {
 			return nil
 		})
-	pps.EXPECT().Recv().AnyTimes().AnyTimes().DoAndReturn(
+	var ppsent bool
+	pps.EXPECT().Recv().AnyTimes().DoAndReturn(
 		func() (*scheduler.PeerPacket, error) {
-			return &scheduler.PeerPacket{
-				Code:          dfcodes.Success,
-				TaskId:        taskID,
-				SrcPid:        "127.0.0.1",
-				ParallelCount: pieceParallelCount,
-				MainPeer: &scheduler.PeerPacket_DestPeer{
-					Ip:      "127.0.0.1",
-					RpcPort: port,
-					PeerId:  "peer-x",
-				},
-				StealPeers: nil,
-			}, nil
+			if !ppsent {
+				ppsent = true
+				return &scheduler.PeerPacket{
+					Code:          dfcodes.Success,
+					TaskId:        taskID,
+					SrcPid:        "127.0.0.1",
+					ParallelCount: pieceParallelCount,
+					MainPeer: &scheduler.PeerPacket_DestPeer{
+						Ip:      "127.0.0.1",
+						RpcPort: port,
+						PeerId:  "peer-x",
+					},
+					StealPeers: nil,
+				}, nil
+			}
+			time.Sleep(time.Hour)
+			return nil, nil
 		})
 	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).DoAndReturn(
