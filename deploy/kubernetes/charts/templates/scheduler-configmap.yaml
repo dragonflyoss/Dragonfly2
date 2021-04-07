@@ -15,7 +15,6 @@ data:
       port: {{ .containerPort }}
     worker:
 {{ toYaml .config.worker | indent 6 }}
-{{- end }}
     cdn:
       {{- range $.Values.cdnsystem }}
       cdn-name: {{template "dragonfly.cdnsystem.fullname" . }}
