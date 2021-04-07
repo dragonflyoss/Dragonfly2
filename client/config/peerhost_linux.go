@@ -100,6 +100,6 @@ var PeerHostConfig = PeerHostOption{
 				Duration: 3 * time.Minute,
 			},
 		},
-		StoreStrategy: storage.SimpleLocalTaskStoreStrategy,
+		StoreStrategy: storage.AdvanceLocalTaskStoreStrategy,
 	},
 }

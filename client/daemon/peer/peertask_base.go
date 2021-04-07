@@ -292,14 +292,15 @@ func (pt *peerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc func()
 		return
 	}
 	var (
-		num            int32
-		limit          int32
-		initialized    bool
-		pieceRequestCh chan *DownloadPieceRequest
+		num             int32
+		limit           int32
+		initialized     bool
+		pieceRequestCh  chan *DownloadPieceRequest
+		pieceBufferSize = int32(16)
 	)
 loop:
 	for {
-		limit = pt.pieceParallelCount
+		limit = pieceBufferSize
 		// check whether catch exit signal or get a failed piece
 		// if nothing got, process normal pieces
 		select {
@@ -370,10 +371,7 @@ loop:
 				break loop
 			}
 			pc := pt.peerPacket.ParallelCount
-			if pc <= 4 {
-				pc = 4
-			}
-			pieceRequestCh = make(chan *DownloadPieceRequest, pc*2)
+			pieceRequestCh = make(chan *DownloadPieceRequest, pieceBufferSize)
 			for i := int32(0); i < pc; i++ {
 				go pt.downloadPieceWorker(i, pti, pieceRequestCh)
 			}
