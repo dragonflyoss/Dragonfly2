@@ -1,4 +1,3 @@
-{{- range .Values.cdnsystem }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11,20 +10,20 @@ metadata:
 data:
   cdn.yaml: |-
     base:
-      listenPort: {{ .service.port }}
-      downloadPort: {{ .service.nginxPort }}
-      systemReservedBandwidth: {{ .config.base.systemReservedBandwidth }}
-      maxBandwidth: {{ .config.base.maxBandwidth }}
-      enableProfiler: {{ .config.base.enableProfiler }}
-      failAccessInterval: {{ .config.base.failAccessInterval }}
-      gcInitialDelay: {{ .config.base.gcInitialDelay }}
-      gcMetaInterval: {{ .config.base.gcMetaInterval }}
-      gcStorageInterval: {{ .config.base.gcStorageInterval }}
-      taskExpireTime: {{ .config.base.taskExpireTime }}
-      storagePattern: {{ .config.base.storagePattern }}
-      console: {{ .config.base.console }}
+      listenPort: {{ .Values.cdnsystem.service.port }}
+      downloadPort: {{ .Values.cdnsystem.service.nginxPort }}
+      systemReservedBandwidth: {{ .Values.cdnsystem.config.base.systemReservedBandwidth }}
+      maxBandwidth: {{ .Values.cdnsystem.config.base.maxBandwidth }}
+      enableProfiler: {{ .Values.cdnsystem.config.base.enableProfiler }}
+      failAccessInterval: {{ .Values.cdnsystem.config.base.failAccessInterval }}
+      gcInitialDelay: {{ .Values.cdnsystem.config.base.gcInitialDelay }}
+      gcMetaInterval: {{ .Values.cdnsystem.config.base.gcMetaInterval }}
+      gcStorageInterval: {{ .Values.cdnsystem.config.base.gcStorageInterval }}
+      taskExpireTime: {{ .Values.cdnsystem.config.base.taskExpireTime }}
+      storagePattern: {{ .Values.cdnsystem.config.base.storagePattern }}
+      console: {{ .Values.cdnsystem.config.base.console }}
     plugins:
-{{ toYaml .config.plugins | indent 6 }}
+{{ toYaml .Values.cdnsystem.config.plugins | indent 6 }}
   nginx.conf: |-
     worker_rlimit_nofile        100000;
 
@@ -71,14 +70,11 @@ data:
         proxy_intercept_errors  on;
 
         server {
-            listen              {{ .service.nginxTargetPort }};
-            {{- range .config.plugins.storage }}
+            listen              {{ .Values.cdnsystem.service.nginxTargetPort }};
+            {{- range .Values.cdnsystem.config.plugins.storage }}
             location / {
               root {{ .config.baseDir }};
             }
             {{- end }}
         }
     }
-
----
-{{- end }}

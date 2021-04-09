@@ -1,69 +1,73 @@
-{{- range .Values.cdnsystem }}
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
     app: {{ template "dragonfly.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    component: "{{ .name }}"
+    component: "{{ .Values.cdnsystem.name }}"
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
   name: {{ template "dragonfly.cdnsystem.fullname" . }}
-  {{- if .deploymentAnnotations }}
+  {{- if .Values.cdnsystem.deploymentAnnotations }}
   annotations:
-{{ toYaml .deploymentAnnotations | indent 4 }}
+{{ toYaml .Values.cdnsystem.deploymentAnnotations | indent 4 }}
   {{- end }}
 spec:
-  replicas: {{ .replicas }}
+  replicas: {{ .Values.cdnsystem.replicas }}
+  selector:
+    matchLabels:
+      app: {{ template "dragonfly.name" . }}
+      component: "{{ .Values.cdnsystem.name }}"
+      release: {{ .Release.Name }}
   template:
     metadata:
       labels:
         app: {{ template "dragonfly.cdnsystem.fullname" . }}
-        component: "{{ .name }}"
+        component: "{{ .Values.cdnsystem.name }}"
         release: {{ .Release.Name }}
-        {{- if .podAnnotations }}
+        {{- if .Values.cdnsystem.podAnnotations }}
       annotations:
-{{ toYaml .podAnnotations | indent 8 }}
+{{ toYaml .Values.cdnsystem.podAnnotations | indent 8 }}
         {{- end }}
     spec:
-      {{- if .nodeSelector }}
+      {{- if .Values.cdnsystem.nodeSelector }}
       nodeSelector:
-{{ toYaml .nodeSelector | indent 8 }}
+{{ toYaml .Values.cdnsystem.nodeSelector | indent 8 }}
       {{- end }}
-      {{- if .tolerations }}
+      {{- if .Values.cdnsystem.tolerations }}
       tolerations:
-{{ toYaml .tolerations | indent 8 }}
+{{ toYaml .Values.cdnsystem.tolerations | indent 8 }}
       {{- end }}
-      {{- if .affinity }}
+      {{- if .Values.cdnsystem.affinity }}
       affinity:
-{{ toYaml .affinity | indent 8 }}
+{{ toYaml .Values.cdnsystem.affinity | indent 8 }}
       {{- end }}
-      {{- if quote .terminationGracePeriodSeconds }}
-      terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds }}
+      {{- if quote .Values.cdnsystem.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.cdnsystem.terminationGracePeriodSeconds }}
       {{- end }}
-      {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.priorityClassName) }}
-      priorityClassName: {{ .priorityClassName }}
+      {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.Values.cdnsystem.priorityClassName) }}
+      priorityClassName: {{ .Values.cdnsystem.priorityClassName }}
       {{- end }}
       containers:
       - name: cdnsystem
-        image: "{{ .image }}:{{ .tag }}"
-        imagePullPolicy: {{ .pullPolicy | quote }}
+        image: "{{ .Values.cdnsystem.image }}:{{ .Values.cdnsystem.tag }}"
+        imagePullPolicy: {{ .Values.cdnsystem.pullPolicy | quote }}
         resources:
-{{ toYaml .resources | indent 12 }}
+{{ toYaml .Values.cdnsystem.resources | indent 12 }}
         ports:
-        - containerPort: {{ .containerPort }}
+        - containerPort: {{ .Values.cdnsystem.containerPort }}
           protocol: TCP
         volumeMounts:
         - name: config
           mountPath: "/etc/dragonfly"
       containers:
       - name: nginx
-        image: "{{ .nginx.image }}:{{ .nginx.tag }}"
-        imagePullPolicy: {{ .nginx.pullPolicy | quote }}
+        image: "{{ .Values.cdnsystem.nginx.image }}:{{ .Values.cdnsystem.nginx.tag }}"
+        imagePullPolicy: {{ .Values.cdnsystem.nginx.pullPolicy | quote }}
         resources:
-{{ toYaml .nginx.resources | indent 12 }}
+{{ toYaml .Values.cdnsystem.nginx.resources | indent 12 }}
         ports:
-        - containerPort: {{ .nginx.containerPort }}
+        - containerPort: {{ .Values.cdnsystem.nginx.containerPort }}
           protocol: TCP
         volumeMounts:
         - name: nginx-config
@@ -81,6 +85,3 @@ spec:
           items:
           - key: nginx.conf
             path: nginx.conf
-              
----
-{{- end }}

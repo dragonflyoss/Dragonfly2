@@ -1,4 +1,3 @@
-{{- range .Values.scheduler }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,18 +9,13 @@ metadata:
     heritage: "{{ .Release.Service }}"
 data:
   scheduler.yaml: |-
-    deubug: {{ .config.debug }}
+    deubug: {{ .Values.scheduler.config.debug }}
     server:
-      port: {{ .containerPort }}
+      port: {{ .Values.scheduler.containerPort }}
     worker:
-{{ toYaml .config.worker | indent 6 }}
+{{ toYaml .Values.scheduler.config.worker | indent 6 }}
     cdn:
-      {{- range $.Values.cdnsystem }}
       cdn-name: {{template "dragonfly.cdnsystem.fullname" . }}
       ip: {{template "dragonfly.cdnsystem.fullname" . }}
-      rpc-port: {{ .service.port }}
-      download-port: {{ .service.nginxPort}}
-      {{- end }}
-
----
-{{- end }}
+      rpc-port: {{ .Values.cdnsystem.service.port }}
+      download-port: {{ .Values.cdnsystem.service.nginxPort }}

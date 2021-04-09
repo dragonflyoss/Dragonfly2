@@ -20,7 +20,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- else -}}
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
-{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -28,7 +28,7 @@ Create a default fully qualified scheduler name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "dragonfly.scheduler.fullname" -}}
-{{ template "dragonfly.fullname" . }}-{{ .name }}
+{{ template "dragonfly.fullname" . }}-{{ .Values.scheduler.name }}
 {{- end -}}
 
 {{/*
@@ -36,7 +36,7 @@ Create a default fully qualified cdnsystem name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "dragonfly.cdnsystem.fullname" -}}
-{{ template "dragonfly.fullname" . }}-{{ .name }}
+{{ template "dragonfly.fullname" . }}-{{ .Values.cdnsystem.name }}
 {{- end -}}{
 
 {{/*
@@ -44,7 +44,7 @@ Create a default fully qualified cdnsystem's nginx name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "dragonfly.cdnsystem.nginx.name" -}}
-{{ template "dragonfly.fullname" . }}-{{ .naginx.name }}
+{{ template "dragonfly.fullname" . }}-{{ .Values.cdnsystem.nginx.name }}
 {{- end -}}{
 
 {{/*
@@ -52,6 +52,6 @@ Create a default fully qualified client name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "dragonfly.client.fullname" -}}
-{{ template "dragonfly.fullname" . }}-{{ .name }}
+{{ template "dragonfly.fullname" . }}-{{ .Values.client.name }}
 {{- end -}}
 
