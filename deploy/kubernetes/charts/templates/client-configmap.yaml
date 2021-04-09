@@ -9,28 +9,26 @@ metadata:
     heritage: "{{ .Release.Service }}"
 data:
   dfget-daemon.yaml: |-
-    alive_time: {{ .config.alive_time }}
-    gc_interval: {{ .config.gc_interval }}
-    pid_file: {{ .config.pid_file }}
-    lock_file: {{ .config.lock_file }}
-    data_dir: {{ .config.data_dir }}
-    work_home: {{ .config.work_home }}
-    keep_storage: {{ .config.keep_storage }}
-    verbose: {{ .config.verbose }}
+    alive_time: {{ .Values.client.config.alive_time }}
+    gc_interval: {{ .Values.client.config.gc_interval }}
+    pid_file: {{ .Values.client.config.pid_file }}
+    lock_file: {{ .Values.client.config.lock_file }}
+    data_dir: {{ .Values.client.config.data_dir }}
+    work_home: {{ .Values.client.config.work_home }}
+    keep_storage: {{ .Values.client.config.keep_storage }}
+    verbose: {{ .Values.client.config.verbose }}
     scheduler:
       net_addrs:
-        {{- range $.Values.scheduler }}
         - type: tcp
-          addr: {{template "dragonfly.scheduler.fullname" . }}-{{ .service.port }}
-        {{- end }}
+          addr: {{template "dragonfly.scheduler.fullname" . }}-{{ .Values.scheduler.service.port }}
       schedule_timeout: 5m
     host:
-{{ toYaml .config.host | indent 6 }}
+{{ toYaml .Values.client.config.host | indent 6 }}
     download:
-{{ toYaml .config.download | indent 6 }}
+{{ toYaml .Values.client.config.download | indent 6 }}
     upload:
-{{ toYaml .config.upload | indent 6 }}
+{{ toYaml .Values.client.config.upload | indent 6 }}
     storage:
-{{ toYaml .config.storage | indent 6 }}
+{{ toYaml .Values.client.config.storage | indent 6 }}
     proxy:
-{{ toYaml .config.proxy | indent 6 }}
+{{ toYaml .Values.client.config.proxy | indent 6 }}
