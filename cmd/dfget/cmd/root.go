@@ -135,7 +135,9 @@ func init() {
 	flagSet.StringVarP(&dfgetConfig.Output, "", "O", "", "Deprecated, keep for backward compatibility, use --output or -o instead")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.TotalRateLimit), "totallimit",
 		"network bandwidth rate limit for the whole host, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
-	flagSet.DurationVarP(&dfgetConfig.Timeout, "timeout", "e", 600*time.Second,
+	flagSet.VarP(config.NewDurationValue(&dfgetConfig.Timeout), "timeout", "e",
+		"timeout for file downloading task. If dfget has not finished downloading all pieces of file before --timeout, the dfget will throw an error and exit")
+	flagSet.Var(config.NewDurationValue(&dfgetConfig.Timeout), "exceed",
 		"timeout for file downloading task. If dfget has not finished downloading all pieces of file before --timeout, the dfget will throw an error and exit")
 	flagSet.StringVarP(&dfgetConfig.Md5, "md5", "m", "",
 		"md5 value input from user for the requested downloading file to enhance security")
@@ -181,7 +183,6 @@ func init() {
 		"caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
 	persistentflagSet.DurationVar(&daemonConfig.AliveTime.Duration, "alivetime", daemonConfig.AliveTime.Duration,
 		"alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
-	//flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")
 	flagSet.StringVar(&daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "daemon-sock",
 		daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "the unix domain socket address for grpc with daemon")
 	flagSet.StringVar(&daemonConfig.PidFile, "daemon-pid", daemonConfig.PidFile, "the daemon pid")
@@ -197,7 +198,6 @@ func init() {
 	flagSet.BoolVar(&deprecatedFlags.commonBool, "showcenter", false, "deprecated")
 	flagSet.BoolVar(&deprecatedFlags.commonBool, "usewrap", false, "deprecated")
 
-	flagSet.StringVar(&deprecatedFlags.commonString, "exceed", "", "deprecated")
 	flagSet.StringVar(&deprecatedFlags.commonString, "locallimit", "", "deprecated")
 	flagSet.StringVar(&deprecatedFlags.commonString, "minrate", "", "deprecated")
 	flagSet.StringVarP(&deprecatedFlags.commonString, "tasktype", "t", "", "deprecated")
@@ -205,6 +205,7 @@ func init() {
 
 	flagSet.BoolVarP(&deprecatedFlags.version, "version", "v", false, "deprecated")
 
+	flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")
 	flagSet.MarkDeprecated("clientqueue", "controlled by Manager and Scheduler")
 	flagSet.MarkDeprecated("dfdaemon", "not used anymore")
 	flagSet.MarkDeprecated("version", "Please use 'dfget version' instead")
