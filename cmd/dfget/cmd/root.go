@@ -77,11 +77,12 @@ download SUCCESS cost:0.026s length:141898 reason:0
 `
 
 var deprecatedFlags struct {
-	// Deprecated: not used any more
-	dfdaemon bool
-	// Deprecated: not used any more
-	clientQueue int
-	nodes       config.SupernodesValue
+	nodes   config.SupernodesValue
+	version bool
+
+	commonString string
+	commonBool   bool
+	commonInt    int
 }
 
 var rootCmd = &cobra.Command{
@@ -92,6 +93,10 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	Example:           dfgetExample,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if deprecatedFlags.version {
+			version.VersionCmd.Run(nil, nil)
+			return nil
+		}
 		// Convent deprecated flags
 		convertDeprecatedFlags()
 
@@ -127,6 +132,7 @@ func init() {
 	flagSet.StringVarP(&dfgetConfig.URL, "url", "u", "", "URL of user requested downloading file(only HTTP/HTTPs supported)")
 	flagSet.StringVarP(&dfgetConfig.Output, "output", "o", "",
 		"destination path which is used to store the requested downloading file. It must contain detailed directory and specific filename, for example, '/tmp/file.mp4'")
+	flagSet.StringVarP(&dfgetConfig.Output, "", "O", "", "Deprecated, keep for backward compatibility, use --output or -o instead")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.TotalRateLimit), "totallimit",
 		"network bandwidth rate limit for the whole host, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
 	flagSet.DurationVarP(&dfgetConfig.Timeout, "timeout", "e", 600*time.Second,
@@ -151,11 +157,13 @@ func init() {
 		"deprecated, please use schedulers instead. specify the addresses(host:port=weight) of supernodes where the host is necessary, the port(default: 8002) and the weight(default:1) are optional. And the type of weight must be integer")
 	flagSet.BoolVar(&dfgetConfig.NotBackSource, "notbacksource", false,
 		"disable back source downloading for requested file when p2p fails to download it")
-	flagSet.BoolVar(&deprecatedFlags.dfdaemon, "dfdaemon", deprecatedFlags.dfdaemon,
+	flagSet.BoolVar(&dfgetConfig.NotBackSource, "notbs", false,
+		"disable back source downloading for requested file when p2p fails to download it")
+	flagSet.BoolVar(&deprecatedFlags.commonBool, "dfdaemon", false,
 		"identify whether the request is from dfdaemon")
 	flagSet.BoolVar(&dfgetConfig.Insecure, "insecure", false,
 		"identify whether supernode should skip secure verify when interact with the source.")
-	flagSet.IntVar(&deprecatedFlags.clientQueue, "clientqueue", deprecatedFlags.clientQueue,
+	flagSet.IntVar(&deprecatedFlags.commonInt, "clientqueue", 0,
 		"specify the size of client queue which controls the number of pieces that can be processed simultaneously")
 	flagSet.BoolVarP(&dfgetConfig.ShowBar, "showbar", "b", false,
 		"show progress bar, it is conflict with '--console'")
@@ -173,7 +181,7 @@ func init() {
 		"caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
 	persistentflagSet.DurationVar(&daemonConfig.AliveTime.Duration, "alivetime", daemonConfig.AliveTime.Duration,
 		"alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")
-	flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")
+	//flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")
 	flagSet.StringVar(&daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "daemon-sock",
 		daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "the unix domain socket address for grpc with daemon")
 	flagSet.StringVar(&daemonConfig.PidFile, "daemon-pid", daemonConfig.PidFile, "the daemon pid")
@@ -181,6 +189,26 @@ func init() {
 	flagSet.StringVar(&dfgetConfig.MoreDaemonOptions, "more-daemon-options", "",
 		"more options passed to daemon by command line, please confirm your options with \"dfget daemon --help\"")
 
+	// backward compatibility
+	flagSet.BoolVar(&deprecatedFlags.commonBool, "cachefirst", false, "deprecated")
+	flagSet.BoolVar(&deprecatedFlags.commonBool, "check", false, "deprecated")
+	flagSet.BoolVar(&deprecatedFlags.commonBool, "createmeta", false, "deprecated")
+	flagSet.BoolVar(&deprecatedFlags.commonBool, "notmd5", false, "deprecated")
+	flagSet.BoolVar(&deprecatedFlags.commonBool, "showcenter", false, "deprecated")
+	flagSet.BoolVar(&deprecatedFlags.commonBool, "usewrap", false, "deprecated")
+
+	flagSet.StringVar(&deprecatedFlags.commonString, "exceed", "", "deprecated")
+	flagSet.StringVar(&deprecatedFlags.commonString, "locallimit", "", "deprecated")
+	flagSet.StringVar(&deprecatedFlags.commonString, "minrate", "", "deprecated")
+	flagSet.StringVarP(&deprecatedFlags.commonString, "tasktype", "t", "", "deprecated")
+	flagSet.StringVarP(&deprecatedFlags.commonString, "center", "c", "", "deprecated")
+
+	flagSet.BoolVarP(&deprecatedFlags.version, "version", "v", false, "deprecated")
+
+	flagSet.MarkDeprecated("clientqueue", "controlled by Manager and Scheduler")
+	flagSet.MarkDeprecated("dfdaemon", "not used anymore")
+	flagSet.MarkDeprecated("version", "Please use 'dfget version' instead")
+	flagSet.MarkShorthandDeprecated("v", "Please use 'dfget version' instead")
 	// Add command
 	rootCmd.AddCommand(version.VersionCmd)
 }
