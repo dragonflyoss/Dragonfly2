@@ -16,7 +16,7 @@ spec:
   replicas: {{ .Values.cdnsystem.replicas }}
   selector:
     matchLabels:
-      app: {{ template "dragonfly.name" . }}
+      app: {{ template "dragonfly.cdnsystem.fullname" . }}
       component: "{{ .Values.cdnsystem.name }}"
       release: {{ .Release.Name }}
   template:
