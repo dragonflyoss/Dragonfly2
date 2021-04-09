@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -41,7 +42,8 @@ func newStreamPeerTask(ctx context.Context,
 	pieceManager PieceManager,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
-	schedulerOption config.SchedulerOption) (context.Context, StreamPeerTask, *TinyData, error) {
+	schedulerOption config.SchedulerOption,
+	perPeerRateLimit rate.Limit) (context.Context, StreamPeerTask, *TinyData, error) {
 	ctx, span := tracer.Start(ctx, SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(AttributePeerHost.String(host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
@@ -111,6 +113,10 @@ func newStreamPeerTask(ctx context.Context,
 	}
 	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
+	var limiter *rate.Limiter
+	if perPeerRateLimit > 0 {
+		limiter = rate.NewLimiter(perPeerRateLimit, int(perPeerRateLimit))
+	}
 	return ctx, &streamPeerTask{
 		peerTask: peerTask{
 			ctx:              ctx,
@@ -135,6 +141,7 @@ func newStreamPeerTask(ctx context.Context,
 			contentLength:    -1,
 			totalPiece:       -1,
 			schedulerOption:  schedulerOption,
+			limiter:          limiter,
 
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},

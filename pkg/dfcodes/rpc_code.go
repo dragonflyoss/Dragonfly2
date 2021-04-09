@@ -37,6 +37,7 @@ const (
 	ClientContextCanceled   base.Code = 4003
 	ClientWaitPieceReady    base.Code = 4004 // when target peer downloads from source slowly, should wait
 	ClientPieceDownloadFail base.Code = 4005
+	ClientRequestLimitFail  base.Code = 4006
 
 	// scheduler response error 5000-5999
 	SchedError          base.Code = 5000

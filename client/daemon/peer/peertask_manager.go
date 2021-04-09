@@ -28,6 +28,7 @@ import (
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -100,6 +101,8 @@ type peerTaskManager struct {
 	storageManager  storage.Manager
 
 	runningPeerTasks sync.Map
+
+	perPeerRateLimit rate.Limit
 }
 
 func NewPeerTaskManager(
@@ -107,7 +110,8 @@ func NewPeerTaskManager(
 	pieceManager PieceManager,
 	storageManager storage.Manager,
 	schedulerClient schedulerclient.SchedulerClient,
-	schedulerOption config.SchedulerOption) (PeerTaskManager, error) {
+	schedulerOption config.SchedulerOption,
+	perPeerRateLimit rate.Limit) (PeerTaskManager, error) {
 
 	ptm := &peerTaskManager{
 		host:             host,
@@ -116,6 +120,7 @@ func NewPeerTaskManager(
 		storageManager:   storageManager,
 		schedulerClient:  schedulerClient,
 		schedulerOption:  schedulerOption,
+		perPeerRateLimit: perPeerRateLimit,
 	}
 	return ptm, nil
 }
@@ -124,7 +129,8 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	// TODO ensure scheduler is ok first
 
 	start := time.Now()
-	ctx, pt, tiny, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager, &req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption)
+	ctx, pt, tiny, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager,
+		&req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption, ptm.perPeerRateLimit)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -170,7 +176,8 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 
 func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (reader io.Reader, attribute map[string]string, err error) {
 	start := time.Now()
-	ctx, pt, tiny, err := newStreamPeerTask(ctx, ptm.host, ptm.pieceManager, req, ptm.schedulerClient, ptm.schedulerOption)
+	ctx, pt, tiny, err := newStreamPeerTask(ctx, ptm.host, ptm.pieceManager,
+		req, ptm.schedulerClient, ptm.schedulerOption, ptm.perPeerRateLimit)
 	if err != nil {
 		return nil, nil, err
 	}

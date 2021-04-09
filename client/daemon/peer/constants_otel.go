@@ -20,4 +20,5 @@ const (
 	SpanFirstSchedule  = "schedule-#1"
 	SpanGetPieceTasks  = "get-piece-tasks"
 	SpanDownloadPiece  = "download-piece-#%d"
+	SpanWaitPieceLimit = "wait-limit"
 )
