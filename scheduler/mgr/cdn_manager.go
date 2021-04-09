@@ -88,26 +88,37 @@ func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *type
 	}
 	cm.lock.Lock()
 	_, ok := cm.callbackFns[task]
+	if !ok {
+		cm.callbackFns[task] = callback
+	}
 	cm.lock.Unlock()
 	if ok {
 		return
 	}
 
-	stream, err := cli.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-		TaskId:  task.TaskId,
-		Url:     task.Url,
-		Filter:  task.Filter,
-		UrlMeta: task.UrlMata,
-	})
-	if err != nil {
-		logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
-	}
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				debug.PrintStack()
+			}
+		}()
+		stream, err := cli.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+			TaskId:  task.TaskId,
+			Url:     task.Url,
+			Filter:  task.Filter,
+			UrlMeta: task.UrlMata,
+		})
+		if err != nil {
+			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
+			cm.lock.Lock()
+			delete(cm.callbackFns, task)
+			delete(cm.callbackList, task)
+			cm.lock.Unlock()
+			return
+		}
 
-	cm.lock.Lock()
-	cm.callbackFns[task] = callback
-	cm.lock.Unlock()
-
-	go cli.Work(task, stream, cm.doCallback)
+		cli.Work(task, stream, cm.doCallback)
+	}()
 
 	return
 }

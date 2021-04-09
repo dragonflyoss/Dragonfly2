@@ -21,6 +21,11 @@ import (
 	"sync"
 )
 
+const (
+	HostLoadCDN = 10
+	HostLoadPeer = 4
+)
+
 type HostManager struct {
 	data *sync.Map
 }
@@ -59,11 +64,11 @@ func (m *HostManager) GetHost(uuid string) (h *types.Host, ok bool) {
 
 func (m *HostManager) CalculateLoad(host *types.Host) {
 	if host.Type == types.HostTypePeer {
-		host.SetTotalUploadLoad(3)
-		host.SetTotalDownloadLoad(3)
+		host.SetTotalUploadLoad(HostLoadPeer)
+		host.SetTotalDownloadLoad(HostLoadPeer)
 	} else {
-		host.SetTotalUploadLoad(4)
-		host.SetTotalDownloadLoad(4)
+		host.SetTotalUploadLoad(HostLoadCDN)
+		host.SetTotalDownloadLoad(HostLoadCDN)
 	}
 	return
 }

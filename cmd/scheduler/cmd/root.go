@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"go.uber.org/zap/zapcore"
 	"os"
 	"reflect"
 	"time"
@@ -60,6 +61,10 @@ var SchedulerCmd = &cobra.Command{
 		// init logger
 		if err := logcore.InitScheduler(cfg.Console); err != nil {
 			return errors.Wrap(err, "init scheduler logger")
+		}
+		if cfg.Debug {
+			logcore.SetCoreLevel(zapcore.DebugLevel)
+			logcore.SetGrpcLevel(zapcore.DebugLevel)
 		}
 
 		go func() {

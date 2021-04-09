@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/service/schedule_worker"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"fmt"
+	"time"
 )
 
 var _ server.SchedulerServer = &SchedulerServer{}
@@ -39,6 +40,7 @@ type SchedulerServer struct {
 
 func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (pkg *scheduler.RegisterResult, err error) {
 	pkg = &scheduler.RegisterResult{}
+	startTime := time.Now()
 	defer func() {
 		e := recover()
 		if e != nil {
@@ -50,6 +52,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 				err = dferrors.New(dfcodes.SchedError, err.Error())
 			}
 		}
+		logger.Debugf("RegisterPeerTask [%s] cost time: [%d]", request.PeerId, time.Now().Sub(startTime))
 		return
 	}()
 
@@ -156,6 +159,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 }
 
 func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (err error) {
+	startTime := time.Now()
 	defer func() {
 		e := recover()
 		if e != nil {
@@ -167,6 +171,7 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 				err = dferrors.New(dfcodes.SchedError, err.Error())
 			}
 		}
+		logger.Debugf("ReportPeerResult [%s] cost time: [%d]", result.PeerId, time.Now().Sub(startTime))
 		return
 	}()
 
@@ -191,6 +196,7 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 }
 
 func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (err error) {
+	startTime := time.Now()
 	defer func() {
 		e := recover()
 		if e != nil {
@@ -202,6 +208,7 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 				err = dferrors.New(dfcodes.SchedError, err.Error())
 			}
 		}
+		logger.Debugf("ReportPeerResult [%s] cost time: [%d]", target.PeerId, time.Now().Sub(startTime))
 		return
 	}()
 
