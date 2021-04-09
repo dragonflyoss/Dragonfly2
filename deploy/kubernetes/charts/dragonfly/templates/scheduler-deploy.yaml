@@ -16,7 +16,7 @@ spec:
   replicas: {{ .Values.scheduler.replicas }}
   selector:
     matchLabels:
-      app: {{ template "dragonfly.name" . }}
+      app: {{ template "dragonfly.scheduler.fullname" . }}
       component: "{{ .Values.scheduler.name }}"
       release: {{ .Release.Name }}
   template:

@@ -21,7 +21,7 @@ spec:
       nodePort: {{.Values.cdnsystem.service.nodePort}}
       {{- end }}
     - port: {{.Values.cdnsystem.service.nginxPort}}
-      name: http
+      name: http-nginx
       targetPort: {{ .Values.cdnsystem.service.nginxTargetPort }}
       {{- if (and (eq .Values.cdnsystem.service.type "NodePort") (not (empty .Values.cdnsystem.service.nginxNodePort))) }}
       nodePort: {{.Values.cdnsystem.service.nginxNodePort}}

@@ -16,7 +16,7 @@ spec:
   replicas: {{ .Values.client.replicas }}
   selector:
     matchLabels:
-      app: {{ template "dragonfly.name" . }}
+      app: {{ template "dragonfly.client.fullname" . }}
       component: "{{ .Values.client.name }}"
       release: {{ .Release.Name }}
   template:
