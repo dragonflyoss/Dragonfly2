@@ -35,6 +35,6 @@
   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8001:CONTAINER_NGINX_PORT
 {{- end }}
 
-3. Get the client URL by running these commands:
+3. Get the client port by running these commands:
   export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
   You can use $CONTAINER_PORT as a proxy port in Node.
