@@ -43,7 +43,7 @@ var PeerHostConfig = PeerHostOption{
 		NetTopology:    "",
 	},
 	Download: DownloadOption{
-		RateLimit: clientutil.RateLimit{
+		TotalRateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(104857600),
 		},
 		DownloadGRPC: ListenOption{
@@ -100,6 +100,6 @@ var PeerHostConfig = PeerHostOption{
 				Duration: 3 * time.Minute,
 			},
 		},
-		StoreStrategy: storage.SimpleLocalTaskStoreStrategy,
+		StoreStrategy: storage.AdvanceLocalTaskStoreStrategy,
 	},
 }

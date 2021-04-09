@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -98,6 +99,8 @@ type peerTask struct {
 	requestedPieces *Bitmap
 	// lock used by piece result manage, when update readyPieces, lock first
 	lock sync.Locker
+	// limiter will be used when enable per peer task rate limit
+	limiter *rate.Limiter
 }
 
 func (pt *peerTask) ReportPieceResult(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
@@ -292,14 +295,15 @@ func (pt *peerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc func()
 		return
 	}
 	var (
-		num            int32
-		limit          int32
-		initialized    bool
-		pieceRequestCh chan *DownloadPieceRequest
+		num             int32
+		limit           int32
+		initialized     bool
+		pieceRequestCh  chan *DownloadPieceRequest
+		pieceBufferSize = int32(16)
 	)
 loop:
 	for {
-		limit = pt.pieceParallelCount
+		limit = pieceBufferSize
 		// check whether catch exit signal or get a failed piece
 		// if nothing got, process normal pieces
 		select {
@@ -370,10 +374,7 @@ loop:
 				break loop
 			}
 			pc := pt.peerPacket.ParallelCount
-			if pc <= 4 {
-				pc = 4
-			}
-			pieceRequestCh = make(chan *DownloadPieceRequest, pc*2)
+			pieceRequestCh = make(chan *DownloadPieceRequest, pieceBufferSize)
 			for i := int32(0); i < pc; i++ {
 				go pt.downloadPieceWorker(i, pti, pieceRequestCh)
 			}
@@ -434,16 +435,41 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *D
 	for {
 		select {
 		case request := <-requests:
-			_, span := tracer.Start(pt.ctx, fmt.Sprintf(SpanDownloadPiece, request.piece.PieceNum))
-
+			ctx, span := tracer.Start(pt.ctx, fmt.Sprintf(SpanDownloadPiece, request.piece.PieceNum))
+			span.SetAttributes(AttributePiece.Int(int(request.piece.PieceNum)))
+			span.SetAttributes(AttributePieceWorker.Int(int(id)))
+			if pt.limiter != nil {
+				_, waitSpan := tracer.Start(ctx, SpanWaitPieceLimit)
+				if err := pt.limiter.WaitN(pt.ctx, int(request.piece.RangeSize)); err != nil {
+					pt.Errorf("request limiter error: %s", err)
+					waitSpan.RecordError(err)
+					waitSpan.End()
+					pti.ReportPieceResult(request.piece,
+						&scheduler.PieceResult{
+							TaskId:        pt.GetTaskID(),
+							SrcPid:        pt.GetPeerID(),
+							DstPid:        request.DstPid,
+							PieceNum:      request.piece.PieceNum,
+							Success:       false,
+							Code:          dfcodes.ClientRequestLimitFail,
+							HostLoad:      nil,
+							FinishedCount: 0, // update by peer task
+						})
+					pt.failedReason = err.Error()
+					pt.failedCode = dfcodes.ClientRequestLimitFail
+					pt.cancel()
+					span.SetAttributes(AttributePieceSuccess.Bool(false))
+					span.End()
+					return
+				}
+				waitSpan.End()
+			}
 			pt.Debugf("peer download worker #%d receive piece task, "+
 				"dest peer id: %s, piece num: %d, range start: %d, range size: %d",
 				id, request.DstPid, request.piece.PieceNum, request.piece.RangeStart, request.piece.RangeSize)
 			success := pt.pieceManager.DownloadPiece(pti, request)
 
 			span.SetAttributes(AttributePieceSuccess.Bool(success))
-			span.SetAttributes(AttributePiece.Int(int(request.piece.PieceNum)))
-			span.SetAttributes(AttributePieceWorker.Int(int(id)))
 			span.End()
 		case <-pt.done:
 			pt.Debugf("peer task done, peer download worker #%d exit", id)

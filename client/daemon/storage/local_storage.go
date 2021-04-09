@@ -241,8 +241,40 @@ func (t *localTaskStore) MarkReclaim() {
 func (t *localTaskStore) Reclaim() error {
 	log := logger.With("gc", t.StoreStrategy, "task", t.TaskID)
 	log.Infof("start gc task data")
-	var err error
+	err := t.reclaimData(log)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
 
+	// close and remove metadata
+	err = t.reclaimMeta(log)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	// remove task work metaDir
+	if err = os.Remove(t.dataDir); err != nil && !os.IsNotExist(err) {
+		log.Warnf("remove task data directory %q error: %s", t.dataDir, err)
+		return err
+	}
+	log.Infof("purged task work directory: %s", t.dataDir)
+
+	taskDir := path.Dir(t.dataDir)
+	if dirs, err := ioutil.ReadDir(taskDir); err != nil {
+		log.Warnf("stat task directory %q error: %s", taskDir, err)
+	} else {
+		if len(dirs) == 0 {
+			if err := os.Remove(taskDir); err != nil {
+				log.Warnf("remove unused task directory %q error: %s", taskDir, err)
+			}
+		} else {
+			log.Warnf("task directory %q is not empty", taskDir)
+		}
+	}
+	return nil
+}
+
+func (t *localTaskStore) reclaimData(log *logger.SugaredLoggerOnWith) error {
 	// remove data
 	data := path.Join(t.dataDir, taskData)
 	stat, err := os.Lstat(data)
@@ -266,43 +298,25 @@ func (t *localTaskStore) Reclaim() error {
 			return err
 		}
 	}
-	if err = os.Remove(data); err != nil && !os.IsNotExist(err) {
+	if err = os.Remove(data); err != nil {
 		log.Errorf("remove data file %s error: %s", data, err)
 		return err
 	}
 	log.Infof("purged task data: %s", data)
+	return nil
+}
 
-	// close and remove metadata
-	if err = t.metadataFile.Close(); err != nil {
+func (t *localTaskStore) reclaimMeta(log *logger.SugaredLoggerOnWith) error {
+	if err := t.metadataFile.Close(); err != nil {
 		log.Warnf("close task meta data %q error: %s", t.metadataFilePath, err)
 		return err
 	}
 	log.Infof("start gc task metadata")
-	if err = os.Remove(t.metadataFilePath); err != nil && !os.IsNotExist(err) {
+	if err := os.Remove(t.metadataFilePath); err != nil && !os.IsNotExist(err) {
 		log.Warnf("remove task meta data %q error: %s", t.metadataFilePath, err)
 		return err
 	}
 	log.Infof("purged task mata data: %s", t.metadataFilePath)
-
-	// remove task work metaDir
-	if err = os.Remove(t.dataDir); err != nil && !os.IsNotExist(err) {
-		log.Warnf("remove task data directory %q error: %s", t.dataDir, err)
-		return err
-	}
-	log.Infof("purged task work directory: %s", t.dataDir)
-
-	taskDir := path.Dir(t.dataDir)
-	if dirs, err := ioutil.ReadDir(taskDir); err != nil {
-		log.Warnf("stat task directory %q error: %s", taskDir, err)
-	} else {
-		if len(dirs) == 0 {
-			if err := os.Remove(taskDir); err != nil {
-				log.Warnf("remove unused task directory %q error: %s", taskDir, err)
-			}
-		} else {
-			log.Warnf("task directory %q is not empty", taskDir)
-		}
-	}
 	return nil
 }
 

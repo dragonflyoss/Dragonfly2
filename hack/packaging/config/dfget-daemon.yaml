@@ -53,8 +53,10 @@ host:
 
 # download service option
 download:
-  # download limit  per second
-  rate_limit: 512Mi
+  # total download limit per second
+  total_rate_limit: 200Mi
+  # per peer task download limit per second
+  per_peer_rate_limit: 20Mi
   # download grpc option
   download_grpc:
     # security option
