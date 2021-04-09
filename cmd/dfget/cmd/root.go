@@ -127,7 +127,7 @@ func init() {
 	flagSet.StringVarP(&dfgetConfig.URL, "url", "u", "", "URL of user requested downloading file(only HTTP/HTTPs supported)")
 	flagSet.StringVarP(&dfgetConfig.Output, "output", "o", "",
 		"destination path which is used to store the requested downloading file. It must contain detailed directory and specific filename, for example, '/tmp/file.mp4'")
-	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.RateLimit), "totallimit",
+	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.TotalRateLimit), "totallimit",
 		"network bandwidth rate limit for the whole host, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte")
 	flagSet.DurationVarP(&dfgetConfig.Timeout, "timeout", "e", 600*time.Second,
 		"timeout for file downloading task. If dfget has not finished downloading all pieces of file before --timeout, the dfget will throw an error and exit")
@@ -401,7 +401,7 @@ func spawnDaemon() error {
 	// Initialize daemon args
 	var args = []string{
 		"daemon",
-		"--download-rate", fmt.Sprintf("%f", daemonConfig.Download.RateLimit.Limit),
+		"--download-rate", fmt.Sprintf("%f", daemonConfig.Download.TotalRateLimit.Limit),
 		"--upload-port", fmt.Sprintf("%d", daemonConfig.Upload.TCPListen.PortRange.Start),
 		"--home", daemonConfig.WorkHome,
 		"--ip", daemonConfig.Host.ListenIP,

@@ -131,9 +131,10 @@ type HostOption struct {
 }
 
 type DownloadOption struct {
-	RateLimit    clientutil.RateLimit `json:"rate_limit" yaml:"rate_limit"`
-	DownloadGRPC ListenOption         `json:"download_grpc" yaml:"download_grpc"`
-	PeerGRPC     ListenOption         `json:"peer_grpc" yaml:"peer_grpc"`
+	TotalRateLimit   clientutil.RateLimit `json:"total_rate_limit" yaml:"total_rate_limit"`
+	PerPeerRateLimit clientutil.RateLimit `json:"per_peer_rate_limit" yaml:"per_peer_rate_limit"`
+	DownloadGRPC     ListenOption         `json:"download_grpc" yaml:"download_grpc"`
+	PeerGRPC         ListenOption         `json:"peer_grpc" yaml:"peer_grpc"`
 }
 
 type ProxyOption struct {

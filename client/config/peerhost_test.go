@@ -309,7 +309,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			AdvertiseIP:    "0.0.0.0",
 		},
 		Download: DownloadOption{
-			RateLimit: clientutil.RateLimit{
+			TotalRateLimit: clientutil.RateLimit{
 				Limit: 209715200,
 			},
 			DownloadGRPC: ListenOption{

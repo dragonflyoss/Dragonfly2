@@ -44,7 +44,7 @@ var PeerHostConfig = PeerHostOption{
 		NetTopology:    "",
 	},
 	Download: DownloadOption{
-		RateLimit: clientutil.RateLimit{
+		TotalRateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(104857600),
 		},
 		DownloadGRPC: ListenOption{

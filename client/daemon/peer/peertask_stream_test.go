@@ -98,7 +98,8 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		},
 		req,
 		ptm.schedulerClient,
-		ptm.schedulerOption)
+		ptm.schedulerOption,
+		0)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
 		ctx:   ctx,
@@ -195,7 +196,8 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		},
 		req,
 		schedulerClient,
-		ptm.schedulerOption)
+		ptm.schedulerOption,
+		0)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
 		ctx:   ctx,
