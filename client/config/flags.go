@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/docker/go-units"
 	"github.com/pkg/errors"
@@ -86,3 +88,33 @@ func (r *RateLimitValue) Set(s string) error {
 func (r *RateLimitValue) Type() string {
 	return "ratelimit"
 }
+
+// DurationValue supports time.Duration format like 30s, 1m30s, 1h
+// and also treat integer as seconds
+type DurationValue time.Duration
+
+func NewDurationValue(p *time.Duration) *DurationValue {
+	return (*DurationValue)(p)
+}
+
+func (d *DurationValue) Set(s string) error {
+	v, err := time.ParseDuration(s)
+	if err == nil {
+		*d = DurationValue(v)
+		return nil
+	}
+	// try to convert to integer for seconds by default
+	seconds, convErr := strconv.Atoi(s)
+	if convErr != nil {
+		// just return first err
+		return err
+	}
+	*d = DurationValue(time.Duration(seconds) * time.Second)
+	return nil
+}
+
+func (d *DurationValue) Type() string {
+	return "duration"
+}
+
+func (d *DurationValue) String() string { return (*time.Duration)(d).String() }
