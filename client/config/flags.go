@@ -15,11 +15,15 @@ import (
 // SchedulersValue implements the pflag.Value interface.
 
 type NetAddrsValue struct {
-	n *[]dfnet.NetAddr
+	n     *[]dfnet.NetAddr
+	isSet bool
 }
 
 func NewNetAddrsValue(n *[]dfnet.NetAddr) *NetAddrsValue {
-	return &NetAddrsValue{n: n}
+	return &NetAddrsValue{
+		n:     n,
+		isSet: false,
+	}
 }
 
 func (nv *NetAddrsValue) String() string {
@@ -38,6 +42,11 @@ func (nv *NetAddrsValue) Set(value string) error {
 	}
 	if len(vv) == 1 {
 		value = fmt.Sprintf("%s:%d", value, DefaultSupernodePort)
+	}
+
+	if !nv.isSet && len(*nv.n) > 0 {
+		*nv.n = []dfnet.NetAddr{}
+		nv.isSet = true
 	}
 
 	*nv.n = append(*nv.n,
