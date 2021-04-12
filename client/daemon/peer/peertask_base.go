@@ -355,6 +355,8 @@ loop:
 			case <-pt.peerPacketReady:
 				// preparePieceTasksByPeer func already send piece result with error
 				pt.Infof("new peer client ready")
+				// research from piece 0
+				num = pt.getNextPieceNum(0)
 				continue loop
 			case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 				pt.failedReason = reasonReScheduleTimeout
@@ -384,6 +386,7 @@ loop:
 		if piecePacket.TotalPiece > pt.totalPiece {
 			pt.totalPiece = piecePacket.TotalPiece
 			_ = pt.callback.Update(pt)
+			pt.Debugf("update total piece count: %d", pt.totalPiece)
 		}
 
 		// trigger DownloadPiece
@@ -400,7 +403,7 @@ loop:
 			}
 		}
 
-		num = pt.getNextPieceNum(num, limit)
+		num = pt.getNextPieceNum(num)
 		if num == -1 {
 			pt.Infof("all pieces requests send, just wait failed pieces")
 			if pt.isCompleted() {
@@ -523,6 +526,8 @@ func (pt *peerTask) preparePieceTasksByPeer(curPeerPacket *scheduler.PeerPacket,
 	var span trace.Span
 	_, span = tracer.Start(pt.ctx, config.SpanGetPieceTasks)
 	span.SetAttributes(config.AttributeTargetPeerId.String(peer.PeerId))
+	span.SetAttributes(config.AttributeGetPieceStartNum.Int(int(request.StartNum)))
+	span.SetAttributes(config.AttributeGetPieceLimit.Int(int(request.Limit)))
 	defer span.End()
 
 	// when cdn returns dfcodes.CdnTaskNotFound, report it to scheduler and wait cdn download it.
@@ -531,6 +536,7 @@ retry:
 	p, err := pt.getPieceTasks(curPeerPacket, peer, request)
 	if err == nil {
 		pt.Infof("get piece task from peer %s ok, pieces length: %d", peer.PeerId, len(p.PieceInfos))
+		span.SetAttributes(config.AttributeGetPieceCount.Int(len(p.PieceInfos)))
 		return p, nil
 	}
 	span.RecordError(err)
@@ -625,11 +631,11 @@ func (pt *peerTask) getPieceTasks(curPeerPacket *scheduler.PeerPacket, peer *sch
 	return nil, err
 }
 
-func (pt *peerTask) getNextPieceNum(cur, limit int32) int32 {
+func (pt *peerTask) getNextPieceNum(cur int32) int32 {
 	if pt.isCompleted() {
 		return -1
 	}
-	i := cur + limit
+	i := cur
 	for ; pt.requestedPieces.IsSet(i); i++ {
 	}
 	if pt.totalPiece > 0 && i >= pt.totalPiece {
