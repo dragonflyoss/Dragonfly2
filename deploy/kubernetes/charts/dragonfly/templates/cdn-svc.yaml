@@ -32,7 +32,7 @@ spec:
       targetPort: {{ $port.port }}
 {{- end }}
   selector:
-    app: {{ template "dragonfly.name" . }}
+    app: {{ template "dragonfly.cdn.fullname" . }}
     component: "{{ .Values.cdn.name }}"
     release: {{ .Release.Name }}
   type: {{.Values.cdn.service.type}}
