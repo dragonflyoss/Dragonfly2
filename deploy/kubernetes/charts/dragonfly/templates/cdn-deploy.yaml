@@ -57,21 +57,14 @@ spec:
         ports:
         - containerPort: {{ .Values.cdn.containerPort }}
           protocol: TCP
+        - containerPort: {{ .Values.cdn.nginxContiainerPort }}
+          protocol: TCP
         volumeMounts:
         - name: config
           mountPath: "/etc/dragonfly"
-      containers:
-      - name: nginx
-        image: "{{ .Values.cdn.nginx.image }}:{{ .Values.cdn.nginx.tag }}"
-        imagePullPolicy: {{ .Values.cdn.nginx.pullPolicy | quote }}
-        resources:
-{{ toYaml .Values.cdn.nginx.resources | indent 12 }}
-        ports:
-        - containerPort: {{ .Values.cdn.nginx.containerPort }}
-          protocol: TCP
-        volumeMounts:
         - name: nginx-config
-          mountPath: "/etc/nginx"
+          mountPath: "/etc/nginx/nginx.conf"
+          subPath: "nginx.conf"
       volumes:
       - name: config
         configMap:
@@ -81,7 +74,4 @@ spec:
             path: cdn.yaml
       - name: nginx-config
         configMap:
-          name: {{ template "dragonfly.cdn.nginx.name" . }}
-          items:
-          - key: nginx.conf
-            path: nginx.conf
+          name: {{ template "dragonfly.cdn.fullname" . }}

@@ -71,10 +71,8 @@ data:
 
         server {
             listen              {{ .Values.cdn.service.nginxTargetPort }};
-            {{- range .Values.cdn.config.plugins.storage }}
             location / {
-              root {{ .config.baseDir }};
+              root {{ .Values.cdn.config.plugins.storage.config.baseDir }};
             }
-            {{- end }}
         }
     }

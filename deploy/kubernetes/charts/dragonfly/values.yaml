@@ -56,19 +56,7 @@ cdn:
   podAnnotations: {}
   deploymentAnnotations: {}
   containerPort: 8003
-  nginx:
-    name: nginx
-    image: nginx
-    tag: stable
-    pullPolicy: IfNotPresent
-    resources:
-      requests:
-        cpu: "512m"
-        memory: "512Mi"
-      limits:
-        cpu: "512m"
-        memory: "512Mi"
-    containerPort: 8001
+  nginxContiainerPort: 8001
   service:
     type: ClusterIP
     annotations: {}
@@ -90,24 +78,15 @@ cdn:
       console: false
     plugins:
       storage:
-        - name: disk
-          enable: true
-          config:
-            baseDir: /tmp/cdn
-            gcConfig:
-              youngGCThreshold: 100G
-              fullGCThreshold: 5G
-              cleanRatio: 1
-              intervalThreshold: 2h
-        - name: memory
-          enable: true
-          config:
-            baseDir: /tmp/memory/dragonfly
-            gcConfig:
-              youngGCThreshold: 100G
-              fullGCThreshold: 5G
-              cleanRatio: 3
-              intervalThreshold: 3s
+        name: disk
+        enable: true
+        config:
+          baseDir: /tmp/cdn
+          gcConfig:
+            youngGCThreshold: 100G
+            fullGCThreshold: 5G
+            cleanRatio: 1
+            intervalThreshold: 2h
 
 dfdaemon:
   name: dfdaemon
