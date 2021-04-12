@@ -109,11 +109,11 @@ cdn:
               cleanRatio: 3
               intervalThreshold: 3s
 
-client:
-  name: client
+dfdaemon:
+  name: dfdaemon
   nameOverride: ""
   fullnameOverride: ""
-  image: dragonflyoss/client
+  image: dragonflyoss/dfdaemon
   tag: 0.1.0
   pullPolicy: IfNotPresent
   resources:

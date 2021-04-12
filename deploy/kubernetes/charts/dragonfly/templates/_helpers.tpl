@@ -48,10 +48,10 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- end -}}{
 
 {{/*
-Create a default fully qualified client name.
+Create a default fully qualified dfdaemon name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
-{{- define "dragonfly.client.fullname" -}}
-{{ template "dragonfly.fullname" . }}-{{ .Values.client.name }}
+{{- define "dragonfly.dfdaemon.fullname" -}}
+{{ template "dragonfly.fullname" . }}-{{ .Values.dfdaemon.name }}
 {{- end -}}
 
