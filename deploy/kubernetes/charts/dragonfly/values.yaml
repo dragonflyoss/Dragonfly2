@@ -3,7 +3,7 @@ fullnameOverride: ""
 
 scheduler:
   name: scheduler
-  replicas: 2
+  replicas: 1
   image: dragonflyoss/scheduler
   tag: 0.1.0
   pullPolicy: IfNotPresent
@@ -38,7 +38,7 @@ cdn:
   name: cdn
   nameOverride: ""
   fullnameOverride: ""
-  replicas: 2
+  replicas: 1
   image: dragonflyoss/cdn
   tag: 0.1.0
   pullPolicy: IfNotPresent
