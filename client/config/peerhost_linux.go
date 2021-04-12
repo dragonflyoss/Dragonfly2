@@ -10,13 +10,14 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var (
 	PeerHostConfigPath = "/etc/dragonfly/dfget-daemon.yaml"
 
-	peerHostWorkHome = "/etc/dragonfly/dfdaemon/"
+	peerHostWorkHome = basic.HomeDir + "/.dragonfly/dfget-daemon/"
 	peerHostDataDir  = peerHostWorkHome
 )
 

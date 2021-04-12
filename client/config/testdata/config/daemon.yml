@@ -21,7 +21,8 @@ host:
   net_topology: d7y
 
 download:
-  rate_limit: 200Mi
+  total_rate_limit: 200Mi
+  per_peer_rate_limit: 20Mi
   download_grpc:
     security:
       insecure: true

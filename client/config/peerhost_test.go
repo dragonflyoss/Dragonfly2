@@ -312,6 +312,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 			TotalRateLimit: clientutil.RateLimit{
 				Limit: 209715200,
 			},
+			PerPeerRateLimit: clientutil.RateLimit{
+				Limit: 20971520,
+			},
 			DownloadGRPC: ListenOption{
 				Security: SecurityOption{
 					Insecure: true,
