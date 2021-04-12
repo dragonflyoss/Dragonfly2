@@ -32,7 +32,7 @@ var PeerHostConfig = PeerHostOption{
 	Console:     false,
 	Scheduler: SchedulerOption{
 		NetAddrs:        nil,
-		ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+		ScheduleTimeout: clientutil.Duration{Duration: 1 * time.Minute},
 	},
 	Host: HostOption{
 		ListenIP:       "0.0.0.0",

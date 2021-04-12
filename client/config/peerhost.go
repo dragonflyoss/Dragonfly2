@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -103,6 +104,10 @@ func (p *PeerHostOption) Convert() error {
 func (p *PeerHostOption) Validate() error {
 	if len(p.Scheduler.NetAddrs) == 0 {
 		return errors.New("empty schedulers")
+	}
+	// ScheduleTimeout should not great then AliveTime
+	if p.AliveTime.Duration > 0 && p.Scheduler.ScheduleTimeout.Duration > p.AliveTime.Duration {
+		p.Scheduler.ScheduleTimeout.Duration = p.AliveTime.Duration - time.Second
 	}
 	return nil
 }
