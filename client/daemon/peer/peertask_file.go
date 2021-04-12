@@ -78,14 +78,14 @@ func newFilePeerTask(ctx context.Context,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
 	perPeerRateLimit rate.Limit) (context.Context, FilePeerTask, *TinyData, error) {
-	ctx, span := tracer.Start(ctx, SpanFilePeerTask, trace.WithSpanKind(trace.SpanKindClient))
-	span.SetAttributes(AttributePeerHost.String(host.Uuid))
+	ctx, span := tracer.Start(ctx, config.SpanFilePeerTask, trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(config.AttributePeerHost.String(host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
-	span.SetAttributes(AttributePeerId.String(request.PeerId))
+	span.SetAttributes(config.AttributePeerId.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
 	// trace register
-	_, regSpan := tracer.Start(ctx, SpanRegisterTask)
+	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	regSpan.RecordError(err)
 	regSpan.End()
@@ -110,20 +110,20 @@ func newFilePeerTask(ctx context.Context,
 		err = errors.Errorf("empty schedule result")
 		return ctx, nil, nil, err
 	}
-	span.SetAttributes(AttributeTaskId.String(result.TaskId))
+	span.SetAttributes(config.AttributeTaskId.String(result.TaskId))
 
 	var singlePiece *scheduler.SinglePiece
 	if !backSource {
 		switch result.SizeScope {
 		case base.SizeScope_SMALL:
-			span.SetAttributes(AttributePeerTaskSizeScope.String("small"))
+			span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
 			logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
 				singlePiece = piece.SinglePiece
 			}
 		case base.SizeScope_TINY:
 			defer span.End()
-			span.SetAttributes(AttributePeerTaskSizeScope.String("tiny"))
+			span.SetAttributes(config.AttributePeerTaskSizeScope.String("tiny"))
 			logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
 				return ctx, nil, &TinyData{
@@ -136,7 +136,7 @@ func newFilePeerTask(ctx context.Context,
 			span.RecordError(err)
 			return ctx, nil, nil, err
 		case base.SizeScope_NORMAL:
-			span.SetAttributes(AttributePeerTaskSizeScope.String("normal"))
+			span.SetAttributes(config.AttributePeerTaskSizeScope.String("normal"))
 			logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
 	}
@@ -280,7 +280,7 @@ func (pt *filePeerTask) finish() error {
 				pt.Errorf("finish recover from: %s", rerr)
 				err = fmt.Errorf("%v", rerr)
 			}
-			pt.span.SetAttributes(AttributePeerTaskSuccess.Bool(true))
+			pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 			pt.span.End()
 		}()
 		// send EOF piece result to scheduler
@@ -354,7 +354,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			if err := recover(); err != nil {
 				pt.Errorf("cleanUnfinished recover from: %s", err)
 			}
-			pt.span.SetAttributes(AttributePeerTaskSuccess.Bool(false))
+			pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 			pt.span.End()
 		}()
 		// send EOF piece result to scheduler

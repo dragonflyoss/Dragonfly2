@@ -164,7 +164,7 @@ func (pt *peerTask) receivePeerPacket() {
 		spanDone   bool
 	)
 	// FIXME currently only record first schedule result
-	_, span := tracer.Start(pt.ctx, SpanFirstSchedule)
+	_, span := tracer.Start(pt.ctx, config.SpanFirstSchedule)
 	defer func() {
 		if !spanDone {
 			span.End()
@@ -227,7 +227,7 @@ loop:
 			peerPacket.MainPeer.PeerId, peerPacket.ParallelCount)
 		if !spanDone {
 			spanDone = true
-			span.SetAttributes(AttributeMainPeer.String(peerPacket.MainPeer.PeerId))
+			span.SetAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId))
 			span.End()
 		}
 
@@ -435,11 +435,11 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *D
 	for {
 		select {
 		case request := <-requests:
-			ctx, span := tracer.Start(pt.ctx, fmt.Sprintf(SpanDownloadPiece, request.piece.PieceNum))
-			span.SetAttributes(AttributePiece.Int(int(request.piece.PieceNum)))
-			span.SetAttributes(AttributePieceWorker.Int(int(id)))
+			ctx, span := tracer.Start(pt.ctx, fmt.Sprintf(config.SpanDownloadPiece, request.piece.PieceNum))
+			span.SetAttributes(config.AttributePiece.Int(int(request.piece.PieceNum)))
+			span.SetAttributes(config.AttributePieceWorker.Int(int(id)))
 			if pt.limiter != nil {
-				_, waitSpan := tracer.Start(ctx, SpanWaitPieceLimit)
+				_, waitSpan := tracer.Start(ctx, config.SpanWaitPieceLimit)
 				if err := pt.limiter.WaitN(pt.ctx, int(request.piece.RangeSize)); err != nil {
 					pt.Errorf("request limiter error: %s", err)
 					waitSpan.RecordError(err)
@@ -458,7 +458,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *D
 					pt.failedReason = err.Error()
 					pt.failedCode = dfcodes.ClientRequestLimitFail
 					pt.cancel()
-					span.SetAttributes(AttributePieceSuccess.Bool(false))
+					span.SetAttributes(config.AttributePieceSuccess.Bool(false))
 					span.End()
 					return
 				}
@@ -469,7 +469,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *D
 				id, request.DstPid, request.piece.PieceNum, request.piece.RangeStart, request.piece.RangeSize)
 			success := pt.pieceManager.DownloadPiece(pti, request)
 
-			span.SetAttributes(AttributePieceSuccess.Bool(success))
+			span.SetAttributes(config.AttributePieceSuccess.Bool(success))
 			span.End()
 		case <-pt.done:
 			pt.Debugf("peer task done, peer download worker #%d exit", id)
@@ -521,8 +521,8 @@ func (pt *peerTask) preparePieceTasksByPeer(curPeerPacket *scheduler.PeerPacket,
 		return nil, fmt.Errorf("empty peer")
 	}
 	var span trace.Span
-	_, span = tracer.Start(pt.ctx, SpanGetPieceTasks)
-	span.SetAttributes(AttributeTargetPeerId.String(peer.PeerId))
+	_, span = tracer.Start(pt.ctx, config.SpanGetPieceTasks)
+	span.SetAttributes(config.AttributeTargetPeerId.String(peer.PeerId))
 	defer span.End()
 
 	// when cdn returns dfcodes.CdnTaskNotFound, report it to scheduler and wait cdn download it.
@@ -567,7 +567,7 @@ retry:
 	})
 	if perr != nil {
 		span.RecordError(perr)
-		pt.Errorf("send piece result error: %s, code: %d", peer.PeerId, err)
+		pt.Errorf("send piece result error: %s, code: %d", err, code)
 	}
 
 	if code == dfcodes.CdnTaskNotFound && curPeerPacket == pt.peerPacket {

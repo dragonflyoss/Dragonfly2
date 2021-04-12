@@ -179,7 +179,7 @@ func init() {
 		"IP address that server will listen on")
 	flagSet.IntVar(&daemonConfig.Upload.ListenOption.TCPListen.PortRange.Start, "port", daemonConfig.Upload.ListenOption.TCPListen.PortRange.Start,
 		"port number that server will listen on")
-	persistentflagSet.DurationVar(&daemonConfig.Storage.Option.TaskExpireTime.Duration, "expiretime", daemonConfig.Storage.Option.TaskExpireTime.Duration,
+	persistentflagSet.DurationVar(&daemonConfig.Storage.TaskExpireTime.Duration, "expiretime", daemonConfig.Storage.TaskExpireTime.Duration,
 		"caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted")
 	persistentflagSet.DurationVar(&daemonConfig.AliveTime.Duration, "alivetime", daemonConfig.AliveTime.Duration,
 		"alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit")

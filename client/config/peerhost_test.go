@@ -30,7 +30,6 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
@@ -363,13 +362,11 @@ func TestPeerHostOption_Load(t *testing.T) {
 			},
 		},
 		Storage: StorageOption{
-			Option: storage.Option{
-				DataPath: "/tmp/storage/data",
-				TaskExpireTime: clientutil.Duration{
-					Duration: 180000000000,
-				},
+			DataPath: "/tmp/storage/data",
+			TaskExpireTime: clientutil.Duration{
+				Duration: 180000000000,
 			},
-			StoreStrategy: storage.StoreStrategy("io.d7y.storage.v2.simple"),
+			StoreStrategy: StoreStrategy("io.d7y.storage.v2.simple"),
 		},
 		Proxy: &ProxyOption{
 			ListenOption: ListenOption{

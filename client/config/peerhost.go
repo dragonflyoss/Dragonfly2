@@ -33,7 +33,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
@@ -354,9 +353,15 @@ type SecurityOption struct {
 }
 
 type StorageOption struct {
-	storage.Option `yaml:",inline"`
-	StoreStrategy  storage.StoreStrategy `json:"strategy" yaml:"strategy"`
+	// DataPath indicates directory which stores temporary files for p2p uploading
+	DataPath string `json:"data_path" yaml:"data_path"`
+	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
+	// after this period cache file will be gc
+	TaskExpireTime clientutil.Duration `json:"task_expire_time" yaml:"task_expire_time"`
+	StoreStrategy  StoreStrategy       `json:"strategy" yaml:"strategy"`
 }
+
+type StoreStrategy string
 
 type FileString string
 

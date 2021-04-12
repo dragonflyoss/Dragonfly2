@@ -34,6 +34,7 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -55,12 +56,14 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		output = "../test/testdata/test.output"
 	)
 
-	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
-		DataPath: test.DataDir,
-		TaskExpireTime: clientutil.Duration{
-			Duration: -1 * time.Second,
-		},
-	}, func(request storage.CommonTaskRequest) {})
+	storageManager, _ := storage.NewStorageManager(
+		config.SimpleLocalTaskStoreStrategy,
+		&config.StorageOption{
+			DataPath: test.DataDir,
+			TaskExpireTime: clientutil.Duration{
+				Duration: -1 * time.Second,
+			},
+		}, func(request storage.CommonTaskRequest) {})
 
 	hash := md5.New()
 	hash.Write(testBytes)
