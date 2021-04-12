@@ -10,8 +10,8 @@ const (
 	taskData     = "data"
 	taskMetaData = "metadata"
 
-	defaultFileMode      = os.FileMode(0644)
-	defaultDirectoryMode = os.FileMode(0755)
+	defaultFileMode      = os.FileMode(4644)
+	defaultDirectoryMode = os.FileMode(4755)
 )
 
 var (
