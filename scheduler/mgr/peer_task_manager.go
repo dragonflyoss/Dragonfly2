@@ -152,12 +152,17 @@ func (m *PeerTaskManager) UpdatePeerTask(pt *types.PeerTask) {
 		return
 	}
 
+	if pt.GetFreeLoad() == 0 || pt.IsDown() {
+		ranger.Delete(pt)
+		return
+	}
+
 	status := pt.GetNodeStatus()
 	switch status {
 	case types.PeerTaskStatusLeaveNode, types.PeerTaskStatusNodeGone:
 		ranger.Delete(pt)
 	default:
-		ranger.Update(pt)
+		ranger.UpdateOrAdd(pt)
 	}
 }
 

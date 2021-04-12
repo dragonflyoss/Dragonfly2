@@ -78,6 +78,12 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 			}
 		}
 	}
+
+	if task.CDNError != nil {
+		err = task.CDNError
+		return
+	}
+
 	pkg.TaskId = task.TaskId
 	pkg.SizeScope = task.SizeScope
 
