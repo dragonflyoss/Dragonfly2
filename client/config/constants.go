@@ -123,3 +123,8 @@ const (
 const (
 	RangeSeparator = "-"
 )
+
+const (
+	SimpleLocalTaskStoreStrategy  = StoreStrategy("io.d7y.storage.v2.simple")
+	AdvanceLocalTaskStoreStrategy = StoreStrategy("io.d7y.storage.v2.advance")
+)

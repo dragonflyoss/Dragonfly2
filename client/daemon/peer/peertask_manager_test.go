@@ -139,12 +139,14 @@ func setupPeerTaskManagerComponents(
 		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
 			return nil
 		})
-	storageManager, _ := storage.NewStorageManager(storage.SimpleLocalTaskStoreStrategy, &storage.Option{
-		DataPath: test.DataDir,
-		TaskExpireTime: clientutil.Duration{
-			Duration: -1 * time.Second,
-		},
-	}, func(request storage.CommonTaskRequest) {})
+	storageManager, _ := storage.NewStorageManager(
+		config.SimpleLocalTaskStoreStrategy,
+		&config.StorageOption{
+			DataPath: test.DataDir,
+			TaskExpireTime: clientutil.Duration{
+				Duration: -1 * time.Second,
+			},
+		}, func(request storage.CommonTaskRequest) {})
 	return sched, storageManager
 }
 

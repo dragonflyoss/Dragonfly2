@@ -1,4 +1,4 @@
-package peer
+package config
 
 import "go.opentelemetry.io/otel/attribute"
 
@@ -21,4 +21,5 @@ const (
 	SpanGetPieceTasks  = "get-piece-tasks"
 	SpanDownloadPiece  = "download-piece-#%d"
 	SpanWaitPieceLimit = "wait-limit"
+	SpanPeerGC         = "peer-gc"
 )

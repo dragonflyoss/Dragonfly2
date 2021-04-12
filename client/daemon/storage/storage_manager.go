@@ -31,8 +31,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -76,14 +79,6 @@ type Manager interface {
 	CleanUp()
 }
 
-type Option struct {
-	// DataPath indicates directory which stores temporary files for p2p uploading
-	DataPath string `json:"data_path" yaml:"data_path"`
-	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
-	// after this period cache file will be gc
-	TaskExpireTime clientutil.Duration `json:"task_expire_time" yaml:"task_expire_time"`
-}
-
 var (
 	ErrTaskNotFound  = errors.New("task not found")
 	ErrPieceNotFound = errors.New("piece not found")
@@ -93,21 +88,26 @@ const (
 	GCName = "StorageManager"
 )
 
+var tracer trace.Tracer
+
+func init() {
+	tracer = otel.Tracer("dfget-daemon-gc")
+}
+
 type storageManager struct {
 	sync.Locker
 	clientutil.KeepAlive
-	storeStrategy      StoreStrategy
-	storeOption        *Option
+	storeStrategy      config.StoreStrategy
+	storeOption        *config.StorageOption
 	tasks              *sync.Map
 	markedReclaimTasks []PeerTaskMetaData
 	dataPathStat       *syscall.Stat_t
 	gcCallback         func(CommonTaskRequest)
 }
 
-type StoreStrategy string
 type GCCallback func(request CommonTaskRequest)
 
-func NewStorageManager(storeStrategy StoreStrategy, opt *Option, gcCallback GCCallback, moreOpts ...func(*storageManager) error) (Manager, error) {
+func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOption, gcCallback GCCallback, moreOpts ...func(*storageManager) error) (Manager, error) {
 	if !path.IsAbs(opt.DataPath) {
 		abs, err := filepath.Abs(opt.DataPath)
 		if err != nil {
@@ -126,9 +126,9 @@ func NewStorageManager(storeStrategy StoreStrategy, opt *Option, gcCallback GCCa
 		return nil, err
 	}
 	switch storeStrategy {
-	case SimpleLocalTaskStoreStrategy, AdvanceLocalTaskStoreStrategy:
-	case StoreStrategy(""):
-		storeStrategy = SimpleLocalTaskStoreStrategy
+	case config.SimpleLocalTaskStoreStrategy, config.AdvanceLocalTaskStoreStrategy:
+	case config.StoreStrategy(""):
+		storeStrategy = config.SimpleLocalTaskStoreStrategy
 	default:
 		return nil, fmt.Errorf("not support store strategy: %s", storeStrategy)
 	}
@@ -157,7 +157,7 @@ func NewStorageManager(storeStrategy StoreStrategy, opt *Option, gcCallback GCCa
 	return s, nil
 }
 
-func WithStorageOption(opt *Option) func(*storageManager) error {
+func WithStorageOption(opt *config.StorageOption) func(*storageManager) error {
 	return func(manager *storageManager) error {
 		manager.storeOption = opt
 		return nil
@@ -291,18 +291,18 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 
 	// fallback to simple strategy for proxy
 	if req.Destination == "" {
-		t.StoreStrategy = string(SimpleLocalTaskStoreStrategy)
+		t.StoreStrategy = string(config.SimpleLocalTaskStoreStrategy)
 	}
 	data := path.Join(dataDir, taskData)
 	switch t.StoreStrategy {
-	case string(SimpleLocalTaskStoreStrategy):
+	case string(config.SimpleLocalTaskStoreStrategy):
 		t.DataFilePath = data
 		f, err := os.OpenFile(t.DataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
 		if err != nil {
 			return err
 		}
 		f.Close()
-	case string(AdvanceLocalTaskStoreStrategy):
+	case string(config.AdvanceLocalTaskStoreStrategy):
 		dir, file := path.Split(req.Destination)
 		dirStat, err := os.Stat(dir)
 		if err != nil {
@@ -462,13 +462,19 @@ func (s *storageManager) TryGC() (bool, error) {
 			logger.Warnf("task %s/%s marked, but not found", key.TaskID, key.PeerID)
 			continue
 		}
+		_, span := tracer.Start(context.Background(), config.SpanPeerGC)
+		span.SetAttributes(config.AttributePeerId.String(task.(*PeerTaskMetaData).PeerID))
+		span.SetAttributes(config.AttributeTaskId.String(task.(*PeerTaskMetaData).TaskID))
 		s.tasks.Delete(key)
 		if err := task.(*localTaskStore).Reclaim(); err != nil {
 			// FIXME: retry later or push to queue
 			logger.Errorf("gc task %s/%s error: %s", key.TaskID, key.PeerID, err)
+			span.RecordError(err)
+			span.End()
 			continue
 		}
 		logger.Infof("task %s/%s reclaimed", key.TaskID, key.PeerID)
+		span.End()
 	}
 	logger.Infof("marked %d task(s), reclaimed %d task(s)", len(markedTasks), len(s.markedReclaimTasks))
 	s.markedReclaimTasks = markedTasks
@@ -480,11 +486,12 @@ func (s *storageManager) CleanUp() {
 }
 
 func (s *storageManager) forceGC() (bool, error) {
-	s.tasks.Range(func(key, value interface{}) bool {
+	s.tasks.Range(func(key, task interface{}) bool {
 		s.tasks.Delete(key.(PeerTaskMetaData))
-		err := value.(*localTaskStore).Reclaim()
+		task.(*localTaskStore).MarkReclaim()
+		err := task.(*localTaskStore).Reclaim()
 		if err != nil {
-			logger.Errorf("gc task store %s error: %s", key, value)
+			logger.Errorf("gc task store %s error: %s", key, err)
 		}
 		return true
 	})

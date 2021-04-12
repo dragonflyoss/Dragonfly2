@@ -9,7 +9,6 @@ import (
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
@@ -97,11 +96,9 @@ var PeerHostConfig = PeerHostOption{
 		},
 	},
 	Storage: StorageOption{
-		Option: storage.Option{
-			TaskExpireTime: clientutil.Duration{
-				Duration: 3 * time.Minute,
-			},
+		TaskExpireTime: clientutil.Duration{
+			Duration: 3 * time.Minute,
 		},
-		StoreStrategy: storage.AdvanceLocalTaskStoreStrategy,
+		StoreStrategy: AdvanceLocalTaskStoreStrategy,
 	},
 }

@@ -34,6 +34,7 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -57,13 +58,14 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 		peerID    = "peer-d4bb1c273a9889fea14abd4651994fe8"
 		pieceSize = 512
 	)
-	sm, err := NewStorageManager(SimpleLocalTaskStoreStrategy, &Option{
-		DataPath: test.DataDir,
-		TaskExpireTime: clientutil.Duration{
-			Duration: time.Minute,
-		},
-	}, func(request CommonTaskRequest) {
-	})
+	sm, err := NewStorageManager(config.SimpleLocalTaskStoreStrategy,
+		&config.StorageOption{
+			DataPath: test.DataDir,
+			TaskExpireTime: clientutil.Duration{
+				Duration: time.Minute,
+			},
+		}, func(request CommonTaskRequest) {
+		})
 	var s = sm.(*storageManager)
 
 	err = s.CreateTask(
@@ -226,13 +228,14 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 		peerID    = "peer-d4bb1c273a9889fea14abd4651994fe8"
 		pieceSize = 512
 	)
-	sm, err := NewStorageManager(AdvanceLocalTaskStoreStrategy, &Option{
-		DataPath: test.DataDir,
-		TaskExpireTime: clientutil.Duration{
-			Duration: time.Minute,
-		},
-	}, func(request CommonTaskRequest) {
-	})
+	sm, err := NewStorageManager(config.AdvanceLocalTaskStoreStrategy,
+		&config.StorageOption{
+			DataPath: test.DataDir,
+			TaskExpireTime: clientutil.Duration{
+				Duration: time.Minute,
+			},
+		}, func(request CommonTaskRequest) {
+		})
 	var s = sm.(*storageManager)
 
 	err = s.CreateTask(
