@@ -141,8 +141,13 @@ func (cm *CDNManager) doCallback(task *types.Task, err *dferrors.DfError) {
 				debug.PrintStack()
 			}
 		}()
+		task.CDNError = err
 		for _, pt := range list {
 			fn(pt, err)
+		}
+		if err != nil {
+			time.Sleep(time.Second*5)
+			GetTaskManager().DeleteTask(task.TaskId)
 		}
 	}()
 }
