@@ -46,7 +46,7 @@ build-local() {
 }
 
 build-cdn-local() {
-    build-local ${CDN_BINARY_NAME} cdnsystem
+    build-local ${CDN_BINARY_NAME} cdn
 }
 
 build-dfget-local() {

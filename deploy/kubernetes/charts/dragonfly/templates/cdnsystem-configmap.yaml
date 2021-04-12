@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ template "dragonfly.cdnsystem.fullname" . }}
+  name: {{ template "dragonfly.cdn.fullname" . }}
   labels:
     app: {{ template "dragonfly.fullname" . }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
@@ -10,20 +10,20 @@ metadata:
 data:
   cdn.yaml: |-
     base:
-      listenPort: {{ .Values.cdnsystem.service.port }}
-      downloadPort: {{ .Values.cdnsystem.service.nginxPort }}
-      systemReservedBandwidth: {{ .Values.cdnsystem.config.base.systemReservedBandwidth }}
-      maxBandwidth: {{ .Values.cdnsystem.config.base.maxBandwidth }}
-      enableProfiler: {{ .Values.cdnsystem.config.base.enableProfiler }}
-      failAccessInterval: {{ .Values.cdnsystem.config.base.failAccessInterval }}
-      gcInitialDelay: {{ .Values.cdnsystem.config.base.gcInitialDelay }}
-      gcMetaInterval: {{ .Values.cdnsystem.config.base.gcMetaInterval }}
-      gcStorageInterval: {{ .Values.cdnsystem.config.base.gcStorageInterval }}
-      taskExpireTime: {{ .Values.cdnsystem.config.base.taskExpireTime }}
-      storagePattern: {{ .Values.cdnsystem.config.base.storagePattern }}
-      console: {{ .Values.cdnsystem.config.base.console }}
+      listenPort: {{ .Values.cdn.service.port }}
+      downloadPort: {{ .Values.cdn.service.nginxPort }}
+      systemReservedBandwidth: {{ .Values.cdn.config.base.systemReservedBandwidth }}
+      maxBandwidth: {{ .Values.cdn.config.base.maxBandwidth }}
+      enableProfiler: {{ .Values.cdn.config.base.enableProfiler }}
+      failAccessInterval: {{ .Values.cdn.config.base.failAccessInterval }}
+      gcInitialDelay: {{ .Values.cdn.config.base.gcInitialDelay }}
+      gcMetaInterval: {{ .Values.cdn.config.base.gcMetaInterval }}
+      gcStorageInterval: {{ .Values.cdn.config.base.gcStorageInterval }}
+      taskExpireTime: {{ .Values.cdn.config.base.taskExpireTime }}
+      storagePattern: {{ .Values.cdn.config.base.storagePattern }}
+      console: {{ .Values.cdn.config.base.console }}
     plugins:
-{{ toYaml .Values.cdnsystem.config.plugins | indent 6 }}
+{{ toYaml .Values.cdn.config.plugins | indent 6 }}
   nginx.conf: |-
     worker_rlimit_nofile        100000;
 
@@ -70,8 +70,8 @@ data:
         proxy_intercept_errors  on;
 
         server {
-            listen              {{ .Values.cdnsystem.service.nginxTargetPort }};
-            {{- range .Values.cdnsystem.config.plugins.storage }}
+            listen              {{ .Values.cdn.service.nginxTargetPort }};
+            {{- range .Values.cdn.config.plugins.storage }}
             location / {
               root {{ .config.baseDir }};
             }

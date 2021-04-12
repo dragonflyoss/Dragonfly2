@@ -34,12 +34,12 @@ scheduler:
       sender-num: 10
       sender-job-pool-size: 10000
 
-cdnsystem:
-  name: cdnsystem
+cdn:
+  name: cdn
   nameOverride: ""
   fullnameOverride: ""
   replicas: 2
-  image: dragonflyoss/cdnsystem
+  image: dragonflyoss/cdn
   tag: 0.1.0
   pullPolicy: IfNotPresent
   resources:

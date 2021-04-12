@@ -4,70 +4,70 @@ metadata:
   labels:
     app: {{ template "dragonfly.name" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    component: "{{ .Values.cdnsystem.name }}"
+    component: "{{ .Values.cdn.name }}"
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
-  name: {{ template "dragonfly.cdnsystem.fullname" . }}
-  {{- if .Values.cdnsystem.deploymentAnnotations }}
+  name: {{ template "dragonfly.cdn.fullname" . }}
+  {{- if .Values.cdn.deploymentAnnotations }}
   annotations:
-{{ toYaml .Values.cdnsystem.deploymentAnnotations | indent 4 }}
+{{ toYaml .Values.cdn.deploymentAnnotations | indent 4 }}
   {{- end }}
 spec:
-  replicas: {{ .Values.cdnsystem.replicas }}
+  replicas: {{ .Values.cdn.replicas }}
   selector:
     matchLabels:
-      app: {{ template "dragonfly.cdnsystem.fullname" . }}
-      component: "{{ .Values.cdnsystem.name }}"
+      app: {{ template "dragonfly.cdn.fullname" . }}
+      component: "{{ .Values.cdn.name }}"
       release: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app: {{ template "dragonfly.cdnsystem.fullname" . }}
-        component: "{{ .Values.cdnsystem.name }}"
+        app: {{ template "dragonfly.cdn.fullname" . }}
+        component: "{{ .Values.cdn.name }}"
         release: {{ .Release.Name }}
-        {{- if .Values.cdnsystem.podAnnotations }}
+        {{- if .Values.cdn.podAnnotations }}
       annotations:
-{{ toYaml .Values.cdnsystem.podAnnotations | indent 8 }}
+{{ toYaml .Values.cdn.podAnnotations | indent 8 }}
         {{- end }}
     spec:
-      {{- if .Values.cdnsystem.nodeSelector }}
+      {{- if .Values.cdn.nodeSelector }}
       nodeSelector:
-{{ toYaml .Values.cdnsystem.nodeSelector | indent 8 }}
+{{ toYaml .Values.cdn.nodeSelector | indent 8 }}
       {{- end }}
-      {{- if .Values.cdnsystem.tolerations }}
+      {{- if .Values.cdn.tolerations }}
       tolerations:
-{{ toYaml .Values.cdnsystem.tolerations | indent 8 }}
+{{ toYaml .Values.cdn.tolerations | indent 8 }}
       {{- end }}
-      {{- if .Values.cdnsystem.affinity }}
+      {{- if .Values.cdn.affinity }}
       affinity:
-{{ toYaml .Values.cdnsystem.affinity | indent 8 }}
+{{ toYaml .Values.cdn.affinity | indent 8 }}
       {{- end }}
-      {{- if quote .Values.cdnsystem.terminationGracePeriodSeconds }}
-      terminationGracePeriodSeconds: {{ .Values.cdnsystem.terminationGracePeriodSeconds }}
+      {{- if quote .Values.cdn.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.cdn.terminationGracePeriodSeconds }}
       {{- end }}
-      {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.Values.cdnsystem.priorityClassName) }}
-      priorityClassName: {{ .Values.cdnsystem.priorityClassName }}
+      {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.Values.cdn.priorityClassName) }}
+      priorityClassName: {{ .Values.cdn.priorityClassName }}
       {{- end }}
       containers:
-      - name: cdnsystem
-        image: "{{ .Values.cdnsystem.image }}:{{ .Values.cdnsystem.tag }}"
-        imagePullPolicy: {{ .Values.cdnsystem.pullPolicy | quote }}
+      - name: cdn
+        image: "{{ .Values.cdn.image }}:{{ .Values.cdn.tag }}"
+        imagePullPolicy: {{ .Values.cdn.pullPolicy | quote }}
         resources:
-{{ toYaml .Values.cdnsystem.resources | indent 12 }}
+{{ toYaml .Values.cdn.resources | indent 12 }}
         ports:
-        - containerPort: {{ .Values.cdnsystem.containerPort }}
+        - containerPort: {{ .Values.cdn.containerPort }}
           protocol: TCP
         volumeMounts:
         - name: config
           mountPath: "/etc/dragonfly"
       containers:
       - name: nginx
-        image: "{{ .Values.cdnsystem.nginx.image }}:{{ .Values.cdnsystem.nginx.tag }}"
-        imagePullPolicy: {{ .Values.cdnsystem.nginx.pullPolicy | quote }}
+        image: "{{ .Values.cdn.nginx.image }}:{{ .Values.cdn.nginx.tag }}"
+        imagePullPolicy: {{ .Values.cdn.nginx.pullPolicy | quote }}
         resources:
-{{ toYaml .Values.cdnsystem.nginx.resources | indent 12 }}
+{{ toYaml .Values.cdn.nginx.resources | indent 12 }}
         ports:
-        - containerPort: {{ .Values.cdnsystem.nginx.containerPort }}
+        - containerPort: {{ .Values.cdn.nginx.containerPort }}
           protocol: TCP
         volumeMounts:
         - name: nginx-config
@@ -75,13 +75,13 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: {{ template "dragonfly.cdnsystem.fullname" . }}
+          name: {{ template "dragonfly.cdn.fullname" . }}
           items:
           - key: cdn.yaml
             path: cdn.yaml
       - name: nginx-config
         configMap:
-          name: {{ template "dragonfly.cdnsystem.nginx.name" . }}
+          name: {{ template "dragonfly.cdn.nginx.name" . }}
           items:
           - key: nginx.conf
             path: nginx.conf
