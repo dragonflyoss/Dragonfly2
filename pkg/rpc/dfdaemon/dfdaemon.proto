@@ -37,6 +37,8 @@ message DownRequest{
   // identify one downloading
   // framework will fill it automatically
   string uuid = 6;
+  int64 uid = 7;
+  int64 gid = 8;
 }
 
 message DownResult{

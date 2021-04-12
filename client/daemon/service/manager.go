@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -159,6 +160,13 @@ func (m *manager) Download(ctx context.Context,
 			Done:            true,
 		}
 		logger.Infof("tiny file, wrote to output")
+		if req.Uid != 0 && req.Gid != 0 {
+			if err = os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {
+				logger.Errorf("change own failed: %s", err)
+				return err
+			}
+		}
+
 		return nil
 	}
 	for {
@@ -183,6 +191,12 @@ func (m *manager) Download(ctx context.Context,
 			if p.PeerTaskDone {
 				p.DoneCallback()
 				logger.Infof("task %s done", p.TaskId)
+				if req.Uid != 0 && req.Gid != 0 {
+					if err = os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {
+						logger.Errorf("change own failed: %s", err)
+						return err
+					}
+				}
 				return nil
 			}
 		case <-ctx.Done():

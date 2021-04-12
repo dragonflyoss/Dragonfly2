@@ -41,6 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil/progressbar"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/pidfile"
+	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -268,6 +269,8 @@ func runDfget() error {
 		Output: output,
 		BizId:  dfgetConfig.CallSystem,
 		Filter: filter,
+		Uid:    int64(basic.UserId),
+		Gid:    int64(basic.UserGroup),
 	}
 	var (
 		start = time.Now()
