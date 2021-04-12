@@ -19,15 +19,18 @@ package basic
 import (
 	"os"
 	"os/user"
+	"strconv"
 	"strings"
 
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 var (
-	HomeDir  string
-	TmpDir   string
-	Username string
+	HomeDir   string
+	TmpDir    string
+	Username  string
+	UserId    int
+	UserGroup int
 )
 
 func init() {
@@ -37,6 +40,8 @@ func init() {
 	}
 
 	Username = u.Username
+	UserId, err = strconv.Atoi(u.Uid)
+	UserGroup, err = strconv.Atoi(u.Gid)
 
 	HomeDir = u.HomeDir
 	HomeDir = strings.TrimSpace(HomeDir)
