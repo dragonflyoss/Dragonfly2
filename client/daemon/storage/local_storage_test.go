@@ -188,7 +188,8 @@ func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 	ts := localTaskStore{
 		SugaredLoggerOnWith: logger.With("test", "localTaskStore"),
 		persistentMetadata: persistentMetadata{
-			TaskID: "test",
+			TaskID:       "test",
+			DataFilePath: src,
 		},
 		RWMutex:      &sync.RWMutex{},
 		dataDir:      test.DataDir,

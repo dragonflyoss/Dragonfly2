@@ -360,7 +360,7 @@ func (m *PeerTaskManager) downloadMonitorWorkingLoop() {
 			pt, _ := v.(*types.PeerTask)
 			if pt != nil {
 				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", pt.Task.TaskId, pt.Pid, pt.GetNodeStatus())
-				if pt.Success || pt.Host.Type == types.HostTypeCdn {
+				if pt.Success || (pt.Host != nil && pt.Host.Type == types.HostTypeCdn) {
 					// clear from monitor
 				} else {
 					if pt.GetNodeStatus() != types.PeerTaskStatusHealth {

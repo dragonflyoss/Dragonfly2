@@ -86,25 +86,25 @@ func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
 	avgCost, lastCost := e.getAvgAndLastCost(costHistory, 4)
 
 	if avgCost * 40 < lastCost {
-		logger.Debugf("IsNodeBad [%s]: node cost is too long", peer.Pid)
+		logger.Debugf("IsNodeBad [%s]: node cost is too long avg[%d] last[%d]", peer.Pid, avgCost, lastCost)
 		return true
 	}
 
 	return false
 }
 
-func (e *Evaluator) getAvgAndLastCost(list []int32, splitPostition int) (avgCost, lastCost int32) {
+func (e *Evaluator) getAvgAndLastCost(list []int64, splitPostition int) (avgCost, lastCost int64) {
 	length := len(list)
-	totalCost := int32(0)
+	totalCost := int64(0)
 	for i, cost := range list {
-		totalCost += cost
-		if length - i < splitPostition {
-			lastCost += cost
+		totalCost += int64(cost)
+		if length - i <= splitPostition {
+			lastCost += int64(cost)
 		}
 	}
 
-	avgCost = totalCost / int32(length)
-	lastCost = lastCost / int32(splitPostition)
+	avgCost = totalCost / int64(length)
+	lastCost = lastCost / int64(splitPostition)
 	return
 }
 

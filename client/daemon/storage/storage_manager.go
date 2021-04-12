@@ -280,45 +280,60 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 
 		SugaredLoggerOnWith: logger.With("task", req.TaskID, "peer", req.PeerID, "component", "localTaskStore"),
 	}
+	if err := os.MkdirAll(t.dataDir, defaultDirectoryMode); err != nil && !os.IsExist(err) {
+		return err
+	}
+	metadata, err := os.OpenFile(t.metadataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
+	if err != nil {
+		return err
+	}
+	t.metadataFile = metadata
+
+	// fallback to simple strategy for proxy
+	if req.Destination == "" {
+		t.StoreStrategy = string(SimpleLocalTaskStoreStrategy)
+	}
+	data := path.Join(dataDir, taskData)
 	switch t.StoreStrategy {
 	case string(SimpleLocalTaskStoreStrategy):
-		t.dataFilePath = path.Join(dataDir, taskData)
-	case string(AdvanceLocalTaskStoreStrategy):
-		t.dataFilePath = req.Destination
-		// just create a new file
-		f, err := os.OpenFile(t.dataFilePath, os.O_CREATE|os.O_TRUNC, defaultFileMode)
+		t.DataFilePath = data
+		f, err := os.OpenFile(t.DataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
 		if err != nil {
 			return err
 		}
 		f.Close()
-		if err = os.MkdirAll(dataDir, defaultDirectoryMode); err != nil {
-			return err
-		}
-		dir := filepath.Dir(req.Destination)
+	case string(AdvanceLocalTaskStoreStrategy):
+		dir, file := path.Split(req.Destination)
 		dirStat, err := os.Stat(dir)
 		if err != nil {
 			return err
 		}
+
+		t.DataFilePath = path.Join(dir, fmt.Sprintf(".%s.dfget.cache.%s", file, req.PeerID))
+		f, err := os.OpenFile(t.DataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
+		if err != nil {
+			return err
+		}
+		f.Close()
+
 		stat := dirStat.Sys().(*syscall.Stat_t)
+		// same dev, can hard link
 		if stat.Dev == s.dataPathStat.Dev {
-			// hard link
-			if err := os.Link(t.dataFilePath, path.Join(dataDir, taskData)); err != nil {
+			if err := os.Link(t.DataFilePath, data); err != nil {
 				return err
 			}
 		} else {
-			// symbol link
-			if err := os.Symlink(t.dataFilePath, path.Join(dataDir, taskData)); err != nil {
+			// make symbol link for reload error gc
+			if err := os.Symlink(t.DataFilePath, data); err != nil {
 				return err
 			}
 		}
 	}
-	if err := t.init(); err != nil {
-		return err
-	}
-	s.tasks.Store(PeerTaskMetaData{
-		PeerID: req.PeerID,
-		TaskID: req.TaskID,
-	}, t)
+	s.tasks.Store(
+		PeerTaskMetaData{
+			PeerID: req.PeerID,
+			TaskID: req.TaskID,
+		}, t)
 	return nil
 }
 
@@ -344,58 +359,22 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 			peerID := peerDir.Name()
 			dataDir := path.Join(s.storeOption.DataPath, string(s.storeStrategy), taskID, peerID)
 			t := &localTaskStore{
-				persistentMetadata: persistentMetadata{
-					StoreStrategy: string(s.storeStrategy),
-					TaskID:        taskID,
-					PeerID:        peerID,
-					TaskMeta:      map[string]string{},
-					Pieces:        map[int32]PieceMetaData{},
-				},
 				RWMutex:             &sync.RWMutex{},
 				dataDir:             dataDir,
 				metadataFilePath:    path.Join(dataDir, taskMetaData),
-				dataFilePath:        path.Join(dataDir, taskData),
 				expireTime:          s.storeOption.TaskExpireTime.Duration,
 				lastAccess:          time.Now(),
 				gcCallback:          gcCallback,
 				SugaredLoggerOnWith: logger.With("task", taskID, "peer", peerID, "component", s.storeStrategy),
 			}
-			switch t.StoreStrategy {
-			case string(SimpleLocalTaskStoreStrategy):
-				t.dataFilePath = path.Join(dataDir, taskData)
-			case string(AdvanceLocalTaskStoreStrategy):
-				// check sym link
-				stat, err0 := os.Lstat(path.Join(dataDir, taskData))
-				if err0 != nil {
-					loadErrs = append(loadErrs, err0)
-					loadErrDirs = append(loadErrDirs, dataDir)
-					logger.With("action", "reload", "stage", "init", "taskID", taskID, "peerID", peerID).
-						Warnf("load task from disk error: %s", err0)
-					continue
-				}
-				// is sym link
-				if stat.Mode()&os.ModeSymlink == os.ModeSymlink {
-					dest, err0 := os.Readlink(path.Join(dataDir, taskData))
-					if err0 != nil {
-						loadErrs = append(loadErrs, err0)
-						loadErrDirs = append(loadErrDirs, dataDir)
-						logger.With("action", "reload", "stage", "init", "taskID", taskID, "peerID", peerID).
-							Warnf("load task from disk error: %s", err0)
-						continue
-					}
-					t.dataFilePath = dest
-				} else {
-					t.dataFilePath = path.Join(dataDir, taskData)
-				}
-			}
-			if err0 := t.init(); err0 != nil {
-				loadErrs = append(loadErrs, err0)
+
+			if t.metadataFile, err = os.Open(t.metadataFilePath); err != nil {
+				loadErrs = append(loadErrs, err)
 				loadErrDirs = append(loadErrDirs, dataDir)
-				logger.With("action", "reload", "stage", "init", "taskID", taskID, "peerID", peerID).
-					Warnf("load task from disk error: %s", err0)
+				logger.With("action", "reload", "stage", "read metadata", "taskID", taskID, "peerID", peerID).
+					Warnf("open task metadata error: %s", err)
 				continue
 			}
-
 			bytes, err0 := ioutil.ReadAll(t.metadataFile)
 			if err0 != nil {
 				loadErrs = append(loadErrs, err0)
@@ -412,7 +391,7 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 					Warnf("load task from disk error: %s", err0)
 				continue
 			}
-			logger.Debugf("load task %s/%s metadata from %s",
+			logger.Debugf("load task %s/%s from disk, metadata %s",
 				t.persistentMetadata.TaskID, t.persistentMetadata.PeerID, t.metadataFilePath)
 			s.tasks.Store(PeerTaskMetaData{
 				PeerID: peerID,
@@ -422,15 +401,32 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 	}
 	// remove load error peer tasks
 	for _, dir := range loadErrDirs {
+		// remove metadata
 		if err = os.Remove(path.Join(dir, taskMetaData)); err != nil {
 			logger.Warnf("remove load error file %s error: %s", path.Join(dir, taskMetaData), err)
+		} else {
+			logger.Warnf("remove load error file %s ok", path.Join(dir, taskMetaData))
 		}
-		logger.Warnf("remove load error file %s ok", path.Join(dir, taskMetaData))
 
-		if err = os.Remove(path.Join(dir, taskData)); err != nil {
-			logger.Warnf("remove load error file %s error: %s", path.Join(dir, taskData), err)
+		// remove data
+		data := path.Join(dir, taskData)
+		stat, err := os.Lstat(data)
+		if err == nil {
+			// remove sym link file
+			if stat.Mode()&os.ModeSymlink == os.ModeSymlink {
+				dest, err0 := os.Readlink(data)
+				if err0 == nil {
+					if err = os.Remove(dest); err != nil {
+						logger.Warnf("remove load error file %s error: %s", data, err)
+					}
+				}
+			}
+			if err = os.Remove(data); err != nil {
+				logger.Warnf("remove load error file %s error: %s", data, err)
+			} else {
+				logger.Warnf("remove load error file %s ok", data)
+			}
 		}
-		logger.Warnf("remove load error file %s ok", path.Join(dir, taskData))
 
 		if err = os.Remove(dir); err != nil {
 			logger.Warnf("remove load error directory %s error: %s", dir, err)

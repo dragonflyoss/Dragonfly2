@@ -32,7 +32,6 @@ func (s *SchedulerService) GetPeerTask(peerTaskId string) (peerTask *types.PeerT
 func (s *SchedulerService) AddPeerTask(pid string, task *types.Task, host *types.Host) (ret *types.PeerTask, err error) {
 	ret = s.peerTaskMgr.AddPeerTask(pid, task, host)
 	host.AddPeerTask(ret)
-	s.cdnMgr.AddToCallback(ret)
 	return
 }
 

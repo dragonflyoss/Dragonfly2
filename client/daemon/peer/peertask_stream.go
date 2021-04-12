@@ -9,6 +9,8 @@ import (
 
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -39,8 +41,19 @@ func newStreamPeerTask(ctx context.Context,
 	pieceManager PieceManager,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
-	schedulerOption config.SchedulerOption) (StreamPeerTask, *TinyData, error) {
+	schedulerOption config.SchedulerOption) (context.Context, StreamPeerTask, *TinyData, error) {
+	ctx, span := tracer.Start(ctx, SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(AttributePeerHost.String(host.Uuid))
+	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
+	span.SetAttributes(AttributePeerId.String(request.PeerId))
+	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
+
+	// trace register
+	_, regSpan := tracer.Start(ctx, SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
+	regSpan.RecordError(err)
+	regSpan.End()
+
 	var backSource bool
 	if err != nil {
 		// check if it is back source error
@@ -50,40 +63,55 @@ func newStreamPeerTask(ctx context.Context,
 		// not back source
 		if !backSource {
 			logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
-			return nil, nil, err
+			return ctx, nil, nil, err
 		}
 	}
+	if result == nil {
+		defer span.End()
+		span.RecordError(err)
+		err = errors.Errorf("empty schedule result")
+		return ctx, nil, nil, err
+	}
+	span.SetAttributes(AttributeTaskId.String(result.TaskId))
 
 	var singlePiece *scheduler.SinglePiece
 	if !backSource {
 		switch result.SizeScope {
 		case base.SizeScope_SMALL:
+			span.SetAttributes(AttributePeerTaskSizeScope.String("small"))
 			logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
 				singlePiece = piece.SinglePiece
 			}
 		case base.SizeScope_TINY:
+			defer span.End()
+			span.SetAttributes(AttributePeerTaskSizeScope.String("tiny"))
 			logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
-				return nil, &TinyData{
+				return ctx, nil, &TinyData{
 					TaskId:  result.TaskId,
 					PeerID:  request.PeerId,
 					Content: piece.PieceContent,
 				}, nil
 			}
-			return nil, nil, errors.Errorf("scheduler return tiny piece but can not parse piece content")
+			err = errors.Errorf("scheduler return tiny piece but can not parse piece content")
+			span.RecordError(err)
+			return ctx, nil, nil, err
 		case base.SizeScope_NORMAL:
+			span.SetAttributes(AttributePeerTaskSizeScope.String("normal"))
 			logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
 	}
 
 	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	if err != nil {
-		return nil, nil, err
+		defer span.End()
+		span.RecordError(err)
+		return ctx, nil, nil, err
 	}
 	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
-	return &streamPeerTask{
+	return ctx, &streamPeerTask{
 		peerTask: peerTask{
 			ctx:              ctx,
 			host:             host,
@@ -96,6 +124,7 @@ func newStreamPeerTask(ctx context.Context,
 			taskId:           result.TaskId,
 			singlePiece:      singlePiece,
 			done:             make(chan struct{}),
+			span:             span,
 			once:             sync.Once{},
 			readyPieces:      NewBitmap(),
 			requestedPieces:  NewBitmap(),
@@ -204,7 +233,10 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	}
 
 	go func(first int32) {
-		defer s.cancel()
+		defer func() {
+			s.cancel()
+			s.span.End()
+		}()
 		var (
 			desired int32
 			cur     int32
@@ -258,6 +290,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 					}
 					wrote, err = s.writeTo(pw, desired)
 					if err != nil {
+						s.span.RecordError(err)
 						s.Errorf("write to pipe error: %s", err)
 						_ = pw.CloseWithError(err)
 						return
@@ -290,6 +323,7 @@ func (s *streamPeerTask) finish() error {
 		if err := s.callback.Done(s); err != nil {
 			s.Errorf("done callback error: %s", err)
 		}
+		s.span.SetAttributes(AttributePeerTaskSuccess.Bool(true))
 	})
 	return nil
 }
@@ -306,6 +340,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 		if err := s.callback.Fail(s, s.failedCode, s.failedReason); err != nil {
 			s.Errorf("fail callback error: %s", err)
 		}
+		s.span.SetAttributes(AttributePeerTaskSuccess.Bool(false))
 	})
 }
 
