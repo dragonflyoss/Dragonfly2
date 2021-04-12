@@ -3,7 +3,7 @@ kind: DaemonSet
 metadata:
   name: {{ template "dragonfly.dfdaemon.fullname" . }}
   labels:
-    app: {{ template "dragonfly.name" . }}
+    app: {{ template "dragonfly.dfdaemon.fullname" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     component: "{{ .Values.dfdaemon.name }}"
     heritage: {{ .Release.Service }}
@@ -48,7 +48,6 @@ spec:
       {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.Values.dfdaemon.priorityClassName) }}
       priorityClassName: {{ .Values.dfdaemon.priorityClassName }}
       {{- end }}
-      hostNetwork: true
       containers:
       - name: dfdaemon
         image: "{{ .Values.dfdaemon.image }}:{{ .Values.dfdaemon.tag }}"
@@ -57,6 +56,7 @@ spec:
 {{ toYaml .Values.dfdaemon.resources | indent 12 }}
         ports:
         - containerPort: 65001
+          hostPort: 65001
           protocol: TCP
         volumeMounts:
         - name: config

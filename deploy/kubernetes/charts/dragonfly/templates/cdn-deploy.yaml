@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: {{ template "dragonfly.name" . }}
+    app: {{ template "dragonfly.cdn.fullname" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     component: "{{ .Values.cdn.name }}"
     heritage: {{ .Release.Service }}
