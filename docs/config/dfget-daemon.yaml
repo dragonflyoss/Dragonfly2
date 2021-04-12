@@ -35,6 +35,8 @@ scheduler:
 
 # when enable, pprof will be enabled,
 verbose: true
+telemetry:
+  jaeger: ""
 
 # current host info used for scheduler
 host:
@@ -123,7 +125,7 @@ storage:
   #                            fast than simple strategy, but:
   #                            the output file will be the peer data for uploading to other peers
   #                            when user delete or change this file, this peer data will be corrupted
-  strategy: io.d7y.storage.v2.simple
+  strategy: io.d7y.storage.v2.advance
 
 # proxy service option
 proxy:

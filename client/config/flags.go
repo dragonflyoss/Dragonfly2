@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/docker/go-units"
 	"github.com/pkg/errors"
@@ -15,11 +17,15 @@ import (
 // SchedulersValue implements the pflag.Value interface.
 
 type NetAddrsValue struct {
-	n *[]dfnet.NetAddr
+	n     *[]dfnet.NetAddr
+	isSet bool
 }
 
 func NewNetAddrsValue(n *[]dfnet.NetAddr) *NetAddrsValue {
-	return &NetAddrsValue{n: n}
+	return &NetAddrsValue{
+		n:     n,
+		isSet: false,
+	}
 }
 
 func (nv *NetAddrsValue) String() string {
@@ -38,6 +44,11 @@ func (nv *NetAddrsValue) Set(value string) error {
 	}
 	if len(vv) == 1 {
 		value = fmt.Sprintf("%s:%d", value, DefaultSupernodePort)
+	}
+
+	if !nv.isSet && len(*nv.n) > 0 {
+		*nv.n = []dfnet.NetAddr{}
+		nv.isSet = true
 	}
 
 	*nv.n = append(*nv.n,
@@ -77,3 +88,33 @@ func (r *RateLimitValue) Set(s string) error {
 func (r *RateLimitValue) Type() string {
 	return "ratelimit"
 }
+
+// DurationValue supports time.Duration format like 30s, 1m30s, 1h
+// and also treat integer as seconds
+type DurationValue time.Duration
+
+func NewDurationValue(p *time.Duration) *DurationValue {
+	return (*DurationValue)(p)
+}
+
+func (d *DurationValue) Set(s string) error {
+	v, err := time.ParseDuration(s)
+	if err == nil {
+		*d = DurationValue(v)
+		return nil
+	}
+	// try to convert to integer for seconds by default
+	seconds, convErr := strconv.Atoi(s)
+	if convErr != nil {
+		// just return first err
+		return err
+	}
+	*d = DurationValue(time.Duration(seconds) * time.Second)
+	return nil
+}
+
+func (d *DurationValue) Type() string {
+	return "duration"
+}
+
+func (d *DurationValue) String() string { return (*time.Duration)(d).String() }
