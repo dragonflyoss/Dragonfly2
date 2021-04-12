@@ -567,7 +567,7 @@ retry:
 	})
 	if perr != nil {
 		span.RecordError(perr)
-		pt.Errorf("send piece result error: %s, code: %d", peer.PeerId, err)
+		pt.Errorf("send piece result error: %s, code: %d", err, code)
 	}
 
 	if code == dfcodes.CdnTaskNotFound && curPeerPacket == pt.peerPacket {

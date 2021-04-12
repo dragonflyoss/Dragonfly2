@@ -259,6 +259,7 @@ func (s *storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 }
 
 func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
+	s.Keep()
 	logger.Debugf("init local task storage, peer id: %s, task id: %s", req.PeerID, req.TaskID)
 
 	dataDir := path.Join(s.storeOption.DataPath, req.TaskID, req.PeerID)
@@ -463,8 +464,8 @@ func (s *storageManager) TryGC() (bool, error) {
 			continue
 		}
 		_, span := tracer.Start(context.Background(), config.SpanPeerGC)
-		span.SetAttributes(config.AttributePeerId.String(task.(*PeerTaskMetaData).PeerID))
-		span.SetAttributes(config.AttributeTaskId.String(task.(*PeerTaskMetaData).TaskID))
+		span.SetAttributes(config.AttributePeerId.String(task.(*localTaskStore).PeerID))
+		span.SetAttributes(config.AttributeTaskId.String(task.(*localTaskStore).TaskID))
 		s.tasks.Delete(key)
 		if err := task.(*localTaskStore).Reclaim(); err != nil {
 			// FIXME: retry later or push to queue
