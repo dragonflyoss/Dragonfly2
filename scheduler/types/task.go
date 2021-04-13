@@ -17,6 +17,7 @@
 package types
 
 import (
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
@@ -45,6 +46,7 @@ type Task struct {
 	ContentLength int64
 	Statistic     *metrics.TaskStatistic
 	Removed       bool
+	CDNError      *dferrors.DfError
 }
 
 func CopyTask(t *Task) *Task {
