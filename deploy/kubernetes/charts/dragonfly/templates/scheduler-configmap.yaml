@@ -17,7 +17,7 @@ data:
     scheduler:
     cdn:
       list:
-        - - cdn-name: {{template "dragonfly.cdn.fullname" . }}
+        - - cdn-name: {{template "dragonfly.cdn.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
             ip: {{template "dragonfly.cdn.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
             rpc-port: {{ .Values.cdn.service.port }}
             download-port: {{ .Values.cdn.service.nginxPort }}
