@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "dragonfly.scheduler.fullname" . }}
+  labels:
+    app: {{ template "dragonfly.fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+data:
+  scheduler.yaml: |-
+    deubug: {{ .Values.scheduler.config.debug }}
+    server:
+      port: {{ .Values.scheduler.containerPort }}
+    worker:
+{{ toYaml .Values.scheduler.config.worker | indent 6 }}
+    cdn:
+      cdn-name: {{template "dragonfly.cdn.fullname" . }}
+      ip: {{template "dragonfly.cdn.fullname" . }}
+      rpc-port: {{ .Values.cdn.service.port }}
+      download-port: {{ .Values.cdn.service.nginxPort }}
