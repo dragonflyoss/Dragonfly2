@@ -20,8 +20,7 @@ import (
 	"fmt"
 	"path"
 
-	"d7y.io/dragonfly/v2/pkg/basic"
-	"d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
 
 func InitManager(console bool) error {
@@ -29,21 +28,19 @@ func InitManager(console bool) error {
 		return nil
 	}
 
-	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
-
-	if coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false); err != nil {
+	if coreLogger, err := CreateLogger(getLogFilePath(ManagerPrefix, CoreLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(getLogFilePath(ManagerPrefix, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false); err != nil {
+	if gcLogger, err := CreateLogger(getLogFilePath(ManagerPrefix, GCLogFileName), 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGcLogger(gcLogger.Sugar())
@@ -57,27 +54,25 @@ func InitScheduler(console bool) error {
 		return nil
 	}
 
-	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
-
-	if coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false); err != nil {
+	if coreLogger, err := CreateLogger(getLogFilePath(SchedulerPrefix, CoreLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(getLogFilePath(SchedulerPrefix, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false); err != nil {
+	if gcLogger, err := CreateLogger(getLogFilePath(SchedulerPrefix, GCLogFileName), 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGcLogger(gcLogger.Sugar())
 	}
 
-	if statPeerLogger, err := CreateLogger(path.Join(logDir, "stat/peer.log"), 300, 30, 0, true, true); err != nil {
+	if statPeerLogger, err := CreateLogger(getStatLogFilePath(StatPeerLogFileName), 300, 30, 0, true, true); err != nil {
 		return err
 	} else {
 		logger.SetStatPeerLogger(statPeerLogger)
@@ -91,36 +86,34 @@ func InitCdnSystem(console bool) error {
 		return nil
 	}
 
-	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
-
-	if coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false); err != nil {
+	if coreLogger, err := CreateLogger(getLogFilePath(CDNPrefix, CoreLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(getLogFilePath(CDNPrefix, GrpcLogFileName), 300, 30, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false); err != nil {
+	if gcLogger, err := CreateLogger(getLogFilePath(CDNPrefix, GCLogFileName), 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGcLogger(gcLogger.Sugar())
 	}
 
-	if statSeedLogger, err := CreateLogger(path.Join(logDir, "stat/seed.log"), 300, 30, 0, true, true); err != nil {
-		return err
-	} else {
-		logger.SetStatSeedLogger(statSeedLogger)
-	}
-
-	if downloaderLogger, err := CreateLogger(path.Join(logDir, "downloader.log"), 300, 7, 0, false, false); err != nil {
+	if downloaderLogger, err := CreateLogger(getLogFilePath(CDNPrefix, DownloaderLogFileName), 300, 7, 0, false, false); err != nil {
 		return err
 	} else {
 		logger.SetDownloadLogger(downloaderLogger)
+	}
+
+	if statSeedLogger, err := CreateLogger(getStatLogFilePath(StatSeedLogFileName), 300, 30, 0, true, true); err != nil {
+		return err
+	} else {
+		logger.SetStatSeedLogger(statSeedLogger)
 	}
 
 	return nil
@@ -131,19 +124,19 @@ func InitDaemon(console bool) error {
 		return nil
 	}
 
-	if coreLogger, err := CreateLogger(path.Join(clientLogDir, fmt.Sprintf("dfdaemon-%s", CoreLogFileName)), 100, 7, 14, false, false); err != nil {
+	if coreLogger, err := CreateLogger(getLogFilePath(DfdaemonPrefix, CoreLogFileName), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(path.Join(clientLogDir, fmt.Sprintf("dfdaemon-%s", GrpcLogFileName)), 100, 7, 14, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(getLogFilePath(DfdaemonPrefix, GrpcLogFileName), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(path.Join(clientLogDir, "gc.log"), 100, 7, 14, false, false); err != nil {
+	if gcLogger, err := CreateLogger(getLogFilePath(DfdaemonPrefix, GCLogFileName), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGcLogger(gcLogger.Sugar())
@@ -157,7 +150,7 @@ func InitDfget(console bool) error {
 		return nil
 	}
 
-	if dfgetLogger, err := CreateLogger(path.Join(clientLogDir, "dfget.log"), 300, -1, -1, false, false); err != nil {
+	if dfgetLogger, err := CreateLogger(getLogFilePath(DfdaemonPrefix, DfgetLogFileName), 300, -1, -1, false, false); err != nil {
 		return err
 	} else {
 		log := dfgetLogger.Sugar()
@@ -166,4 +159,12 @@ func InitDfget(console bool) error {
 	}
 
 	return nil
+}
+
+func getLogFilePath(prefix, name string) string {
+	return path.Join(defaultLogDir, fmt.Sprintf("%s-%s", prefix, name))
+}
+
+func getStatLogFilePath(name string) string {
+	return path.Join(defaultLogDir, "stat", name)
 }

@@ -30,8 +30,23 @@ import (
 )
 
 const (
-	CoreLogFileName = "core.log"
-	GrpcLogFileName = "grpc.log"
+	CoreLogFileName       = "core.log"
+	GrpcLogFileName       = "grpc.log"
+	GCLogFileName         = "gc.log"
+	DfgetLogFileName      = "dfget.log"
+	DownloaderLogFileName = "downloader.log"
+)
+
+const (
+	ManagerPrefix   = "manager"
+	CDNPrefix       = "cdn"
+	SchedulerPrefix = "scheduler"
+	DfdaemonPrefix  = "dfdaemon"
+)
+
+const (
+	StatSeedLogFileName = "seed.log"
+	StatPeerLogFileName = "peer.log"
 )
 
 var coreLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)
