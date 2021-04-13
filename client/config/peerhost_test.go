@@ -228,7 +228,7 @@ port2:
 timeout: 3m
 limit: 2Mib
 type: tcp
-proxy1: ./testdata/config/proxy.yml
+proxy1: ./testdata/config/proxy.yaml
 proxy2: 
   registry_mirror:
     url: https://index.docker.io
@@ -422,7 +422,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 	}
 
 	peerHostOptionYAML := &PeerHostOption{}
-	if err := peerHostOptionYAML.Load("./testdata/config/daemon.yml"); err != nil {
+	if err := peerHostOptionYAML.Load("./testdata/config/daemon.yaml"); err != nil {
 		t.Fatal(err)
 	}
 	// s1, _ := json.MarshalIndent(peerHostOption, "", "\t")
