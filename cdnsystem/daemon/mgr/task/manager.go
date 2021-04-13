@@ -36,7 +36,7 @@ import (
 )
 
 func init() {
-	// Ensure that Manager implements the SeedTaskMgr interface
+	// Ensure that Manager implements the SeedTaskMgr and gcExecutor interfaces
 	var manager *Manager = nil
 	var _ mgr.SeedTaskMgr = manager
 	var _ gc.Executor = manager
@@ -73,23 +73,24 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgr
 	return taskMgr, nil
 }
 
-func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.SeedPiece,
-	err error) {
+func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.SeedPiece, err error) {
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
-		logger.WithTaskID(req.TaskId).Infof("failed to add or update task with req %+v: %v", req, err)
+		logger.WithTaskID(req.TaskId).Infof("failed to add or update task with req: %+v: %v", req, err)
 		return nil, err
 	}
+	logger.WithTaskID(task.TaskId).Debugf("success get task info: %+v", task)
+
 	// update accessTime for taskId
 	if err := tm.accessTimeMap.Add(task.TaskId, time.Now()); err != nil {
 		logger.WithTaskID(task.TaskId).Warnf("failed to update accessTime: %v", err)
 	}
-	logger.WithTaskID(task.TaskId).Debugf("success get task info: %+v", task)
 
 	// trigger CDN
 	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
 		return nil, errors.Wrapf(err, "failed to trigger cdn")
 	}
+	logger.WithTaskID(task.TaskId).Infof("successfully trigger cdn sync action")
 	// watch seed progress
 	return tm.progressMgr.WatchSeedProgress(ctx, task.TaskId)
 }
@@ -108,20 +109,19 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 	defer synclock.UnLock(task.TaskId, false)
 	// reconfirm
 	if !task.IsFrozen() {
-		logger.WithTaskID(task.TaskId).Infof("reconfirm seedTask is running or has been downloaded successfully, " +
-			"status:%s", task.CdnStatus)
+		logger.WithTaskID(task.TaskId).Infof("reconfirm find seedTask is running or has been downloaded successfully, status:%s", task.CdnStatus)
 		return nil
 	}
 	if task.IsWait() {
 		tm.progressMgr.InitSeedProgress(ctx, task.TaskId)
-		logger.WithTaskID(task.TaskId).Infof("success to init seed progress")
+		logger.WithTaskID(task.TaskId).Infof("successfully init seed progress for task")
 	}
 
 	updatedTask, err := tm.updateTask(task.TaskId, &types.SeedTask{
-		CdnStatus: types.TaskInfoCdnStatusRUNNING,
+		CdnStatus: types.TaskInfoCdnStatusRunning,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "update task failed")
+		return errors.Wrapf(err, "failed to update task")
 	}
 	// triggerCDN goroutine
 	go func() {
@@ -137,19 +137,18 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 			logger.WithTaskID(task.TaskId).Infof("success to update task cdn updatedTask:%+v", updatedTask)
 		}
 	}()
-	logger.WithTaskID(task.TaskId).Infof("success start cdn trigger")
 	return nil
 }
 
 func (tm *Manager) getTask(taskId string) (*types.SeedTask, error) {
 	if stringutils.IsBlank(taskId) {
-		return nil, errors.Wrap(cdnerrors.ErrEmptyValue, "taskId is empty")
+		return nil, errors.Wrap(cdnerrors.ErrInvalidValue, "taskId is empty")
 	}
 
 	v, err := tm.taskStore.Get(taskId)
 	if err != nil {
 		if errors.Cause(err) == dferrors.ErrDataNotFound {
-			return nil, errors.Wrapf(cdnerrors.ErrDataNotFound,"task not found")
+			return nil, errors.Wrapf(cdnerrors.ErrDataNotFound, "task not found")
 		}
 		return nil, err
 	}
@@ -161,11 +160,12 @@ func (tm *Manager) getTask(taskId string) (*types.SeedTask, error) {
 	if info, ok := v.(*types.SeedTask); ok {
 		return info, nil
 	}
-	return nil, errors.Wrapf(cdnerrors.ErrConvertFailed, "taskId %s: %v", taskId, v)
+	return nil, errors.Wrapf(cdnerrors.ErrConvertFailed, "origin object: %+v", v)
 }
 
 func (tm Manager) Get(ctx context.Context, taskId string) (*types.SeedTask, error) {
-	// todo locker
+	synclock.Lock(taskId, true)
+	defer synclock.UnLock(taskId, true)
 	return tm.getTask(taskId)
 }
 

@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
 	"fmt"
 	"os"
 	"strings"
@@ -52,7 +53,10 @@ func NewCdnSeedServer(cfg *config.Config, taskMgr mgr.SeedTaskMgr) (*CdnSeedServ
 	}, nil
 }
 
-func constructRequest(req *cdnsystem.SeedRequest) *types.TaskRegisterRequest {
+func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRequest, error) {
+	if err := checkSeedRequestParams(req); err != nil {
+		return nil, err
+	}
 	meta := req.UrlMeta
 	header := make(map[string]string)
 	if meta != nil {
@@ -72,11 +76,11 @@ func constructRequest(req *cdnsystem.SeedRequest) *types.TaskRegisterRequest {
 		Md5:    header["md5"],
 		TaskId: req.TaskId,
 		Filter: strings.Split(req.Filter, "&"),
-	}
+	}, nil
 }
 
-// validateSeedRequestParams validates the params of SeedRequest.
-func validateSeedRequestParams(req *cdnsystem.SeedRequest) error {
+// checkSeedRequestParams check the params of SeedRequest.
+func checkSeedRequestParams(req *cdnsystem.SeedRequest) error {
 	if !urlutils.IsValidURL(req.Url) {
 		return errors.Errorf("resource url:%s is invalid", req.Url)
 	}
@@ -97,22 +101,23 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds, request:%+v %v", req, err)
 		}
 	}()
-	if err := validateSeedRequestParams(req); err != nil {
+	logger.Infof("obtain seeds request: %+v", req)
+	registerRequest, err := constructRegisterRequest(req)
+	if err != nil {
 		return dferrors.Newf(dfcodes.BadRequest, "bad seed request: %v", err)
 	}
-	registerRequest := constructRequest(req)
-
 	// register task
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
+
 	if err != nil {
 		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "failed to register seed task:%v", err)
 	}
-	peerId := fmt.Sprintf("%s-%s_%s", iputils.HostName, req.TaskId, "CDN")
 	task, err := css.taskMgr.Get(ctx, req.TaskId)
+	if err != nil {
+		return err
+	}
+	peerId := cdnutil.GenCdnPeerId(req.TaskId)
 	for piece := range pieceChan {
-		if err != nil {
-			return err
-		}
 		psc <- &cdnsystem.PieceSeed{
 			PeerId:     peerId,
 			SeederName: iputils.HostName,
@@ -153,7 +158,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 			logger.WithTaskID(req.TaskId).Errorf("failed to get piece tasks, req=%+v :%v", req, err)
 		}
 	}()
-	if err := validateGetPieceTasksRequestParams(req); err != nil {
+	if err := checkPieceTasksRequestParams(req); err != nil {
 		return nil, dferrors.Newf(dfcodes.BadRequest, "validate seed request fail: %v", err)
 	}
 	task, err := css.taskMgr.Get(ctx, req.TaskId)
@@ -199,18 +204,18 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	}, nil
 }
 
-func validateGetPieceTasksRequestParams(req *base.PieceTaskRequest) error {
+func checkPieceTasksRequestParams(req *base.PieceTaskRequest) error {
 	if stringutils.IsBlank(req.TaskId) {
-		return errors.Wrap(dferrors.ErrEmptyValue, "taskId")
+		return errors.Wrap(cdnerrors.ErrInvalidValue, "taskId is nil")
 	}
 	if stringutils.IsBlank(req.SrcPid) {
-		return errors.Wrapf(dferrors.ErrEmptyValue, "src peer id")
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "src peer id is nil")
 	}
 	if req.StartNum < 0 {
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "invalid starNum %d", req.StartNum)
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "invalid starNum %d", req.StartNum)
 	}
 	if req.Limit < 0 {
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "invalid limit %d", req.Limit)
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "invalid limit %d", req.Limit)
 	}
 	return nil
 }

@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-package mgr
+package cdnutil
 
 import (
-	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"fmt"
 )
 
-
-// CDNMgr as an interface defines all operations against CDN and
-// operates on the underlying files stored on the local disk, etc.
-type CDNMgr interface {
-
-	// TriggerCDN will trigger CDN to download the resource from sourceUrl.
-	TriggerCDN(ctx context.Context, taskInfo *types.SeedTask) (*types.SeedTask, error)
-
-	// Delete the cdn meta with specified taskID.
-	// The file on the disk will be deleted when the force is true.
-	Delete(ctx context.Context, taskID string, force bool) error
+func GenCdnPeerId(taskId string) string {
+	return fmt.Sprintf("%s-%s_%s", iputils.HostName, taskId, "CDN")
 }

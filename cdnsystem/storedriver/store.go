@@ -137,7 +137,7 @@ func (s *Store) PutBytes(ctx context.Context, raw *Raw, data []byte) error {
 func (s *Store) Remove(ctx context.Context, raw *Raw) error {
 	if raw == nil || (stringutils.IsBlank(raw.Key) &&
 		stringutils.IsBlank(raw.Bucket)) {
-		return errors.Wrapf(cdnerrors.ErrEmptyValue, "cannot set both key and bucket empty at the same time")
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "cannot set both key and bucket empty at the same time")
 	}
 	return s.driver.Remove(ctx, raw)
 }
@@ -181,7 +181,7 @@ func (s *Store) GetGcConfig(ctx context.Context) *GcConfig {
 
 func checkEmptyKey(raw *Raw) error {
 	if raw == nil || stringutils.IsBlank(raw.Key) {
-		return cdnerrors.ErrEmptyValue
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "raw key is empty")
 	}
 	return nil
 }

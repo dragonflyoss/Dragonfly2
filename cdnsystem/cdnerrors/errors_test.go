@@ -138,42 +138,6 @@ func (s *ErrorTestSuite) TestIsDownloadFail() {
 	}
 }
 
-func (s *ErrorTestSuite) TestIsEmptyValue() {
-	type args struct {
-		err error
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "equal",
-			args: args{
-				err: ErrEmptyValue,
-			},
-			want: true,
-		}, {
-			name: "wrap",
-			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrEmptyValue, "wrap err"), "wapp err"),
-			},
-			want: true,
-		}, {
-			name: "notEqual",
-			args: args{
-				err: errors.Wrapf(ErrInvalidValue, "invaid"),
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			s.Equal(tt.want, IsEmptyValue(tt.args.err))
-		})
-	}
-}
-
 func (s *ErrorTestSuite) TestIsFileLengthNotEqual() {
 	type args struct {
 		err error
