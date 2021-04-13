@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ template "dragonfly.dfdaemon.fullname" . }}
+  labels:
+    app: {{ template "dragonfly.dfdaemon.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    component: "{{ .Values.dfdaemon.name }}"
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  {{- if .Values.dfdaemon.deploymentAnnotations }}
+  annotations:
+{{ toYaml .Values.dfdaemon.deploymentAnnotations | indent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.dfdaemon.replicas }}
+  selector:
+    matchLabels:
+      app: {{ template "dragonfly.dfdaemon.fullname" . }}
+      component: "{{ .Values.dfdaemon.name }}"
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "dragonfly.dfdaemon.fullname" . }}
+        component: "{{ .Values.dfdaemon.name }}"
+        release: {{ .Release.Name }}
+        {{- if .Values.dfdaemon.podAnnotations }}
+      annotations:
+{{ toYaml .Values.dfdaemon.podAnnotations | indent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.dfdaemon.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.dfdaemon.nodeSelector | indent 8 }}
+      {{- end }}
+      {{- if .Values.dfdaemon.tolerations }}
+      tolerations:
+{{ toYaml .Values.dfdaemon.tolerations | indent 8 }}
+      {{- end }}
+      {{- if .Values.dfdaemon.affinity }}
+      affinity:
+{{ toYaml .Values.dfdaemon.affinity | indent 8 }}
+      {{- end }}
+      {{- if quote .Values.dfdaemon.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.dfdaemon.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.Values.dfdaemon.priorityClassName) }}
+      priorityClassName: {{ .Values.dfdaemon.priorityClassName }}
+      {{- end }}
+      containers:
+      - name: dfdaemon
+        image: "{{ .Values.dfdaemon.image }}:{{ .Values.dfdaemon.tag }}"
+        imagePullPolicy: {{ .Values.dfdaemon.pullPolicy | quote }}
+        resources:
+{{ toYaml .Values.dfdaemon.resources | indent 12 }}
+        ports:
+        - containerPort: 65001
+          hostPort: 65001
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: "/etc/dragonfly"
+      volumes:
+      - name: config
+        configMap:
+          name: {{ template "dragonfly.dfdaemon.fullname" . }}
+          items:
+          - key: dfget-daemon.yaml
+            path: dfget-daemon.yaml
