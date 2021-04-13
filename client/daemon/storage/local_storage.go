@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
@@ -197,6 +198,10 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	var pieces []*base.PieceInfo
 	t.RLock()
 	defer t.RUnlock()
+	if t.TotalPieces > 0 && req.StartNum >= t.TotalPieces {
+		logger.Errorf("invalid start num: %d", req.StartNum)
+		return nil, dferrors.ErrInvalidArgument
+	}
 	for i := int32(0); i < req.Limit; i++ {
 		if piece, ok := t.Pieces[req.StartNum+i]; ok {
 			pieces = append(pieces, &base.PieceInfo{

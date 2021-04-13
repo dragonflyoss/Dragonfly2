@@ -139,6 +139,7 @@ type DownloadOption struct {
 	PerPeerRateLimit clientutil.RateLimit `json:"per_peer_rate_limit" yaml:"per_peer_rate_limit"`
 	DownloadGRPC     ListenOption         `json:"download_grpc" yaml:"download_grpc"`
 	PeerGRPC         ListenOption         `json:"peer_grpc" yaml:"peer_grpc"`
+	CalculateDigest  bool                 `json:"calculate_digest" yaml:"calculate_digest"`
 }
 
 type ProxyOption struct {
