@@ -14,7 +14,6 @@ data:
       port: {{ .Values.scheduler.containerPort }}
     worker:
 {{ toYaml .Values.scheduler.config.worker | indent 6 }}
-    scheduler:
     cdn:
       list:
         - - cdn-name: {{template "dragonfly.cdn.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
