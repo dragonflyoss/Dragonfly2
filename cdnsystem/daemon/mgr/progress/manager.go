@@ -19,10 +19,10 @@ package progress
 import (
 	"container/list"
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
@@ -103,8 +103,8 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskId string) (<-chan
 			}
 		}
 		if _, err := pm.progress.Get(taskId); err == nil {
-			close(seedCh)
 			chanList.Remove(ele)
+			close(seedCh)
 		}
 	}(ch, ele)
 	return ch, nil
@@ -152,18 +152,16 @@ func (pm *Manager) PublishTask(ctx context.Context, taskId string, task *types.S
 	if err != nil {
 		return errors.Wrap(err, "failed to get seed subscribers")
 	}
-	var wg sync.WaitGroup
 	// unwatch
 	for e := chanList.Front(); e != nil; e = e.Next() {
-		wg.Add(1)
-		sub := e.Value.(chan *types.SeedPiece)
-		go func(sub chan *types.SeedPiece, e *list.Element) {
-			defer wg.Done()
-			close(sub)
-			chanList.Remove(e)
-		}(sub, e)
+		chanList.Remove(e)
+		sub, ok := e.Value.(chan *types.SeedPiece)
+		if !ok {
+			logger.Warnf("failed to convert chan seedPiece, e.Value:%v", e.Value)
+			continue
+		}
+		close(sub)
 	}
-	wg.Wait()
 	return nil
 }
 
@@ -171,27 +169,31 @@ func (pm *Manager) Clear(ctx context.Context, taskID string) error {
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
-	if err != nil && !cdnerrors.IsDataNotFound(err) {
+	if err != nil && errors.Cause(err) != dferrors.ErrDataNotFound {
 		return errors.Wrap(err, "failed to get seed subscribers")
 	}
 	if chanList != nil {
 		for e := chanList.Front(); e != nil; e = e.Next() {
-			sub := e.Value.(chan *types.SeedPiece)
-			close(sub)
 			chanList.Remove(e)
+			sub, ok := e.Value.(chan *types.SeedPiece)
+			if !ok {
+				logger.Warnf("failed to convert chan seedPiece, e.Value:%v", e.Value)
+				continue
+			}
+			close(sub)
 		}
 		chanList = nil
 	}
 	err = pm.seedSubscribers.Remove(taskID)
-	if err != nil && !cdnerrors.IsDataNotFound(err) {
+	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
 		return errors.Wrap(err, "failed to clear seed subscribes")
 	}
 	err = pm.taskPieceMetaRecords.Remove(taskID)
-	if err != nil && !cdnerrors.IsDataNotFound(err) {
+	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
 		return errors.Wrap(err, "failed to clear piece meta records")
 	}
 	err = pm.progress.Remove(taskID)
-	if err != nil && !cdnerrors.IsDataNotFound(err) {
+	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
 		return errors.Wrap(err, "failed to clear progress record")
 	}
 	return nil
