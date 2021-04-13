@@ -283,7 +283,7 @@ func runDfget() error {
 	var (
 		result *dfdaemongrpc.DownResult
 	)
-	pb := progressbar.DefaultBytes(-1, "downloading")
+	pb := progressbar.DefaultBytes(-1, "Downloading")
 	for {
 		result, err = down.Recv()
 		if err != nil {
@@ -298,17 +298,25 @@ func runDfget() error {
 			pb.Set64(int64(result.CompletedLength))
 		}
 		if result.Done {
+			pb.Describe("Downloaded")
 			pb.Finish()
 			end = time.Now()
-			fmt.Printf("time cost: %dms\n", end.Sub(start).Milliseconds())
+			fmt.Printf("Task: %s\nPeer: %s\n", result.TaskId, result.PeerId)
+			fmt.Printf("Download success, time cost: %dms, length: %d\n", end.Sub(start).Milliseconds(), result.CompletedLength)
 			break
 		}
 	}
 	if err != nil {
 		start = time.Now()
-		logger.Errorf("download by dragonfly error: %s", err)
+		err = fmt.Errorf("download by dragonfly error: %s", err)
+		logger.Error(err)
 		if !dfgetConfig.NotBackSource {
-			return downloadFromSource(hdr)
+			if err = downloadFromSource(hdr); err != nil {
+				return err
+			}
+			end = time.Now()
+			fmt.Printf("Download from source success, time cost: %dms\n", end.Sub(start).Milliseconds())
+			return nil
 		} else {
 			logger.Warnf("back source disabled")
 		}
