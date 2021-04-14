@@ -27,9 +27,13 @@ type DigestReader interface {
 	Digest() string
 }
 
-func NewDigestReader(reader io.Reader, digest string) io.Reader {
+func NewDigestReader(reader io.Reader, digest ...string) io.Reader {
+	var d string
+	if len(digest) > 0 {
+		d = digest[0]
+	}
 	return &digestReader{
-		digest: digest,
+		digest: d,
 		// TODO support more digest method like sha1, sha256
 		hash: md5.New(),
 		r:    reader,
@@ -50,6 +54,7 @@ func (dr *digestReader) Read(p []byte) (int, error) {
 			logger.Warnf("digest not match, desired: %s, actual: %s", dr.digest, digest)
 			return n, ErrDigestNotMatch
 		}
+		logger.Debugf("digests match: %s", digest)
 	}
 	return n, err
 }

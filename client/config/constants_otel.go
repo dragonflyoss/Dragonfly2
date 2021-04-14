@@ -16,6 +16,7 @@ const (
 	AttributeGetPieceStartNum  = attribute.Key("d7y.peer.piece.start")
 	AttributeGetPieceLimit     = attribute.Key("d7y.peer.piece.limit")
 	AttributeGetPieceCount     = attribute.Key("d7y.peer.piece.count")
+	AttributeGetPieceRetry     = attribute.Key("d7y.peer.piece.retry")
 
 	SpanFilePeerTask   = "file-peer-task"
 	SpanStreamPeerTask = "stream-peer-task"

@@ -238,7 +238,7 @@ func (pm *pieceManager) processPieceFromSource(pt PeerTask,
 		}
 	}
 	if pm.calculateDigest {
-		reader = clientutil.NewDigestReader(reader, "")
+		reader = clientutil.NewDigestReader(reader)
 	}
 	n, err := pm.storageManager.WritePiece(
 		pt.Context(),

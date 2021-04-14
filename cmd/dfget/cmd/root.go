@@ -243,7 +243,8 @@ func runDfget() error {
 	// Check df daemon state, start a new daemon if necessary
 	daemonClient, err := checkAndSpawnDaemon(addr)
 	if err != nil {
-		return downloadFromSource(hdr)
+		logger.Errorf("connect daemon error: %s", err)
+		return downloadFromSource(hdr, err)
 	}
 
 	output, err := filepath.Abs(dfgetConfig.Output)
@@ -283,7 +284,7 @@ func runDfget() error {
 	var (
 		result *dfdaemongrpc.DownResult
 	)
-	pb := progressbar.DefaultBytes(-1, "downloading")
+	pb := progressbar.DefaultBytes(-1, "Downloading")
 	for {
 		result, err = down.Recv()
 		if err != nil {
@@ -298,20 +299,17 @@ func runDfget() error {
 			pb.Set64(int64(result.CompletedLength))
 		}
 		if result.Done {
+			pb.Describe("Downloaded")
 			pb.Finish()
 			end = time.Now()
-			fmt.Printf("time cost: %dms\n", end.Sub(start).Milliseconds())
+			fmt.Printf("Task: %s\nPeer: %s\n", result.TaskId, result.PeerId)
+			fmt.Printf("Download success, time cost: %dms, length: %d\n", end.Sub(start).Milliseconds(), result.CompletedLength)
 			break
 		}
 	}
 	if err != nil {
-		start = time.Now()
 		logger.Errorf("download by dragonfly error: %s", err)
-		if !dfgetConfig.NotBackSource {
-			return downloadFromSource(hdr)
-		} else {
-			logger.Warnf("back source disabled")
-		}
+		return downloadFromSource(hdr, err)
 	}
 	return err
 }
@@ -342,10 +340,22 @@ func initVerboseMode(verbose bool) {
 			logger.Warnf("serve go pprof error: %s", err)
 		}
 	}()
+	logger.Debugf("%#v", dfgetConfig)
 }
 
-func downloadFromSource(hdr map[string]string) (err error) {
-	logger.Infof("try to download from source")
+func downloadFromSource(hdr map[string]string, dferr error) (err error) {
+	if dfgetConfig.NotBackSource {
+		err = fmt.Errorf("dfget download error: %s, and back source disabled", dferr)
+		logger.Warnf("%s", err)
+		return err
+	}
+
+	var (
+		start = time.Now()
+		end   time.Time
+	)
+
+	fmt.Printf("dfget download error: %s, try to download from source", dferr)
 	var (
 		resourceClient source.ResourceClient
 		target         *os.File
@@ -374,12 +384,14 @@ func downloadFromSource(hdr map[string]string) (err error) {
 	}
 
 	written, err = io.Copy(target, response)
-	if err != nil {
-		logger.Errorf("copied %d bytes to %s, with error: %s",
-			written, dfgetConfig.Output, err)
-	} else {
+	if err == nil {
 		logger.Infof("copied %d bytes to %s", written, dfgetConfig.Output)
+		end = time.Now()
+		fmt.Printf("Download from source success, time cost: %dms\n", end.Sub(start).Milliseconds())
+		return nil
 	}
+	logger.Errorf("copied %d bytes to %s, with error: %s",
+		written, dfgetConfig.Output, err)
 	return err
 }
 
@@ -406,7 +418,7 @@ func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 	err = retry.Do(func() error {
 		dc, err = probeDaemon(addr)
 		return err
-	})
+	}, retry.Attempts(3))
 	return dc, err
 }
 
