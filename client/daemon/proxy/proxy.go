@@ -31,6 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/golang/groupcache/lru"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/semaphore"
@@ -64,6 +65,9 @@ type Proxy struct {
 
 	// peerHost is the peer host info
 	peerHost *scheduler.PeerHost
+
+	// whiteList is the proxy white list
+	whiteList []*config.WhiteList
 
 	// semaphore is used to limit max concurrency when process http request
 	semaphore *semaphore.Weighted
@@ -131,6 +135,15 @@ func WithRules(rules []*config.Proxy) Option {
 	}
 }
 
+// WithWhiteList sets the proxy whitelist
+func WithWhiteList(whiteList []*config.WhiteList) Option {
+	return func(p *Proxy) *Proxy {
+		p.whiteList = whiteList
+		return p
+	}
+}
+
+// NewFromConfig returns a new transparent proxy from the given properties
 // WithMaxConcurrency sets max concurrent for process http request
 func WithMaxConcurrency(con int64) Option {
 	return func(p *Proxy) *Proxy {
@@ -160,6 +173,15 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// check whiteList
+	if !proxy.checkWhiteList(r) {
+		status := http.StatusUnauthorized
+		http.Error(w, http.StatusText(status), status)
+		logger.Debugf("not in whitelist: %s", r.Host)
+		return
+	}
+
+	// limit max concurrency
 	if proxy.semaphore != nil {
 		err := proxy.semaphore.Acquire(r.Context(), 1)
 		if err != nil {
@@ -169,6 +191,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		defer proxy.semaphore.Release(1)
 	}
+
 	if r.Method == http.MethodConnect {
 		// handle https proxy requests
 		proxy.handleHTTPS(w, r)
@@ -179,6 +202,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// handle http proxy requests
 		proxy.handleHTTP(w, r)
 	}
+
 }
 
 func (proxy *Proxy) handleHTTP(w http.ResponseWriter, req *http.Request) {
@@ -320,6 +344,34 @@ func (proxy *Proxy) remoteConfig(host string) *tls.Config {
 func (proxy *Proxy) setRules(rules []*config.Proxy) error {
 	proxy.rules = rules
 	return nil
+}
+
+// checkWhiteList check proxy white list.
+func (proxy *Proxy) checkWhiteList(r *http.Request) bool {
+	whiteList := proxy.whiteList
+
+	// No whitelist
+	if len(whiteList) <= 0 {
+		return true
+	}
+
+	for _, v := range whiteList {
+		if v.Host == r.URL.Hostname() {
+			// No ports
+			if len(v.Ports) <= 0 {
+				return true
+			}
+
+			// Hit ports
+			if stringutils.Contains(v.Ports, r.URL.Port()) {
+				return true
+			}
+
+			return false
+		}
+	}
+
+	return false
 }
 
 // shouldUseDragonfly returns whether we should use dragonfly to proxy a request. It

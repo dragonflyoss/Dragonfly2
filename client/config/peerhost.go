@@ -121,6 +121,7 @@ type SchedulerOption struct {
 }
 
 type HostOption struct {
+	// SecurityDomain is the security domain
 	SecurityDomain string `json:"security_domain" yaml:"security_domain"`
 	// Peerhost location for scheduler
 	Location string `json:"location" yaml:"location"`
@@ -144,9 +145,10 @@ type DownloadOption struct {
 
 type ProxyOption struct {
 	// WARNING: when add more option, please update ProxyOption.unmarshal function
-	ListenOption   `yaml:",inline"`
+	ListenOption   `json:",inline" yaml:",inline"`
 	MaxConcurrency int64           `json:"max_concurrency" yaml:"max_concurrency"`
 	RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
+	WhiteList      []*WhiteList    `json:"white_list" yaml:"white_list"`
 	Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
 	HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
 }
@@ -230,6 +232,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 		RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
 		Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
 		HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
+		WhiteList      []*WhiteList    `json:"white_list" yaml:"white_list"`
 	}{}
 
 	if err := unmarshal(b, &pt); err != nil {
@@ -240,6 +243,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 	p.RegistryMirror = pt.RegistryMirror
 	p.Proxies = pt.Proxies
 	p.HijackHTTPS = pt.HijackHTTPS
+	p.WhiteList = pt.WhiteList
 	p.MaxConcurrency = pt.MaxConcurrency
 
 	return nil
@@ -646,5 +650,10 @@ type HijackHost struct {
 
 // TelemetryOption is the option for telemetry
 type TelemetryOption struct {
-	Jaeger string `json:"jaeger" yaml:"jaeger"`
+	Jaeger string `yaml:"jaeger" json:"jaeger"`
+}
+
+type WhiteList struct {
+	Host  string   `yaml:"host" json:"host"`
+	Ports []string `yaml:"ports" json:"ports"`
 }
