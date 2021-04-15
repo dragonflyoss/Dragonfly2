@@ -26,15 +26,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/groupcache/lru"
-	"github.com/pkg/errors"
-
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/golang/groupcache/lru"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/semaphore"
 )
 
 var okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
@@ -68,12 +68,15 @@ type Proxy struct {
 
 	// whiteList is the proxy white list
 	whiteList []*config.WhiteList
+
+	// semaphore is used to limit max concurrency when process http request
+	semaphore *semaphore.Weighted
 }
 
 // Option is a functional option for configuring the proxy
 type Option func(p *Proxy) *Proxy
 
-// WithHTTPSHosts sets the rules for hijacking https requests
+// WithPeerHost sets the *scheduler.PeerHost
 func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerHost = peerHost
@@ -81,7 +84,7 @@ func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 	}
 }
 
-// WithHTTPSHosts sets the rules for hijacking https requests
+// WithPeerTaskManager sets the peer.PeerTaskManager
 func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerTaskManager = peerTaskManager
@@ -105,8 +108,7 @@ func WithRegistryMirror(r *config.RegistryMirror) Option {
 	}
 }
 
-// WithCertFromFile is a convenient wrapper for WithCert, to read certificate from
-// the given file
+// WithCert sets the certificate
 func WithCert(cert *tls.Certificate) Option {
 	return func(p *Proxy) *Proxy {
 		p.cert = cert
@@ -142,6 +144,17 @@ func WithWhiteList(whiteList []*config.WhiteList) Option {
 }
 
 // NewFromConfig returns a new transparent proxy from the given properties
+// WithMaxConcurrency sets max concurrent for process http request
+func WithMaxConcurrency(con int64) Option {
+	return func(p *Proxy) *Proxy {
+		if con > 0 {
+			p.semaphore = semaphore.NewWeighted(con)
+		}
+		return p
+	}
+}
+
+// NewProxy returns a new transparent proxy from the given options
 func NewProxy(options ...Option) (*Proxy, error) {
 	return NewProxyWithOptions(options...)
 }
@@ -166,6 +179,17 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(status), status)
 		logger.Debugf("not in whitelist: %s", r.Host)
 		return
+	}
+
+	// limit max concurrency
+	if proxy.semaphore != nil {
+		err := proxy.semaphore.Acquire(r.Context(), 1)
+		if err != nil {
+			logger.Errorf("acquire semaphore error: %v", err)
+			http.Error(w, err.Error(), http.StatusTooManyRequests)
+			return
+		}
+		defer proxy.semaphore.Release(1)
 	}
 
 	if r.Method == http.MethodConnect {

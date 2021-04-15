@@ -215,7 +215,12 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	var firstPiece int32
 	select {
 	case <-s.ctx.Done():
-		err := errors.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
+		var err error
+		if s.failedReason != "" {
+			err = errors.Errorf(s.failedReason)
+		} else {
+			err = errors.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
+		}
 		s.Errorf("%s", err)
 		return nil, nil, err
 	case <-s.done:

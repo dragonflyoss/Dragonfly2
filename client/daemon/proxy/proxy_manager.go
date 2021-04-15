@@ -59,6 +59,7 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.PeerTask
 		WithPeerTaskManager(peerTaskManager),
 		WithRules(proxies),
 		WithWhiteList(whiteList),
+		WithMaxConcurrency(opts.MaxConcurrency),
 	}
 
 	if registry != nil {
