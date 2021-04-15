@@ -101,7 +101,7 @@ func init() {
 	flagSet.IntVar(&daemonConfig.Upload.ListenOption.TCPListen.PortRange.End, "upload-port-end", daemonConfig.Upload.ListenOption.TCPListen.PortRange.End, "the address that daemon will listen on for peer upload")
 	flagSet.StringVar(&daemonConfig.PidFile, "pid", daemonConfig.PidFile, "dfdaemon pid file location")
 	flagSet.StringVar(&daemonConfig.LockFile, "lock", daemonConfig.LockFile, "dfdaemon lock file location")
-	flagSet.StringVar(&daemonConfig.Host.SecurityDomain, "security-domain", "", "peer security domain for scheduler")
+	flagSet.StringVar(&daemonConfig.Host.SecurityDomain, "security-domain", daemonConfig.Host.SecurityDomain, "peer security domain for scheduler")
 	flagSet.StringVar(&daemonConfig.Host.Location, "location", daemonConfig.Host.Location, "peer location for scheduler")
 	flagSet.StringVar(&daemonConfig.Host.IDC, "idc", daemonConfig.Host.IDC, "peer idc for scheduler")
 	flagSet.StringVar(&daemonConfig.Host.NetTopology, "net-topology", daemonConfig.Host.NetTopology, "peer net topology for scheduler")
@@ -137,6 +137,16 @@ func initDaemonConfig(cfgPath string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	fmt.Println("11111111")
+	fmt.Println(cfgPath)
+	fmt.Println("11111111")
+
+	daemonConfig.Load(cfgPath)
+	fmt.Println("222222222")
+	s, _ := json.MarshalIndent(daemonConfig, "", "  ")
+	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
+	fmt.Println("222222222")
 
 	// Load from config file
 	if err := daemonConfig.Load(cfgPath); err != nil {

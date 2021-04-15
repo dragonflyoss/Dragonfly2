@@ -67,7 +67,7 @@ type Proxy struct {
 	peerHost *scheduler.PeerHost
 
 	// whiteList is the proxy white list
-	whiteList []*config.WhiteListOption
+	whiteList []*config.WhiteList
 }
 
 // Option is a functional option for configuring the proxy
@@ -134,7 +134,7 @@ func WithRules(rules []*config.Proxy) Option {
 }
 
 // WithWhiteList sets the proxy whitelist
-func WithWhiteList(whiteList []*config.WhiteListOption) Option {
+func WithWhiteList(whiteList []*config.WhiteList) Option {
 	return func(p *Proxy) *Proxy {
 		p.whiteList = whiteList
 		return p
@@ -161,22 +161,24 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// check whiteList
-	if proxy.checkWhiteList(r) {
-		if r.Method == http.MethodConnect {
-			// handle https proxy requests
-			proxy.handleHTTPS(w, r)
-		} else if r.URL.Scheme == "" {
-			// handle direct requests
-			proxy.directHandler.ServeHTTP(w, r)
-		} else {
-			// handle http proxy requests
-			proxy.handleHTTP(w, r)
-		}
+	if !proxy.checkWhiteList(r) {
+		status := http.StatusUnauthorized
+		http.Error(w, http.StatusText(status), status)
+		logger.Debugf("not in whitelist: %s", r.Host)
+		return
 	}
 
-	status := http.StatusUnauthorized
-	http.Error(w, http.StatusText(status), status)
-	logger.Debugf("not in whitelist: %s", r.Host)
+	if r.Method == http.MethodConnect {
+		// handle https proxy requests
+		proxy.handleHTTPS(w, r)
+	} else if r.URL.Scheme == "" {
+		// handle direct requests
+		proxy.directHandler.ServeHTTP(w, r)
+	} else {
+		// handle http proxy requests
+		proxy.handleHTTP(w, r)
+	}
+
 }
 
 func (proxy *Proxy) handleHTTP(w http.ResponseWriter, req *http.Request) {
@@ -324,22 +326,28 @@ func (proxy *Proxy) setRules(rules []*config.Proxy) error {
 func (proxy *Proxy) checkWhiteList(r *http.Request) bool {
 	whiteList := proxy.whiteList
 
-	if len(whiteList) > 0 {
-		for _, v := range whiteList {
-			if v.Host == r.URL.Hostname() {
-				if len(v.Ports) > 0 {
-					if stringutils.Contains(v.Ports, r.URL.Port()) {
-						return true
-					}
-					return false
-				}
-				return true
-			}
-		}
-		return false
+	// No whitelist
+	if len(whiteList) <= 0 {
+		return true
 	}
 
-	return true
+	for _, v := range whiteList {
+		if v.Host == r.URL.Hostname() {
+			// No ports
+			if len(v.Ports) <= 0 {
+				return true
+			}
+
+			// Hit ports
+			if stringutils.Contains(v.Ports, r.URL.Port()) {
+				return true
+			}
+
+			return false
+		}
+	}
+
+	return false
 }
 
 // shouldUseDragonfly returns whether we should use dragonfly to proxy a request. It

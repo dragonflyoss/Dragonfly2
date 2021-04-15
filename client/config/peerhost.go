@@ -121,6 +121,7 @@ type SchedulerOption struct {
 }
 
 type HostOption struct {
+	// SecurityDomain is the security domain
 	SecurityDomain string `json:"security_domain" yaml:"security_domain"`
 	// Peerhost location for scheduler
 	Location string `json:"location" yaml:"location"`
@@ -143,11 +144,11 @@ type DownloadOption struct {
 }
 
 type ProxyOption struct {
-	ListenOption   `yaml:",inline"`
-	RegistryMirror *RegistryMirror    `json:"registry_mirror" yaml:"registry_mirror"`
-	Proxies        []*Proxy           `json:"proxies" yaml:"proxies"`
-	HijackHTTPS    *HijackConfig      `json:"hijack_https" yaml:"hijack_https"`
-	WhiteList      []*WhiteListOption `json:"white_list" yaml:"white_list"`
+	ListenOption   `json:",inline" yaml:",inline"`
+	RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
+	WhiteList      []*WhiteList    `json:"white_list" yaml:"white_list"`
+	Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
+	HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
 }
 
 func (p *ProxyOption) UnmarshalJSON(b []byte) error {
@@ -228,6 +229,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 		RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
 		Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
 		HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
+		WhiteList      []*WhiteList    `json:"white_list" yaml:"white_list"`
 	}{}
 
 	if err := unmarshal(b, &pt); err != nil {
@@ -238,6 +240,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 	p.RegistryMirror = pt.RegistryMirror
 	p.Proxies = pt.Proxies
 	p.HijackHTTPS = pt.HijackHTTPS
+	p.WhiteList = pt.WhiteList
 
 	return nil
 }
@@ -646,7 +649,7 @@ type TelemetryOption struct {
 	Jaeger string `yaml:"jaeger" json:"jaeger"`
 }
 
-type WhiteListOption struct {
+type WhiteList struct {
 	Host  string   `yaml:"host" json:"host"`
 	Ports []string `yaml:"ports" json:"ports"`
 }
