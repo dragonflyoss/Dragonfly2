@@ -138,16 +138,6 @@ func initDaemonConfig(cfgPath string) {
 		os.Exit(1)
 	}
 
-	fmt.Println("11111111")
-	fmt.Println(cfgPath)
-	fmt.Println("11111111")
-
-	daemonConfig.Load(cfgPath)
-	fmt.Println("222222222")
-	s, _ := json.MarshalIndent(daemonConfig, "", "  ")
-	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
-	fmt.Println("222222222")
-
 	// Load from config file
 	if err := daemonConfig.Load(cfgPath); err != nil {
 		fmt.Println(err)
