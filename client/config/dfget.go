@@ -97,9 +97,9 @@ type ClientOption struct {
 	Verbose bool `json:"verbose,omitempty"`
 
 	// Config file paths,
-	// default:["/etc/dragonfly/dfget.yml","/etc/dragonfly.conf"].
+	// default:["/etc/dragonfly/dfget.yaml","/etc/dragonfly.conf"].
 	//
-	// NOTE: It is recommended to use `/etc/dragonfly/dfget.yml` as default,
+	// NOTE: It is recommended to use `/etc/dragonfly/dfget.yaml` as default,
 	// and the `/etc/dragonfly.conf` is just to ensure compatibility with previous versions.
 	//ConfigFiles []string `json:"-"`
 

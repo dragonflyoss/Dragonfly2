@@ -238,6 +238,8 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	} else {
 		attr[headers.TransferEncoding] = "chunked"
 	}
+	attr["X-Dragonfly-Task"] = s.taskId
+	attr["X-Dragonfly-Peer"] = s.peerId
 
 	go func(first int32) {
 		defer func() {
@@ -259,13 +261,18 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 			if desired == cur {
 				for {
 					delete(cache, desired)
+					_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
+					span.SetAttributes(config.AttributePiece.Int(int(desired)))
 					wrote, err = s.writeTo(writer, desired)
 					if err != nil {
+						span.RecordError(err)
+						span.End()
 						s.Errorf("write to pipe error: %s", err)
 						_ = pw.CloseWithError(err)
 						return
 					}
 					s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
+					span.End()
 					desired++
 					cached := cache[desired]
 					if !cached {
@@ -284,6 +291,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 			select {
 			case <-s.ctx.Done():
 				s.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
+				s.span.RecordError(s.ctx.Err())
 				if err := pw.CloseWithError(s.ctx.Err()); err != nil {
 					s.Errorf("CloseWithError failed: %s", err)
 				}
@@ -295,13 +303,18 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 						pw.Close()
 						return
 					}
+					_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
+					span.SetAttributes(config.AttributePiece.Int(int(desired)))
 					wrote, err = s.writeTo(pw, desired)
 					if err != nil {
+						span.RecordError(err)
+						span.End()
 						s.span.RecordError(err)
 						s.Errorf("write to pipe error: %s", err)
 						_ = pw.CloseWithError(err)
 						return
 					}
+					span.End()
 					s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
 					desired++
 				}

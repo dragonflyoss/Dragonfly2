@@ -251,11 +251,17 @@ func (pt *peerTask) pullSinglePiece(pti PeerTask, cleanUnfinishedFunc func()) {
 	pt.Infof("single piece, dest peer id: %s, piece num: %d, size: %d",
 		pt.singlePiece.DstPid, pt.singlePiece.PieceInfo.PieceNum, pt.singlePiece.PieceInfo.RangeSize)
 
+	ctx, span := tracer.Start(pt.ctx, fmt.Sprintf(config.SpanDownloadPiece, pt.singlePiece.PieceInfo.PieceNum))
+	span.SetAttributes(config.AttributePiece.Int(int(pt.singlePiece.PieceInfo.PieceNum)))
+
 	pt.contentLength = int64(pt.singlePiece.PieceInfo.RangeSize)
 	if err := pt.callback.Init(pti); err != nil {
 		pt.failedReason = err.Error()
 		pt.failedCode = dfcodes.ClientError
 		cleanUnfinishedFunc()
+		span.RecordError(err)
+		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
+		span.End()
 		return
 	}
 
@@ -265,10 +271,14 @@ func (pt *peerTask) pullSinglePiece(pti PeerTask, cleanUnfinishedFunc func()) {
 		DstAddr: pt.singlePiece.DstAddr,
 		piece:   pt.singlePiece.PieceInfo,
 	}
-	if pt.pieceManager.DownloadPiece(pti, request) {
+	if pt.pieceManager.DownloadPiece(ctx, pti, request) {
 		pt.Infof("single piece download success")
+		span.SetAttributes(config.AttributePieceSuccess.Bool(true))
+		span.End()
 	} else {
 		// fallback to download from other peers
+		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
+		span.End()
 		pt.Warnf("single piece download failed, switch to download from other peers")
 		go pt.receivePeerPacket()
 		pt.pullPiecesFromPeers(pti, cleanUnfinishedFunc)
@@ -470,7 +480,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *D
 			pt.Debugf("peer download worker #%d receive piece task, "+
 				"dest peer id: %s, piece num: %d, range start: %d, range size: %d",
 				id, request.DstPid, request.piece.PieceNum, request.piece.RangeStart, request.piece.RangeSize)
-			success := pt.pieceManager.DownloadPiece(pti, request)
+			success := pt.pieceManager.DownloadPiece(ctx, pti, request)
 
 			span.SetAttributes(config.AttributePieceSuccess.Bool(success))
 			span.End()

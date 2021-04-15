@@ -1,7 +1,7 @@
 package config
 
 const (
-	DefaultConfigFilePath string = "/etc/dragonfly/manager.yml"
+	DefaultConfigFilePath string = "/etc/dragonfly/manager.yaml"
 )
 
 type Config struct {
