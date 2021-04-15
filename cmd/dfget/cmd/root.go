@@ -397,6 +397,7 @@ func downloadFromSource(hdr map[string]string, dferr error) (err error) {
 func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 	// Check pid
 	if ok, err := pidfile.IsProcessExistsByPIDFile(daemonConfig.PidFile); err != nil || !ok {
+		logger.Infof("daemon pid not found, try to start daemon")
 		if err = spawnDaemon(); err != nil {
 			return nil, fmt.Errorf("start daemon error: %s", err)
 		}
@@ -405,6 +406,7 @@ func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 	// Check socket
 	_, err := os.Stat(addr.Addr)
 	if os.IsNotExist(err) {
+		logger.Warnf("daemon addr not found, try to start daemon again")
 		if err = spawnDaemon(); err != nil {
 			return nil, fmt.Errorf("start daemon error: %s", err)
 		}

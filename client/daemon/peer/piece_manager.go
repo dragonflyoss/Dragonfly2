@@ -24,10 +24,11 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
+	cdnconfig "d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -37,7 +38,7 @@ import (
 
 type PieceManager interface {
 	DownloadSource(ctx context.Context, pt PeerTask, request *scheduler.PeerTaskRequest) error
-	DownloadPiece(peerTask PeerTask, request *DownloadPieceRequest) bool
+	DownloadPiece(ctx context.Context, peerTask PeerTask, request *DownloadPieceRequest) bool
 	ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error)
 }
 
@@ -93,37 +94,41 @@ func WithLimiter(limiter *rate.Limiter) func(*pieceManager) {
 	}
 }
 
-func (pm *pieceManager) DownloadPiece(pt PeerTask, request *DownloadPieceRequest) (success bool) {
+func (pm *pieceManager) DownloadPiece(ctx context.Context, pt PeerTask, request *DownloadPieceRequest) (success bool) {
 	var (
 		start = time.Now().UnixNano()
 		end   int64
 	)
 	defer func() {
+		_, rspan := tracer.Start(ctx, config.SpanPushPieceResult)
+		rspan.SetAttributes(config.AttributeWritePieceSuccess.Bool(success))
 		if success {
 			pm.pushSuccessResult(pt, request.DstPid, request.piece, start, end)
 		} else {
 			pm.pushFailResult(pt, request.DstPid, request.piece, start, end)
 		}
+		rspan.End()
 	}()
 
 	// 1. download piece from other peers
 	if pm.Limiter != nil {
-		if err := pm.Limiter.WaitN(pt.Context(), int(request.piece.RangeSize)); err != nil {
+		if err := pm.Limiter.WaitN(ctx, int(request.piece.RangeSize)); err != nil {
 			pt.Log().Errorf("require rate limit access error: %s", err)
 			return
 		}
 	}
+	_, span := tracer.Start(ctx, config.SpanWritePiece)
 	request.CalcDigest = pm.calculateDigest && request.piece.PieceMd5 != ""
 	r, c, err := pm.pieceDownloader.DownloadPiece(request)
 	if err != nil {
+		span.End()
 		pt.Log().Errorf("download piece failed, piece num: %d, error: %s", request.piece.PieceNum, err)
 		return
 	}
-	end = time.Now().UnixNano()
 	defer c.Close()
 
 	// 2. save to storage
-	n, err := pm.storageManager.WritePiece(pt.Context(), &storage.WritePieceRequest{
+	n, err := pm.storageManager.WritePiece(ctx, &storage.WritePieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
@@ -139,6 +144,9 @@ func (pm *pieceManager) DownloadPiece(pt PeerTask, request *DownloadPieceRequest
 		},
 		Reader: r,
 	})
+	end = time.Now().UnixNano()
+	span.RecordError(err)
+	span.End()
 	pt.AddTraffic(n)
 	if err != nil {
 		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s",
@@ -385,13 +393,13 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, request
 // and then use the DefaultPieceSize.
 func computePieceSize(length int64) int32 {
 	if length <= 0 || length <= 200*1024*1024 {
-		return config.DefaultPieceSize
+		return cdnconfig.DefaultPieceSize
 	}
 
 	gapCount := length / int64(100*1024*1024)
-	mpSize := (gapCount-2)*1024*1024 + config.DefaultPieceSize
-	if mpSize > config.DefaultPieceSizeLimit {
-		return config.DefaultPieceSizeLimit
+	mpSize := (gapCount-2)*1024*1024 + cdnconfig.DefaultPieceSize
+	if mpSize > cdnconfig.DefaultPieceSizeLimit {
+		return cdnconfig.DefaultPieceSizeLimit
 	}
 	return int32(mpSize)
 }

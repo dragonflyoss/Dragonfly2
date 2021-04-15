@@ -15,7 +15,8 @@ data:
     worker:
 {{ toYaml .Values.scheduler.config.worker | indent 6 }}
     cdn:
-      cdn-name: {{template "dragonfly.cdn.fullname" . }}
-      ip: {{template "dragonfly.cdn.fullname" . }}
-      rpc-port: {{ .Values.cdn.service.port }}
-      download-port: {{ .Values.cdn.service.nginxPort }}
+      list:
+        - - cdn-name: {{template "dragonfly.cdn.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+            ip: {{template "dragonfly.cdn.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+            rpc-port: {{ .Values.cdn.service.port }}
+            download-port: {{ .Values.cdn.service.nginxPort }}

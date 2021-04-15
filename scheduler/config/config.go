@@ -19,7 +19,7 @@ package config
 import "runtime"
 
 const (
-	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yml"
+	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yaml"
 )
 
 var config = createDefaultConfig()
