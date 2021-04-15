@@ -26,14 +26,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/groupcache/lru"
-	"github.com/pkg/errors"
-
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/golang/groupcache/lru"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/semaphore"
 )
 
 var okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
@@ -64,12 +64,15 @@ type Proxy struct {
 
 	// peerHost is the peer host info
 	peerHost *scheduler.PeerHost
+
+	// semaphore is used to limit max concurrency when process http request
+	semaphore *semaphore.Weighted
 }
 
 // Option is a functional option for configuring the proxy
 type Option func(p *Proxy) *Proxy
 
-// WithHTTPSHosts sets the rules for hijacking https requests
+// WithPeerHost sets the *scheduler.PeerHost
 func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerHost = peerHost
@@ -77,7 +80,7 @@ func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 	}
 }
 
-// WithHTTPSHosts sets the rules for hijacking https requests
+// WithPeerTaskManager sets the peer.PeerTaskManager
 func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerTaskManager = peerTaskManager
@@ -101,8 +104,7 @@ func WithRegistryMirror(r *config.RegistryMirror) Option {
 	}
 }
 
-// WithCertFromFile is a convenient wrapper for WithCert, to read certificate from
-// the given file
+// WithCert sets the certificate
 func WithCert(cert *tls.Certificate) Option {
 	return func(p *Proxy) *Proxy {
 		p.cert = cert
@@ -129,7 +131,17 @@ func WithRules(rules []*config.Proxy) Option {
 	}
 }
 
-// NewFromConfig returns a new transparent proxy from the given properties
+// WithMaxConcurrency sets max concurrent for process http request
+func WithMaxConcurrency(con int64) Option {
+	return func(p *Proxy) *Proxy {
+		if con > 0 {
+			p.semaphore = semaphore.NewWeighted(con)
+		}
+		return p
+	}
+}
+
+// NewProxy returns a new transparent proxy from the given options
 func NewProxy(options ...Option) (*Proxy, error) {
 	return NewProxyWithOptions(options...)
 }
@@ -148,6 +160,15 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if proxy.semaphore != nil {
+		err := proxy.semaphore.Acquire(r.Context(), 1)
+		if err != nil {
+			logger.Errorf("acquire semaphore error: %v", err)
+			http.Error(w, err.Error(), http.StatusTooManyRequests)
+			return
+		}
+		defer proxy.semaphore.Release(1)
+	}
 	if r.Method == http.MethodConnect {
 		// handle https proxy requests
 		proxy.handleHTTPS(w, r)
