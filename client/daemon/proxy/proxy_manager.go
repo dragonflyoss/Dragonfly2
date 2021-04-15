@@ -52,11 +52,13 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.PeerTask
 	registry := opts.RegistryMirror
 	proxies := opts.Proxies
 	hijackHTTPS := opts.HijackHTTPS
+	whiteList := opts.WhiteList
 
 	options := []Option{
 		WithPeerHost(peerHost),
 		WithPeerTaskManager(peerTaskManager),
 		WithRules(proxies),
+		WithWhiteList(whiteList),
 	}
 
 	if registry != nil {

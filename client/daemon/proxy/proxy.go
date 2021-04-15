@@ -34,6 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 var okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
@@ -64,6 +65,9 @@ type Proxy struct {
 
 	// peerHost is the peer host info
 	peerHost *scheduler.PeerHost
+
+	// whiteList is the proxy white list
+	whiteList []*config.WhiteListOption
 }
 
 // Option is a functional option for configuring the proxy
@@ -129,6 +133,14 @@ func WithRules(rules []*config.Proxy) Option {
 	}
 }
 
+// WithWhiteList sets the proxy whitelist
+func WithWhiteList(whiteList []*config.WhiteListOption) Option {
+	return func(p *Proxy) *Proxy {
+		p.whiteList = whiteList
+		return p
+	}
+}
+
 // NewFromConfig returns a new transparent proxy from the given properties
 func NewProxy(options ...Option) (*Proxy, error) {
 	return NewProxyWithOptions(options...)
@@ -148,16 +160,23 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodConnect {
-		// handle https proxy requests
-		proxy.handleHTTPS(w, r)
-	} else if r.URL.Scheme == "" {
-		// handle direct requests
-		proxy.directHandler.ServeHTTP(w, r)
-	} else {
-		// handle http proxy requests
-		proxy.handleHTTP(w, r)
+	// check whiteList
+	if proxy.checkWhiteList(r) {
+		if r.Method == http.MethodConnect {
+			// handle https proxy requests
+			proxy.handleHTTPS(w, r)
+		} else if r.URL.Scheme == "" {
+			// handle direct requests
+			proxy.directHandler.ServeHTTP(w, r)
+		} else {
+			// handle http proxy requests
+			proxy.handleHTTP(w, r)
+		}
 	}
+
+	status := http.StatusUnauthorized
+	http.Error(w, http.StatusText(status), status)
+	logger.Debugf("not in whitelist: %s", r.Host)
 }
 
 func (proxy *Proxy) handleHTTP(w http.ResponseWriter, req *http.Request) {
@@ -299,6 +318,28 @@ func (proxy *Proxy) remoteConfig(host string) *tls.Config {
 func (proxy *Proxy) setRules(rules []*config.Proxy) error {
 	proxy.rules = rules
 	return nil
+}
+
+// checkWhiteList check proxy white list.
+func (proxy *Proxy) checkWhiteList(r *http.Request) bool {
+	whiteList := proxy.whiteList
+
+	if len(whiteList) > 0 {
+		for _, v := range whiteList {
+			if v.Host == r.URL.Hostname() {
+				if len(v.Ports) > 0 {
+					if stringutils.Contains(v.Ports, r.URL.Port()) {
+						return true
+					}
+					return false
+				}
+				return true
+			}
+		}
+		return false
+	}
+
+	return true
 }
 
 // shouldUseDragonfly returns whether we should use dragonfly to proxy a request. It

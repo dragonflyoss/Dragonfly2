@@ -144,9 +144,10 @@ type DownloadOption struct {
 
 type ProxyOption struct {
 	ListenOption   `yaml:",inline"`
-	RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
-	Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
-	HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
+	RegistryMirror *RegistryMirror    `json:"registry_mirror" yaml:"registry_mirror"`
+	Proxies        []*Proxy           `json:"proxies" yaml:"proxies"`
+	HijackHTTPS    *HijackConfig      `json:"hijack_https" yaml:"hijack_https"`
+	WhiteList      []*WhiteListOption `json:"white_list" yaml:"white_list"`
 }
 
 func (p *ProxyOption) UnmarshalJSON(b []byte) error {
@@ -642,5 +643,10 @@ type HijackHost struct {
 
 // TelemetryOption is the option for telemetry
 type TelemetryOption struct {
-	Jaeger string `json:"jaeger" yaml:"jaeger"`
+	Jaeger string `yaml:"jaeger" json:"jaeger"`
+}
+
+type WhiteListOption struct {
+	Host  string   `yaml:"host" json:"host"`
+	Ports []string `yaml:"ports" json:"ports"`
 }
