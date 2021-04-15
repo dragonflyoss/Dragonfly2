@@ -28,7 +28,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/avast/retry-go"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/go-http-utils/headers"
@@ -379,7 +378,7 @@ func downloadFromSource(hdr map[string]string, dferr error) (err error) {
 
 	target, err = os.OpenFile(dfgetConfig.Output, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		logger.Errorf("open %s error: %s", dfgetConfig.Output)
+		logger.Errorf("open %s error: %s", dfgetConfig.Output, err)
 		return err
 	}
 
@@ -414,12 +413,7 @@ func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 	}
 
 	// Check daemon health
-	var dc dfclient.DaemonClient
-	err = retry.Do(func() error {
-		dc, err = probeDaemon(addr)
-		return err
-	}, retry.Attempts(3))
-	return dc, err
+	return probeDaemon(addr)
 }
 
 func probeDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
