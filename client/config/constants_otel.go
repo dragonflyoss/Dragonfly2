@@ -17,13 +17,17 @@ const (
 	AttributeGetPieceLimit     = attribute.Key("d7y.peer.piece.limit")
 	AttributeGetPieceCount     = attribute.Key("d7y.peer.piece.count")
 	AttributeGetPieceRetry     = attribute.Key("d7y.peer.piece.retry")
+	AttributeWritePieceSuccess = attribute.Key("d7y.peer.piece.write.success")
 
-	SpanFilePeerTask   = "file-peer-task"
-	SpanStreamPeerTask = "stream-peer-task"
-	SpanRegisterTask   = "register"
-	SpanFirstSchedule  = "schedule-#1"
-	SpanGetPieceTasks  = "get-piece-tasks"
-	SpanDownloadPiece  = "download-piece-#%d"
-	SpanWaitPieceLimit = "wait-limit"
-	SpanPeerGC         = "peer-gc"
+	SpanFilePeerTask    = "file-peer-task"
+	SpanStreamPeerTask  = "stream-peer-task"
+	SpanRegisterTask    = "register"
+	SpanFirstSchedule   = "schedule-#1"
+	SpanGetPieceTasks   = "get-piece-tasks"
+	SpanDownloadPiece   = "download-piece-#%d"
+	SpanWritePiece      = "write-piece"
+	SpanWriteBackPiece  = "write-back-piece"
+	SpanWaitPieceLimit  = "wait-limit"
+	SpanPushPieceResult = "push-result"
+	SpanPeerGC          = "peer-gc"
 )
