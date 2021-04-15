@@ -46,10 +46,8 @@ const (
 )
 
 const (
-	DefaultYamlConfigFile = "/etc/dragonfly/dfget.yml"
-	ProxyYamlConfigFile   = "/etc/dragonfly/proxy.yml"
-	DefaultLocalLimit     = 20 * ratelimiter.MB
-	DefaultMinRate        = 64 * ratelimiter.KB
+	DefaultLocalLimit = 20 * ratelimiter.MB
+	DefaultMinRate    = 64 * ratelimiter.KB
 )
 
 /* http header */

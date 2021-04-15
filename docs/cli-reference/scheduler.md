@@ -14,7 +14,7 @@ scheduler [flags]
 ### 可选参数
 
 ```
-      --config string              the path of scheduler's configuration file (default "conf/scheduler.yml")
+      --config string              the path of scheduler's configuration file (default "conf/scheduler.yaml")
   -h, --help                       help for scheduler
       --port int                   port is the port that scheduler server listens on (default 8002)
       --sender-job-pool-size int   sender-job-pool-size is used for scheduler and do not change it (default 10000)
@@ -25,7 +25,7 @@ scheduler [flags]
 
 ### 使用示例
 
-scheduler --config your-config-path/scheduler.yml
+scheduler --config your-config-path/scheduler.yaml
 
 ### 配置文件说明
 

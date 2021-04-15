@@ -17,8 +17,9 @@
 package config
 
 import (
-	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 )
 
 const (
@@ -42,7 +43,7 @@ const (
 
 const (
 	// DefaultCdnConfigFilePath the default cdn config path.
-	DefaultCdnConfigFilePath = "/etc/dragonfly/cdn.yml"
+	DefaultCdnConfigFilePath = "/etc/dragonfly/cdn.yaml"
 
 	DefaultStoragePattern = "disk"
 )

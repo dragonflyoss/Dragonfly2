@@ -2,7 +2,7 @@
 
 ## Step 1: Validate Dragonfly Configuration
 
-To use dfdaemon as Registry Mirror, first you need to ensure configuration in `$HOME/.dragonfly/dfget-daemon.yml`:
+To use dfdaemon as Registry Mirror, first you need to ensure configuration in `$HOME/.dragonfly/dfget-daemon.yaml`:
 
 ```yaml
 proxy:
