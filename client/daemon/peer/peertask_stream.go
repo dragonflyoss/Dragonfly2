@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -171,6 +172,9 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Warnf("recover from %s", r)
+			var buf [4096]byte
+			n := runtime.Stack(buf[:], false)
+			s.Errorf("panic stack: %s", string(buf[:n]))
 		}
 	}()
 	// retry failed piece
