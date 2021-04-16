@@ -71,6 +71,9 @@ type Proxy struct {
 
 	// semaphore is used to limit max concurrency when process http request
 	semaphore *semaphore.Weighted
+
+	// defaultFilter is used when http request without X-Dragonfly-Filter Header
+	defaultFilter string
 }
 
 // Option is a functional option for configuring the proxy
@@ -143,13 +146,20 @@ func WithWhiteList(whiteList []*config.WhiteList) Option {
 	}
 }
 
-// NewFromConfig returns a new transparent proxy from the given properties
 // WithMaxConcurrency sets max concurrent for process http request
 func WithMaxConcurrency(con int64) Option {
 	return func(p *Proxy) *Proxy {
 		if con > 0 {
 			p.semaphore = semaphore.NewWeighted(con)
 		}
+		return p
+	}
+}
+
+// WithDefaultFilter sets default filter for http requests without X-Dragonfly-Filter Header
+func WithDefaultFilter(f string) Option {
+	return func(p *Proxy) *Proxy {
+		p.defaultFilter = f
 		return p
 	}
 }
@@ -305,6 +315,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(tlsConfig),
 		transport.WithCondition(proxy.shouldUseDragonfly),
+		transport.WithDefaultFilter(proxy.defaultFilter),
 	)
 	return rt
 }
@@ -316,6 +327,7 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(proxy.registry.TLSConfig()),
 		transport.WithCondition(proxy.shouldUseDragonflyForMirror),
+		transport.WithDefaultFilter(proxy.defaultFilter),
 	)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get transport: %v", err), http.StatusInternalServerError)

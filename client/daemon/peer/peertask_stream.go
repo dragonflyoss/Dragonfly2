@@ -259,8 +259,8 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	} else {
 		attr[headers.TransferEncoding] = "chunked"
 	}
-	attr["X-Dragonfly-Task"] = s.taskId
-	attr["X-Dragonfly-Peer"] = s.peerId
+	attr[config.HeaderDragonflyTask] = s.taskId
+	attr[config.HeaderDragonflyPeer] = s.peerId
 
 	go func(first int32) {
 		defer func() {

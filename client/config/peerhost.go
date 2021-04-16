@@ -146,6 +146,7 @@ type DownloadOption struct {
 type ProxyOption struct {
 	// WARNING: when add more option, please update ProxyOption.unmarshal function
 	ListenOption   `json:",inline" yaml:",inline"`
+	DefaultFilter  string          `json:"default_filter" yaml:"default_filter"`
 	MaxConcurrency int64           `json:"max_concurrency" yaml:"max_concurrency"`
 	RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
 	WhiteList      []*WhiteList    `json:"white_list" yaml:"white_list"`
@@ -228,6 +229,7 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
 	pt := struct {
 		ListenOption   `yaml:",inline"`
+		DefaultFilter  string          `json:"default_filter" yaml:"default_filter"`
 		MaxConcurrency int64           `json:"max_concurrency" yaml:"max_concurrency"`
 		RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
 		Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
@@ -245,6 +247,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 	p.HijackHTTPS = pt.HijackHTTPS
 	p.WhiteList = pt.WhiteList
 	p.MaxConcurrency = pt.MaxConcurrency
+	p.DefaultFilter = pt.DefaultFilter
 
 	return nil
 }
