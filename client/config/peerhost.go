@@ -655,5 +655,6 @@ type TelemetryOption struct {
 
 type WhiteList struct {
 	Host  string   `yaml:"host" json:"host"`
+	Regx  *Regexp  `yaml:"regx" json:"regx"`
 	Ports []string `yaml:"ports" json:"ports"`
 }

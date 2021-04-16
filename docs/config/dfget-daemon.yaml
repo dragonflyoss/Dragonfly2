@@ -181,5 +181,7 @@ proxy:
   white_list:
     # the host of the whitelist
     - host: ""
+      # match whitelist hosts
+      regx:
       # port that need to be added to the whitelist
       ports:
