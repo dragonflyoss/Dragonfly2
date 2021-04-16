@@ -92,10 +92,10 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 	return newDownResultStream(dc, ctx, taskId, req, opts)
 }
 
-func (dc *daemonClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest,
+func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest,
 	opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		if client, err := dc.getDaemonClientWithTarget(addr.GetEndpoint()); err != nil {
+		if client, err := dc.getDaemonClientWithTarget(target.GetEndpoint()); err != nil {
 			return nil, err
 		} else {
 			return client.GetPieceTasks(ctx, ptr, opts...)

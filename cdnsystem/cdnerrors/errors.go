@@ -37,7 +37,7 @@ var (
 	ErrFileLengthNotEqual = errors.New("inconsistent file length")
 
 	// ErrDownloadFail
-	ErrDownloadFail = errors.New("download failed")
+	ErrDownloadFail = errors.New("resource download failed")
 
 	// ErrResourceExpired
 	ErrResourceExpired = errors.New("resource expired")
@@ -53,9 +53,6 @@ var (
 
 	// ErrFileNotExist represents the file is not exists
 	ErrFileNotExist = errors.New("file or directory not exist")
-
-	// ErrEmptyValue represents the value is empty or nil.
-	ErrEmptyValue = errors.New("empty value")
 
 	// ErrInvalidValue represents the value is invalid.
 	ErrInvalidValue = errors.New("invalid value")
@@ -108,10 +105,6 @@ func IsPieceMd5NotMatch(err error) bool {
 
 func IsDataNotFound(err error) bool {
 	return errors.Cause(err) == ErrDataNotFound
-}
-
-func IsEmptyValue(err error) bool {
-	return errors.Cause(err) == ErrEmptyValue
 }
 
 func IsInvalidValue(err error) bool {

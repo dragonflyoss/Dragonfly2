@@ -25,7 +25,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	urlutils2 "d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -53,7 +52,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 				"task hit unReachable cache and interval less than %d, url: %s", tm.cfg.FailAccessInterval, request.URL)
 		}
 		tm.taskURLUnReachableStore.Delete(taskId)
-		logger.Debugf("delete taskId:%s from url unReach store", taskId)
+		logger.Debugf("delete taskId:%s from url unReachable store", taskId)
 	}
 	var task *types.SeedTask
 	newTask := &types.SeedTask{
@@ -62,7 +61,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		RequestMd5:       request.Md5,
 		Url:              request.URL,
 		TaskUrl:          taskURL,
-		CdnStatus:        types.TaskInfoCdnStatusWAITING,
+		CdnStatus:        types.TaskInfoCdnStatusWaiting,
 		SourceFileLength: IllegalSourceFileLen,
 	}
 	// using the existing task if it already exists corresponding to taskId
@@ -85,8 +84,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	// get sourceContentLength with req.Header
 	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Header)
 	if err != nil {
-		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length: %v",
-			task.Url, err)
+		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length: %v", task.Url, err)
 
 		if cdnerrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskId, time.Now())
@@ -115,15 +113,15 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 // updateTask
 func (tm *Manager) updateTask(taskId string, updateTaskInfo *types.SeedTask) (*types.SeedTask, error) {
 	if stringutils.IsBlank(taskId) {
-		return nil, errors.Wrap(dferrors.ErrEmptyValue, "taskId")
+		return nil, errors.Wrap(cdnerrors.ErrInvalidValue, "taskId is empty")
 	}
 
 	if updateTaskInfo == nil {
-		return nil, errors.Wrap(dferrors.ErrEmptyValue, "Update TaskInfo")
+		return nil, errors.Wrap(cdnerrors.ErrInvalidValue, "updateTaskInfo is nil")
 	}
-	// the expected new CDNStatus is not nil
+
 	if stringutils.IsBlank(updateTaskInfo.CdnStatus) {
-		return nil, errors.Wrapf(dferrors.ErrEmptyValue, "CDNStatus of TaskInfo: %+v", updateTaskInfo)
+		return nil, errors.Wrap(cdnerrors.ErrInvalidValue, "status of task is empty")
 	}
 	// get origin task
 	task, err := tm.getTask(taskId)

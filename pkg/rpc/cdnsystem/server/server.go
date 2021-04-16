@@ -130,16 +130,16 @@ func StatSeedStart(taskId, url string) {
 }
 
 
-func StatSeedFinish(taskId, url string, success bool, code base.Code, beginTime, endTime uint64, traffic, contentLength int64) {
+func StatSeedFinish(taskId, url string, success bool, err error, beginTime, endTime int, traffic, contentLength int64) {
 	logger.StatSeedLogger.Info("seed making finish",
 		zap.Bool("success", success),
 		zap.String("taskId", taskId),
 		zap.String("url", url),
 		zap.String("seederIp", iputils.HostIp),
 		zap.String("seederName", iputils.HostName),
-		zap.Uint64("beginTime", beginTime),
-		zap.Uint64("endTime", endTime),
+		zap.Int("beginTime", beginTime),
+		zap.Int("endTime", endTime),
 		zap.Int64("traffic", traffic),
 		zap.Int64("contentLength", contentLength),
-		zap.Int("code", int(code)))
+		zap.Error(err))
 }

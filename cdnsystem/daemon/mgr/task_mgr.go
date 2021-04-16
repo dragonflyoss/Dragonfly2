@@ -30,15 +30,15 @@ type SeedTaskMgr interface {
 	// Register register seed task
 	Register(ctx context.Context, registerRequest *types.TaskRegisterRequest) (pieceCh <-chan *types.SeedPiece, err error)
 
-	// Get get task Info with specified taskID.
-	Get(ctx context.Context, taskID string) (*types.SeedTask, error)
+	// Get get task Info with specified taskId.
+	Get(ctx context.Context, taskId string) (*types.SeedTask, error)
 
 	// GetAccessTime get all tasks accessTime.
 	GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error)
 
 	// Delete delete a task.
-	Delete(ctx context.Context, taskID string) error
+	Delete(ctx context.Context, taskId string) error
 
-	GetPieces(ctx context.Context, taskID string) (pieces []*types.SeedPiece, err error)
-
+	// GetPieces
+	GetPieces(ctx context.Context, taskId string) (pieces []*types.SeedPiece, err error)
 }

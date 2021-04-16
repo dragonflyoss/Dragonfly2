@@ -38,36 +38,36 @@ func (task *SeedTask) IsSuccess() bool {
 
 // IsFrozen
 func (task *SeedTask) IsFrozen() bool {
-	return task.CdnStatus == TaskInfoCdnStatusFAILED ||
-		task.CdnStatus == TaskInfoCdnStatusWAITING ||
-		task.CdnStatus == TaskInfoCdnStatusSourceERROR
+	return task.CdnStatus == TaskInfoCdnStatusFailed ||
+		task.CdnStatus == TaskInfoCdnStatusWaiting ||
+		task.CdnStatus == TaskInfoCdnStatusSourceError
 }
 
 // IsWait
 func (task *SeedTask) IsWait() bool {
-	return task.CdnStatus == TaskInfoCdnStatusWAITING
+	return task.CdnStatus == TaskInfoCdnStatusWaiting
 }
 
 // IsError
 func (task *SeedTask) IsError() bool {
-	return task.CdnStatus == TaskInfoCdnStatusFAILED ||
-		task.CdnStatus == TaskInfoCdnStatusSourceERROR
+	return task.CdnStatus == TaskInfoCdnStatusFailed ||
+		task.CdnStatus == TaskInfoCdnStatusSourceError
 }
 
 const (
 
-	// TaskInfoCdnStatusWAITING captures enum value "WAITING"
-	TaskInfoCdnStatusWAITING string = "WAITING"
+	// TaskInfoCdnStatusWaiting captures enum value "WAITING"
+	TaskInfoCdnStatusWaiting string = "WAITING"
 
-	// TaskInfoCdnStatusRUNNING captures enum value "RUNNING"
-	TaskInfoCdnStatusRUNNING string = "RUNNING"
+	// TaskInfoCdnStatusRunning captures enum value "RUNNING"
+	TaskInfoCdnStatusRunning string = "RUNNING"
 
-	// TaskInfoCdnStatusFAILED captures enum value "FAILED"
-	TaskInfoCdnStatusFAILED string = "FAILED"
+	// TaskInfoCdnStatusFailed captures enum value "FAILED"
+	TaskInfoCdnStatusFailed string = "FAILED"
 
 	// TaskInfoCdnStatusSuccess captures enum value "SUCCESS"
 	TaskInfoCdnStatusSuccess string = "SUCCESS"
 
-	// TaskInfoCdnStatusSourceERROR captures enum value "SOURCE_ERROR"
-	TaskInfoCdnStatusSourceERROR string = "SOURCE_ERROR"
+	// TaskInfoCdnStatusSourceError captures enum value "SOURCE_ERROR"
+	TaskInfoCdnStatusSourceError string = "SOURCE_ERROR"
 )
