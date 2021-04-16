@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package peer
 
 import (
@@ -215,7 +231,12 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	var firstPiece int32
 	select {
 	case <-s.ctx.Done():
-		err := errors.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
+		var err error
+		if s.failedReason != "" {
+			err = errors.Errorf(s.failedReason)
+		} else {
+			err = errors.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
+		}
 		s.Errorf("%s", err)
 		return nil, nil, err
 	case <-s.done:
@@ -238,8 +259,8 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	} else {
 		attr[headers.TransferEncoding] = "chunked"
 	}
-	attr["X-Dragonfly-Task"] = s.taskId
-	attr["X-Dragonfly-Peer"] = s.peerId
+	attr[config.HeaderDragonflyTask] = s.taskId
+	attr[config.HeaderDragonflyPeer] = s.peerId
 
 	go func(first int32) {
 		defer func() {
