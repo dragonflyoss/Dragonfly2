@@ -41,6 +41,7 @@ const (
 	SpanFirstSchedule   = "schedule-#1"
 	SpanGetPieceTasks   = "get-piece-tasks"
 	SpanDownloadPiece   = "download-piece-#%d"
+	SpanProxy           = "proxy"
 	SpanWritePiece      = "write-piece"
 	SpanWriteBackPiece  = "write-back-piece"
 	SpanWaitPieceLimit  = "wait-limit"

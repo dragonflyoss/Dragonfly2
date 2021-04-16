@@ -34,6 +34,9 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/golang/groupcache/lru"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -74,6 +77,9 @@ type Proxy struct {
 
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
+
+	// tracer is used for telemetry
+	tracer trace.Tracer
 }
 
 // Option is a functional option for configuring the proxy
@@ -173,6 +179,7 @@ func NewProxy(options ...Option) (*Proxy, error) {
 func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 	proxy := &Proxy{
 		directHandler: http.NewServeMux(),
+		tracer:        otel.Tracer("dfget-daemon-proxy"),
 	}
 	for _, opt := range options {
 		opt(proxy)
@@ -183,6 +190,18 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx, span := proxy.tracer.Start(r.Context(), config.SpanProxy)
+	span.SetAttributes(semconv.HTTPSchemeKey.String(r.URL.Scheme))
+	span.SetAttributes(semconv.HTTPHostKey.String(r.Host))
+	span.SetAttributes(semconv.HTTPURLKey.String(r.URL.String()))
+	span.SetAttributes(semconv.HTTPMethodKey.String(r.Method))
+	defer func() {
+		span.End()
+	}()
+	// update ctx for transfer trace id
+	// TODO(jim): only support HTTP scheme, need support HTTPS scheme
+	r = r.WithContext(ctx)
+
 	// check whiteList
 	if !proxy.checkWhiteList(r) {
 		status := http.StatusUnauthorized
@@ -210,12 +229,12 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		proxy.directHandler.ServeHTTP(w, r)
 	} else {
 		// handle http proxy requests
-		proxy.handleHTTP(w, r)
+		proxy.handleHTTP(span, w, r)
 	}
 
 }
 
-func (proxy *Proxy) handleHTTP(w http.ResponseWriter, req *http.Request) {
+func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http.Request) {
 	resp, err := proxy.newTransport(nil).RoundTrip(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -224,6 +243,7 @@ func (proxy *Proxy) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	defer resp.Body.Close()
 	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
+	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
 	if _, err := io.Copy(w, resp.Body); err != nil {
 		logger.Errorf("failed to write http body: %v", err)
 	}
