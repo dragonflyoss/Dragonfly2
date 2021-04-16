@@ -66,6 +66,7 @@ func newStreamPeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerId.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
+	logger.Debugf("request overview, url: %s, filter: %s, meta: %s, biz: %s", request.Url, request.Filter, request.UrlMata, request.BizId)
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)

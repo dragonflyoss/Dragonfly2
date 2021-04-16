@@ -167,6 +167,8 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 		filter = f
 		// remove because we will set Filter in scheduler.PeerTaskRequest
 		delete(meta.Header, config.HeaderDragonflyFilter)
+	} else {
+		filter = rt.defaultFilter
 	}
 	r, attr, err := rt.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
