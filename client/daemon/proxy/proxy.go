@@ -381,6 +381,8 @@ func (proxy *Proxy) setRules(rules []*config.Proxy) error {
 // checkWhiteList check proxy white list.
 func (proxy *Proxy) checkWhiteList(r *http.Request) bool {
 	whiteList := proxy.whiteList
+	host := r.URL.Hostname()
+	port := r.URL.Port()
 
 	// No whitelist
 	if len(whiteList) <= 0 {
@@ -388,14 +390,14 @@ func (proxy *Proxy) checkWhiteList(r *http.Request) bool {
 	}
 
 	for _, v := range whiteList {
-		if v.Host == r.URL.Hostname() {
+		if (v.Host != "" && v.Host == host) || (v.Regx != nil && v.Regx.MatchString(host)) {
 			// No ports
 			if len(v.Ports) <= 0 {
 				return true
 			}
 
 			// Hit ports
-			if stringutils.Contains(v.Ports, r.URL.Port()) {
+			if stringutils.Contains(v.Ports, port) {
 				return true
 			}
 
