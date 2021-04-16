@@ -160,8 +160,22 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	return
 }
 
-func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
-	return schedule_worker.CreateClient(stream, s.worker, s.svc.GetScheduler()).Start()
+func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) (err error) {
+	defer func() {
+		e := recover()
+		if e != nil {
+			err = dferrors.New(dfcodes.SchedError, fmt.Sprintf("%v", e))
+			return
+		}
+		if err != nil {
+			if _, ok := err.(*dferrors.DfError); !ok {
+				err = dferrors.New(dfcodes.SchedError, err.Error())
+			}
+		}
+		return
+	}()
+	err = schedule_worker.CreateClient(stream, s.worker, s.svc.GetScheduler()).Start()
+	return
 }
 
 func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (err error) {

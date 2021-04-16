@@ -17,6 +17,7 @@
 package scheduler
 
 import (
+	"d7y.io/dragonfly/v2/pkg/safe"
 	"sort"
 	"strings"
 	"sync"
@@ -149,7 +150,7 @@ func (ef *evaluatorFactory) deleteGetEvaluatorFunc(priority int, fun GetEvaluato
 
 func RegisterEvaluator(name string, evaluator IPeerTaskEvaluator) {
 	factory.cacheClearFunc.Do(func() {
-		go func() {
+		go safe.Call(func() {
 			tick := time.NewTicker(time.Hour)
 			for {
 				select {
@@ -157,7 +158,7 @@ func RegisterEvaluator(name string, evaluator IPeerTaskEvaluator) {
 					factory.clearCache()
 				}
 			}
-		}()
+		})
 	})
 	factory.addEvaluator(name, evaluator)
 	factory.clearCache()

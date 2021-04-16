@@ -17,6 +17,7 @@
 package schedule_worker
 
 import (
+	"d7y.io/dragonfly/v2/pkg/safe"
 	"fmt"
 	"time"
 
@@ -54,8 +55,8 @@ func CreateWorker(sche *scheduler.Scheduler, sender ISender, sendJod func(*types
 }
 
 func (w *Worker) Start() {
-	go w.doScheduleWorker()
-	go w.doUpdatePieceResultWorker()
+	go safe.Call(w.doScheduleWorker)
+	go safe.Call(w.doUpdatePieceResultWorker)
 }
 
 func (w *Worker) Stop() {
