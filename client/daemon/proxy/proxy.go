@@ -244,8 +244,10 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
-	if _, err := io.Copy(w, resp.Body); err != nil {
+	if n, err := io.Copy(w, resp.Body); err != nil {
 		logger.Errorf("failed to write http body: %v", err)
+	} else {
+		span.SetAttributes(semconv.HTTPResponseContentLengthKey.Int64(n))
 	}
 }
 

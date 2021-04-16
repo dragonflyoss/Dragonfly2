@@ -395,6 +395,9 @@ loop:
 
 		if !initialized {
 			pt.contentLength = piecePacket.ContentLength
+			if pt.contentLength > 0 {
+				pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(pt.contentLength))
+			}
 			initialized = true
 			if err = pt.callback.Init(pt); err != nil {
 				pt.failedReason = err.Error()
