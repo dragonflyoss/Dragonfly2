@@ -35,37 +35,29 @@ func NewCdnValue(cc *cdnConfig) *CdnValue {
 
 func (cv *CdnValue) String() string {
 	var result []string
-	for _, group := range cv.cc.List {
-		var subResult []string
-		for _, v := range group {
-			subResult = append(subResult, fmt.Sprintf("%s:%s:%d:%d", v.CdnName, v.IP, v.RpcPort, v.DownloadPort))
-		}
-		result = append(result, strings.Join(subResult, ","))
+	for _, cdn := range cv.cc.List {
+		result = append(result, fmt.Sprintf("%s:%s:%d:%d", cdn.CdnName, cdn.IP, cdn.RpcPort, cdn.DownloadPort))
 	}
-	return strings.Join(result, "|")
+	return strings.Join(result, ",")
 }
 
 func (cv *CdnValue) Set(value string) error {
 	cv.cc.List = cv.cc.List[:0]
-	cdnList := strings.Split(value, "|")
-	for _, addresses := range cdnList {
-		addrs := strings.Split(addresses, ",")
-		var cdnList []CdnServerConfig
-		for _, address := range addrs {
-			vv := strings.Split(address, ":")
-			if len(vv) != 4 {
-				return errors.New("invalid cdn address")
-			}
-			rpcPort, _ := strconv.Atoi(vv[2])
-			downloadPort, _ := strconv.Atoi(vv[3])
-			cdnList = append(cdnList, CdnServerConfig{
-				CdnName:      vv[0],
-				IP:           vv[1],
-				RpcPort:      rpcPort,
-				DownloadPort: downloadPort,
-			})
+	cdnList := strings.Split(value, ",")
+
+	for _, address := range cdnList {
+		vv := strings.Split(address, ":")
+		if len(vv) != 4 {
+			return errors.New("invalid cdn address")
 		}
-		cv.cc.List = append(cv.cc.List, cdnList)
+		rpcPort, _ := strconv.Atoi(vv[2])
+		downloadPort, _ := strconv.Atoi(vv[3])
+		cv.cc.List = append(cv.cc.List, CdnServerConfig{
+			CdnName:      vv[0],
+			IP:           vv[1],
+			RpcPort:      rpcPort,
+			DownloadPort: downloadPort,
+		})
 	}
 	return nil
 }
