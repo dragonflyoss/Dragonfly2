@@ -28,13 +28,13 @@ var SchedulerConfig = Config{
 		ABTest: false,
 	},
 	CDN: cdnConfig{
-		List: [][]CdnServerConfig{
-			{{
+		Servers: []CdnServerConfig{
+			{
 				Name:         "cdn",
 				IP:           "127.0.0.1",
 				RpcPort:      8003,
 				DownloadPort: 8001,
-			}},
+			},
 		},
 	},
 	GC: gcConfig{
