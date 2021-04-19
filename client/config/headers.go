@@ -20,4 +20,5 @@ const (
 	HeaderDragonflyFilter = "X-Dragonfly-Filter"
 	HeaderDragonflyPeer   = "X-Dragonfly-Peer"
 	HeaderDragonflyTask   = "X-Dragonfly-Task"
+	HeaderDragonflyBiz    = "X-Dragonfly-Biz"
 )

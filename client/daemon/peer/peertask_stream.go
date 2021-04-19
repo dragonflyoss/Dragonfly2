@@ -243,9 +243,19 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 			err = errors.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
 		}
 		s.Errorf("%s", err)
+		s.span.RecordError(err)
+		s.span.End()
 		return nil, nil, err
 	case <-s.done:
-		err := errors.New("stream peer task early done")
+		var err error
+		if s.failedReason != "" {
+			err = errors.Errorf(s.failedReason)
+		} else {
+			err = errors.Errorf("stream peer task early done")
+		}
+		s.Errorf("%s", err)
+		s.span.RecordError(err)
+		s.span.End()
 		return nil, nil, err
 	case first := <-s.successPieceCh:
 		//if !ok {
