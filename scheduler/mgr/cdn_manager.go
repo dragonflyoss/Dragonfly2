@@ -18,6 +18,14 @@ package mgr
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"hash/crc32"
+	"io/ioutil"
+	"net/http"
+	"sync"
+	"time"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -26,13 +34,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"errors"
-	"fmt"
-	"hash/crc32"
-	"io/ioutil"
-	"net/http"
-	"sync"
-	"time"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
@@ -71,7 +72,7 @@ func (cm *CDNManager) InitCDNClient() {
 				Type: dfnet.TCP,
 				Addr: fmt.Sprintf("%s:%d", cdn.IP, cdn.RpcPort),
 			})
-			cm.cdnInfoMap[cdn.CdnName] = &cdns[i]
+			cm.cdnInfoMap[cdn.Name] = &cdns[i]
 		}
 		seederClient, err := client.GetClientByAddr(addrs)
 		if err != nil {
@@ -136,7 +137,7 @@ func (cm *CDNManager) doCallback(task *types.Task, err *dferrors.DfError) {
 			fn(pt, err)
 		}
 		if err != nil {
-			time.Sleep(time.Second*5)
+			time.Sleep(time.Second * 5)
 			GetTaskManager().DeleteTask(task.TaskId)
 		}
 	})

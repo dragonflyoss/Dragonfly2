@@ -25,13 +25,13 @@ const (
 var config = createDefaultConfig()
 
 type Config struct {
-	Debug     bool                  `yaml:"debug" mapstructure:",squash"`
-	Console   bool                  `yaml:"console"`
-	Scheduler schedulerConfig       `yaml:"scheduler" mapstructure:",squash"`
-	Server    serverConfig          `yaml:"server" mapstructure:",squash"`
-	Worker    schedulerWorkerConfig `yaml:"worker" mapstructure:",squash"`
-	CDN       cdnConfig             `yaml:"cdn" mapstructure:",squash"`
-	GC        gcConfig              `yaml:"gc" mapstructure:",squash"`
+	Debug     bool                  `mapstructure:"debug"`
+	Console   bool                  `mapstructure:"console"`
+	Scheduler schedulerConfig       `mapstructure:"scheduler,squash"`
+	Server    serverConfig          `mapstructure:"server,squash"`
+	Worker    schedulerWorkerConfig `mapstructure:"worker,squash"`
+	CDN       cdnConfig             `mapstructure:"cdn,squash"`
+	GC        gcConfig              `mapstructure:"gc,squash"`
 }
 
 type schedulerConfig struct {
@@ -41,31 +41,31 @@ type schedulerConfig struct {
 }
 
 type serverConfig struct {
-	IP   string `yaml:"ip",omitempty`
-	Port int    `yaml:"port"`
+	IP   string `mapstructure:"ip"`
+	Port int    `mapstructure:"port"`
 }
 
 type schedulerWorkerConfig struct {
-	WorkerNum         int `yaml:"worker-num"`
-	WorkerJobPoolSize int `yaml:"worker-job-pool-size"`
-	SenderNum         int `yaml:"sender-num"`
-	SenderJobPoolSize int `yaml:"sender-job-pool-size"`
+	WorkerNum         int `mapstructure:"workerNum"`
+	WorkerJobPoolSize int `mapstructure:"workerJobPoolSize"`
+	SenderNum         int `mapstructure:"senderNum"`
+	SenderJobPoolSize int `mapstructure:"senderJobPoolSize"`
 }
 
 type CdnServerConfig struct {
-	CdnName      string `yaml:"cdn-name"`
-	IP           string `yaml:"ip",omitempty`
-	RpcPort      int    `yaml:"rpc-port"`
-	DownloadPort int    `yaml:"download-port"`
+	Name         string `mapstructure:"name"`
+	IP           string `mapstructure:"ip"`
+	RpcPort      int    `mapstructure:"rpcPort"`
+	DownloadPort int    `mapstructure:"downloadPort"`
 }
 
 type cdnConfig struct {
-	List [][]CdnServerConfig `yaml:"list" mapstructure:",squash"`
+	List [][]CdnServerConfig `mapstructure:"list"`
 }
 
 type gcConfig struct {
-	PeerTaskDelay int64 `yaml:"peer-task-gc-delay-time"`
-	TaskDelay     int64 `yaml:"task-gc-delay-time"`
+	PeerTaskDelay int64 `mapstructure:"peerTaskDelay"`
+	TaskDelay     int64 `mapstructure:"taskDelay"`
 }
 
 func GetConfig() *Config {

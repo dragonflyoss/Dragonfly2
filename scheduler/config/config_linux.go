@@ -26,7 +26,7 @@ var SchedulerConfig = Config{
 	CDN: cdnConfig{
 		List: [][]CdnServerConfig{
 			{{
-				CdnName:      "cdn",
+				Name:         "cdn",
 				IP:           "127.0.0.1",
 				RpcPort:      8003,
 				DownloadPort: 8001,

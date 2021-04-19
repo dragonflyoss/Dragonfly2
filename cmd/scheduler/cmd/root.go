@@ -1,11 +1,11 @@
 package cmd
 
 import (
+	"encoding/json"
+	"os"
+
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"go.uber.org/zap/zapcore"
-	"os"
-	"reflect"
-	"time"
 
 	"fmt"
 
@@ -16,13 +16,14 @@ import (
 	"d7y.io/dragonfly/v2/version"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
-	"github.com/mitchellh/mapstructure"
 	"github.com/phayes/freeport"
+	"github.com/sirupsen/logrus"
+
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -31,16 +32,14 @@ const (
 	SchedulerEnvPrefix = "scheduler"
 )
 
-var (
-	cdnList        string
-	schedulerViper = viper.GetViper()
-)
+var cfg *config.Config
+var cfgFile string
 
 // schedulerDescription is used to describe supernode command in details.
 var schedulerDescription = `scheduler is a long-running process with two primary responsibilities:
 It's the tracker and scheduler in the P2P network that choose appropriate downloading net-path for each peer.`
 
-var SchedulerCmd = &cobra.Command{
+var schedulerCmd = &cobra.Command{
 	Use:               "scheduler",
 	Short:             "the central control server of Dragonfly used for scheduling",
 	Long:              schedulerDescription,
@@ -48,16 +47,8 @@ var SchedulerCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// load config file.
-		if err := readConfigFile(schedulerViper, cmd); err != nil {
-			return errors.Wrap(err, "read config file")
-		}
-
-		// get config from viper.
-		cfg, err := getConfigFromViper(schedulerViper)
-		if err != nil {
-			return errors.Wrap(err, "get config from viper")
-		}
+		s, _ := json.MarshalIndent(cfg, "", "  ")
+		logger.Debugf("scheduler option(debug only, can not use as config):\n%s", string(s))
 
 		// init logger
 		if err := logcore.InitScheduler(cfg.Console); err != nil {
@@ -68,7 +59,7 @@ var SchedulerCmd = &cobra.Command{
 			logcore.SetGrpcLevel(zapcore.DebugLevel)
 		}
 
-		go safe.Call(func(){
+		go safe.Call(func() {
 			// enable go pprof and statsview
 			port, _ := freeport.GetFreePort()
 			debugListen := fmt.Sprintf("localhost:%d", port)
@@ -90,169 +81,56 @@ var SchedulerCmd = &cobra.Command{
 }
 
 func init() {
-	SchedulerCmd.AddCommand(version.VersionCmd)
-	setupFlags(SchedulerCmd)
+	// Initialize default daemon config
+	cfg = &config.SchedulerConfig
+
+	// Initialize cobra
+	cobra.OnInitialize(initConfig)
+
+	// Add flags
+	flagSet := schedulerCmd.Flags()
+	flagSet.Bool("debug", cfg.Debug, "debug")
+	flagSet.Bool("console", cfg.Console, "console")
+	flagSet.Int("port", cfg.Server.Port, "port is the port that scheduler server listens on")
+	flagSet.Int("worker-num", cfg.Worker.WorkerNum, "worker-num is used for scheduler and do not change it")
+	flagSet.Int("worker-job-pool-size", cfg.Worker.WorkerJobPoolSize, "worker-job-pool-size is used for scheduler and do not change it")
+	flagSet.Int("sender-num", cfg.Worker.SenderNum, "sender-num is used for scheduler and do not change it")
+	flagSet.Int("sender-job-pool-size", cfg.Worker.WorkerJobPoolSize, "sender-job-pool-size is used for scheduler and do not change it")
+	flagSet.StringVar(&cfgFile, "config", "", "the path of scheduler's configuration file")
+	flagSet.Var(config.NewCdnValue(&cfg.CDN), "cdn-list", "cdn list with format of [CdnName1]:[ip1]:[rpcPort1]:[downloadPort1]|[CdnName2]:[ip2]:[rpcPort2]:[downloadPort2]")
+
+	schedulerCmd.AddCommand(version.VersionCmd)
 }
 
-// setupFlags setups flags for command line.
-func setupFlags(cmd *cobra.Command) {
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
-	// flagSet := cmd.PersistentFlags()
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	flagSet := cmd.Flags()
-
-	defaultBaseProperties := config.GetConfig()
-
-	flagSet.Bool("debug", defaultBaseProperties.Debug,
-		"debug")
-
-	flagSet.Bool("console", defaultBaseProperties.Console,
-		"console")
-
-	flagSet.String("config", config.DefaultConfigFilePath,
-		"the path of scheduler's configuration file")
-
-	flagSet.Int("port", defaultBaseProperties.Server.Port,
-		"port is the port that scheduler server listens on")
-
-	flagSet.Int("worker-num", defaultBaseProperties.Worker.WorkerNum,
-		"worker-num is used for scheduler and do not change it")
-
-	flagSet.Int("worker-job-pool-size", defaultBaseProperties.Worker.WorkerJobPoolSize,
-		"worker-job-pool-size is used for scheduler and do not change it")
-
-	flagSet.Int("sender-num", defaultBaseProperties.Worker.SenderNum,
-		"sender-num is used for scheduler and do not change it")
-
-	flagSet.Int("sender-job-pool-size", defaultBaseProperties.Worker.WorkerJobPoolSize,
-		"sender-job-pool-size is used for scheduler and do not change it")
-
-	flagSet.Var(config.NewCdnValue(&defaultBaseProperties.CDN), "cdn-list",
-		"cdn list with format of [CdnName1]:[ip1]:[rpcPort1]:[downloadPort1]|[CdnName2]:[ip2]:[rpcPort2]:[downloadPort2]")
-
-	exitOnError(bindRootFlags(schedulerViper), "bind root command flags")
-}
-
-// bindRootFlags binds flags on rootCmd to the given viper instance.
-func bindRootFlags(v *viper.Viper) error {
-	flags := []struct {
-		key  string
-		flag string
-	}{
-		{
-			key:  "debug",
-			flag: "debug",
-		},
-		{
-			key:  "console",
-			flag: "console",
-		},
-		{
-			key:  "config",
-			flag: "config",
-		},
-		{
-			key:  "server.port",
-			flag: "port",
-		},
-		{
-			key:  "worker.worker-num",
-			flag: "worker-num",
-		},
-		{
-			key:  "worker.worker-job-pool-size",
-			flag: "worker-job-pool-size",
-		},
-		{
-			key:  "worker.sender-num",
-			flag: "sender-num",
-		},
-		{
-			key:  "worker.sender-job-pool-size",
-			flag: "sender-job-pool-size",
-		},
+func initConfig() {
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(cfgFile)
+	} else {
+		viper.AddConfigPath(filepath.Dir(config.DefaultConfigFilePath))
+		viper.SetConfigFile(filepath.Base(config.DefaultConfigFilePath))
 	}
 
-	for _, f := range flags {
-		if err := v.BindPFlag(f.key, SchedulerCmd.Flag(f.flag)); err != nil {
-			return err
-		}
+	fmt.Printf("file: %s", cfgFile)
+
+	viper.SetEnvPrefix(SchedulerEnvPrefix)
+	viper.AutomaticEnv() // read in envionment variables that match
+
+	// If a config file is found, read it in.
+	if err := viper.ReadInConfig(); err == nil {
+		logrus.Debugf("Using config file: %s", viper.ConfigFileUsed())
 	}
 
-	v.SetEnvPrefix(SchedulerEnvPrefix)
-	v.AutomaticEnv()
-
-	return nil
-}
-
-// readConfigFile reads config file into the given viper instance. If we're
-// reading the default configuration file and the file does not exist, nil will
-// be returned.
-func readConfigFile(v *viper.Viper, cmd *cobra.Command) error {
-	v.SetConfigFile(v.GetString("config"))
-	v.SetConfigType("yaml")
-
-	if err := v.ReadInConfig(); err != nil {
-		// when the default config file is not found, ignore the error
-		if os.IsNotExist(err) && !cmd.Flag("config").Changed {
-			return nil
-		}
-		return err
-	}
-
-	return nil
-}
-
-// getDefaultConfig returns the default configuration of scheduler
-func getDefaultConfig() (interface{}, error) {
-	return getConfigFromViper(viper.GetViper())
-}
-
-// getConfigFromViper returns supernode config from the given viper instance
-func getConfigFromViper(v *viper.Viper) (*config.Config, error) {
-	cfg := config.GetConfig()
-
-	if err := v.Unmarshal(cfg, func(dc *mapstructure.DecoderConfig) {
-		dc.TagName = "yaml"
-		dc.Squash = true
-		dc.DecodeHook = decodeWithYAML(
-			reflect.TypeOf(time.Second),
-		)
-	}); err != nil {
-		return nil, errors.Wrap(err, "unmarshal yaml")
-	}
-
-	return cfg, nil
-}
-
-// decodeWithYAML returns a mapstructure.DecodeHookFunc to decode the given
-// types by unmarshalling from yaml text.
-func decodeWithYAML(types ...reflect.Type) mapstructure.DecodeHookFunc {
-	return func(f, t reflect.Type, data interface{}) (interface{}, error) {
-		for _, typ := range types {
-			if t == typ {
-				b, _ := yaml.Marshal(data)
-				v := reflect.New(t)
-				return v.Interface(), yaml.Unmarshal(b, v.Interface())
-			}
-		}
-		return data, nil
+	// Unmarshal config
+	if err := viper.Unmarshal(&cfg); err != nil {
+		logrus.Fatalf(errors.Wrap(err, "cannot unmarshal config").Error())
 	}
 }
 
 // Execute will process supernode.
 func Execute() {
-	if err := SchedulerCmd.Execute(); err != nil {
+	if err := schedulerCmd.Execute(); err != nil {
 		logger.Errorf(err.Error())
 		os.Exit(1)
-	}
-}
-
-func exitOnError(err error, msg string) {
-	if err != nil {
-		logger.Errorf("%s: %v", msg, err)
 	}
 }
