@@ -80,8 +80,9 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	storageMgr.SetTaskMgr(taskMgr)
 	storageMgr.InitializeCleaners()
+	progressMgr.SetTaskMgr(taskMgr)
 	// gc manager
-	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, storageMgr)
+	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create gc manager")
 	}

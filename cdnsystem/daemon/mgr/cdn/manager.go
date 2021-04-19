@@ -26,7 +26,6 @@ import (
 import (
 	"context"
 	"crypto/md5"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
@@ -138,23 +137,14 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength), nil
 }
 
-// Delete the cdn meta with specified TaskId.
-// It will also delete the files on the disk when the force equals true.
-func (cm *Manager) Delete(ctx context.Context, TaskId string, force bool) error {
-	if force {
-		err := cm.cacheStore.DeleteTask(ctx, TaskId)
-		if err != nil {
-			return errors.Wrap(err, "failed to delete task files")
-		}
-	}
-	err := cm.progressMgr.Clear(ctx, TaskId)
-	if err != nil && !cdnerrors.IsDataNotFound(err) {
-		return errors.Wrap(err, "failed to clear progress")
+func (cm *Manager) Delete(ctx context.Context, TaskId string) error {
+	err := cm.cacheStore.DeleteTask(ctx, TaskId)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete task files")
 	}
 	return nil
 }
 
-// handleCDNResult
 func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, sourceMd5 string, downloadMetadata *downloadMetadata) (bool, error) {
 	logger.WithTaskID(task.TaskId).Debugf("handle cdn result, downloadMetaData: %+v", downloadMetadata)
 	var isSuccess = true
