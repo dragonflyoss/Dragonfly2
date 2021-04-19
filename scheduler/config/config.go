@@ -60,7 +60,7 @@ type CdnServerConfig struct {
 }
 
 type cdnConfig struct {
-	List [][]CdnServerConfig `yaml:"list" mapstructure:",squash"`
+	List []CdnServerConfig `yaml:"list" mapstructure:",squash"`
 }
 
 type gcConfig struct {
@@ -93,13 +93,13 @@ func createDefaultConfig() *Config {
 			ABTest: false,
 		},
 		CDN: cdnConfig{
-			List: [][]CdnServerConfig{
-				{{
+			List: []CdnServerConfig{
+				{
 					CdnName:      "cdn",
 					IP:           "127.0.0.1",
 					RpcPort:      8003,
 					DownloadPort: 8001,
-				}},
+				},
 			},
 		},
 		GC: gcConfig{
