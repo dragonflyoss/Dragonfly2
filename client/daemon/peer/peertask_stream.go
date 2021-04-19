@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -66,6 +67,7 @@ func newStreamPeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerId.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
+	logger.Debugf("request overview, url: %s, filter: %s, meta: %s, biz: %s", request.Url, request.Filter, request.UrlMata, request.BizId)
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
@@ -170,6 +172,9 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Warnf("recover from %s", r)
+			var buf [4096]byte
+			n := runtime.Stack(buf[:], false)
+			s.Errorf("panic stack: %s", string(buf[:n]))
 		}
 	}()
 	// retry failed piece
@@ -238,9 +243,19 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 			err = errors.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
 		}
 		s.Errorf("%s", err)
+		s.span.RecordError(err)
+		s.span.End()
 		return nil, nil, err
 	case <-s.done:
-		err := errors.New("stream peer task early done")
+		var err error
+		if s.failedReason != "" {
+			err = errors.Errorf(s.failedReason)
+		} else {
+			err = errors.Errorf("stream peer task early done")
+		}
+		s.Errorf("%s", err)
+		s.span.RecordError(err)
+		s.span.End()
 		return nil, nil, err
 	case first := <-s.successPieceCh:
 		//if !ok {

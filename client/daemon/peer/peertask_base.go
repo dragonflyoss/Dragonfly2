@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -217,21 +218,16 @@ loop:
 			break loop
 		}
 
-		if peerPacket.Code == dfcodes.SchedPeerGone {
-			pt.failedReason = reasonPeerGoneFromScheduler
-			pt.failedCode = dfcodes.SchedPeerGone
-			pt.cancel()
-			pt.Errorf(pt.failedReason)
-			if !spanDone {
-				span.RecordError(fmt.Errorf(pt.failedReason))
-			}
-			break
-		}
-
 		if peerPacket.Code != dfcodes.Success {
 			pt.Errorf("receive peer packet with error: %d", peerPacket.Code)
-			// TODO when receive error, cancel ?
-			// pt.cancel()
+			if pt.isExitPeerPacketCode(peerPacket) {
+				pt.cancel()
+				pt.Errorf(pt.failedReason)
+				if !spanDone {
+					span.RecordError(fmt.Errorf(pt.failedReason))
+				}
+				break
+			}
 			continue
 		}
 
@@ -260,7 +256,31 @@ loop:
 		default:
 		}
 	}
-	close(pt.peerPacketReady)
+}
+
+func (pt *peerTask) isExitPeerPacketCode(pp *scheduler.PeerPacket) bool {
+	switch pp.Code {
+	case dfcodes.ResourceLacked, dfcodes.BadRequest, dfcodes.PeerTaskNotFound, dfcodes.UnknownError, dfcodes.RequestTimeOut:
+		// 1xxx
+		pt.failedCode = pp.Code
+		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
+		return true
+	case dfcodes.SchedError:
+		// 5xxx
+		pt.failedCode = pp.Code
+		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
+		return true
+	case dfcodes.SchedPeerGone:
+		pt.failedReason = reasonPeerGoneFromScheduler
+		pt.failedCode = dfcodes.SchedPeerGone
+		return true
+	case dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
+		// 6xxx
+		pt.failedCode = pp.Code
+		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
+		return true
+	}
+	return false
 }
 
 func (pt *peerTask) pullSinglePiece(pti PeerTask, cleanUnfinishedFunc func()) {
@@ -424,11 +444,24 @@ loop:
 			if !pt.requestedPieces.IsSet(piece.PieceNum) {
 				pt.requestedPieces.Set(piece.PieceNum)
 			}
-			pieceRequestCh <- &DownloadPieceRequest{
+			req := &DownloadPieceRequest{
 				TaskID:  pt.GetTaskID(),
 				DstPid:  piecePacket.DstPid,
 				DstAddr: piecePacket.DstAddr,
 				piece:   piece,
+			}
+			select {
+			case pieceRequestCh <- req:
+			case <-pt.done:
+				pt.Warnf("peer task done, but still some piece request not process")
+			case <-pt.ctx.Done():
+				pt.Warnf("context done due to %s", pt.ctx.Err())
+				if !pt.peerTaskDone {
+					if pt.failedCode == failedCodeNotSet {
+						pt.failedReason = reasonContextCanceled
+						pt.failedCode = dfcodes.ClientContextCanceled
+					}
+				}
 			}
 		}
 
@@ -519,9 +552,12 @@ func (pt *peerTask) isCompleted() bool {
 
 func (pt *peerTask) preparePieceTasks(request *base.PieceTaskRequest) (p *base.PiecePacket, err error) {
 	defer func() {
-		if rerr := recover(); rerr != nil {
-			pt.Errorf("preparePieceTasks recover from: %s", rerr)
-			err = fmt.Errorf("%v", rerr)
+		if r := recover(); r != nil {
+			pt.Errorf("preparePieceTasks recover from: %s", r)
+			err = fmt.Errorf("%v", r)
+			var buf [4096]byte
+			n := runtime.Stack(buf[:], false)
+			pt.Errorf("panic stack: %s", string(buf[:n]))
 		}
 	}()
 prepare:

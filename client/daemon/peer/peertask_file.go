@@ -19,6 +19,7 @@ package peer
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -84,6 +85,7 @@ func newFilePeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerId.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
+	logger.Debugf("request overview, url: %s, filter: %s, meta: %s, biz: %s", request.Url, request.Filter, request.UrlMata, request.BizId)
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
@@ -215,6 +217,9 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 	defer func() {
 		if r := recover(); r != nil {
 			pt.Warnf("recover from %s", r)
+			var buf [4096]byte
+			n := runtime.Stack(buf[:], false)
+			pt.Errorf("panic stack: %s", string(buf[:n]))
 		}
 	}()
 	pt.Debugf("report piece %d result, success: %t", piece.PieceNum, pieceResult.Success)
@@ -276,9 +281,12 @@ func (pt *filePeerTask) finish() error {
 	// send last progress
 	pt.once.Do(func() {
 		defer func() {
-			if rerr := recover(); rerr != nil {
-				pt.Errorf("finish recover from: %s", rerr)
-				err = fmt.Errorf("%v", rerr)
+			if r := recover(); r != nil {
+				pt.Errorf("finish recover from: %s", r)
+				err = fmt.Errorf("%v", r)
+				var buf [4096]byte
+				n := runtime.Stack(buf[:], false)
+				pt.Errorf("panic stack: %s", string(buf[:n]))
 			}
 			pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 			pt.span.End()
@@ -351,8 +359,11 @@ func (pt *filePeerTask) cleanUnfinished() {
 	// send last progress
 	pt.once.Do(func() {
 		defer func() {
-			if err := recover(); err != nil {
-				pt.Errorf("cleanUnfinished recover from: %s", err)
+			if r := recover(); r != nil {
+				pt.Errorf("cleanUnfinished recover from: %s", r)
+				var buf [4096]byte
+				n := runtime.Stack(buf[:], false)
+				pt.Errorf("panic stack: %s", string(buf[:n]))
 			}
 			pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 			pt.span.End()
