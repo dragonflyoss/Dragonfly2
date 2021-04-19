@@ -218,21 +218,16 @@ loop:
 			break loop
 		}
 
-		if peerPacket.Code == dfcodes.SchedPeerGone {
-			pt.failedReason = reasonPeerGoneFromScheduler
-			pt.failedCode = dfcodes.SchedPeerGone
-			pt.cancel()
-			pt.Errorf(pt.failedReason)
-			if !spanDone {
-				span.RecordError(fmt.Errorf(pt.failedReason))
-			}
-			break
-		}
-
 		if peerPacket.Code != dfcodes.Success {
 			pt.Errorf("receive peer packet with error: %d", peerPacket.Code)
-			// TODO when receive error, cancel ?
-			// pt.cancel()
+			if pt.isExitPeerPacketCode(peerPacket) {
+				pt.cancel()
+				pt.Errorf(pt.failedReason)
+				if !spanDone {
+					span.RecordError(fmt.Errorf(pt.failedReason))
+				}
+				break
+			}
 			continue
 		}
 
@@ -261,6 +256,31 @@ loop:
 		default:
 		}
 	}
+}
+
+func (pt *peerTask) isExitPeerPacketCode(pp *scheduler.PeerPacket) bool {
+	switch pp.Code {
+	case dfcodes.ResourceLacked, dfcodes.BadRequest, dfcodes.PeerTaskNotFound, dfcodes.UnknownError, dfcodes.RequestTimeOut:
+		// 1xxx
+		pt.failedCode = pp.Code
+		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
+		return true
+	case dfcodes.SchedError:
+		// 5xxx
+		pt.failedCode = pp.Code
+		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
+		return true
+	case dfcodes.SchedPeerGone:
+		pt.failedReason = reasonPeerGoneFromScheduler
+		pt.failedCode = dfcodes.SchedPeerGone
+		return true
+	case dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
+		// 6xxx
+		pt.failedCode = pp.Code
+		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
+		return true
+	}
+	return false
 }
 
 func (pt *peerTask) pullSinglePiece(pti PeerTask, cleanUnfinishedFunc func()) {
