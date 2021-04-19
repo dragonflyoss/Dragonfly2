@@ -162,18 +162,29 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 		delete(meta.Header, h)
 	}
 
-	var filter string
+	var (
+		filter string
+		biz    string
+	)
 	if f, ok := meta.Header[config.HeaderDragonflyFilter]; ok {
 		filter = f
 		// remove because we will set Filter in scheduler.PeerTaskRequest
 		delete(meta.Header, config.HeaderDragonflyFilter)
+	} else {
+		filter = rt.defaultFilter
+	}
+	if b, ok := meta.Header[config.HeaderDragonflyBiz]; ok {
+		biz = b
+		delete(meta.Header, config.HeaderDragonflyBiz)
+	} else {
+		biz = "d7y/proxy"
 	}
 	r, attr, err := rt.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
 		&scheduler.PeerTaskRequest{
 			Url:         url,
 			Filter:      filter,
-			BizId:       "d7y/proxy",
+			BizId:       biz,
 			UrlMata:     meta,
 			PeerId:      clientutil.GenPeerID(rt.peerHost),
 			PeerHost:    rt.peerHost,
