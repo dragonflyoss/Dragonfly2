@@ -131,7 +131,7 @@ func setupFlags(cmd *cobra.Command) {
 		"sender-job-pool-size is used for scheduler and do not change it")
 
 	flagSet.Var(config.NewCdnValue(&defaultBaseProperties.CDN), "cdn-list",
-		"cdn list with format of [CdnName1]:[ip1]:[rpcPort1]:[downloadPort1]|[CdnName2]:[ip2]:[rpcPort2]:[downloadPort2]")
+		"cdn list with format of [CdnName1]:[ip1]:[rpcPort1]:[downloadPort1],[CdnName2]:[ip2]:[rpcPort2]:[downloadPort2]")
 
 	exitOnError(bindRootFlags(schedulerViper), "bind root command flags")
 }

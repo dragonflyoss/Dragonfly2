@@ -53,14 +53,14 @@ type schedulerWorkerConfig struct {
 }
 
 type CdnServerConfig struct {
-	CdnName      string `yaml:"cdn-name"`
+	CdnName      string `yaml:"name"`
 	IP           string `yaml:"ip",omitempty`
 	RpcPort      int    `yaml:"rpc-port"`
 	DownloadPort int    `yaml:"download-port"`
 }
 
 type cdnConfig struct {
-	List []CdnServerConfig `yaml:"list" mapstructure:",squash"`
+	List []CdnServerConfig `yaml:"servers" mapstructure:",squash"`
 }
 
 type gcConfig struct {
