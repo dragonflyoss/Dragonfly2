@@ -41,10 +41,14 @@ type Manager struct {
 	cfg                  *config.Config
 	seedSubscribers      *syncmap.SyncMap
 	taskPieceMetaRecords *syncmap.SyncMap
-	progress             *syncmap.SyncMap
+	taskMgr              mgr.SeedTaskMgr
 	mu                   *synclock.LockerPool
 	timeout              time.Duration
 	buffer               int
+}
+
+func (pm *Manager) SetTaskMgr(taskMgr mgr.SeedTaskMgr) {
+	pm.taskMgr = taskMgr
 }
 
 func NewManager(cfg *config.Config) (*Manager, error) {
@@ -52,7 +56,6 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 		cfg:                  cfg,
 		seedSubscribers:      syncmap.NewSyncMap(),
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
-		progress:             syncmap.NewSyncMap(),
 		mu:                   synclock.NewLockerPool(),
 		timeout:              3 * time.Second,
 		buffer:               4,
@@ -102,7 +105,7 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskId string) (<-chan
 			case <-time.After(pm.timeout):
 			}
 		}
-		if _, err := pm.progress.Get(taskId); err == nil {
+		if task, err := pm.taskMgr.Get(ctx, taskId); err == nil && task.IsDone() {
 			chanList.Remove(ele)
 			close(seedCh)
 		}
@@ -144,10 +147,6 @@ func (pm *Manager) PublishTask(ctx context.Context, taskId string, task *types.S
 	logger.Debugf("publish task record %+v", task)
 	pm.mu.Lock(taskId, false)
 	defer pm.mu.UnLock(taskId, false)
-	err := pm.progress.Add(taskId, task)
-	if err != nil {
-		errors.Wrap(err, "failed to add task record")
-	}
 	chanList, err := pm.seedSubscribers.GetAsList(taskId)
 	if err != nil {
 		return errors.Wrap(err, "failed to get seed subscribers")
@@ -191,10 +190,6 @@ func (pm *Manager) Clear(ctx context.Context, taskID string) error {
 	err = pm.taskPieceMetaRecords.Remove(taskID)
 	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
 		return errors.Wrap(err, "failed to clear piece meta records")
-	}
-	err = pm.progress.Remove(taskID)
-	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
-		return errors.Wrap(err, "failed to clear progress record")
 	}
 	return nil
 }

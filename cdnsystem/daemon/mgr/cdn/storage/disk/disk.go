@@ -47,6 +47,7 @@ func init() {
 
 	var diskStorage *diskStorageMgr = nil
 	var _ storage.Manager = diskStorage
+	var _ gc.Executor = diskStorage
 }
 
 type diskBuilder struct {
@@ -60,11 +61,7 @@ func (*diskBuilder) Build(cfg *config.Config) (storage.Manager, error) {
 	storageMgr := &diskStorageMgr{
 		diskStore: diskStore,
 	}
-	gc.Register("task", &gc.ExecutorWrapper{
-		GCInitialDelay: cfg.GCInitialDelay,
-		GCInterval:     cfg.GCStorageInterval,
-		Instance:       storageMgr,
-	})
+	gc.Register("diskStorage", cfg.GCInitialDelay, cfg.GCStorageInterval, storageMgr)
 	return storageMgr, nil
 }
 

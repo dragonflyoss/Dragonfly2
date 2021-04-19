@@ -49,31 +49,34 @@ func main() {
 		go func() {
 			defer wg.Done()
 			psc, _ := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-				TaskId: "test1",
-				Url:    "oss://alimonitor-monitor/serverdd.xml",
-				UrlMeta: &base.UrlMeta{
-					Header: map[string]string{
-						"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
-						"accessKeyID":     "RX8yefyaWDWf15SV",
-						"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
-					},
-				},
-				//TaskId: "test2",
-				//Url: "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
-				//Filter: "",
+				//TaskId: "test1",
+				//Url:    "oss://alimonitor-monitor/serverdd.xml",
+				//UrlMeta: &base.UrlMeta{
+				//	Header: map[string]string{
+				//		"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
+				//		"accessKeyID":     "RX8yefyaWDWf15SV",
+				//		"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
+				//	},
+				//},
+				TaskId: "test2",
+				Url: "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
+				Filter: "",
 			})
 			for {
-				psc.Recv()
+				piece, err := psc.Recv()
+				if err != nil {
+					fmt.Println(err)
+					break
+				}
+				fmt.Println(piece)
 			}
-
 		}()
 	}
 	wg.Wait()
 	fmt.Println("client finish")
 }
 
-func
-main2() {
+func main2() {
 	c, err := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,

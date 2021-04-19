@@ -20,10 +20,7 @@ import (
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/synclock"
-	"sync"
 	"time"
 )
 
@@ -38,17 +35,21 @@ type Executor interface {
 }
 
 type ExecutorWrapper struct {
-	GCInitialDelay time.Duration
-	GCInterval     time.Duration
-	Instance       Executor
+	gcInitialDelay time.Duration
+	gcInterval     time.Duration
+	gcExecutor     Executor
 }
 
 var (
 	gcExecutorWrappers = make(map[string]*ExecutorWrapper)
 )
 
-func Register(name string, gcWrapper *ExecutorWrapper) {
-	gcExecutorWrappers[name] = gcWrapper
+func Register(name string, gcInitialDelay time.Duration, gcInterval time.Duration, gcExecutor Executor) {
+	gcExecutorWrappers[name] = &ExecutorWrapper{
+		gcInitialDelay: gcInitialDelay,
+		gcInterval:     gcInterval,
+		gcExecutor:     gcExecutor,
+	}
 }
 
 // Manager is an implementation of the interface of GCMgr.
@@ -56,41 +57,21 @@ type Manager struct {
 	cfg     *config.Config
 	taskMgr mgr.SeedTaskMgr
 	cdnMgr  mgr.CDNMgr
-	storage storage.Manager
 }
 
 func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) {
-	logger.GcLogger.Infof("gc task: start to deal with task: %s", taskID)
-
-	synclock.Lock(taskID, false)
-	defer synclock.UnLock(taskID, false)
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func(wg *sync.WaitGroup) {
-		gcm.gcCDNByTaskID(ctx, taskID, full)
-		wg.Done()
-	}(&wg)
-
-	// delete memory data
-	go func(wg *sync.WaitGroup) {
-		gcm.gcTaskByTaskID(ctx, taskID)
-		wg.Done()
-	}(&wg)
-
-	wg.Wait()
-	gcm.gcTask(ctx, taskID, full)
+	if full {
+		gcm.cdnMgr.Delete(ctx, taskID)
+	}
+	gcm.taskMgr.Delete(ctx, taskID)
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr,
-	storage storage.Manager) (*Manager, error) {
+func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr) (*Manager, error) {
 	return &Manager{
 		cfg:     cfg,
 		taskMgr: taskMgr,
 		cdnMgr:  cdnMgr,
-		storage: storage,
 	}, nil
 }
 
@@ -103,12 +84,12 @@ func (gcm *Manager) StartGC(ctx context.Context) {
 		go func(name string, wrapper *ExecutorWrapper) {
 			logger.Debugf("start the %s gc task", name)
 			// delay to execute GC after gcm.initialDelay
-			time.Sleep(wrapper.GCInitialDelay)
+			time.Sleep(wrapper.gcInitialDelay)
 
 			// execute the GC by fixed delay
-			ticker := time.NewTicker(wrapper.GCInterval)
+			ticker := time.NewTicker(wrapper.gcInterval)
 			for range ticker.C {
-				wrapper.Instance.GC(ctx)
+				wrapper.gcExecutor.GC(ctx)
 			}
 		}(name, executorWrapper)
 	}
