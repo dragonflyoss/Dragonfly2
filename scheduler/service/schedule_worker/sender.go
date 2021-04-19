@@ -17,7 +17,6 @@
 package schedule_worker
 
 import (
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
@@ -31,7 +30,6 @@ type ISender interface {
 	Start()
 	Stop()
 	Send(peerTask *types.PeerTask)
-	SendError(peerTask *types.PeerTask, err *dferrors.DfError)
 }
 
 type SenderGroup struct {
