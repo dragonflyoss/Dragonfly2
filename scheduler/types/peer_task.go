@@ -345,7 +345,8 @@ func (pt *PeerTask) SendError(dfError *dferrors.DfError) error {
 		pkg := &scheduler.PeerPacket{
 			Code: dfError.Code,
 		}
-		if dfError.Code == dfcodes.SchedPeerGone {
+		if dfError.Code == dfcodes.SchedPeerGone ||
+			pt.Task.CDNError != nil {
 			defer pt.client.Close()
 		}
 		return pt.client.Send(pkg)

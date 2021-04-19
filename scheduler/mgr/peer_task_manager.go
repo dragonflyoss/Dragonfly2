@@ -136,6 +136,22 @@ func (m *PeerTaskManager) AddTask(task *types.Task) {
 }
 
 func (m *PeerTaskManager) DeleteTask(task *types.Task) {
+	// notify client cnd error
+	m.data.Range(func(key, value interface{}) bool {
+		peerTask, _ := value.(*types.PeerTask)
+		if peerTask == nil {
+			return true
+		}
+		if peerTask.Task != task {
+			return true
+		}
+		if task.CDNError != nil {
+			peerTask.SendError(task.CDNError)
+		}
+		m.data.Delete(key)
+		return true
+	})
+
 	m.dataRanger.Delete(task)
 }
 
