@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"d7y.io/dragonfly/v2/pkg/safe"
 	"go.uber.org/zap/zapcore"
 	"os"
 	"reflect"
@@ -67,7 +68,7 @@ var SchedulerCmd = &cobra.Command{
 			logcore.SetGrpcLevel(zapcore.DebugLevel)
 		}
 
-		go func() {
+		go safe.Call(func(){
 			// enable go pprof and statsview
 			port, _ := freeport.GetFreePort()
 			debugListen := fmt.Sprintf("localhost:%d", port)
@@ -78,7 +79,7 @@ var SchedulerCmd = &cobra.Command{
 			if err := statsview.New().Start(); err != nil {
 				logger.Warnf("serve go pprof error: %s", err)
 			}
-		}()
+		})
 
 		logger.Debugf("get scheduler config: %+v", cfg)
 		logger.Infof("start to run scheduler")

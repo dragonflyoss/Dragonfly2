@@ -99,6 +99,7 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 	if err == nil {
 		rr = res.(*scheduler.RegisterResult)
 		taskId = rr.TaskId
+		suc = true
 	}
 
 	ph := ptr.PeerHost

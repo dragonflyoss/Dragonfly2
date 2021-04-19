@@ -96,6 +96,7 @@ func (m *TaskManager) gcWorkingLoop() {
 			defer func() {
 				e := recover()
 				if e != nil {
+					logger.Error("gcWorkingLoop", e)
 					debug.PrintStack()
 				}
 			}()

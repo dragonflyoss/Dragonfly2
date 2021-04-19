@@ -24,13 +24,13 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"errors"
 	"fmt"
 	"hash/crc32"
 	"io/ioutil"
 	"net/http"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -96,12 +96,7 @@ func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *type
 		return
 	}
 
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				debug.PrintStack()
-			}
-		}()
+	go safe.Call(func() {
 		stream, err := cli.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 			TaskId:  task.TaskId,
 			Url:     task.Url,
@@ -119,7 +114,7 @@ func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *type
 		}
 
 		cli.Work(task, stream, cm.doCallback)
-	}()
+	})
 
 	return
 }
@@ -135,12 +130,7 @@ func (cm *CDNManager) doCallback(task *types.Task, err *dferrors.DfError) {
 	if list == nil {
 		return
 	}
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				debug.PrintStack()
-			}
-		}()
+	go safe.Call(func() {
 		task.CDNError = err
 		for _, pt := range list {
 			fn(pt, err)
@@ -149,7 +139,7 @@ func (cm *CDNManager) doCallback(task *types.Task, err *dferrors.DfError) {
 			time.Sleep(time.Second*5)
 			GetTaskManager().DeleteTask(task.TaskId)
 		}
-	}()
+	})
 }
 
 func (cm *CDNManager) AddToCallback(peerTask *types.PeerTask) {

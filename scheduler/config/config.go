@@ -64,8 +64,8 @@ type cdnConfig struct {
 }
 
 type gcConfig struct {
-	PeerTaskDelay int64 `yaml:"task-gc-delay-time"`
-	TaskDelay     int64 `yaml:"peer-task-gc-delay-time"`
+	PeerTaskDelay int64 `yaml:"peer-task-gc-delay-time"`
+	TaskDelay     int64 `yaml:"task-gc-delay-time"`
 }
 
 func GetConfig() *Config {
