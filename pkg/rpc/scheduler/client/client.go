@@ -20,7 +20,6 @@ import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"errors"
-	"fmt"
 	"sync"
 
 	"google.golang.org/grpc"
