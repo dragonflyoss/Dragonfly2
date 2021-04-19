@@ -64,7 +64,7 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) 
 	//}
 	result, err := cd.doDetect(ctx, task)
 	if err != nil {
-		logger.WithTaskID(task.TaskId).Infof("detect cache failed, reset cache: %v", err)
+		logger.WithTaskID(task.TaskId).Infof("failed to detect cache, reset cache: %v", err)
 		metaData, err := cd.resetCache(ctx, task)
 		if err == nil {
 			result = &cacheResult{

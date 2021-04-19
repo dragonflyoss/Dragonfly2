@@ -164,6 +164,4 @@ type Manager interface {
 	SetTaskMgr(mgr.SeedTaskMgr)
 
 	InitializeCleaners()
-
-	GC(ctx context.Context) error
 }

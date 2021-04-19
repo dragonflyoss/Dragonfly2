@@ -31,7 +31,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"fmt"
 	"github.com/pkg/errors"
-	"sync"
 	"time"
 )
 
@@ -65,11 +64,7 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgr
 		cdnMgr:                  cdnMgr,
 		progressMgr:             progressMgr,
 	}
-	gc.Register("task", &gc.ExecutorWrapper{
-		GCInitialDelay: cfg.GCInitialDelay,
-		GCInterval:     cfg.GCMetaInterval,
-		Instance:       taskMgr,
-	})
+	gc.Register("task", cfg.GCInitialDelay, cfg.GCMetaInterval, taskMgr)
 	return taskMgr, nil
 }
 
@@ -132,9 +127,9 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		go tm.progressMgr.PublishTask(ctx, task.TaskId, updateTaskInfo)
 		updatedTask, err = tm.updateTask(task.TaskId, updateTaskInfo)
 		if err != nil {
-			logger.WithTaskID(task.TaskId).Errorf("update task fail:%v", err)
+			logger.WithTaskID(task.TaskId).Errorf("failed to update task:%v", err)
 		} else {
-			logger.WithTaskID(task.TaskId).Infof("success to update task cdn updatedTask:%+v", updatedTask)
+			logger.WithTaskID(task.TaskId).Infof("successfully update task cdn updatedTask:%+v", updatedTask)
 		}
 	}()
 	return nil
@@ -177,6 +172,7 @@ func (tm Manager) Delete(ctx context.Context, taskId string) error {
 	tm.accessTimeMap.Delete(taskId)
 	tm.taskURLUnReachableStore.Delete(taskId)
 	tm.taskStore.Delete(taskId)
+	tm.progressMgr.Clear(ctx, taskId)
 	return nil
 }
 
@@ -193,7 +189,7 @@ const (
 )
 
 func (tm *Manager) GC(ctx context.Context) error {
-	logger.Debugf("start the meta gc job")
+	logger.Debugf("start the task meta gc job")
 	var removedTaskCount int
 	startTime := time.Now()
 	// get all taskIDs and the corresponding accessTime
@@ -215,7 +211,8 @@ func (tm *Manager) GC(ctx context.Context) error {
 			continue
 		}
 		// gc task memory data
-		tm.gcTask(ctx, taskID, false)
+		logger.GcLogger.Infof("gc task: start to deal with task: %s", taskID)
+		tm.Delete(ctx, taskID)
 		removedTaskCount++
 	}
 
@@ -223,44 +220,6 @@ func (tm *Manager) GC(ctx context.Context) error {
 	if timeDuring := time.Since(startTime); timeDuring > gcTasksTimeout {
 		logger.GcLogger.Warnf("gc tasks:%d cost:%.3f", removedTaskCount, timeDuring.Seconds())
 	}
-	logger.GcLogger.Infof("gc tasks: success to full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
+	logger.GcLogger.Infof("gc tasks: successfully full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
 	return nil
-}
-
-// gcTask
-func (tm *Manager) gcTask(ctx context.Context, taskID string, full bool) {
-	logger.GcLogger.Infof("gc task: start to deal with task: %s", taskID)
-
-	synclock.Lock(taskID, false)
-	defer synclock.UnLock(taskID, false)
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func(wg *sync.WaitGroup) {
-		tm.gcCDNByTaskID(ctx, taskID, full)
-		wg.Done()
-	}(&wg)
-
-	// delete memory data
-	go func(wg *sync.WaitGroup) {
-		tm.gcTaskByTaskID(ctx, taskID)
-		wg.Done()
-	}(&wg)
-
-	wg.Wait()
-}
-
-// gcCDNByTaskID
-func (tm *Manager) gcCDNByTaskID(ctx context.Context, taskID string, force bool) {
-	if err := tm.cdnMgr.Delete(ctx, taskID, force); err != nil {
-		logger.GcLogger.Errorf("gc task: failed to gc cdn meta taskID(%s): %v", taskID, err)
-	}
-}
-
-// gcTaskByTaskID
-func (tm *Manager) gcTaskByTaskID(ctx context.Context, taskID string) {
-	if err := tm.Delete(ctx, taskID); err != nil {
-		logger.GcLogger.Errorf("gc task: failed to gc task info taskID(%s): %v", taskID, err)
-	}
 }

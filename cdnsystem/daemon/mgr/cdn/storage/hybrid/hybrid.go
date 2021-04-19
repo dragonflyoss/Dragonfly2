@@ -52,6 +52,7 @@ func init() {
 
 	var hybrid *hybridStorageMgr = nil
 	var _ storage.Manager = hybrid
+	var _ gc.Executor = hybrid
 }
 
 type hybridBuilder struct {
@@ -72,11 +73,7 @@ func (*hybridBuilder) Build(cfg *config.Config) (storage.Manager, error) {
 		hasShm:      true,
 		shmSwitch:   newShmSwitch(),
 	}
-	gc.Register("task", &gc.ExecutorWrapper{
-		GCInitialDelay: cfg.GCInitialDelay,
-		GCInterval:     cfg.GCStorageInterval,
-		Instance:       storageMgr,
-	})
+	gc.Register("hybridStorage", cfg.GCInitialDelay, cfg.GCStorageInterval, storageMgr)
 	return storageMgr, nil
 }
 

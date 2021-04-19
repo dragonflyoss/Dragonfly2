@@ -93,12 +93,12 @@ func checkSeedRequestParams(req *cdnsystem.SeedRequest) error {
 func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds: %v", r)
 			err = dferrors.Newf(dfcodes.UnknownError, "a panic error was encountered: %v", r)
 		}
 
 		if err != nil {
 			logger.WithTaskID(req.TaskId).Errorf("failed to obtain seeds, request:%+v %v", req, err)
+
 		}
 	}()
 	logger.Infof("obtain seeds request: %+v", req)
