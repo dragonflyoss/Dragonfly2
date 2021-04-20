@@ -1,53 +1,44 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package cmd
 
 import (
-	"encoding/json"
-	"os"
-	"strconv"
-
-	"go.uber.org/zap/zapcore"
-
 	"fmt"
+	"os"
 
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/server"
-	"d7y.io/dragonfly/v2/version"
-	"github.com/go-echarts/statsview"
-	"github.com/go-echarts/statsview/viewer"
-	"github.com/phayes/freeport"
-	"github.com/sirupsen/logrus"
-
-	"path/filepath"
-
+	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-const (
-	// SupernodeEnvPrefix is the default environment prefix for Viper.
-	// Both BindEnv and AutomaticEnv will use this prefix.
-	SchedulerEnvPrefix = "scheduler"
-)
-
-var cfg *config.Config
 var cfgFile string
 
-// schedulerDescription is used to describe supernode command in details.
-var schedulerDescription = `scheduler is a long-running process with two primary responsibilities:
-It's the tracker and scheduler in the P2P network that choose appropriate downloading net-path for each peer.`
-
-var schedulerCmd = &cobra.Command{
-	Use:               "scheduler",
-	Short:             "the central control server of Dragonfly used for scheduling",
-	Long:              schedulerDescription,
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
+	Use:     "scheduler [OPTIONS]",
+	Short:   "P2P scheduler",
+	Long: `scheduler is a long-running process and is mainly responsible for 
+deciding which peers transmit blocks to each other.`,
 	Args:              cobra.NoArgs,
-	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
+	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Init logger
 		if err := logcore.InitScheduler(cfg.Console); err != nil {
 			return errors.Wrap(err, "init scheduler logger")
 		}
@@ -56,98 +47,51 @@ var schedulerCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	// Initialize default daemon config
-	cfg = config.New()
-
-	// Initialize cobra
-	cobra.OnInitialize(initConfig)
-
-	// Add flags
-	flagSet := schedulerCmd.Flags()
-	flagSet.BoolVar(&cfg.Console, "console", cfg.Console, "console")
-	flagSet.BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "print verbose log and enable golang debug info")
-	flagSet.IntVar(&cfg.Server.Port, "port", cfg.Server.Port, "port is the port that scheduler server listens on")
-	flagSet.IntVar(&cfg.Worker.WorkerNum, "worker-num", cfg.Worker.WorkerNum, "worker-num is used for scheduler and do not change it")
-	flagSet.IntVar(&cfg.Worker.WorkerJobPoolSize, "worker-job-pool-size", cfg.Worker.WorkerJobPoolSize, "worker-job-pool-size is used for scheduler and do not change it")
-	flagSet.IntVar(&cfg.Worker.SenderNum, "sender-num", cfg.Worker.SenderNum, "sender-num is used for scheduler and do not change it")
-	flagSet.IntVar(&cfg.Worker.WorkerJobPoolSize, "sender-job-pool-size", cfg.Worker.WorkerJobPoolSize, "sender-job-pool-size is used for scheduler and do not change it")
-	flagSet.StringVar(&cfgFile, "config", "", "the path of scheduler's configuration file")
-	flagSet.Var(config.NewCDNValue(&cfg.CDN), "cdn-servers", "cdn server list with format of [CdnName1]:[ip1]:[rpcPort1]:[downloadPort1],[CdnName2]:[ip2]:[rpcPort2]:[downloadPort2]")
-
-	schedulerCmd.AddCommand(version.VersionCmd)
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
+func init() {
+	cobra.OnInitialize(initConfig)
+
+	// Here you will define your flags and configuration settings.
+	// Cobra supports persistent flags, which, if defined here,
+	// will be global for your application.
+
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.scheduler.yaml)")
+
+	// Cobra also supports local flags, which will only run
+	// when this action is called directly.
+	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+// initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		viper.AddConfigPath(filepath.Dir(config.DefaultConfigFilePath))
-		viper.SetConfigFile(filepath.Base(config.DefaultConfigFilePath))
+		// Find home directory.
+		home, err := homedir.Dir()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		// Search config in home directory with name ".scheduler" (without extension).
+		viper.AddConfigPath(home)
+		viper.SetConfigName(".scheduler")
 	}
 
-	fmt.Printf("file: %s", cfgFile)
-
-	viper.SetEnvPrefix(SchedulerEnvPrefix)
-	viper.AutomaticEnv() // read in envionment variables that match
+	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		logrus.Debugf("Using config file: %s", viper.ConfigFileUsed())
-	}
-
-	// Unmarshal config
-	if err := viper.Unmarshal(&cfg); err != nil {
-		logrus.Fatalf(errors.Wrap(err, "cannot unmarshal config").Error())
-	}
-}
-
-func runScheduler() error {
-	// Scheduler config values
-	s, _ := json.MarshalIndent(cfg, "", "  ")
-	logger.Debugf("dfget option(debug only, can not use as config):\n%s", string(s))
-
-	// Initialize verbose mode
-	initVerboseMode(cfg.Verbose)
-
-	svr := server.NewServer(cfg)
-
-	return svr.Serve()
-}
-
-func initVerboseMode(verbose bool) {
-	if !verbose {
-		return
-	}
-
-	logcore.SetCoreLevel(zapcore.DebugLevel)
-	logcore.SetGrpcLevel(zapcore.DebugLevel)
-
-	go func() {
-		// enable go pprof and statsview
-		port, _ := strconv.Atoi(os.Getenv("D7Y_PPROF_PORT"))
-		if port == 0 {
-			port, _ = freeport.GetFreePort()
-		}
-
-		debugListen := fmt.Sprintf("localhost:%d", port)
-		viewer.SetConfiguration(viewer.WithAddr(debugListen))
-
-		logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
-			"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
-			Infof("enable debug at http://%s", debugListen)
-
-		if err := statsview.New().Start(); err != nil {
-			logger.Warnf("serve go pprof error: %s", err)
-		}
-	}()
-}
-
-// Execute will process supernode.
-func Execute() {
-	if err := schedulerCmd.Execute(); err != nil {
-		logger.Errorf(err.Error())
-		os.Exit(1)
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
 }
