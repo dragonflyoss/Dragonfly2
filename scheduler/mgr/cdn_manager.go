@@ -25,13 +25,6 @@ import (
 	"sync"
 	"time"
 
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"sync"
-	"time"
-
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
