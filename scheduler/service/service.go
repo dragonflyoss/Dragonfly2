@@ -17,6 +17,7 @@
 package service
 
 import (
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 )
@@ -29,7 +30,7 @@ type SchedulerService struct {
 	scheduler   *scheduler.Scheduler
 }
 
-func CreateSchedulerService() *SchedulerService {
+func NewSchedulerService(cfg *config.Config) *SchedulerService {
 	s := &SchedulerService{
 		cdnMgr:      mgr.GetCDNManager(),
 		taskMgr:     mgr.GetTaskManager(),
@@ -38,6 +39,7 @@ func CreateSchedulerService() *SchedulerService {
 		scheduler:   scheduler.CreateScheduler(),
 	}
 	s.cdnMgr.InitCDNClient()
+
 	return s
 }
 

@@ -28,21 +28,26 @@ type Server struct {
 	scheduler *service.SchedulerService
 	worker    schedule_worker.IWorker
 	server    *SchedulerServer
+	config    config.ServerConfig
 	running   bool
 }
 
-func NewServer() *Server {
+func NewServer(cfg *config.Config) *Server {
 	s := &Server{
-		running:   false,
-		scheduler: service.CreateSchedulerService(),
+		running: false,
+		config:  cfg.Server,
 	}
-	s.worker = schedule_worker.CreateWorkerGroup(s.scheduler.GetScheduler())
-	s.server = &SchedulerServer{svc: s.scheduler, worker: s.worker}
+
+	s.worker = schedule_worker.NewWorkerGroup(cfg, s.scheduler.GetScheduler())
+
+	s.server = NewSchedulerServer(cfg, WithSchedulerService(service.NewSchedulerService(cfg)),
+		WithWorker(s.worker))
+
 	return s
 }
 
-func (s *Server) Start() (err error) {
-	port := config.GetConfig().Server.Port
+func (s *Server) Serve() (err error) {
+	port := s.config.Port
 
 	go s.worker.Start()
 	defer s.worker.Stop()

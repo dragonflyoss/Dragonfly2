@@ -65,6 +65,10 @@ type PeerHostOption struct {
 	Telemetry TelemetryOption `json:"telemetry" yaml:"telemetry"`
 }
 
+func NewPeerHostOption() *PeerHostOption {
+	return &peerHostConfig
+}
+
 func (p *PeerHostOption) Load(path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {

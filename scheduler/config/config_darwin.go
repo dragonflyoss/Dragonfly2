@@ -12,23 +12,23 @@ var (
 	SchedulerConfigPath = basic.HomeDir + "/.dragonfly/scheduler.yaml"
 )
 
-var SchedulerConfig = Config{
+var config = Config{
 	Console: false,
 	Verbose: false,
-	Server: serverConfig{
+	Server: ServerConfig{
 		Port: 8002,
 	},
-	Worker: schedulerWorkerConfig{
+	Worker: SchedulerWorkerConfig{
 		WorkerNum:         runtime.GOMAXPROCS(0),
 		WorkerJobPoolSize: 10000,
 		SenderNum:         10,
 		SenderJobPoolSize: 10000,
 	},
-	Scheduler: schedulerConfig{
+	Scheduler: SchedulerConfig{
 		ABTest: false,
 	},
-	CDN: cdnConfig{
-		Servers: []CdnServerConfig{
+	CDN: CDNConfig{
+		Servers: []CDNServerConfig{
 			{
 				Name:         "cdn",
 				IP:           "127.0.0.1",
@@ -37,7 +37,7 @@ var SchedulerConfig = Config{
 			},
 		},
 	},
-	GC: gcConfig{
+	GC: GCConfig{
 		TaskDelay:     3600 * 1000,
 		PeerTaskDelay: 3600 * 1000,
 	},

@@ -36,7 +36,7 @@ var (
 	peerHostDataDir  = peerHostWorkHome
 )
 
-var PeerHostConfig = PeerHostOption{
+var peerHostConfig = PeerHostOption{
 	DataDir:     peerHostDataDir,
 	WorkHome:    peerHostWorkHome,
 	AliveTime:   clientutil.Duration{Duration: 5 * time.Minute},

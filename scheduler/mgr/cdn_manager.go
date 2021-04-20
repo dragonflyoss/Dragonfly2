@@ -43,7 +43,7 @@ const TinyFileSize = 128
 
 type CDNManager struct {
 	client       client.SeederClient
-	cdnInfoMap   map[string]*config.CdnServerConfig
+	cdnInfoMap   map[string]*config.CDNServerConfig
 	lock         *sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
 	callbackList map[*types.Task][]*types.PeerTask
@@ -51,7 +51,7 @@ type CDNManager struct {
 
 func createCDNManager() *CDNManager {
 	cdnMgr := &CDNManager{
-		cdnInfoMap:   make(map[string]*config.CdnServerConfig),
+		cdnInfoMap:   make(map[string]*config.CDNServerConfig),
 		lock:         new(sync.RWMutex),
 		callbackFns:  make(map[*types.Task]func(*types.PeerTask, *dferrors.DfError)),
 		callbackList: make(map[*types.Task][]*types.PeerTask),
@@ -158,7 +158,7 @@ func (cm *CDNManager) AddToCallback(peerTask *types.PeerTask) {
 	cm.lock.Unlock()
 }
 
-func (cm *CDNManager) getCdnInfo(seederName string) *config.CdnServerConfig {
+func (cm *CDNManager) getCdnInfo(seederName string) *config.CDNServerConfig {
 	return cm.cdnInfoMap[seederName]
 }
 

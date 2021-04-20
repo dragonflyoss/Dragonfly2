@@ -22,77 +22,75 @@ const (
 	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yaml"
 )
 
-var config = createDefaultConfig()
-
 type Config struct {
 	Console   bool                  `mapstructure:"console"`
 	Verbose   bool                  `mapstructure:"verbose"`
-	Scheduler schedulerConfig       `mapstructure:"scheduler"`
-	Server    serverConfig          `mapstructure:"server"`
-	Worker    schedulerWorkerConfig `mapstructure:"worker"`
-	CDN       cdnConfig             `mapstructure:"cdn"`
-	GC        gcConfig              `mapstructure:"gc"`
+	Scheduler SchedulerConfig       `mapstructure:"scheduler"`
+	Server    ServerConfig          `mapstructure:"server"`
+	Worker    SchedulerWorkerConfig `mapstructure:"worker"`
+	CDN       CDNConfig             `mapstructure:"cdn"`
+	GC        GCConfig              `mapstructure:"gc"`
 }
 
-type schedulerConfig struct {
+type SchedulerConfig struct {
 	ABTest     bool   `mapstructure:"abtest"`
 	AScheduler string `mapstructure:"ascheduler"`
 	BScheduler string `mapstructure:"bscheduler"`
 }
 
-type serverConfig struct {
+type ServerConfig struct {
 	IP   string `mapstructure:"ip"`
 	Port int    `mapstructure:"port"`
 }
 
-type schedulerWorkerConfig struct {
+type SchedulerWorkerConfig struct {
 	WorkerNum         int `mapstructure:"workerNum"`
 	WorkerJobPoolSize int `mapstructure:"workerJobPoolSize"`
 	SenderNum         int `mapstructure:"senderNum"`
 	SenderJobPoolSize int `mapstructure:"senderJobPoolSize"`
 }
 
-type CdnServerConfig struct {
+type CDNServerConfig struct {
 	Name         string `mapstructure:"name"`
 	IP           string `mapstructure:"ip"`
 	RpcPort      int    `mapstructure:"rpcPort"`
 	DownloadPort int    `mapstructure:"downloadPort"`
 }
 
-type cdnConfig struct {
-	Servers []CdnServerConfig `mapstructure:"servers"`
+type CDNConfig struct {
+	Servers []CDNServerConfig `mapstructure:"servers"`
 }
 
-type gcConfig struct {
+type GCConfig struct {
 	PeerTaskDelay int64 `mapstructure:"peerTaskDelay"`
 	TaskDelay     int64 `mapstructure:"taskDelay"`
 }
 
-func GetConfig() *Config {
-	return config
+func New() *Config {
+	return &config
 }
 
-func SetConfig(cfg *Config) {
-	config = cfg
+func GetConfig() *Config {
+	return &config
 }
 
 func createDefaultConfig() *Config {
 	return &Config{
 		Console: false,
-		Server: serverConfig{
+		Server: ServerConfig{
 			Port: 8002,
 		},
-		Worker: schedulerWorkerConfig{
+		Worker: SchedulerWorkerConfig{
 			WorkerNum:         runtime.GOMAXPROCS(0),
 			WorkerJobPoolSize: 10000,
 			SenderNum:         10,
 			SenderJobPoolSize: 10000,
 		},
-		Scheduler: schedulerConfig{
+		Scheduler: SchedulerConfig{
 			ABTest: false,
 		},
-		CDN: cdnConfig{
-			Servers: []CdnServerConfig{
+		CDN: CDNConfig{
+			Servers: []CDNServerConfig{
 				{
 					Name:         "cdn",
 					IP:           "127.0.0.1",
@@ -101,7 +99,7 @@ func createDefaultConfig() *Config {
 				},
 			},
 		},
-		GC: gcConfig{
+		GC: GCConfig{
 			TaskDelay:     3600 * 1000,
 			PeerTaskDelay: 3600 * 1000,
 		},

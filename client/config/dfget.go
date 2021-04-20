@@ -107,6 +107,10 @@ type ClientOption struct {
 	MoreDaemonOptions string `json:"more_daemon_options,omitempty"`
 }
 
+func NewClientOption() *ClientOption {
+	return &dfgetConfig
+}
+
 func (cfg *ClientOption) Validate() error {
 	if cfg == nil {
 		return errors.Wrap(dferrors.ErrInvalidArgument, "runtime config")

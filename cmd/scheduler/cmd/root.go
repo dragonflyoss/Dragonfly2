@@ -58,7 +58,7 @@ var schedulerCmd = &cobra.Command{
 
 func init() {
 	// Initialize default daemon config
-	cfg = &config.SchedulerConfig
+	cfg = config.New()
 
 	// Initialize cobra
 	cobra.OnInitialize(initConfig)
@@ -111,8 +111,9 @@ func runScheduler() error {
 	// Initialize verbose mode
 	initVerboseMode(cfg.Verbose)
 
-	svr := server.NewServer()
-	return svr.Start()
+	svr := server.NewServer(cfg)
+
+	return svr.Serve()
 }
 
 func initVerboseMode(verbose bool) {

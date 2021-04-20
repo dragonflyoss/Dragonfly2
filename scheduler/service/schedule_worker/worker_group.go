@@ -17,13 +17,14 @@
 package schedule_worker
 
 import (
+	"hash/crc32"
+
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/mgr"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/types"
-	"hash/crc32"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -46,7 +47,7 @@ type WorkerGroup struct {
 	scheduler *scheduler.Scheduler
 }
 
-func CreateWorkerGroup(scheduler *scheduler.Scheduler) *WorkerGroup {
+func NewWorkerGroup(cfg *config.Config, scheduler *scheduler.Scheduler) *WorkerGroup {
 	workerNum := config.GetConfig().Worker.WorkerNum
 	chanSize := config.GetConfig().Worker.WorkerJobPoolSize
 	return &WorkerGroup{
@@ -64,11 +65,11 @@ func (wg *WorkerGroup) Start() {
 	mgr.GetPeerTaskManager().SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
 		status := pt.GetNodeStatus()
 		if status != types.PeerTaskStatusHealth {
-		//} else if pt.GetNodeStatus() != types.PeerTaskStatusDone{
-		//	return
+			//} else if pt.GetNodeStatus() != types.PeerTaskStatusDone{
+			//	return
 		} else if pt.Success || pt.Host.Type == types.HostTypeCdn {
 			return
-		} else if pt.GetParent() == nil  {
+		} else if pt.GetParent() == nil {
 			pt.SetNodeStatus(types.PeerTaskStatusNeedParent)
 		} else {
 			pt.SetNodeStatus(types.PeerTaskStatusNeedCheckNode)

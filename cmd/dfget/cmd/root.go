@@ -124,7 +124,7 @@ func Execute() {
 
 func init() {
 	// Initialize default dfget config
-	dfgetConfig = &config.DfgetConfig
+	dfgetConfig = config.NewClientOption()
 
 	// Add flags
 	flagSet := rootCmd.Flags()

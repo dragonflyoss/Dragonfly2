@@ -84,7 +84,7 @@ var daemonCmd = &cobra.Command{
 
 func init() {
 	// Initialize default daemon config
-	daemonConfig = &config.PeerHostConfig
+	daemonConfig = config.NewPeerHostOption()
 
 	// Initialize cobra
 	initDaemonConfig(config.PeerHostConfigPath)

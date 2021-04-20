@@ -32,23 +32,23 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	config := &Config{
 		Console: true,
 		Verbose: true,
-		Scheduler: schedulerConfig{
+		Scheduler: SchedulerConfig{
 			ABTest:     true,
 			AScheduler: "a-scheduler",
 			BScheduler: "b-scheduler",
 		},
-		Server: serverConfig{
+		Server: ServerConfig{
 			IP:   "127.0.0.1",
 			Port: 8002,
 		},
-		Worker: schedulerWorkerConfig{
+		Worker: SchedulerWorkerConfig{
 			WorkerNum:         8,
 			WorkerJobPoolSize: 10000,
 			SenderNum:         10,
 			SenderJobPoolSize: 10000,
 		},
-		CDN: cdnConfig{
-			Servers: []CdnServerConfig{
+		CDN: CDNConfig{
+			Servers: []CDNServerConfig{
 				{
 					Name:         "cdn",
 					IP:           "127.0.0.1",
@@ -57,7 +57,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 				},
 			},
 		},
-		GC: gcConfig{
+		GC: GCConfig{
 			TaskDelay:     3600 * 1000,
 			PeerTaskDelay: 3600 * 1000,
 		},

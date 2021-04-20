@@ -26,10 +26,10 @@ import (
 
 // CdnValue implements the pflag.Value interface.
 type CdnValue struct {
-	cc *cdnConfig
+	cc *CDNConfig
 }
 
-func NewCDNValue(cc *cdnConfig) *CdnValue {
+func NewCDNValue(cc *CDNConfig) *CdnValue {
 	return &CdnValue{cc: cc}
 }
 
@@ -52,7 +52,7 @@ func (cv *CdnValue) Set(value string) error {
 		}
 		rpcPort, _ := strconv.Atoi(vv[2])
 		downloadPort, _ := strconv.Atoi(vv[3])
-		cv.cc.Servers = append(cv.cc.Servers, CdnServerConfig{
+		cv.cc.Servers = append(cv.cc.Servers, CDNServerConfig{
 			Name:         vv[0],
 			IP:           vv[1],
 			RpcPort:      rpcPort,

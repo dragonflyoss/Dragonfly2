@@ -18,24 +18,64 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"time"
+
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/service/schedule_worker"
 	"d7y.io/dragonfly/v2/scheduler/types"
-	"fmt"
-	"time"
 )
 
 var _ server.SchedulerServer = &SchedulerServer{}
 
 type SchedulerServer struct {
-	svc    *service.SchedulerService
-	worker schedule_worker.IWorker
+	service *service.SchedulerService
+	worker  schedule_worker.IWorker
+	config  config.SchedulerConfig
+}
+
+// Option is a functional option for configuring the scheduler
+type Option func(p *SchedulerServer) *SchedulerServer
+
+// WithSchedulerService sets the *service.SchedulerService
+func WithSchedulerService(service *service.SchedulerService) Option {
+	return func(s *SchedulerServer) *SchedulerServer {
+		s.service = service
+		return s
+	}
+}
+
+// WithWorker sets the schedule_worker.IWorker
+func WithWorker(worker schedule_worker.IWorker) Option {
+	return func(p *SchedulerServer) *SchedulerServer {
+		p.worker = worker
+		return p
+	}
+}
+
+// NewSchedulerServer returns a new transparent scheduler server from the given options
+func NewSchedulerServer(cfg *config.Config, options ...Option) *SchedulerServer {
+	return NewSchedulerWithOptions(cfg, options...)
+}
+
+// NewSchedulerWithOptions constructs a new instance of a scheduler server with additional options.
+func NewSchedulerWithOptions(cfg *config.Config, options ...Option) *SchedulerServer {
+	scheduler := &SchedulerServer{
+		config: cfg.Scheduler,
+	}
+
+	for _, opt := range options {
+		opt(scheduler)
+	}
+
+	return scheduler
 }
 
 func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (pkg *scheduler.RegisterResult, err error) {
@@ -58,8 +98,8 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 	// get or create task
 	var isCdn = false
-	pkg.TaskId = s.svc.GenerateTaskId(request.Url, request.Filter, request.UrlMata, request.BizId, request.PeerId)
-	task, _ := s.svc.GetTask(pkg.TaskId)
+	pkg.TaskId = s.service.GenerateTaskId(request.Url, request.Filter, request.UrlMata, request.BizId, request.PeerId)
+	task, _ := s.service.GetTask(pkg.TaskId)
 	if task == nil {
 		task = &types.Task{
 			TaskId:  pkg.TaskId,
@@ -68,7 +108,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 			BizId:   request.BizId,
 			UrlMata: request.UrlMata,
 		}
-		task, err = s.svc.AddTask(task)
+		task, err = s.service.AddTask(task)
 		if err != nil {
 			dferror, _ := err.(*dferrors.DfError)
 			if dferror != nil && dferror.Code == dfcodes.SchedNeedBackSource {
@@ -95,7 +135,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 	// get or create host
 	hostId := request.PeerHost.Uuid
-	host, _ := s.svc.GetHost(hostId)
+	host, _ := s.service.GetHost(hostId)
 	if host == nil {
 		host = &types.Host{
 			Type:     types.HostTypePeer,
@@ -104,7 +144,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		if isCdn {
 			host.Type = types.HostTypeCdn
 		}
-		host, err = s.svc.AddHost(host)
+		host, err = s.service.AddHost(host)
 		if err != nil {
 			return
 		}
@@ -112,9 +152,9 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 	// get or creat PeerTask
 	pid := request.PeerId
-	peerTask, _ := s.svc.GetPeerTask(pid)
+	peerTask, _ := s.service.GetPeerTask(pid)
 	if peerTask == nil {
-		peerTask, err = s.svc.AddPeerTask(pid, task, host)
+		peerTask, err = s.service.AddPeerTask(pid, task, host)
 		if err != nil {
 			return
 		}
@@ -136,7 +176,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 	// case base.SizeScope_SMALL
 	// do scheduler piece
-	parent, _, err := s.svc.SchedulerParent(peerTask)
+	parent, _, err := s.service.SchedulerParent(peerTask)
 	if err != nil {
 		return
 	}
@@ -174,7 +214,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		}
 		return
 	}()
-	err = schedule_worker.CreateClient(stream, s.worker, s.svc.GetScheduler()).Start()
+	err = schedule_worker.CreateClient(stream, s.worker, s.service.GetScheduler()).Start()
 	return
 }
 
@@ -198,7 +238,7 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 	logger.Infof("[%s][%s]: receive a peer result [%+v]", result.TaskId, result.PeerId, *result)
 
 	pid := result.PeerId
-	peerTask, err := s.svc.GetPeerTask(pid)
+	peerTask, err := s.service.GetPeerTask(pid)
 	if err != nil {
 		return
 	}
@@ -233,7 +273,7 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 	}()
 
 	pid := target.PeerId
-	peerTask, err := s.svc.GetPeerTask(pid)
+	peerTask, err := s.service.GetPeerTask(pid)
 	if err != nil {
 		return
 	}
