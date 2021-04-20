@@ -48,8 +48,7 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 			candidateNodes = append(candidateNodes, ringNode)
 		}
 	}
-	logger.GrpcLogger.Debugf("conn:%s all server node list:%v, exclusiveNodes node list:%v, "+
-		"candidate node list:%v", conn.name, ringNodes, exclusiveNodes, candidateNodes)
+	logger.Debugf("conn:%s all server node list:%v, exclusiveNodes node list:%v, candidate node list:%v", conn.name, ringNodes, exclusiveNodes, candidateNodes)
 	for _, candidateNode := range candidateNodes {
 		// Check whether there is a corresponding mapping client in the node2ClientMap
 		if client, ok := conn.node2ClientMap.Load(candidateNode); ok {

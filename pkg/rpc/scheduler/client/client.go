@@ -18,8 +18,8 @@ package client
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"errors"
-	"fmt"
 	"sync"
 
 	"google.golang.org/grpc"
@@ -84,7 +84,8 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 }
 
 func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, exclusiveNodes []string, opts []grpc.CallOption) (rr *scheduler.RegisterResult, err error) {
-	key := fmt.Sprintf("%s,%s,%s", ptr.Url, ptr.Filter, ptr.BizId)
+	key := idgen.GenerateTaskId(ptr.Url, ptr.Filter, ptr.UrlMata, ptr.BizId)
+	logger.Infof("start to register peer task for url(%s), generate hashKey taskId: %s", ptr.Url, key)
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		client, err := sc.getSchedulerClient(key)
 		if err != nil {
