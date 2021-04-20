@@ -165,6 +165,7 @@ func initTracer(addr string) (func(), error) {
 }
 
 func runDaemon() error {
+	// Daemon config values
 	s, _ := json.MarshalIndent(daemonConfig, "", "  ")
 	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
 

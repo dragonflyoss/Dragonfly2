@@ -27,17 +27,18 @@ var config = createDefaultConfig()
 type Config struct {
 	Debug     bool                  `mapstructure:"debug"`
 	Console   bool                  `mapstructure:"console"`
-	Scheduler schedulerConfig       `mapstructure:"scheduler,squash"`
-	Server    serverConfig          `mapstructure:"server,squash"`
-	Worker    schedulerWorkerConfig `mapstructure:"worker,squash"`
-	CDN       cdnConfig             `mapstructure:"cdn,squash"`
-	GC        gcConfig              `mapstructure:"gc,squash"`
+	Verbose   bool                  `mapstructure:"verbose"`
+	Scheduler schedulerConfig       `mapstructure:"scheduler"`
+	Server    serverConfig          `mapstructure:"server"`
+	Worker    schedulerWorkerConfig `mapstructure:"worker"`
+	CDN       cdnConfig             `mapstructure:"cdn"`
+	GC        gcConfig              `mapstructure:"gc"`
 }
 
 type schedulerConfig struct {
-	ABTest     bool
-	AScheduler string
-	BScheduler string
+	ABTest     bool   `mapstructure:"abtest"`
+	AScheduler string `mapstructure:"ascheduler"`
+	BScheduler string `mapstructure:"bscheduler"`
 }
 
 type serverConfig struct {
@@ -60,7 +61,7 @@ type CdnServerConfig struct {
 }
 
 type cdnConfig struct {
-	Servers []CdnServerConfig `yaml:"servers" mapstructure:",squash"`
+	Servers []CdnServerConfig `mapstructure:"servers"`
 }
 
 type gcConfig struct {

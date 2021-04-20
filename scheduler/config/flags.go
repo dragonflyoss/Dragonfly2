@@ -63,5 +63,5 @@ func (cv *CdnValue) Set(value string) error {
 }
 
 func (cv *CdnValue) Type() string {
-	return "cdn-list"
+	return "cdn-servers"
 }

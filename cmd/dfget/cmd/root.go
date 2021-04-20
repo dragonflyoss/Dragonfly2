@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -197,12 +198,10 @@ func init() {
 	flagSet.BoolVar(&deprecatedFlags.commonBool, "notmd5", false, "deprecated")
 	flagSet.BoolVar(&deprecatedFlags.commonBool, "showcenter", false, "deprecated")
 	flagSet.BoolVar(&deprecatedFlags.commonBool, "usewrap", false, "deprecated")
-
 	flagSet.StringVar(&deprecatedFlags.commonString, "locallimit", "", "deprecated")
 	flagSet.StringVar(&deprecatedFlags.commonString, "minrate", "", "deprecated")
 	flagSet.StringVarP(&deprecatedFlags.commonString, "tasktype", "t", "", "deprecated")
 	flagSet.StringVarP(&deprecatedFlags.commonString, "center", "c", "", "deprecated")
-
 	flagSet.BoolVarP(&deprecatedFlags.version, "version", "v", false, "deprecated")
 
 	flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")
@@ -210,6 +209,7 @@ func init() {
 	flagSet.MarkDeprecated("dfdaemon", "not used anymore")
 	flagSet.MarkDeprecated("version", "Please use 'dfget version' instead")
 	flagSet.MarkShorthandDeprecated("v", "Please use 'dfget version' instead")
+
 	// Add command
 	rootCmd.AddCommand(version.VersionCmd)
 }
@@ -226,6 +226,10 @@ func convertDeprecatedFlags() {
 
 // runDfget does some init operations and starts to download.
 func runDfget() error {
+	// Dfget config values
+	s, _ := json.MarshalIndent(dfgetConfig, "", "  ")
+	logger.Debugf("dfget option(debug only, can not use as config):\n%s", string(s))
+
 	var addr = dfnet.NetAddr{
 		Type: dfnet.UNIX,
 		Addr: daemonConfig.Download.DownloadGRPC.UnixListen.Socket,
@@ -339,7 +343,6 @@ func initVerboseMode(verbose bool) {
 			logger.Warnf("serve go pprof error: %s", err)
 		}
 	}()
-	logger.Debugf("%#v", dfgetConfig)
 }
 
 func downloadFromSource(hdr map[string]string, dferr error) (err error) {

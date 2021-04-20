@@ -3,8 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"os"
+	"strconv"
 
-	"d7y.io/dragonfly/v2/pkg/safe"
 	"go.uber.org/zap/zapcore"
 
 	"fmt"
@@ -47,36 +47,21 @@ var schedulerCmd = &cobra.Command{
 	DisableAutoGenTag: true, // disable displaying auto generation tag in cli docs
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		s, _ := json.MarshalIndent(cfg, "", "  ")
-		logger.Debugf("scheduler option(debug only, can not use as config):\n%s", string(s))
-
-		// init logger
+		// Init logger
 		if err := logcore.InitScheduler(cfg.Console); err != nil {
 			return errors.Wrap(err, "init scheduler logger")
 		}
+
+		// Init debug
 		if cfg.Debug {
 			logcore.SetCoreLevel(zapcore.DebugLevel)
 			logcore.SetGrpcLevel(zapcore.DebugLevel)
 		}
 
-		go safe.Call(func() {
-			// enable go pprof and statsview
-			port, _ := freeport.GetFreePort()
-			debugListen := fmt.Sprintf("localhost:%d", port)
-			viewer.SetConfiguration(viewer.WithAddr(debugListen))
-			logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
-				"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
-				Infof("enable debug at http://%s", debugListen)
-			if err := statsview.New().Start(); err != nil {
-				logger.Warnf("serve go pprof error: %s", err)
-			}
-		})
+		// Initialize verbose mode
+		initVerboseMode(cfg.Verbose)
 
-		logger.Debugf("get scheduler config: %+v", cfg)
-		logger.Infof("start to run scheduler")
-
-		svr := server.NewServer()
-		return svr.Start()
+		return runScheduler()
 	},
 }
 
@@ -89,13 +74,13 @@ func init() {
 
 	// Add flags
 	flagSet := schedulerCmd.Flags()
-	flagSet.Bool("debug", cfg.Debug, "debug")
-	flagSet.Bool("console", cfg.Console, "console")
-	flagSet.Int("port", cfg.Server.Port, "port is the port that scheduler server listens on")
-	flagSet.Int("worker-num", cfg.Worker.WorkerNum, "worker-num is used for scheduler and do not change it")
-	flagSet.Int("worker-job-pool-size", cfg.Worker.WorkerJobPoolSize, "worker-job-pool-size is used for scheduler and do not change it")
-	flagSet.Int("sender-num", cfg.Worker.SenderNum, "sender-num is used for scheduler and do not change it")
-	flagSet.Int("sender-job-pool-size", cfg.Worker.WorkerJobPoolSize, "sender-job-pool-size is used for scheduler and do not change it")
+	flagSet.BoolVar(&cfg.Debug, "debug", cfg.Debug, "debug")
+	flagSet.BoolVar(&cfg.Console, "console", cfg.Console, "console")
+	flagSet.IntVar(&cfg.Server.Port, "port", cfg.Server.Port, "port is the port that scheduler server listens on")
+	flagSet.IntVar(&cfg.Worker.WorkerNum, "worker-num", cfg.Worker.WorkerNum, "worker-num is used for scheduler and do not change it")
+	flagSet.IntVar(&cfg.Worker.WorkerJobPoolSize, "worker-job-pool-size", cfg.Worker.WorkerJobPoolSize, "worker-job-pool-size is used for scheduler and do not change it")
+	flagSet.IntVar(&cfg.Worker.SenderNum, "sender-num", cfg.Worker.SenderNum, "sender-num is used for scheduler and do not change it")
+	flagSet.IntVar(&cfg.Worker.WorkerJobPoolSize, "sender-job-pool-size", cfg.Worker.WorkerJobPoolSize, "sender-job-pool-size is used for scheduler and do not change it")
 	flagSet.StringVar(&cfgFile, "config", "", "the path of scheduler's configuration file")
 	flagSet.Var(config.NewCdnValue(&cfg.CDN), "cdn-servers", "cdn server list with format of [CdnName1]:[ip1]:[rpcPort1]:[downloadPort1],[CdnName2]:[ip2]:[rpcPort2]:[downloadPort2]")
 
@@ -125,6 +110,46 @@ func initConfig() {
 	if err := viper.Unmarshal(&cfg); err != nil {
 		logrus.Fatalf(errors.Wrap(err, "cannot unmarshal config").Error())
 	}
+}
+
+func runScheduler() error {
+	// Scheduler config values
+	s, _ := json.MarshalIndent(cfg, "", "  ")
+	logger.Debugf("dfget option(debug only, can not use as config):\n%s", string(s))
+
+	// Initialize verbose mode
+	initVerboseMode(cfg.Verbose)
+
+	svr := server.NewServer()
+	return svr.Start()
+}
+
+func initVerboseMode(verbose bool) {
+	if !verbose {
+		return
+	}
+
+	logcore.SetCoreLevel(zapcore.DebugLevel)
+	logcore.SetGrpcLevel(zapcore.DebugLevel)
+
+	go func() {
+		// enable go pprof and statsview
+		port, _ := strconv.Atoi(os.Getenv("D7Y_PPROF_PORT"))
+		if port == 0 {
+			port, _ = freeport.GetFreePort()
+		}
+
+		debugListen := fmt.Sprintf("localhost:%d", port)
+		viewer.SetConfiguration(viewer.WithAddr(debugListen))
+
+		logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugListen),
+			"statsview", fmt.Sprintf("http://%s/debug/statsview", debugListen)).
+			Infof("enable debug at http://%s", debugListen)
+
+		if err := statsview.New().Start(); err != nil {
+			logger.Warnf("serve go pprof error: %s", err)
+		}
+	}()
 }
 
 // Execute will process supernode.

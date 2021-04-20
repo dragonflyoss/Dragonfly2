@@ -15,6 +15,7 @@ var (
 var SchedulerConfig = Config{
 	Debug:   false,
 	Console: false,
+	Verbose: false,
 	Server: serverConfig{
 		Port: 8002,
 	},
