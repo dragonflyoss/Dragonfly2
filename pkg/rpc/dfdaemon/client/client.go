@@ -18,6 +18,9 @@ package client
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -27,7 +30,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"sync"
 )
 
 func GetClient() (DaemonClient, error) {
@@ -42,13 +44,16 @@ var once sync.Once
 func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	once.Do(func() {
 		dc = &daemonClient{
-			rpc.NewConnection("dfdaemon", make([]dfnet.NetAddr, 0), opts...),
+			rpc.NewConnection(context.Background(), "dfdaemon", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+				rpc.WithConnExpireTime(5 * time.Minute),
+				rpc.WithDialOption(opts),
+			}),
 		}
 	})
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
-	err := dc.Connection.AddNodes(addrs)
+	err := dc.Connection.AddServerNodes(addrs)
 	if err != nil {
 		return nil, err
 	}

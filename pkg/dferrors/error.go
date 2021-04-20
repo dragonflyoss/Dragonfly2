@@ -25,12 +25,13 @@ import (
 
 // common and framework errors
 var (
-	ErrInvalidArgument = errors.New("invalid argument")
-	ErrDataNotFound    = errors.New("data not found")
-	ErrEmptyValue      = errors.New("empty value")
-	ErrConvertFailed   = errors.New("convert failed")
-	ErrEndOfStream     = errors.New("end of stream")
-	ErrNoCandidateNode = errors.New("candidate server node not found")
+	ErrInvalidArgument    = errors.New("invalid argument")
+	ErrDataNotFound       = errors.New("data not found")
+	ErrEmptyValue         = errors.New("empty value")
+	ErrConvertFailed      = errors.New("convert failed")
+	ErrEndOfStream        = errors.New("end of stream")
+	ErrNoCandidateNode    = errors.New("candidate server node not found")
+	ErrServerNodeNotFound = errors.New("")
 )
 
 func IsEndOfStream(err error) bool {

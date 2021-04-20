@@ -18,81 +18,174 @@ package rpc
 
 import (
 	"context"
+	"io"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
-type candidateClient struct {
-	node string
-	Ref  interface{}
-}
+func (conn *Connection) startGC() {
+	// todo 从hashing环中删除频繁失败的节点
+	logger.GrpcLogger.Debugf("conn[%s]: start the gc connections job", conn.name)
+	// execute the GC by fixed delay
+	ticker := time.NewTicker(conn.gcConnInterval)
+	for range ticker.C {
+		removedConnCount := 0
+		totalNodeSize := 0
+		startTime := time.Now()
 
-// findCandidateClientConn find candidate node client conn other than exclusiveNodes
-func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...string) (*candidateClient, error) {
-	ringNodes, ok := conn.hashRing.GetNodes(key, conn.hashRing.Size())
-	if !ok {
-		return nil, dferrors.ErrNoCandidateNode
-	}
-	candidateNodes := make([]string, 0, 0)
-	for _, ringNode := range ringNodes {
-		candidate := true
-		for _, exclusiveNode := range exclusiveNodes {
-			if exclusiveNode == ringNode {
-				candidate = false
+		// todo use anther locker, @santong
+		//conn.rwMutex.Lock()
+		// range all connections and determine whether they are expired
+		conn.accessNodeMap.Range(func(node, accessTime interface{}) bool {
+			serverNode := node.(string)
+			totalNodeSize += 1
+			atime := accessTime.(time.Time)
+			if time.Since(atime) < conn.connExpireTime {
+				return true
 			}
+			conn.gcConn(serverNode)
+			removedConnCount++
+			return true
+		})
+		// todo use anther locker, @santong
+		//conn.rwMutex.Unlock()
+		// slow GC detected, report it with a log warning
+		if timeElapse := time.Since(startTime); timeElapse > conn.gcConnTimeout {
+			logger.GrpcLogger.Warnf("conn[%s]: gc %d conns, cost:%.3f seconds", conn.name, removedConnCount, timeElapse.Seconds())
 		}
-		if candidate {
-			candidateNodes = append(candidateNodes, ringNode)
-		}
+		logger.GrpcLogger.Infof("conn[%s]: successfully gc clientConn count(%d), remainder count(%d)", conn.name, removedConnCount,
+			totalNodeSize-removedConnCount)
 	}
-	logger.Debugf("conn:%s all server node list:%v, exclusiveNodes node list:%v, candidate node list:%v", conn.name, ringNodes, exclusiveNodes, candidateNodes)
-	for _, candidateNode := range candidateNodes {
-		// Check whether there is a corresponding mapping client in the node2ClientMap
-		if client, ok := conn.node2ClientMap.Load(candidateNode); ok {
-			logger.GrpcLogger.Debugf("conn:%s hit cache candidateNode: %s", conn.name, candidateNode)
-			return &candidateClient{
-				node: candidateNode,
-				Ref:  client,
-			}, nil
-		}
-		logger.GrpcLogger.Debugf("conn:%s attempt to connect candidateNode: %s", conn.name, candidateNode)
-		if clientConn, err := conn.createClient(candidateNode, append(clientOpts, conn.opts...)...); err == nil {
-			logger.GrpcLogger.Debugf("conn:%s success connect to candidateNode: %s", conn.name, candidateNode)
-			return &candidateClient{
-				node: candidateNode,
-				Ref:  clientConn,
-			}, nil
-		} else {
-			logger.GrpcLogger.Warnf("conn:%s failed to connect candidateNode: %s: %v", conn.name, candidateNode, err)
-		}
-	}
-	return nil, dferrors.ErrNoCandidateNode
 }
 
-func (conn *Connection) createClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	// should not retry
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return grpc.DialContext(ctx, target, opts...)
-}
-
-func (conn *Connection) gcConn(ctx context.Context, node string) {
+// gcConn gc keys and clients associated with server node
+func (conn *Connection) gcConn(node string) {
+	conn.rwMutex.Lock(node, false)
+	defer conn.rwMutex.UnLock(node, false)
+	logger.GrpcLogger.Infof("conn[%s]: gc keys and clients associated with server node:%s start", conn.name, node)
 	value, ok := conn.node2ClientMap.Load(node)
 	if ok {
 		clientCon := value.(*grpc.ClientConn)
 		clientCon.Close()
 		conn.node2ClientMap.Delete(node)
+		logger.GrpcLogger.Infof("conn[%s]: success gc clientConn:%s", conn.name, node)
 	} else {
-		logger.GrpcLogger.Warnf("conn:%s node:%s dose not found", conn.name, node)
+		logger.GrpcLogger.Warnf("conn[%s]: server node:%s dose not found", conn.name, node)
 	}
 	conn.key2NodeMap.Range(func(key, value interface{}) bool {
 		if value == node {
 			conn.key2NodeMap.Delete(key)
-			logger.GrpcLogger.Infof("conn:%s success gc node:%s", conn.name, key)
+			logger.GrpcLogger.Infof("conn[%s]: success gc key:%s", conn.name, key)
 		}
 		return true
 	})
+	logger.GrpcLogger.Infof("conn[%s]: gc keys and clients associated with server node:%s end", conn.name, node)
+}
+
+type wrappedClientStream struct {
+	grpc.ClientStream
+	method string
+	cc     *grpc.ClientConn
+}
+
+func (w *wrappedClientStream) RecvMsg(m interface{}) error {
+	err := w.ClientStream.RecvMsg(m)
+	if err != nil && err != io.EOF {
+		err = convertClientError(err)
+		logger.GrpcLogger.Errorf("client receive a message:%T error:%v for method:%s target:%s connState:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
+	}
+
+	return err
+}
+
+func (w *wrappedClientStream) SendMsg(m interface{}) error {
+	err := w.ClientStream.SendMsg(m)
+	if err != nil {
+		logger.GrpcLogger.Errorf("client send a message:%T error:%v for method:%s target:%s connState:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
+	}
+
+	return err
+}
+
+func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+	s, err := streamer(ctx, desc, cc, method, opts...)
+	if err != nil {
+		err = convertClientError(err)
+		logger.GrpcLogger.Errorf("create client stream error:%v for method:%s target:%s connState:%s", err, method, cc.Target(), cc.GetState().String())
+		return nil, err
+	}
+
+	return &wrappedClientStream{
+		ClientStream: s,
+		method:       method,
+		cc:           cc,
+	}, nil
+}
+
+func unaryClientInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	if err != nil {
+		err = convertClientError(err)
+		logger.GrpcLogger.Errorf("do unary client error:%v for method:%s target:%s connState:%s", err, method, cc.Target(), cc.GetState().String())
+	}
+
+	return err
+}
+
+func convertClientError(err error) error {
+	if err == nil {
+		return nil
+	}
+	s := status.Convert(err)
+	for _, d := range s.Details() {
+		switch internal := d.(type) {
+		case *base.GrpcDfError:
+			return &dferrors.DfError{
+				Code:    internal.Code,
+				Message: internal.Message,
+			}
+		}
+	}
+	// grpc framework error
+	return &dferrors.DfError{
+		Code:    base.Code(s.Code()),
+		Message: s.Message(),
+	}
+}
+
+type RetryMeta struct {
+	StreamTimes int     // times of replacing stream on the current client
+	MaxAttempts int     // limit times for execute
+	InitBackoff float64 // second
+	MaxBackOff  float64 // second
+}
+
+
+func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {
+	var res interface{}
+	for i := 0; i < maxAttempts; i++ {
+		if e, ok := cause.(*dferrors.DfError); ok {
+			if e.Code != dfcodes.UnknownError {
+				return res, cause
+			}
+		}
+
+		if i > 0 {
+			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))
+		}
+
+		res, cause = f()
+		if cause == nil {
+			break
+		}
+	}
+
+	return res, cause
 }

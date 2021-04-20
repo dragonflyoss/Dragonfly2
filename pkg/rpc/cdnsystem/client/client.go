@@ -18,19 +18,16 @@ package client
 
 import (
 	"context"
+	"errors"
+	"sync"
+	"time"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"errors"
 	"google.golang.org/grpc"
-	"sync"
 )
-
-func GetClient() (SeederClient, error) {
-	// 从本地文件/manager读取addrs
-	return sc, nil
-}
 
 var sc *seederClient
 
@@ -38,14 +35,18 @@ var once sync.Once
 
 func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SeederClient, error) {
 	once.Do(func() {
+
 		sc = &seederClient{
-			rpc.NewConnection("cdn", make([]dfnet.NetAddr, 0), opts...),
+			rpc.NewConnection(context.Background(), "cdn", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+				rpc.WithConnExpireTime(5 * time.Minute),
+				rpc.WithDialOption(opts),
+			}),
 		}
 	})
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
-	err := sc.Connection.AddNodes(addrs)
+	err := sc.Connection.AddServerNodes(addrs)
 	if err != nil {
 		return nil, err
 	}
