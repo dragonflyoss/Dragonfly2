@@ -29,7 +29,7 @@ type CdnValue struct {
 	cc *cdnConfig
 }
 
-func NewCdnValue(cc *cdnConfig) *CdnValue {
+func NewCDNValue(cc *cdnConfig) *CdnValue {
 	return &CdnValue{cc: cc}
 }
 

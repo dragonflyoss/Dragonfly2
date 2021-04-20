@@ -82,7 +82,7 @@ func init() {
 	flagSet.IntVar(&cfg.Worker.SenderNum, "sender-num", cfg.Worker.SenderNum, "sender-num is used for scheduler and do not change it")
 	flagSet.IntVar(&cfg.Worker.WorkerJobPoolSize, "sender-job-pool-size", cfg.Worker.WorkerJobPoolSize, "sender-job-pool-size is used for scheduler and do not change it")
 	flagSet.StringVar(&cfgFile, "config", "", "the path of scheduler's configuration file")
-	flagSet.Var(config.NewCdnValue(&cfg.CDN), "cdn-servers", "cdn server list with format of [CdnName1]:[ip1]:[rpcPort1]:[downloadPort1],[CdnName2]:[ip2]:[rpcPort2]:[downloadPort2]")
+	flagSet.Var(config.NewCDNValue(&cfg.CDN), "cdn-servers", "cdn server list with format of [CdnName1]:[ip1]:[rpcPort1]:[downloadPort1],[CdnName2]:[ip2]:[rpcPort2]:[downloadPort2]")
 
 	schedulerCmd.AddCommand(version.VersionCmd)
 }
