@@ -17,9 +17,13 @@
 package config
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"testing"
 
+	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
 )
 
 func TestSchedulerConfig_Load(t *testing.T) {
@@ -30,7 +34,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 		Console: true,
 		Verbose: true,
 		Scheduler: schedulerConfig{
-			ABTest:     false,
+			ABTest:     true,
 			AScheduler: "a-scheduler",
 			BScheduler: "b-scheduler",
 		},
@@ -61,15 +65,16 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	}
 
 	schedulerConfigYAML := &Config{}
-	if err := schedulerConfigYAML.Load("./testdata/config/daemon.yaml"); err != nil {
-		t.Fatal(err)
-	}
-
+	contentYAML, _ := ioutil.ReadFile("./testdata/scheduler.yaml")
+	var dataYAML map[string]interface{}
+	yaml.Unmarshal(contentYAML, &dataYAML)
+	mapstructure.Decode(dataYAML, &schedulerConfigYAML)
 	assert.EqualValues(config, schedulerConfigYAML)
 
 	schedulerConfigJSON := &Config{}
-	if err := peerHostOptionJSON.Load("./testdata/config/daemon.json"); err != nil {
-		t.Fatal(err)
-	}
+	contentJSON, _ := ioutil.ReadFile("./testdata/scheduler.json")
+	var dataJSON map[string]interface{}
+	json.Unmarshal(contentJSON, &dataJSON)
+	mapstructure.Decode(dataJSON, &schedulerConfigJSON)
 	assert.EqualValues(config, schedulerConfigJSON)
 }
