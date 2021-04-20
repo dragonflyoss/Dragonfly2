@@ -30,7 +30,6 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{
-		Debug:   true,
 		Console: true,
 		Verbose: true,
 		Scheduler: schedulerConfig{

@@ -25,6 +25,7 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
@@ -61,7 +62,9 @@ var daemonCmd = &cobra.Command{
 		}
 
 		// Initialize logger
-		logcore.InitDaemon(daemonConfig.Console)
+		if err := logcore.InitDaemon(daemonConfig.Console); err != nil {
+			return errors.Wrap(err, "init daemon logger")
+		}
 
 		// Initialize telemetry
 		if daemonConfig.Telemetry.Jaeger != "" {

@@ -52,15 +52,6 @@ var schedulerCmd = &cobra.Command{
 			return errors.Wrap(err, "init scheduler logger")
 		}
 
-		// Init debug
-		if cfg.Debug {
-			logcore.SetCoreLevel(zapcore.DebugLevel)
-			logcore.SetGrpcLevel(zapcore.DebugLevel)
-		}
-
-		// Initialize verbose mode
-		initVerboseMode(cfg.Verbose)
-
 		return runScheduler()
 	},
 }
@@ -74,8 +65,8 @@ func init() {
 
 	// Add flags
 	flagSet := schedulerCmd.Flags()
-	flagSet.BoolVar(&cfg.Debug, "debug", cfg.Debug, "debug")
 	flagSet.BoolVar(&cfg.Console, "console", cfg.Console, "console")
+	flagSet.BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "print verbose log and enable golang debug info")
 	flagSet.IntVar(&cfg.Server.Port, "port", cfg.Server.Port, "port is the port that scheduler server listens on")
 	flagSet.IntVar(&cfg.Worker.WorkerNum, "worker-num", cfg.Worker.WorkerNum, "worker-num is used for scheduler and do not change it")
 	flagSet.IntVar(&cfg.Worker.WorkerJobPoolSize, "worker-job-pool-size", cfg.Worker.WorkerJobPoolSize, "worker-job-pool-size is used for scheduler and do not change it")

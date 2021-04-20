@@ -25,7 +25,6 @@ const (
 var config = createDefaultConfig()
 
 type Config struct {
-	Debug     bool                  `mapstructure:"debug"`
 	Console   bool                  `mapstructure:"console"`
 	Verbose   bool                  `mapstructure:"verbose"`
 	Scheduler schedulerConfig       `mapstructure:"scheduler"`
@@ -79,7 +78,6 @@ func SetConfig(cfg *Config) {
 
 func createDefaultConfig() *Config {
 	return &Config{
-		Debug:   false,
 		Console: false,
 		Server: serverConfig{
 			Port: 8002,

@@ -18,6 +18,12 @@ package mgr
 
 import (
 	"bytes"
+	"fmt"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -25,22 +31,17 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure/workqueue"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
-	"fmt"
 	"github.com/olekukonko/tablewriter"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
 const (
-	PeerGoneTimeout = int64(time.Second * 10)
+	PeerGoneTimeout      = int64(time.Second * 10)
 	PeerForceGoneTimeout = int64(time.Minute * 2)
 )
 
 type PeerTaskManager struct {
 	data                    *sync.Map
-	dataRanger				*sync.Map
+	dataRanger              *sync.Map
 	gcQueue                 workqueue.DelayingInterface
 	gcDelayTime             time.Duration
 	downloadMonitorQueue    workqueue.DelayingInterface
@@ -54,7 +55,7 @@ func createPeerTaskManager() *PeerTaskManager {
 	}
 	ptm := &PeerTaskManager{
 		data:                 new(sync.Map),
-		dataRanger:                 new(sync.Map),
+		dataRanger:           new(sync.Map),
 		downloadMonitorQueue: workqueue.NewDelayingQueue(),
 		gcQueue:              workqueue.NewDelayingQueue(),
 		gcDelayTime:          delay,
@@ -77,7 +78,6 @@ func (m *PeerTaskManager) AddPeerTask(pid string, task *types.Task, host *types.
 
 	pt := types.NewPeerTask(pid, task, host, m.addToGCQueue)
 	m.data.Store(pid, pt)
-
 
 	GetTaskManager().TouchTask(task.TaskId)
 
@@ -224,7 +224,7 @@ func (m *PeerTaskManager) ClearPeerTask() {
 		if pt != nil && pt.Task != nil && pt.Task.Removed {
 			m.data.Delete(pt.Pid)
 		}
-		return  true
+		return true
 	})
 }
 
@@ -274,7 +274,7 @@ func (m *PeerTaskManager) gcWorkingLoop() {
 func (m *PeerTaskManager) printDebugInfoLoop() {
 	for {
 		time.Sleep(time.Second * 10)
-		if config.GetConfig().Debug {
+		if config.GetConfig().Verbose {
 			logger.Debugf(m.printDebugInfo())
 		}
 	}
@@ -287,7 +287,6 @@ func (m *PeerTaskManager) printDebugInfo() string {
 	buffer := bytes.NewBuffer([]byte{})
 	table := tablewriter.NewWriter(buffer)
 	table.SetHeader([]string{"PeerId", "Finished Piece Num", "Download Finished", "Free Load", "Peer Down"})
-
 
 	m.data.Range(func(key interface{}, value interface{}) (ok bool) {
 		ok = true
@@ -341,14 +340,14 @@ func (m *PeerTaskManager) printDebugInfo() string {
 func (m *PeerTaskManager) RefreshDownloadMonitor(pt *types.PeerTask) {
 	logger.Debugf("[%s][%s] downloadMonitorWorkingLoop refresh ", pt.Task.TaskId, pt.Pid)
 	status := pt.GetNodeStatus()
-	 if status != types.PeerTaskStatusHealth {
+	if status != types.PeerTaskStatusHealth {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
 	} else if pt.IsWaiting() {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
 	} else {
-		delay := time.Millisecond*time.Duration(pt.GetCost()*10)
-		if delay < time.Millisecond * 20 {
-			delay = time.Millisecond*20
+		delay := time.Millisecond * time.Duration(pt.GetCost()*10)
+		if delay < time.Millisecond*20 {
+			delay = time.Millisecond * 20
 		}
 		m.downloadMonitorQueue.AddAfter(pt, delay)
 	}
