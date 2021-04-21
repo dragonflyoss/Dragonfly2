@@ -48,9 +48,10 @@ func (suite *SchedulerTestSuite) SetupSuite() {
 	suite.cdn.Start()
 	time.Sleep(time.Second / 2)
 	mgr.GetCDNManager().InitCDNClient()
-	suite.svr = server.NewServer()
+	//todo fix
+	suite.svr = server.NewServer(nil)
 	suite.ss = suite.svr.GetServer()
-	go suite.svr.Start()
+	go suite.svr.Serve()
 	time.Sleep(time.Second / 2)
 	go func() {
 		// enable go pprof and statsview

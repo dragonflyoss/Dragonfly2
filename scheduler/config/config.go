@@ -27,6 +27,7 @@ const (
 type Config struct {
 	Console   bool                  `mapstructure:"console"`
 	Verbose   bool                  `mapstructure:"verbose"`
+	PProfPort int                   `mapstructure:"pprofPort"`
 	Scheduler SchedulerConfig       `mapstructure:"scheduler"`
 	Server    ServerConfig          `mapstructure:"server"`
 	Worker    SchedulerWorkerConfig `mapstructure:"worker"`
