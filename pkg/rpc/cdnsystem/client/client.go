@@ -65,12 +65,12 @@ type seederClient struct {
 	*rpc.Connection
 }
 
-func (sc *seederClient) getSeederClient(key string) (cdnsystem.SeederClient, error) {
-	clientConn, err := sc.Connection.GetClientConn(key)
+func (sc *seederClient) getSeederClient(key string, stick bool) (cdnsystem.SeederClient, string, error) {
+	clientConn, err := sc.Connection.GetClientConn(key, stick)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return cdnsystem.NewSeederClient(clientConn), nil
+	return cdnsystem.NewSeederClient(clientConn), clientConn.Target(), nil
 }
 
 func (sc *seederClient) getSeederClientWithTarget(target string) (cdnsystem.SeederClient, error) {

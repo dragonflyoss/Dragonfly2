@@ -32,7 +32,7 @@ import (
 
 func (conn *Connection) startGC() {
 	// todo 从hashing环中删除频繁失败的节点
-	logger.GrpcLogger.Debugf("conn[%s]: start the gc connections job", conn.name)
+	logger.GrpcLogger.With("conn", conn.name).Debugf("start the gc connections job")
 	// execute the GC by fixed delay
 	ticker := time.NewTicker(conn.gcConnInterval)
 	for range ticker.C {
@@ -58,10 +58,17 @@ func (conn *Connection) startGC() {
 		//conn.rwMutex.Unlock()
 		// slow GC detected, report it with a log warning
 		if timeElapse := time.Since(startTime); timeElapse > conn.gcConnTimeout {
-			logger.GrpcLogger.Warnf("conn[%s]: gc %d conns, cost:%.3f seconds", conn.name, removedConnCount, timeElapse.Seconds())
+			logger.GrpcLogger.With("conn", conn.name).Warnf("gc %d conns, cost:%.3f seconds", removedConnCount, timeElapse.Seconds())
 		}
-		logger.GrpcLogger.Infof("conn[%s]: successfully gc clientConn count(%d), remainder count(%d)", conn.name, removedConnCount,
-			totalNodeSize-removedConnCount)
+		actualTotal := 0
+		conn.node2ClientMap.Range(func(key, value interface{}) bool {
+			if value != nil {
+				actualTotal++
+			}
+			return true
+		})
+		logger.GrpcLogger.With("conn", conn.name).Infof("successfully gc clientConn count(%d), remainder count(%d), actualTotalConnCount(%d)",
+			removedConnCount, totalNodeSize-removedConnCount, actualTotal)
 	}
 }
 
@@ -69,24 +76,30 @@ func (conn *Connection) startGC() {
 func (conn *Connection) gcConn(node string) {
 	conn.rwMutex.Lock(node, false)
 	defer conn.rwMutex.UnLock(node, false)
-	logger.GrpcLogger.Infof("conn[%s]: gc keys and clients associated with server node:%s start", conn.name, node)
+	logger.GrpcLogger.With("conn", conn.name).Infof("gc keys and clients associated with server node:%s starting", node)
 	value, ok := conn.node2ClientMap.Load(node)
 	if ok {
 		clientCon := value.(*grpc.ClientConn)
-		clientCon.Close()
-		conn.node2ClientMap.Delete(node)
-		logger.GrpcLogger.Infof("conn[%s]: success gc clientConn:%s", conn.name, node)
+		err := clientCon.Close()
+		if err == nil {
+			conn.node2ClientMap.Delete(node)
+			logger.GrpcLogger.With("conn", conn.name).Infof("success gc clientConn:%s", node)
+		} else {
+			logger.GrpcLogger.With("conn", conn.name).Warnf("failed to close clientConn:%s: %v", node, err)
+		}
 	} else {
-		logger.GrpcLogger.Warnf("conn[%s]: server node:%s dose not found", conn.name, node)
+		logger.GrpcLogger.With("conn", conn.name).Warnf("server node:%s dose not found in node2ClientMap", node)
 	}
+	// gc hash keys
 	conn.key2NodeMap.Range(func(key, value interface{}) bool {
 		if value == node {
 			conn.key2NodeMap.Delete(key)
-			logger.GrpcLogger.Infof("conn[%s]: success gc key:%s", conn.name, key)
+			logger.GrpcLogger.With("conn", conn.name).Infof("success gc key:%s associated with server node %s", key, node)
 		}
 		return true
 	})
-	logger.GrpcLogger.Infof("conn[%s]: gc keys and clients associated with server node:%s end", conn.name, node)
+	conn.accessNodeMap.Delete(node)
+	logger.GrpcLogger.With("conn", conn.name).Infof("gc keys and clients associated with server node:%s ending", node)
 }
 
 type wrappedClientStream struct {
@@ -166,7 +179,6 @@ type RetryMeta struct {
 	InitBackoff float64 // second
 	MaxBackOff  float64 // second
 }
-
 
 func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {
 	var res interface{}

@@ -74,11 +74,11 @@ type daemonClient struct {
 	*rpc.Connection
 }
 
-func (dc *daemonClient) getDaemonClient(key string) (dfdaemon.DaemonClient, error) {
-	if clientConn, err := dc.Connection.GetClientConn(key); err != nil {
-		return nil, err
+func (dc *daemonClient) getDaemonClient(key string, stick bool) (dfdaemon.DaemonClient, string, error) {
+	if clientConn, err := dc.Connection.GetClientConn(key, stick); err != nil {
+		return nil, "", err
 	} else {
-		return dfdaemon.NewDaemonClient(clientConn), nil
+		return dfdaemon.NewDaemonClient(clientConn), clientConn.Target(), nil
 	}
 }
 

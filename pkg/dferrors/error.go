@@ -31,7 +31,6 @@ var (
 	ErrConvertFailed      = errors.New("convert failed")
 	ErrEndOfStream        = errors.New("end of stream")
 	ErrNoCandidateNode    = errors.New("candidate server node not found")
-	ErrServerNodeNotFound = errors.New("")
 )
 
 func IsEndOfStream(err error) bool {
