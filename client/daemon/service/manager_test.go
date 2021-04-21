@@ -52,11 +52,11 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 
 	mockPeerTaskManager := mock_peer.NewMockPeerTaskManager(ctrl)
 	mockPeerTaskManager.EXPECT().StartFilePeerTask(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(ctx context.Context, req *peer.FilePeerTaskRequest) (chan *peer.PeerTaskProgress, bool, error) {
-			ch := make(chan *peer.PeerTaskProgress)
+		func(ctx context.Context, req *peer.FilePeerTaskRequest) (chan *peer.FilePeerTaskProgress, bool, error) {
+			ch := make(chan *peer.FilePeerTaskProgress)
 			go func() {
 				for i := 0; i <= 100; i++ {
-					ch <- &peer.PeerTaskProgress{
+					ch <- &peer.FilePeerTaskProgress{
 						State: &peer.ProgressState{
 							Success: true,
 						},
