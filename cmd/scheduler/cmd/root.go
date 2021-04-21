@@ -69,18 +69,11 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.scheduler.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
+	// Initialize default scheduler config
 	cfg = config.New()
+
+	// Initialize cobra
+	cobra.OnInitialize(initConfig)
 
 	// Add flags
 	flagSet := rootCmd.Flags()
@@ -117,12 +110,12 @@ func initConfig() {
 }
 
 func runScheduler() error {
-	// initialize verbose mode
-	common.InitVerboseMode(cfg.Verbose, cfg.PProfPort)
-
 	// scheduler config values
 	s, _ := json.MarshalIndent(cfg, "", "\t")
 	logger.Debugf("scheduler configuration: %s", string(s))
+
+	// initialize verbose mode
+	common.InitVerboseMode(cfg.Verbose, cfg.PProfPort)
 
 	svr := server.New(cfg)
 

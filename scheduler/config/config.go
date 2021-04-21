@@ -16,10 +16,6 @@
 
 package config
 
-import (
-	"runtime"
-)
-
 const (
 	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yaml"
 )
@@ -71,40 +67,4 @@ type GCConfig struct {
 
 func New() *Config {
 	return &config
-}
-
-func GetConfig() *Config {
-	return &config
-}
-
-func createDefaultConfig() *Config {
-	return &Config{
-		Console: false,
-		Server: ServerConfig{
-			Port: 8002,
-		},
-		Worker: SchedulerWorkerConfig{
-			WorkerNum:         runtime.GOMAXPROCS(0),
-			WorkerJobPoolSize: 10000,
-			SenderNum:         10,
-			SenderJobPoolSize: 10000,
-		},
-		Scheduler: SchedulerConfig{
-			ABTest: false,
-		},
-		CDN: CDNConfig{
-			Servers: []CDNServerConfig{
-				{
-					Name:         "cdn",
-					IP:           "127.0.0.1",
-					RpcPort:      8003,
-					DownloadPort: 8001,
-				},
-			},
-		},
-		GC: GCConfig{
-			TaskDelay:     3600 * 1000,
-			PeerTaskDelay: 3600 * 1000,
-		},
-	}
 }
