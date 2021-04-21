@@ -83,9 +83,12 @@ func init() {
 	flagSet.IntP("port", "p", cfg.Server.Port, "listen port for scheduler server")
 	flagSet.StringVarP(&cfgFile, "config", "f", "", "the path of scheduler config file")
 
-	_ = viper.BindPFlags(flagSet)
-
+	// Add common cmds
 	common.AddCommonSubCmds(rootCmd)
+
+	if err := viper.BindPFlags(flagSet); err != nil {
+		panic(err)
+	}
 }
 
 // initConfig reads in config file and ENV variables if set.
