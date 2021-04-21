@@ -56,9 +56,9 @@ func (m *MockPeerTaskManager) EXPECT() *MockPeerTaskManagerMockRecorder {
 }
 
 // StartFilePeerTask mocks base method
-func (m *MockPeerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *PeerTaskProgress, error) {
+func (m *MockPeerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *FilePeerTaskProgress, error) {
 	ret := m.ctrl.Call(m, "StartFilePeerTask", ctx, req)
-	ret0, _ := ret[0].(chan *PeerTaskProgress)
+	ret0, _ := ret[0].(chan *FilePeerTaskProgress)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

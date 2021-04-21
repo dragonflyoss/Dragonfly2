@@ -34,6 +34,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 type PieceManager interface {
@@ -246,7 +247,7 @@ func (pm *pieceManager) processPieceFromSource(pt PeerTask,
 		}
 	}
 	if pm.calculateDigest {
-		reader = clientutil.NewDigestReader(reader)
+		reader = digestutils.NewDigestReader(reader)
 	}
 	n, err := pm.storageManager.WritePiece(
 		pt.Context(),
@@ -278,7 +279,7 @@ func (pm *pieceManager) processPieceFromSource(pt PeerTask,
 		return n, err
 	}
 	if pm.calculateDigest {
-		md5 = reader.(clientutil.DigestReader).Digest()
+		md5 = reader.(digestutils.DigestReader).Digest()
 	}
 	success = true
 	return n, nil
@@ -327,7 +328,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, request
 
 	// calc total md5
 	if pm.calculateDigest && request.UrlMata.Md5 != "" {
-		reader = clientutil.NewDigestReader(body, request.UrlMata.Md5)
+		reader = digestutils.NewDigestReader(body, request.UrlMata.Md5)
 	}
 
 	// 2. save to storage

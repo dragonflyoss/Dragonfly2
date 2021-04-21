@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"runtime"
 	"sync"
 	"sync/atomic"
 
@@ -168,15 +167,7 @@ func newStreamPeerTask(ctx context.Context,
 }
 
 func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
-	// FIXME goroutine safe for channel and send on closed channel
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Warnf("recover from %s", r)
-			var buf [4096]byte
-			n := runtime.Stack(buf[:], false)
-			s.Errorf("panic stack: %s", string(buf[:n]))
-		}
-	}()
+	defer s.recoverFromPanic()
 	// retry failed piece
 	if !pieceResult.Success {
 		_ = s.peerPacketStream.Send(pieceResult)

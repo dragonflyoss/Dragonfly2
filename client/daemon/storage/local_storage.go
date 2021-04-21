@@ -30,6 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 type localTaskStore struct {
@@ -109,7 +110,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	}
 	// when Md5 is empty, try to get md5 from reader
 	if req.PieceMetaData.Md5 == "" {
-		if get, ok := req.Reader.(clientutil.DigestReader); ok {
+		if get, ok := req.Reader.(digestutils.DigestReader); ok {
 			req.PieceMetaData.Md5 = get.Digest()
 		}
 	}

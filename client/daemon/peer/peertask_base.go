@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"runtime"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -551,15 +551,7 @@ func (pt *peerTask) isCompleted() bool {
 }
 
 func (pt *peerTask) preparePieceTasks(request *base.PieceTaskRequest) (p *base.PiecePacket, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			pt.Errorf("preparePieceTasks recover from: %s", r)
-			err = fmt.Errorf("%v", r)
-			var buf [4096]byte
-			n := runtime.Stack(buf[:], false)
-			pt.Errorf("panic stack: %s", string(buf[:n]))
-		}
-	}()
+	defer pt.recoverFromPanic()
 prepare:
 	pt.pieceParallelCount = pt.peerPacket.ParallelCount
 	request.DstPid = pt.peerPacket.MainPeer.PeerId
@@ -719,4 +711,10 @@ func (pt *peerTask) getNextPieceNum(cur int32) int32 {
 		}
 	}
 	return i
+}
+
+func (pt *peerTask) recoverFromPanic() {
+	if r := recover(); r != nil {
+		pt.Errorf("recovered from panic %q. Call stack:\n%v", r, string(debug.Stack()))
+	}
 }
