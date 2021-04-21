@@ -45,8 +45,8 @@ const (
 var rootCmd = &cobra.Command{
 	Use:   "scheduler",
 	Short: "P2P scheduler",
-	Long: `scheduler is a long-running process and is mainly responsible for 
-deciding which peers transmit blocks to each other.`,
+	Long: `scheduler is a long-running process and is mainly responsible 
+for deciding which peers transmit blocks to each other.`,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
@@ -84,11 +84,13 @@ func init() {
 
 	// Add flags
 	flagSet := rootCmd.Flags()
-	flagSet.BoolVar(&cfg.Console, "console", cfg.Console, "whether print log info on the terminal")
-	flagSet.BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "whether use debug level logger and enable pprof")
-	flagSet.IntVar(&cfg.PProfPort, "pprofPort", cfg.PProfPort, "listen port for pprof, only valid when the verbose option is true, default is random port")
-	flagSet.IntVarP(&cfg.Server.Port, "port", "p", cfg.Server.Port, "port is the port that scheduler server listens on")
+	flagSet.Bool("console", cfg.Console, "whether print log info on the terminal")
+	flagSet.Bool("verbose", cfg.Verbose, "whether use debug level logger and enable pprof")
+	flagSet.Int("pprofPort", cfg.PProfPort, "listen port for pprof, only valid when the verbose option is true, default is random port")
+	flagSet.IntP("port", "p", cfg.Server.Port, "listen port for scheduler server")
 	flagSet.StringVarP(&cfgFile, "config", "f", "", "the path of scheduler config file")
+
+	_ = viper.BindPFlags(flagSet)
 
 	common.AddCommonSubCmds(rootCmd)
 }
@@ -121,8 +123,8 @@ func runScheduler() error {
 	common.InitVerboseMode(cfg.Verbose, cfg.PProfPort)
 
 	// scheduler config values
-	s, _ := json.MarshalIndent(cfg, "", "\t")
-	logger.Debugf("scheduler configuration: %s", string(s))
+	s, _ := json.MarshalIndent(cfg, "", "  ")
+	logger.Infof("scheduler configuration: %s", string(s))
 
 	svr := server.NewServer(cfg)
 
