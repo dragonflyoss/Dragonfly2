@@ -207,7 +207,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !proxy.checkWhiteList(r) {
 		status := http.StatusUnauthorized
 		http.Error(w, http.StatusText(status), status)
-		logger.Debugf("not in whitelist: %s", r.Host)
+		logger.Debugf("not in whitelist: %s, url：%s", r.Host, r.URL.String())
 		return
 	}
 
@@ -461,7 +461,7 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go copyAndClose(dst, clientConn)
-	go copyAndClose(clientConn, dst)
+	copyAndClose(clientConn, dst)
 }
 
 func copyAndClose(dst io.WriteCloser, src io.ReadCloser) error {

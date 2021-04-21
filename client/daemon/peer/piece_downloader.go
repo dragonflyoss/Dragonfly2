@@ -25,10 +25,10 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 type DownloadPieceRequest struct {
@@ -101,7 +101,7 @@ func (p *pieceDownloader) DownloadPiece(d *DownloadPieceRequest) (io.Reader, io.
 	r := resp.Body.(io.Reader)
 	c := resp.Body.(io.Closer)
 	if d.CalcDigest {
-		r = clientutil.NewDigestReader(io.LimitReader(resp.Body, int64(d.piece.RangeSize)), d.piece.PieceMd5)
+		r = digestutils.NewDigestReader(io.LimitReader(resp.Body, int64(d.piece.RangeSize)), d.piece.PieceMd5)
 	}
 	return r, c, nil
 }

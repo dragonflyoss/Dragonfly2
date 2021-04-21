@@ -44,7 +44,7 @@ type PeerTaskManager interface {
 	// return a progress channel for request download progress
 	// tiny stands task file is tiny and task is done
 	StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (
-		progress chan *PeerTaskProgress, tiny *TinyData, err error)
+		progress chan *FilePeerTaskProgress, tiny *TinyData, err error)
 	// StartStreamPeerTask starts a peer task with stream io
 	// tiny stands task file is tiny and task is done
 	StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (
@@ -125,7 +125,7 @@ func NewPeerTaskManager(
 	return ptm, nil
 }
 
-func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *PeerTaskProgress, *TinyData, error) {
+func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *FilePeerTaskProgress, *TinyData, error) {
 	// TODO ensure scheduler is ok first
 
 	start := time.Now()
