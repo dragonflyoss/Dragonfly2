@@ -22,8 +22,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/mgr"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -44,15 +43,15 @@ type WorkerGroup struct {
 
 	triggerLoadQueue workqueue.Interface
 
-	scheduler *scheduler.Scheduler
+	schedulerService *service.SchedulerService
 }
 
-func NewWorkerGroup(cfg *config.Config, scheduler *scheduler.Scheduler) *WorkerGroup {
+func NewWorkerGroup(cfg *config.Config, schedulerService *service.SchedulerService) *WorkerGroup {
 	return &WorkerGroup{
 		workerNum:        cfg.Worker.WorkerNum,
 		chanSize:         cfg.Worker.WorkerJobPoolSize,
-		sender:           NewSender(cfg.Worker),
-		scheduler:        scheduler,
+		sender:           NewSender(cfg.Worker, schedulerService),
+		schedulerService: schedulerService,
 		triggerLoadQueue: workqueue.New(),
 	}
 }
@@ -60,7 +59,7 @@ func NewWorkerGroup(cfg *config.Config, scheduler *scheduler.Scheduler) *WorkerG
 func (wg *WorkerGroup) Serve() {
 	wg.stopCh = make(chan struct{})
 
-	mgr.GetPeerTaskManager().SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
+	wg.schedulerService.TaskManager.PeerTask.SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
 		status := pt.GetNodeStatus()
 		if status != types.PeerTaskStatusHealth {
 			//} else if pt.GetNodeStatus() != types.PeerTaskStatusDone{
@@ -76,8 +75,8 @@ func (wg *WorkerGroup) Serve() {
 	})
 
 	for i := 0; i < wg.workerNum; i++ {
-		w := CreateWorker(wg.scheduler, wg.sender, wg.ReceiveJob, wg.stopCh)
-		w.Start()
+		w := NewWorker(wg.schedulerService, wg.sender, wg.ReceiveJob, wg.stopCh)
+		w.Serve()
 		wg.workerList = append(wg.workerList, w)
 	}
 

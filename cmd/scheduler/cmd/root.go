@@ -111,7 +111,7 @@ func runScheduler() error {
 	// Initialize verbose mode
 	initVerboseMode(cfg.Verbose)
 
-	svr := server.NewServer(cfg)
+	svr := server.New(cfg)
 
 	return svr.Serve()
 }

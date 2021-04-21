@@ -16,7 +16,9 @@
 
 package config
 
-import "runtime"
+import (
+	"runtime"
+)
 
 const (
 	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yaml"

@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package mgr
+package manager
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/types"
 	"sync"
+
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 const (
-	HostLoadCDN = 10
+	HostLoadCDN  = 10
 	HostLoadPeer = 4
 )
 
@@ -30,13 +31,13 @@ type HostManager struct {
 	data *sync.Map
 }
 
-func createHostManager() *HostManager {
+func newHostManager() *HostManager {
 	return &HostManager{
 		data: new(sync.Map),
 	}
 }
 
-func (m *HostManager) AddHost(host *types.Host) *types.Host {
+func (m *HostManager) Add(host *types.Host) *types.Host {
 	v, ok := m.data.Load(host.Uuid)
 	if ok {
 		return v.(*types.Host)
@@ -45,21 +46,26 @@ func (m *HostManager) AddHost(host *types.Host) *types.Host {
 	copyHost := types.CopyHost(host)
 	m.CalculateLoad(copyHost)
 	m.data.Store(host.Uuid, copyHost)
+
 	return copyHost
 }
 
-func (m *HostManager) DeleteHost(uuid string) {
+func (m *HostManager) Delete(uuid string) {
 	m.data.Delete(uuid)
-	return
 }
 
-func (m *HostManager) GetHost(uuid string) (h *types.Host, ok bool) {
+func (m *HostManager) Get(uuid string) (*types.Host, bool) {
 	data, ok := m.data.Load(uuid)
 	if !ok {
-		return
+		return nil, false
 	}
-	h = data.(*types.Host)
-	return
+
+	h, ok := data.(*types.Host)
+	if !ok {
+		return nil, false
+	}
+
+	return h, true
 }
 
 func (m *HostManager) CalculateLoad(host *types.Host) {
@@ -70,5 +76,4 @@ func (m *HostManager) CalculateLoad(host *types.Host) {
 		host.SetTotalUploadLoad(HostLoadCDN)
 		host.SetTotalDownloadLoad(HostLoadCDN)
 	}
-	return
 }

@@ -25,22 +25,22 @@ import (
 )
 
 type Server struct {
-	scheduler *service.SchedulerService
-	worker    schedule_worker.IWorker
-	server    *SchedulerServer
-	config    config.ServerConfig
-	running   bool
+	service *service.SchedulerService
+	worker  schedule_worker.IWorker
+	server  *SchedulerServer
+	config  config.ServerConfig
+	running bool
 }
 
-func NewServer(cfg *config.Config) *Server {
+func New(cfg *config.Config) *Server {
 	s := &Server{
 		running: false,
 		config:  cfg.Server,
 	}
 
-	s.worker = schedule_worker.NewWorkerGroup(cfg, s.scheduler.GetScheduler())
-
-	s.server = NewSchedulerServer(cfg, WithSchedulerService(service.NewSchedulerService(cfg)),
+	s.service = service.NewSchedulerService(cfg)
+	s.worker = schedule_worker.NewWorkerGroup(cfg, s.service)
+	s.server = NewSchedulerServer(cfg, WithSchedulerService(s.service),
 		WithWorker(s.worker))
 
 	return s
@@ -64,16 +64,4 @@ func (s *Server) Stop() (err error) {
 		rpc.StopServer()
 	}
 	return
-}
-
-func (s *Server) GetServer() *SchedulerServer {
-	return s.server
-}
-
-func (s *Server) GetSchedulerService() *service.SchedulerService {
-	return s.scheduler
-}
-
-func (s *Server) GetWorker() schedule_worker.IWorker {
-	return s.worker
 }

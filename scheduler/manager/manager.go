@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-package service
+package manager
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/types"
-	"errors"
+	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
-func (s *SchedulerService) GetHost(hostId string) (host *types.Host, err error) {
-	host, _ = s.hostMgr.GetHost(hostId)
-	if host == nil {
-		err = errors.New("host not exited: " + hostId)
-	}
-	return
+type Manager struct {
+	CDNManager  *CDNManager
+	TaskManager *TaskManager
+	HostManager *HostManager
 }
 
-func (s *SchedulerService) AddHost(host *types.Host) (ret *types.Host, err error) {
-	ret = s.hostMgr.AddHost(host)
-	return
+func New(cfg *config.Config) *Manager {
+	hostManager := newHostManager()
+	taskManager := newTaskManager(cfg, hostManager)
+	cdnManager := newCDNManager(cfg.CDN, taskManager, hostManager)
+
+	return &Manager{
+		CDNManager:  cdnManager,
+		TaskManager: taskManager,
+		HostManager: hostManager,
+	}
 }

@@ -27,7 +27,7 @@ type Scheduler struct {
 	factory *evaluatorFactory
 }
 
-func CreateScheduler() *Scheduler {
+func New() *Scheduler {
 	RegisterEvaluator("default", basic.NewEvaluator())
 	RegisterGetEvaluatorFunc(0, func(*types.Task) (string, bool) { return "default", true })
 	return &Scheduler{
@@ -36,7 +36,7 @@ func CreateScheduler() *Scheduler {
 }
 
 // scheduler children to a peer
-func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.PeerTask, err error) {
+func (s *Scheduler) ScheduleChildren(peer *types.PeerTask) (children []*types.PeerTask, err error) {
 	if peer == nil || peer.IsDown() {
 		return
 	}
@@ -78,7 +78,7 @@ func (s *Scheduler) SchedulerChildren(peer *types.PeerTask) (children []*types.P
 }
 
 // scheduler a parent to a peer
-func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTask, secondary []*types.PeerTask, err error) {
+func (s *Scheduler) ScheduleParent(peer *types.PeerTask) (primary *types.PeerTask, secondary []*types.PeerTask, err error) {
 	if peer == nil || peer.Success || peer.IsDown() {
 		return
 	}
@@ -97,7 +97,7 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTa
 		val, _ := s.factory.getEvaluator(peer.Task).Evaluate(parent, peer)
 
 		// scheduler the same parent, value reduce a half
-		if peer.GetParent() != nil && peer.GetParent().DstPeerTask!=nil &&
+		if peer.GetParent() != nil && peer.GetParent().DstPeerTask != nil &&
 			peer.GetParent().DstPeerTask.Pid == parent.Pid {
 			val = val / 2.0
 		}
@@ -122,7 +122,7 @@ func (s *Scheduler) SchedulerParent(peer *types.PeerTask) (primary *types.PeerTa
 	return
 }
 
-func (s *Scheduler) SchedulerBadNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
+func (s *Scheduler) ScheduleBadNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
 	logger.Debugf("[%s][%s]SchedulerBadNode scheduler node is bad", peer.Task.TaskId, peer.Pid)
 	parent := peer.GetParent()
 	if parent != nil && parent.DstPeerTask != nil {
@@ -152,7 +152,7 @@ func (s *Scheduler) SchedulerBadNode(peer *types.PeerTask) (adjustNodes []*types
 	return
 }
 
-func (s *Scheduler) SchedulerLeaveNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
+func (s *Scheduler) ScheduleLeaveNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
 	parent := peer.GetParent()
 	if parent != nil && parent.DstPeerTask != nil {
 		pNode := parent.DstPeerTask
@@ -171,7 +171,7 @@ func (s *Scheduler) SchedulerLeaveNode(peer *types.PeerTask) (adjustNodes []*typ
 	return
 }
 
-func (s *Scheduler) SchedulerAdjustParentNode(peer *types.PeerTask) (primary *types.PeerTask, secondary []*types.PeerTask, err error) {
+func (s *Scheduler) ScheduleAdjustParentNode(peer *types.PeerTask) (primary *types.PeerTask, secondary []*types.PeerTask, err error) {
 	parent := peer.GetParent()
 	if parent != nil && parent.DstPeerTask != nil {
 		pNode := parent.DstPeerTask
@@ -181,7 +181,7 @@ func (s *Scheduler) SchedulerAdjustParentNode(peer *types.PeerTask) (primary *ty
 	return s.SchedulerParent(peer)
 }
 
-func (s *Scheduler) SchedulerDone(peer *types.PeerTask) (parent *types.PeerTask, err error) {
+func (s *Scheduler) ScheduleDone(peer *types.PeerTask) (parent *types.PeerTask, err error) {
 	if peer.GetParent() == nil {
 		return
 	}

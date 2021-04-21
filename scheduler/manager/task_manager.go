@@ -14,38 +14,46 @@
  * limitations under the License.
  */
 
-package mgr
+package manager
 
 import (
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/types"
 	"runtime/debug"
 	"sync"
 	"time"
+
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type TaskManager struct {
 	lock        *sync.RWMutex
 	data        map[string]*types.Task
 	gcDelayTime time.Duration
+
+	PeerTask *PeerTask
 }
 
-func createTaskManager() *TaskManager {
+func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
 	delay := time.Hour * 48
-	if config.GetConfig().GC.TaskDelay > 0 {
-		delay = time.Duration(config.GetConfig().GC.TaskDelay) * time.Millisecond
+	if cfg.GC.TaskDelay > 0 {
+		delay = time.Duration(cfg.GC.TaskDelay) * time.Millisecond
 	}
+
 	tm := &TaskManager{
 		lock:        new(sync.RWMutex),
 		data:        make(map[string]*types.Task),
 		gcDelayTime: delay,
 	}
+
+	peerTask := newPeerTask(cfg, tm, hostManager)
+	tm.PeerTask = peerTask
+
 	go tm.gcWorkingLoop()
 	return tm
 }
 
-func (m *TaskManager) AddTask(task *types.Task) (*types.Task, bool) {
+func (m *TaskManager) Add(task *types.Task) (*types.Task, bool) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	v, ok := m.data[task.TaskId]
@@ -59,26 +67,26 @@ func (m *TaskManager) AddTask(task *types.Task) (*types.Task, bool) {
 	return copyTask, true
 }
 
-func (m *TaskManager) DeleteTask(taskId string) {
+func (m *TaskManager) Delete(taskId string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	t, _ := m.data[taskId]
 	if t != nil {
 		logger.Infof("Task [%s] Statistic: %+v ", t.TaskId, t.Statistic.GetStatistic())
-		GetPeerTaskManager().DeleteTask(t)
+		m.PeerTask.DeleteTask(t)
 	}
 	delete(m.data, taskId)
 	return
 }
 
-func (m *TaskManager) GetTask(taskId string) (h *types.Task, ok bool) {
+func (m *TaskManager) Get(taskId string) (h *types.Task, ok bool) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	h, ok = m.data[taskId]
 	return
 }
 
-func (m *TaskManager) TouchTask(taskId string) {
+func (m *TaskManager) Touch(taskId string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	t, _ := m.data[taskId]
@@ -88,10 +96,9 @@ func (m *TaskManager) TouchTask(taskId string) {
 	return
 }
 
-
 func (m *TaskManager) gcWorkingLoop() {
 	for {
-		func(){
+		func() {
 			time.Sleep(time.Hour)
 			defer func() {
 				e := recover()
@@ -112,12 +119,12 @@ func (m *TaskManager) gcWorkingLoop() {
 
 			if len(needDeleteKeys) > 0 {
 				for _, taskId := range needDeleteKeys {
-					m.DeleteTask(taskId)
+					m.Delete(taskId)
 				}
 			}
 
 			// clear peer task
-			GetPeerTaskManager().ClearPeerTask()
+			m.PeerTask.ClearPeerTask()
 		}()
 	}
 }

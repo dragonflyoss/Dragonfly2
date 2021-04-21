@@ -23,7 +23,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/mgr"
+	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
@@ -34,21 +34,24 @@ type ISender interface {
 }
 
 type SenderGroup struct {
-	senderNum  int
-	chanSize   int
-	senderList []*Sender
-	stopCh     chan struct{}
+	senderNum        int
+	chanSize         int
+	senderList       []*Sender
+	stopCh           chan struct{}
+	schedulerService *service.SchedulerService
 }
 
 type Sender struct {
-	jobChan chan *string
-	stopCh  <-chan struct{}
+	jobChan          chan *string
+	stopCh           <-chan struct{}
+	schedulerService *service.SchedulerService
 }
 
-func NewSender(worker config.SchedulerWorkerConfig) *SenderGroup {
+func NewSender(worker config.SchedulerWorkerConfig, schedulerService *service.SchedulerService) *SenderGroup {
 	return &SenderGroup{
-		senderNum: worker.SenderNum,
-		chanSize:  worker.SenderJobPoolSize,
+		senderNum:        worker.SenderNum,
+		chanSize:         worker.SenderJobPoolSize,
+		schedulerService: schedulerService,
 	}
 }
 
@@ -56,10 +59,11 @@ func (sg *SenderGroup) Serve() {
 	sg.stopCh = make(chan struct{})
 	for i := 0; i < sg.senderNum; i++ {
 		s := &Sender{
-			jobChan: make(chan *string, sg.chanSize),
-			stopCh:  sg.stopCh,
+			jobChan:          make(chan *string, sg.chanSize),
+			stopCh:           sg.stopCh,
+			schedulerService: sg.schedulerService,
 		}
-		s.Start()
+		s.Serve()
 		sg.senderList = append(sg.senderList, s)
 	}
 	logger.Infof("start sender worker : %d", sg.senderNum)
@@ -79,7 +83,7 @@ func (s *Sender) Send(peerTask *types.PeerTask) {
 	s.jobChan <- &peerTask.Pid
 }
 
-func (s *Sender) Start() {
+func (s *Sender) Serve() {
 	go s.doSend()
 }
 
@@ -88,7 +92,7 @@ func (s *Sender) doSend() {
 	for {
 		select {
 		case job := <-s.jobChan:
-			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(*job)
+			peerTask, _ := s.schedulerService.TaskManager.PeerTask.Get(*job)
 			if peerTask == nil {
 				break
 			}

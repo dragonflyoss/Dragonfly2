@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package mgr
+package manager
 
 import (
 	"context"
@@ -47,33 +47,36 @@ type CDNManager struct {
 	lock         *sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
 	callbackList map[*types.Task][]*types.PeerTask
+	taskManager  *TaskManager
+	hostManager  *HostManager
 }
 
-func createCDNManager() *CDNManager {
-	cdnMgr := &CDNManager{
+func newCDNManager(cfg config.CDNConfig, taskManager *TaskManager, hostManager *HostManager) *CDNManager {
+	mgr := &CDNManager{
 		cdnInfoMap:   make(map[string]*config.CDNServerConfig),
 		lock:         new(sync.RWMutex),
 		callbackFns:  make(map[*types.Task]func(*types.PeerTask, *dferrors.DfError)),
 		callbackList: make(map[*types.Task][]*types.PeerTask),
+		taskManager:  taskManager,
+		hostManager:  hostManager,
 	}
-	return cdnMgr
-}
 
-func (cm *CDNManager) InitCDNClient() {
-	servers := config.GetConfig().CDN.Servers
+	servers := cfg.Servers
 	var addrs []dfnet.NetAddr
 	for i, cdn := range servers {
 		addrs = append(addrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
 			Addr: fmt.Sprintf("%s:%d", cdn.IP, cdn.RpcPort),
 		})
-		cm.cdnInfoMap[cdn.Name] = &servers[i]
+		mgr.cdnInfoMap[cdn.Name] = &servers[i]
 	}
 	seederClient, err := client.GetClientByAddr(addrs)
 	if err != nil {
 		logger.Errorf("create cdn client failed main addr [%s]", addrs[0])
 	}
-	cm.client = seederClient
+	mgr.client = seederClient
+
+	return mgr
 }
 
 func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error) {
@@ -135,7 +138,7 @@ func (cm *CDNManager) doCallback(task *types.Task, err *dferrors.DfError) {
 
 		if err != nil {
 			time.Sleep(time.Second * 5)
-			GetTaskManager().DeleteTask(task.TaskId)
+			cm.taskManager.Delete(task.TaskId)
 		}
 	})
 }
@@ -201,7 +204,7 @@ func (cm *CDNManager) Work(task *types.Task, stream *client.PieceSeedStream) {
 
 func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) (err error) {
 	hostId := cm.getHostUuid(ps)
-	host, ok := GetHostManager().GetHost(hostId)
+	host, ok := cm.hostManager.Get(hostId)
 	if !ok {
 		ip, rpcPort, downPort := "", 0, 0
 		cdnInfo := cm.getCdnInfo(ps.SeederName)
@@ -220,12 +223,12 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 				DownPort: int32(downPort),
 			},
 		}
-		host = GetHostManager().AddHost(host)
+		host = cm.hostManager.Add(host)
 	}
 	pid := ps.PeerId
-	peerTask, _ := GetPeerTaskManager().GetPeerTask(pid)
+	peerTask, _ := cm.taskManager.peerTask.Get(pid)
 	if peerTask == nil {
-		peerTask = GetPeerTaskManager().AddPeerTask(pid, task, host)
+		peerTask = cm.taskManager.peerTask.Add(pid, task, host)
 	} else if peerTask.Host == nil {
 		peerTask.Host = host
 	}

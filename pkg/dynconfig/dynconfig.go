@@ -80,7 +80,7 @@ func WithLocalConfigPath(p string) Option {
 }
 
 // NewDynconfig returns a new dynconfig instence
-func NewDynconfig(sourceType sourceType, expire time.Duration, options ...Option) (*dynconfig, error) {
+func New(sourceType sourceType, expire time.Duration, options ...Option) (*dynconfig, error) {
 	d, err := NewDynconfigWithOptions(sourceType, expire, options...)
 	if err != nil {
 		return nil, err

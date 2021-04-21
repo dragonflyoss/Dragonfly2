@@ -26,14 +26,11 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/service/schedule_worker"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
-
-var _ server.SchedulerServer = &SchedulerServer{}
 
 type SchedulerServer struct {
 	service *service.SchedulerService
@@ -178,7 +175,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 	// case base.SizeScope_SMALL
 	// do scheduler piece
-	parent, _, err := s.service.SchedulerParent(peerTask)
+	parent, _, err := s.service.ScheduleParent(peerTask)
 	if err != nil {
 		return
 	}
@@ -216,7 +213,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		}
 		return
 	}()
-	err = schedule_worker.CreateClient(stream, s.worker, s.service.GetScheduler()).Start()
+	err = schedule_worker.NewClient(stream, s.worker, s.service).Serve()
 	return
 }
 
