@@ -49,7 +49,7 @@ func NewServer(cfg *config.Config) *Server {
 func (s *Server) Serve() (err error) {
 	port := s.config.Port
 
-	go s.worker.Start()
+	go s.worker.Serve()
 	defer s.worker.Stop()
 
 	s.running = true

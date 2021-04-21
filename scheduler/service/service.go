@@ -23,22 +23,22 @@ import (
 )
 
 type SchedulerService struct {
-	cdnMgr      *mgr.CDNManager
-	taskMgr     *mgr.TaskManager
-	hostMgr     *mgr.HostManager
-	peerTaskMgr *mgr.PeerTaskManager
-	scheduler   *scheduler.Scheduler
+	CDNManager      *mgr.CDNManager
+	TaskManager     *mgr.TaskManager
+	HostManager     *mgr.HostManager
+	PeerTaskManager *mgr.PeerTaskManager
+	Scheduler       *scheduler.Scheduler
 }
 
 func NewSchedulerService(cfg *config.Config) *SchedulerService {
 	s := &SchedulerService{
-		cdnMgr:      mgr.GetCDNManager(),
-		taskMgr:     mgr.GetTaskManager(),
-		hostMgr:     mgr.GetHostManager(),
-		peerTaskMgr: mgr.GetPeerTaskManager(),
-		scheduler:   scheduler.CreateScheduler(),
+		CDNManager:      mgr.GetCDNManager(),
+		TaskManager:     mgr.GetTaskManager(),
+		HostManager:     mgr.GetHostManager(),
+		PeerTaskManager: mgr.GetPeerTaskManager(),
+		Scheduler:       scheduler.CreateScheduler(),
 	}
-	s.cdnMgr.InitCDNClient()
+	s.CDNManager.InitCDNClient()
 
 	return s
 }

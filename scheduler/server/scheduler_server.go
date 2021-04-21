@@ -48,6 +48,7 @@ type Option func(p *SchedulerServer) *SchedulerServer
 func WithSchedulerService(service *service.SchedulerService) Option {
 	return func(s *SchedulerServer) *SchedulerServer {
 		s.service = service
+
 		return s
 	}
 }
@@ -56,6 +57,7 @@ func WithSchedulerService(service *service.SchedulerService) Option {
 func WithWorker(worker schedule_worker.IWorker) Option {
 	return func(p *SchedulerServer) *SchedulerServer {
 		p.worker = worker
+
 		return p
 	}
 }

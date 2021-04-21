@@ -29,7 +29,7 @@ import (
 )
 
 type IWorker interface {
-	Start()
+	Serve()
 	Stop()
 	ReceiveJob(job *types.PeerTask)
 	ReceiveUpdatePieceResult(pr *scheduler2.PieceResult)
@@ -48,18 +48,16 @@ type WorkerGroup struct {
 }
 
 func NewWorkerGroup(cfg *config.Config, scheduler *scheduler.Scheduler) *WorkerGroup {
-	workerNum := config.GetConfig().Worker.WorkerNum
-	chanSize := config.GetConfig().Worker.WorkerJobPoolSize
 	return &WorkerGroup{
-		workerNum:        workerNum,
-		chanSize:         chanSize,
-		sender:           CreateSender(),
+		workerNum:        cfg.Worker.WorkerNum,
+		chanSize:         cfg.Worker.WorkerJobPoolSize,
+		sender:           NewSender(cfg.Worker),
 		scheduler:        scheduler,
 		triggerLoadQueue: workqueue.New(),
 	}
 }
 
-func (wg *WorkerGroup) Start() {
+func (wg *WorkerGroup) Serve() {
 	wg.stopCh = make(chan struct{})
 
 	mgr.GetPeerTaskManager().SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
@@ -82,7 +80,9 @@ func (wg *WorkerGroup) Start() {
 		w.Start()
 		wg.workerList = append(wg.workerList, w)
 	}
-	wg.sender.Start()
+
+	wg.sender.Serve()
+
 	logger.Infof("start scheduler worker number:%d", wg.workerNum)
 }
 
