@@ -60,7 +60,12 @@ var PeerHostConfig = PeerHostOption{
 	},
 	Download: DownloadOption{
 		TotalRateLimit: clientutil.RateLimit{
+			// 100Mi
 			Limit: rate.Limit(104857600),
+		},
+		PerPeerRateLimit: clientutil.RateLimit{
+			// 20Mi
+			Limit: rate.Limit(20971520),
 		},
 		DownloadGRPC: ListenOption{
 			Security: SecurityOption{
