@@ -1,4 +1,3 @@
----
 run:
   deadline: 3m
   modules-download-mode: readonly
@@ -20,7 +19,6 @@ linters:
     - gocyclo
     - staticcheck
 
-# output configuration options
 output:
   format: colored-line-number
   print-issued-lines: true
