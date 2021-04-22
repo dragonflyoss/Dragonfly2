@@ -17,13 +17,14 @@
 package cmd
 
 import (
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"fmt"
-	"go.uber.org/zap/zapcore"
 	"os"
 	"reflect"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"go.uber.org/zap/zapcore"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon"
@@ -32,7 +33,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-	"d7y.io/dragonfly/v2/version"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/mitchellh/mapstructure"
@@ -133,9 +133,7 @@ func init() {
 	setupFlags(rootCmd)
 
 	// add sub commands
-	rootCmd.AddCommand(version.VersionCmd)
-	rootCmd.AddCommand(common.NewGenDocCommand("cdn"))
-	rootCmd.AddCommand(common.NewConfigCommand("cdn", getDefaultConfig))
+	rootCmd.AddCommand(common.VersionCmd)
 }
 
 // setupFlags setups flags for command line.

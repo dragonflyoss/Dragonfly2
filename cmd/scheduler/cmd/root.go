@@ -18,9 +18,7 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
-	"path/filepath"
 
 	"d7y.io/dragonfly/v2/cmd/common"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -29,7 +27,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/server"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -73,44 +70,7 @@ func init() {
 	cfg = config.New()
 
 	// Initialize cobra
-	cobra.OnInitialize(initConfig)
-
-	// Add flags
-	flagSet := rootCmd.Flags()
-	flagSet.Bool("console", cfg.Console, "whether print log info on the terminal")
-	flagSet.Bool("verbose", cfg.Verbose, "whether use debug level logger and enable pprof")
-	flagSet.Int("pprofPort", cfg.PProfPort, "listen port for pprof, only valid when the verbose option is true, default is random port")
-	flagSet.StringVarP(&cfgFile, "config", "f", "", "the path of scheduler config file")
-
-	// Add common cmds
-	common.AddCommonSubCmds(rootCmd)
-
-	if err := viper.BindPFlags(flagSet); err != nil {
-		panic(err)
-	}
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		viper.AddConfigPath(filepath.Dir(config.DefaultConfigFilePath))
-		viper.SetConfigFile(filepath.Base(config.DefaultConfigFilePath))
-	}
-
-	viper.SetEnvPrefix(SchedulerEnvPrefix)
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
-
-	if err := viper.Unmarshal(&cfg); err != nil {
-		panic(errors.Wrap(err, "unmarshal config to struct"))
-	}
+	common.InitCobra(rootCmd, &cfgFile, SchedulerEnvPrefix, cfg)
 }
 
 func runScheduler() error {

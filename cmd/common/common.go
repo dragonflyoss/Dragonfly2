@@ -21,13 +21,36 @@ import (
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/version"
+	"d7y.io/dragonfly/v2/pkg/platform"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/phayes/freeport"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"go.uber.org/zap/zapcore"
 )
+
+// InitCobra initializes flags binding and common sub cmds.
+// cfgFile is a pointer to configuration path, config is a pointer to configuration struct.
+func InitCobra(cmd *cobra.Command, cfgFile *string, envPrefix string, config interface{}) {
+	cobra.OnInitialize(func() { initConfig(cfgFile, envPrefix, config) })
+
+	// Add flags
+	flagSet := cmd.Flags()
+	flagSet.Bool("console", false, "whether print log on the terminal")
+	flagSet.Bool("verbose", false, "whether use debug level logger and enable pprof")
+	flagSet.Int("pprofPort", 0, "listen port for pprof, only valid when the verbose option is true, default is random port")
+	flagSet.StringVarP(cfgFile, "config", "f", "", "the path of configuration file")
+
+	if err := viper.BindPFlags(flagSet); err != nil {
+		panic(errors.Wrap(err, "bind flags to viper"))
+	}
+
+	// Add common cmds
+	cmd.AddCommand(VersionCmd)
+	cmd.AddCommand(newGenDocCommand(cmd.Name()))
+}
 
 func InitVerboseMode(verbose bool, pprofPort int) {
 	if !verbose {
@@ -37,7 +60,7 @@ func InitVerboseMode(verbose bool, pprofPort int) {
 	logcore.SetCoreLevel(zapcore.DebugLevel)
 	logcore.SetGrpcLevel(zapcore.DebugLevel)
 
-	// enable go pprof and statsview
+	// Enable go pprof and statsview
 	go func() {
 		if pprofPort == 0 {
 			pprofPort, _ = freeport.GetFreePort()
@@ -56,7 +79,26 @@ func InitVerboseMode(verbose bool, pprofPort int) {
 	}()
 }
 
-func AddCommonSubCmds(parent *cobra.Command) {
-	parent.AddCommand(version.VersionCmd)
-	parent.AddCommand(NewGenDocCommand(parent.Name()))
+// initConfig reads in config file and ENV variables if set.
+func initConfig(cfgFile *string, envPrefix string, config interface{}) {
+	if *cfgFile != "" {
+		// Use config file from the flag.
+		viper.SetConfigFile(*cfgFile)
+	} else {
+		viper.AddConfigPath(platform.DefaultConfigDir)
+		viper.SetConfigFile(envPrefix)
+		viper.SetConfigType("yaml")
+	}
+
+	viper.SetEnvPrefix(envPrefix)
+	viper.AutomaticEnv() // read in environment variables that match
+
+	// If a config file is found, read it in.
+	if err := viper.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
+
+	if err := viper.Unmarshal(config); err != nil {
+		panic(errors.Wrap(err, "unmarshal config to struct"))
+	}
 }

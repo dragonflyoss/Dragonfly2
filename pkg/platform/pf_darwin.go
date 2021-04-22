@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package logcore
+package platform
 
 import (
-	"path"
+	"path/filepath"
 
 	"d7y.io/dragonfly/v2/pkg/basic"
 )
 
-var clientLogDir = path.Join(basic.HomeDir, "logs/dragonfly")
+const (
+	OsArch = "darwin"
+)
+
+var (
+	DefaultConfigDir = filepath.Join(basic.HomeDir, ".dragonfly")
+	ClientLogDir     = filepath.Join(basic.HomeDir, ".dragonfly/logs")
+)
