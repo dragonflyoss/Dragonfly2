@@ -21,7 +21,8 @@ import "d7y.io/dragonfly/v2/pkg/rpc/base"
 // rpc code
 const (
 	// success code 200-299
-	Success base.Code = 200
+	Success           base.Code = 200
+	ServerUnavailable base.Code = 500 // framework can not find server node
 
 	// common response error 1000-1999
 	ResourceLacked   base.Code = 1000 // client can be migrated to another scheduler

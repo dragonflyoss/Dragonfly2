@@ -19,11 +19,8 @@ package httputils
 import (
 	"context"
 	"crypto/tls"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/suite"
-	"github.com/valyala/fasthttp"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -32,6 +29,10 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"github.com/stretchr/testify/suite"
+	"github.com/valyala/fasthttp"
 )
 
 func TestHttpUtil(t *testing.T) {
@@ -133,7 +134,9 @@ func (s *HTTPUtilTestSuite) TestGetRangeSE() {
 					EndIndex:   65575,
 				},
 			},
-			errCheck: cdnerrors.IsNilError,
+			errCheck: func(err error) bool {
+				return err == nil
+			},
 		},
 		{
 			rangeHTTPHeader: "bytes=2-2",
@@ -144,7 +147,9 @@ func (s *HTTPUtilTestSuite) TestGetRangeSE() {
 					EndIndex:   2,
 				},
 			},
-			errCheck: cdnerrors.IsNilError,
+			errCheck: func(err error) bool {
+				return err == nil
+			},
 		},
 		{
 			rangeHTTPHeader: "bytes=2-",
@@ -155,7 +160,9 @@ func (s *HTTPUtilTestSuite) TestGetRangeSE() {
 					EndIndex:   65575,
 				},
 			},
-			errCheck: cdnerrors.IsNilError,
+			errCheck: func(err error) bool {
+				return err == nil
+			},
 		},
 		{
 			rangeHTTPHeader: "bytes=-100",
@@ -166,7 +173,9 @@ func (s *HTTPUtilTestSuite) TestGetRangeSE() {
 					EndIndex:   65575,
 				},
 			},
-			errCheck: cdnerrors.IsNilError,
+			errCheck: func(err error) bool {
+				return err == nil
+			},
 		},
 		{
 			rangeHTTPHeader: "bytes=0-66575",

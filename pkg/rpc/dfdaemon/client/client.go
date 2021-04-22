@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 	"sync"
+	"time"
 
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -43,13 +44,16 @@ var once sync.Once
 func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	once.Do(func() {
 		dc = &daemonClient{
-			rpc.NewConnection("dfdaemon", make([]dfnet.NetAddr, 0), opts...),
+			rpc.NewConnection(context.Background(), "dfdaemon", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+				rpc.WithConnExpireTime(5 * time.Minute),
+				rpc.WithDialOption(opts),
+			}),
 		}
 	})
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
-	err := dc.Connection.AddNodes(addrs)
+	err := dc.Connection.AddServerNodes(addrs)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +64,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 type DaemonClient interface {
 	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error)
 
-	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest,
-		opts ...grpc.CallOption) (*base.PiecePacket, error)
+	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
 	CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) error
 }
@@ -70,11 +73,11 @@ type daemonClient struct {
 	*rpc.Connection
 }
 
-func (dc *daemonClient) getDaemonClient(key string) (dfdaemon.DaemonClient, error) {
-	if clientConn, err := dc.Connection.GetClientConn(key); err != nil {
-		return nil, err
+func (dc *daemonClient) getDaemonClient(key string, stick bool) (dfdaemon.DaemonClient, string, error) {
+	if clientConn, err := dc.Connection.GetClientConn(key, stick); err != nil {
+		return nil, "", err
 	} else {
-		return dfdaemon.NewDaemonClient(clientConn), nil
+		return dfdaemon.NewDaemonClient(clientConn), clientConn.Target(), nil
 	}
 }
 
@@ -93,8 +96,8 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 	return newDownResultStream(dc, ctx, taskId, req, opts)
 }
 
-func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest,
-	opts ...grpc.CallOption) (*base.PiecePacket, error) {
+func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
+	error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		if client, err := dc.getDaemonClientWithTarget(target.GetEndpoint()); err != nil {
 			return nil, err
