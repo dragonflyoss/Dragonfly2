@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package platform
+package common
 
-const (
-	OsArch = "linux"
+import (
+	"path/filepath"
+
+	"d7y.io/dragonfly/v2/pkg/basic"
 )
 
-var (
-	DefaultConfigDir = "/etc/dragonfly"
-	ClientLogDir     = "/var/log/dragonfly"
-)
+var defaultConfigDir = filepath.Join(basic.HomeDir, ".dragonfly")

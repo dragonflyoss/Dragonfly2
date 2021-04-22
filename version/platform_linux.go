@@ -17,10 +17,5 @@
 package version
 
 const (
-	Major      = "2"
-	Minor      = "0"
-	GitVersion = "v2.0.0-rc.0"
-	GoVersion  = "go1.15.2"
-	Platform   = osArch
-	BuildDay   = "2021-04-26"
+	osArch = "linux"
 )

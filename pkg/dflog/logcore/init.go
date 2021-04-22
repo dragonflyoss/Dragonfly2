@@ -22,7 +22,6 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/platform"
 )
 
 func InitManager(console bool) error {
@@ -132,19 +131,19 @@ func InitDaemon(console bool) error {
 		return nil
 	}
 
-	if coreLogger, err := CreateLogger(path.Join(platform.ClientLogDir, fmt.Sprintf("dfdaemon-%s", CoreLogFileName)), 100, 7, 14, false, false); err != nil {
+	if coreLogger, err := CreateLogger(path.Join(clientLogDir, fmt.Sprintf("dfdaemon-%s", CoreLogFileName)), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
 		logger.SetCoreLogger(coreLogger.Sugar())
 	}
 
-	if grpcLogger, err := CreateLogger(path.Join(platform.ClientLogDir, fmt.Sprintf("dfdaemon-%s", GrpcLogFileName)), 100, 7, 14, false, false); err != nil {
+	if grpcLogger, err := CreateLogger(path.Join(clientLogDir, fmt.Sprintf("dfdaemon-%s", GrpcLogFileName)), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGrpcLogger(grpcLogger.Sugar())
 	}
 
-	if gcLogger, err := CreateLogger(path.Join(platform.ClientLogDir, "gc.log"), 100, 7, 14, false, false); err != nil {
+	if gcLogger, err := CreateLogger(path.Join(clientLogDir, "gc.log"), 100, 7, 14, false, false); err != nil {
 		return err
 	} else {
 		logger.SetGcLogger(gcLogger.Sugar())
@@ -158,7 +157,7 @@ func InitDfget(console bool) error {
 		return nil
 	}
 
-	if dfgetLogger, err := CreateLogger(path.Join(platform.ClientLogDir, "dfget.log"), 300, -1, -1, false, false); err != nil {
+	if dfgetLogger, err := CreateLogger(path.Join(clientLogDir, "dfget.log"), 300, -1, -1, false, false); err != nil {
 		return err
 	} else {
 		log := dfgetLogger.Sugar()

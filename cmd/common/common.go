@@ -21,7 +21,6 @@ import (
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/platform"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/phayes/freeport"
@@ -85,7 +84,7 @@ func initConfig(cfgFile *string, envPrefix string, config interface{}) {
 		// Use config file from the flag.
 		viper.SetConfigFile(*cfgFile)
 	} else {
-		viper.AddConfigPath(platform.DefaultConfigDir)
+		viper.AddConfigPath(defaultConfigDir)
 		viper.SetConfigFile(envPrefix)
 		viper.SetConfigType("yaml")
 	}
