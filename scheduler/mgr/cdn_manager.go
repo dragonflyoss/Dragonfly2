@@ -41,7 +41,7 @@ import (
 const TinyFileSize = 128
 
 type CDNManager struct {
-	client       client.SeederClient
+	client       client.CdnClient
 	cdnInfoMap   map[string]*config.CdnServerConfig
 	lock         *sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
@@ -162,7 +162,7 @@ func (cm *CDNManager) getCdnInfo(seederName string) *config.CdnServerConfig {
 }
 
 type CDNClient struct {
-	client.SeederClient
+	client.CdnClient
 	mgr *CDNManager
 }
 
