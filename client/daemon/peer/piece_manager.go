@@ -123,6 +123,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt PeerTask, request 
 	r, c, err := pm.pieceDownloader.DownloadPiece(request)
 	if err != nil {
 		span.End()
+		span.RecordError(err)
 		pt.Log().Errorf("download piece failed, piece num: %d, error: %s", request.piece.PieceNum, err)
 		return
 	}

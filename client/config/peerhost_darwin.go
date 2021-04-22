@@ -20,7 +20,6 @@ package config
 
 import (
 	"net"
-	"time"
 
 	"golang.org/x/time/rate"
 
@@ -39,8 +38,8 @@ var (
 var PeerHostConfig = PeerHostOption{
 	DataDir:     peerHostDataDir,
 	WorkHome:    peerHostWorkHome,
-	AliveTime:   clientutil.Duration{Duration: 5 * time.Minute},
-	GCInterval:  clientutil.Duration{Duration: 1 * time.Minute},
+	AliveTime:   clientutil.Duration{Duration: DefaultDaemonAliveTime},
+	GCInterval:  clientutil.Duration{Duration: DefaultGCInterval},
 	PidFile:     "/tmp/dfdaemon.pid",
 	LockFile:    "/tmp/dfdaemon.lock",
 	KeepStorage: false,
@@ -48,7 +47,7 @@ var PeerHostConfig = PeerHostOption{
 	Console:     false,
 	Scheduler: SchedulerOption{
 		NetAddrs:        nil,
-		ScheduleTimeout: clientutil.Duration{Duration: 1 * time.Minute},
+		ScheduleTimeout: clientutil.Duration{Duration: DefaultScheduleTimeout},
 	},
 	Host: HostOption{
 		ListenIP:       net.IPv4zero.String(),
@@ -60,12 +59,10 @@ var PeerHostConfig = PeerHostOption{
 	},
 	Download: DownloadOption{
 		TotalRateLimit: clientutil.RateLimit{
-			// 100Mi
-			Limit: rate.Limit(104857600),
+			Limit: rate.Limit(DefaultTotalDownloadLimit),
 		},
 		PerPeerRateLimit: clientutil.RateLimit{
-			// 20Mi
-			Limit: rate.Limit(20971520),
+			Limit: rate.Limit(DefaultPerPeerDownloadLimit),
 		},
 		DownloadGRPC: ListenOption{
 			Security: SecurityOption{
@@ -90,7 +87,7 @@ var PeerHostConfig = PeerHostOption{
 	},
 	Upload: UploadOption{
 		RateLimit: clientutil.RateLimit{
-			Limit: rate.Limit(104857600),
+			Limit: rate.Limit(DefaultUploadLimit),
 		},
 		ListenOption: ListenOption{
 			Security: SecurityOption{
@@ -118,7 +115,7 @@ var PeerHostConfig = PeerHostOption{
 	},
 	Storage: StorageOption{
 		TaskExpireTime: clientutil.Duration{
-			Duration: 3 * time.Minute,
+			Duration: DefaultTaskExpireTime,
 		},
 		StoreStrategy: AdvanceLocalTaskStoreStrategy,
 	},
