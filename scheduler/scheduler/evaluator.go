@@ -14,26 +14,57 @@
  * limitations under the License.
  */
 
-package basic
+package scheduler
 
 import (
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/scheduler/mgr"
-	"d7y.io/dragonfly/v2/scheduler/types"
 	"fmt"
 	"strings"
 	"time"
+
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/scheduler/manager"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-type Evaluator struct {
+type evaluatorOption func(*evaluator) *evaluator
+
+type Evaluator interface {
+	needAdjustParent(peer *types.PeerTask) bool
+	isNodeBad(peer *types.PeerTask) bool
+	evaluate(dst *types.PeerTask, src *types.PeerTask) (float64, error)
+	selectChildCandidates(peer *types.PeerTask) []*types.PeerTask
+	selectParentCandidates(peer *types.PeerTask) []*types.PeerTask
 }
 
-func NewEvaluator() *Evaluator {
-	e := &Evaluator{}
-	return e
+type evaluator struct {
+	taskManager *manager.TaskManager
 }
 
-func (e *Evaluator) NeedAdjustParent(peer *types.PeerTask) bool {
+// WithTaskManager sets task manager.
+func withTaskManager(t *manager.TaskManager) evaluatorOption {
+	return func(e *evaluator) *evaluator {
+		e.taskManager = t
+		return e
+	}
+}
+
+func newEvaluator(options ...evaluatorOption) Evaluator {
+	return newEvaluatorWithOptions(options...)
+}
+
+// NewEvaluatorWithOptions constructs a new instance of a Evaluator with additional options.
+func newEvaluatorWithOptions(options ...evaluatorOption) Evaluator {
+	evaluator := &evaluator{}
+
+	// Apply all options
+	for _, opt := range options {
+		evaluator = opt(evaluator)
+	}
+
+	return evaluator
+}
+
+func (e *evaluator) needAdjustParent(peer *types.PeerTask) bool {
 	parent := peer.GetParent()
 
 	if parent == nil {
@@ -46,7 +77,7 @@ func (e *Evaluator) NeedAdjustParent(peer *types.PeerTask) bool {
 	}
 
 	avgCost, lastCost := e.getAvgAndLastCost(parent.CostHistory, 4)
-	if avgCost * 40 < lastCost {
+	if avgCost*40 < lastCost {
 		logger.Debugf("IsNodeBad [%s]: node cost is too long", peer.Pid)
 		return true
 	}
@@ -54,7 +85,7 @@ func (e *Evaluator) NeedAdjustParent(peer *types.PeerTask) bool {
 	return (avgCost * 20) < lastCost
 }
 
-func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
+func (e *evaluator) isNodeBad(peer *types.PeerTask) (result bool) {
 	if peer.IsDown() {
 		logger.Debugf("IsNodeBad [%s]: node is down ", peer.Pid)
 		return true
@@ -85,7 +116,7 @@ func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
 
 	avgCost, lastCost := e.getAvgAndLastCost(costHistory, 4)
 
-	if avgCost * 40 < lastCost {
+	if avgCost*40 < lastCost {
 		logger.Debugf("IsNodeBad [%s]: node cost is too long avg[%d] last[%d]", peer.Pid, avgCost, lastCost)
 		return true
 	}
@@ -93,12 +124,12 @@ func (e *Evaluator) IsNodeBad(peer *types.PeerTask) (result bool) {
 	return false
 }
 
-func (e *Evaluator) getAvgAndLastCost(list []int64, splitPostition int) (avgCost, lastCost int64) {
+func (e *evaluator) getAvgAndLastCost(list []int64, splitPostition int) (avgCost, lastCost int64) {
 	length := len(list)
 	totalCost := int64(0)
 	for i, cost := range list {
 		totalCost += int64(cost)
-		if length - i <= splitPostition {
+		if length-i <= splitPostition {
 			lastCost += int64(cost)
 		}
 	}
@@ -108,11 +139,11 @@ func (e *Evaluator) getAvgAndLastCost(list []int64, splitPostition int) (avgCost
 	return
 }
 
-func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
+func (e *evaluator) selectChildCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
 	if peer == nil {
 		return
 	}
-	mgr.GetPeerTaskManager().Walker(peer.Task, -1, func(pt *types.PeerTask) bool {
+	e.taskManager.PeerTask.Walker(peer.Task, -1, func(pt *types.PeerTask) bool {
 		if pt == nil || peer.Task != pt.Task {
 			return true
 		}
@@ -122,7 +153,7 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 			return true
 		} else if pt.Success {
 			return true
-		} else if pt.Host.Type == types.HostTypeCdn{
+		} else if pt.Host.Type == types.HostTypeCdn {
 			return true
 		} else if peer.GetParent() != nil && peer.GetParent().DstPeerTask == pt {
 			return true
@@ -142,13 +173,13 @@ func (e *Evaluator) SelectChildCandidates(peer *types.PeerTask) (list []*types.P
 	return
 }
 
-func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
+func (e *evaluator) selectParentCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
 	if peer == nil {
 		logger.Debugf("peerTask is nil")
 		return
 	}
 	var msg []string
-	mgr.GetPeerTaskManager().WalkerReverse(peer.Task, -1, func(pt *types.PeerTask) bool {
+	e.taskManager.PeerTask.WalkerReverse(peer.Task, -1, func(pt *types.PeerTask) bool {
 		if pt == nil {
 			return true
 		} else if peer.Task != pt.Task {
@@ -188,15 +219,15 @@ func (e *Evaluator) SelectParentCandidates(peer *types.PeerTask) (list []*types.
 	return
 }
 
-func (e *Evaluator) Evaluate(dst *types.PeerTask, src *types.PeerTask) (result float64, error error) {
-	profits := e.GetProfits(dst, src)
+func (e *evaluator) evaluate(dst *types.PeerTask, src *types.PeerTask) (result float64, error error) {
+	profits := e.getProfits(dst, src)
 
-	load, err := e.GetHostLoad(dst.Host)
+	load, err := e.getHostLoad(dst.Host)
 	if err != nil {
 		return
 	}
 
-	dist, err := e.GetDistance(dst, src)
+	dist, err := e.getDistance(dst, src)
 	if err != nil {
 		return
 	}
@@ -206,7 +237,7 @@ func (e *Evaluator) Evaluate(dst *types.PeerTask, src *types.PeerTask) (result f
 }
 
 // GetProfits 0.0~unlimited larger and better
-func (e *Evaluator) GetProfits(dst *types.PeerTask, src *types.PeerTask) float64 {
+func (e *evaluator) getProfits(dst *types.PeerTask, src *types.PeerTask) float64 {
 	diff := src.GetDiffPieceNum(dst)
 	deep := dst.GetDeep()
 
@@ -214,13 +245,13 @@ func (e *Evaluator) GetProfits(dst *types.PeerTask, src *types.PeerTask) float64
 }
 
 // GetHostLoad 0.0~1.0 larger and better
-func (e *Evaluator) GetHostLoad(host *types.Host) (load float64, err error) {
+func (e *evaluator) getHostLoad(host *types.Host) (load float64, err error) {
 	load = 1.0 - host.GetUploadLoadPercent()
 	return
 }
 
 // GetDistance 0.0~1.0 larger and better
-func (e *Evaluator) GetDistance(dst *types.PeerTask, src *types.PeerTask) (dist float64, err error) {
+func (e *evaluator) getDistance(dst *types.PeerTask, src *types.PeerTask) (dist float64, err error) {
 	hostDist := 40.0
 	if dst.Host == src.Host {
 		hostDist = 0.0
@@ -236,4 +267,3 @@ func (e *Evaluator) GetDistance(dst *types.PeerTask, src *types.PeerTask) (dist 
 
 	return 1.0 - hostDist/80.0, nil
 }
-

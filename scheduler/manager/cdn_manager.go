@@ -226,9 +226,9 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 		host = cm.hostManager.Add(host)
 	}
 	pid := ps.PeerId
-	peerTask, _ := cm.taskManager.peerTask.Get(pid)
+	peerTask, _ := cm.taskManager.PeerTask.Get(pid)
 	if peerTask == nil {
-		peerTask = cm.taskManager.peerTask.Add(pid, task, host)
+		peerTask = cm.taskManager.PeerTask.Add(pid, task, host)
 	} else if peerTask.Host == nil {
 		peerTask.Host = host
 	}

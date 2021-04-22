@@ -97,7 +97,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 	// get or create task
 	var isCdn = false
-	pkg.TaskId = s.service.GenerateTaskId(request.Url, request.Filter, request.UrlMata, request.BizId, request.PeerId)
+	pkg.TaskId = s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMata, request.BizId, request.PeerId)
 	task, _ := s.service.GetTask(pkg.TaskId)
 	if task == nil {
 		task = &types.Task{

@@ -42,22 +42,22 @@ func NewSchedulerService(cfg *config.Config) *SchedulerService {
 		CDNManager:  mgr.CDNManager,
 		TaskManager: mgr.TaskManager,
 		HostManager: mgr.HostManager,
-		Scheduler:   scheduler.New(),
+		Scheduler:   scheduler.New(cfg.Scheduler, mgr.TaskManager),
 		ABTest:      cfg.Scheduler.ABTest,
 	}
 }
 
-func (s *SchedulerService) GenerateTaskId(url string, filter string, meta *base.UrlMeta, bizId string, peerId string) (taskId string) {
+func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string, peerID string) (taskID string) {
 	if s.ABTest {
-		return idgen.GenerateTwinsTaskId(url, filter, meta, bizId, peerId)
+		return idgen.GenerateTwinsTaskID(url, filter, meta, bizID, peerID)
 	}
-	return idgen.GenerateTaskId(url, filter, meta, bizId)
+	return idgen.GenerateTaskID(url, filter, meta, bizID)
 }
 
-func (s *SchedulerService) GetTask(taskId string) (task *types.Task, err error) {
-	task, _ = s.TaskManager.Get(taskId)
+func (s *SchedulerService) GetTask(taskID string) (task *types.Task, err error) {
+	task, _ = s.TaskManager.Get(taskID)
 	if task == nil {
-		err = errors.New("peer task not exited: " + taskId)
+		err = errors.New("peer task not exited: " + taskID)
 	}
 	return
 }
@@ -80,10 +80,10 @@ func (s *SchedulerService) ScheduleChildren(task *types.PeerTask) (children []*t
 	return s.Scheduler.ScheduleChildren(task)
 }
 
-func (s *SchedulerService) GetPeerTask(peerTaskId string) (peerTask *types.PeerTask, err error) {
-	peerTask, _ = s.TaskManager.PeerTask.Get(peerTaskId)
+func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *types.PeerTask, err error) {
+	peerTask, _ = s.TaskManager.PeerTask.Get(peerTaskID)
 	if peerTask == nil {
-		err = errors.New("peer task do not exist: " + peerTaskId)
+		err = errors.New("peer task do not exist: " + peerTaskID)
 	}
 	return
 }
@@ -94,24 +94,24 @@ func (s *SchedulerService) AddPeerTask(pid string, task *types.Task, host *types
 	return
 }
 
-func (s *SchedulerService) DeletePeerTask(peerTaskId string) (err error) {
-	peerTask, err := s.GetPeerTask(peerTaskId)
+func (s *SchedulerService) DeletePeerTask(peerTaskID string) (err error) {
+	peerTask, err := s.GetPeerTask(peerTaskID)
 	if err != nil {
 		return
 	}
 	// delete from manager
-	s.TaskManager.PeerTask.Delete(peerTaskId)
+	s.TaskManager.PeerTask.Delete(peerTaskID)
 	// delete from host
-	peerTask.Host.DeletePeerTask(peerTaskId)
+	peerTask.Host.DeletePeerTask(peerTaskID)
 	// delete from piece lazy
 	peerTask.SetDown()
 	return
 }
 
-func (s *SchedulerService) GetHost(hostId string) (host *types.Host, err error) {
-	host, _ = s.HostManager.Get(hostId)
+func (s *SchedulerService) GetHost(hostID string) (host *types.Host, err error) {
+	host, _ = s.HostManager.Get(hostID)
 	if host == nil {
-		err = errors.New("host not exited: " + hostId)
+		err = errors.New("host not exited: " + hostID)
 	}
 	return
 }

@@ -18,6 +18,8 @@ package client
 
 import (
 	"context"
+	"sync"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -27,7 +29,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"sync"
 )
 
 func GetClient() (DaemonClient, error) {
@@ -88,7 +89,7 @@ func (dc *daemonClient) getDaemonClientWithTarget(target string) (dfdaemon.Daemo
 func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error) {
 	req.Uuid = uuid.New().String()
 	// 生成taskId
-	taskId := idgen.GenerateTaskId(req.Url, req.Filter, req.UrlMeta, req.BizId)
+	taskId := idgen.GenerateTaskID(req.Url, req.Filter, req.UrlMeta, req.BizId)
 	return newDownResultStream(dc, ctx, taskId, req, opts)
 }
 

@@ -19,6 +19,7 @@ package server
 import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/service/schedule_worker"

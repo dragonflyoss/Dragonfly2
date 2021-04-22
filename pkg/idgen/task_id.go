@@ -30,9 +30,9 @@ const (
 	TwinsB = "_B"
 )
 
-// GenerateTaskId generates a taskId.
+// GenerateTaskID generates a taskId.
 // filter is separated by & character.
-func GenerateTaskId(url string, filter string, meta *base.UrlMeta, bizId string) string {
+func GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string) string {
 	taskIdSource := url
 	if filter != "" {
 		taskIdSource = urlutils.FilterURLParam(url, strings.Split(filter, "&"))
@@ -46,8 +46,8 @@ func GenerateTaskId(url string, filter string, meta *base.UrlMeta, bizId string)
 
 	if md5String != "" {
 		taskIdSource += "|" + md5String
-	} else if bizId != "" {
-		taskIdSource += "|" + bizId
+	} else if bizID != "" {
+		taskIdSource += "|" + bizID
 	}
 
 	if rangeString != "" {
@@ -60,14 +60,14 @@ func GenerateTaskId(url string, filter string, meta *base.UrlMeta, bizId string)
 }
 
 // GenerateTwinsTaskId used A/B testing
-func GenerateTwinsTaskId(url string, filter string, meta *base.UrlMeta, bizId, peerId string) string {
-	taskId := GenerateTaskId(url, filter, meta, bizId)
+func GenerateTwinsTaskID(url string, filter string, meta *base.UrlMeta, bizID, peerID string) string {
+	taskID := GenerateTaskID(url, filter, meta, bizID)
 
-	if digestutils.CheckSum(peerId)&1 == 0 {
-		taskId += TwinsA
+	if digestutils.CheckSum(peerID)&1 == 0 {
+		taskID += TwinsA
 	} else {
-		taskId += TwinsB
+		taskID += TwinsB
 	}
 
-	return taskId
+	return taskID
 }
