@@ -29,6 +29,7 @@ import (
 	"syscall"
 	"time"
 
+	"d7y.io/dragonfly/v2/cmd/common"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/go-http-utils/headers"
@@ -50,7 +51,6 @@ import (
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	"d7y.io/dragonfly/v2/version"
 )
 
 var filter string
@@ -95,7 +95,7 @@ var rootCmd = &cobra.Command{
 	Example:           dfgetExample,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if deprecatedFlags.version {
-			version.VersionCmd.Run(nil, nil)
+			common.VersionCmd.Run(nil, nil)
 			return nil
 		}
 		// Convent deprecated flags
@@ -211,7 +211,7 @@ func init() {
 	flagSet.MarkShorthandDeprecated("v", "Please use 'dfget version' instead")
 
 	// Add command
-	rootCmd.AddCommand(version.VersionCmd)
+	rootCmd.AddCommand(common.VersionCmd)
 }
 
 // Convert flags

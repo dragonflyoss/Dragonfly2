@@ -14,6 +14,13 @@
  * limitations under the License.
  */
 
-package logcore
+package platform
 
-const clientLogDir = "/var/log/dragonfly"
+const(
+	OsArch = "linux"
+)
+
+var (
+	DefaultConfigDir = "/etc/dragonfly"
+	ClientLogDir     = "/var/log/dragonfly"
+)
