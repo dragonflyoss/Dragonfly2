@@ -99,10 +99,11 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 		suc           bool
 		code          base.Code
 		schedulerNode string
+		res           interface{}
 	)
 	key := idgen.GenerateTaskId(ptr.Url, ptr.Filter, ptr.UrlMata, ptr.BizId)
-	logger.Infof("generate hash key taskId: %s and start to register peer task for peer_id(%s) url(%s)", key, ptr.PeerId, ptr.Url)
-	if res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	logger.WithPeerID(ptr.PeerId).Infof("generate hash key taskId: %s and start to register peer task for peer_id(%s) url(%s)", key, ptr.PeerId, ptr.Url)
+	if res, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		client, schedulerNode, err = sc.getSchedulerClient(key, false)
 		if err != nil {
@@ -116,6 +117,7 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 		suc = true
 		code = dfcodes.Success
 		if taskId != key {
+			logger.WithPeerID(ptr.PeerId).Warnf("correct taskId from %s to %s", key, taskId)
 			sc.Connection.CorrectKey2NodeRelation(schedulerNode, key, taskId)
 		}
 	} else {
@@ -128,7 +130,8 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 			suc, int32(code), taskId, ptr.Url, ptr.PeerHost.Ip, ptr.PeerHost.SecurityDomain, ptr.PeerHost.Idc, schedulerNode)
 
 	if err != nil {
-		if preNode, err := sc.TryMigrate(key, err, exclusiveNodes); err == nil {
+		var preNode string
+		if preNode, err = sc.TryMigrate(key, err, exclusiveNodes); err == nil {
 			exclusiveNodes = append(exclusiveNodes, preNode)
 			return sc.doRegisterPeerTask(ctx, ptr, exclusiveNodes, opts)
 		}
@@ -176,7 +179,8 @@ func (sc *schedulerClient) doReportPeerResult(ctx context.Context, pr *scheduler
 			pr.Success, int32(pr.Code), pr.TaskId, pr.Url, schedulerNode, pr.ContentLength, pr.Traffic, pr.Cost)
 
 	if err != nil {
-		if preNode, err := sc.TryMigrate(pr.TaskId, err, exclusiveNodes); err == nil {
+		var preNode string
+		if preNode, err = sc.TryMigrate(pr.TaskId, err, exclusiveNodes); err == nil {
 			exclusiveNodes = append(exclusiveNodes, preNode)
 			return sc.doReportPeerResult(ctx, pr, exclusiveNodes, opts)
 		}
