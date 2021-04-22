@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package common
 
 import (
@@ -30,10 +31,10 @@ type genDocCommand struct {
 	path string
 }
 
-func newGenDocCommand(name string) *cobra.Command {
-	genDocCommand := new(genDocCommand)
+func newDocCommand(name string) *cobra.Command {
+	docCommand := new(genDocCommand)
 
-	genDocCommand.cmd = &cobra.Command{
+	docCommand.cmd = &cobra.Command{
 		Use:               "doc",
 		Short:             fmt.Sprintf("generate markdown documents for cmd:%s", name),
 		Long:              fmt.Sprintf("generate markdown documents for cmd:%s", name),
@@ -41,13 +42,13 @@ func newGenDocCommand(name string) *cobra.Command {
 		DisableAutoGenTag: true,
 		SilenceUsage:      true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return genDocCommand.runGenDoc()
+			return docCommand.runDoc()
 		},
 	}
 
-	genDocCommand.bindFlags()
+	docCommand.bindFlags()
 
-	return genDocCommand.cmd
+	return docCommand.cmd
 }
 
 // bindFlags binds flags for specific command.
@@ -57,7 +58,7 @@ func (g *genDocCommand) bindFlags() {
 	flagSet.StringVar(&g.path, "path", "./", "destination dir of generated markdown documents")
 }
 
-func (g *genDocCommand) runGenDoc() error {
+func (g *genDocCommand) runDoc() error {
 	_ = fileutils.MkdirAll(g.path)
 	if !fileutils.IsDir(g.path) {
 		return errors.Errorf("path %s is not dir, please check it", g.path)

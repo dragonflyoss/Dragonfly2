@@ -48,7 +48,7 @@ func InitCobra(cmd *cobra.Command, cfgFile *string, envPrefix string, config int
 
 	// Add common cmds
 	cmd.AddCommand(VersionCmd)
-	cmd.AddCommand(newGenDocCommand(cmd.Name()))
+	cmd.AddCommand(newDocCommand(cmd.Name()))
 }
 
 func InitVerboseMode(verbose bool, pprofPort int) {
