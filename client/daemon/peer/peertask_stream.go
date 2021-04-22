@@ -92,6 +92,8 @@ func newStreamPeerTask(ctx context.Context,
 		return ctx, nil, nil, err
 	}
 	span.SetAttributes(config.AttributeTaskId.String(result.TaskId))
+	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
+		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var singlePiece *scheduler.SinglePiece
 	if !backSource {
@@ -128,8 +130,6 @@ func newStreamPeerTask(ctx context.Context,
 		span.RecordError(err)
 		return ctx, nil, nil, err
 	}
-	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
-		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 	var limiter *rate.Limiter
 	if perPeerRateLimit > 0 {
 		limiter = rate.NewLimiter(perPeerRateLimit, int(perPeerRateLimit))
