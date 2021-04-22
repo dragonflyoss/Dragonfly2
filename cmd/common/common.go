@@ -85,7 +85,7 @@ func initConfig(cfgFile *string, envPrefix string, config interface{}) {
 		viper.SetConfigFile(*cfgFile)
 	} else {
 		viper.AddConfigPath(defaultConfigDir)
-		viper.SetConfigFile(envPrefix)
+		viper.SetConfigName(envPrefix)
 		viper.SetConfigType("yaml")
 	}
 
@@ -93,8 +93,10 @@ func initConfig(cfgFile *string, envPrefix string, config interface{}) {
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println("using config file:", viper.ConfigFileUsed())
 	}
 
 	if err := viper.Unmarshal(config); err != nil {
