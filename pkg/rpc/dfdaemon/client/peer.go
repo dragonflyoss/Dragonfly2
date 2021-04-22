@@ -43,7 +43,7 @@ func GetPieceTasks(destPeer *scheduler.PeerPacket_DestPeer, ctx context.Context,
 		return nil, err
 	}
 	if toCdn {
-		return client.(cdnclient.SeederClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
+		return client.(cdnclient.CdnClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
 	}
 	return client.(DaemonClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
 }

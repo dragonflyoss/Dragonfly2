@@ -166,9 +166,9 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	logger.Debugf("task:%+v", task)
 	if err != nil {
 		if cdnerrors.IsDataNotFound(err) {
-			return nil, dferrors.Newf(dfcodes.CdnTaskNotFound, "failed to get task(%s) from cdn: %v", task.TaskId, err)
+			return nil, dferrors.Newf(dfcodes.CdnTaskNotFound, "failed to get task(%s) from cdn: %v", req.TaskId, err)
 		}
-		return nil, dferrors.Newf(dfcodes.CdnError, "failed to get task(%s) from cdn: %v", task.TaskId, err)
+		return nil, dferrors.Newf(dfcodes.CdnError, "failed to get task(%s) from cdn: %v", req.TaskId, err)
 	}
 	if task.IsError() {
 		return nil, dferrors.Newf(dfcodes.CdnTaskDownloadFail, "fail to download task(%s), cdnStatus: %s", task.TaskId, task.CdnStatus)

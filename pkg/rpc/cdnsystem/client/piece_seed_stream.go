@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"github.com/pkg/errors"
@@ -30,7 +31,7 @@ import (
 
 type PieceSeedStream struct {
 	// client for one target
-	sc      *seederClient
+	sc      *cdnClient
 	ctx     context.Context
 	hashKey string
 	sr      *cdnsystem.SeedRequest
@@ -42,7 +43,7 @@ type PieceSeedStream struct {
 	rpc.RetryMeta
 }
 
-func newPieceSeedStream(sc *seederClient, ctx context.Context, hashKey string, sr *cdnsystem.SeedRequest, opts []grpc.CallOption) (*PieceSeedStream, error) {
+func newPieceSeedStream(sc *cdnClient, ctx context.Context, hashKey string, sr *cdnsystem.SeedRequest, opts []grpc.CallOption) (*PieceSeedStream, error) {
 	pss := &PieceSeedStream{
 		sc:      sc,
 		ctx:     ctx,
@@ -65,10 +66,11 @@ func newPieceSeedStream(sc *seederClient, ctx context.Context, hashKey string, s
 
 func (pss *PieceSeedStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, _, err := pss.sc.getSeederClient(pss.hashKey, false)
+		client, cdnServerNode, err := pss.sc.getCdnClient(pss.hashKey, false)
 		if err != nil {
 			return nil, err
 		}
+		logger.WithTaskID(pss.hashKey).Infof("invoke cdn node %s ObtainSeeds", cdnServerNode)
 		return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, nil)
 	if err == nil {
@@ -109,7 +111,7 @@ func (pss *PieceSeedStream) replaceStream(key string, cause error) error {
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, _, err := pss.sc.getSeederClient(key, true)
+		client, _, err := pss.sc.getCdnClient(key, true)
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +132,7 @@ func (pss *PieceSeedStream) replaceClient(key string, cause error) error {
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, _, err := pss.sc.getSeederClient(key, true)
+		client, _, err := pss.sc.getCdnClient(key, true)
 		if err != nil {
 			return nil, err
 		}

@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	DefaultConsole = false
+	DefaultConsole = true
 )
 
 const (
