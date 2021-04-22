@@ -93,6 +93,7 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 	req.Uuid = uuid.New().String()
 	// 生成taskId
 	taskId := idgen.GenerateTaskId(req.Url, req.Filter, req.UrlMeta, req.BizId)
+	// todo 这里需要考虑最终的taskId是否和这里生成的逻辑是否一致，如果不一致需要修正
 	return newDownResultStream(dc, ctx, taskId, req, opts)
 }
 
