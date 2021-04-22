@@ -4,10 +4,10 @@ package scheduler
 
 import (
 	context "context"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -25,9 +25,9 @@ type SchedulerClient interface {
 	// it will send the last piece result to the new scheduler.
 	ReportPieceResult(ctx context.Context, opts ...grpc.CallOption) (Scheduler_ReportPieceResultClient, error)
 	// ReportPeerResult reports downloading result for the peer task.
-	ReportPeerResult(ctx context.Context, in *PeerResult, opts ...grpc.CallOption) (*empty.Empty, error)
+	ReportPeerResult(ctx context.Context, in *PeerResult, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// LeaveTask makes the peer leaving from scheduling overlay for the task.
-	LeaveTask(ctx context.Context, in *PeerTarget, opts ...grpc.CallOption) (*empty.Empty, error)
+	LeaveTask(ctx context.Context, in *PeerTarget, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type schedulerClient struct {
@@ -78,8 +78,8 @@ func (x *schedulerReportPieceResultClient) Recv() (*PeerPacket, error) {
 	return m, nil
 }
 
-func (c *schedulerClient) ReportPeerResult(ctx context.Context, in *PeerResult, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *schedulerClient) ReportPeerResult(ctx context.Context, in *PeerResult, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/scheduler.Scheduler/ReportPeerResult", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -87,8 +87,8 @@ func (c *schedulerClient) ReportPeerResult(ctx context.Context, in *PeerResult, 
 	return out, nil
 }
 
-func (c *schedulerClient) LeaveTask(ctx context.Context, in *PeerTarget, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *schedulerClient) LeaveTask(ctx context.Context, in *PeerTarget, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/scheduler.Scheduler/LeaveTask", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -107,9 +107,9 @@ type SchedulerServer interface {
 	// it will send the last piece result to the new scheduler.
 	ReportPieceResult(Scheduler_ReportPieceResultServer) error
 	// ReportPeerResult reports downloading result for the peer task.
-	ReportPeerResult(context.Context, *PeerResult) (*empty.Empty, error)
+	ReportPeerResult(context.Context, *PeerResult) (*emptypb.Empty, error)
 	// LeaveTask makes the peer leaving from scheduling overlay for the task.
-	LeaveTask(context.Context, *PeerTarget) (*empty.Empty, error)
+	LeaveTask(context.Context, *PeerTarget) (*emptypb.Empty, error)
 	mustEmbedUnimplementedSchedulerServer()
 }
 
@@ -123,10 +123,10 @@ func (UnimplementedSchedulerServer) RegisterPeerTask(context.Context, *PeerTaskR
 func (UnimplementedSchedulerServer) ReportPieceResult(Scheduler_ReportPieceResultServer) error {
 	return status.Errorf(codes.Unimplemented, "method ReportPieceResult not implemented")
 }
-func (UnimplementedSchedulerServer) ReportPeerResult(context.Context, *PeerResult) (*empty.Empty, error) {
+func (UnimplementedSchedulerServer) ReportPeerResult(context.Context, *PeerResult) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReportPeerResult not implemented")
 }
-func (UnimplementedSchedulerServer) LeaveTask(context.Context, *PeerTarget) (*empty.Empty, error) {
+func (UnimplementedSchedulerServer) LeaveTask(context.Context, *PeerTarget) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LeaveTask not implemented")
 }
 func (UnimplementedSchedulerServer) mustEmbedUnimplementedSchedulerServer() {}

@@ -129,7 +129,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	progress, err := pt.Start(ctx)
 	assert.Nil(err, "start file peer task")
 
-	var p *PeerTaskProgress
+	var p *FilePeerTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
 		if p.PeerTaskDone {
@@ -238,7 +238,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	progress, err := pt.Start(ctx)
 	assert.Nil(err, "start file peer task")
 
-	var p *PeerTaskProgress
+	var p *FilePeerTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
 		if p.PeerTaskDone {

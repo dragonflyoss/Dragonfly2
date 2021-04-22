@@ -212,7 +212,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	})
 	assert.Nil(err, "start file peer task")
 
-	var p *PeerTaskProgress
+	var p *FilePeerTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
 		if p.PeerTaskDone {
