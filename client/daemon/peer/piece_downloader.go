@@ -51,7 +51,7 @@ type pieceDownloader struct {
 var defaultTransport http.RoundTripper = &http.Transport{
 	// Proxy: http.ProxyFromEnvironment,
 	DialContext: (&net.Dialer{
-		Timeout:   30 * time.Second,
+		Timeout:   1 * time.Second,
 		KeepAlive: 30 * time.Second,
 		DualStack: true,
 	}).DialContext,
@@ -74,7 +74,7 @@ func NewPieceDownloader(opts ...func(*pieceDownloader) error) (PieceDownloader, 
 	}
 	pd.httpClient = &http.Client{
 		Transport: pd.transport,
-		Timeout:   10 * time.Second,
+		Timeout:   4 * time.Second,
 	}
 	return pd, nil
 }

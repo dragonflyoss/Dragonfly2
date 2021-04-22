@@ -113,6 +113,7 @@ func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
 func (p *streamPeerTaskCallback) Fail(pt PeerTask, code base.Code, reason string) error {
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
+	pt.Log().Errorf("stream peer task failed, code: %d, reason: %s", code, reason)
 	err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
