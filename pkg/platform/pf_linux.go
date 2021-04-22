@@ -16,7 +16,7 @@
 
 package platform
 
-const(
+const (
 	OsArch = "linux"
 )
 
