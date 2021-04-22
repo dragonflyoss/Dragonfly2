@@ -100,8 +100,10 @@ func (pps *peerPacketStream) closeSend() error {
 
 func (pps *peerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
 	pps.sc.UpdateAccessNodeMap(pps.hashKey)
-	pp, err = pps.stream.Recv()
-
+	if pp, err = pps.stream.Recv(); err != nil && err != io.EOF {
+		pp, err = pps.retryRecv(err)
+	}
+	return
 	if err != nil && err != io.EOF {
 		if e, ok := err.(*dferrors.DfError); ok && e.Code == dfcodes.PeerTaskNotFound {
 			pp, err = pps.retryRecv(err)
@@ -158,15 +160,16 @@ func (pps *peerPacketStream) retryRecv(cause error) (*scheduler.PeerPacket, erro
 }
 
 func (pps *peerPacketStream) initStream() error {
-	client, _, err := pps.sc.getSchedulerClient(pps.hashKey, true)
-	if err == nil {
-		stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-			return client.ReportPieceResult(pps.ctx, pps.opts...)
-		}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, nil)
-		if err == nil {
-			pps.stream = stream.(scheduler.Scheduler_ReportPieceResultClient)
-			pps.retryMeta.StreamTimes = 1
+	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		client, _, err := pps.sc.getSchedulerClient(pps.hashKey, true)
+		if err != nil {
+			return nil, err
 		}
+		return client.ReportPieceResult(pps.ctx, pps.opts...)
+	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, nil)
+	if err == nil {
+		pps.stream = stream.(scheduler.Scheduler_ReportPieceResultClient)
+		pps.retryMeta.StreamTimes = 1
 	}
 	if err != nil {
 		err = pps.replaceClient(err)
@@ -178,15 +181,16 @@ func (pps *peerPacketStream) replaceStream(cause error) error {
 	if pps.retryMeta.StreamTimes >= pps.retryMeta.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
-	client, _, err := pps.sc.getSchedulerClient(pps.hashKey, true)
-	if err == nil {
-		res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-			return client.ReportPieceResult(pps.ctx, pps.opts...)
-		}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, cause)
-		if err == nil {
-			pps.stream = res.(scheduler.Scheduler_ReportPieceResultClient)
-			pps.retryMeta.StreamTimes++
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		client, _, err := pps.sc.getSchedulerClient(pps.hashKey, true)
+		if err != nil {
+			return nil, err
 		}
+		return client.ReportPieceResult(pps.ctx, pps.opts...)
+	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, cause)
+	if err == nil {
+		pps.stream = res.(scheduler.Scheduler_ReportPieceResultClient)
+		pps.retryMeta.StreamTimes++
 	}
 	return err
 }
@@ -197,21 +201,23 @@ func (pps *peerPacketStream) replaceClient(cause error) error {
 	} else {
 		pps.failedServers = append(pps.failedServers, preNode)
 	}
-	client, _, err := pps.sc.getSchedulerClient(pps.hashKey, true)
-	if err == nil {
-		stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-			timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			_, err = client.RegisterPeerTask(timeCtx, pps.ptr)
-			if err == nil {
-				return client.ReportPieceResult(pps.ctx, pps.opts...)
-			}
-			return nil, err
-		}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, cause)
+
+	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		client, _, err := pps.sc.getSchedulerClient(pps.hashKey, true)
 		if err == nil {
-			pps.stream = stream.(scheduler.Scheduler_ReportPieceResultClient)
-			pps.retryMeta.StreamTimes = 1
+			return nil, err
 		}
+		timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_, err = client.RegisterPeerTask(timeCtx, pps.ptr)
+		if err != nil {
+			return nil, err
+		}
+		return client.ReportPieceResult(pps.ctx, pps.opts...)
+	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, cause)
+	if err == nil {
+		pps.stream = stream.(scheduler.Scheduler_ReportPieceResultClient)
+		pps.retryMeta.StreamTimes = 1
 	}
 	if err != nil {
 		err = pps.replaceClient(cause)

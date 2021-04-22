@@ -102,24 +102,25 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 	)
 	key := idgen.GenerateTaskId(ptr.Url, ptr.Filter, ptr.UrlMata, ptr.BizId)
 	logger.Infof("generate hash key taskId: %s and start to register peer task for peer_id(%s) url(%s)", key, ptr.PeerId, ptr.Url)
-	client, schedulerNode, err := sc.getSchedulerClient(key, false)
-	if err != nil {
-		code = dfcodes.ServerUnavailable
+	if res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		var client scheduler.SchedulerClient
+		client, schedulerNode, err = sc.getSchedulerClient(key, false)
+		if err != nil {
+			code = dfcodes.ServerUnavailable
+			return nil, err
+		}
+		return client.RegisterPeerTask(ctx, ptr, opts...)
+	}, 0.5, 5.0, 5, nil); err == nil {
+		rr = res.(*scheduler.RegisterResult)
+		taskId = rr.TaskId
+		suc = true
+		code = dfcodes.Success
+		if taskId != key {
+			sc.Connection.CorrectKey2NodeRelation(schedulerNode, key, taskId)
+		}
 	} else {
-		if res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-			return client.RegisterPeerTask(ctx, ptr, opts...)
-		}, 0.5, 5.0, 5, nil); err == nil {
-			rr = res.(*scheduler.RegisterResult)
-			taskId = rr.TaskId
-			suc = true
-			code = dfcodes.Success
-			if taskId != key {
-				sc.Connection.CorrectKey2NodeRelation(schedulerNode, key, taskId)
-			}
-		} else {
-			if de, ok := err.(*dferrors.DfError); ok {
-				code = de.Code
-			}
+		if de, ok := err.(*dferrors.DfError); ok {
+			code = de.Code
 		}
 	}
 	logger.With("peerId", ptr.PeerId, "errMsg", err).
@@ -155,17 +156,19 @@ func (sc *schedulerClient) doReportPeerResult(ctx context.Context, pr *scheduler
 		suc           bool
 		code          base.Code
 	)
-	client, schedulerNode, err := sc.getSchedulerClient(pr.TaskId, true)
-	if err != nil {
-		code = dfcodes.ServerUnavailable
-	} else {
-		_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
-			return client.ReportPeerResult(ctx, pr, opts...)
-		}, 0.5, 5.0, 5, nil)
-		if err == nil {
-			suc = true
-			code = dfcodes.Success
+
+	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
+		var client scheduler.SchedulerClient
+		client, schedulerNode, err = sc.getSchedulerClient(pr.TaskId, true)
+		if err != nil {
+			code = dfcodes.ServerUnavailable
+			return nil, err
 		}
+		return client.ReportPeerResult(ctx, pr, opts...)
+	}, 0.5, 5.0, 5, nil)
+	if err == nil {
+		suc = true
+		code = dfcodes.Success
 	}
 
 	logger.With("peerId", pr.PeerId, "errMsg", err).
@@ -190,12 +193,15 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 	defer func() {
 		logger.With("peerId", pt.PeerId, "errMsg", err).Infof("leave from task result:%t for taskId:%s,scheduler:%s", suc, pt.TaskId, schedulerNode)
 	}()
-	client, schedulerNode, err := sc.getSchedulerClient(pt.TaskId, true)
-	if err == nil {
-		_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
-			return client.LeaveTask(ctx, pt, opts...)
-		}, 0.5, 5.0, 3, nil)
-	}
+
+	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
+		var client scheduler.SchedulerClient
+		client, schedulerNode, err = sc.getSchedulerClient(pt.TaskId, true)
+		if err != nil {
+			return nil, err
+		}
+		return client.LeaveTask(ctx, pt, opts...)
+	}, 0.5, 5.0, 3, nil)
 	if err == nil {
 		suc = true
 	}

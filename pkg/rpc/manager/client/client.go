@@ -63,7 +63,7 @@ type wrapperManagerClient struct {
 }
 
 func (mc *managerClient) getManagerClient(key string) (*wrapperManagerClient, error) {
-	clientConn, err := mc.Connection.GetClientConn(key)
+	clientConn, err := mc.Connection.GetClientConn(key, true)
 	if err != nil {
 		return nil, err
 	}

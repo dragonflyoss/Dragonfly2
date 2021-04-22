@@ -167,10 +167,7 @@ func convertClientError(err error) error {
 		}
 	}
 	// grpc framework error
-	return &dferrors.DfError{
-		Code:    base.Code(s.Code()),
-		Message: s.Message(),
-	}
+	return err
 }
 
 type RetryMeta struct {

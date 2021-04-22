@@ -63,15 +63,16 @@ func newDownResultStream(dc *daemonClient, ctx context.Context, hashKey string, 
 }
 
 func (drs *DownResultStream) initStream() error {
-	client, _, err := drs.dc.getDaemonClient(drs.hashKey, false)
-	if err == nil {
-		stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-			return client.Download(drs.ctx, drs.req, drs.opts...)
-		}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, nil)
-		if err == nil {
-			drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
-			drs.StreamTimes = 1
+	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		client, _, err := drs.dc.getDaemonClient(drs.hashKey, false)
+		if err != nil {
+			return nil, err
 		}
+		return client.Download(drs.ctx, drs.req, drs.opts...)
+	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, nil)
+	if err == nil {
+		drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
+		drs.StreamTimes = 1
 	}
 	if err != nil {
 		err = drs.replaceClient(err)
@@ -90,8 +91,7 @@ func (drs *DownResultStream) Recv() (dr *dfdaemon.DownResult, err error) {
 }
 
 func (drs *DownResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error) {
-	code := status.Code(cause)
-	if code == codes.DeadlineExceeded {
+	if status.Code(cause) == codes.DeadlineExceeded {
 		return nil, cause
 	}
 
@@ -108,15 +108,17 @@ func (drs *DownResultStream) replaceStream(cause error) error {
 	if drs.StreamTimes >= drs.MaxAttempts {
 		return errors.New("times of replacing stream reaches limit")
 	}
-	client, _, err := drs.dc.getDaemonClient(drs.hashKey, true)
-	if err == nil {
-		stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-			return client.Download(drs.ctx, drs.req, drs.opts...)
-		}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
-		if err == nil {
-			drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
-			drs.StreamTimes++
+
+	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		client, _, err := drs.dc.getDaemonClient(drs.hashKey, true)
+		if err != nil {
+			return nil, err
 		}
+		return client.Download(drs.ctx, drs.req, drs.opts...)
+	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
+	if err == nil {
+		drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
+		drs.StreamTimes++
 	}
 	return err
 }
@@ -127,15 +129,17 @@ func (drs *DownResultStream) replaceClient(cause error) error {
 	} else {
 		drs.failedServers = append(drs.failedServers, preNode)
 	}
-	client, _, err := drs.dc.getDaemonClient(drs.hashKey, true)
-	if err == nil {
-		stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-			return client.Download(drs.ctx, drs.req, drs.opts...)
-		}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
-		if err == nil {
-			drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
-			drs.StreamTimes = 1
+
+	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		client, _, err := drs.dc.getDaemonClient(drs.hashKey, true)
+		if err != nil {
+			return nil, err
 		}
+		return client.Download(drs.ctx, drs.req, drs.opts...)
+	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
+	if err == nil {
+		drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
+		drs.StreamTimes = 1
 	}
 	if err != nil {
 		err = drs.replaceClient(cause)

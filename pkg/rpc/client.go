@@ -258,12 +258,14 @@ func (conn *Connection) GetServerNode(hashKey string) (string, bool) {
 }
 
 func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, error) {
-	conn.rwMutex.Lock(node, false)
+	logger.With("conn", conn.name).Debugf("start to get client conn by target %s", node)
+	conn.rwMutex.Lock(node, true)
+	defer conn.rwMutex.UnLock(node, true)
 	clientConn, err := conn.loadOrCreateClientConnByNode(node)
-	conn.rwMutex.UnLock(node, false)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get client conn by conn %s", node)
 	}
+	logger.With("conn", conn.name).Debugf("successfully get %s client conn", node)
 	return clientConn, nil
 }
 
@@ -293,6 +295,7 @@ func (conn *Connection) loadOrCreateClientConnByNode(node string) (clientConn *g
 // GetClientConn get conn or bind hashKey to candidate node, don't do the migrate action
 // stick whether hash key need already associated with specify node
 func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientConn, error) {
+	logger.With("conn", conn.name).Debugf("start to get client conn hashKey %s, stick %t", hashKey, stick)
 	node, ok := conn.key2NodeMap.Load(hashKey)
 	if stick && !ok {
 		// if request is stateful, hash key must exist in key2NodeMap
@@ -301,9 +304,9 @@ func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientC
 	if ok {
 		// if exist
 		serverNode := node.(string)
-		conn.rwMutex.Lock(serverNode, false)
+		conn.rwMutex.Lock(serverNode, true)
 		clientConn, err := conn.loadOrCreateClientConnByNode(serverNode)
-		conn.rwMutex.UnLock(serverNode, false)
+		conn.rwMutex.UnLock(serverNode, true)
 		if err != nil {
 			return nil, err
 		}

@@ -64,8 +64,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 type DaemonClient interface {
 	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error)
 
-	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest,
-		opts ...grpc.CallOption) (*base.PiecePacket, error)
+	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
 	CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) error
 }
@@ -97,8 +96,8 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 	return newDownResultStream(dc, ctx, taskId, req, opts)
 }
 
-func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest,
-	opts ...grpc.CallOption) (*base.PiecePacket, error) {
+func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
+	error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		if client, err := dc.getDaemonClientWithTarget(target.GetEndpoint()); err != nil {
 			return nil, err
