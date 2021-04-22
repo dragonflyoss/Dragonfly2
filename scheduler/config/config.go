@@ -79,7 +79,7 @@ func SetConfig(cfg *Config) {
 func createDefaultConfig() *Config {
 	return &Config{
 		Debug:   false,
-		Console: false,
+		Console: true,
 		Server: serverConfig{
 			Port: 8002,
 		},
