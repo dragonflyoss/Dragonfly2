@@ -46,30 +46,10 @@ const (
 )
 
 const (
-	DefaultLocalLimit = 20 * ratelimiter.MB
-	DefaultMinRate    = 64 * ratelimiter.KB
-)
-
-/* http header */
-const (
-	StrRange         = "Range"
-	StrContentLength = "Content-Length"
-	StrContentType   = "Content-Type"
-	StrUserAgent     = "User-Agent"
-
-	StrTaskFileName = "taskFileName"
-	StrClientID     = "cid"
-	StrTaskID       = "taskID"
-	StrSuperNode    = "superNode"
-	StrRateLimit    = "rateLimit"
-	StrPieceNum     = "pieceNum"
-	StrPieceSize    = "pieceSize"
-	StrDataDir      = "dataDir"
-	StrTotalLimit   = "totalLimit"
-	StrCDNSource    = "cdnSource"
-
-	StrBytes   = "bytes"
-	StrPattern = "pattern"
+	DefaultPerPeerDownloadLimit = 20 * ratelimiter.MB
+	DefaultTotalDownloadLimit   = 100 * ratelimiter.MB
+	DefaultUploadLimit          = 100 * ratelimiter.MB
+	DefaultMinRate              = 64 * ratelimiter.KB
 )
 
 /* others */
@@ -80,46 +60,15 @@ const (
 	ServerPortLowerLimit = 15000
 	ServerPortUpperLimit = 65000
 
-	RangeNotSatisfiableDesc = "range not satisfiable"
-	AddrUsedDesc            = "address already in use"
-
-	PeerHTTPPathPrefix = "/peer/file/"
-	CDNPathPrefix      = "/qtdown/"
-
-	LocalHTTPPathCheck  = "/check/"
-	LocalHTTPPathClient = "/client/"
-	LocalHTTPPathRate   = "/rate/"
-	LocalHTTPPing       = "/server/ping"
-
-	DataExpireTime         = 3 * time.Minute
-	DaemonAliveTime        = 5 * time.Minute
+	DefaultTaskExpireTime  = 3 * time.Minute
+	DefaultGCInterval      = 1 * time.Minute
+	DefaultDaemonAliveTime = 5 * time.Minute
+	DefaultScheduleTimeout = 5 * time.Minute
 	DefaultDownloadTimeout = 5 * time.Minute
 
 	DefaultSupernodeSchema = "http"
 	DefaultSupernodeIP     = "127.0.0.1"
 	DefaultSupernodePort   = 8002
-)
-
-/* errors code */
-const (
-	// CodeLaunchServerError represents failed to launch a peer server.
-	CodeLaunchServerError = 1100 + iota
-
-	// CodePrepareError represents failed to prepare before downloading.
-	CodePrepareError
-
-	// CodeGetUserError represents failed to get current user.
-	CodeGetUserError
-
-	// CodeRegisterError represents failed to register to supernode.
-	CodeRegisterError
-
-	// CodeDownloadError represents failed to download file.
-	CodeDownloadError
-)
-
-const (
-	RangeSeparator = "-"
 )
 
 const (

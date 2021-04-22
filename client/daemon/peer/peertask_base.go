@@ -191,7 +191,7 @@ loop:
 	for {
 		select {
 		case <-pt.ctx.Done():
-			pt.Debugf("context done due to %s", pt.ctx.Err())
+			pt.Infof("context done due to %s", pt.ctx.Err())
 			break loop
 		case <-pt.done:
 			pt.Infof("peer task done, stop wait peer packet from scheduler")
@@ -235,8 +235,10 @@ loop:
 			pt.Warnf("scheduler client send a peerPacket with empty peers")
 			continue
 		}
-		pt.Debugf("receive new peer packet, main peer: %s, parallel count: %d",
+		pt.Infof("receive new peer packet, main peer: %s, parallel count: %d",
 			peerPacket.MainPeer.PeerId, peerPacket.ParallelCount)
+		pt.span.AddEvent("receive new peer packet",
+			trace.WithAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId)))
 		if !spanDone {
 			spanDone = true
 			span.SetAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId))

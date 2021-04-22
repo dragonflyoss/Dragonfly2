@@ -172,7 +172,7 @@ func init() {
 		"show progress bar, it is conflict with '--console'")
 	flagSet.BoolVar(&dfgetConfig.Console, "console", false,
 		"show log on console, it's conflict with '--showbar'")
-	flagSet.BoolVar(&dfgetConfig.Verbose, "verbose", false,
+	flagSet.BoolVar(&dfgetConfig.Verbose, "verbose", true,
 		"enable verbose mode, all debug log will be display")
 	persistentflagSet.StringVar(&daemonConfig.WorkHome, "home", daemonConfig.WorkHome,
 		"the work home directory")
