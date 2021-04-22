@@ -80,7 +80,6 @@ func init() {
 	flagSet.Bool("console", cfg.Console, "whether print log info on the terminal")
 	flagSet.Bool("verbose", cfg.Verbose, "whether use debug level logger and enable pprof")
 	flagSet.Int("pprofPort", cfg.PProfPort, "listen port for pprof, only valid when the verbose option is true, default is random port")
-	flagSet.IntP("port", "p", cfg.Server.Port, "listen port for scheduler server")
 	flagSet.StringVarP(&cfgFile, "config", "f", "", "the path of scheduler config file")
 
 	// Add common cmds
