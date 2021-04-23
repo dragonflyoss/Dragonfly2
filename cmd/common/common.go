@@ -18,16 +18,21 @@ package common
 
 import (
 	"fmt"
+	"reflect"
+	"time"
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
+	"github.com/mitchellh/mapstructure"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/yaml.v3"
 )
 
 // InitCobra initializes flags binding and common sub cmds.
@@ -97,7 +102,25 @@ func initConfig(cfgFile *string, envPrefix string, config interface{}) {
 		fmt.Println("using config file:", viper.ConfigFileUsed())
 	}
 
-	if err := viper.Unmarshal(config); err != nil {
+	if err := viper.Unmarshal(config, initDecoderConfig); err != nil {
 		panic(errors.Wrap(err, "unmarshal config to struct"))
 	}
+}
+
+func initDecoderConfig(dc *mapstructure.DecoderConfig) {
+	dc.TagName = "yaml"
+	dc.DecodeHook = mapstructure.ComposeDecodeHookFunc(dc.DecodeHook, func(from, to reflect.Type, v interface{}) (interface{}, error) {
+		switch to {
+		case reflect.TypeOf(time.Second), reflect.TypeOf(unit.B):
+			b, _ := yaml.Marshal(v)
+			p := reflect.New(to)
+			if err := yaml.Unmarshal(b, p.Interface()); err != nil {
+				return nil, err
+			} else {
+				return p.Interface(), nil
+			}
+		default:
+			return v, nil
+		}
+	})
 }

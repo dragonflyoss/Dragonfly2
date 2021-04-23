@@ -35,7 +35,7 @@ var (
 )
 
 const (
-	SchedulerEnvPrefix = "scheduler"
+	schedulerEnvPrefix = "scheduler"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -70,7 +70,7 @@ func init() {
 	cfg = config.New()
 
 	// Initialize cobra
-	common.InitCobra(rootCmd, &cfgFile, SchedulerEnvPrefix, cfg)
+	common.InitCobra(rootCmd, &cfgFile, schedulerEnvPrefix, cfg)
 }
 
 func runScheduler() error {
