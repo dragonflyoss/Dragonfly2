@@ -81,7 +81,9 @@ func runScheduler() error {
 	// initialize verbose mode
 	common.InitVerboseMode(cfg.Verbose, cfg.PProfPort)
 
-	svr := server.New(cfg)
-
-	return svr.Serve()
+	if svr, err := server.New(cfg); err != nil {
+		return err
+	} else {
+		return svr.Serve()
+	}
 }

@@ -33,7 +33,7 @@ type Server struct {
 	running bool
 }
 
-func New(cfg *config.Config) *Server {
+func New(cfg *config.Config) (*Server, error) {
 	s := &Server{
 		running: false,
 		config:  cfg.Server,
@@ -44,7 +44,7 @@ func New(cfg *config.Config) *Server {
 	s.server = NewSchedulerServer(cfg, WithSchedulerService(s.service),
 		WithWorker(s.worker))
 
-	return s
+	return s, nil
 }
 
 func (s *Server) Serve() (err error) {

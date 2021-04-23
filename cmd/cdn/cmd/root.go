@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon"
+	server "d7y.io/dragonfly/v2/cdnsystem/daemon"
 	"d7y.io/dragonfly/v2/cmd/common"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
@@ -82,14 +82,9 @@ func runCdnSystem() error {
 	// initialize verbose mode
 	common.InitVerboseMode(cfg.Verbose, cfg.PProfPort)
 
-	d, err := daemon.New(cfg)
-	if err != nil {
-		logger.Errorf("failed to initialize daemon in cdn: %v", err)
+	if svr, err := server.New(cfg); err != nil {
 		return err
+	} else {
+		return svr.Serve()
 	}
-	return d.Run()
-
-	svr := server.New(cfg)
-
-	return svr.Serve()
 }
