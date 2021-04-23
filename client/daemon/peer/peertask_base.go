@@ -31,11 +31,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -646,17 +646,18 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 		peerPacketChanged bool
 		count             int
 	)
-	p, err := rpc.ExecuteWithRetryAndContext(pt.ctx, func() (interface{}, error) {
+	p, _, err := clientutil.Retry(pt.ctx, func() (interface{}, bool, error) {
 		pp, getErr := dfclient.GetPieceTasks(peer, pt.ctx, request)
+		// when GetPieceTasks returns err, exit retry
 		if getErr != nil {
 			span.RecordError(getErr)
 			// fast way to exit retry
 			if curPeerPacket != pt.peerPacket {
 				pt.Warnf("get piece tasks with error: %s, but peer packet changed, switch to new peer packet", getErr)
 				peerPacketChanged = true
-				return nil, nil
+				return nil, true, nil
 			}
-			return nil, getErr
+			return nil, true, getErr
 		}
 		// by santong: when peer return empty, retry later
 		if len(pp.PieceInfos) == 0 {
@@ -678,14 +679,14 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 			if curPeerPacket != pt.peerPacket {
 				pt.Warnf("get empty pieces and peer packet changed, switch to new peer packet")
 				peerPacketChanged = true
-				return nil, nil
+				return nil, true, nil
 			}
 			span.AddEvent("retry due to empty pieces",
 				trace.WithAttributes(config.AttributeGetPieceRetry.Int(count)))
 			pt.Warnf("peer %s returns success but with empty pieces, retry later", peer.PeerId)
-			return nil, dferrors.ErrEmptyValue
+			return nil, false, dferrors.ErrEmptyValue
 		}
-		return pp, nil
+		return pp, false, nil
 	}, 0.05, 0.2, 40, nil)
 	if peerPacketChanged {
 		return nil, errPeerPacketChanged
