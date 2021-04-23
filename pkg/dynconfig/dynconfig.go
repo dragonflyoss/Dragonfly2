@@ -40,6 +40,7 @@ const (
 
 type strategy interface {
 	Get() (interface{}, error)
+	Set(interface{})
 	Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error
 }
 
@@ -123,6 +124,11 @@ func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, option
 // Get dynamic config
 func (d *dynconfig) Get() (interface{}, error) {
 	return d.strategy.Get()
+}
+
+// Set dynamic config
+func (d *dynconfig) Set(x interface{}) {
+	d.strategy.Set(x)
 }
 
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags
