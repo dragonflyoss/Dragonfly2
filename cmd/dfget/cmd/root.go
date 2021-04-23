@@ -109,7 +109,7 @@ var rootCmd = &cobra.Command{
 		// Init logger
 		logcore.InitDfget(dfgetConfig.Console)
 
-		// Start dfget
+		// Serve dfget
 		return runDfget()
 	},
 }

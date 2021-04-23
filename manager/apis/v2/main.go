@@ -26,7 +26,7 @@ import (
 // @host localhost:8080
 // @BasePath /api/v2
 func main() {
-	server := service.NewManagerServer(config.GetConfig())
+	server := service.NewManagerServer(config.New())
 	router := gin.New()
 	handler := handler.NewHandler(server)
 

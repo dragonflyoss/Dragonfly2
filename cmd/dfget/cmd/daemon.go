@@ -77,7 +77,7 @@ var daemonCmd = &cobra.Command{
 			}
 		}
 
-		// Start daemon
+		// Serve daemon
 		return runDaemon()
 	},
 }

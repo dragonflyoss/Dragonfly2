@@ -38,7 +38,7 @@ type Server struct {
 	stop       chan struct{}
 }
 
-func NewServer(cfg *config.Config) (*Server, error) {
+func New(cfg *config.Config) (*Server, error) {
 	if ms := service.NewManagerServer(cfg); ms != nil {
 		router, err := InitRouter(ms)
 		if err != nil {
@@ -59,7 +59,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}
 }
 
-func (s *Server) Start() (error) {
+func (s *Server) Serve() (error) {
 	go func() {
 		port := s.cfg.Server.Port
 		err := rpc.StartTcpServer(port, port, s.ms)

@@ -41,7 +41,7 @@ const (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "cdn",
-	Short: "P2P cdn system",
+	Short: "cdn system of dragonfly",
 	Long: `cdn system is a long-running process and is mainly responsible
 for caching downloaded data to avoid downloading the same files
 from remote source repeatedly.`,

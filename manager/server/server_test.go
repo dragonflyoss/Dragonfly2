@@ -65,7 +65,7 @@ func (suite *ServerTestSuite) memoryConfig() *config.Config {
 }
 
 func (suite *ServerTestSuite) mysqlConfig() *config.Config {
-	return config.GetConfig()
+	return config.New()
 }
 
 func (suite *ServerTestSuite) TestAddConfig() {
@@ -510,12 +510,12 @@ func (suite *ServerTestSuite) SetupSuite() {
 
 	_ = logcore.InitManager(false)
 	cfg := suite.mysqlConfig()
-	server, err := NewServer(cfg)
+	server, err := New(cfg)
 	assert.Nil(err)
 	assert.NotNil(server)
 	suite.server = server
 
-	go server.Start()
+	go server.Serve()
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.IP, cfg.Server.Port)
 	client, err := client.CreateClient([]dfnet.NetAddr{
