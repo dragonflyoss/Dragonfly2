@@ -24,14 +24,14 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type sourceType string
+type sourceType int
 
 const (
 	// ManagerSourceType represents pulling configuration from manager
-	ManagerSourceType sourceType = "manager"
+	ManagerSourceType sourceType = 1 << iota
 
 	// LocalSourceType represents read configuration from local file
-	LocalSourceType sourceType = "local"
+	LocalSourceType
 )
 
 const (
