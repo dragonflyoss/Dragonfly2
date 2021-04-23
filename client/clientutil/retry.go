@@ -20,8 +20,6 @@ import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 )
 
@@ -36,12 +34,6 @@ func Retry(ctx context.Context,
 		cancel bool
 	)
 	for i := 0; i < maxAttempts; i++ {
-		if e, ok := cause.(*dferrors.DfError); ok {
-			if e.Code != dfcodes.UnknownError {
-				return res, cancel, cause
-			}
-		}
-
 		if i > 0 {
 			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))
 		}
