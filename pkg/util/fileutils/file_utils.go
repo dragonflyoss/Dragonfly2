@@ -18,12 +18,13 @@
 package fileutils
 
 import (
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"syscall"
+
+	"d7y.io/dragonfly/v2/pkg/unit"
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/pkg/errors"
@@ -161,42 +162,42 @@ func stat(path string) (os.FileInfo, error) {
 }
 
 // GetFreeSpace gets the free disk space of the path.
-func GetFreeSpace(path string) (fsize.Size, error) {
+func GetFreeSpace(path string) (unit.Bytes, error) {
 	fs := syscall.Statfs_t{}
 	if err := syscall.Statfs(path, &fs); err != nil {
 		return 0, err
 	}
 
-	return fsize.Size(fs.Bavail * uint64(fs.Bsize)), nil
+	return unit.Bytes(fs.Bavail * uint64(fs.Bsize)), nil
 }
 
 // GetTotalSpace
-func GetTotalSpace(path string) (fsize.Size, error) {
+func GetTotalSpace(path string) (unit.Bytes, error) {
 	fs := syscall.Statfs_t{}
 	if err := syscall.Statfs(path, &fs); err != nil {
 		return 0, err
 	}
 
-	return fsize.Size(fs.Blocks * uint64(fs.Bsize)), nil
+	return unit.Bytes(fs.Blocks * uint64(fs.Bsize)), nil
 }
 
-func GetTotalAndFreeSpace(path string) (fsize.Size, fsize.Size, error) {
+func GetTotalAndFreeSpace(path string) (unit.Bytes, unit.Bytes, error) {
 	fs := syscall.Statfs_t{}
 	if err := syscall.Statfs(path, &fs); err != nil {
 		return 0, 0, err
 	}
-	total := fsize.Size(fs.Blocks * uint64(fs.Bsize))
-	free := fsize.Size(fs.Bavail * uint64(fs.Bsize))
+	total := unit.Bytes(fs.Blocks * uint64(fs.Bsize))
+	free := unit.Bytes(fs.Bavail * uint64(fs.Bsize))
 	return total, free, nil
 }
 
 // GetUsedSpace
-func GetUsedSpace(path string) (fsize.Size, error) {
+func GetUsedSpace(path string) (unit.Bytes, error) {
 	fs := syscall.Statfs_t{}
 	if err := syscall.Statfs(path, &fs); err != nil {
 		return 0, err
 	}
-	return fsize.Size((fs.Blocks - fs.Bavail) * uint64(fs.Bsize)), nil
+	return unit.Bytes((fs.Blocks - fs.Bavail) * uint64(fs.Bsize)), nil
 }
 
 // MoveFile moves the file src to dst.

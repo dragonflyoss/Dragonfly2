@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/ratelimiter"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"gopkg.in/yaml.v3"
 )
 
@@ -127,11 +127,11 @@ type BaseProperties struct {
 
 	// SystemReservedBandwidth is the network bandwidth reserved for system software.
 	// default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	SystemReservedBandwidth ratelimiter.Rate `yaml:"systemReservedBandwidth"`
+	SystemReservedBandwidth unit.Bytes `yaml:"systemReservedBandwidth"`
 
 	// MaxBandwidth is the network bandwidth that cdn system can use.
 	// default: 200 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	MaxBandwidth ratelimiter.Rate `yaml:"maxBandwidth"`
+	MaxBandwidth unit.Bytes `yaml:"maxBandwidth"`
 
 	// Whether to enable profiler
 	// default: false

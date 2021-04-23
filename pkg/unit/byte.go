@@ -37,24 +37,27 @@ const (
 	PB       = 1024 * TB
 )
 
-func (f Bytes) MarshalYAML() (interface{}, error) {
-	result := f.String()
-	return result, nil
+func (f Bytes) ToNumber() int64 {
+	return int64(f)
 }
 
-// UnmarshalYAML implements the yaml.Unmarshaler interface.
-func (f *Bytes) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var fsizeStr string
-	if err := unmarshal(&fsizeStr); err != nil {
-		return err
+func ToBytes(size int64) Bytes {
+	return Bytes(size)
+}
+
+// Set is used for command flag var
+func (f *Bytes) Set(s string) (err error) {
+	if stringutils.IsBlank(s) {
+		*f = 0
+	} else {
+		*f, err = parseSize(s)
 	}
 
-	fsize, err := parseSize(fsizeStr)
-	if err != nil {
-		return err
-	}
-	*f = fsize
-	return nil
+	return
+}
+
+func (f Bytes) Type() string {
+	return "bytes"
 }
 
 func (f Bytes) String() string {
@@ -63,7 +66,13 @@ func (f Bytes) String() string {
 		unit   Bytes
 	)
 
-	if f >= GB {
+	if f >= PB {
+		symbol = "PB"
+		unit = PB
+	} else if f >= TB {
+		symbol = "TB"
+		unit = TB
+	} else if f >= GB {
 		symbol = "GB"
 		unit = GB
 	} else if f >= MB {
@@ -110,13 +119,25 @@ func parseSize(fsize string) (Bytes, error) {
 		return 0, errors.Wrapf(err, "failed to parse size:%s", fsize)
 	}
 
-	return ToFsize(num) * unit, nil
+	return ToBytes(num) * unit, nil
 }
 
-func (f Bytes) ToNumber() int64 {
-	return int64(f)
+func (f Bytes) MarshalYAML() (interface{}, error) {
+	result := f.String()
+	return result, nil
 }
 
-func ToFsize(size int64) Bytes {
-	return Bytes(size)
+// UnmarshalYAML implements the yaml.Unmarshaler interface.
+func (f *Bytes) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var fsizeStr string
+	if err := unmarshal(&fsizeStr); err != nil {
+		return err
+	}
+
+	fsize, err := parseSize(fsizeStr)
+	if err != nil {
+		return err
+	}
+	*f = fsize
+	return nil
 }

@@ -18,10 +18,11 @@ package storedriver
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"io"
 	"path/filepath"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 // Driver defines an interface to manage the data stored in the driver.
@@ -62,13 +63,13 @@ type Driver interface {
 	Stat(ctx context.Context, raw *Raw) (*StorageInfo, error)
 
 	// GetAvailSpace returns the available disk space in B.
-	GetAvailSpace(ctx context.Context) (fsize.Size, error)
+	GetAvailSpace(ctx context.Context) (unit.Bytes, error)
 
 	// GetTotalAndFreeSpace
-	GetTotalAndFreeSpace(ctx context.Context) (fsize.Size, fsize.Size, error)
+	GetTotalAndFreeSpace(ctx context.Context) (unit.Bytes, unit.Bytes, error)
 
 	// GetTotalSpace
-	GetTotalSpace(ctx context.Context) (fsize.Size, error)
+	GetTotalSpace(ctx context.Context) (unit.Bytes, error)
 
 	// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 	// calling walkFn for each file or directory in the tree, including root.
@@ -116,8 +117,8 @@ type StorageInfo struct {
 
 // GcConfig
 type GcConfig struct {
-	YoungGCThreshold  fsize.Size    `yaml:"youngGCThreshold"`
-	FullGCThreshold   fsize.Size    `yaml:"fullGCThreshold"`
+	YoungGCThreshold  unit.Bytes    `yaml:"youngGCThreshold"`
+	FullGCThreshold   unit.Bytes    `yaml:"fullGCThreshold"`
 	CleanRatio        int           `yaml:"cleanRatio"`
 	IntervalThreshold time.Duration `yaml:"intervalThreshold"`
 }

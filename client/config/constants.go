@@ -19,7 +19,7 @@ package config
 import (
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/ratelimiter"
+	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 /* the reason of backing to source */
@@ -46,10 +46,10 @@ const (
 )
 
 const (
-	DefaultPerPeerDownloadLimit = 20 * ratelimiter.MB
-	DefaultTotalDownloadLimit   = 100 * ratelimiter.MB
-	DefaultUploadLimit          = 100 * ratelimiter.MB
-	DefaultMinRate              = 64 * ratelimiter.KB
+	DefaultPerPeerDownloadLimit = 20 * unit.MB
+	DefaultTotalDownloadLimit   = 100 * unit.MB
+	DefaultUploadLimit          = 100 * unit.MB
+	DefaultMinRate              = 64 * unit.KB
 )
 
 /* others */

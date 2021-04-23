@@ -19,6 +19,14 @@ package hybrid
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"path"
+	"strings"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
@@ -29,22 +37,15 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-	"encoding/json"
-	"fmt"
 	"github.com/pkg/errors"
 	"go.uber.org/atomic"
-	"io"
-	"os"
-	"path"
-	"strings"
-	"time"
 )
 
 const name = "hybrid"
 
-const secureLevel = 500 * fsize.MB
+const secureLevel = 500 * unit.MB
 
 func init() {
 	var builder *hybridBuilder = nil
@@ -330,12 +331,12 @@ func (h *hybridStorageMgr) tryShmSpace(ctx context.Context, url, taskId string, 
 				return nil
 			},
 		})
-		canUseShm := h.getMemoryUsableSpace(ctx)-fsize.Size(remainder.Load())-secureLevel >= fsize.Size(
+		canUseShm := h.getMemoryUsableSpace(ctx)-unit.Bytes(remainder.Load())-secureLevel >= unit.Bytes(
 			fileLength)
 		if !canUseShm {
 			// 如果剩余空间过小，则强制执行一次fullgc后在检查是否满足
 			h.memoryStoreCleaner.Gc(ctx, true)
-			canUseShm = h.getMemoryUsableSpace(ctx)-fsize.Size(remainder.Load())-secureLevel >= fsize.Size(
+			canUseShm = h.getMemoryUsableSpace(ctx)-unit.Bytes(remainder.Load())-secureLevel >= unit.Bytes(
 				fileLength)
 		}
 		if canUseShm { // 创建shm
@@ -354,13 +355,13 @@ func (h *hybridStorageMgr) getDiskDefaultGcConfig() *storedriver.GcConfig {
 	if err != nil {
 		logger.GcLogger.Errorf("failed to get total space of disk: %v", err)
 	}
-	yongGcThreshold := 200 * fsize.GB
+	yongGcThreshold := 200 * unit.GB
 	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
 		yongGcThreshold = totalSpace / 4
 	}
 	return &storedriver.GcConfig{
 		YoungGCThreshold:  yongGcThreshold,
-		FullGCThreshold:   25 * fsize.GB,
+		FullGCThreshold:   25 * unit.GB,
 		IntervalThreshold: 2 * time.Hour,
 		CleanRatio:        1,
 	}
@@ -368,39 +369,39 @@ func (h *hybridStorageMgr) getDiskDefaultGcConfig() *storedriver.GcConfig {
 
 func (h *hybridStorageMgr) getMemoryDefaultGcConfig() *storedriver.GcConfig {
 	// determine whether the shared cache can be used
-	diff := fsize.Size(0)
+	diff := unit.Bytes(0)
 	totalSpace, err := h.memoryStore.GetTotalSpace(context.TODO())
 	if err != nil {
 		logger.GcLogger.Errorf("failed to get total space of memory: %v", err)
 	}
-	if totalSpace < 72*fsize.GB {
-		diff = 72*fsize.GB - totalSpace
+	if totalSpace < 72*unit.GB {
+		diff = 72*unit.GB - totalSpace
 	}
 	if diff >= totalSpace {
 		h.hasShm = false
 	}
 	return &storedriver.GcConfig{
-		YoungGCThreshold:  10*fsize.GB + diff,
-		FullGCThreshold:   2*fsize.GB + diff,
+		YoungGCThreshold:  10*unit.GB + diff,
+		FullGCThreshold:   2*unit.GB + diff,
 		CleanRatio:        3,
 		IntervalThreshold: 2 * time.Hour,
 	}
 }
 
-func (h *hybridStorageMgr) getMemoryUsableSpace(ctx context.Context) fsize.Size {
+func (h *hybridStorageMgr) getMemoryUsableSpace(ctx context.Context) unit.Bytes {
 	totalSize, freeSize, err := h.memoryStore.GetTotalAndFreeSpace(ctx)
 	if err != nil {
 		logger.GcLogger.Errorf("failed to get total and free space of memory: %v", err)
 		return 0
 	}
 	// 如果内存总容量大于等于 72G，则返回内存的剩余可用空间
-	threshold := 72 * fsize.GB
+	threshold := 72 * unit.GB
 	if totalSize >= threshold {
 		return freeSize
 	}
 	// 如果总容量小于72G， 如40G容量，则可用空间为 当前可用空间 - 32G： 最大可用空间为8G，50G容量，则可用空间为 当前可用空间 - 22G：最大可用空间为28G
 
-	usableSpace := freeSize - (72*fsize.GB - totalSize)
+	usableSpace := freeSize - (72*unit.GB - totalSize)
 	if usableSpace > 0 {
 		return usableSpace
 	}

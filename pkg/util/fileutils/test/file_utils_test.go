@@ -25,9 +25,9 @@ import (
 	"testing"
 
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/filerw"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/statutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/google/uuid"
@@ -173,9 +173,9 @@ func (s *FileUtilsTestSuite) TestTryLock() {
 }
 
 func TestFSizeSet(t *testing.T) {
-	var num = fsize.ToFsize(0)
+	var num = unit.ToBytes(0)
 	var sizePtr = &num
 	err := sizePtr.Set("11m")
 	assert.Nil(t, err)
-	assert.Equal(t, 11*fsize.MB, *sizePtr)
+	assert.Equal(t, 11*unit.MB, *sizePtr)
 }
