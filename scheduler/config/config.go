@@ -21,48 +21,48 @@ const (
 )
 
 type Config struct {
-	Console   bool                  `mapstructure:"console"`
-	Verbose   bool                  `mapstructure:"verbose"`
-	PProfPort int                   `mapstructure:"pprofPort"`
-	Scheduler SchedulerConfig       `mapstructure:"scheduler"`
-	Server    ServerConfig          `mapstructure:"server"`
-	Worker    SchedulerWorkerConfig `mapstructure:"worker"`
-	CDN       CDNConfig             `mapstructure:"cdn"`
-	GC        GCConfig              `mapstructure:"gc"`
+	Console   bool                  `yaml:"console"`
+	Verbose   bool                  `yaml:"verbose"`
+	PProfPort int                   `yaml:"pprofPort"`
+	Scheduler SchedulerConfig       `yaml:"scheduler"`
+	Server    ServerConfig          `yaml:"server"`
+	Worker    SchedulerWorkerConfig `yaml:"worker"`
+	CDN       CDNConfig             `yaml:"cdn"`
+	GC        GCConfig              `yaml:"gc"`
 }
 
 type SchedulerConfig struct {
-	ABTest     bool   `mapstructure:"abtest"`
-	AScheduler string `mapstructure:"ascheduler"`
-	BScheduler string `mapstructure:"bscheduler"`
+	ABTest     bool   `yaml:"abtest"`
+	AScheduler string `yaml:"ascheduler"`
+	BScheduler string `yaml:"bscheduler"`
 }
 
 type ServerConfig struct {
-	IP   string `mapstructure:"ip"`
-	Port int    `mapstructure:"port"`
+	IP   string `yaml:"ip"`
+	Port int    `yaml:"port"`
 }
 
 type SchedulerWorkerConfig struct {
-	WorkerNum         int `mapstructure:"workerNum"`
-	WorkerJobPoolSize int `mapstructure:"workerJobPoolSize"`
-	SenderNum         int `mapstructure:"senderNum"`
-	SenderJobPoolSize int `mapstructure:"senderJobPoolSize"`
+	WorkerNum         int `yaml:"workerNum"`
+	WorkerJobPoolSize int `yaml:"workerJobPoolSize"`
+	SenderNum         int `yaml:"senderNum"`
+	SenderJobPoolSize int `yaml:"senderJobPoolSize"`
 }
 
 type CDNServerConfig struct {
-	Name         string `mapstructure:"name"`
-	IP           string `mapstructure:"ip"`
-	RpcPort      int    `mapstructure:"rpcPort"`
-	DownloadPort int    `mapstructure:"downloadPort"`
+	Name         string `yaml:"name"`
+	IP           string `yaml:"ip"`
+	RpcPort      int    `yaml:"rpcPort"`
+	DownloadPort int    `yaml:"downloadPort"`
 }
 
 type CDNConfig struct {
-	Servers []CDNServerConfig `mapstructure:"servers"`
+	Servers []CDNServerConfig `yaml:"servers"`
 }
 
 type GCConfig struct {
-	PeerTaskDelay int64 `mapstructure:"peerTaskDelay"`
-	TaskDelay     int64 `mapstructure:"taskDelay"`
+	PeerTaskDelay int64 `yaml:"peerTaskDelay"`
+	TaskDelay     int64 `yaml:"taskDelay"`
 }
 
 func New() *Config {

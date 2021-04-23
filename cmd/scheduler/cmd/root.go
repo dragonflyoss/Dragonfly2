@@ -17,7 +17,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"os"
 
 	"d7y.io/dragonfly/v2/cmd/common"
@@ -27,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/server"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -75,8 +75,8 @@ func init() {
 
 func runScheduler() error {
 	// scheduler config values
-	s, _ := json.MarshalIndent(cfg, "", "  ")
-	logger.Infof("scheduler configuration: %s", string(s))
+	s, _ := yaml.Marshal(cfg)
+	logger.Infof("scheduler configuration:\n%s", string(s))
 
 	// initialize verbose mode
 	common.InitVerboseMode(cfg.Verbose, cfg.PProfPort)

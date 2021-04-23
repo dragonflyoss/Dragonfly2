@@ -19,7 +19,6 @@ package common
 import (
 	"fmt"
 	"reflect"
-	"time"
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
@@ -78,7 +77,7 @@ func InitVerboseMode(verbose bool, pprofPort int) {
 			Infof("enable pprof at %s", debugAddr)
 
 		if err := statsview.New().Start(); err != nil {
-			logger.Warnf("serve pprof error: %v", err)
+			logger.Warnf("serve pprof error:%v", err)
 		}
 	}()
 }
@@ -111,7 +110,7 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 	dc.TagName = "yaml"
 	dc.DecodeHook = mapstructure.ComposeDecodeHookFunc(dc.DecodeHook, func(from, to reflect.Type, v interface{}) (interface{}, error) {
 		switch to {
-		case reflect.TypeOf(time.Second), reflect.TypeOf(unit.B):
+		case reflect.TypeOf(unit.B):
 			b, _ := yaml.Marshal(v)
 			p := reflect.New(to)
 			if err := yaml.Unmarshal(b, p.Interface()); err != nil {

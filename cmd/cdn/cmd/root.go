@@ -17,14 +17,16 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
+	"d7y.io/dragonfly/v2/cmd/common"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-
-	"github.com/mitchellh/go-homedir"
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -32,66 +34,62 @@ var (
 	cfg     *config.Config
 )
 
+const (
+	cdnSystemEnvPrefix = "cdn"
+)
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "cdn",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Short: "P2P cdn system",
+	Long: `cdn system is a long-running process and is mainly responsible
+for caching downloaded data to avoid downloading the same files
+from remote source repeatedly.`,
+	Args:              cobra.NoArgs,
+	DisableAutoGenTag: true,
+	SilenceUsage:      true,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := logcore.InitCdnSystem(cfg.Console); err != nil {
+			return errors.Wrap(err, "init cdn system logger")
+		}
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+		return runCdnSystem()
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 		os.Exit(1)
 	}
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	// Initialize default cdn system config
+	cfg = config.New()
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.cdn.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// Initialize cobra
+	common.InitCobra(rootCmd, &cfgFile, cdnSystemEnvPrefix, cfg)
 }
 
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+func runCdnSystem() error {
+	// cdn system config values
+	s, _ := yaml.Marshal(cfg)
+	logger.Infof("cdn system configuration:\n%s", string(s))
 
-		// Search config in home directory with name ".cdn" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".cdn")
+	// initialize verbose mode
+	common.InitVerboseMode(cfg.Verbose, cfg.PProfPort)
+
+	d, err := daemon.New(cfg)
+	if err != nil {
+		logger.Errorf("failed to initialize daemon in cdn: %v", err)
+		return err
 	}
+	return d.Run()
 
-	viper.AutomaticEnv() // read in environment variables that match
+	svr := server.New(cfg)
 
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
+	return svr.Serve()
 }
