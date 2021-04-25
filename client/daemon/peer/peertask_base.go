@@ -250,7 +250,7 @@ loop:
 		select {
 		case pt.peerPacketReady <- true:
 		case <-pt.ctx.Done():
-			pt.Debugf("context done due to %s", pt.ctx.Err())
+			pt.Infof("context done due to %s", pt.ctx.Err())
 			break loop
 		case <-pt.done:
 			pt.Infof("peer task done, stop wait peer packet from scheduler")
@@ -330,12 +330,12 @@ func (pt *peerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc func()
 		close(pt.failedPieceCh)
 		cleanUnfinishedFunc()
 	}()
-	// wait available peer daemon
+	// wait first available peer
 	select {
 	case <-pt.peerPacketReady:
 		// preparePieceTasksByPeer func already send piece result with error
-		pt.Infof("new peer client ready, scheduler time cost: %dus",
-			time.Now().Sub(pt.callback.GetStartTime()).Microseconds())
+		pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
+			time.Now().Sub(pt.callback.GetStartTime()).Microseconds(), pt.peerPacket.MainPeer)
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		pt.failedReason = reasonScheduleTimeout
 		pt.failedCode = dfcodes.ClientScheduleTimeout
@@ -402,7 +402,7 @@ loop:
 				}
 			case <-pt.peerPacketReady:
 				// preparePieceTasksByPeer func already send piece result with error
-				pt.Infof("new peer client ready")
+				pt.Infof("new peer client ready, main peer: %s", pt.peerPacket.MainPeer)
 				// research from piece 0
 				num = pt.getNextPieceNum(0)
 				continue loop
@@ -646,7 +646,7 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 		peerPacketChanged bool
 		count             int
 	)
-	p, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	p, err := rpc.ExecuteWithRetryAndContext(pt.ctx, func() (interface{}, error) {
 		pp, getErr := dfclient.GetPieceTasks(peer, pt.ctx, request)
 		if getErr != nil {
 			span.RecordError(getErr)

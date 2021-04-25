@@ -18,6 +18,10 @@ package storage
 
 import (
 	"context"
+	"os"
+	"strings"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
@@ -26,9 +30,6 @@ import (
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
 	"github.com/pkg/errors"
-	"os"
-	"strings"
-	"time"
 )
 
 type Cleaner struct {
@@ -38,8 +39,7 @@ type Cleaner struct {
 	TaskMgr    mgr.SeedTaskMgr
 }
 
-func NewStorageCleaner(gcConfig *storedriver.GcConfig, store storedriver.Driver, storageMgr Manager,
-	taskMgr mgr.SeedTaskMgr) *Cleaner {
+func NewStorageCleaner(gcConfig *storedriver.GcConfig, store storedriver.Driver, storageMgr Manager, taskMgr mgr.SeedTaskMgr) *Cleaner {
 	return &Cleaner{
 		Cfg:        gcConfig,
 		Store:      store,
@@ -48,7 +48,7 @@ func NewStorageCleaner(gcConfig *storedriver.GcConfig, store storedriver.Driver,
 	}
 }
 
-func (cleaner *Cleaner) Gc(ctx context.Context, force bool) ([]string, error) {
+func (cleaner *Cleaner) Gc(ctx context.Context, storagePattern string, force bool) ([]string, error) {
 	freeSpace, err := cleaner.Store.GetAvailSpace(ctx)
 	if err != nil {
 		if cdnerrors.IsFileNotExist(err) {
@@ -71,7 +71,7 @@ func (cleaner *Cleaner) Gc(ctx context.Context, force bool) ([]string, error) {
 		}
 	}
 
-	logger.GcLogger.Debugf("start to exec gc with fullGC: %t", fullGC)
+	logger.GcLogger.With("type", storagePattern).Debugf("start to exec gc with fullGC: %t", fullGC)
 
 	gapTasks := treemap.NewWith(godsutils.Int64Comparator)
 	intervalTasks := treemap.NewWith(godsutils.Int64Comparator)
@@ -81,10 +81,10 @@ func (cleaner *Cleaner) Gc(ctx context.Context, force bool) ([]string, error) {
 	walkTaskIds := make(map[string]bool)
 	var gcTaskIDs []string
 	walkFn := func(path string, info os.FileInfo, err error) error {
-		logger.GcLogger.Debugf("start to walk path(%s)", path)
+		logger.GcLogger.With("type", storagePattern).Debugf("start to walk path(%s)", path)
 
 		if err != nil {
-			logger.GcLogger.Errorf("failed to access path(%s): %v", path, err)
+			logger.GcLogger.With("type", storagePattern).Errorf("failed to access path(%s): %v", path, err)
 			return err
 		}
 		if info.IsDir() {
@@ -100,7 +100,7 @@ func (cleaner *Cleaner) Gc(ctx context.Context, force bool) ([]string, error) {
 		// we should return directly when we success to get info which means it is being used
 		if _, err := cleaner.TaskMgr.Get(ctx, taskId); err == nil || !cdnerrors.IsDataNotFound(err) {
 			if err != nil {
-				logger.GcLogger.Errorf("failed to get taskId(%s): %v", taskId, err)
+				logger.GcLogger.With("type", storagePattern).Errorf("failed to get taskId(%s): %v", taskId, err)
 			}
 			return nil
 		}
@@ -113,13 +113,13 @@ func (cleaner *Cleaner) Gc(ctx context.Context, force bool) ([]string, error) {
 
 		metaData, err := cleaner.StorageMgr.ReadFileMetaData(ctx, taskId)
 		if err != nil || metaData == nil {
-			logger.GcLogger.Debugf("taskId: %s, failed to get metadata: %v", taskId, err)
+			logger.GcLogger.With("type", storagePattern).Debugf("taskId: %s, failed to get metadata: %v", taskId, err)
 			gcTaskIDs = append(gcTaskIDs, taskId)
 			return nil
 		}
 		// put taskId into gapTasks or intervalTasks which will sort by some rules
 		if err := cleaner.sortInert(ctx, gapTasks, intervalTasks, metaData); err != nil {
-			logger.GcLogger.Errorf("failed to parse inert metaData(%+v): %v", metaData, err)
+			logger.GcLogger.With("type", storagePattern).Errorf("failed to parse inert metaData(%+v): %v", metaData, err)
 		}
 
 		return nil

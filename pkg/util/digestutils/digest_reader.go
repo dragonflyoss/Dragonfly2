@@ -43,6 +43,8 @@ type DigestReader interface {
 	Digest() string
 }
 
+// TODO add AF_ALG digest https://github.com/golang/sys/commit/e24f485414aeafb646f6fca458b0bf869c0880a1
+
 func NewDigestReader(reader io.Reader, digest ...string) io.Reader {
 	var d string
 	if len(digest) > 0 {

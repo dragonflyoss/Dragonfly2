@@ -204,22 +204,22 @@ func (tm *Manager) GC(ctx context.Context) error {
 	for _, taskID := range taskIDs {
 		atime, err := taskAccessMap.GetAsTime(taskID)
 		if err != nil {
-			logger.GcLogger.Errorf("gc tasks: failed to get access time taskID(%s): %v", taskID, err)
+			logger.GcLogger.With("type", "meta").Errorf("gc tasks: failed to get access time taskID(%s): %v", taskID, err)
 			continue
 		}
 		if time.Since(atime) < tm.cfg.TaskExpireTime {
 			continue
 		}
 		// gc task memory data
-		logger.GcLogger.Infof("gc task: start to deal with task: %s", taskID)
+		logger.GcLogger.With("type", "meta").Infof("gc task: start to deal with task: %s", taskID)
 		tm.Delete(ctx, taskID)
 		removedTaskCount++
 	}
 
 	// slow GC detected, report it with a log warning
 	if timeDuring := time.Since(startTime); timeDuring > gcTasksTimeout {
-		logger.GcLogger.Warnf("gc tasks:%d cost:%.3f", removedTaskCount, timeDuring.Seconds())
+		logger.GcLogger.With("type", "meta").Warnf("gc tasks:%d cost:%.3f", removedTaskCount, timeDuring.Seconds())
 	}
-	logger.GcLogger.Infof("gc tasks: successfully full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
+	logger.GcLogger.With("type", "meta").Infof("gc tasks: successfully full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
 	return nil
 }

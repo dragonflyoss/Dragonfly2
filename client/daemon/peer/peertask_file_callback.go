@@ -114,6 +114,7 @@ func (p *filePeerTaskCallback) Done(pt PeerTask) error {
 func (p *filePeerTaskCallback) Fail(pt PeerTask, code base.Code, reason string) error {
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
+	pt.Log().Errorf("file peer task failed, code: %d, reason: %s", code, reason)
 	err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),

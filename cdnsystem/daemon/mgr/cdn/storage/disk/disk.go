@@ -79,7 +79,7 @@ type diskStorageMgr struct {
 func (s *diskStorageMgr) getDiskDefaultGcConfig() *storedriver.GcConfig {
 	totalSpace, err := s.diskStore.GetTotalSpace(context.TODO())
 	if err != nil {
-		logger.GcLogger.Errorf("get total space of disk: %v", err)
+		logger.GcLogger.With("type", "disk").Errorf("get total space of disk: %v", err)
 	}
 	yongGcThreshold := 200 * unit.GB
 	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
@@ -97,7 +97,7 @@ func (s *diskStorageMgr) InitializeCleaners() {
 	diskGcConfig := s.diskStore.GetGcConfig(context.TODO())
 	if diskGcConfig == nil {
 		diskGcConfig = s.getDiskDefaultGcConfig()
-		logger.GcLogger.Warnf("disk gc config is nil, use default gcConfig: %v", diskGcConfig)
+		logger.GcLogger.With("type", "disk").Warnf("disk gc config is nil, use default gcConfig: %v", diskGcConfig)
 	}
 	s.diskStoreCleaner = &storage.Cleaner{
 		Cfg:        diskGcConfig,
@@ -129,23 +129,24 @@ func (s *diskStorageMgr) ReadPieceMetaRecords(ctx context.Context, taskId string
 }
 
 func (s *diskStorageMgr) GC(ctx context.Context) error {
-	logger.Debugf("start the disk gc job")
-	gcTaskIDs, err := s.diskStoreCleaner.Gc(ctx, false)
+	logger.GcLogger.With("type", "disk").Info("start the disk storage gc job")
+	gcTaskIDs, err := s.diskStoreCleaner.Gc(ctx, "disk", false)
 	if err != nil {
-		logger.GcLogger.Error("gc disk: failed to get gcTaskIds")
+		logger.GcLogger.With("type", "disk").Error("failed to get gcTaskIds")
 	}
+	logger.GcLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up", len(gcTaskIDs))
 	for _, taskID := range gcTaskIDs {
 		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
 		if _, err := s.taskMgr.Get(ctx, taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
 			if err != nil {
-				logger.GcLogger.Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
+				logger.GcLogger.With("type", "disk").Errorf("failed to get taskID(%s): %v", taskID, err)
 			}
 			synclock.UnLock(taskID, false)
 			continue
 		}
 		if err := s.DeleteTask(ctx, taskID); err != nil {
-			logger.GcLogger.Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
+			logger.GcLogger.With("type", "disk").Errorf("failed to delete disk files with taskID(%s): %v", taskID, err)
 			synclock.UnLock(taskID, false)
 			continue
 		}

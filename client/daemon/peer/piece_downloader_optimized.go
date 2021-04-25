@@ -20,6 +20,7 @@ import (
 	"io"
 	"net"
 	"net/http/httputil"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -44,7 +45,7 @@ func (o optimizedPieceDownloader) DownloadPiece(request *DownloadPieceRequest) (
 	logger.Debugf("download piece, addr: %s, task: %s, peer: %s, piece: %d",
 		request.TaskID, request.DstAddr, request.DstPid, request.piece.PieceNum)
 	// TODO get from connection pool
-	conn, err := net.Dial("tcp", request.DstAddr)
+	conn, err := net.DialTimeout("tcp", request.DstAddr, time.Second)
 	if err != nil {
 		panic(err)
 	}

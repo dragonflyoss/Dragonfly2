@@ -111,20 +111,22 @@ func newFilePeerTask(ctx context.Context,
 		return ctx, nil, nil, err
 	}
 	span.SetAttributes(config.AttributeTaskId.String(result.TaskId))
+	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
+		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var singlePiece *scheduler.SinglePiece
 	if !backSource {
 		switch result.SizeScope {
 		case base.SizeScope_SMALL:
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
-			logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
+			logger.Infof("%s/%s size scope: small", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
 				singlePiece = piece.SinglePiece
 			}
 		case base.SizeScope_TINY:
 			defer span.End()
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("tiny"))
-			logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
+			logger.Infof("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
 				return ctx, nil, &TinyData{
 					TaskId:  result.TaskId,
@@ -137,7 +139,7 @@ func newFilePeerTask(ctx context.Context,
 			return ctx, nil, nil, err
 		case base.SizeScope_NORMAL:
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("normal"))
-			logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
+			logger.Infof("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
 	}
 
@@ -147,8 +149,6 @@ func newFilePeerTask(ctx context.Context,
 		span.RecordError(err)
 		return ctx, nil, nil, err
 	}
-	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
-		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var limiter *rate.Limiter
 	if perPeerRateLimit > 0 {
