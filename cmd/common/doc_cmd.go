@@ -36,8 +36,8 @@ func newDocCommand(name string) *cobra.Command {
 
 	docCommand.cmd = &cobra.Command{
 		Use:               "doc",
-		Short:             fmt.Sprintf("generate markdown documents for cmd:%s", name),
-		Long:              fmt.Sprintf("generate markdown documents for cmd:%s", name),
+		Short:             "generate documents",
+		Long:              fmt.Sprintf("generate markdown documents for cmd:%s .", name),
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		SilenceUsage:      true,

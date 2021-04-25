@@ -41,9 +41,9 @@ const (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "manager",
-	Short: "the central controller of dragonfly",
+	Short: "the central manager of dragonfly",
 	Long: `manager is a long-running process and is mainly responsible 
-for managing schedulers and cdns, offering open apis and product portal, etc.`,
+for managing schedulers and cdns, offering http apis and portal, etc.`,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,

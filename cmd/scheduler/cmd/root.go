@@ -41,7 +41,7 @@ const (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "scheduler",
-	Short: "p2p scheduler of dragonfly",
+	Short: "the scheduler of dragonfly",
 	Long: `scheduler is a long-running process and is mainly responsible 
 for deciding which peers transmit blocks to each other.`,
 	Args:              cobra.NoArgs,
