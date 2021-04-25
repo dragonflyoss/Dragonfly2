@@ -18,14 +18,18 @@ jobs:
     strategy:
       matrix:
         go-version: [ 1.15 ]
-        platform: [ ubuntu-latest ]
+        platform:
+          - ubuntu-latest
+          - macos-latest
+        version:
+          - "latest"
+          - "v1.37"
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v2
       - uses: golangci/golangci-lint-action@v2
         with:
-          # must be specified without patch version
-          version: v2.5.2
+          version: ${{ matrix.version }}
 
   test:
     name: test
@@ -33,7 +37,9 @@ jobs:
     strategy:
       matrix:
         go-version: [ 1.15 ]
-        platform: [ ubuntu-latest ]
+        platform:
+          - ubuntu-latest
+          - macos-latest
     runs-on: ${{ matrix.platform }}
     steps:
     - name: Install Go
