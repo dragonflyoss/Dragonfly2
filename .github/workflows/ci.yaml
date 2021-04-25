@@ -16,7 +16,8 @@ jobs:
     timeout-minutes: 10
     strategy:
       matrix:
-        go-version: [ 1.14, 1.15 ]
+        go-version: 
+          - 1.15
         platform:
           - ubuntu-latest
           - macos-latest
@@ -35,7 +36,8 @@ jobs:
     timeout-minutes: 10
     strategy:
       matrix:
-        go-version: [ 1.14, 1.15 ]
+        go-version:
+          - 1.15
         platform:
           - ubuntu-latest
           - macos-latest
