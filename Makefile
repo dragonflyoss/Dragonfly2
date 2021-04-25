@@ -56,6 +56,9 @@ docker-push-scheduler: docker-build-scheduler ## Push scheduler image
 	./hack/docker-push.sh scheduler
 .PHONY: docker-push-scheduler
 
+build: build-cdn build-scheduler build-dfget build-manager ## Build dragonfly
+.PHONY: build
+
 build-cdn: build-dirs ## Build cdn
 	@echo "Begin to build cdn."
 	./hack/build.sh cdn
