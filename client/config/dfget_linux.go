@@ -18,7 +18,7 @@
 
 package config
 
-var DfgetConfig = ClientOption{
+var dfgetConfig = ClientOption{
 	URL:           "",
 	LockFile:      "/var/run/dfget.lock",
 	Output:        "",

@@ -18,10 +18,11 @@ package service
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
 	"fmt"
 	"os"
 	"strings"
+
+	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
 
 	"github.com/pkg/errors"
 

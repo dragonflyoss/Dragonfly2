@@ -17,18 +17,18 @@
 package schedule_worker
 
 import (
+	"hash/crc32"
+
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/mgr"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/types"
-	"hash/crc32"
 	"k8s.io/client-go/util/workqueue"
 )
 
 type IWorker interface {
-	Start()
+	Serve()
 	Stop()
 	ReceiveJob(job *types.PeerTask)
 	ReceiveUpdatePieceResult(pr *scheduler2.PieceResult)
@@ -43,32 +43,30 @@ type WorkerGroup struct {
 
 	triggerLoadQueue workqueue.Interface
 
-	scheduler *scheduler.Scheduler
+	schedulerService *service.SchedulerService
 }
 
-func CreateWorkerGroup(scheduler *scheduler.Scheduler) *WorkerGroup {
-	workerNum := config.GetConfig().Worker.WorkerNum
-	chanSize := config.GetConfig().Worker.WorkerJobPoolSize
+func NewWorkerGroup(cfg *config.Config, schedulerService *service.SchedulerService) *WorkerGroup {
 	return &WorkerGroup{
-		workerNum:        workerNum,
-		chanSize:         chanSize,
-		sender:           CreateSender(),
-		scheduler:        scheduler,
+		workerNum:        cfg.Worker.WorkerNum,
+		chanSize:         cfg.Worker.WorkerJobPoolSize,
+		sender:           NewSender(cfg.Worker, schedulerService),
+		schedulerService: schedulerService,
 		triggerLoadQueue: workqueue.New(),
 	}
 }
 
-func (wg *WorkerGroup) Start() {
+func (wg *WorkerGroup) Serve() {
 	wg.stopCh = make(chan struct{})
 
-	mgr.GetPeerTaskManager().SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
+	wg.schedulerService.TaskManager.PeerTask.SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
 		status := pt.GetNodeStatus()
 		if status != types.PeerTaskStatusHealth {
-		//} else if pt.GetNodeStatus() != types.PeerTaskStatusDone{
-		//	return
+			//} else if pt.GetNodeStatus() != types.PeerTaskStatusDone{
+			//	return
 		} else if pt.Success || pt.Host.Type == types.HostTypeCdn {
 			return
-		} else if pt.GetParent() == nil  {
+		} else if pt.GetParent() == nil {
 			pt.SetNodeStatus(types.PeerTaskStatusNeedParent)
 		} else {
 			pt.SetNodeStatus(types.PeerTaskStatusNeedCheckNode)
@@ -77,11 +75,13 @@ func (wg *WorkerGroup) Start() {
 	})
 
 	for i := 0; i < wg.workerNum; i++ {
-		w := CreateWorker(wg.scheduler, wg.sender, wg.ReceiveJob, wg.stopCh)
-		w.Start()
+		w := NewWorker(wg.schedulerService, wg.sender, wg.ReceiveJob, wg.stopCh)
+		w.Serve()
 		wg.workerList = append(wg.workerList, w)
 	}
-	wg.sender.Start()
+
+	wg.sender.Serve()
+
 	logger.Infof("start scheduler worker number:%d", wg.workerNum)
 }
 

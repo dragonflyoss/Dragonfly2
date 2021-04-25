@@ -16,95 +16,55 @@
 
 package config
 
-import "runtime"
-
 const (
 	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yaml"
 )
 
-var config = createDefaultConfig()
-
 type Config struct {
-	Debug     bool                  `yaml:"debug" mapstructure:",squash"`
 	Console   bool                  `yaml:"console"`
-	Scheduler schedulerConfig       `yaml:"scheduler" mapstructure:",squash"`
-	Server    serverConfig          `yaml:"server" mapstructure:",squash"`
-	Worker    schedulerWorkerConfig `yaml:"worker" mapstructure:",squash"`
-	CDN       cdnConfig             `yaml:"cdn" mapstructure:",squash"`
-	GC        gcConfig              `yaml:"gc" mapstructure:",squash"`
+	Verbose   bool                  `yaml:"verbose"`
+	PProfPort int                   `yaml:"pprofPort"`
+	Scheduler SchedulerConfig       `yaml:"scheduler"`
+	Server    ServerConfig          `yaml:"server"`
+	Worker    SchedulerWorkerConfig `yaml:"worker"`
+	CDN       CDNConfig             `yaml:"cdn"`
+	GC        GCConfig              `yaml:"gc"`
 }
 
-type schedulerConfig struct {
-	ABTest     bool
-	AScheduler string
-	BScheduler string
+type SchedulerConfig struct {
+	ABTest     bool   `yaml:"abtest"`
+	AScheduler string `yaml:"ascheduler"`
+	BScheduler string `yaml:"bscheduler"`
 }
 
-type serverConfig struct {
-	IP   string `yaml:"ip",omitempty`
+type ServerConfig struct {
+	IP   string `yaml:"ip"`
 	Port int    `yaml:"port"`
 }
 
-type schedulerWorkerConfig struct {
-	WorkerNum         int `yaml:"worker-num"`
-	WorkerJobPoolSize int `yaml:"worker-job-pool-size"`
-	SenderNum         int `yaml:"sender-num"`
-	SenderJobPoolSize int `yaml:"sender-job-pool-size"`
+type SchedulerWorkerConfig struct {
+	WorkerNum         int `yaml:"workerNum"`
+	WorkerJobPoolSize int `yaml:"workerJobPoolSize"`
+	SenderNum         int `yaml:"senderNum"`
+	SenderJobPoolSize int `yaml:"senderJobPoolSize"`
 }
 
-type CdnServerConfig struct {
-	CdnName      string `yaml:"name"`
-	IP           string `yaml:"ip",omitempty`
-	RpcPort      int    `yaml:"rpc-port"`
-	DownloadPort int    `yaml:"download-port"`
+type CDNServerConfig struct {
+	Name         string `yaml:"name"`
+	IP           string `yaml:"ip"`
+	RpcPort      int    `yaml:"rpcPort"`
+	DownloadPort int    `yaml:"downloadPort"`
 }
 
-type cdnConfig struct {
-	List []CdnServerConfig `yaml:"servers" mapstructure:",squash"`
+type CDNConfig struct {
+	Servers []CDNServerConfig `yaml:"servers"`
 }
 
-type gcConfig struct {
-	PeerTaskDelay int64 `yaml:"peer-task-gc-delay-time"`
-	TaskDelay     int64 `yaml:"task-gc-delay-time"`
+type GCConfig struct {
+	PeerTaskDelay int64 `yaml:"peerTaskDelay"`
+	TaskDelay     int64 `yaml:"taskDelay"`
 }
 
-func GetConfig() *Config {
-	return config
-}
-
-func SetConfig(cfg *Config) {
-	config = cfg
-}
-
-func createDefaultConfig() *Config {
-	return &Config{
-		Debug:   true,
-		Console: false,
-		Server: serverConfig{
-			Port: 8002,
-		},
-		Worker: schedulerWorkerConfig{
-			WorkerNum:         runtime.GOMAXPROCS(0),
-			WorkerJobPoolSize: 10000,
-			SenderNum:         10,
-			SenderJobPoolSize: 10000,
-		},
-		Scheduler: schedulerConfig{
-			ABTest: false,
-		},
-		CDN: cdnConfig{
-			List: []CdnServerConfig{
-				{
-					CdnName:      "cdn",
-					IP:           "127.0.0.1",
-					RpcPort:      8003,
-					DownloadPort: 8001,
-				},
-			},
-		},
-		GC: gcConfig{
-			TaskDelay:     3600 * 1000,
-			PeerTaskDelay: 3600 * 1000,
-		},
-	}
+func New() *Config {
+	return &config
 }

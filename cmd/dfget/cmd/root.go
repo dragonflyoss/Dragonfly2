@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -28,6 +29,7 @@ import (
 	"syscall"
 	"time"
 
+	"d7y.io/dragonfly/v2/cmd/common"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/go-http-utils/headers"
@@ -49,7 +51,6 @@ import (
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	"d7y.io/dragonfly/v2/version"
 )
 
 var filter string
@@ -94,7 +95,7 @@ var rootCmd = &cobra.Command{
 	Example:           dfgetExample,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if deprecatedFlags.version {
-			version.VersionCmd.Run(nil, nil)
+			common.VersionCmd.Run(nil, nil)
 			return nil
 		}
 		// Convent deprecated flags
@@ -108,7 +109,7 @@ var rootCmd = &cobra.Command{
 		// Init logger
 		logcore.InitDfget(dfgetConfig.Console)
 
-		// Start dfget
+		// Serve dfget
 		return runDfget()
 	},
 }
@@ -123,7 +124,7 @@ func Execute() {
 
 func init() {
 	// Initialize default dfget config
-	dfgetConfig = &config.DfgetConfig
+	dfgetConfig = config.NewClientOption()
 
 	// Add flags
 	flagSet := rootCmd.Flags()
@@ -197,12 +198,10 @@ func init() {
 	flagSet.BoolVar(&deprecatedFlags.commonBool, "notmd5", false, "deprecated")
 	flagSet.BoolVar(&deprecatedFlags.commonBool, "showcenter", false, "deprecated")
 	flagSet.BoolVar(&deprecatedFlags.commonBool, "usewrap", false, "deprecated")
-
 	flagSet.StringVar(&deprecatedFlags.commonString, "locallimit", "", "deprecated")
 	flagSet.StringVar(&deprecatedFlags.commonString, "minrate", "", "deprecated")
 	flagSet.StringVarP(&deprecatedFlags.commonString, "tasktype", "t", "", "deprecated")
 	flagSet.StringVarP(&deprecatedFlags.commonString, "center", "c", "", "deprecated")
-
 	flagSet.BoolVarP(&deprecatedFlags.version, "version", "v", false, "deprecated")
 
 	flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")
@@ -210,8 +209,9 @@ func init() {
 	flagSet.MarkDeprecated("dfdaemon", "not used anymore")
 	flagSet.MarkDeprecated("version", "Please use 'dfget version' instead")
 	flagSet.MarkShorthandDeprecated("v", "Please use 'dfget version' instead")
+
 	// Add command
-	rootCmd.AddCommand(version.VersionCmd)
+	rootCmd.AddCommand(common.VersionCmd)
 }
 
 // Convert flags
@@ -226,6 +226,10 @@ func convertDeprecatedFlags() {
 
 // runDfget does some init operations and starts to download.
 func runDfget() error {
+	// Dfget config values
+	s, _ := json.MarshalIndent(dfgetConfig, "", "  ")
+	logger.Debugf("dfget option(debug only, can not use as config):\n%s", string(s))
+
 	var addr = dfnet.NetAddr{
 		Type: dfnet.UNIX,
 		Addr: daemonConfig.Download.DownloadGRPC.UnixListen.Socket,
@@ -339,7 +343,6 @@ func initVerboseMode(verbose bool) {
 			logger.Warnf("serve go pprof error: %s", err)
 		}
 	}()
-	logger.Debugf("%#v", dfgetConfig)
 }
 
 func downloadFromSource(hdr map[string]string, dferr error) (err error) {

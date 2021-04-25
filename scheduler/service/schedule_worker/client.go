@@ -17,35 +17,34 @@
 package schedule_worker
 
 import (
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"io"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/mgr"
-	scheduler2 "d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/service"
 )
 
 type Client struct {
-	client    scheduler.Scheduler_ReportPieceResultServer
-	stop      bool
-	worker    IWorker
-	scheduler *scheduler2.Scheduler
+	client           scheduler.Scheduler_ReportPieceResultServer
+	stop             bool
+	worker           IWorker
+	schedulerService *service.SchedulerService
 }
 
-func CreateClient(client scheduler.Scheduler_ReportPieceResultServer, worker IWorker, scheduler *scheduler2.Scheduler) *Client {
+func NewClient(client scheduler.Scheduler_ReportPieceResultServer, worker IWorker, schedulerService *service.SchedulerService) *Client {
 	c := &Client{
-		client:    client,
-		worker:    worker,
-		scheduler: scheduler,
+		client:           client,
+		worker:           worker,
+		schedulerService: schedulerService,
 	}
 	return c
 }
 
-
-func (c *Client) Start() error {
+func (c *Client) Serve() error {
 	return c.doWork()
 }
 
@@ -58,7 +57,7 @@ func (c *Client) doWork() error {
 		return nil
 	}
 	pid := pr.SrcPid
-	peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(pid)
+	peerTask, _ := c.schedulerService.TaskManager.PeerTask.Get(pid)
 	if peerTask == nil {
 		peerResult := &scheduler.PeerPacket{
 			Code: dfcodes.PeerTaskNotFound,
@@ -67,11 +66,11 @@ func (c *Client) doWork() error {
 		return nil
 	}
 	peerTask.SetClient(c)
-	mgr.GetCDNManager().AddToCallback(peerTask)
+	c.schedulerService.CDNManager.AddToCallback(peerTask)
 
 	for !c.stop {
 		if pr != nil {
-			logger.Infof("[%s][%s]: receive a pieceResult %v - %v cost[%d]", pr.TaskId, pr.SrcPid, pr.PieceNum, pr.Code, pr.EndTime - pr.BeginTime)
+			logger.Infof("[%s][%s]: receive a pieceResult %v - %v cost[%d]", pr.TaskId, pr.SrcPid, pr.PieceNum, pr.Code, pr.EndTime-pr.BeginTime)
 		}
 		if pr.PieceNum == common.EndOfPiece {
 			logger.Infof("[%s][%s]: client closed total cost[%d]", pr.TaskId, pr.SrcPid, time.Now().UnixNano()-peerTask.GetStartTime())
@@ -89,7 +88,7 @@ func (c *Client) doWork() error {
 	return nil
 }
 
-func (c *Client) Send (p *scheduler.PeerPacket) error {
+func (c *Client) Send(p *scheduler.PeerPacket) error {
 	return c.client.Send(p)
 }
 

@@ -24,14 +24,14 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type sourceType string
+type sourceType int
 
 const (
 	// ManagerSourceType represents pulling configuration from manager
-	ManagerSourceType sourceType = "manager"
+	ManagerSourceType sourceType = 1 << iota
 
 	// LocalSourceType represents read configuration from local file
-	LocalSourceType sourceType = "local"
+	LocalSourceType
 )
 
 const (
@@ -40,6 +40,7 @@ const (
 
 type strategy interface {
 	Get() (interface{}, error)
+	Set(interface{})
 	Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error
 }
 
@@ -80,7 +81,7 @@ func WithLocalConfigPath(p string) Option {
 }
 
 // NewDynconfig returns a new dynconfig instence
-func NewDynconfig(sourceType sourceType, expire time.Duration, options ...Option) (*dynconfig, error) {
+func New(sourceType sourceType, expire time.Duration, options ...Option) (*dynconfig, error) {
 	d, err := NewDynconfigWithOptions(sourceType, expire, options...)
 	if err != nil {
 		return nil, err
@@ -123,6 +124,11 @@ func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, option
 // Get dynamic config
 func (d *dynconfig) Get() (interface{}, error) {
 	return d.strategy.Get()
+}
+
+// Set dynamic config
+func (d *dynconfig) Set(x interface{}) {
+	d.strategy.Set(x)
 }
 
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags

@@ -18,22 +18,23 @@ package local
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
-	"d7y.io/dragonfly/v2/pkg/synclock"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-	"d7y.io/dragonfly/v2/pkg/util/statutils"
 	"fmt"
-	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"time"
+
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
+	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/statutils"
+	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 )
 
 func init() {
@@ -67,7 +68,7 @@ func NewStorage(conf interface{}) (storedriver.Driver, error) {
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		DecodeHook: decodeHock(
 			reflect.TypeOf(time.Second),
-			reflect.TypeOf(fsize.B)),
+			reflect.TypeOf(unit.B)),
 		Result: cfg,
 	})
 	if err != nil {
@@ -104,7 +105,7 @@ func decodeHock(types ...reflect.Type) mapstructure.DecodeHookFunc {
 	}
 }
 
-func (ds *diskStorage) GetTotalSpace(ctx context.Context) (fsize.Size, error) {
+func (ds *diskStorage) GetTotalSpace(ctx context.Context) (unit.Bytes, error) {
 	path := ds.BaseDir
 	lock(path, -1, true)
 	defer unLock(path, -1, true)
@@ -368,14 +369,14 @@ func (ds *diskStorage) Remove(ctx context.Context, raw *storedriver.Raw) error {
 }
 
 // GetAvailSpace returns the available disk space in Byte.
-func (ds *diskStorage) GetAvailSpace(ctx context.Context) (fsize.Size, error) {
+func (ds *diskStorage) GetAvailSpace(ctx context.Context) (unit.Bytes, error) {
 	path := ds.BaseDir
 	lock(path, -1, true)
 	defer unLock(path, -1, true)
 	return fileutils.GetFreeSpace(path)
 }
 
-func (ds *diskStorage) GetTotalAndFreeSpace(ctx context.Context) (fsize.Size, fsize.Size, error) {
+func (ds *diskStorage) GetTotalAndFreeSpace(ctx context.Context) (unit.Bytes, unit.Bytes, error) {
 	path := ds.BaseDir
 	lock(path, -1, true)
 	defer unLock(path, -1, true)

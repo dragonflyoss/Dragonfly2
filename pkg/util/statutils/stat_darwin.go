@@ -21,7 +21,7 @@ import (
 	"syscall"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
+	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 // Atime returns the last access time in time.Time.
@@ -57,11 +57,11 @@ func GetSysStat(info os.FileInfo) *syscall.Stat_t {
 	}
 }
 
-func FreeSpace(diskPath string) (fsize.Size, error) {
+func FreeSpace(diskPath string) (unit.Bytes, error) {
 	fs := &syscall.Statfs_t{}
 	if err := syscall.Statfs(diskPath, fs); err != nil {
 		return 0, err
 	}
 
-	return fsize.ToFsize(int64(fs.Bavail) * int64(fs.Bsize)), nil
+	return unit.ToBytes(int64(fs.Bavail) * int64(fs.Bsize)), nil
 }

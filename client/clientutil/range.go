@@ -64,8 +64,8 @@ func ParseRange(s string, size int64) ([]Range, error) {
 		start, end := textproto.TrimString(ra[:i]), textproto.TrimString(ra[i+1:])
 		var r Range
 		if start == "" {
-			// If no Start is specified, end specifies the
-			// range Start relative to the end of the file.
+			// If no Serve is specified, end specifies the
+			// range Serve relative to the end of the file.
 			i, err := strconv.ParseInt(end, 10, 64)
 			if err != nil {
 				return nil, errors.New("invalid range")

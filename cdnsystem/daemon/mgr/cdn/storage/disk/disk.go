@@ -34,8 +34,8 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -81,13 +81,13 @@ func (s *diskStorageMgr) getDiskDefaultGcConfig() *storedriver.GcConfig {
 	if err != nil {
 		logger.GcLogger.With("type", "disk").Errorf("get total space of disk: %v", err)
 	}
-	yongGcThreshold := 200 * fsize.GB
+	yongGcThreshold := 200 * unit.GB
 	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
 		yongGcThreshold = totalSpace / 4
 	}
 	return &storedriver.GcConfig{
 		YoungGCThreshold:  yongGcThreshold,
-		FullGCThreshold:   25 * fsize.GB,
+		FullGCThreshold:   25 * unit.GB,
 		IntervalThreshold: 2 * time.Hour,
 		CleanRatio:        1,
 	}

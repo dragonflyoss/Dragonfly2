@@ -26,23 +26,23 @@ import (
 
 // CdnValue implements the pflag.Value interface.
 type CdnValue struct {
-	cc *cdnConfig
+	cc *CDNConfig
 }
 
-func NewCdnValue(cc *cdnConfig) *CdnValue {
+func NewCDNValue(cc *CDNConfig) *CdnValue {
 	return &CdnValue{cc: cc}
 }
 
 func (cv *CdnValue) String() string {
 	var result []string
-	for _, cdn := range cv.cc.List {
-		result = append(result, fmt.Sprintf("%s:%s:%d:%d", cdn.CdnName, cdn.IP, cdn.RpcPort, cdn.DownloadPort))
+	for _, cdn := range cv.cc.Servers {
+		result = append(result, fmt.Sprintf("%s:%s:%d:%d", cdn.Name, cdn.IP, cdn.RpcPort, cdn.DownloadPort))
 	}
 	return strings.Join(result, ",")
 }
 
 func (cv *CdnValue) Set(value string) error {
-	cv.cc.List = cv.cc.List[:0]
+	cv.cc.Servers = cv.cc.Servers[:0]
 	cdnList := strings.Split(value, ",")
 
 	for _, address := range cdnList {
@@ -52,8 +52,8 @@ func (cv *CdnValue) Set(value string) error {
 		}
 		rpcPort, _ := strconv.Atoi(vv[2])
 		downloadPort, _ := strconv.Atoi(vv[3])
-		cv.cc.List = append(cv.cc.List, CdnServerConfig{
-			CdnName:      vv[0],
+		cv.cc.Servers = append(cv.cc.Servers, CDNServerConfig{
+			Name:         vv[0],
 			IP:           vv[1],
 			RpcPort:      rpcPort,
 			DownloadPort: downloadPort,
@@ -63,5 +63,5 @@ func (cv *CdnValue) Set(value string) error {
 }
 
 func (cv *CdnValue) Type() string {
-	return "cdn-list"
+	return "cdn-servers"
 }
