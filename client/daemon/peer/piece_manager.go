@@ -120,11 +120,15 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt PeerTask, request 
 	}
 	_, span := tracer.Start(ctx, config.SpanWritePiece)
 	request.CalcDigest = pm.calculateDigest && request.piece.PieceMd5 != ""
+	span.SetAttributes(config.AttributeTargetPeerId.String(request.DstPid))
+	span.SetAttributes(config.AttributeTargetPeerAddr.String(request.DstAddr))
+	span.SetAttributes(config.AttributePiece.Int(int(request.piece.PieceNum)))
 	r, c, err := pm.pieceDownloader.DownloadPiece(request)
 	if err != nil {
-		span.End()
 		span.RecordError(err)
-		pt.Log().Errorf("download piece failed, piece num: %d, error: %s", request.piece.PieceNum, err)
+		span.End()
+		pt.Log().Errorf("download piece failed, piece num: %d, error: %s, from peer: %s",
+			request.piece.PieceNum, err, request.DstPid)
 		return
 	}
 	defer c.Close()

@@ -442,7 +442,7 @@ loop:
 
 		// trigger DownloadPiece
 		for _, piece := range piecePacket.PieceInfos {
-			pt.Infof("get piece %d from %s", piece.PieceNum, piecePacket.DstPid)
+			pt.Infof("get piece %d from %s/%s", piece.PieceNum, piecePacket.DstAddr, piecePacket.DstPid)
 			if !pt.requestedPieces.IsSet(piece.PieceNum) {
 				pt.requestedPieces.Set(piece.PieceNum)
 			}
