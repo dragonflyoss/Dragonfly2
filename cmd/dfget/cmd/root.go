@@ -67,14 +67,11 @@ limit, transmission encryption and so on.`
 
 // dfgetExample shows examples in dfget command, and is used in auto-generated cli docs.
 var dfgetExample = `
-$ dfget -u https://www.taobao.com -o /tmp/test/b.test --expiretime 20s
---2019-02-02 18:56:34--  https://www.taobao.com
-dfget version:0.3.0
-workspace:/root/.dragonfly
-sign:96414-1549104994.143
-client:127.0.0.1 connected to node:127.0.0.1
-start download by dragonfly...
-download SUCCESS cost:0.026s length:141898 reason:0
+$ dfget -u https://example.com/1G -o /tmp/d7y.test
+⠼ Downloaded (1.0 GB, 509.902 MB/s)
+Task: 4d07b1df273af9c830296903f0ba0cc2290dc630b26f634d6ac95cddfce6a0ef
+Peer: 10.0.0.1-30-59c54ceb-868a-4897-9832-577d2b347cce
+Download success, time cost: 2008ms, length: 1073741824
 `
 
 var deprecatedFlags struct {

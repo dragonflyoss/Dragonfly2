@@ -23,6 +23,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon"
+	"d7y.io/dragonfly/v2/client/pidfile"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/gofrs/flock"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -32,15 +40,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/semconv"
-
-	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/client/daemon"
-	"d7y.io/dragonfly/v2/client/pidfile"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var daemonConfig *config.PeerHostOption
@@ -170,8 +169,8 @@ func initTracer(addr string) (func(), error) {
 
 func runDaemon() error {
 	// Daemon config values
-	s, _ := json.MarshalIndent(daemonConfig, "", "  ")
-	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
+	data, _ := json.Marshal(daemonConfig)
+	logger.Infof("loaded daemon option(debug only, can not use as config): \n%s", string(data))
 
 	// Initialize lock file
 	lock := flock.New(daemonConfig.LockFile)
