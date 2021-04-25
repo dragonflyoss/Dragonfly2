@@ -24,8 +24,6 @@ import (
 	"d7y.io/dragonfly/v2/cmd/common"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -74,10 +72,6 @@ func init() {
 
 	// Initialize cobra
 	common.InitCobra(rootCmd, &cfgFile, cdnSystemEnvPrefix, cfg)
-	// set cdn node advertise ip
-	if stringutils.IsBlank(cfg.AdvertiseIP) {
-		cfg.AdvertiseIP = iputils.HostIp
-	}
 }
 
 func runCdnSystem() error {
