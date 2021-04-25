@@ -25,6 +25,7 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
@@ -61,7 +62,9 @@ var daemonCmd = &cobra.Command{
 		}
 
 		// Initialize logger
-		logcore.InitDaemon(daemonConfig.Console)
+		if err := logcore.InitDaemon(daemonConfig.Console); err != nil {
+			return errors.Wrap(err, "init daemon logger")
+		}
 
 		// Initialize telemetry
 		if daemonConfig.Telemetry.Jaeger != "" {
@@ -74,14 +77,14 @@ var daemonCmd = &cobra.Command{
 			}
 		}
 
-		// Start daemon
+		// Serve daemon
 		return runDaemon()
 	},
 }
 
 func init() {
 	// Initialize default daemon config
-	daemonConfig = &config.PeerHostConfig
+	daemonConfig = config.NewPeerHostOption()
 
 	// Initialize cobra
 	initDaemonConfig(config.PeerHostConfigPath)
@@ -166,6 +169,7 @@ func initTracer(addr string) (func(), error) {
 }
 
 func runDaemon() error {
+	// Daemon config values
 	s, _ := json.MarshalIndent(daemonConfig, "", "  ")
 	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
 

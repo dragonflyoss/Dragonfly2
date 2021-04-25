@@ -18,12 +18,7 @@ package local
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-	"d7y.io/dragonfly/v2/pkg/util/statutils"
 	"fmt"
-	"github.com/stretchr/testify/suite"
 	"io"
 	"io/ioutil"
 	"os"
@@ -32,6 +27,12 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
+	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly/v2/pkg/util/statutils"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestStorageSuite(t *testing.T) {
@@ -728,8 +729,8 @@ func Test_diskStorage_GetTotalAndFreeSpace(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    fsize.Size
-		want1   fsize.Size
+		want    unit.Bytes
+		want1   unit.Bytes
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -767,7 +768,7 @@ func Test_diskStorage_GetTotalSpace(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    fsize.Size
+		want    unit.Bytes
 		wantErr bool
 	}{
 		// TODO: Add test cases.

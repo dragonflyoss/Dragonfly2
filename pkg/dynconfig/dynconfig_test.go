@@ -170,7 +170,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			mockManagerClient := mock_manager_client.NewMockmanagerClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			d, err := NewDynconfig(ManagerSourceType, tc.expire, []Option{WithManagerClient(mockManagerClient)}...)
+			d, err := New(ManagerSourceType, tc.expire, []Option{WithManagerClient(mockManagerClient)}...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -316,7 +316,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 			mockManagerClient := mock_manager_client.NewMockmanagerClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			d, err := NewDynconfig(ManagerSourceType, tc.expire, []Option{WithManagerClient(mockManagerClient)}...)
+			d, err := New(ManagerSourceType, tc.expire, []Option{WithManagerClient(mockManagerClient)}...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -393,7 +393,7 @@ func TestDynconfigGet_LocalSourceType(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			d, err := NewDynconfig(LocalSourceType, tc.expire, []Option{WithLocalConfigPath(configPath)}...)
+			d, err := New(LocalSourceType, tc.expire, []Option{WithLocalConfigPath(configPath)}...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -467,7 +467,7 @@ func TestDynconfigUnmarshal_LocalSourceType(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			d, err := NewDynconfig(LocalSourceType, tc.expire, []Option{WithLocalConfigPath(configPath)}...)
+			d, err := New(LocalSourceType, tc.expire, []Option{WithLocalConfigPath(configPath)}...)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -18,9 +18,10 @@ package server
 
 import (
 	"context"
+
 	"github.com/golang/protobuf/ptypes/empty"
 
-	"d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"

@@ -52,8 +52,8 @@ func New(cfg *config.Config) (*Daemon, error) {
 	}, nil
 }
 
-// Run runs the daemon.
-func (d *Daemon) Run() error {
+// Serve runs the daemon.
+func (d *Daemon) Serve() error {
 	if err := d.server.Start(); err != nil {
 		logger.Errorf("failed to start cdn system %s : %v", d.Name, err)
 		return err

@@ -19,32 +19,38 @@ package server
 import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/service/schedule_worker"
 )
 
 type Server struct {
-	scheduler *service.SchedulerService
-	worker    schedule_worker.IWorker
-	server    *SchedulerServer
-	running   bool
+	service *service.SchedulerService
+	worker  schedule_worker.IWorker
+	server  *SchedulerServer
+	config  config.ServerConfig
+	running bool
 }
 
-func NewServer() *Server {
+func New(cfg *config.Config) (*Server, error) {
 	s := &Server{
-		running:   false,
-		scheduler: service.CreateSchedulerService(),
+		running: false,
+		config:  cfg.Server,
 	}
-	s.worker = schedule_worker.CreateWorkerGroup(s.scheduler.GetScheduler())
-	s.server = &SchedulerServer{svc: s.scheduler, worker: s.worker}
-	return s
+
+	s.service = service.NewSchedulerService(cfg)
+	s.worker = schedule_worker.NewWorkerGroup(cfg, s.service)
+	s.server = NewSchedulerServer(cfg, WithSchedulerService(s.service),
+		WithWorker(s.worker))
+
+	return s, nil
 }
 
-func (s *Server) Start() (err error) {
-	port := config.GetConfig().Server.Port
+func (s *Server) Serve() (err error) {
+	port := s.config.Port
 
-	go s.worker.Start()
+	go s.worker.Serve()
 	defer s.worker.Stop()
 
 	s.running = true
@@ -59,16 +65,4 @@ func (s *Server) Stop() (err error) {
 		rpc.StopServer()
 	}
 	return
-}
-
-func (s *Server) GetServer() *SchedulerServer {
-	return s.server
-}
-
-func (s *Server) GetSchedulerService() *service.SchedulerService {
-	return s.scheduler
-}
-
-func (s *Server) GetWorker() schedule_worker.IWorker {
-	return s.worker
 }

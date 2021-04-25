@@ -17,37 +17,47 @@
 package scheduler
 
 import (
-	"d7y.io/dragonfly/v2/pkg/safe"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/safe"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-type GetEvaluatorFunc func(task *types.Task) (string, bool)
-
-var factory = &evaluatorFactory{
-	lock:              new(sync.RWMutex),
-	evaluators:        make(map[string]IPeerTaskEvaluator),
-	getEvaluatorFuncs: map[int]GetEvaluatorFunc{},
-	cache:             map[*types.Task]IPeerTaskEvaluator{},
-	cacheClearFunc:    new(sync.Once),
-}
-
 type evaluatorFactory struct {
 	lock                         *sync.RWMutex
-	evaluators                   map[string]IPeerTaskEvaluator
-	getEvaluatorFuncs            map[int]GetEvaluatorFunc
-	getEvaluatorFuncPriorityList []GetEvaluatorFunc
-	cache                        map[*types.Task]IPeerTaskEvaluator
+	evaluators                   map[string]Evaluator
+	getEvaluatorFuncs            map[int]getEvaluatorFunc
+	getEvaluatorFuncPriorityList []getEvaluatorFunc
+	cache                        map[*types.Task]Evaluator
 	cacheClearFunc               *sync.Once
+	abtest                       bool
+	ascheduler                   string
+	bscheduler                   string
 }
 
-func (ef *evaluatorFactory) getEvaluator(task *types.Task) IPeerTaskEvaluator {
+type getEvaluatorFunc func(task *types.Task) (string, bool)
+
+func newEvaluatorFactory(cfg config.SchedulerConfig) *evaluatorFactory {
+	factory := &evaluatorFactory{
+		lock:              new(sync.RWMutex),
+		evaluators:        make(map[string]Evaluator),
+		getEvaluatorFuncs: map[int]getEvaluatorFunc{},
+		cache:             map[*types.Task]Evaluator{},
+		cacheClearFunc:    new(sync.Once),
+		abtest:            cfg.ABTest,
+		ascheduler:        cfg.AScheduler,
+		bscheduler:        cfg.BScheduler,
+	}
+	return factory
+}
+
+func (ef *evaluatorFactory) get(task *types.Task) Evaluator {
 	ef.lock.RLock()
 
 	evaluator, ok := ef.cache[task]
@@ -56,15 +66,15 @@ func (ef *evaluatorFactory) getEvaluator(task *types.Task) IPeerTaskEvaluator {
 		return evaluator
 	}
 
-	if config.GetConfig().Scheduler.ABTest {
+	if ef.abtest {
 		name := ""
 		if strings.HasSuffix(task.TaskId, idgen.TwinsB) {
-			if config.GetConfig().Scheduler.BScheduler != "" {
-				name = config.GetConfig().Scheduler.BScheduler
+			if ef.bscheduler != "" {
+				name = ef.bscheduler
 			}
 		} else {
-			if config.GetConfig().Scheduler.AScheduler != "" {
-				name = config.GetConfig().Scheduler.AScheduler
+			if ef.ascheduler != "" {
+				name = ef.ascheduler
 			}
 		}
 		if name != "" {
@@ -100,17 +110,17 @@ func (ef *evaluatorFactory) getEvaluator(task *types.Task) IPeerTaskEvaluator {
 
 func (ef *evaluatorFactory) clearCache() {
 	ef.lock.Lock()
-	ef.cache = make(map[*types.Task]IPeerTaskEvaluator)
+	ef.cache = make(map[*types.Task]Evaluator)
 	ef.lock.Unlock()
 }
 
-func (ef *evaluatorFactory) addEvaluator(name string, evaluator IPeerTaskEvaluator) {
+func (ef *evaluatorFactory) add(name string, evaluator Evaluator) {
 	ef.lock.Lock()
 	ef.evaluators[name] = evaluator
 	ef.lock.Unlock()
 }
 
-func (ef *evaluatorFactory) addGetEvaluatorFunc(priority int, fun GetEvaluatorFunc) {
+func (ef *evaluatorFactory) addGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
 	ef.lock.Lock()
 	defer ef.lock.Unlock()
 	_, ok := ef.getEvaluatorFuncs[priority]
@@ -130,7 +140,7 @@ func (ef *evaluatorFactory) addGetEvaluatorFunc(priority int, fun GetEvaluatorFu
 
 }
 
-func (ef *evaluatorFactory) deleteGetEvaluatorFunc(priority int, fun GetEvaluatorFunc) {
+func (ef *evaluatorFactory) deleteGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
 	ef.lock.Lock()
 
 	delete(ef.getEvaluatorFuncs, priority)
@@ -148,27 +158,23 @@ func (ef *evaluatorFactory) deleteGetEvaluatorFunc(priority int, fun GetEvaluato
 	ef.lock.Unlock()
 }
 
-func RegisterEvaluator(name string, evaluator IPeerTaskEvaluator) {
-	factory.cacheClearFunc.Do(func() {
+func (ef *evaluatorFactory) register(name string, evaluator Evaluator) {
+	ef.cacheClearFunc.Do(func() {
 		go safe.Call(func() {
 			tick := time.NewTicker(time.Hour)
 			for {
 				select {
 				case <-tick.C:
-					factory.clearCache()
+					ef.clearCache()
 				}
 			}
 		})
 	})
-	factory.addEvaluator(name, evaluator)
-	factory.clearCache()
+	ef.add(name, evaluator)
+	ef.clearCache()
 }
 
-func RegisterGetEvaluatorFunc(priority int, fun GetEvaluatorFunc) {
-	factory.addGetEvaluatorFunc(priority, fun)
-	factory.clearCache()
-}
-
-func DeleteGetEvaluatorFunc(priority int, fun GetEvaluatorFunc) {
-	factory.deleteGetEvaluatorFunc(priority, fun)
+func (ef *evaluatorFactory) registerGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
+	ef.addGetEvaluatorFunc(priority, fun)
+	ef.clearCache()
 }

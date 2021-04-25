@@ -67,6 +67,11 @@ func (d *dynconfigLocal) Get() (interface{}, error) {
 	return dynconfig, nil
 }
 
+// Set dynamic config
+func (d *dynconfigLocal) Set(x interface{}) {
+	d.cache.Set(defaultCacheKey, x, 0)
+}
+
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags
 // on the fields of the structure are properly set.
 func (d *dynconfigLocal) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error {
