@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - feature/github
+      - main-rc
   pull_request:
     branches:
       - main
-      - feature/github
+      - main-rc
 
 jobs:
   lint:
