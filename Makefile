@@ -123,9 +123,9 @@ build-deb-dfget:
 .PHONY: build-deb-dfget
 
 test: ## Run unittests
-	@go test -short ${PKG_LIST}
+	@go test -race -short ${PKG_LIST}
 
 test-coverage: ## Run tests with coverage
-	@go test -short -coverprofile cover.out -covermode=atomic ./pkg/dynconfig/...
+	@go test -race -short -coverprofile cover.out -covermode=atomic ./pkg/dynconfig/...
 	@cat cover.out >> coverage.txt
 

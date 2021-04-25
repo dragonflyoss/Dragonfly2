@@ -52,11 +52,8 @@ jobs:
       - name: Run Unit tests.
         run: make test-coverage
 
-      - name: Upload Coverage report to CodeCov
-        uses: codecov/codecov-action@v1.4.1
-        with:
-          token: ${{secrets.CODECOV_TOKEN}}
-          file: ./coverage.txt
+      - name: Upload coverage to Codecov
+        run: bash <(curl -s https://codecov.io/bash)
 
   build:
     name: Build
