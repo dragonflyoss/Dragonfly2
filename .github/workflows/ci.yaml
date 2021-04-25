@@ -49,8 +49,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Test
-        run: go test -v ./pkg/dynconfig/...
+      - name: Run Unit tests.
+        run: make test-coverage
+
+      - name: Upload Coverage report to CodeCov
+        uses: codecov/codecov-action@v1.4.1
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
+          file: ./coverage.txt
 
   build:
     name: Build

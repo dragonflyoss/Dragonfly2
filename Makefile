@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+PROJECT_NAME := "d7y.io/dragonfly/v2"
+PKG := "$(PROJECT_NAME)"
+PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
 VERSION := 2.0.0
 
 build-dirs: ## Prepare required folders for build
@@ -118,3 +121,11 @@ build-deb-dfget:
 	@ docker run --rm \
 		-v ${PWD}/bin/deb/amd64:/pkg dfget-deb-builder
 .PHONY: build-deb-dfget
+
+test: ## Run unittests
+	@go test -short ${PKG_LIST}
+
+test-coverage: ## Run tests with coverage
+	@go test -short -coverprofile cover.out -covermode=atomic ./pkg/dynconfig/...
+	@cat cover.out >> coverage.txt
+
