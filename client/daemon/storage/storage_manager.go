@@ -320,12 +320,20 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 		stat := dirStat.Sys().(*syscall.Stat_t)
 		// same dev, can hard link
 		if stat.Dev == s.dataPathStat.Dev {
+			logger.Debugf("same device, try to hard link")
 			if err := os.Link(t.DataFilePath, data); err != nil {
-				return err
+				logger.Warnf("hard link failed for same device: %s, fallback to symbol link", err)
+				// fallback to symbol link
+				if err := os.Symlink(t.DataFilePath, data); err != nil {
+					logger.Errorf("symbol link failed: %s", err)
+					return err
+				}
 			}
 		} else {
+			logger.Debugf("different devices, try to symbol link")
 			// make symbol link for reload error gc
 			if err := os.Symlink(t.DataFilePath, data); err != nil {
+				logger.Errorf("symbol link failed: %s", err)
 				return err
 			}
 		}
