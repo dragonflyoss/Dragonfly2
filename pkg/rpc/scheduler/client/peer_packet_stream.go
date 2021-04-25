@@ -204,7 +204,7 @@ func (pps *peerPacketStream) replaceClient(cause error) error {
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		client, _, err := pps.sc.getSchedulerClient(pps.hashKey, true)
-		if err == nil {
+		if err != nil {
 			return nil, err
 		}
 		timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
