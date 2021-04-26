@@ -22,4 +22,4 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic"
 )
 
-var clientLogDir     = filepath.Join(basic.HomeDir, ".dragonfly/logs")
+var defaultLogDir = filepath.Join(basic.HomeDir, ".dragonfly/logs")

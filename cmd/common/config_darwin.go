@@ -22,4 +22,4 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic"
 )
 
-var defaultConfigDir = filepath.Join(basic.HomeDir, ".dragonfly")
+var defaultConfigDir = filepath.Join(basic.HomeDir, ".dragonfly/config")

@@ -20,6 +20,7 @@ package config
 
 import (
 	"net"
+	"path/filepath"
 
 	"golang.org/x/time/rate"
 
@@ -31,7 +32,7 @@ import (
 var (
 	PeerHostConfigPath = "/etc/dragonfly/dfget-daemon.yaml"
 
-	peerHostWorkHome = basic.HomeDir + "/.dragonfly/dfget-daemon/"
+	peerHostWorkHome = filepath.Join(basic.HomeDir, ".dragonfly/dfdaemon/")
 	peerHostDataDir  = peerHostWorkHome
 )
 

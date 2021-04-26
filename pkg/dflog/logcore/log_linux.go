@@ -16,4 +16,4 @@
 
 package logcore
 
-var clientLogDir = "/var/log/dragonfly"
+const defaultLogDir = "/var/log/dragonfly"
