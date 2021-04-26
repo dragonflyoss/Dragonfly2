@@ -19,6 +19,11 @@ package disk
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"io"
+	"strings"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
@@ -29,14 +34,10 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
-	"encoding/json"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"io"
-	"strings"
-	"time"
 )
 
 const name = "disk"
@@ -47,6 +48,7 @@ func init() {
 
 	var diskStorage *diskStorageMgr = nil
 	var _ storage.Manager = diskStorage
+	var _ gc.Executor = diskStorage
 }
 
 type diskBuilder struct {
@@ -60,11 +62,7 @@ func (*diskBuilder) Build(cfg *config.Config) (storage.Manager, error) {
 	storageMgr := &diskStorageMgr{
 		diskStore: diskStore,
 	}
-	gc.Register("task", &gc.ExecutorWrapper{
-		GCInitialDelay: cfg.GCInitialDelay,
-		GCInterval:     cfg.GCStorageInterval,
-		Instance:       storageMgr,
-	})
+	gc.Register("diskStorage", cfg.GCInitialDelay, cfg.GCStorageInterval, storageMgr)
 	return storageMgr, nil
 }
 
@@ -81,15 +79,15 @@ type diskStorageMgr struct {
 func (s *diskStorageMgr) getDiskDefaultGcConfig() *storedriver.GcConfig {
 	totalSpace, err := s.diskStore.GetTotalSpace(context.TODO())
 	if err != nil {
-		logger.GcLogger.Errorf("get total space of disk: %v", err)
+		logger.GcLogger.With("type", "disk").Errorf("get total space of disk: %v", err)
 	}
-	yongGcThreshold := 200 * fsize.GB
+	yongGcThreshold := 200 * unit.GB
 	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
 		yongGcThreshold = totalSpace / 4
 	}
 	return &storedriver.GcConfig{
 		YoungGCThreshold:  yongGcThreshold,
-		FullGCThreshold:   25 * fsize.GB,
+		FullGCThreshold:   25 * unit.GB,
 		IntervalThreshold: 2 * time.Hour,
 		CleanRatio:        1,
 	}
@@ -99,7 +97,7 @@ func (s *diskStorageMgr) InitializeCleaners() {
 	diskGcConfig := s.diskStore.GetGcConfig(context.TODO())
 	if diskGcConfig == nil {
 		diskGcConfig = s.getDiskDefaultGcConfig()
-		logger.GcLogger.Warnf("disk gc config is nil, use default gcConfig: %v", diskGcConfig)
+		logger.GcLogger.With("type", "disk").Warnf("disk gc config is nil, use default gcConfig: %v", diskGcConfig)
 	}
 	s.diskStoreCleaner = &storage.Cleaner{
 		Cfg:        diskGcConfig,
@@ -131,23 +129,24 @@ func (s *diskStorageMgr) ReadPieceMetaRecords(ctx context.Context, taskId string
 }
 
 func (s *diskStorageMgr) GC(ctx context.Context) error {
-	logger.Debugf("start the disk gc job")
-	gcTaskIDs, err := s.diskStoreCleaner.Gc(ctx, false)
+	logger.GcLogger.With("type", "disk").Info("start the disk storage gc job")
+	gcTaskIDs, err := s.diskStoreCleaner.Gc(ctx, "disk", false)
 	if err != nil {
-		logger.GcLogger.Error("gc disk: failed to get gcTaskIds")
+		logger.GcLogger.With("type", "disk").Error("failed to get gcTaskIds")
 	}
+	logger.GcLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up", len(gcTaskIDs))
 	for _, taskID := range gcTaskIDs {
 		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
 		if _, err := s.taskMgr.Get(ctx, taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
 			if err != nil {
-				logger.GcLogger.Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
+				logger.GcLogger.With("type", "disk").Errorf("failed to get taskID(%s): %v", taskID, err)
 			}
 			synclock.UnLock(taskID, false)
 			continue
 		}
 		if err := s.DeleteTask(ctx, taskID); err != nil {
-			logger.GcLogger.Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
+			logger.GcLogger.With("type", "disk").Errorf("failed to delete disk files with taskID(%s): %v", taskID, err)
 			synclock.UnLock(taskID, false)
 			continue
 		}

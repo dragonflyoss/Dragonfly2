@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 
 	"github.com/gofrs/flock"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
@@ -61,7 +62,9 @@ var daemonCmd = &cobra.Command{
 		}
 
 		// Initialize logger
-		logcore.InitDaemon(daemonConfig.Console)
+		if err := logcore.InitDaemon(daemonConfig.Console); err != nil {
+			return errors.Wrap(err, "init daemon logger")
+		}
 
 		// Initialize telemetry
 		if daemonConfig.Telemetry.Jaeger != "" {
@@ -74,14 +77,14 @@ var daemonCmd = &cobra.Command{
 			}
 		}
 
-		// Start daemon
+		// Serve daemon
 		return runDaemon()
 	},
 }
 
 func init() {
 	// Initialize default daemon config
-	daemonConfig = &config.PeerHostConfig
+	daemonConfig = config.NewPeerHostOption()
 
 	// Initialize cobra
 	initDaemonConfig(config.PeerHostConfigPath)
@@ -101,14 +104,15 @@ func init() {
 	flagSet.IntVar(&daemonConfig.Upload.ListenOption.TCPListen.PortRange.End, "upload-port-end", daemonConfig.Upload.ListenOption.TCPListen.PortRange.End, "the address that daemon will listen on for peer upload")
 	flagSet.StringVar(&daemonConfig.PidFile, "pid", daemonConfig.PidFile, "dfdaemon pid file location")
 	flagSet.StringVar(&daemonConfig.LockFile, "lock", daemonConfig.LockFile, "dfdaemon lock file location")
-	flagSet.StringVar(&daemonConfig.Host.SecurityDomain, "security-domain", "", "peer security domain for scheduler")
+	flagSet.StringVar(&daemonConfig.Host.SecurityDomain, "security-domain", daemonConfig.Host.SecurityDomain, "peer security domain for scheduler")
 	flagSet.StringVar(&daemonConfig.Host.Location, "location", daemonConfig.Host.Location, "peer location for scheduler")
 	flagSet.StringVar(&daemonConfig.Host.IDC, "idc", daemonConfig.Host.IDC, "peer idc for scheduler")
 	flagSet.StringVar(&daemonConfig.Host.NetTopology, "net-topology", daemonConfig.Host.NetTopology, "peer net topology for scheduler")
-	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.TotalRateLimit), "download-rate", "download rate limit for other peers and back source")
+	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.TotalRateLimit), "download-rate", "total download rate limit for other peers and back source")
+	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.PerPeerRateLimit), "per-peer-download-rate", "per peer download rate limit for other peers and back source")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
 	flagSet.DurationVar(&daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule-timeout", daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule timeout")
-	flagSet.StringVar(&daemonConfig.Telemetry.Jaeger, "jaeger", daemonConfig.Telemetry.Jaeger, "jaeger addr, like: http://localhost:14268")
+	flagSet.StringVar(&daemonConfig.Telemetry.Jaeger, "jaeger", "http://jaeger.dragonfly.svc.staging.alipay.net:14268", "jaeger addr, like: http://localhost:14268")
 	flagSet.String("config", config.PeerHostConfigPath, "daemon config file location")
 
 	// Add command
@@ -165,6 +169,7 @@ func initTracer(addr string) (func(), error) {
 }
 
 func runDaemon() error {
+	// Daemon config values
 	s, _ := json.MarshalIndent(daemonConfig, "", "  ")
 	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
 

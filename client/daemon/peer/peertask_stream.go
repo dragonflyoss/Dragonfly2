@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package peer
 
 import (
@@ -50,6 +66,7 @@ func newStreamPeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerId.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
+	logger.Debugf("request overview, url: %s, filter: %s, meta: %s, biz: %s", request.Url, request.Filter, request.UrlMata, request.BizId)
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
@@ -75,6 +92,8 @@ func newStreamPeerTask(ctx context.Context,
 		return ctx, nil, nil, err
 	}
 	span.SetAttributes(config.AttributeTaskId.String(result.TaskId))
+	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
+		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var singlePiece *scheduler.SinglePiece
 	if !backSource {
@@ -111,8 +130,6 @@ func newStreamPeerTask(ctx context.Context,
 		span.RecordError(err)
 		return ctx, nil, nil, err
 	}
-	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
-		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 	var limiter *rate.Limiter
 	if perPeerRateLimit > 0 {
 		limiter = rate.NewLimiter(perPeerRateLimit, int(perPeerRateLimit))
@@ -150,12 +167,7 @@ func newStreamPeerTask(ctx context.Context,
 }
 
 func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
-	// FIXME goroutine safe for channel and send on closed channel
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Warnf("recover from %s", r)
-		}
-	}()
+	defer s.recoverFromPanic()
 	// retry failed piece
 	if !pieceResult.Success {
 		_ = s.peerPacketStream.Send(pieceResult)
@@ -215,11 +227,26 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	var firstPiece int32
 	select {
 	case <-s.ctx.Done():
-		err := errors.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
+		var err error
+		if s.failedReason != "" {
+			err = errors.Errorf(s.failedReason)
+		} else {
+			err = errors.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
+		}
 		s.Errorf("%s", err)
+		s.span.RecordError(err)
+		s.span.End()
 		return nil, nil, err
 	case <-s.done:
-		err := errors.New("stream peer task early done")
+		var err error
+		if s.failedReason != "" {
+			err = errors.Errorf(s.failedReason)
+		} else {
+			err = errors.Errorf("stream peer task early done")
+		}
+		s.Errorf("%s", err)
+		s.span.RecordError(err)
+		s.span.End()
 		return nil, nil, err
 	case first := <-s.successPieceCh:
 		//if !ok {
@@ -238,6 +265,8 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	} else {
 		attr[headers.TransferEncoding] = "chunked"
 	}
+	attr[config.HeaderDragonflyTask] = s.taskId
+	attr[config.HeaderDragonflyPeer] = s.peerId
 
 	go func(first int32) {
 		defer func() {
@@ -259,13 +288,18 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 			if desired == cur {
 				for {
 					delete(cache, desired)
+					_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
+					span.SetAttributes(config.AttributePiece.Int(int(desired)))
 					wrote, err = s.writeTo(writer, desired)
 					if err != nil {
+						span.RecordError(err)
+						span.End()
 						s.Errorf("write to pipe error: %s", err)
 						_ = pw.CloseWithError(err)
 						return
 					}
 					s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
+					span.End()
 					desired++
 					cached := cache[desired]
 					if !cached {
@@ -284,6 +318,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 			select {
 			case <-s.ctx.Done():
 				s.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
+				s.span.RecordError(s.ctx.Err())
 				if err := pw.CloseWithError(s.ctx.Err()); err != nil {
 					s.Errorf("CloseWithError failed: %s", err)
 				}
@@ -295,13 +330,18 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 						pw.Close()
 						return
 					}
+					_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
+					span.SetAttributes(config.AttributePiece.Int(int(desired)))
 					wrote, err = s.writeTo(pw, desired)
 					if err != nil {
+						span.RecordError(err)
+						span.End()
 						s.span.RecordError(err)
 						s.Errorf("write to pipe error: %s", err)
 						_ = pw.CloseWithError(err)
 						return
 					}
+					span.End()
 					s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
 					desired++
 				}

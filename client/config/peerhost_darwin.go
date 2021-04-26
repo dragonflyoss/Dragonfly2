@@ -1,10 +1,25 @@
 // +build darwin
 
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package config
 
 import (
 	"net"
-	"time"
 
 	"golang.org/x/time/rate"
 
@@ -20,11 +35,11 @@ var (
 	peerHostDataDir  = peerHostWorkHome
 )
 
-var PeerHostConfig = PeerHostOption{
+var peerHostConfig = PeerHostOption{
 	DataDir:     peerHostDataDir,
 	WorkHome:    peerHostWorkHome,
-	AliveTime:   clientutil.Duration{Duration: 5 * time.Minute},
-	GCInterval:  clientutil.Duration{Duration: 1 * time.Minute},
+	AliveTime:   clientutil.Duration{Duration: DefaultDaemonAliveTime},
+	GCInterval:  clientutil.Duration{Duration: DefaultGCInterval},
 	PidFile:     "/tmp/dfdaemon.pid",
 	LockFile:    "/tmp/dfdaemon.lock",
 	KeepStorage: false,
@@ -32,7 +47,7 @@ var PeerHostConfig = PeerHostOption{
 	Console:     false,
 	Scheduler: SchedulerOption{
 		NetAddrs:        nil,
-		ScheduleTimeout: clientutil.Duration{Duration: 1 * time.Minute},
+		ScheduleTimeout: clientutil.Duration{Duration: DefaultScheduleTimeout},
 	},
 	Host: HostOption{
 		ListenIP:       net.IPv4zero.String(),
@@ -44,7 +59,10 @@ var PeerHostConfig = PeerHostOption{
 	},
 	Download: DownloadOption{
 		TotalRateLimit: clientutil.RateLimit{
-			Limit: rate.Limit(104857600),
+			Limit: rate.Limit(DefaultTotalDownloadLimit),
+		},
+		PerPeerRateLimit: clientutil.RateLimit{
+			Limit: rate.Limit(DefaultPerPeerDownloadLimit),
 		},
 		DownloadGRPC: ListenOption{
 			Security: SecurityOption{
@@ -69,7 +87,7 @@ var PeerHostConfig = PeerHostOption{
 	},
 	Upload: UploadOption{
 		RateLimit: clientutil.RateLimit{
-			Limit: rate.Limit(104857600),
+			Limit: rate.Limit(DefaultUploadLimit),
 		},
 		ListenOption: ListenOption{
 			Security: SecurityOption{
@@ -97,7 +115,7 @@ var PeerHostConfig = PeerHostOption{
 	},
 	Storage: StorageOption{
 		TaskExpireTime: clientutil.Duration{
-			Duration: 3 * time.Minute,
+			Duration: DefaultTaskExpireTime,
 		},
 		StoreStrategy: AdvanceLocalTaskStoreStrategy,
 	},

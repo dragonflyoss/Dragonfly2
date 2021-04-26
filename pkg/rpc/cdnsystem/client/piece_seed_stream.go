@@ -18,18 +18,20 @@ package client
 
 import (
 	"context"
+	"io"
+
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"io"
 )
 
 type PieceSeedStream struct {
 	// client for one target
-	sc      *seederClient
+	sc      *cdnClient
 	ctx     context.Context
 	hashKey string
 	sr      *cdnsystem.SeedRequest
@@ -41,7 +43,7 @@ type PieceSeedStream struct {
 	rpc.RetryMeta
 }
 
-func newPieceSeedStream(sc *seederClient, ctx context.Context, hashKey string, sr *cdnsystem.SeedRequest, opts []grpc.CallOption) (*PieceSeedStream, error) {
+func newPieceSeedStream(sc *cdnClient, ctx context.Context, hashKey string, sr *cdnsystem.SeedRequest, opts []grpc.CallOption) (*PieceSeedStream, error) {
 	pss := &PieceSeedStream{
 		sc:      sc,
 		ctx:     ctx,
@@ -64,17 +66,19 @@ func newPieceSeedStream(sc *seederClient, ctx context.Context, hashKey string, s
 
 func (pss *PieceSeedStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		if client, err := pss.sc.getSeederClient(pss.hashKey); err != nil {
+		client, cdnServerNode, err := pss.sc.getCdnClient(pss.hashKey, false)
+		if err != nil {
 			return nil, err
-		} else {
-			return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 		}
+		logger.WithTaskID(pss.hashKey).Infof("invoke cdn node %s ObtainSeeds", cdnServerNode)
+		return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, nil)
-	if err != nil {
-		err = pss.replaceClient(pss.hashKey, err)
-	} else {
+	if err == nil {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
 		pss.StreamTimes = 1
+	}
+	if err != nil {
+		err = pss.replaceClient(pss.hashKey, err)
 	}
 	return err
 }
@@ -88,8 +92,7 @@ func (pss *PieceSeedStream) Recv() (ps *cdnsystem.PieceSeed, err error) {
 }
 
 func (pss *PieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error) {
-	code := status.Code(cause)
-	if code == codes.DeadlineExceeded {
+	if status.Code(cause) == codes.DeadlineExceeded {
 		return nil, cause
 	}
 
@@ -108,18 +111,16 @@ func (pss *PieceSeedStream) replaceStream(key string, cause error) error {
 	}
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		if client, err := pss.sc.getSeederClient(key); err != nil {
+		client, _, err := pss.sc.getCdnClient(key, true)
+		if err != nil {
 			return nil, err
-		} else {
-			return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 		}
+		return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
-
 	if err == nil {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
 		pss.StreamTimes++
 	}
-
 	return err
 }
 
@@ -129,20 +130,20 @@ func (pss *PieceSeedStream) replaceClient(key string, cause error) error {
 	} else {
 		pss.failedServers = append(pss.failedServers, preNode)
 	}
-	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		if client, err := pss.sc.getSeederClient(key); err != nil {
-			return nil, err
-		} else {
-			return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
-		}
-	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
 
-	if err != nil {
-		err = pss.replaceClient(key, cause)
-	} else {
+	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		client, _, err := pss.sc.getCdnClient(key, true)
+		if err != nil {
+			return nil, err
+		}
+		return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
+	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
+	if err == nil {
 		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
 		pss.StreamTimes = 1
 	}
-
+	if err != nil {
+		err = pss.replaceClient(key, cause)
+	}
 	return err
 }

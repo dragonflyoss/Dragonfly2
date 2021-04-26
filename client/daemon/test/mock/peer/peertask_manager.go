@@ -56,10 +56,10 @@ func (mr *MockPeerTaskManagerMockRecorder) IsPeerTaskRunning(pid interface{}) *g
 }
 
 // StartFilePeerTask mocks base method.
-func (m *MockPeerTaskManager) StartFilePeerTask(ctx context.Context, req *peer.FilePeerTaskRequest) (chan *peer.PeerTaskProgress, *peer.TinyData, error) {
+func (m *MockPeerTaskManager) StartFilePeerTask(ctx context.Context, req *peer.FilePeerTaskRequest) (chan *peer.FilePeerTaskProgress, *peer.TinyData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartFilePeerTask", ctx, req)
-	ret0, _ := ret[0].(chan *peer.PeerTaskProgress)
+	ret0, _ := ret[0].(chan *peer.FilePeerTaskProgress)
 	ret1, _ := ret[1].(*peer.TinyData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2

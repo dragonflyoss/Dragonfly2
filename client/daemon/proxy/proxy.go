@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,14 +26,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/groupcache/lru"
-	"github.com/pkg/errors"
-
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/golang/groupcache/lru"
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/semaphore"
 )
 
 var okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
@@ -64,12 +68,24 @@ type Proxy struct {
 
 	// peerHost is the peer host info
 	peerHost *scheduler.PeerHost
+
+	// whiteList is the proxy white list
+	whiteList []*config.WhiteList
+
+	// semaphore is used to limit max concurrency when process http request
+	semaphore *semaphore.Weighted
+
+	// defaultFilter is used when http request without X-Dragonfly-Filter Header
+	defaultFilter string
+
+	// tracer is used for telemetry
+	tracer trace.Tracer
 }
 
 // Option is a functional option for configuring the proxy
 type Option func(p *Proxy) *Proxy
 
-// WithHTTPSHosts sets the rules for hijacking https requests
+// WithPeerHost sets the *scheduler.PeerHost
 func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerHost = peerHost
@@ -77,7 +93,7 @@ func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 	}
 }
 
-// WithHTTPSHosts sets the rules for hijacking https requests
+// WithPeerTaskManager sets the peer.PeerTaskManager
 func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerTaskManager = peerTaskManager
@@ -101,8 +117,7 @@ func WithRegistryMirror(r *config.RegistryMirror) Option {
 	}
 }
 
-// WithCertFromFile is a convenient wrapper for WithCert, to read certificate from
-// the given file
+// WithCert sets the certificate
 func WithCert(cert *tls.Certificate) Option {
 	return func(p *Proxy) *Proxy {
 		p.cert = cert
@@ -129,7 +144,33 @@ func WithRules(rules []*config.Proxy) Option {
 	}
 }
 
-// NewFromConfig returns a new transparent proxy from the given properties
+// WithWhiteList sets the proxy whitelist
+func WithWhiteList(whiteList []*config.WhiteList) Option {
+	return func(p *Proxy) *Proxy {
+		p.whiteList = whiteList
+		return p
+	}
+}
+
+// WithMaxConcurrency sets max concurrent for process http request
+func WithMaxConcurrency(con int64) Option {
+	return func(p *Proxy) *Proxy {
+		if con > 0 {
+			p.semaphore = semaphore.NewWeighted(con)
+		}
+		return p
+	}
+}
+
+// WithDefaultFilter sets default filter for http requests without X-Dragonfly-Filter Header
+func WithDefaultFilter(f string) Option {
+	return func(p *Proxy) *Proxy {
+		p.defaultFilter = f
+		return p
+	}
+}
+
+// NewProxy returns a new transparent proxy from the given options
 func NewProxy(options ...Option) (*Proxy, error) {
 	return NewProxyWithOptions(options...)
 }
@@ -138,7 +179,9 @@ func NewProxy(options ...Option) (*Proxy, error) {
 func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 	proxy := &Proxy{
 		directHandler: http.NewServeMux(),
+		tracer:        otel.Tracer("dfget-daemon-proxy"),
 	}
+
 	for _, opt := range options {
 		opt(proxy)
 	}
@@ -148,6 +191,37 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx, span := proxy.tracer.Start(r.Context(), config.SpanProxy)
+	span.SetAttributes(semconv.HTTPSchemeKey.String(r.URL.Scheme))
+	span.SetAttributes(semconv.HTTPHostKey.String(r.Host))
+	span.SetAttributes(semconv.HTTPURLKey.String(r.URL.String()))
+	span.SetAttributes(semconv.HTTPMethodKey.String(r.Method))
+	defer func() {
+		span.End()
+	}()
+	// update ctx for transfer trace id
+	// TODO(jim): only support HTTP scheme, need support HTTPS scheme
+	r = r.WithContext(ctx)
+
+	// check whiteList
+	if !proxy.checkWhiteList(r) {
+		status := http.StatusUnauthorized
+		http.Error(w, http.StatusText(status), status)
+		logger.Debugf("not in whitelist: %s, url：%s", r.Host, r.URL.String())
+		return
+	}
+
+	// limit max concurrency
+	if proxy.semaphore != nil {
+		err := proxy.semaphore.Acquire(r.Context(), 1)
+		if err != nil {
+			logger.Errorf("acquire semaphore error: %v", err)
+			http.Error(w, err.Error(), http.StatusTooManyRequests)
+			return
+		}
+		defer proxy.semaphore.Release(1)
+	}
+
 	if r.Method == http.MethodConnect {
 		// handle https proxy requests
 		proxy.handleHTTPS(w, r)
@@ -156,11 +230,12 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		proxy.directHandler.ServeHTTP(w, r)
 	} else {
 		// handle http proxy requests
-		proxy.handleHTTP(w, r)
+		proxy.handleHTTP(span, w, r)
 	}
+
 }
 
-func (proxy *Proxy) handleHTTP(w http.ResponseWriter, req *http.Request) {
+func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http.Request) {
 	resp, err := proxy.newTransport(nil).RoundTrip(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -169,8 +244,11 @@ func (proxy *Proxy) handleHTTP(w http.ResponseWriter, req *http.Request) {
 	defer resp.Body.Close()
 	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
-	if _, err := io.Copy(w, resp.Body); err != nil {
+	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
+	if n, err := io.Copy(w, resp.Body); err != nil {
 		logger.Errorf("failed to write http body: %v", err)
+	} else {
+		span.SetAttributes(semconv.HTTPResponseContentLengthKey.Int64(n))
 	}
 }
 
@@ -260,6 +338,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(tlsConfig),
 		transport.WithCondition(proxy.shouldUseDragonfly),
+		transport.WithDefaultFilter(proxy.defaultFilter),
 	)
 	return rt
 }
@@ -271,6 +350,7 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(proxy.registry.TLSConfig()),
 		transport.WithCondition(proxy.shouldUseDragonflyForMirror),
+		transport.WithDefaultFilter(proxy.defaultFilter),
 	)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get transport: %v", err), http.StatusInternalServerError)
@@ -299,6 +379,36 @@ func (proxy *Proxy) remoteConfig(host string) *tls.Config {
 func (proxy *Proxy) setRules(rules []*config.Proxy) error {
 	proxy.rules = rules
 	return nil
+}
+
+// checkWhiteList check proxy white list.
+func (proxy *Proxy) checkWhiteList(r *http.Request) bool {
+	whiteList := proxy.whiteList
+	host := r.URL.Hostname()
+	port := r.URL.Port()
+
+	// No whitelist
+	if len(whiteList) <= 0 {
+		return true
+	}
+
+	for _, v := range whiteList {
+		if (v.Host != "" && v.Host == host) || (v.Regx != nil && v.Regx.MatchString(host)) {
+			// No ports
+			if len(v.Ports) <= 0 {
+				return true
+			}
+
+			// Hit ports
+			if stringutils.Contains(v.Ports, port) {
+				return true
+			}
+
+			return false
+		}
+	}
+
+	return false
 }
 
 // shouldUseDragonfly returns whether we should use dragonfly to proxy a request. It
@@ -351,7 +461,7 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go copyAndClose(dst, clientConn)
-	go copyAndClose(clientConn, dst)
+	copyAndClose(clientConn, dst)
 }
 
 func copyAndClose(dst io.WriteCloser, src io.ReadCloser) error {

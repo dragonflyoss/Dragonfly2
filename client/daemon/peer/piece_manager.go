@@ -24,20 +24,22 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
+	cdnconfig "d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 type PieceManager interface {
 	DownloadSource(ctx context.Context, pt PeerTask, request *scheduler.PeerTaskRequest) error
-	DownloadPiece(peerTask PeerTask, request *DownloadPieceRequest) bool
+	DownloadPiece(ctx context.Context, peerTask PeerTask, request *DownloadPieceRequest) bool
 	ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error)
 }
 
@@ -93,37 +95,46 @@ func WithLimiter(limiter *rate.Limiter) func(*pieceManager) {
 	}
 }
 
-func (pm *pieceManager) DownloadPiece(pt PeerTask, request *DownloadPieceRequest) (success bool) {
+func (pm *pieceManager) DownloadPiece(ctx context.Context, pt PeerTask, request *DownloadPieceRequest) (success bool) {
 	var (
 		start = time.Now().UnixNano()
 		end   int64
 	)
 	defer func() {
+		_, rspan := tracer.Start(ctx, config.SpanPushPieceResult)
+		rspan.SetAttributes(config.AttributeWritePieceSuccess.Bool(success))
 		if success {
 			pm.pushSuccessResult(pt, request.DstPid, request.piece, start, end)
 		} else {
 			pm.pushFailResult(pt, request.DstPid, request.piece, start, end)
 		}
+		rspan.End()
 	}()
 
 	// 1. download piece from other peers
 	if pm.Limiter != nil {
-		if err := pm.Limiter.WaitN(pt.Context(), int(request.piece.RangeSize)); err != nil {
+		if err := pm.Limiter.WaitN(ctx, int(request.piece.RangeSize)); err != nil {
 			pt.Log().Errorf("require rate limit access error: %s", err)
 			return
 		}
 	}
+	_, span := tracer.Start(ctx, config.SpanWritePiece)
 	request.CalcDigest = pm.calculateDigest && request.piece.PieceMd5 != ""
+	span.SetAttributes(config.AttributeTargetPeerId.String(request.DstPid))
+	span.SetAttributes(config.AttributeTargetPeerAddr.String(request.DstAddr))
+	span.SetAttributes(config.AttributePiece.Int(int(request.piece.PieceNum)))
 	r, c, err := pm.pieceDownloader.DownloadPiece(request)
 	if err != nil {
-		pt.Log().Errorf("download piece failed, piece num: %d, error: %s", request.piece.PieceNum, err)
+		span.RecordError(err)
+		span.End()
+		pt.Log().Errorf("download piece failed, piece num: %d, error: %s, from peer: %s",
+			request.piece.PieceNum, err, request.DstPid)
 		return
 	}
-	end = time.Now().UnixNano()
 	defer c.Close()
 
 	// 2. save to storage
-	n, err := pm.storageManager.WritePiece(pt.Context(), &storage.WritePieceRequest{
+	n, err := pm.storageManager.WritePiece(ctx, &storage.WritePieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
@@ -139,6 +150,9 @@ func (pm *pieceManager) DownloadPiece(pt PeerTask, request *DownloadPieceRequest
 		},
 		Reader: r,
 	})
+	end = time.Now().UnixNano()
+	span.RecordError(err)
+	span.End()
 	pt.AddTraffic(n)
 	if err != nil {
 		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s",
@@ -238,7 +252,7 @@ func (pm *pieceManager) processPieceFromSource(pt PeerTask,
 		}
 	}
 	if pm.calculateDigest {
-		reader = clientutil.NewDigestReader(reader)
+		reader = digestutils.NewDigestReader(reader)
 	}
 	n, err := pm.storageManager.WritePiece(
 		pt.Context(),
@@ -270,7 +284,7 @@ func (pm *pieceManager) processPieceFromSource(pt PeerTask,
 		return n, err
 	}
 	if pm.calculateDigest {
-		md5 = reader.(clientutil.DigestReader).Digest()
+		md5 = reader.(digestutils.DigestReader).Digest()
 	}
 	success = true
 	return n, nil
@@ -319,7 +333,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, request
 
 	// calc total md5
 	if pm.calculateDigest && request.UrlMata.Md5 != "" {
-		reader = clientutil.NewDigestReader(body, request.UrlMata.Md5)
+		reader = digestutils.NewDigestReader(body, request.UrlMata.Md5)
 	}
 
 	// 2. save to storage
@@ -385,13 +399,13 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, request
 // and then use the DefaultPieceSize.
 func computePieceSize(length int64) int32 {
 	if length <= 0 || length <= 200*1024*1024 {
-		return config.DefaultPieceSize
+		return cdnconfig.DefaultPieceSize
 	}
 
 	gapCount := length / int64(100*1024*1024)
-	mpSize := (gapCount-2)*1024*1024 + config.DefaultPieceSize
-	if mpSize > config.DefaultPieceSizeLimit {
-		return config.DefaultPieceSizeLimit
+	mpSize := (gapCount-2)*1024*1024 + cdnconfig.DefaultPieceSize
+	if mpSize > cdnconfig.DefaultPieceSizeLimit {
+		return cdnconfig.DefaultPieceSizeLimit
 	}
 	return int32(mpSize)
 }

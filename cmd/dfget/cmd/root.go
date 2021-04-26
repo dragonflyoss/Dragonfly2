@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -28,7 +29,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/avast/retry-go"
+	"d7y.io/dragonfly/v2/cmd/common"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/go-http-utils/headers"
@@ -50,7 +51,6 @@ import (
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	"d7y.io/dragonfly/v2/version"
 )
 
 var filter string
@@ -95,7 +95,7 @@ var rootCmd = &cobra.Command{
 	Example:           dfgetExample,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if deprecatedFlags.version {
-			version.VersionCmd.Run(nil, nil)
+			common.VersionCmd.Run(nil, nil)
 			return nil
 		}
 		// Convent deprecated flags
@@ -109,7 +109,7 @@ var rootCmd = &cobra.Command{
 		// Init logger
 		logcore.InitDfget(dfgetConfig.Console)
 
-		// Start dfget
+		// Serve dfget
 		return runDfget()
 	},
 }
@@ -124,7 +124,7 @@ func Execute() {
 
 func init() {
 	// Initialize default dfget config
-	dfgetConfig = &config.DfgetConfig
+	dfgetConfig = config.NewClientOption()
 
 	// Add flags
 	flagSet := rootCmd.Flags()
@@ -172,7 +172,7 @@ func init() {
 		"show progress bar, it is conflict with '--console'")
 	flagSet.BoolVar(&dfgetConfig.Console, "console", false,
 		"show log on console, it's conflict with '--showbar'")
-	flagSet.BoolVar(&dfgetConfig.Verbose, "verbose", false,
+	flagSet.BoolVar(&dfgetConfig.Verbose, "verbose", true,
 		"enable verbose mode, all debug log will be display")
 	persistentflagSet.StringVar(&daemonConfig.WorkHome, "home", daemonConfig.WorkHome,
 		"the work home directory")
@@ -198,12 +198,10 @@ func init() {
 	flagSet.BoolVar(&deprecatedFlags.commonBool, "notmd5", false, "deprecated")
 	flagSet.BoolVar(&deprecatedFlags.commonBool, "showcenter", false, "deprecated")
 	flagSet.BoolVar(&deprecatedFlags.commonBool, "usewrap", false, "deprecated")
-
 	flagSet.StringVar(&deprecatedFlags.commonString, "locallimit", "", "deprecated")
 	flagSet.StringVar(&deprecatedFlags.commonString, "minrate", "", "deprecated")
 	flagSet.StringVarP(&deprecatedFlags.commonString, "tasktype", "t", "", "deprecated")
 	flagSet.StringVarP(&deprecatedFlags.commonString, "center", "c", "", "deprecated")
-
 	flagSet.BoolVarP(&deprecatedFlags.version, "version", "v", false, "deprecated")
 
 	flagSet.MarkDeprecated("exceed", "please use '--timeout' or '-e' instead")
@@ -211,8 +209,9 @@ func init() {
 	flagSet.MarkDeprecated("dfdaemon", "not used anymore")
 	flagSet.MarkDeprecated("version", "Please use 'dfget version' instead")
 	flagSet.MarkShorthandDeprecated("v", "Please use 'dfget version' instead")
+
 	// Add command
-	rootCmd.AddCommand(version.VersionCmd)
+	rootCmd.AddCommand(common.VersionCmd)
 }
 
 // Convert flags
@@ -227,6 +226,10 @@ func convertDeprecatedFlags() {
 
 // runDfget does some init operations and starts to download.
 func runDfget() error {
+	// Dfget config values
+	s, _ := json.MarshalIndent(dfgetConfig, "", "  ")
+	logger.Debugf("dfget option(debug only, can not use as config):\n%s", string(s))
+
 	var addr = dfnet.NetAddr{
 		Type: dfnet.UNIX,
 		Addr: daemonConfig.Download.DownloadGRPC.UnixListen.Socket,
@@ -243,7 +246,8 @@ func runDfget() error {
 	// Check df daemon state, start a new daemon if necessary
 	daemonClient, err := checkAndSpawnDaemon(addr)
 	if err != nil {
-		return downloadFromSource(hdr)
+		logger.Errorf("connect daemon error: %s", err)
+		return downloadFromSource(hdr, err)
 	}
 
 	output, err := filepath.Abs(dfgetConfig.Output)
@@ -307,19 +311,8 @@ func runDfget() error {
 		}
 	}
 	if err != nil {
-		start = time.Now()
-		err = fmt.Errorf("download by dragonfly error: %s", err)
-		logger.Error(err)
-		if !dfgetConfig.NotBackSource {
-			if err = downloadFromSource(hdr); err != nil {
-				return err
-			}
-			end = time.Now()
-			fmt.Printf("Download from source success, time cost: %dms\n", end.Sub(start).Milliseconds())
-			return nil
-		} else {
-			logger.Warnf("back source disabled")
-		}
+		logger.Errorf("download by dragonfly error: %s", err)
+		return downloadFromSource(hdr, err)
 	}
 	return err
 }
@@ -352,8 +345,19 @@ func initVerboseMode(verbose bool) {
 	}()
 }
 
-func downloadFromSource(hdr map[string]string) (err error) {
-	logger.Infof("try to download from source")
+func downloadFromSource(hdr map[string]string, dferr error) (err error) {
+	if dfgetConfig.NotBackSource {
+		err = fmt.Errorf("dfget download error: %s, and back source disabled", dferr)
+		logger.Warnf("%s", err)
+		return err
+	}
+
+	var (
+		start = time.Now()
+		end   time.Time
+	)
+
+	fmt.Printf("dfget download error: %s, try to download from source", dferr)
 	var (
 		resourceClient source.ResourceClient
 		target         *os.File
@@ -377,23 +381,26 @@ func downloadFromSource(hdr map[string]string) (err error) {
 
 	target, err = os.OpenFile(dfgetConfig.Output, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		logger.Errorf("open %s error: %s", dfgetConfig.Output)
+		logger.Errorf("open %s error: %s", dfgetConfig.Output, err)
 		return err
 	}
 
 	written, err = io.Copy(target, response)
-	if err != nil {
-		logger.Errorf("copied %d bytes to %s, with error: %s",
-			written, dfgetConfig.Output, err)
-	} else {
+	if err == nil {
 		logger.Infof("copied %d bytes to %s", written, dfgetConfig.Output)
+		end = time.Now()
+		fmt.Printf("Download from source success, time cost: %dms\n", end.Sub(start).Milliseconds())
+		return nil
 	}
+	logger.Errorf("copied %d bytes to %s, with error: %s",
+		written, dfgetConfig.Output, err)
 	return err
 }
 
 func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 	// Check pid
 	if ok, err := pidfile.IsProcessExistsByPIDFile(daemonConfig.PidFile); err != nil || !ok {
+		logger.Infof("daemon pid not found, try to start daemon")
 		if err = spawnDaemon(); err != nil {
 			return nil, fmt.Errorf("start daemon error: %s", err)
 		}
@@ -402,6 +409,7 @@ func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 	// Check socket
 	_, err := os.Stat(addr.Addr)
 	if os.IsNotExist(err) {
+		logger.Warnf("daemon addr not found, try to start daemon again")
 		if err = spawnDaemon(); err != nil {
 			return nil, fmt.Errorf("start daemon error: %s", err)
 		}
@@ -410,12 +418,7 @@ func checkAndSpawnDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {
 	}
 
 	// Check daemon health
-	var dc dfclient.DaemonClient
-	err = retry.Do(func() error {
-		dc, err = probeDaemon(addr)
-		return err
-	})
-	return dc, err
+	return probeDaemon(addr)
 }
 
 func probeDaemon(addr dfnet.NetAddr) (dfclient.DaemonClient, error) {

@@ -21,9 +21,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/filerw"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -60,7 +60,7 @@ func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, comp
 			return nil, err
 		}
 		fileInfo, err := os.Stat(filePath)
-		if err == nil && fileInfo.Size() >= int64(maxSize)*fsize.MB.ToNumber() {
+		if err == nil && fileInfo.Size() >= int64(maxSize)*unit.MB.ToNumber() {
 			_, _ = filerw.CopyFile(filePath, filePath+".old")
 			_ = filerw.CleanFile(filePath)
 		}

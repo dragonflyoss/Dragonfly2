@@ -17,8 +17,9 @@
 package config
 
 import (
-	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 const (
@@ -42,7 +43,7 @@ const (
 
 const (
 	// DefaultCdnConfigFilePath the default cdn config path.
-	DefaultCdnConfigFilePath = "/etc/dragonfly/cdn.yml"
+	DefaultCdnConfigFilePath = "/etc/dragonfly/cdn.yaml"
 
 	DefaultStoragePattern = "disk"
 )
@@ -78,8 +79,8 @@ const (
 const (
 	// DefaultSystemReservedBandwidth is the default network bandwidth reserved for system software.
 	// unit: MB/s
-	DefaultSystemReservedBandwidth = 20 * ratelimiter.MB
+	DefaultSystemReservedBandwidth = 20 * unit.MB
 	// DefaultMaxBandwidth is the default network bandwidth that cdn can use.
 	// unit: MB/s
-	DefaultMaxBandwidth = 1 * ratelimiter.GB
+	DefaultMaxBandwidth = 1 * unit.GB
 )

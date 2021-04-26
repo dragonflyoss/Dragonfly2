@@ -19,10 +19,10 @@ package progress
 import (
 	"container/list"
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
@@ -41,10 +41,14 @@ type Manager struct {
 	cfg                  *config.Config
 	seedSubscribers      *syncmap.SyncMap
 	taskPieceMetaRecords *syncmap.SyncMap
-	progress             *syncmap.SyncMap
+	taskMgr              mgr.SeedTaskMgr
 	mu                   *synclock.LockerPool
 	timeout              time.Duration
 	buffer               int
+}
+
+func (pm *Manager) SetTaskMgr(taskMgr mgr.SeedTaskMgr) {
+	pm.taskMgr = taskMgr
 }
 
 func NewManager(cfg *config.Config) (*Manager, error) {
@@ -52,7 +56,6 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 		cfg:                  cfg,
 		seedSubscribers:      syncmap.NewSyncMap(),
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
-		progress:             syncmap.NewSyncMap(),
 		mu:                   synclock.NewLockerPool(),
 		timeout:              3 * time.Second,
 		buffer:               4,
@@ -102,9 +105,9 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskId string) (<-chan
 			case <-time.After(pm.timeout):
 			}
 		}
-		if _, err := pm.progress.Get(taskId); err == nil {
-			close(seedCh)
+		if task, err := pm.taskMgr.Get(ctx, taskId); err == nil && task.IsDone() {
 			chanList.Remove(ele)
+			close(seedCh)
 		}
 	}(ch, ele)
 	return ch, nil
@@ -144,26 +147,20 @@ func (pm *Manager) PublishTask(ctx context.Context, taskId string, task *types.S
 	logger.Debugf("publish task record %+v", task)
 	pm.mu.Lock(taskId, false)
 	defer pm.mu.UnLock(taskId, false)
-	err := pm.progress.Add(taskId, task)
-	if err != nil {
-		errors.Wrap(err, "failed to add task record")
-	}
 	chanList, err := pm.seedSubscribers.GetAsList(taskId)
 	if err != nil {
 		return errors.Wrap(err, "failed to get seed subscribers")
 	}
-	var wg sync.WaitGroup
 	// unwatch
 	for e := chanList.Front(); e != nil; e = e.Next() {
-		wg.Add(1)
-		sub := e.Value.(chan *types.SeedPiece)
-		go func(sub chan *types.SeedPiece, e *list.Element) {
-			defer wg.Done()
-			close(sub)
-			chanList.Remove(e)
-		}(sub, e)
+		chanList.Remove(e)
+		sub, ok := e.Value.(chan *types.SeedPiece)
+		if !ok {
+			logger.Warnf("failed to convert chan seedPiece, e.Value:%v", e.Value)
+			continue
+		}
+		close(sub)
 	}
-	wg.Wait()
 	return nil
 }
 
@@ -171,28 +168,28 @@ func (pm *Manager) Clear(ctx context.Context, taskID string) error {
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
-	if err != nil && !cdnerrors.IsDataNotFound(err) {
+	if err != nil && errors.Cause(err) != dferrors.ErrDataNotFound {
 		return errors.Wrap(err, "failed to get seed subscribers")
 	}
 	if chanList != nil {
 		for e := chanList.Front(); e != nil; e = e.Next() {
-			sub := e.Value.(chan *types.SeedPiece)
-			close(sub)
 			chanList.Remove(e)
+			sub, ok := e.Value.(chan *types.SeedPiece)
+			if !ok {
+				logger.Warnf("failed to convert chan seedPiece, e.Value:%v", e.Value)
+				continue
+			}
+			close(sub)
 		}
 		chanList = nil
 	}
 	err = pm.seedSubscribers.Remove(taskID)
-	if err != nil && !cdnerrors.IsDataNotFound(err) {
+	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
 		return errors.Wrap(err, "failed to clear seed subscribes")
 	}
 	err = pm.taskPieceMetaRecords.Remove(taskID)
-	if err != nil && !cdnerrors.IsDataNotFound(err) {
+	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
 		return errors.Wrap(err, "failed to clear piece meta records")
-	}
-	err = pm.progress.Remove(taskID)
-	if err != nil && !cdnerrors.IsDataNotFound(err) {
-		return errors.Wrap(err, "failed to clear progress record")
 	}
 	return nil
 }

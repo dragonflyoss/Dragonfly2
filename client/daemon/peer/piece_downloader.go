@@ -25,10 +25,10 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 type DownloadPieceRequest struct {
@@ -51,7 +51,7 @@ type pieceDownloader struct {
 var defaultTransport http.RoundTripper = &http.Transport{
 	// Proxy: http.ProxyFromEnvironment,
 	DialContext: (&net.Dialer{
-		Timeout:   30 * time.Second,
+		Timeout:   1 * time.Second,
 		KeepAlive: 30 * time.Second,
 		DualStack: true,
 	}).DialContext,
@@ -74,7 +74,7 @@ func NewPieceDownloader(opts ...func(*pieceDownloader) error) (PieceDownloader, 
 	}
 	pd.httpClient = &http.Client{
 		Transport: pd.transport,
-		Timeout:   10 * time.Second,
+		Timeout:   4 * time.Second,
 	}
 	return pd, nil
 }
@@ -101,7 +101,7 @@ func (p *pieceDownloader) DownloadPiece(d *DownloadPieceRequest) (io.Reader, io.
 	r := resp.Body.(io.Reader)
 	c := resp.Body.(io.Closer)
 	if d.CalcDigest {
-		r = clientutil.NewDigestReader(io.LimitReader(resp.Body, int64(d.piece.RangeSize)), d.piece.PieceMd5)
+		r = digestutils.NewDigestReader(io.LimitReader(resp.Body, int64(d.piece.RangeSize)), d.piece.PieceMd5)
 	}
 	return r, c, nil
 }
@@ -117,7 +117,9 @@ func buildDownloadPieceHTTPRequest(d *DownloadPieceRequest) *http.Request {
 	b.Write([]byte("?peerId="))
 	b.WriteString(d.DstPid)
 
-	req, _ := http.NewRequest(http.MethodGet, b.String(), nil)
+	u := b.String()
+	logger.Debugf("built request url: %s", u)
+	req, _ := http.NewRequest(http.MethodGet, u, nil)
 
 	// TODO use string.Builder
 	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d",

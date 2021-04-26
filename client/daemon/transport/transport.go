@@ -1,5 +1,5 @@
 /*
- * Copyright The Dragonfly Authors.
+ *     Copyright 2020 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -51,6 +52,9 @@ type transport struct {
 
 	// peerHost is the peer host info
 	peerHost *scheduler.PeerHost
+
+	// defaultFilter is used when http request without X-Dragonfly-Filter Header
+	defaultFilter string
 }
 
 // Option is functional config for transport.
@@ -84,6 +88,14 @@ func WithTLS(cfg *tls.Config) Option {
 func WithCondition(c func(r *http.Request) bool) Option {
 	return func(rt *transport) *transport {
 		rt.shouldUseDragonfly = c
+		return rt
+	}
+}
+
+// WithDefaultFilter sets default filter for http requests with X-Dragonfly-Filter Header
+func WithDefaultFilter(f string) Option {
+	return func(rt *transport) *transport {
+		rt.defaultFilter = f
 		return rt
 	}
 }
@@ -150,13 +162,29 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 		delete(meta.Header, h)
 	}
 
+	var (
+		filter string
+		biz    string
+	)
+	if f, ok := meta.Header[config.HeaderDragonflyFilter]; ok {
+		filter = f
+		// remove because we will set Filter in scheduler.PeerTaskRequest
+		delete(meta.Header, config.HeaderDragonflyFilter)
+	} else {
+		filter = rt.defaultFilter
+	}
+	if b, ok := meta.Header[config.HeaderDragonflyBiz]; ok {
+		biz = b
+		delete(meta.Header, config.HeaderDragonflyBiz)
+	} else {
+		biz = "d7y/proxy"
+	}
 	r, attr, err := rt.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
 		&scheduler.PeerTaskRequest{
-			Url: url,
-			// FIXME(jim): read filter from config or from request header
-			Filter:      "",
-			BizId:       "d7y/proxy",
+			Url:         url,
+			Filter:      filter,
+			BizId:       biz,
 			UrlMata:     meta,
 			PeerId:      clientutil.GenPeerID(rt.peerHost),
 			PeerHost:    rt.peerHost,

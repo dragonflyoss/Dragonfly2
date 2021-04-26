@@ -18,7 +18,6 @@ package peer
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -44,14 +43,14 @@ type FilePeerTaskRequest struct {
 // FilePeerTask represents a peer task to download a file
 type FilePeerTask interface {
 	PeerTask
-	// Start start the special peer task, return a *PeerTaskProgress channel for updating download progress
-	Start(ctx context.Context) (chan *PeerTaskProgress, error)
+	// Start start the special peer task, return a *FilePeerTaskProgress channel for updating download progress
+	Start(ctx context.Context) (chan *FilePeerTaskProgress, error)
 }
 
 type filePeerTask struct {
 	peerTask
 	// progressCh holds progress status
-	progressCh     chan *PeerTaskProgress
+	progressCh     chan *FilePeerTaskProgress
 	progressStopCh chan bool
 }
 
@@ -61,7 +60,7 @@ type ProgressState struct {
 	Msg     string
 }
 
-type PeerTaskProgress struct {
+type FilePeerTaskProgress struct {
 	State           *ProgressState
 	TaskId          string
 	PeerID          string
@@ -84,6 +83,7 @@ func newFilePeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerId.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
+	logger.Infof("request overview, url: %s, filter: %s, meta: %s, biz: %s, peer: %s", request.Url, request.Filter, request.UrlMata, request.BizId, request.PeerId)
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
@@ -111,20 +111,22 @@ func newFilePeerTask(ctx context.Context,
 		return ctx, nil, nil, err
 	}
 	span.SetAttributes(config.AttributeTaskId.String(result.TaskId))
+	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
+		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var singlePiece *scheduler.SinglePiece
 	if !backSource {
 		switch result.SizeScope {
 		case base.SizeScope_SMALL:
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
-			logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
+			logger.Infof("%s/%s size scope: small", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
 				singlePiece = piece.SinglePiece
 			}
 		case base.SizeScope_TINY:
 			defer span.End()
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("tiny"))
-			logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
+			logger.Infof("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
 				return ctx, nil, &TinyData{
 					TaskId:  result.TaskId,
@@ -137,7 +139,7 @@ func newFilePeerTask(ctx context.Context,
 			return ctx, nil, nil, err
 		case base.SizeScope_NORMAL:
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("normal"))
-			logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
+			logger.Infof("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
 	}
 
@@ -147,15 +149,13 @@ func newFilePeerTask(ctx context.Context,
 		span.RecordError(err)
 		return ctx, nil, nil, err
 	}
-	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
-		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var limiter *rate.Limiter
 	if perPeerRateLimit > 0 {
 		limiter = rate.NewLimiter(perPeerRateLimit, int(perPeerRateLimit))
 	}
 	return ctx, &filePeerTask{
-		progressCh:     make(chan *PeerTaskProgress),
+		progressCh:     make(chan *FilePeerTaskProgress),
 		progressStopCh: make(chan bool),
 		peerTask: peerTask{
 			host:             host,
@@ -186,7 +186,7 @@ func newFilePeerTask(ctx context.Context,
 	}, nil, nil
 }
 
-func (pt *filePeerTask) Start(ctx context.Context) (chan *PeerTaskProgress, error) {
+func (pt *filePeerTask) Start(ctx context.Context) (chan *FilePeerTaskProgress, error) {
 	pt.ctx, pt.cancel = context.WithCancel(ctx)
 	if pt.backSource {
 		pt.contentLength = -1
@@ -212,11 +212,7 @@ func (pt *filePeerTask) Start(ctx context.Context) (chan *PeerTaskProgress, erro
 
 func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
 	// goroutine safe for channel and send on closed channel
-	defer func() {
-		if r := recover(); r != nil {
-			pt.Warnf("recover from %s", r)
-		}
-	}()
+	defer pt.recoverFromPanic()
 	pt.Debugf("report piece %d result, success: %t", piece.PieceNum, pieceResult.Success)
 
 	// retry failed piece
@@ -242,7 +238,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 	pieceResult.FinishedCount = pt.readyPieces.Settled()
 	_ = pt.peerPacketStream.Send(pieceResult)
 	// send progress first to avoid close channel panic
-	p := &PeerTaskProgress{
+	p := &FilePeerTaskProgress{
 		State: &ProgressState{
 			Success: pieceResult.Success,
 			Code:    pieceResult.Code,
@@ -275,14 +271,7 @@ func (pt *filePeerTask) finish() error {
 	var err error
 	// send last progress
 	pt.once.Do(func() {
-		defer func() {
-			if rerr := recover(); rerr != nil {
-				pt.Errorf("finish recover from: %s", rerr)
-				err = fmt.Errorf("%v", rerr)
-			}
-			pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
-			pt.span.End()
-		}()
+		defer pt.recoverFromPanic()
 		// send EOF piece result to scheduler
 		_ = pt.peerPacketStream.Send(
 			scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled()))
@@ -302,7 +291,7 @@ func (pt *filePeerTask) finish() error {
 			message = err.Error()
 		}
 
-		pg := &PeerTaskProgress{
+		pg := &FilePeerTaskProgress{
 			State: &ProgressState{
 				Success: success,
 				Code:    code,
@@ -341,28 +330,23 @@ func (pt *filePeerTask) finish() error {
 		}
 		pt.Debugf("finished: close done channel")
 		close(pt.done)
+		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
+		pt.span.End()
 	})
 	return err
 }
 
 func (pt *filePeerTask) cleanUnfinished() {
 	defer pt.cancel()
-
 	// send last progress
 	pt.once.Do(func() {
-		defer func() {
-			if err := recover(); err != nil {
-				pt.Errorf("cleanUnfinished recover from: %s", err)
-			}
-			pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
-			pt.span.End()
-		}()
+		defer pt.recoverFromPanic()
 		// send EOF piece result to scheduler
 		_ = pt.peerPacketStream.Send(
 			scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled()))
 		pt.Debugf("clean up end piece result sent")
 
-		pg := &PeerTaskProgress{
+		pg := &FilePeerTaskProgress{
 			State: &ProgressState{
 				Success: false,
 				Code:    pt.failedCode,
@@ -406,6 +390,8 @@ func (pt *filePeerTask) cleanUnfinished() {
 
 		pt.Debugf("clean unfinished: close done channel")
 		close(pt.done)
+		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		pt.span.End()
 	})
 }
 

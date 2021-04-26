@@ -1,10 +1,13 @@
 package config
 
 const (
-	DefaultConfigFilePath string = "/etc/dragonfly/manager.yml"
+	DefaultConfigFilePath string = "/etc/dragonfly/manager.yaml"
 )
 
 type Config struct {
+	Console       bool                 `yaml:"console"`
+	Verbose       bool                 `yaml:"verbose"`
+	PProfPort     int                  `yaml:"pprofPort"`
 	Server        *ServerConfig        `yaml:"server"`
 	ConfigService *ConfigServiceConfig `yaml:"config-service"`
 	Stores        []*StoreConfig       `yaml:"stores"`
@@ -42,7 +45,7 @@ type StoreConfig struct {
 	Memory *MemoryConfig `yaml:"memory", omitempty`
 }
 
-func GetConfig() *Config {
+func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
 			Port: 8004,

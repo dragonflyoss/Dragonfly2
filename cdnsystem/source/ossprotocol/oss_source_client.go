@@ -121,15 +121,15 @@ func (osc *ossSourceClient) Download(url string, header map[string]string) (io.R
 func (osc *ossSourceClient) getClient(header map[string]string) (*oss.Client, error) {
 	endpoint, ok := header[endpoint]
 	if !ok {
-		return nil, errors.Wrapf(cdnerrors.ErrEmptyValue, "endpoint is empty")
+		return nil, errors.Wrapf(cdnerrors.ErrInvalidValue, "endpoint is empty")
 	}
 	accessKeyID, ok := header[accessKeyID]
 	if !ok {
-		return nil, errors.Wrapf(cdnerrors.ErrEmptyValue, "accessKeyID is empty")
+		return nil, errors.Wrapf(cdnerrors.ErrInvalidValue, "accessKeyID is empty")
 	}
 	accessKeySecret, ok := header[accessKeySecret]
 	if !ok {
-		return nil, errors.Wrapf(cdnerrors.ErrEmptyValue, "accessKeySecret is empty")
+		return nil, errors.Wrapf(cdnerrors.ErrInvalidValue, "accessKeySecret is empty")
 	}
 	if client, ok := osc.clientMap.Load(endpoint); ok {
 		return client.(*oss.Client), nil

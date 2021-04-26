@@ -12,7 +12,7 @@ services:
     ports:
       - 65001:65001
     volumes:
-      - ./hack/testdata/dfget-daemon.yml:/etc/dragonfly/dfget-daemon.yml
+      - ./hack/testdata/dfget-daemon.yaml:/etc/dragonfly/dfget-daemon.yaml
       - ./log/dragonfly/dfdaemon:/var/log/dragonfly
 
   scheduler:
@@ -24,7 +24,7 @@ services:
     container_name: scheduler
     hostname: scheduler
     volumes:
-      - ./hack/testdata/scheduler.yml:/etc/dragonfly/scheduler.yml
+      - ./hack/testdata/scheduler.yaml:/etc/dragonfly/scheduler.yaml
       - ./log/dragonfly/scheduler:/root/logs/dragonfly
 
   cdn:
@@ -34,7 +34,7 @@ services:
     container_name: cdn
     hostname: cdn
     volumes:
-      - ./hack/testdata/cdn.yml:/etc/dragonfly/cdn.yml
+      - ./hack/testdata/cdn.yaml:/etc/dragonfly/cdn.yaml
       - ./log/dragonfly/cdn:/root/logs/dragonfly
 
   manager:
@@ -46,7 +46,7 @@ services:
     container_name: manager
     hostname: manager
     volumes:
-      - ./hack/testdata/manager.yml:/etc/dragonfly/manager.yml
+      - ./hack/testdata/manager.yaml:/etc/dragonfly/manager.yaml
       - ./log/dragonfly/manager:/root/logs/dragonfly
     entrypoint: sh -c '/root/wait-for.sh db:3306 -t 30 -- /opt/dragonfly/bin/manager'
 

@@ -19,12 +19,13 @@ package cdn
 import (
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/disk"   // To register diskStorage
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/hybrid" // To register hybridStorage
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/synclock"
+	"time"
 )
 import (
 	"context"
 	"crypto/md5"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
@@ -84,7 +85,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(ctx, task)
 	if err != nil {
-		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), errors.Wrapf(err, "failed to detect cache")
+		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFailed), errors.Wrapf(err, "failed to detect cache")
 	}
 	logger.WithTaskID(task.TaskId).Debugf("detects cache result: %+v", detectResult)
 	// second: report detect result
@@ -98,11 +99,14 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		return getUpdateTaskInfo(types.TaskInfoCdnStatusSuccess, detectResult.fileMetaData.SourceRealMd5, detectResult.fileMetaData.PieceMd5Sign,
 			detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength), nil
 	}
+	server.StatSeedStart(task.TaskId, task.Url)
+	start := time.Now()
 	// third: start to download the source file
 	body, expireInfo, err := cm.download(task, detectResult)
 	// download fail
 	if err != nil {
-		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusSourceERROR), err
+		server.StatSeedFinish(task.TaskId, task.Url, false, err, start.Nanosecond(), time.Now().Nanosecond(), 0, 0)
+		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusSourceError), err
 	}
 	defer body.Close()
 
@@ -116,40 +120,31 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
 	if err != nil {
+		server.StatSeedFinish(task.TaskId, task.Url, false, err, start.Nanosecond(), time.Now().Nanosecond(), downloadMetadata.backSourceLength,
+			downloadMetadata.realSourceFileLength)
 		logger.WithTaskID(task.TaskId).Errorf("failed to write for task: %v", err)
-		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
+		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFailed), err
 	}
-
-	//todo log
-	// server.StatSeedFinish()
-
+	server.StatSeedFinish(task.TaskId, task.Url, true, nil, start.Nanosecond(), time.Now().Nanosecond(), downloadMetadata.backSourceLength,
+		downloadMetadata.realSourceFileLength)
 	sourceMD5 := reader.Md5()
 	// fifth: handle CDN result
 	success, err := cm.handleCDNResult(ctx, task, sourceMD5, downloadMetadata)
 	if err != nil || !success {
-		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFAILED), err
+		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFailed), err
 	}
 	return getUpdateTaskInfo(types.TaskInfoCdnStatusSuccess, sourceMD5, downloadMetadata.pieceMd5Sign,
 		downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength), nil
 }
 
-// Delete the cdn meta with specified TaskId.
-// It will also delete the files on the disk when the force equals true.
-func (cm *Manager) Delete(ctx context.Context, TaskId string, force bool) error {
-	if force {
-		err := cm.cacheStore.DeleteTask(ctx, TaskId)
-		if err != nil {
-			return errors.Wrap(err, "failed to delete task files")
-		}
-	}
-	err := cm.progressMgr.Clear(ctx, TaskId)
-	if err != nil && !cdnerrors.IsDataNotFound(err) {
-		return errors.Wrap(err, "failed to clear progress")
+func (cm *Manager) Delete(ctx context.Context, TaskId string) error {
+	err := cm.cacheStore.DeleteTask(ctx, TaskId)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete task files")
 	}
 	return nil
 }
 
-// handleCDNResult
 func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, sourceMd5 string, downloadMetadata *downloadMetadata) (bool, error) {
 	logger.WithTaskID(task.TaskId).Debugf("handle cdn result, downloadMetaData: %+v", downloadMetadata)
 	var isSuccess = true

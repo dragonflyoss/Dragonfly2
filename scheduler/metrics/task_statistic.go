@@ -89,10 +89,12 @@ func (t *TaskStatistic) GetStatistic() (info *StatisticInfo) {
 		case count90:
 			info.Costs[90] = int32(totalCost / int64(count90))
 		case count95:
-			info.Costs[90] = int32(totalCost / int64(count95))
+			info.Costs[95] = int32(totalCost / int64(count95))
 		}
 	}
-	info.Costs[90] = int32(totalCost / int64(count))
+	if count > 0 {
+		info.Costs[100] = int32(totalCost / int64(count))
+	}
 
 	return
 }

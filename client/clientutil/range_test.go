@@ -81,7 +81,7 @@ func TestParseRange(t *testing.T) {
 		}
 		for i := range r {
 			if ranges[i].Start != r[i].Start {
-				t.Errorf("ParseRange(%q)[%d].Start = %d, want %d", test.s, i, ranges[i].Start, r[i].Start)
+				t.Errorf("ParseRange(%q)[%d].Serve = %d, want %d", test.s, i, ranges[i].Start, r[i].Start)
 			}
 			if ranges[i].Length != r[i].Length {
 				t.Errorf("ParseRange(%q)[%d].Length = %d, want %d", test.s, i, ranges[i].Length, r[i].Length)

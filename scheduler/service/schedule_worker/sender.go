@@ -17,51 +17,53 @@
 package schedule_worker
 
 import (
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/mgr"
-	"d7y.io/dragonfly/v2/scheduler/types"
 	"fmt"
 	"hash/crc32"
 	"runtime/debug"
+
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/service"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type ISender interface {
-	Start()
+	Serve()
 	Stop()
 	Send(peerTask *types.PeerTask)
 }
 
 type SenderGroup struct {
-	senderNum  int
-	chanSize   int
-	senderList []*Sender
-	stopCh     chan struct{}
+	senderNum        int
+	chanSize         int
+	senderList       []*Sender
+	stopCh           chan struct{}
+	schedulerService *service.SchedulerService
 }
 
 type Sender struct {
-	jobChan chan *string
-	stopCh  <-chan struct{}
+	jobChan          chan *string
+	stopCh           <-chan struct{}
+	schedulerService *service.SchedulerService
 }
 
-func CreateSender() *SenderGroup {
-	senderNum := config.GetConfig().Worker.SenderNum
-	chanSize := config.GetConfig().Worker.SenderJobPoolSize
-	sg := &SenderGroup{
-		senderNum: senderNum,
-		chanSize:  chanSize,
+func NewSender(worker config.SchedulerWorkerConfig, schedulerService *service.SchedulerService) *SenderGroup {
+	return &SenderGroup{
+		senderNum:        worker.SenderNum,
+		chanSize:         worker.SenderJobPoolSize,
+		schedulerService: schedulerService,
 	}
-	return sg
 }
 
-func (sg *SenderGroup) Start() {
+func (sg *SenderGroup) Serve() {
 	sg.stopCh = make(chan struct{})
 	for i := 0; i < sg.senderNum; i++ {
 		s := &Sender{
-			jobChan: make(chan *string, sg.chanSize),
-			stopCh:  sg.stopCh,
+			jobChan:          make(chan *string, sg.chanSize),
+			stopCh:           sg.stopCh,
+			schedulerService: sg.schedulerService,
 		}
-		s.Start()
+		s.Serve()
 		sg.senderList = append(sg.senderList, s)
 	}
 	logger.Infof("start sender worker : %d", sg.senderNum)
@@ -73,15 +75,15 @@ func (sg *SenderGroup) Stop() {
 }
 
 func (sg *SenderGroup) Send(peerTask *types.PeerTask) {
-	sendId := crc32.ChecksumIEEE([]byte(peerTask.Pid)) % uint32(sg.senderNum)
-	sg.senderList[sendId].Send(peerTask)
+	sendID := crc32.ChecksumIEEE([]byte(peerTask.Pid)) % uint32(sg.senderNum)
+	sg.senderList[sendID].Send(peerTask)
 }
 
 func (s *Sender) Send(peerTask *types.PeerTask) {
 	s.jobChan <- &peerTask.Pid
 }
 
-func (s *Sender) Start() {
+func (s *Sender) Serve() {
 	go s.doSend()
 }
 
@@ -90,20 +92,20 @@ func (s *Sender) doSend() {
 	for {
 		select {
 		case job := <-s.jobChan:
-			peerTask, _ := mgr.GetPeerTaskManager().GetPeerTask(*job)
+			peerTask, _ := s.schedulerService.TaskManager.PeerTask.Get(*job)
 			if peerTask == nil {
 				break
 			}
-			func () {
+			func() {
 				defer func() {
 					e := recover()
 					if e != nil {
 						debug.PrintStack()
 						err = fmt.Errorf("%v", e)
 					}
-				} ()
+				}()
 				err = peerTask.Send()
-			} ()
+			}()
 			if err != nil && err.Error() == "empty client" {
 				logger.Warnf("[%s][%s]: client is empty : %v", peerTask.Task.TaskId, peerTask.Pid, err.Error())
 				break

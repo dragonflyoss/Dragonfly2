@@ -17,15 +17,17 @@
 package config
 
 import (
-	"d7y.io/dragonfly/v2/pkg/ratelimiter"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"gopkg.in/yaml.v3"
 )
 
-// NewDefaultConfig creates an instant with default values.
-func NewDefaultConfig() *Config {
+// New creates an instant with default values.
+func New() *Config {
 	return &Config{
 		BaseProperties: NewDefaultBaseProperties(),
 		Plugins:        NewDefaultPlugins(),
@@ -34,6 +36,9 @@ func NewDefaultConfig() *Config {
 
 // Config contains all configuration of cdn node.
 type Config struct {
+	Console         bool `yaml:"console"`
+	Verbose         bool `yaml:"verbose"`
+	PProfPort       int  `yaml:"pprofPort"`
 	*BaseProperties `yaml:"base"`
 	Plugins         map[PluginType][]*PluginProperties `yaml:"plugins"`
 }
@@ -107,6 +112,7 @@ func NewDefaultBaseProperties() *BaseProperties {
 		TaskExpireTime:          DefaultTaskExpireTime,
 		StoragePattern:          DefaultStoragePattern,
 		Console:                 DefaultConsole,
+		AdvertiseIP:             iputils.HostIp,
 	}
 }
 
@@ -123,11 +129,11 @@ type BaseProperties struct {
 
 	// SystemReservedBandwidth is the network bandwidth reserved for system software.
 	// default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	SystemReservedBandwidth ratelimiter.Rate `yaml:"systemReservedBandwidth"`
+	SystemReservedBandwidth unit.Bytes `yaml:"systemReservedBandwidth"`
 
 	// MaxBandwidth is the network bandwidth that cdn system can use.
 	// default: 200 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	MaxBandwidth ratelimiter.Rate `yaml:"maxBandwidth"`
+	MaxBandwidth unit.Bytes `yaml:"maxBandwidth"`
 
 	// Whether to enable profiler
 	// default: false

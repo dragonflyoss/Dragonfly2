@@ -19,12 +19,13 @@ package server
 import (
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/ossprotocol"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 )
 
 import (
 	"context"
+	"fmt"
+
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
@@ -35,7 +36,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"fmt"
 	"github.com/pkg/errors"
 )
 
@@ -47,14 +47,9 @@ type Server struct {
 
 // New creates a brand new server instance.
 func New(cfg *config.Config) (*Server, error) {
-	sb := storage.Get(cfg.StoragePattern, true)
-	if sb == nil {
-		return nil, fmt.Errorf("could not get storage for pattern: %s", cfg.StoragePattern)
-	}
-	logger.Debugf("storage pattern is %s", sb.Name())
-	storageMgr, err := sb.Build(cfg)
+	storageMgr, err := storage.NewManager(cfg)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build storage")
+		return nil, errors.Wrapf(err, "failed to create storage manager")
 	}
 
 	sourceClient, err := source.NewSourceClient()
@@ -80,8 +75,9 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	storageMgr.SetTaskMgr(taskMgr)
 	storageMgr.InitializeCleaners()
+	progressMgr.SetTaskMgr(taskMgr)
 	// gc manager
-	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr, storageMgr)
+	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create gc manager")
 	}

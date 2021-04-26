@@ -18,12 +18,14 @@ package storedriver
 
 import (
 	"context"
+
 	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/pkg/unit"
+
 	"fmt"
 	"io"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/fsize"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
@@ -75,7 +77,7 @@ func (s *Store) Name() string {
 }
 
 // GetTotalSpace
-func (s *Store) GetTotalSpace(ctx context.Context) (fsize.Size, error) {
+func (s *Store) GetTotalSpace(ctx context.Context) (unit.Bytes, error) {
 	return s.driver.GetTotalSpace(ctx)
 }
 
@@ -89,7 +91,7 @@ func (s *Store) Exits(ctx context.Context, raw *Raw) bool {
 	return s.driver.Exits(ctx, raw)
 }
 
-func (s *Store) GetTotalAndFreeSpace(ctx context.Context) (fsize.Size, fsize.Size, error) {
+func (s *Store) GetTotalAndFreeSpace(ctx context.Context) (unit.Bytes, unit.Bytes, error) {
 	return s.driver.GetTotalAndFreeSpace(ctx)
 }
 
@@ -137,7 +139,7 @@ func (s *Store) PutBytes(ctx context.Context, raw *Raw, data []byte) error {
 func (s *Store) Remove(ctx context.Context, raw *Raw) error {
 	if raw == nil || (stringutils.IsBlank(raw.Key) &&
 		stringutils.IsBlank(raw.Bucket)) {
-		return errors.Wrapf(cdnerrors.ErrEmptyValue, "cannot set both key and bucket empty at the same time")
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "cannot set both key and bucket empty at the same time")
 	}
 	return s.driver.Remove(ctx, raw)
 }
@@ -167,7 +169,7 @@ func (s *Store) MoveFile(src string, dst string) error {
 }
 
 // GetAvailSpace returns the available disk space in B.
-func (s *Store) GetAvailSpace(ctx context.Context) (fsize.Size, error) {
+func (s *Store) GetAvailSpace(ctx context.Context) (unit.Bytes, error) {
 	return s.driver.GetAvailSpace(ctx)
 }
 
@@ -181,7 +183,7 @@ func (s *Store) GetGcConfig(ctx context.Context) *GcConfig {
 
 func checkEmptyKey(raw *Raw) error {
 	if raw == nil || stringutils.IsBlank(raw.Key) {
-		return cdnerrors.ErrEmptyValue
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "raw key is empty")
 	}
 	return nil
 }

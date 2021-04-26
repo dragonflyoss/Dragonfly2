@@ -23,6 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"fmt"
@@ -41,7 +42,7 @@ func Register(b Builder) {
 	builderMap[strings.ToLower(b.Name())] = b
 }
 
-func Get(name string, defaultIfAbsent bool) Builder {
+func getBuilder(name string, defaultIfAbsent bool) Builder {
 	if b, ok := builderMap[strings.ToLower(name)]; ok {
 		return b
 	}
@@ -137,6 +138,16 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 	}, nil
 }
 
+
+func NewManager(cfg *config.Config) (Manager, error) {
+	sb := getBuilder(cfg.StoragePattern, true)
+	if sb == nil {
+		return nil, fmt.Errorf("could not get storage for pattern: %s", cfg.StoragePattern)
+	}
+	logger.Debugf("storage pattern is %s", sb.Name())
+	return sb.Build(cfg)
+}
+
 type Manager interface {
 
 	ResetRepo(ctx context.Context, task *types.SeedTask) error
@@ -164,6 +175,4 @@ type Manager interface {
 	SetTaskMgr(mgr.SeedTaskMgr)
 
 	InitializeCleaners()
-
-	GC(ctx context.Context) error
 }
