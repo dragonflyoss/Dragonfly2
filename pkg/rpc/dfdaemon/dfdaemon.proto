@@ -1,0 +1,62 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package dfdaemon;
+
+import "pkg/rpc/base/base.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon";
+
+message DownRequest{
+  // download content with the url, but not only for http protocol
+  string url = 1;
+  // pieces will be written to output path directly,
+  // at the same time, dfdaemon workspace also makes soft link to the output
+  string output = 2;
+  base.UrlMeta url_meta = 3;
+  // caller business id
+  string biz_id = 4;
+  // regex format
+  string filter = 5;
+  // identify one downloading
+  // framework will fill it automatically
+  string uuid = 6;
+  int64 uid = 7;
+  int64 gid = 8;
+}
+
+message DownResult{
+  string task_id = 2;
+  string peer_id = 3;
+  uint64 completed_length = 4;
+  // done with success or fail
+  bool done = 5;
+}
+
+// Daemon Client RPC Service
+service Daemon{
+  // trigger client to download file
+  rpc Download(DownRequest) returns(stream DownResult);
+  // get piece tasks from other peers
+  rpc GetPieceTasks(base.PieceTaskRequest)returns(base.PiecePacket);
+  // check daemon health
+  rpc CheckHealth(google.protobuf.Empty)returns(google.protobuf.Empty);
+}
+
+

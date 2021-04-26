@@ -1,0 +1,64 @@
+version: "Compose specification"
+services:
+  dfdaemon:
+    build:
+      context: .
+      dockerfile: Dockerfile.dfdaemon
+    depends_on:
+      - scheduler
+      - cdn
+    container_name: dfdaemon
+    hostname: dfdaemon
+    ports:
+      - 65001:65001
+    volumes:
+      - ./hack/testdata/dfget-daemon.yaml:/etc/dragonfly/dfget-daemon.yaml
+      - ./log/dragonfly/dfdaemon:/var/log/dragonfly
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    depends_on:
+      - cdn
+    container_name: scheduler
+    hostname: scheduler
+    volumes:
+      - ./hack/testdata/scheduler.yaml:/etc/dragonfly/scheduler.yaml
+      - ./log/dragonfly/scheduler:/root/logs/dragonfly
+
+  cdn:
+    build:
+      context: .
+      dockerfile: Dockerfile.cdn
+    container_name: cdn
+    hostname: cdn
+    volumes:
+      - ./hack/testdata/cdn.yaml:/etc/dragonfly/cdn.yaml
+      - ./log/dragonfly/cdn:/root/logs/dragonfly
+
+  manager:
+    build:
+      context: .
+      dockerfile: Dockerfile.manager
+    depends_on:
+      - db
+    container_name: manager
+    hostname: manager
+    volumes:
+      - ./hack/testdata/manager.yaml:/etc/dragonfly/manager.yaml
+      - ./log/dragonfly/manager:/root/logs/dragonfly
+    entrypoint: sh -c '/root/wait-for.sh db:3306 -t 30 -- /opt/dragonfly/bin/manager'
+
+  db:
+    image: mysql:8.0.19
+    volumes:
+      - ./mysql:/var/lib/mysql
+    restart: always
+    container_name: db
+    hostname: db
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: config_db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root1234
