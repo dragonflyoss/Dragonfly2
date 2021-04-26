@@ -117,7 +117,9 @@ func buildDownloadPieceHTTPRequest(d *DownloadPieceRequest) *http.Request {
 	b.Write([]byte("?peerId="))
 	b.WriteString(d.DstPid)
 
-	req, _ := http.NewRequest(http.MethodGet, b.String(), nil)
+	u := b.String()
+	logger.Debugf("built request url: %s", u)
+	req, _ := http.NewRequest(http.MethodGet, u, nil)
 
 	// TODO use string.Builder
 	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d",

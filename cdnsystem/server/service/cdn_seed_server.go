@@ -19,7 +19,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
@@ -192,11 +191,10 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 			count++
 		}
 	}
-	hostName, _ := os.Hostname()
 
 	return &base.PiecePacket{
 		TaskId:        req.TaskId,
-		DstPid:        fmt.Sprintf("%s-%s_%s", hostName, req.TaskId, "CDN"),
+		DstPid:        fmt.Sprintf("%s-%s_%s", iputils.HostName, req.TaskId, "CDN"),
 		DstAddr:       fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.DownloadPort),
 		PieceInfos:    pieceInfos,
 		TotalPiece:    task.PieceTotal,

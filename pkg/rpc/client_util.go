@@ -199,32 +199,3 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 
 	return res, cause
 }
-
-func ExecuteWithRetryAndContext(ctx context.Context, f func() (data interface{}, err error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {
-	var (
-		res interface{}
-	)
-	for i := 0; i < maxAttempts; i++ {
-		if e, ok := cause.(*dferrors.DfError); ok {
-			if e.Code != dfcodes.UnknownError {
-				return res, cause
-			}
-		}
-
-		if i > 0 {
-			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))
-		}
-
-		res, cause = f()
-		if cause == nil {
-			break
-		}
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-	}
-
-	return res, cause
-}
