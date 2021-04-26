@@ -127,6 +127,6 @@ test: ## Run unittests
 .PHONY: test
 
 test-coverage: ## Run tests with coverage
-	@go test -race -short -coverprofile cover.out -covermode=atomic ./pkg/dynconfig/...
+	@go test -race -short -coverprofile cover.out -covermode=atomic
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
