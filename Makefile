@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+PROJECT_NAME := "d7y.io/dragonfly/v2"
+PKG := "$(PROJECT_NAME)"
+PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
 VERSION := 2.0.0
 
 build-dirs: ## Prepare required folders for build
@@ -55,6 +58,9 @@ docker-push-scheduler: docker-build-scheduler ## Push scheduler image
 	@echo "Begin to push dfdaemon docker image."
 	./hack/docker-push.sh scheduler
 .PHONY: docker-push-scheduler
+
+build: build-cdn build-scheduler build-dfget build-manager ## Build dragonfly
+.PHONY: build
 
 build-cdn: build-dirs ## Build cdn
 	@echo "Begin to build cdn."
@@ -115,3 +121,12 @@ build-deb-dfget:
 	@ docker run --rm \
 		-v ${PWD}/bin/deb/amd64:/pkg dfget-deb-builder
 .PHONY: build-deb-dfget
+
+test: ## Run unittests
+	@go test -race -short ${PKG_LIST}
+.PHONY: test
+
+test-coverage: ## Run tests with coverage
+	@go test -race -short -coverprofile cover.out -covermode=atomic ./pkg/dynconfig/...
+	@cat cover.out >> coverage.txt
+.PHONY: test-coverage

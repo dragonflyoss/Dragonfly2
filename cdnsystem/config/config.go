@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -111,6 +112,7 @@ func NewDefaultBaseProperties() *BaseProperties {
 		TaskExpireTime:          DefaultTaskExpireTime,
 		StoragePattern:          DefaultStoragePattern,
 		Console:                 DefaultConsole,
+		AdvertiseIP:             iputils.HostIp,
 	}
 }
 
