@@ -1,0 +1,18 @@
+server:
+  ip: ""
+  port: 8002
+
+scheduler:
+
+worker:
+  worker-num: 5
+  worker-job-pool-size: 10000
+  sender-num: 10
+  sender-job-pool-size: 10000
+
+cdn:
+  list:
+    - - cdn-name: "cdn"
+        ip: "cdn"
+        rpcPort: 8003
+        download-port: 8001

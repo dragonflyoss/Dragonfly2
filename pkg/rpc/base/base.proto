@@ -1,0 +1,97 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package base;
+
+option go_package = "d7y.io/dragonfly/v2/pkg/rpc/base";
+
+enum Code{
+  X_UNSPECIFIED = 0;
+}
+
+enum PieceStyle{
+  PLAIN = 0;
+}
+
+enum SizeScope{
+  // size > one piece size
+  NORMAL = 0;
+  // 128 byte < size <= one piece size and be plain type
+  SMALL = 1;
+  // size <= 128 byte and be plain type
+  TINY = 2;
+}
+message GrpcDfError {
+  Code code = 1;
+  string message = 2;
+}
+
+message UrlMeta{
+  // used as follows:
+  //
+  // 1. check whether downloaded content is consistent with the source file
+  //
+  // 2. generate different task ids for same url
+  string md5 = 1;
+  // downloaded range for url
+  string range = 2;
+  // other attributes for url
+  // eg, when url is http protocol, header is used as http header
+  map<string, string> header = 3;
+}
+
+message HostLoad{
+  // cpu usage
+  float cpu_ratio = 1;
+  // memory usage
+  float mem_ratio = 2;
+  // disk space usage
+  float disk_ratio = 3;
+}
+
+message PieceTaskRequest{
+  string task_id = 1;
+  string src_pid = 2;
+  string dst_pid = 3;
+  // piece number
+  int32 start_num = 4;
+  // expected piece count
+  int32 limit = 5;
+}
+
+message PieceInfo{
+  int32 piece_num = 1;
+  uint64 range_start = 2;
+  int32 range_size = 3;
+  string piece_md5 = 4;
+  uint64 piece_offset = 5;
+  base.PieceStyle piece_style = 6;
+}
+
+message PiecePacket{
+  string task_id = 2;
+  string dst_pid = 3;
+  // ip:port
+  string dst_addr = 4;
+  repeated PieceInfo piece_infos = 5;
+  // total piece count for url
+  int32 total_piece = 6;
+  int64 content_length = 7;
+  // sha256 code of all piece md5
+  string piece_md5_sign = 8;
+}

@@ -1,0 +1,33 @@
+{
+  "console": true,
+  "verbose": true,
+  "scheduler": {
+    "abtest": true,
+    "ascheduler": "a-scheduler",
+    "bscheduler": "b-scheduler"
+  },
+  "server": {
+    "ip": "127.0.0.1",
+    "port": 8002
+  },
+  "worker": {
+    "workerNum": 8,
+    "workerJobPoolSize": 10000,
+    "senderNum": 10,
+    "senderJobPoolSize": 10000
+  },
+  "cdn": {
+    "servers": [
+      {
+        "name": "cdn",
+        "ip": "127.0.0.1",
+        "rpcPort": 8003,
+        "downloadPort": 8001
+      }
+    ]
+  },
+  "gc": {
+    "taskDelay": 3600000,
+    "peerTaskDelay": 3600000
+  }
+}

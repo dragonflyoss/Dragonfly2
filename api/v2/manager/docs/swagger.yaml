@@ -1,0 +1,234 @@
+basePath: /api/v2
+definitions:
+  handler.HTTPError:
+    properties:
+      code:
+        example: 400
+        type: integer
+      message:
+        example: status bad request
+        type: string
+    type: object
+  types.AddConfigResponse:
+    properties:
+      id:
+        type: string
+    type: object
+  types.Config:
+    properties:
+      create_at:
+        type: string
+      data:
+        type: string
+      id:
+        type: string
+      object:
+        type: string
+      type:
+        type: string
+      update_at:
+        type: string
+      version:
+        type: integer
+    required:
+      - data
+      - object
+      - type
+      - version
+    type: object
+  types.GetConfigResponse:
+    properties:
+      config:
+        $ref: '#/definitions/types.Config'
+    type: object
+  types.ListConfigsResponse:
+    properties:
+      configs:
+        items:
+          $ref: '#/definitions/types.Config'
+        type: array
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server Petstore server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Swagger Example API
+  version: "1.0"
+paths:
+  /configs:
+    get:
+      consumes:
+        - application/json
+      description: get configs
+      parameters:
+        - description: configs search by object
+          in: query
+          name: object
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ListConfigsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: List configs
+      tags:
+        - configs
+    post:
+      consumes:
+        - application/json
+      description: add by json config
+      parameters:
+        - description: Add config
+          in: body
+          name: config
+          required: true
+          schema:
+            $ref: '#/definitions/types.Config'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.AddConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Add a config
+      tags:
+        - configs
+  /configs/{id}:
+    delete:
+      consumes:
+        - application/json
+      description: Delete by config ID
+      parameters:
+        - description: Config ID
+          in: path
+          name: id
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Delete a config
+      tags:
+        - configs
+    get:
+      consumes:
+        - application/json
+      description: get a config by Config ID
+      parameters:
+        - description: Config ID
+          in: path
+          name: id
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Get a config
+      tags:
+        - configs
+    post:
+      consumes:
+        - application/json
+      description: Update by json config
+      parameters:
+        - description: Config ID
+          in: path
+          name: id
+          required: true
+          type: string
+        - description: Update Config
+          in: body
+          name: Config
+          required: true
+          schema:
+            $ref: '#/definitions/types.Config'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Update a config
+      tags:
+        - configs
+swagger: "2.0"
