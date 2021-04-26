@@ -17,21 +17,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/gofrs/flock"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/trace/jaeger"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon"
@@ -41,6 +30,16 @@ import (
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"github.com/gofrs/flock"
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/trace/jaeger"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/semconv"
+	"gopkg.in/yaml.v3"
 )
 
 var daemonConfig *config.PeerHostOption
@@ -170,8 +169,8 @@ func initTracer(addr string) (func(), error) {
 
 func runDaemon() error {
 	// Daemon config values
-	s, _ := json.MarshalIndent(daemonConfig, "", "  ")
-	logger.Debugf("daemon option(debug only, can not use as config):\n%s", string(s))
+	data, _ := yaml.Marshal(daemonConfig)
+	logger.Infof("loaded daemon option(debug only, can not use as config): \n%s", string(data))
 
 	// Initialize lock file
 	lock := flock.New(daemonConfig.LockFile)
