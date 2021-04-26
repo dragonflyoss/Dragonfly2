@@ -1,0 +1,179 @@
+# daemon alive time, when sets 0s, daemon will not auto exit
+alive_time: 0s
+
+# daemon gc task running interval
+gc_interval: 1m0s
+
+# daemon pid location
+pid_file: /var/run/dfdaemon.pid
+
+# daemon lock file location
+# some lock file will only allow to run one daemon service
+lock_file: /var/run/dfdaemon.lock
+
+# daemon data directory
+data_dir: /home/t4/dragonfly/
+
+# daemon work directory, daemon will change current working directory to this
+work_home: /home/t4/dragonfly/
+
+# when daemon exit, keep peer task data or not
+# it is usefully when upgrade daemon service, all local cache will be saved
+keep_storage: false
+
+# all addresses of all schedulers
+# the schedulers of all daemons should be same in one region or zone.
+# daemon will send tasks to a fixed scheduler by hashing the task url and meta data
+# caution: only tcp is supported
+scheduler:
+  # below example is a stand address
+  net_addrs:
+  - type: tcp
+    addr: 127.0.0.1:8002
+  # schedule timeout
+  schedule_timeout: 10s
+
+# when enable, pprof will be enabled,
+verbose: true
+console: false
+
+# current host info used for scheduler
+host:
+  # tcp service listen address
+  # port should be set by other options
+  listen_ip: 0.0.0.0
+  # access ip for other peers
+  # when local ip is different with access ip, advertise_ip should be set
+  advertise_ip: 0.0.0.0
+  # geographical location and network topology
+  location: ""
+  idc: ""
+  security_domain: ""
+  net_topology: ""
+
+# download service option
+download:
+  # total download limit per second
+  total_rate_limit: 200Mi
+  # per peer task download limit per second
+  per_peer_rate_limit: 20Mi
+  # download grpc option
+  download_grpc:
+    # security option
+    security:
+      insecure: true
+      cacert: ""
+      cert: ""
+      key: ""
+      tls_config: null
+    # download service listen address
+    # current, only support unix domain socket
+    unix_listen:
+      socket: /var/run/dfdaemon.sock
+  # peer grpc option
+  # peer grpc service send pieces info to other peers
+  peer_grpc:
+    security:
+      insecure: true
+      cacert: ""
+      cert: ""
+      key: ""
+    tcp_listen:
+      # listen address
+      listen: 0.0.0.0
+      # listen port, daemon will try to listen
+      # when this port is not available, daemon will try next port
+      port: 65000
+      # if want to limit upper port, please use blow format
+#     port:
+#       start: 65000
+#       end: 65009
+
+# proxy config file location or detail config
+# proxy: ""
+
+# upload service option
+upload:
+  # upload limit per second
+  rate_limit: 1024Mi
+  security:
+    insecure: true
+    cacert: ""
+    cert: ""
+    key: ""
+  tcp_listen:
+    # listen address
+    listen: 0.0.0.0
+    # listen port, daemon will try to listen
+    # when this port is not available, daemon will try next port
+    port: 65002
+    # if want to limit upper port, please use blow format
+#   port:
+#     start: 65020
+#     end: 65029
+
+# peer task storage option
+storage:
+  # task data expire time
+  # when there is no access to a task data, this task will be gc.
+  task_expire_time: 1m0s
+  # storage strategy when process task data
+  # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
+  #                           the download file in date directory will be the peer data for uploading to other peers
+  # io.d7y.storage.v2.advance: download file directly to output path, avoid copy to output path
+  #                            fast than simple strategy, but:
+  #                            the output file will be the peer data for uploading to other peers
+  #                            when user delete or change this file, this peer data will be corrupted
+  strategy: io.d7y.storage.v2.simple
+
+# proxy service option
+proxy:
+  security:
+    insecure: true
+    cacert: ""
+    cert: ""
+    key: ""
+  tcp_listen:
+    # listen address
+    listen: 0.0.0.0
+    # listen port, daemon will try to listen
+    # when this port is not available, daemon will try next port
+    port: 65001
+    # if want to limit upper port, please use blow format
+  #   port:
+  #     start: 65020
+  #     end: 65029
+  registry_mirror:
+    # url for the registry mirror
+    url: https://index.docker.io
+    # whether to ignore https certificate errors
+    insecure: true
+    # optional certificates if the remote server uses self-signed certificates
+    certs: [ ]
+    # whether to request the remote registry directly
+    direct: false
+
+  proxies:
+  - regx: shells/.*\.sh
+  # proxy all http image layer download requests with dfget
+  - regx: blobs/sha256.*
+  # change http requests to some-registry to https and proxy them with dfget
+  - regx: some-registry/
+    use_https: true
+  # proxy requests directly, without dfget
+  - regx: no-proxy-reg
+    direct: true
+  # proxy requests with redirect
+  - regx: some-registry
+    redirect: another-registry
+
+  hijack_https:
+    # key pair used to hijack https requests
+    cert: ""
+    key: ""
+    hosts:
+    - regx: mirror.aliyuncs.com:443 # regexp to match request hosts
+      # whether to ignore https certificate errors
+      insecure: true
+      # optional certificates if the host uses self-signed certificates
+      certs: [ ]
