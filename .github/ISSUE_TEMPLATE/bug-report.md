@@ -5,13 +5,13 @@ labels: kind/bug
 
 ---
 
-#### Bug report:
+### Bug report:
 
-#### Expected behavior:
+### Expected behavior:
 
-#### How to reproduce it:
+### How to reproduce it:
 
-#### Environment:
+### Environment:
 - Dragonfly version:
 - OS:
 - Kernel (e.g. `uname -a`):

@@ -5,8 +5,8 @@ labels: kind/feature
 
 ---
 
-#### Feature request:
+### Feature request:
 
-#### Use case:
+### Use case:
 
-#### UI Example:
+### UI Example:
