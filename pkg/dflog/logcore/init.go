@@ -18,7 +18,7 @@ package logcore
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
@@ -162,9 +162,9 @@ func InitDfget(console bool) error {
 }
 
 func getLogFilePath(prefix, name string) string {
-	return path.Join(defaultLogDir, fmt.Sprintf("%s-%s", prefix, name))
+	return filepath.Join(defaultLogDir, fmt.Sprintf("%s-%s", prefix, name))
 }
 
 func getStatLogFilePath(name string) string {
-	return path.Join(defaultLogDir, "stat", name)
+	return filepath.Join(defaultLogDir, "stat", name)
 }

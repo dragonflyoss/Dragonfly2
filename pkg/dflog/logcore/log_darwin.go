@@ -17,9 +17,9 @@
 package logcore
 
 import (
-	"path"
+	"path/filepath"
 
 	"d7y.io/dragonfly/v2/pkg/basic"
 )
 
-var defaultLogDir = path.Join(basic.HomeDir, "logs/dragonfly")
+var defaultLogDir = filepath.Join(basic.HomeDir, ".dragonfly/logs")
