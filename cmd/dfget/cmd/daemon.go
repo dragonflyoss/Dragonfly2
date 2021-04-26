@@ -17,7 +17,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -40,6 +39,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/semconv"
+	"gopkg.in/yaml.v3"
 )
 
 var daemonConfig *config.PeerHostOption
@@ -169,7 +169,7 @@ func initTracer(addr string) (func(), error) {
 
 func runDaemon() error {
 	// Daemon config values
-	data, _ := json.Marshal(daemonConfig)
+	data, _ := yaml.Marshal(daemonConfig)
 	logger.Infof("loaded daemon option(debug only, can not use as config): \n%s", string(data))
 
 	// Initialize lock file
