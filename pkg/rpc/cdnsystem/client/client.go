@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
@@ -52,7 +53,7 @@ func GetClientByConfigServer(cfgServer mgClient.ManagerClient, cdnMap map[string
 	}
 	sc := &cdnClient{
 		Connection: rpc.NewConnection(context.Background(), "cdn-dynamic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
-			rpc.WithConnExpireTime(5 * time.Minute),
+			rpc.WithConnExpireTime(60 * time.Second),
 			rpc.WithDialOption(opts),
 		}),
 	}
@@ -78,6 +79,25 @@ func GetClientByConfigServer(cfgServer mgClient.ManagerClient, cdnMap map[string
 		}
 	}()
 	return sc, nil
+}
+
+var once sync.Once
+var elasticCdnClient *cdnClient
+
+func GetElasticClientByAdders(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
+	once.Do(func() {
+		elasticCdnClient = &cdnClient{
+			rpc.NewConnection(context.Background(), "cdn-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+				rpc.WithConnExpireTime(30 * time.Second),
+				rpc.WithDialOption(opts),
+			}),
+		}
+	})
+	err := elasticCdnClient.Connection.AddServerNodes(addrs)
+	if err != nil {
+		return nil, err
+	}
+	return elasticCdnClient, nil
 }
 
 // see cdnsystem.CdnClient
@@ -130,7 +150,7 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 	return nil, err
 }
 
-func init()  {
+func init() {
 	var cc *cdnClient = nil
 	var _ CdnClient = cc
 }

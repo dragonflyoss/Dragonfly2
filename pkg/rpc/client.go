@@ -164,10 +164,12 @@ func NewConnection(ctx context.Context, name string, adders []dfnet.NetAddr, con
 	return conn
 }
 
-func (conn *Connection) CorrectKey2NodeRelation(serverNode, tmpHashKey, realHashKey string) {
+func (conn *Connection) CorrectKey2NodeRelation(tmpHashKey, realHashKey string) {
 	if tmpHashKey == realHashKey {
 		return
 	}
+	key, _ := conn.key2NodeMap.Load(tmpHashKey)
+	serverNode := key.(string)
 	conn.rwMutex.Lock(serverNode, false)
 	defer conn.rwMutex.UnLock(serverNode, false)
 	conn.key2NodeMap.Store(realHashKey, serverNode)

@@ -145,8 +145,8 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 		suc = true
 		code = dfcodes.Success
 		if taskId != key {
-			logger.WithPeerID(ptr.PeerId).Warnf("correct taskId from %s to %s", key, taskId)
-			sc.Connection.CorrectKey2NodeRelation(schedulerNode, key, taskId)
+			logger.WithPeerID(ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", key, taskId)
+			sc.Connection.CorrectKey2NodeRelation(key, taskId)
 		}
 	} else {
 		if de, ok := err.(*dferrors.DfError); ok {

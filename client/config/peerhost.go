@@ -57,15 +57,14 @@ type PeerHostOption struct {
 	Verbose     bool   `yaml:"verbose" json:"verbose"`
 	Console     bool   `json:"console" yaml:"console"`
 
-	Scheduler SchedulerOption `json:"scheduler" yaml:"scheduler"`
-	Host      HostOption      `json:"host" yaml:"host"`
-	Download  DownloadOption  `json:"download" yaml:"download"`
-	Proxy     *ProxyOption    `json:"proxy" yaml:"proxy"`
-	Upload    UploadOption    `json:"upload" yaml:"upload"`
-	Storage   StorageOption   `json:"storage" yaml:"storage"`
-	Telemetry TelemetryOption `json:"telemetry" yaml:"telemetry"`
-
-	ConfigServer string `json:"telemetry" yaml:"configServer"`
+	Scheduler    SchedulerOption `json:"scheduler" yaml:"scheduler"`
+	Host         HostOption      `json:"host" yaml:"host"`
+	Download     DownloadOption  `json:"download" yaml:"download"`
+	Proxy        *ProxyOption    `json:"proxy" yaml:"proxy"`
+	Upload       UploadOption    `json:"upload" yaml:"upload"`
+	Storage      StorageOption   `json:"storage" yaml:"storage"`
+	Telemetry    TelemetryOption `json:"telemetry" yaml:"telemetry"`
+	ConfigServer string          `json:"configServer" yaml:"configServer"`
 }
 
 func NewPeerHostOption() *PeerHostOption {
@@ -109,7 +108,7 @@ func (p *PeerHostOption) Convert() error {
 }
 
 func (p *PeerHostOption) Validate() error {
-	if len(p.Scheduler.NetAddrs) == 0 && stringutils.IsBlank(p.ConfigServer){
+	if len(p.Scheduler.NetAddrs) == 0 && stringutils.IsBlank(p.ConfigServer) {
 		return errors.New("empty schedulers and configserver is not specified")
 	}
 	// ScheduleTimeout should not great then AliveTime

@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
@@ -36,12 +37,31 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 		return nil, errors.New("address list of daemon is empty")
 	}
 	dc := &daemonClient{
-		rpc.NewConnection(context.Background(), "cdn-static", addrs, []rpc.ConnOption{
+		rpc.NewConnection(context.Background(), "daemon-static", addrs, []rpc.ConnOption{
 			rpc.WithConnExpireTime(60 * time.Second),
 			rpc.WithDialOption(opts),
 		}),
 	}
 	return dc, nil
+}
+
+var once sync.Once
+var elasticDaemonClient *daemonClient
+
+func GetElasticClientByAdders(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
+	once.Do(func() {
+		elasticDaemonClient = &daemonClient{
+			rpc.NewConnection(context.Background(), "daemon-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+				rpc.WithConnExpireTime(30 * time.Second),
+				rpc.WithDialOption(opts),
+			}),
+		}
+	})
+	err := elasticDaemonClient.Connection.AddServerNodes(addrs)
+	if err != nil {
+		return nil, err
+	}
+	return elasticDaemonClient, nil
 }
 
 // see dfdaemon.DaemonClient
@@ -111,7 +131,7 @@ func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, o
 	return
 }
 
-func init()  {
+func init() {
 	var dc *daemonClient = nil
 	var _ DaemonClient = dc
 }
