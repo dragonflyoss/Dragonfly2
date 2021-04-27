@@ -123,6 +123,11 @@ func InitCdnSystem(console bool) error {
 		logger.SetDownloadLogger(downloaderLogger)
 	}
 
+	if keepAliveLogger, err := CreateLogger(path.Join(logDir, "keepAlive.log"), 300, 7, 0, false, false); err != nil{
+		return err
+	} else {
+		logger.SetKeepAliveLogger(keepAliveLogger.Sugar())
+	}
 	return nil
 }
 

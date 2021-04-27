@@ -21,6 +21,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	mgClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/manager"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
@@ -36,8 +37,8 @@ type SchedulerService struct {
 	ABTest      bool
 }
 
-func NewSchedulerService(cfg *config.Config) *SchedulerService {
-	mgr := manager.New(cfg)
+func NewSchedulerService(cfg *config.Config, cfgServer mgClient.ManagerClient) *SchedulerService {
+	mgr := manager.New(cfg, cfgServer)
 	return &SchedulerService{
 		CDNManager:  mgr.CDNManager,
 		TaskManager: mgr.TaskManager,

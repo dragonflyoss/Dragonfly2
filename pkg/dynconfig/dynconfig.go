@@ -44,7 +44,7 @@ type strategy interface {
 	Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error
 }
 
-type dynconfig struct {
+type Dynconfig struct {
 	sourceType      sourceType
 	managerClient   managerClient
 	localConfigPath string
@@ -54,11 +54,11 @@ type dynconfig struct {
 }
 
 // Option is a functional option for configuring the dynconfig
-type Option func(d *dynconfig) (*dynconfig, error)
+type Option func(d *Dynconfig) (*Dynconfig, error)
 
 // WithManagerClient set the manager client
 func WithManagerClient(c managerClient) Option {
-	return func(d *dynconfig) (*dynconfig, error) {
+	return func(d *Dynconfig) (*Dynconfig, error) {
 		if d.sourceType != ManagerSourceType {
 			return nil, errors.New("the source type must be ManagerSourceType")
 		}
@@ -70,7 +70,7 @@ func WithManagerClient(c managerClient) Option {
 
 // WithManagerClient set the file path
 func WithLocalConfigPath(p string) Option {
-	return func(d *dynconfig) (*dynconfig, error) {
+	return func(d *Dynconfig) (*Dynconfig, error) {
 		if d.sourceType != LocalSourceType {
 			return nil, errors.New("the source type must be LocalSourceType")
 		}
@@ -81,7 +81,7 @@ func WithLocalConfigPath(p string) Option {
 }
 
 // NewDynconfig returns a new dynconfig instence
-func New(sourceType sourceType, expire time.Duration, options ...Option) (*dynconfig, error) {
+func New(sourceType sourceType, expire time.Duration, options ...Option) (*Dynconfig, error) {
 	d, err := NewDynconfigWithOptions(sourceType, expire, options...)
 	if err != nil {
 		return nil, err
@@ -106,8 +106,8 @@ func New(sourceType sourceType, expire time.Duration, options ...Option) (*dynco
 }
 
 // NewDynconfigWithOptions constructs a new instance of a dynconfig with additional options.
-func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, options ...Option) (*dynconfig, error) {
-	d := &dynconfig{
+func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, options ...Option) (*Dynconfig, error) {
+	d := &Dynconfig{
 		sourceType: sourceType,
 		cache:      cache.New(expire, cache.NoCleanup),
 		expire:     expire,
@@ -122,18 +122,18 @@ func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, option
 }
 
 // Get dynamic config
-func (d *dynconfig) Get() (interface{}, error) {
+func (d *Dynconfig) Get() (interface{}, error) {
 	return d.strategy.Get()
 }
 
 // Set dynamic config
-func (d *dynconfig) Set(x interface{}) {
+func (d *Dynconfig) Set(x interface{}) {
 	d.strategy.Set(x)
 }
 
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags
 // on the fields of the structure are properly set.
-func (d *dynconfig) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error {
+func (d *Dynconfig) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error {
 	return d.strategy.Unmarshal(rawVal, opts...)
 }
 

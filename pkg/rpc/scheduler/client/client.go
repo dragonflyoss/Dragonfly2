@@ -18,14 +18,17 @@ package client
 
 import (
 	"context"
-	"sync"
+	"fmt"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	mgClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
-
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
@@ -35,32 +38,55 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-func GetClient() (SchedulerClient, error) {
-	// 从本地文件/manager读取addrs
-	return sc, nil
-}
-
-var sc *schedulerClient
-
-var once sync.Once
-
 func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
-	once.Do(func() {
-		opts := make([]grpc.DialOption, 0, 0)
-		sc = &schedulerClient{
-			rpc.NewConnection(context.Background(), "scheduler", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
-				rpc.WithConnExpireTime(5 * time.Minute),
-				rpc.WithDialOption(opts),
-			}),
-		}
-	})
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
-	err := sc.Connection.AddServerNodes(addrs)
-	if err != nil {
-		return nil, err
+	sc := &schedulerClient{
+		rpc.NewConnection(context.Background(), "scheduler-static", addrs, []rpc.ConnOption{
+			rpc.WithConnExpireTime(5 * time.Minute),
+			rpc.WithDialOption(opts),
+		}),
 	}
+	logger.Infof("scheduler server list: %s", addrs)
+	return sc, nil
+}
+
+func GetSchedulerByConfigServer(cfgServerAddr string, opts ...grpc.DialOption) (SchedulerClient, error) {
+	if stringutils.IsBlank(cfgServerAddr) {
+		return nil, fmt.Errorf("config server address is not specified")
+	}
+	configServer, err := mgClient.NewClient([]dfnet.NetAddr{{
+		Type: dfnet.TCP,
+		Addr: cfgServerAddr,
+	}})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create config server")
+	}
+	// todo create HostTag
+	HostTag := ""
+	schedulers, err := configServer.GetSchedulers(context.Background(), &manager.GetSchedulersRequest{
+		Ip:       iputils.HostIp,
+		HostName: iputils.HostName,
+		HostTag:  HostTag,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get scheduler list from config server")
+	}
+	var scheds []dfnet.NetAddr
+	for i := range schedulers.Addrs {
+		scheds = append(scheds, dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: schedulers.Addrs[i],
+		})
+	}
+	sc := &schedulerClient{
+		Connection: rpc.NewConnection(context.Background(), "scheduler-dynamic", scheds, []rpc.ConnOption{
+			rpc.WithConnExpireTime(5 * time.Minute),
+			rpc.WithDialOption(opts),
+		}),
+	}
+	logger.Infof("scheduler server list: %s", scheds)
 	return sc, nil
 }
 
@@ -73,6 +99,8 @@ type SchedulerClient interface {
 	ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error
 
 	LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) error
+
+	Close() error
 }
 
 type schedulerClient struct {
@@ -211,4 +239,9 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 	}
 
 	return
+}
+
+func init()  {
+	var sc *schedulerClient = nil
+	var _ SchedulerClient = sc
 }

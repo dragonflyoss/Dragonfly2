@@ -35,14 +35,21 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/task"
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	configServer "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
 
 type Server struct {
-	Config  *config.Config
-	TaskMgr mgr.SeedTaskMgr
-	GCMgr   mgr.GCMgr
+	Config       *config.Config
+	GCMgr        mgr.GCMgr
+	seedServer   server.SeederServer
+	configServer configServer.ManagerClient
 }
 
 // New creates a brand new server instance.
@@ -82,27 +89,50 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to create gc manager")
 	}
 
+	cdnSeedServer, err := service.NewCdnSeedServer(cfg, taskMgr)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create seedServer")
+	}
+	var cfgServer configServer.ManagerClient
+	if !stringutils.IsBlank(cfg.ConfigServer) {
+		cfgServer, err = configServer.NewClient([]dfnet.NetAddr{{
+			Type: dfnet.TCP,
+			Addr: cfg.ConfigServer,
+		}})
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create config server")
+		}
+	}
 	return &Server{
-		Config:  cfg,
-		TaskMgr: taskMgr,
-		GCMgr:   gcMgr,
+		Config:       cfg,
+		GCMgr:        gcMgr,
+		seedServer:   cdnSeedServer,
+		configServer: cfgServer,
 	}, nil
 }
 
 // Start runs cdn server.
 func (s *Server) Start() (err error) {
 	defer func() {
-		if err := recover(); err != nil {
-			err = errors.New(fmt.Sprintf("%v", err))
+		if rec := recover(); rec != nil {
+			err = errors.New(fmt.Sprintf("%v", rec))
 		}
 	}()
-	seedServer, err := service.NewCdnSeedServer(s.Config, s.TaskMgr)
-	if err != nil {
-		return errors.Wrap(err, "create seedServer fail")
-	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	// start gc
-	s.GCMgr.StartGC(context.Background())
-	err = rpc.StartTcpServer(s.Config.ListenPort, s.Config.ListenPort, seedServer)
+	err = s.GCMgr.StartGC(ctx)
+	if err != nil {
+		return err
+	}
+	if s.configServer != nil {
+		s.configServer.KeepAlive(ctx, &manager.KeepAliveRequest{
+			HostName: iputils.HostName,
+			Type:     manager.ResourceType_Cdn,
+		})
+	}
+	err = rpc.StartTcpServer(s.Config.ListenPort, s.Config.ListenPort, s.seedServer)
 	if err != nil {
 		return errors.Wrap(err, "failed to start tcp server")
 	}

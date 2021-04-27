@@ -18,6 +18,7 @@ package daemon
 
 import (
 	_ "d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
+	"github.com/pkg/errors"
 )
 
 import (
@@ -25,13 +26,10 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/server"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"fmt"
-	"os"
 )
 
 // Daemon is a struct to identify main instance of cdn.
 type Daemon struct {
-	Name   string
 	config *config.Config
 	server *server.Server
 }
@@ -46,7 +44,6 @@ func New(cfg *config.Config) (*Daemon, error) {
 		return nil, err
 	}
 	return &Daemon{
-		Name:   fmt.Sprint("CDN:", os.Getpid()),
 		config: cfg,
 		server: s,
 	}, nil
@@ -55,9 +52,8 @@ func New(cfg *config.Config) (*Daemon, error) {
 // Serve runs the daemon.
 func (d *Daemon) Serve() error {
 	if err := d.server.Start(); err != nil {
-		logger.Errorf("failed to start cdn system %s : %v", d.Name, err)
-		return err
+		return errors.Wrapf(err,"failed to start cdn system")
 	}
-	logger.Infof("start cdn system %s successfully", d.Name)
+	logger.Info("successfully start cdn system")
 	return nil
 }

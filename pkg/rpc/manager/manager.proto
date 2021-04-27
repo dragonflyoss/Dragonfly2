@@ -18,9 +18,10 @@ syntax = "proto3";
 
 package manager;
 
+import "google/protobuf/empty.proto";
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/manager";
 
-message NavigatorRequest{
+message GetSchedulersRequest{
     // client ip
     string ip = 1;
     // client host name
@@ -33,16 +34,18 @@ message SchedulerNodes{
     // ip:port
     repeated string addrs = 2;
     HostInfo client_host = 3;
-    ClientConfig client_config = 4;
 }
 
-message HeartRequest{
+message KeepAliveRequest{
+     // identify servers with hostname
+     string host_name = 1;
+     ResourceType type = 2;
+}
+
+message GetClusterConfigRequest{
     // identify servers with hostname
     string host_name = 1;
-    oneof from{
-        bool scheduler = 2;
-        bool cdn = 3;
-    }
+    ResourceType type = 2;
 }
 
 message ClientConfig{
@@ -50,16 +53,22 @@ message ClientConfig{
 }
 
 message CdnConfig{
-    //......
+    string cluster_id = 1;
+    string cluster_config = 2;
+    string instance_config = 3;
+    string update_time = 4;
 }
 
 message SchedulerConfig{
-    ClientConfig client_config = 1;
-    repeated ServerInfo cdn_hosts = 2;
-    //......
+    string cluster_id = 1;
+    string cluster_config = 2;
+    string instance_config = 3;
+    string client_config = 4;
+    string update_time = 5;
+    repeated ServerInfo cdn_hosts = 6;
 }
 
-message ManagementConfig{
+message ClusterConfig{
     oneof config{
         SchedulerConfig scheduler_config = 2;
         CdnConfig cdn_config = 3;
@@ -77,10 +86,16 @@ message HostInfo{
     string host_name = 2;
     // security isolation domain for network
     string security_domain = 3;
+    map<string, string> proxy_domain = 4;
     // area|country|province|city|...
-    string location = 4;
-    string idc = 5;
-    string net_topology = 6;
+    string location = 5;
+    string idc = 6;
+    string net_topology = 7;
+}
+
+enum ResourceType {
+    Scheduler = 0;
+    Cdn = 1;
 }
 
 // Manager System RPC Service
@@ -92,7 +107,11 @@ service Manager{
     // so need retry one times to get latest servers
     //
     // 3. manager actively triggers fresh
-    rpc GetSchedulers(NavigatorRequest)returns(SchedulerNodes);
-    // keep alive for cdn or scheduler and receives management configuration
-    rpc KeepAlive(HeartRequest)returns(ManagementConfig);
+    rpc GetSchedulers(GetSchedulersRequest)returns(SchedulerNodes){}
+
+    // keep alive for cdn or scheduler
+    rpc KeepAlive(KeepAliveRequest)returns(google.protobuf.Empty){}
+
+    // get cluster config for cdn or scheduler(client) from manager
+    rpc GetClusterConfig(GetClusterConfigRequest)returns(ClusterConfig){}
 }

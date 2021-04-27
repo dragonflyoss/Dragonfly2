@@ -11,10 +11,11 @@ type Config struct {
 	Server        *ServerConfig        `yaml:"server"`
 	ConfigService *ConfigServiceConfig `yaml:"config-service"`
 	Stores        []*StoreConfig       `yaml:"stores"`
+	HostService   *HostService         `yaml:"host-service"`
 }
 
 type ServerConfig struct {
-	IP   string `yaml:"ip",omitempty`
+	IP   string `yaml:"ip"`
 	Port int    `yaml:"port"`
 }
 
@@ -28,21 +29,27 @@ type MysqlConfig struct {
 	IP       string `yaml:"ip"`
 	Port     int    `yaml:"port"`
 	Db       string `yaml:"db"`
-	Table    string `yaml:"table"`
 }
 
 type OssConfig struct {
 }
 
-type MemoryConfig struct {
+type StoreConfig struct {
+	Name  string       `yaml:"name"`
+	Type  string       `yaml:"type"`
+	Mysql *MysqlConfig `yaml:"mysql,omitempty"`
+	Oss   *OssConfig   `yaml:"oss,omitempty"`
 }
 
-type StoreConfig struct {
-	Name   string        `yaml:"name"`
-	Type   string        `yaml:"type"`
-	Mysql  *MysqlConfig  `yaml:"mysql",omitempty`
-	Oss    *OssConfig    `yaml:"oss",omitempty`
-	Memory *MemoryConfig `yaml:"memory", omitempty`
+type HostService struct {
+	Skyline *SkylineService `yaml:"skyline"`
+}
+
+type SkylineService struct {
+	Domain    string `yaml:"domain"`
+	AppName   string `yaml:"app-name"`
+	Account   string `yaml:"account"`
+	AccessKey string `yaml:"access-key"`
 }
 
 func New() *Config {
@@ -63,10 +70,16 @@ func New() *Config {
 					IP:       "127.0.0.1",
 					Port:     3306,
 					Db:       "config_db",
-					Table:    "config_table",
 				},
-				Oss:    nil,
-				Memory: nil,
+				Oss: nil,
+			},
+		},
+		HostService: &HostService{
+			Skyline: &SkylineService{
+				Domain:    "http://xxx",
+				AppName:   "dragonfly-manager",
+				Account:   "yourAccount",
+				AccessKey: "yourAccessKey",
 			},
 		},
 	}

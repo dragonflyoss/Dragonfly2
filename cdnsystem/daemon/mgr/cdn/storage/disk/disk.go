@@ -134,7 +134,7 @@ func (s *diskStorageMgr) GC(ctx context.Context) error {
 	if err != nil {
 		logger.GcLogger.With("type", "disk").Error("failed to get gcTaskIds")
 	}
-	logger.GcLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up", len(gcTaskIDs))
+	var realGcCount int
 	for _, taskID := range gcTaskIDs {
 		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
@@ -145,6 +145,7 @@ func (s *diskStorageMgr) GC(ctx context.Context) error {
 			synclock.UnLock(taskID, false)
 			continue
 		}
+		realGcCount++
 		if err := s.DeleteTask(ctx, taskID); err != nil {
 			logger.GcLogger.With("type", "disk").Errorf("failed to delete disk files with taskID(%s): %v", taskID, err)
 			synclock.UnLock(taskID, false)
@@ -152,6 +153,7 @@ func (s *diskStorageMgr) GC(ctx context.Context) error {
 		}
 		synclock.UnLock(taskID, false)
 	}
+	logger.GcLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up, actual gc %d tasks", len(gcTaskIDs), realGcCount)
 	return nil
 }
 

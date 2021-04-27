@@ -15,13 +15,13 @@ func InitRouter(server *service.ManagerServer) (*gin.Engine, error) {
 
 	api := router.Group("/api/v2")
 	{
-		configs := api.Group("/configs")
+		configs := api.Group("/schedulerclusters")
 		{
-			configs.POST("", handler.AddConfig)
-			configs.DELETE(":id", handler.DeleteConfig)
-			configs.POST(":id", handler.UpdateConfig)
-			configs.GET(":id", handler.GetConfig)
-			configs.GET("", handler.ListConfigs)
+			configs.POST("", handler.AddSchedulerCluster)
+			configs.DELETE(":id", handler.DeleteSchedulerCluster)
+			configs.POST(":id", handler.UpdateSchedulerCluster)
+			configs.GET(":id", handler.GetSchedulerCluster)
+			configs.GET("", handler.ListSchedulerClusters)
 		}
 	}
 

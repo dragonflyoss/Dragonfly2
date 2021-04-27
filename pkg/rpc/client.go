@@ -45,8 +45,16 @@ const (
 	defaultDialTimeout = 10 * time.Second
 )
 
+type Closer interface {
+	Close() error
+}
+
+// todo Perfect state
+type ConnStatus string
+
 type Connection struct {
 	ctx            context.Context
+	cancelFun      context.CancelFunc
 	rwMutex        *synclock.LockerPool
 	dialOpts       []grpc.DialOption
 	key2NodeMap    sync.Map // key -> node(many to one)
@@ -58,11 +66,15 @@ type Connection struct {
 	dialTimeout    time.Duration
 	name           string
 	hashRing       *hashring.HashRing // server hash ring
+	serverNodes    []dfnet.NetAddr
+	status         ConnStatus
 }
 
 func newDefaultConnection(ctx context.Context) *Connection {
+	childCtx, cancel := context.WithCancel(ctx)
 	return &Connection{
-		ctx:            ctx,
+		ctx:            childCtx,
+		cancelFun:      cancel,
 		rwMutex:        synclock.NewLockerPool(),
 		dialOpts:       defaultClientOpts,
 		key2NodeMap:    sync.Map{},
@@ -136,14 +148,15 @@ func WithDialTimeout(dialTimeout time.Duration) ConnOption {
 	})
 }
 
-func NewConnection(ctx context.Context, name string, addrs []dfnet.NetAddr, connOpts []ConnOption) *Connection {
+func NewConnection(ctx context.Context, name string, adders []dfnet.NetAddr, connOpts []ConnOption) *Connection {
 	conn := newDefaultConnection(ctx)
 	conn.name = name
-	addresses := make([]string, 0, len(addrs))
-	for _, addr := range addrs {
+	addresses := make([]string, 0, len(adders))
+	for _, addr := range adders {
 		addresses = append(addresses, addr.GetEndpoint())
 	}
 	conn.hashRing = hashring.New(addresses)
+	conn.serverNodes = adders
 	for _, opt := range connOpts {
 		opt.apply(conn)
 	}
@@ -161,7 +174,7 @@ func (conn *Connection) CorrectKey2NodeRelation(serverNode, tmpHashKey, realHash
 	conn.key2NodeMap.Delete(tmpHashKey)
 }
 
-func (conn *Connection) UpdateAccessNodeMap(key string) {
+func (conn *Connection) UpdateAccessNodeMapByHashKey(key string) {
 	node, ok := conn.key2NodeMap.Load(key)
 	if ok {
 		conn.accessNodeMap.Store(node, time.Now())
@@ -174,6 +187,10 @@ func (conn *Connection) UpdateAccessNodeMap(key string) {
 	} else {
 		logger.With("conn", conn.name).Errorf("update access node map failed, hash key (%s) not found in key2NodeMap", key)
 	}
+}
+
+func (conn *Connection) UpdateAccessNodeMapByServerNode(serverNode string) {
+	conn.accessNodeMap.Store(serverNode, time.Now())
 }
 
 func (conn *Connection) AddServerNodes(addrs []dfnet.NetAddr) error {
@@ -283,7 +300,7 @@ func (conn *Connection) loadOrCreateClientConnByNode(node string) (clientConn *g
 	}
 	logger.With("conn", conn.name).Debugf("failed to load clientConn associated with node %s, attempt to create it", node)
 	if clientConn, err := conn.createClient(node, append(defaultClientOpts, conn.dialOpts...)...); err == nil {
-		logger.With("conn", conn.name).Infof("success connect to node %s for hash key", node)
+		logger.With("conn", conn.name).Infof("success connect to node %s", node)
 		// bind
 		conn.node2ClientMap.Store(node, clientConn)
 		return clientConn, nil
@@ -354,4 +371,45 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
 	return
+}
+
+func (conn *Connection) Close() error {
+	for i := range conn.serverNodes {
+		serverNode := conn.serverNodes[i].GetEndpoint()
+		conn.rwMutex.Lock(serverNode, false)
+		conn.hashRing.RemoveNode(serverNode)
+		value, ok := conn.node2ClientMap.Load(serverNode)
+		if ok {
+			clientCon := value.(*grpc.ClientConn)
+			err := clientCon.Close()
+			if err == nil {
+				conn.node2ClientMap.Delete(serverNode)
+			} else {
+				logger.GrpcLogger.With("conn", conn.name).Warnf("failed to close clientConn:%s: %v", serverNode, err)
+			}
+		}
+		// gc hash keys
+		conn.key2NodeMap.Range(func(key, value interface{}) bool {
+			if value == serverNode {
+				conn.key2NodeMap.Delete(key)
+				logger.GrpcLogger.With("conn", conn.name).Infof("success gc key:%s associated with server node %s", key, serverNode)
+			}
+			return true
+		})
+		conn.accessNodeMap.Delete(serverNode)
+		conn.rwMutex.UnLock(serverNode, false)
+	}
+	conn.cancelFun()
+	return nil
+}
+
+func (conn *Connection) UpdateState(adders []dfnet.NetAddr) {
+	// todo lock
+	conn.serverNodes = adders
+	var addresses []string
+	for _, addr := range adders {
+		addresses = append(addresses, addr.GetEndpoint())
+	}
+
+	conn.hashRing = hashring.New(addresses)
 }

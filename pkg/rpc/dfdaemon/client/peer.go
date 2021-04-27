@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
@@ -39,6 +40,7 @@ func GetPieceTasks(destPeer *scheduler.PeerPacket_DestPeer, ctx context.Context,
 		Addr: destAddr,
 	}
 	client, err := getClient(netAddr, toCdn)
+	defer client.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +50,7 @@ func GetPieceTasks(destPeer *scheduler.PeerPacket_DestPeer, ctx context.Context,
 	return client.(DaemonClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
 }
 
-func getClient(netAddr dfnet.NetAddr, toCdn bool) (interface{}, error) {
+func getClient(netAddr dfnet.NetAddr, toCdn bool) (rpc.Closer, error) {
 	if toCdn {
 		return cdnclient.GetClientByAddr([]dfnet.NetAddr{netAddr})
 	} else {

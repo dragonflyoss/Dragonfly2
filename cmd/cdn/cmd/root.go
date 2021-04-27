@@ -71,7 +71,7 @@ func init() {
 	cfg = config.New()
 
 	// Initialize cobra
-	common.InitCobra(rootCmd, &cfgFile, cdnSystemEnvPrefix, cfg)
+	common.InitCobra(rootCmd, cfgFile, cdnSystemEnvPrefix, cfg)
 }
 
 func runCdnSystem() error {

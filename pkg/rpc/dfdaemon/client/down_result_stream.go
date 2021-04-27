@@ -82,7 +82,7 @@ func (drs *DownResultStream) initStream() error {
 }
 
 func (drs *DownResultStream) Recv() (dr *dfdaemon.DownResult, err error) {
-	drs.dc.UpdateAccessNodeMap(drs.hashKey)
+	drs.dc.UpdateAccessNodeMapByHashKey(drs.hashKey)
 	if dr, err = drs.stream.Recv(); err != nil && err != io.EOF {
 		dr, err = drs.retryRecv(err)
 	}

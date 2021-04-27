@@ -33,9 +33,9 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/configs": {
+        "/schedulerclusters": {
             "get": {
-                "description": "get configs",
+                "description": "List by object",
                 "consumes": [
                     "application/json"
                 ],
@@ -43,14 +43,21 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "configs"
+                    "SchedulerCluster"
                 ],
-                "summary": "List configs",
+                "summary": "List scheduler clusters",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "configs search by object",
-                        "name": "object",
+                        "type": "integer",
+                        "description": "begin marker of current page",
+                        "name": "marker",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "return max item count, default 10, max 50",
+                        "name": "maxItemCount",
                         "in": "query",
                         "required": true
                     }
@@ -59,7 +66,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.ListConfigsResponse"
+                            "$ref": "#/definitions/types.ListSchedulerClustersResponse"
                         }
                     },
                     "400": {
@@ -91,17 +98,17 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "configs"
+                    "SchedulerCluster"
                 ],
-                "summary": "Add a config",
+                "summary": "Add scheduler cluster",
                 "parameters": [
                     {
-                        "description": "Add config",
-                        "name": "config",
+                        "description": "Scheduler cluster",
+                        "name": "cluster",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.Config"
+                            "$ref": "#/definitions/types.SchedulerCluster"
                         }
                     }
                 ],
@@ -109,7 +116,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.AddConfigResponse"
+                            "$ref": "#/definitions/types.SchedulerCluster"
                         }
                     },
                     "400": {
@@ -133,9 +140,9 @@ var doc = `{
                 }
             }
         },
-        "/configs/{id}": {
+        "/schedulerclusters/{id}": {
             "get": {
-                "description": "get a config by Config ID",
+                "description": "Get scheduler cluster by ClusterId",
                 "consumes": [
                     "application/json"
                 ],
@@ -143,13 +150,13 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "configs"
+                    "SchedulerCluster"
                 ],
-                "summary": "Get a config",
+                "summary": "Get scheduler cluster",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Config ID",
+                        "description": "ClusterId",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -159,7 +166,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.GetConfigResponse"
+                            "$ref": "#/definitions/types.SchedulerCluster"
                         }
                     },
                     "400": {
@@ -183,7 +190,7 @@ var doc = `{
                 }
             },
             "post": {
-                "description": "Update by json config",
+                "description": "Update by json scheduler cluster",
                 "consumes": [
                     "application/json"
                 ],
@@ -191,24 +198,24 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "configs"
+                    "SchedulerCluster"
                 ],
-                "summary": "Update a config",
+                "summary": "Update scheduler cluster",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Config ID",
+                        "description": "ClusterId",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Update Config",
-                        "name": "Config",
+                        "description": "SchedulerCluster",
+                        "name": "Cluster",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.Config"
+                            "$ref": "#/definitions/types.SchedulerCluster"
                         }
                     }
                 ],
@@ -240,7 +247,7 @@ var doc = `{
                 }
             },
             "delete": {
-                "description": "Delete by config ID",
+                "description": "Delete by clusterId",
                 "consumes": [
                     "application/json"
                 ],
@@ -248,13 +255,13 @@ var doc = `{
                     "application/json"
                 ],
                 "tags": [
-                    "configs"
+                    "SchedulerCluster"
                 ],
-                "summary": "Delete a config",
+                "summary": "Delete scheduler cluster",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Config ID",
+                        "description": "ClusterId",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -303,62 +310,40 @@ var doc = `{
                 }
             }
         },
-        "types.AddConfigResponse": {
+        "types.ListSchedulerClustersResponse": {
             "type": "object",
             "properties": {
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.Config": {
-            "type": "object",
-            "required": [
-                "data",
-                "object",
-                "type",
-                "version"
-            ],
-            "properties": {
-                "create_at": {
-                    "type": "string"
-                },
-                "data": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "object": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "update_at": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "integer"
-                }
-            }
-        },
-        "types.GetConfigResponse": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "$ref": "#/definitions/types.Config"
-                }
-            }
-        },
-        "types.ListConfigsResponse": {
-            "type": "object",
-            "properties": {
-                "configs": {
+                "clusters": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/types.Config"
+                        "$ref": "#/definitions/types.SchedulerCluster"
                     }
+                }
+            }
+        },
+        "types.SchedulerCluster": {
+            "type": "object",
+            "properties": {
+                "client_config": {
+                    "type": "string"
+                },
+                "cluster_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "creator": {
+                    "type": "string"
+                },
+                "modifier": {
+                    "type": "string"
+                },
+                "scheduler_config": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         }

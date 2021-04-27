@@ -171,4 +171,7 @@ type BaseProperties struct {
 
 	// Console shows log on console
 	Console bool `yaml:"console"`
+
+	// ConfigServer
+	ConfigServer string `yaml:"configServer"`
 }
