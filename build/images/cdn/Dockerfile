@@ -1,26 +1,21 @@
 FROM golang:1.15.10-alpine as builder
 
 WORKDIR /go/src/d7y.io/dragonfly/v2
+
 RUN apk --no-cache add bash make gcc libc-dev git
 
 COPY . /go/src/d7y.io/dragonfly/v2
 
-# go build cdn.
-# write the resulting executable to the dir /opt/dragonfly/df-cdn.
 ARG GOPROXY
+
 RUN make build-cdn && make install-cdn
 
 FROM nginx:1.19-alpine
-
-# TODO hack for China mainland, remove later
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
-    apk --no-cache add ca-certificates bash && echo 'hosts: files dns' > /etc/nsswitch.conf
 
 COPY --from=builder /go/src/d7y.io/dragonfly/v2/hack/start-cdn.sh /root/start.sh
 COPY --from=builder /go/src/d7y.io/dragonfly/v2/hack/cdn-nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder /opt/dragonfly/df-cdn/cdn /opt/dragonfly/df-cdn/cdn
 
-# cdn will listen 8001,8003 in default.
 EXPOSE 8001 8003
 
 ENTRYPOINT ["/root/start.sh"]

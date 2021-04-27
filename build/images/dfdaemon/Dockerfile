@@ -7,14 +7,10 @@ RUN apk --no-cache add bash make gcc libc-dev git
 COPY . /go/src/d7y.io/dragonfly/v2
 
 ARG GOPROXY
+
 RUN make build-dfget && make install-dfget
 
 FROM alpine:3.12
-
-# TODO hack for China mainland, remove later
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
-    apk --no-cache add ca-certificates bash vim grep curl tree && \
-    echo 'hosts: files dns' > /etc/nsswitch.conf
 
 ENV PATH=/opt/dragonfly/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
@@ -22,4 +18,5 @@ COPY --from=builder /opt/dragonfly/bin/dfget /opt/dragonfly/bin/dfget
 
 EXPOSE 65001
 
-ENTRYPOINT ["/opt/dragonfly/bin/dfget", "daemon", "--config", "/etc/dragonfly/dfget-daemon.yaml"]
+ENTRYPOINT ["/opt/dragonfly/bin/dfget", "daemon"]
+
