@@ -1,6 +1,15 @@
 # Dragonfly2
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/dragonflyoss/Dragonfly2?style=flat-square)](https://goreportcard.com/report/github.com/dragonflyoss/Dragonfly2)
+[![Coverage](https://codecov.io/gh/dragonflyoss/Dragonfly2/branch/main/graph/badge.svg)](https://codecov.io/gh/dragonflyoss/Dragonfly2)
+[![GitHub release](https://img.shields.io/github/release/dragonflyoss/Dragonfly2.svg)](https://github.com/dragonflyoss/Dragonfly2/releases)
+[![Github Build Status](https://github.com/dragonflyoss/Dragonfly2/workflows/Go/badge.svg?branch=main)](https://github.com/dragonflyoss/Dragonfly2/actions?query=workflow%3AGo+branch%3Amain)
+[![GoDoc](https://godoc.org/github.com/dragonflyoss/Dragonfly2?status.svg)](https://godoc.org/github.com/dragonflyoss/Dragonfly2)
+[![LICENSE](https://img.shields.io/github/license/dragonflyoss/Dragonfly2.svg?style=flat-square)](https://github.com/dragonflyoss/Dragonfly2/blob/main/LICENSE)
+
 ## 产品定位
 提供企业级（高效、稳定、安全、低成本、产品化）的文件分发与管理服务，并成为在该领域的云原生最佳实践与标准解决方案
+
 ## 解决的问题
 1. 架构设计缺陷：现有架构很难满足日益增长的文件分发业务需要，在稳定性、效率以及安全性等方面逐渐暴露出不足，并受到越来越多的挑战
 2. 价值渗透不足：当前只能支持HTTP回源协议，针对其他类型的存储（比如HDFS、各云厂商的存储服务、Maven、YUM等等）缺乏适配，从而导致覆盖的场景受到极大制约，进一步阻碍了其在公司和社区的推广以及价值传播
@@ -20,10 +29,13 @@
 + 产品化能力：支持文件上传、各种分发模式的任务管理、数据视图以及全局管控等功能
 + 内外一套，核心特性相互共享，非通用特性各自扩展
 + 与生态进一步集成：Harbor、Nydus（镜像按需下载解决方案）、各云厂商仓库服务等
+
 ## 产品架构
 ![](docs/prod-arch.png)
+
 ## 技术架构
 ![](docs/tech-arch.png)
+
 ## 各子系统主要逻辑单元
 Manager
 
