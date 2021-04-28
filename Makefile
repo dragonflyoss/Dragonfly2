@@ -130,3 +130,7 @@ test-coverage: ## Run tests with coverage
 	@go test -race -short -coverprofile cover.out -covermode=atomic
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
+
+swag-manager:
+	@swag init -g cmd/manager/main.go -o api/v2/manager
+.PHONY: swag-manager
