@@ -8,6 +8,8 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/configsvc"
 	"d7y.io/dragonfly/v2/manager/host"
+	"d7y.io/dragonfly/v2/manager/hostidentifier"
+	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -15,9 +17,10 @@ import (
 )
 
 type ManagerServer struct {
-	configSvc   *configsvc.ConfigSvc
-	store       configsvc.Store
+	identifier  hostidentifier.Identifier
+	store       store.Store
 	hostManager host.HostManager
+	configSvc   *configsvc.ConfigSvc
 }
 
 func NewManagerServer(cfg *config.Config) *ManagerServer {
@@ -25,12 +28,14 @@ func NewManagerServer(cfg *config.Config) *ManagerServer {
 		return nil
 	}
 
-	store, err := configsvc.NewStore(cfg)
+	identifier := hostidentifier.NewIdentifier()
+
+	store, err := store.NewStore(cfg)
 	if err != nil {
 		return nil
 	}
 
-	configSvc, err := configsvc.NewConfigSvc(store)
+	configSvc, err := configsvc.NewConfigSvc(store, identifier)
 	if err != nil {
 		return nil
 	}
@@ -41,9 +46,10 @@ func NewManagerServer(cfg *config.Config) *ManagerServer {
 	}
 
 	return &ManagerServer{
-		configSvc:   configSvc,
+		identifier:  identifier,
 		store:       store,
 		hostManager: hostManager,
+		configSvc:   configSvc,
 	}
 }
 
@@ -51,14 +57,7 @@ func (ms *ManagerServer) GetSchedulers(ctx context.Context, req *manager.GetSche
 	hostInfo, err := ms.hostManager.GetHostInfo("", req.GetIp(), req.GetHostName(), "")
 	if err != nil {
 		logger.Warnf("failed to get host info: %v", err)
-		hostInfo = &host.HostInfo{
-			HostName:       req.GetHostName(),
-			Ip:             req.GetIp(),
-			SecurityDomain: "",
-			Location:       "",
-			Idc:            "",
-			NetTopology:    "",
-		}
+		hostInfo = host.NewEmptyHostInfo(req.GetIp(), req.GetHostName())
 	}
 
 	nodes, err := ms.configSvc.GetSchedulers(ctx, hostInfo)
@@ -122,9 +121,9 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 		var cdnInstances []*types.CdnInstance
 		maxItemCount := 50
 		for marker := 0; ; marker = marker + maxItemCount {
-			opts := []configsvc.OpOption{}
-			opts = append(opts, configsvc.WithClusterId(cdnClusterId.(string)))
-			opts = append(opts, configsvc.WithMarker(marker, maxItemCount))
+			var opts []store.OpOption
+			opts = append(opts, store.WithClusterId(cdnClusterId.(string)))
+			opts = append(opts, store.WithMarker(marker, maxItemCount))
 			if instances, err := ms.configSvc.ListCdnInstances(context.TODO(), opts...); err != nil {
 				return nil, err
 			} else if len(instances) <= 0 {
@@ -203,7 +202,7 @@ func (ms *ManagerServer) GetSchedulerCluster(ctx context.Context, clusterId stri
 	return ms.configSvc.GetSchedulerCluster(ctx, clusterId)
 }
 
-func (ms *ManagerServer) ListSchedulerClusters(ctx context.Context, opts ...configsvc.OpOption) ([]*types.SchedulerCluster, error) {
+func (ms *ManagerServer) ListSchedulerClusters(ctx context.Context, opts ...store.OpOption) ([]*types.SchedulerCluster, error) {
 	return ms.configSvc.ListSchedulerClusters(ctx, opts...)
 }
 
@@ -223,7 +222,7 @@ func (ms *ManagerServer) GetSchedulerInstance(ctx context.Context, instanceId st
 	return ms.configSvc.GetSchedulerInstance(ctx, instanceId)
 }
 
-func (ms *ManagerServer) ListSchedulerInstances(ctx context.Context, opts ...configsvc.OpOption) ([]*types.SchedulerInstance, error) {
+func (ms *ManagerServer) ListSchedulerInstances(ctx context.Context, opts ...store.OpOption) ([]*types.SchedulerInstance, error) {
 	return ms.configSvc.ListSchedulerInstances(ctx, opts...)
 }
 
@@ -243,7 +242,7 @@ func (ms *ManagerServer) GetCdnCluster(ctx context.Context, clusterId string) (*
 	return ms.configSvc.GetCdnCluster(ctx, clusterId)
 }
 
-func (ms *ManagerServer) ListCdnClusters(ctx context.Context, opts ...configsvc.OpOption) ([]*types.CdnCluster, error) {
+func (ms *ManagerServer) ListCdnClusters(ctx context.Context, opts ...store.OpOption) ([]*types.CdnCluster, error) {
 	return ms.configSvc.ListCdnClusters(ctx, opts...)
 }
 
@@ -263,7 +262,7 @@ func (ms *ManagerServer) GetCdnInstance(ctx context.Context, instanceId string) 
 	return ms.configSvc.GetCdnInstance(ctx, instanceId)
 }
 
-func (ms *ManagerServer) ListCdnInstances(ctx context.Context, opts ...configsvc.OpOption) ([]*types.CdnInstance, error) {
+func (ms *ManagerServer) ListCdnInstances(ctx context.Context, opts ...store.OpOption) ([]*types.CdnInstance, error) {
 	return ms.configSvc.ListCdnInstances(ctx, opts...)
 }
 
@@ -283,6 +282,6 @@ func (ms *ManagerServer) GetSecurityDomain(ctx context.Context, securityDomain s
 	return ms.configSvc.GetSecurityDomain(ctx, securityDomain)
 }
 
-func (ms *ManagerServer) ListSecurityDomains(ctx context.Context, opts ...configsvc.OpOption) ([]*types.SecurityDomain, error) {
+func (ms *ManagerServer) ListSecurityDomains(ctx context.Context, opts ...store.OpOption) ([]*types.SecurityDomain, error) {
 	return ms.configSvc.ListSecurityDomains(ctx, opts...)
 }

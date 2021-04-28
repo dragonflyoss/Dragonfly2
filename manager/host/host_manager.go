@@ -11,6 +11,21 @@ type HostInfo struct {
 	NetTopology    string
 }
 
+func NewEmptyHostInfo(ip, hostName string) *HostInfo {
+	return &HostInfo{
+		HostName:       hostName,
+		Ip:             ip,
+		SecurityDomain: "",
+		Location:       "",
+		Idc:            "",
+		NetTopology:    "",
+	}
+}
+
+func (host *HostInfo) IsEmpty() bool {
+	return len(host.SecurityDomain) == 0 && len(host.Idc) == 0
+}
+
 type HostManager interface {
 	GetHostInfo(sn, ip, hostName, alias string) (*HostInfo, error)
 }

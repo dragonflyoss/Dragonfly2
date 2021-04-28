@@ -8,6 +8,8 @@ import (
 
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/host"
+	"d7y.io/dragonfly/v2/manager/hostidentifier"
+	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -36,32 +38,30 @@ type cdnInstance struct {
 }
 
 type ConfigSvc struct {
-	mu    sync.Mutex
-	store Store
+	mu         sync.Mutex
+	store      store.Store
+	identifier hostidentifier.Identifier
 
-	schClusters map[string]*types.SchedulerCluster
-	cdnClusters map[string]*types.CdnCluster
-
-	schInstances map[string]*schedulerInstance
-	cdnInstances map[string]*cdnInstance
-
-	schInstanceHosts map[string]string
-	cdnInstanceHosts map[string]string
+	schClusters    map[string]*types.SchedulerCluster
+	cdnClusters    map[string]*types.CdnCluster
+	schInstances   map[string]*schedulerInstance
+	cdnInstances   map[string]*cdnInstance
+	securityDomain map[string]*types.SecurityDomain
 
 	stopC chan struct{}
 	wg    sync.WaitGroup
 }
 
-func NewConfigSvc(store Store) (*ConfigSvc, error) {
+func NewConfigSvc(store store.Store, identifier hostidentifier.Identifier) (*ConfigSvc, error) {
 	svc := &ConfigSvc{
-		store:            store,
-		schClusters:      make(map[string]*types.SchedulerCluster),
-		cdnClusters:      make(map[string]*types.CdnCluster),
-		schInstances:     make(map[string]*schedulerInstance),
-		cdnInstances:     make(map[string]*cdnInstance),
-		schInstanceHosts: make(map[string]string),
-		cdnInstanceHosts: make(map[string]string),
-		stopC:            make(chan struct{}),
+		store:          store,
+		identifier:     identifier,
+		schClusters:    make(map[string]*types.SchedulerCluster),
+		cdnClusters:    make(map[string]*types.CdnCluster),
+		schInstances:   make(map[string]*schedulerInstance),
+		cdnInstances:   make(map[string]*cdnInstance),
+		securityDomain: make(map[string]*types.SecurityDomain),
+		stopC:          make(chan struct{}),
 	}
 
 	if err := svc.rebuild(); err != nil {
@@ -123,7 +123,7 @@ func (svc *ConfigSvc) updateAllInstanceState() {
 func (svc *ConfigSvc) rebuild() error {
 	maxItemCount := 50
 	for marker := 0; ; marker = marker + maxItemCount {
-		if clusters, err := svc.ListSchedulerClusters(context.TODO(), WithMarker(marker, maxItemCount)); err != nil {
+		if clusters, err := svc.ListSchedulerClusters(context.TODO(), store.WithMarker(marker, maxItemCount)); err != nil {
 			return err
 		} else if len(clusters) <= 0 {
 			break
@@ -135,7 +135,7 @@ func (svc *ConfigSvc) rebuild() error {
 	}
 
 	for marker := 0; ; marker = marker + maxItemCount {
-		if clusters, err := svc.ListCdnClusters(context.TODO(), WithMarker(marker, maxItemCount)); err != nil {
+		if clusters, err := svc.ListCdnClusters(context.TODO(), store.WithMarker(marker, maxItemCount)); err != nil {
 			return err
 		} else if len(clusters) <= 0 {
 			break
@@ -147,7 +147,7 @@ func (svc *ConfigSvc) rebuild() error {
 	}
 
 	for marker := 0; ; marker = marker + maxItemCount {
-		if instances, err := svc.ListSchedulerInstances(context.TODO(), WithMarker(marker, maxItemCount)); err != nil {
+		if instances, err := svc.ListSchedulerInstances(context.TODO(), store.WithMarker(marker, maxItemCount)); err != nil {
 			return err
 		} else if len(instances) <= 0 {
 			break
@@ -157,13 +157,13 @@ func (svc *ConfigSvc) rebuild() error {
 					instance:      instance,
 					keepAliveTime: time.Now(),
 				}
-				svc.schInstanceHosts[instance.HostName] = instance.InstanceId
+				svc.identifier.Put(instance.HostName, instance.InstanceId)
 			}
 		}
 	}
 
 	for marker := 0; ; marker = marker + maxItemCount {
-		if instances, err := svc.ListCdnInstances(context.TODO(), WithMarker(marker, maxItemCount)); err != nil {
+		if instances, err := svc.ListCdnInstances(context.TODO(), store.WithMarker(marker, maxItemCount)); err != nil {
 			return err
 		} else if len(instances) <= 0 {
 			break
@@ -173,7 +173,19 @@ func (svc *ConfigSvc) rebuild() error {
 					instance:      instance,
 					keepAliveTime: time.Now(),
 				}
-				svc.cdnInstanceHosts[instance.HostName] = instance.InstanceId
+				svc.identifier.Put(instance.HostName, instance.InstanceId)
+			}
+		}
+	}
+
+	for marker := 0; ; marker = marker + maxItemCount {
+		if domains, err := svc.ListSecurityDomains(context.TODO(), store.WithMarker(marker, maxItemCount)); err != nil {
+			return err
+		} else if len(domains) <= 0 {
+			break
+		} else {
+			for _, domain := range domains {
+				svc.securityDomain[domain.SecurityDomain] = domain
 			}
 		}
 	}
@@ -196,12 +208,16 @@ func (svc *ConfigSvc) GetSchedulers(ctx context.Context, hostInfo *host.HostInfo
 			continue
 		}
 
-		if instance.instance.Idc == hostInfo.Idc {
+		if hostInfo.IsEmpty() {
 			nodes = append(nodes, fmt.Sprintf("%s:%d", instance.instance.Ip, instance.instance.Port))
 			continue
 		}
 
-		if instance.instance.SecurityDomain == hostInfo.SecurityDomain {
+		if instance.instance.SecurityDomain != hostInfo.SecurityDomain {
+			continue
+		}
+
+		if instance.instance.Idc == hostInfo.Idc {
 			nodes = append(nodes, fmt.Sprintf("%s:%d", instance.instance.Ip, instance.instance.Port))
 			continue
 		}
@@ -225,30 +241,8 @@ func instanceNextState(cur string, timeout bool) (next string, ok bool) {
 	return
 }
 
-func (svc *ConfigSvc) instanceId(hostName string, resourceType manager.ResourceType) (string, bool) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
-	switch resourceType {
-	case manager.ResourceType_Scheduler:
-		if instanceId, exist := svc.schInstanceHosts[hostName]; exist {
-			return instanceId, true
-		} else {
-			return "", false
-		}
-	case manager.ResourceType_Cdn:
-		if instanceId, exist := svc.cdnInstanceHosts[hostName]; exist {
-			return instanceId, true
-		} else {
-			return "", false
-		}
-	default:
-		return "", false
-	}
-}
-
 func (svc *ConfigSvc) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) error {
-	instanceId, exist := svc.instanceId(req.GetHostName(), req.GetType())
+	instanceId, exist := svc.identifier.Get(req.GetHostName())
 	if !exist {
 		return dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
 	}
@@ -291,7 +285,7 @@ func (svc *ConfigSvc) KeepAlive(ctx context.Context, req *manager.KeepAliveReque
 }
 
 func (svc *ConfigSvc) GetInstanceAndClusterConfig(ctx context.Context, req *manager.GetClusterConfigRequest) (interface{}, interface{}, error) {
-	instanceId, exist := svc.instanceId(req.GetHostName(), req.GetType())
+	instanceId, exist := svc.identifier.Get(req.GetHostName())
 	if !exist {
 		return nil, nil, dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
 	}
@@ -323,7 +317,7 @@ func (svc *ConfigSvc) GetInstanceAndClusterConfig(ctx context.Context, req *mana
 
 func (svc *ConfigSvc) AddSchedulerCluster(ctx context.Context, cluster *types.SchedulerCluster) (*types.SchedulerCluster, error) {
 	cluster.ClusterId = NewUUID(SchedulerClusterPrefix)
-	if inter, err := svc.store.Add(ctx, cluster.ClusterId, cluster, WithResourceType(SchedulerCluster)); err != nil {
+	if inter, err := svc.store.Add(ctx, cluster.ClusterId, cluster, store.WithResourceType(store.SchedulerCluster)); err != nil {
 		return nil, err
 	} else {
 		cluster = inter.(*types.SchedulerCluster)
@@ -335,7 +329,7 @@ func (svc *ConfigSvc) AddSchedulerCluster(ctx context.Context, cluster *types.Sc
 }
 
 func (svc *ConfigSvc) DeleteSchedulerCluster(ctx context.Context, clusterId string) (*types.SchedulerCluster, error) {
-	if inter, err := svc.store.Delete(ctx, clusterId, WithResourceType(SchedulerCluster)); err != nil {
+	if inter, err := svc.store.Delete(ctx, clusterId, store.WithResourceType(store.SchedulerCluster)); err != nil {
 		return nil, err
 	} else if inter == nil {
 		return nil, nil
@@ -351,7 +345,7 @@ func (svc *ConfigSvc) DeleteSchedulerCluster(ctx context.Context, clusterId stri
 }
 
 func (svc *ConfigSvc) UpdateSchedulerCluster(ctx context.Context, cluster *types.SchedulerCluster) (*types.SchedulerCluster, error) {
-	if inter, err := svc.store.Update(ctx, cluster.ClusterId, cluster, WithResourceType(SchedulerCluster)); err != nil {
+	if inter, err := svc.store.Update(ctx, cluster.ClusterId, cluster, store.WithResourceType(store.SchedulerCluster)); err != nil {
 		return nil, err
 	} else {
 		cluster = inter.(*types.SchedulerCluster)
@@ -378,7 +372,7 @@ func (svc *ConfigSvc) getSchedulerCluster(ctx context.Context, clusterId string)
 func (svc *ConfigSvc) GetSchedulerCluster(ctx context.Context, clusterId string) (*types.SchedulerCluster, error) {
 	if cluster, exist := svc.getSchedulerCluster(ctx, clusterId); exist {
 		return cluster, nil
-	} else if inter, err := svc.store.Get(ctx, clusterId, WithResourceType(SchedulerCluster)); err != nil {
+	} else if inter, err := svc.store.Get(ctx, clusterId, store.WithResourceType(store.SchedulerCluster)); err != nil {
 		return nil, err
 	} else {
 		cluster := inter.(*types.SchedulerCluster)
@@ -393,8 +387,8 @@ func (svc *ConfigSvc) GetSchedulerCluster(ctx context.Context, clusterId string)
 	}
 }
 
-func (svc *ConfigSvc) ListSchedulerClusters(ctx context.Context, opts ...OpOption) ([]*types.SchedulerCluster, error) {
-	if inners, err := svc.store.List(ctx, append(opts, WithResourceType(SchedulerCluster))...); err != nil {
+func (svc *ConfigSvc) ListSchedulerClusters(ctx context.Context, opts ...store.OpOption) ([]*types.SchedulerCluster, error) {
+	if inners, err := svc.store.List(ctx, append(opts, store.WithResourceType(store.SchedulerCluster))...); err != nil {
 		return nil, err
 	} else {
 		clusters := []*types.SchedulerCluster{}
@@ -409,7 +403,7 @@ func (svc *ConfigSvc) ListSchedulerClusters(ctx context.Context, opts ...OpOptio
 func (svc *ConfigSvc) AddSchedulerInstance(ctx context.Context, instance *types.SchedulerInstance) (*types.SchedulerInstance, error) {
 	instance.InstanceId = NewUUID(SchedulerInstancePrefix)
 	instance.State = InstanceInactive
-	if inter, err := svc.store.Add(ctx, instance.InstanceId, instance, WithResourceType(SchedulerInstance)); err != nil {
+	if inter, err := svc.store.Add(ctx, instance.InstanceId, instance, store.WithResourceType(store.SchedulerInstance)); err != nil {
 		return nil, err
 	} else {
 		instance = inter.(*types.SchedulerInstance)
@@ -420,13 +414,13 @@ func (svc *ConfigSvc) AddSchedulerInstance(ctx context.Context, instance *types.
 			keepAliveTime: time.Now(),
 		}
 
-		svc.schInstanceHosts[instance.HostName] = instance.InstanceId
+		svc.identifier.Put(instance.HostName, instance.InstanceId)
 		return instance, nil
 	}
 }
 
 func (svc *ConfigSvc) DeleteSchedulerInstance(ctx context.Context, instanceId string) (*types.SchedulerInstance, error) {
-	if inter, err := svc.store.Delete(ctx, instanceId, WithResourceType(SchedulerInstance)); err != nil {
+	if inter, err := svc.store.Delete(ctx, instanceId, store.WithResourceType(store.SchedulerInstance)); err != nil {
 		return nil, err
 	} else if inter == nil {
 		return nil, nil
@@ -437,13 +431,13 @@ func (svc *ConfigSvc) DeleteSchedulerInstance(ctx context.Context, instanceId st
 		if _, exist := svc.schInstances[instance.InstanceId]; exist {
 			delete(svc.schInstances, instance.InstanceId)
 		}
-		delete(svc.schInstanceHosts, instance.HostName)
+		svc.identifier.Delete(instance.HostName)
 		return instance, nil
 	}
 }
 
 func (svc *ConfigSvc) UpdateSchedulerInstance(ctx context.Context, instance *types.SchedulerInstance) (*types.SchedulerInstance, error) {
-	if inter, err := svc.store.Update(ctx, instance.InstanceId, instance, WithResourceType(SchedulerInstance)); err != nil {
+	if inter, err := svc.store.Update(ctx, instance.InstanceId, instance, store.WithResourceType(store.SchedulerInstance)); err != nil {
 		return nil, err
 	} else {
 		instance = inter.(*types.SchedulerInstance)
@@ -473,7 +467,7 @@ func (svc *ConfigSvc) getSchedulerInstance(ctx context.Context, instanceId strin
 func (svc *ConfigSvc) GetSchedulerInstance(ctx context.Context, instanceId string) (*types.SchedulerInstance, error) {
 	if instance, exist := svc.getSchedulerInstance(ctx, instanceId); exist {
 		return instance.instance, nil
-	} else if inter, err := svc.store.Get(ctx, instanceId, WithResourceType(SchedulerInstance)); err != nil {
+	} else if inter, err := svc.store.Get(ctx, instanceId, store.WithResourceType(store.SchedulerInstance)); err != nil {
 		return nil, err
 	} else {
 		instance := inter.(*types.SchedulerInstance)
@@ -491,8 +485,8 @@ func (svc *ConfigSvc) GetSchedulerInstance(ctx context.Context, instanceId strin
 	}
 }
 
-func (svc *ConfigSvc) ListSchedulerInstances(ctx context.Context, opts ...OpOption) ([]*types.SchedulerInstance, error) {
-	if inners, err := svc.store.List(ctx, append(opts, WithResourceType(SchedulerInstance))...); err != nil {
+func (svc *ConfigSvc) ListSchedulerInstances(ctx context.Context, opts ...store.OpOption) ([]*types.SchedulerInstance, error) {
+	if inners, err := svc.store.List(ctx, append(opts, store.WithResourceType(store.SchedulerInstance))...); err != nil {
 		return nil, err
 	} else {
 		instances := []*types.SchedulerInstance{}
@@ -506,7 +500,7 @@ func (svc *ConfigSvc) ListSchedulerInstances(ctx context.Context, opts ...OpOpti
 
 func (svc *ConfigSvc) AddCdnCluster(ctx context.Context, cluster *types.CdnCluster) (*types.CdnCluster, error) {
 	cluster.ClusterId = NewUUID(CdnClusterPrefix)
-	if inter, err := svc.store.Add(ctx, cluster.ClusterId, cluster, WithResourceType(CdnCluster)); err != nil {
+	if inter, err := svc.store.Add(ctx, cluster.ClusterId, cluster, store.WithResourceType(store.CdnCluster)); err != nil {
 		return nil, err
 	} else {
 		cluster = inter.(*types.CdnCluster)
@@ -521,7 +515,7 @@ func (svc *ConfigSvc) AddCdnCluster(ctx context.Context, cluster *types.CdnClust
 }
 
 func (svc *ConfigSvc) DeleteCdnCluster(ctx context.Context, clusterId string) (*types.CdnCluster, error) {
-	if inter, err := svc.store.Delete(ctx, clusterId, WithResourceType(CdnCluster)); err != nil {
+	if inter, err := svc.store.Delete(ctx, clusterId, store.WithResourceType(store.CdnCluster)); err != nil {
 		return nil, err
 	} else if inter == nil {
 		return nil, nil
@@ -537,7 +531,7 @@ func (svc *ConfigSvc) DeleteCdnCluster(ctx context.Context, clusterId string) (*
 }
 
 func (svc *ConfigSvc) UpdateCdnCluster(ctx context.Context, cluster *types.CdnCluster) (*types.CdnCluster, error) {
-	if inter, err := svc.store.Update(ctx, cluster.ClusterId, cluster, WithResourceType(CdnCluster)); err != nil {
+	if inter, err := svc.store.Update(ctx, cluster.ClusterId, cluster, store.WithResourceType(store.CdnCluster)); err != nil {
 		return nil, err
 	} else {
 		cluster = inter.(*types.CdnCluster)
@@ -564,7 +558,7 @@ func (svc *ConfigSvc) getCdnCluster(ctx context.Context, clusterId string) (*typ
 func (svc *ConfigSvc) GetCdnCluster(ctx context.Context, clusterId string) (*types.CdnCluster, error) {
 	if cluster, exist := svc.getCdnCluster(ctx, clusterId); exist {
 		return cluster, nil
-	} else if inter, err := svc.store.Get(ctx, clusterId, WithResourceType(CdnCluster)); err != nil {
+	} else if inter, err := svc.store.Get(ctx, clusterId, store.WithResourceType(store.CdnCluster)); err != nil {
 		return nil, err
 	} else {
 		cluster := inter.(*types.CdnCluster)
@@ -579,8 +573,8 @@ func (svc *ConfigSvc) GetCdnCluster(ctx context.Context, clusterId string) (*typ
 	}
 }
 
-func (svc *ConfigSvc) ListCdnClusters(ctx context.Context, opts ...OpOption) ([]*types.CdnCluster, error) {
-	if inners, err := svc.store.List(ctx, append(opts, WithResourceType(CdnCluster))...); err != nil {
+func (svc *ConfigSvc) ListCdnClusters(ctx context.Context, opts ...store.OpOption) ([]*types.CdnCluster, error) {
+	if inners, err := svc.store.List(ctx, append(opts, store.WithResourceType(store.CdnCluster))...); err != nil {
 		return nil, err
 	} else {
 		clusters := []*types.CdnCluster{}
@@ -595,7 +589,7 @@ func (svc *ConfigSvc) ListCdnClusters(ctx context.Context, opts ...OpOption) ([]
 func (svc *ConfigSvc) AddCdnInstance(ctx context.Context, instance *types.CdnInstance) (*types.CdnInstance, error) {
 	instance.InstanceId = NewUUID(CdnInstancePrefix)
 	instance.State = InstanceInactive
-	if inter, err := svc.store.Add(ctx, instance.InstanceId, instance, WithResourceType(CdnInstance)); err != nil {
+	if inter, err := svc.store.Add(ctx, instance.InstanceId, instance, store.WithResourceType(store.CdnInstance)); err != nil {
 		return nil, err
 	} else {
 		instance = inter.(*types.CdnInstance)
@@ -608,13 +602,13 @@ func (svc *ConfigSvc) AddCdnInstance(ctx context.Context, instance *types.CdnIns
 			instance:      instance,
 			keepAliveTime: time.Now(),
 		}
-		svc.cdnInstanceHosts[instance.HostName] = instance.InstanceId
+		svc.identifier.Put(instance.HostName, instance.InstanceId)
 		return instance, nil
 	}
 }
 
 func (svc *ConfigSvc) DeleteCdnInstance(ctx context.Context, instanceId string) (*types.CdnInstance, error) {
-	if inter, err := svc.store.Delete(ctx, instanceId, WithResourceType(CdnInstance)); err != nil {
+	if inter, err := svc.store.Delete(ctx, instanceId, store.WithResourceType(store.CdnInstance)); err != nil {
 		return nil, err
 	} else if inter == nil {
 		return nil, nil
@@ -625,13 +619,13 @@ func (svc *ConfigSvc) DeleteCdnInstance(ctx context.Context, instanceId string) 
 		if _, exist := svc.cdnInstances[instance.InstanceId]; exist {
 			delete(svc.cdnInstances, instance.InstanceId)
 		}
-		delete(svc.cdnInstanceHosts, instance.HostName)
+		svc.identifier.Delete(instance.HostName)
 		return instance, nil
 	}
 }
 
 func (svc *ConfigSvc) UpdateCdnInstance(ctx context.Context, instance *types.CdnInstance) (*types.CdnInstance, error) {
-	if inter, err := svc.store.Update(ctx, instance.InstanceId, instance, WithResourceType(CdnInstance)); err != nil {
+	if inter, err := svc.store.Update(ctx, instance.InstanceId, instance, store.WithResourceType(store.CdnInstance)); err != nil {
 		return nil, err
 	} else {
 		instance = inter.(*types.CdnInstance)
@@ -661,7 +655,7 @@ func (svc *ConfigSvc) getCdnInstance(ctx context.Context, instanceId string) (*c
 func (svc *ConfigSvc) GetCdnInstance(ctx context.Context, instanceId string) (*types.CdnInstance, error) {
 	if instance, exist := svc.getCdnInstance(ctx, instanceId); exist {
 		return instance.instance, nil
-	} else if inter, err := svc.store.Get(ctx, instanceId, WithResourceType(CdnInstance)); err != nil {
+	} else if inter, err := svc.store.Get(ctx, instanceId, store.WithResourceType(store.CdnInstance)); err != nil {
 		return nil, err
 	} else {
 		instance := inter.(*types.CdnInstance)
@@ -679,8 +673,8 @@ func (svc *ConfigSvc) GetCdnInstance(ctx context.Context, instanceId string) (*t
 	}
 }
 
-func (svc *ConfigSvc) ListCdnInstances(ctx context.Context, opts ...OpOption) ([]*types.CdnInstance, error) {
-	if inners, err := svc.store.List(ctx, append(opts, WithResourceType(CdnInstance))...); err != nil {
+func (svc *ConfigSvc) ListCdnInstances(ctx context.Context, opts ...store.OpOption) ([]*types.CdnInstance, error) {
+	if inners, err := svc.store.List(ctx, append(opts, store.WithResourceType(store.CdnInstance))...); err != nil {
 		return nil, err
 	} else {
 		instances := []*types.CdnInstance{}
@@ -693,45 +687,76 @@ func (svc *ConfigSvc) ListCdnInstances(ctx context.Context, opts ...OpOption) ([
 }
 
 func (svc *ConfigSvc) AddSecurityDomain(ctx context.Context, securityDomain *types.SecurityDomain) (*types.SecurityDomain, error) {
-	if inter, err := svc.store.Add(ctx, securityDomain.SecurityDomain, securityDomain, WithResourceType(SecurityDomain)); err != nil {
+	if inter, err := svc.store.Add(ctx, securityDomain.SecurityDomain, securityDomain, store.WithResourceType(store.SecurityDomain)); err != nil {
 		return nil, err
 	} else {
 		domain := inter.(*types.SecurityDomain)
+		svc.mu.Lock()
+		defer svc.mu.Unlock()
+		svc.securityDomain[domain.SecurityDomain] = domain
 		return domain, nil
 	}
 }
 
 func (svc *ConfigSvc) DeleteSecurityDomain(ctx context.Context, securityDomain string) (*types.SecurityDomain, error) {
-	if inter, err := svc.store.Delete(ctx, securityDomain, WithResourceType(SecurityDomain)); err != nil {
+	if inter, err := svc.store.Delete(ctx, securityDomain, store.WithResourceType(store.SecurityDomain)); err != nil {
 		return nil, err
 	} else if inter == nil {
 		return nil, nil
 	} else {
 		domain := inter.(*types.SecurityDomain)
+		svc.mu.Lock()
+		defer svc.mu.Unlock()
+		if _, exist := svc.securityDomain[domain.SecurityDomain]; exist {
+			delete(svc.securityDomain, domain.SecurityDomain)
+		}
 		return domain, nil
 	}
 }
 
 func (svc *ConfigSvc) UpdateSecurityDomain(ctx context.Context, securityDomain *types.SecurityDomain) (*types.SecurityDomain, error) {
-	if inter, err := svc.store.Update(ctx, securityDomain.SecurityDomain, securityDomain, WithResourceType(SecurityDomain)); err != nil {
+	if inter, err := svc.store.Update(ctx, securityDomain.SecurityDomain, securityDomain, store.WithResourceType(store.SecurityDomain)); err != nil {
 		return nil, err
 	} else {
 		domain := inter.(*types.SecurityDomain)
+		svc.mu.Lock()
+		defer svc.mu.Unlock()
+		if _, exist := svc.securityDomain[domain.SecurityDomain]; exist {
+			delete(svc.securityDomain, domain.SecurityDomain)
+		}
+		svc.securityDomain[domain.SecurityDomain] = domain
 		return domain, nil
+	}
+}
+func (svc *ConfigSvc) getSecurityDomain(ctx context.Context, securityDomain string) (*types.SecurityDomain, bool) {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+	if cur, exist := svc.securityDomain[securityDomain]; exist {
+		return cur, true
+	} else {
+		return nil, false
 	}
 }
 
 func (svc *ConfigSvc) GetSecurityDomain(ctx context.Context, securityDomain string) (*types.SecurityDomain, error) {
-	if inter, err := svc.store.Get(ctx, securityDomain, WithResourceType(SecurityDomain)); err != nil {
+	if domain, exist := svc.getSecurityDomain(ctx, securityDomain); exist {
+		return domain, nil
+	} else if inter, err := svc.store.Get(ctx, securityDomain, store.WithResourceType(store.SecurityDomain)); err != nil {
 		return nil, err
 	} else {
 		domain := inter.(*types.SecurityDomain)
+		svc.mu.Lock()
+		defer svc.mu.Unlock()
+		if _, exist := svc.securityDomain[domain.SecurityDomain]; exist {
+			delete(svc.securityDomain, domain.SecurityDomain)
+		}
+		svc.securityDomain[domain.SecurityDomain] = domain
 		return domain, nil
 	}
 }
 
-func (svc *ConfigSvc) ListSecurityDomains(ctx context.Context, opts ...OpOption) ([]*types.SecurityDomain, error) {
-	if inners, err := svc.store.List(ctx, append(opts, WithResourceType(SecurityDomain))...); err != nil {
+func (svc *ConfigSvc) ListSecurityDomains(ctx context.Context, opts ...store.OpOption) ([]*types.SecurityDomain, error) {
+	if inners, err := svc.store.List(ctx, append(opts, store.WithResourceType(store.SecurityDomain))...); err != nil {
 		return nil, err
 	} else {
 		domains := []*types.SecurityDomain{}

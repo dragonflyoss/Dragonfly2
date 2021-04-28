@@ -10,6 +10,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/configsvc"
+	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -296,7 +297,7 @@ func (suite *ServerTestSuite) TestSchedulerCluster() {
 	}
 
 	{
-		ret, err := suite.server.ms.ListSchedulerClusters(context.TODO(), configsvc.WithMarker(0, 10))
+		ret, err := suite.server.ms.ListSchedulerClusters(context.TODO(), store.WithMarker(0, 10))
 		assert.NotNil(ret)
 		assert.Nil(err)
 		for i, c := range ret {
@@ -374,9 +375,9 @@ func (suite *ServerTestSuite) TestSchedulerInstance() {
 	}
 
 	{
-		op := []configsvc.OpOption{}
-		op = append(op, configsvc.WithClusterId(cluster.ClusterId))
-		op = append(op, configsvc.WithMarker(0, 10))
+		op := []store.OpOption{}
+		op = append(op, store.WithClusterId(cluster.ClusterId))
+		op = append(op, store.WithMarker(0, 10))
 
 		ret, err := suite.server.ms.ListSchedulerInstances(context.TODO(), op...)
 		assert.NotNil(ret)
@@ -439,7 +440,7 @@ func (suite *ServerTestSuite) TestCdnCluster() {
 	}
 
 	{
-		ret, err := suite.server.ms.ListCdnClusters(context.TODO(), configsvc.WithMarker(0, 10))
+		ret, err := suite.server.ms.ListCdnClusters(context.TODO(), store.WithMarker(0, 10))
 		assert.NotNil(ret)
 		assert.Nil(err)
 		for i, c := range ret {
@@ -516,9 +517,9 @@ func (suite *ServerTestSuite) TestCdnInstance() {
 	}
 
 	{
-		op := []configsvc.OpOption{}
-		op = append(op, configsvc.WithClusterId(cluster.ClusterId))
-		op = append(op, configsvc.WithMarker(0, 10))
+		op := []store.OpOption{}
+		op = append(op, store.WithClusterId(cluster.ClusterId))
+		op = append(op, store.WithMarker(0, 10))
 
 		ret, err := suite.server.ms.ListCdnInstances(context.TODO(), op...)
 		assert.NotNil(ret)
@@ -596,7 +597,7 @@ func (suite *ServerTestSuite) TestSecurityDomain() {
 	}
 
 	{
-		ret, err := suite.server.ms.ListSecurityDomains(context.TODO(), configsvc.WithMarker(0, 10))
+		ret, err := suite.server.ms.ListSecurityDomains(context.TODO(), store.WithMarker(0, 10))
 		assert.NotNil(ret)
 		assert.Nil(err)
 		for i, d := range ret {
