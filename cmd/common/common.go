@@ -41,11 +41,11 @@ func InitCobra(cmd *cobra.Command, cfgFile *string, envPrefix string, config int
 
 	// Add flags
 	flagSet := cmd.Flags()
-	flagSet.Bool("console", false, "whether print log on the terminal")
+	flagSet.Bool("console", false, "whether output log info on the terminal")
 	flagSet.Bool("verbose", false, "whether use debug level logger and enable pprof")
 	flagSet.Int("pprofPort", 0, "listen port for pprof, only valid when the verbose option is true, default is random port")
 	flagSet.StringVarP(cfgFile, "config", "f", "", "the path of configuration file")
-	
+
 	if err := viper.BindPFlags(flagSet); err != nil {
 		panic(errors.Wrap(err, "bind flags to viper"))
 	}
