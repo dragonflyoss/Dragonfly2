@@ -42,9 +42,6 @@ const (
 )
 
 const (
-	// DefaultCdnConfigFilePath the default cdn config path.
-	DefaultCdnConfigFilePath = "/etc/dragonfly/cdn.yaml"
-
 	DefaultStoragePattern = "disk"
 )
 

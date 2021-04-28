@@ -30,8 +30,9 @@ import (
 )
 
 var (
-	cfgFile string
-	cfg     *config.Config
+	cfgFile = config.DefaultConfigPath
+	// Initialize default scheduler config
+	cfg = config.New()
 )
 
 const (
@@ -52,6 +53,9 @@ for deciding which peers transmit blocks to each other.`,
 			return errors.Wrap(err, "init scheduler logger")
 		}
 
+		if err := common.InitConfig(cmd, schedulerEnvPrefix, cfg); err != nil {
+			return errors.Wrapf(err, "init cdn scheduler config")
+		}
 		return runScheduler()
 	},
 }
@@ -66,11 +70,9 @@ func Execute() {
 }
 
 func init() {
-	// Initialize default scheduler config
-	cfg = config.New()
 
 	// Initialize cobra
-	common.InitCobra(rootCmd, &cfgFile, schedulerEnvPrefix, cfg)
+	common.SetupFlags(rootCmd, cfgFile)
 }
 
 func runScheduler() error {

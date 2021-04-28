@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-package common
+package config
 
-var defaultConfigDir = "/etc/dragonfly"
+var DefaultConfigPath = "/etc/dragonfly/manager.yaml"

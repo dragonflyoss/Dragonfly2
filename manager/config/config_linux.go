@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-package common
+package config
 
-import (
-	"path/filepath"
-
-	"d7y.io/dragonfly/v2/pkg/basic"
-)
-
-var defaultConfigDir = filepath.Join(basic.HomeDir, ".dragonfly")
+var DefaultConfigPath = basic.HomeDir + "/.dragonfly/manager.yaml"

@@ -30,8 +30,8 @@ import (
 )
 
 var (
-	cfgFile string
-	cfg     *config.Config
+	cfgFile = config.DefaultConfigPath
+	cfg     = config.New()
 )
 
 const (
@@ -53,6 +53,10 @@ from remote source repeatedly.`,
 			return errors.Wrap(err, "init cdn system logger")
 		}
 
+		if err := common.InitConfig(cmd, cdnSystemEnvPrefix, cfg); err != nil {
+			return errors.Wrapf(err, "init cdn system config")
+		}
+
 		return runCdnSystem()
 	},
 }
@@ -67,11 +71,8 @@ func Execute() {
 }
 
 func init() {
-	// Initialize default cdn system config
-	cfg = config.New()
-
 	// Initialize cobra
-	common.InitCobra(rootCmd, &cfgFile, cdnSystemEnvPrefix, cfg)
+	common.SetupFlags(rootCmd, cfgFile)
 }
 
 func runCdnSystem() error {

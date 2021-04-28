@@ -1,9 +1,5 @@
 package config
 
-const (
-	DefaultConfigFilePath string = "/etc/dragonfly/manager.yaml"
-)
-
 type Config struct {
 	Console       bool                 `yaml:"console"`
 	Verbose       bool                 `yaml:"verbose"`

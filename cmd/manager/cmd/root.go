@@ -30,8 +30,9 @@ import (
 )
 
 var (
-	cfgFile string
-	cfg     *config.Config
+	cfgFile = config.DefaultConfigPath
+	// Initialize default manager config
+	cfg = config.New()
 )
 
 const (
@@ -52,6 +53,9 @@ for managing schedulers and cdns, offering http apis and portal, etc.`,
 			return errors.Wrap(err, "init manager logger")
 		}
 
+		if err := common.InitConfig(cmd, managerEnvPrefix, cfg); err != nil {
+			return errors.Wrapf(err, "init cdn manager config")
+		}
 		return runManager()
 	},
 }
@@ -66,11 +70,9 @@ func Execute() {
 }
 
 func init() {
-	// Initialize default manager config
-	cfg = config.New()
 
 	// Initialize cobra
-	common.InitCobra(rootCmd, &cfgFile, managerEnvPrefix, cfg)
+	common.SetupFlags(rootCmd, cfgFile)
 }
 
 func runManager() error {

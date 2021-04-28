@@ -71,6 +71,3 @@ plugins:
           fullGCThreshold: 5G
           cleanRatio: 3
           intervalThreshold: 2h
-#  sourceClient:
-#    - name: http
-#      enable: false
