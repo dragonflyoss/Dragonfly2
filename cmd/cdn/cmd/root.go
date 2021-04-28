@@ -30,8 +30,7 @@ import (
 )
 
 var (
-	cfgFile string
-	cfg     *config.Config
+	cfg *config.Config
 )
 
 const (
@@ -71,7 +70,7 @@ func init() {
 	cfg = config.New()
 
 	// Initialize cobra
-	common.InitCobra(rootCmd, &cfgFile, cdnSystemEnvPrefix, cfg)
+	common.InitCobra(rootCmd, cdnSystemEnvPrefix, cfg)
 }
 
 func runCdnSystem() error {
