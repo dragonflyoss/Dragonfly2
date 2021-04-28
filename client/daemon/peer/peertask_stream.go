@@ -388,6 +388,8 @@ func (s *streamPeerTask) cleanUnfinished() {
 			s.Errorf("fail callback error: %s", err)
 		}
 		s.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		s.span.SetAttributes(config.AttributePeerTaskCode.Int(int(s.failedCode)))
+		s.span.SetAttributes(config.AttributePeerTaskMessage.String(s.failedReason))
 	})
 }
 
