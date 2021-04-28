@@ -34,6 +34,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var (
+	configFileRead bool
+	existEnvPrefix string
+)
+
 // InitCobra initializes flags binding and common sub cmds.
 // config is a pointer to configuration struct.
 func InitCobra(cmd *cobra.Command, envPrefix string, config interface{}) {
@@ -41,19 +46,23 @@ func InitCobra(cmd *cobra.Command, envPrefix string, config interface{}) {
 	cobra.OnInitialize(func() { initConfig(&cfgFile, envPrefix, config) })
 
 	// Add flags
-	flagSet := cmd.Flags()
-	flagSet.Bool("console", false, "whether output log info on the terminal")
-	flagSet.Bool("verbose", false, "whether use debug level logger and enable pprof")
-	flagSet.Int("pprofPort", 0, "listen port for pprof, only valid when the verbose option is true, default is random port")
-	flagSet.StringVarP(&cfgFile, "config", "f", "", "the path of configuration file")
+	persistentFlags := cmd.PersistentFlags()
+	persistentFlags.Bool("console", false, "whether output log info on the terminal")
+	persistentFlags.Bool("verbose", false, "whether use debug level logger and enable pprof")
+	persistentFlags.Int("pprofPort", 0, "listen port for pprof, only valid when the verbose option is true, default is random port")
+	persistentFlags.StringVarP(&cfgFile, "config", "f", "", "the path of configuration file")
 
-	if err := viper.BindPFlags(flagSet); err != nil {
+	cmdFlags := cmd.Flags()
+	cmdFlags.AddFlagSet(persistentFlags)
+	if err := viper.BindPFlags(cmdFlags); err != nil {
 		panic(errors.Wrap(err, "bind flags to viper"))
 	}
 
 	// Add common cmds
-	cmd.AddCommand(VersionCmd)
-	cmd.AddCommand(newDocCommand(cmd.Name()))
+	if !cmd.HasParent() {
+		cmd.AddCommand(VersionCmd)
+		cmd.AddCommand(newDocCommand(cmd.Name()))
+	}
 }
 
 func InitVerboseMode(verbose bool, pprofPort int) {
@@ -85,29 +94,40 @@ func InitVerboseMode(verbose bool, pprofPort int) {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig(cfgFile *string, envPrefix string, config interface{}) {
-	if *cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(*cfgFile)
+	if existEnvPrefix != "" && existEnvPrefix != envPrefix {
+		panic("viper can not support multi env prefix")
 	} else {
-		viper.AddConfigPath(defaultConfigDir)
-		viper.SetConfigName(envPrefix)
-		viper.SetConfigType("yaml")
+		existEnvPrefix = envPrefix
 	}
 
-	viper.SetEnvPrefix(envPrefix)
-	viper.AutomaticEnv() // read in environment variables that match
+	// config file is read in only once.
+	if !configFileRead {
+		if *cfgFile != "" {
+			// Use config file from the flag.
+			viper.SetConfigFile(*cfgFile)
+		} else {
+			viper.AddConfigPath(defaultConfigDir)
+			viper.SetConfigName(envPrefix)
+			viper.SetConfigType("yaml")
+		}
 
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err != nil {
-		ignoreErr := false
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			if *cfgFile == "" {
-				ignoreErr = true
+		viper.SetEnvPrefix(envPrefix)
+		viper.AutomaticEnv() // read in environment variables that match
+
+		// If a config file is found, read it in.
+		if err := viper.ReadInConfig(); err != nil {
+			ignoreErr := false
+			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+				if *cfgFile == "" {
+					ignoreErr = true
+				}
+			}
+			if !ignoreErr {
+				panic(errors.Wrap(err, "viper read config"))
 			}
 		}
-		if !ignoreErr {
-			panic(errors.Wrap(err, "viper read config"))
-		}
+
+		configFileRead = true
 	}
 
 	if err := viper.Unmarshal(config, initDecoderConfig); err != nil {
