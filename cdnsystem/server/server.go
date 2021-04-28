@@ -17,6 +17,7 @@
 package server
 
 import (
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/ossprotocol"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
@@ -54,6 +55,9 @@ type Server struct {
 
 // New creates a brand new server instance.
 func New(cfg *config.Config) (*Server, error) {
+	if err := plugins.Initialize(cfg); err != nil {
+		return nil, err
+	}
 	storageMgr, err := storage.NewManager(cfg)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create storage manager")
@@ -111,8 +115,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}, nil
 }
 
-// Start runs cdn server.
-func (s *Server) Start() (err error) {
+func (s *Server) Serve() (err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			err = errors.New(fmt.Sprintf("%v", rec))
@@ -137,4 +140,9 @@ func (s *Server) Start() (err error) {
 		return errors.Wrap(err, "failed to start tcp server")
 	}
 	return nil
+}
+
+
+func (s *Server) Stop() {
+	rpc.StopServer()
 }

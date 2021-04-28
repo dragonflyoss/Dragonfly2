@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	server "d7y.io/dragonfly/v2/cdnsystem/daemon"
+	"d7y.io/dragonfly/v2/cdnsystem/server"
 	"d7y.io/dragonfly/v2/cmd/common"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
