@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
-	"d7y.io/dragonfly/v2/manager/configsvc"
+	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/gin-gonic/gin"
@@ -208,7 +208,7 @@ func (handler *Handler) ListSchedulerClusters(ctx *gin.Context) {
 		marker = 0
 	}
 
-	clusters, err := handler.server.ListSchedulerClusters(context.TODO(), configsvc.WithMarker(marker, maxItemCount))
+	clusters, err := handler.server.ListSchedulerClusters(context.TODO(), store.WithMarker(marker, maxItemCount))
 	if err == nil {
 		if len(clusters) > 0 {
 			ctx.JSON(http.StatusOK, &types.ListSchedulerClustersResponse{Clusters: clusters})

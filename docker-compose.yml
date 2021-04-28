@@ -41,24 +41,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.manager
-    depends_on:
-      - db
     container_name: manager
     hostname: manager
     volumes:
       - ./hack/testdata/manager.yaml:/etc/dragonfly/manager.yaml
       - ./log/dragonfly/manager:/root/logs/dragonfly
-    entrypoint: sh -c '/root/wait-for.sh db:3306 -t 30 -- /opt/dragonfly/bin/manager'
-
-  db:
-    image: mysql:8.0.19
-    volumes:
-      - ./mysql:/var/lib/mysql
-    restart: always
-    container_name: db
-    hostname: db
-    environment:
-      MYSQL_ROOT_PASSWORD: root1234
-      MYSQL_DATABASE: config_db
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root1234

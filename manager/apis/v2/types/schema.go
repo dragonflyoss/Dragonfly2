@@ -14,6 +14,10 @@ type SchedulerCluster struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
+type ListSchedulerClustersResponse struct {
+	Clusters []*SchedulerCluster `json:"clusters"`
+}
+
 type SchedulerInstance struct {
 	InstanceId     string    `json:"instance_id,size:63"`
 	ClusterId      string    `json:"cluster_id,size:63"`
@@ -62,8 +66,4 @@ type SecurityDomain struct {
 	Modifier       string    `json:"modifier,size:31"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
-}
-
-type ListSchedulerClustersResponse struct {
-	Clusters []*SchedulerCluster `json:"clusters"`
 }
