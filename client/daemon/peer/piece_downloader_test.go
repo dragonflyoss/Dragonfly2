@@ -17,6 +17,7 @@
 package peer
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -118,7 +119,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 			hash := md5.New()
 			hash.Write(tt.targetPieceData)
 			digest := hex.EncodeToString(hash.Sum(nil)[:16])
-			r, c, err := pd.DownloadPiece(&DownloadPieceRequest{
+			r, c, err := pd.DownloadPiece(context.Background(), &DownloadPieceRequest{
 				TaskID:     tt.taskID,
 				DstPid:     "",
 				DstAddr:    addr.Host,

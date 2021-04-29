@@ -395,6 +395,7 @@ loop:
 
 		if err != nil {
 			pt.Warnf("get piece task error: %s, wait available peers from scheduler", err)
+			pt.span.RecordError(err)
 			select {
 			// when peer task without content length or total pieces count, match here
 			case <-pt.done:
@@ -429,6 +430,7 @@ loop:
 			}
 			initialized = true
 			if err = pt.callback.Init(pt); err != nil {
+				pt.span.RecordError(err)
 				pt.failedReason = err.Error()
 				pt.failedCode = dfcodes.ClientError
 				break loop
