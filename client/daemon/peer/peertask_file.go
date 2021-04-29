@@ -198,7 +198,7 @@ func (pt *filePeerTask) Start(ctx context.Context) (chan *FilePeerTaskProgress, 
 				pt.Errorf("download from source error: %s", err)
 				return
 			}
-			pt.Errorf("download from source ok")
+			pt.Infof("download from source ok")
 			pt.finish()
 		}()
 		return pt.progressCh, nil
@@ -286,6 +286,7 @@ func (pt *filePeerTask) finish() error {
 		// callback to store data to output
 		if err = pt.callback.Done(pt); err != nil {
 			pt.Errorf("peer task done callback failed: %s", err)
+			pt.span.RecordError(err)
 			success = false
 			code = dfcodes.ClientError
 			message = err.Error()
@@ -385,6 +386,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 		}
 
 		if err := pt.callback.Fail(pt, pt.failedCode, pt.failedReason); err != nil {
+			pt.span.RecordError(err)
 			pt.Errorf("peer task fail callback failed: %s", err)
 		}
 

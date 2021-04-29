@@ -17,6 +17,7 @@
 package peer
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -40,7 +41,7 @@ type DownloadPieceRequest struct {
 }
 
 type PieceDownloader interface {
-	DownloadPiece(*DownloadPieceRequest) (io.Reader, io.Closer, error)
+	DownloadPiece(context.Context, *DownloadPieceRequest) (io.Reader, io.Closer, error)
 }
 
 type pieceDownloader struct {
@@ -49,17 +50,17 @@ type pieceDownloader struct {
 }
 
 var defaultTransport http.RoundTripper = &http.Transport{
-	// Proxy: http.ProxyFromEnvironment,
+	Proxy: http.ProxyFromEnvironment,
 	DialContext: (&net.Dialer{
-		Timeout:   1 * time.Second,
+		Timeout:   2 * time.Second,
 		KeepAlive: 30 * time.Second,
 		DualStack: true,
 	}).DialContext,
-	ForceAttemptHTTP2:     true,
 	MaxIdleConns:          100,
 	IdleConnTimeout:       90 * time.Second,
+	ResponseHeaderTimeout: 2 * time.Second,
 	TLSHandshakeTimeout:   10 * time.Second,
-	ExpectContinueTimeout: 1 * time.Second,
+	ExpectContinueTimeout: 2 * time.Second,
 }
 
 func NewPieceDownloader(opts ...func(*pieceDownloader) error) (PieceDownloader, error) {
@@ -74,7 +75,7 @@ func NewPieceDownloader(opts ...func(*pieceDownloader) error) (PieceDownloader, 
 	}
 	pd.httpClient = &http.Client{
 		Transport: pd.transport,
-		Timeout:   4 * time.Second,
+		Timeout:   30 * time.Second,
 	}
 	return pd, nil
 }
@@ -86,8 +87,8 @@ func WithTransport(rt http.RoundTripper) func(*pieceDownloader) error {
 	}
 }
 
-func (p *pieceDownloader) DownloadPiece(d *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-	resp, err := p.httpClient.Do(buildDownloadPieceHTTPRequest(d))
+func (p *pieceDownloader) DownloadPiece(ctx context.Context, d *DownloadPieceRequest) (io.Reader, io.Closer, error) {
+	resp, err := p.httpClient.Do(buildDownloadPieceHTTPRequest(ctx, d))
 	if err != nil {
 		logger.Errorf("task id: %s, piece num: %d, dst: %s, download piece failed: %s",
 			d.TaskID, d.piece.PieceNum, d.DstAddr, err)
@@ -106,7 +107,7 @@ func (p *pieceDownloader) DownloadPiece(d *DownloadPieceRequest) (io.Reader, io.
 	return r, c, nil
 }
 
-func buildDownloadPieceHTTPRequest(d *DownloadPieceRequest) *http.Request {
+func buildDownloadPieceHTTPRequest(ctx context.Context, d *DownloadPieceRequest) *http.Request {
 	b := strings.Builder{}
 	b.WriteString("http://")
 	b.WriteString(d.DstAddr)
@@ -119,7 +120,7 @@ func buildDownloadPieceHTTPRequest(d *DownloadPieceRequest) *http.Request {
 
 	u := b.String()
 	logger.Debugf("built request url: %s", u)
-	req, _ := http.NewRequest(http.MethodGet, u, nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 
 	// TODO use string.Builder
 	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d",

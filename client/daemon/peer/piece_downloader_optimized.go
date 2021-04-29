@@ -17,6 +17,7 @@
 package peer
 
 import (
+	"context"
 	"io"
 	"net"
 	"net/http/httputil"
@@ -31,6 +32,17 @@ import (
 type optimizedPieceDownloader struct {
 }
 
+type cancelCloser struct {
+	cancel func()
+	closer io.Closer
+}
+
+func (c *cancelCloser) Close() error {
+	err := c.closer.Close()
+	c.cancel()
+	return err
+}
+
 func NewOptimizedPieceDownloader(opts ...func(*optimizedPieceDownloader) error) (PieceDownloader, error) {
 	pd := &optimizedPieceDownloader{}
 	for _, opt := range opts {
@@ -41,28 +53,33 @@ func NewOptimizedPieceDownloader(opts ...func(*optimizedPieceDownloader) error) 
 	return pd, nil
 }
 
-func (o optimizedPieceDownloader) DownloadPiece(request *DownloadPieceRequest) (io.Reader, io.Closer, error) {
+func (o optimizedPieceDownloader) DownloadPiece(ctx context.Context, request *DownloadPieceRequest) (io.Reader, io.Closer, error) {
 	logger.Debugf("download piece, addr: %s, task: %s, peer: %s, piece: %d",
 		request.TaskID, request.DstAddr, request.DstPid, request.piece.PieceNum)
 	// TODO get from connection pool
-	conn, err := net.DialTimeout("tcp", request.DstAddr, time.Second)
+	conn, err := net.DialTimeout("tcp", request.DstAddr, 2*time.Second)
 	if err != nil {
 		panic(err)
 	}
 	// TODO refactor httputil.NewClientConn
 	client := httputil.NewClientConn(conn, nil)
-	req := buildDownloadPieceHTTPRequest(request)
+	// add default timeout
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	req := buildDownloadPieceHTTPRequest(ctx, request)
 
 	// write request to tcp conn
 	if err = client.Write(req); err != nil {
+		cancel()
 		return nil, nil, err
 	}
 	// read response header
 	resp, err := client.Read(req)
 	if err != nil {
+		cancel()
 		return nil, nil, err
 	}
 	if resp.ContentLength <= 0 {
+		cancel()
 		logger.Errorf("can not get ContentLength, addr: %s, task: %s, peer: %s, piece: %d",
 			request.TaskID, request.DstAddr, request.DstPid, request.piece.PieceNum)
 		return nil, nil, errors.New("can not get ContentLength")
@@ -71,7 +88,8 @@ func (o optimizedPieceDownloader) DownloadPiece(request *DownloadPieceRequest) (
 	if buf.Buffered() > 0 {
 		logger.Warnf("buffer size is not 0, addr: %s, task: %s, peer: %s, piece: %d",
 			request.TaskID, request.DstAddr, request.DstPid, request.piece.PieceNum)
-		return io.LimitReader(clientutil.BufferReader(buf, conn), resp.ContentLength), conn, nil
+		return io.LimitReader(clientutil.BufferReader(buf, conn), resp.ContentLength),
+			&cancelCloser{cancel: cancel, closer: conn}, nil
 	}
-	return io.LimitReader(conn, resp.ContentLength), conn, nil
+	return io.LimitReader(conn, resp.ContentLength), &cancelCloser{cancel: cancel, closer: conn}, nil
 }

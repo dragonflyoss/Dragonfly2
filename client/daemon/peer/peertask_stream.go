@@ -368,6 +368,7 @@ func (s *streamPeerTask) finish() error {
 		close(s.done)
 		//close(s.successPieceCh)
 		if err := s.callback.Done(s); err != nil {
+			s.span.RecordError(err)
 			s.Errorf("done callback error: %s", err)
 		}
 		s.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
@@ -385,6 +386,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 		close(s.done)
 		//close(s.successPieceCh)
 		if err := s.callback.Fail(s, s.failedCode, s.failedReason); err != nil {
+			s.span.RecordError(err)
 			s.Errorf("fail callback error: %s", err)
 		}
 		s.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
