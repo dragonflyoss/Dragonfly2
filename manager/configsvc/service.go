@@ -21,10 +21,10 @@ const (
 	InstanceActive   string = "active"
 	InstanceInactive string = "inactive"
 
-	SchedulerClusterPrefix  string = "sclu"
-	SchedulerInstancePrefix string = "sins"
-	CdnClusterPrefix        string = "cclu"
-	CdnInstancePrefix       string = "cins"
+	SchedulerClusterPrefix  string = "sclu-"
+	SchedulerInstancePrefix string = "sins-"
+	CdnClusterPrefix        string = "cclu-"
+	CdnInstancePrefix       string = "cins-"
 )
 
 type schedulerInstance struct {
@@ -157,7 +157,7 @@ func (svc *ConfigSvc) rebuild() error {
 					instance:      instance,
 					keepAliveTime: time.Now(),
 				}
-				svc.identifier.Put(instance.HostName, instance.InstanceId)
+				svc.identifier.Put(SchedulerInstancePrefix+instance.HostName, instance.InstanceId)
 			}
 		}
 	}
@@ -173,7 +173,7 @@ func (svc *ConfigSvc) rebuild() error {
 					instance:      instance,
 					keepAliveTime: time.Now(),
 				}
-				svc.identifier.Put(instance.HostName, instance.InstanceId)
+				svc.identifier.Put(CdnInstancePrefix+instance.HostName, instance.InstanceId)
 			}
 		}
 	}
@@ -242,12 +242,12 @@ func instanceNextState(cur string, timeout bool) (next string, ok bool) {
 }
 
 func (svc *ConfigSvc) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) error {
-	instanceId, exist := svc.identifier.Get(req.GetHostName())
-	if !exist {
-		return dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
-	}
-
 	if manager.ResourceType_Scheduler == req.GetType() {
+		instanceId, exist := svc.identifier.Get(SchedulerInstancePrefix + req.GetHostName())
+		if !exist {
+			return dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
+		}
+
 		if instance, exist := svc.getSchedulerInstance(ctx, instanceId); !exist {
 			return dferrors.Newf(dfcodes.ManagerError, "Scheduler instance not exist, instanceId %s", instanceId)
 		} else {
@@ -264,6 +264,11 @@ func (svc *ConfigSvc) KeepAlive(ctx context.Context, req *manager.KeepAliveReque
 			}
 		}
 	} else if manager.ResourceType_Cdn == req.GetType() {
+		instanceId, exist := svc.identifier.Get(CdnInstancePrefix + req.GetHostName())
+		if !exist {
+			return dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
+		}
+
 		if instance, exist := svc.getCdnInstance(ctx, instanceId); !exist {
 			return dferrors.Newf(dfcodes.ManagerError, "Cdn instance not exist, instanceId %s", instanceId)
 		} else {
@@ -285,12 +290,12 @@ func (svc *ConfigSvc) KeepAlive(ctx context.Context, req *manager.KeepAliveReque
 }
 
 func (svc *ConfigSvc) GetInstanceAndClusterConfig(ctx context.Context, req *manager.GetClusterConfigRequest) (interface{}, interface{}, error) {
-	instanceId, exist := svc.identifier.Get(req.GetHostName())
-	if !exist {
-		return nil, nil, dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
-	}
-
 	if manager.ResourceType_Scheduler == req.GetType() {
+		instanceId, exist := svc.identifier.Get(SchedulerInstancePrefix + req.GetHostName())
+		if !exist {
+			return nil, nil, dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
+		}
+
 		if instance, exist := svc.getSchedulerInstance(ctx, instanceId); !exist {
 			return nil, nil, dferrors.Newf(dfcodes.ManagerError, "Scheduler instance not exist, instanceId %s", instanceId)
 		} else {
@@ -301,6 +306,11 @@ func (svc *ConfigSvc) GetInstanceAndClusterConfig(ctx context.Context, req *mana
 			}
 		}
 	} else if manager.ResourceType_Cdn == req.GetType() {
+		instanceId, exist := svc.identifier.Get(CdnInstancePrefix + req.GetHostName())
+		if !exist {
+			return nil, nil, dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
+		}
+
 		if instance, exist := svc.getCdnInstance(ctx, instanceId); !exist {
 			return nil, nil, dferrors.Newf(dfcodes.ManagerError, "Cdn instance not exist, instanceId %s", instanceId)
 		} else {
@@ -414,7 +424,7 @@ func (svc *ConfigSvc) AddSchedulerInstance(ctx context.Context, instance *types.
 			keepAliveTime: time.Now(),
 		}
 
-		svc.identifier.Put(instance.HostName, instance.InstanceId)
+		svc.identifier.Put(SchedulerInstancePrefix+instance.HostName, instance.InstanceId)
 		return instance, nil
 	}
 }
@@ -431,7 +441,7 @@ func (svc *ConfigSvc) DeleteSchedulerInstance(ctx context.Context, instanceId st
 		if _, exist := svc.schInstances[instance.InstanceId]; exist {
 			delete(svc.schInstances, instance.InstanceId)
 		}
-		svc.identifier.Delete(instance.HostName)
+		svc.identifier.Delete(SchedulerInstancePrefix + instance.HostName)
 		return instance, nil
 	}
 }
@@ -443,12 +453,18 @@ func (svc *ConfigSvc) UpdateSchedulerInstance(ctx context.Context, instance *typ
 		instance = inter.(*types.SchedulerInstance)
 		svc.mu.Lock()
 		defer svc.mu.Unlock()
-		if _, exist := svc.schInstances[instance.InstanceId]; exist {
+
+		var keepAliveTime time.Time
+		if old, exist := svc.schInstances[instance.InstanceId]; exist {
+			keepAliveTime = old.keepAliveTime
 			delete(svc.schInstances, instance.InstanceId)
+		} else {
+			keepAliveTime = time.Now()
 		}
+
 		svc.schInstances[instance.InstanceId] = &schedulerInstance{
 			instance:      instance,
-			keepAliveTime: time.Now(),
+			keepAliveTime: keepAliveTime,
 		}
 		return instance, nil
 	}
@@ -473,13 +489,18 @@ func (svc *ConfigSvc) GetSchedulerInstance(ctx context.Context, instanceId strin
 		instance := inter.(*types.SchedulerInstance)
 		svc.mu.Lock()
 		defer svc.mu.Unlock()
-		if _, exist := svc.schInstances[instance.InstanceId]; exist {
+
+		var keepAliveTime time.Time
+		if old, exist := svc.schInstances[instance.InstanceId]; exist {
+			keepAliveTime = old.keepAliveTime
 			delete(svc.schInstances, instance.InstanceId)
+		} else {
+			keepAliveTime = time.Now()
 		}
 
 		svc.schInstances[instance.InstanceId] = &schedulerInstance{
 			instance:      instance,
-			keepAliveTime: time.Now(),
+			keepAliveTime: keepAliveTime,
 		}
 		return instance, nil
 	}
@@ -602,7 +623,7 @@ func (svc *ConfigSvc) AddCdnInstance(ctx context.Context, instance *types.CdnIns
 			instance:      instance,
 			keepAliveTime: time.Now(),
 		}
-		svc.identifier.Put(instance.HostName, instance.InstanceId)
+		svc.identifier.Put(CdnInstancePrefix+instance.HostName, instance.InstanceId)
 		return instance, nil
 	}
 }
@@ -619,7 +640,7 @@ func (svc *ConfigSvc) DeleteCdnInstance(ctx context.Context, instanceId string) 
 		if _, exist := svc.cdnInstances[instance.InstanceId]; exist {
 			delete(svc.cdnInstances, instance.InstanceId)
 		}
-		svc.identifier.Delete(instance.HostName)
+		svc.identifier.Delete(CdnInstancePrefix + instance.HostName)
 		return instance, nil
 	}
 }
@@ -631,12 +652,18 @@ func (svc *ConfigSvc) UpdateCdnInstance(ctx context.Context, instance *types.Cdn
 		instance = inter.(*types.CdnInstance)
 		svc.mu.Lock()
 		defer svc.mu.Unlock()
-		if _, exist := svc.cdnInstances[instance.InstanceId]; exist {
+
+		var keepAliveTime time.Time
+		if old, exist := svc.cdnInstances[instance.InstanceId]; exist {
+			keepAliveTime = old.keepAliveTime
 			delete(svc.cdnInstances, instance.InstanceId)
+		} else {
+			keepAliveTime = time.Now()
 		}
+
 		svc.cdnInstances[instance.InstanceId] = &cdnInstance{
 			instance:      instance,
-			keepAliveTime: time.Now(),
+			keepAliveTime: keepAliveTime,
 		}
 		return instance, nil
 	}
@@ -661,13 +688,18 @@ func (svc *ConfigSvc) GetCdnInstance(ctx context.Context, instanceId string) (*t
 		instance := inter.(*types.CdnInstance)
 		svc.mu.Lock()
 		defer svc.mu.Unlock()
-		if _, exist := svc.cdnInstances[instance.InstanceId]; exist {
+
+		var keepAliveTime time.Time
+		if old, exist := svc.cdnInstances[instance.InstanceId]; exist {
+			keepAliveTime = old.keepAliveTime
 			delete(svc.cdnInstances, instance.InstanceId)
+		} else {
+			keepAliveTime = time.Now()
 		}
 
 		svc.cdnInstances[instance.InstanceId] = &cdnInstance{
 			instance:      instance,
-			keepAliveTime: time.Now(),
+			keepAliveTime: keepAliveTime,
 		}
 		return instance, nil
 	}

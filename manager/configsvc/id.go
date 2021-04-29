@@ -7,5 +7,5 @@ import (
 )
 
 func NewUUID(prefix string) string {
-	return fmt.Sprintf("%s-%s", prefix, idgen.UUIDString())
+	return fmt.Sprintf("%s%s", prefix, idgen.UUIDString())
 }

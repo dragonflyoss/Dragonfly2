@@ -96,9 +96,10 @@ func (ms *ManagerServer) KeepAlive(ctx context.Context, req *manager.KeepAliveRe
 }
 
 func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetClusterConfigRequest) (*manager.ClusterConfig, error) {
-	if _, interCluster, err := ms.configSvc.GetInstanceAndClusterConfig(ctx, req); err != nil {
+	if interInstance, interCluster, err := ms.configSvc.GetInstanceAndClusterConfig(ctx, req); err != nil {
 		return nil, err
 	} else if manager.ResourceType_Scheduler == req.GetType() {
+		schedulerInstance := interInstance.(*types.SchedulerInstance)
 		schedulerCluster := interCluster.(*types.SchedulerCluster)
 		schedulerConfigsMap := make(map[string]interface{})
 		err := json.Unmarshal([]byte(schedulerCluster.SchedulerConfig), &schedulerConfigsMap)
@@ -109,12 +110,13 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 		cdnClusterId, exist := schedulerConfigsMap["CDN_CLUSTER_ID"]
 		if !exist {
 			return &manager.ClusterConfig{Config: &manager.ClusterConfig_SchedulerConfig{SchedulerConfig: &manager.SchedulerConfig{
-				ClusterId:      schedulerCluster.ClusterId,
-				ClusterConfig:  schedulerCluster.SchedulerConfig,
-				InstanceConfig: "",
-				ClientConfig:   schedulerCluster.ClientConfig,
-				UpdateTime:     schedulerCluster.UpdatedAt.String(),
-				CdnHosts:       []*manager.ServerInfo{},
+				ClusterId:       schedulerCluster.ClusterId,
+				ClusterConfig:   schedulerCluster.SchedulerConfig,
+				ClientConfig:    schedulerCluster.ClientConfig,
+				ClusterVersion:  schedulerCluster.Version,
+				InstanceConfig:  schedulerInstance.Idc, // todo InstanceConfig format
+				InstanceVersion: schedulerInstance.Version,
+				CdnHosts:        []*manager.ServerInfo{},
 			}}}, nil
 		}
 
@@ -135,7 +137,10 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 
 		var cdnHosts []*manager.ServerInfo
 		for _, instance := range cdnInstances {
-			// todo 过滤存活的实例
+			if instance.State != configsvc.InstanceActive {
+				continue
+			}
+
 			hostInfo, err := ms.hostManager.GetHostInfo("", instance.Ip, instance.HostName, "")
 			if err != nil {
 				return nil, dferrors.Newf(dfcodes.ManagerHostError, "get host info error: %v", err)
@@ -168,20 +173,23 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 		}
 
 		return &manager.ClusterConfig{Config: &manager.ClusterConfig_SchedulerConfig{SchedulerConfig: &manager.SchedulerConfig{
-			ClusterId:      schedulerCluster.ClusterId,
-			ClusterConfig:  schedulerCluster.SchedulerConfig,
-			InstanceConfig: "",
-			ClientConfig:   schedulerCluster.ClientConfig,
-			UpdateTime:     schedulerCluster.UpdatedAt.String(),
-			CdnHosts:       cdnHosts,
+			ClusterId:       schedulerCluster.ClusterId,
+			ClusterConfig:   schedulerCluster.SchedulerConfig,
+			ClientConfig:    schedulerCluster.ClientConfig,
+			ClusterVersion:  schedulerCluster.Version,
+			InstanceConfig:  schedulerInstance.Idc, // todo InstanceConfig format
+			InstanceVersion: schedulerInstance.Version,
+			CdnHosts:        cdnHosts,
 		}}}, nil
 	} else {
+		instance := interInstance.(*types.CdnInstance)
 		cluster := interCluster.(*types.CdnCluster)
 		return &manager.ClusterConfig{Config: &manager.ClusterConfig_CdnConfig{CdnConfig: &manager.CdnConfig{
-			ClusterId:      cluster.ClusterId,
-			ClusterConfig:  cluster.Config,
-			InstanceConfig: "",
-			UpdateTime:     cluster.UpdatedAt.String(),
+			ClusterId:       cluster.ClusterId,
+			ClusterConfig:   cluster.Config,
+			ClusterVersion:  cluster.Version,
+			InstanceConfig:  instance.Idc, // todo InstanceConfig format
+			InstanceVersion: instance.Version,
 		}}}, nil
 	}
 }
