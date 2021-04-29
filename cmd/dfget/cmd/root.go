@@ -387,6 +387,12 @@ func downloadFromSource(hdr map[string]string, dferr error) (err error) {
 		logger.Infof("copied %d bytes to %s", written, dfgetConfig.Output)
 		end = time.Now()
 		fmt.Printf("Download from source success, time cost: %dms\n", end.Sub(start).Milliseconds())
+		// change permission
+		logger.Infof("change own to uid %d gid %d", basic.UserId, basic.UserGroup)
+		if err = os.Chown(dfgetConfig.Output, basic.UserId, basic.UserGroup); err != nil {
+			logger.Errorf("change own failed: %s", err)
+			return err
+		}
 		return nil
 	}
 	logger.Errorf("copied %d bytes to %s, with error: %s",
