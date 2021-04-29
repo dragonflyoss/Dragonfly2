@@ -34,9 +34,13 @@ Provide efficient, stable, secure, low-cost file and image distribution services
 <img src="docs/en/images/architecture.png" alt="logo" width="800"/>
 
 **Manager:** Used to manage the dynamic configuration that each module depends on, and provide keepalive and metrics functions.
+
 **Scheduler:** The tracker and scheduler in the P2P network that choose appropriate downloading net-path for each peer.
+
 **CDN:** A CDN server that caches downloaded data from source to avoid downloading same files repeatedly.
+
 **Daemon:** Used for pulling images only. It establishes a proxy between containerd/CRI-O and registry.
+
 **Dfget:** The client of Dragonfly used for downloading files. It's similar to wget.
 
 ## Getting Started
