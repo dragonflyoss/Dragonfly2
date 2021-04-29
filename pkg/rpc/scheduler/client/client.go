@@ -80,6 +80,7 @@ func GetSchedulerByConfigServer(cfgServerAddr string, opts ...grpc.DialOption) (
 			Addr: schedulers.Addrs[i],
 		})
 	}
+	logger.Infof("successfully get scheduler list: %s", scheds)
 	sc := &schedulerClient{
 		Connection: rpc.NewConnection(context.Background(), "scheduler-dynamic", scheds, []rpc.ConnOption{
 			rpc.WithConnExpireTime(5 * time.Minute),
