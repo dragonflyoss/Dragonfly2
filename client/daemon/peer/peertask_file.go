@@ -391,6 +391,8 @@ func (pt *filePeerTask) cleanUnfinished() {
 		pt.Debugf("clean unfinished: close done channel")
 		close(pt.done)
 		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
+		pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
 		pt.span.End()
 	})
 }
