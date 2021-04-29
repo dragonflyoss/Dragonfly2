@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/store"
@@ -63,18 +62,18 @@ func (handler *Handler) AddSchedulerCluster(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /schedulerclusters/{id} [delete]
 func (handler *Handler) DeleteSchedulerCluster(ctx *gin.Context) {
-	id := ctx.Param("id")
-	if id == "" {
-		NewError(ctx, http.StatusBadRequest, errors.New("must set clusterId you want delete in path of http protocol"))
+	var uri types.SchedulerClusterUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	retCluster, err := handler.server.DeleteSchedulerCluster(context.TODO(), id)
+	retCluster, err := handler.server.DeleteSchedulerCluster(context.TODO(), uri.ClusterId)
 	if err == nil {
 		if retCluster != nil {
 			ctx.JSON(http.StatusOK, "success")
 		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("scheduler cluster not found, id %s", id))
+			NewError(ctx, http.StatusNotFound, errors.Newf("scheduler cluster not found, id %s", uri.ClusterId))
 		}
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -99,9 +98,9 @@ func (handler *Handler) DeleteSchedulerCluster(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /schedulerclusters/{id} [post]
 func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
-	id := ctx.Param("id")
-	if id == "" {
-		NewError(ctx, http.StatusBadRequest, errors.New("must set clusterId you want update in path of http protocol"))
+	var uri types.SchedulerClusterUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -116,7 +115,7 @@ func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	cluster.ClusterId = id
+	cluster.ClusterId = uri.ClusterId
 	_, err := handler.server.UpdateSchedulerCluster(context.TODO(), &cluster)
 	if err == nil {
 		ctx.JSON(http.StatusOK, "success")
@@ -144,13 +143,13 @@ func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /schedulerclusters/{id} [get]
 func (handler *Handler) GetSchedulerCluster(ctx *gin.Context) {
-	id := ctx.Param("id")
-	if id == "" {
-		NewError(ctx, http.StatusBadRequest, errors.New("must set clusterId you want get in path of http protocol"))
+	var uri types.SchedulerClusterUri
+	if err := ctx.ShouldBindUri(&uri); err != nil {
+		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	retCluster, err := handler.server.GetSchedulerCluster(context.TODO(), id)
+	retCluster, err := handler.server.GetSchedulerCluster(context.TODO(), uri.ClusterId)
 	if err == nil {
 		ctx.JSON(http.StatusOK, &retCluster)
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
@@ -170,50 +169,26 @@ func (handler *Handler) GetSchedulerCluster(ctx *gin.Context) {
 // @Tags SchedulerCluster
 // @Accept  json
 // @Produce  json
-// @Param marker query int true "begin marker of current page"
-// @Param maxItemCount query int true "return max item count, default 10, max 50"
+// @Param marker query int true "begin marker of current page" default(0)
+// @Param maxItemCount query int true "return max item count, default 10, max 50" default(10) minimum(10) maximum(50)
 // @Success 200 {object} types.ListSchedulerClustersResponse
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /schedulerclusters [get]
 func (handler *Handler) ListSchedulerClusters(ctx *gin.Context) {
-	var maxItemCount int
-	var marker int
-	var err error
-
-	qMaxItemCount := ctx.Query("maxItemCount")
-	if len(qMaxItemCount) > 0 {
-		maxItemCount, err = strconv.Atoi(qMaxItemCount)
-		if err != nil {
-			NewError(ctx, http.StatusBadRequest, err)
-			return
-		}
-
-		if maxItemCount > 50 {
-			maxItemCount = 50
-		}
-	} else {
-		maxItemCount = 10
+	var query types.ListQuery
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		NewError(ctx, http.StatusBadRequest, err)
+		return
 	}
 
-	qMarker := ctx.Query("marker")
-	if len(qMarker) > 0 {
-		marker, err = strconv.Atoi(qMarker)
-		if err != nil {
-			NewError(ctx, http.StatusBadRequest, err)
-			return
-		}
-	} else {
-		marker = 0
-	}
-
-	clusters, err := handler.server.ListSchedulerClusters(context.TODO(), store.WithMarker(marker, maxItemCount))
+	clusters, err := handler.server.ListSchedulerClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
 	if err == nil {
 		if len(clusters) > 0 {
 			ctx.JSON(http.StatusOK, &types.ListSchedulerClustersResponse{Clusters: clusters})
 		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("list scheduler clusters empty, marker %d, maxItemCount %d", qMarker, qMaxItemCount))
+			NewError(ctx, http.StatusNotFound, errors.Newf("list scheduler clusters empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount))
 		}
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -225,16 +200,6 @@ func (handler *Handler) ListSchedulerClusters(ctx *gin.Context) {
 }
 
 func checkSchedulerClusterValidate(cluster *types.SchedulerCluster) (err error) {
-	if len(cluster.SchedulerConfig) <= 0 {
-		err = errors.New("scheduler config must be set")
-		return
-	}
-
-	if len(cluster.ClientConfig) <= 0 {
-		err = errors.New("client config must be set")
-		return
-	}
-
 	var schedulerConfigMap map[string]string
 	err = json.Unmarshal([]byte(cluster.SchedulerConfig), &schedulerConfigMap)
 	if err != nil {

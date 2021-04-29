@@ -9,11 +9,88 @@ definitions:
         example: status bad request
         type: string
     type: object
+  types.CdnCluster:
+    properties:
+      cluster_id:
+        type: string
+      config:
+        type: string
+      created_at:
+        type: string
+      creator:
+        type: string
+      modifier:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    required:
+    - config
+    type: object
+  types.CdnInstance:
+    properties:
+      cluster_id:
+        type: string
+      created_at:
+        type: string
+      down_port:
+        type: integer
+      host_name:
+        type: string
+      idc:
+        type: string
+      instance_id:
+        type: string
+      ip:
+        type: string
+      location:
+        type: string
+      port:
+        type: integer
+      rpc_port:
+        type: integer
+      state:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    required:
+    - cluster_id
+    - down_port
+    - host_name
+    - idc
+    - ip
+    - port
+    - rpc_port
+    type: object
+  types.ListCdnClustersResponse:
+    properties:
+      clusters:
+        items:
+          $ref: '#/definitions/types.CdnCluster'
+        type: array
+    type: object
+  types.ListCdnInstancesResponse:
+    properties:
+      instances:
+        items:
+          $ref: '#/definitions/types.CdnInstance'
+        type: array
+    type: object
   types.ListSchedulerClustersResponse:
     properties:
       clusters:
         items:
           $ref: '#/definitions/types.SchedulerCluster'
+        type: array
+    type: object
+  types.ListSchedulerInstancesResponse:
+    properties:
+      instances:
+        items:
+          $ref: '#/definitions/types.SchedulerInstance'
         type: array
     type: object
   types.SchedulerCluster:
@@ -32,6 +109,49 @@ definitions:
         type: string
       updated_at:
         type: string
+      version:
+        type: integer
+    required:
+    - client_config
+    - scheduler_config
+    type: object
+  types.SchedulerInstance:
+    properties:
+      cluster_id:
+        type: string
+      created_at:
+        type: string
+      host_name:
+        type: string
+      idc:
+        type: string
+      instance_id:
+        type: string
+      ip:
+        type: string
+      location:
+        type: string
+      net_config:
+        type: string
+      port:
+        type: integer
+      security_domain:
+        type: string
+      state:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+      vips:
+        type: string
+    required:
+    - cluster_id
+    - host_name
+    - idc
+    - ip
+    - port
+    - security_domain
     type: object
 host: localhost:8080
 info:
@@ -47,19 +167,379 @@ info:
   title: Swagger Example API
   version: "1.0"
 paths:
+  /cdnclusters:
+    get:
+      consumes:
+      - application/json
+      description: List by object
+      parameters:
+      - default: 0
+        description: begin marker of current page
+        in: query
+        name: marker
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 10
+        name: maxItemCount
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ListCdnClustersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: List cdn clusters
+      tags:
+      - CdnCluster
+    post:
+      consumes:
+      - application/json
+      description: add by json config
+      parameters:
+      - description: Cdn cluster
+        in: body
+        name: cluster
+        required: true
+        schema:
+          $ref: '#/definitions/types.CdnCluster'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CdnCluster'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Add cdn cluster
+      tags:
+      - CdnCluster
+  /cdnclusters/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete by clusterId
+      parameters:
+      - description: ClusterId
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Delete cdn cluster
+      tags:
+      - CdnCluster
+    get:
+      consumes:
+      - application/json
+      description: Get cdn cluster by ClusterId
+      parameters:
+      - description: ClusterId
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CdnCluster'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Get cdn cluster
+      tags:
+      - CdnCluster
+    post:
+      consumes:
+      - application/json
+      description: Update by json cdn cluster
+      parameters:
+      - description: ClusterId
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: CdnCluster
+        in: body
+        name: Cluster
+        required: true
+        schema:
+          $ref: '#/definitions/types.CdnCluster'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Update cdn cluster
+      tags:
+      - CdnCluster
+  /cdninstances:
+    get:
+      consumes:
+      - application/json
+      description: List by object
+      parameters:
+      - default: 0
+        description: begin marker of current page
+        in: query
+        name: marker
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 10
+        name: maxItemCount
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ListCdnInstancesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: List cdn instances
+      tags:
+      - CdnInstance
+    post:
+      consumes:
+      - application/json
+      description: add by json config
+      parameters:
+      - description: Cdn instance
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/types.CdnInstance'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CdnInstance'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Add cdn instance
+      tags:
+      - CdnInstance
+  /cdninstances/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete by instanceId
+      parameters:
+      - description: InstanceId
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Delete cdn instance
+      tags:
+      - CdnInstance
+    get:
+      consumes:
+      - application/json
+      description: Get cdn instance by InstanceId
+      parameters:
+      - description: InstanceId
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CdnInstance'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Get cdn instance
+      tags:
+      - CdnInstance
+    post:
+      consumes:
+      - application/json
+      description: Update by json cdn instance
+      parameters:
+      - description: InstanceId
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: CdnInstance
+        in: body
+        name: Instance
+        required: true
+        schema:
+          $ref: '#/definitions/types.CdnInstance'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Update cdn instance
+      tags:
+      - CdnInstance
   /schedulerclusters:
     get:
       consumes:
       - application/json
       description: List by object
       parameters:
-      - description: begin marker of current page
+      - default: 0
+        description: begin marker of current page
         in: query
         name: marker
         required: true
         type: integer
-      - description: return max item count, default 10, max 50
+      - default: 10
+        description: return max item count, default 10, max 50
         in: query
+        maximum: 50
+        minimum: 10
         name: maxItemCount
         required: true
         type: integer
@@ -221,4 +701,182 @@ paths:
       summary: Update scheduler cluster
       tags:
       - SchedulerCluster
+  /schedulerinstances:
+    get:
+      consumes:
+      - application/json
+      description: List by object
+      parameters:
+      - default: 0
+        description: begin marker of current page
+        in: query
+        name: marker
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 10
+        name: maxItemCount
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ListSchedulerInstancesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: List scheduler instances
+      tags:
+      - SchedulerInstance
+    post:
+      consumes:
+      - application/json
+      description: add by json config
+      parameters:
+      - description: Scheduler instance
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/types.SchedulerInstance'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.SchedulerInstance'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Add scheduler instance
+      tags:
+      - SchedulerInstance
+  /schedulerinstances/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete by instanceId
+      parameters:
+      - description: InstanceId
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Delete scheduler instance
+      tags:
+      - SchedulerInstance
+    get:
+      consumes:
+      - application/json
+      description: Get scheduler instance by InstanceId
+      parameters:
+      - description: InstanceId
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.SchedulerInstance'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Get scheduler instance
+      tags:
+      - SchedulerInstance
+    post:
+      consumes:
+      - application/json
+      description: Update by json scheduler instance
+      parameters:
+      - description: InstanceId
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: SchedulerInstance
+        in: body
+        name: Instance
+        required: true
+        schema:
+          $ref: '#/definitions/types.SchedulerInstance'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.HTTPError'
+      summary: Update scheduler instance
+      tags:
+      - SchedulerInstance
 swagger: "2.0"

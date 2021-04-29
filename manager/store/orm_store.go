@@ -89,6 +89,19 @@ type SecurityDomainTable struct {
 	DeletedAt      gorm.DeletedAt `gorm:"deleted_at;index"`
 }
 
+type WarmupTaskTable struct {
+	ID          uint   `gorm:"primaryKey"`
+	TaskId      string `gorm:"unique;size:63"`
+	ClusterId   string `gorm:"size:63"`
+	Type        string `gorm:"size:31"`
+	OriginalUri string `gorm:"size:1023"`
+	State       string `gorm:"size:15"`
+	TaskUris    string `gorm:"size:4095"`
+	CreatedAt   time.Time `gorm:"created_at"`
+	UpdatedAt   time.Time `gorm:"created_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index"`
+}
+
 type ormStore struct {
 	db *gorm.DB
 }
@@ -208,8 +221,8 @@ func tableToSchema(data interface{}) interface{} {
 			ClientConfig:    t.ClientConfig,
 			Creator:         t.Creator,
 			Modifier:        t.Modifier,
-			CreatedAt:       t.CreatedAt,
-			UpdatedAt:       t.UpdatedAt,
+			CreatedAt:       t.CreatedAt.String(),
+			UpdatedAt:       t.UpdatedAt.String(),
 		}
 	case *SchedulerInstanceTable:
 		return &types.SchedulerInstance{
@@ -224,8 +237,8 @@ func tableToSchema(data interface{}) interface{} {
 			Ip:             t.Ip,
 			Port:           t.Port,
 			State:          t.State,
-			CreatedAt:      t.CreatedAt,
-			UpdatedAt:      t.UpdatedAt,
+			CreatedAt:      t.CreatedAt.String(),
+			UpdatedAt:      t.UpdatedAt.String(),
 		}
 	case *CdnClusterTable:
 		return &types.CdnCluster{
@@ -233,8 +246,8 @@ func tableToSchema(data interface{}) interface{} {
 			Config:    t.Config,
 			Creator:   t.Creator,
 			Modifier:  t.Modifier,
-			CreatedAt: t.CreatedAt,
-			UpdatedAt: t.UpdatedAt,
+			CreatedAt: t.CreatedAt.String(),
+			UpdatedAt: t.UpdatedAt.String(),
 		}
 	case *CdnInstanceTable:
 		return &types.CdnInstance{
@@ -248,8 +261,8 @@ func tableToSchema(data interface{}) interface{} {
 			RpcPort:    t.RpcPort,
 			DownPort:   t.DownPort,
 			State:      t.State,
-			CreatedAt:  t.CreatedAt,
-			UpdatedAt:  t.UpdatedAt,
+			CreatedAt:  t.CreatedAt.String(),
+			UpdatedAt:  t.UpdatedAt.String(),
 		}
 	case *SecurityDomainTable:
 		return &types.SecurityDomain{
@@ -258,8 +271,8 @@ func tableToSchema(data interface{}) interface{} {
 			ProxyDomain:    t.ProxyDomain,
 			Creator:        t.Creator,
 			Modifier:       t.Modifier,
-			CreatedAt:      t.CreatedAt,
-			UpdatedAt:      t.UpdatedAt,
+			CreatedAt:      t.CreatedAt.String(),
+			UpdatedAt:      t.UpdatedAt.String(),
 		}
 	default:
 		return nil

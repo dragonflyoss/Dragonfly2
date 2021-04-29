@@ -18,6 +18,538 @@
     "host": "localhost:8080",
     "basePath": "/api/v2",
     "paths": {
+        "/cdnclusters": {
+            "get": {
+                "description": "List by object",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CdnCluster"
+                ],
+                "summary": "List cdn clusters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "begin marker of current page",
+                        "name": "marker",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 10,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "maxItemCount",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ListCdnClustersResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "add by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CdnCluster"
+                ],
+                "summary": "Add cdn cluster",
+                "parameters": [
+                    {
+                        "description": "Cdn cluster",
+                        "name": "cluster",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CdnCluster"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.CdnCluster"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/cdnclusters/{id}": {
+            "get": {
+                "description": "Get cdn cluster by ClusterId",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CdnCluster"
+                ],
+                "summary": "Get cdn cluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ClusterId",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.CdnCluster"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Update by json cdn cluster",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CdnCluster"
+                ],
+                "summary": "Update cdn cluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ClusterId",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "CdnCluster",
+                        "name": "Cluster",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CdnCluster"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete by clusterId",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CdnCluster"
+                ],
+                "summary": "Delete cdn cluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ClusterId",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/cdninstances": {
+            "get": {
+                "description": "List by object",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CdnInstance"
+                ],
+                "summary": "List cdn instances",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "begin marker of current page",
+                        "name": "marker",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 10,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "maxItemCount",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ListCdnInstancesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "add by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CdnInstance"
+                ],
+                "summary": "Add cdn instance",
+                "parameters": [
+                    {
+                        "description": "Cdn instance",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CdnInstance"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.CdnInstance"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/cdninstances/{id}": {
+            "get": {
+                "description": "Get cdn instance by InstanceId",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CdnInstance"
+                ],
+                "summary": "Get cdn instance",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "InstanceId",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.CdnInstance"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Update by json cdn instance",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CdnInstance"
+                ],
+                "summary": "Update cdn instance",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "InstanceId",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "CdnInstance",
+                        "name": "Instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CdnInstance"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete by instanceId",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CdnInstance"
+                ],
+                "summary": "Delete cdn instance",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "InstanceId",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/schedulerclusters": {
             "get": {
                 "description": "List by object",
@@ -34,13 +566,17 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 0,
                         "description": "begin marker of current page",
                         "name": "marker",
                         "in": "query",
                         "required": true
                     },
                     {
+                        "maximum": 50,
+                        "minimum": 10,
                         "type": "integer",
+                        "default": 10,
                         "description": "return max item count, default 10, max 50",
                         "name": "maxItemCount",
                         "in": "query",
@@ -279,6 +815,272 @@
                     }
                 }
             }
+        },
+        "/schedulerinstances": {
+            "get": {
+                "description": "List by object",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SchedulerInstance"
+                ],
+                "summary": "List scheduler instances",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "begin marker of current page",
+                        "name": "marker",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 10,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "maxItemCount",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ListSchedulerInstancesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "add by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SchedulerInstance"
+                ],
+                "summary": "Add scheduler instance",
+                "parameters": [
+                    {
+                        "description": "Scheduler instance",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.SchedulerInstance"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.SchedulerInstance"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/schedulerinstances/{id}": {
+            "get": {
+                "description": "Get scheduler instance by InstanceId",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SchedulerInstance"
+                ],
+                "summary": "Get scheduler instance",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "InstanceId",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.SchedulerInstance"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Update by json scheduler instance",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SchedulerInstance"
+                ],
+                "summary": "Update scheduler instance",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "InstanceId",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "SchedulerInstance",
+                        "name": "Instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.SchedulerInstance"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete by instanceId",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SchedulerInstance"
+                ],
+                "summary": "Delete scheduler instance",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "InstanceId",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.HTTPError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -295,6 +1097,110 @@
                 }
             }
         },
+        "types.CdnCluster": {
+            "type": "object",
+            "required": [
+                "config"
+            ],
+            "properties": {
+                "cluster_id": {
+                    "type": "string"
+                },
+                "config": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "creator": {
+                    "type": "string"
+                },
+                "modifier": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.CdnInstance": {
+            "type": "object",
+            "required": [
+                "cluster_id",
+                "down_port",
+                "host_name",
+                "idc",
+                "ip",
+                "port",
+                "rpc_port"
+            ],
+            "properties": {
+                "cluster_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "down_port": {
+                    "type": "integer"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "idc": {
+                    "type": "string"
+                },
+                "instance_id": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "rpc_port": {
+                    "type": "integer"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.ListCdnClustersResponse": {
+            "type": "object",
+            "properties": {
+                "clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.CdnCluster"
+                    }
+                }
+            }
+        },
+        "types.ListCdnInstancesResponse": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.CdnInstance"
+                    }
+                }
+            }
+        },
         "types.ListSchedulerClustersResponse": {
             "type": "object",
             "properties": {
@@ -306,8 +1212,23 @@
                 }
             }
         },
+        "types.ListSchedulerInstancesResponse": {
+            "type": "object",
+            "properties": {
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.SchedulerInstance"
+                    }
+                }
+            }
+        },
         "types.SchedulerCluster": {
             "type": "object",
+            "required": [
+                "client_config",
+                "scheduler_config"
+            ],
             "properties": {
                 "client_config": {
                     "type": "string"
@@ -328,6 +1249,64 @@
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.SchedulerInstance": {
+            "type": "object",
+            "required": [
+                "cluster_id",
+                "host_name",
+                "idc",
+                "ip",
+                "port",
+                "security_domain"
+            ],
+            "properties": {
+                "cluster_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "idc": {
+                    "type": "string"
+                },
+                "instance_id": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "net_config": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "security_domain": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                },
+                "vips": {
                     "type": "string"
                 }
             }
