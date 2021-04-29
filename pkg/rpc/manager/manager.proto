@@ -54,18 +54,25 @@ message ClientConfig{
 
 message CdnConfig{
     string cluster_id = 1;
+
     string cluster_config = 2;
-    string instance_config = 3;
-    string update_time = 4;
+    int64  cluster_version = 3;
+
+    string instance_config = 4;
+    int64 instance_version = 5;
 }
 
 message SchedulerConfig{
     string cluster_id = 1;
+
     string cluster_config = 2;
-    string instance_config = 3;
-    string client_config = 4;
-    string update_time = 5;
-    repeated ServerInfo cdn_hosts = 6;
+    string client_config = 3;
+    int64 cluster_version = 4;
+
+    string instance_config = 5;
+    int64 instance_version = 6;
+
+    repeated ServerInfo cdn_hosts = 7;
 }
 
 message ClusterConfig{
