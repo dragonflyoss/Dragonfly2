@@ -224,7 +224,7 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 			candidateNodes = append(candidateNodes, ringNode)
 		}
 	}
-	logger.With("conn", conn.name).Infof("find candidate result for hash key %s: all server node list:%v, exclusiveNodes node list:%v, candidate node list:%v",
+	logger.With("conn", conn.name).Infof("candidate result for hash key %s: all server node list:%v, exclusiveNodes node list:%v, candidate node list:%v",
 		key, ringNodes, exclusiveNodes, candidateNodes)
 	for _, candidateNode := range candidateNodes {
 		conn.rwMutex.Lock(candidateNode, true)

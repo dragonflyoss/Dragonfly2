@@ -758,7 +758,7 @@ func (orm *ormStore) List(ctx context.Context, opts ...OpOption) ([]interface{},
 		}
 
 		if tx.Error != nil {
-			return nil, dferrors.Newf(dfcodes.ManagerStoreError, "list cnd instances error %s", tx.Error.Error())
+			return nil, dferrors.Newf(dfcodes.ManagerStoreError, "list cdn instances error %s", tx.Error.Error())
 		} else {
 			var inter []interface{}
 			for _, instance := range instances {
