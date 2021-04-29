@@ -1,5 +1,7 @@
 # Dragonfly2
 
+![alt](docs/en/images/logo/dragonfly-linear.svg)
+
 [![GitHub release](https://img.shields.io/github/release/dragonflyoss/Dragonfly2.svg)](https://github.com/dragonflyoss/Dragonfly2/releases)
 [![CI](https://github.com/dragonflyoss/Dragonfly2/actions/workflows/ci.yaml/badge.svg)](https://github.com/dragonflyoss/Dragonfly2/actions/workflows/ci.yaml)
 [![Coverage](https://codecov.io/gh/dragonflyoss/Dragonfly2/branch/main/graph/badge.svg)](https://codecov.io/gh/dragonflyoss/Dragonfly2)
