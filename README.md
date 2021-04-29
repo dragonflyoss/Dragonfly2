@@ -1,4 +1,6 @@
 # Dragonfly2
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdragonflyoss%2FDragonfly2.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdragonflyoss%2FDragonfly2?ref=badge_shield)
+
 ## 产品定位
 提供企业级（高效、稳定、安全、低成本、产品化）的文件分发与管理服务，并成为在该领域的云原生最佳实践与标准解决方案
 ## 解决的问题
@@ -87,3 +89,7 @@ Framework
 + 五月：上海外滩大会PR；支持订阅通知、文件主动推送、远程拷贝、跨云传输等产品化能力
 + 六月：支持命令通道，完成通道合一；支持伪实时同步及多语言SDK支持；集团全量上线，完成内部版本和社区版本的最终合一
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdragonflyoss%2FDragonfly2.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdragonflyoss%2FDragonfly2?ref=badge_large)
