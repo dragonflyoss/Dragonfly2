@@ -1,2 +1,2 @@
-# Contributing to Dragonfly2 Docs
+# Contributing to Dragonfly Docs
 
