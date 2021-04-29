@@ -65,7 +65,7 @@ plugins:
     - name: memory
       enable: true
       config:
-        baseDir: /tmp/memory/dragonfly2
+        baseDir: /tmp/memory/dragonfly
         gcConfig:
           youngGCThreshold: 100G
           fullGCThreshold: 5G

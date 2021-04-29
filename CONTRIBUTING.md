@@ -1,6 +1,6 @@
-# Contributing to Dragonfly2
+# Contributing to Dragonfly
 
-It is warmly welcomed if you have interest to hack on Dragonfly2. First, we encourage this kind of willing very much. And here is a list of contributing guide for you.
+It is warmly welcomed if you have interest to hack on Dragonfly. First, we encourage this kind of willing very much. And here is a list of contributing guide for you.
 
 ## Topics
 
@@ -8,17 +8,17 @@ It is warmly welcomed if you have interest to hack on Dragonfly2. First, we enco
 * [Reporting general issues](#reporting-general-issues)
 * [Code and doc contribution](#code-and-doc-contribution)
 * [Engage to help anything](#engage-to-help-anything)
-* [Join Dragonfly2 as a member](#join-dragonfly2-as-a-member)
+* [Join Dragonfly as a member](#join-dragonfly-as-a-member)
 
 ## Reporting security issues
 
-Security issues are always treated seriously. As our usual principle, we discourage anyone to spread security issues. If you find a security issue of Dragonfly2, please do not discuss it in public and even do not open a public issue. Instead we encourage you to send us a private email to [Dragonfly2@noreply.github.com](mailto:Dragonfly2@noreply.github.com) to report this.
+Security issues are always treated seriously. As our usual principle, we discourage anyone to spread security issues. If you find a security issue of Dragonfly, please do not discuss it in public and even do not open a public issue. Instead we encourage you to send us a private email to [Dragonfly@noreply.github.com](mailto:Dragonfly@noreply.github.com) to report this.
 
 ## Reporting general issues
 
-To be honest, we regard every user of Dragonfly2 as a very kind contributor. After experiencing Dragonfly2, you may have some feedback for the project. Then feel free to open an issue via [NEW ISSUE](https://github.com/dragonflyoss/Dragonfly2/issues/new).
+To be honest, we regard every user of Dragonfly as a very kind contributor. After experiencing Dragonfly, you may have some feedback for the project. Then feel free to open an issue via [NEW ISSUE](https://github.com/dragonflyoss/Dragonfly2/issues/new).
 
-Since we collaborate project Dragonfly2 in a distributed way, we appreciate **WELL-WRITTEN**, **DETAILED**, **EXPLICIT** issue reports. To make the communication more efficient, we wish everyone could search if your issue is an existing one in the searching list. If you find it existing, please add your details in comments under the existing issue instead of opening a brand new one.
+Since we collaborate project Dragonfly in a distributed way, we appreciate **WELL-WRITTEN**, **DETAILED**, **EXPLICIT** issue reports. To make the communication more efficient, we wish everyone could search if your issue is an existing one in the searching list. If you find it existing, please add your details in comments under the existing issue instead of opening a brand new one.
 
 To make the issue details as standard as possible, we setup an [ISSUE TEMPLATE](./.github/ISSUE_TEMPLATE) for issue reporters. You can find three kinds of issue templates there: question, bug report and feature request. Please **BE SURE** to follow the instructions to fill fields in template.
 
@@ -39,7 +39,7 @@ Also we must remind that when filing a new issue, please remember to remove the 
 
 ## Code and doc contribution
 
-Every action to make project Dragonfly2 better is encouraged. On GitHub, every improvement for Dragonfly2 could be via a PR (short for pull request).
+Every action to make project Dragonfly better is encouraged. On GitHub, every improvement for Dragonfly could be via a PR (short for pull request).
 
 * If you find a typo, try to fix it!
 * If you find a bug, try to fix it!
@@ -56,7 +56,7 @@ Actually it is impossible to list them completely. Just remember one princinple:
 
 > WE ARE LOOKING FORWARD TO ANY PR FROM YOU.
 
-Since you are ready to improve Dragonfly2 with a PR, we suggest you could take a look at the PR rules here.
+Since you are ready to improve Dragonfly with a PR, we suggest you could take a look at the PR rules here.
 
 * [Workspace Preparation](#workspace-preparation)
 * [Branch Definition](#branch-definition)
@@ -69,7 +69,7 @@ Since you are ready to improve Dragonfly2 with a PR, we suggest you could take a
 
 To put forward a PR, we assume you have registered a GitHub ID. Then you could finish the preparation in the following steps:
 
-1. **FORK** Dragonfly2 to your repository. To make this work, you just need to click the button Fork in right-left of [dragonflyoss/Dragonfly2](https://github.com/dragonflyoss/Dragonfly2) main page. Then you will end up with your repository in `https://github.com/<your-username>/Dragonfly`, in which `your-username` is your GitHub username.
+1. **FORK** Dragonfly to your repository. To make this work, you just need to click the button Fork in right-left of [dragonflyoss/Dragonfly2](https://github.com/dragonflyoss/Dragonfly2) main page. Then you will end up with your repository in `https://github.com/<your-username>/Dragonfly`, in which `your-username` is your GitHub username.
 1. **CLONE** your own repository to develop locally. Use `git clone https://github.com/<your-username>/Dragonfly2.git` to clone repository to your local machine. Then you can create new branches to finish the change you wish to make.
 
 1. **Set Remote** upstream to be `https://github.com/dragonflyoss/Dragonfly2.git` using the following two commands:
@@ -112,9 +112,9 @@ To put forward a PR, we assume you have registered a GitHub ID. Then you could f
 
 ### Branch Definition
 
-Right now we assume every contribution via pull request is for [branch main](https://github.com/dragonflyoss/Dragonfly2/tree/main) in Dragonfly2. Before contributing, be aware of branch definition would help a lot.
+Right now we assume every contribution via pull request is for [branch main](https://github.com/dragonflyoss/Dragonfly2/tree/main) in Dragonfly. Before contributing, be aware of branch definition would help a lot.
 
-As a contributor, keep in mind again that every contribution via pull request is for branch main. While in project Dragonfly2, there are several other branches, we generally call them rc branches, release branches and backport branches.
+As a contributor, keep in mind again that every contribution via pull request is for branch main. While in project Dragonfly, there are several other branches, we generally call them rc branches, release branches and backport branches.
 
 Before officially releasing a version, we will checkout a rc(release candidate) branch. In this branch, we will test more than branch main.
 
@@ -124,7 +124,7 @@ When backporting some fixes to existing released version, we will checkout backp
 
 ### Commit Rules
 
-Actually in Dragonfly2, we take two rules serious when committing:
+Actually in Dragonfly, we take two rules serious when committing:
 
 * [Commit Message](#commit-message)
 * [Commit Content](#commit-content)
@@ -159,11 +159,11 @@ No matter what the commit message, or commit content is, we do take more emphasi
 
 ### PR Description
 
-PR is the only way to make change to Dragonfly2 project files. To help reviewers better get your purpose, PR description could not be too detailed. We encourage contributors to follow the [PR template](./.github/PULL_REQUEST_TEMPLATE.md) to finish the pull request.
+PR is the only way to make change to Dragonfly project files. To help reviewers better get your purpose, PR description could not be too detailed. We encourage contributors to follow the [PR template](./.github/PULL_REQUEST_TEMPLATE.md) to finish the pull request.
 
 ### Developing Environment
 
-As a contributor, if you want to make any contribution to Dragonfly2 project, we should reach an agreement on the version of tools used in the development environment.
+As a contributor, if you want to make any contribution to Dragonfly project, we should reach an agreement on the version of tools used in the development environment.
 Here are some dependents with specific version:
 
 * golang : v1.15
@@ -171,11 +171,11 @@ Here are some dependents with specific version:
 * shellCheck : latest
 * docker: latest
 
-When you develop the Dragonfly2 project at the local environment, you should use subcommands of Makefile to help yourself to check and build the latest version of Dragonfly2. For the convenience of developers, we use the docker to build Dragonfly2. It can reduce problems of the developing environment.
+When you develop the Dragonfly project at the local environment, you should use subcommands of Makefile to help yourself to check and build the latest version of Dragonfly. For the convenience of developers, we use the docker to build Dragonfly. It can reduce problems of the developing environment.
 
 ### Golang Dependency Management
 
-The Dragonfly2 project uses [Go modules](https://golang.org/cmd/go/#hdr-Modules__module_versions__and_more) to manage dependencies on external packages. This requires a working Go environment with version 1.15 or greater installed.
+The Dragonfly project uses [Go modules](https://golang.org/cmd/go/#hdr-Modules__module_versions__and_more) to manage dependencies on external packages. This requires a working Go environment with version 1.15 or greater installed.
 
 To add or update a new dependency, use the `go get` command:
 
@@ -202,25 +202,25 @@ git commit
 
 ## Engage to help anything
 
-We choose GitHub as the primary place for Dragonfly2 to collaborate. So the latest updates of Dragonfly2 are always here. Although contributions via PR is an explicit way to help, we still call for any other ways.
+We choose GitHub as the primary place for Dragonfly to collaborate. So the latest updates of Dragonfly are always here. Although contributions via PR is an explicit way to help, we still call for any other ways.
 
 * reply to other's issues if you could;
 * help solve other user's problems;
 * help review other's PR design;
 * help review other's codes in PR;
-* discuss about Dragonfly2 to make things clearer;
-* advocate Dragonfly2 technology beyond GitHub;
-* write blogs on Dragonfly2 and so on.
+* discuss about Dragonfly to make things clearer;
+* advocate Dragonfly technology beyond GitHub;
+* write blogs on Dragonfly and so on.
 
 In a word, **ANY HELP IS CONTRIBUTION.**
 
-## Join Dragonfly2 as a member
+## Join Dragonfly as a member
 
-It is also welcomed to join Dragonfly2 team if you are willing to participate in Dragonfly2 community continuously and keep active.
+It is also welcomed to join Dragonfly team if you are willing to participate in Dragonfly community continuously and keep active.
 
 ### Requirements
 
-* Have read the [Contributing to Dragonfly2](CONTRIBUTING.md) carefully
+* Have read the [Contributing to Dragonfly](CONTRIBUTING.md) carefully
 * Have read the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md)
 * Have submitted multi PRs to the community
 * Be active in the community, may including but not limited
