@@ -8,7 +8,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	_ "d7y.io/dragonfly/v2/api/v2/manager/docs"
+	_ "d7y.io/dragonfly/v2/api/v2/manager"
 )
 
 // @title Swagger Example API
