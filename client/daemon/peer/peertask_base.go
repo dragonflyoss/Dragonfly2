@@ -176,15 +176,16 @@ func (pt *peerTask) pullPieces(pti PeerTask, cleanUnfinishedFunc func()) {
 
 func (pt *peerTask) receivePeerPacket() {
 	var (
-		peerPacket *scheduler.PeerPacket
-		err        error
-		spanDone   bool
+		peerPacket    *scheduler.PeerPacket
+		err           error
+		firstSpanDone bool
 	)
-	// FIXME currently only record first schedule result
-	_, span := tracer.Start(pt.ctx, config.SpanFirstSchedule)
+	// only record first schedule result
+	// other schedule result will record as an event in peer task span
+	_, firstPeerSpan := tracer.Start(pt.ctx, config.SpanFirstSchedule)
 	defer func() {
-		if !spanDone {
-			span.End()
+		if !firstSpanDone {
+			firstPeerSpan.End()
 		}
 	}()
 loop:
@@ -212,8 +213,8 @@ loop:
 			}
 			pt.cancel()
 			pt.Errorf(pt.failedReason)
-			if !spanDone {
-				span.RecordError(err)
+			if !firstSpanDone {
+				firstPeerSpan.RecordError(err)
 			}
 			break loop
 		}
@@ -223,10 +224,16 @@ loop:
 			if pt.isExitPeerPacketCode(peerPacket) {
 				pt.cancel()
 				pt.Errorf(pt.failedReason)
-				if !spanDone {
-					span.RecordError(fmt.Errorf(pt.failedReason))
+				if !firstSpanDone {
+					firstPeerSpan.RecordError(fmt.Errorf(pt.failedReason))
 				}
+				pt.span.AddEvent("receive exit peer packet",
+					trace.WithAttributes(config.AttributePeerPacketCode.Int(int(peerPacket.Code))))
+				pt.span.RecordError(fmt.Errorf(pt.failedReason))
 				break
+			} else {
+				pt.span.AddEvent("receive not success peer packet",
+					trace.WithAttributes(config.AttributePeerPacketCode.Int(int(peerPacket.Code))))
 			}
 			continue
 		}
@@ -239,10 +246,10 @@ loop:
 			peerPacket.MainPeer.PeerId, peerPacket.ParallelCount)
 		pt.span.AddEvent("receive new peer packet",
 			trace.WithAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId)))
-		if !spanDone {
-			spanDone = true
-			span.SetAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId))
-			span.End()
+		if !firstSpanDone {
+			firstSpanDone = true
+			firstPeerSpan.SetAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId))
+			firstPeerSpan.End()
 		}
 
 		pt.peerPacket = peerPacket
@@ -388,6 +395,7 @@ loop:
 
 		if err != nil {
 			pt.Warnf("get piece task error: %s, wait available peers from scheduler", err)
+			pt.span.RecordError(err)
 			select {
 			// when peer task without content length or total pieces count, match here
 			case <-pt.done:
@@ -422,6 +430,7 @@ loop:
 			}
 			initialized = true
 			if err = pt.callback.Init(pt); err != nil {
+				pt.span.RecordError(err)
 				pt.failedReason = err.Error()
 				pt.failedCode = dfcodes.ClientError
 				break loop
