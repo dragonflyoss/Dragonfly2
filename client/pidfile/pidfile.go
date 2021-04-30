@@ -43,7 +43,7 @@ func IsProcessExistsByPIDFile(path string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(pidByte)))
+	pid, err := strconv.ParseInt(strings.TrimSpace(string(pidByte)), 10, 32)
 	if err != nil {
 		return false, err
 	}

@@ -19,6 +19,11 @@ package storage
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"io"
+	"strconv"
+	"strings"
+
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
@@ -26,11 +31,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"fmt"
 	"github.com/pkg/errors"
-	"io"
-	"strconv"
-	"strings"
 )
 
 var (
@@ -104,11 +105,11 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 		}
 	}()
 	fields := strings.Split(value, fieldSeparator)
-	pieceNum, err := strconv.Atoi(fields[0])
+	pieceNum, err := strconv.ParseInt(fields[0], 10, 32)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid pieceNum:%s", fields[0])
 	}
-	pieceLen, err := strconv.Atoi(fields[1])
+	pieceLen, err := strconv.ParseInt(fields[1], 10, 32)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid pieceLen:%s", fields[1])
 	}
@@ -124,7 +125,7 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid offset:%s", fields[4])
 	}
-	pieceStyle, err := strconv.Atoi(fields[5])
+	pieceStyle, err := strconv.ParseInt(fields[5], 10, 8)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid pieceStyle:%s", fields[5])
 	}
@@ -138,7 +139,6 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 	}, nil
 }
 
-
 func NewManager(cfg *config.Config) (Manager, error) {
 	sb := getBuilder(cfg.StoragePattern, true)
 	if sb == nil {
@@ -149,7 +149,6 @@ func NewManager(cfg *config.Config) (Manager, error) {
 }
 
 type Manager interface {
-
 	ResetRepo(ctx context.Context, task *types.SeedTask) error
 
 	StatDownloadFile(ctx context.Context, taskId string) (*storedriver.StorageInfo, error)
