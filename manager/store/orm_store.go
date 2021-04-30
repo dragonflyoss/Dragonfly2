@@ -90,15 +90,15 @@ type SecurityDomainTable struct {
 }
 
 type WarmupTaskTable struct {
-	ID          uint   `gorm:"primaryKey"`
-	TaskId      string `gorm:"unique;size:63"`
-	ClusterId   string `gorm:"size:63"`
-	Type        string `gorm:"size:31"`
-	OriginalUri string `gorm:"size:1023"`
-	State       string `gorm:"size:15"`
-	TaskUris    string `gorm:"size:4095"`
-	CreatedAt   time.Time `gorm:"created_at"`
-	UpdatedAt   time.Time `gorm:"created_at"`
+f	ID          uint           `gorm:"primaryKey"`
+	TaskId      string         `gorm:"unique;size:63"`
+	ClusterId   string         `gorm:"size:63"`
+	Type        string         `gorm:"size:31"`
+	OriginalUri string         `gorm:"size:1023"`
+	State       string         `gorm:"size:15"`
+	TaskUris    string         `gorm:"size:4095"`
+	CreatedAt   time.Time      `gorm:"created_at"`
+	UpdatedAt   time.Time      `gorm:"created_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
 }
 

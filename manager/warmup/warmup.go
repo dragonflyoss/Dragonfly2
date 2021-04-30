@@ -16,7 +16,7 @@ type WarmupSvc struct {
 	mu         sync.Mutex
 	store      store.Store
 	identifier hostidentifier.Identifier
-	tasks map[string]*warmupTasks
+	tasks      map[string]*warmupTasks
 }
 
 func NewWarmupSvc(store store.Store, identifier hostidentifier.Identifier) (*WarmupSvc, error) {

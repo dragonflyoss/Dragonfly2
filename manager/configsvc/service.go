@@ -296,11 +296,11 @@ func (svc *ConfigSvc) GetInstanceAndClusterConfig(ctx context.Context, req *mana
 			return nil, nil, dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
 		}
 
-		if instance, exist := svc.getSchedulerInstance(ctx, instanceId); !exist {
-			return nil, nil, dferrors.Newf(dfcodes.ManagerError, "Scheduler instance not exist, instanceId %s", instanceId)
+		if instance, err := svc.GetSchedulerInstance(ctx, instanceId); err != nil {
+			return nil, nil, err
 		} else {
-			if cluster, exist := svc.getSchedulerCluster(ctx, instance.instance.ClusterId); !exist {
-				return nil, nil, dferrors.Newf(dfcodes.ManagerError, "Scheduler cluster not exist, clusterId %s", instance.instance.ClusterId)
+			if cluster, err := svc.GetSchedulerCluster(ctx, instance.ClusterId); err != nil {
+				return nil, nil, err
 			} else {
 				return instance, cluster, nil
 			}
@@ -311,11 +311,11 @@ func (svc *ConfigSvc) GetInstanceAndClusterConfig(ctx context.Context, req *mana
 			return nil, nil, dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
 		}
 
-		if instance, exist := svc.getCdnInstance(ctx, instanceId); !exist {
-			return nil, nil, dferrors.Newf(dfcodes.ManagerError, "Cdn instance not exist, instanceId %s", instanceId)
+		if instance, err := svc.GetCdnInstance(ctx, instanceId); err != nil {
+			return nil, nil, err
 		} else {
-			if cluster, exist := svc.getCdnCluster(ctx, instance.instance.ClusterId); !exist {
-				return nil, nil, dferrors.Newf(dfcodes.ManagerError, "Cdn cluster not exist, clusterId %s", instance.instance.ClusterId)
+			if cluster, err := svc.GetCdnCluster(ctx, instance.ClusterId); err != nil {
+				return nil, nil, err
 			} else {
 				return instance, cluster, nil
 			}
