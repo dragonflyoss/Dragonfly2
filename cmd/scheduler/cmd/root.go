@@ -30,8 +30,7 @@ import (
 )
 
 var (
-	cfgFile string
-	cfg     *config.Config
+	cfg *config.Config
 )
 
 const (
@@ -70,7 +69,7 @@ func init() {
 	cfg = config.New()
 
 	// Initialize cobra
-	common.InitCobra(rootCmd, &cfgFile, schedulerEnvPrefix, cfg)
+	common.InitCobra(rootCmd, true, schedulerEnvPrefix, cfg)
 }
 
 func runScheduler() error {
