@@ -31,7 +31,7 @@ Provide efficient, stable, secure, low-cost file and image distribution services
 
 ## Architecture
 
-<img src="docs/en/images/architecture.png" alt="logo" width="800"/>
+![alt][arch]
 
 **Manager:** Used to manage the dynamic configuration that each module depends on, and provide keepalive and metrics functions.
 
@@ -72,3 +72,4 @@ Please refer to our [Code of Conduct][codeconduct].
 [website]: https://d7y.io
 [discussion]: https://github.com/dragonflyoss/Dragonfly2/discussions
 [logo-linear]: docs/en/images/logo/dragonfly-linear.svg
+[arch]: docs/en/images/arch.png
