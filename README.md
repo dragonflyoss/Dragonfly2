@@ -1,6 +1,6 @@
 # Dragonfly
 
-<img src="docs/en/images/logo/dragonfly-linear.svg" alt="logo" width="400"/>
+![alt][logo-linear]
 
 [![GitHub release](https://img.shields.io/github/release/dragonflyoss/Dragonfly2.svg)](https://github.com/dragonflyoss/Dragonfly2/releases)
 [![CI](https://github.com/dragonflyoss/Dragonfly2/actions/workflows/ci.yaml/badge.svg)](https://github.com/dragonflyoss/Dragonfly2/actions/workflows/ci.yaml)
@@ -31,7 +31,7 @@ Provide efficient, stable, secure, low-cost file and image distribution services
 
 ## Architecture
 
-<img src="docs/en/images/architecture.png" alt="logo" width="800"/>
+![alt][arch]
 
 **Manager:** Used to manage the dynamic configuration that each module depends on, and provide keepalive and metrics functions.
 
@@ -71,3 +71,5 @@ Please refer to our [Code of Conduct][codeconduct].
 [quickstart]: https://github.com/dragonflyoss/Dragonfly2
 [website]: https://d7y.io
 [discussion]: https://github.com/dragonflyoss/Dragonfly2/discussions
+[logo-linear]: docs/en/images/logo/dragonfly-linear.svg
+[arch]: docs/en/images/arch.png
