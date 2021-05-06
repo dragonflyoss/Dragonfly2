@@ -36,9 +36,10 @@ func New() *Config {
 
 // Config contains all configuration of cdn node.
 type Config struct {
-	Console         bool `yaml:"console"`
-	Verbose         bool `yaml:"verbose"`
-	PProfPort       int  `yaml:"pprofPort"`
+	Console         bool   `yaml:"console"`
+	Verbose         bool   `yaml:"verbose"`
+	PProfPort       int    `yaml:"pprofPort"`
+	Jaeger          string `yaml:"jaeger"`
 	*BaseProperties `yaml:"base"`
 	Plugins         map[PluginType][]*PluginProperties `yaml:"plugins"`
 }

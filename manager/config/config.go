@@ -8,6 +8,7 @@ type Config struct {
 	Console       bool                 `yaml:"console"`
 	Verbose       bool                 `yaml:"verbose"`
 	PProfPort     int                  `yaml:"pprofPort"`
+	Jaeger        string               `yaml:"jaeger"`
 	Server        *ServerConfig        `yaml:"server"`
 	ConfigService *ConfigServiceConfig `yaml:"config-service"`
 	Stores        []*StoreConfig       `yaml:"stores"`

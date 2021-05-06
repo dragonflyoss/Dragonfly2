@@ -41,10 +41,10 @@ require (
 	github.com/swaggo/swag v1.7.0
 	github.com/valyala/fasthttp v1.22.0
 	github.com/willf/bitset v1.1.11
-	go.opentelemetry.io/otel v0.19.0
-	go.opentelemetry.io/otel/exporters/trace/jaeger v0.19.0
-	go.opentelemetry.io/otel/sdk v0.19.0
-	go.opentelemetry.io/otel/trace v0.19.0
+	go.opentelemetry.io/otel v0.20.0
+	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0
+	go.opentelemetry.io/otel/sdk v0.20.0
+	go.opentelemetry.io/otel/trace v0.20.0
 	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2

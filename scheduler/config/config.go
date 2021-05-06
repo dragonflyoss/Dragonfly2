@@ -24,6 +24,7 @@ type Config struct {
 	Console   bool                  `yaml:"console"`
 	Verbose   bool                  `yaml:"verbose"`
 	PProfPort int                   `yaml:"pprofPort"`
+	Jaeger    string                `yaml:"jaeger"`
 	Scheduler SchedulerConfig       `yaml:"scheduler"`
 	Server    ServerConfig          `yaml:"server"`
 	Worker    SchedulerWorkerConfig `yaml:"worker"`

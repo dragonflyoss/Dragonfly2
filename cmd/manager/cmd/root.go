@@ -77,8 +77,8 @@ func runManager() error {
 	s, _ := yaml.Marshal(cfg)
 	logger.Infof("manager configuration:\n%s", string(s))
 
-	// initialize verbose mode
-	common.InitVerboseMode(cfg.Verbose, cfg.PProfPort)
+	ff := common.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Jaeger)
+	defer ff()
 
 	if svr, err := server.New(cfg); err != nil {
 		return err
