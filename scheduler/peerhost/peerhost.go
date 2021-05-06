@@ -14,56 +14,82 @@
  * limitations under the License.
  */
 
-package types
+package peerhost
 
 import (
 	"sync"
+	"time"
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-type HostType int
+type PeerHostType int
 
 const (
-	HostTypePeer = 1
-	HostTypeCdn  = 2
+	// ClientPeerHostType represents client peerhost for scheduler
+	ClientPeerHostType = 1 << iota
+
+	// CDNPeerHostType represents CDN peerhost for scheduler
+	CDNPeerHostType
 )
 
-type Host struct {
+const (
+	DefaultCDNMaxUploaders   = 10
+	DefaultCDNMaxDownloaders = 10
+
+	DefaultClientMaxUploaders   = 4
+	DefaultClientMaxDownloaders = 4
+)
+
+type PeerHost struct {
 	scheduler.PeerHost
 
-	Type        HostType  // peer / cdn
-	peerTaskMap *sync.Map // Pid => PeerTask
-	// ProducerLoad is the load of download services provided by the current node.
-	totalUploadLoad     int32
-	currentUploadLoad   int32
-	totalDownloadLoad   int32
-	currentDownloadLoad int32
-	loadLock            *sync.Mutex
-	// ServiceDownTime the down time of the peer service.
-	ServiceDownTime int64
+	Type               PeerHostType
+	peerTaskMap        *sync.Map
+	maxUploaders       int
+	currentUploaders   int
+	maxDownloaders     int
+	currentDownloaders int
+	mutex              *sync.Mutex
+
+	startTime time.Time
+	endTime   time.Time
 }
 
-func CopyHost(h *Host) *Host {
-	copyHost := *h
-	copyHost.peerTaskMap = new(sync.Map)
-	copyHost.loadLock = new(sync.Mutex)
-	return &copyHost
-}
-
-func (h *Host) AddPeerTask(peerTask *PeerTask) {
-	h.peerTaskMap.Store(peerTask.Pid, peerTask)
-}
-
-func (h *Host) DeletePeerTask(peerTaskId string) {
-	if h == nil || h.peerTaskMap == nil {
-		return
+func newPeerHost(p *PeerHost) *PeerHost {
+	if p.Type == ClientPeerHostType {
+		p.maxUploaders = DefaultClientMaxUploaders
+		p.maxDownloaders = DefaultClientMaxUploaders
+	} else {
+		p.maxUploaders = DefaultCDNMaxUploaders
+		p.maxDownloaders = DefaultCDNMaxUploaders
 	}
-	h.peerTaskMap.Delete(peerTaskId)
+
+	p.peerTaskMap = &sync.Map{}
+	p.mutex = &sync.Mutex{}
+
+	return p
 }
 
-func (h *Host) GetPeerTaskNum() int32 {
+func (p *PeerHost) AddPeerTask(pt *PeerTask) {
+	p.peerTaskMap.Store(pt.Pid, pt)
+}
+
+func (p *PeerHost) DeletePeerTask(ID string) {
+	p.peerTaskMap.Delete(ID)
+}
+
+func (h *PeerHost) GetPeerTask(ID string) (*PeerTask, bool) {
+	v, ok := h.peerTaskMap.Load(ID)
+	if ok {
+		return v.(*PeerTask), ok
+	}
+
+	return nil, false
+}
+
+func (h *PeerHost) GetPeerTaskLenght() int {
 	count := 0
 	if h.peerTaskMap != nil {
 		h.peerTaskMap.Range(func(key interface{}, value interface{}) bool {
@@ -71,35 +97,30 @@ func (h *Host) GetPeerTaskNum() int32 {
 			return true
 		})
 	}
-	return int32(count)
+
+	return count
 }
 
-func (h *Host) GetPeerTask(peerTaskId string) (peerTask *PeerTask) {
-	v, _ := h.peerTaskMap.Load(peerTaskId)
-	peerTask, _ = v.(*PeerTask)
-	return
-}
-
-func (h *Host) SetTotalUploadLoad(load int32) {
+func (h *PeerHost) SetTotalUploadLoad(load int32) {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
 	h.totalUploadLoad = load
 }
 
-func (h *Host) AddUploadLoad(delta int32) {
+func (h *PeerHost) AddUploadLoad(delta int32) {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
 	logger.Infof("host[%s] type[%d] add UploadLoad [%d]", h.Uuid, h.Type, delta)
 	h.currentUploadLoad += delta
 }
 
-func (h *Host) GetUploadLoad() int32 {
+func (h *PeerHost) GetUploadLoad() int32 {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
 	return h.currentUploadLoad
 }
 
-func (h *Host) GetUploadLoadPercent() float64 {
+func (h *PeerHost) GetUploadLoadPercent() float64 {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
 	if h.totalUploadLoad <= 0 {
@@ -108,31 +129,31 @@ func (h *Host) GetUploadLoadPercent() float64 {
 	return float64(h.currentUploadLoad) / float64(h.totalUploadLoad)
 }
 
-func (h *Host) GetFreeUploadLoad() int32 {
+func (h *PeerHost) GetFreeUploadLoad() int32 {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
 	return h.totalUploadLoad - h.currentUploadLoad
 }
 
-func (h *Host) SetTotalDownloadLoad(load int32) {
+func (h *PeerHost) SetTotalDownloadLoad(load int32) {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
 	h.totalDownloadLoad = load
 }
 
-func (h *Host) AddDownloadLoad(delta int32) {
+func (h *PeerHost) AddDownloadLoad(delta int32) {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
 	h.currentDownloadLoad += delta
 }
 
-func (h *Host) GetDownloadLoad() int32 {
+func (h *PeerHost) GetDownloadLoad() int32 {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
 	return h.currentDownloadLoad
 }
 
-func (h *Host) GetDownloadLoadPercent() float64 {
+func (h *PeerHost) GetDownloadLoadPercent() float64 {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
 	if h.totalDownloadLoad <= 0 {
@@ -141,7 +162,7 @@ func (h *Host) GetDownloadLoadPercent() float64 {
 	return float64(h.currentDownloadLoad) / float64(h.totalDownloadLoad)
 }
 
-func (h *Host) GetFreeDownloadLoad() int32 {
+func (h *PeerHost) GetFreeDownloadLoad() int32 {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
 	return h.totalDownloadLoad - h.currentDownloadLoad

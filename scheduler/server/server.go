@@ -26,7 +26,6 @@ import (
 )
 
 type Server struct {
-	service *service.SchedulerService
 	worker  schedule_worker.IWorker
 	server  *SchedulerServer
 	config  config.ServerConfig
@@ -39,9 +38,9 @@ func New(cfg *config.Config) (*Server, error) {
 		config:  cfg.Server,
 	}
 
-	s.service = service.NewSchedulerService(cfg)
-	s.worker = schedule_worker.NewWorkerGroup(cfg, s.service)
-	s.server = NewSchedulerServer(cfg, WithSchedulerService(s.service),
+	service := service.NewSchedulerService(cfg)
+	s.worker = schedule_worker.NewWorkerGroup(cfg, service)
+	s.server = NewSchedulerServer(cfg, WithSchedulerService(service),
 		WithWorker(s.worker))
 
 	return s, nil
