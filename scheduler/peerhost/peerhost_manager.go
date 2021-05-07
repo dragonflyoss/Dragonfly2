@@ -20,31 +20,37 @@ import (
 	"sync"
 )
 
-type PeerHostManager struct {
+type PeerHostManager interface {
+	Add(*peerHost) PeerHost
+	Get(string) (PeerHost, bool)
+	Delete(string)
+}
+
+type peerHostManager struct {
 	peerhosts *sync.Map
 }
 
-func New() *PeerHostManager {
-	return &PeerHostManager{
+func New() PeerHostManager {
+	return &peerHostManager{
 		peerhosts: &sync.Map{},
 	}
 }
 
-func (pm *PeerHostManager) Add(host *peerHost) PeerHost {
+func (pm *peerHostManager) Add(host *peerHost) PeerHost {
 	p := newPeerHost(host)
 	v, _ := pm.peerhosts.LoadOrStore(host.Uuid, p)
 	return v.(*peerHost)
 }
 
-func (pm *PeerHostManager) Delete(uuid string) {
-	pm.peerhosts.Delete(uuid)
-}
-
-func (pm *PeerHostManager) Get(uuid string) (PeerHost, bool) {
+func (pm *peerHostManager) Get(uuid string) (PeerHost, bool) {
 	data, ok := pm.peerhosts.Load(uuid)
 	if !ok {
 		return nil, false
 	}
 
 	return data.(*peerHost), true
+}
+
+func (pm *peerHostManager) Delete(uuid string) {
+	pm.peerhosts.Delete(uuid)
 }
