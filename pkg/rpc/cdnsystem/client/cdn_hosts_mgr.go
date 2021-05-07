@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	mgClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -37,6 +38,7 @@ func (md *DynamicHostsMgr) Get() (interface{}, error) {
 		HostName: iputils.HostName,
 		Type:     manager.ResourceType_Scheduler,
 	})
+	logger.Debugf("scheduler config from manager is: %v", scConfig)
 	if err != nil {
 		return nil, err
 	}
