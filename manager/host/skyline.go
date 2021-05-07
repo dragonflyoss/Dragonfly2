@@ -2,6 +2,7 @@ package host
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -179,22 +180,21 @@ var SelectLists = []string{
 	"dsw_cluster.name", "net_asw.name", "logic_pod.name", "net_pod.name",
 }
 
-func (skyline *skyline) GetHostInfo(sn, ip, hostName, alias string) (*HostInfo, error) {
+func (skyline *skyline) GetHostInfo(ctx context.Context, opts ...OpOption) (*HostInfo, error) {
+	op := Op{}
+	op.ApplyOpts(opts)
+
 	var conditions []string
-	if len(sn) > 0 {
-		conditions = append(conditions, fmt.Sprintf("sn = '%s'", sn))
+	if len(op.sn) > 0 {
+		conditions = append(conditions, fmt.Sprintf("sn = '%s'", op.sn))
 	}
 
-	if len(ip) > 0 {
-		conditions = append(conditions, fmt.Sprintf("ip = '%s'", ip))
+	if len(op.ip) > 0 {
+		conditions = append(conditions, fmt.Sprintf("ip = '%s'", op.ip))
 	}
 
-	if len(hostName) > 0 {
-		conditions = append(conditions, fmt.Sprintf("host_name = '%s'", hostName))
-	}
-
-	if len(alias) > 0 {
-		conditions = append(conditions, fmt.Sprintf("host_name = '%s'", alias))
+	if len(op.hostName) > 0 {
+		conditions = append(conditions, fmt.Sprintf("host_name = '%s'", op.hostName))
 	}
 
 	req := NewQueryRequest()

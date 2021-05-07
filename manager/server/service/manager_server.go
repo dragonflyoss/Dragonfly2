@@ -54,10 +54,14 @@ func NewManagerServer(cfg *config.Config) *ManagerServer {
 }
 
 func (ms *ManagerServer) GetSchedulers(ctx context.Context, req *manager.GetSchedulersRequest) (*manager.SchedulerNodes, error) {
-	hostInfo, err := ms.hostManager.GetHostInfo("", req.GetIp(), req.GetHostName(), "")
+	var opts []host.OpOption
+	opts = append(opts, host.WithIp(req.GetIp()))
+	opts = append(opts, host.WithHostName(req.GetHostName()))
+
+	hostInfo, err := ms.hostManager.GetHostInfo(ctx, opts...)
 	if err != nil {
 		logger.Warnf("failed to get host info: %v", err)
-		hostInfo = host.NewEmptyHostInfo(req.GetIp(), req.GetHostName())
+		hostInfo = host.NewDefaultHostInfo(req.GetIp(), req.GetHostName())
 	}
 
 	nodes, err := ms.configSvc.GetSchedulers(ctx, hostInfo)
@@ -141,7 +145,10 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 				continue
 			}
 
-			hostInfo, err := ms.hostManager.GetHostInfo("", instance.Ip, instance.HostName, "")
+			var opts []host.OpOption
+			opts = append(opts, host.WithIp(instance.Ip))
+			opts = append(opts, host.WithHostName(instance.HostName))
+			hostInfo, err := ms.hostManager.GetHostInfo(ctx, opts...)
 			if err != nil {
 				return nil, dferrors.Newf(dfcodes.ManagerHostError, "get host info error: %v", err)
 			}

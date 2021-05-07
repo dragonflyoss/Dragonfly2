@@ -208,7 +208,7 @@ func (svc *ConfigSvc) GetSchedulers(ctx context.Context, hostInfo *host.HostInfo
 			continue
 		}
 
-		if hostInfo.IsEmpty() {
+		if hostInfo.IsDefault() {
 			nodes = append(nodes, fmt.Sprintf("%s:%d", instance.instance.Ip, instance.instance.Port))
 			continue
 		}

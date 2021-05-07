@@ -90,7 +90,7 @@ type SecurityDomainTable struct {
 }
 
 type WarmupTaskTable struct {
-f	ID          uint           `gorm:"primaryKey"`
+	ID          uint           `gorm:"primaryKey"`
 	TaskId      string         `gorm:"unique;size:63"`
 	ClusterId   string         `gorm:"size:63"`
 	Type        string         `gorm:"size:31"`
