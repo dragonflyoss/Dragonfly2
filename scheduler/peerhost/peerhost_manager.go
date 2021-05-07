@@ -18,13 +18,6 @@ package peerhost
 
 import (
 	"sync"
-
-	"d7y.io/dragonfly/v2/scheduler/types"
-)
-
-const (
-	HostLoadCDN  = 10
-	HostLoadPeer = 4
 )
 
 type PeerHostManager struct {
@@ -37,43 +30,21 @@ func New() *PeerHostManager {
 	}
 }
 
-func (p *PeerHostManager) Add(host *types.Host) *types.Host {
-	v, ok := p.peerhosts.Load(host.Uuid)
-	if ok {
-		return v.(*types.Host)
-	}
-
-	copyHost := types.CopyHost(host)
-	p.CalculateLoad(copyHost)
-	p.peerhosts.Store(host.Uuid, copyHost)
-
-	return copyHost
+func (pm *PeerHostManager) Add(host *peerHost) PeerHost {
+	p := newPeerHost(host)
+	v, _ := pm.peerhosts.LoadOrStore(host.Uuid, p)
+	return v.(*peerHost)
 }
 
-func (p *PeerHostManager) Delete(uuid string) {
-	p.peerhosts.Delete(uuid)
+func (pm *PeerHostManager) Delete(uuid string) {
+	pm.peerhosts.Delete(uuid)
 }
 
-func (m *PeerHostManager) Get(uuid string) (*types.Host, bool) {
-	data, ok := m.peerhosts.Load(uuid)
+func (pm *PeerHostManager) Get(uuid string) (PeerHost, bool) {
+	data, ok := pm.peerhosts.Load(uuid)
 	if !ok {
 		return nil, false
 	}
 
-	h, ok := data.(*types.Host)
-	if !ok {
-		return nil, false
-	}
-
-	return h, true
-}
-
-func (m *PeerHostManager) CalculateLoad(host *types.Host) {
-	if host.Type == types.HostTypePeer {
-		host.SetTotalUploadLoad(HostLoadPeer)
-		host.SetTotalDownloadLoad(HostLoadPeer)
-	} else {
-		host.SetTotalUploadLoad(HostLoadCDN)
-		host.SetTotalDownloadLoad(HostLoadCDN)
-	}
+	return data.(*peerHost), true
 }
