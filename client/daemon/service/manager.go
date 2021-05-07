@@ -192,6 +192,7 @@ func (m *manager) Download(ctx context.Context,
 				p.DoneCallback()
 				logger.Infof("task %s done", p.TaskId)
 				if req.Uid != 0 && req.Gid != 0 {
+					logger.Infof("change own to uid %d gid %d", req.Uid, req.Gid)
 					if err = os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {
 						logger.Errorf("change own failed: %s", err)
 						return err
