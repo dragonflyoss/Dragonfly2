@@ -142,7 +142,7 @@ func (rt *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return rt.baseRoundTripper.RoundTrip(req)
 }
 
-// needUseGetter is the default value for shouldUseDragonfly, which downloads all
+// NeedUseDragonfly is the default value for shouldUseDragonfly, which downloads all
 // images layers with dragonfly.
 func NeedUseDragonfly(req *http.Request) bool {
 	return req.Method == http.MethodGet && layerReg.MatchString(req.URL.Path)
@@ -151,7 +151,9 @@ func NeedUseDragonfly(req *http.Request) bool {
 // download uses dragonfly to download.
 func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
-	logger.Infof("start download with url: %s", url)
+	peerID := clientutil.GenPeerID(rt.peerHost)
+	log := logger.With("peer", peerID, "component", "transport")
+	log.Infof("start download with url: %s", url)
 
 	// Init meta value
 	meta := &base.UrlMeta{Header: map[string]string{}}
@@ -178,19 +180,19 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 			Filter:      filter,
 			BizId:       biz,
 			UrlMata:     meta,
-			PeerId:      clientutil.GenPeerID(rt.peerHost),
+			PeerId:      peerID,
 			PeerHost:    rt.peerHost,
 			HostLoad:    nil,
 			IsMigrating: false,
 		},
 	)
 	if err != nil {
-		logger.Errorf("download fail: %v", err)
+		log.Errorf("download fail: %v", err)
 		return nil, err
 	}
 
 	hdr := mapToHeader(attr)
-	logger.Infof("download stream attribute: %v", hdr)
+	log.Infof("download stream attribute: %v", hdr)
 
 	resp := &http.Response{
 		StatusCode: 200,
