@@ -35,6 +35,9 @@ import (
 var (
 	// layerReg the regex to determine if it is an image download
 	layerReg = regexp.MustCompile("^.+/blobs/sha256.*$")
+
+	// represents proxy default biz value
+	proxyBiz = "d7y/proxy"
 )
 
 // transport implements RoundTripper for dragonfly.
@@ -55,6 +58,9 @@ type transport struct {
 
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
+
+	// defaultBiz is used when http request without X-Dragonfly-Biz Header
+	defaultBiz string
 }
 
 // Option is functional config for transport.
@@ -96,6 +102,14 @@ func WithCondition(c func(r *http.Request) bool) Option {
 func WithDefaultFilter(f string) Option {
 	return func(rt *transport) *transport {
 		rt.defaultFilter = f
+		return rt
+	}
+}
+
+// WithDefaultFilter sets default filter for http requests with X-Dragonfly-Biz Header
+func WithDefaultBiz(b string) Option {
+	return func(rt *transport) *transport {
+		rt.defaultBiz = b
 		return rt
 	}
 }
@@ -143,42 +157,37 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	logger.Infof("start download with url: %s", url)
 
 	meta := &base.UrlMeta{Header: map[string]string{}}
+
+	// Set meta range's value
 	if rg := req.Header.Get("Range"); len(rg) > 0 {
-		meta = &base.UrlMeta{
-			Md5:    "",
-			Range:  rg,
-			Header: map[string]string{},
-		}
+		meta.Md5 = ""
+		meta.Range = rg
 	}
 
-	// copy header
-	for k, v := range req.Header {
-		// TODO only use first value currently
-		meta.Header[k] = v[0]
-	}
+	// Delete hop-by-hop headers
+	delHopHeaders(req.Header)
 
-	// remove hop by hop header
-	for _, h := range hopHeaders {
-		delete(meta.Header, h)
-	}
+	meta.Header = headerToMap(req.Header)
 
-	var (
-		filter string
-		biz    string
-	)
+	// Handle meta filter parameter
+	var filter string
 	if f, ok := meta.Header[config.HeaderDragonflyFilter]; ok {
 		filter = f
-		// remove because we will set Filter in scheduler.PeerTaskRequest
+		// Remove because we will set Filter in scheduler.PeerTaskRequest
 		delete(meta.Header, config.HeaderDragonflyFilter)
 	} else {
 		filter = rt.defaultFilter
 	}
+
+	// Biz meta filter parameter
+	var biz string
 	if b, ok := meta.Header[config.HeaderDragonflyBiz]; ok {
 		biz = b
 		delete(meta.Header, config.HeaderDragonflyBiz)
 	} else {
-		biz = "d7y/proxy"
+		biz = proxyBiz
 	}
+
 	r, attr, err := rt.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
 		&scheduler.PeerTaskRequest{
@@ -196,10 +205,8 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 		logger.Errorf("download fail: %v", err)
 		return nil, err
 	}
-	var hdr = http.Header{}
-	for k, v := range attr {
-		hdr.Set(k, v)
-	}
+
+	hdr := mapToHeader(attr)
 	logger.Infof("download stream attribute: %v", hdr)
 
 	resp := &http.Response{
@@ -244,4 +251,30 @@ var hopHeaders = []string{
 	"Trailer", // not Trailers per URL above; https://www.rfc-editor.org/errata_search.php?eid=4522
 	"Transfer-Encoding",
 	"Upgrade",
+}
+
+// headerToMap coverts request headers to map[string]string.
+func headerToMap(header http.Header) map[string]string {
+	m := make(map[string]string)
+	for k, v := range header {
+		// TODO only use first value currently
+		m[k] = v[0]
+	}
+	return m
+}
+
+// mapToHeader coverts map[string]string to request headers.
+func mapToHeader(m map[string]string) http.Header {
+	var h = http.Header{}
+	for k, v := range m {
+		h.Set(k, v)
+	}
+	return h
+}
+
+// delHopHeaders delete hop-by-hop headers.
+func delHopHeaders(header http.Header) {
+	for _, h := range hopHeaders {
+		header.Del(h)
+	}
 }
