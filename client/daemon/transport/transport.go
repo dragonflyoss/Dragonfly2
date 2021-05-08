@@ -162,26 +162,14 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 		meta.Range = rg
 	}
 
+	// Pick header's parameters
+	filter := pickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
+	biz := pickHeader(req.Header, config.HeaderDragonflyBiz, rt.defaultBiz)
+
 	// Delete hop-by-hop headers
 	delHopHeaders(req.Header)
 
 	meta.Header = headerToMap(req.Header)
-
-	// Handle meta filter parameter
-	filter := rt.defaultFilter
-	if f, ok := meta.Header[config.HeaderDragonflyFilter]; ok {
-		filter = f
-		// Remove because we will set Filter in scheduler.PeerTaskRequest
-		delete(meta.Header, config.HeaderDragonflyFilter)
-	}
-
-	// Handle meta biz parameter
-	biz := rt.defaultBiz
-	if b, ok := meta.Header[config.HeaderDragonflyBiz]; ok {
-		biz = b
-		// Remove because we will set Biz in scheduler.PeerTaskRequest
-		delete(meta.Header, config.HeaderDragonflyBiz)
-	}
 
 	r, attr, err := rt.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
@@ -272,4 +260,15 @@ func delHopHeaders(header http.Header) {
 	for _, h := range hopHeaders {
 		header.Del(h)
 	}
+}
+
+// pickHeader pick header with key.
+func pickHeader(header http.Header, key, defaultValue string) string {
+	v := header.Get(key)
+	if v != "" {
+		header.Del(key)
+		return v
+	}
+
+	return defaultValue
 }
