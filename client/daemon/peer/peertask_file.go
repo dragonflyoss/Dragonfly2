@@ -129,8 +129,9 @@ func newFilePeerTask(ctx context.Context,
 			logger.Infof("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
 				return ctx, nil, &TinyData{
+					span:    span,
 					TaskId:  result.TaskId,
-					PeerID:  request.PeerId,
+					PeerId:  request.PeerId,
 					Content: piece.PieceContent,
 				}, nil
 			}
