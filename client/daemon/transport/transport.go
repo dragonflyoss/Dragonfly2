@@ -35,9 +35,6 @@ import (
 var (
 	// layerReg the regex to determine if it is an image download
 	layerReg = regexp.MustCompile("^.+/blobs/sha256.*$")
-
-	// represents proxy default biz value
-	proxyBiz = "d7y/proxy"
 )
 
 // transport implements RoundTripper for dragonfly.
@@ -156,6 +153,7 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
 	logger.Infof("start download with url: %s", url)
 
+	// Init meta value
 	meta := &base.UrlMeta{Header: map[string]string{}}
 
 	// Set meta range's value
@@ -170,22 +168,19 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	meta.Header = headerToMap(req.Header)
 
 	// Handle meta filter parameter
-	var filter string
+	filter := rt.defaultFilter
 	if f, ok := meta.Header[config.HeaderDragonflyFilter]; ok {
 		filter = f
 		// Remove because we will set Filter in scheduler.PeerTaskRequest
 		delete(meta.Header, config.HeaderDragonflyFilter)
-	} else {
-		filter = rt.defaultFilter
 	}
 
-	// Biz meta filter parameter
-	var biz string
+	// Handle meta biz parameter
+	biz := rt.defaultBiz
 	if b, ok := meta.Header[config.HeaderDragonflyBiz]; ok {
 		biz = b
+		// Remove because we will set Biz in scheduler.PeerTaskRequest
 		delete(meta.Header, config.HeaderDragonflyBiz)
-	} else {
-		biz = proxyBiz
 	}
 
 	r, attr, err := rt.peerTaskManager.StartStreamPeerTask(
