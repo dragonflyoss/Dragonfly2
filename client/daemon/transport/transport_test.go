@@ -71,3 +71,136 @@ func TestTransport_RoundTrip(t *testing.T) {
 	}
 	assert.Equal(testData, output)
 }
+
+func TestTransport_headerToMap(t *testing.T) {
+	tests := []struct {
+		name   string
+		header http.Header
+		expect func(t *testing.T, data interface{})
+	}{
+		{
+			name: "normal conversion",
+			header: http.Header{
+				"foo": {"foo"},
+				"bar": {"bar"},
+			},
+			expect: func(t *testing.T, data interface{}) {
+				assert := testifyassert.New(t)
+				assert.EqualValues(data, map[string]string{
+					"foo": "foo",
+					"bar": "bar",
+				})
+			},
+		},
+		{
+			name:   "header is empty",
+			header: http.Header{},
+			expect: func(t *testing.T, data interface{}) {
+				assert := testifyassert.New(t)
+				assert.EqualValues(data, map[string]string{})
+			},
+		},
+		{
+			name: "header is a nested array",
+			header: http.Header{
+				"foo": {"foo1", "foo2"},
+				"bar": {"bar"},
+			},
+			expect: func(t *testing.T, data interface{}) {
+				assert := testifyassert.New(t)
+				assert.EqualValues(data, map[string]string{
+					"foo": "foo1",
+					"bar": "bar",
+				})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			data := headerToMap(tc.header)
+			tc.expect(t, data)
+		})
+	}
+}
+
+func TestTransport_mapToHeader(t *testing.T) {
+	tests := []struct {
+		name   string
+		m      map[string]string
+		expect func(t *testing.T, data interface{})
+	}{
+		{
+			name: "normal conversion",
+			m: map[string]string{
+				"foo": "foo",
+				"bar": "bar",
+			},
+			expect: func(t *testing.T, data interface{}) {
+				assert := testifyassert.New(t)
+				assert.EqualValues(data, http.Header{
+					"foo": {"foo"},
+					"bar": {"bar"},
+				})
+			},
+		},
+		{
+			name: "map is empty",
+			m:    map[string]string{},
+			expect: func(t *testing.T, data interface{}) {
+				assert := testifyassert.New(t)
+				assert.EqualValues(data, http.Header{})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			data := mapToHeader(tc.m)
+			tc.expect(t, data)
+		})
+	}
+}
+
+func TestTransport_pickHeader(t *testing.T) {
+	tests := []struct {
+		name         string
+		header       http.Header
+		key          string
+		defaultValue string
+		expect       func(t *testing.T, data string, header http.Header)
+	}{
+		{
+			name: "Pick the existing key",
+			header: http.Header{
+				"foo": {"foo"},
+				"bar": {"bar"},
+			},
+			key:          "foo",
+			defaultValue: "",
+			expect: func(t *testing.T, data string, header http.Header) {
+				assert := testifyassert.New(t)
+				assert.Equal(data, "foo")
+				assert.Equal(header.Get("foo"), "")
+			},
+		},
+		{
+			name:         "Pick the non-existent key",
+			header:       http.Header{},
+			key:          "foo",
+			defaultValue: "bar",
+			expect: func(t *testing.T, data string, header http.Header) {
+				assert := testifyassert.New(t)
+				assert.Equal(data, "bar")
+				assert.Equal(header.Get("foo"), "")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			data := pickHeader(tc.header, tc.key, tc.defaultValue)
+			tc.expect(t, data, tc.header)
+		})
+	}
+}
