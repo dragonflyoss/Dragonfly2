@@ -644,7 +644,7 @@ retry:
 	}
 
 	if code == dfcodes.CdnTaskNotFound && curPeerPacket == pt.peerPacket {
-		span.AddEvent("RetryForCdnTaskNotFound")
+		span.AddEvent("retry for CdnTaskNotFound")
 		goto retry
 	}
 	return nil, err

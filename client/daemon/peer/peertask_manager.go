@@ -82,8 +82,10 @@ type PeerTaskCallback interface {
 }
 
 type TinyData struct {
+	// span is used by peer task manager to record events without peer task
+	span    trace.Span
 	TaskId  string
-	PeerID  string
+	PeerId  string
 	Content []byte
 }
 
@@ -127,7 +129,6 @@ func NewPeerTaskManager(
 
 func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *FilePeerTaskProgress, *TinyData, error) {
 	// TODO ensure scheduler is ok first
-
 	start := time.Now()
 	ctx, pt, tiny, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager,
 		&req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption, ptm.perPeerRateLimit)
@@ -136,27 +137,31 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	}
 	// tiny file content is returned by scheduler, just write to output
 	if tiny != nil {
-		// TODO enable trace for tiny peer task
-		//defer pt.Span().End()
+		defer tiny.span.End()
+		log := logger.With("peer", tiny.PeerId, "task", tiny.TaskId, "component", "peerTaskManager")
 		_, err = os.Stat(req.Output)
 		if err == nil {
 			// remove exist file
-			logger.Infof("destination file %q exists, purge it first", req.Output)
+			log.Infof("destination file %q exists, purge it first", req.Output)
+			tiny.span.AddEvent("purge exist output")
 			os.Remove(req.Output)
 		}
 		dstFile, err := os.OpenFile(req.Output, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 		if err != nil {
-			//pt.Span().RecordError(err)
-			logger.Errorf("open tasks destination file error: %s", err)
+			tiny.span.RecordError(err)
+			tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+			log.Errorf("open task destination file error: %s", err)
 			return nil, nil, err
 		}
 		defer dstFile.Close()
 		n, err := dstFile.Write(tiny.Content)
 		if err != nil {
-			//pt.Span().RecordError(err)
+			tiny.span.RecordError(err)
+			tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 			return nil, nil, err
 		}
-		logger.Debugf("copied tasks data %d bytes to %s", n, req.Output)
+		log.Debugf("copied tasks data %d bytes to %s", n, req.Output)
+		tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 		return nil, tiny, nil
 	}
 	pt.SetCallback(&filePeerTaskCallback{
@@ -183,6 +188,8 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 	}
 	// tiny file content is returned by scheduler, just write to output
 	if tiny != nil {
+		logger.Infof("copied tasks data %d bytes to buffer", len(tiny.Content))
+		tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 		return bytes.NewBuffer(tiny.Content), map[string]string{
 			headers.ContentLength: fmt.Sprintf("%d", len(tiny.Content)),
 		}, nil
