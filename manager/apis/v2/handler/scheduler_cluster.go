@@ -13,7 +13,7 @@ import (
 	"gopkg.in/errgo.v2/fmt/errors"
 )
 
-// AddSchedulerCluster godoc
+// CreateSchedulerCluster godoc
 // @Summary Add scheduler cluster
 // @Description add by json config
 // @Tags SchedulerCluster
@@ -24,8 +24,8 @@ import (
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /schedulerclusters [post]
-func (handler *Handler) AddSchedulerCluster(ctx *gin.Context) {
+// @Router /scheduler/clusters [post]
+func (handler *Handler) CreateSchedulerCluster(ctx *gin.Context) {
 	var cluster types.SchedulerCluster
 	if err := ctx.ShouldBindJSON(&cluster); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -49,7 +49,7 @@ func (handler *Handler) AddSchedulerCluster(ctx *gin.Context) {
 	}
 }
 
-// DeleteSchedulerCluster godoc
+// DestroySchedulerCluster godoc
 // @Summary Delete scheduler cluster
 // @Description Delete by clusterId
 // @Tags SchedulerCluster
@@ -60,8 +60,8 @@ func (handler *Handler) AddSchedulerCluster(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /schedulerclusters/{id} [delete]
-func (handler *Handler) DeleteSchedulerCluster(ctx *gin.Context) {
+// @Router /scheduler/clusters/{id} [delete]
+func (handler *Handler) DestroySchedulerCluster(ctx *gin.Context) {
 	var uri types.SchedulerClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -96,7 +96,7 @@ func (handler *Handler) DeleteSchedulerCluster(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /schedulerclusters/{id} [post]
+// @Router /scheduler/clusters/{id} [post]
 func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
 	var uri types.SchedulerClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -141,7 +141,7 @@ func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /schedulerclusters/{id} [get]
+// @Router /scheduler/clusters/{id} [get]
 func (handler *Handler) GetSchedulerCluster(ctx *gin.Context) {
 	var uri types.SchedulerClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -175,7 +175,7 @@ func (handler *Handler) GetSchedulerCluster(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /schedulerclusters [get]
+// @Router /scheduler/clusters [get]
 func (handler *Handler) ListSchedulerClusters(ctx *gin.Context) {
 	var query types.ListQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {

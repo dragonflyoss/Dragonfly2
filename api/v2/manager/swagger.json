@@ -4,7 +4,7 @@
         "contact": {}
     },
     "paths": {
-        "/cdnclusters": {
+        "/cdn/clusters": {
             "get": {
                 "description": "List by object",
                 "consumes": [
@@ -115,7 +115,7 @@
                 }
             }
         },
-        "/cdnclusters/{id}": {
+        "/cdn/clusters/{id}": {
             "get": {
                 "description": "Get cdn cluster by ClusterID",
                 "consumes": [
@@ -270,7 +270,7 @@
                 }
             }
         },
-        "/cdninstances": {
+        "/cdn/instances": {
             "get": {
                 "description": "List by object",
                 "consumes": [
@@ -381,7 +381,7 @@
                 }
             }
         },
-        "/cdninstances/{id}": {
+        "/cdn/instances/{id}": {
             "get": {
                 "description": "Get cdn instance by InstanceID",
                 "consumes": [
@@ -536,7 +536,7 @@
                 }
             }
         },
-        "/schedulerclusters": {
+        "/scheduler/clusters": {
             "get": {
                 "description": "List by object",
                 "consumes": [
@@ -647,7 +647,7 @@
                 }
             }
         },
-        "/schedulerclusters/{id}": {
+        "/scheduler/clusters/{id}": {
             "get": {
                 "description": "Get scheduler cluster by ClusterID",
                 "consumes": [
@@ -802,7 +802,7 @@
                 }
             }
         },
-        "/schedulerinstances": {
+        "/scheduler/instances": {
             "get": {
                 "description": "List by object",
                 "consumes": [
@@ -913,7 +913,7 @@
                 }
             }
         },
-        "/schedulerinstances/{id}": {
+        "/scheduler/instances/{id}": {
             "get": {
                 "description": "Get scheduler instance by InstanceID",
                 "consumes": [

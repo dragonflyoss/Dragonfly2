@@ -24,7 +24,7 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/cdnclusters": {
+        "/cdn/clusters": {
             "get": {
                 "description": "List by object",
                 "consumes": [
@@ -135,7 +135,7 @@ var doc = `{
                 }
             }
         },
-        "/cdnclusters/{id}": {
+        "/cdn/clusters/{id}": {
             "get": {
                 "description": "Get cdn cluster by ClusterID",
                 "consumes": [
@@ -290,7 +290,7 @@ var doc = `{
                 }
             }
         },
-        "/cdninstances": {
+        "/cdn/instances": {
             "get": {
                 "description": "List by object",
                 "consumes": [
@@ -401,7 +401,7 @@ var doc = `{
                 }
             }
         },
-        "/cdninstances/{id}": {
+        "/cdn/instances/{id}": {
             "get": {
                 "description": "Get cdn instance by InstanceID",
                 "consumes": [
@@ -556,7 +556,7 @@ var doc = `{
                 }
             }
         },
-        "/schedulerclusters": {
+        "/scheduler/clusters": {
             "get": {
                 "description": "List by object",
                 "consumes": [
@@ -667,7 +667,7 @@ var doc = `{
                 }
             }
         },
-        "/schedulerclusters/{id}": {
+        "/scheduler/clusters/{id}": {
             "get": {
                 "description": "Get scheduler cluster by ClusterID",
                 "consumes": [
@@ -822,7 +822,7 @@ var doc = `{
                 }
             }
         },
-        "/schedulerinstances": {
+        "/scheduler/instances": {
             "get": {
                 "description": "List by object",
                 "consumes": [
@@ -933,7 +933,7 @@ var doc = `{
                 }
             }
         },
-        "/schedulerinstances/{id}": {
+        "/scheduler/instances/{id}": {
             "get": {
                 "description": "Get scheduler instance by InstanceID",
                 "consumes": [

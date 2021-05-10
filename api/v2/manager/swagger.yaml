@@ -155,7 +155,7 @@ definitions:
 info:
   contact: {}
 paths:
-  /cdnclusters:
+  /cdn/clusters:
     get:
       consumes:
       - application/json
@@ -230,7 +230,7 @@ paths:
       summary: Add cdn cluster
       tags:
       - CDNCluster
-  /cdnclusters/{id}:
+  /cdn/clusters/{id}:
     delete:
       consumes:
       - application/json
@@ -333,7 +333,7 @@ paths:
       summary: Update cdn cluster
       tags:
       - CDNCluster
-  /cdninstances:
+  /cdn/instances:
     get:
       consumes:
       - application/json
@@ -408,7 +408,7 @@ paths:
       summary: Add cdn instance
       tags:
       - CDNInstance
-  /cdninstances/{id}:
+  /cdn/instances/{id}:
     delete:
       consumes:
       - application/json
@@ -511,7 +511,7 @@ paths:
       summary: Update cdn instance
       tags:
       - CDNInstance
-  /schedulerclusters:
+  /scheduler/clusters:
     get:
       consumes:
       - application/json
@@ -586,7 +586,7 @@ paths:
       summary: Add scheduler cluster
       tags:
       - SchedulerCluster
-  /schedulerclusters/{id}:
+  /scheduler/clusters/{id}:
     delete:
       consumes:
       - application/json
@@ -689,7 +689,7 @@ paths:
       summary: Update scheduler cluster
       tags:
       - SchedulerCluster
-  /schedulerinstances:
+  /scheduler/instances:
     get:
       consumes:
       - application/json
@@ -764,7 +764,7 @@ paths:
       summary: Add scheduler instance
       tags:
       - SchedulerInstance
-  /schedulerinstances/{id}:
+  /scheduler/instances/{id}:
     delete:
       consumes:
       - application/json

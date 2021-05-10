@@ -13,7 +13,7 @@ import (
 	"gopkg.in/errgo.v2/fmt/errors"
 )
 
-// AddCDNCluster godoc
+// CreateCDNCluster godoc
 // @Summary Add cdn cluster
 // @Description add by json config
 // @Tags CDNCluster
@@ -24,8 +24,8 @@ import (
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdnclusters [post]
-func (handler *Handler) AddCDNCluster(ctx *gin.Context) {
+// @Router /cdn/clusters [post]
+func (handler *Handler) CreateCDNCluster(ctx *gin.Context) {
 	var cluster types.CDNCluster
 	if err := ctx.ShouldBindJSON(&cluster); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -49,7 +49,7 @@ func (handler *Handler) AddCDNCluster(ctx *gin.Context) {
 	}
 }
 
-// DeleteCDNCluster godoc
+// DestroyCDNCluster godoc
 // @Summary Delete cdn cluster
 // @Description Delete by clusterId
 // @Tags CDNCluster
@@ -60,8 +60,8 @@ func (handler *Handler) AddCDNCluster(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdnclusters/{id} [delete]
-func (handler *Handler) DeleteCDNCluster(ctx *gin.Context) {
+// @Router /cdn/clusters/{id} [delete]
+func (handler *Handler) DestroyCDNCluster(ctx *gin.Context) {
 	var uri types.CDNClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -96,7 +96,7 @@ func (handler *Handler) DeleteCDNCluster(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdnclusters/{id} [post]
+// @Router /cdn/clusters/{id} [post]
 func (handler *Handler) UpdateCDNCluster(ctx *gin.Context) {
 	var uri types.CDNClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -141,7 +141,7 @@ func (handler *Handler) UpdateCDNCluster(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdnclusters/{id} [get]
+// @Router /cdn/clusters/{id} [get]
 func (handler *Handler) GetCDNCluster(ctx *gin.Context) {
 	var uri types.CDNClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -175,7 +175,7 @@ func (handler *Handler) GetCDNCluster(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdnclusters [get]
+// @Router /cdn/clusters [get]
 func (handler *Handler) ListCDNClusters(ctx *gin.Context) {
 	var query types.ListQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
