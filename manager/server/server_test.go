@@ -13,6 +13,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -159,61 +160,64 @@ func (suite *ServerTestSuite) testDefaultCDNCluster() *types.CDNCluster {
 //	}
 //}
 //
-//func (suite *ServerTestSuite) TestKeepAlive() {
-//	assert := assert.New(suite.T())
-//	configsvc.KeepAliveTimeoutMax = 5 * time.Second
-//
-//	{
-//		req := &client.KeepAliveRequest{
-//			IsCdn:       false,
-//			IsScheduler: true,
-//			Interval:    0,
-//		}
-//
-//		err := suite.client.KeepAlive(context.TODO(), req)
-//		assert.NotNil(err)
-//	}
-//
-//	var cluster *types.SchedulerCluster
-//	{
-//		cluster = suite.testDefaultSchedulerCluster()
-//		ret, err := suite.server.ms.AddSchedulerCluster(context.TODO(), cluster)
-//		assert.NotNil(ret)
-//		assert.Nil(err)
-//		cluster.ClusterID = ret.ClusterID
-//	}
-//
-//	var instance *types.SchedulerInstance
-//	{
-//		instance = &types.SchedulerInstance{
-//			ClusterID:      cluster.ClusterID,
-//			SecurityDomain: "security_abc",
-//			IDC:            "idc_abc",
-//			Location:       "location_abc",
-//			NetConfig:      "",
-//			HostName:       iputils.HostName,
-//			IP:             iputils.HostIp,
-//			Port:           80,
-//		}
-//
-//		ret, err := suite.server.ms.AddSchedulerInstance(context.TODO(), instance)
-//		assert.NotNil(ret)
-//		assert.Nil(err)
-//		instance.InstanceID = ret.InstanceID
-//	}
-//
-//	{
-//		req := &client.KeepAliveRequest{
-//			IsCdn:       false,
-//			IsScheduler: true,
-//			Interval:    0,
-//		}
-//
-//		err := suite.client.KeepAlive(context.TODO(), req)
-//		assert.Nil(err)
-//	}
-//}
-//
+func (suite *ServerTestSuite) TestKeepAlive() {
+	assert := assert.New(suite.T())
+
+	var cluster *types.SchedulerCluster
+	{
+		cluster = suite.testDefaultSchedulerCluster()
+		ret, err := suite.server.ms.AddSchedulerCluster(context.TODO(), cluster)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		cluster.ClusterID = ret.ClusterID
+	}
+
+	var instance *types.SchedulerInstance
+	{
+		instance = &types.SchedulerInstance{
+			ClusterID:      cluster.ClusterID,
+			SecurityDomain: "security_abc",
+			IDC:            "idc_abc",
+			Location:       "location_abc",
+			NetConfig:      "",
+			HostName:       "hostname_abc",
+			IP:             "192.168.0.11",
+			Port:           80,
+		}
+
+		ret, err := suite.server.ms.AddSchedulerInstance(context.TODO(), instance)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		instance.InstanceID = ret.InstanceID
+	}
+
+	for i := 0; i < 20; i++ {
+		req := &manager.KeepAliveRequest{
+			HostName: "hostname_abc",
+			Type:     manager.ResourceType_Scheduler,
+		}
+
+		err := suite.server.ms.KeepAlive(context.TODO(), req)
+		assert.Nil(err)
+
+		if i%2 == 0 {
+			time.Sleep(configsvc.KeepAliveTimeoutMax - time.Second)
+
+			ret, err := suite.server.ms.GetSchedulerInstance(context.TODO(), instance.InstanceID)
+			assert.NotNil(ret)
+			assert.Nil(err)
+			assert.Equal(configsvc.InstanceActive, ret.State)
+		} else {
+			time.Sleep(configsvc.KeepAliveTimeoutMax * 2)
+
+			ret, err := suite.server.ms.GetSchedulerInstance(context.TODO(), instance.InstanceID)
+			assert.NotNil(ret)
+			assert.Nil(err)
+			assert.Equal(configsvc.InstanceInactive, ret.State)
+		}
+	}
+}
+
 //func (suite *ServerTestSuite) TestGetClusterConfig() {
 //	assert := assert.New(suite.T())
 //
@@ -625,7 +629,7 @@ func (suite *ServerTestSuite) TestSecurityDomain() {
 func (suite *ServerTestSuite) SetupSuite() {
 	assert := assert.New(suite.T())
 
-	configsvc.KeepAliveTimeoutMax = 5 * time.Second
+	configsvc.KeepAliveTimeoutMax = 2 * time.Second
 	_ = logcore.InitManager(false)
 	cfg := suite.testMysqlConfig()
 	server, err := New(cfg)

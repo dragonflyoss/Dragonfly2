@@ -94,8 +94,11 @@ func (svc *ConfigSvc) updateAllInstanceState() {
 	svc.mu.Lock()
 	now := time.Now()
 	for _, instance := range svc.schInstances {
-		timeout := now.After(instance.keepAliveTime.Add(KeepAliveTimeoutMax))
-		if state, ok := instanceNextState(instance.instance.State, timeout); ok {
+		if now.Before(instance.keepAliveTime.Add(KeepAliveTimeoutMax)) {
+			continue
+		}
+
+		if state, ok := instanceNextState(instance.instance.State, true); ok {
 			inter := *instance.instance
 			inter.State = state
 			schInstances = append(schInstances, inter)
@@ -103,8 +106,11 @@ func (svc *ConfigSvc) updateAllInstanceState() {
 	}
 
 	for _, instance := range svc.cdnInstances {
-		timeout := now.After(instance.keepAliveTime.Add(KeepAliveTimeoutMax))
-		if state, ok := instanceNextState(instance.instance.State, timeout); ok {
+		if now.Before(instance.keepAliveTime.Add(KeepAliveTimeoutMax)) {
+			continue
+		}
+
+		if state, ok := instanceNextState(instance.instance.State, true); ok {
 			inter := *instance.instance
 			inter.State = state
 			cdnInstances = append(cdnInstances, inter)
@@ -256,10 +262,8 @@ func (svc *ConfigSvc) KeepAlive(ctx context.Context, req *manager.KeepAliveReque
 			return dferrors.Newf(dfcodes.ManagerError, "Scheduler instance not exist, instanceID %s", instanceID)
 		}
 
-		now := time.Now()
-		timeout := now.After(instance.keepAliveTime.Add(KeepAliveTimeoutMax))
-		instance.keepAliveTime = now
-		if state, ok := instanceNextState(instance.instance.State, timeout); ok {
+		instance.keepAliveTime = time.Now()
+		if state, ok := instanceNextState(instance.instance.State, false); ok {
 			inter := *instance.instance
 			inter.State = state
 			_, err := svc.UpdateSchedulerInstance(ctx, &inter)
@@ -278,10 +282,8 @@ func (svc *ConfigSvc) KeepAlive(ctx context.Context, req *manager.KeepAliveReque
 			return dferrors.Newf(dfcodes.ManagerError, "Cdn instance not exist, instanceID %s", instanceID)
 		}
 
-		now := time.Now()
-		timeout := now.After(instance.keepAliveTime.Add(KeepAliveTimeoutMax))
-		instance.keepAliveTime = now
-		if state, ok := instanceNextState(instance.instance.State, timeout); ok {
+		instance.keepAliveTime = time.Now()
+		if state, ok := instanceNextState(instance.instance.State, false); ok {
 			inter := *instance.instance
 			inter.State = state
 			_, err := svc.UpdateCDNInstance(ctx, &inter)
