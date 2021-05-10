@@ -49,9 +49,9 @@ func NewSchedulerService(cfg *config.Config) *SchedulerService {
 
 func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string, peerID string) (taskID string) {
 	if s.ABTest {
-		return idgen.GenerateTwinsTaskID(url, filter, meta, bizID, peerID)
+		return idgen.TwinsTaskID(url, filter, meta, bizID, peerID)
 	}
-	return idgen.GenerateTaskID(url, filter, meta, bizID)
+	return idgen.TaskID(url, filter, meta, bizID)
 }
 
 func (s *SchedulerService) GetTask(taskID string) (task *types.Task, err error) {

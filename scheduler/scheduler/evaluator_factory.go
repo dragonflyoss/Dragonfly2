@@ -68,7 +68,7 @@ func (ef *evaluatorFactory) get(task *types.Task) Evaluator {
 
 	if ef.abtest {
 		name := ""
-		if strings.HasSuffix(task.TaskId, idgen.TwinsB) {
+		if strings.HasSuffix(task.TaskId, idgen.TwinsBSuffix) {
 			if ef.bscheduler != "" {
 				name = ef.bscheduler
 			}

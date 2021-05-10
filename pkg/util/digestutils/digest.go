@@ -22,7 +22,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"hash"
-	"hash/crc32"
 	"io"
 
 	"d7y.io/dragonfly/v2/pkg/unit"
@@ -42,10 +41,6 @@ func Sha256(values ...string) string {
 	}
 
 	return ToHashString(h)
-}
-
-func CheckSum(value string) uint32 {
-	return crc32.ChecksumIEEE([]byte(value))
 }
 
 func Md5Reader(reader io.Reader) string {
