@@ -86,7 +86,7 @@ func (s *HttpSourceClientTestSuite) TestGetContentLength() {
 		{
 			name: "t1",
 			args: args{
-				url:    "https://download.jetbrains.8686c.com/go/goland-2020.2.3.dmg",
+				url:    "www.foo.com",
 				header: map[string]string{},
 			},
 			want:    417880807,
@@ -94,7 +94,7 @@ func (s *HttpSourceClientTestSuite) TestGetContentLength() {
 		}, {
 			name: "t2",
 			args: args{
-				url:    "http://www.baidu.com",
+				url:    "www.foo.com",
 				header: map[string]string{},
 			},
 			want:    -1,
@@ -102,21 +102,21 @@ func (s *HttpSourceClientTestSuite) TestGetContentLength() {
 		}, {
 			name: "t3",
 			args: args{
-				url: "www.xxx.com",
+				url: "www.foo.com",
 			},
 			want:    -10,
 			wantErr: false,
 		}, {
 			name: "t4",
 			args: args{
-				url: "www.xxx.com",
+				url: "www.foo.com",
 			},
 			want:    -100,
 			wantErr: false,
 		}, {
 			name: "t4",
 			args: args{
-				url:    "www.xxx.com",
+				url:    "www.foo.com",
 				header: nil,
 			},
 			want:    -1000,
@@ -124,7 +124,7 @@ func (s *HttpSourceClientTestSuite) TestGetContentLength() {
 		}, {
 			name: "404",
 			args: args{
-				url: "www.xxx.com",
+				url: "www.foo.com",
 				header: nil,
 			},
 			want:    -1,
@@ -153,7 +153,7 @@ func (s *HttpSourceClientTestSuite) TestIsExpired() {
 		{
 			name: "t1",
 			args: args{
-				url:        "https://download.jetbrains.8686c.com/go/goland-2020.2.3.dmg",
+				url:        "www.foo.com",
 				expireInfo: map[string]string{"Etag": "lmW9EEXRsIpgQHKGyHMYFxFZBaJ1", "Last-Modified": "Wed, 16 Sep 2020 11:58:38 GMT"},
 			},
 			want:    false,
@@ -181,7 +181,7 @@ func (s *HttpSourceClientTestSuite) TestIsSupportRange() {
 		{
 			name: "support",
 			args: args{
-				url:    "https://download.jetbrains.8686c.com/go/goland-2020.2.3.dmg",
+				url:    "www.foo.com",
 				header: nil,
 			},
 			want:    true,
@@ -190,7 +190,7 @@ func (s *HttpSourceClientTestSuite) TestIsSupportRange() {
 		{
 			name: "notSupport",
 			args: args{
-				url:    "https://image.baidu.com/search/down?tn=download&ipn=dwnl&word=download&ie=utf8&fr=result&url=http%3A%2F%2Fsrc.onlinedown.net%2Fsupply%2F1372064088_17046.png&thumburl=https%3A%2F%2Fss0.bdstatic.com%2F70cFvHSh_Q1YnxGkpoWK1HF6hhy%2Fit%2Fu%3D3211174755%2C200170773%26fm%3D26%26gp%3D0.jpg",
+				url:    "www.foo.com",
 				header: nil,
 			},
 			want:    false,

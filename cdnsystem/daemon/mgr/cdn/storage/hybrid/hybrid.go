@@ -104,8 +104,8 @@ func (h *hybridStorageMgr) GC(ctx context.Context) error {
 		if err != nil {
 			logger.GcLogger.With("type", "hybrid").Error("gc disk: failed to get gcTaskIds")
 		}
-		realGcCount := h.gcTasks(ctx, gcTaskIDs, true)
-		logger.GcLogger.With("type", "hybrid").Infof("at most %d tasks can be cleaned up from disk, actual gc %d tasks", len(gcTaskIDs), realGcCount)
+		realGCCount := h.gcTasks(ctx, gcTaskIDs, true)
+		logger.GcLogger.With("type", "hybrid").Infof("at most %d tasks can be cleaned up from disk, actual gc %d tasks", len(gcTaskIDs), realGCCount)
 	}()
 	if h.hasShm {
 		wg.Add(1)
@@ -124,7 +124,7 @@ func (h *hybridStorageMgr) GC(ctx context.Context) error {
 }
 
 func (h *hybridStorageMgr) gcTasks(ctx context.Context, gcTaskIDs []string, isDisk bool) int {
-	var realGcCount int
+	var realGCCount int
 	for _, taskID := range gcTaskIDs {
 		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
@@ -135,7 +135,7 @@ func (h *hybridStorageMgr) gcTasks(ctx context.Context, gcTaskIDs []string, isDi
 			synclock.UnLock(taskID, false)
 			continue
 		}
-		realGcCount++
+		realGCCount++
 		if isDisk {
 			if err := h.deleteDiskFiles(ctx, taskID); err != nil {
 				logger.GcLogger.With("type", "hybrid").Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
@@ -151,7 +151,7 @@ func (h *hybridStorageMgr) gcTasks(ctx context.Context, gcTaskIDs []string, isDi
 		}
 		synclock.UnLock(taskID, false)
 	}
-	return realGcCount
+	return realGCCount
 }
 
 func (h *hybridStorageMgr) SetTaskMgr(taskMgr mgr.SeedTaskMgr) {

@@ -30,7 +30,6 @@ import (
 )
 
 var (
-	cfgFile = config.DefaultConfigFilePath
 	cfg     *config.Config
 )
 
@@ -70,7 +69,7 @@ func init() {
 	cfg = config.New()
 
 	// Initialize cobra
-	common.InitCobra(rootCmd, cfgFile, managerEnvPrefix, cfg)
+	common.InitCobra(rootCmd, managerEnvPrefix, cfg)
 }
 
 func runManager() error {

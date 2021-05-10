@@ -166,12 +166,12 @@ type BaseProperties struct {
 	// default: 3min
 	TaskExpireTime time.Duration `yaml:"taskExpireTime"`
 
-	// disk/hybrid/memory
+	// StoragePattern disk/hybrid/memory
 	StoragePattern string `yaml:"storagePattern"`
 
 	// Console shows log on console
 	Console bool `yaml:"console"`
 
-	// ConfigServer
+	// ConfigServer the service address that provides the configuration item
 	ConfigServer string `yaml:"configServer"`
 }

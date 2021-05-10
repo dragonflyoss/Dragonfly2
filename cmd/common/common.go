@@ -36,7 +36,8 @@ import (
 
 // InitCobra initializes flags binding and common sub cmds.
 // cfgFile is a pointer to configuration path, config is a pointer to configuration struct.
-func InitCobra(cmd *cobra.Command, cfgFile string, envPrefix string, config interface{}) {
+func InitCobra(cmd *cobra.Command, envPrefix string, config interface{}) {
+	var cfgFile *string
 	cobra.OnInitialize(func() { initConfig(cfgFile, envPrefix, config) })
 
 	// Add flags
@@ -44,7 +45,7 @@ func InitCobra(cmd *cobra.Command, cfgFile string, envPrefix string, config inte
 	flagSet.Bool("console", false, "whether print log on the terminal")
 	flagSet.Bool("verbose", false, "whether use debug level logger and enable pprof")
 	flagSet.Int("pprofPort", 0, "listen port for pprof, only valid when the verbose option is true, default is random port")
-	flagSet.StringVarP(&cfgFile, "config", "f", cfgFile, "the path of configuration file")
+	flagSet.StringVarP(cfgFile, "config", "f", "", "the path of configuration file")
 	
 	if err := viper.BindPFlags(flagSet); err != nil {
 		panic(errors.Wrap(err, "bind flags to viper"))
@@ -83,10 +84,10 @@ func InitVerboseMode(verbose bool, pprofPort int) {
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initConfig(cfgFile string, envPrefix string, config interface{}) {
-	if cfgFile != "" {
+func initConfig(cfgFile *string, envPrefix string, config interface{}) {
+	if *cfgFile != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
+		viper.SetConfigFile(*cfgFile)
 	} else {
 		viper.AddConfigPath(defaultConfigDir)
 		viper.SetConfigName(envPrefix)

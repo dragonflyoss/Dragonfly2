@@ -51,6 +51,9 @@ base:
   # Console shows log on console
   console: false
 
+  # the service address that provides the configuration item
+  configServer: 127.0.0.1:8004
+
 plugins:
   storage:
     - name: disk
@@ -65,7 +68,7 @@ plugins:
     - name: memory
       enable: true
       config:
-        baseDir: /tmp/memory/dragonfly
+        baseDir: /tmp/memory/dragonfly2
         gcConfig:
           youngGCThreshold: 100G
           fullGCThreshold: 5G

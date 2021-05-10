@@ -111,8 +111,7 @@ func init() {
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.PerPeerRateLimit), "per-peer-download-rate", "per peer download rate limit for other peers and back source")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
 	flagSet.DurationVar(&daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule-timeout", daemonConfig.Scheduler.ScheduleTimeout.Duration, "schedule timeout")
-	flagSet.StringVar(&daemonConfig.Telemetry.Jaeger, "jaeger", "http://jaeger.dragonfly.svc.staging.alipay.net:14268", "jaeger addr, " +
-		"like: http://localhost:14268")
+	flagSet.StringVar(&daemonConfig.Telemetry.Jaeger, "jaeger", daemonConfig.Telemetry.Jaeger, "jaeger addr, like: http://localhost:14268")
 	flagSet.StringVar(&daemonConfig.ConfigServer, "configServer", daemonConfig.ConfigServer, "specify config server")
 	flagSet.String("config", config.PeerHostConfigPath, "daemon config file location")
 
