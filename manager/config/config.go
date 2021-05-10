@@ -76,8 +76,8 @@ func New() *Config {
 		},
 		HostService: &HostService{
 			Skyline: &SkylineService{
-				Domain:    "http://xxx",
-				AppName:   "dragonfly-manager",
+				Domain:    "http://foo",
+				AppName:   "youApp",
 				Account:   "yourAccount",
 				AccessKey: "yourAccessKey",
 			},
