@@ -46,7 +46,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 		sleep          func()
 		cleanFileCache func(t *testing.T)
 		mock           func(m *mock_manager_client.MockmanagerClientMockRecorder)
-		expect         func(t *testing.T, res interface{})
+		expect         func(t *testing.T, data interface{})
 	}{
 		{
 			name:   "get dynconfig success without file cache",
@@ -196,7 +196,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 		sleep          func()
 		cleanFileCache func(t *testing.T)
 		mock           func(m *mock_manager_client.MockmanagerClientMockRecorder)
-		expect         func(t *testing.T, res interface{})
+		expect         func(t *testing.T, data interface{})
 	}{
 		{
 			name:   "unmarshals dynconfig success without file cache",
@@ -343,7 +343,7 @@ func TestDynconfigGet_LocalSourceType(t *testing.T) {
 		dynconfig  TestDynconfig
 		configPath string
 		sleep      func()
-		expect     func(t *testing.T, res interface{})
+		expect     func(t *testing.T, data interface{})
 	}{
 		{
 			name:   "get dynconfig success with local file",
@@ -419,7 +419,7 @@ func TestDynconfigUnmarshal_LocalSourceType(t *testing.T) {
 		dynconfig  TestDynconfig
 		configPath string
 		sleep      func()
-		expect     func(t *testing.T, res interface{})
+		expect     func(t *testing.T, data interface{})
 	}{
 		{
 			name:   "unmarshals dynconfig success with local file",

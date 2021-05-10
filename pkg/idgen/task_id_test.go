@@ -19,15 +19,155 @@ package idgen
 import (
 	"testing"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenerateTaskId(t *testing.T) {
-	taskId := TaskID("http://alibaba.com/path/xx", "", nil, "")
-	assert.NotEmpty(t, taskId)
+func TestTaskID(t *testing.T) {
+	tests := []struct {
+		name   string
+		url    string
+		filter string
+		meta   *base.UrlMeta
+		bizID  string
+		expect func(t *testing.T, d interface{})
+	}{
+		{
+			name:   "generate taskID with url",
+			url:    "https://example.com",
+			filter: "",
+			meta:   nil,
+			bizID:  "",
+			expect: func(t *testing.T, d interface{}) {
+				assert := assert.New(t)
+				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9", d)
+			},
+		},
+		{
+			name:   "generate taskID with meta",
+			url:    "https://example.com",
+			filter: "",
+			meta: &base.UrlMeta{
+				Range: "foo",
+				Md5:   "bar",
+			},
+			bizID: "",
+			expect: func(t *testing.T, d interface{}) {
+				assert := assert.New(t)
+				assert.Equal("aeee0e0a2a0c75130582641353c539aaf9011a0088b31347f7588e70e449a3e0", d)
+			},
+		},
+		{
+			name:   "generate taskID with filter",
+			url:    "https://example.com?foo=foo&bar=bar",
+			filter: "foo&bar",
+			meta:   nil,
+			bizID:  "",
+			expect: func(t *testing.T, d interface{}) {
+				assert := assert.New(t)
+				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9", d)
+			},
+		},
+		{
+			name:   "generate taskID with bizID",
+			url:    "https://example.com",
+			filter: "",
+			meta:   nil,
+			bizID:  "foo",
+			expect: func(t *testing.T, d interface{}) {
+				assert := assert.New(t)
+				assert.Equal("2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b", d)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			data := TaskID(tc.url, tc.filter, tc.meta, tc.bizID)
+			tc.expect(t, data)
+		})
+	}
 }
 
-func TestGenerateTwinsTaskId(t *testing.T) {
-	taskId := TwinsTaskID("http://alibaba.com/path/xx", "", nil, "", "peerId")
-	assert.NotEmpty(t, taskId)
+func TestTwinsTaskID(t *testing.T) {
+	tests := []struct {
+		name   string
+		url    string
+		filter string
+		meta   *base.UrlMeta
+		bizID  string
+		peerID string
+		expect func(t *testing.T, d interface{})
+	}{
+		{
+			name:   "generate taskID with url",
+			url:    "https://example.com",
+			filter: "",
+			meta:   nil,
+			bizID:  "",
+			peerID: "foo",
+			expect: func(t *testing.T, d interface{}) {
+				assert := assert.New(t)
+				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9_B", d)
+			},
+		},
+		{
+			name:   "generate taskID with meta",
+			url:    "https://example.com",
+			filter: "",
+			meta: &base.UrlMeta{
+				Range: "foo",
+				Md5:   "bar",
+			},
+			bizID:  "",
+			peerID: "foo",
+			expect: func(t *testing.T, d interface{}) {
+				assert := assert.New(t)
+				assert.Equal("aeee0e0a2a0c75130582641353c539aaf9011a0088b31347f7588e70e449a3e0_B", d)
+			},
+		},
+		{
+			name:   "generate taskID with filter",
+			url:    "https://example.com?foo=foo&bar=bar",
+			filter: "foo&bar",
+			meta:   nil,
+			bizID:  "",
+			peerID: "foo",
+			expect: func(t *testing.T, d interface{}) {
+				assert := assert.New(t)
+				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9_B", d)
+			},
+		},
+		{
+			name:   "generate taskID with bizID",
+			url:    "https://example.com",
+			filter: "",
+			meta:   nil,
+			bizID:  "foo",
+			peerID: "foo",
+			expect: func(t *testing.T, d interface{}) {
+				assert := assert.New(t)
+				assert.Equal("2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b_B", d)
+			},
+		},
+		{
+			name:   "generate twinsA taskID",
+			url:    "https://example.com",
+			filter: "",
+			meta:   nil,
+			bizID:  "",
+			peerID: "bar",
+			expect: func(t *testing.T, d interface{}) {
+				assert := assert.New(t)
+				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9_A", d)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			data := TwinsTaskID(tc.url, tc.filter, tc.meta, tc.bizID, tc.peerID)
+			tc.expect(t, data)
+		})
+	}
 }

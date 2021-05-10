@@ -37,12 +37,14 @@ func TaskID(url string, filter string, meta *base.UrlMeta, bizID string) string 
 
 	data = append(data, urlutils.FilterURLParam(url, strings.Split(filter, "&")))
 
-	if meta.Md5 != "" {
-		data = append(data, meta.Md5)
-	}
+	if meta != nil {
+		if meta.Md5 != "" {
+			data = append(data, meta.Md5)
+		}
 
-	if meta.Range != "" {
-		data = append(data, meta.Range)
+		if meta.Range != "" {
+			data = append(data, meta.Range)
+		}
 	}
 
 	if bizID != "" {
