@@ -86,9 +86,6 @@
     "registry_mirror": {
       "url": "https://index.docker.io",
       "insecure": true,
-      "certs": [
-        "./testdata/certs/sca.crt"
-      ],
       "direct": false
     },
     "proxies": [
@@ -105,10 +102,7 @@
       "hosts": [
         {
           "regx": "mirror.aliyuncs.com:443",
-          "insecure": true,
-          "certs": [
-            "./testdata/certs/sca.crt"
-          ]
+          "insecure": true
         }
       ]
     }
