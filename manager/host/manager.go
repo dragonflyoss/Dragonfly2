@@ -6,28 +6,28 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 )
 
-type HostInfo struct {
+type Info struct {
 	HostName       string
-	Ip             string
+	IP             string
 	SecurityDomain string
 	Location       string
-	Idc            string
+	IDC            string
 	NetTopology    string
 }
 
-func NewDefaultHostInfo(ip, hostName string) *HostInfo {
-	return &HostInfo{
+func NewDefaultHostInfo(ip, hostName string) *Info {
+	return &Info{
 		HostName:       hostName,
-		Ip:             ip,
+		IP:             ip,
 		SecurityDomain: "",
 		Location:       "",
-		Idc:            "",
+		IDC:            "",
 		NetTopology:    "",
 	}
 }
 
-func (host *HostInfo) IsDefault() bool {
-	return len(host.SecurityDomain) == 0 && len(host.Idc) == 0
+func (host *Info) IsDefault() bool {
+	return len(host.SecurityDomain) == 0 && len(host.IDC) == 0
 }
 
 type Op struct {
@@ -50,7 +50,7 @@ func WithSn(sn string) OpOption {
 	}
 }
 
-func WithIp(ip string) OpOption {
+func WithIP(ip string) OpOption {
 	return func(op *Op) {
 		op.ip = ip
 	}
@@ -62,11 +62,11 @@ func WithHostName(hostName string) OpOption {
 	}
 }
 
-type HostManager interface {
-	GetHostInfo(ctx context.Context, opts ...OpOption) (*HostInfo, error)
+type Manager interface {
+	GetHostInfo(ctx context.Context, opts ...OpOption) (*Info, error)
 }
 
-func NewHostManager(config *config.HostService) (HostManager, error) {
+func NewManager(config *config.HostService) (Manager, error) {
 	if config.Skyline != nil {
 		return NewSkyline(config.Skyline)
 	}

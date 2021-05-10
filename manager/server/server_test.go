@@ -29,7 +29,7 @@ func (suite *ServerTestSuite) testMysqlConfig() *config.Config {
 		Server: &config.ServerConfig{
 			Port: 8004,
 		},
-		ConfigService: &config.ConfigServiceConfig{
+		Configure: &config.ConfigureConfig{
 			StoreName: "store1",
 		},
 		Stores: []*config.StoreConfig{
@@ -79,7 +79,7 @@ func (suite *ServerTestSuite) testDefaultSchedulerCluster() *types.SchedulerClus
 	}
 }
 
-func (suite *ServerTestSuite) testDefaultCdnCluster() *types.CdnCluster {
+func (suite *ServerTestSuite) testDefaultCDNCluster() *types.CDNCluster {
 	cdnConfigMap := map[string]string{
 		"cdnConfig_a": "a",
 		"cdnConfig_b": "b",
@@ -87,7 +87,7 @@ func (suite *ServerTestSuite) testDefaultCdnCluster() *types.CdnCluster {
 	}
 
 	cdnConfigBytes, _ := json.Marshal(&cdnConfigMap)
-	return &types.CdnCluster{
+	return &types.CDNCluster{
 		Config: string(cdnConfigBytes),
 	}
 }
@@ -102,7 +102,7 @@ func (suite *ServerTestSuite) testDefaultCdnCluster() *types.CdnCluster {
 //		ret, err := suite.server.ms.AddSchedulerCluster(context.TODO(), cluster)
 //		assert.NotNil(ret)
 //		assert.Nil(err)
-//		cluster.ClusterId = ret.ClusterId
+//		cluster.ClusterID = ret.ClusterID
 //	}
 //
 //	hostName := "magneto-controller011162004111.nt12"
@@ -110,25 +110,25 @@ func (suite *ServerTestSuite) testDefaultCdnCluster() *types.CdnCluster {
 //	var instance *types.SchedulerInstance
 //	{
 //		instance = &types.SchedulerInstance{
-//			ClusterId:      cluster.ClusterId,
+//			ClusterID:      cluster.ClusterID,
 //			SecurityDomain: "security_abc",
-//			Idc:            "idc_abc",
+//			IDC:            "idc_abc",
 //			Location:       "location_abc",
 //			NetConfig:      "",
 //			HostName:       hostName,
-//			Ip:             ip,
+//			IP:             ip,
 //			Port:           80,
 //		}
 //
 //		ret, err := suite.server.ms.AddSchedulerInstance(context.TODO(), instance)
 //		assert.NotNil(ret)
 //		assert.Nil(err)
-//		instance.InstanceId = ret.InstanceId
+//		instance.InstanceID = ret.InstanceID
 //	}
 //
 //	{
 //		req := &manager.GetSchedulersRequest{
-//			Ip:       ip,
+//			IP:       ip,
 //			HostName: hostName,
 //		}
 //
@@ -149,7 +149,7 @@ func (suite *ServerTestSuite) testDefaultCdnCluster() *types.CdnCluster {
 //
 //	{
 //		req := &manager.GetSchedulersRequest{
-//			Ip:       ip,
+//			IP:       ip,
 //			HostName: hostName,
 //		}
 //
@@ -180,26 +180,26 @@ func (suite *ServerTestSuite) testDefaultCdnCluster() *types.CdnCluster {
 //		ret, err := suite.server.ms.AddSchedulerCluster(context.TODO(), cluster)
 //		assert.NotNil(ret)
 //		assert.Nil(err)
-//		cluster.ClusterId = ret.ClusterId
+//		cluster.ClusterID = ret.ClusterID
 //	}
 //
 //	var instance *types.SchedulerInstance
 //	{
 //		instance = &types.SchedulerInstance{
-//			ClusterId:      cluster.ClusterId,
+//			ClusterID:      cluster.ClusterID,
 //			SecurityDomain: "security_abc",
-//			Idc:            "idc_abc",
+//			IDC:            "idc_abc",
 //			Location:       "location_abc",
 //			NetConfig:      "",
 //			HostName:       iputils.HostName,
-//			Ip:             iputils.HostIp,
+//			IP:             iputils.HostIp,
 //			Port:           80,
 //		}
 //
 //		ret, err := suite.server.ms.AddSchedulerInstance(context.TODO(), instance)
 //		assert.NotNil(ret)
 //		assert.Nil(err)
-//		instance.InstanceId = ret.InstanceId
+//		instance.InstanceID = ret.InstanceID
 //	}
 //
 //	{
@@ -223,26 +223,26 @@ func (suite *ServerTestSuite) testDefaultCdnCluster() *types.CdnCluster {
 //		ret, err := suite.server.ms.AddSchedulerCluster(context.TODO(), cluster)
 //		assert.NotNil(ret)
 //		assert.Nil(err)
-//		cluster.ClusterId = ret.ClusterId
+//		cluster.ClusterID = ret.ClusterID
 //	}
 //
 //	var instance *types.SchedulerInstance
 //	{
 //		instance = &types.SchedulerInstance{
-//			ClusterId:      cluster.ClusterId,
+//			ClusterID:      cluster.ClusterID,
 //			SecurityDomain: "security_abc",
-//			Idc:            "idc_abc",
+//			IDC:            "idc_abc",
 //			Location:       "location_abc",
 //			NetConfig:      "",
 //			HostName:       "dragonfly2-scheduler011239070235.nt12",
-//			Ip:             "11.239.70.235",
+//			IP:             "11.239.70.235",
 //			Port:           80,
 //		}
 //
 //		ret, err := suite.server.ms.AddSchedulerInstance(context.TODO(), instance)
 //		assert.NotNil(ret)
 //		assert.Nil(err)
-//		instance.InstanceId = ret.InstanceId
+//		instance.InstanceID = ret.InstanceID
 //	}
 //
 //	{
@@ -266,14 +266,14 @@ func (suite *ServerTestSuite) TestSchedulerCluster() {
 		ret, err := suite.server.ms.AddSchedulerCluster(context.TODO(), cluster)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		cluster.ClusterId = ret.ClusterId
+		cluster.ClusterID = ret.ClusterID
 	}
 
 	{
-		ret, err := suite.server.ms.GetSchedulerCluster(context.TODO(), cluster.ClusterId)
+		ret, err := suite.server.ms.GetSchedulerCluster(context.TODO(), cluster.ClusterID)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		assert.Equal(cluster.ClusterId, ret.ClusterId)
+		assert.Equal(cluster.ClusterID, ret.ClusterID)
 		assert.Equal(cluster.SchedulerConfig, ret.SchedulerConfig)
 		assert.Equal(cluster.ClientConfig, ret.ClientConfig)
 	}
@@ -291,7 +291,7 @@ func (suite *ServerTestSuite) TestSchedulerCluster() {
 		ret, err := suite.server.ms.UpdateSchedulerCluster(context.TODO(), cluster)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		assert.Equal(cluster.ClusterId, ret.ClusterId)
+		assert.Equal(cluster.ClusterID, ret.ClusterID)
 		assert.Equal(cluster.SchedulerConfig, ret.SchedulerConfig)
 		assert.Equal(cluster.ClientConfig, ret.ClientConfig)
 	}
@@ -301,8 +301,8 @@ func (suite *ServerTestSuite) TestSchedulerCluster() {
 		assert.NotNil(ret)
 		assert.Nil(err)
 		for i, c := range ret {
-			if cluster.ClusterId == c.ClusterId {
-				assert.Equal(cluster.ClusterId, ret[i].ClusterId)
+			if cluster.ClusterID == c.ClusterID {
+				assert.Equal(cluster.ClusterID, ret[i].ClusterID)
 				assert.Equal(cluster.SchedulerConfig, ret[i].SchedulerConfig)
 				assert.Equal(cluster.ClientConfig, ret[i].ClientConfig)
 			}
@@ -310,15 +310,15 @@ func (suite *ServerTestSuite) TestSchedulerCluster() {
 	}
 
 	{
-		ret, err := suite.server.ms.DeleteSchedulerCluster(context.TODO(), cluster.ClusterId)
+		ret, err := suite.server.ms.DeleteSchedulerCluster(context.TODO(), cluster.ClusterID)
 		assert.NotNil(ret)
 		assert.Nil(err)
 
-		ret, err = suite.server.ms.GetSchedulerCluster(context.TODO(), cluster.ClusterId)
+		ret, err = suite.server.ms.GetSchedulerCluster(context.TODO(), cluster.ClusterID)
 		assert.Nil(ret)
 		assert.NotNil(err)
 
-		ret, err = suite.server.ms.DeleteSchedulerCluster(context.TODO(), fmt.Sprintf("%sabc", cluster.ClusterId))
+		ret, err = suite.server.ms.DeleteSchedulerCluster(context.TODO(), fmt.Sprintf("%sabc", cluster.ClusterID))
 		assert.Nil(ret)
 		assert.Nil(err)
 	}
@@ -333,33 +333,33 @@ func (suite *ServerTestSuite) TestSchedulerInstance() {
 		ret, err := suite.server.ms.AddSchedulerCluster(context.TODO(), cluster)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		cluster.ClusterId = ret.ClusterId
+		cluster.ClusterID = ret.ClusterID
 	}
 
 	var instance *types.SchedulerInstance
 	{
 		instance = &types.SchedulerInstance{
-			ClusterId:      cluster.ClusterId,
+			ClusterID:      cluster.ClusterID,
 			SecurityDomain: "security_abc",
-			Idc:            "idc_abc",
+			IDC:            "idc_abc",
 			Location:       "location_abc",
 			NetConfig:      "",
 			HostName:       "hostname_abc",
-			Ip:             "192.168.0.11",
+			IP:             "192.168.0.11",
 			Port:           80,
 		}
 
 		ret, err := suite.server.ms.AddSchedulerInstance(context.TODO(), instance)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		instance.InstanceId = ret.InstanceId
+		instance.InstanceID = ret.InstanceID
 	}
 
 	{
-		ret, err := suite.server.ms.GetSchedulerInstance(context.TODO(), instance.InstanceId)
+		ret, err := suite.server.ms.GetSchedulerInstance(context.TODO(), instance.InstanceID)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		assert.Equal(instance.InstanceId, ret.InstanceId)
+		assert.Equal(instance.InstanceID, ret.InstanceID)
 		assert.Equal(instance.SecurityDomain, ret.SecurityDomain)
 		assert.Equal(instance.Location, ret.Location)
 	}
@@ -369,56 +369,56 @@ func (suite *ServerTestSuite) TestSchedulerInstance() {
 		ret, err := suite.server.ms.UpdateSchedulerInstance(context.TODO(), instance)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		assert.Equal(instance.InstanceId, ret.InstanceId)
+		assert.Equal(instance.InstanceID, ret.InstanceID)
 		assert.Equal(instance.SecurityDomain, ret.SecurityDomain)
 		assert.Equal(instance.Location, ret.Location)
 	}
 
 	{
 		op := []store.OpOption{}
-		op = append(op, store.WithClusterId(cluster.ClusterId))
+		op = append(op, store.WithClusterID(cluster.ClusterID))
 		op = append(op, store.WithMarker(0, 10))
 
 		ret, err := suite.server.ms.ListSchedulerInstances(context.TODO(), op...)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		assert.Equal(instance.InstanceId, ret[0].InstanceId)
+		assert.Equal(instance.InstanceID, ret[0].InstanceID)
 		assert.Equal(instance.SecurityDomain, ret[0].SecurityDomain)
 		assert.Equal(instance.Location, ret[0].Location)
 	}
 
 	{
-		ret, err := suite.server.ms.DeleteSchedulerInstance(context.TODO(), instance.InstanceId)
+		ret, err := suite.server.ms.DeleteSchedulerInstance(context.TODO(), instance.InstanceID)
 		assert.NotNil(ret)
 		assert.Nil(err)
 
-		ret, err = suite.server.ms.GetSchedulerInstance(context.TODO(), instance.InstanceId)
+		ret, err = suite.server.ms.GetSchedulerInstance(context.TODO(), instance.InstanceID)
 		assert.Nil(ret)
 		assert.NotNil(err)
 
-		ret, err = suite.server.ms.DeleteSchedulerInstance(context.TODO(), fmt.Sprintf("%sabc", instance.InstanceId))
+		ret, err = suite.server.ms.DeleteSchedulerInstance(context.TODO(), fmt.Sprintf("%sabc", instance.InstanceID))
 		assert.Nil(ret)
 		assert.Nil(err)
 	}
 }
 
-func (suite *ServerTestSuite) TestCdnCluster() {
+func (suite *ServerTestSuite) TestCDNCluster() {
 	assert := assert.New(suite.T())
 
-	var cluster *types.CdnCluster
+	var cluster *types.CDNCluster
 	{
-		cluster = suite.testDefaultCdnCluster()
-		ret, err := suite.server.ms.AddCdnCluster(context.TODO(), cluster)
+		cluster = suite.testDefaultCDNCluster()
+		ret, err := suite.server.ms.AddCDNCluster(context.TODO(), cluster)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		cluster.ClusterId = ret.ClusterId
+		cluster.ClusterID = ret.ClusterID
 	}
 
 	{
-		ret, err := suite.server.ms.GetCdnCluster(context.TODO(), cluster.ClusterId)
+		ret, err := suite.server.ms.GetCDNCluster(context.TODO(), cluster.ClusterID)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		assert.Equal(cluster.ClusterId, ret.ClusterId)
+		assert.Equal(cluster.ClusterID, ret.ClusterID)
 		assert.Equal(cluster.Config, ret.Config)
 	}
 
@@ -432,113 +432,113 @@ func (suite *ServerTestSuite) TestCdnCluster() {
 		assert.Nil(err)
 		cluster.Config = string(cdnConfigByte)
 
-		ret, err := suite.server.ms.UpdateCdnCluster(context.TODO(), cluster)
+		ret, err := suite.server.ms.UpdateCDNCluster(context.TODO(), cluster)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		assert.Equal(cluster.ClusterId, ret.ClusterId)
+		assert.Equal(cluster.ClusterID, ret.ClusterID)
 		assert.Equal(cluster.Config, ret.Config)
 	}
 
 	{
-		ret, err := suite.server.ms.ListCdnClusters(context.TODO(), store.WithMarker(0, 10))
+		ret, err := suite.server.ms.ListCDNClusters(context.TODO(), store.WithMarker(0, 10))
 		assert.NotNil(ret)
 		assert.Nil(err)
 		for i, c := range ret {
-			if cluster.ClusterId == c.ClusterId {
-				assert.Equal(cluster.ClusterId, ret[i].ClusterId)
+			if cluster.ClusterID == c.ClusterID {
+				assert.Equal(cluster.ClusterID, ret[i].ClusterID)
 				assert.Equal(cluster.Config, ret[i].Config)
 			}
 		}
 	}
 
 	{
-		ret, err := suite.server.ms.DeleteCdnCluster(context.TODO(), cluster.ClusterId)
+		ret, err := suite.server.ms.DeleteCDNCluster(context.TODO(), cluster.ClusterID)
 		assert.NotNil(ret)
 		assert.Nil(err)
 
-		ret, err = suite.server.ms.GetCdnCluster(context.TODO(), cluster.ClusterId)
+		ret, err = suite.server.ms.GetCDNCluster(context.TODO(), cluster.ClusterID)
 		assert.Nil(ret)
 		assert.NotNil(err)
 
-		ret, err = suite.server.ms.DeleteCdnCluster(context.TODO(), fmt.Sprintf("%sabc", cluster.ClusterId))
+		ret, err = suite.server.ms.DeleteCDNCluster(context.TODO(), fmt.Sprintf("%sabc", cluster.ClusterID))
 		assert.Nil(ret)
 		assert.Nil(err)
 	}
 }
 
-func (suite *ServerTestSuite) TestCdnInstance() {
+func (suite *ServerTestSuite) TestCDNInstance() {
 	assert := assert.New(suite.T())
 
-	var cluster *types.CdnCluster
+	var cluster *types.CDNCluster
 	{
-		cluster = suite.testDefaultCdnCluster()
-		ret, err := suite.server.ms.AddCdnCluster(context.TODO(), cluster)
+		cluster = suite.testDefaultCDNCluster()
+		ret, err := suite.server.ms.AddCDNCluster(context.TODO(), cluster)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		cluster.ClusterId = ret.ClusterId
+		cluster.ClusterID = ret.ClusterID
 	}
 
-	var instance *types.CdnInstance
+	var instance *types.CDNInstance
 	{
-		instance = &types.CdnInstance{
-			ClusterId: cluster.ClusterId,
-			Idc:       "idc_abc",
+		instance = &types.CDNInstance{
+			ClusterID: cluster.ClusterID,
+			IDC:       "idc_abc",
 			Location:  "location_abc",
 			HostName:  "hostName_abc",
-			Ip:        "ip_abc",
+			IP:        "ip_abc",
 			Port:      0,
-			RpcPort:   0,
+			RPCPort:   0,
 			DownPort:  0,
 		}
 
-		ret, err := suite.server.ms.AddCdnInstance(context.TODO(), instance)
+		ret, err := suite.server.ms.AddCDNInstance(context.TODO(), instance)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		instance.InstanceId = ret.InstanceId
+		instance.InstanceID = ret.InstanceID
 	}
 
 	{
-		ret, err := suite.server.ms.GetCdnInstance(context.TODO(), instance.InstanceId)
+		ret, err := suite.server.ms.GetCDNInstance(context.TODO(), instance.InstanceID)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		assert.Equal(instance.InstanceId, ret.InstanceId)
-		assert.Equal(instance.Idc, ret.Idc)
+		assert.Equal(instance.InstanceID, ret.InstanceID)
+		assert.Equal(instance.IDC, ret.IDC)
 		assert.Equal(instance.Location, ret.Location)
 	}
 
 	{
 		instance.Location = "location_abc_update"
-		ret, err := suite.server.ms.UpdateCdnInstance(context.TODO(), instance)
+		ret, err := suite.server.ms.UpdateCDNInstance(context.TODO(), instance)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		assert.Equal(instance.InstanceId, ret.InstanceId)
-		assert.Equal(instance.Idc, ret.Idc)
+		assert.Equal(instance.InstanceID, ret.InstanceID)
+		assert.Equal(instance.IDC, ret.IDC)
 		assert.Equal(instance.Location, ret.Location)
 	}
 
 	{
 		op := []store.OpOption{}
-		op = append(op, store.WithClusterId(cluster.ClusterId))
+		op = append(op, store.WithClusterID(cluster.ClusterID))
 		op = append(op, store.WithMarker(0, 10))
 
-		ret, err := suite.server.ms.ListCdnInstances(context.TODO(), op...)
+		ret, err := suite.server.ms.ListCDNInstances(context.TODO(), op...)
 		assert.NotNil(ret)
 		assert.Nil(err)
-		assert.Equal(instance.InstanceId, ret[0].InstanceId)
-		assert.Equal(instance.Idc, ret[0].Idc)
+		assert.Equal(instance.InstanceID, ret[0].InstanceID)
+		assert.Equal(instance.IDC, ret[0].IDC)
 		assert.Equal(instance.Location, ret[0].Location)
 	}
 
 	{
-		ret, err := suite.server.ms.DeleteCdnInstance(context.TODO(), instance.InstanceId)
+		ret, err := suite.server.ms.DeleteCDNInstance(context.TODO(), instance.InstanceID)
 		assert.NotNil(ret)
 		assert.Nil(err)
 
-		ret, err = suite.server.ms.GetCdnInstance(context.TODO(), instance.InstanceId)
+		ret, err = suite.server.ms.GetCDNInstance(context.TODO(), instance.InstanceID)
 		assert.Nil(ret)
 		assert.NotNil(err)
 
-		ret, err = suite.server.ms.DeleteCdnInstance(context.TODO(), fmt.Sprintf("%sabc", instance.InstanceId))
+		ret, err = suite.server.ms.DeleteCDNInstance(context.TODO(), fmt.Sprintf("%sabc", instance.InstanceID))
 		assert.Nil(ret)
 		assert.Nil(err)
 	}

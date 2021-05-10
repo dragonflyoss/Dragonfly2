@@ -1,18 +1,18 @@
 package types
 
 type SchedulerCluster struct {
-	ClusterId       string `json:"cluster_id,size:63" binding:"omitempty"`
-	SchedulerConfig string `json:"scheduler_config,size:4095" binding:"required"`
-	ClientConfig    string `json:"client_config,size:4095" binding:"required"`
+	ClusterID       string `json:"cluster_id" binding:"omitempty"`
+	SchedulerConfig string `json:"scheduler_config" binding:"required"`
+	ClientConfig    string `json:"client_config" binding:"required"`
 	Version         int64  `json:"version" binding:"omitempty"`
-	Creator         string `json:"creator,size:31" binding:"omitempty"`
-	Modifier        string `json:"modifier,size:31" binding:"omitempty"`
+	Creator         string `json:"creator" binding:"omitempty"`
+	Modifier        string `json:"modifier" binding:"omitempty"`
 	CreatedAt       string `json:"created_at" binding:"omitempty"`
 	UpdatedAt       string `json:"updated_at" binding:"omitempty"`
 }
 
-type SchedulerClusterUri struct {
-	ClusterId string `uri:"id" binding:"required"`
+type SchedulerClusterURI struct {
+	ClusterID string `uri:"id" binding:"required"`
 }
 
 type ListSchedulerClustersResponse struct {
@@ -20,17 +20,17 @@ type ListSchedulerClustersResponse struct {
 }
 
 type SchedulerInstance struct {
-	InstanceId     string `json:"instance_id,size:63" binding:"omitempty"`
-	ClusterId      string `json:"cluster_id,size:63" binding:"required"`
-	SecurityDomain string `json:"security_domain,size:63" binding:"required"`
-	Vips           string `json:"vips,size:4095" binding:"omitempty"`
-	Idc            string `json:"idc,size:63" binding:"required"`
-	Location       string `json:"location,size:4095" binding:"omitempty"`
-	NetConfig      string `json:"net_config,size:4095" binding:"omitempty"`
-	HostName       string `json:"host_name,size:63" binding:"required"`
-	Ip             string `json:"ip,size:31" binding:"required"`
+	InstanceID     string `json:"instance_id" binding:"omitempty"`
+	ClusterID      string `json:"cluster_id" binding:"required"`
+	SecurityDomain string `json:"security_domain" binding:"required"`
+	VIPs           string `json:"vips" binding:"omitempty"`
+	IDC            string `json:"idc" binding:"required"`
+	Location       string `json:"location" binding:"omitempty"`
+	NetConfig      string `json:"net_config" binding:"omitempty"`
+	HostName       string `json:"host_name" binding:"required"`
+	IP             string `json:"ip" binding:"required"`
 	Port           int32  `json:"port" binding:"required"`
-	State          string `json:"state,size:15" binding:"omitempty"`
+	State          string `json:"state" binding:"omitempty"`
 	Version        int64  `json:"version" binding:"omitempty"`
 	CreatedAt      string `json:"created_at" binding:"omitempty"`
 	UpdatedAt      string `json:"updated_at" binding:"omitempty"`
@@ -40,59 +40,59 @@ type ListSchedulerInstancesResponse struct {
 	Instances []*SchedulerInstance `json:"instances"`
 }
 
-type SchedulerInstanceUri struct {
-	InstanceId string `uri:"id" binding:"required"`
+type SchedulerInstanceURI struct {
+	InstanceID string `uri:"id" binding:"required"`
 }
 
-type CdnCluster struct {
-	ClusterId string `json:"cluster_id,size:63" binding:"omitempty"`
-	Config    string `json:"config,size:4095" binding:"required"`
+type CDNCluster struct {
+	ClusterID string `json:"cluster_id" binding:"omitempty"`
+	Config    string `json:"config" binding:"required"`
 	Version   int64  `json:"version" binding:"omitempty"`
-	Creator   string `json:"creator,size:31" binding:"omitempty"`
-	Modifier  string `json:"modifier,size:31" binding:"omitempty"`
+	Creator   string `json:"creator" binding:"omitempty"`
+	Modifier  string `json:"modifier" binding:"omitempty"`
 	CreatedAt string `json:"created_at" binding:"omitempty"`
 	UpdatedAt string `json:"updated_at" binding:"omitempty"`
 }
 
-type ListCdnClustersResponse struct {
-	Clusters []*CdnCluster `json:"clusters"`
+type ListCDNClustersResponse struct {
+	Clusters []*CDNCluster `json:"clusters"`
 }
 
-type CdnClusterUri struct {
-	ClusterId string `uri:"id" binding:"required"`
+type CDNClusterURI struct {
+	ClusterID string `uri:"id" binding:"required"`
 }
 
-type CdnInstance struct {
-	InstanceId string `json:"instance_id,size:63" binding:"omitempty"`
-	ClusterId  string `json:"cluster_id,size:63" binding:"required"`
-	Idc        string `json:"idc,size:63" binding:"required"`
-	Location   string `json:"location,size:4095" binding:"omitempty"`
-	HostName   string `json:"host_name,size:63" binding:"required"`
-	Ip         string `json:"ip,size:31" binding:"required"`
+type CDNInstance struct {
+	InstanceID string `json:"instance_id" binding:"omitempty"`
+	ClusterID  string `json:"cluster_id" binding:"required"`
+	IDC        string `json:"idc" binding:"required"`
+	Location   string `json:"location" binding:"omitempty"`
+	HostName   string `json:"host_name" binding:"required"`
+	IP         string `json:"ip" binding:"required"`
 	Port       int32  `json:"port" binding:"required"`
-	RpcPort    int32  `json:"rpc_port" binding:"required"`
+	RPCPort    int32  `json:"rpc_port" binding:"required"`
 	DownPort   int32  `json:"down_port" binding:"required"`
-	State      string `json:"state,size:15" binding:"omitempty"`
+	State      string `json:"state" binding:"omitempty"`
 	Version    int64  `json:"version" binding:"omitempty"`
 	CreatedAt  string `json:"created_at" binding:"omitempty"`
 	UpdatedAt  string `json:"updated_at" binding:"omitempty"`
 }
 
-type ListCdnInstancesResponse struct {
-	Instances []*CdnInstance `json:"instances"`
+type ListCDNInstancesResponse struct {
+	Instances []*CDNInstance `json:"instances"`
 }
 
-type CdnInstanceUri struct {
-	InstanceId string `uri:"id" binding:"required"`
+type CDNInstanceURI struct {
+	InstanceID string `uri:"id" binding:"required"`
 }
 
 type SecurityDomain struct {
-	SecurityDomain string `json:"security_domain,size:63" binding:"required"`
-	DisplayName    string `json:"display_name,size:63" binding:"required"`
-	ProxyDomain    string `json:"proxy_domain,size:4095" binding:"omitempty"`
+	SecurityDomain string `json:"security_domain" binding:"required"`
+	DisplayName    string `json:"display_name" binding:"required"`
+	ProxyDomain    string `json:"proxy_domain" binding:"omitempty"`
 	Version        int64  `json:"version" binding:"omitempty"`
-	Creator        string `json:"creator,size:31" binding:"omitempty"`
-	Modifier       string `json:"modifier,size:31" binding:"omitempty"`
+	Creator        string `json:"creator" binding:"omitempty"`
+	Modifier       string `json:"modifier" binding:"omitempty"`
 	CreatedAt      string `json:"created_at" binding:"omitempty"`
 	UpdatedAt      string `json:"updated_at" binding:"omitempty"`
 }
@@ -106,18 +106,18 @@ type ListQuery struct {
 	MaxItemCount int `form:"maxItemCount" binding:"omitempty,min=10,max=50"`
 }
 
-type TaskUri struct {
-	Uri   string `json:"uri,size:1023"`
-	State string `json:"state,size:15"`
+type TaskURI struct {
+	URI   string `json:"uri"`
+	State string `json:"state"`
 }
 
 type WarmupTask struct {
-	TaskId      string     `json:"task_id,size:63"`
-	ClusterId   string     `json:"cluster_id,size:63"`
-	Type        string     `json:"type,size:31"`
-	OriginalUri string     `json:"original_uri,size:1023"`
-	State       string     `json:"state,size:15"`
-	TaskUris    []*TaskUri `json:"task_uris"`
+	TaskID      string     `json:"task_id"`
+	ClusterID   string     `json:"cluster_id"`
+	Type        string     `json:"type"`
+	OriginalURI string     `json:"original_uri"`
+	State       string     `json:"state"`
+	TaskURIs    []*TaskURI `json:"task_uris"`
 	CreatedAt   string     `json:"created_at"`
 	UpdatedAt   string     `json:"updated_at"`
 }

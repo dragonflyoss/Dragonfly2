@@ -5,8 +5,8 @@ import (
 )
 
 type Identifier interface {
-	Get(hostName string) (instanceId string, ok bool)
-	Put(hostName, instanceId string)
+	Get(hostName string) (instanceID string, ok bool)
+	Put(hostName, instanceID string)
 	Delete(hostName string)
 	Exist(hostName string) bool
 }
@@ -23,19 +23,19 @@ func NewIdentifier() Identifier {
 	}
 }
 
-func (id *identifier) Get(hostName string) (instanceId string, ok bool) {
+func (id *identifier) Get(hostName string) (instanceID string, ok bool) {
 	id.mu.Lock()
 	defer id.mu.Unlock()
 
-	instanceId, ok = id.hosts[hostName]
+	instanceID, ok = id.hosts[hostName]
 	return
 }
 
-func (id *identifier) Put(hostName, instanceId string) {
+func (id *identifier) Put(hostName, instanceID string) {
 	id.mu.Lock()
 	defer id.mu.Unlock()
 
-	id.hosts[hostName] = instanceId
+	id.hosts[hostName] = instanceID
 }
 
 func (id *identifier) Delete(hostName string) {

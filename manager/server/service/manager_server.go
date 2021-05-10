@@ -19,7 +19,7 @@ import (
 type ManagerServer struct {
 	identifier  hostidentifier.Identifier
 	store       store.Store
-	hostManager host.HostManager
+	hostManager host.Manager
 	configSvc   *configsvc.ConfigSvc
 }
 
@@ -40,7 +40,7 @@ func NewManagerServer(cfg *config.Config) *ManagerServer {
 		return nil
 	}
 
-	hostManager, err := host.NewHostManager(cfg.HostService)
+	hostManager, err := host.NewManager(cfg.HostService)
 	if err != nil {
 		return nil
 	}
@@ -55,7 +55,7 @@ func NewManagerServer(cfg *config.Config) *ManagerServer {
 
 func (ms *ManagerServer) GetSchedulers(ctx context.Context, req *manager.GetSchedulersRequest) (*manager.SchedulerNodes, error) {
 	var opts []host.OpOption
-	opts = append(opts, host.WithIp(req.GetIp()))
+	opts = append(opts, host.WithIP(req.GetIp()))
 	opts = append(opts, host.WithHostName(req.GetHostName()))
 
 	hostInfo, err := ms.hostManager.GetHostInfo(ctx, opts...)
@@ -72,7 +72,7 @@ func (ms *ManagerServer) GetSchedulers(ctx context.Context, req *manager.GetSche
 	proxyDomain := make(map[string]string)
 	if len(hostInfo.SecurityDomain) > 0 {
 		if securityDomain, err := ms.configSvc.GetSecurityDomain(ctx, hostInfo.SecurityDomain); err != nil {
-			;
+
 		} else if len(securityDomain.ProxyDomain) > 0 {
 			if err := json.Unmarshal([]byte(securityDomain.ProxyDomain), &proxyDomain); err != nil {
 				return nil, err
@@ -83,12 +83,12 @@ func (ms *ManagerServer) GetSchedulers(ctx context.Context, req *manager.GetSche
 	return &manager.SchedulerNodes{
 		Addrs: nodes,
 		ClientHost: &manager.HostInfo{
-			Ip:             hostInfo.Ip,
+			Ip:             hostInfo.IP,
 			HostName:       hostInfo.HostName,
 			SecurityDomain: hostInfo.SecurityDomain,
 			ProxyDomain:    proxyDomain,
 			Location:       hostInfo.Location,
-			Idc:            hostInfo.Idc,
+			Idc:            hostInfo.IDC,
 			NetTopology:    hostInfo.NetTopology,
 		},
 	}, nil
@@ -111,26 +111,26 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 			return nil, err
 		}
 
-		cdnClusterId, exist := schedulerConfigsMap["CDN_CLUSTER_ID"]
+		CDNClusterID, exist := schedulerConfigsMap["CDN_CLUSTER_ID"]
 		if !exist {
 			return &manager.ClusterConfig{Config: &manager.ClusterConfig_SchedulerConfig{SchedulerConfig: &manager.SchedulerConfig{
-				ClusterId:       schedulerCluster.ClusterId,
+				ClusterId:       schedulerCluster.ClusterID,
 				ClusterConfig:   schedulerCluster.SchedulerConfig,
 				ClientConfig:    schedulerCluster.ClientConfig,
 				ClusterVersion:  schedulerCluster.Version,
-				InstanceConfig:  schedulerInstance.Idc, // todo InstanceConfig format
+				InstanceConfig:  schedulerInstance.IDC, // todo InstanceConfig format
 				InstanceVersion: schedulerInstance.Version,
 				CdnHosts:        []*manager.ServerInfo{},
 			}}}, nil
 		}
 
-		var cdnInstances []*types.CdnInstance
+		var cdnInstances []*types.CDNInstance
 		maxItemCount := 50
 		for marker := 0; ; marker = marker + maxItemCount {
 			var opts []store.OpOption
-			opts = append(opts, store.WithClusterId(cdnClusterId.(string)))
+			opts = append(opts, store.WithClusterID(CDNClusterID.(string)))
 			opts = append(opts, store.WithMarker(marker, maxItemCount))
-			if instances, err := ms.configSvc.ListCdnInstances(context.TODO(), opts...); err != nil {
+			if instances, err := ms.configSvc.ListCDNInstances(context.TODO(), opts...); err != nil {
 				return nil, err
 			} else if len(instances) <= 0 {
 				break
@@ -146,7 +146,7 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 			}
 
 			var opts []host.OpOption
-			opts = append(opts, host.WithIp(instance.Ip))
+			opts = append(opts, host.WithIP(instance.IP))
 			opts = append(opts, host.WithHostName(instance.HostName))
 			hostInfo, err := ms.hostManager.GetHostInfo(ctx, opts...)
 			if err != nil {
@@ -156,7 +156,7 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 			proxyDomain := make(map[string]string)
 			if len(hostInfo.SecurityDomain) > 0 {
 				if securityDomain, err := ms.configSvc.GetSecurityDomain(ctx, hostInfo.SecurityDomain); err != nil {
-					;
+
 				} else if len(securityDomain.ProxyDomain) > 0 {
 					if err := json.Unmarshal([]byte(securityDomain.ProxyDomain), &proxyDomain); err != nil {
 						return nil, err
@@ -166,36 +166,36 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 
 			cdnHosts = append(cdnHosts, &manager.ServerInfo{
 				HostInfo: &manager.HostInfo{
-					Ip:             hostInfo.Ip,
+					Ip:             hostInfo.IP,
 					HostName:       hostInfo.HostName,
 					SecurityDomain: hostInfo.SecurityDomain,
 					ProxyDomain:    proxyDomain,
 					Location:       hostInfo.Location,
-					Idc:            hostInfo.Idc,
+					Idc:            hostInfo.IDC,
 					NetTopology:    hostInfo.NetTopology,
 				},
-				RpcPort:  instance.RpcPort,
+				RpcPort:  instance.RPCPort,
 				DownPort: instance.DownPort,
 			})
 		}
 
 		return &manager.ClusterConfig{Config: &manager.ClusterConfig_SchedulerConfig{SchedulerConfig: &manager.SchedulerConfig{
-			ClusterId:       schedulerCluster.ClusterId,
+			ClusterId:       schedulerCluster.ClusterID,
 			ClusterConfig:   schedulerCluster.SchedulerConfig,
 			ClientConfig:    schedulerCluster.ClientConfig,
 			ClusterVersion:  schedulerCluster.Version,
-			InstanceConfig:  schedulerInstance.Idc, // todo InstanceConfig format
+			InstanceConfig:  schedulerInstance.IDC, // todo InstanceConfig format
 			InstanceVersion: schedulerInstance.Version,
 			CdnHosts:        cdnHosts,
 		}}}, nil
 	} else {
-		instance := interInstance.(*types.CdnInstance)
-		cluster := interCluster.(*types.CdnCluster)
+		instance := interInstance.(*types.CDNInstance)
+		cluster := interCluster.(*types.CDNCluster)
 		return &manager.ClusterConfig{Config: &manager.ClusterConfig_CdnConfig{CdnConfig: &manager.CdnConfig{
-			ClusterId:       cluster.ClusterId,
+			ClusterId:       cluster.ClusterID,
 			ClusterConfig:   cluster.Config,
 			ClusterVersion:  cluster.Version,
-			InstanceConfig:  instance.Idc, // todo InstanceConfig format
+			InstanceConfig:  instance.IDC, // todo InstanceConfig format
 			InstanceVersion: instance.Version,
 		}}}, nil
 	}
@@ -205,16 +205,16 @@ func (ms *ManagerServer) AddSchedulerCluster(ctx context.Context, cluster *types
 	return ms.configSvc.AddSchedulerCluster(ctx, cluster)
 }
 
-func (ms *ManagerServer) DeleteSchedulerCluster(ctx context.Context, clusterId string) (*types.SchedulerCluster, error) {
-	return ms.configSvc.DeleteSchedulerCluster(ctx, clusterId)
+func (ms *ManagerServer) DeleteSchedulerCluster(ctx context.Context, clusterID string) (*types.SchedulerCluster, error) {
+	return ms.configSvc.DeleteSchedulerCluster(ctx, clusterID)
 }
 
 func (ms *ManagerServer) UpdateSchedulerCluster(ctx context.Context, cluster *types.SchedulerCluster) (*types.SchedulerCluster, error) {
 	return ms.configSvc.UpdateSchedulerCluster(ctx, cluster)
 }
 
-func (ms *ManagerServer) GetSchedulerCluster(ctx context.Context, clusterId string) (*types.SchedulerCluster, error) {
-	return ms.configSvc.GetSchedulerCluster(ctx, clusterId)
+func (ms *ManagerServer) GetSchedulerCluster(ctx context.Context, clusterID string) (*types.SchedulerCluster, error) {
+	return ms.configSvc.GetSchedulerCluster(ctx, clusterID)
 }
 
 func (ms *ManagerServer) ListSchedulerClusters(ctx context.Context, opts ...store.OpOption) ([]*types.SchedulerCluster, error) {
@@ -225,60 +225,60 @@ func (ms *ManagerServer) AddSchedulerInstance(ctx context.Context, instance *typ
 	return ms.configSvc.AddSchedulerInstance(ctx, instance)
 }
 
-func (ms *ManagerServer) DeleteSchedulerInstance(ctx context.Context, instanceId string) (*types.SchedulerInstance, error) {
-	return ms.configSvc.DeleteSchedulerInstance(ctx, instanceId)
+func (ms *ManagerServer) DeleteSchedulerInstance(ctx context.Context, instanceID string) (*types.SchedulerInstance, error) {
+	return ms.configSvc.DeleteSchedulerInstance(ctx, instanceID)
 }
 
 func (ms *ManagerServer) UpdateSchedulerInstance(ctx context.Context, instance *types.SchedulerInstance) (*types.SchedulerInstance, error) {
 	return ms.configSvc.UpdateSchedulerInstance(ctx, instance)
 }
 
-func (ms *ManagerServer) GetSchedulerInstance(ctx context.Context, instanceId string) (*types.SchedulerInstance, error) {
-	return ms.configSvc.GetSchedulerInstance(ctx, instanceId)
+func (ms *ManagerServer) GetSchedulerInstance(ctx context.Context, instanceID string) (*types.SchedulerInstance, error) {
+	return ms.configSvc.GetSchedulerInstance(ctx, instanceID)
 }
 
 func (ms *ManagerServer) ListSchedulerInstances(ctx context.Context, opts ...store.OpOption) ([]*types.SchedulerInstance, error) {
 	return ms.configSvc.ListSchedulerInstances(ctx, opts...)
 }
 
-func (ms *ManagerServer) AddCdnCluster(ctx context.Context, cluster *types.CdnCluster) (*types.CdnCluster, error) {
-	return ms.configSvc.AddCdnCluster(ctx, cluster)
+func (ms *ManagerServer) AddCDNCluster(ctx context.Context, cluster *types.CDNCluster) (*types.CDNCluster, error) {
+	return ms.configSvc.AddCDNCluster(ctx, cluster)
 }
 
-func (ms *ManagerServer) DeleteCdnCluster(ctx context.Context, clusterId string) (*types.CdnCluster, error) {
-	return ms.configSvc.DeleteCdnCluster(ctx, clusterId)
+func (ms *ManagerServer) DeleteCDNCluster(ctx context.Context, clusterID string) (*types.CDNCluster, error) {
+	return ms.configSvc.DeleteCDNCluster(ctx, clusterID)
 }
 
-func (ms *ManagerServer) UpdateCdnCluster(ctx context.Context, cluster *types.CdnCluster) (*types.CdnCluster, error) {
-	return ms.configSvc.UpdateCdnCluster(ctx, cluster)
+func (ms *ManagerServer) UpdateCDNCluster(ctx context.Context, cluster *types.CDNCluster) (*types.CDNCluster, error) {
+	return ms.configSvc.UpdateCDNCluster(ctx, cluster)
 }
 
-func (ms *ManagerServer) GetCdnCluster(ctx context.Context, clusterId string) (*types.CdnCluster, error) {
-	return ms.configSvc.GetCdnCluster(ctx, clusterId)
+func (ms *ManagerServer) GetCDNCluster(ctx context.Context, clusterID string) (*types.CDNCluster, error) {
+	return ms.configSvc.GetCDNCluster(ctx, clusterID)
 }
 
-func (ms *ManagerServer) ListCdnClusters(ctx context.Context, opts ...store.OpOption) ([]*types.CdnCluster, error) {
-	return ms.configSvc.ListCdnClusters(ctx, opts...)
+func (ms *ManagerServer) ListCDNClusters(ctx context.Context, opts ...store.OpOption) ([]*types.CDNCluster, error) {
+	return ms.configSvc.ListCDNClusters(ctx, opts...)
 }
 
-func (ms *ManagerServer) AddCdnInstance(ctx context.Context, instance *types.CdnInstance) (*types.CdnInstance, error) {
-	return ms.configSvc.AddCdnInstance(ctx, instance)
+func (ms *ManagerServer) AddCDNInstance(ctx context.Context, instance *types.CDNInstance) (*types.CDNInstance, error) {
+	return ms.configSvc.AddCDNInstance(ctx, instance)
 }
 
-func (ms *ManagerServer) DeleteCdnInstance(ctx context.Context, instanceId string) (*types.CdnInstance, error) {
-	return ms.configSvc.DeleteCdnInstance(ctx, instanceId)
+func (ms *ManagerServer) DeleteCDNInstance(ctx context.Context, instanceID string) (*types.CDNInstance, error) {
+	return ms.configSvc.DeleteCDNInstance(ctx, instanceID)
 }
 
-func (ms *ManagerServer) UpdateCdnInstance(ctx context.Context, instance *types.CdnInstance) (*types.CdnInstance, error) {
-	return ms.configSvc.UpdateCdnInstance(ctx, instance)
+func (ms *ManagerServer) UpdateCDNInstance(ctx context.Context, instance *types.CDNInstance) (*types.CDNInstance, error) {
+	return ms.configSvc.UpdateCDNInstance(ctx, instance)
 }
 
-func (ms *ManagerServer) GetCdnInstance(ctx context.Context, instanceId string) (*types.CdnInstance, error) {
-	return ms.configSvc.GetCdnInstance(ctx, instanceId)
+func (ms *ManagerServer) GetCDNInstance(ctx context.Context, instanceID string) (*types.CDNInstance, error) {
+	return ms.configSvc.GetCDNInstance(ctx, instanceID)
 }
 
-func (ms *ManagerServer) ListCdnInstances(ctx context.Context, opts ...store.OpOption) ([]*types.CdnInstance, error) {
-	return ms.configSvc.ListCdnInstances(ctx, opts...)
+func (ms *ManagerServer) ListCDNInstances(ctx context.Context, opts ...store.OpOption) ([]*types.CDNInstance, error) {
+	return ms.configSvc.ListCDNInstances(ctx, opts...)
 }
 
 func (ms *ManagerServer) AddSecurityDomain(ctx context.Context, securityDomain *types.SecurityDomain) (*types.SecurityDomain, error) {

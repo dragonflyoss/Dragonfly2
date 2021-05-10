@@ -1,7 +1,8 @@
 package server
 
 import (
-	_ "d7y.io/dragonfly/v2/api/v2/manager/docs"
+	// manager swag api
+	_ "d7y.io/dragonfly/v2/api/v2/manager"
 	"d7y.io/dragonfly/v2/manager/apis/v2/handler"
 	"d7y.io/dragonfly/v2/manager/server/service"
 	"github.com/gin-gonic/gin"
@@ -35,20 +36,20 @@ func InitRouter(server *service.ManagerServer) (*gin.Engine, error) {
 
 		{
 			configs := api.Group("/cdnclusters")
-			configs.POST("", handler.AddCdnCluster)
-			configs.DELETE(":id", handler.DeleteCdnCluster)
-			configs.POST(":id", handler.UpdateCdnCluster)
-			configs.GET(":id", handler.GetCdnCluster)
-			configs.GET("", handler.ListCdnClusters)
+			configs.POST("", handler.AddCDNCluster)
+			configs.DELETE(":id", handler.DeleteCDNCluster)
+			configs.POST(":id", handler.UpdateCDNCluster)
+			configs.GET(":id", handler.GetCDNCluster)
+			configs.GET("", handler.ListCDNClusters)
 		}
 
 		{
 			configs := api.Group("/cdninstances")
-			configs.POST("", handler.AddCdnInstance)
-			configs.DELETE(":id", handler.DeleteCdnInstance)
-			configs.POST(":id", handler.UpdateCdnInstance)
-			configs.GET(":id", handler.GetCdnInstance)
-			configs.GET("", handler.ListCdnInstances)
+			configs.POST("", handler.AddCDNInstance)
+			configs.DELETE(":id", handler.DeleteCDNInstance)
+			configs.POST(":id", handler.UpdateCDNInstance)
+			configs.GET(":id", handler.GetCDNInstance)
+			configs.GET("", handler.ListCDNInstances)
 		}
 	}
 

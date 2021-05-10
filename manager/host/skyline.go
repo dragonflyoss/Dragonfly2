@@ -52,16 +52,16 @@ func (req *QueryRequest) SetCondition(cond string) {
 }
 
 type Item struct {
-	Ip                 string   `json:"ip"`
-	Sn                 string   `json:"sn"`
+	IP                 string   `json:"ip"`
+	SN                 string   `json:"sn"`
 	HostName           string   `json:"host_name"`
-	VpcId              string   `json:"vpc_id"`
+	VPCID              string   `json:"vpc_id"`
 	SecurityDomain     string   `json:"security_domain"`
-	IdcAbbreviation    string   `json:"idc.abbreviation"`
-	IdcCountry         string   `json:"idc.country"`
-	IdcArea            string   `json:"idc.area"`
-	IdcProvince        string   `json:"idc.province"`
-	IdcCity            string   `json:"idc.city"`
+	IDCAbbreviation    string   `json:"idc.abbreviation"`
+	IDCCountry         string   `json:"idc.country"`
+	IDCArea            string   `json:"idc.area"`
+	IDCProvince        string   `json:"idc.province"`
+	IDCCity            string   `json:"idc.city"`
 	RoomAbbreviation   string   `json:"room.abbreviation"`
 	CabinetCabinetNum  string   `json:"cabinet.cabinet_num"`
 	CabinetLogicRegion string   `json:"cabinet.logic_region"`
@@ -131,10 +131,10 @@ func (client *skylineClient) itemSearch(req *QueryRequest) (*QueryResponse, erro
 
 	url := fmt.Sprintf("%s/item/query", client.domain)
 	request, err := http.NewRequest("POST", url, bytes.NewReader(body))
-	defer request.Body.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer request.Body.Close()
 
 	request.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	request.Header.Set("account", client.account)
@@ -163,7 +163,7 @@ type skyline struct {
 	client *skylineClient
 }
 
-func NewSkyline(config *config.SkylineService) (HostManager, error) {
+func NewSkyline(config *config.SkylineService) (Manager, error) {
 	return &skyline{
 		client: &skylineClient{
 			domain:    config.Domain,
@@ -180,7 +180,7 @@ var SelectLists = []string{
 	"dsw_cluster.name", "net_asw.name", "logic_pod.name", "net_pod.name",
 }
 
-func (skyline *skyline) GetHostInfo(ctx context.Context, opts ...OpOption) (*HostInfo, error) {
+func (skyline *skyline) GetHostInfo(ctx context.Context, opts ...OpOption) (*Info, error) {
 	op := Op{}
 	op.ApplyOpts(opts)
 
@@ -223,14 +223,14 @@ func (skyline *skyline) GetHostInfo(ctx context.Context, opts ...OpOption) (*Hos
 		}
 
 		item := resp.Value.ItemList[0]
-		location := fmt.Sprintf("%s|%s|%s|%s", item.IdcArea, item.IdcCountry, item.IdcProvince, item.IdcCity)
+		location := fmt.Sprintf("%s|%s|%s|%s", item.IDCArea, item.IDCCountry, item.IDCProvince, item.IDCCity)
 		netTopology := fmt.Sprintf("%s|%s", item.CabinetLogicRegion, item.CabinetCabinetNum)
-		return &HostInfo{
+		return &Info{
 			HostName:       item.HostName,
-			Ip:             item.Ip,
+			IP:             item.IP,
 			SecurityDomain: item.SecurityDomain,
 			Location:       location,
-			Idc:            item.IdcAbbreviation,
+			IDC:            item.IDCAbbreviation,
 			NetTopology:    netTopology,
 		}, nil
 	}

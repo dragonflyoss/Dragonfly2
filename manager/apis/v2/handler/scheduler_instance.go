@@ -54,25 +54,25 @@ func (handler *Handler) AddSchedulerInstance(ctx *gin.Context) {
 // @Tags SchedulerInstance
 // @Accept  json
 // @Produce  json
-// @Param  id path string true "InstanceId"
+// @Param  id path string true "InstanceID"
 // @Success 200 {string} string
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /schedulerinstances/{id} [delete]
 func (handler *Handler) DeleteSchedulerInstance(ctx *gin.Context) {
-	var uri types.SchedulerInstanceUri
+	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	retInstance, err := handler.server.DeleteSchedulerInstance(context.TODO(), uri.InstanceId)
+	retInstance, err := handler.server.DeleteSchedulerInstance(context.TODO(), uri.InstanceID)
 	if err == nil {
 		if retInstance != nil {
 			ctx.JSON(http.StatusOK, "success")
 		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("scheduler instance not found, id %s", uri.InstanceId))
+			NewError(ctx, http.StatusNotFound, errors.Newf("scheduler instance not found, id %s", uri.InstanceID))
 		}
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -89,7 +89,7 @@ func (handler *Handler) DeleteSchedulerInstance(ctx *gin.Context) {
 // @Tags SchedulerInstance
 // @Accept  json
 // @Produce  json
-// @Param  id path string true "InstanceId"
+// @Param  id path string true "InstanceID"
 // @Param  Instance body types.SchedulerInstance true "SchedulerInstance"
 // @Success 200 {string} string
 // @Failure 400 {object} HTTPError
@@ -97,7 +97,7 @@ func (handler *Handler) DeleteSchedulerInstance(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /schedulerinstances/{id} [post]
 func (handler *Handler) UpdateSchedulerInstance(ctx *gin.Context) {
-	var uri types.SchedulerInstanceUri
+	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
@@ -114,7 +114,7 @@ func (handler *Handler) UpdateSchedulerInstance(ctx *gin.Context) {
 		return
 	}
 
-	instance.InstanceId = uri.InstanceId
+	instance.InstanceID = uri.InstanceID
 	_, err := handler.server.UpdateSchedulerInstance(context.TODO(), &instance)
 	if err == nil {
 		ctx.JSON(http.StatusOK, "success")
@@ -131,24 +131,24 @@ func (handler *Handler) UpdateSchedulerInstance(ctx *gin.Context) {
 
 // GetSchedulerInstance godoc
 // @Summary Get scheduler instance
-// @Description Get scheduler instance by InstanceId
+// @Description Get scheduler instance by InstanceID
 // @Tags SchedulerInstance
 // @Accept  json
 // @Produce  json
-// @Param id path string true "InstanceId"
+// @Param id path string true "InstanceID"
 // @Success 200 {object} types.SchedulerInstance
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /schedulerinstances/{id} [get]
 func (handler *Handler) GetSchedulerInstance(ctx *gin.Context) {
-	var uri types.SchedulerInstanceUri
+	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	retInstance, err := handler.server.GetSchedulerInstance(context.TODO(), uri.InstanceId)
+	retInstance, err := handler.server.GetSchedulerInstance(context.TODO(), uri.InstanceID)
 	if err == nil {
 		ctx.JSON(http.StatusOK, &retInstance)
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {

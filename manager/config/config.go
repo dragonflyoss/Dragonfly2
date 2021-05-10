@@ -5,13 +5,13 @@ const (
 )
 
 type Config struct {
-	Console       bool                 `yaml:"console"`
-	Verbose       bool                 `yaml:"verbose"`
-	PProfPort     int                  `yaml:"pprofPort"`
-	Server        *ServerConfig        `yaml:"server"`
-	ConfigService *ConfigServiceConfig `yaml:"config-service"`
-	Stores        []*StoreConfig       `yaml:"stores"`
-	HostService   *HostService         `yaml:"host-service"`
+	Console     bool             `yaml:"console"`
+	Verbose     bool             `yaml:"verbose"`
+	PProfPort   int              `yaml:"pprofPort"`
+	Server      *ServerConfig    `yaml:"server"`
+	Configure   *ConfigureConfig `yaml:"configure"`
+	Stores      []*StoreConfig   `yaml:"stores"`
+	HostService *HostService     `yaml:"host-service"`
 }
 
 type ServerConfig struct {
@@ -19,7 +19,7 @@ type ServerConfig struct {
 	Port int    `yaml:"port"`
 }
 
-type ConfigServiceConfig struct {
+type ConfigureConfig struct {
 	StoreName string `yaml:"store-name"`
 }
 
@@ -57,7 +57,7 @@ func New() *Config {
 		Server: &ServerConfig{
 			Port: 8004,
 		},
-		ConfigService: &ConfigServiceConfig{
+		Configure: &ConfigureConfig{
 			StoreName: "store1",
 		},
 		Stores: []*StoreConfig{

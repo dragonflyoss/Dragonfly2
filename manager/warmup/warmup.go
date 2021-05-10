@@ -8,21 +8,21 @@ import (
 	"d7y.io/dragonfly/v2/manager/store"
 )
 
-type warmupTasks struct {
+type tasks struct {
 	tasks map[string]*types.WarmupTask
 }
 
-type WarmupSvc struct {
+type Server struct {
 	mu         sync.Mutex
 	store      store.Store
 	identifier hostidentifier.Identifier
-	tasks      map[string]*warmupTasks
+	tasks      map[string]*tasks
 }
 
-func NewWarmupSvc(store store.Store, identifier hostidentifier.Identifier) (*WarmupSvc, error) {
-	return &WarmupSvc{
+func NewServer(store store.Store, identifier hostidentifier.Identifier) (*Server, error) {
+	return &Server{
 		store:      store,
 		identifier: identifier,
-		tasks:      make(map[string]*warmupTasks),
+		tasks:      make(map[string]*tasks),
 	}, nil
 }

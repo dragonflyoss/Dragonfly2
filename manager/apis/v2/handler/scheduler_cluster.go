@@ -55,25 +55,25 @@ func (handler *Handler) AddSchedulerCluster(ctx *gin.Context) {
 // @Tags SchedulerCluster
 // @Accept  json
 // @Produce  json
-// @Param  id path string true "ClusterId"
+// @Param  id path string true "ClusterID"
 // @Success 200 {string} string
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /schedulerclusters/{id} [delete]
 func (handler *Handler) DeleteSchedulerCluster(ctx *gin.Context) {
-	var uri types.SchedulerClusterUri
+	var uri types.SchedulerClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	retCluster, err := handler.server.DeleteSchedulerCluster(context.TODO(), uri.ClusterId)
+	retCluster, err := handler.server.DeleteSchedulerCluster(context.TODO(), uri.ClusterID)
 	if err == nil {
 		if retCluster != nil {
 			ctx.JSON(http.StatusOK, "success")
 		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("scheduler cluster not found, id %s", uri.ClusterId))
+			NewError(ctx, http.StatusNotFound, errors.Newf("scheduler cluster not found, id %s", uri.ClusterID))
 		}
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -90,7 +90,7 @@ func (handler *Handler) DeleteSchedulerCluster(ctx *gin.Context) {
 // @Tags SchedulerCluster
 // @Accept  json
 // @Produce  json
-// @Param  id path string true "ClusterId"
+// @Param  id path string true "ClusterID"
 // @Param  Cluster body types.SchedulerCluster true "SchedulerCluster"
 // @Success 200 {string} string
 // @Failure 400 {object} HTTPError
@@ -98,7 +98,7 @@ func (handler *Handler) DeleteSchedulerCluster(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /schedulerclusters/{id} [post]
 func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
-	var uri types.SchedulerClusterUri
+	var uri types.SchedulerClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
@@ -115,7 +115,7 @@ func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	cluster.ClusterId = uri.ClusterId
+	cluster.ClusterID = uri.ClusterID
 	_, err := handler.server.UpdateSchedulerCluster(context.TODO(), &cluster)
 	if err == nil {
 		ctx.JSON(http.StatusOK, "success")
@@ -132,24 +132,24 @@ func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
 
 // GetSchedulerCluster godoc
 // @Summary Get scheduler cluster
-// @Description Get scheduler cluster by ClusterId
+// @Description Get scheduler cluster by ClusterID
 // @Tags SchedulerCluster
 // @Accept  json
 // @Produce  json
-// @Param id path string true "ClusterId"
+// @Param id path string true "ClusterID"
 // @Success 200 {object} types.SchedulerCluster
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /schedulerclusters/{id} [get]
 func (handler *Handler) GetSchedulerCluster(ctx *gin.Context) {
-	var uri types.SchedulerClusterUri
+	var uri types.SchedulerClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	retCluster, err := handler.server.GetSchedulerCluster(context.TODO(), uri.ClusterId)
+	retCluster, err := handler.server.GetSchedulerCluster(context.TODO(), uri.ClusterID)
 	if err == nil {
 		ctx.JSON(http.StatusOK, &retCluster)
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {

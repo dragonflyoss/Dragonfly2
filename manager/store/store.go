@@ -13,8 +13,8 @@ type ResourceType string
 const (
 	SchedulerCluster  ResourceType = "SchedulerCluster"
 	SchedulerInstance ResourceType = "SchedulerInstance"
-	CdnCluster        ResourceType = "CdnCluster"
-	CdnInstance       ResourceType = "CdnInstance"
+	CDNCluster        ResourceType = "CDNCluster"
+	CDNInstance       ResourceType = "CDNInstance"
 	SecurityDomain    ResourceType = "SecurityDomain"
 )
 
@@ -24,8 +24,8 @@ func (objType ResourceType) String() string {
 
 type Op struct {
 	ResourceType ResourceType
-	ClusterId    string
-	InstanceId   string
+	ClusterID    string
+	InstanceID   string
 	Marker       int
 	MaxItemCount int
 }
@@ -52,15 +52,15 @@ func WithResourceType(objType ResourceType) OpOption {
 	}
 }
 
-func WithClusterId(clusterId string) OpOption {
+func WithClusterID(clusterID string) OpOption {
 	return func(op *Op) {
-		op.ClusterId = clusterId
+		op.ClusterID = clusterID
 	}
 }
 
-func WithInstanceId(instanceId string) OpOption {
+func WithInstanceID(instanceID string) OpOption {
 	return func(op *Op) {
-		op.InstanceId = instanceId
+		op.InstanceID = instanceID
 	}
 }
 
@@ -72,23 +72,24 @@ func WithMarker(marker, maxItemCount int) OpOption {
 }
 
 func NewStore(cfg *config.Config) (Store, error) {
-	if cfg.ConfigService.StoreName == "" {
+	if cfg.Configure.StoreName == "" {
 		return nil, dferrors.Newf(dfcodes.ManagerConfigError, "config error: store-name nil")
 	}
 
 	for _, store := range cfg.Stores {
-		if cfg.ConfigService.StoreName == store.Name {
+		if cfg.Configure.StoreName == store.Name {
 			switch store.Type {
 			case "mysql":
 				if store.Mysql != nil {
-					if orm, err := NewOrmStore(store); err != nil {
+					orm, err := NewOrmStore(store)
+					if err != nil {
 						return nil, err
-					} else {
-						return orm, nil
 					}
-				} else {
-					return nil, dferrors.Newf(dfcodes.ManagerConfigError, "config error: mysql nil")
+
+					return orm, nil
 				}
+
+				return nil, dferrors.Newf(dfcodes.ManagerConfigError, "config error: mysql nil")
 			case "oss":
 				return nil, dferrors.Newf(dfcodes.ManagerConfigError, "config error: oss not support")
 			default:

@@ -1,4 +1,3 @@
-basePath: /api/v2
 definitions:
   handler.HTTPError:
     properties:
@@ -9,7 +8,7 @@ definitions:
         example: status bad request
         type: string
     type: object
-  types.CdnCluster:
+  types.CDNCluster:
     properties:
       cluster_id:
         type: string
@@ -28,7 +27,7 @@ definitions:
     required:
     - config
     type: object
-  types.CdnInstance:
+  types.CDNInstance:
     properties:
       cluster_id:
         type: string
@@ -65,18 +64,18 @@ definitions:
     - port
     - rpc_port
     type: object
-  types.ListCdnClustersResponse:
+  types.ListCDNClustersResponse:
     properties:
       clusters:
         items:
-          $ref: '#/definitions/types.CdnCluster'
+          $ref: '#/definitions/types.CDNCluster'
         type: array
     type: object
-  types.ListCdnInstancesResponse:
+  types.ListCDNInstancesResponse:
     properties:
       instances:
         items:
-          $ref: '#/definitions/types.CdnInstance'
+          $ref: '#/definitions/types.CDNInstance'
         type: array
     type: object
   types.ListSchedulerClustersResponse:
@@ -153,19 +152,8 @@ definitions:
     - port
     - security_domain
     type: object
-host: localhost:8080
 info:
-  contact:
-    email: support@swagger.io
-    name: API Support
-    url: http://www.swagger.io/support
-  description: This is a sample server Petstore server.
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Swagger Example API
-  version: "1.0"
+  contact: {}
 paths:
   /cdnclusters:
     get:
@@ -193,7 +181,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.ListCdnClustersResponse'
+            $ref: '#/definitions/types.ListCDNClustersResponse'
         "400":
           description: Bad Request
           schema:
@@ -208,7 +196,7 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: List cdn clusters
       tags:
-      - CdnCluster
+      - CDNCluster
     post:
       consumes:
       - application/json
@@ -219,14 +207,14 @@ paths:
         name: cluster
         required: true
         schema:
-          $ref: '#/definitions/types.CdnCluster'
+          $ref: '#/definitions/types.CDNCluster'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.CdnCluster'
+            $ref: '#/definitions/types.CDNCluster'
         "400":
           description: Bad Request
           schema:
@@ -241,14 +229,14 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Add cdn cluster
       tags:
-      - CdnCluster
+      - CDNCluster
   /cdnclusters/{id}:
     delete:
       consumes:
       - application/json
       description: Delete by clusterId
       parameters:
-      - description: ClusterId
+      - description: ClusterID
         in: path
         name: id
         required: true
@@ -274,13 +262,13 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Delete cdn cluster
       tags:
-      - CdnCluster
+      - CDNCluster
     get:
       consumes:
       - application/json
-      description: Get cdn cluster by ClusterId
+      description: Get cdn cluster by ClusterID
       parameters:
-      - description: ClusterId
+      - description: ClusterID
         in: path
         name: id
         required: true
@@ -291,7 +279,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.CdnCluster'
+            $ref: '#/definitions/types.CDNCluster'
         "400":
           description: Bad Request
           schema:
@@ -306,23 +294,23 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Get cdn cluster
       tags:
-      - CdnCluster
+      - CDNCluster
     post:
       consumes:
       - application/json
       description: Update by json cdn cluster
       parameters:
-      - description: ClusterId
+      - description: ClusterID
         in: path
         name: id
         required: true
         type: string
-      - description: CdnCluster
+      - description: CDNCluster
         in: body
         name: Cluster
         required: true
         schema:
-          $ref: '#/definitions/types.CdnCluster'
+          $ref: '#/definitions/types.CDNCluster'
       produces:
       - application/json
       responses:
@@ -344,7 +332,7 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Update cdn cluster
       tags:
-      - CdnCluster
+      - CDNCluster
   /cdninstances:
     get:
       consumes:
@@ -371,7 +359,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.ListCdnInstancesResponse'
+            $ref: '#/definitions/types.ListCDNInstancesResponse'
         "400":
           description: Bad Request
           schema:
@@ -386,7 +374,7 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: List cdn instances
       tags:
-      - CdnInstance
+      - CDNInstance
     post:
       consumes:
       - application/json
@@ -397,14 +385,14 @@ paths:
         name: instance
         required: true
         schema:
-          $ref: '#/definitions/types.CdnInstance'
+          $ref: '#/definitions/types.CDNInstance'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.CdnInstance'
+            $ref: '#/definitions/types.CDNInstance'
         "400":
           description: Bad Request
           schema:
@@ -419,14 +407,14 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Add cdn instance
       tags:
-      - CdnInstance
+      - CDNInstance
   /cdninstances/{id}:
     delete:
       consumes:
       - application/json
       description: Delete by instanceId
       parameters:
-      - description: InstanceId
+      - description: InstanceID
         in: path
         name: id
         required: true
@@ -452,13 +440,13 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Delete cdn instance
       tags:
-      - CdnInstance
+      - CDNInstance
     get:
       consumes:
       - application/json
-      description: Get cdn instance by InstanceId
+      description: Get cdn instance by InstanceID
       parameters:
-      - description: InstanceId
+      - description: InstanceID
         in: path
         name: id
         required: true
@@ -469,7 +457,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.CdnInstance'
+            $ref: '#/definitions/types.CDNInstance'
         "400":
           description: Bad Request
           schema:
@@ -484,23 +472,23 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Get cdn instance
       tags:
-      - CdnInstance
+      - CDNInstance
     post:
       consumes:
       - application/json
       description: Update by json cdn instance
       parameters:
-      - description: InstanceId
+      - description: InstanceID
         in: path
         name: id
         required: true
         type: string
-      - description: CdnInstance
+      - description: CDNInstance
         in: body
         name: Instance
         required: true
         schema:
-          $ref: '#/definitions/types.CdnInstance'
+          $ref: '#/definitions/types.CDNInstance'
       produces:
       - application/json
       responses:
@@ -522,7 +510,7 @@ paths:
             $ref: '#/definitions/handler.HTTPError'
       summary: Update cdn instance
       tags:
-      - CdnInstance
+      - CDNInstance
   /schedulerclusters:
     get:
       consumes:
@@ -604,7 +592,7 @@ paths:
       - application/json
       description: Delete by clusterId
       parameters:
-      - description: ClusterId
+      - description: ClusterID
         in: path
         name: id
         required: true
@@ -634,9 +622,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get scheduler cluster by ClusterId
+      description: Get scheduler cluster by ClusterID
       parameters:
-      - description: ClusterId
+      - description: ClusterID
         in: path
         name: id
         required: true
@@ -668,7 +656,7 @@ paths:
       - application/json
       description: Update by json scheduler cluster
       parameters:
-      - description: ClusterId
+      - description: ClusterID
         in: path
         name: id
         required: true
@@ -782,7 +770,7 @@ paths:
       - application/json
       description: Delete by instanceId
       parameters:
-      - description: InstanceId
+      - description: InstanceID
         in: path
         name: id
         required: true
@@ -812,9 +800,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get scheduler instance by InstanceId
+      description: Get scheduler instance by InstanceID
       parameters:
-      - description: InstanceId
+      - description: InstanceID
         in: path
         name: id
         required: true
@@ -846,7 +834,7 @@ paths:
       - application/json
       description: Update by json scheduler instance
       parameters:
-      - description: InstanceId
+      - description: InstanceID
         in: path
         name: id
         required: true
