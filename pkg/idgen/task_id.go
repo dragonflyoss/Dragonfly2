@@ -17,56 +17,49 @@
 package idgen
 
 import (
+	"hash/crc32"
 	"strings"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 const (
-	TwinsA = "_A"
-	TwinsB = "_B"
+	TwinsASuffix = "_A"
+	TwinsBSuffix = "_B"
 )
 
 // GenerateTaskID generates a taskId.
 // filter is separated by & character.
-func GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string) string {
-	taskIdSource := url
-	if filter != "" {
-		taskIdSource = urlutils.FilterURLParam(url, strings.Split(filter, "&"))
+func TaskID(url string, filter string, meta *base.UrlMeta, bizID string) string {
+	var data []string
+
+	data = append(data, urlutils.FilterURLParam(url, strings.Split(filter, "&")))
+
+	if meta.Md5 != "" {
+		data = append(data, meta.Md5)
 	}
 
-	var md5String, rangeString string
-	if meta != nil {
-		md5String = meta.Md5
-		rangeString = meta.Range
+	if meta.Range != "" {
+		data = append(data, meta.Range)
 	}
 
-	if md5String != "" {
-		taskIdSource += "|" + md5String
-	} else if bizID != "" {
-		taskIdSource += "|" + bizID
+	if bizID != "" {
+		data = append(data, bizID)
 	}
 
-	if rangeString != "" {
-		taskIdSource += "|" + rangeString
-	}
-
-	taskIdSource = stringutils.SubString(taskIdSource, len(taskIdSource)-10, len(taskIdSource)) + taskIdSource
-
-	return digestutils.Sha256(taskIdSource)
+	return digestutils.Sha256(data...)
 }
 
 // GenerateTwinsTaskId used A/B testing
-func GenerateTwinsTaskID(url string, filter string, meta *base.UrlMeta, bizID, peerID string) string {
-	taskID := GenerateTaskID(url, filter, meta, bizID)
+func TwinsTaskID(url string, filter string, meta *base.UrlMeta, bizID, peerID string) string {
+	taskID := TaskID(url, filter, meta, bizID)
 
-	if digestutils.CheckSum(peerID)&1 == 0 {
-		taskID += TwinsA
+	if crc32.ChecksumIEEE([]byte(peerID))&1 == 0 {
+		taskID += TwinsASuffix
 	} else {
-		taskID += TwinsB
+		taskID += TwinsBSuffix
 	}
 
 	return taskID
