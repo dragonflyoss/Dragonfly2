@@ -127,7 +127,7 @@ test: ## Run unittests
 .PHONY: test
 
 test-coverage: ## Run tests with coverage
-	@go test -race -short -coverprofile cover.out -covermode=atomic
+	@go test -race -short ${PKG_LIST} -coverprofile cover.out -covermode=atomic
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
