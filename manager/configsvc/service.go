@@ -12,6 +12,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
@@ -243,6 +244,7 @@ func instanceNextState(cur string, timeout bool) (next string, ok bool) {
 }
 
 func (svc *ConfigSvc) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) error {
+	logger.Debugf("receive heart beat from %s, type %s", req.HostName, req.Type)
 	if manager.ResourceType_Scheduler == req.GetType() {
 		instanceID, exist := svc.identifier.Get(SchedulerInstancePrefix + req.GetHostName())
 		if !exist {
