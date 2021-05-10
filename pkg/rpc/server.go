@@ -31,6 +31,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
@@ -158,6 +159,8 @@ func startServer(netAddr dfnet.NetAddr, impl interface{}, opts []grpc.ServerOpti
 
 	register(server, impl)
 
+	// Register reflection service on gRPC server.
+	reflection.Register(server)
 	return server.Serve(lis)
 }
 
