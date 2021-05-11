@@ -12,7 +12,7 @@ import (
 	"gopkg.in/errgo.v2/fmt/errors"
 )
 
-// AddCDNInstance godoc
+// CreateCDNInstance godoc
 // @Summary Add cdn instance
 // @Description add by json config
 // @Tags CDNInstance
@@ -23,8 +23,8 @@ import (
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdninstances [post]
-func (handler *Handler) AddCDNInstance(ctx *gin.Context) {
+// @Router /cdn/instances [post]
+func (handler *Handler) CreateCDNInstance(ctx *gin.Context) {
 	var instance types.CDNInstance
 	if err := ctx.ShouldBindJSON(&instance); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -48,7 +48,7 @@ func (handler *Handler) AddCDNInstance(ctx *gin.Context) {
 	}
 }
 
-// DeleteCDNInstance godoc
+// DestroyCDNInstance godoc
 // @Summary Delete cdn instance
 // @Description Delete by instanceId
 // @Tags CDNInstance
@@ -59,8 +59,8 @@ func (handler *Handler) AddCDNInstance(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdninstances/{id} [delete]
-func (handler *Handler) DeleteCDNInstance(ctx *gin.Context) {
+// @Router /cdn/instances/{id} [delete]
+func (handler *Handler) DestroyCDNInstance(ctx *gin.Context) {
 	var uri types.CDNInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -95,7 +95,7 @@ func (handler *Handler) DeleteCDNInstance(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdninstances/{id} [post]
+// @Router /cdn/instances/{id} [post]
 func (handler *Handler) UpdateCDNInstance(ctx *gin.Context) {
 	var uri types.CDNInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -140,7 +140,7 @@ func (handler *Handler) UpdateCDNInstance(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdninstances/{id} [get]
+// @Router /cdn/instances/{id} [get]
 func (handler *Handler) GetCDNInstance(ctx *gin.Context) {
 	var uri types.CDNInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -174,7 +174,7 @@ func (handler *Handler) GetCDNInstance(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdninstances [get]
+// @Router /cdn/instances [get]
 func (handler *Handler) ListCDNInstances(ctx *gin.Context) {
 	var query types.ListQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {

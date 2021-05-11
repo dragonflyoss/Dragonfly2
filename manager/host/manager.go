@@ -67,9 +67,5 @@ type Manager interface {
 }
 
 func NewManager(config *config.HostService) (Manager, error) {
-	if config.Skyline != nil {
-		return NewSkyline(config.Skyline)
-	}
-
 	return NewDefaultHostManager()
 }

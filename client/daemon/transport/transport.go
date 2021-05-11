@@ -55,6 +55,9 @@ type transport struct {
 
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
+
+	// defaultBiz is used when http request without X-Dragonfly-Biz Header
+	defaultBiz string
 }
 
 // Option is functional config for transport.
@@ -100,6 +103,14 @@ func WithDefaultFilter(f string) Option {
 	}
 }
 
+// WithDefaultFilter sets default filter for http requests with X-Dragonfly-Biz Header
+func WithDefaultBiz(b string) Option {
+	return func(rt *transport) *transport {
+		rt.defaultBiz = b
+		return rt
+	}
+}
+
 // New constructs a new instance of a RoundTripper with additional options.
 func New(options ...Option) (http.RoundTripper, error) {
 	rt := &transport{
@@ -131,7 +142,7 @@ func (rt *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return rt.baseRoundTripper.RoundTrip(req)
 }
 
-// needUseGetter is the default value for shouldUseDragonfly, which downloads all
+// NeedUseDragonfly is the default value for shouldUseDragonfly, which downloads all
 // images layers with dragonfly.
 func NeedUseDragonfly(req *http.Request) bool {
 	return req.Method == http.MethodGet && layerReg.MatchString(req.URL.Path)
@@ -140,45 +151,28 @@ func NeedUseDragonfly(req *http.Request) bool {
 // download uses dragonfly to download.
 func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
-	logger.Infof("start download with url: %s", url)
+	peerID := clientutil.GenPeerID(rt.peerHost)
+	log := logger.With("peer", peerID, "component", "transport")
+	log.Infof("start download with url: %s", url)
 
+	// Init meta value
 	meta := &base.UrlMeta{Header: map[string]string{}}
+
+	// Set meta range's value
 	if rg := req.Header.Get("Range"); len(rg) > 0 {
-		meta = &base.UrlMeta{
-			Md5:    "",
-			Range:  rg,
-			Header: map[string]string{},
-		}
+		meta.Md5 = ""
+		meta.Range = rg
 	}
 
-	// copy header
-	for k, v := range req.Header {
-		// TODO only use first value currently
-		meta.Header[k] = v[0]
-	}
+	// Pick header's parameters
+	filter := pickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
+	biz := pickHeader(req.Header, config.HeaderDragonflyBiz, rt.defaultBiz)
 
-	// remove hop by hop header
-	for _, h := range hopHeaders {
-		delete(meta.Header, h)
-	}
+	// Delete hop-by-hop headers
+	delHopHeaders(req.Header)
 
-	var (
-		filter string
-		biz    string
-	)
-	if f, ok := meta.Header[config.HeaderDragonflyFilter]; ok {
-		filter = f
-		// remove because we will set Filter in scheduler.PeerTaskRequest
-		delete(meta.Header, config.HeaderDragonflyFilter)
-	} else {
-		filter = rt.defaultFilter
-	}
-	if b, ok := meta.Header[config.HeaderDragonflyBiz]; ok {
-		biz = b
-		delete(meta.Header, config.HeaderDragonflyBiz)
-	} else {
-		biz = "d7y/proxy"
-	}
+	meta.Header = headerToMap(req.Header)
+
 	r, attr, err := rt.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
 		&scheduler.PeerTaskRequest{
@@ -186,21 +180,19 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 			Filter:      filter,
 			BizId:       biz,
 			UrlMata:     meta,
-			PeerId:      clientutil.GenPeerID(rt.peerHost),
+			PeerId:      peerID,
 			PeerHost:    rt.peerHost,
 			HostLoad:    nil,
 			IsMigrating: false,
 		},
 	)
 	if err != nil {
-		logger.Errorf("download fail: %v", err)
+		log.Errorf("download fail: %v", err)
 		return nil, err
 	}
-	var hdr = http.Header{}
-	for k, v := range attr {
-		hdr.Set(k, v)
-	}
-	logger.Infof("download stream attribute: %v", hdr)
+
+	hdr := mapToHeader(attr)
+	log.Infof("download stream attribute: %v", hdr)
 
 	resp := &http.Response{
 		StatusCode: 200,
@@ -244,4 +236,41 @@ var hopHeaders = []string{
 	"Trailer", // not Trailers per URL above; https://www.rfc-editor.org/errata_search.php?eid=4522
 	"Transfer-Encoding",
 	"Upgrade",
+}
+
+// headerToMap coverts request headers to map[string]string.
+func headerToMap(header http.Header) map[string]string {
+	m := make(map[string]string)
+	for k, v := range header {
+		// TODO only use first value currently
+		m[k] = v[0]
+	}
+	return m
+}
+
+// mapToHeader coverts map[string]string to request headers.
+func mapToHeader(m map[string]string) http.Header {
+	var h = http.Header{}
+	for k, v := range m {
+		h.Set(k, v)
+	}
+	return h
+}
+
+// delHopHeaders delete hop-by-hop headers.
+func delHopHeaders(header http.Header) {
+	for _, h := range hopHeaders {
+		header.Del(h)
+	}
+}
+
+// pickHeader pick header with key.
+func pickHeader(header http.Header, key, defaultValue string) string {
+	v := header.Get(key)
+	if v != "" {
+		header.Del(key)
+		return v
+	}
+
+	return defaultValue
 }

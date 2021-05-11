@@ -47,14 +47,7 @@ func (suite *ServerTestSuite) testMysqlConfig() *config.Config {
 				Oss: nil,
 			},
 		},
-		HostService: &config.HostService{
-			Skyline: &config.SkylineService{
-				Domain:    "http://xxx",
-				AppName:   "xxx",
-				Account:   "xxx",
-				AccessKey: "xxx",
-			},
-		},
+		HostService: &config.HostService{},
 	}
 }
 

@@ -12,7 +12,7 @@ import (
 	"gopkg.in/errgo.v2/fmt/errors"
 )
 
-// AddSchedulerInstance godoc
+// CreateSchedulerInstance godoc
 // @Summary Add scheduler instance
 // @Description add by json config
 // @Tags SchedulerInstance
@@ -23,8 +23,8 @@ import (
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /schedulerinstances [post]
-func (handler *Handler) AddSchedulerInstance(ctx *gin.Context) {
+// @Router /scheduler/instances [post]
+func (handler *Handler) CreateSchedulerInstance(ctx *gin.Context) {
 	var instance types.SchedulerInstance
 	if err := ctx.ShouldBindJSON(&instance); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -48,7 +48,7 @@ func (handler *Handler) AddSchedulerInstance(ctx *gin.Context) {
 	}
 }
 
-// DeleteSchedulerInstance godoc
+// DestroySchedulerInstance godoc
 // @Summary Delete scheduler instance
 // @Description Delete by instanceId
 // @Tags SchedulerInstance
@@ -59,8 +59,8 @@ func (handler *Handler) AddSchedulerInstance(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /schedulerinstances/{id} [delete]
-func (handler *Handler) DeleteSchedulerInstance(ctx *gin.Context) {
+// @Router /scheduler/instances/{id} [delete]
+func (handler *Handler) DestroySchedulerInstance(ctx *gin.Context) {
 	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -95,7 +95,7 @@ func (handler *Handler) DeleteSchedulerInstance(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /schedulerinstances/{id} [post]
+// @Router /scheduler/instances/{id} [post]
 func (handler *Handler) UpdateSchedulerInstance(ctx *gin.Context) {
 	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -140,7 +140,7 @@ func (handler *Handler) UpdateSchedulerInstance(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /schedulerinstances/{id} [get]
+// @Router /scheduler/instances/{id} [get]
 func (handler *Handler) GetSchedulerInstance(ctx *gin.Context) {
 	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
@@ -174,7 +174,7 @@ func (handler *Handler) GetSchedulerInstance(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /schedulerinstances [get]
+// @Router /scheduler/instances [get]
 func (handler *Handler) ListSchedulerInstances(ctx *gin.Context) {
 	var query types.ListQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {

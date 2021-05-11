@@ -42,7 +42,6 @@ type StoreConfig struct {
 }
 
 type HostService struct {
-	Skyline *SkylineService `yaml:"skyline"`
 }
 
 type SkylineService struct {
@@ -74,14 +73,7 @@ func New() *Config {
 				Oss: nil,
 			},
 		},
-		HostService: &HostService{
-			Skyline: &SkylineService{
-				Domain:    "http://xxx",
-				AppName:   "dragonfly-manager",
-				Account:   "yourAccount",
-				AccessKey: "yourAccessKey",
-			},
-		},
+		HostService: &HostService{},
 	}
 }
 
