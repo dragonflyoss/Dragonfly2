@@ -25,15 +25,15 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
-type DynamicHostsMgr struct {
+type DynHostsMgr struct {
 	managerCli mgClient.ManagerClient
 }
 
-func NewCdnHostsMgr(cfgServer mgClient.ManagerClient) *DynamicHostsMgr {
-	return &DynamicHostsMgr{managerCli: cfgServer}
+func NewCdnHostsMgr(cfgServer mgClient.ManagerClient) *DynHostsMgr {
+	return &DynHostsMgr{managerCli: cfgServer}
 }
 
-func (md *DynamicHostsMgr) Get() (interface{}, error) {
+func (md *DynHostsMgr) Get() (interface{}, error) {
 	scConfig, err := md.managerCli.GetSchedulerClusterConfig(context.Background(), &manager.GetClusterConfigRequest{
 		HostName: iputils.HostName,
 		Type:     manager.ResourceType_Scheduler,
