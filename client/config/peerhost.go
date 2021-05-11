@@ -379,7 +379,10 @@ type StorageOption struct {
 	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
 	// after this period cache file will be gc
 	TaskExpireTime clientutil.Duration `json:"task_expire_time" yaml:"task_expire_time"`
-	StoreStrategy  StoreStrategy       `json:"strategy" yaml:"strategy"`
+	// DiskGCThreshold indicates the threshold to gc the oldest tasks
+	DiskGCThreshold clientutil.StorageSize `json:"disk_gc_threshold" yaml:"disk_gc_threshold"`
+
+	StoreStrategy StoreStrategy `json:"strategy" yaml:"strategy"`
 }
 
 type StoreStrategy string

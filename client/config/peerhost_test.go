@@ -140,6 +140,18 @@ listen:
 				},
 			},
 		},
+		{
+			text: `
+disk_gc_threshold: 1Ki
+`,
+			target: &struct {
+				Size clientutil.StorageSize `yaml:"disk_gc_threshold"`
+			}{
+				Size: clientutil.StorageSize{
+					SizeInBytes: 1024,
+				},
+			},
+		},
 	}
 	for _, c := range cases {
 		actual := reflect.New(reflect.TypeOf(c.target).Elem()).Interface()

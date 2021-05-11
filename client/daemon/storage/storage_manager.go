@@ -25,11 +25,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/docker/go-units"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -454,8 +456,10 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 
 func (s *storageManager) TryGC() (bool, error) {
 	var markedTasks []PeerTaskMetaData
+	var totalSize int64
 	s.tasks.Range(func(key, task interface{}) bool {
-		// remove from task list first
+		totalSize += task.(*localTaskStore).ContentLength
+
 		if task.(*localTaskStore).CanReclaim() {
 			task.(*localTaskStore).MarkReclaim()
 			markedTasks = append(markedTasks, key.(PeerTaskMetaData))
@@ -465,6 +469,30 @@ func (s *storageManager) TryGC() (bool, error) {
 		}
 		return true
 	})
+
+	if s.storeOption.DiskGCThreshold.SizeInBytes > 0 && totalSize > s.storeOption.DiskGCThreshold.SizeInBytes {
+		logger.Infof("quota threshold reached, start gc oldest task")
+		var tasks []*localTaskStore
+		s.tasks.Range(func(key, task interface{}) bool {
+			tasks = append(tasks, task.(*localTaskStore))
+			return true
+		})
+		sort.SliceStable(tasks, func(i, j int) bool {
+			return tasks[i].lastAccess.Before(tasks[j].lastAccess)
+		})
+		for _, task := range tasks {
+			task.MarkReclaim()
+			markedTasks = append(markedTasks, PeerTaskMetaData{task.PeerID, task.TaskID})
+			logger.Infof("quota threshold reached, mark task %s/%s reclaimed, last access: %s, size: %s",
+				task.TaskID, task.PeerID, task.lastAccess.Format(time.RFC3339Nano),
+				units.BytesSize(float64(task.ContentLength)))
+			totalSize -= task.ContentLength
+			if totalSize < s.storeOption.DiskGCThreshold.SizeInBytes {
+				break
+			}
+		}
+	}
+
 	for _, key := range s.markedReclaimTasks {
 		task, ok := s.tasks.Load(key)
 		if !ok {
