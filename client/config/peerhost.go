@@ -551,20 +551,37 @@ func (cp *CertPool) MarshalYAML() (interface{}, error) {
 }
 
 func (cp *CertPool) unmarshal(unmarshal func(interface{}) error) error {
-	var cf []FileString
-	if err := unmarshal(&cf); err != nil {
+	if err := unmarshal(&cp.Files); err != nil {
 		return err
 	}
 
-	pool := x509.NewCertPool()
-	for _, cert := range cf {
-		if !pool.AppendCertsFromPEM([]byte(cert)) {
-			return errors.Errorf("invalid cert: %s", cert)
-		}
+	pool, err := certPoolFromFiles(cp.Files...)
+	if err != nil {
+		return err
 	}
 
 	cp.CertPool = pool
 	return nil
+}
+
+// certPoolFromFiles returns an *x509.CertPool constructed from the given files.
+// If no files are given, (nil, nil) will be returned.
+func certPoolFromFiles(files ...string) (*x509.CertPool, error) {
+	if len(files) == 0 {
+		return nil, nil
+	}
+
+	roots := x509.NewCertPool()
+	for _, f := range files {
+		cert, err := ioutil.ReadFile(f)
+		if err != nil {
+			return nil, errors.Wrapf(err, "read cert file %s", f)
+		}
+		if !roots.AppendCertsFromPEM(cert) {
+			return nil, errors.Errorf("invalid cert: %s", f)
+		}
+	}
+	return roots, nil
 }
 
 // Proxy describes a regular expression matching rule for how to proxy a request.

@@ -147,6 +147,7 @@ func (m *manager) Download(ctx context.Context,
 		},
 		Output: req.Output,
 	}
+	log := logger.With("peer", peerTask.PeerId, "component", "downloadService")
 
 	peerTaskProgress, tiny, err := m.peerTaskManager.StartFilePeerTask(ctx, peerTask)
 	if err != nil {
@@ -155,14 +156,14 @@ func (m *manager) Download(ctx context.Context,
 	if tiny != nil {
 		results <- &dfdaemongrpc.DownResult{
 			TaskId:          tiny.TaskId,
-			PeerId:          tiny.PeerID,
+			PeerId:          tiny.PeerId,
 			CompletedLength: uint64(len(tiny.Content)),
 			Done:            true,
 		}
-		logger.Infof("tiny file, wrote to output")
+		log.Infof("tiny file, wrote to output")
 		if req.Uid != 0 && req.Gid != 0 {
 			if err = os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {
-				logger.Errorf("change own failed: %s", err)
+				log.Errorf("change own failed: %s", err)
 				return err
 			}
 		}
@@ -174,11 +175,11 @@ func (m *manager) Download(ctx context.Context,
 		case p, ok := <-peerTaskProgress:
 			if !ok {
 				err = errors.New("progress closed unexpected")
-				logger.Errorf(err.Error())
+				log.Errorf(err.Error())
 				return dferrors.New(dfcodes.UnknownError, err.Error())
 			}
 			if !p.State.Success {
-				logger.Errorf("task %s failed: %d/%s", p.TaskId, p.State.Code, p.State.Msg)
+				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskId, p.State.Code, p.State.Msg)
 				return dferrors.New(p.State.Code, p.State.Msg)
 			}
 			results <- &dfdaemongrpc.DownResult{
@@ -190,11 +191,11 @@ func (m *manager) Download(ctx context.Context,
 			// peer task sets PeerTaskDone to true only once
 			if p.PeerTaskDone {
 				p.DoneCallback()
-				logger.Infof("task %s done", p.TaskId)
+				log.Infof("task %s/%s done", p.PeerID, p.TaskId)
 				if req.Uid != 0 && req.Gid != 0 {
-					logger.Infof("change own to uid %d gid %d", req.Uid, req.Gid)
+					log.Infof("change own to uid %d gid %d", req.Uid, req.Gid)
 					if err = os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {
-						logger.Errorf("change own failed: %s", err)
+						log.Errorf("change own failed: %s", err)
 						return err
 					}
 				}
@@ -205,7 +206,7 @@ func (m *manager) Download(ctx context.Context,
 				CompletedLength: 0,
 				Done:            true,
 			}
-			logger.Infof("context done due to %s", ctx.Err())
+			log.Infof("context done due to %s", ctx.Err())
 			return status.Error(codes.Canceled, ctx.Err().Error())
 		}
 	}

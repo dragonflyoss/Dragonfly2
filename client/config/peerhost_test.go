@@ -17,9 +17,7 @@
 package config
 
 import (
-	"crypto/x509"
 	"encoding/json"
-	"io/ioutil"
 	"net/url"
 	"reflect"
 	"testing"
@@ -271,10 +269,6 @@ func TestPeerHostOption_Load(t *testing.T) {
 	proxyExp, _ := NewRegexp("blobs/sha256.*")
 	hijackExp, _ := NewRegexp("mirror.aliyuncs.com:443")
 
-	certPool := x509.NewCertPool()
-	ca, _ := ioutil.ReadFile("./testdata/certs/sca.crt")
-	certPool.AppendCertsFromPEM(ca)
-
 	peerHostOption := &PeerHostOption{
 		AliveTime: clientutil.Duration{
 			Duration: 0,
@@ -391,9 +385,6 @@ func TestPeerHostOption_Load(t *testing.T) {
 						Scheme: "https",
 					},
 				},
-				Certs: &CertPool{
-					CertPool: certPool,
-				},
 				Insecure: true,
 				Direct:   false,
 			},
@@ -412,9 +403,6 @@ func TestPeerHostOption_Load(t *testing.T) {
 					{
 						Regx:     hijackExp,
 						Insecure: true,
-						Certs: &CertPool{
-							CertPool: certPool,
-						},
 					},
 				},
 			},

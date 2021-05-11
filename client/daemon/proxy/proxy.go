@@ -40,7 +40,12 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
+var (
+	okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
+
+	// represents proxy default biz value
+	bizTag = "d7y/proxy"
+)
 
 // Proxy is an http proxy handler. It proxies requests with dragonfly
 // if any defined proxy rules is matched
@@ -339,6 +344,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithTLS(tlsConfig),
 		transport.WithCondition(proxy.shouldUseDragonfly),
 		transport.WithDefaultFilter(proxy.defaultFilter),
+		transport.WithDefaultBiz(bizTag),
 	)
 	return rt
 }
@@ -351,6 +357,7 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 		transport.WithTLS(proxy.registry.TLSConfig()),
 		transport.WithCondition(proxy.shouldUseDragonflyForMirror),
 		transport.WithDefaultFilter(proxy.defaultFilter),
+		transport.WithDefaultBiz(bizTag),
 	)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get transport: %v", err), http.StatusInternalServerError)
