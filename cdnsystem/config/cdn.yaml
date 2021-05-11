@@ -19,10 +19,6 @@ base:
   # default: 1G, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
   maxBandwidth: 1G
 
-  # Whether to enable profiler
-  # default: false
-  enableProfiler: false
-
   # FailAccessInterval is the interval time after failed to access the URL.
   # If a task failed to be downloaded from the source, it will not be retried in the time since the last failure.
   # default: 3m
@@ -48,9 +44,6 @@ base:
   # StoragePattern is the pattern of storage policy, [disk/hybrid]
   storagePattern: disk
 
-  # Console shows log on console
-  console: false
-
 plugins:
   storage:
     - name: disk
@@ -71,6 +64,15 @@ plugins:
           fullGCThreshold: 5G
           cleanRatio: 3
           intervalThreshold: 2h
-#  sourceClient:
-#    - name: http
-#      enable: false
+
+# Console shows log on console
+# default: false
+console: false
+
+# Whether to enable debug level logger and enable pprof
+# default: false
+verbose: false
+
+# listen port for pprof, only valid when the verbose option is true
+# default is random port
+pprofPort: 0
