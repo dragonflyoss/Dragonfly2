@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-package logcore
+package dfpath
 
-import (
-	"path/filepath"
-
-	"d7y.io/dragonfly/v2/pkg/basic"
-)
-
-var clientLogDir     = filepath.Join(basic.HomeDir, ".dragonfly/logs")
+var LogDir = "/var/log/dragonfly"

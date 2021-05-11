@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"time"
 
+	"d7y.io/dragonfly/v2/cmd/common"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"gopkg.in/yaml.v3"
@@ -36,12 +37,9 @@ func New() *Config {
 
 // Config contains all configuration of cdn node.
 type Config struct {
-	Console         bool   `yaml:"console"`
-	Verbose         bool   `yaml:"verbose"`
-	PProfPort       int    `yaml:"pprofPort"`
-	Jaeger          string `yaml:"jaeger"`
-	*BaseProperties `yaml:"base"`
-	Plugins         map[PluginType][]*PluginProperties `yaml:"plugins"`
+	common.BaseOptions `yaml:",inline" mapstructure:",squash"`
+	*BaseProperties    `yaml:"base" mapstructure:"base"`
+	Plugins            map[PluginType][]*PluginProperties `yaml:"plugins" mapstructure:"plugins"`
 }
 
 // Load loads config properties from the giving file.
@@ -112,64 +110,59 @@ func NewDefaultBaseProperties() *BaseProperties {
 		GCStorageInterval:       DefaultGCStorageInterval,
 		TaskExpireTime:          DefaultTaskExpireTime,
 		StoragePattern:          DefaultStoragePattern,
-		Console:                 DefaultConsole,
 		AdvertiseIP:             iputils.HostIp,
 	}
 }
 
 // BaseProperties contains all basic properties of cdn system.
 type BaseProperties struct {
-
 	// ListenPort is the port cdn server listens on.
 	// default: 8002
-	ListenPort int `yaml:"listenPort"`
+	ListenPort int `yaml:"listenPort" mapstructure:"listenPort"`
 
 	// DownloadPort is the port for download files from cdn.
 	// default: 8001
-	DownloadPort int `yaml:"downloadPort"`
+	DownloadPort int `yaml:"downloadPort" mapstructure:"downloadPort"`
 
 	// SystemReservedBandwidth is the network bandwidth reserved for system software.
 	// default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	SystemReservedBandwidth unit.Bytes `yaml:"systemReservedBandwidth"`
+	SystemReservedBandwidth unit.Bytes `yaml:"systemReservedBandwidth" mapstructure:"systemReservedBandwidth"`
 
 	// MaxBandwidth is the network bandwidth that cdn system can use.
 	// default: 200 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	MaxBandwidth unit.Bytes `yaml:"maxBandwidth"`
+	MaxBandwidth unit.Bytes `yaml:"maxBandwidth" mapstructure:"maxBandwidth"`
 
 	// Whether to enable profiler
 	// default: false
-	EnableProfiler bool `yaml:"enableProfiler"`
+	EnableProfiler bool `yaml:"enableProfiler" mapstructure:"enableProfiler"`
 
 	// AdvertiseIP is used to set the ip that we advertise to other peer in the p2p-network.
 	// By default, the first non-loop address is advertised.
-	AdvertiseIP string `yaml:"advertiseIP"`
+	AdvertiseIP string `yaml:"advertiseIP" mapstructure:"advertiseIP"`
 
 	// FailAccessInterval is the interval time after failed to access the URL.
 	// unit: minutes
 	// default: 3
-	FailAccessInterval time.Duration `yaml:"failAccessInterval"`
+	FailAccessInterval time.Duration `yaml:"failAccessInterval" mapstructure:"failAccessInterval"`
 
 	// gc related
 	// GCInitialDelay is the delay time from the start to the first GC execution.
 	// default: 6s
-	GCInitialDelay time.Duration `yaml:"gcInitialDelay"`
+	GCInitialDelay time.Duration `yaml:"gcInitialDelay" mapstructure:"gcInitialDelay"`
 
 	// GCMetaInterval is the interval time to execute GC meta.
 	// default: 2min
-	GCMetaInterval time.Duration `yaml:"gcMetaInterval"`
+	GCMetaInterval time.Duration `yaml:"gcMetaInterval" mapstructure:"gcMetaInterval"`
 
 	// GCStorageInterval is the interval time to execute GC storage.
 	// default: 15s
-	GCStorageInterval time.Duration `yaml:"gcStorageInterval"`
+	GCStorageInterval time.Duration `yaml:"gcStorageInterval" mapstructure:"gcStorageInterval"`
 
 	// TaskExpireTime when a task is not accessed within the taskExpireTime,
 	// and it will be treated to be expired.
 	// default: 3min
-	TaskExpireTime time.Duration `yaml:"taskExpireTime"`
+	TaskExpireTime time.Duration `yaml:"taskExpireTime" mapstructure:"taskExpireTime"`
 
 	// disk/hybrid/memory
-	StoragePattern string `yaml:"storagePattern"`
-
-	// Console shows log on console
-	Console bool `yaml:"console"`
+	StoragePattern string `yaml:"storagePattern" mapstructure:"storagePattern"`
 }

@@ -14,44 +14,36 @@
  * limitations under the License.
  */
 
-package basic
+package dfpath
 
 import (
-	"os"
-	"os/user"
-	"strconv"
-	"strings"
+	"path/filepath"
 
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
 var (
-	HomeDir   string
-	TmpDir    string
-	Username  string
-	UserId    int
-	UserGroup int
+	DefaultDataDir = filepath.Join(WorkHome, "data")
+	DaemonSockPath = filepath.Join(WorkHome, "daemon.sock")
+	DaemonLockPath = filepath.Join(WorkHome, "daemon.lock")
+	DaemonPidPath  = filepath.Join(WorkHome, "daemon.pid")
+	DfgetLockPath  = filepath.Join(WorkHome, "dfget.lock")
 )
 
 func init() {
-	u, err := user.Current()
-	if err != nil {
+	if err := fileutils.MkdirAll(WorkHome); err != nil {
 		panic(err)
 	}
 
-	Username = u.Username
-	UserId, _ = strconv.Atoi(u.Uid)
-	UserGroup, _ = strconv.Atoi(u.Gid)
-
-	HomeDir = u.HomeDir
-	HomeDir = strings.TrimSpace(HomeDir)
-	if stringutils.IsBlank(HomeDir) {
-		panic("home dir is empty")
+	if err := fileutils.MkdirAll(DefaultConfigDir); err != nil {
+		panic(err)
 	}
 
-	TmpDir = os.TempDir()
-	TmpDir = strings.TrimSpace(TmpDir)
-	if stringutils.IsBlank(TmpDir) {
-		TmpDir = "/tmp"
+	if err := fileutils.MkdirAll(LogDir); err != nil {
+		panic(err)
+	}
+
+	if err := fileutils.MkdirAll(DefaultDataDir); err != nil {
+		panic(err)
 	}
 }

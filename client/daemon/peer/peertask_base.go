@@ -343,7 +343,7 @@ func (pt *peerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc func()
 		// preparePieceTasksByPeer func already send piece result with error
 		pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
 			time.Now().Sub(pt.callback.GetStartTime()).Microseconds(), pt.peerPacket.MainPeer)
-	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
+	case <-time.After(pt.schedulerOption.ScheduleTimeout):
 		pt.failedReason = reasonScheduleTimeout
 		pt.failedCode = dfcodes.ClientScheduleTimeout
 		pt.Errorf(pt.failedReason)
@@ -414,7 +414,7 @@ loop:
 				// research from piece 0
 				num = pt.getNextPieceNum(0)
 				continue loop
-			case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
+			case <-time.After(pt.schedulerOption.ScheduleTimeout):
 				pt.failedReason = reasonReScheduleTimeout
 				pt.failedCode = dfcodes.ClientScheduleTimeout
 				pt.Errorf(pt.failedReason)

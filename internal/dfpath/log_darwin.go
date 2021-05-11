@@ -14,44 +14,10 @@
  * limitations under the License.
  */
 
-package basic
+package dfpath
 
 import (
-	"os"
-	"os/user"
-	"strconv"
-	"strings"
-
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"path/filepath"
 )
 
-var (
-	HomeDir   string
-	TmpDir    string
-	Username  string
-	UserId    int
-	UserGroup int
-)
-
-func init() {
-	u, err := user.Current()
-	if err != nil {
-		panic(err)
-	}
-
-	Username = u.Username
-	UserId, _ = strconv.Atoi(u.Uid)
-	UserGroup, _ = strconv.Atoi(u.Gid)
-
-	HomeDir = u.HomeDir
-	HomeDir = strings.TrimSpace(HomeDir)
-	if stringutils.IsBlank(HomeDir) {
-		panic("home dir is empty")
-	}
-
-	TmpDir = os.TempDir()
-	TmpDir = strings.TrimSpace(TmpDir)
-	if stringutils.IsBlank(TmpDir) {
-		TmpDir = "/tmp"
-	}
-}
+var LogDir = filepath.Join(WorkHome, "logs")

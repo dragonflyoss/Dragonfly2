@@ -1,5 +1,3 @@
-// +build darwin
-
 /*
  *     Copyright 2020 The Dragonfly Authors
  *
@@ -16,27 +14,6 @@
  * limitations under the License.
  */
 
-package config
+package dfpath
 
-import "d7y.io/dragonfly/v2/pkg/unit"
-
-var dfgetConfig = ClientOption{
-	URL:           "",
-	LockFile:      "/tmp/dfget.lock",
-	Output:        "",
-	Timeout:       0,
-	BenchmarkRate: 128 * unit.KB,
-	RateLimit:     0,
-	Md5:           "",
-	DigestMethod:  "",
-	DigestValue:   "",
-	Identifier:    "",
-	CallSystem:    "",
-	Pattern:       "",
-	Cacerts:       nil,
-	Filter:        nil,
-	Header:        nil,
-	NotBackSource: false,
-	Insecure:      false,
-	ShowBar:       false,
-}
+var WorkHome = "/usr/local/dragonfly"

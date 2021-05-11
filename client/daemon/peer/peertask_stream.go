@@ -251,7 +251,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	case first := <-s.successPieceCh:
 		//if !ok {
 		//	s.Warnf("successPieceCh closed unexpect")
-		//	return nil, nil, errors.New("early done")
+		//	return nil, nil, errors.NewDaemonConfig("early done")
 		//}
 		firstPiece = first
 	}

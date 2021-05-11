@@ -17,36 +17,130 @@
 package cmd
 
 import (
-	"fmt"
+	"context"
+	"os"
+	"time"
 
+	"d7y.io/dragonfly/v2/client/config"
+	server "d7y.io/dragonfly/v2/client/daemon"
+	"d7y.io/dragonfly/v2/cmd/common"
+	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	"github.com/gofrs/flock"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
+)
+
+var (
+	cfg *config.DaemonConfig
 )
 
 // daemonCmd represents the daemon command
 var daemonCmd = &cobra.Command{
 	Use:   "daemon",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "start the client daemon of dragonfly",
+	Long: `client daemon is mainly responsible for transmitting blocks between peers 
+and putting the completed file into the specified target path. at the same time, 
+it supports container engine, wget and other downloading tools through proxy function.`,
+	Args:               cobra.NoArgs,
+	DisableAutoGenTag:  true,
+	SilenceUsage:       true,
+	FParseErrWhitelist: cobra.FParseErrWhitelist{UnknownFlags: true},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := logcore.InitDaemon(cfg.Console); err != nil {
+			return errors.Wrap(err, "init client daemon logger")
+		}
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("daemon called")
+		// Convert config
+		if err := cfg.Convert(); err != nil {
+			return err
+		}
+
+		// Validate config
+		if err := cfg.Validate(); err != nil {
+			return err
+		}
+
+		return runDaemon()
 	},
 }
 
 func init() {
+	// Add the command to parent
 	rootCmd.AddCommand(daemonCmd)
 
-	// Here you will define your flags and configuration settings.
+	if len(os.Args) > 1 && os.Args[1] == daemonCmd.Name() {
+		// Initialize default daemon config
+		cfg = config.NewDaemonConfig()
+		// Initialize cobra
+		common.InitCobra(daemonCmd, true, cfg)
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// daemonCmd.PersistentFlags().String("foo", "", "A help for foo")
+		flags := daemonCmd.Flags()
+		flags.Int("launcher", -1, "pid of process launching daemon, a negative number implies that the daemon is started directly by the user")
+		flags.Lookup("launcher").Hidden = true
+		_ = viper.BindPFlags(flags)
+		_ = viper.BindEnv("download.total-rate-limit")
+		_ = viper.BindEnv("upload.total-rate-limit")
+	}
+}
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// daemonCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+func runDaemon() error {
+	target := dfnet.NetAddr{Type: dfnet.UNIX, Addr: dfpath.DaemonSockPath}
+	daemonClient, err := client.GetClientByAddr([]dfnet.NetAddr{target})
+	if err != nil {
+		return err
+	}
+
+	// Checking Steps:
+	//
+	// 1. Try to lock
+	//
+	// 2. If lock successfully, start the client daemon and then return
+	//
+	// 3. If lock fail, checking whether the daemon has been started. If true, return directly.
+	//    Otherwise, wait 50 ms and execute again from 1
+	// 4. Checking timeout about 5s
+	lock := flock.New(dfpath.DaemonLockPath)
+	times := 0
+	limit := 100 // 100 * 50ms = 5s
+	for {
+		if ok, err := lock.TryLock(); err != nil {
+			return err
+		} else if !ok {
+			if daemonClient.CheckHealth(context.Background(), target) == nil {
+				return errors.New("the daemon is running, so there is no need to start it again")
+			}
+		} else {
+			break
+		}
+
+		times++
+		if times > limit {
+			return errors.New("the daemon is unhealthy")
+		}
+
+		time.Sleep(50 * time.Millisecond)
+	}
+	defer lock.Unlock()
+
+	logger.Infof("daemon is launched by pid:%d", viper.GetInt("launcher"))
+
+	// daemon config values
+	s, _ := yaml.Marshal(cfg)
+	logger.Infof("client daemon configuration:\n%s", string(s))
+
+	ff := common.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Jaeger)
+	defer ff()
+
+	if svr, err := server.New(cfg); err != nil {
+		return err
+	} else {
+		common.SetupQuitSignalHandler(func() { svr.Stop() })
+		return svr.Serve()
+	}
 }

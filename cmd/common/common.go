@@ -21,12 +21,17 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"syscall"
+	"time"
 
+	"d7y.io/dragonfly/v2/internal/dfpath"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/version"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
@@ -46,33 +51,47 @@ import (
 
 var (
 	configFileRead bool
-	existEnvPrefix string
 )
 
-type FinalHandler func()
-type SignalHandler func()
+type (
+	FinalHandler  func()
+	SignalHandler func()
+)
+
+type BaseOptions struct {
+	Console   bool   `yaml:"console" mapstructure:"console"`
+	Verbose   bool   `yaml:"verbose" mapstructure:"verbose"`
+	PProfPort int    `yaml:"pprof-port" mapstructure:"pprof-port"`
+	Jaeger    string `yaml:"jaeger" mapstructure:"jaeger"`
+}
 
 // InitCobra initializes flags binding and common sub cmds.
 // config is a pointer to configuration struct.
-func InitCobra(cmd *cobra.Command, useFile bool, envPrefix string, config interface{}) {
-	var cfgFile string
-	cobra.OnInitialize(func() { initConfig(useFile, &cfgFile, envPrefix, config) })
+func InitCobra(cmd *cobra.Command, useFile bool, config interface{}) {
+	rootName := cmd.Root().Name()
+	cobra.OnInitialize(func() { initConfig(useFile, rootName, config) })
 
-	// Add flags
 	rootFlags := cmd.Root().PersistentFlags()
+	// Execute only once
 	if rootFlags.Lookup("console") == nil {
-		rootFlags.Bool("console", false, "whether output log info on the terminal")
-		rootFlags.Bool("verbose", false, "whether use debug level logger and enable pprof")
-		rootFlags.Int("pprofPort", 0, "listen port for pprof, only valid when the verbose option is true, default is random port")
-		rootFlags.String("jaeger", "", "jaeger back-end address, like: http://localhost:14250")
-		rootFlags.StringVarP(&cfgFile, "config", "f", "", "the path of configuration file")
-	}
+		// Add flags
+		rootFlags.Bool("console", false, "whether logger output records to the stdout")
+		rootFlags.Bool("verbose", false, "whether logger use debug level")
+		rootFlags.Int("pprof-port", -1, "listen port for pprof, 0 represents random port")
+		rootFlags.String("jaeger", "", "jaeger endpoint url, like: http://localhost:14250/api/traces")
+		if useFile {
+			rootFlags.String("config", "", fmt.Sprintf("the path of configuration file with yaml extension name, default is %s, it can also be set by env var:%s", filepath.Join(dfpath.DefaultConfigDir, rootName+".yaml"), strings.ToUpper(rootName+"_config")))
+		}
 
-	// Bind flags
-	if err := viper.BindPFlags(cmd.Flags()); err != nil {
-		panic(errors.Wrap(err, "bind cmd flags to viper"))
-	} else if err := viper.BindPFlags(rootFlags); err != nil {
-		panic(errors.Wrap(err, "bind root flags to viper"))
+		// Bind root flags
+		if err := viper.BindPFlags(rootFlags); err != nil {
+			panic(errors.Wrap(err, "bind root flags to viper"))
+		}
+
+		// Config for binding env
+		viper.SetEnvPrefix(rootName)
+		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+		_ = viper.BindEnv("config")
 	}
 
 	// Add common cmds
@@ -82,14 +101,16 @@ func InitCobra(cmd *cobra.Command, useFile bool, envPrefix string, config interf
 	}
 }
 
-// InitMonitor initialize monitor and return final func
+// InitMonitor initialize monitor and return final handler
 func InitMonitor(verbose bool, pprofPort int, jaeger string) FinalHandler {
-	var ffs []func()
+	var fc = make(chan func(), 5)
 
 	if verbose {
 		logcore.SetCoreLevel(zapcore.DebugLevel)
 		logcore.SetGrpcLevel(zapcore.DebugLevel)
+	}
 
+	if pprofPort >= 0 {
 		// Enable go pprof and statsview
 		go func() {
 			if pprofPort == 0 {
@@ -103,31 +124,39 @@ func InitMonitor(verbose bool, pprofPort int, jaeger string) FinalHandler {
 				"statsview", fmt.Sprintf("http://%s/debug/statsview", debugAddr)).
 				Infof("enable pprof at %s", debugAddr)
 
-			if err := statsview.New().Start(); err != nil {
+			vm := statsview.New()
+			if err := vm.Start(); err != nil {
 				logger.Warnf("serve pprof error:%v", err)
+			} else {
+				fc <- func() { vm.Stop() }
 			}
 		}()
 	}
 
 	if jaeger != "" {
-		if ff, err := initTracer(verbose, jaeger); err != nil {
-			logger.Warnf("init tracer error:%v", err)
+		if ff, err := initJaegerTracer(jaeger); err != nil {
+			logger.Warnf("init jaeger tracer error:%v", err)
 		} else {
-			ffs = append(ffs, ff)
+			fc <- ff
 		}
 	}
 
 	return func() {
-		logger.Infof("do %d final handlers", len(ffs))
-		for _, ff := range ffs {
-			ff()
+		logger.Infof("do %d monitor finalizer", len(fc))
+		for {
+			select {
+			case f := <-fc:
+				f()
+			default:
+				return
+			}
 		}
 	}
 }
 
 func SetupQuitSignalHandler(handler SignalHandler) {
 	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 
 	go func() {
 		var done bool
@@ -138,6 +167,7 @@ func SetupQuitSignalHandler(handler SignalHandler) {
 				if !done {
 					done = true
 					handler()
+					logger.Warnf("handle signal:%v finish", sig)
 				}
 			}
 		}
@@ -145,28 +175,16 @@ func SetupQuitSignalHandler(handler SignalHandler) {
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initConfig(useFile bool, cfgFile *string, envPrefix string, config interface{}) {
-	// Env prefix must be consistent.
-	if envPrefix != "" {
-		if existEnvPrefix != "" {
-			if existEnvPrefix != envPrefix {
-				panic("viper can not support multi env prefix")
-			}
-		} else {
-			viper.SetEnvPrefix(envPrefix)
-			viper.AutomaticEnv() // read in environment variables that match
-			existEnvPrefix = envPrefix
-		}
-	}
-
+func initConfig(useFile bool, name string, config interface{}) {
 	// Use config file and read once.
 	if useFile && !configFileRead {
-		if *cfgFile != "" {
+		cfgFile := viper.GetString("config")
+		if cfgFile != "" {
 			// Use config file from the flag.
-			viper.SetConfigFile(*cfgFile)
+			viper.SetConfigFile(cfgFile)
 		} else {
-			viper.AddConfigPath(defaultConfigDir)
-			viper.SetConfigName(envPrefix)
+			viper.AddConfigPath(dfpath.DefaultConfigDir)
+			viper.SetConfigName(name)
 			viper.SetConfigType("yaml")
 		}
 
@@ -174,7 +192,7 @@ func initConfig(useFile bool, cfgFile *string, envPrefix string, config interfac
 		if err := viper.ReadInConfig(); err != nil {
 			ignoreErr := false
 			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-				if *cfgFile == "" {
+				if cfgFile == "" {
 					ignoreErr = true
 				}
 			}
@@ -192,8 +210,7 @@ func initConfig(useFile bool, cfgFile *string, envPrefix string, config interfac
 }
 
 func initDecoderConfig(dc *mapstructure.DecoderConfig) {
-	dc.TagName = "yaml"
-	dc.DecodeHook = mapstructure.ComposeDecodeHookFunc(dc.DecodeHook, func(from, to reflect.Type, v interface{}) (interface{}, error) {
+	dc.DecodeHook = mapstructure.ComposeDecodeHookFunc(func(from, to reflect.Type, v interface{}) (interface{}, error) {
 		switch to {
 		case reflect.TypeOf(unit.B):
 			b, _ := yaml.Marshal(v)
@@ -206,12 +223,12 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 		default:
 			return v, nil
 		}
-	})
+	}, mapstructure.StringToSliceHookFunc("&"), dc.DecodeHook)
 }
 
 // initTracer creates a new trace provider instance and registers it as global trace provider.
-func initTracer(verbose bool, addr string) (func(), error) {
-	exp, err := jaeger.NewRawExporter(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(addr)))
+func initJaegerTracer(url string) (func(), error) {
+	exp, err := jaeger.NewRawExporter(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
 	if err != nil {
 		return nil, err
 	}
@@ -223,6 +240,7 @@ func initTracer(verbose bool, addr string) (func(), error) {
 		// Record information about this application in an Resource.
 		sdktrace.WithResource(resource.NewWithAttributes(
 			semconv.ServiceNameKey.String("dragonfly"),
+			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", iputils.HostName, iputils.HostIp)),
 			semconv.ServiceVersionKey.String(version.GitVersion))),
 	)
 
@@ -230,5 +248,10 @@ func initTracer(verbose bool, addr string) (func(), error) {
 	// instrumentation in the future will default to using it.
 	otel.SetTracerProvider(tp)
 
-	return func() { _ = tp.Shutdown(context.Background()) }, nil
+	return func() {
+		// Do not make the application hang when it is shutdown.
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_ = tp.Shutdown(ctx)
+	}, nil
 }

@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
-package common
+package dfpath
 
-var defaultConfigDir = "/etc/dragonfly"
+import (
+	"path/filepath"
+)
+
+var DefaultConfigDir = filepath.Join(WorkHome, "config")

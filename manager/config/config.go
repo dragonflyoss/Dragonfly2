@@ -1,22 +1,23 @@
 package config
 
+import (
+	"d7y.io/dragonfly/v2/cmd/common"
+)
+
 const (
 	DefaultConfigFilePath string = "/etc/dragonfly/manager.yaml"
 )
 
 type Config struct {
-	Console       bool                 `yaml:"console"`
-	Verbose       bool                 `yaml:"verbose"`
-	PProfPort     int                  `yaml:"pprofPort"`
-	Jaeger        string               `yaml:"jaeger"`
-	Server        *ServerConfig        `yaml:"server"`
-	ConfigService *ConfigServiceConfig `yaml:"config-service"`
-	Stores        []*StoreConfig       `yaml:"stores"`
+	common.BaseOptions `yaml:",inline" mapstructure:",squash"`
+	Server             *ServerConfig        `yaml:"server" mapstructure:"server"`
+	ConfigService      *ConfigServiceConfig `yaml:"config-service" mapstructure:"config-service"`
+	Stores             []*StoreConfig       `yaml:"stores" mapstructure:"stores"`
 }
 
 type ServerConfig struct {
-	IP   string `yaml:"ip",omitempty`
-	Port int    `yaml:"port"`
+	IP   string `yaml:"ip,omitempty" mapstructure:"ip,omitempty"`
+	Port int    `yaml:"port" mapstructure:"port"`
 }
 
 type ConfigServiceConfig struct {
@@ -24,12 +25,12 @@ type ConfigServiceConfig struct {
 }
 
 type MysqlConfig struct {
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	IP       string `yaml:"ip"`
-	Port     int    `yaml:"port"`
-	Db       string `yaml:"db"`
-	Table    string `yaml:"table"`
+	User     string `yaml:"user" mapstructure:"user"`
+	Password string `yaml:"password" mapstructure:"password"`
+	IP       string `yaml:"ip" mapstructure:"ip"`
+	Port     int    `yaml:"port" mapstructure:"port"`
+	Db       string `yaml:"db" mapstructure:"db"`
+	Table    string `yaml:"table" mapstructure:"table"`
 }
 
 type OssConfig struct {
@@ -39,11 +40,11 @@ type MemoryConfig struct {
 }
 
 type StoreConfig struct {
-	Name   string        `yaml:"name"`
-	Type   string        `yaml:"type"`
-	Mysql  *MysqlConfig  `yaml:"mysql",omitempty`
-	Oss    *OssConfig    `yaml:"oss",omitempty`
-	Memory *MemoryConfig `yaml:"memory", omitempty`
+	Name   string        `yaml:"name" mapstructure:"name"`
+	Type   string        `yaml:"type" mapstructure:"type"`
+	Mysql  *MysqlConfig  `yaml:"mysql,omitempty" mapstructure:"mysql,omitempty"`
+	Oss    *OssConfig    `yaml:"oss,omitempty" mapstructure:"oss,omitempty"`
+	Memory *MemoryConfig `yaml:"memory,omitempty" mapstructure:"memory,omitempty"`
 }
 
 func New() *Config {

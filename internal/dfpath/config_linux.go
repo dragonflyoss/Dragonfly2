@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 
-package logcore
+package dfpath
 
-var clientLogDir = "/var/log/dragonfly"
+var DefaultConfigDir = "/etc/dragonfly"

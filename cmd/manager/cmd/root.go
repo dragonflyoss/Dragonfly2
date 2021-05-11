@@ -33,10 +33,6 @@ var (
 	cfg *config.Config
 )
 
-const (
-	managerEnvPrefix = "manager"
-)
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "manager",
@@ -67,9 +63,8 @@ func Execute() {
 func init() {
 	// Initialize default manager config
 	cfg = config.New()
-
 	// Initialize cobra
-	common.InitCobra(rootCmd, true, managerEnvPrefix, cfg)
+	common.InitCobra(rootCmd, true, cfg)
 }
 
 func runManager() error {

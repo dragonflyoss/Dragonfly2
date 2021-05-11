@@ -27,8 +27,11 @@ import (
 	"syscall"
 	"time"
 
+	"d7y.io/dragonfly/v2/cmd/common"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"github.com/pkg/errors"
+	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -36,67 +39,67 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
+type DfgetConfig = ClientOption
+
 // ClientOption holds all the runtime config information.
 type ClientOption struct {
+	common.BaseOptions `yaml:",inline" mapstructure:",squash"`
 	// URL download URL.
-	URL string `json:"url"`
+	URL string `yaml:"url,omitempty" mapstructure:"url,omitempty"`
 
 	// Lock file location
-	LockFile string `json:"lock_file" yaml:"lock_file"`
+	LockFile string `yaml:"lock_file,omitempty" mapstructure:"lock_file,omitempty"`
 
 	// Output full output path.
-	Output string `json:"output"`
+	Output string `yaml:"output,omitempty" mapstructure:"output,omitempty"`
 
 	// Timeout download timeout(second).
-	Timeout time.Duration `json:"timeout,omitempty"`
+	Timeout time.Duration `yaml:"timeout,omitempty" mapstructure:"timeout,omitempty"`
+
+	BenchmarkRate unit.Bytes `yaml:"benchmark-rate,omitempty" mapstructure:"benchmark-rate,omitempty"`
 
 	// Md5 expected file md5.
 	// Deprecated: Md5 is deprecated, use DigestMethod with DigestValue instead
-	Md5 string `json:"md5,omitempty"`
-
+	Md5    string `yaml:"md5,omitempty" mapstructure:"md5,omitempty"`
+	Digest string `yaml:"digest,omitempty" mapstructure:"digest,omitempty"`
 	// DigestMethod indicates digest method, like md5, sha256
-	DigestMethod string `json:"digest_method,omitempty"`
+	DigestMethod string `yaml:"digest_method,omitempty" mapstructure:"digest_method,omitempty"`
 
 	// DigestValue indicates digest value
-	DigestValue string `json:"digest_value,omitempty"`
+	DigestValue string `yaml:"digest_value,omitempty" mapstructure:"digest_value,omitempty"`
 
 	// Identifier identify download task, it is available merely when md5 param not exist.
-	Identifier string `json:"identifier,omitempty"`
+	Identifier string `yaml:"identifier,omitempty" mapstructure:"identifier,omitempty"`
 
 	// CallSystem system name that executes dfget.
-	CallSystem string `json:"call_system,omitempty"`
+	CallSystem string `yaml:"call_system,omitempty" mapstructure:"call_system,omitempty"`
 
 	// Pattern download pattern, must be 'p2p' or 'cdn' or 'source',
 	// default:`p2p`.
-	Pattern string `json:"pattern,omitempty"`
+	Pattern string `yaml:"pattern,omitempty" mapstructure:"pattern,omitempty"`
 
 	// CA certificate to verify when supernode interact with the source.
-	Cacerts []string `json:"cacert,omitempty"`
+	Cacerts []string `yaml:"cacert,omitempty" mapstructure:"cacert,omitempty"`
 
 	// Filter filter some query params of url, use char '&' to separate different params.
 	// eg: -f 'key&sign' will filter 'key' and 'sign' query param.
 	// in this way, different urls correspond one same download task that can use p2p mode.
-	Filter []string `json:"filter,omitempty"`
+	Filter []string `yaml:"filter,omitempty" mapstructure:"filter,omitempty"`
 
 	// Header of http request.
 	// eg: --header='Accept: *' --header='Host: abc'.
-	Header []string `json:"header,omitempty"`
+	Header []string `yaml:"header,omitempty" mapstructure:"header,omitempty"`
 
 	// NotBackSource indicates whether to not back source to download when p2p fails.
-	NotBackSource bool `json:"not_back_source,omitempty"`
+	NotBackSource bool `yaml:"not_back_source,omitempty" mapstructure:"not_back_source,omitempty"`
 
 	// Insecure indicates whether skip secure verify when supernode interact with the source.
-	Insecure bool `json:"insecure,omitempty"`
+	Insecure bool `yaml:"insecure,omitempty" mapstructure:"insecure,omitempty"`
 
 	// ShowBar shows progress bar, it's conflict with `--console`.
-	ShowBar bool `json:"show_bar,omitempty"`
+	ShowBar bool `yaml:"show_bar,omitempty" mapstructure:"show_bar,omitempty"`
 
-	// Console shows log on console, it's conflict with `--showbar`.
-	Console bool `json:"console,omitempty" yaml:"console,omitempty"`
-
-	// Verbose indicates whether to be verbose.
-	// If set true, log level will be 'debug'.
-	Verbose bool `json:"verbose,omitempty"`
+	RateLimit rate.Limit
 
 	// Config file paths,
 	// default:["/etc/dragonfly/dfget.yaml","/etc/dragonfly.conf"].
@@ -106,10 +109,10 @@ type ClientOption struct {
 	//ConfigFiles []string `json:"-"`
 
 	// MoreDaemonOptions indicates more options passed to daemon by command line.
-	MoreDaemonOptions string `json:"more_daemon_options,omitempty"`
+	MoreDaemonOptions string `yaml:"more_daemon_options,omitempty" mapstructure:"more_daemon_options,omitempty"`
 }
 
-func NewClientOption() *ClientOption {
+func NewDfgetConfig() *ClientOption {
 	return &dfgetConfig
 }
 
@@ -124,6 +127,22 @@ func (cfg *ClientOption) Validate() error {
 
 	if err := cfg.checkOutput(); err != nil {
 		return errors.Wrapf(dferrors.ErrInvalidArgument, "output: %v", err)
+	}
+
+	return nil
+}
+
+func (cfg *ClientOption) Convert(args []string) error {
+	if cfg.URL == "" && len(args) > 0 {
+		cfg.URL = args[0]
+	}
+
+	if cfg.Digest != "" {
+		cfg.Identifier = ""
+	}
+
+	if cfg.Console {
+		cfg.ShowBar = false
 	}
 
 	return nil

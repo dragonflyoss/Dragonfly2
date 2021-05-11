@@ -33,10 +33,6 @@ var (
 	cfg *config.Config
 )
 
-const (
-	cdnSystemEnvPrefix = "cdn"
-)
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "cdn",
@@ -68,9 +64,8 @@ func Execute() {
 func init() {
 	// Initialize default cdn system config
 	cfg = config.New()
-
 	// Initialize cobra
-	common.InitCobra(rootCmd, true, cdnSystemEnvPrefix, cfg)
+	common.InitCobra(rootCmd, true, cfg)
 }
 
 func runCdnSystem() error {

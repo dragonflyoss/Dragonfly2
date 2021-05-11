@@ -31,9 +31,9 @@ const (
 )
 
 type NetAddr struct {
-	Type NetworkType `json:"type" yaml:"type"`
+	Type NetworkType `mapstructure:"type" yaml:"type"`
 	// see https://github.com/grpc/grpc/blob/master/doc/naming.md
-	Addr string `json:"addr" yaml:"addr"`
+	Addr string `mapstructure:"addr" yaml:"addr"`
 }
 
 func (n NetAddr) GetEndpoint() string {

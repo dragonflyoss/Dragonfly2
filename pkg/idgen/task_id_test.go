@@ -23,11 +23,11 @@ import (
 )
 
 func TestGenerateTaskId(t *testing.T) {
-	taskId := GenerateTaskId("http://alibaba.com/path/xx", "", nil, "")
+	taskId := GenerateTaskID("http://alibaba.com/path/xx", "", nil, "")
 	assert.NotEmpty(t, taskId)
 }
 
 func TestGenerateTwinsTaskId(t *testing.T) {
-	taskId := GenerateTwinsTaskId("http://alibaba.com/path/xx", "", nil, "", "peerId")
+	taskId := GenerateTwinsTaskID("http://alibaba.com/path/xx", "", nil, "", "peerId")
 	assert.NotEmpty(t, taskId)
 }

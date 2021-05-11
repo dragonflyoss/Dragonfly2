@@ -28,6 +28,9 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
@@ -72,7 +75,20 @@ type peerHost struct {
 	PieceManager    peer.PieceManager
 }
 
-func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost, error) {
+func New(opt *config.PeerHostOption) (PeerHost, error) {
+
+	host := &scheduler.PeerHost{
+		Uuid:           idgen.UUIDString(),
+		Ip:             opt.Host.AdvertiseIP,
+		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
+		DownPort:       0,
+		HostName:       iputils.HostName,
+		SecurityDomain: opt.Host.SecurityDomain,
+		Location:       opt.Host.Location,
+		Idc:            opt.Host.IDC,
+		NetTopology:    opt.Host.NetTopology,
+	}
+
 	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs)
 	if err != nil {
 		return nil, err
@@ -147,7 +163,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 		once:          &sync.Once{},
 		done:          make(chan bool),
 		schedPeerHost: host,
-		Option:        opt,
+		Option:        *opt,
 
 		ServiceManager:  serviceManager,
 		PeerTaskManager: peerTaskManager,
@@ -155,7 +171,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 		ProxyManager:    proxyManager,
 		UploadManager:   uploadManager,
 		StorageManager:  storageManager,
-		GCManager:       gc.NewManager(opt.GCInterval.Duration),
+		GCManager:       gc.NewManager(opt.GCInterval),
 	}, nil
 }
 
@@ -240,7 +256,8 @@ func (ph *peerHost) prepareTCPListener(opt config.ListenOption, withTLS bool) (n
 
 func (ph *peerHost) Serve() error {
 	ph.GCManager.Start()
-
+	// todo fix
+	ph.Option.Download.DownloadGRPC.UnixListen.Socket = dfpath.DaemonSockPath
 	// prepare download service listen
 	if ph.Option.Download.DownloadGRPC.UnixListen == nil {
 		return errors.New("download grpc unix listen option is empty")
@@ -337,17 +354,17 @@ func (ph *peerHost) Serve() error {
 		return nil
 	})
 
-	if ph.Option.AliveTime.Duration > 0 {
+	if ph.Option.AliveTime > 0 {
 		g.Go(func() error {
 			select {
-			case <-time.After(ph.Option.AliveTime.Duration):
+			case <-time.After(ph.Option.AliveTime):
 				var keepalives = []clientutil.KeepAlive{
 					ph.StorageManager,
 					ph.ServiceManager,
 				}
 				var keep bool
 				for _, keepalive := range keepalives {
-					if keepalive.Alive(ph.Option.AliveTime.Duration) {
+					if keepalive.Alive(ph.Option.AliveTime) {
 						keep = true
 					}
 				}
