@@ -16,10 +16,6 @@
 
 package config
 
-const (
-	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yaml"
-)
-
 type Config struct {
 	Console   bool                  `yaml:"console"`
 	Verbose   bool                  `yaml:"verbose"`

@@ -101,7 +101,7 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 		schedulerNode string
 		res           interface{}
 	)
-	key := idgen.GenerateTaskID(ptr.Url, ptr.Filter, ptr.UrlMata, ptr.BizId)
+	key := idgen.TaskID(ptr.Url, ptr.Filter, ptr.UrlMata, ptr.BizId)
 	logger.WithPeerID(ptr.PeerId).Infof("generate hash key taskId: %s and start to register peer task for peer_id(%s) url(%s)", key, ptr.PeerId, ptr.Url)
 	if res, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
