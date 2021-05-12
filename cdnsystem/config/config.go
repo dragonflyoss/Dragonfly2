@@ -104,14 +104,12 @@ func NewDefaultBaseProperties() *BaseProperties {
 		DownloadPort:            DefaultDownloadPort,
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
 		MaxBandwidth:            DefaultMaxBandwidth,
-		EnableProfiler:          DefaultEnableProfiler,
 		FailAccessInterval:      DefaultFailAccessInterval,
 		GCInitialDelay:          DefaultGCInitialDelay,
 		GCMetaInterval:          DefaultGCMetaInterval,
 		GCStorageInterval:       DefaultGCStorageInterval,
 		TaskExpireTime:          DefaultTaskExpireTime,
 		StoragePattern:          DefaultStoragePattern,
-		Console:                 DefaultConsole,
 		AdvertiseIP:             iputils.HostIp,
 	}
 }
@@ -134,10 +132,6 @@ type BaseProperties struct {
 	// MaxBandwidth is the network bandwidth that cdn system can use.
 	// default: 200 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
 	MaxBandwidth unit.Bytes `yaml:"maxBandwidth"`
-
-	// Whether to enable profiler
-	// default: false
-	EnableProfiler bool `yaml:"enableProfiler"`
 
 	// AdvertiseIP is used to set the ip that we advertise to other peer in the p2p-network.
 	// By default, the first non-loop address is advertised.
@@ -168,7 +162,4 @@ type BaseProperties struct {
 
 	// disk/hybrid/memory
 	StoragePattern string `yaml:"storagePattern"`
-
-	// Console shows log on console
-	Console bool `yaml:"console"`
 }
