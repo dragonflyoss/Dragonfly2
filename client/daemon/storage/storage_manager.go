@@ -456,24 +456,28 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 
 func (s *storageManager) TryGC() (bool, error) {
 	var markedTasks []PeerTaskMetaData
-	var totalSize int64
+	var totalNotMarkedSize int64
 	s.tasks.Range(func(key, task interface{}) bool {
-		totalSize += task.(*localTaskStore).ContentLength
-
 		if task.(*localTaskStore).CanReclaim() {
 			task.(*localTaskStore).MarkReclaim()
 			markedTasks = append(markedTasks, key.(PeerTaskMetaData))
 		} else {
+			// just calculate not reclaimed task
+			totalNotMarkedSize += task.(*localTaskStore).ContentLength
 			logger.Debugf("task %s/%s not reach gc time",
 				key.(PeerTaskMetaData).TaskID, key.(PeerTaskMetaData).PeerID)
 		}
 		return true
 	})
 
-	if s.storeOption.DiskGCThreshold.SizeInBytes > 0 && totalSize > s.storeOption.DiskGCThreshold.SizeInBytes {
+	if s.storeOption.DiskGCThreshold.SizeInBytes > 0 && totalNotMarkedSize > s.storeOption.DiskGCThreshold.SizeInBytes {
 		logger.Infof("quota threshold reached, start gc oldest task")
 		var tasks []*localTaskStore
 		s.tasks.Range(func(key, task interface{}) bool {
+			// skip reclaimed task
+			if task.(*localTaskStore).reclaimMarked {
+				return true
+			}
 			tasks = append(tasks, task.(*localTaskStore))
 			return true
 		})
@@ -486,8 +490,8 @@ func (s *storageManager) TryGC() (bool, error) {
 			logger.Infof("quota threshold reached, mark task %s/%s reclaimed, last access: %s, size: %s",
 				task.TaskID, task.PeerID, task.lastAccess.Format(time.RFC3339Nano),
 				units.BytesSize(float64(task.ContentLength)))
-			totalSize -= task.ContentLength
-			if totalSize < s.storeOption.DiskGCThreshold.SizeInBytes {
+			totalNotMarkedSize -= task.ContentLength
+			if totalNotMarkedSize < s.storeOption.DiskGCThreshold.SizeInBytes {
 				break
 			}
 		}
