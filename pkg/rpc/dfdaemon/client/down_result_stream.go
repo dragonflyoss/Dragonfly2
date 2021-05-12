@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"github.com/pkg/errors"
@@ -82,7 +83,16 @@ func (drs *DownResultStream) initStream() error {
 }
 
 func (drs *DownResultStream) Recv() (dr *dfdaemon.DownResult, err error) {
-	drs.dc.UpdateAccessNodeMap(drs.hashKey)
+	defer func() {
+		if dr != nil {
+			if dr.TaskId != drs.hashKey {
+				logger.WithPeerID(dr.PeerId).Warnf("down result stream correct taskId from %s to %s", drs.hashKey, dr.TaskId)
+				drs.dc.Connection.CorrectKey2NodeRelation(drs.hashKey, dr.TaskId)
+				drs.hashKey = dr.TaskId
+			}
+		}
+	}()
+	drs.dc.UpdateAccessNodeMapByHashKey(drs.hashKey)
 	if dr, err = drs.stream.Recv(); err != nil && err != io.EOF {
 		dr, err = drs.retryRecv(err)
 	}

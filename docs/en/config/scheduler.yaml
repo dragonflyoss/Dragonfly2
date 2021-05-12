@@ -22,3 +22,6 @@ cdn:
       ip: "127.0.0.1"
       rpc-port: 8003
       download-port: 8001
+
+# the service address that provides the configuration item
+configServer: 127.0.0.1:8004

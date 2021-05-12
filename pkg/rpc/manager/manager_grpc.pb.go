@@ -7,10 +7,12 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // ManagerClient is the client API for Manager service.
@@ -24,9 +26,11 @@ type ManagerClient interface {
 	// so need retry one times to get latest servers
 	//
 	// 3. manager actively triggers fresh
-	GetSchedulers(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerNodes, error)
-	// keep alive for cdn or scheduler and receives management configuration
-	KeepAlive(ctx context.Context, in *HeartRequest, opts ...grpc.CallOption) (*ManagementConfig, error)
+	GetSchedulers(ctx context.Context, in *GetSchedulersRequest, opts ...grpc.CallOption) (*SchedulerNodes, error)
+	// keep alive for cdn or scheduler
+	KeepAlive(ctx context.Context, in *KeepAliveRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// get cluster config for cdn or scheduler(client) from manager
+	GetClusterConfig(ctx context.Context, in *GetClusterConfigRequest, opts ...grpc.CallOption) (*ClusterConfig, error)
 }
 
 type managerClient struct {
@@ -37,7 +41,7 @@ func NewManagerClient(cc grpc.ClientConnInterface) ManagerClient {
 	return &managerClient{cc}
 }
 
-func (c *managerClient) GetSchedulers(ctx context.Context, in *NavigatorRequest, opts ...grpc.CallOption) (*SchedulerNodes, error) {
+func (c *managerClient) GetSchedulers(ctx context.Context, in *GetSchedulersRequest, opts ...grpc.CallOption) (*SchedulerNodes, error) {
 	out := new(SchedulerNodes)
 	err := c.cc.Invoke(ctx, "/manager.Manager/GetSchedulers", in, out, opts...)
 	if err != nil {
@@ -46,9 +50,18 @@ func (c *managerClient) GetSchedulers(ctx context.Context, in *NavigatorRequest,
 	return out, nil
 }
 
-func (c *managerClient) KeepAlive(ctx context.Context, in *HeartRequest, opts ...grpc.CallOption) (*ManagementConfig, error) {
-	out := new(ManagementConfig)
+func (c *managerClient) KeepAlive(ctx context.Context, in *KeepAliveRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/manager.Manager/KeepAlive", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *managerClient) GetClusterConfig(ctx context.Context, in *GetClusterConfigRequest, opts ...grpc.CallOption) (*ClusterConfig, error) {
+	out := new(ClusterConfig)
+	err := c.cc.Invoke(ctx, "/manager.Manager/GetClusterConfig", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,9 +79,11 @@ type ManagerServer interface {
 	// so need retry one times to get latest servers
 	//
 	// 3. manager actively triggers fresh
-	GetSchedulers(context.Context, *NavigatorRequest) (*SchedulerNodes, error)
-	// keep alive for cdn or scheduler and receives management configuration
-	KeepAlive(context.Context, *HeartRequest) (*ManagementConfig, error)
+	GetSchedulers(context.Context, *GetSchedulersRequest) (*SchedulerNodes, error)
+	// keep alive for cdn or scheduler
+	KeepAlive(context.Context, *KeepAliveRequest) (*emptypb.Empty, error)
+	// get cluster config for cdn or scheduler(client) from manager
+	GetClusterConfig(context.Context, *GetClusterConfigRequest) (*ClusterConfig, error)
 	mustEmbedUnimplementedManagerServer()
 }
 
@@ -76,11 +91,14 @@ type ManagerServer interface {
 type UnimplementedManagerServer struct {
 }
 
-func (UnimplementedManagerServer) GetSchedulers(context.Context, *NavigatorRequest) (*SchedulerNodes, error) {
+func (UnimplementedManagerServer) GetSchedulers(context.Context, *GetSchedulersRequest) (*SchedulerNodes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSchedulers not implemented")
 }
-func (UnimplementedManagerServer) KeepAlive(context.Context, *HeartRequest) (*ManagementConfig, error) {
+func (UnimplementedManagerServer) KeepAlive(context.Context, *KeepAliveRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method KeepAlive not implemented")
+}
+func (UnimplementedManagerServer) GetClusterConfig(context.Context, *GetClusterConfigRequest) (*ClusterConfig, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetClusterConfig not implemented")
 }
 func (UnimplementedManagerServer) mustEmbedUnimplementedManagerServer() {}
 
@@ -92,11 +110,11 @@ type UnsafeManagerServer interface {
 }
 
 func RegisterManagerServer(s grpc.ServiceRegistrar, srv ManagerServer) {
-	s.RegisterService(&_Manager_serviceDesc, srv)
+	s.RegisterService(&Manager_ServiceDesc, srv)
 }
 
 func _Manager_GetSchedulers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NavigatorRequest)
+	in := new(GetSchedulersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -108,13 +126,13 @@ func _Manager_GetSchedulers_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: "/manager.Manager/GetSchedulers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).GetSchedulers(ctx, req.(*NavigatorRequest))
+		return srv.(ManagerServer).GetSchedulers(ctx, req.(*GetSchedulersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Manager_KeepAlive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HeartRequest)
+	in := new(KeepAliveRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -126,12 +144,33 @@ func _Manager_KeepAlive_Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: "/manager.Manager/KeepAlive",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).KeepAlive(ctx, req.(*HeartRequest))
+		return srv.(ManagerServer).KeepAlive(ctx, req.(*KeepAliveRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Manager_serviceDesc = grpc.ServiceDesc{
+func _Manager_GetClusterConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClusterConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagerServer).GetClusterConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/manager.Manager/GetClusterConfig",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagerServer).GetClusterConfig(ctx, req.(*GetClusterConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Manager_ServiceDesc is the grpc.ServiceDesc for Manager service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Manager_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "manager.Manager",
 	HandlerType: (*ManagerServer)(nil),
 	Methods: []grpc.MethodDesc{
@@ -143,7 +182,11 @@ var _Manager_serviceDesc = grpc.ServiceDesc{
 			MethodName: "KeepAlive",
 			Handler:    _Manager_KeepAlive_Handler,
 		},
+		{
+			MethodName: "GetClusterConfig",
+			Handler:    _Manager_GetClusterConfig_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/rpc/manager/manager.proto",
+	Metadata: "manager.proto",
 }

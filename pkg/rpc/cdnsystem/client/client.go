@@ -18,7 +18,7 @@ package client
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -27,30 +27,77 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	mgClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
 
-var sc *cdnClient
+func GetClientByAddr(adders []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
+	if len(adders) == 0 {
+		return nil, errors.New("address list of cdn is empty")
+	}
+	cc := &cdnClient{
+		rpc.NewConnection(context.Background(), "cdn-static", adders, []rpc.ConnOption{
+			rpc.WithConnExpireTime(60 * time.Second),
+			rpc.WithDialOption(opts),
+		}),
+	}
+	return cc, nil
+}
+
+func GetClientByConfigServer(cfgServer mgClient.ManagerClient, cdnMap map[string]*config.CDNServerConfig, opts ...grpc.DialOption) (CdnClient, error) {
+	watcher, err := newCdnListWatcher(cfgServer, 10*time.Second)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create cdn list watcher")
+	}
+	sc := &cdnClient{
+		Connection: rpc.NewConnection(context.Background(), "cdn-dynamic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+			rpc.WithConnExpireTime(60 * time.Second),
+			rpc.WithDialOption(opts),
+		}),
+	}
+	go func() {
+		out := watcher.Watch()
+		for adders := range out {
+			var (
+				dfAdders []dfnet.NetAddr
+			)
+			for i := range adders {
+				cdnMap[adders[i].HostInfo.HostName] = &config.CDNServerConfig{
+					Name:         adders[i].HostInfo.HostName,
+					IP:           adders[i].HostInfo.Ip,
+					RpcPort:      adders[i].RpcPort,
+					DownloadPort: adders[i].DownPort,
+				}
+				dfAdders = append(dfAdders, dfnet.NetAddr{
+					Type: dfnet.TCP,
+					Addr: fmt.Sprintf("%s:%d", adders[i].HostInfo.Ip, adders[i].RpcPort),
+				})
+			}
+			sc.Connection.UpdateState(dfAdders)
+		}
+	}()
+	return sc, nil
+}
 
 var once sync.Once
+var elasticCdnClient *cdnClient
 
-func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
+func GetElasticClientByAdders(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
 	once.Do(func() {
-		sc = &cdnClient{
-			rpc.NewConnection(context.Background(), "cdn", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
-				rpc.WithConnExpireTime(5 * time.Minute),
+		elasticCdnClient = &cdnClient{
+			rpc.NewConnection(context.Background(), "cdn-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+				rpc.WithConnExpireTime(30 * time.Second),
 				rpc.WithDialOption(opts),
 			}),
 		}
 	})
-	if len(addrs) == 0 {
-		return nil, errors.New("address list of cdn is empty")
-	}
-	err := sc.Connection.AddServerNodes(addrs)
+	err := elasticCdnClient.Connection.AddServerNodes(addrs)
 	if err != nil {
 		return nil, err
 	}
-	return sc, nil
+	return elasticCdnClient, nil
 }
 
 // see cdnsystem.CdnClient
@@ -58,38 +105,40 @@ type CdnClient interface {
 	ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error)
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
+
+	Close() error
 }
 
 type cdnClient struct {
 	*rpc.Connection
 }
 
-func (sc *cdnClient) getCdnClient(key string, stick bool) (cdnsystem.SeederClient, string, error) {
-	clientConn, err := sc.Connection.GetClientConn(key, stick)
+func (cc *cdnClient) getCdnClient(key string, stick bool) (cdnsystem.SeederClient, string, error) {
+	clientConn, err := cc.Connection.GetClientConn(key, stick)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrapf(err, "failed to get ClientConn for hashKey %s", key)
 	}
 	return cdnsystem.NewSeederClient(clientConn), clientConn.Target(), nil
 }
 
-func (sc *cdnClient) getSeederClientWithTarget(target string) (cdnsystem.SeederClient, error) {
-	conn, err := sc.Connection.GetClientConnByTarget(target)
+func (cc *cdnClient) getSeederClientWithTarget(target string) (cdnsystem.SeederClient, error) {
+	conn, err := cc.Connection.GetClientConnByTarget(target)
 	if err != nil {
 		return nil, err
 	}
 	return cdnsystem.NewSeederClient(conn), nil
 }
 
-func (sc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error) {
-	return newPieceSeedStream(sc, ctx, sr.TaskId, sr, opts)
+func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error) {
+	return newPieceSeedStream(cc, ctx, sr.TaskId, sr, opts)
 }
 
-func (sc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
+func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		defer func() {
 			logger.WithTaskID(req.TaskId).Infof("invoke cdn node %s GetPieceTasks", addr.GetEndpoint())
 		}()
-		if client, err := sc.getSeederClientWithTarget(addr.GetEndpoint()); err != nil {
+		if client, err := cc.getSeederClientWithTarget(addr.GetEndpoint()); err != nil {
 			return nil, err
 		} else {
 			return client.GetPieceTasks(ctx, req, opts...)
@@ -99,4 +148,9 @@ func (sc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 		return res.(*base.PiecePacket), nil
 	}
 	return nil, err
+}
+
+func init() {
+	var cc *cdnClient = nil
+	var _ CdnClient = cc
 }

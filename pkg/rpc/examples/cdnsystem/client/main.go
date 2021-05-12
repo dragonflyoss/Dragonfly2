@@ -17,11 +17,11 @@
 package main
 
 import (
+	"sync"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
-	"sync"
 )
 
 import (
@@ -49,15 +49,6 @@ func main() {
 		go func() {
 			defer wg.Done()
 			psc, _ := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-				//TaskId: "test1",
-				//Url:    "oss://alimonitor-monitor/serverdd.xml",
-				//UrlMeta: &base.UrlMeta{
-				//	Header: map[string]string{
-				//		"endpoint":        "http://oss-cn-hangzhou-zmf.aliyuncs.com",
-				//		"accessKeyID":     "RX8yefyaWDWf15SV",
-				//		"accessKeySecret": "hPExQDzDPHepZA7W6N5U7skJqLZGhy",
-				//	},
-				//},
 				TaskId: "test2",
 				Url: "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
 				Filter: "",
@@ -74,31 +65,4 @@ func main() {
 	}
 	wg.Wait()
 	fmt.Println("client finish")
-}
-
-func main2() {
-	c, err := client.GetClientByAddr([]dfnet.NetAddr{
-		{
-			Type: dfnet.TCP,
-			Addr: "localhost:8003",
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	psc, err := c.GetPieceTasks(context.TODO(), dfnet.NetAddr{
-		Type: dfnet.TCP,
-		Addr: "localhost:8003",
-	}, &base.PieceTaskRequest{
-		TaskId:   "test",
-		SrcPid:   "11.11.11.11",
-		StartNum: 1,
-		Limit:    4,
-	})
-	if err != nil {
-		fmt.Printf("%v", err)
-	}
-
-	fmt.Printf("client finish:%v", psc)
 }
