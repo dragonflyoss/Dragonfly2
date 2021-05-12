@@ -256,7 +256,7 @@ func (ph *peerHost) prepareTCPListener(opt config.ListenOption, withTLS bool) (n
 
 func (ph *peerHost) Serve() error {
 	ph.GCManager.Start()
-	// todo fix
+	// todo remove this field, and use directly dfpath.DaemonSockPath
 	ph.Option.Download.DownloadGRPC.UnixListen.Socket = dfpath.DaemonSockPath
 	// prepare download service listen
 	if ph.Option.Download.DownloadGRPC.UnixListen == nil {

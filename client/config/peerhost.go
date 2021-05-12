@@ -141,7 +141,7 @@ type HostOption struct {
 }
 
 type DownloadOption struct {
-	TotalRateLimit   clientutil.RateLimit `mapstructure:"total_rate_limit" yaml:"total_rate_limit"`
+	TotalRateLimit   clientutil.RateLimit `mapstructure:"total-rate-limit" yaml:"total-rate-limit"`
 	PerPeerRateLimit clientutil.RateLimit `mapstructure:"per_peer_rate_limit" yaml:"per_peer_rate_limit"`
 	DownloadGRPC     ListenOption         `mapstructure:"download_grpc" yaml:"download_grpc"`
 	PeerGRPC         ListenOption         `mapstructure:"peer_grpc" yaml:"peer_grpc"`
@@ -259,7 +259,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 
 type UploadOption struct {
 	ListenOption `yaml:",inline" mapstructure:",squash"`
-	RateLimit    clientutil.RateLimit `mapstructure:"rate_limit" yaml:"rate_limit"`
+	RateLimit    clientutil.RateLimit `mapstructure:"total-rate-limit" yaml:"total-rate-limit"`
 }
 
 type ListenOption struct {

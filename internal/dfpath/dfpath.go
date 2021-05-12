@@ -26,7 +26,6 @@ var (
 	DefaultDataDir = filepath.Join(WorkHome, "data")
 	DaemonSockPath = filepath.Join(WorkHome, "daemon.sock")
 	DaemonLockPath = filepath.Join(WorkHome, "daemon.lock")
-	DaemonPidPath  = filepath.Join(WorkHome, "daemon.pid")
 	DfgetLockPath  = filepath.Join(WorkHome, "dfget.lock")
 )
 

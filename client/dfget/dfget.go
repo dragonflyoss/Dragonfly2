@@ -88,7 +88,7 @@ func Download(cfg *config.DfgetConfig, client dfclient.DaemonClient) error {
 	var (
 		result *dfdaemongrpc.DownResult
 	)
-	// todo verbose  才开启progressbar
+	// todo showBar为true才使用
 	pb := progressbar.DefaultBytes(-1, "Downloading")
 	for {
 		result, err = down.Recv()
