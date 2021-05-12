@@ -66,7 +66,7 @@ func (s *SchedulerService) AddTask(task *types.Task) (*types.Task, error) {
 	}
 
 	// Task does not exist
-	ret := s.TaskManager.Set(task)
+	ret := s.TaskManager.Set(task.TaskId, task)
 	if err := s.CDNManager.TriggerTask(ret, s.TaskManager.PeerTask.CDNCallback); err != nil {
 		return nil, err
 	}
