@@ -45,6 +45,10 @@ func (n NetAddr) GetEndpoint() string {
 	}
 }
 
+func (n NetAddr) String() string{
+	return n.GetEndpoint()
+}
+
 func (n *NetAddr) UnmarshalJSON(b []byte) error {
 	var v interface{}
 	if err := json.Unmarshal(b, &v); err != nil {
@@ -120,4 +124,15 @@ func (n *NetAddr) unmarshal(unmarshal func(in []byte, out interface{}) (err erro
 	n.Addr = nt.Addr
 
 	return nil
+}
+
+func Convert2NetAddr(addrs []string) []NetAddr {
+	netAddrs := make([]NetAddr, 0, len(addrs))
+	for i := range addrs {
+		netAddrs = append(netAddrs, NetAddr{
+			Type: TCP,
+			Addr: addrs[i],
+		})
+	}
+	return netAddrs
 }

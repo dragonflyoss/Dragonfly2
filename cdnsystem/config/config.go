@@ -36,9 +36,10 @@ func New() *Config {
 
 // Config contains all configuration of cdn node.
 type Config struct {
-	Console         bool `yaml:"console"`
-	Verbose         bool `yaml:"verbose"`
-	PProfPort       int  `yaml:"pprofPort"`
+	Console         bool   `yaml:"console"`
+	Verbose         bool   `yaml:"verbose"`
+	PProfPort       int    `yaml:"pprofPort"`
+	ConfigServer    string `yaml:"configServer"`
 	*BaseProperties `yaml:"base"`
 	Plugins         map[PluginType][]*PluginProperties `yaml:"plugins"`
 }
@@ -160,6 +161,6 @@ type BaseProperties struct {
 	// default: 3min
 	TaskExpireTime time.Duration `yaml:"taskExpireTime"`
 
-	// disk/hybrid/memory
+	// StoragePattern disk/hybrid/memory
 	StoragePattern string `yaml:"storagePattern"`
 }

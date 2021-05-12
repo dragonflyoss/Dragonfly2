@@ -37,6 +37,20 @@ func (m *MockSchedulerClient) EXPECT() *MockSchedulerClientMockRecorder {
 	return m.recorder
 }
 
+// Close mocks base method.
+func (m *MockSchedulerClient) Close() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close.
+func (mr *MockSchedulerClientMockRecorder) Close() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockSchedulerClient)(nil).Close))
+}
+
 // LeaveTask mocks base method.
 func (m *MockSchedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) error {
 	m.ctrl.T.Helper()

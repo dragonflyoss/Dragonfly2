@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	server "d7y.io/dragonfly/v2/cdnsystem/daemon"
+	"d7y.io/dragonfly/v2/cdnsystem/server"
 	"d7y.io/dragonfly/v2/cmd/common"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
@@ -30,7 +30,6 @@ import (
 )
 
 var (
-	cfgFile string
 	cfg     *config.Config
 )
 
@@ -71,7 +70,7 @@ func init() {
 	cfg = config.New()
 
 	// Initialize cobra
-	common.InitCobra(rootCmd, &cfgFile, cdnSystemEnvPrefix, cfg)
+	common.InitCobra(rootCmd, cdnSystemEnvPrefix, cfg)
 }
 
 func runCdnSystem() error {

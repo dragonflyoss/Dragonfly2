@@ -17,14 +17,15 @@
 package config
 
 type Config struct {
-	Console   bool                  `yaml:"console"`
-	Verbose   bool                  `yaml:"verbose"`
-	PProfPort int                   `yaml:"pprofPort"`
-	Scheduler SchedulerConfig       `yaml:"scheduler"`
-	Server    ServerConfig          `yaml:"server"`
-	Worker    SchedulerWorkerConfig `yaml:"worker"`
-	CDN       CDNConfig             `yaml:"cdn"`
-	GC        GCConfig              `yaml:"gc"`
+	Console      bool                  `yaml:"console"`
+	Verbose      bool                  `yaml:"verbose"`
+	PProfPort    int                   `yaml:"pprofPort"`
+	ConfigServer string                `yaml:"configServer"`
+	Scheduler    SchedulerConfig       `yaml:"scheduler"`
+	Server       ServerConfig          `yaml:"server"`
+	Worker       SchedulerWorkerConfig `yaml:"worker"`
+	CDN          CDNConfig             `yaml:"cdn"`
+	GC           GCConfig              `yaml:"gc"`
 }
 
 type SchedulerConfig struct {
@@ -48,8 +49,8 @@ type SchedulerWorkerConfig struct {
 type CDNServerConfig struct {
 	Name         string `yaml:"name"`
 	IP           string `yaml:"ip"`
-	RpcPort      int    `yaml:"rpcPort"`
-	DownloadPort int    `yaml:"downloadPort"`
+	RpcPort      int32    `yaml:"rpcPort"`
+	DownloadPort int32    `yaml:"downloadPort"`
 }
 
 type CDNConfig struct {

@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
@@ -56,13 +57,14 @@ type PeerHostOption struct {
 	Verbose     bool   `yaml:"verbose" json:"verbose"`
 	Console     bool   `json:"console" yaml:"console"`
 
-	Scheduler SchedulerOption `json:"scheduler" yaml:"scheduler"`
-	Host      HostOption      `json:"host" yaml:"host"`
-	Download  DownloadOption  `json:"download" yaml:"download"`
-	Proxy     *ProxyOption    `json:"proxy" yaml:"proxy"`
-	Upload    UploadOption    `json:"upload" yaml:"upload"`
-	Storage   StorageOption   `json:"storage" yaml:"storage"`
-	Telemetry TelemetryOption `json:"telemetry" yaml:"telemetry"`
+	Scheduler    SchedulerOption `json:"scheduler" yaml:"scheduler"`
+	Host         HostOption      `json:"host" yaml:"host"`
+	Download     DownloadOption  `json:"download" yaml:"download"`
+	Proxy        *ProxyOption    `json:"proxy" yaml:"proxy"`
+	Upload       UploadOption    `json:"upload" yaml:"upload"`
+	Storage      StorageOption   `json:"storage" yaml:"storage"`
+	Telemetry    TelemetryOption `json:"telemetry" yaml:"telemetry"`
+	ConfigServer string          `json:"configServer" yaml:"configServer"`
 }
 
 func NewPeerHostOption() *PeerHostOption {
@@ -106,8 +108,8 @@ func (p *PeerHostOption) Convert() error {
 }
 
 func (p *PeerHostOption) Validate() error {
-	if len(p.Scheduler.NetAddrs) == 0 {
-		return errors.New("empty schedulers")
+	if len(p.Scheduler.NetAddrs) == 0 && stringutils.IsBlank(p.ConfigServer) {
+		return errors.New("empty schedulers and config server is not specified")
 	}
 	// ScheduleTimeout should not great then AliveTime
 	if p.AliveTime.Duration > 0 && p.Scheduler.ScheduleTimeout.Duration > p.AliveTime.Duration {
