@@ -16,20 +16,16 @@
 
 package config
 
-const (
-	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yaml"
-)
-
 type Config struct {
 	Console      bool                  `yaml:"console"`
 	Verbose      bool                  `yaml:"verbose"`
 	PProfPort    int                   `yaml:"pprofPort"`
+	ConfigServer string                `yaml:"configServer"`
 	Scheduler    SchedulerConfig       `yaml:"scheduler"`
 	Server       ServerConfig          `yaml:"server"`
 	Worker       SchedulerWorkerConfig `yaml:"worker"`
 	CDN          CDNConfig             `yaml:"cdn"`
 	GC           GCConfig              `yaml:"gc"`
-	ConfigServer string                `yaml:"configServer"`
 }
 
 type SchedulerConfig struct {
