@@ -139,6 +139,7 @@ func (cm *CDNManager) doCallback(task *types.Task, err *dferrors.DfError) {
 		if err != nil {
 			time.Sleep(time.Second * 5)
 			cm.taskManager.Delete(task.TaskId)
+			cm.taskManager.PeerTask.DeleteTask(task)
 		}
 	})
 }

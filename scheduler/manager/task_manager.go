@@ -17,6 +17,7 @@
 package manager
 
 import (
+	"fmt"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -53,47 +54,73 @@ func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
 	return tm
 }
 
-func (m *TaskManager) Add(task *types.Task) (*types.Task, bool) {
+func (m *TaskManager) Set(task *types.Task) *types.Task {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	v, ok := m.data[task.TaskId]
-	if ok {
-		return v, false
-	}
 
+	return m.set(task)
+}
+
+func (m *TaskManager) set(task *types.Task) *types.Task {
 	copyTask := types.CopyTask(task)
-
 	m.data[task.TaskId] = copyTask
-	return copyTask, true
+	return copyTask
+}
+
+func (m *TaskManager) Add(task *types.Task) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	if _, found := m.get(task.TaskId); found {
+		return fmt.Errorf("Task %s already exists", task.TaskId)
+	}
+	m.set(task)
+	return nil
+}
+
+func (m *TaskManager) Get(taskId string) (*types.Task, bool) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+
+	item, found := m.get(taskId)
+	if !found {
+		return nil, false
+	}
+	return item, true
+}
+
+func (m *TaskManager) get(taskId string) (*types.Task, bool) {
+	item, found := m.data[taskId]
+	return item, found
 }
 
 func (m *TaskManager) Delete(taskId string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	t, _ := m.data[taskId]
-	if t != nil {
-		logger.Infof("Task [%s] Statistic: %+v ", t.TaskId, t.Statistic.GetStatistic())
-		m.PeerTask.DeleteTask(t)
-	}
-	delete(m.data, taskId)
+
+	m.delete(taskId)
 	return
 }
 
-func (m *TaskManager) Get(taskId string) (h *types.Task, ok bool) {
-	m.lock.RLock()
-	defer m.lock.RUnlock()
-	h, ok = m.data[taskId]
-	return
+func (m *TaskManager) delete(taskId string) {
+	if _, found := m.data[taskId]; found {
+		delete(m.data, taskId)
+		return
+	}
 }
 
 func (m *TaskManager) Touch(taskId string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	t, _ := m.data[taskId]
-	if t != nil {
+
+	m.touch(taskId)
+	return
+}
+
+func (m *TaskManager) touch(taskId string) {
+	if t, ok := m.data[taskId]; ok {
 		t.LastActive = time.Now()
 	}
-	return
 }
 
 func (m *TaskManager) gcWorkingLoop() {

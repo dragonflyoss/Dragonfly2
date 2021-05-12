@@ -58,13 +58,20 @@ func (s *SchedulerService) GetTask(taskID string) (*types.Task, bool) {
 	return s.TaskManager.Get(taskID)
 }
 
-func (s *SchedulerService) AddTask(task *types.Task) (ret *types.Task, err error) {
-	ret, ok := s.TaskManager.Add(task)
-	if ok {
-		err = s.CDNManager.TriggerTask(ret, s.TaskManager.PeerTask.CDNCallback)
+func (s *SchedulerService) AddTask(task *types.Task) (*types.Task, error) {
+	// Task already exists
+	if ret, ok := s.TaskManager.Get(task.TaskId); ok {
+		s.TaskManager.PeerTask.AddTask(ret)
+		return ret, nil
+	}
+
+	// Task does not exist
+	ret := s.TaskManager.Set(task)
+	if err := s.CDNManager.TriggerTask(ret, s.TaskManager.PeerTask.CDNCallback); err != nil {
+		return nil, err
 	}
 	s.TaskManager.PeerTask.AddTask(ret)
-	return
+	return ret, nil
 }
 
 func (s *SchedulerService) ScheduleParent(task *types.PeerTask) (primary *types.PeerTask,
