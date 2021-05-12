@@ -54,17 +54,13 @@ func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.
 	return idgen.TaskID(url, filter, meta, bizID)
 }
 
-func (s *SchedulerService) GetTask(taskID string) (task *types.Task, err error) {
-	task, _ = s.TaskManager.Get(taskID)
-	if task == nil {
-		err = errors.New("peer task not exited: " + taskID)
-	}
-	return
+func (s *SchedulerService) GetTask(taskID string) (*types.Task, bool) {
+	return s.TaskManager.Get(taskID)
 }
 
 func (s *SchedulerService) AddTask(task *types.Task) (ret *types.Task, err error) {
-	ret, added := s.TaskManager.Add(task)
-	if added {
+	ret, ok := s.TaskManager.Add(task)
+	if ok {
 		err = s.CDNManager.TriggerTask(ret, s.TaskManager.PeerTask.CDNCallback)
 	}
 	s.TaskManager.PeerTask.AddTask(ret)
