@@ -137,7 +137,7 @@ func startServer(netAddr dfnet.NetAddr, impl interface{}, opts []grpc.ServerOpti
 	if err != nil {
 		return err
 	}
-
+	logger.GrpcLogger.Infof("rpc listening on: %s", netAddr.GetEndpoint())
 	server := grpc.NewServer(append(serverOpts, opts...)...)
 
 	switch netAddr.Type {
@@ -163,11 +163,11 @@ func startServer(netAddr dfnet.NetAddr, impl interface{}, opts []grpc.ServerOpti
 
 func StopServer() {
 	if unixServer != nil {
-		unixServer.Stop()
+		unixServer.GracefulStop()
 	}
 
 	if tcpServer != nil {
-		tcpServer.Stop()
+		tcpServer.GracefulStop()
 	}
 }
 

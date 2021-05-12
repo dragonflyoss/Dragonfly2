@@ -78,7 +78,7 @@ func newPeerPacketStream(sc *schedulerClient, ctx context.Context, hashKey strin
 
 func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
 	pps.lastPieceResult = pr
-	pps.sc.UpdateAccessNodeMap(pps.hashKey)
+	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
 	err = pps.stream.Send(pr)
 
 	if pr.PieceNum == common.EndOfPiece {
@@ -99,7 +99,7 @@ func (pps *peerPacketStream) closeSend() error {
 }
 
 func (pps *peerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
-	pps.sc.UpdateAccessNodeMap(pps.hashKey)
+	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
 	if pp, err = pps.stream.Recv(); err != nil && err != io.EOF {
 		pp, err = pps.retryRecv(err)
 	}

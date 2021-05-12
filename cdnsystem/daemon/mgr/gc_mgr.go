@@ -22,9 +22,9 @@ import "context"
 type GCMgr interface {
 
 	// StartGC starts to execute GC with a new goroutine.
-	StartGC(ctx context.Context)
+	StartGC(ctx context.Context) error
 
 	// GCTask is used to do the gc task job with specified taskID.
 	// The CDN file will be deleted when the full is true.
-	GCTask(ctx context.Context, taskID string, full bool)
+	GCTask(ctx context.Context, taskID string, full bool) error
 }

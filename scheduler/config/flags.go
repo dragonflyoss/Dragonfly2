@@ -55,8 +55,8 @@ func (cv *CdnValue) Set(value string) error {
 		cv.cc.Servers = append(cv.cc.Servers, CDNServerConfig{
 			Name:         vv[0],
 			IP:           vv[1],
-			RpcPort:      rpcPort,
-			DownloadPort: downloadPort,
+			RpcPort:      int32(rpcPort),
+			DownloadPort: int32(downloadPort),
 		})
 	}
 	return nil

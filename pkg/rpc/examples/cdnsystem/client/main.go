@@ -23,7 +23,6 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
@@ -62,31 +61,4 @@ func main() {
 	}
 	wg.Wait()
 	fmt.Println("client finish")
-}
-
-func main2() {
-	c, err := client.GetClientByAddr([]dfnet.NetAddr{
-		{
-			Type: dfnet.TCP,
-			Addr: "localhost:8003",
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	psc, err := c.GetPieceTasks(context.TODO(), dfnet.NetAddr{
-		Type: dfnet.TCP,
-		Addr: "localhost:8003",
-	}, &base.PieceTaskRequest{
-		TaskId:   "test",
-		SrcPid:   "11.11.11.11",
-		StartNum: 1,
-		Limit:    4,
-	})
-	if err != nil {
-		fmt.Printf("%v", err)
-	}
-
-	fmt.Printf("client finish:%v", psc)
 }

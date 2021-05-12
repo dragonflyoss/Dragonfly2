@@ -36,40 +36,46 @@ func (conn *Connection) startGC() {
 	logger.GrpcLogger.With("conn", conn.name).Debugf("start the gc connections job")
 	// execute the GC by fixed delay
 	ticker := time.NewTicker(conn.gcConnInterval)
-	for range ticker.C {
-		removedConnCount := 0
-		totalNodeSize := 0
-		startTime := time.Now()
+	for {
+		select {
+		case <-conn.ctx.Done():
+			logger.GrpcLogger.With("conn", conn.name).Info("conn close, exit gc")
+			return
+		case <-ticker.C:
+			removedConnCount := 0
+			totalNodeSize := 0
+			startTime := time.Now()
 
-		// todo use anther locker, @santong
-		//conn.rwMutex.Lock()
-		// range all connections and determine whether they are expired
-		conn.accessNodeMap.Range(func(node, accessTime interface{}) bool {
-			serverNode := node.(string)
-			totalNodeSize += 1
-			atime := accessTime.(time.Time)
-			if time.Since(atime) < conn.connExpireTime {
+			// todo use anther locker, @santong
+			//conn.rwMutex.Lock()
+			// range all connections and determine whether they are expired
+			conn.accessNodeMap.Range(func(node, accessTime interface{}) bool {
+				serverNode := node.(string)
+				totalNodeSize += 1
+				atime := accessTime.(time.Time)
+				if time.Since(atime) < conn.connExpireTime {
+					return true
+				}
+				conn.gcConn(serverNode)
+				removedConnCount++
 				return true
+			})
+			// todo use anther locker, @santong
+			//conn.rwMutex.Unlock()
+			// slow GC detected, report it with a log warning
+			if timeElapse := time.Since(startTime); timeElapse > conn.gcConnTimeout {
+				logger.GrpcLogger.With("conn", conn.name).Warnf("gc %d conns, cost:%.3f seconds", removedConnCount, timeElapse.Seconds())
 			}
-			conn.gcConn(serverNode)
-			removedConnCount++
-			return true
-		})
-		// todo use anther locker, @santong
-		//conn.rwMutex.Unlock()
-		// slow GC detected, report it with a log warning
-		if timeElapse := time.Since(startTime); timeElapse > conn.gcConnTimeout {
-			logger.GrpcLogger.With("conn", conn.name).Warnf("gc %d conns, cost:%.3f seconds", removedConnCount, timeElapse.Seconds())
+			actualTotal := 0
+			conn.node2ClientMap.Range(func(key, value interface{}) bool {
+				if value != nil {
+					actualTotal++
+				}
+				return true
+			})
+			logger.GrpcLogger.With("conn", conn.name).Infof("successfully gc clientConn count(%d), remainder count(%d), actualTotalConnCount(%d)",
+				removedConnCount, totalNodeSize-removedConnCount, actualTotal)
 		}
-		actualTotal := 0
-		conn.node2ClientMap.Range(func(key, value interface{}) bool {
-			if value != nil {
-				actualTotal++
-			}
-			return true
-		})
-		logger.GrpcLogger.With("conn", conn.name).Infof("successfully gc clientConn count(%d), remainder count(%d), actualTotalConnCount(%d)",
-			removedConnCount, totalNodeSize-removedConnCount, actualTotal)
 	}
 }
 
@@ -186,7 +192,6 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 				return res, cause
 			}
 		}
-
 		if i > 0 {
 			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))
 		}

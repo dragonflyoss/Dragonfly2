@@ -73,9 +73,17 @@ type peerHost struct {
 }
 
 func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost, error) {
-	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs)
+	var (
+		sched schedulerclient.SchedulerClient
+		err   error
+	)
+	if len(opt.Scheduler.NetAddrs) > 0 {
+		sched, err = schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs)
+	} else {
+		sched, err = schedulerclient.GetSchedulerByConfigServer(opt.ConfigServer)
+	}
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get schedulers")
 	}
 
 	// Storage.Option.DataPath is same with PeerHost DataDir

@@ -8,6 +8,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	// manager swag api
 	_ "d7y.io/dragonfly/v2/api/v2/manager"
 )
 
@@ -32,13 +33,40 @@ func main() {
 
 	api := router.Group("/api/v2")
 	{
-		configs := api.Group("/configs")
 		{
-			configs.POST("", handler.AddConfig)
-			configs.DELETE(":id", handler.DeleteConfig)
-			configs.POST(":id", handler.UpdateConfig)
-			configs.GET(":id", handler.GetConfig)
-			configs.GET("", handler.ListConfigs)
+			configs := api.Group("/scheduler/clusters")
+			configs.POST("", handler.CreateSchedulerCluster)
+			configs.DELETE(":id", handler.DestroySchedulerCluster)
+			configs.PATCH(":id", handler.UpdateSchedulerCluster)
+			configs.GET(":id", handler.GetSchedulerCluster)
+			configs.GET("", handler.ListSchedulerClusters)
+		}
+
+		{
+			configs := api.Group("/scheduler/instances")
+			configs.POST("", handler.CreateSchedulerInstance)
+			configs.DELETE(":id", handler.DestroySchedulerInstance)
+			configs.PATCH(":id", handler.UpdateSchedulerInstance)
+			configs.GET(":id", handler.GetSchedulerInstance)
+			configs.GET("", handler.ListSchedulerInstances)
+		}
+
+		{
+			configs := api.Group("/cdn/clusters")
+			configs.POST("", handler.CreateCDNCluster)
+			configs.DELETE(":id", handler.DestroyCDNCluster)
+			configs.PATCH(":id", handler.UpdateCDNCluster)
+			configs.GET(":id", handler.GetCDNCluster)
+			configs.GET("", handler.ListCDNClusters)
+		}
+
+		{
+			configs := api.Group("/cdn/instances")
+			configs.POST("", handler.CreateCDNInstance)
+			configs.DELETE(":id", handler.DestroyCDNInstance)
+			configs.PATCH(":id", handler.UpdateCDNInstance)
+			configs.GET(":id", handler.GetCDNInstance)
+			configs.GET("", handler.ListCDNInstances)
 		}
 	}
 
