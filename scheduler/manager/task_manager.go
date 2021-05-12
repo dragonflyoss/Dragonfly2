@@ -37,6 +37,7 @@ type TaskManager struct {
 
 func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
 	delay := time.Hour * 48
+	// TODO(Gaius) TaskDelay use the time.Duration
 	if cfg.GC.TaskDelay > 0 {
 		delay = time.Duration(cfg.GC.TaskDelay) * time.Millisecond
 	}
@@ -123,6 +124,7 @@ func (m *TaskManager) touch(taskId string) {
 	}
 }
 
+// TODO(Gaius) Use client GC manager
 func (m *TaskManager) gcWorkingLoop() {
 	for {
 		func() {
