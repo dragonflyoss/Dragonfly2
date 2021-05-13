@@ -98,16 +98,15 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	// get or create task
 	var isCdn = false
 	pkg.TaskId = s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMata, request.BizId, request.PeerId)
-	task, _ := s.service.GetTask(pkg.TaskId)
-	if task == nil {
-		task = &types.Task{
+	task, ok := s.service.GetTask(pkg.TaskId)
+	if !ok {
+		task, err = s.service.AddTask(&types.Task{
 			TaskId:  pkg.TaskId,
 			Url:     request.Url,
 			Filter:  request.Filter,
 			BizId:   request.BizId,
 			UrlMata: request.UrlMata,
-		}
-		task, err = s.service.AddTask(task)
+		})
 		if err != nil {
 			dferror, _ := err.(*dferrors.DfError)
 			if dferror != nil && dferror.Code == dfcodes.SchedNeedBackSource {
