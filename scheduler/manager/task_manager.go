@@ -17,6 +17,7 @@
 package manager
 
 import (
+	"fmt"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -36,6 +37,7 @@ type TaskManager struct {
 
 func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
 	delay := time.Hour * 48
+	// TODO(Gaius) TaskDelay use the time.Duration
 	if cfg.GC.TaskDelay > 0 {
 		delay = time.Duration(cfg.GC.TaskDelay) * time.Millisecond
 	}
@@ -53,49 +55,76 @@ func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
 	return tm
 }
 
-func (m *TaskManager) Add(task *types.Task) (*types.Task, bool) {
+func (m *TaskManager) Set(k string, task *types.Task) *types.Task {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	v, ok := m.data[task.TaskId]
-	if ok {
-		return v, false
-	}
 
+	return m.set(k, task)
+}
+
+func (m *TaskManager) set(k string, task *types.Task) *types.Task {
 	copyTask := types.CopyTask(task)
-
-	m.data[task.TaskId] = copyTask
-	return copyTask, true
+	m.data[k] = copyTask
+	return copyTask
 }
 
-func (m *TaskManager) Delete(taskId string) {
+func (m *TaskManager) Add(k string, task *types.Task) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	t, _ := m.data[taskId]
-	if t != nil {
-		logger.Infof("Task [%s] Statistic: %+v ", t.TaskId, t.Statistic.GetStatistic())
-		m.PeerTask.DeleteTask(t)
+
+	if _, found := m.get(k); found {
+		return fmt.Errorf("Task %s already exists", k)
 	}
-	delete(m.data, taskId)
-	return
+	m.set(k, task)
+	return nil
 }
 
-func (m *TaskManager) Get(taskId string) (h *types.Task, ok bool) {
+func (m *TaskManager) Get(k string) (*types.Task, bool) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
-	h, ok = m.data[taskId]
-	return
+
+	item, found := m.get(k)
+	if !found {
+		return nil, false
+	}
+	return item, true
 }
 
-func (m *TaskManager) Touch(taskId string) {
+func (m *TaskManager) get(k string) (*types.Task, bool) {
+	item, found := m.data[k]
+	return item, found
+}
+
+func (m *TaskManager) Delete(k string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	t, _ := m.data[taskId]
-	if t != nil {
-		t.LastActive = time.Now()
-	}
+
+	m.delete(k)
 	return
 }
 
+func (m *TaskManager) delete(k string) {
+	if _, found := m.data[k]; found {
+		delete(m.data, k)
+		return
+	}
+}
+
+func (m *TaskManager) Touch(k string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	m.touch(k)
+	return
+}
+
+func (m *TaskManager) touch(k string) {
+	if t, ok := m.data[k]; ok {
+		t.LastActive = time.Now()
+	}
+}
+
+// TODO(Gaius) Use client GC manager
 func (m *TaskManager) gcWorkingLoop() {
 	for {
 		func() {
