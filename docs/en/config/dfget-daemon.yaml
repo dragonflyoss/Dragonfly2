@@ -138,6 +138,8 @@ storage:
   #                            when user delete or change this file, this peer data will be corrupted
   # default is io.d7y.storage.v2.advance
   strategy: io.d7y.storage.v2.advance
+  # disk quota gc threshold, when the quota of all tasks exceeds the gc threshold, oldest tasks will be reclaimed.
+  disk_gc_threshold: 50Gi
 
 # proxy service config file location or detail config
 # proxy: ""
