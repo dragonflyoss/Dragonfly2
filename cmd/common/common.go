@@ -37,8 +37,8 @@ import (
 // InitCobra initializes flags binding and common sub cmds.
 // cfgFile is a pointer to configuration path, config is a pointer to configuration struct.
 func InitCobra(cmd *cobra.Command, envPrefix string, config interface{}) {
-	var cfgFile *string
-	cobra.OnInitialize(func() { initConfig(cfgFile, envPrefix, config) })
+	var cfgFile = ""
+	cobra.OnInitialize(func() { initConfig(&cfgFile, envPrefix, config) })
 
 	// Add flags
 	flagSet := cmd.Flags()
@@ -46,7 +46,7 @@ func InitCobra(cmd *cobra.Command, envPrefix string, config interface{}) {
 	flagSet.Bool("verbose", false, "whether use debug level logger and enable pprof")
 	flagSet.Int("pprofPort", 0, "listen port for pprof, only valid when the verbose option is true, default is random port")
 	flagSet.String("configServer", "", "the service address that provides the configuration item")
-	flagSet.StringVarP(cfgFile, "config", "f", "", "the path of configuration file")
+	flagSet.StringVarP(&cfgFile, "config", "f", "", "the path of configuration file")
 	
 	if err := viper.BindPFlags(flagSet); err != nil {
 		panic(errors.Wrap(err, "bind flags to viper"))
