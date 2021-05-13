@@ -30,7 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	mgClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -43,8 +43,8 @@ import (
 const TinyFileSize = 128
 
 type CDNManager struct {
+	config       config.CDNConfig
 	client       cdnClient.CdnClient
-	cdnInfoMap   map[string]*config.CDNServerConfig
 	lock         *sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
 	callbackList map[*types.Task][]*types.PeerTask
@@ -52,9 +52,9 @@ type CDNManager struct {
 	hostManager  *HostManager
 }
 
-func newCDNManager(cfg config.CDNConfig, taskManager *TaskManager, hostManager *HostManager, cfgServer mgClient.ManagerClient) *CDNManager {
+func newCDNManager(cfg config.CDNConfig, taskManager *TaskManager, hostManager *HostManager, managerClient client.ManagerClient) *CDNManager {
 	mgr := &CDNManager{
-		cdnInfoMap:   make(map[string]*config.CDNServerConfig),
+		config:       cfg,
 		lock:         new(sync.RWMutex),
 		callbackFns:  make(map[*types.Task]func(*types.PeerTask, *dferrors.DfError)),
 		callbackList: make(map[*types.Task][]*types.PeerTask),
@@ -64,7 +64,7 @@ func newCDNManager(cfg config.CDNConfig, taskManager *TaskManager, hostManager *
 
 	var (
 		seederClient cdnClient.CdnClient
-		err error
+		err          error
 	)
 
 	if cfgServer != nil {
@@ -84,6 +84,7 @@ func newCDNManager(cfg config.CDNConfig, taskManager *TaskManager, hostManager *
 	if err != nil {
 		logger.Errorf("create cdn client failed main addr: %v", err)
 	}
+
 	mgr.client = seederClient
 
 	return mgr
@@ -170,6 +171,10 @@ func (cm *CDNManager) AddToCallback(peerTask *types.PeerTask) {
 		cm.callbackList[peerTask.Task] = append(cm.callbackList[peerTask.Task], peerTask)
 	}
 	cm.lock.Unlock()
+}
+
+func (cm *CDNManager) getCDNAddrs() []dfnet.NetAddr {
+	return cm.cdnInfoMap[seederName]
 }
 
 func (cm *CDNManager) getCdnInfo(seederName string) *config.CDNServerConfig {

@@ -16,16 +16,48 @@
 
 package config
 
+import (
+	"time"
+
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"github.com/pkg/errors"
+)
+
 type Config struct {
-	Console      bool                  `yaml:"console"`
-	Verbose      bool                  `yaml:"verbose"`
-	PProfPort    int                   `yaml:"pprofPort"`
-	ConfigServer string                `yaml:"configServer"`
-	Scheduler    SchedulerConfig       `yaml:"scheduler"`
-	Server       ServerConfig          `yaml:"server"`
-	Worker       SchedulerWorkerConfig `yaml:"worker"`
-	CDN          CDNConfig             `yaml:"cdn"`
-	GC           GCConfig              `yaml:"gc"`
+	Console   bool                  `yaml:"console"`
+	Verbose   bool                  `yaml:"verbose"`
+	PProfPort int                   `yaml:"pprofPort"`
+	Manager   *ManagerConfig        `yaml:"manager"`
+	Scheduler SchedulerConfig       `yaml:"scheduler"`
+	Server    ServerConfig          `yaml:"server"`
+	Worker    SchedulerWorkerConfig `yaml:"worker"`
+	CDN       CDNConfig             `yaml:"cdn"`
+	GC        GCConfig              `yaml:"gc"`
+}
+
+func New() *Config {
+	return &config
+}
+
+func (c *Config) Convert() error {
+	return nil
+}
+
+func (c *Config) Validate() error {
+	if c.Manager != nil {
+		if len(c.Manager.NetAddrs) <= 0 {
+			return errors.New("empty config server is not specified")
+		}
+	}
+	return nil
+}
+
+type ManagerConfig struct {
+	// NetAddrs is manager addresses.
+	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
+
+	// ExpireTime is expire time for manager cache.
+	ExpireTime time.Duration `yaml:"expire"`
 }
 
 type SchedulerConfig struct {
@@ -49,8 +81,8 @@ type SchedulerWorkerConfig struct {
 type CDNServerConfig struct {
 	Name         string `yaml:"name"`
 	IP           string `yaml:"ip"`
-	RpcPort      int32    `yaml:"rpcPort"`
-	DownloadPort int32    `yaml:"downloadPort"`
+	RpcPort      int32  `yaml:"rpcPort"`
+	DownloadPort int32  `yaml:"downloadPort"`
 }
 
 type CDNConfig struct {
@@ -60,8 +92,4 @@ type CDNConfig struct {
 type GCConfig struct {
 	PeerTaskDelay int64 `yaml:"peerTaskDelay"`
 	TaskDelay     int64 `yaml:"taskDelay"`
-}
-
-func New() *Config {
-	return &config
 }

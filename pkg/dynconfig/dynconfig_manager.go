@@ -31,11 +31,11 @@ type dynconfigManager struct {
 	cache     cache.Cache
 	cachePath string
 	expire    time.Duration
-	client    managerClient
+	client    ManagerClient
 }
 
 // newDynconfigManager returns a new manager dynconfig instence
-func newDynconfigManager(cache cache.Cache, expire time.Duration, client managerClient) (*dynconfigManager, error) {
+func newDynconfigManager(cache cache.Cache, expire time.Duration, client ManagerClient) (*dynconfigManager, error) {
 	cachePath, err := defaultCacheFile()
 	if err != nil {
 		return nil, err

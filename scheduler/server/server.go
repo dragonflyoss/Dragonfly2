@@ -18,72 +18,72 @@ package server
 
 import (
 	"context"
+	"errors"
 
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	configServer "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/service/schedule_worker"
-	"github.com/pkg/errors"
 )
 
 type Server struct {
-	service      *service.SchedulerService
-	worker       schedule_worker.IWorker
-	server       *SchedulerServer
-	config       config.ServerConfig
-	configServer configServer.ManagerClient
-	running      bool
+	service       *service.SchedulerService
+	worker        schedule_worker.IWorker
+	server        *SchedulerServer
+	config        config.ServerConfig
+	managerClient client.ManagerClient
+	running       bool
 }
 
 func New(cfg *config.Config) (*Server, error) {
+	var err error
+
 	s := &Server{
 		running: false,
 		config:  cfg.Server,
 	}
-	if !stringutils.IsBlank(cfg.ConfigServer) {
-		cfgServer, err := configServer.NewClient([]dfnet.NetAddr{{
-			Type: dfnet.TCP,
-			Addr: cfg.ConfigServer,
-		}})
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create config server")
-		}
-		s.configServer = cfgServer
+
+	// Start manager client
+	s.managerClient, err = client.NewClient(cfg.Manager.NetAddrs)
+	if err != nil {
+		return nil, errors.New("start manager client failed")
 	}
-	s.service = service.NewSchedulerService(cfg, s.configServer)
+
+	s.service = service.NewSchedulerService(cfg, s.managerClient)
 	s.worker = schedule_worker.NewWorkerGroup(cfg, s.service)
 	s.server = NewSchedulerServer(cfg, WithSchedulerService(s.service),
 		WithWorker(s.worker))
+
 	return s, nil
 }
 
-func (s *Server) Serve() (err error) {
+func (s *Server) Serve() error {
 	port := s.config.Port
+	s.running = true
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	go s.worker.Serve()
 	defer s.worker.Stop()
 
-	s.running = true
 	logger.Infof("start server at port %d", port)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	if s.configServer != nil {
-		logger.Info("start scheduler keep alive")
-		s.configServer.KeepAlive(ctx, &manager.KeepAliveRequest{
-			HostName: iputils.HostName,
-			Type:     manager.ResourceType_Scheduler,
-		})
+	if err := rpc.StartTcpServer(port, port, s.server); err != nil {
+		return err
 	}
-	err = rpc.StartTcpServer(port, port, s.server)
-	return
+
+	// Start keepalive
+	logger.Info("start scheduler keep alive")
+	s.managerClient.KeepAlive(ctx, &manager.KeepAliveRequest{
+		HostName: iputils.HostName,
+		Type:     manager.ResourceType_Scheduler,
+	})
+
+	return nil
 }
 
 func (s *Server) Stop() (err error) {

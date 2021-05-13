@@ -46,7 +46,7 @@ type strategy interface {
 
 type Dynconfig struct {
 	sourceType      sourceType
-	managerClient   managerClient
+	managerClient   ManagerClient
 	localConfigPath string
 	cache           cache.Cache
 	expire          time.Duration
@@ -57,7 +57,7 @@ type Dynconfig struct {
 type Option func(d *Dynconfig) (*Dynconfig, error)
 
 // WithManagerClient set the manager client
-func WithManagerClient(c managerClient) Option {
+func WithManagerClient(c ManagerClient) Option {
 	return func(d *Dynconfig) (*Dynconfig, error) {
 		if d.sourceType != ManagerSourceType {
 			return nil, errors.New("the source type must be ManagerSourceType")
