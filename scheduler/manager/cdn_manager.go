@@ -30,7 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -43,8 +43,8 @@ import (
 const TinyFileSize = 128
 
 type CDNManager struct {
-	config       config.CDNConfig
 	client       cdnClient.CdnClient
+	servers      map[string]*config.CDNServerConfig
 	lock         *sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
 	callbackList map[*types.Task][]*types.PeerTask
@@ -52,42 +52,87 @@ type CDNManager struct {
 	hostManager  *HostManager
 }
 
-func newCDNManager(cfg config.CDNConfig, taskManager *TaskManager, hostManager *HostManager, managerClient client.ManagerClient) *CDNManager {
+func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *HostManager, dynconfig config.DynconfigInterface) (*CDNManager, error) {
 	mgr := &CDNManager{
-		config:       cfg,
-		lock:         new(sync.RWMutex),
-		callbackFns:  make(map[*types.Task]func(*types.PeerTask, *dferrors.DfError)),
-		callbackList: make(map[*types.Task][]*types.PeerTask),
+		lock:         &sync.RWMutex{},
+		callbackFns:  map[*types.Task]func(*types.PeerTask, *dferrors.DfError){},
+		callbackList: map[*types.Task][]*types.PeerTask{},
 		taskManager:  taskManager,
 		hostManager:  hostManager,
 	}
 
-	var (
-		seederClient cdnClient.CdnClient
-		err          error
-	)
-
-	if cfgServer != nil {
-		seederClient, err = cdnClient.GetClientByConfigServer(cfgServer, mgr.cdnInfoMap)
-	} else {
-		servers := cfg.Servers
-		var addrs []dfnet.NetAddr
-		for i, cdn := range servers {
-			addrs = append(addrs, dfnet.NetAddr{
-				Type: dfnet.TCP,
-				Addr: fmt.Sprintf("%s:%d", cdn.IP, cdn.RpcPort),
-			})
-			mgr.cdnInfoMap[cdn.Name] = &servers[i]
+	var addrs []dfnet.NetAddr
+	if cfg.Manager != nil {
+		dc, err := dynconfig.Get()
+		if err != nil {
+			return nil, err
 		}
-		seederClient, err = cdnClient.GetClientByAddr(addrs)
+
+		mgr.servers = cdnHostsToServers(dc.CdnHosts)
+		addrs = cdnHostsToNetAddrs(dc.CdnHosts)
+	} else {
+		mgr.servers = cdnServerConfigToServers(cfg.CDN.Servers)
+		addrs = cdnServerConfigToNetAddrs(cfg.CDN.Servers)
 	}
+
+	client, err := cdnClient.GetClientByAddr(addrs)
 	if err != nil {
-		logger.Errorf("create cdn client failed main addr: %v", err)
+		return nil, err
 	}
 
-	mgr.client = seederClient
+	mgr.client = client
+	return mgr, nil
+}
 
-	return mgr
+// cdnHostsToServers coverts manager.CdnHosts to map[string]*config.CDNServerConfig.
+func cdnHostsToServers(hosts []*manager.ServerInfo) map[string]*config.CDNServerConfig {
+	var servers map[string]*config.CDNServerConfig
+	for i := range hosts {
+		servers[hosts[i].HostInfo.HostName] = &config.CDNServerConfig{
+			Name:         hosts[i].HostInfo.HostName,
+			IP:           hosts[i].HostInfo.Ip,
+			RpcPort:      hosts[i].RpcPort,
+			DownloadPort: hosts[i].DownPort,
+		}
+	}
+
+	return servers
+}
+
+// cdnHostsToNetAddrs coverts manager.CdnHosts to []dfnet.NetAddr.
+func cdnHostsToNetAddrs(hosts []*manager.ServerInfo) []dfnet.NetAddr {
+	var netAddrs []dfnet.NetAddr
+	for i := range hosts {
+		netAddrs = append(netAddrs, dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: fmt.Sprintf("%s:%d", hosts[i].HostInfo.Ip, hosts[i].RpcPort),
+		})
+	}
+
+	return netAddrs
+}
+
+// cdnServerConfigToServers coverts []config.CDNServerConfig to map[string]*config.CDNServerConfig.
+func cdnServerConfigToServers(serverConfigs []config.CDNServerConfig) map[string]*config.CDNServerConfig {
+	var servers map[string]*config.CDNServerConfig
+	for i := range serverConfigs {
+		servers[serverConfigs[i].Name] = &serverConfigs[i]
+	}
+
+	return servers
+}
+
+// CDNServerConfigToNetAddrs coverts []config.CDNServerConfig to []dfnet.NetAddr.
+func cdnServerConfigToNetAddrs(serverConfigs []config.CDNServerConfig) []dfnet.NetAddr {
+	var netAddrs []dfnet.NetAddr
+	for i := range serverConfigs {
+		netAddrs = append(netAddrs, dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: fmt.Sprintf("%s:%d", serverConfigs[i].IP, serverConfigs[i].RpcPort),
+		})
+	}
+
+	return netAddrs
 }
 
 func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error) {
@@ -173,12 +218,9 @@ func (cm *CDNManager) AddToCallback(peerTask *types.PeerTask) {
 	cm.lock.Unlock()
 }
 
-func (cm *CDNManager) getCDNAddrs() []dfnet.NetAddr {
-	return cm.cdnInfoMap[seederName]
-}
-
-func (cm *CDNManager) getCdnInfo(seederName string) *config.CDNServerConfig {
-	return cm.cdnInfoMap[seederName]
+func (cm *CDNManager) getServer(name string) (*config.CDNServerConfig, bool) {
+	item, found := cm.servers[name]
+	return item, found
 }
 
 type CDNClient struct {
@@ -222,25 +264,24 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 	hostId := cm.getHostUuid(ps)
 	host, ok := cm.hostManager.Get(hostId)
 	if !ok {
-		ip, rpcPort, downPort := "", 0, 0
-		cdnInfo := cm.getCdnInfo(ps.SeederName)
-		if cdnInfo != nil {
-			ip, rpcPort, downPort = cdnInfo.IP, int(cdnInfo.RpcPort), int(cdnInfo.DownloadPort)
-		} else {
+		server, found := cm.getServer(ps.SeederName)
+		if !found {
 			logger.Errorf("get cdn by SeederName[%s] failed", ps.SeederName)
 		}
+
 		host = &types.Host{
 			Type: types.HostTypeCdn,
 			PeerHost: scheduler.PeerHost{
 				Uuid:     hostId,
 				HostName: ps.SeederName,
-				Ip:       ip,
-				RpcPort:  int32(rpcPort),
-				DownPort: int32(downPort),
+				Ip:       server.IP,
+				RpcPort:  server.RpcPort,
+				DownPort: server.DownloadPort,
 			},
 		}
 		host = cm.hostManager.Add(host)
 	}
+
 	pid := ps.PeerId
 	peerTask, _ := cm.taskManager.PeerTask.Get(pid)
 	if peerTask == nil {

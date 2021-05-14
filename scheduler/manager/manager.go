@@ -17,7 +17,6 @@
 package manager
 
 import (
-	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -27,14 +26,17 @@ type Manager struct {
 	HostManager *HostManager
 }
 
-func New(cfg *config.Config, managerClient client.ManagerClient) *Manager {
+func New(cfg *config.Config, dynconfig config.DynconfigInterface) (*Manager, error) {
 	hostManager := newHostManager()
 	taskManager := newTaskManager(cfg, hostManager)
-	cdnManager := newCDNManager(cfg.CDN, taskManager, hostManager, managerClient)
+	cdnManager, err := newCDNManager(cfg, taskManager, hostManager, dynconfig)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Manager{
 		CDNManager:  cdnManager,
 		TaskManager: taskManager,
 		HostManager: hostManager,
-	}
+	}, nil
 }

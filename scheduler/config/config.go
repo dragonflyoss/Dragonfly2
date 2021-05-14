@@ -31,7 +31,7 @@ type Config struct {
 	Scheduler SchedulerConfig       `yaml:"scheduler"`
 	Server    ServerConfig          `yaml:"server"`
 	Worker    SchedulerWorkerConfig `yaml:"worker"`
-	CDN       CDNConfig             `yaml:"cdn"`
+	CDN       *CDNConfig            `yaml:"cdn"`
 	GC        GCConfig              `yaml:"gc"`
 }
 
@@ -39,14 +39,14 @@ func New() *Config {
 	return &config
 }
 
-func (c *Config) Convert() error {
-	return nil
-}
-
 func (c *Config) Validate() error {
-	if c.Manager != nil {
-		if len(c.Manager.NetAddrs) <= 0 {
-			return errors.New("empty config server is not specified")
+	if c.Manager == nil || len(c.Manager.NetAddrs) <= 0 {
+		return errors.New("empty manager config is not specified")
+	}
+
+	if c.CDN != nil {
+		if len(c.CDN.Servers) <= 0 {
+			return errors.New("empty CDN server is not specified")
 		}
 	}
 	return nil

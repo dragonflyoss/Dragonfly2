@@ -27,7 +27,7 @@ var config = Config{
 	Scheduler: SchedulerConfig{
 		ABTest: false,
 	},
-	CDN: CDNConfig{
+	CDN: &CDNConfig{
 		Servers: []CDNServerConfig{
 			{
 				Name:         "cdn",

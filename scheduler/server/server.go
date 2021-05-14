@@ -48,13 +48,24 @@ func New(cfg *config.Config) (*Server, error) {
 		config:  cfg.Server,
 	}
 
-	// Start manager client
+	// Initialize manager client
 	s.managerClient, err = client.NewClient(cfg.Manager.NetAddrs)
 	if err != nil {
 		return nil, errors.New("start manager client failed")
 	}
 
-	s.service = service.NewSchedulerService(cfg, s.managerClient)
+	// Initialize dynconfig client
+	dynconfig, err := config.NewDynconfig(s.managerClient, cfg.Manager.ExpireTime)
+	if err != nil {
+		return nil, errors.New("start dynconfig client failed")
+	}
+
+	// Initialize scheduler service
+	s.service, err = service.NewSchedulerService(cfg, dynconfig)
+	if err != nil {
+		return nil, errors.New("start scheduler service failed")
+	}
+
 	s.worker = schedule_worker.NewWorkerGroup(cfg, s.service)
 	s.server = NewSchedulerServer(cfg, WithSchedulerService(s.service),
 		WithWorker(s.worker))

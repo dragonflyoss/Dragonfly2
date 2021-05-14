@@ -18,7 +18,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -27,8 +26,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	mgClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	"d7y.io/dragonfly/v2/scheduler/config"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
@@ -44,41 +41,6 @@ func GetClientByAddr(adders []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient
 		}),
 	}
 	return cc, nil
-}
-
-func GetClientByConfigServer(cfgServer mgClient.ManagerClient, cdnMap map[string]*config.CDNServerConfig, opts ...grpc.DialOption) (CdnClient, error) {
-	watcher, err := newCdnListWatcher(cfgServer, 10*time.Second)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create cdn list watcher")
-	}
-	sc := &cdnClient{
-		Connection: rpc.NewConnection(context.Background(), "cdn-dynamic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
-			rpc.WithConnExpireTime(60 * time.Second),
-			rpc.WithDialOption(opts),
-		}),
-	}
-	go func() {
-		out := watcher.Watch()
-		for adders := range out {
-			var (
-				dfAdders []dfnet.NetAddr
-			)
-			for i := range adders {
-				cdnMap[adders[i].HostInfo.HostName] = &config.CDNServerConfig{
-					Name:         adders[i].HostInfo.HostName,
-					IP:           adders[i].HostInfo.Ip,
-					RpcPort:      adders[i].RpcPort,
-					DownloadPort: adders[i].DownPort,
-				}
-				dfAdders = append(dfAdders, dfnet.NetAddr{
-					Type: dfnet.TCP,
-					Addr: fmt.Sprintf("%s:%d", adders[i].HostInfo.Ip, adders[i].RpcPort),
-				})
-			}
-			sc.Connection.UpdateState(dfAdders)
-		}
-	}()
-	return sc, nil
 }
 
 var once sync.Once
