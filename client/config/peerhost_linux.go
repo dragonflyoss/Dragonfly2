@@ -51,7 +51,7 @@ var peerHostConfig = PeerHostOption{
 	},
 	Host: HostOption{
 		ListenIP:       "0.0.0.0",
-		AdvertiseIP:    iputils.HostIp,
+		AdvertiseIP:    Attribute(iputils.HostIp),
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",

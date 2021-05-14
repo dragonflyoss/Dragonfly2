@@ -60,7 +60,15 @@ host:
   advertise_ip: 0.0.0.0
   # geographical location and network topology
   location: ""
-  idc: ""
+  # all attribute of host support two format
+  # idc: idc0 # static string
+  # or dynamic string from a shell command
+  # it's useful when cmdb is not enabled
+  idc:
+    command: echo idc1
+    regx: idc[\d]+
+    retry: 1
+    default: idc0
   security_domain: ""
   net_topology: ""
 

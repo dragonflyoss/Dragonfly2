@@ -173,7 +173,7 @@ func init() {
 		"enable verbose mode, all debug log will be display")
 	persistentflagSet.StringVar(&daemonConfig.WorkHome, "home", daemonConfig.WorkHome,
 		"the work home directory")
-	persistentflagSet.StringVar(&daemonConfig.Host.ListenIP, "ip", daemonConfig.Host.ListenIP,
+	persistentflagSet.StringVar((*string)(&daemonConfig.Host.ListenIP), "ip", string(daemonConfig.Host.ListenIP),
 		"IP address that server will listen on")
 	flagSet.IntVar(&daemonConfig.Upload.ListenOption.TCPListen.PortRange.Start, "port", daemonConfig.Upload.ListenOption.TCPListen.PortRange.Start,
 		"port number that server will listen on")
@@ -450,7 +450,7 @@ func spawnDaemon() error {
 		"--download-rate", fmt.Sprintf("%f", daemonConfig.Download.TotalRateLimit.Limit),
 		"--upload-port", fmt.Sprintf("%d", daemonConfig.Upload.TCPListen.PortRange.Start),
 		"--home", daemonConfig.WorkHome,
-		"--ip", daemonConfig.Host.ListenIP,
+		"--ip", string(daemonConfig.Host.ListenIP),
 		"--expiretime", daemonConfig.Storage.TaskExpireTime.String(),
 		"--alivetime", daemonConfig.AliveTime.String(),
 		"--grpc-unix-listen", daemonConfig.Download.DownloadGRPC.UnixListen.Socket,

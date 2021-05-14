@@ -17,6 +17,7 @@
 package unit
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -24,6 +25,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 )
 
 type Bytes int64
@@ -35,6 +37,7 @@ const (
 	GB       = 1024 * MB
 	TB       = 1024 * GB
 	PB       = 1024 * TB
+	EB       = 1024 * PB
 )
 
 func (f Bytes) ToNumber() int64 {
@@ -89,7 +92,7 @@ func (f Bytes) String() string {
 	return fmt.Sprintf("%.1f%s", float64(f)/float64(unit), symbol)
 }
 
-var sizeRegexp = regexp.MustCompile(`^([0-9]+)(\.0*)?(MB?|m|KB?|k|GB?|g|B)?$`)
+var sizeRegexp = regexp.MustCompile(`^([0-9]+)(\.0*)?([MmKkGgTtPpEe])?[iI]?[bB]?$`)
 
 func parseSize(fsize string) (Bytes, error) {
 	fsize = strings.TrimSpace(fsize)
@@ -104,12 +107,18 @@ func parseSize(fsize string) (Bytes, error) {
 
 	var unit Bytes
 	switch matches[3] {
-	case "k", "K", "KB":
+	case "k", "K":
 		unit = KB
-	case "m", "M", "MB":
+	case "m", "M":
 		unit = MB
-	case "g", "G", "GB":
+	case "g", "G":
 		unit = GB
+	case "t", "T":
+		unit = TB
+	case "p", "P":
+		unit = PB
+	case "e", "E":
+		unit = EB
 	default:
 		unit = B
 	}
@@ -127,17 +136,37 @@ func (f Bytes) MarshalYAML() (interface{}, error) {
 	return result, nil
 }
 
-// UnmarshalYAML implements the yaml.Unmarshaler interface.
-func (f *Bytes) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var fsizeStr string
-	if err := unmarshal(&fsizeStr); err != nil {
-		return err
-	}
+func (f *Bytes) UnmarshalJSON(b []byte) error {
+	return f.unmarshal(json.Unmarshal, b)
+}
 
-	fsize, err := parseSize(fsizeStr)
-	if err != nil {
+func (f *Bytes) UnmarshalYAML(node *yaml.Node) error {
+	return f.unmarshal(yaml.Unmarshal, []byte(node.Value))
+}
+
+func (f *Bytes) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
+	var v interface{}
+	if err := unmarshal(b, &v); err != nil {
 		return err
 	}
-	*f = fsize
-	return nil
+	switch value := v.(type) {
+	case float64:
+		*f = Bytes(int64(value))
+		return nil
+	case int:
+		*f = Bytes(int64(value))
+		return nil
+	case int64:
+		*f = Bytes(value)
+		return nil
+	case string:
+		size, err := parseSize(value)
+		if err != nil {
+			return errors.WithMessage(err, "invalid byte size")
+		}
+		*f = size
+		return nil
+	default:
+		return errors.New("invalid byte size")
+	}
 }

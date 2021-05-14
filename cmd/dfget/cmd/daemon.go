@@ -95,7 +95,7 @@ func init() {
 	flagSet.BoolVar(&daemonConfig.KeepStorage, "keep-storage", daemonConfig.KeepStorage, "keep storage after daemon exit")
 	flagSet.BoolVar(&daemonConfig.Verbose, "verbose", daemonConfig.Verbose, "print verbose log and enable golang debug info")
 	flagSet.BoolVar(&daemonConfig.Console, "console", daemonConfig.Console, "console shows log on console")
-	flagSet.StringVar(&daemonConfig.Host.AdvertiseIP, "advertise-ip", daemonConfig.Host.AdvertiseIP, "the ip report to scheduler, normal same with listen ip")
+	flagSet.StringVar((*string)(&daemonConfig.Host.AdvertiseIP), "advertise-ip", string(daemonConfig.Host.AdvertiseIP), "the ip report to scheduler, normal same with listen ip")
 	flagSet.StringVar(&daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "grpc-unix-listen", daemonConfig.Download.DownloadGRPC.UnixListen.Socket, "the local unix domain socket listen address for grpc with dfget")
 	flagSet.IntVar(&daemonConfig.Download.PeerGRPC.TCPListen.PortRange.Start, "grpc-port", daemonConfig.Download.PeerGRPC.TCPListen.PortRange.Start, "the listen address for grpc with other peers")
 	flagSet.IntVar(&daemonConfig.Download.PeerGRPC.TCPListen.PortRange.End, "grpc-port-end", daemonConfig.Download.PeerGRPC.TCPListen.PortRange.End, "the listen address for grpc with other peers")
@@ -103,10 +103,10 @@ func init() {
 	flagSet.IntVar(&daemonConfig.Upload.ListenOption.TCPListen.PortRange.End, "upload-port-end", daemonConfig.Upload.ListenOption.TCPListen.PortRange.End, "the address that daemon will listen on for peer upload")
 	flagSet.StringVar(&daemonConfig.PidFile, "pid", daemonConfig.PidFile, "dfdaemon pid file location")
 	flagSet.StringVar(&daemonConfig.LockFile, "lock", daemonConfig.LockFile, "dfdaemon lock file location")
-	flagSet.StringVar(&daemonConfig.Host.SecurityDomain, "security-domain", daemonConfig.Host.SecurityDomain, "peer security domain for scheduler")
-	flagSet.StringVar(&daemonConfig.Host.Location, "location", daemonConfig.Host.Location, "peer location for scheduler")
-	flagSet.StringVar(&daemonConfig.Host.IDC, "idc", daemonConfig.Host.IDC, "peer idc for scheduler")
-	flagSet.StringVar(&daemonConfig.Host.NetTopology, "net-topology", daemonConfig.Host.NetTopology, "peer net topology for scheduler")
+	flagSet.StringVar((*string)(&daemonConfig.Host.SecurityDomain), "security-domain", string(daemonConfig.Host.SecurityDomain), "peer security domain for scheduler")
+	flagSet.StringVar((*string)(&daemonConfig.Host.Location), "location", string(daemonConfig.Host.Location), "peer location for scheduler")
+	flagSet.StringVar((*string)(&daemonConfig.Host.IDC), "idc", string(daemonConfig.Host.IDC), "peer idc for scheduler")
+	flagSet.StringVar((*string)(&daemonConfig.Host.NetTopology), "net-topology", string(daemonConfig.Host.NetTopology), "peer net topology for scheduler")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.TotalRateLimit), "download-rate", "total download rate limit for other peers and back source")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Download.PerPeerRateLimit), "per-peer-download-rate", "per peer download rate limit for other peers and back source")
 	flagSet.Var(config.NewLimitRateValue(&daemonConfig.Upload.RateLimit), "upload-rate", "upload rate limit for other peers")
@@ -194,14 +194,14 @@ func runDaemon() error {
 
 	ph, err := daemon.NewPeerHost(&scheduler.PeerHost{
 		Uuid:           uuid.New().String(),
-		Ip:             daemonConfig.Host.AdvertiseIP,
+		Ip:             string(daemonConfig.Host.AdvertiseIP),
 		RpcPort:        int32(daemonConfig.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
 		HostName:       iputils.HostName,
-		SecurityDomain: daemonConfig.Host.SecurityDomain,
-		Location:       daemonConfig.Host.Location,
-		Idc:            daemonConfig.Host.IDC,
-		NetTopology:    daemonConfig.Host.NetTopology,
+		SecurityDomain: string(daemonConfig.Host.SecurityDomain),
+		Location:       string(daemonConfig.Host.Location),
+		Idc:            string(daemonConfig.Host.IDC),
+		NetTopology:    string(daemonConfig.Host.NetTopology),
 	}, *daemonConfig)
 	if err != nil {
 		logger.Errorf("init peer host failed: %s", err)

@@ -25,11 +25,14 @@ import (
 	"io/ioutil"
 	"net"
 	"net/url"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -97,11 +100,11 @@ func (p *PeerHostOption) Load(path string) error {
 
 func (p *PeerHostOption) Convert() error {
 	// AdvertiseIP
-	ip := net.ParseIP(p.Host.AdvertiseIP)
+	ip := net.ParseIP(string(p.Host.AdvertiseIP))
 	if ip == nil || net.IPv4zero.Equal(ip) {
-		p.Host.AdvertiseIP = iputils.HostIp
+		p.Host.AdvertiseIP = Attribute(iputils.HostIp)
 	} else {
-		p.Host.AdvertiseIP = ip.String()
+		p.Host.AdvertiseIP = Attribute(ip.String())
 	}
 
 	return nil
@@ -128,17 +131,17 @@ type SchedulerOption struct {
 
 type HostOption struct {
 	// SecurityDomain is the security domain
-	SecurityDomain string `json:"security_domain" yaml:"security_domain"`
-	// Peerhost location for scheduler
-	Location string `json:"location" yaml:"location"`
-	// Peerhost idc for scheduler
-	IDC string `json:"idc" yaml:"idc"`
-	// Peerhost net topology for scheduler
-	NetTopology string `json:"net_topology" yaml:"net_topology"`
+	SecurityDomain Attribute `json:"security_domain" yaml:"security_domain"`
+	// Location for scheduler
+	Location Attribute `json:"location" yaml:"location"`
+	// IDX for scheduler
+	IDC Attribute `json:"idc" yaml:"idc"`
+	// NetTopology for scheduler
+	NetTopology Attribute `json:"net_topology" yaml:"net_topology"`
 	// The listen ip for all tcp services of daemon
-	ListenIP string `json:"listen_ip" yaml:"listen_ip"`
+	ListenIP Attribute `json:"listen_ip" yaml:"listen_ip"`
 	// The ip report to scheduler, normal same with listen ip
-	AdvertiseIP string `json:"advertise_ip" yaml:"advertise_ip"`
+	AdvertiseIP Attribute `json:"advertise_ip" yaml:"advertise_ip"`
 }
 
 type DownloadOption struct {
@@ -382,7 +385,7 @@ type StorageOption struct {
 	// after this period cache file will be gc
 	TaskExpireTime clientutil.Duration `json:"task_expire_time" yaml:"task_expire_time"`
 	// DiskGCThreshold indicates the threshold to gc the oldest tasks
-	DiskGCThreshold clientutil.StorageSize `json:"disk_gc_threshold" yaml:"disk_gc_threshold"`
+	DiskGCThreshold unit.Bytes `json:"disk_gc_threshold" yaml:"disk_gc_threshold"`
 
 	StoreStrategy StoreStrategy `json:"strategy" yaml:"strategy"`
 }
@@ -686,4 +689,134 @@ type WhiteList struct {
 	Host  string   `yaml:"host" json:"host"`
 	Regx  *Regexp  `yaml:"regx" json:"regx"`
 	Ports []string `yaml:"ports" json:"ports"`
+}
+
+// Attribute allows get value from command or just a raw string
+type Attribute string
+
+func (t *Attribute) UnmarshalJSON(b []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	return t.unmarshal(v)
+}
+
+func (t *Attribute) UnmarshalYAML(node *yaml.Node) error {
+	var v interface{}
+	switch node.Kind {
+	case yaml.MappingNode:
+		var m = make(map[string]interface{})
+		for i := 0; i < len(node.Content); i += 2 {
+			var (
+				key   string
+				value interface{}
+			)
+			if err := node.Content[i].Decode(&key); err != nil {
+				return err
+			}
+			if err := node.Content[i+1].Decode(&value); err != nil {
+				return err
+			}
+			m[key] = value
+		}
+		v = m
+	case yaml.ScalarNode:
+		var i string
+		if err := node.Decode(&i); err != nil {
+			return err
+		}
+		v = i
+	default:
+		return errors.New("invalid format")
+	}
+	return t.unmarshal(v)
+}
+
+func (t *Attribute) unmarshal(v interface{}) error {
+	switch value := v.(type) {
+	case string:
+		*t = Attribute(value)
+		return nil
+	case map[string]interface{}:
+		var (
+			command string
+			regx    string
+			retry   = 1
+			defaulz = "unknown"
+		)
+		if s, ok := value["command"]; ok {
+			switch cmd := s.(type) {
+			case string:
+				command = cmd
+			default:
+				return errors.New("invalid command format")
+			}
+		} else {
+			return errors.New("empty command")
+		}
+		if e, ok := value["regx"]; ok {
+			switch reg := e.(type) {
+			case string:
+				regx = reg
+			default:
+				return errors.New("invalid regx format")
+			}
+		}
+		if e, ok := value["retry"]; ok {
+			switch r := e.(type) {
+			case int:
+				retry = r
+			case int64:
+				retry = int(r)
+			default:
+				return errors.New("invalid retry format")
+			}
+			if retry <= 0 {
+				retry = 1
+			}
+		}
+		if e, ok := value["default"]; ok {
+			switch r := e.(type) {
+			case string:
+				defaulz = r
+			default:
+				return errors.New("invalid default format")
+			}
+		}
+		var (
+			result []byte
+			err    error
+			r      *regexp.Regexp
+		)
+
+		if regx != "" {
+			r, err = regexp.Compile(regx)
+			if err != nil {
+				err = fmt.Errorf("complie regx %s error: %s", regx, err)
+				logger.Errorf(err.Error())
+				return err
+			}
+		}
+		for i := 0; i <= retry; i++ {
+			result, err = exec.Command("/bin/sh", "-c", command).CombinedOutput()
+			logger.Infof("exec command %q output: %q", command, result)
+			if err != nil {
+				logger.Errorf("exec command error: %s", err)
+				*t = Attribute(defaulz)
+				continue
+			}
+			if r == nil || r.MatchString(string(result)) {
+				*t = Attribute(strings.TrimSpace(string(result)))
+				break
+			}
+			err = fmt.Errorf("exec command output %s not match regx %s", string(result), regx)
+			logger.Errorf(err.Error())
+			*t = Attribute(defaulz)
+			continue
+		}
+		return err
+	default:
+		return errors.New("invalid attribute")
+	}
 }
