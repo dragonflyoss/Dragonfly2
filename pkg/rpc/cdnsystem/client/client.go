@@ -35,7 +35,7 @@ func GetClientByAddr(adders []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient
 		return nil, errors.New("address list of cdn is empty")
 	}
 	cc := &cdnClient{
-		rpc.NewConnection(context.Background(), "cdn-static", adders, []rpc.ConnOption{
+		rpc.NewConnection(context.Background(), "cdn", adders, []rpc.ConnOption{
 			rpc.WithConnExpireTime(60 * time.Second),
 			rpc.WithDialOption(opts),
 		}),

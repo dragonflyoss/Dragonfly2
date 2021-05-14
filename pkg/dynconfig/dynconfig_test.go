@@ -90,7 +90,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 				time.Sleep(30 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				path, err := defaultCacheFile()
+				path, err := DefaultCacheFile()
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -131,7 +131,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 				time.Sleep(30 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				path, err := defaultCacheFile()
+				path, err := DefaultCacheFile()
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -240,7 +240,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 				time.Sleep(30 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				path, err := defaultCacheFile()
+				path, err := DefaultCacheFile()
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -279,7 +279,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 				time.Sleep(30 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				path, err := defaultCacheFile()
+				path, err := DefaultCacheFile()
 				if err != nil {
 					t.Fatal(err)
 				}

@@ -55,8 +55,8 @@ type CDNManager struct {
 func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *HostManager, dynconfig config.DynconfigInterface) (*CDNManager, error) {
 	mgr := &CDNManager{
 		lock:         &sync.RWMutex{},
-		callbackFns:  map[*types.Task]func(*types.PeerTask, *dferrors.DfError){},
-		callbackList: map[*types.Task][]*types.PeerTask{},
+		callbackFns:  make(map[*types.Task]func(*types.PeerTask, *dferrors.DfError)),
+		callbackList: make(map[*types.Task][]*types.PeerTask),
 		taskManager:  taskManager,
 		hostManager:  hostManager,
 	}
@@ -69,6 +69,7 @@ func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *Ho
 
 	// Initialize CDNManager servers
 	mgr.servers = cdnHostsToServers(dc.CdnHosts)
+	logger.Debugf("servers map is %+v\n", mgr.servers)
 
 	// Initialize CDNManager client
 	client, err := cdnClient.GetClientByAddr(cdnHostsToNetAddrs(dc.CdnHosts))
@@ -77,14 +78,12 @@ func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *Ho
 	}
 	mgr.client = client
 
-	logger.Debugf("server========> %#v\n%#v\n", cdnHostsToNetAddrs(dc.CdnHosts), mgr.servers)
-
 	return mgr, nil
 }
 
 // cdnHostsToServers coverts manager.CdnHosts to map[string]*manager.ServerInfo.
 func cdnHostsToServers(hosts []*manager.ServerInfo) map[string]*manager.ServerInfo {
-	var m map[string]*manager.ServerInfo
+	m := make(map[string]*manager.ServerInfo)
 	for i := range hosts {
 		m[hosts[i].HostInfo.HostName] = hosts[i]
 	}
