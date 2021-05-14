@@ -18,7 +18,6 @@ package server
 
 import (
 	"context"
-	"errors"
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -51,19 +50,19 @@ func New(cfg *config.Config) (*Server, error) {
 	// Initialize manager client
 	s.managerClient, err = client.NewClient(cfg.Manager.NetAddrs)
 	if err != nil {
-		return nil, errors.New("start manager client failed")
+		return nil, err
 	}
 
 	// Initialize dynconfig client
 	dynconfig, err := config.NewDynconfig(s.managerClient, cfg.Manager.ExpireTime)
 	if err != nil {
-		return nil, errors.New("start dynconfig client failed")
+		return nil, err
 	}
 
 	// Initialize scheduler service
 	s.service, err = service.NewSchedulerService(cfg, dynconfig)
 	if err != nil {
-		return nil, errors.New("start scheduler service failed")
+		return nil, err
 	}
 
 	s.worker = schedule_worker.NewWorkerGroup(cfg, s.service)

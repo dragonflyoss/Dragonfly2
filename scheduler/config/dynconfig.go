@@ -45,7 +45,7 @@ func NewDynconfig(rawClient client.ManagerClient, expire time.Duration) (Dynconf
 
 func (d *dynconfig) Get() (*manager.SchedulerConfig, error) {
 	var config *manager.SchedulerConfig
-	if err := d.Unmarshal(config); err != nil {
+	if err := d.Unmarshal(&config); err != nil {
 		return nil, err
 	}
 

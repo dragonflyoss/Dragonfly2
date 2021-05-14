@@ -31,7 +31,6 @@ type Config struct {
 	Scheduler SchedulerConfig       `yaml:"scheduler"`
 	Server    ServerConfig          `yaml:"server"`
 	Worker    SchedulerWorkerConfig `yaml:"worker"`
-	CDN       *CDNConfig            `yaml:"cdn"`
 	GC        GCConfig              `yaml:"gc"`
 }
 
@@ -44,11 +43,6 @@ func (c *Config) Validate() error {
 		return errors.New("empty manager config is not specified")
 	}
 
-	if c.CDN != nil {
-		if len(c.CDN.Servers) <= 0 {
-			return errors.New("empty CDN server is not specified")
-		}
-	}
 	return nil
 }
 
@@ -57,7 +51,7 @@ type ManagerConfig struct {
 	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
 
 	// ExpireTime is expire time for manager cache.
-	ExpireTime time.Duration `yaml:"expire"`
+	ExpireTime time.Duration `yaml:"expireTime"`
 }
 
 type SchedulerConfig struct {
@@ -76,17 +70,6 @@ type SchedulerWorkerConfig struct {
 	WorkerJobPoolSize int `yaml:"workerJobPoolSize"`
 	SenderNum         int `yaml:"senderNum"`
 	SenderJobPoolSize int `yaml:"senderJobPoolSize"`
-}
-
-type CDNServerConfig struct {
-	Name         string `yaml:"name"`
-	IP           string `yaml:"ip"`
-	RpcPort      int32  `yaml:"rpcPort"`
-	DownloadPort int32  `yaml:"downloadPort"`
-}
-
-type CDNConfig struct {
-	Servers []CDNServerConfig `yaml:"servers"`
 }
 
 type GCConfig struct {
