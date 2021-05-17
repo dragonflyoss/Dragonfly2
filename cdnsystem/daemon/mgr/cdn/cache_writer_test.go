@@ -18,10 +18,11 @@ package cdn
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/suite"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
 func TestCacheWriter(t *testing.T) {

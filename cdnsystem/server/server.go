@@ -17,13 +17,6 @@
 package server
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/plugins"
-	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
-	_ "d7y.io/dragonfly/v2/cdnsystem/source/ossprotocol"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
-)
-
-import (
 	"context"
 	"fmt"
 
@@ -34,11 +27,15 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/progress"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/task"
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
+	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
+	_ "d7y.io/dragonfly/v2/cdnsystem/source/ossprotocol"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	configServer "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"

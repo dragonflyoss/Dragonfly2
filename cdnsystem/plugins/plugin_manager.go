@@ -17,8 +17,9 @@
 package plugins
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"sync"
+
+	"d7y.io/dragonfly/v2/cdnsystem/config"
 )
 
 // NewManager creates a default plugin manager instant.

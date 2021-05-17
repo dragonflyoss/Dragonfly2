@@ -17,8 +17,9 @@
 package storedriver
 
 import (
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
 func TestStoreMgrTestSuite(t *testing.T) {

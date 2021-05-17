@@ -17,13 +17,14 @@
 package cdn
 
 import (
+	"fmt"
+	"io"
+
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"fmt"
 	"github.com/pkg/errors"
-	"io"
 )
 
 const RangeHeaderName = "Range"

@@ -17,11 +17,12 @@
 package plugins
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"fmt"
-	"github.com/stretchr/testify/suite"
 	"reflect"
 	"testing"
+
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"github.com/stretchr/testify/suite"
 )
 
 func TestPluginsTestSuite(t *testing.T) {
