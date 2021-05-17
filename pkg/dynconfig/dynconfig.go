@@ -24,11 +24,11 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type sourceType int
+type SourceType int
 
 const (
 	// ManagerSourceType represents pulling configuration from manager
-	ManagerSourceType sourceType = 1 << iota
+	ManagerSourceType SourceType = 1 << iota
 
 	// LocalSourceType represents read configuration from local file
 	LocalSourceType
@@ -45,7 +45,7 @@ type strategy interface {
 }
 
 type Dynconfig struct {
-	sourceType      sourceType
+	sourceType      SourceType
 	managerClient   ManagerClient
 	localConfigPath string
 	cache           cache.Cache
@@ -81,7 +81,7 @@ func WithLocalConfigPath(p string) Option {
 }
 
 // NewDynconfig returns a new dynconfig instence
-func New(sourceType sourceType, expire time.Duration, options ...Option) (*Dynconfig, error) {
+func New(sourceType SourceType, expire time.Duration, options ...Option) (*Dynconfig, error) {
 	d, err := NewDynconfigWithOptions(sourceType, expire, options...)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func New(sourceType sourceType, expire time.Duration, options ...Option) (*Dynco
 }
 
 // NewDynconfigWithOptions constructs a new instance of a dynconfig with additional options.
-func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, options ...Option) (*Dynconfig, error) {
+func NewDynconfigWithOptions(sourceType SourceType, expire time.Duration, options ...Option) (*Dynconfig, error) {
 	d := &Dynconfig{
 		sourceType: sourceType,
 		cache:      cache.New(expire, cache.NoCleanup),

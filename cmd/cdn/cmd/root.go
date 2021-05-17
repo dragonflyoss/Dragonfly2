@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	cfg     *config.Config
+	cfg *config.Config
 )
 
 const (

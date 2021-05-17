@@ -18,6 +18,7 @@ package dynconfig
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -101,6 +102,10 @@ func defaultConfigFile() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	fmt.Println("222222222")
+	fmt.Println(dir)
+	fmt.Println("222222222")
 
 	return filepath.Join(dir, "dynconfig.yaml"), nil
 }

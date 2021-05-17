@@ -20,6 +20,7 @@ import (
 	"context"
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -47,14 +48,24 @@ func New(cfg *config.Config) (*Server, error) {
 		config:  cfg.Server,
 	}
 
-	// Initialize manager client
-	s.managerClient, err = client.NewClient(cfg.Manager.NetAddrs)
-	if err != nil {
-		return nil, err
+	// Initialize dynconfig client
+	var sourceType dynconfig.SourceType
+	options := []dynconfig.Option{}
+	if cfg.Manager != nil {
+		sourceType = dynconfig.ManagerSourceType
+		s.managerClient, err = client.NewClient(cfg.Manager.NetAddrs)
+		if err != nil {
+			return nil, err
+		}
+		options = []dynconfig.Option{dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient))}
+	} else {
+		if cfg.Dynconfig.Path != "" {
+			options = []dynconfig.Option{dynconfig.WithLocalConfigPath(cfg.Dynconfig.Path)}
+		}
+		sourceType = dynconfig.LocalSourceType
 	}
 
-	// Initialize dynconfig client
-	dynconfig, err := config.NewDynconfig(s.managerClient, cfg.Manager.ExpireTime)
+	dynconfig, err := config.NewDynconfig(sourceType, cfg.Dynconfig.ExpireTime, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -88,11 +99,12 @@ func (s *Server) Serve() error {
 
 	// Start keepalive
 	logger.Info("start scheduler keep alive")
-	s.managerClient.KeepAlive(ctx, &manager.KeepAliveRequest{
-		HostName: iputils.HostName,
-		Type:     manager.ResourceType_Scheduler,
-	})
-
+	if s.managerClient != nil {
+		s.managerClient.KeepAlive(ctx, &manager.KeepAliveRequest{
+			HostName: iputils.HostName,
+			Type:     manager.ResourceType_Scheduler,
+		})
+	}
 	return nil
 }
 

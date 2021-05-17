@@ -27,6 +27,7 @@ type Config struct {
 	Console   bool                  `yaml:"console"`
 	Verbose   bool                  `yaml:"verbose"`
 	PProfPort int                   `yaml:"pprofPort"`
+	Dynconfig *DynconfigOptions     `yaml:"dynconfig"`
 	Manager   *ManagerConfig        `yaml:"manager"`
 	Scheduler SchedulerConfig       `yaml:"scheduler"`
 	Server    ServerConfig          `yaml:"server"`
@@ -39,8 +40,10 @@ func New() *Config {
 }
 
 func (c *Config) Validate() error {
-	if c.Manager == nil || len(c.Manager.NetAddrs) <= 0 {
-		return errors.New("empty manager config is not specified")
+	if c.Manager != nil {
+		if len(c.Manager.NetAddrs) <= 0 {
+			return errors.New("empty manager config is not specified")
+		}
 	}
 
 	return nil
@@ -49,9 +52,14 @@ func (c *Config) Validate() error {
 type ManagerConfig struct {
 	// NetAddrs is manager addresses.
 	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
+}
 
+type DynconfigOptions struct {
 	// ExpireTime is expire time for manager cache.
 	ExpireTime time.Duration `yaml:"expireTime"`
+
+	// ExpireTime is expire time for manager cache.
+	Path string `yaml:"path"`
 }
 
 type SchedulerConfig struct {
