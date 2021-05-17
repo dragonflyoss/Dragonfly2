@@ -68,6 +68,8 @@ type CdnClient interface {
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
+	UpdateState(adders []dfnet.NetAddr)
+
 	Close() error
 }
 

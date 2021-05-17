@@ -36,15 +36,16 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	cdnClient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 const TinyFileSize = 128
 
 type CDNManager struct {
-	client       cdnClient.CdnClient
+	client       client.CdnClient
 	servers      map[string]*manager.ServerInfo
+	dynconfig    config.DynconfigInterface
 	lock         *sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
 	callbackList map[*types.Task][]*types.PeerTask
@@ -59,10 +60,14 @@ func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *Ho
 		callbackList: make(map[*types.Task][]*types.PeerTask),
 		taskManager:  taskManager,
 		hostManager:  hostManager,
+		dynconfig:    dynconfig,
 	}
 
+	// Registration manager
+	dynconfig.Register(mgr)
+
 	// Get dynconfig content
-	dc, err := dynconfig.Get()
+	dc, err := mgr.dynconfig.Get()
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +77,7 @@ func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *Ho
 	logger.Debugf("servers map is %+v\n", mgr.servers)
 
 	// Initialize CDNManager client
-	client, err := cdnClient.GetClientByAddr(cdnHostsToNetAddrs(dc.CdnHosts))
+	client, err := client.GetClientByAddr(cdnHostsToNetAddrs(dc.CdnHosts))
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +109,17 @@ func cdnHostsToNetAddrs(hosts []*manager.ServerInfo) []dfnet.NetAddr {
 	return netAddrs
 }
 
+func (cm *CDNManager) OnNotify(c *manager.SchedulerConfig) {
+	// Sync CDNManager servers
+	cm.servers = cdnHostsToServers(c.CdnHosts)
+	logger.Debugf("servers map is %+v\n", cm.servers)
+
+	// Sync CDNManager client netAddrs
+	cm.client.UpdateState(cdnHostsToNetAddrs(c.CdnHosts))
+}
+
 func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error) {
+	cm.dynconfig.Notify()
 	if cm.client == nil {
 		err = dferrors.New(dfcodes.SchedNeedBackSource, "empty cdn")
 		return
@@ -188,16 +203,17 @@ func (cm *CDNManager) AddToCallback(peerTask *types.PeerTask) {
 }
 
 func (cm *CDNManager) getServer(name string) (*manager.ServerInfo, bool) {
+	cm.dynconfig.Notify()
 	item, found := cm.servers[name]
 	return item, found
 }
 
 type CDNClient struct {
-	cdnClient.CdnClient
+	client.CdnClient
 	mgr *CDNManager
 }
 
-func (cm *CDNManager) Work(task *types.Task, stream *cdnClient.PieceSeedStream) {
+func (cm *CDNManager) Work(task *types.Task, stream *client.PieceSeedStream) {
 	waitCallback := true
 	for {
 		ps, err := stream.Recv()
@@ -314,6 +330,7 @@ func (cm *CDNManager) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt 
 }
 
 func (cm *CDNManager) getTinyFileContent(task *types.Task, cdnHost *types.Host) (content []byte, err error) {
+	cm.dynconfig.Notify()
 	resp, err := cm.client.GetPieceTasks(context.TODO(), dfnet.NetAddr{Type: dfnet.TCP, Addr: fmt.Sprintf("%s:%d", cdnHost.Ip, cdnHost.RpcPort)}, &base.PieceTaskRequest{
 		TaskId:   task.TaskId,
 		SrcPid:   "scheduler",

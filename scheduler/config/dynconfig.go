@@ -18,6 +18,7 @@ package config
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	dc "d7y.io/dragonfly/v2/pkg/dynconfig"
@@ -27,11 +28,28 @@ import (
 )
 
 type DynconfigInterface interface {
+	// Get the dynamic config from manager
 	Get() (*manager.SchedulerConfig, error)
+
+	// Register allows an instance to register itself to listen/observe events.
+	Register(Observer)
+
+	// Deregister allows an instance to remove itself from the collection of observers/listeners.
+	Deregister(Observer)
+
+	// Notify publishes new events to listeners.
+	Notify() error
+}
+
+type Observer interface {
+	// OnNotify allows an event to be "published" to interface implementations.
+	OnNotify(*manager.SchedulerConfig)
 }
 
 type dynconfig struct {
 	*dc.Dynconfig
+	observers map[Observer]struct{}
+	data      *manager.SchedulerConfig
 }
 
 func NewDynconfig(rawClient client.ManagerClient, expire time.Duration) (DynconfigInterface, error) {
@@ -40,7 +58,10 @@ func NewDynconfig(rawClient client.ManagerClient, expire time.Duration) (Dynconf
 		return nil, err
 	}
 
-	return &dynconfig{client}, nil
+	return &dynconfig{
+		Dynconfig: client,
+		observers: map[Observer]struct{}{},
+	}, nil
 }
 
 func (d *dynconfig) Get() (*manager.SchedulerConfig, error) {
@@ -49,11 +70,41 @@ func (d *dynconfig) Get() (*manager.SchedulerConfig, error) {
 		return nil, err
 	}
 
+	d.data = config
 	return config, nil
 }
 
 type managerClient struct {
 	client.ManagerClient
+}
+
+func (d *dynconfig) Register(l Observer) {
+	d.observers[l] = struct{}{}
+}
+
+func (d *dynconfig) Deregister(l Observer) {
+	delete(d.observers, l)
+}
+
+func (d *dynconfig) Notify() error {
+	config, err := d.Get()
+	if err != nil {
+		return err
+	}
+
+	if d.data == nil {
+		d.data = config
+	}
+
+	if reflect.DeepEqual(d.data, config) {
+		return nil
+	}
+
+	for o := range d.observers {
+		o.OnNotify(config)
+	}
+
+	return nil
 }
 
 func newManagerClient(client client.ManagerClient) dc.ManagerClient {
