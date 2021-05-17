@@ -21,7 +21,6 @@ import (
 	"reflect"
 	"time"
 
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	dc "d7y.io/dragonfly/v2/pkg/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -117,7 +116,6 @@ func (mc *managerClient) Get() (interface{}, error) {
 		HostName: iputils.HostName,
 		Type:     manager.ResourceType_Scheduler,
 	})
-	logger.Debugf("scheduler config from manager is: %v", scConfig)
 	if err != nil {
 		return nil, err
 	}
