@@ -36,7 +36,7 @@ func TestDynconfigGet(t *testing.T) {
 		sleep          func()
 		cleanFileCache func(t *testing.T)
 		mock           func(m *mock_manager_client.MockManagerClientMockRecorder)
-		expect         func(t *testing.T, data interface{}, err error)
+		expect         func(t *testing.T, data *manager.SchedulerConfig, err error)
 	}{
 		{
 			name:   "get dynconfig success",
@@ -53,15 +53,17 @@ func TestDynconfigGet(t *testing.T) {
 			},
 			sleep: func() {},
 			mock: func(m *mock_manager_client.MockManagerClientMockRecorder) {
-				m.GetSchedulerClusterConfig(gomock.Any(), gomock.Any()).Return(&manager.SchedulerConfig{}, nil).Times(1)
+				m.GetSchedulerClusterConfig(gomock.Any(), gomock.Any()).Return(&manager.SchedulerConfig{
+					ClusterId: "bar",
+				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, data interface{}, err error) {
+			expect: func(t *testing.T, data *manager.SchedulerConfig, err error) {
 				assert := assert.New(t)
-				assert.EqualValues(&manager.SchedulerConfig{}, data)
+				assert.Equal("bar", data.ClusterId)
 			},
 		},
 		{
-			name:   "manager client return error",
+			name:   "client failed to return for the second time",
 			expire: 10 * time.Millisecond,
 			cleanFileCache: func(t *testing.T) {
 				path, err := dc.DefaultCacheFile()
@@ -74,17 +76,19 @@ func TestDynconfigGet(t *testing.T) {
 				}
 			},
 			sleep: func() {
-				time.Sleep(30 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 			},
 			mock: func(m *mock_manager_client.MockManagerClientMockRecorder) {
 				gomock.InOrder(
-					m.GetSchedulerClusterConfig(gomock.Any(), gomock.Any()).Return(&manager.SchedulerConfig{}, nil),
-					m.GetSchedulerClusterConfig(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")),
+					m.GetSchedulerClusterConfig(gomock.Any(), gomock.Any()).Return(&manager.SchedulerConfig{
+						ClusterId: "bar",
+					}, nil).Times(1),
+					m.GetSchedulerClusterConfig(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1),
 				)
 			},
-			expect: func(t *testing.T, data interface{}, err error) {
+			expect: func(t *testing.T, data *manager.SchedulerConfig, err error) {
 				assert := assert.New(t)
-				assert.NotEmpty(data)
+				assert.Equal("bar", data.ClusterId)
 			},
 		},
 	}
