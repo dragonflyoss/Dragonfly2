@@ -18,7 +18,6 @@ package config
 
 import (
 	"context"
-	"reflect"
 	"time"
 
 	dc "d7y.io/dragonfly/v2/pkg/dynconfig"
@@ -49,7 +48,6 @@ type Observer interface {
 type dynconfig struct {
 	*dc.Dynconfig
 	observers map[Observer]struct{}
-	data      *manager.SchedulerConfig
 }
 
 func NewDynconfig(rawClient client.ManagerClient, expire time.Duration) (DynconfigInterface, error) {
@@ -70,7 +68,6 @@ func (d *dynconfig) Get() (*manager.SchedulerConfig, error) {
 		return nil, err
 	}
 
-	d.data = config
 	return config, nil
 }
 
@@ -90,14 +87,6 @@ func (d *dynconfig) Notify() error {
 	config, err := d.Get()
 	if err != nil {
 		return err
-	}
-
-	if d.data == nil {
-		d.data = config
-	}
-
-	if reflect.DeepEqual(d.data, config) {
-		return nil
 	}
 
 	for o := range d.observers {
