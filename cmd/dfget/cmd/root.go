@@ -27,7 +27,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/dfget"
-	"d7y.io/dragonfly/v2/cmd/common"
+	"d7y.io/dragonfly/v2/cmd/dependency"
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -61,7 +61,7 @@ var rootCmd = &cobra.Command{
 	DisableAutoGenTag:  true,
 	FParseErrWhitelist: cobra.FParseErrWhitelist{UnknownFlags: true},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := logcore.InitDfget(cfg.Console); err != nil {
+		if err := logcore.InitDfget(dfgetConfig.Console); err != nil {
 			return errors.Wrap(err, "init client dfget logger")
 		}
 
@@ -93,7 +93,7 @@ func init() {
 	// Initialize default dfget config
 	dfgetConfig = config.NewDfgetConfig()
 	// Initialize cobra
-	common.InitCobra(rootCmd, false, dfgetConfig)
+	dependency.InitCobra(rootCmd, false, dfgetConfig)
 
 	// Add flags
 	flagSet := rootCmd.Flags()
@@ -154,7 +154,7 @@ func runDfget() error {
 	s, _ := yaml.Marshal(dfgetConfig)
 	logger.Infof("client dfget configuration:\n%s", string(s))
 
-	ff := common.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Jaeger)
+	ff := dependency.InitMonitor(dfgetConfig.Verbose, dfgetConfig.PProfPort, dfgetConfig.Jaeger)
 	defer ff()
 
 	logger.Info("start to check and spawn daemon")
@@ -210,6 +210,7 @@ func checkAndSpawnDaemon() (client.DaemonClient, error) {
 
 	times := 0
 	limit := 100
+	interval := 50 * time.Millisecond
 	for {
 		// 4.Cycle check with 5s timeout
 		if daemonClient.CheckHealth(context.Background(), target) == nil {
@@ -220,6 +221,6 @@ func checkAndSpawnDaemon() (client.DaemonClient, error) {
 		if times > limit {
 			return nil, errors.New("the daemon is unhealthy")
 		}
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(interval)
 	}
 }

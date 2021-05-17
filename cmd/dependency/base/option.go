@@ -1,5 +1,3 @@
-// +build linux
-
 /*
  *     Copyright 2020 The Dragonfly Authors
  *
@@ -16,23 +14,11 @@
  * limitations under the License.
  */
 
-package config
+package base
 
-var dfgetConfig = ClientOption{
-	URL:           "",
-	LockFile:      "/var/run/dfget.lock",
-	Output:        "",
-	Timeout:       0,
-	Md5:           "",
-	DigestMethod:  "",
-	DigestValue:   "",
-	Identifier:    "",
-	CallSystem:    "",
-	Pattern:       "",
-	Cacerts:       nil,
-	Filter:        nil,
-	Header:        nil,
-	NotBackSource: false,
-	Insecure:      false,
-	ShowBar:       false,
+type Options struct {
+	Console   bool   `yaml:"console" mapstructure:"console"`
+	Verbose   bool   `yaml:"verbose" mapstructure:"verbose"`
+	PProfPort int    `yaml:"pprof-port" mapstructure:"pprof-port"`
+	Jaeger    string `yaml:"jaeger" mapstructure:"jaeger"`
 }

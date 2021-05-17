@@ -23,14 +23,6 @@ import (
 )
 
 const (
-	DefaultConsole = false
-)
-
-const (
-	DefaultEnableProfiler = false
-)
-
-const (
 	CDNWriterRoutineLimit = 4
 )
 
@@ -42,9 +34,6 @@ const (
 )
 
 const (
-	// DefaultCdnConfigFilePath the default cdn config path.
-	DefaultCdnConfigFilePath = "/etc/dragonfly/cdn.yaml"
-
 	DefaultStoragePattern = "disk"
 )
 

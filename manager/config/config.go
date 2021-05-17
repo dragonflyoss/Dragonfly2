@@ -1,18 +1,14 @@
 package config
 
 import (
-	"d7y.io/dragonfly/v2/cmd/common"
-)
-
-const (
-	DefaultConfigFilePath string = "/etc/dragonfly/manager.yaml"
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 )
 
 type Config struct {
-	common.BaseOptions `yaml:",inline" mapstructure:",squash"`
-	Server             *ServerConfig        `yaml:"server" mapstructure:"server"`
-	ConfigService      *ConfigServiceConfig `yaml:"config-service" mapstructure:"config-service"`
-	Stores             []*StoreConfig       `yaml:"stores" mapstructure:"stores"`
+	base.Options  `yaml:",inline" mapstructure:",squash"`
+	Server        *ServerConfig        `yaml:"server" mapstructure:"server"`
+	ConfigService *ConfigServiceConfig `yaml:"config-service" mapstructure:"config-service"`
+	Stores        []*StoreConfig       `yaml:"stores" mapstructure:"stores"`
 }
 
 type ServerConfig struct {

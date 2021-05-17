@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"d7y.io/dragonfly/v2/cmd/common"
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"gopkg.in/yaml.v3"
@@ -37,9 +37,9 @@ func New() *Config {
 
 // Config contains all configuration of cdn node.
 type Config struct {
-	common.BaseOptions `yaml:",inline" mapstructure:",squash"`
-	*BaseProperties    `yaml:"base" mapstructure:"base"`
-	Plugins            map[PluginType][]*PluginProperties `yaml:"plugins" mapstructure:"plugins"`
+	base.Options    `yaml:",inline" mapstructure:",squash"`
+	*BaseProperties `yaml:"base" mapstructure:"base"`
+	Plugins         map[PluginType][]*PluginProperties `yaml:"plugins" mapstructure:"plugins"`
 }
 
 // Load loads config properties from the giving file.
@@ -103,7 +103,6 @@ func NewDefaultBaseProperties() *BaseProperties {
 		DownloadPort:            DefaultDownloadPort,
 		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
 		MaxBandwidth:            DefaultMaxBandwidth,
-		EnableProfiler:          DefaultEnableProfiler,
 		FailAccessInterval:      DefaultFailAccessInterval,
 		GCInitialDelay:          DefaultGCInitialDelay,
 		GCMetaInterval:          DefaultGCMetaInterval,
@@ -131,10 +130,6 @@ type BaseProperties struct {
 	// MaxBandwidth is the network bandwidth that cdn system can use.
 	// default: 200 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
 	MaxBandwidth unit.Bytes `yaml:"maxBandwidth" mapstructure:"maxBandwidth"`
-
-	// Whether to enable profiler
-	// default: false
-	EnableProfiler bool `yaml:"enableProfiler" mapstructure:"enableProfiler"`
 
 	// AdvertiseIP is used to set the ip that we advertise to other peer in the p2p-network.
 	// By default, the first non-loop address is advertised.

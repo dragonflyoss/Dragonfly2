@@ -281,7 +281,6 @@ func TestPeerHostOption_Load(t *testing.T) {
 		DataDir:     "/tmp/dragonfly/dfdaemon/",
 		WorkHome:    "/tmp/dragonfly/dfdaemon/",
 		KeepStorage: false,
-		Verbose:     true,
 		Scheduler: SchedulerOption{
 			NetAddrs: []dfnet.NetAddr{
 				{
@@ -416,9 +415,4 @@ func TestPeerHostOption_Load(t *testing.T) {
 
 	assert.EqualValues(peerHostOption, peerHostOptionYAML)
 
-	peerHostOptionJSON := &PeerHostOption{}
-	if err := peerHostOptionJSON.Load("./testdata/config/daemon.json"); err != nil {
-		t.Fatal(err)
-	}
-	assert.EqualValues(peerHostOption, peerHostOptionJSON)
 }

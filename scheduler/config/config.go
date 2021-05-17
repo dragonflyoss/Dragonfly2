@@ -17,20 +17,16 @@
 package config
 
 import (
-	"d7y.io/dragonfly/v2/cmd/common"
-)
-
-const (
-	DefaultConfigFilePath string = "/etc/dragonfly/scheduler.yaml"
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 )
 
 type Config struct {
-	common.BaseOptions `yaml:",inline" mapstructure:",squash"`
-	Scheduler          SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
-	Server             ServerConfig          `yaml:"server" mapstructure:"server"`
-	Worker             SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
-	CDN                CDNConfig             `yaml:"cdn" mapstructure:"cdn"`
-	GC                 GCConfig              `yaml:"gc" mapstructure:"gc"`
+	base.Options `yaml:",inline" mapstructure:",squash"`
+	Scheduler    SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
+	Server       ServerConfig          `yaml:"server" mapstructure:"server"`
+	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
+	CDN          CDNConfig             `yaml:"cdn" mapstructure:"cdn"`
+	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
 }
 
 type SchedulerConfig struct {

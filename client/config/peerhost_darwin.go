@@ -38,14 +38,14 @@ var (
 var peerHostConfig = PeerHostOption{
 	DataDir:    peerHostDataDir,
 	WorkHome:   peerHostWorkHome,
-	AliveTime:  DefaultDaemonAliveTime,
-	GCInterval: DefaultGCInterval,
+	AliveTime:  clientutil.Duration{Duration: DefaultDaemonAliveTime},
+	GCInterval: clientutil.Duration{Duration: DefaultGCInterval},
 	//PidFile:     "/tmp/dfdaemon.pid",
 	//LockFile:    "/tmp/dfdaemon.lock",
 	KeepStorage: false,
 	Scheduler: SchedulerOption{
 		NetAddrs:        nil,
-		ScheduleTimeout: DefaultScheduleTimeout,
+		ScheduleTimeout: clientutil.Duration{Duration: DefaultScheduleTimeout},
 	},
 	Host: HostOption{
 		ListenIP:       net.IPv4zero.String(),

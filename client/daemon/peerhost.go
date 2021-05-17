@@ -171,7 +171,7 @@ func New(opt *config.PeerHostOption) (PeerHost, error) {
 		ProxyManager:    proxyManager,
 		UploadManager:   uploadManager,
 		StorageManager:  storageManager,
-		GCManager:       gc.NewManager(opt.GCInterval),
+		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 	}, nil
 }
 
@@ -354,17 +354,17 @@ func (ph *peerHost) Serve() error {
 		return nil
 	})
 
-	if ph.Option.AliveTime > 0 {
+	if ph.Option.AliveTime.Duration > 0 {
 		g.Go(func() error {
 			select {
-			case <-time.After(ph.Option.AliveTime):
+			case <-time.After(ph.Option.AliveTime.Duration):
 				var keepalives = []clientutil.KeepAlive{
 					ph.StorageManager,
 					ph.ServiceManager,
 				}
 				var keep bool
 				for _, keepalive := range keepalives {
-					if keepalive.Alive(ph.Option.AliveTime) {
+					if keepalive.Alive(ph.Option.AliveTime.Duration) {
 						keep = true
 					}
 				}

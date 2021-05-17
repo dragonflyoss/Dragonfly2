@@ -30,7 +30,7 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/cmd/common"
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
@@ -41,12 +41,12 @@ import (
 
 type DaemonConfig = PeerHostOption
 type PeerHostOption struct {
-	common.BaseOptions `yaml:",inline" mapstructure:",squash"`
+	base.Options `yaml:",inline" mapstructure:",squash"`
 	// AliveTime indicates alive duration for which daemon keeps no accessing by any uploading and download requests,
 	// after this period daemon will automatically exit
 	// when AliveTime == 0, will run infinitely
-	AliveTime  time.Duration `mapstructure:"alive_time" yaml:"alive_time"`
-	GCInterval time.Duration `mapstructure:"gc_interval" yaml:"gc_interval"`
+	AliveTime  clientutil.Duration `mapstructure:"alive_time" yaml:"alive_time"`
+	GCInterval clientutil.Duration `mapstructure:"gc_interval" yaml:"gc_interval"`
 
 	// Pid file location
 	PidFile string `json:"pid_file" yaml:"pid_file"`
@@ -111,8 +111,8 @@ func (p *PeerHostOption) Validate() error {
 		return errors.New("empty schedulers")
 	}
 	// ScheduleTimeout should not great then AliveTime
-	if p.AliveTime > 0 && p.Scheduler.ScheduleTimeout > p.AliveTime {
-		p.Scheduler.ScheduleTimeout = p.AliveTime - time.Second
+	if p.AliveTime.Duration > 0 && p.Scheduler.ScheduleTimeout.Duration > p.AliveTime.Duration {
+		p.Scheduler.ScheduleTimeout.Duration = p.AliveTime.Duration - time.Second
 	}
 	return nil
 }
@@ -122,7 +122,7 @@ type SchedulerOption struct {
 	NetAddrs []dfnet.NetAddr `mapstructure:"net_addrs" yaml:"net_addrs"`
 
 	// ScheduleTimeout is request timeout.
-	ScheduleTimeout time.Duration `mapstructure:"schedule_timeout" yaml:"schedule_timeout"`
+	ScheduleTimeout clientutil.Duration `mapstructure:"schedule_timeout" yaml:"schedule_timeout"`
 }
 
 type HostOption struct {
@@ -141,7 +141,7 @@ type HostOption struct {
 }
 
 type DownloadOption struct {
-	TotalRateLimit   clientutil.RateLimit `mapstructure:"total-rate-limit" yaml:"total-rate-limit"`
+	TotalRateLimit   clientutil.RateLimit `mapstructure:"total_rate_limit" yaml:"total_rate_limit"`
 	PerPeerRateLimit clientutil.RateLimit `mapstructure:"per_peer_rate_limit" yaml:"per_peer_rate_limit"`
 	DownloadGRPC     ListenOption         `mapstructure:"download_grpc" yaml:"download_grpc"`
 	PeerGRPC         ListenOption         `mapstructure:"peer_grpc" yaml:"peer_grpc"`
@@ -259,7 +259,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 
 type UploadOption struct {
 	ListenOption `yaml:",inline" mapstructure:",squash"`
-	RateLimit    clientutil.RateLimit `mapstructure:"total-rate-limit" yaml:"total-rate-limit"`
+	RateLimit    clientutil.RateLimit `mapstructure:"rate_limit" yaml:"rate_limit"`
 }
 
 type ListenOption struct {

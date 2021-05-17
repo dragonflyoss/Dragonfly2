@@ -23,7 +23,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	server "d7y.io/dragonfly/v2/client/daemon"
-	"d7y.io/dragonfly/v2/cmd/common"
+	"d7y.io/dragonfly/v2/cmd/dependency"
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -78,14 +78,12 @@ func init() {
 		// Initialize default daemon config
 		cfg = config.NewDaemonConfig()
 		// Initialize cobra
-		common.InitCobra(daemonCmd, true, cfg)
+		dependency.InitCobra(daemonCmd, true, cfg)
 
 		flags := daemonCmd.Flags()
 		flags.Int("launcher", -1, "pid of process launching daemon, a negative number implies that the daemon is started directly by the user")
 		flags.Lookup("launcher").Hidden = true
 		_ = viper.BindPFlags(flags)
-		_ = viper.BindEnv("download.total-rate-limit")
-		_ = viper.BindEnv("upload.total-rate-limit")
 	}
 }
 
@@ -108,6 +106,7 @@ func runDaemon() error {
 	lock := flock.New(dfpath.DaemonLockPath)
 	times := 0
 	limit := 100 // 100 * 50ms = 5s
+	interval := 50 * time.Millisecond
 	for {
 		if ok, err := lock.TryLock(); err != nil {
 			return err
@@ -124,7 +123,7 @@ func runDaemon() error {
 			return errors.New("the daemon is unhealthy")
 		}
 
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(interval)
 	}
 	defer lock.Unlock()
 
@@ -134,13 +133,13 @@ func runDaemon() error {
 	s, _ := yaml.Marshal(cfg)
 	logger.Infof("client daemon configuration:\n%s", string(s))
 
-	ff := common.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Jaeger)
+	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Jaeger)
 	defer ff()
 
 	if svr, err := server.New(cfg); err != nil {
 		return err
 	} else {
-		common.SetupQuitSignalHandler(func() { svr.Stop() })
+		dependency.SetupQuitSignalHandler(func() { svr.Stop() })
 		return svr.Serve()
 	}
 }

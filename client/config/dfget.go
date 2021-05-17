@@ -27,7 +27,7 @@ import (
 	"syscall"
 	"time"
 
-	"d7y.io/dragonfly/v2/cmd/common"
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"github.com/pkg/errors"
@@ -43,7 +43,7 @@ type DfgetConfig = ClientOption
 
 // ClientOption holds all the runtime config information.
 type ClientOption struct {
-	common.BaseOptions `yaml:",inline" mapstructure:",squash"`
+	base.Options `yaml:",inline" mapstructure:",squash"`
 	// URL download URL.
 	URL string `yaml:"url,omitempty" mapstructure:"url,omitempty"`
 
@@ -99,7 +99,7 @@ type ClientOption struct {
 	// ShowBar shows progress bar, it's conflict with `--console`.
 	ShowBar bool `yaml:"show_bar,omitempty" mapstructure:"show_bar,omitempty"`
 
-	RateLimit rate.Limit
+	RateLimit rate.Limit `yaml:"rate-limit,omitempty" mapstructure:"rate-limit,omitempty"`
 
 	// Config file paths,
 	// default:["/etc/dragonfly/dfget.yaml","/etc/dragonfly.conf"].

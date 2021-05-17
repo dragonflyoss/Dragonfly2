@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package common
+package dependency
 
 import (
 	"context"
@@ -27,7 +27,10 @@ import (
 	"syscall"
 	"time"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/unit"
@@ -49,52 +52,31 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var (
-	configFileRead bool
-)
-
-type (
-	FinalHandler  func()
-	SignalHandler func()
-)
-
-type BaseOptions struct {
-	Console   bool   `yaml:"console" mapstructure:"console"`
-	Verbose   bool   `yaml:"verbose" mapstructure:"verbose"`
-	PProfPort int    `yaml:"pprof-port" mapstructure:"pprof-port"`
-	Jaeger    string `yaml:"jaeger" mapstructure:"jaeger"`
-}
-
 // InitCobra initializes flags binding and common sub cmds.
 // config is a pointer to configuration struct.
-func InitCobra(cmd *cobra.Command, useFile bool, config interface{}) {
+func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
 	rootName := cmd.Root().Name()
-	cobra.OnInitialize(func() { initConfig(useFile, rootName, config) })
+	cobra.OnInitialize(func() { initConfig(useConfigFile, rootName, config) })
 
-	rootFlags := cmd.Root().PersistentFlags()
-	// Execute only once
-	if rootFlags.Lookup("console") == nil {
-		// Add flags
-		rootFlags.Bool("console", false, "whether logger output records to the stdout")
-		rootFlags.Bool("verbose", false, "whether logger use debug level")
-		rootFlags.Int("pprof-port", -1, "listen port for pprof, 0 represents random port")
-		rootFlags.String("jaeger", "", "jaeger endpoint url, like: http://localhost:14250/api/traces")
-		if useFile {
-			rootFlags.String("config", "", fmt.Sprintf("the path of configuration file with yaml extension name, default is %s, it can also be set by env var:%s", filepath.Join(dfpath.DefaultConfigDir, rootName+".yaml"), strings.ToUpper(rootName+"_config")))
-		}
+	// Add common flags
+	flags := cmd.Flags()
+	flags.Bool("console", false, "whether logger output records to the stdout")
+	flags.Bool("verbose", false, "whether logger use debug level")
+	flags.Int("pprof-port", -1, "listen port for pprof, 0 represents random port")
+	flags.String("jaeger", "", "jaeger endpoint url, like: http://localhost:14250/api/traces")
+	flags.String("config", "", fmt.Sprintf("the path of configuration file with yaml extension name, default is %s, it can also be set by env var:%s", filepath.Join(dfpath.DefaultConfigDir, rootName+".yaml"), strings.ToUpper(rootName+"_config")))
 
-		// Bind root flags
-		if err := viper.BindPFlags(rootFlags); err != nil {
-			panic(errors.Wrap(err, "bind root flags to viper"))
-		}
-
-		// Config for binding env
-		viper.SetEnvPrefix(rootName)
-		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-		_ = viper.BindEnv("config")
+	// Bind common flags
+	if err := viper.BindPFlags(flags); err != nil {
+		panic(errors.Wrap(err, "bind common flags to viper"))
 	}
 
-	// Add common cmds
+	// Config for binding env
+	viper.SetEnvPrefix(rootName)
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	_ = viper.BindEnv("config")
+
+	// Add common cmds only on root cmd
 	if !cmd.HasParent() {
 		cmd.AddCommand(VersionCmd)
 		cmd.AddCommand(newDocCommand(cmd.Name()))
@@ -102,7 +84,7 @@ func InitCobra(cmd *cobra.Command, useFile bool, config interface{}) {
 }
 
 // InitMonitor initialize monitor and return final handler
-func InitMonitor(verbose bool, pprofPort int, jaeger string) FinalHandler {
+func InitMonitor(verbose bool, pprofPort int, jaeger string) func() {
 	var fc = make(chan func(), 5)
 
 	if verbose {
@@ -154,7 +136,7 @@ func InitMonitor(verbose bool, pprofPort int, jaeger string) FinalHandler {
 	}
 }
 
-func SetupQuitSignalHandler(handler SignalHandler) {
+func SetupQuitSignalHandler(handler func()) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
 
@@ -175,9 +157,9 @@ func SetupQuitSignalHandler(handler SignalHandler) {
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initConfig(useFile bool, name string, config interface{}) {
+func initConfig(useConfigFile bool, name string, config interface{}) {
 	// Use config file and read once.
-	if useFile && !configFileRead {
+	if useConfigFile {
 		cfgFile := viper.GetString("config")
 		if cfgFile != "" {
 			// Use config file from the flag.
@@ -200,8 +182,6 @@ func initConfig(useFile bool, name string, config interface{}) {
 				panic(errors.Wrap(err, "viper read config"))
 			}
 		}
-
-		configFileRead = true
 	}
 
 	if err := viper.Unmarshal(config, initDecoderConfig); err != nil {
@@ -212,7 +192,16 @@ func initConfig(useFile bool, name string, config interface{}) {
 func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 	dc.DecodeHook = mapstructure.ComposeDecodeHookFunc(func(from, to reflect.Type, v interface{}) (interface{}, error) {
 		switch to {
-		case reflect.TypeOf(unit.B):
+		case reflect.TypeOf(unit.B),
+			reflect.TypeOf(dfnet.NetAddr{}),
+			reflect.TypeOf(clientutil.RateLimit{}),
+			reflect.TypeOf(clientutil.Duration{}),
+			reflect.TypeOf(config.ProxyOption{}),
+			reflect.TypeOf(config.TCPListenPortRange{}),
+			reflect.TypeOf(config.FileString("")),
+			reflect.TypeOf(config.URL{}),
+			reflect.TypeOf(config.CertPool{}),
+			reflect.TypeOf(config.Regexp{}):
 			b, _ := yaml.Marshal(v)
 			p := reflect.New(to)
 			if err := yaml.Unmarshal(b, p.Interface()); err != nil {
