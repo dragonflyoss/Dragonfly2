@@ -19,11 +19,12 @@ package cdn
 import (
 	"bytes"
 	"context"
+	"io"
+	"sync"
+
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/pkg/errors"
-	"io"
-	"sync"
 )
 
 type protocolContent struct {

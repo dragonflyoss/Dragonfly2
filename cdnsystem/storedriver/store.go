@@ -19,13 +19,12 @@ package storedriver
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/pkg/unit"
-
 	"fmt"
 	"io"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )

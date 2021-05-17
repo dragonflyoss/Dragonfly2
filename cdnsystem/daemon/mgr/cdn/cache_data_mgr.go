@@ -19,6 +19,10 @@ package cdn
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"io"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -26,10 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"fmt"
 	"github.com/pkg/errors"
-	"io"
-	"time"
 )
 
 // cacheDataManager manages the meta file and piece meta file of each TaskId.
