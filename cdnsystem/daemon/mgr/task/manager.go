@@ -159,8 +159,6 @@ func (tm *Manager) getTask(taskId string) (*types.SeedTask, error) {
 }
 
 func (tm Manager) Get(ctx context.Context, taskId string) (*types.SeedTask, error) {
-	synclock.Lock(taskId, true)
-	defer synclock.UnLock(taskId, true)
 	return tm.getTask(taskId)
 }
 
