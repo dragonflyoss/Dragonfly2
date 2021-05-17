@@ -18,10 +18,12 @@ package gc
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"time"
 )
 
 func init() {
@@ -59,11 +61,17 @@ type Manager struct {
 	cdnMgr  mgr.CDNMgr
 }
 
-func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) {
+func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) error{
+	// todo data consistency
+	var err error
 	if full {
-		gcm.cdnMgr.Delete(ctx, taskID)
+		err = gcm.cdnMgr.Delete(ctx, taskID)
+		if err != nil {
+			return err
+		}
 	}
-	gcm.taskMgr.Delete(ctx, taskID)
+	err = gcm.taskMgr.Delete(ctx, taskID)
+	return err
 }
 
 // NewManager returns a new Manager.
@@ -76,21 +84,31 @@ func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr) 
 }
 
 // StartGC starts to do the gc jobs.
-func (gcm *Manager) StartGC(ctx context.Context) {
-	logger.Debugf("start the gc job")
-
+func (gcm *Manager) StartGC(ctx context.Context) error {
+	logger.Debugf("====start the gc jobs====")
+	var wg sync.WaitGroup
 	for name, executorWrapper := range gcExecutorWrappers {
-		// start a goroutine to gc memory
+		wg.Add(1)
+		// start a goroutine to gc
 		go func(name string, wrapper *ExecutorWrapper) {
 			logger.Debugf("start the %s gc task", name)
 			// delay to execute GC after gcm.initialDelay
 			time.Sleep(wrapper.gcInitialDelay)
-
+			wg.Done()
 			// execute the GC by fixed delay
 			ticker := time.NewTicker(wrapper.gcInterval)
-			for range ticker.C {
-				wrapper.gcExecutor.GC(ctx)
+			for {
+				select {
+				case <-ctx.Done():
+					logger.Infof("exit %s gc task", name)
+					return
+				case <-ticker.C:
+					wrapper.gcExecutor.GC(ctx)
+				}
 			}
 		}(name, executorWrapper)
 	}
+	wg.Wait()
+	logger.Debugf("====all gc jobs have been launched====")
+	return nil
 }

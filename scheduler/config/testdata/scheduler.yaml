@@ -21,3 +21,4 @@ cdn:
 gc:
   taskDelay: 3600000
   peerTaskDelay: 3600000
+configServer: 127.0.0.1:8004

@@ -17,10 +17,11 @@
 package progress
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"github.com/pkg/errors"
 	"sort"
 	"strconv"
+
+	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"github.com/pkg/errors"
 )
 
 // setPieceMetaRecord

@@ -17,15 +17,17 @@
 package cdn
 
 import (
+	"time"
+
+	"context"
+	"crypto/md5"
+	"fmt"
+
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/disk"   // To register diskStorage
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/hybrid" // To register hybridStorage
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/synclock"
-	"time"
-)
-import (
-	"context"
-	"crypto/md5"
+
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
@@ -35,7 +37,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"fmt"
 	"github.com/pkg/errors"
 )
 

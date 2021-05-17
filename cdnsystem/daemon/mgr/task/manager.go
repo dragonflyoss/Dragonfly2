@@ -18,6 +18,9 @@ package task
 
 import (
 	"context"
+	"fmt"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
@@ -29,9 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"fmt"
 	"github.com/pkg/errors"
-	"time"
 )
 
 func init() {
@@ -159,8 +160,6 @@ func (tm *Manager) getTask(taskId string) (*types.SeedTask, error) {
 }
 
 func (tm Manager) Get(ctx context.Context, taskId string) (*types.SeedTask, error) {
-	synclock.Lock(taskId, true)
-	defer synclock.UnLock(taskId, true)
 	return tm.getTask(taskId)
 }
 

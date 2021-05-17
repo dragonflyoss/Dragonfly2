@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
@@ -57,13 +58,14 @@ type PeerHostOption struct {
 	WorkHome    string `mapstructure:"work_home" yaml:"work_home"`
 	KeepStorage bool   `mapstructure:"keep_storage" yaml:"keep_storage"`
 
-	Scheduler SchedulerOption `mapstructure:"scheduler" yaml:"scheduler"`
-	Host      HostOption      `mapstructure:"host" yaml:"host"`
-	Download  DownloadOption  `mapstructure:"download" yaml:"download"`
-	Proxy     *ProxyOption    `mapstructure:"proxy" yaml:"proxy"`
-	Upload    UploadOption    `mapstructure:"upload" yaml:"upload"`
-	Storage   StorageOption   `mapstructure:"storage" yaml:"storage"`
-	Telemetry TelemetryOption `mapstructure:"telemetry" yaml:"telemetry"`
+	Scheduler    SchedulerOption `mapstructure:"scheduler" yaml:"scheduler"`
+	Host         HostOption      `mapstructure:"host" yaml:"host"`
+	Download     DownloadOption  `mapstructure:"download" yaml:"download"`
+	Proxy        *ProxyOption    `mapstructure:"proxy" yaml:"proxy"`
+	Upload       UploadOption    `mapstructure:"upload" yaml:"upload"`
+	Storage      StorageOption   `mapstructure:"storage" yaml:"storage"`
+	Telemetry    TelemetryOption `mapstructure:"telemetry" yaml:"telemetry"`
+	ConfigServer string          `mapstructure:"configServer" yaml:"configServer"`
 }
 
 func NewDaemonConfig() *PeerHostOption {
@@ -107,8 +109,8 @@ func (p *PeerHostOption) Convert() error {
 }
 
 func (p *PeerHostOption) Validate() error {
-	if len(p.Scheduler.NetAddrs) == 0 {
-		return errors.New("empty schedulers")
+	if len(p.Scheduler.NetAddrs) == 0 && stringutils.IsBlank(p.ConfigServer) {
+		return errors.New("empty schedulers and config server is not specified")
 	}
 	// ScheduleTimeout should not great then AliveTime
 	if p.AliveTime.Duration > 0 && p.Scheduler.ScheduleTimeout.Duration > p.AliveTime.Duration {
@@ -379,8 +381,9 @@ type StorageOption struct {
 	DataPath string `mapstructure:"data_path" yaml:"data_path"`
 	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
 	// after this period cache file will be gc
-	TaskExpireTime clientutil.Duration `mapstructure:"task_expire_time" yaml:"task_expire_time"`
-	StoreStrategy  StoreStrategy       `mapstructure:"strategy" yaml:"strategy"`
+	TaskExpireTime  clientutil.Duration    `mapstructure:"task_expire_time" yaml:"task_expire_time"`
+	StoreStrategy   StoreStrategy          `mapstructure:"strategy" yaml:"strategy"`
+	DiskGCThreshold clientutil.StorageSize `mapstructure:"disk_gc_threshold" yaml:"disk_gc_threshold"`
 }
 
 type StoreStrategy string

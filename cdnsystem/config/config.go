@@ -40,6 +40,7 @@ type Config struct {
 	base.Options    `yaml:",inline" mapstructure:",squash"`
 	*BaseProperties `yaml:"base" mapstructure:"base"`
 	Plugins         map[PluginType][]*PluginProperties `yaml:"plugins" mapstructure:"plugins"`
+	ConfigServer    string                             `yaml:"configServer" mapstructure:"configServer"`
 }
 
 // Load loads config properties from the giving file.
@@ -158,6 +159,6 @@ type BaseProperties struct {
 	// default: 3min
 	TaskExpireTime time.Duration `yaml:"taskExpireTime" mapstructure:"taskExpireTime"`
 
-	// disk/hybrid/memory
+	// StoragePattern disk/hybrid/memory
 	StoragePattern string `yaml:"storagePattern" mapstructure:"storagePattern"`
 }

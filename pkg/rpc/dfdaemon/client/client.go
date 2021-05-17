@@ -32,32 +32,36 @@ import (
 	"google.golang.org/grpc"
 )
 
-func GetClient() (DaemonClient, error) {
-	// 从本地文件/manager读取addrs
+func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
+	if len(addrs) == 0 {
+		return nil, errors.New("address list of daemon is empty")
+	}
+	dc := &daemonClient{
+		rpc.NewConnection(context.Background(), "daemon-static", addrs, []rpc.ConnOption{
+			rpc.WithConnExpireTime(60 * time.Second),
+			rpc.WithDialOption(opts),
+		}),
+	}
 	return dc, nil
 }
 
-var dc *daemonClient
-
 var once sync.Once
+var elasticDaemonClient *daemonClient
 
-func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
+func GetElasticClientByAdders(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	once.Do(func() {
-		dc = &daemonClient{
-			rpc.NewConnection(context.Background(), "dfdaemon", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
-				rpc.WithConnExpireTime(5 * time.Minute),
+		elasticDaemonClient = &daemonClient{
+			rpc.NewConnection(context.Background(), "daemon-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+				rpc.WithConnExpireTime(30 * time.Second),
 				rpc.WithDialOption(opts),
 			}),
 		}
 	})
-	if len(addrs) == 0 {
-		return nil, errors.New("address list of cdn is empty")
-	}
-	err := dc.Connection.AddServerNodes(addrs)
+	err := elasticDaemonClient.Connection.AddServerNodes(addrs)
 	if err != nil {
 		return nil, err
 	}
-	return dc, nil
+	return elasticDaemonClient, nil
 }
 
 // see dfdaemon.DaemonClient
@@ -67,6 +71,8 @@ type DaemonClient interface {
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
 	CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) error
+
+	Close() error
 }
 
 type daemonClient struct {
@@ -123,4 +129,9 @@ func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, o
 	}, 0.2, 2.0, 3, nil)
 
 	return
+}
+
+func init() {
+	var dc *daemonClient = nil
+	var _ DaemonClient = dc
 }

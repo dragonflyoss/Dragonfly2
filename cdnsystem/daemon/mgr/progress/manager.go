@@ -19,6 +19,9 @@ package progress
 import (
 	"container/list"
 	"context"
+	"sync"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -27,8 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"github.com/pkg/errors"
-	"sync"
-	"time"
 )
 
 func init() {

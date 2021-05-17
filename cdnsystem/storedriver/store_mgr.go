@@ -17,10 +17,11 @@
 package storedriver
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"fmt"
 	"strings"
+
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 )
 
 // StorageBuilder is a function that creates a new storage plugin instant with the giving conf.

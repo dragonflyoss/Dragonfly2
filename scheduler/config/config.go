@@ -22,6 +22,7 @@ import (
 
 type Config struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
+	ConfigServer string                `yaml:"configServer" mapstructure:"configServer"`
 	Scheduler    SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
 	Server       ServerConfig          `yaml:"server" mapstructure:"server"`
 	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
@@ -50,8 +51,8 @@ type SchedulerWorkerConfig struct {
 type CDNServerConfig struct {
 	Name         string `yaml:"name" mapstructure:"name"`
 	IP           string `yaml:"ip" mapstructure:"ip"`
-	RpcPort      int    `yaml:"rpcPort" mapstructure:"rpcPort"`
-	DownloadPort int    `yaml:"downloadPort" mapstructure:"downloadPort"`
+	RpcPort      int32  `yaml:"rpcPort" mapstructure:"rpcPort"`
+	DownloadPort int32  `yaml:"downloadPort" mapstructure:"downloadPort"`
 }
 
 type CDNConfig struct {

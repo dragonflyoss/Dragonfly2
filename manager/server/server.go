@@ -18,17 +18,20 @@ package server
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/server/service"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
-	"github.com/pkg/errors"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/manager/server/service"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+
+	// manager server rpc
+	_ "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
+	"github.com/pkg/errors"
 )
 
 type Server struct {
@@ -54,12 +57,12 @@ func New(cfg *config.Config) (*Server, error) {
 			},
 			stop: make(chan struct{}),
 		}, nil
-	} else {
-		return nil, errors.New("failed to create manager server")
 	}
+
+	return nil, errors.New("failed to create manager server")
 }
 
-func (s *Server) Serve() (error) {
+func (s *Server) Serve() error {
 	go func() {
 		port := s.cfg.Server.Port
 		err := rpc.StartTcpServer(port, port, s.ms)

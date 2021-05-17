@@ -124,3 +124,39 @@ func (d *Duration) unmarshal(v interface{}) error {
 		return errors.New("invalid duration")
 	}
 }
+
+type StorageSize struct {
+	SizeInBytes int64
+}
+
+func (s *StorageSize) UnmarshalJSON(b []byte) error {
+	return s.unmarshal(json.Unmarshal, b)
+}
+
+func (s *StorageSize) UnmarshalYAML(node *yaml.Node) error {
+	return s.unmarshal(yaml.Unmarshal, []byte(node.Value))
+}
+
+func (s *StorageSize) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
+	var v interface{}
+	if err := unmarshal(b, &v); err != nil {
+		return err
+	}
+	switch value := v.(type) {
+	case float64:
+		s.SizeInBytes = int64(value)
+		return nil
+	case int:
+		s.SizeInBytes = int64(value)
+		return nil
+	case string:
+		size, err := units.RAMInBytes(value)
+		if err != nil {
+			return errors.WithMessage(err, "invalid storage size")
+		}
+		s.SizeInBytes = size
+		return nil
+	default:
+		return errors.New("invalid storage size")
+	}
+}

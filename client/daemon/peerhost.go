@@ -91,7 +91,7 @@ func New(opt *config.PeerHostOption) (PeerHost, error) {
 
 	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get schedulers")
 	}
 
 	// Storage.Option.DataPath is same with PeerHost DataDir

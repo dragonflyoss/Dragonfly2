@@ -21,6 +21,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	mgClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/manager"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
@@ -36,8 +37,8 @@ type SchedulerService struct {
 	ABTest      bool
 }
 
-func NewSchedulerService(cfg *config.Config) *SchedulerService {
-	mgr := manager.New(cfg)
+func NewSchedulerService(cfg *config.Config, cfgServer mgClient.ManagerClient) *SchedulerService {
+	mgr := manager.New(cfg, cfgServer)
 	return &SchedulerService{
 		CDNManager:  mgr.CDNManager,
 		TaskManager: mgr.TaskManager,
@@ -54,21 +55,24 @@ func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.
 	return idgen.TaskID(url, filter, meta, bizID)
 }
 
-func (s *SchedulerService) GetTask(taskID string) (task *types.Task, err error) {
-	task, _ = s.TaskManager.Get(taskID)
-	if task == nil {
-		err = errors.New("peer task not exited: " + taskID)
-	}
-	return
+func (s *SchedulerService) GetTask(taskID string) (*types.Task, bool) {
+	return s.TaskManager.Get(taskID)
 }
 
-func (s *SchedulerService) AddTask(task *types.Task) (ret *types.Task, err error) {
-	ret, added := s.TaskManager.Add(task)
-	if added {
-		err = s.CDNManager.TriggerTask(ret, s.TaskManager.PeerTask.CDNCallback)
+func (s *SchedulerService) AddTask(task *types.Task) (*types.Task, error) {
+	// Task already exists
+	if ret, ok := s.TaskManager.Get(task.TaskId); ok {
+		s.TaskManager.PeerTask.AddTask(ret)
+		return ret, nil
+	}
+
+	// Task does not exist
+	ret := s.TaskManager.Set(task.TaskId, task)
+	if err := s.CDNManager.TriggerTask(ret, s.TaskManager.PeerTask.CDNCallback); err != nil {
+		return nil, err
 	}
 	s.TaskManager.PeerTask.AddTask(ret)
-	return
+	return ret, nil
 }
 
 func (s *SchedulerService) ScheduleParent(task *types.PeerTask) (primary *types.PeerTask,

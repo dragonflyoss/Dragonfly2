@@ -5,19 +5,20 @@ import (
 )
 
 type Config struct {
-	base.Options  `yaml:",inline" mapstructure:",squash"`
-	Server        *ServerConfig        `yaml:"server" mapstructure:"server"`
-	ConfigService *ConfigServiceConfig `yaml:"config-service" mapstructure:"config-service"`
-	Stores        []*StoreConfig       `yaml:"stores" mapstructure:"stores"`
+	base.Options `yaml:",inline" mapstructure:",squash"`
+	Server       *ServerConfig    `yaml:"server" mapstructure:"server"`
+	Configure    *ConfigureConfig `yaml:"configure" mapstructure:"configure"`
+	Stores       []*StoreConfig   `yaml:"stores" mapstructure:"stores"`
+	HostService  *HostService     `yaml:"host-service" mapstructure:"host-service"`
 }
 
 type ServerConfig struct {
-	IP   string `yaml:"ip,omitempty" mapstructure:"ip,omitempty"`
+	IP   string `yaml:"ip" mapstructure:"ip"`
 	Port int    `yaml:"port" mapstructure:"port"`
 }
 
-type ConfigServiceConfig struct {
-	StoreName string `yaml:"store-name"`
+type ConfigureConfig struct {
+	StoreName string `yaml:"store-name" mapstructure:"store-name"`
 }
 
 type MysqlConfig struct {
@@ -26,21 +27,26 @@ type MysqlConfig struct {
 	IP       string `yaml:"ip" mapstructure:"ip"`
 	Port     int    `yaml:"port" mapstructure:"port"`
 	Db       string `yaml:"db" mapstructure:"db"`
-	Table    string `yaml:"table" mapstructure:"table"`
 }
 
 type OssConfig struct {
 }
 
-type MemoryConfig struct {
+type StoreConfig struct {
+	Name  string       `yaml:"name" mapstructure:"name"`
+	Type  string       `yaml:"type" mapstructure:"type"`
+	Mysql *MysqlConfig `yaml:"mysql,omitempty" mapstructure:"mysql,omitempty"`
+	Oss   *OssConfig   `yaml:"oss,omitempty" mapstructure:"oss,omitempty"`
 }
 
-type StoreConfig struct {
-	Name   string        `yaml:"name" mapstructure:"name"`
-	Type   string        `yaml:"type" mapstructure:"type"`
-	Mysql  *MysqlConfig  `yaml:"mysql,omitempty" mapstructure:"mysql,omitempty"`
-	Oss    *OssConfig    `yaml:"oss,omitempty" mapstructure:"oss,omitempty"`
-	Memory *MemoryConfig `yaml:"memory,omitempty" mapstructure:"memory,omitempty"`
+type HostService struct {
+}
+
+type SkylineService struct {
+	Domain    string `yaml:"domain" mapstructure:"domain"`
+	AppName   string `yaml:"app-name" mapstructure:"app-name"`
+	Account   string `yaml:"account" mapstructure:"account"`
+	AccessKey string `yaml:"access-key" mapstructure:"access-key"`
 }
 
 func New() *Config {
@@ -48,7 +54,7 @@ func New() *Config {
 		Server: &ServerConfig{
 			Port: 8004,
 		},
-		ConfigService: &ConfigServiceConfig{
+		Configure: &ConfigureConfig{
 			StoreName: "store1",
 		},
 		Stores: []*StoreConfig{
@@ -61,12 +67,11 @@ func New() *Config {
 					IP:       "127.0.0.1",
 					Port:     3306,
 					Db:       "config_db",
-					Table:    "config_table",
 				},
-				Oss:    nil,
-				Memory: nil,
+				Oss: nil,
 			},
 		},
+		HostService: &HostService{},
 	}
 }
 
