@@ -17,10 +17,11 @@
 package source
 
 import (
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"fmt"
 	"strings"
+
+	"d7y.io/dragonfly/v2/pkg/dferrors"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 func (s *ResourceClientAdaptor) getSchema(url string) (string, error) {

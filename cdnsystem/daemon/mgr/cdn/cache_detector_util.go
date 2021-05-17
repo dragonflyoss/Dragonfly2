@@ -18,16 +18,17 @@ package cdn
 
 import (
 	"crypto/md5"
+	"encoding/binary"
+	"hash"
+	"io"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/ifaceutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"encoding/binary"
 	"github.com/pkg/errors"
-	"hash"
-	"io"
 )
 
 // checkSameFile check whether meta file is modified

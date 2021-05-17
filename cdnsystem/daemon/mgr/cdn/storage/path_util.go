@@ -17,9 +17,10 @@
 package storage
 
 import (
+	"path"
+
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"path"
 )
 
 const (

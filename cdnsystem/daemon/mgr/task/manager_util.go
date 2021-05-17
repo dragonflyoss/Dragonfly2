@@ -18,17 +18,15 @@ package task
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/pkg/synclock"
-
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	urlutils2 "d7y.io/dragonfly/v2/pkg/util/net/urlutils"
+	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-
 	"github.com/pkg/errors"
 )
 
@@ -40,7 +38,7 @@ const (
 func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegisterRequest) (*types.SeedTask, error) {
 	taskURL := request.URL
 	if request.Filter != nil {
-		taskURL = urlutils2.FilterURLParam(request.URL, request.Filter)
+		taskURL = urlutils.FilterURLParam(request.URL, request.Filter)
 	}
 	taskId := request.TaskId
 	synclock.Lock(taskId, false)

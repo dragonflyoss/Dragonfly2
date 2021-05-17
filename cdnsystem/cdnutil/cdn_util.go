@@ -17,8 +17,9 @@
 package cdnutil
 
 import (
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"fmt"
+
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 func GenCdnPeerId(taskId string) string {

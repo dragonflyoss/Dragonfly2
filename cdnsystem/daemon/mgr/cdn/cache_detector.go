@@ -19,15 +19,16 @@ package cdn
 import (
 	"context"
 	"crypto/md5"
+	"fmt"
+	"hash"
+	"sort"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"fmt"
 	"github.com/pkg/errors"
-	"hash"
-	"sort"
 )
 
 // cacheDetector detect task cache

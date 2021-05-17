@@ -21,11 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
-
-	"github.com/pkg/errors"
-
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -37,6 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/pkg/errors"
 )
 
 // CdnSeedServer is used to implement cdnsystem.SeederServer.
