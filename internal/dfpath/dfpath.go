@@ -14,12 +14,35 @@
  * limitations under the License.
  */
 
-package common
+package dfpath
 
 import (
 	"path/filepath"
 
-	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
-var defaultConfigDir = filepath.Join(basic.HomeDir, ".dragonfly")
+var (
+	DefaultDataDir = filepath.Join(WorkHome, "data")
+	DaemonSockPath = filepath.Join(WorkHome, "daemon.sock")
+	DaemonLockPath = filepath.Join(WorkHome, "daemon.lock")
+	DfgetLockPath  = filepath.Join(WorkHome, "dfget.lock")
+)
+
+func init() {
+	if err := fileutils.MkdirAll(WorkHome); err != nil {
+		panic(err)
+	}
+
+	if err := fileutils.MkdirAll(DefaultConfigDir); err != nil {
+		panic(err)
+	}
+
+	if err := fileutils.MkdirAll(LogDir); err != nil {
+		panic(err)
+	}
+
+	if err := fileutils.MkdirAll(DefaultDataDir); err != nil {
+		panic(err)
+	}
+}

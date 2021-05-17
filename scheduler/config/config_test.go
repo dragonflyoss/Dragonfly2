@@ -23,15 +23,13 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func TestSchedulerConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{
-		Console: true,
-		Verbose: true,
 		Scheduler: SchedulerConfig{
 			ABTest:     true,
 			AScheduler: "a-scheduler",
