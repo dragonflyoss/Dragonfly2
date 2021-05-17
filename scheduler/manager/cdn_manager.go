@@ -119,7 +119,9 @@ func (cm *CDNManager) OnNotify(c *manager.SchedulerConfig) {
 }
 
 func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error) {
-	cm.dynconfig.Notify()
+	if err := cm.dynconfig.Notify(); err != nil {
+		return err
+	}
 	if cm.client == nil {
 		err = dferrors.New(dfcodes.SchedNeedBackSource, "empty cdn")
 		return
@@ -203,7 +205,10 @@ func (cm *CDNManager) AddToCallback(peerTask *types.PeerTask) {
 }
 
 func (cm *CDNManager) getServer(name string) (*manager.ServerInfo, bool) {
-	cm.dynconfig.Notify()
+	if err := cm.dynconfig.Notify(); err != nil {
+		return nil, false
+	}
+
 	item, found := cm.servers[name]
 	return item, found
 }
@@ -330,7 +335,10 @@ func (cm *CDNManager) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt 
 }
 
 func (cm *CDNManager) getTinyFileContent(task *types.Task, cdnHost *types.Host) (content []byte, err error) {
-	cm.dynconfig.Notify()
+	if err := cm.dynconfig.Notify(); err != nil {
+		return nil, err
+	}
+
 	resp, err := cm.client.GetPieceTasks(context.TODO(), dfnet.NetAddr{Type: dfnet.TCP, Addr: fmt.Sprintf("%s:%d", cdnHost.Ip, cdnHost.RpcPort)}, &base.PieceTaskRequest{
 		TaskId:   task.TaskId,
 		SrcPid:   "scheduler",
