@@ -13,8 +13,6 @@ var (
 )
 
 var config = Config{
-	Console: false,
-	Verbose: true,
 	Server: ServerConfig{
 		Port: 8002,
 	},

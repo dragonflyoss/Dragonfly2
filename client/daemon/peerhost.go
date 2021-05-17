@@ -28,6 +28,9 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
@@ -72,16 +75,21 @@ type peerHost struct {
 	PieceManager    peer.PieceManager
 }
 
-func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost, error) {
-	var (
-		sched schedulerclient.SchedulerClient
-		err   error
-	)
-	if len(opt.Scheduler.NetAddrs) > 0 {
-		sched, err = schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs)
-	} else {
-		sched, err = schedulerclient.GetSchedulerByConfigServer(opt.ConfigServer)
+func New(opt *config.PeerHostOption) (PeerHost, error) {
+
+	host := &scheduler.PeerHost{
+		Uuid:           idgen.UUIDString(),
+		Ip:             opt.Host.AdvertiseIP,
+		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
+		DownPort:       0,
+		HostName:       iputils.HostName,
+		SecurityDomain: opt.Host.SecurityDomain,
+		Location:       opt.Host.Location,
+		Idc:            opt.Host.IDC,
+		NetTopology:    opt.Host.NetTopology,
 	}
+
+	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get schedulers")
 	}
@@ -155,7 +163,7 @@ func NewPeerHost(host *scheduler.PeerHost, opt config.PeerHostOption) (PeerHost,
 		once:          &sync.Once{},
 		done:          make(chan bool),
 		schedPeerHost: host,
-		Option:        opt,
+		Option:        *opt,
 
 		ServiceManager:  serviceManager,
 		PeerTaskManager: peerTaskManager,
@@ -248,7 +256,8 @@ func (ph *peerHost) prepareTCPListener(opt config.ListenOption, withTLS bool) (n
 
 func (ph *peerHost) Serve() error {
 	ph.GCManager.Start()
-
+	// todo remove this field, and use directly dfpath.DaemonSockPath
+	ph.Option.Download.DownloadGRPC.UnixListen.Socket = dfpath.DaemonSockPath
 	// prepare download service listen
 	if ph.Option.Download.DownloadGRPC.UnixListen == nil {
 		return errors.New("download grpc unix listen option is empty")

@@ -44,9 +44,6 @@ base:
   # StoragePattern is the pattern of storage policy, [disk/hybrid]
   storagePattern: disk
 
-  # Console shows log on console
-  console: false
-
 plugins:
   storage:
     - name: disk

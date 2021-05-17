@@ -16,50 +16,52 @@
 
 package config
 
+import (
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
+)
+
 type Config struct {
-	Console      bool                  `yaml:"console"`
-	Verbose      bool                  `yaml:"verbose"`
-	PProfPort    int                   `yaml:"pprofPort"`
-	ConfigServer string                `yaml:"configServer"`
-	Scheduler    SchedulerConfig       `yaml:"scheduler"`
-	Server       ServerConfig          `yaml:"server"`
-	Worker       SchedulerWorkerConfig `yaml:"worker"`
-	CDN          CDNConfig             `yaml:"cdn"`
-	GC           GCConfig              `yaml:"gc"`
+	base.Options `yaml:",inline" mapstructure:",squash"`
+	ConfigServer string                `yaml:"configServer" mapstructure:"configServer"`
+	Scheduler    SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
+	Server       ServerConfig          `yaml:"server" mapstructure:"server"`
+	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
+	CDN          CDNConfig             `yaml:"cdn" mapstructure:"cdn"`
+	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
 }
 
 type SchedulerConfig struct {
-	ABTest     bool   `yaml:"abtest"`
-	AScheduler string `yaml:"ascheduler"`
-	BScheduler string `yaml:"bscheduler"`
+	ABTest     bool   `yaml:"abtest" mapstructure:"abtest"`
+	AScheduler string `yaml:"ascheduler" mapstructure:"ascheduler"`
+	BScheduler string `yaml:"bscheduler" mapstructure:"bscheduler"`
 }
 
 type ServerConfig struct {
-	IP   string `yaml:"ip"`
-	Port int    `yaml:"port"`
+	IP   string `yaml:"ip" mapstructure:"ip"`
+	Port int    `yaml:"port" mapstructure:"port"`
 }
 
 type SchedulerWorkerConfig struct {
-	WorkerNum         int `yaml:"workerNum"`
-	WorkerJobPoolSize int `yaml:"workerJobPoolSize"`
-	SenderNum         int `yaml:"senderNum"`
-	SenderJobPoolSize int `yaml:"senderJobPoolSize"`
+	WorkerNum         int `yaml:"workerNum" mapstructure:"workerNum"`
+	WorkerJobPoolSize int `yaml:"workerJobPoolSize" mapstructure:"workerJobPoolSize"`
+	SenderNum         int `yaml:"senderNum" mapstructure:"senderNum"`
+	SenderJobPoolSize int `yaml:"senderJobPoolSize" mapstructure:"senderJobPoolSize"`
 }
 
 type CDNServerConfig struct {
-	Name         string `yaml:"name"`
-	IP           string `yaml:"ip"`
-	RpcPort      int32    `yaml:"rpcPort"`
-	DownloadPort int32    `yaml:"downloadPort"`
+	Name         string `yaml:"name" mapstructure:"name"`
+	IP           string `yaml:"ip" mapstructure:"ip"`
+	RpcPort      int32  `yaml:"rpcPort" mapstructure:"rpcPort"`
+	DownloadPort int32  `yaml:"downloadPort" mapstructure:"downloadPort"`
 }
 
 type CDNConfig struct {
-	Servers []CDNServerConfig `yaml:"servers"`
+	Servers []CDNServerConfig `yaml:"servers" mapstructure:"servers"`
 }
 
 type GCConfig struct {
-	PeerTaskDelay int64 `yaml:"peerTaskDelay"`
-	TaskDelay     int64 `yaml:"taskDelay"`
+	PeerTaskDelay int64 `yaml:"peerTaskDelay" mapstructure:"peerTaskDelay"`
+	TaskDelay     int64 `yaml:"taskDelay" mapstructure:"taskDelay"`
 }
 
 func New() *Config {

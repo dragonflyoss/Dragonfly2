@@ -1,54 +1,52 @@
 package config
 
-const (
-	DefaultConfigFilePath string = "/etc/dragonfly/manager.yaml"
+import (
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 )
 
 type Config struct {
-	Console     bool             `yaml:"console"`
-	Verbose     bool             `yaml:"verbose"`
-	PProfPort   int              `yaml:"pprofPort"`
-	Server      *ServerConfig    `yaml:"server"`
-	Configure   *ConfigureConfig `yaml:"configure"`
-	Stores      []*StoreConfig   `yaml:"stores"`
-	HostService *HostService     `yaml:"host-service"`
+	base.Options `yaml:",inline" mapstructure:",squash"`
+	Server       *ServerConfig    `yaml:"server" mapstructure:"server"`
+	Configure    *ConfigureConfig `yaml:"configure" mapstructure:"configure"`
+	Stores       []*StoreConfig   `yaml:"stores" mapstructure:"stores"`
+	HostService  *HostService     `yaml:"host-service" mapstructure:"host-service"`
 }
 
 type ServerConfig struct {
-	IP   string `yaml:"ip"`
-	Port int    `yaml:"port"`
+	IP   string `yaml:"ip" mapstructure:"ip"`
+	Port int    `yaml:"port" mapstructure:"port"`
 }
 
 type ConfigureConfig struct {
-	StoreName string `yaml:"store-name"`
+	StoreName string `yaml:"store-name" mapstructure:"store-name"`
 }
 
 type MysqlConfig struct {
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	IP       string `yaml:"ip"`
-	Port     int    `yaml:"port"`
-	Db       string `yaml:"db"`
+	User     string `yaml:"user" mapstructure:"user"`
+	Password string `yaml:"password" mapstructure:"password"`
+	IP       string `yaml:"ip" mapstructure:"ip"`
+	Port     int    `yaml:"port" mapstructure:"port"`
+	Db       string `yaml:"db" mapstructure:"db"`
 }
 
 type OssConfig struct {
 }
 
 type StoreConfig struct {
-	Name  string       `yaml:"name"`
-	Type  string       `yaml:"type"`
-	Mysql *MysqlConfig `yaml:"mysql,omitempty"`
-	Oss   *OssConfig   `yaml:"oss,omitempty"`
+	Name  string       `yaml:"name" mapstructure:"name"`
+	Type  string       `yaml:"type" mapstructure:"type"`
+	Mysql *MysqlConfig `yaml:"mysql,omitempty" mapstructure:"mysql,omitempty"`
+	Oss   *OssConfig   `yaml:"oss,omitempty" mapstructure:"oss,omitempty"`
 }
 
 type HostService struct {
 }
 
 type SkylineService struct {
-	Domain    string `yaml:"domain"`
-	AppName   string `yaml:"app-name"`
-	Account   string `yaml:"account"`
-	AccessKey string `yaml:"access-key"`
+	Domain    string `yaml:"domain" mapstructure:"domain"`
+	AppName   string `yaml:"app-name" mapstructure:"app-name"`
+	Account   string `yaml:"account" mapstructure:"account"`
+	AccessKey string `yaml:"access-key" mapstructure:"access-key"`
 }
 
 func New() *Config {

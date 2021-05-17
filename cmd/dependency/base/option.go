@@ -14,44 +14,11 @@
  * limitations under the License.
  */
 
-package basic
+package base
 
-import (
-	"os"
-	"os/user"
-	"strconv"
-	"strings"
-
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-)
-
-var (
-	HomeDir   string
-	TmpDir    string
-	Username  string
-	UserId    int
-	UserGroup int
-)
-
-func init() {
-	u, err := user.Current()
-	if err != nil {
-		panic(err)
-	}
-
-	Username = u.Username
-	UserId, _ = strconv.Atoi(u.Uid)
-	UserGroup, _ = strconv.Atoi(u.Gid)
-
-	HomeDir = u.HomeDir
-	HomeDir = strings.TrimSpace(HomeDir)
-	if stringutils.IsBlank(HomeDir) {
-		panic("home dir is empty")
-	}
-
-	TmpDir = os.TempDir()
-	TmpDir = strings.TrimSpace(TmpDir)
-	if stringutils.IsBlank(TmpDir) {
-		TmpDir = "/tmp"
-	}
+type Options struct {
+	Console   bool   `yaml:"console" mapstructure:"console"`
+	Verbose   bool   `yaml:"verbose" mapstructure:"verbose"`
+	PProfPort int    `yaml:"pprof-port" mapstructure:"pprof-port"`
+	Jaeger    string `yaml:"jaeger" mapstructure:"jaeger"`
 }
