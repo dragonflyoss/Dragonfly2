@@ -7,14 +7,14 @@ Organization of document is as following:
 * [Quick Start](#Quick-Start)
 * [User Guide](#User-Guide)
 * [CLI Reference](#CLI-Reference)
-    * [WIP dfget](./cli-reference/dfget.md)
-    * [WIP cdnsystem](./cli-reference/cdn.md)
-    * [WIP scheduler](./cli-reference/scheduler.md)
+    * [WIP dfget](cli-reference/dfget.md)
+    * [WIP cdnsystem](cli-reference/cdn.md)
+    * [WIP scheduler](cli-reference/scheduler.md)
     * [TODO manager](./cli-reference/manager.md)
 * [TODO API Reference](#API-Reference)
 * [Ecosystem](#Ecosystem)
-    * [Kubernetes Integration](./ecosystem/Kubernetes-with-Dragonfly.md)
-    * [WIP Harbor Integration](./ecosystem/Harbor-with-Dragonfly.md)
+    * [Kubernetes Integration](ecosystem/Kubernetes-with-Dragonfly.md)
+    * [WIP Harbor Integration](ecosystem/Harbor-with-Dragonfly.md)
 * [Developer Guide](#Developer-Guide)
     * [Design Doc](#Design-Doc)
     * [Test Guide](#Test-Guide)
@@ -25,15 +25,15 @@ Find `WIP` or `TODO` in this page and follow [CONTRIBUTING](../../CONTRIBUTING.m
 
 ## Quick Start
 
-[Quick Started](./user-guide/quick-start.md) is exactly what you need if you would give Dragonfly a try. This document includes what are the prerequisites, how to install Dragonfly and how to experience Dragonfly's usage.
+[Quick Started](user-guide/quick-start.md) is exactly what you need if you would give Dragonfly a try. This document includes what are the prerequisites, how to install Dragonfly and how to experience Dragonfly's usage.
 
 ## [WIP] User Guide
 
-[User Guide](./user-guide) helps all kinds of guidance end users need to experience Dragonfly. Not only the very brief [Quick Start](./quick-start), but the detailed binary installation and configure illustration. In addition, any concept and function which help users understand Dragonfly better would be included as well.
+[User Guide]() helps all kinds of guidance end users need to experience Dragonfly. Not only the very brief [Quick Start](./quick-start), but the detailed binary installation and configure illustration. In addition, any concept and function which help users understand Dragonfly better would be included as well.
 
 ## [WIP] CLI Reference
 
-For almost all users, commandline is the first reference you may need. Document in directory [CLI Reference](./cli-reference) is about command detailed usage of Dragonfly CLI including `dfget`, `cdnsystem`, `scheduler` and `manager`. You can get introductions, synopsis, examples, options about command. Last but not least, Dragonfly can guarantee commandline docs is strongly consistent with Dragonfly CLI's source code. What's more, all commandline docs are auto generated via source code.
+For almost all users, commandline is the first reference you may need. Document in directory [CLI Reference](cli-reference) is about command detailed usage of Dragonfly CLI including `dfget`, `cdnsystem`, `scheduler` and `manager`. You can get introductions, synopsis, examples, options about command. Last but not least, Dragonfly can guarantee commandline docs is strongly consistent with Dragonfly CLI's source code. What's more, all commandline docs are auto generated via source code.
 
 ## [TODO] API Reference
 
