@@ -139,17 +139,7 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 			}
 		}
 
-		// var cdnHosts []*manager.ServerInfo
-		cdnHosts := []*manager.ServerInfo{
-			{
-				HostInfo: &manager.HostInfo{
-					HostName: "test",
-					Ip:       "127.0.0.1",
-				},
-				RpcPort:  8001,
-				DownPort: 8002,
-			},
-		}
+		var cdnHosts []*manager.ServerInfo
 		for _, instance := range cdnInstances {
 			if instance.State != configsvc.InstanceActive {
 				continue
