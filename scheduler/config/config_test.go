@@ -30,8 +30,6 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{
-		Console: true,
-		Verbose: true,
 		Manager: &ManagerConfig{
 			NetAddrs: []dfnet.NetAddr{
 				{
@@ -39,6 +37,10 @@ func TestSchedulerConfig_Load(t *testing.T) {
 					Addr: "127.0.0.1:8004",
 				},
 			},
+		},
+		Dynconfig: &DynconfigOptions{
+			Path:       "foo",
+			CachePath:  "bar",
 			ExpireTime: 1000,
 		},
 		Scheduler: SchedulerConfig{

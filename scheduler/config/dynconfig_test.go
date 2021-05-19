@@ -42,12 +42,7 @@ func TestDynconfigGet(t *testing.T) {
 			name:   "get dynconfig success",
 			expire: 10 * time.Second,
 			cleanFileCache: func(t *testing.T) {
-				path, err := dc.DefaultCacheFile()
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if err := os.Remove(path); err != nil {
+				if err := os.Remove(SchedulerDynconfigCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -66,12 +61,7 @@ func TestDynconfigGet(t *testing.T) {
 			name:   "client failed to return for the second time",
 			expire: 10 * time.Millisecond,
 			cleanFileCache: func(t *testing.T) {
-				path, err := dc.DefaultCacheFile()
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if err := os.Remove(path); err != nil {
+				if err := os.Remove(SchedulerDynconfigCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -100,7 +90,11 @@ func TestDynconfigGet(t *testing.T) {
 			mockManagerClient := mocks.NewMockManagerClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			d, err := NewDynconfig(mockManagerClient, tc.expire)
+			d, err := NewDynconfig(dc.ManagerSourceType, []dc.Option{
+				dc.WithManagerClient(NewManagerClient(mockManagerClient)),
+				dc.WithCachePath(SchedulerDynconfigCachePath),
+				dc.WithExpireTime(tc.expire),
+			}...)
 			if err != nil {
 				t.Fatal(err)
 			}
