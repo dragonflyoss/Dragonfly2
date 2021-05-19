@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	mock_manager_client "d7y.io/dragonfly/v2/pkg/dynconfig/mocks"
+	mock_manager_client "d7y.io/dragonfly/v2/internal/dynconfig/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"

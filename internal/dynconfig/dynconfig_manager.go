@@ -18,37 +18,40 @@ package dynconfig
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/cache"
-	"github.com/spf13/viper"
 )
 
-type dynconfigLocal struct {
-	cache    cache.Cache
-	filepath string
-	expired  time.Duration
+const ()
+
+type dynconfigManager struct {
+	cachePath string
+	cache     cache.Cache
+	expire    time.Duration
+	client    ManagerClient
 }
 
-// newDynconfigLocal returns a new local dynconfig instence
-func newDynconfigLocal(cache cache.Cache, expired time.Duration, filePath string) (*dynconfigLocal, error) {
-	d := &dynconfigLocal{
-		cache:    cache,
-		filepath: filePath,
-		expired:  expired,
+// newDynconfigManager returns a new manager dynconfig instence
+func newDynconfigManager(expire time.Duration, cachePath string, client ManagerClient) (*dynconfigManager, error) {
+	d := &dynconfigManager{
+		cache:     cache.New(expire, cache.NoCleanup),
+		cachePath: cachePath,
+		expire:    expire,
+		client:    client,
 	}
 
-	if err := d.load(); err != nil {
-		return nil, err
+	if err := d.cache.LoadFile(d.cachePath); err != nil {
+		if err := d.load(); err != nil {
+			return nil, err
+		}
 	}
 
 	return d, nil
 }
 
 // Get dynamic config
-func (d *dynconfigLocal) Get() (interface{}, error) {
+func (d *dynconfigManager) get() (interface{}, error) {
 	// Cache has not expired
 	dynconfig, _, found := d.cache.GetWithExpiration(defaultCacheKey)
 	if found {
@@ -67,15 +70,10 @@ func (d *dynconfigLocal) Get() (interface{}, error) {
 	return dynconfig, nil
 }
 
-// Set dynamic config
-func (d *dynconfigLocal) Set(x interface{}) {
-	d.cache.Set(defaultCacheKey, x, 0)
-}
-
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags
 // on the fields of the structure are properly set.
-func (d *dynconfigLocal) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error {
-	dynconfig, err := d.Get()
+func (d *dynconfigManager) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error {
+	dynconfig, err := d.get()
 	if err != nil {
 		return errors.New("can't find the cached data")
 	}
@@ -83,24 +81,16 @@ func (d *dynconfigLocal) Unmarshal(rawVal interface{}, opts ...DecoderConfigOpti
 	return decode(dynconfig, defaultDecoderConfig(rawVal, opts...))
 }
 
-// Load dynamic config from local file
-func (d *dynconfigLocal) load() error {
-	viper.SetConfigFile(d.filepath)
-
-	if err := viper.ReadInConfig(); err != nil {
+// Load dynamic config from manager
+func (d *dynconfigManager) load() error {
+	dynconfig, err := d.client.Get()
+	if err != nil {
 		return err
 	}
 
-	d.cache.Set(defaultCacheKey, viper.AllSettings(), d.expired)
-	return nil
-}
-
-// Get default config file path
-func defaultConfigFile() (string, error) {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return "", err
+	d.cache.Set(defaultCacheKey, dynconfig, d.expire)
+	if err := d.cache.SaveFile(d.cachePath); err != nil {
+		return err
 	}
-
-	return filepath.Join(dir, "dynconfig.yaml"), nil
+	return nil
 }

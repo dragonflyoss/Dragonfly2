@@ -2,15 +2,15 @@
 
 package config
 
-import "runtime"
-
-var (
-	SchedulerConfigPath = "/etc/dragonfly/scheduler.yaml"
+import (
+	"runtime"
 )
 
 var config = Config{
 	Dynconfig: &DynconfigOptions{
 		ExpireTime: 60000 * 1000 * 1000,
+		Path:       SchedulerDynconfigPath,
+		CachePath:  SchedulerDynconfigCachePath,
 	},
 	Server: ServerConfig{
 		Port: 8002,

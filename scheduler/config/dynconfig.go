@@ -18,13 +18,19 @@ package config
 
 import (
 	"context"
+	"path/filepath"
 	"reflect"
-	"time"
 
-	dc "d7y.io/dragonfly/v2/pkg/dynconfig"
+	"d7y.io/dragonfly/v2/internal/dfpath"
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+)
+
+var (
+	SchedulerDynconfigPath      = filepath.Join(dfpath.WorkHome, "dynconfig/scheduler.json")
+	SchedulerDynconfigCachePath = filepath.Join(dfpath.WorkHome, "dynconfig/scheduler")
 )
 
 type DynconfigInterface interface {
@@ -52,8 +58,8 @@ type dynconfig struct {
 	data      *manager.SchedulerConfig
 }
 
-func NewDynconfig(sourceType dc.SourceType, expire time.Duration, options ...dc.Option) (DynconfigInterface, error) {
-	client, err := dc.New(sourceType, expire, options...)
+func NewDynconfig(sourceType dc.SourceType, options ...dc.Option) (DynconfigInterface, error) {
+	client, err := dc.New(sourceType, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -67,13 +73,13 @@ func NewDynconfig(sourceType dc.SourceType, expire time.Duration, options ...dc.
 }
 
 func (d *dynconfig) Get() (*manager.SchedulerConfig, error) {
-	var config *manager.SchedulerConfig
+	var config manager.SchedulerConfig
 	if err := d.Unmarshal(&config); err != nil {
 		return nil, err
 	}
 
-	d.data = config
-	return config, nil
+	d.data = &config
+	return &config, nil
 }
 
 type managerClient struct {

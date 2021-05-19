@@ -19,8 +19,8 @@ package server
 import (
 	"context"
 
+	"d7y.io/dragonfly/v2/internal/dynconfig"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -57,15 +57,21 @@ func New(cfg *config.Config) (*Server, error) {
 		if err != nil {
 			return nil, err
 		}
-		options = []dynconfig.Option{dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient))}
+		options = []dynconfig.Option{
+			dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient)),
+			dynconfig.WithCachePath(cfg.Dynconfig.CachePath),
+			dynconfig.WithExpireTime(cfg.Dynconfig.ExpireTime),
+		}
 	} else {
 		if cfg.Dynconfig.Path != "" {
-			options = []dynconfig.Option{dynconfig.WithLocalConfigPath(cfg.Dynconfig.Path)}
+			options = []dynconfig.Option{
+				dynconfig.WithLocalConfigPath(cfg.Dynconfig.Path),
+			}
 		}
 		sourceType = dynconfig.LocalSourceType
 	}
 
-	dynconfig, err := config.NewDynconfig(sourceType, cfg.Dynconfig.ExpireTime, options...)
+	dynconfig, err := config.NewDynconfig(sourceType, options...)
 	if err != nil {
 		return nil, err
 	}

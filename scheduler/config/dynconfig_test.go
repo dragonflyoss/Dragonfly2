@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	dc "d7y.io/dragonfly/v2/pkg/dynconfig"
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/scheduler/config/mocks"
 	"github.com/golang/mock/gomock"

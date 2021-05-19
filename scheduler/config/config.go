@@ -60,6 +60,9 @@ type DynconfigOptions struct {
 
 	// Path is dynconfig filepath.
 	Path string `yaml:"path"`
+
+	// CachePath is cache filepath.
+	CachePath string `yaml:"cachePath"`
 }
 
 type SchedulerConfig struct {
