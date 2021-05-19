@@ -17,9 +17,10 @@
 package cdnerrors
 
 import (
+	"testing"
+
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 func TestErrorTestSuite(t *testing.T) {

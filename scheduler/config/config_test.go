@@ -23,7 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func TestSchedulerConfig_Load(t *testing.T) {

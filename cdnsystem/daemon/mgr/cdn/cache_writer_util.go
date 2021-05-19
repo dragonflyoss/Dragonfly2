@@ -20,16 +20,17 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/binary"
+	"hash"
+	"sync"
+
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"encoding/binary"
 	"github.com/pkg/errors"
-	"hash"
-	"sync"
 )
 
 // calculateRoutineCount calculate how many goroutines are needed to execute write goroutine
