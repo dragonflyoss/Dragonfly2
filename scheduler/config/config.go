@@ -25,15 +25,14 @@ import (
 )
 
 type Config struct {
-	Console   bool                  `yaml:"console"`
-	Verbose   bool                  `yaml:"verbose"`
-	PProfPort int                   `yaml:"pprofPort"`
-	Dynconfig *DynconfigOptions     `yaml:"dynconfig"`
-	Manager   *ManagerConfig        `yaml:"manager"`
-	Scheduler SchedulerConfig       `yaml:"scheduler"`
-	Server    ServerConfig          `yaml:"server"`
-	Worker    SchedulerWorkerConfig `yaml:"worker"`
-	GC        GCConfig              `yaml:"gc"`
+	base.Options `yaml:",inline" mapstructure:",squash"`
+	ConfigServer string                `yaml:"configServer" mapstructure:"configServer"`
+	Scheduler    SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
+	Server       ServerConfig          `yaml:"server" mapstructure:"server"`
+	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
+	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
+	Dynconfig    *DynconfigOptions     `yaml:"dynconfig"`
+	Manager      *ManagerConfig        `yaml:"manager"`
 }
 
 func New() *Config {
@@ -59,15 +58,8 @@ type DynconfigOptions struct {
 	// ExpireTime is expire time for manager cache.
 	ExpireTime time.Duration `yaml:"expireTime"`
 
-	// ExpireTime is expire time for manager cache.
-	Path         string `yaml:"path"`
-	base.Options `yaml:",inline" mapstructure:",squash"`
-	ConfigServer string                `yaml:"configServer" mapstructure:"configServer"`
-	Scheduler    SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
-	Server       ServerConfig          `yaml:"server" mapstructure:"server"`
-	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
-	CDN          CDNConfig             `yaml:"cdn" mapstructure:"cdn"`
-	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
+	// Path is dynconfig filepath.
+	Path string `yaml:"path"`
 }
 
 type SchedulerConfig struct {

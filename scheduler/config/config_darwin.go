@@ -13,8 +13,6 @@ var (
 )
 
 var config = Config{
-	Console: false,
-	Verbose: true,
 	Dynconfig: &DynconfigOptions{
 		ExpireTime: 60000 * 1000 * 1000,
 	},
