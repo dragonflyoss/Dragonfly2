@@ -38,6 +38,7 @@ type Server struct {
 	config        config.ServerConfig
 	managerClient client.ManagerClient
 	running       bool
+	dynconfig     config.DynconfigInterface
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -75,9 +76,10 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	s.dynconfig = dynconfig
 
 	// Initialize scheduler service
-	s.service, err = service.NewSchedulerService(cfg, dynconfig)
+	s.service, err = service.NewSchedulerService(cfg, s.dynconfig)
 	if err != nil {
 		return nil, err
 	}
@@ -94,6 +96,8 @@ func (s *Server) Serve() error {
 	s.running = true
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	s.dynconfig.Start()
 
 	go s.worker.Serve()
 	defer s.worker.Stop()
@@ -117,6 +121,7 @@ func (s *Server) Serve() error {
 func (s *Server) Stop() (err error) {
 	if s.running {
 		s.running = false
+		s.dynconfig.Stop()
 		rpc.StopServer()
 	}
 	return

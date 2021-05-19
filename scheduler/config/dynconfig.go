@@ -19,7 +19,7 @@ package config
 import (
 	"context"
 	"path/filepath"
-	"reflect"
+	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
@@ -33,8 +33,12 @@ var (
 	SchedulerDynconfigCachePath = filepath.Join(dfpath.WorkHome, "dynconfig/scheduler")
 )
 
+var (
+	watchInterval = 1 * time.Second
+)
+
 type DynconfigInterface interface {
-	// Get the dynamic config from manager
+	// Get the dynamic config from manager.
 	Get() (*manager.SchedulerConfig, error)
 
 	// Register allows an instance to register itself to listen/observe events.
@@ -45,6 +49,12 @@ type DynconfigInterface interface {
 
 	// Notify publishes new events to listeners.
 	Notify() error
+
+	// Start the dynconfig listening service.
+	Start() error
+
+	// Stop the dynconfig listening service.
+	Stop()
 }
 
 type Observer interface {
@@ -55,7 +65,7 @@ type Observer interface {
 type dynconfig struct {
 	*dc.Dynconfig
 	observers map[Observer]struct{}
-	data      *manager.SchedulerConfig
+	done      chan bool
 }
 
 func NewDynconfig(sourceType dc.SourceType, options ...dc.Option) (DynconfigInterface, error) {
@@ -67,6 +77,7 @@ func NewDynconfig(sourceType dc.SourceType, options ...dc.Option) (DynconfigInte
 	d := &dynconfig{
 		Dynconfig: client,
 		observers: map[Observer]struct{}{},
+		done:      make(chan bool),
 	}
 
 	return d, nil
@@ -78,7 +89,6 @@ func (d *dynconfig) Get() (*manager.SchedulerConfig, error) {
 		return nil, err
 	}
 
-	d.data = &config
 	return &config, nil
 }
 
@@ -100,19 +110,38 @@ func (d *dynconfig) Notify() error {
 		return err
 	}
 
-	if d.data == nil {
-		d.data = config
-	}
-
-	if reflect.DeepEqual(d.data, config) {
-		return nil
-	}
-
 	for o := range d.observers {
 		o.OnNotify(config)
 	}
 
 	return nil
+}
+
+func (d *dynconfig) Start() error {
+	if err := d.Notify(); err != nil {
+		return err
+	}
+
+	go d.watch()
+
+	return nil
+}
+
+func (d *dynconfig) watch() {
+	tick := time.NewTicker(watchInterval)
+
+	for {
+		select {
+		case <-tick.C:
+			d.Notify()
+		case <-d.done:
+			return
+		}
+	}
+}
+
+func (d *dynconfig) Stop() {
+	close(d.done)
 }
 
 func NewManagerClient(client client.ManagerClient) dc.ManagerClient {

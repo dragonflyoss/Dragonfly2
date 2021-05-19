@@ -74,7 +74,7 @@ func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *Ho
 
 	// Initialize CDNManager servers
 	mgr.servers = cdnHostsToServers(dc.CdnHosts)
-	logger.Debugf("servers map is %+v\n", mgr.servers)
+	logger.Debugf("servers map: %+v\n", mgr.servers)
 
 	// Initialize CDNManager client
 	client, err := client.GetClientByAddr(cdnHostsToNetAddrs(dc.CdnHosts))
@@ -112,7 +112,6 @@ func cdnHostsToNetAddrs(hosts []*manager.ServerInfo) []dfnet.NetAddr {
 func (cm *CDNManager) OnNotify(c *manager.SchedulerConfig) {
 	// Sync CDNManager servers
 	cm.servers = cdnHostsToServers(c.CdnHosts)
-	logger.Debugf("servers map is %+v\n", cm.servers)
 
 	// Sync CDNManager client netAddrs
 	cm.client.UpdateState(cdnHostsToNetAddrs(c.CdnHosts))
