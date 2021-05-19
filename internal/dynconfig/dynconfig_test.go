@@ -37,158 +37,13 @@ type SchedulerOption struct {
 	Name string
 }
 
-func TestDynconfigGet_ManagerSourceType(t *testing.T) {
-	schedulerName := "scheduler"
-	tests := []struct {
-		name           string
-		expire         time.Duration
-		dynconfig      TestDynconfig
-		sleep          func()
-		cleanFileCache func(t *testing.T)
-		mock           func(m *mock_manager_client.MockmanagerClientMockRecorder)
-		expect         func(t *testing.T, data interface{})
-	}{
-		{
-			name:   "get dynconfig success without file cache",
-			expire: 20 * time.Millisecond,
-			dynconfig: TestDynconfig{
-				Scheduler: SchedulerOption{
-					Name: schedulerName,
-				},
-			},
-			sleep:          func() {},
-			cleanFileCache: func(t *testing.T) {},
-			mock: func(m *mock_manager_client.MockmanagerClientMockRecorder) {
-				var d map[string]interface{}
-				mapstructure.Decode(TestDynconfig{
-					Scheduler: SchedulerOption{
-						Name: schedulerName,
-					},
-				}, &d)
-				m.Get().Return(d, nil).Times(1)
-			},
-			expect: func(t *testing.T, data interface{}) {
-				assert := assert.New(t)
-				var d TestDynconfig
-				mapstructure.Decode(data, &d)
-				assert.EqualValues(d, TestDynconfig{
-					Scheduler: SchedulerOption{
-						Name: schedulerName,
-					},
-				})
-			},
-		},
-		{
-			name:   "get expire dynconfig with file cache",
-			expire: 20 * time.Millisecond,
-			dynconfig: TestDynconfig{
-				Scheduler: SchedulerOption{
-					Name: schedulerName,
-				},
-			},
-			sleep: func() {
-				time.Sleep(30 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				path, err := DefaultCacheFile()
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if err := os.Remove(path); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mock_manager_client.MockmanagerClientMockRecorder) {
-				var d map[string]interface{}
-				mapstructure.Decode(TestDynconfig{
-					Scheduler: SchedulerOption{
-						Name: schedulerName,
-					},
-				}, &d)
-				m.Get().Return(d, nil).Times(1)
-			},
-			expect: func(t *testing.T, data interface{}) {
-				assert := assert.New(t)
-				var d TestDynconfig
-				mapstructure.Decode(data, &d)
-				assert.EqualValues(d, TestDynconfig{
-					Scheduler: SchedulerOption{
-						Name: schedulerName,
-					},
-				})
-			},
-		},
-		{
-			name:   "get manager config failed",
-			expire: 20 * time.Millisecond,
-			dynconfig: TestDynconfig{
-				Scheduler: SchedulerOption{
-					Name: schedulerName,
-				},
-			},
-			sleep: func() {
-				time.Sleep(30 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				path, err := DefaultCacheFile()
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if err := os.Remove(path); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mock_manager_client.MockmanagerClientMockRecorder) {
-				var d map[string]interface{}
-				mapstructure.Decode(TestDynconfig{
-					Scheduler: SchedulerOption{
-						Name: schedulerName,
-					},
-				}, &d)
-				m.Get().Return(d, nil).Times(1)
-				m.Get().Return(nil, errors.New("manager serivce error")).Times(1)
-			},
-			expect: func(t *testing.T, data interface{}) {
-				assert := assert.New(t)
-				var d TestDynconfig
-				mapstructure.Decode(data, &d)
-				assert.EqualValues(d, TestDynconfig{
-					Scheduler: SchedulerOption{
-						Name: schedulerName,
-					},
-				})
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-			mockManagerClient := mock_manager_client.NewMockmanagerClient(ctl)
-			tc.mock(mockManagerClient.EXPECT())
-
-			d, err := New(ManagerSourceType, tc.expire, []Option{WithManagerClient(mockManagerClient)}...)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.sleep()
-			data, err := d.Get()
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.expect(t, data)
-			tc.cleanFileCache(t)
-		})
-	}
-}
-
 func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 	schedulerName := "scheduler"
+	cachePath, err := mockCachePath()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tests := []struct {
 		name           string
 		expire         time.Duration
@@ -240,12 +95,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 				time.Sleep(30 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				path, err := DefaultCacheFile()
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if err := os.Remove(path); err != nil {
+				if err := os.Remove(cachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -279,12 +129,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 				time.Sleep(30 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				path, err := DefaultCacheFile()
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if err := os.Remove(path); err != nil {
+				if err := os.Remove(cachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -316,7 +161,11 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 			mockManagerClient := mock_manager_client.NewMockmanagerClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			d, err := New(ManagerSourceType, tc.expire, []Option{WithManagerClient(mockManagerClient)}...)
+			d, err := New(ManagerSourceType, []Option{
+				WithManagerClient(mockManagerClient),
+				WithCachePath(cachePath),
+				WithExpireTime(tc.expire),
+			}...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -333,85 +182,9 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 	}
 }
 
-func TestDynconfigGet_LocalSourceType(t *testing.T) {
-	schedulerName := "scheduler"
-	configPath := filepath.Join("./testdata", "dynconfig.yaml")
-
-	tests := []struct {
-		name       string
-		expire     time.Duration
-		dynconfig  TestDynconfig
-		configPath string
-		sleep      func()
-		expect     func(t *testing.T, data interface{})
-	}{
-		{
-			name:   "get dynconfig success with local file",
-			expire: 20 * time.Millisecond,
-			dynconfig: TestDynconfig{
-				Scheduler: SchedulerOption{
-					Name: schedulerName,
-				},
-			},
-			configPath: configPath,
-			sleep:      func() {},
-			expect: func(t *testing.T, data interface{}) {
-				assert := assert.New(t)
-				var d TestDynconfig
-				mapstructure.Decode(data, &d)
-				assert.EqualValues(d, TestDynconfig{
-					Scheduler: SchedulerOption{
-						Name: schedulerName,
-					},
-				})
-			},
-		},
-		{
-			name:   "get expire dynconfig with local file",
-			expire: 20 * time.Millisecond,
-			dynconfig: TestDynconfig{
-				Scheduler: SchedulerOption{
-					Name: schedulerName,
-				},
-			},
-			configPath: configPath,
-			sleep: func() {
-				time.Sleep(30 * time.Millisecond)
-			},
-			expect: func(t *testing.T, data interface{}) {
-				assert := assert.New(t)
-				var d TestDynconfig
-				mapstructure.Decode(data, &d)
-				assert.EqualValues(d, TestDynconfig{
-					Scheduler: SchedulerOption{
-						Name: schedulerName,
-					},
-				})
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			d, err := New(LocalSourceType, tc.expire, []Option{WithLocalConfigPath(configPath)}...)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.sleep()
-			data, err := d.Get()
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.expect(t, data)
-		})
-	}
-}
-
 func TestDynconfigUnmarshal_LocalSourceType(t *testing.T) {
-	schedulerName := "scheduler"
-	configPath := filepath.Join("./testdata", "dynconfig.yaml")
+	schedulerName := "foo"
+	configPath := filepath.Join("./testdata", "dynconfig.json")
 
 	tests := []struct {
 		name       string
@@ -467,7 +240,7 @@ func TestDynconfigUnmarshal_LocalSourceType(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			d, err := New(LocalSourceType, tc.expire, []Option{WithLocalConfigPath(configPath)}...)
+			d, err := New(LocalSourceType, []Option{WithLocalConfigPath(configPath)}...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -481,4 +254,13 @@ func TestDynconfigUnmarshal_LocalSourceType(t *testing.T) {
 			tc.expect(t, data)
 		})
 	}
+}
+
+func mockCachePath() (string, error) {
+	userDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(userDir, ".dynconfig"), nil
 }
