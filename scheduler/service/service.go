@@ -21,7 +21,6 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	mgClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/manager"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
@@ -37,15 +36,19 @@ type SchedulerService struct {
 	ABTest      bool
 }
 
-func NewSchedulerService(cfg *config.Config, cfgServer mgClient.ManagerClient) *SchedulerService {
-	mgr := manager.New(cfg, cfgServer)
+func NewSchedulerService(cfg *config.Config, dynconfig config.DynconfigInterface) (*SchedulerService, error) {
+	mgr, err := manager.New(cfg, dynconfig)
+	if err != nil {
+		return nil, err
+	}
+
 	return &SchedulerService{
 		CDNManager:  mgr.CDNManager,
 		TaskManager: mgr.TaskManager,
 		HostManager: mgr.HostManager,
 		Scheduler:   scheduler.New(cfg.Scheduler, mgr.TaskManager),
 		ABTest:      cfg.Scheduler.ABTest,
-	}
+	}, nil
 }
 
 func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string, peerID string) (taskID string) {

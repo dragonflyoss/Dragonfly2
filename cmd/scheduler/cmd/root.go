@@ -43,6 +43,12 @@ for deciding which peers transmit blocks to each other.`,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Validate config
+		if err := cfg.Validate(); err != nil {
+			return err
+		}
+
+		// Initialize logger
 		if err := logcore.InitScheduler(cfg.Console); err != nil {
 			return errors.Wrap(err, "init scheduler logger")
 		}

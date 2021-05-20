@@ -20,18 +20,17 @@ import (
 	"errors"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/cache"
 	"github.com/mitchellh/mapstructure"
 )
 
-type sourceType int
+type SourceType int
 
 const (
-	// ManagerSourceType represents pulling configuration from manager
-	ManagerSourceType sourceType = 1 << iota
-
 	// LocalSourceType represents read configuration from local file
-	LocalSourceType
+	LocalSourceType SourceType = iota
+
+	// ManagerSourceType represents pulling configuration from manager
+	ManagerSourceType
 )
 
 const (
@@ -39,16 +38,14 @@ const (
 )
 
 type strategy interface {
-	Get() (interface{}, error)
-	Set(interface{})
 	Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error
 }
 
 type Dynconfig struct {
-	sourceType      sourceType
-	managerClient   managerClient
+	sourceType      SourceType
+	managerClient   ManagerClient
 	localConfigPath string
-	cache           cache.Cache
+	cachePath       string
 	expire          time.Duration
 	strategy        strategy
 }
@@ -57,7 +54,7 @@ type Dynconfig struct {
 type Option func(d *Dynconfig) (*Dynconfig, error)
 
 // WithManagerClient set the manager client
-func WithManagerClient(c managerClient) Option {
+func WithManagerClient(c ManagerClient) Option {
 	return func(d *Dynconfig) (*Dynconfig, error) {
 		if d.sourceType != ManagerSourceType {
 			return nil, errors.New("the source type must be ManagerSourceType")
@@ -68,7 +65,7 @@ func WithManagerClient(c managerClient) Option {
 	}
 }
 
-// WithManagerClient set the file path
+// WithLocalConfigPath set the file path
 func WithLocalConfigPath(p string) Option {
 	return func(d *Dynconfig) (*Dynconfig, error) {
 		if d.sourceType != LocalSourceType {
@@ -80,21 +77,49 @@ func WithLocalConfigPath(p string) Option {
 	}
 }
 
+// WithCachePath set the cache file path
+func WithCachePath(p string) Option {
+	return func(d *Dynconfig) (*Dynconfig, error) {
+		if d.sourceType != ManagerSourceType {
+			return nil, errors.New("the source type must be ManagerSourceType")
+		}
+
+		d.cachePath = p
+		return d, nil
+	}
+}
+
+// WithExpireTime set the expire time for cache
+func WithExpireTime(e time.Duration) Option {
+	return func(d *Dynconfig) (*Dynconfig, error) {
+		if d.sourceType != ManagerSourceType {
+			return nil, errors.New("the source type must be ManagerSourceType")
+		}
+
+		d.expire = e
+		return d, nil
+	}
+}
+
 // NewDynconfig returns a new dynconfig instence
-func New(sourceType sourceType, expire time.Duration, options ...Option) (*Dynconfig, error) {
-	d, err := NewDynconfigWithOptions(sourceType, expire, options...)
+func New(sourceType SourceType, options ...Option) (*Dynconfig, error) {
+	d, err := NewDynconfigWithOptions(sourceType, options...)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := d.Validate(); err != nil {
 		return nil, err
 	}
 
 	switch sourceType {
 	case ManagerSourceType:
-		d.strategy, err = newDynconfigManager(d.cache, expire, d.managerClient)
+		d.strategy, err = newDynconfigManager(d.expire, d.cachePath, d.managerClient)
 		if err != nil {
 			return nil, err
 		}
 	case LocalSourceType:
-		d.strategy, err = newDynconfigLocal(d.cache, expire, d.localConfigPath)
+		d.strategy, err = newDynconfigLocal(d.localConfigPath)
 		if err != nil {
 			return nil, err
 		}
@@ -106,11 +131,9 @@ func New(sourceType sourceType, expire time.Duration, options ...Option) (*Dynco
 }
 
 // NewDynconfigWithOptions constructs a new instance of a dynconfig with additional options.
-func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, options ...Option) (*Dynconfig, error) {
+func NewDynconfigWithOptions(sourceType SourceType, options ...Option) (*Dynconfig, error) {
 	d := &Dynconfig{
 		sourceType: sourceType,
-		cache:      cache.New(expire, cache.NoCleanup),
-		expire:     expire,
 	}
 
 	for _, opt := range options {
@@ -118,17 +141,29 @@ func NewDynconfigWithOptions(sourceType sourceType, expire time.Duration, option
 			return nil, err
 		}
 	}
+
 	return d, nil
 }
 
-// Get dynamic config
-func (d *Dynconfig) Get() (interface{}, error) {
-	return d.strategy.Get()
-}
+// Validate parameters
+func (d *Dynconfig) Validate() error {
+	if d.sourceType == ManagerSourceType {
+		if d.managerClient == nil {
+			return errors.New("missing parameter ManagerClient, use method WithManagerClient to assign")
+		}
+		if d.cachePath == "" {
+			return errors.New("missing parameter CachePath, use method WithCachePath to assign")
+		}
+		if d.expire == 0 {
+			return errors.New("missing parameter Expire, use method WithExpireTime to assign")
+		}
+	}
 
-// Set dynamic config
-func (d *Dynconfig) Set(x interface{}) {
-	d.strategy.Set(x)
+	if d.sourceType == LocalSourceType && d.localConfigPath == "" {
+		return errors.New("missing parameter LocalConfigPath, use method WithLocalConfigPath to assign")
+	}
+
+	return nil
 }
 
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags
