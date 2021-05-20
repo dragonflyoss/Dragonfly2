@@ -332,8 +332,8 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, request
 	reader := body.(io.Reader)
 
 	// calc total md5
-	if pm.calculateDigest && request.UrlMata.Md5 != "" {
-		reader = digestutils.NewDigestReader(body, request.UrlMata.Md5)
+	if pm.calculateDigest && request.UrlMata.Digest != "" {
+		reader = digestutils.NewDigestReader(body, request.UrlMata.Digest)
 	}
 
 	// 2. save to storage
