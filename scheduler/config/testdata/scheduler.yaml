@@ -1,5 +1,15 @@
-console: true
-verbose: true
+manager:
+  netAddrs:
+    - type: tcp
+      addr: 127.0.0.1:8004
+dynconfig:
+  type: 1
+  expireTime: 1000
+  path: foo
+  cachePath: bar
+  netAddrs:
+    - type: tcp
+      addr: 127.0.0.1:8002
 scheduler:
   abtest: true
   ascheduler: "a-scheduler"
@@ -21,4 +31,3 @@ cdn:
 gc:
   taskDelay: 3600000
   peerTaskDelay: 3600000
-configServer: 127.0.0.1:8004

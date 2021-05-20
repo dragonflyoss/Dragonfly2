@@ -17,10 +17,10 @@
 package config
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"testing"
 
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
@@ -30,6 +30,26 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{
+		Manager: &ManagerConfig{
+			NetAddrs: []dfnet.NetAddr{
+				{
+					Type: dfnet.TCP,
+					Addr: "127.0.0.1:8004",
+				},
+			},
+		},
+		Dynconfig: &DynconfigOptions{
+			Type:       1,
+			Path:       "foo",
+			CachePath:  "bar",
+			ExpireTime: 1000,
+			NetAddrs: []dfnet.NetAddr{
+				{
+					Type: dfnet.TCP,
+					Addr: "127.0.0.1:8002",
+				},
+			},
+		},
 		Scheduler: SchedulerConfig{
 			ABTest:     true,
 			AScheduler: "a-scheduler",
@@ -45,16 +65,6 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			SenderNum:         10,
 			SenderJobPoolSize: 10000,
 		},
-		CDN: CDNConfig{
-			Servers: []CDNServerConfig{
-				{
-					Name:         "cdn",
-					IP:           "127.0.0.1",
-					RpcPort:      8003,
-					DownloadPort: 8001,
-				},
-			},
-		},
 		GC: GCConfig{
 			TaskDelay:     3600 * 1000,
 			PeerTaskDelay: 3600 * 1000,
@@ -67,11 +77,4 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	yaml.Unmarshal(contentYAML, &dataYAML)
 	mapstructure.Decode(dataYAML, &schedulerConfigYAML)
 	assert.EqualValues(config, schedulerConfigYAML)
-
-	schedulerConfigJSON := &Config{}
-	contentJSON, _ := ioutil.ReadFile("./testdata/scheduler.json")
-	var dataJSON map[string]interface{}
-	json.Unmarshal(contentJSON, &dataJSON)
-	mapstructure.Decode(dataJSON, &schedulerConfigJSON)
-	assert.EqualValues(config, schedulerConfigJSON)
 }

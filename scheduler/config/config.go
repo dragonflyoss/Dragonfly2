@@ -17,7 +17,12 @@
 package config
 
 import (
+	"time"
+
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"github.com/pkg/errors"
 )
 
 type Config struct {
@@ -26,8 +31,63 @@ type Config struct {
 	Scheduler    SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
 	Server       ServerConfig          `yaml:"server" mapstructure:"server"`
 	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
-	CDN          CDNConfig             `yaml:"cdn" mapstructure:"cdn"`
 	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
+	Dynconfig    *DynconfigOptions     `yaml:"dynconfig"`
+	Manager      *ManagerConfig        `yaml:"manager"`
+}
+
+func New() *Config {
+	return &config
+}
+
+func (c *Config) Validate() error {
+	if c.Manager != nil {
+		if len(c.Manager.NetAddrs) <= 0 {
+			return errors.New("empty manager config is not specified")
+		}
+	}
+
+	if c.Dynconfig.Type == dc.LocalSourceType && c.Dynconfig.Path == "" {
+		return errors.New("dynconfig is LocalSourceType type requires parameter path")
+	}
+
+	if c.Dynconfig.Type == dc.ManagerSourceType {
+		if c.Dynconfig.ExpireTime == 0 {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter expireTime")
+		}
+
+		if c.Dynconfig.CachePath == "" {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter cachePath")
+		}
+
+		if len(c.Dynconfig.NetAddrs) <= 0 {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter netAddrs")
+		}
+	}
+
+	return nil
+}
+
+type ManagerConfig struct {
+	// NetAddrs is manager addresses.
+	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
+}
+
+type DynconfigOptions struct {
+	// Type is dynconfig source type.
+	Type dc.SourceType `yaml:"type"`
+
+	// ExpireTime is expire time for manager cache.
+	ExpireTime time.Duration `yaml:"expireTime"`
+
+	// NetAddrs is dynconfig source addresses.
+	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
+
+	// Path is dynconfig filepath.
+	Path string `yaml:"path"`
+
+	// CachePath is cache filepath.
+	CachePath string `yaml:"cachePath"`
 }
 
 type SchedulerConfig struct {
@@ -48,22 +108,7 @@ type SchedulerWorkerConfig struct {
 	SenderJobPoolSize int `yaml:"senderJobPoolSize" mapstructure:"senderJobPoolSize"`
 }
 
-type CDNServerConfig struct {
-	Name         string `yaml:"name" mapstructure:"name"`
-	IP           string `yaml:"ip" mapstructure:"ip"`
-	RpcPort      int32  `yaml:"rpcPort" mapstructure:"rpcPort"`
-	DownloadPort int32  `yaml:"downloadPort" mapstructure:"downloadPort"`
-}
-
-type CDNConfig struct {
-	Servers []CDNServerConfig `yaml:"servers" mapstructure:"servers"`
-}
-
 type GCConfig struct {
 	PeerTaskDelay int64 `yaml:"peerTaskDelay" mapstructure:"peerTaskDelay"`
 	TaskDelay     int64 `yaml:"taskDelay" mapstructure:"taskDelay"`
-}
-
-func New() *Config {
-	return &config
 }

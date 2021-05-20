@@ -2,13 +2,17 @@
 
 package config
 
-import "runtime"
-
-var (
-	SchedulerConfigPath = "/etc/dragonfly/scheduler.yaml"
+import (
+	"runtime"
 )
 
 var config = Config{
+	Dynconfig: &DynconfigOptions{
+		Type:       1,
+		ExpireTime: 60000 * 1000 * 1000,
+		Path:       SchedulerDynconfigPath,
+		CachePath:  SchedulerDynconfigCachePath,
+	},
 	Server: ServerConfig{
 		Port: 8002,
 	},
@@ -20,16 +24,6 @@ var config = Config{
 	},
 	Scheduler: SchedulerConfig{
 		ABTest: false,
-	},
-	CDN: CDNConfig{
-		Servers: []CDNServerConfig{
-			{
-				Name:         "cdn",
-				IP:           "127.0.0.1",
-				RpcPort:      8003,
-				DownloadPort: 8001,
-			},
-		},
 	},
 	GC: GCConfig{
 		TaskDelay:     3600 * 1000,

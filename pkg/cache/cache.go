@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"time"
@@ -288,10 +289,18 @@ func (c *cache) Save(w io.Writer) (err error) {
 // NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
 // documentation for NewFrom().)
 func (c *cache) SaveFile(fname string) error {
+	if _, err := os.Stat(filepath.Dir(fname)); os.IsNotExist(err) {
+		err := os.MkdirAll(fname, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
 	fp, err := os.Create(fname)
 	if err != nil {
 		return err
 	}
+
 	err = c.Save(fp)
 	if err != nil {
 		fp.Close()

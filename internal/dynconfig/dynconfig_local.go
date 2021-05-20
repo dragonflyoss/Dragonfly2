@@ -14,29 +14,34 @@
  * limitations under the License.
  */
 
-package manager
+package dynconfig
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/config"
+	"encoding/json"
+	"errors"
+	"io/ioutil"
 )
 
-type Manager struct {
-	CDNManager  *CDNManager
-	TaskManager *TaskManager
-	HostManager *HostManager
+type dynconfigLocal struct {
+	filepath string
 }
 
-func New(cfg *config.Config, dynconfig config.DynconfigInterface) (*Manager, error) {
-	hostManager := newHostManager()
-	taskManager := newTaskManager(cfg, hostManager)
-	cdnManager, err := newCDNManager(cfg, taskManager, hostManager, dynconfig)
-	if err != nil {
-		return nil, err
+// newDynconfigLocal returns a new local dynconfig instence
+func newDynconfigLocal(path string) (*dynconfigLocal, error) {
+	d := &dynconfigLocal{
+		filepath: path,
 	}
 
-	return &Manager{
-		CDNManager:  cdnManager,
-		TaskManager: taskManager,
-		HostManager: hostManager,
-	}, nil
+	return d, nil
+}
+
+// Unmarshal unmarshals the config into a Struct. Make sure that the tags
+// on the fields of the structure are properly set.
+func (d *dynconfigLocal) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error {
+	b, err := ioutil.ReadFile(d.filepath)
+	if err != nil {
+		return errors.New("can't find the local config data")
+	}
+
+	return json.Unmarshal(b, rawVal)
 }
