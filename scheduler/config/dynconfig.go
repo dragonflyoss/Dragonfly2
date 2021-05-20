@@ -50,8 +50,8 @@ type DynconfigInterface interface {
 	// Notify publishes new events to listeners.
 	Notify() error
 
-	// Start the dynconfig listening service.
-	Start() error
+	// Serve the dynconfig listening service.
+	Serve() error
 
 	// Stop the dynconfig listening service.
 	Stop()
@@ -117,7 +117,7 @@ func (d *dynconfig) Notify() error {
 	return nil
 }
 
-func (d *dynconfig) Start() error {
+func (d *dynconfig) Serve() error {
 	if err := d.Notify(); err != nil {
 		return err
 	}

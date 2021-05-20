@@ -97,7 +97,7 @@ func (s *Server) Serve() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	s.dynconfig.Start()
+	s.dynconfig.Serve()
 
 	go s.worker.Serve()
 	defer s.worker.Stop()
