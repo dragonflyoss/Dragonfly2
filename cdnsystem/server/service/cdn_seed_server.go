@@ -58,8 +58,8 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 	meta := req.UrlMeta
 	header := make(map[string]string)
 	if meta != nil {
-		if !stringutils.IsBlank(meta.Md5) {
-			header["md5"] = meta.Md5
+		if !stringutils.IsBlank(meta.Digest) {
+			header["md5"] = meta.Digest
 		}
 		if !stringutils.IsBlank(meta.Range) {
 			header["range"] = meta.Range

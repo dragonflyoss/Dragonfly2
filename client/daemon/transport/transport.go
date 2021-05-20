@@ -160,7 +160,7 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 
 	// Set meta range's value
 	if rg := req.Header.Get("Range"); len(rg) > 0 {
-		meta.Md5 = ""
+		meta.Digest = ""
 		meta.Range = rg
 	}
 
