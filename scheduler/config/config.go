@@ -61,7 +61,7 @@ func (c *Config) Validate() error {
 		}
 
 		if len(c.Dynconfig.NetAddrs) <= 0 {
-			return errors.New("empty netAddrs is not specified")
+			return errors.New("dynconfig is ManagerSourceType type requires parameter netAddrs")
 		}
 	}
 
