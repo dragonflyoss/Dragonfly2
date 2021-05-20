@@ -49,30 +49,31 @@ func New(cfg *config.Config) (*Server, error) {
 		config:  cfg.Server,
 	}
 
-	// Initialize dynconfig client
-	var sourceType dynconfig.SourceType
-	options := []dynconfig.Option{}
+	// Initialize manager client
 	if cfg.Manager != nil {
-		sourceType = dynconfig.ManagerSourceType
 		s.managerClient, err = client.NewClient(cfg.Manager.NetAddrs)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Initialize dynconfig client
+	options := []dynconfig.Option{}
+	if cfg.Dynconfig.Type == dynconfig.LocalSourceType {
+		options = []dynconfig.Option{
+			dynconfig.WithLocalConfigPath(cfg.Dynconfig.Path),
+		}
+	}
+
+	if cfg.Dynconfig.Type == dynconfig.ManagerSourceType {
 		options = []dynconfig.Option{
 			dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient)),
 			dynconfig.WithCachePath(cfg.Dynconfig.CachePath),
 			dynconfig.WithExpireTime(cfg.Dynconfig.ExpireTime),
 		}
-	} else {
-		if cfg.Dynconfig.Path != "" {
-			options = []dynconfig.Option{
-				dynconfig.WithLocalConfigPath(cfg.Dynconfig.Path),
-			}
-		}
-		sourceType = dynconfig.LocalSourceType
 	}
 
-	dynconfig, err := config.NewDynconfig(sourceType, options...)
+	dynconfig, err := config.NewDynconfig(cfg.Dynconfig.Type, options...)
 	if err != nil {
 		return nil, err
 	}

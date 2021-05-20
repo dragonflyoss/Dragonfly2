@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"github.com/pkg/errors"
 )
@@ -46,6 +47,16 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	if c.Dynconfig.Type == dc.LocalSourceType && c.Dynconfig.Path == "" {
+		return errors.New("dynconfig is LocalSourceType type requires parameter path")
+	}
+
+	if c.Dynconfig.Type == dc.ManagerSourceType {
+		if c.Dynconfig.CachePath == "" || c.Manager == nil {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter cachePath and manager config")
+		}
+	}
+
 	return nil
 }
 
@@ -55,6 +66,9 @@ type ManagerConfig struct {
 }
 
 type DynconfigOptions struct {
+	// Type is dynconfig source type.
+	Type dc.SourceType `yaml:"type"`
+
 	// ExpireTime is expire time for manager cache.
 	ExpireTime time.Duration `yaml:"expireTime"`
 

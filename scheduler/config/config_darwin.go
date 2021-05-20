@@ -8,6 +8,7 @@ import (
 
 var config = Config{
 	Dynconfig: &DynconfigOptions{
+		Type:       1,
 		ExpireTime: 60000 * 1000 * 1000,
 		Path:       SchedulerDynconfigPath,
 		CachePath:  SchedulerDynconfigCachePath,

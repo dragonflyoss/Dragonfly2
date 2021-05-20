@@ -26,11 +26,11 @@ import (
 type SourceType int
 
 const (
-	// ManagerSourceType represents pulling configuration from manager
-	ManagerSourceType SourceType = 1 << iota
-
 	// LocalSourceType represents read configuration from local file
-	LocalSourceType
+	LocalSourceType SourceType = iota
+
+	// ManagerSourceType represents pulling configuration from manager
+	ManagerSourceType
 )
 
 const (
