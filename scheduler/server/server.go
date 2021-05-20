@@ -103,18 +103,17 @@ func (s *Server) Serve() error {
 	go s.worker.Serve()
 	defer s.worker.Stop()
 
-	logger.Infof("start server at port %d", port)
-	if err := rpc.StartTcpServer(port, port, s.server); err != nil {
-		return err
-	}
-
-	// Start keepalive
-	logger.Info("start scheduler keep alive")
 	if s.managerClient != nil {
 		s.managerClient.KeepAlive(ctx, &manager.KeepAliveRequest{
 			HostName: iputils.HostName,
 			Type:     manager.ResourceType_Scheduler,
 		})
+		logger.Info("start scheduler keep alive")
+	}
+
+	logger.Infof("start server at port %d", port)
+	if err := rpc.StartTcpServer(port, port, s.server); err != nil {
+		return err
 	}
 	return nil
 }
