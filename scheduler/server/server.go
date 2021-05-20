@@ -66,8 +66,13 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	if cfg.Dynconfig.Type == dynconfig.ManagerSourceType {
+		client, err := client.NewClient(cfg.Dynconfig.NetAddrs)
+		if err != nil {
+			return nil, err
+		}
+
 		options = []dynconfig.Option{
-			dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient)),
+			dynconfig.WithManagerClient(config.NewManagerClient(client)),
 			dynconfig.WithCachePath(cfg.Dynconfig.CachePath),
 			dynconfig.WithExpireTime(cfg.Dynconfig.ExpireTime),
 		}

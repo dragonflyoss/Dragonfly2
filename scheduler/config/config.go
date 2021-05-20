@@ -52,8 +52,16 @@ func (c *Config) Validate() error {
 	}
 
 	if c.Dynconfig.Type == dc.ManagerSourceType {
-		if c.Dynconfig.CachePath == "" || c.Manager == nil {
-			return errors.New("dynconfig is ManagerSourceType type requires parameter cachePath and manager config")
+		if c.Dynconfig.ExpireTime == 0 {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter expireTime")
+		}
+
+		if c.Dynconfig.CachePath == "" {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter cachePath")
+		}
+
+		if len(c.Dynconfig.NetAddrs) <= 0 {
+			return errors.New("empty netAddrs is not specified")
 		}
 	}
 
@@ -71,6 +79,9 @@ type DynconfigOptions struct {
 
 	// ExpireTime is expire time for manager cache.
 	ExpireTime time.Duration `yaml:"expireTime"`
+
+	// NetAddrs is dynconfig source addresses.
+	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
 
 	// Path is dynconfig filepath.
 	Path string `yaml:"path"`

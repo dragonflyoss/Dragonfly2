@@ -7,6 +7,9 @@ dynconfig:
   expireTime: 1000
   path: foo
   cachePath: bar
+  netAddrs:
+    - type: tcp
+      addr: 127.0.0.1:8002
 scheduler:
   abtest: true
   ascheduler: "a-scheduler"

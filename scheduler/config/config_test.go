@@ -43,6 +43,12 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			Path:       "foo",
 			CachePath:  "bar",
 			ExpireTime: 1000,
+			NetAddrs: []dfnet.NetAddr{
+				{
+					Type: dfnet.TCP,
+					Addr: "127.0.0.1:8002",
+				},
+			},
 		},
 		Scheduler: SchedulerConfig{
 			ABTest:     true,
