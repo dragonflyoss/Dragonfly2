@@ -22,20 +22,20 @@ import (
 )
 
 type TaskStatistic struct {
-	lock      sync.RWMutex
-	StartTime time.Time
-	EndTime time.Time
-	PeerCount int32
+	lock          sync.RWMutex
+	StartTime     time.Time
+	EndTime       time.Time
+	PeerCount     int32
 	FinishedCount int32
-	CostList []int32
+	CostList      []int32
 }
 
 type StatisticInfo struct {
-	StartTime time.Time
-	EndTime time.Time
-	PeerCount int32
+	StartTime     time.Time
+	EndTime       time.Time
+	PeerCount     int32
 	FinishedCount int32
-	Costs map[int32]int32
+	Costs         map[int32]int32
 }
 
 func (t *TaskStatistic) SetStartTime(start time.Time) {
@@ -52,7 +52,7 @@ func (t *TaskStatistic) SetEndTime(end time.Time) {
 
 func (t *TaskStatistic) AddPeerTaskStart() {
 	t.lock.Lock()
-	t.PeerCount ++
+	t.PeerCount++
 	t.lock.Unlock()
 }
 
@@ -66,11 +66,11 @@ func (t *TaskStatistic) GetStatistic() (info *StatisticInfo) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 	info = &StatisticInfo{
-		StartTime: t.StartTime,
-		EndTime: t.EndTime,
-		PeerCount: t.PeerCount,
+		StartTime:     t.StartTime,
+		EndTime:       t.EndTime,
+		PeerCount:     t.PeerCount,
 		FinishedCount: t.FinishedCount,
-		Costs: make(map[int32]int32),
+		Costs:         make(map[int32]int32),
 	}
 
 	if info.EndTime.IsZero() {
@@ -79,7 +79,7 @@ func (t *TaskStatistic) GetStatistic() (info *StatisticInfo) {
 
 	count := len(t.CostList)
 	count90 := count * 90 / 100
-	count95 := count * 95 /100
+	count95 := count * 95 / 100
 
 	totalCost := int64(0)
 
