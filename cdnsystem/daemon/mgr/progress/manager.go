@@ -92,7 +92,7 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get seed subscribers")
 	}
-	pieceMetaDataRecords, err := pm.getPieceMetaRecordsByTaskId(taskID)
+	pieceMetaDataRecords, err := pm.getPieceMetaRecordsByTaskID(taskID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get piece meta records by taskID")
 	}
@@ -198,5 +198,5 @@ func (pm *Manager) Clear(ctx context.Context, taskID string) error {
 func (pm *Manager) GetPieces(ctx context.Context, taskID string) (records []*types.SeedPiece, err error) {
 	pm.mu.Lock(taskID, true)
 	defer pm.mu.UnLock(taskID, true)
-	return pm.getPieceMetaRecordsByTaskId(taskID)
+	return pm.getPieceMetaRecordsByTaskID(taskID)
 }

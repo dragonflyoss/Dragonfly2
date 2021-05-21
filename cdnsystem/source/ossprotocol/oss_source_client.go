@@ -188,16 +188,16 @@ type ossObject struct {
 	object string
 }
 
-func ParseOssObject(ossUrl string) (*ossObject, error) {
-	parsedUrl, err := url.Parse(ossUrl)
-	if parsedUrl.Scheme != "oss" {
-		return nil, fmt.Errorf("url:%s is not oss object", ossUrl)
+func ParseOssObject(ossURL string) (*ossObject, error) {
+	url, err := url.Parse(ossURL)
+	if url.Scheme != "oss" {
+		return nil, fmt.Errorf("url:%s is not oss object", ossURL)
 	}
 	if err != nil {
 		return nil, err
 	}
 	return &ossObject{
-		bucket: parsedUrl.Host,
-		object: parsedUrl.Path[1:],
+		bucket: url.Host,
+		object: url.Path[1:],
 	}, nil
 }

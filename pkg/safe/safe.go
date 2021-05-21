@@ -17,7 +17,6 @@
 package safe
 
 import (
-	"errors"
 	"fmt"
 	"runtime/debug"
 )
@@ -26,7 +25,7 @@ import (
 func Call(f func()) (err error) {
 	defer func() {
 		if desc := recover(); desc != nil {
-			err = errors.New(fmt.Sprintf("%v", desc))
+			err = fmt.Errorf("%v", desc)
 			debug.PrintStack()
 		}
 	}()

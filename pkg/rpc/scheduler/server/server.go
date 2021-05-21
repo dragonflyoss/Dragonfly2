@@ -57,19 +57,19 @@ type SchedulerServer interface {
 func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (rr *scheduler.RegisterResult, err error) {
 	rr, err = p.server.RegisterPeerTask(ctx, ptr)
 
-	var taskId = "unknown"
+	var taskID = "unknown"
 	var suc bool
 	var code base.Code
 
 	if err == nil && rr != nil {
-		taskId = rr.TaskId
+		taskID = rr.TaskId
 	}
 
 	peerHost := ptr.PeerHost
 
 	logger.StatPeerLogger.Info("register peer task",
 		zap.Bool("success", suc),
-		zap.String("taskId", taskId),
+		zap.String("taskID", taskID),
 		zap.String("url", ptr.Url),
 		zap.String("peerIp", peerHost.Ip),
 		zap.String("securityDomain", peerHost.SecurityDomain),
@@ -90,7 +90,7 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 
 	logger.StatPeerLogger.Info("finish peer task",
 		zap.Bool("success", pr.Success),
-		zap.String("taskId", pr.TaskId),
+		zap.String("taskID", pr.TaskId),
 		zap.String("url", pr.Url),
 		zap.String("peerIp", pr.SrcIp),
 		zap.String("securityDomain", pr.SecurityDomain),
