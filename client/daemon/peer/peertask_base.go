@@ -656,7 +656,7 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 		count             int
 	)
 	p, _, err := clientutil.Retry(pt.ctx, func() (interface{}, bool, error) {
-		pp, getErr := dfclient.GetPieceTasks(peer, pt.ctx, request)
+		pp, getErr := dfclient.GetPieceTasks(pt.ctx, peer, request)
 		// when GetPieceTasks returns err, exit retry
 		if getErr != nil {
 			span.RecordError(getErr)

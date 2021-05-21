@@ -41,7 +41,7 @@ type DownResultStream struct {
 	rpc.RetryMeta
 }
 
-func newDownResultStream(dc *daemonClient, ctx context.Context, hashKey string, req *dfdaemon.DownRequest, opts []grpc.CallOption) (*DownResultStream, error) {
+func newDownResultStream(ctx context.Context, dc *daemonClient, hashKey string, req *dfdaemon.DownRequest, opts []grpc.CallOption) (*DownResultStream, error) {
 	drs := &DownResultStream{
 		dc:      dc,
 		ctx:     ctx,

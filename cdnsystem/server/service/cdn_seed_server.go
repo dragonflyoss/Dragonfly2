@@ -114,10 +114,10 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	if err != nil {
 		return err
 	}
-	peerId := cdnutil.GenCdnPeerId(req.TaskId)
+	peerID := cdnutil.GenCdnPeerId(req.TaskId)
 	for piece := range pieceChan {
 		psc <- &cdnsystem.PieceSeed{
-			PeerId:     peerId,
+			PeerId:     peerID,
 			SeederName: iputils.HostName,
 			PieceInfo: &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
@@ -139,7 +139,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		return dferrors.Newf(dfcodes.CdnTaskDownloadFail, "task(%s) status error , status: %s", req.TaskId, task.CdnStatus)
 	}
 	psc <- &cdnsystem.PieceSeed{
-		PeerId:        peerId,
+		PeerId:        peerID,
 		SeederName:    iputils.HostName,
 		Done:          true,
 		ContentLength: task.SourceFileLength,

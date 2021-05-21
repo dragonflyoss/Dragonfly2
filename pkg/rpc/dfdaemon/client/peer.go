@@ -30,10 +30,10 @@ import (
 	"google.golang.org/grpc"
 )
 
-func GetPieceTasks(destPeer *scheduler.PeerPacket_DestPeer, ctx context.Context, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
+func GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	destAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)
-	peerId := destPeer.PeerId
-	toCdn := strings.HasSuffix(peerId, common.CdnSuffix)
+	peerID := destPeer.PeerId
+	toCdn := strings.HasSuffix(peerID, common.CdnSuffix)
 	var err error
 	netAddr := dfnet.NetAddr{
 		Type: dfnet.TCP,
@@ -52,7 +52,6 @@ func GetPieceTasks(destPeer *scheduler.PeerPacket_DestPeer, ctx context.Context,
 func getClient(netAddr dfnet.NetAddr, toCdn bool) (rpc.Closer, error) {
 	if toCdn {
 		return cdnclient.GetElasticClientByAdders([]dfnet.NetAddr{netAddr})
-	} else {
-		return GetElasticClientByAdders([]dfnet.NetAddr{netAddr})
 	}
+	return GetElasticClientByAdders([]dfnet.NetAddr{netAddr})
 }

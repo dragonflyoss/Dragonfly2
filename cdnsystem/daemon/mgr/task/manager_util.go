@@ -40,21 +40,21 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if request.Filter != nil {
 		taskURL = urlutils.FilterURLParam(request.URL, request.Filter)
 	}
-	taskId := request.TaskId
-	synclock.Lock(taskId, false)
-	defer synclock.UnLock(taskId, false)
-	if key, err := tm.taskURLUnReachableStore.Get(taskId); err == nil {
+	taskID := request.TaskId
+	synclock.Lock(taskID, false)
+	defer synclock.UnLock(taskID, false)
+	if key, err := tm.taskURLUnReachableStore.Get(taskID); err == nil {
 		if unReachableStartTime, ok := key.(time.Time); ok &&
 			time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
 			return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable,
 				"task hit unReachable cache and interval less than %d, url: %s", tm.cfg.FailAccessInterval, request.URL)
 		}
-		tm.taskURLUnReachableStore.Delete(taskId)
-		logger.Debugf("delete taskId:%s from url unReachable store", taskId)
+		tm.taskURLUnReachableStore.Delete(taskID)
+		logger.Debugf("delete taskID:%s from url unReachable store", taskID)
 	}
 	var task *types.SeedTask
 	newTask := &types.SeedTask{
-		TaskId:           taskId,
+		TaskId:           taskID,
 		Header:           request.Header,
 		RequestMd5:       request.Md5,
 		Url:              request.URL,
@@ -62,16 +62,16 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		CdnStatus:        types.TaskInfoCdnStatusWaiting,
 		SourceFileLength: IllegalSourceFileLen,
 	}
-	// using the existing task if it already exists corresponding to taskId
-	if v, err := tm.taskStore.Get(taskId); err == nil {
+	// using the existing task if it already exists corresponding to taskID
+	if v, err := tm.taskStore.Get(taskID); err == nil {
 		existTask := v.(*types.SeedTask)
 		if !isSameTask(existTask, newTask) {
 			return nil, errors.Wrapf(cdnerrors.ErrTaskIDDuplicate, "newTask:%+v, existTask:%+v", newTask, existTask)
 		}
 		task = existTask
-		logger.Debugf("get exist task for taskId:%s", taskId)
+		logger.Debugf("get exist task for taskID:%s", taskID)
 	} else {
-		logger.Debugf("get new task for taskId:%s", taskId)
+		logger.Debugf("get new task for taskID:%s", taskID)
 		task = newTask
 	}
 
@@ -85,13 +85,13 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length: %v", task.Url, err)
 
 		if cdnerrors.IsURLNotReachable(err) {
-			tm.taskURLUnReachableStore.Add(taskId, time.Now())
+			tm.taskURLUnReachableStore.Add(taskID, time.Now())
 			return nil, err
 		}
 	}
 	// if not support file length header request ,return -1
 	task.SourceFileLength = sourceFileLength
-	logger.WithTaskID(taskId).Debugf("get file content length: %d", sourceFileLength)
+	logger.WithTaskID(taskID).Debugf("get file content length: %d", sourceFileLength)
 
 	// if success to get the information successfully with the req.Header then update the task.Header to req.Header.
 	if request.Header != nil {
@@ -109,9 +109,9 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 }
 
 // updateTask
-func (tm *Manager) updateTask(taskId string, updateTaskInfo *types.SeedTask) (*types.SeedTask, error) {
-	if stringutils.IsBlank(taskId) {
-		return nil, errors.Wrap(cdnerrors.ErrInvalidValue, "taskId is empty")
+func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*types.SeedTask, error) {
+	if stringutils.IsBlank(taskID) {
+		return nil, errors.Wrap(cdnerrors.ErrInvalidValue, "taskID is empty")
 	}
 
 	if updateTaskInfo == nil {
@@ -122,7 +122,7 @@ func (tm *Manager) updateTask(taskId string, updateTaskInfo *types.SeedTask) (*t
 		return nil, errors.Wrap(cdnerrors.ErrInvalidValue, "status of task is empty")
 	}
 	// get origin task
-	task, err := tm.getTask(taskId)
+	task, err := tm.getTask(taskID)
 	if err != nil {
 		return nil, err
 	}

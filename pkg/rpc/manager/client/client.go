@@ -217,7 +217,7 @@ func (mc *managerClient) GetCdnClusterConfig(ctx context.Context, req *manager.G
 	return cc, nil
 }
 
-func init()  {
+func init() {
 	var mc *managerClient = nil
 	var _ ManagerClient = mc
 }
