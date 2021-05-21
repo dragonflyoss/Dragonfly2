@@ -77,9 +77,9 @@ func externalIPv4() (string, error) {
 	if len(values) > 0 {
 		sort.Strings(values)
 		return values[0], nil
-	} else {
-		return "", errors.Errorf("not found any ipv4")
 	}
+
+	return "", errors.Errorf("not found any ipv4")
 }
 
 // ipAddrs returns all the valid IPs available.

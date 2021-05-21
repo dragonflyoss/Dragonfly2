@@ -18,7 +18,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -63,9 +62,7 @@ func (s *StorageTestSuite) SetupSuite() {
 
 func (s *StorageTestSuite) TeardownSuite() {
 	if s.workHome != "" {
-		if err := os.RemoveAll(s.workHome); err != nil {
-			fmt.Errorf("remove path:%s error", s.workHome)
-		}
+		os.RemoveAll(s.workHome)
 	}
 }
 
@@ -535,9 +532,7 @@ func (s *StorageTestSuite) TestRemove() {
 		args    args
 		wantErr bool
 	}{
-		{
-
-		},
+		{},
 	}
 	for _, tt := range tests {
 		err := s.Remove(tt.args.ctx, tt.args.raw)
@@ -560,9 +555,7 @@ func (s *StorageTestSuite) TestStat() {
 		want    *storedriver.StorageInfo
 		wantErr bool
 	}{
-		{
-
-		},
+		{},
 	}
 	for _, tt := range tests {
 		got, err := s.Stat(tt.args.ctx, tt.args.raw)

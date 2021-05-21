@@ -66,7 +66,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if v, err := tm.taskStore.Get(taskId); err == nil {
 		existTask := v.(*types.SeedTask)
 		if !isSameTask(existTask, newTask) {
-			return nil, errors.Wrapf(cdnerrors.ErrTaskIdDuplicate, "newTask:%+v, existTask:%+v", newTask, existTask)
+			return nil, errors.Wrapf(cdnerrors.ErrTaskIDDuplicate, "newTask:%+v, existTask:%+v", newTask, existTask)
 		}
 		task = existTask
 		logger.Debugf("get exist task for taskId:%s", taskId)
