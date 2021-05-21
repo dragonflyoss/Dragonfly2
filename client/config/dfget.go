@@ -90,8 +90,8 @@ type ClientOption struct {
 	// eg: --header='Accept: *' --header='Host: abc'.
 	Header []string `yaml:"header,omitempty" mapstructure:"header,omitempty"`
 
-	// NotBackSource indicates whether to not back source to download when p2p fails.
-	NotBackSource bool `yaml:"not_back_source,omitempty" mapstructure:"not_back_source,omitempty"`
+	// DisableBackSource indicates whether to not back source to download when p2p fails.
+	DisableBackSource bool `yaml:"disable_back_source,omitempty" mapstructure:"disable_back_source,omitempty"`
 
 	// Insecure indicates whether skip secure verify when supernode interact with the source.
 	Insecure bool `yaml:"insecure,omitempty" mapstructure:"insecure,omitempty"`

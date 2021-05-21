@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -85,6 +86,7 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		logger.Error(err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
@@ -106,11 +108,7 @@ func init() {
 
 	flagSet.DurationP("timeout", "e", dfgetConfig.Timeout,
 		"timeout for file downloading task. If dfget has not finished downloading all pieces of file "+
-			"before --timeout, the dfget will throw an error and exit, default see --benchmark-rate")
-
-	flagSet.String("benchmark-rate", dfgetConfig.BenchmarkRate.String(),
-		"benchmark rate in format of G(B)/g/M(B)/m/K(B)/k/B which is used to calculate the default --timeout, "+
-			"calculation formula: fileLength/benchmark-rate")
+			"before --timeout, the dfget will throw an error and exit, 0 is infinite")
 
 	flagSet.String("limit", unit.Bytes(dfgetConfig.RateLimit).String(),
 		"network bandwidth rate limit in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will be parsed as Byte, 0 is infinite")
@@ -125,8 +123,9 @@ func init() {
 		"filter some query params of url, use char '&' to separate different params, eg: -f 'key&sign' "+
 			"will filter 'key' and 'sign' query param. in this way, different urls can correspond to the same P2P task")
 
-	flagSet.Bool("not-back-source", dfgetConfig.NotBackSource,
-		"disable dfget downloading file directly from url source when peer fails to download file")
+	flagSet.Bool("disable-back-source", dfgetConfig.DisableBackSource,
+		"disable dfget downloading file directly from url source when peer fails to download file, "+
+			"--limit is invalid when peer downloads the file from source")
 
 	flagSet.StringP("pattern", "p", dfgetConfig.Pattern, "downloading pattern, must be p2p/cdn/source")
 
