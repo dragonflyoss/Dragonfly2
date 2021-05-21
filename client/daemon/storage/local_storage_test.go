@@ -42,7 +42,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {

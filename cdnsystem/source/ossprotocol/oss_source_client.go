@@ -63,7 +63,12 @@ func (osc *ossSourceClient) GetContentLength(url string, header map[string]strin
 	if err != nil {
 		return -1, err
 	}
+
 	contentLen, err := strconv.ParseInt(resHeader.Get(oss.HTTPHeaderContentLength), 10, 64)
+	if err != nil {
+		return -1, err
+	}
+
 	return contentLen, nil
 }
 
