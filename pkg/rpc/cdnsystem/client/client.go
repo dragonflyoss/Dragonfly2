@@ -94,7 +94,7 @@ func (cc *cdnClient) getSeederClientWithTarget(target string) (cdnsystem.SeederC
 }
 
 func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error) {
-	return newPieceSeedStream(cc, ctx, sr.TaskId, sr, opts)
+	return newPieceSeedStream(ctx, cc, sr.TaskId, sr, opts)
 }
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {

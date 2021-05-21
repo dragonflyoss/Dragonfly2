@@ -243,8 +243,8 @@ func (cm *CDNManager) Work(task *types.Task, stream *client.PieceSeedStream) {
 }
 
 func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) (err error) {
-	hostId := cm.getHostUuid(ps)
-	host, ok := cm.hostManager.Get(hostId)
+	hostID := cm.getHostUUID(ps)
+	host, ok := cm.hostManager.Get(hostID)
 	if !ok {
 		server, found := cm.getServer(ps.SeederName)
 		if !found {
@@ -254,7 +254,7 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 		host = &types.Host{
 			Type: types.HostTypeCdn,
 			PeerHost: scheduler.PeerHost{
-				Uuid:     hostId,
+				Uuid:     hostID,
 				HostName: ps.SeederName,
 				Ip:       server.HostInfo.Ip,
 				RpcPort:  server.RpcPort,
@@ -316,7 +316,7 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 	return
 }
 
-func (cm *CDNManager) getHostUuid(ps *cdnsystem.PieceSeed) string {
+func (cm *CDNManager) getHostUUID(ps *cdnsystem.PieceSeed) string {
 	return fmt.Sprintf("cdn:%s", ps.PeerId)
 }
 

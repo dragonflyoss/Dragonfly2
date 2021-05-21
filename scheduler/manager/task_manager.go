@@ -138,17 +138,17 @@ func (m *TaskManager) gcWorkingLoop() {
 			}()
 			var needDeleteKeys []string
 			m.lock.RLock()
-			for taskId, task := range m.data {
+			for taskID, task := range m.data {
 				if task != nil && time.Now().After(task.LastActive.Add(m.gcDelayTime)) {
-					needDeleteKeys = append(needDeleteKeys, taskId)
+					needDeleteKeys = append(needDeleteKeys, taskID)
 					task.Removed = true
 				}
 			}
 			m.lock.RUnlock()
 
 			if len(needDeleteKeys) > 0 {
-				for _, taskId := range needDeleteKeys {
-					m.Delete(taskId)
+				for _, taskID := range needDeleteKeys {
+					m.Delete(taskID)
 				}
 			}
 

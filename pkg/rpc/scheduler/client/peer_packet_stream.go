@@ -51,7 +51,7 @@ type peerPacketStream struct {
 	retryMeta rpc.RetryMeta
 }
 
-func newPeerPacketStream(sc *schedulerClient, ctx context.Context, hashKey string, ptr *scheduler.PeerTaskRequest, opts []grpc.CallOption) (PeerPacketStream, error) {
+func newPeerPacketStream(ctx context.Context, sc *schedulerClient, hashKey string, ptr *scheduler.PeerTaskRequest, opts []grpc.CallOption) (PeerPacketStream, error) {
 	ptr.IsMigrating = true
 
 	pps := &peerPacketStream{

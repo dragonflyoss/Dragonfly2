@@ -68,11 +68,11 @@ func (mm *cacheDataManager) writeFileMetaDataByTask(ctx context.Context, task *t
 }
 
 // updateAccessTime update access and interval
-func (mm *cacheDataManager) updateAccessTime(ctx context.Context, taskId string, accessTime int64) error {
-	mm.cacheLocker.Lock(taskId, false)
-	defer mm.cacheLocker.UnLock(taskId, false)
+func (mm *cacheDataManager) updateAccessTime(ctx context.Context, taskID string, accessTime int64) error {
+	mm.cacheLocker.Lock(taskID, false)
+	defer mm.cacheLocker.UnLock(taskID, false)
 
-	originMetaData, err := mm.readFileMetaData(ctx, taskId)
+	originMetaData, err := mm.readFileMetaData(ctx, taskID)
 	if err != nil {
 		return err
 	}
@@ -80,34 +80,34 @@ func (mm *cacheDataManager) updateAccessTime(ctx context.Context, taskId string,
 	interval := accessTime - originMetaData.AccessTime
 	originMetaData.Interval = interval
 	if interval <= 0 {
-		logger.WithTaskID(taskId).Warnf("file hit interval:%d, accessTime:%v", interval, time.Unix(accessTime/1000, accessTime%1000))
+		logger.WithTaskID(taskID).Warnf("file hit interval:%d, accessTime:%v", interval, time.Unix(accessTime/1000, accessTime%1000))
 		originMetaData.Interval = 0
 	}
 
 	originMetaData.AccessTime = accessTime
 
-	return mm.storage.WriteFileMetaData(ctx, taskId, originMetaData)
+	return mm.storage.WriteFileMetaData(ctx, taskID, originMetaData)
 }
 
-func (mm *cacheDataManager) updateExpireInfo(ctx context.Context, taskId string, expireInfo map[string]string) error {
-	mm.cacheLocker.Lock(taskId, false)
-	defer mm.cacheLocker.UnLock(taskId, false)
+func (mm *cacheDataManager) updateExpireInfo(ctx context.Context, taskID string, expireInfo map[string]string) error {
+	mm.cacheLocker.Lock(taskID, false)
+	defer mm.cacheLocker.UnLock(taskID, false)
 
-	originMetaData, err := mm.readFileMetaData(ctx, taskId)
+	originMetaData, err := mm.readFileMetaData(ctx, taskID)
 	if err != nil {
 		return err
 	}
 
 	originMetaData.ExpireInfo = expireInfo
 
-	return mm.storage.WriteFileMetaData(ctx, taskId, originMetaData)
+	return mm.storage.WriteFileMetaData(ctx, taskID, originMetaData)
 }
 
-func (mm *cacheDataManager) updateStatusAndResult(ctx context.Context, taskId string, metaData *storage.FileMetaData) error {
-	mm.cacheLocker.Lock(taskId, false)
-	defer mm.cacheLocker.UnLock(taskId, false)
+func (mm *cacheDataManager) updateStatusAndResult(ctx context.Context, taskID string, metaData *storage.FileMetaData) error {
+	mm.cacheLocker.Lock(taskID, false)
+	defer mm.cacheLocker.UnLock(taskID, false)
 
-	originMetaData, err := mm.readFileMetaData(ctx, taskId)
+	originMetaData, err := mm.readFileMetaData(ctx, taskID)
 	if err != nil {
 		return err
 	}
@@ -127,30 +127,30 @@ func (mm *cacheDataManager) updateStatusAndResult(ctx context.Context, taskId st
 			originMetaData.PieceMd5Sign = metaData.PieceMd5Sign
 		}
 	}
-	return mm.storage.WriteFileMetaData(ctx, taskId, originMetaData)
+	return mm.storage.WriteFileMetaData(ctx, taskID, originMetaData)
 }
 
 // appendPieceMetaData append piece meta info to storage
-func (mm *cacheDataManager) appendPieceMetaData(ctx context.Context, taskId string, record *storage.PieceMetaRecord) error {
-	mm.cacheLocker.Lock(taskId, false)
-	defer mm.cacheLocker.UnLock(taskId, false)
+func (mm *cacheDataManager) appendPieceMetaData(ctx context.Context, taskID string, record *storage.PieceMetaRecord) error {
+	mm.cacheLocker.Lock(taskID, false)
+	defer mm.cacheLocker.UnLock(taskID, false)
 	// write to the storage
-	return mm.storage.AppendPieceMetaData(ctx, taskId, record)
+	return mm.storage.AppendPieceMetaData(ctx, taskID, record)
 }
 
 // appendPieceMetaData append piece meta info to storage
-func (mm *cacheDataManager) writePieceMetaRecords(ctx context.Context, taskId string, records []*storage.PieceMetaRecord) error {
-	mm.cacheLocker.Lock(taskId, false)
-	defer mm.cacheLocker.UnLock(taskId, false)
+func (mm *cacheDataManager) writePieceMetaRecords(ctx context.Context, taskID string, records []*storage.PieceMetaRecord) error {
+	mm.cacheLocker.Lock(taskID, false)
+	defer mm.cacheLocker.UnLock(taskID, false)
 	// write to the storage
-	return mm.storage.WritePieceMetaRecords(ctx, taskId, records)
+	return mm.storage.WritePieceMetaRecords(ctx, taskID, records)
 }
 
 // readAndCheckPieceMetaRecords reads pieceMetaRecords from storage and check data integrity by the md5 file of the TaskId
-func (mm *cacheDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskId, pieceMd5Sign string) ([]*storage.PieceMetaRecord, error) {
-	mm.cacheLocker.Lock(taskId, true)
-	defer mm.cacheLocker.UnLock(taskId, true)
-	md5Sign, pieceMetaRecords, err := mm.getPieceMd5Sign(ctx, taskId)
+func (mm *cacheDataManager) readAndCheckPieceMetaRecords(ctx context.Context, taskID, pieceMd5Sign string) ([]*storage.PieceMetaRecord, error) {
+	mm.cacheLocker.Lock(taskID, true)
+	defer mm.cacheLocker.UnLock(taskID, true)
+	md5Sign, pieceMetaRecords, err := mm.getPieceMd5Sign(ctx, taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -162,14 +162,14 @@ func (mm *cacheDataManager) readAndCheckPieceMetaRecords(ctx context.Context, ta
 }
 
 // readPieceMetaRecords reads pieceMetaRecords from storage and without check data integrity
-func (mm *cacheDataManager) readPieceMetaRecords(ctx context.Context, taskId string) ([]*storage.PieceMetaRecord, error) {
-	mm.cacheLocker.Lock(taskId, true)
-	defer mm.cacheLocker.UnLock(taskId, true)
-	return mm.storage.ReadPieceMetaRecords(ctx, taskId)
+func (mm *cacheDataManager) readPieceMetaRecords(ctx context.Context, taskID string) ([]*storage.PieceMetaRecord, error) {
+	mm.cacheLocker.Lock(taskID, true)
+	defer mm.cacheLocker.UnLock(taskID, true)
+	return mm.storage.ReadPieceMetaRecords(ctx, taskID)
 }
 
-func (mm *cacheDataManager) getPieceMd5Sign(ctx context.Context, taskId string) (string, []*storage.PieceMetaRecord, error) {
-	pieceMetaRecords, err := mm.storage.ReadPieceMetaRecords(ctx, taskId)
+func (mm *cacheDataManager) getPieceMd5Sign(ctx context.Context, taskID string) (string, []*storage.PieceMetaRecord, error) {
+	pieceMetaRecords, err := mm.storage.ReadPieceMetaRecords(ctx, taskID)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "failed to read piece meta file")
 	}
@@ -180,20 +180,20 @@ func (mm *cacheDataManager) getPieceMd5Sign(ctx context.Context, taskId string) 
 	return digestutils.Sha256(pieceMd5...), pieceMetaRecords, nil
 }
 
-func (mm *cacheDataManager) readFileMetaData(ctx context.Context, taskId string) (*storage.FileMetaData, error) {
-	if fileMeta, err := mm.storage.ReadFileMetaData(ctx, taskId); err != nil {
+func (mm *cacheDataManager) readFileMetaData(ctx context.Context, taskID string) (*storage.FileMetaData, error) {
+	fileMeta, err := mm.storage.ReadFileMetaData(ctx, taskID)
+	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read file metadata from storage")
-	} else {
-		return fileMeta, nil
 	}
+	return fileMeta, nil
 }
 
-func (mm *cacheDataManager) statDownloadFile(ctx context.Context, taskId string) (*storedriver.StorageInfo, error) {
-	return mm.storage.StatDownloadFile(ctx, taskId)
+func (mm *cacheDataManager) statDownloadFile(ctx context.Context, taskID string) (*storedriver.StorageInfo, error) {
+	return mm.storage.StatDownloadFile(ctx, taskID)
 }
 
-func (mm *cacheDataManager) readDownloadFile(ctx context.Context, taskId string) (io.ReadCloser, error) {
-	return mm.storage.ReadDownloadFile(ctx, taskId)
+func (mm *cacheDataManager) readDownloadFile(ctx context.Context, taskID string) (io.ReadCloser, error) {
+	return mm.storage.ReadDownloadFile(ctx, taskID)
 }
 
 func (mm *cacheDataManager) resetRepo(ctx context.Context, task *types.SeedTask) error {
@@ -202,6 +202,6 @@ func (mm *cacheDataManager) resetRepo(ctx context.Context, task *types.SeedTask)
 	return mm.storage.ResetRepo(ctx, task)
 }
 
-func (mm *cacheDataManager) writeDownloadFile(ctx context.Context, taskId string, offset int64, len int64, buf *bytes.Buffer) error {
-	return mm.storage.WriteDownloadFile(ctx, taskId, offset, len, buf)
+func (mm *cacheDataManager) writeDownloadFile(ctx context.Context, taskID string, offset int64, len int64, buf *bytes.Buffer) error {
+	return mm.storage.WriteDownloadFile(ctx, taskID, offset, len, buf)
 }

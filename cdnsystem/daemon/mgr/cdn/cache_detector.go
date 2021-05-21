@@ -74,10 +74,9 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) 
 			return result, nil
 		}
 		return result, err
-	} else {
-		if err := cd.cacheDataManager.updateAccessTime(ctx, task.TaskId, getCurrentTimeMillisFunc()); err != nil {
-			logger.WithTaskID(task.TaskId).Warnf("failed to update task access time ")
-		}
+	}
+	if err := cd.cacheDataManager.updateAccessTime(ctx, task.TaskId, getCurrentTimeMillisFunc()); err != nil {
+		logger.WithTaskID(task.TaskId).Warnf("failed to update task access time ")
 	}
 	return result, nil
 }

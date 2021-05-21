@@ -66,7 +66,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				waitToWriteContent := job.pieceContent
 				// 要写盘数据的长度
 				originPieceLen := waitToWriteContent.Len() // 未作处理的原始数据长度
-				pieceLen := originPieceLen // 经过处理后写到存储介质的真实长度
+				pieceLen := originPieceLen                 // 经过处理后写到存储介质的真实长度
 				pieceStyle := types.PlainUnspecified
 
 				if err := cw.writeToFile(ctx, job.TaskId, waitToWriteContent, int64(job.pieceNum)*int64(job.pieceSize), pieceMd5); err != nil {

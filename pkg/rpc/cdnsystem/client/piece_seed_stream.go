@@ -43,7 +43,7 @@ type PieceSeedStream struct {
 	rpc.RetryMeta
 }
 
-func newPieceSeedStream(sc *cdnClient, ctx context.Context, hashKey string, sr *cdnsystem.SeedRequest, opts []grpc.CallOption) (*PieceSeedStream, error) {
+func newPieceSeedStream(ctx context.Context, sc *cdnClient, hashKey string, sr *cdnsystem.SeedRequest, opts []grpc.CallOption) (*PieceSeedStream, error) {
 	pss := &PieceSeedStream{
 		sc:      sc,
 		ctx:     ctx,
