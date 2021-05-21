@@ -240,6 +240,10 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 			},
 		}, func(request CommonTaskRequest) {
 		})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var s = sm.(*storageManager)
 
 	err = s.CreateTask(

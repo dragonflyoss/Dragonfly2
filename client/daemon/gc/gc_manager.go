@@ -51,10 +51,10 @@ func NewManager(interval time.Duration) Manager {
 
 func (g gcManager) Start() {
 	go func() {
-		tick := time.Tick(g.interval)
+		tick := time.NewTicker(g.interval)
 		for {
 			select {
-			case <-tick:
+			case <-tick.C:
 				for name, gc := range allGCTasks {
 					var log = logger.With("component", name)
 					log.Debugf("start gc")
