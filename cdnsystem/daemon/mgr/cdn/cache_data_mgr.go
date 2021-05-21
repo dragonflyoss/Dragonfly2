@@ -80,7 +80,7 @@ func (mm *cacheDataManager) updateAccessTime(ctx context.Context, taskId string,
 	interval := accessTime - originMetaData.AccessTime
 	originMetaData.Interval = interval
 	if interval <= 0 {
-		logger.WithTaskID(taskId).Warnf("file hit interval:%d, accessTime:%d", interval, time.Unix(accessTime/1000, accessTime%1000))
+		logger.WithTaskID(taskId).Warnf("file hit interval:%d, accessTime:%v", interval, time.Unix(accessTime/1000, accessTime%1000))
 		originMetaData.Interval = 0
 	}
 

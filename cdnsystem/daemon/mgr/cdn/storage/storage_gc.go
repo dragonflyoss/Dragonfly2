@@ -25,7 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
-	"d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
@@ -56,7 +56,7 @@ func (cleaner *Cleaner) Gc(ctx context.Context, storagePattern string, force boo
 			if err != nil {
 				return nil, err
 			}
-			freeSpace, err = cleaner.Store.GetAvailSpace(ctx)
+			freeSpace, _ = cleaner.Store.GetAvailSpace(ctx)
 		} else {
 			return nil, errors.Wrapf(err, "failed to get avail space")
 		}
