@@ -64,7 +64,7 @@ func (tc *testCase) WithRegistryMirror(rawURL string, direct bool) *testCase {
 	var url *url.URL
 	url, tc.Error = url.Parse(rawURL)
 	tc.RegistryMirror = &config.RegistryMirror{
-		Remote: &config.URL{url},
+		Remote: &config.URL{URL: url},
 		Direct: direct,
 	}
 	return tc

@@ -255,17 +255,6 @@ func testFillAndSerialize(t *testing.T, tc Cache) {
 		{Num: 2},
 		{Num: 3},
 	}, DefaultExpiration)
-	tc.Set("[]*struct", []*TestStruct{
-		&TestStruct{Num: 4},
-		&TestStruct{Num: 5},
-	}, DefaultExpiration)
-	tc.Set("structception", &TestStruct{
-		Num: 42,
-		Children: []*TestStruct{
-			&TestStruct{Num: 6174},
-			&TestStruct{Num: 4716},
-		},
-	}, DefaultExpiration)
 
 	fp := &bytes.Buffer{}
 	err := tc.Save(fp)
