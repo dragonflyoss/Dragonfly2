@@ -42,7 +42,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
@@ -66,6 +66,10 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 			},
 		}, func(request CommonTaskRequest) {
 		})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var s = sm.(*storageManager)
 
 	err = s.CreateTask(
@@ -236,6 +240,10 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 			},
 		}, func(request CommonTaskRequest) {
 		})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var s = sm.(*storageManager)
 
 	err = s.CreateTask(

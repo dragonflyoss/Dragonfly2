@@ -66,7 +66,7 @@ func GetSchedulerByConfigServer(cfgServerAddr string, opts ...grpc.DialOption) (
 	// todo create HostTag
 	HostTag := ""
 	schedulers, err := configServer.GetSchedulers(context.Background(), &manager.GetSchedulersRequest{
-		Ip:       iputils.HostIp,
+		Ip:       iputils.HostIP,
 		HostName: iputils.HostName,
 		HostTag:  HostTag,
 	})
@@ -93,13 +93,13 @@ func GetSchedulerByConfigServer(cfgServerAddr string, opts ...grpc.DialOption) (
 
 // see scheduler.SchedulerClient
 type SchedulerClient interface {
-	RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error)
+	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest, ...grpc.CallOption) (*scheduler.RegisterResult, error)
 	// IsMigrating of ptr will be set to true
-	ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error)
+	ReportPieceResult(context.Context, string, *scheduler.PeerTaskRequest, ...grpc.CallOption) (PeerPacketStream, error)
 
-	ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error
+	ReportPeerResult(context.Context, *scheduler.PeerResult, ...grpc.CallOption) error
 
-	LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) error
+	LeaveTask(context.Context, *scheduler.PeerTarget, ...grpc.CallOption) error
 
 	Close() error
 }
@@ -109,11 +109,11 @@ type schedulerClient struct {
 }
 
 func (sc *schedulerClient) getSchedulerClient(key string, stick bool) (scheduler.SchedulerClient, string, error) {
-	if clientConn, err := sc.Connection.GetClientConn(key, stick); err != nil {
+	clientConn, err := sc.Connection.GetClientConn(key, stick)
+	if err != nil {
 		return nil, "", err
-	} else {
-		return scheduler.NewSchedulerClient(clientConn), clientConn.Target(), nil
 	}
+	return scheduler.NewSchedulerClient(clientConn), clientConn.Target(), nil
 }
 
 func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (rr *scheduler.RegisterResult,
@@ -168,13 +168,13 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 	return
 }
 
-func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error) {
-	pps, err := newPeerPacketStream(sc, ctx, taskId, ptr, opts)
+func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error) {
+	pps, err := newPeerPacketStream(ctx, sc, taskID, ptr, opts)
 
-	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskId:%s", taskId)
+	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskID:%s", taskID)
 
 	// trigger scheduling
-	pps.Send(scheduler.NewZeroPieceResult(taskId, ptr.PeerId))
+	pps.Send(scheduler.NewZeroPieceResult(taskID, ptr.PeerId))
 	return pps, err
 }
 

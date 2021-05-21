@@ -203,13 +203,14 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 			reflect.TypeOf(config.CertPool{}),
 			reflect.TypeOf(config.Regexp{}),
 			reflect.TypeOf(clientutil.StorageSize{}):
+
 			b, _ := yaml.Marshal(v)
 			p := reflect.New(to)
 			if err := yaml.Unmarshal(b, p.Interface()); err != nil {
 				return nil, err
-			} else {
-				return p.Interface(), nil
 			}
+
+			return p.Interface(), nil
 		default:
 			return v, nil
 		}
@@ -230,7 +231,7 @@ func initJaegerTracer(url string) (func(), error) {
 		// Record information about this application in an Resource.
 		sdktrace.WithResource(resource.NewWithAttributes(
 			semconv.ServiceNameKey.String("dragonfly"),
-			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", iputils.HostName, iputils.HostIp)),
+			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", iputils.HostName, iputils.HostIP)),
 			semconv.ServiceVersionKey.String(version.GitVersion))),
 	)
 

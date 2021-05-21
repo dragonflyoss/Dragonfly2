@@ -110,7 +110,7 @@ func NewDefaultBaseProperties() *BaseProperties {
 		GCStorageInterval:       DefaultGCStorageInterval,
 		TaskExpireTime:          DefaultTaskExpireTime,
 		StoragePattern:          DefaultStoragePattern,
-		AdvertiseIP:             iputils.HostIp,
+		AdvertiseIP:             iputils.HostIP,
 	}
 }
 

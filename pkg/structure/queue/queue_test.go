@@ -17,12 +17,13 @@
 package queue
 
 import (
-	"github.com/stretchr/testify/suite"
 	"math/rand"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/suite"
 )
 
 func TestQueue(t *testing.T) {
@@ -45,38 +46,38 @@ func (suite *QueueTestSuite) TestQueue_infiniteQueue() {
 	suite.Equal(q.Len(), 0)
 
 	q.PutTimeout(nil, 0)
-	suite.Equal(q.Len(),  0)
+	suite.Equal(q.Len(), 0)
 
 	q.Put(0)
-	suite.Equal(q.Len(),  1)
-	suite.Equal(q.Poll(),  0)
-	suite.Equal(q.Len(),  0)
+	suite.Equal(q.Len(), 1)
+	suite.Equal(q.Poll(), 0)
+	suite.Equal(q.Len(), 0)
 
 	{ // test Poll
 		time.AfterFunc(timeout, func() { q.Put(1) })
 		start := time.Now()
-		suite.Equal(q.Poll(),  1)
-		suite.Equal(time.Since(start) > timeout,  true)
+		suite.Equal(q.Poll(), 1)
+		suite.Equal(time.Since(start) > timeout, true)
 	}
 
 	{ // test PollTimeout
 		v, ok := q.PollTimeout(0)
 		suite.Nil(v)
-		suite.Equal(ok,  false)
+		suite.Equal(ok, false)
 
 		start := time.Now()
 		v, ok = q.PollTimeout(timeout)
 		suite.Nil(v)
-		suite.Equal(ok,  false)
-		suite.Equal(time.Since(start) > timeout,  true)
+		suite.Equal(ok, false)
+		suite.Equal(time.Since(start) > timeout, true)
 
 		time.AfterFunc(timeout/2, func() { q.Put(1) })
 		start = time.Now()
 		v, ok = q.PollTimeout(timeout)
-		suite.Equal(ok,  true)
-		suite.Equal(v,  1)
-		suite.Equal(time.Since(start) >= timeout/2,  true)
-		suite.Equal(time.Since(start) < timeout,  true)
+		suite.Equal(ok, true)
+		suite.Equal(v, 1)
+		suite.Equal(time.Since(start) >= timeout/2, true)
+		suite.Equal(time.Since(start) < timeout, true)
 	}
 }
 func (suite *QueueTestSuite) TestQueue_infiniteQueue_PollTimeout() {
@@ -104,8 +105,8 @@ func (suite *QueueTestSuite) TestQueue_infiniteQueue_PollTimeout() {
 	})
 	wg.Wait()
 
-	suite.Equal(time.Since(start) > timeout,  true)
-	suite.Equal(cnt,  int32(n-1))
+	suite.Equal(time.Since(start) > timeout, true)
+	suite.Equal(cnt, int32(n-1))
 }
 
 func (suite *QueueTestSuite) TestQueue_finiteQueue() {
@@ -113,46 +114,46 @@ func (suite *QueueTestSuite) TestQueue_finiteQueue() {
 	q := NewQueue(2)
 
 	q.Put(nil)
-	suite.Equal(q.Len(),  0)
+	suite.Equal(q.Len(), 0)
 
 	q.PutTimeout(nil, 0)
-	suite.Equal(q.Len(),  0)
+	suite.Equal(q.Len(), 0)
 
 	q.Put(1)
-	suite.Equal(q.Len(),  1)
+	suite.Equal(q.Len(), 1)
 
 	start := time.Now()
 	q.PutTimeout(2, timeout)
 	q.PutTimeout(3, timeout)
 	q.PutTimeout(4, 0)
-	suite.Equal(q.Len(),  2)
-	suite.Equal(time.Since(start) >= timeout,  true)
-	suite.Equal(time.Since(start) < 2*timeout,  true)
+	suite.Equal(q.Len(), 2)
+	suite.Equal(time.Since(start) >= timeout, true)
+	suite.Equal(time.Since(start) < 2*timeout, true)
 
-	suite.Equal(q.Poll(),  1)
-	suite.Equal(q.Len(),  1)
-	suite.Equal(q.Poll(),  2)
+	suite.Equal(q.Poll(), 1)
+	suite.Equal(q.Len(), 1)
+	suite.Equal(q.Poll(), 2)
 
 	{
 		q.PutTimeout(1, 0)
 		item, ok := q.PollTimeout(timeout)
-		suite.Equal(ok,  true)
-		suite.Equal(item,  1)
+		suite.Equal(ok, true)
+		suite.Equal(item, 1)
 
 		start = time.Now()
 		item, ok = q.PollTimeout(timeout)
-		suite.Equal(ok,  false)
+		suite.Equal(ok, false)
 		suite.Nil(item)
-		suite.Equal(time.Since(start) >= timeout,  true)
+		suite.Equal(time.Since(start) >= timeout, true)
 
 		start = time.Now()
 		q.PutTimeout(1, 0)
 		item, ok = q.PollTimeout(0)
-		suite.Equal(ok,  true)
-		suite.Equal(item,  1)
+		suite.Equal(ok, true)
+		suite.Equal(item, 1)
 		item, ok = q.PollTimeout(0)
-		suite.Equal(ok,  false)
+		suite.Equal(ok, false)
 		suite.Nil(item)
-		suite.Equal(time.Since(start) < timeout,  true)
+		suite.Equal(time.Since(start) < timeout, true)
 	}
 }

@@ -67,7 +67,7 @@ func Download(cfg *config.DfgetConfig, client dfclient.DaemonClient) error {
 	request := &dfdaemongrpc.DownRequest{
 		Url: cfg.URL,
 		UrlMeta: &base.UrlMeta{
-			Digest:    cfg.Digest,
+			Digest: cfg.Digest,
 			Range:  hdr[headers.Range],
 			Header: hdr,
 		},

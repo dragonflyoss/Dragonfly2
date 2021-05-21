@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package sortedlist
 
 import (
@@ -110,7 +126,7 @@ func (l *SortedList) Range(fn func(data Item) bool) {
 	l.RangeLimit(-1, fn)
 }
 
-func (l *SortedList) RangeLimit(limit int ,fn func(Item) bool) {
+func (l *SortedList) RangeLimit(limit int, fn func(Item) bool) {
 	if limit == 0 {
 		return
 	}
@@ -118,7 +134,7 @@ func (l *SortedList) RangeLimit(limit int ,fn func(Item) bool) {
 	defer l.l.RUnlock()
 
 	count := 0
-	for i := l.left; i<=l.right; i++ {
+	for i := l.left; i <= l.right; i++ {
 		buc := l.buckets[i]
 		for _, b := range buc.buckets {
 			for it := range b {
@@ -138,7 +154,7 @@ func (l *SortedList) RangeReverse(fn func(data Item) bool) {
 	l.RangeReverseLimit(-1, fn)
 }
 
-func (l *SortedList) RangeReverseLimit(limit int ,fn func(Item) bool) {
+func (l *SortedList) RangeReverseLimit(limit int, fn func(Item) bool) {
 	if limit == 0 {
 		return
 	}
@@ -146,8 +162,8 @@ func (l *SortedList) RangeReverseLimit(limit int ,fn func(Item) bool) {
 	defer l.l.RUnlock()
 
 	count := 0
-	for i := l.right; i>=l.left; i-- {
-		for j:=len(l.buckets[i].buckets)-1; j>=0; j-- {
+	for i := l.right; i >= l.left; i-- {
+		for j := len(l.buckets[i].buckets) - 1; j >= 0; j-- {
 			for it := range l.buckets[i].buckets[j] {
 				if !fn(it) {
 					return
@@ -216,4 +232,3 @@ func (l *SortedList) getKeyMapKey(data Item) (key1, key2 int, ok bool) {
 func (l *SortedList) deleteKeyMapKey(data Item) {
 	delete(l.keyMap, data)
 }
-

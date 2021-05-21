@@ -117,7 +117,7 @@ func (s *Server) Serve() error {
 	}
 
 	logger.Infof("start server at port %d", port)
-	if err := rpc.StartTcpServer(port, port, s.server); err != nil {
+	if err := rpc.StartTCPServer(port, port, s.server); err != nil {
 		return err
 	}
 	return nil

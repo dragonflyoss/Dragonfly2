@@ -132,8 +132,8 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	}
 
 	// get or create host
-	hostId := request.PeerHost.Uuid
-	host, _ := s.service.GetHost(hostId)
+	hostID := request.PeerHost.Uuid
+	host, _ := s.service.GetHost(hostID)
 	if host == nil {
 		host = &types.Host{
 			Type:     types.HostTypePeer,

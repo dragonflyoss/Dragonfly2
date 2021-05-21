@@ -18,6 +18,8 @@ package server
 
 import (
 	"context"
+	"sync"
+
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -27,7 +29,6 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
-	"sync"
 )
 
 func init() {

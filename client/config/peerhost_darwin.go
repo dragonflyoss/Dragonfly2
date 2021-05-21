@@ -49,7 +49,7 @@ var peerHostConfig = PeerHostOption{
 	},
 	Host: HostOption{
 		ListenIP:       net.IPv4zero.String(),
-		AdvertiseIP:    iputils.HostIp,
+		AdvertiseIP:    iputils.HostIP,
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",

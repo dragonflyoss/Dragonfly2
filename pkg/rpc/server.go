@@ -85,7 +85,7 @@ var sp = struct {
 	once sync.Once
 }{ch: make(chan struct{})}
 
-func GetTcpServerPort() int {
+func GetTCPServerPort() int {
 	sp.once.Do(func() {
 		<-sp.ch
 	})
@@ -94,7 +94,7 @@ func GetTcpServerPort() int {
 }
 
 // for client, start tcp first and then start unix on server process
-func StartTcpServer(incrementPort int, upLimit int, impl interface{}, opts ...grpc.ServerOption) error {
+func StartTCPServer(incrementPort int, upLimit int, impl interface{}, opts ...grpc.ServerOption) error {
 	for {
 		if incrementPort > upLimit {
 			return errors.New("no ports available")
@@ -125,9 +125,9 @@ func StartUnixServer(sockPath string, impl interface{}, opts ...grpc.ServerOptio
 
 	if err := startServer(netAddr, impl, opts); err != nil {
 		return err
-	} else {
-		return nil
 	}
+
+	return nil
 }
 
 // start server with addr and register source
@@ -148,12 +148,13 @@ func startServer(netAddr dfnet.NetAddr, impl interface{}, opts []grpc.ServerOpti
 
 		addr := lis.Addr().String()
 		index := strings.LastIndex(addr, ":")
-		if p, err := strconv.Atoi(stringutils.SubString(addr, index+1, len(addr))); err != nil {
+		p, err := strconv.Atoi(stringutils.SubString(addr, index+1, len(addr)))
+		if err != nil {
 			return err
-		} else {
-			sp.port = p
-			close(sp.ch)
 		}
+
+		sp.port = p
+		close(sp.ch)
 	}
 
 	register(server, impl)

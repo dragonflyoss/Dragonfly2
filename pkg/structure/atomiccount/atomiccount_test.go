@@ -17,15 +17,16 @@
 package atomiccount
 
 import (
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
 func TestSuite(t *testing.T) {
 	suite.Run(t, new(AtomicCountUtilSuite))
 }
 
-type AtomicCountUtilSuite struct{
+type AtomicCountUtilSuite struct {
 	suite.Suite
 }
 

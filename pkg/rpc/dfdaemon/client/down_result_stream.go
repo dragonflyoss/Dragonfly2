@@ -41,7 +41,7 @@ type DownResultStream struct {
 	rpc.RetryMeta
 }
 
-func newDownResultStream(dc *daemonClient, ctx context.Context, hashKey string, req *dfdaemon.DownRequest, opts []grpc.CallOption) (*DownResultStream, error) {
+func newDownResultStream(ctx context.Context, dc *daemonClient, hashKey string, req *dfdaemon.DownRequest, opts []grpc.CallOption) (*DownResultStream, error) {
 	drs := &DownResultStream{
 		dc:      dc,
 		ctx:     ctx,
@@ -58,9 +58,8 @@ func newDownResultStream(dc *daemonClient, ctx context.Context, hashKey string, 
 
 	if err := drs.initStream(); err != nil {
 		return nil, err
-	} else {
-		return drs, nil
 	}
+	return drs, nil
 }
 
 func (drs *DownResultStream) initStream() error {
@@ -134,11 +133,11 @@ func (drs *DownResultStream) replaceStream(cause error) error {
 }
 
 func (drs *DownResultStream) replaceClient(cause error) error {
-	if preNode, err := drs.dc.TryMigrate(drs.hashKey, cause, drs.failedServers); err != nil {
+	preNode, err := drs.dc.TryMigrate(drs.hashKey, cause, drs.failedServers)
+	if err != nil {
 		return err
-	} else {
-		drs.failedServers = append(drs.failedServers, preNode)
 	}
+	drs.failedServers = append(drs.failedServers, preNode)
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		client, _, err := drs.dc.getDaemonClient(drs.hashKey, true)

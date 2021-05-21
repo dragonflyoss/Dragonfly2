@@ -61,7 +61,7 @@ func checkSameFile(task *types.SeedTask, metaData *storage.FileMetaData) error {
 func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, fileMd5 hash.Hash) error {
 	bufSize := int32(256 * 1024)
 	pieceLen := pieceRecord.PieceLen
-	if pieceLen >0 && pieceLen < bufSize {
+	if pieceLen > 0 && pieceLen < bufSize {
 		bufSize = pieceLen
 	}
 	// todo 针对分片格式解析出原始数据来计算fileMd5

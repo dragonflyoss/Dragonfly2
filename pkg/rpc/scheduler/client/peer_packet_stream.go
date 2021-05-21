@@ -21,8 +21,6 @@ import (
 	"io"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -53,7 +51,7 @@ type peerPacketStream struct {
 	retryMeta rpc.RetryMeta
 }
 
-func newPeerPacketStream(sc *schedulerClient, ctx context.Context, hashKey string, ptr *scheduler.PeerTaskRequest, opts []grpc.CallOption) (PeerPacketStream, error) {
+func newPeerPacketStream(ctx context.Context, sc *schedulerClient, hashKey string, ptr *scheduler.PeerTaskRequest, opts []grpc.CallOption) (PeerPacketStream, error) {
 	ptr.IsMigrating = true
 
 	pps := &peerPacketStream{
@@ -71,9 +69,8 @@ func newPeerPacketStream(sc *schedulerClient, ctx context.Context, hashKey strin
 
 	if err := pps.initStream(); err != nil {
 		return nil, err
-	} else {
-		return pps, nil
 	}
+	return pps, nil
 }
 
 func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
@@ -102,12 +99,6 @@ func (pps *peerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
 	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
 	if pp, err = pps.stream.Recv(); err != nil && err != io.EOF {
 		pp, err = pps.retryRecv(err)
-	}
-	return
-	if err != nil && err != io.EOF {
-		if e, ok := err.(*dferrors.DfError); ok && e.Code == dfcodes.PeerTaskNotFound {
-			pp, err = pps.retryRecv(err)
-		}
 	}
 	return
 }
@@ -196,11 +187,11 @@ func (pps *peerPacketStream) replaceStream(cause error) error {
 }
 
 func (pps *peerPacketStream) replaceClient(cause error) error {
-	if preNode, err := pps.sc.TryMigrate(pps.hashKey, cause, pps.failedServers); err != nil {
+	preNode, err := pps.sc.TryMigrate(pps.hashKey, cause, pps.failedServers)
+	if err != nil {
 		return err
-	} else {
-		pps.failedServers = append(pps.failedServers, preNode)
 	}
+	pps.failedServers = append(pps.failedServers, preNode)
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		client, _, err := pps.sc.getSchedulerClient(pps.hashKey, true)

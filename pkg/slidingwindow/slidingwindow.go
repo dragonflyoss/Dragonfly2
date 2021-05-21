@@ -66,7 +66,7 @@ func (w *WindowStatus) AddCount(n uint) {
 	w.Set(n)
 
 	for w.Test(w.start) {
-		w.start += 1
+		w.start++
 	}
 }
 

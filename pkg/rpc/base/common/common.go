@@ -17,17 +17,18 @@
 package common
 
 import (
+	"reflect"
+
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"reflect"
 )
 
 var EndOfPiece = int32(1) << 30
 var ZeroOfPiece = int32(-1)
 
-// cdn peer id suffix
+// CdnSuffix represents cdn peer id suffix
 var CdnSuffix = "_CDN"
 
 func NewGrpcDfError(code base.Code, msg string) *base.GrpcDfError {

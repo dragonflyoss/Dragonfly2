@@ -27,25 +27,25 @@ var (
 	// ErrURLNotReachable represents the url is a not reachable.
 	ErrURLNotReachable = errors.New("url not reachable")
 
-	// ErrTaskIdDuplicate represents the task id is in conflict.
-	ErrTaskIdDuplicate = errors.New("taskId conflict")
+	// ErrTaskIDDuplicate represents the task id is in conflict.
+	ErrTaskIDDuplicate = errors.New("taskId conflict")
 
-	// ErrPieceCountNotEqual
+	// ErrPieceCountNotEqual represents piece count is not equal.
 	ErrPieceCountNotEqual = errors.New("inconsistent number of pieces")
 
-	// ErrFileLengthNotEqual
+	// ErrFileLengthNotEqual represents file length is not equal.
 	ErrFileLengthNotEqual = errors.New("inconsistent file length")
 
-	// ErrDownloadFail
+	// ErrDownloadFail represents download failed.
 	ErrDownloadFail = errors.New("resource download failed")
 
-	// ErrResourceExpired
+	// ErrResourceExpired represents resource is expired.
 	ErrResourceExpired = errors.New("resource expired")
 
-	// ErrResourceNotSupportRangeRequest
+	// ErrResourceNotSupportRangeRequest represents resource is not support range.
 	ErrResourceNotSupportRangeRequest = errors.New("resource does not support range request")
 
-	// ErrPieceMd5NotMatch
+	// ErrPieceMd5NotMatch represents piece md5 is not match.
 	ErrPieceMd5NotMatch = errors.New("piece md5 check fail")
 
 	// ErrDataNotFound represents the data cannot be found.
@@ -76,7 +76,7 @@ func IsURLNotReachable(err error) bool {
 
 // IsTaskIDDuplicate checks the error is a TaskIDDuplicate error or not.
 func IsTaskIDDuplicate(err error) bool {
-	return errors.Cause(err) == ErrTaskIdDuplicate
+	return errors.Cause(err) == ErrTaskIDDuplicate
 }
 
 func IsPieceCountNotEqual(err error) bool {

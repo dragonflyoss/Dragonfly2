@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -37,7 +38,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func TestUploadManager_Serve(t *testing.T) {

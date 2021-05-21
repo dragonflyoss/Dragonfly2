@@ -60,7 +60,7 @@ func (s *FileUtilsTestSuite) TearDownSuite() {
 	}
 }
 
-func (s *FileUtilsTestSuite) BeforeTest(suiteName, testName string) () {
+func (s *FileUtilsTestSuite) BeforeTest(suiteName, testName string) {
 	s.testDir = filepath.Join(s.workDir, testName)
 	s.testFile = filepath.Join(s.testDir, uuid.New().String())
 }
@@ -78,7 +78,7 @@ func (s *FileUtilsTestSuite) TestDeleteFile() {
 	s.Require().Nil(err)
 
 	s.Require().True(fileutils.PathExist(s.testFile))
-	err = fileutils.DeleteFile(s.testFile)
+	_ = fileutils.DeleteFile(s.testFile)
 	s.Require().False(fileutils.PathExist(s.testFile))
 }
 

@@ -31,7 +31,7 @@ import (
 
 	"github.com/mattn/go-runewidth"
 	"github.com/mitchellh/colorstring"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 // ProgressBar is a simple progress bar
@@ -681,9 +681,9 @@ func renderProgressBar(c config, s state) (int, error) {
 	}
 
 	if c.fullWidth && !c.ignoreLength {
-		width, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+		width, _, err := term.GetSize(int(os.Stdout.Fd()))
 		if err != nil {
-			width, _, err = terminal.GetSize(int(os.Stderr.Fd()))
+			width, _, err = term.GetSize(int(os.Stderr.Fd()))
 			if err != nil {
 				width = 80
 			}

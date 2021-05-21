@@ -25,7 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
-	"d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
@@ -56,7 +56,7 @@ func (cleaner *Cleaner) Gc(ctx context.Context, storagePattern string, force boo
 			if err != nil {
 				return nil, err
 			}
-			freeSpace, err = cleaner.Store.GetAvailSpace(ctx)
+			freeSpace, _ = cleaner.Store.GetAvailSpace(ctx)
 		} else {
 			return nil, errors.Wrapf(err, "failed to get avail space")
 		}
@@ -90,31 +90,31 @@ func (cleaner *Cleaner) Gc(ctx context.Context, storagePattern string, force boo
 		if info.IsDir() {
 			return nil
 		}
-		taskId := strings.Split(info.Name(), ".")[0]
-		// If the taskId has been handled, and no need to do that again.
-		if walkTaskIds[taskId] {
+		taskID := strings.Split(info.Name(), ".")[0]
+		// If the taskID has been handled, and no need to do that again.
+		if walkTaskIds[taskID] {
 			return nil
 		}
-		walkTaskIds[taskId] = true
+		walkTaskIds[taskID] = true
 
 		// we should return directly when we success to get info which means it is being used
-		if _, err := cleaner.TaskMgr.Get(ctx, taskId); err == nil || !cdnerrors.IsDataNotFound(err) {
+		if _, err := cleaner.TaskMgr.Get(ctx, taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
 			if err != nil {
-				logger.GcLogger.With("type", storagePattern).Errorf("failed to get taskId(%s): %v", taskId, err)
+				logger.GcLogger.With("type", storagePattern).Errorf("failed to get taskID(%s): %v", taskID, err)
 			}
 			return nil
 		}
 
-		// add taskId to gcTaskIds slice directly when fullGC equals true.
+		// add taskID to gcTaskIds slice directly when fullGC equals true.
 		if fullGC {
-			gcTaskIDs = append(gcTaskIDs, taskId)
+			gcTaskIDs = append(gcTaskIDs, taskID)
 			return nil
 		}
 
-		metaData, err := cleaner.StorageMgr.ReadFileMetaData(ctx, taskId)
+		metaData, err := cleaner.StorageMgr.ReadFileMetaData(ctx, taskID)
 		if err != nil || metaData == nil {
-			logger.GcLogger.With("type", storagePattern).Debugf("taskId: %s, failed to get metadata: %v", taskId, err)
-			gcTaskIDs = append(gcTaskIDs, taskId)
+			logger.GcLogger.With("type", storagePattern).Debugf("taskID: %s, failed to get metadata: %v", taskID, err)
+			gcTaskIDs = append(gcTaskIDs, taskID)
 			return nil
 		}
 		// put taskId into gapTasks or intervalTasks which will sort by some rules
@@ -173,14 +173,14 @@ func (cleaner *Cleaner) getGCTasks(gapTasks, intervalTasks *treemap.Map) []strin
 	var gcTasks = make([]string, 0)
 
 	for _, v := range gapTasks.Values() {
-		if taskIds, ok := v.([]string); ok {
-			gcTasks = append(gcTasks, taskIds...)
+		if taskIDs, ok := v.([]string); ok {
+			gcTasks = append(gcTasks, taskIDs...)
 		}
 	}
 
 	for _, v := range intervalTasks.Values() {
-		if taskIds, ok := v.([]string); ok {
-			gcTasks = append(gcTasks, taskIds...)
+		if taskIDs, ok := v.([]string); ok {
+			gcTasks = append(gcTasks, taskIDs...)
 		}
 	}
 

@@ -18,7 +18,7 @@ package types
 
 import "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 
-type IClient interface{
+type IClient interface {
 	Send(*scheduler.PeerPacket) error
 	Recv() (*scheduler.PieceResult, error)
 	Close()

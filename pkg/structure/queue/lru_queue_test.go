@@ -17,8 +17,9 @@
 package queue
 
 import (
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
 func TestLruQueue(t *testing.T) {
@@ -70,47 +71,47 @@ func (suite *LruQueueTestSuite) TestLRUQueue() {
 
 	items = q.GetFront(10)
 	suite.Equal(len(items), 5)
-	suite.Equal(items[0],  "data5")
-	suite.Equal(items[1],  "data4")
-	suite.Equal(items[2],  "data3")
-	suite.Equal(items[3],  3)
-	suite.Equal(items[4],  2)
+	suite.Equal(items[0], "data5")
+	suite.Equal(items[1], "data4")
+	suite.Equal(items[2], "data3")
+	suite.Equal(items[3], 3)
+	suite.Equal(items[4], 2)
 
 	obsoleteKey, obsoleteData := q.Put("key6", "data6")
-	suite.Equal(obsoleteKey,  "key2")
-	suite.Equal(obsoleteData.(int),  2)
+	suite.Equal(obsoleteKey, "key2")
+	suite.Equal(obsoleteData.(int), 2)
 	_, err = q.GetItemByKey("key2")
 	suite.NotNil(err)
 
 	items = q.GetFront(5)
-	suite.Equal(len(items),  5)
-	suite.Equal(items[0],  "data6")
-	suite.Equal(items[1],  "data5")
-	suite.Equal(items[2],  "data4")
-	suite.Equal(items[3],  "data3")
-	suite.Equal(items[4],  3)
+	suite.Equal(len(items), 5)
+	suite.Equal(items[0], "data6")
+	suite.Equal(items[1], "data5")
+	suite.Equal(items[2], "data4")
+	suite.Equal(items[3], "data3")
+	suite.Equal(items[4], 3)
 
 	v1, err = q.Get("key5")
 	suite.Nil(err)
-	suite.Equal(v1.(string),  "data5")
+	suite.Equal(v1.(string), "data5")
 
 	items = q.GetFront(5)
-	suite.Equal(len(items),  5)
-	suite.Equal(items[0],  "data5")
-	suite.Equal(items[1],  "data6")
-	suite.Equal(items[2],  "data4")
-	suite.Equal(items[3],  "data3")
-	suite.Equal(items[4],  3)
+	suite.Equal(len(items), 5)
+	suite.Equal(items[0], "data5")
+	suite.Equal(items[1], "data6")
+	suite.Equal(items[2], "data4")
+	suite.Equal(items[3], "data3")
+	suite.Equal(items[4], 3)
 
 	v1 = q.Delete("key3")
-	suite.Equal(v1,  "data3")
+	suite.Equal(v1, "data3")
 
 	items = q.GetFront(5)
-	suite.Equal(len(items),  4)
-	suite.Equal(items[0],  "data5")
-	suite.Equal(items[1],  "data6")
-	suite.Equal(items[2],  "data4")
-	suite.Equal(items[3],  3)
+	suite.Equal(len(items), 4)
+	suite.Equal(items[0], "data5")
+	suite.Equal(items[1], "data6")
+	suite.Equal(items[2], "data4")
+	suite.Equal(items[3], 3)
 
 	v1 = q.Delete("key3")
 	suite.Nil(v1)

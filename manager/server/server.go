@@ -65,7 +65,7 @@ func New(cfg *config.Config) (*Server, error) {
 func (s *Server) Serve() error {
 	go func() {
 		port := s.cfg.Server.Port
-		err := rpc.StartTcpServer(port, port, s.ms)
+		err := rpc.StartTCPServer(port, port, s.ms)
 		if err != nil {
 			logger.Errorf("failed to start manager tcp server: %+v", err)
 		}

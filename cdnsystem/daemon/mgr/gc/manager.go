@@ -61,7 +61,7 @@ type Manager struct {
 	cdnMgr  mgr.CDNMgr
 }
 
-func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) error{
+func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) error {
 	// todo data consistency
 	var err error
 	if full {

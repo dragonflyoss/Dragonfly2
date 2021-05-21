@@ -75,9 +75,9 @@ func runManager() error {
 	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Jaeger)
 	defer ff()
 
-	if svr, err := server.New(cfg); err != nil {
+	svr, err := server.New(cfg)
+	if err != nil {
 		return err
-	} else {
-		return svr.Serve()
 	}
+	return svr.Serve()
 }

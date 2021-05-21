@@ -45,7 +45,7 @@ func (n NetAddr) GetEndpoint() string {
 	}
 }
 
-func (n NetAddr) String() string{
+func (n NetAddr) String() string {
 	return n.GetEndpoint()
 }
 

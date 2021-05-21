@@ -504,8 +504,8 @@ func (s *storageManager) TryGC() (bool, error) {
 			continue
 		}
 		_, span := tracer.Start(context.Background(), config.SpanPeerGC)
-		span.SetAttributes(config.AttributePeerId.String(task.(*localTaskStore).PeerID))
-		span.SetAttributes(config.AttributeTaskId.String(task.(*localTaskStore).TaskID))
+		span.SetAttributes(config.AttributePeerID.String(task.(*localTaskStore).PeerID))
+		span.SetAttributes(config.AttributeTaskID.String(task.(*localTaskStore).TaskID))
 		s.tasks.Delete(key)
 		if err := task.(*localTaskStore).Reclaim(); err != nil {
 			// FIXME: retry later or push to queue

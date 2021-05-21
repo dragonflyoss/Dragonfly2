@@ -24,33 +24,33 @@ import (
 func AssertTrue(cond bool, message string) error {
 	if cond {
 		return nil
-	} else {
-		return errors.New(message)
 	}
+
+	return errors.New(message)
 }
 
 func AssertFalse(cond bool, message string) error {
 	if !cond {
 		return nil
-	} else {
-		return errors.New(message)
 	}
+
+	return errors.New(message)
 }
 
 func AssertNil(v interface{}, message string) error {
 	if ifaceutils.IsNil(v) {
 		return nil
-	} else {
-		return errors.New(message)
 	}
+
+	return errors.New(message)
 }
 
 func AssertNotNil(v interface{}, message string) error {
 	if !ifaceutils.IsNil(v) {
 		return nil
-	} else {
-		return errors.New(message)
 	}
+
+	return errors.New(message)
 }
 
 func PAssert(cond bool, message string) {

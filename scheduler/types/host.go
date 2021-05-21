@@ -17,9 +17,10 @@
 package types
 
 import (
+	"sync"
+
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"sync"
 )
 
 type HostType int
@@ -55,11 +56,11 @@ func (h *Host) AddPeerTask(peerTask *PeerTask) {
 	h.peerTaskMap.Store(peerTask.Pid, peerTask)
 }
 
-func (h *Host) DeletePeerTask(peerTaskId string) {
+func (h *Host) DeletePeerTask(peerTaskID string) {
 	if h == nil || h.peerTaskMap == nil {
 		return
 	}
-	h.peerTaskMap.Delete(peerTaskId)
+	h.peerTaskMap.Delete(peerTaskID)
 }
 
 func (h *Host) GetPeerTaskNum() int32 {
@@ -73,8 +74,8 @@ func (h *Host) GetPeerTaskNum() int32 {
 	return int32(count)
 }
 
-func (h *Host) GetPeerTask(peerTaskId string) (peerTask *PeerTask) {
-	v, _ := h.peerTaskMap.Load(peerTaskId)
+func (h *Host) GetPeerTask(peerTaskID string) (peerTask *PeerTask) {
+	v, _ := h.peerTaskMap.Load(peerTaskID)
 	peerTask, _ = v.(*PeerTask)
 	return
 }

@@ -26,6 +26,13 @@ import (
 	"time"
 )
 
+var (
+	v1 = "foo"
+	v2 = "bar"
+	v3 = "baz"
+	v4 = "yes"
+)
+
 type TestStruct struct {
 	Num      int
 	Children []*TestStruct
@@ -124,15 +131,15 @@ func TestCacheTimes(t *testing.T) {
 
 func TestStorePointerToStruct(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", &TestStruct{Num: 1}, DefaultExpiration)
-	x, found := tc.Get("foo")
+	tc.Set(v1, &TestStruct{Num: 1}, DefaultExpiration)
+	x, found := tc.Get(v1)
 	if !found {
 		t.Fatal("*TestStruct was not found for foo")
 	}
 	foo := x.(*TestStruct)
 	foo.Num++
 
-	y, found := tc.Get("foo")
+	y, found := tc.Get(v1)
 	if !found {
 		t.Fatal("*TestStruct was not found for foo (second time)")
 	}
@@ -144,11 +151,11 @@ func TestStorePointerToStruct(t *testing.T) {
 
 func TestAdd(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	err := tc.Add("foo", "bar", DefaultExpiration)
+	err := tc.Add(v1, v2, DefaultExpiration)
 	if err != nil {
 		t.Error("Couldn't add foo even though it shouldn't exist")
 	}
-	err = tc.Add("foo", "baz", DefaultExpiration)
+	err = tc.Add(v1, v3, DefaultExpiration)
 	if err == nil {
 		t.Error("Successfully added another foo when it should have returned an error")
 	}
@@ -156,9 +163,9 @@ func TestAdd(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", "bar", DefaultExpiration)
-	tc.Delete("foo")
-	x, found := tc.Get("foo")
+	tc.Set(v1, v2, DefaultExpiration)
+	tc.Delete(v1)
+	x, found := tc.Get(v1)
 	if found {
 		t.Error("foo was found, but it should have been deleted")
 	}
@@ -169,9 +176,9 @@ func TestDelete(t *testing.T) {
 
 func TestCacheKeys(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", 1, DefaultExpiration)
-	tc.Set("bar", 2, DefaultExpiration)
-	tc.Set("baz", 3, DefaultExpiration)
+	tc.Set(v1, 1, DefaultExpiration)
+	tc.Set(v2, 2, DefaultExpiration)
+	tc.Set(v3, 3, DefaultExpiration)
 	keys := tc.Keys()
 	if len(keys) != 3 {
 		t.Error("invalid number of cache keys received")
@@ -180,9 +187,9 @@ func TestCacheKeys(t *testing.T) {
 
 func TestItemCount(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", "1", DefaultExpiration)
-	tc.Set("bar", "2", DefaultExpiration)
-	tc.Set("baz", "3", DefaultExpiration)
+	tc.Set(v1, "1", DefaultExpiration)
+	tc.Set(v2, "2", DefaultExpiration)
+	tc.Set(v3, "3", DefaultExpiration)
 	if n := tc.ItemCount(); n != 3 {
 		t.Errorf("Item count is not 3: %d", n)
 	}
@@ -190,17 +197,17 @@ func TestItemCount(t *testing.T) {
 
 func TestFlush(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", "bar", DefaultExpiration)
-	tc.Set("baz", "yes", DefaultExpiration)
+	tc.Set(v1, v2, DefaultExpiration)
+	tc.Set(v3, v4, DefaultExpiration)
 	tc.Flush()
-	x, found := tc.Get("foo")
+	x, found := tc.Get(v1)
 	if found {
 		t.Error("foo was found, but it should have been deleted")
 	}
 	if x != nil {
 		t.Error("x is not nil:", x)
 	}
-	x, found = tc.Get("baz")
+	x, found = tc.Get(v3)
 	if found {
 		t.Error("baz was found, but it should have been deleted")
 	}
@@ -211,16 +218,16 @@ func TestFlush(t *testing.T) {
 
 func TestOnEvicted(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Set("foo", 3, DefaultExpiration)
+	tc.Set(v1, 3, DefaultExpiration)
 	works := false
 	tc.OnEvicted(func(k string, v interface{}) {
-		if k == "foo" && v.(int) == 3 {
+		if k == v1 && v.(int) == 3 {
 			works = true
 		}
-		tc.Set("bar", 4, DefaultExpiration)
+		tc.Set(v2, 4, DefaultExpiration)
 	})
-	tc.Delete("foo")
-	x, _ := tc.Get("bar")
+	tc.Delete(v1)
+	x, _ := tc.Get(v2)
 	if !works {
 		t.Error("works bool not true")
 	}
@@ -247,17 +254,6 @@ func testFillAndSerialize(t *testing.T, tc Cache) {
 	tc.Set("[]struct", []TestStruct{
 		{Num: 2},
 		{Num: 3},
-	}, DefaultExpiration)
-	tc.Set("[]*struct", []*TestStruct{
-		&TestStruct{Num: 4},
-		&TestStruct{Num: 5},
-	}, DefaultExpiration)
-	tc.Set("structception", &TestStruct{
-		Num: 42,
-		Children: []*TestStruct{
-			&TestStruct{Num: 6174},
-			&TestStruct{Num: 4716},
-		},
 	}, DefaultExpiration)
 
 	fp := &bytes.Buffer{}
@@ -388,32 +384,32 @@ func BenchmarkCacheGetNotExpiring(b *testing.B) {
 func benchmarkCacheGet(b *testing.B, exp time.Duration) {
 	b.StopTimer()
 	tc := New(exp, 0)
-	tc.Set("foo", "bar", DefaultExpiration)
+	tc.Set(v1, v2, DefaultExpiration)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		tc.Get("foo")
+		tc.Get(v1)
 	}
 }
 
 func BenchmarkRWMutexMapGet(b *testing.B) {
 	b.StopTimer()
 	m := map[string]string{
-		"foo": "bar",
+		v1: v2,
 	}
 	mu := sync.RWMutex{}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		mu.RLock()
-		_, _ = m["foo"]
+		_, _ = m[v1]
 		mu.RUnlock()
 	}
 }
 
 func BenchmarkRWMutexInterfaceMapGetStruct(b *testing.B) {
 	b.StopTimer()
-	s := struct{ name string }{name: "foo"}
+	s := struct{ name string }{name: v1}
 	m := map[interface{}]string{
-		s: "bar",
+		s: v2,
 	}
 	mu := sync.RWMutex{}
 	b.StartTimer()
@@ -427,13 +423,13 @@ func BenchmarkRWMutexInterfaceMapGetStruct(b *testing.B) {
 func BenchmarkRWMutexInterfaceMapGetString(b *testing.B) {
 	b.StopTimer()
 	m := map[interface{}]string{
-		"foo": "bar",
+		v1: v2,
 	}
 	mu := sync.RWMutex{}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		mu.RLock()
-		_, _ = m["foo"]
+		_, _ = m[v1]
 		mu.RUnlock()
 	}
 }
@@ -449,7 +445,7 @@ func BenchmarkCacheGetConcurrentNotExpiring(b *testing.B) {
 func benchmarkCacheGetConcurrent(b *testing.B, exp time.Duration) {
 	b.StopTimer()
 	tc := New(exp, 0)
-	tc.Set("foo", "bar", DefaultExpiration)
+	tc.Set(v1, v2, DefaultExpiration)
 	wg := new(sync.WaitGroup)
 	workers := runtime.NumCPU()
 	each := b.N / workers
@@ -458,7 +454,7 @@ func benchmarkCacheGetConcurrent(b *testing.B, exp time.Duration) {
 	for i := 0; i < workers; i++ {
 		go func() {
 			for j := 0; j < each; j++ {
-				tc.Get("foo")
+				tc.Get(v1)
 			}
 			wg.Done()
 		}()
@@ -469,7 +465,7 @@ func benchmarkCacheGetConcurrent(b *testing.B, exp time.Duration) {
 func BenchmarkRWMutexMapGetConcurrent(b *testing.B) {
 	b.StopTimer()
 	m := map[string]string{
-		"foo": "bar",
+		v1: v2,
 	}
 	mu := sync.RWMutex{}
 	wg := new(sync.WaitGroup)
@@ -481,7 +477,7 @@ func BenchmarkRWMutexMapGetConcurrent(b *testing.B) {
 		go func() {
 			for j := 0; j < each; j++ {
 				mu.RLock()
-				_, _ = m["foo"]
+				_, _ = m[v1]
 				mu.RUnlock()
 			}
 			wg.Done()
@@ -507,9 +503,9 @@ func benchmarkCacheGetManyConcurrent(b *testing.B, exp time.Duration) {
 	tc := New(exp, 0)
 	keys := make([]string, n)
 	for i := 0; i < n; i++ {
-		k := "foo" + strconv.Itoa(i)
+		k := v1 + strconv.Itoa(i)
 		keys[i] = k
-		tc.Set(k, "bar", DefaultExpiration)
+		tc.Set(k, v2, DefaultExpiration)
 	}
 	each := b.N / n
 	wg := new(sync.WaitGroup)
@@ -539,7 +535,7 @@ func benchmarkCacheSet(b *testing.B, exp time.Duration) {
 	tc := New(exp, 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		tc.Set("foo", "bar", DefaultExpiration)
+		tc.Set(v1, v2, DefaultExpiration)
 	}
 }
 
@@ -550,7 +546,7 @@ func BenchmarkRWMutexMapSet(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		mu.Lock()
-		m["foo"] = "bar"
+		m[v1] = v2
 		mu.Unlock()
 	}
 }
@@ -560,8 +556,8 @@ func BenchmarkCacheSetDelete(b *testing.B) {
 	tc := New(DefaultExpiration, 0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		tc.Set("foo", "bar", DefaultExpiration)
-		tc.Delete("foo")
+		tc.Set(v1, v2, DefaultExpiration)
+		tc.Delete(v1)
 	}
 }
 
@@ -572,10 +568,10 @@ func BenchmarkRWMutexMapSetDelete(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		mu.Lock()
-		m["foo"] = "bar"
+		m[v1] = v2
 		mu.Unlock()
 		mu.Lock()
-		delete(m, "foo")
+		delete(m, v1)
 		mu.Unlock()
 	}
 }
@@ -587,8 +583,8 @@ func BenchmarkRWMutexMapSetDeleteSingleLock(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		mu.Lock()
-		m["foo"] = "bar"
-		delete(m, "foo")
+		m[v1] = v2
+		delete(m, v1)
 		mu.Unlock()
 	}
 }
