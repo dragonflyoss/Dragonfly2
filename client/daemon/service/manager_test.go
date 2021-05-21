@@ -161,6 +161,10 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 	}
 	m.peerServer = rpc.NewServer(m)
 	port, err := freeport.GetFreePort()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	assert.Nil(err, "get free port should be ok")
 	go func() {
