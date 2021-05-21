@@ -592,7 +592,7 @@ func (pt *peerTask) preparePieceTasksByPeer(curPeerPacket *scheduler.PeerPacket,
 	}
 	var span trace.Span
 	_, span = tracer.Start(pt.ctx, config.SpanGetPieceTasks)
-	span.SetAttributes(config.AttributeTargetPeerId.String(peer.PeerId))
+	span.SetAttributes(config.AttributeTargetPeerID.String(peer.PeerId))
 	span.SetAttributes(config.AttributeGetPieceStartNum.Int(int(request.StartNum)))
 	span.SetAttributes(config.AttributeGetPieceLimit.Int(int(request.Limit)))
 	defer span.End()

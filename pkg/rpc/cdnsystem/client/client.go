@@ -102,11 +102,11 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 		defer func() {
 			logger.WithTaskID(req.TaskId).Infof("invoke cdn node %s GetPieceTasks", addr.GetEndpoint())
 		}()
-		if client, err := cc.getSeederClientWithTarget(addr.GetEndpoint()); err != nil {
+		client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
+		if err != nil {
 			return nil, err
-		} else {
-			return client.GetPieceTasks(ctx, req, opts...)
 		}
+		return client.GetPieceTasks(ctx, req, opts...)
 	}, 0.2, 2.0, 3, nil)
 	if err == nil {
 		return res.(*base.PiecePacket), nil

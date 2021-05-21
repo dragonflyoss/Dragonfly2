@@ -21,8 +21,6 @@ import (
 	"io"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -102,12 +100,6 @@ func (pps *peerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
 	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
 	if pp, err = pps.stream.Recv(); err != nil && err != io.EOF {
 		pp, err = pps.retryRecv(err)
-	}
-	return
-	if err != nil && err != io.EOF {
-		if e, ok := err.(*dferrors.DfError); ok && e.Code == dfcodes.PeerTaskNotFound {
-			pp, err = pps.retryRecv(err)
-		}
 	}
 	return
 }
