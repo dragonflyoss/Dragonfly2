@@ -43,7 +43,7 @@ type PieceSeedStream struct {
 	rpc.RetryMeta
 }
 
-func newPieceSeedStream(sc *cdnClient, ctx context.Context, hashKey string, sr *cdnsystem.SeedRequest, opts []grpc.CallOption) (*PieceSeedStream, error) {
+func newPieceSeedStream(ctx context.Context, sc *cdnClient, hashKey string, sr *cdnsystem.SeedRequest, opts []grpc.CallOption) (*PieceSeedStream, error) {
 	pss := &PieceSeedStream{
 		sc:      sc,
 		ctx:     ctx,
@@ -59,9 +59,8 @@ func newPieceSeedStream(sc *cdnClient, ctx context.Context, hashKey string, sr *
 
 	if err := pss.initStream(); err != nil {
 		return nil, err
-	} else {
-		return pss, nil
 	}
+	return pss, nil
 }
 
 func (pss *PieceSeedStream) initStream() error {
@@ -125,11 +124,11 @@ func (pss *PieceSeedStream) replaceStream(key string, cause error) error {
 }
 
 func (pss *PieceSeedStream) replaceClient(key string, cause error) error {
-	if preNode, err := pss.sc.TryMigrate(key, cause, pss.failedServers); err != nil {
+	preNode, err := pss.sc.TryMigrate(key, cause, pss.failedServers)
+	if err != nil {
 		return err
-	} else {
-		pss.failedServers = append(pss.failedServers, preNode)
 	}
+	pss.failedServers = append(pss.failedServers, preNode)
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		client, _, err := pss.sc.getCdnClient(key, true)

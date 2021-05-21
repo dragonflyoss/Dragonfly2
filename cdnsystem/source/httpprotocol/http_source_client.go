@@ -34,18 +34,18 @@ import (
 )
 
 const (
-	HttpClient  = "http"
-	HttpsClient = "https"
+	HTTPClient  = "http"
+	HTTPSClient = "https"
 )
 
 func init() {
-	httpSourceClient := NewHttpSourceClient()
-	source.Register(HttpClient, httpSourceClient)
-	source.Register(HttpsClient, httpSourceClient)
+	httpSourceClient := NewHTTPSourceClient()
+	source.Register(HTTPClient, httpSourceClient)
+	source.Register(HTTPSClient, httpSourceClient)
 }
 
-// NewHttpSourceClient returns a new HttpSourceClient.
-func NewHttpSourceClient() source.ResourceClient {
+// NewHTTPSourceClient returns a new HttpSourceClient.
+func NewHTTPSourceClient() source.ResourceClient {
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{

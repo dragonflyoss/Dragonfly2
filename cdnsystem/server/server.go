@@ -132,13 +132,12 @@ func (s *Server) Serve() (err error) {
 			Type:     manager.ResourceType_Cdn,
 		})
 	}
-	err = rpc.StartTcpServer(s.Config.ListenPort, s.Config.ListenPort, s.seedServer)
+	err = rpc.StartTCPServer(s.Config.ListenPort, s.Config.ListenPort, s.seedServer)
 	if err != nil {
 		return errors.Wrap(err, "failed to start tcp server")
 	}
 	return nil
 }
-
 
 func (s *Server) Stop() {
 	rpc.StopServer()

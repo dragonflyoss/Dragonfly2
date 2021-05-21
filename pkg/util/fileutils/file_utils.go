@@ -86,12 +86,12 @@ func IsSymbolicLink(name string) bool {
 	if e != nil {
 		return false
 	}
-	return f.Mode() & os.ModeSymlink != 0
+	return f.Mode()&os.ModeSymlink != 0
 }
 
 // SymbolicLink creates newname as a symbolic link to oldname.
 func SymbolicLink(oldname string, newname string) error {
-	if PathExist(newname) && IsSymbolicLink(newname) && PathExist(oldname){
+	if PathExist(newname) && IsSymbolicLink(newname) && PathExist(oldname) {
 		dstPath, err := os.Readlink(newname)
 		if err != nil {
 			return err

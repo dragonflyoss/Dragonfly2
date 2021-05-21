@@ -21,13 +21,14 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"io/ioutil"
+	"os"
 	"testing"
 
 	testifyassert "github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func TestNewDigestReader(t *testing.T) {

@@ -149,27 +149,27 @@ func NewManager(cfg *config.Config) (Manager, error) {
 }
 
 type Manager interface {
-	ResetRepo(ctx context.Context, task *types.SeedTask) error
+	ResetRepo(context.Context, *types.SeedTask) error
 
-	StatDownloadFile(ctx context.Context, taskId string) (*storedriver.StorageInfo, error)
+	StatDownloadFile(context.Context, string) (*storedriver.StorageInfo, error)
 
-	WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64, buf *bytes.Buffer) error
+	WriteDownloadFile(context.Context, string, int64, int64, *bytes.Buffer) error
 
-	ReadDownloadFile(ctx context.Context, taskId string) (io.ReadCloser, error)
+	ReadDownloadFile(context.Context, string) (io.ReadCloser, error)
 
-	CreateUploadLink(ctx context.Context, taskId string) error
+	CreateUploadLink(context.Context, string) error
 
-	ReadFileMetaData(ctx context.Context, taskId string) (*FileMetaData, error)
+	ReadFileMetaData(context.Context, string) (*FileMetaData, error)
 
-	WriteFileMetaData(ctx context.Context, taskId string, data *FileMetaData) error
+	WriteFileMetaData(context.Context, string, *FileMetaData) error
 
-	WritePieceMetaRecords(ctx context.Context, id string, records []*PieceMetaRecord) error
+	WritePieceMetaRecords(context.Context, string, []*PieceMetaRecord) error
 
-	AppendPieceMetaData(ctx context.Context, taskId string, pieceRecord *PieceMetaRecord) error
+	AppendPieceMetaData(context.Context, string, *PieceMetaRecord) error
 
-	ReadPieceMetaRecords(ctx context.Context, taskId string) ([]*PieceMetaRecord, error)
+	ReadPieceMetaRecords(context.Context, string) ([]*PieceMetaRecord, error)
 
-	DeleteTask(ctx context.Context, taskId string) error
+	DeleteTask(context.Context, string) error
 
 	SetTaskMgr(mgr.SeedTaskMgr)
 

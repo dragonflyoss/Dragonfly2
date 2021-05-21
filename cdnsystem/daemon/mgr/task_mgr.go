@@ -29,17 +29,17 @@ import (
 type SeedTaskMgr interface {
 
 	// Register register seed task
-	Register(ctx context.Context, registerRequest *types.TaskRegisterRequest) (pieceCh <-chan *types.SeedPiece, err error)
+	Register(context.Context, *types.TaskRegisterRequest) (pieceCh <-chan *types.SeedPiece, err error)
 
 	// Get get task Info with specified taskId.
-	Get(ctx context.Context, taskId string) (*types.SeedTask, error)
+	Get(context.Context, string) (*types.SeedTask, error)
 
 	// GetAccessTime get all tasks accessTime.
-	GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error)
+	GetAccessTime(context.Context) (*syncmap.SyncMap, error)
 
 	// Delete delete a task.
-	Delete(ctx context.Context, taskId string) error
+	Delete(context.Context, string) error
 
 	// GetPieces
-	GetPieces(ctx context.Context, taskId string) (pieces []*types.SeedPiece, err error)
+	GetPieces(context.Context, string) (pieces []*types.SeedPiece, err error)
 }

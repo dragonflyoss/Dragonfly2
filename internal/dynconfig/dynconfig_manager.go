@@ -23,8 +23,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/cache"
 )
 
-const ()
-
 type dynconfigManager struct {
 	cachePath string
 	cache     cache.Cache

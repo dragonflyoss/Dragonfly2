@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var HostIp string
+var HostIP string
 var HostName string
 
 func init() {
@@ -32,7 +32,7 @@ func init() {
 	if ip == "" {
 		panic(err)
 	} else {
-		HostIp = ip
+		HostIP = ip
 	}
 
 	name, err := os.Hostname()
@@ -77,9 +77,9 @@ func externalIPv4() (string, error) {
 	if len(values) > 0 {
 		sort.Strings(values)
 		return values[0], nil
-	} else {
-		return "", errors.Errorf("not found any ipv4")
 	}
+
+	return "", errors.Errorf("not found any ipv4")
 }
 
 // ipAddrs returns all the valid IPs available.

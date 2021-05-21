@@ -114,10 +114,10 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	if err != nil {
 		return err
 	}
-	peerId := cdnutil.GenCdnPeerId(req.TaskId)
+	peerID := cdnutil.GenCDNPeerID(req.TaskId)
 	for piece := range pieceChan {
 		psc <- &cdnsystem.PieceSeed{
-			PeerId:     peerId,
+			PeerId:     peerID,
 			SeederName: iputils.HostName,
 			PieceInfo: &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
@@ -139,7 +139,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		return dferrors.Newf(dfcodes.CdnTaskDownloadFail, "task(%s) status error , status: %s", req.TaskId, task.CdnStatus)
 	}
 	psc <- &cdnsystem.PieceSeed{
-		PeerId:        peerId,
+		PeerId:        peerID,
 		SeederName:    iputils.HostName,
 		Done:          true,
 		ContentLength: task.SourceFileLength,
@@ -172,7 +172,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
-		return nil, dferrors.Newf(dfcodes.CdnError, "failed to get pieces of task(%s) from cdn: %v", err)
+		return nil, dferrors.Newf(dfcodes.CdnError, "failed to get pieces of task(%s) from cdn: %v", task.TaskId, err)
 	}
 	pieceInfos := make([]*base.PieceInfo, 0)
 	var count int32 = 0

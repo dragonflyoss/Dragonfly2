@@ -100,7 +100,7 @@ func (p *PeerHostOption) Convert() error {
 	// AdvertiseIP
 	ip := net.ParseIP(p.Host.AdvertiseIP)
 	if ip == nil || net.IPv4zero.Equal(ip) {
-		p.Host.AdvertiseIP = iputils.HostIp
+		p.Host.AdvertiseIP = iputils.HostIP
 	} else {
 		p.Host.AdvertiseIP = ip.String()
 	}

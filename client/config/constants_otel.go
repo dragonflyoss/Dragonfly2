@@ -20,10 +20,10 @@ import "go.opentelemetry.io/otel/attribute"
 
 const (
 	AttributePeerHost          = attribute.Key("d7y.peer.host")
-	AttributeTaskId            = attribute.Key("d7y.peer.task.id")
+	AttributeTaskID            = attribute.Key("d7y.peer.task.id")
 	AttributeTaskContentLength = attribute.Key("d7y.peer.task.content_length")
-	AttributePeerId            = attribute.Key("d7y.peer.id")
-	AttributeTargetPeerId      = attribute.Key("d7y.peer.target.id")
+	AttributePeerID            = attribute.Key("d7y.peer.id")
+	AttributeTargetPeerID      = attribute.Key("d7y.peer.target.id")
 	AttributeTargetPeerAddr    = attribute.Key("d7y.peer.target.addr")
 	AttributeMainPeer          = attribute.Key("d7y.peer.task.main_peer")
 	AttributePeerPacketCode    = attribute.Key("d7y.peer.packet.code")

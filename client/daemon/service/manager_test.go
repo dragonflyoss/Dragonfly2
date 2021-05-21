@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"testing"
 	"time"
 
@@ -42,7 +43,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func TestDownloadManager_ServeDownload(t *testing.T) {
@@ -79,6 +80,10 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 	}
 	m.downloadServer = rpc.NewServer(m)
 	port, err := freeport.GetFreePort()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	assert.Nil(err, "get free port should be ok")
 	go func() {
@@ -156,6 +161,10 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 	}
 	m.peerServer = rpc.NewServer(m)
 	port, err := freeport.GetFreePort()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	assert.Nil(err, "get free port should be ok")
 	go func() {

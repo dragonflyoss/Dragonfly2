@@ -29,7 +29,6 @@ import (
 
 const RangeHeaderName = "Range"
 
-
 func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, map[string]string, error) {
 	headers := maputils.DeepCopyMap(nil, task.Header)
 	if detectResult.breakPoint > 0 {

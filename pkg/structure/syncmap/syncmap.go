@@ -1,3 +1,18 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package syncmap
 
@@ -65,7 +80,7 @@ func (mmap *SyncMap) GetAsMap(key string) (*SyncMap, error) {
 
 // GetAsList returns result as list
 // The ErrConvertFailed error will be returned if the assertion fails.
-func (mmap *SyncMap) GetAsList(key string)(*list.List, error)  {
+func (mmap *SyncMap) GetAsList(key string) (*list.List, error) {
 	v, err := mmap.Get(key)
 	if err != nil {
 		return list.New(), errors.Wrapf(err, "failed to get key %s from map", key)
@@ -75,6 +90,7 @@ func (mmap *SyncMap) GetAsList(key string)(*list.List, error)  {
 	}
 	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
 }
+
 // GetAsInt returns result as int.
 // The ErrConvertFailed error will be returned if the assertion fails.
 func (mmap *SyncMap) GetAsInt(key string) (int, error) {

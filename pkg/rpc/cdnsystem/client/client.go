@@ -94,7 +94,7 @@ func (cc *cdnClient) getSeederClientWithTarget(target string) (cdnsystem.SeederC
 }
 
 func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error) {
-	return newPieceSeedStream(cc, ctx, sr.TaskId, sr, opts)
+	return newPieceSeedStream(ctx, cc, sr.TaskId, sr, opts)
 }
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
@@ -102,11 +102,11 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 		defer func() {
 			logger.WithTaskID(req.TaskId).Infof("invoke cdn node %s GetPieceTasks", addr.GetEndpoint())
 		}()
-		if client, err := cc.getSeederClientWithTarget(addr.GetEndpoint()); err != nil {
+		client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
+		if err != nil {
 			return nil, err
-		} else {
-			return client.GetPieceTasks(ctx, req, opts...)
 		}
+		return client.GetPieceTasks(ctx, req, opts...)
 	}, 0.2, 2.0, 3, nil)
 	if err == nil {
 		return res.(*base.PiecePacket), nil

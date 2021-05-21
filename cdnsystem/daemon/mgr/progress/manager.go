@@ -63,38 +63,38 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 	}, nil
 }
 
-func (pm *Manager) InitSeedProgress(ctx context.Context, taskId string) {
-	pm.mu.Lock(taskId, true)
-	if _, ok := pm.seedSubscribers.Load(taskId); ok {
-		logger.WithTaskID(taskId).Debugf("the task seedSubscribers already exist")
-		if _, ok := pm.taskPieceMetaRecords.Load(taskId); ok {
-			logger.WithTaskID(taskId).Debugf("the task taskPieceMetaRecords already exist")
-			pm.mu.UnLock(taskId, true)
+func (pm *Manager) InitSeedProgress(ctx context.Context, taskID string) {
+	pm.mu.Lock(taskID, true)
+	if _, ok := pm.seedSubscribers.Load(taskID); ok {
+		logger.WithTaskID(taskID).Debugf("the task seedSubscribers already exist")
+		if _, ok := pm.taskPieceMetaRecords.Load(taskID); ok {
+			logger.WithTaskID(taskID).Debugf("the task taskPieceMetaRecords already exist")
+			pm.mu.UnLock(taskID, true)
 			return
 		}
 	}
-	pm.mu.UnLock(taskId, true)
-	pm.mu.Lock(taskId, false)
-	defer pm.mu.UnLock(taskId, false)
-	if _, loaded := pm.seedSubscribers.LoadOrStore(taskId, list.New()); loaded {
-		logger.WithTaskID(taskId).Info("the task seedSubscribers already exist")
+	pm.mu.UnLock(taskID, true)
+	pm.mu.Lock(taskID, false)
+	defer pm.mu.UnLock(taskID, false)
+	if _, loaded := pm.seedSubscribers.LoadOrStore(taskID, list.New()); loaded {
+		logger.WithTaskID(taskID).Info("the task seedSubscribers already exist")
 	}
-	if _, loaded := pm.taskPieceMetaRecords.LoadOrStore(taskId, syncmap.NewSyncMap()); loaded {
-		logger.WithTaskID(taskId).Info("the task taskPieceMetaRecords already exist")
+	if _, loaded := pm.taskPieceMetaRecords.LoadOrStore(taskID, syncmap.NewSyncMap()); loaded {
+		logger.WithTaskID(taskID).Info("the task taskPieceMetaRecords already exist")
 	}
 }
 
-func (pm *Manager) WatchSeedProgress(ctx context.Context, taskId string) (<-chan *types.SeedPiece, error) {
-	logger.Debugf("watch seed progress begin for taskId:%s", taskId)
-	pm.mu.Lock(taskId, true)
-	defer pm.mu.UnLock(taskId, true)
-	chanList, err := pm.seedSubscribers.GetAsList(taskId)
+func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error) {
+	logger.Debugf("watch seed progress begin for taskID:%s", taskID)
+	pm.mu.Lock(taskID, true)
+	defer pm.mu.UnLock(taskID, true)
+	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get seed subscribers")
 	}
-	pieceMetaDataRecords, err := pm.getPieceMetaRecordsByTaskId(taskId)
+	pieceMetaDataRecords, err := pm.getPieceMetaRecordsByTaskID(taskID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get piece meta records by taskId")
+		return nil, errors.Wrap(err, "failed to get piece meta records by taskID")
 	}
 	ch := make(chan *types.SeedPiece, pm.buffer)
 	ele := chanList.PushBack(ch)
@@ -106,7 +106,7 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskId string) (<-chan
 			case <-time.After(pm.timeout):
 			}
 		}
-		if task, err := pm.taskMgr.Get(ctx, taskId); err == nil && task.IsDone() {
+		if task, err := pm.taskMgr.Get(ctx, taskID); err == nil && task.IsDone() {
 			chanList.Remove(ele)
 			close(seedCh)
 		}
@@ -115,15 +115,15 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskId string) (<-chan
 }
 
 // Publish publish seedPiece
-func (pm *Manager) PublishPiece(ctx context.Context, taskId string, record *types.SeedPiece) error {
+func (pm *Manager) PublishPiece(ctx context.Context, taskID string, record *types.SeedPiece) error {
 	logger.Debugf("seed piece meta record %+v", record)
-	pm.mu.Lock(taskId, false)
-	defer pm.mu.UnLock(taskId, false)
-	err := pm.setPieceMetaRecord(taskId, record)
+	pm.mu.Lock(taskID, false)
+	defer pm.mu.UnLock(taskID, false)
+	err := pm.setPieceMetaRecord(taskID, record)
 	if err != nil {
 		errors.Wrap(err, "failed to set piece meta record")
 	}
-	chanList, err := pm.seedSubscribers.GetAsList(taskId)
+	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get seed subscribers")
 	}
@@ -144,11 +144,11 @@ func (pm *Manager) PublishPiece(ctx context.Context, taskId string, record *type
 	return nil
 }
 
-func (pm *Manager) PublishTask(ctx context.Context, taskId string, task *types.SeedTask) error {
+func (pm *Manager) PublishTask(ctx context.Context, taskID string, task *types.SeedTask) error {
 	logger.Debugf("publish task record %+v", task)
-	pm.mu.Lock(taskId, false)
-	defer pm.mu.UnLock(taskId, false)
-	chanList, err := pm.seedSubscribers.GetAsList(taskId)
+	pm.mu.Lock(taskID, false)
+	defer pm.mu.UnLock(taskID, false)
+	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
 		return errors.Wrap(err, "failed to get seed subscribers")
 	}
@@ -198,5 +198,5 @@ func (pm *Manager) Clear(ctx context.Context, taskID string) error {
 func (pm *Manager) GetPieces(ctx context.Context, taskID string) (records []*types.SeedPiece, err error) {
 	pm.mu.Lock(taskID, true)
 	defer pm.mu.UnLock(taskID, true)
-	return pm.getPieceMetaRecordsByTaskId(taskID)
+	return pm.getPieceMetaRecordsByTaskID(taskID)
 }
