@@ -69,9 +69,8 @@ func newPeerPacketStream(ctx context.Context, sc *schedulerClient, hashKey strin
 
 	if err := pps.initStream(); err != nil {
 		return nil, err
-	} else {
-		return pps, nil
 	}
+	return pps, nil
 }
 
 func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
@@ -188,11 +187,11 @@ func (pps *peerPacketStream) replaceStream(cause error) error {
 }
 
 func (pps *peerPacketStream) replaceClient(cause error) error {
-	if preNode, err := pps.sc.TryMigrate(pps.hashKey, cause, pps.failedServers); err != nil {
+	preNode, err := pps.sc.TryMigrate(pps.hashKey, cause, pps.failedServers)
+	if err != nil {
 		return err
-	} else {
-		pps.failedServers = append(pps.failedServers, preNode)
 	}
+	pps.failedServers = append(pps.failedServers, preNode)
 
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		client, _, err := pps.sc.getSchedulerClient(pps.hashKey, true)
