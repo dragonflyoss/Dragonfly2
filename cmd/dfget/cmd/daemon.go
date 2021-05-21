@@ -136,10 +136,10 @@ func runDaemon() error {
 	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Jaeger)
 	defer ff()
 
-	if svr, err := server.New(cfg); err != nil {
+	svr, err := server.New(cfg)
+	if err != nil {
 		return err
-	} else {
-		dependency.SetupQuitSignalHandler(func() { svr.Stop() })
-		return svr.Serve()
 	}
+	dependency.SetupQuitSignalHandler(func() { svr.Stop() })
+	return svr.Serve()
 }
