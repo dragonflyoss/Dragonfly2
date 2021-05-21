@@ -114,7 +114,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	if err != nil {
 		return err
 	}
-	peerID := cdnutil.GenCdnPeerId(req.TaskId)
+	peerID := cdnutil.GenCDNPeerID(req.TaskId)
 	for piece := range pieceChan {
 		psc <- &cdnsystem.PieceSeed{
 			PeerId:     peerID,
