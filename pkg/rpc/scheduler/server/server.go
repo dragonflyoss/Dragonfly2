@@ -74,7 +74,7 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 		zap.String("peerIp", peerHost.Ip),
 		zap.String("securityDomain", peerHost.SecurityDomain),
 		zap.String("idc", peerHost.Idc),
-		zap.String("schedulerIp", iputils.HostIp),
+		zap.String("schedulerIp", iputils.HostIP),
 		zap.String("schedulerName", iputils.HostName),
 		zap.Int32("code", int32(code)))
 
@@ -95,7 +95,7 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 		zap.String("peerIp", pr.SrcIp),
 		zap.String("securityDomain", pr.SecurityDomain),
 		zap.String("idc", pr.Idc),
-		zap.String("schedulerIp", iputils.HostIp),
+		zap.String("schedulerIp", iputils.HostIP),
 		zap.String("schedulerName", iputils.HostName),
 		zap.Int64("contentLength", pr.ContentLength),
 		zap.Uint64("traffic", uint64(pr.Traffic)),

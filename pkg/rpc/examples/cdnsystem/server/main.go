@@ -17,17 +17,15 @@
 package main
 
 import (
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
-)
-import (
 	"context"
 	"fmt"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/safe"
 )
 
@@ -66,7 +64,7 @@ func (hs *helloSeeder) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*
 
 func main() {
 	logcore.InitCdnSystem(false)
-	err := rpc.StartTcpServer(12345, 12345, &helloSeeder{})
+	err := rpc.StartTCPServer(12345, 12345, &helloSeeder{})
 
 	if err != nil {
 		fmt.Printf("finish error:%v\n", err)

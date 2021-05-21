@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var HostIp string
+var HostIP string
 var HostName string
 
 func init() {
@@ -32,7 +32,7 @@ func init() {
 	if ip == "" {
 		panic(err)
 	} else {
-		HostIp = ip
+		HostIP = ip
 	}
 
 	name, err := os.Hostname()

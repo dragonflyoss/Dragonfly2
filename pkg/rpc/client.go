@@ -239,16 +239,17 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 			}, nil
 		}
 		logger.With("conn", conn.name).Debugf("attempt to connect candidateNode %s for hash key %s", candidateNode, key)
-		if clientConn, err := conn.createClient(candidateNode, append(defaultClientOpts, conn.dialOpts...)...); err == nil {
+		clientConn, err := conn.createClient(candidateNode, append(defaultClientOpts, conn.dialOpts...)...)
+		if err == nil {
 			logger.With("conn", conn.name).Infof("success connect to candidateNode %s for hash key %s", candidateNode, key)
 			conn.rwMutex.UnLock(candidateNode, true)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  clientConn,
 			}, nil
-		} else {
-			logger.With("conn", conn.name).Infof("failed to connect candidateNode %s for hash key %s: %v", candidateNode, key, err)
 		}
+
+		logger.With("conn", conn.name).Infof("failed to connect candidateNode %s for hash key %s: %v", candidateNode, key, err)
 		conn.rwMutex.UnLock(candidateNode, true)
 	}
 	return nil, dferrors.ErrNoCandidateNode
@@ -300,15 +301,17 @@ func (conn *Connection) loadOrCreateClientConnByNode(node string) (clientConn *g
 		logger.With("conn", conn.name).Debugf("hit cache clientConn associated with node %s", node)
 		return client.(*grpc.ClientConn), nil
 	}
+
 	logger.With("conn", conn.name).Debugf("failed to load clientConn associated with node %s, attempt to create it", node)
-	if clientConn, err := conn.createClient(node, append(defaultClientOpts, conn.dialOpts...)...); err == nil {
+	clientConn, err = conn.createClient(node, append(defaultClientOpts, conn.dialOpts...)...)
+	if err == nil {
 		logger.With("conn", conn.name).Infof("success connect to node %s", node)
 		// bind
 		conn.node2ClientMap.Store(node, clientConn)
 		return clientConn, nil
-	} else {
-		return nil, errors.Wrapf(err, "cannot found clientConn associated with node %s and create client conn failed", node)
 	}
+
+	return nil, errors.Wrapf(err, "cannot found clientConn associated with node %s and create client conn failed", node)
 }
 
 // GetClientConn get conn or bind hashKey to candidate node, don't do the migrate action

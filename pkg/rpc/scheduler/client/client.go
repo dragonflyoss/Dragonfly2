@@ -66,7 +66,7 @@ func GetSchedulerByConfigServer(cfgServerAddr string, opts ...grpc.DialOption) (
 	// todo create HostTag
 	HostTag := ""
 	schedulers, err := configServer.GetSchedulers(context.Background(), &manager.GetSchedulersRequest{
-		Ip:       iputils.HostIp,
+		Ip:       iputils.HostIP,
 		HostName: iputils.HostName,
 		HostTag:  HostTag,
 	})

@@ -107,12 +107,12 @@ func (s *diskStorageMgr) InitializeCleaners() {
 	}
 }
 
-func (s *diskStorageMgr) AppendPieceMetaData(ctx context.Context, taskId string, pieceRecord *storage.PieceMetaRecord) error {
-	return s.diskStore.PutBytes(ctx, storage.GetAppendPieceMetaDataRaw(taskId), []byte(pieceRecord.String()+"\n"))
+func (s *diskStorageMgr) AppendPieceMetaData(ctx context.Context, taskID string, pieceRecord *storage.PieceMetaRecord) error {
+	return s.diskStore.PutBytes(ctx, storage.GetAppendPieceMetaDataRaw(taskID), []byte(pieceRecord.String()+"\n"))
 }
 
-func (s *diskStorageMgr) ReadPieceMetaRecords(ctx context.Context, taskId string) ([]*storage.PieceMetaRecord, error) {
-	bytes, err := s.diskStore.GetBytes(ctx, storage.GetPieceMetaDataRaw(taskId))
+func (s *diskStorageMgr) ReadPieceMetaRecords(ctx context.Context, taskID string) ([]*storage.PieceMetaRecord, error) {
+	bytes, err := s.diskStore.GetBytes(ctx, storage.GetPieceMetaDataRaw(taskID))
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func (s *diskStorageMgr) GC(ctx context.Context) error {
 	logger.GcLogger.With("type", "disk").Info("start the disk storage gc job")
 	gcTaskIDs, err := s.diskStoreCleaner.Gc(ctx, "disk", false)
 	if err != nil {
-		logger.GcLogger.With("type", "disk").Error("failed to get gcTaskIds")
+		logger.GcLogger.With("type", "disk").Error("failed to get gcTaskIDs")
 	}
 	var realGCCount int
 	for _, taskID := range gcTaskIDs {
@@ -161,15 +161,15 @@ func (s *diskStorageMgr) SetTaskMgr(mgr mgr.SeedTaskMgr) {
 	s.taskMgr = mgr
 }
 
-func (s *diskStorageMgr) WriteDownloadFile(ctx context.Context, taskId string, offset int64, len int64, buf *bytes.Buffer) error {
-	raw := storage.GetDownloadRaw(taskId)
+func (s *diskStorageMgr) WriteDownloadFile(ctx context.Context, taskID string, offset int64, len int64, buf *bytes.Buffer) error {
+	raw := storage.GetDownloadRaw(taskID)
 	raw.Offset = offset
 	raw.Length = len
 	return s.diskStore.Put(ctx, raw, buf)
 }
 
-func (s *diskStorageMgr) ReadFileMetaData(ctx context.Context, taskId string) (*storage.FileMetaData, error) {
-	bytes, err := s.diskStore.GetBytes(ctx, storage.GetTaskMetaDataRaw(taskId))
+func (s *diskStorageMgr) ReadFileMetaData(ctx context.Context, taskID string) (*storage.FileMetaData, error) {
+	bytes, err := s.diskStore.GetBytes(ctx, storage.GetTaskMetaDataRaw(taskID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get metadata bytes")
 	}
@@ -181,63 +181,63 @@ func (s *diskStorageMgr) ReadFileMetaData(ctx context.Context, taskId string) (*
 	return metaData, nil
 }
 
-func (s *diskStorageMgr) WriteFileMetaData(ctx context.Context, taskId string, metaData *storage.FileMetaData) error {
+func (s *diskStorageMgr) WriteFileMetaData(ctx context.Context, taskID string, metaData *storage.FileMetaData) error {
 	data, err := json.Marshal(metaData)
 	if err != nil {
 		return errors.Wrapf(err, "failed to marshal metadata")
 	}
-	return s.diskStore.PutBytes(ctx, storage.GetTaskMetaDataRaw(taskId), data)
+	return s.diskStore.PutBytes(ctx, storage.GetTaskMetaDataRaw(taskID), data)
 }
 
-func (s *diskStorageMgr) WritePieceMetaRecords(ctx context.Context, taskId string, records []*storage.PieceMetaRecord) error {
+func (s *diskStorageMgr) WritePieceMetaRecords(ctx context.Context, taskID string, records []*storage.PieceMetaRecord) error {
 	recordStrs := make([]string, 0, len(records))
 	for i := range records {
 		recordStrs = append(recordStrs, records[i].String())
 	}
-	pieceRaw := storage.GetPieceMetaDataRaw(taskId)
+	pieceRaw := storage.GetPieceMetaDataRaw(taskID)
 	pieceRaw.Trunc = true
 	pieceRaw.TruncSize = 0
 	return s.diskStore.PutBytes(ctx, pieceRaw, []byte(strings.Join(recordStrs, "\n")))
 }
 
-func (s *diskStorageMgr) ReadPieceMetaBytes(ctx context.Context, taskId string) ([]byte, error) {
-	return s.diskStore.GetBytes(ctx, storage.GetPieceMetaDataRaw(taskId))
+func (s *diskStorageMgr) ReadPieceMetaBytes(ctx context.Context, taskID string) ([]byte, error) {
+	return s.diskStore.GetBytes(ctx, storage.GetPieceMetaDataRaw(taskID))
 }
 
-func (s *diskStorageMgr) ReadDownloadFile(ctx context.Context, taskId string) (io.ReadCloser, error) {
-	return s.diskStore.Get(ctx, storage.GetDownloadRaw(taskId))
+func (s *diskStorageMgr) ReadDownloadFile(ctx context.Context, taskID string) (io.ReadCloser, error) {
+	return s.diskStore.Get(ctx, storage.GetDownloadRaw(taskID))
 }
 
-func (s *diskStorageMgr) StatDownloadFile(ctx context.Context, taskId string) (*storedriver.StorageInfo, error) {
-	return s.diskStore.Stat(ctx, storage.GetDownloadRaw(taskId))
+func (s *diskStorageMgr) StatDownloadFile(ctx context.Context, taskID string) (*storedriver.StorageInfo, error) {
+	return s.diskStore.Stat(ctx, storage.GetDownloadRaw(taskID))
 }
 
-func (s *diskStorageMgr) CreateUploadLink(ctx context.Context, taskId string) error {
+func (s *diskStorageMgr) CreateUploadLink(ctx context.Context, taskID string) error {
 	// create a soft link from the upload file to the download file
-	if err := fileutils.SymbolicLink(s.diskStore.GetPath(storage.GetDownloadRaw(taskId)),
-		s.diskStore.GetPath(storage.GetUploadRaw(taskId))); err != nil {
+	if err := fileutils.SymbolicLink(s.diskStore.GetPath(storage.GetDownloadRaw(taskID)),
+		s.diskStore.GetPath(storage.GetUploadRaw(taskID))); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *diskStorageMgr) DeleteTask(ctx context.Context, taskId string) error {
-	if err := s.diskStore.Remove(ctx, storage.GetTaskMetaDataRaw(taskId)); err != nil && !cdnerrors.IsFileNotExist(err) {
+func (s *diskStorageMgr) DeleteTask(ctx context.Context, taskID string) error {
+	if err := s.diskStore.Remove(ctx, storage.GetTaskMetaDataRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
 		errors.Cause(err)
 		return err
 	}
-	if err := s.diskStore.Remove(ctx, storage.GetPieceMetaDataRaw(taskId)); err != nil && !cdnerrors.IsFileNotExist(err) {
+	if err := s.diskStore.Remove(ctx, storage.GetPieceMetaDataRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
 		return err
 	}
-	if err := s.diskStore.Remove(ctx, storage.GetDownloadRaw(taskId)); err != nil && !cdnerrors.IsFileNotExist(err) {
+	if err := s.diskStore.Remove(ctx, storage.GetDownloadRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
 		return err
 	}
-	if err := s.diskStore.Remove(ctx, storage.GetUploadRaw(taskId)); err != nil && !cdnerrors.IsFileNotExist(err) {
+	if err := s.diskStore.Remove(ctx, storage.GetUploadRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
 		return err
 	}
 	// try to clean the parent bucket
-	if err := s.diskStore.Remove(ctx, storage.GetParentRaw(taskId)); err != nil && !cdnerrors.IsFileNotExist(err) {
-		logrus.Warnf("taskID:%s failed remove parent bucket:%v", taskId, err)
+	if err := s.diskStore.Remove(ctx, storage.GetParentRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
+		logrus.Warnf("taskID:%s failed remove parent bucket:%v", taskID, err)
 	}
 	return nil
 }
