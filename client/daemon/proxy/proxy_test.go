@@ -56,13 +56,13 @@ func (tc *testCase) WithRule(regx string, direct bool, useHTTPS bool, redirect s
 	return tc
 }
 
-func (tc *testCase) WithRegistryMirror(rawUrl string, direct bool) *testCase {
+func (tc *testCase) WithRegistryMirror(rawURL string, direct bool) *testCase {
 	if tc.Error != nil {
 		return tc
 	}
 
 	var url *url.URL
-	url, tc.Error = url.Parse(rawUrl)
+	url, tc.Error = url.Parse(rawURL)
 	tc.RegistryMirror = &config.RegistryMirror{
 		Remote: &config.URL{url},
 		Direct: direct,

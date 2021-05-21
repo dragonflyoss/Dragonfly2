@@ -59,9 +59,8 @@ func newPieceSeedStream(ctx context.Context, sc *cdnClient, hashKey string, sr *
 
 	if err := pss.initStream(); err != nil {
 		return nil, err
-	} else {
-		return pss, nil
 	}
+	return pss, nil
 }
 
 func (pss *PieceSeedStream) initStream() error {

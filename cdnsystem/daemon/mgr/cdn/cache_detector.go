@@ -118,12 +118,12 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (re
 }
 
 // parseByReadMetaFile detect cache by read meta and pieceMeta files of task
-func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskId string,
+func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskID string,
 	fileMetaData *storage.FileMetaData) (*cacheResult, error) {
 	if !fileMetaData.Success {
 		return nil, errors.Wrapf(cdnerrors.ErrDownloadFail, "success flag of download is false")
 	}
-	pieceMetaRecords, err := cd.cacheDataManager.readAndCheckPieceMetaRecords(ctx, taskId, fileMetaData.PieceMd5Sign)
+	pieceMetaRecords, err := cd.cacheDataManager.readAndCheckPieceMetaRecords(ctx, taskID, fileMetaData.PieceMd5Sign)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check piece meta integrity")
 	}
@@ -131,7 +131,7 @@ func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskId string,
 		return nil, errors.Wrapf(cdnerrors.ErrPieceCountNotEqual, "piece file piece count(%d), "+
 			"meta file piece count(%d)", len(pieceMetaRecords), fileMetaData.TotalPieceCount)
 	}
-	storageInfo, err := cd.cacheDataManager.statDownloadFile(ctx, taskId)
+	storageInfo, err := cd.cacheDataManager.statDownloadFile(ctx, taskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get cdn file length")
 	}
@@ -149,13 +149,13 @@ func (cd *cacheDetector) parseByReadMetaFile(ctx context.Context, taskId string,
 }
 
 // parseByReadFile detect cache by read pieceMeta and data files of task
-func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskId string, metaData *storage.FileMetaData) (*cacheResult, error) {
-	reader, err := cd.cacheDataManager.readDownloadFile(ctx, taskId)
+func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskID string, metaData *storage.FileMetaData) (*cacheResult, error) {
+	reader, err := cd.cacheDataManager.readDownloadFile(ctx, taskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read data file")
 	}
 	defer reader.Close()
-	tempRecords, err := cd.cacheDataManager.readPieceMetaRecords(ctx, taskId)
+	tempRecords, err := cd.cacheDataManager.readPieceMetaRecords(ctx, taskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "parseByReadFile:failed to read piece meta file")
 	}
@@ -174,14 +174,14 @@ func (cd *cacheDetector) parseByReadFile(ctx context.Context, taskId string, met
 		}
 		// read content
 		if err := checkPieceContent(reader, tempRecords[index], fileMd5); err != nil {
-			logger.WithTaskID(taskId).Errorf("read content of pieceNum %d failed: %v", tempRecords[index].PieceNum, err)
+			logger.WithTaskID(taskID).Errorf("read content of pieceNum %d failed: %v", tempRecords[index].PieceNum, err)
 			break
 		}
 		breakPoint = tempRecords[index].OriginRange.EndIndex + 1
 		pieceMetaRecords = append(pieceMetaRecords, tempRecords[index])
 	}
 	if len(tempRecords) != len(pieceMetaRecords) {
-		if err := cd.cacheDataManager.writePieceMetaRecords(ctx, taskId, pieceMetaRecords); err != nil {
+		if err := cd.cacheDataManager.writePieceMetaRecords(ctx, taskID, pieceMetaRecords); err != nil {
 			return nil, errors.Wrapf(err, "write piece meta records failed")
 		}
 	}

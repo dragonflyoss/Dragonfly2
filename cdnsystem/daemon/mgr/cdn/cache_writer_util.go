@@ -114,7 +114,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 }
 
 // writeToFile
-func (cw *cacheWriter) writeToFile(ctx context.Context, taskId string, bytesBuffer *bytes.Buffer, offset int64, pieceMd5 hash.Hash) error {
+func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuffer *bytes.Buffer, offset int64, pieceMd5 hash.Hash) error {
 	var resultBuf = &bytes.Buffer{}
 	// write piece content
 	var pieceContent []byte
@@ -135,5 +135,5 @@ func (cw *cacheWriter) writeToFile(ctx context.Context, taskId string, bytesBuff
 		}
 	}
 	// write to the storage
-	return cw.cacheDataManager.writeDownloadFile(ctx, taskId, offset, int64(pieceContLen), resultBuf)
+	return cw.cacheDataManager.writeDownloadFile(ctx, taskID, offset, int64(pieceContLen), resultBuf)
 }
