@@ -20,11 +20,8 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/valyala/fasthttp"
 	"io"
 	"io/ioutil"
 	"net"
@@ -33,6 +30,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"github.com/pkg/errors"
+	"github.com/valyala/fasthttp"
 )
 
 /* http content types */

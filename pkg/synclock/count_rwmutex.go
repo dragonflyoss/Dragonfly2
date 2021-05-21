@@ -17,8 +17,9 @@
 package synclock
 
 import (
-	"d7y.io/dragonfly/v2/pkg/structure/atomiccount"
 	"sync"
+
+	"d7y.io/dragonfly/v2/pkg/structure/atomiccount"
 )
 
 type countRWMutex struct {
