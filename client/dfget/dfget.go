@@ -120,7 +120,7 @@ func Download(cfg *config.DfgetConfig, client dfclient.DaemonClient) error {
 }
 
 func downloadFromSource(cfg *config.DfgetConfig, hdr map[string]string) (err error) {
-	if cfg.NotBackSource {
+	if cfg.DisableBackSource {
 		err = fmt.Errorf("dfget download error, and back source disabled")
 		logger.Warnf("%s", err)
 		return err
