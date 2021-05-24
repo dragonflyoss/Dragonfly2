@@ -43,11 +43,11 @@ func (m *HostManager) Add(host *types.Host) *types.Host {
 		return v.(*types.Host)
 	}
 
-	copyHost := types.CopyHost(host)
-	m.CalculateLoad(copyHost)
-	m.data.Store(host.Uuid, copyHost)
+	h := types.Init(host)
+	m.CalculateLoad(h)
+	m.data.Store(host.Uuid, h)
 
-	return copyHost
+	return h
 }
 
 func (m *HostManager) Delete(uuid string) {
