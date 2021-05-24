@@ -24,6 +24,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+
+	// Server registered to grpc
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -90,7 +92,7 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	s.worker = worker.NewWorkerGroup(cfg, s.service)
+	s.worker = worker.NewGroup(cfg, s.service)
 	s.server = NewSchedulerServer(cfg, WithSchedulerService(s.service),
 		WithWorker(s.worker))
 

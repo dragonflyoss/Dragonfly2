@@ -4,7 +4,7 @@ run:
 
 linters-settings:
   gocyclo:
-    min-complexity: 20
+    min-complexity: 40
 
 linters:
   disable-all: true
