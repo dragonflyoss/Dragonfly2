@@ -65,17 +65,17 @@ type BuildOptions interface {
 
 // fileMetaData
 type FileMetaData struct {
-	TaskID        string            `json:"taskId"`
-	TaskURL       string            `json:"taskUrl"`
-	PieceSize     int32             `json:"pieceSize"`
-	SourceFileLen int64             `json:"sourceFileLen"`
-	AccessTime    int64             `json:"accessTime"`
-	Interval      int64             `json:"interval"`
-	CdnFileLength int64             `json:"cdnFileLength"`
-	SourceRealMd5 string            `json:"sourceRealMd5"`
-	PieceMd5Sign  string            `json:"pieceMd5Sign"`
-	ExpireInfo    map[string]string `json:"expireInfo"`
-	Finish        bool              `json:"finish"`
+	TaskID          string            `json:"taskId"`
+	TaskURL         string            `json:"taskUrl"`
+	PieceSize       int32             `json:"pieceSize"`
+	SourceFileLen   int64             `json:"sourceFileLen"`
+	AccessTime      int64             `json:"accessTime"`
+	Interval        int64             `json:"interval"`
+	CdnFileLength   int64             `json:"cdnFileLength"`
+	SourceRealMd5   string            `json:"sourceRealMd5"`
+	PieceMd5Sign    string            `json:"pieceMd5Sign"`
+	ExpireInfo      map[string]string `json:"expireInfo"`
+	Finish          bool              `json:"finish"`
 	Success         bool              `json:"success"`
 	TotalPieceCount int32             `json:"totalPieceCount"`
 	//PieceMetaDataSign string            `json:"pieceMetaDataSign"`
