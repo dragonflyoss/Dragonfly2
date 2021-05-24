@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package schedule_worker
+package worker
 
 import (
 	"hash/crc32"

@@ -28,13 +28,13 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"
-	"d7y.io/dragonfly/v2/scheduler/service/schedule_worker"
+	"d7y.io/dragonfly/v2/scheduler/service/worker"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type SchedulerServer struct {
 	service *service.SchedulerService
-	worker  schedule_worker.IWorker
+	worker  worker.IWorker
 	config  config.SchedulerConfig
 }
 
@@ -50,8 +50,8 @@ func WithSchedulerService(service *service.SchedulerService) Option {
 	}
 }
 
-// WithWorker sets the schedule_worker.IWorker
-func WithWorker(worker schedule_worker.IWorker) Option {
+// WithWorker sets the worker.IWorker
+func WithWorker(worker worker.IWorker) Option {
 	return func(p *SchedulerServer) *SchedulerServer {
 		p.worker = worker
 
@@ -224,7 +224,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		}
 		return
 	}()
-	err = schedule_worker.NewClient(stream, s.worker, s.service).Serve()
+	err = worker.NewClient(stream, s.worker, s.service).Serve()
 	return
 }
 
