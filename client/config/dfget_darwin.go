@@ -21,11 +21,11 @@ package config
 import "d7y.io/dragonfly/v2/pkg/unit"
 
 var dfgetConfig = ClientOption{
-	URL:           "",
-	LockFile:      "/tmp/dfget.lock",
-	Output:        "",
-	Timeout:       0,
-	BenchmarkRate: 128 * unit.KB,
+	URL:               "",
+	LockFile:          "/tmp/dfget.lock",
+	Output:            "",
+	Timeout:           0,
+	BenchmarkRate:     128 * unit.KB,
 	RateLimit:         0,
 	Md5:               "",
 	DigestMethod:      "",

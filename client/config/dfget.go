@@ -173,7 +173,7 @@ func (cfg *ClientOption) checkOutput() error {
 	}
 
 	dir, _ := path.Split(cfg.Output)
-	if err := MkdirAll(dir, 0777, basic.UserId, basic.UserGroup); err != nil {
+	if err := MkdirAll(dir, 0777, basic.UserID, basic.UserGroup); err != nil {
 		return err
 	}
 

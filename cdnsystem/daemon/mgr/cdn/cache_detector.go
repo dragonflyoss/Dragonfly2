@@ -65,7 +65,7 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) 
 	//}
 	result, err := cd.doDetect(ctx, task)
 	if err != nil {
-		logger.WithTaskID(task.TaskId).Infof("failed to detect cache, reset cache: %v", err)
+		logger.WithTaskID(task.TaskID).Infof("failed to detect cache, reset cache: %v", err)
 		metaData, err := cd.resetCache(ctx, task)
 		if err == nil {
 			result = &cacheResult{
@@ -75,46 +75,46 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask) 
 		}
 		return result, err
 	}
-	if err := cd.cacheDataManager.updateAccessTime(ctx, task.TaskId, getCurrentTimeMillisFunc()); err != nil {
-		logger.WithTaskID(task.TaskId).Warnf("failed to update task access time ")
+	if err := cd.cacheDataManager.updateAccessTime(ctx, task.TaskID, getCurrentTimeMillisFunc()); err != nil {
+		logger.WithTaskID(task.TaskID).Warnf("failed to update task access time ")
 	}
 	return result, nil
 }
 
 // detectCache the actual detect action which detects file metaData and pieces metaData of specific task
 func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (result *cacheResult, err error) {
-	fileMetaData, err := cd.cacheDataManager.readFileMetaData(ctx, task.TaskId)
+	fileMetaData, err := cd.cacheDataManager.readFileMetaData(ctx, task.TaskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read file meta data")
 	}
 	if err := checkSameFile(task, fileMetaData); err != nil {
 		return nil, errors.Wrapf(err, "task does not match meta information of task file")
 	}
-	expired, err := cd.resourceClient.IsExpired(task.Url, task.Header, fileMetaData.ExpireInfo)
+	expired, err := cd.resourceClient.IsExpired(task.URL, task.Header, fileMetaData.ExpireInfo)
 	if err != nil {
 		// 如果获取失败，则认为没有过期，防止打爆源
-		logger.WithTaskID(task.TaskId).Errorf("failed to check if the task expired: %v", err)
+		logger.WithTaskID(task.TaskID).Errorf("failed to check if the task expired: %v", err)
 	}
-	logger.WithTaskID(task.TaskId).Debugf("task expired result: %t", expired)
+	logger.WithTaskID(task.TaskID).Debugf("task expired result: %t", expired)
 	if expired {
-		return nil, errors.Wrapf(cdnerrors.ErrResourceExpired, "url:%s, expireInfo:%+v", task.Url,
+		return nil, errors.Wrapf(cdnerrors.ErrResourceExpired, "url:%s, expireInfo:%+v", task.URL,
 			fileMetaData.ExpireInfo)
 	}
 	// not expired
 	if fileMetaData.Finish {
 		// quickly detect the cache situation through the meta data
-		return cd.parseByReadMetaFile(ctx, task.TaskId, fileMetaData)
+		return cd.parseByReadMetaFile(ctx, task.TaskID, fileMetaData)
 	}
 	// check if the resource supports range request. if so,
 	// detect the cache situation by reading piece meta and data file
-	supportRange, err := cd.resourceClient.IsSupportRange(task.Url, task.Header)
+	supportRange, err := cd.resourceClient.IsSupportRange(task.URL, task.Header)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to check if url(%s) supports range request", task.Url)
+		return nil, errors.Wrapf(err, "failed to check if url(%s) supports range request", task.URL)
 	}
 	if !supportRange {
-		return nil, errors.Wrapf(cdnerrors.ErrResourceNotSupportRangeRequest, "url:%s", task.Url)
+		return nil, errors.Wrapf(cdnerrors.ErrResourceNotSupportRangeRequest, "url:%s", task.URL)
 	}
-	return cd.parseByReadFile(ctx, task.TaskId, fileMetaData)
+	return cd.parseByReadFile(ctx, task.TaskID, fileMetaData)
 }
 
 // parseByReadMetaFile detect cache by read meta and pieceMeta files of task

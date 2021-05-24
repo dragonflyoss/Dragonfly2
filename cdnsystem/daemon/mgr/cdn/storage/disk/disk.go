@@ -243,7 +243,7 @@ func (s *diskStorageMgr) DeleteTask(ctx context.Context, taskID string) error {
 }
 
 func (s *diskStorageMgr) ResetRepo(ctx context.Context, task *types.SeedTask) error {
-	return s.DeleteTask(ctx, task.TaskId)
+	return s.DeleteTask(ctx, task.TaskID)
 }
 
 func init() {

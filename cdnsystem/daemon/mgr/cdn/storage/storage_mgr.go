@@ -65,7 +65,7 @@ type BuildOptions interface {
 
 // fileMetaData
 type FileMetaData struct {
-	TaskId          string            `json:"taskId"`
+	TaskID          string            `json:"taskId"`
 	TaskURL         string            `json:"taskUrl"`
 	PieceSize       int32             `json:"pieceSize"`
 	SourceFileLen   int64             `json:"sourceFileLen"`

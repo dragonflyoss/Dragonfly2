@@ -62,6 +62,7 @@ func (o optimizedPieceDownloader) DownloadPiece(ctx context.Context, request *Do
 		panic(err)
 	}
 	// TODO refactor httputil.NewClientConn
+	//nolint
 	client := httputil.NewClientConn(conn, nil)
 	// add default timeout
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)

@@ -29,7 +29,7 @@ var (
 	HomeDir   string
 	TmpDir    string
 	Username  string
-	UserId    int
+	UserID    int
 	UserGroup int
 )
 
@@ -40,7 +40,7 @@ func init() {
 	}
 
 	Username = u.Username
-	UserId, _ = strconv.Atoi(u.Uid)
+	UserID, _ = strconv.Atoi(u.Uid)
 	UserGroup, _ = strconv.Atoi(u.Gid)
 
 	HomeDir = u.HomeDir

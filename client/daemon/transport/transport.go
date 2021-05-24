@@ -48,7 +48,7 @@ type transport struct {
 	shouldUseDragonfly func(req *http.Request) bool
 
 	// peerTaskManager is the peer task manager
-	peerTaskManager peer.PeerTaskManager
+	peerTaskManager peer.TaskManager
 
 	// peerHost is the peer host info
 	peerHost *scheduler.PeerHost
@@ -72,7 +72,7 @@ func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 }
 
 // WithHTTPSHosts sets the rules for hijacking https requests
-func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) Option {
+func WithPeerTaskManager(peerTaskManager peer.TaskManager) Option {
 	return func(rt *transport) *transport {
 		rt.peerTaskManager = peerTaskManager
 		return rt

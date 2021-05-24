@@ -71,7 +71,7 @@ type peerHost struct {
 	StorageManager storage.Manager
 	GCManager      gc.Manager
 
-	PeerTaskManager peer.PeerTaskManager
+	PeerTaskManager peer.TaskManager
 	PieceManager    peer.PieceManager
 }
 

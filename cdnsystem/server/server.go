@@ -30,11 +30,17 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
+
+	// Init http client
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
+
+	// Init OSS client
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/ossprotocol"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+
+	// Server registered to grpc
 	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	configServer "d7y.io/dragonfly/v2/pkg/rpc/manager/client"

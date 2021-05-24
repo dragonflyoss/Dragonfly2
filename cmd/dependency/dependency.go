@@ -109,18 +109,18 @@ func InitMonitor(verbose bool, pprofPort int, jaeger string) func() {
 			vm := statsview.New()
 			if err := vm.Start(); err != nil {
 				logger.Warnf("serve pprof error:%v", err)
-			} else {
-				fc <- func() { vm.Stop() }
 			}
+			fc <- func() { vm.Stop() }
 		}()
 	}
 
 	if jaeger != "" {
-		if ff, err := initJaegerTracer(jaeger); err != nil {
+		ff, err := initJaegerTracer(jaeger)
+		if err != nil {
 			logger.Warnf("init jaeger tracer error:%v", err)
-		} else {
-			fc <- ff
 		}
+
+		fc <- ff
 	}
 
 	return func() {

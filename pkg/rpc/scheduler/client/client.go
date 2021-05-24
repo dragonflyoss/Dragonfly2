@@ -124,7 +124,7 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, exclusiveNodes []string,
 	opts []grpc.CallOption) (rr *scheduler.RegisterResult, err error) {
 	var (
-		taskId        string
+		taskID        string
 		suc           bool
 		code          base.Code
 		schedulerNode string
@@ -142,12 +142,12 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 		return client.RegisterPeerTask(ctx, ptr, opts...)
 	}, 0.5, 5.0, 5, nil); err == nil {
 		rr = res.(*scheduler.RegisterResult)
-		taskId = rr.TaskId
+		taskID = rr.TaskId
 		suc = true
 		code = dfcodes.Success
-		if taskId != key {
-			logger.WithPeerID(ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", key, taskId)
-			sc.Connection.CorrectKey2NodeRelation(key, taskId)
+		if taskID != key {
+			logger.WithPeerID(ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", key, taskID)
+			sc.Connection.CorrectKey2NodeRelation(key, taskID)
 		}
 	} else {
 		if de, ok := err.(*dferrors.DfError); ok {
@@ -156,7 +156,7 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 	}
 	logger.With("peerId", ptr.PeerId, "errMsg", err).
 		Infof("register peer task result:%t[%d] for taskId:%s,url:%s,peerIp:%s,securityDomain:%s,idc:%s,scheduler:%s",
-			suc, int32(code), taskId, ptr.Url, ptr.PeerHost.Ip, ptr.PeerHost.SecurityDomain, ptr.PeerHost.Idc, schedulerNode)
+			suc, int32(code), taskID, ptr.Url, ptr.PeerHost.Ip, ptr.PeerHost.SecurityDomain, ptr.PeerHost.Idc, schedulerNode)
 
 	if err != nil {
 		var preNode string

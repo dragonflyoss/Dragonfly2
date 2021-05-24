@@ -19,9 +19,9 @@
 package config
 
 var dfgetConfig = ClientOption{
-	URL:           "",
-	LockFile:      "/var/run/dfget.lock",
-	Output:        "",
+	URL:               "",
+	LockFile:          "/var/run/dfget.lock",
+	Output:            "",
 	Timeout:           0,
 	Md5:               "",
 	DigestMethod:      "",

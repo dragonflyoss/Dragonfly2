@@ -183,7 +183,7 @@ func (e *evaluator) selectParentCandidates(peer *types.PeerTask) (list []*types.
 		if pt == nil {
 			return true
 		} else if peer.Task != pt.Task {
-			msg = append(msg, fmt.Sprintf("%s task[%s] not same", pt.Pid, pt.Task.TaskId))
+			msg = append(msg, fmt.Sprintf("%s task[%s] not same", pt.Pid, pt.Task.TaskID))
 			return true
 		} else if pt.IsDown() {
 			msg = append(msg, fmt.Sprintf("%s is down", pt.Pid))
@@ -213,7 +213,7 @@ func (e *evaluator) selectParentCandidates(peer *types.PeerTask) (list []*types.
 		return true
 	})
 	if len(list) == 0 {
-		logger.Debugf("[%s][%s] scheduler failed: \n%s", peer.Task.TaskId, peer.Pid, strings.Join(msg, "\n"))
+		logger.Debugf("[%s][%s] scheduler failed: \n%s", peer.Task.TaskID, peer.Pid, strings.Join(msg, "\n"))
 	}
 
 	return

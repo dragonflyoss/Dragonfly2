@@ -67,14 +67,14 @@ type peerTask struct {
 	// host info about current host
 	host *scheduler.PeerHost
 	// callback holds some actions, like init, done, fail actions
-	callback PeerTaskCallback
+	callback TaskCallback
 
 	// schedule options
 	schedulerOption config.SchedulerOption
 
 	// peer task meta info
-	peerId          string
-	taskId          string
+	peerID          string
+	taskID          string
 	contentLength   int64
 	totalPiece      int32
 	completedLength int64
@@ -124,16 +124,16 @@ func (pt *peerTask) ReportPieceResult(pieceTask *base.PieceInfo, pieceResult *sc
 	panic("implement me")
 }
 
-func (pt *peerTask) SetCallback(callback PeerTaskCallback) {
+func (pt *peerTask) SetCallback(callback TaskCallback) {
 	pt.callback = callback
 }
 
 func (pt *peerTask) GetPeerID() string {
-	return pt.peerId
+	return pt.peerID
 }
 
 func (pt *peerTask) GetTaskID() string {
-	return pt.taskId
+	return pt.taskID
 }
 
 func (pt *peerTask) GetContentLength() int64 {
@@ -164,7 +164,7 @@ func (pt *peerTask) Log() *logger.SugaredLoggerOnWith {
 	return pt.SugaredLoggerOnWith
 }
 
-func (pt *peerTask) pullPieces(pti PeerTask, cleanUnfinishedFunc func()) {
+func (pt *peerTask) pullPieces(pti Task, cleanUnfinishedFunc func()) {
 	// when there is a single piece, try to download first
 	if pt.singlePiece != nil {
 		go pt.pullSinglePiece(pti, cleanUnfinishedFunc)
@@ -292,7 +292,7 @@ func (pt *peerTask) isExitPeerPacketCode(pp *scheduler.PeerPacket) bool {
 	return false
 }
 
-func (pt *peerTask) pullSinglePiece(pti PeerTask, cleanUnfinishedFunc func()) {
+func (pt *peerTask) pullSinglePiece(pti Task, cleanUnfinishedFunc func()) {
 	pt.Infof("single piece, dest peer id: %s, piece num: %d, size: %d",
 		pt.singlePiece.DstPid, pt.singlePiece.PieceInfo.PieceNum, pt.singlePiece.PieceInfo.RangeSize)
 
@@ -332,7 +332,7 @@ func (pt *peerTask) pullSinglePiece(pti PeerTask, cleanUnfinishedFunc func()) {
 
 // TODO when main peer is not available, switch to steel peers
 // piece manager need peer task interface, pti make it compatibility for stream peer task
-func (pt *peerTask) pullPiecesFromPeers(pti PeerTask, cleanUnfinishedFunc func()) {
+func (pt *peerTask) pullPiecesFromPeers(pti Task, cleanUnfinishedFunc func()) {
 	defer func() {
 		close(pt.failedPieceCh)
 		cleanUnfinishedFunc()
@@ -387,8 +387,8 @@ loop:
 		pt.Debugf("try to get pieces, number: %d, limit: %d", num, limit)
 		piecePacket, err := pt.preparePieceTasks(
 			&base.PieceTaskRequest{
-				TaskId:   pt.taskId,
-				SrcPid:   pt.peerId,
+				TaskId:   pt.taskID,
+				SrcPid:   pt.peerID,
 				StartNum: num,
 				Limit:    limit,
 			})
@@ -507,7 +507,7 @@ loop:
 	}
 }
 
-func (pt *peerTask) downloadPieceWorker(id int32, pti PeerTask, requests chan *DownloadPieceRequest) {
+func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *DownloadPieceRequest) {
 	for {
 		select {
 		case request := <-requests:
@@ -630,8 +630,8 @@ retry:
 	}
 	pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
 	perr := pt.peerPacketStream.Send(&scheduler.PieceResult{
-		TaskId:        pt.taskId,
-		SrcPid:        pt.peerId,
+		TaskId:        pt.taskID,
+		SrcPid:        pt.peerID,
 		DstPid:        peer.PeerId,
 		Success:       false,
 		Code:          code,
@@ -672,8 +672,8 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 		if len(pp.PieceInfos) == 0 {
 			count++
 			er := pt.peerPacketStream.Send(&scheduler.PieceResult{
-				TaskId:        pt.taskId,
-				SrcPid:        pt.peerId,
+				TaskId:        pt.taskID,
+				SrcPid:        pt.peerID,
 				DstPid:        peer.PeerId,
 				Success:       false,
 				Code:          dfcodes.ClientWaitPieceReady,

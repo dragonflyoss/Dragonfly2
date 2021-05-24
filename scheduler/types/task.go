@@ -27,14 +27,14 @@ import (
 )
 
 type Task struct {
-	TaskId string `json:"task_id,omitempty"`
-	Url    string `json:"url,omitempty"`
+	TaskID string `json:"task_id,omitempty"`
+	URL    string `json:"url,omitempty"`
 	// regex format, used for task id generator, assimilating different urls
 	Filter string `json:"filter,omitempty"`
 	// biz_id and md5 are used for task id generator to distinguish the same urls
 	// md5 is also used to check consistency about file content
-	BizId   string        `json:"biz_id,omitempty"`   // caller's biz id that can be any string
-	UrlMata *base.UrlMeta `json:"url_mata,omitempty"` // downloaded file content md5
+	BizID   string        `json:"biz_id,omitempty"`   // caller's biz id that can be any string
+	URLMata *base.UrlMeta `json:"url_mata,omitempty"` // downloaded file content md5
 
 	SizeScope   base.SizeScope
 	DirectPiece *scheduler.RegisterResult_PieceContent

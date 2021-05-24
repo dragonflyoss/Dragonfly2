@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package schedule_worker
+package worker
 
 import (
 	"fmt"
@@ -107,14 +107,14 @@ func (s *Sender) doSend() {
 				err = peerTask.Send()
 			}()
 			if err != nil && err.Error() == "empty client" {
-				logger.Warnf("[%s][%s]: client is empty : %v", peerTask.Task.TaskId, peerTask.Pid, err.Error())
+				logger.Warnf("[%s][%s]: client is empty : %v", peerTask.Task.TaskID, peerTask.Pid, err.Error())
 				break
 			} else if err != nil {
 				//TODO error
-				logger.Warnf("[%s][%s]: send result failed : %v", peerTask.Task.TaskId, peerTask.Pid, err.Error())
+				logger.Warnf("[%s][%s]: send result failed : %v", peerTask.Task.TaskID, peerTask.Pid, err.Error())
 				break
 			} else {
-				logger.Debugf("[%s][%s]: send result success", peerTask.Task.TaskId, peerTask.Pid)
+				logger.Debugf("[%s][%s]: send result success", peerTask.Task.TaskID, peerTask.Pid)
 			}
 			if peerTask.Success {
 				break

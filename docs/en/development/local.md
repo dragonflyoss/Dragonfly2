@@ -45,8 +45,8 @@ $ tail -f log/**/*.log
 ==> log/dragonfly/scheduler/core.log <==
 {"level":"info","ts":"2021-02-26 05:43:37.332","caller":"cmd/root.go:57","msg":"start to run scheduler"}
 {"level":"info","ts":"2021-02-26 05:43:37.338","caller":"server/server.go:35","msg":"start server at port %!s(int=8002)"}
-{"level":"info","ts":"2021-02-26 05:43:37.342","caller":"schedule_worker/sender.go:49","msg":"start sender worker : 50"}
-{"level":"info","ts":"2021-02-26 05:43:37.343","caller":"schedule_worker/worker_group.go:64","msg":"start scheduler worker number:6"}
+{"level":"info","ts":"2021-02-26 05:43:37.342","caller":"worker/sender.go:49","msg":"start sender worker : 50"}
+{"level":"info","ts":"2021-02-26 05:43:37.343","caller":"worker/worker_group.go:64","msg":"start scheduler worker number:6"}
 ```
 
 ### Step 4: Stop dragonfly

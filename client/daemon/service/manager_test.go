@@ -61,7 +61,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 						State: &peer.ProgressState{
 							Success: true,
 						},
-						TaskId:          "",
+						TaskID:          "",
 						PeerID:          "",
 						ContentLength:   100,
 						CompletedLength: int64(i),

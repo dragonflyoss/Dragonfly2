@@ -38,8 +38,8 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
-// PeerTaskManager processes all peer tasks request
-type PeerTaskManager interface {
+// TaskManager processes all peer tasks request
+type TaskManager interface {
 	// StartFilePeerTask starts a peer task to download a file
 	// return a progress channel for request download progress
 	// tiny stands task file is tiny and task is done
@@ -56,8 +56,8 @@ type PeerTaskManager interface {
 	Stop(ctx context.Context) error
 }
 
-// PeerTask represents common interface to operate a peer task
-type PeerTask interface {
+// Task represents common interface to operate a peer task
+type Task interface {
 	Context() context.Context
 	Log() *logger.SugaredLoggerOnWith
 	ReportPieceResult(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error
@@ -67,25 +67,25 @@ type PeerTask interface {
 	GetContentLength() int64
 	// SetContentLength will called after download completed, when download from source without content length
 	SetContentLength(int64) error
-	SetCallback(PeerTaskCallback)
+	SetCallback(TaskCallback)
 	AddTraffic(int64)
 	GetTraffic() int64
 }
 
-// PeerTaskCallback inserts some operations for peer task download lifecycle
-type PeerTaskCallback interface {
-	Init(pt PeerTask) error
-	Done(pt PeerTask) error
-	Update(pt PeerTask) error
-	Fail(pt PeerTask, code base.Code, reason string) error
+// TaskCallback inserts some operations for peer task download lifecycle
+type TaskCallback interface {
+	Init(pt Task) error
+	Done(pt Task) error
+	Update(pt Task) error
+	Fail(pt Task, code base.Code, reason string) error
 	GetStartTime() time.Time
 }
 
 type TinyData struct {
 	// span is used by peer task manager to record events without peer task
 	span    trace.Span
-	TaskId  string
-	PeerId  string
+	TaskID  string
+	PeerID  string
 	Content []byte
 }
 
@@ -113,7 +113,7 @@ func NewPeerTaskManager(
 	storageManager storage.Manager,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
-	perPeerRateLimit rate.Limit) (PeerTaskManager, error) {
+	perPeerRateLimit rate.Limit) (TaskManager, error) {
 
 	ptm := &peerTaskManager{
 		host:             host,
@@ -138,7 +138,7 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	// tiny file content is returned by scheduler, just write to output
 	if tiny != nil {
 		defer tiny.span.End()
-		log := logger.With("peer", tiny.PeerId, "task", tiny.TaskId, "component", "peerTaskManager")
+		log := logger.With("peer", tiny.PeerID, "task", tiny.TaskID, "component", "peerTaskManager")
 		_, err = os.Stat(req.Output)
 		if err == nil {
 			// remove exist file

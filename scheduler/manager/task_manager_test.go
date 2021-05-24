@@ -40,7 +40,7 @@ func TestTaskManager_Set(t *testing.T) {
 			},
 			key: "foo",
 			task: &types.Task{
-				TaskId: "bar",
+				TaskID: "bar",
 			},
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -68,7 +68,7 @@ func TestTaskManager_Set(t *testing.T) {
 			},
 			key: "",
 			task: &types.Task{
-				TaskId: "bar",
+				TaskID: "bar",
 			},
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -101,7 +101,7 @@ func TestTaskManager_Add(t *testing.T) {
 			},
 			key: "foo",
 			task: &types.Task{
-				TaskId: "bar",
+				TaskID: "bar",
 			},
 			expect: func(t *testing.T, d interface{}, err error) {
 				assert := assert.New(t)
@@ -129,7 +129,7 @@ func TestTaskManager_Add(t *testing.T) {
 			},
 			key: "",
 			task: &types.Task{
-				TaskId: "bar",
+				TaskID: "bar",
 			},
 			expect: func(t *testing.T, d interface{}, err error) {
 				assert := assert.New(t)
@@ -144,7 +144,7 @@ func TestTaskManager_Add(t *testing.T) {
 			},
 			key: "foo",
 			task: &types.Task{
-				TaskId: "bar",
+				TaskID: "bar",
 			},
 			expect: func(t *testing.T, d interface{}, err error) {
 				assert := assert.New(t)
@@ -162,6 +162,10 @@ func TestTaskManager_Add(t *testing.T) {
 }
 
 func TestTaskManager_Get(t *testing.T) {
+	mockTask := &types.Task{
+		TaskID: "bar",
+	}
+
 	tests := []struct {
 		name        string
 		taskManager *TaskManager
@@ -172,15 +176,13 @@ func TestTaskManager_Get(t *testing.T) {
 			name: "get existing task",
 			taskManager: &TaskManager{
 				lock: new(sync.RWMutex),
-				data: map[string]*types.Task{"foo": &types.Task{
-					TaskId: "bar",
-				}},
+				data: map[string]*types.Task{"foo": mockTask},
 			},
 			key: "foo",
 			expect: func(t *testing.T, task *types.Task, found bool) {
 				assert := assert.New(t)
 				assert.Equal(true, found)
-				assert.Equal("bar", task.TaskId)
+				assert.Equal("bar", task.TaskID)
 			},
 		},
 		{
@@ -250,6 +252,10 @@ func TestTaskManager_Delete(t *testing.T) {
 }
 
 func TestTaskManager_Touch(t *testing.T) {
+	mockTask := &types.Task{
+		TaskID: "bar",
+	}
+
 	tests := []struct {
 		name        string
 		taskManager *TaskManager
@@ -261,9 +267,7 @@ func TestTaskManager_Touch(t *testing.T) {
 			name: "touch existing task",
 			taskManager: &TaskManager{
 				lock: new(sync.RWMutex),
-				data: map[string]*types.Task{"foo": &types.Task{
-					TaskId: "bar",
-				}},
+				data: map[string]*types.Task{"foo": mockTask},
 			},
 			key: "foo",
 			expect: func(t *testing.T, task *types.Task, found bool) {

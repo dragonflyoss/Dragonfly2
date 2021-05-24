@@ -48,7 +48,7 @@ type proxyManager struct {
 	config.ListenOption
 }
 
-func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.PeerTaskManager, opts *config.ProxyOption) (Manager, error) {
+func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, opts *config.ProxyOption) (Manager, error) {
 	registry := opts.RegistryMirror
 	proxies := opts.Proxies
 	hijackHTTPS := opts.HijackHTTPS

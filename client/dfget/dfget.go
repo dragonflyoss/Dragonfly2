@@ -33,6 +33,8 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+
+	// Init daemon rpc client
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"github.com/go-http-utils/headers"
@@ -74,7 +76,7 @@ func Download(cfg *config.DfgetConfig, client dfclient.DaemonClient) error {
 		Output: output,
 		BizId:  cfg.CallSystem,
 		Filter: filter,
-		Uid:    int64(basic.UserId),
+		Uid:    int64(basic.UserID),
 		Gid:    int64(basic.UserGroup),
 	}
 	var (
@@ -165,8 +167,8 @@ func downloadFromSource(cfg *config.DfgetConfig, hdr map[string]string) (err err
 		end = time.Now()
 		fmt.Printf("Download from source success, time cost: %dms\n", end.Sub(start).Milliseconds())
 		// change permission
-		logger.Infof("change own to uid %d gid %d", basic.UserId, basic.UserGroup)
-		if err = os.Chown(cfg.Output, basic.UserId, basic.UserGroup); err != nil {
+		logger.Infof("change own to uid %d gid %d", basic.UserID, basic.UserGroup)
+		if err = os.Chown(cfg.Output, basic.UserID, basic.UserGroup); err != nil {
 			logger.Errorf("change own failed: %s", err)
 			return err
 		}
