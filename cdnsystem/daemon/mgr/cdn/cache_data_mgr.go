@@ -51,7 +51,7 @@ func (mm *cacheDataManager) writeFileMetaDataByTask(ctx context.Context, task *t
 	mm.cacheLocker.Lock(task.TaskID, false)
 	defer mm.cacheLocker.UnLock(task.TaskID, false)
 	metaData := &storage.FileMetaData{
-		TaskId:          task.TaskID,
+		TaskID:          task.TaskID,
 		TaskURL:         task.TaskURL,
 		PieceSize:       task.PieceSize,
 		SourceFileLen:   task.SourceFileLength,
