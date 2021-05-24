@@ -77,7 +77,7 @@ func New() *Config {
 	}
 }
 
-func (cfg *StoreConfig) CheckValid() error {
+func (cfg *StoreConfig) Valid() error {
 	if (cfg.Mysql == nil && cfg.Oss == nil) || (cfg.Mysql != nil && cfg.Oss != nil) {
 		return dferrors.Newf(dfcodes.ManagerConfigError, "store config error")
 	}
@@ -97,6 +97,6 @@ func (cfg *StoreConfig) CheckValid() error {
 	return nil
 }
 
-func (cfg *Config) CheckValid() error {
+func (cfg *Config) Valid() error {
 	return nil
 }

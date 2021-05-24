@@ -25,7 +25,7 @@ type ManagerServer struct {
 }
 
 func NewManagerServer(cfg *config.Config) *ManagerServer {
-	if err := cfg.CheckValid(); err != nil {
+	if err := cfg.Valid(); err != nil {
 		return nil
 	}
 

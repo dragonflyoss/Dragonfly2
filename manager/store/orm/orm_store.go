@@ -3,11 +3,13 @@ package orm
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
+	"github.com/xo/dburl"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -29,12 +31,27 @@ var ormTables = map[store.ResourceType]newTableSetup{
 }
 
 func newOrmStore(cfg *config.StoreConfig) (*ormStore, error) {
-	if err := cfg.CheckValid(); err != nil {
+	if err := cfg.Valid(); err != nil {
 		return nil, err
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
-		cfg.Mysql.User, cfg.Mysql.Password, cfg.Mysql.IP, cfg.Mysql.Port, cfg.Mysql.Db)
+	u, err := dburl.Parse("mysql://user:pass@localhost/dbname?")
+	if err != nil {
+		return nil, err
+	}
+
+	u.Host = fmt.Sprintf("%s:%d", cfg.Mysql.IP, cfg.Mysql.Port)
+	u.Path = cfg.Mysql.Db
+	u.User = url.UserPassword(cfg.Mysql.User, cfg.Mysql.Password)
+	q := u.Query()
+	q.Add("charset", "utf8")
+	q.Add("parseTime", "True")
+	q.Add("loc", "Local")
+	u.RawQuery = q.Encode()
+	dsn, err := dburl.GenMySQL(u)
+	if err != nil {
+		return nil, err
+	}
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
