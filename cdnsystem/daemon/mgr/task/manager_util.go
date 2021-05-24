@@ -57,7 +57,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		TaskID:           taskID,
 		Header:           request.Header,
 		RequestMd5:       request.Md5,
-		Url:              request.URL,
+		URL:              request.URL,
 		TaskURL:          taskURL,
 		CdnStatus:        types.TaskInfoCdnStatusWaiting,
 		SourceFileLength: IllegalSourceFileLen,
@@ -80,9 +80,9 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 
 	// get sourceContentLength with req.Header
-	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Header)
+	sourceFileLength, err := tm.resourceClient.GetContentLength(task.URL, request.Header)
 	if err != nil {
-		logger.WithTaskID(task.TaskID).Errorf("failed to get url (%s) content length: %v", task.Url, err)
+		logger.WithTaskID(task.TaskID).Errorf("failed to get url (%s) content length: %v", task.URL, err)
 
 		if cdnerrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskID, time.Now())

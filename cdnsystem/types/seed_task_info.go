@@ -18,7 +18,7 @@ package types
 
 type SeedTask struct {
 	TaskID           string            `json:"taskId,omitempty"`
-	Url              string            `json:"url,omitempty"`
+	URL              string            `json:"url,omitempty"`
 	TaskURL          string            `json:"taskUrl,omitempty"`
 	SourceFileLength int64             `json:"sourceFileLength,omitempty"`
 	CdnFileLength    int64             `json:"cdnFileLength,omitempty"`

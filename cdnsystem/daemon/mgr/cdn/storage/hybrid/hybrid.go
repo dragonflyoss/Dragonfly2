@@ -255,7 +255,7 @@ func (h *hybridStorageMgr) ResetRepo(ctx context.Context, task *types.SeedTask) 
 		logger.WithTaskID(task.TaskID).Errorf("reset repo: failed to delete task files: %v", err)
 	}
 	// 判断是否有足够空间存放
-	shmPath, err := h.tryShmSpace(ctx, task.Url, task.TaskID, task.SourceFileLength)
+	shmPath, err := h.tryShmSpace(ctx, task.URL, task.TaskID, task.SourceFileLength)
 	if err == nil {
 		return fileutils.SymbolicLink(shmPath, h.diskStore.GetPath(storage.GetDownloadRaw(task.TaskID)))
 	}

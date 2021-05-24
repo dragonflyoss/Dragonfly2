@@ -47,7 +47,7 @@ func checkSameFile(task *types.SeedTask, metaData *storage.FileMetaData) error {
 	}
 
 	if metaData.TaskURL != task.TaskURL {
-		return errors.Errorf("meta task taskUrl(%s) is not equals with task taskUrl(%s)", metaData.TaskURL, task.Url)
+		return errors.Errorf("meta task taskUrl(%s) is not equals with task taskUrl(%s)", metaData.TaskURL, task.URL)
 	}
 	if !stringutils.IsBlank(metaData.SourceRealMd5) && !stringutils.IsBlank(task.RequestMd5) &&
 		metaData.SourceRealMd5 != task.RequestMd5 {

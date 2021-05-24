@@ -90,14 +90,14 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (re
 	if err := checkSameFile(task, fileMetaData); err != nil {
 		return nil, errors.Wrapf(err, "task does not match meta information of task file")
 	}
-	expired, err := cd.resourceClient.IsExpired(task.Url, task.Header, fileMetaData.ExpireInfo)
+	expired, err := cd.resourceClient.IsExpired(task.URL, task.Header, fileMetaData.ExpireInfo)
 	if err != nil {
 		// 如果获取失败，则认为没有过期，防止打爆源
 		logger.WithTaskID(task.TaskID).Errorf("failed to check if the task expired: %v", err)
 	}
 	logger.WithTaskID(task.TaskID).Debugf("task expired result: %t", expired)
 	if expired {
-		return nil, errors.Wrapf(cdnerrors.ErrResourceExpired, "url:%s, expireInfo:%+v", task.Url,
+		return nil, errors.Wrapf(cdnerrors.ErrResourceExpired, "url:%s, expireInfo:%+v", task.URL,
 			fileMetaData.ExpireInfo)
 	}
 	// not expired
@@ -107,12 +107,12 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask) (re
 	}
 	// check if the resource supports range request. if so,
 	// detect the cache situation by reading piece meta and data file
-	supportRange, err := cd.resourceClient.IsSupportRange(task.Url, task.Header)
+	supportRange, err := cd.resourceClient.IsSupportRange(task.URL, task.Header)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to check if url(%s) supports range request", task.Url)
+		return nil, errors.Wrapf(err, "failed to check if url(%s) supports range request", task.URL)
 	}
 	if !supportRange {
-		return nil, errors.Wrapf(cdnerrors.ErrResourceNotSupportRangeRequest, "url:%s", task.Url)
+		return nil, errors.Wrapf(cdnerrors.ErrResourceNotSupportRangeRequest, "url:%s", task.URL)
 	}
 	return cd.parseByReadFile(ctx, task.TaskID, fileMetaData)
 }
