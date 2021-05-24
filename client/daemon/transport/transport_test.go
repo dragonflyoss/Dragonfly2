@@ -134,14 +134,14 @@ func TestTransport_mapToHeader(t *testing.T) {
 		{
 			name: "normal conversion",
 			m: map[string]string{
-				"foo": "foo",
-				"bar": "bar",
+				"Foo": "foo",
+				"Bar": "bar",
 			},
 			expect: func(t *testing.T, data interface{}) {
 				assert := testifyassert.New(t)
 				assert.EqualValues(data, http.Header{
-					"foo": {"foo"},
-					"bar": {"bar"},
+					"Foo": {"foo"},
+					"Bar": {"bar"},
 				})
 			},
 		},
@@ -174,26 +174,26 @@ func TestTransport_pickHeader(t *testing.T) {
 		{
 			name: "Pick the existing key",
 			header: http.Header{
-				"foo": {"foo"},
-				"bar": {"bar"},
+				"Foo": {"foo"},
+				"Bar": {"bar"},
 			},
-			key:          "foo",
+			key:          "Foo",
 			defaultValue: "",
 			expect: func(t *testing.T, data string, header http.Header) {
 				assert := testifyassert.New(t)
-				assert.Equal(data, "foo")
-				assert.Equal(header.Get("foo"), "")
+				assert.Equal("foo", data)
+				assert.Equal("", header.Get("Foo"))
 			},
 		},
 		{
 			name:         "Pick the non-existent key",
 			header:       http.Header{},
-			key:          "foo",
+			key:          "Foo",
 			defaultValue: "bar",
 			expect: func(t *testing.T, data string, header http.Header) {
 				assert := testifyassert.New(t)
 				assert.Equal(data, "bar")
-				assert.Equal(header.Get("foo"), "")
+				assert.Equal(header.Get("Foo"), "")
 			},
 		},
 	}
