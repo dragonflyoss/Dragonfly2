@@ -10,6 +10,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/host"
 	"d7y.io/dragonfly/v2/manager/hostidentifier"
 	"d7y.io/dragonfly/v2/manager/store"
+	"d7y.io/dragonfly/v2/manager/store/client"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -30,7 +31,7 @@ func NewManagerServer(cfg *config.Config) *ManagerServer {
 
 	identifier := hostidentifier.NewIdentifier()
 
-	store, err := store.NewStore(cfg)
+	store, err := client.NewStore(cfg)
 	if err != nil {
 		return nil
 	}

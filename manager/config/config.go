@@ -2,6 +2,8 @@ package config
 
 import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 )
 
 type Config struct {
@@ -73,6 +75,26 @@ func New() *Config {
 		},
 		HostService: &HostService{},
 	}
+}
+
+func (cfg *StoreConfig) CheckValid() error {
+	if (cfg.Mysql == nil && cfg.Oss == nil) || (cfg.Mysql != nil && cfg.Oss != nil) {
+		return dferrors.Newf(dfcodes.ManagerConfigError, "store config error")
+	}
+
+	if cfg.Mysql != nil {
+		if len(cfg.Mysql.User) == 0 || len(cfg.Mysql.Password) == 0 || cfg.Mysql.Port == 0 || len(cfg.Mysql.IP) == 0 || len(cfg.Mysql.Db) == 0 {
+			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error")
+		}
+
+		return nil
+	}
+
+	if cfg.Oss != nil {
+		return dferrors.Newf(dfcodes.ManagerConfigError, "store config error")
+	}
+
+	return nil
 }
 
 func (cfg *Config) CheckValid() error {
