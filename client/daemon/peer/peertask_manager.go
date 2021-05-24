@@ -39,7 +39,7 @@ import (
 )
 
 // PeerTaskManager processes all peer tasks request
-type PeerTaskManager interface {
+type TaskManager interface {
 	// StartFilePeerTask starts a peer task to download a file
 	// return a progress channel for request download progress
 	// tiny stands task file is tiny and task is done
@@ -57,7 +57,7 @@ type PeerTaskManager interface {
 }
 
 // PeerTask represents common interface to operate a peer task
-type PeerTask interface {
+type Task interface {
 	Context() context.Context
 	Log() *logger.SugaredLoggerOnWith
 	ReportPieceResult(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error
@@ -67,17 +67,17 @@ type PeerTask interface {
 	GetContentLength() int64
 	// SetContentLength will called after download completed, when download from source without content length
 	SetContentLength(int64) error
-	SetCallback(PeerTaskCallback)
+	SetCallback(TaskCallback)
 	AddTraffic(int64)
 	GetTraffic() int64
 }
 
 // PeerTaskCallback inserts some operations for peer task download lifecycle
-type PeerTaskCallback interface {
-	Init(pt PeerTask) error
-	Done(pt PeerTask) error
-	Update(pt PeerTask) error
-	Fail(pt PeerTask, code base.Code, reason string) error
+type TaskCallback interface {
+	Init(pt Task) error
+	Done(pt Task) error
+	Update(pt Task) error
+	Fail(pt Task, code base.Code, reason string) error
 	GetStartTime() time.Time
 }
 
@@ -113,7 +113,7 @@ func NewPeerTaskManager(
 	storageManager storage.Manager,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
-	perPeerRateLimit rate.Limit) (PeerTaskManager, error) {
+	perPeerRateLimit rate.Limit) (TaskManager, error) {
 
 	ptm := &peerTaskManager{
 		host:             host,

@@ -50,7 +50,7 @@ type Manager interface {
 type manager struct {
 	clientutil.KeepAlive
 	peerHost        *scheduler.PeerHost
-	peerTaskManager peer.PeerTaskManager
+	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
 
 	downloadServer rpc.Server
@@ -60,7 +60,7 @@ type manager struct {
 
 var _ dfdaemonserver.DaemonServer = &manager{}
 
-func NewManager(peerHost *scheduler.PeerHost, peerTaskManager peer.PeerTaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Manager, error) {
+func NewManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Manager, error) {
 	mgr := &manager{
 		KeepAlive:       clientutil.NewKeepAlive("service manager"),
 		peerHost:        peerHost,

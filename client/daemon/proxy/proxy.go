@@ -69,7 +69,7 @@ type Proxy struct {
 	directHandler http.Handler
 
 	// peerTaskManager is the peer task manager
-	peerTaskManager peer.PeerTaskManager
+	peerTaskManager peer.TaskManager
 
 	// peerHost is the peer host info
 	peerHost *scheduler.PeerHost
@@ -99,7 +99,7 @@ func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 }
 
 // WithPeerTaskManager sets the peer.PeerTaskManager
-func WithPeerTaskManager(peerTaskManager peer.PeerTaskManager) Option {
+func WithPeerTaskManager(peerTaskManager peer.TaskManager) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerTaskManager = peerTaskManager
 		return p

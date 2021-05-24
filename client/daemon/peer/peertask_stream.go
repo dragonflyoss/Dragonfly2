@@ -41,7 +41,7 @@ import (
 
 // StreamPeerTask represents a peer task with stream io for reading directly without once more disk io
 type StreamPeerTask interface {
-	PeerTask
+	Task
 	// Start start the special peer task, return a io.Reader for stream io
 	// when all data transferred, reader return a io.EOF
 	// attribute stands some extra data, like HTTP response Header

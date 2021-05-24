@@ -42,7 +42,7 @@ type FilePeerTaskRequest struct {
 
 // FilePeerTask represents a peer task to download a file
 type FilePeerTask interface {
-	PeerTask
+	Task
 	// Start start the special peer task, return a *FilePeerTaskProgress channel for updating download progress
 	Start(ctx context.Context) (chan *FilePeerTaskProgress, error)
 }
