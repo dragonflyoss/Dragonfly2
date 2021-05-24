@@ -123,7 +123,7 @@ func setupPeerTaskManagerComponents(
 			return nil, nil
 		})
 	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
-	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).DoAndReturn(
+	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
 			return &scheduler.RegisterResult{
 				TaskId:      taskID,
@@ -131,11 +131,11 @@ func setupPeerTaskManagerComponents(
 				DirectPiece: nil,
 			}, nil
 		})
-	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (schedulerclient.PeerPacketStream, error) {
 			return pps, nil
 		})
-	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).DoAndReturn(
+	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
 			return nil
 		})
