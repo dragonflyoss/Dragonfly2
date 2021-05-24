@@ -58,7 +58,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		Header:           request.Header,
 		RequestMd5:       request.Md5,
 		Url:              request.URL,
-		TaskUrl:          taskURL,
+		TaskURL:          taskURL,
 		CdnStatus:        types.TaskInfoCdnStatusWaiting,
 		SourceFileLength: IllegalSourceFileLen,
 	}
@@ -169,7 +169,7 @@ func isSameTask(task1, task2 *types.SeedTask) bool {
 	if task1 == task2 {
 		return true
 	}
-	if task1.TaskUrl != task2.TaskUrl {
+	if task1.TaskURL != task2.TaskURL {
 		return false
 	}
 
