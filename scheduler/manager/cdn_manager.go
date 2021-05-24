@@ -322,7 +322,14 @@ func (cm *CDNManager) getHostUUID(ps *cdnsystem.PieceSeed) string {
 
 func (cm *CDNManager) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *types.PeerTask) *types.Piece {
 	p := task.GetOrCreatePiece(ps.PieceInfo.PieceNum)
-	p.PieceInfo = *ps.PieceInfo
+	p.PieceInfo = base.PieceInfo{
+		PieceNum:    ps.PieceInfo.PieceNum,
+		RangeStart:  ps.PieceInfo.RangeStart,
+		RangeSize:   ps.PieceInfo.RangeSize,
+		PieceMd5:    ps.PieceInfo.PieceMd5,
+		PieceOffset: ps.PieceInfo.PieceOffset,
+		PieceStyle:  ps.PieceInfo.PieceStyle,
+	}
 	return p
 }
 

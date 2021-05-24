@@ -134,10 +134,22 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	// get or create host
 	hostID := request.PeerHost.Uuid
 	host, _ := s.service.GetHost(hostID)
+
+	peerHost := request.PeerHost
 	if host == nil {
 		host = &types.Host{
-			Type:     types.HostTypePeer,
-			PeerHost: *request.PeerHost,
+			Type: types.HostTypePeer,
+			PeerHost: scheduler.PeerHost{
+				Uuid:           peerHost.Uuid,
+				Ip:             peerHost.Ip,
+				RpcPort:        peerHost.RpcPort,
+				DownPort:       peerHost.DownPort,
+				HostName:       peerHost.HostName,
+				SecurityDomain: peerHost.SecurityDomain,
+				Location:       peerHost.Location,
+				Idc:            peerHost.Idc,
+				NetTopology:    peerHost.NetTopology,
+			},
 		}
 		if isCdn {
 			host.Type = types.HostTypeCdn
@@ -233,7 +245,7 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 		return
 	}()
 
-	logger.Infof("[%s][%s]: receive a peer result [%+v]", result.TaskId, result.PeerId, *result)
+	logger.Infof("[%s][%s]: receive a peer result [%+v]", result.TaskId, result.PeerId, result)
 
 	pid := result.PeerId
 	peerTask, err := s.service.GetPeerTask(pid)
