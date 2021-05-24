@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -153,6 +154,7 @@ type DownloadOption struct {
 type ProxyOption struct {
 	// WARNING: when add more option, please update ProxyOption.unmarshal function
 	ListenOption   `mapstructure:",squash" yaml:",inline"`
+	BasicAuth      *BasicAuth      `mapstructure:"basic_auth" yaml:"basic_auth"`
 	DefaultFilter  string          `mapstructure:"default_filter" yaml:"default_filter"`
 	MaxConcurrency int64           `mapstructure:"max_concurrency" yaml:"max_concurrency"`
 	RegistryMirror *RegistryMirror `mapstructure:"registry_mirror" yaml:"registry_mirror"`
@@ -242,6 +244,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 		Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
 		HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
 		WhiteList      []*WhiteList    `json:"white_list" yaml:"white_list"`
+		BasicAuth      *BasicAuth      `json:"basic_auth" yaml:"basic_auth"`
 	}{}
 
 	if err := unmarshal(b, &pt); err != nil {
@@ -255,6 +258,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 	p.WhiteList = pt.WhiteList
 	p.MaxConcurrency = pt.MaxConcurrency
 	p.DefaultFilter = pt.DefaultFilter
+	p.BasicAuth = pt.BasicAuth
 
 	return nil
 }
@@ -381,9 +385,10 @@ type StorageOption struct {
 	DataPath string `mapstructure:"data_path" yaml:"data_path"`
 	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
 	// after this period cache file will be gc
-	TaskExpireTime  clientutil.Duration    `mapstructure:"task_expire_time" yaml:"task_expire_time"`
-	StoreStrategy   StoreStrategy          `mapstructure:"strategy" yaml:"strategy"`
-	DiskGCThreshold clientutil.StorageSize `mapstructure:"disk_gc_threshold" yaml:"disk_gc_threshold"`
+	TaskExpireTime clientutil.Duration `mapstructure:"task_expire_time" yaml:"task_expire_time"`
+	// DiskGCThreshold indicates the threshold to gc the oldest tasks
+	DiskGCThreshold unit.Bytes    `mapstructure:"disk_gc_threshold" yaml:"disk_gc_threshold"`
+	StoreStrategy   StoreStrategy `mapstructure:"strategy" yaml:"strategy"`
 }
 
 type StoreStrategy string
@@ -685,4 +690,9 @@ type WhiteList struct {
 	Host  string   `yaml:"host" mapstructure:"host"`
 	Regx  *Regexp  `yaml:"regx" mapstructure:"regx"`
 	Ports []string `yaml:"ports" mapstructure:"ports"`
+}
+
+type BasicAuth struct {
+	Username string `json:"username" yaml:"username"`
+	Password string `json:"password" yaml:"password"`
 }
