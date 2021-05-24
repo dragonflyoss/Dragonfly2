@@ -76,17 +76,16 @@ type peerHost struct {
 }
 
 func New(opt *config.PeerHostOption) (PeerHost, error) {
-
 	host := &scheduler.PeerHost{
 		Uuid:           idgen.UUIDString(),
-		Ip:             string(opt.Host.AdvertiseIP),
+		Ip:             opt.Host.AdvertiseIP,
 		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
 		HostName:       iputils.HostName,
-		SecurityDomain: string(opt.Host.SecurityDomain),
-		Location:       string(opt.Host.Location),
-		Idc:            string(opt.Host.IDC),
-		NetTopology:    string(opt.Host.NetTopology),
+		SecurityDomain: opt.Host.SecurityDomain,
+		Location:       opt.Host.Location,
+		Idc:            opt.Host.IDC,
+		NetTopology:    opt.Host.NetTopology,
 	}
 
 	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs)

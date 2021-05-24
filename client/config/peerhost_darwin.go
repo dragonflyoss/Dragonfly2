@@ -48,8 +48,8 @@ var peerHostConfig = PeerHostOption{
 		ScheduleTimeout: clientutil.Duration{Duration: DefaultScheduleTimeout},
 	},
 	Host: HostOption{
-		ListenIP:       Attribute(net.IPv4zero.String()),
-		AdvertiseIP:    Attribute(iputils.HostIP),
+		ListenIP:       net.IPv4zero.String(),
+		AdvertiseIP:    iputils.HostIP,
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",
