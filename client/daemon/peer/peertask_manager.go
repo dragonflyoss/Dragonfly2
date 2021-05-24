@@ -38,7 +38,7 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
-// PeerTaskManager processes all peer tasks request
+// TaskManager processes all peer tasks request
 type TaskManager interface {
 	// StartFilePeerTask starts a peer task to download a file
 	// return a progress channel for request download progress
@@ -56,7 +56,7 @@ type TaskManager interface {
 	Stop(ctx context.Context) error
 }
 
-// PeerTask represents common interface to operate a peer task
+// Task represents common interface to operate a peer task
 type Task interface {
 	Context() context.Context
 	Log() *logger.SugaredLoggerOnWith
@@ -72,7 +72,7 @@ type Task interface {
 	GetTraffic() int64
 }
 
-// PeerTaskCallback inserts some operations for peer task download lifecycle
+// TaskCallback inserts some operations for peer task download lifecycle
 type TaskCallback interface {
 	Init(pt Task) error
 	Done(pt Task) error
