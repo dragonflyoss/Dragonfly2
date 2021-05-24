@@ -470,7 +470,7 @@ func (s *storageManager) TryGC() (bool, error) {
 		return true
 	})
 
-	if s.storeOption.DiskGCThreshold.SizeInBytes > 0 && totalNotMarkedSize > s.storeOption.DiskGCThreshold.SizeInBytes {
+	if s.storeOption.DiskGCThreshold > 0 && totalNotMarkedSize > int64(s.storeOption.DiskGCThreshold) {
 		logger.Infof("quota threshold reached, start gc oldest task")
 		var tasks []*localTaskStore
 		s.tasks.Range(func(key, task interface{}) bool {
@@ -491,7 +491,7 @@ func (s *storageManager) TryGC() (bool, error) {
 				task.TaskID, task.PeerID, task.lastAccess.Format(time.RFC3339Nano),
 				units.BytesSize(float64(task.ContentLength)))
 			totalNotMarkedSize -= task.ContentLength
-			if totalNotMarkedSize < s.storeOption.DiskGCThreshold.SizeInBytes {
+			if totalNotMarkedSize < int64(s.storeOption.DiskGCThreshold) {
 				break
 			}
 		}

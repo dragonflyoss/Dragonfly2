@@ -124,7 +124,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		func() {
 			/********** prepare test start **********/
 			mockPeerTask := NewMockPeerTask(ctrl)
-			mockPeerTask.EXPECT().SetContentLength(gomock.Any()).DoAndReturn(
+			mockPeerTask.EXPECT().SetContentLength(gomock.Any()).AnyTimes().DoAndReturn(
 				func(arg0 int64) error {
 					return nil
 				})

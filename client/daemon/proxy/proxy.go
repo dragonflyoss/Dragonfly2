@@ -18,11 +18,13 @@ package proxy
 
 import (
 	"crypto/tls"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,6 +34,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/go-http-utils/headers"
 	"github.com/golang/groupcache/lru"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
@@ -85,6 +88,8 @@ type Proxy struct {
 
 	// tracer is used for telemetry
 	tracer trace.Tracer
+
+	basicAuth *config.BasicAuth
 }
 
 // Option is a functional option for configuring the proxy
@@ -175,6 +180,14 @@ func WithDefaultFilter(f string) Option {
 	}
 }
 
+// WithBasicAuth sets basic auth info for proxy
+func WithBasicAuth(auth *config.BasicAuth) Option {
+	return func(p *Proxy) *Proxy {
+		p.basicAuth = auth
+		return p
+	}
+}
+
 // NewProxy returns a new transparent proxy from the given options
 func NewProxy(options ...Option) (*Proxy, error) {
 	return NewProxyWithOptions(options...)
@@ -208,6 +221,24 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO(jim): only support HTTP scheme, need support HTTPS scheme
 	r = r.WithContext(ctx)
 
+	// check authenticity
+	if proxy.basicAuth != nil {
+		user, pass, ok := proxyBasicAuth(r)
+		if !ok {
+			status := http.StatusProxyAuthRequired
+			http.Error(w, http.StatusText(status), status)
+			logger.Debugf("empty auth info: %s, url：%s", r.Host, r.URL.String())
+			return
+		}
+		// TODO dynamic auth config via manager
+		if user != proxy.basicAuth.Username || pass != proxy.basicAuth.Password {
+			status := http.StatusUnauthorized
+			http.Error(w, http.StatusText(status), status)
+			logger.Debugf("mismatch auth info (%s/%s): %s, url：%s", user, pass, r.Host, r.URL.String())
+			return
+		}
+	}
+
 	// check whiteList
 	if !proxy.checkWhiteList(r) {
 		status := http.StatusUnauthorized
@@ -238,6 +269,34 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		proxy.handleHTTP(span, w, r)
 	}
 
+}
+
+func proxyBasicAuth(r *http.Request) (username, password string, ok bool) {
+	auth := r.Header.Get(headers.ProxyAuthorization)
+	if auth == "" {
+		return
+	}
+	return parseBasicAuth(auth)
+}
+
+// parseBasicAuth parses an HTTP Basic Authentication string.
+// "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" returns ("Aladdin", "open sesame", true).
+func parseBasicAuth(auth string) (username, password string, ok bool) {
+	const prefix = "Basic "
+	// Case insensitive prefix match. See Issue 22736.
+	if len(auth) < len(prefix) || !strings.EqualFold(auth[:len(prefix)], prefix) {
+		return
+	}
+	c, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
+	if err != nil {
+		return
+	}
+	cs := string(c)
+	s := strings.IndexByte(cs, ':')
+	if s < 0 {
+		return
+	}
+	return cs[:s], cs[s+1:], true
 }
 
 func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http.Request) {

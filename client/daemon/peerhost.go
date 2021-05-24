@@ -76,7 +76,6 @@ type peerHost struct {
 }
 
 func New(opt *config.PeerHostOption) (PeerHost, error) {
-
 	host := &scheduler.PeerHost{
 		Uuid:           idgen.UUIDString(),
 		Ip:             opt.Host.AdvertiseIP,

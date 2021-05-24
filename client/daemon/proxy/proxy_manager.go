@@ -61,6 +61,7 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.PeerTask
 		WithWhiteList(whiteList),
 		WithMaxConcurrency(opts.MaxConcurrency),
 		WithDefaultFilter(opts.DefaultFilter),
+		WithBasicAuth(opts.BasicAuth),
 	}
 
 	if registry != nil {

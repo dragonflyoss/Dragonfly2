@@ -201,8 +201,7 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 			reflect.TypeOf(config.FileString("")),
 			reflect.TypeOf(config.URL{}),
 			reflect.TypeOf(config.CertPool{}),
-			reflect.TypeOf(config.Regexp{}),
-			reflect.TypeOf(clientutil.StorageSize{}):
+			reflect.TypeOf(config.Regexp{}):
 
 			b, _ := yaml.Marshal(v)
 			p := reflect.New(to)
