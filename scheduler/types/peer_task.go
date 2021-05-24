@@ -299,7 +299,7 @@ func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 	// if pt != nil && pt.client != nil {
 	pkg = &scheduler.PeerPacket{
 		Code:   dfcodes.Success,
-		TaskId: pt.Task.TaskId,
+		TaskId: pt.Task.TaskID,
 		// source peer id
 		SrcPid: pt.Pid,
 		// concurrent downloading count from main peer
@@ -308,10 +308,9 @@ func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 	defer pt.lock.Unlock()
 	if pt.parent != nil && pt.parent.DstPeerTask != nil && pt.parent.DstPeerTask.Host != nil {
 		pkg.ParallelCount = int32(pt.parent.Concurrency)
-		peerHost := pt.parent.DstPeerTask.Host.PeerHost
 		pkg.MainPeer = &scheduler.PeerPacket_DestPeer{
-			Ip:      peerHost.Ip,
-			RpcPort: peerHost.RpcPort,
+			Ip:      pt.parent.DstPeerTask.Host.PeerHost.Ip,
+			RpcPort: pt.parent.DstPeerTask.Host.PeerHost.RpcPort,
 			PeerId:  pt.parent.DstPeerTask.Pid,
 		}
 	}

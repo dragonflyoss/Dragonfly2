@@ -40,7 +40,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if request.Filter != nil {
 		taskURL = urlutils.FilterURLParam(request.URL, request.Filter)
 	}
-	taskID := request.TaskId
+	taskID := request.TaskID
 	synclock.Lock(taskID, false)
 	defer synclock.UnLock(taskID, false)
 	if key, err := tm.taskURLUnReachableStore.Get(taskID); err == nil {
@@ -54,11 +54,11 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 	var task *types.SeedTask
 	newTask := &types.SeedTask{
-		TaskId:           taskID,
+		TaskID:           taskID,
 		Header:           request.Header,
 		RequestMd5:       request.Md5,
-		Url:              request.URL,
-		TaskUrl:          taskURL,
+		URL:              request.URL,
+		TaskURL:          taskURL,
 		CdnStatus:        types.TaskInfoCdnStatusWaiting,
 		SourceFileLength: IllegalSourceFileLen,
 	}
@@ -80,9 +80,9 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 
 	// get sourceContentLength with req.Header
-	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Header)
+	sourceFileLength, err := tm.resourceClient.GetContentLength(task.URL, request.Header)
 	if err != nil {
-		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length: %v", task.Url, err)
+		logger.WithTaskID(task.TaskID).Errorf("failed to get url (%s) content length: %v", task.URL, err)
 
 		if cdnerrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskID, time.Now())
@@ -103,7 +103,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		pieceSize := computePieceSize(task.SourceFileLength)
 		task.PieceSize = pieceSize
 	}
-	tm.taskStore.Add(task.TaskId, task)
+	tm.taskStore.Add(task.TaskID, task)
 	logger.Debugf("success add task:%+v into taskStore", task)
 	return task, nil
 }
@@ -169,7 +169,7 @@ func isSameTask(task1, task2 *types.SeedTask) bool {
 	if task1 == task2 {
 		return true
 	}
-	if task1.TaskUrl != task2.TaskUrl {
+	if task1.TaskURL != task2.TaskURL {
 		return false
 	}
 

@@ -28,13 +28,13 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"
-	"d7y.io/dragonfly/v2/scheduler/service/schedule_worker"
+	"d7y.io/dragonfly/v2/scheduler/service/worker"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type SchedulerServer struct {
 	service *service.SchedulerService
-	worker  schedule_worker.IWorker
+	worker  worker.IWorker
 	config  config.SchedulerConfig
 }
 
@@ -50,8 +50,8 @@ func WithSchedulerService(service *service.SchedulerService) Option {
 	}
 }
 
-// WithWorker sets the schedule_worker.IWorker
-func WithWorker(worker schedule_worker.IWorker) Option {
+// WithWorker sets the worker.IWorker
+func WithWorker(worker worker.IWorker) Option {
 	return func(p *SchedulerServer) *SchedulerServer {
 		p.worker = worker
 
@@ -101,11 +101,11 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	task, ok := s.service.GetTask(pkg.TaskId)
 	if !ok {
 		task, err = s.service.AddTask(&types.Task{
-			TaskId:  pkg.TaskId,
-			Url:     request.Url,
+			TaskID:  pkg.TaskId,
+			URL:     request.Url,
 			Filter:  request.Filter,
-			BizId:   request.BizId,
-			UrlMata: request.UrlMata,
+			BizID:   request.BizId,
+			URLMata: request.UrlMata,
 		})
 		if err != nil {
 			dferror, _ := err.(*dferrors.DfError)
@@ -122,7 +122,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		return
 	}
 
-	pkg.TaskId = task.TaskId
+	pkg.TaskId = task.TaskID
 	pkg.SizeScope = task.SizeScope
 
 	// case base.SizeScope_TINY
@@ -134,10 +134,22 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	// get or create host
 	hostID := request.PeerHost.Uuid
 	host, _ := s.service.GetHost(hostID)
+
+	peerHost := request.PeerHost
 	if host == nil {
 		host = &types.Host{
-			Type:     types.HostTypePeer,
-			PeerHost: *request.PeerHost,
+			Type: types.HostTypePeer,
+			PeerHost: scheduler.PeerHost{
+				Uuid:           peerHost.Uuid,
+				Ip:             peerHost.Ip,
+				RpcPort:        peerHost.RpcPort,
+				DownPort:       peerHost.DownPort,
+				HostName:       peerHost.HostName,
+				SecurityDomain: peerHost.SecurityDomain,
+				Location:       peerHost.Location,
+				Idc:            peerHost.Idc,
+				NetTopology:    peerHost.NetTopology,
+			},
 		}
 		if isCdn {
 			host.Type = types.HostTypeCdn
@@ -212,7 +224,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		}
 		return
 	}()
-	err = schedule_worker.NewClient(stream, s.worker, s.service).Serve()
+	err = worker.NewClient(stream, s.worker, s.service).Serve()
 	return
 }
 
@@ -233,7 +245,7 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 		return
 	}()
 
-	logger.Infof("[%s][%s]: receive a peer result [%+v]", result.TaskId, result.PeerId, *result)
+	logger.Infof("[%s][%s]: receive a peer result [%+v]", result.TaskId, result.PeerId, result)
 
 	pid := result.PeerId
 	peerTask, err := s.service.GetPeerTask(pid)

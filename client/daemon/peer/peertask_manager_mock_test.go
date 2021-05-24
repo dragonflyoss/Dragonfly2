@@ -190,7 +190,7 @@ func (mr *MockPeerTaskMockRecorder) SetContentLength(arg0 interface{}) *gomock.C
 }
 
 // SetCallback mocks base method
-func (m *MockPeerTask) SetCallback(arg0 PeerTaskCallback) {
+func (m *MockPeerTask) SetCallback(arg0 TaskCallback) {
 	m.ctrl.Call(m, "SetCallback", arg0)
 }
 
@@ -269,7 +269,7 @@ func (m *MockPeerTaskCallback) EXPECT() *MockPeerTaskCallbackMockRecorder {
 }
 
 // Init mocks base method
-func (m *MockPeerTaskCallback) Init(pt PeerTask) error {
+func (m *MockPeerTaskCallback) Init(pt Task) error {
 	ret := m.ctrl.Call(m, "Init", pt)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -281,7 +281,7 @@ func (mr *MockPeerTaskCallbackMockRecorder) Init(pt interface{}) *gomock.Call {
 }
 
 // Done mocks base method
-func (m *MockPeerTaskCallback) Done(pt PeerTask) error {
+func (m *MockPeerTaskCallback) Done(pt Task) error {
 	ret := m.ctrl.Call(m, "Done", pt)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -293,7 +293,7 @@ func (mr *MockPeerTaskCallbackMockRecorder) Done(pt interface{}) *gomock.Call {
 }
 
 // Update mocks base method
-func (m *MockPeerTaskCallback) Update(pt PeerTask) error {
+func (m *MockPeerTaskCallback) Update(pt Task) error {
 	ret := m.ctrl.Call(m, "Update", pt)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -305,7 +305,7 @@ func (mr *MockPeerTaskCallbackMockRecorder) Update(pt interface{}) *gomock.Call 
 }
 
 // Fail mocks base method
-func (m *MockPeerTaskCallback) Fail(pt PeerTask, reason string) error {
+func (m *MockPeerTaskCallback) Fail(pt Task, reason string) error {
 	ret := m.ctrl.Call(m, "Fail", pt, reason)
 	ret0, _ := ret[0].(error)
 	return ret0
