@@ -105,7 +105,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 			URL:     request.Url,
 			Filter:  request.Filter,
 			BizID:   request.BizId,
-			UrlMata: request.UrlMata,
+			URLMata: request.UrlMata,
 		})
 		if err != nil {
 			dferror, _ := err.(*dferrors.DfError)

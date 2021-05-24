@@ -34,7 +34,7 @@ type Task struct {
 	// biz_id and md5 are used for task id generator to distinguish the same urls
 	// md5 is also used to check consistency about file content
 	BizID   string        `json:"biz_id,omitempty"`   // caller's biz id that can be any string
-	UrlMata *base.UrlMeta `json:"url_mata,omitempty"` // downloaded file content md5
+	URLMata *base.UrlMeta `json:"url_mata,omitempty"` // downloaded file content md5
 
 	SizeScope   base.SizeScope
 	DirectPiece *scheduler.RegisterResult_PieceContent
