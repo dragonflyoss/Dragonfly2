@@ -28,7 +28,7 @@ import (
 )
 
 type protocolContent struct {
-	TaskId       string
+	TaskID       string
 	pieceNum     int32
 	pieceSize    int32
 	pieceContent *bytes.Buffer
@@ -80,7 +80,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 			if int(pieceContLeft) <= n {
 				bb.Write(buf[:pieceContLeft])
 				pc := &protocolContent{
-					TaskId:       task.TaskID,
+					TaskID:       task.TaskID,
 					pieceNum:     curPieceNum,
 					pieceSize:    task.PieceSize,
 					pieceContent: bb,
@@ -105,7 +105,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 		if err == io.EOF {
 			if bb.Len() > 0 {
 				pc := &protocolContent{
-					TaskId:       task.TaskID,
+					TaskID:       task.TaskID,
 					pieceNum:     curPieceNum,
 					pieceSize:    task.PieceSize,
 					pieceContent: bb,
