@@ -28,7 +28,7 @@ jobs:
         uses: golangci/golangci-lint-action@v2.5.2
         with:
           version: latest
-          args: --out-format=line-number
+          args: -c .golangci.yml
 
   test:
     name: Test
