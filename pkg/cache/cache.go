@@ -291,7 +291,9 @@ func (c *cache) Save(w io.Writer) (err error) {
 func (c *cache) SaveFile(fname string) error {
 	dir := filepath.Dir(fname)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		os.MkdirAll(dir, os.ModePerm)
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			return err
+		}
 	}
 
 	fp, err := os.Create(fname)
