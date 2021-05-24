@@ -165,8 +165,8 @@ func newFilePeerTask(ctx context.Context,
 			peerPacketStream: peerPacketStream,
 			pieceManager:     pieceManager,
 			peerPacketReady:  make(chan bool),
-			peerId:           request.PeerId,
-			taskId:           result.TaskId,
+			peerID:           request.PeerId,
+			taskID:           result.TaskId,
 			singlePiece:      singlePiece,
 			done:             make(chan struct{}),
 			span:             span,
@@ -245,8 +245,8 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 			Code:    pieceResult.Code,
 			Msg:     "downloading",
 		},
-		TaskId:          pt.taskId,
-		PeerID:          pt.peerId,
+		TaskId:          pt.taskID,
+		PeerID:          pt.peerID,
 		ContentLength:   pt.contentLength,
 		CompletedLength: pt.completedLength,
 		PeerTaskDone:    false,
@@ -275,7 +275,7 @@ func (pt *filePeerTask) finish() error {
 		defer pt.recoverFromPanic()
 		// send EOF piece result to scheduler
 		_ = pt.peerPacketStream.Send(
-			scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled()))
+			scheduler.NewEndPieceResult(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 		pt.Debugf("finish end piece result sent")
 
 		var (
@@ -299,8 +299,8 @@ func (pt *filePeerTask) finish() error {
 				Code:    code,
 				Msg:     message,
 			},
-			TaskId:          pt.taskId,
-			PeerID:          pt.peerId,
+			TaskId:          pt.taskID,
+			PeerID:          pt.peerID,
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,
 			PeerTaskDone:    true,
@@ -345,7 +345,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 		defer pt.recoverFromPanic()
 		// send EOF piece result to scheduler
 		_ = pt.peerPacketStream.Send(
-			scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled()))
+			scheduler.NewEndPieceResult(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 		pt.Debugf("clean up end piece result sent")
 
 		pg := &FilePeerTaskProgress{
@@ -354,8 +354,8 @@ func (pt *filePeerTask) cleanUnfinished() {
 				Code:    pt.failedCode,
 				Msg:     pt.failedReason,
 			},
-			TaskId:          pt.taskId,
-			PeerID:          pt.peerId,
+			TaskId:          pt.taskID,
+			PeerID:          pt.peerID,
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,
 			PeerTaskDone:    true,

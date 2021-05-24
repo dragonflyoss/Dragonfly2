@@ -144,8 +144,8 @@ func newStreamPeerTask(ctx context.Context,
 			peerPacketStream: peerPacketStream,
 			pieceManager:     pieceManager,
 			peerPacketReady:  make(chan bool),
-			peerId:           request.PeerId,
-			taskId:           result.TaskId,
+			peerID:           request.PeerId,
+			taskID:           result.TaskId,
 			singlePiece:      singlePiece,
 			done:             make(chan struct{}),
 			span:             span,
@@ -266,8 +266,8 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	} else {
 		attr[headers.TransferEncoding] = "chunked"
 	}
-	attr[config.HeaderDragonflyTask] = s.taskId
-	attr[config.HeaderDragonflyPeer] = s.peerId
+	attr[config.HeaderDragonflyTask] = s.taskID
+	attr[config.HeaderDragonflyPeer] = s.peerID
 
 	go func(first int32) {
 		defer func() {
@@ -364,7 +364,7 @@ func (s *streamPeerTask) finish() error {
 	s.once.Do(func() {
 		// send EOF piece result to scheduler
 		_ = s.peerPacketStream.Send(
-			scheduler.NewEndPieceResult(s.taskId, s.peerId, s.readyPieces.Settled()))
+			scheduler.NewEndPieceResult(s.taskID, s.peerID, s.readyPieces.Settled()))
 		s.Debugf("end piece result sent")
 		close(s.done)
 		//close(s.successPieceCh)
@@ -382,7 +382,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 	s.once.Do(func() {
 		// send EOF piece result to scheduler
 		_ = s.peerPacketStream.Send(
-			scheduler.NewEndPieceResult(s.taskId, s.peerId, s.readyPieces.Settled()))
+			scheduler.NewEndPieceResult(s.taskID, s.peerID, s.readyPieces.Settled()))
 		s.Debugf("end piece result sent")
 		close(s.done)
 		//close(s.successPieceCh)
@@ -407,8 +407,8 @@ func (s *streamPeerTask) SetContentLength(i int64) error {
 func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
 	pr, pc, err := s.pieceManager.ReadPiece(s.ctx, &storage.ReadPieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
-			PeerID: s.peerId,
-			TaskID: s.taskId,
+			PeerID: s.peerID,
+			TaskID: s.taskID,
 		},
 		PieceMetaData: storage.PieceMetaData{
 			Num: pieceNum,

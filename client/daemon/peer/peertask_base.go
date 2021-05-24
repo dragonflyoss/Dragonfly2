@@ -73,8 +73,8 @@ type peerTask struct {
 	schedulerOption config.SchedulerOption
 
 	// peer task meta info
-	peerId          string
-	taskId          string
+	peerID          string
+	taskID          string
 	contentLength   int64
 	totalPiece      int32
 	completedLength int64
@@ -129,11 +129,11 @@ func (pt *peerTask) SetCallback(callback TaskCallback) {
 }
 
 func (pt *peerTask) GetPeerID() string {
-	return pt.peerId
+	return pt.peerID
 }
 
 func (pt *peerTask) GetTaskID() string {
-	return pt.taskId
+	return pt.taskID
 }
 
 func (pt *peerTask) GetContentLength() int64 {
@@ -387,8 +387,8 @@ loop:
 		pt.Debugf("try to get pieces, number: %d, limit: %d", num, limit)
 		piecePacket, err := pt.preparePieceTasks(
 			&base.PieceTaskRequest{
-				TaskId:   pt.taskId,
-				SrcPid:   pt.peerId,
+				TaskId:   pt.taskID,
+				SrcPid:   pt.peerID,
 				StartNum: num,
 				Limit:    limit,
 			})
@@ -630,8 +630,8 @@ retry:
 	}
 	pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
 	perr := pt.peerPacketStream.Send(&scheduler.PieceResult{
-		TaskId:        pt.taskId,
-		SrcPid:        pt.peerId,
+		TaskId:        pt.taskID,
+		SrcPid:        pt.peerID,
 		DstPid:        peer.PeerId,
 		Success:       false,
 		Code:          code,
@@ -672,8 +672,8 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 		if len(pp.PieceInfos) == 0 {
 			count++
 			er := pt.peerPacketStream.Send(&scheduler.PieceResult{
-				TaskId:        pt.taskId,
-				SrcPid:        pt.peerId,
+				TaskId:        pt.taskID,
+				SrcPid:        pt.peerID,
 				DstPid:        peer.PeerId,
 				Success:       false,
 				Code:          dfcodes.ClientWaitPieceReady,
