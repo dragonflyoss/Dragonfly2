@@ -2,10 +2,6 @@ package store
 
 import (
 	"context"
-
-	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 )
 
 type ResourceType string
@@ -69,33 +65,4 @@ func WithMarker(marker, maxItemCount int) OpOption {
 		op.Marker = marker
 		op.MaxItemCount = maxItemCount
 	}
-}
-
-func NewStore(cfg *config.Config) (Store, error) {
-	if cfg.Configure.StoreName == "" {
-		return nil, dferrors.Newf(dfcodes.ManagerConfigError, "config error: store-name nil")
-	}
-
-	for _, store := range cfg.Stores {
-		if cfg.Configure.StoreName == store.Name {
-			switch store.Type {
-			case "mysql":
-				if store.Mysql != nil {
-					orm, err := NewOrmStore(store)
-					if err != nil {
-						return nil, err
-					}
-
-					return orm, nil
-				}
-
-				return nil, dferrors.Newf(dfcodes.ManagerConfigError, "config error: mysql nil")
-			case "oss":
-				return nil, dferrors.Newf(dfcodes.ManagerConfigError, "config error: oss not support")
-			default:
-			}
-		}
-	}
-
-	return nil, dferrors.Newf(dfcodes.ManagerConfigError, "config error: not find store matched")
 }
