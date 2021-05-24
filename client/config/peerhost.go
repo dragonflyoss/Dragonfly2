@@ -156,6 +156,7 @@ type DownloadOption struct {
 type ProxyOption struct {
 	// WARNING: when add more option, please update ProxyOption.unmarshal function
 	ListenOption   `mapstructure:",squash" yaml:",inline"`
+	BasicAuth      *BasicAuth      `mapstructure:"basic_auth" yaml:"basic_auth"`
 	DefaultFilter  string          `mapstructure:"default_filter" yaml:"default_filter"`
 	MaxConcurrency int64           `mapstructure:"max_concurrency" yaml:"max_concurrency"`
 	RegistryMirror *RegistryMirror `mapstructure:"registry_mirror" yaml:"registry_mirror"`
@@ -245,6 +246,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 		Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
 		HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
 		WhiteList      []*WhiteList    `json:"white_list" yaml:"white_list"`
+		BasicAuth      *BasicAuth      `json:"basic_auth" yaml:"basic_auth"`
 	}{}
 
 	if err := unmarshal(b, &pt); err != nil {
@@ -258,6 +260,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 	p.WhiteList = pt.WhiteList
 	p.MaxConcurrency = pt.MaxConcurrency
 	p.DefaultFilter = pt.DefaultFilter
+	p.BasicAuth = pt.BasicAuth
 
 	return nil
 }
@@ -691,6 +694,11 @@ type WhiteList struct {
 	Ports []string `yaml:"ports" mapstructure:"ports"`
 }
 
+type BasicAuth struct {
+	Username string `json:"username" yaml:"username"`
+	Password string `json:"password" yaml:"password"`
+}
+
 // Attribute allows get value from command or just a raw string
 type Attribute string
 
@@ -800,7 +808,7 @@ func (t *Attribute) unmarshal(v interface{}) error {
 		}
 		for i := 0; i <= retry; i++ {
 			result, err = exec.Command("/bin/sh", "-c", command).CombinedOutput()
-			logger.Infof("exec command %q output: %q", command, result)
+			logger.Debugf("exec command %q output: %q", command, result)
 			if err != nil {
 				logger.Errorf("exec command error: %s", err)
 				*t = Attribute(defaulz)
