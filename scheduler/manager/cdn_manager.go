@@ -135,7 +135,7 @@ func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *type
 	go safe.Call(func() {
 		stream, err := cm.client.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 			TaskId:  task.TaskID,
-			Url:     task.Url,
+			Url:     task.URL,
 			Filter:  task.Filter,
 			UrlMeta: task.UrlMata,
 		})

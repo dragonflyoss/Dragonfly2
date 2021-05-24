@@ -102,9 +102,9 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	if !ok {
 		task, err = s.service.AddTask(&types.Task{
 			TaskID:  pkg.TaskId,
-			Url:     request.Url,
+			URL:     request.Url,
 			Filter:  request.Filter,
-			BizId:   request.BizId,
+			BizID:   request.BizId,
 			UrlMata: request.UrlMata,
 		})
 		if err != nil {
