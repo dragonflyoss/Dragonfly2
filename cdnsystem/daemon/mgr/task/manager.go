@@ -129,9 +129,8 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		updatedTask, err = tm.updateTask(task.TaskID, updateTaskInfo)
 		if err != nil {
 			logger.WithTaskID(task.TaskID).Errorf("failed to update task:%v", err)
-		} else {
-			logger.WithTaskID(task.TaskID).Infof("successfully update task cdn updatedTask:%+v", updatedTask)
 		}
+		logger.WithTaskID(task.TaskID).Infof("successfully update task cdn updatedTask:%+v", updatedTask)
 	}()
 	return nil
 }

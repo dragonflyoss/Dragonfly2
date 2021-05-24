@@ -363,9 +363,8 @@ func (m *PeerTask) RefreshDownloadMonitor(pt *types.PeerTask) {
 func (m *PeerTask) CDNCallback(pt *types.PeerTask, err *dferrors.DfError) {
 	if err != nil {
 		pt.SendError(err)
-	} else {
-		m.downloadMonitorQueue.Add(pt)
 	}
+	m.downloadMonitorQueue.Add(pt)
 }
 
 func (m *PeerTask) SetDownloadingMonitorCallBack(callback func(*types.PeerTask)) {

@@ -72,8 +72,7 @@ func (m *HostManager) CalculateLoad(host *types.Host) {
 	if host.Type == types.HostTypePeer {
 		host.SetTotalUploadLoad(HostLoadPeer)
 		host.SetTotalDownloadLoad(HostLoadPeer)
-	} else {
-		host.SetTotalUploadLoad(HostLoadCDN)
-		host.SetTotalDownloadLoad(HostLoadCDN)
 	}
+	host.SetTotalUploadLoad(HostLoadCDN)
+	host.SetTotalDownloadLoad(HostLoadCDN)
 }

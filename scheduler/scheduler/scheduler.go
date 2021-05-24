@@ -125,9 +125,8 @@ func (s *Scheduler) ScheduleParent(peer *types.PeerTask) (primary *types.PeerTas
 		peer.AddParent(primary, 1)
 		s.taskManager.PeerTask.Update(primary)
 		s.taskManager.PeerTask.Update(oldParent)
-	} else {
-		logger.Debugf("[%s][%s]SchedulerParent scheduler a empty parent", peer.Task.TaskID, peer.Pid)
 	}
+	logger.Debugf("[%s][%s]SchedulerParent scheduler a empty parent", peer.Task.TaskID, peer.Pid)
 
 	return
 }
