@@ -289,7 +289,7 @@ func (s *HTTPUtilTestSuite) TestRegisterProtocol() {
 	defer resp.Body.Close()
 
 	s.NotNil(resp)
-	buf := make([]byte,0)
+	buf := make([]byte, 0)
 	resp.Body.Read(buf)
 	fmt.Println(string(buf))
 	fmt.Println(resp.ContentLength)

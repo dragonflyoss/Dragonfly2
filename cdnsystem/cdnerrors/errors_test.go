@@ -17,9 +17,10 @@
 package cdnerrors
 
 import (
+	"testing"
+
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 func TestErrorTestSuite(t *testing.T) {
@@ -474,13 +475,13 @@ func (s *ErrorTestSuite) TestIsTaskIDDuplicate() {
 		{
 			name: "equal",
 			args: args{
-				err: ErrTaskIdDuplicate,
+				err: ErrTaskIDDuplicate,
 			},
 			want: true,
 		}, {
 			name: "wrap",
 			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrTaskIdDuplicate, "wrap err"), "wapp err"),
+				err: errors.Wrapf(errors.Wrapf(ErrTaskIDDuplicate, "wrap err"), "wapp err"),
 			},
 			want: true,
 		}, {

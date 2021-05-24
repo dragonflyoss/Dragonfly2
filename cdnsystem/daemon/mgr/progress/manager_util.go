@@ -17,10 +17,11 @@
 package progress
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"github.com/pkg/errors"
 	"sort"
 	"strconv"
+
+	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"github.com/pkg/errors"
 )
 
 // setPieceMetaRecord
@@ -32,8 +33,8 @@ func (pm *Manager) setPieceMetaRecord(taskID string, record *types.SeedPiece) er
 	return pieceRecords.Add(strconv.Itoa(int(record.PieceNum)), record)
 }
 
-// getPieceMetaRecordsByTaskId
-func (pm *Manager) getPieceMetaRecordsByTaskId(taskID string) (records []*types.SeedPiece, err error) {
+// getPieceMetaRecordsByTaskID
+func (pm *Manager) getPieceMetaRecordsByTaskID(taskID string) (records []*types.SeedPiece, err error) {
 	pieceRecords, err := pm.taskPieceMetaRecords.GetAsMap(taskID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get piece meta records")
@@ -63,5 +64,3 @@ func (pm *Manager) getPieceMetaRecordsByTaskId(taskID string) (records []*types.
 //	close(sub)
 //	return nil
 //}
-
-

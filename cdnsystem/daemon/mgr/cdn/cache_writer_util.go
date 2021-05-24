@@ -20,16 +20,17 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/binary"
+	"hash"
+	"sync"
+
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"encoding/binary"
 	"github.com/pkg/errors"
-	"hash"
-	"sync"
 )
 
 // calculateRoutineCount calculate how many goroutines are needed to execute write goroutine
@@ -65,7 +66,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				waitToWriteContent := job.pieceContent
 				// 要写盘数据的长度
 				originPieceLen := waitToWriteContent.Len() // 未作处理的原始数据长度
-				pieceLen := originPieceLen // 经过处理后写到存储介质的真实长度
+				pieceLen := originPieceLen                 // 经过处理后写到存储介质的真实长度
 				pieceStyle := types.PlainUnspecified
 
 				if err := cw.writeToFile(ctx, job.TaskId, waitToWriteContent, int64(job.pieceNum)*int64(job.pieceSize), pieceMd5); err != nil {
@@ -113,7 +114,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 }
 
 // writeToFile
-func (cw *cacheWriter) writeToFile(ctx context.Context, taskId string, bytesBuffer *bytes.Buffer, offset int64, pieceMd5 hash.Hash) error {
+func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuffer *bytes.Buffer, offset int64, pieceMd5 hash.Hash) error {
 	var resultBuf = &bytes.Buffer{}
 	// write piece content
 	var pieceContent []byte
@@ -134,5 +135,5 @@ func (cw *cacheWriter) writeToFile(ctx context.Context, taskId string, bytesBuff
 		}
 	}
 	// write to the storage
-	return cw.cacheDataManager.writeDownloadFile(ctx, taskId, offset, int64(pieceContLen), resultBuf)
+	return cw.cacheDataManager.writeDownloadFile(ctx, taskID, offset, int64(pieceContLen), resultBuf)
 }

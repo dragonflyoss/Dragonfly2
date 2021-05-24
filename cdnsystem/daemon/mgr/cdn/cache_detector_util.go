@@ -18,16 +18,17 @@ package cdn
 
 import (
 	"crypto/md5"
+	"encoding/binary"
+	"hash"
+	"io"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/ifaceutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"encoding/binary"
 	"github.com/pkg/errors"
-	"hash"
-	"io"
 )
 
 // checkSameFile check whether meta file is modified
@@ -60,7 +61,7 @@ func checkSameFile(task *types.SeedTask, metaData *storage.FileMetaData) error {
 func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, fileMd5 hash.Hash) error {
 	bufSize := int32(256 * 1024)
 	pieceLen := pieceRecord.PieceLen
-	if pieceLen >0 && pieceLen < bufSize {
+	if pieceLen > 0 && pieceLen < bufSize {
 		bufSize = pieceLen
 	}
 	// todo 针对分片格式解析出原始数据来计算fileMd5

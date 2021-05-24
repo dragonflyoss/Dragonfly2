@@ -58,7 +58,7 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 	if pe, ok := peer.FromContext(ctx); ok {
 		peerAddr = pe.Addr.String()
 	}
-	logger.Infof("trigger obtain seed for taskId:%s,url:%s,from:%s", sr.TaskId, sr.Url, peerAddr)
+	logger.Infof("trigger obtain seed for taskID:%s,url:%s,from:%s", sr.TaskId, sr.Url, peerAddr)
 
 	errChan := make(chan error, 10)
 	psc := make(chan *cdnsystem.PieceSeed, 4)
@@ -121,21 +121,20 @@ func call(ctx context.Context, psc chan *cdnsystem.PieceSeed, p *proxy, sr *cdns
 	}
 }
 
-func StatSeedStart(taskId, url string) {
+func StatSeedStart(taskID, url string) {
 	logger.StatSeedLogger.Info("trigger seed making",
-		zap.String("taskId", taskId),
+		zap.String("taskID", taskID),
 		zap.String("url", url),
-		zap.String("seederIp", iputils.HostIp),
+		zap.String("seederIp", iputils.HostIP),
 		zap.String("seederName", iputils.HostName))
 }
 
-
-func StatSeedFinish(taskId, url string, success bool, err error, beginTime, endTime int, traffic, contentLength int64) {
+func StatSeedFinish(taskID, url string, success bool, err error, beginTime, endTime int, traffic, contentLength int64) {
 	logger.StatSeedLogger.Info("seed making finish",
 		zap.Bool("success", success),
-		zap.String("taskId", taskId),
+		zap.String("taskID", taskID),
 		zap.String("url", url),
-		zap.String("seederIp", iputils.HostIp),
+		zap.String("seederIp", iputils.HostIP),
 		zap.String("seederName", iputils.HostName),
 		zap.Int("beginTime", beginTime),
 		zap.Int("endTime", endTime),

@@ -14,12 +14,25 @@
  * limitations under the License.
  */
 
-package logcore
+package dependency
 
 import (
-	"path/filepath"
+	"fmt"
 
-	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/version"
+	"github.com/spf13/cobra"
 )
 
-var clientLogDir     = filepath.Join(basic.HomeDir, ".dragonfly/logs")
+var VersionCmd = &cobra.Command{
+	Use:               "version",
+	Short:             "show version",
+	Long:              `show the version details of dragonfly.`,
+	Args:              cobra.NoArgs,
+	DisableAutoGenTag: true,
+	SilenceUsage:      true,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("Major:%s Minor:%s\n", version.Major, version.Minor)
+		fmt.Printf("GitVersion:%s\n", version.GitVersion)
+		fmt.Printf("Platform:%s GoVersion:%s BuildDay:%s\n", version.Platform, version.GoVersion, version.BuildDay)
+	},
+}

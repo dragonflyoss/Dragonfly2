@@ -18,6 +18,9 @@ package task
 
 import (
 	"context"
+	"fmt"
+	"time"
+
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
@@ -29,9 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"fmt"
 	"github.com/pkg/errors"
-	"time"
 )
 
 func init() {
@@ -135,21 +136,21 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 	return nil
 }
 
-func (tm *Manager) getTask(taskId string) (*types.SeedTask, error) {
-	if stringutils.IsBlank(taskId) {
-		return nil, errors.Wrap(cdnerrors.ErrInvalidValue, "taskId is empty")
+func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
+	if stringutils.IsBlank(taskID) {
+		return nil, errors.Wrap(cdnerrors.ErrInvalidValue, "taskID is empty")
 	}
 
-	v, err := tm.taskStore.Get(taskId)
+	v, err := tm.taskStore.Get(taskID)
 	if err != nil {
 		if errors.Cause(err) == dferrors.ErrDataNotFound {
 			return nil, errors.Wrapf(cdnerrors.ErrDataNotFound, "task not found")
 		}
 		return nil, err
 	}
-	// update accessTime for taskId
-	if err := tm.accessTimeMap.Add(taskId, time.Now()); err != nil {
-		logger.WithTaskID(taskId).Warnf("failed to update accessTime: %v", err)
+	// update accessTime for taskID
+	if err := tm.accessTimeMap.Add(taskID, time.Now()); err != nil {
+		logger.WithTaskID(taskID).Warnf("failed to update accessTime: %v", err)
 	}
 	// type assertion
 	if info, ok := v.(*types.SeedTask); ok {
@@ -158,28 +159,26 @@ func (tm *Manager) getTask(taskId string) (*types.SeedTask, error) {
 	return nil, errors.Wrapf(cdnerrors.ErrConvertFailed, "origin object: %+v", v)
 }
 
-func (tm Manager) Get(ctx context.Context, taskId string) (*types.SeedTask, error) {
-	synclock.Lock(taskId, true)
-	defer synclock.UnLock(taskId, true)
-	return tm.getTask(taskId)
+func (tm Manager) Get(ctx context.Context, taskID string) (*types.SeedTask, error) {
+	return tm.getTask(taskID)
 }
 
 func (tm Manager) GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error) {
 	return tm.accessTimeMap, nil
 }
 
-func (tm Manager) Delete(ctx context.Context, taskId string) error {
-	tm.accessTimeMap.Delete(taskId)
-	tm.taskURLUnReachableStore.Delete(taskId)
-	tm.taskStore.Delete(taskId)
-	tm.progressMgr.Clear(ctx, taskId)
+func (tm Manager) Delete(ctx context.Context, taskID string) error {
+	tm.accessTimeMap.Delete(taskID)
+	tm.taskURLUnReachableStore.Delete(taskID)
+	tm.taskStore.Delete(taskID)
+	tm.progressMgr.Clear(ctx, taskID)
 	return nil
 }
 
-func (tm *Manager) GetPieces(ctx context.Context, taskId string) (pieces []*types.SeedPiece, err error) {
-	synclock.Lock(taskId, true)
-	defer synclock.UnLock(taskId, true)
-	return tm.progressMgr.GetPieces(ctx, taskId)
+func (tm *Manager) GetPieces(ctx context.Context, taskID string) (pieces []*types.SeedPiece, err error) {
+	synclock.Lock(taskID, true)
+	defer synclock.UnLock(taskID, true)
+	return tm.progressMgr.GetPieces(ctx, taskID)
 }
 
 const (

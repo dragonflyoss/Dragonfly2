@@ -21,7 +21,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/server"
-	"d7y.io/dragonfly/v2/cmd/common"
+	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"github.com/pkg/errors"
@@ -30,11 +30,7 @@ import (
 )
 
 var (
-	cfg     *config.Config
-)
-
-const (
-	cdnSystemEnvPrefix = "cdn"
+	cfg *config.Config
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -68,9 +64,8 @@ func Execute() {
 func init() {
 	// Initialize default cdn system config
 	cfg = config.New()
-
 	// Initialize cobra
-	common.InitCobra(rootCmd, cdnSystemEnvPrefix, cfg)
+	dependency.InitCobra(rootCmd, true, cfg)
 }
 
 func runCdnSystem() error {
@@ -78,12 +73,12 @@ func runCdnSystem() error {
 	s, _ := yaml.Marshal(cfg)
 	logger.Infof("cdn system configuration:\n%s", string(s))
 
-	// initialize verbose mode
-	common.InitVerboseMode(cfg.Verbose, cfg.PProfPort)
+	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Jaeger)
+	defer ff()
 
-	if svr, err := server.New(cfg); err != nil {
+	svr, err := server.New(cfg)
+	if err != nil {
 		return err
-	} else {
-		return svr.Serve()
 	}
+	return svr.Serve()
 }

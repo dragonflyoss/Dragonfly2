@@ -17,12 +17,13 @@
 package types
 
 import (
+	"sync"
+	"time"
+
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
-	"sync"
-	"time"
 )
 
 type Task struct {

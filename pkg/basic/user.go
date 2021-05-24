@@ -40,26 +40,18 @@ func init() {
 	}
 
 	Username = u.Username
-	UserId, err = strconv.Atoi(u.Uid)
-	UserGroup, err = strconv.Atoi(u.Gid)
+	UserId, _ = strconv.Atoi(u.Uid)
+	UserGroup, _ = strconv.Atoi(u.Gid)
 
 	HomeDir = u.HomeDir
 	HomeDir = strings.TrimSpace(HomeDir)
 	if stringutils.IsBlank(HomeDir) {
 		panic("home dir is empty")
 	}
-	HomeDir = strings.TrimRight(HomeDir, "/")
-	if stringutils.IsBlank(HomeDir) {
-		HomeDir = "/"
-	}
 
 	TmpDir = os.TempDir()
 	TmpDir = strings.TrimSpace(TmpDir)
 	if stringutils.IsBlank(TmpDir) {
 		TmpDir = "/tmp"
-	}
-	TmpDir = strings.TrimRight(TmpDir, "/")
-	if stringutils.IsBlank(TmpDir) {
-		TmpDir = "/"
 	}
 }

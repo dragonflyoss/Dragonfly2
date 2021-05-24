@@ -48,8 +48,8 @@ func TestTaskID(t *testing.T) {
 			url:    "https://example.com",
 			filter: "",
 			meta: &base.UrlMeta{
-				Range: "foo",
-				Md5:   "bar",
+				Range:  "foo",
+				Digest: "bar",
 			},
 			bizID: "",
 			expect: func(t *testing.T, d interface{}) {
@@ -116,8 +116,8 @@ func TestTwinsTaskID(t *testing.T) {
 			url:    "https://example.com",
 			filter: "",
 			meta: &base.UrlMeta{
-				Range: "foo",
-				Md5:   "bar",
+				Range:  "foo",
+				Digest: "bar",
 			},
 			bizID:  "",
 			peerID: "foo",

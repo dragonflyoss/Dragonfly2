@@ -17,10 +17,11 @@
 package cdnutil
 
 import (
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"fmt"
+
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
-func GenCdnPeerId(taskId string) string {
-	return fmt.Sprintf("%s-%s_%s", iputils.HostName, taskId, "CDN")
+func GenCDNPeerID(taskID string) string {
+	return fmt.Sprintf("%s-%s_%s", iputils.HostName, taskID, "CDN")
 }

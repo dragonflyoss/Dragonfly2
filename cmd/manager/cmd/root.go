@@ -19,7 +19,7 @@ package cmd
 import (
 	"os"
 
-	"d7y.io/dragonfly/v2/cmd/common"
+	"d7y.io/dragonfly/v2/cmd/dependency"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/server"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -30,11 +30,7 @@ import (
 )
 
 var (
-	cfg     *config.Config
-)
-
-const (
-	managerEnvPrefix = "manager"
+	cfg *config.Config
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -67,9 +63,8 @@ func Execute() {
 func init() {
 	// Initialize default manager config
 	cfg = config.New()
-
 	// Initialize cobra
-	common.InitCobra(rootCmd, managerEnvPrefix, cfg)
+	dependency.InitCobra(rootCmd, true, cfg)
 }
 
 func runManager() error {
@@ -77,12 +72,12 @@ func runManager() error {
 	s, _ := yaml.Marshal(cfg)
 	logger.Infof("manager configuration:\n%s", string(s))
 
-	// initialize verbose mode
-	common.InitVerboseMode(cfg.Verbose, cfg.PProfPort)
+	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Jaeger)
+	defer ff()
 
-	if svr, err := server.New(cfg); err != nil {
+	svr, err := server.New(cfg)
+	if err != nil {
 		return err
-	} else {
-		return svr.Serve()
 	}
+	return svr.Serve()
 }

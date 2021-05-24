@@ -120,7 +120,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt PeerTask, request 
 	}
 	ctx, span := tracer.Start(ctx, config.SpanWritePiece)
 	request.CalcDigest = pm.calculateDigest && request.piece.PieceMd5 != ""
-	span.SetAttributes(config.AttributeTargetPeerId.String(request.DstPid))
+	span.SetAttributes(config.AttributeTargetPeerID.String(request.DstPid))
 	span.SetAttributes(config.AttributeTargetPeerAddr.String(request.DstAddr))
 	span.SetAttributes(config.AttributePiece.Int(int(request.piece.PieceNum)))
 	r, c, err := pm.pieceDownloader.DownloadPiece(ctx, request)
@@ -332,8 +332,8 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, request
 	reader := body.(io.Reader)
 
 	// calc total md5
-	if pm.calculateDigest && request.UrlMata.Md5 != "" {
-		reader = digestutils.NewDigestReader(body, request.UrlMata.Md5)
+	if pm.calculateDigest && request.UrlMata.Digest != "" {
+		reader = digestutils.NewDigestReader(body, request.UrlMata.Digest)
 	}
 
 	// 2. save to storage

@@ -17,15 +17,17 @@
 package cdn
 
 import (
+	"time"
+
+	"context"
+	"crypto/md5"
+	"fmt"
+
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/disk"   // To register diskStorage
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/hybrid" // To register hybridStorage
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/synclock"
-	"time"
-)
-import (
-	"context"
-	"crypto/md5"
+
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
@@ -35,7 +37,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"fmt"
 	"github.com/pkg/errors"
 )
 
@@ -137,8 +138,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength), nil
 }
 
-func (cm *Manager) Delete(ctx context.Context, TaskId string) error {
-	err := cm.cacheStore.DeleteTask(ctx, TaskId)
+func (cm *Manager) Delete(ctx context.Context, taskID string) error {
+	err := cm.cacheStore.DeleteTask(ctx, taskID)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete task files")
 	}
@@ -197,9 +198,9 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 	return true, nil
 }
 
-func (cm *Manager) updateExpireInfo(ctx context.Context, TaskId string, expireInfo map[string]string) {
-	if err := cm.cacheDataManager.updateExpireInfo(ctx, TaskId, expireInfo); err != nil {
-		logger.WithTaskID(TaskId).Errorf("failed to update expireInfo(%s): %v", expireInfo, err)
+func (cm *Manager) updateExpireInfo(ctx context.Context, taskID string, expireInfo map[string]string) {
+	if err := cm.cacheDataManager.updateExpireInfo(ctx, taskID, expireInfo); err != nil {
+		logger.WithTaskID(taskID).Errorf("failed to update expireInfo(%s): %v", expireInfo, err)
 	}
-	logger.WithTaskID(TaskId).Infof("success to update expireInfo(%s)", expireInfo)
+	logger.WithTaskID(taskID).Infof("success to update expireInfo(%s)", expireInfo)
 }

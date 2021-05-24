@@ -14,25 +14,10 @@
  * limitations under the License.
  */
 
-package common
+package dfpath
 
 import (
-	"fmt"
-
-	"d7y.io/dragonfly/v2/version"
-	"github.com/spf13/cobra"
+	"path/filepath"
 )
 
-var VersionCmd = &cobra.Command{
-	Use:               "version",
-	Short:             "show version",
-	Long:              `show the version details of dragonfly.`,
-	Args:              cobra.NoArgs,
-	DisableAutoGenTag: true,
-	SilenceUsage:      true,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Major:%s Minor:%s\n", version.Major, version.Minor)
-		fmt.Printf("GitVersion:%s\n", version.GitVersion)
-		fmt.Printf("Platform:%s GoVersion:%s BuildDay:%s\n", version.Platform, version.GoVersion, version.BuildDay)
-	},
-}
+var DefaultConfigDir = filepath.Join(WorkHome, "config")

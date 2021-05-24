@@ -42,12 +42,12 @@ message GrpcDfError {
 }
 
 message UrlMeta{
-  // used as follows:
+  // format:md5:xxx or sha256:yyy, used as follows:
   //
   // 1. check whether downloaded content is consistent with the source file
   //
   // 2. generate different task ids for same url
-  string md5 = 1;
+  string digest = 1;
   // downloaded range for url
   string range = 2;
   // other attributes for url

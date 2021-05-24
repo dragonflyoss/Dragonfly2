@@ -16,52 +16,99 @@
 
 package config
 
+import (
+	"time"
+
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"github.com/pkg/errors"
+)
+
 type Config struct {
-	Console      bool                  `yaml:"console"`
-	Verbose      bool                  `yaml:"verbose"`
-	PProfPort    int                   `yaml:"pprofPort"`
-	ConfigServer string                `yaml:"configServer"`
-	Scheduler    SchedulerConfig       `yaml:"scheduler"`
-	Server       ServerConfig          `yaml:"server"`
-	Worker       SchedulerWorkerConfig `yaml:"worker"`
-	CDN          CDNConfig             `yaml:"cdn"`
-	GC           GCConfig              `yaml:"gc"`
-}
-
-type SchedulerConfig struct {
-	ABTest     bool   `yaml:"abtest"`
-	AScheduler string `yaml:"ascheduler"`
-	BScheduler string `yaml:"bscheduler"`
-}
-
-type ServerConfig struct {
-	IP   string `yaml:"ip"`
-	Port int    `yaml:"port"`
-}
-
-type SchedulerWorkerConfig struct {
-	WorkerNum         int `yaml:"workerNum"`
-	WorkerJobPoolSize int `yaml:"workerJobPoolSize"`
-	SenderNum         int `yaml:"senderNum"`
-	SenderJobPoolSize int `yaml:"senderJobPoolSize"`
-}
-
-type CDNServerConfig struct {
-	Name         string `yaml:"name"`
-	IP           string `yaml:"ip"`
-	RpcPort      int32    `yaml:"rpcPort"`
-	DownloadPort int32    `yaml:"downloadPort"`
-}
-
-type CDNConfig struct {
-	Servers []CDNServerConfig `yaml:"servers"`
-}
-
-type GCConfig struct {
-	PeerTaskDelay int64 `yaml:"peerTaskDelay"`
-	TaskDelay     int64 `yaml:"taskDelay"`
+	base.Options `yaml:",inline" mapstructure:",squash"`
+	ConfigServer string                `yaml:"configServer" mapstructure:"configServer"`
+	Scheduler    SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
+	Server       ServerConfig          `yaml:"server" mapstructure:"server"`
+	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
+	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
+	Dynconfig    *DynconfigOptions     `yaml:"dynconfig"`
+	Manager      *ManagerConfig        `yaml:"manager"`
 }
 
 func New() *Config {
 	return &config
+}
+
+func (c *Config) Validate() error {
+	if c.Manager != nil {
+		if len(c.Manager.NetAddrs) <= 0 {
+			return errors.New("empty manager config is not specified")
+		}
+	}
+
+	if c.Dynconfig.Type == dc.LocalSourceType && c.Dynconfig.Path == "" {
+		return errors.New("dynconfig is LocalSourceType type requires parameter path")
+	}
+
+	if c.Dynconfig.Type == dc.ManagerSourceType {
+		if c.Dynconfig.ExpireTime == 0 {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter expireTime")
+		}
+
+		if c.Dynconfig.CachePath == "" {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter cachePath")
+		}
+
+		if len(c.Dynconfig.NetAddrs) <= 0 {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter netAddrs")
+		}
+	}
+
+	return nil
+}
+
+type ManagerConfig struct {
+	// NetAddrs is manager addresses.
+	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
+}
+
+type DynconfigOptions struct {
+	// Type is dynconfig source type.
+	Type dc.SourceType `yaml:"type"`
+
+	// ExpireTime is expire time for manager cache.
+	ExpireTime time.Duration `yaml:"expireTime"`
+
+	// NetAddrs is dynconfig source addresses.
+	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
+
+	// Path is dynconfig filepath.
+	Path string `yaml:"path"`
+
+	// CachePath is cache filepath.
+	CachePath string `yaml:"cachePath"`
+}
+
+type SchedulerConfig struct {
+	ABTest     bool   `yaml:"abtest" mapstructure:"abtest"`
+	AScheduler string `yaml:"ascheduler" mapstructure:"ascheduler"`
+	BScheduler string `yaml:"bscheduler" mapstructure:"bscheduler"`
+}
+
+type ServerConfig struct {
+	IP   string `yaml:"ip" mapstructure:"ip"`
+	Port int    `yaml:"port" mapstructure:"port"`
+}
+
+type SchedulerWorkerConfig struct {
+	WorkerNum         int `yaml:"workerNum" mapstructure:"workerNum"`
+	WorkerJobPoolSize int `yaml:"workerJobPoolSize" mapstructure:"workerJobPoolSize"`
+	SenderNum         int `yaml:"senderNum" mapstructure:"senderNum"`
+	SenderJobPoolSize int `yaml:"senderJobPoolSize" mapstructure:"senderJobPoolSize"`
+}
+
+type GCConfig struct {
+	PeerTaskDelay int64 `yaml:"peerTaskDelay" mapstructure:"peerTaskDelay"`
+	TaskDelay     int64 `yaml:"taskDelay" mapstructure:"taskDelay"`
 }

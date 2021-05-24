@@ -20,18 +20,18 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 )
 
-func NewZeroPieceResult(taskId, peerId string) *PieceResult {
+func NewZeroPieceResult(taskID, peerID string) *PieceResult {
 	return &PieceResult{
-		TaskId:   taskId,
-		SrcPid:   peerId,
+		TaskId:   taskID,
+		SrcPid:   peerID,
 		PieceNum: common.ZeroOfPiece,
 	}
 }
 
-func NewEndPieceResult(taskId, peerId string, finishedCount int32) *PieceResult {
+func NewEndPieceResult(taskID, peerID string, finishedCount int32) *PieceResult {
 	return &PieceResult{
-		TaskId:        taskId,
-		SrcPid:        peerId,
+		TaskId:        taskID,
+		SrcPid:        peerID,
 		PieceNum:      common.EndOfPiece,
 		FinishedCount: finishedCount,
 	}

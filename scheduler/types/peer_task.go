@@ -17,14 +17,15 @@
 package types
 
 import (
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type PeerTaskStatus int8
@@ -443,11 +444,12 @@ func (pt *PeerTask) SetNodeStatus(status PeerTaskStatus, data ...interface{}) {
 }
 
 func (pt *PeerTask) IsWaiting() bool {
-	pt.lock.Lock()
-	defer pt.lock.Unlock()
 	if pt == nil || pt.parent == nil || pt.parent.DstPeerTask == nil {
 		return false
 	}
+
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
 	return pt.finishedNum >= pt.parent.DstPeerTask.finishedNum
 }
 

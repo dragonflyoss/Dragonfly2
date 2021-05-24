@@ -51,7 +51,7 @@ func (conn *Connection) startGC() {
 			// range all connections and determine whether they are expired
 			conn.accessNodeMap.Range(func(node, accessTime interface{}) bool {
 				serverNode := node.(string)
-				totalNodeSize += 1
+				totalNodeSize++
 				atime := accessTime.(time.Time)
 				if time.Since(atime) < conn.connExpireTime {
 					return true

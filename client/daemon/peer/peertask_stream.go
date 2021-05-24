@@ -63,7 +63,7 @@ func newStreamPeerTask(ctx context.Context,
 	ctx, span := tracer.Start(ctx, config.SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
-	span.SetAttributes(config.AttributePeerId.String(request.PeerId))
+	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
 	logger.Debugf("request overview, url: %s, filter: %s, meta: %s, biz: %s", request.Url, request.Filter, request.UrlMata, request.BizId)
@@ -91,7 +91,7 @@ func newStreamPeerTask(ctx context.Context,
 		err = errors.Errorf("empty schedule result")
 		return ctx, nil, nil, err
 	}
-	span.SetAttributes(config.AttributeTaskId.String(result.TaskId))
+	span.SetAttributes(config.AttributeTaskID.String(result.TaskId))
 	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
@@ -252,7 +252,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	case first := <-s.successPieceCh:
 		//if !ok {
 		//	s.Warnf("successPieceCh closed unexpect")
-		//	return nil, nil, errors.New("early done")
+		//	return nil, nil, errors.NewDaemonConfig("early done")
 		//}
 		firstPiece = first
 	}

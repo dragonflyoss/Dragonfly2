@@ -21,11 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
-
-	"github.com/pkg/errors"
-
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -37,6 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/pkg/errors"
 )
 
 // CdnSeedServer is used to implement cdnsystem.SeederServer.
@@ -60,8 +58,8 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 	meta := req.UrlMeta
 	header := make(map[string]string)
 	if meta != nil {
-		if !stringutils.IsBlank(meta.Md5) {
-			header["md5"] = meta.Md5
+		if !stringutils.IsBlank(meta.Digest) {
+			header["md5"] = meta.Digest
 		}
 		if !stringutils.IsBlank(meta.Range) {
 			header["range"] = meta.Range
@@ -116,10 +114,10 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	if err != nil {
 		return err
 	}
-	peerId := cdnutil.GenCdnPeerId(req.TaskId)
+	peerID := cdnutil.GenCDNPeerID(req.TaskId)
 	for piece := range pieceChan {
 		psc <- &cdnsystem.PieceSeed{
-			PeerId:     peerId,
+			PeerId:     peerID,
 			SeederName: iputils.HostName,
 			PieceInfo: &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
@@ -141,7 +139,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		return dferrors.Newf(dfcodes.CdnTaskDownloadFail, "task(%s) status error , status: %s", req.TaskId, task.CdnStatus)
 	}
 	psc <- &cdnsystem.PieceSeed{
-		PeerId:        peerId,
+		PeerId:        peerID,
 		SeederName:    iputils.HostName,
 		Done:          true,
 		ContentLength: task.SourceFileLength,
@@ -174,7 +172,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
-		return nil, dferrors.Newf(dfcodes.CdnError, "failed to get pieces of task(%s) from cdn: %v", err)
+		return nil, dferrors.Newf(dfcodes.CdnError, "failed to get pieces of task(%s) from cdn: %v", task.TaskId, err)
 	}
 	pieceInfos := make([]*base.PieceInfo, 0)
 	var count int32 = 0

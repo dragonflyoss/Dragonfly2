@@ -31,6 +31,7 @@ import (
 	"strings"
 	"time"
 
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -42,35 +43,35 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
+type DaemonConfig = PeerHostOption
 type PeerHostOption struct {
+	base.Options `yaml:",inline" mapstructure:",squash"`
 	// AliveTime indicates alive duration for which daemon keeps no accessing by any uploading and download requests,
 	// after this period daemon will automatically exit
 	// when AliveTime == 0, will run infinitely
-	AliveTime  clientutil.Duration `json:"alive_time" yaml:"alive_time"`
-	GCInterval clientutil.Duration `json:"gc_interval" yaml:"gc_interval"`
+	AliveTime  clientutil.Duration `mapstructure:"alive_time" yaml:"alive_time"`
+	GCInterval clientutil.Duration `mapstructure:"gc_interval" yaml:"gc_interval"`
 
 	// Pid file location
 	PidFile string `json:"pid_file" yaml:"pid_file"`
 	// Lock file location
 	LockFile string `json:"lock_file" yaml:"lock_file"`
 
-	DataDir     string `json:"data_dir" yaml:"data_dir"`
-	WorkHome    string `json:"work_home" yaml:"work_home"`
-	KeepStorage bool   `json:"keep_storage" yaml:"keep_storage"`
-	Verbose     bool   `yaml:"verbose" json:"verbose"`
-	Console     bool   `json:"console" yaml:"console"`
+	DataDir     string `mapstructure:"data_dir" yaml:"data_dir"`
+	WorkHome    string `mapstructure:"work_home" yaml:"work_home"`
+	KeepStorage bool   `mapstructure:"keep_storage" yaml:"keep_storage"`
 
-	Scheduler    SchedulerOption `json:"scheduler" yaml:"scheduler"`
-	Host         HostOption      `json:"host" yaml:"host"`
-	Download     DownloadOption  `json:"download" yaml:"download"`
-	Proxy        *ProxyOption    `json:"proxy" yaml:"proxy"`
-	Upload       UploadOption    `json:"upload" yaml:"upload"`
-	Storage      StorageOption   `json:"storage" yaml:"storage"`
-	Telemetry    TelemetryOption `json:"telemetry" yaml:"telemetry"`
-	ConfigServer string          `json:"configServer" yaml:"configServer"`
+	Scheduler    SchedulerOption `mapstructure:"scheduler" yaml:"scheduler"`
+	Host         HostOption      `mapstructure:"host" yaml:"host"`
+	Download     DownloadOption  `mapstructure:"download" yaml:"download"`
+	Proxy        *ProxyOption    `mapstructure:"proxy" yaml:"proxy"`
+	Upload       UploadOption    `mapstructure:"upload" yaml:"upload"`
+	Storage      StorageOption   `mapstructure:"storage" yaml:"storage"`
+	Telemetry    TelemetryOption `mapstructure:"telemetry" yaml:"telemetry"`
+	ConfigServer string          `mapstructure:"configServer" yaml:"configServer"`
 }
 
-func NewPeerHostOption() *PeerHostOption {
+func NewDaemonConfig() *PeerHostOption {
 	return &peerHostConfig
 }
 
@@ -102,7 +103,7 @@ func (p *PeerHostOption) Convert() error {
 	// AdvertiseIP
 	ip := net.ParseIP(string(p.Host.AdvertiseIP))
 	if ip == nil || net.IPv4zero.Equal(ip) {
-		p.Host.AdvertiseIP = Attribute(iputils.HostIp)
+		p.Host.AdvertiseIP = Attribute(iputils.HostIP)
 	} else {
 		p.Host.AdvertiseIP = Attribute(ip.String())
 	}
@@ -123,44 +124,44 @@ func (p *PeerHostOption) Validate() error {
 
 type SchedulerOption struct {
 	// NetAddrs is scheduler addresses.
-	NetAddrs []dfnet.NetAddr `json:"net_addrs" yaml:"net_addrs"`
+	NetAddrs []dfnet.NetAddr `mapstructure:"net_addrs" yaml:"net_addrs"`
 
 	// ScheduleTimeout is request timeout.
-	ScheduleTimeout clientutil.Duration `json:"schedule_timeout" yaml:"schedule_timeout"`
+	ScheduleTimeout clientutil.Duration `mapstructure:"schedule_timeout" yaml:"schedule_timeout"`
 }
 
 type HostOption struct {
 	// SecurityDomain is the security domain
-	SecurityDomain Attribute `json:"security_domain" yaml:"security_domain"`
-	// Location for scheduler
-	Location Attribute `json:"location" yaml:"location"`
-	// IDX for scheduler
-	IDC Attribute `json:"idc" yaml:"idc"`
-	// NetTopology for scheduler
-	NetTopology Attribute `json:"net_topology" yaml:"net_topology"`
+	SecurityDomain Attribute `mapstructure:"security_domain" yaml:"security_domain"`
+	// Peerhost location for scheduler
+	Location Attribute `mapstructure:"location" yaml:"location"`
+	// Peerhost idc for scheduler
+	IDC Attribute `mapstructure:"idc" yaml:"idc"`
+	// Peerhost net topology for scheduler
+	NetTopology Attribute `mapstructure:"net_topology" yaml:"net_topology"`
 	// The listen ip for all tcp services of daemon
-	ListenIP Attribute `json:"listen_ip" yaml:"listen_ip"`
+	ListenIP Attribute `mapstructure:"listen_ip" yaml:"listen_ip"`
 	// The ip report to scheduler, normal same with listen ip
-	AdvertiseIP Attribute `json:"advertise_ip" yaml:"advertise_ip"`
+	AdvertiseIP Attribute `mapstructure:"advertise_ip" yaml:"advertise_ip"`
 }
 
 type DownloadOption struct {
-	TotalRateLimit   clientutil.RateLimit `json:"total_rate_limit" yaml:"total_rate_limit"`
-	PerPeerRateLimit clientutil.RateLimit `json:"per_peer_rate_limit" yaml:"per_peer_rate_limit"`
-	DownloadGRPC     ListenOption         `json:"download_grpc" yaml:"download_grpc"`
-	PeerGRPC         ListenOption         `json:"peer_grpc" yaml:"peer_grpc"`
-	CalculateDigest  bool                 `json:"calculate_digest" yaml:"calculate_digest"`
+	TotalRateLimit   clientutil.RateLimit `mapstructure:"total_rate_limit" yaml:"total_rate_limit"`
+	PerPeerRateLimit clientutil.RateLimit `mapstructure:"per_peer_rate_limit" yaml:"per_peer_rate_limit"`
+	DownloadGRPC     ListenOption         `mapstructure:"download_grpc" yaml:"download_grpc"`
+	PeerGRPC         ListenOption         `mapstructure:"peer_grpc" yaml:"peer_grpc"`
+	CalculateDigest  bool                 `mapstructure:"calculate_digest" yaml:"calculate_digest"`
 }
 
 type ProxyOption struct {
 	// WARNING: when add more option, please update ProxyOption.unmarshal function
-	ListenOption   `json:",inline" yaml:",inline"`
-	DefaultFilter  string          `json:"default_filter" yaml:"default_filter"`
-	MaxConcurrency int64           `json:"max_concurrency" yaml:"max_concurrency"`
-	RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
-	WhiteList      []*WhiteList    `json:"white_list" yaml:"white_list"`
-	Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
-	HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
+	ListenOption   `mapstructure:",squash" yaml:",inline"`
+	DefaultFilter  string          `mapstructure:"default_filter" yaml:"default_filter"`
+	MaxConcurrency int64           `mapstructure:"max_concurrency" yaml:"max_concurrency"`
+	RegistryMirror *RegistryMirror `mapstructure:"registry_mirror" yaml:"registry_mirror"`
+	WhiteList      []*WhiteList    `mapstructure:"white_list" yaml:"white_list"`
+	Proxies        []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
+	HijackHTTPS    *HijackConfig   `mapstructure:"hijack_https" yaml:"hijack_https"`
 }
 
 func (p *ProxyOption) UnmarshalJSON(b []byte) error {
@@ -262,19 +263,19 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 }
 
 type UploadOption struct {
-	ListenOption `yaml:",inline"`
-	RateLimit    clientutil.RateLimit `json:"rate_limit" yaml:"rate_limit"`
+	ListenOption `yaml:",inline" mapstructure:",squash"`
+	RateLimit    clientutil.RateLimit `mapstructure:"rate_limit" yaml:"rate_limit"`
 }
 
 type ListenOption struct {
-	Security   SecurityOption    `json:"security" yaml:"security"`
-	TCPListen  *TCPListenOption  `json:"tcp_listen,omitempty" yaml:"tcp_listen,omitempty"`
-	UnixListen *UnixListenOption `json:"unix_listen,omitempty" yaml:"unix_listen,omitempty"`
+	Security   SecurityOption    `mapstructure:"security" yaml:"security"`
+	TCPListen  *TCPListenOption  `mapstructure:"tcp_listen,omitempty" yaml:"tcp_listen,omitempty"`
+	UnixListen *UnixListenOption `mapstructure:"unix_listen,omitempty" yaml:"unix_listen,omitempty"`
 }
 
 type TCPListenOption struct {
 	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1
-	Listen string `json:"listen" yaml:"listen"`
+	Listen string `mapstructure:"listen" yaml:"listen"`
 
 	// PortRange stands listen port
 	// yaml example 1:
@@ -283,7 +284,7 @@ type TCPListenOption struct {
 	//   port:
 	//     start: 12345
 	//     end: 12346
-	PortRange TCPListenPortRange `json:"port" yaml:"port"`
+	PortRange TCPListenPortRange `mapstructure:"port" yaml:"port"`
 }
 
 type TCPListenPortRange struct {
@@ -366,28 +367,27 @@ func (t *TCPListenPortRange) unmarshal(v interface{}) error {
 }
 
 type UnixListenOption struct {
-	Socket string `json:"socket" yaml:"socket"`
+	Socket string `mapstructure:"socket" yaml:"socket"`
 }
 
 type SecurityOption struct {
 	// Insecure indicate enable tls or not
-	Insecure  bool        `json:"insecure" yaml:"insecure"`
-	CACert    string      `json:"ca_cert" yaml:"ca_cert"`
-	Cert      string      `json:"cert" yaml:"cert"`
-	Key       string      `json:"key" yaml:"key"`
-	TLSConfig *tls.Config `json:"tls_config" yaml:"tls_config"`
+	Insecure  bool        `mapstructure:"insecure" yaml:"insecure"`
+	CACert    string      `mapstructure:"ca_cert" yaml:"ca_cert"`
+	Cert      string      `mapstructure:"cert" yaml:"cert"`
+	Key       string      `mapstructure:"key" yaml:"key"`
+	TLSConfig *tls.Config `mapstructure:"tls_config" yaml:"tls_config"`
 }
 
 type StorageOption struct {
 	// DataPath indicates directory which stores temporary files for p2p uploading
-	DataPath string `json:"data_path" yaml:"data_path"`
+	DataPath string `mapstructure:"data_path" yaml:"data_path"`
 	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
 	// after this period cache file will be gc
-	TaskExpireTime clientutil.Duration `json:"task_expire_time" yaml:"task_expire_time"`
+	TaskExpireTime clientutil.Duration `mapstructure:"task_expire_time" yaml:"task_expire_time"`
 	// DiskGCThreshold indicates the threshold to gc the oldest tasks
-	DiskGCThreshold unit.Bytes `json:"disk_gc_threshold" yaml:"disk_gc_threshold"`
-
-	StoreStrategy StoreStrategy `json:"strategy" yaml:"strategy"`
+	DiskGCThreshold unit.Bytes    `mapstructure:"disk_gc_threshold" yaml:"disk_gc_threshold"`
+	StoreStrategy   StoreStrategy `mapstructure:"strategy" yaml:"strategy"`
 }
 
 type StoreStrategy string
@@ -464,16 +464,16 @@ func (t *TLSConfig) UnmarshalJSON(b []byte) error {
 // RegistryMirror configures the mirror of the official docker registry
 type RegistryMirror struct {
 	// Remote url for the registry mirror, default is https://index.docker.io
-	Remote *URL `yaml:"url" json:"url"`
+	Remote *URL `yaml:"url" mapstructure:"url"`
 
 	// Optional certificates if the mirror uses self-signed certificates
-	Certs *CertPool `yaml:"certs" json:"certs"`
+	Certs *CertPool `yaml:"certs" mapstructure:"certs"`
 
 	// Whether to ignore certificates errors for the registry
-	Insecure bool `yaml:"insecure" json:"insecure"`
+	Insecure bool `yaml:"insecure" mapstructure:"insecure"`
 
 	// Request the remote registry directly.
-	Direct bool `yaml:"direct" json:"direct"`
+	Direct bool `yaml:"direct" mapstructure:"direct"`
 }
 
 // TLSConfig returns the tls.Config used to communicate with the mirror.
@@ -593,12 +593,12 @@ func certPoolFromFiles(files ...string) (*x509.CertPool, error) {
 
 // Proxy describes a regular expression matching rule for how to proxy a request.
 type Proxy struct {
-	Regx     *Regexp `yaml:"regx" json:"regx"`
-	UseHTTPS bool    `yaml:"use_https" json:"use_https"`
-	Direct   bool    `yaml:"direct" json:"direct"`
+	Regx     *Regexp `yaml:"regx" mapstructure:"regx"`
+	UseHTTPS bool    `yaml:"use_https" mapstructure:"use_https"`
+	Direct   bool    `yaml:"direct" mapstructure:"direct"`
 
 	// Redirect is the host to redirect to, if not empty
-	Redirect string `yaml:"redirect" json:"redirect"`
+	Redirect string `yaml:"redirect" mapstructure:"redirect"`
 }
 
 func NewProxy(regx string, useHTTPS bool, direct bool, redirect string) (*Proxy, error) {
@@ -668,27 +668,27 @@ func (r *Regexp) MarshalYAML() (interface{}, error) {
 
 // HijackConfig represents how dfdaemon hijacks http requests.
 type HijackConfig struct {
-	Cert  string        `yaml:"cert" json:"cert"`
-	Key   string        `yaml:"key" json:"key"`
-	Hosts []*HijackHost `yaml:"hosts" json:"hosts"`
+	Cert  string        `yaml:"cert" mapstructure:"cert"`
+	Key   string        `yaml:"key" mapstructure:"key"`
+	Hosts []*HijackHost `yaml:"hosts" mapstructure:"hosts"`
 }
 
 // HijackHost is a hijack rule for the hosts that matches Regx.
 type HijackHost struct {
-	Regx     *Regexp   `yaml:"regx" json:"regx"`
-	Insecure bool      `yaml:"insecure" json:"insecure"`
-	Certs    *CertPool `yaml:"certs" json:"certs"`
+	Regx     *Regexp   `yaml:"regx" mapstructure:"regx"`
+	Insecure bool      `yaml:"insecure" mapstructure:"insecure"`
+	Certs    *CertPool `yaml:"certs" mapstructure:"certs"`
 }
 
 // TelemetryOption is the option for telemetry
 type TelemetryOption struct {
-	Jaeger string `yaml:"jaeger" json:"jaeger"`
+	Jaeger string `yaml:"jaeger" mapstructure:"jaeger"`
 }
 
 type WhiteList struct {
-	Host  string   `yaml:"host" json:"host"`
-	Regx  *Regexp  `yaml:"regx" json:"regx"`
-	Ports []string `yaml:"ports" json:"ports"`
+	Host  string   `yaml:"host" mapstructure:"host"`
+	Regx  *Regexp  `yaml:"regx" mapstructure:"regx"`
+	Ports []string `yaml:"ports" mapstructure:"ports"`
 }
 
 // Attribute allows get value from command or just a raw string

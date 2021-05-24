@@ -17,9 +17,10 @@
 package storage
 
 import (
+	"path"
+
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"path"
 )
 
 const (
@@ -30,63 +31,63 @@ const (
 	UploadHome = "upload"
 )
 
-func getDownloadKey(taskId string) string {
-	return path.Join(getParentKey(taskId), taskId)
+func getDownloadKey(taskID string) string {
+	return path.Join(getParentKey(taskID), taskID)
 }
 
-func getTaskMetaDataKey(taskId string) string {
-	return path.Join(getParentKey(taskId), taskId+".meta")
+func getTaskMetaDataKey(taskID string) string {
+	return path.Join(getParentKey(taskID), taskID+".meta")
 }
 
-func getPieceMetaDataKey(TaskId string) string {
-	return path.Join(getParentKey(TaskId), TaskId+".piece")
+func getPieceMetaDataKey(taskID string) string {
+	return path.Join(getParentKey(taskID), taskID+".piece")
 }
 
-func getParentKey(taskId string) string {
-	return stringutils.SubString(taskId, 0, 3)
+func getParentKey(taskID string) string {
+	return stringutils.SubString(taskID, 0, 3)
 }
 
-func GetDownloadRaw(taskId string) *storedriver.Raw {
+func GetDownloadRaw(taskID string) *storedriver.Raw {
 	return &storedriver.Raw{
 		Bucket: DownloadHome,
-		Key:    getDownloadKey(taskId),
+		Key:    getDownloadKey(taskID),
 	}
 }
 
-func GetUploadRaw(taskId string) *storedriver.Raw {
+func GetUploadRaw(taskID string) *storedriver.Raw {
 	return &storedriver.Raw{
 		Bucket: UploadHome,
-		Key:    getDownloadKey(taskId),
+		Key:    getDownloadKey(taskID),
 	}
 }
 
-func GetTaskMetaDataRaw(taskId string) *storedriver.Raw {
+func GetTaskMetaDataRaw(taskID string) *storedriver.Raw {
 	return &storedriver.Raw{
 		Bucket: DownloadHome,
-		Key:    getTaskMetaDataKey(taskId),
+		Key:    getTaskMetaDataKey(taskID),
 		Trunc:  true,
 	}
 }
 
-func GetPieceMetaDataRaw(taskId string) *storedriver.Raw {
+func GetPieceMetaDataRaw(taskID string) *storedriver.Raw {
 	return &storedriver.Raw{
 		Bucket: DownloadHome,
-		Key:    getPieceMetaDataKey(taskId),
+		Key:    getPieceMetaDataKey(taskID),
 	}
 }
 
-func GetAppendPieceMetaDataRaw(taskId string) *storedriver.Raw {
+func GetAppendPieceMetaDataRaw(taskID string) *storedriver.Raw {
 	return &storedriver.Raw{
 		Bucket: DownloadHome,
-		Key:    getPieceMetaDataKey(taskId),
+		Key:    getPieceMetaDataKey(taskID),
 		Append: true,
 	}
 }
 
-func GetParentRaw(taskId string) *storedriver.Raw {
+func GetParentRaw(taskID string) *storedriver.Raw {
 	return &storedriver.Raw{
 		Bucket: DownloadHome,
-		Key:    getParentKey(taskId),
+		Key:    getParentKey(taskID),
 	}
 }
 

@@ -19,13 +19,12 @@ package storedriver
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/pkg/unit"
-
 	"fmt"
 	"io"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
@@ -65,7 +64,6 @@ func NewStore(name string, builder StorageBuilder, cfg interface{}) (*Store, err
 	}, nil
 }
 
-
 // Type returns the plugin type: StoragePlugin.
 func (s *Store) Type() config.PluginType {
 	return config.StoragePlugin
@@ -85,7 +83,6 @@ func (s *Store) GetTotalSpace(ctx context.Context) (unit.Bytes, error) {
 func (s *Store) CreateBaseDir(ctx context.Context) error {
 	return s.driver.CreateBaseDir(ctx)
 }
-
 
 func (s *Store) Exits(ctx context.Context, raw *Raw) bool {
 	return s.driver.Exits(ctx, raw)

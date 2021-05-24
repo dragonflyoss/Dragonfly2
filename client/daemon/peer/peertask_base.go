@@ -592,7 +592,7 @@ func (pt *peerTask) preparePieceTasksByPeer(curPeerPacket *scheduler.PeerPacket,
 	}
 	var span trace.Span
 	_, span = tracer.Start(pt.ctx, config.SpanGetPieceTasks)
-	span.SetAttributes(config.AttributeTargetPeerId.String(peer.PeerId))
+	span.SetAttributes(config.AttributeTargetPeerID.String(peer.PeerId))
 	span.SetAttributes(config.AttributeGetPieceStartNum.Int(int(request.StartNum)))
 	span.SetAttributes(config.AttributeGetPieceLimit.Int(int(request.Limit)))
 	defer span.End()
@@ -656,7 +656,7 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 		count             int
 	)
 	p, _, err := clientutil.Retry(pt.ctx, func() (interface{}, bool, error) {
-		pp, getErr := dfclient.GetPieceTasks(peer, pt.ctx, request)
+		pp, getErr := dfclient.GetPieceTasks(pt.ctx, peer, request)
 		// when GetPieceTasks returns err, exit retry
 		if getErr != nil {
 			span.RecordError(getErr)

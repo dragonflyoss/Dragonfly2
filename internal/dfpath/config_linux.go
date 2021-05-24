@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-package dynconfig
+package dfpath
 
-// managerClient is a client of manager
-type managerClient interface {
-	Get() (interface{}, error)
-}
+var DefaultConfigDir = "/etc/dragonfly"

@@ -80,11 +80,11 @@ type daemonClient struct {
 }
 
 func (dc *daemonClient) getDaemonClient(key string, stick bool) (dfdaemon.DaemonClient, string, error) {
-	if clientConn, err := dc.Connection.GetClientConn(key, stick); err != nil {
+	clientConn, err := dc.Connection.GetClientConn(key, stick)
+	if err != nil {
 		return nil, "", err
-	} else {
-		return dfdaemon.NewDaemonClient(clientConn), clientConn.Target(), nil
 	}
+	return dfdaemon.NewDaemonClient(clientConn), clientConn.Target(), nil
 }
 
 func (dc *daemonClient) getDaemonClientWithTarget(target string) (dfdaemon.DaemonClient, error) {
@@ -97,19 +97,19 @@ func (dc *daemonClient) getDaemonClientWithTarget(target string) (dfdaemon.Daemo
 
 func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error) {
 	req.Uuid = uuid.New().String()
-	// 生成taskId
-	taskId := idgen.TaskID(req.Url, req.Filter, req.UrlMeta, req.BizId)
-	return newDownResultStream(dc, ctx, taskId, req, opts)
+	// generate taskID
+	taskID := idgen.TaskID(req.Url, req.Filter, req.UrlMeta, req.BizId)
+	return newDownResultStream(ctx, dc, taskID, req, opts)
 }
 
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
 	error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		if client, err := dc.getDaemonClientWithTarget(target.GetEndpoint()); err != nil {
+		client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
+		if err != nil {
 			return nil, err
-		} else {
-			return client.GetPieceTasks(ctx, ptr, opts...)
 		}
+		return client.GetPieceTasks(ctx, ptr, opts...)
 	}, 0.2, 2.0, 3, nil)
 
 	if err == nil {
@@ -121,11 +121,11 @@ func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr,
 
 func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (err error) {
 	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
-		if client, err := dc.getDaemonClientWithTarget(target.GetEndpoint()); err != nil {
+		client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
+		if err != nil {
 			return nil, errors.Wrapf(err, "failed to connect server %s", target.GetEndpoint())
-		} else {
-			return client.CheckHealth(ctx, new(empty.Empty), opts...)
 		}
+		return client.CheckHealth(ctx, new(empty.Empty), opts...)
 	}, 0.2, 2.0, 3, nil)
 
 	return
