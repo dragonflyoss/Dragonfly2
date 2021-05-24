@@ -96,7 +96,7 @@ func (osc *ossSourceClient) IsExpired(url string, header, expireInfo map[string]
 }
 
 func (osc *ossSourceClient) Download(url string, header map[string]string) (io.ReadCloser, map[string]string, error) {
-	ossObject, err := ParseOssObject(url)
+	ossObject, err := ParseOSSObject(url)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to parse oss object from url:%s", url)
 	}
@@ -153,7 +153,7 @@ func (osc *ossSourceClient) getMeta(url string, header map[string]string) (http.
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get oss client")
 	}
-	ossObject, err := ParseOssObject(url)
+	ossObject, err := ParseOSSObject(url)
 	if err != nil {
 		return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable, "failed to parse oss object: %v", err)
 	}
@@ -183,12 +183,12 @@ func getOptions(header map[string]string) []oss.Option {
 	return opts
 }
 
-type ossObject struct {
+type OSSObject struct {
 	bucket string
 	object string
 }
 
-func ParseOssObject(ossURL string) (*ossObject, error) {
+func ParseOSSObject(ossURL string) (*OSSObject, error) {
 	url, err := url.Parse(ossURL)
 	if url.Scheme != "oss" {
 		return nil, fmt.Errorf("url:%s is not oss object", ossURL)
@@ -196,7 +196,7 @@ func ParseOssObject(ossURL string) (*ossObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ossObject{
+	return &OSSObject{
 		bucket: url.Host,
 		object: url.Path[1:],
 	}, nil
