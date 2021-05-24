@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"gopkg.in/yaml.v3"
 
 	testifyassert "github.com/stretchr/testify/assert"
@@ -145,11 +146,9 @@ listen:
 disk_gc_threshold: 1Ki
 `,
 			target: &struct {
-				Size clientutil.StorageSize `yaml:"disk_gc_threshold"`
+				Size unit.Bytes `yaml:"disk_gc_threshold"`
 			}{
-				Size: clientutil.StorageSize{
-					SizeInBytes: 1024,
-				},
+				Size: unit.Bytes(1024),
 			},
 		},
 	}
