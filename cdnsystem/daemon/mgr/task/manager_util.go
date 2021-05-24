@@ -40,7 +40,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if request.Filter != nil {
 		taskURL = urlutils.FilterURLParam(request.URL, request.Filter)
 	}
-	taskID := request.TaskId
+	taskID := request.TaskID
 	synclock.Lock(taskID, false)
 	defer synclock.UnLock(taskID, false)
 	if key, err := tm.taskURLUnReachableStore.Get(taskID); err == nil {

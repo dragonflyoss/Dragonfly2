@@ -72,7 +72,7 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgr
 func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.SeedPiece, err error) {
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
-		logger.WithTaskID(req.TaskId).Infof("failed to add or update task with req: %+v: %v", req, err)
+		logger.WithTaskID(req.TaskID).Infof("failed to add or update task with req: %+v: %v", req, err)
 		return nil, err
 	}
 	logger.WithTaskID(task.TaskID).Debugf("success get task info: %+v", task)

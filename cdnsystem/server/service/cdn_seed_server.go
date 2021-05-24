@@ -72,7 +72,7 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 		Header: header,
 		URL:    req.Url,
 		Md5:    header["md5"],
-		TaskId: req.TaskId,
+		TaskID: req.TaskId,
 		Filter: strings.Split(req.Filter, "&"),
 	}, nil
 }
