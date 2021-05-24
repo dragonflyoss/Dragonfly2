@@ -42,8 +42,8 @@ func checkSameFile(task *types.SeedTask, metaData *storage.FileMetaData) error {
 			task.PieceSize)
 	}
 
-	if metaData.TaskId != task.TaskId {
-		return errors.Errorf("meta task TaskId(%s) is not equals with task TaskId(%s)", metaData.TaskId, task.TaskId)
+	if metaData.TaskId != task.TaskID {
+		return errors.Errorf("meta task TaskId(%s) is not equals with task TaskId(%s)", metaData.TaskId, task.TaskID)
 	}
 
 	if metaData.TaskURL != task.TaskUrl {

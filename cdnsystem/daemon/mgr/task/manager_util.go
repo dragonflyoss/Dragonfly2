@@ -54,7 +54,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 	var task *types.SeedTask
 	newTask := &types.SeedTask{
-		TaskId:           taskID,
+		TaskID:           taskID,
 		Header:           request.Header,
 		RequestMd5:       request.Md5,
 		Url:              request.URL,
@@ -82,7 +82,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	// get sourceContentLength with req.Header
 	sourceFileLength, err := tm.resourceClient.GetContentLength(task.Url, request.Header)
 	if err != nil {
-		logger.WithTaskID(task.TaskId).Errorf("failed to get url (%s) content length: %v", task.Url, err)
+		logger.WithTaskID(task.TaskID).Errorf("failed to get url (%s) content length: %v", task.Url, err)
 
 		if cdnerrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskID, time.Now())
@@ -103,7 +103,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		pieceSize := computePieceSize(task.SourceFileLength)
 		task.PieceSize = pieceSize
 	}
-	tm.taskStore.Add(task.TaskId, task)
+	tm.taskStore.Add(task.TaskID, task)
 	logger.Debugf("success add task:%+v into taskStore", task)
 	return task, nil
 }

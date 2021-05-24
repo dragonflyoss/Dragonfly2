@@ -251,13 +251,13 @@ func (h *hybridStorageMgr) CreateUploadLink(ctx context.Context, taskID string) 
 }
 
 func (h *hybridStorageMgr) ResetRepo(ctx context.Context, task *types.SeedTask) error {
-	if err := h.deleteTaskFiles(ctx, task.TaskId, false, true); err != nil {
-		logger.WithTaskID(task.TaskId).Errorf("reset repo: failed to delete task files: %v", err)
+	if err := h.deleteTaskFiles(ctx, task.TaskID, false, true); err != nil {
+		logger.WithTaskID(task.TaskID).Errorf("reset repo: failed to delete task files: %v", err)
 	}
 	// 判断是否有足够空间存放
-	shmPath, err := h.tryShmSpace(ctx, task.Url, task.TaskId, task.SourceFileLength)
+	shmPath, err := h.tryShmSpace(ctx, task.Url, task.TaskID, task.SourceFileLength)
 	if err == nil {
-		return fileutils.SymbolicLink(shmPath, h.diskStore.GetPath(storage.GetDownloadRaw(task.TaskId)))
+		return fileutils.SymbolicLink(shmPath, h.diskStore.GetPath(storage.GetDownloadRaw(task.TaskID)))
 	}
 	return nil
 }

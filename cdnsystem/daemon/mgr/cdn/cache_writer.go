@@ -80,13 +80,13 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 			if int(pieceContLeft) <= n {
 				bb.Write(buf[:pieceContLeft])
 				pc := &protocolContent{
-					TaskId:       task.TaskId,
+					TaskId:       task.TaskID,
 					pieceNum:     curPieceNum,
 					pieceSize:    task.PieceSize,
 					pieceContent: bb,
 				}
 				jobCh <- pc
-				logger.WithTaskID(task.TaskId).Debugf("send protocolContent to jobCh, pieceNum: %d", curPieceNum)
+				logger.WithTaskID(task.TaskID).Debugf("send protocolContent to jobCh, pieceNum: %d", curPieceNum)
 				curPieceNum++
 
 				// write the data left to a new buffer
@@ -105,16 +105,16 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 		if err == io.EOF {
 			if bb.Len() > 0 {
 				pc := &protocolContent{
-					TaskId:       task.TaskId,
+					TaskId:       task.TaskID,
 					pieceNum:     curPieceNum,
 					pieceSize:    task.PieceSize,
 					pieceContent: bb,
 				}
 				jobCh <- pc
 				curPieceNum++
-				logger.WithTaskID(task.TaskId).Debugf("send the last protocolContent, pieceNum: %d", curPieceNum)
+				logger.WithTaskID(task.TaskID).Debugf("send the last protocolContent, pieceNum: %d", curPieceNum)
 			}
-			logger.WithTaskID(task.TaskId).Info("send all protocolContents and wait for cdnWriter")
+			logger.WithTaskID(task.TaskID).Info("send all protocolContents and wait for cdnWriter")
 			break
 		}
 		if err != nil {
@@ -127,12 +127,12 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	close(jobCh)
 	wg.Wait()
 
-	storageInfo, err := cw.cacheDataManager.statDownloadFile(ctx, task.TaskId)
+	storageInfo, err := cw.cacheDataManager.statDownloadFile(ctx, task.TaskID)
 	if err != nil {
 		return &downloadMetadata{backSourceLength: backSourceFileLength}, errors.Wrapf(err, "failed to get cdn file length")
 	}
 
-	pieceMd5Sign, _, err := cw.cacheDataManager.getPieceMd5Sign(ctx, task.TaskId)
+	pieceMd5Sign, _, err := cw.cacheDataManager.getPieceMd5Sign(ctx, task.TaskID)
 	if err != nil {
 		return &downloadMetadata{backSourceLength: backSourceFileLength}, errors.Wrapf(err, "failed to get piece md5 sign")
 	}

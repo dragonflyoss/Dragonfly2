@@ -48,10 +48,10 @@ func newCacheDataManager(storeMgr storage.Manager) *cacheDataManager {
 
 // writeFileMetaDataByTask stores the metadata of task by task to storage.
 func (mm *cacheDataManager) writeFileMetaDataByTask(ctx context.Context, task *types.SeedTask) (*storage.FileMetaData, error) {
-	mm.cacheLocker.Lock(task.TaskId, false)
-	defer mm.cacheLocker.UnLock(task.TaskId, false)
+	mm.cacheLocker.Lock(task.TaskID, false)
+	defer mm.cacheLocker.UnLock(task.TaskID, false)
 	metaData := &storage.FileMetaData{
-		TaskId:          task.TaskId,
+		TaskId:          task.TaskID,
 		TaskURL:         task.TaskUrl,
 		PieceSize:       task.PieceSize,
 		SourceFileLen:   task.SourceFileLength,
@@ -60,7 +60,7 @@ func (mm *cacheDataManager) writeFileMetaDataByTask(ctx context.Context, task *t
 		TotalPieceCount: task.PieceTotal,
 	}
 
-	if err := mm.storage.WriteFileMetaData(ctx, task.TaskId, metaData); err != nil {
+	if err := mm.storage.WriteFileMetaData(ctx, task.TaskID, metaData); err != nil {
 		return nil, errors.Wrapf(err, "failed to write file metadata to storage")
 	}
 
@@ -197,8 +197,8 @@ func (mm *cacheDataManager) readDownloadFile(ctx context.Context, taskID string)
 }
 
 func (mm *cacheDataManager) resetRepo(ctx context.Context, task *types.SeedTask) error {
-	mm.cacheLocker.Lock(task.TaskId, false)
-	defer mm.cacheLocker.UnLock(task.TaskId, false)
+	mm.cacheLocker.Lock(task.TaskID, false)
+	defer mm.cacheLocker.UnLock(task.TaskID, false)
 	return mm.storage.ResetRepo(ctx, task)
 }
 
