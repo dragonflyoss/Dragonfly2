@@ -62,7 +62,7 @@ type ProgressState struct {
 
 type FilePeerTaskProgress struct {
 	State           *ProgressState
-	TaskId          string
+	TaskID          string
 	PeerID          string
 	ContentLength   int64
 	CompletedLength int64
@@ -130,8 +130,8 @@ func newFilePeerTask(ctx context.Context,
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
 				return ctx, nil, &TinyData{
 					span:    span,
-					TaskId:  result.TaskId,
-					PeerId:  request.PeerId,
+					TaskID:  result.TaskId,
+					PeerID:  request.PeerId,
 					Content: piece.PieceContent,
 				}, nil
 			}
@@ -245,7 +245,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 			Code:    pieceResult.Code,
 			Msg:     "downloading",
 		},
-		TaskId:          pt.taskID,
+		TaskID:          pt.taskID,
 		PeerID:          pt.peerID,
 		ContentLength:   pt.contentLength,
 		CompletedLength: pt.completedLength,
@@ -299,7 +299,7 @@ func (pt *filePeerTask) finish() error {
 				Code:    code,
 				Msg:     message,
 			},
-			TaskId:          pt.taskID,
+			TaskID:          pt.taskID,
 			PeerID:          pt.peerID,
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,
@@ -354,7 +354,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 				Code:    pt.failedCode,
 				Msg:     pt.failedReason,
 			},
-			TaskId:          pt.taskID,
+			TaskID:          pt.taskID,
 			PeerID:          pt.peerID,
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,

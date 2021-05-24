@@ -84,8 +84,8 @@ type TaskCallback interface {
 type TinyData struct {
 	// span is used by peer task manager to record events without peer task
 	span    trace.Span
-	TaskId  string
-	PeerId  string
+	TaskID  string
+	PeerID  string
 	Content []byte
 }
 
@@ -138,7 +138,7 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	// tiny file content is returned by scheduler, just write to output
 	if tiny != nil {
 		defer tiny.span.End()
-		log := logger.With("peer", tiny.PeerId, "task", tiny.TaskId, "component", "peerTaskManager")
+		log := logger.With("peer", tiny.PeerID, "task", tiny.TaskID, "component", "peerTaskManager")
 		_, err = os.Stat(req.Output)
 		if err == nil {
 			// remove exist file

@@ -155,8 +155,8 @@ func (m *manager) Download(ctx context.Context,
 	}
 	if tiny != nil {
 		results <- &dfdaemongrpc.DownResult{
-			TaskId:          tiny.TaskId,
-			PeerId:          tiny.PeerId,
+			TaskId:          tiny.TaskID,
+			PeerId:          tiny.PeerID,
 			CompletedLength: uint64(len(tiny.Content)),
 			Done:            true,
 		}
@@ -179,11 +179,11 @@ func (m *manager) Download(ctx context.Context,
 				return dferrors.New(dfcodes.UnknownError, err.Error())
 			}
 			if !p.State.Success {
-				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskId, p.State.Code, p.State.Msg)
+				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskID, p.State.Code, p.State.Msg)
 				return dferrors.New(p.State.Code, p.State.Msg)
 			}
 			results <- &dfdaemongrpc.DownResult{
-				TaskId:          p.TaskId,
+				TaskId:          p.TaskID,
 				PeerId:          p.PeerID,
 				CompletedLength: uint64(p.CompletedLength),
 				Done:            p.PeerTaskDone,
@@ -191,7 +191,7 @@ func (m *manager) Download(ctx context.Context,
 			// peer task sets PeerTaskDone to true only once
 			if p.PeerTaskDone {
 				p.DoneCallback()
-				log.Infof("task %s/%s done", p.PeerID, p.TaskId)
+				log.Infof("task %s/%s done", p.PeerID, p.TaskID)
 				if req.Uid != 0 && req.Gid != 0 {
 					log.Infof("change own to uid %d gid %d", req.Uid, req.Gid)
 					if err = os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {

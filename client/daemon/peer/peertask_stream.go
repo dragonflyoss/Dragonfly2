@@ -111,8 +111,8 @@ func newStreamPeerTask(ctx context.Context,
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
 				return ctx, nil, &TinyData{
 					span:    span,
-					TaskId:  result.TaskId,
-					PeerId:  request.PeerId,
+					TaskID:  result.TaskId,
+					PeerID:  request.PeerId,
 					Content: piece.PieceContent,
 				}, nil
 			}
