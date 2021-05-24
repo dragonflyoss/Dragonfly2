@@ -2,6 +2,8 @@ package config
 
 import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 )
 
 type Config struct {
@@ -75,6 +77,42 @@ func New() *Config {
 	}
 }
 
-func (cfg *Config) CheckValid() error {
+func (cfg *StoreConfig) Valid() error {
+	if (cfg.Mysql == nil && cfg.Oss == nil) || (cfg.Mysql != nil && cfg.Oss != nil) {
+		return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: please select one of mysql or oss")
+	}
+
+	if cfg.Mysql != nil {
+		if len(cfg.Mysql.User) == 0 {
+			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.User is null")
+		}
+
+		if len(cfg.Mysql.Password) == 0 {
+			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.Password is null")
+		}
+
+		if cfg.Mysql.Port == 0 {
+			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.Port is null")
+		}
+
+		if len(cfg.Mysql.IP) == 0 {
+			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.IP is null")
+		}
+
+		if len(cfg.Mysql.Db) == 0 {
+			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.Db is null")
+		}
+
+		return nil
+	}
+
+	if cfg.Oss != nil {
+		return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: oss not support yet")
+	}
+
+	return nil
+}
+
+func (cfg *Config) Valid() error {
 	return nil
 }
