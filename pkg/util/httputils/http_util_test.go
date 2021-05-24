@@ -90,7 +90,7 @@ func (s *HTTPUtilTestSuite) TestGet() {
 	code, body, e := Get("http://"+s.host, 0)
 	checkOk(s, code, body, e, 0)
 
-	_, _, e = Get("http://"+s.host, 50*time.Millisecond)
+	_, _, e = Get("http://"+s.host, 20*time.Millisecond)
 	s.EqualError(e, "timeout")
 }
 
@@ -104,7 +104,7 @@ func (s *HTTPUtilTestSuite) TestHttpGet() {
 
 	checkOk(s, code, body, e, 0)
 
-	res, e = HTTPGetTimeout("http://"+s.host, nil, 60*time.Millisecond)
+	res, e = HTTPGetTimeout("http://"+s.host, nil, 100*time.Millisecond)
 	s.Nil(e)
 	code = res.StatusCode
 	body, e = ioutil.ReadAll(res.Body)
@@ -113,7 +113,7 @@ func (s *HTTPUtilTestSuite) TestHttpGet() {
 
 	checkOk(s, code, body, e, 0)
 
-	_, e = HTTPGetTimeout("http://"+s.host, nil, 20*time.Millisecond)
+	_, e = HTTPGetTimeout("http://"+s.host, nil, 10*time.Millisecond)
 	s.NotNil(e)
 	s.Equal(strings.Contains(e.Error(), context.DeadlineExceeded.Error()), true)
 }
@@ -224,7 +224,7 @@ func (s *HTTPUtilTestSuite) TestConcurrencyPostJson() {
 	for i := 0; i < 100; i++ {
 		go func(x, y int) {
 			defer wg.Done()
-			code, body, e := PostJSON("http://"+s.host, req(x, y), 1*time.Second)
+			code, body, e := PostJSON("http://"+s.host, req(x, y), 2*time.Second)
 			time.Sleep(20 * time.Millisecond)
 			checkOk(s, code, body, e, x+y)
 		}(i, i)
