@@ -289,11 +289,9 @@ func (c *cache) Save(w io.Writer) (err error) {
 // NOTE: This method is deprecated in favor of c.Items() and NewFrom() (see the
 // documentation for NewFrom().)
 func (c *cache) SaveFile(fname string) error {
-	if _, err := os.Stat(filepath.Dir(fname)); os.IsNotExist(err) {
-		err := os.MkdirAll(fname, os.ModePerm)
-		if err != nil {
-			return err
-		}
+	dir := filepath.Dir(fname)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.MkdirAll(dir, os.ModePerm)
 	}
 
 	fp, err := os.Create(fname)
