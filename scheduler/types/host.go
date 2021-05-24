@@ -45,11 +45,10 @@ type Host struct {
 	ServiceDownTime int64
 }
 
-func CopyHost(h *Host) *Host {
-	copyHost := *h
-	copyHost.peerTaskMap = new(sync.Map)
-	copyHost.loadLock = new(sync.Mutex)
-	return &copyHost
+func Init(h *Host) *Host {
+	h.loadLock = &sync.Mutex{}
+	h.peerTaskMap = &sync.Map{}
+	return h
 }
 
 func (h *Host) AddPeerTask(peerTask *PeerTask) {

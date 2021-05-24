@@ -50,7 +50,7 @@ func main() {
 			defer wg.Done()
 			psc, _ := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 				TaskId: "test2",
-				Url: "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
+				Url:    "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
 				Filter: "",
 			})
 			for {

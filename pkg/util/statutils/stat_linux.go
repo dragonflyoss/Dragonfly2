@@ -52,9 +52,8 @@ func CtimeSec(info os.FileInfo) int64 {
 func GetSysStat(info os.FileInfo) *syscall.Stat_t {
 	if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 		return stat
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func FreeSpace(diskPath string) (unit.Bytes, error) {

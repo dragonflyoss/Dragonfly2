@@ -42,7 +42,7 @@ type FilePeerTaskRequest struct {
 
 // FilePeerTask represents a peer task to download a file
 type FilePeerTask interface {
-	PeerTask
+	Task
 	// Start start the special peer task, return a *FilePeerTaskProgress channel for updating download progress
 	Start(ctx context.Context) (chan *FilePeerTaskProgress, error)
 }
@@ -62,7 +62,7 @@ type ProgressState struct {
 
 type FilePeerTaskProgress struct {
 	State           *ProgressState
-	TaskId          string
+	TaskID          string
 	PeerID          string
 	ContentLength   int64
 	CompletedLength int64
@@ -130,8 +130,8 @@ func newFilePeerTask(ctx context.Context,
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
 				return ctx, nil, &TinyData{
 					span:    span,
-					TaskId:  result.TaskId,
-					PeerId:  request.PeerId,
+					TaskID:  result.TaskId,
+					PeerID:  request.PeerId,
 					Content: piece.PieceContent,
 				}, nil
 			}
@@ -165,8 +165,8 @@ func newFilePeerTask(ctx context.Context,
 			peerPacketStream: peerPacketStream,
 			pieceManager:     pieceManager,
 			peerPacketReady:  make(chan bool),
-			peerId:           request.PeerId,
-			taskId:           result.TaskId,
+			peerID:           request.PeerId,
+			taskID:           result.TaskId,
 			singlePiece:      singlePiece,
 			done:             make(chan struct{}),
 			span:             span,
@@ -245,8 +245,8 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 			Code:    pieceResult.Code,
 			Msg:     "downloading",
 		},
-		TaskId:          pt.taskId,
-		PeerID:          pt.peerId,
+		TaskID:          pt.taskID,
+		PeerID:          pt.peerID,
 		ContentLength:   pt.contentLength,
 		CompletedLength: pt.completedLength,
 		PeerTaskDone:    false,
@@ -275,7 +275,7 @@ func (pt *filePeerTask) finish() error {
 		defer pt.recoverFromPanic()
 		// send EOF piece result to scheduler
 		_ = pt.peerPacketStream.Send(
-			scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled()))
+			scheduler.NewEndPieceResult(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 		pt.Debugf("finish end piece result sent")
 
 		var (
@@ -299,8 +299,8 @@ func (pt *filePeerTask) finish() error {
 				Code:    code,
 				Msg:     message,
 			},
-			TaskId:          pt.taskId,
-			PeerID:          pt.peerId,
+			TaskID:          pt.taskID,
+			PeerID:          pt.peerID,
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,
 			PeerTaskDone:    true,
@@ -345,7 +345,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 		defer pt.recoverFromPanic()
 		// send EOF piece result to scheduler
 		_ = pt.peerPacketStream.Send(
-			scheduler.NewEndPieceResult(pt.taskId, pt.peerId, pt.readyPieces.Settled()))
+			scheduler.NewEndPieceResult(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 		pt.Debugf("clean up end piece result sent")
 
 		pg := &FilePeerTaskProgress{
@@ -354,8 +354,8 @@ func (pt *filePeerTask) cleanUnfinished() {
 				Code:    pt.failedCode,
 				Msg:     pt.failedReason,
 			},
-			TaskId:          pt.taskId,
-			PeerID:          pt.peerId,
+			TaskID:          pt.taskID,
+			PeerID:          pt.peerID,
 			ContentLength:   pt.contentLength,
 			CompletedLength: pt.completedLength,
 			PeerTaskDone:    true,

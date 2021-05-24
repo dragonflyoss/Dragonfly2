@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package schedule_worker
+package worker
 
 import (
 	"hash/crc32"
@@ -34,7 +34,7 @@ type IWorker interface {
 	ReceiveUpdatePieceResult(pr *scheduler2.PieceResult)
 }
 
-type WorkerGroup struct {
+type Group struct {
 	workerNum  int
 	chanSize   int
 	workerList []*Worker
@@ -46,8 +46,8 @@ type WorkerGroup struct {
 	schedulerService *service.SchedulerService
 }
 
-func NewWorkerGroup(cfg *config.Config, schedulerService *service.SchedulerService) *WorkerGroup {
-	return &WorkerGroup{
+func NewGroup(cfg *config.Config, schedulerService *service.SchedulerService) *Group {
+	return &Group{
 		workerNum:        cfg.Worker.WorkerNum,
 		chanSize:         cfg.Worker.WorkerJobPoolSize,
 		sender:           NewSender(cfg.Worker, schedulerService),
@@ -56,7 +56,7 @@ func NewWorkerGroup(cfg *config.Config, schedulerService *service.SchedulerServi
 	}
 }
 
-func (wg *WorkerGroup) Serve() {
+func (wg *Group) Serve() {
 	wg.stopCh = make(chan struct{})
 
 	wg.schedulerService.TaskManager.PeerTask.SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
@@ -85,22 +85,22 @@ func (wg *WorkerGroup) Serve() {
 	logger.Infof("start scheduler worker number:%d", wg.workerNum)
 }
 
-func (wg *WorkerGroup) Stop() {
+func (wg *Group) Stop() {
 	close(wg.stopCh)
 	wg.sender.Stop()
 	wg.triggerLoadQueue.ShutDown()
 	logger.Infof("stop scheduler worker")
 }
 
-func (wg *WorkerGroup) ReceiveJob(job *types.PeerTask) {
+func (wg *Group) ReceiveJob(job *types.PeerTask) {
 	if job == nil {
 		return
 	}
-	choiceWorkerID := crc32.ChecksumIEEE([]byte(job.Task.TaskId)) % uint32(wg.workerNum)
+	choiceWorkerID := crc32.ChecksumIEEE([]byte(job.Task.TaskID)) % uint32(wg.workerNum)
 	wg.workerList[choiceWorkerID].ReceiveJob(job)
 }
 
-func (wg *WorkerGroup) ReceiveUpdatePieceResult(pr *scheduler2.PieceResult) {
+func (wg *Group) ReceiveUpdatePieceResult(pr *scheduler2.PieceResult) {
 	if pr == nil {
 		return
 	}

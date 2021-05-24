@@ -160,10 +160,9 @@ func runDfget() error {
 	daemonClient, err := checkAndSpawnDaemon()
 	if err != nil {
 		logger.Errorf("check and spawn daemon error:%v", err)
-	} else {
-		logger.Info("check and spawn daemon success")
 	}
 
+	logger.Info("check and spawn daemon success")
 	return dfget.Download(dfgetConfig, daemonClient)
 }
 

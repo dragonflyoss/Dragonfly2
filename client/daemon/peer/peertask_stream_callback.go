@@ -37,7 +37,7 @@ func (p *streamPeerTaskCallback) GetStartTime() time.Time {
 	return p.start
 }
 
-func (p *streamPeerTaskCallback) Init(pt PeerTask) error {
+func (p *streamPeerTaskCallback) Init(pt Task) error {
 	// prepare storage
 	err := p.ptm.storageManager.RegisterTask(p.ctx,
 		storage.RegisterTaskRequest{
@@ -55,7 +55,7 @@ func (p *streamPeerTaskCallback) Init(pt PeerTask) error {
 	return err
 }
 
-func (p *streamPeerTaskCallback) Update(pt PeerTask) error {
+func (p *streamPeerTaskCallback) Update(pt Task) error {
 	// update storage
 	err := p.ptm.storageManager.UpdateTask(p.ctx,
 		&storage.UpdateTaskRequest{
@@ -72,7 +72,7 @@ func (p *streamPeerTaskCallback) Update(pt PeerTask) error {
 	return err
 }
 
-func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
+func (p *streamPeerTaskCallback) Done(pt Task) error {
 	var cost = time.Now().Sub(p.start).Milliseconds()
 	pt.Log().Infof("stream peer task done, cost: %dms", cost)
 	e := p.ptm.storageManager.Store(
@@ -110,7 +110,7 @@ func (p *streamPeerTaskCallback) Done(pt PeerTask) error {
 	return nil
 }
 
-func (p *streamPeerTaskCallback) Fail(pt PeerTask, code base.Code, reason string) error {
+func (p *streamPeerTaskCallback) Fail(pt Task, code base.Code, reason string) error {
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	pt.Log().Errorf("stream peer task failed, code: %d, reason: %s", code, reason)

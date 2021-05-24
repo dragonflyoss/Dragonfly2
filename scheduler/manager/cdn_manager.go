@@ -134,13 +134,13 @@ func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *type
 
 	go safe.Call(func() {
 		stream, err := cm.client.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-			TaskId:  task.TaskId,
-			Url:     task.Url,
+			TaskId:  task.TaskID,
+			Url:     task.URL,
 			Filter:  task.Filter,
-			UrlMeta: task.UrlMata,
+			UrlMeta: task.URLMata,
 		})
 		if err != nil {
-			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
+			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskID, err)
 			e, ok := err.(*dferrors.DfError)
 			if !ok {
 				e = dferrors.New(dfcodes.CdnError, err.Error())
@@ -176,7 +176,7 @@ func (cm *CDNManager) doCallback(task *types.Task, err *dferrors.DfError) {
 
 		if err != nil {
 			time.Sleep(time.Second * 5)
-			cm.taskManager.Delete(task.TaskId)
+			cm.taskManager.Delete(task.TaskID)
 			cm.taskManager.PeerTask.DeleteTask(task)
 		}
 	})
@@ -219,20 +219,20 @@ func (cm *CDNManager) Work(task *types.Task, stream *client.PieceSeedStream) {
 			if !ok {
 				dferr = dferrors.New(dfcodes.CdnError, err.Error())
 			}
-			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskId, err)
+			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskID, err)
 			cm.doCallback(task, dferr)
 			return
 		}
 
 		if ps == nil {
-			logger.Warnf("receive a nil pieceSeed or state from cdn: taskId[%s]", task.TaskId)
+			logger.Warnf("receive a nil pieceSeed or state from cdn: taskId[%s]", task.TaskID)
 		} else {
 			pieceNum := int32(-1)
 			if ps.PieceInfo != nil {
 				pieceNum = ps.PieceInfo.PieceNum
 			}
 			cm.processPieceSeed(task, ps)
-			logger.Debugf("receive a pieceSeed from cdn: taskId[%s]-%d done [%v]", task.TaskId, pieceNum, ps.Done)
+			logger.Debugf("receive a pieceSeed from cdn: taskId[%s]-%d done [%v]", task.TaskID, pieceNum, ps.Done)
 
 			if waitCallback {
 				waitCallback = false
@@ -322,13 +322,20 @@ func (cm *CDNManager) getHostUUID(ps *cdnsystem.PieceSeed) string {
 
 func (cm *CDNManager) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *types.PeerTask) *types.Piece {
 	p := task.GetOrCreatePiece(ps.PieceInfo.PieceNum)
-	p.PieceInfo = *ps.PieceInfo
+	p.PieceInfo = base.PieceInfo{
+		PieceNum:    ps.PieceInfo.PieceNum,
+		RangeStart:  ps.PieceInfo.RangeStart,
+		RangeSize:   ps.PieceInfo.RangeSize,
+		PieceMd5:    ps.PieceInfo.PieceMd5,
+		PieceOffset: ps.PieceInfo.PieceOffset,
+		PieceStyle:  ps.PieceInfo.PieceStyle,
+	}
 	return p
 }
 
 func (cm *CDNManager) getTinyFileContent(task *types.Task, cdnHost *types.Host) (content []byte, err error) {
 	resp, err := cm.client.GetPieceTasks(context.TODO(), dfnet.NetAddr{Type: dfnet.TCP, Addr: fmt.Sprintf("%s:%d", cdnHost.Ip, cdnHost.RpcPort)}, &base.PieceTaskRequest{
-		TaskId:   task.TaskId,
+		TaskId:   task.TaskID,
 		SrcPid:   "scheduler",
 		StartNum: 0,
 		Limit:    2,
@@ -343,7 +350,7 @@ func (cm *CDNManager) getTinyFileContent(task *types.Task, cdnHost *types.Host) 
 	// TODO download the tiny file
 	// http://host:port/download/{taskId 前3位}/{taskId}?peerId={peerId};
 	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
-		cdnHost.Ip, cdnHost.DownPort, task.TaskId[:3], task.TaskId)
+		cdnHost.Ip, cdnHost.DownPort, task.TaskID[:3], task.TaskID)
 	client := &http.Client{
 		Timeout: time.Second * 5,
 	}

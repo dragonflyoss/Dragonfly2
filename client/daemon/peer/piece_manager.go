@@ -26,6 +26,8 @@ import (
 
 	cdnconfig "d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/source"
+
+	// Init http client
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
@@ -38,8 +40,8 @@ import (
 )
 
 type PieceManager interface {
-	DownloadSource(ctx context.Context, pt PeerTask, request *scheduler.PeerTaskRequest) error
-	DownloadPiece(ctx context.Context, peerTask PeerTask, request *DownloadPieceRequest) bool
+	DownloadSource(ctx context.Context, pt Task, request *scheduler.PeerTaskRequest) error
+	DownloadPiece(ctx context.Context, peerTask Task, request *DownloadPieceRequest) bool
 	ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error)
 }
 
@@ -95,7 +97,7 @@ func WithLimiter(limiter *rate.Limiter) func(*pieceManager) {
 	}
 }
 
-func (pm *pieceManager) DownloadPiece(ctx context.Context, pt PeerTask, request *DownloadPieceRequest) (success bool) {
+func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *DownloadPieceRequest) (success bool) {
 	var (
 		start = time.Now().UnixNano()
 		end   int64
@@ -163,7 +165,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt PeerTask, request 
 	return
 }
 
-func (pm *pieceManager) pushSuccessResult(peerTask PeerTask, dstPid string, piece *base.PieceInfo, start int64, end int64) {
+func (pm *pieceManager) pushSuccessResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64) {
 	err := peerTask.ReportPieceResult(
 		piece,
 		&scheduler.PieceResult{
@@ -183,7 +185,7 @@ func (pm *pieceManager) pushSuccessResult(peerTask PeerTask, dstPid string, piec
 	}
 }
 
-func (pm *pieceManager) pushFailResult(peerTask PeerTask, dstPid string, piece *base.PieceInfo, start int64, end int64) {
+func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64) {
 	err := peerTask.ReportPieceResult(
 		piece,
 		&scheduler.PieceResult{
@@ -207,7 +209,7 @@ func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceReq
 	return pm.storageManager.ReadPiece(ctx, req)
 }
 
-func (pm *pieceManager) processPieceFromSource(pt PeerTask,
+func (pm *pieceManager) processPieceFromSource(pt Task,
 	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize int32) (int64, error) {
 	var (
 		success bool
@@ -290,7 +292,7 @@ func (pm *pieceManager) processPieceFromSource(pt PeerTask,
 	return n, nil
 }
 
-func (pm *pieceManager) DownloadSource(ctx context.Context, pt PeerTask, request *scheduler.PeerTaskRequest) error {
+func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *scheduler.PeerTaskRequest) error {
 	if request.UrlMata == nil {
 		request.UrlMata = &base.UrlMeta{
 			Header: map[string]string{},

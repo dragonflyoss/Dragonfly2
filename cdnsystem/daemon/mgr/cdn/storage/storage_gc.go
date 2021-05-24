@@ -144,7 +144,7 @@ func (cleaner *Cleaner) sortInert(ctx context.Context, gapTasks, intervalTasks *
 
 	if metaData.Interval > 0 &&
 		gap <= metaData.Interval+(int64(cleaner.Cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
-		info, err := cleaner.StorageMgr.StatDownloadFile(ctx, metaData.TaskId)
+		info, err := cleaner.StorageMgr.StatDownloadFile(ctx, metaData.TaskID)
 		if err != nil {
 			return err
 		}
@@ -154,7 +154,7 @@ func (cleaner *Cleaner) sortInert(ctx context.Context, gapTasks, intervalTasks *
 			v = make([]string, 0)
 		}
 		tasks := v.([]string)
-		tasks = append(tasks, metaData.TaskId)
+		tasks = append(tasks, metaData.TaskID)
 		intervalTasks.Put(info.Size, tasks)
 		return nil
 	}
@@ -164,7 +164,7 @@ func (cleaner *Cleaner) sortInert(ctx context.Context, gapTasks, intervalTasks *
 		v = make([]string, 0)
 	}
 	tasks := v.([]string)
-	tasks = append(tasks, metaData.TaskId)
+	tasks = append(tasks, metaData.TaskID)
 	gapTasks.Put(gap, tasks)
 	return nil
 }

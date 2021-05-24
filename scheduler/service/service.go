@@ -64,13 +64,13 @@ func (s *SchedulerService) GetTask(taskID string) (*types.Task, bool) {
 
 func (s *SchedulerService) AddTask(task *types.Task) (*types.Task, error) {
 	// Task already exists
-	if ret, ok := s.TaskManager.Get(task.TaskId); ok {
+	if ret, ok := s.TaskManager.Get(task.TaskID); ok {
 		s.TaskManager.PeerTask.AddTask(ret)
 		return ret, nil
 	}
 
 	// Task does not exist
-	ret := s.TaskManager.Set(task.TaskId, task)
+	ret := s.TaskManager.Set(task.TaskID, task)
 	if err := s.CDNManager.TriggerTask(ret, s.TaskManager.PeerTask.CDNCallback); err != nil {
 		return nil, err
 	}

@@ -25,6 +25,14 @@ import (
 )
 
 func TestCDNHostsToServers(t *testing.T) {
+	mockServerInfo := &manager.ServerInfo{
+		HostInfo: &manager.HostInfo{
+			HostName: "foo",
+		},
+		RpcPort:  8002,
+		DownPort: 8001,
+	}
+
 	tests := []struct {
 		name   string
 		hosts  []*manager.ServerInfo
@@ -44,13 +52,7 @@ func TestCDNHostsToServers(t *testing.T) {
 			expect: func(t *testing.T, data interface{}) {
 				assert := testifyassert.New(t)
 				assert.EqualValues(map[string]*manager.ServerInfo{
-					"foo": &manager.ServerInfo{
-						HostInfo: &manager.HostInfo{
-							HostName: "foo",
-						},
-						RpcPort:  8002,
-						DownPort: 8001,
-					},
+					"foo": mockServerInfo,
 				}, data)
 			},
 		},
