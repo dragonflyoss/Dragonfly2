@@ -102,8 +102,8 @@ func (suite *RateLimiterSuite) TestRateLimiter_AcquireBlocking() {
 			suite.Equal(rl.AcquireBlocking(cc.t), cc.t)
 		}
 		end := time.Now().UnixNano() / time.Millisecond.Nanoseconds()
-		suite.Equal(true, end-start >= cc.e-10)
-		suite.Equal(true, end-start < cc.e+10)
+		suite.Equal(true, end-start >= cc.e)
+		suite.Equal(true, end-start < cc.e+50)
 	}
 }
 
