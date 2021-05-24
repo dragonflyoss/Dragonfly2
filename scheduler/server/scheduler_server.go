@@ -101,7 +101,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	task, ok := s.service.GetTask(pkg.TaskId)
 	if !ok {
 		task, err = s.service.AddTask(&types.Task{
-			TaskId:  pkg.TaskId,
+			TaskID:  pkg.TaskId,
 			Url:     request.Url,
 			Filter:  request.Filter,
 			BizId:   request.BizId,
@@ -122,7 +122,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		return
 	}
 
-	pkg.TaskId = task.TaskId
+	pkg.TaskId = task.TaskID
 	pkg.SizeScope = task.SizeScope
 
 	// case base.SizeScope_TINY

@@ -96,7 +96,7 @@ func (wg *Group) ReceiveJob(job *types.PeerTask) {
 	if job == nil {
 		return
 	}
-	choiceWorkerID := crc32.ChecksumIEEE([]byte(job.Task.TaskId)) % uint32(wg.workerNum)
+	choiceWorkerID := crc32.ChecksumIEEE([]byte(job.Task.TaskID)) % uint32(wg.workerNum)
 	wg.workerList[choiceWorkerID].ReceiveJob(job)
 }
 

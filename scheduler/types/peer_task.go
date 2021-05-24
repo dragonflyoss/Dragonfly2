@@ -299,7 +299,7 @@ func (pt *PeerTask) GetSendPkg() (pkg *scheduler.PeerPacket) {
 	// if pt != nil && pt.client != nil {
 	pkg = &scheduler.PeerPacket{
 		Code:   dfcodes.Success,
-		TaskId: pt.Task.TaskId,
+		TaskId: pt.Task.TaskID,
 		// source peer id
 		SrcPid: pt.Pid,
 		// concurrent downloading count from main peer

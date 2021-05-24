@@ -86,7 +86,7 @@ func (m *PeerTask) Add(pid string, task *types.Task, host *types.Host) *types.Pe
 	pt := types.NewPeerTask(pid, task, host, m.addToGCQueue)
 	m.data.Store(pid, pt)
 
-	m.taskManager.Touch(task.TaskId)
+	m.taskManager.Touch(task.TaskID)
 
 	r, ok := m.dataRanger.Load(pt.Task)
 	if ok {
@@ -345,7 +345,7 @@ func (m *PeerTask) printDebugInfo() string {
 }
 
 func (m *PeerTask) RefreshDownloadMonitor(pt *types.PeerTask) {
-	logger.Debugf("[%s][%s] downloadMonitorWorkingLoop refresh ", pt.Task.TaskId, pt.Pid)
+	logger.Debugf("[%s][%s] downloadMonitorWorkingLoop refresh ", pt.Task.TaskID, pt.Pid)
 	status := pt.GetNodeStatus()
 	if status != types.PeerTaskStatusHealth {
 		m.downloadMonitorQueue.AddAfter(pt, time.Second*2)
@@ -381,7 +381,7 @@ func (m *PeerTask) downloadMonitorWorkingLoop() {
 		if m.downloadMonitorCallBack != nil {
 			pt, _ := v.(*types.PeerTask)
 			if pt != nil {
-				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", pt.Task.TaskId, pt.Pid, pt.GetNodeStatus())
+				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", pt.Task.TaskID, pt.Pid, pt.GetNodeStatus())
 				if pt.Success || (pt.Host != nil && pt.Host.Type == types.HostTypeCdn) {
 					// clear from monitor
 				} else {

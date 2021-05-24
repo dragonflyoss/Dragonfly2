@@ -126,14 +126,14 @@ func (s *Scheduler) ScheduleParent(peer *types.PeerTask) (primary *types.PeerTas
 		s.taskManager.PeerTask.Update(primary)
 		s.taskManager.PeerTask.Update(oldParent)
 	} else {
-		logger.Debugf("[%s][%s]SchedulerParent scheduler a empty parent", peer.Task.TaskId, peer.Pid)
+		logger.Debugf("[%s][%s]SchedulerParent scheduler a empty parent", peer.Task.TaskID, peer.Pid)
 	}
 
 	return
 }
 
 func (s *Scheduler) ScheduleBadNode(peer *types.PeerTask) (adjustNodes []*types.PeerTask, err error) {
-	logger.Debugf("[%s][%s]SchedulerBadNode scheduler node is bad", peer.Task.TaskId, peer.Pid)
+	logger.Debugf("[%s][%s]SchedulerBadNode scheduler node is bad", peer.Task.TaskID, peer.Pid)
 	parent := peer.GetParent()
 	if parent != nil && parent.DstPeerTask != nil {
 		pNode := parent.DstPeerTask
@@ -155,7 +155,7 @@ func (s *Scheduler) ScheduleBadNode(peer *types.PeerTask) (adjustNodes []*types.
 		if node.GetParent() != nil {
 			parentID = node.GetParent().DstPeerTask.Pid
 		}
-		logger.Debugf("[%s][%s]SchedulerBadNode [%s] scheduler a new parent [%s]", peer.Task.TaskId, peer.Pid,
+		logger.Debugf("[%s][%s]SchedulerBadNode [%s] scheduler a new parent [%s]", peer.Task.TaskID, peer.Pid,
 			node.Pid, parentID)
 	}
 

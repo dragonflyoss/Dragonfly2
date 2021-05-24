@@ -27,7 +27,7 @@ import (
 )
 
 type Task struct {
-	TaskId string `json:"task_id,omitempty"`
+	TaskID string `json:"task_id,omitempty"`
 	Url    string `json:"url,omitempty"`
 	// regex format, used for task id generator, assimilating different urls
 	Filter string `json:"filter,omitempty"`
