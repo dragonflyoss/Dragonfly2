@@ -36,12 +36,10 @@ var (
 )
 
 var peerHostConfig = PeerHostOption{
-	DataDir:    peerHostDataDir,
-	WorkHome:   peerHostWorkHome,
-	AliveTime:  clientutil.Duration{Duration: DefaultDaemonAliveTime},
-	GCInterval: clientutil.Duration{Duration: DefaultGCInterval},
-	//PidFile:     "/var/run/dfdaemon.pid",
-	//LockFile:    "/var/run/dfdaemon.lock",
+	DataDir:     peerHostDataDir,
+	WorkHome:    peerHostWorkHome,
+	AliveTime:   clientutil.Duration{Duration: DefaultDaemonAliveTime},
+	GCInterval:  clientutil.Duration{Duration: DefaultGCInterval},
 	KeepStorage: false,
 	Scheduler: SchedulerOption{
 		NetAddrs:        nil,
