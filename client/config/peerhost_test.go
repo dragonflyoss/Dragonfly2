@@ -287,7 +287,6 @@ func TestPeerHostOption_Load(t *testing.T) {
 		GCInterval: clientutil.Duration{
 			Duration: 60000000000,
 		},
-		LockFile:    "/tmp/dfdaemon.lock",
 		DataDir:     "/tmp/dragonfly/dfdaemon/",
 		WorkHome:    "/tmp/dragonfly/dfdaemon/",
 		KeepStorage: false,
