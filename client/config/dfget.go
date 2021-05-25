@@ -47,9 +47,6 @@ type ClientOption struct {
 	// URL download URL.
 	URL string `yaml:"url,omitempty" mapstructure:"url,omitempty"`
 
-	// Lock file location
-	LockFile string `yaml:"lock_file,omitempty" mapstructure:"lock_file,omitempty"`
-
 	// Output full output path.
 	Output string `yaml:"output,omitempty" mapstructure:"output,omitempty"`
 
