@@ -128,7 +128,7 @@ func (suite *QueueTestSuite) TestQueue_finiteQueue() {
 	q.PutTimeout(4, 0)
 	suite.Equal(q.Len(), 2)
 	suite.Equal(time.Since(start) >= timeout, true)
-	suite.Equal(time.Since(start) < 2*timeout, true)
+	suite.Equal(time.Since(start) < 4*timeout, true)
 
 	suite.Equal(q.Poll(), 1)
 	suite.Equal(q.Len(), 1)

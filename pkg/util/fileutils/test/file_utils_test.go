@@ -99,7 +99,7 @@ func (s *FileUtilsTestSuite) TestLink() {
 	st := statutils.GetSysStat(info)
 	s.Require().NotNil(st)
 
-	s.Require().Equal(uint16(2), st.Nlink)
+	s.Require().Equal(uint64(2), uint64(st.Nlink))
 
 	s.Require().True(fileutils.PathExist(s.testFile + ".link"))
 

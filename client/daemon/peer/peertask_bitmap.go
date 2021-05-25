@@ -16,6 +16,8 @@
 
 package peer
 
+import "sync/atomic"
+
 type Bitmap struct {
 	bits    []byte
 	cap     int32
@@ -51,12 +53,12 @@ func (b *Bitmap) Set(i int32) {
 	//if b.IsSet(i) {
 	//	return
 	//}
-	b.settled++
+	atomic.AddInt32(&b.settled, 1)
 	b.bits[i/8] |= 1 << uint(7-i%8)
 }
 
 func (b *Bitmap) Settled() int32 {
-	return b.settled
+	return atomic.LoadInt32(&b.settled)
 }
 
 //func (b *Bitmap) Clear(i int) {

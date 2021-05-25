@@ -12,12 +12,11 @@ coverage:
         enabled: yes
         target: 80%
 
-comment:               
+comment:
   layout: "reach, diff, flags, files"
   behavior: default
-  require_changes: false  
-  require_base: no        
-  require_head: yes       
-  branches:               
+  require_changes: false
+  require_base: no
+  require_head: yes
+  branches:
     - main
-    - main-rc

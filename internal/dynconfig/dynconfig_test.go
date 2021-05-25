@@ -70,7 +70,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 						Name: schedulerName,
 					},
 				}, &d)
-				m.Get().Return(d, nil).Times(1)
+				m.Get().Return(d, nil).AnyTimes()
 			},
 			expect: func(t *testing.T, data interface{}) {
 				assert := assert.New(t)

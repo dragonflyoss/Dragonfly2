@@ -24,7 +24,9 @@ import (
 	"os"
 	"path"
 	"sync"
+	"sync/atomic"
 	"time"
+	"unsafe"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -45,13 +47,14 @@ type localTaskStore struct {
 	metadataFilePath string
 
 	expireTime    time.Duration
-	lastAccess    time.Time
+	lastAccess    *time.Time
 	reclaimMarked bool
 	gcCallback    func(CommonTaskRequest)
 }
 
 func (t *localTaskStore) touch() {
-	t.lastAccess = time.Now()
+	access := time.Now()
+	atomic.SwapPointer((*unsafe.Pointer)(unsafe.Pointer(&t.lastAccess)), unsafe.Pointer(&access))
 }
 
 func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {

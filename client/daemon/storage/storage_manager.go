@@ -286,6 +286,7 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 	if err := os.MkdirAll(t.dataDir, defaultDirectoryMode); err != nil && !os.IsExist(err) {
 		return err
 	}
+	t.touch()
 	metadata, err := os.OpenFile(t.metadataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
 	if err != nil {
 		return err
@@ -374,10 +375,10 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 				dataDir:             dataDir,
 				metadataFilePath:    path.Join(dataDir, taskMetaData),
 				expireTime:          s.storeOption.TaskExpireTime.Duration,
-				lastAccess:          time.Now(),
 				gcCallback:          gcCallback,
 				SugaredLoggerOnWith: logger.With("task", taskID, "peer", peerID, "component", s.storeStrategy),
 			}
+			t.touch()
 
 			if t.metadataFile, err = os.Open(t.metadataFilePath); err != nil {
 				loadErrs = append(loadErrs, err)
@@ -482,7 +483,7 @@ func (s *storageManager) TryGC() (bool, error) {
 			return true
 		})
 		sort.SliceStable(tasks, func(i, j int) bool {
-			return tasks[i].lastAccess.Before(tasks[j].lastAccess)
+			return tasks[i].lastAccess.Before(*tasks[j].lastAccess)
 		})
 		for _, task := range tasks {
 			task.MarkReclaim()
