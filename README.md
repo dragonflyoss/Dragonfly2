@@ -3,7 +3,7 @@
 ![alt][logo-linear]
 
 [![GitHub release](https://img.shields.io/github/release/dragonflyoss/Dragonfly2.svg)](https://github.com/dragonflyoss/Dragonfly2/releases)
-[![CI](https://github.com/dragonflyoss/Dragonfly2/actions/workflows/ci.yaml/badge.svg)](https://github.com/dragonflyoss/Dragonfly2/actions/workflows/ci.yaml)
+[![CI](https://github.com/dragonflyoss/Dragonfly2/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/dragonflyoss/Dragonfly2/actions/workflows/ci.yaml)
 [![Coverage](https://codecov.io/gh/dragonflyoss/Dragonfly2/branch/main/graph/badge.svg)](https://codecov.io/gh/dragonflyoss/Dragonfly2)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dragonflyoss/Dragonfly2?style=flat-square)](https://goreportcard.com/report/github.com/dragonflyoss/Dragonfly2)
 [![Open Source Helpers](https://www.codetriage.com/dragonflyoss/dragonfly2/badges/users.svg)](https://www.codetriage.com/dragonflyoss/dragonfly2)
