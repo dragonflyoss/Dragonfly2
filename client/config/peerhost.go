@@ -50,8 +50,6 @@ type PeerHostOption struct {
 	AliveTime  clientutil.Duration `mapstructure:"alive_time" yaml:"alive_time"`
 	GCInterval clientutil.Duration `mapstructure:"gc_interval" yaml:"gc_interval"`
 
-	// Pid file location
-	PidFile string `json:"pid_file" yaml:"pid_file"`
 	// Lock file location
 	LockFile string `json:"lock_file" yaml:"lock_file"`
 

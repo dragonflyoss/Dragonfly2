@@ -40,7 +40,6 @@ var peerHostConfig = PeerHostOption{
 	WorkHome:   peerHostWorkHome,
 	AliveTime:  clientutil.Duration{Duration: DefaultDaemonAliveTime},
 	GCInterval: clientutil.Duration{Duration: DefaultGCInterval},
-	//PidFile:     "/tmp/dfdaemon.pid",
 	//LockFile:    "/tmp/dfdaemon.lock",
 	KeepStorage: false,
 	Scheduler: SchedulerOption{
