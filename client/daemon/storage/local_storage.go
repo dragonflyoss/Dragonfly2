@@ -26,7 +26,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"unsafe"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -47,14 +46,14 @@ type localTaskStore struct {
 	metadataFilePath string
 
 	expireTime    time.Duration
-	lastAccess    *time.Time
+	lastAccess    int64
 	reclaimMarked bool
 	gcCallback    func(CommonTaskRequest)
 }
 
 func (t *localTaskStore) touch() {
-	access := time.Now()
-	atomic.SwapPointer((*unsafe.Pointer)(unsafe.Pointer(&t.lastAccess)), unsafe.Pointer(&access))
+	access := time.Now().UnixNano()
+	atomic.SwapInt64(&t.lastAccess, access)
 }
 
 func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
@@ -246,7 +245,8 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 }
 
 func (t *localTaskStore) CanReclaim() bool {
-	return t.lastAccess.Add(t.expireTime).Before(time.Now())
+	access := time.Unix(0, t.lastAccess)
+	return access.Add(t.expireTime).Before(time.Now())
 }
 
 // MarkReclaim will try to invoke gcCallback (normal leave peer task)
