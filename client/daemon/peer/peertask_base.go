@@ -558,7 +558,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 }
 
 func (pt *peerTask) isCompleted() bool {
-	return pt.completedLength == pt.contentLength
+	return atomic.LoadInt64(&pt.completedLength) == atomic.LoadInt64(&pt.contentLength)
 }
 
 func (pt *peerTask) preparePieceTasks(request *base.PieceTaskRequest) (p *base.PiecePacket, err error) {

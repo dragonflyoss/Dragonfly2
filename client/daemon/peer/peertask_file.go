@@ -248,7 +248,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 		TaskID:          pt.taskID,
 		PeerID:          pt.peerID,
 		ContentLength:   pt.contentLength,
-		CompletedLength: pt.completedLength,
+		CompletedLength: atomic.LoadInt64(&pt.completedLength),
 		PeerTaskDone:    false,
 	}
 
