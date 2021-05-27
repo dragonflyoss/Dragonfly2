@@ -17,68 +17,150 @@
 package gc
 
 import (
+	"errors"
 	"sync"
 	"time"
 
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
 
+// GC is the interface used for release resource
 type GC interface {
 	// Add adds GC task
-	Add(interval time.Duration, name string, t Task)
+	Add(string, Task)
 
-	// AddTask adds GC task
-	ForceRun(name string)
+	// Run GC task
+	Run(string) error
 
-	// AddTask adds GC task
-	ForceRunAll()
+	// Run all registered GC tasks
+	RunAll()
 
 	// Serve running the GC task
-	Serve() error
+	Serve()
 
 	// Stop running the GC task
 	Stop()
 }
 
+// GC provides task release function
 type gc struct {
-	tasks sync.Map
-	done  chan bool
+	tasks    *sync.Map
+	interval time.Duration
+	timeout  time.Duration
+	logger   Logger
+	done     chan bool
 }
 
-func AddTask(interval time.Duration, name string, t Task) {
-	tasks[name] = gc
-}
+// Option is a functional option for configuring the GC
+type Option func(g *gc) *gc
 
-func New(interval time.Duration) GC {
-	return &gc{
-		tasks: &sync.Map{},
-		done:  make(chan bool),
+// WithInterval set the interval for GC collection
+func WithInterval(interval time.Duration) Option {
+	return func(g *gc) *gc {
+		g.interval = interval
+		return g
 	}
 }
 
-func (g gcManager) Ser() {
+// WithTimeout set the timeout for GC collection
+func WithTimeout(timeout time.Duration) Option {
+	return func(g *gc) *gc {
+		g.timeout = timeout
+		return g
+	}
+}
+
+// WithLogger set the logger for GC
+func WithLogger(logger Logger) Option {
+	return func(g *gc) *gc {
+		g.logger = logger
+		return g
+	}
+}
+
+// New returns a new GC instence
+func New(options ...Option) (GC, error) {
+	return NewWithOptions(options...)
+}
+
+// NewWithOptions constructs a new instance of a GC with additional options.
+func NewWithOptions(options ...Option) (GC, error) {
+	g := &gc{
+		tasks: &sync.Map{},
+		done:  make(chan bool),
+	}
+
+	for _, opt := range options {
+		opt(g)
+	}
+
+	if err := g.validate(); err != nil {
+		return nil, err
+	}
+
+	return g, nil
+}
+
+func (g gc) Add(k string, t Task) {
+	g.tasks.Store(k, t)
+}
+
+func (g gc) Run(k string) error {
+	v, ok := g.tasks.Load(k)
+	if !ok {
+		return errors.New("can not find the task")
+	}
+
+	g.run(k, v.(Task))
+	return nil
+}
+
+func (g gc) RunAll() {
+	g.tasks.Range(func(k, v interface{}) bool {
+		g.run(k.(string), v.(Task))
+		return true
+	})
+}
+
+func (g gc) Serve() {
 	go func() {
 		tick := time.NewTicker(g.interval)
 		for {
 			select {
 			case <-tick.C:
-				for name, gc := range allGCTasks {
-					var log = logger.With("component", name)
-					log.Debugf("start gc")
-					_, err := gc.TryGC()
-					if err != nil {
-						log.Errorf("gc %s error: %s", name, err)
-					}
-					log.Debugf("gc done")
-				}
+				g.RunAll()
+			case <-time.After(g.timeout):
+				logger.Infof("GC timeout")
+				return
 			case <-g.done:
-				logger.Infof("gc exited")
+				logger.Infof("GC exited")
 				return
 			}
 		}
 	}()
 }
 
-func (g gcManager) Stop() {
+func (g gc) Stop() {
 	close(g.done)
+}
+
+func (g gc) validate() error {
+	if g.interval <= 0 {
+		return errors.New("interval value is greater than 0")
+	}
+
+	if g.timeout >= g.interval {
+		return errors.New("timeout value needs to be less than the interval value")
+	}
+
+	return nil
+}
+
+func (g gc) run(k string, t Task) {
+	g.logger.Infof("%s GC start", k)
+	if err := t.RunGC(); err != nil {
+		g.logger.Errorf("%s GC error: %v", k, err)
+		return
+	}
+	g.logger.Infof("%s GC success", k)
 }
