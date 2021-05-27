@@ -133,7 +133,7 @@ func runDaemon() error {
 	s, _ := yaml.Marshal(cfg)
 	logger.Infof("client daemon configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Jaeger)
+	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry.Jaeger)
 	defer ff()
 
 	svr, err := server.New(cfg)

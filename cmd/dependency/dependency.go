@@ -58,26 +58,26 @@ func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
 	rootName := cmd.Root().Name()
 	cobra.OnInitialize(func() { initConfig(useConfigFile, rootName, config) })
 
-	// Add common flags
-	flags := cmd.Flags()
-	flags.Bool("console", false, "whether logger output records to the stdout")
-	flags.Bool("verbose", false, "whether logger use debug level")
-	flags.Int("pprof-port", -1, "listen port for pprof, 0 represents random port")
-	flags.String("jaeger", "", "jaeger endpoint url, like: http://localhost:14250/api/traces")
-	flags.String("config", "", fmt.Sprintf("the path of configuration file with yaml extension name, default is %s, it can also be set by env var:%s", filepath.Join(dfpath.DefaultConfigDir, rootName+".yaml"), strings.ToUpper(rootName+"_config")))
-
-	// Bind common flags
-	if err := viper.BindPFlags(flags); err != nil {
-		panic(errors.Wrap(err, "bind common flags to viper"))
-	}
-
-	// Config for binding env
-	viper.SetEnvPrefix(rootName)
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	_ = viper.BindEnv("config")
-
-	// Add common cmds only on root cmd
 	if !cmd.HasParent() {
+		// Add common flags
+		flags := cmd.PersistentFlags()
+		flags.Bool("console", false, "whether logger output records to the stdout")
+		flags.Bool("verbose", false, "whether logger use debug level")
+		flags.Int("pprof-port", -1, "listen port for pprof, 0 represents random port")
+		flags.String("jaeger", "", "jaeger endpoint url, like: http://localhost:14250/api/traces")
+		flags.String("config", "", fmt.Sprintf("the path of configuration file with yaml extension name, default is %s, it can also be set by env var:%s", filepath.Join(dfpath.DefaultConfigDir, rootName+".yaml"), strings.ToUpper(rootName+"_config")))
+
+		// Bind common flags
+		if err := viper.BindPFlags(flags); err != nil {
+			panic(errors.Wrap(err, "bind common flags to viper"))
+		}
+
+		// Config for binding env
+		viper.SetEnvPrefix(rootName)
+		viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+		_ = viper.BindEnv("config")
+
+		// Add common cmds only on root cmd
 		cmd.AddCommand(VersionCmd)
 		cmd.AddCommand(newDocCommand(cmd.Name()))
 	}

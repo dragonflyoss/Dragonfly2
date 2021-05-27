@@ -60,7 +60,6 @@ type PeerHostOption struct {
 	Proxy        *ProxyOption    `mapstructure:"proxy" yaml:"proxy"`
 	Upload       UploadOption    `mapstructure:"upload" yaml:"upload"`
 	Storage      StorageOption   `mapstructure:"storage" yaml:"storage"`
-	Telemetry    TelemetryOption `mapstructure:"telemetry" yaml:"telemetry"`
 	ConfigServer string          `mapstructure:"configServer" yaml:"configServer"`
 }
 
