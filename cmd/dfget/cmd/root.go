@@ -153,7 +153,7 @@ func runDfget() error {
 	s, _ := yaml.Marshal(dfgetConfig)
 	logger.Infof("client dfget configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(dfgetConfig.Verbose, dfgetConfig.PProfPort, dfgetConfig.Jaeger)
+	ff := dependency.InitMonitor(dfgetConfig.Verbose, dfgetConfig.PProfPort, dfgetConfig.Telemetry.Jaeger)
 	defer ff()
 
 	logger.Info("start to check and spawn daemon")
