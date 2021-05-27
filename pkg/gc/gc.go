@@ -17,6 +17,7 @@
 package gc
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"time"
@@ -111,29 +112,25 @@ func (g gc) Run(k string) error {
 		return errors.New("can not find the task")
 	}
 
-	g.run(k, v.(Task))
+	g.run(context.Background(), k, v.(Task))
 	return nil
 }
 
 func (g gc) RunAll() {
-	g.tasks.Range(func(k, v interface{}) bool {
-		g.run(k.(string), v.(Task))
-		return true
-	})
+	g.runAll(context.Background())
 }
 
 func (g gc) Serve() {
 	go func() {
+		ctx, cancel := context.WithCancel(context.Background())
 		tick := time.NewTicker(g.interval)
 		for {
 			select {
 			case <-tick.C:
-				g.RunAll()
-			case <-time.After(g.timeout):
-				logger.Infof("GC timeout")
-				return
+				g.runAll(ctx)
 			case <-g.done:
-				logger.Infof("GC exited")
+				cancel()
+				logger.Infof("GC stop")
 				return
 			}
 		}
@@ -156,11 +153,32 @@ func (g gc) validate() error {
 	return nil
 }
 
-func (g gc) run(k string, t Task) {
-	g.logger.Infof("%s GC start", k)
-	if err := t.RunGC(); err != nil {
-		g.logger.Errorf("%s GC error: %v", k, err)
-		return
+func (g gc) runAll(ctx context.Context) {
+	g.tasks.Range(func(k, v interface{}) bool {
+		go g.run(ctx, k.(string), v.(Task))
+		return true
+	})
+}
+
+func (g gc) run(ctx context.Context, k string, t Task) {
+	done := make(chan struct{})
+
+	go func() {
+		g.logger.Infof("%s GC start", k)
+
+		defer close(done)
+		if err := t.RunGC(); err != nil {
+			g.logger.Errorf("%s GC error: %v", k, err)
+			return
+		}
+	}()
+
+	select {
+	case <-time.After(g.timeout):
+		g.logger.Infof("%s GC timeout", k)
+	case <-done:
+		g.logger.Infof("%s GC done", k)
+	case <-ctx.Done():
+		g.logger.Infof("%s GC stop", k)
 	}
-	g.logger.Infof("%s GC success", k)
 }
