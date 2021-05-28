@@ -100,8 +100,8 @@ func TestGCRun(t *testing.T) {
 		{
 			name:     "run task succeeded",
 			taskName: "foo",
-			interval: 10 * time.Second,
-			timeout:  2 * time.Second,
+			interval: 2 * time.Hour,
+			timeout:  1 * time.Hour,
 			run: func(gc GC, taskName string, ml *mocks.MockLogger, mt *mocks.MockTask, t *testing.T) {
 				var wg sync.WaitGroup
 				wg.Add(3)
@@ -120,7 +120,8 @@ func TestGCRun(t *testing.T) {
 		{
 			name:     "task run GC failed",
 			taskName: "foo",
-			interval: 10 * time.Second,
+			interval: 2 * time.Hour,
+			timeout:  1 * time.Hour,
 			run: func(gc GC, taskName string, ml *mocks.MockLogger, mt *mocks.MockTask, t *testing.T) {
 				var wg sync.WaitGroup
 				wg.Add(4)
@@ -141,8 +142,8 @@ func TestGCRun(t *testing.T) {
 		{
 			name:     "task load wrong key",
 			taskName: "foo",
-			interval: 10 * time.Second,
-			timeout:  2 * time.Second,
+			interval: 2 * time.Hour,
+			timeout:  1 * time.Hour,
 			run: func(gc GC, taskName string, ml *mocks.MockLogger, mt *mocks.MockTask, t *testing.T) {
 				assert := assert.New(t)
 				gc.Add(taskName, mt)
