@@ -186,7 +186,7 @@ func (suite *LeaseTestSuite) randPrefix() string {
 func (suite *LeaseTestSuite) SetupTest() {
 	assert := assert.New(suite.T())
 
-	cfg := config.MockConfig()
+	cfg := config.New()
 	store, err := client.NewStore(cfg)
 	assert.Nil(err)
 	assert.NotNil(store)

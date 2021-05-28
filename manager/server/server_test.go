@@ -764,7 +764,7 @@ func (suite *ServerTestSuite) SetupSuite() {
 
 	configsvc.KeepAliveTimeoutMax = 2 * time.Second
 	_ = logcore.InitManager(false)
-	cfg := config.MockConfig()
+	cfg := config.New()
 	server, err := New(cfg)
 	assert.Nil(err)
 	assert.NotNil(server)
