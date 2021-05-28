@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"github.com/sirupsen/logrus"
 )
 
 // GC is the interface used for release resource
@@ -87,8 +87,9 @@ func New(options ...Option) (GC, error) {
 // NewWithOptions constructs a new instance of a GC with additional options.
 func NewWithOptions(options ...Option) (GC, error) {
 	g := &gc{
-		tasks: &sync.Map{},
-		done:  make(chan bool),
+		tasks:  &sync.Map{},
+		done:   make(chan bool),
+		logger: logrus.New(),
 	}
 
 	for _, opt := range options {
@@ -112,7 +113,7 @@ func (g gc) Run(k string) error {
 		return errors.New("can not find the task")
 	}
 
-	g.run(context.Background(), k, v.(Task))
+	go g.run(context.Background(), k, v.(Task))
 	return nil
 }
 
@@ -123,14 +124,15 @@ func (g gc) RunAll() {
 func (g gc) Serve() {
 	go func() {
 		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		tick := time.NewTicker(g.interval)
 		for {
 			select {
 			case <-tick.C:
 				g.runAll(ctx)
 			case <-g.done:
-				cancel()
-				logger.Infof("GC stop")
+				g.logger.Infof("GC stop")
 				return
 			}
 		}
@@ -144,6 +146,10 @@ func (g gc) Stop() {
 func (g gc) validate() error {
 	if g.interval <= 0 {
 		return errors.New("interval value is greater than 0")
+	}
+
+	if g.timeout <= 0 {
+		return errors.New("timeout value is greater than 0")
 	}
 
 	if g.timeout >= g.interval {
@@ -164,8 +170,7 @@ func (g gc) run(ctx context.Context, k string, t Task) {
 	done := make(chan struct{})
 
 	go func() {
-		g.logger.Infof("%s GC start", k)
-
+		g.logger.Infof("%s GC %s", k, "start")
 		defer close(done)
 		if err := t.RunGC(); err != nil {
 			g.logger.Errorf("%s GC error: %v", k, err)
@@ -175,10 +180,10 @@ func (g gc) run(ctx context.Context, k string, t Task) {
 
 	select {
 	case <-time.After(g.timeout):
-		g.logger.Infof("%s GC timeout", k)
+		g.logger.Infof("%s GC %s", k, "timeout")
 	case <-done:
-		g.logger.Infof("%s GC done", k)
+		g.logger.Infof("%s GC %s", k, "done")
 	case <-ctx.Done():
-		g.logger.Infof("%s GC stop", k)
+		g.logger.Infof("%s GC %s", k, "stop")
 	}
 }

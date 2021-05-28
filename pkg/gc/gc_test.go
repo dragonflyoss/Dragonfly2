@@ -17,6 +17,8 @@
 package gc
 
 import (
+	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -28,16 +30,14 @@ import (
 func TestGCNew(t *testing.T) {
 	tests := []struct {
 		name     string
-		timeout  time.Duration
 		interval time.Duration
-		mock     func(ml *mocks.MockLoggerMockRecorder, mt *mocks.MockTaskMockRecorder)
+		timeout  time.Duration
 		expect   func(t *testing.T, err error)
 	}{
 		{
 			name:     "new GC instance succeeded",
-			timeout:  1 * time.Second,
 			interval: 2 * time.Second,
-			mock:     func(ml *mocks.MockLoggerMockRecorder, mt *mocks.MockTaskMockRecorder) {},
+			timeout:  1 * time.Second,
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
@@ -45,9 +45,8 @@ func TestGCNew(t *testing.T) {
 		},
 		{
 			name:     "new GC without interval",
-			timeout:  1 * time.Second,
 			interval: 0,
-			mock:     func(ml *mocks.MockLoggerMockRecorder, mt *mocks.MockTaskMockRecorder) {},
+			timeout:  1 * time.Second,
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "interval value is greater than 0")
@@ -55,19 +54,17 @@ func TestGCNew(t *testing.T) {
 		},
 		{
 			name:     "new GC without timeout",
-			timeout:  0,
 			interval: 2 * time.Second,
-			mock:     func(ml *mocks.MockLoggerMockRecorder, mt *mocks.MockTaskMockRecorder) {},
+			timeout:  0,
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.NoError(err)
+				assert.EqualError(err, "timeout value is greater than 0")
 			},
 		},
 		{
 			name:     "timeout is greater than interval",
-			timeout:  2 * time.Second,
 			interval: 1 * time.Second,
-			mock:     func(ml *mocks.MockLoggerMockRecorder, mt *mocks.MockTaskMockRecorder) {},
+			timeout:  2 * time.Second,
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "timeout value needs to be less than the interval value")
@@ -80,8 +77,6 @@ func TestGCNew(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 			mockLogger := mocks.NewMockLogger(ctl)
-			mockTask := mocks.NewMockTask(ctl)
-			tc.mock(mockLogger.EXPECT(), mockTask.EXPECT())
 
 			_, err := New([]Option{
 				WithInterval(tc.interval),
@@ -98,50 +93,61 @@ func TestGCRun(t *testing.T) {
 	tests := []struct {
 		name     string
 		taskName string
-		timeout  time.Duration
 		interval time.Duration
-		mock     func(ml *mocks.MockLoggerMockRecorder, mt *mocks.MockTaskMockRecorder)
-		expect   func(t *testing.T, err error)
+		timeout  time.Duration
+		run      func(gc GC, taskName string, ml *mocks.MockLogger, mt *mocks.MockTask, t *testing.T)
 	}{
 		{
-			name:     "new GC instance succeeded",
+			name:     "run task succeeded",
 			taskName: "foo",
-			timeout:  1 * time.Second,
-			interval: 2 * time.Second,
-			mock:     func(ml *mocks.MockLoggerMockRecorder, mt *mocks.MockTaskMockRecorder) {},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-			},
-		},
-		{
-			name:     "new GC without interval",
-			timeout:  1 * time.Second,
-			interval: 0,
-			mock:     func(ml *mocks.MockLoggerMockRecorder, mt *mocks.MockTaskMockRecorder) {},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "interval value is greater than 0")
-			},
-		},
-		{
-			name:     "new GC without timeout",
-			timeout:  0,
-			interval: 2 * time.Second,
-			mock:     func(ml *mocks.MockLoggerMockRecorder, mt *mocks.MockTaskMockRecorder) {},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.NoError(err)
-			},
-		},
-		{
-			name:     "timeout is greater than interval",
+			interval: 10 * time.Second,
 			timeout:  2 * time.Second,
-			interval: 1 * time.Second,
-			mock:     func(ml *mocks.MockLoggerMockRecorder, mt *mocks.MockTaskMockRecorder) {},
-			expect: func(t *testing.T, err error) {
+			run: func(gc GC, taskName string, ml *mocks.MockLogger, mt *mocks.MockTask, t *testing.T) {
+				var wg sync.WaitGroup
+				wg.Add(3)
+				defer wg.Wait()
+
+				gomock.InOrder(
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo"), gomock.Eq("start")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					mt.EXPECT().RunGC().Do(func() { wg.Done() }).Return(nil).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo"), gomock.Eq("done")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+				)
+
+				gc.Add(taskName, mt)
+				gc.Run(taskName)
+			},
+		},
+		{
+			name:     "task run GC failed",
+			taskName: "foo",
+			interval: 10 * time.Second,
+			run: func(gc GC, taskName string, ml *mocks.MockLogger, mt *mocks.MockTask, t *testing.T) {
+				var wg sync.WaitGroup
+				wg.Add(4)
+				defer wg.Wait()
+
+				err := errors.New("bar")
+				gomock.InOrder(
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo"), gomock.Eq("start")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					mt.EXPECT().RunGC().Do(func() { wg.Done() }).Return(err).Times(1),
+					ml.EXPECT().Errorf(gomock.Any(), gomock.Eq("foo"), gomock.Eq(err)).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo"), gomock.Eq("done")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+				)
+
+				gc.Add(taskName, mt)
+				gc.Run(taskName)
+			},
+		},
+		{
+			name:     "task load wrong key",
+			taskName: "foo",
+			interval: 10 * time.Second,
+			timeout:  2 * time.Second,
+			run: func(gc GC, taskName string, ml *mocks.MockLogger, mt *mocks.MockTask, t *testing.T) {
 				assert := assert.New(t)
-				assert.EqualError(err, "timeout value needs to be less than the interval value")
+				gc.Add(taskName, mt)
+				err := gc.Run("bar")
+				assert.EqualError(err, "can not find the task")
 			},
 		},
 	}
@@ -152,21 +158,116 @@ func TestGCRun(t *testing.T) {
 			defer ctl.Finish()
 			mockLogger := mocks.NewMockLogger(ctl)
 			mockTask := mocks.NewMockTask(ctl)
-			tc.mock(mockLogger.EXPECT(), mockTask.EXPECT())
 
-			_, err := New([]Option{
+			gc, err := New([]Option{
 				WithInterval(tc.interval),
 				WithTimeout(tc.timeout),
 				WithLogger(mockLogger),
 			}...)
-
-			tc.expect(t, err)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tc.run(gc, tc.taskName, mockLogger, mockTask, t)
 		})
 	}
 }
 
 func TestGCRunAll(t *testing.T) {
+	tests := []struct {
+		name     string
+		taskName string
+		interval time.Duration
+		timeout  time.Duration
+		run      func(gc GC, taskName string, ml *mocks.MockLogger, mt *mocks.MockTask)
+	}{
+		{
+			name:     "run task succeeded",
+			taskName: "foo",
+			interval: 2 * time.Hour,
+			timeout:  1 * time.Hour,
+			run: func(gc GC, taskName string, ml *mocks.MockLogger, mt *mocks.MockTask) {
+				var wg sync.WaitGroup
+				wg.Add(3)
+				defer wg.Wait()
+
+				gomock.InOrder(
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo"), gomock.Eq("start")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					mt.EXPECT().RunGC().Do(func() { wg.Done() }).Return(nil).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo"), gomock.Eq("done")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+				)
+
+				gc.Add(taskName, mt)
+				gc.RunAll()
+			},
+		},
+		{
+			name:     "task run GC failed",
+			taskName: "foo",
+			interval: 2 * time.Hour,
+			timeout:  1 * time.Hour,
+			run: func(gc GC, taskName string, ml *mocks.MockLogger, mt *mocks.MockTask) {
+				var wg sync.WaitGroup
+				wg.Add(4)
+				defer wg.Wait()
+
+				err := errors.New("bar")
+				gomock.InOrder(
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo"), gomock.Eq("start")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					mt.EXPECT().RunGC().Do(func() { wg.Done() }).Return(err).Times(1),
+					ml.EXPECT().Errorf(gomock.Any(), gomock.Eq("foo"), gomock.Eq(err)).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo"), gomock.Eq("done")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+				)
+
+				gc.Add(taskName, mt)
+				gc.RunAll()
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			mockLogger := mocks.NewMockLogger(ctl)
+			mockTask := mocks.NewMockTask(ctl)
+			gc, err := New([]Option{
+				WithInterval(tc.interval),
+				WithTimeout(tc.timeout),
+				WithLogger(mockLogger),
+			}...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tc.run(gc, tc.taskName, mockLogger, mockTask)
+		})
+	}
 }
 
 func TestGCServe(t *testing.T) {
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer wg.Wait()
+
+	mockLogger := mocks.NewMockLogger(ctl)
+	mockTask := mocks.NewMockTask(ctl)
+
+	gc, err := New([]Option{
+		WithInterval(2 * time.Hour),
+		WithTimeout(1 * time.Hour),
+		WithLogger(mockLogger),
+	}...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockLogger.EXPECT().Infof(gomock.Eq("GC stop")).Do(func(args ...interface{}) {
+		wg.Done()
+	}).Times(1)
+
+	gc.Add("foo", mockTask)
+	gc.Serve()
+	gc.Stop()
 }
