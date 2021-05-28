@@ -7,13 +7,18 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
+	"d7y.io/dragonfly/v2/manager/dc"
 	"d7y.io/dragonfly/v2/manager/host"
 	"d7y.io/dragonfly/v2/manager/hostidentifier"
+	"d7y.io/dragonfly/v2/manager/lease"
 	"d7y.io/dragonfly/v2/manager/store"
+	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	rCache "github.com/go-redis/cache/v8"
 )
 
 var KeepAliveTimeoutMax = 60 * time.Second
@@ -28,50 +33,146 @@ const (
 	CDNInstancePrefix       string = "cins-"
 )
 
-type schedulerInstance struct {
-	instance      *types.SchedulerInstance
-	keepAliveTime time.Time
-}
-
-type cdnInstance struct {
-	instance      *types.CDNInstance
-	keepAliveTime time.Time
-}
-
 type ConfigSvc struct {
 	mu         sync.Mutex
 	store      store.Store
 	identifier hostidentifier.Identifier
+	lessor     lease.Lessor
 
-	schClusters    map[string]*types.SchedulerCluster
-	cdnClusters    map[string]*types.CDNCluster
-	schInstances   map[string]*schedulerInstance
-	cdnInstances   map[string]*cdnInstance
-	securityDomain map[string]*types.SecurityDomain
+	schClusters    cache.Cache
+	cdnClusters    cache.Cache
+	schInstances   cache.Cache
+	cdnInstances   cache.Cache
+	securityDomain cache.Cache
+
+	keepAliveCache      *rCache.Cache
+	keepAliveTTL        time.Duration
+	keepAliveTimeoutMax time.Duration
+	checkKeepAliveTime  time.Duration
+
+	keepAliveLeaseID          lease.LeaseID
+	grantKeepAliveLeaseIDTime time.Duration
 
 	stopC chan struct{}
 	wg    sync.WaitGroup
 }
 
-func NewConfigSvc(store store.Store, identifier hostidentifier.Identifier) (*ConfigSvc, error) {
+func NewConfigSvc(store store.Store, identifier hostidentifier.Identifier, lessor lease.Lessor, client *dc.RedisClient) (*ConfigSvc, error) {
 	svc := &ConfigSvc{
 		store:          store,
 		identifier:     identifier,
-		schClusters:    make(map[string]*types.SchedulerCluster),
-		cdnClusters:    make(map[string]*types.CDNCluster),
-		schInstances:   make(map[string]*schedulerInstance),
-		cdnInstances:   make(map[string]*cdnInstance),
-		securityDomain: make(map[string]*types.SecurityDomain),
+		lessor:         lessor,
+		schClusters:    cache.New(5*time.Minute, 5*time.Second),
+		cdnClusters:    cache.New(5*time.Minute, 5*time.Second),
+		schInstances:   cache.New(5*time.Minute, 5*time.Second),
+		cdnInstances:   cache.New(5*time.Minute, 5*time.Second),
+		securityDomain: cache.New(5*time.Minute, 5*time.Second),
 		stopC:          make(chan struct{}),
 	}
+
+	svc.schClusters.OnEvicted(svc.schClusterOnEvicted)
+	svc.cdnClusters.OnEvicted(svc.cdnClusterOnEvicted)
+	svc.schInstances.OnEvicted(svc.schInstanceOnEvicted)
+	svc.cdnInstances.OnEvicted(svc.cdnInstanceOnEvicted)
+	svc.securityDomain.OnEvicted(svc.securityDomainOnEvicted)
+
+	/* keepAlive */
+	if client.Client != nil {
+		svc.keepAliveCache = rCache.New(&rCache.Options{
+			Redis: client.Client,
+		})
+	} else {
+		svc.keepAliveCache = rCache.New(&rCache.Options{
+			Redis: client.ClusterClient,
+		})
+	}
+	svc.keepAliveTTL = 5 * time.Minute
+	svc.keepAliveTimeoutMax = KeepAliveTimeoutMax
+	svc.checkKeepAliveTime = KeepAliveTimeoutMax / 5
+
+	/* keepAliveLease */
+	svc.keepAliveLeaseID = lease.NoLease
+	svc.grantKeepAliveLeaseIDTime = 5 * time.Second
 
 	if err := svc.rebuild(); err != nil {
 		return nil, err
 	}
 
-	svc.wg.Add(1)
+	svc.wg.Add(2)
+	go svc.grantKeepAliveLeaseLoop()
 	go svc.checkKeepAliveLoop()
 	return svc, nil
+}
+
+func (svc *ConfigSvc) schClusterOnEvicted(s string, i interface{}) {
+	_, _ = svc.GetSchedulerCluster(context.TODO(), s, store.WithSkipLocalCache())
+}
+
+func (svc *ConfigSvc) schInstanceOnEvicted(s string, i interface{}) {
+	_, _ = svc.GetSchedulerInstance(context.TODO(), s, store.WithSkipLocalCache())
+}
+
+func (svc *ConfigSvc) cdnClusterOnEvicted(s string, i interface{}) {
+	_, _ = svc.GetCDNCluster(context.TODO(), s, store.WithSkipLocalCache())
+}
+
+func (svc *ConfigSvc) cdnInstanceOnEvicted(s string, i interface{}) {
+	_, _ = svc.GetCDNInstance(context.TODO(), s, store.WithSkipLocalCache())
+}
+
+func (svc *ConfigSvc) securityDomainOnEvicted(s string, i interface{}) {
+	_, _ = svc.GetSecurityDomain(context.TODO(), s, store.WithSkipLocalCache())
+}
+
+func (svc *ConfigSvc) grantKeepAliveLease() (lease.LeaseID, chan struct{}, error) {
+	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancel()
+
+	key := "ConfigSvc/keepAliveLeaseID"
+	value := iputils.HostName
+	leaseID, err := svc.lessor.Grant(ctx, key, value, 10)
+	if err != nil {
+		logger.Infof("grant lease error: key %s, value %s, error %s", key, value, err.Error())
+		return lease.NoLease, nil, err
+	}
+
+	ch, err := svc.lessor.KeepAlive(ctx, leaseID)
+	if err != nil {
+		svc.lessor.Revoke(ctx, leaseID)
+		logger.Errorf("keepalive lease error: key %s, value %s, leaseID %s, error %s", key, value, leaseID.String(), err.Error())
+		return lease.NoLease, nil, err
+	}
+
+	logger.Infof("grant lease successful: key %s, value %s, leaseID %s", key, value, leaseID.String())
+	return leaseID, ch, nil
+}
+
+func (svc *ConfigSvc) grantKeepAliveLeaseLoop() {
+	defer svc.wg.Done()
+
+	var ka chan struct{}
+	id, ch, err := svc.grantKeepAliveLease()
+	if err == nil {
+		svc.keepAliveLeaseID = id
+		ka = ch
+	}
+
+	for {
+		select {
+		case <-svc.stopC:
+			return
+		case <-ka:
+			svc.keepAliveLeaseID = lease.NoLease
+		case <-time.After(svc.grantKeepAliveLeaseIDTime):
+			if svc.keepAliveLeaseID == lease.NoLease {
+				id, ch, err := svc.grantKeepAliveLease()
+				if err == nil {
+					svc.keepAliveLeaseID = id
+					ka = ch
+				}
+			}
+		}
+	}
 }
 
 func (svc *ConfigSvc) checkKeepAliveLoop() {
@@ -81,49 +182,82 @@ func (svc *ConfigSvc) checkKeepAliveLoop() {
 		select {
 		case <-svc.stopC:
 			return
-		case <-time.After(KeepAliveTimeoutMax):
-			svc.updateAllInstanceState()
+		case <-time.After(svc.checkKeepAliveTime):
+			if svc.keepAliveLeaseID != lease.NoLease {
+				svc.updateAllInstanceState()
+			}
 		}
 	}
 }
 
+func (svc *ConfigSvc) setKeepAlive(ctx context.Context, instanceID string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	return svc.keepAliveCache.Set(&rCache.Item{
+		Ctx:   ctx,
+		Key:   instanceID,
+		Value: time.Now(),
+		TTL:   svc.keepAliveTTL,
+	})
+}
+
+func (svc *ConfigSvc) getKeepAlive(ctx context.Context, instanceID string) (time.Time, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var v time.Time
+	err := svc.keepAliveCache.Get(ctx, instanceID, &v)
+	if err != nil {
+		return time.Now(), err
+	}
+
+	return v, err
+}
+
+func (svc *ConfigSvc) deleteKeepAlive(ctx context.Context, instanceID string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	return svc.keepAliveCache.Delete(ctx, instanceID)
+}
+
 func (svc *ConfigSvc) updateAllInstanceState() {
-	var schInstances []types.SchedulerInstance
-	var cdnInstances []types.CDNInstance
-
-	svc.mu.Lock()
 	now := time.Now()
-	for _, instance := range svc.schInstances {
-		if now.Before(instance.keepAliveTime.Add(KeepAliveTimeoutMax)) {
+	for instanceID, item := range svc.schInstances.Items() {
+		keepAliveTime, err := svc.getKeepAlive(context.TODO(), instanceID)
+		if err != nil {
 			continue
 		}
 
-		if state, ok := instanceNextState(instance.instance.State, true); ok {
-			inter := *instance.instance
-			inter.State = state
-			schInstances = append(schInstances, inter)
-		}
-	}
-
-	for _, instance := range svc.cdnInstances {
-		if now.Before(instance.keepAliveTime.Add(KeepAliveTimeoutMax)) {
+		if now.Before(keepAliveTime.Add(svc.keepAliveTimeoutMax)) {
 			continue
 		}
 
-		if state, ok := instanceNextState(instance.instance.State, true); ok {
-			inter := *instance.instance
+		instance := item.Object.(*types.SchedulerInstance)
+		if state, ok := instanceNextState(instance.State, true); ok {
+			inter := *instance
 			inter.State = state
-			cdnInstances = append(cdnInstances, inter)
+			_, _ = svc.UpdateSchedulerInstance(context.TODO(), &inter, store.WithKeepalive())
 		}
 	}
-	svc.mu.Unlock()
 
-	for _, instance := range schInstances {
-		svc.UpdateSchedulerInstance(context.TODO(), &instance)
-	}
+	for instanceID, item := range svc.cdnInstances.Items() {
+		keepAliveTime, err := svc.getKeepAlive(context.TODO(), instanceID)
+		if err != nil {
+			continue
+		}
 
-	for _, instance := range cdnInstances {
-		svc.UpdateCDNInstance(context.TODO(), &instance)
+		if now.Before(keepAliveTime.Add(svc.keepAliveTimeoutMax)) {
+			continue
+		}
+
+		instance := item.Object.(*types.CDNInstance)
+		if state, ok := instanceNextState(instance.State, true); ok {
+			inter := *instance
+			inter.State = state
+			_, _ = svc.UpdateCDNInstance(context.TODO(), &inter, store.WithKeepalive())
+		}
 	}
 }
 
@@ -137,7 +271,7 @@ func (svc *ConfigSvc) rebuild() error {
 			break
 		} else {
 			for _, cluster := range clusters {
-				svc.schClusters[cluster.ClusterID] = cluster
+				_ = svc.schClusters.Add(cluster.ClusterID, cluster, cache.DefaultExpiration)
 			}
 		}
 	}
@@ -149,7 +283,7 @@ func (svc *ConfigSvc) rebuild() error {
 			break
 		} else {
 			for _, cluster := range clusters {
-				svc.cdnClusters[cluster.ClusterID] = cluster
+				_ = svc.cdnClusters.Add(cluster.ClusterID, cluster, cache.DefaultExpiration)
 			}
 		}
 	}
@@ -161,10 +295,7 @@ func (svc *ConfigSvc) rebuild() error {
 			break
 		} else {
 			for _, instance := range instances {
-				svc.schInstances[instance.InstanceID] = &schedulerInstance{
-					instance:      instance,
-					keepAliveTime: time.Now(),
-				}
+				_ = svc.schInstances.Add(instance.InstanceID, instance, cache.DefaultExpiration)
 				svc.identifier.Put(SchedulerInstancePrefix+instance.HostName, instance.InstanceID)
 			}
 		}
@@ -177,10 +308,7 @@ func (svc *ConfigSvc) rebuild() error {
 			break
 		} else {
 			for _, instance := range instances {
-				svc.cdnInstances[instance.InstanceID] = &cdnInstance{
-					instance:      instance,
-					keepAliveTime: time.Now(),
-				}
+				_ = svc.cdnInstances.Add(instance.InstanceID, instance, cache.DefaultExpiration)
 				svc.identifier.Put(CDNInstancePrefix+instance.HostName, instance.InstanceID)
 			}
 		}
@@ -193,7 +321,7 @@ func (svc *ConfigSvc) rebuild() error {
 			break
 		} else {
 			for _, domain := range domains {
-				svc.securityDomain[domain.SecurityDomain] = domain
+				_ = svc.securityDomain.Add(domain.SecurityDomain, domain, cache.DefaultExpiration)
 			}
 		}
 	}
@@ -201,32 +329,33 @@ func (svc *ConfigSvc) rebuild() error {
 	return nil
 }
 
-func (svc *ConfigSvc) Stop() {
-	svc.stopC <- struct{}{}
+func (svc *ConfigSvc) Close() error {
+	close(svc.stopC)
 	svc.wg.Wait()
+	svc.stopC = nil
+	return nil
 }
 
 func (svc *ConfigSvc) GetSchedulers(ctx context.Context, hostInfo *host.Info) ([]string, error) {
-	nodes := []string{}
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
+	var nodes []string
 
-	for _, instance := range svc.schInstances {
-		if instance.instance.State != InstanceActive {
+	for _, item := range svc.schInstances.Items() {
+		instance := item.Object.(*types.SchedulerInstance)
+		if instance.State != InstanceActive {
 			continue
 		}
 
 		if hostInfo.IsDefault() {
-			nodes = append(nodes, fmt.Sprintf("%s:%d", instance.instance.IP, instance.instance.Port))
+			nodes = append(nodes, fmt.Sprintf("%s:%d", instance.IP, instance.Port))
 			continue
 		}
 
-		if instance.instance.SecurityDomain != hostInfo.SecurityDomain {
+		if instance.SecurityDomain != hostInfo.SecurityDomain {
 			continue
 		}
 
-		if instance.instance.IDC == hostInfo.IDC {
-			nodes = append(nodes, fmt.Sprintf("%s:%d", instance.instance.IP, instance.instance.Port))
+		if instance.IDC == hostInfo.IDC {
+			nodes = append(nodes, fmt.Sprintf("%s:%d", instance.IP, instance.Port))
 			continue
 		}
 	}
@@ -257,16 +386,19 @@ func (svc *ConfigSvc) KeepAlive(ctx context.Context, req *manager.KeepAliveReque
 			return dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
 		}
 
-		instance, exist := svc.getSchedulerInstance(ctx, instanceID)
-		if !exist {
-			return dferrors.Newf(dfcodes.ManagerError, "Scheduler instance not exist, instanceID %s", instanceID)
+		if err := svc.setKeepAlive(ctx, instanceID); err != nil {
+			return err
 		}
 
-		instance.keepAliveTime = time.Now()
-		if state, ok := instanceNextState(instance.instance.State, false); ok {
-			inter := *instance.instance
+		instance, err := svc.GetSchedulerInstance(ctx, instanceID)
+		if err != nil {
+			return dferrors.Newf(dfcodes.ManagerError, "Scheduler instance not exist, instanceID %s, error %s", instanceID, err.Error())
+		}
+
+		if state, ok := instanceNextState(instance.State, false); ok {
+			inter := *instance
 			inter.State = state
-			_, err := svc.UpdateSchedulerInstance(ctx, &inter)
+			_, err := svc.UpdateSchedulerInstance(ctx, &inter, store.WithKeepalive())
 			return err
 		}
 
@@ -277,16 +409,19 @@ func (svc *ConfigSvc) KeepAlive(ctx context.Context, req *manager.KeepAliveReque
 			return dferrors.Newf(dfcodes.ManagerError, "hostname not exist, %s", req.GetHostName())
 		}
 
-		instance, exist := svc.getCDNInstance(ctx, instanceID)
-		if !exist {
-			return dferrors.Newf(dfcodes.ManagerError, "Cdn instance not exist, instanceID %s", instanceID)
+		if err := svc.setKeepAlive(ctx, instanceID); err != nil {
+			return err
 		}
 
-		instance.keepAliveTime = time.Now()
-		if state, ok := instanceNextState(instance.instance.State, false); ok {
-			inter := *instance.instance
+		instance, err := svc.GetCDNInstance(ctx, instanceID)
+		if err != nil {
+			return dferrors.Newf(dfcodes.ManagerError, "Cdn instance not exist, instanceID %s, error %s", instanceID, err.Error())
+		}
+
+		if state, ok := instanceNextState(instance.State, false); ok {
+			inter := *instance
 			inter.State = state
-			_, err := svc.UpdateCDNInstance(ctx, &inter)
+			_, err := svc.UpdateCDNInstance(ctx, &inter, store.WithKeepalive())
 			return err
 		}
 
@@ -336,78 +471,59 @@ func (svc *ConfigSvc) GetInstanceAndClusterConfig(ctx context.Context, req *mana
 	}
 }
 
-func (svc *ConfigSvc) AddSchedulerCluster(ctx context.Context, cluster *types.SchedulerCluster) (*types.SchedulerCluster, error) {
+func (svc *ConfigSvc) AddSchedulerCluster(ctx context.Context, cluster *types.SchedulerCluster, opts ...store.OpOption) (*types.SchedulerCluster, error) {
 	cluster.ClusterID = NewUUID(SchedulerClusterPrefix)
-	inter, err := svc.store.Add(ctx, cluster.ClusterID, cluster, store.WithResourceType(store.SchedulerCluster))
+	inter, err := svc.store.Add(ctx, cluster.ClusterID, cluster, append(opts, store.WithResourceType(store.SchedulerCluster))...)
 	if err != nil {
 		return nil, err
 	}
 
 	cluster = inter.(*types.SchedulerCluster)
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	svc.schClusters[cluster.ClusterID] = cluster
+	_ = svc.schClusters.Add(cluster.ClusterID, cluster, cache.DefaultExpiration)
 	return cluster, nil
 }
 
-func (svc *ConfigSvc) DeleteSchedulerCluster(ctx context.Context, clusterID string) (*types.SchedulerCluster, error) {
-	if inter, err := svc.store.Delete(ctx, clusterID, store.WithResourceType(store.SchedulerCluster)); err != nil {
+func (svc *ConfigSvc) DeleteSchedulerCluster(ctx context.Context, clusterID string, opts ...store.OpOption) (*types.SchedulerCluster, error) {
+	if inter, err := svc.store.Delete(ctx, clusterID, append(opts, store.WithResourceType(store.SchedulerCluster))...); err != nil {
 		return nil, err
 	} else if inter == nil {
 		return nil, nil
 	} else {
 		cluster := inter.(*types.SchedulerCluster)
-		svc.mu.Lock()
-		defer svc.mu.Unlock()
-		if _, exist := svc.schClusters[cluster.ClusterID]; exist {
-			delete(svc.schClusters, cluster.ClusterID)
-		}
+		svc.schClusters.Delete(cluster.ClusterID)
 		return cluster, nil
 	}
 }
 
-func (svc *ConfigSvc) UpdateSchedulerCluster(ctx context.Context, cluster *types.SchedulerCluster) (*types.SchedulerCluster, error) {
-	inter, err := svc.store.Update(ctx, cluster.ClusterID, cluster, store.WithResourceType(store.SchedulerCluster))
+func (svc *ConfigSvc) UpdateSchedulerCluster(ctx context.Context, cluster *types.SchedulerCluster, opts ...store.OpOption) (*types.SchedulerCluster, error) {
+	inter, err := svc.store.Update(ctx, cluster.ClusterID, cluster, append(opts, store.WithResourceType(store.SchedulerCluster))...)
 	if err != nil {
 		return nil, err
 	}
 
 	cluster = inter.(*types.SchedulerCluster)
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	if _, exist := svc.schClusters[cluster.ClusterID]; exist {
-		delete(svc.schClusters, cluster.ClusterID)
-	}
-	svc.schClusters[cluster.ClusterID] = cluster
+	svc.schClusters.SetDefault(cluster.ClusterID, cluster)
 	return cluster, nil
 }
 
-func (svc *ConfigSvc) getSchedulerCluster(ctx context.Context, clusterID string) (*types.SchedulerCluster, bool) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	if cur, exist := svc.schClusters[clusterID]; exist {
-		return cur, true
-	}
+func (svc *ConfigSvc) GetSchedulerCluster(ctx context.Context, clusterID string, opts ...store.OpOption) (*types.SchedulerCluster, error) {
+	op := store.Op{}
+	op.ApplyOpts(opts)
 
-	return nil, false
-}
-
-func (svc *ConfigSvc) GetSchedulerCluster(ctx context.Context, clusterID string) (*types.SchedulerCluster, error) {
-	if cluster, exist := svc.getSchedulerCluster(ctx, clusterID); exist {
-		return cluster, nil
-	} else if inter, err := svc.store.Get(ctx, clusterID, store.WithResourceType(store.SchedulerCluster)); err != nil {
-		return nil, err
-	} else {
-		cluster := inter.(*types.SchedulerCluster)
-		svc.mu.Lock()
-		defer svc.mu.Unlock()
-		if _, exist := svc.schClusters[cluster.ClusterID]; exist {
-			delete(svc.schClusters, cluster.ClusterID)
+	if !op.SkipLocalCache {
+		if cluster, exist := svc.schClusters.Get(clusterID); exist {
+			return cluster.(*types.SchedulerCluster), nil
 		}
-
-		svc.schClusters[cluster.ClusterID] = cluster
-		return cluster, nil
 	}
+
+	inter, err := svc.store.Get(ctx, clusterID, append(opts, store.WithResourceType(store.SchedulerCluster))...)
+	if err != nil {
+		return nil, err
+	}
+
+	cluster := inter.(*types.SchedulerCluster)
+	svc.schClusters.SetDefault(cluster.ClusterID, cluster)
+	return cluster, nil
 }
 
 func (svc *ConfigSvc) ListSchedulerClusters(ctx context.Context, opts ...store.OpOption) ([]*types.SchedulerCluster, error) {
@@ -424,103 +540,64 @@ func (svc *ConfigSvc) ListSchedulerClusters(ctx context.Context, opts ...store.O
 	return clusters, nil
 }
 
-func (svc *ConfigSvc) AddSchedulerInstance(ctx context.Context, instance *types.SchedulerInstance) (*types.SchedulerInstance, error) {
+func (svc *ConfigSvc) AddSchedulerInstance(ctx context.Context, instance *types.SchedulerInstance, opts ...store.OpOption) (*types.SchedulerInstance, error) {
 	instance.InstanceID = NewUUID(SchedulerInstancePrefix)
 	instance.State = InstanceInactive
-	inter, err := svc.store.Add(ctx, instance.InstanceID, instance, store.WithResourceType(store.SchedulerInstance))
+	inter, err := svc.store.Add(ctx, instance.InstanceID, instance, append(opts, store.WithResourceType(store.SchedulerInstance))...)
 	if err != nil {
 		return nil, err
 	}
 
 	instance = inter.(*types.SchedulerInstance)
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	svc.schInstances[instance.InstanceID] = &schedulerInstance{
-		instance:      instance,
-		keepAliveTime: time.Now(),
-	}
-
+	_ = svc.schInstances.Add(instance.InstanceID, instance, cache.DefaultExpiration)
 	svc.identifier.Put(SchedulerInstancePrefix+instance.HostName, instance.InstanceID)
+	_ = svc.setKeepAlive(ctx, instance.InstanceID)
 	return instance, nil
 }
 
-func (svc *ConfigSvc) DeleteSchedulerInstance(ctx context.Context, instanceID string) (*types.SchedulerInstance, error) {
-	if inter, err := svc.store.Delete(ctx, instanceID, store.WithResourceType(store.SchedulerInstance)); err != nil {
+func (svc *ConfigSvc) DeleteSchedulerInstance(ctx context.Context, instanceID string, opts ...store.OpOption) (*types.SchedulerInstance, error) {
+	if inter, err := svc.store.Delete(ctx, instanceID, append(opts, store.WithResourceType(store.SchedulerInstance))...); err != nil {
 		return nil, err
 	} else if inter == nil {
 		return nil, nil
 	} else {
 		instance := inter.(*types.SchedulerInstance)
-		svc.mu.Lock()
-		defer svc.mu.Unlock()
-		if _, exist := svc.schInstances[instance.InstanceID]; exist {
-			delete(svc.schInstances, instance.InstanceID)
-		}
+		svc.schInstances.Delete(instance.InstanceID)
 		svc.identifier.Delete(SchedulerInstancePrefix + instance.HostName)
+		_ = svc.deleteKeepAlive(ctx, instance.InstanceID)
 		return instance, nil
 	}
 }
 
-func (svc *ConfigSvc) UpdateSchedulerInstance(ctx context.Context, instance *types.SchedulerInstance) (*types.SchedulerInstance, error) {
-	inter, err := svc.store.Update(ctx, instance.InstanceID, instance, store.WithResourceType(store.SchedulerInstance))
+func (svc *ConfigSvc) UpdateSchedulerInstance(ctx context.Context, instance *types.SchedulerInstance, opts ...store.OpOption) (*types.SchedulerInstance, error) {
+	inter, err := svc.store.Update(ctx, instance.InstanceID, instance, append(opts, store.WithResourceType(store.SchedulerInstance))...)
 	if err != nil {
 		return nil, err
 	}
 
 	instance = inter.(*types.SchedulerInstance)
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
-	var keepAliveTime time.Time
-	if old, exist := svc.schInstances[instance.InstanceID]; exist {
-		keepAliveTime = old.keepAliveTime
-		delete(svc.schInstances, instance.InstanceID)
-	} else {
-		keepAliveTime = time.Now()
-	}
-
-	svc.schInstances[instance.InstanceID] = &schedulerInstance{
-		instance:      instance,
-		keepAliveTime: keepAliveTime,
-	}
-
+	svc.schInstances.SetDefault(instance.InstanceID, instance)
 	return instance, nil
 }
 
-func (svc *ConfigSvc) getSchedulerInstance(ctx context.Context, instanceID string) (*schedulerInstance, bool) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	if cur, exist := svc.schInstances[instanceID]; exist {
-		return cur, true
+func (svc *ConfigSvc) GetSchedulerInstance(ctx context.Context, instanceID string, opts ...store.OpOption) (*types.SchedulerInstance, error) {
+	op := store.Op{}
+	op.ApplyOpts(opts)
+
+	if !op.SkipLocalCache {
+		if instance, exist := svc.schInstances.Get(instanceID); exist {
+			return instance.(*types.SchedulerInstance), nil
+		}
 	}
 
-	return nil, false
-}
-
-func (svc *ConfigSvc) GetSchedulerInstance(ctx context.Context, instanceID string) (*types.SchedulerInstance, error) {
-	if instance, exist := svc.getSchedulerInstance(ctx, instanceID); exist {
-		return instance.instance, nil
-	} else if inter, err := svc.store.Get(ctx, instanceID, store.WithResourceType(store.SchedulerInstance)); err != nil {
+	inter, err := svc.store.Get(ctx, instanceID, append(opts, store.WithResourceType(store.SchedulerInstance))...)
+	if err != nil {
 		return nil, err
-	} else {
-		instance := inter.(*types.SchedulerInstance)
-		svc.mu.Lock()
-		defer svc.mu.Unlock()
-
-		var keepAliveTime time.Time
-		if old, exist := svc.schInstances[instance.InstanceID]; exist {
-			keepAliveTime = old.keepAliveTime
-			delete(svc.schInstances, instance.InstanceID)
-		} else {
-			keepAliveTime = time.Now()
-		}
-
-		svc.schInstances[instance.InstanceID] = &schedulerInstance{
-			instance:      instance,
-			keepAliveTime: keepAliveTime,
-		}
-		return instance, nil
 	}
+
+	instance := inter.(*types.SchedulerInstance)
+	svc.schInstances.SetDefault(instance.InstanceID, instance)
+	return instance, nil
 }
 
 func (svc *ConfigSvc) ListSchedulerInstances(ctx context.Context, opts ...store.OpOption) ([]*types.SchedulerInstance, error) {
@@ -537,81 +614,59 @@ func (svc *ConfigSvc) ListSchedulerInstances(ctx context.Context, opts ...store.
 	return instances, nil
 }
 
-func (svc *ConfigSvc) AddCDNCluster(ctx context.Context, cluster *types.CDNCluster) (*types.CDNCluster, error) {
+func (svc *ConfigSvc) AddCDNCluster(ctx context.Context, cluster *types.CDNCluster, opts ...store.OpOption) (*types.CDNCluster, error) {
 	cluster.ClusterID = NewUUID(CDNClusterPrefix)
-	inter, err := svc.store.Add(ctx, cluster.ClusterID, cluster, store.WithResourceType(store.CDNCluster))
+	inter, err := svc.store.Add(ctx, cluster.ClusterID, cluster, append(opts, store.WithResourceType(store.CDNCluster))...)
 	if err != nil {
 		return nil, err
 	}
 
 	cluster = inter.(*types.CDNCluster)
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	if _, exist := svc.cdnClusters[cluster.ClusterID]; exist {
-		delete(svc.cdnClusters, cluster.ClusterID)
-	}
-	svc.cdnClusters[cluster.ClusterID] = cluster
+	_ = svc.cdnClusters.Add(cluster.ClusterID, cluster, cache.DefaultExpiration)
 	return cluster, nil
 }
 
-func (svc *ConfigSvc) DeleteCDNCluster(ctx context.Context, clusterID string) (*types.CDNCluster, error) {
-	if inter, err := svc.store.Delete(ctx, clusterID, store.WithResourceType(store.CDNCluster)); err != nil {
+func (svc *ConfigSvc) DeleteCDNCluster(ctx context.Context, clusterID string, opts ...store.OpOption) (*types.CDNCluster, error) {
+	if inter, err := svc.store.Delete(ctx, clusterID, append(opts, store.WithResourceType(store.CDNCluster))...); err != nil {
 		return nil, err
 	} else if inter == nil {
 		return nil, nil
 	} else {
 		cluster := inter.(*types.CDNCluster)
-		svc.mu.Lock()
-		defer svc.mu.Unlock()
-		if _, exist := svc.cdnClusters[cluster.ClusterID]; exist {
-			delete(svc.cdnClusters, cluster.ClusterID)
-		}
+		svc.cdnClusters.Delete(cluster.ClusterID)
 		return cluster, nil
 	}
 }
 
-func (svc *ConfigSvc) UpdateCDNCluster(ctx context.Context, cluster *types.CDNCluster) (*types.CDNCluster, error) {
-	inter, err := svc.store.Update(ctx, cluster.ClusterID, cluster, store.WithResourceType(store.CDNCluster))
+func (svc *ConfigSvc) UpdateCDNCluster(ctx context.Context, cluster *types.CDNCluster, opts ...store.OpOption) (*types.CDNCluster, error) {
+	inter, err := svc.store.Update(ctx, cluster.ClusterID, cluster, append(opts, store.WithResourceType(store.CDNCluster))...)
 	if err != nil {
 		return nil, err
 	}
 
 	cluster = inter.(*types.CDNCluster)
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	if _, exist := svc.cdnClusters[cluster.ClusterID]; exist {
-		delete(svc.cdnClusters, cluster.ClusterID)
-	}
-	svc.cdnClusters[cluster.ClusterID] = cluster
+	svc.cdnClusters.SetDefault(cluster.ClusterID, cluster)
 	return cluster, nil
 }
 
-func (svc *ConfigSvc) getCDNCluster(ctx context.Context, clusterID string) (*types.CDNCluster, bool) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	if cur, exist := svc.cdnClusters[clusterID]; exist {
-		return cur, true
-	}
+func (svc *ConfigSvc) GetCDNCluster(ctx context.Context, clusterID string, opts ...store.OpOption) (*types.CDNCluster, error) {
+	op := store.Op{}
+	op.ApplyOpts(opts)
 
-	return nil, false
-}
-
-func (svc *ConfigSvc) GetCDNCluster(ctx context.Context, clusterID string) (*types.CDNCluster, error) {
-	if cluster, exist := svc.getCDNCluster(ctx, clusterID); exist {
-		return cluster, nil
-	} else if inter, err := svc.store.Get(ctx, clusterID, store.WithResourceType(store.CDNCluster)); err != nil {
-		return nil, err
-	} else {
-		cluster := inter.(*types.CDNCluster)
-		svc.mu.Lock()
-		defer svc.mu.Unlock()
-		if _, exist := svc.cdnClusters[cluster.ClusterID]; exist {
-			delete(svc.cdnClusters, cluster.ClusterID)
+	if !op.SkipLocalCache {
+		if cluster, exist := svc.cdnClusters.Get(clusterID); exist {
+			return cluster.(*types.CDNCluster), nil
 		}
-
-		svc.cdnClusters[cluster.ClusterID] = cluster
-		return cluster, nil
 	}
+
+	inter, err := svc.store.Get(ctx, clusterID, append(opts, store.WithResourceType(store.CDNCluster))...)
+	if err != nil {
+		return nil, err
+	}
+
+	cluster := inter.(*types.CDNCluster)
+	svc.cdnClusters.SetDefault(cluster.ClusterID, cluster)
+	return cluster, nil
 }
 
 func (svc *ConfigSvc) ListCDNClusters(ctx context.Context, opts ...store.OpOption) ([]*types.CDNCluster, error) {
@@ -628,104 +683,64 @@ func (svc *ConfigSvc) ListCDNClusters(ctx context.Context, opts ...store.OpOptio
 	return clusters, nil
 }
 
-func (svc *ConfigSvc) AddCDNInstance(ctx context.Context, instance *types.CDNInstance) (*types.CDNInstance, error) {
+func (svc *ConfigSvc) AddCDNInstance(ctx context.Context, instance *types.CDNInstance, opts ...store.OpOption) (*types.CDNInstance, error) {
 	instance.InstanceID = NewUUID(CDNInstancePrefix)
 	instance.State = InstanceInactive
-	inter, err := svc.store.Add(ctx, instance.InstanceID, instance, store.WithResourceType(store.CDNInstance))
+	inter, err := svc.store.Add(ctx, instance.InstanceID, instance, append(opts, store.WithResourceType(store.CDNInstance))...)
 	if err != nil {
 		return nil, err
 	}
 
 	instance = inter.(*types.CDNInstance)
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	if _, exist := svc.cdnInstances[instance.InstanceID]; exist {
-		delete(svc.cdnInstances, instance.InstanceID)
-	}
-	svc.cdnInstances[instance.InstanceID] = &cdnInstance{
-		instance:      instance,
-		keepAliveTime: time.Now(),
-	}
+	_ = svc.cdnInstances.Add(instance.InstanceID, instance, cache.DefaultExpiration)
 	svc.identifier.Put(CDNInstancePrefix+instance.HostName, instance.InstanceID)
+	_ = svc.setKeepAlive(ctx, instance.InstanceID)
 	return instance, nil
 }
 
-func (svc *ConfigSvc) DeleteCDNInstance(ctx context.Context, instanceID string) (*types.CDNInstance, error) {
-	if inter, err := svc.store.Delete(ctx, instanceID, store.WithResourceType(store.CDNInstance)); err != nil {
+func (svc *ConfigSvc) DeleteCDNInstance(ctx context.Context, instanceID string, opts ...store.OpOption) (*types.CDNInstance, error) {
+	if inter, err := svc.store.Delete(ctx, instanceID, append(opts, store.WithResourceType(store.CDNInstance))...); err != nil {
 		return nil, err
 	} else if inter == nil {
 		return nil, nil
 	} else {
 		instance := inter.(*types.CDNInstance)
-		svc.mu.Lock()
-		defer svc.mu.Unlock()
-		if _, exist := svc.cdnInstances[instance.InstanceID]; exist {
-			delete(svc.cdnInstances, instance.InstanceID)
-		}
+		svc.cdnInstances.Delete(instance.InstanceID)
 		svc.identifier.Delete(CDNInstancePrefix + instance.HostName)
+		_ = svc.deleteKeepAlive(ctx, instance.InstanceID)
 		return instance, nil
 	}
 }
 
-func (svc *ConfigSvc) UpdateCDNInstance(ctx context.Context, instance *types.CDNInstance) (*types.CDNInstance, error) {
-	inter, err := svc.store.Update(ctx, instance.InstanceID, instance, store.WithResourceType(store.CDNInstance))
+func (svc *ConfigSvc) UpdateCDNInstance(ctx context.Context, instance *types.CDNInstance, opts ...store.OpOption) (*types.CDNInstance, error) {
+	inter, err := svc.store.Update(ctx, instance.InstanceID, instance, append(opts, store.WithResourceType(store.CDNInstance))...)
 	if err != nil {
 		return nil, err
 	}
 
 	instance = inter.(*types.CDNInstance)
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-
-	var keepAliveTime time.Time
-	if old, exist := svc.cdnInstances[instance.InstanceID]; exist {
-		keepAliveTime = old.keepAliveTime
-		delete(svc.cdnInstances, instance.InstanceID)
-	} else {
-		keepAliveTime = time.Now()
-	}
-
-	svc.cdnInstances[instance.InstanceID] = &cdnInstance{
-		instance:      instance,
-		keepAliveTime: keepAliveTime,
-	}
+	svc.cdnInstances.SetDefault(instance.InstanceID, instance)
 	return instance, nil
 }
 
-func (svc *ConfigSvc) getCDNInstance(ctx context.Context, instanceID string) (*cdnInstance, bool) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	if cur, exist := svc.cdnInstances[instanceID]; exist {
-		return cur, true
+func (svc *ConfigSvc) GetCDNInstance(ctx context.Context, instanceID string, opts ...store.OpOption) (*types.CDNInstance, error) {
+	op := store.Op{}
+	op.ApplyOpts(opts)
+
+	if !op.SkipLocalCache {
+		if instance, exist := svc.cdnInstances.Get(instanceID); exist {
+			return instance.(*types.CDNInstance), nil
+		}
 	}
 
-	return nil, false
-}
-
-func (svc *ConfigSvc) GetCDNInstance(ctx context.Context, instanceID string) (*types.CDNInstance, error) {
-	if instance, exist := svc.getCDNInstance(ctx, instanceID); exist {
-		return instance.instance, nil
-	} else if inter, err := svc.store.Get(ctx, instanceID, store.WithResourceType(store.CDNInstance)); err != nil {
+	inter, err := svc.store.Get(ctx, instanceID, append(opts, store.WithResourceType(store.CDNInstance))...)
+	if err != nil {
 		return nil, err
-	} else {
-		instance := inter.(*types.CDNInstance)
-		svc.mu.Lock()
-		defer svc.mu.Unlock()
-
-		var keepAliveTime time.Time
-		if old, exist := svc.cdnInstances[instance.InstanceID]; exist {
-			keepAliveTime = old.keepAliveTime
-			delete(svc.cdnInstances, instance.InstanceID)
-		} else {
-			keepAliveTime = time.Now()
-		}
-
-		svc.cdnInstances[instance.InstanceID] = &cdnInstance{
-			instance:      instance,
-			keepAliveTime: keepAliveTime,
-		}
-		return instance, nil
 	}
+
+	instance := inter.(*types.CDNInstance)
+	svc.cdnInstances.SetDefault(instance.InstanceID, instance)
+	return instance, nil
 }
 
 func (svc *ConfigSvc) ListCDNInstances(ctx context.Context, opts ...store.OpOption) ([]*types.CDNInstance, error) {
@@ -742,75 +757,58 @@ func (svc *ConfigSvc) ListCDNInstances(ctx context.Context, opts ...store.OpOpti
 	return instances, nil
 }
 
-func (svc *ConfigSvc) AddSecurityDomain(ctx context.Context, securityDomain *types.SecurityDomain) (*types.SecurityDomain, error) {
-	inter, err := svc.store.Add(ctx, securityDomain.SecurityDomain, securityDomain, store.WithResourceType(store.SecurityDomain))
+func (svc *ConfigSvc) AddSecurityDomain(ctx context.Context, securityDomain *types.SecurityDomain, opts ...store.OpOption) (*types.SecurityDomain, error) {
+	inter, err := svc.store.Add(ctx, securityDomain.SecurityDomain, securityDomain, append(opts, store.WithResourceType(store.SecurityDomain))...)
 	if err != nil {
 		return nil, err
 	}
 
 	domain := inter.(*types.SecurityDomain)
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	svc.securityDomain[domain.SecurityDomain] = domain
+	_ = svc.securityDomain.Add(domain.SecurityDomain, domain, cache.DefaultExpiration)
 	return domain, nil
 }
 
-func (svc *ConfigSvc) DeleteSecurityDomain(ctx context.Context, securityDomain string) (*types.SecurityDomain, error) {
-	if inter, err := svc.store.Delete(ctx, securityDomain, store.WithResourceType(store.SecurityDomain)); err != nil {
+func (svc *ConfigSvc) DeleteSecurityDomain(ctx context.Context, securityDomain string, opts ...store.OpOption) (*types.SecurityDomain, error) {
+	if inter, err := svc.store.Delete(ctx, securityDomain, append(opts, store.WithResourceType(store.SecurityDomain))...); err != nil {
 		return nil, err
 	} else if inter == nil {
 		return nil, nil
 	} else {
 		domain := inter.(*types.SecurityDomain)
-		svc.mu.Lock()
-		defer svc.mu.Unlock()
-		if _, exist := svc.securityDomain[domain.SecurityDomain]; exist {
-			delete(svc.securityDomain, domain.SecurityDomain)
-		}
+		svc.securityDomain.Delete(domain.SecurityDomain)
 		return domain, nil
 	}
 }
 
-func (svc *ConfigSvc) UpdateSecurityDomain(ctx context.Context, securityDomain *types.SecurityDomain) (*types.SecurityDomain, error) {
-	inter, err := svc.store.Update(ctx, securityDomain.SecurityDomain, securityDomain, store.WithResourceType(store.SecurityDomain))
+func (svc *ConfigSvc) UpdateSecurityDomain(ctx context.Context, securityDomain *types.SecurityDomain, opts ...store.OpOption) (*types.SecurityDomain, error) {
+	inter, err := svc.store.Update(ctx, securityDomain.SecurityDomain, securityDomain, append(opts, store.WithResourceType(store.SecurityDomain))...)
 	if err != nil {
 		return nil, err
 	}
 
 	domain := inter.(*types.SecurityDomain)
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	if _, exist := svc.securityDomain[domain.SecurityDomain]; exist {
-		delete(svc.securityDomain, domain.SecurityDomain)
-	}
-	svc.securityDomain[domain.SecurityDomain] = domain
+	svc.securityDomain.SetDefault(domain.SecurityDomain, domain)
 	return domain, nil
 }
-func (svc *ConfigSvc) getSecurityDomain(ctx context.Context, securityDomain string) (*types.SecurityDomain, bool) {
-	svc.mu.Lock()
-	defer svc.mu.Unlock()
-	if cur, exist := svc.securityDomain[securityDomain]; exist {
-		return cur, true
-	}
 
-	return nil, false
-}
+func (svc *ConfigSvc) GetSecurityDomain(ctx context.Context, securityDomain string, opts ...store.OpOption) (*types.SecurityDomain, error) {
+	op := store.Op{}
+	op.ApplyOpts(opts)
 
-func (svc *ConfigSvc) GetSecurityDomain(ctx context.Context, securityDomain string) (*types.SecurityDomain, error) {
-	if domain, exist := svc.getSecurityDomain(ctx, securityDomain); exist {
-		return domain, nil
-	} else if inter, err := svc.store.Get(ctx, securityDomain, store.WithResourceType(store.SecurityDomain)); err != nil {
-		return nil, err
-	} else {
-		domain := inter.(*types.SecurityDomain)
-		svc.mu.Lock()
-		defer svc.mu.Unlock()
-		if _, exist := svc.securityDomain[domain.SecurityDomain]; exist {
-			delete(svc.securityDomain, domain.SecurityDomain)
+	if !op.SkipLocalCache {
+		if domain, exist := svc.securityDomain.Get(securityDomain); exist {
+			return domain.(*types.SecurityDomain), nil
 		}
-		svc.securityDomain[domain.SecurityDomain] = domain
-		return domain, nil
 	}
+
+	inter, err := svc.store.Get(ctx, securityDomain, append(opts, store.WithResourceType(store.SecurityDomain))...)
+	if err != nil {
+		return nil, err
+	}
+
+	domain := inter.(*types.SecurityDomain)
+	svc.securityDomain.SetDefault(domain.SecurityDomain, domain)
+	return domain, nil
 }
 
 func (svc *ConfigSvc) ListSecurityDomains(ctx context.Context, opts ...store.OpOption) ([]*types.SecurityDomain, error) {
