@@ -94,11 +94,24 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() {
+	if s.ms != nil {
+		err := s.ms.Close()
+		if err != nil {
+			logger.Errorf("failed to stop manager server: %+v", err)
+		}
+
+		s.ms = nil
+	}
+
 	rpc.StopServer()
 
 	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
 	defer cancel()
-	if err := s.httpServer.Shutdown(ctx); err != nil {
+
+	err := s.httpServer.Shutdown(ctx)
+	if err != nil {
 		logger.Errorf("failed to stop manager http server: %+v", err)
 	}
+
+	s.httpServer = nil
 }
