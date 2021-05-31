@@ -108,7 +108,7 @@ func New(sourceType SourceType, options ...Option) (*Dynconfig, error) {
 		return nil, err
 	}
 
-	if err := d.Validate(); err != nil {
+	if err := d.validate(); err != nil {
 		return nil, err
 	}
 
@@ -145,8 +145,8 @@ func NewDynconfigWithOptions(sourceType SourceType, options ...Option) (*Dynconf
 	return d, nil
 }
 
-// Validate parameters
-func (d *Dynconfig) Validate() error {
+// validate parameters
+func (d *Dynconfig) validate() error {
 	if d.sourceType == ManagerSourceType {
 		if d.managerClient == nil {
 			return errors.New("missing parameter ManagerClient, use method WithManagerClient to assign")
