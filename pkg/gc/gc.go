@@ -78,11 +78,6 @@ func WithLogger(logger Logger) Option {
 
 // New returns a new GC instence
 func New(options ...Option) (GC, error) {
-	return NewWithOptions(options...)
-}
-
-// NewWithOptions constructs a new instance of a GC with additional options.
-func NewWithOptions(options ...Option) (GC, error) {
 	g := &gc{
 		tasks:  &sync.Map{},
 		done:   make(chan bool),
