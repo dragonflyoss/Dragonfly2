@@ -75,7 +75,6 @@ func TestGCNew(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
-			defer ctl.Finish()
 			mockLogger := mocks.NewMockLogger(ctl)
 
 			_, err := New([]Option{
@@ -156,7 +155,6 @@ func TestGCRun(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
-			defer ctl.Finish()
 			mockLogger := mocks.NewMockLogger(ctl)
 			mockTask := mocks.NewMockTask(ctl)
 
@@ -228,7 +226,6 @@ func TestGCRunAll(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
-			defer ctl.Finish()
 			mockLogger := mocks.NewMockLogger(ctl)
 			mockTask := mocks.NewMockTask(ctl)
 			gc, err := New([]Option{
@@ -246,7 +243,6 @@ func TestGCRunAll(t *testing.T) {
 
 func TestGCServe(t *testing.T) {
 	ctl := gomock.NewController(t)
-	defer ctl.Finish()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
