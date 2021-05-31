@@ -53,29 +53,26 @@ type gc struct {
 }
 
 // Option is a functional option for configuring the GC
-type Option func(g *gc) *gc
+type Option func(g *gc)
 
 // WithInterval set the interval for GC collection
 func WithInterval(interval time.Duration) Option {
-	return func(g *gc) *gc {
+	return func(g *gc) {
 		g.interval = interval
-		return g
 	}
 }
 
 // WithTimeout set the timeout for GC collection
 func WithTimeout(timeout time.Duration) Option {
-	return func(g *gc) *gc {
+	return func(g *gc) {
 		g.timeout = timeout
-		return g
 	}
 }
 
 // WithLogger set the logger for GC
 func WithLogger(logger Logger) Option {
-	return func(g *gc) *gc {
+	return func(g *gc) {
 		g.logger = logger
-		return g
 	}
 }
 
