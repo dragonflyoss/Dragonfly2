@@ -39,11 +39,11 @@ type ConfigSvc struct {
 	identifier hostidentifier.Identifier
 	lessor     lease.Lessor
 
-	schClusters    cache.Cache
-	cdnClusters    cache.Cache
-	schInstances   cache.Cache
-	cdnInstances   cache.Cache
-	securityDomain cache.Cache
+	schedulerClusters  cache.Cache
+	cdnClusters        cache.Cache
+	schedulerInstances cache.Cache
+	cdnInstances       cache.Cache
+	securityDomain     cache.Cache
 
 	keepAliveCache      *rCache.Cache
 	keepAliveTTL        time.Duration
@@ -59,20 +59,20 @@ type ConfigSvc struct {
 
 func NewConfigSvc(store store.Store, identifier hostidentifier.Identifier, lessor lease.Lessor, client *dc.RedisClient) (*ConfigSvc, error) {
 	svc := &ConfigSvc{
-		store:          store,
-		identifier:     identifier,
-		lessor:         lessor,
-		schClusters:    cache.New(5*time.Minute, 5*time.Second),
-		cdnClusters:    cache.New(5*time.Minute, 5*time.Second),
-		schInstances:   cache.New(5*time.Minute, 5*time.Second),
-		cdnInstances:   cache.New(5*time.Minute, 5*time.Second),
-		securityDomain: cache.New(5*time.Minute, 5*time.Second),
-		stopC:          make(chan struct{}),
+		store:              store,
+		identifier:         identifier,
+		lessor:             lessor,
+		schedulerClusters:  cache.New(5*time.Minute, 5*time.Second),
+		cdnClusters:        cache.New(5*time.Minute, 5*time.Second),
+		schedulerInstances: cache.New(5*time.Minute, 5*time.Second),
+		cdnInstances:       cache.New(5*time.Minute, 5*time.Second),
+		securityDomain:     cache.New(5*time.Minute, 5*time.Second),
+		stopC:              make(chan struct{}),
 	}
 
-	svc.schClusters.OnEvicted(svc.schClusterOnEvicted)
+	svc.schedulerClusters.OnEvicted(svc.schClusterOnEvicted)
 	svc.cdnClusters.OnEvicted(svc.cdnClusterOnEvicted)
-	svc.schInstances.OnEvicted(svc.schInstanceOnEvicted)
+	svc.schedulerInstances.OnEvicted(svc.schInstanceOnEvicted)
 	svc.cdnInstances.OnEvicted(svc.cdnInstanceOnEvicted)
 	svc.securityDomain.OnEvicted(svc.securityDomainOnEvicted)
 
@@ -224,7 +224,7 @@ func (svc *ConfigSvc) deleteKeepAlive(ctx context.Context, instanceID string) er
 
 func (svc *ConfigSvc) updateAllInstanceState() {
 	now := time.Now()
-	for instanceID, item := range svc.schInstances.Items() {
+	for instanceID, item := range svc.schedulerInstances.Items() {
 		keepAliveTime, err := svc.getKeepAlive(context.TODO(), instanceID)
 		if err != nil {
 			continue
@@ -271,7 +271,7 @@ func (svc *ConfigSvc) rebuild() error {
 			break
 		} else {
 			for _, cluster := range clusters {
-				_ = svc.schClusters.Add(cluster.ClusterID, cluster, cache.DefaultExpiration)
+				_ = svc.schedulerClusters.Add(cluster.ClusterID, cluster, cache.DefaultExpiration)
 			}
 		}
 	}
@@ -295,7 +295,7 @@ func (svc *ConfigSvc) rebuild() error {
 			break
 		} else {
 			for _, instance := range instances {
-				_ = svc.schInstances.Add(instance.InstanceID, instance, cache.DefaultExpiration)
+				_ = svc.schedulerInstances.Add(instance.InstanceID, instance, cache.DefaultExpiration)
 				svc.identifier.Put(SchedulerInstancePrefix+instance.HostName, instance.InstanceID)
 			}
 		}
@@ -339,7 +339,7 @@ func (svc *ConfigSvc) Close() error {
 func (svc *ConfigSvc) GetSchedulers(ctx context.Context, hostInfo *host.Info) ([]string, error) {
 	var nodes []string
 
-	for _, item := range svc.schInstances.Items() {
+	for _, item := range svc.schedulerInstances.Items() {
 		instance := item.Object.(*types.SchedulerInstance)
 		if instance.State != InstanceActive {
 			continue
@@ -479,7 +479,7 @@ func (svc *ConfigSvc) AddSchedulerCluster(ctx context.Context, cluster *types.Sc
 	}
 
 	cluster = inter.(*types.SchedulerCluster)
-	_ = svc.schClusters.Add(cluster.ClusterID, cluster, cache.DefaultExpiration)
+	_ = svc.schedulerClusters.Add(cluster.ClusterID, cluster, cache.DefaultExpiration)
 	return cluster, nil
 }
 
@@ -490,7 +490,7 @@ func (svc *ConfigSvc) DeleteSchedulerCluster(ctx context.Context, clusterID stri
 		return nil, nil
 	} else {
 		cluster := inter.(*types.SchedulerCluster)
-		svc.schClusters.Delete(cluster.ClusterID)
+		svc.schedulerClusters.Delete(cluster.ClusterID)
 		return cluster, nil
 	}
 }
@@ -502,7 +502,7 @@ func (svc *ConfigSvc) UpdateSchedulerCluster(ctx context.Context, cluster *types
 	}
 
 	cluster = inter.(*types.SchedulerCluster)
-	svc.schClusters.SetDefault(cluster.ClusterID, cluster)
+	svc.schedulerClusters.SetDefault(cluster.ClusterID, cluster)
 	return cluster, nil
 }
 
@@ -511,7 +511,7 @@ func (svc *ConfigSvc) GetSchedulerCluster(ctx context.Context, clusterID string,
 	op.ApplyOpts(opts)
 
 	if !op.SkipLocalCache {
-		if cluster, exist := svc.schClusters.Get(clusterID); exist {
+		if cluster, _, exist := svc.schedulerClusters.GetWithExpiration(clusterID); exist {
 			return cluster.(*types.SchedulerCluster), nil
 		}
 	}
@@ -522,7 +522,7 @@ func (svc *ConfigSvc) GetSchedulerCluster(ctx context.Context, clusterID string,
 	}
 
 	cluster := inter.(*types.SchedulerCluster)
-	svc.schClusters.SetDefault(cluster.ClusterID, cluster)
+	svc.schedulerClusters.SetDefault(cluster.ClusterID, cluster)
 	return cluster, nil
 }
 
@@ -549,7 +549,7 @@ func (svc *ConfigSvc) AddSchedulerInstance(ctx context.Context, instance *types.
 	}
 
 	instance = inter.(*types.SchedulerInstance)
-	_ = svc.schInstances.Add(instance.InstanceID, instance, cache.DefaultExpiration)
+	_ = svc.schedulerInstances.Add(instance.InstanceID, instance, cache.DefaultExpiration)
 	svc.identifier.Put(SchedulerInstancePrefix+instance.HostName, instance.InstanceID)
 	_ = svc.setKeepAlive(ctx, instance.InstanceID)
 	return instance, nil
@@ -562,7 +562,7 @@ func (svc *ConfigSvc) DeleteSchedulerInstance(ctx context.Context, instanceID st
 		return nil, nil
 	} else {
 		instance := inter.(*types.SchedulerInstance)
-		svc.schInstances.Delete(instance.InstanceID)
+		svc.schedulerInstances.Delete(instance.InstanceID)
 		svc.identifier.Delete(SchedulerInstancePrefix + instance.HostName)
 		_ = svc.deleteKeepAlive(ctx, instance.InstanceID)
 		return instance, nil
@@ -576,7 +576,7 @@ func (svc *ConfigSvc) UpdateSchedulerInstance(ctx context.Context, instance *typ
 	}
 
 	instance = inter.(*types.SchedulerInstance)
-	svc.schInstances.SetDefault(instance.InstanceID, instance)
+	svc.schedulerInstances.SetDefault(instance.InstanceID, instance)
 	return instance, nil
 }
 
@@ -585,7 +585,7 @@ func (svc *ConfigSvc) GetSchedulerInstance(ctx context.Context, instanceID strin
 	op.ApplyOpts(opts)
 
 	if !op.SkipLocalCache {
-		if instance, exist := svc.schInstances.Get(instanceID); exist {
+		if instance, _, exist := svc.schedulerInstances.GetWithExpiration(instanceID); exist {
 			return instance.(*types.SchedulerInstance), nil
 		}
 	}
@@ -596,7 +596,7 @@ func (svc *ConfigSvc) GetSchedulerInstance(ctx context.Context, instanceID strin
 	}
 
 	instance := inter.(*types.SchedulerInstance)
-	svc.schInstances.SetDefault(instance.InstanceID, instance)
+	svc.schedulerInstances.SetDefault(instance.InstanceID, instance)
 	return instance, nil
 }
 
@@ -654,7 +654,7 @@ func (svc *ConfigSvc) GetCDNCluster(ctx context.Context, clusterID string, opts 
 	op.ApplyOpts(opts)
 
 	if !op.SkipLocalCache {
-		if cluster, exist := svc.cdnClusters.Get(clusterID); exist {
+		if cluster, _, exist := svc.cdnClusters.GetWithExpiration(clusterID); exist {
 			return cluster.(*types.CDNCluster), nil
 		}
 	}
@@ -728,7 +728,7 @@ func (svc *ConfigSvc) GetCDNInstance(ctx context.Context, instanceID string, opt
 	op.ApplyOpts(opts)
 
 	if !op.SkipLocalCache {
-		if instance, exist := svc.cdnInstances.Get(instanceID); exist {
+		if instance, _, exist := svc.cdnInstances.GetWithExpiration(instanceID); exist {
 			return instance.(*types.CDNInstance), nil
 		}
 	}
@@ -796,7 +796,7 @@ func (svc *ConfigSvc) GetSecurityDomain(ctx context.Context, securityDomain stri
 	op.ApplyOpts(opts)
 
 	if !op.SkipLocalCache {
-		if domain, exist := svc.securityDomain.Get(securityDomain); exist {
+		if domain, _, exist := svc.securityDomain.GetWithExpiration(securityDomain); exist {
 			return domain.(*types.SecurityDomain), nil
 		}
 	}
