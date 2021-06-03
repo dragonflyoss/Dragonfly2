@@ -19,7 +19,7 @@ package logcore
 import (
 	"path"
 
-	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/internal/dfpath"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
 
@@ -28,7 +28,7 @@ func InitManager(console bool) error {
 		return nil
 	}
 
-	logDir := path.Join(basic.HomeDir, "logs/manager")
+	logDir := path.Join(dfpath.LogDir, "manager")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false)
 	if err != nil {
@@ -56,7 +56,7 @@ func InitScheduler(console bool) error {
 		return nil
 	}
 
-	logDir := path.Join(basic.HomeDir, "logs/scheduler")
+	logDir := path.Join(dfpath.LogDir, "scheduler")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false)
 	if err != nil {
@@ -90,7 +90,7 @@ func InitCdnSystem(console bool) error {
 		return nil
 	}
 
-	logDir := path.Join(basic.HomeDir, "logs/cdn")
+	logDir := path.Join(dfpath.LogDir, "cdn")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false)
 	if err != nil {
@@ -135,7 +135,7 @@ func InitDaemon(console bool) error {
 		return nil
 	}
 
-	logDir := path.Join(basic.HomeDir, "logs/daemon")
+	logDir := path.Join(dfpath.LogDir, "daemon")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 100, 7, 14, false, false)
 	if err != nil {
@@ -163,7 +163,7 @@ func InitDfget(console bool) error {
 		return nil
 	}
 
-	logDir := path.Join(basic.HomeDir, "logs/dfget")
+	logDir := path.Join(dfpath.LogDir, "dfget")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 100, 7, 14, false, false)
 	if err != nil {

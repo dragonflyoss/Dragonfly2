@@ -48,7 +48,7 @@ crictl pull docker.io/library/busybox
 You can execute the following command to check if the busybox image is distributed via Dragonfly.
 
 ```bash
-grep 'register peer task result' $HOME/.dragonfly/logs/daemon/*.log
+grep 'register peer task result' ~/.dragonfly/logs/daemon/*.log
 ```
 
 If the output of command above has content like
