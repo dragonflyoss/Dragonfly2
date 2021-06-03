@@ -1,6 +1,6 @@
 # Use dfget daemon as HTTP proxy for containerd
 
-Currently, containerd use `ctr` doesn't support private registries with `registry-mirrors`,
+Currently, `ctr` command of containerd doesn't support private registries with `registry-mirrors`,
 in order to do so, we need to use HTTP proxy for containerd.
 
 ## Quick Start
