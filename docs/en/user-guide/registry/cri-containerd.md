@@ -1,10 +1,10 @@
-# Use Dfdaemon as Registry mirror for cri-containerd
+# Use client as registry mirror for cri-containerd
 
 ## Quick Start
 
-### Step 1: Configure Dfdaemon
+### Step 1: Configure Client
 
-To use dfdaemon as Registry Mirror, first you need to ensure configuration in `$HOME/.dragonfly/dfget-daemon.yaml`:
+To use client as registry mirror, first you need to ensure configuration in `$HOME/.dragonfly/config/dfget.yaml`:
 
 ```yaml
 proxy:
@@ -48,7 +48,7 @@ crictl pull docker.io/library/busybox
 You can execute the following command to check if the busybox image is distributed via Dragonfly.
 
 ```bash
-grep 'register peer task result' ~/logs/dragonfly/*.log
+grep 'register peer task result' $HOME/.dragonfly/logs/daemon/*.log
 ```
 
 If the output of command above has content like
