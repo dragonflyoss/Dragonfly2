@@ -17,11 +17,9 @@
 package logcore
 
 import (
-	"fmt"
 	"path"
 
 	"d7y.io/dragonfly/v2/internal/dfpath"
-	"d7y.io/dragonfly/v2/pkg/basic"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
 
@@ -30,7 +28,7 @@ func InitManager(console bool) error {
 		return nil
 	}
 
-	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
+	logDir := path.Join(dfpath.LogDir, "manager")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false)
 	if err != nil {
@@ -58,7 +56,7 @@ func InitScheduler(console bool) error {
 		return nil
 	}
 
-	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
+	logDir := path.Join(dfpath.LogDir, "scheduler")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false)
 	if err != nil {
@@ -92,7 +90,7 @@ func InitCdnSystem(console bool) error {
 		return nil
 	}
 
-	logDir := path.Join(basic.HomeDir, "logs/dragonfly")
+	logDir := path.Join(dfpath.LogDir, "cdn")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false)
 	if err != nil {
@@ -137,19 +135,21 @@ func InitDaemon(console bool) error {
 		return nil
 	}
 
-	coreLogger, err := CreateLogger(path.Join(dfpath.LogDir, fmt.Sprintf("dfdaemon-%s", CoreLogFileName)), 100, 7, 14, false, false)
+	logDir := path.Join(dfpath.LogDir, "daemon")
+
+	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 100, 7, 14, false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := CreateLogger(path.Join(dfpath.LogDir, fmt.Sprintf("dfdaemon-%s", GrpcLogFileName)), 100, 7, 14, false, false)
+	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 100, 7, 14, false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	gcLogger, err := CreateLogger(path.Join(dfpath.LogDir, "gc.log"), 100, 7, 14, false, false)
+	gcLogger, err := CreateLogger(path.Join(logDir, GCLogFileName), 100, 7, 14, false, false)
 	if err != nil {
 		return err
 	}
@@ -163,13 +163,19 @@ func InitDfget(console bool) error {
 		return nil
 	}
 
-	dfgetLogger, err := CreateLogger(path.Join(dfpath.LogDir, "dfget.log"), 300, -1, -1, false, false)
+	logDir := path.Join(dfpath.LogDir, "dfget")
+
+	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 100, 7, 14, false, false)
 	if err != nil {
 		return err
 	}
-	log := dfgetLogger.Sugar()
-	logger.SetCoreLogger(log)
-	logger.SetGrpcLogger(log)
+	logger.SetCoreLogger(coreLogger.Sugar())
+
+	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 100, 7, 14, false, false)
+	if err != nil {
+		return err
+	}
+	logger.SetGrpcLogger(grpcLogger.Sugar())
 
 	return nil
 }

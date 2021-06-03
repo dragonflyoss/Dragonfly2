@@ -32,6 +32,7 @@ import (
 const (
 	CoreLogFileName = "core.log"
 	GrpcLogFileName = "grpc.log"
+	GCLogFileName   = "gc.log"
 )
 
 var coreLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)

@@ -142,6 +142,8 @@ func (s *SchedulerInstanceStore) Delete(ctx context.Context, id string, opts ...
 }
 
 func (s *SchedulerInstanceStore) Update(ctx context.Context, id string, data interface{}, opts ...store.OpOption) (interface{}, error) {
+	op := store.Op{}
+	op.ApplyOpts(opts)
 
 	tInstance := &SchedulerInstanceTable{}
 	tx := s.withTable(ctx).Where("instance_id = ?", id).First(tInstance)
@@ -155,6 +157,11 @@ func (s *SchedulerInstanceStore) Update(ctx context.Context, id string, data int
 	}
 
 	instance := SchedulerInstanceToTable(i)
+	if op.Keepalive {
+		tInstance.State = instance.State
+		instance = tInstance
+	}
+
 	s.updateSchemaToTable(instance, tInstance)
 	tx = tx.Updates(instance)
 	if err := tx.Error; errors.Is(err, gorm.ErrRecordNotFound) {

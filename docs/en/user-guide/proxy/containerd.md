@@ -1,7 +1,7 @@
-# Use dfget daemon as HTTP proxy for docker daemon
+# Use dfget daemon as HTTP proxy for containerd
 
-Currently, docker doesn't support private registries with `registry-mirrors`,
-in order to do so, we need to use HTTP proxy for docker daemon.
+Currently, `ctr` command of containerd doesn't support private registries with `registry-mirrors`,
+in order to do so, we need to use HTTP proxy for containerd.
 
 ## Quick Start
 
@@ -57,7 +57,7 @@ openssl x509 -req -days 36500 -extfile openssl.conf -extensions v3_ca -in ca.csr
 ### Step 2: Configure dfget daemon
 
 To use dfget daemon as HTTP proxy, first you need to append a proxy rule in
-`/var/log/dragonfly/dfget.yaml`, This will proxy `your.private.registry`'s requests for image layers:
+`/etc/dragonfly/dfget.yaml`, This will proxy `your.private.registry`'s requests for image layers:
 
 ```yaml
 proxy:
@@ -76,21 +76,10 @@ proxy:
       - regx: your.private.registry
 ```
 
-### Step 3: Configure Docker daemon
+### Step 3: Configure containerd
 
-Add your private registry to `insecure-registries` in
-`/etc/docker/daemon.json`, in order to ignore the certificate error:
-
-```json
-{
-  "insecure-registries": ["your.private.registry"]
-}
-```
-
-### Step 4: Configure Docker daemon
-
-Set dfdaemon as `HTTP_PROXY` and `HTTPS_PROXY` for docker daemon in
-`/etc/systemd/system/docker.service.d/http-proxy.conf`:
+Set dfget damone as `HTTP_PROXY` and `HTTPS_PROXY` for containerd in
+`/etc/systemd/system/containerd.service.d/http-proxy.conf`:
 
 ```
 [Service]
@@ -105,7 +94,7 @@ Through the above steps, we can start to validate if Dragonfly works as expected
 And you can pull the image as usual, for example:
 
 ```bash
-docker pull your.private.registry/namespace/image:latest
+ctr image pull your.private.registry/namespace/image:latest
 ```
 
 ## Custom assets

@@ -25,32 +25,6 @@ type ServerTestSuite struct {
 	client client.ManagerClient
 }
 
-func (suite *ServerTestSuite) testMysqlConfig() *config.Config {
-	return &config.Config{
-		Server: &config.ServerConfig{
-			Port: 8004,
-		},
-		Configure: &config.ConfigureConfig{
-			StoreName: "store1",
-		},
-		Stores: []*config.StoreConfig{
-			{
-				Name: "store1",
-				Type: "mysql",
-				Mysql: &config.MysqlConfig{
-					User:     "root",
-					Password: "root1234",
-					IP:       "127.0.0.1",
-					Port:     3306,
-					Db:       "config_db",
-				},
-				Oss: nil,
-			},
-		},
-		HostService: &config.HostService{},
-	}
-}
-
 func (suite *ServerTestSuite) testDefaultSchedulerCluster() *types.SchedulerCluster {
 	schedulerConfigMap := map[string]string{
 		"schedulerConfig_a": "a",
@@ -86,74 +60,7 @@ func (suite *ServerTestSuite) testDefaultCDNCluster() *types.CDNCluster {
 	}
 }
 
-//
-//func (suite *ServerTestSuite) TestGetSchedulers() {
-//	assert := assert.New(suite.T())
-//
-//	var cluster *types.SchedulerCluster
-//	{
-//		cluster = suite.testDefaultSchedulerCluster()
-//		ret, err := suite.server.ms.AddSchedulerCluster(context.TODO(), cluster)
-//		assert.NotNil(ret)
-//		assert.Nil(err)
-//		cluster.ClusterID = ret.ClusterID
-//	}
-//
-//	hostName := "magneto-controller011162004111.nt12"
-//	ip := "11.162.4.111"
-//	var instance *types.SchedulerInstance
-//	{
-//		instance = &types.SchedulerInstance{
-//			ClusterID:      cluster.ClusterID,
-//			SecurityDomain: "security_abc",
-//			IDC:            "idc_abc",
-//			Location:       "location_abc",
-//			NetConfig:      "",
-//			HostName:       hostName,
-//			IP:             ip,
-//			Port:           80,
-//		}
-//
-//		ret, err := suite.server.ms.AddSchedulerInstance(context.TODO(), instance)
-//		assert.NotNil(ret)
-//		assert.Nil(err)
-//		instance.InstanceID = ret.InstanceID
-//	}
-//
-//	{
-//		req := &manager.GetSchedulersRequest{
-//			IP:       ip,
-//			HostName: hostName,
-//		}
-//
-//		ret, err := suite.server.ms.GetSchedulers(context.TODO(), req)
-//		assert.NotNil(err)
-//		assert.Nil(ret)
-//	}
-//
-//	{
-//		req := &manager.KeepAliveRequest{
-//			HostName: hostName,
-//			Type:     manager.ResourceType_Scheduler,
-//		}
-//
-//		err := suite.server.ms.KeepAlive(context.TODO(), req)
-//		assert.Nil(err)
-//	}
-//
-//	{
-//		req := &manager.GetSchedulersRequest{
-//			IP:       ip,
-//			HostName: hostName,
-//		}
-//
-//		ret, err := suite.server.ms.GetSchedulers(context.TODO(), req)
-//		assert.Nil(err)
-//		assert.NotNil(ret)
-//	}
-//}
-//
-func (suite *ServerTestSuite) TestKeepAlive() {
+func (suite *ServerTestSuite) TestGetSchedulers() {
 	assert := assert.New(suite.T())
 
 	var cluster *types.SchedulerCluster
@@ -173,7 +80,7 @@ func (suite *ServerTestSuite) TestKeepAlive() {
 			IDC:            "idc_abc",
 			Location:       "location_abc",
 			NetConfig:      "",
-			HostName:       "hostname_abc",
+			HostName:       suite.randPrefix() + "hostname_abc",
 			IP:             "192.168.0.11",
 			Port:           80,
 		}
@@ -184,9 +91,61 @@ func (suite *ServerTestSuite) TestKeepAlive() {
 		instance.InstanceID = ret.InstanceID
 	}
 
-	for i := 0; i < 20; i++ {
+	{
 		req := &manager.KeepAliveRequest{
-			HostName: "hostname_abc",
+			HostName: instance.HostName,
+			Type:     manager.ResourceType_Scheduler,
+		}
+
+		err := suite.server.ms.KeepAlive(context.TODO(), req)
+		assert.Nil(err)
+	}
+
+	{
+		req := &manager.GetSchedulersRequest{
+			HostName: instance.HostName,
+		}
+
+		ret, err := suite.server.ms.GetSchedulers(context.TODO(), req)
+		assert.Nil(err)
+		assert.NotNil(ret)
+	}
+}
+
+func (suite *ServerTestSuite) TestKeepAliveScheduler() {
+	assert := assert.New(suite.T())
+
+	var cluster *types.SchedulerCluster
+	{
+		cluster = suite.testDefaultSchedulerCluster()
+		ret, err := suite.server.ms.AddSchedulerCluster(context.TODO(), cluster)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		cluster.ClusterID = ret.ClusterID
+	}
+
+	var instance *types.SchedulerInstance
+	{
+		instance = &types.SchedulerInstance{
+			ClusterID:      cluster.ClusterID,
+			SecurityDomain: "security_abc",
+			IDC:            "idc_abc",
+			Location:       "location_abc",
+			NetConfig:      "",
+			HostName:       suite.randPrefix() + "hostname_abc",
+			IP:             "192.168.0.11",
+			Port:           80,
+		}
+
+		ret, err := suite.server.ms.AddSchedulerInstance(context.TODO(), instance)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		instance.InstanceID = ret.InstanceID
+	}
+
+	for i := 0; i < 10; i++ {
+		req := &manager.KeepAliveRequest{
+			HostName: instance.HostName,
 			Type:     manager.ResourceType_Scheduler,
 		}
 
@@ -211,48 +170,225 @@ func (suite *ServerTestSuite) TestKeepAlive() {
 	}
 }
 
-//func (suite *ServerTestSuite) TestGetClusterConfig() {
-//	assert := assert.New(suite.T())
-//
-//	var cluster *types.SchedulerCluster
-//	{
-//		cluster = suite.testDefaultSchedulerCluster()
-//		ret, err := suite.server.ms.AddSchedulerCluster(context.TODO(), cluster)
-//		assert.NotNil(ret)
-//		assert.Nil(err)
-//		cluster.ClusterID = ret.ClusterID
-//	}
-//
-//	var instance *types.SchedulerInstance
-//	{
-//		instance = &types.SchedulerInstance{
-//			ClusterID:      cluster.ClusterID,
-//			SecurityDomain: "security_abc",
-//			IDC:            "idc_abc",
-//			Location:       "location_abc",
-//			NetConfig:      "",
-//			HostName:       "dragonfly2-scheduler011239070235.nt12",
-//			IP:             "11.239.70.235",
-//			Port:           80,
-//		}
-//
-//		ret, err := suite.server.ms.AddSchedulerInstance(context.TODO(), instance)
-//		assert.NotNil(ret)
-//		assert.Nil(err)
-//		instance.InstanceID = ret.InstanceID
-//	}
-//
-//	{
-//		req := &manager.GetClusterConfigRequest{
-//			HostName: "dragonfly2-scheduler011239070235.nt12",
-//			Type:     manager.ResourceType_Scheduler,
-//		}
-//
-//		ret, err := suite.server.ms.GetClusterConfig(context.TODO(), req)
-//		assert.NotNil(err)
-//		assert.Nil(ret)
-//	}
-//}
+func (suite *ServerTestSuite) TestKeepAliveCDN() {
+	assert := assert.New(suite.T())
+
+	var cluster *types.CDNCluster
+	{
+		cluster = suite.testDefaultCDNCluster()
+		ret, err := suite.server.ms.AddCDNCluster(context.TODO(), cluster)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		cluster.ClusterID = ret.ClusterID
+	}
+
+	var instance *types.CDNInstance
+	{
+		instance = &types.CDNInstance{
+			ClusterID: cluster.ClusterID,
+			IDC:       "idc_abc",
+			Location:  "location_abc",
+			HostName:  suite.randPrefix() + "hostname_abc",
+			IP:        "ip_abc",
+			Port:      0,
+			RPCPort:   0,
+			DownPort:  0,
+		}
+
+		ret, err := suite.server.ms.AddCDNInstance(context.TODO(), instance)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		instance.InstanceID = ret.InstanceID
+	}
+
+	for i := 0; i < 10; i++ {
+		req := &manager.KeepAliveRequest{
+			HostName: instance.HostName,
+			Type:     manager.ResourceType_Cdn,
+		}
+
+		err := suite.server.ms.KeepAlive(context.TODO(), req)
+		assert.Nil(err)
+
+		if i%2 == 0 {
+			time.Sleep(configsvc.KeepAliveTimeoutMax - time.Second)
+
+			ret, err := suite.server.ms.GetCDNInstance(context.TODO(), instance.InstanceID)
+			assert.NotNil(ret)
+			assert.Nil(err)
+			assert.Equal(configsvc.InstanceActive, ret.State)
+		} else {
+			time.Sleep(configsvc.KeepAliveTimeoutMax * 2)
+
+			ret, err := suite.server.ms.GetCDNInstance(context.TODO(), instance.InstanceID)
+			assert.NotNil(ret)
+			assert.Nil(err)
+			assert.Equal(configsvc.InstanceInactive, ret.State)
+		}
+	}
+}
+
+func (suite *ServerTestSuite) TestGetSchedulerClusterConfig() {
+	assert := assert.New(suite.T())
+
+	var cluster *types.SchedulerCluster
+	{
+		cluster = suite.testDefaultSchedulerCluster()
+		ret, err := suite.server.ms.AddSchedulerCluster(context.TODO(), cluster)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		cluster.ClusterID = ret.ClusterID
+	}
+
+	var instance *types.SchedulerInstance
+	{
+		instance = &types.SchedulerInstance{
+			ClusterID:      cluster.ClusterID,
+			SecurityDomain: "security_abc",
+			IDC:            "idc_abc",
+			Location:       "location_abc",
+			NetConfig:      "",
+			HostName:       suite.randPrefix() + "hostname_abc",
+			IP:             "192.168.0.11",
+			Port:           80,
+		}
+
+		ret, err := suite.server.ms.AddSchedulerInstance(context.TODO(), instance)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		instance.InstanceID = ret.InstanceID
+	}
+
+	{
+		req := &manager.GetClusterConfigRequest{
+			HostName: instance.HostName,
+			Type:     manager.ResourceType_Scheduler,
+		}
+
+		ret, err := suite.server.ms.GetClusterConfig(context.TODO(), req)
+		assert.Nil(err)
+		assert.NotNil(ret)
+		cfg := ret.GetSchedulerConfig()
+		assert.Equal(cluster.SchedulerConfig, cfg.ClusterConfig)
+		assert.Equal(cluster.ClientConfig, cfg.ClientConfig)
+	}
+
+	var cdnCluster *types.CDNCluster
+	{
+		cdnCluster = suite.testDefaultCDNCluster()
+		ret, err := suite.server.ms.AddCDNCluster(context.TODO(), cdnCluster)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		cdnCluster.ClusterID = ret.ClusterID
+	}
+
+	var cdnInstance *types.CDNInstance
+	{
+		cdnInstance = &types.CDNInstance{
+			ClusterID: cdnCluster.ClusterID,
+			IDC:       "idc_abc",
+			Location:  "location_abc",
+			HostName:  suite.randPrefix() + "hostname_abc",
+			IP:        "ip_abc",
+			Port:      0,
+			RPCPort:   0,
+			DownPort:  0,
+		}
+
+		ret, err := suite.server.ms.AddCDNInstance(context.TODO(), cdnInstance)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		cdnInstance.InstanceID = ret.InstanceID
+	}
+
+	{
+		req := &manager.KeepAliveRequest{
+			HostName: cdnInstance.HostName,
+			Type:     manager.ResourceType_Cdn,
+		}
+
+		err := suite.server.ms.KeepAlive(context.TODO(), req)
+		assert.Nil(err)
+	}
+
+	{
+		var schedulerConfigMap map[string]string
+		err := json.Unmarshal([]byte(cluster.SchedulerConfig), &schedulerConfigMap)
+		assert.Nil(err)
+
+		schedulerConfigMap["CDN_CLUSTER_ID"] = cdnCluster.ClusterID
+		schedulerConfigByte, err := json.Marshal(schedulerConfigMap)
+		assert.Nil(err)
+		cluster.SchedulerConfig = string(schedulerConfigByte)
+
+		suite.server.ms.UpdateSchedulerCluster(context.TODO(), cluster)
+	}
+
+	{
+		req := &manager.GetClusterConfigRequest{
+			HostName: instance.HostName,
+			Type:     manager.ResourceType_Scheduler,
+		}
+
+		ret, err := suite.server.ms.GetClusterConfig(context.TODO(), req)
+		assert.Nil(err)
+		assert.NotNil(ret)
+		cfg := ret.GetSchedulerConfig()
+		assert.Equal(cluster.SchedulerConfig, cfg.ClusterConfig)
+		assert.Equal(cluster.ClientConfig, cfg.ClientConfig)
+
+		cdnHost := cfg.GetCdnHosts()
+		assert.Equal(1, len(cdnHost))
+
+		assert.Equal(cdnInstance.HostName, cdnHost[0].HostInfo.HostName)
+		assert.Equal(cdnInstance.IP, cdnHost[0].HostInfo.Ip)
+	}
+}
+
+func (suite *ServerTestSuite) TestGetCDNClusterConfig() {
+	assert := assert.New(suite.T())
+
+	var cluster *types.CDNCluster
+	{
+		cluster = suite.testDefaultCDNCluster()
+		ret, err := suite.server.ms.AddCDNCluster(context.TODO(), cluster)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		cluster.ClusterID = ret.ClusterID
+	}
+
+	var instance *types.CDNInstance
+	{
+		instance = &types.CDNInstance{
+			ClusterID: cluster.ClusterID,
+			IDC:       "idc_abc",
+			Location:  "location_abc",
+			HostName:  suite.randPrefix() + "hostname_abc",
+			IP:        "ip_abc",
+			Port:      0,
+			RPCPort:   0,
+			DownPort:  0,
+		}
+
+		ret, err := suite.server.ms.AddCDNInstance(context.TODO(), instance)
+		assert.NotNil(ret)
+		assert.Nil(err)
+		instance.InstanceID = ret.InstanceID
+	}
+
+	{
+		req := &manager.GetClusterConfigRequest{
+			HostName: instance.HostName,
+			Type:     manager.ResourceType_Cdn,
+		}
+
+		ret, err := suite.server.ms.GetClusterConfig(context.TODO(), req)
+		assert.Nil(err)
+		assert.NotNil(ret)
+		cfg := ret.GetCdnConfig()
+		assert.Equal(cluster.Config, cfg.ClusterConfig)
+	}
+}
 
 func (suite *ServerTestSuite) TestSchedulerCluster() {
 	assert := assert.New(suite.T())
@@ -341,7 +477,7 @@ func (suite *ServerTestSuite) TestSchedulerInstance() {
 			IDC:            "idc_abc",
 			Location:       "location_abc",
 			NetConfig:      "",
-			HostName:       "hostname_abc",
+			HostName:       suite.randPrefix() + "hostname_abc",
 			IP:             "192.168.0.11",
 			Port:           80,
 		}
@@ -481,7 +617,7 @@ func (suite *ServerTestSuite) TestCDNInstance() {
 			ClusterID: cluster.ClusterID,
 			IDC:       "idc_abc",
 			Location:  "location_abc",
-			HostName:  "hostName_abc",
+			HostName:  suite.randPrefix() + "hostname_abc",
 			IP:        "ip_abc",
 			Port:      0,
 			RPCPort:   0,
@@ -619,12 +755,16 @@ func (suite *ServerTestSuite) TestSecurityDomain() {
 	}
 }
 
+func (suite *ServerTestSuite) randPrefix() string {
+	return fmt.Sprintf("%d_", time.Now().Unix())
+}
+
 func (suite *ServerTestSuite) SetupSuite() {
 	assert := assert.New(suite.T())
 
 	configsvc.KeepAliveTimeoutMax = 2 * time.Second
 	_ = logcore.InitManager(false)
-	cfg := suite.testMysqlConfig()
+	cfg := config.New()
 	server, err := New(cfg)
 	assert.Nil(err)
 	assert.NotNil(server)

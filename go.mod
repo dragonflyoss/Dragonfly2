@@ -13,6 +13,8 @@ require (
 	github.com/go-echarts/statsview v0.3.4
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
 	github.com/go-openapi/spec v0.20.3 // indirect
+	github.com/go-redis/cache/v8 v8.4.1
+	github.com/go-redis/redis/v8 v8.9.0
 	github.com/gofrs/flock v0.8.0
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/mock v1.5.0
