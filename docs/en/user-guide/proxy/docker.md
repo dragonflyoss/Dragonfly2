@@ -1,4 +1,4 @@
-# Use Dfdaemon as HTTP Proxy for Docker daemon
+# Use client as HTTP proxy for docker daemon
 
 Currently, docker doesn't support private registries with `registry-mirrors`,
 in order to do so, we need to use HTTP proxy for docker daemon.
@@ -54,10 +54,10 @@ openssl req -new -key ca.key -nodes -out ca.csr -config openssl.conf
 openssl x509 -req -days 36500 -extfile openssl.conf -extensions v3_ca -in ca.csr -signkey ca.key -out ca.crt
 ```
 
-### Step 2: Configure Dfdaemon
+### Step 2: Configure client
 
-To use dfdaemon as HTTP proxy, first you need to append a proxy rule in
-`$HOME/.dragonfly/dfget-daemon.yaml`, This will proxy `your.private.registry`'s requests for image layers:
+To use client as HTTP proxy, first you need to append a proxy rule in
+`$HOME/.dragonfly/config/dfget.yaml`, This will proxy `your.private.registry`'s requests for image layers:
 
 ```yaml
 proxy:
