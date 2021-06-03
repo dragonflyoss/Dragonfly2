@@ -14,9 +14,9 @@ cd /go/src/d7y.io/dragonfly/v2 &&
   mkdir -p /build/debian &&
   cd /build &&
   cp /go/src/d7y.io/dragonfly/v2/bin/linux_amd64/dfget /build/ &&
-  cp /go/src/d7y.io/dragonfly/v2/docs/cli-reference/dfget.1 /build/ &&
+  cp /go/src/d7y.io/dragonfly/v2/docs/en/cli-reference/dfget.1 /build/ &&
   cp /go/src/d7y.io/dragonfly/v2/LICENSE /build/ &&
-  cp /go/src/d7y.io/dragonfly/v2/docs/config/dfget-daemon.yaml /build/ &&
+  cp /go/src/d7y.io/dragonfly/v2/docs/en/config/dfget.yaml /build/ &&
   cp /go/src/d7y.io/dragonfly/v2/hack/packaging/systemd/dfget-daemon.service /build/debian/ &&
   cp /go/src/d7y.io/dragonfly/v2/hack/packaging/deb/compat /build/debian/compat &&
   cp /go/src/d7y.io/dragonfly/v2/hack/packaging/deb/copyright /build/debian/copyright &&
