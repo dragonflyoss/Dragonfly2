@@ -137,6 +137,9 @@ func (s *CDNInstanceStore) Delete(ctx context.Context, id string, opts ...store.
 }
 
 func (s *CDNInstanceStore) Update(ctx context.Context, id string, data interface{}, opts ...store.OpOption) (interface{}, error) {
+	op := store.Op{}
+	op.ApplyOpts(opts)
+
 	tInstance := &CDNInstanceTable{}
 	tx := s.withTable(ctx).Where("instance_id = ?", id).First(tInstance)
 	if err := tx.Error; errors.Is(err, gorm.ErrRecordNotFound) {
@@ -149,6 +152,11 @@ func (s *CDNInstanceStore) Update(ctx context.Context, id string, data interface
 	}
 
 	instance := CDNInstanceToTable(i)
+	if op.Keepalive {
+		tInstance.State = instance.State
+		instance = tInstance
+	}
+
 	s.updateSchemaToTable(instance, tInstance)
 	tx = tx.Updates(instance)
 	if err := tx.Error; errors.Is(err, gorm.ErrRecordNotFound) {

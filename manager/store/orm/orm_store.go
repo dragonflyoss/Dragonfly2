@@ -2,7 +2,6 @@ package orm
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 
 	"d7y.io/dragonfly/v2/manager/config"
@@ -28,6 +27,7 @@ var ormTables = map[store.ResourceType]newTableSetup{
 	store.CDNCluster:        NewCDNClusterStore,
 	store.CDNInstance:       NewCDNInstanceStore,
 	store.SecurityDomain:    NewSecurityDomainStore,
+	store.Lease:             NewLeaseStore,
 }
 
 func newOrmStore(cfg *config.StoreConfig) (*ormStore, error) {
@@ -40,7 +40,7 @@ func newOrmStore(cfg *config.StoreConfig) (*ormStore, error) {
 		return nil, err
 	}
 
-	u.Host = fmt.Sprintf("%s:%d", cfg.Mysql.IP, cfg.Mysql.Port)
+	u.Host = cfg.Mysql.Addr
 	u.Path = cfg.Mysql.Db
 	u.User = url.UserPassword(cfg.Mysql.User, cfg.Mysql.Password)
 	q := u.Query()

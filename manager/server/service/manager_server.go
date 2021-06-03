@@ -7,8 +7,10 @@ import (
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/configsvc"
+	"d7y.io/dragonfly/v2/manager/dc"
 	"d7y.io/dragonfly/v2/manager/host"
 	"d7y.io/dragonfly/v2/manager/hostidentifier"
+	"d7y.io/dragonfly/v2/manager/lease"
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/manager/store/client"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
@@ -22,36 +24,70 @@ type ManagerServer struct {
 	store       store.Store
 	hostManager host.Manager
 	configSvc   *configsvc.ConfigSvc
+	lessor      lease.Lessor
+	redisClient *dc.RedisClient
 }
 
 func NewManagerServer(cfg *config.Config) *ManagerServer {
-	if err := cfg.Valid(); err != nil {
+	var err error
+	mgr := &ManagerServer{}
+	defer func() {
+		if err != nil {
+			mgr.Close()
+		}
+	}()
+
+	if err = cfg.Valid(); err != nil {
 		return nil
 	}
 
-	identifier := hostidentifier.NewIdentifier()
+	mgr.identifier = hostidentifier.NewIdentifier()
 
-	store, err := client.NewStore(cfg)
+	mgr.store, err = client.NewStore(cfg)
 	if err != nil {
 		return nil
 	}
 
-	configSvc, err := configsvc.NewConfigSvc(store, identifier)
+	mgr.lessor, err = lease.NewLessor(mgr.store)
 	if err != nil {
 		return nil
 	}
 
-	hostManager, err := host.NewManager(cfg.HostService)
+	mgr.redisClient, err = dc.NewRedisClient(cfg.Redis)
 	if err != nil {
 		return nil
 	}
 
-	return &ManagerServer{
-		identifier:  identifier,
-		store:       store,
-		hostManager: hostManager,
-		configSvc:   configSvc,
+	mgr.configSvc, err = configsvc.NewConfigSvc(mgr.store, mgr.identifier, mgr.lessor, mgr.redisClient)
+	if err != nil {
+		return nil
 	}
+
+	mgr.hostManager, err = host.NewManager(cfg.HostService)
+	if err != nil {
+		return nil
+	}
+
+	return mgr
+}
+
+func (ms *ManagerServer) Close() error {
+	if ms.configSvc != nil {
+		_ = ms.configSvc.Close()
+		ms.configSvc = nil
+	}
+
+	if ms.redisClient != nil {
+		_ = ms.redisClient.Close()
+		ms.redisClient = nil
+	}
+
+	if ms.lessor != nil {
+		_ = ms.lessor.Close()
+		ms.lessor = nil
+	}
+
+	return nil
 }
 
 func (ms *ManagerServer) GetSchedulers(ctx context.Context, req *manager.GetSchedulersRequest) (*manager.SchedulerNodes, error) {

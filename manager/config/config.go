@@ -10,6 +10,7 @@ type Config struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
 	Server       *ServerConfig    `yaml:"server" mapstructure:"server"`
 	Configure    *ConfigureConfig `yaml:"configure" mapstructure:"configure"`
+	Redis        *RedisConfig     `yaml:"redis" mapstructure:"redis"`
 	Stores       []*StoreConfig   `yaml:"stores" mapstructure:"stores"`
 	HostService  *HostService     `yaml:"host-service" mapstructure:"host-service"`
 }
@@ -26,8 +27,7 @@ type ConfigureConfig struct {
 type MysqlConfig struct {
 	User     string `yaml:"user" mapstructure:"user"`
 	Password string `yaml:"password" mapstructure:"password"`
-	IP       string `yaml:"ip" mapstructure:"ip"`
-	Port     int    `yaml:"port" mapstructure:"port"`
+	Addr     string `yaml:"addr" mapstructure:"addr"`
 	Db       string `yaml:"db" mapstructure:"db"`
 }
 
@@ -42,6 +42,12 @@ type StoreConfig struct {
 }
 
 type HostService struct {
+}
+
+type RedisConfig struct {
+	User     string   `yaml:"user" mapstructure:"user"`
+	Password string   `yaml:"password" mapstructure:"password"`
+	Addrs    []string `yaml:"addr" mapstructure:"addrs"`
 }
 
 type SkylineService struct {
@@ -59,6 +65,11 @@ func New() *Config {
 		Configure: &ConfigureConfig{
 			StoreName: "store1",
 		},
+		Redis: &RedisConfig{
+			User:     "",
+			Password: "",
+			Addrs:    []string{"127.0.0.1:6379"},
+		},
 		Stores: []*StoreConfig{
 			{
 				Name: "store1",
@@ -66,9 +77,8 @@ func New() *Config {
 				Mysql: &MysqlConfig{
 					User:     "root",
 					Password: "root1234",
-					IP:       "127.0.0.1",
-					Port:     3306,
-					Db:       "config_db",
+					Addr:     "127.0.0.1:3306",
+					Db:       "dragonfly_manager",
 				},
 				Oss: nil,
 			},
@@ -91,12 +101,8 @@ func (cfg *StoreConfig) Valid() error {
 			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.Password is null")
 		}
 
-		if cfg.Mysql.Port == 0 {
-			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.Port is null")
-		}
-
-		if len(cfg.Mysql.IP) == 0 {
-			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.IP is null")
+		if len(cfg.Mysql.Addr) == 0 {
+			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.Addr is null")
 		}
 
 		if len(cfg.Mysql.Db) == 0 {
@@ -113,6 +119,26 @@ func (cfg *StoreConfig) Valid() error {
 	return nil
 }
 
+func (cfg *RedisConfig) Valid() error {
+	if len(cfg.Addrs) == 0 {
+		return dferrors.Newf(dfcodes.ManagerConfigError, "redis config error: Addrs is null")
+	}
+
+	return nil
+}
+
 func (cfg *Config) Valid() error {
+	if cfg.Redis == nil {
+		return dferrors.Newf(dfcodes.ManagerConfigError, "redis config error: Redis is null")
+	}
+
+	if err := cfg.Redis.Valid(); err != nil {
+		return err
+	}
+
+	if len(cfg.Stores) <= 0 {
+		return dferrors.Newf(dfcodes.ManagerConfigError, "stores config error: Stores is null")
+	}
+
 	return nil
 }

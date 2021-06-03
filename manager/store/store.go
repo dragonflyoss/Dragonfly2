@@ -12,6 +12,7 @@ const (
 	CDNCluster        ResourceType = "CDNCluster"
 	CDNInstance       ResourceType = "CDNInstance"
 	SecurityDomain    ResourceType = "SecurityDomain"
+	Lease             ResourceType = "Lease"
 )
 
 func (objType ResourceType) String() string {
@@ -19,11 +20,13 @@ func (objType ResourceType) String() string {
 }
 
 type Op struct {
-	ResourceType ResourceType
-	ClusterID    string
-	InstanceID   string
-	Marker       int
-	MaxItemCount int
+	ResourceType   ResourceType
+	ClusterID      string
+	InstanceID     string
+	Marker         int
+	MaxItemCount   int
+	Keepalive      bool
+	SkipLocalCache bool
 }
 
 type OpOption func(*Op)
@@ -64,5 +67,17 @@ func WithMarker(marker, maxItemCount int) OpOption {
 	return func(op *Op) {
 		op.Marker = marker
 		op.MaxItemCount = maxItemCount
+	}
+}
+
+func WithKeepalive() OpOption {
+	return func(op *Op) {
+		op.Keepalive = true
+	}
+}
+
+func WithSkipLocalCache() OpOption {
+	return func(op *Op) {
+		op.SkipLocalCache = true
 	}
 }
