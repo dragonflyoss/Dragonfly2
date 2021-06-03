@@ -1,4 +1,4 @@
-# Use client as HTTP proxy for containerd
+# Use dfget daemon as HTTP proxy for containerd
 
 Currently, containerd use `ctr` doesn't support private registries with `registry-mirrors`,
 in order to do so, we need to use HTTP proxy for containerd.
@@ -54,9 +54,9 @@ openssl req -new -key ca.key -nodes -out ca.csr -config openssl.conf
 openssl x509 -req -days 36500 -extfile openssl.conf -extensions v3_ca -in ca.csr -signkey ca.key -out ca.crt
 ```
 
-### Step 2: Configure client
+### Step 2: Configure dfget daemon
 
-To use client as HTTP proxy, first you need to append a proxy rule in
+To use dfget daemon as HTTP proxy, first you need to append a proxy rule in
 `/etc/dragonfly/dfget.yaml`, This will proxy `your.private.registry`'s requests for image layers:
 
 ```yaml
@@ -78,7 +78,7 @@ proxy:
 
 ### Step 3: Configure containerd
 
-Set client as `HTTP_PROXY` and `HTTPS_PROXY` for containerd in
+Set dfget damone as `HTTP_PROXY` and `HTTPS_PROXY` for containerd in
 `/etc/systemd/system/containerd.service.d/http-proxy.conf`:
 
 ```

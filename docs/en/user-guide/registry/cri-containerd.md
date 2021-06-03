@@ -1,10 +1,10 @@
-# Use client as registry mirror for cri-containerd
+# Use dfget daemon as registry mirror for cri-containerd
 
 ## Quick Start
 
-### Step 1: Configure Client
+### Step 1: Configure dfget daemon
 
-To use client as registry mirror, first you need to ensure configuration in `/etc/dragonfly/dfget.yaml`:
+To use dfget daemon as registry mirror, first you need to ensure configuration in `/etc/dragonfly/dfget.yaml`:
 
 ```yaml
 proxy:
