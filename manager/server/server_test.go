@@ -42,8 +42,8 @@ func (suite *ServerTestSuite) testDefaultSchedulerCluster() *types.SchedulerClus
 	clientConfigBytes, _ := json.Marshal(&clientConfigMap)
 
 	return &types.SchedulerCluster{
-		SchedulerConfig: string(schedulerConfigBytes),
-		ClientConfig:    string(clientConfigBytes),
+		Config:       string(schedulerConfigBytes),
+		ClientConfig: string(clientConfigBytes),
 	}
 }
 
@@ -269,7 +269,7 @@ func (suite *ServerTestSuite) TestGetSchedulerClusterConfig() {
 		assert.Nil(err)
 		assert.NotNil(ret)
 		cfg := ret.GetSchedulerConfig()
-		assert.Equal(cluster.SchedulerConfig, cfg.ClusterConfig)
+		assert.Equal(cluster.Config, cfg.ClusterConfig)
 		assert.Equal(cluster.ClientConfig, cfg.ClientConfig)
 	}
 
@@ -313,13 +313,13 @@ func (suite *ServerTestSuite) TestGetSchedulerClusterConfig() {
 
 	{
 		var schedulerConfigMap map[string]string
-		err := json.Unmarshal([]byte(cluster.SchedulerConfig), &schedulerConfigMap)
+		err := json.Unmarshal([]byte(cluster.Config), &schedulerConfigMap)
 		assert.Nil(err)
 
 		schedulerConfigMap["CDN_CLUSTER_ID"] = cdnCluster.ClusterID
 		schedulerConfigByte, err := json.Marshal(schedulerConfigMap)
 		assert.Nil(err)
-		cluster.SchedulerConfig = string(schedulerConfigByte)
+		cluster.Config = string(schedulerConfigByte)
 
 		suite.server.ms.UpdateSchedulerCluster(context.TODO(), cluster)
 	}
@@ -334,7 +334,7 @@ func (suite *ServerTestSuite) TestGetSchedulerClusterConfig() {
 		assert.Nil(err)
 		assert.NotNil(ret)
 		cfg := ret.GetSchedulerConfig()
-		assert.Equal(cluster.SchedulerConfig, cfg.ClusterConfig)
+		assert.Equal(cluster.Config, cfg.ClusterConfig)
 		assert.Equal(cluster.ClientConfig, cfg.ClientConfig)
 
 		cdnHost := cfg.GetCdnHosts()
@@ -407,25 +407,25 @@ func (suite *ServerTestSuite) TestSchedulerCluster() {
 		assert.NotNil(ret)
 		assert.Nil(err)
 		assert.Equal(cluster.ClusterID, ret.ClusterID)
-		assert.Equal(cluster.SchedulerConfig, ret.SchedulerConfig)
+		assert.Equal(cluster.Config, ret.Config)
 		assert.Equal(cluster.ClientConfig, ret.ClientConfig)
 	}
 
 	{
 		var schedulerConfigMap map[string]string
-		err := json.Unmarshal([]byte(cluster.SchedulerConfig), &schedulerConfigMap)
+		err := json.Unmarshal([]byte(cluster.Config), &schedulerConfigMap)
 		assert.Nil(err)
 
 		schedulerConfigMap["schedulerConfig_a"] = "schedulerConfig_a_update"
 		schedulerConfigByte, err := json.Marshal(schedulerConfigMap)
 		assert.Nil(err)
-		cluster.SchedulerConfig = string(schedulerConfigByte)
+		cluster.Config = string(schedulerConfigByte)
 
 		ret, err := suite.server.ms.UpdateSchedulerCluster(context.TODO(), cluster)
 		assert.NotNil(ret)
 		assert.Nil(err)
 		assert.Equal(cluster.ClusterID, ret.ClusterID)
-		assert.Equal(cluster.SchedulerConfig, ret.SchedulerConfig)
+		assert.Equal(cluster.Config, ret.Config)
 		assert.Equal(cluster.ClientConfig, ret.ClientConfig)
 	}
 
@@ -436,7 +436,7 @@ func (suite *ServerTestSuite) TestSchedulerCluster() {
 		for i, c := range ret {
 			if cluster.ClusterID == c.ClusterID {
 				assert.Equal(cluster.ClusterID, ret[i].ClusterID)
-				assert.Equal(cluster.SchedulerConfig, ret[i].SchedulerConfig)
+				assert.Equal(cluster.Config, ret[i].Config)
 				assert.Equal(cluster.ClientConfig, ret[i].ClientConfig)
 			}
 		}

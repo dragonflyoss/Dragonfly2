@@ -17,15 +17,16 @@ type SchedulerInstanceTable struct {
 	InstanceID     string         `gorm:"column:instance_id;unique;size:63"`
 	ClusterID      string         `gorm:"column:cluster_id;size:63"`
 	SecurityDomain string         `gorm:"column:security_domain;size:63"`
-	VIPs           string         `gorm:"column:vips;size:4095"`
+	VIPs           string         `gorm:"column:vips;type:text;not null"`
 	IDC            string         `gorm:"column:idc;size:63"`
-	Location       string         `gorm:"column:location;size:4095"`
-	NetConfig      string         `gorm:"column:net_config;size:4095"`
+	Location       string         `gorm:"column:location;type:text;not null"`
+	NetConfig      string         `gorm:"column:net_config;type:text;not null"`
 	HostName       string         `gorm:"column:host_name;size:63"`
 	IP             string         `gorm:"column:ip;size:31"`
 	Port           int32          `gorm:"column:port"`
 	State          string         `gorm:"column:state;size:15"`
 	Version        int64          `gorm:"column:version"`
+	Description    string         `gorm:"column:description;size:1023"`
 	CreatedAt      time.Time      `gorm:"column:created_at"`
 	UpdatedAt      time.Time      `gorm:"column:updated_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"column:deleted_at;index"`
