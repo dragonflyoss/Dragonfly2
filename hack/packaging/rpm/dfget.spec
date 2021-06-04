@@ -8,7 +8,7 @@ URL:     https://d7y.io/
 License: Apache 2.0
 Source0: dfget
 Source1: dfget-daemon.service
-Source2: dfget-daemon.yaml
+Source2: dfget.yaml
 Source3: dfget.1
 Source4: LICENSE
 Source5: ChangeLog
@@ -33,7 +33,7 @@ mkdir -p %{buildroot}/opt/dragonfly
 mkdir -p %{buildroot}%{_unitdir}/dfget-daemon.service.d
 install -p -m 755 %{SOURCE0} %{buildroot}%{_bindir}/dfget
 install -D -m 644 %{SOURCE1} %{buildroot}%{_unitdir}/dfget-daemon.service
-install -D -m 600 %{SOURCE2} %{buildroot}%{_sysconfdir}/dragonfly/dfget-daemon.yaml
+install -D -m 600 %{SOURCE2} %{buildroot}%{_sysconfdir}/dragonfly/dfget.yaml
 install -D -m 644 %{SOURCE3} %{buildroot}%{_mandir}/man1/dfget.1
 install -D -m 644 %{SOURCE4} %{buildroot}%{_docdir}/dfget/LICENSE
 install -D -m 644 %{SOURCE5} %{buildroot}%{_docdir}/dfget/ChangeLog
@@ -53,7 +53,7 @@ install -p -m 755 %{SOURCE9} %{buildroot}/opt/dragonfly/fix.dfget-daemon.cpuset.
 %{_mandir}/man1/dfget.1*
 %{_docdir}/dfget/*
 %defattr(600,root,root)
-%config(noreplace) %{_sysconfdir}/dragonfly/dfget-daemon.yaml
+%config(noreplace) %{_sysconfdir}/dragonfly/dfget.yaml
 
 %pre
 #getent group dragonfly >/dev/null || groupadd -r dragonfly

@@ -11,7 +11,7 @@ override_dh_auto_build:
 override_dh_auto_install:
 	mkdir -p $(DESTDIR)/etc/dragonfly
 	mkdir -p $(DESTDIR)/usr/bin
-	cp dfget-daemon.yaml $(DESTDIR)/etc/dragonfly/dfget-daemon.yaml
+	cp dfget.yaml $(DESTDIR)/etc/dragonfly/dfget.yaml
 	cp dfget $(DESTDIR)/usr/bin/dfget
 
 override_dh_installinit:
