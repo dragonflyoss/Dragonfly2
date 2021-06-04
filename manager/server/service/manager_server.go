@@ -142,17 +142,17 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 	} else if manager.ResourceType_Scheduler == req.GetType() {
 		schedulerInstance := interInstance.(*types.SchedulerInstance)
 		schedulerCluster := interCluster.(*types.SchedulerCluster)
-		schedulerConfigsMap := make(map[string]interface{})
-		err := json.Unmarshal([]byte(schedulerCluster.SchedulerConfig), &schedulerConfigsMap)
+		configsMap := make(map[string]interface{})
+		err := json.Unmarshal([]byte(schedulerCluster.Config), &configsMap)
 		if err != nil {
 			return nil, err
 		}
 
-		CDNClusterID, exist := schedulerConfigsMap["CDN_CLUSTER_ID"]
+		CDNClusterID, exist := configsMap["CDN_CLUSTER_ID"]
 		if !exist {
 			return &manager.ClusterConfig{Config: &manager.ClusterConfig_SchedulerConfig{SchedulerConfig: &manager.SchedulerConfig{
 				ClusterId:       schedulerCluster.ClusterID,
-				ClusterConfig:   schedulerCluster.SchedulerConfig,
+				ClusterConfig:   schedulerCluster.Config,
 				ClientConfig:    schedulerCluster.ClientConfig,
 				ClusterVersion:  schedulerCluster.Version,
 				InstanceConfig:  schedulerInstance.IDC, // todo InstanceConfig format
@@ -218,7 +218,7 @@ func (ms *ManagerServer) GetClusterConfig(ctx context.Context, req *manager.GetC
 
 		return &manager.ClusterConfig{Config: &manager.ClusterConfig_SchedulerConfig{SchedulerConfig: &manager.SchedulerConfig{
 			ClusterId:       schedulerCluster.ClusterID,
-			ClusterConfig:   schedulerCluster.SchedulerConfig,
+			ClusterConfig:   schedulerCluster.Config,
 			ClientConfig:    schedulerCluster.ClientConfig,
 			ClusterVersion:  schedulerCluster.Version,
 			InstanceConfig:  schedulerInstance.IDC, // todo InstanceConfig format

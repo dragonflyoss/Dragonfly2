@@ -16,10 +16,12 @@ type SecurityDomainTable struct {
 	ID             uint           `gorm:"column:id;primaryKey"`
 	SecurityDomain string         `gorm:"column:security_domain;unique;size:63"`
 	DisplayName    string         `gorm:"column:display_name;size:63"`
-	ProxyDomain    string         `gorm:"column:proxy_domain;size:4095"`
+	ProxyDomain    string         `gorm:"column:proxy_domain;type:text;not null"`
+	Config         string         `gorm:"column:config;type:text;not null"`
 	Creator        string         `gorm:"column:creator;size:31"`
 	Modifier       string         `gorm:"column:modifier;size:31"`
 	Version        int64          `gorm:"column:version"`
+	Description    string         `gorm:"column:description;size:1023"`
 	CreatedAt      time.Time      `gorm:"column:created_at"`
 	UpdatedAt      time.Time      `gorm:"column:updated_at"`
 	DeletedAt      gorm.DeletedAt `gorm:"column:deleted_at;index"`

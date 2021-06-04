@@ -13,16 +13,18 @@ import (
 )
 
 type SchedulerClusterTable struct {
-	ID              uint           `gorm:"column:id;primaryKey"`
-	ClusterID       string         `gorm:"column:cluster_id;unique;size:63"`
-	SchedulerConfig string         `gorm:"column:scheduler_config;size:4095"`
-	ClientConfig    string         `gorm:"column:client_config;size:4095"`
-	Creator         string         `gorm:"column:creator;size:31"`
-	Modifier        string         `gorm:"column:modifier;size:31"`
-	Version         int64          `gorm:"column:version"`
-	CreatedAt       time.Time      `gorm:"column:created_at"`
-	UpdatedAt       time.Time      `gorm:"column:updated_at"`
-	DeletedAt       gorm.DeletedAt `gorm:"column:deleted_at;index"`
+	ID           uint           `gorm:"column:id;primaryKey"`
+	ClusterID    string         `gorm:"column:cluster_id;unique;size:63"`
+	Config       string         `gorm:"column:config;type:text;not null"`
+	ClientConfig string         `gorm:"column:client_config;type:text;not null"`
+	Creator      string         `gorm:"column:creator;size:31"`
+	Modifier     string         `gorm:"column:modifier;size:31"`
+	Enable       bool           `gorm:"column:enable;type:bool"`
+	Version      int64          `gorm:"column:version"`
+	Description  string         `gorm:"column:description;size:1023"`
+	CreatedAt    time.Time      `gorm:"column:created_at"`
+	UpdatedAt    time.Time      `gorm:"column:updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 type SchedulerClusterStore struct {
@@ -48,30 +50,30 @@ func NewSchedulerClusterStore(db *gorm.DB, table string) (store.Store, error) {
 
 func SchedulerClusterToTable(t *types.SchedulerCluster) *SchedulerClusterTable {
 	return &SchedulerClusterTable{
-		ClusterID:       t.ClusterID,
-		SchedulerConfig: t.SchedulerConfig,
-		ClientConfig:    t.ClientConfig,
-		Creator:         t.Creator,
-		Modifier:        t.Modifier,
-		Version:         time.Now().UnixNano(),
+		ClusterID:    t.ClusterID,
+		Config:       t.Config,
+		ClientConfig: t.ClientConfig,
+		Creator:      t.Creator,
+		Modifier:     t.Modifier,
+		Version:      time.Now().UnixNano(),
 	}
 }
 
 func SchedulerClusterToSchema(t *SchedulerClusterTable) *types.SchedulerCluster {
 	return &types.SchedulerCluster{
-		ClusterID:       t.ClusterID,
-		SchedulerConfig: t.SchedulerConfig,
-		ClientConfig:    t.ClientConfig,
-		Creator:         t.Creator,
-		Modifier:        t.Modifier,
-		CreatedAt:       t.CreatedAt.String(),
-		UpdatedAt:       t.UpdatedAt.String(),
+		ClusterID:    t.ClusterID,
+		Config:       t.Config,
+		ClientConfig: t.ClientConfig,
+		Creator:      t.Creator,
+		Modifier:     t.Modifier,
+		CreatedAt:    t.CreatedAt.String(),
+		UpdatedAt:    t.UpdatedAt.String(),
 	}
 }
 
 func (s *SchedulerClusterStore) updateSchemaToTable(new, old *SchedulerClusterTable) *SchedulerClusterTable {
 	new.ID = old.ID
-	if new.SchedulerConfig != old.SchedulerConfig || new.ClientConfig != old.ClientConfig {
+	if new.Config != old.Config || new.ClientConfig != old.ClientConfig {
 		new.Version = time.Now().UnixNano()
 	} else {
 		new.Version = old.Version

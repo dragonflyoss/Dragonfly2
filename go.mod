@@ -21,6 +21,7 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/mux v1.7.3
+	github.com/iancoleman/strcase v0.1.3
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-runewidth v0.0.9
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db

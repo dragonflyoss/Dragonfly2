@@ -8,6 +8,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
+	"github.com/iancoleman/strcase"
 	"github.com/xo/dburl"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -65,7 +66,7 @@ func newOrmStore(cfg *config.StoreConfig) (*ormStore, error) {
 	}
 
 	for t, f := range ormTables {
-		table := t.String()
+		table := strcase.ToSnake(t.String())
 		s, err := f(db, table)
 		if err != nil {
 			return nil, err
