@@ -57,8 +57,8 @@ plugins:
       config:
         gcInitialDelay: 5s
         gcInterval: 15s
-        drivers:
-          - name: disk
+        driverConfigs:
+          disk:
             gcConfig:
               youngGCThreshold: 100G
               fullGCThreshold: 5G
@@ -69,14 +69,14 @@ plugins:
       config:
         gcInitialDelay: 5s
         gcInterval: 15s
-        drivers:
-          - name: disk
+        driverConfigs:
+          disk:
             gcConfig:
               youngGCThreshold: 100G
               fullGCThreshold: 5G
               cleanRatio: 1
               intervalThreshold: 2h
-          - name: memory
+          memory:
             gcConfig:
               youngGCThreshold: 100G
               fullGCThreshold: 5G
