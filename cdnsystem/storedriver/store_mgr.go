@@ -19,15 +19,11 @@ package storedriver
 import (
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"strings"
-	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
-	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"github.com/mitchellh/mapstructure"
-	"gopkg.in/yaml.v3"
 )
 
 // DriverBuilder is a function that creates a new storage driver plugin instant with the giving Config.
@@ -40,28 +36,7 @@ func Register(name string, builder DriverBuilder) {
 	// plugin builder
 	var f = func(conf interface{}) (plugins.Plugin, error) {
 		cfg := &Config{}
-		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-			DecodeHook: mapstructure.ComposeDecodeHookFunc(func(from, to reflect.Type, v interface{}) (interface{}, error) {
-				switch to {
-				case reflect.TypeOf(unit.B),
-					reflect.TypeOf(time.Second):
-					b, _ := yaml.Marshal(v)
-					p := reflect.New(to)
-					if err := yaml.Unmarshal(b, p.Interface()); err != nil {
-						return nil, err
-					}
-					return p.Interface(), nil
-				default:
-					return v, nil
-				}
-			}),
-			Result: cfg,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create decoder: %v", err)
-		}
-		err = decoder.Decode(conf)
-		if err != nil {
+		if err := mapstructure.Decode(conf, cfg); err != nil {
 			return nil, fmt.Errorf("failed to parse config: %v", err)
 		}
 		// prepare the base dir
