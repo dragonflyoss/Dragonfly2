@@ -18,34 +18,73 @@ package storedriver
 
 import (
 	"fmt"
+	"path/filepath"
+	"reflect"
 	"strings"
+	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
+	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"github.com/mitchellh/mapstructure"
+	"gopkg.in/yaml.v3"
 )
 
-// StorageBuilder is a function that creates a new storage plugin instant with the giving conf.
-type StorageBuilder func(conf interface{}) (Driver, error)
+// DriverBuilder is a function that creates a new storage driver plugin instant with the giving Config.
+type DriverBuilder func(cfg *Config) (Driver, error)
 
 // Register defines an interface to register a driver with specified name.
 // All drivers should call this function to register itself to the driverFactory.
-func Register(name string, builder StorageBuilder) {
+func Register(name string, builder DriverBuilder) {
 	name = strings.ToLower(name)
 	// plugin builder
-	var f plugins.Builder = func(conf interface{}) (plugin plugins.Plugin, e error) {
-		return NewStore(name, builder, conf)
+	var f = func(conf interface{}) (plugins.Plugin, error) {
+		cfg := &Config{}
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			DecodeHook: mapstructure.ComposeDecodeHookFunc(func(from, to reflect.Type, v interface{}) (interface{}, error) {
+				switch to {
+				case reflect.TypeOf(unit.B),
+					reflect.TypeOf(time.Second):
+					b, _ := yaml.Marshal(v)
+					p := reflect.New(to)
+					if err := yaml.Unmarshal(b, p.Interface()); err != nil {
+						return nil, err
+					}
+					return p.Interface(), nil
+				default:
+					return v, nil
+				}
+			}),
+			Result: cfg,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create decoder: %v", err)
+		}
+		err = decoder.Decode(conf)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse config: %v", err)
+		}
+		// prepare the base dir
+		if !filepath.IsAbs(cfg.BaseDir) {
+			return nil, fmt.Errorf("not absolute path: %s", cfg.BaseDir)
+		}
+		if err := fileutils.MkdirAll(cfg.BaseDir); err != nil {
+			return nil, fmt.Errorf("failed to create baseDir%s: %v", cfg.BaseDir, err)
+		}
+
+		return newDriverPlugin(name, builder, cfg)
 	}
-	plugins.RegisterPlugin(config.StoragePlugin, name, f)
+	plugins.RegisterPluginBuilder(plugins.StorageDriverPlugin, name, f)
 }
 
 // Get a store from manager with specified name.
-func Get(name string) (*Store, error) {
-	v := plugins.GetPlugin(config.StoragePlugin, strings.ToLower(name))
+func Get(name string) (Driver, error) {
+	v := plugins.GetPlugin(plugins.StorageDriverPlugin, strings.ToLower(name))
 	if v == nil {
 		return nil, fmt.Errorf("storage: %s not existed", name)
 	}
-	if store, ok := v.(*Store); ok {
-		return store, nil
+	if plugin, ok := v.(*driverPlugin); ok {
+		return plugin.instance, nil
 	}
-	return nil, fmt.Errorf("get store error: unknown reason")
+	return nil, fmt.Errorf("get store driver %s error: unknown reason", name)
 }

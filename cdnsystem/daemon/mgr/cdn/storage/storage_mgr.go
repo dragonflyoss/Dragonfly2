@@ -18,52 +18,62 @@ package storage
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
+	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 )
 
-var (
-	builderMap     = make(map[string]Builder)
-	defaultStorage = "disk"
-)
+type Manager interface {
+	Initialize(taskMgr mgr.SeedTaskMgr)
 
-func Register(b Builder) {
-	builderMap[strings.ToLower(b.Name())] = b
+	// ResetRepo reset the storage of task
+	ResetRepo(*types.SeedTask) error
+
+	// StatDownloadFile
+	StatDownloadFile(taskID string) (*storedriver.StorageInfo, error)
+
+	// WriteDownloadFile
+	WriteDownloadFile(taskID string, offset int64, len int64, buf *bytes.Buffer) error
+
+	// ReadDownloadFile
+	ReadDownloadFile(taskID string) (io.ReadCloser, error)
+
+	// CreateUploadLink
+	CreateUploadLink(taskID string) error
+
+	// ReadFileMetaData
+	ReadFileMetaData(taskID string) (*FileMetaData, error)
+
+	// WriteFileMetaData
+	WriteFileMetaData(taskID string, meta *FileMetaData) error
+
+	// WritePieceMetaRecords
+	WritePieceMetaRecords(taskID string, metaRecords []*PieceMetaRecord) error
+
+	// AppendPieceMetaData
+	AppendPieceMetaData(taskID string, metaRecord *PieceMetaRecord) error
+
+	// ReadPieceMetaRecords
+	ReadPieceMetaRecords(taskID string) ([]*PieceMetaRecord, error)
+
+	// DeleteTask
+	DeleteTask(taskID string) error
 }
 
-func getBuilder(name string, defaultIfAbsent bool) Builder {
-	if b, ok := builderMap[strings.ToLower(name)]; ok {
-		return b
-	}
-	if stringutils.IsBlank(name) && defaultIfAbsent {
-		return builderMap[defaultStorage]
-	}
-	return nil
-}
-
-// Builder creates a storage
-type Builder interface {
-	Build(cfg *config.Config) (Manager, error)
-
-	Name() string
-}
-
-type BuildOptions interface {
-}
-
-// fileMetaData
+// FileMetaData
 type FileMetaData struct {
 	TaskID          string            `json:"taskId"`
 	TaskURL         string            `json:"taskUrl"`
@@ -81,8 +91,6 @@ type FileMetaData struct {
 	//PieceMetaDataSign string            `json:"pieceMetaDataSign"`
 }
 
-const fieldSeparator = ":"
-
 // pieceMetaRecord
 type PieceMetaRecord struct {
 	PieceNum    int32             `json:"pieceNum"`    // piece Num start from 0
@@ -92,6 +100,8 @@ type PieceMetaRecord struct {
 	OriginRange *rangeutils.Range `json:"originRange"` //  piece's real offset in the file
 	PieceStyle  types.PieceFormat `json:"pieceStyle"`  // 1: PlainUnspecified
 }
+
+const fieldSeparator = ":"
 
 func (record PieceMetaRecord) String() string {
 	return fmt.Sprintf("%d%s%d%s%s%s%s%s%s%s%d", record.PieceNum, fieldSeparator, record.PieceLen, fieldSeparator, record.Md5, fieldSeparator, record.Range,
@@ -122,9 +132,6 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid origin range:%s", fields[4])
 	}
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid offset:%s", fields[4])
-	}
 	pieceStyle, err := strconv.ParseInt(fields[5], 10, 8)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid pieceStyle:%s", fields[5])
@@ -139,39 +146,146 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 	}, nil
 }
 
-func NewManager(cfg *config.Config) (Manager, error) {
-	sb := getBuilder(cfg.StoragePattern, true)
-	if sb == nil {
-		return nil, fmt.Errorf("could not get storage for pattern: %s", cfg.StoragePattern)
-	}
-	logger.Debugf("storage pattern is %s", sb.Name())
-	return sb.Build(cfg)
+type managerPlugin struct {
+	// name is a unique identifier, you can also name it ID.
+	name string
+	// instance holds a manger instant which implements the interface of Manager.
+	instance Manager
 }
 
-type Manager interface {
-	ResetRepo(context.Context, *types.SeedTask) error
+func (m *managerPlugin) Type() plugins.PluginType {
+	return plugins.StorageManagerPlugin
+}
 
-	StatDownloadFile(context.Context, string) (*storedriver.StorageInfo, error)
+func (m *managerPlugin) Name() string {
+	return m.name
+}
 
-	WriteDownloadFile(context.Context, string, int64, int64, *bytes.Buffer) error
+func (m *managerPlugin) ResetRepo(task *types.SeedTask) error {
+	return m.instance.ResetRepo(task)
+}
 
-	ReadDownloadFile(context.Context, string) (io.ReadCloser, error)
+func (m *managerPlugin) StatDownloadFile(path string) (*storedriver.StorageInfo, error) {
+	return m.instance.StatDownloadFile(path)
+}
 
-	CreateUploadLink(context.Context, string) error
+func (m *managerPlugin) WriteDownloadFile(s string, i int64, i2 int64, buffer *bytes.Buffer) error {
+	return m.instance.WriteDownloadFile(s, i, i2, buffer)
+}
 
-	ReadFileMetaData(context.Context, string) (*FileMetaData, error)
+func (m *managerPlugin) ReadDownloadFile(s string) (io.ReadCloser, error) {
+	return m.instance.ReadDownloadFile(s)
+}
 
-	WriteFileMetaData(context.Context, string, *FileMetaData) error
+func (m *managerPlugin) CreateUploadLink(s string) error {
+	return m.instance.CreateUploadLink(s)
+}
 
-	WritePieceMetaRecords(context.Context, string, []*PieceMetaRecord) error
+func (m *managerPlugin) ReadFileMetaData(s string) (*FileMetaData, error) {
+	return m.instance.ReadFileMetaData(s)
+}
 
-	AppendPieceMetaData(context.Context, string, *PieceMetaRecord) error
+func (m *managerPlugin) WriteFileMetaData(s string, data *FileMetaData) error {
+	return m.instance.WriteFileMetaData(s, data)
+}
 
-	ReadPieceMetaRecords(context.Context, string) ([]*PieceMetaRecord, error)
+func (m *managerPlugin) WritePieceMetaRecords(s string, records []*PieceMetaRecord) error {
+	return m.instance.WritePieceMetaRecords(s, records)
+}
 
-	DeleteTask(context.Context, string) error
+func (m *managerPlugin) AppendPieceMetaData(s string, record *PieceMetaRecord) error {
+	return m.instance.AppendPieceMetaData(s, record)
+}
 
-	SetTaskMgr(mgr.SeedTaskMgr)
+func (m *managerPlugin) ReadPieceMetaRecords(s string) ([]*PieceMetaRecord, error) {
+	return m.instance.ReadPieceMetaRecords(s)
+}
 
-	InitializeCleaners()
+func (m *managerPlugin) DeleteTask(s string) error {
+	return m.instance.DeleteTask(s)
+}
+
+// ManagerBuilder is a function that creates a new storage manager plugin instant with the giving conf.
+type ManagerBuilder func(cfg *Config) (Manager, error)
+
+// Register defines an interface to register a storage manager with specified name.
+// All storage managers should call this function to register itself to the storage manager factory.
+func Register(name string, builder ManagerBuilder) {
+	name = strings.ToLower(name)
+	// plugin builder
+	var f = func(conf interface{}) (plugins.Plugin, error) {
+		cfg := &Config{}
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			DecodeHook: mapstructure.ComposeDecodeHookFunc(func(from, to reflect.Type, v interface{}) (interface{}, error) {
+				switch to {
+				case reflect.TypeOf(unit.B):
+					b, _ := yaml.Marshal(v)
+					p := reflect.New(to)
+					if err := yaml.Unmarshal(b, p.Interface()); err != nil {
+						return nil, err
+					}
+					return p.Interface(), nil
+				default:
+					return v, nil
+				}
+			}),
+
+			Result: cfg,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create decoder: %v", err)
+		}
+		err = decoder.Decode(conf)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse config: %v", err)
+		}
+		return newManagerPlugin(name, builder, cfg)
+	}
+	plugins.RegisterPluginBuilder(plugins.StorageManagerPlugin, name, f)
+}
+
+func newManagerPlugin(name string, builder ManagerBuilder, cfg *Config) (plugins.Plugin, error) {
+	if name == "" || builder == nil {
+		return nil, fmt.Errorf("storage manager plugin's name and builder cannot be nil")
+	}
+
+	instant, err := builder(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init storage manager %s: %v", name, err)
+	}
+
+	return &managerPlugin{
+		name:     name,
+		instance: instant,
+	}, nil
+}
+
+// Get a storage manager from manager with specified name.
+func Get(name string) (Manager, error) {
+	v := plugins.GetPlugin(plugins.StorageManagerPlugin, strings.ToLower(name))
+	if v == nil {
+		return nil, fmt.Errorf("storage manager: %s not existed", name)
+	}
+	if plugin, ok := v.(*managerPlugin); ok {
+		return plugin.instance, nil
+	}
+	return nil, fmt.Errorf("get store manager %s storage error: unknown reason", name)
+}
+
+type Config struct {
+	GCInitialDelay time.Duration            `yaml:"gcInitialDelay"`
+	GCInterval     time.Duration            `yaml:"gcInterval"`
+	DriverConfigs  map[string]*DriverConfig `yaml:"driverConfigs"`
+}
+
+type DriverConfig struct {
+	GCConfig *GCConfig `yaml:"gcConfig"`
+}
+
+// GcConfig
+type GCConfig struct {
+	YoungGCThreshold  unit.Bytes    `yaml:"youngGCThreshold"`
+	FullGCThreshold   unit.Bytes    `yaml:"fullGCThreshold"`
+	CleanRatio        int           `yaml:"cleanRatio"`
+	IntervalThreshold time.Duration `yaml:"intervalThreshold"`
 }

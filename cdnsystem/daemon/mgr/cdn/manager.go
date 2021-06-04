@@ -84,7 +84,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	cm.cdnLocker.Lock(task.TaskID, false)
 	defer cm.cdnLocker.UnLock(task.TaskID, false)
 	// first: detect Cache
-	detectResult, err := cm.detector.detectCache(ctx, task)
+	detectResult, err := cm.detector.detectCache(task)
 	if err != nil {
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFailed), errors.Wrapf(err, "failed to detect cache")
 	}
@@ -139,7 +139,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 }
 
 func (cm *Manager) Delete(ctx context.Context, taskID string) error {
-	err := cm.cacheStore.DeleteTask(ctx, taskID)
+	err := cm.cacheStore.DeleteTask(taskID)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete task files")
 	}
@@ -177,7 +177,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 	if !isSuccess {
 		cdnFileLength = 0
 	}
-	if err := cm.cacheDataManager.updateStatusAndResult(ctx, task.TaskID, &storage.FileMetaData{
+	if err := cm.cacheDataManager.updateStatusAndResult(task.TaskID, &storage.FileMetaData{
 		Finish:          true,
 		Success:         isSuccess,
 		SourceRealMd5:   sourceMd5,
@@ -199,7 +199,7 @@ func (cm *Manager) handleCDNResult(ctx context.Context, task *types.SeedTask, so
 }
 
 func (cm *Manager) updateExpireInfo(ctx context.Context, taskID string, expireInfo map[string]string) {
-	if err := cm.cacheDataManager.updateExpireInfo(ctx, taskID, expireInfo); err != nil {
+	if err := cm.cacheDataManager.updateExpireInfo(taskID, expireInfo); err != nil {
 		logger.WithTaskID(taskID).Errorf("failed to update expireInfo(%s): %v", expireInfo, err)
 	}
 	logger.WithTaskID(taskID).Infof("success to update expireInfo(%s)", expireInfo)

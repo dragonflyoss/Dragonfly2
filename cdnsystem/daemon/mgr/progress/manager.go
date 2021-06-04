@@ -22,7 +22,6 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -39,7 +38,6 @@ func init() {
 }
 
 type Manager struct {
-	cfg                  *config.Config
 	seedSubscribers      *syncmap.SyncMap
 	taskPieceMetaRecords *syncmap.SyncMap
 	taskMgr              mgr.SeedTaskMgr
@@ -52,9 +50,8 @@ func (pm *Manager) SetTaskMgr(taskMgr mgr.SeedTaskMgr) {
 	pm.taskMgr = taskMgr
 }
 
-func NewManager(cfg *config.Config) (*Manager, error) {
+func NewManager() (mgr.SeedProgressMgr, error) {
 	return &Manager{
-		cfg:                  cfg,
 		seedSubscribers:      syncmap.NewSyncMap(),
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
 		mu:                   synclock.NewLockerPool(),
@@ -106,7 +103,7 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 			case <-time.After(pm.timeout):
 			}
 		}
-		if task, err := pm.taskMgr.Get(ctx, taskID); err == nil && task.IsDone() {
+		if task, err := pm.taskMgr.Get(taskID); err == nil && task.IsDone() {
 			chanList.Remove(ele)
 			close(seedCh)
 		}
@@ -121,7 +118,7 @@ func (pm *Manager) PublishPiece(ctx context.Context, taskID string, record *type
 	defer pm.mu.UnLock(taskID, false)
 	err := pm.setPieceMetaRecord(taskID, record)
 	if err != nil {
-		errors.Wrap(err, "failed to set piece meta record")
+		return errors.Wrap(err, "failed to set piece meta record")
 	}
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {

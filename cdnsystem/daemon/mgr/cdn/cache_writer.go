@@ -127,12 +127,12 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	close(jobCh)
 	wg.Wait()
 
-	storageInfo, err := cw.cacheDataManager.statDownloadFile(ctx, task.TaskID)
+	storageInfo, err := cw.cacheDataManager.statDownloadFile(task.TaskID)
 	if err != nil {
 		return &downloadMetadata{backSourceLength: backSourceFileLength}, errors.Wrapf(err, "failed to get cdn file length")
 	}
 
-	pieceMd5Sign, _, err := cw.cacheDataManager.getPieceMd5Sign(ctx, task.TaskID)
+	pieceMd5Sign, _, err := cw.cacheDataManager.getPieceMd5Sign(task.TaskID)
 	if err != nil {
 		return &downloadMetadata{backSourceLength: backSourceFileLength}, errors.Wrapf(err, "failed to get piece md5 sign")
 	}
