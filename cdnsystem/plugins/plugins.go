@@ -32,8 +32,8 @@ func SetManager(m Manager) {
 // Initialize builds all plugins defined in config file.
 func Initialize(plugins map[PluginType][]*PluginProperties) error {
 	// todo Plugin loads sequence dependencies
-	for pt, value := range plugins {
-		for _, v := range value {
+	for _, pt := range PluginTypes {
+		for _, v := range plugins[pt] {
 			if !v.Enable {
 				logger.Infof("plugin[%s][%s] is disabled", pt, v.Name)
 				continue
