@@ -17,12 +17,16 @@
 package storedriver
 
 import (
-	"context"
+	"fmt"
 	"io"
 	"path/filepath"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/pkg/errors"
 )
 
 // Driver defines an interface to manage the data stored in the driver.
@@ -36,47 +40,47 @@ type Driver interface {
 	// Get data from the storage based on raw information.
 	// If the length<=0, the driver should return all data from the raw.offset.
 	// Otherwise, just return the data which starts from raw.offset and the length is raw.length.
-	Get(ctx context.Context, raw *Raw) (io.ReadCloser, error)
+	Get(raw *Raw) (io.ReadCloser, error)
 
 	// Get data from the storage based on raw information.
 	// The data should be returned in bytes.
 	// If the length<=0, the storage driver should return all data from the raw.offset.
 	// Otherwise, just return the data which starts from raw.offset and the length is raw.length.
-	GetBytes(ctx context.Context, raw *Raw) ([]byte, error)
+	GetBytes(raw *Raw) ([]byte, error)
 
 	// Put the data into the storage with raw information.
 	// The storage will get data from io.Reader as io stream.
 	// If the offset>0, the storage driver should starting at byte raw.offset off.
-	Put(ctx context.Context, raw *Raw, data io.Reader) error
+	Put(raw *Raw, data io.Reader) error
 
 	// PutBytes puts the data into the storage with raw information.
 	// The data is passed in bytes.
 	// If the offset>0, the storage driver should starting at byte raw.offset off.
-	PutBytes(ctx context.Context, raw *Raw, data []byte) error
+	PutBytes(raw *Raw, data []byte) error
 
 	// Remove the data from the storage based on raw information.
-	Remove(ctx context.Context, raw *Raw) error
+	Remove(raw *Raw) error
 
 	// Stat determines whether the data exists based on raw information.
 	// If that, and return some info that in the form of struct StorageInfo.
 	// If not, return the ErrFileNotExist.
-	Stat(ctx context.Context, raw *Raw) (*StorageInfo, error)
+	Stat(raw *Raw) (*StorageInfo, error)
 
 	// GetAvailSpace returns the available disk space in B.
-	GetAvailSpace(ctx context.Context) (unit.Bytes, error)
+	GetAvailSpace() (unit.Bytes, error)
 
 	// GetTotalAndFreeSpace
-	GetTotalAndFreeSpace(ctx context.Context) (unit.Bytes, unit.Bytes, error)
+	GetTotalAndFreeSpace() (unit.Bytes, unit.Bytes, error)
 
 	// GetTotalSpace
-	GetTotalSpace(ctx context.Context) (unit.Bytes, error)
+	GetTotalSpace() (unit.Bytes, error)
 
 	// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
 	// calling walkFn for each file or directory in the tree, including root.
-	Walk(ctx context.Context, raw *Raw) error
+	Walk(raw *Raw) error
 
 	// CreateBaseDir
-	CreateBaseDir(ctx context.Context) error
+	CreateBaseDir() error
 
 	// GetPath
 	GetPath(raw *Raw) string
@@ -85,13 +89,14 @@ type Driver interface {
 	MoveFile(src string, dst string) error
 
 	// Exits
-	Exits(ctx context.Context, raw *Raw) bool
+	Exits(raw *Raw) bool
 
 	// GetHomePath
-	GetHomePath(ctx context.Context) string
+	GetHomePath() string
+}
 
-	// GetGcConfig
-	GetGcConfig(ctx context.Context) *GcConfig
+type Config struct {
+	BaseDir string `yaml:"baseDir"`
 }
 
 // Raw identifies a piece of data uniquely.
@@ -115,10 +120,152 @@ type StorageInfo struct {
 	ModTime    time.Time // modified time
 }
 
-// GcConfig
-type GcConfig struct {
-	YoungGCThreshold  unit.Bytes    `yaml:"youngGCThreshold"`
-	FullGCThreshold   unit.Bytes    `yaml:"fullGCThreshold"`
-	CleanRatio        int           `yaml:"cleanRatio"`
-	IntervalThreshold time.Duration `yaml:"intervalThreshold"`
+func init() {
+	// Ensure that driverPlugin implements the interface of Driver
+	var driverPlugin *driverPlugin = nil
+	var _ Driver = driverPlugin
+	// Ensure that driverPlugin implements the interface Plugin
+	var _ plugins.Plugin = driverPlugin
+}
+
+// driverPlugin is a wrapper of the storage driver which implements the interface of Driver.
+type driverPlugin struct {
+	// name is a unique identifier, you can also name it ID.
+	name string
+	// instance holds a storage which implements the interface of driverPlugin.
+	instance Driver
+}
+
+// NewDriverPlugin creates a new storage Driver Plugin instance.
+func newDriverPlugin(name string, builder DriverBuilder, cfg *Config) (plugins.Plugin, error) {
+	if name == "" || builder == nil {
+		return nil, fmt.Errorf("storage driver plugin's name and builder cannot be nil")
+	}
+	// init driver with specific config
+	driver, err := builder(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init storage driver %s: %v", name, err)
+	}
+
+	return &driverPlugin{
+		name:     name,
+		instance: driver,
+	}, nil
+}
+
+// Type returns the plugin type StorageDriverPlugin.
+func (s *driverPlugin) Type() plugins.PluginType {
+	return plugins.StorageDriverPlugin
+}
+
+// Name returns the plugin name.
+func (s *driverPlugin) Name() string {
+	return s.name
+}
+
+// GetTotalSpace
+func (s *driverPlugin) GetTotalSpace() (unit.Bytes, error) {
+	return s.instance.GetTotalSpace()
+}
+
+// CreateBaseDir
+func (s *driverPlugin) CreateBaseDir() error {
+	return s.instance.CreateBaseDir()
+}
+
+func (s *driverPlugin) Exits(raw *Raw) bool {
+	return s.instance.Exits(raw)
+}
+
+func (s *driverPlugin) GetTotalAndFreeSpace() (unit.Bytes, unit.Bytes, error) {
+	return s.instance.GetTotalAndFreeSpace()
+}
+
+// Get the data from the storage driver in io stream.
+func (s *driverPlugin) Get(raw *Raw) (io.ReadCloser, error) {
+	if err := checkEmptyKey(raw); err != nil {
+		return nil, err
+	}
+	return s.instance.Get(raw)
+}
+
+// GetBytes gets the data from the storage driver in bytes.
+func (s *driverPlugin) GetBytes(raw *Raw) ([]byte, error) {
+	if err := checkEmptyKey(raw); err != nil {
+		return nil, err
+	}
+	return s.instance.GetBytes(raw)
+}
+
+// Put puts data into the storage in io stream.
+func (s *driverPlugin) Put(raw *Raw, data io.Reader) error {
+	if err := checkEmptyKey(raw); err != nil {
+		return err
+	}
+	return s.instance.Put(raw, data)
+}
+
+// PutBytes puts data into the storage in bytes.
+func (s *driverPlugin) PutBytes(raw *Raw, data []byte) error {
+	if err := checkEmptyKey(raw); err != nil {
+		return err
+	}
+	return s.instance.PutBytes(raw, data)
+}
+
+// AppendBytes append data into storage in bytes.
+//func (s *Store) AppendBytes(ctx context.Context, raw *Raw, data []byte) error {
+//	if err := checkEmptyKey(raw); err != nil {
+//		return err
+//	}
+//	return s.driver.AppendBytes(ctx, raw, data)
+//}
+
+// Remove the data from the storage based on raw information.
+func (s *driverPlugin) Remove(raw *Raw) error {
+	if raw == nil || (stringutils.IsBlank(raw.Key) &&
+		stringutils.IsBlank(raw.Bucket)) {
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "cannot set both key and bucket empty at the same time")
+	}
+	return s.instance.Remove(raw)
+}
+
+// Stat determines whether the data exists based on raw information.
+// If that, and return some info that in the form of struct StorageInfo.
+// If not, return the ErrNotFound.
+func (s *driverPlugin) Stat(raw *Raw) (*StorageInfo, error) {
+	if err := checkEmptyKey(raw); err != nil {
+		return nil, err
+	}
+	return s.instance.Stat(raw)
+}
+
+// Walk walks the file tree rooted at root which determined by raw.Bucket and raw.Key,
+// calling walkFn for each file or directory in the tree, including root.
+func (s *driverPlugin) Walk(raw *Raw) error {
+	return s.instance.Walk(raw)
+}
+
+func (s *driverPlugin) GetPath(raw *Raw) string {
+	return s.instance.GetPath(raw)
+}
+
+func (s *driverPlugin) MoveFile(src string, dst string) error {
+	return s.instance.MoveFile(src, dst)
+}
+
+// GetAvailSpace returns the available disk space in B.
+func (s *driverPlugin) GetAvailSpace() (unit.Bytes, error) {
+	return s.instance.GetAvailSpace()
+}
+
+func (s *driverPlugin) GetHomePath() string {
+	return s.instance.GetHomePath()
+}
+
+func checkEmptyKey(raw *Raw) error {
+	if raw == nil || stringutils.IsBlank(raw.Key) {
+		return errors.Wrapf(cdnerrors.ErrInvalidValue, "raw key is empty")
+	}
+	return nil
 }

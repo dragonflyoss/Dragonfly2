@@ -69,7 +69,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				pieceLen := originPieceLen                 // 经过处理后写到存储介质的真实长度
 				pieceStyle := types.PlainUnspecified
 
-				if err := cw.writeToFile(ctx, job.TaskID, waitToWriteContent, int64(job.pieceNum)*int64(job.pieceSize), pieceMd5); err != nil {
+				if err := cw.writeToFile(job.TaskID, waitToWriteContent, int64(job.pieceNum)*int64(job.pieceSize), pieceMd5); err != nil {
 					logger.WithTaskID(job.TaskID).Errorf("failed to write file, pieceNum %d: %v", job.pieceNum, err)
 					// todo redo the job?
 					continue
@@ -95,7 +95,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				go func(record *storage.PieceMetaRecord) {
 					defer wg.Done()
 					// todo 可以先塞入channel，然后启动单独goroutine顺序写文件
-					if err := cw.cacheDataManager.appendPieceMetaData(ctx, job.TaskID, record); err != nil {
+					if err := cw.cacheDataManager.appendPieceMetaData(job.TaskID, record); err != nil {
 						logger.WithTaskID(job.TaskID).Errorf("failed to append piece meta data to file:%v", err)
 					}
 				}(pieceRecord)
@@ -114,7 +114,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 }
 
 // writeToFile
-func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuffer *bytes.Buffer, offset int64, pieceMd5 hash.Hash) error {
+func (cw *cacheWriter) writeToFile(taskID string, bytesBuffer *bytes.Buffer, offset int64, pieceMd5 hash.Hash) error {
 	var resultBuf = &bytes.Buffer{}
 	// write piece content
 	var pieceContent []byte
@@ -135,5 +135,5 @@ func (cw *cacheWriter) writeToFile(ctx context.Context, taskID string, bytesBuff
 		}
 	}
 	// write to the storage
-	return cw.cacheDataManager.writeDownloadFile(ctx, taskID, offset, int64(pieceContLen), resultBuf)
+	return cw.cacheDataManager.writeDownloadFile(taskID, offset, int64(pieceContLen), resultBuf)
 }

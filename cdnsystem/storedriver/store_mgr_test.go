@@ -33,7 +33,7 @@ type StoreMgrTestSuite struct {
 func (s *StoreMgrTestSuite) SetupSuite() {
 	type args struct {
 		name    string
-		builder StorageBuilder
+		builder DriverBuilder
 	}
 	tests := []struct {
 		name string
@@ -43,7 +43,7 @@ func (s *StoreMgrTestSuite) SetupSuite() {
 			name: "test1",
 			args: args{
 				name: "disk1",
-				builder: func(conf interface{}) (Driver, error) {
+				builder: func(cfg *Config) (Driver, error) {
 					return nil, nil
 				},
 			},
@@ -51,7 +51,7 @@ func (s *StoreMgrTestSuite) SetupSuite() {
 			name: "test2",
 			args: args{
 				name: "memory1",
-				builder: func(conf interface{}) (Driver, error) {
+				builder: func(cfg *Config) (Driver, error) {
 					return nil, nil
 				},
 			},
@@ -69,16 +69,15 @@ func (s *StoreMgrTestSuite) TestGet() {
 	tests := []struct {
 		name    string
 		args    args
-		want    *Store
+		want    Driver
 		wantErr bool
 	}{
 		{
 			name: "test1",
 			args: args{name: "disk"},
-			want: &Store{
-				driverName: "disk",
-				config:     nil,
-				driver:     nil,
+			want: &driverPlugin{
+				name:     "disk",
+				instance: nil,
 			},
 			wantErr: false,
 		},

@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
@@ -46,6 +45,7 @@ var (
 	gcExecutorWrappers = make(map[string]*ExecutorWrapper)
 )
 
+// Register a gc task
 func Register(name string, gcInitialDelay time.Duration, gcInterval time.Duration, gcExecutor Executor) {
 	gcExecutorWrappers[name] = &ExecutorWrapper{
 		gcInitialDelay: gcInitialDelay,
@@ -56,7 +56,6 @@ func Register(name string, gcInitialDelay time.Duration, gcInterval time.Duratio
 
 // Manager is an implementation of the interface of GCMgr.
 type Manager struct {
-	cfg     *config.Config
 	taskMgr mgr.SeedTaskMgr
 	cdnMgr  mgr.CDNMgr
 }
@@ -75,9 +74,8 @@ func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) error 
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr) (*Manager, error) {
+func NewManager(taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr) (*Manager, error) {
 	return &Manager{
-		cfg:     cfg,
 		taskMgr: taskMgr,
 		cdnMgr:  cdnMgr,
 	}, nil
@@ -103,7 +101,9 @@ func (gcm *Manager) StartGC(ctx context.Context) error {
 					logger.Infof("exit %s gc task", name)
 					return
 				case <-ticker.C:
-					wrapper.gcExecutor.GC(ctx)
+					if err := wrapper.gcExecutor.GC(ctx); err != nil {
+						logger.Errorf("%s gc task execute failed: %v", name, err)
+					}
 				}
 			}
 		}(name, executorWrapper)

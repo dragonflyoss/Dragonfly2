@@ -16,25 +16,8 @@
 
 package config
 
-// PluginType defines the type of plugin.
-type PluginType string
-
 const (
-	// StoragePlugin the storage plugin type.
-	StoragePlugin = PluginType("storage")
+	DefaultDiskBaseDir = "/tmp/cdnsystem"
 
-	// SourceClientPlugin the source client plugin type
-	SourceClientPlugin = PluginType("sourceClient")
+	DefaultMemoryBaseDir = "/tmp/memory/dragonfly"
 )
-
-// PluginTypes explicitly stores all available plugin types.
-var PluginTypes = []PluginType{
-	StoragePlugin, SourceClientPlugin,
-}
-
-// PluginProperties the properties of a plugin.
-type PluginProperties struct {
-	Name   string      `yaml:"name" mapstructure:"name"`
-	Enable bool        `yaml:"enable" mapstructure:"enable"`
-	Config interface{} `yaml:"config" mapstructure:"config"`
-}
