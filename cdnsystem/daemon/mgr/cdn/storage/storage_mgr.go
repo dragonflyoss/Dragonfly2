@@ -218,7 +218,8 @@ func Register(name string, builder ManagerBuilder) {
 		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 			DecodeHook: mapstructure.ComposeDecodeHookFunc(func(from, to reflect.Type, v interface{}) (interface{}, error) {
 				switch to {
-				case reflect.TypeOf(unit.B):
+				case reflect.TypeOf(unit.B),
+					reflect.TypeOf(time.Second):
 					b, _ := yaml.Marshal(v)
 					p := reflect.New(to)
 					if err := yaml.Unmarshal(b, p.Interface()); err != nil {
@@ -229,7 +230,6 @@ func Register(name string, builder ManagerBuilder) {
 					return v, nil
 				}
 			}),
-
 			Result: cfg,
 		})
 		if err != nil {

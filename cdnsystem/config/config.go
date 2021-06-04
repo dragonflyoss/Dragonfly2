@@ -17,8 +17,6 @@
 package config
 
 import (
-	"fmt"
-	"io/ioutil"
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
@@ -48,20 +46,6 @@ type Config struct {
 
 	Plugins      map[plugins.PluginType][]*plugins.PluginProperties `yaml:"plugins" mapstructure:"plugins"`
 	ConfigServer string                                             `yaml:"configServer" mapstructure:"configServer"`
-}
-
-// Load loads config properties from the giving file.
-func (c *Config) Load(path string) error {
-	content, err := ioutil.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("failed to load yaml %s when reading file: %v", path, err)
-	}
-
-	if err = yaml.Unmarshal(content, c); err != nil {
-		return fmt.Errorf("failed to load yaml %s: %v", path, err)
-	}
-
-	return nil
 }
 
 func (c *Config) String() string {
@@ -116,7 +100,7 @@ func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 							GCConfig: &storage.GCConfig{
 								YoungGCThreshold:  100 * unit.GB,
 								FullGCThreshold:   5 * unit.GB,
-								CleanRatio:        3,
+								CleanRatio:        1,
 								IntervalThreshold: 2 * time.Hour,
 							},
 						},
