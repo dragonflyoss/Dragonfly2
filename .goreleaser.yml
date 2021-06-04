@@ -1,0 +1,62 @@
+before:
+  hooks:
+    - go mod download
+    - go generate ./...
+
+builds:
+  - main: ./cmd/dfget
+    id: "dfget"
+    binary: dfget
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+
+  - main: ./cmd/scheduler
+    id: "scheduler"
+    binary: scheduler
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+
+  - main: ./cmd/cdn
+    id: "cdn"
+    binary: cdn
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+
+  - main: ./cmd/manager
+    id: "manager"
+    binary: manager
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+
+archives:
+  - format: tar.gz
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - docs/*
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
