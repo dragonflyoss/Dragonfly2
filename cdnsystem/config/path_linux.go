@@ -14,17 +14,10 @@
  * limitations under the License.
  */
 
-package mgr
+package config
 
-import "context"
+const (
+	DefaultDiskBaseDir = "/home/admin/ftp"
 
-// GCMgr as an interface defines all operations about gc operation.
-type GCMgr interface {
-
-	// StartGC starts to execute GC
-	StartGC(ctx context.Context) error
-
-	// GCTask is used to do the gc task job with specified taskID.
-	// The CDN file will be deleted when the full is true.
-	GCTask(ctx context.Context, taskID string, full bool) error
-}
+	DefaultMemoryBaseDir = "/dev/shm/dragonfly"
+)

@@ -19,7 +19,6 @@ package plugins
 import (
 	"fmt"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
 
@@ -31,8 +30,9 @@ func SetManager(m Manager) {
 }
 
 // Initialize builds all plugins defined in config file.
-func Initialize(cfg *config.Config) error {
-	for pt, value := range cfg.Plugins {
+func Initialize(plugins map[PluginType][]*PluginProperties) error {
+	// todo Plugin loads sequence dependencies
+	for pt, value := range plugins {
 		for _, v := range value {
 			if !v.Enable {
 				logger.Infof("plugin[%s][%s] is disabled", pt, v.Name)
@@ -55,13 +55,13 @@ func Initialize(cfg *config.Config) error {
 	return nil
 }
 
-// RegisterPlugin register a plugin builder that will be called to create a new
+// RegisterPluginBuilder register a plugin builder that will be called to create a new
 // plugin instant when cdn starts.
-func RegisterPlugin(pt config.PluginType, name string, builder Builder) {
+func RegisterPluginBuilder(pt PluginType, name string, builder Builder) {
 	mgr.AddBuilder(pt, name, builder)
 }
 
 // GetPlugin returns a plugin instant with the giving plugin type and name.
-func GetPlugin(pt config.PluginType, name string) Plugin {
+func GetPlugin(pt PluginType, name string) Plugin {
 	return mgr.GetPlugin(pt, name)
 }

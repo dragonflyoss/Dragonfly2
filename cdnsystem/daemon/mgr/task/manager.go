@@ -54,8 +54,7 @@ type Manager struct {
 }
 
 // NewManager returns a new Manager Object.
-func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgressMgr,
-	resourceClient source.ResourceClient) (*Manager, error) {
+func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgressMgr, resourceClient source.ResourceClient) (*Manager, error) {
 	taskMgr := &Manager{
 		cfg:                     cfg,
 		taskStore:               syncmap.NewSyncMap(),
@@ -65,6 +64,7 @@ func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgr
 		cdnMgr:                  cdnMgr,
 		progressMgr:             progressMgr,
 	}
+	progressMgr.SetTaskMgr(taskMgr)
 	gc.Register("task", cfg.GCInitialDelay, cfg.GCMetaInterval, taskMgr)
 	return taskMgr, nil
 }
@@ -125,7 +125,12 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		if err != nil {
 			logger.WithTaskID(task.TaskID).Errorf("trigger cdn get error: %v", err)
 		}
-		go tm.progressMgr.PublishTask(ctx, task.TaskID, updateTaskInfo)
+		go func() {
+			if err := tm.progressMgr.PublishTask(ctx, task.TaskID, updateTaskInfo); err != nil {
+				logger.WithTaskID(task.TaskID).Errorf("failed to publish task: %v", err)
+			}
+
+		}()
 		updatedTask, err = tm.updateTask(task.TaskID, updateTaskInfo)
 		if err != nil {
 			logger.WithTaskID(task.TaskID).Errorf("failed to update task:%v", err)
@@ -158,11 +163,11 @@ func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
 	return nil, errors.Wrapf(cdnerrors.ErrConvertFailed, "origin object: %+v", v)
 }
 
-func (tm Manager) Get(ctx context.Context, taskID string) (*types.SeedTask, error) {
+func (tm Manager) Get(taskID string) (*types.SeedTask, error) {
 	return tm.getTask(taskID)
 }
 
-func (tm Manager) GetAccessTime(ctx context.Context) (*syncmap.SyncMap, error) {
+func (tm Manager) GetAccessTime() (*syncmap.SyncMap, error) {
 	return tm.accessTimeMap, nil
 }
 
@@ -191,7 +196,7 @@ func (tm *Manager) GC(ctx context.Context) error {
 	var removedTaskCount int
 	startTime := time.Now()
 	// get all taskIDs and the corresponding accessTime
-	taskAccessMap, err := tm.GetAccessTime(ctx)
+	taskAccessMap, err := tm.GetAccessTime()
 	if err != nil {
 		return fmt.Errorf("gc tasks: failed to get task accessTime map for GC: %v", err)
 	}
