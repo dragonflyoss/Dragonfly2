@@ -21,13 +21,14 @@ type PluginType string
 
 const (
 	// StorageDriverPlugin the storage driver plugin type.
-	StorageDriverPlugin = PluginType("storageDriver")
+	StorageDriverPlugin = PluginType("storagedriver")
 	// StorageManagerPlugin the storage manager plugin type
-	StorageManagerPlugin = PluginType("storageManager")
+	StorageManagerPlugin = PluginType("storagemanager")
 )
 
 // PluginTypes explicitly stores all available plugin types.
 var PluginTypes = []PluginType{
+	// The order here is very important and represents the dependency loading order of the plugin。 driver plugins should be loaded before manager plugins
 	StorageDriverPlugin, StorageManagerPlugin,
 }
 
