@@ -1,14 +1,14 @@
 package types
 
 type SchedulerCluster struct {
-	ClusterID       string `json:"cluster_id" binding:"omitempty"`
-	SchedulerConfig string `json:"scheduler_config" binding:"required"`
-	ClientConfig    string `json:"client_config" binding:"required"`
-	Version         int64  `json:"version" binding:"omitempty"`
-	Creator         string `json:"creator" binding:"omitempty"`
-	Modifier        string `json:"modifier" binding:"omitempty"`
-	CreatedAt       string `json:"created_at" binding:"omitempty"`
-	UpdatedAt       string `json:"updated_at" binding:"omitempty"`
+	ClusterID    string `json:"cluster_id" binding:"omitempty"`
+	Config       string `json:"config" binding:"required"`
+	ClientConfig string `json:"client_config" binding:"required"`
+	Version      int64  `json:"version" binding:"omitempty"`
+	Creator      string `json:"creator" binding:"omitempty"`
+	Modifier     string `json:"modifier" binding:"omitempty"`
+	CreatedAt    string `json:"created_at" binding:"omitempty"`
+	UpdatedAt    string `json:"updated_at" binding:"omitempty"`
 }
 
 type SchedulerClusterURI struct {

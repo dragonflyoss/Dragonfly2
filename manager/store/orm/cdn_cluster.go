@@ -13,15 +13,17 @@ import (
 )
 
 type CDNClusterTable struct {
-	ID        uint           `gorm:"column:id;primaryKey"`
-	ClusterID string         `gorm:"column:cluster_id;unique;size:63"`
-	Config    string         `gorm:"column:config;size:4095"`
-	Creator   string         `gorm:"column:creator;size:31"`
-	Modifier  string         `gorm:"column:modifier;size:31"`
-	Version   int64          `gorm:"column:version"`
-	CreatedAt time.Time      `gorm:"column:created_at"`
-	UpdatedAt time.Time      `gorm:"column:updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index"`
+	ID          uint           `gorm:"column:id;primaryKey"`
+	ClusterID   string         `gorm:"column:cluster_id;unique;size:63"`
+	Config      string         `gorm:"column:config;type:text;not null"`
+	Creator     string         `gorm:"column:creator;size:31"`
+	Modifier    string         `gorm:"column:modifier;size:31"`
+	Enable      bool           `gorm:"column:enable;type:bool;"`
+	Version     int64          `gorm:"column:version"`
+	Description string         `gorm:"column:description;size:1023"`
+	CreatedAt   time.Time      `gorm:"column:created_at"`
+	UpdatedAt   time.Time      `gorm:"column:updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at;index"`
 }
 
 type CDNClusterStore struct {

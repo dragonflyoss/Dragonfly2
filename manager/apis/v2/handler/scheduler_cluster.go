@@ -200,8 +200,8 @@ func (handler *Handler) ListSchedulerClusters(ctx *gin.Context) {
 }
 
 func checkSchedulerClusterValidate(cluster *types.SchedulerCluster) (err error) {
-	var schedulerConfigMap map[string]string
-	err = json.Unmarshal([]byte(cluster.SchedulerConfig), &schedulerConfigMap)
+	var configMap map[string]string
+	err = json.Unmarshal([]byte(cluster.Config), &configMap)
 	if err != nil {
 		err = errors.New("unmarshal scheduler_config error: scheduler_config must map[string]string")
 		return
