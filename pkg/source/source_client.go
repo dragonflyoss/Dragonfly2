@@ -51,10 +51,10 @@ type ResourceClient interface {
 	// Download download from source
 	Download(ctx context.Context, url string, header Header) (io.ReadCloser, error)
 
-	// DownloadWithExpireInfo
+	// DownloadWithExpire download from source and get expire info
 	DownloadWithExpire(ctx context.Context, url string, header Header) (io.ReadCloser, map[string]string, error)
 
-	// GetExpireInfo get expire info of url
+	// GetExpireInfo get expire info of resource
 	GetExpireInfo(ctx context.Context, url string, header Header) (map[string]string, error)
 }
 

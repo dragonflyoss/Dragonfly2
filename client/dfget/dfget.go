@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/client/clientutil/progressbar"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/pkg/basic"
@@ -33,6 +32,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	"d7y.io/dragonfly/v2/pkg/source"
 
 	// Init daemon rpc client
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
