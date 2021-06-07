@@ -34,6 +34,10 @@ func Register(schema string, resourceClient ResourceClient) {
 	clients[strings.ToLower(schema)] = resourceClient
 }
 
+func UnRegister(schema string) {
+	delete(clients, strings.ToLower(schema))
+}
+
 // ResourceClient supply apis that interact with the source.
 type ResourceClient interface {
 
