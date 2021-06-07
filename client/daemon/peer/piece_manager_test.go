@@ -41,6 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	_ "d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 )
 
 func TestPieceManager_DownloadSource(t *testing.T) {
