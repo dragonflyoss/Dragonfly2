@@ -32,7 +32,7 @@ func init() {
 }
 
 type Executor interface {
-	GC(ctx context.Context) error
+	GC() error
 }
 
 type ExecutorWrapper struct {
@@ -60,16 +60,16 @@ type Manager struct {
 	cdnMgr  mgr.CDNMgr
 }
 
-func (gcm *Manager) GCTask(ctx context.Context, taskID string, full bool) error {
+func (gcm *Manager) GCTask(taskID string, full bool) error {
 	// todo data consistency
 	var err error
 	if full {
-		err = gcm.cdnMgr.Delete(ctx, taskID)
+		err = gcm.cdnMgr.Delete(taskID)
 		if err != nil {
 			return err
 		}
 	}
-	err = gcm.taskMgr.Delete(ctx, taskID)
+	err = gcm.taskMgr.Delete(taskID)
 	return err
 }
 
@@ -101,7 +101,7 @@ func (gcm *Manager) StartGC(ctx context.Context) error {
 					logger.Infof("exit %s gc task", name)
 					return
 				case <-ticker.C:
-					if err := wrapper.gcExecutor.GC(ctx); err != nil {
+					if err := wrapper.gcExecutor.GC(); err != nil {
 						logger.Errorf("%s gc task execute failed: %v", name, err)
 					}
 				}

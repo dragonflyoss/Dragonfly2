@@ -17,29 +17,41 @@
 package cdn
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/progress"
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
+	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"github.com/stretchr/testify/suite"
 )
 
-func TestCacheWriter(t *testing.T) {
+func TestCacheWriterSuite(t *testing.T) {
 	suite.Run(t, new(CacheWriterTestSuite))
 }
 
 type CacheWriterTestSuite struct {
 	workHome string
-	config   string
 	writer   *cacheWriter
+	cfg      *config.Config
 	suite.Suite
 }
 
 func (s *CacheWriterTestSuite) SetupSuite() {
 	s.workHome, _ = ioutil.TempDir("/tmp", "cdn-CacheWriterTestSuite-")
-	s.config = "baseDir: " + s.workHome
-	s.writer = newCacheWriter(nil, nil)
+	plugins.Initialize(config.NewDefaultPlugins())
+	storeMgr, _ := storage.Get(config.DefaultStoragePattern)
+	progressMgr, _ := progress.NewManager()
+	cacheDataManager := newCacheDataManager(storeMgr)
+	cdnReporter := newReporter(progressMgr)
+	s.writer = newCacheWriter(cdnReporter, cacheDataManager)
 }
 
 func (s *CacheWriterTestSuite) TeardownSuite() {
@@ -51,13 +63,43 @@ func (s *CacheWriterTestSuite) TeardownSuite() {
 }
 
 func (s *CacheWriterTestSuite) TestStartWriter() {
+	testStr := "hello dragonfly2"
+	var httpFileLen = int64(len(testStr))
+	f := strings.NewReader(testStr)
 
+	task := &types.SeedTask{
+		TaskID: "5806501cbcc3bb92f0b645918c5a4b15495a63259e3e0363008f97e186509e9e",
+	}
+
+	detectResult := &cacheResult{
+		breakPoint:       0,
+		pieceMetaRecords: nil,
+		fileMetaData:     nil,
+		fileMd5:          nil,
+	}
+
+	downloadMetadata, err := s.writer.startWriter(context.TODO(), f, task, detectResult)
+	s.Nil(err)
+	s.Equal(httpFileLen, downloadMetadata.realSourceFileLength)
 }
 
 func (s *CacheWriterTestSuite) TestWriteToFile() {
+	testStr := "hello dragonfly"
 
+	var bb = bytes.NewBufferString(testStr)
+
+	task := &types.SeedTask{
+		TaskID: "5816501cbcc3bb92f0b645918c5a4b15495a63259e3e0363008f97e186509e9e",
+	}
+
+	err := s.writer.writeToFile(task.TaskID, bb, 0, nil)
+	s.Nil(err)
+
+	s.checkFileSize(s.writer.cacheDataManager.storage, task.TaskID, int64(len(testStr)))
 }
 
-func (s *CacheWriterTestSuite) TestAppendPieceMetaDataToFile() {
-
+func (s *CacheWriterTestSuite) checkFileSize(cdnStore storage.Manager, taskID string, expectedSize int64) {
+	storageInfo, err := cdnStore.StatDownloadFile(taskID)
+	s.Nil(err)
+	s.Equal(expectedSize, storageInfo.Size)
 }

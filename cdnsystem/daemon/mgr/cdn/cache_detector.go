@@ -17,10 +17,12 @@
 package cdn
 
 import (
+	"context"
 	"crypto/md5"
 	"fmt"
 	"hash"
 	"sort"
+	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
@@ -33,7 +35,6 @@ import (
 // cacheDetector detect task cache
 type cacheDetector struct {
 	cacheDataManager *cacheDataManager
-	resourceClient   source.ResourceClient
 }
 
 // cacheResult cache result of detect
@@ -50,10 +51,9 @@ func (s *cacheResult) String() string {
 }
 
 // newCacheDetector create a new cache detector
-func newCacheDetector(cacheDataManager *cacheDataManager, resourceClient source.ResourceClient) *cacheDetector {
+func newCacheDetector(cacheDataManager *cacheDataManager) *cacheDetector {
 	return &cacheDetector{
 		cacheDataManager: cacheDataManager,
-		resourceClient:   resourceClient,
 	}
 }
 
@@ -89,7 +89,9 @@ func (cd *cacheDetector) doDetect(task *types.SeedTask) (result *cacheResult, er
 	if err := checkSameFile(task, fileMetaData); err != nil {
 		return nil, errors.Wrapf(err, "task does not match meta information of task file")
 	}
-	expired, err := cd.resourceClient.IsExpired(task.URL, task.Header, fileMetaData.ExpireInfo)
+	ctx, expireCancel := context.WithTimeout(context.Background(), 4*time.Second)
+	defer expireCancel()
+	expired, err := source.IsExpired(ctx, task.URL, task.Header, fileMetaData.ExpireInfo)
 	if err != nil {
 		// 如果获取失败，则认为没有过期，防止打爆源
 		logger.WithTaskID(task.TaskID).Errorf("failed to check if the task expired: %v", err)
@@ -106,7 +108,9 @@ func (cd *cacheDetector) doDetect(task *types.SeedTask) (result *cacheResult, er
 	}
 	// check if the resource supports range request. if so,
 	// detect the cache situation by reading piece meta and data file
-	supportRange, err := cd.resourceClient.IsSupportRange(task.URL, task.Header)
+	ctx, rangeCancel := context.WithTimeout(context.Background(), 4*time.Second)
+	defer rangeCancel()
+	supportRange, err := source.IsSupportRange(ctx, task.URL, task.Header)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check if url(%s) supports range request", task.URL)
 	}

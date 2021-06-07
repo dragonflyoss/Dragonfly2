@@ -48,10 +48,13 @@ type PeerTask struct {
 	Task *Task  // task info
 	Host *Host  // host info
 
-	isDown         bool // is leave scheduler
-	lock           *sync.Mutex
-	finishedNum    int32 // download finished piece number
-	startTime      int64
+	isDown bool // is leave scheduler
+	lock   *sync.Mutex
+	// 已经下载完成的分片数量
+	finishedNum int32 // download finished piece number
+	// 开始下载的时间
+	startTime int64
+	// 上一次访问的时间点
 	lastActiveTime int64
 	touch          func(*PeerTask)
 

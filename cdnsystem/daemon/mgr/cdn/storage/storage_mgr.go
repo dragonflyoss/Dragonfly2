@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//go:generate mockgen -destination ./mock/mock_storage_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage Manager
 
 package storage
 
@@ -210,7 +211,7 @@ type ManagerBuilder func(cfg *Config) (Manager, error)
 
 // Register defines an interface to register a storage manager with specified name.
 // All storage managers should call this function to register itself to the storage manager factory.
-func Register(name string, builder ManagerBuilder) {
+func Register(name string, builder ManagerBuilder) error {
 	name = strings.ToLower(name)
 	// plugin builder
 	var f = func(conf interface{}) (plugins.Plugin, error) {
@@ -241,7 +242,7 @@ func Register(name string, builder ManagerBuilder) {
 		}
 		return newManagerPlugin(name, builder, cfg)
 	}
-	plugins.RegisterPluginBuilder(plugins.StorageManagerPlugin, name, f)
+	return plugins.RegisterPluginBuilder(plugins.StorageManagerPlugin, name, f)
 }
 
 func newManagerPlugin(name string, builder ManagerBuilder, cfg *Config) (plugins.Plugin, error) {
@@ -261,15 +262,12 @@ func newManagerPlugin(name string, builder ManagerBuilder, cfg *Config) (plugins
 }
 
 // Get a storage manager from manager with specified name.
-func Get(name string) (Manager, error) {
-	v := plugins.GetPlugin(plugins.StorageManagerPlugin, strings.ToLower(name))
-	if v == nil {
-		return nil, fmt.Errorf("storage manager: %s not existed", name)
+func Get(name string) (Manager, bool) {
+	v, ok := plugins.GetPlugin(plugins.StorageManagerPlugin, strings.ToLower(name))
+	if !ok {
+		return nil, false
 	}
-	if plugin, ok := v.(*managerPlugin); ok {
-		return plugin.instance, nil
-	}
-	return nil, fmt.Errorf("get store manager %s storage error: unknown reason", name)
+	return v.(*managerPlugin).instance, true
 }
 
 type Config struct {

@@ -14,24 +14,18 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination ./mock/mock_cdn_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon/mgr CDNMgr
-
-package mgr
+package cdnutil
 
 import (
-	"context"
+	"fmt"
+	"testing"
 
-	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
-// CDNMgr as an interface defines all operations against CDN and
-// operates on the underlying files stored on the local disk, etc.
-type CDNMgr interface {
-
-	// TriggerCDN will trigger CDN to download the resource from sourceUrl.
-	TriggerCDN(context.Context, *types.SeedTask) (*types.SeedTask, error)
-
-	// Delete the cdn meta with specified taskID.
-	// The file on the disk will be deleted when the force is true.
-	Delete(string) error
+func TestGenCdnPeerID(t *testing.T) {
+	var taskID = "123456"
+	if got, want := GenCDNPeerID(taskID), fmt.Sprint(iputils.HostName, "-", taskID, "_CDN"); got != want {
+		t.Errorf("GenCdnPeerID() = %v, want %v", got, want)
+	}
 }

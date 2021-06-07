@@ -88,7 +88,6 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			resourceClient:   sourceClient,
 			computePieceSize: computePieceSize,
 		},
 		storageManager:  storageManager,
@@ -198,7 +197,6 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			resourceClient:   sourceClient,
 			computePieceSize: computePieceSize,
 		},
 		storageManager:  storageManager,

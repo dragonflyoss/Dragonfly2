@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//go:generate mockgen -destination ./mock/mock_gc_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon/mgr GCMgr
 
 package mgr
 
@@ -26,5 +27,5 @@ type GCMgr interface {
 
 	// GCTask is used to do the gc task job with specified taskID.
 	// The CDN file will be deleted when the full is true.
-	GCTask(ctx context.Context, taskID string, full bool) error
+	GCTask(taskID string, full bool) error
 }

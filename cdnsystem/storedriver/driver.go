@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//go:generate mockgen -destination ./mock_driver.go -package storedriver d7y.io/dragonfly/v2/cdnsystem/storedriver Driver
 
 package storedriver
 

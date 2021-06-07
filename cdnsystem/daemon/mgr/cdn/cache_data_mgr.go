@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
@@ -29,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"github.com/pkg/errors"
 )
 
@@ -79,7 +79,7 @@ func (mm *cacheDataManager) updateAccessTime(taskID string, accessTime int64) er
 	interval := accessTime - originMetaData.AccessTime
 	originMetaData.Interval = interval
 	if interval <= 0 {
-		logger.WithTaskID(taskID).Warnf("file hit interval:%d, accessTime:%v", interval, time.Unix(accessTime/1000, accessTime%1000))
+		logger.WithTaskID(taskID).Warnf("file hit interval:%d, accessTime:%s", interval, timeutils.MillisUnixTime(accessTime))
 		originMetaData.Interval = 0
 	}
 

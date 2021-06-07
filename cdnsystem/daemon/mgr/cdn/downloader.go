@@ -17,9 +17,11 @@
 package cdn
 
 import (
+	"context"
 	"fmt"
 	"io"
 
+	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
@@ -29,7 +31,7 @@ import (
 
 const RangeHeaderName = "Range"
 
-func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, map[string]string, error) {
+func (cm *Manager) download(ctx context.Context, task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, map[string]string, error) {
 	headers := maputils.DeepCopyMap(nil, task.Header)
 	if detectResult.breakPoint > 0 {
 		breakRange, err := rangeutils.GetBreakRange(detectResult.breakPoint, task.SourceFileLength)
@@ -43,5 +45,5 @@ func (cm *Manager) download(task *types.SeedTask, detectResult *cacheResult) (io
 	}
 	logger.WithTaskID(task.TaskID).Infof("start download url %s at range:%d-%d: with header: %+v", task.URL, detectResult.breakPoint,
 		task.SourceFileLength, task.Header)
-	return cm.resourceClient.Download(task.URL, headers)
+	return source.DownloadWithExpire(ctx, task.URL, headers)
 }
