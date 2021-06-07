@@ -23,9 +23,11 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	_ "github.com/golang/mock/mockgen/model"
 )
 
 var _ ResourceClient = (*ClientManagerImpl)(nil)
@@ -62,6 +64,7 @@ type ClientManager interface {
 }
 
 type ClientManagerImpl struct {
+	sync.RWMutex
 	clients map[string]ResourceClient
 }
 
@@ -197,9 +200,28 @@ func (clientMgr *ClientManagerImpl) getSourceClient(rawURL string) (ResourceClie
 	if err != nil {
 		return nil, err
 	}
+	clientMgr.RLock()
 	client, ok := clientMgr.clients[strings.ToLower(parsedURL.Scheme)]
+	clientMgr.RUnlock()
 	if !ok || client == nil {
 		return nil, fmt.Errorf("can not find client for supporting url %s, clients:%v", rawURL, clientMgr.clients)
 	}
+	return client, nil
+}
+
+func (clientMgr *ClientManagerImpl) loadSourcePlugin(schema string) (ResourceClient, error) {
+	clientMgr.Lock()
+	defer clientMgr.Unlock()
+	// double check
+	client, ok := clientMgr.clients[schema]
+	if ok {
+		return client, nil
+	}
+
+	client, err := LoadPlugin(schema)
+	if err != nil {
+		return nil, err
+	}
+	clientMgr.clients[schema] = client
 	return client, nil
 }

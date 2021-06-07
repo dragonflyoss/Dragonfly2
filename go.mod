@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
-	github.com/Jeffail/tunny v0.1.4
+	github.com/Jeffail/tunny v0.1.4 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alicebob/miniredis/v2 v2.14.5
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
@@ -19,7 +19,7 @@ require (
 	github.com/go-redis/redis/v8 v8.10.0
 	github.com/gofrs/flock v0.8.0
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
-	github.com/golang/mock v1.5.0
+	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/mux v1.7.3
@@ -53,7 +53,6 @@ require (
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210309074719-68d13333faf2 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	google.golang.org/grpc v1.36.0

@@ -27,6 +27,7 @@ var (
 	DaemonSockPath = filepath.Join(WorkHome, "daemon.sock")
 	DaemonLockPath = filepath.Join(WorkHome, "daemon.lock")
 	DfgetLockPath  = filepath.Join(WorkHome, "dfget.lock")
+	PluginsDir     = filepath.Join(WorkHome, "plugins")
 )
 
 func init() {
