@@ -65,8 +65,8 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				// todo 后续压缩等特性通过waitToWriteContent 和 pieceStyle 实现
 				waitToWriteContent := job.pieceContent
 				// 要写盘数据的长度
-				originPieceLen := waitToWriteContent.Len() // 未作处理的原始数据长度
-				pieceLen := originPieceLen                 // 经过处理后写到存储介质的真实长度
+				originPieceLen := waitToWriteContent.Len() // Unprocessed raw data length 未作处理的原始数据长度
+				pieceLen := originPieceLen                 // The real length written to the storage medium after processing
 				pieceStyle := types.PlainUnspecified
 
 				if err := cw.writeToFile(job.TaskID, waitToWriteContent, int64(job.pieceNum)*int64(job.pieceSize), pieceMd5); err != nil {
@@ -94,7 +94,6 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 				// write piece meta to storage
 				go func(record *storage.PieceMetaRecord) {
 					defer wg.Done()
-					// todo 可以先塞入channel，然后启动单独goroutine顺序写文件
 					if err := cw.cacheDataManager.appendPieceMetaData(job.TaskID, record); err != nil {
 						logger.WithTaskID(job.TaskID).Errorf("failed to append piece meta data to file:%v", err)
 					}
