@@ -28,9 +28,8 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
 
-var mgr *ClientManagerImpl = nil
-var _ ResourceClient = mgr
-var _ ClientManager = mgr
+var _ ResourceClient = (*ClientManagerImpl)(nil)
+var _ ClientManager = (*ClientManagerImpl)(nil)
 
 type Header map[string]string
 

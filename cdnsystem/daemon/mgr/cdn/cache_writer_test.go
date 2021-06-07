@@ -47,7 +47,10 @@ type CacheWriterTestSuite struct {
 func (s *CacheWriterTestSuite) SetupSuite() {
 	s.workHome, _ = ioutil.TempDir("/tmp", "cdn-CacheWriterTestSuite-")
 	plugins.Initialize(config.NewDefaultPlugins())
-	storeMgr, _ := storage.Get(config.DefaultStorageMode)
+	storeMgr, ok := storage.Get(config.DefaultStorageMode)
+	if !ok {
+		s.Failf("failed to get storage mode %s", config.DefaultStorageMode)
+	}
 	progressMgr, _ := progress.NewManager()
 	cacheDataManager := newCacheDataManager(storeMgr)
 	cdnReporter := newReporter(progressMgr)

@@ -27,7 +27,6 @@ import (
 
 	cdnconfig "d7y.io/dragonfly/v2/cdnsystem/config"
 
-	// Init http client
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
