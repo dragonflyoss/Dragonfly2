@@ -60,11 +60,10 @@ func Download(cfg *config.DfgetConfig, client dfclient.DaemonClient) error {
 
 	if cfg.Timeout > 0 {
 		ctx, cancel = context.WithTimeout(ctx, cfg.Timeout)
-		defer cancel()
 	} else {
 		ctx, cancel = context.WithCancel(ctx)
-		defer cancel()
 	}
+	defer cancel()
 
 	request := &dfdaemongrpc.DownRequest{
 		Url: cfg.URL,
