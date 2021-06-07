@@ -39,8 +39,7 @@ const (
 )
 
 var defaultHTTPClient *http.Client
-var client *httpSourceClient = nil
-var _ source.ResourceClient = client
+var _ source.ResourceClient = (*httpSourceClient)(nil)
 
 func init() {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
@@ -86,9 +85,9 @@ func (client *httpSourceClient) GetContentLength(ctx context.Context, url string
 		return -1, errors.Wrapf(cdnerrors.ErrURLNotReachable, "get http header meta data failed: %v", err)
 	}
 	resp.Body.Close()
-	// todo 待讨论，这里如果是其他状态码是否要加入到 ErrURLNotReachable 中,如果不加入会下载404/频繁下载403
+	// todo Here if other status codes should be added to ErrURLNotReachable, if not, it will be downloaded frequently for 404 or 403
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-		// todo 这种情况是否要和 err的情况作区分，类似于提出一种其他的错误类型用于表示这种错误是可以与url进行交互，但是状态码不符合预期
+		// todo Whether this situation should be distinguished from the err situation, similar to proposing another error type to indicate that this  error can interact with the URL, but the status code does not meet expectations
 		return -1, errors.Wrapf(cdnerrors.ErrURLNotReachable, "failed to get http resource length, unexpected code: %d", resp.StatusCode)
 	}
 	return resp.ContentLength, nil
@@ -106,7 +105,7 @@ func (client *httpSourceClient) IsSupportRange(ctx context.Context, url string, 
 	return resp.StatusCode == http.StatusPartialContent, nil
 }
 
-// todo 考虑 expire，类似访问baidu网页是没有last-modified的
+// todo Consider the situation where there is no last-modified such as baidu
 func (client *httpSourceClient) IsExpired(ctx context.Context, url string, header source.Header, expireInfo map[string]string) (bool, error) {
 	lastModified := timeutils.UnixMillis(expireInfo[headers.LastModified])
 
@@ -127,7 +126,7 @@ func (client *httpSourceClient) IsExpired(ctx context.Context, url string, heade
 	// send request
 	resp, err := client.doRequest(ctx, http.MethodGet, url, copied)
 	if err != nil {
-		// 如果获取失败，则认为没有过期，防止打爆源
+		// If it fails to get the result, it is considered that the source has not expired, to prevent the source from exploding
 		return false, err
 	}
 	resp.Body.Close()

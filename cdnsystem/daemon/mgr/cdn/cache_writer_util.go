@@ -62,7 +62,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, write
 			defer wg.Done()
 			for job := range jobCh {
 				var pieceMd5 = md5.New()
-				// todo 后续压缩等特性通过waitToWriteContent 和 pieceStyle 实现
+				// todo Subsequent compression and other features are implemented through waitToWriteContent and pieceStyle
 				waitToWriteContent := job.pieceContent
 				// 要写盘数据的长度
 				originPieceLen := waitToWriteContent.Len() // the length of the original data that has not been processed
