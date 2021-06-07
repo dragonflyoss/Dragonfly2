@@ -13,73 +13,128 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//go:generate mockgen -destination ./mock/mock_source_client.go -package mock d7y.io/dragonfly/v2/cdnsystem/source ResourceClient
 
 package source
 
 import (
+	"context"
+	"fmt"
 	"io"
+	"net/url"
+	"strings"
+	"time"
 )
 
 var clients = make(map[string]ResourceClient)
 
+type Header map[string]string
+
 func Register(schema string, resourceClient ResourceClient) {
-	clients[schema] = resourceClient
+	clients[strings.ToLower(schema)] = resourceClient
 }
 
-func NewSourceClient() (ResourceClient, error) {
-	return &ResourceClientAdaptor{
-		clients: clients,
-	}, nil
-}
-
-// SourceClient supply apis that interact with the source.
+// ResourceClient supply apis that interact with the source.
 type ResourceClient interface {
 
-	// GetContentLength get content length from source
-	GetContentLength(url string, headers map[string]string) (int64, error)
+	// GetContentLength get length of resource content
+	// return -l if request fail
+	// return -1 if response status is not StatusOK and StatusPartialContent
+	GetContentLength(ctx context.Context, url string, header Header) (int64, error)
 
-	// IsSupportRange checks if source supports breakpoint continuation
-	IsSupportRange(url string, headers map[string]string) (bool, error)
+	// IsSupportRange checks if resource supports breakpoint continuation
+	IsSupportRange(ctx context.Context, url string, header Header) (bool, error)
 
-	// IsExpired checks if cache is expired
-	IsExpired(url string, headers, expireInfo map[string]string) (bool, error)
+	// IsExpired checks if a resource received or stored is the same.
+	IsExpired(ctx context.Context, url string, header Header, expireInfo map[string]string) (bool, error)
 
 	// Download download from source
-	Download(url string, headers map[string]string) (io.ReadCloser, map[string]string, error)
+	Download(ctx context.Context, url string, header Header) (io.ReadCloser, error)
+
+	// DownloadWithExpireInfo
+	DownloadWithExpire(ctx context.Context, url string, header Header) (io.ReadCloser, map[string]string, error)
+
+	// GetExpireInfo get expire info of url
+	GetExpireInfo(ctx context.Context, url string, header Header) (map[string]string, error)
 }
 
-type ResourceClientAdaptor struct {
-	clients map[string]ResourceClient
-}
-
-func (s *ResourceClientAdaptor) GetContentLength(url string, headers map[string]string) (int64, error) {
-	sourceClient, err := s.getSourceClient(url)
+func GetContentLength(ctx context.Context, url string, headers map[string]string) (int64, error) {
+	sourceClient, err := getSourceClient(url)
 	if err != nil {
 		return -1, err
 	}
-	return sourceClient.GetContentLength(url, headers)
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 4*time.Second)
+		defer cancel()
+	}
+	return sourceClient.GetContentLength(ctx, url, headers)
 }
 
-func (s *ResourceClientAdaptor) IsSupportRange(url string, headers map[string]string) (bool, error) {
-	sourceClient, err := s.getSourceClient(url)
+func IsSupportRange(ctx context.Context, url string, headers map[string]string) (bool, error) {
+	sourceClient, err := getSourceClient(url)
 	if err != nil {
 		return false, err
 	}
-	return sourceClient.IsSupportRange(url, headers)
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 4*time.Second)
+		defer cancel()
+	}
+	return sourceClient.IsSupportRange(ctx, url, headers)
 }
 
-func (s *ResourceClientAdaptor) IsExpired(url string, headers, expireInfo map[string]string) (bool, error) {
-	sourceClient, err := s.getSourceClient(url)
+func IsExpired(ctx context.Context, url string, headers, expireInfo map[string]string) (bool, error) {
+	sourceClient, err := getSourceClient(url)
 	if err != nil {
 		return false, err
 	}
-	return sourceClient.IsExpired(url, headers, expireInfo)
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 4*time.Second)
+		defer cancel()
+	}
+	return sourceClient.IsExpired(ctx, url, headers, expireInfo)
 }
 
-func (s *ResourceClientAdaptor) Download(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
-	sourceClient, err := s.getSourceClient(url)
+func Download(ctx context.Context, url string, headers map[string]string) (io.ReadCloser, error) {
+	sourceClient, err := getSourceClient(url)
+	if err != nil {
+		return nil, err
+	}
+	return sourceClient.Download(ctx, url, headers)
+}
+
+func DownloadWithExpire(ctx context.Context, url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
+	sourceClient, err := getSourceClient(url)
 	if err != nil {
 		return nil, nil, err
 	}
-	return sourceClient.Download(url, headers)
+	return sourceClient.DownloadWithExpire(ctx, url, headers)
+}
+
+func GetExpireInfo(ctx context.Context, url string, headers map[string]string) (map[string]string, error) {
+	sourceClient, err := getSourceClient(url)
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 4*time.Second)
+		defer cancel()
+	}
+	return sourceClient.GetExpireInfo(ctx, url, headers)
+}
+
+// getSourceClient get a source client from source manager with specified schema.
+func getSourceClient(rawURL string) (ResourceClient, error) {
+	url, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, err
+	}
+	client, ok := clients[strings.ToLower(url.Scheme)]
+	if !ok || client == nil {
+		return nil, fmt.Errorf("does not support url %s", rawURL)
+	}
+	return client, nil
 }

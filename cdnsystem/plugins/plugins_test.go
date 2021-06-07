@@ -44,19 +44,7 @@ func (s *PluginsTestSuite) TearDownTest() {
 	mgr = s.mgr
 }
 
-func (s *PluginsTestSuite) TestSetManager() {
-	tmp := &managerIml{}
-	SetManager(tmp)
-	s.Equal(mgr, tmp)
-}
-
-// -----------------------------------------------------------------------------
-
-func (s *PluginsTestSuite) TestInitialize() {
-
-}
-
-func (s *PluginsTestSuite) TestManagerIml_Builder() {
+func (s *PluginsTestSuite) TestPluginBuilder() {
 	var builder Builder = func(conf interface{}) (plugin Plugin, e error) {
 		return nil, nil
 	}
@@ -64,7 +52,7 @@ func (s *PluginsTestSuite) TestManagerIml_Builder() {
 
 	var testFunc = func(pt PluginType, name string, b Builder, result bool) {
 		manager.AddBuilder(pt, name, b)
-		obj := manager.GetBuilder(pt, name)
+		obj, _ := manager.GetBuilder(pt, name)
 		if result {
 			s.NotNil(obj)
 			objVal := reflect.ValueOf(obj)
@@ -76,7 +64,6 @@ func (s *PluginsTestSuite) TestManagerIml_Builder() {
 		}
 	}
 
-	testFunc(PluginType("test"), "test", builder, false)
 	for _, pt := range PluginTypes {
 		testFunc(pt, "test", builder, true)
 		testFunc(pt, "", nil, false)
@@ -85,12 +72,12 @@ func (s *PluginsTestSuite) TestManagerIml_Builder() {
 	}
 }
 
-func (s *PluginsTestSuite) TestManagerIml_Plugin() {
+func (s *PluginsTestSuite) TestManagerPlugin() {
 	manager := NewManager()
 
 	var testFunc = func(p Plugin, result bool) {
 		manager.AddPlugin(p)
-		obj := manager.GetPlugin(p.Type(), p.Name())
+		obj, _ := manager.GetPlugin(p.Type(), p.Name())
 		if result {
 			s.NotNil(obj)
 			s.Equal(obj, p)
@@ -142,12 +129,12 @@ func (s *PluginsTestSuite) TestRepositoryIml() {
 	repo := NewRepository()
 	for _, v := range cases {
 		repo.Add(v.pt, v.name, v.data)
-		data := repo.Get(v.pt, v.name)
+		data, _ := repo.Get(v.pt, v.name)
 		if v.addResult {
 			s.NotNil(data)
 			s.Equal(data, v.data)
 			repo.Delete(v.pt, v.name)
-			data = repo.Get(v.pt, v.name)
+			data, _ = repo.Get(v.pt, v.name)
 			s.Nil(data)
 		} else {
 			s.Nil(data)

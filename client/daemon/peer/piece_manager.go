@@ -49,20 +49,14 @@ type pieceManager struct {
 	*rate.Limiter
 	storageManager   storage.TaskStorageDriver
 	pieceDownloader  PieceDownloader
-	resourceClient   source.ResourceClient
 	computePieceSize func(contentLength int64) int32
 
 	calculateDigest bool
 }
 
 func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (PieceManager, error) {
-	resourceClient, err := source.NewSourceClient()
-	if err != nil {
-		return nil, err
-	}
 	pm := &pieceManager{
 		storageManager:   s,
-		resourceClient:   resourceClient,
 		computePieceSize: computePieceSize,
 		calculateDigest:  true,
 	}
@@ -305,7 +299,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	log := pt.Log()
 	log.Infof("start to download from source")
-	contentLength, err := pm.resourceClient.GetContentLength(request.Url, request.UrlMata.Header)
+	contentLength, err := source.GetContentLength(ctx, request.Url, request.UrlMata.Header)
 	if err != nil {
 		log.Warnf("get content length error: %s for %s", err, request.Url)
 	}
@@ -326,7 +320,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	log.Debugf("get content length: %d", contentLength)
 	// 1. download piece from source
-	body, _, err := pm.resourceClient.Download(request.Url, request.UrlMata.Header)
+	body, err := source.Download(ctx, request.Url, request.UrlMata.Header)
 	if err != nil {
 		return err
 	}

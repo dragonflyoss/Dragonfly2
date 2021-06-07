@@ -77,6 +77,7 @@ func NewSchedulerWithOptions(cfg *config.Config, options ...Option) *SchedulerSe
 	return scheduler
 }
 
+// 注册PeerTask
 func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (pkg *scheduler.RegisterResult, err error) {
 	pkg = &scheduler.RegisterResult{}
 	startTime := time.Now()
@@ -97,9 +98,11 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 	// get or create task
 	var isCdn = false
+	// 生成TaskId
 	pkg.TaskId = s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMata, request.BizId, request.PeerId)
 	task, ok := s.service.GetTask(pkg.TaskId)
 	if !ok {
+		// 如果当前任务不存在，则新增
 		task, err = s.service.AddTask(&types.Task{
 			TaskID:  pkg.TaskId,
 			URL:     request.Url,

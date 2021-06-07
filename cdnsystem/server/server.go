@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+// cdn server
 package server
 
 import (
@@ -29,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/task"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
-	"d7y.io/dragonfly/v2/cdnsystem/source"
 
 	// Init http client
 	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
@@ -62,11 +62,6 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	// source client
-	sourceClient, err := source.NewSourceClient()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create source client")
-	}
 	// progress manager
 	progressMgr, err := progress.NewManager()
 	if err != nil {
@@ -74,17 +69,17 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// storage manager
-	storageMgr, err := storage.Get(cfg.StoragePattern)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create storage manager")
+	storageMgr, ok := storage.Get(cfg.StoragePattern)
+	if !ok {
+		return nil, fmt.Errorf("can not find storage pattern %s", cfg.StoragePattern)
 	}
 	// cdn manager
-	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr, sourceClient)
+	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create cdn manager")
 	}
 	// task manager
-	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr, sourceClient)
+	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create task manager")
 	}

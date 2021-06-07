@@ -85,7 +85,6 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			resourceClient:   sourceClient,
 			computePieceSize: computePieceSize,
 		},
 		storageManager:  storageManager,
@@ -108,7 +107,6 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		&pieceManager{
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
-			resourceClient:  sourceClient,
 			computePieceSize: func(contentLength int64) int32 {
 				return int32(pieceSize)
 			},
@@ -184,7 +182,6 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			resourceClient:   sourceClient,
 			computePieceSize: computePieceSize,
 		},
 		storageManager:  storageManager,
@@ -207,7 +204,6 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		&pieceManager{
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
-			resourceClient:  sourceClient,
 			computePieceSize: func(contentLength int64) int32 {
 				return int32(pieceSize)
 			},

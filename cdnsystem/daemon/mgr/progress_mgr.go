@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//go:generate mockgen -destination ./mock/mock_progress_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon/mgr SeedProgressMgr
 
 package mgr
 
@@ -41,7 +42,7 @@ type SeedProgressMgr interface {
 	GetPieces(context.Context, string) (records []*types.SeedPiece, err error)
 
 	// Clear meta info of task
-	Clear(context.Context, string) error
+	Clear(string) error
 
 	SetTaskMgr(taskMgr SeedTaskMgr)
 }

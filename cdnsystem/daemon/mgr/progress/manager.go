@@ -162,7 +162,7 @@ func (pm *Manager) PublishTask(ctx context.Context, taskID string, task *types.S
 	return nil
 }
 
-func (pm *Manager) Clear(ctx context.Context, taskID string) error {
+func (pm *Manager) Clear(taskID string) error {
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)

@@ -18,7 +18,6 @@ package disk
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,16 +45,18 @@ func init() {
 	var diskStorage *diskStorageMgr = nil
 	var _ storage.Manager = diskStorage
 	var _ gc.Executor = diskStorage
-	storage.Register(StoragePattern, NewStorageManager)
+	if err := storage.Register(StoragePattern, NewStorageManager); err != nil {
+		panic(fmt.Sprintf("register disk storage manager plugin failed: %v", err))
+	}
 }
 
 func NewStorageManager(cfg *storage.Config) (storage.Manager, error) {
 	if len(cfg.DriverConfigs) != 1 {
 		return nil, fmt.Errorf("disk storage manager should have only one disk driver, cfg's driver number is wrong config: %v", cfg)
 	}
-	diskDriver, err := storedriver.Get(local.DiskDriverName)
-	if err != nil {
-		return nil, fmt.Errorf("find disk driver for disk storage manager failed, config parameter is %#v: %v", cfg, err)
+	diskDriver, ok := storedriver.Get(local.DiskDriverName)
+	if !ok {
+		return nil, fmt.Errorf("can not find disk driver for disk storage manager, config is %#v", cfg)
 	}
 
 	storageMgr := &diskStorageMgr{
@@ -121,7 +122,7 @@ func (s *diskStorageMgr) ReadPieceMetaRecords(taskID string) ([]*storage.PieceMe
 	return result, nil
 }
 
-func (s *diskStorageMgr) GC(ctx context.Context) error {
+func (s *diskStorageMgr) GC() error {
 	logger.GcLogger.With("type", "disk").Info("start the disk storage gc job")
 	gcTaskIDs, err := s.cleaner.GC("disk", false)
 	if err != nil {
