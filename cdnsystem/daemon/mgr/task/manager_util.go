@@ -22,6 +22,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/synclock"
@@ -80,7 +81,9 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 
 	// get sourceContentLength with req.Header
-	sourceFileLength, err := tm.resourceClient.GetContentLength(task.URL, request.Header)
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
+	sourceFileLength, err := source.GetContentLength(ctx, task.URL, request.Header)
 	if err != nil {
 		logger.WithTaskID(task.TaskID).Errorf("failed to get url (%s) content length: %v", task.URL, err)
 

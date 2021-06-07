@@ -117,6 +117,7 @@ func (cm *CDNManager) OnNotify(c *manager.SchedulerConfig) {
 	cm.client.UpdateState(cdnHostsToNetAddrs(c.CdnHosts))
 }
 
+// 触发CDN下载任务
 func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error) {
 	if cm.client == nil {
 		err = dferrors.New(dfcodes.SchedNeedBackSource, "empty cdn")
@@ -242,6 +243,7 @@ func (cm *CDNManager) Work(task *types.Task, stream *client.PieceSeedStream) {
 	}
 }
 
+// 处理CDN返回的分片信息
 func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed) (err error) {
 	hostID := cm.getHostUUID(ps)
 	host, ok := cm.hostManager.Get(hostID)
@@ -316,6 +318,7 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 	return
 }
 
+// 获取主机标识
 func (cm *CDNManager) getHostUUID(ps *cdnsystem.PieceSeed) string {
 	return fmt.Sprintf("cdn:%s", ps.PeerId)
 }

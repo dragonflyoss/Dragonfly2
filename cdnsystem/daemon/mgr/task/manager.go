@@ -25,7 +25,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
-	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -48,19 +47,17 @@ type Manager struct {
 	taskStore               *syncmap.SyncMap
 	accessTimeMap           *syncmap.SyncMap
 	taskURLUnReachableStore *syncmap.SyncMap
-	resourceClient          source.ResourceClient
 	cdnMgr                  mgr.CDNMgr
 	progressMgr             mgr.SeedProgressMgr
 }
 
 // NewManager returns a new Manager Object.
-func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgressMgr, resourceClient source.ResourceClient) (*Manager, error) {
+func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgressMgr) (*Manager, error) {
 	taskMgr := &Manager{
 		cfg:                     cfg,
 		taskStore:               syncmap.NewSyncMap(),
 		accessTimeMap:           syncmap.NewSyncMap(),
 		taskURLUnReachableStore: syncmap.NewSyncMap(),
-		resourceClient:          resourceClient,
 		cdnMgr:                  cdnMgr,
 		progressMgr:             progressMgr,
 	}
@@ -171,11 +168,11 @@ func (tm Manager) GetAccessTime() (*syncmap.SyncMap, error) {
 	return tm.accessTimeMap, nil
 }
 
-func (tm Manager) Delete(ctx context.Context, taskID string) error {
+func (tm Manager) Delete(taskID string) error {
 	tm.accessTimeMap.Delete(taskID)
 	tm.taskURLUnReachableStore.Delete(taskID)
 	tm.taskStore.Delete(taskID)
-	tm.progressMgr.Clear(ctx, taskID)
+	tm.progressMgr.Clear(taskID)
 	return nil
 }
 
@@ -191,7 +188,7 @@ const (
 	gcTasksTimeout = 2.0 * time.Second
 )
 
-func (tm *Manager) GC(ctx context.Context) error {
+func (tm *Manager) GC() error {
 	logger.Debugf("start the task meta gc job")
 	var removedTaskCount int
 	startTime := time.Now()
@@ -215,7 +212,7 @@ func (tm *Manager) GC(ctx context.Context) error {
 		}
 		// gc task memory data
 		logger.GcLogger.With("type", "meta").Infof("gc task: start to deal with task: %s", taskID)
-		tm.Delete(ctx, taskID)
+		tm.Delete(taskID)
 		removedTaskCount++
 	}
 

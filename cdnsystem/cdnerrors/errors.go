@@ -30,22 +30,22 @@ var (
 	// ErrTaskIDDuplicate represents the task id is in conflict.
 	ErrTaskIDDuplicate = errors.New("taskId conflict")
 
-	// ErrPieceCountNotEqual represents piece count is not equal.
+	// ErrPieceCountNotEqual represents the number of pieces downloaded does not match the amount of meta information
 	ErrPieceCountNotEqual = errors.New("inconsistent number of pieces")
 
-	// ErrFileLengthNotEqual represents file length is not equal.
+	// ErrFileLengthNotEqual represents the file length of downloaded dose not match the length of meta information
 	ErrFileLengthNotEqual = errors.New("inconsistent file length")
 
-	// ErrDownloadFail represents download failed.
+	// ErrDownloadFail represents an exception was encountered while downloading the file
 	ErrDownloadFail = errors.New("resource download failed")
 
-	// ErrResourceExpired represents resource is expired.
+	// ErrResourceExpired represents the downloaded resource has expired
 	ErrResourceExpired = errors.New("resource expired")
 
-	// ErrResourceNotSupportRangeRequest represents resource is not support range.
+	// ErrResourceNotSupportRangeRequest represents the downloaded resource does not support Range downloads
 	ErrResourceNotSupportRangeRequest = errors.New("resource does not support range request")
 
-	// ErrPieceMd5NotMatch represents piece md5 is not match.
+	// ErrPieceMd5NotMatch represents the MD5 value of the download file is inconsistent with the meta information
 	ErrPieceMd5NotMatch = errors.New("piece md5 check fail")
 
 	// ErrDataNotFound represents the data cannot be found.

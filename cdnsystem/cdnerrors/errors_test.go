@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func TestErrorTestSuite(t *testing.T) {
+func TestErrorSuite(t *testing.T) {
 	suite.Run(t, new(ErrorTestSuite))
 }
 

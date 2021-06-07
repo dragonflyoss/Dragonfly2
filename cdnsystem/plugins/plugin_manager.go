@@ -17,6 +17,7 @@
 package plugins
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -38,19 +39,19 @@ func NewRepository() Repository {
 // Manager manages all plugin builders and plugin instants.
 type Manager interface {
 	// GetBuilder adds a Builder object with the giving plugin type and name.
-	AddBuilder(pt PluginType, name string, b Builder)
+	AddBuilder(pt PluginType, name string, b Builder) error
 
 	// GetBuilder returns a Builder object with the giving plugin type and name.
-	GetBuilder(pt PluginType, name string) Builder
+	GetBuilder(pt PluginType, name string) (Builder, bool)
 
 	// DeleteBuilder deletes a builder with the giving plugin type and name.
 	DeleteBuilder(pt PluginType, name string)
 
 	// AddPlugin adds a plugin into this manager.
-	AddPlugin(p Plugin)
+	AddPlugin(p Plugin) error
 
 	// GetPlugin returns a plugin with the giving plugin type and name.
-	GetPlugin(pt PluginType, name string) Plugin
+	GetPlugin(pt PluginType, name string) (Plugin, bool)
 
 	// DeletePlugin deletes a plugin with the giving plugin type and name.
 	DeletePlugin(pt PluginType, name string)
@@ -71,11 +72,11 @@ type Builder func(conf interface{}) (Plugin, error)
 // Repository stores data related to plugin.
 type Repository interface {
 	// Add adds a data to this repository.
-	Add(pt PluginType, name string, data interface{})
+	Add(pt PluginType, name string, data interface{}) error
 
 	// Get gets a data with the giving type and name from this
 	// repository.
-	Get(pt PluginType, name string) interface{}
+	Get(pt PluginType, name string) (interface{}, bool)
 
 	// Delete deletes a data with the giving type and name from
 	// this repository.
@@ -92,44 +93,38 @@ type managerIml struct {
 
 var _ Manager = (*managerIml)(nil)
 
-func (m *managerIml) AddBuilder(pt PluginType, name string, b Builder) {
+func (m *managerIml) AddBuilder(pt PluginType, name string, b Builder) error {
 	if b == nil {
-		return
+		return fmt.Errorf("builder is nil")
 	}
-	m.builders.Add(pt, name, b)
+	return m.builders.Add(pt, name, b)
 }
 
-func (m *managerIml) GetBuilder(pt PluginType, name string) Builder {
-	data := m.builders.Get(pt, name)
-	if data == nil {
-		return nil
+func (m *managerIml) GetBuilder(pt PluginType, name string) (Builder, bool) {
+	data, ok := m.builders.Get(pt, name)
+	if ok {
+		return data.(Builder), true
 	}
-	if builder, ok := data.(Builder); ok {
-		return builder
-	}
-	return nil
+	return nil, false
 }
 
 func (m *managerIml) DeleteBuilder(pt PluginType, name string) {
 	m.builders.Delete(pt, name)
 }
 
-func (m *managerIml) AddPlugin(p Plugin) {
+func (m *managerIml) AddPlugin(p Plugin) error {
 	if p == nil {
-		return
+		return fmt.Errorf("plugin is nil")
 	}
-	m.plugins.Add(p.Type(), p.Name(), p)
+	return m.plugins.Add(p.Type(), p.Name(), p)
 }
 
-func (m *managerIml) GetPlugin(pt PluginType, name string) Plugin {
-	data := m.plugins.Get(pt, name)
-	if data == nil {
-		return nil
+func (m *managerIml) GetPlugin(pt PluginType, name string) (Plugin, bool) {
+	data, ok := m.plugins.Get(pt, name)
+	if !ok {
+		return nil, false
 	}
-	if plugin, ok := data.(Plugin); ok {
-		return plugin
-	}
-	return nil
+	return data.(Plugin), true
 }
 
 func (m *managerIml) DeletePlugin(pt PluginType, name string) {
@@ -144,33 +139,32 @@ type repositoryIml struct {
 	lock  sync.Mutex
 }
 
-var _ Repository = (*repositoryIml)(nil)
-
-func (r *repositoryIml) Add(pt PluginType, name string, data interface{}) {
-	if data == nil || !validate(pt, name) {
-		return
-	}
-
-	m := r.getRepo(pt)
-	m.Store(name, data)
+func init() {
+	var repoImpl *repositoryIml = nil
+	var _ Repository = repoImpl
 }
 
-func (r *repositoryIml) Get(pt PluginType, name string) interface{} {
+func (r *repositoryIml) Add(pt PluginType, name string, data interface{}) error {
+	if data == nil {
+		return fmt.Errorf("data is nil")
+	}
 	if !validate(pt, name) {
-		return nil
+		return fmt.Errorf("invalid pluginType %s, name %s", pt, name)
 	}
-
 	m := r.getRepo(pt)
-	if v, ok := m.Load(name); ok && v != nil {
-		return v
-	}
+	m.Store(name, data)
 	return nil
 }
 
-func (r *repositoryIml) Delete(pt PluginType, name string) {
-	if !validate(pt, name) {
-		return
+func (r *repositoryIml) Get(pt PluginType, name string) (interface{}, bool) {
+	m := r.getRepo(pt)
+	if v, ok := m.Load(name); ok && v != nil {
+		return v, true
 	}
+	return nil, false
+}
+
+func (r *repositoryIml) Delete(pt PluginType, name string) {
 	m := r.getRepo(pt)
 	m.Delete(name)
 }
@@ -193,8 +187,9 @@ func (r *repositoryIml) getRepo(pt PluginType) *sync.Map {
 	return m
 }
 
-// -----------------------------------------------------------------------------
-// helper functions
+/*
+   helper functions
+*/
 
 func validate(pt PluginType, name string) bool {
 	if name == "" {
