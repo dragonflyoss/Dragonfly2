@@ -14,7 +14,7 @@
 
 PROJECT_NAME := "d7y.io/dragonfly/v2"
 PKG := "$(PROJECT_NAME)"
-PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/cdnsystem/\|manager\)')
+PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/cdnsystem/\)')
 VERSION := 2.0.0
 
 build-dirs: ## Prepare required folders for build

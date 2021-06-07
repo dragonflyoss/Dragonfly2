@@ -11,7 +11,8 @@ import (
 type storeSetup func(cfg *config.StoreConfig) (store.Store, error)
 
 var storePlugins = map[string]storeSetup{
-	"mysql": orm.NewOrmStore,
+	"mysql":  orm.NewMySQLOrmStore,
+	"sqlite": orm.NewSQLiteOrmStore,
 }
 
 func NewStore(cfg *config.Config) (store.Store, error) {

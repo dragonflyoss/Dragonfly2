@@ -1,7 +1,10 @@
 package config
 
 import (
+	"path"
+
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 )
@@ -31,14 +34,19 @@ type MysqlConfig struct {
 	Db       string `yaml:"db" mapstructure:"db"`
 }
 
+type SQLiteConfig struct {
+	Db string `yaml:"db" mapstructure:"db"`
+}
+
 type OssConfig struct {
 }
 
 type StoreConfig struct {
-	Name  string       `yaml:"name" mapstructure:"name"`
-	Type  string       `yaml:"type" mapstructure:"type"`
-	Mysql *MysqlConfig `yaml:"mysql,omitempty" mapstructure:"mysql,omitempty"`
-	Oss   *OssConfig   `yaml:"oss,omitempty" mapstructure:"oss,omitempty"`
+	Name   string        `yaml:"name" mapstructure:"name"`
+	Type   string        `yaml:"type" mapstructure:"type"`
+	Mysql  *MysqlConfig  `yaml:"mysql,omitempty" mapstructure:"mysql,omitempty"`
+	SQLite *SQLiteConfig `yaml:"sqlite,omitempty" mapstructure:"sqlite,omitempty"`
+	Oss    *OssConfig    `yaml:"oss,omitempty" mapstructure:"oss,omitempty"`
 }
 
 type HostService struct {
@@ -73,14 +81,10 @@ func New() *Config {
 		Stores: []*StoreConfig{
 			{
 				Name: "store1",
-				Type: "mysql",
-				Mysql: &MysqlConfig{
-					User:     "root",
-					Password: "root1234",
-					Addr:     "127.0.0.1:3306",
-					Db:       "dragonfly_manager",
+				Type: "sqlite",
+				SQLite: &SQLiteConfig{
+					Db: path.Join(dfpath.WorkHome, "dragonfly_manager.db"),
 				},
-				Oss: nil,
 			},
 		},
 		HostService: &HostService{},
@@ -88,10 +92,6 @@ func New() *Config {
 }
 
 func (cfg *StoreConfig) Valid() error {
-	if (cfg.Mysql == nil && cfg.Oss == nil) || (cfg.Mysql != nil && cfg.Oss != nil) {
-		return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: please select one of mysql or oss")
-	}
-
 	if cfg.Mysql != nil {
 		if len(cfg.Mysql.User) == 0 {
 			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.User is null")
@@ -110,6 +110,12 @@ func (cfg *StoreConfig) Valid() error {
 		}
 
 		return nil
+	}
+
+	if cfg.SQLite != nil {
+		if len(cfg.SQLite.Db) == 0 {
+			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: SQLite.Db is null")
+		}
 	}
 
 	if cfg.Oss != nil {
