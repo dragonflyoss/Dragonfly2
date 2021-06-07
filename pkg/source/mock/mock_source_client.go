@@ -9,7 +9,7 @@ import (
 	io "io"
 	reflect "reflect"
 
-	source "d7y.io/dragonfly/v2/cdnsystem/source"
+	"d7y.io/dragonfly/v2/pkg/source"
 	gomock "github.com/golang/mock/gomock"
 )
 

@@ -22,13 +22,12 @@ import (
 	"math"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/source"
 	"golang.org/x/time/rate"
 
 	cdnconfig "d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/source"
 
 	// Init http client
-	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -36,6 +35,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	_ "d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
