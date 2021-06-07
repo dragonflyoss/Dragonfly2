@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//go:generate mockgen -destination ./mock/mock_source_client.go -package mock d7y.io/dragonfly/v2/cdnsystem/source ResourceClient
+//go:generate mockgen -destination ./mock/mock_source_client.go -package mock d7y.io/dragonfly/v2/pkg/source ResourceClient
 
 package source
 
@@ -58,72 +58,72 @@ type ResourceClient interface {
 	GetExpireInfo(ctx context.Context, url string, header Header) (map[string]string, error)
 }
 
-func GetContentLength(ctx context.Context, url string, headers map[string]string) (int64, error) {
+func GetContentLength(ctx context.Context, url string, header Header) (int64, error) {
 	sourceClient, err := getSourceClient(url)
 	if err != nil {
 		return -1, err
 	}
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, 4*time.Second)
+		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 	}
-	return sourceClient.GetContentLength(ctx, url, headers)
+	return sourceClient.GetContentLength(ctx, url, header)
 }
 
-func IsSupportRange(ctx context.Context, url string, headers map[string]string) (bool, error) {
+func IsSupportRange(ctx context.Context, url string, header Header) (bool, error) {
 	sourceClient, err := getSourceClient(url)
 	if err != nil {
 		return false, err
 	}
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, 4*time.Second)
+		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 	}
-	return sourceClient.IsSupportRange(ctx, url, headers)
+	return sourceClient.IsSupportRange(ctx, url, header)
 }
 
-func IsExpired(ctx context.Context, url string, headers, expireInfo map[string]string) (bool, error) {
+func IsExpired(ctx context.Context, url string, header Header, expireInfo map[string]string) (bool, error) {
 	sourceClient, err := getSourceClient(url)
 	if err != nil {
 		return false, err
 	}
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, 4*time.Second)
+		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 	}
-	return sourceClient.IsExpired(ctx, url, headers, expireInfo)
+	return sourceClient.IsExpired(ctx, url, header, expireInfo)
 }
 
-func Download(ctx context.Context, url string, headers map[string]string) (io.ReadCloser, error) {
+func Download(ctx context.Context, url string, header Header) (io.ReadCloser, error) {
 	sourceClient, err := getSourceClient(url)
 	if err != nil {
 		return nil, err
 	}
-	return sourceClient.Download(ctx, url, headers)
+	return sourceClient.Download(ctx, url, header)
 }
 
-func DownloadWithExpire(ctx context.Context, url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
+func DownloadWithExpire(ctx context.Context, url string, header Header) (io.ReadCloser, map[string]string, error) {
 	sourceClient, err := getSourceClient(url)
 	if err != nil {
 		return nil, nil, err
 	}
-	return sourceClient.DownloadWithExpire(ctx, url, headers)
+	return sourceClient.DownloadWithExpire(ctx, url, header)
 }
 
-func GetExpireInfo(ctx context.Context, url string, headers map[string]string) (map[string]string, error) {
+func GetExpireInfo(ctx context.Context, url string, header Header) (map[string]string, error) {
 	sourceClient, err := getSourceClient(url)
 	if err != nil {
 		return nil, err
 	}
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, 4*time.Second)
+		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 	}
-	return sourceClient.GetExpireInfo(ctx, url, headers)
+	return sourceClient.GetExpireInfo(ctx, url, header)
 }
 
 // getSourceClient get a source client from source manager with specified schema.
