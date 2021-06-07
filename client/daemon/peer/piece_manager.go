@@ -35,7 +35,6 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	_ "d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
