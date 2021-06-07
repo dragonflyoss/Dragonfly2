@@ -134,7 +134,7 @@ func getSourceClient(rawURL string) (ResourceClient, error) {
 	}
 	client, ok := clients[strings.ToLower(url.Scheme)]
 	if !ok || client == nil {
-		return nil, fmt.Errorf("does not support url %s", rawURL)
+		return nil, fmt.Errorf("can not find client for supporting url %s", rawURL)
 	}
 	return client, nil
 }
