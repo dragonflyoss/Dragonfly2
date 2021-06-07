@@ -70,11 +70,11 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
-	sourceClient.EXPECT().GetContentLength(context.Background(), url, map[string]string{}).DoAndReturn(
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, map[string]string{}).DoAndReturn(
 		func(url string, headers map[string]string) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
-	sourceClient.EXPECT().Download(context.Background(), url, map[string]string{}).DoAndReturn(
+	sourceClient.EXPECT().Download(gomock.Any(), url, map[string]string{}).DoAndReturn(
 		func(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
 		})
@@ -168,11 +168,11 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
-	sourceClient.EXPECT().GetContentLength(context.Background(), url, map[string]string{}).DoAndReturn(
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, map[string]string{}).DoAndReturn(
 		func(url string, headers map[string]string) (int64, error) {
 			return -1, nil
 		})
-	sourceClient.EXPECT().Download(context.Background(), url, map[string]string{}).DoAndReturn(
+	sourceClient.EXPECT().Download(gomock.Any(), url, map[string]string{}).DoAndReturn(
 		func(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
 		})

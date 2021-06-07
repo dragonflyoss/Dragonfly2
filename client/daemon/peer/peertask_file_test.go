@@ -26,15 +26,14 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/source"
-	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
-	"github.com/golang/mock/gomock"
-	testifyassert "github.com/stretchr/testify/assert"
-
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/source"
+	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
+	"github.com/golang/mock/gomock"
+	testifyassert "github.com/stretchr/testify/assert"
 )
 
 func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
@@ -73,11 +72,11 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
-	sourceClient.EXPECT().GetContentLength(context.Background(), url, source.Header{}).DoAndReturn(
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.Header{}).DoAndReturn(
 		func(url string, headers map[string]string) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
-	sourceClient.EXPECT().Download(context.Background(), url, map[string]string{}).DoAndReturn(
+	sourceClient.EXPECT().Download(gomock.Any(), url, map[string]string{}).DoAndReturn(
 		func(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
 		})
@@ -183,11 +182,11 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
-	sourceClient.EXPECT().GetContentLength(context.Background(), url, map[string]string{}).DoAndReturn(
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, map[string]string{}).DoAndReturn(
 		func(url string, headers map[string]string) (int64, error) {
 			return -1, nil
 		})
-	sourceClient.EXPECT().Download(context.Background(), url, map[string]string{}).DoAndReturn(
+	sourceClient.EXPECT().Download(gomock.Any(), url, map[string]string{}).DoAndReturn(
 		func(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
 		})
