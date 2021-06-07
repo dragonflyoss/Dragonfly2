@@ -16,7 +16,14 @@
 
 package main
 
-import "d7y.io/dragonfly/v2/cmd/cdn/cmd"
+import (
+	"d7y.io/dragonfly/v2/cmd/cdn/cmd"
+
+	// Init http client
+	_ "d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	// Init OSS client
+	_ "d7y.io/dragonfly/v2/pkg/source/ossprotocol"
+)
 
 func main() {
 	cmd.Execute()
