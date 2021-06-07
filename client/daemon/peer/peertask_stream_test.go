@@ -70,13 +70,13 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, map[string]string{}).DoAndReturn(
-		func(url string, headers map[string]string) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.Header{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.Header) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, map[string]string{}).DoAndReturn(
-		func(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
-			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
+	sourceClient.EXPECT().Download(gomock.Any(), url, source.Header{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.Header) (io.ReadCloser, error) {
+			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
 	ptm := &peerTaskManager{
@@ -168,12 +168,12 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, map[string]string{}).DoAndReturn(
-		func(url string, headers map[string]string) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.Header{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.Header) (int64, error) {
 			return -1, nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, map[string]string{}).DoAndReturn(
-		func(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
+	sourceClient.EXPECT().Download(gomock.Any(), url, source.Header{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.Header) (io.ReadCloser, map[string]string, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
 		})
 
