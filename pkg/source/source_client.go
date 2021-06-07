@@ -24,19 +24,15 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
 
-var clients = make(map[string]ResourceClient)
+var mgr *ClientManagerImpl = nil
+var _ ResourceClient = mgr
+var _ ClientManager = mgr
 
 type Header map[string]string
-
-func Register(schema string, resourceClient ResourceClient) {
-	clients[strings.ToLower(schema)] = resourceClient
-}
-
-func UnRegister(schema string) {
-	delete(clients, strings.ToLower(schema))
-}
 
 // ResourceClient supply apis that interact with the source.
 type ResourceClient interface {
@@ -62,8 +58,22 @@ type ResourceClient interface {
 	GetExpireInfo(ctx context.Context, url string, header Header) (map[string]string, error)
 }
 
-func GetContentLength(ctx context.Context, url string, header Header) (int64, error) {
-	sourceClient, err := getSourceClient(url)
+type ClientManager interface {
+	ResourceClient
+	Register(schema string, resourceClient ResourceClient)
+	UnRegister(schema string)
+}
+
+type ClientManagerImpl struct {
+	clients map[string]ResourceClient
+}
+
+var defaultMgr = &ClientManagerImpl{
+	clients: make(map[string]ResourceClient),
+}
+
+func (clientMgr *ClientManagerImpl) GetContentLength(ctx context.Context, url string, header Header) (int64, error) {
+	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return -1, err
 	}
@@ -75,8 +85,8 @@ func GetContentLength(ctx context.Context, url string, header Header) (int64, er
 	return sourceClient.GetContentLength(ctx, url, header)
 }
 
-func IsSupportRange(ctx context.Context, url string, header Header) (bool, error) {
-	sourceClient, err := getSourceClient(url)
+func (clientMgr *ClientManagerImpl) IsSupportRange(ctx context.Context, url string, header Header) (bool, error) {
+	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return false, err
 	}
@@ -88,8 +98,8 @@ func IsSupportRange(ctx context.Context, url string, header Header) (bool, error
 	return sourceClient.IsSupportRange(ctx, url, header)
 }
 
-func IsExpired(ctx context.Context, url string, header Header, expireInfo map[string]string) (bool, error) {
-	sourceClient, err := getSourceClient(url)
+func (clientMgr *ClientManagerImpl) IsExpired(ctx context.Context, url string, header Header, expireInfo map[string]string) (bool, error) {
+	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return false, err
 	}
@@ -101,24 +111,24 @@ func IsExpired(ctx context.Context, url string, header Header, expireInfo map[st
 	return sourceClient.IsExpired(ctx, url, header, expireInfo)
 }
 
-func Download(ctx context.Context, url string, header Header) (io.ReadCloser, error) {
-	sourceClient, err := getSourceClient(url)
+func (clientMgr *ClientManagerImpl) Download(ctx context.Context, url string, header Header) (io.ReadCloser, error) {
+	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return nil, err
 	}
 	return sourceClient.Download(ctx, url, header)
 }
 
-func DownloadWithExpire(ctx context.Context, url string, header Header) (io.ReadCloser, map[string]string, error) {
-	sourceClient, err := getSourceClient(url)
+func (clientMgr *ClientManagerImpl) DownloadWithExpire(ctx context.Context, url string, header Header) (io.ReadCloser, map[string]string, error) {
+	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return nil, nil, err
 	}
 	return sourceClient.DownloadWithExpire(ctx, url, header)
 }
 
-func GetExpireInfo(ctx context.Context, url string, header Header) (map[string]string, error) {
-	sourceClient, err := getSourceClient(url)
+func (clientMgr *ClientManagerImpl) GetExpireInfo(ctx context.Context, url string, header Header) (map[string]string, error) {
+	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -130,15 +140,64 @@ func GetExpireInfo(ctx context.Context, url string, header Header) (map[string]s
 	return sourceClient.GetExpireInfo(ctx, url, header)
 }
 
+func NewManager() ClientManager {
+	return &ClientManagerImpl{
+		clients: make(map[string]ResourceClient),
+	}
+}
+
+func (clientMgr *ClientManagerImpl) Register(schema string, resourceClient ResourceClient) {
+	if client, ok := clientMgr.clients[strings.ToLower(schema)]; ok {
+		logger.Infof("replace client %#v with %#v for schema %s", client, resourceClient, schema)
+	}
+	clientMgr.clients[strings.ToLower(schema)] = resourceClient
+}
+
+func Register(schema string, resourceClient ResourceClient) {
+	defaultMgr.Register(schema, resourceClient)
+}
+
+func (clientMgr *ClientManagerImpl) UnRegister(schema string) {
+	if client, ok := clientMgr.clients[strings.ToLower(schema)]; ok {
+		logger.Infof("remove client %#v for schema %s", client, schema)
+	}
+	delete(clientMgr.clients, strings.ToLower(schema))
+}
+
+func UnRegister(schema string) {
+	defaultMgr.UnRegister(schema)
+}
+
+func GetContentLength(ctx context.Context, url string, header Header) (int64, error) {
+	return defaultMgr.GetContentLength(ctx, url, header)
+}
+
+func IsSupportRange(ctx context.Context, url string, header Header) (bool, error) {
+	return defaultMgr.IsSupportRange(ctx, url, header)
+}
+
+func IsExpired(ctx context.Context, url string, header Header, expireInfo map[string]string) (bool, error) {
+	return defaultMgr.IsExpired(ctx, url, header, expireInfo)
+}
+
+func Download(ctx context.Context, url string, header Header) (io.ReadCloser, error) {
+	return defaultMgr.Download(ctx, url, header)
+}
+
+func DownloadWithExpire(ctx context.Context, url string, header Header) (io.ReadCloser, map[string]string, error) {
+	return defaultMgr.DownloadWithExpire(ctx, url, header)
+}
+
 // getSourceClient get a source client from source manager with specified schema.
-func getSourceClient(rawURL string) (ResourceClient, error) {
-	url, err := url.Parse(rawURL)
+func (clientMgr *ClientManagerImpl) getSourceClient(rawURL string) (ResourceClient, error) {
+	logger.Debugf("current clients:%v", clientMgr.clients)
+	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err
 	}
-	client, ok := clients[strings.ToLower(url.Scheme)]
+	client, ok := clientMgr.clients[strings.ToLower(parsedURL.Scheme)]
 	if !ok || client == nil {
-		return nil, fmt.Errorf("can not find client for supporting url %s", rawURL)
+		return nil, fmt.Errorf("can not find client for supporting url %s, clients:%v", rawURL, clientMgr.clients)
 	}
 	return client, nil
 }
