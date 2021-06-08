@@ -115,7 +115,7 @@ install-manager: ## Install manager
 
 # TODO more arch like arm, aarch64
 build-rpm-dfget: build-linux-dfget
-	@echo "Begin to build dfget rpm"
+	@echo "Begin to build rpm dfget"
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
 	-v "$(PWD)/docs:/root/docs" \
@@ -129,7 +129,7 @@ build-rpm-dfget: build-linux-dfget
 .PHONY: build-rpm-dfget
 
 build-deb-dfget: build-linux-dfget
-	@echo "Begin to build dfget deb"
+	@echo "Begin to build deb dfget"
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
 	-v "$(PWD)/docs:/root/docs" \
