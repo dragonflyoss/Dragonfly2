@@ -120,7 +120,7 @@ build-rpm-dfget: build-linux-dfget
 	-v "$(PWD)/build:/root/build" \
 	-v "$(PWD)/docs:/root/docs" \
 	-v "$(PWD)/License:/root/License" \
-	-v "$(PWD)/License:/root/CHANGELOG.md" \
+	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
 	-e "VERSION=$(GIT_VERSION)" \
 	goreleaser/nfpm pkg \
@@ -134,7 +134,7 @@ build-deb-dfget: build-linux-dfget
 	-v "$(PWD)/build:/root/build" \
 	-v "$(PWD)/docs:/root/docs" \
 	-v "$(PWD)/License:/root/License" \
-	-v "$(PWD)/License:/root/CHANGELOG.md" \
+	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
 	-e "VERSION=$(GIT_VERSION)" \
 	goreleaser/nfpm pkg \
@@ -163,29 +163,29 @@ clean:
 	@rm -rf bin .go .cache
 
 help: 
-	@echo "make build-dirs       			prepare required folders for build"
-	@echo "make docker-build       		build dragonfly image"
-	@echo "make docker-push       			push dragonfly image"
-	@echo "make docker-build-cdn       		build CDN image"
-	@echo "make docker-build-dfdaemon       	build dfdaemon image"
-	@echo "make docker-build-scheduler       	build scheduler image"
-	@echo "make docker-push-cdn       		push CDN image"
-	@echo "make docker-push-dfdaemon       	push dfdaemon image"
-	@echo "make docker-push-scheduler       	push scheduler image"
-	@echo "make build       			build dragonfly"
-	@echo "make build-cdn       			build CDN"
-	@echo "make build-dfget       			build dfget"
-	@echo "make build-dfget-linux       		build linux dfget"
-	@echo "make build-scheduler       		build scheduler"
-	@echo "make build-manager       		build manager"
-	@echo "make install-cdn       			install CDN"
-	@echo "make install-dfget       		install dfget"
-	@echo "make install-scheduler       		install scheduler"
-	@echo "make install-manager       		install manager"
-	@echo "make build-rpm-dfget       		build rpm dfget"
-	@echo "make build-deb-dfget       		build deb dfget"
-	@echo "make test       			run unittests"
-	@echo "make test-coverage       		run tests with coverage"
-	@echo "make swag-manager       		generate swagger api"
-	@echo "make changelog       			generate CHANGELOG.md"
-	@echo "make clean       			clean"
+	@echo "make build-dirs                     prepare required folders for build"
+	@echo "make docker-build                   build dragonfly image"
+	@echo "make docker-push                    push dragonfly image"
+	@echo "make docker-build-cdn               build CDN image"
+	@echo "make docker-build-dfdaemon          build dfdaemon image"
+	@echo "make docker-build-scheduler         build scheduler image"
+	@echo "make docker-push-cdn                push CDN image"
+	@echo "make docker-push-dfdaemon           push dfdaemon image"
+	@echo "make docker-push-scheduler          push scheduler image"
+	@echo "make build                          build dragonfly"
+	@echo "make build-cdn                      build CDN"
+	@echo "make build-dfget                    build dfget"
+	@echo "make build-dfget-linux              build linux dfget"
+	@echo "make build-scheduler                build scheduler"
+	@echo "make build-manager                  build manager"
+	@echo "make install-cdn                    install CDN"
+	@echo "make install-dfget                  install dfget"
+	@echo "make install-scheduler              install scheduler"
+	@echo "make install-manager                install manager"
+	@echo "make build-rpm-dfget                build rpm dfget"
+	@echo "make build-deb-dfget                build deb dfget"
+	@echo "make test                           run unittests"
+	@echo "make test-coverage                  run tests with coverage"
+	@echo "make swag-manager                   generate swagger api"
+	@echo "make changelog                      generate CHANGELOG.md"
+	@echo "make clean                          clean"
