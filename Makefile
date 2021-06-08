@@ -17,8 +17,11 @@ DFGET_NAME := "dfget"
 VERSION := "2.0.0"
 PKG := "$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/cdnsystem/\|manager\)')
-GIT_VERSION := $(shell git rev-parse --verify HEAD --short=7)
-DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(GIT_VERSION)"
+GIT_COMMIT := $(shell git rev-parse --verify HEAD --short=7)
+GIT_COMMIT_LONG := $(shell git rev-parse --verify HEAD)
+DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(GIT_COMMIT)"
+
+all: help
 
 build-dirs: ## Prepare required folders for build
 	@mkdir -p ./bin
@@ -75,10 +78,10 @@ build-dfget: build-dirs ## Build dfget
 	./hack/build.sh dfget
 .PHONY: build-dfget
 
-build-dfget-linux: build-dirs ## Build linux dfget
+build-linux-dfget: build-dirs ## Build linux dfget
 	@echo "Begin to build linux dfget."
 	GOOS=linux GOARCH=amd64 ./hack/build.sh dfget
-.PHONY: build-dfget
+.PHONY: build-linux-dfget
 
 build-scheduler: build-dirs ## Build scheduler
 	@echo "Begin to build scheduler."
@@ -111,32 +114,32 @@ install-manager: ## Install manager
 .PHONY: install-manager
 
 # TODO more arch like arm, aarch64
-build-rpm-dfget: build-dfget-linux
+build-rpm-dfget: build-linux-dfget
 	@echo "Begin to build dfget rpm"
 	@docker run --rm \
-	-v "$(PWD)/build:/tmp/build" \
-	-v "$(PWD)/docs:/tmp/docs" \
-	-v "$(PWD)/License:/tmp/License" \
-	-v "$(PWD)/License:/tmp/CHANGELOG.md" \
-	-v "$(PWD)/bin:/tmp/bin" \
+	-v "$(PWD)/build:/root/build" \
+	-v "$(PWD)/docs:/root/docs" \
+	-v "$(PWD)/License:/root/License" \
+	-v "$(PWD)/License:/root/CHANGELOG.md" \
+	-v "$(PWD)/bin:/root/bin" \
 	-e "VERSION=$(GIT_VERSION)" \
 	goreleaser/nfpm pkg \
-		--config /tmp/build/package/nfpm/dfget.yaml \
-		--target /tmp/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm
+		--config /root/build/package/nfpm/dfget.yaml \
+		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm
 .PHONY: build-rpm-dfget
 
-build-deb-dfget: build-dfget-linux
+build-deb-dfget: build-linux-dfget
 	@echo "Begin to build dfget deb"
 	@docker run --rm \
-	-v "$(PWD)/build:/tmp/build" \
-	-v "$(PWD)/docs:/tmp/docs" \
-	-v "$(PWD)/License:/tmp/License" \
-	-v "$(PWD)/License:/tmp/CHANGELOG.md" \
-	-v "$(PWD)/bin:/tmp/bin" \
+	-v "$(PWD)/build:/root/build" \
+	-v "$(PWD)/docs:/root/docs" \
+	-v "$(PWD)/License:/root/License" \
+	-v "$(PWD)/License:/root/CHANGELOG.md" \
+	-v "$(PWD)/bin:/root/bin" \
 	-e "VERSION=$(GIT_VERSION)" \
 	goreleaser/nfpm pkg \
-		--config /tmp/build/package/nfpm/dfget.yaml \
-		--target /tmp/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb
+		--config /root/build/package/nfpm/dfget.yaml \
+		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb
 .PHONY: build-deb-dfget
 
 test: ## Run unittests
@@ -151,3 +154,38 @@ test-coverage: ## Run tests with coverage
 swag-manager:
 	@swag init -g cmd/manager/main.go -o api/v2/manager
 .PHONY: swag-manager
+
+changelog:
+	@git-chglog -o CHANGELOG.md
+
+clean:
+	@go clean
+	@rm -rf bin .go .cache
+
+help: 
+	@echo "make build-dirs       			prepare required folders for build"
+	@echo "make docker-build       			build dragonfly image"
+	@echo "make docker-push       				push dragonfly image"
+	@echo "make docker-build-cdn       		build CDN image"
+	@echo "make docker-build-dfdaemon       		build dfdaemon image"
+	@echo "make docker-build-scheduler       		build scheduler image"
+	@echo "make docker-push-cdn       		push CDN image"
+	@echo "make docker-push-dfdaemon       			push dfdaemon image"
+	@echo "make docker-push-scheduler       			push scheduler image"
+	@echo "make build       			build dragonfly"
+	@echo "make build-cdn       			build CDN"
+	@echo "make build-dfget       			build dfget"
+	@echo "make build-dfget-linux       			build linux dfget"
+	@echo "make build-scheduler       			build scheduler"
+	@echo "make build-manager       			build manager"
+	@echo "make install-cdn       			install CDN"
+	@echo "make install-dfget       			install dfget"
+	@echo "make install-scheduler       			install scheduler"
+	@echo "make install-manager       			install manager"
+	@echo "make build-rpm-dfget       			build rpm dfget"
+	@echo "make build-deb-dfget       				build deb dfget"
+	@echo "make test       				run unittests"
+	@echo "make test-coverage       				run tests with coverage"
+	@echo "make swag-manager       				generate swagger api"
+	@echo "make changelog       				generate CHANGELOG.md"
+	@echo "make clean       				clean"
