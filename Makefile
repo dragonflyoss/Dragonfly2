@@ -13,9 +13,12 @@
 # limitations under the License.
 
 PROJECT_NAME := "d7y.io/dragonfly/v2"
+DFGET_NAME := "dfget"
+VERSION := "2.0.0"
 PKG := "$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/cdnsystem/\|manager\)')
-VERSION := 2.0.0
+GIT_VERSION := $(shell git rev-parse --verify HEAD --short=7)
+DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(GIT_VERSION)"
 
 build-dirs: ## Prepare required folders for build
 	@mkdir -p ./bin
@@ -70,7 +73,12 @@ build-cdn: build-dirs ## Build cdn
 build-dfget: build-dirs ## Build dfget
 	@echo "Begin to build dfget."
 	./hack/build.sh dfget
-.PHONY: build-cdn
+.PHONY: build-dfget
+
+build-dfget-linux: build-dirs ## Build linux dfget
+	@echo "Begin to build linux dfget."
+	GOOS=linux GOARCH=amd64 ./hack/build.sh dfget
+.PHONY: build-dfget
 
 build-scheduler: build-dirs ## Build scheduler
 	@echo "Begin to build scheduler."
@@ -103,23 +111,32 @@ install-manager: ## Install manager
 .PHONY: install-manager
 
 # TODO more arch like arm, aarch64
-build-rpm-dfget:
-	@ docker build \
-		-t dfget-rpm-builder \
-		-f hack/packaging/rpm/Dockerfile \
-		.
-	@ docker run --rm \
-		-v ${PWD}/bin/rpm/amd64:/root/rpmbuild/RPMS/x86_64 dfget-rpm-builder \
-		rpmbuild -bb --define "_dfget_version $(VERSION)" /root/rpmbuild/SPECS/dfget.spec
+build-rpm-dfget: build-dfget-linux
+	@echo "Begin to build dfget rpm"
+	@docker run --rm \
+	-v "$(PWD)/build:/tmp/build" \
+	-v "$(PWD)/docs:/tmp/docs" \
+	-v "$(PWD)/License:/tmp/License" \
+	-v "$(PWD)/License:/tmp/CHANGELOG.md" \
+	-v "$(PWD)/bin:/tmp/bin" \
+	-e "VERSION=$(GIT_VERSION)" \
+	goreleaser/nfpm pkg \
+		--config /tmp/build/package/nfpm/dfget.yaml \
+		--target /tmp/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm
 .PHONY: build-rpm-dfget
 
-build-deb-dfget:
-	@ docker build \
-		-t dfget-deb-builder \
-		-f hack/packaging/deb/Dockerfile \
-		.
-	@ docker run --rm \
-		-v ${PWD}/bin/deb/amd64:/pkg dfget-deb-builder
+build-deb-dfget: build-dfget-linux
+	@echo "Begin to build dfget deb"
+	@docker run --rm \
+	-v "$(PWD)/build:/tmp/build" \
+	-v "$(PWD)/docs:/tmp/docs" \
+	-v "$(PWD)/License:/tmp/License" \
+	-v "$(PWD)/License:/tmp/CHANGELOG.md" \
+	-v "$(PWD)/bin:/tmp/bin" \
+	-e "VERSION=$(GIT_VERSION)" \
+	goreleaser/nfpm pkg \
+		--config /tmp/build/package/nfpm/dfget.yaml \
+		--target /tmp/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb
 .PHONY: build-deb-dfget
 
 test: ## Run unittests
