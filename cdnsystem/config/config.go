@@ -74,7 +74,7 @@ func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 			},
 		}, plugins.StorageManagerPlugin: {
 			{
-				Name:   disk.StoragePattern,
+				Name:   disk.StorageMode,
 				Enable: true,
 				Config: &storage.Config{
 					GCInitialDelay: 0 * time.Second,
@@ -90,7 +90,7 @@ func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 					},
 				},
 			}, {
-				Name:   hybrid.StoragePattern,
+				Name:   hybrid.StorageMode,
 				Enable: false,
 				Config: &storage.Config{
 					GCInitialDelay: 0 * time.Second,
@@ -130,7 +130,7 @@ func NewDefaultBaseProperties() *BaseProperties {
 		GCInitialDelay:          DefaultGCInitialDelay,
 		GCMetaInterval:          DefaultGCMetaInterval,
 		TaskExpireTime:          DefaultTaskExpireTime,
-		StoragePattern:          DefaultStoragePattern,
+		StorageMode:             DefaultStorageMode,
 		AdvertiseIP:             iputils.HostIP,
 	}
 }
@@ -176,6 +176,6 @@ type BaseProperties struct {
 	// default: 3min
 	TaskExpireTime time.Duration `yaml:"taskExpireTime" mapstructure:"taskExpireTime"`
 
-	// StoragePattern disk/hybrid/memory
-	StoragePattern string `yaml:"storagePattern" mapstructure:"storagePattern"`
+	// StorageMode disk/hybrid/memory
+	StorageMode string `yaml:"storageMode" mapstructure:"storageMode"`
 }

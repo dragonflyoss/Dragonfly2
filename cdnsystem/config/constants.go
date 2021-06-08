@@ -34,7 +34,7 @@ const (
 )
 
 const (
-	DefaultStoragePattern = "disk"
+	DefaultStorageMode = "disk"
 )
 
 const (

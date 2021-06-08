@@ -43,7 +43,7 @@ import (
 	"go.uber.org/atomic"
 )
 
-const StoragePattern = "hybrid"
+const StorageMode = "hybrid"
 
 const secureLevel = 500 * unit.MB
 
@@ -55,7 +55,7 @@ func init() {
 	var hybrid *hybridStorageMgr = nil
 	var _ storage.Manager = hybrid
 	var _ gc.Executor = hybrid
-	storage.Register(StoragePattern, NewStorageManager)
+	storage.Register(StorageMode, NewStorageManager)
 }
 
 // NewStorageManager performs initialization for storage manager and return a storage Manager.

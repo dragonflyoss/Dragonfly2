@@ -104,8 +104,8 @@ type PieceMetaRecord struct {
 const fieldSeparator = ":"
 
 func (record PieceMetaRecord) String() string {
-	return fmt.Sprintf("%d%s%d%s%s%s%s%s%s%s%d", record.PieceNum, fieldSeparator, record.PieceLen, fieldSeparator, record.Md5, fieldSeparator, record.Range,
-		fieldSeparator, record.OriginRange, fieldSeparator, record.PieceStyle)
+	return fmt.Sprint(record.PieceNum, fieldSeparator, record.PieceLen, fieldSeparator, record.Md5, fieldSeparator, record.Range, fieldSeparator,
+		record.OriginRange, fieldSeparator, record.PieceStyle)
 }
 
 func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {

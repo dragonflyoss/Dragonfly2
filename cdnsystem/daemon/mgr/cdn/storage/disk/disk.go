@@ -40,13 +40,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const StoragePattern = "disk"
+const StorageMode = "disk"
 
 func init() {
 	var diskStorage *diskStorageMgr = nil
 	var _ storage.Manager = diskStorage
 	var _ gc.Executor = diskStorage
-	storage.Register(StoragePattern, NewStorageManager)
+	storage.Register(StorageMode, NewStorageManager)
 }
 
 func NewStorageManager(cfg *storage.Config) (storage.Manager, error) {

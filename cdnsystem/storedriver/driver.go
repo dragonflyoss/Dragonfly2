@@ -120,14 +120,6 @@ type StorageInfo struct {
 	ModTime    time.Time // modified time
 }
 
-func init() {
-	// Ensure that driverPlugin implements the interface of Driver
-	var driverPlugin *driverPlugin = nil
-	var _ Driver = driverPlugin
-	// Ensure that driverPlugin implements the interface Plugin
-	var _ plugins.Plugin = driverPlugin
-}
-
 // driverPlugin is a wrapper of the storage driver which implements the interface of Driver.
 type driverPlugin struct {
 	// name is a unique identifier, you can also name it ID.
@@ -135,6 +127,12 @@ type driverPlugin struct {
 	// instance holds a storage which implements the interface of driverPlugin.
 	instance Driver
 }
+
+// Ensure that driverPlugin implements the interface of Driver
+var _ Driver = (*driverPlugin)(nil)
+
+// Ensure that driverPlugin implements the interface plugins.Plugin
+var _ plugins.Plugin = (*driverPlugin)(nil)
 
 // NewDriverPlugin creates a new storage Driver Plugin instance.
 func newDriverPlugin(name string, builder DriverBuilder, cfg *Config) (plugins.Plugin, error) {

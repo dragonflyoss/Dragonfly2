@@ -35,12 +35,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func init() {
-	// Ensure that Manager implements the SeedTaskMgr and gcExecutor interfaces
-	var manager *Manager = nil
-	var _ mgr.SeedTaskMgr = manager
-	var _ gc.Executor = manager
-}
+// Ensure that Manager implements the SeedTaskMgr and gcExecutor interfaces
+var _ mgr.SeedTaskMgr = (*Manager)(nil)
+var _ gc.Executor = (*Manager)(nil)
 
 // Manager is an implementation of the interface of TaskMgr.
 type Manager struct {

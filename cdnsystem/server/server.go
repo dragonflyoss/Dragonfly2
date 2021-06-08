@@ -74,7 +74,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// storage manager
-	storageMgr, err := storage.Get(cfg.StoragePattern)
+	storageMgr, err := storage.Get(cfg.StorageMode)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create storage manager")
 	}

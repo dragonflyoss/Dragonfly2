@@ -33,11 +33,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func init() {
-	// Ensure that storage implements the StorageDriver interface
-	var driver *driver = nil
-	var _ storedriver.Driver = driver
-}
+// Ensure driver implements the storedriver.Driver interface
+var _ storedriver.Driver = (*driver)(nil)
 
 const (
 	DiskDriverName   = "disk"

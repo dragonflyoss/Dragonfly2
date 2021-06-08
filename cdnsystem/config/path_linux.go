@@ -16,7 +16,7 @@
 
 package config
 
-const (
+var (
 	DefaultDiskBaseDir = "/home/admin/ftp"
 
 	DefaultMemoryBaseDir = "/dev/shm/dragonfly"

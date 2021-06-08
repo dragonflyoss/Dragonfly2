@@ -16,8 +16,14 @@
 
 package config
 
-const (
-	DefaultDiskBaseDir = "/tmp/cdnsystem"
+import (
+	"path/filepath"
 
-	DefaultMemoryBaseDir = "/tmp/memory/dragonfly"
+	"d7y.io/dragonfly/v2/pkg/basic"
+)
+
+var (
+	DefaultDiskBaseDir = filepath.Join(basic.HomeDir, "ftp")
+
+	DefaultMemoryBaseDir = filepath.Join(basic.HomeDir, "dragonfly")
 )

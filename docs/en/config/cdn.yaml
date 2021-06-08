@@ -37,8 +37,8 @@ base:
   # default: 3m0s
   taskExpireTime: 3m
 
-  # StoragePattern is the pattern of storage policy, [disk/hybrid]
-  storagePattern: disk
+  # storageMode is the Mode of storage policy, [disk/hybrid]
+  storageMode: disk
 
 plugins:
   storageDriver:
