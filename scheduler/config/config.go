@@ -88,6 +88,9 @@ type DynconfigOptions struct {
 
 	// CachePath is cache filepath.
 	CachePath string `yaml:"cachePath"`
+
+	// CDNDirPath is cdn dir.
+	CDNDirPath string `yaml:"cdnDirPata"`
 }
 
 type SchedulerConfig struct {
