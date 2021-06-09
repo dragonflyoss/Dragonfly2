@@ -117,7 +117,7 @@ func Download(cfg *config.DfgetConfig, client dfclient.DaemonClient) error {
 		logger.Errorf("download by dragonfly error: %s", err)
 		return downloadFromSource(cfg, hdr)
 	}
-	return err
+	return nil
 }
 
 func downloadFromSource(cfg *config.DfgetConfig, hdr map[string]string) (err error) {
@@ -161,21 +161,21 @@ func downloadFromSource(cfg *config.DfgetConfig, hdr map[string]string) (err err
 	}
 
 	written, err = io.Copy(target, response)
-	if err == nil {
-		logger.Infof("copied %d bytes to %s", written, cfg.Output)
-		end = time.Now()
-		fmt.Printf("Download from source success, time cost: %dms\n", end.Sub(start).Milliseconds())
-		// change permission
-		logger.Infof("change own to uid %d gid %d", basic.UserID, basic.UserGroup)
-		if err = os.Chown(cfg.Output, basic.UserID, basic.UserGroup); err != nil {
-			logger.Errorf("change own failed: %s", err)
-			return err
-		}
-		return nil
+	if err != nil {
+		logger.Errorf("copied %d bytes to %s, with error: %s", written, cfg.Output, err)
+		return err
 	}
-	logger.Errorf("copied %d bytes to %s, with error: %s",
-		written, cfg.Output, err)
-	return err
+	logger.Infof("copied %d bytes to %s", written, cfg.Output)
+	end = time.Now()
+	fmt.Printf("Download from source success, time cost: %dms\n", end.Sub(start).Milliseconds())
+
+	// change permission
+	logger.Infof("change own to uid %d gid %d", basic.UserID, basic.UserGroup)
+	if err = os.Chown(cfg.Output, basic.UserID, basic.UserGroup); err != nil {
+		logger.Errorf("change own failed: %s", err)
+		return err
+	}
+	return nil
 }
 
 func parseHeader(s []string) map[string]string {
