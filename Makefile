@@ -21,11 +21,11 @@ build-dirs: ## Prepare required folders for build
 	@mkdir -p ./bin
 .PHONY: build-dirs
 
-docker-build: docker-build-cdn docker-build-dfdaemon docker-build-scheduler
+docker-build: docker-build-cdn docker-build-dfdaemon docker-build-scheduler docker-build-manager
 	@echo "Build image done."
 .PHONY: docker-build
 
-docker-push: docker-push-cdn docker-push-dfdaemon docker-push-scheduler
+docker-push: docker-push-cdn docker-push-dfdaemon docker-push-scheduler docker-push-manager
 	@echo "Push image done."
 .PHONY: docker-push
 
@@ -44,6 +44,11 @@ docker-build-scheduler: ## Build scheduler image
 	./hack/docker-build.sh scheduler
 .PHONY: docker-build-scheduler
 
+docker-build-manager: ## Build manager image
+	@echo "Begin to use docker build manager image."
+	./hack/docker-build.sh manager
+.PHONY: docker-build-manager
+
 docker-push-cdn: docker-build-cdn ## Push cdn image
 	@echo "Begin to push cdn docker image."
 	./hack/docker-push.sh cdn
@@ -58,6 +63,11 @@ docker-push-scheduler: docker-build-scheduler ## Push scheduler image
 	@echo "Begin to push dfdaemon docker image."
 	./hack/docker-push.sh scheduler
 .PHONY: docker-push-scheduler
+
+docker-push-manager: docker-build-manager ## Push manager image
+	@echo "Begin to push manager docker image."
+	./hack/docker-push.sh manager
+.PHONY: docker-push-manager
 
 build: build-cdn build-scheduler build-dfget build-manager ## Build dragonfly
 .PHONY: build
