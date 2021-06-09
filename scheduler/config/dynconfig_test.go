@@ -18,6 +18,7 @@ package config
 
 import (
 	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -90,7 +91,7 @@ func TestDynconfigGet(t *testing.T) {
 			mockManagerClient := mocks.NewMockManagerClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			d, err := NewDynconfig(dc.ManagerSourceType, []dc.Option{
+			d, err := NewDynconfig(dc.ManagerSourceType, "", []dc.Option{
 				dc.WithManagerClient(NewManagerClient(mockManagerClient)),
 				dc.WithCachePath(SchedulerDynconfigCachePath),
 				dc.WithExpireTime(tc.expire),
@@ -103,6 +104,63 @@ func TestDynconfigGet(t *testing.T) {
 			data, err := d.Get()
 			tc.expect(t, data, err)
 			tc.cleanFileCache(t)
+		})
+	}
+}
+
+func TestDynconfigGetCDNFromDirPath(t *testing.T) {
+	tests := []struct {
+		name       string
+		cdnDirPath string
+		expect     func(t *testing.T, data *manager.SchedulerConfig, err error)
+	}{
+		{
+			name:       "get CDN from directory",
+			cdnDirPath: path.Join("./testdata", "cdn"),
+			expect: func(t *testing.T, data *manager.SchedulerConfig, err error) {
+				assert := assert.New(t)
+				assert.Equal([]*manager.ServerInfo{
+					{
+						HostInfo: &manager.HostInfo{
+							HostName: "127.0.0.1",
+							Ip:       "127.0.0.1",
+						},
+						RpcPort:  8003,
+						DownPort: 8001,
+					},
+					{
+						HostInfo: &manager.HostInfo{
+							HostName: "127.0.0.2",
+							Ip:       "127.0.0.2",
+						},
+						RpcPort:  8003,
+						DownPort: 8001,
+					},
+				}, data.CdnHosts)
+			},
+		},
+		{
+			name:       "directory does not exist",
+			cdnDirPath: path.Join("./testdata", "foo"),
+			expect: func(t *testing.T, data *manager.SchedulerConfig, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "open testdata/foo: no such file or directory")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+
+			d, err := NewDynconfig(dc.LocalSourceType, tc.cdnDirPath, []dc.Option{
+				dc.WithLocalConfigPath(SchedulerDynconfigPath),
+			}...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			data, err := d.Get()
+			tc.expect(t, data, err)
 		})
 	}
 }

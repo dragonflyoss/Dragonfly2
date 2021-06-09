@@ -18,6 +18,8 @@ package config
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"path/filepath"
 	"time"
 
@@ -64,32 +66,66 @@ type Observer interface {
 
 type dynconfig struct {
 	*dc.Dynconfig
-	observers map[Observer]struct{}
-	done      chan bool
+	observers  map[Observer]struct{}
+	done       chan bool
+	cdnDirPath string
 }
 
-func NewDynconfig(sourceType dc.SourceType, options ...dc.Option) (DynconfigInterface, error) {
+// TODO(Gaius) Rely on manager to delete cdnDirPath
+func NewDynconfig(sourceType dc.SourceType, cdnDirPath string, options ...dc.Option) (DynconfigInterface, error) {
+	d := &dynconfig{
+		observers:  map[Observer]struct{}{},
+		done:       make(chan bool),
+		cdnDirPath: cdnDirPath,
+	}
+
 	client, err := dc.New(sourceType, options...)
 	if err != nil {
 		return nil, err
 	}
-
-	d := &dynconfig{
-		Dynconfig: client,
-		observers: map[Observer]struct{}{},
-		done:      make(chan bool),
-	}
-
+	d.Dynconfig = client
 	return d, nil
 }
 
 func (d *dynconfig) Get() (*manager.SchedulerConfig, error) {
 	var config manager.SchedulerConfig
-	if err := d.Unmarshal(&config); err != nil {
-		return nil, err
+	if d.cdnDirPath != "" {
+		cdn, err := d.getCDNFromDirPath()
+		if err != nil {
+			return nil, err
+		}
+		config.CdnHosts = cdn
+	} else {
+		if err := d.Unmarshal(&config); err != nil {
+			return nil, err
+		}
 	}
 
 	return &config, nil
+}
+
+func (d *dynconfig) getCDNFromDirPath() ([]*manager.ServerInfo, error) {
+	files, err := ioutil.ReadDir(d.cdnDirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var data []*manager.ServerInfo
+	for _, file := range files {
+		b, err := ioutil.ReadFile(filepath.Join(d.cdnDirPath, file.Name()))
+		if err != nil {
+			return nil, err
+		}
+
+		var s *manager.ServerInfo
+		if err := json.Unmarshal(b, &s); err != nil {
+			return nil, err
+		}
+
+		data = append(data, s)
+	}
+
+	return data, nil
 }
 
 type managerClient struct {

@@ -23,14 +23,14 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type SourceType int
+type SourceType string
 
 const (
 	// LocalSourceType represents read configuration from local file
-	LocalSourceType SourceType = iota
+	LocalSourceType = "local"
 
 	// ManagerSourceType represents pulling configuration from manager
-	ManagerSourceType
+	ManagerSourceType = "manager"
 )
 
 const (
@@ -51,53 +51,53 @@ type Dynconfig struct {
 }
 
 // Option is a functional option for configuring the dynconfig
-type Option func(d *Dynconfig) (*Dynconfig, error)
+type Option func(d *Dynconfig) error
 
 // WithManagerClient set the manager client
 func WithManagerClient(c ManagerClient) Option {
-	return func(d *Dynconfig) (*Dynconfig, error) {
+	return func(d *Dynconfig) error {
 		if d.sourceType != ManagerSourceType {
-			return nil, errors.New("the source type must be ManagerSourceType")
+			return errors.New("the source type must be ManagerSourceType")
 		}
 
 		d.managerClient = c
-		return d, nil
+		return nil
 	}
 }
 
 // WithLocalConfigPath set the file path
 func WithLocalConfigPath(p string) Option {
-	return func(d *Dynconfig) (*Dynconfig, error) {
+	return func(d *Dynconfig) error {
 		if d.sourceType != LocalSourceType {
-			return nil, errors.New("the source type must be LocalSourceType")
+			return errors.New("the source type must be LocalSourceType")
 		}
 
 		d.localConfigPath = p
-		return d, nil
+		return nil
 	}
 }
 
 // WithCachePath set the cache file path
 func WithCachePath(p string) Option {
-	return func(d *Dynconfig) (*Dynconfig, error) {
+	return func(d *Dynconfig) error {
 		if d.sourceType != ManagerSourceType {
-			return nil, errors.New("the source type must be ManagerSourceType")
+			return errors.New("the source type must be ManagerSourceType")
 		}
 
 		d.cachePath = p
-		return d, nil
+		return nil
 	}
 }
 
 // WithExpireTime set the expire time for cache
 func WithExpireTime(e time.Duration) Option {
-	return func(d *Dynconfig) (*Dynconfig, error) {
+	return func(d *Dynconfig) error {
 		if d.sourceType != ManagerSourceType {
-			return nil, errors.New("the source type must be ManagerSourceType")
+			return errors.New("the source type must be ManagerSourceType")
 		}
 
 		d.expire = e
-		return d, nil
+		return nil
 	}
 }
 
@@ -137,7 +137,7 @@ func NewDynconfigWithOptions(sourceType SourceType, options ...Option) (*Dynconf
 	}
 
 	for _, opt := range options {
-		if _, err := opt(d); err != nil {
+		if err := opt(d); err != nil {
 			return nil, err
 		}
 	}
