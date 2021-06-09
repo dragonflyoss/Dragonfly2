@@ -5,17 +5,6 @@ alive_time: 0s
 # daemon gc task running interval
 gc_interval: 1m0s
 
-# daemon pid location
-# in linux, default value is /var/run/dfdaemon.pid
-# in macos(just for testing), default value is /tmp/dfdaemon.pid
-pid_file: /var/run/dfdaemon.pid
-
-# daemon lock file location
-# same lock file will only allow to run one daemon service
-# in linux, default value is /var/run/dfdaemon.lock
-# in macos(just for testing), default value is /tmp/dfdaemon.lock
-lock_file: /var/run/dfdaemon.lock
-
 # daemon data directory
 # in linux, default value is $HOME/.dragonfly/dfget-daemon/
 # in macos(just for testing), default value is /Users/$USER/.dragonfly/dfdaemon/
