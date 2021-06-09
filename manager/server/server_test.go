@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
-	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/configsvc"
+	"d7y.io/dragonfly/v2/manager/server/mocks"
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
@@ -766,7 +766,7 @@ func (suite *ServerTestSuite) SetupSuite() {
 
 	configsvc.KeepAliveTimeoutMax = 2 * time.Second
 	_ = logcore.InitManager(false)
-	cfg := config.New()
+	cfg := mocks.NewMockConfig()
 
 	suite.redis = miniredis.NewMiniRedis()
 	_ = suite.redis.StartAddr(cfg.Redis.Addrs[0])

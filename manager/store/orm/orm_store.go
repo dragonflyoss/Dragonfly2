@@ -37,8 +37,13 @@ var ormTables = map[store.ResourceType]newTableSetup{
 }
 
 func NewMySQLOrmStore(cfg *config.StoreConfig) (store.Store, error) {
-	if err := cfg.Valid(); err != nil {
+	source, err := cfg.Valid()
+	if err != nil {
 		return nil, err
+	}
+
+	if source != "mysql" {
+		return nil, dferrors.Newf(dfcodes.ManagerConfigError, "store config error: source is not mysql")
 	}
 
 	u, err := dburl.Parse("mysql://user:pass@localhost/dbname?")
@@ -46,9 +51,9 @@ func NewMySQLOrmStore(cfg *config.StoreConfig) (store.Store, error) {
 		return nil, err
 	}
 
-	u.Host = cfg.Mysql.Addr
-	u.Path = cfg.Mysql.Db
-	u.User = url.UserPassword(cfg.Mysql.User, cfg.Mysql.Password)
+	u.Host = cfg.Source.Mysql.Addr
+	u.Path = cfg.Source.Mysql.Db
+	u.User = url.UserPassword(cfg.Source.Mysql.User, cfg.Source.Mysql.Password)
 	q := u.Query()
 	q.Add("charset", "utf8")
 	q.Add("parseTime", "True")
@@ -104,15 +109,20 @@ func createSQLiteDB(db string) error {
 }
 
 func NewSQLiteOrmStore(cfg *config.StoreConfig) (store.Store, error) {
-	if err := cfg.Valid(); err != nil {
+	source, err := cfg.Valid()
+	if err != nil {
 		return nil, err
 	}
 
-	if err := createSQLiteDB(cfg.SQLite.Db); err != nil {
+	if source != "sqlite" {
+		return nil, dferrors.Newf(dfcodes.ManagerConfigError, "store config error: source is not sqlite")
+	}
+
+	if err := createSQLiteDB(cfg.Source.SQLite.Db); err != nil {
 		return nil, err
 	}
 
-	u, err := dburl.Parse(fmt.Sprintf("sqlite://%s?", cfg.SQLite.Db))
+	u, err := dburl.Parse(fmt.Sprintf("sqlite://%s?", cfg.Source.SQLite.Db))
 	if err != nil {
 		return nil, err
 	}
