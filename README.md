@@ -39,7 +39,7 @@ Provide efficient, stable, secure, low-cost file and image distribution services
 
 **CDN:** A CDN server that caches downloaded data from source to avoid downloading same files repeatedly.
 
-**Daemon:** Used for pulling images only. It establishes a proxy between containerd/CRI-O and registry.
+**Daemon:** It's a daemon of dfget client. It establishes a proxy between containerd/CRI-O and registry.
 
 **Dfget:** The client of Dragonfly used for downloading files. It's similar to wget.
 
