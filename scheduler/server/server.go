@@ -80,7 +80,7 @@ func New(cfg *config.Config) (*Server, error) {
 		}
 	}
 
-	dynconfig, err := config.NewDynconfig(cfg.Dynconfig.Type, options...)
+	dynconfig, err := config.NewDynconfig(cfg.Dynconfig.Type, cfg.Dynconfig.CDNDirPath, options...)
 	if err != nil {
 		return nil, err
 	}

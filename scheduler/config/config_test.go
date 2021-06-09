@@ -39,7 +39,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			},
 		},
 		Dynconfig: &DynconfigOptions{
-			Type:       1,
+			Type:       "local",
 			Path:       "foo",
 			CachePath:  "bar",
 			ExpireTime: 1000,
