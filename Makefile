@@ -21,6 +21,8 @@ GIT_COMMIT := $(shell git rev-parse --verify HEAD --short=7)
 GIT_COMMIT_LONG := $(shell git rev-parse --verify HEAD)
 DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(GIT_COMMIT)"
 
+all: help
+
 build-dirs: ## Prepare required folders for build
 	@mkdir -p ./bin
 .PHONY: build-dirs
