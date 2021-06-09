@@ -83,7 +83,7 @@ build-docker() {
 }
 
 build-cdn-docker() {
-    build-docker ${DFDAEMON_BINARY_NAME} dfdaemon
+    build-docker ${CDN_BINARY_NAME} dfdaemon
 }
 
 build-dfget-docker() {
@@ -91,7 +91,7 @@ build-dfget-docker() {
 }
 
 build-scheduler-docker() {
-    build-docker ${scheduler_BINARY_NAME} scheduler
+    build-docker ${SCHEDULER_BINARY_NAME} scheduler
 }
 
 build-manager-docker() {
