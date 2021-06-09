@@ -1,6 +1,10 @@
 nameOverride: ""
 fullnameOverride: ""
 
+# values for dragonfly installation
+installation:
+  namespace: kube-system
+
 scheduler:
   name: scheduler
   replicas: 1
