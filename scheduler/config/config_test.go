@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -39,7 +40,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			},
 		},
 		Dynconfig: &DynconfigOptions{
-			Type:       "local",
+			Type:       dc.LocalSourceType,
 			Path:       "foo",
 			CachePath:  "bar",
 			ExpireTime: 1000,

@@ -4,11 +4,13 @@ package config
 
 import (
 	"runtime"
+
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 )
 
 var config = Config{
 	Dynconfig: &DynconfigOptions{
-		Type:       "local",
+		Type:       dc.LocalSourceType,
 		ExpireTime: 60000 * 1000 * 1000,
 		Path:       SchedulerDynconfigPath,
 		CachePath:  SchedulerDynconfigCachePath,
