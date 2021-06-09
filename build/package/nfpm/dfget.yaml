@@ -1,0 +1,49 @@
+name: dfget
+arch: amd64
+platform: linux
+version: ${VERSION}
+section: default
+priority: extra
+description: |
+  dfget is the client of Dragonfly used to download and upload files
+license: "Apache 2.0"
+homepage: https://d7y.io
+
+provides:
+  - dfget
+
+contents:
+  - src: /root/bin/linux_amd64/dfget
+    dst: /usr/bin/dfget
+
+  - src: /root/build/package/nfpm/config/dfget.yaml
+    dst: /etc/dragonfly/dfget.yaml
+    type: config
+
+  - src: /root/docs/en/cli-reference/dfget.1
+    dst: /usr/share/man/man1/dfget.1
+
+  - src: /root/License
+    dst: /usr/share/doc/dfget/License
+
+  - src: /root/CHANGELOG.md
+    dst: /usr/share/doc/dfget/ChangeLog
+
+  - src: /root/build/package/nfpm/systemd/dfget-daemon.service
+    dst: /etc/systemd/system/dfget-daemon.service
+
+  - src: /root/build/package/nfpm/systemd/dfget-daemon.service.d/CPUQuota.conf
+    dst: /etc/systemd/system/dfget-daemon.service.d/CPUQuota.conf
+
+  - src: /root/build/package/nfpm/systemd/dfget-daemon.service.d/CPUShares.conf
+    dst: /etc/systemd/system/dfget-daemon.service.d/CPUShares.conf
+
+  - src: /root/build/package/nfpm/systemd/dfget-daemon.service.d/MemoryLimit.conf
+    dst: /etc/systemd/system/dfget-daemon.service.d/MemoryLimit.conf
+
+  - src: /root/build/package/nfpm/systemd/fix.dfget-daemon.cpuset.sh
+    dst: /opt/dragonfly/fix.dfget-daemon.cpuset.sh
+
+scripts:
+  postinstall: /root/build/package/nfpm/dfget-postinstall.sh
+  preremove: /root/build/package/nfpm/dfget-preremove.sh
