@@ -22,7 +22,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -46,15 +45,8 @@ type StorageTestSuite struct {
 
 func (s *StorageTestSuite) SetupSuite() {
 	s.workHome, _ = ioutil.TempDir("/tmp", "cdn-StoreTestSuite-repo")
-	store, err := NewStorage(map[string]interface{}{
-		"baseDir": s.workHome,
-		//"gcConfig": map[string]interface{}{
-		//	"youngGCThreshold":  "100G",
-		//	"fullGCThreshold":   "5G",
-		//	"cleanRatio":        1,
-		//	"intervalThreshold": "2h",
-		//},
-	})
+	store, err := NewStorageDriver(&storedriver.Config{
+		BaseDir: "/tmp/download"})
 	s.Nil(err)
 	s.NotNil(store)
 	s.Driver = store
@@ -176,11 +168,11 @@ func (s *StorageTestSuite) TestGetPutBytes() {
 	for _, v := range cases {
 		s.Run(v.name, func() {
 			// put
-			err := s.PutBytes(context.Background(), v.putRaw, v.data)
+			err := s.PutBytes(v.putRaw, v.data)
 			s.Nil(err)
 
 			// get
-			result, err := s.GetBytes(context.Background(), v.getRaw)
+			result, err := s.GetBytes(v.getRaw)
 			s.True(v.getErrCheck(err))
 			s.Equal(v.expected, string(result))
 			// stat
@@ -274,10 +266,10 @@ func (s *StorageTestSuite) TestGetPut() {
 	for _, v := range cases {
 		s.Run(v.name, func() {
 			// put
-			err := s.Put(context.Background(), v.putRaw, v.data)
+			err := s.Put(v.putRaw, v.data)
 			s.Nil(err)
 			// get
-			r, err := s.Get(context.Background(), v.getRaw)
+			r, err := s.Get(v.getRaw)
 			s.True(v.getErrCheck(err))
 			if err == nil {
 				result, err := ioutil.ReadAll(r)
@@ -399,12 +391,12 @@ func (s *StorageTestSuite) TestAppendBytes() {
 	for _, v := range cases {
 		s.Run(v.name, func() {
 			// put
-			err := s.Put(context.Background(), v.putRaw, v.data)
+			err := s.Put(v.putRaw, v.data)
 			s.Nil(err)
-			err = s.Put(context.Background(), v.appendRaw, v.appData)
+			err = s.Put(v.appendRaw, v.appData)
 			s.Nil(err)
 			// get
-			r, err := s.Get(context.Background(), v.getRaw)
+			r, err := s.Get(v.getRaw)
 			s.True(v.getErrCheck(err))
 			if err == nil {
 				result, err := ioutil.ReadAll(r)
@@ -475,13 +467,13 @@ func (s *StorageTestSuite) TestPutTrunc() {
 	}
 
 	for _, v := range cases {
-		err := s.Put(context.Background(), originRaw, strings.NewReader(originData))
+		err := s.Put(originRaw, strings.NewReader(originData))
 		s.Nil(err)
 
-		err = s.Put(context.Background(), v.truncRaw, v.data)
+		err = s.Put(v.truncRaw, v.data)
 		s.Nil(err)
 
-		r, err := s.Get(context.Background(), &storedriver.Raw{
+		r, err := s.Get(&storedriver.Raw{
 			Key: "fooTrunc.meta",
 		})
 		s.Nil(err)
@@ -505,7 +497,7 @@ func (s *StorageTestSuite) TestPutParallel() {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			s.Put(context.TODO(), &storedriver.Raw{
+			s.Put(&storedriver.Raw{
 				Key:    key,
 				Offset: int64(i) * int64(testStrLength),
 			}, strings.NewReader(testStr))
@@ -513,7 +505,7 @@ func (s *StorageTestSuite) TestPutParallel() {
 	}
 	wg.Wait()
 
-	info, err := s.Stat(context.TODO(), &storedriver.Raw{Key: key})
+	info, err := s.Stat(&storedriver.Raw{Key: key})
 	s.Nil(err)
 	s.Equal(info.Size, int64(routineCount)*int64(testStrLength))
 }
@@ -523,7 +515,6 @@ func (s *StorageTestSuite) TestRemove() {
 		BaseDir string
 	}
 	type args struct {
-		ctx context.Context
 		raw *storedriver.Raw
 	}
 	tests := []struct {
@@ -535,7 +526,7 @@ func (s *StorageTestSuite) TestRemove() {
 		{},
 	}
 	for _, tt := range tests {
-		err := s.Remove(tt.args.ctx, tt.args.raw)
+		err := s.Remove(tt.args.raw)
 		s.Equal(err != nil, tt.wantErr)
 	}
 }
@@ -545,7 +536,6 @@ func (s *StorageTestSuite) TestStat() {
 		BaseDir string
 	}
 	type args struct {
-		ctx context.Context
 		raw *storedriver.Raw
 	}
 	tests := []struct {
@@ -558,7 +548,7 @@ func (s *StorageTestSuite) TestStat() {
 		{},
 	}
 	for _, tt := range tests {
-		got, err := s.Stat(tt.args.ctx, tt.args.raw)
+		got, err := s.Stat(tt.args.raw)
 		s.Equal(err, tt.wantErr)
 		s.EqualValues(got, tt.want)
 	}
@@ -566,8 +556,7 @@ func (s *StorageTestSuite) TestStat() {
 
 func Test_diskStorage_CreateBaseDir(t *testing.T) {
 	type fields struct {
-		BaseDir  string
-		GcConfig *storedriver.GcConfig
+		BaseDir string
 	}
 	type args struct {
 		ctx context.Context
@@ -582,11 +571,10 @@ func Test_diskStorage_CreateBaseDir(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ds := &diskStorage{
-				BaseDir:  tt.fields.BaseDir,
-				GcConfig: tt.fields.GcConfig,
+			ds := &driver{
+				BaseDir: tt.fields.BaseDir,
 			}
-			if err := ds.CreateBaseDir(tt.args.ctx); (err != nil) != tt.wantErr {
+			if err := ds.CreateBaseDir(); (err != nil) != tt.wantErr {
 				t.Errorf("CreateBaseDir() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -595,8 +583,7 @@ func Test_diskStorage_CreateBaseDir(t *testing.T) {
 
 func Test_diskStorage_Exits(t *testing.T) {
 	type fields struct {
-		BaseDir  string
-		GcConfig *storedriver.GcConfig
+		BaseDir string
 	}
 	type args struct {
 		ctx context.Context
@@ -612,41 +599,11 @@ func Test_diskStorage_Exits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ds := &diskStorage{
-				BaseDir:  tt.fields.BaseDir,
-				GcConfig: tt.fields.GcConfig,
+			ds := &driver{
+				BaseDir: tt.fields.BaseDir,
 			}
-			if got := ds.Exits(tt.args.ctx, tt.args.raw); got != tt.want {
+			if got := ds.Exits(tt.args.raw); got != tt.want {
 				t.Errorf("Exits() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_diskStorage_GetGcConfig(t *testing.T) {
-	type fields struct {
-		BaseDir  string
-		GcConfig *storedriver.GcConfig
-	}
-	type args struct {
-		ctx context.Context
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *storedriver.GcConfig
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ds := &diskStorage{
-				BaseDir:  tt.fields.BaseDir,
-				GcConfig: tt.fields.GcConfig,
-			}
-			if got := ds.GetGcConfig(tt.args.ctx); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetGcConfig() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -654,8 +611,7 @@ func Test_diskStorage_GetGcConfig(t *testing.T) {
 
 func Test_diskStorage_GetHomePath(t *testing.T) {
 	type fields struct {
-		BaseDir  string
-		GcConfig *storedriver.GcConfig
+		BaseDir string
 	}
 	type args struct {
 		ctx context.Context
@@ -670,11 +626,10 @@ func Test_diskStorage_GetHomePath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ds := &diskStorage{
-				BaseDir:  tt.fields.BaseDir,
-				GcConfig: tt.fields.GcConfig,
+			ds := &driver{
+				BaseDir: tt.fields.BaseDir,
 			}
-			if got := ds.GetHomePath(tt.args.ctx); got != tt.want {
+			if got := ds.GetHomePath(); got != tt.want {
 				t.Errorf("GetHomePath() = %v, want %v", got, tt.want)
 			}
 		})
@@ -683,8 +638,7 @@ func Test_diskStorage_GetHomePath(t *testing.T) {
 
 func Test_diskStorage_GetPath(t *testing.T) {
 	type fields struct {
-		BaseDir  string
-		GcConfig *storedriver.GcConfig
+		BaseDir string
 	}
 	type args struct {
 		raw *storedriver.Raw
@@ -699,9 +653,8 @@ func Test_diskStorage_GetPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ds := &diskStorage{
-				BaseDir:  tt.fields.BaseDir,
-				GcConfig: tt.fields.GcConfig,
+			ds := &driver{
+				BaseDir: tt.fields.BaseDir,
 			}
 			if got := ds.GetPath(tt.args.raw); got != tt.want {
 				t.Errorf("GetPath() = %v, want %v", got, tt.want)
@@ -712,8 +665,7 @@ func Test_diskStorage_GetPath(t *testing.T) {
 
 func Test_diskStorage_GetTotalAndFreeSpace(t *testing.T) {
 	type fields struct {
-		BaseDir  string
-		GcConfig *storedriver.GcConfig
+		BaseDir string
 	}
 	type args struct {
 		ctx context.Context
@@ -730,11 +682,10 @@ func Test_diskStorage_GetTotalAndFreeSpace(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ds := &diskStorage{
-				BaseDir:  tt.fields.BaseDir,
-				GcConfig: tt.fields.GcConfig,
+			ds := &driver{
+				BaseDir: tt.fields.BaseDir,
 			}
-			got, got1, err := ds.GetTotalAndFreeSpace(tt.args.ctx)
+			got, got1, err := ds.GetTotalAndFreeSpace()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTotalAndFreeSpace() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -751,8 +702,7 @@ func Test_diskStorage_GetTotalAndFreeSpace(t *testing.T) {
 
 func Test_diskStorage_GetTotalSpace(t *testing.T) {
 	type fields struct {
-		BaseDir  string
-		GcConfig *storedriver.GcConfig
+		BaseDir string
 	}
 	type args struct {
 		ctx context.Context
@@ -768,11 +718,10 @@ func Test_diskStorage_GetTotalSpace(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ds := &diskStorage{
-				BaseDir:  tt.fields.BaseDir,
-				GcConfig: tt.fields.GcConfig,
+			ds := &driver{
+				BaseDir: tt.fields.BaseDir,
 			}
-			got, err := ds.GetTotalSpace(tt.args.ctx)
+			got, err := ds.GetTotalSpace()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTotalSpace() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -790,7 +739,7 @@ func (s *StorageTestSuite) BenchmarkPutParallel() {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			s.Put(context.Background(), &storedriver.Raw{
+			s.Put(&storedriver.Raw{
 				Key:    "foo.bech",
 				Offset: int64(i) * 5,
 			}, strings.NewReader("hello"))
@@ -801,7 +750,7 @@ func (s *StorageTestSuite) BenchmarkPutParallel() {
 
 func (s *StorageTestSuite) BenchmarkPutSerial() {
 	for k := 0; k < 1000; k++ {
-		s.Put(context.Background(), &storedriver.Raw{
+		s.Put(&storedriver.Raw{
 			Key:    "foo1.bech",
 			Offset: int64(k) * 5,
 		}, strings.NewReader("hello"))
@@ -812,7 +761,7 @@ func (s *StorageTestSuite) BenchmarkPutSerial() {
 // helper function
 
 func (s *StorageTestSuite) checkStat(raw *storedriver.Raw) {
-	info, err := s.Stat(context.Background(), raw)
+	info, err := s.Stat(raw)
 	s.Equal(isNilError(err), true)
 
 	pathTemp := filepath.Join(s.workHome, raw.Bucket, raw.Key)
@@ -827,10 +776,10 @@ func (s *StorageTestSuite) checkStat(raw *storedriver.Raw) {
 }
 
 func (s *StorageTestSuite) checkRemove(raw *storedriver.Raw) {
-	err := s.Remove(context.Background(), raw)
+	err := s.Remove(raw)
 	s.Equal(isNilError(err), true)
 
-	_, err = s.Stat(context.Background(), raw)
+	_, err = s.Stat(raw)
 	s.Equal(cdnerrors.IsFileNotExist(err), true)
 }
 

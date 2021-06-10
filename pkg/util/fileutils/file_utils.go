@@ -30,9 +30,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	// PrivateFileMode grants owner to read/write a file.
+	PrivateFileMode = 0600
+	// PrivateDirMode means read and execute access for everyone and also write access for the owner of the directory.
+	PrivateDirMode = 0755
+)
+
 // MkdirAll creates a directory named path with 0755 perm.
 func MkdirAll(dir string) error {
-	return os.MkdirAll(dir, 0755)
+	return os.MkdirAll(dir, PrivateDirMode)
 }
 
 // DeleteFile deletes a regular file not a directory.
@@ -49,7 +56,7 @@ func DeleteFile(path string) error {
 }
 
 // OpenFile opens a file. If the parent directory of the file isn't exist,
-// it will create the directory.
+// it will create the directory with 0755 perm.
 func OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
 	if !PathExist(path) && (flag&syscall.O_CREAT != 0) {
 		if err := MkdirAll(filepath.Dir(path)); err != nil {
@@ -58,10 +65,6 @@ func OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
 	}
 
 	return os.OpenFile(path, flag, perm)
-}
-
-func Open(path string) (*os.File, error) {
-	return OpenFile(path, syscall.O_RDONLY, 0)
 }
 
 // Link creates a hard link pointing to oldname named newname for a file.

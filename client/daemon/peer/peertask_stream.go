@@ -23,6 +23,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/semconv"
@@ -32,7 +33,6 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"

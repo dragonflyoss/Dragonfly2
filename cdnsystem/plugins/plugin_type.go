@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package config
+package plugins
 
 // PluginType defines the type of plugin.
 type PluginType string
 
 const (
-	// StoragePlugin the storage plugin type.
-	StoragePlugin = PluginType("storage")
-
-	// SourceClientPlugin the source client plugin type
-	SourceClientPlugin = PluginType("sourceClient")
+	// StorageDriverPlugin the storage driver plugin type.
+	StorageDriverPlugin = PluginType("storagedriver")
+	// StorageManagerPlugin the storage manager plugin type
+	StorageManagerPlugin = PluginType("storagemanager")
 )
 
 // PluginTypes explicitly stores all available plugin types.
 var PluginTypes = []PluginType{
-	StoragePlugin, SourceClientPlugin,
+	// The order here is very important and represents the dependency loading order of the plugin。 driver plugins should be loaded before manager plugins
+	StorageDriverPlugin, StorageManagerPlugin,
 }
 
 // PluginProperties the properties of a plugin.

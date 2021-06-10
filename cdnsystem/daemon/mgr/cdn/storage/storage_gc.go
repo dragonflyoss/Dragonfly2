@@ -17,7 +17,6 @@
 package storage
 
 import (
-	"context"
 	"os"
 	"strings"
 	"time"
@@ -33,40 +32,40 @@ import (
 )
 
 type Cleaner struct {
-	Cfg        *storedriver.GcConfig
-	Store      storedriver.Driver
-	StorageMgr Manager
-	TaskMgr    mgr.SeedTaskMgr
+	cfg        *GCConfig
+	driver     storedriver.Driver
+	taskMgr    mgr.SeedTaskMgr
+	storageMgr Manager
 }
 
-func NewStorageCleaner(gcConfig *storedriver.GcConfig, store storedriver.Driver, storageMgr Manager, taskMgr mgr.SeedTaskMgr) *Cleaner {
+func NewStorageCleaner(cfg *GCConfig, driver storedriver.Driver, storageMgr Manager, taskMgr mgr.SeedTaskMgr) (*Cleaner, error) {
 	return &Cleaner{
-		Cfg:        gcConfig,
-		Store:      store,
-		StorageMgr: storageMgr,
-		TaskMgr:    taskMgr,
-	}
+		cfg:        cfg,
+		driver:     driver,
+		taskMgr:    taskMgr,
+		storageMgr: storageMgr,
+	}, nil
 }
 
-func (cleaner *Cleaner) Gc(ctx context.Context, storagePattern string, force bool) ([]string, error) {
-	freeSpace, err := cleaner.Store.GetAvailSpace(ctx)
+func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) {
+	freeSpace, err := cleaner.driver.GetAvailSpace()
 	if err != nil {
 		if cdnerrors.IsFileNotExist(err) {
-			err = cleaner.Store.CreateBaseDir(ctx)
+			err = cleaner.driver.CreateBaseDir()
 			if err != nil {
 				return nil, err
 			}
-			freeSpace, _ = cleaner.Store.GetAvailSpace(ctx)
+			freeSpace, _ = cleaner.driver.GetAvailSpace()
 		} else {
 			return nil, errors.Wrapf(err, "failed to get avail space")
 		}
 	}
 	fullGC := force
 	if !fullGC {
-		if freeSpace > cleaner.Cfg.YoungGCThreshold {
+		if freeSpace > cleaner.cfg.YoungGCThreshold {
 			return nil, nil
 		}
-		if freeSpace <= cleaner.Cfg.FullGCThreshold {
+		if freeSpace <= cleaner.cfg.FullGCThreshold {
 			fullGC = true
 		}
 	}
@@ -98,7 +97,7 @@ func (cleaner *Cleaner) Gc(ctx context.Context, storagePattern string, force boo
 		walkTaskIds[taskID] = true
 
 		// we should return directly when we success to get info which means it is being used
-		if _, err := cleaner.TaskMgr.Get(ctx, taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
+		if _, err := cleaner.taskMgr.Get(taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
 			if err != nil {
 				logger.GcLogger.With("type", storagePattern).Errorf("failed to get taskID(%s): %v", taskID, err)
 			}
@@ -111,21 +110,21 @@ func (cleaner *Cleaner) Gc(ctx context.Context, storagePattern string, force boo
 			return nil
 		}
 
-		metaData, err := cleaner.StorageMgr.ReadFileMetaData(ctx, taskID)
+		metaData, err := cleaner.storageMgr.ReadFileMetaData(taskID)
 		if err != nil || metaData == nil {
 			logger.GcLogger.With("type", storagePattern).Debugf("taskID: %s, failed to get metadata: %v", taskID, err)
 			gcTaskIDs = append(gcTaskIDs, taskID)
 			return nil
 		}
 		// put taskId into gapTasks or intervalTasks which will sort by some rules
-		if err := cleaner.sortInert(ctx, gapTasks, intervalTasks, metaData); err != nil {
+		if err := cleaner.sortInert(gapTasks, intervalTasks, metaData); err != nil {
 			logger.GcLogger.With("type", storagePattern).Errorf("failed to parse inert metaData(%+v): %v", metaData, err)
 		}
 
 		return nil
 	}
 
-	if err := cleaner.Store.Walk(ctx, &storedriver.Raw{
+	if err := cleaner.driver.Walk(&storedriver.Raw{
 		WalkFn: walkFn,
 	}); err != nil {
 		return nil, err
@@ -138,13 +137,12 @@ func (cleaner *Cleaner) Gc(ctx context.Context, storagePattern string, force boo
 	return gcTaskIDs, nil
 }
 
-func (cleaner *Cleaner) sortInert(ctx context.Context, gapTasks, intervalTasks *treemap.Map,
-	metaData *FileMetaData) error {
+func (cleaner *Cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metaData *FileMetaData) error {
 	gap := timeutils.CurrentTimeMillis() - metaData.AccessTime
 
 	if metaData.Interval > 0 &&
-		gap <= metaData.Interval+(int64(cleaner.Cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
-		info, err := cleaner.StorageMgr.StatDownloadFile(ctx, metaData.TaskID)
+		gap <= metaData.Interval+(int64(cleaner.cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
+		info, err := cleaner.storageMgr.StatDownloadFile(metaData.TaskID)
 		if err != nil {
 			return err
 		}
@@ -184,6 +182,6 @@ func (cleaner *Cleaner) getGCTasks(gapTasks, intervalTasks *treemap.Map) []strin
 		}
 	}
 
-	gcLen := (len(gcTasks)*cleaner.Cfg.CleanRatio + 9) / 10
+	gcLen := (len(gcTasks)*cleaner.cfg.CleanRatio + 9) / 10
 	return gcTasks[0:gcLen]
 }

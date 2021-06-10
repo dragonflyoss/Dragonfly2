@@ -1,5 +1,3 @@
-# This file is the template of cdn system configuration file.
-# You can configure your cdn system by change the parameter according your requirement.
 ---
 base:
   # listenPort is the port cdn server listens on.
@@ -37,7 +35,7 @@ base:
   # default: 3m0s
   taskExpireTime: 3m
 
-  # storageMode is the Mode of storage policy, [disk/hybrid]
+  # storageMode is the mode of storage policy, [disk/hybrid]
   storageMode: disk
 
 plugins:
@@ -94,6 +92,3 @@ verbose: false
 # listen port for pprof, only valid when the verbose option is true
 # default is random port
 pprofPort: 0
-
-# the service address that provides the configuration item
-configServer: 127.0.0.1:8004
