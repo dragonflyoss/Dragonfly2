@@ -25,5 +25,5 @@ import (
 var (
 	DefaultDiskBaseDir = filepath.Join(basic.HomeDir, "ftp")
 
-	DefaultMemoryBaseDir = filepath.Join(basic.HomeDir, "dragonfly")
+	DefaultMemoryBaseDir = "/dev/shm/dragonfly"
 )
