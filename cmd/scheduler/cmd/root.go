@@ -83,6 +83,7 @@ func runScheduler() error {
 
 	svr, err := server.New(cfg)
 	if err != nil {
+		logger.Errorf("get scheduler server error: %s", err)
 		return err
 	}
 
