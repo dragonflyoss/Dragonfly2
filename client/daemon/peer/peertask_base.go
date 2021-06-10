@@ -210,9 +210,11 @@ loop:
 			if de, ok := err.(*dferrors.DfError); ok {
 				pt.failedCode = de.Code
 				pt.failedReason = de.Message
+				pt.Errorf("receive peer packet failed: %s", pt.failedReason)
+			} else {
+				pt.Errorf("receive peer packet failed: %s", err)
 			}
 			pt.cancel()
-			pt.Errorf(pt.failedReason)
 			if !firstSpanDone {
 				firstPeerSpan.RecordError(err)
 			}
