@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package mgr
+package config
 
-import "context"
+import (
+	"path/filepath"
 
-// GCMgr as an interface defines all operations about gc operation.
-type GCMgr interface {
+	"d7y.io/dragonfly/v2/pkg/basic"
+)
 
-	// StartGC starts to execute GC
-	StartGC(ctx context.Context) error
+var (
+	DefaultDiskBaseDir = filepath.Join(basic.HomeDir, "ftp")
 
-	// GCTask is used to do the gc task job with specified taskID.
-	// The CDN file will be deleted when the full is true.
-	GCTask(ctx context.Context, taskID string, full bool) error
-}
+	DefaultMemoryBaseDir = "/dev/shm/dragonfly"
+)

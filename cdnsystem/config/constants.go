@@ -34,7 +34,7 @@ const (
 )
 
 const (
-	DefaultStoragePattern = "disk"
+	DefaultStorageMode = "disk"
 )
 
 const (
@@ -57,8 +57,6 @@ const (
 
 	// DefaultGCMetaInterval is the interval time to execute the GC meta.
 	DefaultGCMetaInterval = 2 * time.Minute
-
-	DefaultGCStorageInterval = 15 * time.Second
 
 	// DefaultTaskExpireTime when a task is not accessed within the taskExpireTime,
 	// and it will be treated to be expired.

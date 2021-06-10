@@ -110,9 +110,9 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	if err != nil {
 		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "failed to register seed task(%s):%v", req.TaskId, err)
 	}
-	task, err := css.taskMgr.Get(ctx, req.TaskId)
+	task, err := css.taskMgr.Get(req.TaskId)
 	if err != nil {
-		return err
+		return dferrors.Newf(dfcodes.CdnError, "failed to get task(%s): %v", req.TaskId, err)
 	}
 	peerID := cdnutil.GenCDNPeerID(req.TaskId)
 	for piece := range pieceChan {
@@ -131,9 +131,6 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 			ContentLength: task.SourceFileLength,
 		}
 
-	}
-	if err != nil {
-		return dferrors.Newf(dfcodes.CdnError, "failed to get task(%s): %v", req.TaskId, err)
 	}
 	if task.CdnStatus != types.TaskInfoCdnStatusSuccess {
 		return dferrors.Newf(dfcodes.CdnTaskDownloadFail, "task(%s) status error , status: %s", req.TaskId, task.CdnStatus)
@@ -159,7 +156,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	if err := checkPieceTasksRequestParams(req); err != nil {
 		return nil, dferrors.Newf(dfcodes.BadRequest, "failed to validate seed request for task(%s): %v", req.TaskId, err)
 	}
-	task, err := css.taskMgr.Get(ctx, req.TaskId)
+	task, err := css.taskMgr.Get(req.TaskId)
 	logger.Debugf("task:%+v", task)
 	if err != nil {
 		if cdnerrors.IsDataNotFound(err) {

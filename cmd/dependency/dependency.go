@@ -183,7 +183,6 @@ func initConfig(useConfigFile bool, name string, config interface{}) {
 			}
 		}
 	}
-
 	if err := viper.Unmarshal(config, initDecoderConfig); err != nil {
 		panic(errors.Wrap(err, "unmarshal config to struct"))
 	}

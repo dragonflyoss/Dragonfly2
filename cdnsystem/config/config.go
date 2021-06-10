@@ -17,10 +17,14 @@
 package config
 
 import (
-	"fmt"
-	"io/ioutil"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/disk"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/hybrid"
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -39,22 +43,9 @@ func New() *Config {
 type Config struct {
 	base.Options    `yaml:",inline" mapstructure:",squash"`
 	*BaseProperties `yaml:"base" mapstructure:"base"`
-	Plugins         map[PluginType][]*PluginProperties `yaml:"plugins" mapstructure:"plugins"`
-	ConfigServer    string                             `yaml:"configServer" mapstructure:"configServer"`
-}
 
-// Load loads config properties from the giving file.
-func (c *Config) Load(path string) error {
-	content, err := ioutil.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("failed to load yaml %s when reading file: %v", path, err)
-	}
-
-	if err = yaml.Unmarshal(content, c); err != nil {
-		return fmt.Errorf("failed to load yaml %s: %v", path, err)
-	}
-
-	return nil
+	Plugins      map[plugins.PluginType][]*plugins.PluginProperties `yaml:"plugins" mapstructure:"plugins"`
+	ConfigServer string                                             `yaml:"configServer" mapstructure:"configServer"`
 }
 
 func (c *Config) String() string {
@@ -64,32 +55,63 @@ func (c *Config) String() string {
 	return ""
 }
 
-// NewDefaultPlugins creates a Plugins instant with default values.
-func NewDefaultPlugins() map[PluginType][]*PluginProperties {
-	return map[PluginType][]*PluginProperties{
-		StoragePlugin: {
+// NewDefaultPlugins creates plugin instants with default values.
+func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
+	return map[plugins.PluginType][]*plugins.PluginProperties{
+		plugins.StorageDriverPlugin: {
 			{
-				Name:   "disk",
+				Name:   local.DiskDriverName,
 				Enable: true,
-				Config: map[string]interface{}{
-					"baseDir": "/tmp/cdnsystem",
-					"gcConfig": map[string]interface{}{
-						"youngGCThreshold":  "100G",
-						"fullGCThreshold":   "5G",
-						"cleanRatio":        1,
-						"intervalThreshold": "2h",
+				Config: &storedriver.Config{
+					BaseDir: DefaultDiskBaseDir,
+				},
+			}, {
+				Name:   local.MemoryDriverName,
+				Enable: true,
+				Config: &storedriver.Config{
+					BaseDir: DefaultMemoryBaseDir,
+				},
+			},
+		}, plugins.StorageManagerPlugin: {
+			{
+				Name:   disk.StorageMode,
+				Enable: true,
+				Config: &storage.Config{
+					GCInitialDelay: 0 * time.Second,
+					GCInterval:     15 * time.Second,
+					DriverConfigs: map[string]*storage.DriverConfig{
+						local.DiskDriverName: {
+							GCConfig: &storage.GCConfig{
+								YoungGCThreshold:  100 * unit.GB,
+								FullGCThreshold:   5 * unit.GB,
+								CleanRatio:        1,
+								IntervalThreshold: 2 * time.Hour,
+							}},
 					},
 				},
 			}, {
-				Name:   "memory",
-				Enable: true,
-				Config: map[string]interface{}{
-					"baseDir": "/tmp/memory/dragonfly",
-					"gcConfig": map[string]interface{}{
-						"youngGCThreshold":  "100G",
-						"fullGCThreshold":   "5G",
-						"cleanRatio":        3,
-						"intervalThreshold": "2h",
+				Name:   hybrid.StorageMode,
+				Enable: false,
+				Config: &storage.Config{
+					GCInitialDelay: 0 * time.Second,
+					GCInterval:     15 * time.Second,
+					DriverConfigs: map[string]*storage.DriverConfig{
+						local.DiskDriverName: {
+							GCConfig: &storage.GCConfig{
+								YoungGCThreshold:  100 * unit.GB,
+								FullGCThreshold:   5 * unit.GB,
+								CleanRatio:        1,
+								IntervalThreshold: 2 * time.Hour,
+							},
+						},
+						local.MemoryDriverName: {
+							GCConfig: &storage.GCConfig{
+								YoungGCThreshold:  100 * unit.GB,
+								FullGCThreshold:   5 * unit.GB,
+								CleanRatio:        3,
+								IntervalThreshold: 2 * time.Hour,
+							},
+						},
 					},
 				},
 			},
@@ -107,9 +129,8 @@ func NewDefaultBaseProperties() *BaseProperties {
 		FailAccessInterval:      DefaultFailAccessInterval,
 		GCInitialDelay:          DefaultGCInitialDelay,
 		GCMetaInterval:          DefaultGCMetaInterval,
-		GCStorageInterval:       DefaultGCStorageInterval,
 		TaskExpireTime:          DefaultTaskExpireTime,
-		StoragePattern:          DefaultStoragePattern,
+		StorageMode:             DefaultStorageMode,
 		AdvertiseIP:             iputils.HostIP,
 	}
 }
@@ -150,15 +171,11 @@ type BaseProperties struct {
 	// default: 2min
 	GCMetaInterval time.Duration `yaml:"gcMetaInterval" mapstructure:"gcMetaInterval"`
 
-	// GCStorageInterval is the interval time to execute GC storage.
-	// default: 15s
-	GCStorageInterval time.Duration `yaml:"gcStorageInterval" mapstructure:"gcStorageInterval"`
-
 	// TaskExpireTime when a task is not accessed within the taskExpireTime,
 	// and it will be treated to be expired.
 	// default: 3min
 	TaskExpireTime time.Duration `yaml:"taskExpireTime" mapstructure:"taskExpireTime"`
 
-	// StoragePattern disk/hybrid/memory
-	StoragePattern string `yaml:"storagePattern" mapstructure:"storagePattern"`
+	// StorageMode disk/hybrid/memory
+	StorageMode string `yaml:"storageMode" mapstructure:"storageMode"`
 }

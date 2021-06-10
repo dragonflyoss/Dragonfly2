@@ -58,40 +58,39 @@ type Server struct {
 
 // New creates a brand new server instance.
 func New(cfg *config.Config) (*Server, error) {
-	if err := plugins.Initialize(cfg); err != nil {
+	if err := plugins.Initialize(cfg.Plugins); err != nil {
 		return nil, err
 	}
-	storageMgr, err := storage.NewManager(cfg)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create storage manager")
-	}
 
+	// source client
 	sourceClient, err := source.NewSourceClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create source client")
 	}
 	// progress manager
-	progressMgr, err := progress.NewManager(cfg)
+	progressMgr, err := progress.NewManager()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create progress manager")
 	}
 
+	// storage manager
+	storageMgr, err := storage.Get(cfg.StorageMode)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create storage manager")
+	}
 	// cdn manager
 	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr, sourceClient)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create cdn manager")
 	}
-
 	// task manager
 	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr, sourceClient)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create task manager")
 	}
-	storageMgr.SetTaskMgr(taskMgr)
-	storageMgr.InitializeCleaners()
-	progressMgr.SetTaskMgr(taskMgr)
+	storageMgr.Initialize(taskMgr)
 	// gc manager
-	gcMgr, err := gc.NewManager(cfg, taskMgr, cdnMgr)
+	gcMgr, err := gc.NewManager(taskMgr, cdnMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create gc manager")
 	}

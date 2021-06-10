@@ -17,11 +17,9 @@
 package plugins
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -55,56 +53,7 @@ func (s *PluginsTestSuite) TestSetManager() {
 // -----------------------------------------------------------------------------
 
 func (s *PluginsTestSuite) TestInitialize() {
-	var testCase = func(cfg *config.Config, b Builder,
-		pt config.PluginType, name string, hasPlugin bool, errMsg string) {
-		SetManager(NewManager())
-		RegisterPlugin(pt, name, b)
-		err := Initialize(cfg)
-		plugin := GetPlugin(pt, name)
 
-		if errMsg != "" {
-			s.NotNil(err)
-			s.EqualError(err, ".*"+errMsg+".*")
-			s.Nil(plugin)
-		} else {
-			s.Nil(err)
-			if hasPlugin {
-				s.Equal(plugin.Type(), pt)
-				s.Equal(plugin.Name(), name)
-			} else {
-				s.Nil(plugin)
-			}
-		}
-	}
-	var testFunc = func(pt config.PluginType) {
-		errMsg := "build error"
-		name := "test"
-		var createBuilder = func(err bool) Builder {
-			return func(conf interface{}) (plugin Plugin, e error) {
-				if err {
-					return nil, fmt.Errorf(errMsg)
-				}
-				return &mockPlugin{pt, name}, nil
-			}
-		}
-		var createConf = func(enabled bool) *config.Config {
-			plugins := make(map[config.PluginType][]*config.PluginProperties)
-			plugins[pt] = []*config.PluginProperties{{Name: name, Enable: enabled}}
-			return &config.Config{Plugins: plugins}
-		}
-		testCase(createConf(false), createBuilder(false),
-			pt, name, false, "")
-		testCase(createConf(true), nil,
-			pt, name, false, "cannot find builder")
-		testCase(createConf(true), createBuilder(true),
-			pt, name, false, errMsg)
-		testCase(createConf(true), createBuilder(false),
-			pt, name, true, "")
-	}
-
-	for _, pt := range config.PluginTypes {
-		testFunc(pt)
-	}
 }
 
 func (s *PluginsTestSuite) TestManagerIml_Builder() {
@@ -113,7 +62,7 @@ func (s *PluginsTestSuite) TestManagerIml_Builder() {
 	}
 	manager := NewManager()
 
-	var testFunc = func(pt config.PluginType, name string, b Builder, result bool) {
+	var testFunc = func(pt PluginType, name string, b Builder, result bool) {
 		manager.AddBuilder(pt, name, b)
 		obj := manager.GetBuilder(pt, name)
 		if result {
@@ -127,8 +76,8 @@ func (s *PluginsTestSuite) TestManagerIml_Builder() {
 		}
 	}
 
-	testFunc(config.PluginType("test"), "test", builder, false)
-	for _, pt := range config.PluginTypes {
+	testFunc(PluginType("test"), "test", builder, false)
+	for _, pt := range PluginTypes {
 		testFunc(pt, "test", builder, true)
 		testFunc(pt, "", nil, false)
 		testFunc(pt, "", builder, false)
@@ -152,7 +101,7 @@ func (s *PluginsTestSuite) TestManagerIml_Plugin() {
 	}
 
 	testFunc(&mockPlugin{"test", "test"}, false)
-	for _, pt := range config.PluginTypes {
+	for _, pt := range PluginTypes {
 		testFunc(&mockPlugin{pt, "test"}, true)
 		testFunc(&mockPlugin{pt, ""}, false)
 	}
@@ -160,15 +109,15 @@ func (s *PluginsTestSuite) TestManagerIml_Plugin() {
 
 func (s *PluginsTestSuite) TestRepositoryIml() {
 	type testCase struct {
-		pt        config.PluginType
+		pt        PluginType
 		name      string
 		data      interface{}
 		addResult bool
 	}
 	var createCase = func(validPlugin bool, name string, data interface{}, result bool) testCase {
-		pt := config.StoragePlugin
+		pt := StorageDriverPlugin
 		if !validPlugin {
-			pt = config.PluginType("test-validPlugin")
+			pt = PluginType("test-validPlugin")
 		}
 		return testCase{
 			pt:        pt,
@@ -208,15 +157,15 @@ func (s *PluginsTestSuite) TestRepositoryIml() {
 
 func (s *PluginsTestSuite) TestValidate() {
 	type testCase struct {
-		pt       config.PluginType
+		pt       PluginType
 		name     string
 		expected bool
 	}
 	var cases = []testCase{
-		{config.PluginType("test"), "", false},
-		{config.PluginType("test"), "test", false},
+		{PluginType("test"), "", false},
+		{PluginType("test"), "test", false},
 	}
-	for _, pt := range config.PluginTypes {
+	for _, pt := range PluginTypes {
 		cases = append(cases,
 			testCase{pt, "", false},
 			testCase{pt, "test", true},
@@ -230,11 +179,11 @@ func (s *PluginsTestSuite) TestValidate() {
 // -----------------------------------------------------------------------------
 
 type mockPlugin struct {
-	pt   config.PluginType
+	pt   PluginType
 	name string
 }
 
-func (m *mockPlugin) Type() config.PluginType {
+func (m *mockPlugin) Type() PluginType {
 	return m.pt
 }
 

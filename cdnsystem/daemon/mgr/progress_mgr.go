@@ -40,6 +40,8 @@ type SeedProgressMgr interface {
 	// GetPieces get pieces by taskID
 	GetPieces(context.Context, string) (records []*types.SeedPiece, err error)
 
-	// Clear
+	// Clear meta info of task
 	Clear(context.Context, string) error
+
+	SetTaskMgr(taskMgr SeedTaskMgr)
 }

@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"hash"
 	"io"
+	"os"
 
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
@@ -63,7 +64,7 @@ func Md5File(name string) string {
 		return ""
 	}
 
-	f, err := fileutils.Open(name)
+	f, err := os.Open(name)
 	if err != nil {
 		return ""
 	}
