@@ -5,7 +5,7 @@ before:
 
 builds:
   - main: ./cmd/dfget
-    id: "dfget"
+    id: dfget
     binary: dfget
     goos:
       - linux
@@ -14,7 +14,7 @@ builds:
       - amd64
 
   - main: ./cmd/scheduler
-    id: "scheduler"
+    id: scheduler
     binary: scheduler
     goos:
       - linux
@@ -23,7 +23,7 @@ builds:
       - amd64
 
   - main: ./cmd/cdn
-    id: "cdn"
+    id: cdn
     binary: cdn
     goos:
       - linux
@@ -32,7 +32,7 @@ builds:
       - amd64
 
   - main: ./cmd/manager
-    id: "manager"
+    id: manager
     binary: manager
     goos:
       - linux
@@ -60,3 +60,48 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+
+nfpms:
+  - id: dfget
+    package_name: dfget
+    description: dfget is the client of Dragonfly used to download and upload files
+    license: "Apache 2.0"
+    homepage: https://d7y.io
+    bindir: /usr/bin
+    builds:
+      - dfget
+    formats:
+      - rpm
+      - deb
+    contents:
+      - src: build/package/nfpm/config/dfget.yaml
+        dst: /etc/dragonfly/dfget.yaml
+        type: config
+
+      - src: docs/en/cli-reference/dfget.1
+        dst: /usr/share/man/man1/dfget.1
+
+      - src: LICENSE
+        dst: /usr/share/doc/dfget/License
+
+      - src: CHANGELOG.md
+        dst: /usr/share/doc/dfget/ChangeLog
+
+      - src: build/package/nfpm/systemd/dfget-daemon.service
+        dst: /etc/systemd/system/dfget-daemon.service
+
+      - src: build/package/nfpm/systemd/dfget-daemon.service.d/CPUQuota.conf
+        dst: /etc/systemd/system/dfget-daemon.service.d/CPUQuota.conf
+
+      - src: build/package/nfpm/systemd/dfget-daemon.service.d/CPUShares.conf
+        dst: /etc/systemd/system/dfget-daemon.service.d/CPUShares.conf
+
+      - src: build/package/nfpm/systemd/dfget-daemon.service.d/MemoryLimit.conf
+        dst: /etc/systemd/system/dfget-daemon.service.d/MemoryLimit.conf
+
+      - src: build/package/nfpm/systemd/fix.dfget-daemon.cpuset.sh
+        dst: /opt/dragonfly/fix.dfget-daemon.cpuset.sh
+    scripts:
+      postinstall: build/package/nfpm/dfget-postinstall.sh
+      preremove: build/package/nfpm/dfget-preremove.sh
+      postremove: build/package/nfpm/dfget-postremove.sh

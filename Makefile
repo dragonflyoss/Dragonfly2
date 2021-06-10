@@ -129,7 +129,7 @@ build-rpm-dfget: build-linux-dfget
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
 	-v "$(PWD)/docs:/root/docs" \
-	-v "$(PWD)/License:/root/License" \
+	-v "$(PWD)/LICENSE:/root/License" \
 	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
 	-e "VERSION=$(GIT_VERSION)" \
@@ -143,7 +143,7 @@ build-deb-dfget: build-linux-dfget
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
 	-v "$(PWD)/docs:/root/docs" \
-	-v "$(PWD)/License:/root/License" \
+	-v "$(PWD)/LICENSE:/root/License" \
 	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
 	-e "VERSION=$(GIT_VERSION)" \
