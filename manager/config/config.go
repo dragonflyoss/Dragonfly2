@@ -38,6 +38,7 @@ type SQLiteConfig struct {
 type OssConfig struct {
 }
 
+// Only one of Mysql, SQLit and Oss can be used at the same time
 type StoreSource struct {
 	Mysql  *MysqlConfig  `yaml:"mysql,omitempty" mapstructure:"mysql,omitempty"`
 	SQLite *SQLiteConfig `yaml:"sqlite,omitempty" mapstructure:"sqlite,omitempty"`
