@@ -1233,13 +1233,16 @@ var doc = `{
             "type": "object",
             "required": [
                 "client_config",
-                "scheduler_config"
+                "config"
             ],
             "properties": {
                 "client_config": {
                     "type": "string"
                 },
                 "cluster_id": {
+                    "type": "string"
+                },
+                "config": {
                     "type": "string"
                 },
                 "created_at": {
@@ -1249,9 +1252,6 @@ var doc = `{
                     "type": "string"
                 },
                 "modifier": {
-                    "type": "string"
-                },
-                "scheduler_config": {
                     "type": "string"
                 },
                 "updated_at": {
