@@ -40,7 +40,7 @@ import (
 
 func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
 	if len(addrs) == 0 {
-		return nil, errors.New("address list of cdn is empty")
+		return nil, errors.New("address list of scheduler is empty")
 	}
 	sc := &schedulerClient{
 		rpc.NewConnection(context.Background(), "scheduler-static", addrs, []rpc.ConnOption{
