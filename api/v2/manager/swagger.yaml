@@ -98,13 +98,13 @@ definitions:
         type: string
       cluster_id:
         type: string
+      config:
+        type: string
       created_at:
         type: string
       creator:
         type: string
       modifier:
-        type: string
-      scheduler_config:
         type: string
       updated_at:
         type: string
@@ -112,7 +112,7 @@ definitions:
         type: integer
     required:
     - client_config
-    - scheduler_config
+    - config
     type: object
   types.SchedulerInstance:
     properties:
