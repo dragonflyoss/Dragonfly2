@@ -40,7 +40,6 @@ const (
 )
 
 type PeerTask struct {
-	// 存放peerID 到 peerTask的数据
 	data                    *sync.Map
 	dataRanger              *sync.Map
 	gcQueue                 workqueue.DelayingInterface

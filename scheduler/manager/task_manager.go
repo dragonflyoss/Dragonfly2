@@ -38,7 +38,6 @@ type TaskManager struct {
 func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
 	delay := time.Hour * 48
 	// TODO(Gaius) TaskDelay use the time.Duration
-	// TODO 设置的时间是否有点长
 	if cfg.GC.TaskDelay > 0 {
 		delay = time.Duration(cfg.GC.TaskDelay) * time.Millisecond
 	}
