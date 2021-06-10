@@ -31,14 +31,23 @@ type MysqlConfig struct {
 	Db       string `yaml:"db" mapstructure:"db"`
 }
 
+type SQLiteConfig struct {
+	Db string `yaml:"db" mapstructure:"db"`
+}
+
 type OssConfig struct {
 }
 
+// Only one of Mysql, SQLit and Oss can be used at the same time
+type StoreSource struct {
+	Mysql  *MysqlConfig  `yaml:"mysql,omitempty" mapstructure:"mysql,omitempty"`
+	SQLite *SQLiteConfig `yaml:"sqlite,omitempty" mapstructure:"sqlite,omitempty"`
+	Oss    *OssConfig    `yaml:"oss,omitempty" mapstructure:"oss,omitempty"`
+}
+
 type StoreConfig struct {
-	Name  string       `yaml:"name" mapstructure:"name"`
-	Type  string       `yaml:"type" mapstructure:"type"`
-	Mysql *MysqlConfig `yaml:"mysql,omitempty" mapstructure:"mysql,omitempty"`
-	Oss   *OssConfig   `yaml:"oss,omitempty" mapstructure:"oss,omitempty"`
+	Name   string       `yaml:"name" mapstructure:"name"`
+	Source *StoreSource `yaml:"source" mapstructure:"source"`
 }
 
 type HostService struct {
@@ -73,50 +82,63 @@ func New() *Config {
 		Stores: []*StoreConfig{
 			{
 				Name: "store1",
-				Type: "mysql",
-				Mysql: &MysqlConfig{
-					User:     "root",
-					Password: "root1234",
-					Addr:     "127.0.0.1:3306",
-					Db:       "dragonfly_manager",
+				Source: &StoreSource{
+					Mysql: &MysqlConfig{
+						User:     "root",
+						Password: "root1234",
+						Addr:     "127.0.0.1:3306",
+						Db:       "dragonfly_manager",
+					},
 				},
-				Oss: nil,
 			},
 		},
 		HostService: &HostService{},
 	}
 }
 
-func (cfg *StoreConfig) Valid() error {
-	if (cfg.Mysql == nil && cfg.Oss == nil) || (cfg.Mysql != nil && cfg.Oss != nil) {
-		return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: please select one of mysql or oss")
+func (cfg *StoreConfig) Valid() (string, error) {
+	if len(cfg.Name) <= 0 {
+		return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Name is null")
 	}
 
-	if cfg.Mysql != nil {
-		if len(cfg.Mysql.User) == 0 {
-			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.User is null")
-		}
-
-		if len(cfg.Mysql.Password) == 0 {
-			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.Password is null")
-		}
-
-		if len(cfg.Mysql.Addr) == 0 {
-			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.Addr is null")
-		}
-
-		if len(cfg.Mysql.Db) == 0 {
-			return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Mysql.Db is null")
-		}
-
-		return nil
+	if cfg.Source == nil {
+		return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source is null")
 	}
 
-	if cfg.Oss != nil {
-		return dferrors.Newf(dfcodes.ManagerConfigError, "store config error: oss not support yet")
+	source := cfg.Source
+	if source.Mysql != nil {
+		if len(source.Mysql.User) == 0 {
+			return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.Mysql.User is null")
+		}
+
+		if len(source.Mysql.Password) == 0 {
+			return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.Mysql.Password is null")
+		}
+
+		if len(source.Mysql.Addr) == 0 {
+			return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.Mysql.Addr is null")
+		}
+
+		if len(source.Mysql.Db) == 0 {
+			return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.Mysql.Db is null")
+		}
+
+		return "mysql", nil
 	}
 
-	return nil
+	if source.SQLite != nil {
+		if len(source.SQLite.Db) == 0 {
+			return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.SQLite.Db is null")
+		}
+
+		return "sqlite", nil
+	}
+
+	if source.Oss != nil {
+		return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.Oss not support yet")
+	}
+
+	return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source must be set one of mysql, sqlite, oss")
 }
 
 func (cfg *RedisConfig) Valid() error {
@@ -138,6 +160,12 @@ func (cfg *Config) Valid() error {
 
 	if len(cfg.Stores) <= 0 {
 		return dferrors.Newf(dfcodes.ManagerConfigError, "stores config error: Stores is null")
+	}
+
+	for _, store := range cfg.Stores {
+		if _, err := store.Valid(); err != nil {
+			return err
+		}
 	}
 
 	return nil

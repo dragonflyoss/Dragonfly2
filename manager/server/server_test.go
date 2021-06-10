@@ -8,19 +8,21 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
-	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/configsvc"
+	"d7y.io/dragonfly/v2/manager/server/mocks"
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 type ServerTestSuite struct {
 	suite.Suite
+	redis  *miniredis.Miniredis
 	server *Server
 	client client.ManagerClient
 }
@@ -764,7 +766,11 @@ func (suite *ServerTestSuite) SetupSuite() {
 
 	configsvc.KeepAliveTimeoutMax = 2 * time.Second
 	_ = logcore.InitManager(false)
-	cfg := config.New()
+	cfg := mocks.NewMockConfig()
+
+	suite.redis = miniredis.NewMiniRedis()
+	_ = suite.redis.StartAddr(cfg.Redis.Addrs[0])
+
 	server, err := New(cfg)
 	assert.Nil(err)
 	assert.NotNil(server)
@@ -785,6 +791,7 @@ func (suite *ServerTestSuite) SetupSuite() {
 }
 
 func (suite *ServerTestSuite) TearDownSuite() {
+	suite.redis.Close()
 	suite.server.Stop()
 }
 
