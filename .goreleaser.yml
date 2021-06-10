@@ -41,7 +41,8 @@ builds:
       - amd64
 
 archives:
-  - format: tar.gz
+  - name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    format: tar.gz
     files:
       - LICENSE
       - README.md
@@ -63,6 +64,7 @@ changelog:
 
 nfpms:
   - id: dfget
+    file_name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     package_name: dfget
     description: dfget is the client of Dragonfly used to download and upload files
     license: "Apache 2.0"
