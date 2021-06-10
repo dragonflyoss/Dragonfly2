@@ -101,7 +101,7 @@ func WithExpireTime(e time.Duration) Option {
 	}
 }
 
-// NewDynconfig returns a new dynconfig instence
+// New returns a new dynconfig instance
 func New(sourceType SourceType, options ...Option) (*Dynconfig, error) {
 	d, err := NewDynconfigWithOptions(sourceType, options...)
 	if err != nil {
@@ -176,7 +176,7 @@ func (d *Dynconfig) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) e
 // mapstructure.DecoderConfig options
 type DecoderConfigOption func(*mapstructure.DecoderConfig)
 
-// defaultDecoderConfig returns default mapsstructure.DecoderConfig with suppot
+// defaultDecoderConfig returns default mapstructure.DecoderConfig with support
 // of time.Duration values & string slices
 func defaultDecoderConfig(output interface{}, opts ...DecoderConfigOption) *mapstructure.DecoderConfig {
 	c := &mapstructure.DecoderConfig{

@@ -20,11 +20,13 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -112,7 +114,24 @@ func (d *dynconfig) getCDNFromDirPath() ([]*manager.ServerInfo, error) {
 
 	var data []*manager.ServerInfo
 	for _, file := range files {
-		b, err := ioutil.ReadFile(filepath.Join(d.cdnDirPath, file.Name()))
+		// skip directory
+		if file.IsDir() {
+			continue
+		}
+
+		p := filepath.Join(d.cdnDirPath, file.Name())
+		if file.Mode()&os.ModeSymlink != 0 {
+			stat, err := os.Stat(p)
+			if err != nil {
+				logger.Errorf("stat %s error: %s", file.Name(), err)
+				continue
+			}
+			// skip symbol link directory
+			if stat.IsDir() {
+				continue
+			}
+		}
+		b, err := ioutil.ReadFile(p)
 		if err != nil {
 			return nil, err
 		}
