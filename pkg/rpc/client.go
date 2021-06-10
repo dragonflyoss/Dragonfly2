@@ -90,6 +90,7 @@ func newDefaultConnection(ctx context.Context) *Connection {
 var defaultClientOpts = []grpc.DialOption{
 	grpc.FailOnNonTempDialError(true),
 	grpc.WithBlock(),
+	grpc.WithDisableServiceConfig(),
 	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
 	grpc.WithInsecure(),
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
