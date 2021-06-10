@@ -85,10 +85,7 @@ type managerClient struct {
 	adders         []dfnet.NetAddr
 }
 
-func init() {
-	var client *managerClient = nil
-	var _ ManagerClient = client
-}
+var _ ManagerClient = (*managerClient)(nil)
 
 func (mc *managerClient) replaceManager(cause error) error {
 	if e, ok := cause.(*dferrors.DfError); ok {
@@ -217,7 +214,4 @@ func (mc *managerClient) GetCdnClusterConfig(ctx context.Context, req *manager.G
 	return cc, nil
 }
 
-func init() {
-	var mc *managerClient = nil
-	var _ ManagerClient = mc
-}
+var _ ManagerClient = (*managerClient)(nil)

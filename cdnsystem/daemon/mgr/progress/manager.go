@@ -31,11 +31,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func init() {
-	// Ensure that Manager implements the SeedProgressMgr interface
-	var manager *Manager = nil
-	var _ mgr.SeedProgressMgr = manager
-}
+var _ mgr.SeedProgressMgr = (*Manager)(nil)
 
 type Manager struct {
 	seedSubscribers      *syncmap.SyncMap

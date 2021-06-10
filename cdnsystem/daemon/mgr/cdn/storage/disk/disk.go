@@ -41,10 +41,12 @@ import (
 
 const StorageMode = "disk"
 
+var (
+	_ gc.Executor     = (*diskStorageMgr)(nil)
+	_ storage.Manager = (*diskStorageMgr)(nil)
+)
+
 func init() {
-	var diskStorage *diskStorageMgr = nil
-	var _ storage.Manager = diskStorage
-	var _ gc.Executor = diskStorage
 	storage.Register(StorageMode, NewStorageManager)
 }
 

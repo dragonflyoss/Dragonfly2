@@ -41,9 +41,9 @@ const (
 	accessKeySecret = "accessKeySecret"
 )
 
+var _ source.ResourceClient = (*ossSourceClient)(nil)
+
 func init() {
-	var client *ossSourceClient = nil
-	var _ source.ResourceClient = client
 	sourceClient := NewOSSSourceClient()
 	source.Register(ossClient, sourceClient)
 }

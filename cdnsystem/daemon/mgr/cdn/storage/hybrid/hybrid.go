@@ -46,10 +46,10 @@ const StorageMode = "hybrid"
 
 const secureLevel = 500 * unit.MB
 
+var _ storage.Manager = (*hybridStorageMgr)(nil)
+var _ gc.Executor = (*hybridStorageMgr)(nil)
+
 func init() {
-	var hybrid *hybridStorageMgr = nil
-	var _ storage.Manager = hybrid
-	var _ gc.Executor = hybrid
 	storage.Register(StorageMode, NewStorageManager)
 }
 

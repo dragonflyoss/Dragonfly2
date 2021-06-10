@@ -25,11 +25,8 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
 
-func init() {
-	// Ensure that Manager implements the GCMgr interface
-	var manager *Manager = nil
-	var _ mgr.GCMgr = manager
-}
+// Ensure that Manager implements the GCMgr interface
+var _ mgr.GCMgr = (*Manager)(nil)
 
 type Executor interface {
 	GC() error

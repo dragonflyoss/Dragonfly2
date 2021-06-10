@@ -39,11 +39,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func init() {
-	// Ensure that Manager implements the CDNMgr interface
-	var manager *Manager = nil
-	var _ mgr.CDNMgr = manager
-}
+// Ensure that Manager implements the CDNMgr interface
+var _ mgr.CDNMgr = (*Manager)(nil)
 
 // Manager is an implementation of the interface of CDNMgr.
 type Manager struct {
