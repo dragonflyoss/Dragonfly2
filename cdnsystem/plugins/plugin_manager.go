@@ -139,7 +139,10 @@ type repositoryIml struct {
 	lock  sync.Mutex
 }
 
-var _ Repository = (*repositoryIml)(nil)
+func init() {
+	var repoImpl *repositoryIml = nil
+	var _ Repository = repoImpl
+}
 
 func (r *repositoryIml) Add(pt PluginType, name string, data interface{}) error {
 	if data == nil {
