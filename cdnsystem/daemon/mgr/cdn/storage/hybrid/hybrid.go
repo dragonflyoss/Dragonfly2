@@ -42,7 +42,7 @@ import (
 	"go.uber.org/atomic"
 )
 
-const StorageMode = "hybrid"
+const StorageMode = storage.HybridStorageMode
 
 const secureLevel = 500 * unit.MB
 

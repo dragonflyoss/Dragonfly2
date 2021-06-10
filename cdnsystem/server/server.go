@@ -20,6 +20,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"runtime"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
@@ -49,6 +50,9 @@ type Server struct {
 
 // New creates a brand new server instance.
 func New(cfg *config.Config) (*Server, error) {
+	if ok := storage.IsSupport(cfg.StorageMode); !ok {
+		return nil, fmt.Errorf("os %s is not support storage mode %s", runtime.GOOS, cfg.StorageMode)
+	}
 	if err := plugins.Initialize(cfg.Plugins); err != nil {
 		return nil, err
 	}

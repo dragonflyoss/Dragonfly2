@@ -287,3 +287,8 @@ type GCConfig struct {
 	CleanRatio        int           `yaml:"cleanRatio"`
 	IntervalThreshold time.Duration `yaml:"intervalThreshold"`
 }
+
+const (
+	HybridStorageMode = "hybrid"
+	DiskStorageMode   = "disk"
+)

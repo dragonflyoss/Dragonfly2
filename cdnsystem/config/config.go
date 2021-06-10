@@ -67,7 +67,7 @@ func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 				},
 			}, {
 				Name:   local.MemoryDriverName,
-				Enable: true,
+				Enable: false,
 				Config: &storedriver.Config{
 					BaseDir: DefaultMemoryBaseDir,
 				},

@@ -39,7 +39,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const StorageMode = "disk"
+const StorageMode = storage.DiskStorageMode
 
 var (
 	_ gc.Executor     = (*diskStorageMgr)(nil)
