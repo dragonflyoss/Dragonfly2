@@ -11,7 +11,8 @@ import (
 type storeSetup func(cfg *config.StoreConfig) (store.Store, error)
 
 var storePlugins = map[string]storeSetup{
-	"mysql": orm.NewOrmStore,
+	"mysql":  orm.NewMySQLOrmStore,
+	"sqlite": orm.NewSQLiteOrmStore,
 }
 
 func NewStore(cfg *config.Config) (store.Store, error) {
@@ -20,8 +21,13 @@ func NewStore(cfg *config.Config) (store.Store, error) {
 	}
 
 	for _, store := range cfg.Stores {
+		source, err := store.Valid()
+		if err != nil {
+			return nil, err
+		}
+
 		if cfg.Configure.StoreName == store.Name {
-			p, ok := storePlugins[store.Type]
+			p, ok := storePlugins[source]
 			if ok {
 				s, err := p(store)
 				if err != nil {

@@ -1,0 +1,20 @@
+server:
+  ip: ""
+  port: 8004
+
+configure:
+  store-name: "store1"
+
+redis:
+  addrs:
+  - "127.0.0.1:6379"
+
+stores:
+  -
+    name: "store1"
+    source:
+      mysql:
+        user: "root"
+        password: "root1234"
+        addr: "127.0.0.1:3306"
+        db: "dragonfly_manager"

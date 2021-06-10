@@ -112,6 +112,4 @@ func (s *Server) Stop() {
 	if err != nil {
 		logger.Errorf("failed to stop manager http server: %+v", err)
 	}
-
-	s.httpServer = nil
 }

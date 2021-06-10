@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
+	github.com/alicebob/miniredis/v2 v2.14.5
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/docker/go-units v0.4.0
@@ -60,6 +61,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	gorm.io/driver/mysql v1.0.4
+	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.21.3
 	k8s.io/apimachinery v0.20.1
 	k8s.io/client-go v11.0.0+incompatible
