@@ -23,107 +23,128 @@ DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(GIT_COMMIT)"
 
 all: help
 
-build-dirs: ## Prepare required folders for build
+# Prepare required folders for build
+build-dirs:
 	@mkdir -p ./bin
 .PHONY: build-dirs
 
+# Build dragonlfy
 docker-build: docker-build-cdn docker-build-dfdaemon docker-build-scheduler docker-build-manager
 	@echo "Build image done."
 .PHONY: docker-build
 
+# Push dragonfly images
 docker-push: docker-push-cdn docker-push-dfdaemon docker-push-scheduler docker-push-manager
 	@echo "Push image done."
 .PHONY: docker-push
 
-docker-build-cdn: ## Build cdn image
+# Build cdn image
+docker-build-cdn:
 	@echo "Begin to use docker build cdn image."
 	./hack/docker-build.sh cdn
 .PHONY: docker-build-cdn
 
-docker-build-dfdaemon: ## Build dfdaemon image
+# Build dfdaemon image
+docker-build-dfdaemon:
 	@echo "Begin to use docker build dfdaemon image."
 	./hack/docker-build.sh dfdaemon
 .PHONY: docker-build-dfdaemon
 
-docker-build-scheduler: ## Build scheduler image
+# Build scheduler image
+docker-build-scheduler:
 	@echo "Begin to use docker build scheduler image."
 	./hack/docker-build.sh scheduler
 .PHONY: docker-build-scheduler
 
-docker-build-manager: ## Build manager image
+# Build manager image
+docker-build-manager:
 	@echo "Begin to use docker build manager image."
 	./hack/docker-build.sh manager
 .PHONY: docker-build-manager
 
-docker-push-cdn: docker-build-cdn ## Push cdn image
+# Push cdn image
+docker-push-cdn: docker-build-cdn
 	@echo "Begin to push cdn docker image."
 	./hack/docker-push.sh cdn
 .PHONY: docker-push-cdn
 
-docker-push-dfdaemon: docker-build-dfdaemon ## Push dfdaemon image
+# Push dfdaemon image
+docker-push-dfdaemon: docker-build-dfdaemon
 	@echo "Begin to push dfdaemon docker image."
 	./hack/docker-push.sh dfdaemon
 .PHONY: docker-push-dfdaemon
 
-docker-push-scheduler: docker-build-scheduler ## Push scheduler image
+# Push scheduler image
+docker-push-scheduler: docker-build-scheduler
 	@echo "Begin to push dfdaemon docker image."
 	./hack/docker-push.sh scheduler
 .PHONY: docker-push-scheduler
 
-docker-push-manager: docker-build-manager ## Push manager image
+# Push manager image
+docker-push-manager: docker-build-manager
 	@echo "Begin to push manager docker image."
 	./hack/docker-push.sh manager
 .PHONY: docker-push-manager
 
-build: build-cdn build-scheduler build-dfget build-manager ## Build dragonfly
+# Build dragonfly
+build: build-cdn build-scheduler build-dfget build-manager
 .PHONY: build
 
-build-cdn: build-dirs ## Build cdn
+# Build cdn
+build-cdn: build-dirs
 	@echo "Begin to build cdn."
 	./hack/build.sh cdn
 .PHONY: build-cdn
 
-build-dfget: build-dirs ## Build dfget
+# Build dfget
+build-dfget: build-dirs
 	@echo "Begin to build dfget."
 	./hack/build.sh dfget
 .PHONY: build-dfget
 
-build-linux-dfget: build-dirs ## Build linux dfget
+# Build linux dfget
+build-linux-dfget: build-dirs
 	@echo "Begin to build linux dfget."
 	GOOS=linux GOARCH=amd64 ./hack/build.sh dfget
 .PHONY: build-linux-dfget
 
-build-scheduler: build-dirs ## Build scheduler
+# Build scheduler
+build-scheduler: build-dirs
 	@echo "Begin to build scheduler."
 	./hack/build.sh scheduler
 .PHONY: build-scheduler
 
-build-manager: build-dirs ## Build manager
+# Build manager
+build-manager: build-dirs
 	@echo "Begin to build manager."
 	./hack/build.sh manager
 .PHONY: build-manager
 
-install-cdn: ## Install cdn
+# Install cdn
+install-cdn:
 	@echo "Begin to install cdn."
 	./hack/install.sh install cdn
 .PHONY: install-cdn
 
-install-dfget: ## Install dfget
+# Install dfget
+install-dfget:
 	@echo "Begin to install dfget."
 	./hack/install.sh install dfget
 .PHONY: install-dfget
 
-install-scheduler: ## Install scheduler
+# Install scheduler
+install-scheduler:
 	@echo "Begin to install scheduler."
 	./hack/install.sh install scheduler
 .PHONY: install-scheduler
 
-install-manager: ## Install manager
+# Install manager
+install-manager:
 	@echo "Begin to install manager."
 	./hack/install.sh install manager
 .PHONY: install-manager
 
-# TODO more arch like arm, aarch64
+# Build rpm dfget
 build-rpm-dfget: build-linux-dfget
 	@echo "Begin to build rpm dfget"
 	@docker run --rm \
@@ -138,6 +159,7 @@ build-rpm-dfget: build-linux-dfget
 		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm
 .PHONY: build-rpm-dfget
 
+# Build deb dfget
 build-deb-dfget: build-linux-dfget
 	@echo "Begin to build deb dfget"
 	@docker run --rm \
@@ -152,19 +174,23 @@ build-deb-dfget: build-linux-dfget
 		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb
 .PHONY: build-deb-dfget
 
-test: ## Run unittests
+# Run unittests
+test:
 	@go test -race -short ${PKG_LIST}
 .PHONY: test
 
-test-coverage: ## Run tests with coverage
+# Run tests with coverage
+test-coverage:
 	@go test -race -short ${PKG_LIST} -coverprofile cover.out -covermode=atomic
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
+# Generate swagger asserts
 swag-manager:
 	@swag init -g cmd/manager/main.go -o api/v2/manager
 .PHONY: swag-manager
 
+# Generate changelog
 changelog:
 	@git-chglog -o CHANGELOG.md
 
