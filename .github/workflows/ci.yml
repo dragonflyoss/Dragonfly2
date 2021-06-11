@@ -12,7 +12,7 @@ env:
 jobs:
   lint:
     name: Lint
-    timeout-minutes: 10
+    timeout-minutes: 20
     strategy:
       matrix:
         platform:
@@ -30,7 +30,7 @@ jobs:
 
   test:
     name: Test
-    timeout-minutes: 10
+    timeout-minutes: 20
     strategy:
       matrix:
         platform:
@@ -58,7 +58,7 @@ jobs:
 
   build:
     name: Build
-    timeout-minutes: 10
+    timeout-minutes: 20
     strategy:
       matrix:
         platform:
