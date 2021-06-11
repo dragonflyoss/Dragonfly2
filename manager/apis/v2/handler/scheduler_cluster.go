@@ -7,8 +7,6 @@ import (
 
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/store"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/errgo.v2/fmt/errors"
 )
@@ -38,15 +36,12 @@ func (handler *Handler) CreateSchedulerCluster(ctx *gin.Context) {
 	}
 
 	retCluster, err := handler.server.AddSchedulerCluster(context.TODO(), &cluster)
-	if err == nil {
-		ctx.JSON(http.StatusOK, retCluster)
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+
+	if err != nil {
+		NewError(ctx, -1, err)
+		return
 	}
+	ctx.JSON(http.StatusOK, retCluster)
 }
 
 // DestroySchedulerCluster godoc
@@ -69,18 +64,14 @@ func (handler *Handler) DestroySchedulerCluster(ctx *gin.Context) {
 	}
 
 	retCluster, err := handler.server.DeleteSchedulerCluster(context.TODO(), uri.ClusterID)
-	if err == nil {
-		if retCluster != nil {
-			ctx.JSON(http.StatusOK, "success")
-		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("scheduler cluster not found, id %s", uri.ClusterID))
-		}
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
+	if err != nil {
+		NewError(ctx, -1, err)
+		return
+	}
+	if retCluster != nil {
+		ctx.JSON(http.StatusOK, "success")
 	} else {
-		NewError(ctx, http.StatusNotFound, err)
+		NewError(ctx, http.StatusNotFound, errors.Newf("scheduler cluster not found, id %s", uri.ClusterID))
 	}
 }
 
@@ -117,17 +108,11 @@ func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
 
 	cluster.ClusterID = uri.ClusterID
 	_, err := handler.server.UpdateSchedulerCluster(context.TODO(), &cluster)
-	if err == nil {
-		ctx.JSON(http.StatusOK, "success")
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreNotFound) {
-		NewError(ctx, http.StatusNotFound, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	if err != nil {
+		NewError(ctx, -1, err)
+		return
 	}
+	ctx.JSON(http.StatusOK, "success")
 }
 
 // GetSchedulerCluster godoc
@@ -150,17 +135,11 @@ func (handler *Handler) GetSchedulerCluster(ctx *gin.Context) {
 	}
 
 	retCluster, err := handler.server.GetSchedulerCluster(context.TODO(), uri.ClusterID)
-	if err == nil {
-		ctx.JSON(http.StatusOK, &retCluster)
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreNotFound) {
-		NewError(ctx, http.StatusNotFound, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	if err != nil {
+		NewError(ctx, -1, err)
+		return
 	}
+	ctx.JSON(http.StatusOK, &retCluster)
 }
 
 // ListSchedulerClusters godoc
@@ -184,18 +163,15 @@ func (handler *Handler) ListSchedulerClusters(ctx *gin.Context) {
 	}
 
 	clusters, err := handler.server.ListSchedulerClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
-	if err == nil {
-		if len(clusters) > 0 {
-			ctx.JSON(http.StatusOK, &types.ListSchedulerClustersResponse{Clusters: clusters})
-		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("list scheduler clusters empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount))
-		}
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
+
+	if err != nil {
+		NewError(ctx, -1, err)
+		return
+	}
+	if len(clusters) > 0 {
+		ctx.JSON(http.StatusOK, &types.ListSchedulerClustersResponse{Clusters: clusters})
 	} else {
-		NewError(ctx, http.StatusNotFound, err)
+		NewError(ctx, http.StatusNotFound, errors.Newf("list scheduler clusters empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount))
 	}
 }
 
