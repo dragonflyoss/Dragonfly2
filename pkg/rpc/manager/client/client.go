@@ -39,7 +39,6 @@ func NewClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerClient, e
 		return nil, errors.New("manager address list is empty")
 	}
 	mc := &managerClient{
-		locker: &sync.RWMutex{},
 		Connection: rpc.NewConnection(context.Background(), "manager", addrs, []rpc.ConnOption{
 			rpc.WithConnExpireTime(10 * time.Second),
 			rpc.WithDialOption(opts),
@@ -78,7 +77,7 @@ type ManagerClient interface {
 }
 
 type managerClient struct {
-	locker *sync.RWMutex
+	locker sync.RWMutex
 	*rpc.Connection
 	curClient      manager.ManagerClient
 	curManagerNode string
