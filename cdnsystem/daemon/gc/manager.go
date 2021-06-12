@@ -18,15 +18,12 @@ package gc
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
-
-// Ensure that Manager implements the GCMgr interface
-var _ daemon.GCMgr = (*Manager)(nil)
 
 type Executor interface {
 	GC() error
@@ -44,42 +41,15 @@ var (
 
 // Register a gc task
 func Register(name string, gcInitialDelay time.Duration, gcInterval time.Duration, gcExecutor Executor) {
-	gcExecutorWrappers[name] = &ExecutorWrapper{
+	gcExecutorWrappers[strings.ToLower(name)] = &ExecutorWrapper{
 		gcInitialDelay: gcInitialDelay,
 		gcInterval:     gcInterval,
 		gcExecutor:     gcExecutor,
 	}
 }
 
-// Manager is an implementation of the interface of GCMgr.
-type Manager struct {
-	taskMgr daemon.SeedTaskMgr
-	cdnMgr  daemon.CDNMgr
-}
-
-func (gcm *Manager) GCTask(taskID string, full bool) error {
-	// todo data consistency
-	var err error
-	if full {
-		err = gcm.cdnMgr.Delete(taskID)
-		if err != nil {
-			return err
-		}
-	}
-	err = gcm.taskMgr.Delete(taskID)
-	return err
-}
-
-// NewManager returns a new Manager.
-func NewManager(taskMgr daemon.SeedTaskMgr, cdnMgr daemon.CDNMgr) (*Manager, error) {
-	return &Manager{
-		taskMgr: taskMgr,
-		cdnMgr:  cdnMgr,
-	}, nil
-}
-
 // StartGC starts to do the gc jobs.
-func (gcm *Manager) StartGC(ctx context.Context) error {
+func StartGC(ctx context.Context) error {
 	logger.Debugf("====start the gc jobs====")
 	var wg sync.WaitGroup
 	for name, executorWrapper := range gcExecutorWrappers {
@@ -87,7 +57,7 @@ func (gcm *Manager) StartGC(ctx context.Context) error {
 		// start a goroutine to gc
 		go func(name string, wrapper *ExecutorWrapper) {
 			logger.Debugf("start the %s gc task", name)
-			// delay to execute GC after gcm.initialDelay
+			// delay to execute GC after initialDelay
 			time.Sleep(wrapper.gcInitialDelay)
 			wg.Done()
 			// execute the GC by fixed delay

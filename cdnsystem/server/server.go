@@ -23,7 +23,6 @@ import (
 	"runtime"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/gc"
@@ -43,7 +42,6 @@ import (
 
 type Server struct {
 	Config       *config.Config
-	GCMgr        daemon.GCMgr
 	seedServer   server.SeederServer
 	configServer configServer.ManagerClient
 }
@@ -80,7 +78,6 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	storageMgr.Initialize(taskMgr)
 	// gc manager
-	gcMgr, err := gc.NewManager(taskMgr, cdnMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create gc manager")
 	}
@@ -101,7 +98,6 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	return &Server{
 		Config:       cfg,
-		GCMgr:        gcMgr,
 		seedServer:   cdnSeedServer,
 		configServer: cfgServer,
 	}, nil
@@ -117,7 +113,7 @@ func (s *Server) Serve() (err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// start gc
-	err = s.GCMgr.StartGC(ctx)
+	err = gc.StartGC(ctx)
 	if err != nil {
 		return err
 	}
