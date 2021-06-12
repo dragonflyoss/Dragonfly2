@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"

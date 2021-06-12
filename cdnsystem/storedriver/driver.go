@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"

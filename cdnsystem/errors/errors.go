@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cdnerrors
+package errors
 
 import (
 	"github.com/pkg/errors"

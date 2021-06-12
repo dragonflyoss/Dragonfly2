@@ -24,10 +24,10 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/gc"
+	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
 	"d7y.io/dragonfly/v2/cdnsystem/types"

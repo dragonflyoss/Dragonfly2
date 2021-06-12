@@ -26,7 +26,7 @@ import (
 	"syscall"
 	"testing"
 
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	"d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/pkg/unit"
@@ -137,7 +137,7 @@ func (s *LocalDriverTestSuite) TestGetPutBytes() {
 				Length: -1,
 			},
 			putErrCheck: isNil,
-			getErrCheck: cdnerrors.IsInvalidValue,
+			getErrCheck: errors.IsInvalidValue,
 			data:        []byte("hello foo"),
 			expected:    "",
 		}, {
@@ -168,7 +168,7 @@ func (s *LocalDriverTestSuite) TestGetPutBytes() {
 			},
 			data:        []byte("hello foo"),
 			putErrCheck: isNil,
-			getErrCheck: cdnerrors.IsInvalidValue,
+			getErrCheck: errors.IsInvalidValue,
 			expected:    "",
 		}, {
 			name: "put/get data from specific offset",
@@ -268,7 +268,7 @@ func (s *LocalDriverTestSuite) TestGetPut() {
 				Offset: 2,
 				Length: -1,
 			},
-			getErrCheck: cdnerrors.IsInvalidValue,
+			getErrCheck: errors.IsInvalidValue,
 			data:        strings.NewReader("hello meta file"),
 			expected:    "",
 		}, {
@@ -280,7 +280,7 @@ func (s *LocalDriverTestSuite) TestGetPut() {
 				Offset: 30,
 				Length: 5,
 			},
-			getErrCheck: cdnerrors.IsInvalidValue,
+			getErrCheck: errors.IsInvalidValue,
 			data:        strings.NewReader("hello meta file"),
 			expected:    "",
 		},
@@ -575,7 +575,7 @@ func (s *LocalDriverTestSuite) checkRemove(raw *storedriver.Raw) {
 	s.Equal(isNil(err), true)
 
 	_, err = s.Stat(raw)
-	s.Equal(cdnerrors.IsFileNotExist(err), true)
+	s.Equal(errors.IsFileNotExist(err), true)
 }
 
 func isNil(err error) bool {
