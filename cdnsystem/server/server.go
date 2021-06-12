@@ -23,12 +23,12 @@ import (
 	"runtime"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/progress"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/task"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/gc"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/progress"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/task"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
@@ -43,7 +43,7 @@ import (
 
 type Server struct {
 	Config       *config.Config
-	GCMgr        mgr.GCMgr
+	GCMgr        daemon.GCMgr
 	seedServer   server.SeederServer
 	configServer configServer.ManagerClient
 }

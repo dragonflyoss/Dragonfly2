@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
@@ -34,11 +34,11 @@ import (
 type Cleaner struct {
 	cfg        *GCConfig
 	driver     storedriver.Driver
-	taskMgr    mgr.SeedTaskMgr
+	taskMgr    daemon.SeedTaskMgr
 	storageMgr Manager
 }
 
-func NewStorageCleaner(cfg *GCConfig, driver storedriver.Driver, storageMgr Manager, taskMgr mgr.SeedTaskMgr) (*Cleaner, error) {
+func NewStorageCleaner(cfg *GCConfig, driver storedriver.Driver, storageMgr Manager, taskMgr daemon.SeedTaskMgr) (*Cleaner, error) {
 	return &Cleaner{
 		cfg:        cfg,
 		driver:     driver,

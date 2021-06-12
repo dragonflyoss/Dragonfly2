@@ -26,8 +26,8 @@ import (
 	"testing"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/progress"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/progress"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"github.com/stretchr/testify/suite"

@@ -16,7 +16,7 @@
 
 //go:generate mockgen -destination ./mock/mock_cdn_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon/mgr CDNMgr
 
-package mgr
+package daemon
 
 import (
 	"context"

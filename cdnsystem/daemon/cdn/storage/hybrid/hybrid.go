@@ -28,9 +28,9 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/gc"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -77,7 +77,7 @@ func NewStorageManager(cfg *storage.Config) (storage.Manager, error) {
 	return storageMgr, nil
 }
 
-func (h *hybridStorageMgr) Initialize(taskMgr mgr.SeedTaskMgr) {
+func (h *hybridStorageMgr) Initialize(taskMgr daemon.SeedTaskMgr) {
 	h.taskMgr = taskMgr
 	diskGcConfig := h.cfg.DriverConfigs[local.DiskDriverName].GCConfig
 
@@ -139,7 +139,7 @@ type hybridStorageMgr struct {
 	diskDriver          storedriver.Driver
 	diskDriverCleaner   *storage.Cleaner
 	memoryDriverCleaner *storage.Cleaner
-	taskMgr             mgr.SeedTaskMgr
+	taskMgr             daemon.SeedTaskMgr
 	shmSwitch           *shmSwitch
 	hasShm              bool
 }

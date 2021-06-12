@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -38,7 +38,7 @@ import (
 )
 
 type Manager interface {
-	Initialize(taskMgr mgr.SeedTaskMgr)
+	Initialize(taskMgr daemon.SeedTaskMgr)
 
 	// ResetRepo reset the storage of task
 	ResetRepo(*types.SeedTask) error

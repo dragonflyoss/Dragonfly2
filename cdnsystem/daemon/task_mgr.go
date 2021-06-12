@@ -15,7 +15,7 @@
  */
 //go:generate mockgen -destination ./mock/mock_task_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon/mgr SeedTaskMgr
 
-package mgr
+package daemon
 
 import (
 	"context"

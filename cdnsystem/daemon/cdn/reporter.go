@@ -19,15 +19,15 @@ package cdn
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
 type reporter struct {
-	progress mgr.SeedProgressMgr
+	progress daemon.SeedProgressMgr
 }
 
 const (
@@ -35,7 +35,7 @@ const (
 	DownloaderReport = "download"
 )
 
-func newReporter(publisher mgr.SeedProgressMgr) *reporter {
+func newReporter(publisher daemon.SeedProgressMgr) *reporter {
 	return &reporter{
 		progress: publisher,
 	}

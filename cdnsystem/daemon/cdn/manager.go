@@ -23,14 +23,14 @@ import (
 	"crypto/md5"
 	"fmt"
 
-	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/disk"   // To register diskStorage
-	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/hybrid" // To register hybridStorage
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
+	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/disk"   // To register diskStorage
+	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/hybrid" // To register hybridStorage
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
@@ -40,7 +40,7 @@ import (
 )
 
 // Ensure that Manager implements the CDNMgr interface
-var _ mgr.CDNMgr = (*Manager)(nil)
+var _ daemon.CDNMgr = (*Manager)(nil)
 
 // Manager is an implementation of the interface of CDNMgr.
 type Manager struct {
@@ -49,18 +49,18 @@ type Manager struct {
 	limiter          *ratelimiter.RateLimiter
 	cdnLocker        *synclock.LockerPool
 	cacheDataManager *cacheDataManager
-	progressMgr      mgr.SeedProgressMgr
+	progressMgr      daemon.SeedProgressMgr
 	cdnReporter      *reporter
 	detector         *cacheDetector
 	writer           *cacheWriter
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore storage.Manager, progressMgr mgr.SeedProgressMgr) (mgr.CDNMgr, error) {
+func NewManager(cfg *config.Config, cacheStore storage.Manager, progressMgr daemon.SeedProgressMgr) (daemon.CDNMgr, error) {
 	return newManager(cfg, cacheStore, progressMgr)
 }
 
-func newManager(cfg *config.Config, cacheStore storage.Manager, progressMgr mgr.SeedProgressMgr) (*Manager, error) {
+func newManager(cfg *config.Config, cacheStore storage.Manager, progressMgr daemon.SeedProgressMgr) (*Manager, error) {
 	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
 	cacheDataManager := newCacheDataManager(cacheStore)
 	cdnReporter := newReporter(progressMgr)

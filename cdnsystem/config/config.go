@@ -19,9 +19,9 @@ package config
 import (
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/disk"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage/hybrid"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/disk"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/hybrid"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"

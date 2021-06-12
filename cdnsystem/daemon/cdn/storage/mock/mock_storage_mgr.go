@@ -9,8 +9,8 @@ import (
 	io "io"
 	reflect "reflect"
 
-	mgr "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	storage "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
+	storage "d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
 	storedriver "d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	types "d7y.io/dragonfly/v2/cdnsystem/types"
 	gomock "github.com/golang/mock/gomock"
@@ -82,7 +82,7 @@ func (mr *MockManagerMockRecorder) DeleteTask(arg0 interface{}) *gomock.Call {
 }
 
 // Initialize mocks base method.
-func (m *MockManager) Initialize(arg0 mgr.SeedTaskMgr) {
+func (m *MockManager) Initialize(arg0 daemon.SeedTaskMgr) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Initialize", arg0)
 }

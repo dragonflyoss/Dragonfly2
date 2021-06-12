@@ -23,8 +23,8 @@ import (
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/gc"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -35,7 +35,7 @@ import (
 )
 
 // Ensure that Manager implements the SeedTaskMgr and gcExecutor interfaces
-var _ mgr.SeedTaskMgr = (*Manager)(nil)
+var _ daemon.SeedTaskMgr = (*Manager)(nil)
 var _ gc.Executor = (*Manager)(nil)
 
 // Manager is an implementation of the interface of TaskMgr.
@@ -44,12 +44,12 @@ type Manager struct {
 	taskStore               *syncmap.SyncMap
 	accessTimeMap           *syncmap.SyncMap
 	taskURLUnReachableStore *syncmap.SyncMap
-	cdnMgr                  mgr.CDNMgr
-	progressMgr             mgr.SeedProgressMgr
+	cdnMgr                  daemon.CDNMgr
+	progressMgr             daemon.SeedProgressMgr
 }
 
 // NewManager returns a new Manager Object.
-func NewManager(cfg *config.Config, cdnMgr mgr.CDNMgr, progressMgr mgr.SeedProgressMgr) (*Manager, error) {
+func NewManager(cfg *config.Config, cdnMgr daemon.CDNMgr, progressMgr daemon.SeedProgressMgr) (*Manager, error) {
 	taskMgr := &Manager{
 		cfg:                     cfg,
 		taskStore:               syncmap.NewSyncMap(),

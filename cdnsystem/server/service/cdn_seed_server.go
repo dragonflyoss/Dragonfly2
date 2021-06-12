@@ -24,7 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
 	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -39,12 +39,12 @@ import (
 
 // CdnSeedServer is used to implement cdnsystem.SeederServer.
 type CdnSeedServer struct {
-	taskMgr mgr.SeedTaskMgr
+	taskMgr daemon.SeedTaskMgr
 	cfg     *config.Config
 }
 
 // NewManager returns a new Manager Object.
-func NewCdnSeedServer(cfg *config.Config, taskMgr mgr.SeedTaskMgr) (*CdnSeedServer, error) {
+func NewCdnSeedServer(cfg *config.Config, taskMgr daemon.SeedTaskMgr) (*CdnSeedServer, error) {
 	return &CdnSeedServer{
 		taskMgr: taskMgr,
 		cfg:     cfg,

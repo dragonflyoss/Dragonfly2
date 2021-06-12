@@ -21,12 +21,12 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 )
 
 // Ensure that Manager implements the GCMgr interface
-var _ mgr.GCMgr = (*Manager)(nil)
+var _ daemon.GCMgr = (*Manager)(nil)
 
 type Executor interface {
 	GC() error
@@ -53,8 +53,8 @@ func Register(name string, gcInitialDelay time.Duration, gcInterval time.Duratio
 
 // Manager is an implementation of the interface of GCMgr.
 type Manager struct {
-	taskMgr mgr.SeedTaskMgr
-	cdnMgr  mgr.CDNMgr
+	taskMgr daemon.SeedTaskMgr
+	cdnMgr  daemon.CDNMgr
 }
 
 func (gcm *Manager) GCTask(taskID string, full bool) error {
@@ -71,7 +71,7 @@ func (gcm *Manager) GCTask(taskID string, full bool) error {
 }
 
 // NewManager returns a new Manager.
-func NewManager(taskMgr mgr.SeedTaskMgr, cdnMgr mgr.CDNMgr) (*Manager, error) {
+func NewManager(taskMgr daemon.SeedTaskMgr, cdnMgr daemon.CDNMgr) (*Manager, error) {
 	return &Manager{
 		taskMgr: taskMgr,
 		cdnMgr:  cdnMgr,

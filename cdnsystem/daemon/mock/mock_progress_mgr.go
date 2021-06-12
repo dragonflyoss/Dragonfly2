@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	mgr "d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	types "d7y.io/dragonfly/v2/cdnsystem/types"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -106,7 +106,7 @@ func (mr *MockSeedProgressMgrMockRecorder) PublishTask(arg0, arg1, arg2 interfac
 }
 
 // SetTaskMgr mocks base method.
-func (m *MockSeedProgressMgr) SetTaskMgr(arg0 mgr.SeedTaskMgr) {
+func (m *MockSeedProgressMgr) SetTaskMgr(arg0 daemon.SeedTaskMgr) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetTaskMgr", arg0)
 }

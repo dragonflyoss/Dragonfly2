@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/gc"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -71,7 +71,7 @@ type diskStorageMgr struct {
 	cfg        *storage.Config
 	diskDriver storedriver.Driver
 	cleaner    *storage.Cleaner
-	taskMgr    mgr.SeedTaskMgr
+	taskMgr    daemon.SeedTaskMgr
 }
 
 func (s *diskStorageMgr) getDefaultGcConfig() *storage.GCConfig {
@@ -91,7 +91,7 @@ func (s *diskStorageMgr) getDefaultGcConfig() *storage.GCConfig {
 	}
 }
 
-func (s *diskStorageMgr) Initialize(taskMgr mgr.SeedTaskMgr) {
+func (s *diskStorageMgr) Initialize(taskMgr daemon.SeedTaskMgr) {
 	s.taskMgr = taskMgr
 	diskGcConfig := s.cfg.DriverConfigs[local.DiskDriverName].GCConfig
 	if diskGcConfig == nil {

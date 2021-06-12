@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
@@ -31,22 +31,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-var _ mgr.SeedProgressMgr = (*Manager)(nil)
+var _ daemon.SeedProgressMgr = (*Manager)(nil)
 
 type Manager struct {
 	seedSubscribers      *syncmap.SyncMap
 	taskPieceMetaRecords *syncmap.SyncMap
-	taskMgr              mgr.SeedTaskMgr
+	taskMgr              daemon.SeedTaskMgr
 	mu                   *synclock.LockerPool
 	timeout              time.Duration
 	buffer               int
 }
 
-func (pm *Manager) SetTaskMgr(taskMgr mgr.SeedTaskMgr) {
+func (pm *Manager) SetTaskMgr(taskMgr daemon.SeedTaskMgr) {
 	pm.taskMgr = taskMgr
 }
 
-func NewManager() (mgr.SeedProgressMgr, error) {
+func NewManager() (daemon.SeedProgressMgr, error) {
 	return &Manager{
 		seedSubscribers:      syncmap.NewSyncMap(),
 		taskPieceMetaRecords: syncmap.NewSyncMap(),
