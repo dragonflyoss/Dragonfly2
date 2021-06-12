@@ -108,7 +108,7 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 }
 
 // Publish publish seedPiece
-func (pm *Manager) PublishPiece(ctx context.Context, taskID string, record *types.SeedPiece) error {
+func (pm *Manager) PublishPiece(taskID string, record *types.SeedPiece) error {
 	logger.Debugf("seed piece meta record %+v", record)
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)

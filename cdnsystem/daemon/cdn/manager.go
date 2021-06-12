@@ -88,7 +88,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	}
 	logger.WithTaskID(task.TaskID).Debugf("detects cache result: %+v", detectResult)
 	// second: report detect result
-	err = cm.cdnReporter.reportCache(ctx, task.TaskID, detectResult)
+	err = cm.cdnReporter.reportCache(task.TaskID, detectResult)
 	if err != nil {
 		logger.WithTaskID(task.TaskID).Errorf("failed to report cache, reset detectResult:%v", err)
 	}
@@ -117,7 +117,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	}
 	reader := limitreader.NewLimitReaderWithLimiterAndMD5Sum(body, cm.limiter, fileMd5)
 	// forth: write to storage
-	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
+	downloadMetadata, err := cm.writer.startWriter(reader, task, detectResult)
 	if err != nil {
 		server.StatSeedFinish(task.TaskID, task.URL, false, err, start.Nanosecond(), time.Now().Nanosecond(), downloadMetadata.backSourceLength,
 			downloadMetadata.realSourceFileLength)
