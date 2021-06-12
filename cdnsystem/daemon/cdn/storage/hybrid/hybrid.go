@@ -50,11 +50,11 @@ var _ storage.Manager = (*hybridStorageMgr)(nil)
 var _ gc.Executor = (*hybridStorageMgr)(nil)
 
 func init() {
-	storage.Register(StorageMode, NewStorageManager)
+	storage.Register(StorageMode, newStorageManager)
 }
 
 // NewStorageManager performs initialization for storage manager and return a storage Manager.
-func NewStorageManager(cfg *storage.Config) (storage.Manager, error) {
+func newStorageManager(cfg *storage.Config) (storage.Manager, error) {
 	if len(cfg.DriverConfigs) != 2 {
 		return nil, fmt.Errorf("disk storage manager should have two driver, cfg's driver number is wrong : %v", cfg)
 	}

@@ -136,7 +136,7 @@ func (m *managerIml) DeletePlugin(pt PluginType, name string) {
 
 type repositoryIml struct {
 	repos map[PluginType]*sync.Map
-	lock  sync.Mutex
+	sync.Mutex
 }
 
 var _ Repository = (*repositoryIml)(nil)
@@ -175,12 +175,12 @@ func (r *repositoryIml) getRepo(pt PluginType) *sync.Map {
 		return m
 	}
 
-	r.lock.Lock()
+	r.Lock()
 	if m, ok = r.repos[pt]; !ok || m == nil {
 		m = &sync.Map{}
 		r.repos[pt] = m
 	}
-	r.lock.Unlock()
+	r.Unlock()
 	return m
 }
 
