@@ -1,0 +1,175 @@
+name: Docker
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  push_scheduler_to_registry:
+    name: Push Scheduler Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Get Version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          if [[ ${GITHUB_REF} == "refs/heads/master" ]]; then
+            VERSION=latest
+          fi
+          echo ::set-output name=VERSION::${VERSION}
+
+      - name: Get Git Revision
+        id: vars
+        shell: bash
+        run: |
+          echo "::set-output name=git_revision::$(git rev-parse --short HEAD)"
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v1
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          file: build/images/scheduler/Dockerfile
+          labels: |-
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            GITVERSION=git-${{ steps.vars.outputs.git_revision }}
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+          tags: dragonflyoss/scheduler:${{ steps.get_version.outputs.VERSION }}
+          push: true
+
+  push_dfget_to_registry:
+    name: Push Dfget Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Get Version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          if [[ ${GITHUB_REF} == "refs/heads/master" ]]; then
+            VERSION=latest
+          fi
+          echo ::set-output name=VERSION::${VERSION}
+
+      - name: Get Git Revision
+        id: vars
+        shell: bash
+        run: |
+          echo "::set-output name=git_revision::$(git rev-parse --short HEAD)"
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v1
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          file: build/images/dfdaemon/Dockerfile
+          labels: |-
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            GITVERSION=git-${{ steps.vars.outputs.git_revision }}
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+          tags: dragonflyoss/dfget:${{ steps.get_version.outputs.VERSION }}
+          push: true
+
+  push_cdn_to_registry:
+    name: Push CDN Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Get Version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          if [[ ${GITHUB_REF} == "refs/heads/master" ]]; then
+            VERSION=latest
+          fi
+          echo ::set-output name=VERSION::${VERSION}
+
+      - name: Get Git Revision
+        id: vars
+        shell: bash
+        run: |
+          echo "::set-output name=git_revision::$(git rev-parse --short HEAD)"
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v1
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          file: build/images/cdn/Dockerfile
+          labels: |-
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            GITVERSION=git-${{ steps.vars.outputs.git_revision }}
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+          tags: dragonflyoss/cdn:${{ steps.get_version.outputs.VERSION }}
+          push: true
+
+  push_manager_to_registry:
+    name: Push Manager Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Get Version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          if [[ ${GITHUB_REF} == "refs/heads/master" ]]; then
+            VERSION=latest
+          fi
+          echo ::set-output name=VERSION::${VERSION}
+
+      - name: Get Git Revision
+        id: vars
+        shell: bash
+        run: |
+          echo "::set-output name=git_revision::$(git rev-parse --short HEAD)"
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v1
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          file: build/images/manager/Dockerfile
+          labels: |-
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            GITVERSION=git-${{ steps.vars.outputs.git_revision }}
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+          tags: dragonflyoss/manager:${{ steps.get_version.outputs.VERSION }}
+          push: true

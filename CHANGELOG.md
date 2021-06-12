@@ -3,8 +3,11 @@
 
 
 <a name="v0.1.0-alpha"></a>
-## v0.1.0-alpha - 2021-06-04
+## v0.1.0-alpha - 2021-06-10
 ### Chore
+- remove build script's git operation ([#321](https://github.com/dragonflyoss/Dragonfly2/issues/321))
+- docker building workflow ([#323](https://github.com/dragonflyoss/Dragonfly2/issues/323))
+- remove manager netcat-openbsd ([#298](https://github.com/dragonflyoss/Dragonfly2/issues/298))
 - workflows remove main-rc branch ([#221](https://github.com/dragonflyoss/Dragonfly2/issues/221))
 - change manager swagger docs path and add makefile swagger command ([#183](https://github.com/dragonflyoss/Dragonfly2/issues/183))
 - add SECURITY.md ([#181](https://github.com/dragonflyoss/Dragonfly2/issues/181))
@@ -20,7 +23,7 @@
 - record failed code when unfinished and event for scheduler ([#176](https://github.com/dragonflyoss/Dragonfly2/issues/176))
 
 ### Docs
-- add CHANGELOG
+- add CHANGELOG.md
 - add CODE_OF_CONDUCT.md ([#163](https://github.com/dragonflyoss/Dragonfly2/issues/163))
 
 ### Feat
@@ -29,24 +32,30 @@
 - remove slidingwindow and assertutils package ([#263](https://github.com/dragonflyoss/Dragonfly2/issues/263))
 
 ### Feature
+- support basic auth for proxy ([#250](https://github.com/dragonflyoss/Dragonfly2/issues/250))
+- add disk quota gc for daemon ([#215](https://github.com/dragonflyoss/Dragonfly2/issues/215))
+
+### Feature
+- disable resolver server config ([#314](https://github.com/dragonflyoss/Dragonfly2/issues/314))
+- update docs ([#307](https://github.com/dragonflyoss/Dragonfly2/issues/307))
 - remove unsafe code in client/daemon/storage ([#258](https://github.com/dragonflyoss/Dragonfly2/issues/258))
 - remove redundant configurations ([#216](https://github.com/dragonflyoss/Dragonfly2/issues/216))
 
-### Feature
-- support basic auth for proxy ([#250](https://github.com/dragonflyoss/Dragonfly2/issues/250))
-- add disk quota gc for daemon ([#215](https://github.com/dragonflyoss/Dragonfly2/issues/215))
+### Fix
+- cfgFile nil error ([#224](https://github.com/dragonflyoss/Dragonfly2/issues/224))
+- when load config from cdn directory in dynconfig, skip sub directories ([#310](https://github.com/dragonflyoss/Dragonfly2/issues/310))
+- Makefile and build.sh ([#309](https://github.com/dragonflyoss/Dragonfly2/issues/309))
+- ci badge ([#281](https://github.com/dragonflyoss/Dragonfly2/issues/281))
+- change peerPacketReady to buffer channel ([#256](https://github.com/dragonflyoss/Dragonfly2/issues/256))
+- cdn gc dead lock ([#231](https://github.com/dragonflyoss/Dragonfly2/issues/231))
+- change manager docs path ([#193](https://github.com/dragonflyoss/Dragonfly2/issues/193))
+- **manager:** modify to config from scheduler_config in swagger yaml ([#317](https://github.com/dragonflyoss/Dragonfly2/issues/317))
 
 ### Fix
 - use atomic to avoid data race in client ([#254](https://github.com/dragonflyoss/Dragonfly2/issues/254))
 
-### Fix
-- ci badge ([#281](https://github.com/dragonflyoss/Dragonfly2/issues/281))
-- change peerPacketReady to buffer channel ([#256](https://github.com/dragonflyoss/Dragonfly2/issues/256))
-- cdn gc dead lock ([#231](https://github.com/dragonflyoss/Dragonfly2/issues/231))
-- cfgFile nil error ([#224](https://github.com/dragonflyoss/Dragonfly2/issues/224))
-- change manager docs path ([#193](https://github.com/dragonflyoss/Dragonfly2/issues/193))
-
 ### Refactor
+- update arch ([#319](https://github.com/dragonflyoss/Dragonfly2/issues/319))
 - remove benchmark-rate and rename not-back-source ([#245](https://github.com/dragonflyoss/Dragonfly2/issues/245))
 - support multi digest not only md5 ([#236](https://github.com/dragonflyoss/Dragonfly2/issues/236))
 - simplify to make imports more format ([#230](https://github.com/dragonflyoss/Dragonfly2/issues/230))

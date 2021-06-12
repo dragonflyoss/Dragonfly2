@@ -70,9 +70,10 @@ Since you are ready to improve Dragonfly with a PR, we suggest you could take a 
 To put forward a PR, we assume you have registered a GitHub ID. Then you could finish the preparation in the following steps:
 
 1. **FORK** Dragonfly to your repository. To make this work, you just need to click the button Fork in right-left of [dragonflyoss/Dragonfly2](https://github.com/dragonflyoss/Dragonfly2) main page. Then you will end up with your repository in `https://github.com/<your-username>/Dragonfly`, in which `your-username` is your GitHub username.
-1. **CLONE** your own repository to develop locally. Use `git clone https://github.com/<your-username>/Dragonfly2.git` to clone repository to your local machine. Then you can create new branches to finish the change you wish to make.
 
-1. **Set Remote** upstream to be `https://github.com/dragonflyoss/Dragonfly2.git` using the following two commands:
+2. **CLONE** your own repository to develop locally. Use `git clone https://github.com/<your-username>/Dragonfly2.git` to clone repository to your local machine. Then you can create new branches to finish the change you wish to make.
+
+3. **Set Remote** upstream to be `https://github.com/dragonflyoss/Dragonfly2.git` using the following two commands:
 
 	```
 	git remote add upstream https://github.com/dragonflyoss/Dragonfly2.git
@@ -91,7 +92,7 @@ To put forward a PR, we assume you have registered a GitHub ID. Then you could f
 
 	Adding this, we can easily synchronize local branches with upstream branches.
 
-1. **Create a branch** to add a new feature or fix issues
+4. **Create a branch** to add a new feature or fix issues
 
 	Update local working directory:
 
@@ -133,14 +134,13 @@ Actually in Dragonfly, we take two rules serious when committing:
 
 Commit message could help reviewers better understand what the purpose of submitted PR is. It could help accelerate the code review procedure as well. We encourage contributors to use **EXPLICIT** commit message rather than ambiguous message. In general, we advocate the following commit message type:
 
+* feat: xxxx.For example, "feat: make result show in sorted order".
+* fix: xxxx. For example, "fix: fix panic when input nil parameter".
 * docs: xxxx. For example, "docs: add docs about storage installation".
-* feature: xxxx.For example, "feature: make result show in sorted order".
-* bugfix: xxxx. For example, "bugfix: fix panic when input nil parameter".
 * style: xxxx. For example, "style: format the code style of Constants.java".
 * refactor: xxxx. For example, "refactor: simplify to make codes more readable".
 * test: xxx. For example, "test: add unit test case for func InsertIntoArray".
 * chore: xxx. For example, "chore: integrate travis-ci". It's the type of mantainance change.
-* other readable and explicit expression ways.
 
 On the other side, we discourage contributors from committing message like the following ways:
 
@@ -152,7 +152,7 @@ On the other side, we discourage contributors from committing message like the f
 
 Commit content represents all content changes included in one commit. We had better include things in one single commit which could support reviewer's complete review without any other commits' help. In another word, contents in one single commit can pass the CI to avoid code mess. In brief, there are two minor rules for us to keep in mind:
 
-* avoid very large change in a commit;
+* avoid very large change in a commit.
 * complete and reviewable for each commit.
 
 No matter what the commit message, or commit content is, we do take more emphasis on code review.
@@ -204,13 +204,13 @@ git commit
 
 We choose GitHub as the primary place for Dragonfly to collaborate. So the latest updates of Dragonfly are always here. Although contributions via PR is an explicit way to help, we still call for any other ways.
 
-* reply to other's issues if you could;
-* help solve other user's problems;
-* help review other's PR design;
-* help review other's codes in PR;
-* discuss about Dragonfly to make things clearer;
-* advocate Dragonfly technology beyond GitHub;
-* write blogs on Dragonfly and so on.
+* Reply to other's issues if you could.
+* Help solve other user's problems.
+* Help review other's PR design.
+* Help review other's codes in PR.
+* Discuss about Dragonfly to make things clearer.
+* Advocate Dragonfly technology beyond GitHub.
+* Write blogs on Dragonfly and so on.
 
 In a word, **ANY HELP IS CONTRIBUTION.**
 
@@ -220,17 +220,18 @@ It is also welcomed to join Dragonfly team if you are willing to participate in 
 
 ### Requirements
 
-* Have read the [Contributing to Dragonfly](CONTRIBUTING.md) carefully
-* Have read the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md)
-* Have submitted multi PRs to the community
-* Be active in the community, may including but not limited
-  * Submitting or commenting on issues
-  * Contributing PRs to the community
-  * Reviewing PRs in the community
+* Have read the [Contributing to Dragonfly](CONTRIBUTING.md) carefully.
+* Have read the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
+* Ability to maintain one or more modules of `scheduler`, `cdn`, `client` and `manager`.
+* Have submitted multi PRs to the community.
+* Be active in the community, may including but not limited:
+  * Submitting or commenting on issues.
+  * Contributing PRs to the community.
+  * Reviewing PRs in the community.
 
 ### How to do it
 
 You can do it in either of two ways:
 
-* Submit a PR in the [dragonflyoss/Dragonfly2](https://github.com/dragonflyoss/Dragonfly2) repo
-* Contact with the community's [maintainers](MAINTAINERS.md) offline
+* Submit a PR in the [dragonflyoss/Dragonfly2](https://github.com/dragonflyoss/Dragonfly2) repo.
+* Contact with the community's [maintainers](MAINTAINERS.md) offline.
