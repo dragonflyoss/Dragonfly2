@@ -476,7 +476,7 @@ func (s *LocalDriverTestSuite) TestPutParallel() {
 	var key = "fooPutParallel"
 	var routineCount = 4
 	var testStr = "hello"
-	var testStrLength = len(testStr)
+	testStrLength := len(testStr)
 
 	var wg sync.WaitGroup
 	for k := 0; k < routineCount; k++ {

@@ -51,7 +51,7 @@ type Task struct {
 }
 
 func CopyTask(t *Task) *Task {
-	var copyTask = *t //nolint:govet
+	copyTask := *t //nolint:govet
 	if copyTask.PieceList == nil {
 		copyTask.PieceList = make(map[int32]*Piece)
 		copyTask.rwLock = sync.RWMutex{}
