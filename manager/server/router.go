@@ -14,6 +14,8 @@ func InitRouter(server *service.ManagerServer) (*gin.Engine, error) {
 	router := gin.New()
 	handler := handler.NewHandler(server)
 
+	router.Use(handler.Error)
+
 	api := router.Group("/api/v2")
 	{
 		{

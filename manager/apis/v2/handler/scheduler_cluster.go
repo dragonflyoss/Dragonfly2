@@ -26,19 +26,19 @@ import (
 func (handler *Handler) CreateSchedulerCluster(ctx *gin.Context) {
 	var cluster types.SchedulerCluster
 	if err := ctx.ShouldBindJSON(&cluster); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewHTTPError(http.StatusBadRequest, err))
 		return
 	}
 
 	if err := checkSchedulerClusterValidate(&cluster); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewHTTPError(http.StatusBadRequest, err))
 		return
 	}
 
 	retCluster, err := handler.server.AddSchedulerCluster(context.TODO(), &cluster)
 
 	if err != nil {
-		NewError(ctx, -1, err)
+		ctx.Error(NewHTTPError(-1, err))
 		return
 	}
 	ctx.JSON(http.StatusOK, retCluster)
