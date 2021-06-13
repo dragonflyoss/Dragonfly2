@@ -115,7 +115,7 @@ type peerTask struct {
 	// requestedPieces stands all pieces requested from peers
 	requestedPieces *Bitmap
 	// lock used by piece result manage, when update readyPieces, lock first
-	lock sync.Locker
+	lock sync.Mutex
 	// limiter will be used when enable per peer task rate limit
 	limiter *rate.Limiter
 }

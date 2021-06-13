@@ -38,7 +38,7 @@ type localTaskStore struct {
 	*logger.SugaredLoggerOnWith
 	persistentMetadata
 
-	*sync.RWMutex
+	sync.RWMutex
 
 	dataDir string
 

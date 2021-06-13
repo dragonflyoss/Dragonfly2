@@ -27,7 +27,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
 
@@ -197,7 +196,6 @@ func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 			TaskID:       "test",
 			DataFilePath: src,
 		},
-		RWMutex:      &sync.RWMutex{},
 		dataDir:      test.DataDir,
 		metadataFile: matadata,
 		lastAccess:   time.Now().UnixNano(),

@@ -30,12 +30,12 @@ import (
 )
 
 type evaluatorFactory struct {
-	lock                         *sync.RWMutex
+	lock                         sync.RWMutex
 	evaluators                   map[string]Evaluator
 	getEvaluatorFuncs            map[int]getEvaluatorFunc
 	getEvaluatorFuncPriorityList []getEvaluatorFunc
 	cache                        map[*types.Task]Evaluator
-	cacheClearFunc               *sync.Once
+	cacheClearFunc               sync.Once
 	abtest                       bool
 	ascheduler                   string
 	bscheduler                   string
@@ -45,11 +45,9 @@ type getEvaluatorFunc func(task *types.Task) (string, bool)
 
 func newEvaluatorFactory(cfg config.SchedulerConfig) *evaluatorFactory {
 	factory := &evaluatorFactory{
-		lock:              new(sync.RWMutex),
 		evaluators:        make(map[string]Evaluator),
 		getEvaluatorFuncs: map[int]getEvaluatorFunc{},
 		cache:             map[*types.Task]Evaluator{},
-		cacheClearFunc:    new(sync.Once),
 		abtest:            cfg.ABTest,
 		ascheduler:        cfg.AScheduler,
 		bscheduler:        cfg.BScheduler,

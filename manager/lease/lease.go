@@ -66,7 +66,6 @@ type Lease struct {
 
 func NewLessor(store store.Store) (Lessor, error) {
 	lessor := &lessor{
-		mu:           sync.Mutex{},
 		stopC:        make(chan struct{}),
 		keepAliveMap: make(map[LeaseID]*keepAlive),
 		store:        store,

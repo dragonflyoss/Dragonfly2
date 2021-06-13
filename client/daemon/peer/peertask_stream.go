@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
 	"sync/atomic"
 
 	"d7y.io/dragonfly/v2/pkg/dferrors"
@@ -151,10 +150,8 @@ func newStreamPeerTask(ctx context.Context,
 			singlePiece:      singlePiece,
 			done:             make(chan struct{}),
 			span:             span,
-			once:             sync.Once{},
 			readyPieces:      NewBitmap(),
 			requestedPieces:  NewBitmap(),
-			lock:             &sync.Mutex{},
 			failedPieceCh:    make(chan int32, 4),
 			failedReason:     "unknown",
 			failedCode:       dfcodes.UnknownError,
