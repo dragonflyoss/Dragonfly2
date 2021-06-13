@@ -111,7 +111,7 @@ func (s *diskStorageMgr) ReadPieceMetaRecords(taskID string) ([]*storage.PieceMe
 		return nil, err
 	}
 	pieceMetaRecords := strings.Split(strings.TrimSpace(string(readBytes)), "\n")
-	var result = make([]*storage.PieceMetaRecord, 0)
+	var result = make([]*storage.PieceMetaRecord, 0, len(pieceMetaRecords))
 	for _, pieceStr := range pieceMetaRecords {
 		record, err := storage.ParsePieceMetaRecord(pieceStr)
 		if err != nil {
