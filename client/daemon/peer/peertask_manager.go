@@ -127,6 +127,8 @@ func NewPeerTaskManager(
 	return ptm, nil
 }
 
+var _ TaskManager = (*peerTaskManager)(nil)
+
 func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *FilePeerTaskProgress, *TinyData, error) {
 	// TODO ensure scheduler is ok first
 	start := time.Now()

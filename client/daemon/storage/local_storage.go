@@ -51,6 +51,9 @@ type localTaskStore struct {
 	gcCallback    func(CommonTaskRequest)
 }
 
+var _ TaskStorageDriver = (*localTaskStore)(nil)
+var _ Reclaimer = (*localTaskStore)(nil)
+
 func (t *localTaskStore) touch() {
 	access := time.Now().UnixNano()
 	atomic.SwapInt64(&t.lastAccess, access)

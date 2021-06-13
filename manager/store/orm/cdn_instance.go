@@ -37,6 +37,8 @@ type CDNInstanceStore struct {
 	table        string
 }
 
+var _ store.Store = (*CDNInstanceStore)(nil)
+
 func NewCDNInstanceStore(db *gorm.DB, table string) (store.Store, error) {
 	s := &CDNInstanceStore{
 		resourceType: store.CDNInstance,

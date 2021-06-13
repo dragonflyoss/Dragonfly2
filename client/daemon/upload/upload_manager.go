@@ -44,6 +44,8 @@ type uploadManager struct {
 	StorageManager storage.Manager
 }
 
+var _ Manager = (*uploadManager)(nil)
+
 const (
 	PeerDownloadHTTPPathPrefix = "/download/"
 )

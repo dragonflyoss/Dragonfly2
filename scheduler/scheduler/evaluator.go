@@ -40,6 +40,8 @@ type evaluator struct {
 	taskManager *manager.TaskManager
 }
 
+var _ Evaluator = (*evaluator)(nil)
+
 // WithTaskManager sets task manager.
 func withTaskManager(t *manager.TaskManager) evaluatorOption {
 	return func(e *evaluator) *evaluator {

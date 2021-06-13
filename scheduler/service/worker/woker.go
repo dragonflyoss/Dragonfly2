@@ -43,6 +43,8 @@ type Worker struct {
 	schedulerService *service.SchedulerService
 }
 
+var _ IWorker = (*Worker)(nil)
+
 func NewWorker(schedulerService *service.SchedulerService, sender ISender, sendJod func(*types.PeerTask), stop <-chan struct{}) *Worker {
 	return &Worker{
 		scheduleQueue:          workqueue.New(),

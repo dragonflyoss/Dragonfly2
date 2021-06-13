@@ -32,6 +32,8 @@ type CDNClusterStore struct {
 	table        string
 }
 
+var _ store.Store = (*CDNClusterStore)(nil)
+
 func NewCDNClusterStore(db *gorm.DB, table string) (store.Store, error) {
 	s := &CDNClusterStore{
 		resourceType: store.CDNCluster,

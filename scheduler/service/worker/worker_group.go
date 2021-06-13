@@ -46,6 +46,8 @@ type Group struct {
 	schedulerService *service.SchedulerService
 }
 
+var _ IWorker = (*Group)(nil)
+
 func NewGroup(cfg *config.Config, schedulerService *service.SchedulerService) *Group {
 	return &Group{
 		workerNum:        cfg.Worker.WorkerNum,

@@ -54,6 +54,8 @@ type filePeerTask struct {
 	progressStopCh chan bool
 }
 
+var _ FilePeerTask = (*filePeerTask)(nil)
+
 type ProgressState struct {
 	Success bool
 	Code    base.Code

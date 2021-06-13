@@ -120,6 +120,8 @@ type peerTask struct {
 	limiter *rate.Limiter
 }
 
+var _ Task = (*peerTask)(nil)
+
 func (pt *peerTask) ReportPieceResult(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
 	panic("implement me")
 }

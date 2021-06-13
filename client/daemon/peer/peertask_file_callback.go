@@ -33,6 +33,8 @@ type filePeerTaskCallback struct {
 	start time.Time
 }
 
+var _ TaskCallback = (*filePeerTaskCallback)(nil)
+
 func (p *filePeerTaskCallback) GetStartTime() time.Time {
 	return p.start
 }

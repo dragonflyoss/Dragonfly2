@@ -107,6 +107,9 @@ type storageManager struct {
 	gcCallback         func(CommonTaskRequest)
 }
 
+var _ gc.GC = (*storageManager)(nil)
+var _ Manager = (*storageManager)(nil)
+
 type GCCallback func(request CommonTaskRequest)
 
 func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOption, gcCallback GCCallback, moreOpts ...func(*storageManager) error) (Manager, error) {

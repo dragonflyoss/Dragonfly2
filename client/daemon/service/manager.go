@@ -58,7 +58,8 @@ type manager struct {
 	uploadAddr     string
 }
 
-var _ dfdaemonserver.DaemonServer = &manager{}
+var _ dfdaemonserver.DaemonServer = (*manager)(nil)
+var _ Manager = (*manager)(nil)
 
 func NewManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Manager, error) {
 	mgr := &manager{

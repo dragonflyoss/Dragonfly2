@@ -75,6 +75,8 @@ type peerHost struct {
 	PieceManager    peer.PieceManager
 }
 
+var _ PeerHost = (*peerHost)(nil)
+
 func New(opt *config.PeerHostOption) (PeerHost, error) {
 	host := &scheduler.PeerHost{
 		Uuid:           idgen.UUIDString(),

@@ -28,6 +28,8 @@ type LeaseStore struct {
 	table        string
 }
 
+var _ store.Store = (*LeaseStore)(nil)
+
 func NewLeaseStore(db *gorm.DB, table string) (store.Store, error) {
 	s := &LeaseStore{
 		resourceType: store.Lease,

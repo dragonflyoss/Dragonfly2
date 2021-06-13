@@ -52,6 +52,8 @@ type pieceManager struct {
 	calculateDigest bool
 }
 
+var _ PieceManager = (*pieceManager)(nil)
+
 func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (PieceManager, error) {
 	pm := &pieceManager{
 		storageManager:   s,

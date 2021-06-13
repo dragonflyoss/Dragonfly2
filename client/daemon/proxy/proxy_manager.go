@@ -48,6 +48,8 @@ type proxyManager struct {
 	config.ListenOption
 }
 
+var _ Manager = (*proxyManager)(nil)
+
 func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, opts *config.ProxyOption) (Manager, error) {
 	registry := opts.RegistryMirror
 	proxies := opts.Proxies

@@ -53,6 +53,8 @@ type streamPeerTask struct {
 	successPieceCh chan int32
 }
 
+var _ StreamPeerTask = (*streamPeerTask)(nil)
+
 func newStreamPeerTask(ctx context.Context,
 	host *scheduler.PeerHost,
 	pieceManager PieceManager,

@@ -32,6 +32,8 @@ import (
 type optimizedPieceDownloader struct {
 }
 
+var _ PieceDownloader = (*optimizedPieceDownloader)(nil)
+
 type cancelCloser struct {
 	cancel func()
 	closer io.Closer
