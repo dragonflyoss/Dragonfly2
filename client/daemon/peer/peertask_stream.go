@@ -20,13 +20,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync/atomic"
 
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/config"
@@ -138,28 +138,29 @@ func newStreamPeerTask(ctx context.Context,
 	}
 	return ctx, &streamPeerTask{
 		peerTask: peerTask{
-			ctx:              ctx,
-			host:             host,
-			backSource:       backSource,
-			request:          request,
-			peerPacketStream: peerPacketStream,
-			pieceManager:     pieceManager,
-			peerPacketReady:  make(chan bool, 1),
-			peerID:           request.PeerId,
-			taskID:           result.TaskId,
-			singlePiece:      singlePiece,
-			done:             make(chan struct{}),
-			span:             span,
-			readyPieces:      NewBitmap(),
-			requestedPieces:  NewBitmap(),
-			failedPieceCh:    make(chan int32, 4),
-			failedReason:     "unknown",
-			failedCode:       dfcodes.UnknownError,
-			contentLength:    -1,
-			totalPiece:       -1,
-			schedulerOption:  schedulerOption,
-			limiter:          limiter,
-
+			ctx:                 ctx,
+			host:                host,
+			backSource:          backSource,
+			request:             request,
+			peerPacketStream:    peerPacketStream,
+			pieceManager:        pieceManager,
+			peerPacketReady:     make(chan bool, 1),
+			peerID:              request.PeerId,
+			taskID:              result.TaskId,
+			singlePiece:         singlePiece,
+			done:                make(chan struct{}),
+			span:                span,
+			readyPieces:         NewBitmap(),
+			requestedPieces:     NewBitmap(),
+			failedPieceCh:       make(chan int32, 4),
+			failedReason:        "unknown",
+			failedCode:          dfcodes.UnknownError,
+			contentLength:       -1,
+			totalPiece:          -1,
+			schedulerOption:     schedulerOption,
+			limiter:             limiter,
+			completedLength:     atomic.NewInt64(0),
+			usedTraffic:         atomic.NewInt64(0),
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
 		successPieceCh: make(chan int32, 4),
@@ -183,7 +184,7 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 	}
 	// mark piece processed
 	s.readyPieces.Set(pieceResult.PieceNum)
-	atomic.AddInt64(&s.completedLength, int64(piece.RangeSize))
+	s.completedLength.Add(int64(piece.RangeSize))
 	s.lock.Unlock()
 
 	pieceResult.FinishedCount = s.readyPieces.Settled()

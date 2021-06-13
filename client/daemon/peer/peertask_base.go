@@ -22,8 +22,9 @@ import (
 	"io"
 	"runtime/debug"
 	"sync"
-	"sync/atomic"
 	"time"
+
+	"go.uber.org/atomic"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -77,8 +78,8 @@ type peerTask struct {
 	taskID          string
 	contentLength   int64
 	totalPiece      int32
-	completedLength int64
-	usedTraffic     int64
+	completedLength *atomic.Int64
+	usedTraffic     *atomic.Int64
 
 	//sizeScope   base.SizeScope
 	singlePiece *scheduler.SinglePiece
@@ -147,11 +148,11 @@ func (pt *peerTask) SetContentLength(i int64) error {
 }
 
 func (pt *peerTask) AddTraffic(n int64) {
-	atomic.AddInt64(&pt.usedTraffic, n)
+	pt.usedTraffic.Add(n)
 }
 
 func (pt *peerTask) GetTraffic() int64 {
-	return pt.usedTraffic
+	return pt.usedTraffic.Load()
 }
 
 func (pt *peerTask) GetTotalPieces() int32 {
@@ -562,7 +563,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 }
 
 func (pt *peerTask) isCompleted() bool {
-	return atomic.LoadInt64(&pt.completedLength) == atomic.LoadInt64(&pt.contentLength)
+	return pt.completedLength.Load() == pt.contentLength
 }
 
 func (pt *peerTask) preparePieceTasks(request *base.PieceTaskRequest) (p *base.PiecePacket, err error) {

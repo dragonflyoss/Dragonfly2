@@ -19,12 +19,12 @@ package peer
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/config"
@@ -161,28 +161,29 @@ func newFilePeerTask(ctx context.Context,
 		progressCh:     make(chan *FilePeerTaskProgress),
 		progressStopCh: make(chan bool),
 		peerTask: peerTask{
-			host:             host,
-			backSource:       backSource,
-			request:          request,
-			peerPacketStream: peerPacketStream,
-			pieceManager:     pieceManager,
-			peerPacketReady:  make(chan bool, 1),
-			peerID:           request.PeerId,
-			taskID:           result.TaskId,
-			singlePiece:      singlePiece,
-			done:             make(chan struct{}),
-			span:             span,
-			once:             sync.Once{},
-			readyPieces:      NewBitmap(),
-			requestedPieces:  NewBitmap(),
-			failedPieceCh:    make(chan int32, 4),
-			failedReason:     "unknown",
-			failedCode:       dfcodes.UnknownError,
-			contentLength:    -1,
-			totalPiece:       -1,
-			schedulerOption:  schedulerOption,
-			limiter:          limiter,
-
+			host:                host,
+			backSource:          backSource,
+			request:             request,
+			peerPacketStream:    peerPacketStream,
+			pieceManager:        pieceManager,
+			peerPacketReady:     make(chan bool, 1),
+			peerID:              request.PeerId,
+			taskID:              result.TaskId,
+			singlePiece:         singlePiece,
+			done:                make(chan struct{}),
+			span:                span,
+			once:                sync.Once{},
+			readyPieces:         NewBitmap(),
+			requestedPieces:     NewBitmap(),
+			failedPieceCh:       make(chan int32, 4),
+			failedReason:        "unknown",
+			failedCode:          dfcodes.UnknownError,
+			contentLength:       -1,
+			totalPiece:          -1,
+			schedulerOption:     schedulerOption,
+			limiter:             limiter,
+			completedLength:     atomic.NewInt64(0),
+			usedTraffic:         atomic.NewInt64(0),
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "filePeerTask"),
 		},
 	}, nil, nil
@@ -234,7 +235,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 	}
 	// mark piece processed
 	pt.readyPieces.Set(pieceResult.PieceNum)
-	atomic.AddInt64(&pt.completedLength, int64(piece.RangeSize))
+	pt.completedLength.Add(int64(piece.RangeSize))
 	pt.lock.Unlock()
 
 	pieceResult.FinishedCount = pt.readyPieces.Settled()
@@ -249,7 +250,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 		TaskID:          pt.taskID,
 		PeerID:          pt.peerID,
 		ContentLength:   pt.contentLength,
-		CompletedLength: atomic.LoadInt64(&pt.completedLength),
+		CompletedLength: pt.completedLength.Load(),
 		PeerTaskDone:    false,
 	}
 
@@ -303,7 +304,7 @@ func (pt *filePeerTask) finish() error {
 			TaskID:          pt.taskID,
 			PeerID:          pt.peerID,
 			ContentLength:   pt.contentLength,
-			CompletedLength: pt.completedLength,
+			CompletedLength: pt.completedLength.Load(),
 			PeerTaskDone:    true,
 			DoneCallback: func() {
 				pt.peerTaskDone = true
@@ -358,7 +359,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			TaskID:          pt.taskID,
 			PeerID:          pt.peerID,
 			ContentLength:   pt.contentLength,
-			CompletedLength: pt.completedLength,
+			CompletedLength: pt.completedLength.Load(),
 			PeerTaskDone:    true,
 			DoneCallback: func() {
 				pt.peerTaskDone = true
