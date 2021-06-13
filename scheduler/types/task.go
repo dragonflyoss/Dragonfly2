@@ -51,9 +51,10 @@ type Task struct {
 }
 
 func CopyTask(t *Task) *Task {
-	copyTask := *t
+	var copyTask = *t //nolint:govet
 	if copyTask.PieceList == nil {
 		copyTask.PieceList = make(map[int32]*Piece)
+		copyTask.rwLock = sync.RWMutex{}
 		copyTask.CreateTime = time.Now()
 		copyTask.LastActive = copyTask.CreateTime
 		copyTask.SizeScope = base.SizeScope_NORMAL
