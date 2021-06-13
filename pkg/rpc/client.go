@@ -284,7 +284,7 @@ func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, er
 	defer conn.rwMutex.UnLock(node, true)
 	clientConn, err := conn.loadOrCreateClientConnByNode(node)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get client conn by conn %s", node)
+		return nil, errors.Wrapf(err, "get client conn by conn %s", node)
 	}
 	logger.With("conn", conn.name).Debugf("successfully get %s client conn", node)
 	return clientConn, nil
@@ -339,7 +339,7 @@ func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientC
 	// if absence
 	client, err := conn.findCandidateClientConn(hashKey)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find candidate client conn for hash key %s", hashKey)
+		return nil, errors.Wrapf(err, "find candidate client conn for hash key %s", hashKey)
 	}
 	conn.rwMutex.Lock(client.node, false)
 	defer conn.rwMutex.UnLock(client.node, false)
@@ -368,7 +368,7 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	}
 	client, err := conn.findCandidateClientConn(key, exclusiveNodes...)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to find candidate client conn for hash key %s", key)
+		return "", errors.Wrapf(err, "find candidate client conn for hash key %s", key)
 	}
 	logger.With("conn", conn.name).Infof("successfully migrate hash key %s from server node %s to %s", key, currentNode, client.node)
 	conn.rwMutex.Lock(client.node, false)

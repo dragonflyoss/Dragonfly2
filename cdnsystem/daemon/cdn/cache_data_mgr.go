@@ -60,7 +60,7 @@ func (mm *cacheDataManager) writeFileMetaDataByTask(task *types.SeedTask) (*stor
 	}
 
 	if err := mm.storage.WriteFileMetaData(task.TaskID, metaData); err != nil {
-		return nil, errors.Wrapf(err, "failed to write file metadata to storage")
+		return nil, errors.Wrapf(err, "write task %s metadata file", task.TaskID)
 	}
 
 	return metaData, nil
@@ -170,7 +170,7 @@ func (mm *cacheDataManager) readPieceMetaRecords(taskID string) ([]*storage.Piec
 func (mm *cacheDataManager) getPieceMd5Sign(taskID string) (string, []*storage.PieceMetaRecord, error) {
 	pieceMetaRecords, err := mm.storage.ReadPieceMetaRecords(taskID)
 	if err != nil {
-		return "", nil, errors.Wrapf(err, "failed to read piece meta file")
+		return "", nil, errors.Wrapf(err, "read piece meta file")
 	}
 	var pieceMd5 []string
 	for _, piece := range pieceMetaRecords {
@@ -182,7 +182,7 @@ func (mm *cacheDataManager) getPieceMd5Sign(taskID string) (string, []*storage.P
 func (mm *cacheDataManager) readFileMetaData(taskID string) (*storage.FileMetaData, error) {
 	fileMeta, err := mm.storage.ReadFileMetaData(taskID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read file metadata from storage")
+		return nil, errors.Wrapf(err, "read file metadata of task %s from storage", taskID)
 	}
 	return fileMeta, nil
 }

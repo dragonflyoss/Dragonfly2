@@ -89,7 +89,7 @@ func (cd *cacheDetector) detectCache(task *types.SeedTask) (*cacheResult, error)
 func (cd *cacheDetector) doDetect(task *types.SeedTask) (result *cacheResult, err error) {
 	fileMetaData, err := cd.cacheDataManager.readFileMetaData(task.TaskID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read file meta data")
+		return nil, errors.Wrapf(err, "read file meta data of task %s", task.TaskID)
 	}
 	if err := checkSameFile(task, fileMetaData); err != nil {
 		return nil, errors.Wrapf(err, "task does not match meta information of task file")
@@ -117,7 +117,7 @@ func (cd *cacheDetector) doDetect(task *types.SeedTask) (result *cacheResult, er
 	defer rangeCancel()
 	supportRange, err := source.IsSupportRange(ctx, task.URL, task.Header)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to check if url(%s) supports range request", task.URL)
+		return nil, errors.Wrapf(err, "check if url(%s) supports range request", task.URL)
 	}
 	if !supportRange {
 		return nil, errors.Wrapf(cdnerrors.ErrResourceNotSupportRangeRequest, "url:%s", task.URL)
@@ -132,7 +132,7 @@ func (cd *cacheDetector) parseByReadMetaFile(taskID string, fileMetaData *storag
 	}
 	pieceMetaRecords, err := cd.cacheDataManager.readAndCheckPieceMetaRecords(taskID, fileMetaData.PieceMd5Sign)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to check piece meta integrity")
+		return nil, errors.Wrapf(err, "check piece meta integrity")
 	}
 	if fileMetaData.TotalPieceCount > 0 && len(pieceMetaRecords) != int(fileMetaData.TotalPieceCount) {
 		return nil, errors.Wrapf(cdnerrors.ErrPieceCountNotEqual, "piece file piece count(%d), "+
@@ -140,7 +140,7 @@ func (cd *cacheDetector) parseByReadMetaFile(taskID string, fileMetaData *storag
 	}
 	storageInfo, err := cd.cacheDataManager.statDownloadFile(taskID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get cdn file length")
+		return nil, errors.Wrapf(err, "get cdn file length")
 	}
 	// check file data integrity by file size
 	if fileMetaData.CdnFileLength != storageInfo.Size {
@@ -159,12 +159,12 @@ func (cd *cacheDetector) parseByReadMetaFile(taskID string, fileMetaData *storag
 func (cd *cacheDetector) parseByReadFile(taskID string, metaData *storage.FileMetaData) (*cacheResult, error) {
 	reader, err := cd.cacheDataManager.readDownloadFile(taskID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read data file")
+		return nil, errors.Wrapf(err, "read data file")
 	}
 	defer reader.Close()
 	tempRecords, err := cd.cacheDataManager.readPieceMetaRecords(taskID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "parseByReadFile:failed to read piece meta file")
+		return nil, errors.Wrapf(err, "read piece meta file")
 	}
 
 	fileMd5 := md5.New()

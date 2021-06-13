@@ -18,6 +18,7 @@ package cdn
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
@@ -27,7 +28,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/sync/work"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"github.com/pkg/errors"
 )
 
 type protocolContent struct {
@@ -181,12 +181,12 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 
 	storageInfo, err := cw.cacheDataManager.statDownloadFile(task.TaskID)
 	if err != nil {
-		return &downloadMetadata{backSourceLength: backSourceFileLength}, errors.Wrapf(err, "failed to get cdn file length")
+		return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("get cdn file length: %v", err)
 	}
 
 	pieceMd5Sign, _, err := cw.cacheDataManager.getPieceMd5Sign(task.TaskID)
 	if err != nil {
-		return &downloadMetadata{backSourceLength: backSourceFileLength}, errors.Wrapf(err, "failed to get piece md5 sign")
+		return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("get piece md5 sign: %v", err)
 	}
 	return &downloadMetadata{
 		backSourceLength:     backSourceFileLength,

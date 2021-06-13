@@ -104,12 +104,12 @@ func (ds *driver) Get(raw *storedriver.Raw) (io.ReadCloser, error) {
 		}
 		defer func() {
 			if err := f.Close(); err != nil {
-				logger.Error("failed to close file %s: %v", f, err)
+				logger.Error("close file %s: %v", f, err)
 			}
 		}()
 
 		if _, err := f.Seek(raw.Offset, io.SeekStart); err != nil {
-			logger.Errorf("failed to seek file %s: %v", f, err)
+			logger.Errorf("seek file %s: %v", f, err)
 		}
 		var reader io.Reader
 		reader = f
@@ -118,7 +118,7 @@ func (ds *driver) Get(raw *storedriver.Raw) (io.ReadCloser, error) {
 		}
 		buf := make([]byte, 256*1024)
 		if _, err := io.CopyBuffer(w, reader, buf); err != nil {
-			logger.Errorf("failed to copy buffer from file %s: %v", f, err)
+			logger.Errorf("copy buffer from file %s: %v", f, err)
 		}
 	}(w)
 	return r, nil

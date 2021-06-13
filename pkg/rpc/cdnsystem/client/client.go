@@ -82,7 +82,7 @@ var _ CdnClient = (*cdnClient)(nil)
 func (cc *cdnClient) getCdnClient(key string, stick bool) (cdnsystem.SeederClient, string, error) {
 	clientConn, err := cc.Connection.GetClientConn(key, stick)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to get ClientConn for hashKey %s", key)
+		return nil, "", errors.Wrapf(err, "get ClientConn for hashKey %s", key)
 	}
 	return cdnsystem.NewSeederClient(clientConn), clientConn.Target(), nil
 }

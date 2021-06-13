@@ -37,7 +37,7 @@ func (pm *Manager) setPieceMetaRecord(taskID string, record *types.SeedPiece) er
 func (pm *Manager) getPieceMetaRecordsByTaskID(taskID string) (records []*types.SeedPiece, err error) {
 	pieceRecords, err := pm.taskPieceMetaRecords.GetAsMap(taskID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get piece meta records")
+		return nil, errors.Wrap(err, "get piece meta records")
 	}
 	pieceNums := pieceRecords.ListKeyAsIntSlice()
 	sort.Ints(pieceNums)

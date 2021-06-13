@@ -61,7 +61,7 @@ func GetSchedulerByConfigServer(cfgServerAddr string, opts ...grpc.DialOption) (
 		Addr: cfgServerAddr,
 	}})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create config server")
+		return nil, fmt.Errorf("create config server: %v", err)
 	}
 	// todo create HostTag
 	HostTag := ""
@@ -71,7 +71,7 @@ func GetSchedulerByConfigServer(cfgServerAddr string, opts ...grpc.DialOption) (
 		HostTag:  HostTag,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get scheduler list from config server")
+		return nil, fmt.Errorf("get scheduler list from config server: %v", err)
 	}
 	var scheds []dfnet.NetAddr
 	for i := range schedulers.Addrs {
