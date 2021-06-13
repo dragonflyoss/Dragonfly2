@@ -37,7 +37,7 @@ const (
 	HTTPSClient = "https"
 )
 
-var defaultHTTPClient *http.Client
+var _defaultHTTPClient *http.Client
 var _ source.ResourceClient = (*httpSourceClient)(nil)
 
 func init() {
@@ -46,7 +46,7 @@ func init() {
 		Timeout:   3 * time.Second,
 		KeepAlive: 30 * time.Second,
 	}).DialContext
-	defaultHTTPClient = &http.Client{
+	_defaultHTTPClient = &http.Client{
 		Transport: transport,
 	}
 	httpSourceClient := NewHTTPSourceClient()
@@ -62,7 +62,7 @@ type httpSourceClient struct {
 // NewHTTPSourceClient returns a new HTTPSourceClientOption.
 func NewHTTPSourceClient(opts ...HTTPSourceClientOption) source.ResourceClient {
 	client := &httpSourceClient{
-		httpClient: defaultHTTPClient,
+		httpClient: _defaultHTTPClient,
 	}
 	for i := range opts {
 		opts[i](client)
