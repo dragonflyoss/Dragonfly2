@@ -19,8 +19,10 @@ package cdn
 import (
 	"context"
 	"crypto/md5"
+	"encoding/binary"
 	"fmt"
 	"hash"
+	"io"
 	"sort"
 	"time"
 
@@ -29,6 +31,9 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"d7y.io/dragonfly/v2/pkg/util/ifaceutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
 
@@ -213,4 +218,91 @@ func (cd *cacheDetector) resetCache(task *types.SeedTask) (*storage.FileMetaData
 	}
 	// initialize meta data file
 	return cd.cacheDataManager.writeFileMetaDataByTask(task)
+}
+
+/*
+   helper functions
+*/
+// checkSameFile check whether meta file is modified
+func checkSameFile(task *types.SeedTask, metaData *storage.FileMetaData) error {
+	if task == nil || metaData == nil {
+		return errors.Errorf("task or metaData is nil, task:%v, metaData:%v", task, metaData)
+	}
+
+	if metaData.PieceSize != task.PieceSize {
+		return errors.Errorf("meta piece size(%d) is not equals with task piece size(%d)", metaData.PieceSize,
+			task.PieceSize)
+	}
+
+	if metaData.TaskID != task.TaskID {
+		return errors.Errorf("meta task TaskId(%s) is not equals with task TaskId(%s)", metaData.TaskID, task.TaskID)
+	}
+
+	if metaData.TaskURL != task.TaskURL {
+		return errors.Errorf("meta task taskUrl(%s) is not equals with task taskUrl(%s)", metaData.TaskURL, task.URL)
+	}
+	if !stringutils.IsBlank(metaData.SourceRealMd5) && !stringutils.IsBlank(task.RequestMd5) &&
+		metaData.SourceRealMd5 != task.RequestMd5 {
+		return errors.Errorf("meta task source md5(%s) is not equals with task request md5(%s)",
+			metaData.SourceRealMd5, task.RequestMd5)
+	}
+	return nil
+}
+
+//checkPieceContent read piece content from reader and check data integrity by pieceMetaRecord
+func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, fileMd5 hash.Hash) error {
+	bufSize := int32(256 * 1024)
+	pieceLen := pieceRecord.PieceLen
+	if pieceLen > 0 && pieceLen < bufSize {
+		bufSize = pieceLen
+	}
+	// todo 针对分片格式解析出原始数据来计算fileMd5
+	pieceContent := make([]byte, bufSize)
+	var curContent int32
+	pieceMd5 := md5.New()
+	for {
+		if curContent+bufSize <= pieceLen {
+			if err := binary.Read(reader, binary.BigEndian, pieceContent); err != nil {
+				return errors.Wrapf(err, "read file content error")
+			}
+			curContent += bufSize
+			// calculate the md5
+			if _, err := pieceMd5.Write(pieceContent); err != nil {
+				return errors.Wrapf(err, "write piece content md5 err")
+			}
+
+			if !ifaceutils.IsNil(fileMd5) {
+				// todo 需要存放原始文件的md5，如果是压缩文件，这里需要先解压获取原始文件来得到fileMd5
+				if _, err := fileMd5.Write(pieceContent); err != nil {
+					return errors.Wrapf(err, "write file content md5 error")
+				}
+			}
+		} else {
+			readLen := pieceLen - curContent
+			if err := binary.Read(reader, binary.BigEndian, pieceContent[:readLen]); err != nil {
+				return errors.Wrapf(err, "read file content error")
+			}
+			curContent += readLen
+			// calculate the md5
+			if _, err := pieceMd5.Write(pieceContent[:readLen]); err != nil {
+				return errors.Wrapf(err, "write piece content md5 err")
+			}
+			if !ifaceutils.IsNil(fileMd5) {
+				// todo 需要存放原始文件的md5，如果是压缩文件，这里需要先解压获取原始文件来得到fileMd5
+				if _, err := fileMd5.Write(pieceContent[:readLen]); err != nil {
+					return errors.Wrapf(err, "write file content md5 err")
+				}
+			}
+		}
+		if curContent >= pieceLen {
+			break
+		}
+	}
+	realPieceMd5 := digestutils.ToHashString(pieceMd5)
+	// check piece content
+	if realPieceMd5 != pieceRecord.Md5 {
+		return errors.Wrapf(cdnerrors.ErrPieceMd5NotMatch, "realPieceMd5 md5 (%s), expected md5 (%s)",
+			realPieceMd5, pieceRecord.Md5)
+	}
+	return nil
 }

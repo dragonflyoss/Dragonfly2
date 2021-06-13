@@ -28,6 +28,7 @@ import (
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/hybrid" // To register hybridStorage
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
@@ -201,4 +202,24 @@ func (cm *Manager) updateExpireInfo(taskID string, expireInfo map[string]string)
 		logger.WithTaskID(taskID).Errorf("failed to update expireInfo(%s): %v", expireInfo, err)
 	}
 	logger.WithTaskID(taskID).Infof("success to update expireInfo(%s)", expireInfo)
+}
+
+/*
+	helper functions
+*/
+var getCurrentTimeMillisFunc = timeutils.CurrentTimeMillis
+
+// getUpdateTaskInfoWithStatusOnly
+func getUpdateTaskInfoWithStatusOnly(cdnStatus string) *types.SeedTask {
+	return getUpdateTaskInfo(cdnStatus, "", "", 0, 0)
+}
+
+func getUpdateTaskInfo(cdnStatus, realMD5, pieceMd5Sign string, sourceFileLength, cdnFileLength int64) *types.SeedTask {
+	return &types.SeedTask{
+		CdnStatus:        cdnStatus,
+		PieceMd5Sign:     pieceMd5Sign,
+		SourceRealMd5:    realMD5,
+		SourceFileLength: sourceFileLength,
+		CdnFileLength:    cdnFileLength,
+	}
 }
