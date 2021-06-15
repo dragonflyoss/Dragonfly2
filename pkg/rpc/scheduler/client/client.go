@@ -242,7 +242,4 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 	return
 }
 
-func init() {
-	var sc *schedulerClient = nil
-	var _ SchedulerClient = sc
-}
+var _ SchedulerClient = (*schedulerClient)(nil)

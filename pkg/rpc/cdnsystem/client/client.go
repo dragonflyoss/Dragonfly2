@@ -77,6 +77,8 @@ type cdnClient struct {
 	*rpc.Connection
 }
 
+var _ CdnClient = (*cdnClient)(nil)
+
 func (cc *cdnClient) getCdnClient(key string, stick bool) (cdnsystem.SeederClient, string, error) {
 	clientConn, err := cc.Connection.GetClientConn(key, stick)
 	if err != nil {
@@ -112,9 +114,4 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 		return res.(*base.PiecePacket), nil
 	}
 	return nil, err
-}
-
-func init() {
-	var cc *cdnClient = nil
-	var _ CdnClient = cc
 }

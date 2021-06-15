@@ -14,34 +14,25 @@
  * limitations under the License.
  */
 
+// cdn server
 package server
 
 import (
 	"context"
 	"fmt"
+	"runtime"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/gc"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/progress"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/task"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/gc"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/progress"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/task"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
-	"d7y.io/dragonfly/v2/cdnsystem/source"
-
-	// Init http client
-	_ "d7y.io/dragonfly/v2/cdnsystem/source/httpprotocol"
-
-	// Init OSS client
-	_ "d7y.io/dragonfly/v2/cdnsystem/source/ossprotocol"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
-
-	// Server registered to grpc
-	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	configServer "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -51,22 +42,19 @@ import (
 
 type Server struct {
 	Config       *config.Config
-	GCMgr        mgr.GCMgr
 	seedServer   server.SeederServer
 	configServer configServer.ManagerClient
 }
 
 // New creates a brand new server instance.
 func New(cfg *config.Config) (*Server, error) {
+	if ok := storage.IsSupport(cfg.StorageMode); !ok {
+		return nil, fmt.Errorf("os %s is not support storage mode %s", runtime.GOOS, cfg.StorageMode)
+	}
 	if err := plugins.Initialize(cfg.Plugins); err != nil {
 		return nil, err
 	}
 
-	// source client
-	sourceClient, err := source.NewSourceClient()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create source client")
-	}
 	// progress manager
 	progressMgr, err := progress.NewManager()
 	if err != nil {
@@ -74,23 +62,22 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// storage manager
-	storageMgr, err := storage.Get(cfg.StorageMode)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create storage manager")
+	storageMgr, ok := storage.Get(cfg.StorageMode)
+	if !ok {
+		return nil, fmt.Errorf("can not find storage pattern %s", cfg.StorageMode)
 	}
 	// cdn manager
-	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr, sourceClient)
+	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create cdn manager")
 	}
 	// task manager
-	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr, sourceClient)
+	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create task manager")
 	}
 	storageMgr.Initialize(taskMgr)
 	// gc manager
-	gcMgr, err := gc.NewManager(taskMgr, cdnMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create gc manager")
 	}
@@ -111,7 +98,6 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	return &Server{
 		Config:       cfg,
-		GCMgr:        gcMgr,
 		seedServer:   cdnSeedServer,
 		configServer: cfgServer,
 	}, nil
@@ -127,7 +113,7 @@ func (s *Server) Serve() (err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// start gc
-	err = s.GCMgr.StartGC(ctx)
+	err = gc.StartGC(ctx)
 	if err != nil {
 		return err
 	}

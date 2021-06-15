@@ -17,7 +17,7 @@
 package storedriver
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/cdnerrors"
+	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"github.com/pkg/errors"
 )
 

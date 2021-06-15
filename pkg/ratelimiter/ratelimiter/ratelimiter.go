@@ -114,13 +114,13 @@ func (rl *RateLimiter) computeRatePerWindow() {
 	if rl.rate <= 0 {
 		return
 	}
-	ratePerWindow := int64(rl.rate) * int64(rl.window) / 1000
+	ratePerWindow := rl.rate * rl.window / 1000
 	if ratePerWindow > 0 {
 		rl.ratePerWindow = ratePerWindow
 		return
 	}
 	rl.ratePerWindow = 1
-	rl.setWindow(int64(rl.ratePerWindow * 1000 / rl.rate))
+	rl.setWindow(rl.ratePerWindow * 1000 / rl.rate)
 }
 
 func (rl *RateLimiter) createTokens(timeNano int64) int64 {

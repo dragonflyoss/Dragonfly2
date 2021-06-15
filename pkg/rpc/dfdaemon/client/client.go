@@ -32,6 +32,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+var _ DaemonClient = (*daemonClient)(nil)
+
 func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of daemon is empty")
@@ -129,9 +131,4 @@ func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, o
 	}, 0.2, 2.0, 3, nil)
 
 	return
-}
-
-func init() {
-	var dc *daemonClient = nil
-	var _ DaemonClient = dc
 }

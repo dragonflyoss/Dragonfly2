@@ -31,7 +31,7 @@ type DriverBuilder func(cfg *Config) (Driver, error)
 
 // Register defines an interface to register a driver with specified name.
 // All drivers should call this function to register itself to the driverFactory.
-func Register(name string, builder DriverBuilder) {
+func Register(name string, builder DriverBuilder) error {
 	name = strings.ToLower(name)
 	// plugin builder
 	var f = func(conf interface{}) (plugins.Plugin, error) {
@@ -49,17 +49,14 @@ func Register(name string, builder DriverBuilder) {
 
 		return newDriverPlugin(name, builder, cfg)
 	}
-	plugins.RegisterPluginBuilder(plugins.StorageDriverPlugin, name, f)
+	return plugins.RegisterPluginBuilder(plugins.StorageDriverPlugin, name, f)
 }
 
 // Get a store from manager with specified name.
-func Get(name string) (Driver, error) {
-	v := plugins.GetPlugin(plugins.StorageDriverPlugin, strings.ToLower(name))
-	if v == nil {
-		return nil, fmt.Errorf("storage: %s not existed", name)
+func Get(name string) (Driver, bool) {
+	v, ok := plugins.GetPlugin(plugins.StorageDriverPlugin, strings.ToLower(name))
+	if !ok {
+		return nil, false
 	}
-	if plugin, ok := v.(*driverPlugin); ok {
-		return plugin.instance, nil
-	}
-	return nil, fmt.Errorf("get store driver %s error: unknown reason", name)
+	return v.(*driverPlugin).instance, true
 }
