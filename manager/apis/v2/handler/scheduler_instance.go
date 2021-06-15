@@ -6,8 +6,6 @@ import (
 
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/store"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/errgo.v2/fmt/errors"
 )
@@ -27,25 +25,21 @@ import (
 func (handler *Handler) CreateSchedulerInstance(ctx *gin.Context) {
 	var instance types.SchedulerInstance
 	if err := ctx.ShouldBindJSON(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	if err := checkSchedulerInstanceValidate(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retInstance, err := handler.server.AddSchedulerInstance(context.TODO(), &instance)
-	if err == nil {
-		ctx.JSON(http.StatusOK, retInstance)
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
 	}
+	ctx.JSON(http.StatusOK, retInstance)
 }
 
 // DestroySchedulerInstance godoc
@@ -63,23 +57,19 @@ func (handler *Handler) CreateSchedulerInstance(ctx *gin.Context) {
 func (handler *Handler) DestroySchedulerInstance(ctx *gin.Context) {
 	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retInstance, err := handler.server.DeleteSchedulerInstance(context.TODO(), uri.InstanceID)
-	if err == nil {
-		if retInstance != nil {
-			ctx.JSON(http.StatusOK, "success")
-		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("scheduler instance not found, id %s", uri.InstanceID))
-		}
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+	}
+
+	if retInstance != nil {
+		ctx.JSON(http.StatusOK, "success")
 	} else {
-		NewError(ctx, http.StatusNotFound, err)
+		ctx.Error(NewError(http.StatusNotFound, errors.Newf("scheduler instance not found, id %s", uri.InstanceID)))
 	}
 }
 
@@ -99,34 +89,28 @@ func (handler *Handler) DestroySchedulerInstance(ctx *gin.Context) {
 func (handler *Handler) UpdateSchedulerInstance(ctx *gin.Context) {
 	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	var instance types.SchedulerInstance
 	if err := ctx.ShouldBindJSON(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	if err := checkSchedulerInstanceValidate(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	instance.InstanceID = uri.InstanceID
 	_, err := handler.server.UpdateSchedulerInstance(context.TODO(), &instance)
-	if err == nil {
-		ctx.JSON(http.StatusOK, "success")
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreNotFound) {
-		NewError(ctx, http.StatusNotFound, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
 	}
+	ctx.JSON(http.StatusOK, "success")
 }
 
 // GetSchedulerInstance godoc
@@ -144,22 +128,16 @@ func (handler *Handler) UpdateSchedulerInstance(ctx *gin.Context) {
 func (handler *Handler) GetSchedulerInstance(ctx *gin.Context) {
 	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retInstance, err := handler.server.GetSchedulerInstance(context.TODO(), uri.InstanceID)
-	if err == nil {
-		ctx.JSON(http.StatusOK, &retInstance)
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreNotFound) {
-		NewError(ctx, http.StatusNotFound, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
 	}
+	ctx.JSON(http.StatusOK, &retInstance)
 }
 
 // ListSchedulerInstances godoc
@@ -178,23 +156,20 @@ func (handler *Handler) GetSchedulerInstance(ctx *gin.Context) {
 func (handler *Handler) ListSchedulerInstances(ctx *gin.Context) {
 	var query types.ListQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	instances, err := handler.server.ListSchedulerInstances(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
-	if err == nil {
-		if len(instances) > 0 {
-			ctx.JSON(http.StatusOK, &types.ListSchedulerInstancesResponse{Instances: instances})
-		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("list scheduler instances empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount))
-		}
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
+
+	}
+	if len(instances) > 0 {
+		ctx.JSON(http.StatusOK, &types.ListSchedulerInstancesResponse{Instances: instances})
 	} else {
-		NewError(ctx, http.StatusNotFound, err)
+		ctx.Error(NewError(http.StatusNotFound, errors.Newf("list scheduler instances empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount)))
 	}
 }
 

@@ -6,8 +6,6 @@ import (
 
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/store"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/errgo.v2/fmt/errors"
 )
@@ -27,25 +25,21 @@ import (
 func (handler *Handler) CreateCDNInstance(ctx *gin.Context) {
 	var instance types.CDNInstance
 	if err := ctx.ShouldBindJSON(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	if err := checkCDNInstanceValidate(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retInstance, err := handler.server.AddCDNInstance(context.TODO(), &instance)
-	if err == nil {
-		ctx.JSON(http.StatusOK, retInstance)
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
 	}
+	ctx.JSON(http.StatusOK, retInstance)
 }
 
 // DestroyCDNInstance godoc
@@ -63,23 +57,19 @@ func (handler *Handler) CreateCDNInstance(ctx *gin.Context) {
 func (handler *Handler) DestroyCDNInstance(ctx *gin.Context) {
 	var uri types.CDNInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retInstance, err := handler.server.DeleteCDNInstance(context.TODO(), uri.InstanceID)
-	if err == nil {
-		if retInstance != nil {
-			ctx.JSON(http.StatusOK, "success")
-		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("cdn instance not found, id %s", uri.InstanceID))
-		}
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
+	}
+	if retInstance != nil {
+		ctx.JSON(http.StatusOK, "success")
 	} else {
-		NewError(ctx, http.StatusNotFound, err)
+		ctx.Error(NewError(http.StatusNotFound, errors.Newf("cdn instance not found, id %s", uri.InstanceID)))
 	}
 }
 
@@ -99,34 +89,28 @@ func (handler *Handler) DestroyCDNInstance(ctx *gin.Context) {
 func (handler *Handler) UpdateCDNInstance(ctx *gin.Context) {
 	var uri types.CDNInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	var instance types.CDNInstance
 	if err := ctx.ShouldBindJSON(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	if err := checkCDNInstanceValidate(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	instance.InstanceID = uri.InstanceID
 	_, err := handler.server.UpdateCDNInstance(context.TODO(), &instance)
-	if err == nil {
-		ctx.JSON(http.StatusOK, "success")
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreNotFound) {
-		NewError(ctx, http.StatusNotFound, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
 	}
+	ctx.JSON(http.StatusOK, "success")
 }
 
 // GetCDNInstance godoc
@@ -144,22 +128,16 @@ func (handler *Handler) UpdateCDNInstance(ctx *gin.Context) {
 func (handler *Handler) GetCDNInstance(ctx *gin.Context) {
 	var uri types.CDNInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retInstance, err := handler.server.GetCDNInstance(context.TODO(), uri.InstanceID)
-	if err == nil {
-		ctx.JSON(http.StatusOK, &retInstance)
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreNotFound) {
-		NewError(ctx, http.StatusNotFound, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
 	}
+	ctx.JSON(http.StatusOK, &retInstance)
 }
 
 // ListCDNInstances godoc
@@ -178,23 +156,19 @@ func (handler *Handler) GetCDNInstance(ctx *gin.Context) {
 func (handler *Handler) ListCDNInstances(ctx *gin.Context) {
 	var query types.ListQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	instances, err := handler.server.ListCDNInstances(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
-	if err == nil {
-		if len(instances) > 0 {
-			ctx.JSON(http.StatusOK, &types.ListCDNInstancesResponse{Instances: instances})
-		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("list cdn instances empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount))
-		}
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
+	}
+	if len(instances) > 0 {
+		ctx.JSON(http.StatusOK, &types.ListCDNInstancesResponse{Instances: instances})
 	} else {
-		NewError(ctx, http.StatusNotFound, err)
+		ctx.Error(NewError(http.StatusNotFound, errors.Newf("list cdn instances empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount)))
 	}
 }
 

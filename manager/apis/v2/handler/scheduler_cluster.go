@@ -26,19 +26,19 @@ import (
 func (handler *Handler) CreateSchedulerCluster(ctx *gin.Context) {
 	var cluster types.SchedulerCluster
 	if err := ctx.ShouldBindJSON(&cluster); err != nil {
-		ctx.Error(NewHTTPError(http.StatusBadRequest, err))
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	if err := checkSchedulerClusterValidate(&cluster); err != nil {
-		ctx.Error(NewHTTPError(http.StatusBadRequest, err))
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retCluster, err := handler.server.AddSchedulerCluster(context.TODO(), &cluster)
 
 	if err != nil {
-		ctx.Error(NewHTTPError(-1, err))
+		ctx.Error(NewError(-1, err))
 		return
 	}
 	ctx.JSON(http.StatusOK, retCluster)
@@ -59,19 +59,19 @@ func (handler *Handler) CreateSchedulerCluster(ctx *gin.Context) {
 func (handler *Handler) DestroySchedulerCluster(ctx *gin.Context) {
 	var uri types.SchedulerClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retCluster, err := handler.server.DeleteSchedulerCluster(context.TODO(), uri.ClusterID)
 	if err != nil {
-		NewError(ctx, -1, err)
+		ctx.Error(NewError(-1, err))
 		return
 	}
 	if retCluster != nil {
 		ctx.JSON(http.StatusOK, "success")
 	} else {
-		NewError(ctx, http.StatusNotFound, errors.Newf("scheduler cluster not found, id %s", uri.ClusterID))
+		ctx.Error(NewError(http.StatusNotFound, errors.Newf("scheduler cluster not found, id %s", uri.ClusterID)))
 	}
 }
 
@@ -91,25 +91,25 @@ func (handler *Handler) DestroySchedulerCluster(ctx *gin.Context) {
 func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
 	var uri types.SchedulerClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	var cluster types.SchedulerCluster
 	if err := ctx.ShouldBindJSON(&cluster); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	if err := checkSchedulerClusterValidate(&cluster); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	cluster.ClusterID = uri.ClusterID
 	_, err := handler.server.UpdateSchedulerCluster(context.TODO(), &cluster)
 	if err != nil {
-		NewError(ctx, -1, err)
+		ctx.Error(NewError(-1, err))
 		return
 	}
 	ctx.JSON(http.StatusOK, "success")
@@ -130,13 +130,13 @@ func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
 func (handler *Handler) GetSchedulerCluster(ctx *gin.Context) {
 	var uri types.SchedulerClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retCluster, err := handler.server.GetSchedulerCluster(context.TODO(), uri.ClusterID)
 	if err != nil {
-		NewError(ctx, -1, err)
+		ctx.Error(NewError(-1, err))
 		return
 	}
 	ctx.JSON(http.StatusOK, &retCluster)
@@ -158,20 +158,20 @@ func (handler *Handler) GetSchedulerCluster(ctx *gin.Context) {
 func (handler *Handler) ListSchedulerClusters(ctx *gin.Context) {
 	var query types.ListQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	clusters, err := handler.server.ListSchedulerClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
 
 	if err != nil {
-		NewError(ctx, -1, err)
+		ctx.Error(NewError(-1, err))
 		return
 	}
 	if len(clusters) > 0 {
 		ctx.JSON(http.StatusOK, &types.ListSchedulerClustersResponse{Clusters: clusters})
 	} else {
-		NewError(ctx, http.StatusNotFound, errors.Newf("list scheduler clusters empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount))
+		ctx.Error(NewError(http.StatusNotFound, errors.Newf("list scheduler clusters empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount)))
 	}
 }
 

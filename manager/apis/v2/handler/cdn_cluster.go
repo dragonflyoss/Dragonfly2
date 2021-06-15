@@ -7,8 +7,6 @@ import (
 
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/store"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/errgo.v2/fmt/errors"
 )
@@ -28,25 +26,21 @@ import (
 func (handler *Handler) CreateCDNCluster(ctx *gin.Context) {
 	var cluster types.CDNCluster
 	if err := ctx.ShouldBindJSON(&cluster); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	if err := checkCDNClusterValidate(&cluster); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retCluster, err := handler.server.AddCDNCluster(context.TODO(), &cluster)
-	if err == nil {
-		ctx.JSON(http.StatusOK, retCluster)
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
 	}
+	ctx.JSON(http.StatusOK, retCluster)
 }
 
 // DestroyCDNCluster godoc
@@ -64,23 +58,19 @@ func (handler *Handler) CreateCDNCluster(ctx *gin.Context) {
 func (handler *Handler) DestroyCDNCluster(ctx *gin.Context) {
 	var uri types.CDNClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retCluster, err := handler.server.DeleteCDNCluster(context.TODO(), uri.ClusterID)
-	if err == nil {
-		if retCluster != nil {
-			ctx.JSON(http.StatusOK, "success")
-		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("cdn cluster not found, id %s", uri.ClusterID))
-		}
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
+	if err != nil {
+		ctx.Error(NewError(http.StatusBadRequest, err))
+		return
+	}
+	if retCluster != nil {
+		ctx.JSON(http.StatusOK, "success")
 	} else {
-		NewError(ctx, http.StatusNotFound, err)
+		ctx.Error(NewError(http.StatusNotFound, errors.Newf("cdn cluster not found, id %s", uri.ClusterID)))
 	}
 }
 
@@ -100,34 +90,28 @@ func (handler *Handler) DestroyCDNCluster(ctx *gin.Context) {
 func (handler *Handler) UpdateCDNCluster(ctx *gin.Context) {
 	var uri types.CDNClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	var cluster types.CDNCluster
 	if err := ctx.ShouldBindJSON(&cluster); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	if err := checkCDNClusterValidate(&cluster); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	cluster.ClusterID = uri.ClusterID
 	_, err := handler.server.UpdateCDNCluster(context.TODO(), &cluster)
-	if err == nil {
-		ctx.JSON(http.StatusOK, "success")
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreNotFound) {
-		NewError(ctx, http.StatusNotFound, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
 	}
+	ctx.JSON(http.StatusOK, "success")
 }
 
 // GetCDNCluster godoc
@@ -145,22 +129,16 @@ func (handler *Handler) UpdateCDNCluster(ctx *gin.Context) {
 func (handler *Handler) GetCDNCluster(ctx *gin.Context) {
 	var uri types.CDNClusterURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	retCluster, err := handler.server.GetCDNCluster(context.TODO(), uri.ClusterID)
-	if err == nil {
-		ctx.JSON(http.StatusOK, &retCluster)
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreNotFound) {
-		NewError(ctx, http.StatusNotFound, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
 	}
+	ctx.JSON(http.StatusOK, &retCluster)
 }
 
 // ListCDNClusters godoc
@@ -179,23 +157,19 @@ func (handler *Handler) GetCDNCluster(ctx *gin.Context) {
 func (handler *Handler) ListCDNClusters(ctx *gin.Context) {
 	var query types.ListQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(NewError(http.StatusBadRequest, err))
 		return
 	}
 
 	clusters, err := handler.server.ListCDNClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
-	if err == nil {
-		if len(clusters) > 0 {
-			ctx.JSON(http.StatusOK, &types.ListCDNClustersResponse{Clusters: clusters})
-		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("list cdn clusters empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount))
-		}
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
+	if err != nil {
+		ctx.Error(NewError(-1, err))
+		return
+	}
+	if len(clusters) > 0 {
+		ctx.JSON(http.StatusOK, &types.ListCDNClustersResponse{Clusters: clusters})
 	} else {
-		NewError(ctx, http.StatusNotFound, err)
+		ctx.Error(NewError(http.StatusNotFound, errors.Newf("list cdn clusters empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount)))
 	}
 }
 

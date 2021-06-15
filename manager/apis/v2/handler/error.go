@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/gin-gonic/gin"
 )
@@ -14,7 +15,11 @@ func (handler *Handler) Error(ctx *gin.Context) {
 	if e != nil {
 		err, ok := e.Err.(*HTTPError)
 		if !ok {
-			ctx.JSON(http.StatusNotFound, err)
+			httpErr := &HTTPError{
+				Code:    http.StatusNotFound,
+				Message: err.Error(),
+			}
+			ctx.JSON(httpErr.Code, httpErr)
 			return
 		}
 		ctx.JSON(err.Code, err)
@@ -22,28 +27,7 @@ func (handler *Handler) Error(ctx *gin.Context) {
 }
 
 // NewError example
-func NewError(ctx *gin.Context, status int, err error) {
-	er := HTTPError{
-		Message: err.Error(),
-	}
-
-	if status > 0 {
-		er.Code = status
-		ctx.JSON(er.Code, er)
-		return
-	}
-	e, ok := err.(*dferrors.DfError)
-	if ok {
-		er.Code = int(e.Code)
-	} else {
-		er.Code = http.StatusNotFound
-
-	}
-	ctx.JSON(er.Code, er)
-	return
-}
-
-func NewHTTPError(status int, err error) error {
+func NewError(status int, err error) error {
 	httpErr := &HTTPError{
 		Message: err.Error(),
 	}
@@ -54,7 +38,16 @@ func NewHTTPError(status int, err error) error {
 	}
 	e, ok := err.(*dferrors.DfError)
 	if ok {
-		httpErr.Code = int(e.Code)
+		switch e.Code {
+		case dfcodes.InvalidResourceType:
+			httpErr.Code = http.StatusBadRequest
+		case dfcodes.ManagerStoreError:
+			httpErr.Code = http.StatusInternalServerError
+		case dfcodes.ManagerStoreNotFound:
+			httpErr.Code = http.StatusNotFound
+		default:
+			httpErr.Code = http.StatusNotFound
+		}
 	} else {
 		httpErr.Code = http.StatusNotFound
 
