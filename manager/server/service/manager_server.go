@@ -28,7 +28,7 @@ type ManagerServer struct {
 	redisClient *dc.RedisClient
 }
 
-func NewManagerServer(cfg *config.Config) *ManagerServer {
+func NewManagerServer(cfg *config.Config) (*ManagerServer, error) {
 	var err error
 	mgr := &ManagerServer{}
 	defer func() {
@@ -38,37 +38,37 @@ func NewManagerServer(cfg *config.Config) *ManagerServer {
 	}()
 
 	if err = cfg.Valid(); err != nil {
-		return nil
+		return mgr, err
 	}
 
 	mgr.identifier = hostidentifier.NewIdentifier()
 
 	mgr.store, err = client.NewStore(cfg)
 	if err != nil {
-		return nil
+		return mgr, err
 	}
 
 	mgr.lessor, err = lease.NewLessor(mgr.store)
 	if err != nil {
-		return nil
+		return mgr, err
 	}
 
 	mgr.redisClient, err = dc.NewRedisClient(cfg.Redis)
 	if err != nil {
-		return nil
+		return mgr, err
 	}
 
 	mgr.configSvc, err = configsvc.NewConfigSvc(mgr.store, mgr.identifier, mgr.lessor, mgr.redisClient)
 	if err != nil {
-		return nil
+		return mgr, err
 	}
 
 	mgr.hostManager, err = host.NewManager(cfg.HostService)
 	if err != nil {
-		return nil
+		return mgr, err
 	}
 
-	return mgr
+	return mgr, nil
 }
 
 func (ms *ManagerServer) Close() error {
