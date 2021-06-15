@@ -3,7 +3,6 @@
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "work dir:$SRC"
-
 if protoc -I="$SRC" \
   --go_out "$SRC" --go_opt paths=source_relative \
   --go-grpc_out "$SRC" --go-grpc_opt paths=source_relative \
