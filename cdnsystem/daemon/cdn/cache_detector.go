@@ -256,7 +256,7 @@ func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, f
 	if pieceLen > 0 && pieceLen < bufSize {
 		bufSize = pieceLen
 	}
-	// todo 针对分片格式解析出原始数据来计算fileMd5
+	// todo Analyze the original data for the slice format to calculate fileMd5
 	pieceContent := make([]byte, bufSize)
 	var curContent int32
 	pieceMd5 := md5.New()
@@ -272,7 +272,9 @@ func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, f
 			}
 
 			if !ifaceutils.IsNil(fileMd5) {
-				// todo 需要存放原始文件的md5，如果是压缩文件，这里需要先解压获取原始文件来得到fileMd5
+				// todo You need to store the md5 of the original file. If it is a compressed file,
+				// you need to decompress the original file to get the fileMd5. If it is a compressed file,
+				// you need to decompress the original file to get the fileMd5.
 				if _, err := fileMd5.Write(pieceContent); err != nil {
 					return errors.Wrapf(err, "write file content md5 error")
 				}
@@ -288,7 +290,7 @@ func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, f
 				return errors.Wrapf(err, "write piece content md5 err")
 			}
 			if !ifaceutils.IsNil(fileMd5) {
-				// todo 需要存放原始文件的md5，如果是压缩文件，这里需要先解压获取原始文件来得到fileMd5
+				// todo Need to store the md5 of the original file. If it is a compressed file, you need to decompress the original file to get fileMd5.
 				if _, err := fileMd5.Write(pieceContent[:readLen]); err != nil {
 					return errors.Wrapf(err, "write file content md5 err")
 				}
