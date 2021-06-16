@@ -116,25 +116,6 @@ func (um *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 				Range: rg[0],
 			},
 		})
-	if err == storage.ErrTaskNotFound {
-		reuse := um.StorageManager.FindCompletedTask(task)
-		if reuse == nil {
-			log.Errorf("get task data failed: %s", err)
-			http.Error(w, fmt.Sprintf("get piece data error: %s", err), http.StatusNotFound)
-			return
-		}
-		reader, closer, err = um.StorageManager.ReadPiece(r.Context(),
-			&storage.ReadPieceRequest{
-				PeerTaskMetaData: storage.PeerTaskMetaData{
-					TaskID: task,
-					PeerID: reuse.PeerID,
-				},
-				PieceMetaData: storage.PieceMetaData{
-					Num:   -1,
-					Range: rg[0],
-				},
-			})
-	}
 	if err != nil {
 		log.Errorf("get task data failed: %s", err)
 		http.Error(w, fmt.Sprintf("get piece data error: %s", err), http.StatusInternalServerError)
