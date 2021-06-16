@@ -44,16 +44,6 @@ type SchedulerInstanceURI struct {
 	InstanceID string `uri:"id" binding:"required"`
 }
 
-type CDNCluster struct {
-	ClusterID string `json:"cluster_id" binding:"omitempty"`
-	Config    string `json:"config" binding:"required"`
-	Version   int64  `json:"version" binding:"omitempty"`
-	Creator   string `json:"creator" binding:"omitempty"`
-	Modifier  string `json:"modifier" binding:"omitempty"`
-	CreatedAt string `json:"created_at" binding:"omitempty"`
-	UpdatedAt string `json:"updated_at" binding:"omitempty"`
-}
-
 type ListCDNClustersResponse struct {
 	Clusters []*CDNCluster `json:"clusters"`
 }

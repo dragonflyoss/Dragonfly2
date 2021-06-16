@@ -1,11 +1,11 @@
-package handler
+package handlers
 
 import (
 	"context"
 	"net/http"
 
-	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/store"
+	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/gin-gonic/gin"
@@ -24,7 +24,7 @@ import (
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn/instances [post]
-func (handler *Handler) CreateCDNInstance(ctx *gin.Context) {
+func (handler *Handlers) CreateCDNInstance(ctx *gin.Context) {
 	var instance types.CDNInstance
 	if err := ctx.ShouldBindJSON(&instance); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -60,7 +60,7 @@ func (handler *Handler) CreateCDNInstance(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn/instances/{id} [delete]
-func (handler *Handler) DestroyCDNInstance(ctx *gin.Context) {
+func (handler *Handlers) DestroyCDNInstance(ctx *gin.Context) {
 	var uri types.CDNInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -96,7 +96,7 @@ func (handler *Handler) DestroyCDNInstance(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn/instances/{id} [post]
-func (handler *Handler) UpdateCDNInstance(ctx *gin.Context) {
+func (handler *Handlers) UpdateCDNInstance(ctx *gin.Context) {
 	var uri types.CDNInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -141,7 +141,7 @@ func (handler *Handler) UpdateCDNInstance(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn/instances/{id} [get]
-func (handler *Handler) GetCDNInstance(ctx *gin.Context) {
+func (handler *Handlers) GetCDNInstance(ctx *gin.Context) {
 	var uri types.CDNInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -162,7 +162,7 @@ func (handler *Handler) GetCDNInstance(ctx *gin.Context) {
 	}
 }
 
-// ListCDNInstances godoc
+// GetCDNInstances godoc
 // @Summary List cdn instances
 // @Description List by object
 // @Tags CDNInstance
@@ -175,7 +175,7 @@ func (handler *Handler) GetCDNInstance(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn/instances [get]
-func (handler *Handler) ListCDNInstances(ctx *gin.Context) {
+func (handler *Handlers) GetCDNInstances(ctx *gin.Context) {
 	var query types.ListQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)

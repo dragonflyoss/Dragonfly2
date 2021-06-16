@@ -1,0 +1,20 @@
+package types
+
+type CDNParams struct {
+	ID string `uri:"id" binding:"required,gte=1,lte=32"`
+}
+
+type CreateCDNRequest struct {
+	BIO    string                 `json:"bio" binding:"omitempty"`
+	Config map[string]interface{} `json:"config" binding:"required"`
+}
+
+type UpdateCDNRequest struct {
+	BIO    string                 `json:"bio" binding:"omitempty"`
+	Config map[string]interface{} `json:"config" binding:"omitempty"`
+}
+
+type GetCDNsQuery struct {
+	Page    int `json:"page" binding:"omitempty,min=1"`
+	PerPage int `json:"per_page" binding:"omitempty,max=50"`
+}

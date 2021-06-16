@@ -1,45 +1,44 @@
-package handler
+package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
-	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/store"
+	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/errgo.v2/fmt/errors"
 )
 
-// CreateSchedulerCluster godoc
-// @Summary Add scheduler cluster
+// CreateSchedulerInstance godoc
+// @Summary Add scheduler instance
 // @Description add by json config
-// @Tags SchedulerCluster
+// @Tags SchedulerInstance
 // @Accept  json
 // @Produce  json
-// @Param cluster body types.SchedulerCluster true "Scheduler cluster"
-// @Success 200 {object} types.SchedulerCluster
+// @Param instance body types.SchedulerInstance true "Scheduler instance"
+// @Success 200 {object} types.SchedulerInstance
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /scheduler/clusters [post]
-func (handler *Handler) CreateSchedulerCluster(ctx *gin.Context) {
-	var cluster types.SchedulerCluster
-	if err := ctx.ShouldBindJSON(&cluster); err != nil {
+// @Router /scheduler/instances [post]
+func (handler *Handlers) CreateSchedulerInstance(ctx *gin.Context) {
+	var instance types.SchedulerInstance
+	if err := ctx.ShouldBindJSON(&instance); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	if err := checkSchedulerClusterValidate(&cluster); err != nil {
+	if err := checkSchedulerInstanceValidate(&instance); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	retCluster, err := handler.server.AddSchedulerCluster(context.TODO(), &cluster)
+	retInstance, err := handler.server.AddSchedulerInstance(context.TODO(), &instance)
 	if err == nil {
-		ctx.JSON(http.StatusOK, retCluster)
+		ctx.JSON(http.StatusOK, retInstance)
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
 		NewError(ctx, http.StatusBadRequest, err)
 	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
@@ -49,31 +48,31 @@ func (handler *Handler) CreateSchedulerCluster(ctx *gin.Context) {
 	}
 }
 
-// DestroySchedulerCluster godoc
-// @Summary Delete scheduler cluster
-// @Description Delete by clusterId
-// @Tags SchedulerCluster
+// DestroySchedulerInstance godoc
+// @Summary Delete scheduler instance
+// @Description Delete by instanceId
+// @Tags SchedulerInstance
 // @Accept  json
 // @Produce  json
-// @Param  id path string true "ClusterID"
+// @Param  id path string true "InstanceID"
 // @Success 200 {string} string
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /scheduler/clusters/{id} [delete]
-func (handler *Handler) DestroySchedulerCluster(ctx *gin.Context) {
-	var uri types.SchedulerClusterURI
+// @Router /scheduler/instances/{id} [delete]
+func (handler *Handlers) DestroySchedulerInstance(ctx *gin.Context) {
+	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	retCluster, err := handler.server.DeleteSchedulerCluster(context.TODO(), uri.ClusterID)
+	retInstance, err := handler.server.DeleteSchedulerInstance(context.TODO(), uri.InstanceID)
 	if err == nil {
-		if retCluster != nil {
+		if retInstance != nil {
 			ctx.JSON(http.StatusOK, "success")
 		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("scheduler cluster not found, id %s", uri.ClusterID))
+			NewError(ctx, http.StatusNotFound, errors.Newf("scheduler instance not found, id %s", uri.InstanceID))
 		}
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -84,39 +83,39 @@ func (handler *Handler) DestroySchedulerCluster(ctx *gin.Context) {
 	}
 }
 
-// UpdateSchedulerCluster godoc
-// @Summary Update scheduler cluster
-// @Description Update by json scheduler cluster
-// @Tags SchedulerCluster
+// UpdateSchedulerInstance godoc
+// @Summary Update scheduler instance
+// @Description Update by json scheduler instance
+// @Tags SchedulerInstance
 // @Accept  json
 // @Produce  json
-// @Param  id path string true "ClusterID"
-// @Param  Cluster body types.SchedulerCluster true "SchedulerCluster"
+// @Param  id path string true "InstanceID"
+// @Param  Instance body types.SchedulerInstance true "SchedulerInstance"
 // @Success 200 {string} string
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /scheduler/clusters/{id} [post]
-func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
-	var uri types.SchedulerClusterURI
+// @Router /scheduler/instances/{id} [post]
+func (handler *Handlers) UpdateSchedulerInstance(ctx *gin.Context) {
+	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	var cluster types.SchedulerCluster
-	if err := ctx.ShouldBindJSON(&cluster); err != nil {
+	var instance types.SchedulerInstance
+	if err := ctx.ShouldBindJSON(&instance); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	if err := checkSchedulerClusterValidate(&cluster); err != nil {
+	if err := checkSchedulerInstanceValidate(&instance); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	cluster.ClusterID = uri.ClusterID
-	_, err := handler.server.UpdateSchedulerCluster(context.TODO(), &cluster)
+	instance.InstanceID = uri.InstanceID
+	_, err := handler.server.UpdateSchedulerInstance(context.TODO(), &instance)
 	if err == nil {
 		ctx.JSON(http.StatusOK, "success")
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
@@ -130,28 +129,28 @@ func (handler *Handler) UpdateSchedulerCluster(ctx *gin.Context) {
 	}
 }
 
-// GetSchedulerCluster godoc
-// @Summary Get scheduler cluster
-// @Description Get scheduler cluster by ClusterID
-// @Tags SchedulerCluster
+// GetSchedulerInstance godoc
+// @Summary Get scheduler instance
+// @Description Get scheduler instance by InstanceID
+// @Tags SchedulerInstance
 // @Accept  json
 // @Produce  json
-// @Param id path string true "ClusterID"
-// @Success 200 {object} types.SchedulerCluster
+// @Param id path string true "InstanceID"
+// @Success 200 {object} types.SchedulerInstance
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /scheduler/clusters/{id} [get]
-func (handler *Handler) GetSchedulerCluster(ctx *gin.Context) {
-	var uri types.SchedulerClusterURI
+// @Router /scheduler/instances/{id} [get]
+func (handler *Handlers) GetSchedulerInstance(ctx *gin.Context) {
+	var uri types.SchedulerInstanceURI
 	if err := ctx.ShouldBindUri(&uri); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	retCluster, err := handler.server.GetSchedulerCluster(context.TODO(), uri.ClusterID)
+	retInstance, err := handler.server.GetSchedulerInstance(context.TODO(), uri.InstanceID)
 	if err == nil {
-		ctx.JSON(http.StatusOK, &retCluster)
+		ctx.JSON(http.StatusOK, &retInstance)
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
 		NewError(ctx, http.StatusBadRequest, err)
 	} else if dferrors.CheckError(err, dfcodes.ManagerStoreNotFound) {
@@ -163,32 +162,32 @@ func (handler *Handler) GetSchedulerCluster(ctx *gin.Context) {
 	}
 }
 
-// ListSchedulerClusters godoc
-// @Summary List scheduler clusters
+// GetSchedulerInstances godoc
+// @Summary List scheduler instances
 // @Description List by object
-// @Tags SchedulerCluster
+// @Tags SchedulerInstance
 // @Accept  json
 // @Produce  json
 // @Param marker query int true "begin marker of current page" default(0)
 // @Param maxItemCount query int true "return max item count, default 10, max 50" default(10) minimum(10) maximum(50)
-// @Success 200 {object} types.ListSchedulerClustersResponse
+// @Success 200 {object} types.ListSchedulerInstancesResponse
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /scheduler/clusters [get]
-func (handler *Handler) ListSchedulerClusters(ctx *gin.Context) {
+// @Router /scheduler/instances [get]
+func (handler *Handlers) GetSchedulerInstances(ctx *gin.Context) {
 	var query types.ListQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		NewError(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	clusters, err := handler.server.ListSchedulerClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
+	instances, err := handler.server.ListSchedulerInstances(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
 	if err == nil {
-		if len(clusters) > 0 {
-			ctx.JSON(http.StatusOK, &types.ListSchedulerClustersResponse{Clusters: clusters})
+		if len(instances) > 0 {
+			ctx.JSON(http.StatusOK, &types.ListSchedulerInstancesResponse{Instances: instances})
 		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("list scheduler clusters empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount))
+			NewError(ctx, http.StatusNotFound, errors.Newf("list scheduler instances empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount))
 		}
 	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
 		NewError(ctx, http.StatusBadRequest, err)
@@ -199,20 +198,6 @@ func (handler *Handler) ListSchedulerClusters(ctx *gin.Context) {
 	}
 }
 
-func checkSchedulerClusterValidate(cluster *types.SchedulerCluster) (err error) {
-	var configMap map[string]string
-	err = json.Unmarshal([]byte(cluster.Config), &configMap)
-	if err != nil {
-		err = errors.New("unmarshal scheduler_config error: scheduler_config must map[string]string")
-		return
-	}
-
-	var clientConfigMap map[string]string
-	err = json.Unmarshal([]byte(cluster.ClientConfig), &clientConfigMap)
-	if err != nil {
-		err = errors.New("unmarshal client_config error: client_config must map[string]string")
-		return
-	}
-
-	return
+func checkSchedulerInstanceValidate(instance *types.SchedulerInstance) (err error) {
+	return nil
 }

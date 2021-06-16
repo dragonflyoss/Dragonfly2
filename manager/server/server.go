@@ -46,7 +46,8 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create manager server: %s", err)
 	}
-	router, err := InitRouter(ms)
+
+	router, err := initRouter(ms)
 	if err != nil {
 		return nil, err
 	}

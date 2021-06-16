@@ -3,56 +3,49 @@ package server
 import (
 	// manager swag api
 	_ "d7y.io/dragonfly/v2/api/v2/manager"
-	"d7y.io/dragonfly/v2/manager/apis/v2/handler"
+	"d7y.io/dragonfly/v2/manager/handler"
+	"d7y.io/dragonfly/v2/manager/middlewares"
 	"d7y.io/dragonfly/v2/manager/server/service"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func InitRouter(server *service.ManagerServer) (*gin.Engine, error) {
-	router := gin.New()
-	handler := handler.NewHandler(server)
+func initRouter(server *service.ManagerServer) (*gin.Engine, error) {
+	r := gin.New()
+	h := handler.NewHandler(server)
 
-	api := router.Group("/api/v2")
-	{
-		{
-			configs := api.Group("/scheduler/clusters")
-			configs.POST("", handler.CreateSchedulerCluster)
-			configs.DELETE(":id", handler.DestroySchedulerCluster)
-			configs.PATCH(":id", handler.UpdateSchedulerCluster)
-			configs.GET(":id", handler.GetSchedulerCluster)
-			configs.GET("", handler.ListSchedulerClusters)
-		}
+	r.Use(middlewares.Error())
 
-		{
-			configs := api.Group("/scheduler/instances")
-			configs.POST("", handler.CreateSchedulerInstance)
-			configs.DELETE(":id", handler.DestroySchedulerInstance)
-			configs.PATCH(":id", handler.UpdateSchedulerInstance)
-			configs.GET(":id", handler.GetSchedulerInstance)
-			configs.GET("", handler.ListSchedulerInstances)
-		}
+	apiv1 := r.Group("/api/v1")
+	sc := apiv1.Group("/schedulers")
+	sc.POST("", h.CreateScheduler)
+	sc.DELETE(":id", h.DestroyScheduler)
+	sc.PATCH(":id", h.UpdateScheduler)
+	sc.GET(":id", h.GetScheduler)
+	sc.GET("", h.GetSchedulers)
 
-		{
-			configs := api.Group("/cdn/clusters")
-			configs.POST("", handler.CreateCDNCluster)
-			configs.DELETE(":id", handler.DestroyCDNCluster)
-			configs.PATCH(":id", handler.UpdateCDNCluster)
-			configs.GET(":id", handler.GetCDNCluster)
-			configs.GET("", handler.ListCDNClusters)
-		}
+	si := apiv1.Group("/schedulers/:schedulerId/instances")
+	si.POST("", h.CreateSchedulerInstance)
+	si.DELETE(":id", h.DestroySchedulerInstance)
+	si.PATCH(":id", h.UpdateSchedulerInstance)
+	si.GET(":id", h.GetSchedulerInstance)
+	si.GET("", h.GetSchedulerInstances)
 
-		{
-			configs := api.Group("/cdn/instances")
-			configs.POST("", handler.CreateCDNInstance)
-			configs.DELETE(":id", handler.DestroyCDNInstance)
-			configs.PATCH(":id", handler.UpdateCDNInstance)
-			configs.GET(":id", handler.GetCDNInstance)
-			configs.GET("", handler.ListCDNInstances)
-		}
-	}
+	cc := apiv1.Group("/cdns")
+	cc.POST("", h.CreateCDN)
+	cc.DELETE(":id", h.DestroyCDN)
+	cc.PATCH(":id", h.UpdateCDN)
+	cc.GET(":id", h.GetCDN)
+	cc.GET("", h.GetCDNs)
 
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	return router, nil
+	ci := apiv1.Group("/cdns/:cdnId/instances")
+	ci.POST("", h.CreateCDNInstance)
+	ci.DELETE(":id", h.DestroyCDNInstance)
+	ci.PATCH(":id", h.UpdateCDNInstance)
+	ci.GET(":id", h.GetCDNInstance)
+	ci.GET("", h.GetCDNInstances)
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	return r, nil
 }

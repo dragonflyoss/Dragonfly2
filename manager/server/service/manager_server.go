@@ -286,7 +286,7 @@ func (ms *ManagerServer) DeleteCDNCluster(ctx context.Context, clusterID string)
 	return ms.configSvc.DeleteCDNCluster(ctx, clusterID)
 }
 
-func (ms *ManagerServer) UpdateCDNCluster(ctx context.Context, cluster *types.CDNCluster) (*types.CDNCluster, error) {
+func (ms *ManagerServer) UpdateCDNCluster(ctx context.Context, id string, cluster *types.CDNCluster) (*types.CDNCluster, error) {
 	return ms.configSvc.UpdateCDNCluster(ctx, cluster)
 }
 
