@@ -89,6 +89,15 @@ func (m *manager) Stop() {
 func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	m.Keep()
 	p, err := m.storageManager.GetPieces(ctx, request)
+	if err == storage.ErrTaskNotFound {
+		reuse := m.storageManager.FindCompletedTask(request.TaskId)
+		if reuse == nil {
+			logger.Errorf("target peer task %s/%s not found", request.TaskId, request.DstPid)
+			return nil, dferrors.New(dfcodes.PeerTaskNotFound, storage.ErrTaskNotFound.Error())
+		}
+		request.DstPid = reuse.PeerID
+		p, err = m.storageManager.GetPieces(ctx, request)
+	}
 	if err != nil {
 		code := dfcodes.UnknownError
 		if err != storage.ErrTaskNotFound {
@@ -141,7 +150,7 @@ func (m *manager) Download(ctx context.Context,
 			Url:      req.Url,
 			Filter:   req.Filter,
 			BizId:    req.BizId,
-			UrlMata:  req.UrlMeta,
+			UrlMeta:  req.UrlMeta,
 			PeerId:   clientutil.GenPeerID(m.peerHost),
 			PeerHost: m.peerHost,
 		},

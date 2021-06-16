@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -48,7 +49,7 @@ type TaskManager interface {
 	// StartStreamPeerTask starts a peer task with stream io
 	// tiny stands task file is tiny and task is done
 	StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (
-		reader io.Reader, attribute map[string]string, err error)
+		readCloser io.ReadCloser, attribute map[string]string, err error)
 
 	IsPeerTaskRunning(pid string) bool
 
@@ -105,6 +106,11 @@ type peerTaskManager struct {
 	runningPeerTasks sync.Map
 
 	perPeerRateLimit rate.Limit
+
+	// enableMultiplex indicates reusing completed peer task storage
+	// currently, only check completed peer task after register to scheduler
+	// TODO multiplex the running peer task
+	enableMultiplex bool
 }
 
 func NewPeerTaskManager(
@@ -123,11 +129,22 @@ func NewPeerTaskManager(
 		schedulerClient:  schedulerClient,
 		schedulerOption:  schedulerOption,
 		perPeerRateLimit: perPeerRateLimit,
+		enableMultiplex:  true,
 	}
 	return ptm, nil
 }
 
 func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *FilePeerTaskProgress, *TinyData, error) {
+	if ptm.enableMultiplex {
+		taskID := idgen.TaskID(req.Url, req.Filter, req.UrlMeta, req.BizId)
+		reuse := ptm.storageManager.FindCompletedTask(taskID)
+		if reuse != nil {
+			progress, ok := ptm.tryReuseFilePeerTask(ctx, req, reuse)
+			if ok {
+				return progress, nil, nil
+			}
+		}
+	}
 	// TODO ensure scheduler is ok first
 	start := time.Now()
 	ctx, pt, tiny, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager,
@@ -173,13 +190,23 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 
 	ptm.runningPeerTasks.Store(req.PeerId, pt)
 
-	// FIXME 1. merge same task id
-	// FIXME 2. when failed due to schedulerClient error, relocate schedulerClient and retry
+	// FIXME when failed due to schedulerClient error, relocate schedulerClient and retry
 	progress, err := pt.Start(ctx)
 	return progress, nil, err
 }
 
-func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (reader io.Reader, attribute map[string]string, err error) {
+func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (io.ReadCloser, map[string]string, error) {
+	if ptm.enableMultiplex {
+		taskID := idgen.TaskID(req.Url, req.Filter, req.UrlMeta, req.BizId)
+		reuse := ptm.storageManager.FindCompletedTask(taskID)
+		if reuse != nil {
+			r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, req, reuse)
+			if ok {
+				return r, attr, nil
+			}
+		}
+	}
+
 	start := time.Now()
 	ctx, pt, tiny, err := newStreamPeerTask(ctx, ptm.host, ptm.pieceManager,
 		req, ptm.schedulerClient, ptm.schedulerOption, ptm.perPeerRateLimit)
@@ -190,7 +217,7 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 	if tiny != nil {
 		logger.Infof("copied tasks data %d bytes to buffer", len(tiny.Content))
 		tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
-		return bytes.NewBuffer(tiny.Content), map[string]string{
+		return io.NopCloser(bytes.NewBuffer(tiny.Content)), map[string]string{
 			headers.ContentLength: fmt.Sprintf("%d", len(tiny.Content)),
 		}, nil
 	}
@@ -204,11 +231,9 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 
 	ptm.runningPeerTasks.Store(req.PeerId, pt)
 
-	// FIXME 1. merge same task id
-	// FIXME 2. when failed due to schedulerClient error, relocate schedulerClient and retry
-
-	reader, attribute, err = pt.Start(ctx)
-	return reader, attribute, err
+	// FIXME when failed due to schedulerClient error, relocate schedulerClient and retry
+	reader, attribute, err := pt.Start(ctx)
+	return io.NopCloser(reader), attribute, err
 }
 
 func (ptm *peerTaskManager) Stop(ctx context.Context) error {
@@ -216,11 +241,11 @@ func (ptm *peerTaskManager) Stop(ctx context.Context) error {
 	return nil
 }
 
-func (ptm *peerTaskManager) PeerTaskDone(pid string) {
-	ptm.runningPeerTasks.Delete(pid)
+func (ptm *peerTaskManager) PeerTaskDone(peerID string) {
+	ptm.runningPeerTasks.Delete(peerID)
 }
 
-func (ptm *peerTaskManager) IsPeerTaskRunning(pid string) bool {
-	_, ok := ptm.runningPeerTasks.Load(pid)
+func (ptm *peerTaskManager) IsPeerTaskRunning(peerID string) bool {
+	_, ok := ptm.runningPeerTasks.Load(peerID)
 	return ok
 }

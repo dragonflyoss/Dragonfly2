@@ -18,7 +18,6 @@ package transport
 
 import (
 	"crypto/tls"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"regexp"
@@ -63,7 +62,7 @@ type transport struct {
 // Option is functional config for transport.
 type Option func(rt *transport) *transport
 
-// WithHTTPSHosts sets the rules for hijacking https requests
+// WithPeerHost sets the peerHost for transport
 func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 	return func(rt *transport) *transport {
 		rt.peerHost = peerHost
@@ -71,7 +70,7 @@ func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 	}
 }
 
-// WithHTTPSHosts sets the rules for hijacking https requests
+// WithPeerTaskManager sets the peerTaskManager for transport
 func WithPeerTaskManager(peerTaskManager peer.TaskManager) Option {
 	return func(rt *transport) *transport {
 		rt.peerTaskManager = peerTaskManager
@@ -103,7 +102,7 @@ func WithDefaultFilter(f string) Option {
 	}
 }
 
-// WithDefaultFilter sets default filter for http requests with X-Dragonfly-Biz Header
+// WithDefaultBiz sets default biz for http requests with X-Dragonfly-Biz Header
 func WithDefaultBiz(b string) Option {
 	return func(rt *transport) *transport {
 		rt.defaultBiz = b
@@ -173,13 +172,13 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 
 	meta.Header = headerToMap(req.Header)
 
-	r, attr, err := rt.peerTaskManager.StartStreamPeerTask(
+	body, attr, err := rt.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
 		&scheduler.PeerTaskRequest{
 			Url:         url,
 			Filter:      filter,
 			BizId:       biz,
-			UrlMata:     meta,
+			UrlMeta:     meta,
 			PeerId:      peerID,
 			PeerHost:    rt.peerHost,
 			HostLoad:    nil,
@@ -196,7 +195,7 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 
 	resp := &http.Response{
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(r),
+		Body:       body,
 		Header:     hdr,
 	}
 	return resp, nil

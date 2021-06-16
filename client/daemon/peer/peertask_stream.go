@@ -66,7 +66,7 @@ func newStreamPeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
-	logger.Debugf("request overview, url: %s, filter: %s, meta: %s, biz: %s", request.Url, request.Filter, request.UrlMata, request.BizId)
+	logger.Debugf("request overview, url: %s, filter: %s, meta: %s, biz: %s", request.Url, request.Filter, request.UrlMeta, request.BizId)
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
@@ -348,10 +348,6 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 				}
 			case cur = <-s.successPieceCh:
 				continue
-				//if !ok {
-				//	s.Warnf("successPieceCh closed")
-				//	continue
-				//}
 			}
 		}
 	}(firstPiece)
