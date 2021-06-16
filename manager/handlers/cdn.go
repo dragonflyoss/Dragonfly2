@@ -150,12 +150,12 @@ func (handler *Handlers) GetCDNs(ctx *gin.Context) {
 		return
 	}
 
-	cdns, err := handler.server.ListCDNClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
+	cdnInstances, err := handler.server.ListCDNClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
 	// TODO(Gaius) Add pagination link header
-	ctx.JSON(http.StatusOK, cdns)
+	ctx.JSON(http.StatusOK, cdnInstances)
 }

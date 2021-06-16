@@ -6,10 +6,7 @@ import (
 
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/gin-gonic/gin"
-	"gopkg.in/errgo.v2/fmt/errors"
 )
 
 // CreateCDNInstance godoc
@@ -25,27 +22,19 @@ import (
 // @Failure 500 {object} HTTPError
 // @Router /cdn/instances [post]
 func (handler *Handlers) CreateCDNInstance(ctx *gin.Context) {
-	var instance types.CDNInstance
-	if err := ctx.ShouldBindJSON(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+	var json types.CreateCDNInstanceRequest
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.Error(err)
 		return
 	}
 
-	if err := checkCDNInstanceValidate(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+	cdnInstance, err := handler.server.AddCDNInstance(context.TODO(), &json)
+	if err != nil {
+		ctx.Error(err)
 		return
 	}
 
-	retInstance, err := handler.server.AddCDNInstance(context.TODO(), &instance)
-	if err == nil {
-		ctx.JSON(http.StatusOK, retInstance)
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
-	}
+	ctx.JSON(http.StatusOK, cdnInstance)
 }
 
 // DestroyCDNInstance godoc
@@ -61,26 +50,19 @@ func (handler *Handlers) CreateCDNInstance(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /cdn/instances/{id} [delete]
 func (handler *Handlers) DestroyCDNInstance(ctx *gin.Context) {
-	var uri types.CDNInstanceURI
-	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+	var params types.CDNInstanceParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.Error(err)
 		return
 	}
 
-	retInstance, err := handler.server.DeleteCDNInstance(context.TODO(), uri.InstanceID)
-	if err == nil {
-		if retInstance != nil {
-			ctx.JSON(http.StatusOK, "success")
-		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("cdn instance not found, id %s", uri.InstanceID))
-		}
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+	cdnInstance, err := handler.server.DeleteCDNInstance(context.TODO(), params.ID)
+	if err != nil {
+		ctx.Error(err)
+		return
 	}
+
+	ctx.JSON(http.StatusOK, cdnInstance)
 }
 
 // UpdateCDNInstance godoc
@@ -97,36 +79,25 @@ func (handler *Handlers) DestroyCDNInstance(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /cdn/instances/{id} [post]
 func (handler *Handlers) UpdateCDNInstance(ctx *gin.Context) {
-	var uri types.CDNInstanceURI
-	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+	var params types.CDNInstanceParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.Error(err)
 		return
 	}
 
-	var instance types.CDNInstance
-	if err := ctx.ShouldBindJSON(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+	var json types.UpdateCDNInstanceRequest
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.Error(err)
 		return
 	}
 
-	if err := checkCDNInstanceValidate(&instance); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+	cdnInstance, err := handler.server.UpdateCDNInstance(context.TODO(), params.ID, json)
+	if err != nil {
+		ctx.Error(err)
 		return
 	}
 
-	instance.InstanceID = uri.InstanceID
-	_, err := handler.server.UpdateCDNInstance(context.TODO(), &instance)
-	if err == nil {
-		ctx.JSON(http.StatusOK, "success")
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreNotFound) {
-		NewError(ctx, http.StatusNotFound, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
-	}
+	ctx.JSON(http.StatusOK, cdnInstance)
 }
 
 // GetCDNInstance godoc
@@ -142,24 +113,18 @@ func (handler *Handlers) UpdateCDNInstance(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /cdn/instances/{id} [get]
 func (handler *Handlers) GetCDNInstance(ctx *gin.Context) {
-	var uri types.CDNInstanceURI
-	if err := ctx.ShouldBindUri(&uri); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+	var params types.CDNInstanceParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.Error(err)
 		return
 	}
 
-	retInstance, err := handler.server.GetCDNInstance(context.TODO(), uri.InstanceID)
+	cdnInstance, err := handler.server.GetCDNInstance(context.TODO(), params.ID)
 	if err == nil {
-		ctx.JSON(http.StatusOK, &retInstance)
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreNotFound) {
-		NewError(ctx, http.StatusNotFound, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
+		ctx.Error(err)
 	}
+
+	ctx.JSON(http.StatusOK, cdnInstance)
 }
 
 // GetCDNInstances godoc
@@ -176,53 +141,21 @@ func (handler *Handlers) GetCDNInstance(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /cdn/instances [get]
 func (handler *Handlers) GetCDNInstances(ctx *gin.Context) {
-	var query types.ListQuery
+	var query types.GetCDNsQuery
+
+	query.Page = 1
+	query.PerPage = 10
+
 	if err := ctx.ShouldBindQuery(&query); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(err)
 		return
 	}
 
-	instances, err := handler.server.ListCDNInstances(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
-	if err == nil {
-		if len(instances) > 0 {
-			ctx.JSON(http.StatusOK, &types.ListCDNInstancesResponse{Instances: instances})
-		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("list cdn instances empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount))
-		}
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
-	}
-}
-
-func checkCDNInstanceValidate(instance *types.CDNInstance) (err error) {
-	if len(instance.ClusterID) <= 0 {
-		err = errors.New("cdn clusterId must be set")
-		return
+	cdnInstances, err := handler.server.ListCDNInstances(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
+	if err != nil {
+		ctx.Error(err)
 	}
 
-	if len(instance.IDC) <= 0 {
-		err = errors.New("cdn idc must be set")
-		return
-	}
-
-	if instance.Port == 0 {
-		err = errors.New("cdn port must be set")
-		return
-	}
-
-	if instance.DownPort == 0 {
-		err = errors.New("cdn downPort must be set")
-		return
-	}
-
-	if instance.RPCPort == 0 {
-		err = errors.New("cdn rpcPort must be set")
-		return
-	}
-
-	return
+	// TODO(Gaius) Add pagination link header
+	ctx.JSON(http.StatusOK, cdnInstances)
 }

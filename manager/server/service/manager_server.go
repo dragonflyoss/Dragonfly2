@@ -246,7 +246,7 @@ func (ms *ManagerServer) DeleteSchedulerCluster(ctx context.Context, clusterID s
 	return ms.configSvc.DeleteSchedulerCluster(ctx, clusterID)
 }
 
-func (ms *ManagerServer) UpdateSchedulerCluster(ctx context.Context, cluster *types.SchedulerCluster) (*types.SchedulerCluster, error) {
+func (ms *ManagerServer) UpdateSchedulerCluster(ctx context.Context, id string, cluster *types.SchedulerCluster) (*types.SchedulerCluster, error) {
 	return ms.configSvc.UpdateSchedulerCluster(ctx, cluster)
 }
 
@@ -306,7 +306,7 @@ func (ms *ManagerServer) DeleteCDNInstance(ctx context.Context, instanceID strin
 	return ms.configSvc.DeleteCDNInstance(ctx, instanceID)
 }
 
-func (ms *ManagerServer) UpdateCDNInstance(ctx context.Context, instance *types.CDNInstance) (*types.CDNInstance, error) {
+func (ms *ManagerServer) UpdateCDNInstance(ctx context.Context, id string, instance *types.CDNInstance) (*types.CDNInstance, error) {
 	return ms.configSvc.UpdateCDNInstance(ctx, instance)
 }
 
