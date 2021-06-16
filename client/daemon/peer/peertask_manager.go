@@ -119,7 +119,8 @@ func NewPeerTaskManager(
 	storageManager storage.Manager,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
-	perPeerRateLimit rate.Limit) (TaskManager, error) {
+	perPeerRateLimit rate.Limit,
+	multiplex bool) (TaskManager, error) {
 
 	ptm := &peerTaskManager{
 		host:             host,
@@ -129,7 +130,7 @@ func NewPeerTaskManager(
 		schedulerClient:  schedulerClient,
 		schedulerOption:  schedulerOption,
 		perPeerRateLimit: perPeerRateLimit,
-		enableMultiplex:  true,
+		enableMultiplex:  multiplex,
 	}
 	return ptm, nil
 }
