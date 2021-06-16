@@ -4,8 +4,7 @@ platform: linux
 version: ${VERSION}
 section: default
 priority: extra
-description: |
-  dfget is the client of Dragonfly used to download and upload files
+description: dfget is the client of Dragonfly used to download and upload files
 license: "Apache 2.0"
 homepage: https://d7y.io
 
@@ -47,3 +46,4 @@ contents:
 scripts:
   postinstall: /root/build/package/nfpm/dfget-postinstall.sh
   preremove: /root/build/package/nfpm/dfget-preremove.sh
+  postremove: /root/build/package/nfpm/dfget-postremove.sh

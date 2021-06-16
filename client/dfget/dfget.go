@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/source"
 	"d7y.io/dragonfly/v2/client/clientutil/progressbar"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/pkg/basic"
@@ -33,6 +32,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	"d7y.io/dragonfly/v2/pkg/source"
 
 	// Init daemon rpc client
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
@@ -134,20 +134,18 @@ func downloadFromSource(cfg *config.DfgetConfig, hdr map[string]string) (err err
 
 	fmt.Println("dfget download error, try to download from source")
 	var (
-		resourceClient source.ResourceClient
-		target         *os.File
-		response       io.ReadCloser
-		_              map[string]string
-		written        int64
+		target   *os.File
+		response io.ReadCloser
+		_        map[string]string
+		written  int64
 	)
 
-	resourceClient, err = source.NewSourceClient()
 	if err != nil {
 		logger.Errorf("init source client error: %s", err)
 		return err
 	}
 
-	response, _, err = resourceClient.Download(cfg.URL, hdr)
+	response, err = source.Download(context.Background(), cfg.URL, hdr)
 	if err != nil {
 		logger.Errorf("download from source error: %s", err)
 		return err

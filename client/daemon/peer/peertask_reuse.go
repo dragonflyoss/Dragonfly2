@@ -38,7 +38,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(
 	reuse *storage.ReusePeerTask) (chan *FilePeerTaskProgress, bool) {
 	log := logger.With("peer", request.PeerId, "task", reuse.TaskID, "component", "reuseFilePeerTask")
 
-	ctx, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
+	_, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))

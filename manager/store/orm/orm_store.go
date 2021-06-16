@@ -2,15 +2,20 @@ package orm
 
 import (
 	"context"
+	"fmt"
 	"net/url"
+	"os"
+	"path"
 
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/dferrors"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"github.com/iancoleman/strcase"
 	"github.com/xo/dburl"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -31,9 +36,14 @@ var ormTables = map[store.ResourceType]newTableSetup{
 	store.Lease:             NewLeaseStore,
 }
 
-func newOrmStore(cfg *config.StoreConfig) (*ormStore, error) {
-	if err := cfg.Valid(); err != nil {
+func NewMySQLOrmStore(cfg *config.StoreConfig) (store.Store, error) {
+	source, err := cfg.Valid()
+	if err != nil {
 		return nil, err
+	}
+
+	if source != "mysql" {
+		return nil, dferrors.Newf(dfcodes.ManagerConfigError, "store config error: source is not mysql")
 	}
 
 	u, err := dburl.Parse("mysql://user:pass@localhost/dbname?")
@@ -41,9 +51,9 @@ func newOrmStore(cfg *config.StoreConfig) (*ormStore, error) {
 		return nil, err
 	}
 
-	u.Host = cfg.Mysql.Addr
-	u.Path = cfg.Mysql.Db
-	u.User = url.UserPassword(cfg.Mysql.User, cfg.Mysql.Password)
+	u.Host = cfg.Source.Mysql.Addr
+	u.Path = cfg.Source.Mysql.Db
+	u.User = url.UserPassword(cfg.Source.Mysql.User, cfg.Source.Mysql.Password)
 	q := u.Query()
 	q.Add("charset", "utf8")
 	q.Add("parseTime", "True")
@@ -79,8 +89,76 @@ func newOrmStore(cfg *config.StoreConfig) (*ormStore, error) {
 	return orm, nil
 }
 
-func NewOrmStore(cfg *config.StoreConfig) (store.Store, error) {
-	return newOrmStore(cfg)
+func createSQLiteDB(db string) error {
+	dir := path.Dir(db)
+	if !fileutils.PathExist(dir) {
+		if err := fileutils.MkdirAll(dir); err != nil {
+			return err
+		}
+	}
+
+	if !fileutils.PathExist(db) {
+		dbFile, err := os.OpenFile(db, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+		if err != nil {
+			return err
+		}
+		defer dbFile.Close()
+	}
+
+	return nil
+}
+
+func NewSQLiteOrmStore(cfg *config.StoreConfig) (store.Store, error) {
+	source, err := cfg.Valid()
+	if err != nil {
+		return nil, err
+	}
+
+	if source != "sqlite" {
+		return nil, dferrors.Newf(dfcodes.ManagerConfigError, "store config error: source is not sqlite")
+	}
+
+	if err := createSQLiteDB(cfg.Source.SQLite.Db); err != nil {
+		return nil, err
+	}
+
+	u, err := dburl.Parse(fmt.Sprintf("sqlite://%s?", cfg.Source.SQLite.Db))
+	if err != nil {
+		return nil, err
+	}
+
+	q := u.Query()
+	q.Add("cache", "shared")
+	q.Add("mode", "memory")
+	u.RawQuery = q.Encode()
+	dsn, err := dburl.GenOpaque(u)
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+
+	orm := &ormStore{
+		db:     db,
+		stores: make(map[store.ResourceType]store.Store),
+		tables: make(map[store.ResourceType]string),
+	}
+
+	for t, f := range ormTables {
+		table := strcase.ToSnake(t.String())
+		s, err := f(db, table)
+		if err != nil {
+			return nil, err
+		}
+
+		orm.stores[t] = s
+		orm.tables[t] = table
+	}
+
+	return orm, nil
 }
 
 func (orm *ormStore) listTables() []string {

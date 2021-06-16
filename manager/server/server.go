@@ -18,6 +18,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -31,7 +32,6 @@ import (
 
 	// manager server rpc
 	_ "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
-	"github.com/pkg/errors"
 )
 
 type Server struct {
@@ -42,24 +42,25 @@ type Server struct {
 }
 
 func New(cfg *config.Config) (*Server, error) {
-	if ms := service.NewManagerServer(cfg); ms != nil {
-		router, err := InitRouter(ms)
-		if err != nil {
-			return nil, err
-		}
-
-		return &Server{
-			cfg: cfg,
-			ms:  ms,
-			httpServer: &http.Server{
-				Addr:    ":8080",
-				Handler: router,
-			},
-			stop: make(chan struct{}),
-		}, nil
+	ms, err := service.NewManagerServer(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create manager server: %s", err)
+	}
+	router, err := InitRouter(ms)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, errors.New("failed to create manager server")
+	return &Server{
+		cfg: cfg,
+		ms:  ms,
+		httpServer: &http.Server{
+			Addr:    ":8080",
+			Handler: router,
+		},
+		stop: make(chan struct{}),
+	}, nil
+
 }
 
 func (s *Server) Serve() error {
@@ -112,6 +113,4 @@ func (s *Server) Stop() {
 	if err != nil {
 		logger.Errorf("failed to stop manager http server: %+v", err)
 	}
-
-	s.httpServer = nil
 }

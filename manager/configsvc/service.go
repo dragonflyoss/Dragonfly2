@@ -147,13 +147,25 @@ func (svc *ConfigSvc) grantKeepAliveLease() (lease.LeaseID, chan struct{}, error
 	return leaseID, ch, nil
 }
 
+func (svc *ConfigSvc) setKeepAliveLeaseID(id lease.LeaseID) {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+	svc.keepAliveLeaseID = id
+}
+
+func (svc *ConfigSvc) getKeepAliveLeaseID() lease.LeaseID {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+	return svc.keepAliveLeaseID
+}
+
 func (svc *ConfigSvc) grantKeepAliveLeaseLoop() {
 	defer svc.wg.Done()
 
 	var ka chan struct{}
 	id, ch, err := svc.grantKeepAliveLease()
 	if err == nil {
-		svc.keepAliveLeaseID = id
+		svc.setKeepAliveLeaseID(id)
 		ka = ch
 	}
 
@@ -162,12 +174,12 @@ func (svc *ConfigSvc) grantKeepAliveLeaseLoop() {
 		case <-svc.stopC:
 			return
 		case <-ka:
-			svc.keepAliveLeaseID = lease.NoLease
+			svc.setKeepAliveLeaseID(lease.NoLease)
 		case <-time.After(svc.grantKeepAliveLeaseIDTime):
-			if svc.keepAliveLeaseID == lease.NoLease {
+			if svc.getKeepAliveLeaseID() == lease.NoLease {
 				id, ch, err := svc.grantKeepAliveLease()
 				if err == nil {
-					svc.keepAliveLeaseID = id
+					svc.setKeepAliveLeaseID(id)
 					ka = ch
 				}
 			}
@@ -183,7 +195,7 @@ func (svc *ConfigSvc) checkKeepAliveLoop() {
 		case <-svc.stopC:
 			return
 		case <-time.After(svc.checkKeepAliveTime):
-			if svc.keepAliveLeaseID != lease.NoLease {
+			if svc.getKeepAliveLeaseID() != lease.NoLease {
 				svc.updateAllInstanceState()
 			}
 		}

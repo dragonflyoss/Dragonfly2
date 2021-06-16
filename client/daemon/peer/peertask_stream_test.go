@@ -25,13 +25,14 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/source"
+	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/client/daemon/test/mock/source"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -67,14 +68,16 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 			return rc, rc, nil
 		})
 
-	sourceClient := source.NewMockResourceClient(ctrl)
-	sourceClient.EXPECT().GetContentLength(url, map[string]string{}).DoAndReturn(
-		func(url string, headers map[string]string) (int64, error) {
+	sourceClient := sourceMock.NewMockResourceClient(ctrl)
+	source.Register("http", sourceClient)
+	defer source.UnRegister("http")
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.Header{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.Header) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
-	sourceClient.EXPECT().Download(url, map[string]string{}).DoAndReturn(
-		func(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
-			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
+	sourceClient.EXPECT().Download(gomock.Any(), url, source.Header{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.Header) (io.ReadCloser, error) {
+			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
 	ptm := &peerTaskManager{
@@ -85,7 +88,6 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			resourceClient:   sourceClient,
 			computePieceSize: computePieceSize,
 		},
 		storageManager:  storageManager,
@@ -108,7 +110,6 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		&pieceManager{
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
-			resourceClient:  sourceClient,
 			computePieceSize: func(contentLength int64) int32 {
 				return int32(pieceSize)
 			},
@@ -166,13 +167,15 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			return rc, rc, nil
 		})
 
-	sourceClient := source.NewMockResourceClient(ctrl)
-	sourceClient.EXPECT().GetContentLength(url, map[string]string{}).DoAndReturn(
-		func(url string, headers map[string]string) (int64, error) {
+	sourceClient := sourceMock.NewMockResourceClient(ctrl)
+	source.Register("http", sourceClient)
+	defer source.UnRegister("http")
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.Header{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.Header) (int64, error) {
 			return -1, nil
 		})
-	sourceClient.EXPECT().Download(url, map[string]string{}).DoAndReturn(
-		func(url string, headers map[string]string) (io.ReadCloser, map[string]string, error) {
+	sourceClient.EXPECT().Download(gomock.Any(), url, source.Header{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.Header) (io.ReadCloser, map[string]string, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
 		})
 
@@ -184,7 +187,6 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			resourceClient:   sourceClient,
 			computePieceSize: computePieceSize,
 		},
 		storageManager:  storageManager,
@@ -207,7 +209,6 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		&pieceManager{
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
-			resourceClient:  sourceClient,
 			computePieceSize: func(contentLength int64) int32 {
 				return int32(pieceSize)
 			},

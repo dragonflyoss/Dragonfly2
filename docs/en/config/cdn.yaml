@@ -32,38 +32,56 @@ base:
   # default: 2m0s
   gcMetaInterval: 2m
 
-  # gcStorageInterval is the interval time to execute GC storage.
-  # default: 15s
-  gcStorageInterval: 15s
-
   # TaskExpireTime when a task is not accessed within the taskExpireTime,
   # and it will be treated to be expired.
   # default: 3m0s
   taskExpireTime: 3m
 
-  # StoragePattern is the pattern of storage policy, [disk/hybrid]
-  storagePattern: disk
+  # storageMode is the Mode of storage policy, [disk/hybrid]
+  storageMode: disk
 
 plugins:
-  storage:
+  storageDriver:
     - name: disk
       enable: true
       config:
         baseDir: /tmp/cdnsystem2
-        gcConfig:
-          youngGCThreshold: 100G
-          fullGCThreshold: 5G
-          cleanRatio: 1
-          intervalThreshold: 2h
     - name: memory
       enable: true
       config:
         baseDir: /tmp/memory/dragonfly
-        gcConfig:
-          youngGCThreshold: 100G
-          fullGCThreshold: 5G
-          cleanRatio: 3
-          intervalThreshold: 2h
+
+  storageManager:
+    - name: disk
+      enable: true
+      config:
+        gcInitialDelay: 5s
+        gcInterval: 15s
+        driverConfigs:
+          disk:
+            gcConfig:
+              youngGCThreshold: 100G
+              fullGCThreshold: 5G
+              cleanRatio: 1
+              intervalThreshold: 2h
+    - name: hybrid
+      enable: false
+      config:
+        gcInitialDelay: 5s
+        gcInterval: 15s
+        driverConfigs:
+          disk:
+            gcConfig:
+              youngGCThreshold: 100G
+              fullGCThreshold: 5G
+              cleanRatio: 1
+              intervalThreshold: 2h
+          memory:
+            gcConfig:
+              youngGCThreshold: 100G
+              fullGCThreshold: 5G
+              cleanRatio: 3
+              intervalThreshold: 2h
 
 # Console shows log on console
 # default: false

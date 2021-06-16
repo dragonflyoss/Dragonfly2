@@ -1,9 +1,12 @@
 package main
 
 import (
+	"os"
+
 	"d7y.io/dragonfly/v2/manager/apis/v2/handler"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/server/service"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -27,7 +30,12 @@ import (
 // @host localhost:8080
 // @BasePath /api/v2
 func main() {
-	server := service.NewManagerServer(config.New())
+	server, err := service.NewManagerServer(config.New())
+	if err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	}
+
 	router := gin.New()
 	handler := handler.NewHandler(server)
 

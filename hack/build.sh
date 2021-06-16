@@ -11,16 +11,7 @@ MANAGER_BINARY_NAME=manager
 
 PKG=d7y.io/dragonfly/v2
 BUILD_IMAGE=golang:1.15.8
-TAG=$(git rev-list --tags --max-count=1)
-if [[ -z "$TAG" ]]; then
-    VERSION=unknown
-else
-    VERSION=$(git describe --tags "$TAG")
-fi
-
-REVISION=$(git rev-parse --short HEAD)
 DATE=$(date "+%Y%m%d-%H:%M:%S")
-LDFLAGS="-X ${PKG}/version.version=${VERSION} -X ${PKG}/version.revision=${REVISION} -X ${PKG}/version.buildDate=${DATE}"
 
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}" || return
@@ -40,7 +31,7 @@ create-dirs() {
 build-local() {
     test -f "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1" && rm -f "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     cd "${BUILD_SOURCE_HOME}/cmd/$2" || return
-    go build -o "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1" -ldflags "${LDFLAGS}"
+    go build -o "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     chmod a+x "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     echo "BUILD: $2 in ${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
 }
@@ -78,7 +69,7 @@ build-docker() {
         -e GOPROXY="${GOPROXY}" \
         -w /go/src/${PKG} \
         ${BUILD_IMAGE} \
-        go build -o "/go/bin/$1" -ldflags "${LDFLAGS}" ./cmd/"$2"
+        go build -o "/go/bin/$1" ./cmd/"$2"
     echo "BUILD: $1 in ${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
 }
 

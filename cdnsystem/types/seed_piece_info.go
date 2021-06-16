@@ -28,8 +28,6 @@ type SeedPiece struct {
 	PieceLen    int32
 }
 
-type ItemType int8
-
 type PieceFormat int8
 
 const (

@@ -17,75 +17,112 @@
 package storedriver
 
 import (
+	"io"
+	"os"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"d7y.io/dragonfly/v2/cdnsystem/plugins"
+	"d7y.io/dragonfly/v2/pkg/unit"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestStoreMgrTestSuite(t *testing.T) {
-	suite.Run(t, new(StoreMgrTestSuite))
+type mockDriver struct {
+	BaseDir string
 }
 
-type StoreMgrTestSuite struct {
-	suite.Suite
+func newDriver(cfg *Config) (Driver, error) {
+	return &mockDriver{
+		BaseDir: cfg.BaseDir,
+	}, nil
 }
 
-func (s *StoreMgrTestSuite) SetupSuite() {
-	type args struct {
-		name    string
-		builder StorageBuilder
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "test1",
-			args: args{
-				name: "disk1",
-				builder: func(conf interface{}) (Driver, error) {
-					return nil, nil
-				},
-			},
-		}, {
-			name: "test2",
-			args: args{
-				name: "memory1",
-				builder: func(conf interface{}) (Driver, error) {
-					return nil, nil
+func (m mockDriver) Get(_ *Raw) (io.ReadCloser, error) {
+	panic("implement me")
+}
+
+func (m mockDriver) GetBytes(_ *Raw) ([]byte, error) {
+	panic("implement me")
+}
+
+func (m mockDriver) Put(_ *Raw, _ io.Reader) error {
+	panic("implement me")
+}
+
+func (m mockDriver) PutBytes(_ *Raw, _ []byte) error {
+	panic("implement me")
+}
+
+func (m mockDriver) Remove(_ *Raw) error {
+	panic("implement me")
+}
+
+func (m mockDriver) Stat(_ *Raw) (*StorageInfo, error) {
+	panic("implement me")
+}
+
+func (m mockDriver) GetAvailSpace() (unit.Bytes, error) {
+	panic("implement me")
+}
+
+func (m mockDriver) GetTotalAndFreeSpace() (unit.Bytes, unit.Bytes, error) {
+	panic("implement me")
+}
+
+func (m mockDriver) GetTotalSpace() (unit.Bytes, error) {
+	panic("implement me")
+}
+
+func (m mockDriver) Walk(_ *Raw) error {
+	panic("implement me")
+}
+
+func (m mockDriver) CreateBaseDir() error {
+	panic("implement me")
+}
+
+func (m mockDriver) GetPath(_ *Raw) string {
+	panic("implement me")
+}
+
+func (m mockDriver) MoveFile(_ string, _ string) error {
+	panic("implement me")
+}
+
+func (m mockDriver) Exits(_ *Raw) bool {
+	panic("implement me")
+}
+
+func (m mockDriver) GetHomePath() string {
+	panic("implement me")
+}
+
+func TestRegister(t *testing.T) {
+	assert := assert.New(t)
+	var pluginName = "mock"
+	var baseDir = "/tmp/drivertest"
+	var driverBuilder = newDriver
+	err := Register(pluginName, driverBuilder)
+	assert.Nil(err)
+	driver, ok := Get(pluginName)
+	assert.Nil(driver)
+	assert.Equal(false, ok)
+	// enable driver
+	err = plugins.Initialize(map[plugins.PluginType][]*plugins.PluginProperties{
+		plugins.StorageDriverPlugin: {
+			&plugins.PluginProperties{
+				Name:   pluginName,
+				Enable: true,
+				Config: &Config{
+					baseDir,
 				},
 			},
 		},
-	}
-	for _, tt := range tests {
-		Register(tt.name, tt.args.builder)
-	}
-}
-
-func (s *StoreMgrTestSuite) TestGet() {
-	type args struct {
-		name string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *Store
-		wantErr bool
-	}{
-		{
-			name: "test1",
-			args: args{name: "disk"},
-			want: &Store{
-				driverName: "disk",
-				config:     nil,
-				driver:     nil,
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		got, err := Get(tt.args.name)
-		s.Equal(tt.wantErr, err != nil)
-		s.Equal(tt.want, got)
-	}
+	})
+	assert.Nil(err)
+	driver, ok = Get("mock")
+	assert.Equal(&mockDriver{
+		BaseDir: baseDir,
+	}, driver)
+	assert.Equal(true, ok)
+	assert.Nil(os.Remove(baseDir))
 }

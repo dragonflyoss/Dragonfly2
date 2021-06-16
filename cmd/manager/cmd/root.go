@@ -36,7 +36,7 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "manager",
-	Short: "the central manager of dragonfly",
+	Short: "The central manager of dragonfly.",
 	Long: `manager is a long-running process and is mainly responsible 
 for managing schedulers and cdns, offering http apis and portal, etc.`,
 	Args:              cobra.NoArgs,
@@ -69,7 +69,12 @@ func init() {
 
 func runManager() error {
 	// manager config values
-	s, _ := yaml.Marshal(cfg)
+	s, err := yaml.Marshal(cfg)
+
+	if err != nil {
+		return err
+	}
+
 	logger.Infof("manager configuration:\n%s", string(s))
 
 	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry.Jaeger)

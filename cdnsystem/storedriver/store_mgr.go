@@ -18,34 +18,45 @@ package storedriver
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"github.com/mitchellh/mapstructure"
 )
 
-// StorageBuilder is a function that creates a new storage plugin instant with the giving conf.
-type StorageBuilder func(conf interface{}) (Driver, error)
+// DriverBuilder is a function that creates a new storage driver plugin instant with the giving Config.
+type DriverBuilder func(cfg *Config) (Driver, error)
 
 // Register defines an interface to register a driver with specified name.
 // All drivers should call this function to register itself to the driverFactory.
-func Register(name string, builder StorageBuilder) {
+func Register(name string, builder DriverBuilder) error {
 	name = strings.ToLower(name)
 	// plugin builder
-	var f plugins.Builder = func(conf interface{}) (plugin plugins.Plugin, e error) {
-		return NewStore(name, builder, conf)
+	var f = func(conf interface{}) (plugins.Plugin, error) {
+		cfg := &Config{}
+		if err := mapstructure.Decode(conf, cfg); err != nil {
+			return nil, fmt.Errorf("failed to parse config: %v", err)
+		}
+		// prepare the base dir
+		if !filepath.IsAbs(cfg.BaseDir) {
+			return nil, fmt.Errorf("not absolute path: %s", cfg.BaseDir)
+		}
+		if err := fileutils.MkdirAll(cfg.BaseDir); err != nil {
+			return nil, fmt.Errorf("failed to create baseDir%s: %v", cfg.BaseDir, err)
+		}
+
+		return newDriverPlugin(name, builder, cfg)
 	}
-	plugins.RegisterPlugin(config.StoragePlugin, name, f)
+	return plugins.RegisterPluginBuilder(plugins.StorageDriverPlugin, name, f)
 }
 
 // Get a store from manager with specified name.
-func Get(name string) (*Store, error) {
-	v := plugins.GetPlugin(config.StoragePlugin, strings.ToLower(name))
-	if v == nil {
-		return nil, fmt.Errorf("storage: %s not existed", name)
+func Get(name string) (Driver, bool) {
+	v, ok := plugins.GetPlugin(plugins.StorageDriverPlugin, strings.ToLower(name))
+	if !ok {
+		return nil, false
 	}
-	if store, ok := v.(*Store); ok {
-		return store, nil
-	}
-	return nil, fmt.Errorf("get store error: unknown reason")
+	return v.(*driverPlugin).instance, true
 }
