@@ -81,7 +81,7 @@ func (worker *writePieceWorker) Work() error {
 			return fmt.Errorf("report piece status, pieceNum %d pieceMetaRecord %s: %v", job.pieceNum, pieceRecord, err)
 		}
 	}
-	return fmt.Errorf("2222")
+	return nil
 }
 
 type downloadMetadata struct {
@@ -131,7 +131,7 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 			backSourceFileLength += int64(n)
 			if int(pieceContLeft) <= n {
 				bb.Write(buf[:pieceContLeft])
-				err := p.Process(&writePieceWorker{
+				if err := p.Process(&writePieceWorker{
 					pc: &protocolContent{
 						TaskID:       task.TaskID,
 						pieceNum:     curPieceNum,
@@ -139,8 +139,9 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 						pieceContent: bb,
 					},
 					cw: cw,
-				})
-
+				}); err != nil {
+					return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("process piece: %v", err)
+				}
 				logger.WithTaskID(task.TaskID).Debugf("submit a protocolContent to worker pool, pieceNum: %d", curPieceNum)
 				curPieceNum++
 
@@ -159,7 +160,7 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 
 		if err == io.EOF {
 			if bb.Len() > 0 {
-				p.Process(&writePieceWorker{
+				if err := p.Process(&writePieceWorker{
 					pc: &protocolContent{
 						TaskID:       task.TaskID,
 						pieceNum:     curPieceNum,
@@ -167,7 +168,9 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 						pieceContent: bb,
 					},
 					cw: cw,
-				})
+				}); err != nil {
+					return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("process piece: %v", err)
+				}
 				curPieceNum++
 				logger.WithTaskID(task.TaskID).Debugf("submit the last protocolContent to worker pool, pieceNum: %d", curPieceNum)
 			}
