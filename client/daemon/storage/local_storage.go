@@ -24,7 +24,6 @@ import (
 	"os"
 	"path"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -32,6 +31,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"go.uber.org/atomic"
 )
 
 type localTaskStore struct {
@@ -46,14 +46,14 @@ type localTaskStore struct {
 	metadataFilePath string
 
 	expireTime    time.Duration
-	lastAccess    int64
-	reclaimMarked bool
+	lastAccess    atomic.Int64
+	reclaimMarked atomic.Bool
 	gcCallback    func(CommonTaskRequest)
 }
 
 func (t *localTaskStore) touch() {
 	access := time.Now().UnixNano()
-	atomic.SwapInt64(&t.lastAccess, access)
+	t.lastAccess.Store(access)
 }
 
 func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
@@ -264,13 +264,13 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 }
 
 func (t *localTaskStore) CanReclaim() bool {
-	access := time.Unix(0, t.lastAccess)
+	access := time.Unix(0, t.lastAccess.Load())
 	return access.Add(t.expireTime).Before(time.Now())
 }
 
 // MarkReclaim will try to invoke gcCallback (normal leave peer task)
 func (t *localTaskStore) MarkReclaim() {
-	if t.reclaimMarked {
+	if t.reclaimMarked.Load() {
 		return
 	}
 	// leave task
@@ -278,7 +278,7 @@ func (t *localTaskStore) MarkReclaim() {
 		PeerID: t.PeerID,
 		TaskID: t.TaskID,
 	})
-	t.reclaimMarked = true
+	t.reclaimMarked.Store(true)
 	logger.Infof("task %s/%s will be reclaimed, marked", t.TaskID, t.PeerID)
 }
 

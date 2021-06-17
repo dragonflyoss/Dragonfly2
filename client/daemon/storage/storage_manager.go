@@ -388,25 +388,23 @@ func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
 		return nil
 	}
 	for _, t := range ts {
-		if t.reclaimMarked {
-			continue
-		}
 		// touch it before marking reclaim
-		access := time.Unix(0, t.lastAccess)
-		if access.Add(t.expireTime + time.Second).Before(time.Now()) {
+		t.touch()
+		// already marked, skip
+		if t.reclaimMarked.Load() {
 			continue
 		}
-		t.touch()
 
-		if t.Done {
-			return &ReusePeerTask{
-				PeerTaskMetaData: PeerTaskMetaData{
-					PeerID: t.PeerID,
-					TaskID: taskID,
-				},
-				ContentLength: t.ContentLength,
-				TotalPieces:   t.TotalPieces,
-			}
+		if !t.Done {
+			continue
+		}
+		return &ReusePeerTask{
+			PeerTaskMetaData: PeerTaskMetaData{
+				PeerID: t.PeerID,
+				TaskID: taskID,
+			},
+			ContentLength: t.ContentLength,
+			TotalPieces:   t.TotalPieces,
 		}
 	}
 	return nil
@@ -566,20 +564,20 @@ func (s *storageManager) TryGC() (bool, error) {
 		var tasks []*localTaskStore
 		s.tasks.Range(func(key, task interface{}) bool {
 			// skip reclaimed task
-			if task.(*localTaskStore).reclaimMarked {
+			if task.(*localTaskStore).reclaimMarked.Load() {
 				return true
 			}
 			tasks = append(tasks, task.(*localTaskStore))
 			return true
 		})
 		sort.SliceStable(tasks, func(i, j int) bool {
-			return tasks[i].lastAccess < tasks[j].lastAccess
+			return tasks[i].lastAccess.Load() < tasks[j].lastAccess.Load()
 		})
 		for _, task := range tasks {
 			task.MarkReclaim()
 			markedTasks = append(markedTasks, PeerTaskMetaData{task.PeerID, task.TaskID})
 			logger.Infof("quota threshold reached, mark task %s/%s reclaimed, last access: %s, size: %s",
-				task.TaskID, task.PeerID, time.Unix(0, task.lastAccess).Format(time.RFC3339Nano),
+				task.TaskID, task.PeerID, time.Unix(0, task.lastAccess.Load()).Format(time.RFC3339Nano),
 				units.BytesSize(float64(task.ContentLength)))
 			totalNotMarkedSize -= task.ContentLength
 			if totalNotMarkedSize < int64(s.storeOption.DiskGCThreshold) {
