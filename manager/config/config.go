@@ -21,8 +21,9 @@ type ServerConfig struct {
 type MysqlConfig struct {
 	User     string `yaml:"user" mapstructure:"user"`
 	Password string `yaml:"password" mapstructure:"password"`
-	Addr     string `yaml:"addr" mapstructure:"addr"`
-	Db       string `yaml:"db" mapstructure:"db"`
+	Host     string `yaml:"host" mapstructure:"host"`
+	Port     int    `yaml:"port" mapstructure:"db"`
+	DBName   string `yaml:"dbname" mapstructure:"dbname"`
 }
 
 type RedisConfig struct {

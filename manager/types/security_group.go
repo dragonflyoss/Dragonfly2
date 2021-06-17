@@ -5,15 +5,15 @@ type SecurityGroupParams struct {
 }
 
 type CreateSecurityGroupRequest struct {
-	Name         string   `json:"name" binding:"required"`
-	Domain       string   `json:"domain" binding:"required"`
-	ProxyDomains []string `json:"proxy_domains" binding:"omitempty"`
+	Name        string `json:"name" binding:"required"`
+	Domain      string `json:"domain" binding:"required"`
+	ProxyDomain string `json:"proxy_domain" binding:"omitempty"`
 }
 
 type UpdateSecurityGroupRequest struct {
-	Name         string   `json:"name" binding:"omitempty"`
-	Domain       string   `json:"domain" binding:"omitempty"`
-	ProxyDomains []string `json:"proxy_domains" binding:"omitempty"`
+	Name        string `json:"name" binding:"omitempty"`
+	Domain      string `json:"domain" binding:"omitempty"`
+	ProxyDomain string `json:"proxy_domain" binding:"omitempty"`
 }
 
 type GetSecurityGroupsQuery struct {

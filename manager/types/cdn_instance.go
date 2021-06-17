@@ -10,7 +10,7 @@ type CreateCDNInstanceRequest struct {
 	Location     string `json:"location" binding:"omitempty"`
 	Host         string `json:"host" binding:"required"`
 	IP           string `json:"ip" binding:"required"`
-	RPCPort      int32  `json:"rpc_port" binding:"required"`
+	Port         int32  `json:"port" binding:"required"`
 	DownloadPort int32  `json:"download_port" binding:"required"`
 }
 
@@ -20,7 +20,7 @@ type UpdateCDNInstanceRequest struct {
 	Location     string `json:"location" binding:"omitempty"`
 	Host         string `json:"host" binding:"omitempty"`
 	IP           string `json:"ip" binding:"omitempty"`
-	RPCPort      int32  `json:"rpc_port" binding:"omitempty"`
+	Port         int32  `json:"port" binding:"omitempty"`
 	DownloadPort int32  `json:"download_port" binding:"omitempty"`
 }
 
