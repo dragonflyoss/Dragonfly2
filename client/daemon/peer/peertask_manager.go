@@ -26,7 +26,6 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/idgen"
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -138,13 +137,9 @@ func NewPeerTaskManager(
 
 func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *FilePeerTaskProgress, *TinyData, error) {
 	if ptm.enableMultiplex {
-		taskID := idgen.TaskID(req.Url, req.Filter, req.UrlMeta, req.BizId)
-		reuse := ptm.storageManager.FindCompletedTask(taskID)
-		if reuse != nil {
-			progress, ok := ptm.tryReuseFilePeerTask(ctx, req, reuse)
-			if ok {
-				return progress, nil, nil
-			}
+		progress, ok := ptm.tryReuseFilePeerTask(ctx, req)
+		if ok {
+			return progress, nil, nil
 		}
 	}
 	// TODO ensure scheduler is ok first
@@ -199,13 +194,9 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 
 func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (io.ReadCloser, map[string]string, error) {
 	if ptm.enableMultiplex {
-		taskID := idgen.TaskID(req.Url, req.Filter, req.UrlMeta, req.BizId)
-		reuse := ptm.storageManager.FindCompletedTask(taskID)
-		if reuse != nil {
-			r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, req, reuse)
-			if ok {
-				return r, attr, nil
-			}
+		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, req)
+		if ok {
+			return r, attr, nil
 		}
 	}
 

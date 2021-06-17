@@ -26,22 +26,27 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/pkg/dfcodes"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 )
 
-func (ptm *peerTaskManager) tryReuseFilePeerTask(
-	ctx context.Context,
-	request *FilePeerTaskRequest,
-	reuse *storage.ReusePeerTask) (chan *FilePeerTaskProgress, bool) {
-	log := logger.With("peer", request.PeerId, "task", reuse.TaskID, "component", "reuseFilePeerTask")
+func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
+	request *FilePeerTaskRequest) (chan *FilePeerTaskProgress, bool) {
+	taskID := idgen.TaskID(request.Url, request.Filter, request.UrlMeta, request.BizId)
+	reuse := ptm.storageManager.FindCompletedTask(taskID)
+	if reuse == nil {
+		return nil, false
+	}
+
+	log := logger.With("peer", request.PeerId, "task", taskID, "component", "reuseFilePeerTask")
 
 	_, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
-	span.SetAttributes(config.AttributeTaskID.String(reuse.TaskID))
+	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
@@ -56,7 +61,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(
 		&storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID:      reuse.PeerID,
-				TaskID:      reuse.TaskID,
+				TaskID:      taskID,
 				Destination: request.Output,
 			},
 			MetadataOnly: false,
@@ -78,7 +83,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(
 			Code:    dfcodes.Success,
 			Msg:     "Success",
 		},
-		TaskID:          reuse.TaskID,
+		TaskID:          taskID,
 		PeerID:          request.PeerId,
 		ContentLength:   reuse.ContentLength,
 		CompletedLength: reuse.ContentLength,
@@ -94,15 +99,21 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(
 	return progressCh, true
 }
 
-func (ptm *peerTaskManager) tryReuseStreamPeerTask(
-	ctx context.Context,
-	request *scheduler.PeerTaskRequest,
-	reuse *storage.ReusePeerTask) (io.ReadCloser, map[string]string, bool) {
-	log := logger.With("peer", request.PeerId, "task", reuse.TaskID, "component", "reuseStreamPeerTask")
+func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
+	request *scheduler.PeerTaskRequest) (io.ReadCloser, map[string]string, bool) {
+	taskID := idgen.TaskID(request.Url, request.Filter, request.UrlMeta, request.BizId)
+	reuse := ptm.storageManager.FindCompletedTask(taskID)
+	if reuse == nil {
+		return nil, nil, false
+	}
+
+	log := logger.With("peer", request.PeerId, "task", taskID, "component", "reuseStreamPeerTask")
+	log.Infof("reuse from peer task: %s, size: %d", reuse.PeerID, reuse.ContentLength)
+
 	ctx, span := tracer.Start(ctx, config.SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
-	span.SetAttributes(config.AttributeTaskID.String(reuse.TaskID))
+	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
@@ -110,6 +121,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(
 
 	rc, err := ptm.storageManager.ReadAllPieces(ctx, &reuse.PeerTaskMetaData)
 	if err != nil {
+		log.Errorf("read all pieces error when reuse peer task: %s", err)
 		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 		span.RecordError(err)
 		return nil, nil, false
@@ -117,11 +129,10 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(
 
 	attr := map[string]string{}
 	attr[headers.ContentLength] = fmt.Sprintf("%d", reuse.ContentLength)
-	attr[config.HeaderDragonflyTask] = reuse.TaskID
+	attr[config.HeaderDragonflyTask] = taskID
 	attr[config.HeaderDragonflyPeer] = request.PeerId
 
 	// TODO record time when file closed, need add a type to implement Close and WriteTo
 	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
-	log.Infof("reuse from peer task: %s, size: %d", reuse.PeerID, reuse.ContentLength)
 	return rc, attr, true
 }
