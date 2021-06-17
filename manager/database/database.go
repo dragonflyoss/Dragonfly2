@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/manager/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -13,7 +14,7 @@ type Database struct {
 }
 
 func New(cfg *config.MysqlConfig) (*Database, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
 
 	dialector := mysql.Open(dsn)
 
@@ -22,13 +23,15 @@ func New(cfg *config.MysqlConfig) (*Database, error) {
 		return nil, err
 	}
 
-	db.AutoMigrate(
+	if err := db.AutoMigrate(
 		&models.CDN{},
 		&models.CDNInstance{},
 		&models.Scheduler{},
 		&models.SchedulerInstance{},
-		&models.SecurityDomain{},
-	)
+		&models.SecurityGroup{},
+	); err != nil {
+		return nil, err
+	}
 
 	return &Database{db}, nil
 }
