@@ -18,15 +18,16 @@ package cdn
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/sync/work"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+	"github.com/Jeffail/tunny"
 	"github.com/pkg/errors"
 )
 
@@ -42,9 +43,7 @@ type writePieceWorker struct {
 	cw *cacheWriter
 }
 
-var _ work.Worker = (*writePieceWorker)(nil)
-
-func (worker *writePieceWorker) Work() {
+func (worker *writePieceWorker) Work() error {
 	var job = worker.pc
 	// todo Subsequent compression and other features are implemented through waitToWriteContent and pieceStyle
 	waitToWriteContent := job.pieceContent
@@ -55,8 +54,7 @@ func (worker *writePieceWorker) Work() {
 
 	if err := worker.cw.cacheDataManager.writeDownloadFile(job.TaskID, int64(job.pieceNum)*int64(job.pieceSize), int64(waitToWriteContent.Len()),
 		waitToWriteContent); err != nil {
-		logger.WithTaskID(job.TaskID).Errorf("failed to write file, pieceNum %d: %v", job.pieceNum, err)
-		return
+		return fmt.Errorf("write download file: %v", err)
 	}
 	pieceRecord := &storage.PieceMetaRecord{
 		PieceNum: job.pieceNum,
@@ -73,17 +71,17 @@ func (worker *writePieceWorker) Work() {
 		PieceStyle: pieceStyle,
 	}
 	// write piece meta to storage
-
 	if err := worker.cw.cacheDataManager.appendPieceMetaData(job.TaskID, pieceRecord); err != nil {
-		logger.WithTaskID(job.TaskID).Errorf("failed to append piece meta data to file:%v", err)
+		return fmt.Errorf("write piece meta file: %v", err)
 	}
 
 	if worker.cw.cdnReporter != nil {
 		if err := worker.cw.cdnReporter.reportPieceMetaRecord(job.TaskID, pieceRecord, DownloaderReport); err != nil {
 			// NOTE: should we do this job again?
-			logger.WithTaskID(job.TaskID).Errorf("failed to report piece status, pieceNum %d pieceMetaRecord %s: %v", job.pieceNum, pieceRecord, err)
+			return fmt.Errorf("report piece status, pieceNum %d pieceMetaRecord %s: %v", job.pieceNum, pieceRecord, err)
 		}
 	}
+	return fmt.Errorf("2222")
 }
 
 type downloadMetadata struct {
@@ -121,7 +119,11 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 
 	// start writer pool
 	routineCount := calculateRoutineCount(task.SourceFileLength-currentSourceFileLength, task.PieceSize)
-	p := work.New(routineCount)
+	p := tunny.NewFunc(routineCount, func(payload interface{}) interface{} {
+		work := payload.(*writePieceWorker)
+		return work.Work()
+	})
+	defer p.Close()
 
 	for {
 		n, err := reader.Read(buf)
@@ -129,7 +131,7 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 			backSourceFileLength += int64(n)
 			if int(pieceContLeft) <= n {
 				bb.Write(buf[:pieceContLeft])
-				p.Run(&writePieceWorker{
+				err := p.Process(&writePieceWorker{
 					pc: &protocolContent{
 						TaskID:       task.TaskID,
 						pieceNum:     curPieceNum,
@@ -138,6 +140,7 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 					},
 					cw: cw,
 				})
+
 				logger.WithTaskID(task.TaskID).Debugf("submit a protocolContent to worker pool, pieceNum: %d", curPieceNum)
 				curPieceNum++
 
@@ -156,7 +159,7 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 
 		if err == io.EOF {
 			if bb.Len() > 0 {
-				p.Run(&writePieceWorker{
+				p.Process(&writePieceWorker{
 					pc: &protocolContent{
 						TaskID:       task.TaskID,
 						pieceNum:     curPieceNum,
@@ -172,12 +175,9 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 			break
 		}
 		if err != nil {
-			// download fail
-			p.Shutdown()
 			return &downloadMetadata{backSourceLength: backSourceFileLength}, err
 		}
 	}
-	p.Shutdown()
 
 	storageInfo, err := cw.cacheDataManager.statDownloadFile(task.TaskID)
 	if err != nil {
