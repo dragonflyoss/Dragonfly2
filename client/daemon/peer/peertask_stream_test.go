@@ -100,7 +100,6 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		Url:      url,
 		Filter:   "",
 		BizId:    "d7y-test",
-		UrlMeta:  nil,
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	}
@@ -199,7 +198,6 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		Url:      url,
 		Filter:   "",
 		BizId:    "d7y-test",
-		UrlMeta:  nil,
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	}

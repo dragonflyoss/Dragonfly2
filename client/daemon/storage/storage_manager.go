@@ -151,7 +151,6 @@ func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOp
 		dataPathStat:  stat.Sys().(*syscall.Stat_t),
 		gcCallback:    gcCallback,
 
-		indexRWMutex:       sync.RWMutex{},
 		indexTask2PeerTask: map[string][]*localTaskStore{},
 	}
 

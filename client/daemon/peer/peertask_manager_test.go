@@ -206,7 +206,6 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 			Url:      "http://localhost/test/data",
 			Filter:   "",
 			BizId:    "d7y-test",
-			UrlMeta:  nil,
 			PeerId:   peerID,
 			PeerHost: &scheduler.PeerHost{},
 		},
@@ -281,7 +280,6 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		Url:      "http://localhost/test/data",
 		Filter:   "",
 		BizId:    "d7y-test",
-		UrlMeta:  nil,
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	})
