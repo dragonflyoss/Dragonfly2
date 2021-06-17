@@ -19,7 +19,6 @@ package cdn
 import (
 	"context"
 	"crypto/md5"
-	"encoding/binary"
 	"fmt"
 	"hash"
 	"io"
@@ -32,7 +31,6 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
-	"d7y.io/dragonfly/v2/pkg/util/ifaceutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
@@ -258,45 +256,10 @@ func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, f
 	}
 	// todo Analyze the original data for the slice format to calculate fileMd5
 	pieceContent := make([]byte, bufSize)
-	var curContent int32
 	pieceMd5 := md5.New()
+	tee := io.TeeReader(io.TeeReader(io.LimitReader(reader, int64(pieceRecord.PieceLen)), pieceMd5), fileMd5)
 	for {
-		if curContent+bufSize <= pieceLen {
-			if err := binary.Read(reader, binary.BigEndian, pieceContent); err != nil {
-				return errors.Wrapf(err, "read file content error")
-			}
-			curContent += bufSize
-			// calculate the md5
-			if _, err := pieceMd5.Write(pieceContent); err != nil {
-				return errors.Wrapf(err, "write piece content md5 err")
-			}
-
-			if !ifaceutils.IsNil(fileMd5) {
-				// todo You need to store the md5 of the original file. If it is a compressed file,
-				// you need to decompress the original file to get the fileMd5. If it is a compressed file,
-				// you need to decompress the original file to get the fileMd5.
-				if _, err := fileMd5.Write(pieceContent); err != nil {
-					return errors.Wrapf(err, "write file content md5 error")
-				}
-			}
-		} else {
-			readLen := pieceLen - curContent
-			if err := binary.Read(reader, binary.BigEndian, pieceContent[:readLen]); err != nil {
-				return errors.Wrapf(err, "read file content error")
-			}
-			curContent += readLen
-			// calculate the md5
-			if _, err := pieceMd5.Write(pieceContent[:readLen]); err != nil {
-				return errors.Wrapf(err, "write piece content md5 err")
-			}
-			if !ifaceutils.IsNil(fileMd5) {
-				// todo Need to store the md5 of the original file. If it is a compressed file, you need to decompress the original file to get fileMd5.
-				if _, err := fileMd5.Write(pieceContent[:readLen]); err != nil {
-					return errors.Wrapf(err, "write file content md5 err")
-				}
-			}
-		}
-		if curContent >= pieceLen {
+		if _, err := tee.Read(pieceContent); err == io.EOF {
 			break
 		}
 	}
