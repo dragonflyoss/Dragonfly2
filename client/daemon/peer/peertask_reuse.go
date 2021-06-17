@@ -41,8 +41,11 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(
 	_, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
+	span.SetAttributes(config.AttributeTaskID.String(reuse.TaskID))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
+	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
+	defer span.End()
 
 	log.Infof("reuse from peer task: %s, size: %d", reuse.PeerID, reuse.ContentLength)
 	span.AddEvent("reuse peer task", trace.WithAttributes(config.AttributePeerID.String(reuse.PeerID)))
@@ -62,6 +65,8 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(
 		})
 	if err != nil {
 		log.Errorf("store error when reuse peer task: %s", err)
+		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		span.RecordError(err)
 		return nil, false
 	}
 	var cost = time.Now().Sub(start).Milliseconds()
@@ -81,11 +86,11 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(
 		DoneCallback:    func() {},
 	}
 
+	// make a new buffered channel, because we did not need to call newFilePeerTask
 	progressCh := make(chan *FilePeerTaskProgress, 1)
 	progressCh <- pg
 
 	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
-	span.End()
 	return progressCh, true
 }
 
@@ -97,11 +102,16 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(
 	ctx, span := tracer.Start(ctx, config.SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
+	span.SetAttributes(config.AttributeTaskID.String(reuse.TaskID))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
+	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
+	defer span.End()
 
 	rc, err := ptm.storageManager.ReadAllPieces(ctx, &reuse.PeerTaskMetaData)
 	if err != nil {
+		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		span.RecordError(err)
 		return nil, nil, false
 	}
 
@@ -110,7 +120,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(
 	attr[config.HeaderDragonflyTask] = reuse.TaskID
 	attr[config.HeaderDragonflyPeer] = request.PeerId
 
-	// TODO record time when file closed
+	// TODO record time when file closed, need add a type to implement Close and WriteTo
 	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 	log.Infof("reuse from peer task: %s, size: %d", reuse.PeerID, reuse.ContentLength)
 	return rc, attr, true
