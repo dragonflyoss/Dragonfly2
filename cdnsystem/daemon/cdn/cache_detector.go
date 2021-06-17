@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"io/ioutil"
 	"sort"
 	"time"
 
@@ -249,19 +250,11 @@ func checkSameFile(task *types.SeedTask, metaData *storage.FileMetaData) error {
 
 //checkPieceContent read piece content from reader and check data integrity by pieceMetaRecord
 func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, fileMd5 hash.Hash) error {
-	bufSize := int32(256 * 1024)
-	pieceLen := pieceRecord.PieceLen
-	if pieceLen > 0 && pieceLen < bufSize {
-		bufSize = pieceLen
-	}
 	// todo Analyze the original data for the slice format to calculate fileMd5
-	pieceContent := make([]byte, bufSize)
 	pieceMd5 := md5.New()
 	tee := io.TeeReader(io.TeeReader(io.LimitReader(reader, int64(pieceRecord.PieceLen)), pieceMd5), fileMd5)
-	for {
-		if _, err := tee.Read(pieceContent); err == io.EOF {
-			break
-		}
+	if n, err := io.Copy(ioutil.Discard, tee); n != int64(pieceRecord.PieceLen) || err != nil {
+		return fmt.Errorf("read piece content: %v", err)
 	}
 	realPieceMd5 := digestutils.ToHashString(pieceMd5)
 	// check piece content
