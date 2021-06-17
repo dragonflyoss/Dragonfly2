@@ -77,14 +77,14 @@ type CDNInstanceURI struct {
 }
 
 type SecurityDomain struct {
-	SecurityDomain string `json:"security_domain" binding:"required"`
-	DisplayName    string `json:"display_name" binding:"required"`
-	ProxyDomain    string `json:"proxy_domain" binding:"omitempty"`
-	Version        int64  `json:"version" binding:"omitempty"`
-	Creator        string `json:"creator" binding:"omitempty"`
-	Modifier       string `json:"modifier" binding:"omitempty"`
-	CreatedAt      string `json:"created_at" binding:"omitempty"`
-	UpdatedAt      string `json:"updated_at" binding:"omitempty"`
+	Domain      string   `json:"domain" binding:"required"`
+	DisplayName string   `json:"display_name" binding:"required"`
+	ProxyDomain []string `json:"proxy_domain" binding:"omitempty"`
+	Version     int64    `json:"version" binding:"omitempty"`
+	Creator     string   `json:"creator" binding:"omitempty"`
+	Modifier    string   `json:"modifier" binding:"omitempty"`
+	CreatedAt   string   `json:"created_at" binding:"omitempty"`
+	UpdatedAt   string   `json:"updated_at" binding:"omitempty"`
 }
 
 type ListSecurityDomainsResponse struct {

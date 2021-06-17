@@ -2,15 +2,11 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"github.com/gin-gonic/gin"
-	"gopkg.in/errgo.v2/fmt/errors"
 )
 
 // CreateScheduler godoc
@@ -145,42 +141,21 @@ func (handler *Handlers) GetScheduler(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /scheduler/clusters [get]
 func (handler *Handlers) GetSchedulers(ctx *gin.Context) {
-	var query types.ListQuery
+	var query types.GetSchedulersQuery
+
+	query.Page = 1
+	query.PerPage = 10
+
 	if err := ctx.ShouldBindQuery(&query); err != nil {
-		NewError(ctx, http.StatusBadRequest, err)
+		ctx.Error(err)
 		return
 	}
 
-	clusters, err := handler.server.ListSchedulerClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
-	if err == nil {
-		if len(clusters) > 0 {
-			ctx.JSON(http.StatusOK, &types.ListSchedulerClustersResponse{Clusters: clusters})
-		} else {
-			NewError(ctx, http.StatusNotFound, errors.Newf("list scheduler clusters empty, marker %d, maxItemCount %d", query.Marker, query.MaxItemCount))
-		}
-	} else if dferrors.CheckError(err, dfcodes.InvalidResourceType) {
-		NewError(ctx, http.StatusBadRequest, err)
-	} else if dferrors.CheckError(err, dfcodes.ManagerStoreError) {
-		NewError(ctx, http.StatusInternalServerError, err)
-	} else {
-		NewError(ctx, http.StatusNotFound, err)
-	}
-}
-
-func checkSchedulerValidate(cluster *types.SchedulerCluster) (err error) {
-	var configMap map[string]string
-	err = json.Unmarshal([]byte(cluster.Config), &configMap)
+	schedulers, err := handler.server.ListSchedulerClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
 	if err != nil {
-		err = errors.New("unmarshal scheduler_config error: scheduler_config must map[string]string")
+		ctx.Error(err)
 		return
 	}
 
-	var clientConfigMap map[string]string
-	err = json.Unmarshal([]byte(cluster.ClientConfig), &clientConfigMap)
-	if err != nil {
-		err = errors.New("unmarshal client_config error: client_config must map[string]string")
-		return
-	}
-
-	return
+	ctx.JSON(http.StatusOK, schedulers)
 }

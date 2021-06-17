@@ -47,6 +47,11 @@ for managing schedulers and cdns, offering http apis and portal, etc.`,
 			return errors.Wrap(err, "init manager logger")
 		}
 
+		// Validate config
+		if err := cfg.Validate(); err != nil {
+			return err
+		}
+
 		return runManager()
 	},
 }

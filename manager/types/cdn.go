@@ -5,11 +5,13 @@ type CDNParams struct {
 }
 
 type CreateCDNRequest struct {
+	Name   string                 `json:"name" binding:"required"`
 	BIO    string                 `json:"bio" binding:"omitempty"`
 	Config map[string]interface{} `json:"config" binding:"required"`
 }
 
 type UpdateCDNRequest struct {
+	Name   string                 `json:"name" binding:"omitempty"`
 	BIO    string                 `json:"bio" binding:"omitempty"`
 	Config map[string]interface{} `json:"config" binding:"omitempty"`
 }

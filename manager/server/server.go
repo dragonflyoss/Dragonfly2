@@ -35,9 +35,9 @@ import (
 )
 
 type Server struct {
-	cfg        *config.Config
-	ms         *service.ManagerServer
-	httpServer *http.Server
+	config     *config.Config
+	rpcService *service.ManagerServer
+	restServer *http.Server
 	stop       chan struct{}
 }
 
@@ -53,9 +53,9 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	return &Server{
-		cfg: cfg,
-		ms:  ms,
-		httpServer: &http.Server{
+		config:     cfg,
+		rpcService: ms,
+		restServer: &http.Server{
 			Addr:    ":8080",
 			Handler: router,
 		},
@@ -67,7 +67,7 @@ func New(cfg *config.Config) (*Server, error) {
 func (s *Server) Serve() error {
 	go func() {
 		port := s.cfg.Server.Port
-		err := rpc.StartTCPServer(port, port, s.ms)
+		err := rpc.StartTCPServer(port, port, s.rpcService)
 		if err != nil {
 			logger.Errorf("failed to start manager tcp server: %+v", err)
 		}

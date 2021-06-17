@@ -3,7 +3,7 @@ package server
 import (
 	// manager swag api
 	_ "d7y.io/dragonfly/v2/api/v2/manager"
-	"d7y.io/dragonfly/v2/manager/handler"
+	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
 	"d7y.io/dragonfly/v2/manager/server/service"
 	"github.com/gin-gonic/gin"
@@ -13,7 +13,7 @@ import (
 
 func initRouter(server *service.ManagerServer) (*gin.Engine, error) {
 	r := gin.New()
-	h := handler.NewHandler(server)
+	h := handlers.NewHandler(server)
 
 	r.Use(middlewares.Error())
 
@@ -45,6 +45,13 @@ func initRouter(server *service.ManagerServer) (*gin.Engine, error) {
 	ci.PATCH(":id", h.UpdateCDNInstance)
 	ci.GET(":id", h.GetCDNInstance)
 	ci.GET("", h.GetCDNInstances)
+
+	sg := apiv1.Group("/security-groups")
+	sg.POST("", h.CreateSecurityGroup)
+	sg.DELETE(":id", h.DestroySecurityGroup)
+	sg.PATCH(":id", h.UpdateSecurityGroup)
+	sg.GET(":id", h.GetSecurityGroup)
+	sg.GET("", h.GetSecurityGroups)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r, nil
