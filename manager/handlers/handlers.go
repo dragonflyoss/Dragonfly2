@@ -3,9 +3,9 @@ package handlers
 import "d7y.io/dragonfly/v2/manager/service"
 
 type Handlers struct {
-	service *service.Service
+	service service.Service
 }
 
-func NewHandler(service *service.Service) *Handlers {
+func NewHandler(service service.Service) *Handlers {
 	return &Handlers{service: service}
 }

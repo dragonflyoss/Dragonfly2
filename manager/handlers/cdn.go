@@ -1,5 +1,12 @@
 package handlers
 
+import (
+	"net/http"
+
+	"d7y.io/dragonfly/v2/manager/types"
+	"github.com/gin-gonic/gin"
+)
+
 // CreateCDN godoc
 // @Summary Add cdn cluster
 // @Description add by json config
@@ -12,21 +19,21 @@ package handlers
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn/clusters [post]
-// func (handler *Handlers) CreateCDN(ctx *gin.Context) {
-// var json types.CreateCDNRequest
-// if err := ctx.ShouldBindJSON(&json); err != nil {
-// ctx.Error(err)
-// return
-// }
+func (h *Handlers) CreateCDN(ctx *gin.Context) {
+	var json types.CreateCDNRequest
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
 
-// retCluster, err := handler.server.AddCDNCluster(context.TODO(), json)
-// if err != nil {
-// ctx.Error(err)
-// return
-// }
+	cdn, err := h.service.CreateCDN(json)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// ctx.JSON(http.StatusOK, retCluster)
-// }
+	ctx.JSON(http.StatusOK, cdn)
+}
 
 // DestroyCDN godoc
 // @Summary Delete cdn cluster

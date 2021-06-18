@@ -3,6 +3,7 @@ package server
 import (
 	// manager swag api
 	_ "d7y.io/dragonfly/v2/api/v2/manager"
+	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
 	"d7y.io/dragonfly/v2/manager/service"
 	"github.com/gin-gonic/gin"
@@ -10,13 +11,17 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func initRouter(service *service.Service) (*gin.Engine, error) {
-	r := gin.New()
-	// h := handlers.NewHandler(service)
+func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
+	// Set mode
+	if verbose == false {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
+	r := gin.New()
+	h := handlers.NewHandler(service)
 	r.Use(middlewares.Error())
 
-	// apiv1 := r.Group("/api/v1")
+	apiv1 := r.Group("/api/v1")
 	// sc := apiv1.Group("/schedulers")
 	// sc.POST("", h.CreateScheduler)
 	// sc.DELETE(":id", h.DestroyScheduler)
@@ -31,8 +36,8 @@ func initRouter(service *service.Service) (*gin.Engine, error) {
 	// si.GET(":id", h.GetSchedulerInstance)
 	// si.GET("", h.GetSchedulerInstances)
 
-	// cc := apiv1.Group("/cdns")
-	// cc.POST("", h.CreateCDN)
+	cc := apiv1.Group("/cdns")
+	cc.POST("", h.CreateCDN)
 	// cc.DELETE(":id", h.DestroyCDN)
 	// cc.PATCH(":id", h.UpdateCDN)
 	// cc.GET(":id", h.GetCDN)

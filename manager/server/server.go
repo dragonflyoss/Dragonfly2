@@ -17,11 +17,14 @@
 package server
 
 import (
+	"context"
 	"net/http"
 
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/service"
+	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"golang.org/x/sync/errgroup"
 
 	// manager server rpc
 	_ "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
@@ -29,39 +32,38 @@ import (
 
 type Server struct {
 	config     *config.Config
-	service    *service.Service
+	service    service.Service
 	restServer *http.Server
 }
 
 func New(cfg *config.Config) (*Server, error) {
-	// ms, err := service.NewManagerServer(cfg)
-	// if err != nil {
-	// return nil, fmt.Errorf("Failed to create manager server: %s", err)
-	// }
-
-	// router, err := initRouter(ms)
-	// if err != nil {
-	// return nil, err
-	// }
-
-	// return &Server{
-	// config:     cfg,
-	// rpcService: ms,
-	// restServer: &http.Server{
-	// Addr:    ":8080",
-	// Handler: router,
-	// },
-	// }, nil
-
+	// Initialize database
 	db, err := database.New(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	// Initialize service
+	service := service.New(service.WithDatabase(db))
+
+	// Initialize router
+	router, err := initRouter(cfg.Verbose, service)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Server{
+		config:  cfg,
+		service: service,
+		restServer: &http.Server{
+			Addr:    cfg.Server.Addr,
+			Handler: router,
+		},
+	}, nil
 }
 
 func (s *Server) Serve() error {
+	g := errgroup.Group{}
 	// go func() {
 	// port := s.cfg.Server.Port
 	// err := rpc.StartTCPServer(port, port, s.rpcService)
@@ -72,24 +74,17 @@ func (s *Server) Serve() error {
 	// s.stop <- struct{}{}
 	// }()
 
-	// go func() {
-	// if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-	// logger.Errorf("failed to start manager http server: %+v", err)
-	// }
+	g.Go(func() error {
+		if err := s.restServer.ListenAndServe(); err != nil {
+			logger.Errorf("failed to start manager rest server: %+v", err)
+			return err
+		}
+		return nil
+	})
 
-	// s.stop <- struct{}{}
-	// }()
+	werr := g.Wait()
 
-	// quit := make(chan os.Signal, 1)
-	// signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	// select {
-	// case <-s.stop:
-	// s.Stop()
-	// case <-quit:
-	// s.Stop()
-	// }
-
-	return nil
+	return werr
 }
 
 func (s *Server) Stop() {
@@ -107,8 +102,8 @@ func (s *Server) Stop() {
 	// ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
 	// defer cancel()
 
-	// err := s.httpServer.Shutdown(ctx)
-	// if err != nil {
-	// logger.Errorf("failed to stop manager http server: %+v", err)
-	// }
+	err := s.restServer.Shutdown(context.TODO())
+	if err != nil {
+		logger.Errorf("failed to stop manager rest server: %+v", err)
+	}
 }

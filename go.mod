@@ -4,8 +4,8 @@ go 1.15
 
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
+	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
-	github.com/alicebob/miniredis/v2 v2.14.5
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/docker/go-units v0.4.0
@@ -16,13 +16,13 @@ require (
 	github.com/go-openapi/spec v0.20.3 // indirect
 	github.com/go-redis/cache/v8 v8.4.1
 	github.com/go-redis/redis/v8 v8.10.0
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gofrs/flock v0.8.0
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/mux v1.7.3
-	github.com/iancoleman/strcase v0.1.3
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-runewidth v0.0.9
@@ -42,7 +42,6 @@ require (
 	github.com/swaggo/files v0.0.0-20190704085106-630677cd5c14
 	github.com/swaggo/gin-swagger v1.3.0
 	github.com/swaggo/swag v1.7.0
-	github.com/xo/dburl v0.7.0
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0
 	go.opentelemetry.io/otel/sdk v0.20.0
@@ -60,7 +59,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	gorm.io/datatypes v1.0.1
 	gorm.io/driver/mysql v1.0.5
-	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.21.6
 	k8s.io/apimachinery v0.20.1
 	k8s.io/client-go v11.0.0+incompatible

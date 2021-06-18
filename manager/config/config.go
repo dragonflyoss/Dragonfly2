@@ -16,8 +16,7 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	IP   string `yaml:"ip" mapstructure:"ip"`
-	Port int    `yaml:"port" mapstructure:"port"`
+	Addr string `yaml:"addr" mapstructure:"addr"`
 }
 
 type MysqlConfig struct {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/models"
+	"d7y.io/dragonfly/v2/manager/model"
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/mysql"
@@ -12,9 +12,9 @@ import (
 )
 
 type Database struct {
-	db    *gorm.DB
-	rdb   *redis.Client
-	cache *cache.Cache
+	DB    *gorm.DB
+	RDB   *redis.Client
+	Cache *cache.Cache
 }
 
 func New(cfg *config.Config) (*Database, error) {
@@ -29,9 +29,9 @@ func New(cfg *config.Config) (*Database, error) {
 	}
 
 	return &Database{
-		db:    db,
-		rdb:   rdb,
-		cache: NewCache(cfg.Cache, rdb),
+		DB:    db,
+		RDB:   rdb,
+		Cache: NewCache(cfg.Cache, rdb),
 	}, nil
 }
 
@@ -46,11 +46,11 @@ func NewMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 	}
 
 	if err := db.AutoMigrate(
-		&models.CDN{},
-		&models.CDNInstance{},
-		&models.Scheduler{},
-		&models.SchedulerInstance{},
-		&models.SecurityGroup{},
+		&model.CDN{},
+		&model.CDNInstance{},
+		&model.Scheduler{},
+		&model.SchedulerInstance{},
+		&model.SecurityGroup{},
 	); err != nil {
 		return nil, err
 	}

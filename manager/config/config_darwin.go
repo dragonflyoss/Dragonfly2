@@ -6,7 +6,7 @@ import "time"
 
 var config = Config{
 	Server: &ServerConfig{
-		Port: 8002,
+		Addr: ":8080",
 	},
 	Cache: &CacheConfig{
 		Size: 100000,
