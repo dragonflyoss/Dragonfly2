@@ -1,0 +1,39 @@
+# uncomment the follow line, if your k8s is not with openkruise
+#apiVersion: apps/v1
+apiVersion: apps.kruise.io/v1alpha1
+kind: DaemonSet
+metadata:
+  name: dfdaemon
+  labels:
+    app: dragonfly
+    component: dfdaemon
+spec:
+  selector:
+    matchLabels:
+      app: dragonfly
+      component: dfdaemon
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 10
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: dragonfly
+        component: dfdaemon
+    spec:
+      hostNetwork: false
+      serviceAccountName: dfdaemon
+      containers:
+      - name: dfdaemon
+        image: d7yio/dfdaemon
+        imagePullPolicy: "Always"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/dragonfly
+        ports:
+        - containerPort: 65001
+      volumes:
+      - name: config
+        configMap:
+          name: dfdaemon

@@ -1,0 +1,12 @@
+resources:
+- ../../bases
+images:
+- name: d7yio/cdn
+  newName: sample.com/d7y/cdn
+  newTag: latest
+- name: d7yio/dfdaemon
+  newName: sample.com/d7y/dfdaemon
+  newTag: latest
+- name: d7yio/scheduler
+  newName: sample.com/d7y/scheduler
+  newTag: latest

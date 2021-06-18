@@ -1,0 +1,36 @@
+namespace: dragonfly
+resources:
+- namespace.yaml
+- cdn/rabc.yaml
+- cdn/service.yaml
+- cdn/serviceaccount.yaml
+- cdn/statefulset.yaml
+- dfdaemon/seviceaccount.yaml
+- dfdaemon/daemonset.yaml
+- scheduler/configmap.yaml
+- scheduler/service.yaml
+- scheduler/statefulset.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    kustomize.resource.generated.by: dragonfly
+configMapGenerator:
+- name: dfdaemon
+  files:
+  - dfdaemon/dfget.yaml
+- name: scheduler
+  files:
+  - scheduler/scheduler.yaml
+- name: cdn
+  files:
+  - cdn/nginx.conf
+  - cdn/cdn.yaml
+images:
+- name: d7yio/cdn
+  newTag: latest
+- name: d7yio/dfdaemon
+  newTag: latest
+- name: d7yio/scheduler
+  newTag: latest
+- name: bitnami/kubectl
+  newTag: latest
