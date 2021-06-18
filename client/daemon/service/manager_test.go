@@ -51,7 +51,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockPeerTaskManager := mock_peer.NewMockPeerTaskManager(ctrl)
+	mockPeerTaskManager := mock_peer.NewMockTaskManager(ctrl)
 	mockPeerTaskManager.EXPECT().StartFilePeerTask(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, req *peer.FilePeerTaskRequest) (chan *peer.FilePeerTaskProgress, bool, error) {
 			ch := make(chan *peer.FilePeerTaskProgress)

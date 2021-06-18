@@ -55,7 +55,7 @@ type PeerTaskRequest struct {
 	// biz id is used to generate different task ids for same url
 	BizId string `protobuf:"bytes,3,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`
 	// url meta info
-	UrlMata *base.UrlMeta `protobuf:"bytes,4,opt,name=url_mata,json=urlMata,proto3" json:"url_mata,omitempty"`
+	UrlMeta *base.UrlMeta `protobuf:"bytes,4,opt,name=url_mata,json=urlMata,proto3" json:"url_mata,omitempty"`
 	// peer's id and must be global uniqueness
 	PeerId string `protobuf:"bytes,5,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 	// peer host info
@@ -121,7 +121,7 @@ func (x *PeerTaskRequest) GetBizId() string {
 
 func (x *PeerTaskRequest) GetUrlMata() *base.UrlMeta {
 	if x != nil {
-		return x.UrlMata
+		return x.UrlMeta
 	}
 	return nil
 }

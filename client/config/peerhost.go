@@ -381,8 +381,10 @@ type StorageOption struct {
 	// after this period cache file will be gc
 	TaskExpireTime clientutil.Duration `mapstructure:"task_expire_time" yaml:"task_expire_time"`
 	// DiskGCThreshold indicates the threshold to gc the oldest tasks
-	DiskGCThreshold unit.Bytes    `mapstructure:"disk_gc_threshold" yaml:"disk_gc_threshold"`
-	StoreStrategy   StoreStrategy `mapstructure:"strategy" yaml:"strategy"`
+	DiskGCThreshold unit.Bytes `mapstructure:"disk_gc_threshold" yaml:"disk_gc_threshold"`
+	// Multiplex indicates reusing underlying storage for same task id
+	Multiplex     bool          `mapstructure:"multiplex" yaml:"multiplex"`
+	StoreStrategy StoreStrategy `mapstructure:"strategy" yaml:"strategy"`
 }
 
 type StoreStrategy string

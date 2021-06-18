@@ -32,7 +32,7 @@ message PeerTaskRequest{
   // biz id is used to generate different task ids for same url
   string biz_id = 3;
   // url meta info
-  base.UrlMeta url_mata = 4;
+  base.UrlMeta url_meta = 4;
   // peer's id and must be global uniqueness
   string peer_id = 5;
   // peer host info

@@ -285,19 +285,19 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 }
 
 func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *scheduler.PeerTaskRequest) error {
-	if request.UrlMata == nil {
-		request.UrlMata = &base.UrlMeta{
+	if request.UrlMeta == nil {
+		request.UrlMeta = &base.UrlMeta{
 			Header: map[string]string{},
 		}
-	} else if request.UrlMata.Header == nil {
-		request.UrlMata.Header = map[string]string{}
+	} else if request.UrlMeta.Header == nil {
+		request.UrlMeta.Header = map[string]string{}
 	}
-	if request.UrlMata.Range != "" {
-		request.UrlMata.Header["Range"] = request.UrlMata.Range
+	if request.UrlMeta.Range != "" {
+		request.UrlMeta.Header["Range"] = request.UrlMeta.Range
 	}
 	log := pt.Log()
 	log.Infof("start to download from source")
-	contentLength, err := source.GetContentLength(ctx, request.Url, request.UrlMata.Header)
+	contentLength, err := source.GetContentLength(ctx, request.Url, request.UrlMeta.Header)
 	if err != nil {
 		log.Warnf("get content length error: %s for %s", err, request.Url)
 	}
@@ -318,7 +318,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	log.Debugf("get content length: %d", contentLength)
 	// 1. download piece from source
-	body, err := source.Download(ctx, request.Url, request.UrlMata.Header)
+	body, err := source.Download(ctx, request.Url, request.UrlMeta.Header)
 	if err != nil {
 		return err
 	}
@@ -326,8 +326,8 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	reader := body.(io.Reader)
 
 	// calc total md5
-	if pm.calculateDigest && request.UrlMata.Digest != "" {
-		reader = digestutils.NewDigestReader(body, request.UrlMata.Digest)
+	if pm.calculateDigest && request.UrlMeta.Digest != "" {
+		reader = digestutils.NewDigestReader(body, request.UrlMeta.Digest)
 	}
 
 	// 2. save to storage
