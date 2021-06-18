@@ -160,9 +160,9 @@ func runDfget() error {
 	daemonClient, err := checkAndSpawnDaemon()
 	if err != nil {
 		logger.Errorf("check and spawn daemon error:%v", err)
+	} else {
+		logger.Info("check and spawn daemon success")
 	}
-
-	logger.Info("check and spawn daemon success")
 	return dfget.Download(dfgetConfig, daemonClient)
 }
 
@@ -201,24 +201,19 @@ func checkAndSpawnDaemon() (client.DaemonClient, error) {
 		return nil, err
 	}
 
-	// 3.First check since starting
-	if daemonClient.CheckHealth(context.Background(), target) == nil {
-		return daemonClient, nil
-	}
+	// 3. check health with at least 5s timeout
+	tick := time.Tick(50 * time.Millisecond)
+	timeout := time.After(5 * time.Second)
 
-	times := 0
-	limit := 100
-	interval := 50 * time.Millisecond
 	for {
-		// 4.Cycle check with 5s timeout
-		if daemonClient.CheckHealth(context.Background(), target) == nil {
+		select {
+		case <-timeout:
+			return nil, errors.New("the daemon is unhealthy")
+		case <-tick:
+			if err = daemonClient.CheckHealth(context.Background(), target); err != nil {
+				continue
+			}
 			return daemonClient, nil
 		}
-
-		times++
-		if times > limit {
-			return nil, errors.New("the daemon is unhealthy")
-		}
-		time.Sleep(interval)
 	}
 }

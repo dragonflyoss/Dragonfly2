@@ -126,24 +126,15 @@ func downloadFromSource(cfg *config.DfgetConfig, hdr map[string]string) (err err
 		logger.Warnf("%s", err)
 		return err
 	}
-
-	var (
-		start = time.Now()
-		end   time.Time
-	)
-
 	fmt.Println("dfget download error, try to download from source")
+
 	var (
+		start    = time.Now()
+		end      time.Time
 		target   *os.File
 		response io.ReadCloser
-		_        map[string]string
 		written  int64
 	)
-
-	if err != nil {
-		logger.Errorf("init source client error: %s", err)
-		return err
-	}
 
 	response, err = source.Download(context.Background(), cfg.URL, hdr)
 	if err != nil {
