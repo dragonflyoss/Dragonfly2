@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 )
@@ -11,6 +12,7 @@ type Config struct {
 	Server       *ServerConfig `yaml:"server" mapstructure:"server"`
 	Redis        *RedisConfig  `yaml:"redis" mapstructure:"redis"`
 	Mysql        *MysqlConfig  `yaml:"mysql" mapstructure:"mysql"`
+	Cache        *CacheConfig  `yaml:"cache" mapstructure:"cache"`
 }
 
 type ServerConfig struct {
@@ -22,14 +24,19 @@ type MysqlConfig struct {
 	User     string `yaml:"user" mapstructure:"user"`
 	Password string `yaml:"password" mapstructure:"password"`
 	Host     string `yaml:"host" mapstructure:"host"`
-	Port     int    `yaml:"port" mapstructure:"db"`
+	Port     int    `yaml:"port" mapstructure:"port"`
 	DBName   string `yaml:"dbname" mapstructure:"dbname"`
 }
 
 type RedisConfig struct {
-	User     string   `yaml:"user" mapstructure:"user"`
-	Password string   `yaml:"password" mapstructure:"password"`
-	Addrs    []string `yaml:"addr" mapstructure:"addrs"`
+	Addr     string `yaml:"addr" mapstructure:"addr"`
+	Password string `yaml:"password" mapstructure:"password"`
+	DB       int    `yaml:"db" mapstructure:"db"`
+}
+
+type CacheConfig struct {
+	Size int           `yaml:"size" mapstructure:"size"`
+	TTL  time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
 func New() *Config {

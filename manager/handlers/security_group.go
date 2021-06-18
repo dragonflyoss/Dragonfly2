@@ -1,14 +1,5 @@
 package handlers
 
-import (
-	"context"
-	"net/http"
-
-	"d7y.io/dragonfly/v2/manager/store"
-	"d7y.io/dragonfly/v2/manager/types"
-	"github.com/gin-gonic/gin"
-)
-
 // CreateSecurityGroup godoc
 // @Summary Add security group
 // @Description add by json config
@@ -21,21 +12,21 @@ import (
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /security-group [post]
-func (handler *Handlers) CreateSecurityGroup(ctx *gin.Context) {
-	var json types.CreateSecurityGroupRequest
-	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err)
-		return
-	}
+// func (handler *Handlers) CreateSecurityGroup(ctx *gin.Context) {
+// var json types.CreateSecurityGroupRequest
+// if err := ctx.ShouldBindJSON(&json); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	securityGroup, err := handler.server.AddSchedulerInstance(context.TODO(), &json)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
+// securityGroup, err := handler.server.AddSchedulerInstance(context.TODO(), &json)
+// if err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	ctx.JSON(http.StatusOK, securityGroup)
-}
+// ctx.JSON(http.StatusOK, securityGroup)
+// }
 
 // DestroySecurityGroup godoc
 // @Summary Delete security group
@@ -49,21 +40,21 @@ func (handler *Handlers) CreateSecurityGroup(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /security-group/{id} [delete]
-func (handler *Handlers) DestroySecurityGroup(ctx *gin.Context) {
-	var params types.SecurityGroupParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
-		return
-	}
+// func (handler *Handlers) DestroySecurityGroup(ctx *gin.Context) {
+// var params types.SecurityGroupParams
+// if err := ctx.ShouldBindUri(&params); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	securityGroup, err := handler.server.DeleteSchedulerInstance(context.TODO(), params.ID)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
+// securityGroup, err := handler.server.DeleteSchedulerInstance(context.TODO(), params.ID)
+// if err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	ctx.JSON(http.StatusOK, securityGroup)
-}
+// ctx.JSON(http.StatusOK, securityGroup)
+// }
 
 // UpdateSecurityGroup godoc
 // @Summary Update security group
@@ -78,27 +69,27 @@ func (handler *Handlers) DestroySecurityGroup(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /security-group/{id} [patch]
-func (handler *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
-	var params types.SecurityGroupParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
-		return
-	}
+// func (handler *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
+// var params types.SecurityGroupParams
+// if err := ctx.ShouldBindUri(&params); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	var json types.UpdateSecurityGroupRequest
-	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err)
-		return
-	}
+// var json types.UpdateSecurityGroupRequest
+// if err := ctx.ShouldBindJSON(&json); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	securityGroup, err := handler.server.UpdateSchedulerInstance(context.TODO(), params.ID, json)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
+// securityGroup, err := handler.server.UpdateSchedulerInstance(context.TODO(), params.ID, json)
+// if err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	ctx.JSON(http.StatusOK, securityGroup)
-}
+// ctx.JSON(http.StatusOK, securityGroup)
+// }
 
 // GetSecurityGroup godoc
 // @Summary Get security group
@@ -112,20 +103,20 @@ func (handler *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /security-group/{id} [get]
-func (handler *Handlers) GetSecurityGroup(ctx *gin.Context) {
-	var params types.SecurityGroupParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
-		return
-	}
+// func (handler *Handlers) GetSecurityGroup(ctx *gin.Context) {
+// var params types.SecurityGroupParams
+// if err := ctx.ShouldBindUri(&params); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	securityGroup, err := handler.server.GetSchedulerInstance(context.TODO(), params.ID)
-	if err != nil {
-		ctx.Error(err)
-	}
+// securityGroup, err := handler.server.GetSchedulerInstance(context.TODO(), params.ID)
+// if err != nil {
+// ctx.Error(err)
+// }
 
-	ctx.JSON(http.StatusOK, securityGroup)
-}
+// ctx.JSON(http.StatusOK, securityGroup)
+// }
 
 // GetSecurityGroups godoc
 // @Summary List scheduler instances
@@ -140,18 +131,18 @@ func (handler *Handlers) GetSecurityGroup(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /scheduler/instances [get]
-func (handler *Handlers) GetSecurityGroups(ctx *gin.Context) {
-	var query types.GetSecurityGroupsQuery
-	if err := ctx.ShouldBindQuery(&query); err != nil {
-		ctx.Error(err)
-		return
-	}
+// func (handler *Handlers) GetSecurityGroups(ctx *gin.Context) {
+// var query types.GetSecurityGroupsQuery
+// if err := ctx.ShouldBindQuery(&query); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	securityGroup, err := handler.server.ListSchedulerInstances(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
+// securityGroup, err := handler.server.ListSchedulerInstances(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
+// if err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	ctx.JSON(http.StatusOK, securityGroup)
-}
+// ctx.JSON(http.StatusOK, securityGroup)
+// }

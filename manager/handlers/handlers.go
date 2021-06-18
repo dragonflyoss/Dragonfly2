@@ -1,11 +1,11 @@
 package handlers
 
-import "d7y.io/dragonfly/v2/manager/server/service"
+import "d7y.io/dragonfly/v2/manager/service"
 
 type Handlers struct {
-	server *service.ManagerServer
+	service *service.Service
 }
 
-func NewHandler(server *service.ManagerServer) *Handlers {
-	return &Handlers{server: server}
+func NewHandler(service *service.Service) *Handlers {
+	return &Handlers{service: service}
 }

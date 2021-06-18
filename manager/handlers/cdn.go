@@ -1,14 +1,5 @@
 package handlers
 
-import (
-	"context"
-	"net/http"
-
-	"d7y.io/dragonfly/v2/manager/store"
-	"d7y.io/dragonfly/v2/manager/types"
-	"github.com/gin-gonic/gin"
-)
-
 // CreateCDN godoc
 // @Summary Add cdn cluster
 // @Description add by json config
@@ -21,21 +12,21 @@ import (
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn/clusters [post]
-func (handler *Handlers) CreateCDN(ctx *gin.Context) {
-	var json types.CreateCDNRequest
-	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err)
-		return
-	}
+// func (handler *Handlers) CreateCDN(ctx *gin.Context) {
+// var json types.CreateCDNRequest
+// if err := ctx.ShouldBindJSON(&json); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	retCluster, err := handler.server.AddCDNCluster(context.TODO(), json)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
+// retCluster, err := handler.server.AddCDNCluster(context.TODO(), json)
+// if err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	ctx.JSON(http.StatusOK, retCluster)
-}
+// ctx.JSON(http.StatusOK, retCluster)
+// }
 
 // DestroyCDN godoc
 // @Summary Delete cdn cluster
@@ -49,21 +40,21 @@ func (handler *Handlers) CreateCDN(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn/clusters/{id} [delete]
-func (handler *Handlers) DestroyCDN(ctx *gin.Context) {
-	var params types.CDNParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
-		return
-	}
+// func (handler *Handlers) DestroyCDN(ctx *gin.Context) {
+// var params types.CDNParams
+// if err := ctx.ShouldBindUri(&params); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	retCluster, err := handler.server.DeleteCDNCluster(context.TODO(), params.ID)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
+// retCluster, err := handler.server.DeleteCDNCluster(context.TODO(), params.ID)
+// if err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	ctx.JSON(http.StatusOK, retCluster)
-}
+// ctx.JSON(http.StatusOK, retCluster)
+// }
 
 // UpdateCDN godoc
 // @Summary Update cdn cluster
@@ -78,26 +69,26 @@ func (handler *Handlers) DestroyCDN(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn/clusters/{id} [post]
-func (handler *Handlers) UpdateCDN(ctx *gin.Context) {
-	var params types.CDNParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
-		return
-	}
+// func (handler *Handlers) UpdateCDN(ctx *gin.Context) {
+// var params types.CDNParams
+// if err := ctx.ShouldBindUri(&params); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	var json types.UpdateCDNRequest
-	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err)
-		return
-	}
+// var json types.UpdateCDNRequest
+// if err := ctx.ShouldBindJSON(&json); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	cdn, err := handler.server.UpdateCDNCluster(context.TODO(), params.ID, json)
-	if err != nil {
-		ctx.Error(err)
-	}
+// cdn, err := handler.server.UpdateCDNCluster(context.TODO(), params.ID, json)
+// if err != nil {
+// ctx.Error(err)
+// }
 
-	ctx.JSON(http.StatusOK, cdn)
-}
+// ctx.JSON(http.StatusOK, cdn)
+// }
 
 // GetCDN godoc
 // @Summary Get cdn cluster
@@ -111,20 +102,20 @@ func (handler *Handlers) UpdateCDN(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn/clusters/{id} [get]
-func (handler *Handlers) GetCDN(ctx *gin.Context) {
-	var params types.CDNParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
-		return
-	}
+// func (handler *Handlers) GetCDN(ctx *gin.Context) {
+// var params types.CDNParams
+// if err := ctx.ShouldBindUri(&params); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	cdn, err := handler.server.GetCDNCluster(context.TODO(), params.ID)
-	if err != nil {
-		ctx.Error(err)
-	}
+// cdn, err := handler.server.GetCDNCluster(context.TODO(), params.ID)
+// if err != nil {
+// ctx.Error(err)
+// }
 
-	ctx.JSON(http.StatusOK, cdn)
-}
+// ctx.JSON(http.StatusOK, cdn)
+// }
 
 // GetCDNs godoc
 // @Summary List cdn clusters
@@ -139,23 +130,23 @@ func (handler *Handlers) GetCDN(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn/clusters [get]
-func (handler *Handlers) GetCDNs(ctx *gin.Context) {
-	var query types.GetCDNsQuery
+// func (handler *Handlers) GetCDNs(ctx *gin.Context) {
+// var query types.GetCDNsQuery
 
-	query.Page = 1
-	query.PerPage = 10
+// query.Page = 1
+// query.PerPage = 10
 
-	if err := ctx.ShouldBindQuery(&query); err != nil {
-		ctx.Error(err)
-		return
-	}
+// if err := ctx.ShouldBindQuery(&query); err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	cdnInstances, err := handler.server.ListCDNClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
+// cdnInstances, err := handler.server.ListCDNClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
+// if err != nil {
+// ctx.Error(err)
+// return
+// }
 
-	// TODO(Gaius) Add pagination link header
-	ctx.JSON(http.StatusOK, cdnInstances)
-}
+// TODO(Gaius) Add pagination link header
+// ctx.JSON(http.StatusOK, cdnInstances)
+// }

@@ -7,7 +7,7 @@ import (
 
 type CDN struct {
 	gorm.Model
-	Name         string            `gorm:"column:name;uniqueIndex;not null"`
+	Name         string            `gorm:"column:name;size:256;uniqueIndex;not null"`
 	BIO          string            `gorm:"column:bio;size:1024"`
 	Config       datatypes.JSONMap `gorm:"column:config;not null"`
 	Schedulers   []Scheduler       `gorm:"many2many:cdn_scheduler;"`
