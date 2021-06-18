@@ -21,6 +21,8 @@ import (
 	"crypto/md5"
 	"fmt"
 	"hash"
+	"io"
+	"io/ioutil"
 	"sort"
 	"time"
 
@@ -29,6 +31,8 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
 
@@ -42,12 +46,10 @@ type cacheResult struct {
 	breakPoint       int64                      // break-point of task file
 	pieceMetaRecords []*storage.PieceMetaRecord // piece meta data records of task
 	fileMetaData     *storage.FileMetaData      // file meta data of task
-	fileMd5          hash.Hash                  // md5 of file content that has been downloaded
 }
 
 func (s *cacheResult) String() string {
-	return fmt.Sprintf("{breakNum:%d, pieceMetaRecords:%+v, fileMetaData:%+v, "+
-		"fileMd5:%v}", s.breakPoint, s.pieceMetaRecords, s.fileMetaData, s.fileMd5)
+	return fmt.Sprintf("{breakNum:%d, pieceMetaRecords:%+v, fileMetaData:%+v}", s.breakPoint, s.pieceMetaRecords, s.fileMetaData)
 }
 
 // newCacheDetector create a new cache detector
@@ -57,12 +59,12 @@ func newCacheDetector(cacheDataManager *cacheDataManager) *cacheDetector {
 	}
 }
 
-func (cd *cacheDetector) detectCache(task *types.SeedTask) (*cacheResult, error) {
+func (cd *cacheDetector) detectCache(task *types.SeedTask, fileMd5 hash.Hash) (*cacheResult, error) {
 	//err := cd.cacheStore.CreateUploadLink(ctx, task.TaskId)
 	//if err != nil {
 	//	return nil, errors.Wrapf(err, "failed to create upload symbolic link")
 	//}
-	result, err := cd.doDetect(task)
+	result, err := cd.doDetect(task, fileMd5)
 	if err != nil {
 		logger.WithTaskID(task.TaskID).Infof("failed to detect cache, reset cache: %v", err)
 		metaData, err := cd.resetCache(task)
@@ -80,8 +82,8 @@ func (cd *cacheDetector) detectCache(task *types.SeedTask) (*cacheResult, error)
 	return result, nil
 }
 
-// detectCache the actual detect action which detects file metaData and pieces metaData of specific task
-func (cd *cacheDetector) doDetect(task *types.SeedTask) (result *cacheResult, err error) {
+// doDetect the actual detect action which detects file metaData and pieces metaData of specific task
+func (cd *cacheDetector) doDetect(task *types.SeedTask, fileMd5 hash.Hash) (result *cacheResult, err error) {
 	fileMetaData, err := cd.cacheDataManager.readFileMetaData(task.TaskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read file meta data")
@@ -117,7 +119,7 @@ func (cd *cacheDetector) doDetect(task *types.SeedTask) (result *cacheResult, er
 	if !supportRange {
 		return nil, errors.Wrapf(cdnerrors.ErrResourceNotSupportRangeRequest, "url:%s", task.URL)
 	}
-	return cd.parseByReadFile(task.TaskID, fileMetaData)
+	return cd.parseByReadFile(task.TaskID, fileMetaData, fileMd5)
 }
 
 // parseByReadMetaFile detect cache by read meta and pieceMeta files of task
@@ -146,12 +148,11 @@ func (cd *cacheDetector) parseByReadMetaFile(taskID string, fileMetaData *storag
 		breakPoint:       -1,
 		pieceMetaRecords: pieceMetaRecords,
 		fileMetaData:     fileMetaData,
-		fileMd5:          nil,
 	}, nil
 }
 
 // parseByReadFile detect cache by read pieceMeta and data files of task
-func (cd *cacheDetector) parseByReadFile(taskID string, metaData *storage.FileMetaData) (*cacheResult, error) {
+func (cd *cacheDetector) parseByReadFile(taskID string, metaData *storage.FileMetaData, fileMd5 hash.Hash) (*cacheResult, error) {
 	reader, err := cd.cacheDataManager.readDownloadFile(taskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read data file")
@@ -162,7 +163,6 @@ func (cd *cacheDetector) parseByReadFile(taskID string, metaData *storage.FileMe
 		return nil, errors.Wrapf(err, "parseByReadFile:failed to read piece meta file")
 	}
 
-	fileMd5 := md5.New()
 	// sort piece meta records by pieceNum
 	sort.Slice(tempRecords, func(i, j int) bool {
 		return tempRecords[i].PieceNum < tempRecords[j].PieceNum
@@ -201,7 +201,6 @@ func (cd *cacheDetector) parseByReadFile(taskID string, metaData *storage.FileMe
 		breakPoint:       int64(breakPoint),
 		pieceMetaRecords: pieceMetaRecords,
 		fileMetaData:     metaData,
-		fileMd5:          fileMd5,
 	}, nil
 }
 
@@ -213,4 +212,50 @@ func (cd *cacheDetector) resetCache(task *types.SeedTask) (*storage.FileMetaData
 	}
 	// initialize meta data file
 	return cd.cacheDataManager.writeFileMetaDataByTask(task)
+}
+
+/*
+   helper functions
+*/
+// checkSameFile check whether meta file is modified
+func checkSameFile(task *types.SeedTask, metaData *storage.FileMetaData) error {
+	if task == nil || metaData == nil {
+		return errors.Errorf("task or metaData is nil, task:%v, metaData:%v", task, metaData)
+	}
+
+	if metaData.PieceSize != task.PieceSize {
+		return errors.Errorf("meta piece size(%d) is not equals with task piece size(%d)", metaData.PieceSize,
+			task.PieceSize)
+	}
+
+	if metaData.TaskID != task.TaskID {
+		return errors.Errorf("meta task TaskId(%s) is not equals with task TaskId(%s)", metaData.TaskID, task.TaskID)
+	}
+
+	if metaData.TaskURL != task.TaskURL {
+		return errors.Errorf("meta task taskUrl(%s) is not equals with task taskUrl(%s)", metaData.TaskURL, task.URL)
+	}
+	if !stringutils.IsBlank(metaData.SourceRealMd5) && !stringutils.IsBlank(task.RequestMd5) &&
+		metaData.SourceRealMd5 != task.RequestMd5 {
+		return errors.Errorf("meta task source md5(%s) is not equals with task request md5(%s)",
+			metaData.SourceRealMd5, task.RequestMd5)
+	}
+	return nil
+}
+
+//checkPieceContent read piece content from reader and check data integrity by pieceMetaRecord
+func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, fileMd5 hash.Hash) error {
+	// todo Analyze the original data for the slice format to calculate fileMd5
+	pieceMd5 := md5.New()
+	tee := io.TeeReader(io.TeeReader(io.LimitReader(reader, int64(pieceRecord.PieceLen)), pieceMd5), fileMd5)
+	if n, err := io.Copy(ioutil.Discard, tee); n != int64(pieceRecord.PieceLen) || err != nil {
+		return fmt.Errorf("read piece content: %v", err)
+	}
+	realPieceMd5 := digestutils.ToHashString(pieceMd5)
+	// check piece content
+	if realPieceMd5 != pieceRecord.Md5 {
+		return errors.Wrapf(cdnerrors.ErrPieceMd5NotMatch, "realPieceMd5 md5 (%s), expected md5 (%s)",
+			realPieceMd5, pieceRecord.Md5)
+	}
+	return nil
 }

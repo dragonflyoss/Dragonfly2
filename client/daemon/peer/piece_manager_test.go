@@ -183,14 +183,14 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 
 			request := &scheduler.PeerTaskRequest{
 				Url: ts.URL,
-				UrlMata: &base.UrlMeta{
+				UrlMeta: &base.UrlMeta{
 					Digest: "",
 					Range:  "",
 					Header: nil,
 				},
 			}
 			if tc.checkDigest {
-				request.UrlMata.Digest = digest
+				request.UrlMeta.Digest = digest
 			}
 
 			err = pm.DownloadSource(context.Background(), mockPeerTask, request)

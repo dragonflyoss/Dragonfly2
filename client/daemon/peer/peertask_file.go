@@ -83,7 +83,7 @@ func newFilePeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
-	logger.Infof("request overview, url: %s, filter: %s, meta: %s, biz: %s, peer: %s", request.Url, request.Filter, request.UrlMata, request.BizId, request.PeerId)
+	logger.Infof("request overview, url: %s, filter: %s, meta: %s, biz: %s, peer: %s", request.Url, request.Filter, request.UrlMeta, request.BizId, request.PeerId)
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
@@ -330,7 +330,7 @@ func (pt *filePeerTask) finish() error {
 				pt.Warnf("wait progress stopped failed, context done, but progress not stopped")
 			}
 		}
-		pt.Debugf("finished: close done channel")
+		pt.Debugf("finished: close channel")
 		close(pt.done)
 		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 		pt.span.End()
@@ -391,7 +391,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			pt.Errorf("peer task fail callback failed: %s", err)
 		}
 
-		pt.Debugf("clean unfinished: close done channel")
+		pt.Debugf("clean unfinished: close channel")
 		close(pt.done)
 		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 		pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))

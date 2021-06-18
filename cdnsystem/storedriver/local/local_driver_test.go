@@ -62,7 +62,7 @@ func (s *LocalDriverTestSuite) SetupSuite() {
 	s.Driver = gotDriver
 }
 
-func (s *LocalDriverTestSuite) TeardownSuite() {
+func (s *LocalDriverTestSuite) TearDownSuite() {
 	if s.workHome != "" {
 		s.Nil(os.RemoveAll(s.workHome))
 	}

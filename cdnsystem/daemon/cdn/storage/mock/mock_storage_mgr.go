@@ -5,7 +5,6 @@
 package mock
 
 import (
-	bytes "bytes"
 	io "io"
 	reflect "reflect"
 
@@ -168,7 +167,7 @@ func (mr *MockManagerMockRecorder) StatDownloadFile(arg0 interface{}) *gomock.Ca
 }
 
 // WriteDownloadFile mocks base method.
-func (m *MockManager) WriteDownloadFile(arg0 string, arg1, arg2 int64, arg3 *bytes.Buffer) error {
+func (m *MockManager) WriteDownloadFile(arg0 string, arg1, arg2 int64, arg3 io.Reader) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteDownloadFile", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)

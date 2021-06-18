@@ -164,7 +164,7 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 	}
 
 	// clean up test data
-	ts.(*localTaskStore).lastAccess = time.Now().Add(-1 * time.Hour).UnixNano()
+	ts.(*localTaskStore).lastAccess.Store(time.Now().Add(-1 * time.Hour).UnixNano())
 	ok = ts.(Reclaimer).CanReclaim()
 	assert.True(ok, "task should gc")
 	err = ts.(Reclaimer).Reclaim()
@@ -200,8 +200,8 @@ func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 		RWMutex:      &sync.RWMutex{},
 		dataDir:      test.DataDir,
 		metadataFile: matadata,
-		lastAccess:   time.Now().UnixNano(),
 	}
+	ts.lastAccess.Store(time.Now().UnixNano())
 	err = ts.Store(context.Background(), &StoreRequest{
 		CommonTaskRequest: CommonTaskRequest{
 			TaskID:      ts.TaskID,
@@ -338,7 +338,7 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 	}
 
 	// clean up test data
-	ts.(*localTaskStore).lastAccess = time.Now().Add(-1 * time.Hour).UnixNano()
+	ts.(*localTaskStore).lastAccess.Store(time.Now().Add(-1 * time.Hour).UnixNano())
 	ok = ts.(Reclaimer).CanReclaim()
 	assert.True(ok, "task should gc")
 	err = ts.(Reclaimer).Reclaim()

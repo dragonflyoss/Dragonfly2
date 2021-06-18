@@ -119,7 +119,7 @@ func New(opt *config.PeerHostOption) (PeerHost, error) {
 		return nil, err
 	}
 	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
-		opt.Download.PerPeerRateLimit.Limit)
+		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex)
 	if err != nil {
 		return nil, err
 	}

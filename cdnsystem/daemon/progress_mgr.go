@@ -27,22 +27,22 @@ import (
 type SeedProgressMgr interface {
 
 	// InitSeedProgress init task seed progress
-	InitSeedProgress(context.Context, string)
+	InitSeedProgress(ctx context.Context, taskID string)
 
 	// WatchSeedProgress watch task seed progress
-	WatchSeedProgress(context.Context, string) (<-chan *types.SeedPiece, error)
+	WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error)
 
 	// PublishPiece publish piece seed
-	PublishPiece(context.Context, string, *types.SeedPiece) error
+	PublishPiece(taskID string, task *types.SeedPiece) error
 
 	// PublishTask publish task seed
-	PublishTask(context.Context, string, *types.SeedTask) error
+	PublishTask(ctx context.Context, taskID string, task *types.SeedTask) error
 
 	// GetPieces get pieces by taskID
-	GetPieces(context.Context, string) (records []*types.SeedPiece, err error)
+	GetPieces(ctx context.Context, taskID string) (records []*types.SeedPiece, err error)
 
 	// Clear meta info of task
-	Clear(string) error
+	Clear(taskID string) error
 
 	SetTaskMgr(taskMgr SeedTaskMgr)
 }
