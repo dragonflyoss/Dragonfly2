@@ -19,6 +19,8 @@ package progress
 import (
 	"container/list"
 	"context"
+	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -192,4 +194,30 @@ func (pm *Manager) GetPieces(ctx context.Context, taskID string) (records []*typ
 	pm.mu.Lock(taskID, true)
 	defer pm.mu.UnLock(taskID, true)
 	return pm.getPieceMetaRecordsByTaskID(taskID)
+}
+
+// setPieceMetaRecord
+func (pm *Manager) setPieceMetaRecord(taskID string, record *types.SeedPiece) error {
+	pieceRecords, err := pm.taskPieceMetaRecords.GetAsMap(taskID)
+	if err != nil {
+		return err
+	}
+	return pieceRecords.Add(strconv.Itoa(int(record.PieceNum)), record)
+}
+
+// getPieceMetaRecordsByTaskID
+func (pm *Manager) getPieceMetaRecordsByTaskID(taskID string) (records []*types.SeedPiece, err error) {
+	pieceRecords, err := pm.taskPieceMetaRecords.GetAsMap(taskID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get piece meta records")
+	}
+	pieceNums := pieceRecords.ListKeyAsIntSlice()
+	sort.Ints(pieceNums)
+	for i := 0; i < len(pieceNums); i++ {
+		v, _ := pieceRecords.Get(strconv.Itoa(pieceNums[i]))
+		if value, ok := v.(*types.SeedPiece); ok {
+			records = append(records, value)
+		}
+	}
+	return records, nil
 }
