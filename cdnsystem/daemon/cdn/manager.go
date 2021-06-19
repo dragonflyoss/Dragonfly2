@@ -83,7 +83,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	cm.cdnLocker.Lock(task.TaskID, false)
 	defer cm.cdnLocker.UnLock(task.TaskID, false)
 	// first: detect Cache
-	detectResult, err := cm.detector.detectCache(task)
+	fileMd5 := md5.New()
+	detectResult, err := cm.detector.detectCache(task, fileMd5)
 	if err != nil {
 		return getUpdateTaskInfoWithStatusOnly(types.TaskInfoCdnStatusFailed), errors.Wrapf(err, "failed to detect cache")
 	}
@@ -112,10 +113,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 
 	// update Expire info
 	cm.updateExpireInfo(task.TaskID, expireInfo)
-	fileMd5 := md5.New()
-	if detectResult.fileMd5 != nil {
-		fileMd5 = detectResult.fileMd5
-	}
+
 	reader := limitreader.NewLimitReaderWithLimiterAndMD5Sum(body, cm.limiter, fileMd5)
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(reader, task, detectResult)

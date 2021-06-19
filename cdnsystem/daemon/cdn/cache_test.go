@@ -19,6 +19,7 @@ package cdn
 import (
 	"bufio"
 	"context"
+	"crypto/md5"
 	"fmt"
 	"hash"
 	"io"
@@ -153,7 +154,6 @@ func (suite *CacheWriterAndDetectorTestSuite) TestStartWriter() {
 					breakPoint:       0,
 					pieceMetaRecords: nil,
 					fileMetaData:     nil,
-					fileMd5:          nil,
 				},
 			},
 			result: &downloadMetadata{
@@ -176,7 +176,6 @@ func (suite *CacheWriterAndDetectorTestSuite) TestStartWriter() {
 					breakPoint:       0,
 					pieceMetaRecords: nil,
 					fileMetaData:     nil,
-					fileMd5:          nil,
 				},
 			},
 			result: &downloadMetadata{
@@ -300,7 +299,6 @@ func (suite *CacheWriterAndDetectorTestSuite) TestDetectCache() {
 				breakPoint:       0,
 				pieceMetaRecords: nil,
 				fileMetaData:     nil,
-				fileMd5:          nil,
 			},
 			wantErr: false,
 		}, {
@@ -325,7 +323,6 @@ func (suite *CacheWriterAndDetectorTestSuite) TestDetectCache() {
 				breakPoint:       0,
 				pieceMetaRecords: []*storage.PieceMetaRecord{},
 				fileMetaData:     &storage.FileMetaData{},
-				fileMd5:          nil,
 			},
 			wantErr: false,
 		}, {
@@ -337,7 +334,6 @@ func (suite *CacheWriterAndDetectorTestSuite) TestDetectCache() {
 				breakPoint:       0,
 				pieceMetaRecords: nil,
 				fileMetaData:     nil,
-				fileMd5:          nil,
 			},
 			wantErr: false,
 		}, {
@@ -349,7 +345,6 @@ func (suite *CacheWriterAndDetectorTestSuite) TestDetectCache() {
 				breakPoint:       0,
 				pieceMetaRecords: nil,
 				fileMetaData:     nil,
-				fileMd5:          nil,
 			},
 		}, {
 			name: "data corruption",
@@ -360,7 +355,6 @@ func (suite *CacheWriterAndDetectorTestSuite) TestDetectCache() {
 				breakPoint:       0,
 				pieceMetaRecords: nil,
 				fileMetaData:     nil,
-				fileMd5:          nil,
 			},
 		}, {
 			name: "reset cache error",
@@ -371,14 +365,13 @@ func (suite *CacheWriterAndDetectorTestSuite) TestDetectCache() {
 				breakPoint:       0,
 				pieceMetaRecords: nil,
 				fileMetaData:     nil,
-				fileMd5:          nil,
 			},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			got, err := suite.detector.detectCache(tt.args.task)
+			got, err := suite.detector.detectCache(tt.args.task, md5.New())
 			suite.Equal(err, tt.wantErr)
 			suite.Equal(tt.want, got)
 		})
@@ -407,7 +400,7 @@ func (suite *CacheWriterAndDetectorTestSuite) TestParseByReadFile(t *testing.T) 
 			cd := &cacheDetector{
 				cacheDataManager: tt.fields.cacheDataManager,
 			}
-			got, err := cd.parseByReadFile(tt.args.taskID, tt.args.metaData)
+			got, err := cd.parseByReadFile(tt.args.taskID, tt.args.metaData, md5.New())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseByReadFile() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -506,7 +499,6 @@ func Test_cacheResult_String(t *testing.T) {
 				breakPoint:       tt.fields.breakPoint,
 				pieceMetaRecords: tt.fields.pieceMetaRecords,
 				fileMetaData:     tt.fields.fileMetaData,
-				fileMd5:          tt.fields.fileMd5,
 			}
 			if got := s.String(); got != tt.want {
 				t.Errorf("String() = %v, want %v", got, tt.want)
