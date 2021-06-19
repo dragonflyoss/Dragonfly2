@@ -27,12 +27,19 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/disk"
+	storageMock "d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/mock"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/progress"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
+	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/pkg/unit"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -47,9 +54,42 @@ type CacheWriterAndDetectorTestSuite struct {
 	suite.Suite
 }
 
+func NewPlugins(workHome string) map[plugins.PluginType][]*plugins.PluginProperties {
+	return map[plugins.PluginType][]*plugins.PluginProperties{
+		plugins.StorageDriverPlugin: {
+			{
+				Name:   local.DiskDriverName,
+				Enable: true,
+				Config: &storedriver.Config{
+					BaseDir: workHome,
+				},
+			},
+		}, plugins.StorageManagerPlugin: {
+			{
+				Name:   disk.StorageMode,
+				Enable: true,
+				Config: &storage.Config{
+					GCInitialDelay: 0 * time.Second,
+					GCInterval:     15 * time.Second,
+					DriverConfigs: map[string]*storage.DriverConfig{
+						local.DiskDriverName: {
+							GCConfig: &storage.GCConfig{
+								YoungGCThreshold:  100 * unit.GB,
+								FullGCThreshold:   5 * unit.GB,
+								CleanRatio:        1,
+								IntervalThreshold: 2 * time.Hour,
+							}},
+					},
+				},
+			},
+		},
+	}
+}
+
 func (suite *CacheWriterAndDetectorTestSuite) SetupSuite() {
 	suite.workHome, _ = ioutil.TempDir("/tmp", "cdn-CacheWriterDetectorTestSuite-")
-	plugins.Initialize(config.NewDefaultPlugins())
+	suite.T().Log("workHome:", suite.workHome)
+	plugins.Initialize(NewPlugins(suite.workHome))
 	storeMgr, ok := storage.Get(config.DefaultStorageMode)
 	if !ok {
 		suite.Failf("failed to get storage mode %s", config.DefaultStorageMode)
@@ -61,7 +101,7 @@ func (suite *CacheWriterAndDetectorTestSuite) SetupSuite() {
 	suite.detector = newCacheDetector(cacheDataManager)
 }
 
-func (suite *CacheWriterAndDetectorTestSuite) TeardownSuite() {
+func (suite *CacheWriterAndDetectorTestSuite) TearDownSuite() {
 	if suite.workHome != "" {
 		if err := os.RemoveAll(suite.workHome); err != nil {
 			fmt.Printf("remove path: %s error", suite.workHome)
@@ -98,8 +138,8 @@ func (suite *CacheWriterAndDetectorTestSuite) TestStartWriter() {
 				backSourceLength:     contentLen,
 				realCdnFileLength:    contentLen,
 				realSourceFileLength: contentLen,
-				pieceTotalCount:      2,
-				pieceMd5Sign:         "3b0d3defb43bc99e9d0c31eef4d2efaf1d2bcb73fae8f337d6ebf4f643469173",
+				pieceTotalCount:      int32((contentLen + 49) / 50),
+				pieceMd5Sign:         "3f4585787609b0d7d4c9fc800db61655a74494f83507c8acd2818d0461d9cdc5",
 			},
 		}, {
 			name: "write with non nil detectResult",
@@ -118,10 +158,10 @@ func (suite *CacheWriterAndDetectorTestSuite) TestStartWriter() {
 			},
 			result: &downloadMetadata{
 				backSourceLength:     contentLen,
-				realCdnFileLength:    0,
-				realSourceFileLength: 0,
-				pieceTotalCount:      0,
-				pieceMd5Sign:         "",
+				realCdnFileLength:    contentLen,
+				realSourceFileLength: contentLen,
+				pieceTotalCount:      int32((contentLen + 49) / 50),
+				pieceMd5Sign:         "3f4585787609b0d7d4c9fc800db61655a74494f83507c8acd2818d0461d9cdc5",
 			},
 		}, {
 			name: "write with task length",
@@ -141,19 +181,21 @@ func (suite *CacheWriterAndDetectorTestSuite) TestStartWriter() {
 			},
 			result: &downloadMetadata{
 				backSourceLength:     contentLen,
-				realCdnFileLength:    0,
-				realSourceFileLength: 0,
-				pieceTotalCount:      0,
-				pieceMd5Sign:         "",
+				realCdnFileLength:    contentLen,
+				realSourceFileLength: contentLen,
+				pieceTotalCount:      int32((contentLen + 49) / 50),
+				pieceMd5Sign:         "3f4585787609b0d7d4c9fc800db61655a74494f83507c8acd2818d0461d9cdc5",
 			},
 		},
 	}
 	for _, tt := range tests {
-		suite.writer.cdnReporter.progress.InitSeedProgress(context.Background(), tt.args.task.TaskID)
-		downloadMetadata, err := suite.writer.startWriter(tt.args.reader, tt.args.task, tt.args.detectResult)
-		suite.Equal(tt.wantErr, err != nil)
-		suite.Equal(tt.result, downloadMetadata)
-		//suite.checkFileSize(suite.writer.cacheDataManager.storage, task.TaskID, contentLen)
+		suite.Run(tt.name, func() {
+			suite.writer.cdnReporter.progress.InitSeedProgress(context.Background(), tt.args.task.TaskID)
+			downloadMetadata, err := suite.writer.startWriter(tt.args.reader, tt.args.task, tt.args.detectResult)
+			suite.Equal(tt.wantErr, err != nil)
+			suite.Equal(tt.result, downloadMetadata)
+			suite.checkFileSize(suite.writer.cacheDataManager, tt.args.task.TaskID, contentLen)
+		})
 	}
 }
 
@@ -167,8 +209,46 @@ func (suite *CacheWriterAndDetectorTestSuite) TestCalculateRoutineCount() {
 		args args
 		want int
 	}{
-		{},
-		{},
+		{
+			name: "Exact equal default goroutine count",
+			args: args{
+				remainingFileLength: 200,
+				pieceSize:           50,
+			},
+			want: 4,
+		},
+		{
+			name: "larger than default goroutine count",
+			args: args{
+				remainingFileLength: 2222,
+				pieceSize:           50,
+			},
+			want: 4,
+		},
+		{
+			name: "remainingFileLength is zero",
+			args: args{
+				remainingFileLength: 0,
+				pieceSize:           50,
+			},
+			want: 1,
+		},
+		{
+			name: "smaller than 1",
+			args: args{
+				remainingFileLength: 10,
+				pieceSize:           50,
+			},
+			want: 1,
+		},
+		{
+			name: "piece size is zero",
+			args: args{
+				remainingFileLength: 10,
+				pieceSize:           0,
+			},
+			want: 4,
+		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
@@ -179,69 +259,128 @@ func (suite *CacheWriterAndDetectorTestSuite) TestCalculateRoutineCount() {
 	}
 }
 
-func (suite *CacheWriterAndDetectorTestSuite) checkFileSize(cdnStore storage.Manager, taskID string, expectedSize int64) {
-	storageInfo, err := cdnStore.StatDownloadFile(taskID)
+func (suite *CacheWriterAndDetectorTestSuite) checkFileSize(cacheDataMgr *cacheDataManager, taskID string, expectedSize int64) {
+	storageInfo, err := cacheDataMgr.statDownloadFile(taskID)
 	suite.Nil(err)
 	suite.Equal(expectedSize, storageInfo.Size)
 }
 
 func (suite *CacheWriterAndDetectorTestSuite) TestDetectCache() {
-	type fields struct {
-		cacheDataManager *cacheDataManager
-	}
+	ctrl := gomock.NewController(suite.T())
+	mgr := storageMock.NewMockManager(ctrl)
+	mgr.EXPECT()
 	type args struct {
 		task *types.SeedTask
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    *cacheResult
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "no cache",
+			args: args{
+				task: &types.SeedTask{
+					TaskID:           "test1",
+					URL:              "http://www.nocache.com",
+					TaskURL:          "http://www.nocache.com",
+					SourceFileLength: 0,
+					CdnFileLength:    0,
+					PieceSize:        0,
+					Header:           nil,
+					CdnStatus:        "",
+					PieceTotal:       0,
+					RequestMd5:       "",
+					SourceRealMd5:    "",
+					PieceMd5Sign:     "",
+				},
+			},
+			want: &cacheResult{
+				breakPoint:       0,
+				pieceMetaRecords: nil,
+				fileMetaData:     nil,
+				fileMd5:          nil,
+			},
+			wantErr: false,
+		}, {
+			name: "partial cache",
+			args: args{
+				task: &types.SeedTask{
+					TaskID:           "",
+					URL:              "",
+					TaskURL:          "",
+					SourceFileLength: 0,
+					CdnFileLength:    0,
+					PieceSize:        0,
+					Header:           nil,
+					CdnStatus:        "",
+					PieceTotal:       0,
+					RequestMd5:       "",
+					SourceRealMd5:    "",
+					PieceMd5Sign:     "",
+				},
+			},
+			want: &cacheResult{
+				breakPoint:       0,
+				pieceMetaRecords: []*storage.PieceMetaRecord{},
+				fileMetaData:     &storage.FileMetaData{},
+				fileMd5:          nil,
+			},
+			wantErr: false,
+		}, {
+			name: "full cache",
+			args: args{
+				task: nil,
+			},
+			want: &cacheResult{
+				breakPoint:       0,
+				pieceMetaRecords: nil,
+				fileMetaData:     nil,
+				fileMd5:          nil,
+			},
+			wantErr: false,
+		}, {
+			name: "cache expiration",
+			args: args{
+				task: nil,
+			},
+			want: &cacheResult{
+				breakPoint:       0,
+				pieceMetaRecords: nil,
+				fileMetaData:     nil,
+				fileMd5:          nil,
+			},
+		}, {
+			name: "data corruption",
+			args: args{
+				task: nil,
+			},
+			want: &cacheResult{
+				breakPoint:       0,
+				pieceMetaRecords: nil,
+				fileMetaData:     nil,
+				fileMd5:          nil,
+			},
+		}, {
+			name: "reset cache error",
+			args: args{
+				task: nil,
+			},
+			want: &cacheResult{
+				breakPoint:       0,
+				pieceMetaRecords: nil,
+				fileMetaData:     nil,
+				fileMd5:          nil,
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			cd := &cacheDetector{
-				cacheDataManager: tt.fields.cacheDataManager,
-			}
-			got, err := cd.detectCache(tt.args.task)
+			got, err := suite.detector.detectCache(tt.args.task)
 			suite.Equal(err, tt.wantErr)
 			suite.Equal(tt.want, got)
-		})
-	}
-}
-
-func (suite *CacheWriterAndDetectorTestSuite) TestDoDetect(t *testing.T) {
-	type fields struct {
-		cacheDataManager *cacheDataManager
-	}
-	type args struct {
-		task *types.SeedTask
-	}
-	tests := []struct {
-		name       string
-		fields     fields
-		args       args
-		wantResult *cacheResult
-		wantErr    bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cd := &cacheDetector{
-				cacheDataManager: tt.fields.cacheDataManager,
-			}
-			gotResult, err := cd.doDetect(tt.args.task)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("doDetect() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(gotResult, tt.wantResult) {
-				t.Errorf("doDetect() gotResult = %v, want %v", gotResult, tt.wantResult)
-			}
 		})
 	}
 }

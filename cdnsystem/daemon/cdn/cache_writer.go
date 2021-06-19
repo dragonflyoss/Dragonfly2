@@ -18,6 +18,7 @@ package cdn
 
 import (
 	"bytes"
+	"crypto/md5"
 	"fmt"
 	"io"
 	"sync"
@@ -76,6 +77,7 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 	if err != nil {
 		return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("stat cdn download file: %v", storageInfo)
 	}
+	// todo Try getting it from the ProgressManager first
 	pieceMd5Sign, _, err := cw.cacheDataManager.getPieceMd5Sign(task.TaskID)
 	if err != nil {
 		return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("get piece md5 sign: %v", pieceMd5Sign)
@@ -138,10 +140,9 @@ func (cw *cacheWriter) writerPool(wg *sync.WaitGroup, routineCount int, pieceCh 
 				originPieceLen := waitToWriteContent.Len() // the length of the original data that has not been processed
 				pieceLen := originPieceLen                 // the real length written to the storage medium after processing
 				pieceStyle := types.PlainUnspecified
-				pieceMd5Sum := digestutils.Md5Bytes(waitToWriteContent.Bytes())
-
+				pieceMd5 := md5.New()
 				err := cw.cacheDataManager.writeDownloadFile(piece.taskID, int64(piece.pieceNum)*int64(piece.pieceSize), int64(waitToWriteContent.Len()),
-					piece.pieceContent)
+					io.TeeReader(io.LimitReader(piece.pieceContent, int64(waitToWriteContent.Len())), pieceMd5))
 				// Recycle Buffer
 				bufPool.Put(waitToWriteContent)
 				if err != nil {
@@ -151,7 +152,7 @@ func (cw *cacheWriter) writerPool(wg *sync.WaitGroup, routineCount int, pieceCh 
 				pieceRecord := &storage.PieceMetaRecord{
 					PieceNum: piece.pieceNum,
 					PieceLen: int32(pieceLen),
-					Md5:      pieceMd5Sum,
+					Md5:      digestutils.ToHashString(pieceMd5),
 					Range: &rangeutils.Range{
 						StartIndex: uint64(piece.pieceNum * piece.pieceSize),
 						EndIndex:   uint64(piece.pieceNum*piece.pieceSize + int32(pieceLen) - 1),
