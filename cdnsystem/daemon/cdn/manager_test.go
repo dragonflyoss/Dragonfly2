@@ -27,7 +27,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/progress"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mock"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -59,9 +59,15 @@ func (suite *CDNManagerTestSuite) SetupSuite() {
 	if !ok {
 		suite.Failf("failed to get storage mode %s", config.DefaultStorageMode)
 	}
-	progressMgr, _ := progress.NewManager()
+	ctrl := gomock.NewController(suite.T())
+	progressMgr := mock.NewMockSeedProgressMgr(ctrl)
+	progressMgr.EXPECT().PublishPiece(taskID, gomock.Any()).Return(nil).Times(98 * 2)
 	suite.cm, _ = newManager(config.New(), storeMgr, progressMgr)
 }
+
+var dragonflyURL = "http://dragonfly.io.com?a=a&b=b&c=c"
+
+var taskID = idgen.TaskID(dragonflyURL, "a&b", &base.UrlMeta{Digest: "f1e2488bba4d1267948d9e2f7008571c"}, "dragonfly")
 
 func (suite *CDNManagerTestSuite) TearDownSuite() {
 	if suite.workHome != "" {
@@ -72,7 +78,6 @@ func (suite *CDNManagerTestSuite) TearDownSuite() {
 }
 
 func (suite *CDNManagerTestSuite) TestTriggerCDN() {
-	var dragonflyURL = "http://dragonfly.io.com?a=a&b=b&c=c"
 	ctrl := gomock.NewController(suite.T())
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
@@ -121,8 +126,6 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 			return fileInfo.Size(), nil
 		},
 	).AnyTimes()
-	taskID := idgen.TaskID(dragonflyURL, "a&b", &base.UrlMeta{
-		Digest: "f1e2488bba4d1267948d9e2f7008571c"}, "dragonfly")
 	sourceTask := &types.SeedTask{
 		TaskID:           taskID,
 		URL:              dragonflyURL,
@@ -155,7 +158,6 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 	gotSeedTask, err := suite.cm.TriggerCDN(context.Background(), sourceTask)
 	suite.Nil(err)
 	suite.Equal(targetTask, gotSeedTask)
-	suite.cm.progressMgr.InitSeedProgress(context.Background(), taskID)
 	cacheSeedTask, err := suite.cm.TriggerCDN(context.Background(), gotSeedTask)
 	suite.Nil(err)
 	suite.Equal(targetTask, cacheSeedTask)

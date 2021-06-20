@@ -18,11 +18,14 @@ package task
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
+	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/mock"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
+	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -35,118 +38,16 @@ type TaskManagerTestSuite struct {
 	suite.Suite
 }
 
-func (suite *TaskManagerTestSuite) TestManager_Delete() {
-	type args struct {
-		taskID string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			if err := suite.tm.Delete(tt.args.taskID); (err != nil) != tt.wantErr {
-				suite.T().Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func (suite *TaskManagerTestSuite) TestManager_GC() {
-	tests := []struct {
-		name    string
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			if err := suite.tm.GC(); (err != nil) != tt.wantErr {
-				suite.T().Errorf("GC() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func (suite *TaskManagerTestSuite) TestManager_Get() {
-	type args struct {
-		taskID string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *types.SeedTask
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			got, err := suite.tm.Get(tt.args.taskID)
-			if (err != nil) != tt.wantErr {
-				suite.T().Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				suite.T().Errorf("Get() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func (suite *TaskManagerTestSuite) TestManager_GetAccessTime() {
-	tests := []struct {
-		name    string
-		want    *syncmap.SyncMap
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			got, err := suite.tm.GetAccessTime()
-			if (err != nil) != tt.wantErr {
-				suite.T().Errorf("GetAccessTime() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				suite.T().Errorf("GetAccessTime() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func (suite *TaskManagerTestSuite) TestManager_GetPieces() {
-	type args struct {
-		ctx    context.Context
-		taskID string
-	}
-	tests := []struct {
-		name       string
-		args       args
-		wantPieces []*types.SeedPiece
-		wantErr    bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			gotPieces, err := suite.tm.GetPieces(tt.args.ctx, tt.args.taskID)
-			if (err != nil) != tt.wantErr {
-				suite.T().Errorf("GetPieces() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(gotPieces, tt.wantPieces) {
-				suite.T().Errorf("GetPieces() gotPieces = %v, want %v", gotPieces, tt.wantPieces)
-			}
-		})
-	}
-}
-
-func (suite *TaskManagerTestSuite) TestManager_Register() {
+func (suite *TaskManagerTestSuite) TestRegister() {
+	dragonflyURL := "http://dragonfly.io.com?a=a&b=b&c=c"
+	taskID := idgen.TaskID(dragonflyURL, "a&b", &base.UrlMeta{Digest: "f1e2488bba4d1267948d9e2f7008571c"}, "dragonfly")
+	ctrl := gomock.NewController(suite.T())
+	cdnMgr := mock.NewMockCDNMgr(ctrl)
+	progressMgr := mock.NewMockSeedProgressMgr(ctrl)
+	progressMgr.EXPECT().SetTaskMgr(gomock.Any()).Times(1)
+	tm, err := NewManager(config.New(), cdnMgr, progressMgr)
+	suite.Nil(err)
+	suite.NotNil(tm)
 	type args struct {
 		ctx context.Context
 		req *types.TaskRegisterRequest
@@ -157,65 +58,33 @@ func (suite *TaskManagerTestSuite) TestManager_Register() {
 		wantPieceChan <-chan *types.SeedPiece
 		wantErr       bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "register",
+			args: args{
+				ctx: context.Background(),
+				req: &types.TaskRegisterRequest{
+					URL:    dragonflyURL,
+					TaskID: taskID,
+					Md5:    "f1e2488bba4d1267948d9e2f7008571c",
+					Filter: []string{"a", "b"},
+					Header: nil,
+				},
+			},
+			wantPieceChan: nil,
+			wantErr:       false,
+		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			gotPieceChan, err := suite.tm.Register(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				suite.T().Errorf("Register() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(gotPieceChan, tt.wantPieceChan) {
-				suite.T().Errorf("Register() gotPieceChan = %v, want %v", gotPieceChan, tt.wantPieceChan)
-			}
-		})
-	}
-}
-
-func (suite *TaskManagerTestSuite) TestManager_getTask(t *testing.T) {
-	type args struct {
-		taskID string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *types.SeedTask
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			got, err := suite.tm.getTask(tt.args.taskID)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getTask() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getTask() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func (suite *TaskManagerTestSuite) TestManager_triggerCdnSyncAction() {
-	type args struct {
-		ctx  context.Context
-		task *types.SeedTask
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			if err := suite.tm.triggerCdnSyncAction(tt.args.ctx, tt.args.task); (err != nil) != tt.wantErr {
-				suite.T().Errorf("triggerCdnSyncAction() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			//gotPieceChan, err := tm.Register(tt.args.ctx, tt.args.req)
+			//
+			//if (err != nil) != tt.wantErr {
+			//	suite.T().Errorf("Register() error = %v, wantErr %v", err, tt.wantErr)
+			//	return
+			//}
+			//if !reflect.DeepEqual(gotPieceChan, tt.wantPieceChan) {
+			//	suite.T().Errorf("Register() gotPieceChan = %v, want %v", gotPieceChan, tt.wantPieceChan)
+			//}
 		})
 	}
 }
