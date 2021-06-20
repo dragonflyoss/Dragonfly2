@@ -21,6 +21,7 @@ import (
 	"hash"
 	"io"
 	"io/ioutil"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -32,6 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/pkg/source"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
@@ -175,15 +177,41 @@ var partialPieceMetaRecords = []*storage.PieceMetaRecord{
 }
 var fullPieceMetaRecords = append(partialPieceMetaRecords, &storage.PieceMetaRecord{
 	PieceNum: 2,
-	PieceLen: 479,
-	Md5:      "d6c0ab4b25887f295c54c041212e1aca",
+	PieceLen: 2000,
+	Md5:      "5ca91ba695d24ad36f25ea350750c9fe",
 	Range: &rangeutils.Range{
-		StartIndex: 1000,
-		EndIndex:   1480,
+		StartIndex: 4000,
+		EndIndex:   5999,
 	},
 	OriginRange: &rangeutils.Range{
-		StartIndex: 1000,
-		EndIndex:   1480,
+		StartIndex: 4000,
+		EndIndex:   5999,
+	},
+	PieceStyle: 1,
+}, &storage.PieceMetaRecord{
+	PieceNum: 3,
+	PieceLen: 2000,
+	Md5:      "0408118a35af5084043eabcea19c8695",
+	Range: &rangeutils.Range{
+		StartIndex: 6000,
+		EndIndex:   7999,
+	},
+	OriginRange: &rangeutils.Range{
+		StartIndex: 6000,
+		EndIndex:   7999,
+	},
+	PieceStyle: 1,
+}, &storage.PieceMetaRecord{
+	PieceNum: 4,
+	PieceLen: 1789,
+	Md5:      "04de99cd9b578ff0e4a8ed7f382316e0",
+	Range: &rangeutils.Range{
+		StartIndex: 8000,
+		EndIndex:   9788,
+	},
+	OriginRange: &rangeutils.Range{
+		StartIndex: 8000,
+		EndIndex:   9788,
 	},
 	PieceStyle: 1,
 })
@@ -198,11 +226,11 @@ func newCompletedFileMeta(taskID string, URL string, success bool) *storage.File
 		Interval:        0,
 		CdnFileLength:   9789,
 		SourceRealMd5:   "",
-		PieceMd5Sign:    "5e26d8eef470dba365a5dc165cfbbb721b8d36e029d442f7b6d3774ab28a5418",
+		PieceMd5Sign:    "98166bdfebb7b71dd5c6d47492d844f4421d90199641ca11fd8ce3111894115a",
 		ExpireInfo:      nil,
 		Finish:          true,
 		Success:         success,
-		TotalPieceCount: 3,
+		TotalPieceCount: 5,
 	}
 }
 
@@ -308,17 +336,6 @@ func (suite *CacheDetectorTestSuite) TestDetectCache() {
 			want:    nil,
 			wantErr: true,
 		},
-		//{
-		//	name: "data corruption",
-		//	args: args{
-		//		task: nil,
-		//	},
-		//	want: &cacheResult{
-		//		breakPoint:       0,
-		//		pieceMetaRecords: nil,
-		//		fileMetaData:     nil,
-		//	},
-		//},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
@@ -341,81 +358,97 @@ func (suite *CacheDetectorTestSuite) TestParseByReadFile() {
 		want    *cacheResult
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "partial And SupportCacheTask",
+			args: args{
+				taskID:   partialSupportRangeCache.taskID,
+				metaData: partialSupportRangeCache.fileMeta,
+			},
+			want: &cacheResult{
+				breakPoint:       4000,
+				pieceMetaRecords: partialSupportRangeCache.pieces,
+				fileMetaData:     partialSupportRangeCache.fileMeta,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			got, err := suite.detector.parseByReadFile(tt.args.taskID, tt.args.metaData, md5.New())
-			suite.Equal(tt.wantErr, err)
 			suite.Equal(tt.want, got)
+			suite.Equal(tt.wantErr, err != nil)
 		})
 	}
 }
 
 func (suite *CacheDetectorTestSuite) TestParseByReadMetaFile() {
-	type fields struct {
-		cacheDataManager *cacheDataManager
-	}
 	type args struct {
 		taskID       string
 		fileMetaData *storage.FileMetaData
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    *cacheResult
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "parse full cache file meta",
+			args: args{
+				taskID:       fullNoExpiredCache.taskID,
+				fileMetaData: fullNoExpiredCache.fileMeta,
+			},
+			want: &cacheResult{
+				breakPoint:       -1,
+				pieceMetaRecords: fullNoExpiredCache.pieces,
+				fileMetaData:     fullNoExpiredCache.fileMeta,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			got, err := suite.detector.parseByReadMetaFile(tt.args.taskID, tt.args.fileMetaData)
-			suite.Equal(tt.wantErr, err)
+			suite.Equal(tt.wantErr, err != nil)
 			suite.Equal(tt.want, got)
 		})
 	}
 }
 
 func (suite *CacheDetectorTestSuite) TestCheckPieceContent() {
+	content, err := ioutil.ReadFile("../../testdata/cdn/go.html")
+	suite.Nil(err)
 	type args struct {
-		reader      io.Reader
-		pieceRecord *storage.PieceMetaRecord
-		fileMd5     hash.Hash
+		reader       io.Reader
+		pieceRecords []*storage.PieceMetaRecord
+		fileMd5      hash.Hash
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name        string
+		args        args
+		wantFileMd5 string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "check partial cache piece content",
+			args: args{
+				reader:       strings.NewReader(string(content)),
+				pieceRecords: partialSupportRangeCache.pieces,
+				fileMd5:      md5.New(),
+			},
+			wantFileMd5: "ddff04669628a76b52d32322e24a9dd8",
+		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			err := checkPieceContent(tt.args.reader, tt.args.pieceRecord, tt.args.fileMd5)
-			suite.Equal(tt.wantErr, err)
-		})
-	}
-}
-
-func (suite *CacheDetectorTestSuite) TestCheckSameFile(t *testing.T) {
-	type args struct {
-		task     *types.SeedTask
-		metaData *storage.FileMetaData
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := checkSameFile(tt.args.task, tt.args.metaData); (err != nil) != tt.wantErr {
-				t.Errorf("checkSameFile() error = %v, wantErr %v", err, tt.wantErr)
+			// sort piece meta records by pieceNum
+			sort.Slice(tt.args.pieceRecords, func(i, j int) bool {
+				return tt.args.pieceRecords[i].PieceNum < tt.args.pieceRecords[j].PieceNum
+			})
+			for _, pieceRecord := range tt.args.pieceRecords {
+				err := checkPieceContent(tt.args.reader, pieceRecord, tt.args.fileMd5)
+				suite.Nil(err)
 			}
+			suite.Equal(tt.wantFileMd5, digestutils.ToHashString(tt.args.fileMd5))
 		})
 	}
 }
