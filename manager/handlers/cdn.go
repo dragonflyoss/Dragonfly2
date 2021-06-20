@@ -7,18 +7,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CreateCDN godoc
-// @Summary Add cdn cluster
-// @Description add by json config
-// @Tags CDNCluster
-// @Accept  json
-// @Produce  json
-// @Param cluster body types.CDNCluster true "Cdn cluster"
-// @Success 200 {object} types.CDNCluster
+// @Summary Create CDN
+// @Description create by json config
+// @Tags CDN
+// @Accept json
+// @Produce json
+// @Param CDN body types.CreateCDNRequest true "CDN"
+// @Success 200 {object} model.CDN
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdn/clusters [post]
+// @Router /cdns [post]
 func (h *Handlers) CreateCDN(ctx *gin.Context) {
 	var json types.CreateCDNRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
@@ -35,125 +34,125 @@ func (h *Handlers) CreateCDN(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, cdn)
 }
 
-// DestroyCDN godoc
-// @Summary Delete cdn cluster
-// @Description Delete by clusterId
-// @Tags CDNCluster
-// @Accept  json
-// @Produce  json
-// @Param  id path string true "ClusterID"
-// @Success 200 {string} string
+// @Summary Destroy CDN
+// @Description Destroy by id
+// @Tags CDN
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Success 200
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdn/clusters/{id} [delete]
-// func (handler *Handlers) DestroyCDN(ctx *gin.Context) {
-// var params types.CDNParams
-// if err := ctx.ShouldBindUri(&params); err != nil {
-// ctx.Error(err)
-// return
-// }
+// @Router /cdns/{id} [delete]
+func (h *Handlers) DestroyCDN(ctx *gin.Context) {
+	var params types.CDNParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
 
-// retCluster, err := handler.server.DeleteCDNCluster(context.TODO(), params.ID)
-// if err != nil {
-// ctx.Error(err)
-// return
-// }
+	err := h.service.DestroyCDN(params.ID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// ctx.JSON(http.StatusOK, retCluster)
-// }
+	ctx.Status(http.StatusOK)
+}
 
-// UpdateCDN godoc
-// @Summary Update cdn cluster
-// @Description Update by json cdn cluster
-// @Tags CDNCluster
-// @Accept  json
-// @Produce  json
-// @Param  id path string true "ClusterID"
-// @Param  Cluster body types.CDNCluster true "CDNCluster"
-// @Success 200 {string} string
+// @Summary Update CDN
+// @Description Update by json config
+// @Tags CDN
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param CDN body types.UpdateCDNRequest true "CDN"
+// @Success 200 {object} model.CDN
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdn/clusters/{id} [post]
-// func (handler *Handlers) UpdateCDN(ctx *gin.Context) {
-// var params types.CDNParams
-// if err := ctx.ShouldBindUri(&params); err != nil {
-// ctx.Error(err)
-// return
-// }
+// @Router /cdns/{id} [patch]
+func (handler *Handlers) UpdateCDN(ctx *gin.Context) {
+	var params types.CDNParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// var json types.UpdateCDNRequest
-// if err := ctx.ShouldBindJSON(&json); err != nil {
-// ctx.Error(err)
-// return
-// }
+	var json types.UpdateCDNRequest
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// cdn, err := handler.server.UpdateCDNCluster(context.TODO(), params.ID, json)
-// if err != nil {
-// ctx.Error(err)
-// }
+	cdn, err := handler.service.UpdateCDN(params.ID, json)
+	if err != nil {
+		ctx.Error(err)
+	}
 
-// ctx.JSON(http.StatusOK, cdn)
-// }
+	ctx.JSON(http.StatusOK, cdn)
+}
 
-// GetCDN godoc
-// @Summary Get cdn cluster
-// @Description Get cdn cluster by ClusterID
-// @Tags CDNCluster
-// @Accept  json
-// @Produce  json
-// @Param id path string true "ClusterID"
-// @Success 200 {object} types.CDNCluster
+// @Summary Get CDN
+// @Description Get CDN by id
+// @Tags CDN
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Success 200 {object} model.CDN
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdn/clusters/{id} [get]
-// func (handler *Handlers) GetCDN(ctx *gin.Context) {
-// var params types.CDNParams
-// if err := ctx.ShouldBindUri(&params); err != nil {
-// ctx.Error(err)
-// return
-// }
+// @Router /cdns/{id} [get]
+func (h *Handlers) GetCDN(ctx *gin.Context) {
+	var params types.CDNParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
 
-// cdn, err := handler.server.GetCDNCluster(context.TODO(), params.ID)
-// if err != nil {
-// ctx.Error(err)
-// }
+	cdn, err := h.service.GetCDN(params.ID)
+	if err != nil {
+		ctx.Error(err)
+	}
 
-// ctx.JSON(http.StatusOK, cdn)
-// }
+	ctx.JSON(http.StatusOK, cdn)
+}
 
-// GetCDNs godoc
-// @Summary List cdn clusters
-// @Description List by object
-// @Tags CDNCluster
-// @Accept  json
-// @Produce  json
-// @Param marker query int true "begin marker of current page" default(0)
-// @Param maxItemCount query int true "return max item count, default 10, max 50" default(10) minimum(10) maximum(50)
-// @Success 200 {object} types.ListCDNClustersResponse
+// @Summary Get CDNs
+// @Description Get CDNs
+// @Tags CDN
+// @Accept json
+// @Produce json
+// @Param page query int true "current page" default(0)
+// @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
+// @Success 200 {object} types.GetCDNsQuery
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /cdn/clusters [get]
-// func (handler *Handlers) GetCDNs(ctx *gin.Context) {
-// var query types.GetCDNsQuery
+// @Router /cdns [get]
+func (h *Handlers) GetCDNs(ctx *gin.Context) {
+	var query types.GetCDNsQuery
 
-// query.Page = 1
-// query.PerPage = 10
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
 
-// if err := ctx.ShouldBindQuery(&query); err != nil {
-// ctx.Error(err)
-// return
-// }
+	page, perPage := h.setPaginationDefault(query.Page, query.PerPage)
+	cdns, err := h.service.GetCDNs(page, perPage)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// cdnInstances, err := handler.server.ListCDNClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
-// if err != nil {
-// ctx.Error(err)
-// return
-// }
+	totalCount, err := h.service.CDNTotalCount()
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// TODO(Gaius) Add pagination link header
-// ctx.JSON(http.StatusOK, cdnInstances)
-// }
+	h.setPaginationLinkHeader(ctx, page, perPage, int(totalCount))
+	ctx.JSON(http.StatusOK, cdns)
+}

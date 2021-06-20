@@ -11,6 +11,11 @@ import (
 
 type Service interface {
 	CreateCDN(types.CreateCDNRequest) (*model.CDN, error)
+	DestroyCDN(string) error
+	UpdateCDN(string, types.UpdateCDNRequest) (*model.CDN, error)
+	GetCDN(string) (*model.CDN, error)
+	GetCDNs(int, int) (*[]model.CDN, error)
+	CDNTotalCount() (int64, error)
 }
 
 type service struct {

@@ -38,10 +38,10 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 
 	cc := apiv1.Group("/cdns")
 	cc.POST("", h.CreateCDN)
-	// cc.DELETE(":id", h.DestroyCDN)
-	// cc.PATCH(":id", h.UpdateCDN)
-	// cc.GET(":id", h.GetCDN)
-	// cc.GET("", h.GetCDNs)
+	cc.DELETE(":id", h.DestroyCDN)
+	cc.PATCH(":id", h.UpdateCDN)
+	cc.GET(":id", h.GetCDN)
+	cc.GET("", h.GetCDNs)
 
 	// ci := apiv1.Group("/cdns/:cdnId/instances")
 	// ci.POST("", h.CreateCDNInstance)

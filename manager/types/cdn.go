@@ -17,6 +17,6 @@ type UpdateCDNRequest struct {
 }
 
 type GetCDNsQuery struct {
-	Page    int `json:"page" binding:"omitempty,min=1"`
-	PerPage int `json:"per_page" binding:"omitempty,max=50"`
+	Page    int `form:"page" binding:"omitempty,gte=1"`
+	PerPage int `form:"per_page" binding:"omitempty,gte=1,lte=50"`
 }

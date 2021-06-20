@@ -18,3 +18,52 @@ func (s *service) CreateCDN(json types.CreateCDNRequest) (*model.CDN, error) {
 
 	return cdn, nil
 }
+
+func (s *service) DestroyCDN(id string) error {
+	if err := s.db.Unscoped().Delete(&model.CDN{}, id).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) UpdateCDN(id string, json types.UpdateCDNRequest) (*model.CDN, error) {
+	cdn := &model.CDN{}
+
+	if err := s.db.First(&cdn, id).Updates(model.CDN{
+		Name:   json.Name,
+		BIO:    json.BIO,
+		Config: json.Config,
+	}).Error; err != nil {
+		return nil, err
+	}
+
+	return cdn, nil
+}
+
+func (s *service) GetCDN(id string) (*model.CDN, error) {
+	cdn := &model.CDN{}
+	if err := s.db.First(&cdn, id).Error; err != nil {
+		return nil, err
+	}
+
+	return cdn, nil
+}
+
+func (s *service) GetCDNs(page, perPage int) (*[]model.CDN, error) {
+	cdns := &[]model.CDN{}
+	if err := s.db.Scopes(model.Paginate(page, perPage)).Find(&cdns).Error; err != nil {
+		return nil, err
+	}
+
+	return cdns, nil
+}
+
+func (s *service) CDNTotalCount() (int64, error) {
+	var count int64
+	if err := s.db.Model(&model.CDN{}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
