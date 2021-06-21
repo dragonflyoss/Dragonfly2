@@ -19,8 +19,8 @@ type SchedulerInstance struct {
 	IP              string            `gorm:"column:ip;size:256;not null" json:"ip"`
 	Port            int32             `gorm:"column:port;not null" json:"port"`
 	Status          string            `gorm:"type:enum('active', 'inactive');default:'inactive'" json:"status"`
-	SchedulerID     uint              `json:"scheduler_id"`
+	SchedulerID     *uint             `json:"scheduler_id"`
 	Scheduler       Scheduler         `json:"scheduler"`
-	SecurityGroupID uint              `json:"scheduler_group_id"`
+	SecurityGroupID *uint             `json:"scheduler_group_id"`
 	SecurityGroup   SecurityGroup     `json:"scheduler_group"`
 }

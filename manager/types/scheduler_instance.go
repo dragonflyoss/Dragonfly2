@@ -5,7 +5,6 @@ type SchedulerInstanceParams struct {
 }
 
 type CreateSchedulerInstanceRequest struct {
-	SchedulerID    string                 `json:"schduler_id" binding:"required"`
 	SecurityDomain string                 `json:"security_domain" binding:"required"`
 	VIPs           string                 `json:"vips" binding:"omitempty"`
 	IDC            string                 `json:"idc" binding:"required"`
@@ -17,7 +16,7 @@ type CreateSchedulerInstanceRequest struct {
 }
 
 type UpdateSchedulerInstanceRequest struct {
-	SchedulerID    string                 `json:"schduler_id" binding:"omitempty"`
+	SchedulerID    *uint                  `json:"schduler_id" binding:"omitempty"`
 	SecurityDomain string                 `json:"security_domain" binding:"omitempty"`
 	VIPs           string                 `json:"vips" binding:"omitempty"`
 	IDC            string                 `json:"idc" binding:"omitempty"`
@@ -29,6 +28,12 @@ type UpdateSchedulerInstanceRequest struct {
 }
 
 type GetSchedulerInstancesQuery struct {
-	Page    int `form:"page" binding:"omitempty,gte=1"`
-	PerPage int `form:"per_page" binding:"omitempty,gte=1,lte=50"`
+	Page           int    `form:"page" binding:"omitempty,gte=1"`
+	PerPage        int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
+	SecurityDomain string `form:"security_domain" binding:"omitempty"`
+	IDC            string `form:"idc" binding:"omitempty"`
+	Location       string `form:"location" binding:"omitempty"`
+	Host           string `form:"host" binding:"omitempty"`
+	IP             string `form:"ip" binding:"omitempty"`
+	Status         string `form:"status" binding:"omitempty,oneof=active inactive"`
 }

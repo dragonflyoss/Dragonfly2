@@ -1,1 +1,80 @@
 package service
+
+import (
+	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/types"
+)
+
+func (s *service) CreateCDNInstance(json types.CreateCDNInstanceRequest) (*model.CDNInstance, error) {
+	cdnInstance := &model.CDNInstance{
+		Host:         json.Host,
+		IDC:          json.IDC,
+		Location:     json.Location,
+		IP:           json.IP,
+		Port:         json.Port,
+		DownloadPort: json.DownloadPort,
+	}
+
+	if err := s.db.Create(&cdnInstance).Error; err != nil {
+		return nil, err
+	}
+
+	return cdnInstance, nil
+}
+
+func (s *service) DestroyCDNInstance(id string) error {
+	if err := s.db.Unscoped().Delete(&model.CDNInstance{}, id).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) UpdateCDNInstance(id string, json types.UpdateCDNInstanceRequest) (*model.CDNInstance, error) {
+	cdnInstance := &model.CDNInstance{}
+	if err := s.db.First(&cdnInstance, id).Updates(model.CDNInstance{
+		IDC:          json.IDC,
+		Location:     json.Location,
+		IP:           json.IP,
+		Port:         json.Port,
+		DownloadPort: json.DownloadPort,
+	}).Error; err != nil {
+		return nil, err
+	}
+
+	return cdnInstance, nil
+}
+
+func (s *service) GetCDNInstance(id string) (*model.CDNInstance, error) {
+	cdnInstance := &model.CDNInstance{}
+	if err := s.db.First(&cdnInstance, id).Error; err != nil {
+		return nil, err
+	}
+
+	return cdnInstance, nil
+}
+
+func (s *service) GetCDNInstances(q types.GetCDNInstancesQuery) (*[]model.CDNInstance, error) {
+	cdnInstances := &[]model.CDNInstance{}
+	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDNInstance{
+		Host:         q.Host,
+		IDC:          q.IDC,
+		Location:     q.Location,
+		IP:           q.IP,
+		Port:         q.Port,
+		DownloadPort: q.DownloadPort,
+	}).Find(&cdnInstances).Error; err != nil {
+		return nil, err
+	}
+
+	return cdnInstances, nil
+}
+
+func (s *service) CDNInstanceTotalCount() (int64, error) {
+	var count int64
+	if err := s.db.Model(&model.CDNInstance{}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}

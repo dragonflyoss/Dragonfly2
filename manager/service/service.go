@@ -17,6 +17,13 @@ type Service interface {
 	GetCDNs(types.GetCDNsQuery) (*[]model.CDN, error)
 	CDNTotalCount() (int64, error)
 
+	CreateCDNInstance(types.CreateCDNInstanceRequest) (*model.CDNInstance, error)
+	DestroyCDNInstance(string) error
+	UpdateCDNInstance(string, types.UpdateCDNInstanceRequest) (*model.CDNInstance, error)
+	GetCDNInstance(string) (*model.CDNInstance, error)
+	GetCDNInstances(types.GetCDNInstancesQuery) (*[]model.CDNInstance, error)
+	CDNInstanceTotalCount() (int64, error)
+
 	CreateScheduler(types.CreateSchedulerRequest) (*model.Scheduler, error)
 	DestroyScheduler(string) error
 	UpdateScheduler(string, types.UpdateSchedulerRequest) (*model.Scheduler, error)

@@ -21,6 +21,7 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 	h := handlers.NewHandler(service)
 	r.Use(middlewares.Error())
 
+	// Scheduler
 	apiv1 := r.Group("/api/v1")
 	sc := apiv1.Group("/schedulers")
 	sc.POST("", h.CreateScheduler)
@@ -28,28 +29,35 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 	sc.PATCH(":id", h.UpdateScheduler)
 	sc.GET(":id", h.GetScheduler)
 	sc.GET("", h.GetSchedulers)
+	// sc.PUT(":id/scheduler-instances/:schedulerInstanceId", h.AddSchedulerInstanceToScheduler)
 
-	// si := apiv1.Group("/schedulers/:schedulerId/instances")
+	// Scheduler Instance
+	// si := apiv1.Group("/scheduler-instances")
 	// si.POST("", h.CreateSchedulerInstance)
 	// si.DELETE(":id", h.DestroySchedulerInstance)
 	// si.PATCH(":id", h.UpdateSchedulerInstance)
 	// si.GET(":id", h.GetSchedulerInstance)
 	// si.GET("", h.GetSchedulerInstances)
 
+	// CDN
 	cc := apiv1.Group("/cdns")
 	cc.POST("", h.CreateCDN)
 	cc.DELETE(":id", h.DestroyCDN)
 	cc.PATCH(":id", h.UpdateCDN)
 	cc.GET(":id", h.GetCDN)
 	cc.GET("", h.GetCDNs)
+	// cc.PUT(":id/cdn-instances/:cdnInstanceId", h.AddCDNInstanceToCDN)
+	// cc.PUT(":id/schedulers/:schedulerId", h.AddSchedulerToCDN)
 
-	// ci := apiv1.Group("/cdns/:cdnId/instances")
-	// ci.POST("", h.CreateCDNInstance)
-	// ci.DELETE(":id", h.DestroyCDNInstance)
-	// ci.PATCH(":id", h.UpdateCDNInstance)
-	// ci.GET(":id", h.GetCDNInstance)
-	// ci.GET("", h.GetCDNInstances)
+	// CDN Instance
+	ci := apiv1.Group("/cdn-instances")
+	ci.POST("", h.CreateCDNInstance)
+	ci.DELETE(":id", h.DestroyCDNInstance)
+	ci.PATCH(":id", h.UpdateCDNInstance)
+	ci.GET(":id", h.GetCDNInstance)
+	ci.GET("", h.GetCDNInstances)
 
+	// Security Group
 	sg := apiv1.Group("/security-groups")
 	sg.POST("", h.CreateSecurityGroup)
 	sg.DELETE(":id", h.DestroySecurityGroup)
