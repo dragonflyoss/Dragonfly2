@@ -114,5 +114,6 @@ var peerHostConfig = PeerHostOption{
 			Duration: DefaultTaskExpireTime,
 		},
 		StoreStrategy: AdvanceLocalTaskStoreStrategy,
+		Multiplex:     false,
 	},
 }

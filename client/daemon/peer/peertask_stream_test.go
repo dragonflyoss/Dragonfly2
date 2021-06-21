@@ -100,7 +100,6 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		Url:      url,
 		Filter:   "",
 		BizId:    "d7y-test",
-		UrlMata:  nil,
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	}
@@ -127,10 +126,10 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	})
 	pt.(*streamPeerTask).backSource = true
 
-	r, _, err := pt.Start(ctx)
+	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(r)
+	outputBytes, err := ioutil.ReadAll(rc)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }
@@ -199,7 +198,6 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		Url:      url,
 		Filter:   "",
 		BizId:    "d7y-test",
-		UrlMata:  nil,
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	}
@@ -226,10 +224,10 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	})
 	pt.(*streamPeerTask).backSource = true
 
-	r, _, err := pt.Start(ctx)
+	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(r)
+	outputBytes, err := ioutil.ReadAll(rc)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }

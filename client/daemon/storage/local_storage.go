@@ -24,7 +24,6 @@ import (
 	"os"
 	"path"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -32,6 +31,7 @@ import (
 	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"go.uber.org/atomic"
 )
 
 type localTaskStore struct {
@@ -46,8 +46,8 @@ type localTaskStore struct {
 	metadataFilePath string
 
 	expireTime    time.Duration
-	lastAccess    int64
-	reclaimMarked bool
+	lastAccess    atomic.Int64
+	reclaimMarked atomic.Bool
 	gcCallback    func(CommonTaskRequest)
 }
 
@@ -56,7 +56,7 @@ var _ Reclaimer = (*localTaskStore)(nil)
 
 func (t *localTaskStore) touch() {
 	access := time.Now().UnixNano()
-	atomic.SwapInt64(&t.lastAccess, access)
+	t.lastAccess.Store(access)
 }
 
 func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
@@ -132,6 +132,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 }
 
 func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {
+	t.touch()
 	t.Lock()
 	defer t.Unlock()
 	t.persistentMetadata.ContentLength = req.ContentLength
@@ -141,7 +142,7 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	return nil
 }
 
-// GetPiece get a LimitReadCloser from task data with seeked, caller should read bytes and close it.
+// ReadPiece get a LimitReadCloser from task data with seeked, caller should read bytes and close it.
 func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error) {
 	t.touch()
 	file, err := os.Open(t.DataFilePath)
@@ -158,26 +159,44 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 			return nil, nil, ErrPieceNotFound
 		}
 	}
-	// who call ReadPiece, who close the io.ReadCloser
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
 		return nil, nil, err
 	}
+	// who call ReadPiece, who close the io.ReadCloser
 	return io.LimitReader(file, req.Range.Length), file, nil
 }
 
+func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *PeerTaskMetaData) (io.ReadCloser, error) {
+	t.touch()
+	file, err := os.Open(t.DataFilePath)
+	if err != nil {
+		return nil, err
+	}
+	if _, err = file.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+	// who call ReadPiece, who close the io.ReadCloser
+	return file, nil
+}
+
 func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
+	// Store is be called in callback.Done, mark local task store done, for fast search
+	t.Done = true
+	t.touch()
 	if req.TotalPieces > 0 {
 		t.TotalPieces = req.TotalPieces
 	}
-	err := t.saveMetadata()
-	if err != nil {
-		t.Warnf("save task metadata error: %s", err)
-		return err
+	if !req.StoreOnly {
+		err := t.saveMetadata()
+		if err != nil {
+			t.Warnf("save task metadata error: %s", err)
+			return err
+		}
 	}
 	if req.MetadataOnly {
 		return nil
 	}
-	_, err = os.Stat(req.Destination)
+	_, err := os.Stat(req.Destination)
 	if err == nil {
 		// remove exist file
 		t.Infof("destination file %q exists, purge it first", req.Destination)
@@ -220,6 +239,7 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	var pieces []*base.PieceInfo
 	t.RLock()
 	defer t.RUnlock()
+	t.touch()
 	if t.TotalPieces > 0 && req.StartNum >= t.TotalPieces {
 		logger.Errorf("invalid start num: %d", req.StartNum)
 		return nil, dferrors.ErrInvalidArgument
@@ -237,9 +257,8 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 		}
 	}
 	return &base.PiecePacket{
-		TaskId: req.TaskId,
-		DstPid: t.PeerID,
-		//DstAddr:       "", // filled by peer service
+		TaskId:        req.TaskId,
+		DstPid:        t.PeerID,
 		PieceInfos:    pieces,
 		TotalPiece:    t.TotalPieces,
 		ContentLength: t.ContentLength,
@@ -248,13 +267,13 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 }
 
 func (t *localTaskStore) CanReclaim() bool {
-	access := time.Unix(0, t.lastAccess)
+	access := time.Unix(0, t.lastAccess.Load())
 	return access.Add(t.expireTime).Before(time.Now())
 }
 
 // MarkReclaim will try to invoke gcCallback (normal leave peer task)
 func (t *localTaskStore) MarkReclaim() {
-	if t.reclaimMarked {
+	if t.reclaimMarked.Load() {
 		return
 	}
 	// leave task
@@ -262,7 +281,7 @@ func (t *localTaskStore) MarkReclaim() {
 		PeerID: t.PeerID,
 		TaskID: t.TaskID,
 	})
-	t.reclaimMarked = true
+	t.reclaimMarked.Store(true)
 	logger.Infof("task %s/%s will be reclaimed, marked", t.TaskID, t.PeerID)
 }
 
@@ -349,8 +368,8 @@ func (t *localTaskStore) reclaimMeta(log *logger.SugaredLoggerOnWith) error {
 }
 
 func (t *localTaskStore) saveMetadata() error {
-	t.RLock()
-	defer t.RUnlock()
+	t.Lock()
+	defer t.Unlock()
 	data, err := json.Marshal(t.persistentMetadata)
 	if err != nil {
 		return err
@@ -360,5 +379,8 @@ func (t *localTaskStore) saveMetadata() error {
 		return err
 	}
 	_, err = t.metadataFile.Write(data)
+	if err != nil {
+		logger.Errorf("save metadata error: %s", err)
+	}
 	return err
 }

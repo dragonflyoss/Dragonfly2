@@ -17,9 +17,9 @@
 package cdn
 
 import (
-	"bytes"
 	"fmt"
 	"io"
+	"sort"
 
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
@@ -173,6 +173,9 @@ func (mm *cacheDataManager) getPieceMd5Sign(taskID string) (string, []*storage.P
 		return "", nil, errors.Wrapf(err, "read piece meta file")
 	}
 	var pieceMd5 []string
+	sort.Slice(pieceMetaRecords, func(i, j int) bool {
+		return pieceMetaRecords[i].PieceNum < pieceMetaRecords[j].PieceNum
+	})
 	for _, piece := range pieceMetaRecords {
 		pieceMd5 = append(pieceMd5, piece.Md5)
 	}
@@ -201,6 +204,6 @@ func (mm *cacheDataManager) resetRepo(task *types.SeedTask) error {
 	return mm.storage.ResetRepo(task)
 }
 
-func (mm *cacheDataManager) writeDownloadFile(taskID string, offset int64, len int64, buf *bytes.Buffer) error {
-	return mm.storage.WriteDownloadFile(taskID, offset, len, buf)
+func (mm *cacheDataManager) writeDownloadFile(taskID string, offset int64, len int64, data io.Reader) error {
+	return mm.storage.WriteDownloadFile(taskID, offset, len, data)
 }

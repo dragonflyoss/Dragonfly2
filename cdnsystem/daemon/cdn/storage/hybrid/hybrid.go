@@ -17,7 +17,6 @@
 package hybrid
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -204,11 +203,11 @@ func (h *hybridStorageMgr) gcTasks(gcTaskIDs []string, isDisk bool) int {
 	return realGCCount
 }
 
-func (h *hybridStorageMgr) WriteDownloadFile(taskID string, offset int64, len int64, buf *bytes.Buffer) error {
+func (h *hybridStorageMgr) WriteDownloadFile(taskID string, offset int64, len int64, data io.Reader) error {
 	raw := storage.GetDownloadRaw(taskID)
 	raw.Offset = offset
 	raw.Length = len
-	return h.diskDriver.Put(raw, buf)
+	return h.diskDriver.Put(raw, data)
 }
 
 func (h *hybridStorageMgr) DeleteTask(taskID string) error {
