@@ -38,10 +38,10 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
+	_ "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 )
 

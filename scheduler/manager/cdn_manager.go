@@ -25,18 +25,18 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/internal/rpc/manager"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 

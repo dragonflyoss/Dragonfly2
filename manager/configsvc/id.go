@@ -3,7 +3,7 @@ package configsvc
 import (
 	"fmt"
 
-	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/internal/idgen"
 )
 
 func NewUUID(prefix string) string {

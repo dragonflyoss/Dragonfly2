@@ -16,7 +16,7 @@
 
 package types
 
-import "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+import "d7y.io/dragonfly/v2/internal/rpc/scheduler"
 
 type IClient interface {
 	Send(*scheduler.PeerPacket) error

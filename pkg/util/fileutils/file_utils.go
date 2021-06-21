@@ -26,7 +26,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/unit"
 
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"github.com/pkg/errors"
 )
 

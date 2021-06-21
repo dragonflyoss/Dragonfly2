@@ -30,7 +30,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 )
 
 func TestMain(m *testing.M) {

@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
-	dfdaemon "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	base "d7y.io/dragonfly/v2/internal/rpc/base"
+	dfdaemon "d7y.io/dragonfly/v2/internal/rpc/dfdaemon"
 	gomock "github.com/golang/mock/gomock"
 )
 
