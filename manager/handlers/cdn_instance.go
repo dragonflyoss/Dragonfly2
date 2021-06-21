@@ -25,6 +25,17 @@ func (h *Handlers) CreateCDNInstance(ctx *gin.Context) {
 		return
 	}
 
+	if json.SecurityGroupDomain != "" {
+		cdnInstance, err := h.service.CreateCDNInstanceWithSecurityGroupDomain(json)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+
+		ctx.JSON(http.StatusOK, cdnInstance)
+		return
+	}
+
 	cdnInstance, err := h.service.CreateCDNInstance(json)
 	if err != nil {
 		ctx.Error(err)
@@ -73,7 +84,7 @@ func (h *Handlers) DestroyCDNInstance(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /cdn-instances/{id} [patch]
-func (handler *Handlers) UpdateCDNInstance(ctx *gin.Context) {
+func (h *Handlers) UpdateCDNInstance(ctx *gin.Context) {
 	var params types.CDNInstanceParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.Error(err)
@@ -86,7 +97,18 @@ func (handler *Handlers) UpdateCDNInstance(ctx *gin.Context) {
 		return
 	}
 
-	cdnInstance, err := handler.service.UpdateCDNInstance(params.ID, json)
+	if json.SecurityGroupDomain != "" {
+		cdnInstance, err := h.service.UpdateCDNInstanceWithSecurityGroupDomain(params.ID, json)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+
+		ctx.JSON(http.StatusOK, cdnInstance)
+		return
+	}
+
+	cdnInstance, err := h.service.UpdateCDNInstance(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -148,7 +170,7 @@ func (h *Handlers) GetCDNInstances(ctx *gin.Context) {
 		return
 	}
 
-	totalCount, err := h.service.CDNInstanceTotalCount()
+	totalCount, err := h.service.CDNInstanceTotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return

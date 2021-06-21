@@ -4,6 +4,11 @@ type SchedulerParams struct {
 	ID string `uri:"id" binding:"required,gte=1,lte=32"`
 }
 
+type AddInstanceToSchedulerParams struct {
+	ID         string `uri:"id" binding:"required,gte=1,lte=32"`
+	InstanceID string `uri:"instance_id" binding:"required,gte=1,lte=32"`
+}
+
 type CreateSchedulerRequest struct {
 	Name         string                 `json:"name" binding:"required"`
 	BIO          string                 `json:"bio" binding:"omitempty"`

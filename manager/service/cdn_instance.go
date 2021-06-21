@@ -6,7 +6,7 @@ import (
 )
 
 func (s *service) CreateCDNInstance(json types.CreateCDNInstanceRequest) (*model.CDNInstance, error) {
-	cdnInstance := &model.CDNInstance{
+	cdnInstance := model.CDNInstance{
 		Host:         json.Host,
 		IDC:          json.IDC,
 		Location:     json.Location,
@@ -19,7 +19,32 @@ func (s *service) CreateCDNInstance(json types.CreateCDNInstanceRequest) (*model
 		return nil, err
 	}
 
-	return cdnInstance, nil
+	return &cdnInstance, nil
+}
+
+func (s *service) CreateCDNInstanceWithSecurityGroupDomain(json types.CreateCDNInstanceRequest) (*model.CDNInstance, error) {
+	securityGroup := model.SecurityGroup{
+		Domain: json.SecurityGroupDomain,
+	}
+	if err := s.db.First(&securityGroup).Error; err != nil {
+		return s.CreateCDNInstance(json)
+	}
+
+	cdnInstance := model.CDNInstance{
+		Host:         json.Host,
+		IDC:          json.IDC,
+		Location:     json.Location,
+		IP:           json.IP,
+		Port:         json.Port,
+		DownloadPort: json.DownloadPort,
+	}
+
+	if err := s.db.Model(&securityGroup).Association("CDNInstance").Append(&cdnInstance); err != nil {
+		return nil, err
+
+	}
+
+	return &cdnInstance, nil
 }
 
 func (s *service) DestroyCDNInstance(id string) error {
@@ -31,7 +56,7 @@ func (s *service) DestroyCDNInstance(id string) error {
 }
 
 func (s *service) UpdateCDNInstance(id string, json types.UpdateCDNInstanceRequest) (*model.CDNInstance, error) {
-	cdnInstance := &model.CDNInstance{}
+	cdnInstance := model.CDNInstance{}
 	if err := s.db.First(&cdnInstance, id).Updates(model.CDNInstance{
 		IDC:          json.IDC,
 		Location:     json.Location,
@@ -42,20 +67,43 @@ func (s *service) UpdateCDNInstance(id string, json types.UpdateCDNInstanceReque
 		return nil, err
 	}
 
-	return cdnInstance, nil
+	return &cdnInstance, nil
+}
+
+func (s *service) UpdateCDNInstanceWithSecurityGroupDomain(id string, json types.UpdateCDNInstanceRequest) (*model.CDNInstance, error) {
+	securityGroup := model.SecurityGroup{
+		Domain: json.SecurityGroupDomain,
+	}
+	if err := s.db.First(&securityGroup).Error; err != nil {
+		return s.UpdateCDNInstance(id, json)
+	}
+
+	cdnInstance := model.CDNInstance{
+		IDC:          json.IDC,
+		Location:     json.Location,
+		IP:           json.IP,
+		Port:         json.Port,
+		DownloadPort: json.DownloadPort,
+	}
+
+	if err := s.db.Model(&securityGroup).Association("CDNInstance").Append(&cdnInstance); err != nil {
+		return nil, err
+	}
+
+	return &cdnInstance, nil
 }
 
 func (s *service) GetCDNInstance(id string) (*model.CDNInstance, error) {
-	cdnInstance := &model.CDNInstance{}
+	cdnInstance := model.CDNInstance{}
 	if err := s.db.First(&cdnInstance, id).Error; err != nil {
 		return nil, err
 	}
 
-	return cdnInstance, nil
+	return &cdnInstance, nil
 }
 
 func (s *service) GetCDNInstances(q types.GetCDNInstancesQuery) (*[]model.CDNInstance, error) {
-	cdnInstances := &[]model.CDNInstance{}
+	cdnInstances := []model.CDNInstance{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDNInstance{
 		Host:         q.Host,
 		IDC:          q.IDC,
@@ -67,12 +115,19 @@ func (s *service) GetCDNInstances(q types.GetCDNInstancesQuery) (*[]model.CDNIns
 		return nil, err
 	}
 
-	return cdnInstances, nil
+	return &cdnInstances, nil
 }
 
-func (s *service) CDNInstanceTotalCount() (int64, error) {
+func (s *service) CDNInstanceTotalCount(q types.GetCDNInstancesQuery) (int64, error) {
 	var count int64
-	if err := s.db.Model(&model.CDNInstance{}).Count(&count).Error; err != nil {
+	if err := s.db.Model(&model.CDNInstance{}).Where(&model.CDNInstance{
+		Host:         q.Host,
+		IDC:          q.IDC,
+		Location:     q.Location,
+		IP:           q.IP,
+		Port:         q.Port,
+		DownloadPort: q.DownloadPort,
+	}).Count(&count).Error; err != nil {
 		return 0, err
 	}
 

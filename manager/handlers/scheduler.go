@@ -73,7 +73,7 @@ func (h *Handlers) DestroyScheduler(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /schedulers/{id} [patch]
-func (handler *Handlers) UpdateScheduler(ctx *gin.Context) {
+func (h *Handlers) UpdateScheduler(ctx *gin.Context) {
 	var params types.SchedulerParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.Error(err)
@@ -86,7 +86,7 @@ func (handler *Handlers) UpdateScheduler(ctx *gin.Context) {
 		return
 	}
 
-	scheduler, err := handler.service.UpdateScheduler(params.ID, json)
+	scheduler, err := h.service.UpdateScheduler(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -148,7 +148,7 @@ func (h *Handlers) GetSchedulers(ctx *gin.Context) {
 		return
 	}
 
-	totalCount, err := h.service.SchedulerTotalCount()
+	totalCount, err := h.service.SchedulerTotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -156,4 +156,32 @@ func (h *Handlers) GetSchedulers(ctx *gin.Context) {
 
 	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
 	ctx.JSON(http.StatusOK, schedulers)
+}
+
+// @Summary Add Instance to scheduler
+// @Description Add Instance to scheduler
+// @Tags SchedulerInstance
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param instance_id path string true "instance id"
+// @Success 200
+// @Failure 400 {object} HTTPError
+// @Failure 404 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /schedulers/{id}/scheduler-instances/{instance_id} [put]
+func (h *Handlers) AddInstanceToScheduler(ctx *gin.Context) {
+	var params types.AddInstanceToSchedulerParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	err := h.service.AddInstanceToScheduler(params.ID, params.InstanceID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
 }

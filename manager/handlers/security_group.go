@@ -73,7 +73,7 @@ func (h *Handlers) DestroySecurityGroup(ctx *gin.Context) {
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /security-groups/{id} [patch]
-func (handler *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
+func (h *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
 	var params types.SecurityGroupParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.Error(err)
@@ -86,7 +86,7 @@ func (handler *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
 		return
 	}
 
-	securityGroup, err := handler.service.UpdateSecurityGroup(params.ID, json)
+	securityGroup, err := h.service.UpdateSecurityGroup(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -148,7 +148,7 @@ func (h *Handlers) GetSecurityGroups(ctx *gin.Context) {
 		return
 	}
 
-	totalCount, err := h.service.SecurityGroupTotalCount()
+	totalCount, err := h.service.SecurityGroupTotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -156,4 +156,60 @@ func (h *Handlers) GetSecurityGroups(ctx *gin.Context) {
 
 	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
 	ctx.JSON(http.StatusOK, securityGroups)
+}
+
+// @Summary Add SchedulerInstance to SecurityGroup
+// @Description Add SchedulerInstance to SecurityGroup
+// @Tags SecurityGroup
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param instance_id path string true "instance id"
+// @Success 200
+// @Failure 400 {object} HTTPError
+// @Failure 404 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /security-groups/{id}/scheduler-instances/{instance_id} [put]
+func (h *Handlers) AddSchedulerInstanceToSecurityGroup(ctx *gin.Context) {
+	var params types.AddSchedulerInstanceToSecurityGroupParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	err := h.service.AddSchedulerInstanceToSecurityGroup(params.ID, params.InstanceID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
+// @Summary Add CDNInstance to SecurityGroup
+// @Description Add CDNInstance to SecurityGroup
+// @Tags SecurityGroup
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param instance_id path string true "instance id"
+// @Success 200
+// @Failure 400 {object} HTTPError
+// @Failure 404 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /security-groups/{id}/cdn-instances/{instance_id} [put]
+func (h *Handlers) AddCDNInstanceToSecurityGroup(ctx *gin.Context) {
+	var params types.AddCDNInstanceToSecurityGroupParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	err := h.service.AddCDNInstanceToSecurityGroup(params.ID, params.InstanceID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
 }

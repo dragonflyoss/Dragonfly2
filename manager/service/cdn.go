@@ -6,7 +6,7 @@ import (
 )
 
 func (s *service) CreateCDN(json types.CreateCDNRequest) (*model.CDN, error) {
-	cdn := &model.CDN{
+	cdn := model.CDN{
 		Name:   json.Name,
 		BIO:    json.BIO,
 		Config: json.Config,
@@ -16,7 +16,7 @@ func (s *service) CreateCDN(json types.CreateCDNRequest) (*model.CDN, error) {
 		return nil, err
 	}
 
-	return cdn, nil
+	return &cdn, nil
 }
 
 func (s *service) DestroyCDN(id string) error {
@@ -28,7 +28,7 @@ func (s *service) DestroyCDN(id string) error {
 }
 
 func (s *service) UpdateCDN(id string, json types.UpdateCDNRequest) (*model.CDN, error) {
-	cdn := &model.CDN{}
+	cdn := model.CDN{}
 	if err := s.db.First(&cdn, id).Updates(model.CDN{
 		Name:   json.Name,
 		BIO:    json.BIO,
@@ -37,34 +37,72 @@ func (s *service) UpdateCDN(id string, json types.UpdateCDNRequest) (*model.CDN,
 		return nil, err
 	}
 
-	return cdn, nil
+	return &cdn, nil
 }
 
 func (s *service) GetCDN(id string) (*model.CDN, error) {
-	cdn := &model.CDN{}
+	cdn := model.CDN{}
 	if err := s.db.First(&cdn, id).Error; err != nil {
 		return nil, err
 	}
 
-	return cdn, nil
+	return &cdn, nil
 }
 
 func (s *service) GetCDNs(q types.GetCDNsQuery) (*[]model.CDN, error) {
-	cdns := &[]model.CDN{}
+	cdns := []model.CDN{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDN{
 		Name: q.Name,
 	}).Find(&cdns).Error; err != nil {
 		return nil, err
 	}
 
-	return cdns, nil
+	return &cdns, nil
 }
 
-func (s *service) CDNTotalCount() (int64, error) {
+func (s *service) CDNTotalCount(q types.GetCDNsQuery) (int64, error) {
 	var count int64
-	if err := s.db.Model(&model.CDN{}).Count(&count).Error; err != nil {
+	if err := s.db.Model(&model.CDN{}).Where(&model.CDN{
+		Name: q.Name,
+	}).Count(&count).Error; err != nil {
 		return 0, err
 	}
 
 	return count, nil
+}
+
+func (s *service) AddInstanceToCDN(id, instanceID string) error {
+	cdn := model.CDN{}
+	if err := s.db.First(&cdn, id).Error; err != nil {
+		return err
+	}
+
+	cdnInstance := model.CDNInstance{}
+	if err := s.db.First(&cdnInstance, instanceID).Error; err != nil {
+		return err
+	}
+
+	if err := s.db.Model(&cdn).Association("CDNInstance").Append(&cdnInstance); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) AddSchedulerToCDN(id, schedulerID string) error {
+	cdn := model.CDN{}
+	if err := s.db.First(&cdn, id).Error; err != nil {
+		return err
+	}
+
+	scheduler := model.Scheduler{}
+	if err := s.db.First(&scheduler, schedulerID).Error; err != nil {
+		return err
+	}
+
+	if err := s.db.Model(&cdn).Association("Scheduler").Append(&scheduler); err != nil {
+		return err
+	}
+
+	return nil
 }
