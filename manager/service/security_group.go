@@ -86,7 +86,7 @@ func (s *service) AddSchedulerInstanceToSecurityGroup(id, schedulerID uint) erro
 		return err
 	}
 
-	if err := s.db.Model(&securityGroup).Association("SecurityGroup").Append(&schedulerInstance); err != nil {
+	if err := s.db.Model(&securityGroup).Association("SchedulerInstances").Append(&schedulerInstance); err != nil {
 		return err
 	}
 
@@ -104,7 +104,7 @@ func (s *service) AddCDNInstanceToSecurityGroup(id, cdnID uint) error {
 		return err
 	}
 
-	if err := s.db.Model(&securityGroup).Association("SecurityGroup").Append(&cdnInstance); err != nil {
+	if err := s.db.Model(&securityGroup).Association("CDNInstances").Append(&cdnInstance); err != nil {
 		return err
 	}
 

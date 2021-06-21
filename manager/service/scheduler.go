@@ -84,7 +84,7 @@ func (s *service) AddInstanceToScheduler(id, instanceID uint) error {
 		return err
 	}
 
-	if err := s.db.Model(&scheduler).Association("SchedulerInstance").Append(&schedulerInstance); err != nil {
+	if err := s.db.Model(&scheduler).Association("SchedulerInstances").Append(&schedulerInstance); err != nil {
 		return err
 	}
 

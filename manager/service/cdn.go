@@ -82,7 +82,7 @@ func (s *service) AddInstanceToCDN(id, instanceID uint) error {
 		return err
 	}
 
-	if err := s.db.Model(&cdn).Association("CDNInstance").Append(&cdnInstance); err != nil {
+	if err := s.db.Model(&cdn).Association("CDNInstances").Append(&cdnInstance); err != nil {
 		return err
 	}
 
@@ -100,7 +100,7 @@ func (s *service) AddSchedulerToCDN(id, schedulerID uint) error {
 		return err
 	}
 
-	if err := s.db.Model(&cdn).Association("Scheduler").Append(&scheduler); err != nil {
+	if err := s.db.Model(&cdn).Association("Schedulers").Append(&scheduler); err != nil {
 		return err
 	}
 

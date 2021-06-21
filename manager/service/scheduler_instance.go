@@ -91,7 +91,7 @@ func (s *service) UpdateSchedulerInstanceWithSecurityGroupDomain(id uint, json t
 		Port:      json.Port,
 	}
 
-	if err := s.db.Model(&securityGroup).Association("SchedulerInstance").Append(&schedulerInstance); err != nil {
+	if err := s.db.Model(&securityGroup).Association("SchedulerInstances").Append(&schedulerInstance); err != nil {
 		return nil, err
 	}
 

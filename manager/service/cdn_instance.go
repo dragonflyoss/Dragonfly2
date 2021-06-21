@@ -39,7 +39,7 @@ func (s *service) CreateCDNInstanceWithSecurityGroupDomain(json types.CreateCDNI
 		DownloadPort: json.DownloadPort,
 	}
 
-	if err := s.db.Model(&securityGroup).Association("CDNInstance").Append(&cdnInstance); err != nil {
+	if err := s.db.Model(&securityGroup).Association("CDNInstances").Append(&cdnInstance); err != nil {
 		return nil, err
 
 	}
@@ -86,7 +86,7 @@ func (s *service) UpdateCDNInstanceWithSecurityGroupDomain(id uint, json types.U
 		DownloadPort: json.DownloadPort,
 	}
 
-	if err := s.db.Model(&securityGroup).Association("CDNInstance").Append(&cdnInstance); err != nil {
+	if err := s.db.Model(&securityGroup).Association("CDNInstances").Append(&cdnInstance); err != nil {
 		return nil, err
 	}
 

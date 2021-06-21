@@ -19,6 +19,8 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 
 	r := gin.New()
 	h := handlers.NewHandler(service)
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
 	r.Use(middlewares.Error())
 
 	// Scheduler
