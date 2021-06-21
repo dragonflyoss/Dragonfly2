@@ -25,13 +25,13 @@ import (
 	"syscall"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/server/service"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 
 	// manager server rpc
-	_ "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
+	_ "d7y.io/dragonfly/v2/internal/rpc/manager/server"
 )
 
 type Server struct {

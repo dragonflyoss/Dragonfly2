@@ -24,7 +24,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/safe"
 
-	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )

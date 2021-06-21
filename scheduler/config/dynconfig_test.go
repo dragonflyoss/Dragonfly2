@@ -23,7 +23,7 @@ import (
 	"time"
 
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/scheduler/config/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
