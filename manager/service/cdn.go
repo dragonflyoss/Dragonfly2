@@ -29,7 +29,6 @@ func (s *service) DestroyCDN(id string) error {
 
 func (s *service) UpdateCDN(id string, json types.UpdateCDNRequest) (*model.CDN, error) {
 	cdn := &model.CDN{}
-
 	if err := s.db.First(&cdn, id).Updates(model.CDN{
 		Name:   json.Name,
 		BIO:    json.BIO,

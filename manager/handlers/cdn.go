@@ -89,6 +89,7 @@ func (handler *Handlers) UpdateCDN(ctx *gin.Context) {
 	cdn, err := handler.service.UpdateCDN(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
+		return
 	}
 
 	ctx.JSON(http.StatusOK, cdn)
@@ -115,6 +116,7 @@ func (h *Handlers) GetCDN(ctx *gin.Context) {
 	cdn, err := h.service.GetCDN(params.ID)
 	if err != nil {
 		ctx.Error(err)
+		return
 	}
 
 	ctx.JSON(http.StatusOK, cdn)
@@ -127,7 +129,7 @@ func (h *Handlers) GetCDN(ctx *gin.Context) {
 // @Produce json
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
-// @Success 200 {object} types.GetCDNsQuery
+// @Success 200 {object} []model.CDN
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError

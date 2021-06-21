@@ -20,6 +20,6 @@ type UpdateSchedulerRequest struct {
 
 type GetSchedulersQuery struct {
 	Name    string `form:"name" binding:"required"`
-	Page    int    `form:"page" binding:"omitempty,min=1"`
-	PerPage int    `form:"per_page" binding:"omitempty,max=50"`
+	Page    int    `form:"page" binding:"omitempty,gte=1"`
+	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
 }

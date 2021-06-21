@@ -16,12 +16,20 @@ type Service interface {
 	GetCDN(string) (*model.CDN, error)
 	GetCDNs(types.GetCDNsQuery) (*[]model.CDN, error)
 	CDNTotalCount() (int64, error)
+
 	CreateScheduler(types.CreateSchedulerRequest) (*model.Scheduler, error)
 	DestroyScheduler(string) error
 	UpdateScheduler(string, types.UpdateSchedulerRequest) (*model.Scheduler, error)
 	GetScheduler(string) (*model.Scheduler, error)
 	GetSchedulers(types.GetSchedulersQuery) (*[]model.Scheduler, error)
 	SchedulerTotalCount() (int64, error)
+
+	CreateSecurityGroup(types.CreateSecurityGroupRequest) (*model.SecurityGroup, error)
+	DestroySecurityGroup(string) error
+	UpdateSecurityGroup(string, types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error)
+	GetSecurityGroup(string) (*model.SecurityGroup, error)
+	GetSecurityGroups(types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, error)
+	SecurityGroupTotalCount() (int64, error)
 }
 
 type service struct {

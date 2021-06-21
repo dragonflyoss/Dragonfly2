@@ -30,7 +30,6 @@ func (s *service) DestroyScheduler(id string) error {
 
 func (s *service) UpdateScheduler(id string, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := &model.Scheduler{}
-
 	if err := s.db.First(&scheduler, id).Updates(model.Scheduler{
 		Name:         json.Name,
 		BIO:          json.BIO,

@@ -50,12 +50,12 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 	// ci.GET(":id", h.GetCDNInstance)
 	// ci.GET("", h.GetCDNInstances)
 
-	// sg := apiv1.Group("/security-groups")
-	// sg.POST("", h.CreateSecurityGroup)
-	// sg.DELETE(":id", h.DestroySecurityGroup)
-	// sg.PATCH(":id", h.UpdateSecurityGroup)
-	// sg.GET(":id", h.GetSecurityGroup)
-	// sg.GET("", h.GetSecurityGroups)
+	sg := apiv1.Group("/security-groups")
+	sg.POST("", h.CreateSecurityGroup)
+	sg.DELETE(":id", h.DestroySecurityGroup)
+	sg.PATCH(":id", h.UpdateSecurityGroup)
+	sg.GET(":id", h.GetSecurityGroup)
+	sg.GET("", h.GetSecurityGroups)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r, nil
