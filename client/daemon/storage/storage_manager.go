@@ -101,11 +101,11 @@ func init() {
 }
 
 type storageManager struct {
-	sync.Locker
+	sync.Mutex
 	clientutil.KeepAlive
 	storeStrategy      config.StoreStrategy
 	storeOption        *config.StorageOption
-	tasks              *sync.Map
+	tasks              sync.Map
 	markedReclaimTasks []PeerTaskMetaData
 	dataPathStat       *syscall.Stat_t
 	gcCallback         func(CommonTaskRequest)
@@ -113,6 +113,9 @@ type storageManager struct {
 	indexRWMutex       sync.RWMutex
 	indexTask2PeerTask map[string][]*localTaskStore // key: task id, value: slice of localTaskStore
 }
+
+var _ gc.GC = (*storageManager)(nil)
+var _ Manager = (*storageManager)(nil)
 
 type GCCallback func(request CommonTaskRequest)
 
@@ -145,9 +148,7 @@ func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOp
 	s := &storageManager{
 		KeepAlive:     clientutil.NewKeepAlive("storage manager"),
 		storeStrategy: storeStrategy,
-		Locker:        &sync.Mutex{},
 		storeOption:   opt,
-		tasks:         &sync.Map{},
 		dataPathStat:  stat.Sys().(*syscall.Stat_t),
 		gcCallback:    gcCallback,
 
@@ -298,7 +299,6 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 			Pieces:        map[int32]PieceMetaData{},
 		},
 		gcCallback:       s.gcCallback,
-		RWMutex:          &sync.RWMutex{},
 		dataDir:          dataDir,
 		metadataFilePath: path.Join(dataDir, taskMetaData),
 		expireTime:       s.storeOption.TaskExpireTime.Duration,
@@ -451,7 +451,6 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 			peerID := peerDir.Name()
 			dataDir := path.Join(s.storeOption.DataPath, taskID, peerID)
 			t := &localTaskStore{
-				RWMutex:             &sync.RWMutex{},
 				dataDir:             dataDir,
 				metadataFilePath:    path.Join(dataDir, taskMetaData),
 				expireTime:          s.storeOption.TaskExpireTime.Duration,

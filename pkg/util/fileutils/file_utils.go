@@ -60,7 +60,7 @@ func DeleteFile(path string) error {
 func OpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
 	if !PathExist(path) && (flag&syscall.O_CREAT != 0) {
 		if err := MkdirAll(filepath.Dir(path)); err != nil {
-			return nil, errors.Wrapf(err, "failed to open file %s", path)
+			return nil, errors.Wrapf(err, "open file %s", path)
 		}
 	}
 
@@ -75,10 +75,10 @@ func Link(oldname string, newname string) error {
 		}
 
 		if err := DeleteFile(newname); err != nil {
-			return errors.Wrapf(err, "failed to link %s to %s", newname, oldname)
+			return errors.Wrapf(err, "to link %s to %s", newname, oldname)
 		}
 	} else if err := MkdirAll(filepath.Dir(newname)); err != nil {
-		return errors.Wrapf(err, "failed to link %s to %s", newname, oldname)
+		return errors.Wrapf(err, "link %s to %s", newname, oldname)
 	}
 
 	return os.Link(oldname, newname)
@@ -105,12 +105,12 @@ func SymbolicLink(oldname string, newname string) error {
 	}
 	if PathExist(newname) {
 		if err := os.Remove(newname); err != nil {
-			return fmt.Errorf("failed to symlink %s to %s when deleting target file: %v", newname, oldname, err)
+			return fmt.Errorf("symlink %s to %s when deleting target file: %v", newname, oldname, err)
 		}
 	}
 
 	if err := MkdirAll(filepath.Dir(newname)); err != nil {
-		return errors.Wrapf(err, "failed to symlink %s to %s", newname, oldname)
+		return errors.Wrapf(err, "symlink %s to %s", newname, oldname)
 	}
 	return os.Symlink(oldname, newname)
 }
@@ -206,11 +206,11 @@ func GetUsedSpace(path string) (unit.Bytes, error) {
 // MoveFile moves the file src to dst.
 func MoveFile(src string, dst string) error {
 	if !IsRegular(src) {
-		return fmt.Errorf("failed to move %s to %s: src is not a regular file", src, dst)
+		return fmt.Errorf("move %s to %s: src is not a regular file", src, dst)
 	}
 	if PathExist(dst) && !IsDir(dst) {
 		if err := DeleteFile(dst); err != nil {
-			return fmt.Errorf("failed to move %s to %s when deleting dst file: %v", src, dst, err)
+			return fmt.Errorf("move %s to %s when deleting dst file: %v", src, dst, err)
 		}
 	}
 	return os.Rename(src, dst)

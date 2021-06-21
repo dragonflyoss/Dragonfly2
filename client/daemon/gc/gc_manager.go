@@ -36,6 +36,8 @@ type gcManager struct {
 	done     chan bool
 }
 
+var _ Manager = (*gcManager)(nil)
+
 var allGCTasks = map[string]GC{}
 
 func Register(name string, gc GC) {

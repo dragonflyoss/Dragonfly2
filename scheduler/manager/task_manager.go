@@ -28,7 +28,7 @@ import (
 )
 
 type TaskManager struct {
-	lock        *sync.RWMutex
+	lock        sync.RWMutex
 	data        map[string]*types.Task
 	gcDelayTime time.Duration
 
@@ -43,7 +43,6 @@ func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
 	}
 
 	tm := &TaskManager{
-		lock:        new(sync.RWMutex),
 		data:        make(map[string]*types.Task),
 		gcDelayTime: delay,
 	}

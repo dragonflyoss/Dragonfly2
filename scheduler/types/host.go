@@ -40,13 +40,12 @@ type Host struct {
 	currentUploadLoad   int32
 	totalDownloadLoad   int32
 	currentDownloadLoad int32
-	loadLock            *sync.Mutex
+	loadLock            sync.Mutex
 	// ServiceDownTime the down time of the peer service.
 	ServiceDownTime int64
 }
 
 func Init(h *Host) *Host {
-	h.loadLock = &sync.Mutex{}
 	h.peerTaskMap = &sync.Map{}
 	return h
 }

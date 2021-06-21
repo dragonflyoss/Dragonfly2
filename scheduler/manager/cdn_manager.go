@@ -46,7 +46,7 @@ type CDNManager struct {
 	client       client.CdnClient
 	servers      map[string]*manager.ServerInfo
 	dynconfig    config.DynconfigInterface
-	lock         *sync.RWMutex
+	lock         sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
 	callbackList map[*types.Task][]*types.PeerTask
 	taskManager  *TaskManager
@@ -55,7 +55,6 @@ type CDNManager struct {
 
 func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *HostManager, dynconfig config.DynconfigInterface) (*CDNManager, error) {
 	mgr := &CDNManager{
-		lock:         &sync.RWMutex{},
 		callbackFns:  make(map[*types.Task]func(*types.PeerTask, *dferrors.DfError)),
 		callbackList: make(map[*types.Task][]*types.PeerTask),
 		taskManager:  taskManager,

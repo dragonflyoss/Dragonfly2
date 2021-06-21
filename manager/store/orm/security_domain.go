@@ -33,6 +33,8 @@ type SecurityDomainStore struct {
 	table        string
 }
 
+var _ store.Store = (*SecurityDomainStore)(nil)
+
 func NewSecurityDomainStore(db *gorm.DB, table string) (store.Store, error) {
 	s := &SecurityDomainStore{
 		resourceType: store.SecurityDomain,

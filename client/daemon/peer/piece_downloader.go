@@ -49,6 +49,8 @@ type pieceDownloader struct {
 	httpClient *http.Client
 }
 
+var _ PieceDownloader = (*pieceDownloader)(nil)
+
 var defaultTransport http.RoundTripper = &http.Transport{
 	Proxy: http.ProxyFromEnvironment,
 	DialContext: (&net.Dialer{

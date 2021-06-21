@@ -41,6 +41,8 @@ type SenderGroup struct {
 	schedulerService *service.SchedulerService
 }
 
+var _ ISender = (*SenderGroup)(nil)
+
 type Sender struct {
 	jobChan          chan *string
 	stopCh           <-chan struct{}

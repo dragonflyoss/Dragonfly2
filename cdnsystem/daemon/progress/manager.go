@@ -19,6 +19,7 @@ package progress
 import (
 	"container/list"
 	"context"
+	"fmt"
 	"sort"
 	"strconv"
 	"sync"
@@ -85,11 +86,11 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 	defer pm.mu.UnLock(taskID, true)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get seed subscribers")
+		return nil, fmt.Errorf("get seed subscribers: %v", err)
 	}
 	pieceMetaDataRecords, err := pm.getPieceMetaRecordsByTaskID(taskID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get piece meta records by taskID")
+		return nil, fmt.Errorf("get piece meta records by taskID: %v", err)
 	}
 	ch := make(chan *types.SeedPiece, pm.buffer)
 	ele := chanList.PushBack(ch)
@@ -116,11 +117,11 @@ func (pm *Manager) PublishPiece(taskID string, record *types.SeedPiece) error {
 	defer pm.mu.UnLock(taskID, false)
 	err := pm.setPieceMetaRecord(taskID, record)
 	if err != nil {
-		return errors.Wrap(err, "failed to set piece meta record")
+		return fmt.Errorf("set piece meta record: %v", err)
 	}
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
-		return errors.Wrap(err, "failed to get seed subscribers")
+		return fmt.Errorf("get seed subscribers: %v", err)
 	}
 	var wg sync.WaitGroup
 	for e := chanList.Front(); e != nil; e = e.Next() {
@@ -145,7 +146,7 @@ func (pm *Manager) PublishTask(ctx context.Context, taskID string, task *types.S
 	defer pm.mu.UnLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
-		return errors.Wrap(err, "failed to get seed subscribers")
+		return fmt.Errorf("get seed subscribers: %v", err)
 	}
 	// unwatch
 	for e := chanList.Front(); e != nil; e = e.Next() {
@@ -165,7 +166,7 @@ func (pm *Manager) Clear(taskID string) error {
 	defer pm.mu.UnLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil && errors.Cause(err) != dferrors.ErrDataNotFound {
-		return errors.Wrap(err, "failed to get seed subscribers")
+		return errors.Wrap(err, "get seed subscribers")
 	}
 	if chanList != nil {
 		for e := chanList.Front(); e != nil; e = e.Next() {
@@ -181,11 +182,11 @@ func (pm *Manager) Clear(taskID string) error {
 	}
 	err = pm.seedSubscribers.Remove(taskID)
 	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
-		return errors.Wrap(err, "failed to clear seed subscribes")
+		return errors.Wrap(err, "clear seed subscribes")
 	}
 	err = pm.taskPieceMetaRecords.Remove(taskID)
 	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
-		return errors.Wrap(err, "failed to clear piece meta records")
+		return errors.Wrap(err, "clear piece meta records")
 	}
 	return nil
 }

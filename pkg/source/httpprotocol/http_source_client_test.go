@@ -43,7 +43,7 @@ type HTTPSourceClientTestSuite struct {
 
 func (suite *HTTPSourceClientTestSuite) SetupSuite() {
 	suite.ResourceClient = NewHTTPSourceClient()
-	httpmock.ActivateNonDefault(defaultHTTPClient)
+	httpmock.ActivateNonDefault(_defaultHTTPClient)
 }
 
 func (suite *HTTPSourceClientTestSuite) TearDownSuite() {
@@ -121,8 +121,8 @@ func (suite *HTTPSourceClientTestSuite) SetupTest() {
 func (suite *HTTPSourceClientTestSuite) TestNewHTTPSourceClient() {
 	var sourceClient source.ResourceClient
 	sourceClient = NewHTTPSourceClient()
-	suite.Equal(defaultHTTPClient, sourceClient.(*httpSourceClient).httpClient)
-	suite.EqualValues(*defaultHTTPClient, *sourceClient.(*httpSourceClient).httpClient)
+	suite.Equal(_defaultHTTPClient, sourceClient.(*httpSourceClient).httpClient)
+	suite.EqualValues(*_defaultHTTPClient, *sourceClient.(*httpSourceClient).httpClient)
 
 	expectedHTTPClient := &http.Client{}
 	sourceClient = NewHTTPSourceClient(WithHTTPClient(expectedHTTPClient))

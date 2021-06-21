@@ -49,7 +49,7 @@ type PeerTask struct {
 	Host *Host  // host info
 
 	isDown         bool // is leave scheduler
-	lock           *sync.Mutex
+	lock           sync.Mutex
 	finishedNum    int32 // download finished piece number
 	startTime      int64
 	lastActiveTime int64
@@ -94,7 +94,6 @@ func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *Pee
 		Task:            task,
 		Host:            host,
 		isDown:          false,
-		lock:            new(sync.Mutex),
 		startTime:       time.Now().UnixNano(),
 		lastActiveTime:  time.Now().UnixNano(),
 		touch:           touch,

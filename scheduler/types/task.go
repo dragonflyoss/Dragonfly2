@@ -41,7 +41,7 @@ type Task struct {
 
 	CreateTime    time.Time
 	LastActive    time.Time
-	rwLock        *sync.RWMutex
+	rwLock        sync.RWMutex
 	PieceList     map[int32]*Piece // Piece list
 	PieceTotal    int32            // the total number of Pieces, set > 0 when cdn finished
 	ContentLength int64
@@ -51,10 +51,9 @@ type Task struct {
 }
 
 func CopyTask(t *Task) *Task {
-	copyTask := *t
+	copyTask := *t //nolint:govet
 	if copyTask.PieceList == nil {
 		copyTask.PieceList = make(map[int32]*Piece)
-		copyTask.rwLock = new(sync.RWMutex)
 		copyTask.CreateTime = time.Now()
 		copyTask.LastActive = copyTask.CreateTime
 		copyTask.SizeScope = base.SizeScope_NORMAL

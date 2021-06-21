@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -125,7 +126,7 @@ func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, o
 	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
 		client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to connect server %s", target.GetEndpoint())
+			return nil, fmt.Errorf("failed to connect server %s: %v", target.GetEndpoint(), err)
 		}
 		return client.CheckHealth(ctx, new(empty.Empty), opts...)
 	}, 0.2, 2.0, 3, nil)

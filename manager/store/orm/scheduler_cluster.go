@@ -33,6 +33,8 @@ type SchedulerClusterStore struct {
 	table        string
 }
 
+var _ store.Store = (*SchedulerClusterStore)(nil)
+
 func NewSchedulerClusterStore(db *gorm.DB, table string) (store.Store, error) {
 	s := &SchedulerClusterStore{
 		resourceType: store.SchedulerCluster,

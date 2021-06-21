@@ -25,6 +25,8 @@ type ormStore struct {
 	tables map[store.ResourceType]string
 }
 
+var _ store.Store = (*ormStore)(nil)
+
 type newTableSetup func(db *gorm.DB, tableName string) (store.Store, error)
 
 var ormTables = map[store.ResourceType]newTableSetup{

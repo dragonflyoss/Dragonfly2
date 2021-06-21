@@ -143,7 +143,7 @@ func newDriverPlugin(name string, builder DriverBuilder, cfg *Config) (plugins.P
 	// init driver with specific config
 	driver, err := builder(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init storage driver %s: %v", name, err)
+		return nil, fmt.Errorf("init storage driver %s: %v", name, err)
 	}
 
 	return &driverPlugin{

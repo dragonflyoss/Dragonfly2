@@ -17,6 +17,7 @@
 package storage
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -28,7 +29,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
-	"github.com/pkg/errors"
 )
 
 type Cleaner struct {
@@ -57,7 +57,7 @@ func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) 
 			}
 			freeSpace, _ = cleaner.driver.GetAvailSpace()
 		} else {
-			return nil, errors.Wrapf(err, "failed to get avail space")
+			return nil, fmt.Errorf("get available space: %v", err)
 		}
 	}
 	fullGC := force

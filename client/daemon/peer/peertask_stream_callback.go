@@ -33,6 +33,8 @@ type streamPeerTaskCallback struct {
 	start time.Time
 }
 
+var _ TaskCallback = (*streamPeerTaskCallback)(nil)
+
 func (p *streamPeerTaskCallback) GetStartTime() time.Time {
 	return p.start
 }

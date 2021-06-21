@@ -32,6 +32,8 @@ type keepAlive struct {
 	access time.Time
 }
 
+var _ KeepAlive = (*keepAlive)(nil)
+
 func NewKeepAlive(name string) KeepAlive {
 	return &keepAlive{
 		name:   name,

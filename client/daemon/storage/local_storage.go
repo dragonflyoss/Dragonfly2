@@ -38,7 +38,7 @@ type localTaskStore struct {
 	*logger.SugaredLoggerOnWith
 	persistentMetadata
 
-	*sync.RWMutex
+	sync.RWMutex
 
 	dataDir string
 
@@ -50,6 +50,9 @@ type localTaskStore struct {
 	reclaimMarked atomic.Bool
 	gcCallback    func(CommonTaskRequest)
 }
+
+var _ TaskStorageDriver = (*localTaskStore)(nil)
+var _ Reclaimer = (*localTaskStore)(nil)
 
 func (t *localTaskStore) touch() {
 	access := time.Now().UnixNano()

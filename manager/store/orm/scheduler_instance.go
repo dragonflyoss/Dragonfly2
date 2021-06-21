@@ -38,6 +38,8 @@ type SchedulerInstanceStore struct {
 	table        string
 }
 
+var _ store.Store = (*SchedulerInstanceStore)(nil)
+
 func NewSchedulerInstanceStore(db *gorm.DB, table string) (store.Store, error) {
 	s := &SchedulerInstanceStore{
 		resourceType: store.SchedulerInstance,

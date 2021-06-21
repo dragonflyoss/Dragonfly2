@@ -135,6 +135,8 @@ func NewPeerTaskManager(
 	return ptm, nil
 }
 
+var _ TaskManager = (*peerTaskManager)(nil)
+
 func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *FilePeerTaskProgress, *TinyData, error) {
 	if ptm.enableMultiplex {
 		progress, ok := ptm.tryReuseFilePeerTask(ctx, req)
