@@ -22,12 +22,12 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 	r.Use(middlewares.Error())
 
 	apiv1 := r.Group("/api/v1")
-	// sc := apiv1.Group("/schedulers")
-	// sc.POST("", h.CreateScheduler)
-	// sc.DELETE(":id", h.DestroyScheduler)
-	// sc.PATCH(":id", h.UpdateScheduler)
-	// sc.GET(":id", h.GetScheduler)
-	// sc.GET("", h.GetSchedulers)
+	sc := apiv1.Group("/schedulers")
+	sc.POST("", h.CreateScheduler)
+	sc.DELETE(":id", h.DestroyScheduler)
+	sc.PATCH(":id", h.UpdateScheduler)
+	sc.GET(":id", h.GetScheduler)
+	sc.GET("", h.GetSchedulers)
 
 	// si := apiv1.Group("/schedulers/:schedulerId/instances")
 	// si.POST("", h.CreateSchedulerInstance)

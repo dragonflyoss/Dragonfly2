@@ -1,152 +1,157 @@
 package handlers
 
-// CreateScheduler godoc
-// @Summary Add scheduler cluster
-// @Description add by json config
-// @Tags SchedulerCluster
-// @Accept  json
-// @Produce  json
-// @Param cluster body types.SchedulerCluster true "Scheduler cluster"
-// @Success 200 {object} types.SchedulerCluster
+import (
+	"net/http"
+
+	"d7y.io/dragonfly/v2/manager/types"
+	"github.com/gin-gonic/gin"
+)
+
+// @Summary Create Scheduler
+// @Description create by json config
+// @Tags Scheduler
+// @Accept json
+// @Produce json
+// @Param Scheduler body types.CreateSchedulerRequest true "Scheduler"
+// @Success 200 {object} model.Scheduler
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /scheduler/clusters [post]
-// func (handler *Handlers) CreateScheduler(ctx *gin.Context) {
-// var json types.CreateSchedulerRequest
-// if err := ctx.ShouldBindJSON(&json); err != nil {
-// ctx.Error(err)
-// return
-// }
+// @Router /schedulers [post]
+func (h *Handlers) CreateScheduler(ctx *gin.Context) {
+	var json types.CreateSchedulerRequest
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
 
-// scheduler, err := handler.server.AddSchedulerCluster(context.TODO(), json)
-// if err != nil {
-// ctx.Error(err)
-// return
-// }
+	scheduler, err := h.service.CreateScheduler(json)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// ctx.JSON(http.StatusOK, scheduler)
-// }
+	ctx.JSON(http.StatusOK, scheduler)
+}
 
-// DestroyScheduler godoc
-// @Summary Delete scheduler cluster
-// @Description Delete by clusterId
-// @Tags SchedulerCluster
-// @Accept  json
-// @Produce  json
-// @Param  id path string true "ClusterID"
-// @Success 200 {string} string
+// @Summary Destroy Scheduler
+// @Description Destroy by id
+// @Tags Scheduler
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Success 200
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /scheduler/clusters/{id} [delete]
-// func (handler *Handlers) DestroyScheduler(ctx *gin.Context) {
-// var params types.SchedulerParams
-// if err := ctx.ShouldBindUri(&params); err != nil {
-// ctx.Error(err)
-// return
-// }
+// @Router /schedulers/{id} [delete]
+func (h *Handlers) DestroyScheduler(ctx *gin.Context) {
+	var params types.SchedulerParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
 
-// scheduler, err := handler.server.DeleteSchedulerCluster(context.TODO(), params.ID)
-// if err != nil {
-// ctx.Error(err)
-// return
-// }
+	err := h.service.DestroyScheduler(params.ID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// ctx.JSON(http.StatusOK, scheduler)
-// }
+	ctx.Status(http.StatusOK)
+}
 
-// UpdateScheduler godoc
-// @Summary Update scheduler cluster
-// @Description Update by json scheduler cluster
-// @Tags SchedulerCluster
-// @Accept  json
-// @Produce  json
-// @Param  id path string true "ClusterID"
-// @Param  Cluster body types.SchedulerCluster true "SchedulerCluster"
-// @Success 200 {string} string
+// @Summary Update Scheduler
+// @Description Update by json config
+// @Tags Scheduler
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param Scheduler body types.UpdateSchedulerRequest true "Scheduler"
+// @Success 200 {object} model.Scheduler
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /scheduler/clusters/{id} [post]
-// func (handler *Handlers) UpdateScheduler(ctx *gin.Context) {
-// var params types.SchedulerParams
-// if err := ctx.ShouldBindUri(&params); err != nil {
-// ctx.Error(err)
-// return
-// }
+// @Router /schedulers/{id} [patch]
+func (handler *Handlers) UpdateScheduler(ctx *gin.Context) {
+	var params types.SchedulerParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// var json types.CreateSchedulerRequest
-// if err := ctx.ShouldBindJSON(&json); err != nil {
-// ctx.Error(err)
-// return
-// }
+	var json types.UpdateSchedulerRequest
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// scheduler, err := handler.server.UpdateSchedulerCluster(context.TODO(), params.ID, json)
-// if err == nil {
-// ctx.Error(err)
-// }
+	scheduler, err := handler.service.UpdateScheduler(params.ID, json)
+	if err != nil {
+		ctx.Error(err)
+	}
 
-// ctx.JSON(http.StatusOK, scheduler)
-// }
+	ctx.JSON(http.StatusOK, scheduler)
+}
 
-// GetScheduler godoc
-// @Summary Get scheduler cluster
-// @Description Get scheduler cluster by ClusterID
-// @Tags SchedulerCluster
-// @Accept  json
-// @Produce  json
-// @Param id path string true "ClusterID"
-// @Success 200 {object} types.SchedulerCluster
+// @Summary Get Scheduler
+// @Description Get Scheduler by id
+// @Tags Scheduler
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Success 200 {object} model.Scheduler
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /scheduler/clusters/{id} [get]
-// func (handler *Handlers) GetScheduler(ctx *gin.Context) {
-// var params types.SchedulerParams
-// if err := ctx.ShouldBindUri(&params); err != nil {
-// ctx.Error(err)
-// return
-// }
+// @Router /schedulers/{id} [get]
+func (h *Handlers) GetScheduler(ctx *gin.Context) {
+	var params types.SchedulerParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
 
-// scheduler, err := handler.server.GetSchedulerCluster(context.TODO(), params.ID)
-// if err != nil {
-// ctx.Error(err)
-// return
-// }
+	scheduler, err := h.service.GetScheduler(params.ID)
+	if err != nil {
+		ctx.Error(err)
+	}
 
-// ctx.JSON(http.StatusOK, scheduler)
-// }
+	ctx.JSON(http.StatusOK, scheduler)
+}
 
-// GetSchedulers godoc
-// @Summary List scheduler clusters
-// @Description List by object
-// @Tags SchedulerCluster
-// @Accept  json
-// @Produce  json
-// @Param marker query int true "begin marker of current page" default(0)
-// @Param maxItemCount query int true "return max item count, default 10, max 50" default(10) minimum(10) maximum(50)
-// @Success 200 {object} types.ListSchedulerClustersResponse
+// @Summary Get Schedulers
+// @Description Get Schedulers
+// @Tags Scheduler
+// @Accept json
+// @Produce json
+// @Param page query int true "current page" default(0)
+// @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
+// @Success 200 {object} types.GetSchedulersQuery
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /scheduler/clusters [get]
-// func (handler *Handlers) GetSchedulers(ctx *gin.Context) {
-// var query types.GetSchedulersQuery
+// @Router /schedulers [get]
+func (h *Handlers) GetSchedulers(ctx *gin.Context) {
+	var query types.GetSchedulersQuery
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
 
-// query.Page = 1
-// query.PerPage = 10
+	h.setPaginationDefault(&query.Page, &query.PerPage)
+	schedulers, err := h.service.GetSchedulers(query)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// if err := ctx.ShouldBindQuery(&query); err != nil {
-// ctx.Error(err)
-// return
-// }
+	totalCount, err := h.service.SchedulerTotalCount()
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
 
-// schedulers, err := handler.server.ListSchedulerClusters(context.TODO(), store.WithMarker(query.Marker, query.MaxItemCount))
-// if err != nil {
-// ctx.Error(err)
-// return
-// }
-
-// ctx.JSON(http.StatusOK, schedulers)
-// }
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
+	ctx.JSON(http.StatusOK, schedulers)
+}
