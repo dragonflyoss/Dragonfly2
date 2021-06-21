@@ -134,14 +134,13 @@ func (h *Handlers) GetCDN(ctx *gin.Context) {
 // @Router /cdns [get]
 func (h *Handlers) GetCDNs(ctx *gin.Context) {
 	var query types.GetCDNsQuery
-
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	page, perPage := h.setPaginationDefault(query.Page, query.PerPage)
-	cdns, err := h.service.GetCDNs(page, perPage)
+	h.setPaginationDefault(&query.Page, &query.PerPage)
+	cdns, err := h.service.GetCDNs(query)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -153,6 +152,6 @@ func (h *Handlers) GetCDNs(ctx *gin.Context) {
 		return
 	}
 
-	h.setPaginationLinkHeader(ctx, page, perPage, int(totalCount))
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
 	ctx.JSON(http.StatusOK, cdns)
 }

@@ -17,15 +17,14 @@ func NewHandler(service service.Service) *Handlers {
 	return &Handlers{service: service}
 }
 
-func (h *Handlers) setPaginationDefault(page, perPage int) (int, int) {
-	if page == 0 {
-		page = 1
+func (h *Handlers) setPaginationDefault(page, perPage *int) {
+	if *page == 0 {
+		*page = 1
 	}
 
-	if perPage == 0 {
-		perPage = 10
+	if *perPage == 0 {
+		*perPage = 10
 	}
-	return page, perPage
 }
 
 func (h *Handlers) setPaginationLinkHeader(ctx *gin.Context, page, perPage, totalCount int) {

@@ -50,9 +50,11 @@ func (s *service) GetCDN(id string) (*model.CDN, error) {
 	return cdn, nil
 }
 
-func (s *service) GetCDNs(page, perPage int) (*[]model.CDN, error) {
+func (s *service) GetCDNs(q types.GetCDNsQuery) (*[]model.CDN, error) {
 	cdns := &[]model.CDN{}
-	if err := s.db.Scopes(model.Paginate(page, perPage)).Find(&cdns).Error; err != nil {
+	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDN{
+		Name: q.Name,
+	}).Find(&cdns).Error; err != nil {
 		return nil, err
 	}
 

@@ -14,7 +14,7 @@ type Service interface {
 	DestroyCDN(string) error
 	UpdateCDN(string, types.UpdateCDNRequest) (*model.CDN, error)
 	GetCDN(string) (*model.CDN, error)
-	GetCDNs(int, int) (*[]model.CDN, error)
+	GetCDNs(types.GetCDNsQuery) (*[]model.CDN, error)
 	CDNTotalCount() (int64, error)
 }
 
