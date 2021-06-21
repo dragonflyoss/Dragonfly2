@@ -13,14 +13,14 @@ func (s *service) CreateScheduler(json types.CreateSchedulerRequest) (*model.Sch
 		ClientConfig: json.ClientConfig,
 	}
 
-	if err := s.db.Create(&scheduler).Error; err != nil {
+	if err := s.db.Preload("CDNs").Preload("SchedulerInstances").Create(&scheduler).Error; err != nil {
 		return nil, err
 	}
 
 	return &scheduler, nil
 }
 
-func (s *service) DestroyScheduler(id string) error {
+func (s *service) DestroyScheduler(id uint) error {
 	if err := s.db.Unscoped().Delete(&model.Scheduler{}, id).Error; err != nil {
 		return err
 	}
@@ -28,9 +28,9 @@ func (s *service) DestroyScheduler(id string) error {
 	return nil
 }
 
-func (s *service) UpdateScheduler(id string, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
+func (s *service) UpdateScheduler(id uint, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{}
-	if err := s.db.First(&scheduler, id).Updates(model.Scheduler{
+	if err := s.db.Preload("CDNs").Preload("SchedulerInstances").First(&scheduler, id).Updates(model.Scheduler{
 		Name:         json.Name,
 		BIO:          json.BIO,
 		Config:       json.Config,
@@ -42,9 +42,9 @@ func (s *service) UpdateScheduler(id string, json types.UpdateSchedulerRequest) 
 	return &scheduler, nil
 }
 
-func (s *service) GetScheduler(id string) (*model.Scheduler, error) {
+func (s *service) GetScheduler(id uint) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{}
-	if err := s.db.First(&scheduler, id).Error; err != nil {
+	if err := s.db.Preload("CDNs").Preload("SchedulerInstances").First(&scheduler, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ func (s *service) GetScheduler(id string) (*model.Scheduler, error) {
 
 func (s *service) GetSchedulers(q types.GetSchedulersQuery) (*[]model.Scheduler, error) {
 	schedulers := []model.Scheduler{}
-	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Scheduler{
+	if err := s.db.Preload("CDNs").Preload("SchedulerInstances").Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Scheduler{
 		Name: q.Name,
 	}).Find(&schedulers).Error; err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func (s *service) SchedulerTotalCount(q types.GetSchedulersQuery) (int64, error)
 	return count, nil
 }
 
-func (s *service) AddInstanceToScheduler(id, instanceID string) error {
+func (s *service) AddInstanceToScheduler(id, instanceID uint) error {
 	scheduler := model.Scheduler{}
 	if err := s.db.First(&scheduler, id).Error; err != nil {
 		return err

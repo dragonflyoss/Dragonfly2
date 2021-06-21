@@ -1,8 +1,6 @@
 package service
 
 import (
-	"fmt"
-
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 )
@@ -18,7 +16,7 @@ func (s *service) CreateSchedulerInstance(json types.CreateSchedulerInstanceRequ
 		Port:      json.Port,
 	}
 
-	if err := s.db.Create(&schedulerInstance).Error; err != nil {
+	if err := s.db.Preload("Scheduler").Preload("SecurityGroup").Create(&schedulerInstance).Error; err != nil {
 		return nil, err
 	}
 
@@ -43,16 +41,14 @@ func (s *service) CreateSchedulerInstanceWithSecurityGroupDomain(json types.Crea
 		Port:      json.Port,
 	}
 
-	fmt.Println("11111111111")
 	if err := s.db.Model(&securityGroup).Association("SchedulerInstances").Append(&schedulerInstance); err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
-	return &schedulerInstance, nil
+	return s.GetSchedulerInstance(schedulerInstance.ID)
 }
 
-func (s *service) DestroySchedulerInstance(id string) error {
+func (s *service) DestroySchedulerInstance(id uint) error {
 	if err := s.db.Unscoped().Delete(&model.SchedulerInstance{}, id).Error; err != nil {
 		return err
 	}
@@ -60,9 +56,9 @@ func (s *service) DestroySchedulerInstance(id string) error {
 	return nil
 }
 
-func (s *service) UpdateSchedulerInstance(id string, json types.UpdateSchedulerInstanceRequest) (*model.SchedulerInstance, error) {
+func (s *service) UpdateSchedulerInstance(id uint, json types.UpdateSchedulerInstanceRequest) (*model.SchedulerInstance, error) {
 	schedulerInstance := model.SchedulerInstance{}
-	if err := s.db.First(&schedulerInstance, id).Updates(model.SchedulerInstance{
+	if err := s.db.Preload("Scheduler").Preload("SecurityGroup").First(&schedulerInstance, id).Updates(model.SchedulerInstance{
 		Host:      json.Host,
 		VIPs:      json.VIPs,
 		IDC:       json.IDC,
@@ -77,7 +73,7 @@ func (s *service) UpdateSchedulerInstance(id string, json types.UpdateSchedulerI
 	return &schedulerInstance, nil
 }
 
-func (s *service) UpdateSchedulerInstanceWithSecurityGroupDomain(id string, json types.UpdateSchedulerInstanceRequest) (*model.SchedulerInstance, error) {
+func (s *service) UpdateSchedulerInstanceWithSecurityGroupDomain(id uint, json types.UpdateSchedulerInstanceRequest) (*model.SchedulerInstance, error) {
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
@@ -99,12 +95,12 @@ func (s *service) UpdateSchedulerInstanceWithSecurityGroupDomain(id string, json
 		return nil, err
 	}
 
-	return &schedulerInstance, nil
+	return s.GetSchedulerInstance(schedulerInstance.ID)
 }
 
-func (s *service) GetSchedulerInstance(id string) (*model.SchedulerInstance, error) {
+func (s *service) GetSchedulerInstance(id uint) (*model.SchedulerInstance, error) {
 	schedulerInstance := model.SchedulerInstance{}
-	if err := s.db.First(&schedulerInstance, id).Error; err != nil {
+	if err := s.db.Preload("Scheduler").Preload("SecurityGroup").First(&schedulerInstance, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -113,7 +109,7 @@ func (s *service) GetSchedulerInstance(id string) (*model.SchedulerInstance, err
 
 func (s *service) GetSchedulerInstances(q types.GetSchedulerInstancesQuery) (*[]model.SchedulerInstance, error) {
 	schedulerInstances := []model.SchedulerInstance{}
-	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SchedulerInstance{
+	if err := s.db.Preload("Scheduler").Preload("SecurityGroup").Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SchedulerInstance{
 		Host:     q.Host,
 		IDC:      q.IDC,
 		Location: q.Location,

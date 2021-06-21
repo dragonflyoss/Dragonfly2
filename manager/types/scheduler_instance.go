@@ -1,7 +1,7 @@
 package types
 
 type SchedulerInstanceParams struct {
-	ID string `uri:"id" binding:"required,gte=1,lte=32"`
+	ID uint `uri:"id" binding:"required"`
 }
 
 type CreateSchedulerInstanceRequest struct {

@@ -1,17 +1,17 @@
 package types
 
 type CDNParams struct {
-	ID string `uri:"id" binding:"required,gte=1,lte=32"`
+	ID uint `uri:"id" binding:"required"`
 }
 
 type AddInstanceToCDNParams struct {
-	ID         string `uri:"id" binding:"required,gte=1,lte=32"`
-	InstanceID string `uri:"instance_id" binding:"required,gte=1,lte=32"`
+	ID         uint `uri:"id" binding:"required"`
+	InstanceID uint `uri:"instance_id" binding:"required"`
 }
 
 type AddSchedulerToCDNParams struct {
-	ID          string `uri:"id" binding:"required,gte=1,lte=32"`
-	SchedulerID string `uri:"scheduler_id" binding:"required,gte=1,lte=32"`
+	ID          uint `uri:"id" binding:"required"`
+	SchedulerID uint `uri:"scheduler_id" binding:"required"`
 }
 
 type CreateCDNRequest struct {

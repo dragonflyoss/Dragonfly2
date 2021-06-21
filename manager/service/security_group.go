@@ -13,14 +13,14 @@ func (s *service) CreateSecurityGroup(json types.CreateSecurityGroupRequest) (*m
 		ProxyDomain: json.ProxyDomain,
 	}
 
-	if err := s.db.Create(&securityGroup).Error; err != nil {
+	if err := s.db.Preload("CDNInstances").Preload("SchedulerInstances").Create(&securityGroup).Error; err != nil {
 		return nil, err
 	}
 
 	return &securityGroup, nil
 }
 
-func (s *service) DestroySecurityGroup(id string) error {
+func (s *service) DestroySecurityGroup(id uint) error {
 	if err := s.db.Unscoped().Delete(&model.SecurityGroup{}, id).Error; err != nil {
 		return err
 	}
@@ -28,9 +28,9 @@ func (s *service) DestroySecurityGroup(id string) error {
 	return nil
 }
 
-func (s *service) UpdateSecurityGroup(id string, json types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
+func (s *service) UpdateSecurityGroup(id uint, json types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{}
-	if err := s.db.First(&securityGroup, id).Updates(model.SecurityGroup{
+	if err := s.db.Preload("CDNInstances").Preload("SchedulerInstances").First(&securityGroup, id).Updates(model.SecurityGroup{
 		Name:        json.Name,
 		BIO:         json.BIO,
 		Domain:      json.Domain,
@@ -42,9 +42,9 @@ func (s *service) UpdateSecurityGroup(id string, json types.UpdateSecurityGroupR
 	return &securityGroup, nil
 }
 
-func (s *service) GetSecurityGroup(id string) (*model.SecurityGroup, error) {
+func (s *service) GetSecurityGroup(id uint) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{}
-	if err := s.db.First(&securityGroup, id).Error; err != nil {
+	if err := s.db.Preload("CDNInstances").Preload("SchedulerInstances").First(&securityGroup, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ func (s *service) GetSecurityGroup(id string) (*model.SecurityGroup, error) {
 
 func (s *service) GetSecurityGroups(q types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, error) {
 	securityGroups := []model.SecurityGroup{}
-	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
+	if err := s.db.Preload("CDNInstances").Preload("SchedulerInstances").Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
 		Name:   q.Name,
 		Domain: q.Domain,
 	}).Find(&securityGroups).Error; err != nil {
@@ -75,7 +75,7 @@ func (s *service) SecurityGroupTotalCount(q types.GetSecurityGroupsQuery) (int64
 	return count, nil
 }
 
-func (s *service) AddSchedulerInstanceToSecurityGroup(id, schedulerID string) error {
+func (s *service) AddSchedulerInstanceToSecurityGroup(id, schedulerID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.First(&securityGroup, id).Error; err != nil {
 		return err
@@ -93,7 +93,7 @@ func (s *service) AddSchedulerInstanceToSecurityGroup(id, schedulerID string) er
 	return nil
 }
 
-func (s *service) AddCDNInstanceToSecurityGroup(id, cdnID string) error {
+func (s *service) AddCDNInstanceToSecurityGroup(id, cdnID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.First(&securityGroup, id).Error; err != nil {
 		return err
