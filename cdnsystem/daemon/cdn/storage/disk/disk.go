@@ -17,7 +17,6 @@
 package disk
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -151,11 +150,11 @@ func (s *diskStorageMgr) GC() error {
 	return nil
 }
 
-func (s *diskStorageMgr) WriteDownloadFile(taskID string, offset int64, len int64, buf *bytes.Buffer) error {
+func (s *diskStorageMgr) WriteDownloadFile(taskID string, offset int64, len int64, data io.Reader) error {
 	raw := storage.GetDownloadRaw(taskID)
 	raw.Offset = offset
 	raw.Length = len
-	return s.diskDriver.Put(raw, buf)
+	return s.diskDriver.Put(raw, data)
 }
 
 func (s *diskStorageMgr) ReadFileMetaData(taskID string) (*storage.FileMetaData, error) {
