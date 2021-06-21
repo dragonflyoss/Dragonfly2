@@ -11,7 +11,7 @@ import (
 	time "time"
 
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	base "d7y.io/dragonfly/v2/internal/rpc/base"
 	gomock "github.com/golang/mock/gomock"
 )
 

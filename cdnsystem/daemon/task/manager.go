@@ -26,8 +26,8 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/gc"
 	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -78,7 +78,7 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 
 	// trigger CDN
 	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
-		return nil, errors.Wrapf(err, "failed to trigger cdn")
+		return nil, errors.Wrapf(err, "trigger cdn")
 	}
 	logger.WithTaskID(task.TaskID).Infof("successfully trigger cdn sync action")
 	// watch seed progress
@@ -111,7 +111,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		CdnStatus: types.TaskInfoCdnStatusRunning,
 	})
 	if err != nil {
-		return errors.Wrapf(err, "failed to update task")
+		return errors.Wrapf(err, "update task")
 	}
 	// triggerCDN goroutine
 	go func() {

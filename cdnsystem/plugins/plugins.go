@@ -19,7 +19,7 @@ package plugins
 import (
 	"fmt"
 
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 var mgr = NewManager()

@@ -21,9 +21,9 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 )
 
 type filePeerTaskCallback struct {
@@ -32,6 +32,8 @@ type filePeerTaskCallback struct {
 	req   *FilePeerTaskRequest
 	start time.Time
 }
+
+var _ TaskCallback = (*filePeerTaskCallback)(nil)
 
 func (p *filePeerTaskCallback) GetStartTime() time.Time {
 	return p.start

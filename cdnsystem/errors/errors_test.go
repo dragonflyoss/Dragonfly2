@@ -17,6 +17,7 @@
 package errors
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -475,13 +476,18 @@ func (s *ErrorTestSuite) TestIsTaskIDDuplicate() {
 		{
 			name: "equal",
 			args: args{
-				err: ErrTaskIDDuplicate,
+				err: ErrTaskIDDuplicate{
+					TaskID: "test",
+					Cause:  fmt.Errorf("test"),
+				},
 			},
 			want: true,
 		}, {
 			name: "wrap",
 			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrTaskIDDuplicate, "wrap err"), "wapp err"),
+				err: errors.Wrapf(ErrTaskIDDuplicate{
+					TaskID: "test",
+					Cause:  fmt.Errorf("test")}, "wapp err"),
 			},
 			want: true,
 		}, {
@@ -511,13 +517,19 @@ func (s *ErrorTestSuite) TestIsURLNotReachable() {
 		{
 			name: "equal",
 			args: args{
-				err: ErrURLNotReachable,
+				err: ErrURLNotReachable{
+					URL:   "test",
+					Cause: fmt.Errorf("test"),
+				},
 			},
 			want: true,
 		}, {
 			name: "wrap",
 			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrURLNotReachable, "wrap err"), "wapp err"),
+				err: errors.Wrapf(ErrURLNotReachable{
+					URL:   "test",
+					Cause: fmt.Errorf("test"),
+				}, "wapp err"),
 			},
 			want: true,
 		}, {

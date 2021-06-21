@@ -32,8 +32,8 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 )
 
 type Manager interface {
@@ -47,6 +47,8 @@ type proxyManager struct {
 	*Proxy
 	config.ListenOption
 }
+
+var _ Manager = (*proxyManager)(nil)
 
 func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, opts *config.ProxyOption) (Manager, error) {
 	registry := opts.RegistryMirror

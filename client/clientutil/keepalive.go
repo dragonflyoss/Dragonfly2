@@ -19,7 +19,7 @@ package clientutil
 import (
 	"time"
 
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 type KeepAlive interface {
@@ -31,6 +31,8 @@ type keepAlive struct {
 	name   string
 	access time.Time
 }
+
+var _ KeepAlive = (*keepAlive)(nil)
 
 func NewKeepAlive(name string) KeepAlive {
 	return &keepAlive{

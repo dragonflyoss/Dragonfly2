@@ -19,32 +19,30 @@ package synclock
 import (
 	"sync"
 
-	"d7y.io/dragonfly/v2/pkg/structure/atomiccount"
+	"go.uber.org/atomic"
 )
 
 type countRWMutex struct {
 	sync.RWMutex
-	count *atomiccount.AtomicInt
+	count *atomic.Int32
 }
 
 func newCountRWMutex() *countRWMutex {
 	return &countRWMutex{
-		count: atomiccount.NewAtomicInt(0),
+		count: atomic.NewInt32(0),
 	}
 }
 
 func (cm *countRWMutex) reset() {
-	cm.count.Set(0)
+	cm.count.CAS(cm.count.Load(), 0)
 }
 
 func (cm *countRWMutex) inc() int32 {
-	cm.count.Add(1)
-	return cm.count.Get()
+	return cm.count.Inc()
 }
 
 func (cm *countRWMutex) dec() int32 {
-	cm.count.Add(-1)
-	return cm.count.Get()
+	return cm.count.Dec()
 }
 
 func (cm *countRWMutex) lock(rLock bool) {

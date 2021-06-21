@@ -18,12 +18,13 @@ package task
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
@@ -47,8 +48,8 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if key, err := tm.taskURLUnReachableStore.Get(taskID); err == nil {
 		if unReachableStartTime, ok := key.(time.Time); ok &&
 			time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
-			return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable,
-				"task hit unReachable cache and interval less than %d, url: %s", tm.cfg.FailAccessInterval, request.URL)
+			return nil, cdnerrors.ErrURLNotReachable{URL: request.URL, Cause: fmt.Errorf("task hit unReachable cache and interval less than %d, url: %s",
+				tm.cfg.FailAccessInterval, request.URL)}
 		}
 		tm.taskURLUnReachableStore.Delete(taskID)
 		logger.Debugf("delete taskID:%s from url unReachable store", taskID)
@@ -67,7 +68,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if v, err := tm.taskStore.Get(taskID); err == nil {
 		existTask := v.(*types.SeedTask)
 		if !isSameTask(existTask, newTask) {
-			return nil, errors.Wrapf(cdnerrors.ErrTaskIDDuplicate, "newTask:%+v, existTask:%+v", newTask, existTask)
+			return nil, cdnerrors.ErrTaskIDDuplicate{TaskID: taskID, Cause: fmt.Errorf("newTask:%+v, existTask:%+v", newTask, existTask)}
 		}
 		task = existTask
 		logger.Debugf("get exist task for taskID:%s", taskID)

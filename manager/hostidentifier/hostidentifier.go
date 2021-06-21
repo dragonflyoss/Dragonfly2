@@ -18,7 +18,6 @@ type identifier struct {
 
 func NewIdentifier() Identifier {
 	return &identifier{
-		mu:    sync.Mutex{},
 		hosts: make(map[string]string),
 	}
 }

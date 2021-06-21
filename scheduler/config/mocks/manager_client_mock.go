@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	manager "d7y.io/dragonfly/v2/pkg/rpc/manager"
+	manager "d7y.io/dragonfly/v2/internal/rpc/manager"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )

@@ -22,10 +22,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 )
 
 type PeerTaskStatus int8
@@ -49,7 +49,7 @@ type PeerTask struct {
 	Host *Host  // host info
 
 	isDown         bool // is leave scheduler
-	lock           *sync.Mutex
+	lock           sync.Mutex
 	finishedNum    int32 // download finished piece number
 	startTime      int64
 	lastActiveTime int64
@@ -94,7 +94,6 @@ func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *Pee
 		Task:            task,
 		Host:            host,
 		isDown:          false,
-		lock:            new(sync.Mutex),
 		startTime:       time.Now().UnixNano(),
 		lastActiveTime:  time.Now().UnixNano(),
 		touch:           touch,

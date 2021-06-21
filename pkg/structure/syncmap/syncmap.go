@@ -22,11 +22,10 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	"d7y.io/dragonfly/v2/pkg/structure/atomiccount"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-
 	"github.com/pkg/errors"
+	"go.uber.org/atomic"
 )
 
 // SyncMap is a thread-safe map providing generic support
@@ -61,7 +60,7 @@ func (mmap *SyncMap) Get(key string) (interface{}, error) {
 		return v, nil
 	}
 
-	return nil, errors.Wrapf(dferrors.ErrDataNotFound, "failed to get key %s from map", key)
+	return nil, errors.Wrapf(dferrors.ErrDataNotFound, "get key %s from map", key)
 }
 
 // GetAsMap returns result as SyncMap.
@@ -69,13 +68,13 @@ func (mmap *SyncMap) Get(key string) (interface{}, error) {
 func (mmap *SyncMap) GetAsMap(key string) (*SyncMap, error) {
 	v, err := mmap.Get(key)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get key %s from map", key)
+		return nil, errors.Wrapf(err, "get key %s from map", key)
 	}
 
 	if value, ok := v.(*SyncMap); ok {
 		return value, nil
 	}
-	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
+	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "get key %s from map with value %s", key, v)
 }
 
 // GetAsList returns result as list
@@ -83,12 +82,12 @@ func (mmap *SyncMap) GetAsMap(key string) (*SyncMap, error) {
 func (mmap *SyncMap) GetAsList(key string) (*list.List, error) {
 	v, err := mmap.Get(key)
 	if err != nil {
-		return list.New(), errors.Wrapf(err, "failed to get key %s from map", key)
+		return list.New(), errors.Wrapf(err, "get key %s from map", key)
 	}
 	if value, ok := v.(*list.List); ok {
 		return value, nil
 	}
-	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
+	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "get key %s from map with value %s", key, v)
 }
 
 // GetAsInt returns result as int.
@@ -96,13 +95,13 @@ func (mmap *SyncMap) GetAsList(key string) (*list.List, error) {
 func (mmap *SyncMap) GetAsInt(key string) (int, error) {
 	v, err := mmap.Get(key)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get key %s from map", key)
+		return 0, errors.Wrapf(err, "get key %s from map", key)
 	}
 
 	if value, ok := v.(int); ok {
 		return value, nil
 	}
-	return 0, errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
+	return 0, errors.Wrapf(dferrors.ErrConvertFailed, "get key %s from map with value %s", key, v)
 }
 
 // GetAsInt64 returns result as int64.
@@ -110,13 +109,13 @@ func (mmap *SyncMap) GetAsInt(key string) (int, error) {
 func (mmap *SyncMap) GetAsInt64(key string) (int64, error) {
 	v, err := mmap.Get(key)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get key %s from map", key)
+		return 0, errors.Wrapf(err, "get key %s from map", key)
 	}
 
 	if value, ok := v.(int64); ok {
 		return value, nil
 	}
-	return 0, errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
+	return 0, errors.Wrapf(dferrors.ErrConvertFailed, "get key %s from map with value %s", key, v)
 }
 
 // GetAsString returns result as string.
@@ -124,13 +123,13 @@ func (mmap *SyncMap) GetAsInt64(key string) (int64, error) {
 func (mmap *SyncMap) GetAsString(key string) (string, error) {
 	v, err := mmap.Get(key)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get key %s from map", key)
+		return "", errors.Wrapf(err, "get key %s from map", key)
 	}
 
 	if value, ok := v.(string); ok {
 		return value, nil
 	}
-	return "", errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
+	return "", errors.Wrapf(dferrors.ErrConvertFailed, "get key %s from map with value %s", key, v)
 }
 
 // GetAsBool returns result as bool.
@@ -138,27 +137,27 @@ func (mmap *SyncMap) GetAsString(key string) (string, error) {
 func (mmap *SyncMap) GetAsBool(key string) (bool, error) {
 	v, err := mmap.Get(key)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to get key %s from map", key)
+		return false, errors.Wrapf(err, "get key %s from map", key)
 	}
 
 	if value, ok := v.(bool); ok {
 		return value, nil
 	}
-	return false, errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
+	return false, errors.Wrapf(dferrors.ErrConvertFailed, "get key %s from map with value %s", key, v)
 }
 
 // GetAsAtomicInt returns result as *AtomicInt.
 // The ErrConvertFailed error will be returned if the assertion fails.
-func (mmap *SyncMap) GetAsAtomicInt(key string) (*atomiccount.AtomicInt, error) {
+func (mmap *SyncMap) GetAsAtomicInt(key string) (*atomic.Int32, error) {
 	v, err := mmap.Get(key)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get key %s from map", key)
+		return nil, errors.Wrapf(err, "get key %s from map", key)
 	}
 
-	if value, ok := v.(*atomiccount.AtomicInt); ok {
+	if value, ok := v.(*atomic.Int32); ok {
 		return value, nil
 	}
-	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
+	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "get key %s from map with value %s", key, v)
 }
 
 // GetAsTime returns result as Time.
@@ -166,13 +165,13 @@ func (mmap *SyncMap) GetAsAtomicInt(key string) (*atomiccount.AtomicInt, error) 
 func (mmap *SyncMap) GetAsTime(key string) (time.Time, error) {
 	v, err := mmap.Get(key)
 	if err != nil {
-		return time.Now(), errors.Wrapf(err, "failed to get key %s from map", key)
+		return time.Now(), errors.Wrapf(err, "get key %s from map", key)
 	}
 
 	if value, ok := v.(time.Time); ok {
 		return value, nil
 	}
-	return time.Now(), errors.Wrapf(dferrors.ErrConvertFailed, "failed to get key %s from map with value %s", key, v)
+	return time.Now(), errors.Wrapf(dferrors.ErrConvertFailed, "get key %s from map with value %s", key, v)
 }
 
 // Remove deletes the key-value pair from the mmap.
@@ -184,7 +183,7 @@ func (mmap *SyncMap) Remove(key string) error {
 	}
 
 	if _, ok := mmap.Load(key); !ok {
-		return errors.Wrapf(dferrors.ErrDataNotFound, "failed to get key %s from map", key)
+		return errors.Wrapf(dferrors.ErrDataNotFound, "get key %s from map", key)
 	}
 
 	mmap.Delete(key)

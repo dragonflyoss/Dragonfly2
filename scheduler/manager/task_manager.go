@@ -22,13 +22,13 @@ import (
 	"sync"
 	"time"
 
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type TaskManager struct {
-	lock        *sync.RWMutex
+	lock        sync.RWMutex
 	data        map[string]*types.Task
 	gcDelayTime time.Duration
 
@@ -43,7 +43,6 @@ func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
 	}
 
 	tm := &TaskManager{
-		lock:        new(sync.RWMutex),
 		data:        make(map[string]*types.Task),
 		gcDelayTime: delay,
 	}

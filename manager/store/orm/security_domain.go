@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/store"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"gorm.io/gorm"
 )
 
@@ -32,6 +32,8 @@ type SecurityDomainStore struct {
 	db           *gorm.DB
 	table        string
 }
+
+var _ store.Store = (*SecurityDomainStore)(nil)
 
 func NewSecurityDomainStore(db *gorm.DB, table string) (store.Store, error) {
 	s := &SecurityDomainStore{

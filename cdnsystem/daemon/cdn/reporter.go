@@ -20,7 +20,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -46,7 +46,7 @@ func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error 
 	if detectResult != nil && detectResult.pieceMetaRecords != nil {
 		for _, record := range detectResult.pieceMetaRecords {
 			if err := re.reportPieceMetaRecord(taskID, record, CacheReport); err != nil {
-				return errors.Wrapf(err, "failed to publish pieceMetaRecord:%v, seedPiece:%v", record,
+				return errors.Wrapf(err, "publish pieceMetaRecord:%v, seedPiece:%v", record,
 					convertPieceMeta2SeedPiece(record))
 			}
 		}

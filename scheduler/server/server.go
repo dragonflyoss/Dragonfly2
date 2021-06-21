@@ -19,14 +19,14 @@ package server
 import (
 	"context"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/internal/rpc"
+	"d7y.io/dragonfly/v2/internal/rpc/manager"
+	"d7y.io/dragonfly/v2/internal/rpc/manager/client"
 
 	// Server registered to grpc
-	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
+	_ "d7y.io/dragonfly/v2/internal/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"

@@ -30,10 +30,10 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
@@ -51,6 +51,8 @@ type pieceManager struct {
 
 	calculateDigest bool
 }
+
+var _ PieceManager = (*pieceManager)(nil)
 
 func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (PieceManager, error) {
 	pm := &pieceManager{

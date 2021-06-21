@@ -396,7 +396,7 @@ func BenchmarkRWMutexMapGet(b *testing.B) {
 	m := map[string]string{
 		v1: v2,
 	}
-	mu := sync.RWMutex{}
+	var mu sync.RWMutex
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		mu.RLock()
@@ -411,7 +411,7 @@ func BenchmarkRWMutexInterfaceMapGetStruct(b *testing.B) {
 	m := map[interface{}]string{
 		s: v2,
 	}
-	mu := sync.RWMutex{}
+	var mu sync.RWMutex
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		mu.RLock()
@@ -425,7 +425,7 @@ func BenchmarkRWMutexInterfaceMapGetString(b *testing.B) {
 	m := map[interface{}]string{
 		v1: v2,
 	}
-	mu := sync.RWMutex{}
+	var mu sync.RWMutex
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		mu.RLock()
@@ -579,7 +579,7 @@ func BenchmarkRWMutexMapSetDelete(b *testing.B) {
 func BenchmarkRWMutexMapSetDeleteSingleLock(b *testing.B) {
 	b.StopTimer()
 	m := map[string]string{}
-	mu := sync.RWMutex{}
+	var mu sync.Mutex
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		mu.Lock()

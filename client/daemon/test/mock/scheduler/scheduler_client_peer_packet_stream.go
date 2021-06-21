@@ -7,7 +7,7 @@ package mock_client
 import (
 	reflect "reflect"
 
-	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	scheduler "d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
 )
 

@@ -26,14 +26,14 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/disk"   // To register diskStorage
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/hybrid" // To register hybridStorage
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"

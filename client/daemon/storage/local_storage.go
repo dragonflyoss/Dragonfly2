@@ -27,9 +27,9 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"go.uber.org/atomic"
 )
@@ -38,7 +38,7 @@ type localTaskStore struct {
 	*logger.SugaredLoggerOnWith
 	persistentMetadata
 
-	*sync.RWMutex
+	sync.RWMutex
 
 	dataDir string
 
@@ -50,6 +50,9 @@ type localTaskStore struct {
 	reclaimMarked atomic.Bool
 	gcCallback    func(CommonTaskRequest)
 }
+
+var _ TaskStorageDriver = (*localTaskStore)(nil)
+var _ Reclaimer = (*localTaskStore)(nil)
 
 func (t *localTaskStore) touch() {
 	access := time.Now().UnixNano()

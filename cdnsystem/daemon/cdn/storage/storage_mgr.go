@@ -233,11 +233,11 @@ func Register(name string, builder ManagerBuilder) error {
 			Result: cfg,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to create decoder: %v", err)
+			return nil, fmt.Errorf("create decoder: %v", err)
 		}
 		err = decoder.Decode(conf)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse config: %v", err)
+			return nil, fmt.Errorf("parse config: %v", err)
 		}
 		return newManagerPlugin(name, builder, cfg)
 	}
@@ -251,7 +251,7 @@ func newManagerPlugin(name string, builder ManagerBuilder, cfg *Config) (plugins
 
 	instant, err := builder(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init storage manager %s: %v", name, err)
+		return nil, fmt.Errorf("init storage manager %s: %v", name, err)
 	}
 
 	return &managerPlugin{

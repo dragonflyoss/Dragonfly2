@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/manager/store"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 )
 
 type LeaseID string //nolint
@@ -66,7 +66,6 @@ type Lease struct {
 
 func NewLessor(store store.Store) (Lessor, error) {
 	lessor := &lessor{
-		mu:           sync.Mutex{},
 		stopC:        make(chan struct{}),
 		keepAliveMap: make(map[LeaseID]*keepAlive),
 		store:        store,

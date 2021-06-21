@@ -24,9 +24,9 @@ import (
 
 	"k8s.io/client-go/util/workqueue"
 
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	scheduler2 "d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -42,6 +42,8 @@ type Worker struct {
 
 	schedulerService *service.SchedulerService
 }
+
+var _ IWorker = (*Worker)(nil)
 
 func NewWorker(schedulerService *service.SchedulerService, sender ISender, sendJod func(*types.PeerTask), stop <-chan struct{}) *Worker {
 	return &Worker{

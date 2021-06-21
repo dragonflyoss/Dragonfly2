@@ -17,18 +17,34 @@
 package errors
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 )
+
+// ErrURLNotReachable represents the url is a not reachable.
+type ErrURLNotReachable struct {
+	URL   string
+	Cause error
+}
+
+func (e ErrURLNotReachable) Error() string {
+	return fmt.Sprintf("url %s not reachable: %v", e.URL, e.Cause)
+}
+
+// ErrTaskIDDuplicate represents the task id is in conflict.
+type ErrTaskIDDuplicate struct {
+	TaskID string
+	Cause  error
+}
+
+func (e ErrTaskIDDuplicate) Error() string {
+	return fmt.Sprintf("taskId %s conflict: %v", e.TaskID, e.Cause)
+}
 
 var (
 	// ErrSystemError represents the error is a system error.
 	ErrSystemError = errors.New("system error")
-
-	// ErrURLNotReachable represents the url is a not reachable.
-	ErrURLNotReachable = errors.New("url not reachable")
-
-	// ErrTaskIDDuplicate represents the task id is in conflict.
-	ErrTaskIDDuplicate = errors.New("taskId conflict")
 
 	// ErrPieceCountNotEqual represents the number of pieces downloaded does not match the amount of meta information
 	ErrPieceCountNotEqual = errors.New("inconsistent number of pieces")
@@ -71,12 +87,16 @@ func IsSystemError(err error) bool {
 
 // IsURLNotReachable checks the error is a url not reachable or not.
 func IsURLNotReachable(err error) bool {
-	return errors.Cause(err) == ErrURLNotReachable
+	err = errors.Cause(err)
+	_, ok := err.(ErrURLNotReachable)
+	return ok
 }
 
 // IsTaskIDDuplicate checks the error is a TaskIDDuplicate error or not.
 func IsTaskIDDuplicate(err error) bool {
-	return errors.Cause(err) == ErrTaskIDDuplicate
+	err = errors.Cause(err)
+	_, ok := err.(ErrTaskIDDuplicate)
+	return ok
 }
 
 func IsPieceCountNotEqual(err error) bool {

@@ -27,7 +27,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
 
@@ -36,9 +35,9 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
+	_ "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/server"
 )
 
 func TestMain(m *testing.M) {
@@ -197,7 +196,6 @@ func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 			TaskID:       "test",
 			DataFilePath: src,
 		},
-		RWMutex:      &sync.RWMutex{},
 		dataDir:      test.DataDir,
 		metadataFile: matadata,
 	}

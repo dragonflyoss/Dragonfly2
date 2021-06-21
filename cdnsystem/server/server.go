@@ -30,11 +30,11 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/task"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
+	"d7y.io/dragonfly/v2/internal/rpc"
+	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem/server"
+	"d7y.io/dragonfly/v2/internal/rpc/manager"
+	configServer "d7y.io/dragonfly/v2/internal/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	configServer "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
@@ -58,7 +58,7 @@ func New(cfg *config.Config) (*Server, error) {
 	// progress manager
 	progressMgr, err := progress.NewManager()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create progress manager")
+		return nil, errors.Wrapf(err, "create progress manager")
 	}
 
 	// storage manager
@@ -69,22 +69,22 @@ func New(cfg *config.Config) (*Server, error) {
 	// cdn manager
 	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create cdn manager")
+		return nil, errors.Wrapf(err, "create cdn manager")
 	}
 	// task manager
 	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create task manager")
+		return nil, errors.Wrapf(err, "create task manager")
 	}
 	storageMgr.Initialize(taskMgr)
 	// gc manager
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create gc manager")
+		return nil, errors.Wrapf(err, "create gc manager")
 	}
 
 	cdnSeedServer, err := service.NewCdnSeedServer(cfg, taskMgr)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create seedServer")
+		return nil, errors.Wrap(err, "create seedServer")
 	}
 	var cfgServer configServer.ManagerClient
 	if !stringutils.IsBlank(cfg.ConfigServer) {
@@ -93,7 +93,7 @@ func New(cfg *config.Config) (*Server, error) {
 			Addr: cfg.ConfigServer,
 		}})
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create config server")
+			return nil, errors.Wrap(err, "create config server")
 		}
 	}
 	return &Server{
@@ -125,7 +125,7 @@ func (s *Server) Serve() (err error) {
 	}
 	err = rpc.StartTCPServer(s.Config.ListenPort, s.Config.ListenPort, s.seedServer)
 	if err != nil {
-		return errors.Wrap(err, "failed to start tcp server")
+		return errors.Wrap(err, "start tcp server")
 	}
 	return nil
 }

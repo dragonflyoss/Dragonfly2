@@ -1,11 +1,11 @@
 package client
 
 import (
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/manager/store/orm"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 )
 
 type storeSetup func(cfg *config.StoreConfig) (store.Store, error)
