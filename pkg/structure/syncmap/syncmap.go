@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/dferrors"
-	"d7y.io/dragonfly/v2/pkg/structure/atomiccount"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"go.uber.org/atomic"
 
 	"github.com/pkg/errors"
 )
@@ -149,13 +149,13 @@ func (mmap *SyncMap) GetAsBool(key string) (bool, error) {
 
 // GetAsAtomicInt returns result as *AtomicInt.
 // The ErrConvertFailed error will be returned if the assertion fails.
-func (mmap *SyncMap) GetAsAtomicInt(key string) (*atomiccount.AtomicInt, error) {
+func (mmap *SyncMap) GetAsAtomicInt(key string) (*atomic.Int32, error) {
 	v, err := mmap.Get(key)
 	if err != nil {
 		return nil, errors.Wrapf(err, "get key %s from map", key)
 	}
 
-	if value, ok := v.(*atomiccount.AtomicInt); ok {
+	if value, ok := v.(*atomic.Int32); ok {
 		return value, nil
 	}
 	return nil, errors.Wrapf(dferrors.ErrConvertFailed, "get key %s from map with value %s", key, v)
