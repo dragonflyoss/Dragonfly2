@@ -316,7 +316,7 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 }
 
 func (cm *CDNManager) getHostUUID(ps *cdnsystem.PieceSeed) string {
-	return fmt.Sprintf("cdn:%s", ps.PeerId)
+	return fmt.Sprintf("cdn:%s", ps.SeederName)
 }
 
 func (cm *CDNManager) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *types.PeerTask) *types.Piece {
