@@ -248,6 +248,7 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 		server, found := cm.getServer(ps.SeederName)
 		if !found {
 			logger.Errorf("get cdn by SeederName[%s] failed", ps.SeederName)
+			return fmt.Errorf("cdn %s not found", ps.SeederName)
 		}
 
 		host = &types.Host{
