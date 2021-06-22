@@ -15,7 +15,7 @@ func (s *service) CreateCDNInstance(json types.CreateCDNInstanceRequest) (*model
 		DownloadPort: json.DownloadPort,
 	}
 
-	if err := s.db.Preload("CDN").Preload("SecurityGroup").Create(&cdnInstance).Error; err != nil {
+	if err := s.db.Create(&cdnInstance).Error; err != nil {
 		return nil, err
 	}
 
@@ -57,7 +57,7 @@ func (s *service) DestroyCDNInstance(id uint) error {
 
 func (s *service) UpdateCDNInstance(id uint, json types.UpdateCDNInstanceRequest) (*model.CDNInstance, error) {
 	cdnInstance := model.CDNInstance{}
-	if err := s.db.Preload("CDN").Preload("SecurityGroup").First(&cdnInstance, id).Updates(model.CDNInstance{
+	if err := s.db.First(&cdnInstance, id).Updates(model.CDNInstance{
 		IDC:          json.IDC,
 		Location:     json.Location,
 		IP:           json.IP,
@@ -95,7 +95,7 @@ func (s *service) UpdateCDNInstanceWithSecurityGroupDomain(id uint, json types.U
 
 func (s *service) GetCDNInstance(id uint) (*model.CDNInstance, error) {
 	cdnInstance := model.CDNInstance{}
-	if err := s.db.Preload("CDN").Preload("SecurityGroup").First(&cdnInstance, id).Error; err != nil {
+	if err := s.db.First(&cdnInstance, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -104,7 +104,7 @@ func (s *service) GetCDNInstance(id uint) (*model.CDNInstance, error) {
 
 func (s *service) GetCDNInstances(q types.GetCDNInstancesQuery) (*[]model.CDNInstance, error) {
 	cdnInstances := []model.CDNInstance{}
-	if err := s.db.Preload("CDN").Preload("SecurityGroup").Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDNInstance{
+	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDNInstance{
 		Host:         q.Host,
 		IDC:          q.IDC,
 		Location:     q.Location,

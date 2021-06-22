@@ -3,6 +3,7 @@ module d7y.io/dragonfly/v2
 go 1.15
 
 require (
+	github.com/8treenet/gcache v1.1.11
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
@@ -12,7 +13,6 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-echarts/statsview v0.3.4
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
-	github.com/go-openapi/spec v0.20.3 // indirect
 	github.com/go-redis/cache/v8 v8.4.1
 	github.com/go-redis/redis/v8 v8.10.0
 	github.com/go-sql-driver/mysql v1.5.0
@@ -23,7 +23,7 @@ require (
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/mux v1.7.3
 	github.com/jarcoal/httpmock v1.0.8
-	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9
 	github.com/mcuadros/go-gin-prometheus v0.1.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
@@ -39,9 +39,7 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
-	github.com/swaggo/files v0.0.0-20190704085106-630677cd5c14
-	github.com/swaggo/gin-swagger v1.3.0
-	github.com/swaggo/swag v1.7.0 // indirect
+	github.com/ugorji/go v1.1.13 // indirect
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0
 	go.opentelemetry.io/otel/sdk v0.20.0
@@ -51,11 +49,13 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210309074719-68d13333faf2 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf
+	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	gorm.io/datatypes v1.0.1
 	gorm.io/driver/mysql v1.0.5

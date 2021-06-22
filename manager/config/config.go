@@ -10,8 +10,7 @@ import (
 type Config struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
 	Server       *ServerConfig `yaml:"server" mapstructure:"server"`
-	Redis        *RedisConfig  `yaml:"redis" mapstructure:"redis"`
-	Mysql        *MysqlConfig  `yaml:"mysql" mapstructure:"mysql"`
+	Database     *MysqlConfig  `yaml:"database" mapstructure:"database"`
 	Cache        *CacheConfig  `yaml:"cache" mapstructure:"cache"`
 }
 
@@ -27,13 +26,18 @@ type MysqlConfig struct {
 	DBName   string `yaml:"dbname" mapstructure:"dbname"`
 }
 
+type CacheConfig struct {
+	Redis      *RedisConfig      `yaml:"redis" mapstructure:"redis"`
+	LocalCache *LocalCacheConfig `yaml:"localCache" mapstructure:"localCache"`
+}
+
 type RedisConfig struct {
 	Addr     string `yaml:"addr" mapstructure:"addr"`
 	Password string `yaml:"password" mapstructure:"password"`
 	DB       int    `yaml:"db" mapstructure:"db"`
 }
 
-type CacheConfig struct {
+type LocalCacheConfig struct {
 	Size int           `yaml:"size" mapstructure:"size"`
 	TTL  time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
@@ -43,11 +47,15 @@ func New() *Config {
 }
 
 func (cfg *Config) Validate() error {
-	if cfg.Redis == nil {
-		return errors.New("empty redis config is not specified")
+	if cfg.Cache != nil {
+		return errors.New("empty cache config is not specified")
 	}
 
-	if cfg.Mysql == nil {
+	if cfg.Cache.Redis != nil {
+		return errors.New("empty cache redis config is not specified")
+	}
+
+	if cfg.Database == nil {
 		return errors.New("empty mysql config is not specified")
 	}
 

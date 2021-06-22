@@ -20,6 +20,7 @@ import (
 	"context"
 	"net/http"
 
+	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/service"
@@ -43,8 +44,14 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
+	// Initialize database
+	cache := cache.New(cfg.Cache)
+
 	// Initialize service
-	service := service.New(service.WithDatabase(db))
+	service := service.New(
+		service.WithDatabase(db),
+		service.WithCache(cache),
+	)
 
 	// Initialize router
 	router, err := initRouter(cfg.Verbose, service)

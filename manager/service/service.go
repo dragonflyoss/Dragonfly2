@@ -1,12 +1,10 @@
 package service
 
 import (
+	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	rdbcache "github.com/go-redis/cache/v8"
-	"github.com/go-redis/redis/v8"
-	"gorm.io/gorm"
 )
 
 type Service interface {
@@ -56,9 +54,8 @@ type Service interface {
 }
 
 type service struct {
-	db    *gorm.DB
-	rdb   *redis.Client
-	cache *rdbcache.Cache
+	db    *database.Database
+	cache *cache.Cache
 }
 
 // Option is a functional option for service
@@ -67,9 +64,14 @@ type Option func(s *service)
 // WithDatabase set the database client
 func WithDatabase(database *database.Database) Option {
 	return func(s *service) {
-		s.db = database.DB
-		s.rdb = database.RDB
-		s.cache = database.Cache
+		s.db = database
+	}
+}
+
+// WithCache set the cache client
+func WithCache(cache *cache.Cache) Option {
+	return func(s *service) {
+		s.cache = cache
 	}
 }
 
