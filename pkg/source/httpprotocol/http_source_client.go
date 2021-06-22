@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"time"
 
-	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -81,13 +80,13 @@ func WithHTTPClient(client *http.Client) HTTPSourceClientOption {
 func (client *httpSourceClient) GetContentLength(ctx context.Context, url string, header source.Header) (int64, error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {
-		return -1, cdnerrors.ErrURLNotReachable{URL: url, Cause: err}
+		return -1, err
 	}
 	resp.Body.Close()
 	// todo Here if other status codes should be added to ErrURLNotReachable, if not, it will be downloaded frequently for 404 or 403
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
 		// todo Whether this situation should be distinguished from the err situation, similar to proposing another error type to indicate that this  error can interact with the URL, but the status code does not meet expectations
-		return -1, cdnerrors.ErrURLNotReachable{URL: url, Cause: fmt.Errorf("get http resource length failed, unexpected code: %d", resp.StatusCode)}
+		return -1, fmt.Errorf("get http resource length failed, unexpected code: %d", resp.StatusCode)
 	}
 	return resp.ContentLength, nil
 }
