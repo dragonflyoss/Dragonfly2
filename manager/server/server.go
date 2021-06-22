@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -51,11 +52,20 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
+	var serverAddr string
+	if len(cfg.Server.IP) > 0 {
+		serverAddr = cfg.Server.IP
+	}
+	if cfg.Server.Port > 0 {
+		serverAddr += ":" + strconv.Itoa(cfg.Server.Port)
+	} else {
+		serverAddr += ":8080"
+	}
 	return &Server{
 		cfg: cfg,
 		ms:  ms,
 		httpServer: &http.Server{
-			Addr:    ":8080",
+			Addr:    serverAddr,
 			Handler: router,
 		},
 		stop: make(chan struct{}),
