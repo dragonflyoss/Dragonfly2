@@ -26,7 +26,7 @@ func (s *service) CreateCDNInstanceWithSecurityGroupDomain(json types.CreateCDNI
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
-	if err := s.db.Preload("CDN").Preload("SecurityGroup").First(&securityGroup).Error; err != nil {
+	if err := s.db.First(&securityGroup).Error; err != nil {
 		return s.CreateCDNInstance(json)
 	}
 

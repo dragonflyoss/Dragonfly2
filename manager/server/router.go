@@ -31,7 +31,7 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 	sc.PATCH(":id", h.UpdateScheduler)
 	sc.GET(":id", h.GetScheduler)
 	sc.GET("", h.GetSchedulers)
-	sc.PUT(":id/scheduler-instances/:instanceId", h.AddInstanceToScheduler)
+	sc.PUT(":id/scheduler-instances/:instance_id", h.AddInstanceToScheduler)
 
 	// Scheduler Instance
 	si := apiv1.Group("/scheduler-instances")
@@ -48,8 +48,8 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 	cc.PATCH(":id", h.UpdateCDN)
 	cc.GET(":id", h.GetCDN)
 	cc.GET("", h.GetCDNs)
-	cc.PUT(":id/cdn-instances/:instanceId", h.AddInstanceToCDN)
-	cc.PUT(":id/schedulers/:schedulerId", h.AddSchedulerToCDN)
+	cc.PUT(":id/cdn-instances/:instance_id", h.AddInstanceToCDN)
+	cc.PUT(":id/schedulers/:scheduler_id", h.AddSchedulerToCDN)
 
 	// CDN Instance
 	ci := apiv1.Group("/cdn-instances")
@@ -66,8 +66,8 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 	sg.PATCH(":id", h.UpdateSecurityGroup)
 	sg.GET(":id", h.GetSecurityGroup)
 	sg.GET("", h.GetSecurityGroups)
-	sg.PUT(":id/scheduler-instances/:instanceId", h.AddSchedulerInstanceToSecurityGroup)
-	sg.PUT(":id/cdn-instances/:instanceId", h.AddCDNInstanceToSecurityGroup)
+	sg.PUT(":id/scheduler-instances/:instance_id", h.AddSchedulerInstanceToSecurityGroup)
+	sg.PUT(":id/cdn-instances/:instance_id", h.AddCDNInstanceToSecurityGroup)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return r, nil
