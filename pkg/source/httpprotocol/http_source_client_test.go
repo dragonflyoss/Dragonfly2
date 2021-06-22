@@ -159,9 +159,9 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponse
 				header: nil,
 			},
 			content: testContent,
-			expireInfo: map[string]string{
-				headers.LastModified: lastModified,
-				headers.ETag:         etag,
+			expireInfo: source.ResponseHeader{
+				source.LastModified: lastModified,
+				source.ETag:         etag,
 			},
 			wantErr: nil,
 		}, {
@@ -172,7 +172,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponse
 				header: source.RequestHeader{"Range": fmt.Sprintf("bytes=%s", "0-3")},
 			},
 			content: testContent[0:3],
-			expireInfo: map[string]string{
+			expireInfo: source.ResponseHeader{
 				headers.LastModified: lastModified,
 				headers.ETag:         etag,
 			},
