@@ -5,7 +5,6 @@ go 1.15
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/VividCortex/mysqlerr v1.0.0
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/docker/go-units v0.4.0
@@ -26,6 +25,7 @@ require (
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-runewidth v0.0.9
+	github.com/mcuadros/go-gin-prometheus v0.1.0
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/olekukonko/tablewriter v0.0.5
@@ -41,7 +41,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/swaggo/files v0.0.0-20190704085106-630677cd5c14
 	github.com/swaggo/gin-swagger v1.3.0
-	github.com/swaggo/swag v1.7.0
+	github.com/swaggo/swag v1.7.0 // indirect
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0
 	go.opentelemetry.io/otel/sdk v0.20.0

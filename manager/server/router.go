@@ -1,14 +1,11 @@
 package server
 
 import (
-	// manager swag api
-	_ "d7y.io/dragonfly/v2/api/v2/manager"
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
 	"d7y.io/dragonfly/v2/manager/service"
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )
 
 func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
@@ -19,12 +16,20 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 
 	r := gin.New()
 	h := handlers.NewHandler(service)
+
+	// Prometheus
+	p := ginprometheus.NewPrometheus("kore_apiserver")
+	p.Use(r)
+
+	// Middleware
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(middlewares.Error())
 
-	// Scheduler
+	// Router
 	apiv1 := r.Group("/api/v1")
+
+	// Scheduler
 	sc := apiv1.Group("/schedulers")
 	sc.POST("", h.CreateScheduler)
 	sc.DELETE(":id", h.DestroyScheduler)
@@ -69,6 +74,7 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 	sg.PUT(":id/scheduler-instances/:instance_id", h.AddSchedulerInstanceToSecurityGroup)
 	sg.PUT(":id/cdn-instances/:instance_id", h.AddCDNInstanceToSecurityGroup)
 
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Health Check
+	r.GET("/healthy/*action", h.GetHealth)
 	return r, nil
 }

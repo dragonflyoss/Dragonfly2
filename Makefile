@@ -187,7 +187,7 @@ test-coverage:
 
 # Generate swagger asserts
 swag-manager:
-	@swag init -g cmd/manager/main.go -o api/v2/manager
+	@swag init -g cmd/manager/main.go -o api/v1/manager
 .PHONY: swag-manager
 
 # Generate changelog
