@@ -130,19 +130,19 @@ func (suite *HTTPSourceClientTestSuite) TestNewHTTPSourceClient() {
 	suite.EqualValues(*expectedHTTPClient, *sourceClient.(*httpSourceClient).httpClient)
 }
 
-func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithExpire() {
+func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponseHeader() {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	reader, expireInfo, err := suite.DownloadWithExpire(ctx, timeoutURL, map[string]string{})
+	reader, responseHeader, err := suite.DownloadWithResponseHeader(ctx, timeoutURL, source.RequestHeader{})
 	cancel()
 	suite.NotNil(err)
 	suite.Equal("Get \"http://timeout.com\": context deadline exceeded", err.Error())
 	suite.Nil(reader)
-	suite.Nil(expireInfo)
+	suite.Nil(responseHeader)
 
 	type args struct {
 		ctx    context.Context
 		url    string
-		header source.Header
+		header source.RequestHeader
 	}
 	tests := []struct {
 		name       string
@@ -169,7 +169,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithExpire()
 			args: args{
 				ctx:    context.Background(),
 				url:    normalURL,
-				header: source.Header{"Range": fmt.Sprintf("bytes=%s", "0-3")},
+				header: source.RequestHeader{"Range": fmt.Sprintf("bytes=%s", "0-3")},
 			},
 			content: testContent[0:3],
 			expireInfo: map[string]string{
@@ -205,7 +205,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithExpire()
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			reader, expire, err := suite.DownloadWithExpire(tt.args.ctx, tt.args.url, tt.args.header)
+			reader, responseHeader, err := suite.DownloadWithResponseHeader(tt.args.ctx, tt.args.url, tt.args.header)
 			suite.Equal(tt.wantErr, err)
 			if err != nil {
 				return
@@ -213,7 +213,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithExpire()
 			bytes, err := ioutil.ReadAll(reader)
 			suite.Nil(err)
 			suite.Equal(tt.content, string(bytes))
-			suite.Equal(tt.expireInfo, expire)
+			suite.Equal(tt.expireInfo, responseHeader)
 		})
 	}
 }
@@ -222,7 +222,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientGetContentLength() {
 	type args struct {
 		ctx    context.Context
 		url    string
-		header source.Header
+		header source.RequestHeader
 	}
 	tests := []struct {
 		name    string
@@ -232,7 +232,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientGetContentLength() {
 	}{
 		{name: "support content length", args: args{ctx: context.Background(), url: normalURL, header: map[string]string{}}, want: int64(len(testContent)),
 			wantErr: nil},
-		{name: "not support content length", args: args{ctx: context.Background(), url: normalURL, header: source.Header{"Range": fmt.Sprintf("bytes=%s",
+		{name: "not support content length", args: args{ctx: context.Background(), url: normalURL, header: source.RequestHeader{"Range": fmt.Sprintf("bytes=%s",
 			"0-3")}}, want: 4,
 			wantErr: nil},
 	}
@@ -249,7 +249,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientIsExpired() {
 	type args struct {
 		ctx        context.Context
 		url        string
-		header     source.Header
+		header     source.RequestHeader
 		expireInfo map[string]string
 	}
 	tests := []struct {
@@ -258,11 +258,11 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientIsExpired() {
 		want    bool
 		wantErr bool
 	}{
-		{name: "not expire", args: args{context.Background(), normalURL, source.Header{}, map[string]string{headers.LastModified: lastModified,
+		{name: "not expire", args: args{context.Background(), normalURL, source.RequestHeader{}, map[string]string{headers.LastModified: lastModified,
 			headers.ETag: etag}}, want: false, wantErr: false},
-		{name: "error not expire", args: args{context.Background(), errorURL, source.Header{}, map[string]string{headers.LastModified: lastModified,
+		{name: "error not expire", args: args{context.Background(), errorURL, source.RequestHeader{}, map[string]string{headers.LastModified: lastModified,
 			headers.ETag: etag}}, want: false, wantErr: true},
-		{name: "expired", args: args{context.Background(), normalURL, source.Header{}, map[string]string{}}, want: true, wantErr: false},
+		{name: "expired", args: args{context.Background(), normalURL, source.RequestHeader{}, map[string]string{}}, want: true, wantErr: false},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
@@ -299,9 +299,9 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientIsSupportRange() {
 		want    bool
 		wantErr bool
 	}{
-		{name: "support", args: args{ctx: context.Background(), url: normalURL, header: source.Header{"Range": fmt.Sprintf("bytes=%s",
+		{name: "support", args: args{ctx: context.Background(), url: normalURL, header: source.RequestHeader{"Range": fmt.Sprintf("bytes=%s",
 			"0-3")}}, want: true, wantErr: false},
-		{name: "notSupport", args: args{ctx: context.Background(), url: normalNotSupportRangeURL, header: source.Header{"Range": fmt.Sprintf("bytes=%s",
+		{name: "notSupport", args: args{ctx: context.Background(), url: normalNotSupportRangeURL, header: source.RequestHeader{"Range": fmt.Sprintf("bytes=%s",
 			"0-3")}}, want: false, wantErr: false},
 	}
 	for _, tt := range tests {
