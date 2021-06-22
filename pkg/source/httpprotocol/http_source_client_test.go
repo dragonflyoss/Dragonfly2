@@ -148,7 +148,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponse
 		name       string
 		args       args
 		content    string
-		expireInfo map[string]string
+		expireInfo source.ResponseHeader
 		wantErr    error
 	}{
 		{
