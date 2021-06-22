@@ -18,7 +18,7 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 	h := handlers.NewHandler(service)
 
 	// Prometheus
-	p := ginprometheus.NewPrometheus("kore_apiserver")
+	p := ginprometheus.NewPrometheus("dragonfly_manager")
 	p.Use(r)
 
 	// Middleware
