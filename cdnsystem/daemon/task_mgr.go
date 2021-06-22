@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//go:generate mockgen -destination ./mock/mock_task_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon/mgr SeedTaskMgr
+//go:generate mockgen -destination ./mock/mock_task_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon SeedTaskMgr
 
 package daemon
 

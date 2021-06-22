@@ -61,22 +61,22 @@ func NewOSSSourceClient(opts ...OssSourceClientOption) source.ResourceClient {
 
 type OssSourceClientOption func(p *ossSourceClient)
 
-// httpSourceClient is an implementation of the interface of SourceClient.
+// ossSourceClient is an implementation of the interface of SourceClient.
 type ossSourceClient struct {
 	// endpoint_accessKeyID_accessKeySecret -> ossClient
 	clientMap sync.Map
 	accessMap sync.Map
 }
 
-func (osc *ossSourceClient) Download(ctx context.Context, url string, header source.Header) (io.ReadCloser, error) {
+func (osc *ossSourceClient) Download(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, error) {
 	panic("implement me")
 }
 
-func (osc *ossSourceClient) GetExpireInfo(ctx context.Context, url string, header source.Header) (map[string]string, error) {
+func (osc *ossSourceClient) GetLastModifiedMillis(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
 	panic("implement me")
 }
 
-func (osc *ossSourceClient) GetContentLength(ctx context.Context, url string, header source.Header) (int64, error) {
+func (osc *ossSourceClient) GetContentLength(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
 	resHeader, err := osc.getMeta(ctx, url, header)
 	if err != nil {
 		return -1, err
@@ -90,7 +90,7 @@ func (osc *ossSourceClient) GetContentLength(ctx context.Context, url string, he
 	return contentLen, nil
 }
 
-func (osc *ossSourceClient) IsSupportRange(ctx context.Context, url string, header source.Header) (bool, error) {
+func (osc *ossSourceClient) IsSupportRange(ctx context.Context, url string, header source.RequestHeader) (bool, error) {
 	_, err := osc.getMeta(ctx, url, header)
 	if err != nil {
 		return false, err
@@ -98,7 +98,7 @@ func (osc *ossSourceClient) IsSupportRange(ctx context.Context, url string, head
 	return true, nil
 }
 
-func (osc *ossSourceClient) IsExpired(ctx context.Context, url string, header source.Header, expireInfo map[string]string) (bool, error) {
+func (osc *ossSourceClient) IsExpired(ctx context.Context, url string, header source.RequestHeader, expireInfo map[string]string) (bool, error) {
 	lastModified := expireInfo[oss.HTTPHeaderLastModified]
 	eTag := expireInfo[oss.HTTPHeaderEtag]
 	if stringutils.IsBlank(lastModified) && stringutils.IsBlank(eTag) {
@@ -113,7 +113,7 @@ func (osc *ossSourceClient) IsExpired(ctx context.Context, url string, header so
 		HTTPHeaderEtag], nil
 }
 
-func (osc *ossSourceClient) DownloadWithExpire(ctx context.Context, url string, header source.Header) (io.ReadCloser, map[string]string, error) {
+func (osc *ossSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, source.ResponseHeader, error) {
 	ossObject, err := parseOssObject(url)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "parse oss object from url:%s", url)
@@ -132,11 +132,11 @@ func (osc *ossSourceClient) DownloadWithExpire(ctx context.Context, url string, 
 	}
 	resp := res.(*oss.Response)
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPartialContent {
-		expireInfo := map[string]string{
-			headers.LastModified: resp.Headers.Get(headers.LastModified),
-			headers.ETag:         resp.Headers.Get(headers.ETag),
+		responseHeader := source.ResponseHeader{
+			source.LastModified: resp.Headers.Get(headers.LastModified),
+			source.ETag:         resp.Headers.Get(headers.ETag),
 		}
-		return resp.Body, expireInfo, nil
+		return resp.Body, responseHeader, nil
 	}
 	resp.Body.Close()
 	return nil, nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)

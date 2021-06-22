@@ -31,12 +31,12 @@ import (
 
 const RangeHeaderName = "Range"
 
-func (cm *Manager) download(ctx context.Context, task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, map[string]string, error) {
+func (cm *Manager) download(ctx context.Context, task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, error) {
 	headers := maputils.DeepCopyMap(nil, task.Header)
 	if detectResult.breakPoint > 0 {
 		breakRange, err := rangeutils.GetBreakRange(detectResult.breakPoint, task.SourceFileLength)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to calculate the breakRange")
+			return nil, errors.Wrapf(err, "failed to calculate the breakRange")
 		}
 		// check if Range in header? if Range already in Header, priority use this range
 		if _, ok := headers[RangeHeaderName]; !ok {
@@ -45,5 +45,14 @@ func (cm *Manager) download(ctx context.Context, task *types.SeedTask, detectRes
 	}
 	logger.WithTaskID(task.TaskID).Infof("start download url %s at range:%d-%d: with header: %+v", task.URL, detectResult.breakPoint,
 		task.SourceFileLength, task.Header)
-	return source.DownloadWithExpire(ctx, task.URL, headers)
+	reader, responseHeader, err := source.DownloadWithResponseHeader(ctx, task.URL, headers)
+	// update Expire info
+	if err == nil {
+		expireInfo := map[string]string{
+			source.LastModified: responseHeader.Get(source.LastModified),
+			source.ETag:         responseHeader.Get(source.ETag),
+		}
+		cm.updateExpireInfo(task.TaskID, expireInfo)
+	}
+	return reader, err
 }

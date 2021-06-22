@@ -17,14 +17,14 @@
 package main
 
 import (
+	"sync"
+
 	"context"
 	"fmt"
 	"sync"
 
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
@@ -46,20 +46,20 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			//psc, _ := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-			//	TaskId: "test2",
-			//	Url:    "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
-			//	Filter: "",
-			//})
-
 			psc, _ := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-				TaskId: idgen.TaskID("https://desktop.docker.com/mac/stable/amd64/Docker.dmg?a=a&b=b&c=c", "a&b", &base.UrlMeta{
-					Digest: "md5",
-					Range:  "50-1000",
-				}, "dragonfly"),
-				Url:    "https://desktop.docker.com/mac/stable/amd64/Docker.dmg?a=a&b=b&c=c",
-				Filter: "a&b",
+				TaskId: "test2",
+				Url:    "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
+				Filter: "",
 			})
+
+			//psc, _ := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+			//	TaskId: idgen.TaskID("https://desktop.docker.com/mac/stable/amd64/Docker.dmg?a=a&b=b&c=c", "a&b", &base.UrlMeta{
+			//		Digest: "md5",
+			//		Range:  "50-1000",
+			//	}, "dragonfly"),
+			//	Url:    "https://desktop.docker.com/mac/stable/amd64/Docker.dmg?a=a&b=b&c=c",
+			//	Filter: "a&b",
+			//})
 			for {
 				piece, err := psc.Recv()
 				if err != nil {

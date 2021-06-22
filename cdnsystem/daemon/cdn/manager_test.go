@@ -36,7 +36,7 @@ import (
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"github.com/go-http-utils/headers"
+	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 )
@@ -85,7 +85,7 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 	sourceClient.EXPECT().IsSupportRange(gomock.Any(), dragonflyURL, gomock.Any()).Return(true, nil).AnyTimes()
 	sourceClient.EXPECT().IsExpired(gomock.Any(), dragonflyURL, gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
 	sourceClient.EXPECT().Download(gomock.Any(), dragonflyURL, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, header source.Header) (io.ReadCloser, error) {
+		func(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, error) {
 			content, _ := ioutil.ReadFile("../../testdata/cdn/go.html")
 			if rang, ok := header["Range"]; ok {
 				r, _ := rangeutils.ParseHTTPRange(rang)
@@ -94,30 +94,28 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 			return ioutil.NopCloser(strings.NewReader(string(content))), nil
 		},
 	).AnyTimes()
-	sourceClient.EXPECT().DownloadWithExpire(gomock.Any(), dragonflyURL, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, header source.Header) (io.ReadCloser, map[string]string, error) {
+	sourceClient.EXPECT().DownloadWithResponseHeader(gomock.Any(), dragonflyURL, gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, source.ResponseHeader, error) {
 			content, _ := ioutil.ReadFile("../../testdata/cdn/go.html")
 			if rang, ok := header["Range"]; ok {
 				r, err := rangeutils.ParseHTTPRange(rang)
 				suite.Nil(err)
 				return ioutil.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(r.StartIndex), int64(r.EndIndex))),
 					map[string]string{
-						headers.LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
-						headers.ETag:         "etag",
+						source.LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
+						source.ETag:         "etag",
 					}, nil
 			}
 			return ioutil.NopCloser(strings.NewReader(string(content))), map[string]string{
-				headers.LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
-				headers.ETag:         "etag",
+				source.LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
+				source.ETag:         "etag",
 			}, nil
 		},
 	).AnyTimes()
-	sourceClient.EXPECT().GetExpireInfo(gomock.Any(), dragonflyURL, gomock.Any()).Return(map[string]string{
-		headers.LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
-		headers.ETag:         "etag",
-	}, nil).AnyTimes()
+	sourceClient.EXPECT().GetLastModifiedMillis(gomock.Any(), dragonflyURL, gomock.Any()).Return(
+		timeutils.UnixMillis("Sun, 06 Jun 2021 12:52:30 GMT"), nil).AnyTimes()
 	sourceClient.EXPECT().GetContentLength(gomock.Any(), dragonflyURL, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, header source.Header) (int64, error) {
+		func(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
 			if rang, ok := header["Range"]; ok {
 				r, _ := rangeutils.ParseHTTPRange(rang)
 				return int64(r.EndIndex-r.StartIndex) + 1, nil

@@ -107,7 +107,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	server.StatSeedStart(task.TaskID, task.URL)
 	start := time.Now()
 	// third: start to download the source file
-	body, expireInfo, err := cm.download(ctx, task, detectResult)
+	body, err := cm.download(ctx, task, detectResult)
 	// download fail
 	if err != nil {
 		server.StatSeedFinish(task.TaskID, task.URL, false, err, start.Nanosecond(), time.Now().Nanosecond(), 0, 0)
@@ -115,9 +115,6 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		return seedTask, err
 	}
 	defer body.Close()
-
-	// update Expire info
-	cm.updateExpireInfo(task.TaskID, expireInfo)
 
 	reader := limitreader.NewLimitReaderWithLimiterAndMD5Sum(body, cm.limiter, fileMd5)
 	// forth: write to storage
