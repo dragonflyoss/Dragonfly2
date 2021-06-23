@@ -77,8 +77,8 @@ func NewSchedulerWithOptions(cfg *config.Config, options ...Option) *SchedulerSe
 	return scheduler
 }
 
-func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (pkg *scheduler.RegisterResult, err error) {
-	pkg = &scheduler.RegisterResult{}
+func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
+	resp = new(scheduler.RegisterResult)
 	startTime := time.Now()
 	defer func() {
 		e := recover()
@@ -91,17 +91,17 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 				err = dferrors.New(dfcodes.SchedError, err.Error())
 			}
 		}
-		logger.Debugf("RegisterPeerTask [%s] cost time: [%d]", request.PeerId, time.Now().Sub(startTime))
+		logger.Debugf("RegisterPeerTask [%s] cost time: [%d] millis", request.PeerId, time.Now().Sub(startTime).Milliseconds())
 		return
 	}()
 
 	// get or create task
-	var isCdn = false
-	pkg.TaskId = s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMeta, request.BizId, request.PeerId)
-	task, ok := s.service.GetTask(pkg.TaskId)
+	//var isCdn = false
+	taskID := s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMeta, request.BizId, request.PeerId)
+	task, ok := s.service.GetTask(taskID)
 	if !ok {
 		task, err = s.service.AddTask(&types.Task{
-			TaskID:  pkg.TaskId,
+			TaskID:  resp.TaskId,
 			URL:     request.Url,
 			Filter:  request.Filter,
 			BizID:   request.BizId,
@@ -122,52 +122,45 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		return
 	}
 
-	pkg.TaskId = task.TaskID
-	pkg.SizeScope = task.SizeScope
-
-	// case base.SizeScope_TINY
-	if pkg.SizeScope == base.SizeScope_TINY {
-		pkg.DirectPiece = task.DirectPiece
-		return
-	}
-
 	// get or create host
-	hostID := request.PeerHost.Uuid
-	host, _ := s.service.GetHost(hostID)
-
-	peerHost := request.PeerHost
-	if host == nil {
+	reqPeerHost := request.PeerHost
+	if host, ok := s.service.GetHost(reqPeerHost.Uuid); !ok {
 		host = &types.Host{
 			Type: types.HostTypePeer,
 			PeerHost: scheduler.PeerHost{
-				Uuid:           peerHost.Uuid,
-				Ip:             peerHost.Ip,
-				RpcPort:        peerHost.RpcPort,
-				DownPort:       peerHost.DownPort,
-				HostName:       peerHost.HostName,
-				SecurityDomain: peerHost.SecurityDomain,
-				Location:       peerHost.Location,
-				Idc:            peerHost.Idc,
-				NetTopology:    peerHost.NetTopology,
+				Uuid:           reqPeerHost.Uuid,
+				Ip:             reqPeerHost.Ip,
+				RpcPort:        reqPeerHost.RpcPort,
+				DownPort:       reqPeerHost.DownPort,
+				HostName:       reqPeerHost.HostName,
+				SecurityDomain: reqPeerHost.SecurityDomain,
+				Location:       reqPeerHost.Location,
+				Idc:            reqPeerHost.Idc,
+				NetTopology:    reqPeerHost.NetTopology,
 			},
 		}
-		if isCdn {
-			host.Type = types.HostTypeCdn
-		}
+		//if isCdn {
+		//	host.Type = types.HostTypeCdn
+		//}
 		host, err = s.service.AddHost(host)
 		if err != nil {
 			return
 		}
 	}
 
+	resp.TaskId = task.TaskID
+	resp.SizeScope = task.SizeScope
+
+	// case base.SizeScope_TINY
+	if resp.SizeScope == base.SizeScope_TINY {
+		resp.DirectPiece = task.DirectPiece
+		return
+	}
+
 	// get or creat PeerTask
-	pid := request.PeerId
-	peerTask, _ := s.service.GetPeerTask(pid)
-	if peerTask == nil {
+	if peerTask, ok := s.service.GetPeerTask(request.PeerId); !ok {
 		peerTask, err = s.service.AddPeerTask(pid, task, host)
-		if err != nil {
-			return
-		}
+		if err != nil
 	} else if peerTask.Host == nil {
 		peerTask.Host = host
 	}
@@ -180,7 +173,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		peerTask.SetUp()
 	}
 
-	if pkg.SizeScope == base.SizeScope_NORMAL {
+	if resp.SizeScope == base.SizeScope_NORMAL {
 		return
 	}
 
@@ -192,11 +185,11 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	}
 
 	if parent == nil {
-		pkg.SizeScope = base.SizeScope_NORMAL
+		resp.SizeScope = base.SizeScope_NORMAL
 		return
 	}
 
-	pkg.DirectPiece = &scheduler.RegisterResult_SinglePiece{
+	resp.DirectPiece = &scheduler.RegisterResult_SinglePiece{
 		SinglePiece: &scheduler.SinglePiece{
 			// destination peer id
 			DstPid: parent.Pid,

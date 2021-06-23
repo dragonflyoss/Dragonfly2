@@ -28,8 +28,7 @@ import (
 )
 
 type TaskManager struct {
-	lock        sync.RWMutex
-	data        map[string]*types.Task
+	data        sync.Map
 	gcDelayTime time.Duration
 
 	PeerTask *PeerTask
@@ -43,7 +42,6 @@ func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
 	}
 
 	tm := &TaskManager{
-		data:        make(map[string]*types.Task),
 		gcDelayTime: delay,
 	}
 
@@ -54,17 +52,13 @@ func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
 	return tm
 }
 
-func (m *TaskManager) Set(k string, task *types.Task) *types.Task {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	return m.set(k, task)
+func (m *TaskManager) Set(k string, task *types.Task) {
+	m.set(k, task)
 }
 
-func (m *TaskManager) set(k string, task *types.Task) *types.Task {
-	copyTask := types.CopyTask(task)
-	m.data[k] = copyTask
-	return copyTask
+func (m *TaskManager) set(k string, task *types.Task) {
+	task.InitProps()
+	m.data[k] = task
 }
 
 func (m *TaskManager) Add(k string, task *types.Task) error {
@@ -78,35 +72,13 @@ func (m *TaskManager) Add(k string, task *types.Task) error {
 	return nil
 }
 
-func (m *TaskManager) Get(k string) (*types.Task, bool) {
-	m.lock.RLock()
-	defer m.lock.RUnlock()
-
-	item, found := m.get(k)
-	if !found {
-		return nil, false
-	}
-	return item, true
+func (m *TaskManager) Get(taskID string) (*types.Task, bool) {
+	item, ok := m.data.Load(taskID)
+	return item.(*types.Task), ok
 }
 
-func (m *TaskManager) get(k string) (*types.Task, bool) {
-	item, found := m.data[k]
-	return item, found
-}
-
-func (m *TaskManager) Delete(k string) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	m.delete(k)
-	return
-}
-
-func (m *TaskManager) delete(k string) {
-	if _, found := m.data[k]; found {
-		delete(m.data, k)
-		return
-	}
+func (m *TaskManager) Delete(taskID string) {
+	m.data.Delete(taskID)
 }
 
 func (m *TaskManager) Touch(k string) {
@@ -135,23 +107,13 @@ func (m *TaskManager) gcWorkingLoop() {
 					debug.PrintStack()
 				}
 			}()
-			var needDeleteKeys []string
-			m.lock.RLock()
-			for taskID, task := range m.data {
-				if task != nil && time.Now().After(task.LastActive.Add(m.gcDelayTime)) {
-					needDeleteKeys = append(needDeleteKeys, taskID)
-					task.Removed = true
+			m.data.Range(func(taskID, task interface{}) bool {
+				if time.Now().After(task.(types.Task).LastActive.Add(m.gcDelayTime)) {
+					m.data.Delete(taskID.(string))
 				}
-			}
-			m.lock.RUnlock()
+				return true
+			})
 
-			if len(needDeleteKeys) > 0 {
-				for _, taskID := range needDeleteKeys {
-					m.Delete(taskID)
-				}
-			}
-
-			// clear peer task
 			m.PeerTask.ClearPeerTask()
 		}()
 	}

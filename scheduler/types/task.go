@@ -50,18 +50,16 @@ type Task struct {
 	CDNError      *dferrors.DfError
 }
 
-func CopyTask(t *Task) *Task {
-	copyTask := *t //nolint:govet
-	if copyTask.PieceList == nil {
-		copyTask.PieceList = make(map[int32]*Piece)
-		copyTask.CreateTime = time.Now()
-		copyTask.LastActive = copyTask.CreateTime
-		copyTask.SizeScope = base.SizeScope_NORMAL
-		copyTask.Statistic = &metrics.TaskStatistic{
+func (t *Task) InitProps() {
+	if t.PieceList == nil {
+		t.PieceList = make(map[int32]*Piece)
+		t.CreateTime = time.Now()
+		t.LastActive = t.CreateTime
+		t.SizeScope = base.SizeScope_NORMAL
+		t.Statistic = &metrics.TaskStatistic{
 			StartTime: time.Now(),
 		}
 	}
-	return &copyTask
 }
 
 func (t *Task) GetPiece(pieceNum int32) *Piece {

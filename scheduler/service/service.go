@@ -70,11 +70,11 @@ func (s *SchedulerService) AddTask(task *types.Task) (*types.Task, error) {
 	}
 
 	// Task does not exist
-	ret := s.TaskManager.Set(task.TaskID, task)
-	if err := s.CDNManager.TriggerTask(ret, s.TaskManager.PeerTask.CDNCallback); err != nil {
+	s.TaskManager.Set(task.TaskID, task)
+	if err := s.CDNManager.TriggerTask(task, s.TaskManager.PeerTask.CDNCallback); err != nil {
 		return nil, err
 	}
-	s.TaskManager.PeerTask.AddTask(ret)
+	s.TaskManager.PeerTask.AddTask(task)
 	return ret, nil
 }
 
@@ -87,12 +87,8 @@ func (s *SchedulerService) ScheduleChildren(task *types.PeerTask) (children []*t
 	return s.Scheduler.ScheduleChildren(task)
 }
 
-func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *types.PeerTask, err error) {
-	peerTask, _ = s.TaskManager.PeerTask.Get(peerTaskID)
-	if peerTask == nil {
-		err = errors.New("peer task do not exist: " + peerTaskID)
-	}
-	return
+func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *types.PeerTask, ok bool) {
+	return s.TaskManager.PeerTask.Get(peerTaskID)
 }
 
 func (s *SchedulerService) AddPeerTask(pid string, task *types.Task, host *types.Host) (ret *types.PeerTask, err error) {
@@ -115,12 +111,8 @@ func (s *SchedulerService) DeletePeerTask(peerTaskID string) (err error) {
 	return
 }
 
-func (s *SchedulerService) GetHost(hostID string) (host *types.Host, err error) {
-	host, _ = s.HostManager.Get(hostID)
-	if host == nil {
-		err = errors.New("host not exited: " + hostID)
-	}
-	return
+func (s *SchedulerService) GetHost(hostID string) (host *types.Host, ok bool) {
+	return s.HostManager.Get(hostID)
 }
 
 func (s *SchedulerService) AddHost(host *types.Host) (ret *types.Host, err error) {
