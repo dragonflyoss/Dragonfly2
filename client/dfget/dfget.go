@@ -27,16 +27,16 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil/progressbar"
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
+	dfdaemongrpc "d7y.io/dragonfly/v2/internal/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/basic"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/source"
 
 	// Init daemon rpc client
-	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	_ "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
+	dfclient "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
 	"github.com/go-http-utils/headers"
 )
 
@@ -126,24 +126,15 @@ func downloadFromSource(cfg *config.DfgetConfig, hdr map[string]string) (err err
 		logger.Warnf("%s", err)
 		return err
 	}
-
-	var (
-		start = time.Now()
-		end   time.Time
-	)
-
 	fmt.Println("dfget download error, try to download from source")
+
 	var (
+		start    = time.Now()
+		end      time.Time
 		target   *os.File
 		response io.ReadCloser
-		_        map[string]string
 		written  int64
 	)
-
-	if err != nil {
-		logger.Errorf("init source client error: %s", err)
-		return err
-	}
 
 	response, err = source.Download(context.Background(), cfg.URL, hdr)
 	if err != nil {

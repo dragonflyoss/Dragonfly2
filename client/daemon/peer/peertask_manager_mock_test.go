@@ -27,9 +27,9 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 
-	dflog "d7y.io/dragonfly/v2/pkg/dflog"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
-	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	dflog "d7y.io/dragonfly/v2/internal/dflog"
+	base "d7y.io/dragonfly/v2/internal/rpc/base"
+	scheduler "d7y.io/dragonfly/v2/internal/rpc/scheduler"
 )
 
 // MockPeerTaskManager is a mock of PeerTaskManager interface

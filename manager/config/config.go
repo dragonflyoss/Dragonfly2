@@ -47,11 +47,11 @@ func New() *Config {
 }
 
 func (cfg *Config) Validate() error {
-	if cfg.Cache != nil {
+	if cfg.Cache == nil {
 		return errors.New("empty cache config is not specified")
 	}
 
-	if cfg.Cache.Redis != nil {
+	if cfg.Cache != nil && cfg.Cache.Redis == nil {
 		return errors.New("empty cache redis config is not specified")
 	}
 

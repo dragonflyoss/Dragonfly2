@@ -62,7 +62,7 @@ func (s *LocalDriverTestSuite) SetupSuite() {
 	s.Driver = gotDriver
 }
 
-func (s *LocalDriverTestSuite) TeardownSuite() {
+func (s *LocalDriverTestSuite) TearDownSuite() {
 	if s.workHome != "" {
 		s.Nil(os.RemoveAll(s.workHome))
 	}
@@ -476,7 +476,7 @@ func (s *LocalDriverTestSuite) TestPutParallel() {
 	var key = "fooPutParallel"
 	var routineCount = 4
 	var testStr = "hello"
-	var testStrLength = len(testStr)
+	testStrLength := len(testStr)
 
 	var wg sync.WaitGroup
 	for k := 0; k < routineCount; k++ {

@@ -39,13 +39,13 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/rpc"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
+	daemonserver "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/internal/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)
@@ -206,7 +206,6 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 			Url:      "http://localhost/test/data",
 			Filter:   "",
 			BizId:    "d7y-test",
-			UrlMata:  nil,
 			PeerId:   peerID,
 			PeerHost: &scheduler.PeerHost{},
 		},
@@ -281,7 +280,6 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		Url:      "http://localhost/test/data",
 		Filter:   "",
 		BizId:    "d7y-test",
-		UrlMata:  nil,
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	})

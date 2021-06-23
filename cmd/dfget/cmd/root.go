@@ -29,11 +29,11 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/dfget"
 	"d7y.io/dragonfly/v2/cmd/dependency"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"github.com/gofrs/flock"
 	"github.com/pkg/errors"
@@ -160,9 +160,9 @@ func runDfget() error {
 	daemonClient, err := checkAndSpawnDaemon()
 	if err != nil {
 		logger.Errorf("check and spawn daemon error:%v", err)
+	} else {
+		logger.Info("check and spawn daemon success")
 	}
-
-	logger.Info("check and spawn daemon success")
 	return dfget.Download(dfgetConfig, daemonClient)
 }
 
@@ -201,24 +201,19 @@ func checkAndSpawnDaemon() (client.DaemonClient, error) {
 		return nil, err
 	}
 
-	// 3.First check since starting
-	if daemonClient.CheckHealth(context.Background(), target) == nil {
-		return daemonClient, nil
-	}
+	// 3. check health with at least 5s timeout
+	tick := time.Tick(50 * time.Millisecond)
+	timeout := time.After(5 * time.Second)
 
-	times := 0
-	limit := 100
-	interval := 50 * time.Millisecond
 	for {
-		// 4.Cycle check with 5s timeout
-		if daemonClient.CheckHealth(context.Background(), target) == nil {
+		select {
+		case <-timeout:
+			return nil, errors.New("the daemon is unhealthy")
+		case <-tick:
+			if err = daemonClient.CheckHealth(context.Background(), target); err != nil {
+				continue
+			}
 			return daemonClient, nil
 		}
-
-		times++
-		if times > limit {
-			return nil, errors.New("the daemon is unhealthy")
-		}
-		time.Sleep(interval)
 	}
 }

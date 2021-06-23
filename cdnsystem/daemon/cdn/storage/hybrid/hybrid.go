@@ -17,7 +17,6 @@
 package hybrid
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -34,7 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
@@ -204,11 +203,11 @@ func (h *hybridStorageMgr) gcTasks(gcTaskIDs []string, isDisk bool) int {
 	return realGCCount
 }
 
-func (h *hybridStorageMgr) WriteDownloadFile(taskID string, offset int64, len int64, buf *bytes.Buffer) error {
+func (h *hybridStorageMgr) WriteDownloadFile(taskID string, offset int64, len int64, data io.Reader) error {
 	raw := storage.GetDownloadRaw(taskID)
 	raw.Offset = offset
 	raw.Length = len
-	return h.diskDriver.Put(raw, buf)
+	return h.diskDriver.Put(raw, data)
 }
 
 func (h *hybridStorageMgr) DeleteTask(taskID string) error {
@@ -225,11 +224,11 @@ func (h *hybridStorageMgr) ReadPieceMetaRecords(taskID string) ([]*storage.Piece
 		return nil, err
 	}
 	pieceMetaRecords := strings.Split(strings.TrimSpace(string(readBytes)), "\n")
-	var result = make([]*storage.PieceMetaRecord, 0)
+	var result = make([]*storage.PieceMetaRecord, 0, len(pieceMetaRecords))
 	for _, pieceStr := range pieceMetaRecords {
 		record, err := storage.ParsePieceMetaRecord(pieceStr)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get piece meta record:%v", pieceStr)
+			return nil, errors.Wrapf(err, "get piece meta record:%v", pieceStr)
 		}
 		result = append(result, record)
 	}
@@ -239,12 +238,12 @@ func (h *hybridStorageMgr) ReadPieceMetaRecords(taskID string) ([]*storage.Piece
 func (h *hybridStorageMgr) ReadFileMetaData(taskID string) (*storage.FileMetaData, error) {
 	readBytes, err := h.diskDriver.GetBytes(storage.GetTaskMetaDataRaw(taskID))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get metadata bytes")
+		return nil, errors.Wrapf(err, "get metadata bytes")
 	}
 
 	metaData := &storage.FileMetaData{}
 	if err := json.Unmarshal(readBytes, metaData); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal metadata bytes")
+		return nil, errors.Wrapf(err, "unmarshal metadata bytes")
 	}
 	return metaData, nil
 }
@@ -256,7 +255,7 @@ func (h *hybridStorageMgr) AppendPieceMetaData(taskID string, record *storage.Pi
 func (h *hybridStorageMgr) WriteFileMetaData(taskID string, metaData *storage.FileMetaData) error {
 	data, err := json.Marshal(metaData)
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal metadata")
+		return errors.Wrapf(err, "marshal metadata")
 	}
 	return h.diskDriver.PutBytes(storage.GetTaskMetaDataRaw(taskID), data)
 }

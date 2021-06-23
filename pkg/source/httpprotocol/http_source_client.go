@@ -30,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"github.com/go-http-utils/headers"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -38,7 +37,7 @@ const (
 	HTTPSClient = "https"
 )
 
-var defaultHTTPClient *http.Client
+var _defaultHTTPClient *http.Client
 var _ source.ResourceClient = (*httpSourceClient)(nil)
 
 func init() {
@@ -47,7 +46,7 @@ func init() {
 		Timeout:   3 * time.Second,
 		KeepAlive: 30 * time.Second,
 	}).DialContext
-	defaultHTTPClient = &http.Client{
+	_defaultHTTPClient = &http.Client{
 		Transport: transport,
 	}
 	httpSourceClient := NewHTTPSourceClient()
@@ -63,7 +62,7 @@ type httpSourceClient struct {
 // NewHTTPSourceClient returns a new HTTPSourceClientOption.
 func NewHTTPSourceClient(opts ...HTTPSourceClientOption) source.ResourceClient {
 	client := &httpSourceClient{
-		httpClient: defaultHTTPClient,
+		httpClient: _defaultHTTPClient,
 	}
 	for i := range opts {
 		opts[i](client)
@@ -82,13 +81,13 @@ func WithHTTPClient(client *http.Client) HTTPSourceClientOption {
 func (client *httpSourceClient) GetContentLength(ctx context.Context, url string, header source.Header) (int64, error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {
-		return -1, errors.Wrapf(cdnerrors.ErrURLNotReachable, "get http header meta data failed: %v", err)
+		return -1, cdnerrors.ErrURLNotReachable{URL: url, Cause: err}
 	}
 	resp.Body.Close()
 	// todo Here if other status codes should be added to ErrURLNotReachable, if not, it will be downloaded frequently for 404 or 403
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
 		// todo Whether this situation should be distinguished from the err situation, similar to proposing another error type to indicate that this  error can interact with the URL, but the status code does not meet expectations
-		return -1, errors.Wrapf(cdnerrors.ErrURLNotReachable, "failed to get http resource length, unexpected code: %d", resp.StatusCode)
+		return -1, cdnerrors.ErrURLNotReachable{URL: url, Cause: fmt.Errorf("get http resource length failed, unexpected code: %d", resp.StatusCode)}
 	}
 	return resp.ContentLength, nil
 }

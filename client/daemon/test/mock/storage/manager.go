@@ -11,7 +11,7 @@ import (
 	time "time"
 
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	base "d7y.io/dragonfly/v2/internal/rpc/base"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -51,6 +51,21 @@ func (m *MockTaskStorageDriver) GetPieces(ctx context.Context, req *base.PieceTa
 func (mr *MockTaskStorageDriverMockRecorder) GetPieces(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieces", reflect.TypeOf((*MockTaskStorageDriver)(nil).GetPieces), ctx, req)
+}
+
+// ReadAllPieces mocks base method.
+func (m *MockTaskStorageDriver) ReadAllPieces(ctx context.Context, req *storage.PeerTaskMetaData) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadAllPieces", ctx, req)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadAllPieces indicates an expected call of ReadAllPieces.
+func (mr *MockTaskStorageDriverMockRecorder) ReadAllPieces(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadAllPieces", reflect.TypeOf((*MockTaskStorageDriver)(nil).ReadAllPieces), ctx, req)
 }
 
 // ReadPiece mocks base method.
@@ -112,6 +127,69 @@ func (mr *MockTaskStorageDriverMockRecorder) WritePiece(ctx, req interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WritePiece", reflect.TypeOf((*MockTaskStorageDriver)(nil).WritePiece), ctx, req)
 }
 
+// MockReclaimer is a mock of Reclaimer interface.
+type MockReclaimer struct {
+	ctrl     *gomock.Controller
+	recorder *MockReclaimerMockRecorder
+}
+
+// MockReclaimerMockRecorder is the mock recorder for MockReclaimer.
+type MockReclaimerMockRecorder struct {
+	mock *MockReclaimer
+}
+
+// NewMockReclaimer creates a new mock instance.
+func NewMockReclaimer(ctrl *gomock.Controller) *MockReclaimer {
+	mock := &MockReclaimer{ctrl: ctrl}
+	mock.recorder = &MockReclaimerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockReclaimer) EXPECT() *MockReclaimerMockRecorder {
+	return m.recorder
+}
+
+// CanReclaim mocks base method.
+func (m *MockReclaimer) CanReclaim() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanReclaim")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// CanReclaim indicates an expected call of CanReclaim.
+func (mr *MockReclaimerMockRecorder) CanReclaim() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanReclaim", reflect.TypeOf((*MockReclaimer)(nil).CanReclaim))
+}
+
+// MarkReclaim mocks base method.
+func (m *MockReclaimer) MarkReclaim() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "MarkReclaim")
+}
+
+// MarkReclaim indicates an expected call of MarkReclaim.
+func (mr *MockReclaimerMockRecorder) MarkReclaim() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkReclaim", reflect.TypeOf((*MockReclaimer)(nil).MarkReclaim))
+}
+
+// Reclaim mocks base method.
+func (m *MockReclaimer) Reclaim() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Reclaim")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Reclaim indicates an expected call of Reclaim.
+func (mr *MockReclaimerMockRecorder) Reclaim() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reclaim", reflect.TypeOf((*MockReclaimer)(nil).Reclaim))
+}
+
 // MockManager is a mock of Manager interface.
 type MockManager struct {
 	ctrl     *gomock.Controller
@@ -149,16 +227,30 @@ func (mr *MockManagerMockRecorder) Alive(alive interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Alive", reflect.TypeOf((*MockManager)(nil).Alive), alive)
 }
 
-// Clean mocks base method.
+// CleanUp mocks base method.
 func (m *MockManager) CleanUp() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "CleanUp")
 }
 
-// Clean indicates an expected call of Clean.
-func (mr *MockManagerMockRecorder) Clean() *gomock.Call {
+// CleanUp indicates an expected call of CleanUp.
+func (mr *MockManagerMockRecorder) CleanUp() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanUp", reflect.TypeOf((*MockManager)(nil).CleanUp))
+}
+
+// FindCompletedTask mocks base method.
+func (m *MockManager) FindCompletedTask(taskID string) *storage.ReusePeerTask {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindCompletedTask", taskID)
+	ret0, _ := ret[0].(*storage.ReusePeerTask)
+	return ret0
+}
+
+// FindCompletedTask indicates an expected call of FindCompletedTask.
+func (mr *MockManagerMockRecorder) FindCompletedTask(taskID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindCompletedTask", reflect.TypeOf((*MockManager)(nil).FindCompletedTask), taskID)
 }
 
 // GetPieces mocks base method.
@@ -186,6 +278,21 @@ func (m *MockManager) Keep() {
 func (mr *MockManagerMockRecorder) Keep() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Keep", reflect.TypeOf((*MockManager)(nil).Keep))
+}
+
+// ReadAllPieces mocks base method.
+func (m *MockManager) ReadAllPieces(ctx context.Context, req *storage.PeerTaskMetaData) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadAllPieces", ctx, req)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadAllPieces indicates an expected call of ReadAllPieces.
+func (mr *MockManagerMockRecorder) ReadAllPieces(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadAllPieces", reflect.TypeOf((*MockManager)(nil).ReadAllPieces), ctx, req)
 }
 
 // ReadPiece mocks base method.

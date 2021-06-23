@@ -19,13 +19,16 @@ package progress
 import (
 	"container/list"
 	"context"
+	"fmt"
+	"sort"
+	"strconv"
 	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/daemon"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"github.com/pkg/errors"
@@ -83,11 +86,11 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 	defer pm.mu.UnLock(taskID, true)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get seed subscribers")
+		return nil, fmt.Errorf("get seed subscribers: %v", err)
 	}
 	pieceMetaDataRecords, err := pm.getPieceMetaRecordsByTaskID(taskID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get piece meta records by taskID")
+		return nil, fmt.Errorf("get piece meta records by taskID: %v", err)
 	}
 	ch := make(chan *types.SeedPiece, pm.buffer)
 	ele := chanList.PushBack(ch)
@@ -108,17 +111,17 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 }
 
 // Publish publish seedPiece
-func (pm *Manager) PublishPiece(ctx context.Context, taskID string, record *types.SeedPiece) error {
+func (pm *Manager) PublishPiece(taskID string, record *types.SeedPiece) error {
 	logger.Debugf("seed piece meta record %+v", record)
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)
 	err := pm.setPieceMetaRecord(taskID, record)
 	if err != nil {
-		return errors.Wrap(err, "failed to set piece meta record")
+		return fmt.Errorf("set piece meta record: %v", err)
 	}
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
-		return errors.Wrap(err, "failed to get seed subscribers")
+		return fmt.Errorf("get seed subscribers: %v", err)
 	}
 	var wg sync.WaitGroup
 	for e := chanList.Front(); e != nil; e = e.Next() {
@@ -143,7 +146,7 @@ func (pm *Manager) PublishTask(ctx context.Context, taskID string, task *types.S
 	defer pm.mu.UnLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
-		return errors.Wrap(err, "failed to get seed subscribers")
+		return fmt.Errorf("get seed subscribers: %v", err)
 	}
 	// unwatch
 	for e := chanList.Front(); e != nil; e = e.Next() {
@@ -163,7 +166,7 @@ func (pm *Manager) Clear(taskID string) error {
 	defer pm.mu.UnLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil && errors.Cause(err) != dferrors.ErrDataNotFound {
-		return errors.Wrap(err, "failed to get seed subscribers")
+		return errors.Wrap(err, "get seed subscribers")
 	}
 	if chanList != nil {
 		for e := chanList.Front(); e != nil; e = e.Next() {
@@ -179,11 +182,11 @@ func (pm *Manager) Clear(taskID string) error {
 	}
 	err = pm.seedSubscribers.Remove(taskID)
 	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
-		return errors.Wrap(err, "failed to clear seed subscribes")
+		return errors.Wrap(err, "clear seed subscribes")
 	}
 	err = pm.taskPieceMetaRecords.Remove(taskID)
 	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
-		return errors.Wrap(err, "failed to clear piece meta records")
+		return errors.Wrap(err, "clear piece meta records")
 	}
 	return nil
 }
@@ -192,4 +195,30 @@ func (pm *Manager) GetPieces(ctx context.Context, taskID string) (records []*typ
 	pm.mu.Lock(taskID, true)
 	defer pm.mu.UnLock(taskID, true)
 	return pm.getPieceMetaRecordsByTaskID(taskID)
+}
+
+// setPieceMetaRecord
+func (pm *Manager) setPieceMetaRecord(taskID string, record *types.SeedPiece) error {
+	pieceRecords, err := pm.taskPieceMetaRecords.GetAsMap(taskID)
+	if err != nil {
+		return err
+	}
+	return pieceRecords.Add(strconv.Itoa(int(record.PieceNum)), record)
+}
+
+// getPieceMetaRecordsByTaskID
+func (pm *Manager) getPieceMetaRecordsByTaskID(taskID string) (records []*types.SeedPiece, err error) {
+	pieceRecords, err := pm.taskPieceMetaRecords.GetAsMap(taskID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get piece meta records")
+	}
+	pieceNums := pieceRecords.ListKeyAsIntSlice()
+	sort.Ints(pieceNums)
+	for i := 0; i < len(pieceNums); i++ {
+		v, _ := pieceRecords.Get(strconv.Itoa(pieceNums[i]))
+		if value, ok := v.(*types.SeedPiece); ok {
+			records = append(records, value)
+		}
+	}
+	return records, nil
 }

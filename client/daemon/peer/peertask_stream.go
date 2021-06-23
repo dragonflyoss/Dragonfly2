@@ -20,23 +20,22 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
-	"sync/atomic"
 
-	"d7y.io/dragonfly/v2/pkg/dferrors"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/internal/rpc/scheduler/client"
 )
 
 // StreamPeerTask represents a peer task with stream io for reading directly without once more disk io
@@ -53,6 +52,8 @@ type streamPeerTask struct {
 	successPieceCh chan int32
 }
 
+var _ StreamPeerTask = (*streamPeerTask)(nil)
+
 func newStreamPeerTask(ctx context.Context,
 	host *scheduler.PeerHost,
 	pieceManager PieceManager,
@@ -66,7 +67,7 @@ func newStreamPeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
-	logger.Debugf("request overview, url: %s, filter: %s, meta: %s, biz: %s", request.Url, request.Filter, request.UrlMata, request.BizId)
+	logger.Debugf("request overview, url: %s, filter: %s, meta: %s, biz: %s", request.Url, request.Filter, request.UrlMeta, request.BizId)
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
@@ -137,30 +138,29 @@ func newStreamPeerTask(ctx context.Context,
 	}
 	return ctx, &streamPeerTask{
 		peerTask: peerTask{
-			ctx:              ctx,
-			host:             host,
-			backSource:       backSource,
-			request:          request,
-			peerPacketStream: peerPacketStream,
-			pieceManager:     pieceManager,
-			peerPacketReady:  make(chan bool, 1),
-			peerID:           request.PeerId,
-			taskID:           result.TaskId,
-			singlePiece:      singlePiece,
-			done:             make(chan struct{}),
-			span:             span,
-			once:             sync.Once{},
-			readyPieces:      NewBitmap(),
-			requestedPieces:  NewBitmap(),
-			lock:             &sync.Mutex{},
-			failedPieceCh:    make(chan int32, 4),
-			failedReason:     "unknown",
-			failedCode:       dfcodes.UnknownError,
-			contentLength:    -1,
-			totalPiece:       -1,
-			schedulerOption:  schedulerOption,
-			limiter:          limiter,
-
+			ctx:                 ctx,
+			host:                host,
+			backSource:          backSource,
+			request:             request,
+			peerPacketStream:    peerPacketStream,
+			pieceManager:        pieceManager,
+			peerPacketReady:     make(chan bool, 1),
+			peerID:              request.PeerId,
+			taskID:              result.TaskId,
+			singlePiece:         singlePiece,
+			done:                make(chan struct{}),
+			span:                span,
+			readyPieces:         NewBitmap(),
+			requestedPieces:     NewBitmap(),
+			failedPieceCh:       make(chan int32, 4),
+			failedReason:        "unknown",
+			failedCode:          dfcodes.UnknownError,
+			contentLength:       -1,
+			totalPiece:          -1,
+			schedulerOption:     schedulerOption,
+			limiter:             limiter,
+			completedLength:     atomic.NewInt64(0),
+			usedTraffic:         atomic.NewInt64(0),
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
 		successPieceCh: make(chan int32, 4),
@@ -184,7 +184,7 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 	}
 	// mark piece processed
 	s.readyPieces.Set(pieceResult.PieceNum)
-	atomic.AddInt64(&s.completedLength, int64(piece.RangeSize))
+	s.completedLength.Add(int64(piece.RangeSize))
 	s.lock.Unlock()
 
 	pieceResult.FinishedCount = s.readyPieces.Settled()
@@ -348,10 +348,6 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 				}
 			case cur = <-s.successPieceCh:
 				continue
-				//if !ok {
-				//	s.Warnf("successPieceCh closed")
-				//	continue
-				//}
 			}
 		}
 	}(firstPiece)

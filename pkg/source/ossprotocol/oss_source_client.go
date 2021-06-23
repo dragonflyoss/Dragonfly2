@@ -116,7 +116,7 @@ func (osc *ossSourceClient) IsExpired(ctx context.Context, url string, header so
 func (osc *ossSourceClient) DownloadWithExpire(ctx context.Context, url string, header source.Header) (io.ReadCloser, map[string]string, error) {
 	ossObject, err := parseOssObject(url)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to parse oss object from url:%s", url)
+		return nil, nil, errors.Wrapf(err, "parse oss object from url:%s", url)
 	}
 	client, err := osc.getClient(header)
 	if err != nil {
@@ -174,23 +174,23 @@ func genClientKey(endpoint, accessKeyID, accessKeySecret string) string {
 func (osc *ossSourceClient) getMeta(ctx context.Context, url string, header map[string]string) (http.Header, error) {
 	client, err := osc.getClient(header)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get oss client")
+		return nil, errors.Wrapf(err, "get oss client")
 	}
 	ossObject, err := parseOssObject(url)
 	if err != nil {
-		return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable, "failed to parse oss object: %v", err)
+		return nil, cdnerrors.ErrURLNotReachable{URL: url, Cause: fmt.Errorf("parse oss object: %v", err)}
 	}
 
 	bucket, err := client.Bucket(ossObject.bucket)
 	if err != nil {
-		return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable, "failed to get bucket:%s: %v", ossObject.bucket, err)
+		return nil, cdnerrors.ErrURLNotReachable{URL: url, Cause: fmt.Errorf("get bucket:%s: %v", ossObject.bucket, err)}
 	}
 	isExist, err := bucket.IsObjectExist(ossObject.object)
 	if err != nil {
-		return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable, "failed to prob object:%s exist: %v", ossObject.object, err)
+		return nil, cdnerrors.ErrURLNotReachable{URL: url, Cause: fmt.Errorf("prob object:%s exist: %v", ossObject.object, err)}
 	}
 	if !isExist {
-		return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable, "oss object:%s does not exist", ossObject.object)
+		return nil, cdnerrors.ErrURLNotReachable{URL: url, Cause: fmt.Errorf("oss object:%s does not exist", ossObject.object)}
 	}
 	return bucket.GetObjectMeta(ossObject.object, getOptions(header)...)
 }

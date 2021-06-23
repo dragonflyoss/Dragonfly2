@@ -19,8 +19,8 @@ package worker
 import (
 	"hash/crc32"
 
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	scheduler2 "d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/types"
@@ -45,6 +45,8 @@ type Group struct {
 
 	schedulerService *service.SchedulerService
 }
+
+var _ IWorker = (*Group)(nil)
 
 func NewGroup(cfg *config.Config, schedulerService *service.SchedulerService) *Group {
 	return &Group{

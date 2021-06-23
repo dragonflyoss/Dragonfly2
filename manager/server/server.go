@@ -20,15 +20,14 @@ import (
 	"context"
 	"net/http"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/service"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
 	"golang.org/x/sync/errgroup"
-
 	// manager server rpc
-	_ "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
+	// _ "d7y.io/dragonfly/v2/internal/rpc/manager/server"
 )
 
 type Server struct {
