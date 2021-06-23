@@ -59,7 +59,6 @@ func (s *service) DestroyScheduler(id uint) error {
 func (s *service) UpdateScheduler(id uint, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{}
 	if err := s.db.First(&scheduler, id).Updates(model.Scheduler{
-		HostName:  json.HostName,
 		VIPs:      json.VIPs,
 		IDC:       json.IDC,
 		Location:  json.Location,
@@ -82,7 +81,6 @@ func (s *service) UpdateSchedulerWithSecurityGroupDomain(id uint, json types.Upd
 	}
 
 	scheduler := model.Scheduler{
-		HostName:  json.HostName,
 		VIPs:      json.VIPs,
 		IDC:       json.IDC,
 		Location:  json.Location,
