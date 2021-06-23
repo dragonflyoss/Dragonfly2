@@ -5,7 +5,7 @@ type SchedulerParams struct {
 }
 
 type CreateSchedulerRequest struct {
-	Host                string                 `json:"host" binding:"required"`
+	HostName            string                 `json:"host_name" binding:"required"`
 	SecurityGroupDomain string                 `json:"security_group_domain" binding:"omitempty"`
 	VIPs                string                 `json:"vips" binding:"omitempty"`
 	IDC                 string                 `json:"idc" binding:"required"`
@@ -16,7 +16,6 @@ type CreateSchedulerRequest struct {
 }
 
 type UpdateSchedulerRequest struct {
-	Host                string                 `json:"host" binding:"omitempty"`
 	SecurityGroupDomain string                 `json:"security_group_domain" binding:"omitempty"`
 	VIPs                string                 `json:"vips" binding:"omitempty"`
 	IDC                 string                 `json:"idc" binding:"omitempty"`
@@ -30,7 +29,7 @@ type UpdateSchedulerRequest struct {
 type GetSchedulersQuery struct {
 	Page     int    `form:"page" binding:"omitempty,gte=1"`
 	PerPage  int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
-	Host     string `form:"host" binding:"omitempty"`
+	HostName string `form:"host_name" binding:"omitempty"`
 	IDC      string `form:"idc" binding:"omitempty"`
 	Location string `form:"location" binding:"omitempty"`
 	IP       string `form:"ip" binding:"omitempty"`

@@ -7,7 +7,7 @@ const (
 
 type CDN struct {
 	Model
-	Host            string `gorm:"column:host;size:256;uniqueIndex;not null" json:"host"`
+	HostName        string `gorm:"column:host_name;size:256;uniqueIndex;not null" json:"host_name"`
 	IDC             string `gorm:"column:idc;size:1024;not null" json:"idc"`
 	Location        string `gorm:"column:location;size:1024" json:"location"`
 	IP              string `gorm:"column:ip;size:256;not null" json:"ip"`

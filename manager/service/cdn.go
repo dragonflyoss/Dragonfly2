@@ -7,7 +7,7 @@ import (
 
 func (s *service) CreateCDN(json types.CreateCDNRequest) (*model.CDN, error) {
 	cdn := model.CDN{
-		Host:         json.Host,
+		HostName:     json.HostName,
 		IDC:          json.IDC,
 		Location:     json.Location,
 		IP:           json.IP,
@@ -31,7 +31,7 @@ func (s *service) CreateCDNWithSecurityGroupDomain(json types.CreateCDNRequest) 
 	}
 
 	cdn := model.CDN{
-		Host:         json.Host,
+		HostName:     json.HostName,
 		IDC:          json.IDC,
 		Location:     json.Location,
 		IP:           json.IP,
@@ -105,7 +105,7 @@ func (s *service) GetCDN(id uint) (*model.CDN, error) {
 func (s *service) GetCDNs(q types.GetCDNsQuery) (*[]model.CDN, error) {
 	cdns := []model.CDN{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDN{
-		Host:         q.Host,
+		HostName:     q.HostName,
 		IDC:          q.IDC,
 		Location:     q.Location,
 		IP:           q.IP,
@@ -121,7 +121,7 @@ func (s *service) GetCDNs(q types.GetCDNsQuery) (*[]model.CDN, error) {
 func (s *service) CDNTotalCount(q types.GetCDNsQuery) (int64, error) {
 	var count int64
 	if err := s.db.Model(&model.CDN{}).Where(&model.CDN{
-		Host:         q.Host,
+		HostName:     q.HostName,
 		IDC:          q.IDC,
 		Location:     q.Location,
 		IP:           q.IP,

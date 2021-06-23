@@ -11,7 +11,7 @@ const (
 
 type Scheduler struct {
 	Model
-	Host               string            `gorm:"column:host;size:256;uniqueIndex;not null" json:"host"`
+	HostName           string            `gorm:"column:host_name;size:256;uniqueIndex;not null" json:"host_name"`
 	VIPs               string            `gorm:"column:vips;size:1024;not null" json:"vips"`
 	IDC                string            `gorm:"column:idc;size:1024;not null" json:"idc"`
 	Location           string            `gorm:"column:location;size:1024" json:"location"`

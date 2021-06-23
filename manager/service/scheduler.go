@@ -7,7 +7,7 @@ import (
 
 func (s *service) CreateScheduler(json types.CreateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{
-		Host:      json.Host,
+		HostName:  json.HostName,
 		VIPs:      json.VIPs,
 		IDC:       json.IDC,
 		Location:  json.Location,
@@ -32,7 +32,7 @@ func (s *service) CreateSchedulerWithSecurityGroupDomain(json types.CreateSchedu
 	}
 
 	scheduler := model.Scheduler{
-		Host:      json.Host,
+		HostName:  json.HostName,
 		VIPs:      json.VIPs,
 		IDC:       json.IDC,
 		Location:  json.Location,
@@ -59,7 +59,7 @@ func (s *service) DestroyScheduler(id uint) error {
 func (s *service) UpdateScheduler(id uint, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{}
 	if err := s.db.First(&scheduler, id).Updates(model.Scheduler{
-		Host:      json.Host,
+		HostName:  json.HostName,
 		VIPs:      json.VIPs,
 		IDC:       json.IDC,
 		Location:  json.Location,
@@ -82,7 +82,7 @@ func (s *service) UpdateSchedulerWithSecurityGroupDomain(id uint, json types.Upd
 	}
 
 	scheduler := model.Scheduler{
-		Host:      json.Host,
+		HostName:  json.HostName,
 		VIPs:      json.VIPs,
 		IDC:       json.IDC,
 		Location:  json.Location,
@@ -110,7 +110,7 @@ func (s *service) GetScheduler(id uint) (*model.Scheduler, error) {
 func (s *service) GetSchedulers(q types.GetSchedulersQuery) (*[]model.Scheduler, error) {
 	schedulers := []model.Scheduler{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Scheduler{
-		Host:     q.Host,
+		HostName: q.HostName,
 		IDC:      q.IDC,
 		Location: q.Location,
 		IP:       q.IP,
@@ -125,7 +125,7 @@ func (s *service) GetSchedulers(q types.GetSchedulersQuery) (*[]model.Scheduler,
 func (s *service) SchedulerTotalCount(q types.GetSchedulersQuery) (int64, error) {
 	var count int64
 	if err := s.db.Model(&model.Scheduler{}).Where(&model.Scheduler{
-		Host:     q.Host,
+		HostName: q.HostName,
 		IDC:      q.IDC,
 		Location: q.Location,
 		IP:       q.IP,

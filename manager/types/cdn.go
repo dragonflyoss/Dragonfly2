@@ -5,7 +5,7 @@ type CDNParams struct {
 }
 
 type CreateCDNRequest struct {
-	Host                string `json:"host" binding:"required"`
+	HostName            string `json:"host_name" binding:"required"`
 	SecurityGroupDomain string `json:"security_group_domain" binding:"omitempty"`
 	IDC                 string `json:"idc" binding:"required"`
 	Location            string `json:"location" binding:"omitempty"`
@@ -25,7 +25,7 @@ type UpdateCDNRequest struct {
 }
 
 type GetCDNsQuery struct {
-	Host         string `form:"host" binding:"omitempty"`
+	HostName     string `form:"host_name" binding:"omitempty"`
 	IDC          string `form:"idc" binding:"omitempty"`
 	Location     string `form:"location" binding:"omitempty"`
 	IP           string `form:"ip" binding:"omitempty"`
