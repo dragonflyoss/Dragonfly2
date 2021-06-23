@@ -14,4 +14,22 @@
  * limitations under the License.
  */
 
-package hdfs
+package source
+
+// request header
+type RequestHeader map[string]string
+
+// response header
+type ResponseHeader map[string]string
+
+func (h ResponseHeader) Get(key string) string {
+	if h == nil {
+		return ""
+	}
+	return h[key]
+}
+
+const (
+	LastModified = "Last-Modified"
+	ETag         = "ETag"
+)
