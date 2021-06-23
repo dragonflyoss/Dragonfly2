@@ -36,7 +36,9 @@ type Header map[string]string
 // ResourceClient supply apis that interact with the source.
 type ResourceClient interface {
 
-	// GetContentLength get length of resource content
+	// GetContentLength the length of the associated content. The
+	// value -1 indicates that the length is unknown. values >= 0 indicate
+	// that the given number of bytes may be read from Body.
 	// return -l if request fail
 	// return -1 if response status is not StatusOK and StatusPartialContent
 	GetContentLength(ctx context.Context, url string, header Header) (int64, error)
