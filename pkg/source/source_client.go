@@ -31,30 +31,28 @@ import (
 var _ ResourceClient = (*ClientManagerImpl)(nil)
 var _ ClientManager = (*ClientManagerImpl)(nil)
 
-type Header map[string]string
-
 // ResourceClient supply apis that interact with the source.
 type ResourceClient interface {
 
 	// GetContentLength get length of resource content
 	// return -l if request fail
 	// return -1 if response status is not StatusOK and StatusPartialContent
-	GetContentLength(ctx context.Context, url string, header Header) (int64, error)
+	GetContentLength(ctx context.Context, url string, header RequestHeader) (int64, error)
 
 	// IsSupportRange checks if resource supports breakpoint continuation
-	IsSupportRange(ctx context.Context, url string, header Header) (bool, error)
+	IsSupportRange(ctx context.Context, url string, header RequestHeader) (bool, error)
 
 	// IsExpired checks if a resource received or stored is the same.
-	IsExpired(ctx context.Context, url string, header Header, expireInfo map[string]string) (bool, error)
+	IsExpired(ctx context.Context, url string, header RequestHeader, expireInfo map[string]string) (bool, error)
 
 	// Download download from source
-	Download(ctx context.Context, url string, header Header) (io.ReadCloser, error)
+	Download(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, error)
 
-	// DownloadWithExpire download from source and get expire info
-	DownloadWithExpire(ctx context.Context, url string, header Header) (io.ReadCloser, map[string]string, error)
+	// DownloadWithResponseHeader download from source with responseHeader
+	DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, ResponseHeader, error)
 
-	// GetExpireInfo get expire info of resource
-	GetExpireInfo(ctx context.Context, url string, header Header) (map[string]string, error)
+	// GetLastModified get lastModified timestamp milliseconds of resource
+	GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader) (int64, error)
 }
 
 type ClientManager interface {
@@ -71,7 +69,7 @@ var _defaultMgr = &ClientManagerImpl{
 	clients: make(map[string]ResourceClient),
 }
 
-func (clientMgr *ClientManagerImpl) GetContentLength(ctx context.Context, url string, header Header) (int64, error) {
+func (clientMgr *ClientManagerImpl) GetContentLength(ctx context.Context, url string, header RequestHeader) (int64, error) {
 	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return -1, err
@@ -84,7 +82,7 @@ func (clientMgr *ClientManagerImpl) GetContentLength(ctx context.Context, url st
 	return sourceClient.GetContentLength(ctx, url, header)
 }
 
-func (clientMgr *ClientManagerImpl) IsSupportRange(ctx context.Context, url string, header Header) (bool, error) {
+func (clientMgr *ClientManagerImpl) IsSupportRange(ctx context.Context, url string, header RequestHeader) (bool, error) {
 	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return false, err
@@ -97,7 +95,7 @@ func (clientMgr *ClientManagerImpl) IsSupportRange(ctx context.Context, url stri
 	return sourceClient.IsSupportRange(ctx, url, header)
 }
 
-func (clientMgr *ClientManagerImpl) IsExpired(ctx context.Context, url string, header Header, expireInfo map[string]string) (bool, error) {
+func (clientMgr *ClientManagerImpl) IsExpired(ctx context.Context, url string, header RequestHeader, expireInfo map[string]string) (bool, error) {
 	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return false, err
@@ -110,7 +108,7 @@ func (clientMgr *ClientManagerImpl) IsExpired(ctx context.Context, url string, h
 	return sourceClient.IsExpired(ctx, url, header, expireInfo)
 }
 
-func (clientMgr *ClientManagerImpl) Download(ctx context.Context, url string, header Header) (io.ReadCloser, error) {
+func (clientMgr *ClientManagerImpl) Download(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, error) {
 	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return nil, err
@@ -118,25 +116,26 @@ func (clientMgr *ClientManagerImpl) Download(ctx context.Context, url string, he
 	return sourceClient.Download(ctx, url, header)
 }
 
-func (clientMgr *ClientManagerImpl) DownloadWithExpire(ctx context.Context, url string, header Header) (io.ReadCloser, map[string]string, error) {
+func (clientMgr *ClientManagerImpl) DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, ResponseHeader,
+	error) {
 	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return nil, nil, err
 	}
-	return sourceClient.DownloadWithExpire(ctx, url, header)
+	return sourceClient.DownloadWithResponseHeader(ctx, url, header)
 }
 
-func (clientMgr *ClientManagerImpl) GetExpireInfo(ctx context.Context, url string, header Header) (map[string]string, error) {
+func (clientMgr *ClientManagerImpl) GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader) (int64, error) {
 	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
-		return nil, err
+		return -1, err
 	}
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 	}
-	return sourceClient.GetExpireInfo(ctx, url, header)
+	return sourceClient.GetLastModifiedMillis(ctx, url, header)
 }
 
 func NewManager() ClientManager {
@@ -167,24 +166,28 @@ func UnRegister(schema string) {
 	_defaultMgr.UnRegister(schema)
 }
 
-func GetContentLength(ctx context.Context, url string, header Header) (int64, error) {
+func GetContentLength(ctx context.Context, url string, header RequestHeader) (int64, error) {
 	return _defaultMgr.GetContentLength(ctx, url, header)
 }
 
-func IsSupportRange(ctx context.Context, url string, header Header) (bool, error) {
+func IsSupportRange(ctx context.Context, url string, header RequestHeader) (bool, error) {
 	return _defaultMgr.IsSupportRange(ctx, url, header)
 }
 
-func IsExpired(ctx context.Context, url string, header Header, expireInfo map[string]string) (bool, error) {
+func IsExpired(ctx context.Context, url string, header RequestHeader, expireInfo map[string]string) (bool, error) {
 	return _defaultMgr.IsExpired(ctx, url, header, expireInfo)
 }
 
-func Download(ctx context.Context, url string, header Header) (io.ReadCloser, error) {
+func Download(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, error) {
 	return _defaultMgr.Download(ctx, url, header)
 }
 
-func DownloadWithExpire(ctx context.Context, url string, header Header) (io.ReadCloser, map[string]string, error) {
-	return _defaultMgr.DownloadWithExpire(ctx, url, header)
+func DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, ResponseHeader, error) {
+	return _defaultMgr.DownloadWithResponseHeader(ctx, url, header)
+}
+
+func GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader) (int64, error) {
+	return _defaultMgr.GetLastModifiedMillis(ctx, url, header)
 }
 
 // getSourceClient get a source client from source manager with specified schema.

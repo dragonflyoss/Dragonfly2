@@ -78,7 +78,7 @@ func WithHTTPClient(client *http.Client) HTTPSourceClientOption {
 	}
 }
 
-func (client *httpSourceClient) GetContentLength(ctx context.Context, url string, header source.Header) (int64, error) {
+func (client *httpSourceClient) GetContentLength(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {
 		return -1, cdnerrors.ErrURLNotReachable{URL: url, Cause: err}
@@ -92,7 +92,7 @@ func (client *httpSourceClient) GetContentLength(ctx context.Context, url string
 	return resp.ContentLength, nil
 }
 
-func (client *httpSourceClient) IsSupportRange(ctx context.Context, url string, header source.Header) (bool, error) {
+func (client *httpSourceClient) IsSupportRange(ctx context.Context, url string, header source.RequestHeader) (bool, error) {
 	copied := maputils.DeepCopyMap(nil, header)
 	copied[headers.Range] = "bytes=0-0"
 
@@ -105,8 +105,8 @@ func (client *httpSourceClient) IsSupportRange(ctx context.Context, url string, 
 }
 
 // todo Consider the situation where there is no last-modified such as baidu
-func (client *httpSourceClient) IsExpired(ctx context.Context, url string, header source.Header, expireInfo map[string]string) (bool, error) {
-	lastModified := timeutils.UnixMillis(expireInfo[headers.LastModified])
+func (client *httpSourceClient) IsExpired(ctx context.Context, url string, header source.RequestHeader, expireInfo map[string]string) (bool, error) {
+	lastModified := timeutils.UnixMillis(expireInfo[source.LastModified])
 
 	eTag := expireInfo[headers.ETag]
 	if lastModified <= 0 && stringutils.IsBlank(eTag) {
@@ -132,7 +132,7 @@ func (client *httpSourceClient) IsExpired(ctx context.Context, url string, heade
 	return resp.StatusCode != http.StatusNotModified, nil
 }
 
-func (client *httpSourceClient) Download(ctx context.Context, url string, header source.Header) (io.ReadCloser, error) {
+func (client *httpSourceClient) Download(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {
 		return nil, err
@@ -144,39 +144,36 @@ func (client *httpSourceClient) Download(ctx context.Context, url string, header
 	return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 }
 
-func (client *httpSourceClient) DownloadWithExpire(ctx context.Context, url string, header source.Header) (io.ReadCloser, map[string]string, error) {
+func (client *httpSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, source.ResponseHeader,
+	error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {
 		return nil, nil, err
 	}
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPartialContent {
-		expireInfo := map[string]string{
-			headers.LastModified: resp.Header.Get(headers.LastModified),
-			headers.ETag:         resp.Header.Get(headers.ETag),
+		responseHeader := source.ResponseHeader{
+			source.LastModified: resp.Header.Get(headers.LastModified),
+			source.ETag:         resp.Header.Get(headers.ETag),
 		}
-		return resp.Body, expireInfo, nil
+		return resp.Body, responseHeader, nil
 	}
 	resp.Body.Close()
 	return nil, nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 }
 
-func (client *httpSourceClient) GetExpireInfo(ctx context.Context, url string, header source.Header) (map[string]string, error) {
+func (client *httpSourceClient) GetLastModifiedMillis(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {
-		return nil, err
+		return -1, err
 	}
 	resp.Body.Close()
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPartialContent {
-		expireInfo := map[string]string{
-			headers.LastModified: resp.Header.Get(headers.LastModified),
-			headers.ETag:         resp.Header.Get(headers.ETag),
-		}
-		return expireInfo, nil
+		return timeutils.UnixMillis(resp.Header.Get(headers.LastModified)), nil
 	}
-	return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	return -1, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 }
 
-func (client *httpSourceClient) doRequest(ctx context.Context, method string, url string, header source.Header) (*http.Response, error) {
+func (client *httpSourceClient) doRequest(ctx context.Context, method string, url string, header source.RequestHeader) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, nil)
 	if err != nil {
 		return nil, err
