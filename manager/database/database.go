@@ -38,10 +38,10 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 	}
 
 	if err := db.AutoMigrate(
+		&model.CDNCluster{},
 		&model.CDN{},
-		&model.CDNInstance{},
+		&model.SchedulerCluster{},
 		&model.Scheduler{},
-		&model.SchedulerInstance{},
 		&model.SecurityGroup{},
 	); err != nil {
 		return nil, err

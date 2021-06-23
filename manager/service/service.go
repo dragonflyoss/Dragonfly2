@@ -8,40 +8,40 @@ import (
 )
 
 type Service interface {
+	CreateCDNCluster(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
+	DestroyCDNCluster(uint) error
+	UpdateCDNCluster(uint, types.UpdateCDNClusterRequest) (*model.CDNCluster, error)
+	GetCDNCluster(uint) (*model.CDNCluster, error)
+	GetCDNClusters(types.GetCDNClustersQuery) (*[]model.CDNCluster, error)
+	CDNClusterTotalCount(types.GetCDNClustersQuery) (int64, error)
+	AddCDNToCDNCluster(uint, uint) error
+	AddSchedulerClusterToCDNCluster(uint, uint) error
+
 	CreateCDN(types.CreateCDNRequest) (*model.CDN, error)
+	CreateCDNWithSecurityGroupDomain(types.CreateCDNRequest) (*model.CDN, error)
 	DestroyCDN(uint) error
 	UpdateCDN(uint, types.UpdateCDNRequest) (*model.CDN, error)
+	UpdateCDNWithSecurityGroupDomain(uint, types.UpdateCDNRequest) (*model.CDN, error)
 	GetCDN(uint) (*model.CDN, error)
 	GetCDNs(types.GetCDNsQuery) (*[]model.CDN, error)
 	CDNTotalCount(types.GetCDNsQuery) (int64, error)
-	AddInstanceToCDN(uint, uint) error
-	AddSchedulerToCDN(uint, uint) error
 
-	CreateCDNInstance(types.CreateCDNInstanceRequest) (*model.CDNInstance, error)
-	CreateCDNInstanceWithSecurityGroupDomain(types.CreateCDNInstanceRequest) (*model.CDNInstance, error)
-	DestroyCDNInstance(uint) error
-	UpdateCDNInstance(uint, types.UpdateCDNInstanceRequest) (*model.CDNInstance, error)
-	UpdateCDNInstanceWithSecurityGroupDomain(uint, types.UpdateCDNInstanceRequest) (*model.CDNInstance, error)
-	GetCDNInstance(uint) (*model.CDNInstance, error)
-	GetCDNInstances(types.GetCDNInstancesQuery) (*[]model.CDNInstance, error)
-	CDNInstanceTotalCount(types.GetCDNInstancesQuery) (int64, error)
+	CreateSchedulerCluster(types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error)
+	DestroySchedulerCluster(uint) error
+	UpdateSchedulerCluster(uint, types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error)
+	GetSchedulerCluster(uint) (*model.SchedulerCluster, error)
+	GetSchedulerClusters(types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, error)
+	SchedulerClusterTotalCount(types.GetSchedulerClustersQuery) (int64, error)
+	AddSchedulerToSchedulerCluster(uint, uint) error
 
 	CreateScheduler(types.CreateSchedulerRequest) (*model.Scheduler, error)
+	CreateSchedulerWithSecurityGroupDomain(types.CreateSchedulerRequest) (*model.Scheduler, error)
 	DestroyScheduler(uint) error
 	UpdateScheduler(uint, types.UpdateSchedulerRequest) (*model.Scheduler, error)
+	UpdateSchedulerWithSecurityGroupDomain(uint, types.UpdateSchedulerRequest) (*model.Scheduler, error)
 	GetScheduler(uint) (*model.Scheduler, error)
 	GetSchedulers(types.GetSchedulersQuery) (*[]model.Scheduler, error)
 	SchedulerTotalCount(types.GetSchedulersQuery) (int64, error)
-	AddInstanceToScheduler(uint, uint) error
-
-	CreateSchedulerInstance(types.CreateSchedulerInstanceRequest) (*model.SchedulerInstance, error)
-	CreateSchedulerInstanceWithSecurityGroupDomain(types.CreateSchedulerInstanceRequest) (*model.SchedulerInstance, error)
-	DestroySchedulerInstance(uint) error
-	UpdateSchedulerInstance(uint, types.UpdateSchedulerInstanceRequest) (*model.SchedulerInstance, error)
-	UpdateSchedulerInstanceWithSecurityGroupDomain(uint, types.UpdateSchedulerInstanceRequest) (*model.SchedulerInstance, error)
-	GetSchedulerInstance(uint) (*model.SchedulerInstance, error)
-	GetSchedulerInstances(types.GetSchedulerInstancesQuery) (*[]model.SchedulerInstance, error)
-	SchedulerInstanceTotalCount(types.GetSchedulerInstancesQuery) (int64, error)
 
 	CreateSecurityGroup(types.CreateSecurityGroupRequest) (*model.SecurityGroup, error)
 	DestroySecurityGroup(uint) error
@@ -49,8 +49,8 @@ type Service interface {
 	GetSecurityGroup(uint) (*model.SecurityGroup, error)
 	GetSecurityGroups(types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, error)
 	SecurityGroupTotalCount(types.GetSecurityGroupsQuery) (int64, error)
-	AddSchedulerInstanceToSecurityGroup(uint, uint) error
-	AddCDNInstanceToSecurityGroup(uint, uint) error
+	AddSchedulerToSecurityGroup(uint, uint) error
+	AddCDNToSecurityGroup(uint, uint) error
 }
 
 type service struct {

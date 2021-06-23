@@ -75,36 +75,36 @@ func (s *service) SecurityGroupTotalCount(q types.GetSecurityGroupsQuery) (int64
 	return count, nil
 }
 
-func (s *service) AddSchedulerInstanceToSecurityGroup(id, schedulerID uint) error {
+func (s *service) AddSchedulerToSecurityGroup(id, schedulerID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
-	schedulerInstance := model.SchedulerInstance{}
-	if err := s.db.First(&schedulerInstance, schedulerID).Error; err != nil {
+	scheduler := model.Scheduler{}
+	if err := s.db.First(&scheduler, schedulerID).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Model(&securityGroup).Association("SchedulerInstances").Append(&schedulerInstance); err != nil {
+	if err := s.db.Model(&securityGroup).Association("Schedulers").Append(&scheduler); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *service) AddCDNInstanceToSecurityGroup(id, cdnID uint) error {
+func (s *service) AddCDNToSecurityGroup(id, cdnID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
-	cdnInstance := model.CDNInstance{}
-	if err := s.db.First(&cdnInstance, cdnID).Error; err != nil {
+	cdn := model.CDN{}
+	if err := s.db.First(&cdn, cdnID).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Model(&securityGroup).Association("CDNInstances").Append(&cdnInstance); err != nil {
+	if err := s.db.Model(&securityGroup).Association("CDNs").Append(&cdn); err != nil {
 		return err
 	}
 

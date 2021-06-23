@@ -7,9 +7,12 @@ import (
 
 func (s *service) CreateCDN(json types.CreateCDNRequest) (*model.CDN, error) {
 	cdn := model.CDN{
-		Name:   json.Name,
-		BIO:    json.BIO,
-		Config: json.Config,
+		Host:         json.Host,
+		IDC:          json.IDC,
+		Location:     json.Location,
+		IP:           json.IP,
+		Port:         json.Port,
+		DownloadPort: json.DownloadPort,
 	}
 
 	if err := s.db.Create(&cdn).Error; err != nil {
@@ -17,6 +20,31 @@ func (s *service) CreateCDN(json types.CreateCDNRequest) (*model.CDN, error) {
 	}
 
 	return &cdn, nil
+}
+
+func (s *service) CreateCDNWithSecurityGroupDomain(json types.CreateCDNRequest) (*model.CDN, error) {
+	securityGroup := model.SecurityGroup{
+		Domain: json.SecurityGroupDomain,
+	}
+	if err := s.db.First(&securityGroup).Error; err != nil {
+		return s.CreateCDN(json)
+	}
+
+	cdn := model.CDN{
+		Host:         json.Host,
+		IDC:          json.IDC,
+		Location:     json.Location,
+		IP:           json.IP,
+		Port:         json.Port,
+		DownloadPort: json.DownloadPort,
+	}
+
+	if err := s.db.Model(&securityGroup).Association("CDNs").Append(&cdn); err != nil {
+		return nil, err
+
+	}
+
+	return s.GetCDN(cdn.ID)
 }
 
 func (s *service) DestroyCDN(id uint) error {
@@ -30,14 +58,39 @@ func (s *service) DestroyCDN(id uint) error {
 func (s *service) UpdateCDN(id uint, json types.UpdateCDNRequest) (*model.CDN, error) {
 	cdn := model.CDN{}
 	if err := s.db.First(&cdn, id).Updates(model.CDN{
-		Name:   json.Name,
-		BIO:    json.BIO,
-		Config: json.Config,
+		IDC:          json.IDC,
+		Location:     json.Location,
+		IP:           json.IP,
+		Port:         json.Port,
+		DownloadPort: json.DownloadPort,
 	}).Error; err != nil {
 		return nil, err
 	}
 
 	return &cdn, nil
+}
+
+func (s *service) UpdateCDNWithSecurityGroupDomain(id uint, json types.UpdateCDNRequest) (*model.CDN, error) {
+	securityGroup := model.SecurityGroup{
+		Domain: json.SecurityGroupDomain,
+	}
+	if err := s.db.First(&securityGroup).Error; err != nil {
+		return s.UpdateCDN(id, json)
+	}
+
+	cdn := model.CDN{
+		IDC:          json.IDC,
+		Location:     json.Location,
+		IP:           json.IP,
+		Port:         json.Port,
+		DownloadPort: json.DownloadPort,
+	}
+
+	if err := s.db.Model(&securityGroup).Association("CDNs").Append(&cdn); err != nil {
+		return nil, err
+	}
+
+	return s.GetCDN(cdn.ID)
 }
 
 func (s *service) GetCDN(id uint) (*model.CDN, error) {
@@ -52,7 +105,12 @@ func (s *service) GetCDN(id uint) (*model.CDN, error) {
 func (s *service) GetCDNs(q types.GetCDNsQuery) (*[]model.CDN, error) {
 	cdns := []model.CDN{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDN{
-		Name: q.Name,
+		Host:         q.Host,
+		IDC:          q.IDC,
+		Location:     q.Location,
+		IP:           q.IP,
+		Port:         q.Port,
+		DownloadPort: q.DownloadPort,
 	}).Find(&cdns).Error; err != nil {
 		return nil, err
 	}
@@ -63,46 +121,15 @@ func (s *service) GetCDNs(q types.GetCDNsQuery) (*[]model.CDN, error) {
 func (s *service) CDNTotalCount(q types.GetCDNsQuery) (int64, error) {
 	var count int64
 	if err := s.db.Model(&model.CDN{}).Where(&model.CDN{
-		Name: q.Name,
+		Host:         q.Host,
+		IDC:          q.IDC,
+		Location:     q.Location,
+		IP:           q.IP,
+		Port:         q.Port,
+		DownloadPort: q.DownloadPort,
 	}).Count(&count).Error; err != nil {
 		return 0, err
 	}
 
 	return count, nil
-}
-
-func (s *service) AddInstanceToCDN(id, instanceID uint) error {
-	cdn := model.CDN{}
-	if err := s.db.First(&cdn, id).Error; err != nil {
-		return err
-	}
-
-	cdnInstance := model.CDNInstance{}
-	if err := s.db.First(&cdnInstance, instanceID).Error; err != nil {
-		return err
-	}
-
-	if err := s.db.Model(&cdn).Association("CDNInstances").Append(&cdnInstance); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *service) AddSchedulerToCDN(id, schedulerID uint) error {
-	cdn := model.CDN{}
-	if err := s.db.First(&cdn, id).Error; err != nil {
-		return err
-	}
-
-	scheduler := model.Scheduler{}
-	if err := s.db.First(&scheduler, schedulerID).Error; err != nil {
-		return err
-	}
-
-	if err := s.db.Model(&cdn).Association("Schedulers").Append(&scheduler); err != nil {
-		return err
-	}
-
-	return nil
 }

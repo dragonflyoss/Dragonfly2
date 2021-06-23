@@ -25,6 +25,17 @@ func (h *Handlers) CreateCDN(ctx *gin.Context) {
 		return
 	}
 
+	if json.SecurityGroupDomain != "" {
+		cdn, err := h.service.CreateCDNWithSecurityGroupDomain(json)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+
+		ctx.JSON(http.StatusOK, cdn)
+		return
+	}
+
 	cdn, err := h.service.CreateCDN(json)
 	if err != nil {
 		ctx.Error(err)
@@ -83,6 +94,17 @@ func (h *Handlers) UpdateCDN(ctx *gin.Context) {
 	var json types.UpdateCDNRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.Error(err)
+		return
+	}
+
+	if json.SecurityGroupDomain != "" {
+		cdn, err := h.service.UpdateCDNWithSecurityGroupDomain(params.ID, json)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+
+		ctx.JSON(http.StatusOK, cdn)
 		return
 	}
 
@@ -156,60 +178,4 @@ func (h *Handlers) GetCDNs(ctx *gin.Context) {
 
 	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
 	ctx.JSON(http.StatusOK, cdns)
-}
-
-// @Summary Add Instance to CDN
-// @Description Add Instance to CDN
-// @Tags CDNInstance
-// @Accept json
-// @Produce json
-// @Param id path string true "id"
-// @Param instance_id path string true "instance id"
-// @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
-// @Router /cdns/{id}/cdn-instances/{instance_id} [put]
-func (h *Handlers) AddInstanceToCDN(ctx *gin.Context) {
-	var params types.AddInstanceToCDNParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-
-	err := h.service.AddInstanceToCDN(params.ID, params.InstanceID)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-
-	ctx.Status(http.StatusOK)
-}
-
-// @Summary Add Scheduler to CDN
-// @Description Add Scheduler to CDN
-// @Tags CDNInstance
-// @Accept json
-// @Produce json
-// @Param id path string true "id"
-// @Param scheduler_id path string true "scheduler id"
-// @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
-// @Router /cdns/{id}/schedulers/{scheduler_id} [put]
-func (h *Handlers) AddSchedulerToCDN(ctx *gin.Context) {
-	var params types.AddSchedulerToCDNParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-
-	err := h.service.AddSchedulerToCDN(params.ID, params.SchedulerID)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-
-	ctx.Status(http.StatusOK)
 }
