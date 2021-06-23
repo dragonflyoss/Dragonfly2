@@ -1,4 +1,4 @@
-#产品思考与设计
+# 产品思考与设计
 
 ## 产品定位
 提供企业级（高效、稳定、安全、低成本、产品化）的文件分发与管理服务，并成为在该领域的云原生最佳实践与标准解决方案。
@@ -88,6 +88,6 @@
 - 客户端连接管理
 
 
-[arch]: docs/zh-CN/images/arch.png
-[association]: docs/zh-CN/images/association.png
-[download-process]: docs/zh-CN/images/download-process.png
+[arch]: ../images/arch.png
+[association]: ../images/association.png
+[download-process]: ../images/download-process.png
