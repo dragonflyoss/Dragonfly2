@@ -7,6 +7,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/model"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 type Database struct {
@@ -27,7 +28,11 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 
 	dialector := mysql.Open(dsn)
 
-	db, err := gorm.Open(dialector, &gorm.Config{})
+	db, err := gorm.Open(dialector, &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
