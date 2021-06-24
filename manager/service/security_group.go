@@ -75,36 +75,36 @@ func (s *service) SecurityGroupTotalCount(q types.GetSecurityGroupsQuery) (int64
 	return count, nil
 }
 
-func (s *service) AddSchedulerToSecurityGroup(id, schedulerID uint) error {
+func (s *service) AddSchedulerClusterToSecurityGroup(id, schedulerClusterID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
-	scheduler := model.Scheduler{}
-	if err := s.db.First(&scheduler, schedulerID).Error; err != nil {
+	schedulerCluster := model.SchedulerCluster{}
+	if err := s.db.First(&schedulerCluster, schedulerClusterID).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Model(&securityGroup).Association("Schedulers").Append(&scheduler); err != nil {
+	if err := s.db.Model(&securityGroup).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *service) AddCDNToSecurityGroup(id, cdnID uint) error {
+func (s *service) AddCDNClusterToSecurityGroup(id, cdnClusterID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
-	cdn := model.CDN{}
-	if err := s.db.First(&cdn, cdnID).Error; err != nil {
+	cdnCluster := model.CDNCluster{}
+	if err := s.db.First(&cdnCluster, cdnClusterID).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Model(&securityGroup).Association("CDNs").Append(&cdn); err != nil {
+	if err := s.db.Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
 		return err
 	}
 

@@ -25,17 +25,6 @@ func (h *Handlers) CreateCDN(ctx *gin.Context) {
 		return
 	}
 
-	if json.SecurityGroupDomain != "" {
-		cdn, err := h.service.CreateCDNWithSecurityGroupDomain(json)
-		if err != nil {
-			ctx.Error(err)
-			return
-		}
-
-		ctx.JSON(http.StatusOK, cdn)
-		return
-	}
-
 	cdn, err := h.service.CreateCDN(json)
 	if err != nil {
 		ctx.Error(err)
@@ -94,17 +83,6 @@ func (h *Handlers) UpdateCDN(ctx *gin.Context) {
 	var json types.UpdateCDNRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.Error(err)
-		return
-	}
-
-	if json.SecurityGroupDomain != "" {
-		cdn, err := h.service.UpdateCDNWithSecurityGroupDomain(params.ID, json)
-		if err != nil {
-			ctx.Error(err)
-			return
-		}
-
-		ctx.JSON(http.StatusOK, cdn)
 		return
 	}
 

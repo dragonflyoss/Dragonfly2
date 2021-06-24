@@ -169,15 +169,15 @@ func (h *Handlers) GetSecurityGroups(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /security-groups/{id}/scheduler-instances/{instance_id} [put]
-func (h *Handlers) AddSchedulerToSecurityGroup(ctx *gin.Context) {
-	var params types.AddSchedulerToSecurityGroupParams
+// @Router /security-groups/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
+func (h *Handlers) AddSchedulerClusterToSecurityGroup(ctx *gin.Context) {
+	var params types.AddSchedulerClusterToSecurityGroupParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	err := h.service.AddSchedulerToSecurityGroup(params.ID, params.SchedulerID)
+	err := h.service.AddSchedulerClusterToSecurityGroup(params.ID, params.SchedulerClusterID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -197,15 +197,15 @@ func (h *Handlers) AddSchedulerToSecurityGroup(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /security-groups/{id}/cdn-instances/{instance_id} [put]
-func (h *Handlers) AddCDNToSecurityGroup(ctx *gin.Context) {
-	var params types.AddCDNToSecurityGroupParams
+// @Router /security-groups/{id}/cdn-clusters/{cdn_cluster_id} [put]
+func (h *Handlers) AddCDNClusterToSecurityGroup(ctx *gin.Context) {
+	var params types.AddCDNClusterToSecurityGroupParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	err := h.service.AddCDNToSecurityGroup(params.ID, params.CDNID)
+	err := h.service.AddCDNClusterToSecurityGroup(params.ID, params.CDNClusterID)
 	if err != nil {
 		ctx.Error(err)
 		return

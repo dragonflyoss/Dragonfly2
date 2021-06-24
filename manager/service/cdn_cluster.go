@@ -27,6 +27,28 @@ func (s *service) DestroyCDNCluster(id uint) error {
 	return nil
 }
 
+func (s *service) CreateCDNClusterWithSecurityGroupDomain(json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
+	securityGroup := model.SecurityGroup{
+		Domain: json.SecurityGroupDomain,
+	}
+	if err := s.db.First(&securityGroup).Error; err != nil {
+		return s.CreateCDNCluster(json)
+	}
+
+	cdnCluster := model.CDNCluster{
+		Name:   json.Name,
+		BIO:    json.BIO,
+		Config: json.Config,
+	}
+
+	if err := s.db.Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
+		return nil, err
+
+	}
+
+	return &cdnCluster, nil
+}
+
 func (s *service) UpdateCDNCluster(id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, id).Updates(model.CDNCluster{
@@ -34,6 +56,27 @@ func (s *service) UpdateCDNCluster(id uint, json types.UpdateCDNClusterRequest) 
 		BIO:    json.BIO,
 		Config: json.Config,
 	}).Error; err != nil {
+		return nil, err
+	}
+
+	return &cdnCluster, nil
+}
+
+func (s *service) UpdateCDNClusterWithSecurityGroupDomain(id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
+	securityGroup := model.SecurityGroup{
+		Domain: json.SecurityGroupDomain,
+	}
+	if err := s.db.First(&securityGroup).Error; err != nil {
+		return s.UpdateCDNCluster(id, json)
+	}
+
+	cdnCluster := model.CDNCluster{
+		Name:   json.Name,
+		BIO:    json.BIO,
+		Config: json.Config,
+	}
+
+	if err := s.db.Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
 		return nil, err
 	}
 

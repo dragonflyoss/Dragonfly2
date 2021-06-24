@@ -71,8 +71,8 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 	sg.PATCH(":id", h.UpdateSecurityGroup)
 	sg.GET(":id", h.GetSecurityGroup)
 	sg.GET("", h.GetSecurityGroups)
-	sg.PUT(":id/schedulers/:scheduler_id", h.AddSchedulerToSecurityGroup)
-	sg.PUT(":id/cdns/:cdn_id", h.AddCDNToSecurityGroup)
+	sg.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSecurityGroup)
+	sg.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToSecurityGroup)
 
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)

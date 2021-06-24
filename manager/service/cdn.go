@@ -22,31 +22,6 @@ func (s *service) CreateCDN(json types.CreateCDNRequest) (*model.CDN, error) {
 	return &cdn, nil
 }
 
-func (s *service) CreateCDNWithSecurityGroupDomain(json types.CreateCDNRequest) (*model.CDN, error) {
-	securityGroup := model.SecurityGroup{
-		Domain: json.SecurityGroupDomain,
-	}
-	if err := s.db.First(&securityGroup).Error; err != nil {
-		return s.CreateCDN(json)
-	}
-
-	cdn := model.CDN{
-		HostName:     json.HostName,
-		IDC:          json.IDC,
-		Location:     json.Location,
-		IP:           json.IP,
-		Port:         json.Port,
-		DownloadPort: json.DownloadPort,
-	}
-
-	if err := s.db.Model(&securityGroup).Association("CDNs").Append(&cdn); err != nil {
-		return nil, err
-
-	}
-
-	return s.GetCDN(cdn.ID)
-}
-
 func (s *service) DestroyCDN(id uint) error {
 	if err := s.db.Unscoped().Delete(&model.CDN{}, id).Error; err != nil {
 		return err
@@ -68,29 +43,6 @@ func (s *service) UpdateCDN(id uint, json types.UpdateCDNRequest) (*model.CDN, e
 	}
 
 	return &cdn, nil
-}
-
-func (s *service) UpdateCDNWithSecurityGroupDomain(id uint, json types.UpdateCDNRequest) (*model.CDN, error) {
-	securityGroup := model.SecurityGroup{
-		Domain: json.SecurityGroupDomain,
-	}
-	if err := s.db.First(&securityGroup).Error; err != nil {
-		return s.UpdateCDN(id, json)
-	}
-
-	cdn := model.CDN{
-		IDC:          json.IDC,
-		Location:     json.Location,
-		IP:           json.IP,
-		Port:         json.Port,
-		DownloadPort: json.DownloadPort,
-	}
-
-	if err := s.db.Model(&securityGroup).Association("CDNs").Append(&cdn); err != nil {
-		return nil, err
-	}
-
-	return s.GetCDN(cdn.ID)
 }
 
 func (s *service) GetCDN(id uint) (*model.CDN, error) {

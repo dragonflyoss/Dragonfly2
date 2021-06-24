@@ -15,15 +15,17 @@ type AddSchedulerClusterToCDNClusterParams struct {
 }
 
 type CreateCDNClusterRequest struct {
-	Name   string                 `json:"name" binding:"required"`
-	BIO    string                 `json:"bio" binding:"omitempty"`
-	Config map[string]interface{} `json:"config" binding:"required"`
+	Name                string                 `json:"name" binding:"required"`
+	BIO                 string                 `json:"bio" binding:"omitempty"`
+	Config              map[string]interface{} `json:"config" binding:"required"`
+	SecurityGroupDomain string                 `json:"security_group_domain" binding:"omitempty"`
 }
 
 type UpdateCDNClusterRequest struct {
-	Name   string                 `json:"name" binding:"omitempty"`
-	BIO    string                 `json:"bio" binding:"omitempty"`
-	Config map[string]interface{} `json:"config" binding:"omitempty"`
+	Name                string                 `json:"name" binding:"omitempty"`
+	BIO                 string                 `json:"bio" binding:"omitempty"`
+	Config              map[string]interface{} `json:"config" binding:"omitempty"`
+	SecurityGroupDomain string                 `json:"security_group_domain" binding:"omitempty"`
 }
 
 type GetCDNClustersQuery struct {

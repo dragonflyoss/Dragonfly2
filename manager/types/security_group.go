@@ -4,14 +4,14 @@ type SecurityGroupParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
-type AddSchedulerToSecurityGroupParams struct {
-	ID          uint `uri:"id" binding:"required"`
-	SchedulerID uint `uri:"scheduler_id" binding:"required"`
+type AddSchedulerClusterToSecurityGroupParams struct {
+	ID                 uint `uri:"id" binding:"required"`
+	SchedulerClusterID uint `uri:"scheduler_cluster_id" binding:"required"`
 }
 
-type AddCDNToSecurityGroupParams struct {
-	ID    uint `uri:"id" binding:"required"`
-	CDNID uint `uri:"cdn_id" binding:"required"`
+type AddCDNClusterToSecurityGroupParams struct {
+	ID           uint `uri:"id" binding:"required"`
+	CDNClusterID uint `uri:"cdn_cluster_id" binding:"required"`
 }
 
 type CreateSecurityGroupRequest struct {

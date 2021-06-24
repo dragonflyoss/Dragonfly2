@@ -20,6 +20,28 @@ func (s *service) CreateSchedulerCluster(json types.CreateSchedulerClusterReques
 	return &schedulerCluster, nil
 }
 
+func (s *service) CreateSchedulerClusterWithSecurityGroupDomain(json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+	securityGroup := model.SecurityGroup{
+		Domain: json.SecurityGroupDomain,
+	}
+	if err := s.db.First(&securityGroup).Error; err != nil {
+		return s.CreateSchedulerCluster(json)
+	}
+
+	schedulerCluster := model.SchedulerCluster{
+		Name:         json.Name,
+		BIO:          json.BIO,
+		Config:       json.Config,
+		ClientConfig: json.ClientConfig,
+	}
+
+	if err := s.db.Model(&securityGroup).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
+		return nil, err
+	}
+
+	return &schedulerCluster, nil
+}
+
 func (s *service) DestroySchedulerCluster(id uint) error {
 	if err := s.db.Unscoped().Delete(&model.SchedulerCluster{}, id).Error; err != nil {
 		return err
@@ -36,6 +58,28 @@ func (s *service) UpdateSchedulerCluster(id uint, json types.UpdateSchedulerClus
 		Config:       json.Config,
 		ClientConfig: json.ClientConfig,
 	}).Error; err != nil {
+		return nil, err
+	}
+
+	return &schedulerCluster, nil
+}
+
+func (s *service) UpdateSchedulerClusterWithSecurityGroupDomain(id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+	securityGroup := model.SecurityGroup{
+		Domain: json.SecurityGroupDomain,
+	}
+	if err := s.db.First(&securityGroup).Error; err != nil {
+		return s.UpdateSchedulerCluster(id, json)
+	}
+
+	schedulerCluster := model.SchedulerCluster{
+		Name:         json.Name,
+		BIO:          json.BIO,
+		Config:       json.Config,
+		ClientConfig: json.ClientConfig,
+	}
+
+	if err := s.db.Model(&securityGroup).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 		return nil, err
 	}
 

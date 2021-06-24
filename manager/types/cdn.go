@@ -5,23 +5,21 @@ type CDNParams struct {
 }
 
 type CreateCDNRequest struct {
-	HostName            string `json:"host_name" binding:"required"`
-	SecurityGroupDomain string `json:"security_group_domain" binding:"omitempty"`
-	IDC                 string `json:"idc" binding:"required"`
-	Location            string `json:"location" binding:"omitempty"`
-	IP                  string `json:"ip" binding:"required"`
-	Port                int32  `json:"port" binding:"required"`
-	DownloadPort        int32  `json:"download_port" binding:"required"`
+	HostName     string `json:"host_name" binding:"required"`
+	IDC          string `json:"idc" binding:"required"`
+	Location     string `json:"location" binding:"omitempty"`
+	IP           string `json:"ip" binding:"required"`
+	Port         int32  `json:"port" binding:"required"`
+	DownloadPort int32  `json:"download_port" binding:"required"`
 }
 
 type UpdateCDNRequest struct {
-	SecurityGroupDomain string `json:"security_group_domain" binding:"omitempty"`
-	IDC                 string `json:"idc" binding:"omitempty"`
-	Location            string `json:"location" binding:"omitempty"`
-	IP                  string `json:"ip" binding:"omitempty"`
-	Port                int32  `json:"port" binding:"omitempty"`
-	DownloadPort        int32  `json:"download_port" binding:"omitempty"`
-	CDNID               *uint  `json:"cdn_id" binding:"omitempty"`
+	IDC          string `json:"idc" binding:"omitempty"`
+	Location     string `json:"location" binding:"omitempty"`
+	IP           string `json:"ip" binding:"omitempty"`
+	Port         int32  `json:"port" binding:"omitempty"`
+	DownloadPort int32  `json:"download_port" binding:"omitempty"`
+	CDNID        *uint  `json:"cdn_id" binding:"omitempty"`
 }
 
 type GetCDNsQuery struct {

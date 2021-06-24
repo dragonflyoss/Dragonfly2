@@ -25,17 +25,6 @@ func (h *Handlers) CreateScheduler(ctx *gin.Context) {
 		return
 	}
 
-	if json.SecurityGroupDomain != "" {
-		scheduler, err := h.service.CreateSchedulerWithSecurityGroupDomain(json)
-		if err != nil {
-			ctx.Error(err)
-			return
-		}
-
-		ctx.JSON(http.StatusOK, scheduler)
-		return
-	}
-
 	scheduler, err := h.service.CreateScheduler(json)
 	if err != nil {
 		ctx.Error(err)
@@ -94,17 +83,6 @@ func (h *Handlers) UpdateScheduler(ctx *gin.Context) {
 	var json types.UpdateSchedulerRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.Error(err)
-		return
-	}
-
-	if json.SecurityGroupDomain != "" {
-		scheduler, err := h.service.UpdateSchedulerWithSecurityGroupDomain(params.ID, json)
-		if err != nil {
-			ctx.Error(err)
-			return
-		}
-
-		ctx.JSON(http.StatusOK, scheduler)
 		return
 	}
 

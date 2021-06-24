@@ -23,31 +23,6 @@ func (s *service) CreateScheduler(json types.CreateSchedulerRequest) (*model.Sch
 	return &scheduler, nil
 }
 
-func (s *service) CreateSchedulerWithSecurityGroupDomain(json types.CreateSchedulerRequest) (*model.Scheduler, error) {
-	securityGroup := model.SecurityGroup{
-		Domain: json.SecurityGroupDomain,
-	}
-	if err := s.db.First(&securityGroup).Error; err != nil {
-		return s.CreateScheduler(json)
-	}
-
-	scheduler := model.Scheduler{
-		HostName:  json.HostName,
-		VIPs:      json.VIPs,
-		IDC:       json.IDC,
-		Location:  json.Location,
-		NetConfig: json.NetConfig,
-		IP:        json.IP,
-		Port:      json.Port,
-	}
-
-	if err := s.db.Model(&securityGroup).Association("Schedulers").Append(&scheduler); err != nil {
-		return nil, err
-	}
-
-	return s.GetScheduler(scheduler.ID)
-}
-
 func (s *service) DestroyScheduler(id uint) error {
 	if err := s.db.Unscoped().Delete(&model.Scheduler{}, id).Error; err != nil {
 		return err
@@ -70,30 +45,6 @@ func (s *service) UpdateScheduler(id uint, json types.UpdateSchedulerRequest) (*
 	}
 
 	return &scheduler, nil
-}
-
-func (s *service) UpdateSchedulerWithSecurityGroupDomain(id uint, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
-	securityGroup := model.SecurityGroup{
-		Domain: json.SecurityGroupDomain,
-	}
-	if err := s.db.First(&securityGroup).Error; err != nil {
-		return s.UpdateScheduler(id, json)
-	}
-
-	scheduler := model.Scheduler{
-		VIPs:      json.VIPs,
-		IDC:       json.IDC,
-		Location:  json.Location,
-		NetConfig: json.NetConfig,
-		IP:        json.IP,
-		Port:      json.Port,
-	}
-
-	if err := s.db.Model(&securityGroup).Association("Schedulers").Append(&scheduler); err != nil {
-		return nil, err
-	}
-
-	return s.GetScheduler(scheduler.ID)
 }
 
 func (s *service) GetScheduler(id uint) (*model.Scheduler, error) {

@@ -21,6 +21,4 @@ type Scheduler struct {
 	Status             string            `gorm:"type:enum('active', 'inactive');default:'inactive'" json:"status"`
 	SchedulerClusterID *uint
 	SchedulerCluster   SchedulerCluster `json:"-"`
-	SecurityGroupID    *uint
-	SecurityGroup      SecurityGroup `json:"-"`
 }
