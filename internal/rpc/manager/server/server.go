@@ -41,7 +41,7 @@ type proxy struct {
 type ManagerServer interface {
 	GetCDN(context.Context, *manager.GetCDNRequest) (*manager.CDN, error)
 
-	GetScheduler(context.Context, *manager.GetSchedulersRequest) (*manager.Scheduler, error)
+	GetScheduler(context.Context, *manager.GetSchedulerRequest) (*manager.Scheduler, error)
 
 	ListSchedulers(context.Context, *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
 
@@ -52,7 +52,7 @@ func (p *proxy) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manage
 	return p.server.GetCDN(ctx, req)
 }
 
-func (p *proxy) GetScheduler(ctx context.Context, req *manager.GetSchedulersRequest) (*manager.Scheduler, error) {
+func (p *proxy) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	return p.server.GetScheduler(ctx, req)
 }
 

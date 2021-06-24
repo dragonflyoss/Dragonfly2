@@ -23,6 +23,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/rpc"
+	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
@@ -32,7 +33,7 @@ import (
 type ManagerClient interface {
 	GetCDN(context.Context, *manager.GetCDNRequest) (*manager.CDN, error)
 
-	GetScheduler(context.Context, *manager.GetSchedulersRequest) (*manager.Scheduler, error)
+	GetScheduler(context.Context, *manager.GetSchedulerRequest) (*manager.Scheduler, error)
 
 	ListSchedulers(context.Context, *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
 
@@ -40,7 +41,7 @@ type ManagerClient interface {
 }
 
 type managerClient struct {
-	client *manager.ManagerClient
+	client manager.ManagerClient
 }
 
 func New(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (ManagerClient, error) {
@@ -68,7 +69,7 @@ func (mc *managerClient) GetCDN(ctx context.Context, req *manager.GetCDNRequest)
 	return mc.client.GetCDN(ctx, req)
 }
 
-func (mc *managerClient) GetScheduler(ctx context.Context, req *manager.GetSchedulersRequest) (*manager.Scheduler, error) {
+func (mc *managerClient) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	return mc.client.GetScheduler(ctx, req)
 }
 
