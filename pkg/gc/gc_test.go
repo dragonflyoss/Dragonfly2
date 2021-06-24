@@ -260,7 +260,7 @@ func TestGCServe(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mockLogger.EXPECT().Infof(gomock.Eq("GC stop")).Do(func(args ...interface{}) {
+	mockLogger.EXPECT().Infof(gomock.Eq("GC stop")).Do(func(template string, args ...interface{}) {
 		wg.Done()
 	}).Times(1)
 
