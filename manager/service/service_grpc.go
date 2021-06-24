@@ -11,38 +11,31 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type ServiceGRPC interface {
-	GetCDN(context.Context, *manager.GetCDNRequest) (*manager.CDN, error)
-	GetScheduler(context.Context, *manager.GetSchedulerRequest) (*manager.Scheduler, error)
-	ListSchedulers(context.Context, *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
-	KeepAlive(context.Context, *manager.KeepAliveRequest) (*empty.Empty, error)
-}
-
-type serviceGRPC struct {
+type ServiceGRPC struct {
 	db    *database.Database
 	cache *cache.Cache
 }
 
 // Option is a functional option for service
-type GRPCOption func(s *serviceGRPC)
+type GRPCOption func(s *ServiceGRPC)
 
 // WithDatabase set the database client
 func GRPCWithDatabase(database *database.Database) GRPCOption {
-	return func(s *serviceGRPC) {
+	return func(s *ServiceGRPC) {
 		s.db = database
 	}
 }
 
 // WithCache set the cache client
 func GRPCWithCache(cache *cache.Cache) GRPCOption {
-	return func(s *serviceGRPC) {
+	return func(s *ServiceGRPC) {
 		s.cache = cache
 	}
 }
 
 // New returns a new Service instence
-func NewGRPC(options ...GRPCOption) ServiceGRPC {
-	s := &serviceGRPC{}
+func NewGRPC(options ...GRPCOption) *ServiceGRPC {
+	s := &ServiceGRPC{}
 
 	for _, opt := range options {
 		opt(s)
@@ -51,28 +44,28 @@ func NewGRPC(options ...GRPCOption) ServiceGRPC {
 	return s
 }
 
-func (s *serviceGRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
+func (s *ServiceGRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	return nil, nil
 }
 
-func (s *serviceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
+func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	return nil, nil
 }
 
-func (s *serviceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
+func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	return nil, nil
 }
 
-func (s *serviceGRPC) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) (*empty.Empty, error) {
+func (s *ServiceGRPC) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) (*empty.Empty, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

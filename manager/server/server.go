@@ -73,7 +73,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 	return &Server{
 		config:  cfg,
-		service: &grpcService,
+		service: grpcService,
 		restServer: &http.Server{
 			Addr:    cfg.Server.REST.Addr,
 			Handler: router,
