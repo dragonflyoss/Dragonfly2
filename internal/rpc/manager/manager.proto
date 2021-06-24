@@ -19,106 +19,116 @@ syntax = "proto3";
 package manager;
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
 option go_package = "d7y.io/dragonfly/v2/internal/rpc/manager";
 
-message GetSchedulersRequest{
-    // client ip
-    string ip = 1;
-    // client host name
-    string host_name = 2;
-    // json format: {vpcId:xxx,sn:xxx,group:xxx,...}
-    string host_tag = 3;
+enum SourceType {
+  SCHEDULER_SOURCE = 0;
+  CLIENT_SOURCE = 1;
+  CDN_SOURCE = 2;
 }
 
-message SchedulerNodes{
-    // ip:port
-    repeated string addrs = 2;
-    HostInfo client_host = 3;
+message CDNCluster {
+  uint64 id = 1;
+  string name = 2;
+  string bio = 3;
+  map<string, string> config = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
 }
 
-message KeepAliveRequest{
-     // identify servers with hostname
-     string host_name = 1;
-     ResourceType type = 2;
+message SecurityGroup {
+  uint64 id = 1;
+  string name = 2;
+  string bio = 3;
+  string domain = 4;
+  string proxy_domain = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
-message GetClusterConfigRequest{
-    // identify servers with hostname
-    string host_name = 1;
-    ResourceType type = 2;
+message CDN {
+  uint64 id = 1;
+  string host_name = 2;
+  string idc = 3;
+  string location = 4;
+  string ip = 5;
+  int32 port = 6;
+  int32 download_port = 7;
+  string status = 8;
+  uint64 cdn_cluster_id = 9;
+  CDNCluster cdn_cluster = 10;
+  uint64 security_group_id = 11;
+  SecurityGroup security_group = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
 }
 
-message ClientConfig{
-    //......
+message GetCDNRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.uri = true];
 }
 
-message CdnConfig{
-    string cluster_id = 1;
-
-    string cluster_config = 2;
-    int64  cluster_version = 3;
-
-    string instance_config = 4;
-    int64 instance_version = 5;
+message SchedulerCluster {
+  uint64 id = 1;
+  string name = 2;
+  string bio = 3;
+  map<string, string> config = 4;
+  map<string, string> client_config = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
-message SchedulerConfig{
-    string cluster_id = 1;
-
-    string cluster_config = 2;
-    string client_config = 3;
-    int64 cluster_version = 4;
-
-    string instance_config = 5;
-    int64 instance_version = 6;
-
-    repeated ServerInfo cdn_hosts = 7;
+message Scheduler {
+  uint64 id = 1;
+  string host_name = 2;
+  string vips = 3;
+  string idc = 4;
+  string location = 5;
+  map<string, string> net_config = 6;
+  string ip = 7;
+  int32 port = 8;
+  string status = 9;
+  uint64 scheduler_cluster_id = 10;
+  SchedulerCluster scheduler_cluster = 11;
+  uint64 security_group_id = 12;
+  SecurityGroup security_group = 13;
+  repeated CDN cdns = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
 }
 
-message ClusterConfig{
-    oneof config{
-        SchedulerConfig scheduler_config = 2;
-        CdnConfig cdn_config = 3;
-    }
+message GetSchedulerRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.uri = true];
 }
 
-message ServerInfo{
-    HostInfo host_info = 1;
-    int32 rpc_port = 2;
-    int32 down_port = 3;
+message ListSchedulersRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.uri = true];
+  string ip = 3 [(validate.rules).string.ip = true];
+  map<string, string> host_info = 4 [(validate.rules).map.ignore_empty = true];
 }
 
-message HostInfo{
-    string ip = 1;
-    string host_name = 2;
-    // security isolation domain for network
-    string security_domain = 3;
-    map<string, string> proxy_domain = 4;
-    // area|country|province|city|...
-    string location = 5;
-    string idc = 6;
-    string net_topology = 7;
+message ListSchedulersResponse {
+	repeated Scheduler schedulers = 1;
 }
 
-enum ResourceType {
-    Scheduler = 0;
-    Cdn = 1;
+message KeepAliveRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.uri = true];
 }
 
-// Manager System RPC Service
-service Manager{
-    // get scheduler server list, using scene as follows:
-    // 1. scheduler servers are not exist in local config
-    //
-    // 2. connection is fail for all servers from config,
-    // so need retry one times to get latest servers
-    //
-    // 3. manager actively triggers fresh
-    rpc GetSchedulers(GetSchedulersRequest)returns(SchedulerNodes){}
-
-    // keep alive for cdn or scheduler
-    rpc KeepAlive(KeepAliveRequest)returns(google.protobuf.Empty){}
-
-    // get cluster config for cdn or scheduler(client) from manager
-    rpc GetClusterConfig(GetClusterConfigRequest)returns(ClusterConfig){}
+// Manager RPC Service
+service Manager {
+  // Get CDN and CDN cluster configuration
+  rpc GetCDN(GetCDNRequest) returns(CDN);
+  // Get Scheduler and Scheduler cluster configuration
+  rpc GetScheduler(GetSchedulerRequest)returns(Scheduler);
+  // List acitve schedulers configuration
+  rpc ListSchedulers(ListSchedulersRequest)returns(ListSchedulersResponse);
+  // KeepAlive with manager
+  rpc KeepAlive(KeepAliveRequest)returns(google.protobuf.Empty);
 }

@@ -37,23 +37,29 @@ type proxy struct {
 	manager.UnimplementedManagerServer
 }
 
-// see manager.ManagerServer
+// ManagerServer interface
 type ManagerServer interface {
-	GetSchedulers(context.Context, *manager.GetSchedulersRequest) (*manager.SchedulerNodes, error)
+	GetCDN(context.Context, *manager.GetCDNRequest) (*manager.CDN, error)
 
-	KeepAlive(context.Context, *manager.KeepAliveRequest) error
+	GetScheduler(context.Context, *manager.GetSchedulersRequest) (*manager.Scheduler, error)
 
-	GetClusterConfig(ctx context.Context, req *manager.GetClusterConfigRequest) (*manager.ClusterConfig, error)
+	ListSchedulers(context.Context, *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
+
+	KeepAlive(context.Context, *manager.KeepAliveRequest) (*empty.Empty, error)
 }
 
-func (p *proxy) GetSchedulers(ctx context.Context, req *manager.GetSchedulersRequest) (*manager.SchedulerNodes, error) {
-	return p.server.GetSchedulers(ctx, req)
+func (p *proxy) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
+	return p.server.GetCDN(ctx, req)
+}
+
+func (p *proxy) GetScheduler(ctx context.Context, req *manager.GetSchedulersRequest) (*manager.Scheduler, error) {
+	return p.server.GetScheduler(ctx, req)
+}
+
+func (p *proxy) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
+	return p.server.ListSchedulers(ctx, req)
 }
 
 func (p *proxy) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) (*empty.Empty, error) {
-	return new(empty.Empty), p.server.KeepAlive(ctx, req)
-}
-
-func (p *proxy) GetClusterConfig(ctx context.Context, req *manager.GetClusterConfigRequest) (*manager.ClusterConfig, error) {
-	return p.server.GetClusterConfig(ctx, req)
+	return p.server.KeepAlive(ctx, req)
 }
