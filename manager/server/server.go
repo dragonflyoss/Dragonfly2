@@ -21,18 +21,25 @@ import (
 	"net/http"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/service"
 	"golang.org/x/sync/errgroup"
-	// manager server rpc
-	// _ "d7y.io/dragonfly/v2/internal/rpc/manager/server"
+
+	// Initialize manager grpc server
+	_ "d7y.io/dragonfly/v2/internal/rpc/manager/server"
 )
 
 type Server struct {
-	config     *config.Config
-	service    service.Service
+	// Server configuration
+	config *config.Config
+
+	// GRPC service
+	service *service.ServiceGRPC
+
+	// REST server
 	restServer *http.Server
 }
 
@@ -46,23 +53,29 @@ func New(cfg *config.Config) (*Server, error) {
 	// Initialize database
 	cache := cache.New(cfg.Cache)
 
-	// Initialize service
-	service := service.New(
+	// Initialize REST service
+	restService := service.New(
 		service.WithDatabase(db),
 		service.WithCache(cache),
 	)
 
+	// Initialize GRPC service
+	grpcService := service.NewGRPC(
+		service.GRPCWithDatabase(db),
+		service.GRPCWithCache(cache),
+	)
+
 	// Initialize router
-	router, err := initRouter(cfg.Verbose, service)
+	router, err := initRouter(cfg.Verbose, restService)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Server{
 		config:  cfg,
-		service: service,
+		service: &grpcService,
 		restServer: &http.Server{
-			Addr:    cfg.Server.Addr,
+			Addr:    cfg.Server.REST.Addr,
 			Handler: router,
 		},
 	}, nil
@@ -70,16 +83,17 @@ func New(cfg *config.Config) (*Server, error) {
 
 func (s *Server) Serve() error {
 	g := errgroup.Group{}
-	// go func() {
-	// port := s.cfg.Server.Port
-	// err := rpc.StartTCPServer(port, port, s.rpcService)
-	// if err != nil {
-	// logger.Errorf("failed to start manager tcp server: %+v", err)
-	// }
 
-	// s.stop <- struct{}{}
-	// }()
+	// Serve GRPC
+	g.Go(func() error {
+		err := rpc.StartTCPServer(s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End, s.service)
+		if err != nil {
+			logger.Errorf("failed to start manager grpc server: %+v", err)
+		}
+		return nil
+	})
 
+	// Serve REST
 	g.Go(func() error {
 		if err := s.restServer.ListenAndServe(); err != nil {
 			logger.Errorf("failed to start manager rest server: %+v", err)
@@ -88,26 +102,14 @@ func (s *Server) Serve() error {
 		return nil
 	})
 
-	werr := g.Wait()
-
-	return werr
+	return g.Wait()
 }
 
 func (s *Server) Stop() {
-	// if s.ms != nil {
-	// err := s.ms.Close()
-	// if err != nil {
-	// logger.Errorf("failed to stop manager server: %+v", err)
-	// }
+	// Stop GRPC
+	rpc.StopServer()
 
-	// s.ms = nil
-	// }
-
-	// rpc.StopServer()
-
-	// ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
-	// defer cancel()
-
+	// Stop REST
 	err := s.restServer.Shutdown(context.TODO())
 	if err != nil {
 		logger.Errorf("failed to stop manager rest server: %+v", err)

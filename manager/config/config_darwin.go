@@ -4,6 +4,14 @@ package config
 
 var config = Config{
 	Server: &ServerConfig{
-		Addr: ":8080",
+		GRPC: &TCPListenConfig{
+			PortRange: TCPListenPortRange{
+				Start: 65003,
+				End:   65003,
+			},
+		},
+		REST: &RestConfig{
+			Addr: ":8080",
+		},
 	},
 }

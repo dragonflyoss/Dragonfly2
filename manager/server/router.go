@@ -15,7 +15,7 @@ func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
 	}
 
 	r := gin.New()
-	h := handlers.NewHandler(service)
+	h := handlers.New(service)
 
 	// Prometheus
 	p := ginprometheus.NewPrometheus("dragonfly_manager")

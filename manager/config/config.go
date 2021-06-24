@@ -15,7 +15,8 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Addr string `yaml:"addr" mapstructure:"addr"`
+	GRPC *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
+	REST *RestConfig      `yaml:"rest" mapstructure:"rest"`
 }
 
 type MysqlConfig struct {
@@ -42,6 +43,20 @@ type LocalCacheConfig struct {
 	TTL  time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
+type RestConfig struct {
+	Addr string `yaml:"addr" mapstructure:"addr"`
+}
+
+type TCPListenConfig struct {
+	// PortRange stands listen port
+	PortRange TCPListenPortRange `yaml:"port" mapstructure:"port"`
+}
+
+type TCPListenPortRange struct {
+	Start int
+	End   int
+}
+
 func New() *Config {
 	return &config
 }
@@ -61,6 +76,14 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server == nil {
 		return errors.New("empty server config is not specified")
+	}
+
+	if cfg.Server != nil && cfg.Server.GRPC == nil {
+		return errors.New("empty grpc config is not specified")
+	}
+
+	if cfg.Server != nil && cfg.Server.REST == nil {
+		return errors.New("empty rest config is not specified")
 	}
 
 	return nil
