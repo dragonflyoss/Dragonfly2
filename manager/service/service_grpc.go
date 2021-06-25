@@ -68,7 +68,9 @@ func (s *ServiceGRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	cdn := model.CDN{}
-	if err := s.db.Preload("CDNCluster.SecurityGroup").First(&cdn, &model.CDN{HostName: req.HostName}).Error; err != nil {
+	if err := s.db.Preload("CDNCluster.SecurityGroup").First(&cdn, &model.CDN{
+		HostName: req.HostName,
+	}).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
@@ -130,7 +132,11 @@ func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedule
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	scheduler := model.Scheduler{}
-	if err := s.db.Preload("SchedulerCluster.SecurityGroup").Preload("SchedulerCluster.CDNClusters.CDNs").First(&scheduler, &model.Scheduler{HostName: req.HostName}).Error; err != nil {
+	if err := s.db.Preload("SchedulerCluster.SecurityGroup").Preload("SchedulerCluster.CDNClusters.CDNs", &model.CDN{
+		Status: model.CDNStatusActive,
+	}).First(&scheduler, &model.Scheduler{
+		HostName: req.HostName,
+	}).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
@@ -226,7 +232,9 @@ func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSched
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	schedulers := []model.Scheduler{}
-	if err := s.db.Find(&schedulers).Error; err != nil {
+	if err := s.db.Find(&schedulers, &model.Scheduler{
+		Status: model.SchedulerStatusActive,
+	}).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
