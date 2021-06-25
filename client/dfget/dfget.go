@@ -71,12 +71,12 @@ func Download(cfg *config.DfgetConfig, client dfclient.DaemonClient) error {
 			Digest: cfg.Digest,
 			Range:  hdr[headers.Range],
 			Header: hdr,
+			Filter: filter,
 		},
-		Output: output,
-		BizId:  cfg.CallSystem,
-		Filter: filter,
-		Uid:    int64(basic.UserID),
-		Gid:    int64(basic.UserGroup),
+		Output:     output,
+		Callsystem: cfg.CallSystem,
+		Uid:        int64(basic.UserID),
+		Gid:        int64(basic.UserGroup),
 	}
 	var (
 		start = time.Now()
