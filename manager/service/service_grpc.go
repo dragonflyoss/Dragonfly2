@@ -6,6 +6,8 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
+	"d7y.io/dragonfly/v2/manager/model"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -48,7 +50,63 @@ func (s *ServiceGRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	return nil, nil
+
+	cdn := model.CDN{}
+	if err := s.db.First(&cdn, &model.CDN{HostName: req.HostName}).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	cdnCreatedAt, err := ptypes.TimestampProto(cdn.CreatedAt)
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
+	cdnUpdatedAt, err := ptypes.TimestampProto(cdn.UpdatedAt)
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
+	cdnCluster := model.CDNCluster{}
+	if err := s.db.First(&cdnCluster, cdn.CDNClusterID).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	config, err := cdn.CDNCluster.Config.MarshalJSON()
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
+	clusterCreatedAt, err := ptypes.TimestampProto(cdnCluster.CreatedAt)
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
+	clusterUpdatedAt, err := ptypes.TimestampProto(cdnCluster.UpdatedAt)
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
+	return &manager.CDN{
+		Id:           uint64(cdn.ID),
+		HostName:     cdn.HostName,
+		Idc:          cdn.IDC,
+		Location:     cdn.Location,
+		Ip:           cdn.IP,
+		Port:         cdn.Port,
+		DownloadPort: cdn.DownloadPort,
+		Status:       cdn.Status,
+		CdnClusterId: uint64(*cdn.CDNClusterID),
+		CdnCluster: &manager.CDNCluster{
+			Id:        uint64(cdnCluster.ID),
+			Name:      cdnCluster.Name,
+			Bio:       cdnCluster.BIO,
+			Config:    config,
+			CreatedAt: clusterCreatedAt,
+			UpdatedAt: clusterUpdatedAt,
+		},
+		CreatedAt: cdnCreatedAt,
+		UpdatedAt: cdnUpdatedAt,
+	}, nil
 }
 
 func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {

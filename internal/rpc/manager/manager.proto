@@ -34,7 +34,7 @@ message CDNCluster {
   uint64 id = 1;
   string name = 2;
   string bio = 3;
-  map<string, string> config = 4;
+  bytes config = 4;
   uint64 security_group_id = 5;
   SecurityGroup security_group = 6;
   google.protobuf.Timestamp created_at = 7;
@@ -75,8 +75,8 @@ message SchedulerCluster {
   uint64 id = 1;
   string name = 2;
   string bio = 3;
-  map<string, string> config = 4;
-  map<string, string> client_config = 5;
+  bytes config = 4;
+  bytes client_config = 5;
   uint64 security_group_id = 6;
   SecurityGroup security_group = 7;
   google.protobuf.Timestamp created_at = 8;
@@ -89,7 +89,7 @@ message Scheduler {
   string vips = 3;
   string idc = 4;
   string location = 5;
-  map<string, string> net_config = 6;
+  bytes net_config = 6;
   string ip = 7;
   int32 port = 8;
   string status = 9;
