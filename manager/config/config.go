@@ -33,12 +33,22 @@ type MysqlConfig struct {
 }
 
 type RedisConfig struct {
-	Addr     string `yaml:"addr" mapstructure:"addr"`
+	Host     string `yaml:"host" mapstructure:"host"`
+	Port     string `yaml:"port" mapstructure:"port"`
 	Password string `yaml:"password" mapstructure:"password"`
 	DB       int    `yaml:"db" mapstructure:"db"`
 }
 
 type CacheConfig struct {
+	Redis *RedisCacheConfig `yaml:"redis" mapstructure:"redis"`
+	Local *LocalCacheConfig `yaml:"local" mapstructure:"local"`
+}
+
+type RedisCacheConfig struct {
+	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
+}
+
+type LocalCacheConfig struct {
 	Size int           `yaml:"size" mapstructure:"size"`
 	TTL  time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
@@ -70,10 +80,37 @@ func New() *Config {
 				Addr: ":8080",
 			},
 		},
+		Cache: &CacheConfig{
+			Redis: &RedisCacheConfig{
+				TTL: 1 * time.Minute,
+			},
+			Local: &LocalCacheConfig{
+				Size: 10000,
+				TTL:  1 * time.Minute,
+			},
+		},
 	}
 }
 
 func (cfg *Config) Validate() error {
+	if cfg.Cache == nil {
+		return errors.New("empty cache config is not specified")
+	}
+
+	if cfg.Cache != nil {
+		if cfg.Cache.Redis.TTL == 0 {
+			return errors.New("empty redis cache TTL is not specified")
+		}
+
+		if cfg.Cache.Local.Size == 0 {
+			return errors.New("empty local cache size is not specified")
+		}
+
+		if cfg.Cache.Local.TTL == 0 {
+			return errors.New("empty local cache TTL is not specified")
+		}
+	}
+
 	if cfg.Database == nil {
 		return errors.New("empty mysql config is not specified")
 	}

@@ -5,13 +5,15 @@ import (
 
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
 
 type Database struct {
-	*gorm.DB
+	DB  *gorm.DB
+	RDB *redis.Client
 }
 
 func New(cfg *config.Config) (*Database, error) {
@@ -20,7 +22,10 @@ func New(cfg *config.Config) (*Database, error) {
 		return nil, err
 	}
 
-	return &Database{db}, nil
+	return &Database{
+		DB:  db,
+		RDB: NewRedis(cfg.Database.Redis),
+	}, nil
 }
 
 func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
@@ -48,4 +53,12 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+func NewRedis(cfg *config.RedisConfig) *redis.Client {
+	return redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),
+		Password: cfg.Password,
+		DB:       cfg.DB,
+	})
 }

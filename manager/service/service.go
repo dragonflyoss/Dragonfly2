@@ -5,6 +5,8 @@ import (
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
 )
 
 type Service interface {
@@ -54,7 +56,8 @@ type Service interface {
 }
 
 type service struct {
-	db    *database.Database
+	db    *gorm.DB
+	rdb   *redis.Client
 	cache *cache.Cache
 }
 
@@ -64,7 +67,8 @@ type Option func(s *service)
 // WithDatabase set the database client
 func WithDatabase(database *database.Database) Option {
 	return func(s *service) {
-		s.db = database
+		s.db = database.DB
+		s.rdb = database.RDB
 	}
 }
 
