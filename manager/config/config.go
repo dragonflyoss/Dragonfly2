@@ -82,11 +82,11 @@ func New() *Config {
 		},
 		Cache: &CacheConfig{
 			Redis: &RedisCacheConfig{
-				TTL: 1 * time.Minute,
+				TTL: 30 * time.Second,
 			},
 			Local: &LocalCacheConfig{
 				Size: 10000,
-				TTL:  1 * time.Minute,
+				TTL:  30 * time.Second,
 			},
 		},
 	}
