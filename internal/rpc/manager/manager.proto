@@ -19,7 +19,6 @@ syntax = "proto3";
 package manager;
 
 import "google/protobuf/empty.proto";
-import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 
 option go_package = "d7y.io/dragonfly/v2/internal/rpc/manager";
@@ -35,10 +34,7 @@ message CDNCluster {
   string name = 2;
   string bio = 3;
   bytes config = 4;
-  uint64 security_group_id = 5;
   SecurityGroup security_group = 6;
-  google.protobuf.Timestamp created_at = 7;
-  google.protobuf.Timestamp updated_at = 8;
 }
 
 message SecurityGroup {
@@ -47,8 +43,6 @@ message SecurityGroup {
   string bio = 3;
   string domain = 4;
   string proxy_domain = 5;
-  google.protobuf.Timestamp created_at = 6;
-  google.protobuf.Timestamp updated_at = 7;
 }
 
 message CDN {
@@ -60,10 +54,7 @@ message CDN {
   int32 port = 6;
   int32 download_port = 7;
   string status = 8;
-  uint64 cdn_cluster_id = 9;
   CDNCluster cdn_cluster = 10;
-  google.protobuf.Timestamp created_at = 11;
-  google.protobuf.Timestamp updated_at = 12;
 }
 
 message GetCDNRequest {
@@ -77,10 +68,7 @@ message SchedulerCluster {
   string bio = 3;
   bytes config = 4;
   bytes client_config = 5;
-  uint64 security_group_id = 6;
   SecurityGroup security_group = 7;
-  google.protobuf.Timestamp created_at = 8;
-  google.protobuf.Timestamp updated_at = 9;
 }
 
 message Scheduler {
@@ -93,11 +81,8 @@ message Scheduler {
   string ip = 7;
   int32 port = 8;
   string status = 9;
-  uint64 scheduler_cluster_id = 10;
   SchedulerCluster scheduler_cluster = 11;
   repeated CDN cdns = 12;
-  google.protobuf.Timestamp created_at = 13;
-  google.protobuf.Timestamp updated_at = 14;
 }
 
 message GetSchedulerRequest {

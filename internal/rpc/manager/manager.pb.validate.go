@@ -48,32 +48,10 @@ func (m *CDNCluster) Validate() error {
 
 	// no validation rules for Config
 
-	// no validation rules for SecurityGroupId
-
 	if v, ok := interface{}(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CDNClusterValidationError{
 				field:  "SecurityGroup",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CDNClusterValidationError{
-				field:  "CreatedAt",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetUpdatedAt()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CDNClusterValidationError{
-				field:  "UpdatedAt",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -155,26 +133,6 @@ func (m *SecurityGroup) Validate() error {
 
 	// no validation rules for ProxyDomain
 
-	if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SecurityGroupValidationError{
-				field:  "CreatedAt",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetUpdatedAt()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SecurityGroupValidationError{
-				field:  "UpdatedAt",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -255,32 +213,10 @@ func (m *CDN) Validate() error {
 
 	// no validation rules for Status
 
-	// no validation rules for CdnClusterId
-
 	if v, ok := interface{}(m.GetCdnCluster()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CDNValidationError{
 				field:  "CdnCluster",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CDNValidationError{
-				field:  "CreatedAt",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetUpdatedAt()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CDNValidationError{
-				field:  "UpdatedAt",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -447,32 +383,10 @@ func (m *SchedulerCluster) Validate() error {
 
 	// no validation rules for ClientConfig
 
-	// no validation rules for SecurityGroupId
-
 	if v, ok := interface{}(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SchedulerClusterValidationError{
 				field:  "SecurityGroup",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SchedulerClusterValidationError{
-				field:  "CreatedAt",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetUpdatedAt()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SchedulerClusterValidationError{
-				field:  "UpdatedAt",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -561,8 +475,6 @@ func (m *Scheduler) Validate() error {
 
 	// no validation rules for Status
 
-	// no validation rules for SchedulerClusterId
-
 	if v, ok := interface{}(m.GetSchedulerCluster()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SchedulerValidationError{
@@ -586,26 +498,6 @@ func (m *Scheduler) Validate() error {
 			}
 		}
 
-	}
-
-	if v, ok := interface{}(m.GetCreatedAt()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SchedulerValidationError{
-				field:  "CreatedAt",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if v, ok := interface{}(m.GetUpdatedAt()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SchedulerValidationError{
-				field:  "UpdatedAt",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
 	}
 
 	return nil

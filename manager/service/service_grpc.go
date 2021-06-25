@@ -7,7 +7,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/model"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -52,36 +51,11 @@ func (s *ServiceGRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*
 	}
 
 	cdn := model.CDN{}
-	if err := s.db.First(&cdn, &model.CDN{HostName: req.HostName}).Error; err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
-	cdnCreatedAt, err := ptypes.TimestampProto(cdn.CreatedAt)
-	if err != nil {
-		return nil, status.Error(codes.DataLoss, err.Error())
-	}
-
-	cdnUpdatedAt, err := ptypes.TimestampProto(cdn.UpdatedAt)
-	if err != nil {
-		return nil, status.Error(codes.DataLoss, err.Error())
-	}
-
-	cdnCluster := model.CDNCluster{}
-	if err := s.db.First(&cdnCluster, cdn.CDNClusterID).Error; err != nil {
+	if err := s.db.Preload("CDNCluster.SecurityGroup").First(&cdn, &model.CDN{HostName: req.HostName}).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	config, err := cdn.CDNCluster.Config.MarshalJSON()
-	if err != nil {
-		return nil, status.Error(codes.DataLoss, err.Error())
-	}
-
-	clusterCreatedAt, err := ptypes.TimestampProto(cdnCluster.CreatedAt)
-	if err != nil {
-		return nil, status.Error(codes.DataLoss, err.Error())
-	}
-
-	clusterUpdatedAt, err := ptypes.TimestampProto(cdnCluster.UpdatedAt)
 	if err != nil {
 		return nil, status.Error(codes.DataLoss, err.Error())
 	}
@@ -95,17 +69,19 @@ func (s *ServiceGRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*
 		Port:         cdn.Port,
 		DownloadPort: cdn.DownloadPort,
 		Status:       cdn.Status,
-		CdnClusterId: uint64(*cdn.CDNClusterID),
 		CdnCluster: &manager.CDNCluster{
-			Id:        uint64(cdnCluster.ID),
-			Name:      cdnCluster.Name,
-			Bio:       cdnCluster.BIO,
-			Config:    config,
-			CreatedAt: clusterCreatedAt,
-			UpdatedAt: clusterUpdatedAt,
+			Id:     uint64(cdn.CDNCluster.ID),
+			Name:   cdn.CDNCluster.Name,
+			Bio:    cdn.CDNCluster.BIO,
+			Config: config,
+			SecurityGroup: &manager.SecurityGroup{
+				Id:          uint64(cdn.CDNCluster.SecurityGroup.ID),
+				Name:        cdn.CDNCluster.SecurityGroup.Name,
+				Bio:         cdn.CDNCluster.SecurityGroup.BIO,
+				Domain:      cdn.CDNCluster.SecurityGroup.Domain,
+				ProxyDomain: cdn.CDNCluster.SecurityGroup.ProxyDomain,
+			},
 		},
-		CreatedAt: cdnCreatedAt,
-		UpdatedAt: cdnUpdatedAt,
 	}, nil
 }
 
@@ -113,14 +89,109 @@ func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedule
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	return nil, nil
+
+	scheduler := model.Scheduler{}
+	if err := s.db.Preload("SchedulerCluster.SecurityGroup").Preload("SchedulerCluster.CDNClusters.CDNs").First(&scheduler, &model.Scheduler{HostName: req.HostName}).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	schedulerNetConfig, err := scheduler.NetConfig.MarshalJSON()
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
+	schedulerClusterConfig, err := scheduler.SchedulerCluster.Config.MarshalJSON()
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
+	schedulerClusterClientConfig, err := scheduler.SchedulerCluster.ClientConfig.MarshalJSON()
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
+	securityGroup := model.SecurityGroup{}
+	if err := s.db.First(&securityGroup, scheduler.SchedulerCluster.SecurityGroupID).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	var pbCDNs []*manager.CDN
+	for _, cdnCluster := range scheduler.SchedulerCluster.CDNClusters {
+		for _, cdn := range cdnCluster.CDNs {
+			pbCDNs = append(pbCDNs, &manager.CDN{
+				Id:           uint64(cdn.ID),
+				HostName:     cdn.HostName,
+				Idc:          cdn.IDC,
+				Location:     cdn.Location,
+				Ip:           cdn.IP,
+				Port:         cdn.Port,
+				DownloadPort: cdn.DownloadPort,
+				Status:       cdn.Status,
+			})
+		}
+	}
+
+	return &manager.Scheduler{
+		Id:        uint64(scheduler.ID),
+		HostName:  scheduler.HostName,
+		Vips:      scheduler.VIPs,
+		Idc:       scheduler.IDC,
+		Location:  scheduler.Location,
+		NetConfig: schedulerNetConfig,
+		Ip:        scheduler.IP,
+		Port:      scheduler.Port,
+		Status:    scheduler.Status,
+		SchedulerCluster: &manager.SchedulerCluster{
+			Id:           uint64(scheduler.SchedulerCluster.ID),
+			Name:         scheduler.SchedulerCluster.Name,
+			Bio:          scheduler.SchedulerCluster.BIO,
+			Config:       schedulerClusterConfig,
+			ClientConfig: schedulerClusterClientConfig,
+			SecurityGroup: &manager.SecurityGroup{
+				Id:          uint64(scheduler.SchedulerCluster.SecurityGroup.ID),
+				Name:        scheduler.SchedulerCluster.SecurityGroup.Name,
+				Bio:         scheduler.SchedulerCluster.SecurityGroup.BIO,
+				Domain:      scheduler.SchedulerCluster.SecurityGroup.Domain,
+				ProxyDomain: scheduler.SchedulerCluster.SecurityGroup.ProxyDomain,
+			},
+		},
+		Cdns: pbCDNs,
+	}, nil
 }
 
 func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	return nil, nil
+
+	schedulers := []model.Scheduler{}
+	if err := s.db.Where(&model.Scheduler{Status: model.SchedulerStatusActive}).Find(&schedulers).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	var pbSchedulers []*manager.Scheduler
+	for _, scheduler := range schedulers {
+		schedulerNetConfig, err := scheduler.NetConfig.MarshalJSON()
+		if err != nil {
+			return nil, status.Error(codes.DataLoss, err.Error())
+		}
+
+		pbSchedulers = append(pbSchedulers, &manager.Scheduler{
+			Id:        uint64(scheduler.ID),
+			HostName:  scheduler.HostName,
+			Vips:      scheduler.VIPs,
+			Idc:       scheduler.IDC,
+			Location:  scheduler.Location,
+			NetConfig: schedulerNetConfig,
+			Ip:        scheduler.IP,
+			Port:      scheduler.Port,
+			Status:    scheduler.Status,
+		})
+	}
+
+	return &manager.ListSchedulersResponse{
+		Schedulers: pbSchedulers,
+	}, nil
 }
 
 func (s *ServiceGRPC) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) (*empty.Empty, error) {

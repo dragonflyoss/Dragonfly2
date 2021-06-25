@@ -58,7 +58,19 @@ type TCPListenPortRange struct {
 }
 
 func New() *Config {
-	return &config
+	return &Config{
+		Server: &ServerConfig{
+			GRPC: &TCPListenConfig{
+				PortRange: TCPListenPortRange{
+					Start: 65003,
+					End:   65003,
+				},
+			},
+			REST: &RestConfig{
+				Addr: ":8080",
+			},
+		},
+	}
 }
 
 func (cfg *Config) Validate() error {
