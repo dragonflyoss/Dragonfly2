@@ -13,16 +13,16 @@ type Cache struct {
 }
 
 // New cache instance
-func New(cfg *config.CacheConfig) *Cache {
+func New(cfg *config.Config) *Cache {
 	var localCache *cache.TinyLFU
-	if cfg.LocalCache != nil {
-		localCache = cache.NewTinyLFU(cfg.LocalCache.Size, cfg.LocalCache.TTL)
+	if cfg.Cache != nil {
+		localCache = cache.NewTinyLFU(cfg.Cache.Size, cfg.Cache.TTL)
 	}
 
 	// If the attribute TTL of cache.Item(cache's instance) is 0, redis expiration time is 1 hour.
 	// cfg.TTL Set the expiration time of TinyLFU.
 	return &Cache{cache.New(&cache.Options{
-		Redis:      newRedis(cfg.Redis),
+		Redis:      newRedis(cfg.Database.Redis),
 		LocalCache: localCache,
 	})}
 }
@@ -36,5 +36,5 @@ func newRedis(cfg *config.RedisConfig) *redis.Client {
 }
 
 func MakeCacheKey(namespace string, id string) string {
-	return fmt.Sprintf("%s:%s", namespace, id)
+	return fmt.Sprintf("dragonfly_manager:%s:%s", namespace, id)
 }

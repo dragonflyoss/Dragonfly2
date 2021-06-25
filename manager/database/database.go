@@ -15,7 +15,7 @@ type Database struct {
 }
 
 func New(cfg *config.Config) (*Database, error) {
-	db, err := newMyqsl(cfg.Database)
+	db, err := newMyqsl(cfg.Database.Mysql)
 	if err != nil {
 		return nil, err
 	}

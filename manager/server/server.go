@@ -51,7 +51,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize database
-	cache := cache.New(cfg.Cache)
+	cache := cache.New(cfg)
 
 	// Initialize REST service
 	restService := service.New(
