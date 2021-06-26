@@ -34,6 +34,7 @@ type IWorker interface {
 	ReceiveUpdatePieceResult(pr *scheduler2.PieceResult)
 }
 
+// 实现 IWorker 接口
 type Group struct {
 	workerNum  int
 	chanSize   int
@@ -63,12 +64,15 @@ func (wg *Group) Serve() {
 
 	wg.schedulerService.TaskManager.PeerTask.SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
 		status := pt.GetNodeStatus()
+		// 获取peer节点状态
 		if status != types.PeerTaskStatusHealth {
 			//} else if pt.GetNodeStatus() != types.PeerTaskStatusDone{
 			//	return
 		} else if pt.Success || pt.Host.Type == types.HostTypeCdn {
+			// 如果下载成功且对应主机为CDN
 			return
 		} else if pt.GetParent() == nil {
+			// 如果没有父节点，设置状态为需要父亲
 			pt.SetNodeStatus(types.PeerTaskStatusNeedParent)
 		} else {
 			pt.SetNodeStatus(types.PeerTaskStatusNeedCheckNode)

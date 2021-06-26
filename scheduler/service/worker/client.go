@@ -35,6 +35,7 @@ type Client struct {
 	schedulerService *service.SchedulerService
 }
 
+// 每个peer下载任务对应一个客户端
 func NewClient(client scheduler.Scheduler_ReportPieceResultServer, worker IWorker, schedulerService *service.SchedulerService) *Client {
 	c := &Client{
 		client:           client,

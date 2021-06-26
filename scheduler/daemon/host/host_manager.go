@@ -14,47 +14,57 @@
  * limitations under the License.
  */
 
-package manager
+package host
 
 import (
 	"sync"
 
+	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 const (
-	HostLoadCDN  = 10
-	HostLoadPeer = 4
+	CDNHostLoad  = 10
+	PeerHostLoad = 4
 )
 
-type HostManager struct {
-	data *sync.Map
+type manager struct {
+	data sync.Map
 }
 
-func newHostManager() *HostManager {
-	return &HostManager{
-		data: new(sync.Map),
-	}
+func (m *manager) LoadOrStore(uuid string, host *types.Host) (*types.Host, bool) {
+	panic("implement me")
 }
 
-func (m *HostManager) Add(host *types.Host) *types.Host {
-	v, ok := m.data.Load(host.Uuid)
+func newHostManager() daemon.HostMgr {
+	return &manager{}
+}
+
+var _ daemon.HostMgr = (*manager)(nil)
+
+func (m *manager) Store(uuid string, host *types.Host) *types.Host {
+	v, ok := m.data.Load(uuid)
 	if ok {
 		return v.(*types.Host)
 	}
 
 	h := types.Init(host)
-	m.CalculateLoad(h)
+	if host.Type == types.HostTypePeer {
+		host.SetTotalUploadLoad(PeerHostLoad)
+		host.SetTotalDownloadLoad(PeerHostLoad)
+	}
+	host.SetTotalUploadLoad(CDNHostLoad)
+	host.SetTotalDownloadLoad(CDNHostLoad)
 	m.data.Store(host.Uuid, h)
 
 	return h
 }
 
-func (m *HostManager) Delete(uuid string) {
+func (m *manager) Delete(uuid string) {
 	m.data.Delete(uuid)
 }
 
-func (m *HostManager) Get(uuid string) (*types.Host, bool) {
+func (m *manager) Load(uuid string) (*types.Host, bool) {
 	data, ok := m.data.Load(uuid)
 	if !ok {
 		return nil, false
@@ -66,13 +76,4 @@ func (m *HostManager) Get(uuid string) (*types.Host, bool) {
 	}
 
 	return h, true
-}
-
-func (m *HostManager) CalculateLoad(host *types.Host) {
-	if host.Type == types.HostTypePeer {
-		host.SetTotalUploadLoad(HostLoadPeer)
-		host.SetTotalDownloadLoad(HostLoadPeer)
-	}
-	host.SetTotalUploadLoad(HostLoadCDN)
-	host.SetTotalDownloadLoad(HostLoadCDN)
 }

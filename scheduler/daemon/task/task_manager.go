@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package manager
+package task
 
 import (
 	"fmt"
@@ -24,6 +24,9 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/daemon/host"
+	"d7y.io/dragonfly/v2/scheduler/daemon/peer"
+	"d7y.io/dragonfly/v2/scheduler/manager"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
@@ -31,10 +34,10 @@ type TaskManager struct {
 	data        sync.Map
 	gcDelayTime time.Duration
 
-	PeerTask *PeerTask
+	PeerTask *peer.PeerTask
 }
 
-func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
+func newTaskManager(cfg *config.Config, hostManager *host.HostManager) *TaskManager {
 	delay := time.Hour * 48
 	// TODO(Gaius) TaskDelay use the time.Duration
 	if cfg.GC.TaskDelay > 0 {
@@ -45,7 +48,7 @@ func newTaskManager(cfg *config.Config, hostManager *HostManager) *TaskManager {
 		gcDelayTime: delay,
 	}
 
-	peerTask := newPeerTask(cfg, tm, hostManager)
+	peerTask := manager.newPeerTask(cfg, tm, hostManager)
 	tm.PeerTask = peerTask
 
 	go tm.gcWorkingLoop()

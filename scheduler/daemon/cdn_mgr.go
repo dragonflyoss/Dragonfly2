@@ -14,29 +14,13 @@
  * limitations under the License.
  */
 
-package manager
+package daemon
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-type Manager struct {
-	CDNManager  *CDNManager
-	TaskManager *TaskManager
-	HostManager *HostManager
-}
-
-func New(cfg *config.Config, dynconfig config.DynconfigInterface) (*Manager, error) {
-	hostManager := newHostManager()
-	taskManager := newTaskManager(cfg, hostManager)
-	cdnManager, err := newCDNManager(cfg, taskManager, hostManager, dynconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Manager{
-		CDNManager:  cdnManager,
-		TaskManager: taskManager,
-		HostManager: hostManager,
-	}, nil
+type CDNMgr interface {
+	TriggerTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error)
 }

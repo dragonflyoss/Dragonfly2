@@ -24,6 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/internal/rpc/manager/client"
+	service2 "d7y.io/dragonfly/v2/scheduler/server/service"
 
 	// Server registered to grpc
 	_ "d7y.io/dragonfly/v2/internal/rpc/scheduler/server"
@@ -36,7 +37,7 @@ import (
 type Server struct {
 	service       *service.SchedulerService
 	worker        worker.IWorker
-	server        *SchedulerServer
+	server        *service2.SchedulerServer // 提供grpc服务
 	config        config.ServerConfig
 	managerClient client.ManagerClient
 	running       bool
@@ -93,8 +94,9 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	s.worker = worker.NewGroup(cfg, s.service)
-	s.server = NewSchedulerServer(cfg, WithSchedulerService(s.service),
-		WithWorker(s.worker))
+	// 提供GRPC服务
+	s.server = service2.NewSchedulerServer(cfg, service2.WithSchedulerService(s.service),
+		service2.WithWorker(s.worker))
 
 	return s, nil
 }

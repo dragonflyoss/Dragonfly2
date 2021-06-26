@@ -20,34 +20,43 @@ import (
 	"sync"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"go.uber.org/atomic"
 )
 
-type HostType int
+type HostType int32
 
 const (
-	HostTypePeer = 1
-	HostTypeCdn  = 2
+	HostTypePeer = iota + 1
+	HostTypeCdn
 )
 
 type Host struct {
-	scheduler.PeerHost
+	// each time the daemon starts, it will generate a different uuid
+	Uuid string `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	// peer host ip
+	IP string `protobuf:"bytes,2,opt,name=ip,proto3" json:"ip,omitempty"`
+	// rpc service port for peer
+	RpcPort int32 `protobuf:"varint,3,opt,name=rpc_port,json=rpcPort,proto3" json:"rpc_port,omitempty"`
+	// piece downloading port for peer
+	DownloadPort int32 `protobuf:"varint,4,opt,name=down_port,json=downPort,proto3" json:"down_port,omitempty"`
+	// peer host name
+	HostName string `protobuf:"bytes,5,opt,name=host_name,json=hostName,proto3" json:"host_name,omitempty"`
+	// security isolation domain for network
+	SecurityDomain string `protobuf:"bytes,6,opt,name=security_domain,json=securityDomain,proto3" json:"security_domain,omitempty"`
+	// location path: area|country|province|city|...
+	Location string `protobuf:"bytes,7,opt,name=location,proto3" json:"location,omitempty"`
+	// idc where the peer host is located
+	Idc string `protobuf:"bytes,8,opt,name=idc,proto3" json:"idc,omitempty"`
+	// network device path: switch|router|...
+	NetTopology string `protobuf:"bytes,9,opt,name=net_topology,json=netTopology,proto3" json:"net_topology,omitempty"`
 
-	Type        HostType  // peer / cdn
-	peerTaskMap *sync.Map // Pid => PeerTask
+	Type        HostType // peer / cdn
+	peerTaskMap sync.Map // Pid => PeerTask
 	// ProducerLoad is the load of download services provided by the current node.
 	totalUploadLoad     int32
-	currentUploadLoad   int32
+	currentUploadLoad   atomic.Int32
 	totalDownloadLoad   int32
-	currentDownloadLoad int32
-	loadLock            sync.Mutex
-	// ServiceDownTime the down time of the peer service.
-	ServiceDownTime int64
-}
-
-func Init(h *Host) *Host {
-	h.peerTaskMap = &sync.Map{}
-	return h
+	currentDownloadLoad atomic.Int32
 }
 
 func (h *Host) AddPeerTask(peerTask *PeerTask) {
@@ -55,32 +64,25 @@ func (h *Host) AddPeerTask(peerTask *PeerTask) {
 }
 
 func (h *Host) DeletePeerTask(peerTaskID string) {
-	if h == nil || h.peerTaskMap == nil {
-		return
-	}
 	h.peerTaskMap.Delete(peerTaskID)
 }
 
 func (h *Host) GetPeerTaskNum() int32 {
 	count := 0
-	if h.peerTaskMap != nil {
-		h.peerTaskMap.Range(func(key interface{}, value interface{}) bool {
-			count++
-			return true
-		})
-	}
+	h.peerTaskMap.Range(func(key, value interface{}) bool {
+		count++
+		return true
+	})
 	return int32(count)
 }
 
-func (h *Host) GetPeerTask(peerTaskID string) (peerTask *PeerTask) {
-	v, _ := h.peerTaskMap.Load(peerTaskID)
+func (h *Host) GetPeerTask(peerID string) (peerTask *PeerTask) {
+	v, _ := h.peerTaskMap.Load(peerID)
 	peerTask, _ = v.(*PeerTask)
 	return
 }
 
 func (h *Host) SetTotalUploadLoad(load int32) {
-	h.loadLock.Lock()
-	defer h.loadLock.Unlock()
 	h.totalUploadLoad = load
 }
 

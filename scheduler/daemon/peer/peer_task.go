@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package manager
+package peer
 
 import (
 	"bytes"
@@ -30,6 +30,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/pkg/structure/workqueue"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/daemon/host"
+	"d7y.io/dragonfly/v2/scheduler/daemon/task"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"github.com/olekukonko/tablewriter"
 )
@@ -46,12 +48,12 @@ type PeerTask struct {
 	gcDelayTime             time.Duration
 	downloadMonitorQueue    workqueue.DelayingInterface
 	downloadMonitorCallBack func(*types.PeerTask)
-	taskManager             *TaskManager
-	hostManager             *HostManager
+	taskManager             *task.TaskManager
+	hostManager             *host.HostManager
 	verbose                 bool
 }
 
-func newPeerTask(cfg *config.Config, taskManager *TaskManager, hostManager *HostManager) *PeerTask {
+func newPeerTask(cfg *config.Config, taskManager *task.TaskManager, hostManager *host.HostManager) *PeerTask {
 	delay := time.Hour
 	if time.Duration(cfg.GC.PeerTaskDelay)*time.Millisecond > delay {
 		delay = time.Duration(cfg.GC.PeerTaskDelay) * time.Millisecond
@@ -371,6 +373,7 @@ func (m *PeerTask) SetDownloadingMonitorCallBack(callback func(*types.PeerTask))
 	m.downloadMonitorCallBack = callback
 }
 
+// 监听下载情况
 func (m *PeerTask) downloadMonitorWorkingLoop() {
 	for {
 		v, shutdown := m.downloadMonitorQueue.Get()

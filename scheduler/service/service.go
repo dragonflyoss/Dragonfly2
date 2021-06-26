@@ -22,18 +22,25 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/daemon/cdn"
+	"d7y.io/dragonfly/v2/scheduler/daemon/host"
+	"d7y.io/dragonfly/v2/scheduler/daemon/task"
 	"d7y.io/dragonfly/v2/scheduler/manager"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type SchedulerService struct {
-	CDNManager  *manager.CDNManager
-	TaskManager *manager.TaskManager
-	HostManager *manager.HostManager
-	Scheduler   *scheduler.Scheduler
-	config      config.SchedulerConfig
-	ABTest      bool
+	// cdn mgr
+	CDNManager *cdn.CDNManager
+	// task mgr
+	TaskManager *task.TaskManager
+	// host mgr
+	HostManager *host.HostManager
+
+	Scheduler *scheduler.Scheduler
+	config    config.SchedulerConfig
+	ABTest    bool
 }
 
 func NewSchedulerService(cfg *config.Config, dynconfig config.DynconfigInterface) (*SchedulerService, error) {

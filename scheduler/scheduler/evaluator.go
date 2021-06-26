@@ -22,7 +22,7 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/scheduler/manager"
+	"d7y.io/dragonfly/v2/scheduler/daemon/task"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
@@ -37,13 +37,13 @@ type Evaluator interface {
 }
 
 type evaluator struct {
-	taskManager *manager.TaskManager
+	taskManager *task.TaskManager
 }
 
 var _ Evaluator = (*evaluator)(nil)
 
 // WithTaskManager sets task manager.
-func withTaskManager(t *manager.TaskManager) evaluatorOption {
+func withTaskManager(t *task.TaskManager) evaluatorOption {
 	return func(e *evaluator) *evaluator {
 		e.taskManager = t
 		return e

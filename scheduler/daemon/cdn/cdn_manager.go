@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package manager
+package cdn
 
 import (
 	"context"
@@ -29,14 +29,16 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
-
-	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem"
-	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem/client"
+	"d7y.io/dragonfly/v2/scheduler/daemon"
+	"d7y.io/dragonfly/v2/scheduler/daemon/host"
+	"d7y.io/dragonfly/v2/scheduler/daemon/task"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
@@ -49,11 +51,11 @@ type CDNManager struct {
 	lock         sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
 	callbackList map[*types.Task][]*types.PeerTask
-	taskManager  *TaskManager
-	hostManager  *HostManager
+	taskManager  daemon.TaskMgr
+	hostManager  daemon.HostMgr
 }
 
-func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *HostManager, dynconfig config.DynconfigInterface) (*CDNManager, error) {
+func newCDNManager(cfg *config.Config, taskManager *task.TaskManager, hostManager *host.HostManager, dynconfig config.DynconfigInterface) (*CDNManager, error) {
 	mgr := &CDNManager{
 		callbackFns:  make(map[*types.Task]func(*types.PeerTask, *dferrors.DfError)),
 		callbackList: make(map[*types.Task][]*types.PeerTask),
@@ -334,23 +336,24 @@ func (cm *CDNManager) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt 
 }
 
 func (cm *CDNManager) getTinyFileContent(task *types.Task, cdnHost *types.Host) (content []byte, err error) {
-	resp, err := cm.client.GetPieceTasks(context.TODO(), dfnet.NetAddr{Type: dfnet.TCP, Addr: fmt.Sprintf("%s:%d", cdnHost.Ip, cdnHost.RpcPort)}, &base.PieceTaskRequest{
-		TaskId:   task.TaskID,
-		SrcPid:   "scheduler",
-		StartNum: 0,
-		Limit:    2,
-	})
+	resp, err := cm.client.GetPieceTasks(context.TODO(), dfnet.NetAddr{Type: dfnet.TCP, Addr: fmt.Sprintf("%s:%d", cdnHost.IP, cdnHost.RpcPort)},
+		&base.PieceTaskRequest{
+			TaskId:   task.TaskID,
+			SrcPid:   "scheduler",
+			StartNum: 0,
+			Limit:    2,
+		})
 	if err != nil {
 		return
 	}
-	if resp == nil || len(resp.PieceInfos) != 1 || resp.TotalPiece != 1 || resp.ContentLength > TinyFileSize {
+	if len(resp.PieceInfos) != 1 || resp.TotalPiece != 1 || resp.ContentLength > TinyFileSize {
 		err = errors.New("not a tiny file")
 	}
 
 	// TODO download the tiny file
 	// http://host:port/download/{taskId 前3位}/{taskId}?peerId={peerId};
 	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
-		cdnHost.Ip, cdnHost.DownPort, task.TaskID[:3], task.TaskID)
+		cdnHost.IP, cdnHost.DownloadPort, task.TaskID[:3], task.TaskID)
 	client := &http.Client{
 		Timeout: time.Second * 5,
 	}

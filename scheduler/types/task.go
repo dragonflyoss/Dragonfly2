@@ -17,54 +17,43 @@
 package types
 
 import (
-	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly/v2/scheduler/daemon"
 )
 
 type Task struct {
-	TaskID string `json:"task_id,omitempty"`
-	URL    string `json:"url,omitempty"`
-	// regex format, used for task id generator, assimilating different urls
-	Filter string `json:"filter,omitempty"`
-	// biz_id and md5 are used for task id generator to distinguish the same urls
-	// md5 is also used to check consistency about file content
-	BizID   string        `json:"biz_id,omitempty"`   // caller's biz id that can be any string
-	URLMata *base.UrlMeta `json:"url_mata,omitempty"` // downloaded file content md5
-
-	SizeScope   base.SizeScope
-	DirectPiece *scheduler.RegisterResult_PieceContent
-
+	TaskID        string
+	URL           string
+	Filter        string
+	BizID         string
+	URLMata       *base.UrlMeta
+	SizeScope     base.SizeScope
+	DirectPiece   byte[]
 	CreateTime    time.Time
 	LastActive    time.Time
-	rwLock        sync.RWMutex
-	PieceList     map[int32]*Piece // Piece list
-	PieceTotal    int32            // the total number of Pieces, set > 0 when cdn finished
+	PieceList     map[int32]*Piece
+	PieceTotal    int32
 	ContentLength int64
-	Statistic     *metrics.TaskStatistic
-	Removed       bool
+	Statistic     *daemon.TaskStatistic
 	CDNError      *dferrors.DfError
 }
 
 func (t *Task) InitProps() {
 	if t.PieceList == nil {
-		t.PieceList = make(map[int32]*Piece)
 		t.CreateTime = time.Now()
 		t.LastActive = t.CreateTime
 		t.SizeScope = base.SizeScope_NORMAL
-		t.Statistic = &metrics.TaskStatistic{
+		t.Statistic = &daemon.TaskStatistic{
 			StartTime: time.Now(),
 		}
 	}
 }
 
 func (t *Task) GetPiece(pieceNum int32) *Piece {
-	t.rwLock.RLock()
-	defer t.rwLock.RUnlock()
 	return t.PieceList[pieceNum]
 }
 
@@ -84,7 +73,5 @@ func (t *Task) GetOrCreatePiece(pieceNum int32) *Piece {
 }
 
 func (t *Task) AddPiece(p *Piece) {
-	t.rwLock.Lock()
-	defer t.rwLock.Unlock()
 	t.PieceList[p.PieceNum] = p
 }

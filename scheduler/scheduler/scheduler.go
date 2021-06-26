@@ -19,7 +19,7 @@ package scheduler
 import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/manager"
+	"d7y.io/dragonfly/v2/scheduler/daemon/task"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
@@ -28,10 +28,10 @@ type Scheduler struct {
 	abtest           bool
 	ascheduler       string
 	bscheduler       string
-	taskManager      *manager.TaskManager
+	taskManager      *task.TaskManager
 }
 
-func New(cfg config.SchedulerConfig, taskManager *manager.TaskManager) *Scheduler {
+func New(cfg config.SchedulerConfig, taskManager *task.TaskManager) *Scheduler {
 	ef := newEvaluatorFactory(cfg)
 	ef.register("default", newEvaluator(withTaskManager(taskManager)))
 	ef.registerGetEvaluatorFunc(0, func(*types.Task) (string, bool) { return "default", true })

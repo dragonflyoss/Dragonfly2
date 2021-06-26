@@ -18,7 +18,6 @@ package types
 
 import (
 	"errors"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -44,69 +43,45 @@ const (
 )
 
 type PeerTask struct {
-	Pid  string // peer id
-	Task *Task  // task info
-	Host *Host  // host info
-
-	isDown         bool // is leave scheduler
-	lock           sync.Mutex
-	finishedNum    int32 // download finished piece number
-	startTime      int64
-	lastActiveTime int64
+	Pid            string // peer id
+	TaskID         string // task info
+	HostID         string // host info
+	FinishedNum    int32  // downloaded finished piece number
+	StartTime      time.Time
+	LastActiveTime time.Time
 	touch          func(*PeerTask)
-
-	parent          *PeerEdge // primary download provider
-	children        *sync.Map // all primary download consumers
-	subTreeNodesNum int32     // node number of subtree and current node is root of the subtree
+	p2pNode        *P2PNode // primary download provider
+	//subTreeNodesNum int32    // node number of subtree and current node is root of the subtree
 
 	// the client of peer task, which used for send and receive msg
-	client IClient
+	client Client
 
 	Traffic int64
-	Cost    uint32
+	Cost    time.Duration
 	Success bool
 	Code    base.Code
 
-	status  PeerTaskStatus
+	Status  PeerTaskStatus
 	jobData interface{}
 }
 
-type PeerEdge struct {
-	SrcPeerTask *PeerTask // child, consumer
-	DstPeerTask *PeerTask // parent, provider
-	Concurrency int8      // number of thread download from the provider
-	CostHistory []int64   // history of downloading one piece cost from the provider
-}
-
-func (pe *PeerEdge) AddCost(cost int64) {
-	if pe == nil {
-		return
+func NewPeerTask(pid, taskID, hostID string, touch func(*PeerTask)) *PeerTask {
+	return &PeerTask{
+		Pid:            pid,
+		TaskID:         taskID,
+		HostID:         hostID,
+		StartTime:      time.Now(),
+		LastActiveTime: time.Now(),
+		touch:          touch,
+		//subTreeNodesNum: 1,
 	}
-	pe.CostHistory = append(pe.CostHistory, cost)
-	if len(pe.CostHistory) > 20 {
-		pe.CostHistory = pe.CostHistory[1:]
-	}
-}
-
-func NewPeerTask(pid string, task *Task, host *Host, touch func(*PeerTask)) *PeerTask {
-	pt := &PeerTask{
-		Pid:             pid,
-		Task:            task,
-		Host:            host,
-		isDown:          false,
-		startTime:       time.Now().UnixNano(),
-		lastActiveTime:  time.Now().UnixNano(),
-		touch:           touch,
-		children:        new(sync.Map),
-		subTreeNodesNum: 1,
-	}
-	if host != nil {
-		host.AddPeerTask(pt)
-	}
-	pt.Touch()
-	if task != nil {
-		task.Statistic.AddPeerTaskStart()
-	}
+	//if host != nil {
+	//	host.AddPeerTask(pt)
+	//}
+	//pt.Touch()
+	//if task != nil {
+	//	task.Statistic.AddPeerTaskStart()
+	//}
 	return pt
 }
 
@@ -142,7 +117,7 @@ func (pt *PeerTask) AddParent(parent *PeerTask, concurrency int8) {
 	}
 }
 
-func (pt *PeerTask) GetStartTime() int64 {
+func (pt *PeerTask) GetStartTime() time.Duration {
 	return pt.startTime
 }
 
@@ -259,15 +234,6 @@ func (pt *PeerTask) AddPieceStatus(ps *scheduler.PieceResult) {
 		pt.parent.AddCost(int64(ps.EndTime - ps.BeginTime))
 	}
 
-	pt.Touch()
-}
-
-func (pt *PeerTask) IsDown() (ok bool) {
-	return pt.isDown
-}
-
-func (pt *PeerTask) SetDown() {
-	pt.isDown = true
 	pt.Touch()
 }
 

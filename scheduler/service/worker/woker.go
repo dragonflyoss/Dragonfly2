@@ -33,6 +33,7 @@ import (
 
 type JobType int8
 
+// 实现 IWorker 接口
 type Worker struct {
 	scheduleQueue          workqueue.Interface
 	updatePieceResultQueue chan *scheduler2.PieceResult
