@@ -29,7 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"github.com/golang/mock/gomock"
@@ -74,12 +74,12 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	source.Register("http", sourceClient)
 	defer source.UnRegister("http")
 	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.Header) (int64, error) {
+		func(ctx context.Context, url string, headers source.RequestHeader) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
 	sourceClient.EXPECT().Download(gomock.Any(), url, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.Header) (io.ReadCloser, map[string]string, error) {
-			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
+		func(ctx context.Context, url string, headers source.RequestHeader) (io.ReadCloser, error) {
+			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
 	ptm := &peerTaskManager{
@@ -103,7 +103,6 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 			Url:      "http://localhost/test/data",
 			Filter:   "",
 			BizId:    "d7y-test",
-			UrlMata:  nil,
 			PeerId:   peerID,
 			PeerHost: &scheduler.PeerHost{},
 		},
@@ -184,12 +183,12 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.Header{}).DoAndReturn(
-		func(ctx context.Context, url string, header source.Header) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
+		func(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
 			return -1, nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.Header{}).DoAndReturn(
-		func(ctx context.Context, url string, header source.Header) (io.ReadCloser, error) {
+	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
+		func(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
@@ -214,7 +213,6 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			Url:      "http://localhost/test/data",
 			Filter:   "",
 			BizId:    "d7y-test",
-			UrlMata:  nil,
 			PeerId:   peerID,
 			PeerHost: &scheduler.PeerHost{},
 		},

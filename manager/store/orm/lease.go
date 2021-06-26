@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/manager/lease"
 	"d7y.io/dragonfly/v2/manager/store"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"gorm.io/gorm"
 )
 
@@ -27,6 +27,8 @@ type LeaseStore struct {
 	db           *gorm.DB
 	table        string
 }
+
+var _ store.Store = (*LeaseStore)(nil)
 
 func NewLeaseStore(db *gorm.DB, table string) (store.Store, error) {
 	s := &LeaseStore{

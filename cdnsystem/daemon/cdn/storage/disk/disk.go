@@ -17,7 +17,6 @@
 package disk
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,7 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
@@ -111,11 +110,11 @@ func (s *diskStorageMgr) ReadPieceMetaRecords(taskID string) ([]*storage.PieceMe
 		return nil, err
 	}
 	pieceMetaRecords := strings.Split(strings.TrimSpace(string(readBytes)), "\n")
-	var result = make([]*storage.PieceMetaRecord, 0)
+	var result = make([]*storage.PieceMetaRecord, 0, len(pieceMetaRecords))
 	for _, pieceStr := range pieceMetaRecords {
 		record, err := storage.ParsePieceMetaRecord(pieceStr)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get piece meta record: %v", pieceStr)
+			return nil, errors.Wrapf(err, "get piece meta record: %v", pieceStr)
 		}
 		result = append(result, record)
 	}
@@ -151,22 +150,22 @@ func (s *diskStorageMgr) GC() error {
 	return nil
 }
 
-func (s *diskStorageMgr) WriteDownloadFile(taskID string, offset int64, len int64, buf *bytes.Buffer) error {
+func (s *diskStorageMgr) WriteDownloadFile(taskID string, offset int64, len int64, data io.Reader) error {
 	raw := storage.GetDownloadRaw(taskID)
 	raw.Offset = offset
 	raw.Length = len
-	return s.diskDriver.Put(raw, buf)
+	return s.diskDriver.Put(raw, data)
 }
 
 func (s *diskStorageMgr) ReadFileMetaData(taskID string) (*storage.FileMetaData, error) {
 	bytes, err := s.diskDriver.GetBytes(storage.GetTaskMetaDataRaw(taskID))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get metadata bytes")
+		return nil, errors.Wrapf(err, "get metadata bytes")
 	}
 
 	metaData := &storage.FileMetaData{}
 	if err := json.Unmarshal(bytes, metaData); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal metadata bytes")
+		return nil, errors.Wrapf(err, "unmarshal metadata bytes")
 	}
 	return metaData, nil
 }
@@ -174,7 +173,7 @@ func (s *diskStorageMgr) ReadFileMetaData(taskID string) (*storage.FileMetaData,
 func (s *diskStorageMgr) WriteFileMetaData(taskID string, metaData *storage.FileMetaData) error {
 	data, err := json.Marshal(metaData)
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal metadata")
+		return errors.Wrapf(err, "marshal metadata")
 	}
 	return s.diskDriver.PutBytes(storage.GetTaskMetaDataRaw(taskID), data)
 }

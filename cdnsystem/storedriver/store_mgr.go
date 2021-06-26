@@ -37,14 +37,14 @@ func Register(name string, builder DriverBuilder) error {
 	var f = func(conf interface{}) (plugins.Plugin, error) {
 		cfg := &Config{}
 		if err := mapstructure.Decode(conf, cfg); err != nil {
-			return nil, fmt.Errorf("failed to parse config: %v", err)
+			return nil, fmt.Errorf("parse config: %v", err)
 		}
 		// prepare the base dir
 		if !filepath.IsAbs(cfg.BaseDir) {
 			return nil, fmt.Errorf("not absolute path: %s", cfg.BaseDir)
 		}
 		if err := fileutils.MkdirAll(cfg.BaseDir); err != nil {
-			return nil, fmt.Errorf("failed to create baseDir%s: %v", cfg.BaseDir, err)
+			return nil, fmt.Errorf("create baseDir %s: %v", cfg.BaseDir, err)
 		}
 
 		return newDriverPlugin(name, builder, cfg)

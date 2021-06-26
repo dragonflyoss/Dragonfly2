@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/store"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"gorm.io/gorm"
 )
 
@@ -36,6 +36,8 @@ type CDNInstanceStore struct {
 	db           *gorm.DB
 	table        string
 }
+
+var _ store.Store = (*CDNInstanceStore)(nil)
 
 func NewCDNInstanceStore(db *gorm.DB, table string) (store.Store, error) {
 	s := &CDNInstanceStore{

@@ -25,18 +25,18 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/internal/rpc/manager"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
@@ -46,7 +46,7 @@ type CDNManager struct {
 	client       client.CdnClient
 	servers      map[string]*manager.ServerInfo
 	dynconfig    config.DynconfigInterface
-	lock         *sync.RWMutex
+	lock         sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
 	callbackList map[*types.Task][]*types.PeerTask
 	taskManager  *TaskManager
@@ -55,7 +55,6 @@ type CDNManager struct {
 
 func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *HostManager, dynconfig config.DynconfigInterface) (*CDNManager, error) {
 	mgr := &CDNManager{
-		lock:         &sync.RWMutex{},
 		callbackFns:  make(map[*types.Task]func(*types.PeerTask, *dferrors.DfError)),
 		callbackList: make(map[*types.Task][]*types.PeerTask),
 		taskManager:  taskManager,
@@ -249,6 +248,7 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 		server, found := cm.getServer(ps.SeederName)
 		if !found {
 			logger.Errorf("get cdn by SeederName[%s] failed", ps.SeederName)
+			return fmt.Errorf("cdn %s not found", ps.SeederName)
 		}
 
 		host = &types.Host{
@@ -317,7 +317,7 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 }
 
 func (cm *CDNManager) getHostUUID(ps *cdnsystem.PieceSeed) string {
-	return fmt.Sprintf("cdn:%s", ps.PeerId)
+	return fmt.Sprintf("cdn:%s", ps.SeederName)
 }
 
 func (cm *CDNManager) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *types.PeerTask) *types.Piece {

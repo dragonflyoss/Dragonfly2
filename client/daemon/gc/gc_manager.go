@@ -19,7 +19,7 @@ package gc
 import (
 	"time"
 
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 type GC interface {
@@ -35,6 +35,8 @@ type gcManager struct {
 	interval time.Duration
 	done     chan bool
 }
+
+var _ Manager = (*gcManager)(nil)
 
 var allGCTasks = map[string]GC{}
 

@@ -6,6 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/manager/apis/v2/types"
 	"d7y.io/dragonfly/v2/manager/dc"
 	"d7y.io/dragonfly/v2/manager/host"
@@ -13,10 +17,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/lease"
 	"d7y.io/dragonfly/v2/manager/store"
 	"d7y.io/dragonfly/v2/pkg/cache"
-	"d7y.io/dragonfly/v2/pkg/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	rCache "github.com/go-redis/cache/v8"
 )

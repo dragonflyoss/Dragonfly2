@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfpath"
-	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
@@ -45,11 +45,11 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/service"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/internal/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 type PeerHost interface {
@@ -74,6 +74,8 @@ type peerHost struct {
 	PeerTaskManager peer.TaskManager
 	PieceManager    peer.PieceManager
 }
+
+var _ PeerHost = (*peerHost)(nil)
 
 func New(opt *config.PeerHostOption) (PeerHost, error) {
 	host := &scheduler.PeerHost{
@@ -119,7 +121,7 @@ func New(opt *config.PeerHostOption) (PeerHost, error) {
 		return nil, err
 	}
 	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
-		opt.Download.PerPeerRateLimit.Limit)
+		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex)
 	if err != nil {
 		return nil, err
 	}

@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//go:generate mockgen -destination ./mock/mock_storage_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon/mgr/cdn/storage Manager
+//go:generate mockgen -destination ./mock/mock_storage_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage Manager
 
 package storage
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"reflect"
@@ -47,7 +46,7 @@ type Manager interface {
 	StatDownloadFile(taskID string) (*storedriver.StorageInfo, error)
 
 	// WriteDownloadFile
-	WriteDownloadFile(taskID string, offset int64, len int64, buf *bytes.Buffer) error
+	WriteDownloadFile(taskID string, offset int64, len int64, data io.Reader) error
 
 	// ReadDownloadFile
 	ReadDownloadFile(taskID string) (io.ReadCloser, error)
@@ -170,40 +169,40 @@ func (m *managerPlugin) StatDownloadFile(path string) (*storedriver.StorageInfo,
 	return m.instance.StatDownloadFile(path)
 }
 
-func (m *managerPlugin) WriteDownloadFile(s string, i int64, i2 int64, buffer *bytes.Buffer) error {
-	return m.instance.WriteDownloadFile(s, i, i2, buffer)
+func (m *managerPlugin) WriteDownloadFile(taskID string, offset int64, len int64, data io.Reader) error {
+	return m.instance.WriteDownloadFile(taskID, offset, len, data)
 }
 
-func (m *managerPlugin) ReadDownloadFile(s string) (io.ReadCloser, error) {
-	return m.instance.ReadDownloadFile(s)
+func (m *managerPlugin) ReadDownloadFile(taskID string) (io.ReadCloser, error) {
+	return m.instance.ReadDownloadFile(taskID)
 }
 
-func (m *managerPlugin) CreateUploadLink(s string) error {
-	return m.instance.CreateUploadLink(s)
+func (m *managerPlugin) CreateUploadLink(taskID string) error {
+	return m.instance.CreateUploadLink(taskID)
 }
 
-func (m *managerPlugin) ReadFileMetaData(s string) (*FileMetaData, error) {
-	return m.instance.ReadFileMetaData(s)
+func (m *managerPlugin) ReadFileMetaData(taskID string) (*FileMetaData, error) {
+	return m.instance.ReadFileMetaData(taskID)
 }
 
-func (m *managerPlugin) WriteFileMetaData(s string, data *FileMetaData) error {
-	return m.instance.WriteFileMetaData(s, data)
+func (m *managerPlugin) WriteFileMetaData(taskID string, data *FileMetaData) error {
+	return m.instance.WriteFileMetaData(taskID, data)
 }
 
-func (m *managerPlugin) WritePieceMetaRecords(s string, records []*PieceMetaRecord) error {
-	return m.instance.WritePieceMetaRecords(s, records)
+func (m *managerPlugin) WritePieceMetaRecords(taskID string, records []*PieceMetaRecord) error {
+	return m.instance.WritePieceMetaRecords(taskID, records)
 }
 
-func (m *managerPlugin) AppendPieceMetaData(s string, record *PieceMetaRecord) error {
-	return m.instance.AppendPieceMetaData(s, record)
+func (m *managerPlugin) AppendPieceMetaData(taskID string, record *PieceMetaRecord) error {
+	return m.instance.AppendPieceMetaData(taskID, record)
 }
 
-func (m *managerPlugin) ReadPieceMetaRecords(s string) ([]*PieceMetaRecord, error) {
-	return m.instance.ReadPieceMetaRecords(s)
+func (m *managerPlugin) ReadPieceMetaRecords(taskID string) ([]*PieceMetaRecord, error) {
+	return m.instance.ReadPieceMetaRecords(taskID)
 }
 
-func (m *managerPlugin) DeleteTask(s string) error {
-	return m.instance.DeleteTask(s)
+func (m *managerPlugin) DeleteTask(taskID string) error {
+	return m.instance.DeleteTask(taskID)
 }
 
 // ManagerBuilder is a function that creates a new storage manager plugin instant with the giving conf.
@@ -234,11 +233,11 @@ func Register(name string, builder ManagerBuilder) error {
 			Result: cfg,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to create decoder: %v", err)
+			return nil, fmt.Errorf("create decoder: %v", err)
 		}
 		err = decoder.Decode(conf)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse config: %v", err)
+			return nil, fmt.Errorf("parse config: %v", err)
 		}
 		return newManagerPlugin(name, builder, cfg)
 	}
@@ -252,7 +251,7 @@ func newManagerPlugin(name string, builder ManagerBuilder, cfg *Config) (plugins
 
 	instant, err := builder(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init storage manager %s: %v", name, err)
+		return nil, fmt.Errorf("init storage manager %s: %v", name, err)
 	}
 
 	return &managerPlugin{

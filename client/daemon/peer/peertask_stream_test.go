@@ -33,7 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 )
 
 func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
@@ -71,12 +71,12 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.Header{}).DoAndReturn(
-		func(ctx context.Context, url string, headers source.Header) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.RequestHeader) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.Header{}).DoAndReturn(
-		func(ctx context.Context, url string, headers source.Header) (io.ReadCloser, error) {
+	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.RequestHeader) (io.ReadCloser, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
@@ -100,7 +100,6 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		Url:      url,
 		Filter:   "",
 		BizId:    "d7y-test",
-		UrlMata:  nil,
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	}
@@ -127,10 +126,10 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	})
 	pt.(*streamPeerTask).backSource = true
 
-	r, _, err := pt.Start(ctx)
+	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(r)
+	outputBytes, err := ioutil.ReadAll(rc)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }
@@ -170,13 +169,13 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.Header{}).DoAndReturn(
-		func(ctx context.Context, url string, headers source.Header) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.RequestHeader) (int64, error) {
 			return -1, nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.Header{}).DoAndReturn(
-		func(ctx context.Context, url string, headers source.Header) (io.ReadCloser, map[string]string, error) {
-			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil, nil
+	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
+		func(ctx context.Context, url string, headers source.RequestHeader) (io.ReadCloser, error) {
+			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
 	ptm := &peerTaskManager{
@@ -199,7 +198,6 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		Url:      url,
 		Filter:   "",
 		BizId:    "d7y-test",
-		UrlMata:  nil,
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	}
@@ -226,10 +224,10 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	})
 	pt.(*streamPeerTask).backSource = true
 
-	r, _, err := pt.Start(ctx)
+	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(r)
+	outputBytes, err := ioutil.ReadAll(rc)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }

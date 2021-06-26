@@ -28,13 +28,13 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/basic"
-	"d7y.io/dragonfly/v2/pkg/dferrors"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
@@ -189,27 +189,54 @@ func (cfg *ClientOption) checkOutput() error {
 	return nil
 }
 
-// MkdirAll make directories recursive, and change uid, gid to latest directory.
+// MkdirAll make directories recursive, and changes uid, gid to latest directory.
 // For example: the path /data/x exists, uid=1, gid=1
 // when call MkdirAll("/data/x/y/z", 0755, 2, 2)
 // MkdirAll creates /data/x/y and change owner to 2:2, creates /data/x/y/z and change owner to 2:2
 func MkdirAll(dir string, perm os.FileMode, uid, gid int) error {
-	if _, err := os.Stat(strings.TrimRight(dir, "/")); os.IsNotExist(err) {
-		parent, _ := path.Split(dir)
-		err = MkdirAll(strings.TrimRight(parent, "/"), perm, uid, gid)
-		if err != nil && !os.IsExist(err) {
-			logger.Errorf("mkdirall error: %s", err)
+	var (
+		// directories to create
+		dirs []string
+		err  error
+	)
+	subDir := dir
+	// find not exist directories from bottom to top
+	for {
+		if subDir == "" {
+			break
+		}
+		_, err = os.Stat(subDir)
+		// directory exists
+		if err == nil {
+			break
+		}
+		if os.IsNotExist(err) {
+			dirs = append(dirs, subDir)
+		} else {
+			logger.Errorf("stat error: %s", err)
 			return err
 		}
-		err = os.Mkdir(dir, perm)
-		if err != nil && !os.IsExist(err) {
-			logger.Errorf("mkdirall error: %s", err)
-			return err
-		}
-		return os.Chown(dir, uid, gid)
-	} else if err != nil {
-		logger.Errorf("mkdirall error: %s", err)
+		subDir = path.Dir(subDir)
+	}
+
+	// no directory to create
+	if len(dirs) == 0 {
+		return nil
+	}
+
+	err = os.MkdirAll(dir, perm)
+	if err != nil {
+		logger.Errorf("mkdir error: %s", err)
 		return err
+	}
+
+	// update owner from top to bottom
+	for _, d := range dirs {
+		err = os.Chown(d, uid, gid)
+		if err != nil {
+			logger.Errorf("chown error: %s", err)
+			return err
+		}
 	}
 	return nil
 }

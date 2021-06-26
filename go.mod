@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
-	github.com/agiledragon/gomonkey v2.0.2+incompatible // indirect
+	github.com/Jeffail/tunny v0.1.4
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alicebob/miniredis/v2 v2.14.5
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
@@ -51,14 +51,14 @@ require (
 	go.opentelemetry.io/otel/trace v0.20.0
 	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
+	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210309074719-68d13333faf2 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/errgo.v2 v2.1.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776

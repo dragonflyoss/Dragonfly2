@@ -17,7 +17,6 @@
 package manager
 
 import (
-	"sync"
 	"testing"
 
 	"d7y.io/dragonfly/v2/scheduler/types"
@@ -35,7 +34,6 @@ func TestTaskManager_Set(t *testing.T) {
 		{
 			name: "set foo task",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: make(map[string]*types.Task),
 			},
 			key: "foo",
@@ -50,7 +48,6 @@ func TestTaskManager_Set(t *testing.T) {
 		{
 			name: "set empty task",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: make(map[string]*types.Task),
 			},
 			key:  "foo",
@@ -63,7 +60,6 @@ func TestTaskManager_Set(t *testing.T) {
 		{
 			name: "set empty key",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: make(map[string]*types.Task),
 			},
 			key: "",
@@ -96,7 +92,6 @@ func TestTaskManager_Add(t *testing.T) {
 		{
 			name: "add foo task",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: make(map[string]*types.Task),
 			},
 			key: "foo",
@@ -111,7 +106,6 @@ func TestTaskManager_Add(t *testing.T) {
 		{
 			name: "add empty task",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: make(map[string]*types.Task),
 			},
 			key:  "foo",
@@ -124,7 +118,6 @@ func TestTaskManager_Add(t *testing.T) {
 		{
 			name: "add empty key",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: make(map[string]*types.Task),
 			},
 			key: "",
@@ -139,7 +132,6 @@ func TestTaskManager_Add(t *testing.T) {
 		{
 			name: "key already exists",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: map[string]*types.Task{"foo": nil},
 			},
 			key: "foo",
@@ -175,7 +167,6 @@ func TestTaskManager_Get(t *testing.T) {
 		{
 			name: "get existing task",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: map[string]*types.Task{"foo": mockTask},
 			},
 			key: "foo",
@@ -188,7 +179,6 @@ func TestTaskManager_Get(t *testing.T) {
 		{
 			name: "get non-existent task",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: make(map[string]*types.Task),
 			},
 			key: "foo",
@@ -219,7 +209,6 @@ func TestTaskManager_Delete(t *testing.T) {
 		{
 			name: "delete existing task",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: map[string]*types.Task{"foo": nil},
 			},
 			key: "foo",
@@ -231,7 +220,6 @@ func TestTaskManager_Delete(t *testing.T) {
 		{
 			name: "delete non-existent task",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: make(map[string]*types.Task),
 			},
 			key: "foo",
@@ -266,7 +254,6 @@ func TestTaskManager_Touch(t *testing.T) {
 		{
 			name: "touch existing task",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: map[string]*types.Task{"foo": mockTask},
 			},
 			key: "foo",
@@ -279,7 +266,6 @@ func TestTaskManager_Touch(t *testing.T) {
 		{
 			name: "touch non-existent task",
 			taskManager: &TaskManager{
-				lock: new(sync.RWMutex),
 				data: make(map[string]*types.Task),
 			},
 			key: "foo",

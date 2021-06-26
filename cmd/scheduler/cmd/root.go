@@ -20,8 +20,8 @@ import (
 	"os"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/server"
 	"github.com/pkg/errors"

@@ -20,10 +20,10 @@ import (
 	"os"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/server"
-	logger "d7y.io/dragonfly/v2/pkg/dflog"
-	"d7y.io/dragonfly/v2/pkg/dflog/logcore"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"

@@ -62,6 +62,38 @@ func ParseRange(rangeStr string) (r *Range, err error) {
 	}, nil
 }
 
+// ParseRange parses Range according to range string.
+// rangeStr: "bytes=start-end"
+func ParseHTTPRange(rangeStr string) (r *Range, err error) {
+	prefix := "bytes="
+	if !strings.HasPrefix(rangeStr, prefix) || strings.Count(rangeStr, prefix) != 1 {
+		return nil, fmt.Errorf("rangeStr %s not start with bytes=", rangeStr)
+	}
+	rangeStr = strings.Replace(rangeStr, prefix, "", 1)
+	ranges := strings.Split(rangeStr, separator)
+	if len(ranges) != 2 {
+		return nil, fmt.Errorf("range value(%s) is illegal which should be like 0-45535", rangeStr)
+	}
+
+	startIndex, err := strconv.ParseUint(ranges[0], 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("range(%s) start is not a non-negative number", rangeStr)
+	}
+	endIndex, err := strconv.ParseUint(ranges[1], 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("range(%s) end is not a non-negative number", rangeStr)
+	}
+
+	if endIndex < startIndex {
+		return nil, fmt.Errorf("range(%s) start is larger than end", rangeStr)
+	}
+
+	return &Range{
+		StartIndex: startIndex,
+		EndIndex:   endIndex,
+	}, nil
+}
+
 func GetBreakRange(breakPoint int64, sourceFileLength int64) (*Range, error) {
 	if breakPoint < 0 {
 		return nil, fmt.Errorf("breakPoint is illegal for value: %d", breakPoint)
