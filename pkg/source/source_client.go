@@ -27,7 +27,7 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	_ "github.com/golang/mock/mockgen/model"
+	_ "github.com/golang/mock/mockgen/model" //lint:ignore
 )
 
 var _ ResourceClient = (*ClientManagerImpl)(nil)
