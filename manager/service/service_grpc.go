@@ -311,7 +311,7 @@ func (s *ServiceGRPC) CreateScheduler(ctx context.Context, req *manager.CreateSc
 	}, nil
 }
 
-func (s *ServiceGRPC) UpdateScheduler(ctx context.Context, req *manager.CreateSchedulerRequest) (*manager.Scheduler, error) {
+func (s *ServiceGRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
