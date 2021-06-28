@@ -1,4 +1,6 @@
-# Use dfget daemon as registry mirror for cri-containerd
+# Use dfget daemon as registry mirror for Containerd with CRI support
+
+From v1.1.0, Containerd supports registry mirrors, we can configure Containerd via this feature for HA.
 
 ## Quick Start
 
@@ -19,15 +21,28 @@ proxy:
     - regx: blobs/sha256.*
 ```
 
+Run dfget daemon
+
+```shell
+dfget daemon
+```
+
 ## Step 2: Configure Containerd
 
-Then, enable mirrors in containerd registries configuration in
-`/etc/containers/registries.conf`:
+Then, enable mirrors in Containerd registries configuration in
+`/etc/containerd/config.toml`:
 
 ```toml
-[plugins.cri.registry.mirrors."docker.io"]
-  endpoint = ["http://127.0.0.1:65001"]
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+  endpoint = ["http://127.0.0.1:65001","https://registry-1.docker.io"]
 ```
+
+In this config, there is two mirror endpoints for "docker.io", Containerd will pull images with `http://127.0.0.1:65001` first.
+If `http://127.0.0.1:65001` is not available, the default `https://registry-1.docker.io` will be used for HA.
+
+> More details about Containerd configuration: https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/registry.md#configure-registry-endpoint
+
+> Containerd has deprecated the above config from v1.4.0, new format for reference: https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/config.md#registry-configuration
 
 ## Step 3: Restart Containerd Daemon
 

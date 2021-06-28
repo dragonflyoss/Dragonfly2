@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dfdaemon
+  labels:
+    app: dragonfly
+    component: dfdaemon
+spec:
+  selector:
+    matchLabels:
+      app: dragonfly
+      component: dfdaemon
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 10
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: dragonfly
+        component: dfdaemon
+    spec:
+      serviceAccountName: dfdaemon
+      containers:
+      - name: dfdaemon
+        image: dragonflyoss/dfget
+        imagePullPolicy: "Always"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/dragonfly
+        - name: netns # the mountPath is setting in proxy.tcp_listen.namespace
+          mountPath: /host/ns/net
+        ports: # 65001 is in host network, no need here
+        - containerPort: 65000
+        - containerPort: 65002
+        securityContext:
+          capabilities:
+            add:
+            - SYS_ADMIN # setns need CAP_SYS_ADMIN capability
+      volumes:
+      - name: config
+        configMap:
+          name: dfdaemon
+      - name: netns
+        hostPath:
+          path: /proc/1/ns/net # bind mount host net ns to pod, dfdaemon can listen 65001 in host network
