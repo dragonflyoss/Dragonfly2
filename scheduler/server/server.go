@@ -25,6 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/internal/rpc/manager/client"
+	"google.golang.org/grpc"
 
 	// Server registered to grpc
 	_ "d7y.io/dragonfly/v2/internal/rpc/scheduler/server"
@@ -39,7 +40,7 @@ type Server struct {
 	worker        worker.IWorker
 	server        *SchedulerServer
 	config        *config.Config
-	managerClient client.ManagerClient
+	managerClient manager.ManagerClient
 	running       bool
 	dynconfig     config.DynconfigInterface
 }
@@ -53,12 +54,14 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize manager client
-	if len(cfg.Manager.NetAddrs) > 0 {
-		managerClient, err := client.New(cfg.Manager.NetAddrs)
+	var managerConn *grpc.ClientConn
+	if cfg.Manager.Addr != "" {
+		managerConn, err = grpc.Dial(cfg.Manager.Addr, grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
+			logger.Errorf("did not connect: %v", err)
 			return nil, err
 		}
-		s.managerClient = managerClient
+		s.managerClient = manager.NewManagerClient(managerConn)
 	}
 
 	// Initialize dynconfig client
@@ -131,7 +134,6 @@ func (s *Server) Stop() (err error) {
 	if s.running {
 		s.running = false
 		s.dynconfig.Stop()
-		rpc.StopServer()
 	}
 	return
 }

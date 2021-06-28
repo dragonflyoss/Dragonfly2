@@ -35,15 +35,16 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc"
 	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
-	"d7y.io/dragonfly/v2/internal/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 )
 
 type Server struct {
 	Config        *config.Config
 	seedServer    server.SeederServer
-	managerClient client.ManagerClient
+	managerClient manager.ManagerClient
+	managerConn   *grpc.ClientConn
 }
 
 // New creates a brand new server instance.
@@ -88,18 +89,22 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// manager client
-	var managerClient client.ManagerClient
-	if len(cfg.Manager.NetAddrs) > 0 {
-		managerClient, err = client.New(cfg.Manager.NetAddrs)
+	var managerClient manager.ManagerClient
+	var managerConn *grpc.ClientConn
+	if cfg.Manager.Addr != "" {
+		managerConn, err = grpc.Dial(cfg.Manager.Addr, grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
-			return nil, errors.Wrap(err, "create manager service")
+			logger.Errorf("did not connect: %v", err)
+			return nil, err
 		}
+		managerClient = manager.NewManagerClient(managerConn)
 	}
 
 	return &Server{
 		Config:        cfg,
 		seedServer:    cdnSeedServer,
 		managerClient: managerClient,
+		managerConn:   managerConn,
 	}, nil
 }
 
@@ -134,7 +139,7 @@ func (s *Server) Serve() (err error) {
 }
 
 func (s *Server) Stop() {
-	rpc.StopServer()
+	s.managerConn.Close()
 }
 
 func (s *Server) register(ctx context.Context) error {

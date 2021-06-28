@@ -62,8 +62,8 @@ func (c *Config) Validate() error {
 }
 
 type ManagerConfig struct {
-	// NetAddrs is manager addresses.
-	NetAddrs []dfnet.NetAddr `yaml:"netAddrs" mapstructure:"netAddrs"`
+	// Addr is manager address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
 
 	// Keep alive interval
 	KeepAliveInterval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`

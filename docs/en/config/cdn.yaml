@@ -42,9 +42,7 @@ base:
 
   # manager configuration
   manager:
-    netAddrs:
-      - type: tcp
-        addr: 127.0.0.1:65003
+    addr: 127.0.0.1:65003
 
 plugins:
   storageDriver:

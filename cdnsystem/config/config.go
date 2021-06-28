@@ -26,7 +26,6 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"gopkg.in/yaml.v3"
@@ -187,8 +186,8 @@ type BaseProperties struct {
 }
 
 type ManagerConfig struct {
-	// NetAddrs is manager addresses.
-	NetAddrs []dfnet.NetAddr `yaml:"netAddrs" mapstructure:"netAddrs"`
+	// NetAddr is manager address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
 
 	// Keep alive interval
 	KeepAliveInterval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`

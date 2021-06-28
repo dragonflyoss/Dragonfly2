@@ -21,6 +21,7 @@ type ServiceGRPC struct {
 	db    *gorm.DB
 	rdb   *redis.Client
 	cache *cache.Cache
+	manager.UnimplementedManagerServer
 }
 
 // Option is a functional option for service
