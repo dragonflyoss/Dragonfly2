@@ -405,7 +405,7 @@ func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSched
 func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 	req, err := m.Recv()
 	if err != nil {
-		logger.Errorf("Keepalive failed for the first time: %v\n", err)
+		logger.Errorf("Keepalive failed for the first time: %v", err)
 		return err
 	}
 	if err := req.Validate(); err != nil {
@@ -415,7 +415,7 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 	var cachekey string
 	hostName := req.HostName
 	sourceType := req.SourceType
-	logger.Infof("Keepalive successfully for the first time\n", req.HostName)
+	logger.Infof("Keepalive successfully for the first time", req.HostName)
 
 	// Active scheduler
 	if sourceType == manager.SourceType_SCHEDULER_SOURCE {
@@ -430,7 +430,7 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 
 		cachekey = cache.MakeCacheKey("scheduler", hostName)
 		if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
-			logger.Warnf("%s refresh keepalive status failed\n", req.HostName)
+			logger.Warnf("%s refresh keepalive status failed", req.HostName)
 		}
 	}
 
@@ -447,7 +447,7 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 
 		cachekey = cache.MakeCacheKey("cdn", hostName)
 		if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
-			logger.Warnf("%s refresh keepalive status failed\n", req.HostName)
+			logger.Warnf("%s refresh keepalive status failed", req.HostName)
 		}
 	}
 
@@ -467,7 +467,7 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 
 				cachekey = cache.MakeCacheKey("scheduler", hostName)
 				if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
-					logger.Warnf("%s refresh keepalive status failed\n", req.HostName)
+					logger.Warnf("%s refresh keepalive status failed", req.HostName)
 				}
 			}
 
@@ -484,18 +484,18 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 
 				cachekey = cache.MakeCacheKey("cdn", hostName)
 				if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
-					logger.Warnf("%s refresh keepalive status failed\n", req.HostName)
+					logger.Warnf("%s refresh keepalive status failed", req.HostName)
 				}
 			}
 
 			if err == io.EOF {
-				logger.Infof("%s close keepalive\n", hostName)
+				logger.Infof("%s close keepalive", hostName)
 				return nil
 			}
-			logger.Errorf("%s keepalive failed: %v\n", hostName, err)
+			logger.Errorf("%s keepalive failed: %v", hostName, err)
 			return err
 		}
 
-		logger.Debugf("%s send keepalive request\n", hostName)
+		logger.Debugf("%s send keepalive request", hostName)
 	}
 }

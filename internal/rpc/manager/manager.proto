@@ -59,12 +59,12 @@ message CDN {
 
 message GetCDNRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string host_name = 2 [(validate.rules).string.uri = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
 }
 
 message CreateCDNRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string host_name = 2 [(validate.rules).string.uri = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
   string idc = 3 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
   string location = 4 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
   string ip = 5 [(validate.rules).string.ip = true];
@@ -74,7 +74,7 @@ message CreateCDNRequest {
 
 message UpdateCDNRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string host_name = 2 [(validate.rules).string.uri = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
   string idc = 3 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
   string location = 4 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
   string ip = 5 [(validate.rules).string = { ip: true, ignore_empty: true }];
@@ -107,12 +107,12 @@ message Scheduler {
 
 message GetSchedulerRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string host_name = 2 [(validate.rules).string.uri = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
 }
 
 message CreateSchedulerRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string host_name = 2 [(validate.rules).string.uri = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
   string vips = 3 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
   string idc = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
   string location = 5 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
@@ -123,7 +123,7 @@ message CreateSchedulerRequest {
 
 message UpdateSchedulerRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string host_name = 2 [(validate.rules).string.uri = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
   string vips = 3 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
   string idc = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
   string location = 5 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
@@ -134,7 +134,7 @@ message UpdateSchedulerRequest {
 
 message ListSchedulersRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string host_name = 2 [(validate.rules).string.uri = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
   string ip = 3 [(validate.rules).string.ip = true];
   map<string, string> host_info = 4 [(validate.rules).map.ignore_empty = true];
 }
@@ -145,7 +145,7 @@ message ListSchedulersResponse {
 
 message KeepAliveRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string host_name = 2 [(validate.rules).string.uri = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
 }
 
 // Manager RPC Service

@@ -295,16 +295,41 @@ func (m *GetCDNRequest) Validate() error {
 		}
 	}
 
-	if uri, err := url.Parse(m.GetHostName()); err != nil {
+	if err := m._validateHostname(m.GetHostName()); err != nil {
 		return GetCDNRequestValidationError{
 			field:  "HostName",
-			reason: "value must be a valid URI",
+			reason: "value must be a valid hostname",
 			cause:  err,
 		}
-	} else if !uri.IsAbs() {
-		return GetCDNRequestValidationError{
-			field:  "HostName",
-			reason: "value must be absolute",
+	}
+
+	return nil
+}
+
+func (m *GetCDNRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
 		}
 	}
 
@@ -380,16 +405,11 @@ func (m *CreateCDNRequest) Validate() error {
 		}
 	}
 
-	if uri, err := url.Parse(m.GetHostName()); err != nil {
+	if err := m._validateHostname(m.GetHostName()); err != nil {
 		return CreateCDNRequestValidationError{
 			field:  "HostName",
-			reason: "value must be a valid URI",
+			reason: "value must be a valid hostname",
 			cause:  err,
-		}
-	} else if !uri.IsAbs() {
-		return CreateCDNRequestValidationError{
-			field:  "HostName",
-			reason: "value must be absolute",
 		}
 	}
 
@@ -433,6 +453,36 @@ func (m *CreateCDNRequest) Validate() error {
 		return CreateCDNRequestValidationError{
 			field:  "DownloadPort",
 			reason: "value must be inside range [1024, 65535)",
+		}
+	}
+
+	return nil
+}
+
+func (m *CreateCDNRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
 		}
 	}
 
@@ -508,16 +558,11 @@ func (m *UpdateCDNRequest) Validate() error {
 		}
 	}
 
-	if uri, err := url.Parse(m.GetHostName()); err != nil {
+	if err := m._validateHostname(m.GetHostName()); err != nil {
 		return UpdateCDNRequestValidationError{
 			field:  "HostName",
-			reason: "value must be a valid URI",
+			reason: "value must be a valid hostname",
 			cause:  err,
-		}
-	} else if !uri.IsAbs() {
-		return UpdateCDNRequestValidationError{
-			field:  "HostName",
-			reason: "value must be absolute",
 		}
 	}
 
@@ -574,6 +619,36 @@ func (m *UpdateCDNRequest) Validate() error {
 			}
 		}
 
+	}
+
+	return nil
+}
+
+func (m *UpdateCDNRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
 	}
 
 	return nil
@@ -840,16 +915,41 @@ func (m *GetSchedulerRequest) Validate() error {
 		}
 	}
 
-	if uri, err := url.Parse(m.GetHostName()); err != nil {
+	if err := m._validateHostname(m.GetHostName()); err != nil {
 		return GetSchedulerRequestValidationError{
 			field:  "HostName",
-			reason: "value must be a valid URI",
+			reason: "value must be a valid hostname",
 			cause:  err,
 		}
-	} else if !uri.IsAbs() {
-		return GetSchedulerRequestValidationError{
-			field:  "HostName",
-			reason: "value must be absolute",
+	}
+
+	return nil
+}
+
+func (m *GetSchedulerRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
 		}
 	}
 
@@ -927,16 +1027,11 @@ func (m *CreateSchedulerRequest) Validate() error {
 		}
 	}
 
-	if uri, err := url.Parse(m.GetHostName()); err != nil {
+	if err := m._validateHostname(m.GetHostName()); err != nil {
 		return CreateSchedulerRequestValidationError{
 			field:  "HostName",
-			reason: "value must be a valid URI",
+			reason: "value must be a valid hostname",
 			cause:  err,
-		}
-	} else if !uri.IsAbs() {
-		return CreateSchedulerRequestValidationError{
-			field:  "HostName",
-			reason: "value must be absolute",
 		}
 	}
 
@@ -995,6 +1090,36 @@ func (m *CreateSchedulerRequest) Validate() error {
 		return CreateSchedulerRequestValidationError{
 			field:  "Port",
 			reason: "value must be inside range [1024, 65535)",
+		}
+	}
+
+	return nil
+}
+
+func (m *CreateSchedulerRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
 		}
 	}
 
@@ -1072,16 +1197,11 @@ func (m *UpdateSchedulerRequest) Validate() error {
 		}
 	}
 
-	if uri, err := url.Parse(m.GetHostName()); err != nil {
+	if err := m._validateHostname(m.GetHostName()); err != nil {
 		return UpdateSchedulerRequestValidationError{
 			field:  "HostName",
-			reason: "value must be a valid URI",
+			reason: "value must be a valid hostname",
 			cause:  err,
-		}
-	} else if !uri.IsAbs() {
-		return UpdateSchedulerRequestValidationError{
-			field:  "HostName",
-			reason: "value must be absolute",
 		}
 	}
 
@@ -1149,6 +1269,36 @@ func (m *UpdateSchedulerRequest) Validate() error {
 			}
 		}
 
+	}
+
+	return nil
+}
+
+func (m *UpdateSchedulerRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
 	}
 
 	return nil
@@ -1225,16 +1375,11 @@ func (m *ListSchedulersRequest) Validate() error {
 		}
 	}
 
-	if uri, err := url.Parse(m.GetHostName()); err != nil {
+	if err := m._validateHostname(m.GetHostName()); err != nil {
 		return ListSchedulersRequestValidationError{
 			field:  "HostName",
-			reason: "value must be a valid URI",
+			reason: "value must be a valid hostname",
 			cause:  err,
-		}
-	} else if !uri.IsAbs() {
-		return ListSchedulersRequestValidationError{
-			field:  "HostName",
-			reason: "value must be absolute",
 		}
 	}
 
@@ -1247,6 +1392,36 @@ func (m *ListSchedulersRequest) Validate() error {
 
 	if len(m.GetHostInfo()) > 0 {
 
+	}
+
+	return nil
+}
+
+func (m *ListSchedulersRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
 	}
 
 	return nil
@@ -1405,16 +1580,41 @@ func (m *KeepAliveRequest) Validate() error {
 		}
 	}
 
-	if uri, err := url.Parse(m.GetHostName()); err != nil {
+	if err := m._validateHostname(m.GetHostName()); err != nil {
 		return KeepAliveRequestValidationError{
 			field:  "HostName",
-			reason: "value must be a valid URI",
+			reason: "value must be a valid hostname",
 			cause:  err,
 		}
-	} else if !uri.IsAbs() {
-		return KeepAliveRequestValidationError{
-			field:  "HostName",
-			reason: "value must be absolute",
+	}
+
+	return nil
+}
+
+func (m *KeepAliveRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
 		}
 	}
 

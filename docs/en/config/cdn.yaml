@@ -40,6 +40,12 @@ base:
   # storageMode is the Mode of storage policy, [disk/hybrid]
   storageMode: disk
 
+  # manager configuration
+  manager:
+    netAddrs:
+      - type: tcp
+        addr: 127.0.0.1:65003
+
 plugins:
   storageDriver:
     - name: disk
@@ -95,8 +101,3 @@ verbose: false
 # default is random port
 pprofPort: 0
 
-# manager configuration
-manager:
-  netAddrs:
-    - type: tcp
-      addr: "127.0.0.1:65003"

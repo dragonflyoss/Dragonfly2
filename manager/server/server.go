@@ -86,8 +86,11 @@ func (s *Server) Serve() error {
 
 	// Serve GRPC
 	g.Go(func() error {
-		err := rpc.StartTCPServer(s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End, s.service)
-		if err != nil {
+		if err := rpc.StartTCPServer(
+			s.config.Server.GRPC.PortRange.Start,
+			s.config.Server.GRPC.PortRange.End,
+			s.service,
+		); err != nil {
 			logger.Errorf("failed to start manager grpc server: %+v", err)
 		}
 		return nil
