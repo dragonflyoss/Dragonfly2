@@ -66,3 +66,17 @@ crictl harbor.example.com/library/alpine:latest
 ```shell
 crictl pull docker.io/library/alpine:latest
 ```
+
+After pulled images, find logs in dfdaemon pod:
+```shell
+# find pods
+kubectl -n dragonfly get pod -l component=dfdaemon
+# find logs
+pod_name=dfdaemon-xxxxx
+kubectl -n dragonfly exec -it ${pod_name} -- grep "peer task done" /var/log/dragonfly/daemon/core.log
+```
+
+Example output:
+```
+{"level":"info","ts":"2021-06-28 06:02:30.924","caller":"peer/peertask_stream_callback.go:77","msg":"stream peer task done, cost: 2838ms","peer":"172.17.0.9-1-ed7a32ae-3f18-4095-9f54-6ccfc248b16e","task":"3c658c488fd0868847fab30976c2a079d8fd63df148fb3b53fd1a418015723d7","component":"streamPeerTask"}
+```
