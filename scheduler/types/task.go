@@ -17,37 +17,36 @@
 package types
 
 import (
+	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/rpc/base"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/daemon"
 )
 
 type Task struct {
-	TaskID        string
-	URL           string
-	Filter        string
-	BizID         string
-	URLMata       *base.UrlMeta
-	SizeScope     base.SizeScope
-	DirectPiece   byte[]
-	CreateTime    time.Time
-	LastActive    time.Time
-	PieceList     map[int32]*Piece
-	PieceTotal    int32
-	ContentLength int64
-	Statistic     *daemon.TaskStatistic
-	CDNError      *dferrors.DfError
+	TaskID         string
+	URL            string
+	Filter         string
+	BizID          string
+	URLMata        *base.UrlMeta
+	SizeScope      base.SizeScope
+	DirectPiece    []byte
+	CreateTime     time.Time
+	LastAccessTime time.Time
+	PieceList      map[int32]*Piece
+	PieceTotal     int32
+	ContentLength  int64
+	Statistic      *TaskStatistic
+	CDNError       *dferrors.DfError
 }
 
 func (t *Task) InitProps() {
 	if t.PieceList == nil {
 		t.CreateTime = time.Now()
-		t.LastActive = t.CreateTime
+		t.LastAccessTime = t.CreateTime
 		t.SizeScope = base.SizeScope_NORMAL
-		t.Statistic = &daemon.TaskStatistic{
+		t.Statistic = &TaskStatistic{
 			StartTime: time.Now(),
 		}
 	}
@@ -74,4 +73,82 @@ func (t *Task) GetOrCreatePiece(pieceNum int32) *Piece {
 
 func (t *Task) AddPiece(p *Piece) {
 	t.PieceList[p.PieceNum] = p
+}
+
+type TaskStatistic struct {
+	lock          sync.RWMutex
+	StartTime     time.Time
+	EndTime       time.Time
+	PeerCount     int32
+	FinishedCount int32
+	CostList      []int32
+}
+
+type StatisticInfo struct {
+	StartTime     time.Time
+	EndTime       time.Time
+	PeerCount     int32
+	FinishedCount int32
+	Costs         map[int32]int32
+}
+
+func (t *TaskStatistic) SetStartTime(start time.Time) {
+	t.lock.Lock()
+	t.StartTime = start
+	t.lock.Unlock()
+}
+
+func (t *TaskStatistic) SetEndTime(end time.Time) {
+	t.lock.Lock()
+	t.EndTime = end
+	t.lock.Unlock()
+}
+
+func (t *TaskStatistic) AddPeerTaskStart() {
+	t.lock.Lock()
+	t.PeerCount++
+	t.lock.Unlock()
+}
+
+func (t *TaskStatistic) AddPeerTaskDown(cost int32) {
+	t.lock.Lock()
+	t.CostList = append(t.CostList, cost)
+	t.lock.Unlock()
+}
+
+func (t *TaskStatistic) GetStatistic() (info *StatisticInfo) {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+	info = &StatisticInfo{
+		StartTime:     t.StartTime,
+		EndTime:       t.EndTime,
+		PeerCount:     t.PeerCount,
+		FinishedCount: t.FinishedCount,
+		Costs:         make(map[int32]int32),
+	}
+
+	if info.EndTime.IsZero() {
+		info.EndTime = time.Now()
+	}
+
+	count := len(t.CostList)
+	count90 := count * 90 / 100
+	count95 := count * 95 / 100
+
+	totalCost := int64(0)
+
+	for i, cost := range t.CostList {
+		totalCost += int64(cost)
+		switch i {
+		case count90:
+			info.Costs[90] = int32(totalCost / int64(count90))
+		case count95:
+			info.Costs[95] = int32(totalCost / int64(count95))
+		}
+	}
+	if count > 0 {
+		info.Costs[100] = int32(totalCost / int64(count))
+	}
+
+	return
 }

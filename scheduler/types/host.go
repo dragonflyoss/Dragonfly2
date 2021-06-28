@@ -31,6 +31,7 @@ const (
 )
 
 type Host struct {
+	// fixme can remove this uuid, use IP
 	// each time the daemon starts, it will generate a different uuid
 	Uuid string `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
 	// peer host ip
@@ -53,7 +54,7 @@ type Host struct {
 	Type        HostType // peer / cdn
 	peerTaskMap sync.Map // Pid => PeerTask
 	// ProducerLoad is the load of download services provided by the current node.
-	totalUploadLoad     int32
+	TotalUploadLoad     int32
 	currentUploadLoad   atomic.Int32
 	totalDownloadLoad   int32
 	currentDownloadLoad atomic.Int32
