@@ -21,7 +21,6 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"github.com/pkg/errors"
 )
 
@@ -53,8 +52,8 @@ func (c *Config) Validate() error {
 			return errors.New("dynconfig is ManagerSourceType type requires parameter cachePath")
 		}
 
-		if len(c.Dynconfig.NetAddrs) <= 0 {
-			return errors.New("dynconfig is ManagerSourceType type requires parameter netAddrs")
+		if c.Dynconfig.Addr == "" {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter addr")
 		}
 	}
 
@@ -76,8 +75,8 @@ type DynconfigOptions struct {
 	// ExpireTime is expire time for manager cache.
 	ExpireTime time.Duration `yaml:"expireTime" mapstructure:"expireTime"`
 
-	// NetAddrs is dynconfig source addresses.
-	NetAddrs []dfnet.NetAddr `yaml:"netAddrs" mapstructure:"netAddrs"`
+	// Addr is dynconfig source address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
 
 	// Path is dynconfig filepath.
 	Path string `yaml:"path" mapstructure:"path"`

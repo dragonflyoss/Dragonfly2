@@ -28,7 +28,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
-	"d7y.io/dragonfly/v2/internal/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
@@ -148,7 +147,7 @@ func (d *dynconfig) getCDNFromDirPath() ([]*manager.CDN, error) {
 }
 
 type managerClient struct {
-	client.ManagerClient
+	manager.ManagerClient
 }
 
 func (d *dynconfig) Register(l Observer) {
@@ -199,7 +198,7 @@ func (d *dynconfig) Stop() {
 	close(d.done)
 }
 
-func NewManagerClient(client client.ManagerClient) dc.ManagerClient {
+func NewManagerClient(client manager.ManagerClient) dc.ManagerClient {
 	return &managerClient{client}
 }
 

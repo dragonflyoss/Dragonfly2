@@ -24,7 +24,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/internal/rpc"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
-	"d7y.io/dragonfly/v2/internal/rpc/manager/client"
 	"google.golang.org/grpc"
 
 	// Server registered to grpc
@@ -73,13 +72,14 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	if cfg.Dynconfig.Type == dynconfig.ManagerSourceType {
-		client, err := client.New(cfg.Dynconfig.NetAddrs)
+		dynconfigConn, err = grpc.Dial(cfg.Dynconfig.Addr, grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
+			logger.Errorf("did not connect: %v", err)
 			return nil, err
 		}
 
 		options = []dynconfig.Option{
-			dynconfig.WithManagerClient(config.NewManagerClient(client)),
+			dynconfig.WithManagerClient(config.NewManagerClient(manager.NewManagerClient(dynconfigConn))),
 			dynconfig.WithCachePath(cfg.Dynconfig.CachePath),
 			dynconfig.WithExpireTime(cfg.Dynconfig.ExpireTime),
 		}

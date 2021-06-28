@@ -23,16 +23,13 @@ import (
 	"net/http"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/service"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
-
-	// Initialize manager grpc server
-	"d7y.io/dragonfly/v2/internal/rpc/manager"
-	_ "d7y.io/dragonfly/v2/internal/rpc/manager/server"
 )
 
 type Server struct {
