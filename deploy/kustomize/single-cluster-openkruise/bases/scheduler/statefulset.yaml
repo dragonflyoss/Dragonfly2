@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: scheduler
-        image: d7yio/scheduler
+        image: dragonflyoss/scheduler
         imagePullPolicy: "Always"
         ports:
         - containerPort: 8002

@@ -1,12 +1,12 @@
 resources:
 - ../../bases
 images:
-- name: d7yio/cdn
+- name: dragonflyoss/cdn
   newName: sample.com/d7y/cdn
   newTag: latest
-- name: d7yio/dfdaemon
-  newName: sample.com/d7y/dfdaemon
+- name: dragonflyoss/dfget
+  newName: sample.com/d7y/dfget
   newTag: latest
-- name: d7yio/scheduler
+- name: dragonflyoss/scheduler
   newName: sample.com/d7y/scheduler
   newTag: latest

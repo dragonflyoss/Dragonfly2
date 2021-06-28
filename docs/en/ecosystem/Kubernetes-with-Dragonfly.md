@@ -16,18 +16,11 @@ Table of contents:
 If there is no available Kubernetes cluster for testing, [minikube](https://minikube.sigs.k8s.io/docs/start/) is
 recommended. Just run `minikube start`.
 
-Requirements:
-
-1. Host network can connect with other pods
-2. Host network can resolve service in Kubernetes cluster
-
-If your Kubernetes cluster is not ready for those, please open an issue.
-
 ### Build and Apply Kustomize Configuration
 
 ```shell
 git clone https://github.com/dragonflyoss/Dragonfly2.git
-kustomize build Dragonfly2/deploy/kustomize/single-cluster-native | kubectl apply -f -
+kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | kubectl apply -f -
 ```
 
 ### Wait Dragonfly Ready
@@ -35,7 +28,7 @@ kustomize build Dragonfly2/deploy/kustomize/single-cluster-native | kubectl appl
 Wait all pods running
 
 ```
-kubectl -n dragonfly get pod -w
+kubectl -n dragonfly wait --for=condition=ready --all --timeout=10m pod
 ```
 
 ### Configure Runtime

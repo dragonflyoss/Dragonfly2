@@ -26,11 +26,11 @@ configMapGenerator:
   - cdn/nginx.conf
   - cdn/cdn.yaml
 images:
-- name: d7yio/cdn
+- name: dragonflyoss/cdn
   newTag: latest
-- name: d7yio/dfdaemon
+- name: dragonflyoss/dfget
   newTag: latest
-- name: d7yio/scheduler
+- name: dragonflyoss/scheduler
   newTag: latest
 - name: bitnami/kubectl
   newTag: latest

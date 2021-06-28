@@ -117,6 +117,10 @@ proxy:
     cert: ""
     key: ""
   tcp_listen:
+    # Namespace stands the linux net namespace, like /proc/1/ns/net
+    # It's useful for running daemon in pod with ip allocated and listen in host
+    # Linux only
+    namespace: /host/ns/net
     # listen address
     listen: 0.0.0.0
     # listen port, daemon will try to listen

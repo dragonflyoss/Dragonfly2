@@ -12,7 +12,7 @@ spec:
     matchLabels:
       app: dragonfly
       component: cdn
-  replicas: 1
+  replicas: 3
   serviceName: cdn
   template:
     metadata:
@@ -75,7 +75,7 @@ spec:
           cp /etc/dragonfly/nginx.conf /etc/nginx/nginx.conf
           nginx
           exec /opt/dragonfly/df-cdn/cdn
-        image: d7yio/cdn
+        image: dragonflyoss/cdn
         imagePullPolicy: "Always"
         ports:
         - containerPort: 8001

@@ -1,6 +1,7 @@
 #!/bin/bash
 
-root=$(cd .. && dirname $(readlink -f "$0"))
+dir=$(dirname $(readlink -f "$0"))
+root=$(cd "$dir" && cd .. && pwd)
 
 if [[ -z "$root" ]]; then
     exit 1
