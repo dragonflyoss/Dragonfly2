@@ -13,7 +13,7 @@ Organization of document is as following:
     * [TODO manager](./cli-reference/manager.md)
 * [TODO API Reference](#API-Reference)
 * [Ecosystem](#Ecosystem)
-    * [WIP Kubernetes Integration](./ecosystem/Kubernetes-with-Dragonfly.md)
+    * [Kubernetes Integration](./ecosystem/Kubernetes-with-Dragonfly.md)
     * [WIP Harbor Integration](./ecosystem/Harbor-with-Dragonfly.md)
 * [Developer Guide](#Developer-Guide)
     * [Design Doc](#Design-Doc)
@@ -25,7 +25,7 @@ Find `WIP` or `TODO` in this page and follow [CONTRIBUTING](../../CONTRIBUTING.m
 
 ## Quick Start
 
-[TODO Quick Started](./quick-start) is exactly what you need if you would give Dragonfly a try. This document includes what are the prerequisites, how to install Dragonfly and how to experience Dragonfly's usage.
+[Quick Started](./user-guide/quick-start.md) is exactly what you need if you would give Dragonfly a try. This document includes what are the prerequisites, how to install Dragonfly and how to experience Dragonfly's usage.
 
 ## [WIP] User Guide
 
