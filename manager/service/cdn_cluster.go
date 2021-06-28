@@ -138,12 +138,12 @@ func (s *service) AddSchedulerClusterToCDNCluster(id, schedulerClusterID uint) e
 		return err
 	}
 
-	SchedulerCluster := model.SchedulerCluster{}
-	if err := s.db.First(&SchedulerCluster, schedulerClusterID).Error; err != nil {
+	schedulerCluster := model.SchedulerCluster{}
+	if err := s.db.First(&schedulerCluster, schedulerClusterID).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Model(&cdnCluster).Association("SchedulerClusters").Append(&SchedulerCluster); err != nil {
+	if err := s.db.Model(&cdnCluster).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 		return err
 	}
 
