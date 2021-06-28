@@ -38,7 +38,7 @@ type Server struct {
 	service       *service.SchedulerService
 	worker        worker.IWorker
 	server        *SchedulerServer
-	config        config.Config
+	config        *config.Config
 	managerClient client.ManagerClient
 	running       bool
 	dynconfig     config.DynconfigInterface
