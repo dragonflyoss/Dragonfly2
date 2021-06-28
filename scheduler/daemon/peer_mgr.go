@@ -15,3 +15,13 @@
  */
 
 package daemon
+
+import "d7y.io/dragonfly/v2/scheduler/types"
+
+type PeerMgr interface {
+	Add(peer *types.PeerNode)
+
+	Get(peerID string) (*types.PeerNode, bool)
+
+	Delete(peerID string)
+}

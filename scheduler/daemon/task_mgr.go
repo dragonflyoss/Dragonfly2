@@ -19,7 +19,7 @@ package daemon
 import "d7y.io/dragonfly/v2/scheduler/types"
 
 type TaskMgr interface {
-	Store(taskID string, task *types.Task)
+	Add(task *types.Task)
 
 	Load(taskID string) (task *types.Task, ok bool)
 

@@ -22,7 +22,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	scheduler2 "d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/service"
+	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -30,11 +30,11 @@ import (
 type IWorker interface {
 	Serve()
 	Stop()
-	ReceiveJob(job *types.PeerTask)
+	ReceiveJob(job *types.PeerNode)
 	ReceiveUpdatePieceResult(pr *scheduler2.PieceResult)
 }
 
-// 实现 IWorker 接口
+// implements IWorker interface
 type Group struct {
 	workerNum  int
 	chanSize   int
@@ -44,12 +44,12 @@ type Group struct {
 
 	triggerLoadQueue workqueue.Interface
 
-	schedulerService *service.SchedulerService
+	schedulerService *scheduler.SchedulerService
 }
 
 var _ IWorker = (*Group)(nil)
 
-func NewGroup(cfg *config.Config, schedulerService *service.SchedulerService) *Group {
+func NewGroup(cfg *config.Config, schedulerService *scheduler.SchedulerService) *Group {
 	return &Group{
 		workerNum:        cfg.Worker.WorkerNum,
 		chanSize:         cfg.Worker.WorkerJobPoolSize,
@@ -62,10 +62,10 @@ func NewGroup(cfg *config.Config, schedulerService *service.SchedulerService) *G
 func (wg *Group) Serve() {
 	wg.stopCh = make(chan struct{})
 
-	wg.schedulerService.TaskManager.PeerTask.SetDownloadingMonitorCallBack(func(pt *types.PeerTask) {
-		status := pt.GetNodeStatus()
+	wg.schedulerService.TaskManager.PeerTask.SetDownloadingMonitorCallBack(func(pt *types.PeerNode) {
+		status := pt.GetStatus()
 		// 获取peer节点状态
-		if status != types.PeerTaskStatusHealth {
+		if status != types.PeerStatusHealth {
 			//} else if pt.GetNodeStatus() != types.PeerTaskStatusDone{
 			//	return
 		} else if pt.Success || pt.Host.Type == types.HostTypeCdn {
@@ -73,9 +73,9 @@ func (wg *Group) Serve() {
 			return
 		} else if pt.GetParent() == nil {
 			// 如果没有父节点，设置状态为需要父亲
-			pt.SetNodeStatus(types.PeerTaskStatusNeedParent)
+			pt.Status = types.PeerStatusNeedParent
 		} else {
-			pt.SetNodeStatus(types.PeerTaskStatusNeedCheckNode)
+			pt.Status = types.PeerStatusNeedCheckNode
 		}
 		wg.ReceiveJob(pt)
 	})

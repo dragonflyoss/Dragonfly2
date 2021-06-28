@@ -112,6 +112,6 @@ type SchedulerWorkerConfig struct {
 }
 
 type GCConfig struct {
-	PeerTaskDelay int64 `yaml:"peerTaskDelay" mapstructure:"peerTaskDelay"`
-	TaskDelay     int64 `yaml:"taskDelay" mapstructure:"taskDelay"`
+	PeerTaskDelay time.Duration `yaml:"peerTaskDelay" mapstructure:"peerTaskDelay"`
+	TaskDelay     time.Duration `yaml:"taskDelay" mapstructure:"taskDelay"`
 }

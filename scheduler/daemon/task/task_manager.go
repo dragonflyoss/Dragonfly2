@@ -24,47 +24,42 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/daemon/host"
-	"d7y.io/dragonfly/v2/scheduler/daemon/peer"
-	"d7y.io/dragonfly/v2/scheduler/manager"
+	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-type TaskManager struct {
-	data        sync.Map
+type manager struct {
+	taskMap     sync.Map
 	gcDelayTime time.Duration
-
-	PeerTask *peer.PeerTask
+	peerManager daemon.PeerMgr
 }
 
-func newTaskManager(cfg *config.Config, hostManager *host.HostManager) *TaskManager {
-	delay := time.Hour * 48
-	// TODO(Gaius) TaskDelay use the time.Duration
+func newTaskManager(cfg *config.Config, hostManager daemon.HostMgr) daemon.TaskMgr {
+	delay := 48 * time.Hour
 	if cfg.GC.TaskDelay > 0 {
-		delay = time.Duration(cfg.GC.TaskDelay) * time.Millisecond
+		delay = cfg.GC.TaskDelay
 	}
 
-	tm := &TaskManager{
+	tm := &manager{
 		gcDelayTime: delay,
 	}
 
 	peerTask := manager.newPeerTask(cfg, tm, hostManager)
-	tm.PeerTask = peerTask
+	tm.peerManager = peerTask
 
 	go tm.gcWorkingLoop()
 	return tm
 }
 
-func (m *TaskManager) Set(k string, task *types.Task) {
-	m.set(k, task)
+func (m *manager) Add(task types.Task) {
+	m.taskMap.Store(task.TaskID, task)
 }
 
-func (m *TaskManager) set(k string, task *types.Task) {
-	task.InitProps()
-	m.data[k] = task
+func (m *manager) PutIfAbsent() {
+	m.taskMap.LoadOrStore()
 }
 
-func (m *TaskManager) Add(k string, task *types.Task) error {
+func (m *manager) Add(k string, task *types.Task) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -75,31 +70,18 @@ func (m *TaskManager) Add(k string, task *types.Task) error {
 	return nil
 }
 
-func (m *TaskManager) Get(taskID string) (*types.Task, bool) {
-	item, ok := m.data.Load(taskID)
-	return item.(*types.Task), ok
+func (m *manager) Load(taskID string) (types.Task, bool) {
+	item, ok := m.taskMap.Load(taskID)
+	// update last access
+	return item.(types.Task), ok
 }
 
-func (m *TaskManager) Delete(taskID string) {
-	m.data.Delete(taskID)
-}
-
-func (m *TaskManager) Touch(k string) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	m.touch(k)
-	return
-}
-
-func (m *TaskManager) touch(k string) {
-	if t, ok := m.data[k]; ok {
-		t.LastActive = time.Now()
-	}
+func (m *manager) Delete(taskID string) {
+	m.taskMap.Delete(taskID)
 }
 
 // TODO(Gaius) Use client GC manager
-func (m *TaskManager) gcWorkingLoop() {
+func (m *manager) gcWorkingLoop() {
 	for {
 		func() {
 			time.Sleep(time.Hour)
@@ -110,9 +92,9 @@ func (m *TaskManager) gcWorkingLoop() {
 					debug.PrintStack()
 				}
 			}()
-			m.data.Range(func(taskID, task interface{}) bool {
-				if time.Now().After(task.(types.Task).LastActive.Add(m.gcDelayTime)) {
-					m.data.Delete(taskID.(string))
+			m.taskMap.Range(func(taskID, task interface{}) bool {
+				if time.Now().After(task.(types.Task).LastAccessTime.Add(m.gcDelayTime)) {
+					m.taskMap.Delete(taskID.(string))
 				}
 				return true
 			})

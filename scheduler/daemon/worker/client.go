@@ -20,23 +20,21 @@ import (
 	"io"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/rpc/base/common"
-
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/base/common"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/service"
+	scheduler2 "d7y.io/dragonfly/v2/scheduler/scheduler"
 )
 
 type Client struct {
 	client           scheduler.Scheduler_ReportPieceResultServer
 	stop             bool
 	worker           IWorker
-	schedulerService *service.SchedulerService
+	schedulerService *scheduler2.SchedulerService
 }
 
-// 每个peer下载任务对应一个客户端
-func NewClient(client scheduler.Scheduler_ReportPieceResultServer, worker IWorker, schedulerService *service.SchedulerService) *Client {
+func NewClient(client scheduler.Scheduler_ReportPieceResultServer, worker IWorker, schedulerService *scheduler2.SchedulerService) *Client {
 	c := &Client{
 		client:           client,
 		worker:           worker,

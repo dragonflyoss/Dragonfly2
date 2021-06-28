@@ -22,5 +22,5 @@ import (
 )
 
 type CDNMgr interface {
-	TriggerTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error)
+	SeedTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error)
 }

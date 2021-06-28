@@ -17,255 +17,174 @@
 package scheduler
 
 import (
-	"fmt"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/scheduler/daemon/task"
+	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/types"
+
+	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
-type evaluatorOption func(*evaluator) *evaluator
-
 type Evaluator interface {
-	needAdjustParent(peer *types.PeerTask) bool
-	isNodeBad(peer *types.PeerTask) bool
-	evaluate(dst *types.PeerTask, src *types.PeerTask) (float64, error)
-	selectChildCandidates(peer *types.PeerTask) []*types.PeerTask
-	selectParentCandidates(peer *types.PeerTask) []*types.PeerTask
+	NeedAdjustParent(peer *types.PeerTask) bool
+
+	IsNodeBad(peer *types.PeerTask) bool
+
+	Evaluate(dst *types.PeerTask, src *types.PeerTask) (float64, error)
+
+	SelectChildCandidates(peer *types.PeerTask) []*types.PeerTask
+
+	SelectParentCandidates(peer *types.PeerTask) []*types.PeerTask
 }
 
-type evaluator struct {
-	taskManager *task.TaskManager
+type evaluatorFactory struct {
+	lock                         sync.RWMutex
+	evaluators                   map[string]Evaluator
+	getEvaluatorFuncs            map[int]getEvaluatorFunc
+	getEvaluatorFuncPriorityList []getEvaluatorFunc
+	cache                        map[string]Evaluator
+	cacheClearFunc               sync.Once
+	abtest                       bool
+	ascheduler                   string
+	bscheduler                   string
 }
 
-var _ Evaluator = (*evaluator)(nil)
+type getEvaluatorFunc func(taskID string) (string, bool)
 
-// WithTaskManager sets task manager.
-func withTaskManager(t *task.TaskManager) evaluatorOption {
-	return func(e *evaluator) *evaluator {
-		e.taskManager = t
-		return e
+func newEvaluatorFactory(cfg config.SchedulerConfig) *evaluatorFactory {
+	factory := &evaluatorFactory{
+		evaluators:        make(map[string]Evaluator),
+		getEvaluatorFuncs: map[int]getEvaluatorFunc{},
+		cache:             map[string]Evaluator{},
+		abtest:            cfg.ABTest,
+		ascheduler:        cfg.AScheduler,
+		bscheduler:        cfg.BScheduler,
 	}
+	return factory
 }
 
-func newEvaluator(options ...evaluatorOption) Evaluator {
-	return newEvaluatorWithOptions(options...)
-}
+func (ef *evaluatorFactory) get(taskID string) Evaluator {
+	ef.lock.RLock()
 
-// NewEvaluatorWithOptions constructs a new instance of a Evaluator with additional options.
-func newEvaluatorWithOptions(options ...evaluatorOption) Evaluator {
-	evaluator := &evaluator{}
-
-	// Apply all options
-	for _, opt := range options {
-		evaluator = opt(evaluator)
+	evaluator, ok := ef.cache[taskID]
+	if ok {
+		ef.lock.RUnlock()
+		return evaluator
 	}
 
-	return evaluator
-}
-
-func (e *evaluator) needAdjustParent(peer *types.PeerTask) bool {
-	parent := peer.GetParent()
-
-	if parent == nil {
-		return true
-	}
-
-	costHistory := parent.CostHistory
-	if len(costHistory) < 4 {
-		return false
-	}
-
-	avgCost, lastCost := e.getAvgAndLastCost(parent.CostHistory, 4)
-	if avgCost*40 < lastCost {
-		logger.Debugf("IsNodeBad [%s]: node cost is too long", peer.Pid)
-		return true
-	}
-
-	return (avgCost * 20) < lastCost
-}
-
-func (e *evaluator) isNodeBad(peer *types.PeerTask) (result bool) {
-	if peer.IsDown() {
-		logger.Debugf("IsNodeBad [%s]: node is down ", peer.Pid)
-		return true
-	}
-
-	parent := peer.GetParent()
-
-	if parent == nil {
-		return false
-	}
-
-	if peer.IsWaiting() {
-		return false
-	}
-
-	lastActiveTime := peer.GetLastActiveTime()
-	expired := time.Unix(lastActiveTime/int64(time.Second), lastActiveTime%int64(time.Second)).
-		Add(time.Second * 5)
-	if time.Now().After(expired) {
-		logger.Debugf("IsNodeBad [%s]: node is expired", peer.Pid)
-		return true
-	}
-
-	costHistory := parent.CostHistory
-	if int32(len(costHistory)) < 4 {
-		return false
-	}
-
-	avgCost, lastCost := e.getAvgAndLastCost(costHistory, 4)
-
-	if avgCost*40 < lastCost {
-		logger.Debugf("IsNodeBad [%s]: node cost is too long avg[%d] last[%d]", peer.Pid, avgCost, lastCost)
-		return true
-	}
-
-	return false
-}
-
-func (e *evaluator) getAvgAndLastCost(list []int64, splitPostition int) (avgCost, lastCost int64) {
-	length := len(list)
-	totalCost := int64(0)
-	for i, cost := range list {
-		totalCost += int64(cost)
-		if length-i <= splitPostition {
-			lastCost += int64(cost)
-		}
-	}
-
-	avgCost = totalCost / int64(length)
-	lastCost = lastCost / int64(splitPostition)
-	return
-}
-
-func (e *evaluator) selectChildCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
-	if peer == nil {
-		return
-	}
-	e.taskManager.PeerTask.Walker(peer.Task, -1, func(pt *types.PeerTask) bool {
-		if pt == nil || peer.Task != pt.Task {
-			return true
-		}
-		if pt.Pid == peer.Pid {
-			return true
-		} else if pt.IsDown() {
-			return true
-		} else if pt.Success {
-			return true
-		} else if pt.Host.Type == types.HostTypeCdn {
-			return true
-		} else if peer.GetParent() != nil && peer.GetParent().DstPeerTask == pt {
-			return true
-		} else if peer.GetFreeLoad() < 1 {
-			return true
-		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
-			return true
-		} else if pt.GetParent() != nil {
-			return true
-		}
-		list = append(list, pt)
-		if len(list) > 10 {
-			return false
-		}
-		return true
-	})
-	return
-}
-
-func (e *evaluator) selectParentCandidates(peer *types.PeerTask) (list []*types.PeerTask) {
-	if peer == nil {
-		logger.Debugf("peerTask is nil")
-		return
-	}
-	var msg []string
-	e.taskManager.PeerTask.WalkerReverse(peer.Task, -1, func(pt *types.PeerTask) bool {
-		if pt == nil {
-			return true
-		} else if peer.Task != pt.Task {
-			msg = append(msg, fmt.Sprintf("%s task[%s] not same", pt.Pid, pt.Task.TaskID))
-			return true
-		} else if pt.IsDown() {
-			msg = append(msg, fmt.Sprintf("%s is down", pt.Pid))
-			return true
-		} else if pt.Pid == peer.Pid {
-			return true
-		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
-			msg = append(msg, fmt.Sprintf("%s has relation", pt.Pid))
-			return true
-		} else if pt.GetFreeLoad() < 1 {
-			msg = append(msg, fmt.Sprintf("%s no load", pt.Pid))
-			return true
-		}
-		if pt.Success {
-			list = append(list, pt)
+	if ef.abtest {
+		name := ""
+		if strings.HasSuffix(taskID, idgen.TwinsBSuffix) {
+			if ef.bscheduler != "" {
+				name = ef.bscheduler
+			}
 		} else {
-			root := pt.GetRoot()
-			if root != nil && root.Host != nil && root.Host.Type == types.HostTypeCdn {
-				list = append(list, pt)
-			} else {
-				msg = append(msg, fmt.Sprintf("%s not finished and root is not cdn", pt.Pid))
+			if ef.ascheduler != "" {
+				name = ef.ascheduler
 			}
 		}
-		if len(list) > 10 {
-			return false
+		if name != "" {
+			evaluator, ok = ef.evaluators[name]
+			if ok {
+				ef.lock.RUnlock()
+				ef.lock.Lock()
+				ef.cache[taskID] = evaluator
+				ef.lock.Unlock()
+				return evaluator
+			}
 		}
-		return true
+	}
+
+	for _, fun := range ef.getEvaluatorFuncPriorityList {
+		name, ok := fun(taskID)
+		if !ok {
+			continue
+		}
+		evaluator, ok = ef.evaluators[name]
+		if !ok {
+			continue
+		}
+
+		ef.lock.RUnlock()
+		ef.lock.Lock()
+		ef.cache[taskID] = evaluator
+		ef.lock.Unlock()
+		return evaluator
+	}
+	return nil
+}
+
+func (ef *evaluatorFactory) clearCache() {
+	ef.lock.Lock()
+	ef.cache = make(map[string]Evaluator)
+	ef.lock.Unlock()
+}
+
+func (ef *evaluatorFactory) add(name string, evaluator Evaluator) {
+	ef.lock.Lock()
+	ef.evaluators[name] = evaluator
+	ef.lock.Unlock()
+}
+
+func (ef *evaluatorFactory) addGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
+	ef.lock.Lock()
+	defer ef.lock.Unlock()
+	_, ok := ef.getEvaluatorFuncs[priority]
+	if ok {
+		return
+	}
+	ef.getEvaluatorFuncs[priority] = fun
+	var priorities []int
+	for p := range ef.getEvaluatorFuncs {
+		priorities = append(priorities, p)
+	}
+	sort.Ints(priorities)
+	ef.getEvaluatorFuncPriorityList = ef.getEvaluatorFuncPriorityList[:0]
+	for i := len(priorities) - 1; i >= 0; i-- {
+		ef.getEvaluatorFuncPriorityList = append(ef.getEvaluatorFuncPriorityList, ef.getEvaluatorFuncs[priorities[i]])
+	}
+
+}
+
+func (ef *evaluatorFactory) deleteGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
+	ef.lock.Lock()
+
+	delete(ef.getEvaluatorFuncs, priority)
+
+	var priorities []int
+	for p := range ef.getEvaluatorFuncs {
+		priorities = append(priorities, p)
+	}
+	sort.Ints(priorities)
+	ef.getEvaluatorFuncPriorityList = ef.getEvaluatorFuncPriorityList[:0]
+	for i := len(priorities) - 1; i >= 0; i-- {
+		ef.getEvaluatorFuncPriorityList = append(ef.getEvaluatorFuncPriorityList, ef.getEvaluatorFuncs[priorities[i]])
+	}
+
+	ef.lock.Unlock()
+}
+
+func (ef *evaluatorFactory) register(name string, evaluator Evaluator) {
+	ef.cacheClearFunc.Do(func() {
+		go safe.Call(func() {
+			tick := time.NewTicker(time.Hour)
+			for {
+				select {
+				case <-tick.C:
+					ef.clearCache()
+				}
+			}
+		})
 	})
-	if len(list) == 0 {
-		logger.Debugf("[%s][%s] scheduler failed: \n%s", peer.Task.TaskID, peer.Pid, strings.Join(msg, "\n"))
-	}
-
-	return
+	ef.add(name, evaluator)
+	ef.clearCache()
 }
 
-func (e *evaluator) evaluate(dst *types.PeerTask, src *types.PeerTask) (result float64, error error) {
-	profits := e.getProfits(dst, src)
-
-	load, err := e.getHostLoad(dst.Host)
-	if err != nil {
-		return
-	}
-
-	dist, err := e.getDistance(dst, src)
-	if err != nil {
-		return
-	}
-
-	result = profits * load * dist
-	return
-}
-
-// GetProfits 0.0~unlimited larger and better
-func (e *evaluator) getProfits(dst *types.PeerTask, src *types.PeerTask) float64 {
-	diff := src.GetDiffPieceNum(dst)
-	deep := dst.GetDeep()
-
-	return float64((diff+1)*src.GetSubTreeNodesNum()) / float64(deep*deep)
-}
-
-// GetHostLoad 0.0~1.0 larger and better
-func (e *evaluator) getHostLoad(host *types.Host) (load float64, err error) {
-	load = 1.0 - host.GetUploadLoadPercent()
-	return
-}
-
-// GetDistance 0.0~1.0 larger and better
-func (e *evaluator) getDistance(dst *types.PeerTask, src *types.PeerTask) (dist float64, err error) {
-	hostDist := 40.0
-	if dst.Host == src.Host {
-		hostDist = 0.0
-	} else if dst.Host != nil && src.Host != nil {
-		if dst.Host.NetTopology == src.Host.NetTopology && src.Host.NetTopology != "" {
-			hostDist = 10.0
-		} else if dst.Host.Idc == src.Host.Idc && src.Host.Idc != "" {
-			hostDist = 20.0
-		} else if dst.Host.SecurityDomain != src.Host.SecurityDomain {
-			hostDist = 80.0
-		}
-	}
-
-	return 1.0 - hostDist/80.0, nil
+func (ef *evaluatorFactory) registerGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
+	ef.addGetEvaluatorFunc(priority, fun)
+	ef.clearCache()
 }

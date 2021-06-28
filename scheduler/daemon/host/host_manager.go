@@ -29,51 +29,41 @@ const (
 )
 
 type manager struct {
-	data sync.Map
+	hostMap sync.Map
 }
 
-func (m *manager) LoadOrStore(uuid string, host *types.Host) (*types.Host, bool) {
-	panic("implement me")
-}
+var _ daemon.HostMgr = (*manager)(nil)
 
 func newHostManager() daemon.HostMgr {
 	return &manager{}
 }
 
-var _ daemon.HostMgr = (*manager)(nil)
-
-func (m *manager) Store(uuid string, host *types.Host) *types.Host {
-	v, ok := m.data.Load(uuid)
-	if ok {
-		return v.(*types.Host)
-	}
-
-	h := types.Init(host)
+func (m *manager) Add(host *types.Host) {
 	if host.Type == types.HostTypePeer {
 		host.SetTotalUploadLoad(PeerHostLoad)
 		host.SetTotalDownloadLoad(PeerHostLoad)
 	}
 	host.SetTotalUploadLoad(CDNHostLoad)
 	host.SetTotalDownloadLoad(CDNHostLoad)
-	m.data.Store(host.Uuid, h)
-
-	return h
+	m.hostMap.Store(host.UUID, host)
 }
 
 func (m *manager) Delete(uuid string) {
-	m.data.Delete(uuid)
+	m.hostMap.Delete(uuid)
 }
 
-func (m *manager) Load(uuid string) (*types.Host, bool) {
-	data, ok := m.data.Load(uuid)
+func (m *manager) Get(uuid string) (*types.Host, bool) {
+	host, ok := m.hostMap.Load(uuid)
 	if !ok {
 		return nil, false
 	}
+	return host.(*types.Host), true
+}
 
-	h, ok := data.(*types.Host)
-	if !ok {
-		return nil, false
+func (m *manager) GetOrAdd(uuid string, host *types.Host) (*types.Host, bool) {
+	item, loaded := m.hostMap.LoadOrStore(uuid, host)
+	if loaded {
+		return item.(*types.Host), true
 	}
-
-	return h, true
+	return host, false
 }

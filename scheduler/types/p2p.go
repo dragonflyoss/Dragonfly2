@@ -16,7 +16,11 @@
 
 package types
 
-import "time"
+import (
+	"time"
+
+	"d7y.io/dragonfly/v2/internal/rpc/base"
+)
 
 type P2PEdge struct {
 	parent *P2PNode // parent, provider
@@ -33,15 +37,15 @@ func (pe *P2PEdge) AddCost(cost int64) {
 	}
 }
 
-type P2PNode struct {
-	PeerID      string
-	HostID      string
-	Parent      *P2PNode
-	Children    []*P2PNode
-	Concurrency int8    // number of thread download from the node
-	CostHistory []int64 // history of downloading one piece cost from the provider
-	Leaf        bool
-}
+//type P2PNode struct {
+//	PeerID      string
+//	HostID      string
+//	Parent      *P2PNode
+//	Children    []*P2PNode
+//	Concurrency int8    // number of thread download from the node
+//	CostHistory []int64 // history of downloading one piece cost from the provider
+//	Leaf        bool
+//}
 
 func (node *P2PNode) HasParent() bool {
 	return node.Parent != nil
@@ -50,3 +54,27 @@ func (node *P2PNode) HasParent() bool {
 func (node *P2PNode) HistoryCost() time.Duration {
 
 }
+
+//
+//type PeerNode struct {
+//	Pid            string // peer id
+//	TaskID         string // task info
+//	HostID         string // host info
+//	FinishedNum    int32  // downloaded finished piece number
+//	StartTime      time.Time
+//	LastActiveTime time.Time
+//	touch          func(*PeerTask)
+//	p2pNode        *P2PNode // primary download provider
+//	//subTreeNodesNum int32    // node number of subtree and current node is root of the subtree
+//
+//	// the client of peer task, which used for send and receive msg
+//	client Client
+//
+//	Traffic int64
+//	Cost    time.Duration
+//	Success bool
+//	Code    base.Code
+//
+//	Status  PeerTaskStatus
+//	jobData interface{}
+//}

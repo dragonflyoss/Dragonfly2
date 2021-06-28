@@ -30,6 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem/client"
+	managerRPC "d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/safe"
@@ -43,19 +44,21 @@ const TinyFileSize = 128
 
 type manager struct {
 	client        client.CdnClient
-	servers       map[string]*manager.ServerInfo
+	servers       map[string]*managerRPC.ServerInfo
 	dynamicConfig config.DynconfigInterface
 	lock          sync.RWMutex
-	callbackFns   map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
-	callbackList  map[*types.Task][]*types.PeerTask
+	callbackFns   map[string]func(*types.PeerTask, *dferrors.DfError)
+	callbackList  map[string][]*types.PeerTask
 	taskManager   daemon.TaskMgr
 	hostManager   daemon.HostMgr
 }
 
+var _ config.Observer = (*manager)(nil)
+
 func newManager(taskManager daemon.TaskMgr, hostManager daemon.HostMgr, dynamicConfig config.DynconfigInterface) (daemon.CDNMgr, error) {
 	mgr := &manager{
-		callbackFns:   make(map[*types.Task]func(*types.PeerTask, *dferrors.DfError)),
-		callbackList:  make(map[*types.Task][]*types.PeerTask),
+		callbackFns:   make(map[string]func(*types.PeerTask, *dferrors.DfError)),
+		callbackList:  make(map[string][]*types.PeerTask),
 		taskManager:   taskManager,
 		hostManager:   hostManager,
 		dynamicConfig: dynamicConfig,
@@ -64,7 +67,7 @@ func newManager(taskManager daemon.TaskMgr, hostManager daemon.HostMgr, dynamicC
 	// Registration manager
 	dynamicConfig.Register(mgr)
 
-	// Get dynconfig content
+	// Get dynamicConfig content
 	dc, err := mgr.dynamicConfig.Get()
 	if err != nil {
 		return nil, err
@@ -85,8 +88,8 @@ func newManager(taskManager daemon.TaskMgr, hostManager daemon.HostMgr, dynamicC
 }
 
 // cdnHostsToServers coverts manager.CdnHosts to map[string]*manager.ServerInfo.
-func cdnHostsToServers(hosts []*manager.ServerInfo) map[string]*manager.ServerInfo {
-	m := make(map[string]*manager.ServerInfo)
+func cdnHostsToServers(hosts []*managerRPC.ServerInfo) map[string]*managerRPC.ServerInfo {
+	m := make(map[string]*managerRPC.ServerInfo)
 	for i := range hosts {
 		m[hosts[i].HostInfo.HostName] = hosts[i]
 	}
@@ -95,7 +98,7 @@ func cdnHostsToServers(hosts []*manager.ServerInfo) map[string]*manager.ServerIn
 }
 
 // cdnHostsToNetAddrs coverts manager.CdnHosts to []dfnet.NetAddr.
-func cdnHostsToNetAddrs(hosts []*manager.ServerInfo) []dfnet.NetAddr {
+func cdnHostsToNetAddrs(hosts []*managerRPC.ServerInfo) []dfnet.NetAddr {
 	var netAddrs []dfnet.NetAddr
 	for i := range hosts {
 		netAddrs = append(netAddrs, dfnet.NetAddr{
@@ -107,7 +110,7 @@ func cdnHostsToNetAddrs(hosts []*manager.ServerInfo) []dfnet.NetAddr {
 	return netAddrs
 }
 
-func (cm *manager) OnNotify(c *manager.SchedulerConfig) {
+func (cm *manager) OnNotify(c *managerRPC.SchedulerConfig) {
 	// Sync CDNManager servers
 	cm.servers = cdnHostsToServers(c.CdnHosts)
 
@@ -115,41 +118,41 @@ func (cm *manager) OnNotify(c *manager.SchedulerConfig) {
 	cm.client.UpdateState(cdnHostsToNetAddrs(c.CdnHosts))
 }
 
-func (cm *manager) SeedTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error) {
+func (cm *manager) SeedTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) error {
 	if cm.client == nil {
-		err = dferrors.New(dfcodes.SchedNeedBackSource, "empty cdn")
-		return
+		return errors.New("cdn client is nil")
 	}
-	cm.lock.Lock()
-	_, ok := cm.callbackFns[task]
-	if !ok {
-		cm.callbackFns[task] = callback
-	}
-	cm.lock.Unlock()
-	if ok {
-		return
-	}
-
-	go safe.Call(func() {
-		stream, err := cm.client.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-			TaskId:  task.TaskID,
-			Url:     task.URL,
-			Filter:  task.Filter,
-			UrlMeta: task.URLMata,
-		})
-		if err != nil {
-			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskID, err)
-			e, ok := err.(*dferrors.DfError)
-			if !ok {
-				e = dferrors.New(dfcodes.CdnError, err.Error())
-			}
-			cm.doCallback(task, e)
-			return
-		}
-
-		cm.Work(task, stream)
+	stream, err := cm.client.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+		TaskId:  task.TaskID,
+		Url:     task.URL,
+		Filter:  task.Filter,
+		UrlMeta: task.URLMata,
 	})
+	if err != nil {
 
+		logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskID, err)
+		e, ok := err.(*dferrors.DfError)
+		if !ok {
+			e = dferrors.New(dfcodes.CdnError, err.Error())
+		}
+		cm.doCallback(task, e)
+		return
+	}
+
+	cm.Work(task, stream)
+})
+
+cm.lock.Lock()
+_, ok := cm.callbackFns[task]
+if !ok {
+cm.callbackFns[task] = callback
+}
+cm.lock.Unlock()
+if ok {
+return
+}
+
+go safe.Call(func () {
 	return
 }
 
@@ -208,7 +211,7 @@ type CDNClient struct {
 	mgr *CDNManager
 }
 
-func (cm *CDNManager) Work(task *types.Task, stream *client.PieceSeedStream) {
+func (cm *manager) Work(task *types.Task, stream *client.PieceSeedStream) {
 	waitCallback := true
 	for {
 		ps, err := stream.Recv()
@@ -340,7 +343,7 @@ func (cm *manager) downloadTinyFileContent(task *types.Task, cdnHost *types.Host
 		cdnHost.IP, cdnHost.DownloadPort, task.TaskID[:3], task.TaskID)
 	response, err := http.Get(url)
 	if err != nil {
-		return nil, errors.Wrapf(err, "get url %s", url)
+		return nil, err
 	}
 	defer response.Body.Close()
 	content, err := ioutil.ReadAll(response.Body)

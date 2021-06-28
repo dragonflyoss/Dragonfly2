@@ -14,31 +14,25 @@
  * limitations under the License.
  */
 
-package service
+package scheduler
 
 import (
-	"errors"
-
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/daemon/cdn"
-	"d7y.io/dragonfly/v2/scheduler/daemon/host"
-	"d7y.io/dragonfly/v2/scheduler/daemon/task"
-	"d7y.io/dragonfly/v2/scheduler/manager"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type SchedulerService struct {
 	// cdn mgr
-	CDNManager *cdn.CDNManager
+	CDNManager daemon.CDNMgr
 	// task mgr
-	TaskManager *task.TaskManager
+	TaskManager daemon.TaskMgr
 	// host mgr
-	HostManager *host.HostManager
+	HostManager daemon.HostMgr
 
-	Scheduler *scheduler.Scheduler
+	Scheduler *Scheduler
 	config    config.SchedulerConfig
 	ABTest    bool
 }
@@ -53,7 +47,7 @@ func NewSchedulerService(cfg *config.Config, dynconfig config.DynconfigInterface
 		CDNManager:  mgr.CDNManager,
 		TaskManager: mgr.TaskManager,
 		HostManager: mgr.HostManager,
-		Scheduler:   scheduler.New(cfg.Scheduler, mgr.TaskManager),
+		Scheduler:   New(cfg.Scheduler, mgr.TaskManager),
 		ABTest:      cfg.Scheduler.ABTest,
 	}, nil
 }
@@ -85,20 +79,20 @@ func (s *SchedulerService) AddTask(task *types.Task) (*types.Task, error) {
 	return ret, nil
 }
 
-func (s *SchedulerService) ScheduleParent(task *types.PeerTask) (primary *types.PeerTask,
-	secondary []*types.PeerTask, err error) {
+func (s *SchedulerService) ScheduleParent(task *types.PeerNode) (primary *types.PeerNode,
+	secondary []*types.PeerNode, err error) {
 	return s.Scheduler.ScheduleParent(task)
 }
 
-func (s *SchedulerService) ScheduleChildren(task *types.PeerTask) (children []*types.PeerTask, err error) {
+func (s *SchedulerService) ScheduleChildren(task *types.PeerNode) (children []*types.PeerNode, err error) {
 	return s.Scheduler.ScheduleChildren(task)
 }
 
-func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *types.PeerTask, ok bool) {
+func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *types.PeerNode, ok bool) {
 	return s.TaskManager.PeerTask.Get(peerTaskID)
 }
 
-func (s *SchedulerService) AddPeerTask(pid string, task *types.Task, host *types.Host) (ret *types.PeerTask, err error) {
+func (s *SchedulerService) AddPeerTask(pid string, task *types.Task, host *types.Host) (ret *types.PeerNode, err error) {
 	ret = s.TaskManager.PeerTask.Add(pid, task, host)
 	host.AddPeerTask(ret)
 	return
@@ -123,6 +117,6 @@ func (s *SchedulerService) GetHost(hostID string) (host *types.Host, ok bool) {
 }
 
 func (s *SchedulerService) AddHost(host *types.Host) (ret *types.Host, err error) {
-	ret = s.HostManager.Add(host)
+	ret = s.HostManager.Store(host)
 	return
 }

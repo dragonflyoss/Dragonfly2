@@ -23,14 +23,14 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/service"
+	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type ISender interface {
 	Serve()
 	Stop()
-	Send(peerTask *types.PeerTask)
+	Send(peerTask *types.PeerNode)
 }
 
 type SenderGroup struct {
@@ -38,7 +38,7 @@ type SenderGroup struct {
 	chanSize         int
 	senderList       []*Sender
 	stopCh           chan struct{}
-	schedulerService *service.SchedulerService
+	schedulerService *scheduler.SchedulerService
 }
 
 var _ ISender = (*SenderGroup)(nil)
@@ -46,10 +46,10 @@ var _ ISender = (*SenderGroup)(nil)
 type Sender struct {
 	jobChan          chan *string
 	stopCh           <-chan struct{}
-	schedulerService *service.SchedulerService
+	schedulerService *scheduler.SchedulerService
 }
 
-func NewSender(worker config.SchedulerWorkerConfig, schedulerService *service.SchedulerService) *SenderGroup {
+func NewSender(worker config.SchedulerWorkerConfig, schedulerService *scheduler.SchedulerService) *SenderGroup {
 	return &SenderGroup{
 		senderNum:        worker.SenderNum,
 		chanSize:         worker.SenderJobPoolSize,
@@ -76,12 +76,12 @@ func (sg *SenderGroup) Stop() {
 	logger.Infof("stop sender worker : %d", sg.senderNum)
 }
 
-func (sg *SenderGroup) Send(peerTask *types.PeerTask) {
+func (sg *SenderGroup) Send(peerTask *types.PeerNode) {
 	sendID := crc32.ChecksumIEEE([]byte(peerTask.Pid)) % uint32(sg.senderNum)
 	sg.senderList[sendID].Send(peerTask)
 }
 
-func (s *Sender) Send(peerTask *types.PeerTask) {
+func (s *Sender) Send(peerTask *types.PeerNode) {
 	s.jobChan <- &peerTask.Pid
 }
 

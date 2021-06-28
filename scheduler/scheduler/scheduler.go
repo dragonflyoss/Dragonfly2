@@ -19,7 +19,8 @@ package scheduler
 import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/daemon/task"
+	"d7y.io/dragonfly/v2/scheduler/daemon"
+	"d7y.io/dragonfly/v2/scheduler/scheduler/base"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
@@ -28,12 +29,12 @@ type Scheduler struct {
 	abtest           bool
 	ascheduler       string
 	bscheduler       string
-	taskManager      *task.TaskManager
+	taskManager      daemon.TaskMgr
 }
 
-func New(cfg config.SchedulerConfig, taskManager *task.TaskManager) *Scheduler {
+func New(cfg config.SchedulerConfig, taskManager daemon.TaskMgr) *Scheduler {
 	ef := newEvaluatorFactory(cfg)
-	ef.register("default", newEvaluator(withTaskManager(taskManager)))
+	ef.register("default", base.newEvaluator(taskManager))
 	ef.registerGetEvaluatorFunc(0, func(*types.Task) (string, bool) { return "default", true })
 	return &Scheduler{
 		evaluatorFactory: ef,
@@ -87,7 +88,7 @@ func (s *Scheduler) ScheduleChildren(peer *types.PeerTask) (children []*types.Pe
 	return
 }
 
-// scheduler a parent to a peer
+// ScheduleParent schedule a parent to a peer
 func (s *Scheduler) ScheduleParent(peer *types.PeerTask) (primary *types.PeerTask, secondary []*types.PeerTask, err error) {
 	if peer == nil || peer.Success || peer.IsDown() {
 		return

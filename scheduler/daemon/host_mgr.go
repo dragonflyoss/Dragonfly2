@@ -19,11 +19,14 @@ package daemon
 import "d7y.io/dragonfly/v2/scheduler/types"
 
 type HostMgr interface {
-	Store(uuid string, host *types.Host) *types.Host
+	Add(host *types.Host)
 
-	LoadOrStore(uuid string, host *types.Host) (*types.Host, bool)
+	// GetOrAdd returns the existing value for the key if present.
+	// Otherwise, it stores and returns the given value.
+	// The loaded result is true if the value was loaded, false if stored.
+	GetOrAdd(uuid string, host *types.Host) (actual *types.Host, loaded bool)
 
 	Delete(uuid string)
 
-	Load(uuid string) (*types.Host, bool)
+	Get(uuid string) (*types.Host, bool)
 }

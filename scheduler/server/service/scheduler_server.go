@@ -27,13 +27,13 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/service"
+	scheduler2 "d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/service/worker"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type SchedulerServer struct {
-	service *service.SchedulerService
+	service *scheduler2.SchedulerService
 	worker  worker.IWorker
 	config  config.SchedulerConfig
 }
@@ -42,7 +42,7 @@ type SchedulerServer struct {
 type Option func(p *SchedulerServer) *SchedulerServer
 
 // WithSchedulerService sets the *service.SchedulerService
-func WithSchedulerService(service *service.SchedulerService) Option {
+func WithSchedulerService(service *scheduler2.SchedulerService) Option {
 	return func(s *SchedulerServer) *SchedulerServer {
 		s.service = service
 

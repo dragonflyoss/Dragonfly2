@@ -25,7 +25,7 @@ import (
 )
 
 type Task struct {
-	TaskID         string
+	taskID         string
 	URL            string
 	Filter         string
 	BizID          string
@@ -152,3 +152,14 @@ func (t *TaskStatistic) GetStatistic() (info *StatisticInfo) {
 
 	return
 }
+
+type Piece struct {
+	PieceNum    int32      `protobuf:"varint,1,opt,name=piece_num,json=pieceNum,proto3" json:"piece_num,omitempty"`
+	RangeStart  uint64     `protobuf:"varint,2,opt,name=range_start,json=rangeStart,proto3" json:"range_start,omitempty"`
+	RangeSize   int32      `protobuf:"varint,3,opt,name=range_size,json=rangeSize,proto3" json:"range_size,omitempty"`
+	PieceMd5    string     `protobuf:"bytes,4,opt,name=piece_md5,json=pieceMd5,proto3" json:"piece_md5,omitempty"`
+	PieceOffset uint64     `protobuf:"varint,5,opt,name=piece_offset,json=pieceOffset,proto3" json:"piece_offset,omitempty"`
+	PieceStyle  PieceStyle `protobuf:"varint,6,opt,name=piece_style,json=pieceStyle,proto3,enum=base.PieceStyle" json:"piece_style,omitempty"`
+}
+
+type PieceStyle int32
