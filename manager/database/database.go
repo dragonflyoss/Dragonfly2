@@ -87,7 +87,7 @@ func seed(db *gorm.DB) error {
 	db.Model(model.SchedulerCluster{}).Count(&schedulerClusterCount)
 	if schedulerClusterCount <= 0 {
 		if err := db.Create(&model.SchedulerCluster{
-			Name:         "cdn-cluster-1",
+			Name:         "scheduler-cluster-1",
 			Config:       map[string]interface{}{},
 			ClientConfig: map[string]interface{}{},
 		}).Error; err != nil {
