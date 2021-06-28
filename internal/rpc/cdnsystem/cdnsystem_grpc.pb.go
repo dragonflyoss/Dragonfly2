@@ -4,7 +4,6 @@ package cdnsystem
 
 import (
 	context "context"
-
 	base "d7y.io/dragonfly/v2/internal/rpc/base"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -163,5 +162,5 @@ var _Seeder_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "pkg/rpc/cdnsystem/cdnsystem.proto",
+	Metadata: "internal/rpc/cdnsystem/cdnsystem.proto",
 }

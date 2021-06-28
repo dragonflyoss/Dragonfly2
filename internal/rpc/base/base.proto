@@ -41,18 +41,18 @@ message GrpcDfError {
   string message = 2;
 }
 
+// UrlMeta describes url meta info.
 message UrlMeta{
-  // format:md5:xxx or sha256:yyy, used as follows:
-  //
-  // 1. check whether downloaded content is consistent with the source file
-  //
-  // 2. generate different task ids for same url
+  // digest checks integrity of url content, for example md5:xxx or sha256:yyy
   string digest = 1;
-  // downloaded range for url
-  string range = 2;
-  // other attributes for url
-  // eg, when url is http protocol, header is used as http header
-  map<string, string> header = 3;
+  // url tag identifies different task for same url, conflict with digest
+  string tag = 2;
+  // content range for url
+  string range = 3;
+  // filter url used to generate task id
+  string filter = 4;
+  // other url header infos
+  map<string, string> header = 5;
 }
 
 message HostLoad{

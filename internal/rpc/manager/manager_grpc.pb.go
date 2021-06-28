@@ -4,7 +4,6 @@ package manager
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -185,5 +184,5 @@ var _Manager_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/rpc/manager/manager.proto",
+	Metadata: "internal/rpc/manager/manager.proto",
 }

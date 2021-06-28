@@ -24,21 +24,26 @@ import "google/protobuf/empty.proto";
 option go_package = "d7y.io/dragonfly/v2/internal/rpc/dfdaemon";
 
 message DownRequest{
-  // download content with the url, but not only for http protocol
-  string url = 1;
+  // identify one downloading, the framework will fill it automatically
+  string uuid = 1;
+  // download file from the url, not only for http
+  string url = 2;
   // pieces will be written to output path directly,
   // at the same time, dfdaemon workspace also makes soft link to the output
-  string output = 2;
-  base.UrlMeta url_meta = 3;
-  // caller business id
-  string biz_id = 4;
-  // regex format
-  string filter = 5;
-  // identify one downloading
-  // framework will fill it automatically
-  string uuid = 6;
-  int64 uid = 7;
-  int64 gid = 8;
+  string output = 3;
+  // timeout duration, default 3 hour
+  int64 timeout = 4;
+  // rate limit in bytes per second
+  int64 limit = 5;
+  base.UrlMeta url_meta = 6;
+  // p2p/cdn/source
+  string pattern = 7;
+  // call system
+  string callsystem = 8;
+  // user id
+  int64 uid = 9;
+  // group id
+  int64 gid = 10;
 }
 
 message DownResult{

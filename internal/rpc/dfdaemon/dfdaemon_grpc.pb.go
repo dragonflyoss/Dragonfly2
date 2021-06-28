@@ -4,7 +4,6 @@ package dfdaemon
 
 import (
 	context "context"
-
 	base "d7y.io/dragonfly/v2/internal/rpc/base"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -202,5 +201,5 @@ var _Daemon_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "pkg/rpc/dfdaemon/dfdaemon.proto",
+	Metadata: "internal/rpc/dfdaemon/dfdaemon.proto",
 }

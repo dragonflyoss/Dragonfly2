@@ -101,7 +101,9 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 	request := &dfdaemongrpc.DownRequest{
 		Url:    "http://localhost/test",
 		Output: "./testdata/file1",
-		BizId:  "unit test",
+		UrlMeta: &base.UrlMeta{
+			Tag: "unit test",
+		},
 	}
 	down, err := client.Download(context.Background(), request)
 	assert.Nil(err, "client download grpc call should be ok")
