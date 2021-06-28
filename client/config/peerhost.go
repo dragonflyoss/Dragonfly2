@@ -280,6 +280,10 @@ type TCPListenOption struct {
 	//     start: 12345
 	//     end: 12346
 	PortRange TCPListenPortRange `mapstructure:"port" yaml:"port"`
+
+	// Namespace stands the linux net namespace, like /proc/1/ns/net
+	// It's useful for running daemon in pod with ip allocated and listen in host
+	Namespace string `mapstructure:"namespace" yaml:"namespace"`
 }
 
 type TCPListenPortRange struct {
