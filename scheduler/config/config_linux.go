@@ -4,6 +4,7 @@ package config
 
 import (
 	"runtime"
+	"time"
 
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -35,5 +36,5 @@ var config = Config{
 	},
 	Manager: &ManagerConfig{
 		KeepAliveInterval: 5 * time.Second,
-	}
+	},
 }

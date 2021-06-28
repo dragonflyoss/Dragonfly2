@@ -138,19 +138,22 @@ func (s *Server) Stop() {
 }
 
 func (s *Server) register(ctx context.Context) error {
+	ip := s.Config.AdvertiseIP
+	port := int32(s.Config.ListenPort)
+	downloadPort := int32(s.Config.DownloadPort)
 	if _, err := s.managerClient.CreateCDN(ctx, &manager.CreateCDNRequest{
 		SourceType:   manager.SourceType_CDN_SOURCE,
 		HostName:     iputils.HostName,
-		Ip:           s.Config.AdvertiseIP,
-		Port:         int32(s.Config.ListenPort),
-		DownloadPort: int32(s.Config.DownloadPort),
+		Ip:           ip,
+		Port:         port,
+		DownloadPort: downloadPort,
 	}); err != nil {
 		if _, err := s.managerClient.UpdateCDN(ctx, &manager.UpdateCDNRequest{
 			SourceType:   manager.SourceType_CDN_SOURCE,
 			HostName:     iputils.HostName,
-			Ip:           s.Config.AdvertiseIP,
-			Port:         int32(s.Config.ListenPort),
-			DownloadPort: int32(s.Config.DownloadPort),
+			Ip:           ip,
+			Port:         port,
+			DownloadPort: downloadPort,
 		}); err != nil {
 			return err
 		}

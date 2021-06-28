@@ -38,7 +38,7 @@ type Server struct {
 	service       *service.SchedulerService
 	worker        worker.IWorker
 	server        *SchedulerServer
-	config        config.ServerConfig
+	config        config.Config
 	managerClient client.ManagerClient
 	running       bool
 	dynconfig     config.DynconfigInterface
@@ -49,7 +49,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 	s := &Server{
 		running: false,
-		config:  cfg.Server,
+		config:  cfg,
 	}
 
 	// Initialize manager client
@@ -103,7 +103,7 @@ func New(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) Serve() error {
-	port := s.config.Port
+	port := s.config.Server.Port
 	s.running = true
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -137,17 +137,20 @@ func (s *Server) Stop() (err error) {
 }
 
 func (s *Server) register(ctx context.Context) error {
+	ip := s.config.Server.IP
+	port := int32(s.config.Server.Port)
+
 	if _, err := s.managerClient.CreateScheduler(ctx, &manager.CreateSchedulerRequest{
 		SourceType: manager.SourceType_SCHEDULER_SOURCE,
 		HostName:   iputils.HostName,
-		Ip:         s.config.IP,
-		Port:       int32(s.config.Port),
+		Ip:         ip,
+		Port:       port,
 	}); err != nil {
 		if _, err := s.managerClient.UpdateScheduler(ctx, &manager.UpdateSchedulerRequest{
 			SourceType: manager.SourceType_SCHEDULER_SOURCE,
 			HostName:   iputils.HostName,
-			Ip:         s.config.IP,
-			Port:       int32(s.config.Port),
+			Ip:         ip,
+			Port:       port,
 		}); err != nil {
 			return err
 		}
@@ -163,7 +166,7 @@ func (s *Server) keepAlive(ctx context.Context) error {
 		return err
 	}
 
-	tick := time.NewTicker(2 * time.Second)
+	tick := time.NewTicker(s.config.Manager.KeepAliveInterval)
 	hostName := iputils.HostName
 	for {
 		select {
