@@ -27,13 +27,12 @@ import (
 
 type Config struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
-	ConfigServer string                `yaml:"configServer" mapstructure:"configServer"`
 	Scheduler    SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
 	Server       ServerConfig          `yaml:"server" mapstructure:"server"`
 	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
 	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
-	Dynconfig    *DynconfigOptions     `yaml:"dynconfig"`
-	Manager      *ManagerConfig        `yaml:"manager"`
+	Dynconfig    *DynconfigOptions     `yaml:"dynconfig" mapstructure:"dynconfig"`
+	Manager      *ManagerConfig        `yaml:"manager" mapstructure:"manager"`
 }
 
 func New() *Config {
@@ -41,12 +40,6 @@ func New() *Config {
 }
 
 func (c *Config) Validate() error {
-	if c.Manager != nil {
-		if len(c.Manager.NetAddrs) <= 0 {
-			return errors.New("empty manager config is not specified")
-		}
-	}
-
 	if c.Dynconfig.Type == dc.LocalSourceType && c.Dynconfig.Path == "" {
 		return errors.New("dynconfig is LocalSourceType type requires parameter path")
 	}
@@ -70,27 +63,30 @@ func (c *Config) Validate() error {
 
 type ManagerConfig struct {
 	// NetAddrs is manager addresses.
-	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
+	NetAddrs []dfnet.NetAddr `yaml:"netAddrs" mapstructure:"netAddrs"`
+
+	// Keep alive interval
+	KeepAliveInterval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`
 }
 
 type DynconfigOptions struct {
 	// Type is dynconfig source type.
-	Type dc.SourceType `yaml:"type"`
+	Type dc.SourceType `yaml:"type" mapstructure:"type"`
 
 	// ExpireTime is expire time for manager cache.
-	ExpireTime time.Duration `yaml:"expireTime"`
+	ExpireTime time.Duration `yaml:"expireTime" mapstructure:"expireTime"`
 
 	// NetAddrs is dynconfig source addresses.
-	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
+	NetAddrs []dfnet.NetAddr `yaml:"netAddrs" mapstructure:"netAddrs"`
 
 	// Path is dynconfig filepath.
-	Path string `yaml:"path"`
+	Path string `yaml:"path" mapstructure:"path"`
 
 	// CachePath is cache filepath.
-	CachePath string `yaml:"cachePath"`
+	CachePath string `yaml:"cachePath" mapstructure:"cachePath"`
 
 	// CDNDirPath is cdn dir.
-	CDNDirPath string `yaml:"cdnDirPata"`
+	CDNDirPath string `yaml:"cdnDirPata" mapstructure:"cdnDirPata"`
 }
 
 type SchedulerConfig struct {

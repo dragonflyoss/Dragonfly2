@@ -26,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"gopkg.in/yaml.v3"
@@ -44,8 +45,7 @@ type Config struct {
 	base.Options    `yaml:",inline" mapstructure:",squash"`
 	*BaseProperties `yaml:"base" mapstructure:"base"`
 
-	Plugins      map[plugins.PluginType][]*plugins.PluginProperties `yaml:"plugins" mapstructure:"plugins"`
-	ConfigServer string                                             `yaml:"configServer" mapstructure:"configServer"`
+	Plugins map[plugins.PluginType][]*plugins.PluginProperties `yaml:"plugins" mapstructure:"plugins"`
 }
 
 func (c *Config) String() string {
@@ -132,6 +132,9 @@ func NewDefaultBaseProperties() *BaseProperties {
 		TaskExpireTime:          DefaultTaskExpireTime,
 		StorageMode:             DefaultStorageMode,
 		AdvertiseIP:             iputils.HostIP,
+		Manager: &ManagerConfig{
+			KeepAliveInterval: DefaultKeepAliveInterval,
+		},
 	}
 }
 
@@ -178,4 +181,15 @@ type BaseProperties struct {
 
 	// StorageMode disk/hybrid/memory
 	StorageMode string `yaml:"storageMode" mapstructure:"storageMode"`
+
+	// Manager configuration
+	Manager *ManagerConfig `yaml:"manager" mapstructure:"manager"`
+}
+
+type ManagerConfig struct {
+	// NetAddrs is manager addresses.
+	NetAddrs []dfnet.NetAddr `yaml:"netAddrs" mapstructure:"netAddrs"`
+
+	// Keep alive interval
+	KeepAliveInterval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`
 }

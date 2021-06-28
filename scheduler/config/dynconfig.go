@@ -43,7 +43,7 @@ var (
 
 type DynconfigInterface interface {
 	// Get the dynamic config from manager.
-	Get() (*manager.SchedulerConfig, error)
+	Get() (*manager.Scheduler, error)
 
 	// Register allows an instance to register itself to listen/observe events.
 	Register(Observer)
@@ -63,7 +63,7 @@ type DynconfigInterface interface {
 
 type Observer interface {
 	// OnNotify allows an event to be "published" to interface implementations.
-	OnNotify(*manager.SchedulerConfig)
+	OnNotify(*manager.Scheduler)
 }
 
 type dynconfig struct {
@@ -89,14 +89,14 @@ func NewDynconfig(sourceType dc.SourceType, cdnDirPath string, options ...dc.Opt
 	return d, nil
 }
 
-func (d *dynconfig) Get() (*manager.SchedulerConfig, error) {
-	var config manager.SchedulerConfig
+func (d *dynconfig) Get() (*manager.Scheduler, error) {
+	var config manager.Scheduler
 	if d.cdnDirPath != "" {
 		cdn, err := d.getCDNFromDirPath()
 		if err != nil {
 			return nil, err
 		}
-		config.CdnHosts = cdn
+		config.Cdns = cdn
 	} else {
 		if err := d.Unmarshal(&config); err != nil {
 			return nil, err
@@ -106,13 +106,13 @@ func (d *dynconfig) Get() (*manager.SchedulerConfig, error) {
 	return &config, nil
 }
 
-func (d *dynconfig) getCDNFromDirPath() ([]*manager.ServerInfo, error) {
+func (d *dynconfig) getCDNFromDirPath() ([]*manager.CDN, error) {
 	files, err := ioutil.ReadDir(d.cdnDirPath)
 	if err != nil {
 		return nil, err
 	}
 
-	var data []*manager.ServerInfo
+	var data []*manager.CDN
 	for _, file := range files {
 		// skip directory
 		if file.IsDir() {
@@ -136,7 +136,7 @@ func (d *dynconfig) getCDNFromDirPath() ([]*manager.ServerInfo, error) {
 			return nil, err
 		}
 
-		var s *manager.ServerInfo
+		var s *manager.CDN
 		if err := json.Unmarshal(b, &s); err != nil {
 			return nil, err
 		}
@@ -204,9 +204,9 @@ func NewManagerClient(client client.ManagerClient) dc.ManagerClient {
 }
 
 func (mc *managerClient) Get() (interface{}, error) {
-	scConfig, err := mc.GetSchedulerClusterConfig(context.Background(), &manager.GetClusterConfigRequest{
-		HostName: iputils.HostName,
-		Type:     manager.ResourceType_Scheduler,
+	scConfig, err := mc.GetScheduler(context.Background(), &manager.GetSchedulerRequest{
+		HostName:   iputils.HostName,
+		SourceType: manager.SourceType_SCHEDULER_SOURCE,
 	})
 	if err != nil {
 		return nil, err

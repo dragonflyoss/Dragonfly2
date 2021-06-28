@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"io"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
@@ -10,9 +11,9 @@ import (
 	"d7y.io/dragonfly/v2/manager/model"
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -115,6 +116,62 @@ func (s *ServiceGRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*
 	return &pbCDN, nil
 }
 
+func (s *ServiceGRPC) CreateCDN(ctx context.Context, req *manager.CreateCDNRequest) (*manager.CDN, error) {
+	if err := req.Validate(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	cdn := model.CDN{
+		HostName:     req.HostName,
+		IDC:          req.Idc,
+		Location:     req.Location,
+		IP:           req.Ip,
+		Port:         req.Port,
+		DownloadPort: req.DownloadPort,
+	}
+
+	if err := s.db.Create(&cdn).Error; err != nil {
+		return nil, err
+	}
+
+	return &manager.CDN{
+		Id:           uint64(cdn.ID),
+		HostName:     cdn.HostName,
+		Location:     cdn.Location,
+		Ip:           cdn.IP,
+		Port:         cdn.Port,
+		DownloadPort: cdn.DownloadPort,
+		Status:       cdn.Status,
+	}, nil
+}
+
+func (s *ServiceGRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
+	if err := req.Validate(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	cdn := model.CDN{}
+	if err := s.db.First(&cdn, model.CDN{HostName: req.HostName}).Updates(model.CDN{
+		IDC:          req.Idc,
+		Location:     req.Location,
+		IP:           req.Ip,
+		Port:         req.Port,
+		DownloadPort: req.DownloadPort,
+	}).Error; err != nil {
+		return nil, err
+	}
+
+	return &manager.CDN{
+		Id:           uint64(cdn.ID),
+		HostName:     cdn.HostName,
+		Location:     cdn.Location,
+		Ip:           cdn.IP,
+		Port:         cdn.Port,
+		DownloadPort: cdn.DownloadPort,
+		Status:       cdn.Status,
+	}, nil
+}
+
 func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -215,6 +272,82 @@ func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedule
 	return &pbScheduler, nil
 }
 
+func (s *ServiceGRPC) CreateScheduler(ctx context.Context, req *manager.CreateSchedulerRequest) (*manager.Scheduler, error) {
+	if err := req.Validate(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var netConfig datatypes.JSONMap
+	if len(req.NetConfig) > 0 {
+		if err := netConfig.UnmarshalJSON(req.NetConfig); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+
+	scheduler := model.Scheduler{
+		HostName:  req.HostName,
+		VIPs:      req.Vips,
+		IDC:       req.Idc,
+		Location:  req.Location,
+		NetConfig: netConfig,
+		IP:        req.Ip,
+		Port:      req.Port,
+	}
+
+	if err := s.db.Create(&scheduler).Error; err != nil {
+		return nil, err
+	}
+
+	return &manager.Scheduler{
+		Id:        uint64(scheduler.ID),
+		HostName:  scheduler.HostName,
+		Vips:      scheduler.VIPs,
+		Idc:       scheduler.IDC,
+		Location:  scheduler.Location,
+		NetConfig: req.NetConfig,
+		Ip:        scheduler.IP,
+		Port:      scheduler.Port,
+		Status:    scheduler.Status,
+	}, nil
+}
+
+func (s *ServiceGRPC) UpdateScheduler(ctx context.Context, req *manager.CreateSchedulerRequest) (*manager.Scheduler, error) {
+	if err := req.Validate(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var netConfig datatypes.JSONMap
+	if len(req.NetConfig) > 0 {
+		if err := netConfig.UnmarshalJSON(req.NetConfig); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+
+	scheduler := model.Scheduler{}
+	if err := s.db.First(&scheduler, model.Scheduler{HostName: req.HostName}).Updates(model.Scheduler{
+		VIPs:      req.Vips,
+		IDC:       req.Idc,
+		Location:  req.Location,
+		NetConfig: netConfig,
+		IP:        req.Ip,
+		Port:      req.Port,
+	}).Error; err != nil {
+		return nil, err
+	}
+
+	return &manager.Scheduler{
+		Id:        uint64(scheduler.ID),
+		HostName:  scheduler.HostName,
+		Vips:      scheduler.VIPs,
+		Idc:       scheduler.IDC,
+		Location:  scheduler.Location,
+		NetConfig: req.NetConfig,
+		Ip:        scheduler.IP,
+		Port:      scheduler.Port,
+		Status:    scheduler.Status,
+	}, nil
+}
+
 func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -269,9 +402,100 @@ func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSched
 	return &pbListSchedulersResponse, nil
 }
 
-func (s *ServiceGRPC) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) (*empty.Empty, error) {
-	if err := req.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
+	req, err := m.Recv()
+	if err != nil {
+		logger.Errorf("Keepalive failed for the first time: %v\n", err)
+		return err
 	}
-	return nil, nil
+	if err := req.Validate(); err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var cachekey string
+	hostName := req.HostName
+	sourceType := req.SourceType
+	logger.Infof("Keepalive successfully for the first time\n", req.HostName)
+
+	// Active scheduler
+	if sourceType == manager.SourceType_SCHEDULER_SOURCE {
+		scheduler := model.Scheduler{}
+		if err := s.db.First(&scheduler, model.Scheduler{
+			HostName: hostName,
+		}).Updates(model.Scheduler{
+			Status: model.SchedulerStatusActive,
+		}).Error; err != nil {
+			return err
+		}
+
+		cachekey = cache.MakeCacheKey("scheduler", hostName)
+		if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
+			logger.Warnf("%s refresh keepalive status failed\n", req.HostName)
+		}
+	}
+
+	// Active CDN
+	if sourceType == manager.SourceType_CDN_SOURCE {
+		cdn := model.CDN{}
+		if err := s.db.First(&cdn, model.CDN{
+			HostName: hostName,
+		}).Updates(model.CDN{
+			Status: model.CDNStatusActive,
+		}).Error; err != nil {
+			return err
+		}
+
+		cachekey = cache.MakeCacheKey("cdn", hostName)
+		if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
+			logger.Warnf("%s refresh keepalive status failed\n", req.HostName)
+		}
+	}
+
+	for {
+		_, err := m.Recv()
+		if err != nil {
+			// Inactive scheduler
+			if sourceType == manager.SourceType_SCHEDULER_SOURCE {
+				scheduler := model.Scheduler{}
+				if err := s.db.First(&scheduler, model.Scheduler{
+					HostName: hostName,
+				}).Updates(model.Scheduler{
+					Status: model.SchedulerStatusInactive,
+				}).Error; err != nil {
+					return err
+				}
+
+				cachekey = cache.MakeCacheKey("scheduler", hostName)
+				if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
+					logger.Warnf("%s refresh keepalive status failed\n", req.HostName)
+				}
+			}
+
+			// Inactive CDN
+			if sourceType == manager.SourceType_CDN_SOURCE {
+				cdn := model.CDN{}
+				if err := s.db.First(&cdn, model.CDN{
+					HostName: hostName,
+				}).Updates(model.CDN{
+					Status: model.CDNStatusInactive,
+				}).Error; err != nil {
+					return err
+				}
+
+				cachekey = cache.MakeCacheKey("cdn", hostName)
+				if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
+					logger.Warnf("%s refresh keepalive status failed\n", req.HostName)
+				}
+			}
+
+			if err == io.EOF {
+				logger.Infof("%s close keepalive\n", hostName)
+				return nil
+			}
+			logger.Errorf("%s keepalive failed: %v\n", hostName, err)
+			return err
+		}
+
+		logger.Debugf("%s send keepalive request\n", hostName)
+	}
 }

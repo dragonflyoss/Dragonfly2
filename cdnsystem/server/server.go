@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
@@ -30,20 +31,19 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/task"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/server/service"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/rpc"
 	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
-	configServer "d7y.io/dragonfly/v2/internal/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
 
 type Server struct {
-	Config       *config.Config
-	seedServer   server.SeederServer
-	configServer configServer.ManagerClient
+	Config        *config.Config
+	seedServer    server.SeederServer
+	managerClient client.ManagerClient
 }
 
 // New creates a brand new server instance.
@@ -86,20 +86,20 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "create seedServer")
 	}
-	var cfgServer configServer.ManagerClient
-	if !stringutils.IsBlank(cfg.ConfigServer) {
-		cfgServer, err = configServer.NewClient([]dfnet.NetAddr{{
-			Type: dfnet.TCP,
-			Addr: cfg.ConfigServer,
-		}})
+
+	// manager client
+	var managerClient client.ManagerClient
+	if len(cfg.Manager.NetAddrs) > 0 {
+		managerClient, err = client.New(cfg.Manager.NetAddrs)
 		if err != nil {
-			return nil, errors.Wrap(err, "create config server")
+			return nil, errors.Wrap(err, "create manager service")
 		}
 	}
+
 	return &Server{
-		Config:       cfg,
-		seedServer:   cdnSeedServer,
-		configServer: cfgServer,
+		Config:        cfg,
+		seedServer:    cdnSeedServer,
+		managerClient: managerClient,
 	}, nil
 }
 
@@ -117,12 +117,15 @@ func (s *Server) Serve() (err error) {
 	if err != nil {
 		return err
 	}
-	if s.configServer != nil {
-		s.configServer.KeepAlive(ctx, &manager.KeepAliveRequest{
-			HostName: iputils.HostName,
-			Type:     manager.ResourceType_Cdn,
-		})
+
+	if s.managerClient != nil {
+		s.register(ctx)
+		logger.Info("cdn register to manager")
+
+		go s.keepAlive(ctx)
+		logger.Info("start cdn keep alive")
 	}
+
 	err = rpc.StartTCPServer(s.Config.ListenPort, s.Config.ListenPort, s.seedServer)
 	if err != nil {
 		return errors.Wrap(err, "start tcp server")
@@ -132,4 +135,49 @@ func (s *Server) Serve() (err error) {
 
 func (s *Server) Stop() {
 	rpc.StopServer()
+}
+
+func (s *Server) register(ctx context.Context) error {
+	if _, err := s.managerClient.CreateCDN(ctx, &manager.CreateCDNRequest{
+		SourceType:   manager.SourceType_CDN_SOURCE,
+		HostName:     iputils.HostName,
+		Ip:           s.Config.AdvertiseIP,
+		Port:         int32(s.Config.ListenPort),
+		DownloadPort: int32(s.Config.DownloadPort),
+	}); err != nil {
+		if _, err := s.managerClient.UpdateCDN(ctx, &manager.UpdateCDNRequest{
+			SourceType:   manager.SourceType_CDN_SOURCE,
+			HostName:     iputils.HostName,
+			Ip:           s.Config.AdvertiseIP,
+			Port:         int32(s.Config.ListenPort),
+			DownloadPort: int32(s.Config.DownloadPort),
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) keepAlive(ctx context.Context) error {
+	stream, err := s.managerClient.KeepAlive(ctx)
+	if err != nil {
+		logger.Errorf("create keepalive failed: %v\n", err)
+		return err
+	}
+
+	tick := time.NewTicker(s.Config.Manager.KeepAliveInterval)
+	hostName := iputils.HostName
+	for {
+		select {
+		case <-tick.C:
+			if err := stream.Send(&manager.KeepAliveRequest{
+				HostName:   hostName,
+				SourceType: manager.SourceType_CDN_SOURCE,
+			}); err != nil {
+				logger.Errorf("%s send keepalive failed: %v\n", hostName, err)
+				return err
+			}
+		}
+	}
 }

@@ -21,7 +21,6 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/rpc"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
 
@@ -41,25 +40,49 @@ type proxy struct {
 type ManagerServer interface {
 	GetCDN(context.Context, *manager.GetCDNRequest) (*manager.CDN, error)
 
+	CreateCDN(context.Context, *manager.CreateCDNRequest) (*manager.CDN, error)
+
+	UpdateCDN(context.Context, *manager.UpdateCDNRequest) (*manager.CDN, error)
+
 	GetScheduler(context.Context, *manager.GetSchedulerRequest) (*manager.Scheduler, error)
+
+	CreateScheduler(context.Context, *manager.CreateSchedulerRequest) (*manager.Scheduler, error)
+
+	UpdateScheduler(context.Context, *manager.UpdateSchedulerRequest) (*manager.Scheduler, error)
 
 	ListSchedulers(context.Context, *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
 
-	KeepAlive(context.Context, *manager.KeepAliveRequest) (*empty.Empty, error)
+	KeepAlive(manager.Manager_KeepAliveServer) error
 }
 
 func (p *proxy) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
 	return p.server.GetCDN(ctx, req)
 }
 
+func (p *proxy) CreateCDN(ctx context.Context, req *manager.CreateCDNRequest) (*manager.CDN, error) {
+	return p.server.CreateCDN(ctx, req)
+}
+
+func (p *proxy) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
+	return p.server.UpdateCDN(ctx, req)
+}
+
 func (p *proxy) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	return p.server.GetScheduler(ctx, req)
+}
+
+func (p *proxy) CreateScheduler(ctx context.Context, req *manager.CreateSchedulerRequest) (*manager.Scheduler, error) {
+	return p.server.CreateScheduler(ctx, req)
+}
+
+func (p *proxy) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
+	return p.server.UpdateScheduler(ctx, req)
 }
 
 func (p *proxy) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	return p.server.ListSchedulers(ctx, req)
 }
 
-func (p *proxy) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) (*empty.Empty, error) {
-	return p.server.KeepAlive(ctx, req)
+func (p *proxy) KeepAlive(m manager.Manager_KeepAliveServer) error {
+	return p.server.KeepAlive(m)
 }

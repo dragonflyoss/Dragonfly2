@@ -71,3 +71,7 @@ const (
 	// unit: MB/s
 	DefaultMaxBandwidth = 1 * unit.GB
 )
+
+const (
+	DefaultKeepAliveInterval = 5 * time.Second
+)

@@ -365,6 +365,274 @@ var _ interface {
 	ErrorName() string
 } = GetCDNRequestValidationError{}
 
+// Validate checks the field values on CreateCDNRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *CreateCDNRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
+		return CreateCDNRequestValidationError{
+			field:  "SourceType",
+			reason: "value must be one of the defined enum values",
+		}
+	}
+
+	if uri, err := url.Parse(m.GetHostName()); err != nil {
+		return CreateCDNRequestValidationError{
+			field:  "HostName",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+	} else if !uri.IsAbs() {
+		return CreateCDNRequestValidationError{
+			field:  "HostName",
+			reason: "value must be absolute",
+		}
+	}
+
+	if m.GetIdc() != "" {
+
+		if l := utf8.RuneCountInString(m.GetIdc()); l < 1 || l > 1024 {
+			return CreateCDNRequestValidationError{
+				field:  "Idc",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	if m.GetLocation() != "" {
+
+		if utf8.RuneCountInString(m.GetLocation()) > 1024 {
+			return CreateCDNRequestValidationError{
+				field:  "Location",
+				reason: "value length must be at most 1024 runes",
+			}
+		}
+
+	}
+
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		return CreateCDNRequestValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
+		}
+	}
+
+	if val := m.GetPort(); val < 1024 || val >= 65535 {
+		return CreateCDNRequestValidationError{
+			field:  "Port",
+			reason: "value must be inside range [1024, 65535)",
+		}
+	}
+
+	if val := m.GetDownloadPort(); val < 1024 || val >= 65535 {
+		return CreateCDNRequestValidationError{
+			field:  "DownloadPort",
+			reason: "value must be inside range [1024, 65535)",
+		}
+	}
+
+	return nil
+}
+
+// CreateCDNRequestValidationError is the validation error returned by
+// CreateCDNRequest.Validate if the designated constraints aren't met.
+type CreateCDNRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateCDNRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateCDNRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateCDNRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateCDNRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateCDNRequestValidationError) ErrorName() string { return "CreateCDNRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e CreateCDNRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateCDNRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateCDNRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateCDNRequestValidationError{}
+
+// Validate checks the field values on UpdateCDNRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *UpdateCDNRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
+		return UpdateCDNRequestValidationError{
+			field:  "SourceType",
+			reason: "value must be one of the defined enum values",
+		}
+	}
+
+	if uri, err := url.Parse(m.GetHostName()); err != nil {
+		return UpdateCDNRequestValidationError{
+			field:  "HostName",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+	} else if !uri.IsAbs() {
+		return UpdateCDNRequestValidationError{
+			field:  "HostName",
+			reason: "value must be absolute",
+		}
+	}
+
+	if m.GetIdc() != "" {
+
+		if l := utf8.RuneCountInString(m.GetIdc()); l < 1 || l > 1024 {
+			return UpdateCDNRequestValidationError{
+				field:  "Idc",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	if m.GetLocation() != "" {
+
+		if utf8.RuneCountInString(m.GetLocation()) > 1024 {
+			return UpdateCDNRequestValidationError{
+				field:  "Location",
+				reason: "value length must be at most 1024 runes",
+			}
+		}
+
+	}
+
+	if m.GetIp() != "" {
+
+		if ip := net.ParseIP(m.GetIp()); ip == nil {
+			return UpdateCDNRequestValidationError{
+				field:  "Ip",
+				reason: "value must be a valid IP address",
+			}
+		}
+
+	}
+
+	if m.GetPort() != 0 {
+
+		if val := m.GetPort(); val < 1024 || val >= 65535 {
+			return UpdateCDNRequestValidationError{
+				field:  "Port",
+				reason: "value must be inside range [1024, 65535)",
+			}
+		}
+
+	}
+
+	if m.GetDownloadPort() != 0 {
+
+		if val := m.GetDownloadPort(); val < 1024 || val >= 65535 {
+			return UpdateCDNRequestValidationError{
+				field:  "DownloadPort",
+				reason: "value must be inside range [1024, 65535)",
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// UpdateCDNRequestValidationError is the validation error returned by
+// UpdateCDNRequest.Validate if the designated constraints aren't met.
+type UpdateCDNRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateCDNRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateCDNRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateCDNRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateCDNRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateCDNRequestValidationError) ErrorName() string { return "UpdateCDNRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e UpdateCDNRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateCDNRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateCDNRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateCDNRequestValidationError{}
+
 // Validate checks the field values on SchedulerCluster with the rules defined
 // in the proto definition for this message. If any rules are violated, an
 // error is returned.
@@ -643,6 +911,304 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetSchedulerRequestValidationError{}
+
+// Validate checks the field values on CreateSchedulerRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *CreateSchedulerRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
+		return CreateSchedulerRequestValidationError{
+			field:  "SourceType",
+			reason: "value must be one of the defined enum values",
+		}
+	}
+
+	if uri, err := url.Parse(m.GetHostName()); err != nil {
+		return CreateSchedulerRequestValidationError{
+			field:  "HostName",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+	} else if !uri.IsAbs() {
+		return CreateSchedulerRequestValidationError{
+			field:  "HostName",
+			reason: "value must be absolute",
+		}
+	}
+
+	if m.GetVips() != "" {
+
+		if l := utf8.RuneCountInString(m.GetVips()); l < 1 || l > 1024 {
+			return CreateSchedulerRequestValidationError{
+				field:  "Vips",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	if m.GetIdc() != "" {
+
+		if l := utf8.RuneCountInString(m.GetIdc()); l < 1 || l > 1024 {
+			return CreateSchedulerRequestValidationError{
+				field:  "Idc",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	if m.GetLocation() != "" {
+
+		if utf8.RuneCountInString(m.GetLocation()) > 1024 {
+			return CreateSchedulerRequestValidationError{
+				field:  "Location",
+				reason: "value length must be at most 1024 runes",
+			}
+		}
+
+	}
+
+	if len(m.GetNetConfig()) > 0 {
+
+		if len(m.GetNetConfig()) < 1 {
+			return CreateSchedulerRequestValidationError{
+				field:  "NetConfig",
+				reason: "value length must be at least 1 bytes",
+			}
+		}
+
+	}
+
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		return CreateSchedulerRequestValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
+		}
+	}
+
+	if val := m.GetPort(); val < 1024 || val >= 65535 {
+		return CreateSchedulerRequestValidationError{
+			field:  "Port",
+			reason: "value must be inside range [1024, 65535)",
+		}
+	}
+
+	return nil
+}
+
+// CreateSchedulerRequestValidationError is the validation error returned by
+// CreateSchedulerRequest.Validate if the designated constraints aren't met.
+type CreateSchedulerRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateSchedulerRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateSchedulerRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateSchedulerRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateSchedulerRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateSchedulerRequestValidationError) ErrorName() string {
+	return "CreateSchedulerRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateSchedulerRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateSchedulerRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateSchedulerRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateSchedulerRequestValidationError{}
+
+// Validate checks the field values on UpdateSchedulerRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *UpdateSchedulerRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
+		return UpdateSchedulerRequestValidationError{
+			field:  "SourceType",
+			reason: "value must be one of the defined enum values",
+		}
+	}
+
+	if uri, err := url.Parse(m.GetHostName()); err != nil {
+		return UpdateSchedulerRequestValidationError{
+			field:  "HostName",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+	} else if !uri.IsAbs() {
+		return UpdateSchedulerRequestValidationError{
+			field:  "HostName",
+			reason: "value must be absolute",
+		}
+	}
+
+	if m.GetVips() != "" {
+
+		if l := utf8.RuneCountInString(m.GetVips()); l < 1 || l > 1024 {
+			return UpdateSchedulerRequestValidationError{
+				field:  "Vips",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	if m.GetIdc() != "" {
+
+		if l := utf8.RuneCountInString(m.GetIdc()); l < 1 || l > 1024 {
+			return UpdateSchedulerRequestValidationError{
+				field:  "Idc",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	if m.GetLocation() != "" {
+
+		if utf8.RuneCountInString(m.GetLocation()) > 1024 {
+			return UpdateSchedulerRequestValidationError{
+				field:  "Location",
+				reason: "value length must be at most 1024 runes",
+			}
+		}
+
+	}
+
+	if len(m.GetNetConfig()) > 0 {
+
+		if len(m.GetNetConfig()) < 1 {
+			return UpdateSchedulerRequestValidationError{
+				field:  "NetConfig",
+				reason: "value length must be at least 1 bytes",
+			}
+		}
+
+	}
+
+	if m.GetIp() != "" {
+
+		if ip := net.ParseIP(m.GetIp()); ip == nil {
+			return UpdateSchedulerRequestValidationError{
+				field:  "Ip",
+				reason: "value must be a valid IP address",
+			}
+		}
+
+	}
+
+	if m.GetPort() != 0 {
+
+		if val := m.GetPort(); val < 1024 || val >= 65535 {
+			return UpdateSchedulerRequestValidationError{
+				field:  "Port",
+				reason: "value must be inside range [1024, 65535)",
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// UpdateSchedulerRequestValidationError is the validation error returned by
+// UpdateSchedulerRequest.Validate if the designated constraints aren't met.
+type UpdateSchedulerRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateSchedulerRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateSchedulerRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateSchedulerRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateSchedulerRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateSchedulerRequestValidationError) ErrorName() string {
+	return "UpdateSchedulerRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateSchedulerRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateSchedulerRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateSchedulerRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateSchedulerRequestValidationError{}
 
 // Validate checks the field values on ListSchedulersRequest with the rules
 // defined in the proto definition for this message. If any rules are

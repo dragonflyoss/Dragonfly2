@@ -62,6 +62,26 @@ message GetCDNRequest {
   string host_name = 2 [(validate.rules).string.uri = true];
 }
 
+message CreateCDNRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.uri = true];
+  string idc = 3 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string location = 4 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
+  string ip = 5 [(validate.rules).string.ip = true];
+  int32 port = 6 [(validate.rules).int32 = { gte: 1024, lt: 65535 }];
+  int32 download_port = 7 [(validate.rules).int32 = { gte: 1024, lt: 65535 }];
+}
+
+message UpdateCDNRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.uri = true];
+  string idc = 3 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string location = 4 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
+  string ip = 5 [(validate.rules).string = { ip: true, ignore_empty: true }];
+  int32 port = 6 [(validate.rules).int32 = { gte: 1024, lt: 65535, ignore_empty: true }];
+  int32 download_port = 7 [(validate.rules).int32 = { gte: 1024, lt: 65535, ignore_empty: true }];
+}
+
 message SchedulerCluster {
   uint64 id = 1;
   string name = 2;
@@ -90,6 +110,28 @@ message GetSchedulerRequest {
   string host_name = 2 [(validate.rules).string.uri = true];
 }
 
+message CreateSchedulerRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.uri = true];
+  string vips = 3 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string idc = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string location = 5 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
+  bytes net_config = 6 [(validate.rules).bytes = { min_len: 1, ignore_empty: true }];
+  string ip = 7 [(validate.rules).string.ip = true];
+  int32 port = 8 [(validate.rules).int32 = { gte: 1024, lt: 65535 }];
+}
+
+message UpdateSchedulerRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.uri = true];
+  string vips = 3 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string idc = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string location = 5 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
+  bytes net_config = 6 [(validate.rules).bytes = { min_len: 1, ignore_empty: true }];
+  string ip = 7 [(validate.rules).string = { ip: true, ignore_empty: true }];
+  int32 port = 8 [(validate.rules).int32 = { gte: 1024, lt: 65535, ignore_empty: true }];
+}
+
 message ListSchedulersRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string host_name = 2 [(validate.rules).string.uri = true];
@@ -110,10 +152,18 @@ message KeepAliveRequest {
 service Manager {
   // Get CDN and CDN cluster configuration
   rpc GetCDN(GetCDNRequest) returns(CDN);
+  // Create CDN configuration
+  rpc CreateCDN(CreateCDNRequest) returns(CDN);
+  // Update CDN configuration
+  rpc UpdateCDN(UpdateCDNRequest) returns(CDN);
   // Get Scheduler and Scheduler cluster configuration
   rpc GetScheduler(GetSchedulerRequest)returns(Scheduler);
+  // Create scheduler configuration
+  rpc CreateScheduler(CreateSchedulerRequest) returns(Scheduler);
+  // Update scheduler configuration
+  rpc UpdateScheduler(UpdateSchedulerRequest) returns(Scheduler);
   // List acitve schedulers configuration
   rpc ListSchedulers(ListSchedulersRequest)returns(ListSchedulersResponse);
   // KeepAlive with manager
-  rpc KeepAlive(KeepAliveRequest)returns(google.protobuf.Empty);
+  rpc KeepAlive(stream KeepAliveRequest)returns(google.protobuf.Empty);
 }

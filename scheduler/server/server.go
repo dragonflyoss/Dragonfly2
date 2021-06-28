@@ -18,6 +18,7 @@ package server
 
 import (
 	"context"
+	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
@@ -52,11 +53,12 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize manager client
-	if cfg.Manager != nil {
-		s.managerClient, err = client.NewClient(cfg.Manager.NetAddrs)
+	if len(cfg.Manager.NetAddrs) > 0 {
+		managerClient, err := client.New(cfg.Manager.NetAddrs)
 		if err != nil {
 			return nil, err
 		}
+		s.managerClient = managerClient
 	}
 
 	// Initialize dynconfig client
@@ -68,7 +70,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	if cfg.Dynconfig.Type == dynconfig.ManagerSourceType {
-		client, err := client.NewClient(cfg.Dynconfig.NetAddrs)
+		client, err := client.New(cfg.Dynconfig.NetAddrs)
 		if err != nil {
 			return nil, err
 		}
@@ -87,10 +89,11 @@ func New(cfg *config.Config) (*Server, error) {
 	s.dynconfig = dynconfig
 
 	// Initialize scheduler service
-	s.service, err = service.NewSchedulerService(cfg, s.dynconfig)
+	service, err := service.NewSchedulerService(cfg, s.dynconfig)
 	if err != nil {
 		return nil, err
 	}
+	s.service = service
 
 	s.worker = worker.NewGroup(cfg, s.service)
 	s.server = NewSchedulerServer(cfg, WithSchedulerService(s.service),
@@ -106,15 +109,14 @@ func (s *Server) Serve() error {
 	defer cancel()
 
 	s.dynconfig.Serve()
-
 	go s.worker.Serve()
 	defer s.worker.Stop()
 
 	if s.managerClient != nil {
-		s.managerClient.KeepAlive(ctx, &manager.KeepAliveRequest{
-			HostName: iputils.HostName,
-			Type:     manager.ResourceType_Scheduler,
-		})
+		s.register(ctx)
+		logger.Info("scheduler register to manager")
+
+		go s.keepAlive(ctx)
 		logger.Info("start scheduler keep alive")
 	}
 
@@ -132,4 +134,47 @@ func (s *Server) Stop() (err error) {
 		rpc.StopServer()
 	}
 	return
+}
+
+func (s *Server) register(ctx context.Context) error {
+	if _, err := s.managerClient.CreateScheduler(ctx, &manager.CreateSchedulerRequest{
+		SourceType: manager.SourceType_SCHEDULER_SOURCE,
+		HostName:   iputils.HostName,
+		Ip:         s.config.IP,
+		Port:       int32(s.config.Port),
+	}); err != nil {
+		if _, err := s.managerClient.UpdateScheduler(ctx, &manager.UpdateSchedulerRequest{
+			SourceType: manager.SourceType_SCHEDULER_SOURCE,
+			HostName:   iputils.HostName,
+			Ip:         s.config.IP,
+			Port:       int32(s.config.Port),
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) keepAlive(ctx context.Context) error {
+	stream, err := s.managerClient.KeepAlive(ctx)
+	if err != nil {
+		logger.Errorf("create keepalive failed: %v\n", err)
+		return err
+	}
+
+	tick := time.NewTicker(2 * time.Second)
+	hostName := iputils.HostName
+	for {
+		select {
+		case <-tick.C:
+			if err := stream.Send(&manager.KeepAliveRequest{
+				HostName:   hostName,
+				SourceType: manager.SourceType_SCHEDULER_SOURCE,
+			}); err != nil {
+				logger.Errorf("%s send keepalive failed: %v\n", hostName, err)
+				return err
+			}
+		}
+	}
 }

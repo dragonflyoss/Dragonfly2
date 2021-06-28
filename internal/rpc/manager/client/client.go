@@ -25,7 +25,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
 
@@ -33,11 +32,19 @@ import (
 type ManagerClient interface {
 	GetCDN(context.Context, *manager.GetCDNRequest) (*manager.CDN, error)
 
+	CreateCDN(context.Context, *manager.CreateCDNRequest) (*manager.CDN, error)
+
+	UpdateCDN(context.Context, *manager.UpdateCDNRequest) (*manager.CDN, error)
+
 	GetScheduler(context.Context, *manager.GetSchedulerRequest) (*manager.Scheduler, error)
+
+	CreateScheduler(context.Context, *manager.CreateSchedulerRequest) (*manager.Scheduler, error)
+
+	UpdateScheduler(context.Context, *manager.UpdateSchedulerRequest) (*manager.Scheduler, error)
 
 	ListSchedulers(context.Context, *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
 
-	KeepAlive(context.Context, *manager.KeepAliveRequest) (*empty.Empty, error)
+	KeepAlive(context.Context) (manager.Manager_KeepAliveClient, error)
 }
 
 type managerClient struct {
@@ -69,14 +76,30 @@ func (mc *managerClient) GetCDN(ctx context.Context, req *manager.GetCDNRequest)
 	return mc.client.GetCDN(ctx, req)
 }
 
+func (mc *managerClient) CreateCDN(ctx context.Context, req *manager.CreateCDNRequest) (*manager.CDN, error) {
+	return mc.client.CreateCDN(ctx, req)
+}
+
+func (mc *managerClient) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
+	return mc.client.UpdateCDN(ctx, req)
+}
+
 func (mc *managerClient) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	return mc.client.GetScheduler(ctx, req)
+}
+
+func (mc *managerClient) CreateScheduler(ctx context.Context, req *manager.CreateSchedulerRequest) (*manager.Scheduler, error) {
+	return mc.client.CreateScheduler(ctx, req)
+}
+
+func (mc *managerClient) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
+	return mc.client.UpdateScheduler(ctx, req)
 }
 
 func (mc *managerClient) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	return mc.client.ListSchedulers(ctx, req)
 }
 
-func (mc *managerClient) KeepAlive(ctx context.Context, req *manager.KeepAliveRequest) (*empty.Empty, error) {
-	return mc.client.KeepAlive(ctx, req)
+func (mc *managerClient) KeepAlive(ctx context.Context) (manager.Manager_KeepAliveClient, error) {
+	return mc.client.KeepAlive(ctx)
 }

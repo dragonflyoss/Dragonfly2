@@ -25,40 +25,36 @@ import (
 )
 
 func TestCDNHostsToServers(t *testing.T) {
-	mockServerInfo := &manager.ServerInfo{
-		HostInfo: &manager.HostInfo{
-			HostName: "foo",
-		},
-		RpcPort:  8002,
-		DownPort: 8001,
+	mockServerInfo := &manager.CDN{
+		HostName:     "foo",
+		Port:         8002,
+		DownloadPort: 8001,
 	}
 
 	tests := []struct {
 		name   string
-		hosts  []*manager.ServerInfo
+		hosts  []*manager.CDN
 		expect func(t *testing.T, data interface{})
 	}{
 		{
 			name: "normal conversion",
-			hosts: []*manager.ServerInfo{
+			hosts: []*manager.CDN{
 				{
-					HostInfo: &manager.HostInfo{
-						HostName: "foo",
-					},
-					RpcPort:  8002,
-					DownPort: 8001,
+					HostName:     "foo",
+					Port:         8002,
+					DownloadPort: 8001,
 				},
 			},
 			expect: func(t *testing.T, data interface{}) {
 				assert := testifyassert.New(t)
-				assert.EqualValues(map[string]*manager.ServerInfo{
+				assert.EqualValues(map[string]*manager.CDN{
 					"foo": mockServerInfo,
 				}, data)
 			},
 		},
 		{
 			name:  "hosts is empty",
-			hosts: []*manager.ServerInfo{},
+			hosts: []*manager.CDN{},
 			expect: func(t *testing.T, data interface{}) {
 				assert := testifyassert.New(t)
 				assert.Empty(data)
@@ -77,19 +73,16 @@ func TestCDNHostsToServers(t *testing.T) {
 func TestCDNHostsToNetAddrs(t *testing.T) {
 	tests := []struct {
 		name   string
-		hosts  []*manager.ServerInfo
+		hosts  []*manager.CDN
 		expect func(t *testing.T, data interface{})
 	}{
 		{
 			name: "normal conversion",
-			hosts: []*manager.ServerInfo{
+			hosts: []*manager.CDN{
 				{
-					HostInfo: &manager.HostInfo{
-						Ip:       "127.0.0.1",
-						HostName: "foo",
-					},
-					RpcPort:  8002,
-					DownPort: 8001,
+					HostName:     "foo",
+					Port:         8002,
+					DownloadPort: 8001,
 				},
 			},
 			expect: func(t *testing.T, data interface{}) {
@@ -104,13 +97,11 @@ func TestCDNHostsToNetAddrs(t *testing.T) {
 		},
 		{
 			name: "host ip is empty",
-			hosts: []*manager.ServerInfo{
+			hosts: []*manager.CDN{
 				{
-					HostInfo: &manager.HostInfo{
-						HostName: "foo",
-					},
-					RpcPort:  8002,
-					DownPort: 8001,
+					HostName:     "foo",
+					Port:         8002,
+					DownloadPort: 8001,
 				},
 			},
 			expect: func(t *testing.T, data interface{}) {
@@ -125,7 +116,7 @@ func TestCDNHostsToNetAddrs(t *testing.T) {
 		},
 		{
 			name:  "hosts is empty",
-			hosts: []*manager.ServerInfo{},
+			hosts: []*manager.CDN{},
 			expect: func(t *testing.T, data interface{}) {
 				assert := testifyassert.New(t)
 				assert.Empty(data)

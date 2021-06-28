@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var config = Config{
@@ -16,6 +17,7 @@ var config = Config{
 		CachePath:  SchedulerDynconfigCachePath,
 	},
 	Server: ServerConfig{
+		IP:   iputils.HostIP,
 		Port: 8002,
 	},
 	Worker: SchedulerWorkerConfig{
@@ -31,4 +33,7 @@ var config = Config{
 		TaskDelay:     3600 * 1000,
 		PeerTaskDelay: 3600 * 1000,
 	},
+	Manager: &ManagerConfig{
+		KeepAliveInterval: 5 * time.Second,
+	}
 }
