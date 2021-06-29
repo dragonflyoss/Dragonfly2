@@ -207,7 +207,7 @@ func (s *Server) keepAlive(ctx context.Context) error {
 				SourceType: manager.SourceType_CDN_SOURCE,
 			}); err != nil {
 				logger.Errorf("%s send keepalive failed: %v\n", hostName, err)
-				s.managerClient.KeepAlive(ctx)
+				stream, err = s.managerClient.KeepAlive(ctx)
 				if err != nil {
 					logger.Errorf("create keepalive failed: %v\n", err)
 					return err
