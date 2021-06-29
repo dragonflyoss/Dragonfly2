@@ -140,8 +140,8 @@ func (m *manager) Download(ctx context.Context,
 	peerTask := &peer.FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url:      req.Url,
-			Filter:   req.Filter,
-			BizId:    req.BizId,
+			Filter:   req.UrlMeta.Filter,
+			BizId:    req.UrlMeta.Tag,
 			UrlMeta:  req.UrlMeta,
 			PeerId:   clientutil.GenPeerID(m.peerHost),
 			PeerHost: m.peerHost,
