@@ -186,51 +186,42 @@ func (eval *evaluator) SelectParentCandidates(peer *types.PeerNode) (list []*typ
 	return
 }
 
-func (eval *evaluator) Evaluate(dst *types.PeerNode, src *types.PeerNode) (result float64, error error) {
-	profits := e.getProfits(dst, src)
+func (eval *evaluator) Evaluate(dst *types.PeerNode, src *types.PeerNode) float64 {
+	profits := eval.getProfits(dst, src)
 
-	load, err := e.getHostLoad(dst.Host)
-	if err != nil {
-		return
-	}
+	load := eval.getHostLoad(dst.GetHost())
 
-	dist, err := e.getDistance(dst, src)
-	if err != nil {
-		return
-	}
+	dist := eval.getDistance(dst, src)
 
-	result = profits * load * dist
-	return
+	return profits * load * dist
 }
 
 // getProfits 0.0~unlimited larger and better
 func (eval *evaluator) getProfits(dst *types.PeerNode, src *types.PeerNode) float64 {
-	diff := src.GetDiffPieceNum(dst)
-	deep := dst.GetDeep()
+	diff := types.GetDiffPieceNum(src, dst)
+	depth := dst.GetDepth()
 
-	return float64((diff+1)*src.GetSubTreeNodesNum()) / float64(deep*deep)
+	return float64((diff+1)*src.GetWholeTreeNode()) / float64(depth*depth)
 }
 
 // getHostLoad 0.0~1.0 larger and better
-func (eval *evaluator) getHostLoad(host *types.Host) (load float64, err error) {
-	load = 1.0 - host.GetUploadLoadPercent()
-	return
+func (eval *evaluator) getHostLoad(host *types.Host) float64 {
+	return 1.0 - host.GetUploadLoadPercent()
 }
 
 // getDistance 0.0~1.0 larger and better
-func (eval *evaluator) getDistance(dst *types.PeerNode, src *types.PeerNode) (dist float64, err error) {
+func (eval *evaluator) getDistance(dst *types.PeerNode, src *types.PeerNode) float64 {
 	hostDist := 40.0
-	if dst.Host == src.Host {
+	if dst.GetHost() == src.GetHost() {
 		hostDist = 0.0
-	} else if dst.Host != nil && src.Host != nil {
-		if dst.Host.NetTopology == src.Host.NetTopology && src.Host.NetTopology != "" {
+	} else {
+		if src.GetHost().NetTopology != "" && dst.GetHost().NetTopology == src.GetHost().NetTopology {
 			hostDist = 10.0
-		} else if dst.Host.Idc == src.Host.Idc && src.Host.Idc != "" {
+		} else if src.GetHost().Idc != "" && dst.GetHost().Idc == src.GetHost().Idc {
 			hostDist = 20.0
-		} else if dst.Host.SecurityDomain != src.Host.SecurityDomain {
+		} else if dst.GetHost().SecurityDomain != src.GetHost().SecurityDomain {
 			hostDist = 80.0
 		}
 	}
-
-	return 1.0 - hostDist/80.0, nil
+	return 1.0 - hostDist/80.0
 }

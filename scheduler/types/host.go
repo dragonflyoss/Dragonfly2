@@ -26,8 +26,8 @@ import (
 type HostType int32
 
 const (
-	HostTypePeer = iota + 1
-	HostTypeCdn
+	PeerHost = iota + 1
+	CDNHost
 )
 
 type Host struct {
@@ -58,6 +58,10 @@ type Host struct {
 	currentUploadLoad   atomic.Int32
 	totalDownloadLoad   int32
 	currentDownloadLoad atomic.Int32
+}
+
+func NewHost() *Host {
+	return &Host{}
 }
 
 func (h *Host) AddPeerTask(peerNode *PeerNode) {
@@ -146,4 +150,8 @@ func (h *Host) GetFreeDownloadLoad() int32 {
 	h.loadLock.Lock()
 	defer h.loadLock.Unlock()
 	return h.totalDownloadLoad - h.currentDownloadLoad
+}
+
+func IsCDN(host *Host) bool {
+	return host.Type == CDNHost
 }

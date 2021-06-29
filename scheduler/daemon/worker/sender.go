@@ -44,7 +44,7 @@ type SenderGroup struct {
 var _ ISender = (*SenderGroup)(nil)
 
 type Sender struct {
-	jobChan          chan *string
+	jobChan          chan string
 	stopCh           <-chan struct{}
 	schedulerService *scheduler.SchedulerService
 }
@@ -61,7 +61,7 @@ func (sg *SenderGroup) Serve() {
 	sg.stopCh = make(chan struct{})
 	for i := 0; i < sg.senderNum; i++ {
 		s := &Sender{
-			jobChan:          make(chan *string, sg.chanSize),
+			jobChan:          make(chan string, sg.chanSize),
 			stopCh:           sg.stopCh,
 			schedulerService: sg.schedulerService,
 		}
@@ -76,13 +76,13 @@ func (sg *SenderGroup) Stop() {
 	logger.Infof("stop sender worker : %d", sg.senderNum)
 }
 
-func (sg *SenderGroup) Send(peerTask *types.PeerNode) {
-	sendID := crc32.ChecksumIEEE([]byte(peerTask.Pid)) % uint32(sg.senderNum)
-	sg.senderList[sendID].Send(peerTask)
+func (sg *SenderGroup) Send(peer *types.PeerNode) {
+	sendID := crc32.ChecksumIEEE([]byte(peer.GetPeerID())) % uint32(sg.senderNum)
+	sg.senderList[sendID].Send(peer)
 }
 
 func (s *Sender) Send(peerTask *types.PeerNode) {
-	s.jobChan <- &peerTask.Pid
+	s.jobChan <- peerTask.GetPeerID()
 }
 
 func (s *Sender) Serve() {

@@ -38,14 +38,14 @@ type Worker struct {
 	updatePieceResultQueue chan *scheduler2.PieceResult
 	sender                 ISender
 	stopCh                 <-chan struct{}
-	sendJob                func(*types.PeerTask)
+	sendJob                func(*types.PeerNode)
 
 	schedulerService *scheduler.SchedulerService
 }
 
 var _ IWorker = (*Worker)(nil)
 
-func NewWorker(schedulerService *scheduler.SchedulerService, sender ISender, sendJod func(*types.PeerTask), stop <-chan struct{}) *Worker {
+func NewWorker(schedulerService *scheduler.SchedulerService, sender ISender, sendJod func(*types.PeerNode), stop <-chan struct{}) *Worker {
 	return &Worker{
 		scheduleQueue:          workqueue.New(),
 		updatePieceResultQueue: make(chan *scheduler2.PieceResult, 100000),
@@ -90,7 +90,7 @@ func (w *Worker) doUpdatePieceResultWorker() {
 	}
 }
 
-func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.PeerTask, needSchedule bool, err error) {
+func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peer *types.PeerNode, needSchedule bool, err error) {
 	if pr == nil {
 		return
 	}
@@ -156,7 +156,7 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peerTask *types.
 	return
 }
 
-func (w *Worker) ReceiveJob(peerTask *types.PeerTask) {
+func (w *Worker) ReceiveJob(peerTask *types.PeerNode) {
 	logger.Debugf("doScheduleWorker begin add [%s]", peerTask.Pid)
 	w.scheduleQueue.Add(peerTask)
 }
@@ -182,7 +182,7 @@ func (w *Worker) doScheduleWorker() {
 	}
 }
 
-func (w *Worker) doSchedule(peerTask *types.PeerTask) {
+func (w *Worker) doSchedule(peerTask *types.PeerNode) {
 	if peerTask == nil {
 		return
 	}

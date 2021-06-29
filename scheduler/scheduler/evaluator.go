@@ -30,15 +30,16 @@ import (
 )
 
 type Evaluator interface {
-	NeedAdjustParent(peer *types.PeerTask) bool
+	NeedAdjustParent(peer *types.PeerNode) bool
 
-	IsNodeBad(peer *types.PeerTask) bool
+	IsBadNode(peer *types.PeerNode) bool
 
-	Evaluate(dst *types.PeerTask, src *types.PeerTask) (float64, error)
+	// todo Normalization
+	Evaluate(dst *types.PeerNode, src *types.PeerNode) float64
 
-	SelectChildCandidates(peer *types.PeerTask) []*types.PeerTask
+	SelectChildCandidates(peer *types.PeerNode) []*types.PeerNode
 
-	SelectParentCandidates(peer *types.PeerTask) []*types.PeerTask
+	SelectParentCandidates(peer *types.PeerNode) []*types.PeerNode
 }
 
 type evaluatorFactory struct {

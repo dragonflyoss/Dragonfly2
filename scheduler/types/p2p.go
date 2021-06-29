@@ -47,14 +47,6 @@ func (pe *P2PEdge) AddCost(cost int64) {
 //	Leaf        bool
 //}
 
-func (node *P2PNode) HasParent() bool {
-	return node.Parent != nil
-}
-
-func (node *P2PNode) HistoryCost() time.Duration {
-
-}
-
 //
 //type PeerNode struct {
 //	Pid            string // peer id
