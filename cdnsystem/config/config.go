@@ -132,7 +132,12 @@ func NewDefaultBaseProperties() *BaseProperties {
 		StorageMode:             DefaultStorageMode,
 		AdvertiseIP:             iputils.HostIP,
 		Manager: &ManagerConfig{
-			KeepAliveInterval: DefaultKeepAliveInterval,
+			KeepAlive: &KeepAliveConfig{
+				Interval:         DefaultKeepAliveInterval,
+				RetryMaxAttempts: DefaultKeepAliveRetryMaxAttempts,
+				RetryInitBackOff: DefaultKeepAliveRetryInitBackOff,
+				RetryMaxBackOff:  DefaultKeepAliveRetryMaxBackOff,
+			},
 		},
 	}
 }
@@ -192,6 +197,20 @@ type ManagerConfig struct {
 	// CDNClusterID is cdn cluster id.
 	CDNClusterID uint64 `yaml:"cdnClusterID" mapstructure:"cdnClusterID"`
 
+	// KeepAlive configuration
+	KeepAlive *KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
+}
+
+type KeepAliveConfig struct {
 	// Keep alive interval
-	KeepAliveInterval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`
+	Interval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`
+
+	// Keep alive retry max attempts
+	RetryMaxAttempts int `yaml:"keepAliveRetryMaxAttempt" mapstructure:"keepAliveRetryMaxAttempt"`
+
+	// Keep alive retry init backoff
+	RetryInitBackOff float64 `yaml:"keepAliveRetryInitBackOff" mapstructure:"keepAliveRetryInitBackOff"`
+
+	// Keep alive retry max backoff
+	RetryMaxBackOff float64 `yaml:"keepAliveRetryMaxBackOff" mapstructure:"keepAliveRetryMaxBackOff"`
 }

@@ -28,6 +28,7 @@ import (
 
 	// Server registered to grpc
 	_ "d7y.io/dragonfly/v2/internal/rpc/scheduler/server"
+	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"
@@ -134,8 +135,18 @@ func (s *Server) Serve() error {
 	defer s.worker.Stop()
 
 	if s.managerClient != nil {
-		go s.keepAlive(ctx)
-		logger.Info("start scheduler keep alive")
+		retry.Run(ctx, func() (interface{}, bool, error) {
+			if err := s.keepAlive(ctx); err != nil {
+				logger.Errorf("keepalive to manager failed %v", err)
+				return nil, false, err
+			}
+			return nil, false, nil
+		},
+			s.config.Manager.KeepAlive.RetryInitBackOff,
+			s.config.Manager.KeepAlive.RetryMaxBackOff,
+			s.config.Manager.KeepAlive.RetryMaxAttempts,
+			nil,
+		)
 	}
 
 	logger.Infof("start server at port %d", port)
@@ -204,7 +215,7 @@ func (s *Server) keepAlive(ctx context.Context) error {
 		return err
 	}
 
-	tick := time.NewTicker(s.config.Manager.KeepAliveInterval)
+	tick := time.NewTicker(s.config.Manager.KeepAlive.Interval)
 	hostName := iputils.HostName
 	for {
 		select {

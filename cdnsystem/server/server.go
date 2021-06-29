@@ -35,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc"
 	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
+	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -58,29 +59,29 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	// progress manager
+	// Progress manager
 	progressMgr, err := progress.NewManager()
 	if err != nil {
 		return nil, errors.Wrapf(err, "create progress manager")
 	}
 
-	// storage manager
+	// Storage manager
 	storageMgr, ok := storage.Get(cfg.StorageMode)
 	if !ok {
 		return nil, fmt.Errorf("can not find storage pattern %s", cfg.StorageMode)
 	}
-	// cdn manager
+	// CDN manager
 	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create cdn manager")
 	}
-	// task manager
+	// Task manager
 	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create task manager")
 	}
 	storageMgr.Initialize(taskMgr)
-	// gc manager
+	// GC manager
 	if err != nil {
 		return nil, errors.Wrapf(err, "create gc manager")
 	}
@@ -91,9 +92,13 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	s.seedServer = cdnSeedServer
 
-	// manager client
+	// Manager client
 	if cfg.Manager.Addr != "" {
-		managerConn, err := grpc.Dial(cfg.Manager.Addr, grpc.WithInsecure(), grpc.WithBlock())
+		managerConn, err := grpc.Dial(
+			cfg.Manager.Addr,
+			grpc.WithInsecure(),
+			grpc.WithBlock(),
+		)
 		if err != nil {
 			logger.Errorf("did not connect: %v", err)
 			return nil, err
@@ -120,15 +125,25 @@ func (s *Server) Serve() (err error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	// start gc
+	// Start gc
 	err = gc.StartGC(ctx)
 	if err != nil {
 		return err
 	}
 
 	if s.managerClient != nil {
-		go s.keepAlive(ctx)
-		logger.Info("start cdn keep alive")
+		retry.Run(ctx, func() (interface{}, bool, error) {
+			if err := s.keepAlive(ctx); err != nil {
+				logger.Errorf("keepalive to manager failed %v", err)
+				return nil, false, err
+			}
+			return nil, false, nil
+		},
+			s.config.Manager.KeepAlive.RetryInitBackOff,
+			s.config.Manager.KeepAlive.RetryMaxBackOff,
+			s.config.Manager.KeepAlive.RetryMaxAttempts,
+			nil,
+		)
 	}
 
 	err = rpc.StartTCPServer(s.config.ListenPort, s.config.ListenPort, s.seedServer)
@@ -188,16 +203,13 @@ func (s *Server) register(ctx context.Context) error {
 }
 
 func (s *Server) keepAlive(ctx context.Context) error {
-	var stream manager.Manager_KeepAliveClient
-	var err error
-
-	stream, err = s.managerClient.KeepAlive(ctx)
+	stream, err := s.managerClient.KeepAlive(ctx)
 	if err != nil {
 		logger.Errorf("create keepalive failed: %v\n", err)
 		return err
 	}
 
-	tick := time.NewTicker(s.config.Manager.KeepAliveInterval)
+	tick := time.NewTicker(s.config.Manager.KeepAlive.Interval)
 	hostName := iputils.HostName
 	for {
 		select {
@@ -207,11 +219,7 @@ func (s *Server) keepAlive(ctx context.Context) error {
 				SourceType: manager.SourceType_CDN_SOURCE,
 			}); err != nil {
 				logger.Errorf("%s send keepalive failed: %v\n", hostName, err)
-				stream, err = s.managerClient.KeepAlive(ctx)
-				if err != nil {
-					logger.Errorf("create keepalive failed: %v\n", err)
-					return err
-				}
+				return err
 			}
 		}
 	}

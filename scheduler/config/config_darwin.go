@@ -13,7 +13,7 @@ import (
 var config = Config{
 	Dynconfig: &DynconfigOptions{
 		Type:       dc.LocalSourceType,
-		ExpireTime: 60000 * 1000 * 1000,
+		ExpireTime: 30000 * 1000 * 1000,
 		Path:       SchedulerDynconfigPath,
 		CachePath:  SchedulerDynconfigCachePath,
 	},
@@ -35,6 +35,11 @@ var config = Config{
 		PeerTaskDelay: 3600 * 1000,
 	},
 	Manager: &ManagerConfig{
-		KeepAliveInterval: 5 * time.Second,
+		KeepAlive: &KeepAliveConfig{
+			Interval:         5 * time.Second,
+			RetryMaxAttempts: 100000000,
+			RetryInitBackOff: 5,
+			RetryMaxBackOff:  10,
+		},
 	},
 }

@@ -73,5 +73,8 @@ const (
 )
 
 const (
-	DefaultKeepAliveInterval = 5 * time.Second
+	DefaultKeepAliveInterval                 = 5 * time.Second
+	DefaultKeepAliveRetryMaxAttempts         = 100000000
+	DefaultKeepAliveRetryInitBackOff float64 = 5
+	DefaultKeepAliveRetryMaxBackOff  float64 = 10
 )

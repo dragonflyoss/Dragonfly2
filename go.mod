@@ -22,6 +22,7 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/mux v1.7.3
+	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9

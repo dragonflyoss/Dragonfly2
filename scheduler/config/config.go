@@ -57,6 +57,12 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	if c.Manager != nil {
+		if c.Manager.KeepAlive == nil {
+			return errors.New("empty manager keepAlive is not specified")
+		}
+	}
+
 	return nil
 }
 
@@ -67,8 +73,22 @@ type ManagerConfig struct {
 	// SchedulerClusterID is scheduler cluster id.
 	SchedulerClusterID uint64 `yaml:"schedulerClusterID" mapstructure:"schedulerClusterID"`
 
+	// KeepAlive configuration
+	KeepAlive *KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
+}
+
+type KeepAliveConfig struct {
 	// Keep alive interval
-	KeepAliveInterval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`
+	Interval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`
+
+	// Keep alive retry max attempts
+	RetryMaxAttempts int `yaml:"keepAliveRetryMaxAttempt" mapstructure:"keepAliveRetryMaxAttempt"`
+
+	// Keep alive retry init backoff
+	RetryInitBackOff float64 `yaml:"keepAliveRetryInitBackOff" mapstructure:"keepAliveRetryInitBackOff"`
+
+	// Keep alive retry max backoff
+	RetryMaxBackOff float64 `yaml:"keepAliveRetryMaxBackOff" mapstructure:"keepAliveRetryMaxBackOff"`
 }
 
 type DynconfigOptions struct {

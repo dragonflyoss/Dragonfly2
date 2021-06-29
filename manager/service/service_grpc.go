@@ -163,6 +163,13 @@ func (s *ServiceGRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNReque
 		return nil, err
 	}
 
+	if err := s.cache.Delete(
+		context.TODO(),
+		cache.MakeCacheKey("cdn", cdn.HostName),
+	); err != nil {
+		logger.Warnf("%s refresh keepalive status failed", cdn.HostName)
+	}
+
 	return &manager.CDN{
 		Id:           uint64(cdn.ID),
 		HostName:     cdn.HostName,
@@ -191,6 +198,13 @@ func (s *ServiceGRPC) AddCDNToCDNCluster(ctx context.Context, req *manager.AddCD
 
 	if err := s.db.Model(&cdnCluster).Association("CDNs").Append(&cdn); err != nil {
 		return nil, err
+	}
+
+	if err := s.cache.Delete(
+		context.TODO(),
+		cache.MakeCacheKey("cdn", cdn.HostName),
+	); err != nil {
+		logger.Warnf("%s refresh keepalive status failed", cdn.HostName)
 	}
 
 	return &emptypb.Empty{}, nil
@@ -354,6 +368,13 @@ func (s *ServiceGRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateSc
 		return nil, err
 	}
 
+	if err := s.cache.Delete(
+		context.TODO(),
+		cache.MakeCacheKey("scheduler", scheduler.HostName),
+	); err != nil {
+		logger.Warnf("%s refresh keepalive status failed", scheduler.HostName)
+	}
+
 	return &manager.Scheduler{
 		Id:        uint64(scheduler.ID),
 		HostName:  scheduler.HostName,
@@ -384,6 +405,13 @@ func (s *ServiceGRPC) AddSchedulerClusterToSchedulerCluster(ctx context.Context,
 
 	if err := s.db.Model(&schedulerCluster).Association("Schedulers").Append(&scheduler); err != nil {
 		return nil, err
+	}
+
+	if err := s.cache.Delete(
+		context.TODO(),
+		cache.MakeCacheKey("scheduler", scheduler.HostName),
+	); err != nil {
+		logger.Warnf("%s refresh keepalive status failed", scheduler.HostName)
 	}
 
 	return &emptypb.Empty{}, nil
@@ -453,7 +481,6 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var cachekey string
 	hostName := req.HostName
 	sourceType := req.SourceType
 	logger.Infof("%s keepalive successfully for the first time", req.HostName)
@@ -469,8 +496,10 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 			return err
 		}
 
-		cachekey = cache.MakeCacheKey("scheduler", hostName)
-		if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
+		if err := s.cache.Delete(
+			context.TODO(),
+			cache.MakeCacheKey("scheduler", hostName),
+		); err != nil {
 			logger.Warnf("%s refresh keepalive status failed", req.HostName)
 		}
 	}
@@ -486,8 +515,10 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 			return err
 		}
 
-		cachekey = cache.MakeCacheKey("cdn", hostName)
-		if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
+		if err := s.cache.Delete(
+			context.TODO(),
+			cache.MakeCacheKey("cdn", hostName),
+		); err != nil {
 			logger.Warnf("%s refresh keepalive status failed", req.HostName)
 		}
 	}
@@ -506,8 +537,10 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 					return err
 				}
 
-				cachekey = cache.MakeCacheKey("scheduler", hostName)
-				if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
+				if err := s.cache.Delete(
+					context.TODO(),
+					cache.MakeCacheKey("scheduler", hostName),
+				); err != nil {
 					logger.Warnf("%s refresh keepalive status failed", req.HostName)
 				}
 			}
@@ -523,8 +556,10 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 					return err
 				}
 
-				cachekey = cache.MakeCacheKey("cdn", hostName)
-				if err := s.cache.Delete(context.TODO(), cachekey); err != nil {
+				if err := s.cache.Delete(
+					context.TODO(),
+					cache.MakeCacheKey("cdn", hostName),
+				); err != nil {
 					logger.Warnf("%s refresh keepalive status failed", req.HostName)
 				}
 			}
@@ -537,6 +572,6 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 			return err
 		}
 
-		logger.Debugf("%s send keepalive request", hostName)
+		logger.Debugf("%s type of %s send keepalive request", sourceType, hostName)
 	}
 }

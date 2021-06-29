@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package clientutil
+package retry
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 )
 
-func Retry(ctx context.Context,
+func Run(ctx context.Context,
 	f func() (data interface{}, cancel bool, err error),
 	initBackoff float64,
 	maxBackoff float64,
