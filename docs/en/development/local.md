@@ -39,7 +39,7 @@ $ tail -f log/**/*.log
 {"level":"debug","ts":"2021-02-26 05:43:37.800","caller":"rpc/server_listen.go:31","msg":"start to listen port: 0.0.0.0:65001"}
 {"level":"info","ts":"2021-02-26 05:43:37.800","caller":"daemon/peerhost.go:274","msg":"serve download grpc at unix:///tmp/dfdamon.sock"}
 {"level":"info","ts":"2021-02-26 05:43:37.801","caller":"daemon/peerhost.go:285","msg":"serve peer grpc at tcp://[::]:65000"}
-{"level":"info","ts":"2021-02-26 05:43:37.801","caller":"daemon/peerhost.go:320","msg":"serve upload service at tcp://[::]:65002"}
+{"level":"info","ts":"2021-02-26 05:43:37.801","caller":"daemon/peerhost.go:320","msg":"serve upload rest at tcp://[::]:65002"}
 {"level":"info","ts":"2021-02-26 05:43:37.801","caller":"daemon/peerhost.go:306","msg":"serve proxy at tcp://0.0.0.0:65001"}
 
 ==> log/dragonfly/scheduler/core.log <==

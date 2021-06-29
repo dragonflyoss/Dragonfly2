@@ -1,14 +1,14 @@
 1. Get the scheduler URL by running these commands:
-{{- if contains "NodePort" .Values.scheduler.service.type }}
+{{- if contains "NodePort" .Values.scheduler.rest.type }}
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "dragonfly.scheduler.fullname" . }})
   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
   echo http://$NODE_IP:$NODE_PORT
-{{- else if contains "LoadBalancer" .Values.scheduler.service.type }}
+{{- else if contains "LoadBalancer" .Values.scheduler.rest.type }}
      NOTE: It may take a few minutes for the LoadBalancer IP to be available.
            You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "dragonfly.scheduler.fullname" . }}'
   export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "dragonfly.scheduler.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
-  echo http://$SERVICE_IP:{{ .Values.scheduler.service.port }}
-{{- else if contains "ClusterIP" .Values.scheduler.service.type }}
+  echo http://$SERVICE_IP:{{ .Values.scheduler.rest.port }}
+{{- else if contains "ClusterIP" .Values.scheduler.rest.type }}
   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app={{ include "dragonfly.scheduler.fullname" . }},release={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
   export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
   echo "Visit http://127.0.0.1:8002 to use your scheduler"
@@ -16,21 +16,21 @@
 {{- end }}
 
 2. Get the cdn URL by running these commands:
-{{- if contains "NodePort" .Values.cdn.service.type }}
+{{- if contains "NodePort" .Values.cdn.rest.type }}
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "dragonfly.cdn.fullname" . }})
   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
   echo http://$NODE_IP:$NODE_PORT
-{{- else if contains "LoadBalancer" .Values.cdn.service.type }}
+{{- else if contains "LoadBalancer" .Values.cdn.rest.type }}
      NOTE: It may take a few minutes for the LoadBalancer IP to be available.
            You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "dragonfly.cdn.fullname" . }}'
   export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "dragonfly.cdn.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
-  echo http://$SERVICE_IP:{{ .Values.cdn.service.port }}
-{{- else if contains "ClusterIP" .Values.cdn.service.type }}
+  echo http://$SERVICE_IP:{{ .Values.cdn.rest.port }}
+{{- else if contains "ClusterIP" .Values.cdn.rest.type }}
   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app={{ include "dragonfly.cdn.fullname" . }},release={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
   export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
   export CONTAINER_NGINX_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[1].containerPort}")
   echo "Visit http://127.0.0.1:8003 to use your cdn"
-  echo "Visit http://127.0.0.1:8001 to use your nginx service"
+  echo "Visit http://127.0.0.1:8001 to use your nginx rest"
   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8003:$CONTAINER_PORT
   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8001:CONTAINER_NGINX_PORT
 {{- end }}

@@ -36,7 +36,7 @@ type Server struct {
 	config *config.Config
 
 	// GRPC service
-	service *service.ServiceGRPC
+	service *service.GRPC
 
 	// REST server
 	restServer *http.Server
@@ -53,7 +53,7 @@ func New(cfg *config.Config) (*Server, error) {
 	cache := cache.New(cfg)
 
 	// Initialize REST service
-	restService := service.New(
+	restService := service.NewREST(
 		service.WithDatabase(db),
 		service.WithCache(cache),
 	)

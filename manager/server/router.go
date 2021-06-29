@@ -8,7 +8,7 @@ import (
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )
 
-func initRouter(verbose bool, service service.Service) (*gin.Engine, error) {
+func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	// Set mode
 	if verbose == false {
 		gin.SetMode(gin.ReleaseMode)

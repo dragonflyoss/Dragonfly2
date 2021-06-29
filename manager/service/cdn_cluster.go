@@ -5,7 +5,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *service) CreateCDNCluster(json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
+func (s *rest) CreateCDNCluster(json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
 	cdnCluster := model.CDNCluster{
 		Name:   json.Name,
 		BIO:    json.BIO,
@@ -19,7 +19,7 @@ func (s *service) CreateCDNCluster(json types.CreateCDNClusterRequest) (*model.C
 	return &cdnCluster, nil
 }
 
-func (s *service) DestroyCDNCluster(id uint) error {
+func (s *rest) DestroyCDNCluster(id uint) error {
 	if err := s.db.Unscoped().Delete(&model.CDNCluster{}, id).Error; err != nil {
 		return err
 	}
@@ -27,7 +27,7 @@ func (s *service) DestroyCDNCluster(id uint) error {
 	return nil
 }
 
-func (s *service) CreateCDNClusterWithSecurityGroupDomain(json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
+func (s *rest) CreateCDNClusterWithSecurityGroupDomain(json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
@@ -49,7 +49,7 @@ func (s *service) CreateCDNClusterWithSecurityGroupDomain(json types.CreateCDNCl
 	return &cdnCluster, nil
 }
 
-func (s *service) UpdateCDNCluster(id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
+func (s *rest) UpdateCDNCluster(id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, id).Updates(model.CDNCluster{
 		Name:   json.Name,
@@ -62,7 +62,7 @@ func (s *service) UpdateCDNCluster(id uint, json types.UpdateCDNClusterRequest) 
 	return &cdnCluster, nil
 }
 
-func (s *service) UpdateCDNClusterWithSecurityGroupDomain(id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
+func (s *rest) UpdateCDNClusterWithSecurityGroupDomain(id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
@@ -83,7 +83,7 @@ func (s *service) UpdateCDNClusterWithSecurityGroupDomain(id uint, json types.Up
 	return &cdnCluster, nil
 }
 
-func (s *service) GetCDNCluster(id uint) (*model.CDNCluster, error) {
+func (s *rest) GetCDNCluster(id uint) (*model.CDNCluster, error) {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, id).Error; err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (s *service) GetCDNCluster(id uint) (*model.CDNCluster, error) {
 	return &cdnCluster, nil
 }
 
-func (s *service) GetCDNClusters(q types.GetCDNClustersQuery) (*[]model.CDNCluster, error) {
+func (s *rest) GetCDNClusters(q types.GetCDNClustersQuery) (*[]model.CDNCluster, error) {
 	cdnClusters := []model.CDNCluster{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDNCluster{
 		Name: q.Name,
@@ -103,7 +103,7 @@ func (s *service) GetCDNClusters(q types.GetCDNClustersQuery) (*[]model.CDNClust
 	return &cdnClusters, nil
 }
 
-func (s *service) CDNClusterTotalCount(q types.GetCDNClustersQuery) (int64, error) {
+func (s *rest) CDNClusterTotalCount(q types.GetCDNClustersQuery) (int64, error) {
 	var count int64
 	if err := s.db.Model(&model.CDNCluster{}).Where(&model.CDNCluster{
 		Name: q.Name,
@@ -114,7 +114,7 @@ func (s *service) CDNClusterTotalCount(q types.GetCDNClustersQuery) (int64, erro
 	return count, nil
 }
 
-func (s *service) AddCDNToCDNCluster(id, cdnID uint) error {
+func (s *rest) AddCDNToCDNCluster(id, cdnID uint) error {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, id).Error; err != nil {
 		return err
@@ -132,7 +132,7 @@ func (s *service) AddCDNToCDNCluster(id, cdnID uint) error {
 	return nil
 }
 
-func (s *service) AddSchedulerClusterToCDNCluster(id, schedulerClusterID uint) error {
+func (s *rest) AddSchedulerClusterToCDNCluster(id, schedulerClusterID uint) error {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, id).Error; err != nil {
 		return err

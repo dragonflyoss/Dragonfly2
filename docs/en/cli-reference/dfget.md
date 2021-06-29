@@ -87,8 +87,8 @@ set environment variable DF_ACTIVE_PROFILE=local if you want to print logs to Te
       --lock string               dfdaemon lock file location (default "/tmp/dfdaemon.lock")
       --net-topology string       peer net topology for scheduler
       --pid string                dfdaemon pid file location (default "/tmp/dfdaemon.pid")
-      --proxy-port int            the address that daemon will listen on for proxy service (default 65001)
-      --proxy-port-end int        the address that daemon will listen on for proxy service (default 65001)
+      --proxy-port int            the address that daemon will listen on for proxy rest (default 65001)
+      --proxy-port-end int        the address that daemon will listen on for proxy rest (default 65001)
   -s, --schedulers schedulers     schedulers
       --security-domain string    peer security domain for scheduler
       --upload-port int           the address that daemon will listen on for peer upload (default 65002)

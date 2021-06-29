@@ -5,7 +5,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *service) CreateSchedulerCluster(json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (s *rest) CreateSchedulerCluster(json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	schedulerCluster := model.SchedulerCluster{
 		Name:         json.Name,
 		BIO:          json.BIO,
@@ -20,7 +20,7 @@ func (s *service) CreateSchedulerCluster(json types.CreateSchedulerClusterReques
 	return &schedulerCluster, nil
 }
 
-func (s *service) CreateSchedulerClusterWithSecurityGroupDomain(json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (s *rest) CreateSchedulerClusterWithSecurityGroupDomain(json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
@@ -42,7 +42,7 @@ func (s *service) CreateSchedulerClusterWithSecurityGroupDomain(json types.Creat
 	return &schedulerCluster, nil
 }
 
-func (s *service) DestroySchedulerCluster(id uint) error {
+func (s *rest) DestroySchedulerCluster(id uint) error {
 	if err := s.db.Unscoped().Delete(&model.SchedulerCluster{}, id).Error; err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (s *service) DestroySchedulerCluster(id uint) error {
 	return nil
 }
 
-func (s *service) UpdateSchedulerCluster(id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (s *rest) UpdateSchedulerCluster(id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.First(&schedulerCluster, id).Updates(model.SchedulerCluster{
 		Name:         json.Name,
@@ -64,7 +64,7 @@ func (s *service) UpdateSchedulerCluster(id uint, json types.UpdateSchedulerClus
 	return &schedulerCluster, nil
 }
 
-func (s *service) UpdateSchedulerClusterWithSecurityGroupDomain(id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (s *rest) UpdateSchedulerClusterWithSecurityGroupDomain(id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
@@ -86,7 +86,7 @@ func (s *service) UpdateSchedulerClusterWithSecurityGroupDomain(id uint, json ty
 	return &schedulerCluster, nil
 }
 
-func (s *service) GetSchedulerCluster(id uint) (*model.SchedulerCluster, error) {
+func (s *rest) GetSchedulerCluster(id uint) (*model.SchedulerCluster, error) {
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.First(&schedulerCluster, id).Error; err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (s *service) GetSchedulerCluster(id uint) (*model.SchedulerCluster, error) 
 	return &schedulerCluster, nil
 }
 
-func (s *service) GetSchedulerClusters(q types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, error) {
+func (s *rest) GetSchedulerClusters(q types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, error) {
 	schedulerClusters := []model.SchedulerCluster{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SchedulerCluster{
 		Name: q.Name,
@@ -106,7 +106,7 @@ func (s *service) GetSchedulerClusters(q types.GetSchedulerClustersQuery) (*[]mo
 	return &schedulerClusters, nil
 }
 
-func (s *service) SchedulerClusterTotalCount(q types.GetSchedulerClustersQuery) (int64, error) {
+func (s *rest) SchedulerClusterTotalCount(q types.GetSchedulerClustersQuery) (int64, error) {
 	var count int64
 	if err := s.db.Model(&model.SchedulerCluster{}).Where(&model.SchedulerCluster{
 		Name: q.Name,
@@ -117,7 +117,7 @@ func (s *service) SchedulerClusterTotalCount(q types.GetSchedulerClustersQuery) 
 	return count, nil
 }
 
-func (s *service) AddSchedulerToSchedulerCluster(id, schedulerID uint) error {
+func (s *rest) AddSchedulerToSchedulerCluster(id, schedulerID uint) error {
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.First(&schedulerCluster, id).Error; err != nil {
 		return err

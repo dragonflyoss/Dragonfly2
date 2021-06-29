@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Service interface {
+type REST interface {
 	CreateCDNCluster(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	CreateCDNClusterWithSecurityGroupDomain(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	DestroyCDNCluster(uint) error
@@ -55,18 +55,18 @@ type Service interface {
 	AddCDNClusterToSecurityGroup(uint, uint) error
 }
 
-type service struct {
+type rest struct {
 	db    *gorm.DB
 	rdb   *redis.Client
 	cache *cache.Cache
 }
 
-// Option is a functional option for service
-type Option func(s *service)
+// Option is a functional option for rest
+type Option func(s *rest)
 
 // WithDatabase set the database client
 func WithDatabase(database *database.Database) Option {
-	return func(s *service) {
+	return func(s *rest) {
 		s.db = database.DB
 		s.rdb = database.RDB
 	}
@@ -74,14 +74,14 @@ func WithDatabase(database *database.Database) Option {
 
 // WithCache set the cache client
 func WithCache(cache *cache.Cache) Option {
-	return func(s *service) {
+	return func(s *rest) {
 		s.cache = cache
 	}
 }
 
-// New returns a new Service instence
-func New(options ...Option) Service {
-	s := &service{}
+// NewREST returns a new REST instence
+func NewREST(options ...Option) REST {
+	s := &rest{}
 
 	for _, opt := range options {
 		opt(s)

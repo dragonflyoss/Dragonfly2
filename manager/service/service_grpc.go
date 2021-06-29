@@ -18,19 +18,19 @@ import (
 	"gorm.io/gorm"
 )
 
-type ServiceGRPC struct {
+type GRPC struct {
 	db    *gorm.DB
 	rdb   *redis.Client
 	cache *cache.Cache
 	manager.UnimplementedManagerServer
 }
 
-// Option is a functional option for service
-type GRPCOption func(s *ServiceGRPC)
+// Option is a functional option for rest
+type GRPCOption func(s *GRPC)
 
 // WithDatabase set the database client
 func GRPCWithDatabase(database *database.Database) GRPCOption {
-	return func(s *ServiceGRPC) {
+	return func(s *GRPC) {
 		s.db = database.DB
 		s.rdb = database.RDB
 	}
@@ -38,14 +38,14 @@ func GRPCWithDatabase(database *database.Database) GRPCOption {
 
 // WithCache set the cache client
 func GRPCWithCache(cache *cache.Cache) GRPCOption {
-	return func(s *ServiceGRPC) {
+	return func(s *GRPC) {
 		s.cache = cache
 	}
 }
 
-// New returns a new Service instence
-func NewGRPC(options ...GRPCOption) *ServiceGRPC {
-	s := &ServiceGRPC{}
+// NewREST returns a new REST instence
+func NewGRPC(options ...GRPCOption) *GRPC {
+	s := &GRPC{}
 
 	for _, opt := range options {
 		opt(s)
@@ -54,7 +54,7 @@ func NewGRPC(options ...GRPCOption) *ServiceGRPC {
 	return s
 }
 
-func (s *ServiceGRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
+func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -118,7 +118,7 @@ func (s *ServiceGRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*
 	return &pbCDN, nil
 }
 
-func (s *ServiceGRPC) CreateCDN(ctx context.Context, req *manager.CreateCDNRequest) (*manager.CDN, error) {
+func (s *GRPC) CreateCDN(ctx context.Context, req *manager.CreateCDNRequest) (*manager.CDN, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -147,7 +147,7 @@ func (s *ServiceGRPC) CreateCDN(ctx context.Context, req *manager.CreateCDNReque
 	}, nil
 }
 
-func (s *ServiceGRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
+func (s *GRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -181,7 +181,7 @@ func (s *ServiceGRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNReque
 	}, nil
 }
 
-func (s *ServiceGRPC) AddCDNToCDNCluster(ctx context.Context, req *manager.AddCDNToCDNClusterRequest) (*emptypb.Empty, error) {
+func (s *GRPC) AddCDNToCDNCluster(ctx context.Context, req *manager.AddCDNToCDNClusterRequest) (*emptypb.Empty, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -210,7 +210,7 @@ func (s *ServiceGRPC) AddCDNToCDNCluster(ctx context.Context, req *manager.AddCD
 	return &emptypb.Empty{}, nil
 }
 
-func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
+func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -305,7 +305,7 @@ func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedule
 	return &pbScheduler, nil
 }
 
-func (s *ServiceGRPC) CreateScheduler(ctx context.Context, req *manager.CreateSchedulerRequest) (*manager.Scheduler, error) {
+func (s *GRPC) CreateScheduler(ctx context.Context, req *manager.CreateSchedulerRequest) (*manager.Scheduler, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -344,7 +344,7 @@ func (s *ServiceGRPC) CreateScheduler(ctx context.Context, req *manager.CreateSc
 	}, nil
 }
 
-func (s *ServiceGRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
+func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -388,7 +388,7 @@ func (s *ServiceGRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateSc
 	}, nil
 }
 
-func (s *ServiceGRPC) AddSchedulerClusterToSchedulerCluster(ctx context.Context, req *manager.AddSchedulerClusterToSchedulerClusterRequest) (*emptypb.Empty, error) {
+func (s *GRPC) AddSchedulerClusterToSchedulerCluster(ctx context.Context, req *manager.AddSchedulerClusterToSchedulerClusterRequest) (*emptypb.Empty, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -417,7 +417,7 @@ func (s *ServiceGRPC) AddSchedulerClusterToSchedulerCluster(ctx context.Context,
 	return &emptypb.Empty{}, nil
 }
 
-func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
+func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -471,7 +471,7 @@ func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSched
 	return &pbListSchedulersResponse, nil
 }
 
-func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
+func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 	req, err := m.Recv()
 	if err != nil {
 		logger.Errorf("keepalive failed for the first time: %v", err)
