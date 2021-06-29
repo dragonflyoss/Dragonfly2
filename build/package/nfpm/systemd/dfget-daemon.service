@@ -1,14 +1,14 @@
 # Changing the systemd config can be done like this:
 # 1) Edit the config file: systemctl edit --full dfget-daemon
 # 2) Restart the process: systemctl restart dfget-daemon
-# All your changes can be reverted with `systemctl revert dfget-daemon.rest`.
+# All your changes can be reverted with `systemctl revert dfget-daemon.service`.
 # See https://wiki.archlinux.org/index.php/Systemd#Editing_provided_units.
 
 [Unit]
 Description=Dragonfly dfget daemon
 After=network.target
 
-[REST]
+[Service]
 Type=simple
 ExecStartPre=/bin/bash /opt/dragonfly/fix.dfget-daemon.cpuset.sh
 ExecStart=/usr/bin/dfget daemon
