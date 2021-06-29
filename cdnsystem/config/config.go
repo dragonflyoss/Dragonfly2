@@ -189,6 +189,9 @@ type ManagerConfig struct {
 	// NetAddr is manager address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
+	// CDNClusterID is cdn cluster id.
+	CDNClusterID uint64 `yaml:"cdnClusterID" mapstructure:"cdnClusterID"`
+
 	// Keep alive interval
 	KeepAliveInterval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`
 }

@@ -111,7 +111,7 @@ func (s *ServiceGRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*
 		Value: &pbCDN,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		logger.Warnf("Storage cache failed: %v", err)
+		logger.Warnf("storage cache failed: %v", err)
 	}
 
 	return &pbCDN, nil
@@ -122,6 +122,7 @@ func (s *ServiceGRPC) CreateCDN(ctx context.Context, req *manager.CreateCDNReque
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	cdnClusterID := uint(req.CdnClusterId)
 	cdn := model.CDN{
 		HostName:     req.HostName,
 		IDC:          req.Idc,
@@ -129,6 +130,7 @@ func (s *ServiceGRPC) CreateCDN(ctx context.Context, req *manager.CreateCDNReque
 		IP:           req.Ip,
 		Port:         req.Port,
 		DownloadPort: req.DownloadPort,
+		CDNClusterID: &cdnClusterID,
 	}
 
 	if err := s.db.Create(&cdn).Error; err != nil {
@@ -152,12 +154,14 @@ func (s *ServiceGRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNReque
 	}
 
 	cdn := model.CDN{}
+	cdnClusterID := uint(req.CdnClusterId)
 	if err := s.db.First(&cdn, model.CDN{HostName: req.HostName}).Updates(model.CDN{
 		IDC:          req.Idc,
 		Location:     req.Location,
 		IP:           req.Ip,
 		Port:         req.Port,
 		DownloadPort: req.DownloadPort,
+		CDNClusterID: &cdnClusterID,
 	}).Error; err != nil {
 		return nil, err
 	}
@@ -213,11 +217,6 @@ func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedule
 		return nil, status.Error(codes.DataLoss, err.Error())
 	}
 
-	securityGroup := model.SecurityGroup{}
-	if err := s.db.First(&securityGroup, scheduler.SchedulerCluster.SecurityGroupID).Error; err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
 	var pbCDNs []*manager.CDN
 	for _, cdnCluster := range scheduler.SchedulerCluster.CDNClusters {
 		for _, cdn := range cdnCluster.CDNs {
@@ -267,7 +266,7 @@ func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedule
 		Value: &pbScheduler,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		logger.Warnf("Cache storage failed: %v", err)
+		logger.Warnf("cache storage failed: %v", err)
 	}
 
 	return &pbScheduler, nil
@@ -285,14 +284,16 @@ func (s *ServiceGRPC) CreateScheduler(ctx context.Context, req *manager.CreateSc
 		}
 	}
 
+	schedulerClusterID := uint(req.SchedulerClusterId)
 	scheduler := model.Scheduler{
-		HostName:  req.HostName,
-		VIPs:      req.Vips,
-		IDC:       req.Idc,
-		Location:  req.Location,
-		NetConfig: netConfig,
-		IP:        req.Ip,
-		Port:      req.Port,
+		HostName:           req.HostName,
+		VIPs:               req.Vips,
+		IDC:                req.Idc,
+		Location:           req.Location,
+		NetConfig:          netConfig,
+		IP:                 req.Ip,
+		Port:               req.Port,
+		SchedulerClusterID: &schedulerClusterID,
 	}
 
 	if err := s.db.Create(&scheduler).Error; err != nil {
@@ -325,13 +326,15 @@ func (s *ServiceGRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateSc
 	}
 
 	scheduler := model.Scheduler{}
+	schedulerClusterID := uint(req.SchedulerClusterId)
 	if err := s.db.First(&scheduler, model.Scheduler{HostName: req.HostName}).Updates(model.Scheduler{
-		VIPs:      req.Vips,
-		IDC:       req.Idc,
-		Location:  req.Location,
-		NetConfig: netConfig,
-		IP:        req.Ip,
-		Port:      req.Port,
+		VIPs:               req.Vips,
+		IDC:                req.Idc,
+		Location:           req.Location,
+		NetConfig:          netConfig,
+		IP:                 req.Ip,
+		Port:               req.Port,
+		SchedulerClusterID: &schedulerClusterID,
 	}).Error; err != nil {
 		return nil, err
 	}
@@ -397,7 +400,7 @@ func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSched
 		Value: &pbListSchedulersResponse,
 		TTL:   s.cache.TTL,
 	}); err != nil {
-		logger.Warnf("Storage cache failed: %v", err)
+		logger.Warnf("storage cache failed: %v", err)
 	}
 
 	return &pbListSchedulersResponse, nil
@@ -406,7 +409,7 @@ func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSched
 func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 	req, err := m.Recv()
 	if err != nil {
-		logger.Errorf("Keepalive failed for the first time: %v", err)
+		logger.Errorf("keepalive failed for the first time: %v", err)
 		return err
 	}
 	if err := req.Validate(); err != nil {
@@ -416,7 +419,7 @@ func (s *ServiceGRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 	var cachekey string
 	hostName := req.HostName
 	sourceType := req.SourceType
-	logger.Infof("Keepalive successfully for the first time", req.HostName)
+	logger.Infof("%s keepalive successfully for the first time", req.HostName)
 
 	// Active scheduler
 	if sourceType == manager.SourceType_SCHEDULER_SOURCE {

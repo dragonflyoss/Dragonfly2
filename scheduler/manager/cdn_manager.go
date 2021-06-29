@@ -71,6 +71,7 @@ func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *Ho
 		return nil, err
 	}
 
+	fmt.Println("4444444", dc)
 	// Initialize CDNManager servers
 	mgr.servers = cdnHostsToServers(dc.Cdns)
 	logger.Debugf("servers map: %+v\n", mgr.servers)

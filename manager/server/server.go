@@ -18,11 +18,10 @@ package server
 
 import (
 	"context"
-	"fmt"
-	"net"
 	"net/http"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc"
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
@@ -84,21 +83,22 @@ func New(cfg *config.Config) (*Server, error) {
 func (s *Server) Serve() error {
 	g := errgroup.Group{}
 
+	// GRPC listener
+	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.Listen, s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
+	if err != nil {
+		logger.Errorf("failed to net listen: %+v", err)
+		return err
+	}
+
 	// Serve GRPC
 	g.Go(func() error {
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.Server.GRPC.PortRange.Start))
-		if err != nil {
-			logger.Errorf("failed to net listen: %+v", err)
-			return err
-		}
+		defer lis.Close()
 		grpcServer := grpc.NewServer()
 		manager.RegisterManagerServer(grpcServer, s.service)
-		go func() {
-			if err := grpcServer.Serve(lis); err != nil {
-				logger.Errorf("failed to start manager grpc server: %+v", err)
-			}
-		}()
-		logger.Infof("start grpc server with port %s", lis.Addr())
+		logger.Infof("serve grpc at %s://%s", lis.Addr().Network(), lis.Addr().String())
+		if err := grpcServer.Serve(lis); err != nil {
+			logger.Errorf("failed to start manager grpc server: %+v", err)
+		}
 		return nil
 	})
 

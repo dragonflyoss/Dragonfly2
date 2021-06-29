@@ -58,6 +58,9 @@ type RestConfig struct {
 }
 
 type TCPListenConfig struct {
+	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1
+	Listen string `mapstructure:"listen" yaml:"listen"`
+
 	// PortRange stands listen port
 	PortRange TCPListenPortRange `yaml:"port" mapstructure:"port"`
 }

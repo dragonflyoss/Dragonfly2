@@ -64,6 +64,9 @@ type ManagerConfig struct {
 	// Addr is manager address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
+	// SchedulerClusterID is scheduler cluster id.
+	SchedulerClusterID uint64 `yaml:"schedulerClusterID" mapstructure:"schedulerClusterID"`
+
 	// Keep alive interval
 	KeepAliveInterval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`
 }

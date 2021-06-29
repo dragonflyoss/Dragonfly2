@@ -73,5 +73,5 @@ const (
 )
 
 const (
-	DefaultKeepAliveInterval = 1 * time.Second
+	DefaultKeepAliveInterval = 5 * time.Second
 )

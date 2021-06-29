@@ -41,7 +41,7 @@ import (
 )
 
 type Server struct {
-	Config        *config.Config
+	config        *config.Config
 	seedServer    server.SeederServer
 	managerClient manager.ManagerClient
 	managerConn   *grpc.ClientConn
@@ -49,6 +49,8 @@ type Server struct {
 
 // New creates a brand new server instance.
 func New(cfg *config.Config) (*Server, error) {
+	s := &Server{config: cfg}
+
 	if ok := storage.IsSupport(cfg.StorageMode); !ok {
 		return nil, fmt.Errorf("os %s is not support storage mode %s", runtime.GOOS, cfg.StorageMode)
 	}
@@ -87,25 +89,24 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "create seedServer")
 	}
+	s.seedServer = cdnSeedServer
 
 	// manager client
-	var managerClient manager.ManagerClient
-	var managerConn *grpc.ClientConn
 	if cfg.Manager.Addr != "" {
-		managerConn, err = grpc.Dial(cfg.Manager.Addr, grpc.WithInsecure(), grpc.WithBlock())
+		managerConn, err := grpc.Dial(cfg.Manager.Addr, grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
 			logger.Errorf("did not connect: %v", err)
 			return nil, err
 		}
-		managerClient = manager.NewManagerClient(managerConn)
+		s.managerClient = manager.NewManagerClient(managerConn)
+		s.managerConn = managerConn
+
+		// Register to manager
+		s.register(context.Background())
+		logger.Info("cdn register to manager")
 	}
 
-	return &Server{
-		Config:        cfg,
-		seedServer:    cdnSeedServer,
-		managerClient: managerClient,
-		managerConn:   managerConn,
-	}, nil
+	return s, nil
 }
 
 func (s *Server) Serve() (err error) {
@@ -124,14 +125,11 @@ func (s *Server) Serve() (err error) {
 	}
 
 	if s.managerClient != nil {
-		s.register(ctx)
-		logger.Info("cdn register to manager")
-
 		go s.keepAlive(ctx)
 		logger.Info("start cdn keep alive")
 	}
 
-	err = rpc.StartTCPServer(s.Config.ListenPort, s.Config.ListenPort, s.seedServer)
+	err = rpc.StartTCPServer(s.config.ListenPort, s.config.ListenPort, s.seedServer)
 	if err != nil {
 		return errors.Wrap(err, "start tcp server")
 	}
@@ -143,23 +141,34 @@ func (s *Server) Stop() {
 }
 
 func (s *Server) register(ctx context.Context) error {
-	ip := s.Config.AdvertiseIP
-	port := int32(s.Config.ListenPort)
-	downloadPort := int32(s.Config.DownloadPort)
-	if _, err := s.managerClient.CreateCDN(ctx, &manager.CreateCDNRequest{
+	ip := s.config.AdvertiseIP
+	port := int32(s.config.ListenPort)
+	downloadPort := int32(s.config.DownloadPort)
+	cdnClusterID := s.config.Manager.CDNClusterID
+	createCDNRequest := manager.CreateCDNRequest{
 		SourceType:   manager.SourceType_CDN_SOURCE,
 		HostName:     iputils.HostName,
 		Ip:           ip,
 		Port:         port,
 		DownloadPort: downloadPort,
-	}); err != nil {
-		if _, err := s.managerClient.UpdateCDN(ctx, &manager.UpdateCDNRequest{
-			SourceType:   manager.SourceType_CDN_SOURCE,
-			HostName:     iputils.HostName,
-			Ip:           ip,
-			Port:         port,
-			DownloadPort: downloadPort,
-		}); err != nil {
+	}
+	updateCDNRequest := manager.UpdateCDNRequest{
+		SourceType:   manager.SourceType_CDN_SOURCE,
+		HostName:     iputils.HostName,
+		Ip:           ip,
+		Port:         port,
+		DownloadPort: downloadPort,
+	}
+
+	if cdnClusterID != 0 {
+		createCDNRequest.CdnClusterId = cdnClusterID
+		updateCDNRequest.CdnClusterId = cdnClusterID
+	}
+
+	if _, err := s.managerClient.CreateCDN(ctx, &createCDNRequest); err != nil {
+		logger.Warnf("create cdn to manager failed %v", err)
+		if _, err := s.managerClient.UpdateCDN(ctx, &updateCDNRequest); err != nil {
+			logger.Warnf("update cdn to manager failed %v", err)
 			return err
 		}
 	}
@@ -174,7 +183,7 @@ func (s *Server) keepAlive(ctx context.Context) error {
 		return err
 	}
 
-	tick := time.NewTicker(s.Config.Manager.KeepAliveInterval)
+	tick := time.NewTicker(s.config.Manager.KeepAliveInterval)
 	hostName := iputils.HostName
 	for {
 		select {

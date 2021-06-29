@@ -40,6 +40,8 @@ type Server struct {
 	server        *SchedulerServer
 	config        *config.Config
 	managerClient manager.ManagerClient
+	managerConn   *grpc.ClientConn
+	dynconfigConn *grpc.ClientConn
 	running       bool
 	dynconfig     config.DynconfigInterface
 }
@@ -55,12 +57,21 @@ func New(cfg *config.Config) (*Server, error) {
 	// Initialize manager client
 	var managerConn *grpc.ClientConn
 	if cfg.Manager.Addr != "" {
-		managerConn, err = grpc.Dial(cfg.Manager.Addr, grpc.WithInsecure(), grpc.WithBlock())
+		managerConn, err = grpc.Dial(
+			cfg.Manager.Addr,
+			grpc.WithInsecure(),
+			grpc.WithBlock(),
+		)
 		if err != nil {
 			logger.Errorf("did not connect: %v", err)
 			return nil, err
 		}
+		s.managerConn = managerConn
 		s.managerClient = manager.NewManagerClient(managerConn)
+
+		// Register to manager
+		s.register(context.Background())
+		logger.Info("scheduler register to manager")
 	}
 
 	// Initialize dynconfig client
@@ -72,14 +83,19 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	if cfg.Dynconfig.Type == dynconfig.ManagerSourceType {
-		dynconfigConn, err = grpc.Dial(cfg.Dynconfig.Addr, grpc.WithInsecure(), grpc.WithBlock())
+		dynconfigConn, err := grpc.Dial(
+			cfg.Dynconfig.Addr,
+			grpc.WithInsecure(),
+			grpc.WithBlock(),
+		)
 		if err != nil {
 			logger.Errorf("did not connect: %v", err)
 			return nil, err
 		}
+		s.dynconfigConn = dynconfigConn
 
 		options = []dynconfig.Option{
-			dynconfig.WithManagerClient(config.NewManagerClient(manager.NewManagerClient(dynconfigConn))),
+			dynconfig.WithManagerClient(config.NewManagerClient(manager.NewManagerClient(s.dynconfigConn))),
 			dynconfig.WithCachePath(cfg.Dynconfig.CachePath),
 			dynconfig.WithExpireTime(cfg.Dynconfig.ExpireTime),
 		}
@@ -116,9 +132,6 @@ func (s *Server) Serve() error {
 	defer s.worker.Stop()
 
 	if s.managerClient != nil {
-		s.register(ctx)
-		logger.Info("scheduler register to manager")
-
 		go s.keepAlive(ctx)
 		logger.Info("start scheduler keep alive")
 	}
@@ -127,11 +140,14 @@ func (s *Server) Serve() error {
 	if err := rpc.StartTCPServer(port, port, s.server); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (s *Server) Stop() (err error) {
 	if s.running {
+		s.dynconfigConn.Close()
+		s.managerConn.Close()
 		s.running = false
 		s.dynconfig.Stop()
 	}
@@ -141,19 +157,29 @@ func (s *Server) Stop() (err error) {
 func (s *Server) register(ctx context.Context) error {
 	ip := s.config.Server.IP
 	port := int32(s.config.Server.Port)
-
-	if _, err := s.managerClient.CreateScheduler(ctx, &manager.CreateSchedulerRequest{
+	schedulerClusterID := s.config.Manager.SchedulerClusterID
+	createSchedulerRequest := manager.CreateSchedulerRequest{
 		SourceType: manager.SourceType_SCHEDULER_SOURCE,
 		HostName:   iputils.HostName,
 		Ip:         ip,
 		Port:       port,
-	}); err != nil {
-		if _, err := s.managerClient.UpdateScheduler(ctx, &manager.UpdateSchedulerRequest{
-			SourceType: manager.SourceType_SCHEDULER_SOURCE,
-			HostName:   iputils.HostName,
-			Ip:         ip,
-			Port:       port,
-		}); err != nil {
+	}
+	updateSchedulerRequest := manager.UpdateSchedulerRequest{
+		SourceType: manager.SourceType_SCHEDULER_SOURCE,
+		HostName:   iputils.HostName,
+		Ip:         ip,
+		Port:       port,
+	}
+
+	if schedulerClusterID != 0 {
+		createSchedulerRequest.SchedulerClusterId = schedulerClusterID
+		updateSchedulerRequest.SchedulerClusterId = schedulerClusterID
+	}
+
+	if _, err := s.managerClient.CreateScheduler(ctx, &createSchedulerRequest); err != nil {
+		logger.Warnf("create scheduler to manager failed %v", err)
+		if _, err := s.managerClient.UpdateScheduler(ctx, &updateSchedulerRequest); err != nil {
+			logger.Warnf("update scheduler to manager failed %v", err)
 			return err
 		}
 	}

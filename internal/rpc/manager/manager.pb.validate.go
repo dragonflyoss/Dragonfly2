@@ -413,6 +413,10 @@ func (m *CreateCDNRequest) Validate() error {
 		}
 	}
 
+	if m.GetCdnClusterId() != 0 {
+
+	}
+
 	if m.GetIdc() != "" {
 
 		if l := utf8.RuneCountInString(m.GetIdc()); l < 1 || l > 1024 {
@@ -564,6 +568,10 @@ func (m *UpdateCDNRequest) Validate() error {
 			reason: "value must be a valid hostname",
 			cause:  err,
 		}
+	}
+
+	if m.GetCdnClusterId() != 0 {
+
 	}
 
 	if m.GetIdc() != "" {
@@ -1035,6 +1043,10 @@ func (m *CreateSchedulerRequest) Validate() error {
 		}
 	}
 
+	if m.GetSchedulerClusterId() != 0 {
+
+	}
+
 	if m.GetVips() != "" {
 
 		if l := utf8.RuneCountInString(m.GetVips()); l < 1 || l > 1024 {
@@ -1203,6 +1215,10 @@ func (m *UpdateSchedulerRequest) Validate() error {
 			reason: "value must be a valid hostname",
 			cause:  err,
 		}
+	}
+
+	if m.GetSchedulerClusterId() != 0 {
+
 	}
 
 	if m.GetVips() != "" {
