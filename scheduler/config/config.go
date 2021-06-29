@@ -31,7 +31,7 @@ type Config struct {
 	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
 	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
 	Dynconfig    *DynconfigOptions     `yaml:"dynconfig" mapstructure:"dynconfig"`
-	Manager      *ManagerConfig        `yaml:"manager" mapstructure:"manager"`
+	Manager      ManagerConfig         `yaml:"manager" mapstructure:"manager"`
 }
 
 func New() *Config {
@@ -57,12 +57,6 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.Manager != nil {
-		if c.Manager.KeepAlive == nil {
-			return errors.New("empty manager keepAlive is not specified")
-		}
-	}
-
 	return nil
 }
 
@@ -74,21 +68,21 @@ type ManagerConfig struct {
 	SchedulerClusterID uint64 `yaml:"schedulerClusterID" mapstructure:"schedulerClusterID"`
 
 	// KeepAlive configuration
-	KeepAlive *KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
+	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
 }
 
 type KeepAliveConfig struct {
 	// Keep alive interval
-	Interval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 
 	// Keep alive retry max attempts
-	RetryMaxAttempts int `yaml:"keepAliveRetryMaxAttempt" mapstructure:"keepAliveRetryMaxAttempt"`
+	RetryMaxAttempts int `yaml:"retryMaxAttempts" mapstructure:"retryMaxAttempts"`
 
 	// Keep alive retry init backoff
-	RetryInitBackOff float64 `yaml:"keepAliveRetryInitBackOff" mapstructure:"keepAliveRetryInitBackOff"`
+	RetryInitBackOff float64 `yaml:"retryInitBackOff" mapstructure:"retryInitBackOff"`
 
 	// Keep alive retry max backoff
-	RetryMaxBackOff float64 `yaml:"keepAliveRetryMaxBackOff" mapstructure:"keepAliveRetryMaxBackOff"`
+	RetryMaxBackOff float64 `yaml:"retryMaxBackOff" mapstructure:"retryMaxBackOff"`
 }
 
 type DynconfigOptions struct {

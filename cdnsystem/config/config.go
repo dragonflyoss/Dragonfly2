@@ -131,8 +131,8 @@ func NewDefaultBaseProperties() *BaseProperties {
 		TaskExpireTime:          DefaultTaskExpireTime,
 		StorageMode:             DefaultStorageMode,
 		AdvertiseIP:             iputils.HostIP,
-		Manager: &ManagerConfig{
-			KeepAlive: &KeepAliveConfig{
+		Manager: ManagerConfig{
+			KeepAlive: KeepAliveConfig{
 				Interval:         DefaultKeepAliveInterval,
 				RetryMaxAttempts: DefaultKeepAliveRetryMaxAttempts,
 				RetryInitBackOff: DefaultKeepAliveRetryInitBackOff,
@@ -187,7 +187,7 @@ type BaseProperties struct {
 	StorageMode string `yaml:"storageMode" mapstructure:"storageMode"`
 
 	// Manager configuration
-	Manager *ManagerConfig `yaml:"manager" mapstructure:"manager"`
+	Manager ManagerConfig `yaml:"manager" mapstructure:"manager"`
 }
 
 type ManagerConfig struct {
@@ -198,19 +198,19 @@ type ManagerConfig struct {
 	CDNClusterID uint64 `yaml:"cdnClusterID" mapstructure:"cdnClusterID"`
 
 	// KeepAlive configuration
-	KeepAlive *KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
+	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
 }
 
 type KeepAliveConfig struct {
 	// Keep alive interval
-	Interval time.Duration `yaml:"keepAliveInterval" mapstructure:"keepAliveInterval"`
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 
 	// Keep alive retry max attempts
-	RetryMaxAttempts int `yaml:"keepAliveRetryMaxAttempt" mapstructure:"keepAliveRetryMaxAttempt"`
+	RetryMaxAttempts int `yaml:"retryMaxAttempts" mapstructure:"retryMaxAttempts"`
 
 	// Keep alive retry init backoff
-	RetryInitBackOff float64 `yaml:"keepAliveRetryInitBackOff" mapstructure:"keepAliveRetryInitBackOff"`
+	RetryInitBackOff float64 `yaml:"retryInitBackOff" mapstructure:"retryInitBackOff"`
 
 	// Keep alive retry max backoff
-	RetryMaxBackOff float64 `yaml:"keepAliveRetryMaxBackOff" mapstructure:"keepAliveRetryMaxBackOff"`
+	RetryMaxBackOff float64 `yaml:"retryMaxBackOff" mapstructure:"retryMaxBackOff"`
 }

@@ -34,8 +34,8 @@ var config = Config{
 		TaskDelay:     3600 * 1000,
 		PeerTaskDelay: 3600 * 1000,
 	},
-	Manager: &ManagerConfig{
-		KeepAlive: &KeepAliveConfig{
+	Manager: ManagerConfig{
+		KeepAlive: KeepAliveConfig{
 			Interval:         5 * time.Second,
 			RetryMaxAttempts: 100000000,
 			RetryInitBackOff: 5,
