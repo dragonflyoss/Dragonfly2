@@ -41,6 +41,10 @@ type Task struct {
 	CDNError       *dferrors.DfError
 }
 
+func (task *Task) GetTaskID() string {
+	return task.taskID
+}
+
 func (t *Task) InitProps() {
 	if t.PieceList == nil {
 		t.CreateTime = time.Now()

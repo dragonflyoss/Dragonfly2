@@ -29,6 +29,7 @@ import (
 
 type evaluator struct {
 	taskManager daemon.TaskMgr
+	peerManager daemon.PeerMgr
 }
 
 var _ scheduler.Evaluator = (*evaluator)(nil)
@@ -38,7 +39,7 @@ func newEvaluator(taskMgr daemon.TaskMgr) scheduler.Evaluator {
 }
 
 func (eval *evaluator) NeedAdjustParent(peer *types.PeerNode) bool {
-	parent := peer.Parent()
+	parent := peer.GetParent()
 
 	if parent == nil {
 		return true
@@ -49,12 +50,13 @@ func (eval *evaluator) NeedAdjustParent(peer *types.PeerNode) bool {
 		return false
 	}
 
-	avgCost, lastCost := e.getAvgAndLastCost(parent.CostHistory, 4)
+	avgCost, lastCost := eval.getAvgAndLastCost(parent.CostHistory, 4)
 	if avgCost*40 < lastCost {
-		logger.Debugf("IsNodeBad [%s]: node cost is too long", peer.Pid)
+		logger.Debugf("IsBadNode [%s]: node cost is too long", peer.GetPeerID())
 		return true
 	}
 
+	// todo adjust policy
 	return (avgCost * 20) < lastCost
 }
 
@@ -69,60 +71,59 @@ func (eval *evaluator) IsBadNode(peer *types.PeerNode) bool {
 		return false
 	}
 
-	lastActiveTime := peer.LastActiveTime
+	lastActiveTime := peer.LastAccessTime
 
 	if time.Now().After(lastActiveTime.Add(5 * time.Second)) {
-		logger.Debugf("IsBadNode [%s]: node is expired", peer.Pid)
+		logger.Debugf("IsBadNode [%s]: node is expired", peer.GetPeerID())
 		return true
 	}
 
 	costHistory := parent.CostHistory
-	if int32(len(costHistory)) < 4 {
+	if len(costHistory) < 4 {
 		return false
 	}
 
-	avgCost, lastCost := e.getAvgAndLastCost(costHistory, 4)
+	avgCost, lastCost := eval.getAvgAndLastCost(costHistory, 4)
 
 	if avgCost*40 < lastCost {
-		logger.Debugf("IsNodeBad [%s]: node cost is too long avg[%d] last[%d]", peer.Pid, avgCost, lastCost)
+		logger.Debugf("IsNodeBad [%s]: node cost is too long avg[%d] last[%d]", peer.GetPeerID(), avgCost, lastCost)
 		return true
 	}
 
 	return false
 }
 
-func (eval *evaluator) getAvgAndLastCost(list []int64, splitPos int) (avgCost, lastCost int64) {
+func (eval *evaluator) getAvgAndLastCost(list []int, splitPos int) (avgCost, lastCost int) {
 	length := len(list)
-	totalCost := int64(0)
+	totalCost := 0
 	for i, cost := range list {
-		totalCost += int64(cost)
+		totalCost += cost
 		if length-i <= splitPos {
-			lastCost += int64(cost)
+			lastCost += cost
 		}
 	}
-
-	avgCost = totalCost / int64(length)
-	lastCost = lastCost / int64(splitPos)
+	avgCost = totalCost / length
+	lastCost = lastCost / splitPos
 	return
 }
 
-func (eval *evaluator) SelectChildCandidates(peer *types.PeerNode) (list []*types.PeerNode) {
+func (eval *evaluator) SelectChildCandidateNodes(peer *types.PeerNode) (list []*types.PeerNode) {
 	if peer == nil {
 		return
 	}
-	e.taskManager.PeerTask.Walker(peer.Task, -1, func(pt *types.PeerTask) bool {
-		if pt == nil || peer.Task != pt.Task {
+	eval.peerManager.Walker(peer.GetTask(), -1, func(pt *types.PeerNode) bool {
+		if pt == nil || peer.GetTask() != pt.GetTask() {
 			return true
 		}
-		if pt.Pid == peer.Pid {
+		if pt.GetPeerID() == peer.GetPeerID() {
 			return true
 		} else if pt.IsDown() {
 			return true
 		} else if pt.Success {
 			return true
-		} else if pt.Host.Type == types.HostTypeCdn {
+		} else if types.IsCDN(pt.GetHost()) {
 			return true
-		} else if peer.GetParent() != nil && peer.GetParent().DstPeerTask == pt {
+		} else if peer.GetParent() != nil && peer.GetParent() == pt {
 			return true
 		} else if peer.GetFreeLoad() < 1 {
 			return true
@@ -140,38 +141,38 @@ func (eval *evaluator) SelectChildCandidates(peer *types.PeerNode) (list []*type
 	return
 }
 
-func (eval *evaluator) SelectParentCandidates(peer *types.PeerNode) (list []*types.PeerNode) {
+func (eval *evaluator) SelectParentCandidateNodes(peer *types.PeerNode) (list []*types.PeerNode) {
 	if peer == nil {
-		logger.Debugf("peerTask is nil")
+		logger.Debugf("peer is nil")
 		return
 	}
 	var msg []string
-	e.taskManager.PeerTask.WalkerReverse(peer.Task, -1, func(pt *types.PeerTask) bool {
+	eval.taskManager.PeerTask.WalkerReverse(peer.GetTask(), -1, func(pt *types.PeerNode) bool {
 		if pt == nil {
 			return true
-		} else if peer.Task != pt.Task {
-			msg = append(msg, fmt.Sprintf("%s task[%s] not same", pt.Pid, pt.Task.TaskID))
+		} else if peer.GetTask() != pt.GetTask() {
+			msg = append(msg, fmt.Sprintf("%s task[%s] not same", pt.GetPeerID(), pt.GetTask().GetTaskID()))
 			return true
 		} else if pt.IsDown() {
-			msg = append(msg, fmt.Sprintf("%s is down", pt.Pid))
+			msg = append(msg, fmt.Sprintf("%s is down", pt.GetPeerID()))
 			return true
 		} else if pt.Pid == peer.Pid {
 			return true
 		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
-			msg = append(msg, fmt.Sprintf("%s has relation", pt.Pid))
+			msg = append(msg, fmt.Sprintf("%s has relation", pt.GetPeerID()))
 			return true
 		} else if pt.GetFreeLoad() < 1 {
-			msg = append(msg, fmt.Sprintf("%s no load", pt.Pid))
+			msg = append(msg, fmt.Sprintf("%s no load", pt.GetPeerID()))
 			return true
 		}
 		if pt.Success {
 			list = append(list, pt)
 		} else {
-			root := pt.GetRoot()
-			if root != nil && root.Host != nil && root.Host.Type == types.HostTypeCdn {
+			root := peer.GetTreeRoot()
+			if root != nil && root.GetHost() != nil && types.IsCDN(root.GetHost()) {
 				list = append(list, pt)
 			} else {
-				msg = append(msg, fmt.Sprintf("%s not finished and root is not cdn", pt.Pid))
+				msg = append(msg, fmt.Sprintf("%s not finished and root is not cdn", pt.GetPeerID()))
 			}
 		}
 		if len(list) > 10 {
@@ -180,12 +181,13 @@ func (eval *evaluator) SelectParentCandidates(peer *types.PeerNode) (list []*typ
 		return true
 	})
 	if len(list) == 0 {
-		logger.Debugf("[%s][%s] scheduler failed: \n%s", peer.Task.TaskID, peer.Pid, strings.Join(msg, "\n"))
+		logger.Debugf("[%s][%s] scheduler failed: \n%s", peer.GetTask().GetTaskID(), peer.GetPeerID(), strings.Join(msg, "\n"))
 	}
 
 	return
 }
 
+// The bigger the better
 func (eval *evaluator) Evaluate(dst *types.PeerNode, src *types.PeerNode) float64 {
 	profits := eval.getProfits(dst, src)
 

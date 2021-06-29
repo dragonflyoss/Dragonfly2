@@ -42,45 +42,41 @@ const (
 )
 
 type PeerNode struct {
-	pid            string // peer id
-	task           *Task  // task info
-	host           *Host  // host info
-	finishedNum    int32  // downloaded finished piece number
-	startTime      time.Time
-	lastAccessTime time.Time
-	parent         *PeerNode
-	children       []*PeerNode
-	touch          func(node *PeerNode)
-	//subTreeNodesNum int32    // node number of subtree and current node is root of the subtree
-
-	// the client of peer task, which used for send and receive msg
-	client *worker.Client
-
-	Traffic int64
-	Cost    time.Duration
-	Success bool
-	Code    base.Code
-
-	Status  int
-	jobData interface{}
+	peerID            string // peer id
+	task              *Task  // task info
+	host              *Host  // host info
+	finishedNum       int    // downloaded finished piece number
+	startTime         time.Time
+	LastAccessTime    time.Time
+	parent            *PeerNode
+	children          []*PeerNode
+	client            *worker.Client // the client of peer task, which used for send and receive msg
+	Traffic           int64
+	Cost              time.Duration
+	Success           bool
+	Code              base.Code
+	Status            int
+	jobData           interface{}
+	downloadStatistic *downloadStatistic
 }
 
-func NewPeerNode(pid string, task *Task, host *Host, client *worker.Client, touch func(*PeerTask)) (*PeerNode, error) {
-	if task == nil {
+type downloadStatistic struct {
+}
 
+func NewPeerNode(peerID string, task *Task, host *Host, client *worker.Client) (*PeerNode, error) {
+	if task == nil {
+		return nil, errors.New("task is nil")
 	}
 	if host == nil {
-
+		return nil, errors.New("host is nil")
 	}
 	return &PeerNode{
-		pid:            pid,
+		peerID:         peerID,
 		task:           task,
 		host:           host,
 		client:         client,
 		startTime:      time.Now(),
 		lastAccessTime: time.Now(),
-		touch:          touch,
-		//subTreeNodesNum: 1,
 	}, nil
 	//if host != nil {
 	//	host.AddPeerTask(pt)
@@ -89,6 +85,18 @@ func NewPeerNode(pid string, task *Task, host *Host, client *worker.Client, touc
 	//if task != nil {
 	//	task.Statistic.AddPeerTaskStart()
 	//}
+}
+
+func (peer *PeerNode) GetPeerID() string {
+	return peer.peerID
+}
+
+func (peer *PeerNode) GetHost() *Host {
+	return peer.host
+}
+
+func (peer *PeerNode) GetTask() *Task {
+	return peer.task
 }
 
 func (peer *PeerNode) GetWholeTreeNode() int {
@@ -103,17 +111,9 @@ func (peer *PeerNode) GetWholeTreeNode() int {
 	return 9
 }
 
-func (peer *PeerNode) GetPeerID() string {
-	return peer.pid
-}
-
-func (peer *PeerNode) GetHost() *Host {
-	return peer.host
-}
-
-func (peer *PeerNode) AddParent(parent *PeerNode, concurrency int8) error {
+func (peer *PeerNode) AddParent(parent *PeerNode, concurrency int) error {
 	if parent == nil {
-		return errors.New("parent is nil")
+		return errors.New("parent node is nil")
 	}
 
 	pe := &PeerEdge{
@@ -127,7 +127,7 @@ func (peer *PeerNode) AddParent(parent *PeerNode, concurrency int8) error {
 	// modify subTreeNodesNum of all ancestor
 	p := parent
 	for p != nil {
-		atomic.AddInt32(&p.subTreeNodesNum, pt.subTreeNodesNum)
+		atomic.AddInt32(&p.subTreeNodesNum, peer.subTreeNodesNum)
 		if p.parent == nil || p.parent.DstPeerTask == nil {
 			break
 		}
@@ -150,27 +150,21 @@ func (peer *PeerNode) GetParent() *PeerNode {
 }
 
 func (peer *PeerNode) GetCost() int64 {
-	if len(pt.parent.CostHistory) < 1 {
+	if len(peer.parent.CostHistory) < 1 {
 		return int64(time.Second / time.Millisecond)
 	}
 	totalCost := int64(0)
-	for _, cost := range pt.parent.CostHistory {
+	for _, cost := range peer.parent.CostHistory {
 		totalCost += cost
 	}
-	return totalCost / int64(len(pt.parent.CostHistory))
+	return totalCost / int64(len(peer.parent.CostHistory))
 }
 
-func (peer *PeerNode) GetChildren() (children []*PeerEdge) {
-	if pt.children != nil {
-		pt.children.Range(func(k, v interface{}) bool {
-			children = append(children, v.(*PeerEdge))
-			return true
-		})
-	}
-	return children
+func (peer *PeerNode) GetChildren() (children []*PeerNode) {
+	return peer.children
 }
 
-func (peer *PeerNode) AddConcurrency(parent *PeerTask, delta int8) {
+func (peer *PeerNode) AddConcurrency(parent *PeerNode, delta int8) {
 	if parent == nil {
 		return
 	}
@@ -267,7 +261,7 @@ func (peer *PeerNode) SetStatus(traffic int64, cost uint32, success bool, code b
 	}
 }
 
-func (peer *PeerNode) SetClient(client worker.Client) {
+func (peer *PeerNode) SetClient(client *worker.Client) {
 	peer.client = client
 }
 
@@ -327,14 +321,6 @@ func (peer *PeerNode) SendError(dfError *dferrors.DfError) error {
 	return errors.New("empty client")
 }
 
-func GetDiffPieceNum(src *PeerNode, dst *PeerNode) int {
-	diff := src.finishedNum - dst.finishedNum
-	if diff > 0 {
-		return diff
-	}
-	return -diff
-}
-
 func (peer *PeerNode) GetDepth() int {
 	var deep int
 	node := peer
@@ -390,10 +376,18 @@ func (peer *PeerNode) GetSortKeys() (key1, key2 int) {
 	return
 }
 
-func (node *PeerNode) HasParent() bool {
-	return node.parent != nil
+func (peer *PeerNode) HasParent() bool {
+	return peer.parent != nil
 }
 
-func (node *PeerNode) HistoryCost() time.Duration {
+func (peer *PeerNode) HistoryCost() time.Duration {
+	return time.Second
+}
 
+func GetDiffPieceNum(src *PeerNode, dst *PeerNode) int {
+	diff := src.finishedNum - dst.finishedNum
+	if diff > 0 {
+		return diff
+	}
+	return -diff
 }

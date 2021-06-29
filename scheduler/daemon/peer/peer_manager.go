@@ -76,13 +76,13 @@ func newPeerManager(cfg *config.Config, taskManager daemon.TaskMgr, hostManager 
 	return peerManager
 }
 
-func (m *manager) Add(pid string, task *types.Task, host *types.Host) *types.PeerTask {
+func (m *manager) Add(pid string, task *types.Task, host *types.Host) *types.PeerNode {
 	v, ok := m.data.Load(pid)
 	if ok {
-		return v.(*types.PeerTask)
+		return v.(*types.PeerNode)
 	}
 
-	pt := types.NewPeerTask(pid, task, host, m.addToGCQueue)
+	pt := types.NewPeerNode(pid, task, host, m.addToGCQueue)
 	m.data.Store(pid, pt)
 
 	m.taskManager.Touch(task.TaskID)
@@ -98,13 +98,13 @@ func (m *manager) Add(pid string, task *types.Task, host *types.Host) *types.Pee
 	return pt
 }
 
-func (m *manager) AddFake(pid string, task *types.Task) *types.PeerTask {
+func (m *manager) AddFake(pid string, task *types.Task) *types.PeerNode {
 	v, ok := m.data.Load(pid)
 	if ok {
-		return v.(*types.PeerTask)
+		return v.(*types.PeerNode)
 	}
 
-	pt := types.NewPeerTask(pid, task, nil, m.addToGCQueue)
+	pt := types.NewPeerNode(pid, task, nil, m.addToGCQueue)
 	m.data.Store(pid, pt)
 	pt.SetDown()
 	return pt
@@ -113,12 +113,12 @@ func (m *manager) AddFake(pid string, task *types.Task) *types.PeerTask {
 func (m *manager) Delete(pid string) {
 	data, ok := m.data.Load(pid)
 	if ok {
-		if pt, ok := data.(*types.PeerTask); ok {
-			v, ok := m.dataRanger.Load(pt.Task)
+		if peer, ok := data.(*types.PeerNode); ok {
+			v, ok := m.dataRanger.Load(peer.GetTask())
 			if ok {
 				ranger, ok := v.(*sortedlist.SortedList)
 				if ok {
-					ranger.Delete(pt)
+					ranger.Delete(peer)
 				}
 			}
 
@@ -128,12 +128,12 @@ func (m *manager) Delete(pid string) {
 	return
 }
 
-func (m *manager) Get(pid string) (h *types.PeerTask, ok bool) {
+func (m *manager) Get(pid string) (h *types.PeerNode, ok bool) {
 	data, ok := m.data.Load(pid)
 	if !ok {
 		return
 	}
-	h = data.(*types.PeerTask)
+	h = data.(*types.PeerNode)
 	return
 }
 
@@ -144,15 +144,15 @@ func (m *manager) AddTask(task *types.Task) {
 func (m *manager) DeleteTask(task *types.Task) {
 	// notify client cnd error
 	m.data.Range(func(key, value interface{}) bool {
-		peerTask, _ := value.(*types.PeerTask)
-		if peerTask == nil {
+		peer, _ := value.(*types.PeerNode)
+		if peer == nil {
 			return true
 		}
-		if peerTask.Task != task {
+		if peer.GetTask() != task {
 			return true
 		}
 		if task.CDNError != nil {
-			peerTask.SendError(task.CDNError)
+			peer.SendError(task.CDNError)
 		}
 		m.data.Delete(key)
 		return true
@@ -161,11 +161,11 @@ func (m *manager) DeleteTask(task *types.Task) {
 	m.dataRanger.Delete(task)
 }
 
-func (m *manager) Update(pt *types.PeerTask) {
+func (m *manager) Update(pt *types.PeerNode) {
 	if pt == nil || m.dataRanger == nil {
 		return
 	}
-	v, ok := m.dataRanger.Load(pt.Task)
+	v, ok := m.dataRanger.Load(pt.GetTask())
 	if !ok {
 		return
 	}
@@ -188,7 +188,7 @@ func (m *manager) Update(pt *types.PeerTask) {
 	}
 }
 
-func (m *manager) Walker(task *types.Task, limit int, walker func(pt *types.PeerTask) bool) {
+func (m *manager) Walker(task *types.Task, limit int, walker func(pt *types.PeerNode) bool) {
 	if walker == nil || m.dataRanger == nil {
 		return
 	}
@@ -201,12 +201,12 @@ func (m *manager) Walker(task *types.Task, limit int, walker func(pt *types.Peer
 		return
 	}
 	ranger.RangeLimit(limit, func(data sortedlist.Item) bool {
-		pt, _ := data.(*types.PeerTask)
+		pt, _ := data.(*types.PeerNode)
 		return walker(pt)
 	})
 }
 
-func (m *manager) WalkerReverse(task *types.Task, limit int, walker func(pt *types.PeerTask) bool) {
+func (m *manager) WalkerReverse(task *types.Task, limit int, walker func(pt *types.PeerNode) bool) {
 	if walker == nil || m.dataRanger == nil {
 		return
 	}
@@ -219,16 +219,16 @@ func (m *manager) WalkerReverse(task *types.Task, limit int, walker func(pt *typ
 		return
 	}
 	ranger.RangeReverseLimit(limit, func(data sortedlist.Item) bool {
-		pt, _ := data.(*types.PeerTask)
+		pt, _ := data.(*types.PeerNode)
 		return walker(pt)
 	})
 }
 
 func (m *manager) ClearPeerTask() {
 	m.data.Range(func(key interface{}, value interface{}) bool {
-		pt, _ := value.(*types.PeerTask)
-		if pt != nil && pt.Task != nil && pt.Task.Removed {
-			m.data.Delete(pt.Pid)
+		peer, _ := value.(*types.PeerNode)
+		if peer != nil && peer.GetTask() != nil && peer.GetTask().Removed {
+			m.data.Delete(peer.GetPeerID())
 		}
 		return true
 	})
@@ -242,18 +242,18 @@ func (m *manager) SetGCDelayTime(delay time.Duration) {
 	m.gcDelayTime = delay
 }
 
-func (m *manager) addToGCQueue(pt *types.PeerTask) {
+func (m *manager) addToGCQueue(pt *types.PeerNode) {
 	m.gcQueue.AddAfter(pt, m.gcDelayTime)
 }
 
-func (m *manager) cleanPeerTask(pt *types.PeerTask) {
+func (m *manager) cleanPeerTask(pt *types.PeerNode) {
 	defer m.gcQueue.Done(pt)
 	if pt == nil {
 		return
 	}
-	m.data.Delete(pt.Pid)
-	if pt.Host != nil {
-		host, _ := m.hostManager.Get(pt.Host.Uuid)
+	m.data.Delete(pt.GetPeerID())
+	if pt.GetHost() != nil {
+		host, _ := m.hostManager.Get(pt.GetHost().Uuid)
 		if host != nil {
 			host.DeletePeerTask(pt.Pid)
 			if host.GetPeerTaskNum() <= 0 {
@@ -269,7 +269,7 @@ func (m *manager) gcWorkingLoop() {
 		if shutdown {
 			break
 		}
-		pt, _ := v.(*types.PeerTask)
+		pt, _ := v.(*types.PeerNode)
 		if pt != nil {
 			m.cleanPeerTask(pt)
 		}
@@ -288,7 +288,7 @@ func (m *manager) printDebugInfoLoop() {
 
 func (m *manager) printDebugInfo() string {
 	var task *types.Task
-	var roots []*types.PeerTask
+	var roots []*types.PeerNode
 
 	buffer := bytes.NewBuffer([]byte{})
 	table := tablewriter.NewWriter(buffer)
@@ -296,12 +296,12 @@ func (m *manager) printDebugInfo() string {
 
 	m.data.Range(func(key interface{}, value interface{}) (ok bool) {
 		ok = true
-		peerTask, _ := value.(*types.PeerTask)
+		peerTask, _ := value.(*types.PeerNode)
 		if peerTask == nil {
 			return
 		}
 		if task == nil {
-			task = peerTask.Task
+			task = peerTask.GetTask()
 		}
 		if peerTask.GetParent() == nil {
 			roots = append(roots, peerTask)

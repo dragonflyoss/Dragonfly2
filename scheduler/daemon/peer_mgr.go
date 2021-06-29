@@ -24,4 +24,6 @@ type PeerMgr interface {
 	Get(peerID string) (*types.PeerNode, bool)
 
 	Delete(peerID string)
+
+	Walker(task *types.Task, limit int, walker func(pt *types.PeerNode) bool)
 }

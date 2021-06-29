@@ -37,9 +37,9 @@ type Evaluator interface {
 	// todo Normalization
 	Evaluate(dst *types.PeerNode, src *types.PeerNode) float64
 
-	SelectChildCandidates(peer *types.PeerNode) []*types.PeerNode
+	SelectChildCandidateNodes(peer *types.PeerNode) []*types.PeerNode
 
-	SelectParentCandidates(peer *types.PeerNode) []*types.PeerNode
+	SelectParentCandidateNodes(peer *types.PeerNode) []*types.PeerNode
 }
 
 type evaluatorFactory struct {
