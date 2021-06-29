@@ -81,6 +81,7 @@ func TestCDNHostsToNetAddrs(t *testing.T) {
 			hosts: []*manager.CDN{
 				{
 					HostName:     "foo",
+					Ip:           "127.0.0.1",
 					Port:         8002,
 					DownloadPort: 8001,
 				},
