@@ -102,7 +102,9 @@ func New(cfg *config.Config) (*Server, error) {
 		s.managerConn = managerConn
 
 		// Register to manager
-		s.register(context.Background())
+		if err := s.register(context.Background()); err != nil {
+			return nil, err
+		}
 		logger.Info("cdn register to manager")
 	}
 
@@ -144,18 +146,18 @@ func (s *Server) register(ctx context.Context) error {
 	ip := s.config.AdvertiseIP
 	port := int32(s.config.ListenPort)
 	downloadPort := int32(s.config.DownloadPort)
-	cdnClusterID := s.config.Manager.CDNClusterID
 
-	if _, err := s.managerClient.CreateCDN(ctx, &manager.CreateCDNRequest{
+	var cdn *manager.CDN
+	var err error
+	cdn, err = s.managerClient.CreateCDN(ctx, &manager.CreateCDNRequest{
 		SourceType:   manager.SourceType_CDN_SOURCE,
 		HostName:     iputils.HostName,
 		Ip:           ip,
 		Port:         port,
 		DownloadPort: downloadPort,
-		CdnClusterId: cdnClusterID,
-	}); err != nil {
-		logger.Warnf("create cdn to manager failed %v", err)
-		cdn, err := s.managerClient.UpdateCDN(ctx, &manager.UpdateCDNRequest{
+	})
+	if err != nil {
+		cdn, err = s.managerClient.UpdateCDN(ctx, &manager.UpdateCDNRequest{
 			SourceType:   manager.SourceType_CDN_SOURCE,
 			HostName:     iputils.HostName,
 			Ip:           ip,
@@ -163,19 +165,23 @@ func (s *Server) register(ctx context.Context) error {
 			DownloadPort: downloadPort,
 		})
 		if err != nil {
-			logger.Warnf("update cdn to manager failed %v", err)
+			logger.Errorf("update cdn to manager failed %v", err)
 			return err
 		}
+		logger.Infof("update cdn %s successfully", cdn.HostName)
+	}
+	logger.Infof("create cdn %s successfully", cdn.HostName)
 
-		if cdnClusterID != 0 {
-			if _, err := s.managerClient.AddCDNToCDNCluster(ctx, &manager.AddCDNToCDNClusterRequest{
-				CdnId:        cdn.Id,
-				CdnClusterId: cdnClusterID,
-			}); err != nil {
-				logger.Warnf("add cdn to cdn cluster failed %v", err)
-				return err
-			}
+	cdnClusterID := s.config.Manager.CDNClusterID
+	if cdnClusterID != 0 {
+		if _, err := s.managerClient.AddCDNToCDNCluster(ctx, &manager.AddCDNToCDNClusterRequest{
+			CdnId:        cdn.Id,
+			CdnClusterId: cdnClusterID,
+		}); err != nil {
+			logger.Warnf("add cdn to cdn cluster failed %v", err)
+			return err
 		}
+		logger.Infof("add cdn %s to cdn cluster %s successfully", cdn.HostName, cdnClusterID)
 	}
 
 	return nil

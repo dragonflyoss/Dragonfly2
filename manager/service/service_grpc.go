@@ -13,6 +13,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -122,7 +123,6 @@ func (s *ServiceGRPC) CreateCDN(ctx context.Context, req *manager.CreateCDNReque
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	cdnClusterID := uint(req.CdnClusterId)
 	cdn := model.CDN{
 		HostName:     req.HostName,
 		IDC:          req.Idc,
@@ -130,7 +130,6 @@ func (s *ServiceGRPC) CreateCDN(ctx context.Context, req *manager.CreateCDNReque
 		IP:           req.Ip,
 		Port:         req.Port,
 		DownloadPort: req.DownloadPort,
-		CDNClusterID: &cdnClusterID,
 	}
 
 	if err := s.db.Create(&cdn).Error; err != nil {
@@ -175,26 +174,26 @@ func (s *ServiceGRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNReque
 	}, nil
 }
 
-func (s *ServiceGRPC) AddCDNToCDNCluster(ctx context.Context, req *manager.AddCDNToCDNClusterRequest) error {
+func (s *ServiceGRPC) AddCDNToCDNCluster(ctx context.Context, req *manager.AddCDNToCDNClusterRequest) (*emptypb.Empty, error) {
 	if err := req.Validate(); err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, req.CdnClusterId).Error; err != nil {
-		return err
+		return nil, err
 	}
 
 	cdn := model.CDN{}
 	if err := s.db.First(&cdn, req.CdnId).Error; err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := s.db.Model(&cdnCluster).Association("CDNs").Append(&cdn); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
@@ -304,16 +303,14 @@ func (s *ServiceGRPC) CreateScheduler(ctx context.Context, req *manager.CreateSc
 		}
 	}
 
-	schedulerClusterID := uint(req.SchedulerClusterId)
 	scheduler := model.Scheduler{
-		HostName:           req.HostName,
-		VIPs:               req.Vips,
-		IDC:                req.Idc,
-		Location:           req.Location,
-		NetConfig:          netConfig,
-		IP:                 req.Ip,
-		Port:               req.Port,
-		SchedulerClusterID: &schedulerClusterID,
+		HostName:  req.HostName,
+		VIPs:      req.Vips,
+		IDC:       req.Idc,
+		Location:  req.Location,
+		NetConfig: netConfig,
+		IP:        req.Ip,
+		Port:      req.Port,
 	}
 
 	if err := s.db.Create(&scheduler).Error; err != nil {
@@ -370,26 +367,26 @@ func (s *ServiceGRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateSc
 	}, nil
 }
 
-func (s *ServiceGRPC) AddSchedulerClusterToCDNCluster(ctx context.Context, req *manager.AddSchedulerClusterToSchedulerClusterRequest) error {
+func (s *ServiceGRPC) AddSchedulerClusterToSchedulerCluster(ctx context.Context, req *manager.AddSchedulerClusterToSchedulerClusterRequest) (*emptypb.Empty, error) {
 	if err := req.Validate(); err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.First(&schedulerCluster, req.SchedulerClusterId).Error; err != nil {
-		return err
+		return nil, err
 	}
 
 	scheduler := model.Scheduler{}
 	if err := s.db.First(&scheduler, req.SchedulerId).Error; err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := s.db.Model(&schedulerCluster).Association("Schedulers").Append(&scheduler); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &emptypb.Empty{}, nil
 }
 
 func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {

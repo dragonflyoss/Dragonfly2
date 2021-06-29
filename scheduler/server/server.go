@@ -70,7 +70,9 @@ func New(cfg *config.Config) (*Server, error) {
 		s.managerClient = manager.NewManagerClient(managerConn)
 
 		// Register to manager
-		s.register(context.Background())
+		if err := s.register(context.Background()); err != nil {
+			return nil, err
+		}
 		logger.Info("scheduler register to manager")
 	}
 
@@ -157,33 +159,41 @@ func (s *Server) Stop() (err error) {
 func (s *Server) register(ctx context.Context) error {
 	ip := s.config.Server.IP
 	port := int32(s.config.Server.Port)
-	schedulerClusterID := s.config.Manager.SchedulerClusterID
-	createSchedulerRequest := manager.CreateSchedulerRequest{
+
+	var scheduler *manager.Scheduler
+	var err error
+	scheduler, err = s.managerClient.CreateScheduler(ctx, &manager.CreateSchedulerRequest{
 		SourceType: manager.SourceType_SCHEDULER_SOURCE,
 		HostName:   iputils.HostName,
 		Ip:         ip,
 		Port:       port,
-	}
-	updateSchedulerRequest := manager.UpdateSchedulerRequest{
-		SourceType: manager.SourceType_SCHEDULER_SOURCE,
-		HostName:   iputils.HostName,
-		Ip:         ip,
-		Port:       port,
-	}
-
-	if schedulerClusterID != 0 {
-		createSchedulerRequest.SchedulerClusterId = schedulerClusterID
-		updateSchedulerRequest.SchedulerClusterId = schedulerClusterID
-	}
-
-	if _, err := s.managerClient.CreateScheduler(ctx, &createSchedulerRequest); err != nil {
-		logger.Warnf("create scheduler to manager failed %v", err)
-		if _, err := s.managerClient.UpdateScheduler(ctx, &updateSchedulerRequest); err != nil {
+	})
+	if err != nil {
+		scheduler, err = s.managerClient.UpdateScheduler(ctx, &manager.UpdateSchedulerRequest{
+			SourceType: manager.SourceType_SCHEDULER_SOURCE,
+			HostName:   iputils.HostName,
+			Ip:         ip,
+			Port:       port,
+		})
+		if err != nil {
 			logger.Warnf("update scheduler to manager failed %v", err)
 			return err
 		}
+		logger.Infof("update scheduler %s successfully", scheduler.HostName)
 	}
+	logger.Infof("create scheduler %s successfully", scheduler.HostName)
 
+	schedulerClusterID := s.config.Manager.SchedulerClusterID
+	if schedulerClusterID != 0 {
+		if _, err := s.managerClient.AddSchedulerClusterToSchedulerCluster(ctx, &manager.AddSchedulerClusterToSchedulerClusterRequest{
+			SchedulerId:        scheduler.Id,
+			SchedulerClusterId: schedulerClusterID,
+		}); err != nil {
+			logger.Warnf("add scheduler to scheduler cluster failed %v", err)
+			return err
+		}
+		logger.Infof("add scheduler %s to scheduler cluster %s successfully", scheduler.HostName, schedulerClusterID)
+	}
 	return nil
 }
 

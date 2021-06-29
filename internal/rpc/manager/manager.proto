@@ -65,7 +65,6 @@ message GetCDNRequest {
 message CreateCDNRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string host_name = 2 [(validate.rules).string.hostname = true];
-  uint64 cdn_cluster_id = 3 [(validate.rules).uint64 = { ignore_empty: true }];
   string idc = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
   string location = 5 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
   string ip = 6 [(validate.rules).string.ip = true];
@@ -120,7 +119,6 @@ message GetSchedulerRequest {
 message CreateSchedulerRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string host_name = 2 [(validate.rules).string.hostname = true];
-  uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = { ignore_empty: true }];
   string vips = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
   string idc = 5 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
   string location = 6 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
