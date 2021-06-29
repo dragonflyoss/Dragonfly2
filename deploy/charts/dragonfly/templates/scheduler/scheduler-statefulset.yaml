@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   labels:
     app: {{ template "dragonfly.scheduler.fullname" . }}
@@ -9,9 +9,9 @@ metadata:
     release: {{ .Release.Name }}
   namespace: {{ .Values.installation.namespace }}
   name: {{ template "dragonfly.scheduler.fullname" . }}
-  {{- if .Values.scheduler.deploymentAnnotations }}
+  {{- if .Values.scheduler.statefulsetAnnotations }}
   annotations:
-{{ toYaml .Values.scheduler.deploymentAnnotations | indent 4 }}
+{{ toYaml .Values.scheduler.statefulsetAnnotations | indent 4 }}
   {{- end }}
 spec:
   replicas: {{ .Values.scheduler.replicas }}
@@ -20,6 +20,7 @@ spec:
       app: {{ template "dragonfly.scheduler.fullname" . }}
       component: "{{ .Values.scheduler.name }}"
       release: {{ .Release.Name }}
+  serviceName: scheduler
   template:
     metadata:
       labels:
@@ -61,6 +62,10 @@ spec:
         volumeMounts:
         - name: config
           mountPath: "/etc/dragonfly"
+        {{- if .Values.scheduler.config.staticCDN }}
+        - name: cdn-config
+          mountPath: /opt/dragonfly/scheduler-cdn
+        {{- end}}
       volumes:
       - name: config
         configMap:
@@ -68,3 +73,8 @@ spec:
           items:
           - key: scheduler.yaml
             path: scheduler.yaml
+      {{- if .Values.scheduler.config.staticCDN }}
+      - name: cdn-config
+        configMap:
+          name: scheduler-static-cdn
+      {{- end}}

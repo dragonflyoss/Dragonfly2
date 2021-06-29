@@ -9,12 +9,11 @@ metadata:
     component: "{{ .Values.dfdaemon.name }}"
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
-  {{- if .Values.dfdaemon.deploymentAnnotations }}
+  {{- if .Values.dfdaemon.daemonsetAnnotations }}
   annotations:
-{{ toYaml .Values.dfdaemon.deploymentAnnotations | indent 4 }}
+{{ toYaml .Values.dfdaemon.daemonsetAnnotations | indent 4 }}
   {{- end }}
 spec:
-  replicas: {{ .Values.dfdaemon.replicas }}
   selector:
     matchLabels:
       app: {{ template "dragonfly.dfdaemon.fullname" . }}
@@ -35,6 +34,7 @@ spec:
       nodeSelector:
 {{ toYaml .Values.dfdaemon.nodeSelector | indent 8 }}
       {{- end }}
+      hostNetwork: {{ .Values.dfdaemon.hostNetwork }}
       {{- if .Values.dfdaemon.tolerations }}
       tolerations:
 {{ toYaml .Values.dfdaemon.tolerations | indent 8 }}
@@ -55,17 +55,29 @@ spec:
         imagePullPolicy: {{ .Values.dfdaemon.pullPolicy | quote }}
         resources:
 {{ toYaml .Values.dfdaemon.resources | indent 12 }}
+        {{- if .Values.dfdaemon.hostNetwork }}
         ports:
         - containerPort: 65001
           hostPort: 65001
           protocol: TCP
+        {{- end}}
         volumeMounts:
         - name: config
           mountPath: "/etc/dragonfly"
+        {{- if not .Values.dfdaemon.hostNetwork }}
+        - name: netns
+          mountPath: /host/ns/net
+        securityContext:
+          capabilities:
+            add:
+            - SYS_ADMIN
+        {{- end}}
       volumes:
       - name: config
         configMap:
           name: {{ template "dragonfly.dfdaemon.fullname" . }}
-          items:
-          - key: dfget-daemon.yaml
-            path: dfget-daemon.yaml
+      {{- if not .Values.dfdaemon.hostNetwork }}
+      - name: netns
+        hostPath:
+          path: /proc/1/ns/net
+      {{- end}}

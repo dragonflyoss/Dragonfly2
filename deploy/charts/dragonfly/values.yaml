@@ -3,27 +3,31 @@ fullnameOverride: ""
 
 # values for dragonfly installation
 installation:
-  namespace: kube-system
+  namespace: dragonfly-system
+  clusterDomain: ""
 
 scheduler:
   name: scheduler
-  replicas: 1
+  nameOverride: ""
+  fullnameOverride: ""
+  replicas: 3
   image: dragonflyoss/scheduler
-  tag: 0.1.0
+  tag: v0.1.0-alpha.1
   pullPolicy: IfNotPresent
   resources:
     requests:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "0"
+      memory: "0"
     limits:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "4"
+      memory: "8Gi"
   priorityClassName: ""
   nodeSelector: {}
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
-  deploymentAnnotations: {}
+  serviceAnnotations: {}
+  statefulsetAnnotations: {}
   containerPort: 8002
   service:
     type: ClusterIP
@@ -31,6 +35,7 @@ scheduler:
     port: 8002
     targetPort: 8002
   config:
+    staticCDN: true
     debug: false
     worker:
       worker-num: 1
@@ -42,23 +47,24 @@ cdn:
   name: cdn
   nameOverride: ""
   fullnameOverride: ""
-  replicas: 1
+  replicas: 3
   image: dragonflyoss/cdn
-  tag: 0.1.0
-  pullPolicy: IfNotPresent
+  tag: v0.1.0-alpha.1
+  kubectlImage: bitnami/kubectl
+  pullPolicy: Always
   resources:
     requests:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "0"
+      memory: "0"
     limits:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "4"
+      memory: "8Gi"
   priorityClassName: ""
   nodeSelector: {}
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
-  deploymentAnnotations: {}
+  statefulsetAnnotations: {}
   containerPort: 8003
   nginxContiainerPort: 8001
   service:
@@ -81,71 +87,65 @@ cdn:
       storagePattern: disk
       console: false
     plugins:
-      storage:
-        name: disk
+      storageDriver:
+      - name: disk
         enable: true
         config:
           baseDir: /tmp/cdn
-          gcConfig:
-            youngGCThreshold: 100G
-            fullGCThreshold: 5G
-            cleanRatio: 1
-            intervalThreshold: 2h
+      storageManager:
+      - name: disk
+        enable: true
+        config:
+          gcInitialDelay: 5s
+          gcInterval: 15s
+          driverConfigs:
+            disk:
+              gcConfig:
+                youngGCThreshold: 100G
+                fullGCThreshold: 5G
+                cleanRatio: 1
+                intervalThreshold: 2h
 
 dfdaemon:
   name: dfdaemon
   nameOverride: ""
   fullnameOverride: ""
-  image: dragonflyoss/dfdaemon
-  tag: 0.1.0
+  image: dragonflyoss/dfget
+  tag: v0.1.0-alpha.1
   pullPolicy: IfNotPresent
   resources:
     requests:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "0"
+      memory: "0"
     limits:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "2"
+      memory: "2Gi"
   priorityClassName: ""
   nodeSelector: {}
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
-  deploymentAnnotations: {}
+  daemonsetAnnotations: {}
   containerPort: 65001
+  hostNetwork: false
   config:
     alive_time: 0s
     gc_interval: 1m0s
-    pid_file: /tmp/dfdaemon.pid
-    lock_file: /tmp/dfdaemon.lock
-    data_dir: /tmp/dragonfly/dfdaemon/
-    work_home: /tmp/dragonfly/dfdaemon/
     keep_storage: false
-    verbose: false
+    verbose: true
     host:
       listen_ip: 0.0.0.0
       advertise_ip: 0.0.0.0
-      location: ""
-      idc: ""
-      security_domain: ""
-      net_topology: ""
     download:
       rate_limit: 200Mi
       download_grpc:
         security:
           insecure: true
-          cacert: ""
-          cert: ""
-          key: ""
-          tls_config: null
         unix_listen:
           socket: /tmp/dfdamon.sock
       peer_grpc:
         security:
           insecure: true
-          cacert: ""
-          cert: ""
-          key: ""
         tcp_listen:
           listen: 0.0.0.0
           port: 65000
@@ -153,19 +153,18 @@ dfdaemon:
       rate_limit: 100Mi
       security:
         insecure: true
-        cacert: ""
-        cert: ""
-        key: ""
       tcp_listen:
         listen: 0.0.0.0
         port: 65002
     storage:
       task_expire_time: 3m0s
       strategy: io.d7y.storage.v2.simple
+      multiplex: true
     proxy:
       security:
         insecure: true
       tcp_listen:
+        namespace: /host/ns/net
         listen: 0.0.0.0
         port: 65001
       registry_mirror:
