@@ -160,8 +160,8 @@ message KeepAliveRequest {
   string host_name = 2 [(validate.rules).string.hostname = true];
 }
 
-// Manager RPC REST
-rest Manager {
+// Manager RPC Service 
+service Manager {
   // Get CDN and CDN cluster configuration
   rpc GetCDN(GetCDNRequest) returns(CDN);
   // Create CDN configuration

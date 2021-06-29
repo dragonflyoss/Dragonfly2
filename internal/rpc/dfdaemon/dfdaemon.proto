@@ -54,8 +54,8 @@ message DownResult{
   bool done = 5;
 }
 
-// Daemon Client RPC REST
-rest Daemon{
+// Daemon Client RPC Service
+service Daemon{
   // trigger client to download file
   rpc Download(DownRequest) returns(stream DownResult);
   // get piece tasks from other peers

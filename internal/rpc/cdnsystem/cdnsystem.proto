@@ -44,8 +44,8 @@ message PieceSeed{
   int64 content_length = 6;
 }
 
-// CDN System RPC REST
-rest Seeder{
+// CDN System RPC Service
+service Seeder{
   // generate seeds and return to scheduler
   rpc ObtainSeeds(SeedRequest)returns(stream PieceSeed);
   // get piece tasks from cdn

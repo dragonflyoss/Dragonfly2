@@ -90,10 +90,10 @@ Add your private registry to `insecure-registries` in
 ### Step 4: Configure Docker daemon
 
 Set dfdaemon as `HTTP_PROXY` and `HTTPS_PROXY` for docker daemon in
-`/etc/systemd/system/docker.rest.d/http-proxy.conf`:
+`/etc/systemd/system/docker.service.d/http-proxy.conf`:
 
 ```
-[REST]
+[Service]
 Environment="HTTP_PROXY=http://127.0.0.1:65001"
 Environment="HTTPS_PROXY=http://127.0.0.1:65001"
 ```

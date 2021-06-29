@@ -72,7 +72,7 @@ message PeerHost{
   string uuid = 1;
   // peer host ip
   string ip = 2;
-  // rpc rest port for peer
+  // rpc service port for peer
   int32 rpc_port = 3;
   // piece downloading port for peer
   int32 down_port = 4;
@@ -116,7 +116,7 @@ message PeerPacket{
   message DestPeer{
     // dest ip
     string ip = 1;
-    // rpc rest port for dest peer
+    // rpc service port for dest peer
     int32 rpc_port = 2;
     // dest peer id
     string peer_id = 3;
@@ -158,8 +158,8 @@ message PeerTarget{
   string peer_id = 2;
 }
 
-// Scheduler System RPC REST
-rest Scheduler{
+// Scheduler System RPC Service
+service Scheduler{
   // RegisterPeerTask registers a peer into one task.
   rpc RegisterPeerTask(PeerTaskRequest)returns(RegisterResult);
 
