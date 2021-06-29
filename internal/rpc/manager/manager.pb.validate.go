@@ -570,10 +570,6 @@ func (m *UpdateCDNRequest) Validate() error {
 		}
 	}
 
-	if m.GetCdnClusterId() != 0 {
-
-	}
-
 	if m.GetIdc() != "" {
 
 		if l := utf8.RuneCountInString(m.GetIdc()); l < 1 || l > 1024 {
@@ -715,6 +711,88 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UpdateCDNRequestValidationError{}
+
+// Validate checks the field values on AddCDNToCDNClusterRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *AddCDNToCDNClusterRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
+		return AddCDNToCDNClusterRequestValidationError{
+			field:  "SourceType",
+			reason: "value must be one of the defined enum values",
+		}
+	}
+
+	if m.GetCdnId() != 0 {
+
+	}
+
+	if m.GetCdnClusterId() != 0 {
+
+	}
+
+	return nil
+}
+
+// AddCDNToCDNClusterRequestValidationError is the validation error returned by
+// AddCDNToCDNClusterRequest.Validate if the designated constraints aren't met.
+type AddCDNToCDNClusterRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddCDNToCDNClusterRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddCDNToCDNClusterRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddCDNToCDNClusterRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddCDNToCDNClusterRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddCDNToCDNClusterRequestValidationError) ErrorName() string {
+	return "AddCDNToCDNClusterRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddCDNToCDNClusterRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddCDNToCDNClusterRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddCDNToCDNClusterRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddCDNToCDNClusterRequestValidationError{}
 
 // Validate checks the field values on SchedulerCluster with the rules defined
 // in the proto definition for this message. If any rules are violated, an
@@ -1217,10 +1295,6 @@ func (m *UpdateSchedulerRequest) Validate() error {
 		}
 	}
 
-	if m.GetSchedulerClusterId() != 0 {
-
-	}
-
 	if m.GetVips() != "" {
 
 		if l := utf8.RuneCountInString(m.GetVips()); l < 1 || l > 1024 {
@@ -1375,6 +1449,90 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UpdateSchedulerRequestValidationError{}
+
+// Validate checks the field values on
+// AddSchedulerClusterToSchedulerClusterRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, an error is returned.
+func (m *AddSchedulerClusterToSchedulerClusterRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
+		return AddSchedulerClusterToSchedulerClusterRequestValidationError{
+			field:  "SourceType",
+			reason: "value must be one of the defined enum values",
+		}
+	}
+
+	if m.GetSchedulerId() != 0 {
+
+	}
+
+	if m.GetSchedulerClusterId() != 0 {
+
+	}
+
+	return nil
+}
+
+// AddSchedulerClusterToSchedulerClusterRequestValidationError is the
+// validation error returned by
+// AddSchedulerClusterToSchedulerClusterRequest.Validate if the designated
+// constraints aren't met.
+type AddSchedulerClusterToSchedulerClusterRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddSchedulerClusterToSchedulerClusterRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddSchedulerClusterToSchedulerClusterRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddSchedulerClusterToSchedulerClusterRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddSchedulerClusterToSchedulerClusterRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddSchedulerClusterToSchedulerClusterRequestValidationError) ErrorName() string {
+	return "AddSchedulerClusterToSchedulerClusterRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddSchedulerClusterToSchedulerClusterRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddSchedulerClusterToSchedulerClusterRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddSchedulerClusterToSchedulerClusterRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddSchedulerClusterToSchedulerClusterRequestValidationError{}
 
 // Validate checks the field values on ListSchedulersRequest with the rules
 // defined in the proto definition for this message. If any rules are

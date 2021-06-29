@@ -154,14 +154,12 @@ func (s *ServiceGRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNReque
 	}
 
 	cdn := model.CDN{}
-	cdnClusterID := uint(req.CdnClusterId)
 	if err := s.db.First(&cdn, model.CDN{HostName: req.HostName}).Updates(model.CDN{
 		IDC:          req.Idc,
 		Location:     req.Location,
 		IP:           req.Ip,
 		Port:         req.Port,
 		DownloadPort: req.DownloadPort,
-		CDNClusterID: &cdnClusterID,
 	}).Error; err != nil {
 		return nil, err
 	}
@@ -175,6 +173,28 @@ func (s *ServiceGRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNReque
 		DownloadPort: cdn.DownloadPort,
 		Status:       cdn.Status,
 	}, nil
+}
+
+func (s *ServiceGRPC) AddCDNToCDNCluster(ctx context.Context, req *manager.AddCDNToCDNClusterRequest) error {
+	if err := req.Validate(); err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	cdnCluster := model.CDNCluster{}
+	if err := s.db.First(&cdnCluster, req.CdnClusterId).Error; err != nil {
+		return err
+	}
+
+	cdn := model.CDN{}
+	if err := s.db.First(&cdn, req.CdnId).Error; err != nil {
+		return err
+	}
+
+	if err := s.db.Model(&cdnCluster).Association("CDNs").Append(&cdn); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *ServiceGRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
@@ -326,15 +346,13 @@ func (s *ServiceGRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateSc
 	}
 
 	scheduler := model.Scheduler{}
-	schedulerClusterID := uint(req.SchedulerClusterId)
 	if err := s.db.First(&scheduler, model.Scheduler{HostName: req.HostName}).Updates(model.Scheduler{
-		VIPs:               req.Vips,
-		IDC:                req.Idc,
-		Location:           req.Location,
-		NetConfig:          netConfig,
-		IP:                 req.Ip,
-		Port:               req.Port,
-		SchedulerClusterID: &schedulerClusterID,
+		VIPs:      req.Vips,
+		IDC:       req.Idc,
+		Location:  req.Location,
+		NetConfig: netConfig,
+		IP:        req.Ip,
+		Port:      req.Port,
 	}).Error; err != nil {
 		return nil, err
 	}
@@ -350,6 +368,28 @@ func (s *ServiceGRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateSc
 		Port:      scheduler.Port,
 		Status:    scheduler.Status,
 	}, nil
+}
+
+func (s *ServiceGRPC) AddSchedulerClusterToCDNCluster(ctx context.Context, req *manager.AddSchedulerClusterToSchedulerClusterRequest) error {
+	if err := req.Validate(); err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	schedulerCluster := model.SchedulerCluster{}
+	if err := s.db.First(&schedulerCluster, req.SchedulerClusterId).Error; err != nil {
+		return err
+	}
+
+	scheduler := model.Scheduler{}
+	if err := s.db.First(&scheduler, req.SchedulerId).Error; err != nil {
+		return err
+	}
+
+	if err := s.db.Model(&schedulerCluster).Association("Schedulers").Append(&scheduler); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *ServiceGRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {

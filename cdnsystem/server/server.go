@@ -145,31 +145,36 @@ func (s *Server) register(ctx context.Context) error {
 	port := int32(s.config.ListenPort)
 	downloadPort := int32(s.config.DownloadPort)
 	cdnClusterID := s.config.Manager.CDNClusterID
-	createCDNRequest := manager.CreateCDNRequest{
+
+	if _, err := s.managerClient.CreateCDN(ctx, &manager.CreateCDNRequest{
 		SourceType:   manager.SourceType_CDN_SOURCE,
 		HostName:     iputils.HostName,
 		Ip:           ip,
 		Port:         port,
 		DownloadPort: downloadPort,
-	}
-	updateCDNRequest := manager.UpdateCDNRequest{
-		SourceType:   manager.SourceType_CDN_SOURCE,
-		HostName:     iputils.HostName,
-		Ip:           ip,
-		Port:         port,
-		DownloadPort: downloadPort,
-	}
-
-	if cdnClusterID != 0 {
-		createCDNRequest.CdnClusterId = cdnClusterID
-		updateCDNRequest.CdnClusterId = cdnClusterID
-	}
-
-	if _, err := s.managerClient.CreateCDN(ctx, &createCDNRequest); err != nil {
+		CdnClusterId: cdnClusterID,
+	}); err != nil {
 		logger.Warnf("create cdn to manager failed %v", err)
-		if _, err := s.managerClient.UpdateCDN(ctx, &updateCDNRequest); err != nil {
+		cdn, err := s.managerClient.UpdateCDN(ctx, &manager.UpdateCDNRequest{
+			SourceType:   manager.SourceType_CDN_SOURCE,
+			HostName:     iputils.HostName,
+			Ip:           ip,
+			Port:         port,
+			DownloadPort: downloadPort,
+		})
+		if err != nil {
 			logger.Warnf("update cdn to manager failed %v", err)
 			return err
+		}
+
+		if cdnClusterID != 0 {
+			if _, err := s.managerClient.AddCDNToCDNCluster(ctx, &manager.AddCDNToCDNClusterRequest{
+				CdnId:        cdn.Id,
+				CdnClusterId: cdnClusterID,
+			}); err != nil {
+				logger.Warnf("add cdn to cdn cluster failed %v", err)
+				return err
+			}
 		}
 	}
 

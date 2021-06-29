@@ -85,7 +85,7 @@ message UpdateCDNRequest {
 
 message AddCDNToCDNClusterRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string cdn_id = 2 [(validate.rules).uint64 = { ignore_empty: true }];
+  uint64 cdn_id = 2 [(validate.rules).uint64 = { ignore_empty: true }];
   uint64 cdn_cluster_id = 3 [(validate.rules).uint64 = { ignore_empty: true }];
 }
 
@@ -140,9 +140,9 @@ message UpdateSchedulerRequest {
   int32 port = 9 [(validate.rules).int32 = { gte: 1024, lt: 65535, ignore_empty: true }];
 }
 
-message AddSchedulerClusterToCDNClusterRequest {
+message AddSchedulerClusterToSchedulerClusterRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string scheduler_id = 2 [(validate.rules).uint64 = { ignore_empty: true }];
+  uint64 scheduler_id = 2 [(validate.rules).uint64 = { ignore_empty: true }];
   uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = { ignore_empty: true }];
 }
 
@@ -178,6 +178,8 @@ service Manager {
   rpc CreateScheduler(CreateSchedulerRequest) returns(Scheduler);
   // Update scheduler configuration
   rpc UpdateScheduler(UpdateSchedulerRequest) returns(Scheduler);
+  // AddSchedulerClusterToSchedulerCluster add scheduler to scheduler cluster
+  rpc AddSchedulerClusterToSchedulerCluster(AddSchedulerClusterToSchedulerClusterRequest) returns(google.protobuf.Empty);
   // List acitve schedulers configuration
   rpc ListSchedulers(ListSchedulersRequest)returns(ListSchedulersResponse);
   // KeepAlive with manager
