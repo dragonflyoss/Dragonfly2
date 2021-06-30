@@ -6,7 +6,7 @@ daemon as `DaemonSets`.
 Table of contents:
 
 * [Kustomize](#kustomize-support)
-* [TODO Helm](#helm-support)
+* [Helm](#helm-support)
 * [TODO Upgrade Guide](#upgrade-guide)
 
 ## Kustomize Support
@@ -80,3 +80,33 @@ Example output:
 ```
 {"level":"info","ts":"2021-06-28 06:02:30.924","caller":"peer/peertask_stream_callback.go:77","msg":"stream peer task done, cost: 2838ms","peer":"172.17.0.9-1-ed7a32ae-3f18-4095-9f54-6ccfc248b16e","task":"3c658c488fd0868847fab30976c2a079d8fd63df148fb3b53fd1a418015723d7","component":"streamPeerTask"}
 ```
+
+## Helm Support
+
+### Clone Chart
+
+```shell
+git clone https://github.com/dragonflyoss/Dragonfly2.git
+```
+
+### Install
+
+```shell
+kubectl create ns dragonfly-system
+helm install --namespace dragonfly-system dragonfly Dragonfly2/deploy/charts/dragonfly
+```
+
+### Wait Dragonfly Ready
+
+Wait all pods running
+
+```
+kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
+```
+
+### Next Steps
+
+Following [Configure Runtime](#configure-runtime) to configure runtime.
+Following [Using Dragonfly](#using-dragonfly) to use Dragonfly.
+
+## Upgrade Guide
