@@ -18,13 +18,10 @@ found in [Kubernetes-with-Dragonfly](../ecosystem/Kubernetes-with-Dragonfly.md).
 
 ## SEE ALSO
 
-- [multi machines deployment](../user-guide/multi-machines-deployment.md) - experience Dragonfly on multiple machines
 - [install manager](../user-guide/install/install-manager.md) - how to install the Dragonfly manager
 - [install cdn](../user-guide/install/install-cdn.md) - how to install the Dragonfly cdn
 - [install scheduler](../user-guide/install/install-scheduler.md) - how to install the Dragonfly scheduler
-- [install client](../user-guide/install/install-client.md) - how to install the Dragonfly client
 - [proxy](../user-guide/proxy/containerd.md) - make Dragonfly as an HTTP proxy for docker daemon
-- [download files](../user-guide/download-files.md) - download files with Dragonfly
 - Container Runtimes
     - [cri-o mirror](../user-guide/registry-mirror/cri-o.md) - make Dragonfly as Registry Mirror for CRIO daemon
     - [cri-containerd_mirror](../user-guide/registry-mirror/cri-containerd.md) - make Dragonfly as Registry Mirror for containerd daemon
