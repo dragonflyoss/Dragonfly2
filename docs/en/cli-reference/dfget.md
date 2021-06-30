@@ -21,7 +21,7 @@ dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/obje
 
 ## Log configuration
 
-set environment variable DF_ACTIVE_PROFILE=local if you want to print logs to Terminal
+set environment variable console=true if you want to print logs to Terminal
 
 ### Options
 
@@ -64,7 +64,7 @@ set environment variable DF_ACTIVE_PROFILE=local if you want to print logs to Te
 
 ## Log configuration
 
-set environment variable DF_ACTIVE_PROFILE=local if you want to print logs to Terminal
+set environment variable console=true if you want to print logs to Terminal
 
 ### Options
 

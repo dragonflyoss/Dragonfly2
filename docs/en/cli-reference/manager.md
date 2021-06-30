@@ -1,13 +1,15 @@
-## Scheduler
+## Manager
 
-Scheduler is a long-running process which receives and manages download tasks from the client, notify the CDN to return to the source, 
-generate and maintain a P2P network during the download process, and push suitable download nodes to the client
+Manager is a process that runs in the background and plays the role of the brain of each subsystem cluster in Dragonfly. It is used to manage the dynamic 
+configuration of each system module and provide functions such as heartbeat keeping alive, monitoring the market, and product functions.
+
 ## Try it
 ```
-go run cmd/scheduler/main.go [Option]
+go run cmd/manager/main.go [Option]
 ```
+
 ## Log configuration
-set environment variable console=true if you want to print logs to Terminal
+set environment variable console=local if you want to print logs to Terminal
 
 ## Runtime metrics monitoring
 ```

@@ -1,19 +1,19 @@
 ## CDN
 
-CDN is a long-running process which caches downloaded data from source to avoid downloading the same files from source repeatedly
+CDN 是一个长时间运行的服务进程，它缓存从源下载的数据，以避免重复从源下载相同的文件
 
-## Try it
+## 用法
 ```
 go run cmd/cdnsystem/main.go [Option]
 ```
-## Log configuration
-set environment variable console=true if you want to print logs to Terminal
+## 输出日志配置
+如果你期望把系统执行日志输出到命令终端，设置环境变量 console=true 
 
-## Runtime metrics monitoring 
+## Runtime metrics monitoring
 ```
 go run cmd/cdnsystem/main.go --profiler
 ```
-### Options
+### 可选参数
 
 ```
       --config string    the path of configuration file with yaml extension name, default is /Users/${USER_HOME}/.dragonfly/config/cdn.yaml, it can also be 
