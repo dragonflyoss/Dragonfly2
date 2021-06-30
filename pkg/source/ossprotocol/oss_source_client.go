@@ -178,19 +178,19 @@ func (osc *ossSourceClient) getMeta(ctx context.Context, url string, header map[
 	}
 	ossObject, err := parseOssObject(url)
 	if err != nil {
-		return nil, cdnerrors.ErrURLNotReachable{URL: url, Cause: fmt.Errorf("parse oss object: %v", err)}
+		return nil, errors.Wrapf(err, "parse oss object")
 	}
 
 	bucket, err := client.Bucket(ossObject.bucket)
 	if err != nil {
-		return nil, cdnerrors.ErrURLNotReachable{URL: url, Cause: fmt.Errorf("get bucket:%s: %v", ossObject.bucket, err)}
+		return nil, errors.Wrapf(err, "get bucket:%s", ossObject.bucket)
 	}
 	isExist, err := bucket.IsObjectExist(ossObject.object)
 	if err != nil {
-		return nil, cdnerrors.ErrURLNotReachable{URL: url, Cause: fmt.Errorf("prob object:%s exist: %v", ossObject.object, err)}
+		return nil, errors.Wrapf(err, "prob object:%s if exist", ossObject.object)
 	}
 	if !isExist {
-		return nil, cdnerrors.ErrURLNotReachable{URL: url, Cause: fmt.Errorf("oss object:%s does not exist", ossObject.object)}
+		return nil, fmt.Errorf("oss object:%s does not exist", ossObject.object)
 	}
 	return bucket.GetObjectMeta(ossObject.object, getOptions(header)...)
 }

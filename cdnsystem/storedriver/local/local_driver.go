@@ -30,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/statutils"
-	"github.com/pkg/errors"
 )
 
 // Ensure driver implements the storedriver.Driver interface
@@ -368,7 +367,7 @@ func (ds *driver) statPath(bucket, key string) (string, os.FileInfo, error) {
 	f, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil, errors.Wrapf(cdnerrors.ErrFileNotExist, "no such file or directory:%s exists", filePath)
+			return "", nil, cdnerrors.ErrFileNotExist{File: "filePath"}
 		}
 		return "", nil, err
 	}
