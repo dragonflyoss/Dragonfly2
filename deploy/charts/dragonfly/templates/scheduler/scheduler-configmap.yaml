@@ -15,9 +15,17 @@ data:
       port: {{ .Values.scheduler.containerPort }}
     worker:
 {{ toYaml .Values.scheduler.config.worker | indent 6 }}
-    cdn:
-      list:
-        - - cdn-name: {{template "dragonfly.cdn.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
-            ip: {{template "dragonfly.cdn.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
-            rpc-port: {{ .Values.cdn.service.port }}
-            download-port: {{ .Values.cdn.service.nginxPort }}
+    {{- if .Values.scheduler.config.staticCDN }}
+    dynconfig:
+      cdnDirPath: /opt/dragonfly/scheduler-cdn
+    {{- end}}
+
+---
+
+{{- if .Values.scheduler.config.staticCDN }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scheduler-static-cdn
+  namespace: {{ .Values.installation.namespace }}
+{{- end}}
