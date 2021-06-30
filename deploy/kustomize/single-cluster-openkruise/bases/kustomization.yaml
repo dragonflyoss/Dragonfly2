@@ -27,10 +27,10 @@ configMapGenerator:
   - cdn/cdn.yaml
 images:
 - name: dragonflyoss/cdn
-  newTag: v0.1.0-alpha.1
+  newTag: v0.1.0-beta
 - name: dragonflyoss/dfget
-  newTag: v0.1.0-alpha.1
+  newTag: v0.1.0-beta
 - name: dragonflyoss/scheduler
-  newTag: v0.1.0-alpha.1
+  newTag: v0.1.0-beta
 - name: bitnami/kubectl
-  newTag: latest
+  newTag: "1.20"
