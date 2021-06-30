@@ -19,106 +19,167 @@ syntax = "proto3";
 package manager;
 
 import "google/protobuf/empty.proto";
+import "validate/validate.proto";
+
 option go_package = "d7y.io/dragonfly/v2/internal/rpc/manager";
 
-message GetSchedulersRequest{
-    // client ip
-    string ip = 1;
-    // client host name
-    string host_name = 2;
-    // json format: {vpcId:xxx,sn:xxx,group:xxx,...}
-    string host_tag = 3;
+enum SourceType {
+  SCHEDULER_SOURCE = 0;
+  CLIENT_SOURCE = 1;
+  CDN_SOURCE = 2;
 }
 
-message SchedulerNodes{
-    // ip:port
-    repeated string addrs = 2;
-    HostInfo client_host = 3;
+message CDNCluster {
+  uint64 id = 1;
+  string name = 2;
+  string bio = 3;
+  bytes config = 4;
+  SecurityGroup security_group = 6;
 }
 
-message KeepAliveRequest{
-     // identify servers with hostname
-     string host_name = 1;
-     ResourceType type = 2;
+message SecurityGroup {
+  uint64 id = 1;
+  string name = 2;
+  string bio = 3;
+  string domain = 4;
+  string proxy_domain = 5;
 }
 
-message GetClusterConfigRequest{
-    // identify servers with hostname
-    string host_name = 1;
-    ResourceType type = 2;
+message CDN {
+  uint64 id = 1;
+  string host_name = 2;
+  string idc = 3;
+  string location = 4;
+  string ip = 5;
+  int32 port = 6;
+  int32 download_port = 7;
+  string status = 8;
+  CDNCluster cdn_cluster = 10;
 }
 
-message ClientConfig{
-    //......
+message GetCDNRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
 }
 
-message CdnConfig{
-    string cluster_id = 1;
-
-    string cluster_config = 2;
-    int64  cluster_version = 3;
-
-    string instance_config = 4;
-    int64 instance_version = 5;
+message CreateCDNRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
+  string idc = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string location = 5 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
+  string ip = 6 [(validate.rules).string.ip = true];
+  int32 port = 7 [(validate.rules).int32 = { gte: 1024, lt: 65535 }];
+  int32 download_port = 8 [(validate.rules).int32 = { gte: 1024, lt: 65535 }];
 }
 
-message SchedulerConfig{
-    string cluster_id = 1;
-
-    string cluster_config = 2;
-    string client_config = 3;
-    int64 cluster_version = 4;
-
-    string instance_config = 5;
-    int64 instance_version = 6;
-
-    repeated ServerInfo cdn_hosts = 7;
+message UpdateCDNRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
+  string idc = 3 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string location = 4 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
+  string ip = 5 [(validate.rules).string = { ip: true, ignore_empty: true }];
+  int32 port = 6 [(validate.rules).int32 = { gte: 1024, lt: 65535, ignore_empty: true }];
+  int32 download_port = 7 [(validate.rules).int32 = { gte: 1024, lt: 65535, ignore_empty: true }];
 }
 
-message ClusterConfig{
-    oneof config{
-        SchedulerConfig scheduler_config = 2;
-        CdnConfig cdn_config = 3;
-    }
+message AddCDNToCDNClusterRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  uint64 cdn_id = 2 [(validate.rules).uint64 = { ignore_empty: true }];
+  uint64 cdn_cluster_id = 3 [(validate.rules).uint64 = { ignore_empty: true }];
 }
 
-message ServerInfo{
-    HostInfo host_info = 1;
-    int32 rpc_port = 2;
-    int32 down_port = 3;
+message SchedulerCluster {
+  uint64 id = 1;
+  string name = 2;
+  string bio = 3;
+  bytes config = 4;
+  bytes client_config = 5;
+  SecurityGroup security_group = 7;
 }
 
-message HostInfo{
-    string ip = 1;
-    string host_name = 2;
-    // security isolation domain for network
-    string security_domain = 3;
-    map<string, string> proxy_domain = 4;
-    // area|country|province|city|...
-    string location = 5;
-    string idc = 6;
-    string net_topology = 7;
+message Scheduler {
+  uint64 id = 1;
+  string host_name = 2;
+  string vips = 3;
+  string idc = 4;
+  string location = 5;
+  bytes net_config = 6;
+  string ip = 7;
+  int32 port = 8;
+  string status = 9;
+  SchedulerCluster scheduler_cluster = 11;
+  repeated CDN cdns = 12;
 }
 
-enum ResourceType {
-    Scheduler = 0;
-    Cdn = 1;
+message GetSchedulerRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
 }
 
-// Manager System RPC Service
-service Manager{
-    // get scheduler server list, using scene as follows:
-    // 1. scheduler servers are not exist in local config
-    //
-    // 2. connection is fail for all servers from config,
-    // so need retry one times to get latest servers
-    //
-    // 3. manager actively triggers fresh
-    rpc GetSchedulers(GetSchedulersRequest)returns(SchedulerNodes){}
+message CreateSchedulerRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
+  string vips = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string idc = 5 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string location = 6 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
+  bytes net_config = 7 [(validate.rules).bytes = { min_len: 1, ignore_empty: true }];
+  string ip = 8 [(validate.rules).string.ip = true];
+  int32 port = 9 [(validate.rules).int32 = { gte: 1024, lt: 65535 }];
+}
 
-    // keep alive for cdn or scheduler
-    rpc KeepAlive(KeepAliveRequest)returns(google.protobuf.Empty){}
+message UpdateSchedulerRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
+  string vips = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string idc = 5 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
+  string location = 6 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
+  bytes net_config = 7 [(validate.rules).bytes = { min_len: 1, ignore_empty: true }];
+  string ip = 8 [(validate.rules).string = { ip: true, ignore_empty: true }];
+  int32 port = 9 [(validate.rules).int32 = { gte: 1024, lt: 65535, ignore_empty: true }];
+}
 
-    // get cluster config for cdn or scheduler(client) from manager
-    rpc GetClusterConfig(GetClusterConfigRequest)returns(ClusterConfig){}
+message AddSchedulerClusterToSchedulerClusterRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  uint64 scheduler_id = 2 [(validate.rules).uint64 = { ignore_empty: true }];
+  uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = { ignore_empty: true }];
+}
+
+message ListSchedulersRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
+  string ip = 3 [(validate.rules).string.ip = true];
+  map<string, string> host_info = 4 [(validate.rules).map.ignore_empty = true];
+}
+
+message ListSchedulersResponse {
+	repeated Scheduler schedulers = 1;
+}
+
+message KeepAliveRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string host_name = 2 [(validate.rules).string.hostname = true];
+}
+
+// Manager RPC Service 
+service Manager {
+  // Get CDN and CDN cluster configuration
+  rpc GetCDN(GetCDNRequest) returns(CDN);
+  // Create CDN configuration
+  rpc CreateCDN(CreateCDNRequest) returns(CDN);
+  // Update CDN configuration
+  rpc UpdateCDN(UpdateCDNRequest) returns(CDN);
+  // AddCDNToCDNCluster add cdn to cdn cluster
+  rpc AddCDNToCDNCluster(AddCDNToCDNClusterRequest) returns(google.protobuf.Empty);
+  // Get Scheduler and Scheduler cluster configuration
+  rpc GetScheduler(GetSchedulerRequest)returns(Scheduler);
+  // Create scheduler configuration
+  rpc CreateScheduler(CreateSchedulerRequest) returns(Scheduler);
+  // Update scheduler configuration
+  rpc UpdateScheduler(UpdateSchedulerRequest) returns(Scheduler);
+  // AddSchedulerClusterToSchedulerCluster add scheduler to scheduler cluster
+  rpc AddSchedulerClusterToSchedulerCluster(AddSchedulerClusterToSchedulerClusterRequest) returns(google.protobuf.Empty);
+  // List acitve schedulers configuration
+  rpc ListSchedulers(ListSchedulersRequest)returns(ListSchedulersResponse);
+  // KeepAlive with manager
+  rpc KeepAlive(stream KeepAliveRequest)returns(google.protobuf.Empty);
 }

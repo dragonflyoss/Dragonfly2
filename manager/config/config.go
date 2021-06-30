@@ -1,170 +1,144 @@
 package config
 
 import (
+	"errors"
+	"time"
+
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 )
 
 type Config struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
-	Server       *ServerConfig    `yaml:"server" mapstructure:"server"`
-	Configure    *ConfigureConfig `yaml:"configure" mapstructure:"configure"`
-	Redis        *RedisConfig     `yaml:"redis" mapstructure:"redis"`
-	Stores       []*StoreConfig   `yaml:"stores" mapstructure:"stores"`
-	HostService  *HostService     `yaml:"host-service" mapstructure:"host-service"`
+	Server       *ServerConfig   `yaml:"server" mapstructure:"server"`
+	Database     *DatabaseConfig `yaml:"database" mapstructure:"database"`
+	Cache        *CacheConfig    `yaml:"cache" mapstructure:"cache"`
 }
 
 type ServerConfig struct {
-	IP   string `yaml:"ip" mapstructure:"ip"`
-	Port int    `yaml:"port" mapstructure:"port"`
+	GRPC *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
+	REST *RestConfig      `yaml:"rest" mapstructure:"rest"`
 }
 
-type ConfigureConfig struct {
-	StoreName string `yaml:"store-name" mapstructure:"store-name"`
+type DatabaseConfig struct {
+	Mysql *MysqlConfig `yaml:"mysql" mapstructure:"mysql"`
+	Redis *RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
 type MysqlConfig struct {
 	User     string `yaml:"user" mapstructure:"user"`
 	Password string `yaml:"password" mapstructure:"password"`
-	Addr     string `yaml:"addr" mapstructure:"addr"`
-	Db       string `yaml:"db" mapstructure:"db"`
-}
-
-type SQLiteConfig struct {
-	Db string `yaml:"db" mapstructure:"db"`
-}
-
-type OssConfig struct {
-}
-
-// Only one of Mysql, SQLit and Oss can be used at the same time
-type StoreSource struct {
-	Mysql  *MysqlConfig  `yaml:"mysql,omitempty" mapstructure:"mysql,omitempty"`
-	SQLite *SQLiteConfig `yaml:"sqlite,omitempty" mapstructure:"sqlite,omitempty"`
-	Oss    *OssConfig    `yaml:"oss,omitempty" mapstructure:"oss,omitempty"`
-}
-
-type StoreConfig struct {
-	Name   string       `yaml:"name" mapstructure:"name"`
-	Source *StoreSource `yaml:"source" mapstructure:"source"`
-}
-
-type HostService struct {
+	Host     string `yaml:"host" mapstructure:"host"`
+	Port     int    `yaml:"port" mapstructure:"port"`
+	DBName   string `yaml:"dbname" mapstructure:"dbname"`
 }
 
 type RedisConfig struct {
-	User     string   `yaml:"user" mapstructure:"user"`
-	Password string   `yaml:"password" mapstructure:"password"`
-	Addrs    []string `yaml:"addr" mapstructure:"addrs"`
+	Host     string `yaml:"host" mapstructure:"host"`
+	Port     string `yaml:"port" mapstructure:"port"`
+	Password string `yaml:"password" mapstructure:"password"`
+	DB       int    `yaml:"db" mapstructure:"db"`
 }
 
-type SkylineService struct {
-	Domain    string `yaml:"domain" mapstructure:"domain"`
-	AppName   string `yaml:"app-name" mapstructure:"app-name"`
-	Account   string `yaml:"account" mapstructure:"account"`
-	AccessKey string `yaml:"access-key" mapstructure:"access-key"`
+type CacheConfig struct {
+	Redis *RedisCacheConfig `yaml:"redis" mapstructure:"redis"`
+	Local *LocalCacheConfig `yaml:"local" mapstructure:"local"`
+}
+
+type RedisCacheConfig struct {
+	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
+}
+
+type LocalCacheConfig struct {
+	Size int           `yaml:"size" mapstructure:"size"`
+	TTL  time.Duration `yaml:"ttl" mapstructure:"ttl"`
+}
+
+type RestConfig struct {
+	Addr string `yaml:"addr" mapstructure:"addr"`
+}
+
+type TCPListenConfig struct {
+	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1
+	Listen string `mapstructure:"listen" yaml:"listen"`
+
+	// PortRange stands listen port
+	PortRange TCPListenPortRange `yaml:"port" mapstructure:"port"`
+}
+
+type TCPListenPortRange struct {
+	Start int
+	End   int
 }
 
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			Port: 8004,
-		},
-		Configure: &ConfigureConfig{
-			StoreName: "store1",
-		},
-		Redis: &RedisConfig{
-			User:     "",
-			Password: "",
-			Addrs:    []string{"127.0.0.1:6379"},
-		},
-		Stores: []*StoreConfig{
-			{
-				Name: "store1",
-				Source: &StoreSource{
-					Mysql: &MysqlConfig{
-						User:     "root",
-						Password: "root1234",
-						Addr:     "127.0.0.1:3306",
-						Db:       "dragonfly_manager",
-					},
+			GRPC: &TCPListenConfig{
+				PortRange: TCPListenPortRange{
+					Start: 65003,
+					End:   65003,
 				},
 			},
+			REST: &RestConfig{
+				Addr: ":8080",
+			},
 		},
-		HostService: &HostService{},
+		Cache: &CacheConfig{
+			Redis: &RedisCacheConfig{
+				TTL: 30 * time.Second,
+			},
+			Local: &LocalCacheConfig{
+				Size: 10000,
+				TTL:  30 * time.Second,
+			},
+		},
 	}
 }
 
-func (cfg *StoreConfig) Valid() (string, error) {
-	if len(cfg.Name) <= 0 {
-		return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Name is null")
+func (cfg *Config) Validate() error {
+	if cfg.Cache == nil {
+		return errors.New("empty cache config is not specified")
 	}
 
-	if cfg.Source == nil {
-		return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source is null")
-	}
-
-	source := cfg.Source
-	if source.Mysql != nil {
-		if len(source.Mysql.User) == 0 {
-			return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.Mysql.User is null")
+	if cfg.Cache != nil {
+		if cfg.Cache.Redis.TTL == 0 {
+			return errors.New("empty redis cache TTL is not specified")
 		}
 
-		if len(source.Mysql.Password) == 0 {
-			return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.Mysql.Password is null")
+		if cfg.Cache.Local.Size == 0 {
+			return errors.New("empty local cache size is not specified")
 		}
 
-		if len(source.Mysql.Addr) == 0 {
-			return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.Mysql.Addr is null")
+		if cfg.Cache.Local.TTL == 0 {
+			return errors.New("empty local cache TTL is not specified")
+		}
+	}
+
+	if cfg.Database == nil {
+		return errors.New("empty mysql config is not specified")
+	}
+
+	if cfg.Database != nil {
+		if cfg.Database.Redis == nil {
+			return errors.New("empty cache redis config is not specified")
 		}
 
-		if len(source.Mysql.Db) == 0 {
-			return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.Mysql.Db is null")
+		if cfg.Database.Mysql == nil {
+			return errors.New("empty cache mysql config is not specified")
+		}
+	}
+
+	if cfg.Server == nil {
+		return errors.New("empty server config is not specified")
+	}
+
+	if cfg.Server != nil {
+		if cfg.Server.GRPC == nil {
+			return errors.New("empty grpc config is not specified")
 		}
 
-		return "mysql", nil
-	}
-
-	if source.SQLite != nil {
-		if len(source.SQLite.Db) == 0 {
-			return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.SQLite.Db is null")
-		}
-
-		return "sqlite", nil
-	}
-
-	if source.Oss != nil {
-		return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source.Oss not support yet")
-	}
-
-	return "", dferrors.Newf(dfcodes.ManagerConfigError, "store config error: Source must be set one of mysql, sqlite, oss")
-}
-
-func (cfg *RedisConfig) Valid() error {
-	if len(cfg.Addrs) == 0 {
-		return dferrors.Newf(dfcodes.ManagerConfigError, "redis config error: Addrs is null")
-	}
-
-	return nil
-}
-
-func (cfg *Config) Valid() error {
-	if cfg.Redis == nil {
-		return dferrors.Newf(dfcodes.ManagerConfigError, "redis config error: Redis is null")
-	}
-
-	if err := cfg.Redis.Valid(); err != nil {
-		return err
-	}
-
-	if len(cfg.Stores) <= 0 {
-		return dferrors.Newf(dfcodes.ManagerConfigError, "stores config error: Stores is null")
-	}
-
-	for _, store := range cfg.Stores {
-		if _, err := store.Valid(); err != nil {
-			return err
+		if cfg.Server.REST == nil {
+			return errors.New("empty rest config is not specified")
 		}
 	}
 

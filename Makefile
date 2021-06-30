@@ -185,11 +185,6 @@ test-coverage:
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
-# Generate swagger asserts
-swag-manager:
-	@swag init -g cmd/manager/main.go -o api/v2/manager
-.PHONY: swag-manager
-
 # Generate changelog
 changelog:
 	@git-chglog -o CHANGELOG.md

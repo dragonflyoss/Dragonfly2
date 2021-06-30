@@ -1,4 +1,4 @@
-# Dragonfly V2 API
+# Dragonfly V1 API
 
 We encourage users to experience Dragonfly in different ways. When doing this, there are three ways users could choose to interact with dragonfly mostly:
 
