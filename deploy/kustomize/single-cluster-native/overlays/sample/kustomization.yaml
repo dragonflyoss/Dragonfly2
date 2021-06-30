@@ -1,3 +1,4 @@
+namespace: dragonfly-system
 resources:
 - ../../bases
 images:
