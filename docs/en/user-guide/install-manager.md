@@ -160,7 +160,7 @@ Let's take nginx as an example.
     telnet 127.0.0.1 8003
     ```
 
-- [Install the Dragonfly client](install_client.md) and test if the downloading works.
+- [Install the Dragonfly client](install-client.md) and test if the downloading works.
 
     ```sh
     dfget --url "http://${resourceUrl}" --output ./resource.png --supernode "127.0.0.1:8002=1"

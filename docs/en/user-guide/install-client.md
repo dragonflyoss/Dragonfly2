@@ -133,4 +133,4 @@ Test if the downloading works.
 dfget --url "http://${resourceUrl}" --output ./resource.png --node "127.0.0.1:8002"
 ```
 
-And test dfdaemon by [pulling an image](download_files.md).
+And test dfdaemon by [pulling an image](download-files.md).

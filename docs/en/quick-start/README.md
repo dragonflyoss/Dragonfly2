@@ -105,13 +105,13 @@ then Dragonfly works successfully.
 
 ## SEE ALSO
 
-- [multi machines deployment](../user-guide/multi_machines_deployment.md) - experience Dragonfly on multiple machines
-- [install manager](../user-guide/install_manager.md) - how to install the Dragonfly manager
-- [install cdn](../user-guide/install_cdn.md) - how to install the Dragonfly cdn
-- [install scheduler](../user-guide/install_scheduler.md) - how to install the Dragonfly scheduler
-- [install client](../user-guide/install_client.md) - how to install the Dragonfly client
+- [multi machines deployment](../user-guide/multi-machines-deployment.md) - experience Dragonfly on multiple machines
+- [install manager](../user-guide/install-manager.md) - how to install the Dragonfly manager
+- [install cdn](../user-guide/install-cdn.md) - how to install the Dragonfly cdn
+- [install scheduler](../user-guide/install-scheduler.md) - how to install the Dragonfly scheduler
+- [install client](../user-guide/install-client.md) - how to install the Dragonfly client
 - [proxy](../user_guide/proxy/docker.md) - make Dragonfly as an HTTP proxy for docker daemon
-- [download files](../user-guide/download_files.md) - download files with Dragonfly
+- [download files](../user-guide/download-files.md) - download files with Dragonfly
 - Container Runtimes
     - [cri-o mirror](../user_guide/registry/cri-o.md) - make Dragonfly as Registry Mirror for CRIO daemon
     - [cri-containerd_mirror](../user_guide/registry/cri-containerd.md) - make Dragonfly as Registry Mirror for containerd daemon

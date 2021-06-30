@@ -10,7 +10,7 @@ Organization of document is as following:
     * [WIP dfget](cli-reference/dfget.md)
     * [WIP cdnsystem](cli-reference/cdn.md)
     * [WIP scheduler](cli-reference/scheduler.md)
-    * [TODO manager](./cli-reference/manager.md)
+    * [TODO manager](cli-reference/manager.md)
 * [TODO API Reference](#API-Reference)
 * [Ecosystem](#Ecosystem)
     * [Kubernetes Integration](ecosystem/Kubernetes-with-Dragonfly.md)
@@ -29,7 +29,8 @@ Find `WIP` or `TODO` in this page and follow [CONTRIBUTING](../../CONTRIBUTING.m
 
 ## [WIP] User Guide
 
-[User Guide]() helps all kinds of guidance end users need to experience Dragonfly. Not only the very brief [Quick Start](./quick-start), but the detailed binary installation and configure illustration. In addition, any concept and function which help users understand Dragonfly better would be included as well.
+[User Guide]() helps all kinds of guidance end users need to experience Dragonfly. Not only the very brief [Quick Start](./quick-start), but the detailed 
+binary installation and configure illustration. In addition, any concept and function which help users understand Dragonfly better would be included as well.
 
 ## [WIP] CLI Reference
 

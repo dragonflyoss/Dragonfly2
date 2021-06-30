@@ -25,7 +25,7 @@ go run cmd/cdnsystem/main.go --profiler
         --gc-initial-delay duration       gc initial delay is the delay time from the start to the first GC execution (default 6s)
         --gc-meta-interval duration       gc meta interval is the interval time to execute the GC meta (default 2m0s)
     -h, --help                            help for cdn
-        --home-dir string                 homeDir is the working directory of cdnNode (default "/Users/su*__*nweipeng1/cdn-system")
+        --home-dir string                 homeDir is the working directory of cdnNode (default "/Users/${HOMEDIR}/ftp/")
         --max-bandwidth rate              network rate that cdnNode can use (default 200MB)
         --port int                        listenPort is the port that cdn server listens on (default 8003)
         --profiler                        profiler sets whether cdnNode HTTP server setups profiler
