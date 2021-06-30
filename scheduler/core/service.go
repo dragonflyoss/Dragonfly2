@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package scheduler
+package core
 
 import (
 	"d7y.io/dragonfly/v2/internal/idgen"

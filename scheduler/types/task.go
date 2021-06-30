@@ -41,6 +41,22 @@ type Task struct {
 	CDNError       *dferrors.DfError
 }
 
+func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
+	return &Task{
+		taskID:         taskID,
+		url:            url,
+		filter:         filter,
+		bizID:          bizID,
+		urlMata:        meta,
+		CreateTime:     time.Now(),
+		LastAccessTime: time.Now(),
+		PieceList:      nil,
+		PieceTotal:     0,
+		ContentLength:  0,
+		Statistic:      nil,
+		CDNError:       nil,
+	}
+}
 func (task *Task) GetTaskID() string {
 	return task.taskID
 }

@@ -41,15 +41,15 @@ const (
 )
 
 type manager struct {
-	data                    sync.Map
-	dataRanger              sync.Map
-	gcQueue                 workqueue.DelayingInterface
-	gcDelayTime             time.Duration
-	downloadMonitorQueue    workqueue.DelayingInterface
-	downloadMonitorCallBack func(node *types.PeerNode)
-	taskManager             daemon.TaskMgr
-	hostManager             daemon.HostMgr
-	verbose                 bool
+	peerMap              sync.Map
+	dataRanger           sync.Map
+	gcQueue              workqueue.DelayingInterface
+	gcDelayTime          time.Duration
+	downloadMonitorQueue workqueue.DelayingInterface
+	//downloadMonitorCallBack func(node *types.PeerNode)
+	taskManager daemon.TaskMgr
+	hostManager daemon.HostMgr
+	verbose     bool
 }
 
 func newPeerManager(cfg *config.Config, taskManager daemon.TaskMgr, hostManager daemon.HostMgr) daemon.PeerMgr {
@@ -59,9 +59,9 @@ func newPeerManager(cfg *config.Config, taskManager daemon.TaskMgr, hostManager 
 	}
 
 	peerManager := &manager{
-		downloadMonitorQueue: workqueue.NewDelayingQueue(),
 		gcQueue:              workqueue.NewDelayingQueue(),
 		gcDelayTime:          delay,
+		downloadMonitorQueue: workqueue.NewDelayingQueue(),
 		taskManager:          taskManager,
 		hostManager:          hostManager,
 		verbose:              cfg.Verbose,
@@ -76,42 +76,42 @@ func newPeerManager(cfg *config.Config, taskManager daemon.TaskMgr, hostManager 
 	return peerManager
 }
 
-func (m *manager) Add(pid string, task *types.Task, host *types.Host) *types.PeerNode {
-	v, ok := m.data.Load(pid)
+func (m *manager) Add(peerID string, task *types.Task, host *types.Host) *types.PeerNode {
+	v, ok := m.peerMap.Load(peerID)
 	if ok {
 		return v.(*types.PeerNode)
 	}
 
-	pt := types.NewPeerNode(pid, task, host, m.addToGCQueue)
-	m.data.Store(pid, pt)
+	peer, err := types.NewPeerNode(peerID, task, host, m.addToGCQueue)
+	m.peerMap.Store(peerID, peer)
 
-	m.taskManager.Touch(task.TaskID)
+	m.taskManager.Touch(task.GetTaskID())
 
-	r, ok := m.dataRanger.Load(pt.Task)
+	r, ok := m.dataRanger.Load(task.GetTaskID())
 	if ok {
 		ranger, ok := r.(*sortedlist.SortedList)
 		if ok {
-			ranger.Add(pt)
+			ranger.Add(peer)
 		}
 	}
 
-	return pt
+	return peer
 }
 
 func (m *manager) AddFake(pid string, task *types.Task) *types.PeerNode {
-	v, ok := m.data.Load(pid)
+	v, ok := m.peerMap.Load(pid)
 	if ok {
 		return v.(*types.PeerNode)
 	}
 
-	pt := types.NewPeerNode(pid, task, nil, m.addToGCQueue)
-	m.data.Store(pid, pt)
+	peer, _ := types.NewPeerNode(pid, task, nil, m.addToGCQueue)
+	m.peerMap.Store(pid, peer)
 	pt.SetDown()
 	return pt
 }
 
 func (m *manager) Delete(pid string) {
-	data, ok := m.data.Load(pid)
+	data, ok := m.peerMap.Load(pid)
 	if ok {
 		if peer, ok := data.(*types.PeerNode); ok {
 			v, ok := m.dataRanger.Load(peer.GetTask())
@@ -123,13 +123,13 @@ func (m *manager) Delete(pid string) {
 			}
 
 		}
-		m.data.Delete(pid)
+		m.peerMap.Delete(pid)
 	}
 	return
 }
 
 func (m *manager) Get(pid string) (h *types.PeerNode, ok bool) {
-	data, ok := m.data.Load(pid)
+	data, ok := m.peerMap.Load(pid)
 	if !ok {
 		return
 	}
@@ -143,7 +143,7 @@ func (m *manager) AddTask(task *types.Task) {
 
 func (m *manager) DeleteTask(task *types.Task) {
 	// notify client cnd error
-	m.data.Range(func(key, value interface{}) bool {
+	m.peerMap.Range(func(key, value interface{}) bool {
 		peer, _ := value.(*types.PeerNode)
 		if peer == nil {
 			return true
@@ -154,7 +154,7 @@ func (m *manager) DeleteTask(task *types.Task) {
 		if task.CDNError != nil {
 			peer.SendError(task.CDNError)
 		}
-		m.data.Delete(key)
+		m.peerMap.Delete(key)
 		return true
 	})
 
@@ -162,7 +162,7 @@ func (m *manager) DeleteTask(task *types.Task) {
 }
 
 func (m *manager) Update(pt *types.PeerNode) {
-	if pt == nil || m.dataRanger == nil {
+	if pt == nil {
 		return
 	}
 	v, ok := m.dataRanger.Load(pt.GetTask())
@@ -189,7 +189,7 @@ func (m *manager) Update(pt *types.PeerNode) {
 }
 
 func (m *manager) Walker(task *types.Task, limit int, walker func(pt *types.PeerNode) bool) {
-	if walker == nil || m.dataRanger == nil {
+	if walker == nil {
 		return
 	}
 	v, ok := m.dataRanger.Load(task)
@@ -207,7 +207,7 @@ func (m *manager) Walker(task *types.Task, limit int, walker func(pt *types.Peer
 }
 
 func (m *manager) WalkerReverse(task *types.Task, limit int, walker func(pt *types.PeerNode) bool) {
-	if walker == nil || m.dataRanger == nil {
+	if walker == nil {
 		return
 	}
 	v, ok := m.dataRanger.Load(task)
@@ -225,10 +225,10 @@ func (m *manager) WalkerReverse(task *types.Task, limit int, walker func(pt *typ
 }
 
 func (m *manager) ClearPeerTask() {
-	m.data.Range(func(key interface{}, value interface{}) bool {
+	m.peerMap.Range(func(key interface{}, value interface{}) bool {
 		peer, _ := value.(*types.PeerNode)
 		if peer != nil && peer.GetTask() != nil && peer.GetTask().Removed {
-			m.data.Delete(peer.GetPeerID())
+			m.peerMap.Delete(peer.GetPeerID())
 		}
 		return true
 	})
@@ -251,13 +251,13 @@ func (m *manager) cleanPeerTask(pt *types.PeerNode) {
 	if pt == nil {
 		return
 	}
-	m.data.Delete(pt.GetPeerID())
+	m.peerMap.Delete(pt.GetPeerID())
 	if pt.GetHost() != nil {
-		host, _ := m.hostManager.Get(pt.GetHost().Uuid)
+		host, _ := m.hostManager.Get(pt.GetHost().GetUUID())
 		if host != nil {
-			host.DeletePeerTask(pt.Pid)
+			host.DeletePeerTask(pt.GetPeerID())
 			if host.GetPeerTaskNum() <= 0 {
-				m.hostManager.Delete(pt.Host.Uuid)
+				m.hostManager.Delete(pt.GetHost().GetUUID())
 			}
 		}
 	}
@@ -294,7 +294,7 @@ func (m *manager) printDebugInfo() string {
 	table := tablewriter.NewWriter(buffer)
 	table.SetHeader([]string{"PeerId", "Finished Piece Num", "Download Finished", "Free Load", "Peer Down"})
 
-	m.data.Range(func(key interface{}, value interface{}) (ok bool) {
+	m.peerMap.Range(func(key interface{}, value interface{}) (ok bool) {
 		ok = true
 		peerTask, _ := value.(*types.PeerNode)
 		if peerTask == nil {
@@ -318,14 +318,14 @@ func (m *manager) printDebugInfo() string {
 	var msgs []string
 	msgs = append(msgs, buffer.String())
 
-	var printTree func(node *types.PeerTask, path []string)
-	printTree = func(node *types.PeerTask, path []string) {
+	var printTree func(node *types.PeerNode, path []string)
+	printTree = func(node *types.PeerNode, path []string) {
 		if node == nil {
 			return
 		}
-		nPath := append(path, fmt.Sprintf("%s(%d)", node.Pid, node.GetSubTreeNodesNum()))
+		nPath := append(path, fmt.Sprintf("%s(%d)", node.GetPeerID(), node.GetWholeTreeNode()))
 		if len(path) > 1 {
-			msgs = append(msgs, node.Pid+" || "+strings.Join(nPath, "-"))
+			msgs = append(msgs, node.GetPeerID()+" || "+strings.Join(nPath, "-"))
 		}
 		for _, child := range node.GetChildren() {
 			if child == nil || child.SrcPeerTask == nil {
@@ -343,7 +343,7 @@ func (m *manager) printDebugInfo() string {
 	return msg
 }
 
-func (m *manager) RefreshDownloadMonitor(pt *types.PeerTask) {
+func (m *manager) RefreshDownloadMonitor(pt *types.PeerNode) {
 	logger.Debugf("[%s][%s] downloadMonitorWorkingLoop refresh ", pt.TaskID, pt.Pid)
 	status := pt.GetNodeStatus()
 	if status != types.PeerStatusHealth {
@@ -359,14 +359,14 @@ func (m *manager) RefreshDownloadMonitor(pt *types.PeerTask) {
 	}
 }
 
-func (m *manager) CDNCallback(pt *types.PeerTask, err *dferrors.DfError) {
+func (m *manager) CDNCallback(pt *types.PeerNode, err *dferrors.DfError) {
 	if err != nil {
 		pt.SendError(err)
 	}
 	m.downloadMonitorQueue.Add(pt)
 }
 
-func (m *manager) SetDownloadingMonitorCallBack(callback func(*types.PeerTask)) {
+func (m *manager) SetDownloadingMonitorCallBack(callback func(*types.PeerNode)) {
 	m.downloadMonitorCallBack = callback
 }
 
@@ -378,30 +378,30 @@ func (m *manager) downloadMonitorWorkingLoop() {
 			break
 		}
 		if m.downloadMonitorCallBack != nil {
-			pt, _ := v.(*types.PeerTask)
+			pt, _ := v.(*types.PeerNode)
 			if pt != nil {
-				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", pt.TaskID, pt.Pid, pt.GetNodeStatus())
-				if pt.Success || (pt.Host != nil && pt.Host.Type == types.HostTypeCdn) {
+				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", pt.GetTask().GetTaskID(), pt.GetPeerID(), pt.Status)
+				if pt.Success || (pt.GetHost() != nil && types.IsCDN(pt.GetHost())) {
 					// clear from monitor
 				} else {
-					if pt.GetNodeStatus() != types.PeerStatusHealth {
+					if pt.Status != types.PeerStatusHealth {
 						// peer do not report for a long time, peer gone
-						if time.Now().UnixNano() > pt.GetLastActiveTime()+PeerGoneTimeout {
-							pt.SetNodeStatus(types.PeerStatusNodeGone)
+						if time.Now().After(pt.LastAccessTime.Add(PeerGoneTimeout)) {
+							pt.Status = types.PeerStatusNodeGone
 							pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report time out"))
 						}
 						m.downloadMonitorCallBack(pt)
 					} else if !pt.IsWaiting() {
 						m.downloadMonitorCallBack(pt)
 					} else {
-						if time.Now().UnixNano() > pt.GetLastActiveTime()+PeerForceGoneTimeout {
-							pt.SetNodeStatus(types.PeerStatusNodeGone)
+						if time.Now().After(pt.LastAccessTime.Add(PeerForceGoneTimeout)) {
+							pt.Status = types.PeerStatusNodeGone
 							pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report fource time out"))
 						}
 						m.downloadMonitorCallBack(pt)
 					}
-					_, ok := m.Get(pt.Pid)
-					status := pt.GetNodeStatus()
+					_, ok := m.Get(pt.GetPeerID())
+					status := pt.Status
 					if ok && !pt.Success && status != types.PeerStatusNodeGone && status != types.PeerStatusLeaveNode {
 						m.RefreshDownloadMonitor(pt)
 					}

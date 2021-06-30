@@ -64,8 +64,12 @@ func NewHost() *Host {
 	return &Host{}
 }
 
+func (h *Host) GetUUID() string {
+	return h.UUID
+}
+
 func (h *Host) AddPeerTask(peerNode *PeerNode) {
-	h.peerTaskMap.Store(peerNode.Pid, peerNode)
+	h.peerTaskMap.Store(peerNode.GetPeerID(), peerNode)
 }
 
 func (h *Host) DeletePeerTask(peerTaskID string) {

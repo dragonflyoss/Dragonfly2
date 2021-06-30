@@ -27,22 +27,25 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	scheduler2 "d7y.io/dragonfly/v2/scheduler/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/service/worker"
+	"d7y.io/dragonfly/v2/scheduler/core"
+	"d7y.io/dragonfly/v2/scheduler/daemon"
+	"d7y.io/dragonfly/v2/scheduler/daemon/worker"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type SchedulerServer struct {
-	service *scheduler2.SchedulerService
+	service *core.SchedulerService
 	worker  worker.IWorker
 	config  config.SchedulerConfig
+	peerManager daemon.PeerMgr
+	taskManager daemon.TaskMgr
 }
 
 // Option is a functional option for configuring the scheduler
 type Option func(p *SchedulerServer) *SchedulerServer
 
 // WithSchedulerService sets the *service.SchedulerService
-func WithSchedulerService(service *scheduler2.SchedulerService) Option {
+func WithSchedulerService(service *core.SchedulerService) Option {
 	return func(s *SchedulerServer) *SchedulerServer {
 		s.service = service
 
@@ -100,13 +103,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	taskID := s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMeta, request.BizId, request.PeerId)
 	task, ok := s.service.GetTask(taskID)
 	if !ok {
-		task, err = s.service.AddTask(&types.Task{
-			TaskID:  resp.TaskId,
-			URL:     request.Url,
-			Filter:  request.Filter,
-			BizID:   request.BizId,
-			URLMata: request.UrlMeta,
-		})
+		task, err = s.service.AddTask(types.NewTask(resp.TaskId, request.Url, request.Filter, request.BizId, request.UrlMeta))
 		if err != nil {
 			dferror, _ := err.(*dferrors.DfError)
 			if dferror != nil && dferror.Code == dfcodes.SchedNeedBackSource {
@@ -126,7 +123,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	reqPeerHost := request.PeerHost
 	if host, ok := s.service.GetHost(reqPeerHost.Uuid); !ok {
 		host = &types.Host{
-			Type: types.HostTypePeer,
+			Type: types.PeerHost,
 			PeerHost: scheduler.PeerHost{
 				Uuid:           reqPeerHost.Uuid,
 				Ip:             reqPeerHost.Ip,
@@ -148,7 +145,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		}
 	}
 
-	resp.TaskId = task.TaskID
+	resp.TaskId = task.GetTaskID()
 	resp.SizeScope = task.SizeScope
 
 	// case base.SizeScope_TINY

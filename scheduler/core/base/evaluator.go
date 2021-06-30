@@ -23,7 +23,6 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
