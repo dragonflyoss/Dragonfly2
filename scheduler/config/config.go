@@ -102,7 +102,7 @@ type DynconfigOptions struct {
 	CachePath string `yaml:"cachePath" mapstructure:"cachePath"`
 
 	// CDNDirPath is cdn dir.
-	CDNDirPath string `yaml:"cdnDirPata" mapstructure:"cdnDirPata"`
+	CDNDirPath string `yaml:"cdnDirPath" mapstructure:"cdnDirPath"`
 }
 
 type SchedulerConfig struct {
