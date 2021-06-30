@@ -7,7 +7,7 @@ generate and maintain a P2P network during the download process, and push suitab
 go run cmd/scheduler/main.go [Option]
 ```
 ## Log configuration
-set environment variable DF_ACTIVE_PROFILE=local if you want to print logs to Terminal
+set environment variable console=true if you want to print logs to Terminal
 
 ## Runtime metrics monitoring
 ```

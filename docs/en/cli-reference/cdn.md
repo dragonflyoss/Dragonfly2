@@ -7,7 +7,7 @@ CDN is a long-running process which caches downloaded data from source to avoid 
 go run cmd/cdnsystem/main.go [Option]
 ```
 ## Log configuration
-set environment variable DF_ACTIVE_PROFILE=local if you want to print logs to Terminal
+set environment variable console=true if you want to print logs to Terminal
 
 ## Runtime metrics monitoring 
 ```

@@ -6,7 +6,7 @@ This topic explains how to install the Dragonfly scheduler server.
 
 Install scheduler in one of the following ways:
 
-- Deploying with Docker.
+- Deploying with Docker: Recommended for production usage.
 - Deploying with physical machines.
 
 ## Prerequisites
@@ -70,8 +70,7 @@ Or you can build your own scheduler image.
 **NOTE:** Replace ${schedulerDockerImageId} with the ID obtained at the previous step.
 
 ```sh
-docker run -d --name scheduler --restart=always -p 8002 -v /home/admin/scheduler:/home/admin/scheduler ${schedulerDockerImageId} 
---download-port=8001
+docker run -d --name scheduler --restart=always -p 8002  ${schedulerDockerImageId}
 ```
 
 ## Procedure - When Deploying with Physical Machines
@@ -118,20 +117,12 @@ Or you can build your own scheduler executable file.
 ### Start scheduler
 
 ```sh
-schedulerHomeDir=/home/admin/scheduler
-cdn --home-dir=$cdnHomeDir --port=8003 --download-port=$cdnDownloadPort
+scheduler --options
 ```
 ## After this Task
 
-- After cdn is installed, run the following commands to verify if Nginx and **cdn** are started, and if Port `8001` and `8003` are available.
+- After scheduler is installed, run the following commands to verify if **scheduler** is started, and if Port `8002` is available.
 
     ```sh
-    telnet 127.0.0.1 8001
-    telnet 127.0.0.1 8003
-    ```
-
-- [Install the Dragonfly client](install-client.md) and test if the downloading works.
-
-    ```sh
-    dfget --url "http://${resourceUrl}" --output ./resource.png --supernode "127.0.0.1:8002=1"
+    telnet 127.0.0.1 8002
     ```

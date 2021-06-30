@@ -1,6 +1,6 @@
 # Installing Dragonfly CDN Server
 
-This topic explains how to install the Dragonfly cdn server.
+This topic explains how to install the Dragonfly CDN server.
 
 ## Context
 
@@ -70,7 +70,7 @@ Or you can build your own cdn image.
 **NOTE:** Replace ${cdnDockerImageId} with the ID obtained at the previous step.
 
 ```sh
-docker run -d --name cdn --restart=always -p 8001:8001 -p 8003:8003 -v /home/admin/cdn:/home/admin/cdn ${cdnDockerImageId} 
+docker run -d --name cdn --restart=always -p 8001:8001 -p 8003:8003 -v /home/admin/ftp:/home/admin/ftp ${cdnDockerImageId} 
 --download-port=8001
 ```
 
@@ -127,7 +127,7 @@ cdn --home-dir=$cdnHomeDir --port=8003 --download-port=$cdnDownloadPort
 
 You can start a file server in any way. However, the following conditions must be met:
 
-- It must be rooted at `${cdnHomeDir}/repo` which is defined in the previous step.
+- It must be rooted at `${cdnHomeDir}/ftp` which is defined in the previous step.
 - It must listen on the port `cdnDownloadPort` which is defined in the previous step.
 
 Let's take nginx as an example.
@@ -158,10 +158,4 @@ Let's take nginx as an example.
     ```sh
     telnet 127.0.0.1 8001
     telnet 127.0.0.1 8003
-    ```
-
-- [Install the Dragonfly client](install-client.md) and test if the downloading works.
-
-    ```sh
-    dfget --url "http://${resourceUrl}" --output ./resource.png --supernode "127.0.0.1:8002=1"
     ```
