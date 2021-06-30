@@ -1,51 +1,26 @@
-## 调度器 
+## Scheduler
 
-调度器生成并维护下载过程中的P2P网络
-
-### 说明
-
-调度器是一个常驻后台运行的进程，用于接收和管理客户端的下载任务，通知CDN进行回源， 在下载过程中生成维护P2P网络，给客户端推送适合的下载节点
-
-### 用法
+Scheduler is a long-running process which receives and manages download tasks from the client, notify the CDN to return to the source, 
+generate and maintain a P2P network during the download process, and push suitable download nodes to the client
+## Try it
 ```
-scheduler [flags]
+go run cmd/scheduler/main.go [Option]
 ```
+## Log configuration
+set environment variable DF_ACTIVE_PROFILE=local if you want to print logs to Terminal
 
-### 可选参数
-
+## Runtime metrics monitoring
 ```
-      --config string              the path of scheduler's configuration file (default "conf/scheduler.yaml")
-  -h, --help                       help for scheduler
-      --port int                   port is the port that scheduler server listens on (default 8002)
-      --sender-job-pool-size int   sender-job-pool-size is used for scheduler and do not change it (default 10000)
-      --sender-num int             sender-num is used for scheduler and do not change it (default 50)
-      --worker-job-pool-size int   worker-job-pool-size is used for scheduler and do not change it (default 10000)
-      --worker-num int             worker-num is used for scheduler and do not change it (default 12)
+go run cmd/scheduler/main.go --profiler
 ```
-
-### 使用示例
-
-scheduler --config your-config-path/scheduler.yaml
-
-### 配置文件说明
+### Options
 
 ```
-server:
-  port: 8001                        rpc 端口
-
-scheduler:
-
-worker:
-  worker-num: 5                     工作线程数
-  worker-job-pool-size: 10000       工作队列长度
-  sender-num: 10                    发送消息线程数
-  sender-job-pool-size: 10000       发送消息队列长度
-
-cdn:
-  list:                             CDN列表
-    -
-      - cdn-name : "cdn"            CDN服务器的HostName
-        ip: "127.0.0.1"             CDN服务器的IP地址
-        rpcPort: 8003               CDN的RPC端口
-        download-port: 8002         CDN的下载端口
+      --config string    the path of configuration file with yaml extension name, default is /Users/${USER_HOME}/.dragonfly/config/scheduler.yaml, it can 
+      also be set by env var:SCHEDULER_CONFIG，The settings and uses of each configuration item can refer to scheduler.yaml in config directory
+      --console          whether logger output records to the stdout
+  -h, --help             help for cdn
+      --jaeger string    jaeger endpoint url, like: http://localhost:14250/api/traces
+      --pprof-port int   listen port for pprof, 0 represents random port (default -1)
+      --verbose          whether logger use debug level
 ```
