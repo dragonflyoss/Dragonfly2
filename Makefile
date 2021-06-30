@@ -174,6 +174,11 @@ build-deb-dfget: build-linux-dfget
 		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb
 .PHONY: build-deb-dfget
 
+# Generate dfget man page
+build-dfget-man-page:
+	@pandoc -s -t man ./docs/en/cli-reference/dfget.1.md -o ./docs/en/cli-reference/dfget.1
+.PHONY: build-man-page
+
 # Run unittests
 test:
 	@go test -race -short ${PKG_LIST}
@@ -188,10 +193,12 @@ test-coverage:
 # Generate changelog
 changelog:
 	@git-chglog -o CHANGELOG.md
+.PHONY: changelog
 
 clean:
 	@go clean
 	@rm -rf bin .go .cache
+.PHONY: clean
 
 help: 
 	@echo "make build-dirs                     prepare required folders for build"
@@ -215,6 +222,7 @@ help:
 	@echo "make install-manager                install manager"
 	@echo "make build-rpm-dfget                build rpm dfget"
 	@echo "make build-deb-dfget                build deb dfget"
+	@echo "make build-dfget-man-page           generate dfget man page"
 	@echo "make test                           run unittests"
 	@echo "make test-coverage                  run tests with coverage"
 	@echo "make swag-manager                   generate swagger api"
