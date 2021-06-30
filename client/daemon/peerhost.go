@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 
@@ -210,7 +211,23 @@ func loadGPRCTLSCredentials(opt config.SecurityOption) (credentials.TransportCre
 	return credentials.NewTLS(opt.TLSConfig), nil
 }
 
-func (ph *peerHost) prepareTCPListener(opt config.ListenOption, withTLS bool) (net.Listener, int, error) {
+func (*peerHost) prepareTCPListener(opt config.ListenOption, withTLS bool) (net.Listener, int, error) {
+	if len(opt.TCPListen.Namespace) > 0 {
+		runtime.LockOSThread()
+		defer runtime.UnlockOSThread()
+		recoverFunc, err := switchNetNamespace(opt.TCPListen.Namespace)
+		if err != nil {
+			logger.Errorf("failed to change net namespace: %v", err)
+			return nil, -1, err
+		}
+		defer func() {
+			err := recoverFunc()
+			if err != nil {
+				logger.Errorf("failed to recover net namespace: %v", err)
+			}
+		}()
+	}
+
 	var (
 		ln   net.Listener
 		port int

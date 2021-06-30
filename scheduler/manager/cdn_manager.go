@@ -44,7 +44,7 @@ const TinyFileSize = 128
 
 type CDNManager struct {
 	client       client.CdnClient
-	servers      map[string]*manager.ServerInfo
+	servers      map[string]*manager.CDN
 	dynconfig    config.DynconfigInterface
 	lock         sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
@@ -72,11 +72,11 @@ func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *Ho
 	}
 
 	// Initialize CDNManager servers
-	mgr.servers = cdnHostsToServers(dc.CdnHosts)
+	mgr.servers = cdnHostsToServers(dc.Cdns)
 	logger.Debugf("servers map: %+v\n", mgr.servers)
 
 	// Initialize CDNManager client
-	client, err := client.GetClientByAddr(cdnHostsToNetAddrs(dc.CdnHosts))
+	client, err := client.GetClientByAddr(cdnHostsToNetAddrs(dc.Cdns))
 	if err != nil {
 		return nil, err
 	}
@@ -86,34 +86,34 @@ func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *Ho
 }
 
 // cdnHostsToServers coverts manager.CdnHosts to map[string]*manager.ServerInfo.
-func cdnHostsToServers(hosts []*manager.ServerInfo) map[string]*manager.ServerInfo {
-	m := make(map[string]*manager.ServerInfo)
+func cdnHostsToServers(hosts []*manager.CDN) map[string]*manager.CDN {
+	m := make(map[string]*manager.CDN)
 	for i := range hosts {
-		m[hosts[i].HostInfo.HostName] = hosts[i]
+		m[hosts[i].HostName] = hosts[i]
 	}
 
 	return m
 }
 
 // cdnHostsToNetAddrs coverts manager.CdnHosts to []dfnet.NetAddr.
-func cdnHostsToNetAddrs(hosts []*manager.ServerInfo) []dfnet.NetAddr {
+func cdnHostsToNetAddrs(hosts []*manager.CDN) []dfnet.NetAddr {
 	var netAddrs []dfnet.NetAddr
 	for i := range hosts {
 		netAddrs = append(netAddrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", hosts[i].HostInfo.Ip, hosts[i].RpcPort),
+			Addr: fmt.Sprintf("%s:%d", hosts[i].Ip, hosts[i].Port),
 		})
 	}
 
 	return netAddrs
 }
 
-func (cm *CDNManager) OnNotify(c *manager.SchedulerConfig) {
+func (cm *CDNManager) OnNotify(c *manager.Scheduler) {
 	// Sync CDNManager servers
-	cm.servers = cdnHostsToServers(c.CdnHosts)
+	cm.servers = cdnHostsToServers(c.Cdns)
 
 	// Sync CDNManager client netAddrs
-	cm.client.UpdateState(cdnHostsToNetAddrs(c.CdnHosts))
+	cm.client.UpdateState(cdnHostsToNetAddrs(c.Cdns))
 }
 
 func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error) {
@@ -199,7 +199,7 @@ func (cm *CDNManager) AddToCallback(peerTask *types.PeerTask) {
 	cm.lock.Unlock()
 }
 
-func (cm *CDNManager) getServer(name string) (*manager.ServerInfo, bool) {
+func (cm *CDNManager) getServer(name string) (*manager.CDN, bool) {
 	item, found := cm.servers[name]
 	return item, found
 }
@@ -256,9 +256,9 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 			PeerHost: scheduler.PeerHost{
 				Uuid:     hostID,
 				HostName: ps.SeederName,
-				Ip:       server.HostInfo.Ip,
-				RpcPort:  server.RpcPort,
-				DownPort: server.DownPort,
+				Ip:       server.Ip,
+				RpcPort:  server.Port,
+				DownPort: server.DownloadPort,
 			},
 		}
 		host = cm.hostManager.Add(host)

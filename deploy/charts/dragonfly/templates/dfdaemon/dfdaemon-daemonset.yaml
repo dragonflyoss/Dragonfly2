@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ template "dragonfly.dfdaemon.fullname" . }}
+  namespace: {{ .Values.installation.namespace }}
+  labels:
+    app: {{ template "dragonfly.dfdaemon.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    component: "{{ .Values.dfdaemon.name }}"
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  {{- if .Values.dfdaemon.daemonsetAnnotations }}
+  annotations:
+{{ toYaml .Values.dfdaemon.daemonsetAnnotations | indent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "dragonfly.dfdaemon.fullname" . }}
+      component: "{{ .Values.dfdaemon.name }}"
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "dragonfly.dfdaemon.fullname" . }}
+        component: "{{ .Values.dfdaemon.name }}"
+        release: {{ .Release.Name }}
+        {{- if .Values.dfdaemon.podAnnotations }}
+      annotations:
+{{ toYaml .Values.dfdaemon.podAnnotations | indent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.dfdaemon.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.dfdaemon.nodeSelector | indent 8 }}
+      {{- end }}
+      hostNetwork: {{ .Values.dfdaemon.hostNetwork }}
+      {{- if .Values.dfdaemon.tolerations }}
+      tolerations:
+{{ toYaml .Values.dfdaemon.tolerations | indent 8 }}
+      {{- end }}
+      {{- if .Values.dfdaemon.affinity }}
+      affinity:
+{{ toYaml .Values.dfdaemon.affinity | indent 8 }}
+      {{- end }}
+      {{- if quote .Values.dfdaemon.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.dfdaemon.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.Values.dfdaemon.priorityClassName) }}
+      priorityClassName: {{ .Values.dfdaemon.priorityClassName }}
+      {{- end }}
+      containers:
+      - name: dfdaemon
+        image: "{{ .Values.dfdaemon.image }}:{{ .Values.dfdaemon.tag }}"
+        imagePullPolicy: {{ .Values.dfdaemon.pullPolicy | quote }}
+        resources:
+{{ toYaml .Values.dfdaemon.resources | indent 12 }}
+        {{- if .Values.dfdaemon.hostNetwork }}
+        ports:
+        - containerPort: 65001
+          hostPort: 65001
+          protocol: TCP
+        {{- end}}
+        volumeMounts:
+        - name: config
+          mountPath: "/etc/dragonfly"
+        {{- if not .Values.dfdaemon.hostNetwork }}
+        - name: netns
+          mountPath: /host/ns/net
+        securityContext:
+          capabilities:
+            add:
+            - SYS_ADMIN
+        {{- end}}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ template "dragonfly.dfdaemon.fullname" . }}
+      {{- if not .Values.dfdaemon.hostNetwork }}
+      - name: netns
+        hostPath:
+          path: /proc/1/ns/net
+      {{- end}}

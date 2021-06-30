@@ -75,12 +75,12 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 	}
 	storageInfo, err := cw.cacheDataManager.statDownloadFile(task.TaskID)
 	if err != nil {
-		return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("stat cdn download file: %v", storageInfo)
+		return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("stat cdn download file: %v", err)
 	}
 	// todo Try getting it from the ProgressManager first
 	pieceMd5Sign, _, err := cw.cacheDataManager.getPieceMd5Sign(task.TaskID)
 	if err != nil {
-		return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("get piece md5 sign: %v", pieceMd5Sign)
+		return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("get piece md5 sign: %v", err)
 	}
 	return &downloadMetadata{
 		backSourceLength:     backSourceFileLength,
@@ -110,6 +110,9 @@ func (cw *cacheWriter) doWrite(reader io.Reader, task *types.SeedTask, routineCo
 		if err != nil {
 			close(jobCh)
 			return backSourceFileLength, 0, fmt.Errorf("read source taskID %s pieceNum %d piece: %v", task.TaskID, curPieceNum, err)
+		}
+		if n == 0 {
+			break
 		}
 		backSourceFileLength = backSourceFileLength + n
 

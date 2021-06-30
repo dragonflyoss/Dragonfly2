@@ -174,7 +174,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	pieceInfos := make([]*base.PieceInfo, 0)
 	var count int32 = 0
 	for _, piece := range pieces {
-		if piece.PieceNum >= req.StartNum && count < req.Limit {
+		if piece.PieceNum >= req.StartNum && (count < req.Limit || req.Limit == 0) {
 			pieceInfos = append(pieceInfos, &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
 				RangeStart:  piece.PieceRange.StartIndex,
