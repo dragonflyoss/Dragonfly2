@@ -89,7 +89,7 @@ func (cd *cacheDetector) doDetect(task *types.SeedTask, fileMd5 hash.Hash) (resu
 		return nil, errors.Wrapf(err, "read file meta data of task %s", task.TaskID)
 	}
 	if err := checkSameFile(task, fileMetaData); err != nil {
-		return nil, errors.Wrapf(err, "task does not match meta information of task file")
+		return nil, errors.Wrapf(err, "check same file")
 	}
 	ctx, expireCancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer expireCancel()
@@ -100,8 +100,7 @@ func (cd *cacheDetector) doDetect(task *types.SeedTask, fileMd5 hash.Hash) (resu
 	}
 	logger.WithTaskID(task.TaskID).Debugf("task expired result: %t", expired)
 	if expired {
-		return nil, errors.Wrapf(cdnerrors.ErrResourceExpired, "url:%s, expireInfo:%+v", task.URL,
-			fileMetaData.ExpireInfo)
+		return nil, cdnerrors.ErrResourceExpired{URL: task.URL}
 	}
 	// not expired
 	if fileMetaData.Finish {
@@ -117,7 +116,7 @@ func (cd *cacheDetector) doDetect(task *types.SeedTask, fileMd5 hash.Hash) (resu
 		return nil, errors.Wrapf(err, "check if url(%s) supports range request", task.URL)
 	}
 	if !supportRange {
-		return nil, errors.Wrapf(cdnerrors.ErrResourceNotSupportRangeRequest, "url:%s", task.URL)
+		return nil, cdnerrors.ErrResourceNotSupportRangeRequest{URL: task.URL}
 	}
 	return cd.parseByReadFile(task.TaskID, fileMetaData, fileMd5)
 }
@@ -125,15 +124,15 @@ func (cd *cacheDetector) doDetect(task *types.SeedTask, fileMd5 hash.Hash) (resu
 // parseByReadMetaFile detect cache by read meta and pieceMeta files of task
 func (cd *cacheDetector) parseByReadMetaFile(taskID string, fileMetaData *storage.FileMetaData) (*cacheResult, error) {
 	if !fileMetaData.Success {
-		return nil, errors.Wrapf(cdnerrors.ErrDownloadFail, "success flag of download is false")
+		return nil, fmt.Errorf("success flag of taskID %s is false", taskID)
 	}
 	pieceMetaRecords, err := cd.cacheDataManager.readAndCheckPieceMetaRecords(taskID, fileMetaData.PieceMd5Sign)
 	if err != nil {
 		return nil, errors.Wrapf(err, "check piece meta integrity")
 	}
 	if fileMetaData.TotalPieceCount > 0 && len(pieceMetaRecords) != int(fileMetaData.TotalPieceCount) {
-		return nil, errors.Wrapf(cdnerrors.ErrPieceCountNotEqual, "piece file piece count(%d), "+
-			"meta file piece count(%d)", len(pieceMetaRecords), fileMetaData.TotalPieceCount)
+		err := cdnerrors.ErrInconsistentValues{Expected: fileMetaData.TotalPieceCount, Actual: len(pieceMetaRecords)}
+		return nil, errors.Wrapf(err, "compare file piece count")
 	}
 	storageInfo, err := cd.cacheDataManager.statDownloadFile(taskID)
 	if err != nil {
@@ -141,8 +140,11 @@ func (cd *cacheDetector) parseByReadMetaFile(taskID string, fileMetaData *storag
 	}
 	// check file data integrity by file size
 	if fileMetaData.CdnFileLength != storageInfo.Size {
-		return nil, errors.Wrapf(cdnerrors.ErrFileLengthNotEqual, "meta size %d, storage size %d",
-			fileMetaData.CdnFileLength, storageInfo.Size)
+		err := cdnerrors.ErrInconsistentValues{
+			Expected: fileMetaData.CdnFileLength,
+			Actual:   storageInfo.Size,
+		}
+		return nil, errors.Wrapf(err, "compare file cdn file length")
 	}
 	return &cacheResult{
 		breakPoint:       -1,
@@ -249,13 +251,16 @@ func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, f
 	pieceMd5 := md5.New()
 	tee := io.TeeReader(io.TeeReader(io.LimitReader(reader, int64(pieceRecord.PieceLen)), pieceMd5), fileMd5)
 	if n, err := io.Copy(ioutil.Discard, tee); n != int64(pieceRecord.PieceLen) || err != nil {
-		return fmt.Errorf("read piece content: %v", err)
+		return errors.Wrap(err, "read piece content")
 	}
 	realPieceMd5 := digestutils.ToHashString(pieceMd5)
 	// check piece content
 	if realPieceMd5 != pieceRecord.Md5 {
-		return errors.Wrapf(cdnerrors.ErrPieceMd5NotMatch, "realPieceMd5 md5 (%s), expected md5 (%s)",
-			realPieceMd5, pieceRecord.Md5)
+		err := cdnerrors.ErrInconsistentValues{
+			Expected: pieceRecord.Md5,
+			Actual:   realPieceMd5,
+		}
+		return errors.Wrap(err, "compare piece md5")
 	}
 	return nil
 }

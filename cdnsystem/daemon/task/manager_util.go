@@ -48,8 +48,8 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if key, err := tm.taskURLUnReachableStore.Get(taskID); err == nil {
 		if unReachableStartTime, ok := key.(time.Time); ok &&
 			time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
-			return nil, cdnerrors.ErrURLNotReachable{URL: request.URL, Cause: fmt.Errorf("task hit unReachable cache and interval less than %d, url: %s",
-				tm.cfg.FailAccessInterval, request.URL)}
+			return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable{URL: request.URL}, "task hit unReachable cache and interval less than %d, "+
+				"url: %s", tm.cfg.FailAccessInterval, request.URL)
 		}
 		tm.taskURLUnReachableStore.Delete(taskID)
 		logger.Debugf("delete taskID:%s from url unReachable store", taskID)

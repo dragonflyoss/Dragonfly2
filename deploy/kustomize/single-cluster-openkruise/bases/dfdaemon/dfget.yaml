@@ -1,0 +1,145 @@
+# daemon alive time, when sets 0s, daemon will not auto exit
+alive_time: 0s
+
+# daemon gc task running interval
+gc_interval: 1m0s
+
+# when daemon exit, keep peer task data or not
+# it is usefully when upgrade daemon service, all local cache will be saved
+keep_storage: true
+
+# all addresses of all schedulers
+# the schedulers of all daemons should be same in one region or zone.
+# daemon will send tasks to a fixed scheduler by hashing the task url and meta data
+# caution: only tcp is supported
+scheduler:
+  # below example is a stand address
+  net_addrs:
+  - type: tcp
+    addr: scheduler-0.dragonfly.svc:8002
+  - type: tcp
+    addr: scheduler-1.dragonfly.svc:8002
+  - type: tcp
+    addr: scheduler-2.dragonfly.svc:8002
+  # schedule timeout
+  schedule_timeout: 10s
+
+# when enable, pprof will be enabled,
+verbose: true
+console: false
+
+# current host info used for scheduler
+host:
+  # tcp service listen address
+  # port should be set by other options
+  listen_ip: 0.0.0.0
+  # access ip for other peers
+  # when local ip is different with access ip, advertise_ip should be set
+  advertise_ip: 0.0.0.0
+  # geographical location and network topology
+  location: ""
+  idc: ""
+  security_domain: ""
+  net_topology: ""
+
+# download service option
+download:
+  # download limit  per second
+  total_rate_limit: 1024Mi
+  per_peer_rate_limit: 1024Mi
+  # download grpc option
+  download_grpc:
+    # security option
+    security:
+      insecure: true
+      cacert: ""
+      cert: ""
+      key: ""
+      tls_config: null
+    # download service listen address
+    # current, only support unix domain socket
+    unix_listen:
+      socket: /var/run/dfdaemon.sock
+  # peer grpc option
+  # peer grpc service send pieces info to other peers
+  peer_grpc:
+    security:
+      insecure: true
+      cacert: ""
+      cert: ""
+      key: ""
+    tcp_listen:
+      # listen address
+      listen: 0.0.0.0
+      # listen port, daemon will try to listen
+      # when this port is not available, daemon will try next port
+      port: 65000
+      # if want to limit upper port, please use blow format
+#     port:
+#       start: 65000
+#       end: 65009
+
+# proxy config file location or detail config
+# proxy: ""
+
+# upload service option
+upload:
+  # upload limit per second
+  rate_limit: 200Mi
+  security:
+    insecure: true
+    cacert: ""
+    cert: ""
+    key: ""
+  tcp_listen:
+    # listen address
+    listen: 0.0.0.0
+    # listen port, daemon will try to listen
+    # when this port is not available, daemon will try next port
+    port: 65002
+    # if want to limit upper port, please use blow format
+#   port:
+#     start: 65020
+#     end: 65029
+
+# peer task storage option
+storage:
+  # task data expire time
+  # when there is no access to a task data, this task will be gc.
+  task_expire_time: 3m0s
+  multiplex: true
+
+# proxy service option
+proxy:
+  security:
+    insecure: true
+    cacert: ""
+    cert: ""
+    key: ""
+  tcp_listen:
+    # Namespace stands the linux net namespace, like /proc/1/ns/net
+    # It's useful for running daemon in pod with ip allocated and listen in host
+    # Linux only
+    namespace: /host/ns/net
+    # listen address
+    listen: 0.0.0.0
+    # listen port, daemon will try to listen
+    # when this port is not available, daemon will try next port
+    port: 65001
+    # if want to limit upper port, please use blow format
+  #   port:
+  #     start: 65020
+  #     end: 65029
+  registry_mirror:
+    # url for the registry mirror
+    url: https://index.docker.io
+    # whether to ignore https certificate errors
+    insecure: true
+    # optional certificates if the remote server uses self-signed certificates
+    certs: [ ]
+    # whether to request the remote registry directly
+    direct: false
+
+  proxies:
+  # proxy all http image layer download requests with dfget
+  - regx: (blobs|manifests|config)/sha256.*
