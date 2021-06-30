@@ -40,6 +40,11 @@ base:
   # storageMode is the Mode of storage policy, [disk/hybrid]
   storageMode: disk
 
+  # manager configuration
+  manager:
+    addr: 127.0.0.1:65003
+    cdnClusterID: 1
+
 plugins:
   storageDriver:
     - name: disk
@@ -95,5 +100,3 @@ verbose: false
 # default is random port
 pprofPort: 0
 
-# the service address that provides the configuration item
-configServer: 127.0.0.1:8004

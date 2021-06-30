@@ -1,8 +1,10 @@
 {
-  "host_info": {
-    "host_name": "127.0.0.2",
-    "ip": "127.0.0.2"
-  },
-  "rpc_port": 8003,
-  "down_port": 8001
+  "id": 2,
+  "host_name": "bar",
+  "idc": "bar",
+  "location": "bar",
+  "ip": "127.0.0.1",
+  "port": 8003,
+  "download_port": 8001,
+  "status": "active"
 }

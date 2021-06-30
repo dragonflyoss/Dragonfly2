@@ -71,3 +71,10 @@ const (
 	// unit: MB/s
 	DefaultMaxBandwidth = 1 * unit.GB
 )
+
+const (
+	DefaultKeepAliveInterval                 = 5 * time.Second
+	DefaultKeepAliveRetryMaxAttempts         = 100000000
+	DefaultKeepAliveRetryInitBackOff float64 = 5
+	DefaultKeepAliveRetryMaxBackOff  float64 = 10
+)

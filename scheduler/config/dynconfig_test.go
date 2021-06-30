@@ -37,7 +37,7 @@ func TestDynconfigGet(t *testing.T) {
 		sleep          func()
 		cleanFileCache func(t *testing.T)
 		mock           func(m *mocks.MockManagerClientMockRecorder)
-		expect         func(t *testing.T, data *manager.SchedulerConfig, err error)
+		expect         func(t *testing.T, data *manager.Scheduler, err error)
 	}{
 		{
 			name:   "get dynconfig success",
@@ -49,13 +49,13 @@ func TestDynconfigGet(t *testing.T) {
 			},
 			sleep: func() {},
 			mock: func(m *mocks.MockManagerClientMockRecorder) {
-				m.GetSchedulerClusterConfig(gomock.Any(), gomock.Any()).Return(&manager.SchedulerConfig{
-					ClusterId: "bar",
+				m.GetScheduler(gomock.Any(), gomock.Any()).Return(&manager.Scheduler{
+					Id: 1,
 				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, data *manager.SchedulerConfig, err error) {
+			expect: func(t *testing.T, data *manager.Scheduler, err error) {
 				assert := assert.New(t)
-				assert.Equal("bar", data.ClusterId)
+				assert.Equal(uint64(1), data.Id)
 			},
 		},
 		{
@@ -71,15 +71,15 @@ func TestDynconfigGet(t *testing.T) {
 			},
 			mock: func(m *mocks.MockManagerClientMockRecorder) {
 				gomock.InOrder(
-					m.GetSchedulerClusterConfig(gomock.Any(), gomock.Any()).Return(&manager.SchedulerConfig{
-						ClusterId: "bar",
+					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&manager.Scheduler{
+						Id: 1,
 					}, nil).Times(1),
-					m.GetSchedulerClusterConfig(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1),
+					m.GetScheduler(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1),
 				)
 			},
-			expect: func(t *testing.T, data *manager.SchedulerConfig, err error) {
+			expect: func(t *testing.T, data *manager.Scheduler, err error) {
 				assert := assert.New(t)
-				assert.Equal("bar", data.ClusterId)
+				assert.Equal(uint64(1), data.Id)
 			},
 		},
 	}
@@ -112,37 +112,41 @@ func TestDynconfigGetCDNFromDirPath(t *testing.T) {
 	tests := []struct {
 		name       string
 		cdnDirPath string
-		expect     func(t *testing.T, data *manager.SchedulerConfig, err error)
+		expect     func(t *testing.T, data *manager.Scheduler, err error)
 	}{
 		{
 			name:       "get CDN from directory",
 			cdnDirPath: path.Join("./testdata", "cdn"),
-			expect: func(t *testing.T, data *manager.SchedulerConfig, err error) {
+			expect: func(t *testing.T, data *manager.Scheduler, err error) {
 				assert := assert.New(t)
-				assert.Equal([]*manager.ServerInfo{
+				assert.Equal([]*manager.CDN{
 					{
-						HostInfo: &manager.HostInfo{
-							HostName: "127.0.0.1",
-							Ip:       "127.0.0.1",
-						},
-						RpcPort:  8003,
-						DownPort: 8001,
+						Id:           uint64(1),
+						HostName:     "foo",
+						Idc:          "foo",
+						Location:     "foo",
+						Ip:           "127.0.0.1",
+						Port:         8003,
+						DownloadPort: 8001,
+						Status:       "active",
 					},
 					{
-						HostInfo: &manager.HostInfo{
-							HostName: "127.0.0.2",
-							Ip:       "127.0.0.2",
-						},
-						RpcPort:  8003,
-						DownPort: 8001,
+						Id:           uint64(2),
+						HostName:     "bar",
+						Idc:          "bar",
+						Location:     "bar",
+						Ip:           "127.0.0.1",
+						Port:         8003,
+						DownloadPort: 8001,
+						Status:       "active",
 					},
-				}, data.CdnHosts)
+				}, data.Cdns)
 			},
 		},
 		{
 			name:       "directory does not exist",
 			cdnDirPath: path.Join("./testdata", "foo"),
-			expect: func(t *testing.T, data *manager.SchedulerConfig, err error) {
+			expect: func(t *testing.T, data *manager.Scheduler, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "open testdata/foo: no such file or directory")
 			},

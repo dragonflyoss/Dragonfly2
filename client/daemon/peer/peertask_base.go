@@ -32,7 +32,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -41,6 +40,7 @@ import (
 	dfclient "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/internal/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/pkg/retry"
 )
 
 const (
@@ -660,7 +660,7 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 		peerPacketChanged bool
 		count             int
 	)
-	p, _, err := clientutil.Retry(pt.ctx, func() (interface{}, bool, error) {
+	p, _, err := retry.Run(pt.ctx, func() (interface{}, bool, error) {
 		pp, getErr := dfclient.GetPieceTasks(pt.ctx, peer, request)
 		// when GetPieceTasks returns err, exit retry
 		if getErr != nil {

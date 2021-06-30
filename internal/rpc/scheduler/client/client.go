@@ -18,16 +18,11 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/internal/rpc/manager"
-	mgClient "d7y.io/dragonfly/v2/internal/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
@@ -49,45 +44,6 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 		}),
 	}
 	logger.Infof("scheduler server list: %s", addrs)
-	return sc, nil
-}
-
-func GetSchedulerByConfigServer(cfgServerAddr string, opts ...grpc.DialOption) (SchedulerClient, error) {
-	if stringutils.IsBlank(cfgServerAddr) {
-		return nil, fmt.Errorf("config server address is not specified")
-	}
-	configServer, err := mgClient.NewClient([]dfnet.NetAddr{{
-		Type: dfnet.TCP,
-		Addr: cfgServerAddr,
-	}})
-	if err != nil {
-		return nil, fmt.Errorf("create config server: %v", err)
-	}
-	// todo create HostTag
-	HostTag := ""
-	schedulers, err := configServer.GetSchedulers(context.Background(), &manager.GetSchedulersRequest{
-		Ip:       iputils.HostIP,
-		HostName: iputils.HostName,
-		HostTag:  HostTag,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("get scheduler list from config server: %v", err)
-	}
-	var scheds []dfnet.NetAddr
-	for i := range schedulers.Addrs {
-		scheds = append(scheds, dfnet.NetAddr{
-			Type: dfnet.TCP,
-			Addr: schedulers.Addrs[i],
-		})
-	}
-	logger.Infof("successfully get scheduler list: %s", scheds)
-	sc := &schedulerClient{
-		Connection: rpc.NewConnection(context.Background(), "scheduler-dynamic", scheds, []rpc.ConnOption{
-			rpc.WithConnExpireTime(5 * time.Minute),
-			rpc.WithDialOption(opts),
-		}),
-	}
-	logger.Infof("scheduler server list: %s", scheds)
 	return sc, nil
 }
 
