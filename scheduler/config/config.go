@@ -21,19 +21,17 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"github.com/pkg/errors"
 )
 
 type Config struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
-	ConfigServer string                `yaml:"configServer" mapstructure:"configServer"`
 	Scheduler    SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
 	Server       ServerConfig          `yaml:"server" mapstructure:"server"`
 	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
 	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
-	Dynconfig    *DynconfigOptions     `yaml:"dynconfig"`
-	Manager      *ManagerConfig        `yaml:"manager"`
+	Dynconfig    *DynconfigOptions     `yaml:"dynconfig" mapstructure:"dynconfig"`
+	Manager      ManagerConfig         `yaml:"manager" mapstructure:"manager"`
 }
 
 func New() *Config {
@@ -41,12 +39,6 @@ func New() *Config {
 }
 
 func (c *Config) Validate() error {
-	if c.Manager != nil {
-		if len(c.Manager.NetAddrs) <= 0 {
-			return errors.New("empty manager config is not specified")
-		}
-	}
-
 	if c.Dynconfig.Type == dc.LocalSourceType && c.Dynconfig.Path == "" {
 		return errors.New("dynconfig is LocalSourceType type requires parameter path")
 	}
@@ -60,8 +52,8 @@ func (c *Config) Validate() error {
 			return errors.New("dynconfig is ManagerSourceType type requires parameter cachePath")
 		}
 
-		if len(c.Dynconfig.NetAddrs) <= 0 {
-			return errors.New("dynconfig is ManagerSourceType type requires parameter netAddrs")
+		if c.Dynconfig.Addr == "" {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter addr")
 		}
 	}
 
@@ -69,28 +61,48 @@ func (c *Config) Validate() error {
 }
 
 type ManagerConfig struct {
-	// NetAddrs is manager addresses.
-	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
+	// Addr is manager address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
+
+	// SchedulerClusterID is scheduler cluster id.
+	SchedulerClusterID uint64 `yaml:"schedulerClusterID" mapstructure:"schedulerClusterID"`
+
+	// KeepAlive configuration
+	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
+}
+
+type KeepAliveConfig struct {
+	// Keep alive interval
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+
+	// Keep alive retry max attempts
+	RetryMaxAttempts int `yaml:"retryMaxAttempts" mapstructure:"retryMaxAttempts"`
+
+	// Keep alive retry init backoff
+	RetryInitBackOff float64 `yaml:"retryInitBackOff" mapstructure:"retryInitBackOff"`
+
+	// Keep alive retry max backoff
+	RetryMaxBackOff float64 `yaml:"retryMaxBackOff" mapstructure:"retryMaxBackOff"`
 }
 
 type DynconfigOptions struct {
 	// Type is dynconfig source type.
-	Type dc.SourceType `yaml:"type"`
+	Type dc.SourceType `yaml:"type" mapstructure:"type"`
 
 	// ExpireTime is expire time for manager cache.
-	ExpireTime time.Duration `yaml:"expireTime"`
+	ExpireTime time.Duration `yaml:"expireTime" mapstructure:"expireTime"`
 
-	// NetAddrs is dynconfig source addresses.
-	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
+	// Addr is dynconfig source address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
 
 	// Path is dynconfig filepath.
-	Path string `yaml:"path"`
+	Path string `yaml:"path" mapstructure:"path"`
 
 	// CachePath is cache filepath.
-	CachePath string `yaml:"cachePath"`
+	CachePath string `yaml:"cachePath" mapstructure:"cachePath"`
 
 	// CDNDirPath is cdn dir.
-	CDNDirPath string `yaml:"cdnDirPata"`
+	CDNDirPath string `yaml:"cdnDirPata" mapstructure:"cdnDirPata"`
 }
 
 type SchedulerConfig struct {

@@ -44,8 +44,7 @@ type Config struct {
 	base.Options    `yaml:",inline" mapstructure:",squash"`
 	*BaseProperties `yaml:"base" mapstructure:"base"`
 
-	Plugins      map[plugins.PluginType][]*plugins.PluginProperties `yaml:"plugins" mapstructure:"plugins"`
-	ConfigServer string                                             `yaml:"configServer" mapstructure:"configServer"`
+	Plugins map[plugins.PluginType][]*plugins.PluginProperties `yaml:"plugins" mapstructure:"plugins"`
 }
 
 func (c *Config) String() string {
@@ -132,6 +131,14 @@ func NewDefaultBaseProperties() *BaseProperties {
 		TaskExpireTime:          DefaultTaskExpireTime,
 		StorageMode:             DefaultStorageMode,
 		AdvertiseIP:             iputils.HostIP,
+		Manager: ManagerConfig{
+			KeepAlive: KeepAliveConfig{
+				Interval:         DefaultKeepAliveInterval,
+				RetryMaxAttempts: DefaultKeepAliveRetryMaxAttempts,
+				RetryInitBackOff: DefaultKeepAliveRetryInitBackOff,
+				RetryMaxBackOff:  DefaultKeepAliveRetryMaxBackOff,
+			},
+		},
 	}
 }
 
@@ -178,4 +185,32 @@ type BaseProperties struct {
 
 	// StorageMode disk/hybrid/memory
 	StorageMode string `yaml:"storageMode" mapstructure:"storageMode"`
+
+	// Manager configuration
+	Manager ManagerConfig `yaml:"manager" mapstructure:"manager"`
+}
+
+type ManagerConfig struct {
+	// NetAddr is manager address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
+
+	// CDNClusterID is cdn cluster id.
+	CDNClusterID uint64 `yaml:"cdnClusterID" mapstructure:"cdnClusterID"`
+
+	// KeepAlive configuration
+	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
+}
+
+type KeepAliveConfig struct {
+	// Keep alive interval
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+
+	// Keep alive retry max attempts
+	RetryMaxAttempts int `yaml:"retryMaxAttempts" mapstructure:"retryMaxAttempts"`
+
+	// Keep alive retry init backoff
+	RetryInitBackOff float64 `yaml:"retryInitBackOff" mapstructure:"retryInitBackOff"`
+
+	// Keep alive retry max backoff
+	RetryMaxBackOff float64 `yaml:"retryMaxBackOff" mapstructure:"retryMaxBackOff"`
 }
