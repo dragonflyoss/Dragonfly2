@@ -116,13 +116,13 @@ func (s *ErrorTestSuite) TestIsDownloadFail() {
 		{
 			name: "equal",
 			args: args{
-				err: ErrDownloadFail,
+				err: ErrTaskDownloadFail,
 			},
 			want: true,
 		}, {
 			name: "wrap",
 			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrDownloadFail, "wrap err"), "wapp err"),
+				err: errors.Wrapf(errors.Wrapf(ErrTaskDownloadFail, "wrap err"), "wapp err"),
 			},
 			want: true,
 		}, {
@@ -140,42 +140,6 @@ func (s *ErrorTestSuite) TestIsDownloadFail() {
 	}
 }
 
-func (s *ErrorTestSuite) TestIsFileLengthNotEqual() {
-	type args struct {
-		err error
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "equal",
-			args: args{
-				err: ErrFileLengthNotEqual,
-			},
-			want: true,
-		}, {
-			name: "wrap",
-			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrFileLengthNotEqual, "wrap err"), "wapp err"),
-			},
-			want: true,
-		}, {
-			name: "notEqual",
-			args: args{
-				err: errors.Wrapf(ErrInvalidValue, "invaid"),
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			s.Equal(tt.want, IsFileLengthNotEqual(tt.args.err))
-		})
-	}
-}
-
 func (s *ErrorTestSuite) TestIsFileNotExist() {
 	type args struct {
 		err error
@@ -188,13 +152,13 @@ func (s *ErrorTestSuite) TestIsFileNotExist() {
 		{
 			name: "equal",
 			args: args{
-				err: ErrFileNotExist,
+				err: ErrFileNotExist{},
 			},
 			want: true,
 		}, {
 			name: "wrap",
 			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrFileNotExist, "wrap err"), "wapp err"),
+				err: errors.Wrapf(errors.Wrapf(ErrFileNotExist{}, "wrap err"), "wapp err"),
 			},
 			want: true,
 		}, {
@@ -248,7 +212,7 @@ func (s *ErrorTestSuite) TestIsInvalidValue() {
 	}
 }
 
-func (s *ErrorTestSuite) TestIsPieceCountNotEqual() {
+func (s *ErrorTestSuite) TestIsInconsistentValues() {
 	type args struct {
 		err error
 	}
@@ -260,13 +224,13 @@ func (s *ErrorTestSuite) TestIsPieceCountNotEqual() {
 		{
 			name: "equal",
 			args: args{
-				err: ErrPieceCountNotEqual,
+				err: ErrInconsistentValues{},
 			},
 			want: true,
 		}, {
 			name: "wrap",
 			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrPieceCountNotEqual, "wrap err"), "wapp err"),
+				err: errors.Wrapf(errors.Wrapf(ErrInconsistentValues{}, "wrap err"), "wapp err"),
 			},
 			want: true,
 		}, {
@@ -279,79 +243,7 @@ func (s *ErrorTestSuite) TestIsPieceCountNotEqual() {
 	}
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			s.Equal(tt.want, IsPieceCountNotEqual(tt.args.err))
-		})
-	}
-}
-
-func (s *ErrorTestSuite) TestIsPieceMd5NotMatch() {
-	type args struct {
-		err error
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "equal",
-			args: args{
-				err: ErrPieceMd5NotMatch,
-			},
-			want: true,
-		}, {
-			name: "wrap",
-			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrPieceMd5NotMatch, "wrap err"), "wapp err"),
-			},
-			want: true,
-		}, {
-			name: "notEqual",
-			args: args{
-				err: errors.Wrapf(ErrInvalidValue, "invaid"),
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			s.Equal(tt.want, IsPieceMd5NotMatch(tt.args.err))
-		})
-	}
-}
-
-func (s *ErrorTestSuite) TestIsRangeNotSatisfiable() {
-	type args struct {
-		err error
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "equal",
-			args: args{
-				err: ErrRangeNotSatisfiable,
-			},
-			want: true,
-		}, {
-			name: "wrap",
-			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrRangeNotSatisfiable, "wrap err"), "wapp err"),
-			},
-			want: true,
-		}, {
-			name: "notEqual",
-			args: args{
-				err: errors.Wrapf(ErrInvalidValue, "invaid"),
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		s.Run(tt.name, func() {
-			s.Equal(tt.want, IsRangeNotSatisfiable(tt.args.err))
+			s.Equal(tt.want, IsInconsistentValues(tt.args.err))
 		})
 	}
 }
@@ -368,13 +260,13 @@ func (s *ErrorTestSuite) TestIsResourceExpired() {
 		{
 			name: "equal",
 			args: args{
-				err: ErrResourceExpired,
+				err: ErrResourceExpired{},
 			},
 			want: true,
 		}, {
 			name: "wrap",
 			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrResourceExpired, "wrap err"), "wapp err"),
+				err: errors.Wrapf(errors.Wrapf(ErrResourceExpired{}, "wrap err"), "wapp err"),
 			},
 			want: true,
 		}, {
@@ -404,13 +296,13 @@ func (s *ErrorTestSuite) TestIsResourceNotSupportRangeRequest() {
 		{
 			name: "equal",
 			args: args{
-				err: ErrResourceNotSupportRangeRequest,
+				err: ErrResourceNotSupportRangeRequest{},
 			},
 			want: true,
 		}, {
 			name: "wrap",
 			args: args{
-				err: errors.Wrapf(errors.Wrapf(ErrResourceNotSupportRangeRequest, "wrap err"), "wapp err"),
+				err: errors.Wrapf(errors.Wrapf(ErrResourceNotSupportRangeRequest{}, "wrap err"), "wapp err"),
 			},
 			want: true,
 		}, {
@@ -518,8 +410,7 @@ func (s *ErrorTestSuite) TestIsURLNotReachable() {
 			name: "equal",
 			args: args{
 				err: ErrURLNotReachable{
-					URL:   "test",
-					Cause: fmt.Errorf("test"),
+					URL: "test",
 				},
 			},
 			want: true,
@@ -527,8 +418,7 @@ func (s *ErrorTestSuite) TestIsURLNotReachable() {
 			name: "wrap",
 			args: args{
 				err: errors.Wrapf(ErrURLNotReachable{
-					URL:   "test",
-					Cause: fmt.Errorf("test"),
+					URL: "test",
 				}, "wapp err"),
 			},
 			want: true,

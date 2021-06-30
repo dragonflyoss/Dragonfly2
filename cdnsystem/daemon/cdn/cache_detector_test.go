@@ -59,7 +59,7 @@ func (suite *CacheDetectorTestSuite) SetupSuite() {
 	storageMgr.EXPECT().ReadFileMetaData(fullNoExpiredCache.taskID).Return(fullNoExpiredCache.fileMeta, nil).AnyTimes()
 	storageMgr.EXPECT().ReadFileMetaData(partialNotSupportRangeCache.taskID).Return(partialNotSupportRangeCache.fileMeta, nil).AnyTimes()
 	storageMgr.EXPECT().ReadFileMetaData(partialSupportRangeCache.taskID).Return(partialSupportRangeCache.fileMeta, nil).AnyTimes()
-	storageMgr.EXPECT().ReadFileMetaData(noCache.taskID).Return(noCache.fileMeta, cdnerrors.ErrFileNotExist).AnyTimes()
+	storageMgr.EXPECT().ReadFileMetaData(noCache.taskID).Return(noCache.fileMeta, cdnerrors.ErrFileNotExist{}).AnyTimes()
 	storageMgr.EXPECT().ReadDownloadFile(fullNoExpiredCache.taskID).DoAndReturn(
 		func(taskID string) (io.ReadCloser, error) {
 			content, err := ioutil.ReadFile("../../testdata/cdn/go.html")
@@ -78,11 +78,11 @@ func (suite *CacheDetectorTestSuite) SetupSuite() {
 			suite.Nil(err)
 			return ioutil.NopCloser(strings.NewReader(string(content))), nil
 		}).AnyTimes()
-	storageMgr.EXPECT().ReadDownloadFile(noCache.taskID).Return(nil, cdnerrors.ErrFileNotExist).AnyTimes()
+	storageMgr.EXPECT().ReadDownloadFile(noCache.taskID).Return(nil, cdnerrors.ErrFileNotExist{}).AnyTimes()
 	storageMgr.EXPECT().ReadPieceMetaRecords(fullNoExpiredCache.taskID).Return(fullNoExpiredCache.pieces, nil).AnyTimes()
 	storageMgr.EXPECT().ReadPieceMetaRecords(partialNotSupportRangeCache.taskID).Return(partialNotSupportRangeCache.pieces, nil).AnyTimes()
 	storageMgr.EXPECT().ReadPieceMetaRecords(partialSupportRangeCache.taskID).Return(partialSupportRangeCache.pieces, nil).AnyTimes()
-	storageMgr.EXPECT().ReadPieceMetaRecords(noCache.taskID).Return(nil, cdnerrors.ErrFileNotExist).AnyTimes()
+	storageMgr.EXPECT().ReadPieceMetaRecords(noCache.taskID).Return(nil, cdnerrors.ErrFileNotExist{}).AnyTimes()
 	storageMgr.EXPECT().StatDownloadFile(fullNoExpiredCache.taskID).Return(&storedriver.StorageInfo{
 		Path:       "",
 		Size:       9789,
