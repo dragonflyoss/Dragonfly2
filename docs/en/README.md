@@ -25,14 +25,17 @@ Find `WIP` or `TODO` in this page and follow [CONTRIBUTING](../../CONTRIBUTING.m
 
 ## Quick Start
 
-[Quick Started](user-guide/quick-start.md) is exactly what you need if you would give Dragonfly a try. This document includes what are the prerequisites, how to install Dragonfly and how to experience Dragonfly's usage.
+[Quick Started](user-guide/quick-start.md) is exactly what you need if you would give Dragonfly a try. This document includes what are the 
+prerequisites, 
+how to install Dragonfly and how to experience Dragonfly's usage.
 
-## [WIP] User Guide
+## User Guide
 
-[User Guide]() helps all kinds of guidance end users need to experience Dragonfly. Not only the very brief [Quick Start](./quick-start), but the detailed 
-binary installation and configure illustration. In addition, any concept and function which help users understand Dragonfly better would be included as well.
+[User Guide](user-guide/README.md) helps all kinds of guidance end users need to experience Dragonfly. Not only the very brief [Quick Start]
+(user-guide/quick-start.md), but the detailed binary installation and configure illustration. In addition, any concept and function which help users 
+understand Dragonfly better would be included as well.
 
-## [WIP] CLI Reference
+## CLI Reference
 
 For almost all users, commandline is the first reference you may need. Document in directory [CLI Reference](cli-reference) is about command detailed usage of Dragonfly CLI including `dfget`, `cdnsystem`, `scheduler` and `manager`. You can get introductions, synopsis, examples, options about command. Last but not least, Dragonfly can guarantee commandline docs is strongly consistent with Dragonfly CLI's source code. What's more, all commandline docs are auto generated via source code.
 
@@ -40,13 +43,15 @@ For almost all users, commandline is the first reference you may need. Document 
 
 Commandline is the easiest way to experience Dragonfly's ability. API extension will bring more further experience of Dragonfly. Commandline is just one kind of combination usage of API, if you wish to hack or take more advantages of Dragonfly, please see [API Reference](./api-reference). Like command line document, all API docs are auto generated via source code.
 
-## [WIP] Ecosystem
+## Ecosystem
 
-Ecosystem documents show connections between Dragonfly and popular tool or system in cloud native ecosystem. They guide end users how to experience cloud native systems with Dragonfly, such as other CNCF project Kubernetes and Harbor.
+Ecosystem documents show connections between Dragonfly and popular tool or system in cloud native ecosystem. They guide end users how to experience cloud 
+native systems with Dragonfly, such as other CNCF project [Kubernetes](ecosystem/Kubernetes-with-Dragonfly.md) and [Harbor](ecosystem/Harbor-with-Dragonfly.md).
 
-## [WIP] Developer Guide
+## Developer Guide
 
-Develop Guide helps (potential) developers/contributors to understand the theory inside Dragonfly rather than the interface it exposes. With better understanding of how Dragonfly is designed, developer could learn source code of Dragonfly much easier and know how to debug, test and hack.
+[Develop Guide](development/local.md) helps (potential) developers/contributors to understand the theory inside Dragonfly rather than the interface it exposes. With 
+better understanding of how Dragonfly is designed, developer could learn source code of Dragonfly much easier and know how to debug, test and hack.
 
 ### [TODO] Design Doc
 
@@ -67,7 +72,7 @@ For more details, please refer to [test](./test-guide).
 
 The folder `/docs` does not contain all the document about Dragonfly. There are still other really helpful documents in other path of this repo, like:
 
-* [TODO FAQ.md](../FAQ.md)
+* [TODO FAQ.md](../../FAQ.md)
 * [CHANGELOG.md](../../CHANGELOG.md)
 * [TODO ROADMAP.md](../../ROADMAP.md)
 * others.

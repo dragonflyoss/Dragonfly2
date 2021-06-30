@@ -66,7 +66,7 @@ Or you can build your own dfclient image.
 
 ### Start the dfdaemon
 
-**NOTE:** You should prepare the [config files](../config) which should locate under `/etc/dragonfly` by default.
+**NOTE:** You should prepare the [config files](../../config) which should locate under `/etc/dragonfly` by default.
 
 ```sh
 version=1.0.0
@@ -133,4 +133,4 @@ Test if the downloading works.
 dfget --url "http://${resourceUrl}" --output ./resource.png --node "127.0.0.1:8002"
 ```
 
-And test dfdaemon by [pulling an image](download-files.md).
+And test dfdaemon by [pulling an image](../download-files.md).
