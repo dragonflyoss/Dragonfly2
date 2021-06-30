@@ -15,6 +15,17 @@
 
 Provide efficient, stable, secure, low-cost file and image distribution services to be the best practice and standard solution in the related Cloud-Native area.
 
+## Introduction
+
+Dragonfly is an open source intelligent P2P based image and file distribution system. Its goal is to tackle all distribution problems in cloud native scenarios. Currently Dragonfly focuses on being:
+
+- Simple: well-defined user-facing API (HTTP), non-invasive to all container engines;
+- Efficient: CDN support, P2P based file distribution to save enterprise bandwidth;
+- Intelligent: host level speed limit, intelligent flow control due to host detection;
+- Secure: block transmission encryption, HTTPS connection support.
+
+Dragonfly is now hosted by the Cloud Native Computing Foundation (CNCF) as an Incubating Level Project. Originally it was born to solve all kinds of distribution at very large scales, such as application distribution, cache distribution, log distribution, image distribution, and so on.
+
 ## Features
 
 - Implement P2P files distribution with various storage types (HDFS, storage services from various cloud vendors, Maven, Yum, etc.) through a unified back-to-source adapter layer.
@@ -45,9 +56,8 @@ Provide efficient, stable, secure, low-cost file and image distribution services
 
 ## Getting Started
 
-- [Introduction][introduction]
-- [Installation][installation]
 - [Quick start][quickstart]
+- [Installation][installation]
 
 ## Documentation
 You can find the Dragonfly documentation [on the website][website].
@@ -64,12 +74,11 @@ You should check out our [CONTRIBUTING][contributing] and develop the project to
 ## Code of Conduct
 Please refer to our [Code of Conduct][codeconduct].
 
-[contributing]: CONTRIBUTING.md
-[codeconduct]: CODE_OF_CONDUCT.md
-[introduction]: https://github.com/dragonflyoss/Dragonfly2
-[installation]: https://github.com/dragonflyoss/Dragonfly2
-[quickstart]: https://github.com/dragonflyoss/Dragonfly2/blob/main/docs/en/user-guide/quick-start.md
+[arch]: docs/en/images/arch.png
+[logo-linear]: docs/en/images/logo/dragonfly-linear.svg
+[quickstart]: docs/en/user-guide/quick-start.md
+[installation]: docs/en/user-guide/install/README.md
 [website]: https://d7y.io
 [discussion]: https://github.com/dragonflyoss/Dragonfly2/discussions
-[logo-linear]: docs/en/images/logo/dragonfly-linear.svg
-[arch]: docs/en/images/arch.png
+[contributing]: CONTRIBUTING.md
+[codeconduct]: CODE_OF_CONDUCT.md
