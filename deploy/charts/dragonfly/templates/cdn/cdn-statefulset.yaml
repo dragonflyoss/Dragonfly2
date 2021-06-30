@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   labels:
     app: {{ template "dragonfly.cdn.fullname" . }}
@@ -9,9 +9,9 @@ metadata:
     release: {{ .Release.Name }}
   name: {{ template "dragonfly.cdn.fullname" . }}
   namespace: {{ .Values.installation.namespace }}
-  {{- if .Values.cdn.deploymentAnnotations }}
+  {{- if .Values.cdn.statefulsetAnnotations }}
   annotations:
-{{ toYaml .Values.cdn.deploymentAnnotations | indent 4 }}
+{{ toYaml .Values.cdn.statefulsetAnnotations | indent 4 }}
   {{- end }}
 spec:
   replicas: {{ .Values.cdn.replicas }}
@@ -20,6 +20,7 @@ spec:
       app: {{ template "dragonfly.cdn.fullname" . }}
       component: "{{ .Values.cdn.name }}"
       release: {{ .Release.Name }}
+  serviceName: cdn
   template:
     metadata:
       labels:
@@ -31,6 +32,7 @@ spec:
 {{ toYaml .Values.cdn.podAnnotations | indent 8 }}
         {{- end }}
     spec:
+      serviceAccountName: {{template "dragonfly.cdn.fullname" . }}
       {{- if .Values.cdn.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.cdn.nodeSelector | indent 8 }}
@@ -66,6 +68,53 @@ spec:
         - name: nginx-config
           mountPath: "/etc/nginx/nginx.conf"
           subPath: "nginx.conf"
+      {{- if .Values.scheduler.config.staticCDN }}
+      initContainers:
+      - name: update-configmap
+        image: bitnami/kubectl
+        command:
+        - /bin/bash
+        - -xc
+        - |
+          HOSTNAME=$(cat /etc/hostname)
+          cat <<EOF > /tmp/patch.json
+          {
+            "data": {
+              "$POD_NAME.json": "{\"host_info\": {\"host_name\": \"$HOSTNAME\",\"ip\":\"$POD_IP\"},\"rpc_port\": 8003,\"down_port\": 8001}"
+            }
+          }
+          EOF
+          echo data to patch:
+          cat /tmp/patch.json
+          for i in `seq 1 10`; do
+            kubectl -n $POD_NAMESPACE \
+              patch configmap scheduler-static-cdn --type=merge \
+              --patch-file /tmp/patch.json
+            if [[ "$?" -eq 0 ]]; then
+              echo updated configmap:
+              kubectl -n $POD_NAMESPACE get configmap scheduler-static-cdn -oyaml
+              break
+            fi
+          done
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        imagePullPolicy: "Always"
+        {{- end}}
       volumes:
       - name: config
         configMap:

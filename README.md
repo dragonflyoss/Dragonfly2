@@ -68,7 +68,7 @@ Please refer to our [Code of Conduct][codeconduct].
 [codeconduct]: CODE_OF_CONDUCT.md
 [introduction]: https://github.com/dragonflyoss/Dragonfly2
 [installation]: https://github.com/dragonflyoss/Dragonfly2
-[quickstart]: https://github.com/dragonflyoss/Dragonfly2
+[quickstart]: https://github.com/dragonflyoss/Dragonfly2/blob/main/docs/en/user-guide/quick-start.md
 [website]: https://d7y.io
 [discussion]: https://github.com/dragonflyoss/Dragonfly2/discussions
 [logo-linear]: docs/en/images/logo/dragonfly-linear.svg
