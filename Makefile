@@ -176,16 +176,19 @@ build-deb-dfget: build-linux-dfget
 
 # Run unittests
 test:
-	@go generate ${PKG_LIST}
 	@go test -race -short ${PKG_LIST}
 .PHONY: test
 
 # Run tests with coverage
 test-coverage:
-	@go generate ${PKG_LIST}
 	@go test -race -short ${PKG_LIST} -coverprofile cover.out -covermode=atomic
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
+
+# Run go generate
+generate:
+	@go generate ${PKG_LIST}
+.PHONY: generate
 
 # Generate changelog
 changelog:
