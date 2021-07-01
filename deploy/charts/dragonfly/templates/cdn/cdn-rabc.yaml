@@ -30,4 +30,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: {{template "dragonfly.cdn.fullname" . }}
-{{ end }}
+{{- end }}
