@@ -25,8 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/internal/rpc/manager/client"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler/server"
-	"d7y.io/dragonfly/v2/scheduler/daemon/worker"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/core/worker"
 	"d7y.io/dragonfly/v2/scheduler/server/service"
 	"github.com/pkg/errors"
 
@@ -37,7 +36,7 @@ import (
 )
 
 type Server struct {
-	config          *config.ServerConfig
+	config          config.ServerConfig
 	schedulerServer server.SchedulerServer
 	managerClient   client.ManagerClient
 	running         bool
@@ -52,10 +51,11 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	// Initialize manager client
 	if cfg.Manager != nil {
-		s.managerClient, err := client.NewClient(cfg.Manager.NetAddrs)
+		managerClient, err := client.NewClient(cfg.Manager.NetAddrs)
 		if err != nil {
 			return nil, errors.Wrapf(err, "create manager client")
 		}
+		s.managerClient = managerClient
 	}
 
 	var options []dynconfig.Option
@@ -92,7 +92,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 	s.worker = worker.NewGroup(cfg, s.service)
 	// 提供GRPC服务
-	s.server = service.NewSchedulerServer(cfg, service.WithSchedulerService(s.service),
+	s.schedulerServer = service.NewSchedulerServer(cfg, service.WithSchedulerService(s.service),
 		service.WithWorker(s.worker))
 
 	return s, nil

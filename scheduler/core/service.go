@@ -31,6 +31,8 @@ type SchedulerService struct {
 	TaskManager daemon.TaskMgr
 	// host mgr
 	HostManager daemon.HostMgr
+	// Peer mgr
+	PeerManager daemon.PeerMgr
 
 	Scheduler *Scheduler
 	config    config.SchedulerConfig
@@ -89,7 +91,7 @@ func (s *SchedulerService) ScheduleChildren(task *types.PeerNode) (children []*t
 }
 
 func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *types.PeerNode, ok bool) {
-	return s.TaskManager.PeerTask.Get(peerTaskID)
+	return s.PeerManager.Get(peerTaskID)
 }
 
 func (s *SchedulerService) AddPeerTask(pid string, task *types.Task, host *types.Host) (ret *types.PeerNode, err error) {

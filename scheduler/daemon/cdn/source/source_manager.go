@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cdn
+package source
 
 import (
 	"context"
@@ -43,12 +43,11 @@ import (
 const TinyFileSize = 128
 
 type manager struct {
-	client        client.CdnClient
 	servers       map[string]*managerRPC.ServerInfo
 	dynamicConfig config.DynconfigInterface
 	lock          sync.RWMutex
-	callbackFns   map[string]func(*types.PeerTask, *dferrors.DfError)
-	callbackList  map[string][]*types.PeerTask
+	callbackFns   map[string]func(*types.PeerNode, *dferrors.DfError)
+	callbackList  map[string][]*types.PeerNode
 	taskManager   daemon.TaskMgr
 	hostManager   daemon.HostMgr
 }
@@ -57,8 +56,8 @@ var _ config.Observer = (*manager)(nil)
 
 func newManager(taskManager daemon.TaskMgr, hostManager daemon.HostMgr, dynamicConfig config.DynconfigInterface) (daemon.CDNMgr, error) {
 	mgr := &manager{
-		callbackFns:   make(map[string]func(*types.PeerTask, *dferrors.DfError)),
-		callbackList:  make(map[string][]*types.PeerTask),
+		callbackFns:   make(map[string]func(*types.PeerNode, *dferrors.DfError)),
+		callbackList:  make(map[string][]*types.PeerNode),
 		taskManager:   taskManager,
 		hostManager:   hostManager,
 		dynamicConfig: dynamicConfig,
@@ -118,7 +117,7 @@ func (cm *manager) OnNotify(c *managerRPC.SchedulerConfig) {
 	cm.client.UpdateState(cdnHostsToNetAddrs(c.CdnHosts))
 }
 
-func (cm *manager) SeedTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) error {
+func (cm *manager) SeedTask(task *types.Task, callback func(peerTask *types.PeerNode, e *dferrors.DfError)) error {
 	if cm.client == nil {
 		return errors.New("cdn client is nil")
 	}

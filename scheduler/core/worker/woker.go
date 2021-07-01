@@ -20,13 +20,11 @@ import (
 	"fmt"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/safe"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
-	"k8s.io/client-go/util/workqueue"
-
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	scheduler2 "d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/safe"
+	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
@@ -34,101 +32,102 @@ type JobType int8
 
 // 实现 IWorker 接口
 type Worker struct {
-	scheduleQueue          workqueue.Interface
-	updatePieceResultQueue chan *scheduler2.PieceResult
-	sender                 ISender
-	stopCh                 <-chan struct{}
-	sendJob                func(*types.PeerNode)
+	peerChan        chan *types.PeerNode
+	pieceResultChan chan *scheduler.PieceResult
+	sender          ISender
+	stopCh          <-chan struct{}
+	sendJob         func(*types.PeerNode)
 
-	schedulerService *scheduler.SchedulerService
+	schedulerService *core.SchedulerService
 }
 
 var _ IWorker = (*Worker)(nil)
 
-func NewWorker(schedulerService *scheduler.SchedulerService, sender ISender, sendJod func(*types.PeerNode), stop <-chan struct{}) *Worker {
+func NewWorker(schedulerService *core.SchedulerService, sender ISender, sendJod func(*types.PeerNode), stop <-chan struct{}) *Worker {
 	return &Worker{
-		scheduleQueue:          workqueue.New(),
-		updatePieceResultQueue: make(chan *scheduler2.PieceResult, 100000),
-		stopCh:                 stop,
-		sender:                 sender,
-		schedulerService:       schedulerService,
-		sendJob:                sendJod,
+		peerChan:         make(chan *types.PeerNode),
+		pieceResultChan:  make(chan *scheduler.PieceResult),
+		stopCh:           stop,
+		sender:           sender,
+		schedulerService: schedulerService,
+		sendJob:          sendJod,
 	}
 }
 
 func (w *Worker) Serve() {
-	go safe.Call(w.doScheduleWorker)
-	go safe.Call(w.doUpdatePieceResultWorker)
+	go safe.Call(w.startScheduleWorker)
+	go safe.Call(w.startPieceResultWorker)
 }
 
 func (w *Worker) Stop() {
-	if w == nil {
-		return
-	}
-	w.scheduleQueue.ShutDown()
-	close(w.updatePieceResultQueue)
+	close(w.peerChan)
+	close(w.pieceResultChan)
 }
 
-func (w *Worker) ReceiveUpdatePieceResult(pr *scheduler2.PieceResult) {
-	w.updatePieceResultQueue <- pr
+func (w *Worker) ReceiveUpdatePieceResult(pieceResult *scheduler.PieceResult) {
+	w.pieceResultChan <- pieceResult
 }
 
-func (w *Worker) doUpdatePieceResultWorker() {
+func (w *Worker) ReceiveJob(peer *types.PeerNode) {
+	logger.Debugf("doScheduleWorker begin add [%s]", peer.GetPeerID())
+	w.peerChan <- peer
+}
+
+func (w *Worker) startPieceResultWorker() {
 	for {
-		pr, ok := <-w.updatePieceResultQueue
+		pieceResult, ok := <-w.pieceResultChan
 		if !ok {
 			return
 		}
-		peerTask, needSchedule, err := w.UpdatePieceResult(pr)
+		peerTask, needSchedule, err := w.updatePieceResult(pieceResult)
 		if needSchedule {
 			w.sendJob(peerTask)
 		}
 
 		if err != nil {
-			logger.Errorf("[%s][%s]: update piece result failed %v", pr.TaskId, pr.SrcPid, err.Error())
+			logger.Errorf("[%s][%s]: update piece result failed %v", pieceResult.TaskId, pieceResult.SrcPid, err.Error())
 		}
 	}
 }
 
-func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peer *types.PeerNode, needSchedule bool, err error) {
-	if pr == nil {
+func (w *Worker) updatePieceResult(pieceResult *scheduler.PieceResult) (peer *types.PeerNode, needSchedule bool, err error) {
+	if pieceResult == nil {
 		return
 	}
 
-	if w.processErrorCode(pr) {
+	if w.processErrorCode(pieceResult) {
 		return
 	}
 
-	pt := w.schedulerService.TaskManager.PeerTask
-	peerTask, _ = pt.Get(pr.SrcPid)
-	if peerTask == nil {
-		task, _ := w.schedulerService.TaskManager.Load(pr.TaskId)
+	peerNode, _ := w.schedulerService.PeerManager.Get(pieceResult.SrcPid)
+	if peerNode == nil {
+		task, _ := w.schedulerService.TaskManager.Load(pieceResult.TaskId)
 		if task != nil {
-			peerTask = pt.AddFake(pr.SrcPid, task)
+			peerTask = w.schedulerService.PeerManager.AddFake(pieceResult.SrcPid, task)
 		} else {
 			err = fmt.Errorf("[%s][%s]: task not exited", pr.TaskId, pr.SrcPid)
 			logger.Errorf(err.Error())
 			return
 		}
 	}
-	defer pt.Update(peerTask)
+	defer w.schedulerService.PeerManager.Update(peerNode)
 
-	var dstPeerTask *types.PeerTask
-	if pr.DstPid == "" {
-		if peerTask.GetParent() == nil {
-			peerTask.SetNodeStatus(types.PeerStatusNeedParent)
+	var dstPeerTask *types.PeerNode
+	if pieceResult.DstPid == "" {
+		if peerNode.GetParent() == nil {
+			peerNode.Status = types.PeerStatusNeedParent
 			needSchedule = true
-			pt.RefreshDownloadMonitor(peerTask)
+			w.schedulerService.PeerManager.RefreshDownloadMonitor(peerNode)
 			return
 		}
 	} else {
-		dstPeerTask, _ = pt.Get(pr.DstPid)
-		if dstPeerTask == nil {
+		dstPeerNode, _ := &w.schedulerService.PeerManager.Get(pieceResult.DstPid)
+		if dstPeerNode == nil {
 			dstPeerTask = pt.AddFake(pr.DstPid, peerTask.Task)
 		}
 	}
 
-	if pr.PieceNum < 0 {
+	if pieceResult.PieceNum < 0 {
 		if peerTask.GetParent() != nil {
 			w.sendScheduleResult(peerTask)
 		}
@@ -156,16 +155,11 @@ func (w *Worker) UpdatePieceResult(pr *scheduler2.PieceResult) (peer *types.Peer
 	return
 }
 
-func (w *Worker) ReceiveJob(peerTask *types.PeerNode) {
-	logger.Debugf("doScheduleWorker begin add [%s]", peerTask.Pid)
-	w.scheduleQueue.Add(peerTask)
-}
-
 func (w *Worker) sendJobLater(peerTask *types.PeerTask) {
 	w.schedulerService.TaskManager.PeerTask.RefreshDownloadMonitor(peerTask)
 }
 
-func (w *Worker) doScheduleWorker() {
+func (w *Worker) startScheduleWorker() {
 	defer logger.Debugf("doScheduleWorker return")
 	for {
 		logger.Debugf("doScheduleWorker begin get")
@@ -205,7 +199,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerNode) {
 			peerTask.SetNodeStatus(types.PeerStatusHealth)
 			return
 		}
-		peerTask.AddParent(parent, 1)
+		peerTask.SetParent(parent, 1)
 		peerTask.SetNodeStatus(types.PeerStatusHealth)
 		return
 	case types.PeerStatusNeedParent:
@@ -346,7 +340,7 @@ func (w *Worker) sendScheduleResult(peerTask *types.PeerTask) {
 	return
 }
 
-func (w *Worker) processErrorCode(pr *scheduler2.PieceResult) (stop bool) {
+func (w *Worker) processErrorCode(pr *scheduler.PieceResult) (stop bool) {
 	code := pr.Code
 
 	switch code {

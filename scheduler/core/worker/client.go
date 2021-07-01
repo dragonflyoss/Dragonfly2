@@ -24,7 +24,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/rpc/base/common"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	scheduler2 "d7y.io/dragonfly/v2/scheduler/scheduler"
 )
 
 type Client struct {

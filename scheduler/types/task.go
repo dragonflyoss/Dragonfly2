@@ -29,7 +29,7 @@ type Task struct {
 	url            string
 	filter         string
 	bizID          string
-	urlMata        *base.UrlMeta
+	urlMeta        *base.UrlMeta
 	SizeScope      base.SizeScope
 	DirectPiece    []byte
 	CreateTime     time.Time
@@ -47,7 +47,7 @@ func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
 		url:            url,
 		filter:         filter,
 		bizID:          bizID,
-		urlMata:        meta,
+		urlMeta:        meta,
 		CreateTime:     time.Now(),
 		LastAccessTime: time.Now(),
 		PieceList:      nil,
@@ -61,6 +61,17 @@ func (task *Task) GetTaskID() string {
 	return task.taskID
 }
 
+func (task *Task) GetUrl() string {
+	return task.url
+}
+
+func (task *Task) GetFilter() string {
+	return task.filter
+}
+
+func (task *Task) GetUrlMeta() *base.UrlMeta {
+	return task.urlMeta
+}
 func (t *Task) InitProps() {
 	if t.PieceList == nil {
 		t.CreateTime = time.Now()

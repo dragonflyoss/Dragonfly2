@@ -106,7 +106,7 @@ func (m *manager) AddFake(pid string, task *types.Task) *types.PeerNode {
 
 	peer, _ := types.NewPeerNode(pid, task, nil, m.addToGCQueue)
 	m.peerMap.Store(pid, peer)
-	pt.SetDown()
+	peer.SetDown()
 	return pt
 }
 

@@ -19,24 +19,29 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/internal/rpc/base/common"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
+	"d7y.io/dragonfly/v2/scheduler/core/worker"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/daemon/worker"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"github.com/pkg/errors"
 )
 
 type SchedulerServer struct {
-	service *core.SchedulerService
-	worker  worker.IWorker
-	config  config.SchedulerConfig
+	service     *core.SchedulerService
+	worker      worker.Worker
+	config      config.SchedulerConfig
 	peerManager daemon.PeerMgr
 	taskManager daemon.TaskMgr
 }
@@ -81,6 +86,9 @@ func NewSchedulerWithOptions(cfg *config.Config, options ...Option) *SchedulerSe
 }
 
 func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
+	if err := validateParams(request); err != nil {
+		// todo return
+	}
 	resp = new(scheduler.RegisterResult)
 	startTime := time.Now()
 	defer func() {
@@ -200,62 +208,46 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	return
 }
 
-func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) (err error) {
-	defer func() {
-		e := recover()
-		if e != nil {
-			err = dferrors.New(dfcodes.SchedError, fmt.Sprintf("%v", e))
-			return
-		}
-		if err != nil {
-			if _, ok := err.(*dferrors.DfError); !ok {
-				err = dferrors.New(dfcodes.SchedError, err.Error())
+func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
+	for {
+		select {
+		case <-stream.Context().Done():
+			logger.Infof()
+		default:
+			pieceResult, err := stream.Recv()
+			if err == io.EOF || pieceResult.PieceNum == common.EndOfPiece {
+				logger.Infof("read all piece result")
+				return nil
+			}
+			if err != nil {
+				// 处理piece error
+				return err
 			}
 		}
-		return
-	}()
-	err = worker.NewClient(stream, s.worker, s.service).Serve()
-	return
+	}
+	//err = worker.NewClient(stream, s.worker, s.service).Serve()
+	//return
 }
 
 func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (err error) {
-	startTime := time.Now()
-	defer func() {
-		e := recover()
-		if e != nil {
-			err = dferrors.New(dfcodes.SchedError, fmt.Sprintf("%v", e))
-			return
-		}
-		if err != nil {
-			if _, ok := err.(*dferrors.DfError); !ok {
-				err = dferrors.New(dfcodes.SchedError, err.Error())
-			}
-		}
-		logger.Debugf("ReportPeerResult [%s] cost time: [%d]", result.PeerId, time.Now().Sub(startTime))
-		return
-	}()
-
-	logger.Infof("[%s][%s]: receive a peer result [%+v]", result.TaskId, result.PeerId, result)
-
-	pid := result.PeerId
-	peerTask, err := s.service.GetPeerTask(pid)
+	peerTask, err := s.service.GetPeerTask(result.PeerId)
 	if err != nil {
 		return
 	}
 	peerTask.SetStatus(result.Traffic, result.Cost, result.Success, result.Code)
 
 	if peerTask.Success {
-		peerTask.SetNodeStatus(types.PeerTaskStatusDone)
+		peerTask.Status = types.PeerStatusDone
 		s.worker.ReceiveJob(peerTask)
 	} else {
-		peerTask.SetNodeStatus(types.PeerTaskStatusLeaveNode)
+		peerTask.Status = types.PeerStatusLeaveNode
 		s.worker.ReceiveJob(peerTask)
 	}
 
 	return
 }
 
-func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (err error) {
+func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) error {
 	startTime := time.Now()
 	defer func() {
 		e := recover()
@@ -272,16 +264,25 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 		return
 	}()
 
-	pid := target.PeerId
-	peerTask, err := s.service.GetPeerTask(pid)
-	if err != nil {
-		return
+	peerNode, ok := s.service.GetPeerTask(target.PeerId)
+	if !ok {
+		return nil
 	}
 
-	if peerTask != nil {
-		peerTask.SetNodeStatus(types.PeerTaskStatusLeaveNode)
-		s.worker.ReceiveJob(peerTask)
-	}
+	peerNode.Status = types.PeerStatusLeaveNode
+	s.worker.ReceiveJob(peerNode)
 
 	return
+}
+
+// validateParams validates the params of scheduler.PeerTaskRequest.
+func validateParams(req *scheduler.PeerTaskRequest) error {
+	if !urlutils.IsValidURL(req.Url) {
+		return errors.Wrapf(errortypes.ErrInvalidValue, "raw url: %s", req.Url)
+	}
+
+	if stringutils.IsEmpty(req.PeerId) {
+		return errors.Wrapf(errortypes.ErrEmptyValue, "path")
+	}
+	return nil
 }

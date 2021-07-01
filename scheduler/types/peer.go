@@ -25,7 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/daemon/worker"
+	"d7y.io/dragonfly/v2/scheduler/core/worker"
 )
 
 const (
@@ -42,10 +42,10 @@ const (
 )
 
 type PeerNode struct {
-	peerID            string // peer id
-	task              *Task  // task info
-	host              *Host  // host info
-	finishedNum       int    // downloaded finished piece number
+	peerID            string    // peer id
+	task              *Task     // task info
+	host              *NodeHost // host info
+	finishedNum       int       // downloaded finished piece number
 	startTime         time.Time
 	LastAccessTime    time.Time
 	parent            *PeerNode
@@ -63,7 +63,7 @@ type PeerNode struct {
 type downloadStatistic struct {
 }
 
-func NewPeerNode(peerID string, task *Task, host *Host, client *worker.Client) (*PeerNode, error) {
+func NewPeerNode(peerID string, task *Task, host *NodeHost, client *worker.Client) (*PeerNode, error) {
 	if task == nil {
 		return nil, errors.New("task is nil")
 	}
@@ -76,7 +76,7 @@ func NewPeerNode(peerID string, task *Task, host *Host, client *worker.Client) (
 		host:           host,
 		client:         client,
 		startTime:      time.Now(),
-		lastAccessTime: time.Now(),
+		LastAccessTime: time.Now(),
 	}, nil
 	//if host != nil {
 	//	host.AddPeerTask(pt)
@@ -91,7 +91,7 @@ func (peer *PeerNode) GetPeerID() string {
 	return peer.peerID
 }
 
-func (peer *PeerNode) GetHost() *Host {
+func (peer *PeerNode) GetHost() *NodeHost {
 	return peer.host
 }
 
@@ -111,7 +111,7 @@ func (peer *PeerNode) GetWholeTreeNode() int {
 	return 9
 }
 
-func (peer *PeerNode) AddParent(parent *PeerNode, concurrency int) error {
+func (peer *PeerNode) SetParent(parent *PeerNode, concurrency int) error {
 	if parent == nil {
 		return errors.New("parent node is nil")
 	}
@@ -131,13 +131,13 @@ func (peer *PeerNode) AddParent(parent *PeerNode, concurrency int) error {
 		if p.parent == nil || p.parent.DstPeerTask == nil {
 			break
 		}
-		p = p.parent.DstPeerTask
+		p = p.parent
 	}
-	if pt.Host != nil {
-		pt.Host.AddDownloadLoad(int32(concurrency))
+	if peer.GetHost() != nil {
+		peer.GetHost().AddDownloadLoad(concurrency)
 	}
-	if parent.Host != nil {
-		parent.Host.AddUploadLoad(int32(concurrency))
+	if parent.GetHost() != nil {
+		parent.GetHost().AddUploadLoad(concurrency)
 	}
 }
 
@@ -248,15 +248,12 @@ func (peer *PeerNode) SetUp() {
 }
 
 func (peer *PeerNode) SetStatus(traffic int64, cost uint32, success bool, code base.Code) {
-	if pt == nil {
-		return
-	}
-	pt.Traffic = traffic
-	pt.Cost = cost
-	pt.Success = success
-	pt.Code = code
-	pt.Touch()
-	if pt.Success && pt.Task != nil {
+	peer.Traffic = traffic
+	peer.Cost = cost
+	peer.Success = success
+	peer.Code = code
+	peer.Touch()
+	if peer.Success && peer.Task != nil {
 		pt.Task.Statistic.AddPeerTaskDown(int32((time.Now().UnixNano() - pt.startTime) / int64(time.Millisecond)))
 	}
 }

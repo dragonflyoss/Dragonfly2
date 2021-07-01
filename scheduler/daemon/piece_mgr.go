@@ -17,10 +17,18 @@
 package daemon
 
 import (
-	"d7y.io/dragonfly/v2/internal/dferrors"
+	"context"
+
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-type CDNMgr interface {
-	SeedTask(task *types.Task, callback func(peerTask *types.PeerNode, e *dferrors.DfError)) (err error)
+// PieceErrorMgr as an interface defines all operations to handle piece errors.
+type PieceErrorMgr interface {
+	// StartHandleError starts a goroutine to handle the piece error.
+	StartHandleError(ctx context.Context)
+
+	// HandlePieceError the peer should report the error with related info when
+	// it failed to download a piece from supernode.
+	// And the supernode should handle the piece Error and do some repair operations.
+	HandlePieceError(ctx context.Context, pieceErrorRequest *types.PieceErrorRequest) error
 }

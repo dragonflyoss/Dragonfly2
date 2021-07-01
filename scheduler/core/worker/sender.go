@@ -23,7 +23,6 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
@@ -94,7 +93,7 @@ func (s *Sender) doSend() {
 	for {
 		select {
 		case job := <-s.jobChan:
-			peerTask, _ := s.schedulerService.TaskManager.PeerTask.Get(*job)
+			peerTask, _ := s.schedulerService.TaskManager.PeerTask.Get(job)
 			if peerTask == nil {
 				break
 			}

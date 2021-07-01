@@ -30,7 +30,7 @@ const (
 	CDNHost
 )
 
-type Host struct {
+type NodeHost struct {
 	// fixme can remove this uuid, use IP
 	// UUID each time the daemon starts, it will generate a different uuid
 	UUID string
@@ -54,29 +54,29 @@ type Host struct {
 	Type        HostType
 	peerTaskMap sync.Map // Pid => PeerTask
 	// ProducerLoad is the load of download services provided by the current node.
-	TotalUploadLoad     int32
+	TotalUploadLoad     int
 	currentUploadLoad   atomic.Int32
 	totalDownloadLoad   int32
 	currentDownloadLoad atomic.Int32
 }
 
-func NewHost() *Host {
-	return &Host{}
+func NewNodeHost() *NodeHost {
+	return &NodeHost{}
 }
 
-func (h *Host) GetUUID() string {
+func (h *NodeHost) GetUUID() string {
 	return h.UUID
 }
 
-func (h *Host) AddPeerTask(peerNode *PeerNode) {
+func (h *NodeHost) AddPeerNode(peerNode *PeerNode) {
 	h.peerTaskMap.Store(peerNode.GetPeerID(), peerNode)
 }
 
-func (h *Host) DeletePeerTask(peerTaskID string) {
-	h.peerTaskMap.Delete(peerTaskID)
+func (h *NodeHost) DeletePeerNode(peerID string) {
+	h.peerTaskMap.Delete(peerID)
 }
 
-func (h *Host) GetPeerTaskNum() int32 {
+func (h *NodeHost) GetPeerTaskNum() int32 {
 	count := 0
 	h.peerTaskMap.Range(func(key, value interface{}) bool {
 		count++
@@ -85,77 +85,61 @@ func (h *Host) GetPeerTaskNum() int32 {
 	return int32(count)
 }
 
-func (h *Host) GetPeerTask(peerID string) (peerTask *PeerTask) {
-	v, _ := h.peerTaskMap.Load(peerID)
-	peerTask, _ = v.(*PeerTask)
-	return
+func (h *NodeHost) GetPeerNode(peerID string) (*PeerNode, bool) {
+	v, ok := h.peerTaskMap.Load(peerID)
+	if !ok {
+		return nil, false
+	}
+	return v.(*PeerNode), true
 }
 
-func (h *Host) SetTotalUploadLoad(load int32) {
+func (h *NodeHost) SetTotalUploadLoad(load int32) {
 	h.totalUploadLoad = load
 }
 
-func (h *Host) AddUploadLoad(delta int32) {
-	h.loadLock.Lock()
-	defer h.loadLock.Unlock()
-	logger.Infof("host[%s] type[%d] add UploadLoad [%d]", h.Uuid, h.Type, delta)
+func (h *NodeHost) AddUploadLoad(delta int32) {
+	logger.Infof("host[%s] type[%d] add UploadLoad [%d]", h.UUID, h.Type, delta)
 	h.currentUploadLoad += delta
 }
 
-func (h *Host) GetUploadLoad() int32 {
-	h.loadLock.Lock()
-	defer h.loadLock.Unlock()
+func (h *NodeHost) GetUploadLoad() int {
 	return h.currentUploadLoad
 }
 
-func (h *Host) GetUploadLoadPercent() float64 {
-	h.loadLock.Lock()
-	defer h.loadLock.Unlock()
+func (h *NodeHost) GetUploadLoadPercent() float64 {
 	if h.TotalUploadLoad <= 0 {
 		return 1.0
 	}
-	return float64(h.currentUploadLoad) / float64(h.totalUploadLoad)
+	return float64(h.currentUploadLoad.Load()) / float64(h.TotalUploadLoad)
 }
 
-func (h *Host) GetFreeUploadLoad() int32 {
-	h.loadLock.Lock()
-	defer h.loadLock.Unlock()
+func (h *NodeHost) GetFreeUploadLoad() int32 {
 	return h.totalUploadLoad - h.currentUploadLoad
 }
 
-func (h *Host) SetTotalDownloadLoad(load int32) {
-	h.loadLock.Lock()
-	defer h.loadLock.Unlock()
+func (h *NodeHost) SetTotalDownloadLoad(load int) {
 	h.totalDownloadLoad = load
 }
 
-func (h *Host) AddDownloadLoad(delta int32) {
-	h.loadLock.Lock()
-	defer h.loadLock.Unlock()
+func (h *NodeHost) AddDownloadLoad(delta int) {
 	h.currentDownloadLoad += delta
 }
 
-func (h *Host) GetDownloadLoad() int32 {
-	h.loadLock.Lock()
-	defer h.loadLock.Unlock()
+func (h *NodeHost) GetDownloadLoad() int32 {
 	return h.currentDownloadLoad
 }
 
-func (h *Host) GetDownloadLoadPercent() float64 {
-	h.loadLock.Lock()
-	defer h.loadLock.Unlock()
+func (h *NodeHost) GetDownloadLoadPercent() float64 {
 	if h.totalDownloadLoad <= 0 {
 		return 1.0
 	}
 	return float64(h.currentDownloadLoad) / float64(h.totalDownloadLoad)
 }
 
-func (h *Host) GetFreeDownloadLoad() int32 {
-	h.loadLock.Lock()
-	defer h.loadLock.Unlock()
+func (h *NodeHost) GetFreeDownloadLoad() int32 {
 	return h.totalDownloadLoad - h.currentDownloadLoad
 }
 
-func IsCDN(host *Host) bool {
+func IsCDN(host *NodeHost) bool {
 	return host.Type == CDNHost
 }

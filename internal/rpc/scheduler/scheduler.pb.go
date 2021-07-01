@@ -450,9 +450,9 @@ type PieceResult struct {
 
 	// task id
 	TaskId string `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	// source peer id
+	// source peer id  todo replace with consumerPid
 	SrcPid string `protobuf:"bytes,2,opt,name=src_pid,json=srcPid,proto3" json:"src_pid,omitempty"`
-	// dest peer id
+	// dest peer id  todo replace with providerPid
 	DstPid string `protobuf:"bytes,3,opt,name=dst_pid,json=dstPid,proto3" json:"dst_pid,omitempty"`
 	// piece number
 	PieceNum int32 `protobuf:"varint,4,opt,name=piece_num,json=pieceNum,proto3" json:"piece_num,omitempty"`
