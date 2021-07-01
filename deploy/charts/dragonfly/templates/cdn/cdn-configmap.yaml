@@ -11,8 +11,8 @@ metadata:
 data:
   cdn.yaml: |-
     base:
-      listenPort: {{ .Values.cdn.service.port }}
-      downloadPort: {{ .Values.cdn.service.nginxPort }}
+      listenPort: {{ .Values.cdn.containerPort }}
+      downloadPort: {{ .Values.cdn.nginxContiainerPort }}
       systemReservedBandwidth: {{ .Values.cdn.config.base.systemReservedBandwidth }}
       maxBandwidth: {{ .Values.cdn.config.base.maxBandwidth }}
       enableProfiler: {{ .Values.cdn.config.base.enableProfiler }}
@@ -71,7 +71,7 @@ data:
         proxy_intercept_errors  on;
 
         server {
-            listen              {{ .Values.cdn.service.nginxTargetPort }};
+            listen              {{ .Values.cdn.nginxContiainerPort }};
             location / {
               root {{ (index .Values.cdn.config.plugins.storageDriver 0).config.baseDir }};
             }
