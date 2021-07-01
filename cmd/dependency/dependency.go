@@ -195,7 +195,7 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 			reflect.TypeOf(dfnet.NetAddr{}),
 			reflect.TypeOf(clientutil.RateLimit{}),
 			reflect.TypeOf(clientutil.Duration{}),
-			reflect.TypeOf(config.ProxyOption{}),
+			reflect.TypeOf(&config.ProxyOption{}),
 			reflect.TypeOf(config.TCPListenPortRange{}),
 			reflect.TypeOf(config.FileString("")),
 			reflect.TypeOf(config.URL{}),

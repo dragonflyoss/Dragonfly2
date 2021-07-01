@@ -19,7 +19,7 @@ data:
       {{- $count := .Values.scheduler.replicas | int}}
       {{- range $i, $x := until $count }}
       - type: tcp
-        addr: {{template "dragonfly.scheduler.fullname" $ }}-{{$i}}.{{ $.Release.Namespace }}.svc{{ $.Values.installation.clusterDomain }}:{{ $.Values.scheduler.service.port }}
+        addr: {{template "dragonfly.scheduler.fullname" $ }}-{{$i}}.{{ $.Values.installation.namespace }}.svc{{ $.Values.installation.clusterDomain }}:{{ $.Values.scheduler.service.port }}
       {{- end }}
       scheduleTimeout: 5m
     host:

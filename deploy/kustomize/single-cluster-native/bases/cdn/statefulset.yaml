@@ -10,7 +10,7 @@ spec:
     matchLabels:
       app: dragonfly
       component: cdn
-  replicas: 1
+  replicas: 3
   serviceName: cdn
   template:
     metadata:
@@ -30,7 +30,7 @@ spec:
           cat <<EOF > /tmp/patch.json
           {
             "data": {
-              "$POD_NAME.json": "{\"host_info\": {\"host_name\": \"$HOSTNAME\",\"ip\":\"$POD_IP\"},\"rpc_port\": 8003,\"down_port\": 8001}"
+              "$POD_NAME.json": "{\"host_name\": \"$HOSTNAME\",\"ip\":\"$POD_IP\",\"port\": 8003,\"download_port\": 8001,\"status\": \"active\"}"
             }
           }
           EOF

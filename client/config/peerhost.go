@@ -231,14 +231,14 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 
 func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
 	pt := struct {
-		ListenOption   `yaml:",inline"`
-		DefaultFilter  string          `json:"defaultFilter" yaml:"defaultFilter"`
-		MaxConcurrency int64           `json:"maxConcurrency" yaml:"maxConcurrency"`
-		RegistryMirror *RegistryMirror `json:"registryMirror" yaml:"registryMirror"`
-		Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
-		HijackHTTPS    *HijackConfig   `json:"hijackHTTPS" yaml:"hijackHTTPS"`
-		WhiteList      []*WhiteList    `json:"whiteList" yaml:"whiteList"`
-		BasicAuth      *BasicAuth      `json:"basicAuth" yaml:"basicAuth"`
+		ListenOption   `mapstructure:",squash" yaml:",inline"`
+		BasicAuth      *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
+		DefaultFilter  string          `mapstructure:"defaultFilter" yaml:"defaultFilter"`
+		MaxConcurrency int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
+		RegistryMirror *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
+		WhiteList      []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
+		Proxies        []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
+		HijackHTTPS    *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
 	}{}
 
 	if err := unmarshal(b, &pt); err != nil {

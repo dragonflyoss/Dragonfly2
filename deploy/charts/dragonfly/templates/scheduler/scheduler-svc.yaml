@@ -1,4 +1,4 @@
-{{- $count := .Values.scheduler.replicas | int}}
+{{- $count := .Values.scheduler.replicas | int }}
 {{- range $i, $x := until $count }}
 apiVersion: v1
 kind: Service
@@ -21,7 +21,7 @@ spec:
       name: http
       targetPort: {{ $.Values.scheduler.service.targetPort }}
       {{- if (and (eq $.Values.scheduler.service.type "NodePort") (not (empty $.Values.scheduler.service.nodePort))) }}
-      nodePort: {{$.Values.scheduler.service.nodePort}}
+      nodePort: {{ $.Values.scheduler.service.nodePort }}
       {{- end }}
 {{- range $index, $port := $.Values.scheduler.service.extraPorts }}
     - port: {{ $port.port }}
@@ -32,16 +32,16 @@ spec:
     app: {{ template "dragonfly.scheduler.fullname" $ }}
     component: "{{ $.Values.scheduler.name }}"
     release: {{ $.Release.Name }}
-    statefulset.kubernetes.io/pod-name: {{ template "dragonfly.scheduler.fullname" $ }}-{{$i}}
+    statefulset.kubernetes.io/pod-name: {{ template "dragonfly.scheduler.fullname" $ }}-{{ $i }}
   type: {{$.Values.scheduler.service.type}}
-  {{if eq $.Values.scheduler.service.type "LoadBalancer"}}
+  {{- if eq $.Values.scheduler.service.type "LoadBalancer" }}
 {{- if $.Values.scheduler.service.loadBalancerSourceRanges }}
   loadBalancerSourceRanges:
 {{ toYaml $.Values.scheduler.service.loadBalancerSourceRanges | indent 4 }}
 {{- end }}
-  {{if $.Values.scheduler.service.loadBalancerIP}}
-  loadBalancerIP: {{$.Values.scheduler.serivice.loadBalancerIP}}
-  {{end}}
-{{end}}
+  {{- if $.Values.scheduler.service.loadBalancerIP }}
+  loadBalancerIP: {{$.Values.scheduler.serivice.loadBalancerIP }}
+  {{- end }}
+{{- end }}
 ---
 {{- end }}

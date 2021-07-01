@@ -19,13 +19,13 @@ spec:
       name: http
       targetPort: {{ .Values.cdn.service.targetPort }}
       {{- if (and (eq .Values.cdn.service.type "NodePort") (not (empty .Values.cdn.service.nodePort))) }}
-      nodePort: {{.Values.cdn.service.nodePort}}
+      nodePort: {{ .Values.cdn.service.nodePort }}
       {{- end }}
     - port: {{.Values.cdn.service.nginxPort}}
       name: http-nginx
       targetPort: {{ .Values.cdn.service.nginxTargetPort }}
       {{- if (and (eq .Values.cdn.service.type "NodePort") (not (empty .Values.cdn.service.nginxNodePort))) }}
-      nodePort: {{.Values.cdn.service.nginxNodePort}}
+      nodePort: {{ .Values.cdn.service.nginxNodePort }}
       {{- end }}
 {{- range $index, $port := .Values.cdn.service.extraPorts }}
     - port: {{ $port.port }}
@@ -37,12 +37,12 @@ spec:
     component: "{{ .Values.cdn.name }}"
     release: {{ .Release.Name }}
   type: {{.Values.cdn.service.type}}
-  {{if eq .Values.cdn.service.type "LoadBalancer"}}
+  {{- if eq .Values.cdn.service.type "LoadBalancer" }}
 {{- if .Values.cdn.service.loadBalancerSourceRanges }}
   loadBalancerSourceRanges:
 {{ toYaml .Values.cdn.service.loadBalancerSourceRanges | indent 4 }}
 {{- end }}
-  {{if .Values.cdn.service.loadBalancerIP}}
-  loadBalancerIP: {{.Values.cdn.serivice.loadBalancerIP}}
-  {{end}}
-  {{end}}
+  {{- if .Values.cdn.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.cdn.serivice.loadBalancerIP }}
+  {{- end }}
+  {{- end }}
