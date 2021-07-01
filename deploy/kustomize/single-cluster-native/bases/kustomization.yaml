@@ -33,4 +33,4 @@ images:
 - name: dragonflyoss/scheduler
   newTag: v0.1.0-beta
 - name: bitnami/kubectl
-  newTag: 1.20
+  newTag: "1.20"
