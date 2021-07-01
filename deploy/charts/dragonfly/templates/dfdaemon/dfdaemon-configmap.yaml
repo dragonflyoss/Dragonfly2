@@ -10,18 +10,18 @@ metadata:
     heritage: "{{ .Release.Service }}"
 data:
   dfget.yaml: |-
-    alive_time: {{ .Values.dfdaemon.config.alive_time }}
-    gc_interval: {{ .Values.dfdaemon.config.gc_interval }}
-    keep_storage: {{ .Values.dfdaemon.config.keep_storage }}
+    aliveTime: {{ .Values.dfdaemon.config.aliveTime }}
+    gcInterval: {{ .Values.dfdaemon.config.gcInterval }}
+    keepStorage: {{ .Values.dfdaemon.config.keepStorage }}
     verbose: {{ .Values.dfdaemon.config.verbose }}
     scheduler:
-      net_addrs:
+      netAddrs:
       {{- $count := .Values.scheduler.replicas | int}}
       {{- range $i, $x := until $count }}
       - type: tcp
         addr: {{template "dragonfly.scheduler.fullname" $ }}-{{$i}}.{{ $.Release.Namespace }}.svc{{ $.Values.installation.clusterDomain }}:{{ $.Values.scheduler.service.port }}
       {{- end }}
-      schedule_timeout: 5m
+      scheduleTimeout: 5m
     host:
 {{ toYaml .Values.dfdaemon.config.host | indent 6 }}
     download:
@@ -31,16 +31,16 @@ data:
     storage:
 {{ toYaml .Values.dfdaemon.config.storage | indent 6 }}
     proxy:
-      tcp_listen:
+      tcpListen:
     {{- if not .Values.dfdaemon.hostNetwork }}
         namespace: /host/ns/net
     {{- end }}
-        listen: {{ .Values.dfdaemon.config.proxy.tcp_listen.listen }}
-        port: {{ .Values.dfdaemon.config.proxy.tcp_listen.port }}
+        listen: {{ .Values.dfdaemon.config.proxy.tcpListen.listen }}
+        port: {{ .Values.dfdaemon.config.proxy.tcpListen.port }}
       security:
 {{ toYaml .Values.dfdaemon.config.proxy.security | indent 8 }}
-      registry_mirror:
-{{ toYaml .Values.dfdaemon.config.proxy.registry_mirror | indent 8 }}
+      registryMirror:
+{{ toYaml .Values.dfdaemon.config.proxy.registryMirror | indent 8 }}
       proxies:
 {{ toYaml .Values.dfdaemon.config.proxy.proxies | indent 8 }}
 

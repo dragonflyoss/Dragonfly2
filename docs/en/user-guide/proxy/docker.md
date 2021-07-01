@@ -60,12 +60,12 @@ To use dfget daemon as HTTP proxy, first you need to append a proxy rule in
 proxy:
   security:
     insecure: true
-  tcp_listen:
+  tcpListen:
     listen: 0.0.0.0
     port: 65001
   proxies:
     - regx: blobs/sha256.*
-  hijack_https:
+  hijackHTTPS:
     # CA certificate's path used to hijack https requests
     cert: ca.crt
     key: ca.key
@@ -116,12 +116,12 @@ ignore the certificate error with:
 proxy:
   security:
     insecure: true
-  tcp_listen:
+  tcpListen:
     listen: 0.0.0.0
     port: 65001
   proxies:
     - regx: blobs/sha256.*
-  hijack_https:
+  hijackHTTPS:
     # CA certificate's path used to hijack https requests
     cert: ca.crt
     key: ca.key
@@ -136,12 +136,12 @@ Or provide a certificate with:
 proxy:
   security:
     insecure: true
-  tcp_listen:
+  tcpListen:
     listen: 0.0.0.0
     port: 65001
   proxies:
     - regx: blobs/sha256.*
-  hijack_https:
+  hijackHTTPS:
     # CA certificate's path used to hijack https requests
     cert: ca.crt
     key: ca.key
