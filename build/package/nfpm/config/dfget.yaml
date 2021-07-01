@@ -4,13 +4,6 @@ aliveTime: 0s
 # daemon gc task running interval
 gcInterval: 1m0s
 
-# daemon pid location
-pid_file: /var/run/dfdaemon.pid
-
-# daemon lock file location
-# some lock file will only allow to run one daemon service
-lock_file: /var/run/dfdaemon.lock
-
 # daemon data directory
 dataDir: /home/t4/dragonfly/
 

@@ -361,5 +361,4 @@ func TestPeerHostOption_Load(t *testing.T) {
 	}
 
 	assert.EqualValues(peerHostOption, peerHostOptionYAML)
-
 }
