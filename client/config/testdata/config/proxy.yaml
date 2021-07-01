@@ -1,4 +1,4 @@
-registry_mirror:
+registryMirror:
   # url for the registry mirror
   url: https://index.docker.io
   # whether to ignore https certificate errors
@@ -13,7 +13,7 @@ proxies:
   - regx: blobs/sha256.*
   # change http requests to some-registry to https and proxy them with dfget
   - regx: some-registry/
-    use_https: true
+    useHTTPS: true
   # proxy requests directly, without dfget
   - regx: no-proxy-reg
     direct: true
@@ -21,7 +21,7 @@ proxies:
   - regx: some-registry
     redirect: another-registry
 
-hijack_https:
+hijackHTTPS:
   # key pair used to hijack https requests
   cert: ./testdata/certs/sca.crt
   key: ./testdata/certs/sca.key

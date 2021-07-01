@@ -129,45 +129,45 @@ dfdaemon:
   containerPort: 65001
   hostNetwork: false
   config:
-    alive_time: 0s
-    gc_interval: 1m0s
-    keep_storage: false
+    aliveTime: 0s
+    gcInterval: 1m0s
+    keepStorage: false
     verbose: true
     host:
-      listen_ip: 0.0.0.0
-      advertise_ip: 0.0.0.0
+      listenIP: 0.0.0.0
+      advertiseIP: 0.0.0.0
     download:
-      rate_limit: 200Mi
-      download_grpc:
+      rateLimit: 200Mi
+      downloadGRPC:
         security:
           insecure: true
-        unix_listen:
+        unixListen:
           socket: /tmp/dfdamon.sock
-      peer_grpc:
+      peerGRPC:
         security:
           insecure: true
-        tcp_listen:
+        tcpListen:
           listen: 0.0.0.0
           port: 65000
     upload:
-      rate_limit: 100Mi
+      rateLimit: 100Mi
       security:
         insecure: true
-      tcp_listen:
+      tcpListen:
         listen: 0.0.0.0
         port: 65002
     storage:
-      task_expire_time: 3m0s
+      taskExpireTime: 3m0s
       strategy: io.d7y.storage.v2.simple
       multiplex: true
     proxy:
       security:
         insecure: true
-      tcp_listen:
+      tcpListen:
         namespace: /host/ns/net
         listen: 0.0.0.0
         port: 65001
-      registry_mirror:
+      registryMirror:
         url: https://index.docker.io
       proxies:
       - regx: blobs/sha256.*

@@ -28,7 +28,7 @@ spec:
         volumeMounts:
         - name: config
           mountPath: /etc/dragonfly
-        - name: netns # the mountPath is setting in proxy.tcp_listen.namespace
+        - name: netns # the mountPath is setting in proxy.tcpListen.namespace
           mountPath: /host/ns/net
         ports: # 65001 is in host network, no need here
         - containerPort: 65000

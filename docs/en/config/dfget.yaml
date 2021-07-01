@@ -1,24 +1,24 @@
 # daemon alive time, when sets 0s, daemon will not auto exit
 # it is useful for longtime running
-alive_time: 0s
+aliveTime: 0s
 
 # daemon gc task running interval
-gc_interval: 1m0s
+gcInterval: 1m0s
 
 # daemon data directory
 # in linux, default value is $HOME/.dragonfly/dfget-daemon/
 # in macos(just for testing), default value is /Users/$USER/.dragonfly/dfdaemon/
-data_dir: /var/lib/dragonfly
+dataDir: /var/lib/dragonfly
 
 # daemon work directory, daemon will change current working directory to this
 # in linux, default value is $HOME/.dragonfly/dfget-daemon/
 # in macos(just for testing), default value is /Users/$USER/.dragonfly/dfdaemon/
-work_home: /var/lib/dragonfly
+workHome: /var/lib/dragonfly
 
 # when daemon exit, keep peer task data or not
 # it is usefully when upgrade daemon service, all local cache will be saved
 # default is false
-keep_storage: true
+keepStorage: true
 
 # all addresses of all schedulers
 # the schedulers of all daemons should be same in one region or zone.
@@ -26,9 +26,9 @@ keep_storage: true
 # caution: only tcp is supported
 scheduler:
   # schedule timeout
-  schedule_timeout: 30s
+  scheduleTimeout: 30s
   # below example is a stand address
-  net_addrs:
+  netAddrs:
     - type: tcp
       addr: 127.0.0.1:8002
 
@@ -43,46 +43,46 @@ telemetry:
 host:
   # tcp service listen address
   # port should be set by other options
-  listen_ip: 0.0.0.0
+  listenIP: 0.0.0.0
   # access ip for other peers
-  # when local ip is different with access ip, advertise_ip should be set
-  advertise_ip: 0.0.0.0
+  # when local ip is different with access ip, advertiseIP should be set
+  advertiseIP: 0.0.0.0
   # geographical location and network topology
   location: ""
   idc: ""
-  security_domain: ""
-  net_topology: ""
+  securityDomain: ""
+  netTopology: ""
 
 # download service option
 download:
   # total download limit per second
-  total_rate_limit: 200Mi
+  totalRateLimit: 200Mi
   # per peer task download limit per second
-  per_peer_rate_limit: 100Mi
+  perPeerRateLimit: 100Mi
   # download grpc option
-  download_grpc:
+  downloadGRPC:
     # security option
     security:
       insecure: true
       cacert: ""
       cert: ""
       key: ""
-      tls_config: null
+      tlsConfig: null
     # download service listen address
     # current, only support unix domain socket
-    unix_listen:
+    unixListen:
       # in linux, default value is /var/run/dfdaemon.sock
       # in macos(just for testing), default value is /tmp/dfdaemon.sock
       socket: /var/run/dfdaemon.sock
   # peer grpc option
   # peer grpc service send pieces info to other peers
-  peer_grpc:
+  peerGRPC:
     security:
       insecure: true
       cacert: ""
       cert: ""
       key: ""
-    tcp_listen:
+    tcpListen:
       # listen address
       listen: 0.0.0.0
       # listen port, daemon will try to listen
@@ -96,13 +96,13 @@ download:
 # upload service option
 upload:
   # upload limit per second
-  rate_limit: 100Mi
+  rateLimit: 100Mi
   security:
     insecure: true
     cacert: ""
     cert: ""
     key: ""
-  tcp_listen:
+  tcpListen:
     # listen address
     listen: 0.0.0.0
     # listen port, daemon will try to listen
@@ -117,7 +117,7 @@ upload:
 storage:
   # task data expire time
   # when there is no access to a task data, this task will be gc.
-  task_expire_time: 3m0s
+  taskExpireTime: 3m0s
   # storage strategy when process task data
   # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
   #                           the download file in date directory will be the peer data for uploading to other peers
@@ -128,7 +128,7 @@ storage:
   # default is io.d7y.storage.v2.advance
   strategy: io.d7y.storage.v2.advance
   # disk quota gc threshold, when the quota of all tasks exceeds the gc threshold, oldest tasks will be reclaimed.
-  disk_gc_threshold: 50Gi
+  diskGCThreshold: 50Gi
   # set to ture for reusing underlying storage for same task id
   multiplex: true
 
@@ -142,7 +142,7 @@ proxy:
     cacert: ""
     cert: ""
     key: ""
-  tcp_listen:
+  tcpListen:
     # namespace stands the linux net namespace, like /proc/1/ns/net
     # it's useful for running daemon in pod with ip allocated and listening the special port in host net namespace
     # Linux only
@@ -156,7 +156,7 @@ proxy:
   #   port:
   #     start: 65020
   #     end: 65029
-  registry_mirror:
+  registryMirror:
     # url for the registry mirror
     url: https://index.docker.io
     # whether to ignore https certificate errors
@@ -171,7 +171,7 @@ proxy:
     - regx: blobs/sha256.*
     # change http requests to some-registry to https and proxy them with dfget
     - regx: some-registry/
-      use_https: true
+      useHTTPS: true
     # proxy requests directly, without dfget
     - regx: no-proxy-reg
       direct: true
@@ -179,7 +179,7 @@ proxy:
     - regx: some-registry
       redirect: another-registry
 
-  hijack_https:
+  hijackHTTPS:
     # key pair used to hijack https requests
     cert: ""
     key: ""
@@ -190,7 +190,7 @@ proxy:
         # optional certificates if the host uses self-signed certificates
         certs: []
 
-  white_list:
+  whiteList:
     # the host of the whitelist
     - host: ""
       # match whitelist hosts
