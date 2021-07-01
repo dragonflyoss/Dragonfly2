@@ -120,6 +120,7 @@ dfdaemon:
   podAnnotations: {}
   daemonsetAnnotations: {}
   containerPort: 65001
+  hostPort: 65001
   hostNetwork: false
   config:
     aliveTime: 0s
