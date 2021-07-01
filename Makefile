@@ -16,7 +16,7 @@ PROJECT_NAME := "d7y.io/dragonfly/v2"
 DFGET_NAME := "dfget"
 VERSION := "2.0.0"
 PKG := "$(PROJECT_NAME)"
-PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(manager\)')
+PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/manager/\)')
 GIT_COMMIT := $(shell git rev-parse --verify HEAD --short=7)
 GIT_COMMIT_LONG := $(shell git rev-parse --verify HEAD)
 DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(GIT_COMMIT)"
@@ -189,6 +189,11 @@ test-coverage:
 	@go test -race -short ${PKG_LIST} -coverprofile cover.out -covermode=atomic
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
+
+# Run go generate
+generate:
+	@go generate ${PKG_LIST}
+.PHONY: generate
 
 # Generate changelog
 changelog:
