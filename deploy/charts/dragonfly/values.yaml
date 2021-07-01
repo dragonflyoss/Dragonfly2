@@ -12,7 +12,7 @@ scheduler:
   fullnameOverride: ""
   replicas: 3
   image: dragonflyoss/scheduler
-  tag: v0.1.0-alpha.1
+  tag: v0.1.0-beta
   pullPolicy: IfNotPresent
   resources:
     requests:
@@ -49,7 +49,7 @@ cdn:
   fullnameOverride: ""
   replicas: 3
   image: dragonflyoss/cdn
-  tag: v0.1.0-alpha.1
+  tag: v0.1.0-beta
   kubectlImage: bitnami/kubectl
   pullPolicy: Always
   resources:
@@ -111,7 +111,7 @@ dfdaemon:
   nameOverride: ""
   fullnameOverride: ""
   image: dragonflyoss/dfget
-  tag: v0.1.0-alpha.1
+  tag: v0.1.0-beta
   pullPolicy: IfNotPresent
   resources:
     requests:
