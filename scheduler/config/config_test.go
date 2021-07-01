@@ -47,6 +47,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			CachePath:  "bar",
 			ExpireTime: 1000,
 			Addr:       "127.0.0.1:8002",
+			CDNDirPath: "tmp",
 		},
 		Scheduler: SchedulerConfig{
 			ABTest:     true,
