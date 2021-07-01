@@ -1,7 +1,5 @@
 aliveTime: 0s
 gcInterval: 1m0s
-pid_file: /tmp/dfdaemon.pid
-lock_file: /tmp/dfdaemon.lock
 dataDir: /tmp/dragonfly/dfdaemon/
 workHome: /tmp/dragonfly/dfdaemon/
 keepStorage: false
