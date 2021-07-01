@@ -12,10 +12,10 @@ To use dfget daemon as registry mirror, first you need to ensure configuration i
 proxy:
   security:
     insecure: true
-  tcp_listen:
+  tcpListen:
     listen: 0.0.0.0
     port: 65001
-  registry_mirror:
+  registryMirror:
     url: https://index.docker.io
   proxies:
     - regx: blobs/sha256.*

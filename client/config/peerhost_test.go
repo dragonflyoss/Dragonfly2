@@ -17,7 +17,6 @@
 package config
 
 import (
-	"encoding/json"
 	"net/url"
 	"reflect"
 	"testing"
@@ -143,10 +142,10 @@ listen:
 		},
 		{
 			text: `
-disk_gc_threshold: 1Ki
+diskGCThreshold: 1Ki
 `,
 			target: &struct {
-				Size unit.Bytes `yaml:"disk_gc_threshold"`
+				Size unit.Bytes `yaml:"diskGCThreshold"`
 			}{
 				Size: unit.Bytes(1024),
 			},
@@ -160,73 +159,12 @@ disk_gc_threshold: 1Ki
 	}
 }
 
-func TestUnmarshalJSON(t *testing.T) {
-	bytes := []byte(`{
-		"tls": {
-			"key": "./testdata/certs/sca.key",
-			"cert": "./testdata/certs/sca.crt",
-			"ca_cert": "./testdata/certs/ca.crt"
-		},
-		"url": "https://d7y.io",
-    "certs": [
-			"./testdata/certs/ca.crt",
-			"./testdata/certs/sca.crt"
-    ],
-		"regx": "blobs/sha256.*",
-		"port1": 1001,
-		"port2": {
-			"start": 1002,
-			"end": 1003
-		},
-		"timeout": "3m",
-		"limit": "2Mib",
-		"type": "tcp",
-		"proxy1": "./testdata/config/proxy.json",
-		"proxy2": {
-			"registry_mirror": {
-				"url": "https://index.docker.io"
-			}
-		},
-		"schedulers1": {
-			"net_addrs": [ "0.0.0.0", "0.0.0.1" ],
-			"schedule_timeout": "3m"
-		},
-		"schedulers2": {
-			"net_addrs": [{
-				"type": "tcp",
-				"addr": "0.0.0.0"
-			}],
-			"schedule_timeout": "3m"
-		}
-}`)
-
-	var s = struct {
-		TLSConfig   *TLSConfig           `json:"tls"`
-		URL         *URL                 `json:"url"`
-		Certs       *CertPool            `json:"certs"`
-		Regx        *Regexp              `json:"regx"`
-		Port1       TCPListenPortRange   `json:"port1"`
-		Port2       TCPListenPortRange   `json:"port2"`
-		Timeout     clientutil.Duration  `json:"timeout"`
-		Limit       clientutil.RateLimit `json:"limit"`
-		Type        dfnet.NetworkType    `json:"type"`
-		Proxy1      ProxyOption          `json:"proxy1"`
-		Proxy2      ProxyOption          `json:"proxy2"`
-		Schedulers1 SchedulerOption      `json:"schedulers1" yaml:"schedulers1"`
-		Schedulers2 SchedulerOption      `json:"schedulers2" yaml:"schedulers2"`
-	}{}
-
-	if err := json.Unmarshal(bytes, &s); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestUnmarshalYAML(t *testing.T) {
 	bytes := []byte(`
 tls:
   key: ./testdata/certs/sca.key
   cert: ./testdata/certs/sca.crt
-  ca_cert: ./testdata/certs/ca.crt
+  caCert: ./testdata/certs/ca.crt
 url: https://d7y.io
 certs: ["./testdata/certs/ca.crt", "./testdata/certs/sca.crt"]
 regx: blobs/sha256.*
@@ -239,18 +177,18 @@ limit: 2Mib
 type: tcp
 proxy1: ./testdata/config/proxy.yaml
 proxy2: 
-  registry_mirror:
+  registryMirror:
     url: https://index.docker.io
 schedulers1:
-  net_addrs:
+  netAddrs:
     - 0.0.0.0
     - 0.0.0.1
-  schedule_timeout: 0
+  scheduleTimeout: 0
 schedulers2:
-  net_addrs:
+  netAddrs:
     - type: tcp
       addr: 0.0.0.0
-  schedule_timeout: 0
+  scheduleTimeout: 0
 `)
 
 	var s = struct {
@@ -265,8 +203,8 @@ schedulers2:
 		Type        dfnet.NetworkType    `yaml:"type"`
 		Proxy1      ProxyOption          `yaml:"proxy1"`
 		Proxy2      ProxyOption          `yaml:"proxy2"`
-		Schedulers1 SchedulerOption      `json:"schedulers1" yaml:"schedulers1"`
-		Schedulers2 SchedulerOption      `json:"schedulers2" yaml:"schedulers2"`
+		Schedulers1 SchedulerOption      `yaml:"schedulers1"`
+		Schedulers2 SchedulerOption      `yaml:"schedulers2"`
 	}{}
 
 	if err := yaml.Unmarshal(bytes, &s); err != nil {
@@ -319,7 +257,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			DownloadGRPC: ListenOption{
 				Security: SecurityOption{
 					Insecure: true,
-					CACert:   "ca_cert",
+					CACert:   "caCert",
 					Cert:     "cert",
 					Key:      "key",
 				},
@@ -330,7 +268,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			PeerGRPC: ListenOption{
 				Security: SecurityOption{
 					Insecure: true,
-					CACert:   "ca_cert",
+					CACert:   "caCert",
 					Cert:     "cert",
 					Key:      "key",
 				},
@@ -350,7 +288,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			ListenOption: ListenOption{
 				Security: SecurityOption{
 					Insecure: true,
-					CACert:   "ca_cert",
+					CACert:   "caCert",
 					Cert:     "cert",
 					Key:      "key",
 				},
@@ -374,7 +312,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			ListenOption: ListenOption{
 				Security: SecurityOption{
 					Insecure: true,
-					CACert:   "ca_cert",
+					CACert:   "caCert",
 					Cert:     "cert",
 					Key:      "key",
 				},

@@ -47,12 +47,12 @@ type PeerHostOption struct {
 	// AliveTime indicates alive duration for which daemon keeps no accessing by any uploading and download requests,
 	// after this period daemon will automatically exit
 	// when AliveTime == 0, will run infinitely
-	AliveTime  clientutil.Duration `mapstructure:"alive_time" yaml:"alive_time"`
-	GCInterval clientutil.Duration `mapstructure:"gc_interval" yaml:"gc_interval"`
+	AliveTime  clientutil.Duration `mapstructure:"aliveTime" yaml:"aliveTime"`
+	GCInterval clientutil.Duration `mapstructure:"gcInterval" yaml:"gcInterval"`
 
-	DataDir     string `mapstructure:"data_dir" yaml:"data_dir"`
-	WorkHome    string `mapstructure:"work_home" yaml:"work_home"`
-	KeepStorage bool   `mapstructure:"keep_storage" yaml:"keep_storage"`
+	DataDir     string `mapstructure:"dataDir" yaml:"dataDir"`
+	WorkHome    string `mapstructure:"workHome" yaml:"workHome"`
+	KeepStorage bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
 	Scheduler    SchedulerOption `mapstructure:"scheduler" yaml:"scheduler"`
 	Host         HostOption      `mapstructure:"host" yaml:"host"`
@@ -116,45 +116,45 @@ func (p *PeerHostOption) Validate() error {
 
 type SchedulerOption struct {
 	// NetAddrs is scheduler addresses.
-	NetAddrs []dfnet.NetAddr `mapstructure:"net_addrs" yaml:"net_addrs"`
+	NetAddrs []dfnet.NetAddr `mapstructure:"netAddrs" yaml:"netAddrs"`
 
 	// ScheduleTimeout is request timeout.
-	ScheduleTimeout clientutil.Duration `mapstructure:"schedule_timeout" yaml:"schedule_timeout"`
+	ScheduleTimeout clientutil.Duration `mapstructure:"scheduleTimeout" yaml:"scheduleTimeout"`
 }
 
 type HostOption struct {
 	// SecurityDomain is the security domain
-	SecurityDomain string `mapstructure:"security_domain" yaml:"security_domain"`
+	SecurityDomain string `mapstructure:"securityDomain" yaml:"securityDomain"`
 	// Peerhost location for scheduler
 	Location string `mapstructure:"location" yaml:"location"`
 	// Peerhost idc for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
 	// Peerhost net topology for scheduler
-	NetTopology string `mapstructure:"net_topology" yaml:"net_topology"`
+	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`
 	// The listen ip for all tcp services of daemon
-	ListenIP string `mapstructure:"listen_ip" yaml:"listen_ip"`
+	ListenIP string `mapstructure:"listenIP" yaml:"listenIP"`
 	// The ip report to scheduler, normal same with listen ip
-	AdvertiseIP string `mapstructure:"advertise_ip" yaml:"advertise_ip"`
+	AdvertiseIP string `mapstructure:"advertiseIP" yaml:"advertiseIP"`
 }
 
 type DownloadOption struct {
-	TotalRateLimit   clientutil.RateLimit `mapstructure:"total_rate_limit" yaml:"total_rate_limit"`
-	PerPeerRateLimit clientutil.RateLimit `mapstructure:"per_peer_rate_limit" yaml:"per_peer_rate_limit"`
-	DownloadGRPC     ListenOption         `mapstructure:"download_grpc" yaml:"download_grpc"`
-	PeerGRPC         ListenOption         `mapstructure:"peer_grpc" yaml:"peer_grpc"`
-	CalculateDigest  bool                 `mapstructure:"calculate_digest" yaml:"calculate_digest"`
+	TotalRateLimit   clientutil.RateLimit `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
+	PerPeerRateLimit clientutil.RateLimit `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
+	DownloadGRPC     ListenOption         `mapstructure:"downloadGRPC" yaml:"downloadGRPC"`
+	PeerGRPC         ListenOption         `mapstructure:"peerGRPC" yaml:"peerGRPC"`
+	CalculateDigest  bool                 `mapstructure:"calculateDigest" yaml:"calculateDigest"`
 }
 
 type ProxyOption struct {
 	// WARNING: when add more option, please update ProxyOption.unmarshal function
 	ListenOption   `mapstructure:",squash" yaml:",inline"`
-	BasicAuth      *BasicAuth      `mapstructure:"basic_auth" yaml:"basic_auth"`
-	DefaultFilter  string          `mapstructure:"default_filter" yaml:"default_filter"`
-	MaxConcurrency int64           `mapstructure:"max_concurrency" yaml:"max_concurrency"`
-	RegistryMirror *RegistryMirror `mapstructure:"registry_mirror" yaml:"registry_mirror"`
-	WhiteList      []*WhiteList    `mapstructure:"white_list" yaml:"white_list"`
+	BasicAuth      *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
+	DefaultFilter  string          `mapstructure:"defaultFilter" yaml:"defaultFilter"`
+	MaxConcurrency int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
+	RegistryMirror *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
+	WhiteList      []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
 	Proxies        []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
-	HijackHTTPS    *HijackConfig   `mapstructure:"hijack_https" yaml:"hijack_https"`
+	HijackHTTPS    *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
 }
 
 func (p *ProxyOption) UnmarshalJSON(b []byte) error {
@@ -232,13 +232,13 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
 	pt := struct {
 		ListenOption   `yaml:",inline"`
-		DefaultFilter  string          `json:"default_filter" yaml:"default_filter"`
-		MaxConcurrency int64           `json:"max_concurrency" yaml:"max_concurrency"`
-		RegistryMirror *RegistryMirror `json:"registry_mirror" yaml:"registry_mirror"`
+		DefaultFilter  string          `json:"defaultFilter" yaml:"defaultFilter"`
+		MaxConcurrency int64           `json:"maxConcurrency" yaml:"maxConcurrency"`
+		RegistryMirror *RegistryMirror `json:"registryMirror" yaml:"registryMirror"`
 		Proxies        []*Proxy        `json:"proxies" yaml:"proxies"`
-		HijackHTTPS    *HijackConfig   `json:"hijack_https" yaml:"hijack_https"`
-		WhiteList      []*WhiteList    `json:"white_list" yaml:"white_list"`
-		BasicAuth      *BasicAuth      `json:"basic_auth" yaml:"basic_auth"`
+		HijackHTTPS    *HijackConfig   `json:"hijackHTTPS" yaml:"hijackHTTPS"`
+		WhiteList      []*WhiteList    `json:"whiteList" yaml:"whiteList"`
+		BasicAuth      *BasicAuth      `json:"basicAuth" yaml:"basicAuth"`
 	}{}
 
 	if err := unmarshal(b, &pt); err != nil {
@@ -259,13 +259,13 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 
 type UploadOption struct {
 	ListenOption `yaml:",inline" mapstructure:",squash"`
-	RateLimit    clientutil.RateLimit `mapstructure:"rate_limit" yaml:"rate_limit"`
+	RateLimit    clientutil.RateLimit `mapstructure:"rateLimit" yaml:"rateLimit"`
 }
 
 type ListenOption struct {
 	Security   SecurityOption    `mapstructure:"security" yaml:"security"`
-	TCPListen  *TCPListenOption  `mapstructure:"tcp_listen,omitempty" yaml:"tcp_listen,omitempty"`
-	UnixListen *UnixListenOption `mapstructure:"unix_listen,omitempty" yaml:"unix_listen,omitempty"`
+	TCPListen  *TCPListenOption  `mapstructure:"tcpListen,omitempty" yaml:"tcpListen,omitempty"`
+	UnixListen *UnixListenOption `mapstructure:"unixListen,omitempty" yaml:"unixListen,omitempty"`
 }
 
 type TCPListenOption struct {
@@ -372,20 +372,20 @@ type UnixListenOption struct {
 type SecurityOption struct {
 	// Insecure indicate enable tls or not
 	Insecure  bool        `mapstructure:"insecure" yaml:"insecure"`
-	CACert    string      `mapstructure:"ca_cert" yaml:"ca_cert"`
+	CACert    string      `mapstructure:"caCert" yaml:"caCert"`
 	Cert      string      `mapstructure:"cert" yaml:"cert"`
 	Key       string      `mapstructure:"key" yaml:"key"`
-	TLSConfig *tls.Config `mapstructure:"tls_config" yaml:"tls_config"`
+	TLSConfig *tls.Config `mapstructure:"tlsConfig" yaml:"tlsConfig"`
 }
 
 type StorageOption struct {
 	// DataPath indicates directory which stores temporary files for p2p uploading
-	DataPath string `mapstructure:"data_path" yaml:"data_path"`
+	DataPath string `mapstructure:"dataPath" yaml:"dataPath"`
 	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
 	// after this period cache file will be gc
-	TaskExpireTime clientutil.Duration `mapstructure:"task_expire_time" yaml:"task_expire_time"`
+	TaskExpireTime clientutil.Duration `mapstructure:"taskExpireTime" yaml:"taskExpireTime"`
 	// DiskGCThreshold indicates the threshold to gc the oldest tasks
-	DiskGCThreshold unit.Bytes `mapstructure:"disk_gc_threshold" yaml:"disk_gc_threshold"`
+	DiskGCThreshold unit.Bytes `mapstructure:"diskGCThreshold" yaml:"diskGCThreshold"`
 	// Multiplex indicates reusing underlying storage for same task id
 	Multiplex     bool          `mapstructure:"multiplex" yaml:"multiplex"`
 	StoreStrategy StoreStrategy `mapstructure:"strategy" yaml:"strategy"`
@@ -434,7 +434,7 @@ func (f *FileString) UnmarshalYAML(node *yaml.Node) error {
 type tlsConfigFiles struct {
 	Cert   string     `json:"cert"`
 	Key    string     `json:"key"`
-	CACert FileString `json:"ca_cert"`
+	CACert FileString `json:"caCert"`
 }
 
 type TLSConfig struct {
@@ -595,7 +595,7 @@ func certPoolFromFiles(files ...string) (*x509.CertPool, error) {
 // Proxy describes a regular expression matching rule for how to proxy a request.
 type Proxy struct {
 	Regx     *Regexp `yaml:"regx" mapstructure:"regx"`
-	UseHTTPS bool    `yaml:"use_https" mapstructure:"use_https"`
+	UseHTTPS bool    `yaml:"useHTTPS" mapstructure:"useHTTPS"`
 	Direct   bool    `yaml:"direct" mapstructure:"direct"`
 
 	// Redirect is the host to redirect to, if not empty

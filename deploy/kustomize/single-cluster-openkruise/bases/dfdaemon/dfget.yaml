@@ -1,12 +1,12 @@
 # daemon alive time, when sets 0s, daemon will not auto exit
-alive_time: 0s
+aliveTime: 0s
 
 # daemon gc task running interval
-gc_interval: 1m0s
+gcInterval: 1m0s
 
 # when daemon exit, keep peer task data or not
 # it is usefully when upgrade daemon service, all local cache will be saved
-keep_storage: true
+keepStorage: true
 
 # all addresses of all schedulers
 # the schedulers of all daemons should be same in one region or zone.
@@ -14,7 +14,7 @@ keep_storage: true
 # caution: only tcp is supported
 scheduler:
   # below example is a stand address
-  net_addrs:
+  netAddrs:
   - type: tcp
     addr: scheduler-0.dragonfly.svc:8002
   - type: tcp
@@ -22,7 +22,7 @@ scheduler:
   - type: tcp
     addr: scheduler-2.dragonfly.svc:8002
   # schedule timeout
-  schedule_timeout: 10s
+  scheduleTimeout: 10s
 
 # when enable, pprof will be enabled,
 verbose: true
@@ -32,43 +32,43 @@ console: false
 host:
   # tcp service listen address
   # port should be set by other options
-  listen_ip: 0.0.0.0
+  listenIP: 0.0.0.0
   # access ip for other peers
-  # when local ip is different with access ip, advertise_ip should be set
-  advertise_ip: 0.0.0.0
+  # when local ip is different with access ip, advertiseIP should be set
+  advertiseIP: 0.0.0.0
   # geographical location and network topology
   location: ""
   idc: ""
-  security_domain: ""
-  net_topology: ""
+  securityDomain: ""
+  netTopology: ""
 
 # download service option
 download:
   # download limit  per second
-  total_rate_limit: 1024Mi
-  per_peer_rate_limit: 1024Mi
+  totalRateLimit: 1024Mi
+  perPeerRateLimit: 1024Mi
   # download grpc option
-  download_grpc:
+  downloadGRPC:
     # security option
     security:
       insecure: true
       cacert: ""
       cert: ""
       key: ""
-      tls_config: null
+      tlsConfig: null
     # download service listen address
     # current, only support unix domain socket
-    unix_listen:
+    unixListen:
       socket: /var/run/dfdaemon.sock
   # peer grpc option
   # peer grpc service send pieces info to other peers
-  peer_grpc:
+  peerGRPC:
     security:
       insecure: true
       cacert: ""
       cert: ""
       key: ""
-    tcp_listen:
+    tcpListen:
       # listen address
       listen: 0.0.0.0
       # listen port, daemon will try to listen
@@ -85,13 +85,13 @@ download:
 # upload service option
 upload:
   # upload limit per second
-  rate_limit: 200Mi
+  rateLimit: 200Mi
   security:
     insecure: true
     cacert: ""
     cert: ""
     key: ""
-  tcp_listen:
+  tcpListen:
     # listen address
     listen: 0.0.0.0
     # listen port, daemon will try to listen
@@ -106,7 +106,7 @@ upload:
 storage:
   # task data expire time
   # when there is no access to a task data, this task will be gc.
-  task_expire_time: 3m0s
+  taskExpireTime: 3m0s
   multiplex: true
 
 # proxy service option
@@ -116,7 +116,7 @@ proxy:
     cacert: ""
     cert: ""
     key: ""
-  tcp_listen:
+  tcpListen:
     # Namespace stands the linux net namespace, like /proc/1/ns/net
     # It's useful for running daemon in pod with ip allocated and listen in host
     # Linux only
@@ -130,7 +130,7 @@ proxy:
   #   port:
   #     start: 65020
   #     end: 65029
-  registry_mirror:
+  registryMirror:
     # url for the registry mirror
     url: https://index.docker.io
     # whether to ignore https certificate errors
