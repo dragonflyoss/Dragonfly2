@@ -4,6 +4,7 @@ dynconfig:
   path: foo
   cachePath: bar
   addr: 127.0.0.1:8002
+  cdnDirPath: tmp
 scheduler:
   abtest: true
   ascheduler: "a-scheduler"
