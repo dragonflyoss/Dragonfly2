@@ -1,0 +1,36 @@
+# Dragonfly
+
+## Install
+
+Install with Helm 3:
+
+```bash
+helm install dragonfly https://github.com/dragonfly/Dragonfly2/releases/download/v0.1.0-beta/dragonfly-chart.tgz
+```
+
+## Uninstall
+
+```bash
+$ helm delete dragonfly
+release "dragonfly" uninstalled
+```
+
+## [TODO] Configuration
+
+The following table lists the configurable parameters of the dragonfly chart, and their default values.
+
+| Parameter                                 | Description                                                  | Default                       |
+| ----------------------------------------- | ------------------------------------------------------------ | ----------------------------- |
+| `installation.namespace`                  | namespace for dragonfly installation                         | `dragonfly-system`               |
+
+Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
+
+For example:
+
+```shell
+helm install dragonfly https://... --set installation.namespace=kube-system
+```
+
+## Reference
+
+[https://github.com/openkruise/kruise/blob/master/charts/kruise/v0.9.0/README.md](https://github.com/openkruise/kruise/blob/master/charts/kruise/v0.9.0/README.md)
