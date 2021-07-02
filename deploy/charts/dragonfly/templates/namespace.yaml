@@ -1,6 +1,6 @@
-{{- if ne $.Values.installation.namespace "kube-system" }}
+{{- if ne $.Release.Namespace $.Values.namespaceOverride }}
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: {{ $.Values.installation.namespace }}
+  name: {{ template "dragonfly.namespace" $ }}
 {{- end }}
