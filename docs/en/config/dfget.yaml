@@ -137,6 +137,11 @@ storage:
 
 # proxy service detail option
 proxy:
+  # filter for hash url
+  # when defaultFilter: "Expires&Signature", for example:
+  #  http://localhost/xyz?Expires=111&Signature=222 and http://localhost/xyz?Expires=333&Signature=999
+  # is same task
+  defaultFilter: "Expires&Signature"
   security:
     insecure: true
     cacert: ""
