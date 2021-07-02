@@ -1,9 +1,9 @@
 nameOverride: ""
+namespaceOverride: "dragonfly-system"
 fullnameOverride: ""
 
 # values for dragonfly installation
 installation:
-  namespace: dragonfly-system
   clusterDomain: ""
   # enable an all in one jaeger for tracing every downloading event
   # should not use in production environment

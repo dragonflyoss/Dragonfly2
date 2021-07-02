@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/name: jaeger-all-in-one
     app.kubernetes.io/part-of: jaeger
   name: jaeger-all-in-one
-  namespace: {{ .Values.installation.namespace }}
+  namespace: {{ template "dragonfly.namespace" . }}
 
 ---
 
@@ -23,7 +23,7 @@ metadata:
     app.kubernetes.io/name: jaeger-all-in-one-ui-configuration
     app.kubernetes.io/part-of: jaeger
   name: jaeger-all-in-one-ui-configuration
-  namespace: {{ .Values.installation.namespace }}
+  namespace: {{ template "dragonfly.namespace" . }}
 data:
   ui: |-
     {
@@ -52,7 +52,7 @@ metadata:
     app.kubernetes.io/name: jaeger-all-in-one-sampling-configuration
     app.kubernetes.io/part-of: jaeger
   name: jaeger-all-in-one-sampling-configuration
-  namespace: {{ .Values.installation.namespace }}
+  namespace: {{ template "dragonfly.namespace" . }}
 data:
   sampling: |-
     {
@@ -74,7 +74,7 @@ metadata:
     app.kubernetes.io/name: jaeger-all-in-one-collector
     app.kubernetes.io/part-of: jaeger
   name: jaeger-all-in-one-collector-headless
-  namespace: {{ .Values.installation.namespace }}
+  namespace: {{ template "dragonfly.namespace" . }}
 spec:
   clusterIP: None
   ports:
@@ -109,7 +109,7 @@ metadata:
     app.kubernetes.io/name: jaeger-all-in-one-collector
     app.kubernetes.io/part-of: jaeger
   name: jaeger-all-in-one-collector
-  namespace: {{ .Values.installation.namespace }}
+  namespace: {{ template "dragonfly.namespace" . }}
 spec:
   ports:
   - name: http-zipkin
@@ -143,7 +143,7 @@ metadata:
     app.kubernetes.io/name: jaeger-all-in-one-query
     app.kubernetes.io/part-of: jaeger
   name: jaeger-all-in-one-query
-  namespace: {{ .Values.installation.namespace }}
+  namespace: {{ template "dragonfly.namespace" . }}
 spec:
   ports:
   - name: http-query
@@ -168,7 +168,7 @@ metadata:
     app.kubernetes.io/name: jaeger-all-in-one-agent
     app.kubernetes.io/part-of: jaeger
   name: jaeger-all-in-one-agent
-  namespace: {{ .Values.installation.namespace }}
+  namespace: {{ template "dragonfly.namespace" . }}
 spec:
   clusterIP: None
   ports:
@@ -206,7 +206,7 @@ metadata:
     app.kubernetes.io/name: jaeger-all-in-one
     app.kubernetes.io/part-of: jaeger
   name: jaeger-all-in-one
-  namespace: {{ .Values.installation.namespace }}
+  namespace: {{ template "dragonfly.namespace" . }}
 spec:
   selector:
     matchLabels:
