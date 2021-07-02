@@ -23,7 +23,7 @@ spec:
       serviceAccountName: dfdaemon
       containers:
       - name: dfdaemon
-        image: dragonflyoss/dfget
+        image: dragonflyoss/dfdaemon
         imagePullPolicy: "Always"
         ports: # 65001 is in host network, no need here
         - containerPort: 65000
