@@ -16,11 +16,11 @@ scheduler:
   # below example is a stand address
   netAddrs:
   - type: tcp
-    addr: scheduler-0.dragonfly.svc:8002
+    addr: scheduler-0.dragonfly-system.svc:8002
   - type: tcp
-    addr: scheduler-1.dragonfly.svc:8002
+    addr: scheduler-1.dragonfly-system.svc:8002
   - type: tcp
-    addr: scheduler-2.dragonfly.svc:8002
+    addr: scheduler-2.dragonfly-system.svc:8002
   # schedule timeout
   scheduleTimeout: 10s
 
