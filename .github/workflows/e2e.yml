@@ -58,8 +58,9 @@ jobs:
 
       - name: Helm install
         run: |
+          kubectl create ns dragonfly-system
           helm lint ./deploy/charts/dragonfly
-          helm install -n default dragonfly ./deploy/charts/dragonfly
+          helm install -n dragonfly-system dragonfly ./deploy/charts/dragonfly
 
       - name: Wait for running
         run: kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
