@@ -35,6 +35,8 @@ scheduler:
     port: 8002
     targetPort: 8002
   config:
+    # when there is no manager component in or out of cluster, enable staticCDN
+    # cdn will auto register in configmap, and scheduler will discover all of them dynamic.
     staticCDN: true
     debug: false
     worker:
@@ -120,7 +122,13 @@ dfdaemon:
   podAnnotations: {}
   daemonsetAnnotations: {}
   containerPort: 65001
+  # hostPort is used when .hostNetwork == false, and .config.proxy.tcpListen.namespace is empty
+  # many network add-ons do not yet support hostPort
+  # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/#hostport-services-do-not-work
+  # by default, dfdaemon injects the 65001 port to host network by sharing host network namespace,
+  # if you want to use hostPort, please empty .config.proxy.tcpListen.namespace below, and keep .hostNetwork == false
   hostPort: 65001
+  # using hostNetwork when pod with host network can communicate with normal pods with cni network
   hostNetwork: false
   config:
     aliveTime: 0s
@@ -160,7 +168,9 @@ dfdaemon:
       tcpListen:
         namespace: /host/ns/net
         listen: 0.0.0.0
-        port: 65001
+        # if you want to change port, please update hostPort in $.Values.dfdaemon.hostPort
+        # port in configmap is generated from $.Values.dfdaemon.hostPort
+        # port: 65001
       registryMirror:
         url: https://index.docker.io
       proxies:
