@@ -62,7 +62,11 @@ func NewNodeHost() *NodeHost {
 }
 
 func (h *NodeHost) GetUUID() string {
-	return h.UUID
+	return h.uuid
+}
+
+func (h *NodeHost) GetIP() string {
+	return h.ip
 }
 
 func (h *NodeHost) AddPeerNode(peerNode *PeerNode) {

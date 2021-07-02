@@ -118,7 +118,7 @@ func (cm *manager) OnNotify(c *managerRPC.SchedulerConfig) {
 	cm.client.UpdateState(cdnHostsToNetAddrs(c.CdnHosts))
 }
 
-func (cm *manager) SeedTask(task *types.Task, callback func(peerTask *types.PeerNode, e *dferrors.DfError)) error {
+func (cm *manager) SeedTask(task *types.Task) error {
 	if cm.client == nil {
 		return errors.New("cdn client is nil")
 	}
@@ -129,18 +129,15 @@ func (cm *manager) SeedTask(task *types.Task, callback func(peerTask *types.Peer
 		UrlMeta: task.GetUrlMeta(),
 	})
 	if err != nil {
-
 		logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.GetTaskID(), err)
 		e, ok := err.(*dferrors.DfError)
 		if !ok {
 			e = dferrors.New(dfcodes.CdnError, err.Error())
 		}
-		cm.doCallback(task, e)
-		return
+		return e
 	}
-
-	cm.Work(task, stream)
-})
+	return cm.Work(task, stream)
+}
 
 cm.lock.Lock()
 _, ok := cm.callbackFns[task]

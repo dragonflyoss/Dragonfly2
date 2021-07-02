@@ -21,7 +21,7 @@ import "d7y.io/dragonfly/v2/scheduler/types"
 type TaskMgr interface {
 	Add(task *types.Task)
 
-	Load(taskID string) (task *types.Task, ok bool)
+	Get(taskID string) (task *types.Task, ok bool)
 
 	Delete(taskID string)
 }

@@ -18,14 +18,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/internal/rpc/base/common"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
@@ -58,7 +56,6 @@ func WithSchedulerService(service *core.SchedulerService) Option {
 	}
 }
 
-
 // NewSchedulerServer returns a new transparent scheduler server from the given options
 func NewSchedulerServer(cfg *config.Config, options ...Option) *SchedulerServer {
 	return NewSchedulerWithOptions(cfg, options...)
@@ -79,108 +76,16 @@ func NewSchedulerWithOptions(cfg *config.Config, options ...Option) *SchedulerSe
 
 func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
 	if err := validateParams(request); err != nil {
-		// todo return
+		return nil, dferrors.Newf(dfcodes.BadRequest, "bad request param for register peer task: %v", err)
 	}
-	resp = new(scheduler.RegisterResult)
-
-	// get or create task
-	//var isCdn = false
 	taskID := s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMeta, request.BizId, request.PeerId)
-	task, ok := s.service.GetTask(taskID)
+	task, ok := s.taskManager.Get(taskID)
 	if !ok {
-		task, err = s.service.AddTask(types.NewTask(resp.TaskId, request.Url, request.Filter, request.BizId, request.UrlMeta))
-		if err != nil {
-			dferror, _ := err.(*dferrors.DfError)
-			if dferror != nil && dferror.Code == dfcodes.SchedNeedBackSource {
-				isCdn = true
-			} else {
-				return
-			}
+		if task, err = s.service.AddTask(types.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta)); err != nil {
+			return nil
 		}
 	}
-
-	if task.CDNError != nil {
-		err = task.CDNError
-		return
-	}
-
-	// get or create host
-	reqPeerHost := request.PeerHost
-	if host, ok := s.service.GetHost(reqPeerHost.Uuid); !ok {
-		host = &types.NodeHost{
-			Type: types.NodeHost,
-			PeerHost: scheduler.PeerHost{
-				Uuid:           reqPeerHost.Uuid,
-				Ip:             reqPeerHost.Ip,
-				RpcPort:        reqPeerHost.RpcPort,
-				DownPort:       reqPeerHost.DownPort,
-				HostName:       reqPeerHost.HostName,
-				SecurityDomain: reqPeerHost.SecurityDomain,
-				Location:       reqPeerHost.Location,
-				Idc:            reqPeerHost.Idc,
-				NetTopology:    reqPeerHost.NetTopology,
-			},
-		}
-		//if isCdn {
-		//	host.Type = types.HostTypeCdn
-		//}
-		host, err = s.service.AddHost(host)
-		if err != nil {
-			return
-		}
-	}
-
-	resp.TaskId = task.GetTaskID()
-	resp.SizeScope = task.SizeScope
-
-	// case base.SizeScope_TINY
-	if resp.SizeScope == base.SizeScope_TINY {
-		resp.DirectPiece = task.DirectPiece
-		return
-	}
-
-	// get or creat PeerTask
-	if peerTask, ok := s.service.GetPeerTask(request.PeerId); !ok {
-		peerTask, err = s.service.AddPeerTask(pid, task, host)
-		if err != nil
-	} else if peerTask.Host == nil {
-		peerTask.Host = host
-	}
-
-	if isCdn {
-		peerTask.SetDown()
-		err = dferrors.New(dfcodes.SchedNeedBackSource, "there is no cdn")
-		return
-	} else if peerTask.IsDown() {
-		peerTask.SetUp()
-	}
-
-	if resp.SizeScope == base.SizeScope_NORMAL {
-		return
-	}
-
-	// case base.SizeScope_SMALL
-	// do scheduler piece
-	parent, _, err := s.service.ScheduleParent(peerTask)
-	if err != nil {
-		return
-	}
-
-	if parent == nil {
-		resp.SizeScope = base.SizeScope_NORMAL
-		return
-	}
-
-	resp.DirectPiece = &scheduler.RegisterResult_SinglePiece{
-		SinglePiece: &scheduler.SinglePiece{
-			// destination peer id
-			DstPid: parent.Pid,
-			// download address(ip:port)
-			DstAddr: fmt.Sprintf("%s:%d", parent.Host.Ip, parent.Host.DownPort),
-			// one piece task
-			PieceInfo: &task.PieceList[0].PieceInfo,
-		},
-	}
+	resp, err := s.service.RegisterPeerTask(types.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta))
 
 	return
 }
@@ -207,49 +112,36 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 }
 
 func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (err error) {
-	peerTask, err := s.service.GetPeerTask(result.PeerId)
-	if err != nil {
-		return
+	peerTask, ok := s.service.GetPeerTask(result.PeerId)
+	if !ok {
+		logger.Warnf("")
+		return errors.New()
 	}
+	peerTask.Traffic = result.Traffic
+	peerTask.Cost = time.Duration(result.Cost)
+	peerTask.Success = result.Success
+	peerTask.Code = result.Code
 	peerTask.SetStatus(result.Traffic, result.Cost, result.Success, result.Code)
 
 	if peerTask.Success {
 		peerTask.Status = types.PeerStatusDone
-		s.worker.ReceiveJob(peerTask)
+		s.worker.Submit(peerTask)
 	} else {
 		peerTask.Status = types.PeerStatusLeaveNode
-		s.worker.ReceiveJob(peerTask)
+		s.worker.Submit(peerTask)
 	}
 
 	return
 }
 
-func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) error {
-	startTime := time.Now()
-	defer func() {
-		e := recover()
-		if e != nil {
-			err = dferrors.New(dfcodes.SchedError, fmt.Sprintf("%v", e))
-			return
-		}
-		if err != nil {
-			if _, ok := err.(*dferrors.DfError); !ok {
-				err = dferrors.New(dfcodes.SchedError, err.Error())
-			}
-		}
-		logger.Debugf("ReportPeerResult [%s] cost time: [%d]", target.PeerId, time.Now().Sub(startTime))
-		return
-	}()
-
+func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (err error) {
 	peerNode, ok := s.service.GetPeerTask(target.PeerId)
 	if !ok {
+		logger.Warnf("leave task: peer %d not exists", target.PeerId)
 		return nil
 	}
-
 	peerNode.Status = types.PeerStatusLeaveNode
-	s.worker.ReceiveJob(peerNode)
-
-	return
+	return s.worker.Submit(peerNode)
 }
 
 // validateParams validates the params of scheduler.PeerTaskRequest.
