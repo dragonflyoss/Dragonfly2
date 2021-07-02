@@ -9,6 +9,7 @@ on:
 env:
   GO_VERSION: 1.15
   KIND_VERSION: v0.11.1
+  GOPROXY: https://goproxy.io,direct
 
 jobs:
   skip_check:
