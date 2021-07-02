@@ -168,6 +168,7 @@ dfdaemon:
       strategy: io.d7y.storage.v2.simple
       multiplex: true
     proxy:
+      defaultFilter: "Expires&Signature"
       security:
         insecure: true
       tcpListen:
