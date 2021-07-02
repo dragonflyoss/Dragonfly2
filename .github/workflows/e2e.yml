@@ -61,4 +61,4 @@ jobs:
           helm install -n dragonfly-system dragonfly ./deploy/charts/dragonfly
 
       - name: Wait for running
-        run: kubectl get po -n dragonfly-system
+        run: kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
