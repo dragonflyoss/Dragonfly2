@@ -4,6 +4,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ template "dragonfly.scheduler.fullname" $ }}-{{$i}}
+  namespace: {{ template "dragonfly.namespace" $ }}
   labels:
     app: {{ template "dragonfly.name" $ }}
     chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}

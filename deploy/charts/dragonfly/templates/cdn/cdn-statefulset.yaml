@@ -8,6 +8,7 @@ metadata:
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
   name: {{ template "dragonfly.cdn.fullname" . }}
+  namespace: {{ template "dragonfly.namespace" . }}
   {{- if .Values.cdn.statefulsetAnnotations }}
   annotations:
 {{ toYaml .Values.cdn.statefulsetAnnotations | indent 4 }}

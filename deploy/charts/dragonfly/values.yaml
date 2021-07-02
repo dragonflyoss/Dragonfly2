@@ -1,4 +1,5 @@
 nameOverride: ""
+namespaceOverride: "dragonfly-system"
 fullnameOverride: ""
 
 # values for dragonfly installation

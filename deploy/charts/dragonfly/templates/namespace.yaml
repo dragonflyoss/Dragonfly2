@@ -1,0 +1,6 @@
+{{- if ne $.Release.Namespace $.Values.namespaceOverride }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ template "dragonfly.namespace" $ }}
+{{- end }}

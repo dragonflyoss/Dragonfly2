@@ -8,6 +8,7 @@ metadata:
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
   name: {{ template "dragonfly.scheduler.fullname" . }}
+  namespace: {{ template "dragonfly.namespace" . }}
   {{- if .Values.scheduler.statefulsetAnnotations }}
   annotations:
 {{ toYaml .Values.scheduler.statefulsetAnnotations | indent 4 }}
