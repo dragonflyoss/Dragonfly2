@@ -24,5 +24,6 @@
 ## Dragonfly v2.3.0
 
 * 客户端多语言（golang、java、C/C++）SDK封装；
-* Scheduler和CDN持续改进；Manager支持可视化分发大盘以及带宽计量、可观察性导航；
-* 完成和Nydus以及Harbor的集成
+* Scheduler和CDN持续改进；
+* Manager支持可视化分发大盘以及带宽计量、可观察性导航；
+* 完成和Nydus以及Harbor的集成;
