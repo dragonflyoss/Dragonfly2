@@ -105,7 +105,7 @@ dfdaemon:
   name: dfdaemon
   nameOverride: ""
   fullnameOverride: ""
-  image: dragonflyoss/dfget
+  image: dragonflyoss/dfdaemon
   tag: v0.1.0-beta
   pullPolicy: IfNotPresent
   resources:

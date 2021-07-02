@@ -4,7 +4,7 @@ resources:
 images:
 - name: dragonflyoss/cdn
   newTag: v0.1.0-beta
-- name: dragonflyoss/dfget
+- name: dragonflyoss/dfdaemon
   newTag: v0.1.0-beta
 - name: dragonflyoss/scheduler
   newTag: v0.1.0-beta
