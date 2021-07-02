@@ -201,8 +201,8 @@ kind-load-scheduler-image:
 .PHONY: kind-load-scheduler-image
 
 # Run kind load docker-image dfget
-kind-load-dfget-image:
-	@./hack/kind-load-image.sh dfget
+kind-load-dfdaemon-image:
+	@./hack/kind-load-image.sh dfdaemon
 .PHONY: kind-load-dfget-image
 
 # Run kind load docker-image manager
@@ -252,6 +252,11 @@ help:
 	@echo "make test-coverage                  run tests with coverage"
 	@echo "make swag-manager                   generate swagger api"
 	@echo "make kind-load-image                kind load docker image"
+	@echo "make changelog                      generate CHANGELOG.md"
+	@echo "make kind-load-cdn-image            kind load cdn docker image"
+	@echo "make kind-load-scheduler-image      kind load scheduler docker image"
+	@echo "make kind-load-dfdaemon-image       kind load dfdaemon docker image"
+	@echo "make kind-load-manager-image        kind load manager docker image"
 	@echo "make changelog                      generate CHANGELOG.md"
 	@echo "make generate                       run go generate"
 	@echo "make clean                          clean"
