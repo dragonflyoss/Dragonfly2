@@ -21,3 +21,10 @@
 
 3. Configure runtime to use dragonfly:
   https://github.com/dragonflyoss/Dragonfly2/blob/main/docs/en/user-guide/quick-start.md
+{{ if .Values.installation.jaeger }}
+4. Get Jaeger query URL by running these commands:
+  export JAEGER_QUERY_PORT=$(kubectl --namespace {{ .Values.installation.namespace }} get services jaeger-all-in-one-query -o jsonpath="{.spec.ports[0].port}")
+  export JAEGER_QUERY_POD=$(kubectl --namespace {{ .Values.installation.namespace }} get pod -l app.kubernetes.io/name=jaeger-all-in-one -o jsonpath='{range .items[*]}{.metadata.name}{end}' | head -n 1)
+  kubectl --namespace {{ .Values.installation.namespace }} port-forward $JAEGER_QUERY_POD 16686:$JAEGER_QUERY_PORT
+  echo "Visit http://127.0.0.1:16686/search?limit=20&lookback=1h&maxDuration&minDuration&service=dragonfly to query download events"
+{{- end }}

@@ -5,6 +5,9 @@ fullnameOverride: ""
 installation:
   namespace: dragonfly-system
   clusterDomain: ""
+  # enable an all in one jaeger for tracing every downloading event
+  # should not use in production environment
+  jaeger: false
 
 scheduler:
   name: scheduler
@@ -136,6 +139,7 @@ dfdaemon:
     gcInterval: 1m0s
     keepStorage: false
     verbose: true
+    jaeger: "" # customize jaeger like: http://localhost:14268/api/traces
     host:
       listenIP: 0.0.0.0
       advertiseIP: 0.0.0.0

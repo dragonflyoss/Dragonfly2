@@ -21,7 +21,8 @@ The following table lists the configurable parameters of the dragonfly chart, an
 
 | Parameter                                 | Description                                                  | Default                       |
 | ----------------------------------------- | ------------------------------------------------------------ | ----------------------------- |
-| `installation.namespace`                  | namespace for dragonfly installation                         | `dragonfly-system`               |
+| `installation.namespace`                  | namespace for dragonfly installation                         | `dragonfly-system`            |
+| `installation.jaeger`                     | whether enable an all in one jaeger for tracing              | `false`                       |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
