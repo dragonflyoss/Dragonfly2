@@ -67,13 +67,6 @@ cdn:
   statefulsetAnnotations: {}
   containerPort: 8003
   nginxContiainerPort: 8001
-  service:
-    type: ClusterIP
-    annotations: {}
-    port: 8003
-    targetPort: 8003
-    nginxPort: 8001
-    nginxTargetPort: 8001
   config:
     base:
       systemReservedBandwidth: 20M
@@ -127,6 +120,7 @@ dfdaemon:
   podAnnotations: {}
   daemonsetAnnotations: {}
   containerPort: 65001
+  hostPort: 65001
   hostNetwork: false
   config:
     aliveTime: 0s
