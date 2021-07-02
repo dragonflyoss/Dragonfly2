@@ -1,0 +1,59 @@
+name: E2E Test
+
+on:
+  push:
+    branches: [ main, release-*, feature/e2e ]
+  pull_request:
+    branches: [ main, release-*, feature/e2e ]
+
+env:
+  GO_VERSION: 1.15
+  KIND_VERSION: v0.11.1
+
+jobs:
+  skip_check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - name: Skip Check
+        id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          paths_ignore: '["**.md", "**.png", "**.jpg", "**.svg"]'
+          do_not_skip: '["pull_request", "push", "workflow_dispatch", "schedule"]'
+
+  e2e_tests:
+    runs-on: ubuntu-latest
+    needs: skip_check
+    if: needs.skip_check.outputs.noop != 'true'
+
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Setup Kind
+        uses: engineerd/setup-kind@v0.5.0
+        with:
+          version: ${{ env.KIND_VERSION }}
+
+      - name: Load docker image
+        run: |
+          make kind-load-cdn-image
+          make kind-load-scheduler-image
+          make kind-load-dfget-image
+          make kind-load-manager-image
+
+      - name: Helm install
+        run: |
+          helm lint ./deploy/charts/dragonfly
+          helm install -n dragonfly-system dragonfly ./deploy/charts/dragonfly
+
+      - name: Wait for running
+        run: kubectl get po -n dragonfly-system

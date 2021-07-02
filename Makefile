@@ -190,6 +190,26 @@ test-coverage:
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
+# Run kind load docker-image cdn
+kind-load-cdn-image:
+	@./hack/kind-load-image.sh cdn
+.PHONY: kind-load-cdn-image
+
+# Run kind load docker-image scheduler
+kind-load-scheduler-image:
+	@./hack/kind-load-image.sh scheduler
+.PHONY: kind-load-scheduler-image
+
+# Run kind load docker-image dfget
+kind-load-dfget-image:
+	@./hack/kind-load-image.sh dfget
+.PHONY: kind-load-dfget-image
+
+# Run kind load docker-image manager
+kind-load-manager-image:
+	@./hack/kind-load-image.sh manager
+.PHONY: kind-load-manager-image
+
 # Run go generate
 generate:
 	@go generate ${PKG_LIST}
@@ -231,5 +251,7 @@ help:
 	@echo "make test                           run unittests"
 	@echo "make test-coverage                  run tests with coverage"
 	@echo "make swag-manager                   generate swagger api"
+	@echo "make kind-load-image                kind load docker image"
 	@echo "make changelog                      generate CHANGELOG.md"
+	@echo "make generate                       run go generate"
 	@echo "make clean                          clean"
