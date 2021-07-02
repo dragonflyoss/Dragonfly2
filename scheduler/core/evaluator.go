@@ -22,16 +22,18 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/safe"
-	"d7y.io/dragonfly/v2/scheduler/types"
-
 	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/daemon"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type Evaluator interface {
+	// Whether the peer's parent needs to be adjusted
 	NeedAdjustParent(peer *types.PeerNode) bool
 
+	// Whether peer is bad node
 	IsBadNode(peer *types.PeerNode) bool
 
 	// todo Normalization
@@ -52,6 +54,21 @@ type evaluatorFactory struct {
 	abtest                       bool
 	ascheduler                   string
 	bscheduler                   string
+}
+
+func Register(b Builder) {
+
+}
+
+type BuildOptions struct {
+	TaskManager daemon.TaskMgr
+	PeerManager daemon.PeerMgr
+}
+
+type Builder interface {
+	Build(BuildOptions) (Evaluator, error)
+
+	Name() string
 }
 
 type getEvaluatorFunc func(taskID string) (string, bool)

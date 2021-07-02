@@ -24,27 +24,51 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/safe"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"k8s.io/client-go/util/workqueue"
 )
 
-type JobType int8
-
 // 实现 IWorker 接口
-type Worker struct {
+type WorkerPool struct {
 	peerChan        chan *types.PeerNode
 	pieceResultChan chan *scheduler.PieceResult
-	sender          ISender
+	sender          *SenderPool
 	stopCh          <-chan struct{}
 	sendJob         func(*types.PeerNode)
 
 	schedulerService *core.SchedulerService
 }
 
-var _ IWorker = (*Worker)(nil)
-
-func NewWorker(schedulerService *core.SchedulerService, sender ISender, sendJod func(*types.PeerNode), stop <-chan struct{}) *Worker {
-	return &Worker{
+func NewWorkerPool(cfg *config.SchedulerWorkerConfig, schedulerService *scheduler.SchedulerService) *WorkerPool {
+	group := &WorkerPool{
+		sender:           NewSenderPool(cfg, schedulerService),
+		schedulerService: schedulerService,
+		triggerLoadQueue: workqueue.New(),
+	}
+	for i := 0; i < cfg.WorkerNum; i++ {
+		go func() {
+			for {
+				select {
+				case <-group.peerChan:
+					peerTask, _ := job.(*types.PeerTask)
+					group.doSchedule(peerTask)
+					logger.Debugf("doScheduleWorker begin done [%s]", peerTask.Pid)
+					w.scheduleQueue.Done(job)
+					logger.Debugf("doScheduleWorker end done [%s]", peerTask.Pid)
+				case <-group.pieceResultChan:
+					if err := wrapper.gcExecutor.GC(); err != nil {
+						logger.Errorf("%s gc task execute failed: %v", name, err)
+					}
+				}
+			}
+		}()
+	}
+}
+func NewWorkerPool(schedulerService *core.SchedulerService, sender ISender, sendJod func(*types.PeerNode), stop <-chan struct{}) *Worker {
+	return &WorkerPool{
+		workerNum:        cfg.Worker.WorkerNum,
 		peerChan:         make(chan *types.PeerNode),
 		pieceResultChan:  make(chan *scheduler.PieceResult),
 		stopCh:           stop,
@@ -54,31 +78,162 @@ func NewWorker(schedulerService *core.SchedulerService, sender ISender, sendJod 
 	}
 }
 
-func (w *Worker) Serve() {
-	go safe.Call(w.startScheduleWorker)
-	go safe.Call(w.startPieceResultWorker)
-}
-
-func (w *Worker) Stop() {
-	close(w.peerChan)
-	close(w.pieceResultChan)
-}
-
-func (w *Worker) ReceiveUpdatePieceResult(pieceResult *scheduler.PieceResult) {
-	w.pieceResultChan <- pieceResult
-}
-
-func (w *Worker) ReceiveJob(peer *types.PeerNode) {
-	logger.Debugf("doScheduleWorker begin add [%s]", peer.GetPeerID())
-	w.peerChan <- peer
-}
-
-func (w *Worker) startPieceResultWorker() {
-	for {
-		pieceResult, ok := <-w.pieceResultChan
-		if !ok {
+func NewSchedulePeerNodeTask(peerTask *types.PeerNode) func() {
+	return func() {
+		if peerTask == nil {
 			return
 		}
+
+		startTm := time.Now()
+		status := peerTask.Status
+		logger.Debugf("[%s][%s]: begin do schedule [%d]", peerTask.GetTask().GetTaskID(), peerTask.GetPeerID(), status)
+		defer func() {
+			err := recover()
+			if err != nil {
+				logger.Errorf("[%s][%s]: do schedule panic: %v", peerTask.GetTask().GetTaskID(), peerTask.GetPeerID(), err)
+			}
+			logger.Infof("[%s][%s]: end do schedule [%d] cost: %d", peerTask.GetTask().GetTaskID(), peerTask.GetPeerID(), status,
+				time.Now().Sub(startTm).Nanoseconds())
+		}()
+
+		switch status {
+		case types.PeerStatusAddParent:
+			parent, _ := peerTask.GetJobData().(*types.PeerTask)
+			if parent == nil {
+				peerTask.SetNodeStatus(types.PeerStatusHealth)
+				return
+			}
+			peerTask.SetParent(parent, 1)
+			peerTask.SetNodeStatus(types.PeerStatusHealth)
+			return
+		case types.PeerStatusNeedParent:
+			parent, _, err := w.schedulerService.Scheduler.ScheduleParent(peerTask)
+			if err != nil {
+				logger.Debugf("[%s][%s]: schedule parent failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
+			}
+			// retry scheduler parent later when this is no parent
+			if parent == nil || err != nil {
+				w.sendJobLater(peerTask)
+			} else {
+				w.sendScheduleResult(peerTask)
+				peerTask.SetNodeStatus(types.PeerStatusHealth)
+			}
+			w.schedulerService.TaskManager.PeerTask.RefreshDownloadMonitor(peerTask)
+		case types.PeerStatusNeedChildren:
+			children, err := w.schedulerService.Scheduler.ScheduleChildren(peerTask)
+			if err != nil {
+				logger.Debugf("[%s][%s]: schedule children failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
+				return
+			}
+			for i := range children {
+				if children[i].GetParent() != nil {
+					w.sendScheduleResult(children[i])
+				} else {
+					children[i].SetNodeStatus(types.PeerStatusNeedParent)
+					w.sendJob(children[i])
+				}
+			}
+			peerTask.SetNodeStatus(types.PeerStatusHealth)
+
+		case types.PeerStatusBadNode:
+			adjustNodes, err := w.schedulerService.Scheduler.ScheduleBadNode(peerTask)
+			if err != nil {
+				logger.Debugf("[%s][%s]: schedule bad node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
+				w.sendJobLater(peerTask)
+				return
+			}
+			for i := range adjustNodes {
+				if adjustNodes[i].GetParent() != nil {
+					w.sendScheduleResult(adjustNodes[i])
+				} else {
+					adjustNodes[i].SetNodeStatus(types.PeerStatusNeedParent)
+					w.sendJob(adjustNodes[i])
+				}
+			}
+			if peerTask.GetParent() == nil {
+				peerTask.SetNodeStatus(types.PeerStatusNeedParent)
+				w.sendJobLater(peerTask)
+			}
+
+		case types.PeerStatusNeedAdjustNode:
+			_, _, err := w.schedulerService.Scheduler.ScheduleAdjustParentNode(peerTask)
+			if err != nil {
+				logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
+				w.sendJobLater(peerTask)
+				return
+			}
+			w.sendScheduleResult(peerTask)
+			peerTask.SetNodeStatus(types.PeerStatusHealth)
+
+		case types.PeerStatusNeedCheckNode:
+			if w.schedulerService.Scheduler.IsNodeBad(peerTask) && peerTask.GetSubTreeNodesNum() > 1 {
+				adjustNodes, err := w.schedulerService.Scheduler.ScheduleBadNode(peerTask)
+				if err != nil {
+					logger.Debugf("[%s][%s]: schedule bad node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
+					peerTask.SetNodeStatus(types.PeerStatusBadNode)
+					w.sendJobLater(peerTask)
+					return
+				}
+				for i := range adjustNodes {
+					if adjustNodes[i].GetParent() != nil {
+						w.sendScheduleResult(adjustNodes[i])
+					} else {
+						adjustNodes[i].SetNodeStatus(types.PeerStatusNeedParent)
+						w.sendJob(adjustNodes[i])
+					}
+				}
+				peerTask.SetNodeStatus(types.PeerStatusHealth)
+			} else if w.schedulerService.Scheduler.NeedAdjustParent(peerTask) {
+				_, _, err := w.schedulerService.Scheduler.ScheduleAdjustParentNode(peerTask)
+				if err != nil {
+					logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
+					return
+				}
+				w.sendScheduleResult(peerTask)
+				peerTask.SetNodeStatus(types.PeerStatusHealth)
+			}
+
+		case types.PeerStatusDone:
+			parent, err := w.schedulerService.Scheduler.ScheduleDone(peerTask)
+			if err != nil {
+				logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
+				w.sendJobLater(peerTask)
+				return
+			}
+			if parent != nil {
+				parent.SetNodeStatus(types.PeerStatusNeedChildren)
+				w.sendJob(parent)
+			}
+
+		case types.PeerStatusLeaveNode, types.PeerStatusNodeGone:
+			adjustNodes, err := w.schedulerService.Scheduler.ScheduleLeaveNode(peerTask)
+			if err != nil {
+				logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
+				w.sendJobLater(peerTask)
+				return
+			}
+			w.schedulerService.TaskManager.PeerTask.Delete(peerTask.Pid)
+			logger.Debugf("[%s][%s]: PeerStatusLeaveNode", peerTask.Task.TaskID, peerTask.Pid)
+			for i := range adjustNodes {
+				if adjustNodes[i].GetParent() != nil {
+					w.sendScheduleResult(adjustNodes[i])
+				} else {
+					adjustNodes[i].SetNodeStatus(types.PeerStatusNeedParent)
+					w.sendJob(adjustNodes[i])
+				}
+			}
+
+			// delete from manager
+			w.schedulerService.TaskManager.PeerTask.Delete(peerTask.Pid)
+			// delete from host
+			peerTask.Host.DeletePeerTask(peerTask.Pid)
+		}
+		return
+	}
+}
+
+func NewProcessPieceResultTask(pieceResult *scheduler.PieceResult) func() {
+	return func() {
 		peerTask, needSchedule, err := w.updatePieceResult(pieceResult)
 		if needSchedule {
 			w.sendJob(peerTask)
@@ -155,176 +310,8 @@ func (w *Worker) updatePieceResult(pieceResult *scheduler.PieceResult) (peer *ty
 	return
 }
 
-func (w *Worker) sendJobLater(peerTask *types.PeerTask) {
+func (w *Worker) sendJobLater(peerTask *types.PeerNode) {
 	w.schedulerService.TaskManager.PeerTask.RefreshDownloadMonitor(peerTask)
-}
-
-func (w *Worker) startScheduleWorker() {
-	defer logger.Debugf("doScheduleWorker return")
-	for {
-		logger.Debugf("doScheduleWorker begin get")
-		job, shutdown := w.scheduleQueue.Get()
-		logger.Debugf("doScheduleWorker end get")
-		if shutdown {
-			return
-		}
-		peerTask, _ := job.(*types.PeerTask)
-		w.doSchedule(peerTask)
-		logger.Debugf("doScheduleWorker begin done [%s]", peerTask.Pid)
-		w.scheduleQueue.Done(job)
-		logger.Debugf("doScheduleWorker end done [%s]", peerTask.Pid)
-	}
-}
-
-func (w *Worker) doSchedule(peerTask *types.PeerNode) {
-	if peerTask == nil {
-		return
-	}
-
-	startTm := time.Now()
-	status := peerTask.GetNodeStatus()
-	logger.Debugf("[%s][%s]: begin do schedule [%d]", peerTask.Task.TaskID, peerTask.Pid, status)
-	defer func() {
-		err := recover()
-		if err != nil {
-			logger.Errorf("[%s][%s]: do schedule panic: %v", peerTask.Task.TaskID, peerTask.Pid, err)
-		}
-		logger.Infof("[%s][%s]: end do schedule [%d] cost: %d", peerTask.Task.TaskID, peerTask.Pid, status, time.Now().Sub(startTm).Nanoseconds())
-	}()
-
-	switch status {
-	case types.PeerStatusAddParent:
-		parent, _ := peerTask.GetJobData().(*types.PeerTask)
-		if parent == nil {
-			peerTask.SetNodeStatus(types.PeerStatusHealth)
-			return
-		}
-		peerTask.SetParent(parent, 1)
-		peerTask.SetNodeStatus(types.PeerStatusHealth)
-		return
-	case types.PeerStatusNeedParent:
-		parent, _, err := w.schedulerService.Scheduler.ScheduleParent(peerTask)
-		if err != nil {
-			logger.Debugf("[%s][%s]: schedule parent failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
-		}
-		// retry scheduler parent later when this is no parent
-		if parent == nil || err != nil {
-			w.sendJobLater(peerTask)
-		} else {
-			w.sendScheduleResult(peerTask)
-			peerTask.SetNodeStatus(types.PeerStatusHealth)
-		}
-		w.schedulerService.TaskManager.PeerTask.RefreshDownloadMonitor(peerTask)
-	case types.PeerStatusNeedChildren:
-		children, err := w.schedulerService.Scheduler.ScheduleChildren(peerTask)
-		if err != nil {
-			logger.Debugf("[%s][%s]: schedule children failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
-			return
-		}
-		for i := range children {
-			if children[i].GetParent() != nil {
-				w.sendScheduleResult(children[i])
-			} else {
-				children[i].SetNodeStatus(types.PeerStatusNeedParent)
-				w.sendJob(children[i])
-			}
-		}
-		peerTask.SetNodeStatus(types.PeerStatusHealth)
-
-	case types.PeerStatusBadNode:
-		adjustNodes, err := w.schedulerService.Scheduler.ScheduleBadNode(peerTask)
-		if err != nil {
-			logger.Debugf("[%s][%s]: schedule bad node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
-			w.sendJobLater(peerTask)
-			return
-		}
-		for i := range adjustNodes {
-			if adjustNodes[i].GetParent() != nil {
-				w.sendScheduleResult(adjustNodes[i])
-			} else {
-				adjustNodes[i].SetNodeStatus(types.PeerStatusNeedParent)
-				w.sendJob(adjustNodes[i])
-			}
-		}
-		if peerTask.GetParent() == nil {
-			peerTask.SetNodeStatus(types.PeerStatusNeedParent)
-			w.sendJobLater(peerTask)
-		}
-
-	case types.PeerStatusNeedAdjustNode:
-		_, _, err := w.schedulerService.Scheduler.ScheduleAdjustParentNode(peerTask)
-		if err != nil {
-			logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
-			w.sendJobLater(peerTask)
-			return
-		}
-		w.sendScheduleResult(peerTask)
-		peerTask.SetNodeStatus(types.PeerStatusHealth)
-
-	case types.PeerStatusNeedCheckNode:
-		if w.schedulerService.Scheduler.IsNodeBad(peerTask) && peerTask.GetSubTreeNodesNum() > 1 {
-			adjustNodes, err := w.schedulerService.Scheduler.ScheduleBadNode(peerTask)
-			if err != nil {
-				logger.Debugf("[%s][%s]: schedule bad node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
-				peerTask.SetNodeStatus(types.PeerStatusBadNode)
-				w.sendJobLater(peerTask)
-				return
-			}
-			for i := range adjustNodes {
-				if adjustNodes[i].GetParent() != nil {
-					w.sendScheduleResult(adjustNodes[i])
-				} else {
-					adjustNodes[i].SetNodeStatus(types.PeerStatusNeedParent)
-					w.sendJob(adjustNodes[i])
-				}
-			}
-			peerTask.SetNodeStatus(types.PeerStatusHealth)
-		} else if w.schedulerService.Scheduler.NeedAdjustParent(peerTask) {
-			_, _, err := w.schedulerService.Scheduler.ScheduleAdjustParentNode(peerTask)
-			if err != nil {
-				logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
-				return
-			}
-			w.sendScheduleResult(peerTask)
-			peerTask.SetNodeStatus(types.PeerStatusHealth)
-		}
-
-	case types.PeerStatusDone:
-		parent, err := w.schedulerService.Scheduler.ScheduleDone(peerTask)
-		if err != nil {
-			logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
-			w.sendJobLater(peerTask)
-			return
-		}
-		if parent != nil {
-			parent.SetNodeStatus(types.PeerStatusNeedChildren)
-			w.sendJob(parent)
-		}
-
-	case types.PeerStatusLeaveNode, types.PeerStatusNodeGone:
-		adjustNodes, err := w.schedulerService.Scheduler.ScheduleLeaveNode(peerTask)
-		if err != nil {
-			logger.Debugf("[%s][%s]: schedule adjust node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)
-			w.sendJobLater(peerTask)
-			return
-		}
-		w.schedulerService.TaskManager.PeerTask.Delete(peerTask.Pid)
-		logger.Debugf("[%s][%s]: PeerStatusLeaveNode", peerTask.Task.TaskID, peerTask.Pid)
-		for i := range adjustNodes {
-			if adjustNodes[i].GetParent() != nil {
-				w.sendScheduleResult(adjustNodes[i])
-			} else {
-				adjustNodes[i].SetNodeStatus(types.PeerStatusNeedParent)
-				w.sendJob(adjustNodes[i])
-			}
-		}
-
-		// delete from manager
-		w.schedulerService.TaskManager.PeerTask.Delete(peerTask.Pid)
-		// delete from host
-		peerTask.Host.DeletePeerTask(peerTask.Pid)
-	}
-	return
 }
 
 func (w *Worker) sendScheduleResult(peerTask *types.PeerTask) {

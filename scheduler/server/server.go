@@ -44,7 +44,6 @@ type Server struct {
 }
 
 func New(cfg *config.Config) (*Server, error) {
-
 	s := &Server{
 		running: false,
 		config:  cfg.Server,
@@ -90,7 +89,6 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	s.worker = worker.NewGroup(cfg, s.service)
 	// 提供GRPC服务
 	s.schedulerServer = service.NewSchedulerServer(cfg, service.WithSchedulerService(s.service),
 		service.WithWorker(s.worker))

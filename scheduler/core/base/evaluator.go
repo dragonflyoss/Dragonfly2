@@ -22,20 +22,41 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
+
+const name = "basic"
+
+func init() {
+	core.Register(&basicEvaluatorBuilder{})
+}
+
+type basicEvaluatorBuilder struct{}
+
+func (*basicEvaluatorBuilder) Build(opts core.BuildOptions) (core.Evaluator, error) {
+	r := &evaluator{
+		taskManager: opts.TaskManager,
+		peerManager: opts.PeerManager,
+	}
+	return r, nil
+}
+
+func (*basicEvaluatorBuilder) Name() string {
+	return name
+}
 
 type evaluator struct {
 	taskManager daemon.TaskMgr
 	peerManager daemon.PeerMgr
 }
 
-var _ scheduler.Evaluator = (*evaluator)(nil)
-
-func newEvaluator(taskMgr daemon.TaskMgr) scheduler.Evaluator {
+func newEvaluator(taskMgr daemon.TaskMgr) core.Evaluator {
 	return &evaluator{taskManager: taskMgr}
 }
+
+var _ core.Evaluator = (*evaluator)(nil)
 
 func (eval *evaluator) NeedAdjustParent(peer *types.PeerNode) bool {
 	parent := peer.GetParent()
@@ -116,8 +137,6 @@ func (eval *evaluator) SelectChildCandidateNodes(peer *types.PeerNode) (list []*
 		}
 		if pt.GetPeerID() == peer.GetPeerID() {
 			return true
-		} else if pt.IsDown() {
-			return true
 		} else if pt.Success {
 			return true
 		} else if types.IsCDN(pt.GetHost()) {
@@ -146,7 +165,7 @@ func (eval *evaluator) SelectParentCandidateNodes(peer *types.PeerNode) (list []
 		return
 	}
 	var msg []string
-	eval.taskManager.PeerTask.WalkerReverse(peer.GetTask(), -1, func(pt *types.PeerNode) bool {
+	eval.peerManager.WalkerReverse(peer.GetTask(), -1, func(pt *types.PeerNode) bool {
 		if pt == nil {
 			return true
 		} else if peer.GetTask() != pt.GetTask() {
@@ -155,7 +174,7 @@ func (eval *evaluator) SelectParentCandidateNodes(peer *types.PeerNode) (list []
 		} else if pt.IsDown() {
 			msg = append(msg, fmt.Sprintf("%s is down", pt.GetPeerID()))
 			return true
-		} else if pt.Pid == peer.Pid {
+		} else if peer.GetPeerID() == peer.GetPeerID() {
 			return true
 		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
 			msg = append(msg, fmt.Sprintf("%s has relation", pt.GetPeerID()))
@@ -206,7 +225,7 @@ func (eval *evaluator) getProfits(dst *types.PeerNode, src *types.PeerNode) floa
 }
 
 // getHostLoad 0.0~1.0 larger and better
-func (eval *evaluator) getHostLoad(host *types.Host) float64 {
+func (eval *evaluator) getHostLoad(host *types.NodeHost) float64 {
 	return 1.0 - host.GetUploadLoadPercent()
 }
 

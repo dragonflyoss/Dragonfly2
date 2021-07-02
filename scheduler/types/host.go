@@ -17,31 +17,31 @@
 package types
 
 import (
-	"sync"
-
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"go.uber.org/atomic"
 )
 
-type HostType int32
+type HostType int
 
 const (
-	PeerHost = iota + 1
-	CDNHost
+	PeerNodeHost = iota + 1
+	CDNNodeHost
 )
 
 type NodeHost struct {
 	// fixme can remove this uuid, use IP
-	// UUID each time the daemon starts, it will generate a different uuid
-	UUID string
+	// uuid each time the daemon starts, it will generate a different uuid
+	uuid string
 	// IP peer host ip
-	IP string
-	// HostName peer host name
-	HostName string
-	// RpcPort rpc service port for peer
-	RpcPort int32
-	// DownloadPort piece downloading port for peer
-	DownloadPort int32
+	ip string
+	// hostName peer host name
+	hostName string
+	// rpcPort rpc service port for peer
+	rpcPort int32
+	// downloadPort piece downloading port for peer
+	downloadPort int32
+	// Type host type cdn or peer
+	hostType HostType
 	// SecurityDomain security isolation domain for network
 	SecurityDomain string
 	// Location location path: area|country|province|city|...
@@ -50,9 +50,6 @@ type NodeHost struct {
 	Idc string
 	// NetTopology network device path: switch|router|...
 	NetTopology string
-	// Type host type cdn or peer
-	Type        HostType
-	peerTaskMap sync.Map // Pid => PeerTask
 	// ProducerLoad is the load of download services provided by the current node.
 	TotalUploadLoad     int
 	currentUploadLoad   atomic.Int32
@@ -141,5 +138,5 @@ func (h *NodeHost) GetFreeDownloadLoad() int32 {
 }
 
 func IsCDN(host *NodeHost) bool {
-	return host.Type == CDNHost
+	return host.Type == CDNNodeHost
 }

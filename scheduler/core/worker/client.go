@@ -29,11 +29,11 @@ import (
 type Client struct {
 	client           scheduler.Scheduler_ReportPieceResultServer
 	stop             bool
-	worker           IWorker
+	worker           WorkerPool
 	schedulerService *scheduler2.SchedulerService
 }
 
-func NewClient(client scheduler.Scheduler_ReportPieceResultServer, worker IWorker, schedulerService *scheduler2.SchedulerService) *Client {
+func NewClient(client scheduler.Scheduler_ReportPieceResultServer, worker WorkerPool, schedulerService *scheduler2.SchedulerService) *Client {
 	c := &Client{
 		client:           client,
 		worker:           worker,

@@ -32,15 +32,15 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
-	"d7y.io/dragonfly/v2/scheduler/core/worker"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	ants "github.com/panjf2000/ants/v2"
 	"github.com/pkg/errors"
 )
 
 type SchedulerServer struct {
 	service     *core.SchedulerService
-	worker      worker.Worker
+	worker      *ants.Pool
 	config      config.SchedulerConfig
 	peerManager daemon.PeerMgr
 	taskManager daemon.TaskMgr
@@ -58,14 +58,6 @@ func WithSchedulerService(service *core.SchedulerService) Option {
 	}
 }
 
-// WithWorker sets the worker.IWorker
-func WithWorker(worker worker.IWorker) Option {
-	return func(p *SchedulerServer) *SchedulerServer {
-		p.worker = worker
-
-		return p
-	}
-}
 
 // NewSchedulerServer returns a new transparent scheduler server from the given options
 func NewSchedulerServer(cfg *config.Config, options ...Option) *SchedulerServer {
@@ -90,21 +82,6 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		// todo return
 	}
 	resp = new(scheduler.RegisterResult)
-	startTime := time.Now()
-	defer func() {
-		e := recover()
-		if e != nil {
-			err = dferrors.New(dfcodes.SchedError, fmt.Sprintf("%v", e))
-			return
-		}
-		if err != nil {
-			if _, ok := err.(*dferrors.DfError); !ok {
-				err = dferrors.New(dfcodes.SchedError, err.Error())
-			}
-		}
-		logger.Debugf("RegisterPeerTask [%s] cost time: [%d] millis", request.PeerId, time.Now().Sub(startTime).Milliseconds())
-		return
-	}()
 
 	// get or create task
 	//var isCdn = false
@@ -130,8 +107,8 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	// get or create host
 	reqPeerHost := request.PeerHost
 	if host, ok := s.service.GetHost(reqPeerHost.Uuid); !ok {
-		host = &types.Host{
-			Type: types.PeerHost,
+		host = &types.NodeHost{
+			Type: types.NodeHost,
 			PeerHost: scheduler.PeerHost{
 				Uuid:           reqPeerHost.Uuid,
 				Ip:             reqPeerHost.Ip,

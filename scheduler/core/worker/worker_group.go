@@ -22,17 +22,9 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	scheduler2 "d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"k8s.io/client-go/util/workqueue"
 )
-
-type IWorker interface {
-	Serve()
-	Stop()
-	ReceiveJob(job *types.PeerNode)
-	ReceiveUpdatePieceResult(pr *scheduler2.PieceResult)
-}
 
 // implements IWorker interface
 type Group struct {
@@ -48,16 +40,6 @@ type Group struct {
 }
 
 var _ IWorker = (*Group)(nil)
-
-func NewGroup(cfg *config.Config, schedulerService *scheduler.SchedulerService) *Group {
-	return &Group{
-		workerNum:        cfg.Worker.WorkerNum,
-		chanSize:         cfg.Worker.WorkerJobPoolSize,
-		sender:           NewSender(cfg.Worker, schedulerService),
-		schedulerService: schedulerService,
-		triggerLoadQueue: workqueue.New(),
-	}
-}
 
 func (wg *Group) Serve() {
 	wg.stopCh = make(chan struct{})
@@ -96,20 +78,4 @@ func (wg *Group) Stop() {
 	wg.sender.Stop()
 	wg.triggerLoadQueue.ShutDown()
 	logger.Infof("stop scheduler worker")
-}
-
-func (wg *Group) ReceiveJob(job *types.PeerTask) {
-	if job == nil {
-		return
-	}
-	choiceWorkerID := crc32.ChecksumIEEE([]byte(job.Task.TaskID)) % uint32(wg.workerNum)
-	wg.workerList[choiceWorkerID].ReceiveJob(job)
-}
-
-func (wg *Group) ReceiveUpdatePieceResult(pr *scheduler2.PieceResult) {
-	if pr == nil {
-		return
-	}
-	choiceWorkerID := crc32.ChecksumIEEE([]byte(pr.SrcPid)) % uint32(wg.workerNum)
-	wg.workerList[choiceWorkerID].ReceiveUpdatePieceResult(pr)
 }

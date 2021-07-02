@@ -58,6 +58,7 @@ type PeerNode struct {
 	Status            int
 	jobData           interface{}
 	downloadStatistic *downloadStatistic
+	CostHistory       []int
 }
 
 type downloadStatistic struct {
@@ -116,12 +117,7 @@ func (peer *PeerNode) SetParent(parent *PeerNode, concurrency int) error {
 		return errors.New("parent node is nil")
 	}
 
-	pe := &PeerEdge{
-		SrcPeerTask: pt,     // child
-		DstPeerTask: parent, // parent
-		Concurrency: concurrency,
-	}
-	peer.Parent = parent
+	peer.parent = parent
 	parent.children.Store(pt, pe)
 
 	// modify subTreeNodesNum of all ancestor
@@ -266,12 +262,12 @@ func (peer *PeerNode) GetSendPkg() (pkg *scheduler.PeerPacket) {
 	// if pt != nil && pt.client != nil {
 	pkg = &scheduler.PeerPacket{
 		Code:   dfcodes.Success,
-		TaskId: pt.Task.TaskID,
+		TaskId: peer.GetTask().GetTaskID(),
 		// source peer id
-		SrcPid: pt.Pid,
+		SrcPid: peer.GetPeerID(),
 		// concurrent downloading count from main peer
 	}
-	pt.lock.Lock()
+	peer.lock.Lock()
 	defer pt.lock.Unlock()
 	if pt.parent != nil && pt.parent.DstPeerTask != nil && pt.parent.DstPeerTask.Host != nil {
 		pkg.ParallelCount = int32(pt.parent.Concurrency)
@@ -287,33 +283,33 @@ func (peer *PeerNode) GetSendPkg() (pkg *scheduler.PeerPacket) {
 }
 
 func (peer *PeerNode) Send() error {
-	if pt == nil {
+	if peer == nil {
 		return nil
 	}
-	if pt.client != nil {
-		if pt.client.IsClosed() {
-			pt.client = nil
+	if peer.client != nil {
+		if peer.client.IsClosed() {
+			peer.client = nil
 			return errors.New("client closed")
 		}
-		return pt.client.Send(pt.GetSendPkg())
+		return peer.client.Send(peer.GetSendPkg())
 	}
 	return errors.New("empty client")
 }
 
 func (peer *PeerNode) SendError(dfError *dferrors.DfError) error {
-	if pt.client != nil {
-		if pt.client.IsClosed() {
-			pt.client = nil
+	if peer.client != nil {
+		if peer.client.IsClosed() {
+			peer.client = nil
 			return errors.New("client closed")
 		}
 		pkg := &scheduler.PeerPacket{
 			Code: dfError.Code,
 		}
 		if dfError.Code == dfcodes.SchedPeerGone ||
-			pt.Task.CDNError != nil {
-			defer pt.client.Close()
+			peer.Task.CDNError != nil {
+			defer peer.client.Close()
 		}
-		return pt.client.Send(pkg)
+		return peer.client.Send(pkg)
 	}
 	return errors.New("empty client")
 }
@@ -387,4 +383,8 @@ func GetDiffPieceNum(src *PeerNode, dst *PeerNode) int {
 		return diff
 	}
 	return -diff
+}
+
+func IsRunning(peer *PeerNode) bool {
+	return true
 }
