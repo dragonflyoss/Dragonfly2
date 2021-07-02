@@ -3,7 +3,6 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: {{template "dragonfly.cdn.fullname" . }}-role
-  namespace: {{ .Values.installation.namespace }}
 rules:
 - apiGroups:
   - ""
@@ -22,7 +21,6 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: {{template "dragonfly.cdn.fullname" . }}-role-binding
-  namespace: {{ .Values.installation.namespace }}
 roleRef:
   kind: Role
   name: {{template "dragonfly.cdn.fullname" . }}-role

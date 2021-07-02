@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: {{ template "dragonfly.dfdaemon.fullname" . }}
-  namespace: {{ .Values.installation.namespace }}
   labels:
     app: {{ template "dragonfly.dfdaemon.fullname" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}

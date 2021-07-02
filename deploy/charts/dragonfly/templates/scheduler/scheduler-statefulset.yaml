@@ -7,7 +7,6 @@ metadata:
     component: "{{ .Values.scheduler.name }}"
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
-  namespace: {{ .Values.installation.namespace }}
   name: {{ template "dragonfly.scheduler.fullname" . }}
   {{- if .Values.scheduler.statefulsetAnnotations }}
   annotations:

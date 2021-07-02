@@ -1,6 +1,0 @@
-{{- if ne $.Values.installation.namespace "kube-system" }}
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: {{ $.Values.installation.namespace }}
-{{- end }}
