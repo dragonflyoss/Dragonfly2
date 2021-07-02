@@ -36,6 +36,7 @@ data:
     storage:
 {{ toYaml .Values.dfdaemon.config.storage | indent 6 }}
     proxy:
+      defaultFilter: {{ .Values.dfdaemon.config.proxy.defaultFilter }}
       tcpListen:
     {{- if not .Values.dfdaemon.hostNetwork }}
         namespace: {{ .Values.dfdaemon.config.proxy.tcpListen.namespace }}
