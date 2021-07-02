@@ -43,12 +43,17 @@ jobs:
         with:
           version: ${{ env.KIND_VERSION }}
 
+      - name: Build docker image
+        run: |
+          make docker-build-cdn
+          make docker-build-dfdaemon
+          make docker-build-scheduler
+
       - name: Load docker image
         run: |
           make kind-load-cdn-image
           make kind-load-scheduler-image
           make kind-load-dfget-image
-          make kind-load-manager-image
 
       - name: Helm install
         run: |
