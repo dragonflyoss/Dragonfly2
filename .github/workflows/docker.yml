@@ -48,8 +48,8 @@ jobs:
           tags: dragonflyoss/scheduler:${{ steps.get_version.outputs.VERSION }}
           push: true
 
-  push_dfget_to_registry:
-    name: Push Dfget Image
+  push_dfdaemon_to_registry:
+    name: Push Dfdaemon Image
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -87,7 +87,7 @@ jobs:
           build-args: |
             GITVERSION=git-${{ steps.vars.outputs.git_revision }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
-          tags: dragonflyoss/dfget:${{ steps.get_version.outputs.VERSION }}
+          tags: dragonflyoss/dfdaemon:${{ steps.get_version.outputs.VERSION }}
           push: true
 
   push_cdn_to_registry:

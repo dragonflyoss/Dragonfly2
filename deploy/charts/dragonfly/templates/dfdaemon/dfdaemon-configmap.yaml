@@ -33,10 +33,10 @@ data:
     proxy:
       tcpListen:
     {{- if not .Values.dfdaemon.hostNetwork }}
-        namespace: /host/ns/net
+        namespace: {{ .Values.dfdaemon.config.proxy.tcpListen.namespace }}
     {{- end }}
         listen: {{ .Values.dfdaemon.config.proxy.tcpListen.listen }}
-        port: {{ .Values.dfdaemon.config.proxy.tcpListen.port }}
+        port: {{ .Values.dfdaemon.containerPort }}
       security:
 {{ toYaml .Values.dfdaemon.config.proxy.security | indent 8 }}
       registryMirror:

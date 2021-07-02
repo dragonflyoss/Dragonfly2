@@ -2,7 +2,6 @@ namespace: dragonfly-system
 resources:
 - namespace.yaml
 - cdn/rabc.yaml
-- cdn/service.yaml
 - cdn/serviceaccount.yaml
 - cdn/statefulset.yaml
 - dfdaemon/seviceaccount.yaml
@@ -28,7 +27,7 @@ configMapGenerator:
 images:
 - name: dragonflyoss/cdn
   newTag: v0.1.0-beta
-- name: dragonflyoss/dfget
+- name: dragonflyoss/dfdaemon
   newTag: v0.1.0-beta
 - name: dragonflyoss/scheduler
   newTag: v0.1.0-beta
