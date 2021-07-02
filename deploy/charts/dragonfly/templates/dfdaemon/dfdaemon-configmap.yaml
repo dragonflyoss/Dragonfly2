@@ -14,6 +14,11 @@ data:
     gcInterval: {{ .Values.dfdaemon.config.gcInterval }}
     keepStorage: {{ .Values.dfdaemon.config.keepStorage }}
     verbose: {{ .Values.dfdaemon.config.verbose }}
+    {{- if .Values.dfdaemon.config.jaeger }}
+    jaeger: {{ .Values.dfdaemon.config.jaeger }}
+    {{- else if .Values.installation.jaeger }}
+    jaeger: http://jaeger-all-in-one-collector.{{ $.Values.installation.namespace }}.svc{{ $.Values.installation.clusterDomain }}:14268/api/traces
+    {{- end }}
     scheduler:
       netAddrs:
       {{- $count := .Values.scheduler.replicas | int}}
