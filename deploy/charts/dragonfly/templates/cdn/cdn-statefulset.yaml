@@ -80,7 +80,7 @@ spec:
           cat <<EOF > /tmp/patch.json
           {
             "data": {
-              "$POD_NAME.json": "{\"host_name\": \"$HOSTNAME\",\"ip\":\"$POD_IP\",\"port\": {{ .Values.cdn.service.port }},\"download_port\": {{ .Values.cdn.service.nginxPort }},\"status\": \"active\"}"
+              "$POD_NAME.json": "{\"host_name\": \"$HOSTNAME\",\"ip\":\"$POD_IP\",\"port\": {{ .Values.cdn.containerPort }},\"download_port\": {{ .Values.cdn.nginxContiainerPort }},\"status\": \"active\"}"
             }
           }
           EOF
