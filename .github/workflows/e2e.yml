@@ -23,7 +23,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           paths_ignore: '["**.md", "**.png", "**.jpg", "**.svg"]'
-          do_not_skip: '["pull_request", "push", "workflow_dispatch", "schedule"]'
+          do_not_skip: '["push", "workflow_dispatch", "schedule"]'
 
   e2e_tests:
     runs-on: ubuntu-latest
