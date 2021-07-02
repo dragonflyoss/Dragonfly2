@@ -47,14 +47,16 @@ jobs:
       - name: Build docker image
         run: |
           make docker-build-cdn
-          make docker-build-dfdaemon
           make docker-build-scheduler
+          make docker-build-dfdaemon
+          make docker-build-manager
 
       - name: Load docker image
         run: |
-          make kind-load-cdn-image
-          make kind-load-scheduler-image
-          make kind-load-dfget-image
+          make kind-load-cdn
+          make kind-load-scheduler
+          make kind-load-dfdaemon
+          make kind-load-manager
 
       - name: Helm install
         run: |

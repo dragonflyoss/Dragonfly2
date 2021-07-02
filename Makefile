@@ -191,24 +191,24 @@ test-coverage:
 .PHONY: test-coverage
 
 # Run kind load docker-image cdn
-kind-load-cdn-image:
-	@./hack/kind-load-image.sh cdn
-.PHONY: kind-load-cdn-image
+kind-load-cdn:
+	@./hack/kind-load.sh cdn
+.PHONY: kind-load-cdn
 
-# Run kind load docker-image scheduler
-kind-load-scheduler-image:
-	@./hack/kind-load-image.sh scheduler
-.PHONY: kind-load-scheduler-image
+# Run kind load docker scheduler
+kind-load-scheduler:
+	@./hack/kind-load.sh scheduler
+.PHONY: kind-load-scheduler
 
-# Run kind load docker-image dfget
-kind-load-dfdaemon-image:
-	@./hack/kind-load-image.sh dfdaemon
-.PHONY: kind-load-dfget-image
+# Run kind load docker dfget
+kind-load-dfdaemon:
+	@./hack/kind-load.sh dfdaemon
+.PHONY: kind-load-dfget
 
-# Run kind load docker-image manager
-kind-load-manager-image:
-	@./hack/kind-load-image.sh manager
-.PHONY: kind-load-manager-image
+# Run kind load docker manager
+kind-load-manager:
+	@./hack/kind-load.sh manager
+.PHONY: kind-load-manager
 
 # Run go generate
 generate:
@@ -253,10 +253,10 @@ help:
 	@echo "make swag-manager                   generate swagger api"
 	@echo "make kind-load-image                kind load docker image"
 	@echo "make changelog                      generate CHANGELOG.md"
-	@echo "make kind-load-cdn-image            kind load cdn docker image"
-	@echo "make kind-load-scheduler-image      kind load scheduler docker image"
-	@echo "make kind-load-dfdaemon-image       kind load dfdaemon docker image"
-	@echo "make kind-load-manager-image        kind load manager docker image"
+	@echo "make kind-load-cdn                  kind load cdn docker image"
+	@echo "make kind-load-scheduler            kind load scheduler docker image"
+	@echo "make kind-load-dfdaemon             kind load dfdaemon docker image"
+	@echo "make kind-load-manager              kind load manager docker image"
 	@echo "make changelog                      generate CHANGELOG.md"
 	@echo "make generate                       run go generate"
 	@echo "make clean                          clean"
