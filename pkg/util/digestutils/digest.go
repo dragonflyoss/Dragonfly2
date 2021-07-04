@@ -19,6 +19,7 @@ package digestutils
 import (
 	"bufio"
 	"crypto/md5"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"hash"
@@ -28,6 +29,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
+
+const saltSize = 16
 
 func Sha256(values ...string) string {
 	if len(values) == 0 {
@@ -85,4 +88,17 @@ func Md5File(name string) string {
 
 func ToHashString(h hash.Hash) string {
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func GenerateRandomSalt() (string, error) {
+	salt := make([]byte, saltSize)
+
+	_, err := rand.Read(salt[:])
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(salt), nil
+
 }

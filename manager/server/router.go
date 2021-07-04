@@ -10,7 +10,7 @@ import (
 
 func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	// Set mode
-	if verbose == false {
+	if !verbose {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -25,6 +25,11 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(middlewares.Error())
+
+	jwt, err := middlewares.Jwt(h)
+	if err != nil {
+		return nil, err
+	}
 
 	// Router
 	apiv1 := r.Group("/api/v1")
@@ -58,11 +63,20 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 
 	// CDN
 	ci := apiv1.Group("/cdns")
+	ci.Use(jwt.MiddlewareFunc())
 	ci.POST("", h.CreateCDN)
 	ci.DELETE(":id", h.DestroyCDN)
 	ci.PATCH(":id", h.UpdateCDN)
 	ci.GET(":id", h.GetCDN)
 	ci.GET("", h.GetCDNs)
+
+	// Auth
+	ai := apiv1.Group("/auth")
+	ai.POST("/login", jwt.LoginHandler)
+	ai.GET("/logout", jwt.LogoutHandler)
+	ai.POST("/refresh_token", jwt.RefreshHandler)
+	ci.POST("/registry", h.UpdateCDN)
+	ai.GET("/logout", h.DestroyCDN)
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")
