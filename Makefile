@@ -186,7 +186,7 @@ test:
 
 # Run tests with coverage
 test-coverage:
-	@go test -race -short ${PKG_LIST} -coverprofile cover.out -covermode=atomic
+	@go test -gcflags "all=-l" -race -short ${PKG_LIST} -coverprofile cover.out -covermode=atomic
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
