@@ -38,7 +38,7 @@ func (h *Handlers) CreateCDN(ctx *gin.Context) {
 // @Description Destroy by id
 // @Tags CDN
 // @Accept json
-// @Produce text 
+// @Produce text
 // @Param id path string true "id"
 // @Success 200
 // @Failure 400 {object} HTTPError

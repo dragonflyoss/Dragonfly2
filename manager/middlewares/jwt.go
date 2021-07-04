@@ -9,25 +9,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var identityKey = "id"
-
 func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
-		Realm:       "Dragonfly Zone",
-		Key:         []byte("secret key"),
-		Timeout:     time.Hour,
-		MaxRefresh:  time.Hour,
-		IdentityKey: identityKey,
+		Realm:      "Dragonfly Zone",
+		Key:        []byte("Dragonfly Secret Key"),
+		Timeout:    time.Hour,
+		MaxRefresh: time.Hour,
 		Authenticator: func(c *gin.Context) (interface{}, error) {
 			var loginInfos types.LoginRequest
 			if err := c.ShouldBind(&loginInfos); err != nil {
 				return "", jwt.ErrMissingLoginValues
 			}
-			err, userInfo := h.Service.Login(loginInfos)
+			userInfo, err := h.Service.Login(loginInfos)
 			if err != nil {
 				return "", jwt.ErrFailedAuthentication
 			}
-			return userInfo, nil
+
+			return map[string]interface{}{
+				"name": userInfo.Name,
+			}, nil
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{

@@ -12,7 +12,7 @@ const defaultAvatar = "http://defaultAvatar"
 
 func (s *rest) Login(json types.LoginRequest) (*model.User, error) {
 	user := model.User{}
-	if err := s.db.Where(map[string]interface{}{"name": json.Name}).First(&user).Error; err != nil {
+	if err := s.db.Where("name = ?", json.Name).First(&user).Error; err != nil {
 		return nil, err
 	}
 	if digestutils.Sha256(json.Password, user.PasswordSalt) != user.EncryptedPassword {
@@ -24,7 +24,7 @@ func (s *rest) Login(json types.LoginRequest) (*model.User, error) {
 }
 
 func (s *rest) Register(json types.RegisterRequest) (*model.User, error) {
-	passwordSalt, err := digestutils.GenerateRandomSalt()
+	passwordSalt, err := digestutils.GenerateRandomSalt(16)
 	if err != nil {
 		return nil, err
 	}
