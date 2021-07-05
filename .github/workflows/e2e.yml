@@ -62,3 +62,8 @@ jobs:
         run: |
           kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
           kubectl get po -n dragonfly-system
+
+      - name: down
+        run: |
+          curl https://github.com/dragonflyoss/Dragonfly2/blob/main/README.md
+          curl -x http://127.0.0.1:65001 http://github.com/dragonflyoss/Dragonfly2/blob/main/README.md
