@@ -19,6 +19,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
@@ -46,14 +47,17 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	synclock.Lock(taskID, false)
 	defer synclock.UnLock(taskID, false)
 	if key, err := tm.taskURLUnReachableStore.Get(taskID); err == nil {
-		if unReachableStartTime, ok := key.(time.Time); ok &&
-			time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
-			return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable{URL: request.URL}, "task hit unReachable cache and interval less than %d, "+
-				"url: %s", tm.cfg.FailAccessInterval, request.URL)
+		if unReachableStartTime, ok := key.(time.Time); ok && time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
+			existTask, err := tm.taskStore.Get(taskID)
+			if err != nil || reflect.DeepEqual(request.Header, existTask.(*types.SeedTask).Header) {
+				return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable{URL: request.URL}, "task hit unReachable cache and interval less than %d, "+
+					"url: %s", tm.cfg.FailAccessInterval, request.URL)
+			}
 		}
 		tm.taskURLUnReachableStore.Delete(taskID)
 		logger.Debugf("delete taskID:%s from url unReachable store", taskID)
 	}
+
 	var task *types.SeedTask
 	newTask := &types.SeedTask{
 		TaskID:           taskID,
