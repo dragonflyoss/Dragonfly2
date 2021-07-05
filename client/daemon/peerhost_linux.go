@@ -31,6 +31,7 @@ func switchNetNamespace(target string) (func() error, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer unix.Close(fd)
 
 	orgNS := fmt.Sprintf("/proc/%d/ns/net", os.Getpid())
 	// hold the original net namespace
@@ -46,7 +47,16 @@ func switchNetNamespace(target string) (func() error, error) {
 	}
 
 	return func() error {
+		if err := unix.Setns(orgFD, unix.CLONE_NEWNET); err != nil {
+			logger.Errorf("recover net namespace, from %s to %s, error: %s", target, orgNS, err)
+			return err
+		}
 		logger.Infof("recover net namespace, from %s to %s", target, orgNS)
-		return unix.Setns(orgFD, unix.CLONE_NEWNET)
+		if err := unix.Close(orgFD); err != nil {
+			logger.Errorf("recover net namespace, close fd error: %s", err)
+			return err
+		}
+		logger.Infof("recover net namespace, close original fd")
+		return nil
 	}, nil
 }

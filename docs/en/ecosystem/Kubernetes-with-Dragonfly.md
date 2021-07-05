@@ -92,7 +92,6 @@ git clone https://github.com/dragonflyoss/Dragonfly2.git
 ### Install
 
 ```shell
-kubectl create ns dragonfly-system
 helm install --namespace dragonfly-system dragonfly Dragonfly2/deploy/charts/dragonfly
 ```
 
