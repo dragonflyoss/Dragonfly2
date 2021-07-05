@@ -5,17 +5,16 @@ import (
 
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"golang.org/x/crypto/bcrypt"
 )
-
-const defaultAvatar = "http://defaultAvatar"
 
 func (s *rest) Login(json types.LoginRequest) (*model.User, error) {
 	user := model.User{}
 	if err := s.db.Where("name = ?", json.Name).First(&user).Error; err != nil {
 		return nil, err
 	}
-	if digestutils.Sha256(json.Password, user.PasswordSalt) != user.EncryptedPassword {
+	err := bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(json.Password))
+	if err != nil {
 		return nil, errors.New("password mismatch")
 	}
 
@@ -24,26 +23,17 @@ func (s *rest) Login(json types.LoginRequest) (*model.User, error) {
 }
 
 func (s *rest) Register(json types.RegisterRequest) (*model.User, error) {
-	passwordSalt, err := digestutils.GenerateRandomSalt(16)
+
+	encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(json.Password), bcrypt.MinCost)
 	if err != nil {
 		return nil, err
 	}
-
-	avatar := ""
-	if len(json.Avatar) == 0 {
-		avatar = defaultAvatar
-	} else {
-		avatar = json.Avatar
-	}
-
-	encryptedPassword := digestutils.Sha256(json.Password, passwordSalt)
 	user := model.User{
-		EncryptedPassword: encryptedPassword,
+		EncryptedPassword: string(encryptedPasswordBytes),
 		Name:              json.Name,
 		Email:             json.Email,
-		PasswordSalt:      passwordSalt,
 		Phone:             json.Phone,
-		Avatar:            avatar,
+		Avatar:            json.Avatar,
 		Location:          json.Location,
 		Bio:               json.Bio,
 		State:             model.UserStateEnabled,

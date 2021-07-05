@@ -62,28 +62,3 @@ func TestMd5File(t *testing.T) {
 
 	assert.Equal(t, expected, Md5File(path))
 }
-
-func TestGenerateRandomSalt(t *testing.T) {
-	tests := []struct {
-		saltSize int
-		hasError bool
-	}{{
-		saltSize: 0,
-		hasError: true,
-	}, {
-		saltSize: 16,
-		hasError: false,
-	}}
-
-	for _, test := range tests {
-		passwordSalt, err := GenerateRandomSalt(test.saltSize)
-		assert.Equal(t, test.saltSize, len(passwordSalt))
-		if test.hasError {
-			assert.NotNil(t, err)
-		} else {
-			assert.Nil(t, err)
-		}
-
-	}
-
-}

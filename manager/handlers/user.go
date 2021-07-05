@@ -11,7 +11,7 @@ import (
 // @Description Register user by json config
 // @Tags User
 // @Accept json
-// @Produce text
+// @Produce json
 // @Param User body types.RegisterRequest true "User"
 // @Success 200 {object} model.User
 // @Failure 400 {object} HTTPError
@@ -25,11 +25,13 @@ func (h *Handlers) Register(ctx *gin.Context) {
 		return
 	}
 
-	_, err := h.Service.Register(json)
+	userInfo, err := h.Service.Register(json)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
+	userResponseInfo := *userInfo
+	userResponseInfo.EncryptedPassword = ""
 
-	ctx.Status(http.StatusOK)
+	ctx.JSON(http.StatusOK, userInfo)
 }

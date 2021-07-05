@@ -31,7 +31,6 @@ func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{
-				"code":    code,
 				"message": message,
 			})
 		},
