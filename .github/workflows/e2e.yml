@@ -46,10 +46,7 @@ jobs:
 
       - name: Build docker image
         run: |
-          make docker-build-cdn
-          make docker-build-scheduler
-          make docker-build-dfdaemon
-          make docker-build-manager
+          make docker-build
 
       - name: Load docker image
         run: |
