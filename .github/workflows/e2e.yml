@@ -65,5 +65,4 @@ jobs:
 
       - name: down
         run: |
-          curl https://github.com/dragonflyoss/Dragonfly2/blob/main/README.md
           curl -x http://127.0.0.1:65001 http://github.com/dragonflyoss/Dragonfly2/blob/main/README.md
