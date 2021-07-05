@@ -190,6 +190,11 @@ test-coverage:
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
+# Kind load dragonlfy
+kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon
+	@echo "Kind load image done."
+.PHONY: docker-build
+
 # Run kind load docker-image cdn
 kind-load-cdn:
 	@./hack/kind-load.sh cdn

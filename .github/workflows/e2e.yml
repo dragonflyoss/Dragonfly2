@@ -50,10 +50,7 @@ jobs:
 
       - name: Load docker image
         run: |
-          make kind-load-cdn
-          make kind-load-scheduler
-          make kind-load-dfdaemon
-          make kind-load-manager
+          make kind-load
 
       - name: Helm install
         run: |
