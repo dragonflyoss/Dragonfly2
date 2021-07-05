@@ -43,6 +43,7 @@ import (
 const TinyFileSize = 128
 
 type manager struct {
+	client       client.CdnClient
 	servers       map[string]*managerRPC.ServerInfo
 	dynamicConfig config.DynconfigInterface
 	lock          sync.RWMutex
@@ -122,16 +123,16 @@ func (cm *manager) SeedTask(task *types.Task, callback func(peerTask *types.Peer
 		return errors.New("cdn client is nil")
 	}
 	stream, err := cm.client.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
-		TaskId:  task.TaskID,
-		Url:     task.URL,
-		Filter:  task.Filter,
-		UrlMeta: task.URLMata,
+		TaskId:  task.GetTaskID(),
+		Url:     task.GetUrl(),
+		Filter:  task.GetFilter(),
+		UrlMeta: task.GetUrlMeta(),
 	})
 	if err != nil {
-
-		logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskID, err)
+		logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.GetTaskID(), err)
 		e, ok := err.(*dferrors.DfError)
 		if !ok {
+			cm.taskManager.UpdateTask
 			e = dferrors.New(dfcodes.CdnError, err.Error())
 		}
 		cm.doCallback(task, e)
@@ -219,13 +220,13 @@ func (cm *manager) Work(task *types.Task, stream *client.PieceSeedStream) {
 			if !ok {
 				dferr = dferrors.New(dfcodes.CdnError, err.Error())
 			}
-			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskID, err)
+			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.GetTaskID(), err)
 			cm.doCallback(task, dferr)
 			return
 		}
 
 		if ps == nil {
-			logger.Warnf("receive a nil pieceSeed or state from cdn: taskId[%s]", task.TaskID)
+			logger.Warnf("receive a nil pieceSeed or state from cdn: taskId[%s]", task.GetTaskID())
 		} else {
 			pieceNum := int32(-1)
 			if ps.PieceInfo != nil {
@@ -252,8 +253,8 @@ func (cm *manager) processSeedPiece(task *types.Task, ps *cdnsystem.PieceSeed) (
 			return fmt.Errorf("cdn %s not found", ps.SeederName)
 		}
 
-		host = &types.Host{
-			Type: types.HostTypeCdn,
+		host = &types.NodeHost{
+			Type: types.CDNNodeHost,
 			PeerHost: scheduler.PeerHost{
 				Uuid:     hostID,
 				HostName: ps.SeederName,

@@ -76,7 +76,7 @@ func newPeerManager(cfg *config.Config, taskManager daemon.TaskMgr, hostManager 
 	return peerManager
 }
 
-func (m *manager) Add(peerID string, task *types.Task, host *types.Host) *types.PeerNode {
+func (m *manager) Add(peerID string, task *types.Task, host *types.NodeHost) *types.PeerNode {
 	v, ok := m.peerMap.Load(peerID)
 	if ok {
 		return v.(*types.PeerNode)

@@ -18,12 +18,14 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/internal/rpc/base/common"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
@@ -81,11 +83,18 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	taskID := s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMeta, request.BizId, request.PeerId)
 	task, ok := s.taskManager.Get(taskID)
 	if !ok {
-		if task, err = s.service.AddTask(types.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta)); err != nil {
+		if task, err = s.service.CreateTask(types.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta)); err != nil {
 			return nil
 		}
 	}
-	resp, err := s.service.RegisterPeerTask(types.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta))
+	resp, err := s.service.RegisterPeerTask(request, task)
+	if task.Status == 0 {
+		return errors.Errorf()
+	}
+
+	if task.SizeScope == base.SizeScope_TINY {
+		return //
+	}
 
 	return
 }
@@ -147,11 +156,11 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 // validateParams validates the params of scheduler.PeerTaskRequest.
 func validateParams(req *scheduler.PeerTaskRequest) error {
 	if !urlutils.IsValidURL(req.Url) {
-		return errors.Wrapf(errortypes.ErrInvalidValue, "raw url: %s", req.Url)
+		return fmt.Errorf("invalid url: %s", req.Url)
 	}
 
 	if stringutils.IsEmpty(req.PeerId) {
-		return errors.Wrapf(errortypes.ErrEmptyValue, "path")
+		return fmt.Errorf("empty peerID")
 	}
 	return nil
 }

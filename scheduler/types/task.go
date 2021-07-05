@@ -24,6 +24,19 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc/base"
 )
 
+const (
+	TaskStatusHealth = iota + 1
+	TaskStatusNeedParent
+	TaskStatusNeedChildren
+	TaskStatusBadNode
+	TaskStatusNeedAdjustNode
+	TaskStatusNeedCheckNode
+	TaskStatusDone
+	TaskStatusLeaveNode
+	TaskStatusAddParent
+	TaskStatusNodeGone
+)
+
 type Task struct {
 	taskID         string
 	url            string
@@ -39,6 +52,7 @@ type Task struct {
 	ContentLength  int64
 	Statistic      *TaskStatistic
 	CDNError       *dferrors.DfError
+	Status         int
 }
 
 func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
@@ -182,6 +196,10 @@ func (t *TaskStatistic) GetStatistic() (info *StatisticInfo) {
 	}
 
 	return
+}
+
+func IsBad() bool {
+	return true
 }
 
 type Piece struct {

@@ -68,7 +68,7 @@ func (s *SchedulerService) GetTask(taskID string) (*types.Task, bool) {
 	return s.TaskManager.Get(taskID)
 }
 
-func (s *SchedulerService) AddTask(task *types.Task) (*types.Task, error) {
+func (s *SchedulerService) CreateTask(task *types.Task) (*types.Task, error) {
 	// todo lock
 	// Task already exists
 	if ret, ok := s.TaskManager.Get(task.GetTaskID()); ok {
