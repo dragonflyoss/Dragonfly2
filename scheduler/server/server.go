@@ -37,7 +37,7 @@ import (
 
 type Server struct {
 	service       *service.SchedulerService
-	worker        worker.IWorker
+	worker        worker.Worker
 	server        *SchedulerServer
 	config        *config.Config
 	managerClient manager.ManagerClient

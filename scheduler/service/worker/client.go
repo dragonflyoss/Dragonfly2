@@ -31,11 +31,11 @@ import (
 type Client struct {
 	client           scheduler.Scheduler_ReportPieceResultServer
 	stop             bool
-	worker           IWorker
+	worker           Worker
 	schedulerService *service.SchedulerService
 }
 
-func NewClient(client scheduler.Scheduler_ReportPieceResultServer, worker IWorker, schedulerService *service.SchedulerService) *Client {
+func NewClient(client scheduler.Scheduler_ReportPieceResultServer, worker Worker, schedulerService *service.SchedulerService) *Client {
 	c := &Client{
 		client:           client,
 		worker:           worker,
@@ -70,13 +70,19 @@ func (c *Client) doWork() error {
 
 	for !c.stop {
 		if pr != nil {
-			logger.Infof("[%s][%s]: receive a pieceResult %v - %v cost[%d]", pr.TaskId, pr.SrcPid, pr.PieceNum, pr.Code, pr.EndTime-pr.BeginTime)
+			if pr.PieceNum == common.ZeroOfPiece {
+				logger.Infof("[%s][%s]: receive a start signal pieceResult, cost[%d]",
+					pr.TaskId, pr.SrcPid, pr.EndTime-pr.BeginTime)
+			} else {
+				logger.Infof("[%s][%s]: receive a pieceResult %v - %v cost[%d]",
+					pr.TaskId, pr.SrcPid, pr.PieceNum, pr.Code, pr.EndTime-pr.BeginTime)
+			}
 		}
 		if pr.PieceNum == common.EndOfPiece {
 			logger.Infof("[%s][%s]: client closed total cost[%d]", pr.TaskId, pr.SrcPid, time.Now().UnixNano()-peerTask.GetStartTime())
 			return nil
 		}
-		c.worker.ReceiveUpdatePieceResult(pr)
+		c.worker.ReceivePieceResult(pr)
 		pr, err = c.client.Recv()
 		if err == io.EOF {
 			return nil

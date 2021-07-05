@@ -44,7 +44,7 @@ func New(cfg config.SchedulerConfig, taskManager *manager.TaskManager) *Schedule
 	}
 }
 
-// scheduler children to a peer
+// ScheduleChildren schedules children to a peer
 func (s *Scheduler) ScheduleChildren(peer *types.PeerTask) (children []*types.PeerTask, err error) {
 	if peer == nil || peer.IsDown() {
 		return
@@ -87,7 +87,7 @@ func (s *Scheduler) ScheduleChildren(peer *types.PeerTask) (children []*types.Pe
 	return
 }
 
-// scheduler a parent to a peer
+// ScheduleParent schedules a parent to a peer
 func (s *Scheduler) ScheduleParent(peer *types.PeerTask) (primary *types.PeerTask, secondary []*types.PeerTask, err error) {
 	if peer == nil || peer.Success || peer.IsDown() {
 		return

@@ -34,7 +34,7 @@ import (
 
 type SchedulerServer struct {
 	service *service.SchedulerService
-	worker  worker.IWorker
+	worker  worker.Worker
 	config  config.SchedulerConfig
 }
 
@@ -50,8 +50,8 @@ func WithSchedulerService(service *service.SchedulerService) Option {
 	}
 }
 
-// WithWorker sets the worker.IWorker
-func WithWorker(worker worker.IWorker) Option {
+// WithWorker sets the worker.Worker
+func WithWorker(worker worker.Worker) Option {
 	return func(p *SchedulerServer) *SchedulerServer {
 		p.worker = worker
 
@@ -256,10 +256,10 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 
 	if peerTask.Success {
 		peerTask.SetNodeStatus(types.PeerTaskStatusDone)
-		s.worker.ReceiveJob(peerTask)
+		s.worker.ReceivePeerTask(peerTask)
 	} else {
 		peerTask.SetNodeStatus(types.PeerTaskStatusLeaveNode)
-		s.worker.ReceiveJob(peerTask)
+		s.worker.ReceivePeerTask(peerTask)
 	}
 
 	return
@@ -290,7 +290,7 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 
 	if peerTask != nil {
 		peerTask.SetNodeStatus(types.PeerTaskStatusLeaveNode)
-		s.worker.ReceiveJob(peerTask)
+		s.worker.ReceivePeerTask(peerTask)
 	}
 
 	return

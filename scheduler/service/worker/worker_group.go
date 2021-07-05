@@ -27,26 +27,26 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-type IWorker interface {
+type Worker interface {
 	Serve()
 	Stop()
-	ReceiveJob(job *types.PeerTask)
-	ReceiveUpdatePieceResult(pr *scheduler2.PieceResult)
+	ReceivePeerTask(pt *types.PeerTask)
+	ReceivePieceResult(pr *scheduler2.PieceResult)
 }
 
 type Group struct {
 	workerNum  int
 	chanSize   int
-	workerList []*Worker
+	workerList []Worker
 	stopCh     chan struct{}
-	sender     ISender
+	sender     Sender
 
 	triggerLoadQueue workqueue.Interface
 
 	schedulerService *service.SchedulerService
 }
 
-var _ IWorker = (*Group)(nil)
+var _ Worker = (*Group)(nil)
 
 func NewGroup(cfg *config.Config, schedulerService *service.SchedulerService) *Group {
 	return &Group{
@@ -73,11 +73,11 @@ func (wg *Group) Serve() {
 		} else {
 			pt.SetNodeStatus(types.PeerTaskStatusNeedCheckNode)
 		}
-		wg.ReceiveJob(pt)
+		wg.ReceivePeerTask(pt)
 	})
 
 	for i := 0; i < wg.workerNum; i++ {
-		w := NewWorker(wg.schedulerService, wg.sender, wg.ReceiveJob, wg.stopCh)
+		w := NewWorker(wg.schedulerService, wg.sender, wg.ReceivePeerTask, wg.stopCh)
 		w.Serve()
 		wg.workerList = append(wg.workerList, w)
 	}
@@ -94,18 +94,18 @@ func (wg *Group) Stop() {
 	logger.Infof("stop scheduler worker")
 }
 
-func (wg *Group) ReceiveJob(job *types.PeerTask) {
-	if job == nil {
+func (wg *Group) ReceivePeerTask(pt *types.PeerTask) {
+	if pt == nil {
 		return
 	}
-	choiceWorkerID := crc32.ChecksumIEEE([]byte(job.Task.TaskID)) % uint32(wg.workerNum)
-	wg.workerList[choiceWorkerID].ReceiveJob(job)
+	choiceWorkerID := crc32.ChecksumIEEE([]byte(pt.Task.TaskID)) % uint32(wg.workerNum)
+	wg.workerList[choiceWorkerID].ReceivePeerTask(pt)
 }
 
-func (wg *Group) ReceiveUpdatePieceResult(pr *scheduler2.PieceResult) {
+func (wg *Group) ReceivePieceResult(pr *scheduler2.PieceResult) {
 	if pr == nil {
 		return
 	}
 	choiceWorkerID := crc32.ChecksumIEEE([]byte(pr.SrcPid)) % uint32(wg.workerNum)
-	wg.workerList[choiceWorkerID].ReceiveUpdatePieceResult(pr)
+	wg.workerList[choiceWorkerID].ReceivePieceResult(pr)
 }

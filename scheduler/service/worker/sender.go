@@ -27,7 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-type ISender interface {
+type Sender interface {
 	Serve()
 	Stop()
 	Send(peerTask *types.PeerTask)
@@ -36,14 +36,14 @@ type ISender interface {
 type SenderGroup struct {
 	senderNum        int
 	chanSize         int
-	senderList       []*Sender
+	senderList       []*sender
 	stopCh           chan struct{}
 	schedulerService *service.SchedulerService
 }
 
-var _ ISender = (*SenderGroup)(nil)
+var _ Sender = (*SenderGroup)(nil)
 
-type Sender struct {
+type sender struct {
 	jobChan          chan *string
 	stopCh           <-chan struct{}
 	schedulerService *service.SchedulerService
@@ -60,7 +60,7 @@ func NewSender(worker config.SchedulerWorkerConfig, schedulerService *service.Sc
 func (sg *SenderGroup) Serve() {
 	sg.stopCh = make(chan struct{})
 	for i := 0; i < sg.senderNum; i++ {
-		s := &Sender{
+		s := &sender{
 			jobChan:          make(chan *string, sg.chanSize),
 			stopCh:           sg.stopCh,
 			schedulerService: sg.schedulerService,
@@ -81,15 +81,15 @@ func (sg *SenderGroup) Send(peerTask *types.PeerTask) {
 	sg.senderList[sendID].Send(peerTask)
 }
 
-func (s *Sender) Send(peerTask *types.PeerTask) {
+func (s *sender) Send(peerTask *types.PeerTask) {
 	s.jobChan <- &peerTask.Pid
 }
 
-func (s *Sender) Serve() {
+func (s *sender) Serve() {
 	go s.doSend()
 }
 
-func (s *Sender) doSend() {
+func (s *sender) doSend() {
 	var err error
 	for {
 		select {

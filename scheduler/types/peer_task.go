@@ -60,7 +60,7 @@ type PeerTask struct {
 	subTreeNodesNum int32     // node number of subtree and current node is root of the subtree
 
 	// the client of peer task, which used for send and receive msg
-	client IClient
+	client PeerTaskClient
 
 	Traffic int64
 	Cost    uint32
@@ -290,7 +290,7 @@ func (pt *PeerTask) SetStatus(traffic int64, cost uint32, success bool, code bas
 	}
 }
 
-func (pt *PeerTask) SetClient(client IClient) {
+func (pt *PeerTask) SetClient(client PeerTaskClient) {
 	pt.client = client
 }
 
