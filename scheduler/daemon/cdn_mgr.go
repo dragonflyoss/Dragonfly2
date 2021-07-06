@@ -17,10 +17,11 @@
 package daemon
 
 import (
-	"d7y.io/dragonfly/v2/internal/dferrors"
+	"context"
+
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type CDNMgr interface {
-	SeedTask(task *types.Task, callback func(peerTask *types.PeerNode, e *dferrors.DfError)) (err error)
+	SeedTask(ctx context.Context, task *types.Task) (err error)
 }

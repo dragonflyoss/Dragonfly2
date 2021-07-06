@@ -25,17 +25,27 @@ import (
 )
 
 const (
-	TaskStatusHealth = iota + 1
-	TaskStatusNeedParent
-	TaskStatusNeedChildren
-	TaskStatusBadNode
-	TaskStatusNeedAdjustNode
-	TaskStatusNeedCheckNode
-	TaskStatusDone
-	TaskStatusLeaveNode
-	TaskStatusAddParent
-	TaskStatusNodeGone
+	TaskStatusWaiting = iota + 1
+	TaskStatusRunning
+	TaskStatusFailed
+	TaskStatusSuccess
+	TaskStatusSourceError
 )
+
+// isSuccessCDN determines that whether the CDNStatus is success.
+func IsSuccess(status int) bool {
+	return status == TaskStatusSuccess
+}
+
+func isFrozen(status int) bool {
+	return status == TaskStatusFailed ||
+		status == TaskStatusWaiting ||
+		status == TaskStatusSourceError
+}
+
+func isWait(status int) bool {
+	return status == TaskStatusWaiting
+}
 
 type Task struct {
 	taskID         string
@@ -86,32 +96,32 @@ func (task *Task) GetFilter() string {
 func (task *Task) GetUrlMeta() *base.UrlMeta {
 	return task.urlMeta
 }
-func (t *Task) InitProps() {
-	if t.PieceList == nil {
-		t.CreateTime = time.Now()
-		t.LastAccessTime = t.CreateTime
-		t.SizeScope = base.SizeScope_NORMAL
-		t.Statistic = &TaskStatistic{
+func (task *Task) InitProps() {
+	if task.PieceList == nil {
+		task.CreateTime = time.Now()
+		task.LastAccessTime = task.CreateTime
+		task.SizeScope = base.SizeScope_NORMAL
+		task.Statistic = &TaskStatistic{
 			StartTime: time.Now(),
 		}
 	}
 }
 
-func (t *Task) GetPiece(pieceNum int32) *Piece {
-	return t.PieceList[pieceNum]
+func (task *Task) GetPiece(pieceNum int32) *Piece {
+	return task.PieceList[pieceNum]
 }
 
-func (t *Task) GetOrCreatePiece(pieceNum int32) *Piece {
-	t.rwLock.RLock()
-	p := t.PieceList[pieceNum]
+func (task *Task) GetOrCreatePiece(pieceNum int32) *Piece {
+	task.rwLock.RLock()
+	p := task.PieceList[pieceNum]
 	if p == nil {
-		t.rwLock.RUnlock()
-		p = newEmptyPiece(pieceNum, t)
-		t.rwLock.Lock()
-		t.PieceList[pieceNum] = p
-		t.rwLock.Unlock()
+		task.rwLock.RUnlock()
+		p = newEmptyPiece(pieceNum, task)
+		task.rwLock.Lock()
+		task.PieceList[pieceNum] = p
+		task.rwLock.Unlock()
 	} else {
-		t.rwLock.RUnlock()
+		task.rwLock.RUnlock()
 	}
 	return p
 }
@@ -198,10 +208,6 @@ func (t *TaskStatistic) GetStatistic() (info *StatisticInfo) {
 	return
 }
 
-func IsBad() bool {
-	return true
-}
-
 type Piece struct {
 	PieceNum    int32
 	RangeStart  uint64
@@ -212,3 +218,12 @@ type Piece struct {
 }
 
 type PieceStyle int32
+
+type PeerRegisterInfo struct {
+	PeerId string
+	// peer host info
+	PeerHost *PeerHost
+	// current host load
+	HostLoad    *base.HostLoad
+	IsMigrating bool
+}

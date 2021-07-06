@@ -31,23 +31,23 @@ const (
 type NodeHost struct {
 	// fixme can remove this uuid, use IP
 	// uuid each time the daemon starts, it will generate a different uuid
-	uuid string
+	UUID string
 	// IP peer host ip
-	ip string
+	IP string
 	// hostName peer host name
-	hostName string
-	// rpcPort rpc service port for peer
-	rpcPort int32
-	// downloadPort piece downloading port for peer
-	downloadPort int32
+	HostName string
+	// RPCPort rpc service port for peer
+	RPCPort int32
+	// DownloadPort piece downloading port for peer
+	DownloadPort int32
 	// Type host type cdn or peer
-	hostType HostType
+	HostType HostType
 	// SecurityDomain security isolation domain for network
 	SecurityDomain string
 	// Location location path: area|country|province|city|...
 	Location string
 	// Idc idc where the peer host is located
-	Idc string
+	IDC string
 	// NetTopology network device path: switch|router|...
 	NetTopology string
 	// ProducerLoad is the load of download services provided by the current node.

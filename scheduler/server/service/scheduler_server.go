@@ -60,20 +60,7 @@ func WithSchedulerService(service *core.SchedulerService) Option {
 
 // NewSchedulerServer returns a new transparent scheduler server from the given options
 func NewSchedulerServer(cfg *config.Config, options ...Option) *SchedulerServer {
-	return NewSchedulerWithOptions(cfg, options...)
-}
-
-// NewSchedulerWithOptions constructs a new instance of a scheduler server with additional options.
-func NewSchedulerWithOptions(cfg *config.Config, options ...Option) *SchedulerServer {
-	scheduler := &SchedulerServer{
-		config: cfg.Scheduler,
-	}
-
-	for _, opt := range options {
-		opt(scheduler)
-	}
-
-	return scheduler
+	return nil
 }
 
 func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
@@ -83,19 +70,29 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	taskID := s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMeta, request.BizId, request.PeerId)
 	task, ok := s.taskManager.Get(taskID)
 	if !ok {
-		if task, err = s.service.CreateTask(types.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta)); err != nil {
-			return nil
+		if task, err = s.service.CreateTask(ctx, types.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta)); err != nil {
+			return nil, dferrors.Newf(dfcodes.SchedNeedBackSource, "cdn create task fail")
 		}
 	}
-	resp, err := s.service.RegisterPeerTask(request, task)
+	// todo 任务状态有问题
 	if task.Status == 0 {
-		return errors.Errorf()
+		return nil, dferrors.Newf(dfcodes.SchedNeedBackSource, "task status is %s", task.Status)
+	}
+	err = s.service.RegisterPeerTask(request, task)
+	if err != nil {
+		return nil, dferrors.Newf(dfcodes.SchedPeerRegisterFail, "register peer: %v", err)
 	}
 
-	if task.SizeScope == base.SizeScope_TINY {
-		return //
+	resp.SizeScope = getTaskSizeScope(task)
+
+	if resp.SizeScope == base.SizeScope_TINY {
+		resp.DirectPiece = &scheduler.RegisterResult_PieceContent{
+			PieceContent: task.DirectPiece,
+		}
+		return
 	}
 
+	resp.TaskId = task.GetTaskID()
 	return
 }
 
@@ -163,4 +160,16 @@ func validateParams(req *scheduler.PeerTaskRequest) error {
 		return fmt.Errorf("empty peerID")
 	}
 	return nil
+}
+
+const TinyFileSize = 128
+
+func getTaskSizeScope(task *types.Task) base.SizeScope {
+	if task.ContentLength <= TinyFileSize {
+		return base.SizeScope_TINY
+	}
+	if task.PieceTotal == 1 {
+		return base.SizeScope_SMALL
+	}
+	return base.SizeScope_NORMAL
 }

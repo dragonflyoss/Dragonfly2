@@ -40,8 +40,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const TinyFileSize = 128
-
 type manager struct {
 	client        client.CdnClient
 	servers       map[string]*managerRPC.ServerInfo
@@ -118,11 +116,11 @@ func (cm *manager) OnNotify(c *managerRPC.SchedulerConfig) {
 	cm.client.UpdateState(cdnHostsToNetAddrs(c.CdnHosts))
 }
 
-func (cm *manager) SeedTask(task *types.Task) error {
+func (cm *manager) SeedTask(ctx context.Context, task *types.Task) error {
 	if cm.client == nil {
 		return errors.New("cdn client is nil")
 	}
-	stream, err := cm.client.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
+	stream, err := cm.client.ObtainSeeds(ctx, &cdnsystem.SeedRequest{
 		TaskId:  task.GetTaskID(),
 		Url:     task.GetUrl(),
 		Filter:  task.GetFilter(),
@@ -137,20 +135,6 @@ func (cm *manager) SeedTask(task *types.Task) error {
 		return e
 	}
 	return cm.Work(task, stream)
-}
-
-cm.lock.Lock()
-_, ok := cm.callbackFns[task]
-if !ok {
-cm.callbackFns[task] = callback
-}
-cm.lock.Unlock()
-if ok {
-return
-}
-
-go safe.Call(func () {
-	return
 }
 
 func (cm *manager) doCallback(task *types.Task, err *dferrors.DfError) {

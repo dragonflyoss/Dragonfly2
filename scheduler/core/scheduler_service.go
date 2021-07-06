@@ -17,6 +17,8 @@
 package core
 
 import (
+	"context"
+
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/idgen"
@@ -42,21 +44,6 @@ type SchedulerService struct {
 	ABTest    bool
 }
 
-func NewSchedulerService(cfg *config.Config, dynconfig config.DynconfigInterface) (*SchedulerService, error) {
-	mgr, err := manager.New(cfg, dynconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	return &SchedulerService{
-		CDNManager:  mgr.CDNManager,
-		TaskManager: mgr.TaskManager,
-		HostManager: mgr.HostManager,
-		Scheduler:   New(cfg.Scheduler, mgr.TaskManager),
-		ABTest:      cfg.Scheduler.ABTest,
-	}, nil
-}
-
 func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string, peerID string) (taskID string) {
 	if s.ABTest {
 		return idgen.TwinsTaskID(url, filter, meta, bizID, peerID)
@@ -68,7 +55,7 @@ func (s *SchedulerService) GetTask(taskID string) (*types.Task, bool) {
 	return s.TaskManager.Get(taskID)
 }
 
-func (s *SchedulerService) CreateTask(task *types.Task) (*types.Task, error) {
+func (s *SchedulerService) CreateTask(ctx context.Context, task *types.Task) (*types.Task, error) {
 	// todo lock
 	// Task already exists
 	if ret, ok := s.TaskManager.Get(task.GetTaskID()); ok {
@@ -77,7 +64,7 @@ func (s *SchedulerService) CreateTask(task *types.Task) (*types.Task, error) {
 
 	// Task does not exist
 	s.TaskManager.Add(task)
-	if err := s.CDNManager.SeedTask(task, s.TaskManager.PeerTask.CDNCallback); err != nil {
+	if err := s.CDNManager.SeedTask(ctx, task); err != nil {
 		return nil, err
 	}
 	s.TaskManager.PeerTask.AddTask(task)
@@ -126,62 +113,27 @@ func (s *SchedulerService) AddHost(host *types.Host) (ret *types.Host, err error
 	return
 }
 
-func (s *SchedulerService) RegisterPeerTask(task *types.Task) (*types.PeerRegisterResponse, error) {
-	task, ok := s.TaskManager.Load(task.GetTaskID())
-	if !ok {
-		task, err = s.service.AddTask(types.NewTask(resp.TaskId, request.Url, request.Filter, request.BizId, request.UrlMeta))
-		if err != nil {
-			dferror, _ := err.(*dferrors.DfError)
-			if dferror != nil && dferror.Code == dfcodes.SchedNeedBackSource {
-				isCdn = true
-			} else {
-				return
-			}
-		}
-	}
-
-	if task.CDNError != nil {
-		err = task.CDNError
-		return
-	}
-
+func (s *SchedulerService) RegisterPeerTask(req *scheduler.PeerTaskRequest, task *types.Task) (*types.PeerRegisterResponse, error) {
 	// get or create host
-	reqPeerHost := request.PeerHost
-	if host, ok := s.service.GetHost(reqPeerHost.Uuid); !ok {
+	reqPeerHost := req.PeerHost
+	if host, ok := s.HostManager.Get(reqPeerHost.Uuid); !ok {
 		host = &types.NodeHost{
-			Type: types.NodeHost,
-			PeerHost: scheduler.PeerHost{
-				Uuid:           reqPeerHost.Uuid,
-				Ip:             reqPeerHost.Ip,
-				RpcPort:        reqPeerHost.RpcPort,
-				DownPort:       reqPeerHost.DownPort,
-				HostName:       reqPeerHost.HostName,
-				SecurityDomain: reqPeerHost.SecurityDomain,
-				Location:       reqPeerHost.Location,
-				Idc:            reqPeerHost.Idc,
-				NetTopology:    reqPeerHost.NetTopology,
-			},
+			HostType:       types.PeerNodeHost,
+			UUID:           reqPeerHost.Uuid,
+			IP:             reqPeerHost.Ip,
+			RPCPort:        reqPeerHost.RpcPort,
+			DownloadPort:   reqPeerHost.DownPort,
+			HostName:       reqPeerHost.HostName,
+			SecurityDomain: reqPeerHost.SecurityDomain,
+			Location:       reqPeerHost.Location,
+			IDC:            reqPeerHost.Idc,
+			NetTopology:    reqPeerHost.NetTopology,
 		}
-		//if isCdn {
-		//	host.Type = types.HostTypeCdn
-		//}
-		host, err = s.service.AddHost(host)
-		if err != nil {
-			return
-		}
-	}
-
-	resp.TaskId = task.GetTaskID()
-	resp.SizeScope = task.SizeScope
-
-	// case base.SizeScope_TINY
-	if resp.SizeScope == base.SizeScope_TINY {
-		resp.DirectPiece = task.DirectPiece
-		return
+		s.HostManager.Add(host)
 	}
 
 	// get or creat PeerTask
-	if peerTask, ok := s.service.GetPeerTask(request.PeerId); !ok {
+	if peerTask, ok := s.PeerManager.Get(req.PeerId); !ok {
 		peerTask, err = s.service.AddPeerTask(pid, task, host)
 		if err != nil
 	} else if peerTask.Host == nil {
