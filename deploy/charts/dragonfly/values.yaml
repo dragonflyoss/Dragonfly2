@@ -1,10 +1,13 @@
 nameOverride: ""
+namespaceOverride: "dragonfly-system"
 fullnameOverride: ""
 
 # values for dragonfly installation
 installation:
-  namespace: dragonfly-system
   clusterDomain: ""
+  # enable an all in one jaeger for tracing every downloading event
+  # should not use in production environment
+  jaeger: false
 
 scheduler:
   name: scheduler
@@ -35,6 +38,8 @@ scheduler:
     port: 8002
     targetPort: 8002
   config:
+    # when there is no manager component in or out of cluster, enable staticCDN
+    # cdn will auto register in configmap, and scheduler will discover all of them dynamic.
     staticCDN: true
     debug: false
     worker:
@@ -67,13 +72,6 @@ cdn:
   statefulsetAnnotations: {}
   containerPort: 8003
   nginxContiainerPort: 8001
-  service:
-    type: ClusterIP
-    annotations: {}
-    port: 8003
-    targetPort: 8003
-    nginxPort: 8001
-    nginxTargetPort: 8001
   config:
     base:
       systemReservedBandwidth: 20M
@@ -110,7 +108,7 @@ dfdaemon:
   name: dfdaemon
   nameOverride: ""
   fullnameOverride: ""
-  image: dragonflyoss/dfget
+  image: dragonflyoss/dfdaemon
   tag: v0.1.0-beta
   pullPolicy: IfNotPresent
   resources:
@@ -127,12 +125,21 @@ dfdaemon:
   podAnnotations: {}
   daemonsetAnnotations: {}
   containerPort: 65001
+  # hostPort is used when .hostNetwork == false, and .config.proxy.tcpListen.namespace is empty
+  # many network add-ons do not yet support hostPort
+  # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/#hostport-services-do-not-work
+  # by default, dfdaemon injects the 65001 port to host network by sharing host network namespace,
+  # if you want to use hostPort, please empty .config.proxy.tcpListen.namespace below, and keep .hostNetwork == false
+  # for performance, injecting the 65001 port to host network is better than hostPort
+  hostPort: 65001
+  # using hostNetwork when pod with host network can communicate with normal pods with cni network
   hostNetwork: false
   config:
     aliveTime: 0s
     gcInterval: 1m0s
     keepStorage: false
     verbose: true
+    jaeger: "" # customize jaeger like: http://localhost:14268/api/traces
     host:
       listenIP: 0.0.0.0
       advertiseIP: 0.0.0.0
@@ -161,12 +168,15 @@ dfdaemon:
       strategy: io.d7y.storage.v2.simple
       multiplex: true
     proxy:
+      defaultFilter: "Expires&Signature"
       security:
         insecure: true
       tcpListen:
         namespace: /host/ns/net
         listen: 0.0.0.0
-        port: 65001
+        # if you want to change port, please update hostPort in $.Values.dfdaemon.hostPort
+        # port in configmap is generated from $.Values.dfdaemon.hostPort
+        # port: 65001
       registryMirror:
         url: https://index.docker.io
       proxies:

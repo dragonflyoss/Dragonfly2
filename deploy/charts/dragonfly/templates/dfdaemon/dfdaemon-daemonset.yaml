@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: {{ template "dragonfly.dfdaemon.fullname" . }}
-  namespace: {{ .Values.installation.namespace }}
+  namespace: {{ template "dragonfly.namespace" . }}
   labels:
     app: {{ template "dragonfly.dfdaemon.fullname" . }}
     chart: {{ .Chart.Name }}-{{ .Chart.Version }}
@@ -55,29 +55,35 @@ spec:
         imagePullPolicy: {{ .Values.dfdaemon.pullPolicy | quote }}
         resources:
 {{ toYaml .Values.dfdaemon.resources | indent 12 }}
-        {{- if .Values.dfdaemon.hostNetwork }}
         ports:
-        - containerPort: 65001
-          hostPort: 65001
+        - containerPort: {{ .Values.dfdaemon.containerPort }}
+          {{- if and (not .Values.dfdaemon.hostNetwork) (empty .Values.dfdaemon.config.proxy.tcpListen.namespace) }}
+          hostPort: {{ .Values.dfdaemon.hostPort }}
+          hostIP: 127.0.0.1
+          {{- end }}
           protocol: TCP
-        {{- end}}
         volumeMounts:
         - name: config
           mountPath: "/etc/dragonfly"
-        {{- if not .Values.dfdaemon.hostNetwork }}
+        {{- if and (not .Values.dfdaemon.hostNetwork) .Values.dfdaemon.config.proxy.tcpListen.namespace }}
         - name: netns
-          mountPath: /host/ns/net
+          mountPath: /host/ns
         securityContext:
-          capabilities:
-            add:
-            - SYS_ADMIN
-        {{- end}}
+          # FIXME dfget daemon only need /proc/1/ns/net and CAP_SYS_ADMIN
+          # but containerd resolves the symbolic of /proc/1/ns/net from v1.5.0
+          # due to /proc/1/ns/net is not a regular symbolic link, it always failed.
+          # https://github.com/containerd/containerd/blob/v1.5.0/pkg/cri/opts/spec_linux.go#L171
+          privileged: true
+          #capabilities:
+          #  add:
+          #  - SYS_ADMIN
+        {{- end }}
       volumes:
       - name: config
         configMap:
           name: {{ template "dragonfly.dfdaemon.fullname" . }}
-      {{- if not .Values.dfdaemon.hostNetwork }}
+      {{- if and (not .Values.dfdaemon.hostNetwork) .Values.dfdaemon.config.proxy.tcpListen.namespace }}
       - name: netns
         hostPath:
-          path: /proc/1/ns/net
-      {{- end}}
+          path: /proc/1/ns
+      {{- end }}
