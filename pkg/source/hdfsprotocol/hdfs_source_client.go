@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"context"
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
-	"fmt"
 	"github.com/go-http-utils/headers"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -138,9 +138,9 @@ func (h *hdfsSourceClient) DownloadWithResponseHeader(ctx context.Context, url s
 	defer hdfsFile.Close()
 
 	fileInfo := hdfsFile.Stat()
-	fmt.Println(fileInfo, breakPointLSize)
+
 	if breakPointLSize > fileInfo.Size() {
-		return nil, nil, fmt.Errorf("hdfs Range more then file size,range start %d, file size %d", breakPointLSize, fileInfo.Size())
+		return nil, nil, errors.Errorf("hdfs Range more then file size,range start %d, file size %d", breakPointLSize, fileInfo.Size())
 	}
 
 	_, err = hdfsFile.Seek(breakPointLSize, 0)
@@ -178,7 +178,7 @@ func (h *hdfsSourceClient) GetLastModifiedMillis(ctx context.Context, url string
 // getHDFSClient return hdfs client
 func (h *hdfsSourceClient) getHDFSClient(rawurl string) (*hdfs.Client, error) {
 	if len(rawurl) < 4 {
-		return nil, fmt.Errorf("hdfs url invalid: url is %s", rawurl)
+		return nil, errors.Errorf("hdfs url invalid: url is %s", rawurl)
 	}
 
 	parse, err := url.Parse(rawurl)
@@ -230,11 +230,11 @@ func (h *hdfsSourceClient) getHDFSPath(urls string) (string, error) {
 func (h *hdfsSourceClient) getHDFSClientAndPath(urls string) (*hdfs.Client, string, error) {
 	client, err := h.getHDFSClient(urls)
 	if err != nil {
-		return nil, "", fmt.Errorf("hdfs create client fail, url is %s", urls)
+		return nil, "", errors.Errorf("hdfs create client fail, url is %s", urls)
 	}
 	path, err := h.getHDFSPath(urls)
 	if err != nil {
-		return client, "", fmt.Errorf("hdfs url path parse fail, url is %s", urls)
+		return client, "", errors.Errorf("hdfs url path parse fail, url is %s", urls)
 	}
 	return client, path, nil
 }

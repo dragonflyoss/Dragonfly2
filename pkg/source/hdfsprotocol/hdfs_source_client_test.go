@@ -3,11 +3,11 @@ package hdfsprotocol
 import (
 	"context"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"fmt"
 	"github.com/agiledragon/gomonkey"
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/go-http-utils/headers"
 	"github.com/onsi/ginkgo"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"io/fs"
@@ -88,7 +88,7 @@ func TestGetContentLength_OK(t *testing.T) {
 func TestGetContentLength_Fail(t *testing.T) {
 
 	stubRet := []gomonkey.OutputCell{
-		{Values: gomonkey.Params{nil, fmt.Errorf("stat /user/root/input/f3.txt: file does not exist")}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+		{Values: gomonkey.Params{nil, errors.New("stat /user/root/input/f3.txt: file does not exist")}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
 	}
 
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Stat", stubRet)
@@ -182,7 +182,7 @@ func TestDownload_FileExist(t *testing.T) {
 
 func TestDownload_FileNotExist(t *testing.T) {
 	stubRet := []gomonkey.OutputCell{
-		{Values: gomonkey.Params{nil, fmt.Errorf("open /user/root/input/f3.txt: file does not exist")}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+		{Values: gomonkey.Params{nil, errors.New("open /user/root/input/f3.txt: file does not exist")}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
 	}
 
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Open", stubRet)
@@ -242,7 +242,7 @@ func TestDownloadWithResponseHeader_FileExist(t *testing.T) {
 
 func TestDownloadWithResponseHeader_FileNotExist(t *testing.T) {
 	patch := gomonkey.ApplyMethod(reflect.TypeOf(fakeHDFSClient), "Open", func(*hdfs.Client, string) (*hdfs.FileReader, error) {
-		return nil, fmt.Errorf("open /user/root/input/f3.txt: file does not exist")
+		return nil, errors.New("open /user/root/input/f3.txt: file does not exist")
 	})
 	defer patch.Reset()
 
@@ -274,7 +274,7 @@ func TestGetLastModifiedMillis_FileExist(t *testing.T) {
 
 func TestGetLastModifiedMillis_FileNotExist(t *testing.T) {
 	stubRet := []gomonkey.OutputCell{
-		{Values: gomonkey.Params{nil, fmt.Errorf("stat /user/root/input/f3.txt: file does not exist")}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+		{Values: gomonkey.Params{nil, errors.New("stat /user/root/input/f3.txt: file does not exist")}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
 	}
 
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Stat", stubRet)
@@ -303,8 +303,6 @@ func TestNewHDFSSourceClient(t *testing.T) {
 	assert.IsType(t, &hdfsSourceClient{}, newHDFSSourceClient)
 
 }
-
-
 
 type fakeHDFSFileInfo struct {
 	dir      bool
