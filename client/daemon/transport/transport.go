@@ -18,6 +18,7 @@ package transport
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"regexp"
@@ -187,6 +188,11 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	)
 	if err != nil {
 		log.Errorf("download fail: %v", err)
+		// add more info for debugging
+		if attr != nil {
+			err = fmt.Errorf("task: %s\npeer: %s\nerror: %s",
+				attr[config.HeaderDragonflyTask], attr[config.HeaderDragonflyPeer], err)
+		}
 		return nil, err
 	}
 

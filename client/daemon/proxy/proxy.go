@@ -424,6 +424,11 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reverseProxy.Transport = t
+	reverseProxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, err error) {
+		rw.WriteHeader(http.StatusInternalServerError)
+		// write error string to response body
+		rw.Write([]byte(err.Error()))
+	}
 	reverseProxy.ServeHTTP(w, r)
 }
 

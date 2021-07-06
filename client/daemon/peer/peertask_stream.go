@@ -237,7 +237,10 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		s.Errorf("%s", err)
 		s.span.RecordError(err)
 		s.span.End()
-		return nil, nil, err
+		attr := map[string]string{}
+		attr[config.HeaderDragonflyTask] = s.taskID
+		attr[config.HeaderDragonflyPeer] = s.peerID
+		return nil, attr, err
 	case <-s.done:
 		var err error
 		if s.failedReason != "" {
@@ -248,7 +251,10 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		s.Errorf("%s", err)
 		s.span.RecordError(err)
 		s.span.End()
-		return nil, nil, err
+		attr := map[string]string{}
+		attr[config.HeaderDragonflyTask] = s.taskID
+		attr[config.HeaderDragonflyPeer] = s.peerID
+		return nil, attr, err
 	case first := <-s.successPieceCh:
 		//if !ok {
 		//	s.Warnf("successPieceCh closed unexpect")
