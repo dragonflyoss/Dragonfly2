@@ -19,9 +19,6 @@ package hdfsprotocol
 import (
 	"bytes"
 	"context"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
-	"github.com/go-http-utils/headers"
-	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -30,6 +27,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
+	"github.com/go-http-utils/headers"
+	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/pkg/source"
 	"github.com/colinmarc/hdfs/v2"
@@ -102,14 +103,13 @@ func (h *hdfsSourceClient) Download(ctx context.Context, url string, header sour
 	if err != nil {
 		return nil, err
 	}
+	defer hdfsFile.Close()
 
-	if data, err := ioutil.ReadAll(hdfsFile); err != nil {
-		_ = hdfsFile.Close()
+	data, err := ioutil.ReadAll(hdfsFile)
+	if err != nil {
 		return nil, err
-	} else {
-		_ = hdfsFile.Close()
-		return ioutil.NopCloser(bytes.NewBuffer(data)), nil
 	}
+	return ioutil.NopCloser(bytes.NewBuffer(data)), nil
 }
 
 func (h *hdfsSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, source.ResponseHeader, error) {
