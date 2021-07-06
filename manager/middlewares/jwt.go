@@ -29,6 +29,15 @@ func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
 				"name": userInfo.Name,
 			}, nil
 		},
+		PayloadFunc: func(data interface{}) jwt.MapClaims {
+			if v, ok := data.(map[string]interface{}); ok {
+				return jwt.MapClaims{
+					"name": v["name"],
+				}
+			}
+			return jwt.MapClaims{}
+		},
+		
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{
 				"message": message,
@@ -37,6 +46,8 @@ func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
 		TokenLookup:   "header: Authorization, query: token, cookie: jwt",
 		TokenHeadName: "Bearer",
 		TimeFunc:      time.Now,
+		SendCookie: true,
+		CookieHTTPOnly: true,
 	})
 
 	if err != nil {
