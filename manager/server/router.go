@@ -74,7 +74,7 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	ai.POST("/login", jwt.LoginHandler)
 	ai.GET("/logout", jwt.LogoutHandler)
 	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ci.POST("/registry", h.Register)
+	ai.POST("/register", h.Register)
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")

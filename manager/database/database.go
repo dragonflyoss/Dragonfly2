@@ -68,6 +68,7 @@ func migrate(db *gorm.DB) error {
 		&model.SchedulerCluster{},
 		&model.Scheduler{},
 		&model.SecurityGroup{},
+		&model.User{},
 	)
 }
 
