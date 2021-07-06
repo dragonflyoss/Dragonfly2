@@ -20,15 +20,14 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os/user"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 
@@ -53,9 +52,24 @@ type hdfsSourceClient struct {
 	clientMap map[string]*hdfs.Client
 }
 
+// hdfsFileReaderClose is an combination object of the  io.LimitedReader and io.Closer
+type hdfsFileReaderClose struct {
+	limited io.Reader
+	c       io.Closer
+	buf     *bytes.Buffer
+}
+
+func newHdfsFileReaderClose(r io.Reader, n int64, c io.Closer) io.ReadCloser {
+	return &hdfsFileReaderClose{
+		limited: io.LimitReader(r, n),
+		c:       c,
+		buf:     bytes.NewBuffer(make([]byte, 512)),
+	}
+}
+
 type HDFSSourceClientOption func(p *hdfsSourceClient)
 
-func (h *hdfsSourceClient) GetContentLength(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
+func (h *hdfsSourceClient) GetContentLength(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (int64, error) {
 	hdfsClient, path, err := h.getHDFSClientAndPath(url)
 	if err != nil {
 		return -1, err
@@ -64,10 +78,26 @@ func (h *hdfsSourceClient) GetContentLength(ctx context.Context, url string, hea
 	if err != nil {
 		return -1, err
 	}
+
+	if rang != nil {
+		rangeLength := int64(rang.EndIndex - rang.StartIndex)
+		if rangeLength <= info.Size() {
+			return rangeLength, nil
+		}
+	}
+
 	return info.Size(), nil
 }
 
 func (h *hdfsSourceClient) IsSupportRange(ctx context.Context, url string, header source.RequestHeader) (bool, error) {
+	hdfsClient, path, err := h.getHDFSClientAndPath(url)
+	if err != nil {
+		return false, err
+	}
+	_, err = hdfsClient.Stat(path)
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
@@ -94,7 +124,7 @@ func (h *hdfsSourceClient) IsExpired(ctx context.Context, url string, header sou
 	return info.ModTime().Format(layout) != t.Format(layout), nil
 }
 
-func (h *hdfsSourceClient) Download(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, error) {
+func (h *hdfsSourceClient) Download(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, error) {
 	hdfsClient, path, err := h.getHDFSClientAndPath(url)
 	if err != nil {
 		return nil, err
@@ -103,28 +133,23 @@ func (h *hdfsSourceClient) Download(ctx context.Context, url string, header sour
 	if err != nil {
 		return nil, err
 	}
-	defer hdfsFile.Close()
 
-	data, err := ioutil.ReadAll(hdfsFile)
-	if err != nil {
-		return nil, err
+	// default read all data when rang is nil
+	var limitReadN int64 = hdfsFile.Stat().Size()
+
+	if rang != nil {
+		_, err = hdfsFile.Seek(int64(rang.StartIndex), 0)
+		if err != nil {
+			hdfsFile.Close()
+			return nil, err
+		}
+		limitReadN = int64(rang.EndIndex - rang.StartIndex)
 	}
-	return ioutil.NopCloser(bytes.NewBuffer(data)), nil
+
+	return newHdfsFileReaderClose(hdfsFile, limitReadN, hdfsFile), nil
 }
 
-func (h *hdfsSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, source.ResponseHeader, error) {
-
-	breakPoint := header.Get(cdn.RangeHeaderName)
-
-	if breakPoint == "" {
-		// default start break 0
-		breakPoint = "0"
-	}
-
-	breakPointLSize, err := strconv.ParseInt(breakPoint, 0, 64)
-	if err != nil {
-		return nil, nil, err
-	}
+func (h *hdfsSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, source.ResponseHeader, error) {
 
 	hdfsClient, path, err := h.getHDFSClientAndPath(url)
 	if err != nil {
@@ -135,27 +160,22 @@ func (h *hdfsSourceClient) DownloadWithResponseHeader(ctx context.Context, url s
 	if err != nil {
 		return nil, nil, err
 	}
-	defer hdfsFile.Close()
 
 	fileInfo := hdfsFile.Stat()
 
-	if breakPointLSize > fileInfo.Size() {
-		return nil, nil, errors.Errorf("hdfs Range more then file size,range start %d, file size %d", breakPointLSize, fileInfo.Size())
+	// default read all data when rang is nil
+	var limitReadN int64 = fileInfo.Size()
+
+	if rang != nil {
+		_, err = hdfsFile.Seek(int64(rang.StartIndex), 0)
+		if err != nil {
+			hdfsFile.Close()
+			return nil, nil, err
+		}
+		limitReadN = int64(rang.EndIndex - rang.StartIndex)
 	}
 
-	_, err = hdfsFile.Seek(breakPointLSize, 0)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	expectReadSize := fileInfo.Size() - breakPointLSize
-	data := make([]byte, expectReadSize)
-	readLength, err := hdfsFile.Read(data)
-	if err != nil || int64(readLength) != expectReadSize {
-		return nil, nil, err
-	}
-
-	return ioutil.NopCloser(bytes.NewBuffer(data)), source.ResponseHeader{
+	return newHdfsFileReaderClose(hdfsFile, limitReadN, hdfsFile), source.ResponseHeader{
 		source.LastModified: fileInfo.ModTime().Format(layout),
 	}, nil
 }
@@ -250,3 +270,19 @@ func NewHDFSSourceClient(opts ...HDFSSourceClientOption) source.ResourceClient {
 }
 
 var _ source.ResourceClient = (*hdfsSourceClient)(nil)
+
+func (rc *hdfsFileReaderClose) Read(p []byte) (n int, err error) {
+	return rc.limited.Read(p)
+}
+
+func (rc *hdfsFileReaderClose) Close() error {
+	return rc.c.Close()
+}
+
+func (rc *hdfsFileReaderClose) WriteTo(w io.Writer) (n int64, err error) {
+	_, err = rc.limited.Read(rc.buf.Bytes())
+	if err != nil {
+		return -1, err
+	}
+	return rc.buf.WriteTo(w)
+}

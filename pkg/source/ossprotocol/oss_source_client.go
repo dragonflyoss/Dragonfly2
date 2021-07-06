@@ -25,6 +25,8 @@ import (
 	"strconv"
 	"sync"
 
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+
 	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -68,7 +70,7 @@ type ossSourceClient struct {
 	accessMap sync.Map
 }
 
-func (osc *ossSourceClient) Download(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, error) {
+func (osc *ossSourceClient) Download(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, error) {
 	panic("implement me")
 }
 
@@ -76,7 +78,7 @@ func (osc *ossSourceClient) GetLastModifiedMillis(ctx context.Context, url strin
 	panic("implement me")
 }
 
-func (osc *ossSourceClient) GetContentLength(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
+func (osc *ossSourceClient) GetContentLength(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (int64, error) {
 	resHeader, err := osc.getMeta(ctx, url, header)
 	if err != nil {
 		return -1, err
@@ -113,7 +115,7 @@ func (osc *ossSourceClient) IsExpired(ctx context.Context, url string, header so
 		HTTPHeaderEtag], nil
 }
 
-func (osc *ossSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, source.ResponseHeader, error) {
+func (osc *ossSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, source.ResponseHeader, error) {
 	ossObject, err := parseOssObject(url)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "parse oss object from url:%s", url)

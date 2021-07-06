@@ -2,13 +2,16 @@ package hdfsprotocol
 
 import (
 	"context"
+	"fmt"
 	"io"
-	"io/fs"
 	"io/ioutil"
+	"os"
 	"reflect"
-	"strconv"
 	"testing"
 	"time"
+
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 
 	"d7y.io/dragonfly/v2/pkg/source"
 	"github.com/agiledragon/gomonkey"
@@ -27,9 +30,9 @@ const (
 	hdfsExistFileContentLength      int64 = 12
 	hdfsExistFileContent                  = "Hello World\n"
 	hdfsExistFileLastModifiedMillis int64 = 1625218150000
-	hdfsExistFileRangeContent             = "World\n"
 	hdfsExistFileLastModified             = "2021-07-02 09:29:10"
-	hdfsExistFileRange              int   = 6
+	hdfsExistFileRangeStart         int64 = 3
+	hdfsExistFileRangeEnd           int64 = 10
 )
 
 const (
@@ -48,12 +51,13 @@ func testBefore() {
 func TestMain(t *testing.M) {
 	testBefore()
 	t.Run()
+	os.Exit(0)
 }
 
-// TestGetContentLength function test exist and not exist file
+// TestGetContentLength_OK function test exist file and return file length
 func TestGetContentLength_OK(t *testing.T) {
 
-	var info fs.FileInfo = fakeHDFSFileInfo{
+	var info os.FileInfo = fakeHDFSFileInfo{
 		contents: hdfsExistFileContent,
 	}
 	stubRet := []gomonkey.OutputCell{
@@ -65,12 +69,13 @@ func TestGetContentLength_OK(t *testing.T) {
 	defer patch.Reset()
 
 	// exist file
-	length, err := sourceClient.GetContentLength(context.Background(), hdfsExistFileURL, nil)
+	length, err := sourceClient.GetContentLength(context.Background(), hdfsExistFileURL, nil, &rangeutils.Range{0, 12})
 	assert.Equal(t, hdfsExistFileContentLength, length)
 	assert.Nil(t, err)
 
 }
 
+// TestGetContentLength_Fail test file not exist, return error
 func TestGetContentLength_Fail(t *testing.T) {
 
 	stubRet := []gomonkey.OutputCell{
@@ -82,17 +87,45 @@ func TestGetContentLength_Fail(t *testing.T) {
 	defer patch.Reset()
 
 	// not exist file
-	length, err := sourceClient.GetContentLength(context.Background(), hdfsNotExistFileURL, nil)
+	length, err := sourceClient.GetContentLength(context.Background(), hdfsNotExistFileURL, nil, &rangeutils.Range{0, 10})
 	assert.Equal(t, hdfsNotExistFileContentLength, length)
 	assert.EqualError(t, err, "stat /user/root/input/f3.txt: file does not exist")
 }
 
-func TestIsSupportRange(t *testing.T) {
+// TestIsSupportRange_FileExist test file exist, return file  support range
+func TestIsSupportRange_FileExist(t *testing.T) {
+	var info os.FileInfo = fakeHDFSFileInfo{
+		contents: hdfsExistFileContent,
+	}
+	stubRet := []gomonkey.OutputCell{
+		{Values: gomonkey.Params{info, nil}},
+	}
+
+	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Stat", stubRet)
+
+	defer patch.Reset()
+
 	supportRange, err := sourceClient.IsSupportRange(context.Background(), hdfsExistFileURL, nil)
 	assert.Equal(t, true, supportRange)
 	assert.Nil(t, err)
 }
 
+// TestIsSupportRange_FileNotExist test file not exist, return error and not support range
+func TestIsSupportRange_FileNotExist(t *testing.T) {
+	stubRet := []gomonkey.OutputCell{
+		{Values: gomonkey.Params{nil, errors.New("stat /user/root/input/f3.txt: file does not exist")}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+	}
+
+	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Stat", stubRet)
+
+	defer patch.Reset()
+
+	supportRange, err := sourceClient.IsSupportRange(context.Background(), hdfsNotExistFileURL, nil)
+	assert.Equal(t, false, supportRange)
+	assert.EqualError(t, err, "stat /user/root/input/f3.txt: file does not exist")
+}
+
+//
 func TestIsExpired_NoHeader(t *testing.T) {
 	// header not have Last-Modified
 	expired, err := sourceClient.IsExpired(context.Background(), hdfsExistFileURL, nil, map[string]string{})
@@ -101,7 +134,7 @@ func TestIsExpired_NoHeader(t *testing.T) {
 }
 func TestIsExpired_LastModifiedExpired(t *testing.T) {
 	lastModified, _ := time.Parse(layout, hdfsExistFileLastModified)
-	var info fs.FileInfo = fakeHDFSFileInfo{
+	var info os.FileInfo = fakeHDFSFileInfo{
 		modtime: lastModified,
 	}
 	stubRet := []gomonkey.OutputCell{
@@ -123,7 +156,7 @@ func TestIsExpired_LastModifiedExpired(t *testing.T) {
 
 func TestIsExpired_LastModifiedNotExpired(t *testing.T) {
 	lastModified, _ := time.Parse(layout, hdfsExistFileLastModified)
-	var info fs.FileInfo = fakeHDFSFileInfo{
+	var info os.FileInfo = fakeHDFSFileInfo{
 		modtime: lastModified,
 	}
 	stubRet := []gomonkey.OutputCell{
@@ -142,24 +175,35 @@ func TestIsExpired_LastModifiedNotExpired(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestDownload_FileExist(t *testing.T) {
+func Test_Download_FileExist_ByRang(t *testing.T) {
 	var reader *hdfs.FileReader = &hdfs.FileReader{}
 	patch := gomonkey.ApplyMethod(reflect.TypeOf(fakeHDFSClient), "Open", func(*hdfs.Client, string) (*hdfs.FileReader, error) {
 		return reader, nil
 	})
+	patch.ApplyMethod(reflect.TypeOf(reader), "Seek", func(_ *hdfs.FileReader, offset int64, whence int) (int64, error) {
+		return 0 - hdfsExistFileContentLength, nil
+	})
 	patch.ApplyMethod(reflect.TypeOf(reader), "Read", func(_ *hdfs.FileReader, b []byte) (int, error) {
 		byets := []byte(hdfsExistFileContent)
 		copy(b, byets)
-		//for i, byet := range byets {
-		//	b[i] = byet
-		//}
 		return int(hdfsExistFileContentLength), io.EOF
 	})
-
+	patch.ApplyMethodSeq(reflect.TypeOf(reader), "Stat", []gomonkey.OutputCell{
+		{
+			Values: gomonkey.Params{
+				fakeHDFSFileInfo{
+					contents: hdfsExistFileContent,
+				},
+			},
+		},
+	})
 	defer patch.Reset()
 
+	rang := &rangeutils.Range{StartIndex: 0, EndIndex: uint64(hdfsExistFileContentLength)}
 	// exist file
-	download, err := sourceClient.Download(context.Background(), hdfsExistFileURL, nil)
+	download, err := sourceClient.Download(context.Background(), hdfsExistFileURL, source.RequestHeader{
+		cdn.RangeHeaderName: fmt.Sprintf("bytes=%s", rang.String()),
+	}, rang)
 	data, _ := ioutil.ReadAll(download)
 
 	assert.Equal(t, hdfsExistFileContent, string(data))
@@ -175,13 +219,17 @@ func TestDownload_FileNotExist(t *testing.T) {
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Open", stubRet)
 
 	defer patch.Reset()
+
+	rang := rangeutils.Range{StartIndex: 0, EndIndex: uint64(hdfsExistFileContentLength)}
 	// not exist file
-	download, err := sourceClient.Download(context.Background(), hdfsNotExistFileURL, nil)
+	download, err := sourceClient.Download(context.Background(), hdfsNotExistFileURL, source.RequestHeader{
+		cdn.RangeHeaderName: fmt.Sprintf("bytes=%s", rang.String()),
+	}, &rang)
 	assert.Nil(t, download)
 	assert.EqualError(t, err, "open /user/root/input/f3.txt: file does not exist")
 }
 
-func TestDownloadWithResponseHeader_FileExist(t *testing.T) {
+func Test_DownloadWithResponseHeader_FileExist_ByRange(t *testing.T) {
 	lastModified, _ := time.Parse(layout, hdfsExistFileLastModified)
 	var reader *hdfs.FileReader = &hdfs.FileReader{}
 	patches := gomonkey.NewPatches()
@@ -189,42 +237,32 @@ func TestDownloadWithResponseHeader_FileExist(t *testing.T) {
 	patches.ApplyMethod(reflect.TypeOf(fakeHDFSClient), "Open", func(*hdfs.Client, string) (*hdfs.FileReader, error) {
 		return reader, nil
 	})
-	patches.ApplyMethodSeq(reflect.TypeOf(reader), "Stat", []gomonkey.OutputCell{
-		{
-			Values: gomonkey.Params{
-				fakeHDFSFileInfo{
-					contents: hdfsExistFileContent,
-					modtime:  lastModified,
-				},
-			},
-		},
+	patches.ApplyMethod(reflect.TypeOf(reader), "Stat", func(_ *hdfs.FileReader) os.FileInfo {
+		return fakeHDFSFileInfo{
+			contents: hdfsExistFileContent,
+			modtime:  lastModified,
+		}
 	})
 
 	patches.ApplyMethod(reflect.TypeOf(reader), "Seek", func(_ *hdfs.FileReader, offset int64, whence int) (int64, error) {
-		return hdfsExistFileContentLength - int64(hdfsExistFileRange), nil
+		return hdfsExistFileRangeEnd - hdfsExistFileRangeStart, nil
 	})
 	patches.ApplyMethod(reflect.TypeOf(reader), "Read", func(_ *hdfs.FileReader, b []byte) (int, error) {
-		byets := []byte(hdfsExistFileContent)
-		var j int = 0
-		for i, byet := range byets {
-			if i < hdfsExistFileRange {
-				i++
-				continue
-			}
-			b[j] = byet
-			j++
-		}
-		return len(b), nil
+		b = b[0 : hdfsExistFileRangeEnd-hdfsExistFileRangeStart]
+		bytes := []byte(hdfsExistFileContent)
+		copy(b, bytes[hdfsExistFileRangeStart:hdfsExistFileRangeEnd])
+		return len(b), io.EOF
 	})
 
-	body, responseHeader, err := sourceClient.DownloadWithResponseHeader(context.Background(), hdfsExistFileURL, map[string]string{
-		"Range": strconv.Itoa(hdfsExistFileRange),
-	})
+	rang := rangeutils.Range{StartIndex: uint64(hdfsExistFileRangeStart), EndIndex: uint64(hdfsExistFileRangeEnd)}
+	body, responseHeader, err := sourceClient.DownloadWithResponseHeader(context.Background(), hdfsExistFileURL, source.RequestHeader{
+		cdn.RangeHeaderName: fmt.Sprintf("bytes=%s", rang.String()),
+	}, &rang)
 	assert.Nil(t, err)
 	assert.Equal(t, hdfsExistFileLastModified, responseHeader.Get(source.LastModified))
 
 	data, _ := ioutil.ReadAll(body)
-	assert.Equal(t, hdfsExistFileRangeContent, string(data))
+	assert.Equal(t, string(data), string([]byte(hdfsExistFileContent)[hdfsExistFileRangeStart:hdfsExistFileRangeEnd]))
 }
 
 func TestDownloadWithResponseHeader_FileNotExist(t *testing.T) {
@@ -233,9 +271,10 @@ func TestDownloadWithResponseHeader_FileNotExist(t *testing.T) {
 	})
 	defer patch.Reset()
 
-	body, responseHeader, err := sourceClient.DownloadWithResponseHeader(context.Background(), hdfsExistFileURL, map[string]string{
-		"Range": "6",
-	})
+	rang := rangeutils.Range{StartIndex: 0, EndIndex: uint64(hdfsExistFileContentLength)}
+	body, responseHeader, err := sourceClient.DownloadWithResponseHeader(context.Background(), hdfsNotExistFileURL, source.RequestHeader{
+		cdn.RangeHeaderName: fmt.Sprintf("bytes=%s", rang.String()),
+	}, &rang)
 	assert.EqualError(t, err, "open /user/root/input/f3.txt: file does not exist")
 	assert.Nil(t, responseHeader)
 	assert.Nil(t, body)
@@ -243,7 +282,7 @@ func TestDownloadWithResponseHeader_FileNotExist(t *testing.T) {
 
 func TestGetLastModifiedMillis_FileExist(t *testing.T) {
 	lastModified, _ := time.Parse(layout, hdfsExistFileLastModified)
-	var info fs.FileInfo = fakeHDFSFileInfo{
+	var info os.FileInfo = fakeHDFSFileInfo{
 		modtime: lastModified,
 	}
 	stubRet := []gomonkey.OutputCell{
@@ -303,9 +342,9 @@ func (f fakeHDFSFileInfo) Sys() interface{}   { return nil }
 func (f fakeHDFSFileInfo) ModTime() time.Time { return f.modtime }
 func (f fakeHDFSFileInfo) IsDir() bool        { return f.dir }
 func (f fakeHDFSFileInfo) Size() int64        { return int64(len(f.contents)) }
-func (f fakeHDFSFileInfo) Mode() fs.FileMode {
+func (f fakeHDFSFileInfo) Mode() os.FileMode {
 	if f.dir {
-		return 0755 | fs.ModeDir
+		return 0755 | os.ModeDir
 	}
 	return 0644
 }

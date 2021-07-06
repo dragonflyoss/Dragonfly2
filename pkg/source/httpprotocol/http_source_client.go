@@ -24,6 +24,8 @@ import (
 	"net/http"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/task"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
@@ -78,7 +80,7 @@ func WithHTTPClient(client *http.Client) HTTPSourceClientOption {
 	}
 }
 
-func (client *httpSourceClient) GetContentLength(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
+func (client *httpSourceClient) GetContentLength(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (int64, error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {
 		return -1, err
@@ -132,7 +134,7 @@ func (client *httpSourceClient) IsExpired(ctx context.Context, url string, heade
 	return resp.StatusCode != http.StatusNotModified, nil
 }
 
-func (client *httpSourceClient) Download(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, error) {
+func (client *httpSourceClient) Download(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {
 		return nil, err
@@ -144,7 +146,7 @@ func (client *httpSourceClient) Download(ctx context.Context, url string, header
 	return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 }
 
-func (client *httpSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, source.ResponseHeader,
+func (client *httpSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, source.ResponseHeader,
 	error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {
