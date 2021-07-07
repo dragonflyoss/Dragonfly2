@@ -80,6 +80,20 @@ func (mr *MockManagerMockRecorder) DeleteTask(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockManager)(nil).DeleteTask), arg0)
 }
 
+// GetHomePath mocks base method.
+func (m *MockManager) GetHomePath() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetHomePath")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetHomePath indicates an expected call of GetHomePath.
+func (mr *MockManagerMockRecorder) GetHomePath() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHomePath", reflect.TypeOf((*MockManager)(nil).GetHomePath))
+}
+
 // Initialize mocks base method.
 func (m *MockManager) Initialize(arg0 daemon.SeedTaskMgr) {
 	m.ctrl.T.Helper()
