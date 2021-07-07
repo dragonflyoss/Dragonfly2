@@ -20,6 +20,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -38,6 +40,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 )
 
@@ -46,6 +49,7 @@ type Server struct {
 	seedServer    server.SeederServer
 	managerClient manager.ManagerClient
 	managerConn   *grpc.ClientConn
+	storage       storage.Manager
 }
 
 // New creates a brand new server instance.
@@ -70,6 +74,7 @@ func New(cfg *config.Config) (*Server, error) {
 	if !ok {
 		return nil, fmt.Errorf("can not find storage pattern %s", cfg.StorageMode)
 	}
+	s.storage = storageMgr
 	// CDN manager
 	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr)
 	if err != nil {
@@ -116,6 +121,15 @@ func New(cfg *config.Config) (*Server, error) {
 	return s, nil
 }
 
+func (s *Server) startDevFileServer() (err error) {
+	if !s.config.Verbose {
+		return
+	}
+	p, _ := filepath.Abs(s.storage.GetHomePath())
+	http.Handle("/", http.FileServer(http.Dir(p)))
+	return http.ListenAndServe(fmt.Sprint(":", s.config.DownloadPort), nil)
+}
+
 func (s *Server) Serve() (err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -145,10 +159,18 @@ func (s *Server) Serve() (err error) {
 			nil,
 		)
 	}
+	g := errgroup.Group{}
 
-	err = rpc.StartTCPServer(s.config.ListenPort, s.config.ListenPort, s.seedServer)
-	if err != nil {
-		return errors.Wrap(err, "start tcp server")
+	g.Go(func() error {
+		return rpc.StartTCPServer(s.config.ListenPort, s.config.ListenPort, s.seedServer)
+	})
+	g.Go(func() error {
+		return s.startDevFileServer()
+	})
+
+	if err := g.Wait(); err != nil {
+		s.Stop()
+		return errors.Wrap(err, "start server failed")
 	}
 	return nil
 }

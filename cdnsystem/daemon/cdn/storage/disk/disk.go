@@ -73,6 +73,10 @@ type diskStorageMgr struct {
 	taskMgr    daemon.SeedTaskMgr
 }
 
+func (s *diskStorageMgr) GetHomePath() string {
+	return s.diskDriver.GetHomePath()
+}
+
 func (s *diskStorageMgr) getDefaultGcConfig() *storage.GCConfig {
 	totalSpace, err := s.diskDriver.GetTotalSpace()
 	if err != nil {

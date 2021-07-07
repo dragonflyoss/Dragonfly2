@@ -41,7 +41,8 @@ type Manager interface {
 
 	// ResetRepo reset the storage of task
 	ResetRepo(*types.SeedTask) error
-
+	// GetHomePath return storage path of cache task file
+	GetHomePath() string
 	// StatDownloadFile
 	StatDownloadFile(taskID string) (*storedriver.StorageInfo, error)
 

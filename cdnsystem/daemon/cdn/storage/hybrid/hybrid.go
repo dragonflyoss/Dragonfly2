@@ -143,6 +143,10 @@ type hybridStorageMgr struct {
 	hasShm              bool
 }
 
+func (h *hybridStorageMgr) GetHomePath() string {
+	return h.diskDriver.GetHomePath()
+}
+
 func (h *hybridStorageMgr) GC() error {
 	logger.GcLogger.With("type", "hybrid").Info("start the hybrid storage gc job")
 	var wg sync.WaitGroup
