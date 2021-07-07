@@ -119,9 +119,8 @@ func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
 
 	if ctx.Err() == context.DeadlineExceeded {
 		return errors.Errorf("download timeout(%s)", cfg.Timeout)
-	} else {
-		return downError
 	}
+	return downError
 }
 
 func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[string]string) error {

@@ -130,6 +130,12 @@ func (cfg *ClientOption) Validate() error {
 }
 
 func (cfg *ClientOption) Convert(args []string) error {
+	var err error
+
+	if cfg.Output, err = filepath.Abs(cfg.Output); err != nil {
+		return err
+	}
+
 	if cfg.URL == "" && len(args) > 0 {
 		cfg.URL = args[0]
 	}
@@ -140,12 +146,6 @@ func (cfg *ClientOption) Convert(args []string) error {
 
 	if cfg.Console {
 		cfg.ShowProgress = false
-	}
-
-	if p, err := filepath.Abs(cfg.Output); err != nil {
-		return err
-	} else {
-		cfg.Output = p
 	}
 
 	return nil

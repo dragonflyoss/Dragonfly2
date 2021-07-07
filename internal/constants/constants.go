@@ -23,5 +23,5 @@ const (
 	P2PPattern    = "p2p"
 
 	Sha256Hash = "sha256"
-	Md5Hash = "md5"
+	Md5Hash    = "md5"
 )
