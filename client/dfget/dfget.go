@@ -45,7 +45,6 @@ func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
 	var (
 		ctx       = context.Background()
 		cancel    context.CancelFunc
-		hdr       = parseHeader(cfg.Header)
 		wLog      = logger.With("url", cfg.URL)
 		downError error
 	)
@@ -61,58 +60,7 @@ func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
 
 	go func() {
 		defer cancel()
-
-		if client == nil {
-			downError = downloadFromSource(ctx, cfg, hdr)
-		} else {
-			var (
-				start      = time.Now()
-				stream     *daemonclient.DownResultStream
-				result     *dfdaemon.DownResult
-				pb         *progressbar.ProgressBar
-				request    = newDownRequest(cfg, hdr)
-				downLength uint64
-			)
-
-			if stream, downError = client.Download(ctx, request); downError == nil {
-				if cfg.ShowProgress {
-					pb = newProgressBar(-1)
-				}
-
-				for {
-					if result, downError = stream.Recv(); downError != nil {
-						break
-					}
-
-					if result.CompletedLength > 0 {
-						downLength = result.CompletedLength
-						if pb != nil {
-							_ = pb.Set64(int64(downLength))
-						}
-					}
-
-					// success
-					if result.Done {
-						if pb != nil {
-							pb.Describe("Downloaded")
-							_ = pb.Close()
-						}
-
-						wLog.Infof("download from daemon success, length:%dByte cost:%dms", downLength, time.Now().Sub(start).Milliseconds())
-						fmt.Printf("finish total length %d Byte\n", downLength)
-
-						break
-					}
-				}
-			}
-
-			if downError != nil {
-				wLog.Warnf("daemon downloads file error:%v", downError)
-				fmt.Printf("daemon downloads file error:%v\n", downError)
-
-				downError = downloadFromSource(ctx, cfg, hdr)
-			}
-		}
+		downError = download(ctx, client, cfg, wLog)
 	}()
 
 	<-ctx.Done()
@@ -121,6 +69,60 @@ func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
 		return errors.Errorf("download timeout(%s)", cfg.Timeout)
 	}
 	return downError
+}
+
+func download(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfgetConfig, wLog *logger.SugaredLoggerOnWith) (downError error) {
+	hdr := parseHeader(cfg.Header)
+
+	if client == nil {
+		downError = downloadFromSource(ctx, cfg, hdr)
+	} else {
+		var (
+			start   = time.Now()
+			stream  *daemonclient.DownResultStream
+			result  *dfdaemon.DownResult
+			pb      *progressbar.ProgressBar
+			request = newDownRequest(cfg, hdr)
+		)
+
+		if stream, downError = client.Download(ctx, request); downError == nil {
+			if cfg.ShowProgress {
+				pb = newProgressBar(-1)
+			}
+
+			for {
+				if result, downError = stream.Recv(); downError != nil {
+					break
+				}
+
+				if result.CompletedLength > 0 && pb != nil {
+					_ = pb.Set64(int64(result.CompletedLength))
+				}
+
+				// success
+				if result.Done {
+					if pb != nil {
+						pb.Describe("Downloaded")
+						_ = pb.Close()
+					}
+
+					wLog.Infof("download from daemon success, length:%dByte cost:%dms", result.CompletedLength, time.Now().Sub(start).Milliseconds())
+					fmt.Printf("finish total length %d Byte\n", result.CompletedLength)
+
+					break
+				}
+			}
+		}
+
+		if downError != nil {
+			wLog.Warnf("daemon downloads file error:%v", downError)
+			fmt.Printf("daemon downloads file error:%v\n", downError)
+
+			downError = downloadFromSource(ctx, cfg, hdr)
+		}
+	}
+
+	return
 }
 
 func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[string]string) error {
