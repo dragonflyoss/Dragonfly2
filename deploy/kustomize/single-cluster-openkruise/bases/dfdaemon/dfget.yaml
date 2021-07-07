@@ -84,6 +84,7 @@ download:
 
 # upload service option
 upload:
+  defaultFilter: "Expires&Signature"
   # upload limit per second
   rateLimit: 200Mi
   security:
