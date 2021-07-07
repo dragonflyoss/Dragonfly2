@@ -49,12 +49,13 @@ jobs:
         uses: crazy-max/ghaction-setup-containerd@v1
         with:
           containerd-version: ${{ env.CONTAINERD_VERSION }}
+          config: ./test/testdata/containerd/config.toml
 
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
         with:
           version: ${{ env.KIND_VERSION }}
-          config: ./test/kind.yaml
+          config: ./test/testdata/kind/config.yaml
 
       - name: Build docker image
         run: |
@@ -83,6 +84,3 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
           flags: e2etests
-
-      - name: Run containerd
-        run: sudo ctr

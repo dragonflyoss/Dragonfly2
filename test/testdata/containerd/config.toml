@@ -1,0 +1,42 @@
+root = "/var/lib/containerd"
+state = "/run/containerd"
+oom_score = 0
+imports = ["/etc/containerd/runtime_*.toml", "./debug.toml"]
+
+[grpc]
+  address = "/run/containerd/containerd.sock"
+  uid = 0
+  gid = 0
+
+[debug]
+  address = "/run/containerd/debug.sock"
+  uid = 0
+  gid = 0
+  level = "info"
+
+[metrics]
+  address = ""
+  grpc_histogram = false
+
+[cgroup]
+  path = ""
+
+[plugins]
+  [plugins.cgroups]
+    no_prometheus = false
+  [plugins.diff]
+    default = ["walking"]
+  [plugins.linux]
+    shim = "containerd-shim"
+    runtime = "runc"
+    runtime_root = ""
+    no_shim = false
+    shim_debug = false
+  [plugins.scheduler]
+    pause_threshold = 0.02
+    deletion_threshold = 0
+    mutation_threshold = 100
+    schedule_delay = 0
+    startup_delay = "100ms"
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+    endpoint = ["http://127.0.0.1:65001","https://registry-1.docker.io"]
