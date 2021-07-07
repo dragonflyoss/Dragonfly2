@@ -37,7 +37,7 @@ type ResourceClient interface {
 
 	// GetContentLength get length of resource content
 	// return -l if request fail
-	// return -1 if response status is not StatusOK and StatusPartialContent
+	// return task.IllegalSourceFileLen if response status is not StatusOK and StatusPartialContent
 	GetContentLength(ctx context.Context, url string, header RequestHeader) (int64, error)
 
 	// IsSupportRange checks if resource supports breakpoint continuation
