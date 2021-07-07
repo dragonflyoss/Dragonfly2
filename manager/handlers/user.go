@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"d7y.io/dragonfly/v2/manager/types"
@@ -21,7 +20,6 @@ import (
 func (h *Handlers) Register(ctx *gin.Context) {
 	var json types.RegisterRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
-		fmt.Println(err)
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}

@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"net/http"
 	"time"
 
 	"d7y.io/dragonfly/v2/manager/handlers"
@@ -29,6 +30,12 @@ func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
 				"name": userInfo.Name,
 			}, nil
 		},
+		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
+			c.JSON(http.StatusOK, gin.H{
+				"token":  token,
+				"expire": expire.Format(time.RFC3339),
+			})
+		},
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if v, ok := data.(map[string]interface{}); ok {
 				return jwt.MapClaims{
@@ -37,16 +44,16 @@ func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
 			}
 			return jwt.MapClaims{}
 		},
-		
+
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{
 				"message": message,
 			})
 		},
-		TokenLookup:   "header: Authorization, query: token, cookie: jwt",
-		TokenHeadName: "Bearer",
-		TimeFunc:      time.Now,
-		SendCookie: true,
+		TokenLookup:    "header: Authorization, query: token, cookie: jwt",
+		TokenHeadName:  "Bearer",
+		TimeFunc:       time.Now,
+		SendCookie:     true,
 		CookieHTTPOnly: true,
 	})
 
