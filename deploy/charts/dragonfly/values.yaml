@@ -172,7 +172,7 @@ dfdaemon:
       security:
         insecure: true
       tcpListen:
-        namespace: /host/ns/net
+        namespace: /run/dragonfly/net
         listen: 0.0.0.0
         # if you want to change port, please update hostPort in $.Values.dfdaemon.hostPort
         # port in configmap is generated from $.Values.dfdaemon.hostPort

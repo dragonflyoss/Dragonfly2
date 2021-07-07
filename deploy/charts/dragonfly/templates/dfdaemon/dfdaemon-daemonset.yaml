@@ -66,24 +66,58 @@ spec:
         - name: config
           mountPath: "/etc/dragonfly"
         {{- if and (not .Values.dfdaemon.hostNetwork) .Values.dfdaemon.config.proxy.tcpListen.namespace }}
-        - name: netns
-          mountPath: /host/ns
+        - name: run
+          mountPath: /run/dragonfly
         securityContext:
-          # FIXME dfget daemon only need /proc/1/ns/net and CAP_SYS_ADMIN
-          # but containerd resolves the symbolic of /proc/1/ns/net from v1.5.0
-          # due to /proc/1/ns/net is not a regular symbolic link, it always failed.
-          # https://github.com/containerd/containerd/blob/v1.5.0/pkg/cri/opts/spec_linux.go#L171
-          privileged: true
-          #capabilities:
-          #  add:
-          #  - SYS_ADMIN
+          capabilities:
+            add:
+            - SYS_ADMIN
         {{- end }}
+      {{- if and (not .Values.dfdaemon.hostNetwork) .Values.dfdaemon.config.proxy.tcpListen.namespace }}
+      initContainers:
+      - name: mount-netns
+        image: "{{ .Values.dfdaemon.image }}:{{ .Values.dfdaemon.tag }}"
+        imagePullPolicy: {{ .Values.dfdaemon.pullPolicy | quote }}
+        resources:
+{{ toYaml .Values.dfdaemon.resources | indent 12 }}
+        # FIXME dfget daemon only need /proc/1/ns/net and CAP_SYS_ADMIN
+        # but containerd resolves the symbolic of /proc/1/ns/net from v1.5.0
+        # due to /proc/1/ns/net is not a regular symbolic link, it always failed.
+        # for keeping only CAP_SYS_ADMIN capability, use init container to bind mount only netns to /run/dragonfly/net
+        # https://github.com/containerd/containerd/blob/v1.5.0/pkg/cri/opts/spec_linux.go#L171
+        command:
+        - /bin/sh
+        - -cx
+        - |-
+          if [ ! -e "/run/dragonfly/net" ]; then
+            touch /run/dragonfly/net
+          fi
+          i1=$(stat -L -c %i /host/ns/net)
+          i2=$(stat -L -c %i /run/dragonfly/net)
+          if [ "$i1" != "$i2" ]; then
+            /bin/mount -o bind /host/ns/net /run/dragonfly/net
+          fi
+        volumeMounts:
+        - name: hostns
+          mountPath: /host/ns
+        - name: run
+          mountPath: /run/dragonfly
+          # bind mount need Bidirectional to propagate into host
+          mountPropagation: Bidirectional
+        securityContext:
+          # open /proc/1/ns need privilege permission
+          privileged: true
+      {{- end }}
       volumes:
       - name: config
         configMap:
           name: {{ template "dragonfly.dfdaemon.fullname" . }}
       {{- if and (not .Values.dfdaemon.hostNetwork) .Values.dfdaemon.config.proxy.tcpListen.namespace }}
-      - name: netns
+      - name: hostns
         hostPath:
           path: /proc/1/ns
+      - name: run
+        hostPath:
+          path: /run/dragonfly
+          type: DirectoryOrCreate
       {{- end }}
