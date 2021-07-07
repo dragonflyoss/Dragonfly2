@@ -190,6 +190,17 @@ test-coverage:
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
+# Run E2E tests
+e2e-test:
+	@ginkgo -v -r --randomizeAllSpecs --failFast test/e2e --trace --progress
+.PHONY: e2e-test
+
+# Run E2E tests with coverage
+e2e-test-coverage:
+	@ginkgo -v -r --randomizeAllSpecs --failFast -cover test/e2e --trace --progress
+	@cat test/e2e/*.coverprofile >> coverage.txt
+.PHONY: e2e-test-coverage
+
 # Kind load dragonlfy
 kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon
 	@echo "Kind load image done."
@@ -255,6 +266,8 @@ help:
 	@echo "make build-dfget-man-page           generate dfget man page"
 	@echo "make test                           run unittests"
 	@echo "make test-coverage                  run tests with coverage"
+	@echo "make e2e-test                       run e2e tests"
+	@echo "make e2e-test-coverage              run e2e tests with coverage"
 	@echo "make swag-manager                   generate swagger api"
 	@echo "make kind-load-image                kind load docker image"
 	@echo "make changelog                      generate CHANGELOG.md"

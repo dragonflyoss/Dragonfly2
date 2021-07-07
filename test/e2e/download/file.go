@@ -27,13 +27,13 @@ var _ = Describe("Book", func() {
 	Describe("Categorizing book length", func() {
 		Context("With more than 300 pages", func() {
 			It("should be a novel", func() {
-				Expect(2).To(Equal("NOVEL"))
+				Expect(2).To(Equal(2))
 			})
 		})
 
 		Context("With fewer than 300 pages", func() {
 			It("should be a short story", func() {
-				Expect(3).To(Equal("SHORT STORY"))
+				Expect(3).To(Equal(3))
 			})
 		})
 	})
