@@ -65,8 +65,8 @@ type ClientOption struct {
 	// DigestValue indicates digest value
 	DigestValue string `yaml:"digestValue,omitempty" mapstructure:"digestValue,omitempty"`
 
-	// Identifier identify download task, it is available merely when md5 param not exist.
-	Identifier string `yaml:"identifier,omitempty" mapstructure:"identifier,omitempty"`
+	// Tag identify download task, it is available merely when md5 param not exist.
+	Tag string `yaml:"tag,omitempty" mapstructure:"tag,omitempty"`
 
 	// CallSystem system name that executes dfget.
 	CallSystem string `yaml:"callSystem,omitempty" mapstructure:"callSystem,omitempty"`
@@ -81,7 +81,7 @@ type ClientOption struct {
 	// Filter filter some query params of url, use char '&' to separate different params.
 	// eg: -f 'key&sign' will filter 'key' and 'sign' query param.
 	// in this way, different urls correspond one same download task that can use p2p mode.
-	Filter []string `yaml:"filter,omitempty" mapstructure:"filter,omitempty"`
+	Filter string `yaml:"filter,omitempty" mapstructure:"filter,omitempty"`
 
 	// Header of http request.
 	// eg: --header='Accept: *' --header='Host: abc'.
@@ -93,8 +93,8 @@ type ClientOption struct {
 	// Insecure indicates whether skip secure verify when supernode interact with the source.
 	Insecure bool `yaml:"insecure,omitempty" mapstructure:"insecure,omitempty"`
 
-	// ShowBar shows progress bar, it's conflict with `--console`.
-	ShowBar bool `yaml:"showBar,omitempty" mapstructure:"showBar,omitempty"`
+	// ShowProgress shows progress bar, it's conflict with `--console`.
+	ShowProgress bool `yaml:"show-progress,omitempty" mapstructure:"show-progress,omitempty"`
 
 	RateLimit rate.Limit `yaml:"rateLimit,omitempty" mapstructure:"rateLimit,omitempty"`
 
@@ -135,11 +135,17 @@ func (cfg *ClientOption) Convert(args []string) error {
 	}
 
 	if cfg.Digest != "" {
-		cfg.Identifier = ""
+		cfg.Tag = ""
 	}
 
 	if cfg.Console {
-		cfg.ShowBar = false
+		cfg.ShowProgress = false
+	}
+
+	if p, err := filepath.Abs(cfg.Output); err != nil {
+		return err
+	} else {
+		cfg.Output = p
 	}
 
 	return nil

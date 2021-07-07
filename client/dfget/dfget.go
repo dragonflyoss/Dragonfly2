@@ -20,160 +20,219 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/client/clientutil/progressbar"
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly/v2/internal/dfheaders"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/rpc/base"
-	dfdaemongrpc "d7y.io/dragonfly/v2/internal/rpc/dfdaemon"
+	"d7y.io/dragonfly/v2/internal/rpc/dfdaemon"
+	daemonclient "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/source"
-
-	// Init daemon rpc client
-	_ "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
-	dfclient "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
-	"github.com/go-http-utils/headers"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/pkg/errors"
+	"github.com/schollz/progressbar/v3"
 )
 
-var filter string
-
-func Download(cfg *config.DfgetConfig, client dfclient.DaemonClient) error {
+func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
 	var (
-		ctx    = context.Background()
-		cancel context.CancelFunc
-		hdr    = parseHeader(cfg.Header)
+		ctx       = context.Background()
+		cancel    context.CancelFunc
+		hdr       = parseHeader(cfg.Header)
+		wLog      = logger.With("url", cfg.URL)
+		downError error
 	)
 
-	if client == nil {
-		return downloadFromSource(cfg, hdr)
-	}
-
-	output, err := filepath.Abs(cfg.Output)
-	if err != nil {
-		return err
-	}
+	wLog.Info("init success and start to download")
+	fmt.Println("init success and start to download")
 
 	if cfg.Timeout > 0 {
 		ctx, cancel = context.WithTimeout(ctx, cfg.Timeout)
 	} else {
 		ctx, cancel = context.WithCancel(ctx)
 	}
-	defer cancel()
 
-	request := &dfdaemongrpc.DownRequest{
-		Url: cfg.URL,
-		UrlMeta: &base.UrlMeta{
-			Digest: cfg.Digest,
-			Range:  hdr[headers.Range],
-			Header: hdr,
-			Filter: filter,
-		},
-		Output:     output,
-		Callsystem: cfg.CallSystem,
-		Uid:        int64(basic.UserID),
-		Gid:        int64(basic.UserGroup),
-	}
-	var (
-		start = time.Now()
-		end   time.Time
-	)
-	down, err := client.Download(ctx, request)
-	if err != nil {
-		return err
-	}
-	var (
-		result *dfdaemongrpc.DownResult
-	)
-	// todo using progressbar when showBar is true
-	pb := progressbar.DefaultBytes(-1, "Downloading")
-	for {
-		result, err = down.Recv()
-		if err != nil {
-			if de, ok := err.(*dferrors.DfError); ok {
-				logger.Errorf("dragonfly daemon returns error code %d/%s", de.Code, de.Message)
-			} else {
-				logger.Errorf("dragonfly daemon returns error %s", err)
+	go func() {
+		defer cancel()
+
+		if client == nil {
+			downError = downloadFromSource(ctx, cfg, hdr)
+		} else {
+			var (
+				start      = time.Now()
+				stream     *daemonclient.DownResultStream
+				result     *dfdaemon.DownResult
+				pb         *progressbar.ProgressBar
+				request    = newDownRequest(cfg, hdr)
+				downLength uint64
+			)
+
+			if stream, downError = client.Download(ctx, request); downError == nil {
+				if cfg.ShowProgress {
+					pb = newProgressBar(-1)
+				}
+
+				for {
+					if result, downError = stream.Recv(); downError != nil {
+						break
+					}
+
+					if result.CompletedLength > 0 {
+						downLength = result.CompletedLength
+						if pb != nil {
+							_ = pb.Set64(int64(downLength))
+						}
+					}
+
+					// success
+					if result.Done {
+						if pb != nil {
+							pb.Describe("Downloaded")
+							_ = pb.Close()
+						}
+
+						wLog.Infof("download from daemon success, length:%dByte cost:%dms", downLength, time.Now().Sub(start).Milliseconds())
+						fmt.Printf("finish total length %d Byte\n", downLength)
+
+						break
+					}
+				}
 			}
-			break
+
+			if downError != nil {
+				wLog.Warnf("daemon downloads file error:%v", downError)
+				fmt.Printf("daemon downloads file error:%v\n", downError)
+
+				downError = downloadFromSource(ctx, cfg, hdr)
+			}
 		}
-		if result.CompletedLength > 0 {
-			pb.Set64(int64(result.CompletedLength))
-		}
-		if result.Done {
-			pb.Describe("Downloaded")
-			pb.Finish()
-			end = time.Now()
-			fmt.Printf("Task: %s\nPeer: %s\n", result.TaskId, result.PeerId)
-			fmt.Printf("Download success, time cost: %dms, length: %d\n", end.Sub(start).Milliseconds(), result.CompletedLength)
-			break
-		}
+	}()
+
+	<-ctx.Done()
+
+	if ctx.Err() == context.DeadlineExceeded {
+		return errors.Errorf("download timeout(%s)", cfg.Timeout)
+	} else {
+		return downError
 	}
-	if err != nil {
-		logger.Errorf("download by dragonfly error: %s", err)
-		return downloadFromSource(cfg, hdr)
-	}
-	return nil
 }
 
-func downloadFromSource(cfg *config.DfgetConfig, hdr map[string]string) (err error) {
+func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[string]string) error {
 	if cfg.DisableBackSource {
-		err = fmt.Errorf("dfget download error, and back source disabled")
-		logger.Warnf("%s", err)
-		return err
+		return errors.New("try to download from source but back source is disabled")
 	}
-	fmt.Println("dfget download error, try to download from source")
 
 	var (
+		wLog     = logger.With("url", cfg.URL)
 		start    = time.Now()
-		end      time.Time
 		target   *os.File
 		response io.ReadCloser
+		err      error
 		written  int64
 	)
 
-	response, err = source.Download(context.Background(), cfg.URL, hdr)
-	if err != nil {
-		logger.Errorf("download from source error: %s", err)
+	wLog.Info("try to download from source and ignore rate limit")
+	fmt.Println("try to download from source and ignore rate limit")
+
+	dir := filepath.Dir(cfg.Output)
+	_ = fileutils.MkdirAllWithOwner(dir, basic.UserID, basic.UserGroup)
+	if target, err = ioutil.TempFile(dir, ".df_"); err != nil {
+		return err
+	}
+	defer os.Remove(target.Name())
+	defer target.Close()
+
+	if response, err = source.Download(ctx, cfg.URL, hdr); err != nil {
 		return err
 	}
 	defer response.Close()
 
-	target, err = os.OpenFile(cfg.Output, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		logger.Errorf("open %s error: %s", cfg.Output, err)
+	if written, err = io.Copy(target, response); err != nil {
 		return err
 	}
 
-	written, err = io.Copy(target, response)
-	if err != nil {
-		logger.Errorf("copied %d bytes to %s, with error: %s", written, cfg.Output, err)
-		return err
-	}
-	logger.Infof("copied %d bytes to %s", written, cfg.Output)
-	end = time.Now()
-	fmt.Printf("Download from source success, time cost: %dms\n", end.Sub(start).Milliseconds())
+	if !stringutils.IsBlank(cfg.Digest) {
+		parsedHash := digestutils.Parse(cfg.Digest)
+		realHash := digestutils.HashFile(target.Name(), parsedHash[0])
 
-	// change permission
-	logger.Infof("change own to uid %d gid %d", basic.UserID, basic.UserGroup)
-	if err = os.Chown(cfg.Output, basic.UserID, basic.UserGroup); err != nil {
-		logger.Errorf("change own failed: %s", err)
+		if realHash != parsedHash[1] {
+			return errors.Errorf("%s digest is not matched: real[%s] expected[%s]", parsedHash[0], realHash, parsedHash[1])
+		}
+	}
+
+	// change file owner
+	if err = os.Chown(target.Name(), basic.UserID, basic.UserGroup); err != nil {
+		return errors.Wrapf(err, "change file owner to uid[%d] gid[%d]", basic.UserID, basic.UserGroup)
+	}
+
+	if err = os.Rename(target.Name(), cfg.Output); err != nil {
 		return err
 	}
+
+	wLog.Infof("download from source success, length:%dByte cost:%dms", written, time.Now().Sub(start).Milliseconds())
+	fmt.Printf("finish total length %d Byte\n", written)
+
 	return nil
 }
 
 func parseHeader(s []string) map[string]string {
-	hdr := map[string]string{}
+	hdr := make(map[string]string)
+	var key, value string
 	for _, h := range s {
 		idx := strings.Index(h, ":")
 		if idx > 0 {
-			hdr[h[:idx]] = strings.TrimLeft(h[idx:], " ")
+			key = strings.TrimSpace(h[:idx])
+			value = strings.TrimSpace(h[idx+1:])
+			hdr[key] = value
 		}
 	}
+
 	return hdr
+}
+
+func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemon.DownRequest {
+	return &dfdaemon.DownRequest{
+		Url:               cfg.URL,
+		Output:            cfg.Output,
+		Timeout:           int64(cfg.Timeout),
+		Limit:             float64(cfg.RateLimit),
+		DisableBackSource: cfg.DisableBackSource,
+		UrlMeta: &base.UrlMeta{
+			Digest: cfg.Digest,
+			Tag:    cfg.Tag,
+			Range:  hdr[dfheaders.Range],
+			Filter: cfg.Filter,
+			Header: hdr,
+		},
+		Pattern:    cfg.Pattern,
+		Callsystem: cfg.CallSystem,
+		Uid:        int64(basic.UserID),
+		Gid:        int64(basic.UserGroup),
+	}
+}
+
+func newProgressBar(max int64) *progressbar.ProgressBar {
+	return progressbar.NewOptions64(max,
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionShowIts(),
+		progressbar.OptionSetPredictTime(true),
+		progressbar.OptionUseANSICodes(true),
+		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionFullWidth(),
+		progressbar.OptionSetDescription("[cyan]Downloading...[reset]"),
+		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "[green]=[reset]",
+			SaucerHead:    "[green]>[reset]",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}))
 }

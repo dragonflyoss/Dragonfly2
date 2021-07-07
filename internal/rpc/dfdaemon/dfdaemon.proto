@@ -31,26 +31,26 @@ message DownRequest{
   // pieces will be written to output path directly,
   // at the same time, dfdaemon workspace also makes soft link to the output
   string output = 3;
-  // timeout duration, default 3 hour
+  // timeout duration
   int64 timeout = 4;
   // rate limit in bytes per second
-  int64 limit = 5;
-  base.UrlMeta url_meta = 6;
+  double limit = 5;
+  bool disable_back_source = 6;
+  base.UrlMeta url_meta = 7;
   // p2p/cdn/source
-  string pattern = 7;
+  string pattern = 8;
   // call system
-  string callsystem = 8;
+  string callsystem = 9;
   // user id
-  int64 uid = 9;
+  int64 uid = 10;
   // group id
-  int64 gid = 10;
+  int64 gid = 11;
 }
 
 message DownResult{
   string task_id = 2;
   string peer_id = 3;
   uint64 completed_length = 4;
-  // done with success or fail
   bool done = 5;
 }
 
