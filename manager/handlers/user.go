@@ -29,8 +29,6 @@ func (h *Handlers) Register(ctx *gin.Context) {
 		ctx.Error(err)
 		return
 	}
-	userResponseInfo := *userInfo
-	userResponseInfo.EncryptedPassword = ""
 
 	ctx.JSON(http.StatusOK, userInfo)
 }

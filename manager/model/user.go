@@ -9,7 +9,7 @@ type User struct {
 	Model
 	Email             string `gorm:"column:email;size:256;uniqueIndex;not null" json:"email"`
 	Name              string `gorm:"column:name;size:256;uniqueIndex;not null" json:"name"`
-	EncryptedPassword string `gorm:"column:encrypted_password;size:1024" json:"encrypted_password"`
+	EncryptedPassword string `gorm:"column:encrypted_password;size:1024" json:"-"`
 	Avatar            string `gorm:"column:avatar;size:256" json:"avatar"`
 	Phone             string `gorm:"column:phone;size:256" json:"phone"`
 	PrivateToken      string `gorm:"column:private_token;size:256" json:"private_token"`
