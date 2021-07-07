@@ -154,7 +154,7 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	}
 	// tiny file content is returned by scheduler, just write to output
 	if tiny != nil {
-		ptm.storeTinyPeerTask(tiny)
+		ptm.storeTinyPeerTask(ctx, tiny)
 		defer tiny.span.End()
 		log := logger.With("peer", tiny.PeerID, "task", tiny.TaskID, "component", "peerTaskManager")
 		_, err = os.Stat(req.Output)
@@ -212,7 +212,7 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 	}
 	// tiny file content is returned by scheduler, just write to output
 	if tiny != nil {
-		ptm.storeTinyPeerTask(tiny)
+		ptm.storeTinyPeerTask(ctx, tiny)
 		logger.Infof("copied tasks data %d bytes to buffer", len(tiny.Content))
 		tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 		return ioutil.NopCloser(bytes.NewBuffer(tiny.Content)), map[string]string{
@@ -248,9 +248,8 @@ func (ptm *peerTaskManager) IsPeerTaskRunning(peerID string) bool {
 	return ok
 }
 
-func (ptm *peerTaskManager) storeTinyPeerTask(tiny *TinyData) {
+func (ptm *peerTaskManager) storeTinyPeerTask(ctx context.Context, tiny *TinyData) {
 	// TODO store tiny data asynchronous
-	ctx := context.Background()
 	l := int64(len(tiny.Content))
 	err := ptm.storageManager.RegisterTask(ctx,
 		storage.RegisterTaskRequest{
