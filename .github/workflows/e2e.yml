@@ -55,9 +55,8 @@ jobs:
 
       - name: Helm install
         run: |
-          kubectl create ns dragonfly-system
           helm lint ./deploy/charts/dragonfly
-          helm install -n dragonfly-system dragonfly ./deploy/charts/dragonfly
+          helm install -n dragonfly-system --create-namespace dragonfly ./deploy/charts/dragonfly
 
       - name: Wait for running
         run: |
