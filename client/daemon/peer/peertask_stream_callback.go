@@ -44,9 +44,8 @@ func (p *streamPeerTaskCallback) Init(pt Task) error {
 	err := p.ptm.storageManager.RegisterTask(p.ctx,
 		storage.RegisterTaskRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
-				PeerID:      pt.GetPeerID(),
-				TaskID:      pt.GetTaskID(),
-				Destination: "",
+				PeerID: pt.GetPeerID(),
+				TaskID: pt.GetTaskID(),
 			},
 			ContentLength: pt.GetContentLength(),
 			TotalPieces:   pt.GetTotalPieces(),

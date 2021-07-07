@@ -210,6 +210,8 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, span := proxy.tracer.Start(r.Context(), config.SpanProxy)
+	span.SetAttributes(config.AttributePeerHost.String(proxy.peerHost.Uuid))
+	span.SetAttributes(semconv.NetHostIPKey.String(proxy.peerHost.Ip))
 	span.SetAttributes(semconv.HTTPSchemeKey.String(r.URL.Scheme))
 	span.SetAttributes(semconv.HTTPHostKey.String(r.Host))
 	span.SetAttributes(semconv.HTTPURLKey.String(r.URL.String()))
