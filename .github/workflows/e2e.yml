@@ -9,6 +9,7 @@ on:
 env:
   GO_VERSION: 1.15
   KIND_VERSION: v0.11.1
+  CONTAINERD_VERSION: v1.5.2
   GOPROXY: https://goproxy.io,direct
 
 jobs:
@@ -44,6 +45,11 @@ jobs:
           go get -v -t -d ./...
           go get github.com/onsi/ginkgo/ginkgo
 
+      - name: Set up containerd
+        uses: crazy-max/ghaction-setup-containerd@v1
+        with:
+          containerd-version: ${{ env.CONTAINERD_VERSION }}
+
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
         with:
@@ -77,3 +83,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
           flags: e2etests
+
+      - name: Run containerd
+        run: sudo ctr
