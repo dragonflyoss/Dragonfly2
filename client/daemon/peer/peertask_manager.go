@@ -139,6 +139,9 @@ func NewPeerTaskManager(
 var _ TaskManager = (*peerTaskManager)(nil)
 
 func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *FilePeerTaskProgress, *TinyData, error) {
+	if req.PeerHost == nil {
+		req.PeerHost = ptm.host
+	}
 	if ptm.enableMultiplex {
 		progress, ok := ptm.tryReuseFilePeerTask(ctx, req)
 		if ok {
@@ -197,6 +200,9 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 }
 
 func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (io.ReadCloser, map[string]string, error) {
+	if req.PeerHost == nil {
+		req.PeerHost = ptm.host
+	}
 	if ptm.enableMultiplex {
 		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, req)
 		if ok {
