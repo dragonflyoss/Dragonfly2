@@ -1,4 +1,4 @@
-apiVersion: v2
+apiVersion: v1
 name: dragonfly
 version: 0.1.0
 appVersion: "0.1.0"
