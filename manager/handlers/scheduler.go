@@ -25,7 +25,7 @@ func (h *Handlers) CreateScheduler(ctx *gin.Context) {
 		return
 	}
 
-	scheduler, err := h.service.CreateScheduler(json)
+	scheduler, err := h.Service.CreateScheduler(json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -52,7 +52,7 @@ func (h *Handlers) DestroyScheduler(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.DestroyScheduler(params.ID)
+	err := h.Service.DestroyScheduler(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -86,7 +86,7 @@ func (h *Handlers) UpdateScheduler(ctx *gin.Context) {
 		return
 	}
 
-	scheduler, err := h.service.UpdateScheduler(params.ID, json)
+	scheduler, err := h.Service.UpdateScheduler(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -113,7 +113,7 @@ func (h *Handlers) GetScheduler(ctx *gin.Context) {
 		return
 	}
 
-	scheduler, err := h.service.GetScheduler(params.ID)
+	scheduler, err := h.Service.GetScheduler(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -142,13 +142,13 @@ func (h *Handlers) GetSchedulers(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	schedulers, err := h.service.GetSchedulers(query)
+	schedulers, err := h.Service.GetSchedulers(query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.SchedulerTotalCount(query)
+	totalCount, err := h.Service.SchedulerTotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return
