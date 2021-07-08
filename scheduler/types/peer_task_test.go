@@ -1,8 +1,9 @@
 package types
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPeerTask_SetStatus(t *testing.T) {
@@ -10,7 +11,7 @@ func TestPeerTask_SetStatus(t *testing.T) {
 		name         string
 		oldStatus    PeerTaskStatus
 		newStatus    PeerTaskStatus
-		swapStatus    PeerTaskStatus
+		swapStatus   PeerTaskStatus
 		expectStatus PeerTaskStatus
 	}{
 		{
