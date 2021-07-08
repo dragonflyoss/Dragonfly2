@@ -53,9 +53,9 @@ jobs:
 
       - name: Set up crictl
         run: |
-          wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${{ CRICTL_VERSION }}-linux-amd64.tar.gz
-          sudo tar zxvf crictl-${{ CRICTL_VERSION }}-linux-amd64.tar.gz -C /usr/local/bin
-          rm -f crictl-${{ CRICTL_VERSION }}-linux-amd64.tar.gz
+          wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-$CRICTL_VERSION-linux-amd64.tar.gz
+          sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
+          rm -f crictl-$CRICTL_VERSION-linux-amd64.tar.gz
 
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
