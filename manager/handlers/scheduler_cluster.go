@@ -26,7 +26,7 @@ func (h *Handlers) CreateSchedulerCluster(ctx *gin.Context) {
 	}
 
 	if json.SecurityGroupDomain != "" {
-		scheduler, err := h.service.CreateSchedulerClusterWithSecurityGroupDomain(json)
+		scheduler, err := h.Service.CreateSchedulerClusterWithSecurityGroupDomain(json)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -36,7 +36,7 @@ func (h *Handlers) CreateSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.CreateSchedulerCluster(json)
+	schedulerCluster, err := h.Service.CreateSchedulerCluster(json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -63,7 +63,7 @@ func (h *Handlers) DestroySchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.DestroySchedulerCluster(params.ID)
+	err := h.Service.DestroySchedulerCluster(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -98,7 +98,7 @@ func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 	}
 
 	if json.SecurityGroupDomain != "" {
-		scheduler, err := h.service.UpdateSchedulerClusterWithSecurityGroupDomain(params.ID, json)
+		scheduler, err := h.Service.UpdateSchedulerClusterWithSecurityGroupDomain(params.ID, json)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -108,7 +108,7 @@ func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.UpdateSchedulerCluster(params.ID, json)
+	schedulerCluster, err := h.Service.UpdateSchedulerCluster(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -135,7 +135,7 @@ func (h *Handlers) GetSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.GetSchedulerCluster(params.ID)
+	schedulerCluster, err := h.Service.GetSchedulerCluster(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -164,13 +164,13 @@ func (h *Handlers) GetSchedulerClusters(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	schedulerClusters, err := h.service.GetSchedulerClusters(query)
+	schedulerClusters, err := h.Service.GetSchedulerClusters(query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.SchedulerClusterTotalCount(query)
+	totalCount, err := h.Service.SchedulerClusterTotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -199,7 +199,7 @@ func (h *Handlers) AddSchedulerToSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.AddSchedulerToSchedulerCluster(params.ID, params.SchedulerID)
+	err := h.Service.AddSchedulerToSchedulerCluster(params.ID, params.SchedulerID)
 	if err != nil {
 		ctx.Error(err)
 		return

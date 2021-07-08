@@ -24,7 +24,9 @@ import (
 	"hash"
 	"io"
 	"os"
+	"strings"
 
+	"d7y.io/dragonfly/v2/internal/constants"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
@@ -59,19 +61,28 @@ func Md5Bytes(bytes []byte) string {
 	return ToHashString(h)
 }
 
-func Md5File(name string) string {
-	if !fileutils.IsRegular(name) {
+// HashFile computes hash value corresponding to hashType,
+// hashType is from constants.Md5Hash and constants.Sha256Hash.
+func HashFile(file string, hashType string) string {
+	if !fileutils.IsRegular(file) {
 		return ""
 	}
 
-	f, err := os.Open(name)
+	f, err := os.Open(file)
 	if err != nil {
 		return ""
 	}
 
 	defer f.Close()
 
-	h := md5.New()
+	var h hash.Hash
+	if hashType == constants.Md5Hash {
+		h = md5.New()
+	} else if hashType == constants.Sha256Hash {
+		h = sha256.New()
+	} else {
+		return ""
+	}
 
 	r := bufio.NewReaderSize(f, int(4*unit.MB))
 
@@ -85,4 +96,9 @@ func Md5File(name string) string {
 
 func ToHashString(h hash.Hash) string {
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func Parse(digest string) []string {
+	digest = strings.Trim(digest, " ")
+	return strings.Split(digest, ":")
 }

@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package main
+package constants
 
-import (
-	"d7y.io/dragonfly/v2/cmd/dfget/cmd"
-	// Register http client
-	_ "d7y.io/dragonfly/v2/pkg/source/httpprotocol"
-	// Register oss client
-	_ "d7y.io/dragonfly/v2/pkg/source/ossprotocol"
+const (
+	// download pattern
+	SourcePattern = "source"
+	CDNPattern    = "cdn"
+	P2PPattern    = "p2p"
+
+	Sha256Hash = "sha256"
+	Md5Hash    = "md5"
 )
-
-func main() {
-	cmd.Execute()
-}

@@ -162,5 +162,5 @@ var _Seeder_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "internal/rpc/cdnsystem/cdnsystem.proto",
+	Metadata: "pkg/rpc/cdnsystem/cdnsystem.proto",
 }

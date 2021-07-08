@@ -22,6 +22,7 @@ import (
 	"syscall"
 	"testing"
 
+	"d7y.io/dragonfly/v2/internal/constants"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"github.com/google/uuid"
@@ -50,7 +51,7 @@ func TestMd5Reader(t *testing.T) {
 	assert.Equal(t, expected, Md5Reader(strings.NewReader("hello")))
 }
 
-func TestMd5File(t *testing.T) {
+func TestHashFile(t *testing.T) {
 	var expected = "5d41402abc4b2a76b9719d911017c592"
 
 	path := basic.TmpDir + "/" + uuid.New().String()
@@ -60,5 +61,5 @@ func TestMd5File(t *testing.T) {
 	f.Write([]byte("hello"))
 	f.Close()
 
-	assert.Equal(t, expected, Md5File(path))
+	assert.Equal(t, expected, HashFile(path, constants.Md5Hash))
 }
