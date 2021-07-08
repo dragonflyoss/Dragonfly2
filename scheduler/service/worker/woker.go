@@ -26,7 +26,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	scheduler2 "d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -202,11 +202,11 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 	case types.PeerTaskStatusAddParent:
 		parent, _ := peerTask.GetJobData().(*types.PeerTask)
 		if parent == nil {
-			peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+			peerTask.SetNodeStatusHealth(types.PeerTaskStatusAddParent)
 			return
 		}
 		peerTask.AddParent(parent, 1)
-		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+		peerTask.SetNodeStatusHealth(types.PeerTaskStatusAddParent)
 		return
 	case types.PeerTaskStatusNeedParent:
 		parent, _, err := w.schedulerService.Scheduler.ScheduleParent(peerTask)
@@ -218,7 +218,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 			w.sendJobLater(peerTask)
 		} else {
 			w.sendScheduleResult(peerTask)
-			peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+			peerTask.SetNodeStatusHealth(types.PeerTaskStatusNeedParent)
 		}
 		w.schedulerService.TaskManager.PeerTask.RefreshDownloadMonitor(peerTask)
 	case types.PeerTaskStatusNeedChildren:
@@ -235,7 +235,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 				w.sendJob(children[i])
 			}
 		}
-		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+		peerTask.SetNodeStatusHealth(types.PeerTaskStatusNeedChildren)
 
 	case types.PeerTaskStatusBadNode:
 		adjustNodes, err := w.schedulerService.Scheduler.ScheduleBadNode(peerTask)
@@ -265,7 +265,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 			return
 		}
 		w.sendScheduleResult(peerTask)
-		peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+		peerTask.SetNodeStatusHealth(types.PeerTaskStatusNeedAdjustNode)
 
 	case types.PeerTaskStatusNeedCheckNode:
 		if w.schedulerService.Scheduler.IsNodeBad(peerTask) && peerTask.GetSubTreeNodesNum() > 1 {
@@ -284,7 +284,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 					w.sendJob(adjustNodes[i])
 				}
 			}
-			peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+			peerTask.SetNodeStatusHealth(types.PeerTaskStatusNeedCheckNode)
 		} else if w.schedulerService.Scheduler.NeedAdjustParent(peerTask) {
 			_, _, err := w.schedulerService.Scheduler.ScheduleAdjustParentNode(peerTask)
 			if err != nil {
@@ -292,7 +292,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 				return
 			}
 			w.sendScheduleResult(peerTask)
-			peerTask.SetNodeStatus(types.PeerTaskStatusHealth)
+			peerTask.SetNodeStatusHealth(types.PeerTaskStatusNeedCheckNode)
 		}
 
 	case types.PeerTaskStatusDone:
@@ -306,6 +306,7 @@ func (w *Worker) doSchedule(peerTask *types.PeerTask) {
 			parent.SetNodeStatus(types.PeerTaskStatusNeedChildren)
 			w.sendJob(parent)
 		}
+		peerTask.SetNodeStatusHealth(types.PeerTaskStatusDone)
 
 	case types.PeerTaskStatusLeaveNode, types.PeerTaskStatusNodeGone:
 		adjustNodes, err := w.schedulerService.Scheduler.ScheduleLeaveNode(peerTask)
