@@ -7,6 +7,7 @@ require (
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
+	github.com/containerd/containerd v1.5.2
 	github.com/docker/go-units v0.4.0
 	github.com/emirpasic/gods v1.12.0
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
@@ -20,7 +21,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
-	github.com/google/uuid v1.1.5
+	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.7.3
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/kr/text v0.2.0 // indirect
@@ -37,8 +38,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/serialx/hashring v0.0.0-20200727003509-22c0c7ab6b1b
-	github.com/sirupsen/logrus v1.4.2
-	github.com/spf13/afero v1.2.2 // indirect
+	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
@@ -61,6 +61,6 @@ require (
 	gorm.io/datatypes v1.0.1
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.6
-	k8s.io/apimachinery v0.20.1
+	k8s.io/apimachinery v0.20.6
 	k8s.io/client-go v11.0.0+incompatible
 )

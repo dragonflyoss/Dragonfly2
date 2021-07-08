@@ -14,27 +14,28 @@
  * limitations under the License.
  */
 
-package download
+package e2e
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/containerd/containerd"
+
 	//nolint
 	. "github.com/onsi/ginkgo"
+
 	//nolint
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Book", func() {
-	Describe("Categorizing book length", func() {
-		Context("With more than 300 pages", func() {
-			It("should be a novel", func() {
-				Expect(2).To(Equal(2))
-			})
-		})
-
-		Context("With fewer than 300 pages", func() {
-			It("should be a short story", func() {
-				Expect(3).To(Equal(3))
-			})
+var _ = Describe("Containerd", func() {
+	Context("Pull docker.io/library/busybox image", func() {
+		It("should be ok", func() {
+			image, err := cdClient.Pull(context.Background(), "docker.io/library/busybox", containerd.WithPullUnpack)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(image)
 		})
 	})
+
 })

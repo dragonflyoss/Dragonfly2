@@ -22,12 +22,23 @@ import (
 
 	"testing"
 
-	// Each suite must be imported explicitly.
-	_ "d7y.io/dragonfly/v2/test/e2e/download"
+	"github.com/containerd/containerd"
 )
+
+var cdClient *containerd.Client
 
 // TestE2E is the root of e2e test function
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "dragonfly e2e test suite")
 }
+
+var _ = BeforeSuite(func() {
+	client, err := containerd.New("/Users/qiwenbo/Work/github.com/dragonflyoss/dragonfly-assets/containerd/containerd.sock")
+	Expect(err).NotTo(HaveOccurred())
+	cdClient = client
+})
+
+var _ = AfterSuite(func() {
+	cdClient.Close()
+})

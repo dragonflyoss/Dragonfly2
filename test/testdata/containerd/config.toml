@@ -39,4 +39,4 @@ imports = ["/etc/containerd/runtime_*.toml", "./debug.toml"]
     schedule_delay = 0
     startup_delay = "100ms"
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-    endpoint = ["http://127.0.0.1:65001","https://registry-1.docker.io"]
+    endpoint = ["http://127.0.0.1:65001"]
