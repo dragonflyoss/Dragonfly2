@@ -92,7 +92,7 @@ git clone https://github.com/dragonflyoss/Dragonfly2.git
 ### Install
 
 ```shell
-helm install --namespace dragonfly-system dragonfly Dragonfly2/deploy/charts/dragonfly
+helm install --namespace dragonfly-system --name dragonfly Dragonfly2/deploy/charts/dragonfly
 ```
 
 ### Wait Dragonfly Ready
