@@ -75,7 +75,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		}
 	}
 	// todo 任务状态有问题
-	if task.Status == 0 {
+	if types.IsFailedTask(task.Status) {
 		return nil, dferrors.Newf(dfcodes.SchedNeedBackSource, "task status is %s", task.Status)
 	}
 	err = s.service.RegisterPeerTask(request, task)

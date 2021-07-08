@@ -116,47 +116,40 @@ func (s *SchedulerService) AddHost(host *types.Host) (ret *types.Host, err error
 func (s *SchedulerService) RegisterPeerTask(req *scheduler.PeerTaskRequest, task *types.Task) (*types.PeerRegisterResponse, error) {
 	// get or create host
 	reqPeerHost := req.PeerHost
-	if host, ok := s.HostManager.Get(reqPeerHost.Uuid); !ok {
+	var (
+		peerNode *types.PeerNode
+		ok       bool
+		host     *types.NodeHost
+	)
+
+	if host, ok = s.HostManager.Get(reqPeerHost.Uuid); !ok {
 		host = &types.NodeHost{
-			HostType:       types.PeerNodeHost,
-			UUID:           reqPeerHost.Uuid,
-			IP:             reqPeerHost.Ip,
-			RPCPort:        reqPeerHost.RpcPort,
-			DownloadPort:   reqPeerHost.DownPort,
-			HostName:       reqPeerHost.HostName,
-			SecurityDomain: reqPeerHost.SecurityDomain,
-			Location:       reqPeerHost.Location,
-			IDC:            reqPeerHost.Idc,
-			NetTopology:    reqPeerHost.NetTopology,
+			UUID:            reqPeerHost.Uuid,
+			IP:              reqPeerHost.Ip,
+			HostName:        reqPeerHost.HostName,
+			RPCPort:         reqPeerHost.RpcPort,
+			DownloadPort:    reqPeerHost.DownPort,
+			HostType:        types.PeerNodeHost,
+			SecurityDomain:  reqPeerHost.SecurityDomain,
+			Location:        reqPeerHost.Location,
+			IDC:             reqPeerHost.Idc,
+			NetTopology:     reqPeerHost.NetTopology,
+			TotalUploadLoad: 0,
 		}
 		s.HostManager.Add(host)
 	}
 
 	// get or creat PeerTask
-	if peerTask, ok := s.PeerManager.Get(req.PeerId); !ok {
-		peerTask, err = s.service.AddPeerTask(pid, task, host)
-		if err != nil
-	} else if peerTask.Host == nil {
-		peerTask.Host = host
-	}
-
-	if isCdn {
-		peerTask.SetDown()
-		err = dferrors.New(dfcodes.SchedNeedBackSource, "there is no cdn")
-		return
-	} else if peerTask.IsDown() {
-		peerTask.SetUp()
-	}
-
-	if resp.SizeScope == base.SizeScope_NORMAL {
-		return
+	if peerNode, ok = s.PeerManager.Get(req.PeerId); !ok {
+		peerNode, _ := types.NewPeerNode(req.PeerId, task, host)
+		s.PeerManager.Add(peerNode)
 	}
 
 	// case base.SizeScope_SMALL
 	// do scheduler piece
-	parent, _, err := s.service.ScheduleParent(peerTask)
+	parent, _, err := s.ScheduleParent(peerNode)
 	if err != nil {
-		return
+		return err
 	}
 
 	if parent == nil {

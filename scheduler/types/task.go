@@ -37,14 +37,18 @@ func IsSuccess(status int) bool {
 	return status == TaskStatusSuccess
 }
 
-func isFrozen(status int) bool {
+func IsFrozen(status int) bool {
 	return status == TaskStatusFailed ||
 		status == TaskStatusWaiting ||
 		status == TaskStatusSourceError
 }
 
-func isWait(status int) bool {
+func IsWait(status int) bool {
 	return status == TaskStatusWaiting
+}
+
+func IsFailedTask(status int) bool {
+	return status == TaskStatusFailed
 }
 
 type Task struct {
@@ -222,7 +226,7 @@ type PieceStyle int32
 type PeerRegisterInfo struct {
 	PeerId string
 	// peer host info
-	PeerHost *PeerHost
+	PeerHost *NodeHost
 	// current host load
 	HostLoad    *base.HostLoad
 	IsMigrating bool

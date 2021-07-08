@@ -64,7 +64,7 @@ type PeerNode struct {
 type downloadStatistic struct {
 }
 
-func NewPeerNode(peerID string, task *Task, host *NodeHost, client *worker.Client) (*PeerNode, error) {
+func NewPeerNode(peerID string, task *Task, host *NodeHost) (*PeerNode, error) {
 	if task == nil {
 		return nil, errors.New("task is nil")
 	}
