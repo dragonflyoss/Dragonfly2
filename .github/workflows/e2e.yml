@@ -2,9 +2,9 @@ name: E2E Test
 
 on:
   push:
-    branches: [main, release-*, feature/e2e]
+    branches: [main, release-*]
   pull_request:
-    branches: [main, release-*, feature/e2e]
+    branches: [main, release-*]
 
 env:
   GO_VERSION: 1.15
