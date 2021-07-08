@@ -56,6 +56,9 @@ import (
 type PeerHost interface {
 	Serve() error
 	Stop()
+
+	// ExportTaskManager returns the underlay peer.TaskManager for downloading when embed dragonfly in custom binary
+	ExportTaskManager() peer.TaskManager
 }
 
 type peerHost struct {
@@ -418,4 +421,8 @@ func (ph *peerHost) Stop() {
 			ph.StorageManager.CleanUp()
 		}
 	})
+}
+
+func (ph *peerHost) ExportTaskManager() peer.TaskManager {
+	return ph.PeerTaskManager
 }
