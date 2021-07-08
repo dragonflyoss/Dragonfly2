@@ -17,25 +17,49 @@
 package e2e
 
 import (
-	"context"
-	"fmt"
+	"os/exec"
 
-	"github.com/containerd/containerd"
-
-	//nolint
 	. "github.com/onsi/ginkgo"
-
-	//nolint
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gmeasure"
 )
 
-var _ = Describe("Containerd", func() {
-	Context("Pull docker.io/library/busybox image", func() {
-		It("should be ok", func() {
-			image, err := cdClient.Pull(context.Background(), "docker.io/library/busybox", containerd.WithPullUnpack)
+var _ = Describe("Containerd with CRI support", func() {
+	Context("docker.io/library/busybox:latest image", func() {
+		It("pull should be ok", func() {
+			cmd := exec.Command("crictl", "pull", "docker.io/library/busybox:latest")
+			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(image)
+		})
+
+		It("rmi should be ok", func() {
+			cmd := exec.Command("crictl", "rmi", "docker.io/library/busybox:latest")
+			_, err := cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("pull error image", func() {
+			cmd := exec.Command("crictl", "pull", "docker.io/library/foo")
+			_, err := cmd.CombinedOutput()
+			Expect(err).Should(HaveOccurred())
 		})
 	})
 
+	Context("measures docker.io/library/busybox:latest image", func() {
+		It("10 times", func() {
+			experiment := gmeasure.NewExperiment("crictl performance")
+			experiment.SampleDuration("runtime", func(idx int) {
+				var cmd *exec.Cmd
+				var err error
+
+				cmd = exec.Command("crictl", "pull", "docker.io/library/busybox:latest")
+				_, err = cmd.CombinedOutput()
+				Expect(err).NotTo(HaveOccurred())
+
+				cmd = exec.Command("crictl", "rmi", "docker.io/library/busybox:latest")
+				_, err = cmd.CombinedOutput()
+				Expect(err).NotTo(HaveOccurred())
+			}, gmeasure.SamplingConfig{N: 10})
+		})
+	})
 })
