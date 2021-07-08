@@ -54,7 +54,9 @@ jobs:
         run: |
           wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.21.0/crictl-v1.21.0-linux-amd64.tar.gz
           sudo tar zxvf crictl-v1.21.0-linux-amd64.tar.gz -C /usr/local/bin
+          mv ./test/testdata/crictl/config.yaml /etc/crictl.yaml
           rm -f crictl-v1.21.0-linux-amd64.tar.gz
+          crictl --debug pull docker.io/library/busybox:latest
 
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
