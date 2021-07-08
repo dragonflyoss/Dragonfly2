@@ -76,9 +76,7 @@ jobs:
           helm install --create-namespace -n dragonfly-system dragonfly ./deploy/charts/dragonfly
 
       - name: Wait for running
-        run: |
-          kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
-          kubectl get po -n dragonfly-system
+        run: kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 
       - name: Run E2E tests
         run: make e2e-test-coverage

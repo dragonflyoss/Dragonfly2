@@ -25,21 +25,22 @@ import (
 )
 
 var _ = Describe("Containerd with CRI support", func() {
+
 	Context("docker.io/library/busybox:latest image", func() {
 		It("pull should be ok", func() {
-			cmd := exec.Command("crictl", "--runtime-endpoint=unix:/var/run/containerd/containerd.sock", "pull", "docker.io/library/busybox:latest")
+			cmd := exec.Command("crictl", "--runtime-endpoint=unix:///run/containerd/containerd.sock", "pull", "docker.io/library/busybox:latest")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("rmi should be ok", func() {
-			cmd := exec.Command("crictl", "--runtime-endpoint=unix:/var/run/containerd/containerd.sock", "rmi", "docker.io/library/busybox:latest")
+			cmd := exec.Command("crictl", "--runtime-endpoint=unix:///run/containerd/containerd.sock", "rmi", "docker.io/library/busybox:latest")
 			_, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("pull error image", func() {
-			cmd := exec.Command("crictl", "--runtime-endpoint=unix:/var/run/containerd/containerd.sock", "pull", "docker.io/library/foo")
+			cmd := exec.Command("crictl", "--runtime-endpoint=unix:///run/containerd/containerd.sock", "pull", "docker.io/library/foo")
 			_, err := cmd.CombinedOutput()
 			Expect(err).Should(HaveOccurred())
 		})
@@ -52,11 +53,11 @@ var _ = Describe("Containerd with CRI support", func() {
 				var cmd *exec.Cmd
 				var err error
 
-				cmd = exec.Command("crictl", "--runtime-endpoint=unix:/var/run/containerd/containerd.sock", "pull", "docker.io/library/busybox:latest")
+				cmd = exec.Command("crictl", "--runtime-endpoint=unix:///run/containerd/containerd.sock", "pull", "docker.io/library/busybox:latest")
 				_, err = cmd.CombinedOutput()
 				Expect(err).NotTo(HaveOccurred())
 
-				cmd = exec.Command("crictl", "--runtime-endpoint=unix:/var/run/containerd/containerd.sock", "rmi", "docker.io/library/busybox:latest")
+				cmd = exec.Command("crictl", "--runtime-endpoint=unix:///run/containerd/containerd.sock", "rmi", "docker.io/library/busybox:latest")
 				_, err = cmd.CombinedOutput()
 				Expect(err).NotTo(HaveOccurred())
 			}, gmeasure.SamplingConfig{N: 10})
