@@ -20,7 +20,7 @@ import (
 	"hash/crc32"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	scheduler2 "d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"
 	"d7y.io/dragonfly/v2/scheduler/types"

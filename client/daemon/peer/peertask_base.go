@@ -36,11 +36,11 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
-	dfclient "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/internal/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/retry"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 const (
