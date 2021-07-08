@@ -34,7 +34,7 @@ func TestE2E(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	client, err := containerd.New("/Users/qiwenbo/Work/github.com/dragonflyoss/dragonfly-assets/containerd/containerd.sock")
+	client, err := containerd.New("/run/containerd/containerd.sock")
 	Expect(err).NotTo(HaveOccurred())
 	cdClient = client
 })
