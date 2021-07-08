@@ -26,12 +26,18 @@ require (
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-sqlite3 v2.0.1+incompatible // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mcuadros/go-gin-prometheus v0.1.0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/gomega v1.14.0
 	github.com/pborman/uuid v1.2.1
+	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.7.1 // indirect
+	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/schollz/progressbar/v3 v3.8.2
 	github.com/serialx/hashring v0.0.0-20200727003509-22c0c7ab6b1b
@@ -49,8 +55,9 @@ require (
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
-	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
+	golang.org/x/tools v0.1.4 // indirect
+	google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a // indirect
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
@@ -59,6 +66,7 @@ require (
 	gorm.io/datatypes v1.0.1
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.6
-	k8s.io/apimachinery v0.20.1
+	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
+	k8s.io/apimachinery v0.20.6
 	k8s.io/client-go v11.0.0+incompatible
 )

@@ -16,7 +16,7 @@ PROJECT_NAME := "d7y.io/dragonfly/v2"
 DFGET_NAME := "dfget"
 VERSION := "2.0.0"
 PKG := "$(PROJECT_NAME)"
-PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/manager/\)')
+PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/manager/\)' | grep -v '\(/test/\)')
 GIT_COMMIT := $(shell git rev-parse --verify HEAD --short=7)
 GIT_COMMIT_LONG := $(shell git rev-parse --verify HEAD)
 DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(GIT_COMMIT)"
@@ -190,6 +190,42 @@ test-coverage:
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
+# Run E2E tests
+e2e-test:
+	@ginkgo -v -r --failFast test/e2e --trace --progress
+.PHONY: e2e-test
+
+# Run E2E tests with coverage
+e2e-test-coverage:
+	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
+	@cat test/e2e/*.coverprofile >> coverage.txt
+.PHONY: e2e-test-coverage
+
+# Kind load dragonlfy
+kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon
+	@echo "Kind load image done."
+.PHONY: docker-build
+
+# Run kind load docker-image cdn
+kind-load-cdn:
+	@./hack/kind-load.sh cdn
+.PHONY: kind-load-cdn
+
+# Run kind load docker scheduler
+kind-load-scheduler:
+	@./hack/kind-load.sh scheduler
+.PHONY: kind-load-scheduler
+
+# Run kind load docker dfget
+kind-load-dfdaemon:
+	@./hack/kind-load.sh dfdaemon
+.PHONY: kind-load-dfget
+
+# Run kind load docker manager
+kind-load-manager:
+	@./hack/kind-load.sh manager
+.PHONY: kind-load-manager
+
 # Run go generate
 generate:
 	@go generate ${PKG_LIST}
@@ -230,6 +266,15 @@ help:
 	@echo "make build-dfget-man-page           generate dfget man page"
 	@echo "make test                           run unittests"
 	@echo "make test-coverage                  run tests with coverage"
+	@echo "make e2e-test                       run e2e tests"
+	@echo "make e2e-test-coverage              run e2e tests with coverage"
 	@echo "make swag-manager                   generate swagger api"
+	@echo "make kind-load-image                kind load docker image"
 	@echo "make changelog                      generate CHANGELOG.md"
+	@echo "make kind-load-cdn                  kind load cdn docker image"
+	@echo "make kind-load-scheduler            kind load scheduler docker image"
+	@echo "make kind-load-dfdaemon             kind load dfdaemon docker image"
+	@echo "make kind-load-manager              kind load manager docker image"
+	@echo "make changelog                      generate CHANGELOG.md"
+	@echo "make generate                       run go generate"
 	@echo "make clean                          clean"
