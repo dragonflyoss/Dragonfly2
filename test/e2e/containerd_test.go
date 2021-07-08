@@ -17,6 +17,7 @@
 package e2e
 
 import (
+	"fmt"
 	"os/exec"
 
 	// nolint
@@ -32,18 +33,21 @@ var _ = Describe("Containerd with CRI support", func() {
 
 	Context("docker.io/library/busybox:latest image", func() {
 		It("pull should be ok", func() {
-			_, err := pull.CombinedOutput()
+			out, err := pull.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
 		})
 
 		It("rmi should be ok", func() {
-			_, err := rmi.CombinedOutput()
+			out, err := rmi.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(out))
 		})
 
 		It("pull error image", func() {
-			_, err := pull.CombinedOutput()
+			out, err := pull.CombinedOutput()
 			Expect(err).Should(HaveOccurred())
+			fmt.Println(string(out))
 		})
 	})
 })
