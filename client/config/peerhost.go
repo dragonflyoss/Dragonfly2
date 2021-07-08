@@ -41,8 +41,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
-type DaemonConfig = PeerHostOption
-type PeerHostOption struct {
+type DaemonConfig = DaemonOption
+type DaemonOption struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
 	// AliveTime indicates alive duration for which daemon keeps no accessing by any uploading and download requests,
 	// after this period daemon will automatically exit
@@ -63,11 +63,11 @@ type PeerHostOption struct {
 	ConfigServer string          `mapstructure:"configServer" yaml:"configServer"`
 }
 
-func NewDaemonConfig() *PeerHostOption {
+func NewDaemonConfig() *DaemonOption {
 	return &peerHostConfig
 }
 
-func (p *PeerHostOption) Load(path string) error {
+func (p *DaemonOption) Load(path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("unable to load peer host configuration from %q [%v]", path, err)
@@ -91,7 +91,7 @@ func (p *PeerHostOption) Load(path string) error {
 	return nil
 }
 
-func (p *PeerHostOption) Convert() error {
+func (p *DaemonOption) Convert() error {
 	// AdvertiseIP
 	ip := net.ParseIP(p.Host.AdvertiseIP)
 	if ip == nil || net.IPv4zero.Equal(ip) {
@@ -103,7 +103,7 @@ func (p *PeerHostOption) Convert() error {
 	return nil
 }
 
-func (p *PeerHostOption) Validate() error {
+func (p *DaemonOption) Validate() error {
 	if len(p.Scheduler.NetAddrs) == 0 && stringutils.IsBlank(p.ConfigServer) {
 		return errors.New("empty schedulers and config server is not specified")
 	}
