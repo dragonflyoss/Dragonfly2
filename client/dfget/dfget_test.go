@@ -28,13 +28,13 @@ import (
 	"d7y.io/dragonfly/v2/internal/constants"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/source"
-	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
+	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDownloadFromSource(t *testing.T) {
+func Test_downloadFromSource(t *testing.T) {
 	homeDir, err := os.UserHomeDir()
 	assert.Nil(t, err)
 	output := filepath.Join(homeDir, idgen.UUIDString())
@@ -42,7 +42,7 @@ func TestDownloadFromSource(t *testing.T) {
 
 	content := idgen.UUIDString()
 
-	sourceClient := sourceMock.NewMockResourceClient(gomock.NewController(t))
+	sourceClient := sourcemock.NewMockResourceClient(gomock.NewController(t))
 	source.Register("http", sourceClient)
 	defer source.UnRegister("http")
 
