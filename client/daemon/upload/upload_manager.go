@@ -95,7 +95,7 @@ func (um *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("upload piece for task %s/%s to %s, request header: %#v", task, peer, r.RemoteAddr, r.Header)
 	rg, err := clientutil.ParseRange(r.Header.Get(headers.Range), math.MaxInt64)
 	if err != nil {
-		log.Error("parse range with error: %s", err)
+		log.Errorf("parse range with error: %s", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

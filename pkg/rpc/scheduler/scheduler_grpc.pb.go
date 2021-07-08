@@ -247,5 +247,5 @@ var _Scheduler_serviceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "internal/rpc/scheduler/scheduler.proto",
+	Metadata: "pkg/rpc/scheduler/scheduler.proto",
 }

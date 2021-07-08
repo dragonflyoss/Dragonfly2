@@ -21,7 +21,7 @@ package manager;
 import "google/protobuf/empty.proto";
 import "validate/validate.proto";
 
-option go_package = "d7y.io/dragonfly/v2/internal/rpc/manager";
+option go_package = "d7y.io/dragonfly/v2/pkg/rpc/manager";
 
 enum SourceType {
   SCHEDULER_SOURCE = 0;
@@ -65,27 +65,27 @@ message GetCDNRequest {
 message CreateCDNRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string host_name = 2 [(validate.rules).string.hostname = true];
-  string idc = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
-  string location = 5 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
+  string idc = 4 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  string location = 5 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
   string ip = 6 [(validate.rules).string.ip = true];
-  int32 port = 7 [(validate.rules).int32 = { gte: 1024, lt: 65535 }];
-  int32 download_port = 8 [(validate.rules).int32 = { gte: 1024, lt: 65535 }];
+  int32 port = 7 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
+  int32 download_port = 8 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
 }
 
 message UpdateCDNRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string host_name = 2 [(validate.rules).string.hostname = true];
-  string idc = 3 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
-  string location = 4 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
-  string ip = 5 [(validate.rules).string = { ip: true, ignore_empty: true }];
-  int32 port = 6 [(validate.rules).int32 = { gte: 1024, lt: 65535, ignore_empty: true }];
-  int32 download_port = 7 [(validate.rules).int32 = { gte: 1024, lt: 65535, ignore_empty: true }];
+  string idc = 3 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  string location = 4 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
+  string ip = 5 [(validate.rules).string = {ip: true, ignore_empty: true}];
+  int32 port = 6 [(validate.rules).int32 = {gte: 1024, lt: 65535, ignore_empty: true}];
+  int32 download_port = 7 [(validate.rules).int32 = {gte: 1024, lt: 65535, ignore_empty: true}];
 }
 
 message AddCDNToCDNClusterRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  uint64 cdn_id = 2 [(validate.rules).uint64 = { ignore_empty: true }];
-  uint64 cdn_cluster_id = 3 [(validate.rules).uint64 = { ignore_empty: true }];
+  uint64 cdn_id = 2 [(validate.rules).uint64 = {ignore_empty: true}];
+  uint64 cdn_cluster_id = 3 [(validate.rules).uint64 = {ignore_empty: true}];
 }
 
 message SchedulerCluster {
@@ -119,29 +119,29 @@ message GetSchedulerRequest {
 message CreateSchedulerRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string host_name = 2 [(validate.rules).string.hostname = true];
-  string vips = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
-  string idc = 5 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
-  string location = 6 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
-  bytes net_config = 7 [(validate.rules).bytes = { min_len: 1, ignore_empty: true }];
+  string vips = 4 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  string idc = 5 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  string location = 6 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
+  bytes net_config = 7 [(validate.rules).bytes = {min_len: 1, ignore_empty: true}];
   string ip = 8 [(validate.rules).string.ip = true];
-  int32 port = 9 [(validate.rules).int32 = { gte: 1024, lt: 65535 }];
+  int32 port = 9 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
 }
 
 message UpdateSchedulerRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string host_name = 2 [(validate.rules).string.hostname = true];
-  string vips = 4 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
-  string idc = 5 [(validate.rules).string = { min_len: 1, max_len: 1024, ignore_empty: true }];
-  string location = 6 [(validate.rules).string = { max_len: 1024, ignore_empty: true }];
-  bytes net_config = 7 [(validate.rules).bytes = { min_len: 1, ignore_empty: true }];
-  string ip = 8 [(validate.rules).string = { ip: true, ignore_empty: true }];
-  int32 port = 9 [(validate.rules).int32 = { gte: 1024, lt: 65535, ignore_empty: true }];
+  string vips = 4 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  string idc = 5 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  string location = 6 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
+  bytes net_config = 7 [(validate.rules).bytes = {min_len: 1, ignore_empty: true}];
+  string ip = 8 [(validate.rules).string = {ip: true, ignore_empty: true}];
+  int32 port = 9 [(validate.rules).int32 = {gte: 1024, lt: 65535, ignore_empty: true}];
 }
 
 message AddSchedulerClusterToSchedulerClusterRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  uint64 scheduler_id = 2 [(validate.rules).uint64 = { ignore_empty: true }];
-  uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = { ignore_empty: true }];
+  uint64 scheduler_id = 2 [(validate.rules).uint64 = {ignore_empty: true}];
+  uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {ignore_empty: true}];
 }
 
 message ListSchedulersRequest {
@@ -152,7 +152,7 @@ message ListSchedulersRequest {
 }
 
 message ListSchedulersResponse {
-	repeated Scheduler schedulers = 1;
+  repeated Scheduler schedulers = 1;
 }
 
 message KeepAliveRequest {

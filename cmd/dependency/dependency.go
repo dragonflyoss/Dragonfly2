@@ -212,7 +212,7 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 		default:
 			return v, nil
 		}
-	}, mapstructure.StringToSliceHookFunc("&"), dc.DecodeHook)
+	}, dc.DecodeHook)
 }
 
 // initTracer creates a new trace provider instance and registers it as global trace provider.
