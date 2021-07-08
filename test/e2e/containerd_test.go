@@ -19,7 +19,10 @@ package e2e
 import (
 	"os/exec"
 
+	// nolint
 	. "github.com/onsi/ginkgo"
+
+	// nolint
 	. "github.com/onsi/gomega"
 )
 
