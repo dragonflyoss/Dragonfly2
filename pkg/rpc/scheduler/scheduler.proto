@@ -18,10 +18,10 @@ syntax = "proto3";
 
 package scheduler;
 
-import "internal/rpc/base/base.proto";
+import "pkg/rpc/base/base.proto";
 import "google/protobuf/empty.proto";
 
-option go_package = "d7y.io/dragonfly/v2/internal/rpc/scheduler";
+option go_package = "d7y.io/dragonfly/v2/pkg/rpc/scheduler";
 
 message PeerTaskRequest{
   // universal resource locator for different kind of storage

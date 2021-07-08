@@ -201,5 +201,5 @@ var _Daemon_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "internal/rpc/dfdaemon/dfdaemon.proto",
+	Metadata: "pkg/rpc/dfdaemon/dfdaemon.proto",
 }
