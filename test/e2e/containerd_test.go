@@ -21,7 +21,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gmeasure"
 )
 
 var _ = Describe("Containerd with CRI support", func() {
@@ -42,21 +41,6 @@ var _ = Describe("Containerd with CRI support", func() {
 		It("pull error image", func() {
 			_, err := pull.CombinedOutput()
 			Expect(err).Should(HaveOccurred())
-		})
-	})
-
-	Context("measures docker.io/library/busybox:latest image", func() {
-		It("10 times", func() {
-			experiment := gmeasure.NewExperiment("crictl performance")
-			experiment.SampleDuration("runtime", func(idx int) {
-				if _, err := pull.CombinedOutput(); err != nil {
-					Expect(err).NotTo(HaveOccurred())
-				}
-
-				if _, err := rmi.CombinedOutput(); err != nil {
-					Expect(err).NotTo(HaveOccurred())
-				}
-			}, gmeasure.SamplingConfig{N: 10})
 		})
 	})
 })
