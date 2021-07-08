@@ -38,5 +38,29 @@ imports = ["/etc/containerd/runtime_*.toml", "./debug.toml"]
     mutation_threshold = 100
     schedule_delay = 0
     startup_delay = "100ms"
-  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-    endpoint = ["http://127.0.0.1:65001"]
+  [plugins.cri]
+    stream_server_address = ""
+    stream_server_port = "10010"
+    enable_selinux = false
+    sandbox_image = "k8s.gcr.io/pause:3.1"
+    stats_collect_period = 10
+    systemd_cgroup = false
+    enable_tls_streaming = false
+    [plugins.cri.containerd]
+      snapshotter = "overlayfs"
+      [plugins.cri.containerd.default_runtime]
+        runtime_type = "io.containerd.runtime.v1.linux"
+        runtime_engine = ""
+        runtime_root = ""
+      [plugins.cri.containerd.untrusted_workload_runtime]
+        runtime_type = ""
+        runtime_engine = ""
+        runtime_root = ""
+    [plugins.cri.cni]
+      bin_dir = "/opt/cni/bin"
+      conf_dir = "/etc/cni/net.d"
+      conf_template = ""
+    [plugins.cri.registry]
+      [plugins.cri.registry.mirrors]
+        [plugins.cri.registry.mirrors."docker.io"]
+          endpoint = ["http://10.15.233.88:65001"]

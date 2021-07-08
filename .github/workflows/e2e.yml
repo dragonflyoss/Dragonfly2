@@ -62,6 +62,10 @@ jobs:
           version: ${{ env.KIND_VERSION }}
           config: ./test/testdata/kind/config.yaml
 
+      - name: pull docker image
+        run: |
+          crictl --runtime-endpoint=unix:///run/containerd/containerd.sock pull docker.io/library/busybox:latest
+
       - name: Build docker image
         run: |
           make docker-build
