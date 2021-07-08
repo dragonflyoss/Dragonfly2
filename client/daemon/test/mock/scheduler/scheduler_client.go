@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	scheduler "d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	client "d7y.io/dragonfly/v2/internal/rpc/scheduler/client"
+	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	client "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )

@@ -5,10 +5,10 @@ import (
 	"io"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc/codes"

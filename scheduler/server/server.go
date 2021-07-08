@@ -22,13 +22,13 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/internal/rpc"
-	"d7y.io/dragonfly/v2/internal/rpc/manager"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"google.golang.org/grpc"
 
 	// Server registered to grpc
-	_ "d7y.io/dragonfly/v2/internal/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/pkg/retry"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server" //nolint
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/service"

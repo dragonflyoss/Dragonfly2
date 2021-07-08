@@ -47,15 +47,18 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/internal/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 type PeerHost interface {
 	Serve() error
 	Stop()
+
+	// ExportTaskManager returns the underlay peer.TaskManager for downloading when embed dragonfly in custom binary
+	ExportTaskManager() peer.TaskManager
 }
 
 type peerHost struct {
@@ -418,4 +421,8 @@ func (ph *peerHost) Stop() {
 			ph.StorageManager.CleanUp()
 		}
 	})
+}
+
+func (ph *peerHost) ExportTaskManager() peer.TaskManager {
+	return ph.PeerTaskManager
 }

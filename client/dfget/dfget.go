@@ -29,14 +29,14 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
-	dfdaemongrpc "d7y.io/dragonfly/v2/internal/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/source"
 
 	// Init daemon rpc client
-	_ "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
-	dfclient "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"github.com/go-http-utils/headers"
 )
 

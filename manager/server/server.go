@@ -21,12 +21,12 @@ import (
 	"net/http"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc"
-	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/service"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 )

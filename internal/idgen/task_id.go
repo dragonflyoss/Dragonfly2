@@ -20,7 +20,7 @@ import (
 	"hash/crc32"
 	"strings"
 
-	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 )

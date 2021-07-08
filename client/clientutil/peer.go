@@ -22,7 +22,7 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func GenPeerID(peerHost *scheduler.PeerHost) string {

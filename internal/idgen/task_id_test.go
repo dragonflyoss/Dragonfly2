@@ -19,7 +19,7 @@ package idgen
 import (
 	"testing"
 
-	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"github.com/stretchr/testify/assert"
 )
 
