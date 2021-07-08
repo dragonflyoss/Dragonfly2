@@ -42,6 +42,7 @@ jobs:
 
       - name: Get dependencies
         run: |
+          go mod vendor
           go get github.com/onsi/ginkgo/ginkgo
 
       - name: Set up containerd
@@ -74,7 +75,7 @@ jobs:
       - name: Helm install
         run: |
           helm lint ./deploy/charts/dragonfly
-          helm install --create-namespace -n dragonfly-system dragonfly ./deploy/charts/dragonfly
+          helm install --create-namespace --namespace dragonfly-system dragonfly ./deploy/charts/dragonfly
 
       - name: Wait for running
         run: kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
