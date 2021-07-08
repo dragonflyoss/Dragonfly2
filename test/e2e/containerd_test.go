@@ -25,8 +25,8 @@ import (
 )
 
 var _ = Describe("Containerd with CRI support", func() {
-	pull := exec.Command("crictl", "--runtime-endpoint=unix:///run/containerd/containerd.sock", "pull", "docker.io/library/busybox:latest")
-	rmi := exec.Command("crictl", "--runtime-endpoint=unix:///run/containerd/containerd.sock", "rmi", "docker.io/library/busybox:latest")
+	pull := exec.Command("/bin/sh", "-c", "sudo crictl pull docker.io/library/busybox:latest")
+	rmi := exec.Command("/bin/sh", "-c", "sudo crictl rmi docker.io/library/busybox:latest")
 
 	Context("docker.io/library/busybox:latest image", func() {
 		It("pull should be ok", func() {

@@ -56,7 +56,6 @@ jobs:
           sudo tar zxvf crictl-v1.21.0-linux-amd64.tar.gz -C /usr/local/bin
           sudo mv ./test/testdata/crictl/config.yaml /etc/crictl.yaml
           rm -f crictl-v1.21.0-linux-amd64.tar.gz
-          sudo crictl --debug pull docker.io/library/busybox:latest
 
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
@@ -79,10 +78,6 @@ jobs:
 
       - name: Wait for running
         run: kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
-
-      - name: pull docker image
-        run: |
-          crictl --runtime-endpoint=unix:///run/containerd/containerd.sock --debug pull docker.io/library/busybox:latest
 
       - name: Run E2E tests
         run: make e2e-test-coverage
