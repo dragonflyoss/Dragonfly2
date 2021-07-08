@@ -76,7 +76,7 @@ jobs:
           kubectl get po -n dragonfly-system
 
       - name: Run E2E tests
-        run: make e2e-test-coverage
+        run: sudo make e2e-test-coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
