@@ -20,7 +20,7 @@ import (
 	"errors"
 
 	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/manager"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
