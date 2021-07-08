@@ -42,7 +42,7 @@ jobs:
 
       - name: Get dependencies
         run: |
-          sudo go get github.com/onsi/ginkgo/ginkgo
+          go get github.com/onsi/ginkgo/ginkgo
 
       - name: Set up containerd
         uses: crazy-max/ghaction-setup-containerd@v1
@@ -75,7 +75,7 @@ jobs:
           kubectl get po -n dragonfly-system
 
       - name: Run E2E tests
-        run: sudo make e2e-test-coverage
+        run: make e2e-test-coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

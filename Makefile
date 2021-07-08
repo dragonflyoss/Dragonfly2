@@ -192,12 +192,12 @@ test-coverage:
 
 # Run E2E tests
 e2e-test:
-	@ginkgo -v -r --randomizeAllSpecs --failFast test/e2e --trace --progress
+	@ginkgo -v -r --failFast test/e2e --trace --progress
 .PHONY: e2e-test
 
 # Run E2E tests with coverage
 e2e-test-coverage:
-	@ginkgo -v -r --randomizeAllSpecs --failFast -cover test/e2e --trace --progress
+	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
 	@cat test/e2e/*.coverprofile >> coverage.txt
 .PHONY: e2e-test-coverage
 
