@@ -34,7 +34,8 @@ const (
 )
 
 const (
-	DefaultStorageMode = "disk"
+	DefaultStorageMode  = "disk"
+	DevFileServerSwitch = false
 )
 
 const (

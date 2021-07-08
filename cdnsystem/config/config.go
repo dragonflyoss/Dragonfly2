@@ -130,6 +130,7 @@ func NewDefaultBaseProperties() *BaseProperties {
 		GCMetaInterval:          DefaultGCMetaInterval,
 		TaskExpireTime:          DefaultTaskExpireTime,
 		StorageMode:             DefaultStorageMode,
+		DevFileServerSwitch:     DevFileServerSwitch,
 		AdvertiseIP:             iputils.HostIP,
 		Manager: ManagerConfig{
 			KeepAlive: KeepAliveConfig{
@@ -185,6 +186,9 @@ type BaseProperties struct {
 
 	// StorageMode disk/hybrid/memory
 	StorageMode string `yaml:"storageMode" mapstructure:"storageMode"`
+
+	// DevFileServerSwitch when DevFileServerSwitch is true, use a local test file server, use nginx when DevFileServerSwitch is false
+	DevFileServerSwitch bool `yaml:"storageMode" mapstructure:"devFileServerSwitch"`
 
 	// Manager configuration
 	Manager ManagerConfig `yaml:"manager" mapstructure:"manager"`

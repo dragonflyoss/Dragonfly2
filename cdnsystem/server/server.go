@@ -122,7 +122,7 @@ func New(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) startDevFileServer() (err error) {
-	if !s.config.Verbose {
+	if !s.config.DevFileServerSwitch {
 		return
 	}
 	p, _ := filepath.Abs(s.storage.GetHomePath())
