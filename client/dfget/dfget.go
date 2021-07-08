@@ -35,7 +35,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"github.com/schollz/progressbar/v3"
@@ -142,9 +141,7 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	wLog.Info("try to download from source and ignore rate limit")
 	fmt.Println("try to download from source and ignore rate limit")
 
-	dir := filepath.Dir(cfg.Output)
-	_ = fileutils.MkdirAllWithOwner(dir, basic.UserID, basic.UserGroup)
-	if target, err = ioutil.TempFile(dir, ".df_"); err != nil {
+	if target, err = ioutil.TempFile(filepath.Dir(cfg.Output), ".df_"); err != nil {
 		return err
 	}
 	defer os.Remove(target.Name())

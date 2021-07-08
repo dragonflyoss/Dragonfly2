@@ -24,7 +24,6 @@ import (
 	"syscall"
 	"testing"
 
-	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
@@ -179,13 +178,4 @@ func TestFSizeSet(t *testing.T) {
 	err := sizePtr.Set("11m")
 	assert.Nil(t, err)
 	assert.Equal(t, 11*unit.MB, *sizePtr)
-}
-
-func TestMkdirAllWithOwner(t *testing.T) {
-	homeDir, _ := os.UserHomeDir()
-	tmpDir := filepath.Join(homeDir, idgen.UUIDString())
-	dir := filepath.Join(tmpDir, "/x/y/z")
-	fileutils.MkdirAllWithOwner(dir, -1, -1)
-	assert.True(t, fileutils.IsDir(dir))
-	os.RemoveAll(tmpDir)
 }

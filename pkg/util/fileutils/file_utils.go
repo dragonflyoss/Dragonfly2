@@ -41,26 +41,6 @@ func MkdirAll(dir string) error {
 	return os.MkdirAll(dir, PrivateDirMode)
 }
 
-func MkdirAllWithOwner(dir string, uid, gid int) error {
-	if IsDir(dir) {
-		return nil
-	}
-
-	if err := MkdirAllWithOwner(filepath.Dir(dir), uid, gid); err != nil {
-		return err
-	}
-
-	if err := os.Mkdir(dir, PrivateDirMode); err != nil {
-		return err
-	}
-
-	if err := os.Chown(dir, uid, gid); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // DeleteFile deletes a regular file not a directory.
 func DeleteFile(path string) error {
 	if PathExist(path) {
