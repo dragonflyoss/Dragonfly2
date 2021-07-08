@@ -11,6 +11,7 @@ env:
   KIND_VERSION: v0.11.1
   CONTAINERD_VERSION: v1.5.2
   GOPROXY: https://goproxy.io,direct
+  CRICTL_VERSION: v1.21.0
 
 jobs:
   skip_check:
@@ -49,6 +50,12 @@ jobs:
         with:
           containerd-version: ${{ env.CONTAINERD_VERSION }}
           config: ./test/testdata/containerd/config.toml
+
+      - name: Set up crictl
+        run: |
+          wget https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${{ CRICTL_VERSION }}-linux-amd64.tar.gz
+          sudo tar zxvf crictl-${{ CRICTL_VERSION }}-linux-amd64.tar.gz -C /usr/local/bin
+          rm -f crictl-${{ CRICTL_VERSION }}-linux-amd64.tar.gz
 
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
