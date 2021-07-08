@@ -32,15 +32,15 @@ type PeerTaskStatus int8
 
 const (
 	PeerTaskStatusHealth         PeerTaskStatus = 0
-	PeerTaskStatusNeedParent     PeerTaskStatus = 1
-	PeerTaskStatusNeedChildren   PeerTaskStatus = 2
-	PeerTaskStatusBadNode        PeerTaskStatus = 3
-	PeerTaskStatusNeedAdjustNode PeerTaskStatus = 4
-	PeerTaskStatusNeedCheckNode  PeerTaskStatus = 5
-	PeerTaskStatusDone           PeerTaskStatus = 6
-	PeerTaskStatusLeaveNode      PeerTaskStatus = 7
-	PeerTaskStatusAddParent      PeerTaskStatus = 8
-	PeerTaskStatusNodeGone       PeerTaskStatus = 9
+	PeerTaskStatusBadNode        PeerTaskStatus = 11
+	PeerTaskStatusNodeGone       PeerTaskStatus = 12
+	PeerTaskStatusNeedCheckNode  PeerTaskStatus = 13
+	PeerTaskStatusNeedAdjustNode PeerTaskStatus = 21
+	PeerTaskStatusNeedChildren   PeerTaskStatus = 22
+	PeerTaskStatusNeedParent     PeerTaskStatus = 23
+	PeerTaskStatusAddParent      PeerTaskStatus = 24
+	PeerTaskStatusDone           PeerTaskStatus = 31
+	PeerTaskStatusLeaveNode      PeerTaskStatus = 32
 )
 
 type PeerTask struct {
@@ -433,11 +433,27 @@ func (pt *PeerTask) GetJobData() interface{} {
 func (pt *PeerTask) SetNodeStatus(status PeerTaskStatus, data ...interface{}) {
 	pt.lock.Lock()
 	defer pt.lock.Unlock()
+	s := pt.status
+	if status/10 < s/10 {
+		return
+	}
 	pt.status = status
 	if len(data) > 0 {
 		pt.jobData = data[0]
 	} else {
 		pt.jobData = nil
+	}
+}
+
+func (pt *PeerTask) SetNodeStatusHealth(swapStatus ...PeerTaskStatus) {
+	pt.lock.Lock()
+	defer pt.lock.Unlock()
+	if len(swapStatus) == 0 {
+		pt.status = PeerTaskStatusHealth
+		return
+	}
+	if pt.status == swapStatus[0] {
+		pt.status = PeerTaskStatusHealth
 	}
 }
 
