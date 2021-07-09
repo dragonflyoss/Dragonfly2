@@ -190,16 +190,43 @@ test-coverage:
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
+# Prepare github actions E2E tests
+prepare-actions-e2e-test:
+	@helm install --wait --timeout 3m --create-namespace --namespace dragonfly-system dragonfly ./deploy/charts/dragonfly
+.PHONY: prepare-actions-e2e-test
+
+# Run github actons E2E tests
+actions-e2e-test: prepare-actions-e2e-test
+	@ginkgo -v -r --failFast test/e2e --trace --progress
+.PHONY: actions-e2e-test
+
+# Run github actons E2E tests with coverage
+actions-e2e-test-coverage: prepare-actions-e2e-test
+	@ginkgo -v -r --failFast test/e2e --trace --progress
+	@cat test/e2e/*.coverprofile >> coverage.txt
+.PHONY: actions-e2e-test-coverage
+
+# Prepare E2E tests
+prepare-e2e-test:
+	@kind create cluster --config test/testdata/kind/config.yaml
+	@helm install --wait --timeout 10m --create-namespace --namespace dragonfly-system dragonfly ./deploy/charts/dragonfly
+.PHONY: prepare-e2e-test
+
 # Run E2E tests
-e2e-test:
+e2e-test: prepare-e2e-test
 	@ginkgo -v -r --failFast test/e2e --trace --progress
 .PHONY: e2e-test
 
 # Run E2E tests with coverage
-e2e-test-coverage:
+e2e-test-coverage: prepare-e2e-test
 	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
 	@cat test/e2e/*.coverprofile >> coverage.txt
 .PHONY: e2e-test-coverage
+
+# Clean E2E tests
+clean-e2e-test: 
+	@kind delete cluster
+.PHONY: clean-e2e-test
 
 # Kind load dragonlfy
 kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon
@@ -266,8 +293,13 @@ help:
 	@echo "make build-dfget-man-page           generate dfget man page"
 	@echo "make test                           run unittests"
 	@echo "make test-coverage                  run tests with coverage"
+	@echo "make prepare-actions-e2e-test       prepare github actions E2E tests"
+	@echo "make actions-e2e-test               run github actons E2E tests"
+	@echo "make actions-e2e-test-coverage      run github actons E2E tests with coverage"
+	@echo "make prepare-e2e-test               prepare E2E tests"
 	@echo "make e2e-test                       run e2e tests"
 	@echo "make e2e-test-coverage              run e2e tests with coverage"
+	@echo "make clean-e2e-test                 clean e2e tests"
 	@echo "make swag-manager                   generate swagger api"
 	@echo "make kind-load-image                kind load docker image"
 	@echo "make changelog                      generate CHANGELOG.md"

@@ -18,36 +18,26 @@ package e2e
 
 import (
 	"fmt"
-	"os/exec"
 
-	// nolint
-	. "github.com/onsi/ginkgo"
-
-	// nolint
-	. "github.com/onsi/gomega"
+	"d7y.io/dragonfly/v2/test/e2e/util"
+	. "github.com/onsi/ginkgo" //nolint
+	. "github.com/onsi/gomega" //nolint
 )
 
 var _ = Describe("Containerd with CRI support", func() {
-	pull := exec.Command("/bin/sh", "-c", "sudo crictl pull docker.io/library/busybox:latest")
-	rmi := exec.Command("/bin/sh", "-c", "sudo crictl rmi docker.io/library/busybox:latest")
-
 	Context("docker.io/library/busybox:latest image", func() {
 		It("pull should be ok", func() {
-			out, err := pull.CombinedOutput()
+			out, err := util.CrictlCommand("pull", "d7y.io/library/busybox:latest").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println(string(out))
+			fmt.Println(err)
 		})
 
 		It("rmi should be ok", func() {
-			out, err := rmi.CombinedOutput()
+			out, err := util.CrictlCommand("rmi", "d7y.io/library/busybox:latest").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println(string(out))
-		})
-
-		It("pull error image", func() {
-			out, err := pull.CombinedOutput()
-			Expect(err).Should(HaveOccurred())
-			fmt.Println(string(out))
+			fmt.Println(err)
 		})
 	})
 })
