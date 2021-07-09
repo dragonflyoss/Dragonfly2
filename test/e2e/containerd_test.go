@@ -30,14 +30,12 @@ var _ = Describe("Containerd with CRI support", func() {
 			out, err := util.CrictlCommand("pull", "d7y.io/library/busybox:latest").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println(string(out))
-			fmt.Println(err)
 		})
 
 		It("rmi should be ok", func() {
 			out, err := util.CrictlCommand("rmi", "d7y.io/library/busybox:latest").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println(string(out))
-			fmt.Println(err)
 		})
 	})
 })
