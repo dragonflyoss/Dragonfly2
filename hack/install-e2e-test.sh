@@ -11,7 +11,7 @@ curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}/../" || return
 
 install-kind() {
-  if command -v kind ; then
+  if which kind >/dev/null ; then
       echo "wait for kind create cluster"
       kind create cluster --config ${KIND_CONFIG_PATH}
   else 
@@ -23,7 +23,7 @@ install-kind() {
 }
 
 install-helm() {
-  if command -v helm ; then
+  if which helm >/dev/null ; then
       echo "wait for helm install dragonfly"
       helm install --wait --timeout 3m --create-namespace --namespace ${NAMESPACE} dragonfly ${CHARTS_PATH}
   else
