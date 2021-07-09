@@ -7,3 +7,6 @@ nodes:
       - containerPort: 65001
         hostPort: 65001
         protocol: TCP
+    extraMounts:
+      - hostPath: ./test/testdata/containerd/config.toml
+        containerPath: /etc/containerd/config.toml
