@@ -30,4 +30,4 @@ version = 2
   restrict_oom_score_adj = false
 
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."d7y.io"]
-  endpoint = ["http://127.0.0.1:65005"]
+  endpoint = ["http://127.0.0.1:65001"]
