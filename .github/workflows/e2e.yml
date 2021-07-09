@@ -45,43 +45,14 @@ jobs:
           go mod vendor
           go get github.com/onsi/ginkgo/ginkgo
 
-      - name: Set up containerd
-        uses: crazy-max/ghaction-setup-containerd@v1
-        with:
-          containerd-version: ${{ env.CONTAINERD_VERSION }}
-          config: ./test/testdata/containerd/config.toml
-
-      - name: Set up crictl
-        run: |
-          wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.21.0/crictl-v1.21.0-linux-amd64.tar.gz
-          sudo tar zxvf crictl-v1.21.0-linux-amd64.tar.gz -C /usr/local/bin
-          sudo mv ./test/testdata/crictl/config.yaml /etc/crictl.yaml
-          rm -f crictl-v1.21.0-linux-amd64.tar.gz
-
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
         with:
           version: ${{ env.KIND_VERSION }}
           config: ./test/testdata/kind/config.yaml
 
-      - name: Build docker image
-        run: |
-          make docker-build
-
-      - name: Load docker image
-        run: |
-          make kind-load
-
-      - name: Helm install
-        run: |
-          helm lint ./deploy/charts/dragonfly
-          helm install --create-namespace --namespace dragonfly-system dragonfly ./deploy/charts/dragonfly
-
-      - name: Wait for running
-        run: kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
-
       - name: Run E2E tests
-        run: make e2e-test-coverage
+        run: make actions-e2e-test-coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
