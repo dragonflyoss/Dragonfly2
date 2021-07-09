@@ -202,7 +202,7 @@ actions-e2e-test: prepare-actions-e2e-test
 
 # Run github actons E2E tests with coverage
 actions-e2e-test-coverage: prepare-actions-e2e-test
-	@ginkgo -v -r --failFast test/e2e --trace --progress
+	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
 	@cat test/e2e/*.coverprofile >> coverage.txt
 .PHONY: actions-e2e-test-coverage
 
