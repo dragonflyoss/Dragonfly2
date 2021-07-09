@@ -3,13 +3,13 @@ package util
 import "os/exec"
 
 func DockerCommand(arg ...string) *exec.Cmd {
-	cmd := []string{"exec", "-i", "kind-control-plane"}
-	cmd = append(cmd, arg...)
-	return exec.Command("docker", cmd...)
+	extArgs := []string{"exec", "-i", "kind-control-plane"}
+	extArgs = append(extArgs, arg...)
+	return exec.Command("docker", extArgs...)
 }
 
 func CrictlCommand(arg ...string) *exec.Cmd {
-	cmd := []string{"/usr/local/bin/crictl"}
-	cmd = append(cmd, arg...)
-	return DockerCommand(cmd...)
+	extArgs := []string{"/usr/local/bin/crictl"}
+	extArgs = append(extArgs, arg...)
+	return DockerCommand(extArgs...)
 }
