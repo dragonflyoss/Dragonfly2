@@ -192,6 +192,8 @@ test-coverage:
 
 # Prepare github actions E2E tests
 prepare-actions-e2e-test:
+	@make docker-build
+	@make kind-load 
 	@helm install --wait --timeout 3m --create-namespace --namespace dragonfly-system dragonfly ./deploy/charts/dragonfly
 .PHONY: prepare-actions-e2e-test
 
@@ -208,6 +210,8 @@ actions-e2e-test-coverage: prepare-actions-e2e-test
 
 # Prepare E2E tests
 prepare-e2e-test:
+	@make docker-build
+	@make kind-load 
 	@kind create cluster --config test/testdata/kind/config.yaml
 	@helm install --wait --timeout 10m --create-namespace --namespace dragonfly-system dragonfly ./deploy/charts/dragonfly
 .PHONY: prepare-e2e-test
