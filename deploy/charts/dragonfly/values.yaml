@@ -86,23 +86,23 @@ cdn:
       console: false
     plugins:
       storageDriver:
-        - name: disk
-          enable: true
-          config:
-            baseDir: /tmp/cdn
+      - name: disk
+        enable: true
+        config:
+          baseDir: /tmp/cdn
       storageManager:
-        - name: disk
-          enable: true
-          config:
-            gcInitialDelay: 5s
-            gcInterval: 15s
-            driverConfigs:
-              disk:
-                gcConfig:
-                  youngGCThreshold: 100G
-                  fullGCThreshold: 5G
-                  cleanRatio: 1
-                  intervalThreshold: 2h
+      - name: disk
+        enable: true
+        config:
+          gcInitialDelay: 5s
+          gcInterval: 15s
+          driverConfigs:
+            disk:
+              gcConfig:
+                youngGCThreshold: 100G
+                fullGCThreshold: 5G
+                cleanRatio: 1
+                intervalThreshold: 2h
 
 dfdaemon:
   name: dfdaemon
@@ -180,4 +180,4 @@ dfdaemon:
       registryMirror:
         url: https://index.docker.io
       proxies:
-        - regx: blobs/sha256.*
+      - regx: blobs/sha256.*
