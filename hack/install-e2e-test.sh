@@ -11,9 +11,10 @@ curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}/../" || return
 
 install-kind() {
-  if kind create cluster --config ${KIND_CONFIG_PATH} ; then
+  if command -v kind ; then
       echo "wait for kind create cluster"
-  else
+      kind create cluster --config ${KIND_CONFIG_PATH}
+  else 
       go install sigs.k8s.io/kind@v0.11.1
       echo "install kind successed"
       kind create cluster --config ${KIND_CONFIG_PATH}
@@ -22,8 +23,9 @@ install-kind() {
 }
 
 install-helm() {
-  if helm install --wait --timeout 3m --create-namespace --namespace ${NAMESPACE} dragonfly ${CHARTS_PATH} ; then
+  if command -v helm ; then
       echo "wait for helm install dragonfly"
+      helm install --wait --timeout 3m --create-namespace --namespace ${NAMESPACE} dragonfly ${CHARTS_PATH}
   else
       go install sigs.k8s.io/kind@v0.11.1
       echo "install helm success"
