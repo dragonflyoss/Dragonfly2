@@ -49,7 +49,8 @@ const (
 	reasonContextCanceled       = "context canceled"
 	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
 
-	failedCodeNotSet = 0
+	failedReasonNotSet = "unknown"
+	failedCodeNotSet   = 0
 )
 
 var errPeerPacketChanged = errors.New("peer packet changed")
@@ -344,6 +345,14 @@ func (pt *peerTask) pullPiecesFromPeers(pti Task, cleanUnfinishedFunc func()) {
 	}()
 	// wait first available peer
 	select {
+	case <-pt.ctx.Done():
+		err := pt.ctx.Err()
+		pt.Errorf("context done due to %s", err)
+		if pt.failedReason == failedReasonNotSet && err != nil {
+			pt.failedReason = err.Error()
+		}
+		pt.span.AddEvent(fmt.Sprintf("pulling pieces end due to %s", err))
+		return
 	case <-pt.peerPacketReady:
 		// preparePieceTasksByPeer func already send piece result with error
 		pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
