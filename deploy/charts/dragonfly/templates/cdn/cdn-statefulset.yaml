@@ -27,10 +27,13 @@ spec:
         app: {{ template "dragonfly.cdn.fullname" . }}
         component: "{{ .Values.cdn.name }}"
         release: {{ .Release.Name }}
-        {{- if .Values.cdn.podAnnotations }}
+        {{- if .Values.cdn.podLabels }}
+{{ toYaml .Values.cdn.podLabels | indent 8 }}
+        {{- end }}
+      {{- if .Values.cdn.podAnnotations }}
       annotations:
 {{ toYaml .Values.cdn.podAnnotations | indent 8 }}
-        {{- end }}
+      {{- end }}
     spec:
       serviceAccountName: {{template "dragonfly.cdn.fullname" . }}
       {{- if .Values.cdn.nodeSelector }}

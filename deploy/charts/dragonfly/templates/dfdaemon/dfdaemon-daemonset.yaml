@@ -25,10 +25,13 @@ spec:
         app: {{ template "dragonfly.dfdaemon.fullname" . }}
         component: "{{ .Values.dfdaemon.name }}"
         release: {{ .Release.Name }}
-        {{- if .Values.dfdaemon.podAnnotations }}
+        {{- if .Values.dfdaemon.podLabels }}
+{{ toYaml .Values.dfdaemon.podLabels | indent 8 }}
+        {{- end }}
+      {{- if .Values.dfdaemon.podAnnotations }}
       annotations:
 {{ toYaml .Values.dfdaemon.podAnnotations | indent 8 }}
-        {{- end }}
+      {{- end }}
     spec:
       {{- if .Values.dfdaemon.nodeSelector }}
       nodeSelector:
