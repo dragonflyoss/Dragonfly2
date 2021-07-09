@@ -29,5 +29,9 @@ version = 2
   # restrict_oom_score_adj needs to be true when running inside UserNS (rootless)
   restrict_oom_score_adj = false
 
+# Mirrors use d7y.io instead of docker.io.
+# when using docker.io to generate an endpoint, https://registry-1.docker.io will be returned by default.
+# https://github.com/containerd/containerd/blob/main/pkg/cri/server/image_pull.go#L456
+# https://github.com/containerd/containerd/blob/main/remotes/docker/resolver.go#L121
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."d7y.io"]
   endpoint = ["http://127.0.0.1:65001"]
