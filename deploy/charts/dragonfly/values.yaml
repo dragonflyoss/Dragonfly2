@@ -29,6 +29,7 @@ scheduler:
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
+  podLabels: {}
   serviceAnnotations: {}
   statefulsetAnnotations: {}
   containerPort: 8002
@@ -69,6 +70,7 @@ cdn:
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
+  podLabels: {}
   statefulsetAnnotations: {}
   containerPort: 8003
   nginxContiainerPort: 8001
@@ -123,6 +125,7 @@ dfdaemon:
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
+  podLabels: {}
   daemonsetAnnotations: {}
   containerPort: 65001
   # hostPort is used when .hostNetwork == false, and .config.proxy.tcpListen.namespace is empty
