@@ -59,20 +59,20 @@ func newEvaluator(taskMgr daemon.TaskMgr) core.Evaluator {
 var _ core.Evaluator = (*evaluator)(nil)
 
 func (eval *evaluator) NeedAdjustParent(peer *types.PeerNode) bool {
-	parent := peer.GetParent()
+	parent := peer.Parent
 
-	if parent == nil {
+	if parent == nil && !types.IsCDNHost(peer.Host) {
 		return true
 	}
 
-	costHistory := parent.CostHistory
+	costHistory := peer.CostHistory
 	if len(costHistory) < 4 {
 		return false
 	}
 
 	avgCost, lastCost := eval.getAvgAndLastCost(parent.CostHistory, 4)
 	if avgCost*40 < lastCost {
-		logger.Debugf("IsBadNode [%s]: node cost is too long", peer.GetPeerID())
+		logger.Debugf("IsBadNode [%s]: recent pieces have taken too long to download", peer.PeerID)
 		return true
 	}
 
@@ -81,7 +81,7 @@ func (eval *evaluator) NeedAdjustParent(peer *types.PeerNode) bool {
 }
 
 func (eval *evaluator) IsBadNode(peer *types.PeerNode) bool {
-	parent := peer.GetParent()
+	parent := peer.Parent
 
 	if parent == nil {
 		return false
@@ -94,7 +94,7 @@ func (eval *evaluator) IsBadNode(peer *types.PeerNode) bool {
 	lastActiveTime := peer.LastAccessTime
 
 	if time.Now().After(lastActiveTime.Add(5 * time.Second)) {
-		logger.Debugf("IsBadNode [%s]: node is expired", peer.GetPeerID())
+		logger.Debugf("IsBadNode [%s]: node is expired", peer.PeerID)
 		return true
 	}
 
@@ -106,7 +106,7 @@ func (eval *evaluator) IsBadNode(peer *types.PeerNode) bool {
 	avgCost, lastCost := eval.getAvgAndLastCost(costHistory, 4)
 
 	if avgCost*40 < lastCost {
-		logger.Debugf("IsNodeBad [%s]: node cost is too long avg[%d] last[%d]", peer.GetPeerID(), avgCost, lastCost)
+		logger.Debugf("IsNodeBad [%s]: recent pieces have taken too long to download avg[%d] last[%d]", peer.PeerID, avgCost, lastCost)
 		return true
 	}
 
@@ -127,30 +127,30 @@ func (eval *evaluator) getAvgAndLastCost(list []int, splitPos int) (avgCost, las
 	return
 }
 
-func (eval *evaluator) SelectChildCandidateNodes(peer *types.PeerNode) (list []*types.PeerNode) {
+func (eval *evaluator) SelectCandidateChildren(peer *types.PeerNode) (list []*types.PeerNode) {
 	if peer == nil {
 		return
 	}
-	eval.peerManager.Walker(peer.GetTask(), -1, func(pt *types.PeerNode) bool {
-		if pt == nil || peer.GetTask() != pt.GetTask() {
+	eval.peerManager.Walker(peer.Task, -1, func(candidateNode *types.PeerNode) bool {
+		if candidateNode == nil || peer.Task != peer.Task {
 			return true
 		}
-		if pt.GetPeerID() == peer.GetPeerID() {
+		if candidateNode.PeerID == peer.PeerID {
 			return true
-		} else if pt.Success {
+		} else if candidateNode.Success {
 			return true
-		} else if types.IsCDN(pt.GetHost()) {
+		} else if types.IsCDNHost(candidateNode.Host) {
 			return true
-		} else if peer.GetParent() != nil && peer.GetParent() == pt {
+		} else if peer.Parent != nil && peer.Parent == candidateNode {
 			return true
 		} else if peer.GetFreeLoad() < 1 {
 			return true
-		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
+		} else if candidateNode.IsAncestor(peer) || peer.IsAncestor(candidateNode) {
 			return true
-		} else if pt.GetParent() != nil {
+		} else if candidateNode.Parent != nil {
 			return true
 		}
-		list = append(list, pt)
+		list = append(list, candidateNode)
 		if len(list) > 10 {
 			return false
 		}
@@ -159,19 +159,19 @@ func (eval *evaluator) SelectChildCandidateNodes(peer *types.PeerNode) (list []*
 	return
 }
 
-func (eval *evaluator) SelectParentCandidateNodes(peer *types.PeerNode) (list []*types.PeerNode) {
+func (eval *evaluator) SelectCandidateParents(peer *types.PeerNode) (list []*types.PeerNode) {
 	if peer == nil {
 		logger.Debugf("peer is nil")
 		return
 	}
 	var msg []string
-	eval.peerManager.WalkerReverse(peer.GetTask(), -1, func(pt *types.PeerNode) bool {
-		if pt == nil {
+	eval.peerManager.WalkerReverse(peer.Task, -1, func(candidateNode *types.PeerNode) bool {
+		if candidateNode == nil {
 			return true
-		} else if peer.GetTask() != pt.GetTask() {
-			msg = append(msg, fmt.Sprintf("%s task[%s] not same", pt.GetPeerID(), pt.GetTask().GetTaskID()))
+		} else if peer.Task != candidateNode.Task {
+			msg = append(msg, fmt.Sprintf("%s task[%s] not same", pt.PeerID, pt.Task.TaskID))
 			return true
-		} else if pt.IsDown() {
+		} else if candidateNode.IsDown() {
 			msg = append(msg, fmt.Sprintf("%s is down", pt.GetPeerID()))
 			return true
 		} else if peer.GetPeerID() == peer.GetPeerID() {
@@ -183,14 +183,14 @@ func (eval *evaluator) SelectParentCandidateNodes(peer *types.PeerNode) (list []
 			msg = append(msg, fmt.Sprintf("%s no load", pt.GetPeerID()))
 			return true
 		}
-		if pt.Success {
-			list = append(list, pt)
+		if peer.Success {
+			list = append(list, peer)
 		} else {
 			root := peer.GetTreeRoot()
-			if root != nil && root.GetHost() != nil && types.IsCDN(root.GetHost()) {
-				list = append(list, pt)
+			if root != nil && root.Host != nil && types.IsCDNHost(root.Host) {
+				list = append(list, peer)
 			} else {
-				msg = append(msg, fmt.Sprintf("%s not finished and root is not cdn", pt.GetPeerID()))
+				msg = append(msg, fmt.Sprintf("%s not finished and root is not cdn", peer.PeerID))
 			}
 		}
 		if len(list) > 10 {
@@ -199,7 +199,7 @@ func (eval *evaluator) SelectParentCandidateNodes(peer *types.PeerNode) (list []
 		return true
 	})
 	if len(list) == 0 {
-		logger.Debugf("[%s][%s] scheduler failed: \n%s", peer.GetTask().GetTaskID(), peer.GetPeerID(), strings.Join(msg, "\n"))
+		logger.Debugf("[%s][%s] scheduler failed: \n%s", peer.Task.TaskID, peer.PeerID, strings.Join(msg, "\n"))
 	}
 
 	return
@@ -209,7 +209,7 @@ func (eval *evaluator) SelectParentCandidateNodes(peer *types.PeerNode) (list []
 func (eval *evaluator) Evaluate(dst *types.PeerNode, src *types.PeerNode) float64 {
 	profits := eval.getProfits(dst, src)
 
-	load := eval.getHostLoad(dst.GetHost())
+	load := eval.getHostLoad(dst.Host)
 
 	dist := eval.getDistance(dst, src)
 
@@ -232,14 +232,14 @@ func (eval *evaluator) getHostLoad(host *types.NodeHost) float64 {
 // getDistance 0.0~1.0 larger and better
 func (eval *evaluator) getDistance(dst *types.PeerNode, src *types.PeerNode) float64 {
 	hostDist := 40.0
-	if dst.GetHost() == src.GetHost() {
+	if dst.Host == src.Host {
 		hostDist = 0.0
 	} else {
-		if src.GetHost().NetTopology != "" && dst.GetHost().NetTopology == src.GetHost().NetTopology {
+		if src.Host.NetTopology != "" && dst.Host.NetTopology == src.Host.NetTopology {
 			hostDist = 10.0
-		} else if src.GetHost().Idc != "" && dst.GetHost().Idc == src.GetHost().Idc {
+		} else if src.Host.IDC != "" && dst.Host.IDC == src.Host.IDC {
 			hostDist = 20.0
-		} else if dst.GetHost().SecurityDomain != src.GetHost().SecurityDomain {
+		} else if dst.Host.SecurityDomain != src.Host.SecurityDomain {
 			hostDist = 80.0
 		}
 	}

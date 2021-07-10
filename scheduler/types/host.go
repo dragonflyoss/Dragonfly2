@@ -17,18 +17,23 @@
 package types
 
 import (
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"go.uber.org/atomic"
+	"sync"
 )
 
 type HostType int
 
 const (
-	PeerNodeHost = iota + 1
+	PeerNodeHost HostType = iota + 1
 	CDNNodeHost
+)
+const (
+	CDNHostLoad  = 10
+	PeerHostLoad = 4
 )
 
 type NodeHost struct {
+	// ProducerLoad is the load of download services provided by the current node.
+	lock sync.RWMutex
 	// fixme can remove this uuid, use IP
 	// uuid each time the daemon starts, it will generate a different uuid
 	UUID string
@@ -49,98 +54,60 @@ type NodeHost struct {
 	// Idc idc where the peer host is located
 	IDC string
 	// NetTopology network device path: switch|router|...
-	NetTopology string
-	// ProducerLoad is the load of download services provided by the current node.
-	TotalUploadLoad     int
-	currentUploadLoad   atomic.Int32
-	totalDownloadLoad   int32
-	currentDownloadLoad atomic.Int32
-}
-
-func NewNodeHost() *NodeHost {
-	return &NodeHost{}
-}
-
-func (h *NodeHost) GetUUID() string {
-	return h.uuid
-}
-
-func (h *NodeHost) GetIP() string {
-	return h.ip
+	NetTopology       string
+	TotalUploadLoad   int32
+	CurrentUploadLoad int32
+	peerNodeMap       map[string]*PeerNode
 }
 
 func (h *NodeHost) AddPeerNode(peerNode *PeerNode) {
-	h.peerTaskMap.Store(peerNode.GetPeerID(), peerNode)
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	h.peerNodeMap[peerNode.PeerID] = peerNode
 }
 
 func (h *NodeHost) DeletePeerNode(peerID string) {
-	h.peerTaskMap.Delete(peerID)
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	delete(h.peerNodeMap, peerID)
 }
 
-func (h *NodeHost) GetPeerTaskNum() int32 {
-	count := 0
-	h.peerTaskMap.Range(func(key, value interface{}) bool {
-		count++
-		return true
-	})
-	return int32(count)
+func (h *NodeHost) GetPeerTaskNum() int {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	return len(h.peerNodeMap)
 }
 
 func (h *NodeHost) GetPeerNode(peerID string) (*PeerNode, bool) {
-	v, ok := h.peerTaskMap.Load(peerID)
-	if !ok {
-		return nil, false
-	}
-	return v.(*PeerNode), true
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	peerNode, ok := h.peerNodeMap[peerID]
+	return peerNode, ok
 }
 
-func (h *NodeHost) SetTotalUploadLoad(load int32) {
-	h.totalUploadLoad = load
+func (h *NodeHost) IncUploadLoad() {
+	h.CurrentUploadLoad++
 }
 
-func (h *NodeHost) AddUploadLoad(delta int32) {
-	logger.Infof("host[%s] type[%d] add UploadLoad [%d]", h.UUID, h.Type, delta)
-	h.currentUploadLoad += delta
-}
-
-func (h *NodeHost) GetUploadLoad() int {
-	return h.currentUploadLoad
+func (h *NodeHost) DesUploadLoad() {
+	h.CurrentUploadLoad--
 }
 
 func (h *NodeHost) GetUploadLoadPercent() float64 {
 	if h.TotalUploadLoad <= 0 {
 		return 1.0
 	}
-	return float64(h.currentUploadLoad.Load()) / float64(h.TotalUploadLoad)
+	return float64(h.CurrentUploadLoad) / float64(h.TotalUploadLoad)
 }
 
 func (h *NodeHost) GetFreeUploadLoad() int32 {
-	return h.totalUploadLoad - h.currentUploadLoad
+	return h.TotalUploadLoad - h.CurrentUploadLoad
 }
 
-func (h *NodeHost) SetTotalDownloadLoad(load int) {
-	h.totalDownloadLoad = load
+func IsCDNHost(host *NodeHost) bool {
+	return host.HostType == CDNNodeHost
 }
 
-func (h *NodeHost) AddDownloadLoad(delta int) {
-	h.currentDownloadLoad += delta
-}
-
-func (h *NodeHost) GetDownloadLoad() int32 {
-	return h.currentDownloadLoad
-}
-
-func (h *NodeHost) GetDownloadLoadPercent() float64 {
-	if h.totalDownloadLoad <= 0 {
-		return 1.0
-	}
-	return float64(h.currentDownloadLoad) / float64(h.totalDownloadLoad)
-}
-
-func (h *NodeHost) GetFreeDownloadLoad() int32 {
-	return h.totalDownloadLoad - h.currentDownloadLoad
-}
-
-func IsCDN(host *NodeHost) bool {
-	return host.Type == CDNNodeHost
+func IsPeerHost(host *NodeHost) bool {
+	return host.HostType == PeerNodeHost
 }

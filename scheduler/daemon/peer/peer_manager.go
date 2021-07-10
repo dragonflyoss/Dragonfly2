@@ -46,13 +46,12 @@ type manager struct {
 	gcQueue              workqueue.DelayingInterface
 	gcDelayTime          time.Duration
 	downloadMonitorQueue workqueue.DelayingInterface
-	//downloadMonitorCallBack func(node *types.PeerNode)
-	taskManager daemon.TaskMgr
-	hostManager daemon.HostMgr
-	verbose     bool
+	taskManager          daemon.TaskMgr
+	hostManager          daemon.HostMgr
+	verbose              bool
 }
 
-func newPeerManager(cfg *config.Config, taskManager daemon.TaskMgr, hostManager daemon.HostMgr) daemon.PeerMgr {
+func newManager(cfg *config.Config, taskManager daemon.TaskMgr, hostManager daemon.HostMgr) daemon.PeerMgr {
 	delay := time.Hour
 	if cfg.GC.PeerTaskDelay > delay {
 		delay = cfg.GC.PeerTaskDelay
@@ -75,6 +74,8 @@ func newPeerManager(cfg *config.Config, taskManager daemon.TaskMgr, hostManager 
 
 	return peerManager
 }
+
+var _ daemon.PeerMgr = (*manager)(nil)
 
 func (m *manager) Add(peerID string, task *types.Task, host *types.NodeHost) *types.PeerNode {
 	v, ok := m.peerMap.Load(peerID)
@@ -278,11 +279,13 @@ func (m *manager) gcWorkingLoop() {
 }
 
 func (m *manager) printDebugInfoLoop() {
-	for {
-		time.Sleep(time.Second * 10)
-		if m.verbose {
+	if m.verbose {
+		ticker := time.NewTicker(time.Second * 10)
+		for {
+			<-ticker.C
 			logger.Debugf(m.printDebugInfo())
 		}
+
 	}
 }
 
@@ -292,23 +295,23 @@ func (m *manager) printDebugInfo() string {
 
 	buffer := bytes.NewBuffer([]byte{})
 	table := tablewriter.NewWriter(buffer)
-	table.SetHeader([]string{"PeerId", "Finished Piece Num", "Download Finished", "Free Load", "Peer Down"})
+	table.SetHeader([]string{"PeerID", "Finished Piece Num", "Finished", "Free Load"})
 
 	m.peerMap.Range(func(key interface{}, value interface{}) (ok bool) {
 		ok = true
-		peerTask, _ := value.(*types.PeerNode)
+		peerTask := value.(*types.PeerNode)
 		if peerTask == nil {
 			return
 		}
 		if task == nil {
-			task = peerTask.GetTask()
+			task = peerTask.Task
 		}
-		if peerTask.GetParent() == nil {
+		if peerTask.Parent == nil {
 			roots = append(roots, peerTask)
 		}
 		// do not print finished node witch do not has child
 		if !(peerTask.Success && peerTask.Host != nil && peerTask.Host.GetUploadLoadPercent() < 0.001) {
-			table.Append([]string{peerTask.Pid, strconv.Itoa(int(peerTask.GetFinishedNum())),
+			table.Append([]string{peerTask.PeerID, strconv.Itoa(int(peerTask.FinishedNum)),
 				strconv.FormatBool(peerTask.Success), strconv.Itoa(int(peerTask.GetFreeLoad())), strconv.FormatBool(peerTask.IsDown())})
 		}
 		return
@@ -323,11 +326,11 @@ func (m *manager) printDebugInfo() string {
 		if node == nil {
 			return
 		}
-		nPath := append(path, fmt.Sprintf("%s(%d)", node.GetPeerID(), node.GetWholeTreeNode()))
+		nPath := append(path, fmt.Sprintf("%s(%d)", node.PeerID, node.GetWholeTreeNode()))
 		if len(path) > 1 {
-			msgs = append(msgs, node.GetPeerID()+" || "+strings.Join(nPath, "-"))
+			msgs = append(msgs, node.PeerID+" || "+strings.Join(nPath, "-"))
 		}
-		for _, child := range node.GetChildren() {
+		for _, child := range node.Children {
 			if child == nil || child.SrcPeerTask == nil {
 				continue
 			}
@@ -370,18 +373,19 @@ func (m *manager) SetDownloadingMonitorCallBack(callback func(*types.PeerNode)) 
 	m.downloadMonitorCallBack = callback
 }
 
-// monitor peer download
+// downloadMonitorWorkingLoop monitor peers download
 func (m *manager) downloadMonitorWorkingLoop() {
 	for {
 		v, shutdown := m.downloadMonitorQueue.Get()
 		if shutdown {
+			logger.Infof("download monitor working loop closed")
 			break
 		}
 		if m.downloadMonitorCallBack != nil {
 			pt, _ := v.(*types.PeerNode)
 			if pt != nil {
-				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", pt.GetTask().GetTaskID(), pt.GetPeerID(), pt.Status)
-				if pt.Success || (pt.GetHost() != nil && types.IsCDN(pt.GetHost())) {
+				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", pt.Task.TaskID, pt.PeerID, pt.Status)
+				if pt.Success || (pt.Host != nil && types.IsCDNHost(pt.Host)) {
 					// clear from monitor
 				} else {
 					if pt.Status != types.PeerStatusHealth {

@@ -23,10 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-const (
-	CDNHostLoad  = 10
-	PeerHostLoad = 4
-)
+const ()
 
 type manager struct {
 	hostMap sync.Map

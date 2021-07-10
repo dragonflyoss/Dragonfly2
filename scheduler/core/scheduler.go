@@ -42,16 +42,17 @@ func New(cfg config.SchedulerConfig, taskManager daemon.TaskMgr) *Scheduler {
 	}
 }
 
-// scheduler children to a peer
+// ScheduleChildren scheduler children to a peer
 func (s *Scheduler) ScheduleChildren(peer *types.PeerNode) (children []*types.PeerNode, err error) {
-	freeLoad := peer.GetFreeLoad()
-	candidates := s.factory.get(peer.GetTask().GetTaskID()).SelectChildCandidateNodes(peer)
+	eval := s.factory.get(peer.Task.TaskID)
+	freeLoad := peer.Host.GetFreeUploadLoad()
+	candidateChildren := s.factory.get(peer.Task.TaskID).SelectCandidateChildren(peer)
 	schedulerResult := make(map[*types.PeerNode]int8)
 	for freeLoad > 0 {
 		var chosen *types.PeerNode
 		var value float64
-		for _, child := range candidates {
-			worth := s.factory.get(peer.GetTask().GetTaskID()).Evaluate(peer, child)
+		for _, child := range candidateChildren {
+			worth := eval.Evaluate(peer, child)
 			if worth > value && schedulerResult[child] == 0 {
 				value = worth
 				chosen = child
@@ -67,7 +68,7 @@ func (s *Scheduler) ScheduleChildren(peer *types.PeerNode) (children []*types.Pe
 		}
 	}
 	for _, child := range children {
-		if child.GetParent() == peer {
+		if child.Parent == peer {
 			continue
 		} else {
 			child.DeleteParent()
@@ -100,20 +101,21 @@ func (s *Scheduler) ScheduleParent(peer *types.PeerNode) (primary *types.PeerNod
 		}
 	}
 	if primary != nil {
-		if primary == peer.GetParent() {
+		if primary == peer.Parent {
 			return
 		}
 		peer.SetParent(primary, 1)
 	}
-	logger.Debugf("[%s][%s]SchedulerParent scheduler a empty parent", peer.GetTask().GetTaskID(), peer.GetPeerID())
+	logger.Debugf("[%s][%s]SchedulerParent scheduler a empty parent", peer.Task.TaskID, peer.PeerID)
 
 	return
 }
 
 func (s *Scheduler) ScheduleBadNode(peer *types.PeerNode) (adjustNodes []*types.PeerNode, err error) {
-	logger.Debugf("[%s][%s]SchedulerBadNode scheduler node is bad", peer.GetTask().GetTaskID(), peer.GetPeerID())
-	parent := peer.GetParent()
+	logger.Debugf("[%s][%s]Scheduler bad node", peer.Task.TaskID, peer.PeerID)
+	parent := peer.Parent
 	if parent != nil {
+		peer.ReplaceParent()
 		s.ScheduleChildren(parent)
 	}
 

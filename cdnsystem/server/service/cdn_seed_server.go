@@ -29,6 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/internal/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -118,7 +119,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	for piece := range pieceChan {
 		psc <- &cdnsystem.PieceSeed{
 			PeerId:     peerID,
-			SeederName: iputils.HostName,
+			SeederName: idgen.CDNUUID(iputils.HostName, int32(css.cfg.ListenPort)),
 			PieceInfo: &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
 				RangeStart:  piece.PieceRange.StartIndex,
@@ -137,7 +138,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	}
 	psc <- &cdnsystem.PieceSeed{
 		PeerId:        peerID,
-		SeederName:    iputils.HostName,
+		SeederName:    idgen.CDNUUID(iputils.HostName, int32(css.cfg.ListenPort)),
 		Done:          true,
 		ContentLength: task.SourceFileLength,
 	}

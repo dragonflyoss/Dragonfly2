@@ -20,12 +20,13 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/rpc/base"
 )
 
+type TaskStatus int8
+
 const (
-	TaskStatusWaiting = iota + 1
+	TaskStatusWaiting TaskStatus = iota + 1
 	TaskStatusRunning
 	TaskStatusFailed
 	TaskStatusSuccess
@@ -33,90 +34,60 @@ const (
 )
 
 // isSuccessCDN determines that whether the CDNStatus is success.
-func IsSuccess(status int) bool {
+func IsSuccess(status TaskStatus) bool {
 	return status == TaskStatusSuccess
 }
 
-func IsFrozen(status int) bool {
+func IsFrozen(status TaskStatus) bool {
 	return status == TaskStatusFailed ||
 		status == TaskStatusWaiting ||
 		status == TaskStatusSourceError
 }
 
-func IsWait(status int) bool {
+func IsWait(status TaskStatus) bool {
 	return status == TaskStatusWaiting
 }
 
-func IsFailedTask(status int) bool {
+func IsBadTask(status TaskStatus) bool {
 	return status == TaskStatusFailed
 }
 
 type Task struct {
-	taskID         string
-	url            string
-	filter         string
-	bizID          string
-	urlMeta        *base.UrlMeta
-	SizeScope      base.SizeScope
-	DirectPiece    []byte
-	CreateTime     time.Time
-	LastAccessTime time.Time
-	PieceList      map[int32]*Piece
-	PieceTotal     int32
-	ContentLength  int64
-	Statistic      *TaskStatistic
-	CDNError       *dferrors.DfError
-	Status         int
+	lock            sync.RWMutex
+	TaskID          string
+	URL             string
+	Filter          string
+	BizID           string
+	UrlMeta         *base.UrlMeta
+	DirectPiece     []byte
+	CreateTime      time.Time
+	LastAccessTime  time.Time
+	LastTriggerTime time.Time
+	PieceList       map[int32]*PieceInfo
+	PieceTotal      int32
+	ContentLength   int64
+	Status          TaskStatus
 }
 
 func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
 	return &Task{
-		taskID:         taskID,
-		url:            url,
-		filter:         filter,
-		bizID:          bizID,
-		urlMeta:        meta,
-		CreateTime:     time.Now(),
-		LastAccessTime: time.Now(),
-		PieceList:      nil,
-		PieceTotal:     0,
-		ContentLength:  0,
-		Statistic:      nil,
-		CDNError:       nil,
-	}
-}
-func (task *Task) GetTaskID() string {
-	return task.taskID
-}
-
-func (task *Task) GetUrl() string {
-	return task.url
-}
-
-func (task *Task) GetFilter() string {
-	return task.filter
-}
-
-func (task *Task) GetUrlMeta() *base.UrlMeta {
-	return task.urlMeta
-}
-func (task *Task) InitProps() {
-	if task.PieceList == nil {
-		task.CreateTime = time.Now()
-		task.LastAccessTime = task.CreateTime
-		task.SizeScope = base.SizeScope_NORMAL
-		task.Statistic = &TaskStatistic{
-			StartTime: time.Now(),
-		}
+		TaskID:  taskID,
+		URL:     url,
+		Filter:  filter,
+		BizID:   bizID,
+		UrlMeta: meta,
+		Status:  TaskStatusWaiting,
 	}
 }
 
-func (task *Task) GetPiece(pieceNum int32) *Piece {
+func (task *Task) GetPiece(pieceNum int32) *PieceInfo {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
 	return task.PieceList[pieceNum]
 }
 
-func (task *Task) GetOrCreatePiece(pieceNum int32) *Piece {
-	task.rwLock.RLock()
+func (task *Task) GetOrCreatePiece(pieceNum int32) *PieceInfo {
+	task.lock.RLock()
 	p := task.PieceList[pieceNum]
 	if p == nil {
 		task.rwLock.RUnlock()
@@ -130,104 +101,17 @@ func (task *Task) GetOrCreatePiece(pieceNum int32) *Piece {
 	return p
 }
 
-func (t *Task) AddPiece(p *Piece) {
-	t.PieceList[p.PieceNum] = p
+func (task *Task) AddPiece(p *PieceInfo) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.PieceList[p.PieceNum] = p
 }
 
-type TaskStatistic struct {
-	lock          sync.RWMutex
-	StartTime     time.Time
-	EndTime       time.Time
-	PeerCount     int32
-	FinishedCount int32
-	CostList      []int32
-}
-
-type StatisticInfo struct {
-	StartTime     time.Time
-	EndTime       time.Time
-	PeerCount     int32
-	FinishedCount int32
-	Costs         map[int32]int32
-}
-
-func (t *TaskStatistic) SetStartTime(start time.Time) {
-	t.lock.Lock()
-	t.StartTime = start
-	t.lock.Unlock()
-}
-
-func (t *TaskStatistic) SetEndTime(end time.Time) {
-	t.lock.Lock()
-	t.EndTime = end
-	t.lock.Unlock()
-}
-
-func (t *TaskStatistic) AddPeerTaskStart() {
-	t.lock.Lock()
-	t.PeerCount++
-	t.lock.Unlock()
-}
-
-func (t *TaskStatistic) AddPeerTaskDown(cost int32) {
-	t.lock.Lock()
-	t.CostList = append(t.CostList, cost)
-	t.lock.Unlock()
-}
-
-func (t *TaskStatistic) GetStatistic() (info *StatisticInfo) {
-	t.lock.RLock()
-	defer t.lock.RUnlock()
-	info = &StatisticInfo{
-		StartTime:     t.StartTime,
-		EndTime:       t.EndTime,
-		PeerCount:     t.PeerCount,
-		FinishedCount: t.FinishedCount,
-		Costs:         make(map[int32]int32),
-	}
-
-	if info.EndTime.IsZero() {
-		info.EndTime = time.Now()
-	}
-
-	count := len(t.CostList)
-	count90 := count * 90 / 100
-	count95 := count * 95 / 100
-
-	totalCost := int64(0)
-
-	for i, cost := range t.CostList {
-		totalCost += int64(cost)
-		switch i {
-		case count90:
-			info.Costs[90] = int32(totalCost / int64(count90))
-		case count95:
-			info.Costs[95] = int32(totalCost / int64(count95))
-		}
-	}
-	if count > 0 {
-		info.Costs[100] = int32(totalCost / int64(count))
-	}
-
-	return
-}
-
-type Piece struct {
+type PieceInfo struct {
 	PieceNum    int32
 	RangeStart  uint64
 	RangeSize   int32
 	PieceMd5    string
 	PieceOffset uint64
-	PieceStyle  PieceStyle
-}
-
-type PieceStyle int32
-
-type PeerRegisterInfo struct {
-	PeerId string
-	// peer host info
-	PeerHost *NodeHost
-	// current host load
-	HostLoad    *base.HostLoad
-	IsMigrating bool
+	PieceStyle  int32
 }

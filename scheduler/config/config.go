@@ -17,27 +17,34 @@
 package config
 
 import (
+	"runtime"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
 )
 
 type Config struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
-	ConfigServer string                `yaml:"configServer" mapstructure:"configServer"`
-	Scheduler    SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
-	Server       ServerConfig          `yaml:"server" mapstructure:"server"`
-	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
-	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
-	Dynconfig    *DynconfigOptions     `yaml:"dynconfig"`
-	Manager      *ManagerConfig        `yaml:"manager"`
+	ConfigServer string           `yaml:"configServer" mapstructure:"configServer"`
+	Scheduler    *SchedulerConfig `yaml:"scheduler" mapstructure:"scheduler"`
+	Server       *ServerConfig    `yaml:"server" mapstructure:"server"`
+	GC           *GCConfig        `yaml:"gc" mapstructure:"gc"`
+	DynConfig    *DynConfig       `yaml:"dynconfig"`
+	Manager      *ManagerConfig   `yaml:"manager"`
 }
 
 func New() *Config {
-	return &config
+	return &Config{
+		ConfigServer: "",
+		Scheduler:    NewDefaultSchedulerConfig(),
+		Server:       NewDefaultServerConfig(),
+		GC:           NewDefaultGCConfig(),
+		DynConfig:    NewDefaultDynConfig(),
+	}
 }
 
 func (c *Config) Validate() error {
@@ -47,20 +54,20 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.Dynconfig.Type == dc.LocalSourceType && c.Dynconfig.Path == "" {
+	if c.DynConfig.Type == dc.LocalSourceType && c.DynConfig.Path == "" {
 		return errors.New("dynconfig is LocalSourceType type requires parameter path")
 	}
 
-	if c.Dynconfig.Type == dc.ManagerSourceType {
-		if c.Dynconfig.ExpireTime == 0 {
+	if c.DynConfig.Type == dc.ManagerSourceType {
+		if c.DynConfig.ExpireTime == 0 {
 			return errors.New("dynconfig is ManagerSourceType type requires parameter expireTime")
 		}
 
-		if c.Dynconfig.CachePath == "" {
+		if c.DynConfig.CachePath == "" {
 			return errors.New("dynconfig is ManagerSourceType type requires parameter cachePath")
 		}
 
-		if len(c.Dynconfig.NetAddrs) <= 0 {
+		if len(c.DynConfig.NetAddrs) <= 0 {
 			return errors.New("dynconfig is ManagerSourceType type requires parameter netAddrs")
 		}
 	}
@@ -68,12 +75,45 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+func NewDefaultDynConfig() *DynConfig {
+	return &DynConfig{
+		Type:       dc.LocalSourceType,
+		ExpireTime: 60000 * 1000 * 1000,
+		Path:       SchedulerDynconfigPath,
+		CachePath:  SchedulerDynconfigCachePath,
+	}
+}
+
+func NewDefaultServerConfig() *ServerConfig {
+	return &ServerConfig{
+		IP:   iputils.HostIP,
+		Port: 8002,
+	}
+}
+
+func NewDefaultSchedulerConfig() *SchedulerConfig {
+	return &SchedulerConfig{
+		ABTest:            false,
+		WorkerNum:         runtime.GOMAXPROCS(0),
+		WorkerJobPoolSize: 10000,
+		SenderNum:         10,
+		SenderJobPoolSize: 10000,
+	}
+}
+
+func NewDefaultGCConfig() *GCConfig {
+	return &GCConfig{
+		TaskDelay:     3600 * 1000,
+		PeerTaskDelay: 3600 * 1000,
+	}
+}
+
 type ManagerConfig struct {
 	// NetAddrs is manager addresses.
 	NetAddrs []dfnet.NetAddr `yaml:"netAddrs"`
 }
 
-type DynconfigOptions struct {
+type DynConfig struct {
 	// Type is dynconfig source type.
 	Type dc.SourceType `yaml:"type"`
 
@@ -94,21 +134,18 @@ type DynconfigOptions struct {
 }
 
 type SchedulerConfig struct {
-	ABTest     bool   `yaml:"abtest" mapstructure:"abtest"`
-	AScheduler string `yaml:"ascheduler" mapstructure:"ascheduler"`
-	BScheduler string `yaml:"bscheduler" mapstructure:"bscheduler"`
+	ABTest            bool   `yaml:"abtest" mapstructure:"abtest"`
+	AScheduler        string `yaml:"ascheduler" mapstructure:"ascheduler"`
+	BScheduler        string `yaml:"bscheduler" mapstructure:"bscheduler"`
+	WorkerNum         int    `yaml:"workerNum" mapstructure:"workerNum"`
+	WorkerJobPoolSize int    `yaml:"workerJobPoolSize" mapstructure:"workerJobPoolSize"`
+	SenderNum         int    `yaml:"senderNum" mapstructure:"senderNum"`
+	SenderJobPoolSize int    `yaml:"senderJobPoolSize" mapstructure:"senderJobPoolSize"`
 }
 
 type ServerConfig struct {
 	IP   string `yaml:"ip" mapstructure:"ip"`
 	Port int    `yaml:"port" mapstructure:"port"`
-}
-
-type SchedulerWorkerConfig struct {
-	WorkerNum         int `yaml:"workerNum" mapstructure:"workerNum"`
-	WorkerJobPoolSize int `yaml:"workerJobPoolSize" mapstructure:"workerJobPoolSize"`
-	SenderNum         int `yaml:"senderNum" mapstructure:"senderNum"`
-	SenderJobPoolSize int `yaml:"senderJobPoolSize" mapstructure:"senderJobPoolSize"`
 }
 
 type GCConfig struct {

@@ -24,16 +24,17 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/rpc/base/common"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/core"
 )
 
 type Client struct {
 	client           scheduler.Scheduler_ReportPieceResultServer
 	stop             bool
 	worker           WorkerPool
-	schedulerService *scheduler2.SchedulerService
+	schedulerService *core.SchedulerService
 }
 
-func NewClient(client scheduler.Scheduler_ReportPieceResultServer, worker WorkerPool, schedulerService *scheduler2.SchedulerService) *Client {
+func NewClient(client scheduler.Scheduler_ReportPieceResultServer, worker WorkerPool, schedulerService *core.SchedulerService) *Client {
 	c := &Client{
 		client:           client,
 		worker:           worker,
@@ -54,8 +55,8 @@ func (c *Client) doWork() error {
 		// TODO error
 		return nil
 	}
-	pid := pr.SrcPid
-	peerTask, _ := c.schedulerService.TaskManager.PeerTask.Get(pid)
+	peerID := pr.SrcPid
+	peerTask, _ := c.schedulerService.PeerManager.Get(peerID)
 	if peerTask == nil {
 		peerResult := &scheduler.PeerPacket{
 			Code: dfcodes.PeerTaskNotFound,

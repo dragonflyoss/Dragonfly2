@@ -23,6 +23,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
@@ -30,10 +31,10 @@ type SenderPool struct {
 	senderNum        int
 	jobChan          chan string
 	stopCh           <-chan struct{}
-	schedulerService *SchedulerService
+	schedulerService *core.SchedulerService
 }
 
-func NewSenderPool(worker *config.SchedulerWorkerConfig, schedulerService *SchedulerService) *SenderPool {
+func NewSenderPool(worker *config.SchedulerConfig, schedulerService *core.SchedulerService) *SenderPool {
 	return &SenderPool{
 		senderNum:        worker.SenderNum,
 		schedulerService: schedulerService,

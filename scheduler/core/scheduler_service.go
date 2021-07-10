@@ -18,12 +18,12 @@ package core
 
 import (
 	"context"
+	"time"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/internal/rpc/base"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
@@ -44,6 +44,21 @@ type SchedulerService struct {
 	ABTest    bool
 }
 
+func NewSchedulerService(cfg *config.Config, dynconfig config.DynconfigInterface) (*SchedulerService, error) {
+	mgr, err := manager.New(cfg, dynconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SchedulerService{
+		CDNManager:  daemon.CDNMgr(),
+		TaskManager: mgr.TaskManager,
+		HostManager: mgr.HostManager,
+		Scheduler:   scheduler.New(cfg.Scheduler, mgr.TaskManager),
+		ABTest:      cfg.Scheduler.ABTest,
+	}, nil
+}
+
 func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string, peerID string) (taskID string) {
 	if s.ABTest {
 		return idgen.TwinsTaskID(url, filter, meta, bizID, peerID)
@@ -53,22 +68,6 @@ func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.
 
 func (s *SchedulerService) GetTask(taskID string) (*types.Task, bool) {
 	return s.TaskManager.Get(taskID)
-}
-
-func (s *SchedulerService) CreateTask(ctx context.Context, task *types.Task) (*types.Task, error) {
-	// todo lock
-	// Task already exists
-	if ret, ok := s.TaskManager.Get(task.GetTaskID()); ok {
-		return ret, nil
-	}
-
-	// Task does not exist
-	s.TaskManager.Add(task)
-	if err := s.CDNManager.SeedTask(ctx, task); err != nil {
-		return nil, err
-	}
-	s.TaskManager.PeerTask.AddTask(task)
-	return ret, nil
 }
 
 func (s *SchedulerService) ScheduleParent(task *types.PeerNode) (primary *types.PeerNode,
@@ -84,8 +83,8 @@ func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *types.PeerN
 	return s.PeerManager.Get(peerTaskID)
 }
 
-func (s *SchedulerService) AddPeerTask(pid string, task *types.Task, host *types.Host) (ret *types.PeerNode, err error) {
-	ret = s.TaskManager.PeerTask.Add(pid, task, host)
+func (s *SchedulerService) AddPeerTask(pid string, task *types.Task, host *types.NodeHost) (ret *types.PeerNode, err error) {
+	ret = s.PeerManager.Add(pid, task, host)
 	host.AddPeerTask(ret)
 	return
 }
@@ -104,16 +103,16 @@ func (s *SchedulerService) DeletePeerTask(peerTaskID string) (err error) {
 	return
 }
 
-func (s *SchedulerService) GetHost(hostID string) (host *types.Host, ok bool) {
+func (s *SchedulerService) GetHost(hostID string) (host *types.NodeHost, ok bool) {
 	return s.HostManager.Get(hostID)
 }
 
-func (s *SchedulerService) AddHost(host *types.Host) (ret *types.Host, err error) {
+func (s *SchedulerService) AddHost(host *types.Host) (ret *types.NodeHost, err error) {
 	ret = s.HostManager.Store(host)
 	return
 }
 
-func (s *SchedulerService) RegisterPeerTask(req *scheduler.PeerTaskRequest, task *types.Task) (*types.PeerRegisterResponse, error) {
+func (s *SchedulerService) RegisterPeerTask(req *scheduler.PeerTaskRequest, task *types.Task) (*types.PeerNode, error) {
 	// get or create host
 	reqPeerHost := req.PeerHost
 	var (
@@ -141,30 +140,47 @@ func (s *SchedulerService) RegisterPeerTask(req *scheduler.PeerTaskRequest, task
 
 	// get or creat PeerTask
 	if peerNode, ok = s.PeerManager.Get(req.PeerId); !ok {
-		peerNode, _ := types.NewPeerNode(req.PeerId, task, host)
+		peerNode = &types.PeerNode{
+			PeerID:         req.PeerId,
+			Task:           task,
+			Host:           host,
+			FinishedNum:    0,
+			StartTime:      time.Now(),
+			LastAccessTime: time.Now(),
+			Parent:         nil,
+			Children:       nil,
+			Success:        false,
+			Status:         0,
+			CostHistory:    nil,
+		}
 		s.PeerManager.Add(peerNode)
 	}
+	return peerNode, nil
+}
 
-	// case base.SizeScope_SMALL
-	// do scheduler piece
-	parent, _, err := s.ScheduleParent(peerNode)
+func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task) (*types.Task, error) {
+	synclock.Lock(task.TaskID, true)
+	defer synclock.UnLock(task.TaskID, true)
+	existTask, ok := s.TaskManager.Get(task.TaskID)
+	if ok {
+		if existTask.LastTriggerTime.Add(2 * time.Minute).After(time.Now()) {
+			return existTask
+		}
+	}
+	peerNode, err := s.CDNManager.SeedTask(ctx, task)
 	if err != nil {
+		// todo 针对cdn的错误进行处理
 		return err
 	}
 
-	if parent == nil {
-		resp.SizeScope = base.SizeScope_NORMAL
-		return
-	}
+	task.Status = types.TaskStatusRunning
+	s.TaskManager.Add(task)
 
-	resp.DirectPiece = &scheduler.RegisterResult_SinglePiece{
-		SinglePiece: &scheduler.SinglePiece{
-			// destination peer id
-			DstPid: parent.GetPeerID(),
-			// download address(ip:port)
-			DstAddr: fmt.Sprintf("%s:%d", parent.GetHost().GetIP(), parent.Host.DownPort),
-			// one piece task
-			PieceInfo: &task.PieceList[0].PieceInfo,
-		},
-	}
+	s.PeerManager.Add(peerNode)
+	return nil
+}
+
+func (s *SchedulerService) GCPeerNode(ctx context.Context, peer *types.PeerNode) {
+	s.PeerManager.Delete(peer.PeerID)
+
 }

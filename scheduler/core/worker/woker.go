@@ -30,8 +30,67 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-// 实现 IWorker 接口
+type IWorker interface {
+	Serve()
+	Stop()
+	Submit(func()) error
+}
+
+// WorkerPool implements IWorker interface
 type WorkerPool struct {
+	chanSize   int
+	workerList []*Worker
+	stopCh     chan struct{}
+	sender     ISender
+
+	triggerLoadQueue workqueue.Interface
+
+	schedulerService *core.SchedulerService
+}
+
+var _ IWorker = (*WorkerPool)(nil)
+
+func (wg *WorkerPool) Serve() {
+	wg.stopCh = make(chan struct{})
+
+	wg.schedulerService.PeerManager.SetDownloadingMonitorCallBack(func(peer *types.PeerNode) {
+		status := peer.Status
+		// 获取peer节点状态
+		if status != types.PeerStatusHealth {
+			//} else if pt.GetNodeStatus() != types.PeerTaskStatusDone{
+			//	return
+		} else if peer.Success || types.IsCDNHost(peer.Host) {
+			// 如果下载成功且对应主机为CDN
+			return
+		} else if peer.Parent == nil {
+			// 如果没有父节点，设置状态为需要父亲
+			peer.Status = types.PeerStatusNeedParent
+		} else {
+			peer.Status = types.PeerStatusNeedCheckNode
+		}
+		wg.ReceiveJob(peer)
+	})
+
+	for i := 0; i < wg.workerNum; i++ {
+		w := NewWorker(wg.schedulerService, wg.sender, wg.ReceiveJob, wg.stopCh)
+		w.Serve()
+		wg.workerList = append(wg.workerList, w)
+	}
+
+	wg.sender.Serve()
+
+	logger.Infof("start scheduler worker number:%d", wg.workerNum)
+}
+
+func (wg *WorkerPool) Stop() {
+	close(wg.stopCh)
+	wg.sender.Stop()
+	wg.triggerLoadQueue.ShutDown()
+	logger.Infof("stop scheduler worker")
+}
+
+// 实现 IWorker 接口
+type Worker struct {
 	peerChan        chan *types.PeerNode
 	pieceResultChan chan *scheduler.PieceResult
 	sender          *SenderPool
@@ -41,11 +100,10 @@ type WorkerPool struct {
 	schedulerService *core.SchedulerService
 }
 
-func NewWorkerPool(cfg *config.SchedulerWorkerConfig, schedulerService *scheduler.SchedulerService) *WorkerPool {
+func NewWorker(cfg *config.SchedulerConfig, schedulerService *core.SchedulerService) *WorkerPool {
 	group := &WorkerPool{
 		sender:           NewSenderPool(cfg, schedulerService),
 		schedulerService: schedulerService,
-		triggerLoadQueue: workqueue.New(),
 	}
 	for i := 0; i < cfg.WorkerNum; i++ {
 		go func() {
@@ -135,7 +193,7 @@ func NewSchedulePeerNodeTask(peerTask *types.PeerNode) func() {
 			}
 			peerTask.SetNodeStatus(types.PeerStatusHealth)
 
-		case types.PeerStatusBadNode:
+		case types.PeerStatusBad:
 			adjustNodes, err := w.schedulerService.Scheduler.ScheduleBadNode(peerTask)
 			if err != nil {
 				logger.Debugf("[%s][%s]: schedule bad node failed: %v", peerTask.Task.TaskID, peerTask.Pid, err)

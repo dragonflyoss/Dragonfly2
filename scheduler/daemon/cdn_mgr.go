@@ -18,10 +18,14 @@ package daemon
 
 import (
 	"context"
+	"time"
 
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type CDNMgr interface {
-	SeedTask(ctx context.Context, task *types.Task) (err error)
+	// GetLastTriggerSeedTime
+	GetLastTriggerSeedTime(taskID string) time.Time
+	// SeedTask
+	SeedTask(ctx context.Context, task *types.Task) (peerNode *types.PeerNode, err error)
 }

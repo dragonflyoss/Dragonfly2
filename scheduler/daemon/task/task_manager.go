@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
@@ -32,9 +33,22 @@ type manager struct {
 	taskMap     sync.Map
 	gcDelayTime time.Duration
 	peerManager daemon.PeerMgr
+	cdnManager  cdn.Manager
 }
 
-func newTaskManager(cfg *config.Config, hostManager daemon.HostMgr) daemon.TaskMgr {
+func (m *manager) Add(task *types.Task) {
+	panic("implement me")
+}
+
+func (m *manager) Get(taskID string) (task *types.Task, ok bool) {
+	panic("implement me")
+}
+
+func (m *manager) ListTasks() {
+	panic("implement me")
+}
+
+func newManager(cfg *config.Config, hostManager daemon.HostMgr) daemon.TaskMgr {
 	delay := 48 * time.Hour
 	if cfg.GC.TaskDelay > 0 {
 		delay = cfg.GC.TaskDelay
@@ -76,7 +90,7 @@ func (m *manager) Load(taskID string) (types.Task, bool) {
 	return item.(types.Task), ok
 }
 
-func (m *manager) Delete(taskID string) {
+func (m *manager) GC(taskID string) {
 	m.taskMap.Delete(taskID)
 }
 

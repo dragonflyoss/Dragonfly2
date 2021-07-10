@@ -30,18 +30,18 @@ import (
 )
 
 type Evaluator interface {
-	// Whether the peer's parent needs to be adjusted
-	NeedAdjustParent(peer *types.PeerNode) bool
+	// NeedAdjustParent determine whether the peerNode needs a new parent node
+	NeedAdjustParent(peerNode *types.PeerNode) bool
 
-	// Whether peer is bad node
-	IsBadNode(peer *types.PeerNode) bool
+	// IsBadNode determine if peerNode is a failed node
+	IsBadNode(peerNode *types.PeerNode) bool
 
 	// todo Normalization
 	Evaluate(dst *types.PeerNode, src *types.PeerNode) float64
 
-	SelectChildCandidateNodes(peer *types.PeerNode) []*types.PeerNode
+	SelectCandidateChildren(peer *types.PeerNode) []*types.PeerNode
 
-	SelectParentCandidateNodes(peer *types.PeerNode) []*types.PeerNode
+	SelectCandidateParents(peer *types.PeerNode) []*types.PeerNode
 }
 
 type evaluatorFactory struct {

@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-package idgen
+package daemon
 
-import (
-	"fmt"
+import "context"
 
-	"github.com/google/uuid"
-)
-
-func UUIDString() string {
-	return uuid.New().String()
-}
-
-func CDNUUID(cdnHostName string, serverPort int32) string {
-	return fmt.Sprintf("%s-%d_CDN", cdnHostName, serverPort)
+type GCMgr interface {
+	StartGC(ctx context.Context) error
 }
