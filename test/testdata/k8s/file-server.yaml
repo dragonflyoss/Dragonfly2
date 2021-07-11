@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dragonfly-e2e
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: file-server
+  namespace: dragonfly-e2e
+spec:
+  selector:
+    app: dragonfly
+    component: file-server
+  type: ClusterIP
+  ports:
+  - name: nginx
+    port: 80
+    protocol: TCP
+    targetPort: 80
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: file-server
+  namespace: dragonfly-e2e
+spec:
+  serviceName: file-server
+  selector:
+    matchLabels:
+      app: dragonfly
+      component: file-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: dragonfly
+        component: file-server
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.20.1-alpine
+        imagePullPolicy: "IfNotPresent"
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: files
+          mountPath: /usr/share/nginx/html/kind
+      volumes:
+      - name: files
+        hostPath:
+          path: /
