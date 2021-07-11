@@ -18,10 +18,9 @@ package main
 
 import (
 	"d7y.io/dragonfly/v2/cmd/cdn/cmd"
-
-	// Init http client
+	// Register http client
 	_ "d7y.io/dragonfly/v2/pkg/source/httpprotocol"
-	// Init OSS client
+	// Register oss client
 	_ "d7y.io/dragonfly/v2/pkg/source/ossprotocol"
 )
 

@@ -30,9 +30,9 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/internal/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 type FilePeerTaskRequest struct {
@@ -176,7 +176,7 @@ func newFilePeerTask(ctx context.Context,
 			readyPieces:         NewBitmap(),
 			requestedPieces:     NewBitmap(),
 			failedPieceCh:       make(chan int32, 4),
-			failedReason:        "unknown",
+			failedReason:        failedReasonNotSet,
 			failedCode:          dfcodes.UnknownError,
 			contentLength:       -1,
 			totalPiece:          -1,

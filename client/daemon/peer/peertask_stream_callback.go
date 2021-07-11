@@ -22,8 +22,8 @@ import (
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type streamPeerTaskCallback struct {
@@ -44,9 +44,8 @@ func (p *streamPeerTaskCallback) Init(pt Task) error {
 	err := p.ptm.storageManager.RegisterTask(p.ctx,
 		storage.RegisterTaskRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
-				PeerID:      pt.GetPeerID(),
-				TaskID:      pt.GetTaskID(),
-				Destination: "",
+				PeerID: pt.GetPeerID(),
+				TaskID: pt.GetTaskID(),
 			},
 			ContentLength: pt.GetContentLength(),
 			TotalPieces:   pt.GetTotalPieces(),

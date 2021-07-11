@@ -20,7 +20,7 @@ import (
 	"io"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 type persistentMetadata struct {
@@ -59,7 +59,6 @@ type RegisterTaskRequest struct {
 	CommonTaskRequest
 	ContentLength int64
 	TotalPieces   int32
-	GCCallback    func(CommonTaskRequest)
 }
 
 type WritePieceRequest struct {

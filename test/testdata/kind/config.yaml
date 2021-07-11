@@ -1,0 +1,12 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.21.1
+    extraPortMappings:
+      - containerPort: 65001
+        hostPort: 65001
+        protocol: TCP
+    extraMounts:
+      - hostPath: ./test/testdata/containerd/config.toml
+        containerPath: /etc/containerd/config.toml

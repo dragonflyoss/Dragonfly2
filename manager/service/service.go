@@ -53,6 +53,9 @@ type REST interface {
 	SecurityGroupTotalCount(types.GetSecurityGroupsQuery) (int64, error)
 	AddSchedulerClusterToSecurityGroup(uint, uint) error
 	AddCDNClusterToSecurityGroup(uint, uint) error
+
+	Login(json types.LoginRequest) (*model.User, error)
+	Register(json types.RegisterRequest) (*model.User, error)
 }
 
 type rest struct {

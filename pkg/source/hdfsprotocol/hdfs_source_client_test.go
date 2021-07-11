@@ -69,7 +69,7 @@ func TestGetContentLength_OK(t *testing.T) {
 	defer patch.Reset()
 
 	// exist file
-	length, err := sourceClient.GetContentLength(context.Background(), hdfsExistFileURL, nil, &rangeutils.Range{0, 12})
+	length, err := sourceClient.GetContentLength(context.Background(), hdfsExistFileURL, nil, &rangeutils.Range{EndIndex: 12})
 	assert.Equal(t, hdfsExistFileContentLength, length)
 	assert.Nil(t, err)
 
@@ -87,7 +87,7 @@ func TestGetContentLength_Fail(t *testing.T) {
 	defer patch.Reset()
 
 	// not exist file
-	length, err := sourceClient.GetContentLength(context.Background(), hdfsNotExistFileURL, nil, &rangeutils.Range{0, 10})
+	length, err := sourceClient.GetContentLength(context.Background(), hdfsNotExistFileURL, nil, &rangeutils.Range{EndIndex: 10})
 	assert.Equal(t, hdfsNotExistFileContentLength, length)
 	assert.EqualError(t, err, "stat /user/root/input/f3.txt: file does not exist")
 }

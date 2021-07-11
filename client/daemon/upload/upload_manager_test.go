@@ -34,7 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
-	_ "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/server"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
 func TestMain(m *testing.M) {

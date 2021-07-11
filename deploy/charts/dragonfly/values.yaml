@@ -29,6 +29,7 @@ scheduler:
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
+  podLabels: {}
   serviceAnnotations: {}
   statefulsetAnnotations: {}
   containerPort: 8002
@@ -69,6 +70,7 @@ cdn:
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
+  podLabels: {}
   statefulsetAnnotations: {}
   containerPort: 8003
   nginxContiainerPort: 8001
@@ -123,6 +125,7 @@ dfdaemon:
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
+  podLabels: {}
   daemonsetAnnotations: {}
   containerPort: 65001
   # hostPort is used when .hostNetwork == false, and .config.proxy.tcpListen.namespace is empty
@@ -172,7 +175,7 @@ dfdaemon:
       security:
         insecure: true
       tcpListen:
-        namespace: /host/ns/net
+        namespace: /run/dragonfly/net
         listen: 0.0.0.0
         # if you want to change port, please update hostPort in $.Values.dfdaemon.hostPort
         # port in configmap is generated from $.Values.dfdaemon.hostPort
