@@ -26,7 +26,7 @@ install-helm() {
       print_step_info "helm has been installed"
   else
       print_step_info "start install helm"
-      curl -fsSL get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | sh
+      curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | sh
   fi
 
   helm install --wait --timeout 10m --create-namespace --namespace ${NAMESPACE} dragonfly ${CHARTS_PATH}
