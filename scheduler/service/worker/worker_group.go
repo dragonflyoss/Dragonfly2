@@ -84,7 +84,7 @@ func (wg *Group) Serve() {
 
 	wg.sender.Serve()
 
-	logger.Infof("start scheduler worker number:%d", wg.workerNum)
+	logger.Infof("start scheduler worker number: %d", wg.workerNum)
 }
 
 func (wg *Group) Stop() {

@@ -59,7 +59,7 @@ func (nv *NetAddrsValue) Set(value string) error {
 		return errors.New("invalid net address")
 	}
 	if len(vv) == 1 {
-		value = fmt.Sprintf("%s:%d", value, DefaultSupernodePort)
+		value = fmt.Sprintf("%s:%d", value, DefaultSchedulerPort)
 	}
 
 	if !nv.isSet && len(*nv.n) > 0 {

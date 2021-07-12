@@ -133,7 +133,7 @@ func newDirectHandler() *http.ServeMux {
 
 // getEnv returns the environments of dfdaemon.
 func getEnv(w http.ResponseWriter, r *http.Request) {
-	logger.Debugf("access:%s", r.URL.String())
+	logger.Debugf("access: %s", r.URL.String())
 	if err := json.NewEncoder(w).Encode(ensureStringKey(viper.AllSettings())); err != nil {
 		logger.Errorf("failed to encode env json: %v", err)
 	}
@@ -163,7 +163,7 @@ func ensureStringKey(obj interface{}) interface{} {
 
 // getArgs returns all the arguments of command-line except the program name.
 func getArgs(w http.ResponseWriter, r *http.Request) {
-	logger.Debugf("access:%s", r.URL.String())
+	logger.Debugf("access: %s", r.URL.String())
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain;charset=utf-8")

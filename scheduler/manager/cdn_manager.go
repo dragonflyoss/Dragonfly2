@@ -139,7 +139,7 @@ func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *type
 			UrlMeta: task.URLMata,
 		})
 		if err != nil {
-			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskID, err)
+			logger.Warnf("receive a failure state from cdn: taskId[%s] error: %v", task.TaskID, err)
 			e, ok := err.(*dferrors.DfError)
 			if !ok {
 				e = dferrors.New(dfcodes.CdnError, err.Error())
@@ -218,7 +218,7 @@ func (cm *CDNManager) Work(task *types.Task, stream *client.PieceSeedStream) {
 			if !ok {
 				dferr = dferrors.New(dfcodes.CdnError, err.Error())
 			}
-			logger.Warnf("receive a failure state from cdn: taskId[%s] error:%v", task.TaskID, err)
+			logger.Warnf("receive a failure state from cdn: taskId[%s] error: %v", task.TaskID, err)
 			cm.doCallback(task, dferr)
 			return
 		}
@@ -317,7 +317,7 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 }
 
 func (cm *CDNManager) getHostUUID(ps *cdnsystem.PieceSeed) string {
-	return fmt.Sprintf("cdn:%s", ps.SeederName)
+	return fmt.Sprintf("cdn: %s", ps.SeederName)
 }
 
 func (cm *CDNManager) createPiece(task *types.Task, ps *cdnsystem.PieceSeed, pt *types.PeerTask) *types.Piece {
