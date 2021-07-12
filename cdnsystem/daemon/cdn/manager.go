@@ -95,7 +95,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// second: report detect result
 	err = cm.cdnReporter.reportCache(task.TaskID, detectResult)
 	if err != nil {
-		logger.WithTaskID(task.TaskID).Errorf("failed to report cache, reset detectResult:%v", err)
+		logger.WithTaskID(task.TaskID).Errorf("failed to report cache, reset detectResult: %v", err)
 	}
 	// full cache
 	if detectResult.breakPoint == -1 {
@@ -154,16 +154,16 @@ func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceMd5 string, downl
 	var errorMsg string
 	// check md5
 	if !stringutils.IsBlank(task.RequestMd5) && task.RequestMd5 != sourceMd5 {
-		errorMsg = fmt.Sprintf("file md5 not match expected:%s real:%s", task.RequestMd5, sourceMd5)
+		errorMsg = fmt.Sprintf("file md5 not match expected: %s real: %s", task.RequestMd5, sourceMd5)
 		isSuccess = false
 	}
 	// check source length
 	if isSuccess && task.SourceFileLength >= 0 && task.SourceFileLength != downloadMetadata.realSourceFileLength {
-		errorMsg = fmt.Sprintf("file length not match expected:%d real:%d", task.SourceFileLength, downloadMetadata.realSourceFileLength)
+		errorMsg = fmt.Sprintf("file length not match expected: %d real: %d", task.SourceFileLength, downloadMetadata.realSourceFileLength)
 		isSuccess = false
 	}
 	if isSuccess && task.PieceTotal > 0 && downloadMetadata.pieceTotalCount != task.PieceTotal {
-		errorMsg = fmt.Sprintf("task total piece count not match expected:%d real:%d", task.PieceTotal, downloadMetadata.pieceTotalCount)
+		errorMsg = fmt.Sprintf("task total piece count not match expected: %d real: %d", task.PieceTotal, downloadMetadata.pieceTotalCount)
 		isSuccess = false
 	}
 	if !stringutils.IsBlank(errorMsg) {
@@ -195,7 +195,7 @@ func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceMd5 string, downl
 		return false, errors.New(errorMsg)
 	}
 
-	logger.WithTaskID(task.TaskID).Infof("success to get task, downloadMetadata:%+v realMd5: %s", downloadMetadata, sourceMd5)
+	logger.WithTaskID(task.TaskID).Infof("success to get task, downloadMetadata: %+v realMd5: %s", downloadMetadata, sourceMd5)
 
 	return true, nil
 }

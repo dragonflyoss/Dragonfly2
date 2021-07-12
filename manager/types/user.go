@@ -11,5 +11,5 @@ type RegisterRequest struct {
 	Phone    string `form:"phone" binding:"omitempty"`
 	Avatar   string `form:"avatar" binding:"omitempty"`
 	Location string `form:"location" binding:"omitempty"`
-	Bio      string `form:"bio" binding:"omitempty"`
+	BIO      string `form:"bio" binding:"omitempty"`
 }

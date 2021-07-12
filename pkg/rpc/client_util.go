@@ -64,7 +64,7 @@ func (conn *Connection) startGC() {
 			//conn.rwMutex.Unlock()
 			// slow GC detected, report it with a log warning
 			if timeElapse := time.Since(startTime); timeElapse > conn.gcConnTimeout {
-				logger.GrpcLogger.With("conn", conn.name).Warnf("gc %d conns, cost:%.3f seconds", removedConnCount, timeElapse.Seconds())
+				logger.GrpcLogger.With("conn", conn.name).Warnf("gc %d conns, cost: %.3f seconds", removedConnCount, timeElapse.Seconds())
 			}
 			actualTotal := 0
 			conn.node2ClientMap.Range(func(key, value interface{}) bool {
@@ -83,30 +83,30 @@ func (conn *Connection) startGC() {
 func (conn *Connection) gcConn(node string) {
 	conn.rwMutex.Lock(node, false)
 	defer conn.rwMutex.UnLock(node, false)
-	logger.GrpcLogger.With("conn", conn.name).Infof("gc keys and clients associated with server node:%s starting", node)
+	logger.GrpcLogger.With("conn", conn.name).Infof("gc keys and clients associated with server node: %s starting", node)
 	value, ok := conn.node2ClientMap.Load(node)
 	if ok {
 		clientCon := value.(*grpc.ClientConn)
 		err := clientCon.Close()
 		if err == nil {
 			conn.node2ClientMap.Delete(node)
-			logger.GrpcLogger.With("conn", conn.name).Infof("success gc clientConn:%s", node)
+			logger.GrpcLogger.With("conn", conn.name).Infof("success gc clientConn: %s", node)
 		} else {
-			logger.GrpcLogger.With("conn", conn.name).Warnf("failed to close clientConn:%s: %v", node, err)
+			logger.GrpcLogger.With("conn", conn.name).Warnf("failed to close clientConn: %s: %v", node, err)
 		}
 	} else {
-		logger.GrpcLogger.With("conn", conn.name).Warnf("server node:%s dose not found in node2ClientMap", node)
+		logger.GrpcLogger.With("conn", conn.name).Warnf("server node: %s dose not found in node2ClientMap", node)
 	}
 	// gc hash keys
 	conn.key2NodeMap.Range(func(key, value interface{}) bool {
 		if value == node {
 			conn.key2NodeMap.Delete(key)
-			logger.GrpcLogger.With("conn", conn.name).Infof("success gc key:%s associated with server node %s", key, node)
+			logger.GrpcLogger.With("conn", conn.name).Infof("success gc key: %s associated with server node %s", key, node)
 		}
 		return true
 	})
 	conn.accessNodeMap.Delete(node)
-	logger.GrpcLogger.With("conn", conn.name).Infof("gc keys and clients associated with server node:%s ending", node)
+	logger.GrpcLogger.With("conn", conn.name).Infof("gc keys and clients associated with server node: %s ending", node)
 }
 
 type wrappedClientStream struct {
@@ -119,7 +119,7 @@ func (w *wrappedClientStream) RecvMsg(m interface{}) error {
 	err := w.ClientStream.RecvMsg(m)
 	if err != nil && err != io.EOF {
 		err = convertClientError(err)
-		logger.GrpcLogger.Errorf("client receive a message:%T error:%v for method:%s target:%s connState:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
+		logger.GrpcLogger.Errorf("client receive a message: %T error: %v for method: %s target: %s connState: %s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
 
 	return err
@@ -128,7 +128,7 @@ func (w *wrappedClientStream) RecvMsg(m interface{}) error {
 func (w *wrappedClientStream) SendMsg(m interface{}) error {
 	err := w.ClientStream.SendMsg(m)
 	if err != nil {
-		logger.GrpcLogger.Errorf("client send a message:%T error:%v for method:%s target:%s connState:%s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
+		logger.GrpcLogger.Errorf("client send a message: %T error: %v for method: %s target: %s connState: %s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
 
 	return err
@@ -138,7 +138,7 @@ func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grp
 	s, err := streamer(ctx, desc, cc, method, opts...)
 	if err != nil {
 		err = convertClientError(err)
-		logger.GrpcLogger.Errorf("create client stream error:%v for method:%s target:%s connState:%s", err, method, cc.Target(), cc.GetState().String())
+		logger.GrpcLogger.Errorf("create client stream error: %v for method: %s target: %s connState: %s", err, method, cc.Target(), cc.GetState().String())
 		return nil, err
 	}
 
@@ -153,7 +153,7 @@ func unaryClientInterceptor(ctx context.Context, method string, req, reply inter
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	if err != nil {
 		err = convertClientError(err)
-		logger.GrpcLogger.Errorf("do unary client error:%v for method:%s target:%s connState:%s", err, method, cc.Target(), cc.GetState().String())
+		logger.GrpcLogger.Errorf("do unary client error: %v for method: %s target: %s connState: %s", err, method, cc.Target(), cc.GetState().String())
 	}
 
 	return err

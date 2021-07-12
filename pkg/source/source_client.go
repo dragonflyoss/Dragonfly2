@@ -223,7 +223,7 @@ func GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader
 
 // getSourceClient get a source client from source manager with specified schema.
 func (clientMgr *ClientManagerImpl) getSourceClient(rawURL string) (ResourceClient, error) {
-	logger.Debugf("current clients:%v", clientMgr.clients)
+	logger.Debugf("current clients: %v", clientMgr.clients)
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err

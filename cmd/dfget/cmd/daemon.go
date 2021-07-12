@@ -129,7 +129,7 @@ func runDaemon() error {
 	}
 	defer lock.Unlock()
 
-	logger.Infof("daemon is launched by pid:%d", viper.GetInt("launcher"))
+	logger.Infof("daemon is launched by pid: %d", viper.GetInt("launcher"))
 
 	// daemon config values
 	s, _ := yaml.Marshal(cfg)

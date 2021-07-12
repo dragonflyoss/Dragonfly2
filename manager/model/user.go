@@ -15,5 +15,5 @@ type User struct {
 	PrivateToken      string `gorm:"column:private_token;size:256" json:"private_token"`
 	State             string `gorm:"type:enum('enable', 'disable');default:'enable'" json:"state"`
 	Location          string `gorm:"column:location;size:1024" json:"location"`
-	Bio               string `gorm:"column:bio;size:1024" json:"bio"`
+	BIO               string `gorm:"column:bio;size:1024" json:"bio"`
 }

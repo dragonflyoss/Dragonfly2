@@ -25,7 +25,7 @@ import (
 
 var DefaultSupernodesValue = &SupernodesValue{
 	Nodes: []string{
-		fmt.Sprintf("%s:%d", DefaultSupernodeIP, DefaultSupernodePort),
+		fmt.Sprintf("%s:%d", DefaultSchedulerIP, DefaultSchedulerPort),
 	},
 }
 
@@ -57,7 +57,7 @@ func (sv *SupernodesValue) Set(value string) error {
 			return errors.New("invalid nodes")
 		}
 		if len(vv) == 1 {
-			node = fmt.Sprintf("%s:%d", node, DefaultSupernodePort)
+			node = fmt.Sprintf("%s:%d", node, DefaultSchedulerPort)
 		}
 		sv.Nodes = append(sv.Nodes, node)
 	}

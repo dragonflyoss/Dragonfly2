@@ -58,7 +58,7 @@ func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_Downl
 	if pe, ok := peer.FromContext(ctx); ok {
 		peerAddr = pe.Addr.String()
 	}
-	logger.Infof("trigger download for url:%s,from:%s,uuid:%s", req.Url, peerAddr, req.Uuid)
+	logger.Infof("trigger download for url: %s, from: %s, uuid: %s", req.Url, peerAddr, req.Uuid)
 
 	errChan := make(chan error, 10)
 	drc := make(chan *dfdaemon.DownResult, 4)
