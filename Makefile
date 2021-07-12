@@ -190,39 +190,34 @@ test-coverage:
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
-# Prepare github actions E2E tests
-prepare-actions-e2e-test:
-	@make docker-build
-	@make kind-load 
-	@helm install --wait --timeout 3m --create-namespace --namespace dragonfly-system dragonfly ./deploy/charts/dragonfly
-.PHONY: prepare-actions-e2e-test
+# Install github actions E2E tests environment
+install-actions-e2e-test:
+	@./hack/install-e2e-test.sh actions
+.PHONY: install-actions-e2e-test
 
 # Run github actons E2E tests
-actions-e2e-test: prepare-actions-e2e-test
+actions-e2e-test: install-actions-e2e-test
 	@ginkgo -v -r --failFast test/e2e --trace --progress
 .PHONY: actions-e2e-test
 
 # Run github actons E2E tests with coverage
-actions-e2e-test-coverage: prepare-actions-e2e-test
+actions-e2e-test-coverage: install-actions-e2e-test
 	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
 	@cat test/e2e/*.coverprofile >> coverage.txt
 .PHONY: actions-e2e-test-coverage
 
-# Prepare E2E tests
-prepare-e2e-test:
-	@kind create cluster --config test/testdata/kind/config.yaml
-	@make docker-build
-	@make kind-load 
-	@helm install --wait --timeout 10m --create-namespace --namespace dragonfly-system dragonfly ./deploy/charts/dragonfly
-.PHONY: prepare-e2e-test
+# Install E2E tests environment
+install-e2e-test:
+	@./hack/install-e2e-test.sh local
+.PHONY: install-e2e-test
 
 # Run E2E tests
-e2e-test: prepare-e2e-test
+e2e-test: install-e2e-test
 	@ginkgo -v -r --failFast test/e2e --trace --progress
 .PHONY: e2e-test
 
 # Run E2E tests with coverage
-e2e-test-coverage: prepare-e2e-test
+e2e-test-coverage: install-e2e-test
 	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
 	@cat test/e2e/*.coverprofile >> coverage.txt
 .PHONY: e2e-test-coverage
@@ -297,10 +292,10 @@ help:
 	@echo "make build-dfget-man-page           generate dfget man page"
 	@echo "make test                           run unittests"
 	@echo "make test-coverage                  run tests with coverage"
-	@echo "make prepare-actions-e2e-test       prepare github actions E2E tests"
+	@echo "make install-actions-e2e-test       install github actions E2E tests environment"
 	@echo "make actions-e2e-test               run github actons E2E tests"
 	@echo "make actions-e2e-test-coverage      run github actons E2E tests with coverage"
-	@echo "make prepare-e2e-test               prepare E2E tests"
+	@echo "make install-e2e-test               install E2E tests environment"
 	@echo "make e2e-test                       run e2e tests"
 	@echo "make e2e-test-coverage              run e2e tests with coverage"
 	@echo "make clean-e2e-test                 clean e2e tests"

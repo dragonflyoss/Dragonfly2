@@ -43,7 +43,6 @@ jobs:
       - name: Get dependencies
         run: |
           go mod vendor
-          go get github.com/onsi/ginkgo/ginkgo
 
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
