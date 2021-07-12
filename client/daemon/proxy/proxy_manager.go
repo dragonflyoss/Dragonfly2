@@ -51,6 +51,11 @@ type proxyManager struct {
 var _ Manager = (*proxyManager)(nil)
 
 func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, opts *config.ProxyOption) (Manager, error) {
+	// proxy is option, when nil, just disable it
+	if opts == nil {
+		logger.Infof("proxy config is empty, disabled")
+		return &proxyManager{}, nil
+	}
 	registry := opts.RegistryMirror
 	proxies := opts.Proxies
 	hijackHTTPS := opts.HijackHTTPS
