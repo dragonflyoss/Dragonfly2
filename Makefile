@@ -201,7 +201,7 @@ actions-e2e-test: install-actions-e2e-test
 .PHONY: actions-e2e-test
 
 # Run github actons E2E tests with coverage
-actions-e2e-test-coverage: prepare-actions-e2e-test
+actions-e2e-test-coverage: install-actions-e2e-test
 	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
 	@cat test/e2e/*.coverprofile >> coverage.txt
 .PHONY: actions-e2e-test-coverage
@@ -217,7 +217,7 @@ e2e-test: install-e2e-test
 .PHONY: e2e-test
 
 # Run E2E tests with coverage
-e2e-test-coverage: prepare-e2e-test
+e2e-test-coverage: install-e2e-test
 	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
 	@cat test/e2e/*.coverprofile >> coverage.txt
 .PHONY: e2e-test-coverage
