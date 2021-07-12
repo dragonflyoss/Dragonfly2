@@ -55,7 +55,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 			}
 		}
 		tm.taskURLUnReachableStore.Delete(taskID)
-		logger.Debugf("delete taskID:%s from url unReachable store", taskID)
+		logger.Debugf("delete taskID: %s from url unReachable store", taskID)
 	}
 
 	var task *types.SeedTask
@@ -72,12 +72,12 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if v, err := tm.taskStore.Get(taskID); err == nil {
 		existTask := v.(*types.SeedTask)
 		if !isSameTask(existTask, newTask) {
-			return nil, cdnerrors.ErrTaskIDDuplicate{TaskID: taskID, Cause: fmt.Errorf("newTask:%+v, existTask:%+v", newTask, existTask)}
+			return nil, cdnerrors.ErrTaskIDDuplicate{TaskID: taskID, Cause: fmt.Errorf("newTask: %+v, existTask: %+v", newTask, existTask)}
 		}
 		task = existTask
-		logger.Debugf("get exist task for taskID:%s", taskID)
+		logger.Debugf("get exist task for taskID: %s", taskID)
 	} else {
-		logger.Debugf("get new task for taskID:%s", taskID)
+		logger.Debugf("get new task for taskID: %s", taskID)
 		task = newTask
 	}
 
@@ -112,7 +112,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		task.PieceSize = pieceSize
 	}
 	tm.taskStore.Add(task.TaskID, task)
-	logger.Debugf("success add task:%+v into taskStore", task)
+	logger.Debugf("success add task: %+v into taskStore", task)
 	return task, nil
 }
 

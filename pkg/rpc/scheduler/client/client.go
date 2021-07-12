@@ -153,7 +153,7 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error) {
 	pps, err := newPeerPacketStream(ctx, sc, taskID, ptr, opts)
 
-	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskID:%s", taskID)
+	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskID: %s", taskID)
 
 	// trigger scheduling
 	pps.Send(scheduler.NewZeroPieceResult(taskID, ptr.PeerId))
@@ -186,7 +186,7 @@ func (sc *schedulerClient) doReportPeerResult(ctx context.Context, pr *scheduler
 	}
 
 	logger.With("peerId", pr.PeerId, "errMsg", err).
-		Infof("report peer result:%t[%d], peer task down result:%t[%d] for taskId:%s,url:%s,scheduler:%s,length:%d,traffic:%d,cost:%d", suc, int32(code),
+		Infof("report peer result: %t[%d], peer task down result: %t[%d] for taskId: %s, url: %s, scheduler: %s, length: %d, traffic: %d, cost: %d", suc, int32(code),
 			pr.Success, int32(pr.Code), pr.TaskId, pr.Url, schedulerNode, pr.ContentLength, pr.Traffic, pr.Cost)
 
 	if err != nil {
@@ -206,7 +206,7 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 		suc           bool
 	)
 	defer func() {
-		logger.With("peerId", pt.PeerId, "errMsg", err).Infof("leave from task result:%t for taskId:%s,scheduler:%s", suc, pt.TaskId, schedulerNode)
+		logger.With("peerId", pt.PeerId, "errMsg", err).Infof("leave from task result: %t for taskId: %s, scheduler: %s", suc, pt.TaskId, schedulerNode)
 	}()
 
 	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {

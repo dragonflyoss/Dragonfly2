@@ -65,7 +65,7 @@ func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
 		flags.Bool("verbose", false, "whether logger use debug level")
 		flags.Int("pprof-port", -1, "listen port for pprof, 0 represents random port")
 		flags.String("jaeger", "", "jaeger endpoint url, like: http://localhost:14250/api/traces")
-		flags.String("config", "", fmt.Sprintf("the path of configuration file with yaml extension name, default is %s, it can also be set by env var:%s", filepath.Join(dfpath.DefaultConfigDir, rootName+".yaml"), strings.ToUpper(rootName+"_config")))
+		flags.String("config", "", fmt.Sprintf("the path of configuration file with yaml extension name, default is %s, it can also be set by env var: %s", filepath.Join(dfpath.DefaultConfigDir, rootName+".yaml"), strings.ToUpper(rootName+"_config")))
 
 		// Bind common flags
 		if err := viper.BindPFlags(flags); err != nil {
@@ -108,7 +108,7 @@ func InitMonitor(verbose bool, pprofPort int, jaeger string) func() {
 
 			vm := statsview.New()
 			if err := vm.Start(); err != nil {
-				logger.Warnf("serve pprof error:%v", err)
+				logger.Warnf("serve pprof error: %v", err)
 			}
 			fc <- func() { vm.Stop() }
 		}()
@@ -117,7 +117,7 @@ func InitMonitor(verbose bool, pprofPort int, jaeger string) func() {
 	if jaeger != "" {
 		ff, err := initJaegerTracer(jaeger)
 		if err != nil {
-			logger.Warnf("init jaeger tracer error:%v", err)
+			logger.Warnf("init jaeger tracer error: %v", err)
 		}
 
 		fc <- ff
@@ -145,11 +145,11 @@ func SetupQuitSignalHandler(handler func()) {
 		for {
 			select {
 			case sig := <-signals:
-				logger.Warnf("receive signal:%v", sig)
+				logger.Warnf("receive signal: %v", sig)
 				if !done {
 					done = true
 					handler()
-					logger.Warnf("handle signal:%v finish", sig)
+					logger.Warnf("handle signal: %v finish", sig)
 				}
 			}
 		}

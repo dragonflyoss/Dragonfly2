@@ -80,7 +80,7 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 // checkSeedRequestParams check the params of SeedRequest.
 func checkSeedRequestParams(req *cdnsystem.SeedRequest) error {
 	if !urlutils.IsValidURL(req.Url) {
-		return errors.Errorf("resource url:%s is invalid", req.Url)
+		return errors.Errorf("resource url: %s is invalid", req.Url)
 	}
 	if stringutils.IsBlank(req.TaskId) {
 		return errors.New("taskId is empty")
@@ -95,7 +95,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		}
 
 		if err != nil {
-			logger.WithTaskID(req.TaskId).Errorf("failed to obtain task(%s) seeds, request:%+v %v", req.TaskId, req, err)
+			logger.WithTaskID(req.TaskId).Errorf("failed to obtain task(%s) seeds, request: %+v %v", req.TaskId, req, err)
 
 		}
 	}()
@@ -108,7 +108,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
 
 	if err != nil {
-		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "failed to register seed task(%s):%v", req.TaskId, err)
+		return dferrors.Newf(dfcodes.CdnTaskRegistryFail, "failed to register seed task(%s): %v", req.TaskId, err)
 	}
 	task, err := css.taskMgr.Get(req.TaskId)
 	if err != nil {
@@ -150,14 +150,14 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 			logger.WithTaskID(req.TaskId).Errorf("failed to get piece tasks, req=%+v: %v", req, r)
 		}
 		if err != nil {
-			logger.WithTaskID(req.TaskId).Errorf("failed to get piece tasks, req=%+v :%v", req, err)
+			logger.WithTaskID(req.TaskId).Errorf("failed to get piece tasks, req=%+v: %v", req, err)
 		}
 	}()
 	if err := checkPieceTasksRequestParams(req); err != nil {
 		return nil, dferrors.Newf(dfcodes.BadRequest, "failed to validate seed request for task(%s): %v", req.TaskId, err)
 	}
 	task, err := css.taskMgr.Get(req.TaskId)
-	logger.Debugf("task:%+v", task)
+	logger.Debugf("task: %+v", task)
 	if err != nil {
 		if cdnerrors.IsDataNotFound(err) {
 			return nil, dferrors.Newf(dfcodes.CdnTaskNotFound, "failed to get task(%s) from cdn: %v", req.TaskId, err)

@@ -225,7 +225,7 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 			candidateNodes = append(candidateNodes, ringNode)
 		}
 	}
-	logger.With("conn", conn.name).Infof("candidate result for hash key %s: all server node list:%v, exclusiveNodes node list:%v, candidate node list:%v",
+	logger.With("conn", conn.name).Infof("candidate result for hash key %s: all server node list: %v, exclusiveNodes node list: %v, candidate node list: %v",
 		key, ringNodes, exclusiveNodes, candidateNodes)
 	for _, candidateNode := range candidateNodes {
 		conn.rwMutex.Lock(candidateNode, true)
@@ -391,14 +391,14 @@ func (conn *Connection) Close() error {
 			if err == nil {
 				conn.node2ClientMap.Delete(serverNode)
 			} else {
-				logger.GrpcLogger.With("conn", conn.name).Warnf("failed to close clientConn:%s: %v", serverNode, err)
+				logger.GrpcLogger.With("conn", conn.name).Warnf("failed to close clientConn: %s: %v", serverNode, err)
 			}
 		}
 		// gc hash keys
 		conn.key2NodeMap.Range(func(key, value interface{}) bool {
 			if value == serverNode {
 				conn.key2NodeMap.Delete(key)
-				logger.GrpcLogger.With("conn", conn.name).Infof("success gc key:%s associated with server node %s", key, serverNode)
+				logger.GrpcLogger.With("conn", conn.name).Infof("success gc key: %s associated with server node %s", key, serverNode)
 			}
 			return true
 		})

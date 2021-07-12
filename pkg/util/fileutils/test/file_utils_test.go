@@ -55,7 +55,7 @@ func (s *FileUtilsTestSuite) SetupSuite() {
 func (s *FileUtilsTestSuite) TearDownSuite() {
 	if !stringutils.IsBlank(s.workDir) {
 		if err := os.RemoveAll(s.workDir); err != nil {
-			fmt.Printf("remove path %s error:%v\n", s.workDir, err)
+			fmt.Printf("remove path %s error: %v\n", s.workDir, err)
 		}
 	}
 }

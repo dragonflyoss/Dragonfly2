@@ -225,7 +225,7 @@ func (s *diskStorageMgr) DeleteTask(taskID string) error {
 	}
 	// try to clean the parent bucket
 	if err := s.diskDriver.Remove(storage.GetParentRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
-		logrus.Warnf("taskID:%s failed remove parent bucket:%v", taskID, err)
+		logrus.Warnf("taskID: %s failed remove parent bucket: %v", taskID, err)
 	}
 	return nil
 }

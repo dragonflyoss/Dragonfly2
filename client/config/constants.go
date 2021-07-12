@@ -66,9 +66,9 @@ const (
 	DefaultScheduleTimeout = 5 * time.Minute
 	DefaultDownloadTimeout = 5 * time.Minute
 
-	DefaultSupernodeSchema = "http"
-	DefaultSupernodeIP     = "127.0.0.1"
-	DefaultSupernodePort   = 8002
+	DefaultSchedulerSchema = "http"
+	DefaultSchedulerIP     = "127.0.0.1"
+	DefaultSchedulerPort   = 8002
 )
 
 const (

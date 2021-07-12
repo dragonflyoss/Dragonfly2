@@ -116,7 +116,7 @@ func (osc *ossSourceClient) IsExpired(ctx context.Context, url string, header so
 func (osc *ossSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, source.ResponseHeader, error) {
 	ossObject, err := parseOssObject(url)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "parse oss object from url:%s", url)
+		return nil, nil, errors.Wrapf(err, "parse oss object from url: %s", url)
 	}
 	client, err := osc.getClient(header)
 	if err != nil {
@@ -124,11 +124,11 @@ func (osc *ossSourceClient) DownloadWithResponseHeader(ctx context.Context, url 
 	}
 	bucket, err := client.Bucket(ossObject.bucket)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get bucket:%s", ossObject.bucket)
+		return nil, nil, errors.Wrapf(err, "failed to get bucket: %s", ossObject.bucket)
 	}
 	res, err := bucket.GetObject(ossObject.object, getOptions(header)...)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get oss Object:%s", ossObject.object)
+		return nil, nil, errors.Wrapf(err, "failed to get oss Object: %s", ossObject.object)
 	}
 	resp := res.(*oss.Response)
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPartialContent {
@@ -183,14 +183,14 @@ func (osc *ossSourceClient) getMeta(ctx context.Context, url string, header map[
 
 	bucket, err := client.Bucket(ossObject.bucket)
 	if err != nil {
-		return nil, errors.Wrapf(err, "get bucket:%s", ossObject.bucket)
+		return nil, errors.Wrapf(err, "get bucket: %s", ossObject.bucket)
 	}
 	isExist, err := bucket.IsObjectExist(ossObject.object)
 	if err != nil {
-		return nil, errors.Wrapf(err, "prob object:%s if exist", ossObject.object)
+		return nil, errors.Wrapf(err, "prob object: %s if exist", ossObject.object)
 	}
 	if !isExist {
-		return nil, fmt.Errorf("oss object:%s does not exist", ossObject.object)
+		return nil, fmt.Errorf("oss object: %s does not exist", ossObject.object)
 	}
 	return bucket.GetObjectMeta(ossObject.object, getOptions(header)...)
 }
@@ -218,7 +218,7 @@ func parseOssObject(rawURL string) (*ossObject, error) {
 		return nil, errors.Wrapf(err, "parse rawURL: %s failed", rawURL)
 	}
 	if parsedURL.Scheme != "oss" {
-		return nil, fmt.Errorf("rawUrl:%s is not oss url", rawURL)
+		return nil, fmt.Errorf("rawUrl: %s is not oss url", rawURL)
 	}
 	return &ossObject{
 		endpoint: parsedURL.Path[0:2],

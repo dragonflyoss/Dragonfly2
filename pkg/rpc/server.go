@@ -192,7 +192,7 @@ type wrappedServerStream struct {
 func (w *wrappedServerStream) RecvMsg(m interface{}) error {
 	err := w.ServerStream.RecvMsg(m)
 	if err != nil && err != io.EOF {
-		logger.GrpcLogger.Errorf("server receive a message:%T error:%v for method:%s", m, err, w.method)
+		logger.GrpcLogger.Errorf("server receive a message: %T error: %v for method: %s", m, err, w.method)
 	}
 
 	return err
@@ -201,7 +201,7 @@ func (w *wrappedServerStream) RecvMsg(m interface{}) error {
 func (w *wrappedServerStream) SendMsg(m interface{}) error {
 	err := w.ServerStream.SendMsg(m)
 	if err != nil {
-		logger.GrpcLogger.Errorf("server send a message:%T error:%v for method:%s", m, err, w.method)
+		logger.GrpcLogger.Errorf("server send a message: %T error: %v for method: %s", m, err, w.method)
 	}
 
 	return err
@@ -214,7 +214,7 @@ func streamServerInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.S
 	})
 	if err != nil {
 		err = convertServerError(err)
-		logger.GrpcLogger.Errorf("do stream server error:%v for method:%s", err, info.FullMethod)
+		logger.GrpcLogger.Errorf("do stream server error: %v for method: %s", err, info.FullMethod)
 	}
 
 	return err
@@ -224,7 +224,7 @@ func unaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.Una
 	m, err := handler(ctx, req)
 	if err != nil {
 		err = convertServerError(err)
-		logger.GrpcLogger.Errorf("do unary server error:%v for method:%s", err, info.FullMethod)
+		logger.GrpcLogger.Errorf("do unary server error: %v for method: %s", err, info.FullMethod)
 	}
 
 	return m, err

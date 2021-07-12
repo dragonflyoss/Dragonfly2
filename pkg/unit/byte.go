@@ -125,7 +125,7 @@ func parseSize(fsize string) (Bytes, error) {
 
 	num, err := strconv.ParseInt(matches[1], 0, 64)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to parse size:%s", fsize)
+		return 0, errors.Wrapf(err, "failed to parse size: %s", fsize)
 	}
 
 	return ToBytes(num) * unit, nil

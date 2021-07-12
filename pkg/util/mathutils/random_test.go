@@ -29,13 +29,13 @@ func TestRandBackoff(t *testing.T) {
 	maxBackOff := 3.0
 
 	v1 := RandBackoff(initBackOff, maxBackOff, 2, 5)
-	fmt.Printf("rand v1:%v\n", v1)
+	fmt.Printf("rand v1: %v\n", v1)
 
 	assert.True(t, v1 <= time.Duration(maxBackOff*float64(time.Second)))
 	assert.True(t, v1 >= time.Duration(initBackOff*float64(time.Second)))
 
 	v2 := RandBackoff(initBackOff, maxBackOff, 2, 5)
-	fmt.Printf("rand v2:%v\n", v2)
+	fmt.Printf("rand v2: %v\n", v2)
 
 	assert.NotEqual(t, v1, v2)
 }
