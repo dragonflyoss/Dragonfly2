@@ -31,8 +31,8 @@ var VersionCmd = &cobra.Command{
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Major:%s Minor:%s\n", version.Major, version.Minor)
-		fmt.Printf("GitVersion:%s\n", version.GitVersion)
-		fmt.Printf("Platform:%s GoVersion:%s BuildDay:%s\n", version.Platform, version.GoVersion, version.BuildDay)
+		fmt.Printf("Major: %s Minor: %s\n", version.Major, version.Minor)
+		fmt.Printf("GitVersion: %s\n", version.GitVersion)
+		fmt.Printf("Platform: %s GoVersion: %s BuildDay: %s\n", version.Platform, version.GoVersion, version.BuildDay)
 	},
 }

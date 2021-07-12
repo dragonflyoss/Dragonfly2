@@ -117,24 +117,24 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 	fields := strings.Split(value, fieldSeparator)
 	pieceNum, err := strconv.ParseInt(fields[0], 10, 32)
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid pieceNum:%s", fields[0])
+		return nil, errors.Wrapf(err, "invalid pieceNum: %s", fields[0])
 	}
 	pieceLen, err := strconv.ParseInt(fields[1], 10, 32)
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid pieceLen:%s", fields[1])
+		return nil, errors.Wrapf(err, "invalid pieceLen: %s", fields[1])
 	}
 	md5 := fields[2]
 	pieceRange, err := rangeutils.ParseRange(fields[3])
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid piece range:%s", fields[3])
+		return nil, errors.Wrapf(err, "invalid piece range: %s", fields[3])
 	}
 	originRange, err := rangeutils.ParseRange(fields[4])
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid origin range:%s", fields[4])
+		return nil, errors.Wrapf(err, "invalid origin range: %s", fields[4])
 	}
 	pieceStyle, err := strconv.ParseInt(fields[5], 10, 8)
 	if err != nil {
-		return nil, errors.Wrapf(err, "invalid pieceStyle:%s", fields[5])
+		return nil, errors.Wrapf(err, "invalid pieceStyle: %s", fields[5])
 	}
 	return &PieceMetaRecord{
 		PieceNum:    int32(pieceNum),

@@ -107,7 +107,7 @@ func download(ctx context.Context, client daemonclient.DaemonClient, cfg *config
 					_ = pb.Close()
 				}
 
-				wLog.Infof("download from daemon success, length:%dByte cost:%dms", result.CompletedLength, time.Now().Sub(start).Milliseconds())
+				wLog.Infof("download from daemon success, length: %dByte cost: %dms", result.CompletedLength, time.Now().Sub(start).Milliseconds())
 				fmt.Printf("finish total length %d Byte\n", result.CompletedLength)
 
 				break
@@ -116,8 +116,8 @@ func download(ctx context.Context, client daemonclient.DaemonClient, cfg *config
 	}
 
 	if downError != nil {
-		wLog.Warnf("daemon downloads file error:%v", downError)
-		fmt.Printf("daemon downloads file error:%v\n", downError)
+		wLog.Warnf("daemon downloads file error: %v", downError)
+		fmt.Printf("daemon downloads file error: %v\n", downError)
 		downError = downloadFromSource(ctx, cfg, hdr)
 	}
 
@@ -174,7 +174,7 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 		return err
 	}
 
-	wLog.Infof("download from source success, length:%dByte cost:%dms", written, time.Now().Sub(start).Milliseconds())
+	wLog.Infof("download from source success, length: %dByte cost: %dms", written, time.Now().Sub(start).Milliseconds())
 	fmt.Printf("finish total length %d Byte\n", written)
 
 	return nil
