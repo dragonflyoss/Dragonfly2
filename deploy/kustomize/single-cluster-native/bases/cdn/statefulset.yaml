@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cdn
+  labels:
+    app: dragonfly
+    component: cdn
+spec:
+  selector:
+    matchLabels:
+      app: dragonfly
+      component: cdn
+  replicas: 3
+  serviceName: cdn
+  template:
+    metadata:
+      labels:
+        app: dragonfly
+        component: cdn
+    spec:
+      serviceAccountName: cdn
+      initContainers:
+      - name: update-configmap
+        image: bitnami/kubectl
+        command:
+        - /bin/bash
+        - -xc
+        - |
+          HOSTNAME=$(cat /etc/hostname)
+          cat <<EOF > /tmp/patch.json
+          {
+            "data": {
+              "$POD_NAME.json": "{\"host_name\": \"$HOSTNAME\",\"ip\":\"$POD_IP\",\"port\": 8003,\"download_port\": 8001,\"status\": \"active\"}"
+            }
+          }
+          EOF
+          echo data to patch:
+          cat /tmp/patch.json
+          for i in `seq 1 10`; do
+            kubectl -n $POD_NAMESPACE \
+              patch configmap scheduler-static-cdn --type=merge \
+              --patch-file /tmp/patch.json
+            if [[ "$?" -eq 0 ]]; then
+              echo updated configmap:
+              kubectl -n $POD_NAMESPACE get configmap scheduler-static-cdn -oyaml
+              break
+            fi
+          done
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        imagePullPolicy: "Always"
+      containers:
+      - name: cdn
+        command:
+        - /bin/sh
+        - -c
+        - |
+          cp /etc/dragonfly/nginx.conf /etc/nginx/nginx.conf
+          nginx
+          exec /opt/dragonfly/df-cdn/cdn
+        image: dragonflyoss/cdn
+        imagePullPolicy: "Always"
+        ports:
+        - containerPort: 8001
+        - containerPort: 8003
+        volumeMounts:
+        - name: config
+          mountPath: /etc/dragonfly
+      volumes:
+      - name: config
+        configMap:
+          name: cdn

@@ -39,7 +39,7 @@ type manager struct {
 }
 
 func (m *manager) ListPeers() *sync.Map {
-	panic("implement me")
+	return &m.peerMap
 }
 
 func NewManager() daemon.PeerMgr {
@@ -61,6 +61,8 @@ var _ daemon.PeerMgr = (*manager)(nil)
 
 func (m *manager) Add(peerNode *types.PeerNode) {
 	peerNode.LastAccessTime = time.Now()
+	peerNode.Host.AddPeerNode(peerNode)
+	peerNode.Task.PeerNodes.Add(peerNode)
 	m.peerMap.Store(peerNode.PeerID, peerNode)
 	peerNode.Task.AddPeerNode(peerNode)
 }
@@ -78,8 +80,9 @@ func (m *manager) Get(peerID string) (*types.PeerNode, bool) {
 func (m *manager) Delete(peerID string) {
 	peer, ok := m.Get(peerID)
 	if ok {
-		m.peerMap.Delete(peerID)
+		peer.Host.DeletePeerNode(peerID)
 		peer.Task.PeerNodes.Delete(peer)
+		m.peerMap.Delete(peerID)
 	}
 	return
 }
@@ -131,31 +134,4 @@ func (m *manager) pick(task *types.Task, limit int, reverse bool, pickFn func(pe
 		return true
 	})
 	return
-}
-
-func (m *manager) ClearPeerTask() {
-	m.peerMap.Range(func(key interface{}, value interface{}) bool {
-		peer, _ := value.(*types.PeerNode)
-		if peer != nil && peer.GetTask() != nil && peer.GetTask().Removed {
-			m.peerMap.Delete(peer.GetPeerID())
-		}
-		return true
-	})
-}
-
-func (m *manager) cleanPeerTask(pt *types.PeerNode) {
-	defer m.gcQueue.Done(pt)
-	if pt == nil {
-		return
-	}
-	m.peerMap.Delete(pt.GetPeerID())
-	if pt.GetHost() != nil {
-		host, _ := m.hostManager.Get(pt.GetHost().GetUUID())
-		if host != nil {
-			host.DeletePeerTask(pt.GetPeerID())
-			if host.GetPeerTaskNum() <= 0 {
-				m.hostManager.Delete(pt.GetHost().GetUUID())
-			}
-		}
-	}
 }

@@ -27,8 +27,8 @@ const (
 	CDNNodeHost
 )
 const (
-	CDNHostLoad  = 10
-	PeerHostLoad = 4
+	CDNHostLoad    = 10
+	ClientHostLoad = 4
 )
 
 type NodeHost struct {
@@ -55,8 +55,8 @@ type NodeHost struct {
 	IDC string
 	// NetTopology network device path: switch|router|...
 	NetTopology       string
-	TotalUploadLoad   int32
-	CurrentUploadLoad int32
+	TotalUploadLoad   int
+	CurrentUploadLoad int
 	peerNodeMap       map[string]*PeerNode
 }
 
@@ -100,7 +100,7 @@ func (h *NodeHost) GetUploadLoadPercent() float64 {
 	return float64(h.CurrentUploadLoad) / float64(h.TotalUploadLoad)
 }
 
-func (h *NodeHost) GetFreeUploadLoad() int32 {
+func (h *NodeHost) GetFreeUploadLoad() int {
 	return h.TotalUploadLoad - h.CurrentUploadLoad
 }
 

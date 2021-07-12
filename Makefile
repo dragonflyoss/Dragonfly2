@@ -16,7 +16,7 @@ PROJECT_NAME := "d7y.io/dragonfly/v2"
 DFGET_NAME := "dfget"
 VERSION := "2.0.0"
 PKG := "$(PROJECT_NAME)"
-PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(manager\)')
+PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/manager/\)' | grep -v '\(/test/\)')
 GIT_COMMIT := $(shell git rev-parse --verify HEAD --short=7)
 GIT_COMMIT_LONG := $(shell git rev-parse --verify HEAD)
 DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(GIT_COMMIT)"
@@ -174,6 +174,11 @@ build-deb-dfget: build-linux-dfget
 		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb
 .PHONY: build-deb-dfget
 
+# Generate dfget man page
+build-dfget-man-page:
+	@pandoc -s -t man ./docs/en/cli-reference/dfget.1.md -o ./docs/en/cli-reference/dfget.1
+.PHONY: build-man-page
+
 # Run unittests
 test:
 	@go test -race -short ${PKG_LIST}
@@ -185,18 +190,87 @@ test-coverage:
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
-# Generate swagger asserts
-swag-manager:
-	@swag init -g cmd/manager/main.go -o api/v2/manager
-.PHONY: swag-manager
+# Prepare github actions E2E tests
+prepare-actions-e2e-test:
+	@make docker-build
+	@make kind-load 
+	@helm install --wait --timeout 3m --create-namespace --namespace dragonfly-system dragonfly ./deploy/charts/dragonfly
+.PHONY: prepare-actions-e2e-test
+
+# Run github actons E2E tests
+actions-e2e-test: prepare-actions-e2e-test
+	@ginkgo -v -r --failFast test/e2e --trace --progress
+.PHONY: actions-e2e-test
+
+# Run github actons E2E tests with coverage
+actions-e2e-test-coverage: prepare-actions-e2e-test
+	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
+	@cat test/e2e/*.coverprofile >> coverage.txt
+.PHONY: actions-e2e-test-coverage
+
+# Prepare E2E tests
+prepare-e2e-test:
+	@kind create cluster --config test/testdata/kind/config.yaml
+	@make docker-build
+	@make kind-load 
+	@helm install --wait --timeout 10m --create-namespace --namespace dragonfly-system dragonfly ./deploy/charts/dragonfly
+.PHONY: prepare-e2e-test
+
+# Run E2E tests
+e2e-test: prepare-e2e-test
+	@ginkgo -v -r --failFast test/e2e --trace --progress
+.PHONY: e2e-test
+
+# Run E2E tests with coverage
+e2e-test-coverage: prepare-e2e-test
+	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
+	@cat test/e2e/*.coverprofile >> coverage.txt
+.PHONY: e2e-test-coverage
+
+# Clean E2E tests
+clean-e2e-test: 
+	@kind delete cluster
+.PHONY: clean-e2e-test
+
+# Kind load dragonlfy
+kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon
+	@echo "Kind load image done."
+.PHONY: docker-build
+
+# Run kind load docker-image cdn
+kind-load-cdn:
+	@./hack/kind-load.sh cdn
+.PHONY: kind-load-cdn
+
+# Run kind load docker scheduler
+kind-load-scheduler:
+	@./hack/kind-load.sh scheduler
+.PHONY: kind-load-scheduler
+
+# Run kind load docker dfget
+kind-load-dfdaemon:
+	@./hack/kind-load.sh dfdaemon
+.PHONY: kind-load-dfget
+
+# Run kind load docker manager
+kind-load-manager:
+	@./hack/kind-load.sh manager
+.PHONY: kind-load-manager
+
+# Run go generate
+generate:
+	@go generate ${PKG_LIST}
+.PHONY: generate
 
 # Generate changelog
 changelog:
 	@git-chglog -o CHANGELOG.md
+.PHONY: changelog
 
 clean:
 	@go clean
 	@rm -rf bin .go .cache
+.PHONY: clean
 
 help: 
 	@echo "make build-dirs                     prepare required folders for build"
@@ -220,8 +294,23 @@ help:
 	@echo "make install-manager                install manager"
 	@echo "make build-rpm-dfget                build rpm dfget"
 	@echo "make build-deb-dfget                build deb dfget"
+	@echo "make build-dfget-man-page           generate dfget man page"
 	@echo "make test                           run unittests"
 	@echo "make test-coverage                  run tests with coverage"
+	@echo "make prepare-actions-e2e-test       prepare github actions E2E tests"
+	@echo "make actions-e2e-test               run github actons E2E tests"
+	@echo "make actions-e2e-test-coverage      run github actons E2E tests with coverage"
+	@echo "make prepare-e2e-test               prepare E2E tests"
+	@echo "make e2e-test                       run e2e tests"
+	@echo "make e2e-test-coverage              run e2e tests with coverage"
+	@echo "make clean-e2e-test                 clean e2e tests"
 	@echo "make swag-manager                   generate swagger api"
+	@echo "make kind-load-image                kind load docker image"
 	@echo "make changelog                      generate CHANGELOG.md"
+	@echo "make kind-load-cdn                  kind load cdn docker image"
+	@echo "make kind-load-scheduler            kind load scheduler docker image"
+	@echo "make kind-load-dfdaemon             kind load dfdaemon docker image"
+	@echo "make kind-load-manager              kind load manager docker image"
+	@echo "make changelog                      generate CHANGELOG.md"
+	@echo "make generate                       run go generate"
 	@echo "make clean                          clean"

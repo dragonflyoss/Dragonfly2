@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 )
 
@@ -28,6 +28,7 @@ type TaskStatus uint8
 
 const (
 	TaskStatusWaiting TaskStatus = iota + 1
+	TaskStatusRegisterFail
 	TaskStatusRunning
 	TaskStatusFailed
 	TaskStatusSuccess
@@ -35,22 +36,28 @@ const (
 )
 
 // isSuccessCDN determines that whether the CDNStatus is success.
-func IsSuccess(status TaskStatus) bool {
-	return status == TaskStatusSuccess
+func IsSuccessTask(task *Task) bool {
+	return task.Status == TaskStatusSuccess
 }
 
-func IsFrozen(status TaskStatus) bool {
-	return status == TaskStatusFailed ||
-		status == TaskStatusWaiting ||
-		status == TaskStatusSourceError
+func IsFrozenTask(task *Task) bool {
+	status := task.Status
+	return status == TaskStatusFailed || status == TaskStatusWaiting ||
+		status == TaskStatusSourceError || status == TaskStatusRegisterFail
 }
 
-func IsWait(status TaskStatus) bool {
+func IsWaitTask(task *Task) bool {
+	status := task.Status
 	return status == TaskStatusWaiting
 }
 
-func IsBadTask(status TaskStatus) bool {
-	return status == TaskStatusFailed
+func IsRunningTask(task *Task) bool {
+	return task.Status == TaskStatusRunning
+}
+
+func IsFailTask(task *Task) bool {
+	status := task.Status
+	return status == TaskStatusFailed || status == TaskStatusSourceError
 }
 
 type Task struct {
@@ -59,7 +66,7 @@ type Task struct {
 	URL             string
 	Filter          string
 	BizID           string
-	UrlMeta         *base.UrlMeta
+	URLMeta         *base.UrlMeta
 	DirectPiece     []byte
 	CreateTime      time.Time
 	LastAccessTime  time.Time
@@ -77,9 +84,13 @@ func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
 		URL:     url,
 		Filter:  filter,
 		BizID:   bizID,
-		UrlMeta: meta,
+		URLMeta: meta,
 		Status:  TaskStatusWaiting,
 	}
+}
+
+func (task *Task) SetStatus(status TaskStatus) {
+	task.Status = status
 }
 
 func (task *Task) GetPiece(pieceNum int32) *PieceInfo {
@@ -103,11 +114,13 @@ func (task *Task) AddPiece(p *PieceInfo) {
 	task.PieceList[p.PieceNum] = p
 }
 
+const TinyFileSize = 128
+
 type PieceInfo struct {
 	PieceNum    int32
 	RangeStart  uint64
 	RangeSize   int32
 	PieceMd5    string
 	PieceOffset uint64
-	PieceStyle  int8
+	PieceStyle  base.PieceStyle
 }

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// Package fileutils provides utilities supplementing the standard about file packages.
 package fileutils
 
 import (

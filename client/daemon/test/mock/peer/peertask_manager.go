@@ -12,8 +12,8 @@ import (
 
 	peer "d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	base "d7y.io/dragonfly/v2/internal/rpc/base"
-	scheduler "d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
 )
 

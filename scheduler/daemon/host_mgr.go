@@ -16,15 +16,20 @@
 
 package daemon
 
-import "d7y.io/dragonfly/v2/scheduler/types"
+import (
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/types"
+)
 
 type HostMgr interface {
+	config.Observer
+
 	Add(host *types.NodeHost)
 
 	// GetOrAdd returns the existing value for the key if present.
 	// Otherwise, it stores and returns the given value.
 	// The loaded result is true if the value was loaded, false if stored.
-	GetOrAdd(uuid string, host *types.NodeHost) (actual *types.NodeHost, loaded bool)
+	GetOrAdd(host *types.NodeHost) (actual *types.NodeHost, loaded bool)
 
 	Delete(uuid string)
 

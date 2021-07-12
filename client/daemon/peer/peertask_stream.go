@@ -33,9 +33,9 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/internal/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 // StreamPeerTask represents a peer task with stream io for reading directly without once more disk io
@@ -67,7 +67,8 @@ func newStreamPeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
-	logger.Debugf("request overview, url: %s, filter: %s, meta: %s, biz: %s", request.Url, request.Filter, request.UrlMeta, request.BizId)
+	logger.Debugf("request overview, pid: %s, url: %s, filter: %s, meta: %s, biz: %s",
+		request.PeerId, request.Url, request.Filter, request.UrlMeta, request.BizId)
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
@@ -153,7 +154,7 @@ func newStreamPeerTask(ctx context.Context,
 			readyPieces:         NewBitmap(),
 			requestedPieces:     NewBitmap(),
 			failedPieceCh:       make(chan int32, 4),
-			failedReason:        "unknown",
+			failedReason:        failedReasonNotSet,
 			failedCode:          dfcodes.UnknownError,
 			contentLength:       -1,
 			totalPiece:          -1,
@@ -229,7 +230,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	select {
 	case <-s.ctx.Done():
 		var err error
-		if s.failedReason != "" {
+		if s.failedReason != failedReasonNotSet {
 			err = errors.Errorf(s.failedReason)
 		} else {
 			err = errors.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
@@ -237,10 +238,13 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		s.Errorf("%s", err)
 		s.span.RecordError(err)
 		s.span.End()
-		return nil, nil, err
+		attr := map[string]string{}
+		attr[config.HeaderDragonflyTask] = s.taskID
+		attr[config.HeaderDragonflyPeer] = s.peerID
+		return nil, attr, err
 	case <-s.done:
 		var err error
-		if s.failedReason != "" {
+		if s.failedReason != failedReasonNotSet {
 			err = errors.Errorf(s.failedReason)
 		} else {
 			err = errors.Errorf("stream peer task early done")
@@ -248,7 +252,10 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		s.Errorf("%s", err)
 		s.span.RecordError(err)
 		s.span.End()
-		return nil, nil, err
+		attr := map[string]string{}
+		attr[config.HeaderDragonflyTask] = s.taskID
+		attr[config.HeaderDragonflyPeer] = s.peerID
+		return nil, attr, err
 	case first := <-s.successPieceCh:
 		//if !ok {
 		//	s.Warnf("successPieceCh closed unexpect")

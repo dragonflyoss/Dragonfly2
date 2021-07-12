@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
@@ -125,7 +124,7 @@ func (m *monitor) printDebugInfo() string {
 func (m *monitor) RefreshDownloadMonitor(peer *types.PeerNode) {
 	logger.Debugf("[%s][%s] downloadMonitorWorkingLoop refresh ", peer.Task.TaskID, peer.PeerID)
 	status := peer.Status
-	if status != types.PeerStatusHealth {
+	if status != types.PeerStatusRunning {
 		m.downloadMonitorQueue.AddAfter(peer, time.Second*2)
 	} else if peer.IsWaiting() {
 		m.downloadMonitorQueue.AddAfter(peer, time.Second*2)
@@ -136,13 +135,6 @@ func (m *monitor) RefreshDownloadMonitor(peer *types.PeerNode) {
 		}
 		m.downloadMonitorQueue.AddAfter(peer, delay)
 	}
-}
-
-func (m *monitor) CDNCallback(pt *types.PeerNode, err *dferrors.DfError) {
-	if err != nil {
-		//pt.SendError(err)
-	}
-	m.downloadMonitorQueue.Add(pt)
 }
 
 func (m *monitor) SetDownloadingMonitorCallBack(callback func(*types.PeerNode)) {
@@ -164,7 +156,7 @@ func (m *monitor) downloadMonitorWorkingLoop() {
 				if pt.Success || (pt.Host != nil && types.IsCDNHost(pt.Host)) {
 					// clear from monitor
 				} else {
-					if pt.Status != types.PeerStatusHealth {
+					if pt.Status != types.PeerStatusRunning {
 						// peer do not report for a long time, peer gone
 						if time.Now().After(pt.LastAccessTime.Add(PeerGoneTimeout)) {
 							pt.Status = types.PeerStatusNodeGone

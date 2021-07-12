@@ -18,99 +18,106 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc"
+	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/server/service"
-
-	// manager server rpc
-	_ "d7y.io/dragonfly/v2/internal/rpc/manager/server"
+	"d7y.io/dragonfly/v2/manager/database"
+	"d7y.io/dragonfly/v2/manager/service"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 )
 
 type Server struct {
-	cfg        *config.Config
-	ms         *service.ManagerServer
-	httpServer *http.Server
-	stop       chan struct{}
+	// Server configuration
+	config *config.Config
+
+	// GRPC service
+	service *service.GRPC
+
+	// REST server
+	restServer *http.Server
 }
 
 func New(cfg *config.Config) (*Server, error) {
-	ms, err := service.NewManagerServer(cfg)
+	// Initialize database
+	db, err := database.New(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create manager server: %s", err)
+		return nil, err
 	}
-	router, err := InitRouter(ms)
+
+	// Initialize database
+	cache := cache.New(cfg)
+
+	// Initialize REST service
+	restService := service.NewREST(
+		service.WithDatabase(db),
+		service.WithCache(cache),
+	)
+
+	// Initialize GRPC service
+	grpcService := service.NewGRPC(
+		service.GRPCWithDatabase(db),
+		service.GRPCWithCache(cache),
+	)
+
+	// Initialize router
+	router, err := initRouter(cfg.Verbose, restService)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Server{
-		cfg: cfg,
-		ms:  ms,
-		httpServer: &http.Server{
-			Addr:    ":8080",
+		config:  cfg,
+		service: grpcService,
+		restServer: &http.Server{
+			Addr:    cfg.Server.REST.Addr,
 			Handler: router,
 		},
-		stop: make(chan struct{}),
 	}, nil
-
 }
 
 func (s *Server) Serve() error {
-	go func() {
-		port := s.cfg.Server.Port
-		err := rpc.StartTCPServer(port, port, s.ms)
-		if err != nil {
-			logger.Errorf("failed to start manager tcp server: %+v", err)
-		}
+	g := errgroup.Group{}
 
-		s.stop <- struct{}{}
-	}()
-
-	go func() {
-		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Errorf("failed to start manager http server: %+v", err)
-		}
-
-		s.stop <- struct{}{}
-	}()
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case <-s.stop:
-		s.Stop()
-	case <-quit:
-		s.Stop()
+	// GRPC listener
+	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.Listen, s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
+	if err != nil {
+		logger.Errorf("failed to net listen: %+v", err)
+		return err
 	}
 
-	return nil
+	// Serve GRPC
+	g.Go(func() error {
+		defer lis.Close()
+		grpcServer := grpc.NewServer()
+		manager.RegisterManagerServer(grpcServer, s.service)
+		logger.Infof("serve grpc at %s://%s", lis.Addr().Network(), lis.Addr().String())
+		if err := grpcServer.Serve(lis); err != nil {
+			logger.Errorf("failed to start manager grpc server: %+v", err)
+		}
+		return nil
+	})
+
+	// Serve REST
+	g.Go(func() error {
+		if err := s.restServer.ListenAndServe(); err != nil {
+			logger.Errorf("failed to start manager rest server: %+v", err)
+			return err
+		}
+		return nil
+	})
+
+	return g.Wait()
 }
 
 func (s *Server) Stop() {
-	if s.ms != nil {
-		err := s.ms.Close()
-		if err != nil {
-			logger.Errorf("failed to stop manager server: %+v", err)
-		}
-
-		s.ms = nil
-	}
-
-	rpc.StopServer()
-
-	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
-	defer cancel()
-
-	err := s.httpServer.Shutdown(ctx)
+	// Stop REST
+	err := s.restServer.Shutdown(context.TODO())
 	if err != nil {
-		logger.Errorf("failed to stop manager http server: %+v", err)
+		logger.Errorf("failed to stop manager rest server: %+v", err)
 	}
 }

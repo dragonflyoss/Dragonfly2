@@ -53,23 +53,23 @@ type ClientOption struct {
 	// Timeout download timeout(second).
 	Timeout time.Duration `yaml:"timeout,omitempty" mapstructure:"timeout,omitempty"`
 
-	BenchmarkRate unit.Bytes `yaml:"benchmark-rate,omitempty" mapstructure:"benchmark-rate,omitempty"`
+	BenchmarkRate unit.Bytes `yaml:"benchmarkRate,omitempty" mapstructure:"benchmarkRate,omitempty"`
 
 	// Md5 expected file md5.
 	// Deprecated: Md5 is deprecated, use DigestMethod with DigestValue instead
 	Md5    string `yaml:"md5,omitempty" mapstructure:"md5,omitempty"`
 	Digest string `yaml:"digest,omitempty" mapstructure:"digest,omitempty"`
 	// DigestMethod indicates digest method, like md5, sha256
-	DigestMethod string `yaml:"digest_method,omitempty" mapstructure:"digest_method,omitempty"`
+	DigestMethod string `yaml:"digestMethod,omitempty" mapstructure:"digestMethod,omitempty"`
 
 	// DigestValue indicates digest value
-	DigestValue string `yaml:"digest_value,omitempty" mapstructure:"digest_value,omitempty"`
+	DigestValue string `yaml:"digestValue,omitempty" mapstructure:"digestValue,omitempty"`
 
-	// Identifier identify download task, it is available merely when md5 param not exist.
-	Identifier string `yaml:"identifier,omitempty" mapstructure:"identifier,omitempty"`
+	// Tag identify download task, it is available merely when md5 param not exist.
+	Tag string `yaml:"tag,omitempty" mapstructure:"tag,omitempty"`
 
 	// CallSystem system name that executes dfget.
-	CallSystem string `yaml:"call_system,omitempty" mapstructure:"call_system,omitempty"`
+	CallSystem string `yaml:"callSystem,omitempty" mapstructure:"callSystem,omitempty"`
 
 	// Pattern download pattern, must be 'p2p' or 'cdn' or 'source',
 	// default:`p2p`.
@@ -81,22 +81,22 @@ type ClientOption struct {
 	// Filter filter some query params of url, use char '&' to separate different params.
 	// eg: -f 'key&sign' will filter 'key' and 'sign' query param.
 	// in this way, different urls correspond one same download task that can use p2p mode.
-	Filter []string `yaml:"filter,omitempty" mapstructure:"filter,omitempty"`
+	Filter string `yaml:"filter,omitempty" mapstructure:"filter,omitempty"`
 
 	// Header of http request.
 	// eg: --header='Accept: *' --header='Host: abc'.
 	Header []string `yaml:"header,omitempty" mapstructure:"header,omitempty"`
 
 	// DisableBackSource indicates whether to not back source to download when p2p fails.
-	DisableBackSource bool `yaml:"disable_back_source,omitempty" mapstructure:"disable_back_source,omitempty"`
+	DisableBackSource bool `yaml:"disableBackSource,omitempty" mapstructure:"disableBackSource,omitempty"`
 
 	// Insecure indicates whether skip secure verify when supernode interact with the source.
 	Insecure bool `yaml:"insecure,omitempty" mapstructure:"insecure,omitempty"`
 
-	// ShowBar shows progress bar, it's conflict with `--console`.
-	ShowBar bool `yaml:"show_bar,omitempty" mapstructure:"show_bar,omitempty"`
+	// ShowProgress shows progress bar, it's conflict with `--console`.
+	ShowProgress bool `yaml:"show-progress,omitempty" mapstructure:"show-progress,omitempty"`
 
-	RateLimit rate.Limit `yaml:"rate-limit,omitempty" mapstructure:"rate-limit,omitempty"`
+	RateLimit rate.Limit `yaml:"rateLimit,omitempty" mapstructure:"rateLimit,omitempty"`
 
 	// Config file paths,
 	// default:["/etc/dragonfly/dfget.yaml","/etc/dragonfly.conf"].
@@ -106,7 +106,7 @@ type ClientOption struct {
 	//ConfigFiles []string `json:"-"`
 
 	// MoreDaemonOptions indicates more options passed to daemon by command line.
-	MoreDaemonOptions string `yaml:"more_daemon_options,omitempty" mapstructure:"more_daemon_options,omitempty"`
+	MoreDaemonOptions string `yaml:"moreDaemonOptions,omitempty" mapstructure:"moreDaemonOptions,omitempty"`
 }
 
 func NewDfgetConfig() *ClientOption {
@@ -130,16 +130,22 @@ func (cfg *ClientOption) Validate() error {
 }
 
 func (cfg *ClientOption) Convert(args []string) error {
+	var err error
+
+	if cfg.Output, err = filepath.Abs(cfg.Output); err != nil {
+		return err
+	}
+
 	if cfg.URL == "" && len(args) > 0 {
 		cfg.URL = args[0]
 	}
 
 	if cfg.Digest != "" {
-		cfg.Identifier = ""
+		cfg.Tag = ""
 	}
 
 	if cfg.Console {
-		cfg.ShowBar = false
+		cfg.ShowProgress = false
 	}
 
 	return nil

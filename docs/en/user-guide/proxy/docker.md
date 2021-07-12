@@ -24,7 +24,6 @@ distinguished_name	= req_distinguished_name
 attributes		= req_attributes
 extensions               = v3_ca
 req_extensions           = v3_ca
-
 [ req_distinguished_name ]
 countryName			= Country Name (2 letter code)
 countryName_min			= 2
@@ -37,12 +36,10 @@ commonName			= Common Name (eg, fully qualified host name)
 commonName_max			= 64
 emailAddress			= Email Address
 emailAddress_max		= 64
-
 [ req_attributes ]
 challengePassword		= A challenge password
 challengePassword_min		= 4
 challengePassword_max		= 20
-
 [ v3_ca ]
 basicConstraints         = CA:TRUE
 ```
@@ -63,12 +60,12 @@ To use dfget daemon as HTTP proxy, first you need to append a proxy rule in
 proxy:
   security:
     insecure: true
-  tcp_listen:
+  tcpListen:
     listen: 0.0.0.0
     port: 65001
   proxies:
     - regx: blobs/sha256.*
-  hijack_https:
+  hijackHTTPS:
     # CA certificate's path used to hijack https requests
     cert: ca.crt
     key: ca.key
@@ -119,12 +116,12 @@ ignore the certificate error with:
 proxy:
   security:
     insecure: true
-  tcp_listen:
+  tcpListen:
     listen: 0.0.0.0
     port: 65001
   proxies:
     - regx: blobs/sha256.*
-  hijack_https:
+  hijackHTTPS:
     # CA certificate's path used to hijack https requests
     cert: ca.crt
     key: ca.key
@@ -139,12 +136,12 @@ Or provide a certificate with:
 proxy:
   security:
     insecure: true
-  tcp_listen:
+  tcpListen:
     listen: 0.0.0.0
     port: 65001
   proxies:
     - regx: blobs/sha256.*
-  hijack_https:
+  hijackHTTPS:
     # CA certificate's path used to hijack https requests
     cert: ca.crt
     key: ca.key

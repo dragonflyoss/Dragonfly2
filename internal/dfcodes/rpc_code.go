@@ -16,7 +16,7 @@
 
 package dfcodes
 
-import "d7y.io/dragonfly/v2/internal/rpc/base"
+import "d7y.io/dragonfly/v2/pkg/rpc/base"
 
 // rpc code
 const (
@@ -46,9 +46,9 @@ const (
 	SchedPeerGone                  base.Code = 5002 // client should disconnect from scheduler
 	SchedPeerRegisterFail          base.Code = 5003
 	SchedPeerScheduleFail          base.Code = 5004
-	SchedPeerNotFound              base.Code = 5404
-	SchedPeerPieceResultReportFail base.Code = 5406
-	SchedCDNSeedFail               base.Code = 5005
+	SchedPeerNotFound              base.Code = 5005
+	SchedPeerPieceResultReportFail base.Code = 5006
+	SchedCDNSeedFail               base.Code = 5007
 
 	// cdnsystem response error 6000-6999
 	CdnError            base.Code = 6000

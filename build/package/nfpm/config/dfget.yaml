@@ -1,25 +1,18 @@
 # daemon alive time, when sets 0s, daemon will not auto exit
-alive_time: 0s
+aliveTime: 0s
 
 # daemon gc task running interval
-gc_interval: 1m0s
-
-# daemon pid location
-pid_file: /var/run/dfdaemon.pid
-
-# daemon lock file location
-# some lock file will only allow to run one daemon service
-lock_file: /var/run/dfdaemon.lock
+gcInterval: 1m0s
 
 # daemon data directory
-data_dir: /home/t4/dragonfly/
+dataDir: /home/t4/dragonfly/
 
 # daemon work directory, daemon will change current working directory to this
-work_home: /home/t4/dragonfly/
+workHome: /home/t4/dragonfly/
 
 # when daemon exit, keep peer task data or not
 # it is usefully when upgrade daemon service, all local cache will be saved
-keep_storage: false
+keepStorage: false
 
 # all addresses of all schedulers
 # the schedulers of all daemons should be same in one region or zone.
@@ -27,11 +20,11 @@ keep_storage: false
 # caution: only tcp is supported
 scheduler:
   # below example is a stand address
-  net_addrs:
+  netAddrs:
   - type: tcp
     addr: 127.0.0.1:8002
   # schedule timeout
-  schedule_timeout: 10s
+  scheduleTimeout: 10s
 
 # when enable, pprof will be enabled,
 verbose: true
@@ -41,44 +34,44 @@ console: false
 host:
   # tcp service listen address
   # port should be set by other options
-  listen_ip: 0.0.0.0
+  listenIP: 0.0.0.0
   # access ip for other peers
-  # when local ip is different with access ip, advertise_ip should be set
-  advertise_ip: 0.0.0.0
+  # when local ip is different with access ip, advertiseIP should be set
+  advertiseIP: 0.0.0.0
   # geographical location and network topology
   location: ""
   idc: ""
-  security_domain: ""
-  net_topology: ""
+  securityDomain: ""
+  netTopology: ""
 
 # download service option
 download:
   # total download limit per second
-  total_rate_limit: 200Mi
+  totalRateLimit: 200Mi
   # per peer task download limit per second
-  per_peer_rate_limit: 20Mi
+  perPeerRateLimit: 20Mi
   # download grpc option
-  download_grpc:
+  downloadGRPC:
     # security option
     security:
       insecure: true
       cacert: ""
       cert: ""
       key: ""
-      tls_config: null
+      tlsConfig: null
     # download service listen address
     # current, only support unix domain socket
-    unix_listen:
+    unixListen:
       socket: /var/run/dfdaemon.sock
   # peer grpc option
   # peer grpc service send pieces info to other peers
-  peer_grpc:
+  peerGRPC:
     security:
       insecure: true
       cacert: ""
       cert: ""
       key: ""
-    tcp_listen:
+    tcpListen:
       # listen address
       listen: 0.0.0.0
       # listen port, daemon will try to listen
@@ -95,13 +88,13 @@ download:
 # upload service option
 upload:
   # upload limit per second
-  rate_limit: 1024Mi
+  rateLimit: 1024Mi
   security:
     insecure: true
     cacert: ""
     cert: ""
     key: ""
-  tcp_listen:
+  tcpListen:
     # listen address
     listen: 0.0.0.0
     # listen port, daemon will try to listen
@@ -116,7 +109,7 @@ upload:
 storage:
   # task data expire time
   # when there is no access to a task data, this task will be gc.
-  task_expire_time: 1m0s
+  taskExpireTime: 1m0s
   # storage strategy when process task data
   # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
   #                           the download file in date directory will be the peer data for uploading to other peers
@@ -133,7 +126,7 @@ proxy:
     cacert: ""
     cert: ""
     key: ""
-  tcp_listen:
+  tcpListen:
     # listen address
     listen: 0.0.0.0
     # listen port, daemon will try to listen
@@ -143,7 +136,7 @@ proxy:
   #   port:
   #     start: 65020
   #     end: 65029
-  registry_mirror:
+  registryMirror:
     # url for the registry mirror
     url: https://index.docker.io
     # whether to ignore https certificate errors
@@ -159,7 +152,7 @@ proxy:
   - regx: blobs/sha256.*
   # change http requests to some-registry to https and proxy them with dfget
   - regx: some-registry/
-    use_https: true
+    useHTTPS: true
   # proxy requests directly, without dfget
   - regx: no-proxy-reg
     direct: true
@@ -167,7 +160,7 @@ proxy:
   - regx: some-registry
     redirect: another-registry
 
-  hijack_https:
+  hijackHTTPS:
     # key pair used to hijack https requests
     cert: ""
     key: ""

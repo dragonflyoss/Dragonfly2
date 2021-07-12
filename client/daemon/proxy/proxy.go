@@ -32,7 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/go-http-utils/headers"
 	"github.com/golang/groupcache/lru"
@@ -210,6 +210,8 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, span := proxy.tracer.Start(r.Context(), config.SpanProxy)
+	span.SetAttributes(config.AttributePeerHost.String(proxy.peerHost.Uuid))
+	span.SetAttributes(semconv.NetHostIPKey.String(proxy.peerHost.Ip))
 	span.SetAttributes(semconv.HTTPSchemeKey.String(r.URL.Scheme))
 	span.SetAttributes(semconv.HTTPHostKey.String(r.Host))
 	span.SetAttributes(semconv.HTTPURLKey.String(r.URL.String()))
@@ -424,6 +426,11 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reverseProxy.Transport = t
+	reverseProxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, err error) {
+		rw.WriteHeader(http.StatusInternalServerError)
+		// write error string to response body
+		rw.Write([]byte(err.Error()))
+	}
 	reverseProxy.ServeHTTP(w, r)
 }
 

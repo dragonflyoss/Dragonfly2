@@ -19,6 +19,8 @@ package host
 import (
 	"sync"
 
+	"d7y.io/dragonfly/v2/internal/idgen"
+	managerRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -49,10 +51,30 @@ func (m *manager) Get(uuid string) (*types.NodeHost, bool) {
 	return host.(*types.NodeHost), true
 }
 
-func (m *manager) GetOrAdd(uuid string, host *types.NodeHost) (*types.NodeHost, bool) {
-	item, loaded := m.hostMap.LoadOrStore(uuid, host)
+func (m *manager) GetOrAdd(host *types.NodeHost) (*types.NodeHost, bool) {
+	item, loaded := m.hostMap.LoadOrStore(host.UUID, host)
 	if loaded {
 		return item.(*types.NodeHost), true
 	}
 	return host, false
+}
+
+func (m *manager) OnNotify(scheduler *managerRPC.Scheduler) {
+	for _, cdn := range scheduler.Cdns {
+		cdnHost := &types.NodeHost{
+			UUID:           idgen.CDNUUID(cdn.HostName, cdn.Port),
+			IP:             cdn.Ip,
+			HostName:       cdn.HostName,
+			RPCPort:        cdn.Port,
+			DownloadPort:   cdn.DownloadPort,
+			HostType:       types.CDNNodeHost,
+			SecurityDomain: cdn.CdnCluster.SecurityGroup.Name,
+			Location:       cdn.Location,
+			IDC:            cdn.Idc,
+			//NetTopology:       server.NetTopology,
+			TotalUploadLoad:   types.CDNHostLoad,
+			CurrentUploadLoad: 0,
+		}
+		m.GetOrAdd(cdnHost)
+	}
 }

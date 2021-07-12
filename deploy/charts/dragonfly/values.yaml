@@ -1,29 +1,37 @@
 nameOverride: ""
+namespaceOverride: "dragonfly-system"
 fullnameOverride: ""
 
 # values for dragonfly installation
 installation:
-  namespace: kube-system
+  clusterDomain: ""
+  # enable an all in one jaeger for tracing every downloading event
+  # should not use in production environment
+  jaeger: false
 
 scheduler:
   name: scheduler
-  replicas: 1
+  nameOverride: ""
+  fullnameOverride: ""
+  replicas: 3
   image: dragonflyoss/scheduler
-  tag: 0.1.0
+  tag: v0.1.0-beta
   pullPolicy: IfNotPresent
   resources:
     requests:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "0"
+      memory: "0"
     limits:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "4"
+      memory: "8Gi"
   priorityClassName: ""
   nodeSelector: {}
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
-  deploymentAnnotations: {}
+  podLabels: {}
+  serviceAnnotations: {}
+  statefulsetAnnotations: {}
   containerPort: 8002
   service:
     type: ClusterIP
@@ -31,43 +39,41 @@ scheduler:
     port: 8002
     targetPort: 8002
   config:
+    # when there is no manager component in or out of cluster, enable staticCDN
+    # cdn will auto register in configmap, and scheduler will discover all of them dynamic.
+    staticCDN: true
     debug: false
     worker:
-      worker-num: 1
-      worker-job-pool-size: 10000
-      sender-num: 10
-      sender-job-pool-size: 10000
+      workerNum: 4
+      workerJobPoolSize: 10000
+      senderNum: 10
+      senderJobPoolSize: 10000
 
 cdn:
   name: cdn
   nameOverride: ""
   fullnameOverride: ""
-  replicas: 1
+  replicas: 3
   image: dragonflyoss/cdn
-  tag: 0.1.0
-  pullPolicy: IfNotPresent
+  tag: v0.1.0-beta
+  kubectlImage: bitnami/kubectl
+  pullPolicy: Always
   resources:
     requests:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "0"
+      memory: "0"
     limits:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "4"
+      memory: "8Gi"
   priorityClassName: ""
   nodeSelector: {}
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
-  deploymentAnnotations: {}
+  podLabels: {}
+  statefulsetAnnotations: {}
   containerPort: 8003
   nginxContiainerPort: 8001
-  service:
-    type: ClusterIP
-    annotations: {}
-    port: 8003
-    targetPort: 8003
-    nginxPort: 8001
-    nginxTargetPort: 8001
   config:
     base:
       systemReservedBandwidth: 20M
@@ -81,94 +87,100 @@ cdn:
       storagePattern: disk
       console: false
     plugins:
-      storage:
-        name: disk
+      storageDriver:
+      - name: disk
         enable: true
         config:
           baseDir: /tmp/cdn
-          gcConfig:
-            youngGCThreshold: 100G
-            fullGCThreshold: 5G
-            cleanRatio: 1
-            intervalThreshold: 2h
+      storageManager:
+      - name: disk
+        enable: true
+        config:
+          gcInitialDelay: 5s
+          gcInterval: 15s
+          driverConfigs:
+            disk:
+              gcConfig:
+                youngGCThreshold: 100G
+                fullGCThreshold: 5G
+                cleanRatio: 1
+                intervalThreshold: 2h
 
 dfdaemon:
   name: dfdaemon
   nameOverride: ""
   fullnameOverride: ""
   image: dragonflyoss/dfdaemon
-  tag: 0.1.0
+  tag: v0.1.0-beta
   pullPolicy: IfNotPresent
   resources:
     requests:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "0"
+      memory: "0"
     limits:
-      cpu: "512m"
-      memory: "512Mi"
+      cpu: "2"
+      memory: "2Gi"
   priorityClassName: ""
   nodeSelector: {}
   terminationGracePeriodSeconds:
   tolerations: []
   podAnnotations: {}
-  deploymentAnnotations: {}
+  podLabels: {}
+  daemonsetAnnotations: {}
   containerPort: 65001
+  # hostPort is used when .hostNetwork == false, and .config.proxy.tcpListen.namespace is empty
+  # many network add-ons do not yet support hostPort
+  # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/#hostport-services-do-not-work
+  # by default, dfdaemon injects the 65001 port to host network by sharing host network namespace,
+  # if you want to use hostPort, please empty .config.proxy.tcpListen.namespace below, and keep .hostNetwork == false
+  # for performance, injecting the 65001 port to host network is better than hostPort
+  hostPort: 65001
+  # using hostNetwork when pod with host network can communicate with normal pods with cni network
+  hostNetwork: false
   config:
-    alive_time: 0s
-    gc_interval: 1m0s
-    pid_file: /tmp/dfdaemon.pid
-    lock_file: /tmp/dfdaemon.lock
-    data_dir: /tmp/dragonfly/dfdaemon/
-    work_home: /tmp/dragonfly/dfdaemon/
-    keep_storage: false
-    verbose: false
+    aliveTime: 0s
+    gcInterval: 1m0s
+    keepStorage: false
+    verbose: true
+    jaeger: "" # customize jaeger like: http://localhost:14268/api/traces
     host:
-      listen_ip: 0.0.0.0
-      advertise_ip: 0.0.0.0
-      location: ""
-      idc: ""
-      security_domain: ""
-      net_topology: ""
+      listenIP: 0.0.0.0
+      advertiseIP: 0.0.0.0
     download:
-      rate_limit: 200Mi
-      download_grpc:
+      rateLimit: 200Mi
+      downloadGRPC:
         security:
           insecure: true
-          cacert: ""
-          cert: ""
-          key: ""
-          tls_config: null
-        unix_listen:
+        unixListen:
           socket: /tmp/dfdamon.sock
-      peer_grpc:
+      peerGRPC:
         security:
           insecure: true
-          cacert: ""
-          cert: ""
-          key: ""
-        tcp_listen:
+        tcpListen:
           listen: 0.0.0.0
           port: 65000
     upload:
-      rate_limit: 100Mi
+      rateLimit: 100Mi
       security:
         insecure: true
-        cacert: ""
-        cert: ""
-        key: ""
-      tcp_listen:
+      tcpListen:
         listen: 0.0.0.0
         port: 65002
     storage:
-      task_expire_time: 3m0s
+      taskExpireTime: 3m0s
       strategy: io.d7y.storage.v2.simple
+      multiplex: true
     proxy:
+      defaultFilter: "Expires&Signature"
       security:
         insecure: true
-      tcp_listen:
+      tcpListen:
+        namespace: /run/dragonfly/net
         listen: 0.0.0.0
-        port: 65001
-      registry_mirror:
+        # if you want to change port, please update hostPort in $.Values.dfdaemon.hostPort
+        # port in configmap is generated from $.Values.dfdaemon.hostPort
+        # port: 65001
+      registryMirror:
         url: https://index.docker.io
       proxies:
       - regx: blobs/sha256.*

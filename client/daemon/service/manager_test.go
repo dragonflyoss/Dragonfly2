@@ -33,13 +33,13 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
 	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
-	"d7y.io/dragonfly/v2/internal/rpc"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
-	dfdaemongrpc "d7y.io/dragonfly/v2/internal/rpc/dfdaemon"
-	dfclient "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
-	_ "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func TestMain(m *testing.M) {
@@ -101,7 +101,9 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 	request := &dfdaemongrpc.DownRequest{
 		Url:    "http://localhost/test",
 		Output: "./testdata/file1",
-		BizId:  "unit test",
+		UrlMeta: &base.UrlMeta{
+			Tag: "unit test",
+		},
 	}
 	down, err := client.Download(context.Background(), request)
 	assert.Nil(err, "client download grpc call should be ok")

@@ -19,9 +19,9 @@ package config
 import (
 	"io/ioutil"
 	"testing"
+	"time"
 
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
@@ -32,11 +32,13 @@ func TestSchedulerConfig_Load(t *testing.T) {
 
 	config := &Config{
 		Manager: &ManagerConfig{
-			NetAddrs: []dfnet.NetAddr{
-				{
-					Type: dfnet.TCP,
-					Addr: "127.0.0.1:8004",
-				},
+			Addr:               "127.0.0.1:65003",
+			SchedulerClusterID: 1,
+			KeepAlive: KeepAliveConfig{
+				Interval:         1 * time.Second,
+				RetryMaxAttempts: 100,
+				RetryInitBackOff: 100,
+				RetryMaxBackOff:  100,
 			},
 		},
 		DynConfig: &DynConfig{
@@ -44,12 +46,8 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			Path:       "foo",
 			CachePath:  "bar",
 			ExpireTime: 1000,
-			NetAddrs: []dfnet.NetAddr{
-				{
-					Type: dfnet.TCP,
-					Addr: "127.0.0.1:8002",
-				},
-			},
+			Addr:       "127.0.0.1:8002",
+			CDNDirPath: "tmp",
 		},
 		Scheduler: &SchedulerConfig{
 			ABTest:            true,

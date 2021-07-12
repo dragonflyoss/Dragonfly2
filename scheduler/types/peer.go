@@ -17,23 +17,23 @@
 package types
 
 import (
-	"errors"
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-type PeerNodeStatus uint8
+type PeerStatus uint8
 
 const (
-	PeerStatusHealth PeerNodeStatus = iota + 1
+	PeerStatusWaiting PeerStatus = iota + 1
+	PeerStatusRunning
 	PeerStatusNeedParent
 	PeerStatusNeedChildren
 	PeerStatusBadNode
 	PeerStatusNeedAdjustNode
 	PeerStatusNeedCheckNode
-	PeerStatusDone
+	PeerStatusSuccess
 	PeerStatusLeaveNode
 	PeerStatusAddParent
 	PeerStatusNodeGone
@@ -55,8 +55,9 @@ type PeerNode struct {
 	Parent         *PeerNode
 	Children       map[string]*PeerNode
 	Success        bool
-	Status         PeerNodeStatus
+	Status         PeerStatus
 	CostHistory    []int
+	PacketChan     chan *scheduler.PeerPacket
 }
 
 func (peer *PeerNode) GetWholeTreeNode() int {
@@ -88,10 +89,8 @@ func (peer *PeerNode) deleteChild(child *PeerNode) {
 }
 
 // ReplaceParent replace parent
+// delete peer from parent
 func (peer *PeerNode) ReplaceParent(parent *PeerNode) error {
-	if parent == nil {
-		return errors.New("parent node is nil")
-	}
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 	oldParent := peer.Parent
@@ -99,7 +98,9 @@ func (peer *PeerNode) ReplaceParent(parent *PeerNode) error {
 		oldParent.deleteChild(peer)
 	}
 	peer.Parent = parent
-	parent.AddChild(peer)
+	if parent != nil {
+		parent.AddChild(peer)
+	}
 	return nil
 }
 
@@ -125,7 +126,7 @@ func (peer *PeerNode) AddPieceStatus(ps *scheduler.PieceResult) {
 	peer.FinishedNum = ps.FinishedCount
 
 	peer.addCost(int(ps.EndTime - ps.BeginTime))
-
+	peer.Task.PeerNodes.Update(peer)
 }
 
 func (peer *PeerNode) addCost(cost int) {
@@ -190,7 +191,7 @@ func (peer *PeerNode) GetSortKeys() (key1, key2 int) {
 	return
 }
 
-func (peer *PeerNode) getFreeLoad() int32 {
+func (peer *PeerNode) getFreeLoad() int {
 	if peer.Host == nil {
 		return 0
 	}
@@ -207,4 +208,24 @@ func GetDiffPieceNum(src *PeerNode, dst *PeerNode) int32 {
 
 func IsRunning(peer *PeerNode) bool {
 	return peer.Status != PeerStatusBadNode
+}
+
+func (peer *PeerNode) GetParent() *PeerNode {
+	return peer.Parent
+}
+
+func (peer *PeerNode) GetChildren() map[string]*PeerNode {
+	return peer.Children
+}
+
+func (peer *PeerNode) SetStatus(status PeerStatus) {
+	peer.Status = status
+}
+
+func (peer *PeerNode) SetSendChannel(packetChan chan *scheduler.PeerPacket) {
+	peer.PacketChan = packetChan
+}
+
+func (peer *PeerNode) GetSendChannel() chan *scheduler.PeerPacket {
+	return peer.PacketChan
 }

@@ -1,15 +1,10 @@
-manager:
-  netAddrs:
-    - type: tcp
-      addr: 127.0.0.1:8004
 dynconfig:
   type: local
   expireTime: 1000
   path: foo
   cachePath: bar
-  netAddrs:
-    - type: tcp
-      addr: 127.0.0.1:8002
+  addr: 127.0.0.1:8002
+  cdnDirPath: tmp
 scheduler:
   abtest: true
   ascheduler: "a-scheduler"
@@ -31,3 +26,12 @@ cdn:
 gc:
   taskDelay: 3600000
   peerTaskDelay: 3600000
+
+manager:
+  addr: 127.0.0.1:65003
+  schedulerClusterID: 1
+  keepAlive:
+    interval: 1000000000
+    retryMaxAttempts: 100
+    retryInitBackOff: 100
+    retryMaxBackOff: 100

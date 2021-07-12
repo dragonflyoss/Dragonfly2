@@ -19,11 +19,16 @@ package daemon
 import (
 	"context"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type CDNMgr interface {
+	config.Observer
+	// StartSeedTask
+	StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed)) error
 
-	// SeedTask
-	SeedTask(ctx context.Context, task *types.Task) error
+	// DownloadTinyFileContent
+	DownloadTinyFileContent(task *types.Task, cdnHost *types.NodeHost) ([]byte, error)
 }

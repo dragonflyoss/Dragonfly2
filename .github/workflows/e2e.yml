@@ -1,0 +1,62 @@
+name: E2E Test
+
+on:
+  push:
+    branches: [main, release-*]
+  pull_request:
+    branches: [main, release-*]
+
+env:
+  GO_VERSION: 1.15
+  KIND_VERSION: v0.11.1
+  CONTAINERD_VERSION: v1.5.2
+  GOPROXY: https://goproxy.io,direct
+
+jobs:
+  skip_check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - name: Skip Check
+        id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          paths_ignore: '["**.md", "**.png", "**.jpg", "**.svg"]'
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
+
+  e2e_tests:
+    runs-on: ubuntu-latest
+    needs: skip_check
+    if: needs.skip_check.outputs.noop != 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Get dependencies
+        run: |
+          go mod vendor
+          go get github.com/onsi/ginkgo/ginkgo
+
+      - name: Setup Kind
+        uses: engineerd/setup-kind@v0.5.0
+        with:
+          version: ${{ env.KIND_VERSION }}
+          config: ./test/testdata/kind/config.yaml
+
+      - name: Run E2E tests
+        run: make actions-e2e-test-coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.txt
+          flags: e2etests

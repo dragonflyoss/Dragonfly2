@@ -20,7 +20,6 @@ import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 )
 
@@ -31,12 +30,13 @@ type manager struct {
 	done         chan bool
 }
 
-func newManager(cfg *config.GCConfig) daemon.GCMgr {
-	return &manager{
-		gcInterval: time.Duration(3),
-		done:       nil,
-	}
-}
+//
+//func newManager(cfg *config.GCConfig) daemon.GCMgr {
+//	return &manager{
+//		gcInterval: time.Duration(3),
+//		done:       nil,
+//	}
+//}
 
 func (m *manager) StartGC(ctx context.Context) error {
 	time.Sleep(m.initialDelay)

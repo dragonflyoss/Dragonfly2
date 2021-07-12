@@ -20,6 +20,6 @@ import (
 	"context"
 )
 
-type PieceMgr interface {
+type PeerStreamMgr interface {
 	Add(ctx context.Context)
 }

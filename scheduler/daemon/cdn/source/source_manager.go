@@ -18,8 +18,9 @@ package source
 
 import (
 	"context"
-	"time"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	managerRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -30,16 +31,20 @@ type manager struct {
 	peerManager daemon.PeerMgr
 }
 
+func (m manager) OnNotify(scheduler *managerRPC.Scheduler) {
+	panic("implement me")
+}
+
+func (m manager) StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed)) error {
+	panic("implement me")
+}
+
+func (m manager) DownloadTinyFileContent(task *types.Task, cdnHost *types.NodeHost) ([]byte, error) {
+	panic("implement me")
+}
+
 func NewManager() daemon.CDNMgr {
 	return nil
-}
-
-func (m manager) GetLastTriggerSeedTime(taskID string) time.Time {
-	panic("implement me")
-}
-
-func (m manager) SeedTask(ctx context.Context, task *types.Task) (err error) {
-	panic("implement me")
 }
 
 var _ daemon.CDNMgr = (*manager)(nil)

@@ -23,6 +23,7 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -36,7 +37,7 @@ type ResourceClient interface {
 
 	// GetContentLength get length of resource content
 	// return -l if request fail
-	// return -1 if response status is not StatusOK and StatusPartialContent
+	// return task.IllegalSourceFileLen if response status is not StatusOK and StatusPartialContent
 	GetContentLength(ctx context.Context, url string, header RequestHeader) (int64, error)
 
 	// IsSupportRange checks if resource supports breakpoint continuation
@@ -62,6 +63,7 @@ type ClientManager interface {
 }
 
 type ClientManagerImpl struct {
+	sync.RWMutex
 	clients map[string]ResourceClient
 }
 
@@ -197,9 +199,28 @@ func (clientMgr *ClientManagerImpl) getSourceClient(rawURL string) (ResourceClie
 	if err != nil {
 		return nil, err
 	}
+	clientMgr.RLock()
 	client, ok := clientMgr.clients[strings.ToLower(parsedURL.Scheme)]
+	clientMgr.RUnlock()
 	if !ok || client == nil {
 		return nil, fmt.Errorf("can not find client for supporting url %s, clients:%v", rawURL, clientMgr.clients)
 	}
+	return client, nil
+}
+
+func (clientMgr *ClientManagerImpl) loadSourcePlugin(schema string) (ResourceClient, error) {
+	clientMgr.Lock()
+	defer clientMgr.Unlock()
+	// double check
+	client, ok := clientMgr.clients[schema]
+	if ok {
+		return client, nil
+	}
+
+	client, err := LoadPlugin(schema)
+	if err != nil {
+		return nil, err
+	}
+	clientMgr.clients[schema] = client
 	return client, nil
 }
