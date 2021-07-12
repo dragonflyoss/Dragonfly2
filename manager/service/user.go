@@ -35,7 +35,7 @@ func (s *rest) Register(json types.RegisterRequest) (*model.User, error) {
 		Phone:             json.Phone,
 		Avatar:            json.Avatar,
 		Location:          json.Location,
-		Bio:               json.Bio,
+		BIO:               json.BIO,
 		State:             model.UserStateEnabled,
 	}
 
