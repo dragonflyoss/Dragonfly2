@@ -17,22 +17,31 @@ install-kind() {
   else 
       go install sigs.k8s.io/kind@v0.11.1
       echo "install kind successed"
-      kind create cluster --config ${KIND_CONFIG_PATH}
       echo "wait for kind create cluster"
+      kind create cluster --config ${KIND_CONFIG_PATH}
   fi
 }
 
 install-helm() {
   if which helm >/dev/null ; then
       echo "wait for helm install dragonfly"
-      helm install --wait --timeout 3m --create-namespace --namespace ${NAMESPACE} dragonfly ${CHARTS_PATH}
+      helm install --wait --timeout 10m --create-namespace --namespace ${NAMESPACE} dragonfly ${CHARTS_PATH}
   else
-      go install sigs.k8s.io/kind@v0.11.1
-      echo "install helm success"
       curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
       chmod 700 get_helm.sh
       ./get_helm.sh
+      echo "install helm success"
       echo "wait for helm install dragonfly"
+      helm install --wait --timeout 10m --create-namespace --namespace ${NAMESPACE} dragonfly ${CHARTS_PATH}
+  fi
+}
+
+install-ginkgo() {
+  if which ginkgo >/dev/null ; then
+      echo "ginkgo has been installed"
+  else
+      go get -u github.com/onsi/ginkgo/ginkgo
+      echo "install ginkgo success"
   fi
 }
 
@@ -52,6 +61,10 @@ install-local() {
   echo "start helm install dragonfly"
   install-helm
   echo "helm install dragonfly successed"
+
+  echo "start ginkgo install dragonfly"
+  install-ginkgo
+  echo "ginkgo install dragonfly successed"
 }
 
 install-actions() {
@@ -66,6 +79,10 @@ install-actions() {
   echo "start helm install dragonfly"
   install-helm
   echo "helm install dragonfly successed"
+
+  echo "start ginkgo install dragonfly"
+  install-ginkgo
+  echo "ginkgo install dragonfly successed"
 }
 
 main() {
