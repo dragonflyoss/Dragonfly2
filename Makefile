@@ -292,7 +292,7 @@ help:
 	@echo "make build-dfget-man-page           generate dfget man page"
 	@echo "make test                           run unittests"
 	@echo "make test-coverage                  run tests with coverage"
-	@echo "make install-actions-e2e-test       prepare github actions E2E tests environment"
+	@echo "make install-actions-e2e-test       install github actions E2E tests environment"
 	@echo "make actions-e2e-test               run github actons E2E tests"
 	@echo "make actions-e2e-test-coverage      run github actons E2E tests with coverage"
 	@echo "make install-e2e-test               install E2E tests environment"

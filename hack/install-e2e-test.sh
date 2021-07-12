@@ -12,24 +12,22 @@ cd "${curDir}/../" || return
 
 install-kind() {
   if which kind >/dev/null ; then
-      kind create cluster --config ${KIND_CONFIG_PATH}
   else 
       print_step_info "start install kind"
       go install sigs.k8s.io/kind@v0.11.1
-      kind create cluster --config ${KIND_CONFIG_PATH}
   fi
+
+  kind create cluster --config ${KIND_CONFIG_PATH}
 }
 
 install-helm() {
   if which helm >/dev/null ; then
-      helm install --wait --timeout 10m --create-namespace --namespace ${NAMESPACE} dragonfly ${CHARTS_PATH}
   else
       print_step_info "start install helm"
-      curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
-      chmod 700 get_helm.sh
-      ./get_helm.sh
-      helm install --wait --timeout 10m --create-namespace --namespace ${NAMESPACE} dragonfly ${CHARTS_PATH}
+      curl -fsSL get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | sh
   fi
+
+  helm install --wait --timeout 10m --create-namespace --namespace ${NAMESPACE} dragonfly ${CHARTS_PATH}
 }
 
 install-ginkgo() {
