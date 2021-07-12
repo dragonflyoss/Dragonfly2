@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"strings"
 
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
-	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly.v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly.v2/pkg/rpc"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/pkg/rpc/base/common"
+	cdnclient "d7y.io/dragonfly.v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly.v2/pkg/rpc/scheduler"
 	"google.golang.org/grpc"
 )
 

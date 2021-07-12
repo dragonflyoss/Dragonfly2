@@ -20,7 +20,7 @@ import (
 	"context"
 	"io"
 
-	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly.v2/pkg/source"
 )
 
 const (

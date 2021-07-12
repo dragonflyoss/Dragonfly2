@@ -19,7 +19,7 @@ package config
 import (
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly.v2/pkg/unit"
 )
 
 /* the reason of backing to source */

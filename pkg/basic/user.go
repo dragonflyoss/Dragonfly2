@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly.v2/pkg/util/stringutils"
 )
 
 var (

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//go:generate mockgen -destination ./mock_driver.go -package storedriver d7y.io/dragonfly/v2/cdnsystem/storedriver Driver
+//go:generate mockgen -destination ./mock_driver.go -package storedriver d7y.io/dragonfly.v2/cdnsystem/storedriver Driver
 
 package storedriver
 
@@ -23,10 +23,10 @@ import (
 	"path/filepath"
 	"time"
 
-	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
-	"d7y.io/dragonfly/v2/cdnsystem/plugins"
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	cdnerrors "d7y.io/dragonfly.v2/cdnsystem/errors"
+	"d7y.io/dragonfly.v2/cdnsystem/plugins"
+	"d7y.io/dragonfly.v2/pkg/unit"
+	"d7y.io/dragonfly.v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
 

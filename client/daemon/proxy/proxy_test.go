@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly.v2/client/config"
 )
 
 type testItem struct {

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"d7y.io/dragonfly/v2/manager/handlers"
-	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly.v2/manager/handlers"
+	"d7y.io/dragonfly.v2/manager/types"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )

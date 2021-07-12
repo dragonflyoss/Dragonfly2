@@ -17,7 +17,7 @@
 package ratelimiter
 
 import (
-	"d7y.io/dragonfly/v2/pkg/util/mathutils"
+	"d7y.io/dragonfly.v2/pkg/util/mathutils"
 
 	"sync"
 	"time"

@@ -9,7 +9,7 @@ DFGET_BINARY_NAME=dfget
 SCHEDULER_BINARY_NAME=scheduler
 MANAGER_BINARY_NAME=manager
 
-PKG=d7y.io/dragonfly/v2
+PKG=d7y.io/dragonfly.v2
 BUILD_IMAGE=golang:1.15.8
 DATE=$(date "+%Y%m%d-%H:%M:%S")
 

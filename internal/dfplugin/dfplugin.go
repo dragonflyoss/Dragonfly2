@@ -22,7 +22,7 @@ import (
 	"path"
 	"plugin"
 
-	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly.v2/internal/dfpath"
 )
 
 const (

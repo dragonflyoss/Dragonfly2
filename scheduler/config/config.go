@@ -19,8 +19,8 @@ package config
 import (
 	"time"
 
-	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly.v2/cmd/dependency/base"
+	dc "d7y.io/dragonfly.v2/internal/dynconfig"
 	"github.com/pkg/errors"
 )
 

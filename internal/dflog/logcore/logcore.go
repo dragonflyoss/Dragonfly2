@@ -21,9 +21,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/filerw"
+	"d7y.io/dragonfly.v2/pkg/unit"
+	"d7y.io/dragonfly.v2/pkg/util/fileutils"
+	"d7y.io/dragonfly.v2/pkg/util/fileutils/filerw"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"

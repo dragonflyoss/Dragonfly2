@@ -19,7 +19,7 @@ package manager
 import (
 	"testing"
 
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly.v2/scheduler/types"
 	"github.com/stretchr/testify/assert"
 )
 

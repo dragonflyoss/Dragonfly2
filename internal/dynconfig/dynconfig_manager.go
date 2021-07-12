@@ -20,7 +20,7 @@ import (
 	"errors"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/cache"
+	"d7y.io/dragonfly.v2/pkg/cache"
 )
 
 type dynconfigManager struct {

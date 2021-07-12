@@ -20,12 +20,12 @@ import (
 	"io"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	"d7y.io/dragonfly.v2/pkg/rpc/base/common"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/service"
+	"d7y.io/dragonfly.v2/internal/dfcodes"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly.v2/scheduler/service"
 )
 
 type Client struct {

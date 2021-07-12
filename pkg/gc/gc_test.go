@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/gc/mocks"
+	"d7y.io/dragonfly.v2/pkg/gc/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

@@ -20,17 +20,17 @@ import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly.v2/internal/dfcodes"
+	"d7y.io/dragonfly.v2/internal/dferrors"
+	"d7y.io/dragonfly.v2/internal/idgen"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly.v2/pkg/rpc"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/pkg/rpc/scheduler"
 )
 
 func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {

@@ -1,4 +1,4 @@
-module d7y.io/dragonfly/v2
+module d7y.io/dragonfly.v2
 
 go 1.15
 

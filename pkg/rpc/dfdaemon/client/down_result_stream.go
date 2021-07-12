@@ -20,9 +20,9 @@ import (
 	"context"
 	"io"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/pkg/rpc"
+	"d7y.io/dragonfly.v2/pkg/rpc/dfdaemon"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

@@ -21,7 +21,7 @@ package manager;
 import "google/protobuf/empty.proto";
 import "validate/validate.proto";
 
-option go_package = "d7y.io/dragonfly/v2/pkg/rpc/manager";
+option go_package = "d7y.io/dragonfly.v2/pkg/rpc/manager";
 
 enum SourceType {
   SCHEDULER_SOURCE = 0;

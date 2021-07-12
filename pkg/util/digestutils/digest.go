@@ -26,9 +26,9 @@ import (
 	"os"
 	"strings"
 
-	"d7y.io/dragonfly/v2/internal/constants"
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly.v2/internal/constants"
+	"d7y.io/dragonfly.v2/pkg/unit"
+	"d7y.io/dragonfly.v2/pkg/util/fileutils"
 )
 
 func Sha256(values ...string) string {

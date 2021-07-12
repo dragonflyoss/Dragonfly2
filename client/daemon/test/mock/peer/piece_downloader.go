@@ -8,7 +8,7 @@ import (
 	io "io"
 	reflect "reflect"
 
-	peer "d7y.io/dragonfly/v2/client/daemon/peer"
+	peer "d7y.io/dragonfly.v2/client/daemon/peer"
 	gomock "github.com/golang/mock/gomock"
 )
 

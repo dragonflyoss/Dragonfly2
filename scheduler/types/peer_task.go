@@ -22,10 +22,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly.v2/internal/dfcodes"
+	"d7y.io/dragonfly.v2/internal/dferrors"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/pkg/rpc/scheduler"
 )
 
 type PeerTaskStatus int8

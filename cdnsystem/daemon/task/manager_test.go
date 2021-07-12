@@ -20,11 +20,11 @@ import (
 	"context"
 	"testing"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mock"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/cdnsystem/config"
+	"d7y.io/dragonfly.v2/cdnsystem/daemon/mock"
+	"d7y.io/dragonfly.v2/cdnsystem/types"
+	"d7y.io/dragonfly.v2/internal/idgen"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 )

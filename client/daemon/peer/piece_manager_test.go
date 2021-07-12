@@ -30,19 +30,19 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly.v2/pkg/source"
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/client/daemon/test"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	"d7y.io/dragonfly.v2/client/clientutil"
+	"d7y.io/dragonfly.v2/client/config"
+	"d7y.io/dragonfly.v2/client/daemon/storage"
+	"d7y.io/dragonfly.v2/client/daemon/test"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	_ "d7y.io/dragonfly.v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly.v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly.v2/pkg/source/httpprotocol"
 )
 
 func TestPieceManager_DownloadSource(t *testing.T) {

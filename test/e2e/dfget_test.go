@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
+	"d7y.io/dragonfly.v2/test/e2e/e2eutil"
 	. "github.com/onsi/ginkgo" //nolint
 	. "github.com/onsi/gomega" //nolint
 )

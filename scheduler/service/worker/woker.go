@@ -20,15 +20,15 @@ import (
 	"fmt"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/safe"
+	"d7y.io/dragonfly.v2/pkg/safe"
 
 	"k8s.io/client-go/util/workqueue"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	scheduler2 "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/service"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly.v2/internal/dfcodes"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	scheduler2 "d7y.io/dragonfly.v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly.v2/scheduler/service"
+	"d7y.io/dragonfly.v2/scheduler/types"
 )
 
 type JobType int8

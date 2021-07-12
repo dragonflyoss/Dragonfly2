@@ -16,7 +16,7 @@
 
 package types
 
-import "d7y.io/dragonfly/v2/pkg/util/rangeutils"
+import "d7y.io/dragonfly.v2/pkg/util/rangeutils"
 
 // SeedPiece
 type SeedPiece struct {

@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	dc "d7y.io/dragonfly.v2/internal/dynconfig"
 	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"

@@ -28,9 +28,9 @@ import (
 	"github.com/gorilla/mux"
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/client/daemon/storage"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly.v2/client/clientutil"
+	"d7y.io/dragonfly.v2/client/daemon/storage"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
 )
 
 type Manager interface {

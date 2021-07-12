@@ -26,9 +26,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly.v2/pkg/rpc"
+	"d7y.io/dragonfly.v2/pkg/rpc/base/common"
+	"d7y.io/dragonfly.v2/pkg/rpc/scheduler"
 )
 
 type PeerPacketStream interface {

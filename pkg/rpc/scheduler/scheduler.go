@@ -17,7 +17,7 @@
 package scheduler
 
 import (
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	"d7y.io/dragonfly.v2/pkg/rpc/base/common"
 )
 
 func NewZeroPieceResult(taskID, peerID string) *PieceResult {

@@ -22,14 +22,14 @@ import (
 	"reflect"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
-	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/synclock"
-	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly.v2/cdnsystem/config"
+	cdnerrors "d7y.io/dragonfly.v2/cdnsystem/errors"
+	"d7y.io/dragonfly.v2/cdnsystem/types"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/pkg/source"
+	"d7y.io/dragonfly.v2/pkg/synclock"
+	"d7y.io/dragonfly.v2/pkg/util/net/urlutils"
+	"d7y.io/dragonfly.v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 )
 

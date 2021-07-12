@@ -21,11 +21,11 @@ import (
 	"sync"
 	"time"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly.v2/pkg/rpc"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/pkg/rpc/cdnsystem"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )

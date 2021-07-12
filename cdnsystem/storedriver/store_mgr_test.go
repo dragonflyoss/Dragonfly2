@@ -21,8 +21,8 @@ import (
 	"os"
 	"testing"
 
-	"d7y.io/dragonfly/v2/cdnsystem/plugins"
-	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly.v2/cdnsystem/plugins"
+	"d7y.io/dragonfly.v2/pkg/unit"
 	"github.com/stretchr/testify/assert"
 )
 

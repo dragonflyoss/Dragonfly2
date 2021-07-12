@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PROJECT_NAME := "d7y.io/dragonfly/v2"
+PROJECT_NAME := "d7y.io/dragonfly.v2"
 DFGET_NAME := "dfget"
 VERSION := "2.0.0"
 PKG := "$(PROJECT_NAME)"

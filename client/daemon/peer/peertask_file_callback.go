@@ -20,10 +20,10 @@ import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly.v2/client/daemon/storage"
+	"d7y.io/dragonfly.v2/internal/dfcodes"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/pkg/rpc/scheduler"
 )
 
 type filePeerTaskCallback struct {

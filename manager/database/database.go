@@ -3,8 +3,8 @@ package database
 import (
 	"fmt"
 
-	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly.v2/manager/config"
+	"d7y.io/dragonfly.v2/manager/model"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

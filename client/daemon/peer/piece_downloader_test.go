@@ -31,11 +31,11 @@ import (
 	"github.com/go-http-utils/headers"
 	testifyassert "github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/client/daemon/upload"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly.v2/client/clientutil"
+	"d7y.io/dragonfly.v2/client/daemon/test"
+	"d7y.io/dragonfly.v2/client/daemon/upload"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	_ "d7y.io/dragonfly.v2/pkg/rpc/dfdaemon/server"
 )
 
 func TestPieceDownloader_DownloadPiece(t *testing.T) {

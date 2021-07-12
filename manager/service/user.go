@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 
-	"d7y.io/dragonfly/v2/manager/model"
-	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly.v2/manager/model"
+	"d7y.io/dragonfly.v2/manager/types"
 	"golang.org/x/crypto/bcrypt"
 )
 

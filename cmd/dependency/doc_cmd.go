@@ -19,7 +19,7 @@ package dependency
 import (
 	"fmt"
 
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly.v2/pkg/util/fileutils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"

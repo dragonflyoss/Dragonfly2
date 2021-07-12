@@ -20,19 +20,19 @@ import (
 	"context"
 	"time"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/internal/dynconfig"
+	"d7y.io/dragonfly.v2/pkg/rpc"
+	"d7y.io/dragonfly.v2/pkg/rpc/manager"
 	"google.golang.org/grpc"
 
 	// Server registered to grpc
-	"d7y.io/dragonfly/v2/pkg/retry"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server" //nolint
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/service"
-	"d7y.io/dragonfly/v2/scheduler/service/worker"
+	"d7y.io/dragonfly.v2/pkg/retry"
+	_ "d7y.io/dragonfly.v2/pkg/rpc/scheduler/server" //nolint
+	"d7y.io/dragonfly.v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly.v2/scheduler/config"
+	"d7y.io/dragonfly.v2/scheduler/service"
+	"d7y.io/dragonfly.v2/scheduler/service/worker"
 )
 
 type Server struct {

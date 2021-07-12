@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly.v2/manager/types"
 	"github.com/gin-gonic/gin"
 )
 

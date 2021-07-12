@@ -20,19 +20,19 @@ import (
 	"context"
 	"sync"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly.v2/internal/dferrors"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly.v2/client/config"
+	"d7y.io/dragonfly.v2/internal/dfcodes"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly.v2/pkg/rpc/scheduler/client"
 )
 
 type FilePeerTaskRequest struct {

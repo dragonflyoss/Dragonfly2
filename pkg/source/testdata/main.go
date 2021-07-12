@@ -23,8 +23,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"d7y.io/dragonfly/v2/internal/dfpath"
-	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly.v2/internal/dfpath"
+	"d7y.io/dragonfly.v2/pkg/source"
 )
 
 func init() {

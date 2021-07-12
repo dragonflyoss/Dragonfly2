@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly.v2/internal/dferrors"
+	"d7y.io/dragonfly.v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"go.uber.org/atomic"
 )

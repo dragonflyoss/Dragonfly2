@@ -19,7 +19,7 @@ package config
 import (
 	"path/filepath"
 
-	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly.v2/pkg/basic"
 )
 
 var (

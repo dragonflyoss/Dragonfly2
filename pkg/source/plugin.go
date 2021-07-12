@@ -19,7 +19,7 @@ package source
 import (
 	"errors"
 
-	"d7y.io/dragonfly/v2/internal/dfplugin"
+	"d7y.io/dragonfly.v2/internal/dfplugin"
 )
 
 const (

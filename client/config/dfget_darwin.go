@@ -18,7 +18,7 @@
 
 package config
 
-import "d7y.io/dragonfly/v2/pkg/unit"
+import "d7y.io/dragonfly.v2/pkg/unit"
 
 var dfgetConfig = ClientOption{
 	URL:               "",

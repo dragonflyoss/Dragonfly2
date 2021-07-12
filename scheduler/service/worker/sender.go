@@ -21,10 +21,10 @@ import (
 	"hash/crc32"
 	"runtime/debug"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/service"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/scheduler/config"
+	"d7y.io/dragonfly.v2/scheduler/service"
+	"d7y.io/dragonfly.v2/scheduler/types"
 )
 
 type ISender interface {

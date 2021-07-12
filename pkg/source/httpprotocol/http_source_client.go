@@ -24,11 +24,11 @@ import (
 	"net/http"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/task"
-	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/structure/maputils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
+	"d7y.io/dragonfly.v2/cdnsystem/daemon/task"
+	"d7y.io/dragonfly.v2/pkg/source"
+	"d7y.io/dragonfly.v2/pkg/structure/maputils"
+	"d7y.io/dragonfly.v2/pkg/util/stringutils"
+	"d7y.io/dragonfly.v2/pkg/util/timeutils"
 	"github.com/go-http-utils/headers"
 )
 

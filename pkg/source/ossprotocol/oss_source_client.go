@@ -25,9 +25,9 @@ import (
 	"strconv"
 	"sync"
 
-	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
-	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	cdnerrors "d7y.io/dragonfly.v2/cdnsystem/errors"
+	"d7y.io/dragonfly.v2/pkg/source"
+	"d7y.io/dragonfly.v2/pkg/util/stringutils"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"

@@ -20,10 +20,10 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly.v2/internal/dferrors"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly.v2/scheduler/metrics"
 )
 
 type Task struct {

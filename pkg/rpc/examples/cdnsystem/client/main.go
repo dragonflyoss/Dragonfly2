@@ -19,15 +19,15 @@ package main
 import (
 	"sync"
 
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
+	"d7y.io/dragonfly.v2/internal/dflog/logcore"
+	"d7y.io/dragonfly.v2/pkg/basic/dfnet"
+	_ "d7y.io/dragonfly.v2/pkg/rpc/scheduler/server"
 
 	"context"
 	"fmt"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly.v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly.v2/pkg/rpc/cdnsystem/client"
 )
 
 func main() {

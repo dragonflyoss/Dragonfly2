@@ -19,7 +19,7 @@ package dfpath
 import (
 	"path/filepath"
 
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly.v2/pkg/util/fileutils"
 )
 
 var (

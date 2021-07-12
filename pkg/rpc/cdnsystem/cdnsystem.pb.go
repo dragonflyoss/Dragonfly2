@@ -22,7 +22,7 @@
 package cdnsystem
 
 import (
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	base "d7y.io/dragonfly.v2/pkg/rpc/base"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

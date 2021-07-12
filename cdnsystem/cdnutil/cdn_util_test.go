@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly.v2/pkg/util/net/iputils"
 )
 
 func TestGenCdnPeerID(t *testing.T) {

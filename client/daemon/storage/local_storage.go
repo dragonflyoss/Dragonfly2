@@ -26,11 +26,11 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/internal/dferrors"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"d7y.io/dragonfly.v2/client/clientutil"
+	"d7y.io/dragonfly.v2/internal/dferrors"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/pkg/util/digestutils"
 	"go.uber.org/atomic"
 )
 

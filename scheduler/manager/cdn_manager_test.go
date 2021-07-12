@@ -19,8 +19,8 @@ package manager
 import (
 	"testing"
 
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"d7y.io/dragonfly.v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly.v2/pkg/rpc/manager"
 	testifyassert "github.com/stretchr/testify/assert"
 )
 

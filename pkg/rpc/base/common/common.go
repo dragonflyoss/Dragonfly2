@@ -19,8 +19,8 @@ package common
 import (
 	"reflect"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/internal/dfcodes"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

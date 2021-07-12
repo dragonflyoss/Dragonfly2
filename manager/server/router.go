@@ -1,9 +1,9 @@
 package server
 
 import (
-	"d7y.io/dragonfly/v2/manager/handlers"
-	"d7y.io/dragonfly/v2/manager/middlewares"
-	"d7y.io/dragonfly/v2/manager/service"
+	"d7y.io/dragonfly.v2/manager/handlers"
+	"d7y.io/dragonfly.v2/manager/middlewares"
+	"d7y.io/dragonfly.v2/manager/service"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )

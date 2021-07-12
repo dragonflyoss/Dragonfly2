@@ -24,12 +24,12 @@ import (
 	"strings"
 	"testing"
 
-	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/internal/constants"
-	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/pkg/source"
-	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"d7y.io/dragonfly.v2/client/config"
+	"d7y.io/dragonfly.v2/internal/constants"
+	"d7y.io/dragonfly.v2/internal/idgen"
+	"d7y.io/dragonfly.v2/pkg/source"
+	sourcemock "d7y.io/dragonfly.v2/pkg/source/mock"
+	"d7y.io/dragonfly.v2/pkg/util/digestutils"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

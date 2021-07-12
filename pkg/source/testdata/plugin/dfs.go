@@ -22,7 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly.v2/pkg/source"
 )
 
 var data = "hello world"

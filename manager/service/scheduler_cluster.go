@@ -1,8 +1,8 @@
 package service
 
 import (
-	"d7y.io/dragonfly/v2/manager/model"
-	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly.v2/manager/model"
+	"d7y.io/dragonfly.v2/manager/types"
 )
 
 func (s *rest) CreateSchedulerCluster(json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {

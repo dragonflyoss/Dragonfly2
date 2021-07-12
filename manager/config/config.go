@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly.v2/cmd/dependency/base"
 )
 
 type Config struct {

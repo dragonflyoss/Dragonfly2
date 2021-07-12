@@ -26,18 +26,18 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly.v2/client/clientutil"
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/client/daemon/storage"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly.v2/client/config"
+	"d7y.io/dragonfly.v2/client/daemon/storage"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly.v2/pkg/rpc/scheduler/client"
 )
 
 // TaskManager processes all peer tasks request

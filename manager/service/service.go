@@ -1,10 +1,10 @@
 package service
 
 import (
-	"d7y.io/dragonfly/v2/manager/cache"
-	"d7y.io/dragonfly/v2/manager/database"
-	"d7y.io/dragonfly/v2/manager/model"
-	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly.v2/manager/cache"
+	"d7y.io/dragonfly.v2/manager/database"
+	"d7y.io/dragonfly.v2/manager/model"
+	"d7y.io/dragonfly.v2/manager/types"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )

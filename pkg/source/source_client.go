@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//go:generate mockgen -destination ./mock/mock_source_client.go -package mock d7y.io/dragonfly/v2/pkg/source ResourceClient
+//go:generate mockgen -destination ./mock/mock_source_client.go -package mock d7y.io/dragonfly.v2/pkg/source ResourceClient
 
 package source
 
@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
 )
 
 var _ ResourceClient = (*ClientManagerImpl)(nil)

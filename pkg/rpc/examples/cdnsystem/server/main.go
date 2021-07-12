@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
-	"d7y.io/dragonfly/v2/pkg/safe"
+	"d7y.io/dragonfly.v2/internal/dflog/logcore"
+	"d7y.io/dragonfly.v2/pkg/rpc"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/pkg/rpc/cdnsystem"
+	_ "d7y.io/dragonfly.v2/pkg/rpc/cdnsystem/server"
+	"d7y.io/dragonfly.v2/pkg/safe"
 )
 
 type helloSeeder struct {

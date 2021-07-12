@@ -22,9 +22,9 @@ import (
 	"syscall"
 	"testing"
 
-	"d7y.io/dragonfly/v2/internal/constants"
-	"d7y.io/dragonfly/v2/pkg/basic"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly.v2/internal/constants"
+	"d7y.io/dragonfly.v2/pkg/basic"
+	"d7y.io/dragonfly.v2/pkg/util/fileutils"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )

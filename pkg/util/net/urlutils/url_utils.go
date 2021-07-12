@@ -19,7 +19,7 @@ package urlutils
 import (
 	"net/url"
 
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly.v2/pkg/util/stringutils"
 )
 
 // FilterURLParam excludes queries in url with filters.

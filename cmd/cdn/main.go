@@ -17,11 +17,11 @@
 package main
 
 import (
-	"d7y.io/dragonfly/v2/cmd/cdn/cmd"
+	"d7y.io/dragonfly.v2/cmd/cdn/cmd"
 	// Register http client
-	_ "d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	_ "d7y.io/dragonfly.v2/pkg/source/httpprotocol"
 	// Register oss client
-	_ "d7y.io/dragonfly/v2/pkg/source/ossprotocol"
+	_ "d7y.io/dragonfly.v2/pkg/source/ossprotocol"
 )
 
 func main() {

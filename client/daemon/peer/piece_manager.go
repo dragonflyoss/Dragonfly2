@@ -22,19 +22,19 @@ import (
 	"math"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly.v2/pkg/source"
 	"golang.org/x/time/rate"
 
-	cdnconfig "d7y.io/dragonfly/v2/cdnsystem/config"
+	cdnconfig "d7y.io/dragonfly.v2/cdnsystem/config"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"d7y.io/dragonfly.v2/client/clientutil"
+	"d7y.io/dragonfly.v2/client/config"
+	"d7y.io/dragonfly.v2/client/daemon/storage"
+	"d7y.io/dragonfly.v2/internal/dfcodes"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/pkg/rpc/base"
+	"d7y.io/dragonfly.v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly.v2/pkg/util/digestutils"
 )
 
 type PieceManager interface {

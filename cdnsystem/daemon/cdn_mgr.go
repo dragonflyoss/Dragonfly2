@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination ./mock/mock_cdn_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon CDNMgr
+//go:generate mockgen -destination ./mock/mock_cdn_mgr.go -package mock d7y.io/dragonfly.v2/cdnsystem/daemon CDNMgr
 
 package daemon
 
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly.v2/cdnsystem/types"
 )
 
 // CDNMgr as an interface defines all operations against CDN and

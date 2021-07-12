@@ -17,10 +17,10 @@
 package scheduler
 
 import (
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/manager"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/scheduler/config"
+	"d7y.io/dragonfly.v2/scheduler/manager"
+	"d7y.io/dragonfly.v2/scheduler/types"
 )
 
 type Scheduler struct {

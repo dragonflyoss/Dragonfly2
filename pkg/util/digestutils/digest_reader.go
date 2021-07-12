@@ -24,7 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
 )
 
 var (

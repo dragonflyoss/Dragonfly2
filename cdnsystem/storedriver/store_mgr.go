@@ -21,8 +21,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"d7y.io/dragonfly/v2/cdnsystem/plugins"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly.v2/cdnsystem/plugins"
+	"d7y.io/dragonfly.v2/pkg/util/fileutils"
 	"github.com/mitchellh/mapstructure"
 )
 

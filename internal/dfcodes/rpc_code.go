@@ -16,7 +16,7 @@
 
 package dfcodes
 
-import "d7y.io/dragonfly/v2/pkg/rpc/base"
+import "d7y.io/dragonfly.v2/pkg/rpc/base"
 
 // rpc code
 const (

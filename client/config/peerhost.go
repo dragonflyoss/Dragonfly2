@@ -30,15 +30,15 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly.v2/cmd/dependency/base"
+	"d7y.io/dragonfly.v2/pkg/unit"
+	"d7y.io/dragonfly.v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly.v2/client/clientutil"
+	"d7y.io/dragonfly.v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly.v2/pkg/util/net/iputils"
 )
 
 type DaemonConfig = DaemonOption

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//go:generate mockgen -destination ./mock/mock_progress_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon SeedProgressMgr
+//go:generate mockgen -destination ./mock/mock_progress_mgr.go -package mock d7y.io/dragonfly.v2/cdnsystem/daemon SeedProgressMgr
 
 package daemon
 
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly.v2/cdnsystem/types"
 )
 
 // SeedProgressMgr as an interface defines all operations about seed progress

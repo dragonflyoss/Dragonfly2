@@ -19,8 +19,8 @@ package logcore
 import (
 	"path"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfpath"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/internal/dfpath"
 )
 
 func InitManager(console bool) error {

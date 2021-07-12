@@ -17,7 +17,7 @@
 package manager
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly.v2/scheduler/config"
 )
 
 type Manager struct {

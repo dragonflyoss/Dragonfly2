@@ -6,8 +6,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
+	"d7y.io/dragonfly.v2/pkg/basic/dfnet"
 )
 
 // Listen wraps net.Listen with dfnet.NetAddr

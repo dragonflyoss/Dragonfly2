@@ -10,8 +10,8 @@ import (
 	reflect "reflect"
 	time "time"
 
-	storage "d7y.io/dragonfly/v2/client/daemon/storage"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	storage "d7y.io/dragonfly.v2/client/daemon/storage"
+	base "d7y.io/dragonfly.v2/pkg/rpc/base"
 	gomock "github.com/golang/mock/gomock"
 )
 

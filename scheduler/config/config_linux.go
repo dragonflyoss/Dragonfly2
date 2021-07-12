@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"time"
 
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	dc "d7y.io/dragonfly.v2/internal/dynconfig"
+	"d7y.io/dragonfly.v2/pkg/util/net/iputils"
 )
 
 var config = Config{

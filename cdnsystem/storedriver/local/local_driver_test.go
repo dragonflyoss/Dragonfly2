@@ -26,11 +26,11 @@ import (
 	"syscall"
 	"testing"
 
-	"d7y.io/dragonfly/v2/cdnsystem/errors"
-	"d7y.io/dragonfly/v2/cdnsystem/plugins"
-	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/statutils"
+	"d7y.io/dragonfly.v2/cdnsystem/errors"
+	"d7y.io/dragonfly.v2/cdnsystem/plugins"
+	"d7y.io/dragonfly.v2/cdnsystem/storedriver"
+	"d7y.io/dragonfly.v2/pkg/unit"
+	"d7y.io/dragonfly.v2/pkg/util/statutils"
 	"github.com/stretchr/testify/suite"
 )
 

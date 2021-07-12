@@ -21,7 +21,7 @@ import (
 	"syscall"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly.v2/pkg/unit"
 )
 
 // Atime returns the last access time in time.Time.

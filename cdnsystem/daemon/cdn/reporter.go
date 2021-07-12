@@ -17,10 +17,10 @@
 package cdn
 
 import (
-	"d7y.io/dragonfly/v2/cdnsystem/daemon"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly.v2/cdnsystem/daemon"
+	"d7y.io/dragonfly.v2/cdnsystem/daemon/cdn/storage"
+	"d7y.io/dragonfly.v2/cdnsystem/types"
+	logger "d7y.io/dragonfly.v2/internal/dflog"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )

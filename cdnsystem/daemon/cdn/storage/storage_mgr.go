@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//go:generate mockgen -destination ./mock/mock_storage_mgr.go -package mock d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage Manager
+//go:generate mockgen -destination ./mock/mock_storage_mgr.go -package mock d7y.io/dragonfly.v2/cdnsystem/daemon/cdn/storage Manager
 
 package storage
 
@@ -25,12 +25,12 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon"
-	"d7y.io/dragonfly/v2/cdnsystem/plugins"
-	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
-	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+	"d7y.io/dragonfly.v2/cdnsystem/daemon"
+	"d7y.io/dragonfly.v2/cdnsystem/plugins"
+	"d7y.io/dragonfly.v2/cdnsystem/storedriver"
+	"d7y.io/dragonfly.v2/cdnsystem/types"
+	"d7y.io/dragonfly.v2/pkg/unit"
+	"d7y.io/dragonfly.v2/pkg/util/rangeutils"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"

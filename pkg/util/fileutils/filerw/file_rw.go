@@ -20,7 +20,7 @@ import (
 	"io"
 	"os"
 
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+	"d7y.io/dragonfly.v2/pkg/util/fileutils"
 	"github.com/pkg/errors"
 )
 

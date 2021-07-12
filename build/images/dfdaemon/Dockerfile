@@ -1,10 +1,10 @@
 FROM golang:1.15.10-alpine as builder
 
-WORKDIR /go/src/d7y.io/dragonfly/v2
+WORKDIR /go/src/d7y.io/dragonfly.v2
 
 RUN apk --no-cache add bash make gcc libc-dev git
 
-COPY . /go/src/d7y.io/dragonfly/v2
+COPY . /go/src/d7y.io/dragonfly.v2
 
 ARG GOPROXY
 
