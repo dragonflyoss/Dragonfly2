@@ -12,6 +12,7 @@ cd "${curDir}/../" || return
 
 install-kind() {
   if which kind >/dev/null ; then
+      print_step_info "kind has been installed"
   else 
       print_step_info "start install kind"
       go install sigs.k8s.io/kind@v0.11.1
@@ -22,6 +23,7 @@ install-kind() {
 
 install-helm() {
   if which helm >/dev/null ; then
+      print_step_info "helm has been installed"
   else
       print_step_info "start install helm"
       curl -fsSL get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | sh
