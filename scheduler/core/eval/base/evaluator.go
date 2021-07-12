@@ -37,7 +37,6 @@ type basicEvaluatorBuilder struct{}
 
 func (*basicEvaluatorBuilder) Build(opts core.BuildOptions) (core.Evaluator, error) {
 	r := &evaluator{
-		taskManager: opts.TaskManager,
 		peerManager: opts.PeerManager,
 	}
 	return r, nil
@@ -48,12 +47,11 @@ func (*basicEvaluatorBuilder) Name() string {
 }
 
 type evaluator struct {
-	taskManager daemon.TaskMgr
 	peerManager daemon.PeerMgr
 }
 
 func newEvaluator(taskMgr daemon.TaskMgr) core.Evaluator {
-	return &evaluator{taskManager: taskMgr}
+	return &evaluator{}
 }
 
 var _ core.Evaluator = (*evaluator)(nil)
@@ -61,7 +59,7 @@ var _ core.Evaluator = (*evaluator)(nil)
 func (eval *evaluator) NeedAdjustParent(peer *types.PeerNode) bool {
 	parent := peer.Parent
 
-	if parent == nil && !types.IsCDNHost(peer.Host) {
+	if parent == nil {
 		return true
 	}
 
@@ -127,74 +125,59 @@ func (eval *evaluator) getAvgAndLastCost(list []int, splitPos int) (avgCost, las
 	return
 }
 
-func (eval *evaluator) SelectCandidateChildren(peer *types.PeerNode) (list []*types.PeerNode) {
-	if peer == nil {
+func (eval *evaluator) SelectCandidateChildren(peer *types.PeerNode, limit int) (list []*types.PeerNode) {
+	if peer == nil || peer.Host.GetFreeUploadLoad() < 1 {
 		return
 	}
-	eval.peerManager.Walker(peer.Task, -1, func(candidateNode *types.PeerNode) bool {
-		if candidateNode == nil || peer.Task != peer.Task {
-			return true
+	return eval.peerManager.Pick(peer.Task.TaskID, limit, func(candidateNode *types.PeerNode) bool {
+		// pick children
+		if candidateNode == nil || candidateNode.Task.TaskID != peer.Task.TaskID {
+			return false
 		}
 		if candidateNode.PeerID == peer.PeerID {
-			return true
+			return false
 		} else if candidateNode.Success {
-			return true
+			return false
 		} else if types.IsCDNHost(candidateNode.Host) {
-			return true
+			return false
 		} else if peer.Parent != nil && peer.Parent == candidateNode {
-			return true
-		} else if peer.GetFreeLoad() < 1 {
-			return true
+			return false
 		} else if candidateNode.IsAncestor(peer) || peer.IsAncestor(candidateNode) {
-			return true
+			return false
 		} else if candidateNode.Parent != nil {
-			return true
-		}
-		list = append(list, candidateNode)
-		if len(list) > 10 {
 			return false
 		}
 		return true
 	})
-	return
 }
 
-func (eval *evaluator) SelectCandidateParents(peer *types.PeerNode) (list []*types.PeerNode) {
+func (eval *evaluator) SelectCandidateParents(peer *types.PeerNode, limit int) (list []*types.PeerNode) {
 	if peer == nil {
-		logger.Debugf("peer is nil")
 		return
 	}
 	var msg []string
-	eval.peerManager.WalkerReverse(peer.Task, -1, func(candidateNode *types.PeerNode) bool {
+	list = eval.peerManager.PickReverse(peer.Task.TaskID, limit, func(candidateNode *types.PeerNode) bool {
 		if candidateNode == nil {
-			return true
-		} else if peer.Task != candidateNode.Task {
-			msg = append(msg, fmt.Sprintf("%s task[%s] not same", pt.PeerID, pt.Task.TaskID))
-			return true
-		} else if candidateNode.IsDown() {
-			msg = append(msg, fmt.Sprintf("%s is down", pt.GetPeerID()))
-			return true
-		} else if peer.GetPeerID() == peer.GetPeerID() {
-			return true
-		} else if pt.IsAncestor(peer) || peer.IsAncestor(pt) {
-			msg = append(msg, fmt.Sprintf("%s has relation", pt.GetPeerID()))
-			return true
-		} else if pt.GetFreeLoad() < 1 {
-			msg = append(msg, fmt.Sprintf("%s no load", pt.GetPeerID()))
-			return true
-		}
-		if peer.Success {
-			list = append(list, peer)
-		} else {
-			root := peer.GetTreeRoot()
-			if root != nil && root.Host != nil && types.IsCDNHost(root.Host) {
-				list = append(list, peer)
-			} else {
-				msg = append(msg, fmt.Sprintf("%s not finished and root is not cdn", peer.PeerID))
-			}
-		}
-		if len(list) > 10 {
 			return false
+		} else if peer.Task != candidateNode.Task {
+			msg = append(msg, fmt.Sprintf("%s task[%s] not same", candidateNode.PeerID, candidateNode.Task.TaskID))
+			return false
+		} else if peer.PeerID == peer.PeerID {
+			return false
+		} else if candidateNode.IsAncestor(peer) || peer.IsAncestor(candidateNode) {
+			msg = append(msg, fmt.Sprintf("%s has relation", candidateNode.PeerID))
+			return false
+		} else if candidateNode.Host.GetFreeUploadLoad() < 1 {
+			msg = append(msg, fmt.Sprintf("%s no load", candidateNode.PeerID))
+			return false
+		}
+		if candidateNode.Success {
+			return true
+		} else {
+			root := candidateNode.GetTreeRoot()
+			if root != nil && root.Host != nil && types.IsCDNHost(root.Host) {
+				return true
+			}
 		}
 		return true
 	})
@@ -221,7 +204,7 @@ func (eval *evaluator) getProfits(dst *types.PeerNode, src *types.PeerNode) floa
 	diff := types.GetDiffPieceNum(src, dst)
 	depth := dst.GetDepth()
 
-	return float64((diff+1)*src.GetWholeTreeNode()) / float64(depth*depth)
+	return float64(int(diff+1)*src.GetWholeTreeNode()) / float64(depth*depth)
 }
 
 // getHostLoad 0.0~1.0 larger and better

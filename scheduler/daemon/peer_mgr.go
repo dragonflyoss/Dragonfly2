@@ -16,7 +16,11 @@
 
 package daemon
 
-import "d7y.io/dragonfly/v2/scheduler/types"
+import (
+	"sync"
+
+	"d7y.io/dragonfly/v2/scheduler/types"
+)
 
 type PeerMgr interface {
 	Add(peer *types.PeerNode)
@@ -25,7 +29,11 @@ type PeerMgr interface {
 
 	Delete(peerID string)
 
-	Walker(task *types.Task, limit int, walker func(pt *types.PeerNode) bool)
+	ListPeers() *sync.Map
 
-	WalkerReverse(task *types.Task, limit int, walker func(peerNode *types.PeerNode) bool)
+	ListPeerNodesByTask(taskID string) []*types.PeerNode
+
+	Pick(task *types.Task, limit int, pickFn func(pt *types.PeerNode) bool) []*types.PeerNode
+
+	PickReverse(task *types.Task, limit int, pickFn func(peerNode *types.PeerNode) bool) []*types.PeerNode
 }

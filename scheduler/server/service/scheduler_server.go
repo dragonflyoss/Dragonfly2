@@ -31,23 +31,23 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
 
 type SchedulerServer struct {
 	service *core.SchedulerService
-	worker  *core.Worker
-	config  *config.SchedulerConfig
 }
 
 // NewSchedulerServer returns a new transparent scheduler server from the given options
-func NewSchedulerServer(cfg *config.SchedulerConfig) *SchedulerServer {
-	service, _ := core.NewSchedulerService()
+func NewSchedulerServer(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface) (*SchedulerServer, error) {
+	service, err := core.NewSchedulerService(cfg, dynConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "create scheduler service")
+	}
 	return &SchedulerServer{
 		service: service,
-		worker:  pool,
-		config:  cfg,
-	}
+	}, nil
 }
 
 func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
@@ -59,11 +59,11 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	task := types.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta)
 	err = s.service.GetOrCreateTask(ctx, task)
 	if err != nil {
-
+		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
 	}
 	// todo 任务状态有问题
 	if types.IsBadTask(task.Status) {
-		err = dferrors.Newf(dfcodes.SchedNeedBackSource, "task status is %s", task.Status)
+		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "task status is %s", task.Status)
 		return
 	}
 	resp.SizeScope = getTaskSizeScope(task)
@@ -116,16 +116,19 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		for {
 			pieceResult, err := stream.Recv()
 			if err == io.EOF {
+				close(peerPacketChan)
 				return nil
 			}
 			if err != nil {
+
 				return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error")
 			}
+			s.service.AddPieceStream(pieceResult.SrcPid, peerPacketChan)
 			_, ok := s.service.GetPeerTask(pieceResult.SrcPid)
 			if !ok {
 				return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
 			}
-			s.worker.Submit(core.NewReportPieceResultTask(s.service, pieceResult))
+			s.service.HandlePieceResult(pieceResult)
 		}
 	})
 
@@ -178,7 +181,7 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 		logger.Warnf("report peer result: peer %s is not exists", result.PeerId)
 		return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", result.PeerId)
 	}
-	return s.worker.Submit(core.NewReportPeerResultTask(s.service, result))
+	return s.service.HandlePeerResult(result)
 }
 
 func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (err error) {
@@ -187,7 +190,7 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 		logger.Warnf("leave task: peer %d is not exists", target.PeerId)
 		return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", target.PeerId)
 	}
-	return s.worker.Submit(core.NewLeaveTask(s.service, target))
+	return s.service.HandleLeaveTask(target)
 }
 
 // validateParams validates the params of scheduler.PeerTaskRequest.

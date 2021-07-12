@@ -25,9 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/rpc/manager"
 	"d7y.io/dragonfly/v2/internal/rpc/manager/client"
 	"d7y.io/dragonfly/v2/internal/rpc/scheduler/server"
-	"d7y.io/dragonfly/v2/scheduler/core/worker"
 	"d7y.io/dragonfly/v2/scheduler/server/service"
-	"github.com/pkg/errors"
 
 	// Server registered to grpc
 	_ "d7y.io/dragonfly/v2/internal/rpc/scheduler/server"
@@ -36,11 +34,11 @@ import (
 )
 
 type Server struct {
-	config          config.ServerConfig
+	config          *config.ServerConfig
 	schedulerServer server.SchedulerServer
 	managerClient   client.ManagerClient
 	running         bool
-	dynconfig       config.DynconfigInterface
+	dynConfig       config.DynconfigInterface
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -49,49 +47,45 @@ func New(cfg *config.Config) (*Server, error) {
 		config:  cfg.Server,
 	}
 	// Initialize manager client
-	if cfg.Manager != nil {
-		managerClient, err := client.NewClient(cfg.Manager.NetAddrs)
-		if err != nil {
-			return nil, errors.Wrapf(err, "create manager client")
-		}
-		s.managerClient = managerClient
-	}
+	//if cfg.Manager != nil {
+	//	managerClient, err := client.NewClient(cfg.Manager.NetAddrs)
+	//	if err != nil {
+	//		return nil, errors.Wrapf(err, "create manager client")
+	//	}
+	//	s.managerClient = managerClient
+	//}
 
 	var options []dynconfig.Option
-	if cfg.Dynconfig.Type == dynconfig.LocalSourceType {
+	if cfg.DynConfig.Type == dynconfig.LocalSourceType {
 		options = []dynconfig.Option{
-			dynconfig.WithLocalConfigPath(cfg.Dynconfig.Path),
+			dynconfig.WithLocalConfigPath(cfg.DynConfig.Path),
 		}
 	}
 
-	if cfg.Dynconfig.Type == dynconfig.ManagerSourceType {
-		client, err := client.NewClient(cfg.Dynconfig.NetAddrs)
+	if cfg.DynConfig.Type == dynconfig.ManagerSourceType {
+		client, err := client.NewClient(cfg.DynConfig.NetAddrs)
 		if err != nil {
 			return nil, err
 		}
 
 		options = []dynconfig.Option{
 			dynconfig.WithManagerClient(config.NewManagerClient(client)),
-			dynconfig.WithCachePath(cfg.Dynconfig.CachePath),
-			dynconfig.WithExpireTime(cfg.Dynconfig.ExpireTime),
+			dynconfig.WithCachePath(cfg.DynConfig.CachePath),
+			dynconfig.WithExpireTime(cfg.DynConfig.ExpireTime),
 		}
 	}
 
-	dynconfig, err := config.NewDynconfig(cfg.Dynconfig.Type, cfg.Dynconfig.CDNDirPath, options...)
+	dynConfig, err := config.NewDynconfig(cfg.DynConfig.Type, cfg.DynConfig.CDNDirPath, options...)
 	if err != nil {
 		return nil, err
 	}
-	s.dynconfig = dynconfig
+	s.dynConfig = dynConfig
 
 	// Initialize scheduler service
-	s.service, err = scheduler.NewSchedulerService(cfg, s.dynconfig)
+	s.schedulerServer, err = service.NewSchedulerServer(cfg.Scheduler, s.dynConfig)
 	if err != nil {
 		return nil, err
 	}
-
-	// 提供GRPC服务
-	s.schedulerServer = service.NewSchedulerServer(cfg, service.WithSchedulerService(s.service),
-		service.WithWorker(s.worker))
 
 	return s, nil
 }
@@ -102,7 +96,7 @@ func (s *Server) Serve() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	s.dynconfig.Serve()
+	s.dynConfig.Serve()
 
 	if s.managerClient != nil {
 		s.managerClient.KeepAlive(ctx, &manager.KeepAliveRequest{
@@ -122,7 +116,7 @@ func (s *Server) Serve() error {
 func (s *Server) Stop() (err error) {
 	if s.running {
 		s.running = false
-		s.dynconfig.Stop()
+		s.dynConfig.Stop()
 		rpc.StopServer()
 	}
 	return

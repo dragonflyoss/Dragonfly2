@@ -25,17 +25,15 @@ import (
 
 type Scheduler struct {
 	factory     *evaluatorFactory
-	abtest      bool
 	ascheduler  string
 	bscheduler  string
 	taskManager daemon.TaskMgr
 }
 
-func New(cfg config.SchedulerConfig, taskManager daemon.TaskMgr) *Scheduler {
+func newScheduler(cfg *config.SchedulerConfig, taskManager daemon.TaskMgr) *Scheduler {
 	evalFactory := newEvaluatorFactory(cfg)
 	return &Scheduler{
 		factory:     evalFactory,
-		abtest:      cfg.ABTest,
 		ascheduler:  cfg.AScheduler,
 		bscheduler:  cfg.BScheduler,
 		taskManager: taskManager,
@@ -43,21 +41,19 @@ func New(cfg config.SchedulerConfig, taskManager daemon.TaskMgr) *Scheduler {
 }
 
 // ScheduleChildren scheduler children to a peer
-func (s *Scheduler) ScheduleChildren(peer *types.PeerNode) (children []*types.PeerNode, err error) {
+func (s *Scheduler) ScheduleChildren(peer *types.PeerNode, limit int) (children []*types.PeerNode, err error) {
 	eval := s.factory.get(peer.Task.TaskID)
 	freeLoad := peer.Host.GetFreeUploadLoad()
-	candidateChildren := s.factory.get(peer.Task.TaskID).SelectCandidateChildren(peer)
-	schedulerResult := make(map[*types.PeerNode]int8)
+	candidateChildren := eval.SelectCandidateChildren(peer, limit)
+	evalResult := make(map[float64]*types.PeerNode)
+	for _, child := range candidateChildren {
+		evalResult[eval.Evaluate(peer, child)] = child
+	}
+
 	for freeLoad > 0 {
 		var chosen *types.PeerNode
 		var value float64
-		for _, child := range candidateChildren {
-			worth := eval.Evaluate(peer, child)
-			if worth > value && schedulerResult[child] == 0 {
-				value = worth
-				chosen = child
-			}
-		}
+
 		if chosen == nil {
 			break
 		}
@@ -73,7 +69,7 @@ func (s *Scheduler) ScheduleChildren(peer *types.PeerNode) (children []*types.Pe
 		} else {
 			child.DeleteParent()
 		}
-		child.SetParent(peer, 1)
+		child.Parent = peer
 	}
 
 	s.taskManager.PeerTask.Update(peer)
@@ -85,13 +81,13 @@ func (s *Scheduler) ScheduleParent(peer *types.PeerNode) (primary *types.PeerNod
 	if !types.IsRunning(peer) {
 		return
 	}
-	candidates := s.factory.get(peer.GetTask().GetTaskID()).SelectParentCandidateNodes(peer)
+	candidates := s.factory.get(peer.Task.TaskID).SelectCandidateParents(peer)
 	var value float64
 	for _, parent := range candidates {
-		worth := s.factory.get(peer.GetTask().GetTaskID()).Evaluate(parent, peer)
+		worth := s.factory.get(peer.Task.TaskID).Evaluate(parent, peer)
 
 		// scheduler the same parent, worth reduce a half
-		if peer.GetParent() != nil && peer.GetParent().GetPeerID() == parent.GetPeerID() {
+		if peer.Parent != nil && peer.Parent.PeerID == parent.PeerID {
 			worth = worth / 2.0
 		}
 
@@ -119,7 +115,7 @@ func (s *Scheduler) ScheduleBadNode(peer *types.PeerNode) (adjustNodes []*types.
 		s.ScheduleChildren(parent)
 	}
 
-	for _, child := range peer.GetChildren() {
+	for _, child := range peer.Children {
 		s.ScheduleParent(child)
 		adjustNodes = append(adjustNodes, child)
 	}
@@ -140,16 +136,14 @@ func (s *Scheduler) ScheduleBadNode(peer *types.PeerNode) (adjustNodes []*types.
 }
 
 func (s *Scheduler) ScheduleLeaveNode(peer *types.PeerNode) (adjustNodes []*types.PeerNode, err error) {
-	parent := peer.GetParent()
+	parent := peer.Parent
 	if parent != nil {
-		pNode := parent.DstPeerTask
 		peer.DeleteParent()
-		peer.SetDown()
 		s.taskManager.PeerTask.Update(pNode)
 	}
 	s.taskManager.PeerTask.Update(peer)
 
-	for _, child := range peer.GetChildren() {
+	for _, child := range peer.Children {
 		child.DeleteParent()
 		s.ScheduleParent(child)
 		adjustNodes = append(adjustNodes, child)
@@ -159,7 +153,7 @@ func (s *Scheduler) ScheduleLeaveNode(peer *types.PeerNode) (adjustNodes []*type
 }
 
 func (s *Scheduler) ScheduleAdjustParentNode(peer *types.PeerNode) (primary *types.PeerNode, secondary []*types.PeerNode, err error) {
-	parent := peer.GetParent()
+	parent := peer.Parent
 	if parent != nil {
 		pNode := parent.DstPeerTask
 		peer.DeleteParent()
@@ -169,10 +163,7 @@ func (s *Scheduler) ScheduleAdjustParentNode(peer *types.PeerNode) (primary *typ
 }
 
 func (s *Scheduler) ScheduleDone(peer *types.PeerNode) (parent *types.PeerNode, err error) {
-	if peer.GetParent() == nil {
-		return
-	}
-	parent = peer.GetParent()
+	parent = peer.Parent
 	if parent == nil {
 		return
 	}
@@ -180,12 +171,4 @@ func (s *Scheduler) ScheduleDone(peer *types.PeerNode) (parent *types.PeerNode, 
 	s.taskManager.PeerTask.Update(parent)
 
 	return
-}
-
-func (s *Scheduler) NeedAdjustParent(peer *types.PeerNode) bool {
-	return s.evaluatorFactory.get(peer.Task).needAdjustParent(peer)
-}
-
-func (s *Scheduler) IsBadNode(peer *types.PeerNode) bool {
-	return s.evaluatorFactory.get(peer.GetTask().GetTaskID()).IsBadNode(peer)
 }

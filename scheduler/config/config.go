@@ -94,6 +94,7 @@ func NewDefaultServerConfig() *ServerConfig {
 func NewDefaultSchedulerConfig() *SchedulerConfig {
 	return &SchedulerConfig{
 		ABTest:            false,
+		EnableCDN:         true,
 		WorkerNum:         runtime.GOMAXPROCS(0),
 		WorkerJobPoolSize: 10000,
 		SenderNum:         10,
@@ -134,6 +135,7 @@ type DynConfig struct {
 }
 
 type SchedulerConfig struct {
+	EnableCDN         bool   `yaml:"abtest" mapstructure:"enableCDN"`
 	ABTest            bool   `yaml:"abtest" mapstructure:"abtest"`
 	AScheduler        string `yaml:"ascheduler" mapstructure:"ascheduler"`
 	BScheduler        string `yaml:"bscheduler" mapstructure:"bscheduler"`
@@ -141,6 +143,7 @@ type SchedulerConfig struct {
 	WorkerJobPoolSize int    `yaml:"workerJobPoolSize" mapstructure:"workerJobPoolSize"`
 	SenderNum         int    `yaml:"senderNum" mapstructure:"senderNum"`
 	SenderJobPoolSize int    `yaml:"senderJobPoolSize" mapstructure:"senderJobPoolSize"`
+	Monitor           bool   `yaml:"senderJobPoolSize" mapstructure:"monitor"`
 }
 
 type ServerConfig struct {

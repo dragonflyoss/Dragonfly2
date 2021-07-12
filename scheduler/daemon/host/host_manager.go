@@ -23,25 +23,17 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-const ()
-
 type manager struct {
 	hostMap sync.Map
 }
 
 var _ daemon.HostMgr = (*manager)(nil)
 
-func newHostManager() daemon.HostMgr {
+func NewManager() daemon.HostMgr {
 	return &manager{}
 }
 
-func (m *manager) Add(host *types.Host) {
-	if host.Type == types.HostTypePeer {
-		host.SetTotalUploadLoad(PeerHostLoad)
-		host.SetTotalDownloadLoad(PeerHostLoad)
-	}
-	host.SetTotalUploadLoad(CDNHostLoad)
-	host.SetTotalDownloadLoad(CDNHostLoad)
+func (m *manager) Add(host *types.NodeHost) {
 	m.hostMap.Store(host.UUID, host)
 }
 
@@ -49,18 +41,18 @@ func (m *manager) Delete(uuid string) {
 	m.hostMap.Delete(uuid)
 }
 
-func (m *manager) Get(uuid string) (*types.Host, bool) {
+func (m *manager) Get(uuid string) (*types.NodeHost, bool) {
 	host, ok := m.hostMap.Load(uuid)
 	if !ok {
 		return nil, false
 	}
-	return host.(*types.Host), true
+	return host.(*types.NodeHost), true
 }
 
-func (m *manager) GetOrAdd(uuid string, host *types.Host) (*types.Host, bool) {
+func (m *manager) GetOrAdd(uuid string, host *types.NodeHost) (*types.NodeHost, bool) {
 	item, loaded := m.hostMap.LoadOrStore(uuid, host)
 	if loaded {
-		return item.(*types.Host), true
+		return item.(*types.NodeHost), true
 	}
 	return host, false
 }

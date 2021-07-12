@@ -36,12 +36,14 @@ type Evaluator interface {
 	// IsBadNode determine if peerNode is a failed node
 	IsBadNode(peerNode *types.PeerNode) bool
 
-	// todo Normalization
+	// Evaluate todo Normalization
 	Evaluate(dst *types.PeerNode, src *types.PeerNode) float64
 
-	SelectCandidateChildren(peer *types.PeerNode) []*types.PeerNode
+	// SelectCandidateChildren
+	SelectCandidateChildren(peer *types.PeerNode, limit int) []*types.PeerNode
 
-	SelectCandidateParents(peer *types.PeerNode) []*types.PeerNode
+	// SelectCandidateParents
+	SelectCandidateParents(peer *types.PeerNode, limit int) []*types.PeerNode
 }
 
 type evaluatorFactory struct {
@@ -56,8 +58,20 @@ type evaluatorFactory struct {
 	bscheduler                   string
 }
 
-func Register(b Builder) {
+var (
+	m                = make(map[string]Builder)
+	defaultEvaluator = "basic"
+)
 
+func Register(b Builder) {
+	m[strings.ToLower(b.Name())] = b
+}
+
+func Get(name string) Builder {
+	if b, ok := m[strings.ToLower(name)]; ok {
+		return b
+	}
+	return nil
 }
 
 type BuildOptions struct {
@@ -73,7 +87,7 @@ type Builder interface {
 
 type getEvaluatorFunc func(taskID string) (string, bool)
 
-func newEvaluatorFactory(cfg config.SchedulerConfig) *evaluatorFactory {
+func newEvaluatorFactory(cfg *config.SchedulerConfig) *evaluatorFactory {
 	factory := &evaluatorFactory{
 		evaluators:        make(map[string]Evaluator),
 		getEvaluatorFuncs: map[int]getEvaluatorFunc{},

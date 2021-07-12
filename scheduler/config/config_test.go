@@ -39,7 +39,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 				},
 			},
 		},
-		Dynconfig: &DynconfigOptions{
+		DynConfig: &DynConfig{
 			Type:       dc.LocalSourceType,
 			Path:       "foo",
 			CachePath:  "bar",
@@ -51,22 +51,20 @@ func TestSchedulerConfig_Load(t *testing.T) {
 				},
 			},
 		},
-		Scheduler: SchedulerConfig{
-			ABTest:     true,
-			AScheduler: "a-scheduler",
-			BScheduler: "b-scheduler",
-		},
-		Server: ServerConfig{
-			IP:   "127.0.0.1",
-			Port: 8002,
-		},
-		Worker: SchedulerWorkerConfig{
+		Scheduler: &SchedulerConfig{
+			ABTest:            true,
+			AScheduler:        "a-scheduler",
+			BScheduler:        "b-scheduler",
 			WorkerNum:         8,
 			WorkerJobPoolSize: 10000,
 			SenderNum:         10,
 			SenderJobPoolSize: 10000,
 		},
-		GC: GCConfig{
+		Server: &ServerConfig{
+			IP:   "127.0.0.1",
+			Port: 8002,
+		},
+		GC: &GCConfig{
 			TaskDelay:     3600 * 1000,
 			PeerTaskDelay: 3600 * 1000,
 		},

@@ -18,17 +18,8 @@ package daemon
 
 import (
 	"context"
-
-	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-// PieceErrorMgr as an interface defines all operations to handle piece errors.
-type PieceErrorMgr interface {
-	// StartHandleError starts a goroutine to handle the piece error.
-	StartHandleError(ctx context.Context)
-
-	// HandlePieceError the peer should report the error with related info when
-	// it failed to download a piece from supernode.
-	// And the supernode should handle the piece Error and do some repair operations.
-	HandlePieceError(ctx context.Context, pieceErrorRequest *types.PieceErrorRequest) error
+type PieceMgr interface {
+	Add(ctx context.Context)
 }

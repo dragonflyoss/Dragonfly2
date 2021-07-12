@@ -21,9 +21,10 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 )
 
-type TaskStatus int8
+type TaskStatus uint8
 
 const (
 	TaskStatusWaiting TaskStatus = iota + 1
@@ -67,6 +68,7 @@ type Task struct {
 	PieceTotal      int32
 	ContentLength   int64
 	Status          TaskStatus
+	PeerNodes       sortedlist.SortedList
 }
 
 func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
@@ -83,27 +85,21 @@ func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
 func (task *Task) GetPiece(pieceNum int32) *PieceInfo {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
+	task.LastAccessTime = time.Now()
 	return task.PieceList[pieceNum]
 }
 
-func (task *Task) GetOrCreatePiece(pieceNum int32) *PieceInfo {
-	task.lock.RLock()
-	p := task.PieceList[pieceNum]
-	if p == nil {
-		task.rwLock.RUnlock()
-		p = newEmptyPiece(pieceNum, task)
-		task.rwLock.Lock()
-		task.PieceList[pieceNum] = p
-		task.rwLock.Unlock()
-	} else {
-		task.rwLock.RUnlock()
-	}
-	return p
+func (task *Task) AddPeerNode(peer *PeerNode) {
+	task.lock.Lock()
+	defer task.lock.RUnlock()
+	task.LastAccessTime = time.Now()
+	task.PeerNodes.UpdateOrAdd(peer)
 }
 
 func (task *Task) AddPiece(p *PieceInfo) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
+	task.LastAccessTime = time.Now()
 	task.PieceList[p.PieceNum] = p
 }
 
@@ -113,5 +109,5 @@ type PieceInfo struct {
 	RangeSize   int32
 	PieceMd5    string
 	PieceOffset uint64
-	PieceStyle  int32
+	PieceStyle  int8
 }

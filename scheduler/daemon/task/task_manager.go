@@ -17,14 +17,10 @@
 package task
 
 import (
-	"fmt"
-	"runtime/debug"
 	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -34,86 +30,32 @@ type manager struct {
 	gcDelayTime time.Duration
 	peerManager daemon.PeerMgr
 	cdnManager  cdn.Manager
+	dataRanger  sync.Map
 }
 
-func (m *manager) Add(task *types.Task) {
-	panic("implement me")
-}
-
-func (m *manager) Get(taskID string) (task *types.Task, ok bool) {
-	panic("implement me")
-}
-
-func (m *manager) ListTasks() {
-	panic("implement me")
-}
-
-func newManager(cfg *config.Config, hostManager daemon.HostMgr) daemon.TaskMgr {
-	delay := 48 * time.Hour
-	if cfg.GC.TaskDelay > 0 {
-		delay = cfg.GC.TaskDelay
-	}
-
-	tm := &manager{
-		gcDelayTime: delay,
-	}
-
-	peerTask := manager.newPeerTask(cfg, tm, hostManager)
-	tm.peerManager = peerTask
-
-	go tm.gcWorkingLoop()
+func NewManager() daemon.TaskMgr {
+	tm := &manager{}
 	return tm
 }
 
-func (m *manager) Add(task types.Task) {
-	m.taskMap.Store(task.TaskID, task)
-}
+var _ daemon.TaskMgr = (*manager)(nil)
 
-func (m *manager) PutIfAbsent() {
-	m.taskMap.LoadOrStore()
-}
-
-func (m *manager) Add(k string, task *types.Task) error {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	if _, found := m.get(k); found {
-		return fmt.Errorf("Task %s already exists", k)
-	}
-	m.set(k, task)
-	return nil
-}
-
-func (m *manager) Load(taskID string) (types.Task, bool) {
-	item, ok := m.taskMap.Load(taskID)
-	// update last access
-	return item.(types.Task), ok
-}
-
-func (m *manager) GC(taskID string) {
+func (m *manager) Delete(taskID string) {
 	m.taskMap.Delete(taskID)
 }
 
-// TODO(Gaius) Use client GC manager
-func (m *manager) gcWorkingLoop() {
-	for {
-		func() {
-			time.Sleep(time.Hour)
-			defer func() {
-				e := recover()
-				if e != nil {
-					logger.Error("gcWorkingLoop", e)
-					debug.PrintStack()
-				}
-			}()
-			m.taskMap.Range(func(taskID, task interface{}) bool {
-				if time.Now().After(task.(types.Task).LastAccessTime.Add(m.gcDelayTime)) {
-					m.taskMap.Delete(taskID.(string))
-				}
-				return true
-			})
+func (m *manager) ListTasks() *sync.Map {
+	return &m.taskMap
+}
 
-			m.PeerTask.ClearPeerTask()
-		}()
+func (m *manager) Add(task *types.Task) {
+	m.taskMap.Store(task.TaskID, task)
+}
+
+func (m *manager) Get(taskID string) (task *types.Task, ok bool) {
+	item, ok := m.taskMap.Load(taskID)
+	if !ok {
+		return nil, false
 	}
+	return item.(*types.Task), true
 }

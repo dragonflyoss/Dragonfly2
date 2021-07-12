@@ -20,7 +20,7 @@ import (
 	"sync"
 )
 
-type HostType int
+type HostType uint8
 
 const (
 	PeerNodeHost HostType = iota + 1

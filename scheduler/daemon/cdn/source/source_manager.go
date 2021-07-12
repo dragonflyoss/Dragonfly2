@@ -18,6 +18,7 @@ package source
 
 import (
 	"context"
+	"time"
 
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
@@ -27,6 +28,14 @@ type manager struct {
 	taskManager daemon.TaskMgr
 	hostManager daemon.HostMgr
 	peerManager daemon.PeerMgr
+}
+
+func NewManager() daemon.CDNMgr {
+	return nil
+}
+
+func (m manager) GetLastTriggerSeedTime(taskID string) time.Time {
+	panic("implement me")
 }
 
 func (m manager) SeedTask(ctx context.Context, task *types.Task) (err error) {

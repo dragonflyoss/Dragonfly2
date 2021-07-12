@@ -20,44 +20,26 @@ import (
 	"context"
 	"time"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type manager struct {
-	taskManager   daemon.TaskMgr
-	gcInterval      time.Duration
+	taskManager  daemon.TaskMgr
+	gcInterval   time.Duration
 	initialDelay time.Duration
-	done          chan bool
+	done         chan bool
 }
 
 func newManager(cfg *config.GCConfig) daemon.GCMgr {
 	return &manager{
-		interval: 0,
-		done:     nil,
+		gcInterval: time.Duration(3),
+		done:       nil,
 	}
 }
 
 func (m *manager) StartGC(ctx context.Context) error {
 	time.Sleep(m.initialDelay)
-	ticker := time.NewTicker(m.gcInterval)
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Infof("exit %s gc task", name)
-			return
-		case <-ticker.C:
-			if err := wrapper.gcExecutor.GC(); err != nil {
-				logger.Errorf("%s gc task execute failed: %v", name, err)
-			}
-		}
-	}
+	return nil
 
-
-	m.taskManager.ListTasks().Range(func(taskID, value interface{}) bool {
-		task := value.(*types.Task)
-		if task.LastAccessTime.Add(task.TaskID).Before(time.Now())
-	})
 }
