@@ -34,6 +34,7 @@ const (
 
 	// PluginMetaKeyType indicates the type of a plugin, currently support: resource
 	PluginMetaKeyType = "type"
+
 	// PluginMetaKeyName indicates the name of a plugin
 	PluginMetaKeyName = "name"
 )
@@ -41,7 +42,8 @@ const (
 type PluginType string
 
 const (
-	PluginTypeResource = PluginType("resource")
+	PluginTypeResource  = PluginType("resource")
+	PluginTypeAlgorithm = PluginType("algorithm")
 )
 
 type PluginInitFunc func(option map[string]string) (plugin interface{}, meta map[string]string, err error)
