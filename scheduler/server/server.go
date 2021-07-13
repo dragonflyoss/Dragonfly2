@@ -28,7 +28,8 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/server/service"
 	"google.golang.org/grpc"
 
-	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server" //nolint
+	// Server registered to grpc
+	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
@@ -121,9 +122,18 @@ func (s *Server) Serve() error {
 	s.dynConfig.Serve()
 
 	if s.managerClient != nil {
-		if err := s.keepAlive(ctx); err != nil {
-			logger.Errorf("keepalive to manager failed %v", err)
-		}
+		retry.Run(ctx, func() (interface{}, bool, error) {
+			if err := s.keepAlive(ctx); err != nil {
+				logger.Errorf("keepalive to manager failed %v", err)
+				return nil, false, err
+			}
+			return nil, false, nil
+		},
+			s.config.Manager.KeepAlive.RetryInitBackOff,
+			s.config.Manager.KeepAlive.RetryMaxBackOff,
+			s.config.Manager.KeepAlive.RetryMaxAttempts,
+			nil,
+		)
 	}
 
 	logger.Infof("start server at port %d", port)

@@ -18,24 +18,17 @@ package task
 
 import (
 	"sync"
-	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type manager struct {
-	taskMap     sync.Map
-	gcDelayTime time.Duration
-	peerManager daemon.PeerMgr
-	cdnManager  cdn.Manager
-	dataRanger  sync.Map
+	taskMap sync.Map
 }
 
 func NewManager() daemon.TaskMgr {
-	tm := &manager{}
-	return tm
+	return &manager{}
 }
 
 var _ daemon.TaskMgr = (*manager)(nil)

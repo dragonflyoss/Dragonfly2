@@ -41,6 +41,7 @@ func New() *Config {
 		Server:    NewDefaultServerConfig(),
 		GC:        NewDefaultGCConfig(),
 		DynConfig: NewDefaultDynConfig(),
+		Manager:   NewDefaultManagerConfig(),
 	}
 }
 
@@ -100,6 +101,19 @@ func NewDefaultGCConfig() *GCConfig {
 	}
 }
 
+func NewDefaultManagerConfig() *ManagerConfig {
+	return &ManagerConfig{
+		Addr:               "",
+		SchedulerClusterID: 0,
+		KeepAlive: KeepAliveConfig{
+			Interval:         5 * time.Second,
+			RetryMaxAttempts: 100000000,
+			RetryInitBackOff: 5,
+			RetryMaxBackOff:  10,
+		},
+	}
+}
+
 type ManagerConfig struct {
 	// Addr is manager address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
@@ -146,7 +160,7 @@ type DynConfig struct {
 }
 
 type SchedulerConfig struct {
-	EnableCDN            bool          `yaml:"abtest" mapstructure:"enableCDN"`
+	EnableCDN            bool          `yaml:"enableCDN" mapstructure:"enableCDN"`
 	ABTest               bool          `yaml:"abtest" mapstructure:"abtest"`
 	AScheduler           string        `yaml:"ascheduler" mapstructure:"ascheduler"`
 	BScheduler           string        `yaml:"bscheduler" mapstructure:"bscheduler"`
