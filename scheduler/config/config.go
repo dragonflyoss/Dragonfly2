@@ -146,17 +146,17 @@ type DynConfig struct {
 }
 
 type SchedulerConfig struct {
-	EnableCDN            bool   `yaml:"abtest" mapstructure:"enableCDN"`
-	ABTest               bool   `yaml:"abtest" mapstructure:"abtest"`
-	AScheduler           string `yaml:"ascheduler" mapstructure:"ascheduler"`
-	BScheduler           string `yaml:"bscheduler" mapstructure:"bscheduler"`
-	WorkerNum            int    `yaml:"workerNum" mapstructure:"workerNum"`
-	WorkerJobPoolSize    int    `yaml:"workerJobPoolSize" mapstructure:"workerJobPoolSize"`
-	SenderNum            int    `yaml:"senderNum" mapstructure:"senderNum"`
-	SenderJobPoolSize    int    `yaml:"senderJobPoolSize" mapstructure:"senderJobPoolSize"`
-	Monitor              bool   `yaml:"senderJobPoolSize" mapstructure:"monitor"`
-	AccessWindow         time.Duration
-	CandidateParentCount int
+	EnableCDN            bool          `yaml:"abtest" mapstructure:"enableCDN"`
+	ABTest               bool          `yaml:"abtest" mapstructure:"abtest"`
+	AScheduler           string        `yaml:"ascheduler" mapstructure:"ascheduler"`
+	BScheduler           string        `yaml:"bscheduler" mapstructure:"bscheduler"`
+	WorkerNum            int           `yaml:"workerNum" mapstructure:"workerNum"`
+	WorkerJobPoolSize    int           `yaml:"workerJobPoolSize" mapstructure:"workerJobPoolSize"`
+	SenderNum            int           `yaml:"senderNum" mapstructure:"senderNum"`
+	SenderJobPoolSize    int           `yaml:"senderJobPoolSize" mapstructure:"senderJobPoolSize"`
+	Monitor              bool          `yaml:"monitor" mapstructure:"monitor"`
+	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
+	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
 }
 
 type ServerConfig struct {

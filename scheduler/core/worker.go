@@ -97,57 +97,50 @@ func NewReportPieceResultTask(worker *Worker, pr *schedulerRPC.PieceResult) func
 		//if pr == nil || worker.processErrorCode(pr) {
 		//	return
 		//}
-		//if peer.Task.Status
-		//
-		//if !ok {
-		//
-		//}
+
 	}
 }
 
-//func (worker *Worker) processErrorCode(pr *schedulerRPC.PieceResult) (stop bool) {
-//	code := pr.Code
-//	switch code {
-//	case dfcodes.Success:
-//		return
-//	case dfcodes.PeerTaskNotFound:
-//		peer, ok := worker.peerManager.Get(pr.SrcPid)
-//		if ok {
-//			worker.Submit(NewLeaveTask(worker, &schedulerRPC.PeerTarget{
-//				TaskId: peer.Task.TaskID,
-//				PeerId: peer.PeerID,
-//			}))
-//		}
-//		return true
-//	case dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
-//		peerTask, _ := worker.peerManager.Get(pr.SrcPid)
-//		if peerTask != nil {
-//			worker.Submit(NewLeaveTask())
-//			peerTask.SetNodeStatus(types.PeerStatusNeedParent)
-//			worker.sendJob(peerTask)
-//		}
-//		return true
-//	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail:
-//		peerTask, _ := worker.peerManager.Get(pr.SrcPid)
-//		if peerTask != nil {
-//			peerTask.SetNodeStatus(types.PeerStatusNeedParent)
-//			w.sendJob(peerTask)
-//			task := peerTask.Task
-//			if task != nil {
-//				if task.CDNError != nil {
-//					go safe.Call(func() { peerTask.SendError(task.CDNError) })
-//				} else {
-//					worker.CDNManager.TriggerTask(task, w.schedulerService.TaskManager.PeerTask.CDNCallback)
-//				}
-//			}
-//		}
-//		return true
-//	case dfcodes.UnknownError:
-//		return true
-//	}
-//
-//	return
-//}
+func (worker *Worker) processErrorCode(pr *schedulerRPC.PieceResult) (stop bool) {
+	code := pr.Code
+	switch code {
+	case dfcodes.Success:
+		return
+	case dfcodes.PeerTaskNotFound:
+		peer, ok := worker.peerManager.Get(pr.SrcPid)
+		if ok {
+			worker.Submit(NewLeaveTask(worker, &schedulerRPC.PeerTarget{
+				TaskId: peer.Task.TaskID,
+				PeerId: peer.PeerID,
+			}))
+		}
+		return true
+	case dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
+		peerTask, _ := worker.peerManager.Get(pr.SrcPid)
+		if peerTask != nil {
+			//worker.Submit(new())
+			//peerTask.SetNodeStatus(types.PeerStatusNeedParent)
+			//worker.sendJob(peerTask)
+		}
+		return true
+	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail:
+		//peerTask, _ := worker.peerManager.Get(pr.SrcPid)
+		//if peerTask != nil {
+		//	peerTask.SetNodeStatus(types.PeerStatusNeedParent)
+		//	w.sendJob(peerTask)
+		//	task := peerTask.Task
+		//	if task != nil {
+		//		if task.CDNError != nil {
+		//			go safe.Call(func() { peerTask.SendError(task.CDNError) })
+		//		} else {
+		//			worker.CDNManager.TriggerTask(task, w.schedulerService.TaskManager.PeerTask.CDNCallback)
+		//		}
+		//	}
+		//}
+		return true
+	}
+	return true
+}
 
 func constructSuccessPeerPacket(peer *types.PeerNode, parent *types.PeerNode, candidates []*types.PeerNode) *schedulerRPC.PeerPacket {
 	mainPeer := &schedulerRPC.PeerPacket_DestPeer{
