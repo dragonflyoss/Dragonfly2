@@ -33,4 +33,6 @@ type TaskMgr interface {
 	Delete(taskID string)
 
 	ListTasks() *sync.Map
+
+	GetOrAdd(task *types.Task) (actual *types.Task, loaded bool)
 }

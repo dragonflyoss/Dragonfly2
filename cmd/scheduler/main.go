@@ -16,7 +16,10 @@
 
 package main
 
-import "d7y.io/dragonfly/v2/cmd/scheduler/cmd"
+import (
+	"d7y.io/dragonfly/v2/cmd/scheduler/cmd"
+	_ "d7y.io/dragonfly/v2/scheduler/core/scheduler/basic"
+)
 
 func main() {
 	cmd.Execute()

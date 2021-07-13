@@ -73,6 +73,7 @@ func NewDefaultDynConfig() *DynConfig {
 		ExpireTime: 60000 * 1000 * 1000,
 		Path:       SchedulerDynconfigPath,
 		CachePath:  SchedulerDynconfigCachePath,
+		CDNDirPath: CDNDirCachePath,
 	}
 }
 
@@ -85,12 +86,16 @@ func NewDefaultServerConfig() *ServerConfig {
 
 func NewDefaultSchedulerConfig() *SchedulerConfig {
 	return &SchedulerConfig{
-		ABTest:            false,
-		EnableCDN:         true,
-		WorkerNum:         runtime.GOMAXPROCS(0),
-		WorkerJobPoolSize: 10000,
-		SenderNum:         10,
-		SenderJobPoolSize: 10000,
+		EnableCDN:            true,
+		ABTest:               false,
+		WorkerNum:            runtime.GOMAXPROCS(0),
+		WorkerJobPoolSize:    10000,
+		SenderNum:            10,
+		SenderJobPoolSize:    10000,
+		Monitor:              false,
+		AccessWindow:         0,
+		CandidateParentCount: 0,
+		Scheduler:            "basic",
 	}
 }
 
@@ -171,6 +176,7 @@ type SchedulerConfig struct {
 	Monitor              bool          `yaml:"monitor" mapstructure:"monitor"`
 	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
 	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
+	Scheduler            string        `yaml:"scheduler" mapstructure:"scheduler"`
 }
 
 type ServerConfig struct {

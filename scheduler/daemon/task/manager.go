@@ -52,3 +52,11 @@ func (m *manager) Get(taskID string) (task *types.Task, ok bool) {
 	}
 	return item.(*types.Task), true
 }
+
+func (m *manager) GetOrAdd(task *types.Task) (actual *types.Task, loaded bool) {
+	item, loaded := m.taskMap.LoadOrStore(task.TaskID, task)
+	if loaded {
+		return item.(*types.Task), true
+	}
+	return task, false
+}

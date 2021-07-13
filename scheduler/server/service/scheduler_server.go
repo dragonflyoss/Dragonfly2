@@ -52,6 +52,8 @@ func NewSchedulerServer(cfg *config.SchedulerConfig, dynConfig config.DynconfigI
 }
 
 func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
+	logger.Debugf("register peer task, req: %+v", request)
+	resp = new(scheduler.RegisterResult)
 	if verifyErr := validateParams(request); verifyErr != nil {
 		err = dferrors.Newf(dfcodes.BadRequest, "bad request param: %v", verifyErr)
 		return
@@ -62,9 +64,8 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	if err != nil {
 		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
 	}
-	// todo 任务状态有问题
 	if types.IsFailTask(task) {
-		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "task status is %d", task.Status)
+		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is %d", task.Status)
 		return
 	}
 	resp.SizeScope = getTaskSizeScope(task)
@@ -96,7 +97,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 					RangeSize:   singlePiece.RangeSize,
 					PieceMd5:    singlePiece.PieceMd5,
 					PieceOffset: singlePiece.PieceOffset,
-					PieceStyle:  base.PieceStyle(singlePiece.PieceStyle),
+					PieceStyle:  singlePiece.PieceStyle,
 				},
 			},
 		}

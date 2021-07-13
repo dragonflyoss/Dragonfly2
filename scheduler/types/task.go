@@ -51,8 +51,8 @@ func IsWaitTask(task *Task) bool {
 	return status == TaskStatusWaiting
 }
 
-func IsRunningTask(task *Task) bool {
-	return task.Status == TaskStatusRunning
+func IsHealthTask(task *Task) bool {
+	return task.Status == TaskStatusRunning || task.Status == TaskStatusSuccess
 }
 
 func IsFailTask(task *Task) bool {

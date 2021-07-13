@@ -49,6 +49,7 @@ const (
 	SchedPeerNotFound              base.Code = 5005
 	SchedPeerPieceResultReportFail base.Code = 5006
 	SchedCDNSeedFail               base.Code = 5007
+	SchedTaskStatusError           base.Code = 5008
 
 	// cdnsystem response error 6000-6999
 	CdnError            base.Code = 6000

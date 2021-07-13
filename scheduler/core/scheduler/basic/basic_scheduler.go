@@ -17,9 +17,7 @@
 package basic
 
 import (
-	"fmt"
 	"sort"
-	"strings"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -32,13 +30,24 @@ import (
 
 const name = "basic"
 
-type basicSchedulerBuilder struct {
-	name string
-	cfg  *config.SchedulerConfig
+func init() {
+	scheduler.Register(newBasicSchedulerBuilder())
 }
 
-func (builder *basicSchedulerBuilder) Build(opts scheduler.BuildOptions) (scheduler.Scheduler, error) {
-	evalFactory := evaluator.NewEvaluatorFactory(builder.cfg)
+type basicSchedulerBuilder struct {
+	name string
+}
+
+func newBasicSchedulerBuilder() scheduler.Builder {
+	return &basicSchedulerBuilder{
+		name: name,
+	}
+}
+
+var _ scheduler.Builder = (*basicSchedulerBuilder)(nil)
+
+func (builder *basicSchedulerBuilder) Build(cfg *config.SchedulerConfig, opts *scheduler.BuildOptions) (scheduler.Scheduler, error) {
+	evalFactory := evaluator.NewEvaluatorFactory(cfg)
 	evalFactory.Register("default", basic.NewEvaluator())
 	evalFactory.RegisterGetEvaluatorFunc(0, func(taskID string) (string, bool) { return "default", true })
 	sch := &Scheduler{
@@ -48,8 +57,8 @@ func (builder *basicSchedulerBuilder) Build(opts scheduler.BuildOptions) (schedu
 	return sch, nil
 }
 
-func (*basicSchedulerBuilder) Name() string {
-	return name
+func (builder *basicSchedulerBuilder) Name() string {
+	return builder.name
 }
 
 type Scheduler struct {
@@ -121,63 +130,20 @@ func (s *Scheduler) IsBadNode(peer *types.PeerNode) bool {
 }
 
 func (s *Scheduler) selectCandidateChildren(peer *types.PeerNode, limit int) (list []*types.PeerNode) {
-	if peer == nil || peer.Host.GetFreeUploadLoad() < 1 {
-		return
-	}
 	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *types.PeerNode) bool {
-		// pick children
-		if candidateNode == nil || candidateNode.Task.TaskID != peer.Task.TaskID {
-			return false
+		if candidateNode != nil && candidateNode.Parent == nil && !types.IsDonePeer(peer) && !types.IsCDNHost(peer.Host) {
+			return true
 		}
-		if candidateNode.PeerID == peer.PeerID {
-			return false
-		} else if candidateNode.Success {
-			return false
-		} else if types.IsCDNHost(candidateNode.Host) {
-			return false
-		} else if peer.Parent != nil && peer.Parent == candidateNode {
-			return false
-		} else if candidateNode.IsAncestor(peer) || peer.IsAncestor(candidateNode) {
-			return false
-		} else if candidateNode.Parent != nil {
-			return false
-		}
-		return true
+		return false
 	})
 }
 
 func (s *Scheduler) selectCandidateParents(peer *types.PeerNode, limit int) (list []*types.PeerNode) {
-	if peer == nil {
-		return
-	}
-	var msg []string
-	list = s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.PeerNode) bool {
-		if candidateNode == nil {
-			return false
-		} else if peer.Task != candidateNode.Task {
-			msg = append(msg, fmt.Sprintf("%s task[%s] not same", candidateNode.PeerID, candidateNode.Task.TaskID))
-			return false
-		} else if peer.PeerID == candidateNode.PeerID {
-			return false
-		} else if candidateNode.IsAncestor(peer) || peer.IsAncestor(candidateNode) {
-			msg = append(msg, fmt.Sprintf("%s has relation", candidateNode.PeerID))
-			return false
-		} else if candidateNode.Host.GetFreeUploadLoad() < 1 {
-			msg = append(msg, fmt.Sprintf("%s no load", candidateNode.PeerID))
-			return false
-		}
-		if candidateNode.Success {
+	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.PeerNode) bool {
+		if candidateNode != nil && candidateNode.Host.GetFreeUploadLoad() > 0 && (types.IsSuccessPeer(candidateNode) || types.IsCDNHost(candidateNode.
+			GetTreeRoot().Host)) {
 			return true
 		}
-		root := candidateNode.GetTreeRoot()
-		if root != nil && root.Host != nil && types.IsCDNHost(root.Host) {
-			return true
-		}
-		return true
+		return false
 	})
-	if len(list) == 0 {
-		logger.Debugf("[%s][%s] scheduler failed: \n%s", peer.Task.TaskID, peer.PeerID, strings.Join(msg, "\n"))
-	}
-
-	return
 }

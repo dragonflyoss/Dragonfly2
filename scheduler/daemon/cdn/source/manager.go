@@ -35,7 +35,7 @@ func (m manager) OnNotify(scheduler *managerRPC.Scheduler) {
 	panic("implement me")
 }
 
-func (m manager) StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed)) error {
+func (m manager) StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed, err error)) error {
 	panic("implement me")
 }
 

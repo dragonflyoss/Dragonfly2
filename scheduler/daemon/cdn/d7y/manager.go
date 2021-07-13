@@ -75,7 +75,7 @@ func (cm *manager) OnNotify(c *managerRPC.Scheduler) {
 	cm.client.UpdateState(cdnHostsToNetAddrs(cm.cdnServers))
 }
 
-func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed)) error {
+func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed, err error)) error {
 	if cm.client == nil {
 		return errors.New("cdn client is nil")
 	}
@@ -97,11 +97,12 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task, callback
 		}
 		return err
 	}
+	task.SetStatus(types.TaskStatusRunning)
 	go cm.Work(task, stream, callback)
 	return nil
 }
 
-func (cm *manager) Work(task *types.Task, stream *client.PieceSeedStream, callback func(ps *cdnsystem.PieceSeed)) {
+func (cm *manager) Work(task *types.Task, stream *client.PieceSeedStream, callback func(ps *cdnsystem.PieceSeed, err error)) {
 	for {
 		piece, err := stream.Recv()
 		if err == io.EOF {
@@ -117,18 +118,16 @@ func (cm *manager) Work(task *types.Task, stream *client.PieceSeedStream, callba
 				}
 			}
 			task.SetStatus(types.TaskStatusFailed)
+			return
 		}
+		callback(piece, err)
 		if piece != nil {
-			cm.processSeedPiece(task, piece, callback)
+			cm.processSeedPiece(task, piece)
 		}
 	}
 }
 
-func (cm *manager) processSeedPiece(task *types.Task, ps *cdnsystem.PieceSeed, callback func(ps *cdnsystem.PieceSeed)) error {
-	if ps.PieceInfo == nil {
-		return errors.New("piece info is nil")
-	}
-	callback(ps)
+func (cm *manager) processSeedPiece(task *types.Task, ps *cdnsystem.PieceSeed) error {
 	task.AddPiece(&types.PieceInfo{
 		PieceNum:    ps.PieceInfo.PieceNum,
 		RangeStart:  ps.PieceInfo.RangeStart,

@@ -85,9 +85,9 @@ func (m *monitor) printDebugInfo() string {
 			roots = append(roots, peer)
 		}
 		// do not print finished node witch do not has child
-		if !(peer.Success && peer.Host != nil && peer.Host.GetUploadLoadPercent() < 0.001) {
+		if !(peer.Status == types.PeerStatusSuccess && peer.Host != nil && peer.Host.GetUploadLoadPercent() < 0.001) {
 			table.Append([]string{peer.PeerID, strconv.Itoa(int(peer.FinishedNum)),
-				strconv.FormatBool(peer.Success), strconv.Itoa(int(peer.Host.GetFreeUploadLoad()))})
+				strconv.FormatBool(types.IsSuccessPeer(peer)), strconv.Itoa(peer.Host.GetFreeUploadLoad())})
 		}
 		return
 	})
@@ -153,7 +153,7 @@ func (m *monitor) downloadMonitorWorkingLoop() {
 			pt, _ := v.(*types.PeerNode)
 			if pt != nil {
 				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", pt.Task.TaskID, pt.PeerID, pt.Status)
-				if pt.Success || (pt.Host != nil && types.IsCDNHost(pt.Host)) {
+				if types.IsSuccessPeer(pt) || (pt.Host != nil && types.IsCDNHost(pt.Host)) {
 					// clear from monitor
 				} else {
 					if pt.Status != types.PeerStatusRunning {

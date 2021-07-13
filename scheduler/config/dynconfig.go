@@ -34,6 +34,7 @@ import (
 var (
 	SchedulerDynconfigPath      = filepath.Join(dfpath.WorkHome, "dynconfig/scheduler.json")
 	SchedulerDynconfigCachePath = filepath.Join(dfpath.WorkHome, "dynconfig/scheduler")
+	CDNDirCachePath             = "/opt/dragonfly/scheduler-cdn"
 )
 
 var (

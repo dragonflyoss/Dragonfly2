@@ -19,6 +19,7 @@ package scheduler
 import (
 	"strings"
 
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -61,7 +62,7 @@ func GetDefaultScheduler() string {
 }
 
 type Builder interface {
-	Build(opts *BuildOptions) (Scheduler, error)
+	Build(cfg *config.SchedulerConfig, opts *BuildOptions) (Scheduler, error)
 
 	Name() string
 }

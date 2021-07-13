@@ -27,7 +27,7 @@ import (
 type CDNMgr interface {
 	config.Observer
 	// StartSeedTask
-	StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed)) error
+	StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed, err error)) error
 
 	// DownloadTinyFileContent
 	DownloadTinyFileContent(task *types.Task, cdnHost *types.NodeHost) ([]byte, error)

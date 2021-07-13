@@ -50,14 +50,20 @@ type PeerNode struct {
 	Host *NodeHost
 	// FinishedNum specifies downloaded finished piece number
 	FinishedNum    int32
-	StartTime      time.Time
 	LastAccessTime time.Time
 	Parent         *PeerNode
 	Children       map[string]*PeerNode
-	Success        bool
 	Status         PeerStatus
 	CostHistory    []int
 	PacketChan     chan *scheduler.PeerPacket
+}
+
+func IsSuccessPeer(peer *PeerNode) bool {
+	return peer.Status == PeerStatusSuccess
+}
+
+func IsDonePeer(peer *PeerNode) bool {
+	return peer.Status == PeerStatusSuccess || peer.Status == PeerStatusBadNode
 }
 
 func (peer *PeerNode) GetWholeTreeNode() int {

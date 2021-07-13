@@ -51,7 +51,7 @@ func (m *manager) Get(uuid string) (*types.NodeHost, bool) {
 	return host.(*types.NodeHost), true
 }
 
-func (m *manager) GetOrAdd(host *types.NodeHost) (*types.NodeHost, bool) {
+func (m *manager) GetOrAdd(host *types.NodeHost) (actual *types.NodeHost, loaded bool) {
 	item, loaded := m.hostMap.LoadOrStore(host.UUID, host)
 	if loaded {
 		return item.(*types.NodeHost), true
@@ -61,6 +61,10 @@ func (m *manager) GetOrAdd(host *types.NodeHost) (*types.NodeHost, bool) {
 
 func (m *manager) OnNotify(scheduler *managerRPC.Scheduler) {
 	for _, cdn := range scheduler.Cdns {
+		securityDomain := ""
+		if cdn.CdnCluster != nil && cdn.CdnCluster.SecurityGroup != nil {
+			securityDomain = cdn.CdnCluster.SecurityGroup.Name
+		}
 		cdnHost := &types.NodeHost{
 			UUID:           idgen.CDNUUID(cdn.HostName, cdn.Port),
 			IP:             cdn.Ip,
@@ -68,7 +72,7 @@ func (m *manager) OnNotify(scheduler *managerRPC.Scheduler) {
 			RPCPort:        cdn.Port,
 			DownloadPort:   cdn.DownloadPort,
 			HostType:       types.CDNNodeHost,
-			SecurityDomain: cdn.CdnCluster.SecurityGroup.Name,
+			SecurityDomain: securityDomain,
 			Location:       cdn.Location,
 			IDC:            cdn.Idc,
 			//NetTopology:       server.NetTopology,

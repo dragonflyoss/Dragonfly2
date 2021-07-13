@@ -48,9 +48,8 @@ type SchedulerService struct {
 	peerManager daemon.PeerMgr
 
 	worker    *Worker
-	config    config.SchedulerConfig
+	config    *config.SchedulerConfig
 	scheduler scheduler.Scheduler
-	ABTest    bool
 }
 
 func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface) (*SchedulerService, error) {
@@ -66,11 +65,12 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 			return nil, err
 		}
 		dynConfig.Register(cdnManager)
+		hostManager.OnNotify(schedulerConfig)
 		dynConfig.Register(hostManager)
 	}
 	taskManager := task.NewManager()
 	peerManager := peer.NewManager()
-	scheduler, err := scheduler.Get("basic").Build(&scheduler.BuildOptions{
+	scheduler, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
 		PeerManager: peerManager,
 	})
 	if err != nil {
@@ -86,12 +86,12 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		hostManager: hostManager,
 		scheduler:   scheduler,
 		worker:      worker,
-		ABTest:      cfg.ABTest,
+		config:      cfg,
 	}, nil
 }
 
 func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string, peerID string) (taskID string) {
-	if s.ABTest {
+	if s.config.ABTest {
 		return idgen.TwinsTaskID(url, filter, meta, bizID, peerID)
 	}
 	return idgen.TaskID(url, filter, meta, bizID)
@@ -127,7 +127,7 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 			Location:        reqPeerHost.Location,
 			IDC:             reqPeerHost.Idc,
 			NetTopology:     reqPeerHost.NetTopology,
-			TotalUploadLoad: 0,
+			TotalUploadLoad: types.ClientHostLoad,
 		}
 		s.hostManager.Add(host)
 	}
@@ -139,12 +139,10 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 			Task:           task,
 			Host:           host,
 			FinishedNum:    0,
-			StartTime:      time.Now(),
 			LastAccessTime: time.Now(),
 			Parent:         nil,
 			Children:       nil,
-			Success:        false,
-			Status:         0,
+			Status:         types.PeerStatusWaiting,
 			CostHistory:    nil,
 		}
 		s.peerManager.Add(peerNode)
@@ -154,41 +152,42 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 
 func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task) (*types.Task, error) {
 	synclock.Lock(task.TaskID, true)
-	defer synclock.UnLock(task.TaskID, true)
-	existTask, ok := s.taskManager.Get(task.TaskID)
+	task, ok := s.taskManager.GetOrAdd(task)
+	task.LastAccessTime = time.Now()
 	if ok {
-		if existTask.LastTriggerTime.Add(s.config.AccessWindow).After(time.Now()) && !types.IsFrozenTask(task) {
-			return existTask, nil
+		if task.LastTriggerTime.Add(s.config.AccessWindow).After(time.Now()) || types.IsHealthTask(task) {
+			synclock.UnLock(task.TaskID, true)
+			return task, nil
 		}
 	}
+	synclock.UnLock(task.TaskID, true)
 	var (
 		once        sync.Once
 		cdnPeerNode *types.PeerNode
 		cdnHost     *types.NodeHost
 	)
-	s.taskManager.Add(task)
-	err := s.cdnManager.StartSeedTask(ctx, task, func(ps *cdnsystem.PieceSeed) {
+	synclock.Lock(task.TaskID, false)
+	defer synclock.Lock(task.TaskID, false)
+	if err := s.cdnManager.StartSeedTask(ctx, task, func(ps *cdnsystem.PieceSeed, err error) {
 		once.Do(func() {
 			cdnHost, _ = s.hostManager.Get(ps.HostUuid)
 			cdnPeerNode = &types.PeerNode{
 				PeerID:         ps.PeerId,
 				Task:           task,
 				Host:           cdnHost,
-				StartTime:      time.Now(),
 				LastAccessTime: time.Now(),
-				Success:        false,
-				Status:         types.PeerStatusWaiting,
+				Status:         types.PeerStatusRunning,
 			}
 			s.peerManager.Add(cdnPeerNode)
 		})
-		if types.IsFrozenTask(task) {
-			cdnPeerNode.FinishedNum++
-			cdnPeerNode.LastAccessTime = time.Now()
+		if err != nil {
+			cdnPeerNode.SetStatus(types.PeerStatusBadNode)
+			return
 		}
+		cdnPeerNode.FinishedNum++
+		cdnPeerNode.LastAccessTime = time.Now()
 		if ps.Done {
 			cdnPeerNode.Status = types.PeerStatusSuccess
-		}
-		if task.PieceTotal == 1 {
 			if task.ContentLength <= types.TinyFileSize {
 				content, er := s.cdnManager.DownloadTinyFileContent(task, cdnHost)
 				if er == nil && len(content) == int(task.ContentLength) {
@@ -196,8 +195,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 				}
 			}
 		}
-	})
-	if err != nil {
+	}); err != nil {
 		return nil, err
 	}
 	return task, nil
