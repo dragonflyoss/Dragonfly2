@@ -160,6 +160,8 @@ func (s *Server) Stop() {
 func (s *Server) register(ctx context.Context) error {
 	ip := s.config.AdvertiseIP
 	port := int32(s.config.ListenPort)
+	idc := s.config.Host.IDC
+	location := s.config.Host.Location
 	downloadPort := int32(s.config.DownloadPort)
 
 	var cdn *manager.CDN
@@ -169,6 +171,8 @@ func (s *Server) register(ctx context.Context) error {
 		HostName:     iputils.HostName,
 		Ip:           ip,
 		Port:         port,
+		Idc:          idc,
+		Location:     location,
 		DownloadPort: downloadPort,
 	})
 	if err != nil {
@@ -177,6 +181,8 @@ func (s *Server) register(ctx context.Context) error {
 			HostName:     iputils.HostName,
 			Ip:           ip,
 			Port:         port,
+			Idc:          idc,
+			Location:     location,
 			DownloadPort: downloadPort,
 		})
 		if err != nil {

@@ -32,6 +32,7 @@ type Config struct {
 	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
 	Dynconfig    *DynconfigOptions     `yaml:"dynconfig" mapstructure:"dynconfig"`
 	Manager      ManagerConfig         `yaml:"manager" mapstructure:"manager"`
+	Host         HostConfig            `yaml:"host" mapstructure:"host"`
 }
 
 func New() *Config {
@@ -126,4 +127,12 @@ type SchedulerWorkerConfig struct {
 type GCConfig struct {
 	PeerTaskDelay int64 `yaml:"peerTaskDelay" mapstructure:"peerTaskDelay"`
 	TaskDelay     int64 `yaml:"taskDelay" mapstructure:"taskDelay"`
+}
+
+type HostConfig struct {
+	// Peerhost location for scheduler
+	Location string `mapstructure:"location" yaml:"location"`
+
+	// Peerhost idc for scheduler
+	IDC string `mapstructure:"idc" yaml:"idc"`
 }
