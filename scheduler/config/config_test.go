@@ -31,16 +31,6 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{
-		Manager: ManagerConfig{
-			Addr:               "127.0.0.1:65003",
-			SchedulerClusterID: 1,
-			KeepAlive: KeepAliveConfig{
-				Interval:         1 * time.Second,
-				RetryMaxAttempts: 100,
-				RetryInitBackOff: 100,
-				RetryMaxBackOff:  100,
-			},
-		},
 		Dynconfig: &DynconfigOptions{
 			Type:       dc.LocalSourceType,
 			Path:       "foo",
@@ -67,6 +57,20 @@ func TestSchedulerConfig_Load(t *testing.T) {
 		GC: GCConfig{
 			TaskDelay:     3600 * 1000,
 			PeerTaskDelay: 3600 * 1000,
+		},
+		Manager: ManagerConfig{
+			Addr:               "127.0.0.1:65003",
+			SchedulerClusterID: 1,
+			KeepAlive: KeepAliveConfig{
+				Interval:         1 * time.Second,
+				RetryMaxAttempts: 100,
+				RetryInitBackOff: 100,
+				RetryMaxBackOff:  100,
+			},
+		},
+		Host: HostConfig{
+			IDC:      "foo",
+			Location: "bar",
 		},
 	}
 

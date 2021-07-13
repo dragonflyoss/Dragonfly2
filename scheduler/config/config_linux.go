@@ -42,4 +42,5 @@ var config = Config{
 			RetryMaxBackOff:  10,
 		},
 	},
+	Host: HostConfig{},
 }

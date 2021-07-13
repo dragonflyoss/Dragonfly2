@@ -139,6 +139,7 @@ func NewDefaultBaseProperties() *BaseProperties {
 				RetryMaxBackOff:  DefaultKeepAliveRetryMaxBackOff,
 			},
 		},
+		Host: HostConfig{},
 	}
 }
 
@@ -188,6 +189,9 @@ type BaseProperties struct {
 
 	// Manager configuration
 	Manager ManagerConfig `yaml:"manager" mapstructure:"manager"`
+
+	// Host configuration
+	Host HostConfig `yaml:"host" mapstructure:"host"`
 }
 
 type ManagerConfig struct {
@@ -213,4 +217,12 @@ type KeepAliveConfig struct {
 
 	// Keep alive retry max backoff
 	RetryMaxBackOff float64 `yaml:"retryMaxBackOff" mapstructure:"retryMaxBackOff"`
+}
+
+type HostConfig struct {
+	// Peerhost location for scheduler
+	Location string `mapstructure:"location" yaml:"location"`
+
+	// Peerhost idc for scheduler
+	IDC string `mapstructure:"idc" yaml:"idc"`
 }
