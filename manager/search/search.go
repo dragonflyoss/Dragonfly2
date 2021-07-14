@@ -102,9 +102,14 @@ func calculateConditionScore(condition string, conditions map[string]string, sco
 		return 0
 	}
 
-	sv, ok := scopes[scope].([]string)
+	rawSV, ok := scopes[scope].([]interface{})
 	if !ok {
 		return 0
+	}
+
+	sv := make([]string, len(rawSV))
+	for i, v := range rawSV {
+		sv[i] = v.(string)
 	}
 
 	i := sort.SearchStrings(sv, cv)

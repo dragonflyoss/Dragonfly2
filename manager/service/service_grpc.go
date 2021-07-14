@@ -443,10 +443,11 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	var schedulerClusters []model.SchedulerCluster
-	if err := s.db.Preload("SecurityGroup").Find(schedulerClusters).Error; err != nil {
+	if err := s.db.Preload("SecurityGroup").Find(&schedulerClusters).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
+	// Search optimal scheduler cluster
 	schedulerCluster, ok := s.search.SchedulerCluster(schedulerClusters, req.HostInfo)
 	if !ok {
 		if err := s.db.Find(&schedulerCluster, &model.SchedulerCluster{
@@ -457,9 +458,10 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 	}
 
 	schedulers := []model.Scheduler{}
-	if err := s.db.Model(&schedulerCluster).Association("Schedulers").Find(&schedulers, &model.Scheduler{
-		Status: model.SchedulerStatusActive,
-	}); err != nil {
+	if err := s.db.Find(&schedulers, &model.Scheduler{
+		Status:             model.SchedulerStatusActive,
+		SchedulerClusterID: &schedulerCluster.ID,
+	}).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
