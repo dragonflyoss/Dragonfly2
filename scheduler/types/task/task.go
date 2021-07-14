@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package types
+package task
 
 import (
 	"sync"
@@ -22,6 +22,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
+	"d7y.io/dragonfly/v2/scheduler/types/peer"
 )
 
 type TaskStatus uint8
@@ -35,31 +36,6 @@ const (
 	TaskStatusSourceError
 )
 
-// isSuccessCDN determines that whether the CDNStatus is success.
-func IsSuccessTask(task *Task) bool {
-	return task.Status == TaskStatusSuccess
-}
-
-func IsFrozenTask(task *Task) bool {
-	status := task.Status
-	return status == TaskStatusFailed || status == TaskStatusWaiting ||
-		status == TaskStatusSourceError || status == TaskStatusRegisterFail
-}
-
-func IsWaitTask(task *Task) bool {
-	status := task.Status
-	return status == TaskStatusWaiting
-}
-
-func IsHealthTask(task *Task) bool {
-	return task.Status == TaskStatusRunning || task.Status == TaskStatusSuccess
-}
-
-func IsFailTask(task *Task) bool {
-	status := task.Status
-	return status == TaskStatusFailed || status == TaskStatusSourceError
-}
-
 type Task struct {
 	lock            sync.RWMutex
 	TaskID          string
@@ -69,13 +45,13 @@ type Task struct {
 	URLMeta         *base.UrlMeta
 	DirectPiece     []byte
 	CreateTime      time.Time
-	LastAccessTime  time.Time
-	LastTriggerTime time.Time
-	PieceList       map[int32]*PieceInfo
-	PieceTotal      int32
+	lastAccessTime  time.Time
+	lastTriggerTime time.Time
+	pieceList       map[int32]*PieceInfo
+	pieceTotal      int32
 	ContentLength   int64
-	Status          TaskStatus
-	PeerNodes       sortedlist.SortedList
+	status          TaskStatus
+	peerNodes       sortedlist.SortedList
 }
 
 func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
@@ -85,33 +61,33 @@ func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
 		Filter:  filter,
 		BizID:   bizID,
 		URLMeta: meta,
-		Status:  TaskStatusWaiting,
+		status:  TaskStatusWaiting,
 	}
 }
 
 func (task *Task) SetStatus(status TaskStatus) {
-	task.Status = status
+	task.status = status
 }
 
 func (task *Task) GetPiece(pieceNum int32) *PieceInfo {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
-	task.LastAccessTime = time.Now()
-	return task.PieceList[pieceNum]
+	task.lastAccessTime = time.Now()
+	return task.pieceList[pieceNum]
 }
 
-func (task *Task) AddPeerNode(peer *PeerNode) {
+func (task *Task) AddPeerNode(peer *peer.PeerNode) {
 	task.lock.Lock()
 	defer task.lock.RUnlock()
-	task.LastAccessTime = time.Now()
-	task.PeerNodes.UpdateOrAdd(peer)
+	task.lastAccessTime = time.Now()
+	task.peerNodes.UpdateOrAdd(peer)
 }
 
 func (task *Task) AddPiece(p *PieceInfo) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	task.LastAccessTime = time.Now()
-	task.PieceList[p.PieceNum] = p
+	task.lastAccessTime = time.Now()
+	task.pieceList[p.PieceNum] = p
 }
 
 const TinyFileSize = 128
@@ -123,4 +99,29 @@ type PieceInfo struct {
 	PieceMd5    string
 	PieceOffset uint64
 	PieceStyle  base.PieceStyle
+}
+
+// isSuccessCDN determines that whether the CDNStatus is success.
+func IsSuccessTask(task *Task) bool {
+	return task.status == TaskStatusSuccess
+}
+
+func IsFrozenTask(task *Task) bool {
+	status := task.status
+	return status == TaskStatusFailed || status == TaskStatusWaiting ||
+		status == TaskStatusSourceError || status == TaskStatusRegisterFail
+}
+
+func IsWaitTask(task *Task) bool {
+	status := task.status
+	return status == TaskStatusWaiting
+}
+
+func IsHealthTask(task *Task) bool {
+	return task.status == TaskStatusRunning || task.Status == TaskStatusSuccess
+}
+
+func IsFailTask(task *Task) bool {
+	status := task.status
+	return status == TaskStatusFailed || status == TaskStatusSourceError
 }

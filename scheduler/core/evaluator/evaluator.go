@@ -25,19 +25,19 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/types/peer"
 )
 
 type Evaluator interface {
 
 	// Evaluate todo Normalization
-	Evaluate(dst *types.PeerNode, src *types.PeerNode) float64
+	Evaluate(dst *peer.PeerNode, src *peer.PeerNode) float64
 
 	// NeedAdjustParent determine whether the peerNode needs a new parent node
-	NeedAdjustParent(peer *types.PeerNode) bool
+	NeedAdjustParent(peer *peer.PeerNode) bool
 
 	// IsBadNode determine if peerNode is a failed node
-	IsBadNode(peer *types.PeerNode) bool
+	IsBadNode(peer *peer.PeerNode) bool
 }
 
 type Factory struct {
@@ -54,15 +54,15 @@ type Factory struct {
 
 var _ Evaluator = (*Factory)(nil)
 
-func (ef *Factory) Evaluate(dst *types.PeerNode, src *types.PeerNode) float64 {
+func (ef *Factory) Evaluate(dst *peer.PeerNode, src *peer.PeerNode) float64 {
 	return ef.get(dst.Task.TaskID).Evaluate(dst, src)
 }
 
-func (ef *Factory) NeedAdjustParent(peer *types.PeerNode) bool {
+func (ef *Factory) NeedAdjustParent(peer *peer.PeerNode) bool {
 	return ef.get(peer.Task.TaskID).NeedAdjustParent(peer)
 }
 
-func (ef *Factory) IsBadNode(peer *types.PeerNode) bool {
+func (ef *Factory) IsBadNode(peer *peer.PeerNode) bool {
 	return ef.get(peer.Task.TaskID).IsBadNode(peer)
 }
 

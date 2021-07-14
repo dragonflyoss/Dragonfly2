@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package types
+package host
 
 import (
 	"sync"
+
+	"d7y.io/dragonfly/v2/scheduler/types/peer"
 )
 
 type HostType uint8
@@ -34,7 +36,6 @@ const (
 type NodeHost struct {
 	// ProducerLoad is the load of download services provided by the current node.
 	lock sync.RWMutex
-	// fixme can remove this uuid, use IP
 	// uuid each time the daemon starts, it will generate a different uuid
 	UUID string
 	// IP peer host ip
@@ -55,12 +56,12 @@ type NodeHost struct {
 	IDC string
 	// NetTopology network device path: switch|router|...
 	NetTopology       string
-	TotalUploadLoad   int
-	CurrentUploadLoad int
-	peerNodeMap       map[string]*PeerNode
+	totalUploadLoad   int
+	currentUploadLoad int
+	peerNodeMap       map[string]*peer.PeerNode
 }
 
-func (h *NodeHost) AddPeerNode(peerNode *PeerNode) {
+func (h *NodeHost) AddPeerNode(peerNode *peer.PeerNode) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 	h.peerNodeMap[peerNode.PeerID] = peerNode
@@ -78,30 +79,58 @@ func (h *NodeHost) GetPeerTaskNum() int {
 	return len(h.peerNodeMap)
 }
 
-func (h *NodeHost) GetPeerNode(peerID string) (*PeerNode, bool) {
+func (h *NodeHost) GetTotalUploadLoad() int {
+	h.lock.RUnlock()
+	defer h.lock.RUnlock()
+	return h.totalUploadLoad
+}
+
+func (h *NodeHost) SetTotalUploadLoad() int {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	return h.totalUploadLoad
+}
+
+func (h *NodeHost) GetPeerNode(peerID string) (*peer.PeerNode, bool) {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 	peerNode, ok := h.peerNodeMap[peerID]
 	return peerNode, ok
 }
 
-func (h *NodeHost) IncUploadLoad() {
-	h.CurrentUploadLoad++
+func (h *NodeHost) IncUploadLoad() int {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	h.currentUploadLoad++
+	return h.currentUploadLoad
 }
 
-func (h *NodeHost) DesUploadLoad() {
-	h.CurrentUploadLoad--
+func (h *NodeHost) DesUploadLoad() int {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	h.currentUploadLoad--
+	return h.currentUploadLoad
+}
+
+func (h *NodeHost) GetCurrentUpload() int {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	return h.currentUploadLoad
 }
 
 func (h *NodeHost) GetUploadLoadPercent() float64 {
-	if h.TotalUploadLoad <= 0 {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	if h.totalUploadLoad <= 0 {
 		return 1.0
 	}
-	return float64(h.CurrentUploadLoad) / float64(h.TotalUploadLoad)
+	return float64(h.currentUploadLoad) / float64(h.totalUploadLoad)
 }
 
 func (h *NodeHost) GetFreeUploadLoad() int {
-	return h.TotalUploadLoad - h.CurrentUploadLoad
+	h.lock.RLock()
+	defer h.lock.RUnlock()
+	return h.totalUploadLoad - h.currentUploadLoad
 }
 
 func IsCDNHost(host *NodeHost) bool {

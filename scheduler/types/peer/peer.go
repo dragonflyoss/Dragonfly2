@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package types
+package peer
 
 import (
 	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/types/host"
+	"d7y.io/dragonfly/v2/scheduler/types/task"
 )
 
 type PeerStatus uint8
@@ -45,32 +47,32 @@ type PeerNode struct {
 	// PeerID specifies ID of peer
 	PeerID string
 	// Task specifies
-	Task *Task
+	Task *task.Task
 	// Host specifies
-	Host *NodeHost
-	// FinishedNum specifies downloaded finished piece number
-	FinishedNum    int32
-	LastAccessTime time.Time
-	Parent         *PeerNode
-	Children       map[string]*PeerNode
-	Status         PeerStatus
-	CostHistory    []int
+	Host *host.NodeHost
+	// finishedNum specifies downloaded finished piece number
+	finishedNum    int32
+	lastAccessTime time.Time
+	parent         *PeerNode
+	children       map[string]*PeerNode
+	status         PeerStatus
+	costHistory    []int
 	PacketChan     chan *scheduler.PeerPacket
 }
 
-func IsSuccessPeer(peer *PeerNode) bool {
-	return peer.Status == PeerStatusSuccess
+func IsSuccess(peer *PeerNode) bool {
+	return peer.status == PeerStatusSuccess
 }
 
-func IsDonePeer(peer *PeerNode) bool {
-	return peer.Status == PeerStatusSuccess || peer.Status == PeerStatusBadNode
+func IsDone(peer *PeerNode) bool {
+	return peer.status == PeerStatusSuccess || peer.status == PeerStatusBadNode
 }
 
 func (peer *PeerNode) GetWholeTreeNode() int {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
-	count := len(peer.Children)
-	for _, peerNode := range peer.Children {
+	count := len(peer.children)
+	for _, peerNode := range peer.children {
 		count += peerNode.GetWholeTreeNode()
 	}
 	return count
@@ -79,8 +81,7 @@ func (peer *PeerNode) GetWholeTreeNode() int {
 func (peer *PeerNode) AddChild(child *PeerNode) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
-	peer.Children[child.PeerID] = child
-	peer.Host.CurrentUploadLoad--
+	peer.addChild(child)
 }
 
 func (peer *PeerNode) DeleteChild(child *PeerNode) {
@@ -90,8 +91,13 @@ func (peer *PeerNode) DeleteChild(child *PeerNode) {
 }
 
 func (peer *PeerNode) deleteChild(child *PeerNode) {
-	delete(peer.Children, child.PeerID)
-	peer.Host.CurrentUploadLoad++
+	delete(peer.children, child.PeerID)
+	peer.Host.IncUploadLoad()
+}
+
+func (peer *PeerNode) addChild(child *PeerNode) {
+	peer.children[child.PeerID] = child
+	peer.Host.DesUploadLoad()
 }
 
 // ReplaceParent replace parent
@@ -99,11 +105,11 @@ func (peer *PeerNode) deleteChild(child *PeerNode) {
 func (peer *PeerNode) ReplaceParent(parent *PeerNode) error {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
-	oldParent := peer.Parent
+	oldParent := peer.parent
 	if oldParent != nil {
-		oldParent.deleteChild(peer)
+		oldParent.DeleteChild(peer)
 	}
-	peer.Parent = parent
+	peer.parent = parent
 	if parent != nil {
 		parent.AddChild(peer)
 	}
@@ -111,14 +117,16 @@ func (peer *PeerNode) ReplaceParent(parent *PeerNode) error {
 }
 
 func (peer *PeerNode) GetCost() int {
-	if len(peer.CostHistory) < 1 {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
+	if len(peer.costHistory) < 1 {
 		return int(time.Second / time.Millisecond)
 	}
 	totalCost := 0
-	for _, cost := range peer.CostHistory {
+	for _, cost := range peer.costHistory {
 		totalCost += cost
 	}
-	return totalCost / len(peer.CostHistory)
+	return totalCost / len(peer.costHistory)
 }
 
 func (peer *PeerNode) AddPieceStatus(ps *scheduler.PieceResult) {
@@ -129,28 +137,32 @@ func (peer *PeerNode) AddPieceStatus(ps *scheduler.PieceResult) {
 		return
 	}
 
-	peer.FinishedNum = ps.FinishedCount
+	peer.finishedNum = ps.FinishedCount
 
 	peer.addCost(int(ps.EndTime - ps.BeginTime))
-	peer.Task.PeerNodes.Update(peer)
+	peer.Task.peerNodes.Update(peer)
 }
 
 func (peer *PeerNode) addCost(cost int) {
-	peer.CostHistory = append(peer.CostHistory, cost)
-	if len(peer.CostHistory) > 20 {
-		peer.CostHistory = peer.CostHistory[1:]
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	peer.costHistory = append(peer.costHistory, cost)
+	if len(peer.costHistory) > 20 {
+		peer.costHistory = peer.costHistory[len(peer.costHistory)-20:]
 	}
 }
 
 func (peer *PeerNode) GetDepth() int {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
 	var deep int
 	node := peer
 	for node != nil {
 		deep++
-		if node.Parent == nil || IsCDNHost(node.Host) {
+		if node.parent == nil || host.IsCDNHost(node.Host) {
 			break
 		}
-		node = node.Parent
+		node = node.parent
 	}
 	return deep
 }
@@ -158,10 +170,10 @@ func (peer *PeerNode) GetDepth() int {
 func (peer *PeerNode) GetTreeRoot() *PeerNode {
 	node := peer
 	for node != nil {
-		if node.Parent == nil || IsCDNHost(node.Host) {
+		if node.parent == nil || host.IsCDNHost(node.Host) {
 			break
 		}
-		node = node.Parent
+		node = node.parent
 	}
 	return node
 }
@@ -173,26 +185,26 @@ func (peer *PeerNode) IsAncestor(ancestor *PeerNode) bool {
 	}
 	node := peer
 	for node != nil {
-		if node.Parent == nil || IsCDNHost(node.Host) {
+		if node.parent == nil || host.IsCDNHost(node.Host) {
 			return false
 		} else if node.PeerID == ancestor.PeerID {
 			return true
 		}
-		node = node.Parent
+		node = node.parent
 	}
 	return false
 }
 
 func (peer *PeerNode) IsWaiting() bool {
-	if peer.Parent == nil {
+	if peer.parent == nil {
 		return false
 	}
 
-	return peer.FinishedNum >= peer.Parent.FinishedNum
+	return peer.finishedNum >= peer.parent.finishedNum
 }
 
 func (peer *PeerNode) GetSortKeys() (key1, key2 int) {
-	key1 = int(peer.FinishedNum)
+	key1 = int(peer.finishedNum)
 	key2 = int(peer.getFreeLoad())
 	return
 }
@@ -204,8 +216,12 @@ func (peer *PeerNode) getFreeLoad() int {
 	return peer.Host.GetFreeUploadLoad()
 }
 
+func (peer *PeerNode) getFinishNum() int {
+	return
+}
+
 func GetDiffPieceNum(src *PeerNode, dst *PeerNode) int32 {
-	diff := src.FinishedNum - dst.FinishedNum
+	diff := src.finishedNum - dst.finishedNum
 	if diff > 0 {
 		return diff
 	}
@@ -213,22 +229,26 @@ func GetDiffPieceNum(src *PeerNode, dst *PeerNode) int32 {
 }
 
 func IsRunning(peer *PeerNode) bool {
-	return peer.Status != PeerStatusBadNode
+	return peer.status != PeerStatusBadNode
 }
 
 func (peer *PeerNode) GetParent() *PeerNode {
-	return peer.Parent
+	return peer.parent
 }
 
 func (peer *PeerNode) GetChildren() map[string]*PeerNode {
-	return peer.Children
+	return peer.children
 }
 
 func (peer *PeerNode) SetStatus(status PeerStatus) {
-	peer.Status = status
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	peer.status = status
 }
 
 func (peer *PeerNode) SetSendChannel(packetChan chan *scheduler.PeerPacket) {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
 	peer.PacketChan = packetChan
 }
 

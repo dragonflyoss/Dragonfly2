@@ -22,7 +22,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	managerRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/types/host"
 )
 
 type manager struct {
@@ -35,7 +35,7 @@ func NewManager() daemon.HostMgr {
 	return &manager{}
 }
 
-func (m *manager) Add(host *types.NodeHost) {
+func (m *manager) Add(host *host.NodeHost) {
 	m.hostMap.Store(host.UUID, host)
 }
 
@@ -43,18 +43,18 @@ func (m *manager) Delete(uuid string) {
 	m.hostMap.Delete(uuid)
 }
 
-func (m *manager) Get(uuid string) (*types.NodeHost, bool) {
+func (m *manager) Get(uuid string) (*host.NodeHost, bool) {
 	host, ok := m.hostMap.Load(uuid)
 	if !ok {
 		return nil, false
 	}
-	return host.(*types.NodeHost), true
+	return host.(*host.NodeHost), true
 }
 
-func (m *manager) GetOrAdd(host *types.NodeHost) (actual *types.NodeHost, loaded bool) {
+func (m *manager) GetOrAdd(host *host.NodeHost) (actual *host.NodeHost, loaded bool) {
 	item, loaded := m.hostMap.LoadOrStore(host.UUID, host)
 	if loaded {
-		return item.(*types.NodeHost), true
+		return item.(*host.NodeHost), true
 	}
 	return host, false
 }
@@ -65,18 +65,18 @@ func (m *manager) OnNotify(scheduler *managerRPC.Scheduler) {
 		if cdn.CdnCluster != nil && cdn.CdnCluster.SecurityGroup != nil {
 			securityDomain = cdn.CdnCluster.SecurityGroup.Name
 		}
-		cdnHost := &types.NodeHost{
+		cdnHost := &host.NodeHost{
 			UUID:           idgen.CDNUUID(cdn.HostName, cdn.Port),
 			IP:             cdn.Ip,
 			HostName:       cdn.HostName,
 			RPCPort:        cdn.Port,
 			DownloadPort:   cdn.DownloadPort,
-			HostType:       types.CDNNodeHost,
+			HostType:       host.CDNNodeHost,
 			SecurityDomain: securityDomain,
 			Location:       cdn.Location,
 			IDC:            cdn.Idc,
 			//NetTopology:       server.NetTopology,
-			TotalUploadLoad:   types.CDNHostLoad,
+			TotalUploadLoad:   host.CDNHostLoad,
 			CurrentUploadLoad: 0,
 		}
 		m.GetOrAdd(cdnHost)

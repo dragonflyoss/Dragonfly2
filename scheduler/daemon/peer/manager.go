@@ -22,7 +22,8 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/types/peer"
+	"d7y.io/dragonfly/v2/scheduler/types/task"
 )
 
 const (
@@ -59,7 +60,7 @@ func NewManager() daemon.PeerMgr {
 
 var _ daemon.PeerMgr = (*manager)(nil)
 
-func (m *manager) Add(peerNode *types.PeerNode) {
+func (m *manager) Add(peerNode *peer.PeerNode) {
 	peerNode.LastAccessTime = time.Now()
 	peerNode.Host.AddPeerNode(peerNode)
 	peerNode.Task.PeerNodes.Add(peerNode)
@@ -67,12 +68,12 @@ func (m *manager) Add(peerNode *types.PeerNode) {
 	peerNode.Task.AddPeerNode(peerNode)
 }
 
-func (m *manager) Get(peerID string) (*types.PeerNode, bool) {
+func (m *manager) Get(peerID string) (*peer.PeerNode, bool) {
 	data, ok := m.peerMap.Load(peerID)
 	if !ok {
 		return nil, false
 	}
-	peerNode := data.(*types.PeerNode)
+	peerNode := data.(*peer.PeerNode)
 	peerNode.LastAccessTime = time.Now()
 	return peerNode, true
 }
@@ -87,9 +88,9 @@ func (m *manager) Delete(peerID string) {
 	return
 }
 
-func (m *manager) ListPeerNodesByTask(taskID string) (peers []*types.PeerNode) {
+func (m *manager) ListPeerNodesByTask(taskID string) (peers []*peer.PeerNode) {
 	m.peerMap.Range(func(key, value interface{}) bool {
-		peer := value.(*types.PeerNode)
+		peer := value.(*peer.PeerNode)
 		if peer.Task.TaskID == taskID {
 			peers = append(peers, peer)
 		}
@@ -98,15 +99,15 @@ func (m *manager) ListPeerNodesByTask(taskID string) (peers []*types.PeerNode) {
 	return
 }
 
-func (m *manager) Pick(task *types.Task, limit int, pickFn func(peer *types.PeerNode) bool) (pickedPeers []*types.PeerNode) {
+func (m *manager) Pick(task *task.Task, limit int, pickFn func(peer *peer.PeerNode) bool) (pickedPeers []*peer.PeerNode) {
 	return m.pick(task, limit, false, pickFn)
 }
 
-func (m *manager) PickReverse(task *types.Task, limit int, pickFn func(peer *types.PeerNode) bool) (pickedPeers []*types.PeerNode) {
+func (m *manager) PickReverse(task *task.Task, limit int, pickFn func(peer *peer.PeerNode) bool) (pickedPeers []*peer.PeerNode) {
 	return m.pick(task, limit, true, pickFn)
 }
 
-func (m *manager) pick(task *types.Task, limit int, reverse bool, pickFn func(peer *types.PeerNode) bool) (pickedPeers []*types.PeerNode) {
+func (m *manager) pick(task *task.Task, limit int, reverse bool, pickFn func(peer *peer.PeerNode) bool) (pickedPeers []*peer.PeerNode) {
 	if pickFn == nil {
 		return
 	}
@@ -115,7 +116,7 @@ func (m *manager) pick(task *types.Task, limit int, reverse bool, pickFn func(pe
 			if len(pickedPeers) >= limit {
 				return false
 			}
-			peer := data.(*types.PeerNode)
+			peer := data.(*peer.PeerNode)
 			if pickFn(peer) {
 				pickedPeers = append(pickedPeers, peer)
 			}
@@ -127,7 +128,7 @@ func (m *manager) pick(task *types.Task, limit int, reverse bool, pickFn func(pe
 		if len(pickedPeers) >= limit {
 			return false
 		}
-		peer := data.(*types.PeerNode)
+		peer := data.(*peer.PeerNode)
 		if pickFn(peer) {
 			pickedPeers = append(pickedPeers, peer)
 		}

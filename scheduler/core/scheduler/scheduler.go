@@ -21,15 +21,15 @@ import (
 
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/types/peer"
 )
 
 type Scheduler interface {
 	// ScheduleChildren schedule children to a peer
-	ScheduleChildren(peer *types.PeerNode) (children []*types.PeerNode)
+	ScheduleChildren(peer *peer.PeerNode) (children []*peer.PeerNode)
 
 	// ScheduleParent schedule a parent and limit candidates to a peer
-	ScheduleParent(peer *types.PeerNode, limit int) (parent *types.PeerNode, candidateParents []*types.PeerNode)
+	ScheduleParent(peer *peer.PeerNode, limit int) (parent *peer.PeerNode, candidateParents []*peer.PeerNode)
 }
 
 type BuildOptions struct {

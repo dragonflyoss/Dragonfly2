@@ -20,13 +20,11 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types"
-	"github.com/panjf2000/ants/v2"
+	"d7y.io/dragonfly/v2/scheduler/types/peer"
 )
 
 type WorkerFactory struct {
@@ -65,7 +63,7 @@ func (worker *Worker) Submit(task func()) error {
 func (worker *Worker) NewHandleLeaveTask(target *schedulerRPC.PeerTarget) func() {
 	return func() {
 		peer, _ := worker.peerManager.Get(target.PeerId)
-		peer.SetStatus(types.PeerStatusLeaveNode)
+		peer.SetStatus(peer.PeerStatusLeaveNode)
 		peer.ReplaceParent(nil)
 		for _, child := range peer.GetChildren() {
 			parent, candidates := worker.scheduler.ScheduleParent(child, 10)
@@ -84,7 +82,7 @@ func (worker *Worker) NewHandleReportPeerResultTask(result *schedulerRPC.PeerRes
 		peer, _ := worker.peerManager.Get(result.PeerId)
 		peer.ReplaceParent(nil)
 		if result.Success {
-			peer.SetStatus(types.PeerStatusSuccess)
+			peer.SetStatus(peer.PeerStatusSuccess)
 			children := worker.scheduler.ScheduleChildren(peer)
 			for _, child := range children {
 				if child.PacketChan == nil {
@@ -94,7 +92,7 @@ func (worker *Worker) NewHandleReportPeerResultTask(result *schedulerRPC.PeerRes
 				child.PacketChan <- constructSuccessPeerPacket(child, peer, nil)
 			}
 		} else {
-			peer.SetStatus(types.PeerStatusBadNode)
+			peer.SetStatus(peer.PeerStatusBadNode)
 			for _, child := range peer.Children {
 				parent, candidates := worker.scheduler.ScheduleParent(child, 10)
 				if child.PacketChan == nil {
@@ -139,14 +137,14 @@ func (worker *Worker) processErrorCode(pr *schedulerRPC.PieceResult) (stop bool)
 		peerTask, _ := worker.peerManager.Get(pr.SrcPid)
 		if peerTask != nil {
 			worker.Submit(new())
-			peerTask.SetNodeStatus(types.PeerStatusNeedParent)
+			peerTask.SetNodeStatus(peer.PeerStatusNeedParent)
 			worker.sendJob(peerTask)
 		}
 		return true
 	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail:
 		peerTask, _ := worker.peerManager.Get(pr.SrcPid)
 		if peerTask != nil {
-			peerTask.SetStatus(types.PeerStatusNeedParent)
+			peerTask.SetStatus(peer.PeerStatusNeedParent)
 			w.sendJob(peerTask)
 			task := peerTask.Task
 			if task != nil {
@@ -162,7 +160,7 @@ func (worker *Worker) processErrorCode(pr *schedulerRPC.PieceResult) (stop bool)
 	return true
 }
 
-func constructSuccessPeerPacket(peer *types.PeerNode, parent *types.PeerNode, candidates []*types.PeerNode) *schedulerRPC.PeerPacket {
+func constructSuccessPeerPacket(peer *peer.PeerNode, parent *peer.PeerNode, candidates []*peer.PeerNode) *schedulerRPC.PeerPacket {
 	mainPeer := &schedulerRPC.PeerPacket_DestPeer{
 		Ip:      parent.Host.IP,
 		RpcPort: parent.Host.RPCPort,

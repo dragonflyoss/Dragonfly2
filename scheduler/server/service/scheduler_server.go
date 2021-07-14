@@ -31,7 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/types/task"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
@@ -59,12 +59,12 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		return
 	}
 	taskID := s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMeta, request.BizId, request.PeerId)
-	task := types.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta)
+	task := task.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta)
 	task, err = s.service.GetOrCreateTask(ctx, task)
 	if err != nil {
 		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
 	}
-	if types.IsFailTask(task) {
+	if task.IsFailTask(task) {
 		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is %d", task.Status)
 		return
 	}
@@ -179,8 +179,8 @@ func validateParams(req *scheduler.PeerTaskRequest) error {
 	return nil
 }
 
-func getTaskSizeScope(task *types.Task) base.SizeScope {
-	if task.ContentLength <= types.TinyFileSize {
+func getTaskSizeScope(task *task.Task) base.SizeScope {
+	if task.ContentLength <= task.TinyFileSize {
 		return base.SizeScope_TINY
 	}
 	if task.PieceTotal == 1 {

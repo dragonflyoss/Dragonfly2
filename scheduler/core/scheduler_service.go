@@ -34,7 +34,9 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/daemon/host"
 	"d7y.io/dragonfly/v2/scheduler/daemon/peer"
 	"d7y.io/dragonfly/v2/scheduler/daemon/task"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	host2 "d7y.io/dragonfly/v2/scheduler/types/host"
+	peer2 "d7y.io/dragonfly/v2/scheduler/types/peer"
+	task2 "d7y.io/dragonfly/v2/scheduler/types/task"
 	"github.com/panjf2000/ants/v2"
 )
 
@@ -104,44 +106,44 @@ func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.
 	return idgen.TaskID(url, filter, meta, bizID)
 }
 
-func (s *SchedulerService) ScheduleParent(peer *types.PeerNode) (parent *types.PeerNode, err error) {
+func (s *SchedulerService) ScheduleParent(peer *peer2.PeerNode) (parent *peer2.PeerNode, err error) {
 	parent, _ = s.scheduler.ScheduleParent(peer, 1)
 	return
 }
 
-func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *types.PeerNode, ok bool) {
+func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *peer2.PeerNode, ok bool) {
 	return s.peerManager.Get(peerTaskID)
 }
 
-func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *types.Task) (*types.PeerNode, error) {
+func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *task2.Task) (*peer2.PeerNode, error) {
 	// get or create host
 	reqPeerHost := req.PeerHost
 	var (
-		peerNode *types.PeerNode
+		peerNode *peer2.PeerNode
 		ok       bool
-		host     *types.NodeHost
+		host     *host2.NodeHost
 	)
 
 	if host, ok = s.hostManager.Get(reqPeerHost.Uuid); !ok {
-		host = &types.NodeHost{
+		host = &host2.NodeHost{
 			UUID:            reqPeerHost.Uuid,
 			IP:              reqPeerHost.Ip,
 			HostName:        reqPeerHost.HostName,
 			RPCPort:         reqPeerHost.RpcPort,
 			DownloadPort:    reqPeerHost.DownPort,
-			HostType:        types.PeerNodeHost,
+			HostType:        host2.PeerNodeHost,
 			SecurityDomain:  reqPeerHost.SecurityDomain,
 			Location:        reqPeerHost.Location,
 			IDC:             reqPeerHost.Idc,
 			NetTopology:     reqPeerHost.NetTopology,
-			TotalUploadLoad: types.ClientHostLoad,
+			TotalUploadLoad: host2.ClientHostLoad,
 		}
 		s.hostManager.Add(host)
 	}
 
 	// get or creat PeerTask
 	if peerNode, ok = s.peerManager.Get(req.PeerId); !ok {
-		peerNode = &types.PeerNode{
+		peerNode = &peer2.PeerNode{
 			PeerID:         req.PeerId,
 			Task:           task,
 			Host:           host,
@@ -149,7 +151,7 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 			LastAccessTime: time.Now(),
 			Parent:         nil,
 			Children:       nil,
-			Status:         types.PeerStatusWaiting,
+			Status:         peer2.PeerStatusWaiting,
 			CostHistory:    nil,
 		}
 		s.peerManager.Add(peerNode)
@@ -157,12 +159,12 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 	return peerNode, nil
 }
 
-func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task) (*types.Task, error) {
+func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *task2.Task) (*task2.Task, error) {
 	synclock.Lock(task.TaskID, true)
 	task, ok := s.taskManager.GetOrAdd(task)
 	task.LastAccessTime = time.Now()
 	if ok {
-		if task.LastTriggerTime.Add(s.config.AccessWindow).After(time.Now()) || types.IsHealthTask(task) {
+		if task.LastTriggerTime.Add(s.config.AccessWindow).After(time.Now()) || task2.IsHealthTask(task) {
 			synclock.UnLock(task.TaskID, true)
 			return task, nil
 		}
@@ -170,32 +172,32 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	synclock.UnLock(task.TaskID, true)
 	var (
 		once        sync.Once
-		cdnPeerNode *types.PeerNode
-		cdnHost     *types.NodeHost
+		cdnPeerNode *peer2.PeerNode
+		cdnHost     *host2.NodeHost
 	)
 	synclock.Lock(task.TaskID, false)
 	defer synclock.Lock(task.TaskID, false)
 	if err := s.cdnManager.StartSeedTask(ctx, task, func(ps *cdnsystem.PieceSeed, err error) {
 		once.Do(func() {
 			cdnHost, _ = s.hostManager.Get(ps.HostUuid)
-			cdnPeerNode = &types.PeerNode{
+			cdnPeerNode = &peer2.PeerNode{
 				PeerID:         ps.PeerId,
 				Task:           task,
 				Host:           cdnHost,
 				LastAccessTime: time.Now(),
-				Status:         types.PeerStatusRunning,
+				Status:         peer2.PeerStatusRunning,
 			}
 			s.peerManager.Add(cdnPeerNode)
 		})
 		if err != nil {
-			cdnPeerNode.SetStatus(types.PeerStatusBadNode)
+			cdnPeerNode.SetStatus(peer2.PeerStatusBadNode)
 			return
 		}
 		cdnPeerNode.FinishedNum++
 		cdnPeerNode.LastAccessTime = time.Now()
 		if ps.Done {
-			cdnPeerNode.Status = types.PeerStatusSuccess
-			if task.ContentLength <= types.TinyFileSize {
+			cdnPeerNode.Status = peer2.PeerStatusSuccess
+			if task.ContentLength <= task2.TinyFileSize {
 				content, er := s.cdnManager.DownloadTinyFileContent(task, cdnHost)
 				if er == nil && len(content) == int(task.ContentLength) {
 					task.DirectPiece = content
