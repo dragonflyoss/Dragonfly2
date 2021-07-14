@@ -8,6 +8,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/search"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
@@ -23,12 +24,13 @@ type GRPC struct {
 	rdb   *redis.Client
 	cache *cache.Cache
 	manager.UnimplementedManagerServer
+	search search.Search
 }
 
 // Option is a functional option for rest
 type GRPCOption func(s *GRPC)
 
-// WithDatabase set the database client
+// GRPCWithDatabase set the database client
 func GRPCWithDatabase(database *database.Database) GRPCOption {
 	return func(s *GRPC) {
 		s.db = database.DB
@@ -36,10 +38,17 @@ func GRPCWithDatabase(database *database.Database) GRPCOption {
 	}
 }
 
-// WithCache set the cache client
+// GRPCWithCache set the cache client
 func GRPCWithCache(cache *cache.Cache) GRPCOption {
 	return func(s *GRPC) {
 		s.cache = cache
+	}
+}
+
+// GRPCWithSearch set search client
+func GRPCWithSearch(search search.Search) GRPCOption {
+	return func(s *GRPC) {
+		s.search = search
 	}
 }
 
@@ -433,10 +442,24 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
+	var schedulerClusters []model.SchedulerCluster
+	if err := s.db.Preload("SecurityGroup").Find(schedulerClusters).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	schedulerCluster, ok := s.search.SchedulerCluster(schedulerClusters, req.HostInfo)
+	if !ok {
+		if err := s.db.Find(&schedulerCluster, &model.SchedulerCluster{
+			IsDefault: true,
+		}).Error; err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+	}
+
 	schedulers := []model.Scheduler{}
-	if err := s.db.Find(&schedulers, &model.Scheduler{
+	if err := s.db.Model(&schedulerCluster).Association("Schedulers").Find(&schedulers, &model.Scheduler{
 		Status: model.SchedulerStatusActive,
-	}).Error; err != nil {
+	}); err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 

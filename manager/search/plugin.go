@@ -16,5 +16,24 @@
 
 package search
 
-type Search interface {
+import (
+	"errors"
+
+	"d7y.io/dragonfly/v2/internal/dfplugin"
+)
+
+const (
+	pluginName = "search"
+)
+
+func loadPlugin() (Search, error) {
+	client, _, err := dfplugin.Load(dfplugin.PluginTypeAlgorithm, pluginName, map[string]string{})
+	if err != nil {
+		return nil, err
+	}
+
+	if rc, ok := client.(Search); ok {
+		return rc, err
+	}
+	return nil, errors.New("invalid client, not a ResourceClient")
 }

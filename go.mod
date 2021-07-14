@@ -57,6 +57,7 @@ require (
 	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	golang.org/x/tools v0.1.4 // indirect
+	gonum.org/v1/gonum v0.9.3
 	google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a // indirect
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.26.0
