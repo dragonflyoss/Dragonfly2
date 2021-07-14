@@ -40,6 +40,10 @@ const (
 )
 const (
 	layout = "2006-01-02 15:04:05"
+	// hdfsUseDataNodeHostName set hdfs client whether user hostname connect to datanode
+	hdfsUseDataNodeHostName = "dfs.client.use.datanode.hostname"
+	// hdfsUseDataNodeHostNameValue set value is true
+	hdfsUseDataNodeHostNameValue = "true"
 )
 
 func init() {
@@ -80,10 +84,11 @@ func (h *hdfsSourceClient) GetContentLength(ctx context.Context, url string, hea
 	}
 
 	if rang != nil {
-		rangeLength := int64(rang.EndIndex - rang.StartIndex)
-		if rangeLength <= info.Size() {
-			return rangeLength, nil
+
+		if int64(rang.EndIndex) <= info.Size() {
+			return int64(rang.EndIndex - rang.StartIndex), nil
 		}
+		return info.Size() - int64(rang.StartIndex), nil
 	}
 
 	return info.Size(), nil
@@ -216,7 +221,7 @@ func (h *hdfsSourceClient) getHDFSClient(rawurl string) (*hdfs.Client, error) {
 
 	// create client option
 	options := hdfs.ClientOptionsFromConf(map[string]string{
-		"dfs.client.use.datanode.hostname": "true",
+		hdfsUseDataNodeHostName: hdfsUseDataNodeHostNameValue,
 	})
 	options.Addresses = strings.Split(parse.Host, ",")
 	u, err := user.Current()

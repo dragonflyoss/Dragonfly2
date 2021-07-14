@@ -181,7 +181,7 @@ build-dfget-man-page:
 
 # Run unittests
 test:
-	@go test -race -short ${PKG_LIST}
+	@go test -gcflags "all=-l" -race -short ${PKG_LIST}
 .PHONY: test
 
 # Run tests with coverage
@@ -195,12 +195,12 @@ install-actions-e2e-test:
 	@./hack/install-e2e-test.sh actions
 .PHONY: install-actions-e2e-test
 
-# Run github actons E2E tests
+# Run github actions E2E tests
 actions-e2e-test: install-actions-e2e-test
 	@ginkgo -v -r --failFast test/e2e --trace --progress
 .PHONY: actions-e2e-test
 
-# Run github actons E2E tests with coverage
+# Run github actions E2E tests with coverage
 actions-e2e-test-coverage: install-actions-e2e-test
 	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
 	@cat test/e2e/*.coverprofile >> coverage.txt

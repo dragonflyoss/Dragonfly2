@@ -61,7 +61,7 @@ func TestGetContentLength_OK(t *testing.T) {
 		contents: hdfsExistFileContent,
 	}
 	stubRet := []gomonkey.OutputCell{
-		{Values: gomonkey.Params{info, nil}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+		{Values: gomonkey.Params{info, nil}},
 	}
 
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Stat", stubRet)
@@ -79,7 +79,7 @@ func TestGetContentLength_OK(t *testing.T) {
 func TestGetContentLength_Fail(t *testing.T) {
 
 	stubRet := []gomonkey.OutputCell{
-		{Values: gomonkey.Params{nil, errors.New("stat /user/root/input/f3.txt: file does not exist")}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+		{Values: gomonkey.Params{nil, errors.New("stat /user/root/input/f3.txt: file does not exist")}},
 	}
 
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Stat", stubRet)
@@ -113,7 +113,7 @@ func TestIsSupportRange_FileExist(t *testing.T) {
 // TestIsSupportRange_FileNotExist test file not exist, return error and not support range
 func TestIsSupportRange_FileNotExist(t *testing.T) {
 	stubRet := []gomonkey.OutputCell{
-		{Values: gomonkey.Params{nil, errors.New("stat /user/root/input/f3.txt: file does not exist")}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+		{Values: gomonkey.Params{nil, errors.New("stat /user/root/input/f3.txt: file does not exist")}},
 	}
 
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Stat", stubRet)
@@ -138,7 +138,7 @@ func TestIsExpired_LastModifiedExpired(t *testing.T) {
 		modtime: lastModified,
 	}
 	stubRet := []gomonkey.OutputCell{
-		{Values: gomonkey.Params{info, nil}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+		{Values: gomonkey.Params{info, nil}},
 	}
 
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Stat", stubRet)
@@ -160,7 +160,7 @@ func TestIsExpired_LastModifiedNotExpired(t *testing.T) {
 		modtime: lastModified,
 	}
 	stubRet := []gomonkey.OutputCell{
-		{Values: gomonkey.Params{info, nil}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+		{Values: gomonkey.Params{info, nil}},
 	}
 
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Stat", stubRet)
@@ -213,7 +213,7 @@ func Test_Download_FileExist_ByRang(t *testing.T) {
 
 func TestDownload_FileNotExist(t *testing.T) {
 	stubRet := []gomonkey.OutputCell{
-		{Values: gomonkey.Params{nil, errors.New("open /user/root/input/f3.txt: file does not exist")}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+		{Values: gomonkey.Params{nil, errors.New("open /user/root/input/f3.txt: file does not exist")}},
 	}
 
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Open", stubRet)
@@ -286,7 +286,7 @@ func TestGetLastModifiedMillis_FileExist(t *testing.T) {
 		modtime: lastModified,
 	}
 	stubRet := []gomonkey.OutputCell{
-		{Values: gomonkey.Params{info, nil}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+		{Values: gomonkey.Params{info, nil}},
 	}
 
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Stat", stubRet)
@@ -300,7 +300,7 @@ func TestGetLastModifiedMillis_FileExist(t *testing.T) {
 
 func TestGetLastModifiedMillis_FileNotExist(t *testing.T) {
 	stubRet := []gomonkey.OutputCell{
-		{Values: gomonkey.Params{nil, errors.New("stat /user/root/input/f3.txt: file does not exist")}}, // 模拟第一次调用Delete的时候，删除成功，返回nil
+		{Values: gomonkey.Params{nil, errors.New("stat /user/root/input/f3.txt: file does not exist")}},
 	}
 
 	patch := gomonkey.ApplyMethodSeq(reflect.TypeOf(fakeHDFSClient), "Stat", stubRet)
