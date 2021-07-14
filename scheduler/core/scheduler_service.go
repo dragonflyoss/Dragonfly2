@@ -35,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/daemon/peer"
 	"d7y.io/dragonfly/v2/scheduler/daemon/task"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"github.com/panjf2000/ants/v2"
 )
 
 type SchedulerService struct {
@@ -47,7 +48,8 @@ type SchedulerService struct {
 	// Peer mgr
 	peerManager daemon.PeerMgr
 
-	worker    *Worker
+	pool *ants.Pool
+	//pool      *Worker
 	config    *config.SchedulerConfig
 	scheduler scheduler.Scheduler
 }
@@ -76,6 +78,11 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	if err != nil {
 		return nil, err
 	}
+
+	pool, err := ants.NewPool(cfg.WorkerNum)
+	if err != nil {
+		return nil, err
+	}
 	worker, err := newWorker(cfg, scheduler, cdnManager, taskManager, hostManager, peerManager)
 	if err != nil {
 		return nil, err
@@ -85,7 +92,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		taskManager: taskManager,
 		hostManager: hostManager,
 		scheduler:   scheduler,
-		worker:      worker,
+		pool:        pool,
 		config:      cfg,
 	}, nil
 }
@@ -201,14 +208,14 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	return task, nil
 }
 
-func (s *SchedulerService) HandlePieceResult(pieceResult *schedulerRPC.PieceResult) {
-	s.worker.Submit(NewReportPieceResultTask(s.worker, pieceResult))
+func (s *SchedulerService) HandlePieceResult(pieceResult *schedulerRPC.PieceResult) error {
+	return s.pool.Submit(s.worker.NewHandleReportPieceResultTask(pieceResult))
 }
 
-func (s *SchedulerService) HandlePeerResult(result *schedulerRPC.PeerResult) error {
-	return s.worker.Submit(NewReportPeerResultTask(s.worker, result))
+func (s *SchedulerService) HandlePeerResult(peerResult *schedulerRPC.PeerResult) error {
+	return s.pool.Submit(s.worker.NewHandleReportPeerResultTask(peerResult))
 }
 
 func (s *SchedulerService) HandleLeaveTask(target *schedulerRPC.PeerTarget) error {
-	return s.worker.Submit(NewLeaveTask(s.worker, target))
+	return s.pool.Submit(s.worker.NewHandleLeaveTask(target))
 }

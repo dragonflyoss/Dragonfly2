@@ -18,7 +18,9 @@ package server
 
 import (
 	"context"
+	"time"
 
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"github.com/golang/protobuf/ptypes/empty"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -90,18 +92,18 @@ func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) 
 
 	logger.StatPeerLogger.Info("finish peer task",
 		zap.Bool("success", pr.Success),
+		zap.String("peerID", pr.PeerId),
 		zap.String("taskID", pr.TaskId),
-		zap.String("url", pr.Url),
-		zap.String("peerIp", pr.SrcIp),
+		zap.String("URL", pr.Url),
+		zap.String("IDC", pr.Idc),
+		zap.String("peerIP", pr.SrcIp),
 		zap.String("securityDomain", pr.SecurityDomain),
-		zap.String("idc", pr.Idc),
 		zap.String("schedulerIp", iputils.HostIP),
 		zap.String("schedulerName", iputils.HostName),
-		zap.Int64("contentLength", pr.ContentLength),
-		zap.Uint64("traffic", uint64(pr.Traffic)),
-		zap.Uint32("cost", pr.Cost),
+		zap.String("contentLength", unit.Bytes(pr.ContentLength).String()),
+		zap.String("traffic", unit.Bytes(uint64(pr.Traffic)).String()),
+		zap.Duration("cost", time.Duration(int64(pr.Cost))),
 		zap.Int32("code", int32(pr.Code)))
-
 	return new(empty.Empty), err
 }
 
