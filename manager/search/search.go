@@ -102,6 +102,7 @@ func calculateConditionScore(condition string, conditions map[string]string, sco
 		return 0
 	}
 
+	// TODO mapstructure for sv
 	rawSV, ok := scopes[scope].([]interface{})
 	if !ok {
 		return 0
