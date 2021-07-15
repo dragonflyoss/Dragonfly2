@@ -20,8 +20,8 @@ import (
 	"sort"
 
 	"d7y.io/dragonfly/v2/manager/model"
+	"github.com/mitchellh/mapstructure"
 	"gonum.org/v1/gonum/stat"
-	"gorm.io/datatypes"
 )
 
 const (
@@ -31,14 +31,14 @@ const (
 )
 
 const (
-	scopeLocation = "location"
-	scopeIDC      = "idc"
-)
-
-const (
 	conditionLocationWeight = 0.7
 	conditionIDCWeight      = 0.3
 )
+
+type Scopes struct {
+	Location []string `mapstructure:"location"`
+	IDC      []string `mapstructure:"idc"`
+}
 
 type Search interface {
 	SchedulerCluster([]model.SchedulerCluster, map[string]string) (model.SchedulerCluster, bool)
@@ -63,7 +63,7 @@ func (s *search) SchedulerCluster(schedulerClusters []model.SchedulerCluster, co
 	// If there are security domain conditions, match clusters of the same security domain.
 	// If the security domain condition does not exist, it matches clusters that does not have a security domain.
 	// Then use clusters sets to score according to scopes.
-	securityDomain, _ := conditions[conditionSecurityDomain]
+	securityDomain := conditions[conditionSecurityDomain]
 	var clusters []model.SchedulerCluster
 	for _, v := range schedulerClusters {
 		if v.SecurityGroup.Domain == securityDomain {
@@ -78,11 +78,9 @@ func (s *search) SchedulerCluster(schedulerClusters []model.SchedulerCluster, co
 		return clusters[0], true
 	default:
 		var maxMean float64 = 0
-		var cluster model.SchedulerCluster
+		cluster := clusters[0]
 		for _, v := range clusters {
-			lx := calculateConditionScore(conditionLocation, conditions, scopeLocation, v.Scopes)
-			ix := calculateConditionScore(conditionIDC, conditions, scopeIDC, v.Scopes)
-			mean := stat.Mean([]float64{lx, ix}, []float64{conditionLocationWeight, conditionIDCWeight})
+			mean := calculateSchedulerClusterMean(conditions, v.Scopes)
 			if mean > maxMean {
 				maxMean = mean
 				cluster = v
@@ -92,28 +90,31 @@ func (s *search) SchedulerCluster(schedulerClusters []model.SchedulerCluster, co
 	}
 }
 
-func calculateConditionScore(condition string, conditions map[string]string, scope string, scopes datatypes.JSONMap) float64 {
-	cv, ok := conditions[condition]
-	if !ok {
+func calculateSchedulerClusterMean(conditions map[string]string, rawScopes map[string]interface{}) float64 {
+	var scopes Scopes
+	if err := mapstructure.Decode(rawScopes, &scopes); err != nil {
 		return 0
 	}
 
-	if scopes == nil {
+	location := conditions[conditionLocation]
+	lx := calculateConditionScore(location, scopes.Location)
+
+	idc := conditions[conditionIDC]
+	ix := calculateConditionScore(idc, scopes.IDC)
+
+	return stat.Mean([]float64{lx, ix}, []float64{conditionLocationWeight, conditionIDCWeight})
+}
+
+func calculateConditionScore(value string, scope []string) float64 {
+	if value == "" {
 		return 0
 	}
 
-	// TODO mapstructure for sv
-	rawSV, ok := scopes[scope].([]interface{})
-	if !ok {
+	if len(scope) <= 0 {
 		return 0
 	}
 
-	sv := make([]string, len(rawSV))
-	for i, v := range rawSV {
-		sv[i] = v.(string)
-	}
-
-	i := sort.SearchStrings(sv, cv)
+	i := sort.SearchStrings(scope, value)
 	if i < 0 {
 		return 0
 	}
