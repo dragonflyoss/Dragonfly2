@@ -132,7 +132,7 @@ func (suite *HTTPSourceClientTestSuite) TestNewHTTPSourceClient() {
 
 func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponseHeader() {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	reader, responseHeader, err := suite.DownloadWithResponseHeader(ctx, timeoutURL, source.RequestHeader{})
+	reader, responseHeader, err := suite.DownloadWithResponseHeader(ctx, timeoutURL, source.RequestHeader{}, nil)
 	cancel()
 	suite.NotNil(err)
 	suite.Equal("Get \"http://timeout.com\": context deadline exceeded", err.Error())
@@ -205,7 +205,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponse
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			reader, responseHeader, err := suite.DownloadWithResponseHeader(tt.args.ctx, tt.args.url, tt.args.header)
+			reader, responseHeader, err := suite.DownloadWithResponseHeader(tt.args.ctx, tt.args.url, tt.args.header, nil)
 			suite.Equal(tt.wantErr, err)
 			if err != nil {
 				return
@@ -238,7 +238,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientGetContentLength() {
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			got, err := suite.GetContentLength(tt.args.ctx, tt.args.url, tt.args.header)
+			got, err := suite.GetContentLength(tt.args.ctx, tt.args.url, tt.args.header, nil)
 			suite.Equal(tt.wantErr, err)
 			suite.Equal(tt.want, got)
 		})
