@@ -22,6 +22,10 @@ func KubeCtlCommand(arg ...string) *exec.Cmd {
 	return exec.Command("kubectl", arg...)
 }
 
+func BombardierCommand(arg ...string) *exec.Cmd {
+	return exec.Command("bombardier", arg...)
+}
+
 type PodExec struct {
 	namespace string
 	name      string

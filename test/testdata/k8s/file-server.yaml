@@ -4,7 +4,6 @@ metadata:
   name: dragonfly-e2e
 
 ---
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -16,13 +15,12 @@ spec:
     component: file-server
   type: ClusterIP
   ports:
-  - name: nginx
-    port: 80
-    protocol: TCP
-    targetPort: 80
+    - name: nginx
+      port: 80
+      protocol: TCP
+      targetPort: 80
 
 ---
-
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -42,15 +40,33 @@ spec:
         component: file-server
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.20.1-alpine
-        imagePullPolicy: "IfNotPresent"
-        ports:
-        - containerPort: 80
-        volumeMounts:
-        - name: files
-          mountPath: /usr/share/nginx/html/kind
+        - name: nginx
+          image: nginx:1.20.1-alpine
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: files
+              mountPath: /usr/share/nginx/html/kind
       volumes:
-      - name: files
-        hostPath:
-          path: /
+        - name: files
+          hostPath:
+            path: /
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: file-server
+  namespace: dragonfly-e2e
+spec:
+  rules:
+    - http:
+        paths:
+          - pathType: Prefix
+            path: "/file-server"
+            backend:
+              service:
+                name: file-server
+                port:
+                  number: 80

@@ -5,9 +5,15 @@ go 1.15
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/VividCortex/mysqlerr v1.0.0
+	github.com/alecthomas/kingpin v2.2.6+incompatible // indirect
+	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
+	github.com/andybalholm/brotli v1.0.3 // indirect
 	github.com/appleboy/gin-jwt/v2 v2.6.4
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
+	github.com/cheggaaa/pb v1.0.29 // indirect
+	github.com/codesenberg/bombardier v1.2.5 // indirect
+	github.com/codesenberg/concurrent v0.0.0-20180531114123-64560cfcf964 // indirect
 	github.com/docker/go-units v0.4.0
 	github.com/emirpasic/gods v1.12.0
 	github.com/envoyproxy/protoc-gen-validate v0.6.1
@@ -24,6 +30,8 @@ require (
 	github.com/google/uuid v1.1.5
 	github.com/gorilla/mux v1.7.3
 	github.com/jarcoal/httpmock v1.0.8
+	github.com/juju/ratelimit v1.0.1 // indirect
+	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-sqlite3 v2.0.1+incompatible // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
@@ -46,6 +54,7 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
 	github.com/ugorji/go v1.1.13 // indirect
+	github.com/valyala/fasthttp v1.28.0 // indirect
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0
 	go.opentelemetry.io/otel/sdk v0.20.0
@@ -53,8 +62,9 @@ require (
 	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
+	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	golang.org/x/tools v0.1.4 // indirect
 	google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a // indirect
