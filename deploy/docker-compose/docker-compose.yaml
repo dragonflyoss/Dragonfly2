@@ -1,0 +1,30 @@
+version: "Compose specification"
+services:
+  dfdaemon:
+    image: dragonflyoss/dfdaemon:v2.0.0-alpha
+    depends_on:
+    - scheduler
+    - cdn
+    container_name: dfdaemon
+    network_mode: host
+    volumes:
+    - ../kustomize/single-cluster-openkruise/bases/dfdaemon/dfget.yaml:/etc/dragonfly/dfget.yaml
+    - /tmp/log/dragonfly:/var/log/dragonfly
+
+  scheduler:
+    image: dragonflyoss/scheduler:v2.0.0-alpha
+    depends_on:
+    - cdn
+    container_name: scheduler
+    network_mode: host
+    volumes:
+    - ../kustomize/single-cluster-openkruise/bases/scheduler/scheduler.yaml:/etc/dragonfly/scheduler.yaml
+    - /tmp/log/dragonfly:/var/log/dragonfly
+
+  cdn:
+    image: dragonflyoss/cdn:v2.0.0-alpha
+    container_name: cdn
+    network_mode: host
+    volumes:
+    - ../kustomize/single-cluster-openkruise/bases/cdn/cdn.yaml:/etc/dragonfly/cdn.yaml
+    - /tmp/log/dragonfly:/var/log/dragonfly
