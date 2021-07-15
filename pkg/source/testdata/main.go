@@ -42,13 +42,13 @@ func main() {
 
 	ctx := context.Background()
 
-	l, err := client.GetContentLength(ctx, "", nil)
+	l, err := client.GetContentLength(ctx, "", nil, nil)
 	if err != nil {
 		fmt.Printf("get content length error: %s\n", err)
 		os.Exit(1)
 	}
 
-	rc, err := client.Download(ctx, "", nil)
+	rc, err := client.Download(ctx, "", nil, nil)
 	if err != nil {
 		fmt.Printf("download error: %s\n", err)
 		os.Exit(1)
