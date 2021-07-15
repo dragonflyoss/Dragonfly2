@@ -11,6 +11,7 @@ MANAGER_BINARY_NAME=manager
 
 PKG=d7y.io/dragonfly/v2
 BUILD_IMAGE=golang:1.15.8
+GOPROXY=${GOPROXY:-}
 DATE=$(date "+%Y%m%d-%H:%M:%S")
 
 curDir=$(cd "$(dirname "$0")" && pwd)

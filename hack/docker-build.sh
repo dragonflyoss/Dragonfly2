@@ -6,6 +6,7 @@ set -o pipefail
 
 D7Y_VERSION=${D7Y_VERSION:-"latest"}
 D7Y_REGISTRY=${D7Y_REGISTRY:-d7yio}
+GOPROXY=${GOPROXY:-}
 curDir=$(cd "$(dirname "$0")" && pwd)
 IMAGES_DIR="build/images"
 cd "${curDir}/../" || return
