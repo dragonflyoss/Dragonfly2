@@ -21,8 +21,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
-	"d7y.io/dragonfly/v2/scheduler/types/host"
-	"d7y.io/dragonfly/v2/scheduler/types/peer"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type baseEvaluator struct {
@@ -32,19 +31,19 @@ func NewEvaluator() evaluator.Evaluator {
 	return &baseEvaluator{}
 }
 
-func (eval *baseEvaluator) NeedAdjustParent(peer *peer.PeerNode) bool {
-	parent := peer.Parent
+func (eval *baseEvaluator) NeedAdjustParent(peer *types.PeerNode) bool {
+	parent := peer.GetParent()
 
 	if parent == nil {
 		return true
 	}
 
-	costHistory := peer.CostHistory
+	costHistory := peer.GetCostHistory()
 	if len(costHistory) < 4 {
 		return false
 	}
 
-	avgCost, lastCost := getAvgAndLastCost(parent.CostHistory, 4)
+	avgCost, lastCost := getAvgAndLastCost(parent.GetCostHistory(), 4)
 	if avgCost*40 < lastCost {
 		logger.Debugf("IsBadNode [%s]: recent pieces have taken too long to download", peer.PeerID)
 		return true
@@ -54,8 +53,8 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *peer.PeerNode) bool {
 	return (avgCost * 20) < lastCost
 }
 
-func (eval *baseEvaluator) IsBadNode(peer *peer.PeerNode) bool {
-	parent := peer.Parent
+func (eval *baseEvaluator) IsBadNode(peer *types.PeerNode) bool {
+	parent := peer.GetParent()
 
 	if parent == nil {
 		return false
@@ -65,14 +64,14 @@ func (eval *baseEvaluator) IsBadNode(peer *peer.PeerNode) bool {
 		return false
 	}
 
-	lastActiveTime := peer.LastAccessTime
+	lastActiveTime := peer.GetLastAccessTime()
 
 	if time.Now().After(lastActiveTime.Add(5 * time.Second)) {
 		logger.Debugf("IsBadNode [%s]: node is expired", peer.PeerID)
 		return true
 	}
 
-	costHistory := parent.CostHistory
+	costHistory := parent.GetCostHistory()
 	if len(costHistory) < 4 {
 		return false
 	}
@@ -88,7 +87,7 @@ func (eval *baseEvaluator) IsBadNode(peer *peer.PeerNode) bool {
 }
 
 // The bigger the better
-func (eval *baseEvaluator) Evaluate(dst *peer.PeerNode, src *peer.PeerNode) float64 {
+func (eval *baseEvaluator) Evaluate(dst *types.PeerNode, src *types.PeerNode) float64 {
 	profits := getProfits(dst, src)
 
 	load := getHostLoad(dst.Host)
@@ -113,20 +112,20 @@ func getAvgAndLastCost(list []int, splitPos int) (avgCost, lastCost int) {
 }
 
 // getProfits 0.0~unlimited larger and better
-func getProfits(dst *peer.PeerNode, src *peer.PeerNode) float64 {
-	diff := peer.GetDiffPieceNum(src, dst)
+func getProfits(dst *types.PeerNode, src *types.PeerNode) float64 {
+	diff := types.GetDiffPieceNum(src, dst)
 	depth := dst.GetDepth()
 
 	return float64(int(diff+1)*src.GetWholeTreeNode()) / float64(depth*depth)
 }
 
 // getHostLoad 0.0~1.0 larger and better
-func getHostLoad(host *host.NodeHost) float64 {
+func getHostLoad(host *types.NodeHost) float64 {
 	return 1.0 - host.GetUploadLoadPercent()
 }
 
 // getDistance 0.0~1.0 larger and better
-func getDistance(dst *peer.PeerNode, src *peer.PeerNode) float64 {
+func getDistance(dst *types.PeerNode, src *types.PeerNode) float64 {
 	hostDist := 40.0
 	if dst.Host == src.Host {
 		hostDist = 0.0

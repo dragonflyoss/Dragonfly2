@@ -25,8 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator/basic"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types/host"
-	"d7y.io/dragonfly/v2/scheduler/types/peer"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 const name = "basic"
@@ -67,14 +66,14 @@ type Scheduler struct {
 	peerManager daemon.PeerMgr
 }
 
-func (s *Scheduler) ScheduleChildren(peer *peer.PeerNode) (children []*peer.PeerNode) {
+func (s *Scheduler) ScheduleChildren(peer *types.PeerNode) (children []*types.PeerNode) {
 	logger.Debugf("[%s][%s]scheduler children", peer.Task.TaskID, peer.PeerID)
 	if s.evaluator.IsBadNode(peer) {
 		return
 	}
 	freeUpload := peer.Host.GetFreeUploadLoad()
 	candidateChildren := s.selectCandidateChildren(peer, freeUpload*2)
-	evalResult := make(map[float64]*peer.PeerNode)
+	evalResult := make(map[float64]*types.PeerNode)
 	var evalScore []float64
 	for _, child := range candidateChildren {
 		score := s.evaluator.Evaluate(peer, child)
@@ -87,7 +86,7 @@ func (s *Scheduler) ScheduleChildren(peer *peer.PeerNode) (children []*peer.Peer
 			break
 		}
 		child := evalResult[evalScore[len(evalScore)-i-1]]
-		if child.Parent == peer {
+		if child.GetParent() == peer {
 			continue
 		}
 		children = append(children, child)
@@ -99,7 +98,7 @@ func (s *Scheduler) ScheduleChildren(peer *peer.PeerNode) (children []*peer.Peer
 	return
 }
 
-func (s *Scheduler) ScheduleParent(peer *peer.PeerNode, limit int) (parent *peer.PeerNode, candidateParents []*peer.PeerNode) {
+func (s *Scheduler) ScheduleParent(peer *types.PeerNode, limit int) (parent *types.PeerNode, candidateParents []*types.PeerNode) {
 	logger.Debugf("[%s][%s]scheduler parent", peer.Task.TaskID, peer.PeerID)
 	if !s.evaluator.NeedAdjustParent(peer) {
 		return
@@ -110,7 +109,7 @@ func (s *Scheduler) ScheduleParent(peer *peer.PeerNode, limit int) (parent *peer
 		worth := s.evaluator.Evaluate(parent, peer)
 
 		// scheduler the same parent, worth reduce a half
-		if peer.Parent != nil && peer.Parent.PeerID == candidate.PeerID {
+		if peer.GetParent() != nil && peer.GetParent().PeerID == candidate.PeerID {
 			worth = worth / 2.0
 		}
 
@@ -119,30 +118,29 @@ func (s *Scheduler) ScheduleParent(peer *peer.PeerNode, limit int) (parent *peer
 			parent = candidate
 		}
 	}
-	if parent == peer.Parent {
+	if parent == peer.GetParent() {
 		return
 	}
 	peer.ReplaceParent(parent)
 	return
 }
 
-func (s *Scheduler) IsBadNode(peer *peer.PeerNode) bool {
+func (s *Scheduler) IsBadNode(peer *types.PeerNode) bool {
 	return s.evaluator.IsBadNode(peer)
 }
 
-func (s *Scheduler) selectCandidateChildren(peer *peer.PeerNode, limit int) (list []*peer.PeerNode) {
-	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *peer.PeerNode) bool {
-		if candidateNode != nil && candidateNode.Parent == nil && !peer.IsDonePeer(peer) && host.IsPeerHost(peer.Host) {
+func (s *Scheduler) selectCandidateChildren(peer *types.PeerNode, limit int) (list []*types.PeerNode) {
+	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *types.PeerNode) bool {
+		if candidateNode != nil && candidateNode.GetParent() == nil && !peer.IsDone() && peer.Host.IsPeerHost() {
 			return true
 		}
 		return false
 	})
 }
 
-func (s *Scheduler) selectCandidateParents(peer *peer.PeerNode, limit int) (list []*peer.PeerNode) {
-	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *peer.PeerNode) bool {
-		if candidateNode != nil && candidateNode.Host.GetFreeUploadLoad() > 0 && (peer.IsSuccessPeer(candidateNode) || host.IsCDNHost(candidateNode.
-			GetTreeRoot().Host)) {
+func (s *Scheduler) selectCandidateParents(peer *types.PeerNode, limit int) (list []*types.PeerNode) {
+	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.PeerNode) bool {
+		if candidateNode != nil && candidateNode.Host.GetFreeUploadLoad() > 0 && (candidateNode.IsSuccess() || candidateNode.GetTreeRoot().Host.IsCDNHost()) {
 			return true
 		}
 		return false

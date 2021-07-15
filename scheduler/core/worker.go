@@ -24,10 +24,18 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types/peer"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-type WorkerFactory struct {
+type task interface {
+	apply()
+}
+
+type PeerLeaveTask struct {
+	peerID string
+}
+
+type Worker struct {
 
 	// cdn mgr
 	cdnManager daemon.CDNMgr
@@ -40,8 +48,6 @@ type WorkerFactory struct {
 
 	scheduler scheduler.Scheduler
 }
-
-type service
 
 func newWorker(cfg *config.SchedulerConfig, scheduler scheduler.Scheduler, cdnManager daemon.CDNMgr, taskManager daemon.TaskMgr, hostManager daemon.HostMgr,
 	peerManager daemon.PeerMgr) (*Worker, error) {
@@ -63,7 +69,7 @@ func (worker *Worker) Submit(task func()) error {
 func (worker *Worker) NewHandleLeaveTask(target *schedulerRPC.PeerTarget) func() {
 	return func() {
 		peer, _ := worker.peerManager.Get(target.PeerId)
-		peer.SetStatus(peer.PeerStatusLeaveNode)
+		peer.SetStatus(types.PeerStatusLeaveNode)
 		peer.ReplaceParent(nil)
 		for _, child := range peer.GetChildren() {
 			parent, candidates := worker.scheduler.ScheduleParent(child, 10)
@@ -82,7 +88,7 @@ func (worker *Worker) NewHandleReportPeerResultTask(result *schedulerRPC.PeerRes
 		peer, _ := worker.peerManager.Get(result.PeerId)
 		peer.ReplaceParent(nil)
 		if result.Success {
-			peer.SetStatus(peer.PeerStatusSuccess)
+			peer.SetStatus(types.PeerStatusSuccess)
 			children := worker.scheduler.ScheduleChildren(peer)
 			for _, child := range children {
 				if child.PacketChan == nil {
@@ -92,8 +98,8 @@ func (worker *Worker) NewHandleReportPeerResultTask(result *schedulerRPC.PeerRes
 				child.PacketChan <- constructSuccessPeerPacket(child, peer, nil)
 			}
 		} else {
-			peer.SetStatus(peer.PeerStatusBadNode)
-			for _, child := range peer.Children {
+			peer.SetStatus(types.PeerStatusBadNode)
+			for _, child := range peer.GetChildren() {
 				parent, candidates := worker.scheduler.ScheduleParent(child, 10)
 				if child.PacketChan == nil {
 					logger.Warnf("reportPeerResult: there is no packet chan with peer %s", peer.PeerID)
@@ -137,14 +143,14 @@ func (worker *Worker) processErrorCode(pr *schedulerRPC.PieceResult) (stop bool)
 		peerTask, _ := worker.peerManager.Get(pr.SrcPid)
 		if peerTask != nil {
 			worker.Submit(new())
-			peerTask.SetNodeStatus(peer.PeerStatusNeedParent)
+			peerTask.SetStatus(types.PeerStatusNeedParent)
 			worker.sendJob(peerTask)
 		}
 		return true
 	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail:
 		peerTask, _ := worker.peerManager.Get(pr.SrcPid)
 		if peerTask != nil {
-			peerTask.SetStatus(peer.PeerStatusNeedParent)
+			peerTask.SetStatus(types.PeerStatusNeedParent)
 			w.sendJob(peerTask)
 			task := peerTask.Task
 			if task != nil {
@@ -160,7 +166,7 @@ func (worker *Worker) processErrorCode(pr *schedulerRPC.PieceResult) (stop bool)
 	return true
 }
 
-func constructSuccessPeerPacket(peer *peer.PeerNode, parent *peer.PeerNode, candidates []*peer.PeerNode) *schedulerRPC.PeerPacket {
+func constructSuccessPeerPacket(peer *types.PeerNode, parent *types.PeerNode, candidates []*types.PeerNode) *schedulerRPC.PeerPacket {
 	mainPeer := &schedulerRPC.PeerPacket_DestPeer{
 		Ip:      parent.Host.IP,
 		RpcPort: parent.Host.RPCPort,

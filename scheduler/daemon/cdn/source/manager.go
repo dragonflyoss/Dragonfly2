@@ -22,8 +22,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	managerRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types/host"
-	"d7y.io/dragonfly/v2/scheduler/types/task"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type manager struct {
@@ -36,11 +35,11 @@ func (m manager) OnNotify(scheduler *managerRPC.Scheduler) {
 	panic("implement me")
 }
 
-func (m manager) StartSeedTask(ctx context.Context, task *task.Task, callback func(ps *cdnsystem.PieceSeed, err error)) error {
+func (m manager) StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed, err error)) error {
 	panic("implement me")
 }
 
-func (m manager) DownloadTinyFileContent(task *task.Task, cdnHost *host.NodeHost) ([]byte, error) {
+func (m manager) DownloadTinyFileContent(task *types.Task, cdnHost *types.NodeHost) ([]byte, error) {
 	panic("implement me")
 }
 

@@ -31,8 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	managerRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types/host"
-	"d7y.io/dragonfly/v2/scheduler/types/task"
+	"d7y.io/dragonfly/v2/scheduler/types"
 	"github.com/pkg/errors"
 )
 
@@ -76,7 +75,7 @@ func (cm *manager) OnNotify(c *managerRPC.Scheduler) {
 	cm.client.UpdateState(cdnHostsToNetAddrs(cm.cdnServers))
 }
 
-func (cm *manager) StartSeedTask(ctx context.Context, task *task.Task, callback func(ps *cdnsystem.PieceSeed, err error)) error {
+func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed, err error)) error {
 	if cm.client == nil {
 		return errors.New("cdn client is nil")
 	}
@@ -90,20 +89,20 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *task.Task, callback 
 		if cdnErr, ok := err.(*dferrors.DfError); ok {
 			switch cdnErr.Code {
 			case dfcodes.CdnTaskRegistryFail:
-				task.SetStatus(task.TaskStatusRegisterFail)
+				task.SetStatus(types.TaskStatusRegisterFail)
 			case dfcodes.CdnTaskDownloadFail:
-				task.SetStatus(task.TaskStatusSourceError)
+				task.SetStatus(types.TaskStatusSourceError)
 			}
-			task.SetStatus(task.TaskStatusFailed)
+			task.SetStatus(types.TaskStatusFailed)
 		}
 		return err
 	}
-	task.SetStatus(task.TaskStatusRunning)
+	task.SetStatus(types.TaskStatusRunning)
 	go cm.Work(task, stream, callback)
 	return nil
 }
 
-func (cm *manager) Work(task *task.Task, stream *client.PieceSeedStream, callback func(ps *cdnsystem.PieceSeed, err error)) {
+func (cm *manager) Work(task *types.Task, stream *client.PieceSeedStream, callback func(ps *cdnsystem.PieceSeed, err error)) {
 	for {
 		piece, err := stream.Recv()
 		if err == io.EOF {
@@ -113,12 +112,12 @@ func (cm *manager) Work(task *task.Task, stream *client.PieceSeedStream, callbac
 			if recvErr, ok := err.(*dferrors.DfError); ok {
 				switch recvErr.Code {
 				case dfcodes.CdnTaskRegistryFail:
-					task.SetStatus(task.TaskStatusRegisterFail)
+					task.SetStatus(types.TaskStatusRegisterFail)
 				case dfcodes.CdnTaskDownloadFail:
-					task.SetStatus(task.TaskStatusFailed)
+					task.SetStatus(types.TaskStatusFailed)
 				}
 			}
-			task.SetStatus(task.TaskStatusFailed)
+			task.SetStatus(types.TaskStatusFailed)
 			return
 		}
 		callback(piece, err)
@@ -128,8 +127,8 @@ func (cm *manager) Work(task *task.Task, stream *client.PieceSeedStream, callbac
 	}
 }
 
-func (cm *manager) processSeedPiece(task *task.Task, ps *cdnsystem.PieceSeed) error {
-	task.AddPiece(&task.PieceInfo{
+func (cm *manager) processSeedPiece(task *types.Task, ps *cdnsystem.PieceSeed) error {
+	task.AddPiece(&types.PieceInfo{
 		PieceNum:    ps.PieceInfo.PieceNum,
 		RangeStart:  ps.PieceInfo.RangeStart,
 		RangeSize:   ps.PieceInfo.RangeSize,
@@ -140,12 +139,12 @@ func (cm *manager) processSeedPiece(task *task.Task, ps *cdnsystem.PieceSeed) er
 	if ps.Done {
 		task.PieceTotal = ps.TotalPieceCount
 		task.ContentLength = ps.ContentLength
-		task.SetStatus(task.TaskStatusSuccess)
+		task.SetStatus(types.TaskStatusSuccess)
 	}
 	return nil
 }
 
-func (cm *manager) DownloadTinyFileContent(task *task.Task, cdnHost *host.NodeHost) ([]byte, error) {
+func (cm *manager) DownloadTinyFileContent(task *types.Task, cdnHost *types.NodeHost) ([]byte, error) {
 	// no need to invoke getPieceTasks method
 	// TODO download the tiny file
 	// http://host:port/download/{taskId 前3位}/{taskId}?peerId={peerId};

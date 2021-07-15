@@ -19,20 +19,20 @@ package daemon
 import (
 	"sync"
 
-	"d7y.io/dragonfly/v2/scheduler/types/task"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type TaskMgr interface {
 	// Add
-	Add(task *task.Task)
+	Add(task *types.Task)
 
 	// Get
-	Get(taskID string) (task *task.Task, ok bool)
+	Get(taskID string) (task *types.Task, ok bool)
 
 	// Delete
 	Delete(taskID string)
 
 	ListTasks() *sync.Map
 
-	GetOrAdd(task *task.Task) (actual *task.Task, loaded bool)
+	GetOrAdd(task *types.Task) (actual *types.Task, loaded bool)
 }

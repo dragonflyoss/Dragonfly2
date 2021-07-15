@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package host
+package types
 
 import (
 	"sync"
-
-	"d7y.io/dragonfly/v2/scheduler/types/peer"
 )
 
 type HostType uint8
@@ -56,12 +54,12 @@ type NodeHost struct {
 	IDC string
 	// NetTopology network device path: switch|router|...
 	NetTopology       string
-	totalUploadLoad   int
+	TotalUploadLoad   int
 	currentUploadLoad int
-	peerNodeMap       map[string]*peer.PeerNode
+	peerNodeMap       map[string]*PeerNode
 }
 
-func (h *NodeHost) AddPeerNode(peerNode *peer.PeerNode) {
+func (h *NodeHost) AddPeerNode(peerNode *PeerNode) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 	h.peerNodeMap[peerNode.PeerID] = peerNode
@@ -79,19 +77,7 @@ func (h *NodeHost) GetPeerTaskNum() int {
 	return len(h.peerNodeMap)
 }
 
-func (h *NodeHost) GetTotalUploadLoad() int {
-	h.lock.RUnlock()
-	defer h.lock.RUnlock()
-	return h.totalUploadLoad
-}
-
-func (h *NodeHost) SetTotalUploadLoad() int {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-	return h.totalUploadLoad
-}
-
-func (h *NodeHost) GetPeerNode(peerID string) (*peer.PeerNode, bool) {
+func (h *NodeHost) GetPeerNode(peerID string) (*PeerNode, bool) {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 	peerNode, ok := h.peerNodeMap[peerID]
@@ -121,22 +107,22 @@ func (h *NodeHost) GetCurrentUpload() int {
 func (h *NodeHost) GetUploadLoadPercent() float64 {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
-	if h.totalUploadLoad <= 0 {
+	if h.TotalUploadLoad <= 0 {
 		return 1.0
 	}
-	return float64(h.currentUploadLoad) / float64(h.totalUploadLoad)
+	return float64(h.currentUploadLoad) / float64(h.TotalUploadLoad)
 }
 
 func (h *NodeHost) GetFreeUploadLoad() int {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
-	return h.totalUploadLoad - h.currentUploadLoad
+	return h.TotalUploadLoad - h.currentUploadLoad
 }
 
-func IsCDNHost(host *NodeHost) bool {
-	return host.HostType == CDNNodeHost
+func (h *NodeHost) IsCDNHost() bool {
+	return h.HostType == CDNNodeHost
 }
 
-func IsPeerHost(host *NodeHost) bool {
-	return host.HostType == PeerNodeHost
+func (h *NodeHost) IsPeerHost() bool {
+	return h.HostType == PeerNodeHost
 }

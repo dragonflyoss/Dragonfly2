@@ -31,7 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
-	"d7y.io/dragonfly/v2/scheduler/types/task"
+	"d7y.io/dragonfly/v2/scheduler/types"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
@@ -59,13 +59,13 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		return
 	}
 	taskID := s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMeta, request.BizId, request.PeerId)
-	task := task.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta)
+	task := types.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta)
 	task, err = s.service.GetOrCreateTask(ctx, task)
 	if err != nil {
 		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
 	}
-	if task.IsFailTask(task) {
-		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is %d", task.Status)
+	if task.IsFail() {
+		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is %d", task.GetStatus())
 		return
 	}
 	resp.SizeScope = getTaskSizeScope(task)
@@ -86,7 +86,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		if schErr != nil {
 			err = dferrors.Newf(dfcodes.SchedPeerScheduleFail, "failed to schedule peerNode %v: %v", peerNode, schErr)
 		}
-		singlePiece := task.PieceList[0]
+		singlePiece := task.GetPiece(0)
 		resp.DirectPiece = &scheduler.RegisterResult_SinglePiece{
 			SinglePiece: &scheduler.SinglePiece{
 				DstPid:  parent.PeerID,
@@ -131,7 +131,9 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 			once.Do(func() {
 				peer.SetSendChannel(peerPacketChan)
 			})
-			s.service.HandlePieceResult(pieceResult)
+			if err := s.service.HandlePieceResult(pieceResult); err != nil {
+				logger.Errorf("handle piece result %v fail: %v", pieceResult, err)
+			}
 		}
 	})
 
@@ -179,8 +181,8 @@ func validateParams(req *scheduler.PeerTaskRequest) error {
 	return nil
 }
 
-func getTaskSizeScope(task *task.Task) base.SizeScope {
-	if task.ContentLength <= task.TinyFileSize {
+func getTaskSizeScope(task *types.Task) base.SizeScope {
+	if task.ContentLength <= types.TinyFileSize {
 		return base.SizeScope_TINY
 	}
 	if task.PieceTotal == 1 {

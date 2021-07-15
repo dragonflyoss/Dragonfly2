@@ -20,7 +20,7 @@ import (
 	"sync"
 
 	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types/task"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type manager struct {
@@ -41,22 +41,22 @@ func (m *manager) ListTasks() *sync.Map {
 	return &m.taskMap
 }
 
-func (m *manager) Add(task *task.Task) {
+func (m *manager) Add(task *types.Task) {
 	m.taskMap.Store(task.TaskID, task)
 }
 
-func (m *manager) Get(taskID string) (task *task.Task, ok bool) {
+func (m *manager) Get(taskID string) (task *types.Task, ok bool) {
 	item, ok := m.taskMap.Load(taskID)
 	if !ok {
 		return nil, false
 	}
-	return item.(*task.Task), true
+	return item.(*types.Task), true
 }
 
-func (m *manager) GetOrAdd(task *task.Task) (actual *task.Task, loaded bool) {
+func (m *manager) GetOrAdd(task *types.Task) (actual *types.Task, loaded bool) {
 	item, loaded := m.taskMap.LoadOrStore(task.TaskID, task)
 	if loaded {
-		return item.(*task.Task), true
+		return item.(*types.Task), true
 	}
 	return task, false
 }

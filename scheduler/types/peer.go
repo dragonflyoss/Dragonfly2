@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package peer
+package types
 
 import (
 	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/types/host"
-	"d7y.io/dragonfly/v2/scheduler/types/task"
 )
 
 type PeerStatus uint8
 
 const (
-	PeerStatusWaiting PeerStatus = iota + 1
+	PeerStatusWaiting PeerStatus = iota
 	PeerStatusRunning
 	PeerStatusNeedParent
 	PeerStatusNeedChildren
@@ -47,9 +45,9 @@ type PeerNode struct {
 	// PeerID specifies ID of peer
 	PeerID string
 	// Task specifies
-	Task *task.Task
+	Task *Task
 	// Host specifies
-	Host *host.NodeHost
+	Host *NodeHost
 	// finishedNum specifies downloaded finished piece number
 	finishedNum    int32
 	lastAccessTime time.Time
@@ -60,12 +58,14 @@ type PeerNode struct {
 	PacketChan     chan *scheduler.PeerPacket
 }
 
-func IsSuccess(peer *PeerNode) bool {
-	return peer.status == PeerStatusSuccess
-}
-
-func IsDone(peer *PeerNode) bool {
-	return peer.status == PeerStatusSuccess || peer.status == PeerStatusBadNode
+func NewPeerNode(peerID string, task *Task, host *NodeHost) *PeerNode {
+	return &PeerNode{
+		PeerID:         peerID,
+		Task:           task,
+		Host:           host,
+		lastAccessTime: time.Now(),
+		status:         PeerStatusWaiting,
+	}
 }
 
 func (peer *PeerNode) GetWholeTreeNode() int {
@@ -76,6 +76,12 @@ func (peer *PeerNode) GetWholeTreeNode() int {
 		count += peerNode.GetWholeTreeNode()
 	}
 	return count
+}
+
+func (peer *PeerNode) GetLastAccessTime() time.Time {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
+	return peer.lastAccessTime
 }
 
 func (peer *PeerNode) AddChild(child *PeerNode) {
@@ -114,6 +120,12 @@ func (peer *PeerNode) ReplaceParent(parent *PeerNode) error {
 		parent.AddChild(peer)
 	}
 	return nil
+}
+
+func (peer *PeerNode) GetCostHistory() []int {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
+	return peer.costHistory
 }
 
 func (peer *PeerNode) GetCost() int {
@@ -159,7 +171,7 @@ func (peer *PeerNode) GetDepth() int {
 	node := peer
 	for node != nil {
 		deep++
-		if node.parent == nil || host.IsCDNHost(node.Host) {
+		if node.parent == nil || node.Host.IsCDNHost() {
 			break
 		}
 		node = node.parent
@@ -170,7 +182,7 @@ func (peer *PeerNode) GetDepth() int {
 func (peer *PeerNode) GetTreeRoot() *PeerNode {
 	node := peer
 	for node != nil {
-		if node.parent == nil || host.IsCDNHost(node.Host) {
+		if node.parent == nil || node.Host.IsCDNHost() {
 			break
 		}
 		node = node.parent
@@ -185,7 +197,7 @@ func (peer *PeerNode) IsAncestor(ancestor *PeerNode) bool {
 	}
 	node := peer
 	for node != nil {
-		if node.parent == nil || host.IsCDNHost(node.Host) {
+		if node.parent == nil || node.Host.IsCDNHost() {
 			return false
 		} else if node.PeerID == ancestor.PeerID {
 			return true
@@ -196,28 +208,35 @@ func (peer *PeerNode) IsAncestor(ancestor *PeerNode) bool {
 }
 
 func (peer *PeerNode) IsWaiting() bool {
+	peer.lock.RLock()
+	defer peer.lock.RLock()
 	if peer.parent == nil {
 		return false
 	}
-
 	return peer.finishedNum >= peer.parent.finishedNum
 }
 
 func (peer *PeerNode) GetSortKeys() (key1, key2 int) {
+	peer.lock.RLock()
+	defer peer.lock.RLock()
 	key1 = int(peer.finishedNum)
 	key2 = int(peer.getFreeLoad())
 	return
 }
 
 func (peer *PeerNode) getFreeLoad() int {
+	peer.lock.RLock()
+	defer peer.lock.RLock()
 	if peer.Host == nil {
 		return 0
 	}
 	return peer.Host.GetFreeUploadLoad()
 }
 
-func (peer *PeerNode) getFinishNum() int {
-	return
+func (peer *PeerNode) getFinishNum() int32 {
+	peer.lock.RLock()
+	defer peer.lock.RLock()
+	return peer.finishedNum
 }
 
 func GetDiffPieceNum(src *PeerNode, dst *PeerNode) int32 {
@@ -228,15 +247,15 @@ func GetDiffPieceNum(src *PeerNode, dst *PeerNode) int32 {
 	return -diff
 }
 
-func IsRunning(peer *PeerNode) bool {
-	return peer.status != PeerStatusBadNode
-}
-
 func (peer *PeerNode) GetParent() *PeerNode {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
 	return peer.parent
 }
 
 func (peer *PeerNode) GetChildren() map[string]*PeerNode {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
 	return peer.children
 }
 
@@ -254,4 +273,27 @@ func (peer *PeerNode) SetSendChannel(packetChan chan *scheduler.PeerPacket) {
 
 func (peer *PeerNode) GetSendChannel() chan *scheduler.PeerPacket {
 	return peer.PacketChan
+}
+
+func (peer *PeerNode) IsRunning() bool {
+	return peer.status != PeerStatusBadNode
+}
+
+func (peer *PeerNode) IsSuccess() bool {
+	return peer.status == PeerStatusSuccess
+}
+
+func (peer *PeerNode) IncFinishNum() {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	peer.finishedNum++
+}
+
+func (peer *PeerNode) IsDone() bool {
+	return peer.status == PeerStatusSuccess || peer.status == PeerStatusBadNode
+}
+
+func (peer *PeerNode) Touch() {
+	peer.lastAccessTime = time.Now()
+	peer.Task.lastAccessTime = time.Now()
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package task
+package types
 
 import (
 	"sync"
@@ -22,13 +22,12 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
-	"d7y.io/dragonfly/v2/scheduler/types/peer"
 )
 
 type TaskStatus uint8
 
 const (
-	TaskStatusWaiting TaskStatus = iota + 1
+	TaskStatusWaiting TaskStatus = iota
 	TaskStatusRegisterFail
 	TaskStatusRunning
 	TaskStatusFailed
@@ -48,46 +47,80 @@ type Task struct {
 	lastAccessTime  time.Time
 	lastTriggerTime time.Time
 	pieceList       map[int32]*PieceInfo
-	pieceTotal      int32
+	PieceTotal      int32
 	ContentLength   int64
 	status          TaskStatus
-	peerNodes       sortedlist.SortedList
+	peerNodes       *sortedlist.SortedList
 }
 
 func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
 	return &Task{
-		TaskID:  taskID,
-		URL:     url,
-		Filter:  filter,
-		BizID:   bizID,
-		URLMeta: meta,
-		status:  TaskStatusWaiting,
+		TaskID:    taskID,
+		URL:       url,
+		Filter:    filter,
+		BizID:     bizID,
+		URLMeta:   meta,
+		peerNodes: sortedlist.NewSortedList(),
+		status:    TaskStatusWaiting,
 	}
 }
 
 func (task *Task) SetStatus(status TaskStatus) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
 	task.status = status
+}
+
+func (task *Task) GetStatus() TaskStatus {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	return task.status
 }
 
 func (task *Task) GetPiece(pieceNum int32) *PieceInfo {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
-	task.lastAccessTime = time.Now()
 	return task.pieceList[pieceNum]
 }
 
-func (task *Task) AddPeerNode(peer *peer.PeerNode) {
+func (task *Task) AddPeerNode(peer *PeerNode) {
 	task.lock.Lock()
-	defer task.lock.RUnlock()
-	task.lastAccessTime = time.Now()
+	defer task.lock.Unlock()
 	task.peerNodes.UpdateOrAdd(peer)
+}
+
+func (task *Task) DeletePeerNode(peer *PeerNode) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.peerNodes.Delete(peer)
 }
 
 func (task *Task) AddPiece(p *PieceInfo) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	task.lastAccessTime = time.Now()
 	task.pieceList[p.PieceNum] = p
+}
+
+func (task *Task) Touch() {
+	task.lastAccessTime = time.Now()
+}
+
+func (task *Task) GetLastTriggerTime() time.Time {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	return task.lastTriggerTime
+}
+
+func (task *Task) SetLastTriggerTime(lastTriggerTime time.Time) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.lastTriggerTime = lastTriggerTime
+}
+
+func (task *Task) ListPeerNodes() *sortedlist.SortedList {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	return task.peerNodes
 }
 
 const TinyFileSize = 128
@@ -102,26 +135,23 @@ type PieceInfo struct {
 }
 
 // isSuccessCDN determines that whether the CDNStatus is success.
-func IsSuccessTask(task *Task) bool {
+func (task *Task) IsSuccess() bool {
 	return task.status == TaskStatusSuccess
 }
 
-func IsFrozenTask(task *Task) bool {
-	status := task.status
-	return status == TaskStatusFailed || status == TaskStatusWaiting ||
-		status == TaskStatusSourceError || status == TaskStatusRegisterFail
+func (task *Task) IsFrozen() bool {
+	return task.status == TaskStatusFailed || task.status == TaskStatusWaiting ||
+		task.status == TaskStatusSourceError || task.status == TaskStatusRegisterFail
 }
 
-func IsWaitTask(task *Task) bool {
-	status := task.status
-	return status == TaskStatusWaiting
+func (task *Task) IsWaiting() bool {
+	return task.status == TaskStatusWaiting
 }
 
-func IsHealthTask(task *Task) bool {
-	return task.status == TaskStatusRunning || task.Status == TaskStatusSuccess
+func (task *Task) IsHealth() bool {
+	return task.status == TaskStatusRunning || task.status == TaskStatusSuccess
 }
 
-func IsFailTask(task *Task) bool {
-	status := task.status
-	return status == TaskStatusFailed || status == TaskStatusSourceError
+func (task *Task) IsFail() bool {
+	return task.status == TaskStatusFailed || task.status == TaskStatusSourceError
 }
