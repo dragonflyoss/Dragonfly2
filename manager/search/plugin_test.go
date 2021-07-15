@@ -32,16 +32,9 @@ func Test_loadPlugin(t *testing.T) {
 		os.Remove("./testdata/d7y-algorithm-plugin-search.so")
 	}()
 
-	var (
-		cmd    *exec.Cmd
-		output []byte
-		wd     string
-		err    error
-	)
-
 	// build plugin
-	cmd = exec.Command("go", "build", "-buildmode=plugin", "-o=./testdata/d7y-algorithm-plugin-search.so", "testdata/plugin/search.go")
-	output, err = cmd.CombinedOutput()
+	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o=./testdata/d7y-algorithm-plugin-search.so", "testdata/plugin/search.go")
+	output, err := cmd.CombinedOutput()
 	assert.Nil(err)
 	if err != nil {
 		t.Fatalf(string(output))
