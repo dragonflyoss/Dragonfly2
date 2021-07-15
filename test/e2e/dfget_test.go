@@ -25,26 +25,8 @@ import (
 	. "github.com/onsi/gomega" //nolint
 )
 
-const (
-	dragonflyNamespace    = "dragonfly-system"
-	dragonflyE2ENamespace = "dragonfly-e2e"
-)
-
 var _ = Describe("Download with dfget", func() {
 	Context("dfget", func() {
-		It("setup file server should be ok", func() {
-			// create file server
-			out, err := e2eutil.KubeCtlCommand("apply", "-f", "../testdata/k8s/file-server.yaml").CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(string(out))
-
-			// wait file server ready
-			out, err = e2eutil.KubeCtlCommand("-n", dragonflyE2ENamespace,
-				"wait", "--for=condition=ready", "--timeout=5m", "pod", "file-server-0").CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(string(out))
-		})
-
 		It("dfget download should be ok", func() {
 			out, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
 				"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
@@ -68,8 +50,8 @@ var _ = Describe("Download with dfget", func() {
 				"/usr/local/bin/containerd",
 				"/usr/local/bin/create-kubelet-cgroup-v2",
 				"/usr/local/bin/crictl",
-				"/usr/local/bin/containerd-fuse-overlayfs-grpc",
 			}
+
 			for i := range files {
 				url := fmt.Sprintf("http://file-server.dragonfly-e2e.svc/kind%s", files[i])
 				fmt.Println("download url " + url)
