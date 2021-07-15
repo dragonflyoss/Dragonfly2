@@ -22,6 +22,8 @@ import (
 	"io"
 	"io/ioutil"
 
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+
 	"d7y.io/dragonfly/v2/pkg/source"
 )
 
@@ -32,7 +34,7 @@ var _ source.ResourceClient = (*client)(nil)
 type client struct {
 }
 
-func (c *client) GetContentLength(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
+func (c *client) GetContentLength(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (int64, error) {
 	return int64(len(data)), nil
 }
 
@@ -44,11 +46,11 @@ func (c *client) IsExpired(ctx context.Context, url string, header source.Reques
 	panic("implement me")
 }
 
-func (c *client) Download(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, error) {
+func (c *client) Download(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, error) {
 	return ioutil.NopCloser(bytes.NewBufferString(data)), nil
 }
 
-func (c *client) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, source.ResponseHeader, error) {
+func (c *client) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, source.ResponseHeader, error) {
 	return ioutil.NopCloser(bytes.NewBufferString(data)), map[string]string{}, nil
 }
 

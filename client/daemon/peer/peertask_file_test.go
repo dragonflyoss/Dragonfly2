@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
+
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
@@ -73,12 +75,12 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader) (io.ReadCloser, error) {
+	sourceClient.EXPECT().Download(gomock.Any(), url, gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
@@ -183,12 +185,12 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
-		func(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, header source.RequestHeader, rang *rangers.Range) (int64, error) {
 			return -1, nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
-		func(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, error) {
+	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, header source.RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 

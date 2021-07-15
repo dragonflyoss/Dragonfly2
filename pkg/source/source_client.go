@@ -19,12 +19,16 @@ package source
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
+
+	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
+	"github.com/go-http-utils/headers"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
@@ -38,7 +42,7 @@ type ResourceClient interface {
 	// GetContentLength get length of resource content
 	// return -l if request fail
 	// return task.IllegalSourceFileLen if response status is not StatusOK and StatusPartialContent
-	GetContentLength(ctx context.Context, url string, header RequestHeader) (int64, error)
+	GetContentLength(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (int64, error)
 
 	// IsSupportRange checks if resource supports breakpoint continuation
 	IsSupportRange(ctx context.Context, url string, header RequestHeader) (bool, error)
@@ -47,10 +51,10 @@ type ResourceClient interface {
 	IsExpired(ctx context.Context, url string, header RequestHeader, expireInfo map[string]string) (bool, error)
 
 	// Download download from source
-	Download(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, error)
+	Download(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (io.ReadCloser, error)
 
 	// DownloadWithResponseHeader download from source with responseHeader
-	DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, ResponseHeader, error)
+	DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (io.ReadCloser, ResponseHeader, error)
 
 	// GetLastModified get lastModified timestamp milliseconds of resource
 	GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader) (int64, error)
@@ -71,7 +75,7 @@ var _defaultMgr = &ClientManagerImpl{
 	clients: make(map[string]ResourceClient),
 }
 
-func (clientMgr *ClientManagerImpl) GetContentLength(ctx context.Context, url string, header RequestHeader) (int64, error) {
+func (clientMgr *ClientManagerImpl) GetContentLength(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (int64, error) {
 	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return -1, err
@@ -81,7 +85,7 @@ func (clientMgr *ClientManagerImpl) GetContentLength(ctx context.Context, url st
 		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 	}
-	return sourceClient.GetContentLength(ctx, url, header)
+	return sourceClient.GetContentLength(ctx, url, header, rang)
 }
 
 func (clientMgr *ClientManagerImpl) IsSupportRange(ctx context.Context, url string, header RequestHeader) (bool, error) {
@@ -110,21 +114,21 @@ func (clientMgr *ClientManagerImpl) IsExpired(ctx context.Context, url string, h
 	return sourceClient.IsExpired(ctx, url, header, expireInfo)
 }
 
-func (clientMgr *ClientManagerImpl) Download(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, error) {
+func (clientMgr *ClientManagerImpl) Download(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
 	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return nil, err
 	}
-	return sourceClient.Download(ctx, url, header)
+	return sourceClient.Download(ctx, url, header, rang)
 }
 
-func (clientMgr *ClientManagerImpl) DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, ResponseHeader,
+func (clientMgr *ClientManagerImpl) DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (io.ReadCloser, ResponseHeader,
 	error) {
 	sourceClient, err := clientMgr.getSourceClient(url)
 	if err != nil {
 		return nil, nil, err
 	}
-	return sourceClient.DownloadWithResponseHeader(ctx, url, header)
+	return sourceClient.DownloadWithResponseHeader(ctx, url, header, rang)
 }
 
 func (clientMgr *ClientManagerImpl) GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader) (int64, error) {
@@ -169,7 +173,15 @@ func UnRegister(schema string) {
 }
 
 func GetContentLength(ctx context.Context, url string, header RequestHeader) (int64, error) {
-	return _defaultMgr.GetContentLength(ctx, url, header)
+	var httpRange *rangers.Range
+	if header.Get(headers.Range) != "" {
+		var err error
+		httpRange, err = rangers.ParseHTTPRange(header.Get(headers.Range))
+		if err != nil {
+			return -1, err
+		}
+	}
+	return _defaultMgr.GetContentLength(ctx, url, header, httpRange)
 }
 
 func IsSupportRange(ctx context.Context, url string, header RequestHeader) (bool, error) {
@@ -181,11 +193,28 @@ func IsExpired(ctx context.Context, url string, header RequestHeader, expireInfo
 }
 
 func Download(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, error) {
-	return _defaultMgr.Download(ctx, url, header)
+	var httpRange *rangers.Range
+	if header.Get(headers.Range) != "" {
+		var err error
+		httpRange, err = rangers.ParseHTTPRange(header.Get(headers.Range))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return _defaultMgr.Download(ctx, url, header, httpRange)
 }
 
 func DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, ResponseHeader, error) {
-	return _defaultMgr.DownloadWithResponseHeader(ctx, url, header)
+
+	var httpRange *rangers.Range
+	if header.Get(headers.Range) != "" {
+		var err error
+		httpRange, err = rangers.ParseHTTPRange(header.Get(headers.Range))
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return _defaultMgr.DownloadWithResponseHeader(ctx, url, header, httpRange)
 }
 
 func GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader) (int64, error) {
@@ -203,7 +232,7 @@ func (clientMgr *ClientManagerImpl) getSourceClient(rawURL string) (ResourceClie
 	client, ok := clientMgr.clients[strings.ToLower(parsedURL.Scheme)]
 	clientMgr.RUnlock()
 	if !ok || client == nil {
-		return nil, fmt.Errorf("can not find client for supporting url %s, clients: %v", rawURL, clientMgr.clients)
+		return nil, errors.Errorf("can not find client for supporting url %s, clients:%v", rawURL, clientMgr.clients)
 	}
 	return client, nil
 }

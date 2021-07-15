@@ -16,10 +16,17 @@
 
 package source
 
-// request header
+// RequestHeader request header
 type RequestHeader map[string]string
 
-// response header
+func (h RequestHeader) Get(key string) string {
+	if h == nil {
+		return ""
+	}
+	return h[key]
+}
+
+// ResponseHeader response header
 type ResponseHeader map[string]string
 
 func (h ResponseHeader) Get(key string) string {

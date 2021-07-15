@@ -84,23 +84,20 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 	defer source.UnRegister("http")
 	sourceClient.EXPECT().IsSupportRange(gomock.Any(), dragonflyURL, gomock.Any()).Return(true, nil).AnyTimes()
 	sourceClient.EXPECT().IsExpired(gomock.Any(), dragonflyURL, gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
-	sourceClient.EXPECT().Download(gomock.Any(), dragonflyURL, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, error) {
+	sourceClient.EXPECT().Download(gomock.Any(), dragonflyURL, gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, error) {
 			content, _ := ioutil.ReadFile("../../testdata/cdn/go.html")
-			if rang, ok := header["Range"]; ok {
-				r, _ := rangeutils.ParseHTTPRange(rang)
-				return ioutil.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(r.StartIndex), int64(r.EndIndex))), nil
+			if rang != nil {
+				return ioutil.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(rang.StartIndex), int64(rang.EndIndex))), nil
 			}
 			return ioutil.NopCloser(strings.NewReader(string(content))), nil
 		},
 	).AnyTimes()
-	sourceClient.EXPECT().DownloadWithResponseHeader(gomock.Any(), dragonflyURL, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, source.ResponseHeader, error) {
+	sourceClient.EXPECT().DownloadWithResponseHeader(gomock.Any(), dragonflyURL, gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, source.ResponseHeader, error) {
 			content, _ := ioutil.ReadFile("../../testdata/cdn/go.html")
-			if rang, ok := header["Range"]; ok {
-				r, err := rangeutils.ParseHTTPRange(rang)
-				suite.Nil(err)
-				return ioutil.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(r.StartIndex), int64(r.EndIndex))),
+			if rang != nil {
+				return ioutil.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(rang.StartIndex), int64(rang.EndIndex))),
 					map[string]string{
 						source.LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
 						source.ETag:         "etag",
@@ -114,11 +111,10 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 	).AnyTimes()
 	sourceClient.EXPECT().GetLastModifiedMillis(gomock.Any(), dragonflyURL, gomock.Any()).Return(
 		timeutils.UnixMillis("Sun, 06 Jun 2021 12:52:30 GMT"), nil).AnyTimes()
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), dragonflyURL, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
-			if rang, ok := header["Range"]; ok {
-				r, _ := rangeutils.ParseHTTPRange(rang)
-				return int64(r.EndIndex-r.StartIndex) + 1, nil
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), dragonflyURL, gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (int64, error) {
+			if rang != nil {
+				return int64(rang.EndIndex-rang.StartIndex) + 1, nil
 			}
 			fileInfo, _ := os.Stat("../../testdata/cdn/go.html")
 			return fileInfo.Size(), nil

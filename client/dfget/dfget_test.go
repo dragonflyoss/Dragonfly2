@@ -52,7 +52,7 @@ func Test_downloadFromSource(t *testing.T) {
 		Digest: strings.Join([]string{constants.Sha256Hash, digestutils.Sha256(content)}, ":"),
 	}
 
-	sourceClient.EXPECT().Download(context.Background(), cfg.URL, nil).Return(ioutil.NopCloser(strings.NewReader(content)), nil)
+	sourceClient.EXPECT().Download(context.Background(), cfg.URL, nil, nil).Return(ioutil.NopCloser(strings.NewReader(content)), nil)
 
 	err = downloadFromSource(context.Background(), cfg, nil)
 	assert.Nil(t, err)
