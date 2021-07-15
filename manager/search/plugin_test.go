@@ -19,38 +19,54 @@ package search
 import (
 	"os"
 	"os/exec"
+	"path"
 	"testing"
 
-	"d7y.io/dragonfly/v2/internal/dfpath"
-	"d7y.io/dragonfly/v2/manager/model"
 	testifyassert "github.com/stretchr/testify/assert"
 )
 
-func Test_loadPlugin(t *testing.T) {
+func TestLoadPlugin(t *testing.T) {
 	assert := testifyassert.New(t)
 	defer func() {
 		os.Remove("./testdata/d7y-algorithm-plugin-search.so")
+		os.Remove("./testdata/test")
 	}()
 
+	var (
+		cmd    *exec.Cmd
+		output []byte
+		wd     string
+		err    error
+	)
+
 	// build plugin
-	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o=./testdata/d7y-algorithm-plugin-search.so", "testdata/plugin/search.go")
-	output, err := cmd.CombinedOutput()
+	cmd = exec.Command("go", "build", "-buildmode=plugin", "-o=./testdata/d7y-algorithm-plugin-search.so", "testdata/plugin/search.go")
+	output, err = cmd.CombinedOutput()
 	assert.Nil(err)
 	if err != nil {
 		t.Fatalf(string(output))
 		return
 	}
 
-	dfpath.PluginsDir = "."
-
-	s, err := loadPlugin()
+	// build test binary
+	cmd = exec.Command("go", "build", "-o=./testdata/test", "testdata/main.go")
+	output, err = cmd.CombinedOutput()
 	assert.Nil(err)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf(string(output))
 		return
 	}
 
-	cluster, ok := s.SchedulerCluster([]model.SchedulerCluster{}, map[string]string{})
-	assert.Equal(ok, true)
-	assert.Equal(cluster.Name, "foo")
+	wd, err = os.Getwd()
+	assert.Nil(err)
+	wd = path.Join(wd, "testdata")
+
+	// execute test binary
+	cmd = exec.Command("./testdata/test", "-plugin-dir", wd)
+	output, err = cmd.CombinedOutput()
+	assert.Nil(err)
+	if err != nil {
+		t.Fatalf(string(output))
+		return
+	}
 }

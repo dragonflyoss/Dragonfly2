@@ -14,26 +14,39 @@
  * limitations under the License.
  */
 
-package search
+package main
 
 import (
-	"errors"
+	"flag"
+	"fmt"
+	"os"
 
-	"d7y.io/dragonfly/v2/internal/dfplugin"
+	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/search"
 )
 
-const (
-	pluginName = "search"
-)
+func init() {
+	flag.StringVar(&dfpath.PluginsDir, "plugin-dir", ".", "")
+}
 
-func LoadPlugin() (Search, error) {
-	client, _, err := dfplugin.Load(dfplugin.PluginTypeAlgorithm, pluginName, map[string]string{})
+func main() {
+	flag.Parse()
+
+	s, err := search.LoadPlugin()
 	if err != nil {
-		return nil, err
+		fmt.Printf("load plugin error: %s\n", err)
+		os.Exit(1)
 	}
 
-	if rc, ok := client.(Search); ok {
-		return rc, err
+	cluster, ok := s.SchedulerCluster([]model.SchedulerCluster{}, map[string]string{})
+	if !ok {
+		fmt.Println("scheduler cluster not found")
+		os.Exit(1)
 	}
-	return nil, errors.New("invalid client, not a ResourceClient")
+
+	if cluster.Name != "foo" {
+		fmt.Println("scheduler cluster name wrong")
+		os.Exit(1)
+	}
 }

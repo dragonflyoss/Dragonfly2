@@ -18,12 +18,12 @@ package main
 
 import "d7y.io/dragonfly/v2/manager/model"
 
-type Search interface {
-	SchedulerCluster([]model.SchedulerCluster, map[string]string) (model.SchedulerCluster, bool)
-}
-
 type search struct{}
 
 func (s *search) SchedulerCluster(schedulerClusters []model.SchedulerCluster, conditions map[string]string) (model.SchedulerCluster, bool) {
 	return model.SchedulerCluster{Name: "foo"}, true
+}
+
+func DragonflyPluginInit(option map[string]string) (interface{}, map[string]string, error) {
+	return &search{}, map[string]string{"type": "algorithm", "name": "search"}, nil
 }

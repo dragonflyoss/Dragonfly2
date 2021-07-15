@@ -47,7 +47,7 @@ type Search interface {
 type search struct{}
 
 func New() Search {
-	s, err := loadPlugin()
+	s, err := LoadPlugin()
 	if err != nil {
 		return &search{}
 	}
