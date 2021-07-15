@@ -28,7 +28,7 @@ import (
 func TestLoadPlugin(t *testing.T) {
 	assert := testifyassert.New(t)
 	defer func() {
-		os.Remove("./testdata/d7y-algorithm-plugin-search.so")
+		os.Remove("./testdata/d7y-manager-plugin-search.so")
 		os.Remove("./testdata/test")
 	}()
 
@@ -40,7 +40,7 @@ func TestLoadPlugin(t *testing.T) {
 	)
 
 	// build plugin
-	cmd = exec.Command("go", "build", "-buildmode=plugin", "-o=./testdata/d7y-algorithm-plugin-search.so", "testdata/plugin/search.go")
+	cmd = exec.Command("go", "build", "-buildmode=plugin", "-o=./testdata/d7y-manager-plugin-search.so", "testdata/plugin/search.go")
 	output, err = cmd.CombinedOutput()
 	assert.Nil(err)
 	if err != nil {

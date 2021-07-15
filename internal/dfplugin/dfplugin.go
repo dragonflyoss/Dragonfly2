@@ -42,8 +42,8 @@ const (
 type PluginType string
 
 const (
-	PluginTypeResource  = PluginType("resource")
-	PluginTypeAlgorithm = PluginType("algorithm")
+	PluginTypeResource = PluginType("resource")
+	PluginTypeManager  = PluginType("manager")
 )
 
 type PluginInitFunc func(option map[string]string) (plugin interface{}, meta map[string]string, err error)
