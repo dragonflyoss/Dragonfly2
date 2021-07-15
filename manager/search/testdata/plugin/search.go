@@ -25,5 +25,5 @@ func (s *search) SchedulerCluster(schedulerClusters []model.SchedulerCluster, co
 }
 
 func DragonflyPluginInit(option map[string]string) (interface{}, map[string]string, error) {
-	return &search{}, map[string]string{"type": "algorithm", "name": "search"}, nil
+	return &search{}, map[string]string{"type": "manager", "name": "search"}, nil
 }
