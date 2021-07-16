@@ -49,9 +49,9 @@ type SchedulerService struct {
 	// Peer mgr
 	peerManager daemon.PeerMgr
 
-	missionFactory *missionFactory
-	worker         *worker
-	pool           *ants.Pool
+	jobFactory *JobFactory
+	worker     *worker
+	pool       *ants.Pool
 	//pool      *Worker
 	config    *config.SchedulerConfig
 	scheduler scheduler.Scheduler
@@ -81,7 +81,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	if err != nil {
 		return nil, errors.Wrapf(err, "build scheduler %s", cfg.Scheduler)
 	}
-	mf, err := newMissionFactory(scheduler, cdnManager, taskManager, hostManager, peerManager)
+	jf, err := newJobFactory(scheduler, cdnManager, taskManager, hostManager, peerManager)
 	if err != nil {
 		return nil, errors.Wrap(err, "new mission factory")
 	}
@@ -90,13 +90,13 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		return nil, errors.Wrap(err, "new worker")
 	}
 	return &SchedulerService{
-		cdnManager:     cdnManager,
-		taskManager:    taskManager,
-		hostManager:    hostManager,
-		scheduler:      scheduler,
-		missionFactory: mf,
-		worker:         worker,
-		config:         cfg,
+		cdnManager:  cdnManager,
+		taskManager: taskManager,
+		hostManager: hostManager,
+		scheduler:   scheduler,
+		jobFactory:  jf,
+		worker:      worker,
+		config:      cfg,
 	}, nil
 }
 
@@ -198,13 +198,13 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 }
 
 func (s *SchedulerService) HandlePieceResult(pieceResult *schedulerRPC.PieceResult) error {
-	return s.pool.Submit(s.missionFactory.NewHandleReportPieceResultJob(pieceResult))
+	return s.pool.Submit(s.jobFactory.NewHandleReportPieceResultJob(pieceResult))
 }
 
 func (s *SchedulerService) HandlePeerResult(peerResult *schedulerRPC.PeerResult) error {
-	return s.pool.Submit(s.missionFactory.NewHandleReportPeerResultJob(peerResult))
+	return s.pool.Submit(s.jobFactory.NewHandleReportPeerResultJob(peerResult))
 }
 
 func (s *SchedulerService) HandleLeaveTask(target *schedulerRPC.PeerTarget) error {
-	return s.pool.Submit(s.missionFactory.NewHandleLeaveJob(target))
+	return s.pool.Submit(s.jobFactory.NewHandleLeaveJob(target))
 }
