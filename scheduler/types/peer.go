@@ -106,8 +106,6 @@ func (peer *PeerNode) addChild(child *PeerNode) {
 	peer.Host.DesUploadLoad()
 }
 
-// ReplaceParent replace parent
-// delete peer from parent
 func (peer *PeerNode) ReplaceParent(parent *PeerNode) error {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()

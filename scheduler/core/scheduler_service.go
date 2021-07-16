@@ -198,13 +198,13 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 }
 
 func (s *SchedulerService) HandlePieceResult(pieceResult *schedulerRPC.PieceResult) error {
-	return s.pool.Submit(s.missionFactory.NewHandleReportPieceResultMission(pieceResult))
+	return s.pool.Submit(s.missionFactory.NewHandleReportPieceResultJob(pieceResult))
 }
 
 func (s *SchedulerService) HandlePeerResult(peerResult *schedulerRPC.PeerResult) error {
-	return s.pool.Submit(s.missionFactory.NewHandleReportPeerResultMission(peerResult))
+	return s.pool.Submit(s.missionFactory.NewHandleReportPeerResultJob(peerResult))
 }
 
 func (s *SchedulerService) HandleLeaveTask(target *schedulerRPC.PeerTarget) error {
-	return s.pool.Submit(s.missionFactory.NewHandleLeaveMission(target))
+	return s.pool.Submit(s.missionFactory.NewHandleLeaveJob(target))
 }

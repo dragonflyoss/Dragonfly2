@@ -25,7 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-type missionFactory struct {
+type JobFactory struct {
 
 	// cdn mgr
 	cdnManager daemon.CDNMgr
@@ -39,10 +39,10 @@ type missionFactory struct {
 	scheduler scheduler.Scheduler
 }
 
-func newMissionFactory(scheduler scheduler.Scheduler, cdnManager daemon.CDNMgr, taskManager daemon.TaskMgr, hostManager daemon.HostMgr,
-	peerManager daemon.PeerMgr) (*missionFactory, error) {
+func newJobFactory(scheduler scheduler.Scheduler, cdnManager daemon.CDNMgr, taskManager daemon.TaskMgr, hostManager daemon.HostMgr,
+	peerManager daemon.PeerMgr) (*JobFactory, error) {
 
-	return &missionFactory{
+	return &JobFactory{
 		cdnManager:  cdnManager,
 		taskManager: taskManager,
 		hostManager: hostManager,
@@ -51,7 +51,7 @@ func newMissionFactory(scheduler scheduler.Scheduler, cdnManager daemon.CDNMgr, 
 	}, nil
 }
 
-func (factory *missionFactory) NewHandleLeaveMission(target *schedulerRPC.PeerTarget) func() {
+func (factory *JobFactory) NewHandleLeaveJob(target *schedulerRPC.PeerTarget) func() {
 	return func() {
 		peer, _ := factory.peerManager.Get(target.PeerId)
 		peer.SetStatus(types.PeerStatusLeaveNode)
@@ -68,7 +68,7 @@ func (factory *missionFactory) NewHandleLeaveMission(target *schedulerRPC.PeerTa
 	}
 }
 
-func (factory *missionFactory) NewHandleReportPeerResultMission(result *schedulerRPC.PeerResult) func() {
+func (factory *JobFactory) NewHandleReportPeerResultJob(result *schedulerRPC.PeerResult) func() {
 	return func() {
 		peer, _ := factory.peerManager.Get(result.PeerId)
 		peer.ReplaceParent(nil)
@@ -97,7 +97,7 @@ func (factory *missionFactory) NewHandleReportPeerResultMission(result *schedule
 	}
 }
 
-func (factory *missionFactory) NewHandleReportPieceResultMission(pr *schedulerRPC.PieceResult) func() {
+func (factory *JobFactory) NewHandleReportPieceResultJob(pr *schedulerRPC.PieceResult) func() {
 	if factory.processErrorCode(pr) {
 		return func() {
 
@@ -112,7 +112,7 @@ func (factory *missionFactory) NewHandleReportPieceResultMission(pr *schedulerRP
 	}
 }
 
-func (factory *missionFactory) processErrorCode(pr *schedulerRPC.PieceResult) (stop bool) {
+func (factory *JobFactory) processErrorCode(pr *schedulerRPC.PieceResult) (stop bool) {
 	//code := pr.Code
 	//switch code {
 	//case dfcodes.Success:
