@@ -297,3 +297,15 @@ func (peer *PeerNode) Touch() {
 	peer.lastAccessTime = time.Now()
 	peer.Task.lastAccessTime = time.Now()
 }
+
+func (peer *PeerNode) GetFinishedNum() int32 {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
+	return peer.finishedNum
+}
+
+func (peer *PeerNode) GetStatus() interface{} {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
+	return peer.status
+}

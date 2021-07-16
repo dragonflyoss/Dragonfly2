@@ -26,7 +26,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
-	"d7y.io/dragonfly/v2/scheduler/types/peer"
 	"github.com/olekukonko/tablewriter"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -82,13 +81,13 @@ func (m *monitor) printDebugInfo() string {
 		if task == nil {
 			task = peer.Task
 		}
-		if peer.Parent == nil {
+		if peer.GetParent() == nil {
 			roots = append(roots, peer)
 		}
 		// do not print finished node witch do not has child
-		if !(peer.Status == peer.PeerStatusSuccess && peer.Host != nil && peer.Host.GetUploadLoadPercent() < 0.001) {
-			table.Append([]string{peer.PeerID, strconv.Itoa(int(peer.FinishedNum)),
-				strconv.FormatBool(peer.IsSuccessPeer(peer)), strconv.Itoa(peer.Host.GetFreeUploadLoad())})
+		if !(peer.IsSuccess() && peer.Host != nil && peer.Host.GetUploadLoadPercent() < 0.001) {
+			table.Append([]string{peer.PeerID, strconv.Itoa(int(peer.GetFinishedNum())),
+				strconv.FormatBool(peer.IsSuccess()), strconv.Itoa(peer.Host.GetFreeUploadLoad())})
 		}
 		return
 	})
@@ -106,7 +105,7 @@ func (m *monitor) printDebugInfo() string {
 		if len(path) > 1 {
 			msgs = append(msgs, node.PeerID+" || "+strings.Join(nPath, "-"))
 		}
-		for _, child := range node.Children {
+		for _, child := range node.GetChildren() {
 			if child == nil {
 				continue
 			}
@@ -124,8 +123,7 @@ func (m *monitor) printDebugInfo() string {
 
 func (m *monitor) RefreshDownloadMonitor(peer *types.PeerNode) {
 	logger.Debugf("[%s][%s] downloadMonitorWorkingLoop refresh ", peer.Task.TaskID, peer.PeerID)
-	status := peer.Status
-	if status != peer.PeerStatusRunning {
+	if !peer.IsRunning() {
 		m.downloadMonitorQueue.AddAfter(peer, time.Second*2)
 	} else if peer.IsWaiting() {
 		m.downloadMonitorQueue.AddAfter(peer, time.Second*2)
@@ -151,27 +149,27 @@ func (m *monitor) downloadMonitorWorkingLoop() {
 			break
 		}
 		if m.downloadMonitorCallBack != nil {
-			pt, _ := v.(*types.PeerNode)
-			if pt != nil {
-				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", pt.Task.TaskID, pt.PeerID, pt.Status)
-				if peer.IsSuccessPeer(pt) || (pt.Host != nil && types.IsCDNHost(pt.Host)) {
+			peer := v.(*types.PeerNode)
+			if peer != nil {
+				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", peer.Task.TaskID, peer.PeerID, peer.GetStatus())
+				if peer.IsSuccess() || (peer.Host.IsCDNHost()) {
 					// clear from monitor
 				} else {
-					if pt.Status != types.PeerStatusRunning {
+					if !peer.IsRunning() {
 						// peer do not report for a long time, peer gone
-						if time.Now().After(pt.LastAccessTime.Add(PeerGoneTimeout)) {
-							pt.Status = types.PeerStatusNodeGone
+						if time.Now().After(peer.GetLastAccessTime().Add(PeerGoneTimeout)) {
+							peer.SetStatus(types.PeerStatusNodeGone)
 							//pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report time out"))
 						}
-						m.downloadMonitorCallBack(pt)
-					} else if !pt.IsWaiting() {
-						m.downloadMonitorCallBack(pt)
+						m.downloadMonitorCallBack(peer)
+					} else if !peer.IsWaiting() {
+						m.downloadMonitorCallBack(peer)
 					} else {
-						if time.Now().After(pt.LastAccessTime.Add(PeerForceGoneTimeout)) {
-							pt.Status = types.PeerStatusNodeGone
+						if time.Now().After(peer.GetLastAccessTime().Add(PeerForceGoneTimeout)) {
+							peer.SetStatus(types.PeerStatusNodeGone)
 							//pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report fource time out"))
 						}
-						m.downloadMonitorCallBack(pt)
+						m.downloadMonitorCallBack(peer)
 					}
 					//_, ok := m.Get(pt.GetPeerID())
 					//status := pt.Status

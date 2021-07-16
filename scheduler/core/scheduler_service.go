@@ -36,6 +36,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/daemon/task"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"github.com/panjf2000/ants/v2"
+	"github.com/pkg/errors"
 )
 
 type SchedulerService struct {
@@ -48,7 +49,9 @@ type SchedulerService struct {
 	// Peer mgr
 	peerManager daemon.PeerMgr
 
-	pool *ants.Pool
+	missionFactory *missionFactory
+	worker         *worker
+	pool           *ants.Pool
 	//pool      *Worker
 	config    *config.SchedulerConfig
 	scheduler scheduler.Scheduler
@@ -64,7 +67,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	if cfg.EnableCDN {
 		cdnManager, err = d7y.NewManager(schedulerConfig.Cdns)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "new cdn manager")
 		}
 		dynConfig.Register(cdnManager)
 		hostManager.OnNotify(schedulerConfig)
@@ -76,24 +79,24 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		PeerManager: peerManager,
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "build scheduler %s", cfg.Scheduler)
 	}
-
-	pool, err := ants.NewPool(cfg.WorkerNum)
+	mf, err := newMissionFactory(scheduler, cdnManager, taskManager, hostManager, peerManager)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "new mission factory")
 	}
-	worker, err := newWorker(cfg, scheduler, cdnManager, taskManager, hostManager, peerManager)
+	worker, err := newWorker(cfg.WorkerNum)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "new worker")
 	}
 	return &SchedulerService{
-		cdnManager:  cdnManager,
-		taskManager: taskManager,
-		hostManager: hostManager,
-		scheduler:   scheduler,
-		pool:        pool,
-		config:      cfg,
+		cdnManager:     cdnManager,
+		taskManager:    taskManager,
+		hostManager:    hostManager,
+		scheduler:      scheduler,
+		missionFactory: mf,
+		worker:         worker,
+		config:         cfg,
 	}, nil
 }
 
@@ -195,13 +198,13 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 }
 
 func (s *SchedulerService) HandlePieceResult(pieceResult *schedulerRPC.PieceResult) error {
-	return s.pool.Submit(s.worker.NewHandleReportPieceResultTask(pieceResult))
+	return s.pool.Submit(s.missionFactory.NewHandleReportPieceResultMission(pieceResult))
 }
 
 func (s *SchedulerService) HandlePeerResult(peerResult *schedulerRPC.PeerResult) error {
-	return s.pool.Submit(s.worker.NewHandleReportPeerResultTask(peerResult))
+	return s.pool.Submit(s.missionFactory.NewHandleReportPeerResultMission(peerResult))
 }
 
 func (s *SchedulerService) HandleLeaveTask(target *schedulerRPC.PeerTarget) error {
-	return s.pool.Submit(s.worker.NewHandleLeaveTask(target))
+	return s.pool.Submit(s.missionFactory.NewHandleLeaveMission(target))
 }
