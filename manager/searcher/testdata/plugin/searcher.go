@@ -14,26 +14,16 @@
  * limitations under the License.
  */
 
-package search
+package main
 
-import (
-	"errors"
+import "d7y.io/dragonfly/v2/manager/model"
 
-	"d7y.io/dragonfly/v2/internal/dfplugin"
-)
+type searcher struct{}
 
-const (
-	pluginName = "search"
-)
+func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerCluster, conditions map[string]string) (model.SchedulerCluster, bool) {
+	return model.SchedulerCluster{Name: "foo"}, true
+}
 
-func LoadPlugin() (Search, error) {
-	client, _, err := dfplugin.Load(dfplugin.PluginTypeManager, pluginName, map[string]string{})
-	if err != nil {
-		return nil, err
-	}
-
-	if rc, ok := client.(Search); ok {
-		return rc, err
-	}
-	return nil, errors.New("invalid client, not a ResourceClient")
+func DragonflyPluginInit(option map[string]string) (interface{}, map[string]string, error) {
+	return &searcher{}, map[string]string{"type": "manager", "name": "searcher"}, nil
 }

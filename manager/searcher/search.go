@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package search
+package searcher
 
 import (
 	"sort"
@@ -40,22 +40,22 @@ type Scopes struct {
 	IDC      []string `mapstructure:"idc"`
 }
 
-type Search interface {
-	SchedulerCluster([]model.SchedulerCluster, map[string]string) (model.SchedulerCluster, bool)
+type Searcher interface {
+	FindSchedulerCluster([]model.SchedulerCluster, map[string]string) (model.SchedulerCluster, bool)
 }
 
-type search struct{}
+type searcher struct{}
 
-func New() Search {
+func New() Searcher {
 	s, err := LoadPlugin()
 	if err != nil {
-		return &search{}
+		return &searcher{}
 	}
 
 	return s
 }
 
-func (s *search) SchedulerCluster(schedulerClusters []model.SchedulerCluster, conditions map[string]string) (model.SchedulerCluster, bool) {
+func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerCluster, conditions map[string]string) (model.SchedulerCluster, bool) {
 	if len(schedulerClusters) <= 0 || len(conditions) <= 0 {
 		return model.SchedulerCluster{}, false
 	}

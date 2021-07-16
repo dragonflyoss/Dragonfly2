@@ -8,7 +8,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/model"
-	"d7y.io/dragonfly/v2/manager/search"
+	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
@@ -24,7 +24,7 @@ type GRPC struct {
 	rdb   *redis.Client
 	cache *cache.Cache
 	manager.UnimplementedManagerServer
-	search search.Search
+	searcher searcher.Searcher
 }
 
 // Option is a functional option for rest
@@ -45,10 +45,10 @@ func GRPCWithCache(cache *cache.Cache) GRPCOption {
 	}
 }
 
-// GRPCWithSearch set search client
-func GRPCWithSearch(search search.Search) GRPCOption {
+// GRPCWithSearcher set search client
+func GRPCWithSearcher(searcher searcher.Searcher) GRPCOption {
 	return func(s *GRPC) {
-		s.search = search
+		s.searcher = searcher
 	}
 }
 
@@ -448,7 +448,7 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 	}
 
 	// Search optimal scheduler cluster
-	schedulerCluster, ok := s.search.SchedulerCluster(schedulerClusters, req.HostInfo)
+	schedulerCluster, ok := s.searcher.FindSchedulerCluster(schedulerClusters, req.HostInfo)
 	if !ok {
 		if err := s.db.Find(&schedulerCluster, &model.SchedulerCluster{
 			IsDefault: true,

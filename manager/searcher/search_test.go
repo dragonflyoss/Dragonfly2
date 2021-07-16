@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package search
+package searcher
 
 import (
 	"testing"
@@ -216,8 +216,8 @@ func TestSchedulerCluster(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			search := New()
-			clusters, ok := search.SchedulerCluster(tc.schedulerClusters, tc.conditions)
+			searcher := New()
+			clusters, ok := searcher.FindSchedulerCluster(tc.schedulerClusters, tc.conditions)
 			tc.expect(t, clusters, ok)
 		})
 	}

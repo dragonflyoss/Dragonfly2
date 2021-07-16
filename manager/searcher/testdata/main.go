@@ -23,7 +23,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/manager/model"
-	"d7y.io/dragonfly/v2/manager/search"
+	"d7y.io/dragonfly/v2/manager/searcher"
 )
 
 func init() {
@@ -33,13 +33,13 @@ func init() {
 func main() {
 	flag.Parse()
 
-	s, err := search.LoadPlugin()
+	s, err := searcher.LoadPlugin()
 	if err != nil {
 		fmt.Printf("load plugin error: %s\n", err)
 		os.Exit(1)
 	}
 
-	cluster, ok := s.SchedulerCluster([]model.SchedulerCluster{}, map[string]string{})
+	cluster, ok := s.FindSchedulerCluster([]model.SchedulerCluster{}, map[string]string{})
 	if !ok {
 		fmt.Println("scheduler cluster not found")
 		os.Exit(1)

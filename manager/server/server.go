@@ -24,7 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
-	"d7y.io/dragonfly/v2/manager/search"
+	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -53,8 +53,8 @@ func New(cfg *config.Config) (*Server, error) {
 	// Initialize cache
 	cache := cache.New(cfg)
 
-	// Initialize search
-	search := search.New()
+	// Initialize searcher
+	searcher := searcher.New()
 
 	// Initialize REST service
 	restService := service.NewREST(
@@ -66,7 +66,7 @@ func New(cfg *config.Config) (*Server, error) {
 	grpcService := service.NewGRPC(
 		service.GRPCWithDatabase(db),
 		service.GRPCWithCache(cache),
-		service.GRPCWithSearch(search),
+		service.GRPCWithSearcher(searcher),
 	)
 
 	// Initialize router
