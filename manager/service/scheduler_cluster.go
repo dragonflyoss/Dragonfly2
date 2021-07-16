@@ -11,6 +11,7 @@ func (s *rest) CreateSchedulerCluster(json types.CreateSchedulerClusterRequest) 
 		BIO:          json.BIO,
 		Config:       json.Config,
 		ClientConfig: json.ClientConfig,
+		Scopes:       json.Scopes,
 		IsDefault:    json.IsDefault,
 	}
 
@@ -34,6 +35,7 @@ func (s *rest) CreateSchedulerClusterWithSecurityGroupDomain(json types.CreateSc
 		BIO:          json.BIO,
 		Config:       json.Config,
 		ClientConfig: json.ClientConfig,
+		Scopes:       json.Scopes,
 		IsDefault:    json.IsDefault,
 	}
 
@@ -59,6 +61,7 @@ func (s *rest) UpdateSchedulerCluster(id uint, json types.UpdateSchedulerCluster
 		BIO:          json.BIO,
 		Config:       json.Config,
 		ClientConfig: json.ClientConfig,
+		Scopes:       json.Scopes,
 		IsDefault:    json.IsDefault,
 	}).Error; err != nil {
 		return nil, err
@@ -80,6 +83,7 @@ func (s *rest) UpdateSchedulerClusterWithSecurityGroupDomain(id uint, json types
 		BIO:          json.BIO,
 		Config:       json.Config,
 		ClientConfig: json.ClientConfig,
+		Scopes:       json.Scopes,
 		IsDefault:    json.IsDefault,
 	}
 
