@@ -127,14 +127,14 @@ dfdaemon:
   podAnnotations: {}
   podLabels: {}
   daemonsetAnnotations: {}
-  containerPort: 65005
+  containerPort: 65001
   # hostPort is used when .hostNetwork == false, and .config.proxy.tcpListen.namespace is empty
   # many network add-ons do not yet support hostPort
   # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/#hostport-services-do-not-work
   # by default, dfdaemon injects the 65001 port to host network by sharing host network namespace,
   # if you want to use hostPort, please empty .config.proxy.tcpListen.namespace below, and keep .hostNetwork == false
   # for performance, injecting the 65001 port to host network is better than hostPort
-  hostPort: 65005
+  hostPort: 65001
   # using hostNetwork when pod with host network can communicate with normal pods with cni network
   hostNetwork: false
   config:

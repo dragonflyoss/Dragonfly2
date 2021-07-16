@@ -17,9 +17,6 @@
 package e2e
 
 import (
-	"fmt"
-
-	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -36,16 +33,3 @@ func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "dragonfly e2e test suite")
 }
-
-var _ = BeforeSuite(func() {
-	// create file server
-	out, err := e2eutil.KubeCtlCommand("apply", "-f", "../testdata/k8s/file-server.yaml").CombinedOutput()
-	Expect(err).NotTo(HaveOccurred())
-	fmt.Println(string(out))
-
-	// wait file server ready
-	out, err = e2eutil.KubeCtlCommand("-n", dragonflyE2ENamespace,
-		"wait", "--for=condition=ready", "--timeout=5m", "pod", "file-server-0").CombinedOutput()
-	Expect(err).NotTo(HaveOccurred())
-	fmt.Println(string(out))
-})

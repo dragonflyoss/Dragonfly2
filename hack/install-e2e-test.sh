@@ -6,8 +6,11 @@ set -o pipefail
 
 KIND_CONFIG_PATH="test/testdata/kind/config.yaml"
 CHARTS_CONFIG_PATH="test/testdata/charts/config.yaml"
-NAMESPACE="dragonfly-system"
+FILE_SERVER_CONFIG_PATH="test/testdata/k8s/file-server.yaml"
 CHARTS_PATH="deploy/charts/dragonfly"
+NAMESPACE="dragonfly-system"
+E2E_NAMESPACE="dragonfly-e2e"
+FILE_SERVER_NAME="file-server-0"
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}/../" || return
 
@@ -22,15 +25,6 @@ install-kind() {
   kind create cluster --config ${KIND_CONFIG_PATH}
 }
 
-install-ingress-nginx() {
-  VERSION=$(curl https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/stable.txt)
-  kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/${VERSION}/deploy/static/provider/kind/deploy.yaml
-  kubectl wait --namespace ingress-nginx \
-  --for=condition=ready pod \
-  --selector=app.kubernetes.io/component=controller \
-  --timeout=10m
-}
-
 install-helm() {
   if which helm >/dev/null ; then
       print_step_info "helm has been installed"
@@ -42,6 +36,13 @@ install-helm() {
   helm install --wait --timeout 10m --create-namespace --namespace ${NAMESPACE} -f ${CHARTS_CONFIG_PATH} dragonfly ${CHARTS_PATH}
 }
 
+install-file-server() {
+  kubectl apply -f ${FILE_SERVER_CONFIG_PATH}
+  kubectl wait --namespace ${E2E_NAMESPACE} \
+  --for=condition=ready pod ${FILE_SERVER_NAME} \
+  --timeout=10m
+}
+
 install-ginkgo() {
   if which ginkgo >/dev/null ; then
       print_step_info "ginkgo has been installed"
@@ -50,11 +51,13 @@ install-ginkgo() {
   fi
 }
 
-install-bombardier() {
-  if which bombardier >/dev/null ; then
-      print_step_info "bombardier has been installed"
+install-apache-bench() {
+  if which ab >/dev/null ; then
+      print_step_info "ab has been installed"
   else
-      go get github.com/codesenberg/bombardier
+      apt-get update
+      apt-get install apache2-utils
+      apt-get install apache2
   fi
 }
 
@@ -62,9 +65,6 @@ install-local() {
   print_step_info "start kind create cluster"
   install-kind
 
-  print_step_info "start install ingress nginx"
-  install-ingress-nginx
-
   print_step_info "start building docker images"
   make docker-build
 
@@ -74,17 +74,17 @@ install-local() {
   print_step_info "start helm install dragonfly"
   install-helm
 
+  print_step_info "start install file server"
+  install-file-server
+
   print_step_info "start install ginkgo"
   install-ginkgo
 
-  print_step_info "start install bombardier"
-  install-bombardier
+  print_step_info "start install apache bench"
+  install-apache-bench
 }
 
 install-actions() {
-  print_step_info "start install ingress nginx"
-  install-ingress-nginx
-
   print_step_info "start building docker images"
   make docker-build
 
@@ -94,11 +94,14 @@ install-actions() {
   print_step_info "start helm install dragonfly"
   install-helm
 
+  print_step_info "start install file server"
+  install-file-server
+
   print_step_info "start install ginkgo"
   install-ginkgo
 
-  print_step_info "start install bombardier"
-  install-bombardier
+  print_step_info "start install apache bench"
+  install-apache-bench
 }
 
 print_step_info() {

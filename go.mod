@@ -9,6 +9,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.6.4
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
+	github.com/cnlh/benchmark v0.0.2 // indirect
 	github.com/colinmarc/hdfs/v2 v2.2.0
 	github.com/docker/go-units v0.4.0
 	github.com/emirpasic/gods v1.12.0
