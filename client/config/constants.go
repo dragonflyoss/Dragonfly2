@@ -69,6 +69,8 @@ const (
 	DefaultSchedulerSchema = "http"
 	DefaultSchedulerIP     = "127.0.0.1"
 	DefaultSchedulerPort   = 8002
+
+	DefaultPieceChanSize = 16
 )
 
 const (
