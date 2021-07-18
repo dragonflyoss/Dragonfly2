@@ -51,7 +51,7 @@ func (h *Handlers) CreatePermission(ctx *gin.Context) {
 }
 
 // @Summary Destroy Permission
-// @Description Destory Permission by json config
+// @Description Destroy Permission by json config
 // @Tags permission
 // @Accept json
 // @Produce json
@@ -66,7 +66,7 @@ func (h *Handlers) DestroyPermission(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.Service.DestoryPermission(json)
+	err := h.Service.DestroyPermission(json)
 	if err != nil {
 		ctx.Error(err)
 		return

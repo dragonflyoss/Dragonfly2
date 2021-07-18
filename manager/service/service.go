@@ -61,7 +61,7 @@ type REST interface {
 
 	GetEndpoints(g *gin.Engine) gin.RoutesInfo
 	CreatePermission(json types.PolicyRequest) error
-	DestoryPermission(json types.PolicyRequest) error
+	DestroyPermission(json types.PolicyRequest) error
 }
 
 type rest struct {

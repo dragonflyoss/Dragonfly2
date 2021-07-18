@@ -25,7 +25,7 @@ func (s *rest) CreatePermission(json types.PolicyRequest) error {
 	return nil
 }
 
-func (s *rest) DestoryPermission(json types.PolicyRequest) error {
+func (s *rest) DestroyPermission(json types.PolicyRequest) error {
 	res := Enforcer.RemovePolicy(json.Action, json.Subject, json.Object)
 	if !res {
 		return errors.New("failed to remove policy")
