@@ -23,17 +23,17 @@ import (
 )
 
 type PeerMgr interface {
-	Add(peer *types.PeerNode)
+	Add(peer *types.Peer)
 
-	Get(peerID string) (*types.PeerNode, bool)
+	Get(peerID string) (*types.Peer, bool)
 
 	Delete(peerID string)
 
 	ListPeers() *sync.Map
 
-	ListPeerNodesByTask(taskID string) []*types.PeerNode
+	ListPeersByTask(taskID string) []*types.Peer
 
-	Pick(task *types.Task, limit int, pickFn func(pt *types.PeerNode) bool) []*types.PeerNode
+	Pick(task *types.Task, limit int, pickFn func(pt *types.Peer) bool) []*types.Peer
 
-	PickReverse(task *types.Task, limit int, pickFn func(peerNode *types.PeerNode) bool) []*types.PeerNode
+	PickReverse(task *types.Task, limit int, pickFn func(peer *types.Peer) bool) []*types.Peer
 }

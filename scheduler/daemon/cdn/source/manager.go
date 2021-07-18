@@ -39,7 +39,7 @@ func (m manager) StartSeedTask(ctx context.Context, task *types.Task, callback f
 	panic("implement me")
 }
 
-func (m manager) DownloadTinyFileContent(task *types.Task, cdnHost *types.NodeHost) ([]byte, error) {
+func (m manager) DownloadTinyFileContent(task *types.Task, cdnHost *types.PeerHost) ([]byte, error) {
 	panic("implement me")
 }
 

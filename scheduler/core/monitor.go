@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package server
+package core
 
 import (
 	"bytes"
@@ -37,7 +37,7 @@ const (
 
 type monitor struct {
 	downloadMonitorQueue    workqueue.DelayingInterface
-	downloadMonitorCallBack func(node *types.PeerNode)
+	downloadMonitorCallBack func(node *types.Peer)
 	peerManager             daemon.PeerMgr
 	verbose                 bool
 }
@@ -66,7 +66,7 @@ func (m *monitor) printDebugInfoLoop() {
 
 func (m *monitor) printDebugInfo() string {
 	var task *types.Task
-	var roots []*types.PeerNode
+	var roots []*types.Peer
 
 	buffer := bytes.NewBuffer([]byte{})
 	table := tablewriter.NewWriter(buffer)
@@ -74,7 +74,7 @@ func (m *monitor) printDebugInfo() string {
 
 	m.peerManager.ListPeers().Range(func(key interface{}, value interface{}) (ok bool) {
 		ok = true
-		peer := value.(*types.PeerNode)
+		peer := value.(*types.Peer)
 		if peer == nil {
 			return
 		}
@@ -96,8 +96,8 @@ func (m *monitor) printDebugInfo() string {
 	var msgs []string
 	msgs = append(msgs, buffer.String())
 
-	var printTree func(node *types.PeerNode, path []string)
-	printTree = func(node *types.PeerNode, path []string) {
+	var printTree func(node *types.Peer, path []string)
+	printTree = func(node *types.Peer, path []string) {
 		if node == nil {
 			return
 		}
@@ -121,7 +121,7 @@ func (m *monitor) printDebugInfo() string {
 	return msg
 }
 
-func (m *monitor) RefreshDownloadMonitor(peer *types.PeerNode) {
+func (m *monitor) RefreshDownloadMonitor(peer *types.Peer) {
 	logger.Debugf("[%s][%s] downloadMonitorWorkingLoop refresh ", peer.Task.TaskID, peer.PeerID)
 	if !peer.IsRunning() {
 		m.downloadMonitorQueue.AddAfter(peer, time.Second*2)
@@ -136,7 +136,7 @@ func (m *monitor) RefreshDownloadMonitor(peer *types.PeerNode) {
 	}
 }
 
-func (m *monitor) SetDownloadingMonitorCallBack(callback func(*types.PeerNode)) {
+func (m *monitor) SetDownloadingMonitorCallBack(callback func(*types.Peer)) {
 	m.downloadMonitorCallBack = callback
 }
 
@@ -149,10 +149,10 @@ func (m *monitor) downloadMonitorWorkingLoop() {
 			break
 		}
 		if m.downloadMonitorCallBack != nil {
-			peer := v.(*types.PeerNode)
+			peer := v.(*types.Peer)
 			if peer != nil {
 				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", peer.Task.TaskID, peer.PeerID, peer.GetStatus())
-				if peer.IsSuccess() || (peer.Host.IsCDNHost()) {
+				if peer.IsSuccess() || (peer.Host.CDNHost) {
 					// clear from monitor
 				} else {
 					if !peer.IsRunning() {

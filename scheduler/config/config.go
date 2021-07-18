@@ -177,6 +177,8 @@ type SchedulerConfig struct {
 	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
 	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
 	Scheduler            string        `yaml:"scheduler" mapstructure:"scheduler"`
+	CDNLoad              int
+	ClientLoad           int
 }
 
 type ServerConfig struct {

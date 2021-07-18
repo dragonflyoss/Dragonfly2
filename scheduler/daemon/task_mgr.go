@@ -17,8 +17,6 @@
 package daemon
 
 import (
-	"sync"
-
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
@@ -31,8 +29,6 @@ type TaskMgr interface {
 
 	// Delete
 	Delete(taskID string)
-
-	ListTasks() *sync.Map
 
 	GetOrAdd(task *types.Task) (actual *types.Task, loaded bool)
 }

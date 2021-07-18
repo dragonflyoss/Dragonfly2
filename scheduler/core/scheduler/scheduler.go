@@ -26,10 +26,10 @@ import (
 
 type Scheduler interface {
 	// ScheduleChildren schedule children to a peer
-	ScheduleChildren(peer *types.PeerNode) (children []*types.PeerNode)
+	ScheduleChildren(peer *types.Peer) (children []*types.Peer)
 
 	// ScheduleParent schedule a parent and limit candidates to a peer
-	ScheduleParent(peer *types.PeerNode, limit int) (parent *types.PeerNode, candidateParents []*types.PeerNode)
+	ScheduleParent(peer *types.Peer, limit int) (parent *types.Peer, candidateParents []*types.Peer)
 }
 
 type BuildOptions struct {

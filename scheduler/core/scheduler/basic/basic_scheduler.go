@@ -66,14 +66,14 @@ type Scheduler struct {
 	peerManager daemon.PeerMgr
 }
 
-func (s *Scheduler) ScheduleChildren(peer *types.PeerNode) (children []*types.PeerNode) {
+func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) {
 	logger.Debugf("[%s][%s]scheduler children", peer.Task.TaskID, peer.PeerID)
 	if s.evaluator.IsBadNode(peer) {
 		return
 	}
 	freeUpload := peer.Host.GetFreeUploadLoad()
 	candidateChildren := s.selectCandidateChildren(peer, freeUpload*2)
-	evalResult := make(map[float64]*types.PeerNode)
+	evalResult := make(map[float64]*types.Peer)
 	var evalScore []float64
 	for _, child := range candidateChildren {
 		score := s.evaluator.Evaluate(peer, child)
@@ -98,7 +98,7 @@ func (s *Scheduler) ScheduleChildren(peer *types.PeerNode) (children []*types.Pe
 	return
 }
 
-func (s *Scheduler) ScheduleParent(peer *types.PeerNode, limit int) (parent *types.PeerNode, candidateParents []*types.PeerNode) {
+func (s *Scheduler) ScheduleParent(peer *types.Peer, limit int) (parent *types.Peer, candidateParents []*types.Peer) {
 	logger.Debugf("[%s][%s]scheduler parent", peer.Task.TaskID, peer.PeerID)
 	if !s.evaluator.NeedAdjustParent(peer) {
 		return
@@ -125,22 +125,22 @@ func (s *Scheduler) ScheduleParent(peer *types.PeerNode, limit int) (parent *typ
 	return
 }
 
-func (s *Scheduler) IsBadNode(peer *types.PeerNode) bool {
+func (s *Scheduler) IsBadNode(peer *types.Peer) bool {
 	return s.evaluator.IsBadNode(peer)
 }
 
-func (s *Scheduler) selectCandidateChildren(peer *types.PeerNode, limit int) (list []*types.PeerNode) {
-	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *types.PeerNode) bool {
-		if candidateNode != nil && candidateNode.GetParent() == nil && !peer.IsDone() && peer.Host.IsPeerHost() {
+func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list []*types.Peer) {
+	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *types.Peer) bool {
+		if candidateNode != nil && candidateNode.GetParent() == nil && !peer.IsDone() && !peer.Host.CDNHost {
 			return true
 		}
 		return false
 	})
 }
 
-func (s *Scheduler) selectCandidateParents(peer *types.PeerNode, limit int) (list []*types.PeerNode) {
-	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.PeerNode) bool {
-		if candidateNode != nil && candidateNode.Host.GetFreeUploadLoad() > 0 && (candidateNode.IsSuccess() || candidateNode.GetTreeRoot().Host.IsCDNHost()) {
+func (s *Scheduler) selectCandidateParents(peer *types.Peer, limit int) (list []*types.Peer) {
+	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.Peer) bool {
+		if candidateNode != nil && candidateNode.Host.GetFreeUploadLoad() > 0 && (candidateNode.IsSuccess() || candidateNode.GetTreeRoot().Host.CDNHost) {
 			return true
 		}
 		return false

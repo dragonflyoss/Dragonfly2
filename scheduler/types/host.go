@@ -20,91 +20,93 @@ import (
 	"sync"
 )
 
-type HostType uint8
-
-const (
-	PeerNodeHost HostType = iota + 1
-	CDNNodeHost
-)
-const (
-	CDNHostLoad    = 10
-	ClientHostLoad = 4
-)
-
-type NodeHost struct {
-	// ProducerLoad is the load of download services provided by the current node.
+type PeerHost struct {
 	lock sync.RWMutex
 	// uuid each time the daemon starts, it will generate a different uuid
 	UUID string
 	// IP peer host ip
 	IP string
-	// hostName peer host name
+	// HostName peer host name
 	HostName string
 	// RPCPort rpc service port for peer
 	RPCPort int32
 	// DownloadPort piece downloading port for peer
 	DownloadPort int32
-	// Type host type cdn or peer
-	HostType HostType
+	// CDN if host type is cdn
+	CDN bool
 	// SecurityDomain security isolation domain for network
 	SecurityDomain string
 	// Location location path: area|country|province|city|...
 	Location string
-	// Idc idc where the peer host is located
+	// IDC idc where the peer host is located
 	IDC string
 	// NetTopology network device path: switch|router|...
-	NetTopology       string
+	NetTopology string
+	// todo TotalUploadLoad currentUploadLoad decided by real time client report host info
 	TotalUploadLoad   int
 	currentUploadLoad int
-	peerNodeMap       map[string]*PeerNode
+	peerMap           map[string]*Peer
 }
 
-func (h *NodeHost) AddPeerNode(peerNode *PeerNode) {
+func NewClientPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc, netTopology string,
+	totalUploadLoad int) *PeerHost {
+	return newPeerHost(uuid, ip, hostname, rpcPort, downloadPort, false, securityDomain, location, idc, netTopology, totalUploadLoad)
+}
+
+func NewCDNPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc, netTopology string,
+	totalUploadLoad int) *PeerHost {
+	return newPeerHost(uuid, ip, hostname, rpcPort, downloadPort, true, securityDomain, location, idc, netTopology, totalUploadLoad)
+}
+
+func newPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool, securityDomain, location, idc, netTopology string,
+	totalUploadLoad int) *PeerHost {
+	return &PeerHost{
+		UUID:            uuid,
+		IP:              ip,
+		HostName:        hostname,
+		RPCPort:         rpcPort,
+		DownloadPort:    downloadPort,
+		CDN:             isCDN,
+		SecurityDomain:  securityDomain,
+		Location:        location,
+		IDC:             idc,
+		NetTopology:     netTopology,
+		TotalUploadLoad: totalUploadLoad,
+	}
+}
+
+func (h *PeerHost) AddPeer(peer *Peer) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
-	h.peerNodeMap[peerNode.PeerID] = peerNode
+	h.peerMap[peer.PeerID] = peer
 }
 
-func (h *NodeHost) DeletePeerNode(peerID string) {
+func (h *PeerHost) DeletePeer(peerID string) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
-	delete(h.peerNodeMap, peerID)
+	delete(h.peerMap, peerID)
 }
 
-func (h *NodeHost) GetPeerTaskNum() int {
+func (h *PeerHost) GetPeerTaskNum() int {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
-	return len(h.peerNodeMap)
+	return len(h.peerMap)
 }
 
-func (h *NodeHost) GetPeerNode(peerID string) (*PeerNode, bool) {
+func (h *PeerHost) GetPeer(peerID string) (*Peer, bool) {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
-	peerNode, ok := h.peerNodeMap[peerID]
-	return peerNode, ok
+	peer, ok := h.peerMap[peerID]
+	return peer, ok
 }
 
-func (h *NodeHost) IncUploadLoad() int {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-	h.currentUploadLoad++
+func (h *PeerHost) GetCurrentUpload() int {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
 	return h.currentUploadLoad
 }
 
-func (h *NodeHost) DesUploadLoad() int {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-	h.currentUploadLoad--
-	return h.currentUploadLoad
-}
-
-func (h *NodeHost) GetCurrentUpload() int {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
-	return h.currentUploadLoad
-}
-
-func (h *NodeHost) GetUploadLoadPercent() float64 {
+func (h *PeerHost) GetUploadLoadPercent() float64 {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 	if h.TotalUploadLoad <= 0 {
@@ -113,16 +115,22 @@ func (h *NodeHost) GetUploadLoadPercent() float64 {
 	return float64(h.currentUploadLoad) / float64(h.TotalUploadLoad)
 }
 
-func (h *NodeHost) GetFreeUploadLoad() int {
+func (h *PeerHost) GetFreeUploadLoad() int {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 	return h.TotalUploadLoad - h.currentUploadLoad
 }
 
-func (h *NodeHost) IsCDNHost() bool {
-	return h.HostType == CDNNodeHost
+func (h *PeerHost) IncUploadLoad() int {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	h.currentUploadLoad++
+	return h.currentUploadLoad
 }
 
-func (h *NodeHost) IsPeerHost() bool {
-	return h.HostType == PeerNodeHost
+func (h *PeerHost) DecUploadLoad() int {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	h.currentUploadLoad--
+	return h.currentUploadLoad
 }

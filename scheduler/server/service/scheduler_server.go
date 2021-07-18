@@ -77,14 +77,14 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		}
 		return
 	case base.SizeScope_SMALL:
-		peerNode, regErr := s.service.RegisterPeerTask(request, task)
+		peer, regErr := s.service.RegisterPeerTask(request, task)
 		if regErr != nil {
 			err = dferrors.Newf(dfcodes.SchedPeerRegisterFail, "failed to register peer: %v", regErr)
 			return
 		}
-		parent, schErr := s.service.ScheduleParent(peerNode)
+		parent, schErr := s.service.ScheduleParent(peer)
 		if schErr != nil {
-			err = dferrors.Newf(dfcodes.SchedPeerScheduleFail, "failed to schedule peerNode %v: %v", peerNode, schErr)
+			err = dferrors.Newf(dfcodes.SchedPeerScheduleFail, "failed to schedule peer %v: %v", peer, schErr)
 		}
 		singlePiece := task.GetPiece(0)
 		resp.DirectPiece = &scheduler.RegisterResult_SinglePiece{
@@ -131,7 +131,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 			once.Do(func() {
 				peer.SetSendChannel(peerPacketChan)
 			})
-			if err := s.service.HandlePieceResult(pieceResult); err != nil {
+			if err := s.service.HandlePieceResult(peer, pieceResult); err != nil {
 				logger.Errorf("handle piece result %v fail: %v", pieceResult, err)
 			}
 		}
@@ -151,22 +151,22 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 
 func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (err error) {
 	logger.Debugf("report peer result %+v", result)
-	_, ok := s.service.GetPeerTask(result.PeerId)
+	peer, ok := s.service.GetPeerTask(result.PeerId)
 	if !ok {
 		logger.Warnf("report peer result: peer %s is not exists", result.PeerId)
 		return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", result.PeerId)
 	}
-	return s.service.HandlePeerResult(result)
+	return s.service.HandlePeerResult(peer, result)
 }
 
 func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (err error) {
 	logger.Debugf("leave task %+v", target)
-	_, ok := s.service.GetPeerTask(target.PeerId)
+	peer, ok := s.service.GetPeerTask(target.PeerId)
 	if !ok {
 		logger.Warnf("leave task: peer %d is not exists", target.PeerId)
 		return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", target.PeerId)
 	}
-	return s.service.HandleLeaveTask(target)
+	return s.service.HandleLeaveTask(peer, target)
 }
 
 // validateParams validates the params of scheduler.PeerTaskRequest.

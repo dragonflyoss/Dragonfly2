@@ -26,6 +26,6 @@ func UUIDString() string {
 	return uuid.New().String()
 }
 
-func CDNUUID(cdnHostName string, serverPort int32) string {
-	return fmt.Sprintf("%s-%d_CDN", cdnHostName, serverPort)
+func CDNUUID(cdnHostname string, serverPort int32) string {
+	return fmt.Sprintf("%s-%d_CDN", cdnHostname, serverPort)
 }

@@ -30,5 +30,5 @@ type CDNMgr interface {
 	StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed, err error)) error
 
 	// DownloadTinyFileContent
-	DownloadTinyFileContent(task *types.Task, cdnHost *types.NodeHost) ([]byte, error)
+	DownloadTinyFileContent(task *types.Task, cdnHost *types.PeerHost) ([]byte, error)
 }

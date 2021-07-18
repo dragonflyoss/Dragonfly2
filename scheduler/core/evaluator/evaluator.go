@@ -31,13 +31,13 @@ import (
 type Evaluator interface {
 
 	// Evaluate todo Normalization
-	Evaluate(dst *types.PeerNode, src *types.PeerNode) float64
+	Evaluate(dst *types.Peer, src *types.Peer) float64
 
-	// NeedAdjustParent determine whether the peerNode needs a new parent node
-	NeedAdjustParent(peer *types.PeerNode) bool
+	// NeedAdjustParent determine whether the peer needs a new parent node
+	NeedAdjustParent(peer *types.Peer) bool
 
-	// IsBadNode determine if peerNode is a failed node
-	IsBadNode(peer *types.PeerNode) bool
+	// IsBadNode determine if peer is a failed node
+	IsBadNode(peer *types.Peer) bool
 }
 
 type Factory struct {
@@ -54,15 +54,15 @@ type Factory struct {
 
 var _ Evaluator = (*Factory)(nil)
 
-func (ef *Factory) Evaluate(dst *types.PeerNode, src *types.PeerNode) float64 {
+func (ef *Factory) Evaluate(dst *types.Peer, src *types.Peer) float64 {
 	return ef.get(dst.Task.TaskID).Evaluate(dst, src)
 }
 
-func (ef *Factory) NeedAdjustParent(peer *types.PeerNode) bool {
+func (ef *Factory) NeedAdjustParent(peer *types.Peer) bool {
 	return ef.get(peer.Task.TaskID).NeedAdjustParent(peer)
 }
 
-func (ef *Factory) IsBadNode(peer *types.PeerNode) bool {
+func (ef *Factory) IsBadNode(peer *types.Peer) bool {
 	return ef.get(peer.Task.TaskID).IsBadNode(peer)
 }
 

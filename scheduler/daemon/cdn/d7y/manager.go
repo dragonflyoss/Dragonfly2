@@ -144,7 +144,7 @@ func (cm *manager) processSeedPiece(task *types.Task, ps *cdnsystem.PieceSeed) e
 	return nil
 }
 
-func (cm *manager) DownloadTinyFileContent(task *types.Task, cdnHost *types.NodeHost) ([]byte, error) {
+func (cm *manager) DownloadTinyFileContent(task *types.Task, cdnHost *types.PeerHost) ([]byte, error) {
 	// no need to invoke getPieceTasks method
 	// TODO download the tiny file
 	// http://host:port/download/{taskId 前3位}/{taskId}?peerId={peerId};

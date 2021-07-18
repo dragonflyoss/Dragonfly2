@@ -37,10 +37,6 @@ func (m *manager) Delete(taskID string) {
 	m.taskMap.Delete(taskID)
 }
 
-func (m *manager) ListTasks() *sync.Map {
-	return &m.taskMap
-}
-
 func (m *manager) Add(task *types.Task) {
 	m.taskMap.Store(task.TaskID, task)
 }

@@ -35,7 +35,7 @@ func NewManager() daemon.HostMgr {
 	return &manager{}
 }
 
-func (m *manager) Add(host *types.NodeHost) {
+func (m *manager) Add(host *types.PeerHost) {
 	m.hostMap.Store(host.UUID, host)
 }
 
@@ -43,18 +43,18 @@ func (m *manager) Delete(uuid string) {
 	m.hostMap.Delete(uuid)
 }
 
-func (m *manager) Get(uuid string) (*types.NodeHost, bool) {
+func (m *manager) Get(uuid string) (*types.PeerHost, bool) {
 	host, ok := m.hostMap.Load(uuid)
 	if !ok {
 		return nil, false
 	}
-	return host.(*types.NodeHost), true
+	return host.(*types.PeerHost), true
 }
 
-func (m *manager) GetOrAdd(host *types.NodeHost) (actual *types.NodeHost, loaded bool) {
+func (m *manager) GetOrAdd(host *types.PeerHost) (actual *types.PeerHost, loaded bool) {
 	item, loaded := m.hostMap.LoadOrStore(host.UUID, host)
 	if loaded {
-		return item.(*types.NodeHost), true
+		return item.(*types.PeerHost), true
 	}
 	return host, false
 }
@@ -65,13 +65,13 @@ func (m *manager) OnNotify(scheduler *managerRPC.Scheduler) {
 		if cdn.CdnCluster != nil && cdn.CdnCluster.SecurityGroup != nil {
 			securityDomain = cdn.CdnCluster.SecurityGroup.Name
 		}
-		cdnHost := &types.NodeHost{
+		cdnHost := &types.PeerHost{
 			UUID:           idgen.CDNUUID(cdn.HostName, cdn.Port),
 			IP:             cdn.Ip,
 			HostName:       cdn.HostName,
 			RPCPort:        cdn.Port,
 			DownloadPort:   cdn.DownloadPort,
-			HostType:       types.CDNNodeHost,
+			CDN:            true,
 			SecurityDomain: securityDomain,
 			Location:       cdn.Location,
 			IDC:            cdn.Idc,

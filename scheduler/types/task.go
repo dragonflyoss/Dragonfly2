@@ -50,18 +50,18 @@ type Task struct {
 	PieceTotal      int32
 	ContentLength   int64
 	status          TaskStatus
-	peerNodes       *sortedlist.SortedList
+	peers           *sortedlist.SortedList
 }
 
 func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
 	return &Task{
-		TaskID:    taskID,
-		URL:       url,
-		Filter:    filter,
-		BizID:     bizID,
-		URLMeta:   meta,
-		peerNodes: sortedlist.NewSortedList(),
-		status:    TaskStatusWaiting,
+		TaskID:  taskID,
+		URL:     url,
+		Filter:  filter,
+		BizID:   bizID,
+		URLMeta: meta,
+		peers:   sortedlist.NewSortedList(),
+		status:  TaskStatusWaiting,
 	}
 }
 
@@ -83,16 +83,16 @@ func (task *Task) GetPiece(pieceNum int32) *PieceInfo {
 	return task.pieceList[pieceNum]
 }
 
-func (task *Task) AddPeerNode(peer *PeerNode) {
+func (task *Task) AddPeer(peer *Peer) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	task.peerNodes.UpdateOrAdd(peer)
+	task.peers.UpdateOrAdd(peer)
 }
 
-func (task *Task) DeletePeerNode(peer *PeerNode) {
+func (task *Task) DeletePeer(peer *Peer) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	task.peerNodes.Delete(peer)
+	task.peers.Delete(peer)
 }
 
 func (task *Task) AddPiece(p *PieceInfo) {
@@ -117,10 +117,10 @@ func (task *Task) SetLastTriggerTime(lastTriggerTime time.Time) {
 	task.lastTriggerTime = lastTriggerTime
 }
 
-func (task *Task) ListPeerNodes() *sortedlist.SortedList {
+func (task *Task) ListPeers() *sortedlist.SortedList {
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	return task.peerNodes
+	return task.peers
 }
 
 const TinyFileSize = 128

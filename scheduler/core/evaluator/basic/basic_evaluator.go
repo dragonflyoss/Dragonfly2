@@ -31,7 +31,7 @@ func NewEvaluator() evaluator.Evaluator {
 	return &baseEvaluator{}
 }
 
-func (eval *baseEvaluator) NeedAdjustParent(peer *types.PeerNode) bool {
+func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 	parent := peer.GetParent()
 
 	if parent == nil {
@@ -53,7 +53,7 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.PeerNode) bool {
 	return (avgCost * 20) < lastCost
 }
 
-func (eval *baseEvaluator) IsBadNode(peer *types.PeerNode) bool {
+func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 	parent := peer.GetParent()
 
 	if parent == nil {
@@ -87,7 +87,7 @@ func (eval *baseEvaluator) IsBadNode(peer *types.PeerNode) bool {
 }
 
 // The bigger the better
-func (eval *baseEvaluator) Evaluate(dst *types.PeerNode, src *types.PeerNode) float64 {
+func (eval *baseEvaluator) Evaluate(dst *types.Peer, src *types.Peer) float64 {
 	profits := getProfits(dst, src)
 
 	load := getHostLoad(dst.Host)
@@ -112,7 +112,7 @@ func getAvgAndLastCost(list []int, splitPos int) (avgCost, lastCost int) {
 }
 
 // getProfits 0.0~unlimited larger and better
-func getProfits(dst *types.PeerNode, src *types.PeerNode) float64 {
+func getProfits(dst *types.Peer, src *types.Peer) float64 {
 	diff := types.GetDiffPieceNum(src, dst)
 	depth := dst.GetDepth()
 
@@ -120,12 +120,12 @@ func getProfits(dst *types.PeerNode, src *types.PeerNode) float64 {
 }
 
 // getHostLoad 0.0~1.0 larger and better
-func getHostLoad(host *types.NodeHost) float64 {
+func getHostLoad(host *types.PeerHost) float64 {
 	return 1.0 - host.GetUploadLoadPercent()
 }
 
 // getDistance 0.0~1.0 larger and better
-func getDistance(dst *types.PeerNode, src *types.PeerNode) float64 {
+func getDistance(dst *types.Peer, src *types.Peer) float64 {
 	hostDist := 40.0
 	if dst.Host == src.Host {
 		hostDist = 0.0

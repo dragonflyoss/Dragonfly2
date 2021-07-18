@@ -24,14 +24,14 @@ import (
 type HostMgr interface {
 	config.Observer
 
-	Add(host *types.NodeHost)
+	Add(host *types.PeerHost)
 
 	// GetOrAdd returns the existing value for the key if present.
 	// Otherwise, it stores and returns the given value.
 	// The loaded result is true if the value was loaded, false if stored.
-	GetOrAdd(host *types.NodeHost) (actual *types.NodeHost, loaded bool)
+	GetOrAdd(host *types.PeerHost) (actual *types.PeerHost, loaded bool)
 
 	Delete(uuid string)
 
-	Get(uuid string) (*types.NodeHost, bool)
+	Get(uuid string) (*types.PeerHost, bool)
 }

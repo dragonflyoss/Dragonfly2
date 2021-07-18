@@ -17,6 +17,8 @@
 package core
 
 import (
+	"context"
+
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -51,9 +53,8 @@ func newJobFactory(scheduler scheduler.Scheduler, cdnManager daemon.CDNMgr, task
 	}, nil
 }
 
-func (factory *JobFactory) NewHandleLeaveJob(target *schedulerRPC.PeerTarget) func() {
+func (factory *JobFactory) NewHandleLeaveJob(peer *types.Peer, target *schedulerRPC.PeerTarget) func() {
 	return func() {
-		peer, _ := factory.peerManager.Get(target.PeerId)
 		peer.SetStatus(types.PeerStatusLeaveNode)
 		peer.ReplaceParent(nil)
 		for _, child := range peer.GetChildren() {
@@ -68,9 +69,8 @@ func (factory *JobFactory) NewHandleLeaveJob(target *schedulerRPC.PeerTarget) fu
 	}
 }
 
-func (factory *JobFactory) NewHandleReportPeerResultJob(result *schedulerRPC.PeerResult) func() {
+func (factory *JobFactory) NewHandleReportPeerResultJob(peer *types.Peer, result *schedulerRPC.PeerResult) func() {
 	return func() {
-		peer, _ := factory.peerManager.Get(result.PeerId)
 		peer.ReplaceParent(nil)
 		if result.Success {
 			peer.SetStatus(types.PeerStatusSuccess)
@@ -97,63 +97,35 @@ func (factory *JobFactory) NewHandleReportPeerResultJob(result *schedulerRPC.Pee
 	}
 }
 
-func (factory *JobFactory) NewHandleReportPieceResultJob(pr *schedulerRPC.PieceResult) func() {
-	if factory.processErrorCode(pr) {
+func (factory *JobFactory) NewHandleReportPieceResultJob(peer *types.Peer, pr *schedulerRPC.PieceResult) func() {
+	switch pr.Code {
+	case dfcodes.Success:
+		return func() {
+			if pr.Success {
+				peer.AddPieceStatus(pr)
+				return
+			}
+		}
+	case dfcodes.PeerTaskNotFound:
+		return func() {
+			factory.cdnManager.StartSeedTask(context.Background(), types.NewTask())
+		}
+	case dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
+		return func() {
+
+		}
+	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail:
 		return func() {
 
 		}
 	}
+
 	return func() {
-		//peer, ok := factory.peerManager.Get(pr.SrcPid)
-		//if pr == nil || factory.processErrorCode(pr) {
-		//	return
-		//}
 
 	}
 }
 
-func (factory *JobFactory) processErrorCode(pr *schedulerRPC.PieceResult) (stop bool) {
-	//code := pr.Code
-	//switch code {
-	//case dfcodes.Success:
-	//	return
-	//case dfcodes.PeerTaskNotFound:
-	//	peer, ok := factory.peerManager.Get(pr.SrcPid)
-	//	if ok {
-	//		worker.Submit(NewHandleLeaveTask(worker, &schedulerRPC.PeerTarget{
-	//			TaskId: peer.Task.TaskID,
-	//			PeerId: peer.PeerID,
-	//		}))
-	//	}
-	//	return true
-	//case dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
-	//	peerTask, _ := worker.peerManager.Get(pr.SrcPid)
-	//	if peerTask != nil {
-	//		factory.Submit(new())
-	//		peerTask.SetStatus(types.PeerStatusNeedParent)
-	//		worker.sendJob(peerTask)
-	//	}
-	//	return true
-	//case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail:
-	//	peerTask, _ := worker.peerManager.Get(pr.SrcPid)
-	//	if peerTask != nil {
-	//		peerTask.SetStatus(types.PeerStatusNeedParent)
-	//		w.sendJob(peerTask)
-	//		task := peerTask.Task
-	//		if task != nil {
-	//			if task.CDNError != nil {
-	//				go safe.Call(func() { peerTask.SendError(task.CDNError) })
-	//			} else {
-	//				worker.CDNManager.TriggerTask(task, w.schedulerService.TaskManager.PeerTask.CDNCallback)
-	//			}
-	//		}
-	//	}
-	//	return true
-	//}
-	return true
-}
-
-func constructSuccessPeerPacket(peer *types.PeerNode, parent *types.PeerNode, candidates []*types.PeerNode) *schedulerRPC.PeerPacket {
+func constructSuccessPeerPacket(peer *types.Peer, parent *types.Peer, candidates []*types.Peer) *schedulerRPC.PeerPacket {
 	mainPeer := &schedulerRPC.PeerPacket_DestPeer{
 		Ip:      parent.Host.IP,
 		RpcPort: parent.Host.RPCPort,

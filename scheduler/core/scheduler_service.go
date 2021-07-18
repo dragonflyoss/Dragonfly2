@@ -107,51 +107,51 @@ func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.
 	return idgen.TaskID(url, filter, meta, bizID)
 }
 
-func (s *SchedulerService) ScheduleParent(peer *types.PeerNode) (parent *types.PeerNode, err error) {
+func (s *SchedulerService) ScheduleParent(peer *types.Peer) (parent *types.Peer, err error) {
 	parent, _ = s.scheduler.ScheduleParent(peer, 1)
 	return
 }
 
-func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *types.PeerNode, ok bool) {
+func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *types.Peer, ok bool) {
 	return s.peerManager.Get(peerTaskID)
 }
 
-func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *types.Task) (*types.PeerNode, error) {
+func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *types.Task) (*types.Peer, error) {
 	// get or create host
 	reqPeerHost := req.PeerHost
 	var (
-		peerNode *types.PeerNode
-		ok       bool
-		host     *types.NodeHost
+		peer *types.Peer
+		ok   bool
+		host *types.PeerHost
 	)
 
 	if host, ok = s.hostManager.Get(reqPeerHost.Uuid); !ok {
-		host = &types.NodeHost{
+		host = &types.PeerHost{
 			UUID:            reqPeerHost.Uuid,
 			IP:              reqPeerHost.Ip,
 			HostName:        reqPeerHost.HostName,
 			RPCPort:         reqPeerHost.RpcPort,
 			DownloadPort:    reqPeerHost.DownPort,
-			HostType:        types.PeerNodeHost,
+			CDNHost:         false,
 			SecurityDomain:  reqPeerHost.SecurityDomain,
 			Location:        reqPeerHost.Location,
 			IDC:             reqPeerHost.Idc,
 			NetTopology:     reqPeerHost.NetTopology,
-			TotalUploadLoad: types.ClientHostLoad,
+			TotalUploadLoad: s.config.ClientLoad,
 		}
 		s.hostManager.Add(host)
 	}
 
 	// get or creat PeerTask
-	if peerNode, ok = s.peerManager.Get(req.PeerId); !ok {
-		peerNode = &types.PeerNode{
+	if peer, ok = s.peerManager.Get(req.PeerId); !ok {
+		peer = &types.Peer{
 			PeerID: req.PeerId,
 			Task:   task,
 			Host:   host,
 		}
-		s.peerManager.Add(peerNode)
+		s.peerManager.Add(peer)
 	}
-	return peerNode, nil
+	return peer, nil
 }
 
 func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task) (*types.Task, error) {
@@ -165,25 +165,28 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	}
 	synclock.UnLock(task.TaskID, true)
 	var (
-		once        sync.Once
-		cdnPeerNode *types.PeerNode
-		cdnHost     *types.NodeHost
+		once    sync.Once
+		cdnPeer *types.Peer
+		cdnHost *types.PeerHost
 	)
 	synclock.Lock(task.TaskID, false)
 	defer synclock.Lock(task.TaskID, false)
+
+	// register cdn peer task
+	// notify peer tasks
 	if err := s.cdnManager.StartSeedTask(ctx, task, func(ps *cdnsystem.PieceSeed, err error) {
 		once.Do(func() {
 			cdnHost, _ = s.hostManager.Get(ps.HostUuid)
-			s.peerManager.Add(types.NewPeerNode(ps.PeerId, task, cdnHost))
+			s.peerManager.Add(types.NewPeer(ps.PeerId, task, cdnHost))
 		})
 		if err != nil {
-			cdnPeerNode.SetStatus(types.PeerStatusBadNode)
+			cdnPeer.SetStatus(types.PeerStatusBadNode)
 			return
 		}
-		cdnPeerNode.IncFinishNum()
-		cdnPeerNode.Touch()
+		cdnPeer.AddPieceStatus(ps)
+		cdnPeer.Touch()
 		if ps.Done {
-			cdnPeerNode.SetStatus(types.PeerStatusSuccess)
+			cdnPeer.SetStatus(types.PeerStatusSuccess)
 			if task.ContentLength <= types.TinyFileSize {
 				content, er := s.cdnManager.DownloadTinyFileContent(task, cdnHost)
 				if er == nil && len(content) == int(task.ContentLength) {
@@ -197,14 +200,14 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	return task, nil
 }
 
-func (s *SchedulerService) HandlePieceResult(pieceResult *schedulerRPC.PieceResult) error {
-	return s.pool.Submit(s.jobFactory.NewHandleReportPieceResultJob(pieceResult))
+func (s *SchedulerService) HandlePieceResult(peer *types.Peer, pieceResult *schedulerRPC.PieceResult) error {
+	return s.pool.Submit(s.jobFactory.NewHandleReportPieceResultJob(peer, pieceResult))
 }
 
-func (s *SchedulerService) HandlePeerResult(peerResult *schedulerRPC.PeerResult) error {
-	return s.pool.Submit(s.jobFactory.NewHandleReportPeerResultJob(peerResult))
+func (s *SchedulerService) HandlePeerResult(peer *types.Peer, peerResult *schedulerRPC.PeerResult) error {
+	return s.pool.Submit(s.jobFactory.NewHandleReportPeerResultJob(peer, peerResult))
 }
 
-func (s *SchedulerService) HandleLeaveTask(target *schedulerRPC.PeerTarget) error {
-	return s.pool.Submit(s.jobFactory.NewHandleLeaveJob(target))
+func (s *SchedulerService) HandleLeaveTask(peer *types.Peer, target *schedulerRPC.PeerTarget) error {
+	return s.pool.Submit(s.jobFactory.NewHandleLeaveJob(peer, target))
 }
