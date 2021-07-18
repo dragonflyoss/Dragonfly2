@@ -50,7 +50,7 @@ func (h *Handlers) CreatePermission(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "create permission successfully"})
 }
 
-// @Summary Destory Permission
+// @Summary Destroy Permission
 // @Description Destory Permission by json config
 // @Tags permission
 // @Accept json
@@ -60,7 +60,7 @@ func (h *Handlers) CreatePermission(ctx *gin.Context) {
 // @Failure 500 {object} HTTPError
 // @Router /permission [post]
 
-func (h *Handlers) DestoryPermission(ctx *gin.Context) {
+func (h *Handlers) DestroyPermission(ctx *gin.Context) {
 	var json types.PolicyRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})

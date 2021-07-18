@@ -81,7 +81,7 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 	// Permission
 	pn := apiv1.Group("/permission", jwt.MiddlewareFunc(), rbac)
 	pn.POST("", h.CreatePermission)
-	pn.DELETE("", h.DestoryPermission)
+	pn.DELETE("", h.DestroyPermission)
 	pn.GET("/endpoints", h.GetEndpoints(r))
 
 	// Security Group
