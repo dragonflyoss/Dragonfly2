@@ -6,6 +6,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
 	"github.com/go-redis/redis/v8"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -79,6 +80,23 @@ func seed(db *gorm.DB) error {
 		if err := db.Create(&model.CDNCluster{
 			Name:   "cdn-cluster-1",
 			Config: map[string]interface{}{},
+		}).Error; err != nil {
+			return err
+		}
+	}
+	var adminUserCount int64
+	var adminUserName = "admin"
+	db.Model(model.User{}).Where("name = ?", adminUserName).Count(&adminUserCount)
+	if cdnClusterCount <= 0 {
+		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte("Dragonfly2"), bcrypt.MinCost)
+		if err != nil {
+			return err
+		}
+		if err := db.Create(model.User{
+			EncryptedPassword: string(encryptedPasswordBytes),
+			Name:              adminUserName,
+			Email:             fmt.Sprintf("%s@Dragonfly2.com", adminUserName),
+			State:             model.UserStateEnabled,
 		}).Error; err != nil {
 			return err
 		}
