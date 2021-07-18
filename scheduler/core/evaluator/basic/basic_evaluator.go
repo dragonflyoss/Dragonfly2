@@ -20,21 +20,26 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type baseEvaluator struct {
+	cfg *config.SchedulerConfig
 }
 
-func NewEvaluator() evaluator.Evaluator {
-	return &baseEvaluator{}
+func NewEvaluator(cfg *config.SchedulerConfig) evaluator.Evaluator {
+	return &baseEvaluator{cfg: cfg}
 }
 
 func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
+	if peer.Host.CDN {
+		return false
+	}
 	parent := peer.GetParent()
 
-	if parent == nil {
+	if parent == nil && peer.IsRunning() {
 		return true
 	}
 
@@ -43,24 +48,30 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 		return false
 	}
 
-	avgCost, lastCost := getAvgAndLastCost(parent.GetCostHistory(), 4)
+	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
 	if avgCost*40 < lastCost {
 		logger.Debugf("IsBadNode [%s]: recent pieces have taken too long to download", peer.PeerID)
-		return true
 	}
-
 	// todo adjust policy
 	return (avgCost * 20) < lastCost
 }
 
 func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
-	parent := peer.GetParent()
-
-	if parent == nil {
+	if peer.Host.CDN {
 		return false
 	}
 
+	if peer.XXX() {
+		return true
+	}
+
 	if peer.IsWaiting() {
+		return false
+	}
+
+	parent := peer.GetParent()
+
+	if parent == nil {
 		return false
 	}
 

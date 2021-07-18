@@ -28,15 +28,15 @@ type PeerStatus uint8
 const (
 	PeerStatusWaiting PeerStatus = iota
 	PeerStatusRunning
-	PeerStatusNeedParent
-	PeerStatusNeedChildren
+	//PeerStatusNeedParent
+	//PeerStatusNeedChildren
 	PeerStatusBadNode
-	PeerStatusNeedAdjustNode
-	PeerStatusNeedCheckNode
+	//PeerStatusNeedAdjustNode
+	//PeerStatusNeedCheckNode
 	PeerStatusSuccess
 	PeerStatusLeaveNode
-	PeerStatusAddParent
-	PeerStatusNodeGone
+	//PeerStatusAddParent
+	//PeerStatusNodeGone
 	PeerStatusZombie
 )
 
@@ -86,11 +86,19 @@ func (peer *Peer) GetLastAccessTime() time.Time {
 	return peer.lastAccessTime
 }
 
+func (peer *Peer) Touch() {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	peer.lastAccessTime = time.Now()
+	peer.Task.Touch()
+}
+
 func (peer *Peer) associateChild(child *Peer) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 	peer.children[child.PeerID] = child
 	peer.Host.IncUploadLoad()
+	peer.Task.peers.Update(peer)
 }
 
 func (peer *Peer) disassociateChild(child *Peer) {
@@ -98,6 +106,7 @@ func (peer *Peer) disassociateChild(child *Peer) {
 	defer peer.lock.Unlock()
 	delete(peer.children, child.PeerID)
 	peer.Host.DecUploadLoad()
+	peer.Task.peers.Update(peer)
 }
 
 func (peer *Peer) ReplaceParent(parent *Peer) {
@@ -132,12 +141,12 @@ func (peer *Peer) GetCost() int {
 	return totalCost / len(peer.costHistory)
 }
 
-func (peer *Peer) AddPieceStatus(pr *scheduler.PieceResult) {
+func (peer *Peer) AddPieceInfo(finishedCount int32, cost int) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
-	if pr.FinishedCount > peer.finishedNum {
-		peer.finishedNum = pr.FinishedCount
-		peer.addCost(int(pr.EndTime - pr.BeginTime))
+	if finishedCount > peer.finishedNum {
+		peer.finishedNum = finishedCount
+		peer.addCost(cost)
 		peer.Task.peers.Update(peer)
 	}
 }
@@ -252,7 +261,7 @@ func (peer *Peer) SetStatus(status PeerStatus) {
 	peer.status = status
 }
 
-func (peer *Peer) SetSendChannel(packetChan chan *scheduler.PeerPacket) {
+func (peer *Peer) BindSendChannel(packetChan chan *scheduler.PeerPacket) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 	peer.PacketChan = packetChan
@@ -263,7 +272,7 @@ func (peer *Peer) GetSendChannel() chan *scheduler.PeerPacket {
 }
 
 func (peer *Peer) IsRunning() bool {
-	return peer.status != PeerStatusBadNode
+	return peer.status == PeerStatusRunning
 }
 
 func (peer *Peer) IsSuccess() bool {
@@ -280,9 +289,8 @@ func (peer *Peer) IsDone() bool {
 	return peer.status == PeerStatusSuccess || peer.status == PeerStatusBadNode
 }
 
-func (peer *Peer) Touch() {
-	peer.lastAccessTime = time.Now()
-	peer.Task.lastAccessTime = time.Now()
+func (peer *Peer) XXX() bool {
+	return peer.status == PeerStatusBadNode || peer.status == PeerStatusLeaveNode || peer.status == PeerStatusZombie
 }
 
 func (peer *Peer) GetFinishedNum() int32 {

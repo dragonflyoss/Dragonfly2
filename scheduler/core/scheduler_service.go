@@ -21,9 +21,9 @@ import (
 	"sync"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -55,6 +55,7 @@ type SchedulerService struct {
 	//pool      *Worker
 	config    *config.SchedulerConfig
 	scheduler scheduler.Scheduler
+	wg        sync.WaitGroup
 }
 
 func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface) (*SchedulerService, error) {
@@ -62,10 +63,11 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	if err != nil {
 		return nil, err
 	}
+	peerManager := peer.NewManager()
 	cdnManager := source.NewManager()
 	hostManager := host.NewManager()
 	if cfg.EnableCDN {
-		cdnManager, err = d7y.NewManager(schedulerConfig.Cdns)
+		cdnManager, err = d7y.NewManager(schedulerConfig.Cdns, peerManager, hostManager)
 		if err != nil {
 			return nil, errors.Wrap(err, "new cdn manager")
 		}
@@ -74,7 +76,6 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		dynConfig.Register(hostManager)
 	}
 	taskManager := task.NewManager()
-	peerManager := peer.NewManager()
 	scheduler, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
 		PeerManager: peerManager,
 	})
@@ -100,6 +101,35 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	}, nil
 }
 
+//func (s *SchedulerService) start() error {
+//	// 监听在 peer-port端口
+//	s.wg.Add(4)
+//	go s.runEventLoop(aq) // Careful, this should be the only reference to aq.
+//	go s.listenLoop()     // accepts incoming connections.
+//	go s.tickerLoop()
+//	go s.announceLoop()
+//
+//	return nil
+//}
+//
+//// Stop shuts down the scheduler.
+//func (s *SchedulerService) Stop() {
+//	s.stopOnce.Do(func() {
+//		s.log().Info("Stopping scheduler...")
+//
+//		close(s.done)
+//		s.listener.Close()
+//		s.eventLoop.send(shutdownEvent{})
+//
+//		// Waits for all loops to stop.
+//		s.wg.Wait()
+//
+//		s.torrentlog.Sync()
+//
+//		s.log().Info("Scheduler stopped")
+//	})
+//}
+
 func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string, peerID string) (taskID string) {
 	if s.config.ABTest {
 		return idgen.TwinsTaskID(url, filter, meta, bizID, peerID)
@@ -108,7 +138,7 @@ func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.
 }
 
 func (s *SchedulerService) ScheduleParent(peer *types.Peer) (parent *types.Peer, err error) {
-	parent, _ = s.scheduler.ScheduleParent(peer, 1)
+	parent, _ = s.scheduler.ScheduleParent(peer)
 	return
 }
 
@@ -132,7 +162,7 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 			HostName:        reqPeerHost.HostName,
 			RPCPort:         reqPeerHost.RpcPort,
 			DownloadPort:    reqPeerHost.DownPort,
-			CDNHost:         false,
+			CDN:             false,
 			SecurityDomain:  reqPeerHost.SecurityDomain,
 			Location:        reqPeerHost.Location,
 			IDC:             reqPeerHost.Idc,
@@ -164,50 +194,46 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 		}
 	}
 	synclock.UnLock(task.TaskID, true)
-	var (
-		once    sync.Once
-		cdnPeer *types.Peer
-		cdnHost *types.PeerHost
-	)
-	synclock.Lock(task.TaskID, false)
-	defer synclock.Lock(task.TaskID, false)
-
+	// do trigger
+	task.SetLastTriggerTime(time.Now())
 	// register cdn peer task
 	// notify peer tasks
-	if err := s.cdnManager.StartSeedTask(ctx, task, func(ps *cdnsystem.PieceSeed, err error) {
-		once.Do(func() {
-			cdnHost, _ = s.hostManager.Get(ps.HostUuid)
-			s.peerManager.Add(types.NewPeer(ps.PeerId, task, cdnHost))
-		})
-		if err != nil {
-			cdnPeer.SetStatus(types.PeerStatusBadNode)
-			return
-		}
-		cdnPeer.AddPieceStatus(ps)
-		cdnPeer.Touch()
-		if ps.Done {
-			cdnPeer.SetStatus(types.PeerStatusSuccess)
-			if task.ContentLength <= types.TinyFileSize {
-				content, er := s.cdnManager.DownloadTinyFileContent(task, cdnHost)
-				if er == nil && len(content) == int(task.ContentLength) {
-					task.DirectPiece = content
-				}
+	synclock.Lock(task.TaskID, false)
+	defer synclock.Lock(task.TaskID, false)
+	if !task.IsHealth() {
+		task.SetStatus(types.TaskStatusRunning)
+	}
+	go func() {
+		if err := s.cdnManager.StartSeedTask(ctx, task, false); err != nil {
+			logger.Errorf("failed to seed task: %v", err)
+			if err = s.pool.Submit(s.jobFactory.NewHandleFailSeedTaskJob(task)); err != nil {
+				logger.Errorf("failed to submit handle fail seed task job: %v", err)
 			}
 		}
-	}); err != nil {
-		return nil, err
-	}
+	}()
 	return task, nil
 }
 
 func (s *SchedulerService) HandlePieceResult(peer *types.Peer, pieceResult *schedulerRPC.PieceResult) error {
-	return s.pool.Submit(s.jobFactory.NewHandleReportPieceResultJob(peer, pieceResult))
+	job := s.jobFactory.NewHandleReportPieceResultJob(peer, pieceResult)
+	if job != nil {
+		return s.pool.Submit(job)
+	}
+	return nil
 }
 
 func (s *SchedulerService) HandlePeerResult(peer *types.Peer, peerResult *schedulerRPC.PeerResult) error {
-	return s.pool.Submit(s.jobFactory.NewHandleReportPeerResultJob(peer, peerResult))
+	job := s.jobFactory.NewHandleReportPeerResultJob(peer, peerResult)
+	if job != nil {
+		return s.pool.Submit(job)
+	}
+	return nil
 }
 
-func (s *SchedulerService) HandleLeaveTask(peer *types.Peer, target *schedulerRPC.PeerTarget) error {
-	return s.pool.Submit(s.jobFactory.NewHandleLeaveJob(peer, target))
+func (s *SchedulerService) HandleLeaveTask(peer *types.Peer) error {
+	job := s.jobFactory.NewHandleLeaveJob(peer)
+	if job != nil {
+		return s.pool.Submit(job)
+	}
+	return nil
 }

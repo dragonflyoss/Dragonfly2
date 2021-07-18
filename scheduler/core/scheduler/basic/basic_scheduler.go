@@ -48,11 +48,12 @@ var _ scheduler.Builder = (*basicSchedulerBuilder)(nil)
 
 func (builder *basicSchedulerBuilder) Build(cfg *config.SchedulerConfig, opts *scheduler.BuildOptions) (scheduler.Scheduler, error) {
 	evalFactory := evaluator.NewEvaluatorFactory(cfg)
-	evalFactory.Register("default", basic.NewEvaluator())
+	evalFactory.Register("default", basic.NewEvaluator(cfg))
 	evalFactory.RegisterGetEvaluatorFunc(0, func(taskID string) (string, bool) { return "default", true })
 	sch := &Scheduler{
 		evaluator:   evalFactory,
 		peerManager: opts.PeerManager,
+		cfg:         cfg,
 	}
 	return sch, nil
 }
@@ -64,6 +65,7 @@ func (builder *basicSchedulerBuilder) Name() string {
 type Scheduler struct {
 	evaluator   evaluator.Evaluator
 	peerManager daemon.PeerMgr
+	cfg         *config.SchedulerConfig
 }
 
 func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) {
@@ -98,12 +100,12 @@ func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) 
 	return
 }
 
-func (s *Scheduler) ScheduleParent(peer *types.Peer, limit int) (parent *types.Peer, candidateParents []*types.Peer) {
+func (s *Scheduler) ScheduleParent(peer *types.Peer) (parent *types.Peer, candidateParents []*types.Peer) {
 	logger.Debugf("[%s][%s]scheduler parent", peer.Task.TaskID, peer.PeerID)
 	if !s.evaluator.NeedAdjustParent(peer) {
 		return
 	}
-	candidateParents = s.selectCandidateParents(peer, limit)
+	candidateParents = s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
 	var value float64
 	for _, candidate := range candidateParents {
 		worth := s.evaluator.Evaluate(parent, peer)
@@ -131,7 +133,7 @@ func (s *Scheduler) IsBadNode(peer *types.Peer) bool {
 
 func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list []*types.Peer) {
 	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *types.Peer) bool {
-		if candidateNode != nil && candidateNode.GetParent() == nil && !peer.IsDone() && !peer.Host.CDNHost {
+		if candidateNode != nil && candidateNode.GetParent() == nil && !peer.IsDone() && !peer.Host.CDN {
 			return true
 		}
 		return false
@@ -140,7 +142,7 @@ func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list [
 
 func (s *Scheduler) selectCandidateParents(peer *types.Peer, limit int) (list []*types.Peer) {
 	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.Peer) bool {
-		if candidateNode != nil && candidateNode.Host.GetFreeUploadLoad() > 0 && (candidateNode.IsSuccess() || candidateNode.GetTreeRoot().Host.CDNHost) {
+		if candidateNode != nil && candidateNode.Host.GetFreeUploadLoad() > 0 && (candidateNode.IsSuccess() || candidateNode.GetTreeRoot().Host.CDN) {
 			return true
 		}
 		return false

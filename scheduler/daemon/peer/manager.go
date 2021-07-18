@@ -31,10 +31,6 @@ const (
 
 type manager struct {
 	peerMap sync.Map
-	//downloadMonitorQueue workqueue.DelayingInterface
-	taskManager daemon.TaskMgr
-	hostManager daemon.HostMgr
-	verbose     bool
 }
 
 func (m *manager) ListPeers() *sync.Map {
@@ -42,18 +38,7 @@ func (m *manager) ListPeers() *sync.Map {
 }
 
 func NewManager() daemon.PeerMgr {
-
-	return &manager{
-		//downloadMonitorQueue: workqueue.NewDelayingQueue(),
-		//taskManager: taskManager,
-		//hostManager: hostManager,
-	}
-
-	//go peerManager.downloadMonitorWorkingLoop()
-	//
-	//go peerManager.gcWorkingLoop()
-	//
-	//go peerManager.printDebugInfoLoop()
+	return &manager{}
 }
 
 var _ daemon.PeerMgr = (*manager)(nil)
@@ -78,6 +63,7 @@ func (m *manager) Delete(peerID string) {
 	if ok {
 		peer.Host.DeletePeer(peerID)
 		peer.Task.DeletePeer(peer)
+		close(peer.PacketChan)
 		m.peerMap.Delete(peerID)
 	}
 	return

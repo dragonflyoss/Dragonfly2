@@ -152,13 +152,13 @@ func (m *monitor) downloadMonitorWorkingLoop() {
 			peer := v.(*types.Peer)
 			if peer != nil {
 				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", peer.Task.TaskID, peer.PeerID, peer.GetStatus())
-				if peer.IsSuccess() || (peer.Host.CDNHost) {
+				if peer.IsSuccess() || peer.Host.CDN {
 					// clear from monitor
 				} else {
 					if !peer.IsRunning() {
 						// peer do not report for a long time, peer gone
 						if time.Now().After(peer.GetLastAccessTime().Add(PeerGoneTimeout)) {
-							peer.SetStatus(types.PeerStatusNodeGone)
+							peer.SetStatus(types.PeerStatusLeaveNode)
 							//pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report time out"))
 						}
 						m.downloadMonitorCallBack(peer)
@@ -166,7 +166,7 @@ func (m *monitor) downloadMonitorWorkingLoop() {
 						m.downloadMonitorCallBack(peer)
 					} else {
 						if time.Now().After(peer.GetLastAccessTime().Add(PeerForceGoneTimeout)) {
-							peer.SetStatus(types.PeerStatusNodeGone)
+							peer.SetStatus(types.PeerStatusLeaveNode)
 							//pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report fource time out"))
 						}
 						m.downloadMonitorCallBack(peer)

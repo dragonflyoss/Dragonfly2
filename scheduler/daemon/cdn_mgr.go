@@ -19,7 +19,6 @@ package daemon
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -27,8 +26,5 @@ import (
 type CDNMgr interface {
 	config.Observer
 	// StartSeedTask
-	StartSeedTask(ctx context.Context, task *types.Task, callback func(ps *cdnsystem.PieceSeed, err error)) error
-
-	// DownloadTinyFileContent
-	DownloadTinyFileContent(task *types.Task, cdnHost *types.PeerHost) ([]byte, error)
+	StartSeedTask(ctx context.Context, task *types.Task, overrideStatus bool) error
 }

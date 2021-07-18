@@ -28,10 +28,10 @@ type TaskStatus uint8
 
 const (
 	TaskStatusWaiting TaskStatus = iota
-	TaskStatusRegisterFail
 	TaskStatusRunning
-	TaskStatusFailed
 	TaskStatusSuccess
+	TaskStatusCDNRegisterFail
+	TaskStatusFailed
 	TaskStatusSourceError
 )
 
@@ -51,6 +51,7 @@ type Task struct {
 	ContentLength   int64
 	status          TaskStatus
 	peers           *sortedlist.SortedList
+	// todo add cdnPeers
 }
 
 func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
@@ -101,20 +102,28 @@ func (task *Task) AddPiece(p *PieceInfo) {
 	task.pieceList[p.PieceNum] = p
 }
 
-func (task *Task) Touch() {
-	task.lastAccessTime = time.Now()
-}
-
 func (task *Task) GetLastTriggerTime() time.Time {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
 	return task.lastTriggerTime
 }
 
+func (task *Task) Touch() {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.lastAccessTime = time.Now()
+}
+
 func (task *Task) SetLastTriggerTime(lastTriggerTime time.Time) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
 	task.lastTriggerTime = lastTriggerTime
+}
+
+func (task *Task) GetLastAccessTime() time.Time {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	return task.lastAccessTime
 }
 
 func (task *Task) ListPeers() *sortedlist.SortedList {
@@ -141,7 +150,7 @@ func (task *Task) IsSuccess() bool {
 
 func (task *Task) IsFrozen() bool {
 	return task.status == TaskStatusFailed || task.status == TaskStatusWaiting ||
-		task.status == TaskStatusSourceError || task.status == TaskStatusRegisterFail
+		task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
 }
 
 func (task *Task) IsWaiting() bool {
@@ -153,5 +162,5 @@ func (task *Task) IsHealth() bool {
 }
 
 func (task *Task) IsFail() bool {
-	return task.status == TaskStatusFailed || task.status == TaskStatusSourceError
+	return task.status == TaskStatusFailed || task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
 }

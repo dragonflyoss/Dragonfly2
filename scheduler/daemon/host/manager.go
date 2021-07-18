@@ -76,7 +76,7 @@ func (m *manager) OnNotify(scheduler *managerRPC.Scheduler) {
 			Location:       cdn.Location,
 			IDC:            cdn.Idc,
 			//NetTopology:       server.NetTopology,
-			TotalUploadLoad: types.CDNHostLoad,
+			//TotalUploadLoad: types.CDNHostLoad,
 		}
 		m.GetOrAdd(cdnHost)
 	}
