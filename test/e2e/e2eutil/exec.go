@@ -28,10 +28,6 @@ func ABCommand(arg ...string) *exec.Cmd {
 	return exec.Command("ab", arg...)
 }
 
-func BombardierCommand(arg ...string) *exec.Cmd {
-	return exec.Command("bombardier", arg...)
-}
-
 type PodExec struct {
 	namespace string
 	name      string
