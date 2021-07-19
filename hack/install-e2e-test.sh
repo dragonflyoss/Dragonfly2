@@ -53,7 +53,7 @@ install-ginkgo() {
 
 install-apache-bench() {
   if which ab >/dev/null ; then
-      print_step_info "ab has been installed"
+      print_step_info "apache bench has been installed"
   else
       apt-get update
       apt-get install apache2-utils
