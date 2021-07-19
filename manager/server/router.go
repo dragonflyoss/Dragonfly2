@@ -71,10 +71,10 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 
 	// User
 	ai := apiv1.Group("/user")
-	ai.POST("/login", jwt.LoginHandler)
-	ai.GET("/logout", jwt.LogoutHandler)
+	ai.POST("/signin", jwt.LoginHandler)
+	ai.GET("/signout", jwt.LogoutHandler)
 	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/register", h.Register)
+	ai.POST("/signup", h.SignUp)
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")

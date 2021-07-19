@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"net/http"
 	"time"
 
 	"d7y.io/dragonfly/v2/manager/handlers"
@@ -10,36 +9,45 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type user struct {
+	ID uint
+}
+
 func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
+	var identityKey = "id"
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
-		Realm:      "Dragonfly Zone",
-		Key:        []byte("Dragonfly Secret Key"),
-		Timeout:    time.Hour,
-		MaxRefresh: time.Hour,
+		Realm:       "Dragonfly",
+		Key:         []byte("Secret Key"),
+		Timeout:     time.Hour,
+		MaxRefresh:  time.Hour,
+		IdentityKey: identityKey,
 		Authenticator: func(c *gin.Context) (interface{}, error) {
-			var loginInfos types.LoginRequest
-			if err := c.ShouldBind(&loginInfos); err != nil {
+			var json types.SignInRequest
+			if err := c.ShouldBind(&json); err != nil {
 				return "", jwt.ErrMissingLoginValues
 			}
-			userInfo, err := h.Service.Login(loginInfos)
+
+			u, err := h.Service.SignIn(json)
 			if err != nil {
 				return "", jwt.ErrFailedAuthentication
 			}
 
-			return map[string]interface{}{
-				"name": userInfo.Name,
+			return &user{
+				ID: u.ID,
 			}, nil
 		},
-		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
-			c.JSON(http.StatusOK, gin.H{
-				"token":  token,
-				"expire": expire.Format(time.RFC3339),
-			})
+
+		IdentityHandler: func(c *gin.Context) interface{} {
+			claims := jwt.ExtractClaims(c)
+			return &user{
+				ID: claims[identityKey].(uint),
+			}
 		},
+
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
-			if v, ok := data.(map[string]interface{}); ok {
+			if u, ok := data.(user); ok {
 				return jwt.MapClaims{
-					"name": v["name"],
+					identityKey: u.ID,
 				}
 			}
 			return jwt.MapClaims{}
@@ -50,6 +58,7 @@ func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
 				"message": message,
 			})
 		},
+
 		TokenLookup:    "header: Authorization, query: token, cookie: jwt",
 		TokenHeadName:  "Bearer",
 		TimeFunc:       time.Now,
@@ -62,5 +71,4 @@ func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
 	}
 
 	return authMiddleware, nil
-
 }
