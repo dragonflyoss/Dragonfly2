@@ -49,7 +49,7 @@ type cacheResult struct {
 }
 
 func (s *cacheResult) String() string {
-	return fmt.Sprintf("{breakNum:%d, pieceMetaRecords:%+v, fileMetaData:%+v}", s.breakPoint, s.pieceMetaRecords, s.fileMetaData)
+	return fmt.Sprintf("{breakNum: %d, pieceMetaRecords: %+v, fileMetaData: %+v}", s.breakPoint, s.pieceMetaRecords, s.fileMetaData)
 }
 
 // newCacheDetector create a new cache detector
@@ -222,7 +222,7 @@ func (cd *cacheDetector) resetCache(task *types.SeedTask) (*storage.FileMetaData
 // checkSameFile check whether meta file is modified
 func checkSameFile(task *types.SeedTask, metaData *storage.FileMetaData) error {
 	if task == nil || metaData == nil {
-		return errors.Errorf("task or metaData is nil, task:%v, metaData:%v", task, metaData)
+		return errors.Errorf("task or metaData is nil, task: %v, metaData: %v", task, metaData)
 	}
 
 	if metaData.PieceSize != task.PieceSize {

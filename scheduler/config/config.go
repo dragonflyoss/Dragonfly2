@@ -32,6 +32,7 @@ type Config struct {
 	Server       *ServerConfig    `yaml:"server" mapstructure:"server"`
 	DynConfig    *DynConfig       `yaml:"dynConfig" mapstructure:"dynConfig"`
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
+	Host         HostConfig            `yaml:"host" mapstructure:"host"`
 }
 
 func New() *Config {
@@ -194,4 +195,12 @@ type GCConfig struct {
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
 	PeerTTL        time.Duration
 	TaskTTL        time.Duration
+}
+
+type HostConfig struct {
+	// Peerhost location for scheduler
+	Location string `mapstructure:"location" yaml:"location"`
+
+	// Peerhost idc for scheduler
+	IDC string `mapstructure:"idc" yaml:"idc"`
 }

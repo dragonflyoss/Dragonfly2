@@ -14,6 +14,8 @@ type CreateSchedulerClusterRequest struct {
 	BIO                 string                 `json:"bio" binding:"omitempty"`
 	Config              map[string]interface{} `json:"config" binding:"required"`
 	ClientConfig        map[string]interface{} `json:"client_config" binding:"required"`
+	Scopes              map[string]interface{} `json:"scopes" binding:"omitempty"`
+	IsDefault           bool                   `json:"is_default" binding:"omitempty"`
 	SecurityGroupDomain string                 `json:"security_group_domain" binding:"omitempty"`
 }
 
@@ -22,6 +24,8 @@ type UpdateSchedulerClusterRequest struct {
 	BIO                 string                 `json:"bio" binding:"omitempty"`
 	Config              map[string]interface{} `json:"config" binding:"omitempty"`
 	ClientConfig        map[string]interface{} `json:"client_config" binding:"omitempty"`
+	Scopes              map[string]interface{} `json:"scopes" binding:"omitempty"`
+	IsDefault           bool                   `json:"is_default" binding:"omitempty"`
 	SecurityGroupDomain string                 `json:"security_group_domain" binding:"omitempty"`
 }
 

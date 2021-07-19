@@ -88,7 +88,7 @@ var rootCmd = &cobra.Command{
 		//  do get file
 		err := runDfget()
 
-		msg := fmt.Sprintf("download success:%t cost:%dms error:[%v]", err == nil, time.Now().Sub(start).Milliseconds(), err)
+		msg := fmt.Sprintf("download success: %t cost: %dms error:[%v]", err == nil, time.Now().Sub(start).Milliseconds(), err)
 		logger.With("url", dfgetConfig.URL).Info(msg)
 		fmt.Println(msg)
 
@@ -169,7 +169,7 @@ func runDfget() error {
 	if dfgetConfig.Pattern != constants.SourcePattern {
 		logger.Info("start to check and spawn daemon")
 		if daemonClient, err = checkAndSpawnDaemon(); err != nil {
-			logger.Errorf("check and spawn daemon error:%v", err)
+			logger.Errorf("check and spawn daemon error: %v", err)
 		} else {
 			logger.Info("check and spawn daemon success")
 		}

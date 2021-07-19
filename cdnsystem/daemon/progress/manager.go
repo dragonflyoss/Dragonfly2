@@ -81,7 +81,7 @@ func (pm *Manager) InitSeedProgress(ctx context.Context, taskID string) {
 }
 
 func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error) {
-	logger.Debugf("watch seed progress begin for taskID:%s", taskID)
+	logger.Debugf("watch seed progress begin for taskID: %s", taskID)
 	pm.mu.Lock(taskID, true)
 	defer pm.mu.UnLock(taskID, true)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
@@ -153,7 +153,7 @@ func (pm *Manager) PublishTask(ctx context.Context, taskID string, task *types.S
 		chanList.Remove(e)
 		sub, ok := e.Value.(chan *types.SeedPiece)
 		if !ok {
-			logger.Warnf("failed to convert chan seedPiece, e.Value:%v", e.Value)
+			logger.Warnf("failed to convert chan seedPiece, e.Value: %v", e.Value)
 			continue
 		}
 		close(sub)
@@ -173,7 +173,7 @@ func (pm *Manager) Clear(taskID string) error {
 			chanList.Remove(e)
 			sub, ok := e.Value.(chan *types.SeedPiece)
 			if !ok {
-				logger.Warnf("failed to convert chan seedPiece, e.Value:%v", e.Value)
+				logger.Warnf("failed to convert chan seedPiece, e.Value: %v", e.Value)
 				continue
 			}
 			close(sub)

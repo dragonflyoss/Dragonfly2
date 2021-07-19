@@ -18,6 +18,7 @@ package config
 
 import (
 	"io/ioutil"
+	"reflect"
 	"testing"
 	"time"
 
@@ -31,16 +32,6 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{
-		Manager: &ManagerConfig{
-			Addr:               "127.0.0.1:65003",
-			SchedulerClusterID: 1,
-			KeepAlive: KeepAliveConfig{
-				Interval:         1 * time.Second,
-				RetryMaxAttempts: 100,
-				RetryInitBackOff: 100,
-				RetryMaxBackOff:  100,
-			},
-		},
 		DynConfig: &DynConfig{
 			Type:       dc.LocalSourceType,
 			Path:       "foo",
@@ -62,9 +53,20 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			IP:   "127.0.0.1",
 			Port: 8002,
 		},
-		GC: &GCConfig{
-			TaskDelay:     3600 * 1000,
-			PeerTaskDelay: 3600 * 1000,
+
+		Manager: &ManagerConfig{
+			Addr:               "127.0.0.1:65003",
+			SchedulerClusterID: 1,
+			KeepAlive: KeepAliveConfig{
+				Interval:         1 * time.Second,
+				RetryMaxAttempts: 100,
+				RetryInitBackOff: 100,
+				RetryMaxBackOff:  100,
+			},
+		},
+		Host: HostConfig{
+			IDC:      "foo",
+			Location: "bar",
 		},
 	}
 
@@ -73,5 +75,5 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	var dataYAML map[string]interface{}
 	yaml.Unmarshal(contentYAML, &dataYAML)
 	mapstructure.Decode(dataYAML, &schedulerConfigYAML)
-	assert.EqualValues(config, schedulerConfigYAML)
+	assert.True(reflect.DeepEqual(config, schedulerConfigYAML))
 }

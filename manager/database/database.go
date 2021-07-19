@@ -91,6 +91,7 @@ func seed(db *gorm.DB) error {
 			Name:         "scheduler-cluster-1",
 			Config:       map[string]interface{}{},
 			ClientConfig: map[string]interface{}{},
+			IsDefault:    true,
 		}).Error; err != nil {
 			return err
 		}

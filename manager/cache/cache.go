@@ -33,5 +33,5 @@ func New(cfg *config.Config) *Cache {
 }
 
 func MakeCacheKey(namespace string, id string) string {
-	return fmt.Sprintf("manager:%s:%s", namespace, id)
+	return fmt.Sprintf("manager: %s: %s", namespace, id)
 }

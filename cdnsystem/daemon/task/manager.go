@@ -89,7 +89,7 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTask) error {
 	synclock.Lock(task.TaskID, true)
 	if !task.IsFrozen() {
-		logger.WithTaskID(task.TaskID).Infof("seedTask is running or has been downloaded successfully, status:%s", task.CdnStatus)
+		logger.WithTaskID(task.TaskID).Infof("seedTask is running or has been downloaded successfully, status: %s", task.CdnStatus)
 		synclock.UnLock(task.TaskID, true)
 		return nil
 	}
@@ -99,7 +99,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 	defer synclock.UnLock(task.TaskID, false)
 	// reconfirm
 	if !task.IsFrozen() {
-		logger.WithTaskID(task.TaskID).Infof("reconfirm find seedTask is running or has been downloaded successfully, status:%s", task.CdnStatus)
+		logger.WithTaskID(task.TaskID).Infof("reconfirm find seedTask is running or has been downloaded successfully, status: %s", task.CdnStatus)
 		return nil
 	}
 	if task.IsWait() {
@@ -127,9 +127,9 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		}()
 		updatedTask, err = tm.updateTask(task.TaskID, updateTaskInfo)
 		if err != nil {
-			logger.WithTaskID(task.TaskID).Errorf("failed to update task:%v", err)
+			logger.WithTaskID(task.TaskID).Errorf("failed to update task: %v", err)
 		}
-		logger.WithTaskID(task.TaskID).Infof("successfully update task cdn updatedTask:%+v", updatedTask)
+		logger.WithTaskID(task.TaskID).Infof("successfully update task cdn updatedTask: %+v", updatedTask)
 	}()
 	return nil
 }
@@ -215,7 +215,7 @@ func (tm *Manager) GC() error {
 
 	// slow GC detected, report it with a log warning
 	if timeDuring := time.Since(startTime); timeDuring > gcTasksTimeout {
-		logger.GcLogger.With("type", "meta").Warnf("gc tasks:%d cost:%.3f", removedTaskCount, timeDuring.Seconds())
+		logger.GcLogger.With("type", "meta").Warnf("gc tasks: %d cost: %.3f", removedTaskCount, timeDuring.Seconds())
 	}
 	logger.GcLogger.With("type", "meta").Infof("gc tasks: successfully full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
 	return nil

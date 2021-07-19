@@ -79,7 +79,7 @@ func (mm *cacheDataManager) updateAccessTime(taskID string, accessTime int64) er
 	interval := accessTime - originMetaData.AccessTime
 	originMetaData.Interval = interval
 	if interval <= 0 {
-		logger.WithTaskID(taskID).Warnf("file hit interval:%d, accessTime:%s", interval, timeutils.MillisUnixTime(accessTime))
+		logger.WithTaskID(taskID).Warnf("file hit interval: %d, accessTime: %s", interval, timeutils.MillisUnixTime(accessTime))
 		originMetaData.Interval = 0
 	}
 
@@ -154,7 +154,7 @@ func (mm *cacheDataManager) readAndCheckPieceMetaRecords(taskID, pieceMd5Sign st
 		return nil, err
 	}
 	if md5Sign != pieceMd5Sign {
-		return nil, fmt.Errorf("check piece meta data integrity fail, expectMd5Sign:%s, actualMd5Sign:%s",
+		return nil, fmt.Errorf("check piece meta data integrity fail, expectMd5Sign: %s, actualMd5Sign: %s",
 			pieceMd5Sign, md5Sign)
 	}
 	return pieceMetaRecords, nil
