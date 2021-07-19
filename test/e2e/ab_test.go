@@ -24,31 +24,40 @@ import (
 	. "github.com/onsi/gomega" //nolint
 )
 
-var _ = Describe("Download with ab", func() {
-	Context("ab", func() {
-		It("ab download should be ok", func() {
-			files := []string{
-				"/etc/containerd/config.toml",
-				"/etc/fstab",
-				"/etc/hostname",
-				"/usr/bin/kubectl",
-				"/usr/bin/systemctl",
-				"/usr/local/bin/containerd-shim",
-				"/usr/local/bin/clean-install",
-				"/usr/local/bin/entrypoint",
-				"/usr/local/bin/containerd-shim-runc-v2",
-				"/usr/local/bin/ctr",
-				"/usr/local/bin/containerd",
-				"/usr/local/bin/create-kubelet-cgroup-v2",
-				"/usr/local/bin/crictl",
-			}
+const (
+	proxyPort = "65001"
+)
 
-			for i := range files {
-				url := fmt.Sprintf("http://file-server.dragonfly-e2e.svc/kind%s", files[i])
+var _ = Describe("Download concurrency", func() {
+	Context("ab", func() {
+		It("concurrent 50 should be ok", func() {
+			for _, v := range e2eutil.GetFileList() {
+				url := e2eutil.GetFileURL(v)
 				fmt.Println("download url " + url)
 
-				// get original file digest
-				out, err := e2eutil.ABCommand("-c", "100", "-n", "1000", "-X", "127.0.0.1:65001", files[i]).CombinedOutput()
+				out, err := e2eutil.ABCommand("-c", "50", "-n", "50", "-X", fmt.Sprintf("%s:%s", "localhost", proxyPort), url).CombinedOutput()
+				fmt.Println(string(out))
+				Expect(err).NotTo(HaveOccurred())
+			}
+		})
+
+		It("concurrent 100 should be ok", func() {
+			for _, v := range e2eutil.GetFileList() {
+				url := e2eutil.GetFileURL(v)
+				fmt.Println("download url " + url)
+
+				out, err := e2eutil.ABCommand("-c", "100", "-n", "100", "-X", fmt.Sprintf("%s:%s", "localhost", proxyPort), url).CombinedOutput()
+				fmt.Println(string(out))
+				Expect(err).NotTo(HaveOccurred())
+			}
+		})
+
+		It("concurrent 200 should be ok", func() {
+			for _, v := range e2eutil.GetFileList() {
+				url := e2eutil.GetFileURL(v)
+				fmt.Println("download url " + url)
+
+				out, err := e2eutil.ABCommand("-c", "200", "-n", "200", "-X", fmt.Sprintf("%s:%s", "localhost", proxyPort), url).CombinedOutput()
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())
 			}

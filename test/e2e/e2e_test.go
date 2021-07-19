@@ -23,10 +23,6 @@ import (
 	"testing"
 )
 
-const (
-	dragonflyNamespace = "dragonfly-system"
-)
-
 // TestE2E is the root of e2e test function
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)

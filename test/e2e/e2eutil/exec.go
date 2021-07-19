@@ -1,6 +1,8 @@
 package e2eutil
 
-import "os/exec"
+import (
+	"os/exec"
+)
 
 const (
 	kindDockerContainer = "kind-control-plane"
