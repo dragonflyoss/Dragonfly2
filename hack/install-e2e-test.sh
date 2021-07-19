@@ -5,8 +5,12 @@ set -o errexit
 set -o pipefail
 
 KIND_CONFIG_PATH="test/testdata/kind/config.yaml"
-NAMESPACE="dragonfly-system"
+CHARTS_CONFIG_PATH="test/testdata/charts/config.yaml"
+FILE_SERVER_CONFIG_PATH="test/testdata/k8s/file-server.yaml"
 CHARTS_PATH="deploy/charts/dragonfly"
+NAMESPACE="dragonfly-system"
+E2E_NAMESPACE="dragonfly-e2e"
+FILE_SERVER_NAME="file-server-0"
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}/../" || return
 
@@ -29,15 +33,30 @@ install-helm() {
       curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | sh
   fi
 
-  helm install --wait --timeout 10m --create-namespace --namespace ${NAMESPACE} dragonfly ${CHARTS_PATH}
+  helm install --wait --timeout 10m --create-namespace --namespace ${NAMESPACE} -f ${CHARTS_CONFIG_PATH} dragonfly ${CHARTS_PATH}
+}
+
+install-file-server() {
+  kubectl apply -f ${FILE_SERVER_CONFIG_PATH}
+  kubectl wait --namespace ${E2E_NAMESPACE} \
+  --for=condition=ready pod ${FILE_SERVER_NAME} \
+  --timeout=10m
 }
 
 install-ginkgo() {
   if which ginkgo >/dev/null ; then
       print_step_info "ginkgo has been installed"
   else
-      print_step_info "start install ginkgo"
       go get github.com/onsi/ginkgo/ginkgo
+  fi
+}
+
+install-apache-bench() {
+  if which ab >/dev/null ; then
+      print_step_info "apache bench has been installed"
+  else
+      apt-get update
+      apt-get install apache2-utils
   fi
 }
 
@@ -54,8 +73,14 @@ install-local() {
   print_step_info "start helm install dragonfly"
   install-helm
 
-  print_step_info "start ginkgo install dragonfly"
+  print_step_info "start install file server"
+  install-file-server
+
+  print_step_info "start install ginkgo"
   install-ginkgo
+
+  print_step_info "start install apache bench"
+  install-apache-bench
 }
 
 install-actions() {
@@ -68,8 +93,14 @@ install-actions() {
   print_step_info "start helm install dragonfly"
   install-helm
 
-  print_step_info "start ginkgo install dragonfly"
+  print_step_info "start install file server"
+  install-file-server
+
+  print_step_info "start install ginkgo"
   install-ginkgo
+
+  print_step_info "start install apache bench"
+  install-apache-bench
 }
 
 print_step_info() {
