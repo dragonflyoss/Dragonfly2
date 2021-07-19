@@ -85,6 +85,9 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	if err != nil {
 		return nil, errors.Wrap(err, "new mission factory")
 	}
+	if cfg.OpenMonitor {
+		NewMonitor(peerManager)
+	}
 	return &SchedulerService{
 		cdnManager:  cdnManager,
 		taskManager: taskManager,

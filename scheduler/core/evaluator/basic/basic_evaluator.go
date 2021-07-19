@@ -37,12 +37,14 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 	if peer.Host.CDN {
 		return false
 	}
-	parent := peer.GetParent()
 
-	if parent == nil && peer.IsRunning() {
+	if peer.GetParent() == nil && peer.IsRunning() {
 		return true
 	}
 
+	if peer.GetParent() != nil && eval.IsBadNode(peer.GetParent()) {
+		return true
+	}
 	costHistory := peer.GetCostHistory()
 	if len(costHistory) < 4 {
 		return false
@@ -75,10 +77,8 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 		return false
 	}
 
-	lastActiveTime := peer.GetLastAccessTime()
-
-	if time.Now().After(lastActiveTime.Add(5 * time.Second)) {
-		logger.Debugf("IsBadNode [%s]: node is expired", peer.PeerID)
+	if time.Now().After(peer.GetLastAccessTime().Add(5 * time.Second)) {
+		logger.Debugf("IsBadNode [%s]: five seconds have elapsed since the last interview ", peer.PeerID)
 		return true
 	}
 

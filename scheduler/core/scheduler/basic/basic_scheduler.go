@@ -127,13 +127,15 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (parent *types.Peer, candid
 	return
 }
 
-func (s *Scheduler) IsBadNode(peer *types.Peer) bool {
-	return s.evaluator.IsBadNode(peer)
-}
-
 func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list []*types.Peer) {
 	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *types.Peer) bool {
-		if candidateNode != nil && candidateNode.GetParent() == nil && !peer.IsDone() && !peer.Host.CDN {
+		if candidateNode == nil || candidateNode.IsDone() || candidateNode.Host.CDN {
+			return false
+		}
+		if candidateNode.GetParent() == nil {
+			return true
+		}
+		if candidateNode.GetParent() != nil && s.evaluator.IsBadNode(candidateNode.GetParent()) {
 			return true
 		}
 		return false
@@ -142,7 +144,10 @@ func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list [
 
 func (s *Scheduler) selectCandidateParents(peer *types.Peer, limit int) (list []*types.Peer) {
 	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.Peer) bool {
-		if candidateNode != nil && candidateNode.Host.GetFreeUploadLoad() > 0 && (candidateNode.IsSuccess() || candidateNode.GetTreeRoot().Host.CDN) {
+		if candidateNode == nil || s.evaluator.IsBadNode(candidateNode) {
+			return false
+		}
+		if candidateNode.Host.GetFreeUploadLoad() > 0 {
 			return true
 		}
 		return false

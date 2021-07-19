@@ -5,9 +5,11 @@ go 1.15
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/VividCortex/mysqlerr v1.0.0
+	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.6.4
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
+	github.com/colinmarc/hdfs/v2 v2.2.0
 	github.com/docker/go-units v0.4.0
 	github.com/emirpasic/gods v1.12.0
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
@@ -51,8 +53,8 @@ require (
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
-	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
+	gonum.org/v1/gonum v0.9.3
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect

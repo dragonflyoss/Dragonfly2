@@ -32,7 +32,7 @@ type Config struct {
 	Server       *ServerConfig    `yaml:"server" mapstructure:"server"`
 	DynConfig    *DynConfig       `yaml:"dynConfig" mapstructure:"dynConfig"`
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
-	Host         HostConfig            `yaml:"host" mapstructure:"host"`
+	Host         HostConfig       `yaml:"host" mapstructure:"host"`
 }
 
 func New() *Config {
@@ -182,6 +182,7 @@ type SchedulerConfig struct {
 	Scheduler            string        `yaml:"scheduler" mapstructure:"scheduler"`
 	CDNLoad              int
 	ClientLoad           int
+	OpenMonitor          bool
 	GC                   *GCConfig `yaml:"gc" mapstructure:"gc"`
 }
 

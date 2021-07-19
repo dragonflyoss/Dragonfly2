@@ -36,36 +36,27 @@ const (
 )
 
 type monitor struct {
-	downloadMonitorQueue    workqueue.DelayingInterface
-	downloadMonitorCallBack func(node *types.Peer)
-	peerManager             daemon.PeerMgr
-	verbose                 bool
+	downloadMonitorQueue workqueue.DelayingInterface
+	peerManager          daemon.PeerMgr
+	verbose              bool
 }
 
-func NewMonitor() {
+func NewMonitor(peerManager daemon.PeerMgr) {
 	monitor := &monitor{
-		downloadMonitorQueue:    nil,
-		downloadMonitorCallBack: nil,
-		peerManager:             nil,
-		verbose:                 false,
+		downloadMonitorQueue: workqueue.NewDelayingQueue(),
+		peerManager:          peerManager,
 	}
-	go monitor.downloadMonitorWorkingLoop()
 	go monitor.printDebugInfoLoop()
 }
 
 func (m *monitor) printDebugInfoLoop() {
-	if m.verbose {
-		ticker := time.NewTicker(time.Second * 10)
-		for {
-			<-ticker.C
-			logger.Debugf(m.printDebugInfo())
-		}
-
+	ticker := time.NewTicker(time.Second * 10)
+	for range ticker.C {
+		logger.Debugf(m.printDebugInfo())
 	}
 }
 
 func (m *monitor) printDebugInfo() string {
-	var task *types.Task
 	var roots []*types.Peer
 
 	buffer := bytes.NewBuffer([]byte{})
@@ -78,17 +69,11 @@ func (m *monitor) printDebugInfo() string {
 		if peer == nil {
 			return
 		}
-		if task == nil {
-			task = peer.Task
-		}
 		if peer.GetParent() == nil {
 			roots = append(roots, peer)
 		}
-		// do not print finished node witch do not has child
-		if !(peer.IsSuccess() && peer.Host != nil && peer.Host.GetUploadLoadPercent() < 0.001) {
-			table.Append([]string{peer.PeerID, strconv.Itoa(int(peer.GetFinishedNum())),
-				strconv.FormatBool(peer.IsSuccess()), strconv.Itoa(peer.Host.GetFreeUploadLoad())})
-		}
+		table.Append([]string{peer.PeerID, strconv.Itoa(int(peer.GetFinishedNum())),
+			strconv.FormatBool(peer.IsSuccess()), strconv.Itoa(peer.Host.GetFreeUploadLoad())})
 		return
 	})
 	table.Render()
@@ -136,10 +121,6 @@ func (m *monitor) RefreshDownloadMonitor(peer *types.Peer) {
 	}
 }
 
-func (m *monitor) SetDownloadingMonitorCallBack(callback func(*types.Peer)) {
-	m.downloadMonitorCallBack = callback
-}
-
 // downloadMonitorWorkingLoop monitor peers download
 func (m *monitor) downloadMonitorWorkingLoop() {
 	for {
@@ -148,37 +129,37 @@ func (m *monitor) downloadMonitorWorkingLoop() {
 			logger.Infof("download monitor working loop closed")
 			break
 		}
-		if m.downloadMonitorCallBack != nil {
-			peer := v.(*types.Peer)
-			if peer != nil {
-				logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", peer.Task.TaskID, peer.PeerID, peer.GetStatus())
-				if peer.IsSuccess() || peer.Host.CDN {
-					// clear from monitor
-				} else {
-					if !peer.IsRunning() {
-						// peer do not report for a long time, peer gone
-						if time.Now().After(peer.GetLastAccessTime().Add(PeerGoneTimeout)) {
-							peer.SetStatus(types.PeerStatusLeaveNode)
-							//pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report time out"))
-						}
-						m.downloadMonitorCallBack(peer)
-					} else if !peer.IsWaiting() {
-						m.downloadMonitorCallBack(peer)
-					} else {
-						if time.Now().After(peer.GetLastAccessTime().Add(PeerForceGoneTimeout)) {
-							peer.SetStatus(types.PeerStatusLeaveNode)
-							//pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report fource time out"))
-						}
-						m.downloadMonitorCallBack(peer)
+		//if m.downloadMonitorCallBack != nil {
+		peer := v.(*types.Peer)
+		if peer != nil {
+			logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", peer.Task.TaskID, peer.PeerID, peer.GetStatus())
+			if peer.IsSuccess() || peer.Host.CDN {
+				// clear from monitor
+			} else {
+				if !peer.IsRunning() {
+					// peer do not report for a long time, peer gone
+					if time.Now().After(peer.GetLastAccessTime().Add(PeerGoneTimeout)) {
+						peer.SetStatus(types.PeerStatusLeaveNode)
+						//pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report time out"))
 					}
-					//_, ok := m.Get(pt.GetPeerID())
-					//status := pt.Status
-					//if ok && !pt.Success && status != types.PeerStatusNodeGone && status != types.PeerStatusLeaveNode {
-					//	m.RefreshDownloadMonitor(pt)
-					//}
+					//m.downloadMonitorCallBack(peer)
+				} else if !peer.IsWaiting() {
+					//m.downloadMonitorCallBack(peer)
+				} else {
+					if time.Now().After(peer.GetLastAccessTime().Add(PeerForceGoneTimeout)) {
+						peer.SetStatus(types.PeerStatusLeaveNode)
+						//pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report fource time out"))
+					}
+					//m.downloadMonitorCallBack(peer)
 				}
+				//_, ok := m.Get(pt.GetPeerID())
+				//status := pt.Status
+				//if ok && !pt.Success && status != types.PeerStatusNodeGone && status != types.PeerStatusLeaveNode {
+				//	m.RefreshDownloadMonitor(pt)
+				//}
 			}
 		}
+		//}
 
 		m.downloadMonitorQueue.Done(v)
 	}
