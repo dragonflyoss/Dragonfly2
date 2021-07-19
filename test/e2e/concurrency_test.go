@@ -30,17 +30,6 @@ const (
 
 var _ = Describe("Download concurrency", func() {
 	Context("ab", func() {
-		It("concurrent 50 should be ok", func() {
-			for _, v := range e2eutil.GetFileList() {
-				url := e2eutil.GetFileURL(v)
-				fmt.Println("download url " + url)
-
-				out, err := e2eutil.ABCommand("-c", "50", "-n", "50", "-X", fmt.Sprintf("%s:%s", "localhost", proxyPort), url).CombinedOutput()
-				fmt.Println(string(out))
-				Expect(err).NotTo(HaveOccurred())
-			}
-		})
-
 		It("concurrent 100 should be ok", func() {
 			for _, v := range e2eutil.GetFileList() {
 				url := e2eutil.GetFileURL(v)
