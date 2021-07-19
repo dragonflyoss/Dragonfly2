@@ -42,7 +42,7 @@ type SchedulerServer struct {
 
 // NewSchedulerServer returns a new transparent scheduler server from the given options
 func NewSchedulerServer(cfg *config.Config, dynConfig config.DynconfigInterface) (*SchedulerServer, error) {
-	service, err := core.NewSchedulerService(cfg, dynConfig)
+	service, err := core.NewSchedulerService(cfg.Scheduler, dynConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "create scheduler service")
 	}
