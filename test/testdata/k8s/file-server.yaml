@@ -15,10 +15,10 @@ spec:
     component: file-server
   type: ClusterIP
   ports:
-    - name: nginx
-      port: 80
-      protocol: TCP
-      targetPort: 80
+  - name: nginx
+    port: 80
+    protocol: TCP
+    targetPort: 80
 
 ---
 apiVersion: apps/v1
@@ -40,15 +40,15 @@ spec:
         component: file-server
     spec:
       containers:
-        - name: nginx
-          image: nginx:1.21.1
-          imagePullPolicy: "IfNotPresent"
-          ports:
-            - containerPort: 80
-          volumeMounts:
-            - name: files
-              mountPath: /usr/share/nginx/html/kind
+      - name: nginx
+        image: nginx:1.21.1
+        imagePullPolicy: "IfNotPresent"
+        ports:
+          - containerPort: 80
+        volumeMounts:
+          - name: files
+            mountPath: /usr/share/nginx/html/kind
       volumes:
-        - name: files
-          hostPath:
-            path: /
+      - name: files
+        hostPath:
+          path: /
