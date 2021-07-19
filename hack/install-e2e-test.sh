@@ -57,7 +57,6 @@ install-apache-bench() {
   else
       apt-get update
       apt-get install apache2-utils
-      apt-get install apache2
   fi
 }
 
