@@ -7,12 +7,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Summary Register user
-// @Description Register user by json config
+// @Summary SignUp user
+// @Description SignUp user by json config
 // @Tags User
 // @Accept json
 // @Produce json
-// @Param User body types.RegisterRequest true "User"
+// @Param User body types.SignUpRequest true "User"
 // @Success 200 {object} model.User
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError

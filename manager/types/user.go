@@ -2,7 +2,7 @@ package types
 
 type SignInRequest struct {
 	Name     string `form:"name" binding:"required,min=3,max=10"`
-	Password string `form:"password" binding:"required,min=12,max=20"`
+	Password string `form:"password" binding:"required,min=8,max=20"`
 }
 
 type SignUpRequest struct {
