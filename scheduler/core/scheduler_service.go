@@ -50,7 +50,6 @@ type SchedulerService struct {
 	peerManager daemon.PeerMgr
 
 	jobFactory *JobFactory
-	worker     *worker
 	pool       *ants.Pool
 	//pool      *Worker
 	config    *config.SchedulerConfig
@@ -63,9 +62,9 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	if err != nil {
 		return nil, err
 	}
-	peerManager := peer.NewManager()
-	cdnManager := source.NewManager()
 	hostManager := host.NewManager()
+	peerManager := peer.NewManager(cfg.GC, hostManager)
+	cdnManager := source.NewManager()
 	if cfg.EnableCDN {
 		cdnManager, err = d7y.NewManager(schedulerConfig.Cdns, peerManager, hostManager)
 		if err != nil {
@@ -80,15 +79,11 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		PeerManager: peerManager,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "build scheduler %s", cfg.Scheduler)
+		return nil, errors.Wrapf(err, "build scheduler %v", cfg.Scheduler)
 	}
 	jf, err := newJobFactory(scheduler, cdnManager, taskManager, hostManager, peerManager)
 	if err != nil {
 		return nil, errors.Wrap(err, "new mission factory")
-	}
-	worker, err := newWorker(cfg.WorkerNum)
-	if err != nil {
-		return nil, errors.Wrap(err, "new worker")
 	}
 	return &SchedulerService{
 		cdnManager:  cdnManager,
@@ -96,39 +91,9 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		hostManager: hostManager,
 		scheduler:   scheduler,
 		jobFactory:  jf,
-		worker:      worker,
 		config:      cfg,
 	}, nil
 }
-
-//func (s *SchedulerService) start() error {
-//	// 监听在 peer-port端口
-//	s.wg.Add(4)
-//	go s.runEventLoop(aq) // Careful, this should be the only reference to aq.
-//	go s.listenLoop()     // accepts incoming connections.
-//	go s.tickerLoop()
-//	go s.announceLoop()
-//
-//	return nil
-//}
-//
-//// Stop shuts down the scheduler.
-//func (s *SchedulerService) Stop() {
-//	s.stopOnce.Do(func() {
-//		s.log().Info("Stopping scheduler...")
-//
-//		close(s.done)
-//		s.listener.Close()
-//		s.eventLoop.send(shutdownEvent{})
-//
-//		// Waits for all loops to stop.
-//		s.wg.Wait()
-//
-//		s.torrentlog.Sync()
-//
-//		s.log().Info("Scheduler stopped")
-//	})
-//}
 
 func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string, peerID string) (taskID string) {
 	if s.config.ABTest {

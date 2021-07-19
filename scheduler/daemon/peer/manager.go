@@ -18,27 +18,33 @@ package peer
 
 import (
 	"sync"
+	"time"
 
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-const (
-//PeerGoneTimeout      = 10 * time.Second
-//PeerForceGoneTimeout = 2 * time.Minute
-)
-
 type manager struct {
-	peerMap sync.Map
+	hostManager              daemon.HostMgr
+	cleanupExpiredPeerTicker *time.Ticker
+	peerTTL                  time.Duration
+	peerMap                  sync.Map
 }
 
 func (m *manager) ListPeers() *sync.Map {
 	return &m.peerMap
 }
 
-func NewManager() daemon.PeerMgr {
-	return &manager{}
+func NewManager(cfg *config.GCConfig, hostManager daemon.HostMgr) daemon.PeerMgr {
+	m := &manager{
+		hostManager:              hostManager,
+		cleanupExpiredPeerTicker: time.NewTicker(cfg.PeerGCInterval),
+		peerTTL:                  cfg.PeerTTL,
+	}
+	go m.cleanupPeers()
+	return m
 }
 
 var _ daemon.PeerMgr = (*manager)(nil)
@@ -116,4 +122,19 @@ func (m *manager) pick(task *types.Task, limit int, reverse bool, pickFn func(pe
 		return true
 	})
 	return
+}
+
+func (m *manager) cleanupPeers() {
+	for range m.cleanupExpiredPeerTicker.C {
+		m.peerMap.Range(func(key, value interface{}) bool {
+			peer := value.(*types.Peer)
+			if time.Now().Sub(peer.GetLastAccessTime()) > m.peerTTL {
+				m.Delete(key.(string))
+				if !peer.Host.CDN && peer.Host.GetPeerTaskNum() == 0 {
+					m.hostManager.Delete(peer.Host.UUID)
+				}
+			}
+			return true
+		})
+	}
 }

@@ -18,17 +18,22 @@ package task
 
 import (
 	"sync"
+	"time"
 
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type manager struct {
-	taskMap sync.Map
+	cleanupExpiredTaskTicker *time.Ticker
+	taskTTL                  time.Duration
+	taskMap                  sync.Map
 }
 
 func NewManager() daemon.TaskMgr {
-	return &manager{}
+	m := &manager{}
+	go m.cleanupTasks()
+	return m
 }
 
 var _ daemon.TaskMgr = (*manager)(nil)
@@ -55,4 +60,16 @@ func (m *manager) GetOrAdd(task *types.Task) (actual *types.Task, loaded bool) {
 		return item.(*types.Task), true
 	}
 	return task, false
+}
+
+func (m *manager) cleanupTasks() {
+	for range m.cleanupExpiredTaskTicker.C {
+		m.taskMap.Range(func(key, value interface{}) bool {
+			peer := value.(*types.Peer)
+			if time.Now().Sub(peer.GetLastAccessTime()) > m.taskTTL {
+				m.Delete(key.(string))
+			}
+			return true
+		})
+	}
 }

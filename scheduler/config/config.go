@@ -30,7 +30,6 @@ type Config struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
 	Scheduler    *SchedulerConfig `yaml:"scheduler" mapstructure:"scheduler"`
 	Server       *ServerConfig    `yaml:"server" mapstructure:"server"`
-	GC           *GCConfig        `yaml:"gc" mapstructure:"gc"`
 	DynConfig    *DynConfig       `yaml:"dynConfig" mapstructure:"dynConfig"`
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
 }
@@ -39,7 +38,6 @@ func New() *Config {
 	return &Config{
 		Scheduler: NewDefaultSchedulerConfig(),
 		Server:    NewDefaultServerConfig(),
-		GC:        NewDefaultGCConfig(),
 		DynConfig: NewDefaultDynConfig(),
 		Manager:   NewDefaultManagerConfig(),
 	}
@@ -96,13 +94,16 @@ func NewDefaultSchedulerConfig() *SchedulerConfig {
 		AccessWindow:         0,
 		CandidateParentCount: 0,
 		Scheduler:            "basic",
+		GC:                   NewDefaultGCConfig(),
 	}
 }
 
 func NewDefaultGCConfig() *GCConfig {
 	return &GCConfig{
-		TaskDelay:     3600 * 1000,
-		PeerTaskDelay: 3600 * 1000,
+		PeerGCInterval: 5 * time.Minute,
+		TaskGCInterval: 5 * time.Minute,
+		PeerTTL:        5 * time.Minute,
+		TaskTTL:        1 * time.Hour,
 	}
 }
 
@@ -180,6 +181,7 @@ type SchedulerConfig struct {
 	Scheduler            string        `yaml:"scheduler" mapstructure:"scheduler"`
 	CDNLoad              int
 	ClientLoad           int
+	GC                   *GCConfig `yaml:"gc" mapstructure:"gc"`
 }
 
 type ServerConfig struct {
@@ -188,6 +190,8 @@ type ServerConfig struct {
 }
 
 type GCConfig struct {
-	PeerTaskDelay time.Duration `yaml:"peerTaskDelay" mapstructure:"peerTaskDelay"`
-	TaskDelay     time.Duration `yaml:"taskDelay" mapstructure:"taskDelay"`
+	PeerGCInterval time.Duration `yaml:"peerGCInterval" mapstructure:"peerGCInterval"`
+	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
+	PeerTTL        time.Duration
+	TaskTTL        time.Duration
 }

@@ -105,7 +105,7 @@ func New(cfg *config.Config) (*Server, error) {
 	s.dynConfig = dynConfig
 
 	// Initialize scheduler service
-	s.schedulerServer, err = service.NewSchedulerServer(cfg.Scheduler, s.dynConfig)
+	s.schedulerServer, err = service.NewSchedulerServer(cfg, s.dynConfig)
 	if err != nil {
 		return nil, err
 	}
