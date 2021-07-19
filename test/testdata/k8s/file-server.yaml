@@ -44,10 +44,10 @@ spec:
         image: nginx:1.21.1
         imagePullPolicy: "IfNotPresent"
         ports:
-          - containerPort: 80
+        - containerPort: 80
         volumeMounts:
-          - name: files
-            mountPath: /usr/share/nginx/html/kind
+        - name: files
+          mountPath: /usr/share/nginx/html/kind
       volumes:
       - name: files
         hostPath:
