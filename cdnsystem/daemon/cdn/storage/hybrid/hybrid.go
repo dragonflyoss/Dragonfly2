@@ -228,7 +228,7 @@ func (h *hybridStorageMgr) ReadPieceMetaRecords(taskID string) ([]*storage.Piece
 	for _, pieceStr := range pieceMetaRecords {
 		record, err := storage.ParsePieceMetaRecord(pieceStr)
 		if err != nil {
-			return nil, errors.Wrapf(err, "get piece meta record:%v", pieceStr)
+			return nil, errors.Wrapf(err, "get piece meta record: %v", pieceStr)
 		}
 		result = append(result, record)
 	}
@@ -341,7 +341,7 @@ func (h *hybridStorageMgr) deleteTaskFiles(taskID string, deleteUploadPath bool,
 	// try to clean the parent bucket
 	if err := h.diskDriver.Remove(storage.GetParentRaw(taskID)); err != nil &&
 		!cdnerrors.IsFileNotExist(err) {
-		logger.WithTaskID(taskID).Warnf("failed to remove parent bucket:%v", err)
+		logger.WithTaskID(taskID).Warnf("failed to remove parent bucket: %v", err)
 	}
 	return nil
 }
@@ -365,7 +365,7 @@ func (h *hybridStorageMgr) tryShmSpace(url, taskID string, fileLength int64) (st
 							remainder.Add(totalLen - info.Size())
 						}
 					} else {
-						logger.Warnf("failed to get task:%s: %v", taskID, err)
+						logger.Warnf("failed to get task: %s: %v", taskID, err)
 					}
 				}
 				return nil

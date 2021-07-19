@@ -33,7 +33,7 @@ type helloSeeder struct {
 
 func (hs *helloSeeder) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
 	safe.Call(func() {
-		fmt.Printf("req:%v\n", req)
+		fmt.Printf("req: %v\n", req)
 		var i = 5
 		for {
 			select {
@@ -66,6 +66,6 @@ func main() {
 	err := rpc.StartTCPServer(12345, 12345, &helloSeeder{})
 
 	if err != nil {
-		fmt.Printf("finish error:%v\n", err)
+		fmt.Printf("finish error: %v\n", err)
 	}
 }

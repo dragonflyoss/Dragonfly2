@@ -64,31 +64,11 @@ type rest struct {
 	cache *cache.Cache
 }
 
-// Option is a functional option for rest
-type Option func(s *rest)
-
-// WithDatabase set the database client
-func WithDatabase(database *database.Database) Option {
-	return func(s *rest) {
-		s.db = database.DB
-		s.rdb = database.RDB
-	}
-}
-
-// WithCache set the cache client
-func WithCache(cache *cache.Cache) Option {
-	return func(s *rest) {
-		s.cache = cache
-	}
-}
-
 // NewREST returns a new REST instence
-func NewREST(options ...Option) REST {
-	s := &rest{}
-
-	for _, opt := range options {
-		opt(s)
+func NewREST(database *database.Database, cache *cache.Cache) REST {
+	return &rest{
+		db:    database.DB,
+		rdb:   database.RDB,
+		cache: cache,
 	}
-
-	return s
 }

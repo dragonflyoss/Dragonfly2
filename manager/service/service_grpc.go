@@ -8,6 +8,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
@@ -23,35 +24,17 @@ type GRPC struct {
 	rdb   *redis.Client
 	cache *cache.Cache
 	manager.UnimplementedManagerServer
-}
-
-// Option is a functional option for rest
-type GRPCOption func(s *GRPC)
-
-// WithDatabase set the database client
-func GRPCWithDatabase(database *database.Database) GRPCOption {
-	return func(s *GRPC) {
-		s.db = database.DB
-		s.rdb = database.RDB
-	}
-}
-
-// WithCache set the cache client
-func GRPCWithCache(cache *cache.Cache) GRPCOption {
-	return func(s *GRPC) {
-		s.cache = cache
-	}
+	searcher searcher.Searcher
 }
 
 // NewREST returns a new REST instence
-func NewGRPC(options ...GRPCOption) *GRPC {
-	s := &GRPC{}
-
-	for _, opt := range options {
-		opt(s)
+func NewGRPC(database *database.Database, cache *cache.Cache, searcher searcher.Searcher) *GRPC {
+	return &GRPC{
+		db:       database.DB,
+		rdb:      database.RDB,
+		cache:    cache,
+		searcher: searcher,
 	}
-
-	return s
 }
 
 func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
@@ -433,9 +416,25 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
+	var schedulerClusters []model.SchedulerCluster
+	if err := s.db.Preload("SecurityGroup").Find(&schedulerClusters).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	// Search optimal scheduler cluster
+	schedulerCluster, ok := s.searcher.FindSchedulerCluster(schedulerClusters, req.HostInfo)
+	if !ok {
+		if err := s.db.Find(&schedulerCluster, &model.SchedulerCluster{
+			IsDefault: true,
+		}).Error; err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+	}
+
 	schedulers := []model.Scheduler{}
 	if err := s.db.Find(&schedulers, &model.Scheduler{
-		Status: model.SchedulerStatusActive,
+		Status:             model.SchedulerStatusActive,
+		SchedulerClusterID: &schedulerCluster.ID,
 	}).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
