@@ -25,31 +25,37 @@ import (
 )
 
 const (
-	proxyPort = "65001"
+	hostnameFilePath = "/etc/hostname"
+	proxy            = "localhost:65001"
 )
 
 var _ = Describe("Download concurrency", func() {
 	Context("ab", func() {
 		It("concurrent 100 should be ok", func() {
-			for _, v := range e2eutil.GetFileList() {
-				url := e2eutil.GetFileURL(v)
-				fmt.Println("download url " + url)
+			url := e2eutil.GetFileURL(hostnameFilePath)
+			fmt.Println("download url " + url)
 
-				out, err := e2eutil.ABCommand("-c", "100", "-n", "100", "-X", fmt.Sprintf("%s:%s", "localhost", proxyPort), url).CombinedOutput()
-				fmt.Println(string(out))
-				Expect(err).NotTo(HaveOccurred())
-			}
+			out, err := e2eutil.ABCommand("-c", "100", "-n", "200", "-X", proxy, url).CombinedOutput()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("concurrent 200 should be ok", func() {
-			for _, v := range e2eutil.GetFileList() {
-				url := e2eutil.GetFileURL(v)
-				fmt.Println("download url " + url)
+			url := e2eutil.GetFileURL(hostnameFilePath)
+			fmt.Println("download url " + url)
 
-				out, err := e2eutil.ABCommand("-c", "200", "-n", "200", "-X", fmt.Sprintf("%s:%s", "localhost", proxyPort), url).CombinedOutput()
-				fmt.Println(string(out))
-				Expect(err).NotTo(HaveOccurred())
-			}
+			out, err := e2eutil.ABCommand("-c", "200", "-n", "400", "-X", proxy, url).CombinedOutput()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("concurrent 500 should be ok", func() {
+			url := e2eutil.GetFileURL(hostnameFilePath)
+			fmt.Println("download url " + url)
+
+			out, err := e2eutil.ABCommand("-c", "500", "-n", "1000", "-X", proxy, url).CombinedOutput()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })

@@ -16,26 +16,26 @@
 
 package e2e
 
-import (
-	"fmt"
+// import (
+// "fmt"
 
-	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
-	. "github.com/onsi/ginkgo" //nolint
-	. "github.com/onsi/gomega" //nolint
-)
+// "d7y.io/dragonfly/v2/test/e2e/e2eutil"
+// . "github.com/onsi/ginkgo" //nolint
+// . "github.com/onsi/gomega" //nolint
+// )
 
-var _ = Describe("Containerd with CRI support", func() {
-	Context("docker.io/library/busybox:latest image", func() {
-		It("pull should be ok", func() {
-			out, err := e2eutil.CriCtlCommand("pull", "d7y.io/library/busybox:latest").CombinedOutput()
-			fmt.Println(string(out))
-			Expect(err).NotTo(HaveOccurred())
-		})
+// var _ = Describe("Containerd with CRI support", func() {
+// Context("docker.io/library/busybox:latest image", func() {
+// It("pull should be ok", func() {
+// out, err := e2eutil.CriCtlCommand("pull", "d7y.io/library/busybox:latest").CombinedOutput()
+// fmt.Println(string(out))
+// Expect(err).NotTo(HaveOccurred())
+// })
 
-		It("rmi should be ok", func() {
-			out, err := e2eutil.CriCtlCommand("rmi", "d7y.io/library/busybox:latest").CombinedOutput()
-			fmt.Println(string(out))
-			Expect(err).NotTo(HaveOccurred())
-		})
-	})
-})
+// It("rmi should be ok", func() {
+// out, err := e2eutil.CriCtlCommand("rmi", "d7y.io/library/busybox:latest").CombinedOutput()
+// fmt.Println(string(out))
+// Expect(err).NotTo(HaveOccurred())
+// })
+// })
+// })
