@@ -57,17 +57,10 @@ func New(cfg *config.Config) (*Server, error) {
 	searcher := searcher.New()
 
 	// Initialize REST service
-	restService := service.NewREST(
-		service.WithDatabase(db),
-		service.WithCache(cache),
-	)
+	restService := service.NewREST(db, cache)
 
 	// Initialize GRPC service
-	grpcService := service.NewGRPC(
-		service.GRPCWithDatabase(db),
-		service.GRPCWithCache(cache),
-		service.GRPCWithSearcher(searcher),
-	)
+	grpcService := service.NewGRPC(db, cache, searcher)
 
 	// Initialize router
 	router, err := initRouter(cfg.Verbose, restService)

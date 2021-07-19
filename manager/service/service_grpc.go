@@ -27,40 +27,14 @@ type GRPC struct {
 	searcher searcher.Searcher
 }
 
-// Option is a functional option for rest
-type GRPCOption func(s *GRPC)
-
-// GRPCWithDatabase set the database client
-func GRPCWithDatabase(database *database.Database) GRPCOption {
-	return func(s *GRPC) {
-		s.db = database.DB
-		s.rdb = database.RDB
-	}
-}
-
-// GRPCWithCache set the cache client
-func GRPCWithCache(cache *cache.Cache) GRPCOption {
-	return func(s *GRPC) {
-		s.cache = cache
-	}
-}
-
-// GRPCWithSearcher set search client
-func GRPCWithSearcher(searcher searcher.Searcher) GRPCOption {
-	return func(s *GRPC) {
-		s.searcher = searcher
-	}
-}
-
 // NewREST returns a new REST instence
-func NewGRPC(options ...GRPCOption) *GRPC {
-	s := &GRPC{}
-
-	for _, opt := range options {
-		opt(s)
+func NewGRPC(database *database.Database, cache *cache.Cache, searcher searcher.Searcher) *GRPC {
+	return &GRPC{
+		db:       database.DB,
+		rdb:      database.RDB,
+		cache:    cache,
+		searcher: searcher,
 	}
-
-	return s
 }
 
 func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
