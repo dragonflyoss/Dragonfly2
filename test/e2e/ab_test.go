@@ -48,7 +48,7 @@ var _ = Describe("Download with ab", func() {
 				fmt.Println("download url " + url)
 
 				// get original file digest
-				out, err := e2eutil.ABCommand("-c", "100", "-n", "1000", "-X", "localhost:65001", files[i]).CombinedOutput()
+				out, err := e2eutil.ABCommand("-c", "100", "-n", "1000", "-X", "127.0.0.1:65001", files[i]).CombinedOutput()
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())
 			}

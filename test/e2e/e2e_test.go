@@ -24,8 +24,7 @@ import (
 )
 
 const (
-	dragonflyNamespace    = "dragonfly-system"
-	dragonflyE2ENamespace = "dragonfly-e2e"
+	dragonflyNamespace = "dragonfly-system"
 )
 
 // TestE2E is the root of e2e test function
