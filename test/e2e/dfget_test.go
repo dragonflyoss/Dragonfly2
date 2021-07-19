@@ -26,25 +26,11 @@ import (
 )
 
 const (
-	dragonflyNamespace    = "dragonfly-system"
-	dragonflyE2ENamespace = "dragonfly-e2e"
+	dragonflyNamespace = "dragonfly-system"
 )
 
 var _ = Describe("Download with dfget", func() {
 	Context("dfget", func() {
-		It("setup file server should be ok", func() {
-			// create file server
-			out, err := e2eutil.KubeCtlCommand("apply", "-f", "../testdata/k8s/file-server.yaml").CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(string(out))
-
-			// wait file server ready
-			out, err = e2eutil.KubeCtlCommand("-n", dragonflyE2ENamespace,
-				"wait", "--for=condition=ready", "--timeout=5m", "pod", "file-server-0").CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(string(out))
-		})
-
 		It("dfget download should be ok", func() {
 			out, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
 				"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
@@ -54,28 +40,12 @@ var _ = Describe("Download with dfget", func() {
 			Expect(strings.HasPrefix(podName, "dragonfly-dfdaemon-")).Should(BeTrue())
 			pod := e2eutil.NewPodExec(dragonflyNamespace, podName)
 
-			files := []string{
-				"/etc/containerd/config.toml",
-				"/etc/fstab",
-				"/etc/hostname",
-				"/usr/bin/kubectl",
-				"/usr/bin/systemctl",
-				"/usr/local/bin/containerd-shim",
-				"/usr/local/bin/clean-install",
-				"/usr/local/bin/entrypoint",
-				"/usr/local/bin/containerd-shim-runc-v2",
-				"/usr/local/bin/ctr",
-				"/usr/local/bin/containerd",
-				"/usr/local/bin/create-kubelet-cgroup-v2",
-				"/usr/local/bin/crictl",
-				"/usr/local/bin/containerd-fuse-overlayfs-grpc",
-			}
-			for i := range files {
-				url := fmt.Sprintf("http://file-server.dragonfly-e2e.svc/kind%s", files[i])
+			for _, v := range e2eutil.GetFileList() {
+				url := e2eutil.GetFileURL(v)
 				fmt.Println("download url " + url)
 
 				// get original file digest
-				out, err = e2eutil.DockerCommand("sha256sum", files[i]).CombinedOutput()
+				out, err = e2eutil.DockerCommand("sha256sum", v).CombinedOutput()
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())
 				sha256sum1 := strings.Split(string(out), " ")[0]

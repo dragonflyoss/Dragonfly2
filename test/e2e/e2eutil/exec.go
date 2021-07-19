@@ -1,6 +1,8 @@
 package e2eutil
 
-import "os/exec"
+import (
+	"os/exec"
+)
 
 const (
 	kindDockerContainer = "kind-control-plane"
@@ -20,6 +22,10 @@ func CriCtlCommand(arg ...string) *exec.Cmd {
 
 func KubeCtlCommand(arg ...string) *exec.Cmd {
 	return exec.Command("kubectl", arg...)
+}
+
+func ABCommand(arg ...string) *exec.Cmd {
+	return exec.Command("ab", arg...)
 }
 
 type PodExec struct {
