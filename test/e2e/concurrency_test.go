@@ -57,5 +57,14 @@ var _ = Describe("Download concurrency", func() {
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		It("concurrent 1000 should be ok", func() {
+			url := e2eutil.GetFileURL(hostnameFilePath)
+			fmt.Println("download url " + url)
+
+			out, err := e2eutil.ABCommand("-c", "1000", "-n", "2000", "-X", proxy, url).CombinedOutput()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 })
