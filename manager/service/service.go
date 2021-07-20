@@ -54,8 +54,8 @@ type REST interface {
 	AddSchedulerClusterToSecurityGroup(uint, uint) error
 	AddCDNClusterToSecurityGroup(uint, uint) error
 
-	Login(json types.LoginRequest) (*model.User, error)
-	Register(json types.RegisterRequest) (*model.User, error)
+	SignIn(json types.SignInRequest) (*model.User, error)
+	SignUp(json types.SignUpRequest) (*model.User, error)
 }
 
 type rest struct {

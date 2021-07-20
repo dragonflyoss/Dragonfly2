@@ -7,28 +7,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Summary Register user
-// @Description Register user by json config
+// @Summary SignUp user
+// @Description SignUp user by json config
 // @Tags User
 // @Accept json
 // @Produce json
-// @Param User body types.RegisterRequest true "User"
+// @Param User body types.SignUpRequest true "User"
 // @Success 200 {object} model.User
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /auth/register [post]
-func (h *Handlers) Register(ctx *gin.Context) {
-	var json types.RegisterRequest
+// @Router /user/signup [post]
+func (h *Handlers) SignUp(ctx *gin.Context) {
+	var json types.SignUpRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	userInfo, err := h.Service.Register(json)
+	user, err := h.Service.SignUp(json)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, userInfo)
+	ctx.JSON(http.StatusOK, user)
 }
