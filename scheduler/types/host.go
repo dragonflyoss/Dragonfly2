@@ -72,6 +72,7 @@ func newPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN b
 		IDC:             idc,
 		NetTopology:     netTopology,
 		TotalUploadLoad: totalUploadLoad,
+		peerMap:         make(map[string]*Peer),
 	}
 }
 

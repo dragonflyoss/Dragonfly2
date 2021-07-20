@@ -20,10 +20,8 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -197,17 +195,15 @@ func (ef *Factory) deleteGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
 }
 
 func (ef *Factory) Register(name string, evaluator Evaluator) {
-	ef.cacheClearFunc.Do(func() {
-		go safe.Call(func() {
-			tick := time.NewTicker(time.Hour)
-			for {
-				select {
-				case <-tick.C:
-					ef.clearCache()
-				}
-			}
-		})
-	})
+	//ef.cacheClearFunc.Do(func() {
+	//	tick := time.NewTicker(time.Hour)
+	//	for {
+	//		select {
+	//		case <-tick.C:
+	//			ef.clearCache()
+	//		}
+	//	}
+	//})
 	ef.add(name, evaluator)
 	ef.clearCache()
 }

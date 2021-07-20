@@ -100,6 +100,9 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task, override
 		} else if overrideStatus {
 			task.SetStatus(types.TaskStatusFailed)
 		}
+		if !task.IsSuccess() {
+			task.SetStatus(types.TaskStatusFailed)
+		}
 		return errors.Wrapf(err, "obtain seeds from cdn")
 	}
 	return cm.receivePiece(task, stream)

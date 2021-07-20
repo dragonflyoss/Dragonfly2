@@ -30,7 +30,9 @@ type baseEvaluator struct {
 }
 
 func NewEvaluator(cfg *config.SchedulerConfig) evaluator.Evaluator {
-	return &baseEvaluator{cfg: cfg}
+	eval := &baseEvaluator{cfg: cfg}
+	logger.Debugf("create basic evaluator successfully")
+	return eval
 }
 
 func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {

@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -30,8 +31,11 @@ type manager struct {
 	taskMap                  sync.Map
 }
 
-func NewManager() daemon.TaskMgr {
-	m := &manager{}
+func NewManager(cfg *config.GCConfig) daemon.TaskMgr {
+	m := &manager{
+		cleanupExpiredTaskTicker: time.NewTicker(cfg.TaskGCInterval),
+		taskTTL:                  cfg.TaskTTL,
+	}
 	go m.cleanupTasks()
 	return m
 }

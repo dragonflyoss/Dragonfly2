@@ -38,15 +38,16 @@ var _ worker = (*workerGroup)(nil)
 
 func newEventLoopGroup(workerNum int) worker {
 	return &workerGroup{
-		workerNum: workerNum,
-		stopCh:    make(chan struct{}),
+		workerNum:  workerNum,
+		workerList: make([]*baseWorker, 0, workerNum),
+		stopCh:     make(chan struct{}),
 	}
 }
 
 func (wg *workerGroup) start(s *state) {
 	for i := 0; i < wg.workerNum; i++ {
 		w := newWorker()
-		w.start(s)
+		go w.start(s)
 		wg.workerList = append(wg.workerList, w)
 	}
 

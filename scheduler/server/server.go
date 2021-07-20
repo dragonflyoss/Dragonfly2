@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/server/service"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	// Server registered to grpc
@@ -87,13 +88,13 @@ func New(cfg *config.Config) (*Server, error) {
 
 	dynConfig, err := config.NewDynconfig(cfg.DynConfig.Type, cfg.DynConfig.CDNDirPath, options...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create dynamic config")
 	}
 	s.dynConfig = dynConfig
 
 	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create scheduler service")
 	}
 	s.schedulerService = schedulerService
 	// Initialize scheduler service

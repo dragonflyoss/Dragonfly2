@@ -110,7 +110,7 @@ func NewDefaultSchedulerConfig() *SchedulerConfig {
 		WorkerNum:            runtime.GOMAXPROCS(0),
 		Monitor:              false,
 		AccessWindow:         3 * time.Minute,
-		CandidateParentCount: 0,
+		CandidateParentCount: 10,
 		Scheduler:            "basic",
 		CDNLoad:              100,
 		ClientLoad:           10,

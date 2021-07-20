@@ -75,7 +75,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		hostManager.OnNotify(dynConfigData)
 		dynConfig.Register(hostManager)
 	}
-	taskManager := task.NewManager()
+	taskManager := task.NewManager(cfg.GC)
 	sched, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
 		PeerManager: peerManager,
 	})
@@ -92,6 +92,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		cdnManager:  cdnManager,
 		taskManager: taskManager,
 		hostManager: hostManager,
+		peerManager: peerManager,
 		worker:      work,
 		monitor:     downloadMonitor,
 		sched:       sched,
@@ -100,8 +101,11 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 }
 
 func (s *SchedulerService) Serve() {
-	s.worker.start(newState(s.sched, s.peerManager, s.cdnManager, s.worker))
-	s.monitor.start()
+	go s.worker.start(newState(s.sched, s.peerManager, s.cdnManager, s.worker))
+	if s.monitor != nil {
+		go s.monitor.start()
+	}
+	logger.Debugf("start scheduler service successfully")
 }
 
 func (s *SchedulerService) Stop() {
@@ -141,19 +145,8 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 	)
 
 	if peerHost, ok = s.hostManager.Get(reqPeerHost.Uuid); !ok {
-		peerHost = &types.PeerHost{
-			UUID:            reqPeerHost.Uuid,
-			IP:              reqPeerHost.Ip,
-			HostName:        reqPeerHost.HostName,
-			RPCPort:         reqPeerHost.RpcPort,
-			DownloadPort:    reqPeerHost.DownPort,
-			CDN:             false,
-			SecurityDomain:  reqPeerHost.SecurityDomain,
-			Location:        reqPeerHost.Location,
-			IDC:             reqPeerHost.Idc,
-			NetTopology:     reqPeerHost.NetTopology,
-			TotalUploadLoad: s.config.ClientLoad,
-		}
+		peerHost = types.NewClientPeerHost(reqPeerHost.Uuid, reqPeerHost.Ip, reqPeerHost.HostName, reqPeerHost.RpcPort, reqPeerHost.DownPort,
+			reqPeerHost.SecurityDomain, reqPeerHost.Location, reqPeerHost.Idc, reqPeerHost.NetTopology, s.config.ClientLoad)
 		s.hostManager.Add(peerHost)
 	}
 
@@ -184,10 +177,11 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	// register cdn peer task
 	// notify peer tasks
 	synclock.Lock(task.TaskID, false)
-	defer synclock.Lock(task.TaskID, false)
+	defer synclock.UnLock(task.TaskID, false)
 	if !task.IsHealth() {
 		task.SetStatus(types.TaskStatusRunning)
 	}
+
 	go func() {
 		if err := s.cdnManager.StartSeedTask(ctx, task, false); err != nil {
 			logger.Errorf("failed to seed task: %v", err)

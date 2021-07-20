@@ -25,6 +25,23 @@ import (
 
 type PeerStatus uint8
 
+func (status PeerStatus) String() string {
+	switch status {
+	case PeerStatusWaiting:
+		return "Waiting"
+	case PeerStatusRunning:
+		return "Running"
+	case PeerStatusSuccess:
+		return "Success"
+	case PeerStatusFail:
+		return "fail"
+	case PeerStatusZombie:
+		return "zombie"
+	default:
+		return "unknown"
+	}
+}
+
 const (
 	PeerStatusWaiting PeerStatus = iota
 	PeerStatusRunning

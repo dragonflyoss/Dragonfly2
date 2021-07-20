@@ -339,7 +339,7 @@ func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientC
 	// if absence
 	client, err := conn.findCandidateClientConn(hashKey)
 	if err != nil {
-		return nil, errors.Wrapf(err, "find candidate client conn for hash key %s", hashKey)
+		return nil, errors.Wrapf(err, "prob candidate client conn for hash key %s", hashKey)
 	}
 	conn.rwMutex.Lock(client.node, false)
 	defer conn.rwMutex.UnLock(client.node, false)

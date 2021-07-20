@@ -26,6 +26,25 @@ import (
 
 type TaskStatus uint8
 
+func (status TaskStatus) String() string {
+	switch status {
+	case TaskStatusWaiting:
+		return "Waiting"
+	case TaskStatusRunning:
+		return "Running"
+	case TaskStatusSuccess:
+		return "Success"
+	case TaskStatusCDNRegisterFail:
+		return "cdnRegisterFail"
+	case TaskStatusFailed:
+		return "fail"
+	case TaskStatusSourceError:
+		return "sourceError"
+	default:
+		return "unknown"
+	}
+}
+
 const (
 	TaskStatusWaiting TaskStatus = iota
 	TaskStatusRunning

@@ -47,6 +47,7 @@ func newBasicSchedulerBuilder() scheduler.Builder {
 var _ scheduler.Builder = (*basicSchedulerBuilder)(nil)
 
 func (builder *basicSchedulerBuilder) Build(cfg *config.SchedulerConfig, opts *scheduler.BuildOptions) (scheduler.Scheduler, error) {
+	logger.Debugf("start create basic scheduler")
 	evalFactory := evaluator.NewEvaluatorFactory(cfg)
 	evalFactory.Register("default", basic.NewEvaluator(cfg))
 	evalFactory.RegisterGetEvaluatorFunc(0, func(taskID string) (string, bool) { return "default", true })
@@ -55,6 +56,7 @@ func (builder *basicSchedulerBuilder) Build(cfg *config.SchedulerConfig, opts *s
 		peerManager: opts.PeerManager,
 		cfg:         cfg,
 	}
+	logger.Debugf("create basic scheduler successfully")
 	return sch, nil
 }
 

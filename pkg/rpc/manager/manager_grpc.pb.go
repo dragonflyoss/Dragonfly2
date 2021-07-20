@@ -4,15 +4,14 @@ package manager
 
 import (
 	context "context"
+	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // ManagerClient is the client API for Manager service.
@@ -24,13 +23,13 @@ type ManagerClient interface {
 	// Update CDN configuration
 	UpdateCDN(ctx context.Context, in *UpdateCDNRequest, opts ...grpc.CallOption) (*CDN, error)
 	// AddCDNToCDNCluster add cdn to cdn cluster
-	AddCDNToCDNCluster(ctx context.Context, in *AddCDNToCDNClusterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	AddCDNToCDNCluster(ctx context.Context, in *AddCDNToCDNClusterRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 	// Get Scheduler and Scheduler cluster configuration
 	GetScheduler(ctx context.Context, in *GetSchedulerRequest, opts ...grpc.CallOption) (*Scheduler, error)
 	// Update scheduler configuration
 	UpdateScheduler(ctx context.Context, in *UpdateSchedulerRequest, opts ...grpc.CallOption) (*Scheduler, error)
 	// AddSchedulerClusterToSchedulerCluster add scheduler to scheduler cluster
-	AddSchedulerClusterToSchedulerCluster(ctx context.Context, in *AddSchedulerClusterToSchedulerClusterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	AddSchedulerClusterToSchedulerCluster(ctx context.Context, in *AddSchedulerClusterToSchedulerClusterRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 	// List acitve schedulers configuration
 	ListSchedulers(ctx context.Context, in *ListSchedulersRequest, opts ...grpc.CallOption) (*ListSchedulersResponse, error)
 	// KeepAlive with manager
@@ -63,8 +62,8 @@ func (c *managerClient) UpdateCDN(ctx context.Context, in *UpdateCDNRequest, opt
 	return out, nil
 }
 
-func (c *managerClient) AddCDNToCDNCluster(ctx context.Context, in *AddCDNToCDNClusterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *managerClient) AddCDNToCDNCluster(ctx context.Context, in *AddCDNToCDNClusterRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/manager.Manager/AddCDNToCDNCluster", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -90,8 +89,8 @@ func (c *managerClient) UpdateScheduler(ctx context.Context, in *UpdateScheduler
 	return out, nil
 }
 
-func (c *managerClient) AddSchedulerClusterToSchedulerCluster(ctx context.Context, in *AddSchedulerClusterToSchedulerClusterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
+func (c *managerClient) AddSchedulerClusterToSchedulerCluster(ctx context.Context, in *AddSchedulerClusterToSchedulerClusterRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/manager.Manager/AddSchedulerClusterToSchedulerCluster", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -109,7 +108,7 @@ func (c *managerClient) ListSchedulers(ctx context.Context, in *ListSchedulersRe
 }
 
 func (c *managerClient) KeepAlive(ctx context.Context, opts ...grpc.CallOption) (Manager_KeepAliveClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Manager_ServiceDesc.Streams[0], "/manager.Manager/KeepAlive", opts...)
+	stream, err := c.cc.NewStream(ctx, &_Manager_serviceDesc.Streams[0], "/manager.Manager/KeepAlive", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +118,7 @@ func (c *managerClient) KeepAlive(ctx context.Context, opts ...grpc.CallOption) 
 
 type Manager_KeepAliveClient interface {
 	Send(*KeepAliveRequest) error
-	CloseAndRecv() (*emptypb.Empty, error)
+	CloseAndRecv() (*empty.Empty, error)
 	grpc.ClientStream
 }
 
@@ -131,11 +130,11 @@ func (x *managerKeepAliveClient) Send(m *KeepAliveRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *managerKeepAliveClient) CloseAndRecv() (*emptypb.Empty, error) {
+func (x *managerKeepAliveClient) CloseAndRecv() (*empty.Empty, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(emptypb.Empty)
+	m := new(empty.Empty)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -151,13 +150,13 @@ type ManagerServer interface {
 	// Update CDN configuration
 	UpdateCDN(context.Context, *UpdateCDNRequest) (*CDN, error)
 	// AddCDNToCDNCluster add cdn to cdn cluster
-	AddCDNToCDNCluster(context.Context, *AddCDNToCDNClusterRequest) (*emptypb.Empty, error)
+	AddCDNToCDNCluster(context.Context, *AddCDNToCDNClusterRequest) (*empty.Empty, error)
 	// Get Scheduler and Scheduler cluster configuration
 	GetScheduler(context.Context, *GetSchedulerRequest) (*Scheduler, error)
 	// Update scheduler configuration
 	UpdateScheduler(context.Context, *UpdateSchedulerRequest) (*Scheduler, error)
 	// AddSchedulerClusterToSchedulerCluster add scheduler to scheduler cluster
-	AddSchedulerClusterToSchedulerCluster(context.Context, *AddSchedulerClusterToSchedulerClusterRequest) (*emptypb.Empty, error)
+	AddSchedulerClusterToSchedulerCluster(context.Context, *AddSchedulerClusterToSchedulerClusterRequest) (*empty.Empty, error)
 	// List acitve schedulers configuration
 	ListSchedulers(context.Context, *ListSchedulersRequest) (*ListSchedulersResponse, error)
 	// KeepAlive with manager
@@ -175,7 +174,7 @@ func (UnimplementedManagerServer) GetCDN(context.Context, *GetCDNRequest) (*CDN,
 func (UnimplementedManagerServer) UpdateCDN(context.Context, *UpdateCDNRequest) (*CDN, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateCDN not implemented")
 }
-func (UnimplementedManagerServer) AddCDNToCDNCluster(context.Context, *AddCDNToCDNClusterRequest) (*emptypb.Empty, error) {
+func (UnimplementedManagerServer) AddCDNToCDNCluster(context.Context, *AddCDNToCDNClusterRequest) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddCDNToCDNCluster not implemented")
 }
 func (UnimplementedManagerServer) GetScheduler(context.Context, *GetSchedulerRequest) (*Scheduler, error) {
@@ -184,7 +183,7 @@ func (UnimplementedManagerServer) GetScheduler(context.Context, *GetSchedulerReq
 func (UnimplementedManagerServer) UpdateScheduler(context.Context, *UpdateSchedulerRequest) (*Scheduler, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateScheduler not implemented")
 }
-func (UnimplementedManagerServer) AddSchedulerClusterToSchedulerCluster(context.Context, *AddSchedulerClusterToSchedulerClusterRequest) (*emptypb.Empty, error) {
+func (UnimplementedManagerServer) AddSchedulerClusterToSchedulerCluster(context.Context, *AddSchedulerClusterToSchedulerClusterRequest) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddSchedulerClusterToSchedulerCluster not implemented")
 }
 func (UnimplementedManagerServer) ListSchedulers(context.Context, *ListSchedulersRequest) (*ListSchedulersResponse, error) {
@@ -203,7 +202,7 @@ type UnsafeManagerServer interface {
 }
 
 func RegisterManagerServer(s grpc.ServiceRegistrar, srv ManagerServer) {
-	s.RegisterService(&Manager_ServiceDesc, srv)
+	s.RegisterService(&_Manager_serviceDesc, srv)
 }
 
 func _Manager_GetCDN_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -337,7 +336,7 @@ func _Manager_KeepAlive_Handler(srv interface{}, stream grpc.ServerStream) error
 }
 
 type Manager_KeepAliveServer interface {
-	SendAndClose(*emptypb.Empty) error
+	SendAndClose(*empty.Empty) error
 	Recv() (*KeepAliveRequest, error)
 	grpc.ServerStream
 }
@@ -346,7 +345,7 @@ type managerKeepAliveServer struct {
 	grpc.ServerStream
 }
 
-func (x *managerKeepAliveServer) SendAndClose(m *emptypb.Empty) error {
+func (x *managerKeepAliveServer) SendAndClose(m *empty.Empty) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -358,10 +357,7 @@ func (x *managerKeepAliveServer) Recv() (*KeepAliveRequest, error) {
 	return m, nil
 }
 
-// Manager_ServiceDesc is the grpc.ServiceDesc for Manager service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var Manager_ServiceDesc = grpc.ServiceDesc{
+var _Manager_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "manager.Manager",
 	HandlerType: (*ManagerServer)(nil),
 	Methods: []grpc.MethodDesc{

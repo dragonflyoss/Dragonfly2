@@ -63,7 +63,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		return
 	}
 	if task.IsFail() {
-		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is %d", task.GetStatus())
+		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is %s", task.GetStatus())
 		logger.Errorf("task status is health: %d", task.GetStatus())
 		return
 	}
@@ -181,11 +181,13 @@ func validateParams(req *scheduler.PeerTaskRequest) error {
 }
 
 func getTaskSizeScope(task *types.Task) base.SizeScope {
-	if task.ContentLength <= types.TinyFileSize {
-		return base.SizeScope_TINY
-	}
-	if task.PieceTotal == 1 {
-		return base.SizeScope_SMALL
+	if task.IsSuccess() {
+		if task.ContentLength <= types.TinyFileSize {
+			return base.SizeScope_TINY
+		}
+		if task.PieceTotal == 1 {
+			return base.SizeScope_SMALL
+		}
 	}
 	return base.SizeScope_NORMAL
 }
