@@ -5,20 +5,26 @@ import (
 	"strings"
 
 	"d7y.io/dragonfly/v2/manager/types"
-	"github.com/casbin/casbin"
 	"github.com/gin-gonic/gin"
 )
 
-var Enforcer *casbin.Enforcer
+func (s *rest) GetEndpoints(g *gin.Engine) types.Policys {
+	policys := []types.Policy{}
 
-func (s *rest) GetEndpoints(g *gin.Engine) gin.RoutesInfo {
+	for _, route := range g.Routes() {
+		policys = append(policys, types.Policy{
+			Method:   route.Method,
+			Resource: route.Path,
+		})
 
-	return g.Routes()
+	}
+
+	return policys
 
 }
 
 func (s *rest) CreatePermission(json types.PolicyRequest) error {
-	res := Enforcer.AddPolicy(json.Subject, json.Object, strings.ToUpper(json.Action))
+	res := s.enforcer.AddPolicy(json.Subject, json.Object, strings.ToUpper(json.Action))
 	if !res {
 		return errors.New("failed to add policy")
 	}
@@ -26,7 +32,7 @@ func (s *rest) CreatePermission(json types.PolicyRequest) error {
 }
 
 func (s *rest) DestroyPermission(json types.PolicyRequest) error {
-	res := Enforcer.RemovePolicy(json.Action, json.Subject, json.Object)
+	res := s.enforcer.RemovePolicy(json.Action, json.Subject, json.Object)
 	if !res {
 		return errors.New("failed to remove policy")
 

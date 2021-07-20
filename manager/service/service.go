@@ -59,7 +59,7 @@ type REST interface {
 	SignIn(json types.SignInRequest) (*model.User, error)
 	SignUp(json types.SignUpRequest) (*model.User, error)
 
-	GetEndpoints(g *gin.Engine) gin.RoutesInfo
+	GetEndpoints(g *gin.Engine) types.Policys
 	CreatePermission(json types.PolicyRequest) error
 	DestroyPermission(json types.PolicyRequest) error
 }
