@@ -390,159 +390,6 @@ var _ interface {
 	ErrorName() string
 } = GetCDNRequestValidationError{}
 
-// Validate checks the field values on CreateCDNRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, an
-// error is returned.
-func (m *CreateCDNRequest) Validate() error {
-	if m == nil {
-		return nil
-	}
-
-	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
-		return CreateCDNRequestValidationError{
-			field:  "SourceType",
-			reason: "value must be one of the defined enum values",
-		}
-	}
-
-	if err := m._validateHostname(m.GetHostName()); err != nil {
-		return CreateCDNRequestValidationError{
-			field:  "HostName",
-			reason: "value must be a valid hostname",
-			cause:  err,
-		}
-	}
-
-	if m.GetIdc() != "" {
-
-		if l := utf8.RuneCountInString(m.GetIdc()); l < 1 || l > 1024 {
-			return CreateCDNRequestValidationError{
-				field:  "Idc",
-				reason: "value length must be between 1 and 1024 runes, inclusive",
-			}
-		}
-
-	}
-
-	if m.GetLocation() != "" {
-
-		if utf8.RuneCountInString(m.GetLocation()) > 1024 {
-			return CreateCDNRequestValidationError{
-				field:  "Location",
-				reason: "value length must be at most 1024 runes",
-			}
-		}
-
-	}
-
-	if ip := net.ParseIP(m.GetIp()); ip == nil {
-		return CreateCDNRequestValidationError{
-			field:  "Ip",
-			reason: "value must be a valid IP address",
-		}
-	}
-
-	if val := m.GetPort(); val < 1024 || val >= 65535 {
-		return CreateCDNRequestValidationError{
-			field:  "Port",
-			reason: "value must be inside range [1024, 65535)",
-		}
-	}
-
-	if val := m.GetDownloadPort(); val < 1024 || val >= 65535 {
-		return CreateCDNRequestValidationError{
-			field:  "DownloadPort",
-			reason: "value must be inside range [1024, 65535)",
-		}
-	}
-
-	return nil
-}
-
-func (m *CreateCDNRequest) _validateHostname(host string) error {
-	s := strings.ToLower(strings.TrimSuffix(host, "."))
-
-	if len(host) > 253 {
-		return errors.New("hostname cannot exceed 253 characters")
-	}
-
-	for _, part := range strings.Split(s, ".") {
-		if l := len(part); l == 0 || l > 63 {
-			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
-		}
-
-		if part[0] == '-' {
-			return errors.New("hostname parts cannot begin with hyphens")
-		}
-
-		if part[len(part)-1] == '-' {
-			return errors.New("hostname parts cannot end with hyphens")
-		}
-
-		for _, r := range part {
-			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
-				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
-			}
-		}
-	}
-
-	return nil
-}
-
-// CreateCDNRequestValidationError is the validation error returned by
-// CreateCDNRequest.Validate if the designated constraints aren't met.
-type CreateCDNRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e CreateCDNRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e CreateCDNRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e CreateCDNRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e CreateCDNRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e CreateCDNRequestValidationError) ErrorName() string { return "CreateCDNRequestValidationError" }
-
-// Error satisfies the builtin error interface
-func (e CreateCDNRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sCreateCDNRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = CreateCDNRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = CreateCDNRequestValidationError{}
-
 // Validate checks the field values on UpdateCDNRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, an
 // error is returned.
@@ -588,37 +435,25 @@ func (m *UpdateCDNRequest) Validate() error {
 
 	}
 
-	if m.GetIp() != "" {
-
-		if ip := net.ParseIP(m.GetIp()); ip == nil {
-			return UpdateCDNRequestValidationError{
-				field:  "Ip",
-				reason: "value must be a valid IP address",
-			}
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		return UpdateCDNRequestValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
 		}
-
 	}
 
-	if m.GetPort() != 0 {
-
-		if val := m.GetPort(); val < 1024 || val >= 65535 {
-			return UpdateCDNRequestValidationError{
-				field:  "Port",
-				reason: "value must be inside range [1024, 65535)",
-			}
+	if val := m.GetPort(); val < 1024 || val >= 65535 {
+		return UpdateCDNRequestValidationError{
+			field:  "Port",
+			reason: "value must be inside range [1024, 65535)",
 		}
-
 	}
 
-	if m.GetDownloadPort() != 0 {
-
-		if val := m.GetDownloadPort(); val < 1024 || val >= 65535 {
-			return UpdateCDNRequestValidationError{
-				field:  "DownloadPort",
-				reason: "value must be inside range [1024, 65535)",
-			}
+	if val := m.GetDownloadPort(); val < 1024 || val >= 65535 {
+		return UpdateCDNRequestValidationError{
+			field:  "DownloadPort",
+			reason: "value must be inside range [1024, 65535)",
 		}
-
 	}
 
 	return nil
@@ -1094,176 +929,6 @@ var _ interface {
 	ErrorName() string
 } = GetSchedulerRequestValidationError{}
 
-// Validate checks the field values on CreateSchedulerRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
-func (m *CreateSchedulerRequest) Validate() error {
-	if m == nil {
-		return nil
-	}
-
-	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
-		return CreateSchedulerRequestValidationError{
-			field:  "SourceType",
-			reason: "value must be one of the defined enum values",
-		}
-	}
-
-	if err := m._validateHostname(m.GetHostName()); err != nil {
-		return CreateSchedulerRequestValidationError{
-			field:  "HostName",
-			reason: "value must be a valid hostname",
-			cause:  err,
-		}
-	}
-
-	if m.GetVips() != "" {
-
-		if l := utf8.RuneCountInString(m.GetVips()); l < 1 || l > 1024 {
-			return CreateSchedulerRequestValidationError{
-				field:  "Vips",
-				reason: "value length must be between 1 and 1024 runes, inclusive",
-			}
-		}
-
-	}
-
-	if m.GetIdc() != "" {
-
-		if l := utf8.RuneCountInString(m.GetIdc()); l < 1 || l > 1024 {
-			return CreateSchedulerRequestValidationError{
-				field:  "Idc",
-				reason: "value length must be between 1 and 1024 runes, inclusive",
-			}
-		}
-
-	}
-
-	if m.GetLocation() != "" {
-
-		if utf8.RuneCountInString(m.GetLocation()) > 1024 {
-			return CreateSchedulerRequestValidationError{
-				field:  "Location",
-				reason: "value length must be at most 1024 runes",
-			}
-		}
-
-	}
-
-	if len(m.GetNetConfig()) > 0 {
-
-		if len(m.GetNetConfig()) < 1 {
-			return CreateSchedulerRequestValidationError{
-				field:  "NetConfig",
-				reason: "value length must be at least 1 bytes",
-			}
-		}
-
-	}
-
-	if ip := net.ParseIP(m.GetIp()); ip == nil {
-		return CreateSchedulerRequestValidationError{
-			field:  "Ip",
-			reason: "value must be a valid IP address",
-		}
-	}
-
-	if val := m.GetPort(); val < 1024 || val >= 65535 {
-		return CreateSchedulerRequestValidationError{
-			field:  "Port",
-			reason: "value must be inside range [1024, 65535)",
-		}
-	}
-
-	return nil
-}
-
-func (m *CreateSchedulerRequest) _validateHostname(host string) error {
-	s := strings.ToLower(strings.TrimSuffix(host, "."))
-
-	if len(host) > 253 {
-		return errors.New("hostname cannot exceed 253 characters")
-	}
-
-	for _, part := range strings.Split(s, ".") {
-		if l := len(part); l == 0 || l > 63 {
-			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
-		}
-
-		if part[0] == '-' {
-			return errors.New("hostname parts cannot begin with hyphens")
-		}
-
-		if part[len(part)-1] == '-' {
-			return errors.New("hostname parts cannot end with hyphens")
-		}
-
-		for _, r := range part {
-			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
-				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
-			}
-		}
-	}
-
-	return nil
-}
-
-// CreateSchedulerRequestValidationError is the validation error returned by
-// CreateSchedulerRequest.Validate if the designated constraints aren't met.
-type CreateSchedulerRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e CreateSchedulerRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e CreateSchedulerRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e CreateSchedulerRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e CreateSchedulerRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e CreateSchedulerRequestValidationError) ErrorName() string {
-	return "CreateSchedulerRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e CreateSchedulerRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sCreateSchedulerRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = CreateSchedulerRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = CreateSchedulerRequestValidationError{}
-
 // Validate checks the field values on UpdateSchedulerRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.
@@ -1331,26 +996,18 @@ func (m *UpdateSchedulerRequest) Validate() error {
 
 	}
 
-	if m.GetIp() != "" {
-
-		if ip := net.ParseIP(m.GetIp()); ip == nil {
-			return UpdateSchedulerRequestValidationError{
-				field:  "Ip",
-				reason: "value must be a valid IP address",
-			}
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		return UpdateSchedulerRequestValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
 		}
-
 	}
 
-	if m.GetPort() != 0 {
-
-		if val := m.GetPort(); val < 1024 || val >= 65535 {
-			return UpdateSchedulerRequestValidationError{
-				field:  "Port",
-				reason: "value must be inside range [1024, 65535)",
-			}
+	if val := m.GetPort(); val < 1024 || val >= 65535 {
+		return UpdateSchedulerRequestValidationError{
+			field:  "Port",
+			reason: "value must be inside range [1024, 65535)",
 		}
-
 	}
 
 	return nil
