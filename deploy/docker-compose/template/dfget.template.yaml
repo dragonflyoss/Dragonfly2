@@ -140,4 +140,4 @@ proxy:
   proxies:
   # proxy all http image layer download requests with dfget
   - regx: (blobs|manifests|config)/sha256.*
-  - regx: baidu.com/+.*
+  - regx: __IP__.* # test only
