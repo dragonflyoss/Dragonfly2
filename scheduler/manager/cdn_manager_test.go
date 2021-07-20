@@ -21,6 +21,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	testifyassert "github.com/stretchr/testify/assert"
 )
 
@@ -33,12 +34,12 @@ func TestCDNHostsToServers(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		hosts  []*manager.CDN
+		hosts  []*config.CDN
 		expect func(t *testing.T, data interface{})
 	}{
 		{
 			name: "normal conversion",
-			hosts: []*manager.CDN{
+			hosts: []*config.CDN{
 				{
 					HostName:     "foo",
 					Port:         8002,
@@ -54,7 +55,7 @@ func TestCDNHostsToServers(t *testing.T) {
 		},
 		{
 			name:  "hosts is empty",
-			hosts: []*manager.CDN{},
+			hosts: []*config.CDN{},
 			expect: func(t *testing.T, data interface{}) {
 				assert := testifyassert.New(t)
 				assert.Empty(data)
@@ -73,15 +74,15 @@ func TestCDNHostsToServers(t *testing.T) {
 func TestCDNHostsToNetAddrs(t *testing.T) {
 	tests := []struct {
 		name   string
-		hosts  []*manager.CDN
+		hosts  []*config.CDN
 		expect func(t *testing.T, data interface{})
 	}{
 		{
 			name: "normal conversion",
-			hosts: []*manager.CDN{
+			hosts: []*config.CDN{
 				{
 					HostName:     "foo",
-					Ip:           "127.0.0.1",
+					IP:           "127.0.0.1",
 					Port:         8002,
 					DownloadPort: 8001,
 				},
@@ -98,7 +99,7 @@ func TestCDNHostsToNetAddrs(t *testing.T) {
 		},
 		{
 			name: "host ip is empty",
-			hosts: []*manager.CDN{
+			hosts: []*config.CDN{
 				{
 					HostName:     "foo",
 					Port:         8002,
@@ -117,7 +118,7 @@ func TestCDNHostsToNetAddrs(t *testing.T) {
 		},
 		{
 			name:  "hosts is empty",
-			hosts: []*manager.CDN{},
+			hosts: []*config.CDN{},
 			expect: func(t *testing.T, data interface{}) {
 				assert := testifyassert.New(t)
 				assert.Empty(data)
