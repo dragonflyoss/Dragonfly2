@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -101,7 +102,7 @@ func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager
 	return &pbCDN, nil
 }
 
-func (s *GRPC) CreateCDN(ctx context.Context, req *manager.CreateCDNRequest) (*manager.CDN, error) {
+func (s *GRPC) createCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -116,7 +117,7 @@ func (s *GRPC) CreateCDN(ctx context.Context, req *manager.CreateCDNRequest) (*m
 	}
 
 	if err := s.db.Create(&cdn).Error; err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &manager.CDN{
@@ -136,14 +137,21 @@ func (s *GRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*m
 	}
 
 	cdn := model.CDN{}
-	if err := s.db.First(&cdn, model.CDN{HostName: req.HostName}).Updates(model.CDN{
+	if err := s.db.First(&cdn, model.CDN{HostName: req.HostName}).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return s.createCDN(ctx, req)
+		}
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	if err := s.db.Model(&cdn).Updates(model.CDN{
 		IDC:          req.Idc,
 		Location:     req.Location,
 		IP:           req.Ip,
 		Port:         req.Port,
 		DownloadPort: req.DownloadPort,
 	}).Error; err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	if err := s.cache.Delete(
@@ -171,16 +179,16 @@ func (s *GRPC) AddCDNToCDNCluster(ctx context.Context, req *manager.AddCDNToCDNC
 
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, req.CdnClusterId).Error; err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	cdn := model.CDN{}
 	if err := s.db.First(&cdn, req.CdnId).Error; err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	if err := s.db.Model(&cdnCluster).Association("CDNs").Append(&cdn); err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	if err := s.cache.Delete(
@@ -288,7 +296,7 @@ func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerReques
 	return &pbScheduler, nil
 }
 
-func (s *GRPC) CreateScheduler(ctx context.Context, req *manager.CreateSchedulerRequest) (*manager.Scheduler, error) {
+func (s *GRPC) createScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -311,7 +319,7 @@ func (s *GRPC) CreateScheduler(ctx context.Context, req *manager.CreateScheduler
 	}
 
 	if err := s.db.Create(&scheduler).Error; err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &manager.Scheduler{
@@ -332,6 +340,14 @@ func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateScheduler
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	scheduler := model.Scheduler{}
+	if err := s.db.First(&scheduler, model.Scheduler{HostName: req.HostName}).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return s.createScheduler(ctx, req)
+		}
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
 	var netConfig datatypes.JSONMap
 	if len(req.NetConfig) > 0 {
 		if err := netConfig.UnmarshalJSON(req.NetConfig); err != nil {
@@ -339,8 +355,7 @@ func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateScheduler
 		}
 	}
 
-	scheduler := model.Scheduler{}
-	if err := s.db.First(&scheduler, model.Scheduler{HostName: req.HostName}).Updates(model.Scheduler{
+	if err := s.db.Model(&scheduler).Updates(model.Scheduler{
 		VIPs:      req.Vips,
 		IDC:       req.Idc,
 		Location:  req.Location,
@@ -348,7 +363,7 @@ func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateScheduler
 		IP:        req.Ip,
 		Port:      req.Port,
 	}).Error; err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	if err := s.cache.Delete(
@@ -378,16 +393,16 @@ func (s *GRPC) AddSchedulerClusterToSchedulerCluster(ctx context.Context, req *m
 
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.First(&schedulerCluster, req.SchedulerClusterId).Error; err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	scheduler := model.Scheduler{}
 	if err := s.db.First(&scheduler, req.SchedulerId).Error; err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	if err := s.db.Model(&schedulerCluster).Association("Schedulers").Append(&scheduler); err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	if err := s.cache.Delete(
@@ -474,7 +489,7 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 	req, err := m.Recv()
 	if err != nil {
 		logger.Errorf("keepalive failed for the first time: %v", err)
-		return err
+		return status.Error(codes.Unknown, err.Error())
 	}
 	if err := req.Validate(); err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
@@ -492,7 +507,7 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 		}).Updates(model.Scheduler{
 			Status: model.SchedulerStatusActive,
 		}).Error; err != nil {
-			return err
+			return status.Error(codes.Unknown, err.Error())
 		}
 
 		if err := s.cache.Delete(
@@ -511,7 +526,7 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 		}).Updates(model.CDN{
 			Status: model.CDNStatusActive,
 		}).Error; err != nil {
-			return err
+			return status.Error(codes.Unknown, err.Error())
 		}
 
 		if err := s.cache.Delete(
@@ -533,7 +548,7 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 				}).Updates(model.Scheduler{
 					Status: model.SchedulerStatusInactive,
 				}).Error; err != nil {
-					return err
+					return status.Error(codes.Unknown, err.Error())
 				}
 
 				if err := s.cache.Delete(
@@ -552,7 +567,7 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 				}).Updates(model.CDN{
 					Status: model.CDNStatusInactive,
 				}).Error; err != nil {
-					return err
+					return status.Error(codes.Unknown, err.Error())
 				}
 
 				if err := s.cache.Delete(
@@ -568,7 +583,7 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 				return nil
 			}
 			logger.Errorf("%s keepalive failed: %v", hostName, err)
-			return err
+			return status.Error(codes.Unknown, err.Error())
 		}
 
 		logger.Debugf("%s type of %s send keepalive request", sourceType, hostName)

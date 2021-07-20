@@ -175,7 +175,7 @@ func (s *Server) register(ctx context.Context) error {
 
 	var scheduler *manager.Scheduler
 	var err error
-	scheduler, err = s.managerClient.CreateScheduler(ctx, &manager.CreateSchedulerRequest{
+	scheduler, err = s.managerClient.UpdateScheduler(ctx, &manager.UpdateSchedulerRequest{
 		SourceType: manager.SourceType_SCHEDULER_SOURCE,
 		HostName:   iputils.HostName,
 		Ip:         ip,
@@ -184,21 +184,10 @@ func (s *Server) register(ctx context.Context) error {
 		Location:   location,
 	})
 	if err != nil {
-		scheduler, err = s.managerClient.UpdateScheduler(ctx, &manager.UpdateSchedulerRequest{
-			SourceType: manager.SourceType_SCHEDULER_SOURCE,
-			HostName:   iputils.HostName,
-			Ip:         ip,
-			Port:       port,
-			Idc:        idc,
-			Location:   location,
-		})
-		if err != nil {
-			logger.Warnf("update scheduler to manager failed %v", err)
-			return err
-		}
-		logger.Infof("update scheduler %s successfully", scheduler.HostName)
+		logger.Warnf("update scheduler %s to manager failed %v", scheduler.HostName, err)
+		return err
 	}
-	logger.Infof("create scheduler %s successfully", scheduler.HostName)
+	logger.Infof("update scheduler %s to manager successfully", scheduler.HostName)
 
 	schedulerClusterID := s.config.Manager.SchedulerClusterID
 	if schedulerClusterID != 0 {
@@ -206,7 +195,7 @@ func (s *Server) register(ctx context.Context) error {
 			SchedulerId:        scheduler.Id,
 			SchedulerClusterId: schedulerClusterID,
 		}); err != nil {
-			logger.Warnf("add scheduler to scheduler cluster failed %v", err)
+			logger.Warnf("add scheduler %s to scheduler cluster %s failed %v", scheduler.HostName, schedulerClusterID, err)
 			return err
 		}
 		logger.Infof("add scheduler %s to scheduler cluster %s successfully", scheduler.HostName, schedulerClusterID)
