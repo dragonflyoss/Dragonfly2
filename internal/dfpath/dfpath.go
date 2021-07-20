@@ -39,7 +39,7 @@ func init() {
 		panic(err)
 	}
 
-	if err := fileutils.MkdirAll(DefaultDynconfigDir); err != nil {
+	if err := fileutils.MkdirAll(DefaultCacheDir); err != nil {
 		panic(err)
 	}
 

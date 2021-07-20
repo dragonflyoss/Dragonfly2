@@ -20,4 +20,4 @@ import (
 	"path/filepath"
 )
 
-var DefaultConfigDir = filepath.Join(WorkHome, "config")
+var DefaultCacheDir = filepath.Join(WorkHome, "cache")

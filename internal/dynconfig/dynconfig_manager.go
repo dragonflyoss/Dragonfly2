@@ -18,6 +18,7 @@ package dynconfig
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/cache"
@@ -32,6 +33,9 @@ type dynconfigManager struct {
 
 // newDynconfigManager returns a new manager dynconfig instence
 func newDynconfigManager(expire time.Duration, cachePath string, client ManagerClient) (*dynconfigManager, error) {
+	fmt.Println("111111")
+	fmt.Println(cachePath)
+	fmt.Println("111111")
 	d := &dynconfigManager{
 		cache:     cache.New(expire, cache.NoCleanup),
 		cachePath: cachePath,

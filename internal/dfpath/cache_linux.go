@@ -16,8 +16,4 @@
 
 package dfpath
 
-import (
-	"path/filepath"
-)
-
-var DefaultConfigDir = filepath.Join(WorkHome, "config")
+var DefaultCacheDir = "/var/cache/dragonfly"
