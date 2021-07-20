@@ -412,7 +412,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 }
 
 func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
-	reverseProxy := httputil.NewSingleHostReverseProxy(proxy.registry.Remote.URL)
+	reverseProxy := newReverseProxy(proxy.registry)
 	t, err := transport.New(
 		transport.WithPeerHost(proxy.peerHost),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),

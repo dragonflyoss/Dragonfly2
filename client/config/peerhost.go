@@ -467,6 +467,10 @@ type RegistryMirror struct {
 	// Remote url for the registry mirror, default is https://index.docker.io
 	Remote *URL `yaml:"url" mapstructure:"url"`
 
+	// DynamicRemote indicates using header "X-Dragonfly-Registry" for remote instead of Remote
+	// if header "X-Dragonfly-Registry" does not exist, use Remote by default
+	DynamicRemote bool `yaml:"dynamic" mapstructure:"dynamic"`
+
 	// Optional certificates if the mirror uses self-signed certificates
 	Certs *CertPool `yaml:"certs" mapstructure:"certs"`
 
