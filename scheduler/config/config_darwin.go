@@ -14,8 +14,6 @@ var config = Config{
 	Dynconfig: &DynconfigOptions{
 		Type:       dc.LocalSourceType,
 		ExpireTime: 30000 * 1000 * 1000,
-		Path:       SchedulerDynconfigPath,
-		CachePath:  SchedulerDynconfigCachePath,
 	},
 	Server: ServerConfig{
 		IP:   iputils.HostIP,
