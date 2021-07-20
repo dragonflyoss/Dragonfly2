@@ -18,12 +18,10 @@ package server
 
 import (
 	"context"
-	"path/filepath"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -83,7 +81,7 @@ func New(cfg *config.Config) (*Server, error) {
 		if cfg.Dynconfig.Type == dynconfig.ManagerSourceType {
 			options = append(options,
 				dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient)),
-				dynconfig.WithCachePath(filepath.Join(dfpath.DefaultCacheDir, "scheduler_dynconfig")),
+				dynconfig.WithCachePath(config.DefaultDynconfigCachePath),
 				dynconfig.WithExpireTime(cfg.Dynconfig.ExpireTime),
 			)
 		}
