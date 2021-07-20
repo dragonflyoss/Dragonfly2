@@ -20,13 +20,12 @@ import (
 	"testing"
 
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	testifyassert "github.com/stretchr/testify/assert"
 )
 
 func TestCDNHostsToServers(t *testing.T) {
-	mockServerInfo := &manager.CDN{
+	mockServerInfo := &config.CDN{
 		HostName:     "foo",
 		Port:         8002,
 		DownloadPort: 8001,
@@ -48,7 +47,7 @@ func TestCDNHostsToServers(t *testing.T) {
 			},
 			expect: func(t *testing.T, data interface{}) {
 				assert := testifyassert.New(t)
-				assert.EqualValues(map[string]*manager.CDN{
+				assert.EqualValues(map[string]*config.CDN{
 					"foo": mockServerInfo,
 				}, data)
 			},
