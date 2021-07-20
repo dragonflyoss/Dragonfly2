@@ -14,34 +14,10 @@
  * limitations under the License.
  */
 
-package dynconfig
+package dfpath
 
 import (
-	"io/ioutil"
-
-	"gopkg.in/yaml.v3"
+	"path/filepath"
 )
 
-type dynconfigLocal struct {
-	filepath string
-}
-
-// newDynconfigLocal returns a new local dynconfig instence
-func newDynconfigLocal(path string) (*dynconfigLocal, error) {
-	d := &dynconfigLocal{
-		filepath: path,
-	}
-
-	return d, nil
-}
-
-// Unmarshal unmarshals the config into a Struct. Make sure that the tags
-// on the fields of the structure are properly set.
-func (d *dynconfigLocal) Unmarshal(rawVal interface{}) error {
-	b, err := ioutil.ReadFile(d.filepath)
-	if err != nil {
-		return err
-	}
-
-	return yaml.Unmarshal(b, rawVal)
-}
+var DefaultCacheDir = filepath.Join(WorkHome, "cache")

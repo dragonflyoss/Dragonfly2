@@ -30,7 +30,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -44,7 +43,7 @@ const TinyFileSize = 128
 
 type CDNManager struct {
 	client       client.CdnClient
-	servers      map[string]*manager.CDN
+	servers      map[string]*config.CDN
 	dynconfig    config.DynconfigInterface
 	lock         sync.RWMutex
 	callbackFns  map[*types.Task]func(*types.PeerTask, *dferrors.DfError)
@@ -72,11 +71,11 @@ func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *Ho
 	}
 
 	// Initialize CDNManager servers
-	mgr.servers = cdnHostsToServers(dc.Cdns)
+	mgr.servers = cdnHostsToServers(dc.CDNs)
 	logger.Debugf("servers map: %+v\n", mgr.servers)
 
 	// Initialize CDNManager client
-	client, err := client.GetClientByAddr(cdnHostsToNetAddrs(dc.Cdns))
+	client, err := client.GetClientByAddr(cdnHostsToNetAddrs(dc.CDNs))
 	if err != nil {
 		return nil, err
 	}
@@ -85,9 +84,9 @@ func newCDNManager(cfg *config.Config, taskManager *TaskManager, hostManager *Ho
 	return mgr, nil
 }
 
-// cdnHostsToServers coverts manager.CdnHosts to map[string]*manager.ServerInfo.
-func cdnHostsToServers(hosts []*manager.CDN) map[string]*manager.CDN {
-	m := make(map[string]*manager.CDN)
+// cdnHostsToServers coverts []*config.CDN to map[string]*config.CDN
+func cdnHostsToServers(hosts []*config.CDN) map[string]*config.CDN {
+	m := make(map[string]*config.CDN)
 	for i := range hosts {
 		m[hosts[i].HostName] = hosts[i]
 	}
@@ -95,25 +94,25 @@ func cdnHostsToServers(hosts []*manager.CDN) map[string]*manager.CDN {
 	return m
 }
 
-// cdnHostsToNetAddrs coverts manager.CdnHosts to []dfnet.NetAddr.
-func cdnHostsToNetAddrs(hosts []*manager.CDN) []dfnet.NetAddr {
+// cdnHostsToNetAddrs coverts []*config.CDN to []dfnet.NetAddr.
+func cdnHostsToNetAddrs(hosts []*config.CDN) []dfnet.NetAddr {
 	var netAddrs []dfnet.NetAddr
 	for i := range hosts {
 		netAddrs = append(netAddrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", hosts[i].Ip, hosts[i].Port),
+			Addr: fmt.Sprintf("%s:%d", hosts[i].IP, hosts[i].Port),
 		})
 	}
 
 	return netAddrs
 }
 
-func (cm *CDNManager) OnNotify(c *manager.Scheduler) {
+func (cm *CDNManager) OnNotify(c *config.DynconfigData) {
 	// Sync CDNManager servers
-	cm.servers = cdnHostsToServers(c.Cdns)
+	cm.servers = cdnHostsToServers(c.CDNs)
 
 	// Sync CDNManager client netAddrs
-	cm.client.UpdateState(cdnHostsToNetAddrs(c.Cdns))
+	cm.client.UpdateState(cdnHostsToNetAddrs(c.CDNs))
 }
 
 func (cm *CDNManager) TriggerTask(task *types.Task, callback func(peerTask *types.PeerTask, e *dferrors.DfError)) (err error) {
@@ -199,7 +198,7 @@ func (cm *CDNManager) AddToCallback(peerTask *types.PeerTask) {
 	cm.lock.Unlock()
 }
 
-func (cm *CDNManager) getServer(name string) (*manager.CDN, bool) {
+func (cm *CDNManager) getServer(name string) (*config.CDN, bool) {
 	item, found := cm.servers[name]
 	return item, found
 }
@@ -256,7 +255,7 @@ func (cm *CDNManager) processPieceSeed(task *types.Task, ps *cdnsystem.PieceSeed
 			PeerHost: scheduler.PeerHost{
 				Uuid:     hostID,
 				HostName: ps.SeederName,
-				Ip:       server.Ip,
+				Ip:       server.IP,
 				RpcPort:  server.Port,
 				DownPort: server.DownloadPort,
 			},

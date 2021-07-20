@@ -38,7 +38,7 @@ const (
 )
 
 type strategy interface {
-	Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error
+	Unmarshal(rawVal interface{}) error
 }
 
 type Dynconfig struct {
@@ -56,10 +56,6 @@ type Option func(d *Dynconfig) error
 // WithManagerClient set the manager client
 func WithManagerClient(c ManagerClient) Option {
 	return func(d *Dynconfig) error {
-		if d.sourceType != ManagerSourceType {
-			return errors.New("the source type must be ManagerSourceType")
-		}
-
 		d.managerClient = c
 		return nil
 	}
@@ -68,10 +64,6 @@ func WithManagerClient(c ManagerClient) Option {
 // WithLocalConfigPath set the file path
 func WithLocalConfigPath(p string) Option {
 	return func(d *Dynconfig) error {
-		if d.sourceType != LocalSourceType {
-			return errors.New("the source type must be LocalSourceType")
-		}
-
 		d.localConfigPath = p
 		return nil
 	}
@@ -80,10 +72,6 @@ func WithLocalConfigPath(p string) Option {
 // WithCachePath set the cache file path
 func WithCachePath(p string) Option {
 	return func(d *Dynconfig) error {
-		if d.sourceType != ManagerSourceType {
-			return errors.New("the source type must be ManagerSourceType")
-		}
-
 		d.cachePath = p
 		return nil
 	}
@@ -92,10 +80,6 @@ func WithCachePath(p string) Option {
 // WithExpireTime set the expire time for cache
 func WithExpireTime(e time.Duration) Option {
 	return func(d *Dynconfig) error {
-		if d.sourceType != ManagerSourceType {
-			return errors.New("the source type must be ManagerSourceType")
-		}
-
 		d.expire = e
 		return nil
 	}
@@ -168,8 +152,8 @@ func (d *Dynconfig) validate() error {
 
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags
 // on the fields of the structure are properly set.
-func (d *Dynconfig) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error {
-	return d.strategy.Unmarshal(rawVal, opts...)
+func (d *Dynconfig) Unmarshal(rawVal interface{}) error {
+	return d.strategy.Unmarshal(rawVal)
 }
 
 // A DecoderConfigOption can be passed to dynconfig Unmarshal to configure
@@ -178,7 +162,7 @@ type DecoderConfigOption func(*mapstructure.DecoderConfig)
 
 // defaultDecoderConfig returns default mapstructure.DecoderConfig with support
 // of time.Duration values & string slices
-func defaultDecoderConfig(output interface{}, opts ...DecoderConfigOption) *mapstructure.DecoderConfig {
+func defaultDecoderConfig(output interface{}) *mapstructure.DecoderConfig {
 	c := &mapstructure.DecoderConfig{
 		Metadata:         nil,
 		Result:           output,
@@ -187,9 +171,6 @@ func defaultDecoderConfig(output interface{}, opts ...DecoderConfigOption) *maps
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
 		),
-	}
-	for _, opt := range opts {
-		opt(c)
 	}
 	return c
 }

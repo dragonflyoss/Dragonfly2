@@ -40,8 +40,10 @@ func New() *Config {
 }
 
 func (c *Config) Validate() error {
-	if c.Dynconfig.Type == dc.LocalSourceType && c.Dynconfig.Path == "" {
-		return errors.New("dynconfig is LocalSourceType type requires parameter path")
+	if c.Dynconfig.CDNDirPath == "" {
+		if c.Dynconfig.Type == dc.LocalSourceType && c.Dynconfig.Data == nil {
+			return errors.New("dynconfig is LocalSourceType type requires parameter data")
+		}
 	}
 
 	if c.Dynconfig.Type == dc.ManagerSourceType {
@@ -49,12 +51,8 @@ func (c *Config) Validate() error {
 			return errors.New("dynconfig is ManagerSourceType type requires parameter expireTime")
 		}
 
-		if c.Dynconfig.CachePath == "" {
-			return errors.New("dynconfig is ManagerSourceType type requires parameter cachePath")
-		}
-
-		if c.Dynconfig.Addr == "" {
-			return errors.New("dynconfig is ManagerSourceType type requires parameter addr")
+		if c.Manager.Addr == "" {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter manager addr")
 		}
 	}
 
@@ -93,17 +91,11 @@ type DynconfigOptions struct {
 	// ExpireTime is expire time for manager cache.
 	ExpireTime time.Duration `yaml:"expireTime" mapstructure:"expireTime"`
 
-	// Addr is dynconfig source address.
-	Addr string `yaml:"addr" mapstructure:"addr"`
-
-	// Path is dynconfig filepath.
-	Path string `yaml:"path" mapstructure:"path"`
-
-	// CachePath is cache filepath.
-	CachePath string `yaml:"cachePath" mapstructure:"cachePath"`
-
 	// CDNDirPath is cdn dir.
 	CDNDirPath string `yaml:"cdnDirPath" mapstructure:"cdnDirPath"`
+
+	// Data is dynconfig local data.
+	Data *DynconfigData `yaml:"data" mapstructure:"data"`
 }
 
 type SchedulerConfig struct {
