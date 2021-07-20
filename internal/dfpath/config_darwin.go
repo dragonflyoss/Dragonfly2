@@ -21,4 +21,4 @@ import (
 )
 
 var DefaultConfigDir = filepath.Join(WorkHome, "config")
-var DefaultDynconfigDir = filepath.Join(WorkHome, "dynconfig")
+var DefaultDynconfigDir = filepath.Join(DefaultConfigDir, "dynconfig")

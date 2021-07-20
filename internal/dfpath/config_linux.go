@@ -16,5 +16,7 @@
 
 package dfpath
 
+import "path/filepath"
+
 var DefaultConfigDir = "/etc/dragonfly"
-var DefaultDynconfigDir = "/etc/dragonfly/dynconfig"
+var DefaultDynconfigDir = filepath.Join(DefaultConfigDir, "dynconfig")
