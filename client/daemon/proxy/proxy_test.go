@@ -56,16 +56,17 @@ func (tc *testCase) WithRule(regx string, direct bool, useHTTPS bool, redirect s
 	return tc
 }
 
-func (tc *testCase) WithRegistryMirror(rawURL string, direct bool) *testCase {
+func (tc *testCase) WithRegistryMirror(rawURL string, direct bool, dynamic bool) *testCase {
 	if tc.Error != nil {
 		return tc
 	}
 
-	var url *url.URL
-	url, tc.Error = url.Parse(rawURL)
+	var u *url.URL
+	u, tc.Error = url.Parse(rawURL)
 	tc.RegistryMirror = &config.RegistryMirror{
-		Remote: &config.URL{URL: url},
-		Direct: direct,
+		Remote:        &config.URL{URL: u},
+		DynamicRemote: dynamic,
+		Direct:        direct,
 	}
 	return tc
 }
@@ -153,17 +154,17 @@ func TestMatch(t *testing.T) {
 		TestMirror(t)
 
 	newTestCase().
-		WithRegistryMirror("http://index.docker.io", false).
+		WithRegistryMirror("http://index.docker.io", false, false).
 		WithTest("http://h/a", true, false, "").
 		TestMirror(t)
 
 	newTestCase().
-		WithRegistryMirror("http://index.docker.io", false).
+		WithRegistryMirror("http://index.docker.io", false, false).
 		WithTest("http://index.docker.io/v2/blobs/sha256/xxx", false, false, "").
 		TestMirror(t)
 
 	newTestCase().
-		WithRegistryMirror("http://index.docker.io", true).
+		WithRegistryMirror("http://index.docker.io", true, false).
 		WithTest("http://index.docker.io/v2/blobs/sha256/xxx", true, false, "").
 		TestMirror(t)
 }
