@@ -21,4 +21,6 @@ const (
 	HeaderDragonflyPeer   = "X-Dragonfly-Peer"
 	HeaderDragonflyTask   = "X-Dragonfly-Task"
 	HeaderDragonflyBiz    = "X-Dragonfly-Biz"
+	// HeaderDragonflyRegistry is used for dynamic registry mirrors
+	HeaderDragonflyRegistry = "X-Dragonfly-Registry"
 )
