@@ -136,7 +136,7 @@ func (m *manager) CheckHealth(context.Context) error {
 func (m *manager) Download(ctx context.Context,
 	req *dfdaemongrpc.DownRequest, results chan<- *dfdaemongrpc.DownResult) error {
 	m.Keep()
-	// init peer task request, peer download request uses different peer id
+	// init peer task request, peer uses different peer id to generate every request
 	peerTask := &peer.FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url:      req.Url,

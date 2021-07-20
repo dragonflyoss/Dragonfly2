@@ -30,12 +30,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-func GetClientByAddr(adders []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
-	if len(adders) == 0 {
+func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
+	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
 	cc := &cdnClient{
-		rpc.NewConnection(context.Background(), "cdn", adders, []rpc.ConnOption{
+		rpc.NewConnection(context.Background(), "cdn", addrs, []rpc.ConnOption{
 			rpc.WithConnExpireTime(60 * time.Second),
 			rpc.WithDialOption(opts),
 		}),
@@ -46,7 +46,7 @@ func GetClientByAddr(adders []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient
 var once sync.Once
 var elasticCdnClient *cdnClient
 
-func GetElasticClientByAdders(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
+func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
 	once.Do(func() {
 		elasticCdnClient = &cdnClient{
 			rpc.NewConnection(context.Background(), "cdn-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
@@ -68,7 +68,7 @@ type CdnClient interface {
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
-	UpdateState(adders []dfnet.NetAddr)
+	UpdateState(addrs []dfnet.NetAddr)
 
 	Close() error
 }

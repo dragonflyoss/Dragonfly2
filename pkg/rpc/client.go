@@ -149,15 +149,15 @@ func WithDialTimeout(dialTimeout time.Duration) ConnOption {
 	})
 }
 
-func NewConnection(ctx context.Context, name string, adders []dfnet.NetAddr, connOpts []ConnOption) *Connection {
+func NewConnection(ctx context.Context, name string, addrs []dfnet.NetAddr, connOpts []ConnOption) *Connection {
 	conn := newDefaultConnection(ctx)
 	conn.name = name
-	addresses := make([]string, 0, len(adders))
-	for _, addr := range adders {
+	addresses := make([]string, 0, len(addrs))
+	for _, addr := range addrs {
 		addresses = append(addresses, addr.GetEndpoint())
 	}
 	conn.hashRing = hashring.New(addresses)
-	conn.serverNodes = adders
+	conn.serverNodes = addrs
 	for _, opt := range connOpts {
 		opt.apply(conn)
 	}
@@ -409,11 +409,11 @@ func (conn *Connection) Close() error {
 	return nil
 }
 
-func (conn *Connection) UpdateState(adders []dfnet.NetAddr) {
+func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
 	// todo lock
-	conn.serverNodes = adders
+	conn.serverNodes = addrs
 	var addresses []string
-	for _, addr := range adders {
+	for _, addr := range addrs {
 		addresses = append(addresses, addr.GetEndpoint())
 	}
 
