@@ -58,7 +58,7 @@ func (h *Handlers) CreatePermission(ctx *gin.Context) {
 // @Success 200
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /permission [post]
+// @Router /permission [delete]
 
 func (h *Handlers) DestroyPermission(ctx *gin.Context) {
 	var json types.PolicyRequest
