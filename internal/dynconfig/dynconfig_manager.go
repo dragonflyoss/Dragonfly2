@@ -70,13 +70,13 @@ func (d *dynconfigManager) get() (interface{}, error) {
 
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags
 // on the fields of the structure are properly set.
-func (d *dynconfigManager) Unmarshal(rawVal interface{}, opts ...DecoderConfigOption) error {
+func (d *dynconfigManager) Unmarshal(rawVal interface{}) error {
 	dynconfig, err := d.get()
 	if err != nil {
 		return errors.New("can't find the cached data")
 	}
 
-	return decode(dynconfig, defaultDecoderConfig(rawVal, opts...))
+	return decode(dynconfig, defaultDecoderConfig(rawVal))
 }
 
 // Load dynamic config from manager

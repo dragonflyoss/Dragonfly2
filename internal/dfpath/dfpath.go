@@ -39,6 +39,10 @@ func init() {
 		panic(err)
 	}
 
+	if err := fileutils.MkdirAll(DefaultDynconfigDir); err != nil {
+		panic(err)
+	}
+
 	if err := fileutils.MkdirAll(LogDir); err != nil {
 		panic(err)
 	}

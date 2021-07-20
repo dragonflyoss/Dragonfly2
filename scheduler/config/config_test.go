@@ -33,10 +33,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	config := &Config{
 		Dynconfig: &DynconfigOptions{
 			Type:       dc.LocalSourceType,
-			Path:       "foo",
-			CachePath:  "bar",
 			ExpireTime: 1000,
-			Addr:       "127.0.0.1:8002",
 			CDNDirPath: "tmp",
 		},
 		Scheduler: SchedulerConfig{

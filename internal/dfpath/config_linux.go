@@ -17,3 +17,4 @@
 package dfpath
 
 var DefaultConfigDir = "/etc/dragonfly"
+var DefaultDynConfigDir = "/etc/dragonfly/dynconfig"

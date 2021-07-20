@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -56,6 +57,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize manager client
+	options := []dynconfig.Option{dynconfig.WithLocalConfigPath(dependency.GetConfigPath("scheduler"))}
 	var managerConn *grpc.ClientConn
 	if cfg.Manager.Addr != "" {
 		managerConn, err = grpc.Dial(
@@ -75,35 +77,17 @@ func New(cfg *config.Config) (*Server, error) {
 			return nil, err
 		}
 		logger.Info("scheduler register to manager")
+
+		if cfg.Dynconfig.Type == dynconfig.ManagerSourceType {
+			options = append(options,
+				dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient)),
+				dynconfig.WithCachePath(config.SchedulerDynconfigCachePath),
+				dynconfig.WithExpireTime(cfg.Dynconfig.ExpireTime),
+			)
+		}
 	}
 
 	// Initialize dynconfig client
-	options := []dynconfig.Option{}
-	if cfg.Dynconfig.Type == dynconfig.LocalSourceType {
-		options = []dynconfig.Option{
-			dynconfig.WithLocalConfigPath(cfg.Dynconfig.Path),
-		}
-	}
-
-	if cfg.Dynconfig.Type == dynconfig.ManagerSourceType {
-		dynconfigConn, err := grpc.Dial(
-			cfg.Dynconfig.Addr,
-			grpc.WithInsecure(),
-			grpc.WithBlock(),
-		)
-		if err != nil {
-			logger.Errorf("did not connect: %v", err)
-			return nil, err
-		}
-		s.dynconfigConn = dynconfigConn
-
-		options = []dynconfig.Option{
-			dynconfig.WithManagerClient(config.NewManagerClient(manager.NewManagerClient(s.dynconfigConn))),
-			dynconfig.WithCachePath(cfg.Dynconfig.CachePath),
-			dynconfig.WithExpireTime(cfg.Dynconfig.ExpireTime),
-		}
-	}
-
 	dynconfig, err := config.NewDynconfig(cfg.Dynconfig.Type, cfg.Dynconfig.CDNDirPath, options...)
 	if err != nil {
 		return nil, err
