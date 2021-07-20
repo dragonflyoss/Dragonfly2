@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -54,6 +55,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize manager client
+	options := []dynconfig.Option{dynconfig.WithLocalConfigPath(dependency.GetConfigPath("scheduler"))}
 	var managerConn *grpc.ClientConn
 	if cfg.Manager.Addr != "" {
 		managerConn, err = grpc.Dial(
@@ -73,30 +75,13 @@ func New(cfg *config.Config) (*Server, error) {
 			return nil, err
 		}
 		logger.Info("scheduler register to manager")
-	}
 
-	// Initialize dynconfig client
-	options := []dynconfig.Option{}
-	if cfg.DynConfig.Type == dynconfig.LocalSourceType {
-		options = []dynconfig.Option{
-			dynconfig.WithLocalConfigPath(cfg.DynConfig.Path),
-		}
-	}
-	if cfg.DynConfig.Type == dynconfig.ManagerSourceType {
-		dynconfigConn, err := grpc.Dial(
-			cfg.DynConfig.Addr,
-			grpc.WithInsecure(),
-			grpc.WithBlock(),
-		)
-		if err != nil {
-			logger.Errorf("did not connect: %v", err)
-			return nil, err
-		}
-		s.dynconfigConn = dynconfigConn
-		options = []dynconfig.Option{
-			dynconfig.WithManagerClient(config.NewManagerClient(manager.NewManagerClient(dynconfigConn))),
-			dynconfig.WithCachePath(cfg.DynConfig.CachePath),
-			dynconfig.WithExpireTime(cfg.DynConfig.ExpireTime),
+		if cfg.DynConfig.Type == dynconfig.ManagerSourceType {
+			options = append(options,
+				dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient)),
+				dynconfig.WithCachePath(config.DefaultDynconfigCachePath),
+				dynconfig.WithExpireTime(cfg.DynConfig.ExpireTime),
+			)
 		}
 	}
 
@@ -158,7 +143,6 @@ func (s *Server) Stop() (err error) {
 		s.running = false
 		s.dynConfig.Stop()
 		rpc.StopServer()
-		s.dynConfig.Stop()
 		s.schedulerService.Stop()
 	}
 	return
@@ -172,7 +156,7 @@ func (s *Server) register(ctx context.Context) error {
 
 	var scheduler *manager.Scheduler
 	var err error
-	scheduler, err = s.managerClient.CreateScheduler(ctx, &manager.CreateSchedulerRequest{
+	scheduler, err = s.managerClient.UpdateScheduler(ctx, &manager.UpdateSchedulerRequest{
 		SourceType: manager.SourceType_SCHEDULER_SOURCE,
 		HostName:   iputils.HostName,
 		Ip:         ip,
@@ -181,21 +165,10 @@ func (s *Server) register(ctx context.Context) error {
 		Location:   location,
 	})
 	if err != nil {
-		scheduler, err = s.managerClient.UpdateScheduler(ctx, &manager.UpdateSchedulerRequest{
-			SourceType: manager.SourceType_SCHEDULER_SOURCE,
-			HostName:   iputils.HostName,
-			Ip:         ip,
-			Port:       port,
-			Idc:        idc,
-			Location:   location,
-		})
-		if err != nil {
-			logger.Warnf("update scheduler to manager failed %v", err)
-			return err
-		}
-		logger.Infof("update scheduler %s successfully", scheduler.HostName)
+		logger.Warnf("update scheduler %s to manager failed %v", scheduler.HostName, err)
+		return err
 	}
-	logger.Infof("create scheduler %s successfully", scheduler.HostName)
+	logger.Infof("update scheduler %s to manager successfully", scheduler.HostName)
 
 	schedulerClusterID := s.config.Manager.SchedulerClusterID
 	if schedulerClusterID != 0 {
@@ -203,7 +176,7 @@ func (s *Server) register(ctx context.Context) error {
 			SchedulerId:        scheduler.Id,
 			SchedulerClusterId: schedulerClusterID,
 		}); err != nil {
-			logger.Warnf("add scheduler to scheduler cluster failed %v", err)
+			logger.Warnf("add scheduler %s to scheduler cluster %s failed %v", scheduler.HostName, schedulerClusterID, err)
 			return err
 		}
 		logger.Infof("add scheduler %s to scheduler cluster %s successfully", scheduler.HostName, schedulerClusterID)

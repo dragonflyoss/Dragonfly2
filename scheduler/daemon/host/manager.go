@@ -20,7 +20,7 @@ import (
 	"sync"
 
 	"d7y.io/dragonfly/v2/internal/idgen"
-	managerRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -59,24 +59,21 @@ func (m *manager) GetOrAdd(host *types.PeerHost) (actual *types.PeerHost, loaded
 	return host, false
 }
 
-func (m *manager) OnNotify(scheduler *managerRPC.Scheduler) {
-	for _, cdn := range scheduler.Cdns {
-		securityDomain := ""
-		if cdn.CdnCluster != nil && cdn.CdnCluster.SecurityGroup != nil {
-			securityDomain = cdn.CdnCluster.SecurityGroup.Name
-		}
+func (m *manager) OnNotify(dynconfig *config.DynconfigData) {
+	for _, cdn := range dynconfig.CDNs {
 		cdnHost := &types.PeerHost{
 			UUID:           idgen.CDNUUID(cdn.HostName, cdn.Port),
-			IP:             cdn.Ip,
+			IP:             cdn.IP,
 			HostName:       cdn.HostName,
 			RPCPort:        cdn.Port,
 			DownloadPort:   cdn.DownloadPort,
 			CDN:            true,
-			SecurityDomain: securityDomain,
+			SecurityDomain: cdn.SecurityGroup,
 			Location:       cdn.Location,
-			IDC:            cdn.Idc,
-			//NetTopology:       server.NetTopology,
+			IDC:            cdn.IDC,
+			NetTopology:    cdn.NetTopology,
 			//TotalUploadLoad: types.CDNHostLoad,
+			TotalUploadLoad: 100,
 		}
 		m.GetOrAdd(cdnHost)
 	}

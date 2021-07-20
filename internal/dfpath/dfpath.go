@@ -39,6 +39,10 @@ func init() {
 		panic(err)
 	}
 
+	if err := fileutils.MkdirAll(DefaultCacheDir); err != nil {
+		panic(err)
+	}
+
 	if err := fileutils.MkdirAll(LogDir); err != nil {
 		panic(err)
 	}

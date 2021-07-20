@@ -164,9 +164,7 @@ func (s *Server) register(ctx context.Context) error {
 	location := s.config.Host.Location
 	downloadPort := int32(s.config.DownloadPort)
 
-	var cdn *manager.CDN
-	var err error
-	cdn, err = s.managerClient.CreateCDN(ctx, &manager.CreateCDNRequest{
+	cdn, err := s.managerClient.UpdateCDN(ctx, &manager.UpdateCDNRequest{
 		SourceType:   manager.SourceType_CDN_SOURCE,
 		HostName:     iputils.HostName,
 		Ip:           ip,
@@ -176,22 +174,10 @@ func (s *Server) register(ctx context.Context) error {
 		DownloadPort: downloadPort,
 	})
 	if err != nil {
-		cdn, err = s.managerClient.UpdateCDN(ctx, &manager.UpdateCDNRequest{
-			SourceType:   manager.SourceType_CDN_SOURCE,
-			HostName:     iputils.HostName,
-			Ip:           ip,
-			Port:         port,
-			Idc:          idc,
-			Location:     location,
-			DownloadPort: downloadPort,
-		})
-		if err != nil {
-			logger.Errorf("update cdn to manager failed %v", err)
-			return err
-		}
-		logger.Infof("update cdn %s successfully", cdn.HostName)
+		logger.Errorf("update cdn %s to manager failed %v", cdn.HostName, err)
+		return err
 	}
-	logger.Infof("create cdn %s successfully", cdn.HostName)
+	logger.Infof("update cdn %s to manager successfully", cdn.HostName)
 
 	cdnClusterID := s.config.Manager.CDNClusterID
 	if cdnClusterID != 0 {
@@ -199,7 +185,7 @@ func (s *Server) register(ctx context.Context) error {
 			CdnId:        cdn.Id,
 			CdnClusterId: cdnClusterID,
 		}); err != nil {
-			logger.Warnf("add cdn to cdn cluster failed %v", err)
+			logger.Warnf("add cdn %s to cdn cluster %s failed %v", cdn.HostName, cdnClusterID, err)
 			return err
 		}
 		logger.Infof("add cdn %s to cdn cluster %s successfully", cdn.HostName, cdnClusterID)

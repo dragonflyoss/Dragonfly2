@@ -34,10 +34,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	config := &Config{
 		DynConfig: &DynConfig{
 			Type:       dc.LocalSourceType,
-			Path:       "foo",
-			CachePath:  "bar",
 			ExpireTime: 1000,
-			Addr:       "127.0.0.1:8002",
 			CDNDirPath: "tmp",
 		},
 		Scheduler: &SchedulerConfig{
@@ -61,7 +58,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 				RetryMaxBackOff:  100,
 			},
 		},
-		Host: HostConfig{
+		Host: &HostConfig{
 			IDC:      "foo",
 			Location: "bar",
 		},

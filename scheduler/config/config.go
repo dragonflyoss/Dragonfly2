@@ -32,7 +32,7 @@ type Config struct {
 	Server       *ServerConfig    `yaml:"server" mapstructure:"server"`
 	DynConfig    *DynConfig       `yaml:"dynConfig" mapstructure:"dynConfig"`
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
-	Host         HostConfig       `yaml:"host" mapstructure:"host"`
+	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
 }
 
 func New() *Config {
@@ -41,12 +41,22 @@ func New() *Config {
 		Server:    NewDefaultServerConfig(),
 		DynConfig: NewDefaultDynConfig(),
 		Manager:   NewDefaultManagerConfig(),
+		Host:      NewHostConfig(),
+	}
+}
+
+func NewHostConfig() *HostConfig {
+	return &HostConfig{
+		Location: "",
+		IDC:      "",
 	}
 }
 
 func (c *Config) Validate() error {
-	if c.DynConfig.Type == dc.LocalSourceType && c.DynConfig.Path == "" {
-		return errors.New("dynconfig is LocalSourceType type requires parameter path")
+	if c.DynConfig.CDNDirPath == "" {
+		if c.DynConfig.Type == dc.LocalSourceType && c.DynConfig.Data == nil {
+			return errors.New("dynconfig is LocalSourceType type requires parameter data")
+		}
 	}
 
 	if c.DynConfig.Type == dc.ManagerSourceType {
@@ -54,12 +64,8 @@ func (c *Config) Validate() error {
 			return errors.New("dynconfig is ManagerSourceType type requires parameter expireTime")
 		}
 
-		if c.DynConfig.CachePath == "" {
-			return errors.New("dynconfig is ManagerSourceType type requires parameter cachePath")
-		}
-
-		if c.DynConfig.Addr == "" {
-			return errors.New("dynconfig is ManagerSourceType type requires parameter addr")
+		if c.Manager.Addr == "" {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter manager addr")
 		}
 	}
 
@@ -70,9 +76,21 @@ func NewDefaultDynConfig() *DynConfig {
 	return &DynConfig{
 		Type:       dc.LocalSourceType,
 		ExpireTime: 60000 * 1000 * 1000,
-		Path:       SchedulerDynconfigPath,
-		CachePath:  SchedulerDynconfigCachePath,
-		CDNDirPath: CDNDirCachePath,
+		CDNDirPath: "",
+		Data: &DynconfigData{
+			CDNs: []*CDN{
+				{
+					HostName:      "localhost",
+					IP:            "127.0.0.1",
+					Port:          8003,
+					DownloadPort:  8001,
+					SecurityGroup: "",
+					Location:      "",
+					IDC:           "",
+					NetTopology:   "",
+				},
+			},
+		},
 	}
 }
 
@@ -87,11 +105,16 @@ func NewDefaultSchedulerConfig() *SchedulerConfig {
 	return &SchedulerConfig{
 		EnableCDN:            true,
 		ABTest:               false,
+		AScheduler:           "",
+		BScheduler:           "",
 		WorkerNum:            runtime.GOMAXPROCS(0),
 		Monitor:              false,
-		AccessWindow:         0,
+		AccessWindow:         3 * time.Minute,
 		CandidateParentCount: 0,
 		Scheduler:            "basic",
+		CDNLoad:              100,
+		ClientLoad:           10,
+		OpenMonitor:          false,
 		GC:                   NewDefaultGCConfig(),
 	}
 }
@@ -150,17 +173,11 @@ type DynConfig struct {
 	// ExpireTime is expire time for manager cache.
 	ExpireTime time.Duration `yaml:"expireTime" mapstructure:"expireTime"`
 
-	// Addr is dynconfig source address.
-	Addr string `yaml:"addr" mapstructure:"addr"`
-
-	// Path is dynconfig filepath.
-	Path string `yaml:"path" mapstructure:"path"`
-
-	// CachePath is cache filepath.
-	CachePath string `yaml:"cachePath" mapstructure:"cachePath"`
-
 	// CDNDirPath is cdn dir.
 	CDNDirPath string `yaml:"cdnDirPath" mapstructure:"cdnDirPath"`
+
+	// Data is dynconfig local data.
+	Data *DynconfigData `yaml:"data" mapstructure:"data"`
 }
 
 type SchedulerConfig struct {
@@ -174,10 +191,10 @@ type SchedulerConfig struct {
 	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
 	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
 	Scheduler            string        `yaml:"scheduler" mapstructure:"scheduler"`
-	CDNLoad              int
-	ClientLoad           int
-	OpenMonitor          bool
-	GC                   *GCConfig `yaml:"gc" mapstructure:"gc"`
+	CDNLoad              int           `yaml:"cDNLoad" mapstructure:"cDNLoad"`
+	ClientLoad           int           `yaml:"clientLoad" mapstructure:"clientLoad"`
+	OpenMonitor          bool          `yaml:"openMonitor" mapstructure:"openMonitor"`
+	GC                   *GCConfig     `yaml:"gc" mapstructure:"gc"`
 }
 
 type ServerConfig struct {

@@ -19,7 +19,7 @@ package source
 import (
 	"context"
 
-	managerRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
@@ -27,7 +27,7 @@ import (
 type manager struct {
 }
 
-func (m manager) OnNotify(scheduler *managerRPC.Scheduler) {
+func (m manager) OnNotify(dynconfigData *config.DynconfigData) {
 	panic("implement me")
 }
 

@@ -59,7 +59,7 @@ type SchedulerService struct {
 }
 
 func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface) (*SchedulerService, error) {
-	schedulerConfig, err := dynConfig.Get()
+	dynConfigData, err := dynConfig.Get()
 	if err != nil {
 		return nil, err
 	}
@@ -67,12 +67,12 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	peerManager := peer.NewManager(cfg.GC, hostManager)
 	cdnManager := source.NewManager()
 	if cfg.EnableCDN {
-		cdnManager, err = d7y.NewManager(schedulerConfig.Cdns, peerManager, hostManager)
+		cdnManager, err = d7y.NewManager(dynConfigData.CDNs, peerManager, hostManager)
 		if err != nil {
 			return nil, errors.Wrap(err, "new cdn manager")
 		}
 		dynConfig.Register(cdnManager)
-		hostManager.OnNotify(schedulerConfig)
+		hostManager.OnNotify(dynConfigData)
 		dynConfig.Register(hostManager)
 	}
 	taskManager := task.NewManager()

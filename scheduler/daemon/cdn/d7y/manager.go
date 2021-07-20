@@ -30,7 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
-	managerRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"github.com/pkg/errors"
@@ -38,13 +38,12 @@ import (
 
 type manager struct {
 	client      client.CdnClient
-	cdnServers  []*managerRPC.CDN
 	peerManager daemon.PeerMgr
 	hostManager daemon.HostMgr
 	lock        sync.RWMutex
 }
 
-func NewManager(cdnServers []*managerRPC.CDN, peerManager daemon.PeerMgr, hostManager daemon.HostMgr) (daemon.CDNMgr, error) {
+func NewManager(cdnServers []*config.CDN, peerManager daemon.PeerMgr, hostManager daemon.HostMgr) (daemon.CDNMgr, error) {
 	// Initialize CDNManager client
 	cdnClient, err := client.GetClientByAddr(cdnHostsToNetAddrs(cdnServers))
 	if err != nil {
@@ -52,7 +51,6 @@ func NewManager(cdnServers []*managerRPC.CDN, peerManager daemon.PeerMgr, hostMa
 	}
 	mgr := &manager{
 		client:      cdnClient,
-		cdnServers:  cdnServers,
 		peerManager: peerManager,
 		hostManager: hostManager,
 	}
@@ -60,24 +58,22 @@ func NewManager(cdnServers []*managerRPC.CDN, peerManager daemon.PeerMgr, hostMa
 }
 
 // cdnHostsToNetAddrs coverts manager.CdnHosts to []dfnet.NetAddr.
-func cdnHostsToNetAddrs(hosts []*managerRPC.CDN) []dfnet.NetAddr {
+func cdnHostsToNetAddrs(hosts []*config.CDN) []dfnet.NetAddr {
 	var netAddrs []dfnet.NetAddr
 	for i := range hosts {
 		netAddrs = append(netAddrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", hosts[i].Ip, hosts[i].Port),
+			Addr: fmt.Sprintf("%s:%d", hosts[i].IP, hosts[i].Port),
 		})
 	}
 	return netAddrs
 }
 
-func (cm *manager) OnNotify(c *managerRPC.Scheduler) {
+func (cm *manager) OnNotify(c *config.DynconfigData) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
-	// Sync CDNManager servers
-	cm.cdnServers = c.Cdns
 	// Sync CDNManager client netAddrs
-	cm.client.UpdateState(cdnHostsToNetAddrs(cm.cdnServers))
+	cm.client.UpdateState(cdnHostsToNetAddrs(c.CDNs))
 }
 
 func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task, overrideStatus bool) error {

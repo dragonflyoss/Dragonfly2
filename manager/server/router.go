@@ -26,13 +26,20 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	r.Use(gin.Recovery())
 	r.Use(middlewares.Error())
 
-	jwt, err := middlewares.Jwt(h)
+	jwt, err := middlewares.Jwt(service)
 	if err != nil {
 		return nil, err
 	}
 
 	// Router
 	apiv1 := r.Group("/api/v1")
+
+	// User
+	ai := apiv1.Group("/users")
+	ai.POST("/signin", jwt.LoginHandler)
+	ai.POST("/signout", jwt.LogoutHandler)
+	ai.POST("/refresh_token", jwt.RefreshHandler)
+	ai.POST("/signup", h.SignUp)
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")
@@ -68,13 +75,6 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	ci.PATCH(":id", h.UpdateCDN)
 	ci.GET(":id", h.GetCDN)
 	ci.GET("", h.GetCDNs)
-
-	// User
-	ai := apiv1.Group("/user")
-	ai.POST("/login", jwt.LoginHandler)
-	ai.GET("/logout", jwt.LogoutHandler)
-	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/register", h.Register)
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")

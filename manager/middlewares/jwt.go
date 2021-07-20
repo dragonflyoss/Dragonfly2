@@ -1,45 +1,54 @@
 package middlewares
 
 import (
-	"net/http"
 	"time"
 
-	"d7y.io/dragonfly/v2/manager/handlers"
+	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/manager/types"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
-func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
+type user struct {
+	ID uint
+}
+
+func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
+	var identityKey = "id"
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
-		Realm:      "Dragonfly Zone",
-		Key:        []byte("Dragonfly Secret Key"),
-		Timeout:    time.Hour,
-		MaxRefresh: time.Hour,
+		Realm:       "Dragonfly",
+		Key:         []byte("Secret Key"),
+		Timeout:     time.Hour,
+		MaxRefresh:  time.Hour,
+		IdentityKey: identityKey,
+
+		IdentityHandler: func(c *gin.Context) interface{} {
+			claims := jwt.ExtractClaims(c)
+			return &user{
+				ID: claims[identityKey].(uint),
+			}
+		},
+
 		Authenticator: func(c *gin.Context) (interface{}, error) {
-			var loginInfos types.LoginRequest
-			if err := c.ShouldBind(&loginInfos); err != nil {
+			var json types.SignInRequest
+			if err := c.ShouldBind(&json); err != nil {
 				return "", jwt.ErrMissingLoginValues
 			}
-			userInfo, err := h.Service.Login(loginInfos)
+
+			u, err := service.SignIn(json)
 			if err != nil {
 				return "", jwt.ErrFailedAuthentication
 			}
 
-			return map[string]interface{}{
-				"name": userInfo.Name,
+			return &user{
+				ID: u.ID,
 			}, nil
 		},
-		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
-			c.JSON(http.StatusOK, gin.H{
-				"token":  token,
-				"expire": expire.Format(time.RFC3339),
-			})
-		},
+
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
-			if v, ok := data.(map[string]interface{}); ok {
+			if u, ok := data.(user); ok {
 				return jwt.MapClaims{
-					"name": v["name"],
+					identityKey: u.ID,
 				}
 			}
 			return jwt.MapClaims{}
@@ -50,6 +59,25 @@ func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
 				"message": message,
 			})
 		},
+
+		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
+			c.JSON(code, gin.H{
+				"token":  token,
+				"expire": expire.Format(time.RFC3339),
+			})
+		},
+
+		LogoutResponse: func(c *gin.Context, code int) {
+			c.Status(code)
+		},
+
+		RefreshResponse: func(c *gin.Context, code int, token string, expire time.Time) {
+			c.JSON(code, gin.H{
+				"token":  token,
+				"expire": expire.Format(time.RFC3339),
+			})
+		},
+
 		TokenLookup:    "header: Authorization, query: token, cookie: jwt",
 		TokenHeadName:  "Bearer",
 		TimeFunc:       time.Now,
@@ -62,5 +90,4 @@ func Jwt(h *handlers.Handlers) (*jwt.GinJWTMiddleware, error) {
 	}
 
 	return authMiddleware, nil
-
 }

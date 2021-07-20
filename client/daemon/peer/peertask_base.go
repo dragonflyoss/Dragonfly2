@@ -117,7 +117,7 @@ type peerTask struct {
 	// requestedPieces stands all pieces requested from peers
 	requestedPieces *Bitmap
 	// lock used by piece result manage, when update readyPieces, lock first
-	lock sync.Mutex
+	lock sync.RWMutex
 	// limiter will be used when enable per peer task rate limit
 	limiter *rate.Limiter
 }
@@ -364,11 +364,12 @@ func (pt *peerTask) pullPiecesFromPeers(pti Task, cleanUnfinishedFunc func()) {
 		return
 	}
 	var (
-		num             int32
-		limit           int32
-		initialized     bool
-		pieceRequestCh  chan *DownloadPieceRequest
-		pieceBufferSize = int32(16)
+		num            int32
+		limit          int32
+		initialized    bool
+		pieceRequestCh chan *DownloadPieceRequest
+		// keep same size with pt.failedPieceCh for avoiding dead lock
+		pieceBufferSize = int32(config.DefaultPieceChanSize)
 	)
 loop:
 	for {
@@ -525,6 +526,13 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 	for {
 		select {
 		case request := <-requests:
+			pt.lock.RLock()
+			if pt.readyPieces.IsSet(request.piece.PieceNum) {
+				pt.lock.RUnlock()
+				pt.Log().Debugf("piece %d is already downloaded, skip", request.piece.PieceNum)
+				continue
+			}
+			pt.lock.RUnlock()
 			ctx, span := tracer.Start(pt.ctx, fmt.Sprintf(config.SpanDownloadPiece, request.piece.PieceNum))
 			span.SetAttributes(config.AttributePiece.Int(int(request.piece.PieceNum)))
 			span.SetAttributes(config.AttributePieceWorker.Int(int(id)))

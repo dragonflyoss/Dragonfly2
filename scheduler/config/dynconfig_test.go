@@ -18,7 +18,7 @@ package config
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -30,39 +30,49 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDynconfigGet(t *testing.T) {
+func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 	tests := []struct {
 		name           string
 		expire         time.Duration
 		sleep          func()
 		cleanFileCache func(t *testing.T)
 		mock           func(m *mocks.MockManagerClientMockRecorder)
-		expect         func(t *testing.T, data *manager.Scheduler, err error)
+		expect         func(t *testing.T, data *DynconfigData, err error)
 	}{
 		{
 			name:   "get dynconfig success",
 			expire: 10 * time.Second,
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(SchedulerDynconfigCachePath); err != nil {
+				if err := os.Remove(DefaultDynconfigCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
 			sleep: func() {},
 			mock: func(m *mocks.MockManagerClientMockRecorder) {
 				m.GetScheduler(gomock.Any(), gomock.Any()).Return(&manager.Scheduler{
-					Id: 1,
+					Cdns: []*manager.CDN{
+						{
+							HostName:     "foo",
+							Ip:           "127.0.0.1",
+							Port:         8001,
+							DownloadPort: 8003,
+						},
+					},
 				}, nil).Times(1)
 			},
-			expect: func(t *testing.T, data *manager.Scheduler, err error) {
+			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
-				assert.Equal(uint64(1), data.Id)
+				assert.Equal(data.CDNs[0].HostName, "foo")
+				assert.Equal(data.CDNs[0].IP, "127.0.0.1")
+				assert.Equal(data.CDNs[0].Port, int32(8001))
+				assert.Equal(data.CDNs[0].DownloadPort, int32(8003))
 			},
 		},
 		{
 			name:   "client failed to return for the second time",
 			expire: 10 * time.Millisecond,
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(SchedulerDynconfigCachePath); err != nil {
+				if err := os.Remove(DefaultDynconfigCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -72,14 +82,24 @@ func TestDynconfigGet(t *testing.T) {
 			mock: func(m *mocks.MockManagerClientMockRecorder) {
 				gomock.InOrder(
 					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&manager.Scheduler{
-						Id: 1,
+						Cdns: []*manager.CDN{
+							{
+								HostName:     "foo",
+								Ip:           "127.0.0.1",
+								Port:         8001,
+								DownloadPort: 8003,
+							},
+						},
 					}, nil).Times(1),
 					m.GetScheduler(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1),
 				)
 			},
-			expect: func(t *testing.T, data *manager.Scheduler, err error) {
+			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
-				assert.Equal(uint64(1), data.Id)
+				assert.Equal(data.CDNs[0].HostName, "foo")
+				assert.Equal(data.CDNs[0].IP, "127.0.0.1")
+				assert.Equal(data.CDNs[0].Port, int32(8001))
+				assert.Equal(data.CDNs[0].DownloadPort, int32(8003))
 			},
 		},
 	}
@@ -93,7 +113,7 @@ func TestDynconfigGet(t *testing.T) {
 
 			d, err := NewDynconfig(dc.ManagerSourceType, "", []dc.Option{
 				dc.WithManagerClient(NewManagerClient(mockManagerClient)),
-				dc.WithCachePath(SchedulerDynconfigCachePath),
+				dc.WithCachePath(DefaultDynconfigCachePath),
 				dc.WithExpireTime(tc.expire),
 			}...)
 			if err != nil {
@@ -108,45 +128,93 @@ func TestDynconfigGet(t *testing.T) {
 	}
 }
 
-func TestDynconfigGetCDNFromDirPath(t *testing.T) {
+func TestDynconfigGet_LocalSourceType(t *testing.T) {
 	tests := []struct {
 		name       string
-		cdnDirPath string
-		expect     func(t *testing.T, data *manager.Scheduler, err error)
+		configPath string
+		expect     func(t *testing.T, data *DynconfigData, err error)
 	}{
 		{
-			name:       "get CDN from directory",
-			cdnDirPath: path.Join("./testdata", "cdn"),
-			expect: func(t *testing.T, data *manager.Scheduler, err error) {
+			name:       "get CDN from local config",
+			configPath: filepath.Join("./testdata", "dynconfig", "scheduler.yaml"),
+			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
-				assert.Equal([]*manager.CDN{
-					{
-						Id:           uint64(1),
-						HostName:     "foo",
-						Idc:          "foo",
-						Location:     "foo",
-						Ip:           "127.0.0.1",
-						Port:         8003,
-						DownloadPort: 8001,
-						Status:       "active",
-					},
-					{
-						Id:           uint64(2),
-						HostName:     "bar",
-						Idc:          "bar",
-						Location:     "bar",
-						Ip:           "127.0.0.1",
-						Port:         8003,
-						DownloadPort: 8001,
-						Status:       "active",
-					},
-				}, data.Cdns)
+				assert.Equal(
+					&DynconfigData{
+						CDNs: []*CDN{
+							{
+								HostName:     "foo",
+								IP:           "127.0.0.1",
+								Port:         8001,
+								DownloadPort: 8003,
+							},
+							{
+								HostName:     "bar",
+								IP:           "127.0.0.1",
+								Port:         8001,
+								DownloadPort: 8003,
+							},
+						},
+					}, data)
 			},
 		},
 		{
 			name:       "directory does not exist",
-			cdnDirPath: path.Join("./testdata", "foo"),
-			expect: func(t *testing.T, data *manager.Scheduler, err error) {
+			configPath: filepath.Join("./testdata", "foo"),
+			expect: func(t *testing.T, data *DynconfigData, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "open testdata/foo: no such file or directory")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			d, err := NewDynconfig(dc.LocalSourceType, "", dc.WithLocalConfigPath(tc.configPath))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			data, err := d.Get()
+			tc.expect(t, data, err)
+		})
+	}
+}
+
+func TestDynconfigGetCDNFromDirPath(t *testing.T) {
+	tests := []struct {
+		name       string
+		cdnDirPath string
+		expect     func(t *testing.T, data *DynconfigData, err error)
+	}{
+		{
+			name:       "get CDN from directory",
+			cdnDirPath: filepath.Join("./testdata", "dynconfig", "cdn"),
+			expect: func(t *testing.T, data *DynconfigData, err error) {
+				assert := assert.New(t)
+				assert.Equal(
+					&DynconfigData{
+						CDNs: []*CDN{
+							{
+								HostName:     "foo",
+								IP:           "127.0.0.1",
+								Port:         8001,
+								DownloadPort: 8003,
+							},
+							{
+								HostName:     "bar",
+								IP:           "127.0.0.1",
+								Port:         8001,
+								DownloadPort: 8003,
+							},
+						},
+					}, data)
+			},
+		},
+		{
+			name:       "directory does not exist",
+			cdnDirPath: filepath.Join("./testdata", "foo"),
+			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "open testdata/foo: no such file or directory")
 			},
@@ -156,9 +224,7 @@ func TestDynconfigGetCDNFromDirPath(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 
-			d, err := NewDynconfig(dc.LocalSourceType, tc.cdnDirPath, []dc.Option{
-				dc.WithLocalConfigPath(SchedulerDynconfigPath),
-			}...)
+			d, err := NewDynconfig(dc.LocalSourceType, tc.cdnDirPath, dc.WithLocalConfigPath("./testdata/scheduler.yaml"))
 			if err != nil {
 				t.Fatal(err)
 			}
