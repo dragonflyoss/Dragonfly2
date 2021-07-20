@@ -25,6 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
+	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/server/service"
 	"google.golang.org/grpc"
 
@@ -35,13 +36,14 @@ import (
 )
 
 type Server struct {
-	config          *config.Config
-	schedulerServer server.SchedulerServer
-	managerClient   manager.ManagerClient
-	managerConn     *grpc.ClientConn
-	dynconfigConn   *grpc.ClientConn
-	running         bool
-	dynConfig       config.DynconfigInterface
+	config           *config.Config
+	schedulerServer  server.SchedulerServer
+	schedulerService *core.SchedulerService
+	managerClient    manager.ManagerClient
+	managerConn      *grpc.ClientConn
+	dynconfigConn    *grpc.ClientConn
+	running          bool
+	dynConfig        config.DynconfigInterface
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -104,8 +106,13 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	s.dynConfig = dynConfig
 
+	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig)
+	if err != nil {
+		return nil, err
+	}
+	s.schedulerService = schedulerService
 	// Initialize scheduler service
-	s.schedulerServer, err = service.NewSchedulerServer(cfg, s.dynConfig)
+	s.schedulerServer, err = service.NewSchedulerServer(schedulerService)
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +127,7 @@ func (s *Server) Serve() error {
 	defer cancel()
 
 	s.dynConfig.Serve()
+	s.schedulerService.Serve()
 
 	if s.managerClient != nil {
 		retry.Run(ctx, func() (interface{}, bool, error) {
@@ -151,6 +159,7 @@ func (s *Server) Stop() (err error) {
 		s.dynConfig.Stop()
 		rpc.StopServer()
 		s.dynConfig.Stop()
+		s.schedulerService.Stop()
 	}
 	return
 }

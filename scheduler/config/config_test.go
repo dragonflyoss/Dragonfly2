@@ -41,13 +41,10 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			CDNDirPath: "tmp",
 		},
 		Scheduler: &SchedulerConfig{
-			ABTest:            true,
-			AScheduler:        "a-scheduler",
-			BScheduler:        "b-scheduler",
-			WorkerNum:         8,
-			WorkerJobPoolSize: 10000,
-			SenderNum:         10,
-			SenderJobPoolSize: 10000,
+			ABTest:     true,
+			AScheduler: "a-scheduler",
+			BScheduler: "b-scheduler",
+			WorkerNum:  8,
 		},
 		Server: &ServerConfig{
 			IP:   "127.0.0.1",

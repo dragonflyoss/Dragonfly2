@@ -30,11 +30,10 @@ const (
 	PeerStatusRunning
 	//PeerStatusNeedParent
 	//PeerStatusNeedChildren
-	PeerStatusBadNode
+	PeerStatusFail
 	//PeerStatusNeedAdjustNode
 	//PeerStatusNeedCheckNode
 	PeerStatusSuccess
-	PeerStatusLeaveNode
 	//PeerStatusAddParent
 	//PeerStatusNodeGone
 	PeerStatusZombie
@@ -57,6 +56,7 @@ type Peer struct {
 	children       map[string]*Peer
 	status         PeerStatus
 	costHistory    []int
+	leave          bool
 }
 
 func NewPeer(peerID string, task *Task, host *PeerHost) *Peer {
@@ -286,11 +286,7 @@ func (peer *Peer) IncFinishNum() {
 }
 
 func (peer *Peer) IsDone() bool {
-	return peer.status == PeerStatusSuccess || peer.status == PeerStatusBadNode
-}
-
-func (peer *Peer) XXX() bool {
-	return peer.status == PeerStatusBadNode || peer.status == PeerStatusLeaveNode || peer.status == PeerStatusZombie
+	return peer.status == PeerStatusSuccess || peer.status == PeerStatusFail
 }
 
 func (peer *Peer) GetFinishedNum() int32 {
@@ -303,4 +299,16 @@ func (peer *Peer) GetStatus() interface{} {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 	return peer.status
+}
+
+func (peer *Peer) MarkLeave() {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	peer.leave = true
+}
+
+func (peer *Peer) IsLeave() bool {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
+	return peer.leave
 }

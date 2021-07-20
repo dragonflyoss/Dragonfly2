@@ -63,7 +63,7 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 		return false
 	}
 
-	if peer.XXX() {
+	if peer.GetStatus() == types.PeerStatusFail || peer.GetStatus() == types.PeerStatusZombie {
 		return true
 	}
 

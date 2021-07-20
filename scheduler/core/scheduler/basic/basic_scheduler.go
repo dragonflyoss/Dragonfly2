@@ -147,6 +147,9 @@ func (s *Scheduler) selectCandidateParents(peer *types.Peer, limit int) (list []
 		if candidateNode == nil || s.evaluator.IsBadNode(candidateNode) {
 			return false
 		}
+		if candidateNode.IsLeave() {
+			return false
+		}
 		if candidateNode.Host.GetFreeUploadLoad() > 0 {
 			return true
 		}

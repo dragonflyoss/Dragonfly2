@@ -16,24 +16,89 @@
 
 package core
 
-import "github.com/panjf2000/ants/v2"
+import (
+	"hash/crc32"
 
-type PeerLeaveTask struct {
-	peerID string
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+)
+
+type worker interface {
+	start(*state)
+	stop()
+	send(event) bool
 }
 
-type worker struct {
-	pool *ants.Pool
+type workerGroup struct {
+	workerNum  int
+	workerList []*baseWorker
+	stopCh     chan struct{}
 }
 
-func newWorker(workerNum int) (*worker, error) {
-	pool, err := ants.NewPool(workerNum)
-	if err != nil {
-		return nil, err
+var _ worker = (*workerGroup)(nil)
+
+func newEventLoopGroup(workerNum int) worker {
+	return &workerGroup{
+		workerNum: workerNum,
+		stopCh:    make(chan struct{}),
 	}
-	return &worker{pool: pool}, nil
 }
 
-func (worker *worker) submit(task func()) {
-	worker.pool.Submit(task)
+func (wg *workerGroup) start(s *state) {
+	for i := 0; i < wg.workerNum; i++ {
+		w := newWorker()
+		w.start(s)
+		wg.workerList = append(wg.workerList, w)
+	}
+
+	logger.Infof("start scheduler worker number:%d", wg.workerNum)
+}
+
+func (wg *workerGroup) send(e event) bool {
+	choiceWorkerID := crc32.ChecksumIEEE([]byte(e.hashKey())) % uint32(wg.workerNum)
+	return wg.workerList[choiceWorkerID].send(e)
+}
+
+func (wg *workerGroup) stop() {
+	close(wg.stopCh)
+	for _, worker := range wg.workerList {
+		worker.stop()
+	}
+}
+
+type baseWorker struct {
+	events chan event
+	done   chan struct{}
+}
+
+var _ worker = (*baseWorker)(nil)
+
+func newWorker() *baseWorker {
+	return &baseWorker{
+		events: make(chan event),
+		done:   make(chan struct{}),
+	}
+}
+
+func (w *baseWorker) start(s *state) {
+	for {
+		select {
+		case e := <-w.events:
+			e.apply(s)
+		case <-w.done:
+			return
+		}
+	}
+}
+
+func (w *baseWorker) stop() {
+	close(w.done)
+}
+
+func (w *baseWorker) send(e event) bool {
+	select {
+	case w.events <- e:
+		return true
+	case <-w.done:
+		return false
+	}
 }

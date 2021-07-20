@@ -39,21 +39,30 @@ type monitor struct {
 	downloadMonitorQueue workqueue.DelayingInterface
 	peerManager          daemon.PeerMgr
 	verbose              bool
+	done                 chan struct{}
 }
 
-func NewMonitor(peerManager daemon.PeerMgr) {
-	monitor := &monitor{
+func newMonitor(peerManager daemon.PeerMgr) *monitor {
+	return &monitor{
 		downloadMonitorQueue: workqueue.NewDelayingQueue(),
 		peerManager:          peerManager,
 	}
-	go monitor.printDebugInfoLoop()
 }
 
-func (m *monitor) printDebugInfoLoop() {
+func (m *monitor) start() {
 	ticker := time.NewTicker(time.Second * 10)
-	for range ticker.C {
-		logger.Debugf(m.printDebugInfo())
+	for {
+		select {
+		case <-ticker.C:
+			logger.Debugf(m.printDebugInfo())
+		case <-m.done:
+			return
+		}
 	}
+}
+
+func (m *monitor) stop() {
+	close(m.done)
 }
 
 func (m *monitor) printDebugInfo() string {
@@ -139,7 +148,7 @@ func (m *monitor) downloadMonitorWorkingLoop() {
 				if !peer.IsRunning() {
 					// peer do not report for a long time, peer gone
 					if time.Now().After(peer.GetLastAccessTime().Add(PeerGoneTimeout)) {
-						peer.SetStatus(types.PeerStatusLeaveNode)
+						peer.MarkLeave()
 						//pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report time out"))
 					}
 					//m.downloadMonitorCallBack(peer)
@@ -147,7 +156,7 @@ func (m *monitor) downloadMonitorWorkingLoop() {
 					//m.downloadMonitorCallBack(peer)
 				} else {
 					if time.Now().After(peer.GetLastAccessTime().Add(PeerForceGoneTimeout)) {
-						peer.SetStatus(types.PeerStatusLeaveNode)
+						peer.MarkLeave()
 						//pt.SendError(dferrors.New(dfcodes.SchedPeerGone, "report fource time out"))
 					}
 					//m.downloadMonitorCallBack(peer)

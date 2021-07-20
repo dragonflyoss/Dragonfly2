@@ -21,9 +21,11 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -35,7 +37,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/daemon/peer"
 	"d7y.io/dragonfly/v2/scheduler/daemon/task"
 	"d7y.io/dragonfly/v2/scheduler/types"
-	"github.com/panjf2000/ants/v2"
 	"github.com/pkg/errors"
 )
 
@@ -49,12 +50,12 @@ type SchedulerService struct {
 	// Peer mgr
 	peerManager daemon.PeerMgr
 
-	jobFactory *JobFactory
-	pool       *ants.Pool
-	//pool      *Worker
-	config    *config.SchedulerConfig
-	scheduler scheduler.Scheduler
-	wg        sync.WaitGroup
+	sched    scheduler.Scheduler
+	worker   worker
+	config   *config.SchedulerConfig
+	wg       sync.WaitGroup
+	monitor  *monitor
+	stopOnce sync.Once
 }
 
 func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface) (*SchedulerService, error) {
@@ -75,27 +76,43 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		dynConfig.Register(hostManager)
 	}
 	taskManager := task.NewManager()
-	scheduler, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
+	sched, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
 		PeerManager: peerManager,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "build scheduler %v", cfg.Scheduler)
 	}
-	jf, err := newJobFactory(scheduler, cdnManager, taskManager, hostManager, peerManager)
-	if err != nil {
-		return nil, errors.Wrap(err, "new mission factory")
-	}
+
+	work := newEventLoopGroup(cfg.WorkerNum)
+	var downloadMonitor *monitor
 	if cfg.OpenMonitor {
-		NewMonitor(peerManager)
+		downloadMonitor = newMonitor(peerManager)
 	}
 	return &SchedulerService{
 		cdnManager:  cdnManager,
 		taskManager: taskManager,
 		hostManager: hostManager,
-		scheduler:   scheduler,
-		jobFactory:  jf,
+		worker:      work,
+		monitor:     downloadMonitor,
+		sched:       sched,
 		config:      cfg,
 	}, nil
+}
+
+func (s *SchedulerService) Serve() {
+	s.worker.start(newState(s.sched, s.peerManager, s.cdnManager, s.worker))
+	s.monitor.start()
+}
+
+func (s *SchedulerService) Stop() {
+	s.stopOnce.Do(func() {
+		if s.worker != nil {
+			s.worker.stop()
+		}
+		if s.monitor != nil {
+			s.monitor.stop()
+		}
+	})
 }
 
 func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string, peerID string) (taskID string) {
@@ -106,7 +123,7 @@ func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.
 }
 
 func (s *SchedulerService) ScheduleParent(peer *types.Peer) (parent *types.Peer, err error) {
-	parent, _ = s.scheduler.ScheduleParent(peer)
+	parent, _ = s.sched.ScheduleParent(peer)
 	return
 }
 
@@ -118,13 +135,13 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 	// get or create host
 	reqPeerHost := req.PeerHost
 	var (
-		peer *types.Peer
-		ok   bool
-		host *types.PeerHost
+		peer     *types.Peer
+		ok       bool
+		peerHost *types.PeerHost
 	)
 
-	if host, ok = s.hostManager.Get(reqPeerHost.Uuid); !ok {
-		host = &types.PeerHost{
+	if peerHost, ok = s.hostManager.Get(reqPeerHost.Uuid); !ok {
+		peerHost = &types.PeerHost{
 			UUID:            reqPeerHost.Uuid,
 			IP:              reqPeerHost.Ip,
 			HostName:        reqPeerHost.HostName,
@@ -137,7 +154,7 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 			NetTopology:     reqPeerHost.NetTopology,
 			TotalUploadLoad: s.config.ClientLoad,
 		}
-		s.hostManager.Add(host)
+		s.hostManager.Add(peerHost)
 	}
 
 	// get or creat PeerTask
@@ -145,7 +162,7 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 		peer = &types.Peer{
 			PeerID: req.PeerId,
 			Task:   task,
-			Host:   host,
+			Host:   peerHost,
 		}
 		s.peerManager.Add(peer)
 	}
@@ -174,8 +191,8 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	go func() {
 		if err := s.cdnManager.StartSeedTask(ctx, task, false); err != nil {
 			logger.Errorf("failed to seed task: %v", err)
-			if err = s.pool.Submit(s.jobFactory.NewHandleFailSeedTaskJob(task)); err != nil {
-				logger.Errorf("failed to submit handle fail seed task job: %v", err)
+			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {
+				logger.Error("failed to send taskSeed fail event, eventLoop is shutdown")
 			}
 		}
 	}()
@@ -183,25 +200,43 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 }
 
 func (s *SchedulerService) HandlePieceResult(peer *types.Peer, pieceResult *schedulerRPC.PieceResult) error {
-	job := s.jobFactory.NewHandleReportPieceResultJob(peer, pieceResult)
-	if job != nil {
-		return s.pool.Submit(job)
+	peer.Touch()
+	if pieceResult.PieceNum == common.ZeroOfPiece {
+		s.worker.send(peerScheduleParentEvent{peer})
+		return nil
+	} else if pieceResult.Success {
+		s.worker.send(peerDownloadPieceSuccessEvent{
+			peer: peer,
+			pr:   pieceResult,
+		})
+		return nil
+	} else if pieceResult.Code != dfcodes.Success {
+		s.worker.send(peerDownloadPieceFailEvent{
+			peer: peer,
+			pr:   pieceResult,
+		})
+		return nil
 	}
 	return nil
 }
 
 func (s *SchedulerService) HandlePeerResult(peer *types.Peer, peerResult *schedulerRPC.PeerResult) error {
-	job := s.jobFactory.NewHandleReportPeerResultJob(peer, peerResult)
-	if job != nil {
-		return s.pool.Submit(job)
+	peer.Touch()
+	if peerResult.Success {
+		if !s.worker.send(peerDownloadSuccessEvent{peer: peer, peerResult: peerResult}) {
+			logger.Errorf("send peer download success event failed")
+		}
+	}
+	if !s.worker.send(peerDownloadFailEvent{peer: peer, peerResult: peerResult}) {
+		logger.Errorf("send peer download fail event failed")
 	}
 	return nil
 }
 
 func (s *SchedulerService) HandleLeaveTask(peer *types.Peer) error {
-	job := s.jobFactory.NewHandleLeaveJob(peer)
-	if job != nil {
-		return s.pool.Submit(job)
+	peer.Touch()
+	if !s.worker.send(peerLeaveEvent{peer: peer}) {
+		logger.Errorf("send peer leave event failed")
 	}
 	return nil
 }

@@ -27,12 +27,11 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/types"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -41,11 +40,7 @@ type SchedulerServer struct {
 }
 
 // NewSchedulerServer returns a new transparent scheduler server from the given options
-func NewSchedulerServer(cfg *config.Config, dynConfig config.DynconfigInterface) (*SchedulerServer, error) {
-	service, err := core.NewSchedulerService(cfg.Scheduler, dynConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "create scheduler service")
-	}
+func NewSchedulerServer(service *core.SchedulerService) (server.SchedulerServer, error) {
 	return &SchedulerServer{
 		service: service,
 	}, nil

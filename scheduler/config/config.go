@@ -88,9 +88,6 @@ func NewDefaultSchedulerConfig() *SchedulerConfig {
 		EnableCDN:            true,
 		ABTest:               false,
 		WorkerNum:            runtime.GOMAXPROCS(0),
-		WorkerJobPoolSize:    10000,
-		SenderNum:            10,
-		SenderJobPoolSize:    10000,
 		Monitor:              false,
 		AccessWindow:         0,
 		CandidateParentCount: 0,
@@ -167,15 +164,12 @@ type DynConfig struct {
 }
 
 type SchedulerConfig struct {
-	EnableCDN         bool   `yaml:"enableCDN" mapstructure:"enableCDN"`
-	ABTest            bool   `yaml:"abtest" mapstructure:"abtest"`
-	AScheduler        string `yaml:"ascheduler" mapstructure:"ascheduler"`
-	BScheduler        string `yaml:"bscheduler" mapstructure:"bscheduler"`
-	WorkerNum         int    `yaml:"workerNum" mapstructure:"workerNum"`
-	WorkerJobPoolSize int    `yaml:"workerJobPoolSize" mapstructure:"workerJobPoolSize"`
-	SenderNum         int    `yaml:"senderNum" mapstructure:"senderNum"`
-	SenderJobPoolSize int    `yaml:"senderJobPoolSize" mapstructure:"senderJobPoolSize"`
-	Monitor           bool   `yaml:"monitor" mapstructure:"monitor"`
+	EnableCDN  bool   `yaml:"enableCDN" mapstructure:"enableCDN"`
+	ABTest     bool   `yaml:"abtest" mapstructure:"abtest"`
+	AScheduler string `yaml:"ascheduler" mapstructure:"ascheduler"`
+	BScheduler string `yaml:"bscheduler" mapstructure:"bscheduler"`
+	WorkerNum  int    `yaml:"workerNum" mapstructure:"workerNum"`
+	Monitor    bool   `yaml:"monitor" mapstructure:"monitor"`
 	// AccessWindow should less than CDN task expireTime
 	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
 	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
