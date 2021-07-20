@@ -18,7 +18,7 @@ package config
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -131,11 +131,12 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 func TestDynconfigGet_LocalSourceType(t *testing.T) {
 	tests := []struct {
 		name       string
-		cdnDirPath string
+		configPath string
 		expect     func(t *testing.T, data *DynconfigData, err error)
 	}{
 		{
-			name: "get CDN from local config",
+			name:       "get CDN from local config",
+			configPath: filepath.Join("./testdata", "dynconfig", "scheduler.yaml"),
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
 				assert.Equal(
@@ -144,14 +145,14 @@ func TestDynconfigGet_LocalSourceType(t *testing.T) {
 							{
 								HostName:     "foo",
 								IP:           "127.0.0.1",
-								Port:         8003,
-								DownloadPort: 8001,
+								Port:         8001,
+								DownloadPort: 8003,
 							},
 							{
 								HostName:     "bar",
 								IP:           "127.0.0.1",
-								Port:         8003,
-								DownloadPort: 8001,
+								Port:         8001,
+								DownloadPort: 8003,
 							},
 						},
 					}, data)
@@ -159,7 +160,7 @@ func TestDynconfigGet_LocalSourceType(t *testing.T) {
 		},
 		{
 			name:       "directory does not exist",
-			cdnDirPath: path.Join("./testdata", "foo"),
+			configPath: filepath.Join("./testdata", "foo"),
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "open testdata/foo: no such file or directory")
@@ -169,7 +170,7 @@ func TestDynconfigGet_LocalSourceType(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			d, err := NewDynconfig(dc.LocalSourceType, "", dc.WithLocalConfigPath("./testdata/dynconfig/scheduler.yaml"))
+			d, err := NewDynconfig(dc.LocalSourceType, "", dc.WithLocalConfigPath(tc.configPath))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -188,7 +189,7 @@ func TestDynconfigGetCDNFromDirPath(t *testing.T) {
 	}{
 		{
 			name:       "get CDN from directory",
-			cdnDirPath: path.Join("./testdata", "dynconfig", "cdn"),
+			cdnDirPath: filepath.Join("./testdata", "dynconfig", "cdn"),
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
 				assert.Equal(
@@ -197,14 +198,14 @@ func TestDynconfigGetCDNFromDirPath(t *testing.T) {
 							{
 								HostName:     "foo",
 								IP:           "127.0.0.1",
-								Port:         8003,
-								DownloadPort: 8001,
+								Port:         8001,
+								DownloadPort: 8003,
 							},
 							{
 								HostName:     "bar",
 								IP:           "127.0.0.1",
-								Port:         8003,
-								DownloadPort: 8001,
+								Port:         8001,
+								DownloadPort: 8003,
 							},
 						},
 					}, data)
@@ -212,7 +213,7 @@ func TestDynconfigGetCDNFromDirPath(t *testing.T) {
 		},
 		{
 			name:       "directory does not exist",
-			cdnDirPath: path.Join("./testdata", "foo"),
+			cdnDirPath: filepath.Join("./testdata", "foo"),
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "open testdata/foo: no such file or directory")

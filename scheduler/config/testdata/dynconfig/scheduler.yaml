@@ -1,11 +1,11 @@
 dynconfig:
   data:
     cdns:
-      - hostName: "foo"
+      - hostname: "foo"
         ip: "127.0.0.1"
         port: 8001
         downloadPort: 8003
-      - hostName: "bar"
+      - hostname: "bar"
         ip: "127.0.0.1"
         port: 8001
         downloadPort: 8003
