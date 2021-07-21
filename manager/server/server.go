@@ -24,6 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
+	"d7y.io/dragonfly/v2/manager/proxy"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -41,6 +42,9 @@ type Server struct {
 
 	// REST server
 	restServer *http.Server
+
+	// Proxy server
+	proxyServer proxy.Proxy
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -62,6 +66,9 @@ func New(cfg *config.Config) (*Server, error) {
 	// Initialize GRPC service
 	grpcService := service.NewGRPC(db, cache, searcher)
 
+	// Initialize Proxy service
+	proxyServer := proxy.New(cfg.Database.Redis)
+
 	// Initialize router
 	router, err := initRouter(cfg.Verbose, restService)
 	if err != nil {
@@ -75,6 +82,7 @@ func New(cfg *config.Config) (*Server, error) {
 			Addr:    cfg.Server.REST.Addr,
 			Handler: router,
 		},
+		proxyServer: proxyServer,
 	}, nil
 }
 
@@ -109,6 +117,15 @@ func (s *Server) Serve() error {
 		return nil
 	})
 
+	// Serve Proxy
+	g.Go(func() error {
+		if err := s.proxyServer.Serve(); err != nil {
+			logger.Errorf("failed to start manager proxy server: %+v", err)
+			return err
+		}
+		return nil
+	})
+
 	return g.Wait()
 }
 
@@ -118,4 +135,7 @@ func (s *Server) Stop() {
 	if err != nil {
 		logger.Errorf("failed to stop manager rest server: %+v", err)
 	}
+
+	// Stop Proxy
+	s.proxyServer.Stop()
 }
