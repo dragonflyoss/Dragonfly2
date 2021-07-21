@@ -6,6 +6,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/casbin/casbin"
+	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
@@ -57,6 +58,10 @@ type REST interface {
 
 	SignIn(json types.SignInRequest) (*model.User, error)
 	SignUp(json types.SignUpRequest) (*model.User, error)
+
+	GetEndpoints(g *gin.Engine) gin.RoutesInfo
+	CreatePermission(json types.PolicyRequest) error
+	DestoryPermission(json types.PolicyRequest) error
 }
 
 type rest struct {

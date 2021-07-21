@@ -27,11 +27,11 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 	r.Use(gin.Recovery())
 	r.Use(middlewares.Error())
 
+	rbac := middlewares.RBAC(enforcer)
 	jwt, err := middlewares.Jwt(service)
 	if err != nil {
 		return nil, err
 	}
-	rbac := middlewares.RBAC(enforcer)
 
 	// Router
 	apiv1 := r.Group("/api/v1")
@@ -77,6 +77,12 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 	ci.PATCH(":id", h.UpdateCDN)
 	ci.GET(":id", h.GetCDN)
 	ci.GET("", h.GetCDNs)
+
+	// Permission
+	pn := apiv1.Group("/permission", jwt.MiddlewareFunc(), rbac)
+	pn.POST("", h.CreatePermission)
+	pn.DELETE("", h.DestoryPermission)
+	pn.GET("/endpoints", h.GetEndpoints(r))
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")
