@@ -102,14 +102,18 @@ func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) 
 	return
 }
 
-func (s *Scheduler) ScheduleParent(peer *types.Peer) (parent *types.Peer, candidateParents []*types.Peer) {
+func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer, bool) {
 	logger.Debugf("[%s][%s]scheduler parent", peer.Task.TaskID, peer.PeerID)
 	if !s.evaluator.NeedAdjustParent(peer) {
-		return peer.GetParent(), nil
+		if peer.GetParent() == nil {
+			return nil, nil, false
+		}
+		return peer.GetParent(), []*types.Peer{peer.GetParent()}, true
 	}
-	candidateParents = s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
+	candidateParents := s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
 	logger.Debugf("[%s][%s]select num %d candidates", peer.Task.TaskID, peer.PeerID, len(candidateParents))
 	var value float64
+	var primary = peer.GetParent()
 	for _, candidate := range candidateParents {
 		worth := s.evaluator.Evaluate(candidate, peer)
 
@@ -120,14 +124,16 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (parent *types.Peer, candid
 
 		if worth > value {
 			value = worth
-			parent = candidate
+			primary = candidate
 		}
 	}
-	if parent == peer.GetParent() {
-		return
+	if primary != nil {
+		if primary != peer.GetParent() {
+			peer.ReplaceParent(primary)
+		}
+		return primary, candidateParents, true
 	}
-	peer.ReplaceParent(parent)
-	return
+	return nil, nil, false
 }
 
 func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list []*types.Peer) {

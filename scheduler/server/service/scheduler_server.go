@@ -117,40 +117,51 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
 	peerPacketChan := make(chan *scheduler.PeerPacket, 1)
 	var once sync.Once
-	g := errgroup.Group{}
+	g, ctx := errgroup.WithContext(context.Background())
 	g.Go(func() error {
 		for {
-			pieceResult, err := stream.Recv()
-			if err == io.EOF {
+			select {
+			case <-ctx.Done():
 				return nil
-			}
-			if err != nil {
-				return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error")
-			}
-			peer, ok := s.service.GetPeerTask(pieceResult.SrcPid)
-			if !ok {
-				return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
-			}
-			once.Do(func() {
-				peer.BindSendChannel(peerPacketChan)
-				peer.SetStatus(types.PeerStatusRunning)
-			})
-			if err := s.service.HandlePieceResult(peer, pieceResult); err != nil {
-				logger.Errorf("handle piece result %v fail: %v", pieceResult, err)
+			default:
+				pieceResult, err := stream.Recv()
+				if err == io.EOF {
+					return nil
+				}
+				if err != nil {
+					return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error")
+				}
+				peer, ok := s.service.GetPeerTask(pieceResult.SrcPid)
+				if !ok {
+					return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
+				}
+				once.Do(func() {
+					peer.BindSendChannel(peerPacketChan)
+					peer.SetStatus(types.PeerStatusRunning)
+				})
+				if err := s.service.HandlePieceResult(peer, pieceResult); err != nil {
+					logger.Errorf("handle piece result %v fail: %v", pieceResult, err)
+				}
 			}
 		}
 	})
 
 	g.Go(func() error {
-		for pp := range peerPacketChan {
-			err := stream.Send(pp)
-			if err != nil {
-				return err
+		for {
+			select {
+			case pp := <-peerPacketChan:
+				err := stream.Send(pp)
+				if err != nil {
+					return err
+				}
+			case <-ctx.Done():
+				return nil
 			}
 		}
-		return nil
 	})
-	return g.Wait()
+	err := g.Wait()
+	logger.Debugf("report piece result: %v", err)
+	return err
 }
 
 func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (err error) {

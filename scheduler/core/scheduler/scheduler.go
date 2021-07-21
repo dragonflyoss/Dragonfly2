@@ -29,7 +29,7 @@ type Scheduler interface {
 	ScheduleChildren(peer *types.Peer) (children []*types.Peer)
 
 	// ScheduleParent schedule a parent and candidates to a peer
-	ScheduleParent(peer *types.Peer) (parent *types.Peer, candidateParents []*types.Peer)
+	ScheduleParent(peer *types.Peer) (parent *types.Peer, candidateParents []*types.Peer, hasParent bool)
 }
 
 type BuildOptions struct {

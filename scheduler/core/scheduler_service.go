@@ -127,9 +127,9 @@ func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.
 }
 
 func (s *SchedulerService) ScheduleParent(peer *types.Peer) (parent *types.Peer, err error) {
-	parent, candidates := s.sched.ScheduleParent(peer)
-	logger.Debugf("schedule parent result: parent %v, candicates:%v", parent, candidates)
-	if parent == nil {
+	parent, candidates, hasParent := s.sched.ScheduleParent(peer)
+	logger.Debugf("schedule parent result: parent %v, candidates:%v", parent, candidates)
+	if !hasParent || parent == nil {
 		return nil, errors.Errorf("no parent peer available for peer %v", peer.PeerID)
 	}
 	return parent, nil

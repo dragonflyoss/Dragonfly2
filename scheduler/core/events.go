@@ -57,16 +57,17 @@ type peerScheduleParentEvent struct {
 var _ event = peerScheduleParentEvent{}
 
 func (e peerScheduleParentEvent) apply(s *state) {
-	parent := e.peer.GetParent()
-	var candidates []*types.Peer
-	if parent == nil {
-		parent, candidates = s.sched.ScheduleParent(e.peer)
-	}
+	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer)
 	if e.peer.PacketChan == nil {
 		logger.Errorf("report piece result: there is no packet chan associated with peer %s", e.peer.PeerID)
 		return
 	}
+	if !hasParent {
+		e.peer.PacketChan <- constructFailPeerPacket(e.peer, dfcodes.SchedWithoutParentPeer)
+		return
+	}
 	e.peer.PacketChan <- constructSuccessPeerPacket(e.peer, parent, candidates)
+	return
 }
 
 func (e peerScheduleParentEvent) hashKey() string {
@@ -83,16 +84,19 @@ var _ event = peerDownloadPieceSuccessEvent{}
 func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	e.peer.AddPieceInfo(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
 	oldParent := e.peer.GetParent()
+	var candidates []*types.Peer
 	parentPeer, ok := s.peerManager.Get(e.pr.DstPid)
-	if ok {
-		// if wrong record in scheduler, amend it according to pr
-		e.peer.ReplaceParent(parentPeer)
+	if !ok {
+		parentPeer, candidates, _ = s.sched.ScheduleParent(e.peer)
+	}
+	if oldParent != nil {
+		candidates = append(candidates, oldParent)
 	}
 	if e.peer.PacketChan == nil {
 		logger.Errorf("newPieceDownloadSuccessJob: there is no packet chan with peer %s", e.peer.PeerID)
 		return
 	}
-	e.peer.PacketChan <- constructSuccessPeerPacket(e.peer, parentPeer, []*types.Peer{oldParent})
+	e.peer.PacketChan <- constructSuccessPeerPacket(e.peer, parentPeer, candidates)
 	return
 }
 
@@ -141,9 +145,14 @@ func (e peerReplaceParentEvent) hashKey() string {
 }
 
 func (e peerReplaceParentEvent) apply(s *state) {
-	parent, candidates := s.sched.ScheduleParent(e.peer)
+	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer)
 	if e.peer.PacketChan == nil {
 		logger.Errorf("newPieceDownloadSuccessJob: there is no packet chan with peer %s", e.peer.PeerID)
+		return
+	}
+	if !hasParent {
+		logger.Errorf("newPieceDownloadSuccessJob: failed to schedule parent to peer %s", e.peer.PeerID)
+		e.peer.PacketChan <- constructFailPeerPacket(e.peer, dfcodes.SchedWithoutParentPeer)
 		return
 	}
 	e.peer.PacketChan <- constructSuccessPeerPacket(e.peer, parent, candidates)
@@ -209,12 +218,16 @@ var _ event = peerDownloadFailEvent{}
 func (e peerDownloadFailEvent) apply(s *state) {
 	e.peer.SetStatus(types.PeerStatusFail)
 	for _, child := range e.peer.GetChildren() {
-		parent, candidates := s.sched.ScheduleParent(child)
+		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if child.PacketChan == nil {
 			logger.Warnf("reportPeerDownloadResult: there is no packet chan associated with peer %s", e.peer.PeerID)
 			continue
 		}
-		child.PacketChan <- constructSuccessPeerPacket(child, parent, candidates)
+		if hasParent {
+			child.PacketChan <- constructSuccessPeerPacket(child, parent, candidates)
+		} else {
+			child.PacketChan <- constructFailPeerPacket(child, dfcodes.SchedWithoutParentPeer)
+		}
 	}
 	s.peerManager.Delete(e.peer.PeerID)
 }
@@ -233,12 +246,16 @@ func (e peerLeaveEvent) apply(s *state) {
 	e.peer.MarkLeave()
 	e.peer.ReplaceParent(nil)
 	for _, child := range e.peer.GetChildren() {
-		parent, candidates := s.sched.ScheduleParent(child)
+		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if child.PacketChan == nil {
 			logger.Debugf("leave: there is no packet chan with peer %s", child.PeerID)
 			continue
 		}
-		child.PacketChan <- constructSuccessPeerPacket(child, parent, candidates)
+		if hasParent {
+			child.PacketChan <- constructSuccessPeerPacket(child, parent, candidates)
+		} else {
+			child.PacketChan <- constructFailPeerPacket(child, dfcodes.SchedWithoutParentPeer)
+		}
 	}
 	s.peerManager.Delete(e.peer.PeerID)
 }
