@@ -5,6 +5,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+	"github.com/casbin/casbin"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
@@ -59,16 +60,18 @@ type REST interface {
 }
 
 type rest struct {
-	db    *gorm.DB
-	rdb   *redis.Client
-	cache *cache.Cache
+	db       *gorm.DB
+	rdb      *redis.Client
+	cache    *cache.Cache
+	enforcer *casbin.Enforcer
 }
 
 // NewREST returns a new REST instence
-func NewREST(database *database.Database, cache *cache.Cache) REST {
+func NewREST(database *database.Database, cache *cache.Cache, enforcer *casbin.Enforcer) REST {
 	return &rest{
-		db:    database.DB,
-		rdb:   database.RDB,
-		cache: cache,
+		db:       database.DB,
+		rdb:      database.RDB,
+		cache:    cache,
+		enforcer: enforcer,
 	}
 }

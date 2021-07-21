@@ -4,11 +4,12 @@ import (
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
 	"d7y.io/dragonfly/v2/manager/service"
+	"github.com/casbin/casbin"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )
 
-func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
+func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
 	if !verbose {
 		gin.SetMode(gin.ReleaseMode)
@@ -30,6 +31,7 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
+	rbac := middlewares.RBAC(enforcer)
 
 	// Router
 	apiv1 := r.Group("/api/v1")
@@ -39,7 +41,7 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	ai.POST("/signin", jwt.LoginHandler)
 	ai.POST("/signout", jwt.LogoutHandler)
 	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/signup", h.SignUp)
+	ai.POST("/signup", jwt.MiddlewareFunc(), rbac, h.SignUp)
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")
