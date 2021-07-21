@@ -121,9 +121,8 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 			e.peer.Task.SetStatus(types.TaskStatusFailed)
 			s.work.send(taskSeedFailEvent{e.peer.Task})
 			return
-		} else {
-			logger.Debugf("===== successfully obtain seeds from cdn, task: %+v =====", e.peer.Task)
 		}
+		logger.Debugf("===== successfully obtain seeds from cdn, task: %+v =====", e.peer.Task)
 	default:
 		s.work.send(peerReplaceParentEvent{peer: e.peer})
 		return
