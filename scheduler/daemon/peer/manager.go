@@ -69,7 +69,9 @@ func (m *manager) Delete(peerID string) {
 	if ok {
 		peer.Host.DeletePeer(peerID)
 		peer.Task.DeletePeer(peer)
-		close(peer.PacketChan)
+		if peer.PacketChan != nil {
+			close(peer.PacketChan)
+		}
 		m.peerMap.Delete(peerID)
 	}
 	return

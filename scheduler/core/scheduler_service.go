@@ -127,8 +127,12 @@ func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.
 }
 
 func (s *SchedulerService) ScheduleParent(peer *types.Peer) (parent *types.Peer, err error) {
-	parent, _ = s.sched.ScheduleParent(peer)
-	return
+	parent, candidates := s.sched.ScheduleParent(peer)
+	logger.Debugf("schedule parent result: parent %v, candicates:%v", parent, candidates)
+	if parent == nil {
+		return nil, errors.Errorf("no parent peer available for peer %v", peer.PeerID)
+	}
+	return parent, nil
 }
 
 func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *types.Peer, ok bool) {
@@ -152,11 +156,7 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 
 	// get or creat PeerTask
 	if peer, ok = s.peerManager.Get(req.PeerId); !ok {
-		peer = &types.Peer{
-			PeerID: req.PeerId,
-			Task:   task,
-			Host:   peerHost,
-		}
+		peer = types.NewPeer(req.PeerId, task, peerHost)
 		s.peerManager.Add(peer)
 	}
 	return peer, nil
@@ -183,11 +183,16 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	}
 
 	go func() {
-		if err := s.cdnManager.StartSeedTask(ctx, task, false); err != nil {
+		if err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
+			if !task.IsSuccess() {
+				task.SetStatus(types.TaskStatusFailed)
+			}
 			logger.Errorf("failed to seed task: %v", err)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {
 				logger.Error("failed to send taskSeed fail event, eventLoop is shutdown")
 			}
+		} else {
+			logger.Debugf("===== successfully obtain seeds from cdn, task: %+v ====", task)
 		}
 	}()
 	return task, nil

@@ -5,10 +5,10 @@ package dfdaemon
 import (
 	context "context"
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -24,7 +24,7 @@ type DaemonClient interface {
 	// get piece tasks from other peers
 	GetPieceTasks(ctx context.Context, in *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 	// check daemon health
-	CheckHealth(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*empty.Empty, error)
+	CheckHealth(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type daemonClient struct {
@@ -76,8 +76,8 @@ func (c *daemonClient) GetPieceTasks(ctx context.Context, in *base.PieceTaskRequ
 	return out, nil
 }
 
-func (c *daemonClient) CheckHealth(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *daemonClient) CheckHealth(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/dfdaemon.Daemon/CheckHealth", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ type DaemonServer interface {
 	// get piece tasks from other peers
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
 	// check daemon health
-	CheckHealth(context.Context, *empty.Empty) (*empty.Empty, error)
+	CheckHealth(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	mustEmbedUnimplementedDaemonServer()
 }
 
@@ -108,7 +108,7 @@ func (UnimplementedDaemonServer) Download(*DownRequest, Daemon_DownloadServer) e
 func (UnimplementedDaemonServer) GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPieceTasks not implemented")
 }
-func (UnimplementedDaemonServer) CheckHealth(context.Context, *empty.Empty) (*empty.Empty, error) {
+func (UnimplementedDaemonServer) CheckHealth(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckHealth not implemented")
 }
 func (UnimplementedDaemonServer) mustEmbedUnimplementedDaemonServer() {}
@@ -164,7 +164,7 @@ func _Daemon_GetPieceTasks_Handler(srv interface{}, ctx context.Context, dec fun
 }
 
 func _Daemon_CheckHealth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(empty.Empty)
+	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func _Daemon_CheckHealth_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: "/dfdaemon.Daemon/CheckHealth",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServer).CheckHealth(ctx, req.(*empty.Empty))
+		return srv.(DaemonServer).CheckHealth(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }

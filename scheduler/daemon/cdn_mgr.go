@@ -26,5 +26,5 @@ import (
 type CDNMgr interface {
 	config.Observer
 	// StartSeedTask
-	StartSeedTask(ctx context.Context, task *types.Task, overrideStatus bool) error
+	StartSeedTask(ctx context.Context, task *types.Task) error
 }

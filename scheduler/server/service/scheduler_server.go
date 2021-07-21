@@ -47,6 +47,9 @@ func NewSchedulerServer(service *core.SchedulerService) (server.SchedulerServer,
 }
 
 func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
+	defer func() {
+		logger.Debugf("peer %s register result %v", request.PeerId, resp)
+	}()
 	logger.Debugf("register peer task, req: %+v", request)
 	resp = new(scheduler.RegisterResult)
 	if verifyErr := validateParams(request); verifyErr != nil {
@@ -83,7 +86,8 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		}
 		parent, schErr := s.service.ScheduleParent(peer)
 		if schErr != nil {
-			err = dferrors.Newf(dfcodes.SchedPeerScheduleFail, "failed to schedule peer %v: %v", peer, schErr)
+			err = dferrors.Newf(dfcodes.SchedPeerScheduleFail, "failed to schedule peer %v: %v", peer.PeerID, schErr)
+			return
 		}
 		singlePiece := task.GetPiece(0)
 		resp.DirectPiece = &scheduler.RegisterResult_SinglePiece{
@@ -129,6 +133,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 			}
 			once.Do(func() {
 				peer.BindSendChannel(peerPacketChan)
+				peer.SetStatus(types.PeerStatusRunning)
 			})
 			if err := s.service.HandlePieceResult(peer, pieceResult); err != nil {
 				logger.Errorf("handle piece result %v fail: %v", pieceResult, err)

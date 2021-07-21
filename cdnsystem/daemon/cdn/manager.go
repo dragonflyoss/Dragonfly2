@@ -167,9 +167,6 @@ func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceMd5 string, downl
 		errorMsg = fmt.Sprintf("task total piece count not match expected: %d real: %d", task.PieceTotal, downloadMetadata.pieceTotalCount)
 		isSuccess = false
 	}
-	if !stringutils.IsBlank(errorMsg) {
-		logger.WithTaskID(task.TaskID).Error(errorMsg)
-	}
 	sourceFileLen := task.SourceFileLength
 	if isSuccess && task.SourceFileLength <= 0 {
 		sourceFileLen = downloadMetadata.realSourceFileLength

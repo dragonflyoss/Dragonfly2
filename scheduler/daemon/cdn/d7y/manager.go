@@ -36,6 +36,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+var ErrCDNRegisterFail = errors.New("cdn task register failed")
+
+var ErrCDNDownloadFail = errors.New("cdn task download failed")
+
+var ErrCDNUnknown = errors.New("cdn obtain seed encounter unknown err")
+
+var ErrCDNInvokeFail = errors.New("invoke cdn interface failed")
+
+var ErrInitCDNPeerFail = errors.New("init cdn peer failed")
+
 type manager struct {
 	client      client.CdnClient
 	peerManager daemon.PeerMgr
@@ -76,12 +86,12 @@ func (cm *manager) OnNotify(c *config.DynconfigData) {
 	cm.client.UpdateState(cdnHostsToNetAddrs(c.CDNs))
 }
 
-func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task, overrideStatus bool) error {
-	if cm.client == nil && (overrideStatus || !task.IsSuccess()) {
-		task.SetStatus(types.TaskStatusFailed)
-		return errors.New("cdn client is nil")
+func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task) error {
+	if cm.client == nil {
+		return ErrCDNRegisterFail
 	}
-	stream, err := cm.client.ObtainSeeds(ctx, &cdnsystem.SeedRequest{
+	// todo 这个地方必须重新生成一个ctx，不能使用传递进来的参数，需要排查下原因
+	stream, err := cm.client.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
 		TaskId:  task.TaskID,
 		Url:     task.URL,
 		Filter:  task.Filter,
@@ -89,24 +99,17 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task, override
 	})
 	if err != nil {
 		if cdnErr, ok := err.(*dferrors.DfError); ok {
+			logger.Errorf("failed to obtain cdn seed: %v", cdnErr)
 			switch cdnErr.Code {
 			case dfcodes.CdnTaskRegistryFail:
-				task.SetStatus(types.TaskStatusCDNRegisterFail)
+				return errors.Wrap(ErrCDNRegisterFail, "obtain seeds")
 			case dfcodes.CdnTaskDownloadFail:
-				task.SetStatus(types.TaskStatusSourceError)
+				return errors.Wrapf(ErrCDNDownloadFail, "obtain seeds")
 			default:
-				task.SetStatus(types.TaskStatusFailed)
+				return errors.Wrapf(ErrCDNUnknown, "obtain seeds")
 			}
-		} else if overrideStatus {
-			task.SetStatus(types.TaskStatusFailed)
 		}
-		if errors.Cause(err) == dferrors.ErrNoCandidateNode {
-			logger.Errorf("can not find candidate server of cdn")
-		}
-		if !task.IsSuccess() {
-			task.SetStatus(types.TaskStatusFailed)
-		}
-		return errors.Wrapf(err, "obtain seeds from cdn")
+		return errors.Wrapf(ErrCDNInvokeFail, "obtain seeds from cdn: %v", err)
 	}
 	return cm.receivePiece(task, stream)
 }
@@ -114,44 +117,49 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task, override
 func (cm *manager) receivePiece(task *types.Task, stream *client.PieceSeedStream) error {
 	var once sync.Once
 	var cdnPeer *types.Peer
-	var cdnHost *types.PeerHost
 	for {
 		piece, err := stream.Recv()
 		if err == io.EOF {
 			if task.GetStatus() == types.TaskStatusSuccess {
 				return nil
 			}
-			return errors.Errorf("cdn stream receive EOF but task status is %d", task.GetStatus())
+			return errors.Errorf("cdn stream receive EOF but task status is %s", task.GetStatus())
 		}
 		if err != nil {
 			if recvErr, ok := err.(*dferrors.DfError); ok {
 				switch recvErr.Code {
 				case dfcodes.CdnTaskRegistryFail:
-					task.SetStatus(types.TaskStatusCDNRegisterFail)
+					return errors.Wrapf(ErrCDNRegisterFail, "receive piece")
 				case dfcodes.CdnTaskDownloadFail:
-					task.SetStatus(types.TaskStatusFailed)
+					return errors.Wrapf(ErrCDNDownloadFail, "receive piece")
 				default:
-					task.SetStatus(types.TaskStatusFailed)
+					return errors.Wrapf(ErrCDNUnknown, "recive piece")
 				}
 			}
-			task.SetStatus(types.TaskStatusFailed)
-			return err
+			return errors.Wrapf(ErrCDNInvokeFail, "receive piece from cdn: %v", err)
 		}
 		if piece != nil {
 			once.Do(func() {
-				cm.initCdnPeer(task, piece)
+				cdnPeer, err = cm.initCdnPeer(task, piece)
 			})
-			cdnPeer.AddPieceInfo(piece.PieceInfo.PieceNum+1, 0)
+			if err != nil || cdnPeer == nil {
+				return err
+			}
 			cdnPeer.Touch()
 			if piece.Done {
+				task.PieceTotal = piece.TotalPieceCount
+				task.ContentLength = piece.ContentLength
+				task.SetStatus(types.TaskStatusSuccess)
 				cdnPeer.SetStatus(types.PeerStatusSuccess)
 				if task.ContentLength <= types.TinyFileSize {
-					content, er := cm.DownloadTinyFileContent(task, cdnHost)
+					content, er := cm.DownloadTinyFileContent(task, cdnPeer.Host)
 					if er == nil && len(content) == int(task.ContentLength) {
 						task.DirectPiece = content
 					}
 				}
+				return nil
 			}
+			cdnPeer.AddPieceInfo(piece.PieceInfo.PieceNum+1, 0)
 			task.AddPiece(&types.PieceInfo{
 				PieceNum:    piece.PieceInfo.PieceNum,
 				RangeStart:  piece.PieceInfo.RangeStart,
@@ -160,17 +168,11 @@ func (cm *manager) receivePiece(task *types.Task, stream *client.PieceSeedStream
 				PieceOffset: piece.PieceInfo.PieceOffset,
 				PieceStyle:  piece.PieceInfo.PieceStyle,
 			})
-			if piece.Done {
-				task.PieceTotal = piece.TotalPieceCount
-				task.ContentLength = piece.ContentLength
-				task.SetStatus(types.TaskStatusSuccess)
-			}
-			return nil
 		}
 	}
 }
 
-func (cm *manager) initCdnPeer(task *types.Task, ps *cdnsystem.PieceSeed) {
+func (cm *manager) initCdnPeer(task *types.Task, ps *cdnsystem.PieceSeed) (*types.Peer, error) {
 	var ok bool
 	var cdnHost *types.PeerHost
 	cdnPeer, ok := cm.peerManager.Get(ps.PeerId)
@@ -178,12 +180,13 @@ func (cm *manager) initCdnPeer(task *types.Task, ps *cdnsystem.PieceSeed) {
 		logger.Debugf("first seed cdn task for taskID %s", task.TaskID)
 		if cdnHost, ok = cm.hostManager.Get(ps.HostUuid); !ok {
 			logger.Errorf("cannot find host %s", ps.HostUuid)
-			//cdnHost = types.NewCDNPeerHost(piece.HostUuid)
+			return nil, errors.Wrapf(ErrInitCDNPeerFail, "cannot find host %s", ps.HostUuid)
 		}
 		cdnPeer = types.NewPeer(ps.PeerId, task, cdnHost)
 	}
 	cdnPeer.SetStatus(types.PeerStatusRunning)
 	cm.peerManager.Add(cdnPeer)
+	return cdnPeer, nil
 }
 
 func (cm *manager) DownloadTinyFileContent(task *types.Task, cdnHost *types.PeerHost) ([]byte, error) {

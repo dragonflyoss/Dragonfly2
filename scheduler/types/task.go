@@ -75,13 +75,14 @@ type Task struct {
 
 func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
 	return &Task{
-		TaskID:  taskID,
-		URL:     url,
-		Filter:  filter,
-		BizID:   bizID,
-		URLMeta: meta,
-		peers:   sortedlist.NewSortedList(),
-		status:  TaskStatusWaiting,
+		TaskID:    taskID,
+		URL:       url,
+		Filter:    filter,
+		BizID:     bizID,
+		URLMeta:   meta,
+		pieceList: make(map[int32]*PieceInfo),
+		peers:     sortedlist.NewSortedList(),
+		status:    TaskStatusWaiting,
 	}
 }
 

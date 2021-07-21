@@ -82,6 +82,7 @@ func NewPeer(peerID string, task *Task, host *PeerHost) *Peer {
 		Task:           task,
 		Host:           host,
 		lastAccessTime: time.Now(),
+		children:       make(map[string]*Peer),
 		status:         PeerStatusWaiting,
 	}
 }
@@ -90,7 +91,7 @@ func (peer *Peer) GetWholeTreeNode() int {
 	// todo lock task
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
-	count := len(peer.children)
+	count := len(peer.children) + 1
 	for _, peerNode := range peer.children {
 		count += peerNode.GetWholeTreeNode()
 	}
@@ -163,17 +164,11 @@ func (peer *Peer) AddPieceInfo(finishedCount int32, cost int) {
 	defer peer.lock.Unlock()
 	if finishedCount > peer.finishedNum {
 		peer.finishedNum = finishedCount
-		peer.addCost(cost)
+		peer.costHistory = append(peer.costHistory, cost)
+		if len(peer.costHistory) > 20 {
+			peer.costHistory = peer.costHistory[len(peer.costHistory)-20:]
+		}
 		peer.Task.peers.Update(peer)
-	}
-}
-
-func (peer *Peer) addCost(cost int) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	peer.costHistory = append(peer.costHistory, cost)
-	if len(peer.costHistory) > 20 {
-		peer.costHistory = peer.costHistory[len(peer.costHistory)-20:]
 	}
 }
 
@@ -222,7 +217,7 @@ func (peer *Peer) IsAncestor(ancestor *Peer) bool {
 
 func (peer *Peer) IsWaiting() bool {
 	peer.lock.RLock()
-	defer peer.lock.RLock()
+	defer peer.lock.RUnlock()
 	if peer.parent == nil {
 		return false
 	}
@@ -230,16 +225,12 @@ func (peer *Peer) IsWaiting() bool {
 }
 
 func (peer *Peer) GetSortKeys() (key1, key2 int) {
-	peer.lock.RLock()
-	defer peer.lock.RLock()
 	key1 = int(peer.finishedNum)
 	key2 = peer.getFreeLoad()
 	return
 }
 
 func (peer *Peer) getFreeLoad() int {
-	peer.lock.RLock()
-	defer peer.lock.RLock()
 	if peer.Host == nil {
 		return 0
 	}
@@ -248,7 +239,7 @@ func (peer *Peer) getFreeLoad() int {
 
 func (peer *Peer) GetFinishNum() int32 {
 	peer.lock.RLock()
-	defer peer.lock.RLock()
+	defer peer.lock.RUnlock()
 	return peer.finishedNum
 }
 

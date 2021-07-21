@@ -61,20 +61,8 @@ func (m *manager) GetOrAdd(host *types.PeerHost) (actual *types.PeerHost, loaded
 
 func (m *manager) OnNotify(dynconfig *config.DynconfigData) {
 	for _, cdn := range dynconfig.CDNs {
-		cdnHost := &types.PeerHost{
-			UUID:           idgen.CDNUUID(cdn.HostName, cdn.Port),
-			IP:             cdn.IP,
-			HostName:       cdn.HostName,
-			RPCPort:        cdn.Port,
-			DownloadPort:   cdn.DownloadPort,
-			CDN:            true,
-			SecurityDomain: cdn.SecurityGroup,
-			Location:       cdn.Location,
-			IDC:            cdn.IDC,
-			NetTopology:    cdn.NetTopology,
-			//TotalUploadLoad: types.CDNHostLoad,
-			TotalUploadLoad: 100,
-		}
+		cdnHost := types.NewCDNPeerHost(idgen.CDNUUID(cdn.HostName, cdn.Port), cdn.IP, cdn.HostName, cdn.Port, cdn.DownloadPort, cdn.SecurityGroup,
+			cdn.Location, cdn.IDC, cdn.NetTopology, 100)
 		m.GetOrAdd(cdnHost)
 	}
 }

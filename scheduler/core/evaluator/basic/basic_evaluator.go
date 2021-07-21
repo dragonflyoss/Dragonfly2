@@ -40,7 +40,7 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 		return false
 	}
 
-	if peer.GetParent() == nil && peer.IsRunning() {
+	if peer.GetParent() == nil && !peer.IsDone() {
 		return true
 	}
 

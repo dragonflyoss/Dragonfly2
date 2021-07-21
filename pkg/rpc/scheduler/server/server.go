@@ -65,6 +65,7 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskReq
 
 	if err == nil && rr != nil {
 		taskID = rr.TaskId
+		suc = true
 	}
 
 	peerHost := ptr.PeerHost

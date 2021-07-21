@@ -14,29 +14,4 @@
  * limitations under the License.
  */
 
-package source
-
-import (
-	"context"
-
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types"
-)
-
-type manager struct {
-}
-
-func (m manager) OnNotify(dynconfigData *config.DynconfigData) {
-	panic("implement me")
-}
-
-func (m manager) StartSeedTask(ctx context.Context, task *types.Task) error {
-	panic("implement me")
-}
-
-func NewManager() daemon.CDNMgr {
-	return &manager{}
-}
-
-var _ daemon.CDNMgr = (*manager)(nil)
+package cdn

@@ -116,9 +116,13 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 		s.work.send(peerReplaceParentEvent{peer: e.peer})
 		return
 	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
-		if err := s.cdnManager.StartSeedTask(context.Background(), e.peer.Task, true); err != nil {
+		if err := s.cdnManager.StartSeedTask(context.Background(), e.peer.Task); err != nil {
+			logger.Errorf("start seed task fail: %v", err)
+			e.peer.Task.SetStatus(types.TaskStatusFailed)
 			s.work.send(taskSeedFailEvent{e.peer.Task})
 			return
+		} else {
+			logger.Debugf("===== successfully obtain seeds from cdn, task: %+v =====", e.peer.Task)
 		}
 	default:
 		s.work.send(peerReplaceParentEvent{peer: e.peer})
@@ -160,7 +164,7 @@ func (e taskSeedFailEvent) apply(s *state) {
 		e.task.ListPeers().Range(func(data sortedlist.Item) bool {
 			peer := data.(*types.Peer)
 			if peer.PacketChan == nil {
-				logger.Warnf("taskSeedFailEvent: there is no packet chan with peer %s", peer.PeerID)
+				logger.Debugf("taskSeedFailEvent: there is no packet chan with peer %s", peer.PeerID)
 				return true
 			}
 			peer.PacketChan <- constructFailPeerPacket(peer, dfcodes.CdnError)
@@ -185,7 +189,7 @@ func (e peerDownloadSuccessEvent) apply(s *state) {
 	children := s.sched.ScheduleChildren(e.peer)
 	for _, child := range children {
 		if child.PacketChan == nil {
-			logger.Warnf("reportPeerSuccessResult: there is no packet chan with peer %s", e.peer.PeerID)
+			logger.Debugf("reportPeerSuccessResult: there is no packet chan with peer %s", e.peer.PeerID)
 			continue
 		}
 		child.PacketChan <- constructSuccessPeerPacket(child, e.peer, nil)
@@ -232,7 +236,7 @@ func (e peerLeaveEvent) apply(s *state) {
 	for _, child := range e.peer.GetChildren() {
 		parent, candidates := s.sched.ScheduleParent(child)
 		if child.PacketChan == nil {
-			logger.Warnf("leave: there is no packet chan with peer %s", child.PeerID)
+			logger.Debugf("leave: there is no packet chan with peer %s", child.PeerID)
 			continue
 		}
 		child.PacketChan <- constructSuccessPeerPacket(child, parent, candidates)

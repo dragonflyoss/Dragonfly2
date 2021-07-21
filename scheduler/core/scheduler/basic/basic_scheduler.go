@@ -108,9 +108,10 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (parent *types.Peer, candid
 		return
 	}
 	candidateParents = s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
+	logger.Debugf("[%s][%s]select num %d candidates", peer.Task.TaskID, peer.PeerID, len(candidateParents))
 	var value float64
 	for _, candidate := range candidateParents {
-		worth := s.evaluator.Evaluate(parent, peer)
+		worth := s.evaluator.Evaluate(candidate, peer)
 
 		// scheduler the same parent, worth reduce a half
 		if peer.GetParent() != nil && peer.GetParent().PeerID == candidate.PeerID {
@@ -131,12 +132,16 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (parent *types.Peer, candid
 
 func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list []*types.Peer) {
 	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *types.Peer) bool {
-		if candidateNode == nil || candidateNode.IsDone() || candidateNode.Host.CDN {
+		if candidateNode == nil || candidateNode.IsDone() || candidateNode.IsLeave() || candidateNode == peer {
+			return false
+		}
+		if candidateNode.Host != nil && candidateNode.Host.CDN {
 			return false
 		}
 		if candidateNode.GetParent() == nil {
 			return true
 		}
+
 		if candidateNode.GetParent() != nil && s.evaluator.IsBadNode(candidateNode.GetParent()) {
 			return true
 		}
@@ -146,15 +151,10 @@ func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list [
 
 func (s *Scheduler) selectCandidateParents(peer *types.Peer, limit int) (list []*types.Peer) {
 	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.Peer) bool {
-		if candidateNode == nil || s.evaluator.IsBadNode(candidateNode) {
+		if candidateNode == nil || s.evaluator.IsBadNode(candidateNode) || candidateNode.IsLeave() || candidateNode == peer || candidateNode.Host.
+			GetFreeUploadLoad() <= 0 {
 			return false
 		}
-		if candidateNode.IsLeave() {
-			return false
-		}
-		if candidateNode.Host.GetFreeUploadLoad() > 0 {
-			return true
-		}
-		return false
+		return true
 	})
 }
