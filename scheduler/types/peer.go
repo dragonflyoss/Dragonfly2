@@ -45,15 +45,9 @@ func (status PeerStatus) String() string {
 const (
 	PeerStatusWaiting PeerStatus = iota
 	PeerStatusRunning
-	//PeerStatusNeedParent
-	//PeerStatusNeedChildren
-	PeerStatusFail
-	//PeerStatusNeedAdjustNode
-	//PeerStatusNeedCheckNode
-	PeerStatusSuccess
-	//PeerStatusAddParent
-	//PeerStatusNodeGone
 	PeerStatusZombie
+	PeerStatusFail
+	PeerStatusSuccess
 )
 
 type Peer struct {
@@ -108,6 +102,9 @@ func (peer *Peer) Touch() {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 	peer.lastAccessTime = time.Now()
+	if peer.status == PeerStatusZombie {
+		peer.status = PeerStatusRunning
+	}
 	peer.Task.Touch()
 }
 
@@ -295,6 +292,10 @@ func (peer *Peer) IncFinishNum() {
 
 func (peer *Peer) IsDone() bool {
 	return peer.status == PeerStatusSuccess || peer.status == PeerStatusFail
+}
+
+func (peer *Peer) IsBad() bool {
+	return peer.status == PeerStatusFail || peer.status == PeerStatusZombie
 }
 
 func (peer *Peer) GetFinishedNum() int32 {

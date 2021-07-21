@@ -65,7 +65,7 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 		return false
 	}
 
-	if peer.GetStatus() == types.PeerStatusFail || peer.GetStatus() == types.PeerStatusZombie {
+	if peer.IsBad() {
 		return true
 	}
 
@@ -78,9 +78,9 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 	if parent == nil {
 		return false
 	}
-
+	logger.Debugf("IsBadNode [%s]: %s have elapsed since the last access %s, now %s", time.Now().Sub(peer.GetLastAccessTime()), peer.PeerID,
+		peer.GetLastAccessTime(), time.Now())
 	if time.Now().After(peer.GetLastAccessTime().Add(5 * time.Second)) {
-		logger.Debugf("IsBadNode [%s]: five seconds have elapsed since the last interview ", peer.PeerID)
 		return true
 	}
 

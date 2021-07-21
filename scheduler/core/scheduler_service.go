@@ -225,8 +225,7 @@ func (s *SchedulerService) HandlePeerResult(peer *types.Peer, peerResult *schedu
 		if !s.worker.send(peerDownloadSuccessEvent{peer: peer, peerResult: peerResult}) {
 			logger.Errorf("send peer download success event failed")
 		}
-	}
-	if !s.worker.send(peerDownloadFailEvent{peer: peer, peerResult: peerResult}) {
+	} else if !s.worker.send(peerDownloadFailEvent{peer: peer, peerResult: peerResult}) {
 		logger.Errorf("send peer download fail event failed")
 	}
 	return nil

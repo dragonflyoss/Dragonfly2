@@ -69,8 +69,8 @@ func (m *manager) GetOrAdd(task *types.Task) (actual *types.Task, loaded bool) {
 func (m *manager) cleanupTasks() {
 	for range m.cleanupExpiredTaskTicker.C {
 		m.taskMap.Range(func(key, value interface{}) bool {
-			peer := value.(*types.Peer)
-			if time.Now().Sub(peer.GetLastAccessTime()) > m.taskTTL {
+			task := value.(*types.Task)
+			if time.Now().Sub(task.GetLastAccessTime()) > m.taskTTL {
 				m.Delete(key.(string))
 			}
 			return true

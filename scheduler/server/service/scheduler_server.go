@@ -167,7 +167,7 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 	logger.Debugf("leave task %+v", target)
 	peer, ok := s.service.GetPeerTask(target.PeerId)
 	if !ok {
-		logger.Warnf("leave task: peer %d is not exists", target.PeerId)
+		logger.Warnf("leave task: peer %s is not exists", target.PeerId)
 		return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", target.PeerId)
 	}
 	return s.service.HandleLeaveTask(peer)

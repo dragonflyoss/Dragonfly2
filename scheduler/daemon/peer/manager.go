@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
@@ -131,6 +132,11 @@ func (m *manager) cleanupPeers() {
 		m.peerMap.Range(func(key, value interface{}) bool {
 			peer := value.(*types.Peer)
 			if time.Now().Sub(peer.GetLastAccessTime()) > m.peerTTL {
+				logger.Debugf("peer %s has been more than %s since last access, set status to zombie", peer.PeerID, m.peerTTL)
+				peer.SetStatus(types.PeerStatusZombie)
+			}
+			if peer.IsLeave() {
+				logger.Debugf("delete peer %s", peer.PeerID)
 				m.Delete(key.(string))
 				if !peer.Host.CDN && peer.Host.GetPeerTaskNum() == 0 {
 					m.hostManager.Delete(peer.Host.UUID)

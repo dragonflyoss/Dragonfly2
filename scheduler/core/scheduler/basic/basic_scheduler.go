@@ -105,7 +105,7 @@ func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) 
 func (s *Scheduler) ScheduleParent(peer *types.Peer) (parent *types.Peer, candidateParents []*types.Peer) {
 	logger.Debugf("[%s][%s]scheduler parent", peer.Task.TaskID, peer.PeerID)
 	if !s.evaluator.NeedAdjustParent(peer) {
-		return
+		return peer.GetParent(), nil
 	}
 	candidateParents = s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
 	logger.Debugf("[%s][%s]select num %d candidates", peer.Task.TaskID, peer.PeerID, len(candidateParents))
