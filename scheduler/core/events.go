@@ -160,7 +160,7 @@ func (e taskSeedFailEvent) apply(s *state) {
 		e.task.ListPeers().Range(func(data sortedlist.Item) bool {
 			peer := data.(*types.Peer)
 			if peer.PacketChan == nil {
-				logger.Warnf("reportPeerResult: there is no packet chan with peer %s", peer.PeerID)
+				logger.Warnf("taskSeedFailEvent: there is no packet chan with peer %s", peer.PeerID)
 				return true
 			}
 			peer.PacketChan <- constructFailPeerPacket(peer, dfcodes.CdnError)
@@ -185,7 +185,7 @@ func (e peerDownloadSuccessEvent) apply(s *state) {
 	children := s.sched.ScheduleChildren(e.peer)
 	for _, child := range children {
 		if child.PacketChan == nil {
-			logger.Warnf("reportPeerResult: there is no packet chan with peer %s", e.peer.PeerID)
+			logger.Warnf("reportPeerSuccessResult: there is no packet chan with peer %s", e.peer.PeerID)
 			continue
 		}
 		child.PacketChan <- constructSuccessPeerPacket(child, e.peer, nil)
@@ -208,7 +208,7 @@ func (e peerDownloadFailEvent) apply(s *state) {
 	for _, child := range e.peer.GetChildren() {
 		parent, candidates := s.sched.ScheduleParent(child)
 		if child.PacketChan == nil {
-			logger.Warnf("reportPeerResult: there is no packet chan associated with peer %s", e.peer.PeerID)
+			logger.Warnf("reportPeerDownloadResult: there is no packet chan associated with peer %s", e.peer.PeerID)
 			continue
 		}
 		child.PacketChan <- constructSuccessPeerPacket(child, parent, candidates)

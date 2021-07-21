@@ -211,6 +211,9 @@ func (conn *Connection) AddServerNodes(addrs []dfnet.NetAddr) error {
 func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...string) (*candidateClient, error) {
 	ringNodes, ok := conn.hashRing.GetNodes(key, conn.hashRing.Size())
 	if !ok {
+		logger.Warnf("cannot obtain expected %d server nodes", conn.hashRing.Size())
+	}
+	if len(ringNodes) == 0 {
 		return nil, dferrors.ErrNoCandidateNode
 	}
 	candidateNodes := make([]string, 0, 0)

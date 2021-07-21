@@ -64,7 +64,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	}
 	if task.IsFail() {
 		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is %s", task.GetStatus())
-		logger.Errorf("task status is health: %d", task.GetStatus())
+		logger.Errorf("task status is unhealthy, task status is: %s", task.GetStatus())
 		return
 	}
 	resp.SizeScope = getTaskSizeScope(task)

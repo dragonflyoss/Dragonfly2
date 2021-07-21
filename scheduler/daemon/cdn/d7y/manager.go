@@ -100,6 +100,9 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task, override
 		} else if overrideStatus {
 			task.SetStatus(types.TaskStatusFailed)
 		}
+		if errors.Cause(err) == dferrors.ErrNoCandidateNode {
+			logger.Errorf("can not find candidate server of cdn")
+		}
 		if !task.IsSuccess() {
 			task.SetStatus(types.TaskStatusFailed)
 		}
