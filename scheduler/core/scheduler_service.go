@@ -101,7 +101,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 }
 
 func (s *SchedulerService) Serve() {
-	go s.worker.start(newState(s.sched, s.peerManager, s.cdnManager, s.worker))
+	go s.worker.start(newState(s.sched, s.peerManager, s.cdnManager))
 	if s.monitor != nil {
 		go s.monitor.start()
 	}

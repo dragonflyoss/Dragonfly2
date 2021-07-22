@@ -38,15 +38,13 @@ type state struct {
 	sched       scheduler.Scheduler
 	peerManager daemon.PeerMgr
 	cdnManager  daemon.CDNMgr
-	work        worker
 }
 
-func newState(sched scheduler.Scheduler, peerManager daemon.PeerMgr, cdnManager daemon.CDNMgr, worker worker) *state {
+func newState(sched scheduler.Scheduler, peerManager daemon.PeerMgr, cdnManager daemon.CDNMgr) *state {
 	return &state{
 		sched:       sched,
 		peerManager: peerManager,
 		cdnManager:  cdnManager,
-		work:        worker,
 	}
 }
 
