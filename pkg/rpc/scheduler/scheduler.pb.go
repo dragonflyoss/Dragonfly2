@@ -580,7 +580,7 @@ type PeerPacket struct {
 	// source peer id
 	SrcPid string `protobuf:"bytes,3,opt,name=src_pid,json=srcPid,proto3" json:"src_pid,omitempty"`
 	// concurrent downloading count from main peer
-	// todo what effect
+	// TODO what effect
 	ParallelCount int32                  `protobuf:"varint,4,opt,name=parallel_count,json=parallelCount,proto3" json:"parallel_count,omitempty"`
 	MainPeer      *PeerPacket_DestPeer   `protobuf:"bytes,5,opt,name=main_peer,json=mainPeer,proto3" json:"main_peer,omitempty"`
 	StealPeers    []*PeerPacket_DestPeer `protobuf:"bytes,6,rep,name=steal_peers,json=stealPeers,proto3" json:"steal_peers,omitempty"`

@@ -155,5 +155,5 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 	cacheSeedTask, err := suite.cm.TriggerCDN(context.Background(), gotSeedTask)
 	suite.Nil(err)
 	suite.Equal(targetTask, cacheSeedTask)
-	// todo test range download
+	// TODO test range download
 }

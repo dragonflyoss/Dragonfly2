@@ -82,7 +82,7 @@ func NewPeer(peerID string, task *Task, host *PeerHost) *Peer {
 }
 
 func (peer *Peer) GetWholeTreeNode() int {
-	// todo lock task
+	// TODO lock task
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 	count := len(peer.children) + 1

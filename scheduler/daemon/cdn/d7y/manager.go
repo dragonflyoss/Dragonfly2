@@ -90,7 +90,7 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task) error {
 	if cm.client == nil {
 		return ErrCDNRegisterFail
 	}
-	// todo 这个地方必须重新生成一个ctx，不能使用传递进来的参数，需要排查下原因
+	// TODO 这个地方必须重新生成一个ctx，不能使用传递进来的参数，需要排查下原因
 	stream, err := cm.client.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
 		TaskId:  task.TaskID,
 		Url:     task.URL,

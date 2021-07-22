@@ -127,7 +127,7 @@ message PeerPacket{
   string src_pid = 3;
 
   // concurrent downloading count from main peer
-  // todo what effect
+  // TODO what effect
   int32 parallel_count = 4;
   DestPeer main_peer = 5;
   repeated DestPeer steal_peers = 6;

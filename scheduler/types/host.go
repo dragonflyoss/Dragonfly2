@@ -42,7 +42,7 @@ type PeerHost struct {
 	IDC string
 	// NetTopology network device path: switch|router|...
 	NetTopology string
-	// todo TotalUploadLoad currentUploadLoad decided by real time client report host info
+	// TODO TotalUploadLoad currentUploadLoad decided by real time client report host info
 	TotalUploadLoad   int
 	currentUploadLoad int
 	peerMap           map[string]*Peer

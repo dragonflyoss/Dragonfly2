@@ -56,7 +56,7 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 	if avgCost*40 < lastCost {
 		logger.Debugf("IsBadNode [%s]: recent pieces have taken too long to download", peer.PeerID)
 	}
-	// todo adjust policy
+	// TODO adjust policy
 	return (avgCost * 20) < lastCost
 }
 

@@ -49,7 +49,7 @@ type Closer interface {
 	Close() error
 }
 
-// todo Perfect state
+// TODO Perfect state
 type ConnStatus string
 
 type Connection struct {
@@ -233,7 +233,7 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 	for _, candidateNode := range candidateNodes {
 		conn.rwMutex.Lock(candidateNode, true)
 		// Check whether there is a corresponding mapping client in the node2ClientMap
-		// todo 下面部分可以直接调用loadOrCreate方法，但是日志没有这么调用打印全
+		// TODO 下面部分可以直接调用loadOrCreate方法，但是日志没有这么调用打印全
 		if client, ok := conn.node2ClientMap.Load(candidateNode); ok {
 			logger.With("conn", conn.name).Infof("hit cache candidateNode %s for hash key %s", candidateNode, key)
 			conn.rwMutex.UnLock(candidateNode, true)
@@ -356,7 +356,7 @@ func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientC
 // preNode node before the migration
 func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []string) (preNode string, err error) {
 	logger.With("conn", conn.name).Infof("start try migrate server node for key %s, cause err: %v", key, cause)
-	// todo recover findCandidateClientConn error
+	// TODO recover findCandidateClientConn error
 	if e, ok := cause.(*dferrors.DfError); ok {
 		if e.Code != dfcodes.ResourceLacked && e.Code != dfcodes.UnknownError {
 			return "", cause
@@ -413,7 +413,7 @@ func (conn *Connection) Close() error {
 }
 
 func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
-	// todo lock
+	// TODO lock
 	conn.serverNodes = addrs
 	var addresses []string
 	for _, addr := range addrs {

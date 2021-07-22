@@ -70,7 +70,7 @@ type Task struct {
 	ContentLength   int64
 	status          TaskStatus
 	peers           *sortedlist.SortedList
-	// todo add cdnPeers
+	// TODO add cdnPeers
 }
 
 func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
