@@ -4,8 +4,10 @@ import (
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/tasks"
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/go-redis/redis/v8"
+
 	"gorm.io/gorm"
 )
 
@@ -62,13 +64,15 @@ type rest struct {
 	db    *gorm.DB
 	rdb   *redis.Client
 	cache *cache.Cache
+	tasks tasks.Task
 }
 
 // NewREST returns a new REST instence
-func NewREST(database *database.Database, cache *cache.Cache) REST {
+func NewREST(database *database.Database, cache *cache.Cache, tasks tasks.Task) REST {
 	return &rest{
 		db:    database.DB,
 		rdb:   database.RDB,
 		cache: cache,
+		tasks: tasks,
 	}
 }

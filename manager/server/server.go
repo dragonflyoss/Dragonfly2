@@ -27,6 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/proxy"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
+	"d7y.io/dragonfly/v2/manager/tasks"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"golang.org/x/sync/errgroup"
@@ -60,8 +61,14 @@ func New(cfg *config.Config) (*Server, error) {
 	// Initialize searcher
 	searcher := searcher.New()
 
+	// Initialize task
+	tasks, err := tasks.New(cfg.Database.Redis)
+	if err != nil {
+		return nil, err
+	}
+
 	// Initialize REST service
-	restService := service.NewREST(db, cache)
+	restService := service.NewREST(db, cache, tasks)
 
 	// Initialize GRPC service
 	grpcService := service.NewGRPC(db, cache, searcher)

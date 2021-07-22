@@ -33,10 +33,12 @@ type MysqlConfig struct {
 }
 
 type RedisConfig struct {
-	Host     string `yaml:"host" mapstructure:"host"`
-	Port     int    `yaml:"port" mapstructure:"port"`
-	Password string `yaml:"password" mapstructure:"password"`
-	DB       int    `yaml:"db" mapstructure:"db"`
+	Host      string `yaml:"host" mapstructure:"host"`
+	Port      int    `yaml:"port" mapstructure:"port"`
+	Password  string `yaml:"password" mapstructure:"password"`
+	CacheDB   int    `yaml:"cacheDB" mapstructure:"cacheDB"`
+	BrokerDB  int    `yaml:"brokerDB" mapstructure:"brokerDB"`
+	BackendDB int    `yaml:"backendDB" mapstructure:"backendDB"`
 }
 
 type CacheConfig struct {
@@ -83,6 +85,13 @@ func New() *Config {
 				Addr: ":8080",
 			},
 		},
+		Database: &DatabaseConfig{
+			Redis: &RedisConfig{
+				CacheDB:   0,
+				BrokerDB:  1,
+				BackendDB: 2,
+			},
+		},
 		Cache: &CacheConfig{
 			Redis: &RedisCacheConfig{
 				TTL: 30 * time.Second,
@@ -119,7 +128,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Database != nil {
-		if cfg.Database.Redis == nil {
+		if cfg.Database.Redis.Host == "" {
 			return errors.New("empty cache redis config is not specified")
 		}
 
