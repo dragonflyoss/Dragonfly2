@@ -27,6 +27,7 @@ import (
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/disk"   // To register diskStorage
 	_ "d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/hybrid" // To register hybridStorage
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 
@@ -165,9 +166,6 @@ func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceMd5 string, downl
 	if isSuccess && task.PieceTotal > 0 && downloadMetadata.pieceTotalCount != task.PieceTotal {
 		errorMsg = fmt.Sprintf("task total piece count not match expected: %d real: %d", task.PieceTotal, downloadMetadata.pieceTotalCount)
 		isSuccess = false
-	}
-	if !stringutils.IsBlank(errorMsg) {
-		logger.WithTaskID(task.TaskID).Error(errorMsg)
 	}
 	sourceFileLen := task.SourceFileLength
 	if isSuccess && task.SourceFileLength <= 0 {

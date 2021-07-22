@@ -20,73 +20,167 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
+)
+
+type TaskStatus uint8
+
+func (status TaskStatus) String() string {
+	switch status {
+	case TaskStatusWaiting:
+		return "Waiting"
+	case TaskStatusRunning:
+		return "Running"
+	case TaskStatusSuccess:
+		return "Success"
+	case TaskStatusCDNRegisterFail:
+		return "cdnRegisterFail"
+	case TaskStatusFailed:
+		return "fail"
+	case TaskStatusSourceError:
+		return "sourceError"
+	default:
+		return "unknown"
+	}
+}
+
+const (
+	TaskStatusWaiting TaskStatus = iota
+	TaskStatusRunning
+	TaskStatusSuccess
+	TaskStatusCDNRegisterFail
+	TaskStatusFailed
+	TaskStatusSourceError
 )
 
 type Task struct {
-	TaskID string `json:"task_id,omitempty"`
-	URL    string `json:"url,omitempty"`
-	// regex format, used for task id generator, assimilating different urls
-	Filter string `json:"filter,omitempty"`
-	// biz_id and md5 are used for task id generator to distinguish the same urls
-	// md5 is also used to check consistency about file content
-	BizID   string        `json:"biz_id,omitempty"`   // caller's biz id that can be any string
-	URLMata *base.UrlMeta `json:"url_mata,omitempty"` // downloaded file content md5
-
-	SizeScope   base.SizeScope
-	DirectPiece *scheduler.RegisterResult_PieceContent
-
-	CreateTime    time.Time
-	LastActive    time.Time
-	rwLock        sync.RWMutex
-	PieceList     map[int32]*Piece // Piece list
-	PieceTotal    int32            // the total number of Pieces, set > 0 when cdn finished
-	ContentLength int64
-	Statistic     *metrics.TaskStatistic
-	Removed       bool
-	CDNError      *dferrors.DfError
+	lock            sync.RWMutex
+	TaskID          string
+	URL             string
+	Filter          string
+	BizID           string
+	URLMeta         *base.UrlMeta
+	DirectPiece     []byte
+	CreateTime      time.Time
+	lastAccessTime  time.Time
+	lastTriggerTime time.Time
+	pieceList       map[int32]*PieceInfo
+	PieceTotal      int32
+	ContentLength   int64
+	status          TaskStatus
+	peers           *sortedlist.SortedList
+	// TODO add cdnPeers
 }
 
-func CopyTask(t *Task) *Task {
-	copyTask := *t //nolint:govet
-	if copyTask.PieceList == nil {
-		copyTask.PieceList = make(map[int32]*Piece)
-		copyTask.CreateTime = time.Now()
-		copyTask.LastActive = copyTask.CreateTime
-		copyTask.SizeScope = base.SizeScope_NORMAL
-		copyTask.Statistic = &metrics.TaskStatistic{
-			StartTime: time.Now(),
-		}
+func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
+	return &Task{
+		TaskID:    taskID,
+		URL:       url,
+		Filter:    filter,
+		BizID:     bizID,
+		URLMeta:   meta,
+		pieceList: make(map[int32]*PieceInfo),
+		peers:     sortedlist.NewSortedList(),
+		status:    TaskStatusWaiting,
 	}
-	return &copyTask
 }
 
-func (t *Task) GetPiece(pieceNum int32) *Piece {
-	t.rwLock.RLock()
-	defer t.rwLock.RUnlock()
-	return t.PieceList[pieceNum]
+func (task *Task) SetStatus(status TaskStatus) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.status = status
 }
 
-func (t *Task) GetOrCreatePiece(pieceNum int32) *Piece {
-	t.rwLock.RLock()
-	p := t.PieceList[pieceNum]
-	if p == nil {
-		t.rwLock.RUnlock()
-		p = newEmptyPiece(pieceNum, t)
-		t.rwLock.Lock()
-		t.PieceList[pieceNum] = p
-		t.rwLock.Unlock()
-	} else {
-		t.rwLock.RUnlock()
-	}
-	return p
+func (task *Task) GetStatus() TaskStatus {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	return task.status
 }
 
-func (t *Task) AddPiece(p *Piece) {
-	t.rwLock.Lock()
-	defer t.rwLock.Unlock()
-	t.PieceList[p.PieceNum] = p
+func (task *Task) GetPiece(pieceNum int32) *PieceInfo {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	return task.pieceList[pieceNum]
+}
+
+func (task *Task) AddPeer(peer *Peer) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.peers.UpdateOrAdd(peer)
+}
+
+func (task *Task) DeletePeer(peer *Peer) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.peers.Delete(peer)
+}
+
+func (task *Task) AddPiece(p *PieceInfo) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.pieceList[p.PieceNum] = p
+}
+
+func (task *Task) GetLastTriggerTime() time.Time {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	return task.lastTriggerTime
+}
+
+func (task *Task) Touch() {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.lastAccessTime = time.Now()
+}
+
+func (task *Task) SetLastTriggerTime(lastTriggerTime time.Time) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.lastTriggerTime = lastTriggerTime
+}
+
+func (task *Task) GetLastAccessTime() time.Time {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	return task.lastAccessTime
+}
+
+func (task *Task) ListPeers() *sortedlist.SortedList {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	return task.peers
+}
+
+const TinyFileSize = 128
+
+type PieceInfo struct {
+	PieceNum    int32
+	RangeStart  uint64
+	RangeSize   int32
+	PieceMd5    string
+	PieceOffset uint64
+	PieceStyle  base.PieceStyle
+}
+
+// isSuccessCDN determines that whether the CDNStatus is success.
+func (task *Task) IsSuccess() bool {
+	return task.status == TaskStatusSuccess
+}
+
+func (task *Task) IsFrozen() bool {
+	return task.status == TaskStatusFailed || task.status == TaskStatusWaiting ||
+		task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
+}
+
+func (task *Task) IsWaiting() bool {
+	return task.status == TaskStatusWaiting
+}
+
+func (task *Task) IsHealth() bool {
+	return task.status == TaskStatusRunning || task.status == TaskStatusSuccess
+}
+
+func (task *Task) IsFail() bool {
+	return task.status == TaskStatusFailed || task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
 }

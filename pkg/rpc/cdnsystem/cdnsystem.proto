@@ -34,14 +34,16 @@ message SeedRequest{
 message PieceSeed{
   // peer id for cdn node, need suffix with _CDN
   string peer_id = 2;
-  // cdn node host name
-  string seeder_name = 3;
+  // cdn node host uuid
+  string host_uuid = 3;
   base.PieceInfo piece_info = 4;
 
   // whether or not all seeds are downloaded
   bool done = 5;
   // content total length for the url
   int64 content_length = 6;
+  // total piece count
+  int32 total_piece_count = 7;
 }
 
 // CDN System RPC Service

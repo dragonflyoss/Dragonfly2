@@ -19,6 +19,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -192,23 +193,31 @@ func TestDynconfigGetCDNFromDirPath(t *testing.T) {
 			cdnDirPath: filepath.Join("./testdata", "dynconfig", "cdn"),
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
-				assert.Equal(
+				assert.Equal(true, reflect.DeepEqual(
 					&DynconfigData{
 						CDNs: []*CDN{
 							{
-								HostName:     "foo",
-								IP:           "127.0.0.1",
-								Port:         8001,
-								DownloadPort: 8003,
+								HostName:      "foo",
+								IP:            "127.0.0.1",
+								Port:          8001,
+								DownloadPort:  8003,
+								SecurityGroup: "",
+								Location:      "foo",
+								IDC:           "foo",
+								NetTopology:   "",
 							},
 							{
-								HostName:     "bar",
-								IP:           "127.0.0.1",
-								Port:         8001,
-								DownloadPort: 8003,
+								HostName:      "bar",
+								IP:            "127.0.0.1",
+								Port:          8001,
+								DownloadPort:  8003,
+								SecurityGroup: "",
+								Location:      "bar",
+								IDC:           "bar",
+								NetTopology:   "",
 							},
 						},
-					}, data)
+					}, data))
 			},
 		},
 		{

@@ -18,6 +18,7 @@ package config
 
 import (
 	"io/ioutil"
+	"reflect"
 	"testing"
 	"time"
 
@@ -31,31 +32,23 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{
-		Dynconfig: &DynconfigOptions{
+		DynConfig: &DynConfig{
 			Type:       dc.LocalSourceType,
 			ExpireTime: 1000,
 			CDNDirPath: "tmp",
 		},
-		Scheduler: SchedulerConfig{
+		Scheduler: &SchedulerConfig{
 			ABTest:     true,
 			AScheduler: "a-scheduler",
 			BScheduler: "b-scheduler",
+			WorkerNum:  8,
 		},
-		Server: ServerConfig{
+		Server: &ServerConfig{
 			IP:   "127.0.0.1",
 			Port: 8002,
 		},
-		Worker: SchedulerWorkerConfig{
-			WorkerNum:         8,
-			WorkerJobPoolSize: 10000,
-			SenderNum:         10,
-			SenderJobPoolSize: 10000,
-		},
-		GC: GCConfig{
-			TaskDelay:     3600 * 1000,
-			PeerTaskDelay: 3600 * 1000,
-		},
-		Manager: ManagerConfig{
+
+		Manager: &ManagerConfig{
 			Addr:               "127.0.0.1:65003",
 			SchedulerClusterID: 1,
 			KeepAlive: KeepAliveConfig{
@@ -65,7 +58,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 				RetryMaxBackOff:  100,
 			},
 		},
-		Host: HostConfig{
+		Host: &HostConfig{
 			IDC:      "foo",
 			Location: "bar",
 		},
@@ -76,5 +69,5 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	var dataYAML map[string]interface{}
 	yaml.Unmarshal(contentYAML, &dataYAML)
 	mapstructure.Decode(dataYAML, &schedulerConfigYAML)
-	assert.EqualValues(config, schedulerConfigYAML)
+	assert.True(reflect.DeepEqual(config, schedulerConfigYAML))
 }
