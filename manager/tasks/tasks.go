@@ -10,7 +10,7 @@ import (
 )
 
 type Task interface {
-	PerHeart(string, []PerHeatFile) error
+	PreHeats(string, []PreHeatFile) error
 }
 
 type task struct {
@@ -32,13 +32,13 @@ func New(cfg *config.RedisConfig) (Task, error) {
 	return &task{t}, nil
 }
 
-type PerHeatFile struct {
+type PreHeatFile struct {
 	URL     string
 	URLMeta *base.UrlMeta
 	Filter  string
 }
 
-func (t *task) PerHeart(hostname string, files []PerHeatFile) error {
+func (t *task) PreHeats(hostname string, files []PreHeatFile) error {
 	signatures := []*machinerytasks.Signature{}
 	for _, v := range files {
 		args, err := json.Marshal(v)
