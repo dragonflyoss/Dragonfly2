@@ -9,6 +9,7 @@ D7Y_REGISTRY=${D7Y_REGISTRY:-d7yio}
 curDir=$(cd "$(dirname "$0")" && pwd)
 IMAGES_DIR="build/images"
 cd "${curDir}/../" || return
+GOPROXY=${GOPROXY:-`go env GOPROXY`}
 
 docker-build::build-cdn() {
     docker build --build-arg GOPROXY="${GOPROXY}" -t "${D7Y_REGISTRY}"/cdn:"${D7Y_VERSION}" -f "${IMAGES_DIR}/cdn/Dockerfile" .
