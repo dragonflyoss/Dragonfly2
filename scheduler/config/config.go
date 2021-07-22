@@ -17,37 +17,50 @@
 package config
 
 import (
+	"runtime"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
 )
 
 type Config struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
-	Scheduler    SchedulerConfig       `yaml:"scheduler" mapstructure:"scheduler"`
-	Server       ServerConfig          `yaml:"server" mapstructure:"server"`
-	Worker       SchedulerWorkerConfig `yaml:"worker" mapstructure:"worker"`
-	GC           GCConfig              `yaml:"gc" mapstructure:"gc"`
-	Dynconfig    *DynconfigOptions     `yaml:"dynconfig" mapstructure:"dynconfig"`
-	Manager      ManagerConfig         `yaml:"manager" mapstructure:"manager"`
-	Host         HostConfig            `yaml:"host" mapstructure:"host"`
+	Scheduler    *SchedulerConfig `yaml:"scheduler" mapstructure:"scheduler"`
+	Server       *ServerConfig    `yaml:"server" mapstructure:"server"`
+	DynConfig    *DynConfig       `yaml:"dynConfig" mapstructure:"dynConfig"`
+	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
+	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
 }
 
 func New() *Config {
-	return &config
+	return &Config{
+		Scheduler: NewDefaultSchedulerConfig(),
+		Server:    NewDefaultServerConfig(),
+		DynConfig: NewDefaultDynConfig(),
+		Manager:   NewDefaultManagerConfig(),
+		Host:      NewHostConfig(),
+	}
+}
+
+func NewHostConfig() *HostConfig {
+	return &HostConfig{
+		Location: "",
+		IDC:      "",
+	}
 }
 
 func (c *Config) Validate() error {
-	if c.Dynconfig.CDNDirPath == "" {
-		if c.Dynconfig.Type == dc.LocalSourceType && c.Dynconfig.Data == nil {
+	if c.DynConfig.CDNDirPath == "" {
+		if c.DynConfig.Type == dc.LocalSourceType && c.DynConfig.Data == nil {
 			return errors.New("dynconfig is LocalSourceType type requires parameter data")
 		}
 	}
 
-	if c.Dynconfig.Type == dc.ManagerSourceType {
-		if c.Dynconfig.ExpireTime == 0 {
+	if c.DynConfig.Type == dc.ManagerSourceType {
+		if c.DynConfig.ExpireTime == 0 {
 			return errors.New("dynconfig is ManagerSourceType type requires parameter expireTime")
 		}
 
@@ -57,6 +70,75 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+func NewDefaultDynConfig() *DynConfig {
+	return &DynConfig{
+		Type:       dc.LocalSourceType,
+		ExpireTime: 60000 * 1000 * 1000,
+		CDNDirPath: "",
+		Data: &DynconfigData{
+			CDNs: []*CDN{
+				{
+					HostName:      "localhost",
+					IP:            "127.0.0.1",
+					Port:          8003,
+					DownloadPort:  8001,
+					SecurityGroup: "",
+					Location:      "",
+					IDC:           "",
+					NetTopology:   "",
+				},
+			},
+		},
+	}
+}
+
+func NewDefaultServerConfig() *ServerConfig {
+	return &ServerConfig{
+		IP:   iputils.HostIP,
+		Port: 8002,
+	}
+}
+
+func NewDefaultSchedulerConfig() *SchedulerConfig {
+	return &SchedulerConfig{
+		EnableCDN:            true,
+		ABTest:               false,
+		AScheduler:           "",
+		BScheduler:           "",
+		WorkerNum:            runtime.GOMAXPROCS(0),
+		Monitor:              false,
+		AccessWindow:         3 * time.Minute,
+		CandidateParentCount: 10,
+		Scheduler:            "basic",
+		CDNLoad:              100,
+		ClientLoad:           10,
+		OpenMonitor:          false,
+		GC:                   NewDefaultGCConfig(),
+	}
+}
+
+func NewDefaultGCConfig() *GCConfig {
+	return &GCConfig{
+		PeerGCInterval: 5 * time.Minute,
+		TaskGCInterval: 5 * time.Minute,
+		PeerTTL:        5 * time.Minute,
+		TaskTTL:        1 * time.Hour,
+	}
+}
+
+func NewDefaultManagerConfig() *ManagerConfig {
+	return &ManagerConfig{
+		Addr:               "",
+		SchedulerClusterID: 0,
+		KeepAlive: KeepAliveConfig{
+			Interval:         5 * time.Second,
+			RetryMaxAttempts: 100000000,
+			RetryInitBackOff: 5,
+			RetryMaxBackOff:  10,
+		},
+	}
 }
 
 type ManagerConfig struct {
@@ -84,7 +166,7 @@ type KeepAliveConfig struct {
 	RetryMaxBackOff float64 `yaml:"retryMaxBackOff" mapstructure:"retryMaxBackOff"`
 }
 
-type DynconfigOptions struct {
+type DynConfig struct {
 	// Type is dynconfig source type.
 	Type dc.SourceType `yaml:"type" mapstructure:"type"`
 
@@ -99,9 +181,20 @@ type DynconfigOptions struct {
 }
 
 type SchedulerConfig struct {
+	EnableCDN  bool   `yaml:"enableCDN" mapstructure:"enableCDN"`
 	ABTest     bool   `yaml:"abtest" mapstructure:"abtest"`
 	AScheduler string `yaml:"ascheduler" mapstructure:"ascheduler"`
 	BScheduler string `yaml:"bscheduler" mapstructure:"bscheduler"`
+	WorkerNum  int    `yaml:"workerNum" mapstructure:"workerNum"`
+	Monitor    bool   `yaml:"monitor" mapstructure:"monitor"`
+	// AccessWindow should less than CDN task expireTime
+	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
+	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
+	Scheduler            string        `yaml:"scheduler" mapstructure:"scheduler"`
+	CDNLoad              int           `yaml:"cDNLoad" mapstructure:"cDNLoad"`
+	ClientLoad           int           `yaml:"clientLoad" mapstructure:"clientLoad"`
+	OpenMonitor          bool          `yaml:"openMonitor" mapstructure:"openMonitor"`
+	GC                   *GCConfig     `yaml:"gc" mapstructure:"gc"`
 }
 
 type ServerConfig struct {
@@ -109,16 +202,11 @@ type ServerConfig struct {
 	Port int    `yaml:"port" mapstructure:"port"`
 }
 
-type SchedulerWorkerConfig struct {
-	WorkerNum         int `yaml:"workerNum" mapstructure:"workerNum"`
-	WorkerJobPoolSize int `yaml:"workerJobPoolSize" mapstructure:"workerJobPoolSize"`
-	SenderNum         int `yaml:"senderNum" mapstructure:"senderNum"`
-	SenderJobPoolSize int `yaml:"senderJobPoolSize" mapstructure:"senderJobPoolSize"`
-}
-
 type GCConfig struct {
-	PeerTaskDelay int64 `yaml:"peerTaskDelay" mapstructure:"peerTaskDelay"`
-	TaskDelay     int64 `yaml:"taskDelay" mapstructure:"taskDelay"`
+	PeerGCInterval time.Duration `yaml:"peerGCInterval" mapstructure:"peerGCInterval"`
+	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
+	PeerTTL        time.Duration
+	TaskTTL        time.Duration
 }
 
 type HostConfig struct {

@@ -29,6 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -117,8 +118,8 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	peerID := cdnutil.GenCDNPeerID(req.TaskId)
 	for piece := range pieceChan {
 		psc <- &cdnsystem.PieceSeed{
-			PeerId:     peerID,
-			SeederName: iputils.HostName,
+			PeerId:   peerID,
+			HostUuid: idgen.CDNUUID(iputils.HostName, int32(css.cfg.ListenPort)),
 			PieceInfo: &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
 				RangeStart:  piece.PieceRange.StartIndex,
@@ -136,10 +137,11 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 		return dferrors.Newf(dfcodes.CdnTaskDownloadFail, "task(%s) status error , status: %s", req.TaskId, task.CdnStatus)
 	}
 	psc <- &cdnsystem.PieceSeed{
-		PeerId:        peerID,
-		SeederName:    iputils.HostName,
-		Done:          true,
-		ContentLength: task.SourceFileLength,
+		PeerId:          peerID,
+		HostUuid:        idgen.CDNUUID(iputils.HostName, int32(css.cfg.ListenPort)),
+		Done:            true,
+		ContentLength:   task.SourceFileLength,
+		TotalPieceCount: task.PieceTotal,
 	}
 	return nil
 }

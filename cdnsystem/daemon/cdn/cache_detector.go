@@ -189,7 +189,7 @@ func (cd *cacheDetector) parseByReadFile(taskID string, metaData *storage.FileMe
 			return nil, errors.Wrapf(err, "write piece meta records failed")
 		}
 	}
-	// todo already download done, piece 信息已经写完但是meta信息还没有完成更新
+	// TODO already download done, piece 信息已经写完但是meta信息还没有完成更新
 	//if metaData.SourceFileLen >=0 && int64(breakPoint) == metaData.SourceFileLen {
 	//	return &cacheResult{
 	//		breakPoint:       -1,
@@ -198,7 +198,7 @@ func (cd *cacheDetector) parseByReadFile(taskID string, metaData *storage.FileMe
 	//		fileMd5:          fileMd5,
 	//	}, nil
 	//}
-	// todo 整理数据文件 truncate breakpoint之后的数据内容
+	// TODO 整理数据文件 truncate breakpoint之后的数据内容
 	return &cacheResult{
 		breakPoint:       int64(breakPoint),
 		pieceMetaRecords: pieceMetaRecords,
@@ -247,7 +247,7 @@ func checkSameFile(task *types.SeedTask, metaData *storage.FileMetaData) error {
 
 //checkPieceContent read piece content from reader and check data integrity by pieceMetaRecord
 func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, fileMd5 hash.Hash) error {
-	// todo Analyze the original data for the slice format to calculate fileMd5
+	// TODO Analyze the original data for the slice format to calculate fileMd5
 	pieceMd5 := md5.New()
 	tee := io.TeeReader(io.TeeReader(io.LimitReader(reader, int64(pieceRecord.PieceLen)), pieceMd5), fileMd5)
 	if n, err := io.Copy(ioutil.Discard, tee); n != int64(pieceRecord.PieceLen) || err != nil {

@@ -32,7 +32,7 @@ import (
 )
 
 func (conn *Connection) startGC() {
-	// todo 从hashing环中删除频繁失败的节点
+	// TODO 从hashing环中删除频繁失败的节点
 	logger.GrpcLogger.With("conn", conn.name).Debugf("start the gc connections job")
 	// execute the GC by fixed delay
 	ticker := time.NewTicker(conn.gcConnInterval)
@@ -46,7 +46,7 @@ func (conn *Connection) startGC() {
 			totalNodeSize := 0
 			startTime := time.Now()
 
-			// todo use anther locker, @santong
+			// TODO use anther locker, @santong
 			//conn.rwMutex.Lock()
 			// range all connections and determine whether they are expired
 			conn.accessNodeMap.Range(func(node, accessTime interface{}) bool {
@@ -60,7 +60,7 @@ func (conn *Connection) startGC() {
 				removedConnCount++
 				return true
 			})
-			// todo use anther locker, @santong
+			// TODO use anther locker, @santong
 			//conn.rwMutex.Unlock()
 			// slow GC detected, report it with a log warning
 			if timeElapse := time.Since(startTime); timeElapse > conn.gcConnTimeout {
