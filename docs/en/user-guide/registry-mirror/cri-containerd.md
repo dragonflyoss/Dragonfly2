@@ -16,6 +16,8 @@ proxy:
     listen: 0.0.0.0
     port: 65001
   registryMirror:
+    # multiple registries support, if only mirror single registry, disable this
+    dynamic: true
     url: https://index.docker.io
   proxies:
     - regx: blobs/sha256.*
@@ -29,10 +31,15 @@ dfget daemon
 
 ## Step 2: Configure Containerd
 
-Then, enable mirrors in Containerd registries configuration in
+### Option 1: Single Registry
+
+Enable mirrors in Containerd registries configuration in
 `/etc/containerd/config.toml`:
 
 ```toml
+# explicitly use v2 config format, if already v2, skip the "version = 2"
+version = 2
+
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
   endpoint = ["http://127.0.0.1:65001","https://registry-1.docker.io"]
 ```
@@ -43,6 +50,52 @@ If `http://127.0.0.1:65001` is not available, the default `https://registry-1.do
 > More details about Containerd configuration: https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/registry.md#configure-registry-endpoint
 
 > Containerd has deprecated the above config from v1.4.0, new format for reference: https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/config.md#registry-configuration
+
+### Option 2: Multiple Registries
+
+This option only supports Containerd 1.5.0+.
+
+#### 1. Enable Containerd Registries Config Path
+
+Enable mirrors in Containerd registries config path in
+`/etc/containerd/config.toml`:
+
+```toml
+# explicitly use v2 config format, if already v2, skip the "version = 2"
+version = 2
+
+[plugins."io.containerd.grpc.v1.cri".registry]
+  config_path = "/etc/containerd/certs.d"
+```
+
+#### 2. Generate Per Registry hosts.toml
+
+##### Option 1: Generate hosts.toml manually
+
+Path: `/etc/containerd/certs.d/example.com/hosts.toml`
+
+Replace `example.com` according the different registry domains.
+
+Content:
+
+```toml
+server = "https://example.com"
+
+[host."http://127.0.0.1:65001"]
+  capabilities = ["pull", "resolve"]
+  [host."http://127.0.0.1:65001".header]
+    X-Dragonfly-Registry = ["https://example.com"]
+```
+
+##### Option 2: Generate hosts.toml automatically
+
+You can also generate hosts.toml with https://github.com/dragonflyoss/Dragonfly2/blob/main/hack/gen-containerd-hosts.sh
+
+```shell
+bash gen-containerd-hosts.sh example.com
+```
+
+> More details about registry configuration: https://github.com/containerd/containerd/blob/main/docs/hosts.md#registry-configuration---examples
 
 ## Step 3: Restart Containerd Daemon
 

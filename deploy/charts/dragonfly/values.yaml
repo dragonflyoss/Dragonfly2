@@ -181,6 +181,7 @@ dfdaemon:
         # port in configmap is generated from $.Values.dfdaemon.hostPort
         # port: 65001
       registryMirror:
+        dynamic: true
         url: https://index.docker.io
       proxies:
       - regx: blobs/sha256.*
