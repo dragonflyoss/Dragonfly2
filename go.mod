@@ -72,6 +72,6 @@ require (
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.6
 	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
-	k8s.io/apimachinery v0.20.6
+	k8s.io/apimachinery v0.20.6 // indirect
 	k8s.io/client-go v11.0.0+incompatible
 )

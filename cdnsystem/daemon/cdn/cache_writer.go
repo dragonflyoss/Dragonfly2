@@ -77,7 +77,7 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 	if err != nil {
 		return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("stat cdn download file: %v", err)
 	}
-	// todo Try getting it from the ProgressManager first
+	// TODO Try getting it from the ProgressManager first
 	pieceMd5Sign, _, err := cw.cacheDataManager.getPieceMd5Sign(task.TaskID)
 	if err != nil {
 		return &downloadMetadata{backSourceLength: backSourceFileLength}, fmt.Errorf("get piece md5 sign: %v", err)
@@ -138,7 +138,7 @@ func (cw *cacheWriter) writerPool(wg *sync.WaitGroup, routineCount int, pieceCh 
 		go func() {
 			defer wg.Done()
 			for piece := range pieceCh {
-				// todo Subsequent compression and other features are implemented through waitToWriteContent and pieceStyle
+				// TODO Subsequent compression and other features are implemented through waitToWriteContent and pieceStyle
 				waitToWriteContent := piece.pieceContent
 				originPieceLen := waitToWriteContent.Len() // the length of the original data that has not been processed
 				pieceLen := originPieceLen                 // the real length written to the storage medium after processing

@@ -14,23 +14,29 @@
  * limitations under the License.
  */
 
-package types
+package source
 
 import (
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"context"
+
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/daemon"
+	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
-type WaitingType int
-
-type Piece struct {
-	base.PieceInfo
-
-	Task *Task
+type manager struct {
 }
 
-func newEmptyPiece(pieceNum int32, task *Task) *Piece {
-	return &Piece{
-		PieceInfo: base.PieceInfo{PieceNum: pieceNum},
-		Task:      task,
-	}
+func (m manager) OnNotify(dynconfigData *config.DynconfigData) {
+	panic("implement me")
 }
+
+func (m manager) StartSeedTask(ctx context.Context, task *types.Task) error {
+	panic("implement me")
+}
+
+func NewManager() daemon.CDNMgr {
+	return &manager{}
+}
+
+var _ daemon.CDNMgr = (*manager)(nil)

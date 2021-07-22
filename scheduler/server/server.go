@@ -25,32 +25,31 @@ import (
 	"d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
+	"d7y.io/dragonfly/v2/scheduler/core"
+	"d7y.io/dragonfly/v2/scheduler/server/service"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	// Server registered to grpc
 	"d7y.io/dragonfly/v2/pkg/retry"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server" //nolint
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/service"
-	"d7y.io/dragonfly/v2/scheduler/service/worker"
 )
 
 type Server struct {
-	service       *service.SchedulerService
-	worker        worker.IWorker
-	server        *SchedulerServer
-	config        *config.Config
-	managerClient manager.ManagerClient
-	managerConn   *grpc.ClientConn
-	dynconfigConn *grpc.ClientConn
-	running       bool
-	dynconfig     config.DynconfigInterface
+	config           *config.Config
+	schedulerServer  server.SchedulerServer
+	schedulerService *core.SchedulerService
+	managerClient    manager.ManagerClient
+	managerConn      *grpc.ClientConn
+	dynconfigConn    *grpc.ClientConn
+	running          bool
+	dynConfig        config.DynconfigInterface
 }
 
 func New(cfg *config.Config) (*Server, error) {
 	var err error
-
 	s := &Server{
 		running: false,
 		config:  cfg,
@@ -78,32 +77,31 @@ func New(cfg *config.Config) (*Server, error) {
 		}
 		logger.Info("scheduler register to manager")
 
-		if cfg.Dynconfig.Type == dynconfig.ManagerSourceType {
+		if cfg.DynConfig.Type == dynconfig.ManagerSourceType {
 			options = append(options,
 				dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient)),
 				dynconfig.WithCachePath(config.DefaultDynconfigCachePath),
-				dynconfig.WithExpireTime(cfg.Dynconfig.ExpireTime),
+				dynconfig.WithExpireTime(cfg.DynConfig.ExpireTime),
 			)
 		}
 	}
 
-	// Initialize dynconfig client
-	dynconfig, err := config.NewDynconfig(cfg.Dynconfig.Type, cfg.Dynconfig.CDNDirPath, options...)
+	dynConfig, err := config.NewDynconfig(cfg.DynConfig.Type, cfg.DynConfig.CDNDirPath, options...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "create dynamic config")
 	}
-	s.dynconfig = dynconfig
+	s.dynConfig = dynConfig
 
+	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "create scheduler service")
+	}
+	s.schedulerService = schedulerService
 	// Initialize scheduler service
-	service, err := service.NewSchedulerService(cfg, s.dynconfig)
+	s.schedulerServer, err = service.NewSchedulerServer(schedulerService)
 	if err != nil {
 		return nil, err
 	}
-	s.service = service
-
-	s.worker = worker.NewGroup(cfg, s.service)
-	s.server = NewSchedulerServer(cfg, WithSchedulerService(s.service),
-		WithWorker(s.worker))
 
 	return s, nil
 }
@@ -114,9 +112,8 @@ func (s *Server) Serve() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	s.dynconfig.Serve()
-	go s.worker.Serve()
-	defer s.worker.Stop()
+	s.dynConfig.Serve()
+	s.schedulerService.Serve()
 
 	if s.managerClient != nil {
 		retry.Run(ctx, func() (interface{}, bool, error) {
@@ -134,10 +131,9 @@ func (s *Server) Serve() error {
 	}
 
 	logger.Infof("start server at port %d", port)
-	if err := rpc.StartTCPServer(port, port, s.server); err != nil {
+	if err := rpc.StartTCPServer(port, port, s.schedulerServer); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -146,7 +142,9 @@ func (s *Server) Stop() (err error) {
 		s.dynconfigConn.Close()
 		s.managerConn.Close()
 		s.running = false
-		s.dynconfig.Stop()
+		s.dynConfig.Stop()
+		rpc.StopServer()
+		s.schedulerService.Stop()
 	}
 	return
 }

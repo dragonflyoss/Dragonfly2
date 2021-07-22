@@ -279,7 +279,7 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 
 func (cd *clientDaemon) Serve() error {
 	cd.GCManager.Start()
-	// todo remove this field, and use directly dfpath.DaemonSockPath
+	// TODO remove this field, and use directly dfpath.DaemonSockPath
 	cd.Option.Download.DownloadGRPC.UnixListen.Socket = dfpath.DaemonSockPath
 	// prepare download service listen
 	if cd.Option.Download.DownloadGRPC.UnixListen == nil {

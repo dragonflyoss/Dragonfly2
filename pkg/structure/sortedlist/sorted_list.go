@@ -22,7 +22,7 @@ import (
 )
 
 const BucketMaxLength = 10000
-const InnerBucketMaxLength = 20
+const InnerBucketMaxLength = 100
 
 type Item interface {
 	GetSortKeys() (key1 int, key2 int)

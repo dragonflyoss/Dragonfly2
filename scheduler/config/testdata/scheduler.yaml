@@ -7,16 +7,14 @@ scheduler:
   abtest: true
   ascheduler: "a-scheduler"
   bscheduler: "b-scheduler"
-
-server:
-  ip: "127.0.0.1"
-  port: 8002
-
-worker:
   workerNum: 8
   workerJobPoolSize: 10000
   senderNum: 10
   senderJobPoolSize: 10000
+
+server:
+  ip: "127.0.0.1"
+  port: 8002
 
 cdn:
   servers:

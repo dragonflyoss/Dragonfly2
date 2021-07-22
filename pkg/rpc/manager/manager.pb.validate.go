@@ -34,11 +34,26 @@ var (
 )
 
 // Validate checks the field values on CDNCluster with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *CDNCluster) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CDNCluster with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in CDNClusterMultiError, or
+// nil if none found.
+func (m *CDNCluster) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CDNCluster) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for Id
 
@@ -48,7 +63,26 @@ func (m *CDNCluster) Validate() error {
 
 	// no validation rules for Config
 
-	if v, ok := interface{}(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetSecurityGroup()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CDNClusterValidationError{
+					field:  "SecurityGroup",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CDNClusterValidationError{
+					field:  "SecurityGroup",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CDNClusterValidationError{
 				field:  "SecurityGroup",
@@ -58,8 +92,27 @@ func (m *CDNCluster) Validate() error {
 		}
 	}
 
+	if len(errors) > 0 {
+		return CDNClusterMultiError(errors)
+	}
 	return nil
 }
+
+// CDNClusterMultiError is an error wrapping multiple validation errors
+// returned by CDNCluster.ValidateAll() if the designated constraints aren't met.
+type CDNClusterMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CDNClusterMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CDNClusterMultiError) AllErrors() []error { return m }
 
 // CDNClusterValidationError is the validation error returned by
 // CDNCluster.Validate if the designated constraints aren't met.
@@ -116,12 +169,26 @@ var _ interface {
 } = CDNClusterValidationError{}
 
 // Validate checks the field values on SecurityGroup with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *SecurityGroup) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SecurityGroup with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in SecurityGroupMultiError, or
+// nil if none found.
+func (m *SecurityGroup) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SecurityGroup) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for Id
 
@@ -133,8 +200,28 @@ func (m *SecurityGroup) Validate() error {
 
 	// no validation rules for ProxyDomain
 
+	if len(errors) > 0 {
+		return SecurityGroupMultiError(errors)
+	}
 	return nil
 }
+
+// SecurityGroupMultiError is an error wrapping multiple validation errors
+// returned by SecurityGroup.ValidateAll() if the designated constraints
+// aren't met.
+type SecurityGroupMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SecurityGroupMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SecurityGroupMultiError) AllErrors() []error { return m }
 
 // SecurityGroupValidationError is the validation error returned by
 // SecurityGroup.Validate if the designated constraints aren't met.
@@ -191,11 +278,25 @@ var _ interface {
 } = SecurityGroupValidationError{}
 
 // Validate checks the field values on CDN with the rules defined in the proto
-// definition for this message. If any rules are violated, an error is returned.
+// definition for this message. If any rules are violated, the first error
+// encountered is returned, or nil if there are no violations.
 func (m *CDN) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CDN with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in CDNMultiError, or nil if none found.
+func (m *CDN) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CDN) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for Id
 
@@ -213,7 +314,26 @@ func (m *CDN) Validate() error {
 
 	// no validation rules for Status
 
-	if v, ok := interface{}(m.GetCdnCluster()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetCdnCluster()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CDNValidationError{
+					field:  "CdnCluster",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CDNValidationError{
+					field:  "CdnCluster",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCdnCluster()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CDNValidationError{
 				field:  "CdnCluster",
@@ -223,8 +343,27 @@ func (m *CDN) Validate() error {
 		}
 	}
 
+	if len(errors) > 0 {
+		return CDNMultiError(errors)
+	}
 	return nil
 }
+
+// CDNMultiError is an error wrapping multiple validation errors returned by
+// CDN.ValidateAll() if the designated constraints aren't met.
+type CDNMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CDNMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CDNMultiError) AllErrors() []error { return m }
 
 // CDNValidationError is the validation error returned by CDN.Validate if the
 // designated constraints aren't met.
@@ -281,28 +420,53 @@ var _ interface {
 } = CDNValidationError{}
 
 // Validate checks the field values on GetCDNRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *GetCDNRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetCDNRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in GetCDNRequestMultiError, or
+// nil if none found.
+func (m *GetCDNRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetCDNRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
-		return GetCDNRequestValidationError{
+		err := GetCDNRequestValidationError{
 			field:  "SourceType",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateHostname(m.GetHostName()); err != nil {
-		return GetCDNRequestValidationError{
+		err = GetCDNRequestValidationError{
 			field:  "HostName",
 			reason: "value must be a valid hostname",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
+	if len(errors) > 0 {
+		return GetCDNRequestMultiError(errors)
+	}
 	return nil
 }
 
@@ -335,6 +499,23 @@ func (m *GetCDNRequest) _validateHostname(host string) error {
 
 	return nil
 }
+
+// GetCDNRequestMultiError is an error wrapping multiple validation errors
+// returned by GetCDNRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GetCDNRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetCDNRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetCDNRequestMultiError) AllErrors() []error { return m }
 
 // GetCDNRequestValidationError is the validation error returned by
 // GetCDNRequest.Validate if the designated constraints aren't met.
@@ -391,35 +572,61 @@ var _ interface {
 } = GetCDNRequestValidationError{}
 
 // Validate checks the field values on UpdateCDNRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, an
-// error is returned.
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
 func (m *UpdateCDNRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateCDNRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateCDNRequestMultiError, or nil if none found.
+func (m *UpdateCDNRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateCDNRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
-		return UpdateCDNRequestValidationError{
+		err := UpdateCDNRequestValidationError{
 			field:  "SourceType",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateHostname(m.GetHostName()); err != nil {
-		return UpdateCDNRequestValidationError{
+		err = UpdateCDNRequestValidationError{
 			field:  "HostName",
 			reason: "value must be a valid hostname",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetIdc() != "" {
 
 		if l := utf8.RuneCountInString(m.GetIdc()); l < 1 || l > 1024 {
-			return UpdateCDNRequestValidationError{
+			err := UpdateCDNRequestValidationError{
 				field:  "Idc",
 				reason: "value length must be between 1 and 1024 runes, inclusive",
 			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	}
@@ -427,35 +634,54 @@ func (m *UpdateCDNRequest) Validate() error {
 	if m.GetLocation() != "" {
 
 		if utf8.RuneCountInString(m.GetLocation()) > 1024 {
-			return UpdateCDNRequestValidationError{
+			err := UpdateCDNRequestValidationError{
 				field:  "Location",
 				reason: "value length must be at most 1024 runes",
 			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	}
 
 	if ip := net.ParseIP(m.GetIp()); ip == nil {
-		return UpdateCDNRequestValidationError{
+		err := UpdateCDNRequestValidationError{
 			field:  "Ip",
 			reason: "value must be a valid IP address",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if val := m.GetPort(); val < 1024 || val >= 65535 {
-		return UpdateCDNRequestValidationError{
+		err := UpdateCDNRequestValidationError{
 			field:  "Port",
 			reason: "value must be inside range [1024, 65535)",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if val := m.GetDownloadPort(); val < 1024 || val >= 65535 {
-		return UpdateCDNRequestValidationError{
+		err := UpdateCDNRequestValidationError{
 			field:  "DownloadPort",
 			reason: "value must be inside range [1024, 65535)",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
+	if len(errors) > 0 {
+		return UpdateCDNRequestMultiError(errors)
+	}
 	return nil
 }
 
@@ -488,6 +714,23 @@ func (m *UpdateCDNRequest) _validateHostname(host string) error {
 
 	return nil
 }
+
+// UpdateCDNRequestMultiError is an error wrapping multiple validation errors
+// returned by UpdateCDNRequest.ValidateAll() if the designated constraints
+// aren't met.
+type UpdateCDNRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateCDNRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateCDNRequestMultiError) AllErrors() []error { return m }
 
 // UpdateCDNRequestValidationError is the validation error returned by
 // UpdateCDNRequest.Validate if the designated constraints aren't met.
@@ -545,17 +788,35 @@ var _ interface {
 
 // Validate checks the field values on AddCDNToCDNClusterRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *AddCDNToCDNClusterRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AddCDNToCDNClusterRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AddCDNToCDNClusterRequestMultiError, or nil if none found.
+func (m *AddCDNToCDNClusterRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddCDNToCDNClusterRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
-		return AddCDNToCDNClusterRequestValidationError{
+		err := AddCDNToCDNClusterRequestValidationError{
 			field:  "SourceType",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetCdnId() != 0 {
@@ -566,8 +827,28 @@ func (m *AddCDNToCDNClusterRequest) Validate() error {
 
 	}
 
+	if len(errors) > 0 {
+		return AddCDNToCDNClusterRequestMultiError(errors)
+	}
 	return nil
 }
+
+// AddCDNToCDNClusterRequestMultiError is an error wrapping multiple validation
+// errors returned by AddCDNToCDNClusterRequest.ValidateAll() if the
+// designated constraints aren't met.
+type AddCDNToCDNClusterRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddCDNToCDNClusterRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddCDNToCDNClusterRequestMultiError) AllErrors() []error { return m }
 
 // AddCDNToCDNClusterRequestValidationError is the validation error returned by
 // AddCDNToCDNClusterRequest.Validate if the designated constraints aren't met.
@@ -626,12 +907,26 @@ var _ interface {
 } = AddCDNToCDNClusterRequestValidationError{}
 
 // Validate checks the field values on SchedulerCluster with the rules defined
-// in the proto definition for this message. If any rules are violated, an
-// error is returned.
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
 func (m *SchedulerCluster) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SchedulerCluster with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SchedulerClusterMultiError, or nil if none found.
+func (m *SchedulerCluster) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SchedulerCluster) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for Id
 
@@ -643,7 +938,26 @@ func (m *SchedulerCluster) Validate() error {
 
 	// no validation rules for ClientConfig
 
-	if v, ok := interface{}(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetSecurityGroup()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SchedulerClusterValidationError{
+					field:  "SecurityGroup",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SchedulerClusterValidationError{
+					field:  "SecurityGroup",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SchedulerClusterValidationError{
 				field:  "SecurityGroup",
@@ -653,8 +967,28 @@ func (m *SchedulerCluster) Validate() error {
 		}
 	}
 
+	if len(errors) > 0 {
+		return SchedulerClusterMultiError(errors)
+	}
 	return nil
 }
+
+// SchedulerClusterMultiError is an error wrapping multiple validation errors
+// returned by SchedulerCluster.ValidateAll() if the designated constraints
+// aren't met.
+type SchedulerClusterMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SchedulerClusterMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SchedulerClusterMultiError) AllErrors() []error { return m }
 
 // SchedulerClusterValidationError is the validation error returned by
 // SchedulerCluster.Validate if the designated constraints aren't met.
@@ -711,11 +1045,26 @@ var _ interface {
 } = SchedulerClusterValidationError{}
 
 // Validate checks the field values on Scheduler with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *Scheduler) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Scheduler with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in SchedulerMultiError, or nil
+// if none found.
+func (m *Scheduler) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Scheduler) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for Id
 
@@ -735,7 +1084,26 @@ func (m *Scheduler) Validate() error {
 
 	// no validation rules for Status
 
-	if v, ok := interface{}(m.GetSchedulerCluster()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetSchedulerCluster()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SchedulerValidationError{
+					field:  "SchedulerCluster",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SchedulerValidationError{
+					field:  "SchedulerCluster",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSchedulerCluster()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SchedulerValidationError{
 				field:  "SchedulerCluster",
@@ -748,7 +1116,26 @@ func (m *Scheduler) Validate() error {
 	for idx, item := range m.GetCdns() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SchedulerValidationError{
+						field:  fmt.Sprintf("Cdns[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SchedulerValidationError{
+						field:  fmt.Sprintf("Cdns[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return SchedulerValidationError{
 					field:  fmt.Sprintf("Cdns[%v]", idx),
@@ -760,8 +1147,27 @@ func (m *Scheduler) Validate() error {
 
 	}
 
+	if len(errors) > 0 {
+		return SchedulerMultiError(errors)
+	}
 	return nil
 }
+
+// SchedulerMultiError is an error wrapping multiple validation errors returned
+// by Scheduler.ValidateAll() if the designated constraints aren't met.
+type SchedulerMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SchedulerMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SchedulerMultiError) AllErrors() []error { return m }
 
 // SchedulerValidationError is the validation error returned by
 // Scheduler.Validate if the designated constraints aren't met.
@@ -819,27 +1225,52 @@ var _ interface {
 
 // Validate checks the field values on GetSchedulerRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *GetSchedulerRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetSchedulerRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetSchedulerRequestMultiError, or nil if none found.
+func (m *GetSchedulerRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetSchedulerRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
-		return GetSchedulerRequestValidationError{
+		err := GetSchedulerRequestValidationError{
 			field:  "SourceType",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateHostname(m.GetHostName()); err != nil {
-		return GetSchedulerRequestValidationError{
+		err = GetSchedulerRequestValidationError{
 			field:  "HostName",
 			reason: "value must be a valid hostname",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
+	if len(errors) > 0 {
+		return GetSchedulerRequestMultiError(errors)
+	}
 	return nil
 }
 
@@ -872,6 +1303,23 @@ func (m *GetSchedulerRequest) _validateHostname(host string) error {
 
 	return nil
 }
+
+// GetSchedulerRequestMultiError is an error wrapping multiple validation
+// errors returned by GetSchedulerRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetSchedulerRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetSchedulerRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetSchedulerRequestMultiError) AllErrors() []error { return m }
 
 // GetSchedulerRequestValidationError is the validation error returned by
 // GetSchedulerRequest.Validate if the designated constraints aren't met.
@@ -931,34 +1379,60 @@ var _ interface {
 
 // Validate checks the field values on UpdateSchedulerRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *UpdateSchedulerRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateSchedulerRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateSchedulerRequestMultiError, or nil if none found.
+func (m *UpdateSchedulerRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateSchedulerRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
-		return UpdateSchedulerRequestValidationError{
+		err := UpdateSchedulerRequestValidationError{
 			field:  "SourceType",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateHostname(m.GetHostName()); err != nil {
-		return UpdateSchedulerRequestValidationError{
+		err = UpdateSchedulerRequestValidationError{
 			field:  "HostName",
 			reason: "value must be a valid hostname",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetVips() != "" {
 
 		if l := utf8.RuneCountInString(m.GetVips()); l < 1 || l > 1024 {
-			return UpdateSchedulerRequestValidationError{
+			err := UpdateSchedulerRequestValidationError{
 				field:  "Vips",
 				reason: "value length must be between 1 and 1024 runes, inclusive",
 			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	}
@@ -966,10 +1440,14 @@ func (m *UpdateSchedulerRequest) Validate() error {
 	if m.GetIdc() != "" {
 
 		if l := utf8.RuneCountInString(m.GetIdc()); l < 1 || l > 1024 {
-			return UpdateSchedulerRequestValidationError{
+			err := UpdateSchedulerRequestValidationError{
 				field:  "Idc",
 				reason: "value length must be between 1 and 1024 runes, inclusive",
 			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	}
@@ -977,10 +1455,14 @@ func (m *UpdateSchedulerRequest) Validate() error {
 	if m.GetLocation() != "" {
 
 		if utf8.RuneCountInString(m.GetLocation()) > 1024 {
-			return UpdateSchedulerRequestValidationError{
+			err := UpdateSchedulerRequestValidationError{
 				field:  "Location",
 				reason: "value length must be at most 1024 runes",
 			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	}
@@ -988,28 +1470,43 @@ func (m *UpdateSchedulerRequest) Validate() error {
 	if len(m.GetNetConfig()) > 0 {
 
 		if len(m.GetNetConfig()) < 1 {
-			return UpdateSchedulerRequestValidationError{
+			err := UpdateSchedulerRequestValidationError{
 				field:  "NetConfig",
 				reason: "value length must be at least 1 bytes",
 			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	}
 
 	if ip := net.ParseIP(m.GetIp()); ip == nil {
-		return UpdateSchedulerRequestValidationError{
+		err := UpdateSchedulerRequestValidationError{
 			field:  "Ip",
 			reason: "value must be a valid IP address",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if val := m.GetPort(); val < 1024 || val >= 65535 {
-		return UpdateSchedulerRequestValidationError{
+		err := UpdateSchedulerRequestValidationError{
 			field:  "Port",
 			reason: "value must be inside range [1024, 65535)",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
+	if len(errors) > 0 {
+		return UpdateSchedulerRequestMultiError(errors)
+	}
 	return nil
 }
 
@@ -1042,6 +1539,23 @@ func (m *UpdateSchedulerRequest) _validateHostname(host string) error {
 
 	return nil
 }
+
+// UpdateSchedulerRequestMultiError is an error wrapping multiple validation
+// errors returned by UpdateSchedulerRequest.ValidateAll() if the designated
+// constraints aren't met.
+type UpdateSchedulerRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateSchedulerRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateSchedulerRequestMultiError) AllErrors() []error { return m }
 
 // UpdateSchedulerRequestValidationError is the validation error returned by
 // UpdateSchedulerRequest.Validate if the designated constraints aren't met.
@@ -1101,17 +1615,37 @@ var _ interface {
 
 // Validate checks the field values on
 // AddSchedulerClusterToSchedulerClusterRequest with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *AddSchedulerClusterToSchedulerClusterRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// AddSchedulerClusterToSchedulerClusterRequest with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// AddSchedulerClusterToSchedulerClusterRequestMultiError, or nil if none found.
+func (m *AddSchedulerClusterToSchedulerClusterRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddSchedulerClusterToSchedulerClusterRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
-		return AddSchedulerClusterToSchedulerClusterRequestValidationError{
+		err := AddSchedulerClusterToSchedulerClusterRequestValidationError{
 			field:  "SourceType",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetSchedulerId() != 0 {
@@ -1122,8 +1656,29 @@ func (m *AddSchedulerClusterToSchedulerClusterRequest) Validate() error {
 
 	}
 
+	if len(errors) > 0 {
+		return AddSchedulerClusterToSchedulerClusterRequestMultiError(errors)
+	}
 	return nil
 }
+
+// AddSchedulerClusterToSchedulerClusterRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// AddSchedulerClusterToSchedulerClusterRequest.ValidateAll() if the
+// designated constraints aren't met.
+type AddSchedulerClusterToSchedulerClusterRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddSchedulerClusterToSchedulerClusterRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddSchedulerClusterToSchedulerClusterRequestMultiError) AllErrors() []error { return m }
 
 // AddSchedulerClusterToSchedulerClusterRequestValidationError is the
 // validation error returned by
@@ -1185,38 +1740,67 @@ var _ interface {
 
 // Validate checks the field values on ListSchedulersRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *ListSchedulersRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListSchedulersRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListSchedulersRequestMultiError, or nil if none found.
+func (m *ListSchedulersRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListSchedulersRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
-		return ListSchedulersRequestValidationError{
+		err := ListSchedulersRequestValidationError{
 			field:  "SourceType",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateHostname(m.GetHostName()); err != nil {
-		return ListSchedulersRequestValidationError{
+		err = ListSchedulersRequestValidationError{
 			field:  "HostName",
 			reason: "value must be a valid hostname",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if ip := net.ParseIP(m.GetIp()); ip == nil {
-		return ListSchedulersRequestValidationError{
+		err := ListSchedulersRequestValidationError{
 			field:  "Ip",
 			reason: "value must be a valid IP address",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if len(m.GetHostInfo()) > 0 {
 
 	}
 
+	if len(errors) > 0 {
+		return ListSchedulersRequestMultiError(errors)
+	}
 	return nil
 }
 
@@ -1249,6 +1833,23 @@ func (m *ListSchedulersRequest) _validateHostname(host string) error {
 
 	return nil
 }
+
+// ListSchedulersRequestMultiError is an error wrapping multiple validation
+// errors returned by ListSchedulersRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ListSchedulersRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListSchedulersRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListSchedulersRequestMultiError) AllErrors() []error { return m }
 
 // ListSchedulersRequestValidationError is the validation error returned by
 // ListSchedulersRequest.Validate if the designated constraints aren't met.
@@ -1308,16 +1909,49 @@ var _ interface {
 
 // Validate checks the field values on ListSchedulersResponse with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *ListSchedulersResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListSchedulersResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListSchedulersResponseMultiError, or nil if none found.
+func (m *ListSchedulersResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListSchedulersResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	for idx, item := range m.GetSchedulers() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListSchedulersResponseValidationError{
+						field:  fmt.Sprintf("Schedulers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListSchedulersResponseValidationError{
+						field:  fmt.Sprintf("Schedulers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return ListSchedulersResponseValidationError{
 					field:  fmt.Sprintf("Schedulers[%v]", idx),
@@ -1329,8 +1963,28 @@ func (m *ListSchedulersResponse) Validate() error {
 
 	}
 
+	if len(errors) > 0 {
+		return ListSchedulersResponseMultiError(errors)
+	}
 	return nil
 }
+
+// ListSchedulersResponseMultiError is an error wrapping multiple validation
+// errors returned by ListSchedulersResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ListSchedulersResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListSchedulersResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListSchedulersResponseMultiError) AllErrors() []error { return m }
 
 // ListSchedulersResponseValidationError is the validation error returned by
 // ListSchedulersResponse.Validate if the designated constraints aren't met.
@@ -1389,28 +2043,53 @@ var _ interface {
 } = ListSchedulersResponseValidationError{}
 
 // Validate checks the field values on KeepAliveRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, an
-// error is returned.
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
 func (m *KeepAliveRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on KeepAliveRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// KeepAliveRequestMultiError, or nil if none found.
+func (m *KeepAliveRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *KeepAliveRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
-		return KeepAliveRequestValidationError{
+		err := KeepAliveRequestValidationError{
 			field:  "SourceType",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateHostname(m.GetHostName()); err != nil {
-		return KeepAliveRequestValidationError{
+		err = KeepAliveRequestValidationError{
 			field:  "HostName",
 			reason: "value must be a valid hostname",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
+	if len(errors) > 0 {
+		return KeepAliveRequestMultiError(errors)
+	}
 	return nil
 }
 
@@ -1443,6 +2122,23 @@ func (m *KeepAliveRequest) _validateHostname(host string) error {
 
 	return nil
 }
+
+// KeepAliveRequestMultiError is an error wrapping multiple validation errors
+// returned by KeepAliveRequest.ValidateAll() if the designated constraints
+// aren't met.
+type KeepAliveRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m KeepAliveRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m KeepAliveRequestMultiError) AllErrors() []error { return m }
 
 // KeepAliveRequestValidationError is the validation error returned by
 // KeepAliveRequest.Validate if the designated constraints aren't met.

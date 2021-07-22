@@ -86,9 +86,10 @@ func (client *httpSourceClient) GetContentLength(ctx context.Context, url string
 		return -1, err
 	}
 	resp.Body.Close()
-	// todo Here if other status codes should be added to ErrURLNotReachable, if not, it will be downloaded frequently for 404 or 403
+	// TODO Here if other status codes should be added to ErrURLNotReachable, if not, it will be downloaded frequently for 404 or 403
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-		// todo Whether this situation should be distinguished from the err situation, similar to proposing another error type to indicate that this  error can interact with the URL, but the status code does not meet expectations
+		// TODO Whether this situation should be distinguished from the err situation,
+		//similar to proposing another error type to indicate that this  error can interact with the URL, but the status code does not meet expectations
 		return task.IllegalSourceFileLen, fmt.Errorf("get http resource length failed, unexpected code: %d", resp.StatusCode)
 	}
 	return resp.ContentLength, nil
@@ -106,7 +107,7 @@ func (client *httpSourceClient) IsSupportRange(ctx context.Context, url string, 
 	return resp.StatusCode == http.StatusPartialContent, nil
 }
 
-// todo Consider the situation where there is no last-modified such as baidu
+// TODO Consider the situation where there is no last-modified such as baidu
 func (client *httpSourceClient) IsExpired(ctx context.Context, url string, header source.RequestHeader, expireInfo map[string]string) (bool, error) {
 	lastModified := timeutils.UnixMillis(expireInfo[source.LastModified])
 

@@ -14,13 +14,24 @@
  * limitations under the License.
  */
 
-package types
+package daemon
 
-import "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+import (
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/types"
+)
 
-type IClient interface {
-	Send(*scheduler.PeerPacket) error
-	Recv() (*scheduler.PieceResult, error)
-	Close()
-	IsClosed() bool
+type HostMgr interface {
+	config.Observer
+
+	Add(host *types.PeerHost)
+
+	// GetOrAdd returns the existing value for the key if present.
+	// Otherwise, it stores and returns the given value.
+	// The loaded result is true if the value was loaded, false if stored.
+	GetOrAdd(host *types.PeerHost) (actual *types.PeerHost, loaded bool)
+
+	Delete(uuid string)
+
+	Get(uuid string) (*types.PeerHost, bool)
 }
