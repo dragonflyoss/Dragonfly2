@@ -8,12 +8,12 @@ gcInterval: 1m0s
 # daemon data directory
 # in linux, default value is $HOME/.dragonfly/dfget-daemon/
 # in macos(just for testing), default value is /Users/$USER/.dragonfly/dfdaemon/
-dataDir: /Users/sunweipeng1/dragonfly
+dataDir: /var/lib/dragonfly
 
 # daemon work directory, daemon will change current working directory to this
 # in linux, default value is $HOME/.dragonfly/dfget-daemon/
 # in macos(just for testing), default value is /Users/$USER/.dragonfly/dfdaemon/
-workHome: /Users/sunweipeng1/dragonfly
+workHome: /var/lib/dragonfly
 
 # when daemon exit, keep peer task data or not
 # it is usefully when upgrade daemon service, all local cache will be saved
