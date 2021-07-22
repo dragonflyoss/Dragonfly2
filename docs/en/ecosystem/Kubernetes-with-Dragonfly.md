@@ -5,22 +5,27 @@ daemon as `DaemonSets`.
 
 Table of contents:
 
-* [Kustomize](#kustomize-support)
 * [Helm](#helm-support)
+* [Kustomize](#kustomize-support)
 * [TODO Upgrade Guide](#upgrade-guide)
 
-## Kustomize Support
+## Helm Support
 
 ### Prepare Kubernetes Cluster
 
 If there is no available Kubernetes cluster for testing, [minikube](https://minikube.sigs.k8s.io/docs/start/) is
 recommended. Just run `minikube start`.
 
-### Build and Apply Kustomize Configuration
+### Clone Chart
 
 ```shell
 git clone https://github.com/dragonflyoss/Dragonfly2.git
-kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | kubectl apply -f -
+```
+
+### Install
+
+```shell
+helm install --namespace dragonfly-system dragonfly Dragonfly2/deploy/charts/dragonfly
 ```
 
 ### Wait Dragonfly Ready
@@ -28,16 +33,20 @@ kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sampl
 Wait all pods running
 
 ```
-kubectl -n dragonfly wait --for=condition=ready --all --timeout=10m pod
+kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 ```
 
 ### Configure Runtime
 
 Use Containerd with CRI as example, more runtimes can be found [here](../user-guide/quick-start.md)
 
+> This example is for single registry, multiple registries configuration is [here](../user-guide/registry-mirror/cri-containerd.md)
+
 For private registry:
 
 ```toml
+# explicitly use v2 config format, if already v2, skip the "version = 2"
+version = 2
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."harbor.example.com"]
 endpoint = ["http://127.0.0.1:65001", "https://harbor.example.com"]
 ```
@@ -45,6 +54,8 @@ endpoint = ["http://127.0.0.1:65001", "https://harbor.example.com"]
 For docker public registry:
 
 ```toml
+# explicitly use v2 config format, if already v2, skip the "version = 2"
+version = 2
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
 endpoint = ["http://127.0.0.1:65001", "https://registry-1.docker.io"]
 ```
@@ -81,18 +92,18 @@ Example output:
 {"level":"info","ts":"2021-06-28 06:02:30.924","caller":"peer/peertask_stream_callback.go:77","msg":"stream peer task done, cost: 2838ms","peer":"172.17.0.9-1-ed7a32ae-3f18-4095-9f54-6ccfc248b16e","task":"3c658c488fd0868847fab30976c2a079d8fd63df148fb3b53fd1a418015723d7","component":"streamPeerTask"}
 ```
 
-## Helm Support
+## Kustomize Support
 
-### Clone Chart
+### Prepare Kubernetes Cluster
+
+If there is no available Kubernetes cluster for testing, [minikube](https://minikube.sigs.k8s.io/docs/start/) is
+recommended. Just run `minikube start`.
+
+### Build and Apply Kustomize Configuration
 
 ```shell
 git clone https://github.com/dragonflyoss/Dragonfly2.git
-```
-
-### Install
-
-```shell
-helm install --namespace dragonfly-system dragonfly Dragonfly2/deploy/charts/dragonfly
+kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | kubectl apply -f -
 ```
 
 ### Wait Dragonfly Ready
@@ -100,12 +111,13 @@ helm install --namespace dragonfly-system dragonfly Dragonfly2/deploy/charts/dra
 Wait all pods running
 
 ```
-kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
+kubectl -n dragonfly wait --for=condition=ready --all --timeout=10m pod
 ```
 
 ### Next Steps
 
 Following [Configure Runtime](#configure-runtime) to configure runtime.
+
 Following [Using Dragonfly](#using-dragonfly) to use Dragonfly.
 
 ## Upgrade Guide

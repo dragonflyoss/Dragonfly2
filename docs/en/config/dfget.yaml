@@ -162,6 +162,8 @@ proxy:
   #     start: 65020
   #     end: 65029
   registryMirror:
+    # when enable, using header "X-Dragonfly-Registry" for remote instead of url
+    dynamic: true
     # url for the registry mirror
     url: https://index.docker.io
     # whether to ignore https certificate errors
