@@ -34,26 +34,12 @@ var (
 )
 
 // Validate checks the field values on SeedRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
+// the proto definition for this message. If any rules are violated, an error
+// is returned.
 func (m *SeedRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on SeedRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in SeedRequestMultiError, or
-// nil if none found.
-func (m *SeedRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *SeedRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
-
-	var errors []error
 
 	// no validation rules for TaskId
 
@@ -61,26 +47,7 @@ func (m *SeedRequest) validate(all bool) error {
 
 	// no validation rules for Filter
 
-	if all {
-		switch v := interface{}(m.GetUrlMeta()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SeedRequestValidationError{
-					field:  "UrlMeta",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, SeedRequestValidationError{
-					field:  "UrlMeta",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SeedRequestValidationError{
 				field:  "UrlMeta",
@@ -90,27 +57,8 @@ func (m *SeedRequest) validate(all bool) error {
 		}
 	}
 
-	if len(errors) > 0 {
-		return SeedRequestMultiError(errors)
-	}
 	return nil
 }
-
-// SeedRequestMultiError is an error wrapping multiple validation errors
-// returned by SeedRequest.ValidateAll() if the designated constraints aren't met.
-type SeedRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m SeedRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m SeedRequestMultiError) AllErrors() []error { return m }
 
 // SeedRequestValidationError is the validation error returned by
 // SeedRequest.Validate if the designated constraints aren't met.
@@ -167,51 +115,17 @@ var _ interface {
 } = SeedRequestValidationError{}
 
 // Validate checks the field values on PieceSeed with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
+// proto definition for this message. If any rules are violated, an error is returned.
 func (m *PieceSeed) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on PieceSeed with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in PieceSeedMultiError, or nil
-// if none found.
-func (m *PieceSeed) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *PieceSeed) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
-
-	var errors []error
 
 	// no validation rules for PeerId
 
 	// no validation rules for HostUuid
 
-	if all {
-		switch v := interface{}(m.GetPieceInfo()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, PieceSeedValidationError{
-					field:  "PieceInfo",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, PieceSeedValidationError{
-					field:  "PieceInfo",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetPieceInfo()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetPieceInfo()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PieceSeedValidationError{
 				field:  "PieceInfo",
@@ -227,27 +141,8 @@ func (m *PieceSeed) validate(all bool) error {
 
 	// no validation rules for TotalPieceCount
 
-	if len(errors) > 0 {
-		return PieceSeedMultiError(errors)
-	}
 	return nil
 }
-
-// PieceSeedMultiError is an error wrapping multiple validation errors returned
-// by PieceSeed.ValidateAll() if the designated constraints aren't met.
-type PieceSeedMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m PieceSeedMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m PieceSeedMultiError) AllErrors() []error { return m }
 
 // PieceSeedValidationError is the validation error returned by
 // PieceSeed.Validate if the designated constraints aren't met.
