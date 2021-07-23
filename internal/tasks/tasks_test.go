@@ -7,7 +7,7 @@ import (
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 )
 
-func TestMarshal(t *testing.T) {
+func TestTaskMarshal(t *testing.T) {
 	tests := []struct {
 		name   string
 		value  interface{}
@@ -38,7 +38,7 @@ func TestMarshal(t *testing.T) {
 	}
 }
 
-func TestUnmarshal(t *testing.T) {
+func TestTaskUnmarshal(t *testing.T) {
 	tests := []struct {
 		name   string
 		data   []reflect.Value
