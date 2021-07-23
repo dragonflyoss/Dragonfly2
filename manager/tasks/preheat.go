@@ -8,7 +8,7 @@ import (
 
 const (
 	PreheatImageType = "image"
-	PreheatFileType  = "image"
+	PreheatFileType  = "file"
 )
 
 func (t *task) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, error) {
