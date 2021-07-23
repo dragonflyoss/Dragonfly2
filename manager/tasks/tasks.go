@@ -7,7 +7,8 @@ import (
 )
 
 type Task interface {
-	Preheat(types.CreatePreheatRequest) (string, error)
+	CreatePreheat(types.CreatePreheatRequest) (*types.Preheat, error)
+	GetPreheat(string) (*types.Preheat, error)
 }
 
 type task struct {
@@ -27,8 +28,4 @@ func New(cfg *config.RedisConfig) (Task, error) {
 	}
 
 	return &task{t}, nil
-}
-
-func Preheat(json types.CreatePreheatRequest) (string, error) {
-	return "", nil
 }
