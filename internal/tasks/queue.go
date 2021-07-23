@@ -4,12 +4,6 @@ import "fmt"
 
 type Queue string
 
-const (
-	GlobalQueue     Queue = "global"
-	SchedulersQueue Queue = "schedulers"
-	CDNsQueue       Queue = "cdns"
-)
-
 func GetSchedulerQueue(hostname string) Queue {
 	return Queue(fmt.Sprintf("scheduler_%s", hostname))
 }

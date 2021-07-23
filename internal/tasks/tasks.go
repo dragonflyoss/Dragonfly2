@@ -21,10 +21,6 @@ type Config struct {
 	BackendDB int
 }
 
-const (
-	PreheatTask = "preheat"
-)
-
 var tasks = map[string]interface{}{}
 
 type Tasks struct {
