@@ -66,7 +66,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	hostManager := host.NewManager()
 	peerManager := peer.NewManager(cfg.GC, hostManager)
 	cdnManager := source.NewManager()
-	if cfg.EnableCDN {
+	if !cfg.DisableCDN {
 		cdnManager, err = d7y.NewManager(dynConfigData.CDNs, peerManager, hostManager)
 		if err != nil {
 			return nil, errors.Wrap(err, "new cdn manager")
@@ -101,7 +101,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 }
 
 func (s *SchedulerService) Serve() {
-	go s.worker.start(newState(s.sched, s.peerManager, s.cdnManager, s.worker))
+	go s.worker.start(newState(s.sched, s.peerManager, s.cdnManager))
 	if s.monitor != nil {
 		go s.monitor.start()
 	}

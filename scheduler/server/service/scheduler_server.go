@@ -118,10 +118,14 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	peerPacketChan := make(chan *scheduler.PeerPacket, 1)
 	var once sync.Once
 	g, ctx := errgroup.WithContext(context.Background())
+	stopCh := make(chan struct{})
 	g.Go(func() error {
 		for {
+			var peer *types.Peer
 			select {
 			case <-ctx.Done():
+				return nil
+			case <-stopCh:
 				return nil
 			default:
 				pieceResult, err := stream.Recv()
@@ -131,7 +135,8 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 				if err != nil {
 					return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error")
 				}
-				peer, ok := s.service.GetPeerTask(pieceResult.SrcPid)
+				var ok bool
+				peer, ok = s.service.GetPeerTask(pieceResult.SrcPid)
 				if !ok {
 					return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
 				}
@@ -149,13 +154,20 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	g.Go(func() error {
 		for {
 			select {
-			case pp := <-peerPacketChan:
-				err := stream.Send(pp)
-				if err != nil {
-					return err
-				}
 			case <-ctx.Done():
 				return nil
+			case <-stopCh:
+				return nil
+			case pp, ok := <-peerPacketChan:
+				if !ok {
+					close(stopCh)
+					return nil
+				}
+				err := stream.Send(pp)
+				if err != nil {
+					logger.Errorf("send peer %s schedule packet %v failed: %v", pp.SrcPid, pp, err)
+					return err
+				}
 			}
 		}
 	})
