@@ -73,7 +73,7 @@ func Marshal(v interface{}) ([]machineryv1tasks.Arg, error) {
 }
 
 func Unmarshal(data []reflect.Value, v interface{}) error {
-	if len(data) > 1 {
+	if len(data) == 0 {
 		return errors.New("empty data is not specified")
 	}
 
