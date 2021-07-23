@@ -10,7 +10,7 @@ import (
 )
 
 type Task interface {
-	PreHeats(string, []PreHeatFile) error
+	preheats(string, []PreHeatFile) error
 }
 
 type task struct {
@@ -38,7 +38,7 @@ type PreHeatFile struct {
 	Filter  string
 }
 
-func (t *task) PreHeats(hostname string, files []PreHeatFile) error {
+func (t *task) preheats(hostname string, files []PreHeatFile) error {
 	signatures := []*machinerytasks.Signature{}
 	for _, v := range files {
 		args, err := json.Marshal(v)
@@ -47,7 +47,7 @@ func (t *task) PreHeats(hostname string, files []PreHeatFile) error {
 		}
 
 		signatures = append(signatures, &machinerytasks.Signature{
-			Name:       internaltasks.PreHeatTask,
+			Name:       internaltasks.PreheatTask,
 			RoutingKey: internaltasks.GetSchedulerQueue(hostname).String(),
 			Args: []machinerytasks.Arg{
 				{

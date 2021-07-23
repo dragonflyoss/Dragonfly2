@@ -16,7 +16,7 @@ type Config struct {
 }
 
 const (
-	PreHeatTask = "preheat"
+	PreheatTask = "preheat"
 )
 
 var tasks = map[string]interface{}{}
