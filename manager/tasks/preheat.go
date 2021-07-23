@@ -22,15 +22,15 @@ func (t *task) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, e
 }
 
 func (t *task) GetPreheat(id string) (*types.Preheat, error) {
-	task, err := t.Server.GetBackend().GetState(id)
+	groupTaskState, err := t.GetGroupTaskState(id)
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.Preheat{
-		ID:       task.TaskUUID,
-		Status:   task.State,
-		CreateAt: task.CreatedAt,
+		ID:        groupTaskState.GroupUUID,
+		Status:    groupTaskState.State,
+		CreatedAt: groupTaskState.CreatedAt,
 	}, nil
 }
 
@@ -38,7 +38,6 @@ func (t *task) GetPreheat(id string) (*types.Preheat, error) {
 // func (t *task) preheats(hostname string, files []PreHeatFile) error {
 // signatures := []*machinerytasks.Signature{}
 // for _, v := range files {
-// args, err := json.Marshal(v)
 // if err != nil {
 // return err
 // }
@@ -46,12 +45,7 @@ func (t *task) GetPreheat(id string) (*types.Preheat, error) {
 // signatures = append(signatures, &machinerytasks.Signature{
 // Name:       internaltasks.PreheatTask,
 // RoutingKey: internaltasks.GetSchedulerQueue(hostname).String(),
-// Args: []machinerytasks.Arg{
-// {
-// Type:  "string",
-// Value: string(args),
-// },
-// },
+// Args: internaltasks.Marshal(),
 // })
 // }
 
