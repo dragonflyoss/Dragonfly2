@@ -70,11 +70,11 @@ func MarshalTaskArg(taskArg interface{}) ([]machineryv1tasks.Arg, error) {
 	}}, nil
 }
 
-func UnmarshalTaskResult(data []reflect.Value, v interface{}) error {
-	if len(data) > 1 {
+func UnmarshalTaskResult(taskResult []reflect.Value, v interface{}) error {
+	if len(taskResult) > 1 {
 		return errors.New("task result should contain only one json string")
 	}
-	err := json.Unmarshal([]byte(data[0].String()), v)
+	err := json.Unmarshal([]byte(taskResult[0].String()), v)
 	if err != nil {
 		return err
 	}
