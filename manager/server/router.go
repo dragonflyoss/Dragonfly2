@@ -35,11 +35,11 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	apiv1 := r.Group("/api/v1")
 
 	// User
-	ai := apiv1.Group("/users")
-	ai.POST("/signin", jwt.LoginHandler)
-	ai.POST("/signout", jwt.LogoutHandler)
-	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/signup", h.SignUp)
+	u := apiv1.Group("/users")
+	u.POST("/signin", jwt.LoginHandler)
+	u.POST("/signout", jwt.LogoutHandler)
+	u.POST("/refresh_token", jwt.RefreshHandler)
+	u.POST("/signup", h.SignUp)
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")
@@ -51,12 +51,12 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	sc.PUT(":id/schedulers/:scheduler_id", h.AddSchedulerToSchedulerCluster)
 
 	// Scheduler
-	si := apiv1.Group("/schedulers")
-	si.POST("", h.CreateScheduler)
-	si.DELETE(":id", h.DestroyScheduler)
-	si.PATCH(":id", h.UpdateScheduler)
-	si.GET(":id", h.GetScheduler)
-	si.GET("", h.GetSchedulers)
+	s := apiv1.Group("/schedulers")
+	s.POST("", h.CreateScheduler)
+	s.DELETE(":id", h.DestroyScheduler)
+	s.PATCH(":id", h.UpdateScheduler)
+	s.GET(":id", h.GetScheduler)
+	s.GET("", h.GetSchedulers)
 
 	// CDN Cluster
 	cc := apiv1.Group("/cdn-clusters")
@@ -69,12 +69,12 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	cc.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToCDNCluster)
 
 	// CDN
-	ci := apiv1.Group("/cdns")
-	ci.POST("", h.CreateCDN)
-	ci.DELETE(":id", h.DestroyCDN)
-	ci.PATCH(":id", h.UpdateCDN)
-	ci.GET(":id", h.GetCDN)
-	ci.GET("", h.GetCDNs)
+	c := apiv1.Group("/cdns")
+	c.POST("", h.CreateCDN)
+	c.DELETE(":id", h.DestroyCDN)
+	c.PATCH(":id", h.UpdateCDN)
+	c.GET(":id", h.GetCDN)
+	c.GET("", h.GetCDNs)
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")
@@ -85,6 +85,10 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	sg.GET("", h.GetSecurityGroups)
 	sg.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSecurityGroup)
 	sg.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToSecurityGroup)
+
+	// Preheat
+	ph := apiv1.Group("/preheats")
+	ph.POST("", h.CreatePreheat)
 
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)

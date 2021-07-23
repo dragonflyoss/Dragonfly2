@@ -1,25 +1,68 @@
 package tasks
 
 import (
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
+
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 )
 
-type testStruct struct {
-	TestInt int64 `json:"testInt" binding:"required"`
-	TestFloat float64 `json:"testFloat" binding:"required"`
-	TestString string `json:"testString" binding:"required"`
+func TestMarshal(t *testing.T) {
+	tests := []struct {
+		name   string
+		value  interface{}
+		expect func(t *testing.T, result []machineryv1tasks.Arg, err error)
+	}{
+		{
+			name: "marshal successed",
+			value: struct {
+				I int64   `json:"i" binding:"required"`
+				F float64 `json:"f" binding:"required"`
+				S string  `json:"s" binding:"required"`
+			}{
+				I: 1,
+				F: 1.1,
+				S: "foo",
+			},
+			expect: func(t *testing.T, result []machineryv1tasks.Arg, err error) {
+
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			arg, err := Marshal(tc.value)
+			tc.expect(t, arg, err)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshal(t *testing.T) {
-	arg := &testStruct{TestInt: 1, TestFloat: 0.5, TestString: "test"}
-	marshaled, err := MarshalTaskArg(arg)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(marshaled), 1)
-	value := []reflect.Value{reflect.ValueOf(marshaled[0].Value)}
-	result := &testStruct{}
-	err = UnmarshalTaskResult(value, result)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, result, arg)
+func TestUnmarshal(t *testing.T) {
+	tests := []struct {
+		name   string
+		data   []reflect.Value
+		value  interface{}
+		expect func(t *testing.T, result interface{}, err error)
+	}{
+		{
+			name: "unmarshal successed",
+			data: []reflect.Value{{}},
+			value: struct {
+				I int64   `json:"i" binding:"required"`
+				F float64 `json:"f" binding:"required"`
+				S string  `json:"s" binding:"required"`
+			}{},
+			expect: func(t *testing.T, result interface{}, err error) {
+
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := Unmarshal(tc.data, tc.value)
+			tc.expect(t, tc.value, err)
+		})
+	}
 }

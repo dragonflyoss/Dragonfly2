@@ -3,9 +3,10 @@ package tasks
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/pkg/errors"
-	"reflect"
 
 	"github.com/RichardKnop/machinery/v1"
 	machineryv1config "github.com/RichardKnop/machinery/v1/config"
@@ -59,23 +60,24 @@ func (t *Tasks) LaunchWorker(consumerTag string, concurrency int) error {
 	return t.Server.NewWorker(consumerTag, concurrency).Launch()
 }
 
-func MarshalTaskArg(taskArg interface{}) ([]machineryv1tasks.Arg, error) {
-	argJson, err := json.Marshal(taskArg)
+func Marshal(v interface{}) ([]machineryv1tasks.Arg, error) {
+	b, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
 	}
+
 	return []machineryv1tasks.Arg{{
-			Type:  "string",
-			Value: string(argJson),
+		Type:  "string",
+		Value: string(b),
 	}}, nil
 }
 
-func UnmarshalTaskResult(taskResult []reflect.Value, v interface{}) error {
-	if len(taskResult) > 1 {
-		return errors.New("task result should contain only one json string")
+func Unmarshal(data []reflect.Value, v interface{}) error {
+	if len(data) > 1 {
+		return errors.New("empty data is not specified")
 	}
-	err := json.Unmarshal([]byte(taskResult[0].String()), v)
-	if err != nil {
+
+	if err := json.Unmarshal([]byte(data[0].String()), v); err != nil {
 		return err
 	}
 	return nil

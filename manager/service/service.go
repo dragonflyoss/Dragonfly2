@@ -12,6 +12,9 @@ import (
 )
 
 type REST interface {
+	SignIn(json types.SignInRequest) (*model.User, error)
+	SignUp(json types.SignUpRequest) (*model.User, error)
+
 	CreateCDNCluster(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	CreateCDNClusterWithSecurityGroupDomain(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	DestroyCDNCluster(uint) error
@@ -56,8 +59,7 @@ type REST interface {
 	AddSchedulerClusterToSecurityGroup(uint, uint) error
 	AddCDNClusterToSecurityGroup(uint, uint) error
 
-	SignIn(json types.SignInRequest) (*model.User, error)
-	SignUp(json types.SignUpRequest) (*model.User, error)
+	CreatePreheat(types.CreatePreheatRequest) error
 }
 
 type rest struct {
