@@ -120,7 +120,66 @@ func TestTaskUnmarshal(t *testing.T) {
 				}{1, 1.1, "foo"}, result)
 			},
 		},
-		//TODO: add more test cases
+		{
+			name: "unmarshal struct lack of parameters",
+			data: []reflect.Value{
+				reflect.ValueOf("{}"),
+			},
+			value: &struct {
+				I int64   `json:"i" binding:"omitempty"`
+				F float64 `json:"f" binding:"omitempty"`
+				S string  `json:"s" binding:"omitempty"`
+			}{},
+			expect: func(t *testing.T, result interface{}, err error) {
+				assert := assert.New(t)
+				assert.Equal(&struct {
+					I int64   `json:"i" binding:"omitempty"`
+					F float64 `json:"f" binding:"omitempty"`
+					S string  `json:"s" binding:"omitempty"`
+				}{0, 0, ""}, result)
+			},
+		},
+		{
+			name: "unmarshal struct with slice",
+			data: []reflect.Value{
+				reflect.ValueOf("{\"s\":[]}"),
+			},
+			value: &struct {
+				S []string  `json:"s" binding:"required"`
+			}{},
+			expect: func(t *testing.T, result interface{}, err error) {
+				assert := assert.New(t)
+				assert.Equal(&struct {
+					S []string  `json:"s" binding:"required"`
+				}{S: []string{}}, result)
+			},
+		},
+		{
+			name: "unmarshal struct with nil slice",
+			data: []reflect.Value{
+				reflect.ValueOf("{\"s\":null}"),
+			},
+			value: &struct {
+				S []string  `json:"s" binding:"required"`
+			}{},
+			expect: func(t *testing.T, result interface{}, err error) {
+				assert := assert.New(t)
+				assert.Equal(&struct {
+					S []string  `json:"s" binding:"required"`
+				}{S: nil}, result)
+			},
+		},
+		{
+			name: "unmarshal nil data",
+			data: []reflect.Value{},
+			value: &struct {
+				S []string  `json:"s" binding:"required"`
+			}{},
+			expect: func(t *testing.T, result interface{}, err error) {
+				assert := assert.New(t)
+				assert.Equal("empty data is not specified", err.Error())
+			},
+		},
 	}
 
 	for _, tc := range tests {
