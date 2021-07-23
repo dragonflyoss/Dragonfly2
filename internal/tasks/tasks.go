@@ -3,7 +3,6 @@ package tasks
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/RichardKnop/machinery/v1/backends/result"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 
 	"github.com/RichardKnop/machinery/v1"
@@ -58,19 +57,13 @@ func (t *Tasks) LaunchWorker(consumerTag string, concurrency int) error {
 	return t.Server.NewWorker(consumerTag, concurrency).Launch()
 }
 
-func (t *Tasks) SendTask(taskName string, taskArg interface{}) (*result.AsyncResult, error) {
+func ConvertTaskArgToSignatureArgs(taskArg interface{}) ([]machineryv1tasks.Arg, error) {
 	argJson, err := json.Marshal(taskArg)
 	if err != nil {
 		return nil, err
 	}
-	signature := &machineryv1tasks.Signature{
-		Name: taskName,
-		Args: []machineryv1tasks.Arg{
-			{
-				Type:  "string",
-				Value: string(argJson),
-			},
-		},
-	}
-	return t.Server.SendTask(signature)
+	return []machineryv1tasks.Arg{{
+			Type:  "string",
+			Value: string(argJson),
+	}}, nil
 }
