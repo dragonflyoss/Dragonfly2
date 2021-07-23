@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/pkg/errors"
+	"reflect"
 
 	"github.com/RichardKnop/machinery/v1"
 	machineryv1config "github.com/RichardKnop/machinery/v1/config"
@@ -57,7 +59,7 @@ func (t *Tasks) LaunchWorker(consumerTag string, concurrency int) error {
 	return t.Server.NewWorker(consumerTag, concurrency).Launch()
 }
 
-func ConvertTaskArgToSignatureArgs(taskArg interface{}) ([]machineryv1tasks.Arg, error) {
+func MarshalTaskArg(taskArg interface{}) ([]machineryv1tasks.Arg, error) {
 	argJson, err := json.Marshal(taskArg)
 	if err != nil {
 		return nil, err
@@ -66,4 +68,15 @@ func ConvertTaskArgToSignatureArgs(taskArg interface{}) ([]machineryv1tasks.Arg,
 			Type:  "string",
 			Value: string(argJson),
 	}}, nil
+}
+
+func UnmarshalTaskResult(data []reflect.Value, v interface{}) error {
+	if len(data) > 1 {
+		return errors.New("task result should contain only one json string")
+	}
+	err := json.Unmarshal([]byte(data[0].String()), v)
+	if err != nil {
+		return err
+	}
+	return nil
 }
