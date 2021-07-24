@@ -89,6 +89,7 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	// Preheat
 	ph := apiv1.Group("/preheats")
 	ph.POST("", h.CreatePreheat)
+	ph.GET(":id", h.GetPreheat)
 
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)

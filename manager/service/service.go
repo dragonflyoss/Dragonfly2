@@ -59,7 +59,8 @@ type REST interface {
 	AddSchedulerClusterToSecurityGroup(uint, uint) error
 	AddCDNClusterToSecurityGroup(uint, uint) error
 
-	CreatePreheat(types.CreatePreheatRequest) error
+	CreatePreheat(types.CreatePreheatRequest) (*types.Preheat, error)
+	GetPreheat(string) (*types.Preheat, error)
 }
 
 type rest struct {

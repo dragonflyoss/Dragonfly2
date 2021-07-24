@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"time"
 
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/pkg/errors"
@@ -19,10 +20,6 @@ type Config struct {
 	BrokerDB  int
 	BackendDB int
 }
-
-const (
-	PreheatTask = "preheat"
-)
 
 var tasks = map[string]interface{}{}
 
@@ -58,6 +55,49 @@ func New(cfg *Config, queue Queue) (*Tasks, error) {
 
 func (t *Tasks) LaunchWorker(consumerTag string, concurrency int) error {
 	return t.Server.NewWorker(consumerTag, concurrency).Launch()
+}
+
+type GroupTaskState struct {
+	GroupUUID string
+	State     string
+	CreatedAt time.Time
+}
+
+func (t *Tasks) GetGroupTaskState(groupUUID string) (*GroupTaskState, error) {
+	taskStates, err := t.Server.GetBackend().GroupTaskStates(groupUUID, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(taskStates) == 0 {
+		return nil, errors.New("empty group task")
+	}
+
+	for _, taskState := range taskStates {
+		if taskState.IsFailure() {
+			return &GroupTaskState{
+				GroupUUID: groupUUID,
+				State:     machineryv1tasks.StateFailure,
+				CreatedAt: taskState.CreatedAt,
+			}, nil
+		}
+	}
+
+	for _, taskState := range taskStates {
+		if !taskState.IsSuccess() {
+			return &GroupTaskState{
+				GroupUUID: groupUUID,
+				State:     machineryv1tasks.StatePending,
+				CreatedAt: taskState.CreatedAt,
+			}, nil
+		}
+	}
+
+	return &GroupTaskState{
+		GroupUUID: groupUUID,
+		State:     machineryv1tasks.StateSuccess,
+		CreatedAt: taskStates[0].CreatedAt,
+	}, nil
 }
 
 func Marshal(v interface{}) ([]machineryv1tasks.Arg, error) {
