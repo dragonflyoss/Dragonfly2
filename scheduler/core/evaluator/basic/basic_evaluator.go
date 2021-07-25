@@ -66,6 +66,7 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 	}
 
 	if peer.IsBad() {
+		logger.Debugf("peer %s is bad because status is %s", peer.PeerID, peer.GetStatus())
 		return true
 	}
 
@@ -78,9 +79,8 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 	if parent == nil {
 		return false
 	}
-	logger.Debugf("IsBadNode [%s]: %s have elapsed since the last access %s, now %s", time.Now().Sub(peer.GetLastAccessTime()), peer.PeerID,
-		peer.GetLastAccessTime(), time.Now())
 	if time.Now().After(peer.GetLastAccessTime().Add(5 * time.Second)) {
+		logger.Debugf("peer %s is bad because have elapsed %s > 5s since the last access", peer.PeerID, time.Now().Sub(peer.GetLastAccessTime()))
 		return true
 	}
 
@@ -92,7 +92,7 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
 
 	if avgCost*40 < lastCost {
-		logger.Debugf("IsNodeBad [%s]: recent pieces have taken too long to download avg[%d] last[%d]", peer.PeerID, avgCost, lastCost)
+		logger.Debugf("peer %s is bad because recent pieces have taken too long to download avg[%d] last[%d]", peer.PeerID, avgCost, lastCost)
 		return true
 	}
 

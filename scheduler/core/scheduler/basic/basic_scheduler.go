@@ -73,6 +73,7 @@ type Scheduler struct {
 func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) {
 	logger.Debugf("[%s][%s]scheduler children", peer.Task.TaskID, peer.PeerID)
 	if s.evaluator.IsBadNode(peer) {
+		logger.Debugf("[%s][%s]is badNode", peer.Task.TaskID, peer.PeerID)
 		return
 	}
 	freeUpload := peer.Host.GetFreeUploadLoad()
