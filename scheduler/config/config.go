@@ -103,7 +103,7 @@ func NewDefaultServerConfig() *ServerConfig {
 
 func NewDefaultSchedulerConfig() *SchedulerConfig {
 	return &SchedulerConfig{
-		EnableCDN:            true,
+		DisableCDN:           false,
 		ABTest:               false,
 		AScheduler:           "",
 		BScheduler:           "",
@@ -181,7 +181,7 @@ type DynConfig struct {
 }
 
 type SchedulerConfig struct {
-	EnableCDN  bool   `yaml:"enableCDN" mapstructure:"enableCDN"`
+	DisableCDN bool   `yaml:"disableCDN" mapstructure:"disableCDN"`
 	ABTest     bool   `yaml:"abtest" mapstructure:"abtest"`
 	AScheduler string `yaml:"ascheduler" mapstructure:"ascheduler"`
 	BScheduler string `yaml:"bscheduler" mapstructure:"bscheduler"`

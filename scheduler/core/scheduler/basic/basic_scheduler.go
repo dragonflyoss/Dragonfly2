@@ -71,12 +71,14 @@ type Scheduler struct {
 }
 
 func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) {
-	logger.Debugf("[%s][%s]scheduler children", peer.Task.TaskID, peer.PeerID)
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start scheduler children flow")
 	if s.evaluator.IsBadNode(peer) {
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("peer is badNode")
 		return
 	}
 	freeUpload := peer.Host.GetFreeUploadLoad()
 	candidateChildren := s.selectCandidateChildren(peer, freeUpload*2)
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d candidate children %v", len(candidateChildren), candidateChildren)
 	evalResult := make(map[float64]*types.Peer)
 	var evalScore []float64
 	for _, child := range candidateChildren {
@@ -99,19 +101,21 @@ func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) 
 	for _, child := range children {
 		child.ReplaceParent(peer)
 	}
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("final schedule children list %v", children)
 	return
 }
 
 func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer, bool) {
-	logger.Debugf("[%s][%s]scheduler parent", peer.Task.TaskID, peer.PeerID)
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start scheduler parent flow")
 	if !s.evaluator.NeedAdjustParent(peer) {
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("peer does not need to replace the parent node, current parent is %v", peer.GetParent())
 		if peer.GetParent() == nil {
 			return nil, nil, false
 		}
 		return peer.GetParent(), []*types.Peer{peer.GetParent()}, true
 	}
 	candidateParents := s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
-	logger.Debugf("[%s][%s]select num %d candidates", peer.Task.TaskID, peer.PeerID, len(candidateParents))
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d parent candidates %v", len(candidateParents), candidateParents)
 	var value float64
 	var primary = peer.GetParent()
 	for _, candidate := range candidateParents {
@@ -138,29 +142,50 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer
 
 func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list []*types.Peer) {
 	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *types.Peer) bool {
-		if candidateNode == nil || candidateNode.IsDone() || candidateNode.IsLeave() || candidateNode == peer {
+		if candidateNode == nil {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("*candidate child peer is not selected because it is nil")
+			return false
+		}
+		if candidateNode.IsDone() || candidateNode.IsLeave() || candidateNode == peer {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("*candidate child peer %s is not selected because it is %v",
+				candidateNode.PeerID, candidateNode)
 			return false
 		}
 		if candidateNode.Host != nil && candidateNode.Host.CDN {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("candidate child peer %s is not selected because it is a cdn host", candidateNode.PeerID)
 			return false
 		}
 		if candidateNode.GetParent() == nil {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("candidate child peer %s is selected because it has not parent",
+				candidateNode.PeerID)
 			return true
 		}
 
 		if candidateNode.GetParent() != nil && s.evaluator.IsBadNode(candidateNode.GetParent()) {
+			logger.WithTaskAndPeerID(peer.Task.TaskID,
+				peer.PeerID).Debugf("candidate child peer %s is selected because it has parent and parent status is not health", candidateNode.PeerID)
 			return true
 		}
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("=candidate child peer %s is not selected because it is %v",
+			candidateNode.PeerID, candidateNode)
 		return false
 	})
 }
 
 func (s *Scheduler) selectCandidateParents(peer *types.Peer, limit int) (list []*types.Peer) {
 	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.Peer) bool {
-		if candidateNode == nil || s.evaluator.IsBadNode(candidateNode) || candidateNode.IsLeave() || candidateNode == peer || candidateNode.Host.
-			GetFreeUploadLoad() <= 0 {
+		if candidateNode == nil {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("candidate parent peer is not selected because it is nil")
 			return false
 		}
+		if s.evaluator.IsBadNode(candidateNode) || candidateNode.IsLeave() || candidateNode == peer || candidateNode.Host.
+			GetFreeUploadLoad() <= 0 {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("candidate parent peer %s is not selected because it is %v",
+				candidateNode.PeerID, candidateNode)
+			return false
+		}
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("candidate parent peer %s is selected because it is %v",
+			candidateNode.PeerID, candidateNode)
 		return true
 	})
 }
