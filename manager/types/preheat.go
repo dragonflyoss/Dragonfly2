@@ -7,10 +7,11 @@ type PreheatParams struct {
 }
 
 type CreatePreheatRequest struct {
-	Type    string            `json:"type" binding:"required,oneof=image file"`
-	URL     string            `json:"url" binding:"required"`
-	Filter  string            `json:"filter" binding:"omitempty"`
-	Headers map[string]string `json:"headers" binding:"omitempty"`
+	SchedulerClusterID string            `json:"scheduler_cluster_id" binding:"omitempty"`
+	Type               string            `json:"type" binding:"required,oneof=image file"`
+	URL                string            `json:"url" binding:"required"`
+	Filter             string            `json:"filter" binding:"omitempty"`
+	Headers            map[string]string `json:"headers" binding:"omitempty"`
 }
 
 type Preheat struct {
