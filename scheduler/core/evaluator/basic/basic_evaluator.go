@@ -41,10 +41,12 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 	}
 
 	if peer.GetParent() == nil && !peer.IsDone() {
+		logger.Debugf("peer %s need adjust parent because it has not parent and status is %s", peer.PeerID, peer.GetStatus())
 		return true
 	}
 
 	if peer.GetParent() != nil && eval.IsBadNode(peer.GetParent()) {
+		logger.Debugf("peer %s need adjust parent because it current parent is bad", peer.PeerID)
 		return true
 	}
 	costHistory := peer.GetCostHistory()
@@ -57,7 +59,11 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 		logger.Debugf("IsBadNode [%s]: recent pieces have taken too long to download", peer.PeerID)
 	}
 	// TODO adjust policy
-	return (avgCost * 20) < lastCost
+	result := (avgCost * 20) < lastCost
+	if result == true {
+		logger.Debugf("peer %s need adjust parent because it latest download cost is too time consuming", peer.PeerID)
+	}
+	return result
 }
 
 func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
