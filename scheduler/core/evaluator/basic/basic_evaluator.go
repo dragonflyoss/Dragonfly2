@@ -49,6 +49,12 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 		logger.Debugf("peer %s need adjust parent because it current parent is bad", peer.PeerID)
 		return true
 	}
+
+	if peer.GetParent() != nil && peer.GetParent().IsLeave() {
+		logger.Debugf("peer %s need adjust parent because it current parent is status is leave", peer.PeerID)
+		return true
+	}
+
 	costHistory := peer.GetCostHistory()
 	if len(costHistory) < 4 {
 		return false

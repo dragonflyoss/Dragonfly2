@@ -137,6 +137,7 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer
 		}
 		return primary, candidateParents, true
 	}
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID)
 	return nil, nil, false
 }
 

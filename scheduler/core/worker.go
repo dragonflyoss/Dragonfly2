@@ -81,6 +81,7 @@ func newWorker() *baseWorker {
 }
 
 func (w *baseWorker) start(s *state) {
+	go s.start()
 	for {
 		select {
 		case e := <-w.events:
