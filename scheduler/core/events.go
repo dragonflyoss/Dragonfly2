@@ -146,6 +146,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 			return
 		}
 	}
+	parentPeer.Touch()
 	if oldParent != nil {
 		candidates = append(candidates, oldParent)
 	}

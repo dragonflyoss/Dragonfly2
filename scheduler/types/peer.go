@@ -102,7 +102,7 @@ func (peer *Peer) Touch() {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 	peer.lastAccessTime = time.Now()
-	if peer.status == PeerStatusZombie {
+	if peer.status == PeerStatusZombie && !peer.leave {
 		peer.status = PeerStatusRunning
 	}
 	peer.Task.Touch()
