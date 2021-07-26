@@ -71,14 +71,14 @@ type Scheduler struct {
 }
 
 func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) {
-	logger.Debugf("[%s][%s]scheduler children flow", peer.Task.TaskID, peer.PeerID)
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start scheduler children flow")
 	if s.evaluator.IsBadNode(peer) {
-		logger.Debugf("[%s][%s]is badNode", peer.Task.TaskID, peer.PeerID)
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("peer is badNode")
 		return
 	}
 	freeUpload := peer.Host.GetFreeUploadLoad()
 	candidateChildren := s.selectCandidateChildren(peer, freeUpload*2)
-	logger.Debugf("[%s][%s]select num %d candidate children %v", peer.Task.TaskID, peer.PeerID, len(candidateChildren), candidateChildren)
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d candidate children %v", len(candidateChildren), candidateChildren)
 	evalResult := make(map[float64]*types.Peer)
 	var evalScore []float64
 	for _, child := range candidateChildren {
@@ -101,21 +101,21 @@ func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) 
 	for _, child := range children {
 		child.ReplaceParent(peer)
 	}
-	logger.Debugf("[%s][%s]final schedule children list %v", peer.Task.TaskID, peer.PeerID, children)
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("final schedule children list %v", children)
 	return
 }
 
 func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer, bool) {
-	logger.Debugf("[%s][%s]scheduler parent flow", peer.Task.TaskID, peer.PeerID)
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start scheduler parent flow")
 	if !s.evaluator.NeedAdjustParent(peer) {
-		logger.Debugf("[%s][%s]peer does not need to replace the parent node, current parent is %v", peer.Task.TaskID, peer.PeerID, peer.GetParent())
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("peer does not need to replace the parent node, current parent is %v", peer.GetParent())
 		if peer.GetParent() == nil {
 			return nil, nil, false
 		}
 		return peer.GetParent(), []*types.Peer{peer.GetParent()}, true
 	}
 	candidateParents := s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
-	logger.Debugf("[%s][%s]select num %d parent candidates %v", peer.Task.TaskID, peer.PeerID, len(candidateParents), candidateParents)
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d parent candidates %v", len(candidateParents), candidateParents)
 	var value float64
 	var primary = peer.GetParent()
 	for _, candidate := range candidateParents {

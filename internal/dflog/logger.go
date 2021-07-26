@@ -128,6 +128,10 @@ func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
 	CoreLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
+func (log *SugaredLoggerOnWith) Debug(args ...interface{}) {
+	CoreLogger.Debugw(fmt.Sprint(args...), log.withArgs...)
+}
+
 func Infof(template string, args ...interface{}) {
 	CoreLogger.Infof(template, args...)
 }
