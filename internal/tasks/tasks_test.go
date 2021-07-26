@@ -1,9 +1,10 @@
 package tasks
 
 import (
-	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 )
@@ -27,7 +28,7 @@ func TestTaskMarshal(t *testing.T) {
 			},
 			expect: func(t *testing.T, result []machineryv1tasks.Arg, err error) {
 				assert := assert.New(t)
-				assert.Equal([]machineryv1tasks.Arg{{Type:"string", Value:"{\"i\":1,\"f\":1.1,\"s\":\"foo\"}"}}, result)
+				assert.Equal([]machineryv1tasks.Arg{{Type: "string", Value: "{\"i\":1,\"f\":1.1,\"s\":\"foo\"}"}}, result)
 			},
 		},
 		{
@@ -39,37 +40,37 @@ func TestTaskMarshal(t *testing.T) {
 			}{},
 			expect: func(t *testing.T, result []machineryv1tasks.Arg, err error) {
 				assert := assert.New(t)
-				assert.Equal([]machineryv1tasks.Arg{{Name:"", Type:"string", Value:"{\"i\":0,\"f\":0,\"s\":\"\"}"}}, result)
+				assert.Equal([]machineryv1tasks.Arg{{Name: "", Type: "string", Value: "{\"i\":0,\"f\":0,\"s\":\"\"}"}}, result)
 			},
 		},
 		{
 			name: "marshal struct with slice",
 			value: struct {
-				S []string  `json:"s" binding:"required"`
+				S []string `json:"s" binding:"required"`
 			}{
 				S: []string{},
 			},
 			expect: func(t *testing.T, result []machineryv1tasks.Arg, err error) {
 				assert := assert.New(t)
-				assert.Equal([]machineryv1tasks.Arg{{Name:"", Type:"string", Value:"{\"s\":[]}"}}, result)
+				assert.Equal([]machineryv1tasks.Arg{{Name: "", Type: "string", Value: "{\"s\":[]}"}}, result)
 			},
 		},
 		{
 			name: "marshal struct with nil slice",
 			value: struct {
-				S []string  `json:"s" binding:"omitempty"`
+				S []string `json:"s" binding:"omitempty"`
 			}{},
 			expect: func(t *testing.T, result []machineryv1tasks.Arg, err error) {
 				assert := assert.New(t)
-				assert.Equal([]machineryv1tasks.Arg{{Name:"", Type:"string", Value:"{\"s\":null}"}}, result)
+				assert.Equal([]machineryv1tasks.Arg{{Name: "", Type: "string", Value: "{\"s\":null}"}}, result)
 			},
 		},
 		{
-			name: "marshal nil",
+			name:  "marshal nil",
 			value: nil,
 			expect: func(t *testing.T, result []machineryv1tasks.Arg, err error) {
 				assert := assert.New(t)
-				assert.Equal([]machineryv1tasks.Arg{{Name:"", Type:"string", Value:"null"}}, result)
+				assert.Equal([]machineryv1tasks.Arg{{Name: "", Type: "string", Value: "null"}}, result)
 			},
 		},
 		{
@@ -145,12 +146,12 @@ func TestTaskUnmarshal(t *testing.T) {
 				reflect.ValueOf("{\"s\":[]}"),
 			},
 			value: &struct {
-				S []string  `json:"s" binding:"required"`
+				S []string `json:"s" binding:"required"`
 			}{},
 			expect: func(t *testing.T, result interface{}, err error) {
 				assert := assert.New(t)
 				assert.Equal(&struct {
-					S []string  `json:"s" binding:"required"`
+					S []string `json:"s" binding:"required"`
 				}{S: []string{}}, result)
 			},
 		},
@@ -160,12 +161,12 @@ func TestTaskUnmarshal(t *testing.T) {
 				reflect.ValueOf("{\"s\":null}"),
 			},
 			value: &struct {
-				S []string  `json:"s" binding:"required"`
+				S []string `json:"s" binding:"required"`
 			}{},
 			expect: func(t *testing.T, result interface{}, err error) {
 				assert := assert.New(t)
 				assert.Equal(&struct {
-					S []string  `json:"s" binding:"required"`
+					S []string `json:"s" binding:"required"`
 				}{S: nil}, result)
 			},
 		},
@@ -173,7 +174,7 @@ func TestTaskUnmarshal(t *testing.T) {
 			name: "unmarshal nil data",
 			data: []reflect.Value{},
 			value: &struct {
-				S []string  `json:"s" binding:"required"`
+				S []string `json:"s" binding:"required"`
 			}{},
 			expect: func(t *testing.T, result interface{}, err error) {
 				assert := assert.New(t)
