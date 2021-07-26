@@ -62,7 +62,7 @@ func New(cfg *config.Config) (*Server, error) {
 	searcher := searcher.New()
 
 	// Initialize task
-	tasks, err := tasks.New(cfg.Database.Redis)
+	tasks, err := tasks.New(cfg)
 	if err != nil {
 		return nil, err
 	}
