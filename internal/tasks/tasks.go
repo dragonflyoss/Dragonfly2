@@ -122,3 +122,13 @@ func Unmarshal(data []reflect.Value, v interface{}) error {
 	}
 	return nil
 }
+
+// PutTask can put a task before creating a Tasks
+func PutTask(taskName string, taskHandler interface{}) {
+	tasks[taskName] = taskHandler
+}
+
+// RegisterTask will register a task in a created Tasks.
+func (t *Tasks) RegisterTask(taskName string, taskHandler interface{}) error {
+	return t.Server.RegisterTask(taskName, taskHandler)
+}

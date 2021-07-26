@@ -8,4 +8,6 @@ type PreheatRequest struct {
 	Headers map[string]string
 }
 
-type PreheatResponse struct{}
+type PreheatResponse struct{
+	TaskID string
+}

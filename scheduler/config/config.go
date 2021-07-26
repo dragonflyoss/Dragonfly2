@@ -33,6 +33,7 @@ type Config struct {
 	DynConfig    *DynConfig       `yaml:"dynConfig" mapstructure:"dynConfig"`
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
 	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
+	Redis        *RedisConfig     `yaml:"redis" mapstructure:"redis"`
 }
 
 func New() *Config {
@@ -215,4 +216,13 @@ type HostConfig struct {
 
 	// Peerhost idc for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
+}
+
+type RedisConfig struct {
+	Host      string `yaml:"host" mapstructure:"host"`
+	Port      int    `yaml:"port" mapstructure:"port"`
+	Password  string `yaml:"password" mapstructure:"password"`
+	CacheDB   int    `yaml:"cacheDB" mapstructure:"cacheDB"`
+	BrokerDB  int    `yaml:"brokerDB" mapstructure:"brokerDB"`
+	BackendDB int    `yaml:"backendDB" mapstructure:"backendDB"`
 }
