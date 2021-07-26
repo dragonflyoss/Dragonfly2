@@ -37,65 +37,44 @@ type event interface {
 }
 
 type state struct {
-	sched                         scheduler.Scheduler
-	peerManager                   daemon.PeerMgr
-	cdnManager                    daemon.CDNMgr
-	waitScheduleParentPeerQueue   workqueue.DelayingInterface
-	waitScheduleChildrenPeerQueue workqueue.DelayingInterface
+	sched                       scheduler.Scheduler
+	peerManager                 daemon.PeerMgr
+	cdnManager                  daemon.CDNMgr
+	waitScheduleParentPeerQueue workqueue.DelayingInterface
 }
 
 func newState(sched scheduler.Scheduler, peerManager daemon.PeerMgr, cdnManager daemon.CDNMgr) *state {
 	return &state{
-		sched:                         sched,
-		peerManager:                   peerManager,
-		cdnManager:                    cdnManager,
-		waitScheduleParentPeerQueue:   workqueue.NewNamedDelayingQueue("wait reSchedule parent"),
-		waitScheduleChildrenPeerQueue: workqueue.NewNamedDelayingQueue("wait reSchedule children"),
+		sched:                       sched,
+		peerManager:                 peerManager,
+		cdnManager:                  cdnManager,
+		waitScheduleParentPeerQueue: workqueue.NewNamedDelayingQueue("wait reSchedule parent"),
 	}
 }
 
 func (s *state) start() {
-	go func() {
-		for {
-			v, shutdown := s.waitScheduleParentPeerQueue.Get()
-			if shutdown {
-				break
-			}
-			peer := v.(*types.Peer)
-			parent, candidates, hashParent := s.sched.ScheduleParent(peer)
-			if !hashParent {
-				logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Warnf("waitScheduleParentPeerQueue: there is no available parent，reschedule it in one second")
-				s.waitScheduleChildrenPeerQueue.Get()
-				s.waitScheduleParentPeerQueue.AddAfter(peer, time.Second)
-				continue
-			}
-			if peer.PacketChan == nil {
-				logger.Errorf("waitScheduleParentPeerQueue: there is no packet chan associated with peer %s", peer.PeerID)
-				return
-			}
-			peer.PacketChan <- constructSuccessPeerPacket(peer, parent, candidates)
-			s.waitScheduleParentPeerQueue.Done(v)
-		}
-	}()
 	for {
-		v, shutdown := s.waitScheduleChildrenPeerQueue.Get()
+		v, shutdown := s.waitScheduleParentPeerQueue.Get()
 		if shutdown {
 			break
 		}
 		peer := v.(*types.Peer)
-		children := s.sched.ScheduleChildren(peer)
-		if children == nil || len(children) == 0 {
-			s.waitScheduleChildrenPeerQueue.AddAfter(peer, time.Second)
+		if peer.IsDone() || peer.IsLeave() {
+			s.waitScheduleParentPeerQueue.Done(peer)
 			continue
 		}
-		for _, child := range children {
-			if child.PacketChan == nil {
-				logger.Debugf("reportPeerSuccessResult: there is no packet chan with peer %s", peer.PeerID)
-				continue
-			}
-			child.PacketChan <- constructSuccessPeerPacket(child, peer, nil)
+		parent, candidates, hashParent := s.sched.ScheduleParent(peer)
+		if !hashParent && !peer.Host.CDN {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Warnf("waitScheduleParentPeerQueue: there is no available parent，reschedule it in one second")
+			s.waitScheduleParentPeerQueue.AddAfter(peer, time.Second)
+			continue
 		}
-		s.waitScheduleChildrenPeerQueue.Done(v)
+		if peer.PacketChan == nil {
+			logger.Errorf("waitScheduleParentPeerQueue: there is no packet chan associated with peer %s", peer.PeerID)
+			return
+		}
+		peer.PacketChan <- constructSuccessPeerPacket(peer, parent, candidates)
+		s.waitScheduleParentPeerQueue.Done(v)
 	}
 }
 
@@ -110,11 +89,10 @@ func (e startReportPieceResultEvent) apply(s *state) {
 	if !hasParent {
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("peerScheduleParentEvent: there is no available parent，reschedule it in one second")
 		s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
-		//e.peer.PacketChan <- constructFailPeerPacket(e.peer, dfcodes.SchedWithoutParentPeer)
 		return
 	}
 	if e.peer.PacketChan == nil {
-		logger.Errorf("report piece result: there is no packet chan associated with peer %s", e.peer.PeerID)
+		logger.Errorf("start report piece result: there is no packet chan associated with peer %s", e.peer.PeerID)
 		return
 	}
 	e.peer.PacketChan <- constructSuccessPeerPacket(e.peer, parent, candidates)
@@ -136,7 +114,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	oldParent := e.peer.GetParent()
 	var candidates []*types.Peer
 	parentPeer, ok := s.peerManager.Get(e.pr.DstPid)
-	if !ok {
+	if !ok || parentPeer.IsLeave() {
 		var hasParent bool
 		parentPeer, candidates, hasParent = s.sched.ScheduleParent(e.peer)
 		if !hasParent {
@@ -153,6 +131,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 		logger.Errorf("peerDownloadPieceSuccessEvent: there is no packet chan with peer %s", e.peer.PeerID)
 		return
 	}
+	// TODO if parentPeer is equal with oldParent, need schedule again ?
 	e.peer.PacketChan <- constructSuccessPeerPacket(e.peer, parentPeer, candidates)
 	return
 }
@@ -230,13 +209,8 @@ var _ event = peerDownloadSuccessEvent{}
 
 func (e peerDownloadSuccessEvent) apply(s *state) {
 	e.peer.SetStatus(types.PeerStatusSuccess)
+	removePeerFromCurrentTree(e.peer, s)
 	children := s.sched.ScheduleChildren(e.peer)
-	if children == nil || len(children) == 0 {
-		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
-			e.peer.PeerID).Warnf("peerDownloadSuccessEvent: there is no available children，reschedule it in one second")
-		s.waitScheduleChildrenPeerQueue.AddAfter(e.peer, time.Second)
-		return
-	}
 	for _, child := range children {
 		if child.PacketChan == nil {
 			logger.Debugf("reportPeerSuccessResult: there is no packet chan with peer %s", e.peer.PeerID)
@@ -259,10 +233,11 @@ var _ event = peerDownloadFailEvent{}
 
 func (e peerDownloadFailEvent) apply(s *state) {
 	e.peer.SetStatus(types.PeerStatusFail)
+	removePeerFromCurrentTree(e.peer, s)
 	for _, child := range e.peer.GetChildren() {
 		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if child.PacketChan == nil {
-			logger.Warnf("reportPeerDownloadResult: there is no packet chan associated with peer %s", e.peer.PeerID)
+			logger.Warnf("reportPeerFailResult: there is no packet chan associated with peer %s", e.peer.PeerID)
 			continue
 		}
 		if !hasParent {
@@ -327,7 +302,7 @@ func constructFailPeerPacket(peer *types.Peer, errCode base.Code) *schedulerRPC.
 
 func handlePeerLeave(peer *types.Peer, s *state) {
 	peer.MarkLeave()
-	peer.ReplaceParent(nil)
+	removePeerFromCurrentTree(peer, s)
 	for _, child := range peer.GetChildren() {
 		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if !hasParent {
@@ -370,5 +345,21 @@ func handleSeedTaskFail(task *types.Task) {
 			peer.PacketChan <- constructFailPeerPacket(peer, dfcodes.CdnError)
 			return true
 		})
+	}
+}
+
+func removePeerFromCurrentTree(peer *types.Peer, s *state) {
+	parent := peer.GetParent()
+	peer.ReplaceParent(nil)
+	// parent frees up upload resources
+	if parent != nil {
+		children := s.sched.ScheduleChildren(parent)
+		for _, child := range children {
+			if child.PacketChan == nil {
+				logger.Debugf("removePeerFromCurrentTree: there is no packet chan with peer %s", peer.PeerID)
+				continue
+			}
+			child.PacketChan <- constructSuccessPeerPacket(child, peer, nil)
+		}
 	}
 }
