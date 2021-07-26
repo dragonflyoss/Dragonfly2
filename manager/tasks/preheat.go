@@ -11,9 +11,15 @@ const (
 	PreheatFileType  = "file"
 )
 
+type file type {
+	
+
+}
+
 func (t *task) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, error) {
 	if json.Type == PreheatImageType {
 	}
+
 	if json.Type == PreheatFileType {
 	}
 
