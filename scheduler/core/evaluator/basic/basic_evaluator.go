@@ -41,10 +41,12 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 	}
 
 	if peer.GetParent() == nil && !peer.IsDone() {
+		logger.Debugf("peer %s need adjust parent because it has not parent and status is %s", peer.PeerID, peer.GetStatus())
 		return true
 	}
 
 	if peer.GetParent() != nil && eval.IsBadNode(peer.GetParent()) {
+		logger.Debugf("peer %s need adjust parent because it current parent is bad", peer.PeerID)
 		return true
 	}
 	costHistory := peer.GetCostHistory()
@@ -54,10 +56,14 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 
 	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
 	if avgCost*40 < lastCost {
-		logger.Debugf("IsBadNode [%s]: recent pieces have taken too long to download", peer.PeerID)
+		logger.Debugf("peer %s is bad because recent pieces have taken too long to download", peer.PeerID)
 	}
 	// TODO adjust policy
-	return (avgCost * 20) < lastCost
+	result := (avgCost * 20) < lastCost
+	if result == true {
+		logger.Debugf("peer %s need adjust parent because it latest download cost is too time consuming", peer.PeerID)
+	}
+	return result
 }
 
 func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
@@ -66,6 +72,7 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 	}
 
 	if peer.IsBad() {
+		logger.Debugf("peer %s is bad because status is %s", peer.PeerID, peer.GetStatus())
 		return true
 	}
 
@@ -78,9 +85,8 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 	if parent == nil {
 		return false
 	}
-	logger.Debugf("IsBadNode [%s]: %s have elapsed since the last access %s, now %s", time.Now().Sub(peer.GetLastAccessTime()), peer.PeerID,
-		peer.GetLastAccessTime(), time.Now())
 	if time.Now().After(peer.GetLastAccessTime().Add(5 * time.Second)) {
+		logger.Debugf("peer %s is bad because have elapsed %s > 5s since the last access", peer.PeerID, time.Now().Sub(peer.GetLastAccessTime()))
 		return true
 	}
 
@@ -92,7 +98,7 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
 
 	if avgCost*40 < lastCost {
-		logger.Debugf("IsNodeBad [%s]: recent pieces have taken too long to download avg[%d] last[%d]", peer.PeerID, avgCost, lastCost)
+		logger.Debugf("peer %s is bad because recent pieces have taken too long to download avg[%d] last[%d]", peer.PeerID, avgCost, lastCost)
 		return true
 	}
 

@@ -86,7 +86,8 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 		res           interface{}
 	)
 	key := idgen.TaskID(ptr.Url, ptr.Filter, ptr.UrlMeta, ptr.BizId)
-	logger.WithPeerID(ptr.PeerId).Infof("generate hash key taskId: %s and start to register peer task for peer_id(%s) url(%s)", key, ptr.PeerId, ptr.Url)
+	logger.WithTaskAndPeerID(key, ptr.PeerId).Infof("generate hash key taskId: %s and start to register peer task for peer_id(%s) url(%s)", key, ptr.PeerId,
+		ptr.Url)
 	reg := func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		client, schedulerNode, err = sc.getSchedulerClient(key, false)
@@ -102,7 +103,7 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 		taskID = rr.TaskId
 		code = dfcodes.Success
 		if taskID != key {
-			logger.WithPeerID(ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", key, taskID)
+			logger.WithTaskAndPeerID(taskID, ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", key, taskID)
 			sc.Connection.CorrectKey2NodeRelation(key, taskID)
 		}
 		logger.With("peerId", ptr.PeerId).

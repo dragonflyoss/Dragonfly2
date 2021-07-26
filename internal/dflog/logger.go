@@ -94,9 +94,9 @@ func WithTaskID(taskID string) *SugaredLoggerOnWith {
 	}
 }
 
-func WithPeerID(peerID string) *SugaredLoggerOnWith {
+func WithTaskAndPeerID(taskID string, peerID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"peerID", peerID},
+		withArgs: []interface{}{"taskId", taskID, "peerID", peerID},
 	}
 }
 
@@ -126,6 +126,10 @@ func (log *SugaredLoggerOnWith) Error(args ...interface{}) {
 
 func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
 	CoreLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func (log *SugaredLoggerOnWith) Debug(args ...interface{}) {
+	CoreLogger.Debugw(fmt.Sprint(args...), log.withArgs...)
 }
 
 func Infof(template string, args ...interface{}) {
