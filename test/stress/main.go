@@ -233,6 +233,7 @@ func printThroughput(results []*Result) {
 		total += v.Size
 	}
 	fmt.Printf("Throughput\t%v\n", unit.Bytes(total/int64(*duration/time.Second)))
+	fmt.Printf("Request\t\t%d/s\n", len(results)/int(*duration/time.Second))
 }
 
 func saveToOutput(results []*Result) {
