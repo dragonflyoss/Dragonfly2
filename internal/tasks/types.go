@@ -1,11 +1,11 @@
-package task
+package tasks
 
 type PreheatRequest struct {
 	URL     string
+	Tag     string
 	Digest  string
 	Filter  string
 	Headers map[string]string
-	BizID   string
 }
 
 type PreheatResponse struct{}

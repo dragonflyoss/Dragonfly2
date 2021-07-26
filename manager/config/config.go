@@ -15,6 +15,7 @@ type Config struct {
 }
 
 type ServerConfig struct {
+	Name string           `yaml:"name" mapstructure:"name"`
 	GRPC *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
 	REST *RestConfig      `yaml:"rest" mapstructure:"rest"`
 }
@@ -75,6 +76,7 @@ type TCPListenPortRange struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
+			Name: "d7y/manager",
 			GRPC: &TCPListenConfig{
 				PortRange: TCPListenPortRange{
 					Start: 65003,
@@ -105,6 +107,10 @@ func New() *Config {
 }
 
 func (cfg *Config) Validate() error {
+	if cfg.Server.Name == "" {
+		return errors.New("empty server name config is not specified")
+	}
+
 	if cfg.Cache == nil {
 		return errors.New("empty cache config is not specified")
 	}
