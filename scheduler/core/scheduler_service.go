@@ -201,7 +201,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 func (s *SchedulerService) HandlePieceResult(peer *types.Peer, pieceResult *schedulerRPC.PieceResult) error {
 	peer.Touch()
 	if pieceResult.PieceNum == common.ZeroOfPiece {
-		s.worker.send(peerScheduleParentEvent{peer})
+		s.worker.send(startReportPieceResultEvent{peer})
 		return nil
 	} else if pieceResult.Success {
 		s.worker.send(peerDownloadPieceSuccessEvent{

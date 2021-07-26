@@ -99,13 +99,13 @@ func (s *state) start() {
 	}
 }
 
-type peerScheduleParentEvent struct {
+type startReportPieceResultEvent struct {
 	peer *types.Peer
 }
 
-var _ event = peerScheduleParentEvent{}
+var _ event = startReportPieceResultEvent{}
 
-func (e peerScheduleParentEvent) apply(s *state) {
+func (e startReportPieceResultEvent) apply(s *state) {
 	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer)
 	if !hasParent {
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("peerScheduleParentEvent: there is no available parent，reschedule it in one second")
@@ -120,7 +120,7 @@ func (e peerScheduleParentEvent) apply(s *state) {
 	e.peer.PacketChan <- constructSuccessPeerPacket(e.peer, parent, candidates)
 }
 
-func (e peerScheduleParentEvent) hashKey() string {
+func (e startReportPieceResultEvent) hashKey() string {
 	return e.peer.PeerID
 }
 
