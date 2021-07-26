@@ -60,12 +60,17 @@ func (s *state) start() {
 		}
 		peer := v.(*types.Peer)
 		if peer.IsDone() || peer.IsLeave() {
-			s.waitScheduleParentPeerQueue.Done(peer)
+			logger.WithTaskAndPeerID(peer.Task.TaskID,
+				peer.PeerID).Debugf("waitScheduleParentPeerQueue: peer has left from waitScheduleParentPeerQueue because peer is done or leave, "+
+				"peer status is %s, "+
+				"isLeave %t", peer.GetStatus(), peer.IsLeave())
+			s.waitScheduleParentPeerQueue.Done(v)
 			continue
 		}
 		parent, candidates, hashParent := s.sched.ScheduleParent(peer)
 		if !hashParent && !peer.Host.CDN {
 			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Warnf("waitScheduleParentPeerQueue: there is no available parent，reschedule it in one second")
+			s.waitScheduleParentPeerQueue.Done(v)
 			s.waitScheduleParentPeerQueue.AddAfter(peer, time.Second)
 			continue
 		}
@@ -74,7 +79,15 @@ func (s *state) start() {
 			return
 		}
 		peer.PacketChan <- constructSuccessPeerPacket(peer, parent, candidates)
+		logger.WithTaskAndPeerID(peer.Task.TaskID,
+			peer.PeerID).Debugf("waitScheduleParentPeerQueue: peer has left from waitScheduleParentPeerQueue because it has scheduled new parent %v", parent)
 		s.waitScheduleParentPeerQueue.Done(v)
+	}
+}
+
+func (s *state) stop() {
+	if !s.waitScheduleParentPeerQueue.ShuttingDown() {
+		s.waitScheduleParentPeerQueue.ShutDown()
 	}
 }
 

@@ -32,6 +32,7 @@ type workerGroup struct {
 	workerNum  int
 	workerList []*baseWorker
 	stopCh     chan struct{}
+	s          *state
 }
 
 var _ worker = (*workerGroup)(nil)
@@ -45,6 +46,8 @@ func newEventLoopGroup(workerNum int) worker {
 }
 
 func (wg *workerGroup) start(s *state) {
+	wg.s = s
+	go s.start()
 	for i := 0; i < wg.workerNum; i++ {
 		w := newWorker()
 		go w.start(s)
@@ -61,6 +64,7 @@ func (wg *workerGroup) send(e event) bool {
 
 func (wg *workerGroup) stop() {
 	close(wg.stopCh)
+	wg.s.start()
 	for _, worker := range wg.workerList {
 		worker.stop()
 	}
@@ -81,7 +85,6 @@ func newWorker() *baseWorker {
 }
 
 func (w *baseWorker) start(s *state) {
-	go s.start()
 	for {
 		select {
 		case e := <-w.events:
