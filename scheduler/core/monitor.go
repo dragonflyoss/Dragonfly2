@@ -116,7 +116,7 @@ func (m *monitor) printDebugInfo() string {
 }
 
 func (m *monitor) RefreshDownloadMonitor(peer *types.Peer) {
-	logger.Debugf("[%s][%s] downloadMonitorWorkingLoop refresh ", peer.Task.TaskID, peer.PeerID)
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("downloadMonitorWorkingLoop refresh ")
 	if !peer.IsRunning() {
 		m.downloadMonitorQueue.AddAfter(peer, time.Second*2)
 	} else if peer.IsWaiting() {
@@ -141,7 +141,7 @@ func (m *monitor) downloadMonitorWorkingLoop() {
 		//if m.downloadMonitorCallBack != nil {
 		peer := v.(*types.Peer)
 		if peer != nil {
-			logger.Debugf("[%s][%s] downloadMonitorWorkingLoop status[%d]", peer.Task.TaskID, peer.PeerID, peer.GetStatus())
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("downloadMonitorWorkingLoop status[%d]", peer.GetStatus())
 			if peer.IsSuccess() || peer.Host.CDN {
 				// clear from monitor
 			} else {
