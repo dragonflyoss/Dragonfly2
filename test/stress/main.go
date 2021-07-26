@@ -1,0 +1,255 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package main
+
+import (
+	"context"
+	"flag"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"sort"
+	"sync"
+	"syscall"
+	"time"
+
+	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"github.com/go-echarts/statsview"
+	"github.com/go-echarts/statsview/viewer"
+	"github.com/montanaflynn/stats"
+
+	"d7y.io/dragonfly/v2/client/config"
+)
+
+var (
+	target   string
+	output   string
+	con      int
+	duration *time.Duration
+)
+
+func init() {
+	flag.StringVar(&target, "url", "", "")
+	flag.StringVar(&output, "output", "/tmp/statistics.txt", "")
+	flag.IntVar(&con, "connections", 100, "")
+	duration = flag.Duration("duration", 100*time.Second, "")
+}
+
+type Result struct {
+	StatusCode int
+	StartTime  time.Time
+	EndTime    time.Time
+	TaskID     string
+	PeerID     string
+	Size       int64
+}
+
+func main() {
+	go debug()
+
+	flag.Parse()
+
+	var (
+		wgProcess = &sync.WaitGroup{}
+		wgCollect = &sync.WaitGroup{}
+	)
+	ctx, cancel := context.WithCancel(context.Background())
+	resultCh := make(chan *Result, 1024)
+
+	wgCollect.Add(1)
+	go collect(wgCollect, resultCh)
+
+	for i := 0; i < con; i++ {
+		wgProcess.Add(1)
+		go process(ctx, wgProcess, resultCh)
+	}
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+	go forceExit(signals)
+
+loop:
+	for {
+		select {
+		case <-time.After(*duration):
+			break loop
+		case sig := <-signals:
+			log.Printf("receive signal: %v", sig)
+			break loop
+		}
+	}
+	cancel()
+	wgProcess.Wait()
+	close(resultCh)
+	wgCollect.Wait()
+}
+
+func debug() {
+	debugAddr := fmt.Sprintf("%s:%d", iputils.HostIP, 18066)
+	viewer.SetConfiguration(viewer.WithAddr(debugAddr))
+	statsview.New().Start()
+}
+
+func forceExit(signals chan os.Signal) {
+	var count int
+	for {
+		select {
+		case <-signals:
+			count++
+			if count > 2 {
+				log.Printf("force exit")
+				os.Exit(1)
+			}
+		}
+	}
+}
+
+func process(ctx context.Context, wg *sync.WaitGroup, result chan *Result) {
+	defer wg.Done()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		start := time.Now()
+		resp, err := http.Get(target)
+		if err != nil {
+			log.Printf("connect target error: %s", err)
+			continue
+		}
+		n, err := io.Copy(ioutil.Discard, resp.Body)
+		if err != nil {
+			log.Printf("discard data error: %s", err)
+		}
+		end := time.Now()
+		result <- &Result{
+			StatusCode: resp.StatusCode,
+			StartTime:  start,
+			EndTime:    end,
+			Size:       n,
+			TaskID:     resp.Header.Get(config.HeaderDragonflyTask),
+			PeerID:     resp.Header.Get(config.HeaderDragonflyPeer),
+		}
+		resp.Body.Close()
+	}
+}
+
+func collect(wg *sync.WaitGroup, resultCh chan *Result) {
+	defer wg.Done()
+	var results = make([]*Result, 0, 1000)
+loop:
+	for {
+		select {
+		case result, ok := <-resultCh:
+			if !ok {
+				break loop
+			}
+			results = append(results, result)
+		}
+	}
+
+	printStatistics(results)
+	saveToOutput(results)
+}
+
+func printStatistics(results []*Result) {
+	printLatency(results)
+	printStatus(results)
+	printThroughput(results)
+}
+
+func printStatus(results []*Result) {
+	var status = make(map[int]int)
+	for _, v := range results {
+		status[v.StatusCode] ++
+	}
+
+	fmt.Printf("HTTP codes\n")
+	for code, count := range status {
+		fmt.Printf("\t%d\t %d\n", code, count)
+	}
+}
+
+func printLatency(results []*Result) {
+	var dur []int64
+
+	for _, v := range results {
+		if v.StatusCode == 200 {
+			dur = append(dur, v.EndTime.Sub(v.StartTime).Nanoseconds())
+		}
+	}
+	if len(dur) == 0 {
+		log.Printf("empty result with 200 status")
+		return
+	}
+
+	sort.Slice(dur, func(i, j int) bool {
+		return i < j
+	})
+	d := stats.LoadRawData(dur)
+
+	min, _ := stats.Min(d)
+	max, _ := stats.Max(d)
+	mean, _ := stats.Mean(d)
+	fmt.Printf("Latency\n")
+	fmt.Printf("\tavg\t %v\n", time.Duration(int64(mean)))
+	fmt.Printf("\tmin\t %v\n", time.Duration(int64(min)))
+	fmt.Printf("\tmax\t %v\n", time.Duration(int64(max)))
+
+	fmt.Printf("Latency Distribution\n")
+	for _, p := range []float64{50, 75, 90, 95, 99} {
+		percentile, err := stats.Percentile(d, p)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("\t%.0f%%\t%v\n", p, time.Duration(int64(percentile)))
+	}
+}
+
+func printThroughput(results []*Result) {
+	var total int64
+	for _, v := range results {
+		total += v.Size
+	}
+	fmt.Printf("Throughput\t%v\n", unit.Bytes(total/int64(*duration/time.Second)))
+}
+
+func saveToOutput(results []*Result) {
+	out, err := os.OpenFile(output, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer out.Close()
+	for _, v := range results {
+		if v.TaskID == "" {
+			v.TaskID = "unknown"
+		}
+		if v.PeerID == "" {
+			v.PeerID = "unknown"
+		}
+		out.WriteString(fmt.Sprintf("%s %s %d %v %d %d\n",
+			v.TaskID, v.PeerID, v.StatusCode, v.EndTime.Sub(v.StartTime),
+			v.StartTime.UnixNano()/100, v.EndTime.UnixNano()/100))
+	}
+}
