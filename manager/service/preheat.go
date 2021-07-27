@@ -6,7 +6,7 @@ import (
 )
 
 func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, error) {
-	if json.SchedulerClusterID != "" {
+	if json.SchedulerClusterID != nil {
 		schedulerCluster := model.SchedulerCluster{}
 		if err := s.db.First(&schedulerCluster, json.SchedulerClusterID).Error; err != nil {
 			return nil, err

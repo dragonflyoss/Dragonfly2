@@ -13,6 +13,10 @@ import (
 	machineryv1config "github.com/RichardKnop/machinery/v1/config"
 )
 
+const (
+	DefaultResultsExpireIn = 86400
+)
+
 type Config struct {
 	Host      string
 	Port      int
@@ -33,9 +37,10 @@ func New(cfg *Config, queue Queue) (*Tasks, error) {
 	backend := fmt.Sprintf("redis://%s@%s:%d/%d", cfg.Password, cfg.Host, cfg.Port, cfg.BackendDB)
 
 	var cnf = &machineryv1config.Config{
-		Broker:        broker,
-		DefaultQueue:  queue.String(),
-		ResultBackend: backend,
+		Broker:          broker,
+		DefaultQueue:    queue.String(),
+		ResultBackend:   backend,
+		ResultsExpireIn: DefaultResultsExpireIn,
 	}
 
 	server, err := machinery.NewServer(cnf)
