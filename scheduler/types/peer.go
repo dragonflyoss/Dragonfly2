@@ -67,7 +67,7 @@ type Peer struct {
 	finishedNum    atomic.Int32
 	lastAccessTime time.Time
 	parent         *Peer
-	children       map[string]*Peer
+	children       sync.Map
 	status         PeerStatus
 	costHistory    []int
 	leave          atomic.Bool
@@ -80,7 +80,6 @@ func NewPeer(peerID string, task *Task, host *PeerHost) *Peer {
 		Host:           host,
 		CreateTime:     time.Now(),
 		lastAccessTime: time.Now(),
-		children:       make(map[string]*Peer),
 		status:         PeerStatusWaiting,
 	}
 }
@@ -90,9 +89,11 @@ func (peer *Peer) GetWholeTreeNode() int {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 	count := 1
-	for _, peerNode := range peer.children {
+	peer.children.Range(func(key, value interface{}) bool {
+		peerNode := value.(*Peer)
 		count += peerNode.GetWholeTreeNode()
-	}
+		return true
+	})
 	return count
 }
 
@@ -106,24 +107,20 @@ func (peer *Peer) Touch() {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 	peer.lastAccessTime = time.Now()
-	if peer.status == PeerStatusZombie && !peer.leave {
+	if peer.status == PeerStatusZombie && !peer.leave.Load() {
 		peer.status = PeerStatusRunning
 	}
 	peer.Task.Touch()
 }
 
 func (peer *Peer) associateChild(child *Peer) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	peer.children[child.PeerID] = child
+	peer.children.Store(child.PeerID, child)
 	peer.Host.IncUploadLoad()
 	peer.Task.peers.Update(peer)
 }
 
 func (peer *Peer) disassociateChild(child *Peer) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	delete(peer.children, child.PeerID)
+	peer.children.Delete(child.PeerID)
 	peer.Host.DecUploadLoad()
 	peer.Task.peers.Update(peer)
 }
@@ -256,10 +253,10 @@ func (peer *Peer) GetParent() *Peer {
 	return peer.parent
 }
 
-func (peer *Peer) GetChildren() map[string]*Peer {
+func (peer *Peer) GetChildren() *sync.Map {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
-	return peer.children
+	return &peer.children
 }
 
 func (peer *Peer) SetStatus(status PeerStatus) {
