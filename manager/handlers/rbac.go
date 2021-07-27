@@ -56,7 +56,7 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 // @Success 200 {object}
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /permission/{userName}/{role} [get]
+// @Router /permission/{userName}/{object}/{action} [get]
 
 func (h *Handlers) HasRoleForUser(ctx *gin.Context) {
 	var params types.UserHasRoleParams
@@ -64,7 +64,14 @@ func (h *Handlers) HasRoleForUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	has, err := h.Service.HasRoleForUser(params.UserName, params.Role)
+	roleName := ""
+	switch params.Action {
+	case "read":
+		roleName = params.Object + ":" + "read"
+	case "write":
+		roleName = params.Object + ":" + "*"
+	}
+	has, err := h.Service.HasRoleForUser(params.UserName, roleName)
 	if err != nil {
 		ctx.Error(err)
 		return

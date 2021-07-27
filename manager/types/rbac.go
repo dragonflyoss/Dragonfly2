@@ -2,7 +2,8 @@ package types
 
 type PolicyRequest struct {
 	Subject string `form:"subject" binding:"required,min=1"`
-	Role    string `form:"role" binding:"required,min=1"`
+	Object  string `form:"object" binding:"required,min=1"`
+	Action  string `form:"aciton" binding:"required,oneof=read write"`
 }
 
 type PermissionGroups []string
@@ -13,5 +14,6 @@ type UserRolesParams struct {
 
 type UserHasRoleParams struct {
 	UserName string `uri:"userName" binding:"required"`
-	Role     string `uri:"role" binding:"required"`
+	Object   string `uri:"object" binding:"required"`
+	Action   string `uri:"action" binding:"required,oneof=read write"`
 }

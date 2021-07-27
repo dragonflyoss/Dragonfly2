@@ -89,18 +89,30 @@ func GetAPIGroupName(path string) (string, error) {
 
 }
 
+func GetAPIGroupNames(g *gin.Engine) []string {
+	APIGroups := []string{}
+	for _, route := range g.Routes() {
+		apiGroupName, err := GetAPIGroupName(route.Path)
+		if err != nil {
+			continue
+		}
+		if !stringutils.Contains(APIGroups, apiGroupName) {
+			APIGroups = append(APIGroups, apiGroupName)
+		}
+
+	}
+	return APIGroups
+
+}
+
 func SystemRoles(g *gin.Engine) []string {
 	Roles := []string{}
 	policyKeys := []string{"read", "*"}
 
-	for _, route := range g.Routes() {
-		permissionGroupName, err := GetAPIGroupName(route.Path)
-		if err != nil {
-			continue
-		}
+	for _, apiGroup := range GetAPIGroupNames(g) {
 		for _, p := range policyKeys {
-			if !stringutils.Contains(Roles, permissionGroupName+":"+p) {
-				Roles = append(Roles, permissionGroupName+":"+p)
+			if !stringutils.Contains(Roles, apiGroup+":"+p) {
+				Roles = append(Roles, apiGroup+":"+p)
 			}
 
 		}

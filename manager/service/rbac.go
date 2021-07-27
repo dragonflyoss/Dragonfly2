@@ -9,11 +9,18 @@ import (
 )
 
 func (s *rest) GetPermissionGroups(g *gin.Engine) types.PermissionGroups {
-	return rbac.SystemRoles(g)
+	return rbac.GetAPIGroupNames(g)
 }
 
 func (s *rest) CreatePermission(json types.PolicyRequest) error {
-	res, err := s.enforcer.AddRoleForUser(json.Subject, json.Role)
+	roleName := ""
+	switch json.Action {
+	case "read":
+		roleName = json.Object + ":" + "read"
+	case "write":
+		roleName = json.Object + ":" + "*"
+	}
+	res, err := s.enforcer.AddRoleForUser(json.Subject, roleName)
 	if err != nil {
 		return err
 	}
@@ -40,7 +47,14 @@ func (s *rest) HasRoleForUser(userName, role string) (bool, error) {
 }
 
 func (s *rest) DestroyPermission(json types.PolicyRequest) error {
-	res, err := s.enforcer.DeleteRoleForUser(json.Subject, json.Role)
+	roleName := ""
+	switch json.Action {
+	case "read":
+		roleName = json.Object + ":" + "read"
+	case "write":
+		roleName = json.Object + ":" + "*"
+	}
+	res, err := s.enforcer.DeleteRoleForUser(json.Subject, roleName)
 	if err != nil {
 		return err
 	}
