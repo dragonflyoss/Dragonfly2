@@ -222,7 +222,6 @@ type RedisConfig struct {
 	Host      string `yaml:"host" mapstructure:"host"`
 	Port      int    `yaml:"port" mapstructure:"port"`
 	Password  string `yaml:"password" mapstructure:"password"`
-	CacheDB   int    `yaml:"cacheDB" mapstructure:"cacheDB"`
 	BrokerDB  int    `yaml:"brokerDB" mapstructure:"brokerDB"`
 	BackendDB int    `yaml:"backendDB" mapstructure:"backendDB"`
 }

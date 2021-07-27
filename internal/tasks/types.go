@@ -9,5 +9,5 @@ type PreheatRequest struct {
 }
 
 type PreheatResponse struct{
-	TaskID string
+
 }

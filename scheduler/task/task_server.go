@@ -8,31 +8,28 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	internaltasks "d7y.io/dragonfly/v2/internal/tasks"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"encoding/json"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
 
-const (
-	preHeatTask = "preheat"
-)
-
-type Server interface {
+type Task interface {
 	Serve()
 }
 
-type taskServer struct {
-	globalTask *internaltasks.Tasks
-	schedulerTask *internaltasks.Tasks
-	localTask *internaltasks.Tasks
-	ctx context.Context
-	service *core.SchedulerService
+type task struct {
+	globalTasks    *internaltasks.Tasks
+	schedulerTasks *internaltasks.Tasks
+	localTasks     *internaltasks.Tasks
+	ctx            context.Context
+	service        *core.SchedulerService
 }
 
-func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service *core.SchedulerService) (*taskServer, error) {
-	s := &taskServer{}
-	internaltasks.PutTask(preHeatTask, s.preheatHandler)
+func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service *core.SchedulerService) (*task, error) {
 	taskConfig := &internaltasks.Config{
 		Host:      cfg.Host,
 		Port:      cfg.Port,
@@ -53,42 +50,54 @@ func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service 
 		return nil, err
 	}
 
-	return &taskServer{
-		globalTask: globalTask,
-		schedulerTask: schedulerTask,
-		localTask: localTask,
-		ctx: ctx,
-		service: service,
-	}, nil
+	t := &task{
+		globalTasks:    globalTask,
+		schedulerTasks: schedulerTask,
+		localTasks:     localTask,
+		ctx:            ctx,
+		service:        service,
+	}
+	err = globalTask.Server.RegisterTask(internaltasks.PreheatTask, t.preheat)
+	if err != nil {
+		return nil, err
+	}
+	err = schedulerTask.Server.RegisterTask(internaltasks.PreheatTask, t.preheat)
+	if err != nil {
+		return nil, err
+	}
+	err = localTask.Server.RegisterTask(internaltasks.PreheatTask, t.preheat)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
 
-func (s *taskServer) Serve() <-chan error {
-	//wg := sync.WaitGroup{}
-	//wg.Add(3)
-	c := make(chan error)
-	go func() {
-		//defer wg.Done()
-		err := s.globalTask.LaunchWorker("global_worker", 1)
-		c <- err
-	}()
-	go func() {
-		//defer wg.Done()
-		err := s.schedulerTask.LaunchWorker("scheduler_worker", 1)
-		c <- err
-	}()
-	go func() {
-		//defer wg.Done()
-		err := s.localTask.LaunchWorker("local_worker", 5)
-		c <- err
-	}()
-	return c
+func (t *task) Serve() error {
+	g := errgroup.Group{}
+	g.Go(func() error {
+		err := t.globalTasks.LaunchWorker("global_worker", 1)
+		return err
+	})
+	g.Go(func() error {
+		err := t.schedulerTasks.LaunchWorker("scheduler_worker", 1)
+		return err
+	})
+	g.Go(func() error {
+		err := t.localTasks.LaunchWorker("local_worker", 5)
+		return err
+	})
+	return g.Wait()
 }
 
-func (s *taskServer) preheatHandler(requestJson string) (string, error) {
+func (t *task) preheat(req string) (string, error) {
 	request := &internaltasks.PreheatRequest{}
-	err := json.Unmarshal([]byte(requestJson), request)
+	err := unmarshal(req, request)
 	if err != nil {
 		return "", err
+	}
+	if !urlutils.IsValidURL(request.URL) {
+		return "", errors.Errorf("invalid url: %s", request.URL)
 	}
 
 	meta := &base.UrlMeta{Header: map[string]string{}, Digest: request.Digest, Tag: request.Tag}
@@ -97,7 +106,7 @@ func (s *taskServer) preheatHandler(requestJson string) (string, error) {
 	}
 	taskID := idgen.TaskID(request.URL, request.Filter, meta, request.Tag)
 	task := types.NewTask(taskID, request.URL, request.Filter, request.Tag, meta)
-	task, err = s.service.GetOrCreateTask(s.ctx, task)
+	task, err = t.service.GetOrCreateTask(t.ctx, task)
 	if err != nil {
 		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
 		logger.Errorf("get or create task failed: %v", err)
@@ -105,4 +114,9 @@ func (s *taskServer) preheatHandler(requestJson string) (string, error) {
 	}
 
 
+}
+
+
+func unmarshal(data string, v interface{}) error {
+	return json.Unmarshal([]byte(data), v)
 }
