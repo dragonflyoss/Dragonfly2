@@ -115,6 +115,7 @@ func (t *task) preheat(req string) (string, error) {
 		return "", err
 	}
 
+	//TODO: check better ways to get result
 	for {
 		switch task.GetStatus() {
 		case types.TaskStatusFailed, types.TaskStatusCDNRegisterFail, types.TaskStatusSourceError:
