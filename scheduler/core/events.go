@@ -295,14 +295,16 @@ func constructSuccessPeerPacket(peer *types.Peer, parent *types.Peer, candidates
 			PeerId:  candidate.PeerID,
 		})
 	}
-	return &schedulerRPC.PeerPacket{
+	peerPacket := &schedulerRPC.PeerPacket{
 		TaskId:        peer.Task.TaskID,
 		SrcPid:        peer.PeerID,
-		ParallelCount: 0,
+		ParallelCount: 1,
 		MainPeer:      mainPeer,
 		StealPeers:    stealPeers,
 		Code:          dfcodes.Success,
 	}
+	logger.Debugf("send peerPacket %+v to peer %s", peerPacket, peer.PeerID)
+	return peerPacket
 }
 
 func constructFailPeerPacket(peer *types.Peer, errCode base.Code) *schedulerRPC.PeerPacket {

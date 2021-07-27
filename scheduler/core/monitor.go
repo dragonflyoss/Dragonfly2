@@ -70,7 +70,7 @@ func (m *monitor) printDebugInfo() string {
 
 	buffer := bytes.NewBuffer([]byte{})
 	table := tablewriter.NewWriter(buffer)
-	table.SetHeader([]string{"PeerID", "Finished Piece Num", "Finished", "Free Load"})
+	table.SetHeader([]string{"PeerID", "URL", "parent node", "status", "start time", "Finished Piece Num", "Finished", "Free Load"})
 
 	m.peerManager.ListPeers().Range(func(key interface{}, value interface{}) (ok bool) {
 		ok = true
@@ -78,10 +78,14 @@ func (m *monitor) printDebugInfo() string {
 		if peer == nil {
 			return
 		}
+		parentNode := ""
 		if peer.GetParent() == nil {
 			roots = append(roots, peer)
+		} else {
+			parentNode = peer.GetParent().PeerID
 		}
-		table.Append([]string{peer.PeerID, strconv.Itoa(int(peer.GetFinishedNum())),
+
+		table.Append([]string{peer.PeerID, peer.Task.URL, parentNode, peer.GetStatus().String(), peer.CreateTime.String(), strconv.Itoa(int(peer.GetFinishedNum())),
 			strconv.FormatBool(peer.IsSuccess()), strconv.Itoa(peer.Host.GetFreeUploadLoad())})
 		return
 	})
@@ -96,7 +100,7 @@ func (m *monitor) printDebugInfo() string {
 			return
 		}
 		nPath := append(path, fmt.Sprintf("%s(%d)", node.PeerID, node.GetWholeTreeNode()))
-		if len(path) > 1 {
+		if len(path) >= 1 {
 			msgs = append(msgs, node.PeerID+" || "+strings.Join(nPath, "-"))
 		}
 		for _, child := range node.GetChildren() {
