@@ -61,6 +61,7 @@ type Result struct {
 	TaskID     string
 	PeerID     string
 	Size       int64
+	Message    string
 }
 
 func main() {
@@ -138,8 +139,10 @@ func process(ctx context.Context, wg *sync.WaitGroup, result chan *Result) {
 			log.Printf("connect target error: %s", err)
 			continue
 		}
+		var msg string
 		n, err := io.Copy(ioutil.Discard, resp.Body)
 		if err != nil {
+			msg = err.Error()
 			log.Printf("discard data error: %s", err)
 		}
 		end := time.Now()
@@ -150,6 +153,7 @@ func process(ctx context.Context, wg *sync.WaitGroup, result chan *Result) {
 			Size:       n,
 			TaskID:     resp.Header.Get(config.HeaderDragonflyTask),
 			PeerID:     resp.Header.Get(config.HeaderDragonflyPeer),
+			Message:    msg,
 		}
 		resp.Body.Close()
 	}
@@ -249,8 +253,8 @@ func saveToOutput(results []*Result) {
 		if v.PeerID == "" {
 			v.PeerID = "unknown"
 		}
-		out.WriteString(fmt.Sprintf("%s %s %d %v %d %d\n",
+		out.WriteString(fmt.Sprintf("%s %s %d %v %d %d %s\n",
 			v.TaskID, v.PeerID, v.StatusCode, v.EndTime.Sub(v.StartTime),
-			v.StartTime.UnixNano()/100, v.EndTime.UnixNano()/100))
+			v.StartTime.UnixNano()/100, v.EndTime.UnixNano()/100, v.Message))
 	}
 }
