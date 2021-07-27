@@ -108,13 +108,12 @@ func NewDefaultSchedulerConfig() *SchedulerConfig {
 		AScheduler:           "",
 		BScheduler:           "",
 		WorkerNum:            runtime.GOMAXPROCS(0),
-		Monitor:              false,
 		AccessWindow:         3 * time.Minute,
 		CandidateParentCount: 10,
 		Scheduler:            "basic",
 		CDNLoad:              100,
 		ClientLoad:           10,
-		OpenMonitor:          true,
+		OpenMonitor:          false,
 		GC:                   NewDefaultGCConfig(),
 	}
 }
@@ -186,7 +185,6 @@ type SchedulerConfig struct {
 	AScheduler string `yaml:"ascheduler" mapstructure:"ascheduler"`
 	BScheduler string `yaml:"bscheduler" mapstructure:"bscheduler"`
 	WorkerNum  int    `yaml:"workerNum" mapstructure:"workerNum"`
-	Monitor    bool   `yaml:"monitor" mapstructure:"monitor"`
 	// AccessWindow should less than CDN task expireTime
 	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
 	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`

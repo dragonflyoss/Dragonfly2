@@ -103,12 +103,14 @@ func (m *monitor) printDebugInfo() string {
 		if len(path) >= 1 {
 			msgs = append(msgs, node.PeerID+" || "+strings.Join(nPath, "-"))
 		}
-		for _, child := range node.GetChildren() {
+		node.GetChildren().Range(func(key, value interface{}) bool {
+			child := (value).(*types.Peer)
 			if child == nil {
-				continue
+				return true
 			}
 			printTree(child, nPath)
-		}
+			return true
+		})
 	}
 
 	for _, root := range roots {
