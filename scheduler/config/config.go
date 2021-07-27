@@ -43,6 +43,7 @@ func New() *Config {
 		DynConfig: NewDefaultDynConfig(),
 		Manager:   NewDefaultManagerConfig(),
 		Host:      NewHostConfig(),
+		Redis:     NewDefaultRedisConfig(),
 	}
 }
 
@@ -139,6 +140,17 @@ func NewDefaultManagerConfig() *ManagerConfig {
 			RetryInitBackOff: 5,
 			RetryMaxBackOff:  10,
 		},
+	}
+}
+
+func NewDefaultRedisConfig() *RedisConfig {
+	return &RedisConfig{
+		//TODO: add host
+		Host: "",
+		Port: 6379,
+		Password: "",
+		BrokerDB: 1,
+		BackendDB: 2,
 	}
 }
 

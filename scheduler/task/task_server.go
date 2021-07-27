@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"time"
 )
 
 type Task interface {
@@ -73,6 +74,7 @@ func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service 
 	return t, nil
 }
 
+// TODO: add log
 func (t *task) Serve() error {
 	g := errgroup.Group{}
 	g.Go(func() error {
@@ -113,10 +115,27 @@ func (t *task) preheat(req string) (string, error) {
 		return "", err
 	}
 
-
+	for {
+		switch task.GetStatus() {
+		case types.TaskStatusFailed, types.TaskStatusCDNRegisterFail, types.TaskStatusSourceError:
+			return marshal(&internaltasks.PreheatResponse{Success: false})
+		case types.TaskStatusSuccess:
+			return marshal(&internaltasks.PreheatResponse{Success: true})
+		default:
+			time.Sleep(time.Second)
+		}
+	}
 }
 
 
 func unmarshal(data string, v interface{}) error {
 	return json.Unmarshal([]byte(data), v)
+}
+
+func marshal(v interface{}) (string, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
