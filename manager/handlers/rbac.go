@@ -40,7 +40,7 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	roles, err := h.Service.GetRolesForUser(params.UserName)
+	roles, err := h.Service.GetRolesForUser(params.Subject)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -56,7 +56,7 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 // @Success 200 {object}
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /permission/{userName}/{object}/{action} [get]
+// @Router /permission/{subject}/{object}/{action} [get]
 
 func (h *Handlers) HasRoleForUser(ctx *gin.Context) {
 	var params types.UserHasRoleParams
@@ -64,14 +64,11 @@ func (h *Handlers) HasRoleForUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	roleName := ""
-	switch params.Action {
-	case "read":
-		roleName = params.Object + ":" + "read"
-	case "write":
-		roleName = params.Object + ":" + "*"
+	if params.Subject == "admin" {
+		ctx.JSON(http.StatusOK, gin.H{"has": true})
+		return
 	}
-	has, err := h.Service.HasRoleForUser(params.UserName, roleName)
+	has, err := h.Service.HasRoleForUser(params.Subject, params.Object, params.Action)
 	if err != nil {
 		ctx.Error(err)
 		return

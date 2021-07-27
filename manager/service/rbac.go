@@ -13,13 +13,7 @@ func (s *rest) GetPermissionGroups(g *gin.Engine) types.PermissionGroups {
 }
 
 func (s *rest) CreatePermission(json types.PolicyRequest) error {
-	roleName := ""
-	switch json.Action {
-	case "read":
-		roleName = json.Object + ":" + "read"
-	case "write":
-		roleName = json.Object + ":" + "*"
-	}
+	roleName := rbac.RoleName(json.Object, json.Action)
 	res, err := s.enforcer.AddRoleForUser(json.Subject, roleName)
 	if err != nil {
 		return err
@@ -30,16 +24,17 @@ func (s *rest) CreatePermission(json types.PolicyRequest) error {
 	return nil
 }
 
-func (s *rest) GetRolesForUser(userName string) ([]string, error) {
-	res, err := s.enforcer.GetRolesForUser(userName)
+func (s *rest) GetRolesForUser(subject string) ([]string, error) {
+	res, err := s.enforcer.GetRolesForUser(subject)
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func (s *rest) HasRoleForUser(userName, role string) (bool, error) {
-	res, err := s.enforcer.HasRoleForUser(userName, role)
+func (s *rest) HasRoleForUser(subject, object, action string) (bool, error) {
+	roleName := rbac.RoleName(object, action)
+	res, err := s.enforcer.HasRoleForUser(subject, roleName)
 	if err != nil {
 		return false, err
 	}
@@ -47,13 +42,7 @@ func (s *rest) HasRoleForUser(userName, role string) (bool, error) {
 }
 
 func (s *rest) DestroyPermission(json types.PolicyRequest) error {
-	roleName := ""
-	switch json.Action {
-	case "read":
-		roleName = json.Object + ":" + "read"
-	case "write":
-		roleName = json.Object + ":" + "*"
-	}
+	roleName := rbac.RoleName(json.Object, json.Action)
 	res, err := s.enforcer.DeleteRoleForUser(json.Subject, roleName)
 	if err != nil {
 		return err

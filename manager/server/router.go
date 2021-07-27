@@ -85,8 +85,8 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 	pn.POST("", h.CreatePermission)
 	pn.DELETE("", h.DestroyPermission)
 	pn.GET("/groups", h.GetPermissionGroups(r))
-	pn.GET("/:userName", h.GetRolesForUser)
-	pn.GET("/:userName/:role", h.HasRoleForUser)
+	pn.GET("/:subject", h.GetRolesForUser)
+	pn.GET("/:subject/:object/:action", h.HasRoleForUser)
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")

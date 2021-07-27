@@ -89,6 +89,17 @@ func GetAPIGroupName(path string) (string, error) {
 
 }
 
+func RoleName(object, action string) string {
+	roleName := ""
+	switch action {
+	case "read":
+		roleName = object + ":" + "read"
+	case "write":
+		roleName = object + ":" + "*"
+	}
+	return roleName
+}
+
 func GetAPIGroupNames(g *gin.Engine) []string {
 	APIGroups := []string{}
 	for _, route := range g.Routes() {

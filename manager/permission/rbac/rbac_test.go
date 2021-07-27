@@ -36,3 +36,30 @@ func TestGetApiGroupName(t *testing.T) {
 	}
 
 }
+
+func TestRoleName(t *testing.T) {
+	tests := []struct {
+		object           string
+		action           string
+		exceptedRoleName string
+	}{
+		{
+			object:           "users",
+			action:           "read",
+			exceptedRoleName: "users:read",
+		},
+		{
+			object:           "cdns",
+			action:           "write",
+			exceptedRoleName: "cdns:*",
+		},
+	}
+
+	for _, tt := range tests {
+		roleName := RoleName(tt.object, tt.action)
+		if roleName != tt.exceptedRoleName {
+			t.Errorf("RoleName(%v, %v) = %v, want %v", tt.object, tt.action, roleName, tt.exceptedRoleName)
+		}
+	}
+
+}

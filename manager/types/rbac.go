@@ -9,11 +9,11 @@ type PolicyRequest struct {
 type PermissionGroups []string
 
 type UserRolesParams struct {
-	UserName string `uri:"userName" binding:"required"`
+	Subject string `uri:"subject" binding:"required"`
 }
 
 type UserHasRoleParams struct {
-	UserName string `uri:"userName" binding:"required"`
-	Object   string `uri:"object" binding:"required"`
-	Action   string `uri:"action" binding:"required,oneof=read write"`
+	UserRolesParams
+	Object string `uri:"object" binding:"required"`
+	Action string `uri:"action" binding:"required,oneof=read write"`
 }
