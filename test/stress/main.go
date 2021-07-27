@@ -23,7 +23,9 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"sort"
@@ -43,15 +45,17 @@ import (
 var (
 	target   string
 	output   string
+	proxy    string
 	con      int
 	duration *time.Duration
 )
 
 func init() {
-	flag.StringVar(&target, "url", "", "")
-	flag.StringVar(&output, "output", "/tmp/statistics.txt", "")
-	flag.IntVar(&con, "connections", 100, "")
-	duration = flag.Duration("duration", 100*time.Second, "")
+	flag.StringVar(&target, "url", "", "target url for stress testing, example: http://localhost")
+	flag.StringVar(&output, "output", "/tmp/statistics.txt", "all request statistics")
+	flag.StringVar(&target, "proxy", "", "target proxy for downloading, example: http://127.0.0.1:65001")
+	flag.IntVar(&con, "connections", 100, "concurrency count of connections")
+	duration = flag.Duration("duration", 100*time.Second, "testing duration")
 }
 
 type Result struct {
@@ -75,6 +79,25 @@ func main() {
 	)
 	ctx, cancel := context.WithCancel(context.Background())
 	resultCh := make(chan *Result, 1024)
+
+	if proxy != "" {
+		pu, err := url.Parse(proxy)
+		if err != nil {
+			panic(err)
+		}
+		http.DefaultClient.Transport = &http.Transport{
+			Proxy: http.ProxyURL(pu),
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		}
+	}
 
 	wgCollect.Add(1)
 	go collect(wgCollect, resultCh)

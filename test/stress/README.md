@@ -11,7 +11,8 @@ go build -o bin/stress test/stress/main.go
 
 2. Run stress:
 ```shell
-bin/stress -duration 1s --url http://127.0.0.1:65001/misc/d7y-test/blobs/sha256/128K
+bin/stress -connections 100 -duration 1s -proxy http://127.0.0.1:65001 \
+    --url http://localhost/misc/d7y-test/blobs/sha256/128K
 ```
 
 Example output:
@@ -37,11 +38,13 @@ Request		5849/s
 ```
 Usage of ./stress:
   -connections int
-    	 (default 100)
+    	concurrency count of connections (default 100)
   -duration duration
-    	 (default 1m40s)
+    	testing duration (default 1m40s)
   -output string
-    	 (default "/tmp/statistics.txt")
+    	all request statistics (default "/tmp/statistics.txt")
+  -proxy string
+    	target proxy for downloading, example: http://127.0.0.1:65001
   -url string
+    	target url for stress testing, example: http://localhost
 ```
-
