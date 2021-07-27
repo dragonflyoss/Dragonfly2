@@ -186,7 +186,7 @@ func printStatistics(results []*Result) {
 func printStatus(results []*Result) {
 	var status = make(map[int]int)
 	for _, v := range results {
-		status[v.StatusCode] ++
+		status[v.StatusCode]++
 	}
 
 	fmt.Printf("HTTP codes\n")
