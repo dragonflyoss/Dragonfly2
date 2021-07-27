@@ -35,7 +35,7 @@ type Config struct {
 	DynConfig    *DynConfig       `yaml:"dynConfig" mapstructure:"dynConfig"`
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
 	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
-	Redis        *RedisConfig     `yaml:"redis" mapstructure:"redis"`
+	Task         *TaskConfig      `yaml:"task" mapstructure:"task"`
 }
 
 func New() *Config {
@@ -45,7 +45,7 @@ func New() *Config {
 		DynConfig: NewDefaultDynConfig(),
 		Manager:   NewDefaultManagerConfig(),
 		Host:      NewHostConfig(),
-		Redis:     NewDefaultRedisConfig(),
+		Task:      NewDefaultTaskConfig(),
 	}).ConvertRedisHost()
 }
 
@@ -145,28 +145,35 @@ func NewDefaultManagerConfig() *ManagerConfig {
 	}
 }
 
-func NewDefaultRedisConfig() *RedisConfig {
-	return &RedisConfig{
-		Host: "",
-		Port: 6379,
-		Password: "",
-		BrokerDB: 1,
-		BackendDB: 2,
+func NewDefaultTaskConfig() *TaskConfig {
+	return &TaskConfig{
+		GlobalWorkerNum: 1,
+		SchedulerWorkerNum: 1,
+		LocalWorkerNum: 5,
+		Redis: &RedisConfig{
+			Host: "",
+			Port: 6379,
+			Password: "",
+			BrokerDB: 1,
+			BackendDB: 2,
+		},
 	}
 }
 
 func (c *Config) ConvertRedisHost() *Config {
-	n := strings.LastIndex(c.Manager.Addr, ":")
-	if n >= 0 {
-		if ip := net.ParseIP(c.Manager.Addr[0:n]); ip != nil && !net.IPv4zero.Equal(ip){
-			c.Redis.Host = ip.String()
+	if c.Manager != nil && c.Task != nil && c.Task.Redis != nil {
+		n := strings.LastIndex(c.Manager.Addr, ":")
+		if n >= 0 {
+			if ip := net.ParseIP(c.Manager.Addr[0:n]); ip != nil && !net.IPv4zero.Equal(ip){
+				c.Task.Redis.Host = ip.String()
+				return c
+			}
+		} else if ip := net.ParseIP(c.Manager.Addr); ip != nil && !net.IPv4zero.Equal(ip){
+			c.Task.Redis.Host = ip.String()
 			return c
 		}
-	} else if ip := net.ParseIP(c.Manager.Addr[0:n]); ip != nil && !net.IPv4zero.Equal(ip){
-		c.Redis.Host = ip.String()
-		return c
 	}
-	c.Redis.Host = ""
+	c.Task.Redis.Host = ""
 	return c
 }
 
@@ -252,4 +259,11 @@ type RedisConfig struct {
 	Password  string `yaml:"password" mapstructure:"password"`
 	BrokerDB  int    `yaml:"brokerDB" mapstructure:"brokerDB"`
 	BackendDB int    `yaml:"backendDB" mapstructure:"backendDB"`
+}
+
+type TaskConfig struct {
+	GlobalWorkerNum int `yaml:"globalWorkerNum" mapstructure:"globalWorkerNum"`
+	SchedulerWorkerNum int `yaml:"schedulerWorkerNum" mapstructure:"schedulerWorkerNum"`
+	LocalWorkerNum int `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
+	Redis        *RedisConfig     `yaml:"redis" mapstructure:"redis"`
 }

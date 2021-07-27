@@ -28,21 +28,22 @@ type task struct {
 	localTasks     *internaltasks.Tasks
 	ctx            context.Context
 	service        *core.SchedulerService
+	cfg            *config.TaskConfig
 }
 
-func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service *core.SchedulerService) (Task, error) {
-	taskConfig := &internaltasks.Config{
-		Host:      cfg.Host,
-		Port:      cfg.Port,
-		Password:  cfg.Password,
-		BrokerDB:  cfg.BrokerDB,
-		BackendDB: cfg.BackendDB,
+func New(ctx context.Context, cfg *config.TaskConfig, hostname string, service *core.SchedulerService) (Task, error) {
+	redisConfig := &internaltasks.Config{
+		Host:      cfg.Redis.Host,
+		Port:      cfg.Redis.Port,
+		Password:  cfg.Redis.Password,
+		BrokerDB:  cfg.Redis.BrokerDB,
+		BackendDB: cfg.Redis.BackendDB,
 	}
-	globalTask, err := internaltasks.New(taskConfig, internaltasks.GlobalQueue)
+	globalTask, err := internaltasks.New(redisConfig, internaltasks.GlobalQueue)
 	if err != nil {
 		return nil, err
 	}
-	schedulerTask, err := internaltasks.New(taskConfig, internaltasks.SchedulersQueue)
+	schedulerTask, err := internaltasks.New(redisConfig, internaltasks.SchedulersQueue)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service 
 	if err != nil {
 		return nil, err
 	}
-	localTask, err := internaltasks.New(taskConfig, localQueue)
+	localTask, err := internaltasks.New(redisConfig, localQueue)
 	if err != nil {
 		return nil, err
 	}
@@ -61,6 +62,7 @@ func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service 
 		localTasks:     localTask,
 		ctx:            ctx,
 		service:        service,
+		cfg:            cfg,
 	}
 	err = globalTask.RegisterTask(internaltasks.PreheatTask, t.preheat)
 	if err != nil {
@@ -82,15 +84,15 @@ func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service 
 func (t *task) Serve() error {
 	g := errgroup.Group{}
 	g.Go(func() error {
-		err := t.globalTasks.LaunchWorker("global_worker", 1)
+		err := t.globalTasks.LaunchWorker("global_worker", t.cfg.GlobalWorkerNum)
 		return err
 	})
 	g.Go(func() error {
-		err := t.schedulerTasks.LaunchWorker("scheduler_worker", 1)
+		err := t.schedulerTasks.LaunchWorker("scheduler_worker", t.cfg.SchedulerWorkerNum)
 		return err
 	})
 	g.Go(func() error {
-		err := t.localTasks.LaunchWorker("local_worker", 5)
+		err := t.localTasks.LaunchWorker("local_worker", t.cfg.LocalWorkerNum)
 		return err
 	})
 	return g.Wait()

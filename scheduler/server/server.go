@@ -101,10 +101,16 @@ func New(cfg *config.Config) (*Server, error) {
 	s.schedulerService = schedulerService
 	// Initialize scheduler service
 	s.schedulerServer, err = service.NewSchedulerServer(schedulerService)
+
 	if err != nil {
 		return nil, err
 	}
-	s.task, err = task.New(context.Background(), cfg.Redis, iputils.HostName, s.schedulerService)
+	if cfg.Task != nil && cfg.Task.Redis != nil && cfg.Task.Redis.Host != "" {
+		s.task, err = task.New(context.Background(), cfg.Task, iputils.HostName, s.schedulerService)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return s, nil
 }
