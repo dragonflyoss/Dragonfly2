@@ -247,19 +247,21 @@ var _ event = peerDownloadFailEvent{}
 func (e peerDownloadFailEvent) apply(s *state) {
 	e.peer.SetStatus(types.PeerStatusFail)
 	removePeerFromCurrentTree(e.peer, s)
-	for _, child := range e.peer.GetChildren() {
+	e.peer.GetChildren().Range(func(key, value interface{}) bool {
+		child := (value).(*types.Peer)
 		parent, candidates, hasParent := s.sched.ScheduleParent(child)
-		if child.PacketChan == nil {
-			logger.Warnf("reportPeerFailResult: there is no packet chan associated with peer %s", e.peer.PeerID)
-			continue
-		}
 		if !hasParent {
 			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("peerDownloadFailEvent: there is no available parent，reschedule it in one second")
 			s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
-			return
+			return true
+		}
+		if child.PacketChan == nil {
+			logger.Warnf("reportPeerFailResult: there is no packet chan associated with peer %s", e.peer.PeerID)
+			return true
 		}
 		child.PacketChan <- constructSuccessPeerPacket(child, parent, candidates)
-	}
+		return true
+	})
 	s.peerManager.Delete(e.peer.PeerID)
 }
 
@@ -318,19 +320,21 @@ func constructFailPeerPacket(peer *types.Peer, errCode base.Code) *schedulerRPC.
 func handlePeerLeave(peer *types.Peer, s *state) {
 	peer.MarkLeave()
 	removePeerFromCurrentTree(peer, s)
-	for _, child := range peer.GetChildren() {
+	peer.GetChildren().Range(func(key, value interface{}) bool {
+		child := value.(*types.Peer)
 		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if !hasParent {
 			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("handlePeerLeave: there is no available parent，reschedule it in one second")
 			s.waitScheduleParentPeerQueue.AddAfter(child, time.Second)
-			continue
+			return true
 		}
 		if child.PacketChan == nil {
 			logger.Debugf("handlePeerLeave: there is no packet chan with peer %s", child.PeerID)
-			continue
+			return true
 		}
 		child.PacketChan <- constructSuccessPeerPacket(child, parent, candidates)
-	}
+		return true
+	})
 	s.peerManager.Delete(peer.PeerID)
 }
 
