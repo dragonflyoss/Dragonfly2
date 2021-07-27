@@ -132,7 +132,7 @@ func (m *manager) cleanupPeers() {
 	for range m.cleanupExpiredPeerTicker.C {
 		m.peerMap.Range(func(key, value interface{}) bool {
 			peer := value.(*types.Peer)
-			if time.Now().Sub(peer.GetLastAccessTime()) > m.peerTTL {
+			if time.Now().Sub(peer.GetLastAccessTime()) > m.peerTTL && !peer.IsDone() {
 				logger.Debugf("peer %s has been more than %s since last access, set status to zombie", peer.PeerID, m.peerTTL)
 				peer.SetStatus(types.PeerStatusZombie)
 			}
