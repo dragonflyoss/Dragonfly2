@@ -58,6 +58,10 @@ func New(cfg *Config, queue Queue) (*Tasks, error) {
 	}, nil
 }
 
+func (t *Tasks) RegisterTask(name string, taskFunc interface{}) error {
+	return t.Server.RegisterTask(name, taskFunc)
+}
+
 func (t *Tasks) LaunchWorker(consumerTag string, concurrency int) error {
 	return t.Server.NewWorker(consumerTag, concurrency).Launch()
 }

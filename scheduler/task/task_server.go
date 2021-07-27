@@ -46,7 +46,11 @@ func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service 
 	if err != nil {
 		return nil, err
 	}
-	localTask, err := internaltasks.New(taskConfig, internaltasks.GetCDNQueue(hostname))
+	localQueue, err := internaltasks.GetSchedulerQueue(hostname)
+	if err != nil {
+		return nil, err
+	}
+	localTask, err := internaltasks.New(taskConfig, localQueue)
 	if err != nil {
 		return nil, err
 	}
@@ -58,15 +62,15 @@ func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service 
 		ctx:            ctx,
 		service:        service,
 	}
-	err = globalTask.Server.RegisterTask(internaltasks.PreheatTask, t.preheat)
+	err = globalTask.RegisterTask(internaltasks.PreheatTask, t.preheat)
 	if err != nil {
 		return nil, err
 	}
-	err = schedulerTask.Server.RegisterTask(internaltasks.PreheatTask, t.preheat)
+	err = schedulerTask.RegisterTask(internaltasks.PreheatTask, t.preheat)
 	if err != nil {
 		return nil, err
 	}
-	err = localTask.Server.RegisterTask(internaltasks.PreheatTask, t.preheat)
+	err = localTask.RegisterTask(internaltasks.PreheatTask, t.preheat)
 	if err != nil {
 		return nil, err
 	}
@@ -119,9 +123,9 @@ func (t *task) preheat(req string) (string, error) {
 	for {
 		switch task.GetStatus() {
 		case types.TaskStatusFailed, types.TaskStatusCDNRegisterFail, types.TaskStatusSourceError:
-			return marshal(&internaltasks.PreheatResponse{Success: false})
+			return marshal(&internaltasks.PreheatResponse{})
 		case types.TaskStatusSuccess:
-			return marshal(&internaltasks.PreheatResponse{Success: true})
+			return marshal(&internaltasks.PreheatResponse{})
 		default:
 			time.Sleep(time.Second)
 		}

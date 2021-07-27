@@ -10,5 +10,5 @@ type PreheatRequest struct {
 }
 
 type PreheatResponse struct{
-	Success bool `json:"success"`
+
 }

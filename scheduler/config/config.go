@@ -162,8 +162,11 @@ func (c *Config) ConvertRedisHost() *Config {
 			c.Redis.Host = ip.String()
 			return c
 		}
+	} else if ip := net.ParseIP(c.Manager.Addr[0:n]); ip != nil && !net.IPv4zero.Equal(ip){
+		c.Redis.Host = ip.String()
+		return c
 	}
-	c.Redis.Host = iputils.HostIP
+	c.Redis.Host = ""
 	return c
 }
 
