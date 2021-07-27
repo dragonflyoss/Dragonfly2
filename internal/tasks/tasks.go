@@ -131,3 +131,15 @@ func Unmarshal(data []reflect.Value, v interface{}) error {
 	}
 	return nil
 }
+
+func UnmarshalRequest(data string, v interface{}) error {
+	return json.Unmarshal([]byte(data), v)
+}
+
+func MarshalResult(v interface{}) (string, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}

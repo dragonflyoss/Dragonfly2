@@ -12,7 +12,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/types"
-	"encoding/json"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"time"
@@ -100,7 +99,7 @@ func (t *task) Serve() error {
 
 func (t *task) preheat(req string) (string, error) {
 	request := &internaltasks.PreheatRequest{}
-	err := unmarshal(req, request)
+	err := internaltasks.UnmarshalRequest(req, request)
 	if err != nil {
 		return "", err
 	}
@@ -125,24 +124,11 @@ func (t *task) preheat(req string) (string, error) {
 	for {
 		switch task.GetStatus() {
 		case types.TaskStatusFailed, types.TaskStatusCDNRegisterFail, types.TaskStatusSourceError:
-			return marshal(&internaltasks.PreheatResponse{})
+			return internaltasks.MarshalResult(&internaltasks.PreheatResponse{})
 		case types.TaskStatusSuccess:
-			return marshal(&internaltasks.PreheatResponse{})
+			return internaltasks.MarshalResult(&internaltasks.PreheatResponse{})
 		default:
 			time.Sleep(time.Second)
 		}
 	}
-}
-
-
-func unmarshal(data string, v interface{}) error {
-	return json.Unmarshal([]byte(data), v)
-}
-
-func marshal(v interface{}) (string, error) {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
 }
