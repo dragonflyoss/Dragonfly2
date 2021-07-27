@@ -60,6 +60,8 @@ type Peer struct {
 	Host *PeerHost
 	// PacketChan send schedulerPacket to peer client
 	PacketChan chan *scheduler.PeerPacket
+	// createTime
+	CreateTime time.Time
 	// finishedNum specifies downloaded finished piece number
 	finishedNum    int32
 	lastAccessTime time.Time
@@ -75,6 +77,7 @@ func NewPeer(peerID string, task *Task, host *PeerHost) *Peer {
 		PeerID:         peerID,
 		Task:           task,
 		Host:           host,
+		CreateTime:     time.Now(),
 		lastAccessTime: time.Now(),
 		children:       make(map[string]*Peer),
 		status:         PeerStatusWaiting,
@@ -85,7 +88,7 @@ func (peer *Peer) GetWholeTreeNode() int {
 	// TODO lock task
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
-	count := len(peer.children) + 1
+	count := 1
 	for _, peerNode := range peer.children {
 		count += peerNode.GetWholeTreeNode()
 	}
@@ -102,7 +105,7 @@ func (peer *Peer) Touch() {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 	peer.lastAccessTime = time.Now()
-	if peer.status == PeerStatusZombie {
+	if peer.status == PeerStatusZombie && !peer.leave {
 		peer.status = PeerStatusRunning
 	}
 	peer.Task.Touch()
@@ -304,7 +307,7 @@ func (peer *Peer) GetFinishedNum() int32 {
 	return peer.finishedNum
 }
 
-func (peer *Peer) GetStatus() interface{} {
+func (peer *Peer) GetStatus() PeerStatus {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 	return peer.status

@@ -135,6 +135,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 				if err != nil {
 					return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error")
 				}
+				logger.Debugf("report piece result %v of peer %s", pieceResult, pieceResult.SrcPid)
 				var ok bool
 				peer, ok = s.service.GetPeerTask(pieceResult.SrcPid)
 				if !ok {
