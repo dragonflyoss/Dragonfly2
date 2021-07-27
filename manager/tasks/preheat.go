@@ -51,7 +51,12 @@ func newPreheat(tasks *internaltasks.Tasks, hostnames []string, preheatType Preh
 	}
 
 	for _, hostname := range hostnames {
-		p.queues = append(p.queues, internaltasks.GetSchedulerQueue(hostname))
+		queue, err := internaltasks.GetSchedulerQueue(hostname)
+		if err != nil {
+			continue
+		}
+
+		p.queues = append(p.queues, queue)
 	}
 
 	return p

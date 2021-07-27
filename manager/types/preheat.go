@@ -7,7 +7,7 @@ type PreheatParams struct {
 }
 
 type CreatePreheatRequest struct {
-	SchedulerClusterID string            `json:"scheduler_cluster_id" binding:"omitempty"`
+	SchedulerClusterID *uint             `json:"scheduler_cluster_id" binding:"omitempty"`
 	Type               string            `json:"type" binding:"required,oneof=image file"`
 	URL                string            `json:"url" binding:"required"`
 	Filter             string            `json:"filter" binding:"omitempty"`
