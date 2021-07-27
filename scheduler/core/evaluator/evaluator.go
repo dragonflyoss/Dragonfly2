@@ -95,10 +95,9 @@ type getEvaluatorFunc func(taskID string) (string, bool)
 
 func (ef *Factory) get(taskID string) Evaluator {
 	ef.lock.RLock()
-
 	evaluator, ok := ef.cache[taskID]
+	ef.lock.RUnlock()
 	if ok {
-		ef.lock.RUnlock()
 		return evaluator
 	}
 
@@ -114,9 +113,10 @@ func (ef *Factory) get(taskID string) Evaluator {
 			}
 		}
 		if name != "" {
+			ef.lock.RLock()
 			evaluator, ok = ef.evaluators[name]
+			ef.lock.RUnlock()
 			if ok {
-				ef.lock.RUnlock()
 				ef.lock.Lock()
 				ef.cache[taskID] = evaluator
 				ef.lock.Unlock()
@@ -130,17 +130,19 @@ func (ef *Factory) get(taskID string) Evaluator {
 		if !ok {
 			continue
 		}
+		ef.lock.RLock()
 		evaluator, ok = ef.evaluators[name]
+		ef.lock.RUnlock()
 		if !ok {
 			continue
 		}
 
-		ef.lock.RUnlock()
 		ef.lock.Lock()
 		ef.cache[taskID] = evaluator
 		ef.lock.Unlock()
 		return evaluator
 	}
+
 	return nil
 }
 
