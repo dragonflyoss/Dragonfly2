@@ -116,6 +116,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
 	peerPacketChan := make(chan *scheduler.PeerPacket, 1)
+	peerID := ""
 	var once sync.Once
 	g, ctx := errgroup.WithContext(context.Background())
 	stopCh := make(chan struct{})
@@ -133,7 +134,18 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 					return nil
 				}
 				if err != nil {
-					return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error")
+					// todo 检查客户端是否已经异常推出，如果异常退出则剔除掉
+					select {
+					case <-stream.Context().Done():
+						if stream.Context().Err() != nil {
+							logger.Warnf("peer %s abnormal exit: %v", peerID, stream.Context().Err())
+							if peer, ok = s.service.GetPeerTask(peerID) {
+								s.service.HandlePeerLeave()
+							}
+						}
+					default:
+						return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error")
+					}
 				}
 				logger.Debugf("report piece result %v of peer %s", pieceResult, pieceResult.SrcPid)
 				var ok bool
@@ -142,6 +154,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 					return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
 				}
 				once.Do(func() {
+					peerID = pieceResult.SrcPid
 					peer.BindSendChannel(peerPacketChan)
 					peer.SetStatus(types.PeerStatusRunning)
 				})
@@ -194,7 +207,7 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 		logger.Warnf("leave task: peer %s is not exists", target.PeerId)
 		return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", target.PeerId)
 	}
-	return s.service.HandleLeaveTask(peer)
+	return s.service.HandlePeerLeave(peer)
 }
 
 // validateParams validates the params of scheduler.PeerTaskRequest.

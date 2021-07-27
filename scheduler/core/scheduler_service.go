@@ -231,7 +231,7 @@ func (s *SchedulerService) HandlePeerResult(peer *types.Peer, peerResult *schedu
 	return nil
 }
 
-func (s *SchedulerService) HandleLeaveTask(peer *types.Peer) error {
+func (s *SchedulerService) HandlePeerLeave(peer *types.Peer) error {
 	peer.Touch()
 	if !s.worker.send(peerLeaveEvent{peer: peer}) {
 		logger.Errorf("send peer leave event failed")
