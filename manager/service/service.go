@@ -5,7 +5,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"github.com/casbin/casbin"
+	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
@@ -59,9 +59,11 @@ type REST interface {
 	SignIn(json types.SignInRequest) (*model.User, error)
 	SignUp(json types.SignUpRequest) (*model.User, error)
 
-	GetEndpoints(g *gin.Engine) types.Policys
+	GetPermissionGroups(g *gin.Engine) types.PermissionGroups
 	CreatePermission(json types.PolicyRequest) error
 	DestroyPermission(json types.PolicyRequest) error
+	GetRolesForUser(userName string) ([]string, error)
+	HasRoleForUser(userName, role string) (bool, error)
 }
 
 type rest struct {

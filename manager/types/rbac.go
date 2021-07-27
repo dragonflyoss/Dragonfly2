@@ -2,13 +2,16 @@ package types
 
 type PolicyRequest struct {
 	Subject string `form:"subject" binding:"required,min=1"`
-	Object  string `form:"object" binding:"required,min=1"`
-	Action  string `form:"action" binding:"required,min=1"`
+	Role    string `form:"role" binding:"required,min=1"`
 }
 
-type Policy struct {
-	Method   string `json:"method"`
-	Resource string `json:"resource"`
+type PermissionGroups []string
+
+type UserRolesParams struct {
+	UserName string `uri:"userName" binding:"required"`
 }
 
-type Policys []Policy
+type UserHasRoleParams struct {
+	UserName string `uri:"userName" binding:"required"`
+	Role     string `uri:"role" binding:"required"`
+}

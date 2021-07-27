@@ -3,8 +3,9 @@ package server
 import (
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
+	rbacbase "d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/service"
-	"github.com/casbin/casbin"
+	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )
@@ -79,10 +80,13 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 	ci.GET("", h.GetCDNs)
 
 	// Permission
-	pn := apiv1.Group("/permission", jwt.MiddlewareFunc(), rbac)
+	// pn := apiv1.Group("/permission", jwt.MiddlewareFunc(), rbac)
+	pn := apiv1.Group("/permission")
 	pn.POST("", h.CreatePermission)
-	pn.DELETE(":id", h.DestroyPermission)
-	pn.GET("/endpoints", h.GetEndpoints(r))
+	pn.DELETE("", h.DestroyPermission)
+	pn.GET("/groups", h.GetPermissionGroups(r))
+	pn.GET("/:userName", h.GetRolesForUser)
+	pn.GET("/:userName/:role", h.HasRoleForUser)
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")
@@ -96,5 +100,12 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)
+
+	// auto init role checn roles
+	err = rbacbase.InitRole(enforcer, r)
+	if err != nil {
+		return nil, err
+	}
+
 	return r, nil
 }

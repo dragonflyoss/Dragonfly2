@@ -1,8 +1,15 @@
 package rbac
 
 import (
-	"github.com/casbin/casbin"
+	"errors"
+	"regexp"
+	"strings"
+
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/casbin/casbin/v2"
+	"github.com/casbin/casbin/v2/model"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -26,7 +33,7 @@ e = some(where (p.eft == allow))
 
 # Matchers
 [matchers]
-m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && regexMatch(r.act == p.act || p.act == '*') || r.sub == "admin"
+m = g(r.sub, p.sub) && (r.obj == p.obj) && (r.act == p.act || p.act == '*') || r.sub == "admin"
 `
 
 func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
@@ -34,6 +41,67 @@ func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
 	if err != nil {
 		return nil, err
 	}
-	enforcer := casbin.NewEnforcer(modelText, gormAdapter, true)
+	m, err := model.NewModelFromString(modelText)
+	if err != nil {
+		return nil, err
+	}
+	enforcer, err := casbin.NewEnforcer(m, gormAdapter, true)
+	if err != nil {
+		return nil, err
+	}
 	return enforcer, nil
+}
+
+func InitRole(e *casbin.Enforcer, g *gin.Engine) error {
+	systemRoles := SystemRoles(g)
+
+	for _, role := range systemRoles {
+		roleInfo := strings.Split(role, ":")
+		_, err := e.AddPolicy(role, roleInfo[0], roleInfo[1])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+
+}
+
+func GetApiGroupName(path string) (string, error) {
+	apiGroupRegexp := regexp.MustCompile(`^/api/v[0-9]+/(?P<apiGroup>[\-_a-zA-Z]+)`)
+	matchs := apiGroupRegexp.FindStringSubmatch(path)
+	if matchs == nil {
+		return "", errors.New("faild to find api group")
+	}
+	apiGroupName := ""
+	regexGroupNames := apiGroupRegexp.SubexpNames()
+	for i, name := range regexGroupNames {
+		if i != 0 && name == "apiGroup" {
+			apiGroupName = matchs[i]
+		}
+	}
+
+	if apiGroupName != "" {
+		return apiGroupName, nil
+	}
+	return "", errors.New("faild to find api group")
+
+}
+
+func SystemRoles(g *gin.Engine) []string {
+	Roles := []string{}
+	policyKeys := []string{"read", "*"}
+
+	for _, route := range g.Routes() {
+		permissionGroupName, err := GetApiGroupName(route.Path)
+		if err != nil {
+			continue
+		}
+		for _, p := range policyKeys {
+			if !stringutils.Contains(Roles, permissionGroupName+":"+p) {
+				Roles = append(Roles, permissionGroupName+":"+p)
+			}
+
+		}
+	}
+	return Roles
 }

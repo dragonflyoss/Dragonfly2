@@ -7,23 +7,69 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Summary Get Endpoints
-// @Description Get Endpoints by json config
+// @Summary Get PermissionGroups
+// @Description Get PermissionGroups
 // @Tags permission
-// @Accept json
 // @Produce json
 // @Success 200 {object} RoutesInfo
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /endpoints [get]
+// @Router /permission/groups [get]
 
-func (h *Handlers) GetEndpoints(g *gin.Engine) func(ctx *gin.Context) {
+func (h *Handlers) GetPermissionGroups(g *gin.Engine) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 
-		routesInfo := h.Service.GetEndpoints(g)
+		permissionGroups := h.Service.GetPermissionGroups(g)
 
-		ctx.JSON(http.StatusOK, routesInfo)
+		ctx.JSON(http.StatusOK, permissionGroups)
 	}
+}
+
+// @Summary Get User Roles
+// @Description Get User Roles
+// @Tags permission
+// @Produce json
+// @Success 200 {object} RoutesInfo
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /permission/{userName} [get]
+
+func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
+	var params types.UserRolesParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	roles, err := h.Service.GetRolesForUser(params.UserName)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"roles": roles})
+
+}
+
+// @Summary Judge User Roles
+// @Description Judge User Roles
+// @Tags permission
+// @Produce json
+// @Success 200 {object}
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /permission/{userName}/{role} [get]
+
+func (h *Handlers) HasRoleForUser(ctx *gin.Context) {
+	var params types.UserHasRoleParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	has, err := h.Service.HasRoleForUser(params.UserName, params.Role)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"has": has})
 }
 
 // @Summary Create Permission
