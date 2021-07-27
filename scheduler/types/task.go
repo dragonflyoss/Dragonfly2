@@ -105,8 +105,6 @@ func (task *Task) GetPiece(pieceNum int32) *PieceInfo {
 }
 
 func (task *Task) AddPeer(peer *Peer) {
-	task.lock.Lock()
-	defer task.lock.Unlock()
 	task.peers.UpdateOrAdd(peer)
 }
 

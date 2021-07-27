@@ -114,14 +114,18 @@ func (peer *Peer) Touch() {
 }
 
 func (peer *Peer) associateChild(child *Peer) {
+	peer.lock.Lock()
 	peer.children.Store(child.PeerID, child)
 	peer.Host.IncUploadLoad()
+	peer.lock.Unlock()
 	peer.Task.peers.Update(peer)
 }
 
 func (peer *Peer) disassociateChild(child *Peer) {
+	peer.lock.Lock()
 	peer.children.Delete(child.PeerID)
 	peer.Host.DecUploadLoad()
+	peer.lock.Unlock()
 	peer.Task.peers.Update(peer)
 }
 
@@ -159,15 +163,17 @@ func (peer *Peer) GetCost() int {
 
 func (peer *Peer) AddPieceInfo(finishedCount int32, cost int) {
 	peer.lock.Lock()
-	defer peer.lock.Unlock()
 	if finishedCount > peer.finishedNum.Load() {
 		peer.finishedNum.Store(finishedCount)
 		peer.costHistory = append(peer.costHistory, cost)
 		if len(peer.costHistory) > 20 {
 			peer.costHistory = peer.costHistory[len(peer.costHistory)-20:]
 		}
+		peer.lock.Unlock()
 		peer.Task.peers.Update(peer)
+		return
 	}
+	peer.lock.Unlock()
 }
 
 func (peer *Peer) GetDepth() int {
