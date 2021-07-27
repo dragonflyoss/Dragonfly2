@@ -39,7 +39,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 			if err != nil {
 				return "", jwt.ErrFailedAuthentication
 			}
-			c.Set("userNmae", u.Name)
+			c.Set("userName", u.Name)
 
 			return &user{
 				ID: u.ID,
