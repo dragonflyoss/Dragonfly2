@@ -17,7 +17,9 @@
 package config
 
 import (
+	"net"
 	"runtime"
+	"strings"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
@@ -37,14 +39,14 @@ type Config struct {
 }
 
 func New() *Config {
-	return &Config{
+	return (&Config{
 		Scheduler: NewDefaultSchedulerConfig(),
 		Server:    NewDefaultServerConfig(),
 		DynConfig: NewDefaultDynConfig(),
 		Manager:   NewDefaultManagerConfig(),
 		Host:      NewHostConfig(),
 		Redis:     NewDefaultRedisConfig(),
-	}
+	}).ConvertRedisHost()
 }
 
 func NewHostConfig() *HostConfig {
@@ -145,13 +147,24 @@ func NewDefaultManagerConfig() *ManagerConfig {
 
 func NewDefaultRedisConfig() *RedisConfig {
 	return &RedisConfig{
-		//TODO: add host
 		Host: "",
 		Port: 6379,
 		Password: "",
 		BrokerDB: 1,
 		BackendDB: 2,
 	}
+}
+
+func (c *Config) ConvertRedisHost() *Config {
+	n := strings.LastIndex(c.Manager.Addr, ":")
+	if n >= 0 {
+		if ip := net.ParseIP(c.Manager.Addr[0:n]); ip != nil && !net.IPv4zero.Equal(ip){
+			c.Redis.Host = ip.String()
+			return c
+		}
+	}
+	c.Redis.Host = iputils.HostIP
+	return c
 }
 
 type ManagerConfig struct {

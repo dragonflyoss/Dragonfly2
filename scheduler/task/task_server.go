@@ -19,7 +19,7 @@ import (
 )
 
 type Task interface {
-	Serve()
+	Serve() error
 }
 
 type task struct {
@@ -30,7 +30,7 @@ type task struct {
 	service        *core.SchedulerService
 }
 
-func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service *core.SchedulerService) (*task, error) {
+func New(ctx context.Context, cfg *config.RedisConfig, hostname string, service *core.SchedulerService) (Task, error) {
 	taskConfig := &internaltasks.Config{
 		Host:      cfg.Host,
 		Port:      cfg.Port,
