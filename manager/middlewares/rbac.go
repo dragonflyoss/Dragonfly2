@@ -11,7 +11,7 @@ func RBAC(e *casbin.Enforcer) gin.HandlerFunc {
 		userName := c.GetString("userName")
 		// request path
 		p := c.Request.URL.Path
-		permissionGroupName, err := rbac.GetApiGroupName(p)
+		permissionGroupName, err := rbac.GetAPIGroupName(p)
 		if err != nil {
 			c.Next()
 			return

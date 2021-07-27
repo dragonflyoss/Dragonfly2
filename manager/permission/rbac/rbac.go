@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
@@ -45,7 +46,7 @@ func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
 	if err != nil {
 		return nil, err
 	}
-	enforcer, err := casbin.NewEnforcer(m, gormAdapter, true)
+	enforcer, err := casbin.NewEnforcer(m, gormAdapter)
 	if err != nil {
 		return nil, err
 	}
@@ -62,11 +63,12 @@ func InitRole(e *casbin.Enforcer, g *gin.Engine) error {
 			return err
 		}
 	}
+	logger.Info("init and check role success")
 	return nil
 
 }
 
-func GetApiGroupName(path string) (string, error) {
+func GetAPIGroupName(path string) (string, error) {
 	apiGroupRegexp := regexp.MustCompile(`^/api/v[0-9]+/(?P<apiGroup>[\-_a-zA-Z]+)`)
 	matchs := apiGroupRegexp.FindStringSubmatch(path)
 	if matchs == nil {
@@ -92,7 +94,7 @@ func SystemRoles(g *gin.Engine) []string {
 	policyKeys := []string{"read", "*"}
 
 	for _, route := range g.Routes() {
-		permissionGroupName, err := GetApiGroupName(route.Path)
+		permissionGroupName, err := GetAPIGroupName(route.Path)
 		if err != nil {
 			continue
 		}

@@ -23,7 +23,7 @@ func TestGetApiGroupName(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		groupName, err := GetApiGroupName(tt.path)
+		groupName, err := GetAPIGroupName(tt.path)
 		if tt.hasError {
 			if err == nil {
 				t.Errorf("GetApiGroupName(%s) should return error", tt.path)
