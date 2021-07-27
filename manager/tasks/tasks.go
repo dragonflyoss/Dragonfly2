@@ -1,20 +1,13 @@
 package tasks
 
 import (
-	"errors"
-
 	internaltasks "d7y.io/dragonfly/v2/internal/tasks"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-const (
-	PreheatImageType = "image"
-	PreheatFileType  = "file"
-)
-
 type Task interface {
-	CreatePreheat(types.CreatePreheatRequest) (*types.Preheat, error)
+	CreatePreheat([]string, types.CreatePreheatRequest) (*types.Preheat, error)
 	GetPreheat(string) (*types.Preheat, error)
 }
 
@@ -41,14 +34,18 @@ func New(cfg *config.Config) (Task, error) {
 	}, nil
 }
 
-func (t *task) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, error) {
-	if json.Type == PreheatImageType {
-	}
+func (t *task) CreatePreheat(hostnames []string, json types.CreatePreheatRequest) (*types.Preheat, error) {
+	preheat := newPreheat(
+		t.Tasks,
+		hostnames,
+		PreheatType(json.Type),
+		json.URL,
+		json.Filter,
+		t.Server.Name,
+		json.Headers,
+	)
 
-	if json.Type == PreheatFileType {
-	}
-
-	return nil, errors.New("unknown type")
+	return preheat.CreatePreheat()
 }
 
 func (t *task) GetPreheat(id string) (*types.Preheat, error) {
