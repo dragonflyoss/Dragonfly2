@@ -130,8 +130,8 @@ func (peer *Peer) disassociateChild(child *Peer) {
 }
 
 func (peer *Peer) ReplaceParent(parent *Peer) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
+	//peer.lock.Lock()
+	//defer peer.lock.Unlock()
 	oldParent := peer.parent
 	if oldParent != nil {
 		oldParent.disassociateChild(peer)
@@ -219,7 +219,7 @@ func (peer *Peer) IsAncestor(ancestor *Peer) bool {
 	return false
 }
 
-func (peer *Peer) IsWaiting() bool {
+func (peer *Peer) IsBlocking() bool {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 	if peer.parent == nil {
@@ -239,10 +239,6 @@ func (peer *Peer) getFreeLoad() int {
 		return 0
 	}
 	return peer.Host.GetFreeUploadLoad()
-}
-
-func (peer *Peer) GetFinishNum() int32 {
-	return peer.finishedNum.Load()
 }
 
 func GetDiffPieceNum(src *Peer, dst *Peer) int32 {
@@ -283,6 +279,10 @@ func (peer *Peer) GetSendChannel() chan *scheduler.PeerPacket {
 
 func (peer *Peer) IsRunning() bool {
 	return peer.status == PeerStatusRunning
+}
+
+func (peer *Peer) IsWaiting() bool {
+	return peer.status == PeerStatusWaiting
 }
 
 func (peer *Peer) IsSuccess() bool {

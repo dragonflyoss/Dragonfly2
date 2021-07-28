@@ -26,7 +26,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/synclock"
 	"github.com/pkg/errors"
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
@@ -55,7 +54,7 @@ type ConnStatus string
 type Connection struct {
 	ctx            context.Context
 	cancelFun      context.CancelFunc
-	rwMutex        *synclock.LockerPool
+	rwMutex        sync.RWMutex
 	dialOpts       []grpc.DialOption
 	key2NodeMap    sync.Map // key -> node(many to one)
 	node2ClientMap sync.Map // node -> clientConn(one to one)
@@ -75,11 +74,7 @@ func newDefaultConnection(ctx context.Context) *Connection {
 	return &Connection{
 		ctx:            childCtx,
 		cancelFun:      cancel,
-		rwMutex:        synclock.NewLockerPool(),
 		dialOpts:       defaultClientOpts,
-		key2NodeMap:    sync.Map{},
-		node2ClientMap: sync.Map{},
-		accessNodeMap:  sync.Map{},
 		connExpireTime: defaultConnExpireTime,
 		gcConnTimeout:  defaultGcConnTimeout,
 		gcConnInterval: defaultGcConnInterval,
@@ -169,10 +164,10 @@ func (conn *Connection) CorrectKey2NodeRelation(tmpHashKey, realHashKey string) 
 	if tmpHashKey == realHashKey {
 		return
 	}
+	conn.rwMutex.Lock()
+	defer conn.rwMutex.Unlock()
 	key, _ := conn.key2NodeMap.Load(tmpHashKey)
 	serverNode := key.(string)
-	conn.rwMutex.Lock(serverNode, false)
-	defer conn.rwMutex.UnLock(serverNode, false)
 	conn.key2NodeMap.Store(realHashKey, serverNode)
 	conn.key2NodeMap.Delete(tmpHashKey)
 }
@@ -197,11 +192,11 @@ func (conn *Connection) UpdateAccessNodeMapByServerNode(serverNode string) {
 }
 
 func (conn *Connection) AddServerNodes(addrs []dfnet.NetAddr) error {
+	conn.rwMutex.Lock()
+	defer conn.rwMutex.Unlock()
 	for _, addr := range addrs {
 		serverNode := addr.GetEndpoint()
-		conn.rwMutex.Lock(serverNode, false)
 		conn.hashRing = conn.hashRing.AddNode(serverNode)
-		conn.rwMutex.UnLock(serverNode, false)
 		logger.With("conn", conn.name).Debugf("success add %s to server node list", addr)
 	}
 	return nil
@@ -209,6 +204,21 @@ func (conn *Connection) AddServerNodes(addrs []dfnet.NetAddr) error {
 
 // findCandidateClientConn find candidate node client conn other than exclusiveNodes
 func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...string) (*candidateClient, error) {
+	if node, ok := conn.key2NodeMap.Load(key); ok {
+		candidateNode := node.(string)
+		selected := true
+		for _, exclusiveNode := range exclusiveNodes {
+			if exclusiveNode == candidateNode {
+				selected = false
+			}
+		}
+		if selected {
+			if client, ok := conn.node2ClientMap.Load(node); ok {
+				return client.(*candidateClient), nil
+			}
+		}
+	}
+
 	ringNodes, ok := conn.hashRing.GetNodes(key, conn.hashRing.Size())
 	if !ok {
 		logger.Warnf("cannot obtain expected %d server nodes", conn.hashRing.Size())
@@ -231,12 +241,10 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 	logger.With("conn", conn.name).Infof("candidate result for hash key %s: all server node list: %v, exclusiveNodes node list: %v, candidate node list: %v",
 		key, ringNodes, exclusiveNodes, candidateNodes)
 	for _, candidateNode := range candidateNodes {
-		conn.rwMutex.Lock(candidateNode, true)
 		// Check whether there is a corresponding mapping client in the node2ClientMap
 		// TODO 下面部分可以直接调用loadOrCreate方法，但是日志没有这么调用打印全
 		if client, ok := conn.node2ClientMap.Load(candidateNode); ok {
 			logger.With("conn", conn.name).Infof("hit cache candidateNode %s for hash key %s", candidateNode, key)
-			conn.rwMutex.UnLock(candidateNode, true)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  client,
@@ -246,7 +254,6 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 		clientConn, err := conn.createClient(candidateNode, append(defaultClientOpts, conn.dialOpts...)...)
 		if err == nil {
 			logger.With("conn", conn.name).Infof("success connect to candidateNode %s for hash key %s", candidateNode, key)
-			conn.rwMutex.UnLock(candidateNode, true)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  clientConn,
@@ -254,7 +261,6 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 		}
 
 		logger.With("conn", conn.name).Infof("failed to connect candidateNode %s for hash key %s: %v", candidateNode, key, err)
-		conn.rwMutex.UnLock(candidateNode, true)
 	}
 	return nil, dferrors.ErrNoCandidateNode
 }
@@ -273,6 +279,8 @@ func (conn *Connection) createClient(target string, opts ...grpc.DialOption) (*g
 
 // GetServerNode
 func (conn *Connection) GetServerNode(hashKey string) (string, bool) {
+	conn.rwMutex.RLock()
+	defer conn.rwMutex.RUnlock()
 	node, ok := conn.key2NodeMap.Load(hashKey)
 	serverNode := node.(string)
 	if ok {
@@ -283,8 +291,8 @@ func (conn *Connection) GetServerNode(hashKey string) (string, bool) {
 
 func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, error) {
 	logger.With("conn", conn.name).Debugf("start to get client conn by target %s", node)
-	conn.rwMutex.Lock(node, true)
-	defer conn.rwMutex.UnLock(node, true)
+	conn.rwMutex.RLock()
+	defer conn.rwMutex.RUnlock()
 	clientConn, err := conn.loadOrCreateClientConnByNode(node)
 	if err != nil {
 		return nil, errors.Wrapf(err, "get client conn by conn %s", node)
@@ -322,30 +330,32 @@ func (conn *Connection) loadOrCreateClientConnByNode(node string) (clientConn *g
 // stick whether hash key need already associated with specify node
 func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientConn, error) {
 	logger.With("conn", conn.name).Debugf("start to get client conn hashKey %s, stick %t", hashKey, stick)
+	conn.rwMutex.RLock()
 	node, ok := conn.key2NodeMap.Load(hashKey)
 	if stick && !ok {
+		conn.rwMutex.RUnlock()
 		// if request is stateful, hash key must exist in key2NodeMap
 		return nil, fmt.Errorf("it is a stateful request， but cannot find hash key(%s) in key2NodeMap", hashKey)
 	}
 	if ok {
 		// if exist
 		serverNode := node.(string)
-		conn.rwMutex.Lock(serverNode, true)
 		clientConn, err := conn.loadOrCreateClientConnByNode(serverNode)
-		conn.rwMutex.UnLock(serverNode, true)
+		conn.rwMutex.RUnlock()
 		if err != nil {
 			return nil, err
 		}
 		return clientConn, nil
 	}
 	logger.With("conn", conn.name).Infof("no server node associated with hash key %s was found, start find candidate", hashKey)
+	conn.rwMutex.RUnlock()
 	// if absence
+	conn.rwMutex.Lock()
+	defer conn.rwMutex.Unlock()
 	client, err := conn.findCandidateClientConn(hashKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "prob candidate client conn for hash key %s", hashKey)
 	}
-	conn.rwMutex.Lock(client.node, false)
-	defer conn.rwMutex.UnLock(client.node, false)
 	conn.key2NodeMap.Store(hashKey, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
@@ -363,19 +373,21 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 		}
 	}
 	currentNode := ""
+	conn.rwMutex.RLock()
 	if currentNode, ok := conn.key2NodeMap.Load(key); ok {
 		preNode = currentNode.(string)
 		exclusiveNodes = append(exclusiveNodes, currentNode.(string))
 	} else {
 		logger.With("conn", conn.name).Warnf("failed to find server node for hash key %s", key)
 	}
+	conn.rwMutex.RUnlock()
+	conn.rwMutex.Lock()
+	defer conn.rwMutex.Unlock()
 	client, err := conn.findCandidateClientConn(key, exclusiveNodes...)
 	if err != nil {
 		return "", errors.Wrapf(err, "find candidate client conn for hash key %s", key)
 	}
 	logger.With("conn", conn.name).Infof("successfully migrate hash key %s from server node %s to %s", key, currentNode, client.node)
-	conn.rwMutex.Lock(client.node, false)
-	defer conn.rwMutex.UnLock(client.node, false)
 	conn.key2NodeMap.Store(key, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())
@@ -383,9 +395,10 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 }
 
 func (conn *Connection) Close() error {
+	conn.rwMutex.Lock()
+	defer conn.rwMutex.Unlock()
 	for i := range conn.serverNodes {
 		serverNode := conn.serverNodes[i].GetEndpoint()
-		conn.rwMutex.Lock(serverNode, false)
 		conn.hashRing.RemoveNode(serverNode)
 		value, ok := conn.node2ClientMap.Load(serverNode)
 		if ok {
@@ -406,19 +419,18 @@ func (conn *Connection) Close() error {
 			return true
 		})
 		conn.accessNodeMap.Delete(serverNode)
-		conn.rwMutex.UnLock(serverNode, false)
 	}
 	conn.cancelFun()
 	return nil
 }
 
 func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
-	// TODO lock
-	conn.serverNodes = addrs
 	var addresses []string
 	for _, addr := range addrs {
 		addresses = append(addresses, addr.GetEndpoint())
 	}
-
+	conn.rwMutex.Lock()
+	defer conn.rwMutex.Unlock()
+	conn.serverNodes = addrs
 	conn.hashRing = hashring.New(addresses)
 }

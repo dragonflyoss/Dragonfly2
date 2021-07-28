@@ -109,8 +109,8 @@ func (task *Task) AddPeer(peer *Peer) {
 }
 
 func (task *Task) DeletePeer(peer *Peer) {
-	task.lock.Lock()
-	defer task.lock.Unlock()
+	//task.lock.Lock()
+	//defer task.lock.Unlock()
 	task.peers.Delete(peer)
 }
 

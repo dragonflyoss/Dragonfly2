@@ -104,9 +104,9 @@ func (p *streamPeerTaskCallback) Done(pt Task) error {
 		Code:           dfcodes.Success,
 	})
 	if err != nil {
-		pt.Log().Errorf("report successful peer result, error: %v", err)
+		pt.Log().Errorf("step3: report successful peer result, error: %v", err)
 	} else {
-		pt.Log().Infof("report successful peer result ok")
+		pt.Log().Infof("step3: report successful peer result ok")
 	}
 	return nil
 }
@@ -129,9 +129,9 @@ func (p *streamPeerTaskCallback) Fail(pt Task, code base.Code, reason string) er
 		Code:           code,
 	})
 	if err != nil {
-		pt.Log().Errorf("report fail peer result, error: %v", err)
+		pt.Log().Errorf("step3: report fail peer result, error: %v", err)
 	} else {
-		pt.Log().Infof("report fail peer result ok")
+		pt.Log().Infof("step3: report fail peer result ok")
 	}
 	return nil
 }

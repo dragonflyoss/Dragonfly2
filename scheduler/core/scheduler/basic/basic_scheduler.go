@@ -145,31 +145,52 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer
 func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list []*types.Peer) {
 	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *types.Peer) bool {
 		if candidateNode == nil {
-			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("*candidate child peer is not selected because it is nil")
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer is not selected because it is nil")
 			return false
 		}
-		if candidateNode.IsDone() || candidateNode.IsLeave() || candidateNode == peer {
-			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("*candidate child peer %s is not selected because it is %+v",
-				candidateNode.PeerID, candidateNode)
+		if candidateNode.IsDone() {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer %s is not selected because it has done",
+				candidateNode.PeerID)
+			return false
+		}
+		if candidateNode.IsLeave() {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer %s is not selected because it has left",
+				candidateNode.PeerID)
+			return false
+		}
+		if candidateNode == peer {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer %s is not selected because it and peer are the same",
+				candidateNode.PeerID)
+			return false
+		}
+		if peer.GetParent() == candidateNode {
+			logger.WithTaskAndPeerID(peer.Task.TaskID,
+				peer.PeerID).Debugf("******candidate child peer %s is not selected because peer's parent is candidate peer", candidateNode.PeerID)
+			return false
+		}
+		if candidateNode.GetFinishedNum() > peer.GetFinishedNum() {
+			logger.WithTaskAndPeerID(peer.Task.TaskID,
+				peer.PeerID).Debugf("******candidate child peer %s is not selected because it finished number of download is more than peer's",
+				candidateNode.PeerID)
 			return false
 		}
 		if candidateNode.Host != nil && candidateNode.Host.CDN {
-			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("candidate child peer %s is not selected because it is a cdn host", candidateNode.PeerID)
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer %s is not selected because it is a cdn host",
+				candidateNode.PeerID)
 			return false
 		}
 		if candidateNode.GetParent() == nil {
-			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("candidate child peer %s is selected because it has not parent",
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer %s is selected because it has not parent",
 				candidateNode.PeerID)
 			return true
 		}
 
 		if candidateNode.GetParent() != nil && s.evaluator.IsBadNode(candidateNode.GetParent()) {
 			logger.WithTaskAndPeerID(peer.Task.TaskID,
-				peer.PeerID).Debugf("candidate child peer %s is selected because it has parent and parent status is not health", candidateNode.PeerID)
+				peer.PeerID).Debugf("******candidate child peer %s is selected because it has parent and parent status is not health", candidateNode.PeerID)
 			return true
 		}
-		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("=candidate child peer %s is not selected because it is %+v",
-			candidateNode.PeerID, candidateNode)
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer %s is not selected", candidateNode.PeerID)
 		return false
 	})
 }
@@ -177,17 +198,47 @@ func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list [
 func (s *Scheduler) selectCandidateParents(peer *types.Peer, limit int) (list []*types.Peer) {
 	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.Peer) bool {
 		if candidateNode == nil {
-			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("candidate parent peer is not selected because it is nil")
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer is not selected because it is nil")
 			return false
 		}
-		if s.evaluator.IsBadNode(candidateNode) || candidateNode.IsLeave() || candidateNode == peer || candidateNode.Host.
-			GetFreeUploadLoad() <= 0 {
-			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("candidate parent peer %s is not selected because it is %+v",
-				candidateNode.PeerID, candidateNode)
+		if s.evaluator.IsBadNode(candidateNode) {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer %s is not selected because it is badNode",
+				candidateNode.PeerID)
 			return false
 		}
-		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("candidate parent peer %s is selected because it is %+v",
-			candidateNode.PeerID, candidateNode)
+		if candidateNode.IsLeave() {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer %s is not selected because it has already left",
+				candidateNode.PeerID)
+			return false
+		}
+		if candidateNode == peer {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer %s is not selected because it and peer are the same",
+				candidateNode.PeerID)
+			return false
+		}
+		if candidateNode.GetParent() == peer {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer %s is not selected because it's parent is peer",
+				candidateNode.PeerID)
+			return false
+		}
+		if candidateNode.Host.GetFreeUploadLoad() <= 0 {
+			logger.WithTaskAndPeerID(peer.Task.TaskID,
+				peer.PeerID).Debugf("++++++candidate parent peer %s is not selected because it's free upload load equal to less than zero",
+				candidateNode.PeerID)
+			return false
+		}
+		if candidateNode.IsWaiting() {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer %s is not selected because it's status is waiting",
+				candidateNode.PeerID)
+			return false
+		}
+		if candidateNode.GetFinishedNum() < peer.GetFinishedNum() {
+			logger.WithTaskAndPeerID(peer.Task.TaskID,
+				peer.PeerID).Debugf("++++++candidate parent peer %s is not selected because it finished number of download is smaller than peer's",
+				candidateNode.PeerID)
+			return false
+		}
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer %s is selected", candidateNode.PeerID)
 		return true
 	})
 }
