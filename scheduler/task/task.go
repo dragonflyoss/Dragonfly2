@@ -107,7 +107,7 @@ func (t *task) preheat(req string) (string, error) {
 		return "", errors.Errorf("invalid url: %s", request.URL)
 	}
 
-	meta := &base.UrlMeta{Header: map[string]string{}, Digest: request.Digest, Tag: request.Tag}
+	meta := &base.UrlMeta{Header: request.Headers, Digest: request.Digest, Tag: request.Tag}
 	if rg := request.Headers["Range"]; len(rg) > 0 {
 		meta.Range = rg
 	}
