@@ -53,7 +53,7 @@ var (
 func init() {
 	flag.StringVar(&target, "url", "", "target url for stress testing, example: http://localhost")
 	flag.StringVar(&output, "output", "/tmp/statistics.txt", "all request statistics")
-	flag.StringVar(&target, "proxy", "", "target proxy for downloading, example: http://127.0.0.1:65001")
+	flag.StringVar(&proxy, "proxy", "", "target proxy for downloading, example: http://127.0.0.1:65001")
 	flag.IntVar(&con, "connections", 100, "concurrency count of connections")
 	duration = flag.Duration("duration", 100*time.Second, "testing duration")
 }
