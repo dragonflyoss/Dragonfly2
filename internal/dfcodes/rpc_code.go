@@ -41,7 +41,8 @@ const (
 	ClientRequestLimitFail  base.Code = 4006
 
 	// scheduler response error 5000-5999
-	SchedError                     base.Code = 5000
+	SchedError base.Code = 5000
+	/** @deprecated */
 	SchedNeedBackSource            base.Code = 5001 // client should try to download from source
 	SchedPeerGone                  base.Code = 5002 // client should disconnect from scheduler
 	SchedPeerRegisterFail          base.Code = 5003
