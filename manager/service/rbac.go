@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,7 @@ func (s *rest) CreatePermission(json types.PolicyRequest) error {
 		return err
 	}
 	if !res {
-		return errors.New("policy already exists")
+		logger.Infof("The role %s of %s already exist. skip!", roleName, json.Subject)
 	}
 	return nil
 }

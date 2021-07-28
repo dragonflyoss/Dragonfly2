@@ -16,25 +16,20 @@ import (
 
 // Syntax for models see https://casbin.org/docs/en/syntax-for-models
 const modelText = `
-# Request definition
 [request_definition]
 r = sub, obj, act
 
-# Policy definition
 [policy_definition]
-p = sub, obj, act, eft
+p = sub, obj, act
 
-# Role definition
 [role_definition]
 g = _, _
 
-# Policy effect
 [policy_effect]
 e = some(where (p.eft == allow))
 
-# Matchers
 [matchers]
-m = g(r.sub, p.sub) && (r.obj == p.obj) && (r.act == p.act || p.act == '*') || r.sub == "admin"
+m = g(r.sub, p.sub) && r.obj == p.obj && (r.act == p.act || p.act == "*") || r.sub == "admin"
 `
 
 func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
