@@ -63,3 +63,30 @@ func TestRoleName(t *testing.T) {
 	}
 
 }
+func TestHttpMethodToAction(t *testing.T) {
+	tests := []struct {
+		method         string
+		exceptedAction string
+	}{
+		{
+			method:         "GET",
+			exceptedAction: "read",
+		},
+		{
+			method:         "POST",
+			exceptedAction: "*",
+		},
+		{
+			method:         "UNKNOWN",
+			exceptedAction: "",
+		},
+	}
+
+	for _, tt := range tests {
+		action := HttpMethodToAction(tt.method)
+		if action != tt.exceptedAction {
+			t.Errorf("HttpMethodToAction(%v) = %v, want %v", tt.method, action, tt.exceptedAction)
+		}
+	}
+
+}

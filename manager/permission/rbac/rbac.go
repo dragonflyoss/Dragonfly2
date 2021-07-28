@@ -130,3 +130,14 @@ func SystemRoles(g *gin.Engine) []string {
 	}
 	return Roles
 }
+
+func HttpMethodToAction(method string) string {
+	action := ""
+	switch strings.ToUpper(method) {
+	case "GET", "HEAD", "OPTIONS":
+		action = "read"
+	case "POST", "PUT", "PATCH", "DELETE":
+		action = "*"
+	}
+	return action
+}
