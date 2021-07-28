@@ -107,7 +107,7 @@ func (t *task) preheat(req string) (string, error) {
 		return "", errors.Errorf("invalid url: %s", request.URL)
 	}
 
-	meta := &base.UrlMeta{Header: request.Headers, Digest: request.Digest, Tag: request.Tag}
+	meta := &base.UrlMeta{Header: request.Headers, Digest: request.Digest, Tag: request.Tag, Filter: request.Filter}
 	if rg := request.Headers["Range"]; len(rg) > 0 {
 		meta.Range = rg
 	}
@@ -124,7 +124,7 @@ func (t *task) preheat(req string) (string, error) {
 	for {
 		switch task.GetStatus() {
 		case types.TaskStatusFailed, types.TaskStatusCDNRegisterFail, types.TaskStatusSourceError:
-			return internaltasks.MarshalResult(&internaltasks.PreheatResponse{})
+			return "", errors.Errorf("preheat task %s fail.", taskID)
 		case types.TaskStatusSuccess:
 			return internaltasks.MarshalResult(&internaltasks.PreheatResponse{})
 		default:
