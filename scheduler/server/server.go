@@ -123,6 +123,7 @@ func (s *Server) Serve() error {
 
 	s.dynConfig.Serve()
 	s.schedulerService.Serve()
+	go s.task.Serve()
 
 	if s.managerClient != nil {
 		retry.Run(ctx, func() (interface{}, bool, error) {
