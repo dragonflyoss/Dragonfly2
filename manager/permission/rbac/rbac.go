@@ -131,7 +131,7 @@ func SystemRoles(g *gin.Engine) []string {
 	return Roles
 }
 
-func HttpMethodToAction(method string) string {
+func HTTPMethodToAction(method string) string {
 	action := ""
 	switch strings.ToUpper(method) {
 	case "GET", "HEAD", "OPTIONS":

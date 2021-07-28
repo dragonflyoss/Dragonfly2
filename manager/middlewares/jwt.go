@@ -3,6 +3,7 @@ package middlewares
 import (
 	"time"
 
+	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/manager/types"
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -10,11 +11,11 @@ import (
 )
 
 type user struct {
-	ID uint
+	userName string
 }
 
 func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
-	var identityKey = "id"
+	var identityKey = "username"
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
 		Realm:       "Dragonfly",
 		Key:         []byte("Secret Key"),
@@ -24,9 +25,11 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
-			return &user{
-				ID: claims[identityKey].(uint),
+			u := &user{
+				userName: claims[identityKey].(string),
 			}
+			c.Set("userName", u.userName)
+			return u
 		},
 
 		Authenticator: func(c *gin.Context) (interface{}, error) {
@@ -39,17 +42,14 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 			if err != nil {
 				return "", jwt.ErrFailedAuthentication
 			}
-			c.Set("userName", u.Name)
 
-			return &user{
-				ID: u.ID,
-			}, nil
+			return u, nil
 		},
 
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
-			if u, ok := data.(user); ok {
+			if u, ok := data.(*model.User); ok {
 				return jwt.MapClaims{
-					identityKey: u.ID,
+					identityKey: u.Name,
 				}
 			}
 			return jwt.MapClaims{}

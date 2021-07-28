@@ -83,7 +83,7 @@ func TestHttpMethodToAction(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		action := HttpMethodToAction(tt.method)
+		action := HTTPMethodToAction(tt.method)
 		if action != tt.exceptedAction {
 			t.Errorf("HttpMethodToAction(%v) = %v, want %v", tt.method, action, tt.exceptedAction)
 		}

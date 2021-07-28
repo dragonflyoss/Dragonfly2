@@ -18,7 +18,7 @@ func RBAC(e *casbin.Enforcer) gin.HandlerFunc {
 		}
 		// request method
 		m := c.Request.Method
-		action := rbac.HttpMethodToAction(m)
+		action := rbac.HTTPMethodToAction(m)
 		// rbac validation
 		res, err := e.Enforce(userName, permissionGroupName, action)
 		if err != nil || !res {
