@@ -2,6 +2,9 @@ package task
 
 import (
 	"context"
+	"strings"
+	"time"
+
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -14,8 +17,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
-	"strings"
-	"time"
 )
 
 type Task interface {

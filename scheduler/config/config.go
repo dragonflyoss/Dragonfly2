@@ -147,14 +147,14 @@ func NewDefaultManagerConfig() *ManagerConfig {
 
 func NewDefaultTaskConfig() *TaskConfig {
 	return &TaskConfig{
-		GlobalWorkerNum: 1,
-		SchedulerWorkerNum: 1,
-		LocalWorkerNum: 5,
+		GlobalWorkerNum:    10,
+		SchedulerWorkerNum: 10,
+		LocalWorkerNum:     10,
 		Redis: &RedisConfig{
-			Host: "",
-			Port: 6379,
-			Password: "",
-			BrokerDB: 1,
+			Host:      "",
+			Port:      6379,
+			Password:  "",
+			BrokerDB:  1,
 			BackendDB: 2,
 		},
 	}
@@ -164,11 +164,11 @@ func (c *Config) ConvertRedisHost() *Config {
 	if c.Manager != nil && c.Task != nil && c.Task.Redis != nil {
 		n := strings.LastIndex(c.Manager.Addr, ":")
 		if n >= 0 {
-			if ip := net.ParseIP(c.Manager.Addr[0:n]); ip != nil && !net.IPv4zero.Equal(ip){
+			if ip := net.ParseIP(c.Manager.Addr[0:n]); ip != nil && !net.IPv4zero.Equal(ip) {
 				c.Task.Redis.Host = ip.String()
 				return c
 			}
-		} else if ip := net.ParseIP(c.Manager.Addr); ip != nil && !net.IPv4zero.Equal(ip){
+		} else if ip := net.ParseIP(c.Manager.Addr); ip != nil && !net.IPv4zero.Equal(ip) {
 			c.Task.Redis.Host = ip.String()
 			return c
 		}
@@ -262,8 +262,8 @@ type RedisConfig struct {
 }
 
 type TaskConfig struct {
-	GlobalWorkerNum int `yaml:"globalWorkerNum" mapstructure:"globalWorkerNum"`
-	SchedulerWorkerNum int `yaml:"schedulerWorkerNum" mapstructure:"schedulerWorkerNum"`
-	LocalWorkerNum int `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
-	Redis        *RedisConfig     `yaml:"redis" mapstructure:"redis"`
+	GlobalWorkerNum    int          `yaml:"globalWorkerNum" mapstructure:"globalWorkerNum"`
+	SchedulerWorkerNum int          `yaml:"schedulerWorkerNum" mapstructure:"schedulerWorkerNum"`
+	LocalWorkerNum     int          `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
+	Redis              *RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
