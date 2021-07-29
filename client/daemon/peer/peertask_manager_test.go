@@ -203,9 +203,10 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	}
 	progress, _, err := ptm.StartFilePeerTask(context.Background(), &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
-			Url:      "http://localhost/test/data",
-			Filter:   "",
-			BizId:    "d7y-test",
+			Url: "http://localhost/test/data",
+			UrlMeta: &base.UrlMeta{
+				Tag: "d7y-test",
+			},
 			PeerId:   peerID,
 			PeerHost: &scheduler.PeerHost{},
 		},
@@ -277,9 +278,10 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	}
 
 	r, _, err := ptm.StartStreamPeerTask(context.Background(), &scheduler.PeerTaskRequest{
-		Url:      "http://localhost/test/data",
-		Filter:   "",
-		BizId:    "d7y-test",
+		Url: "http://localhost/test/data",
+		UrlMeta: &base.UrlMeta{
+			Tag: "d7y-test",
+		},
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	})

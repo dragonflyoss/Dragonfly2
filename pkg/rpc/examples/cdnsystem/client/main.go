@@ -21,6 +21,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 
 	"context"
@@ -49,7 +50,9 @@ func main() {
 			psc, _ := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
 				TaskId: "test2",
 				Url:    "https://desktop.docker.com/mac/stable/amd64/Docker.dmg",
-				Filter: "",
+				UrlMeta: &base.UrlMeta{
+					Filter: "",
+				},
 			})
 
 			//psc, _ := c.ObtainSeeds(context.TODO(), &cdnsystem.SeedRequest{
