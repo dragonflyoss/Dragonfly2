@@ -108,8 +108,8 @@ func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) 
 func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer, bool) {
 	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start scheduler parent flow")
 	if !s.evaluator.NeedAdjustParent(peer) {
-		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("peer does not need to replace the parent node, peer is %v and current parent is %v",
-			peer, peer.GetParent())
+		//logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("peer does not need to replace the parent node, peer is %v and current parent is %v",
+		//	peer, peer.GetParent())
 		if peer.GetParent() == nil {
 			return nil, nil, false
 		}
@@ -163,9 +163,9 @@ func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list [
 				candidateNode.PeerID)
 			return false
 		}
-		if peer.GetParent() == candidateNode {
+		if candidateNode.IsAncestorOf(peer) {
 			logger.WithTaskAndPeerID(peer.Task.TaskID,
-				peer.PeerID).Debugf("******candidate child peer %s is not selected because peer's parent is candidate peer", candidateNode.PeerID)
+				peer.PeerID).Debugf("******candidate child peer %s is not selected because peer's ancestor is candidate peer", candidateNode.PeerID)
 			return false
 		}
 		if candidateNode.GetFinishedNum() > peer.GetFinishedNum() {
@@ -190,7 +190,7 @@ func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list [
 				peer.PeerID).Debugf("******candidate child peer %s is selected because it has parent and parent status is not health", candidateNode.PeerID)
 			return true
 		}
-		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer %s is not selected", candidateNode.PeerID)
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer %s is selected", candidateNode.PeerID)
 		return false
 	})
 }
@@ -216,8 +216,8 @@ func (s *Scheduler) selectCandidateParents(peer *types.Peer, limit int) (list []
 				candidateNode.PeerID)
 			return false
 		}
-		if candidateNode.GetParent() == peer {
-			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer %s is not selected because it's parent is peer",
+		if candidateNode.IsDescendantOf(peer) {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer %s is not selected because it's ancestor is peer",
 				candidateNode.PeerID)
 			return false
 		}

@@ -715,7 +715,7 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 			}
 			span.AddEvent("retry due to empty pieces",
 				trace.WithAttributes(config.AttributeGetPieceRetry.Int(count)))
-			pt.Warnf("peer %s returns success but with empty pieces, retry later", peer.PeerId)
+			pt.Infof("peer %s returns success but with empty pieces, retry later", peer.PeerId)
 			return nil, false, dferrors.ErrEmptyValue
 		}
 		return pp, false, nil

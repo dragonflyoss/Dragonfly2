@@ -202,16 +202,41 @@ func (peer *Peer) GetTreeRoot() *Peer {
 	return node
 }
 
-// if ancestor is ancestor of peer
-func (peer *Peer) IsAncestor(ancestor *Peer) bool {
+// if peer is offspring of ancestor
+func (peer *Peer) IsDescendantOf(ancestor *Peer) bool {
 	if ancestor == nil {
 		return false
 	}
+	// TODO avoid circulation
+	peer.lock.RLock()
+	ancestor.lock.RLock()
+	defer ancestor.lock.RUnlock()
+	defer peer.lock.RUnlock()
 	node := peer
 	for node != nil {
 		if node.parent == nil || node.Host.CDN {
 			return false
 		} else if node.PeerID == ancestor.PeerID {
+			return true
+		}
+		node = node.parent
+	}
+	return false
+}
+
+func (peer *Peer) IsAncestorOf(offspring *Peer) bool {
+	if offspring == nil {
+		return false
+	}
+	offspring.lock.RLock()
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
+	defer offspring.lock.RUnlock()
+	node := offspring
+	for node != nil {
+		if node.parent == nil || node.Host.CDN {
+			return false
+		} else if node.PeerID == peer.PeerID {
 			return true
 		}
 		node = node.parent

@@ -162,10 +162,8 @@ var _ event = peerDownloadPieceFailEvent{}
 
 func (e peerDownloadPieceFailEvent) apply(s *state) {
 	switch e.pr.Code {
-	case dfcodes.PeerTaskNotFound:
-		handlePeerLeave(e.peer, s)
-		return
-	case dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
+	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
+		// TODO PeerTaskNotFound remove dest peer task, ClientPieceDownloadFail add blank list
 		handleReplaceParent(e.peer, s)
 		return
 	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
@@ -231,6 +229,10 @@ func (e peerDownloadSuccessEvent) apply(s *state) {
 		}
 		child.PacketChan <- constructSuccessPeerPacket(child, e.peer, nil)
 	}
+	if e.peer.PacketChan != nil {
+		close(e.peer.PacketChan)
+		e.peer.PacketChan = nil
+	}
 }
 
 func (e peerDownloadSuccessEvent) hashKey() string {
@@ -262,6 +264,10 @@ func (e peerDownloadFailEvent) apply(s *state) {
 		child.PacketChan <- constructSuccessPeerPacket(child, parent, candidates)
 		return true
 	})
+	if e.peer.PacketChan != nil {
+		close(e.peer.PacketChan)
+		e.peer.PacketChan = nil
+	}
 	s.peerManager.Delete(e.peer.PeerID)
 }
 

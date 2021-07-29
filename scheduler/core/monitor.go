@@ -43,7 +43,8 @@ type monitor struct {
 }
 
 func newMonitor(peerManager daemon.PeerMgr) *monitor {
-	logger, _ := zap.NewDevelopment()
+	config := zap.NewDevelopmentConfig()
+	logger, _ := config.Build()
 	return &monitor{
 		downloadMonitorQueue: workqueue.NewDelayingQueue(),
 		peerManager:          peerManager,
