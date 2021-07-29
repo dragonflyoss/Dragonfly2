@@ -19,7 +19,6 @@ package config
 import (
 	"net"
 	"runtime"
-	"strings"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
@@ -160,15 +159,12 @@ func NewDefaultTaskConfig() *TaskConfig {
 }
 
 func (c *Config) Convert() error {
-	if c.Task.Redis != nil {
-		n := strings.LastIndex(c.Manager.Addr, ":")
-		if n >= 0 {
-			if ip := net.ParseIP(c.Manager.Addr[0:n]); ip != nil && !net.IPv4zero.Equal(ip) {
-				c.Task.Redis.Host = ip.String()
-				return nil
-			}
+	if c.Manager.Addr != "" && c.Task.Redis.Host == "" {
+		host, _, err := net.SplitHostPort(c.Manager.Addr)
+		if err != nil {
+			return err
 		}
-		c.Task.Redis.Host = ""
+		c.Task.Redis.Host = host
 	}
 	return nil
 }
