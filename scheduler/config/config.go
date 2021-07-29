@@ -19,7 +19,6 @@ package config
 import (
 	"net"
 	"runtime"
-	"strings"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
@@ -39,14 +38,14 @@ type Config struct {
 }
 
 func New() *Config {
-	return (&Config{
+	return &Config{
 		Scheduler: NewDefaultSchedulerConfig(),
 		Server:    NewDefaultServerConfig(),
 		DynConfig: NewDefaultDynConfig(),
 		Manager:   NewDefaultManagerConfig(),
 		Host:      NewHostConfig(),
 		Task:      NewDefaultTaskConfig(),
-	}).ConvertRedisHost()
+	}
 }
 
 func NewHostConfig() *HostConfig {
@@ -159,21 +158,15 @@ func NewDefaultTaskConfig() *TaskConfig {
 	}
 }
 
-func (c *Config) ConvertRedisHost() *Config {
-	if c.Manager != nil && c.Task != nil && c.Task.Redis != nil {
-		n := strings.LastIndex(c.Manager.Addr, ":")
-		if n >= 0 {
-			if ip := net.ParseIP(c.Manager.Addr[0:n]); ip != nil && !net.IPv4zero.Equal(ip) {
-				c.Task.Redis.Host = ip.String()
-				return c
-			}
-		} else if ip := net.ParseIP(c.Manager.Addr); ip != nil && !net.IPv4zero.Equal(ip) {
-			c.Task.Redis.Host = ip.String()
-			return c
+func (c *Config) Convert() error {
+	if c.Manager.Addr != "" && c.Task.Redis.Host == "" {
+		host, _, err := net.SplitHostPort(c.Manager.Addr)
+		if err != nil {
+			return err
 		}
+		c.Task.Redis.Host = host
 	}
-	c.Task.Redis.Host = ""
-	return c
+	return nil
 }
 
 type ManagerConfig struct {
