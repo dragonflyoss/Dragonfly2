@@ -62,6 +62,7 @@ type Result struct {
 	StatusCode int
 	StartTime  time.Time
 	EndTime    time.Time
+	Cost       time.Duration
 	TaskID     string
 	PeerID     string
 	Size       int64
@@ -173,6 +174,7 @@ func process(ctx context.Context, wg *sync.WaitGroup, result chan *Result) {
 			StatusCode: resp.StatusCode,
 			StartTime:  start,
 			EndTime:    end,
+			Cost:       end.Sub(start),
 			Size:       n,
 			TaskID:     resp.Header.Get(config.HeaderDragonflyTask),
 			PeerID:     resp.Header.Get(config.HeaderDragonflyPeer),
@@ -201,6 +203,9 @@ loop:
 }
 
 func printStatistics(results []*Result) {
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Cost < results[j].Cost
+	})
 	printLatency(results)
 	printStatus(results)
 	printThroughput(results)
@@ -231,9 +236,6 @@ func printLatency(results []*Result) {
 		return
 	}
 
-	sort.Slice(dur, func(i, j int) bool {
-		return i < j
-	})
 	d := stats.LoadRawData(dur)
 
 	min, _ := stats.Min(d)
@@ -277,7 +279,7 @@ func saveToOutput(results []*Result) {
 			v.PeerID = "unknown"
 		}
 		out.WriteString(fmt.Sprintf("%s %s %d %v %d %d %s\n",
-			v.TaskID, v.PeerID, v.StatusCode, v.EndTime.Sub(v.StartTime),
+			v.TaskID, v.PeerID, v.StatusCode, v.Cost,
 			v.StartTime.UnixNano()/100, v.EndTime.UnixNano()/100, v.Message))
 	}
 }
