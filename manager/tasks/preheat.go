@@ -97,7 +97,7 @@ func (p *preheat) createPreheat(files []*internaltasks.PreheatRequest) (*types.P
 	signatures := []*machineryv1tasks.Signature{}
 	for _, queue := range p.queues {
 		for _, file := range files {
-			args, err := internaltasks.Marshal(file)
+			args, err := internaltasks.MarshalRequest(file)
 			if err != nil {
 				continue
 			}

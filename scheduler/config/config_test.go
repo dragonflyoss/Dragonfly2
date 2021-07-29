@@ -62,6 +62,18 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			IDC:      "foo",
 			Location: "bar",
 		},
+		Task: &TaskConfig{
+			GlobalWorkerNum: 1,
+			SchedulerWorkerNum: 1,
+			LocalWorkerNum: 5,
+			Redis: &RedisConfig{
+				Host: "127.0.0.1",
+				Port: 6379,
+				Password: "password",
+				BrokerDB: 1,
+				BackendDB: 2,
+			},
+		},
 	}
 
 	schedulerConfigYAML := &Config{}

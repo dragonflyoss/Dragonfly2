@@ -17,7 +17,9 @@
 package config
 
 import (
+	"net"
 	"runtime"
+	"strings"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
@@ -33,16 +35,18 @@ type Config struct {
 	DynConfig    *DynConfig       `yaml:"dynConfig" mapstructure:"dynConfig"`
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
 	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
+	Task         *TaskConfig      `yaml:"task" mapstructure:"task"`
 }
 
 func New() *Config {
-	return &Config{
+	return (&Config{
 		Scheduler: NewDefaultSchedulerConfig(),
 		Server:    NewDefaultServerConfig(),
 		DynConfig: NewDefaultDynConfig(),
 		Manager:   NewDefaultManagerConfig(),
 		Host:      NewHostConfig(),
-	}
+		Task:      NewDefaultTaskConfig(),
+	}).ConvertRedisHost()
 }
 
 func NewHostConfig() *HostConfig {
@@ -141,6 +145,38 @@ func NewDefaultManagerConfig() *ManagerConfig {
 	}
 }
 
+func NewDefaultTaskConfig() *TaskConfig {
+	return &TaskConfig{
+		GlobalWorkerNum: 1,
+		SchedulerWorkerNum: 1,
+		LocalWorkerNum: 5,
+		Redis: &RedisConfig{
+			Host: "",
+			Port: 6379,
+			Password: "",
+			BrokerDB: 1,
+			BackendDB: 2,
+		},
+	}
+}
+
+func (c *Config) ConvertRedisHost() *Config {
+	if c.Manager != nil && c.Task != nil && c.Task.Redis != nil {
+		n := strings.LastIndex(c.Manager.Addr, ":")
+		if n >= 0 {
+			if ip := net.ParseIP(c.Manager.Addr[0:n]); ip != nil && !net.IPv4zero.Equal(ip){
+				c.Task.Redis.Host = ip.String()
+				return c
+			}
+		} else if ip := net.ParseIP(c.Manager.Addr); ip != nil && !net.IPv4zero.Equal(ip){
+			c.Task.Redis.Host = ip.String()
+			return c
+		}
+	}
+	c.Task.Redis.Host = ""
+	return c
+}
+
 type ManagerConfig struct {
 	// Addr is manager address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
@@ -215,4 +251,19 @@ type HostConfig struct {
 
 	// Peerhost idc for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
+}
+
+type RedisConfig struct {
+	Host      string `yaml:"host" mapstructure:"host"`
+	Port      int    `yaml:"port" mapstructure:"port"`
+	Password  string `yaml:"password" mapstructure:"password"`
+	BrokerDB  int    `yaml:"brokerDB" mapstructure:"brokerDB"`
+	BackendDB int    `yaml:"backendDB" mapstructure:"backendDB"`
+}
+
+type TaskConfig struct {
+	GlobalWorkerNum int `yaml:"globalWorkerNum" mapstructure:"globalWorkerNum"`
+	SchedulerWorkerNum int `yaml:"schedulerWorkerNum" mapstructure:"schedulerWorkerNum"`
+	LocalWorkerNum int `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
+	Redis        *RedisConfig     `yaml:"redis" mapstructure:"redis"`
 }

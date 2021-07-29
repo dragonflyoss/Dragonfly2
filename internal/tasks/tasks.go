@@ -58,6 +58,10 @@ func New(cfg *Config, queue Queue) (*Tasks, error) {
 	}, nil
 }
 
+func (t *Tasks) RegisterTask(name string, taskFunc interface{}) error {
+	return t.Server.RegisterTask(name, taskFunc)
+}
+
 func (t *Tasks) LaunchWorker(consumerTag string, concurrency int) error {
 	return t.Server.NewWorker(consumerTag, concurrency).Launch()
 }
@@ -105,7 +109,7 @@ func (t *Tasks) GetGroupTaskState(groupUUID string) (*GroupTaskState, error) {
 	}, nil
 }
 
-func Marshal(v interface{}) ([]machineryv1tasks.Arg, error) {
+func MarshalRequest(v interface{}) ([]machineryv1tasks.Arg, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -117,7 +121,7 @@ func Marshal(v interface{}) ([]machineryv1tasks.Arg, error) {
 	}}, nil
 }
 
-func Unmarshal(data []reflect.Value, v interface{}) error {
+func UnmarshalResponse(data []reflect.Value, v interface{}) error {
 	if len(data) == 0 {
 		return errors.New("empty data is not specified")
 	}
@@ -126,4 +130,16 @@ func Unmarshal(data []reflect.Value, v interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func UnmarshalRequest(data string, v interface{}) error {
+	return json.Unmarshal([]byte(data), v)
+}
+
+func MarshalResponse(v interface{}) (string, error) {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }

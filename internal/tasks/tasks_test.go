@@ -32,7 +32,7 @@ func TestTaskMarshal(t *testing.T) {
 			},
 		},
 		{
-			name: "marshal struct with zero value",
+			name: "marshal empty struct",
 			value: struct {
 				I int64   `json:"i" binding:"omitempty"`
 				F float64 `json:"f" binding:"omitempty"`
@@ -89,7 +89,7 @@ func TestTaskMarshal(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			arg, err := Marshal(tc.value)
+			arg, err := MarshalRequest(tc.value)
 			tc.expect(t, arg, err)
 		})
 	}
@@ -185,8 +185,181 @@ func TestTaskUnmarshal(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := Unmarshal(tc.data, tc.value)
+			err := UnmarshalResponse(tc.data, tc.value)
 			tc.expect(t, tc.value, err)
+		})
+	}
+}
+
+func TestUnmarshalRequest(t *testing.T) {
+	tests := []struct {
+		name   string
+		data   string
+		value  interface{}
+		expect func(t *testing.T, result interface{}, err error)
+	}{
+		{
+			name: "unmarshal common struct",
+			data: "{\"i\":1,\"f\":1.1,\"s\":\"foo\"}",
+			value: &struct {
+				I int64   `json:"i" binding:"omitempty"`
+				F float64 `json:"f" binding:"omitempty"`
+				S string  `json:"s" binding:"omitempty"`
+			}{},
+			expect: func(t *testing.T, result interface{}, err error) {
+				assert := assert.New(t)
+				assert.Equal(&struct {
+					I int64   `json:"i" binding:"omitempty"`
+					F float64 `json:"f" binding:"omitempty"`
+					S string  `json:"s" binding:"omitempty"`
+				}{1, 1.1, "foo"}, result)
+			},
+		},
+		{
+			name: "unmarshal empty struct",
+			data: "{}",
+			value: &struct {
+				I int64   `json:"i" binding:"omitempty"`
+				F float64 `json:"f" binding:"omitempty"`
+				S string  `json:"s" binding:"omitempty"`
+			}{},
+			expect: func(t *testing.T, result interface{}, err error) {
+				assert := assert.New(t)
+				assert.Equal(&struct {
+					I int64   `json:"i" binding:"omitempty"`
+					F float64 `json:"f" binding:"omitempty"`
+					S string  `json:"s" binding:"omitempty"`
+				}{0, 0, ""}, result)
+			},
+		},
+		{
+			name: "unmarshal struct with slice",
+			data: "{\"s\":[]}",
+			value: &struct {
+				S []string `json:"s" binding:"required"`
+			}{},
+			expect: func(t *testing.T, result interface{}, err error) {
+				assert := assert.New(t)
+				assert.Equal(&struct {
+					S []string `json:"s" binding:"required"`
+				}{S: []string{}}, result)
+			},
+		},
+		{
+			name: "unmarshal struct with nil slice",
+			data: "{\"s\":null}",
+			value: &struct {
+				S []string `json:"s" binding:"required"`
+			}{},
+			expect: func(t *testing.T, result interface{}, err error) {
+				assert := assert.New(t)
+				assert.Equal(&struct {
+					S []string `json:"s" binding:"required"`
+				}{S: nil}, result)
+			},
+		},
+		{
+			name: "unmarshal nil data",
+			data: "",
+			value: &struct {
+				S []string `json:"s" binding:"required"`
+			}{},
+			expect: func(t *testing.T, result interface{}, err error) {
+				assert := assert.New(t)
+				assert.Equal("unexpected end of JSON input", err.Error())
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := UnmarshalRequest(tc.data, tc.value)
+			tc.expect(t, tc.value, err)
+		})
+	}
+}
+
+func TestMarshalResult(t *testing.T) {
+	tests := []struct {
+		name   string
+		value  interface{}
+		expect func(t *testing.T, result string, err error)
+	}{
+		{
+			name: "marshal common struct",
+			value: struct {
+				I int64   `json:"i" binding:"required"`
+				F float64 `json:"f" binding:"required"`
+				S string  `json:"s" binding:"required"`
+			}{
+				I: 1,
+				F: 1.1,
+				S: "foo",
+			},
+			expect: func(t *testing.T, result string, err error) {
+				assert := assert.New(t)
+				assert.Equal("{\"i\":1,\"f\":1.1,\"s\":\"foo\"}", result)
+			},
+		},
+		{
+			name: "marshal empty struct",
+			value: struct {
+				I int64   `json:"i" binding:"required"`
+				F float64 `json:"f" binding:"required"`
+				S string  `json:"s" binding:"required"`
+			}{},
+			expect: func(t *testing.T, result string, err error) {
+				assert := assert.New(t)
+				assert.Equal("{\"i\":0,\"f\":0,\"s\":\"\"}", result)
+			},
+		},
+		{
+			name: "marshal struct with slice",
+			value: struct {
+				S []string `json:"s" binding:"required"`
+			}{
+				S: []string{},
+			},
+			expect: func(t *testing.T, result string, err error) {
+				assert := assert.New(t)
+				assert.Equal("{\"s\":[]}", result)
+			},
+		},
+		{
+			name: "marshal struct with nil slice",
+			value: struct {
+				S []string `json:"s" binding:"omitempty"`
+			}{},
+			expect: func(t *testing.T, result string, err error) {
+				assert := assert.New(t)
+				assert.Equal("{\"s\":null}", result)
+			},
+		},
+		{
+			name:  "marshal nil",
+			value: nil,
+			expect: func(t *testing.T, result string, err error) {
+				assert := assert.New(t)
+				assert.Equal("null", result)
+			},
+		},
+		{
+			name: "marshal unsupported type",
+			value: struct {
+				C chan struct{} `json:"c" binding:"required"`
+			}{
+				C: make(chan struct{}),
+			},
+			expect: func(t *testing.T, result string, err error) {
+				assert := assert.New(t)
+				assert.Equal("json: unsupported type: chan struct {}", err.Error())
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := MarshalResponse(tc.value)
+			tc.expect(t, result, err)
 		})
 	}
 }
