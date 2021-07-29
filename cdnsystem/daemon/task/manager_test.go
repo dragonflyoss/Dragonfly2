@@ -40,7 +40,7 @@ type TaskManagerTestSuite struct {
 
 func (suite *TaskManagerTestSuite) TestRegister() {
 	dragonflyURL := "http://dragonfly.io.com?a=a&b=b&c=c"
-	taskID := idgen.TaskID(dragonflyURL, "a&b", &base.UrlMeta{Digest: "f1e2488bba4d1267948d9e2f7008571c"}, "dragonfly")
+	taskID := idgen.TaskID(dragonflyURL, &base.UrlMeta{Filter: "a&b", Tag: "dragonfly", Digest: "f1e2488bba4d1267948d9e2f7008571c"})
 	ctrl := gomock.NewController(suite.T())
 	cdnMgr := mock.NewMockCDNMgr(ctrl)
 	progressMgr := mock.NewMockSeedProgressMgr(ctrl)
