@@ -14,6 +14,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"strings"
 	"time"
 )
 
@@ -107,7 +108,11 @@ func (t *task) preheat(req string) (string, error) {
 		return "", errors.Errorf("invalid url: %s", request.URL)
 	}
 
-	meta := &base.UrlMeta{Header: request.Headers, Digest: request.Digest, Tag: request.Tag, Filter: request.Filter}
+	meta := &base.UrlMeta{Header: request.Headers, Tag: request.Tag, Filter: request.Filter}
+	// CDN only support MD5 now.
+	if strings.HasPrefix(request.Digest, "md5") {
+		meta.Digest = request.Digest
+	}
 	if rg := request.Headers["Range"]; len(rg) > 0 {
 		meta.Range = rg
 	}
