@@ -12,6 +12,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // ManagerClient is the client API for Manager service.
@@ -28,8 +29,8 @@ type ManagerClient interface {
 	GetScheduler(ctx context.Context, in *GetSchedulerRequest, opts ...grpc.CallOption) (*Scheduler, error)
 	// Update scheduler configuration
 	UpdateScheduler(ctx context.Context, in *UpdateSchedulerRequest, opts ...grpc.CallOption) (*Scheduler, error)
-	// AddSchedulerClusterToSchedulerCluster add scheduler to scheduler cluster
-	AddSchedulerClusterToSchedulerCluster(ctx context.Context, in *AddSchedulerClusterToSchedulerClusterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// AddSchedulerToSchedulerCluster add scheduler to scheduler cluster
+	AddSchedulerToSchedulerCluster(ctx context.Context, in *AddSchedulerToSchedulerClusterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// List acitve schedulers configuration
 	ListSchedulers(ctx context.Context, in *ListSchedulersRequest, opts ...grpc.CallOption) (*ListSchedulersResponse, error)
 	// KeepAlive with manager
@@ -89,9 +90,9 @@ func (c *managerClient) UpdateScheduler(ctx context.Context, in *UpdateScheduler
 	return out, nil
 }
 
-func (c *managerClient) AddSchedulerClusterToSchedulerCluster(ctx context.Context, in *AddSchedulerClusterToSchedulerClusterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *managerClient) AddSchedulerToSchedulerCluster(ctx context.Context, in *AddSchedulerToSchedulerClusterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/manager.Manager/AddSchedulerClusterToSchedulerCluster", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/manager.Manager/AddSchedulerToSchedulerCluster", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +109,7 @@ func (c *managerClient) ListSchedulers(ctx context.Context, in *ListSchedulersRe
 }
 
 func (c *managerClient) KeepAlive(ctx context.Context, opts ...grpc.CallOption) (Manager_KeepAliveClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Manager_serviceDesc.Streams[0], "/manager.Manager/KeepAlive", opts...)
+	stream, err := c.cc.NewStream(ctx, &Manager_ServiceDesc.Streams[0], "/manager.Manager/KeepAlive", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -155,8 +156,8 @@ type ManagerServer interface {
 	GetScheduler(context.Context, *GetSchedulerRequest) (*Scheduler, error)
 	// Update scheduler configuration
 	UpdateScheduler(context.Context, *UpdateSchedulerRequest) (*Scheduler, error)
-	// AddSchedulerClusterToSchedulerCluster add scheduler to scheduler cluster
-	AddSchedulerClusterToSchedulerCluster(context.Context, *AddSchedulerClusterToSchedulerClusterRequest) (*emptypb.Empty, error)
+	// AddSchedulerToSchedulerCluster add scheduler to scheduler cluster
+	AddSchedulerToSchedulerCluster(context.Context, *AddSchedulerToSchedulerClusterRequest) (*emptypb.Empty, error)
 	// List acitve schedulers configuration
 	ListSchedulers(context.Context, *ListSchedulersRequest) (*ListSchedulersResponse, error)
 	// KeepAlive with manager
@@ -183,8 +184,8 @@ func (UnimplementedManagerServer) GetScheduler(context.Context, *GetSchedulerReq
 func (UnimplementedManagerServer) UpdateScheduler(context.Context, *UpdateSchedulerRequest) (*Scheduler, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateScheduler not implemented")
 }
-func (UnimplementedManagerServer) AddSchedulerClusterToSchedulerCluster(context.Context, *AddSchedulerClusterToSchedulerClusterRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddSchedulerClusterToSchedulerCluster not implemented")
+func (UnimplementedManagerServer) AddSchedulerToSchedulerCluster(context.Context, *AddSchedulerToSchedulerClusterRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddSchedulerToSchedulerCluster not implemented")
 }
 func (UnimplementedManagerServer) ListSchedulers(context.Context, *ListSchedulersRequest) (*ListSchedulersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSchedulers not implemented")
@@ -202,7 +203,7 @@ type UnsafeManagerServer interface {
 }
 
 func RegisterManagerServer(s grpc.ServiceRegistrar, srv ManagerServer) {
-	s.RegisterService(&_Manager_serviceDesc, srv)
+	s.RegisterService(&Manager_ServiceDesc, srv)
 }
 
 func _Manager_GetCDN_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -295,20 +296,20 @@ func _Manager_UpdateScheduler_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_AddSchedulerClusterToSchedulerCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddSchedulerClusterToSchedulerClusterRequest)
+func _Manager_AddSchedulerToSchedulerCluster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddSchedulerToSchedulerClusterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ManagerServer).AddSchedulerClusterToSchedulerCluster(ctx, in)
+		return srv.(ManagerServer).AddSchedulerToSchedulerCluster(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/manager.Manager/AddSchedulerClusterToSchedulerCluster",
+		FullMethod: "/manager.Manager/AddSchedulerToSchedulerCluster",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ManagerServer).AddSchedulerClusterToSchedulerCluster(ctx, req.(*AddSchedulerClusterToSchedulerClusterRequest))
+		return srv.(ManagerServer).AddSchedulerToSchedulerCluster(ctx, req.(*AddSchedulerToSchedulerClusterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -357,7 +358,10 @@ func (x *managerKeepAliveServer) Recv() (*KeepAliveRequest, error) {
 	return m, nil
 }
 
-var _Manager_serviceDesc = grpc.ServiceDesc{
+// Manager_ServiceDesc is the grpc.ServiceDesc for Manager service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Manager_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "manager.Manager",
 	HandlerType: (*ManagerServer)(nil),
 	Methods: []grpc.MethodDesc{
@@ -382,8 +386,8 @@ var _Manager_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Manager_UpdateScheduler_Handler,
 		},
 		{
-			MethodName: "AddSchedulerClusterToSchedulerCluster",
-			Handler:    _Manager_AddSchedulerClusterToSchedulerCluster_Handler,
+			MethodName: "AddSchedulerToSchedulerCluster",
+			Handler:    _Manager_AddSchedulerToSchedulerCluster_Handler,
 		},
 		{
 			MethodName: "ListSchedulers",

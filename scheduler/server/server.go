@@ -186,7 +186,7 @@ func (s *Server) register(ctx context.Context) error {
 
 	schedulerClusterID := s.config.Manager.SchedulerClusterID
 	if schedulerClusterID != 0 {
-		if _, err := s.managerClient.AddSchedulerClusterToSchedulerCluster(ctx, &manager.AddSchedulerClusterToSchedulerClusterRequest{
+		if _, err := s.managerClient.AddSchedulerToSchedulerCluster(ctx, &manager.AddSchedulerToSchedulerClusterRequest{
 			SchedulerId:        scheduler.Id,
 			SchedulerClusterId: schedulerClusterID,
 		}); err != nil {

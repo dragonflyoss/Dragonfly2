@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"go.uber.org/atomic"
 )
 
 type PeerStatus uint8
@@ -60,14 +61,16 @@ type Peer struct {
 	Host *PeerHost
 	// PacketChan send schedulerPacket to peer client
 	PacketChan chan *scheduler.PeerPacket
+	// createTime
+	CreateTime time.Time
 	// finishedNum specifies downloaded finished piece number
-	finishedNum    int32
+	finishedNum    atomic.Int32
 	lastAccessTime time.Time
 	parent         *Peer
-	children       map[string]*Peer
+	children       sync.Map
 	status         PeerStatus
 	costHistory    []int
-	leave          bool
+	leave          atomic.Bool
 }
 
 func NewPeer(peerID string, task *Task, host *PeerHost) *Peer {
@@ -75,8 +78,8 @@ func NewPeer(peerID string, task *Task, host *PeerHost) *Peer {
 		PeerID:         peerID,
 		Task:           task,
 		Host:           host,
+		CreateTime:     time.Now(),
 		lastAccessTime: time.Now(),
-		children:       make(map[string]*Peer),
 		status:         PeerStatusWaiting,
 	}
 }
@@ -85,10 +88,12 @@ func (peer *Peer) GetWholeTreeNode() int {
 	// TODO lock task
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
-	count := len(peer.children) + 1
-	for _, peerNode := range peer.children {
+	count := 1
+	peer.children.Range(func(key, value interface{}) bool {
+		peerNode := value.(*Peer)
 		count += peerNode.GetWholeTreeNode()
-	}
+		return true
+	})
 	return count
 }
 
@@ -102,24 +107,20 @@ func (peer *Peer) Touch() {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 	peer.lastAccessTime = time.Now()
-	if peer.status == PeerStatusZombie {
+	if peer.status == PeerStatusZombie && !peer.leave.Load() {
 		peer.status = PeerStatusRunning
 	}
 	peer.Task.Touch()
 }
 
 func (peer *Peer) associateChild(child *Peer) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	peer.children[child.PeerID] = child
+	peer.children.Store(child.PeerID, child)
 	peer.Host.IncUploadLoad()
 	peer.Task.peers.Update(peer)
 }
 
 func (peer *Peer) disassociateChild(child *Peer) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	delete(peer.children, child.PeerID)
+	peer.children.Delete(child.PeerID)
 	peer.Host.DecUploadLoad()
 	peer.Task.peers.Update(peer)
 }
@@ -159,8 +160,8 @@ func (peer *Peer) GetCost() int {
 func (peer *Peer) AddPieceInfo(finishedCount int32, cost int) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
-	if finishedCount > peer.finishedNum {
-		peer.finishedNum = finishedCount
+	if finishedCount > peer.finishedNum.Load() {
+		peer.finishedNum.Store(finishedCount)
 		peer.costHistory = append(peer.costHistory, cost)
 		if len(peer.costHistory) > 20 {
 			peer.costHistory = peer.costHistory[len(peer.costHistory)-20:]
@@ -218,11 +219,11 @@ func (peer *Peer) IsWaiting() bool {
 	if peer.parent == nil {
 		return false
 	}
-	return peer.finishedNum >= peer.parent.finishedNum
+	return peer.finishedNum.Load() >= peer.parent.finishedNum.Load()
 }
 
 func (peer *Peer) GetSortKeys() (key1, key2 int) {
-	key1 = int(peer.finishedNum)
+	key1 = int(peer.finishedNum.Load())
 	key2 = peer.getFreeLoad()
 	return
 }
@@ -235,13 +236,11 @@ func (peer *Peer) getFreeLoad() int {
 }
 
 func (peer *Peer) GetFinishNum() int32 {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	return peer.finishedNum
+	return peer.finishedNum.Load()
 }
 
 func GetDiffPieceNum(src *Peer, dst *Peer) int32 {
-	diff := src.finishedNum - dst.finishedNum
+	diff := src.finishedNum.Load() - dst.finishedNum.Load()
 	if diff > 0 {
 		return diff
 	}
@@ -254,10 +253,10 @@ func (peer *Peer) GetParent() *Peer {
 	return peer.parent
 }
 
-func (peer *Peer) GetChildren() map[string]*Peer {
+func (peer *Peer) GetChildren() *sync.Map {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
-	return peer.children
+	return &peer.children
 }
 
 func (peer *Peer) SetStatus(status PeerStatus) {
@@ -284,12 +283,6 @@ func (peer *Peer) IsSuccess() bool {
 	return peer.status == PeerStatusSuccess
 }
 
-func (peer *Peer) IncFinishNum() {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	peer.finishedNum++
-}
-
 func (peer *Peer) IsDone() bool {
 	return peer.status == PeerStatusSuccess || peer.status == PeerStatusFail
 }
@@ -299,25 +292,19 @@ func (peer *Peer) IsBad() bool {
 }
 
 func (peer *Peer) GetFinishedNum() int32 {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	return peer.finishedNum
+	return peer.finishedNum.Load()
 }
 
-func (peer *Peer) GetStatus() interface{} {
+func (peer *Peer) GetStatus() PeerStatus {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 	return peer.status
 }
 
 func (peer *Peer) MarkLeave() {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	peer.leave = true
+	peer.leave.Store(true)
 }
 
 func (peer *Peer) IsLeave() bool {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	return peer.leave
+	return peer.leave.Load()
 }

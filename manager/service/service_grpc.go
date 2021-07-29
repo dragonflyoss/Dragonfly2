@@ -386,7 +386,7 @@ func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateScheduler
 	}, nil
 }
 
-func (s *GRPC) AddSchedulerClusterToSchedulerCluster(ctx context.Context, req *manager.AddSchedulerClusterToSchedulerClusterRequest) (*emptypb.Empty, error) {
+func (s *GRPC) AddSchedulerToSchedulerCluster(ctx context.Context, req *manager.AddSchedulerToSchedulerClusterRequest) (*emptypb.Empty, error) {
 	if err := req.Validate(); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
