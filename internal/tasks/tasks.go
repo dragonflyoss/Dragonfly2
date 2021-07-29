@@ -109,7 +109,7 @@ func (t *Tasks) GetGroupTaskState(groupUUID string) (*GroupTaskState, error) {
 	}, nil
 }
 
-func Marshal(v interface{}) ([]machineryv1tasks.Arg, error) {
+func MarshalRequest(v interface{}) ([]machineryv1tasks.Arg, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func Marshal(v interface{}) ([]machineryv1tasks.Arg, error) {
 	}}, nil
 }
 
-func Unmarshal(data []reflect.Value, v interface{}) error {
+func UnmarshalResult(data []reflect.Value, v interface{}) error {
 	if len(data) == 0 {
 		return errors.New("empty data is not specified")
 	}
