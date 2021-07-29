@@ -20,6 +20,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const (
+	timeOut  = time.Minute * 5
+	timeTick = time.Second
+)
+
 type Task interface {
 	Serve() error
 }
@@ -131,7 +136,7 @@ func (t *task) preheat(req string) (string, error) {
 	taskID := idgen.TaskID(request.URL, request.Filter, meta, request.Tag)
 	logger.Debugf("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
 	task := types.NewTask(taskID, request.URL, request.Filter, request.Tag, meta)
-	ctx, cancel := context.WithDeadline(t.ctx, time.Now().Add(5*time.Minute))
+	ctx, cancel := context.WithDeadline(t.ctx, time.Now().Add(timeOut))
 	defer cancel()
 	task, err = t.service.GetOrCreateTask(ctx, task)
 	if err != nil {
@@ -141,7 +146,7 @@ func (t *task) preheat(req string) (string, error) {
 	}
 
 	//TODO: check better ways to get result
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(timeTick)
 	defer ticker.Stop()
 	for {
 		select {
