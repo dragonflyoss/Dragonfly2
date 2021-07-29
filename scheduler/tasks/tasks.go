@@ -2,9 +2,10 @@ package tasks
 
 import (
 	"context"
-	"github.com/go-playground/validator/v10"
 	"strings"
 	"time"
+
+	"github.com/go-playground/validator/v10"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -69,16 +70,6 @@ func New(ctx context.Context, cfg *config.TaskConfig, hostname string, service *
 		service:        service,
 		cfg:            cfg,
 	}
-	err = globalTask.RegisterTask(internaltasks.PreheatTask, t.preheat)
-	if err != nil {
-		logger.Errorf("register preheat task to global queue error: %v", err)
-		return nil, err
-	}
-	err = schedulerTask.RegisterTask(internaltasks.PreheatTask, t.preheat)
-	if err != nil {
-		logger.Errorf("register preheat task to scheduler queue error: %v", err)
-		return nil, err
-	}
 	err = localTask.RegisterTask(internaltasks.PreheatTask, t.preheat)
 	if err != nil {
 		logger.Errorf("register preheat task to local queue error: %v", err)
@@ -124,7 +115,6 @@ func (t *task) preheat(req string) (string, error) {
 		logger.Errorf("unmarshal request err: %v, request body: %s", err, req)
 		return "", err
 	}
-
 	if err = validator.New().Var(request.URL, "url"); err != nil {
 		logger.Errorf("request url \"%s\" is invalid, error: %v", request.URL, err)
 		return "", errors.Errorf("invalid url: %s", request.URL)
@@ -141,22 +131,30 @@ func (t *task) preheat(req string) (string, error) {
 	taskID := idgen.TaskID(request.URL, request.Filter, meta, request.Tag)
 	logger.Debugf("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
 	task := types.NewTask(taskID, request.URL, request.Filter, request.Tag, meta)
-	task, err = t.service.GetOrCreateTask(t.ctx, task)
+	ctx, cancel := context.WithDeadline(t.ctx, time.Now().Add(5*time.Minute))
+	defer cancel()
+	task, err = t.service.GetOrCreateTask(ctx, task)
 	if err != nil {
 		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
-		logger.Errorf("get or create task failed: %v", err)
+		logger.Errorf("get or create task %s failed: %v", taskID, err)
 		return "", err
 	}
 
 	//TODO: check better ways to get result
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 	for {
-		switch task.GetStatus() {
-		case types.TaskStatusFailed, types.TaskStatusCDNRegisterFail, types.TaskStatusSourceError:
-			return "", errors.Errorf("preheat task %s fail.", taskID)
-		case types.TaskStatusSuccess:
-			return internaltasks.MarshalResponse(&internaltasks.PreheatResponse{})
-		default:
-			time.Sleep(time.Second)
+		select {
+		case <-ticker.C:
+			switch task.GetStatus() {
+			case types.TaskStatusFailed, types.TaskStatusCDNRegisterFail, types.TaskStatusSourceError:
+				return "", errors.Errorf("preheat task fail")
+			case types.TaskStatusSuccess:
+				return internaltasks.MarshalResponse(&internaltasks.PreheatResponse{})
+			default:
+			}
+		case <-ctx.Done():
+			return "", errors.Errorf("time out")
 		}
 	}
 }
