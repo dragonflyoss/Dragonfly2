@@ -159,7 +159,7 @@ func NewDefaultTaskConfig() *TaskConfig {
 	}
 }
 
-func (c *Config) ConvertRedisHost() error {
+func (c *Config) Convert() error {
 	if c.Task.Redis != nil {
 		n := strings.LastIndex(c.Manager.Addr, ":")
 		if n >= 0 {

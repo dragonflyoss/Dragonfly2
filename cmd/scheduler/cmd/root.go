@@ -54,7 +54,7 @@ for deciding which peers transmit blocks to each other.`,
 		}
 
 		// Convert redis host config
-		if err := cfg.ConvertRedisHost(); err != nil {
+		if err := cfg.Convert(); err != nil {
 			return err
 		}
 
