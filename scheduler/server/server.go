@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/scheduler/task"
+	"d7y.io/dragonfly/v2/scheduler/tasks"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -30,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/server/service"
-	"d7y.io/dragonfly/v2/scheduler/tasks"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
