@@ -25,77 +25,72 @@ const (
 	PreheatFileType  PreheatType = "file"
 )
 
-var imageManifestsPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
+var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
 
 type Preheat interface {
-	CreatePreheat() (*types.Preheat, error)
+	CreatePreheat(hostnames []string, json types.CreatePreheatRequest) (*types.Preheat, error)
 }
 
 type preheat struct {
-	preheatType PreheatType
-	url         string
-	filter      string
-	tag         string
-	header      http.Header
-	tasks       *internaltasks.Tasks
-	queues      []internaltasks.Queue
-	protocol    string
-	domain      string
-	name        string
+	tasks  *internaltasks.Tasks
+	bizTag string
 }
 
-func newPreheat(tasks *internaltasks.Tasks, hostnames []string, preheatType PreheatType, url, filter, tag string, rawHeader map[string]string) Preheat {
-	p := &preheat{
-		tasks:       tasks,
-		preheatType: preheatType,
-		url:         url,
-		filter:      filter,
-		tag:         tag,
-		header:      httputils.MapToHeader(rawHeader),
-	}
-
-	for _, hostname := range hostnames {
-		queue, err := internaltasks.GetSchedulerQueue(hostname)
-		if err != nil {
-			continue
-		}
-
-		p.queues = append(p.queues, queue)
-	}
-
-	result := imageManifestsPattern.FindSubmatch([]byte(p.url))
-	if len(result) == 5 {
-		p.protocol = string(result[1])
-		p.domain = string(result[2])
-		p.name = string(result[3])
-	}
-
-	return p
+type preheatImage struct {
+	protocol string
+	domain   string
+	name     string
+	tag      string
 }
 
-func (p *preheat) CreatePreheat() (*types.Preheat, error) {
-	if p.preheatType == PreheatImageType {
-		layers, err := p.getLayers(p.url, p.header)
+func newPreheat(tasks *internaltasks.Tasks, bizTag string) (Preheat, error) {
+	return &preheat{
+		tasks:  tasks,
+		bizTag: bizTag,
+	}, nil
+}
+
+func (p *preheat) CreatePreheat(hostnames []string, json types.CreatePreheatRequest) (*types.Preheat, error) {
+	url := json.URL
+	filter := json.Filter
+	rawheader := json.Headers
+
+	// Initialize queues
+	queues := getSchedulerQueues(hostnames)
+
+	// Generate download files
+	var files []*internaltasks.PreheatRequest
+	switch PreheatType(json.Type) {
+	case PreheatImageType:
+		// Parse image manifest url
+		image, err := parseAccessURL(url)
 		if err != nil {
 			return nil, err
 		}
 
-		return p.createPreheat(layers)
+		files, err = p.getLayers(url, filter, httputils.MapToHeader(rawheader), image)
+		if err != nil {
+			return nil, err
+		}
+	case PreheatFileType:
+		files = []*internaltasks.PreheatRequest{
+			{
+				URL:     url,
+				Tag:     p.bizTag,
+				Filter:  filter,
+				Headers: rawheader,
+			},
+		}
+	default:
+		return nil, errors.New("unknow preheat type")
 	}
 
-	return p.createPreheat([]*internaltasks.PreheatRequest{
-		{
-			URL:     p.url,
-			Tag:     p.tag,
-			Filter:  p.filter,
-			Headers: httputils.HeaderToMap(p.header),
-		},
-	})
+	return p.createGroupTasks(files, queues)
 }
 
-func (p *preheat) createPreheat(files []*internaltasks.PreheatRequest) (*types.Preheat, error) {
+func (p *preheat) createGroupTasks(files []*internaltasks.PreheatRequest, queues []internaltasks.Queue) (*types.Preheat, error) {
 	signatures := []*machineryv1tasks.Signature{}
-	for _, queue := range p.queues {
+	for _, queue := range queues {
 		for _, file := range files {
 			args, err := internaltasks.MarshalRequest(file)
 			if err != nil {
@@ -126,7 +121,7 @@ func (p *preheat) createPreheat(files []*internaltasks.PreheatRequest) (*types.P
 	}, nil
 }
 
-func (p *preheat) getLayers(url string, header http.Header) ([]*internaltasks.PreheatRequest, error) {
+func (p *preheat) getLayers(url string, filter string, header http.Header, image *preheatImage) ([]*internaltasks.PreheatRequest, error) {
 	resp, err := p.getManifests(url, header)
 	if err != nil {
 		return nil, err
@@ -135,7 +130,7 @@ func (p *preheat) getLayers(url string, header http.Header) ([]*internaltasks.Pr
 
 	if resp.StatusCode/100 != 2 {
 		if resp.StatusCode == http.StatusUnauthorized {
-			token := p.getAuthToken(resp.Header)
+			token := getAuthToken(resp.Header)
 			bearer := "Bearer " + token
 			header.Add("Authorization", bearer)
 
@@ -144,11 +139,11 @@ func (p *preheat) getLayers(url string, header http.Header) ([]*internaltasks.Pr
 				return nil, err
 			}
 		} else {
-			return nil, errors.New(fmt.Sprintf("request registry %d", resp.StatusCode))
+			return nil, fmt.Errorf("request registry %d", resp.StatusCode)
 		}
 	}
 
-	layers, err := p.parseLayers(resp, header)
+	layers, err := p.parseLayers(resp, filter, header, image)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +168,7 @@ func (p *preheat) getManifests(url string, header http.Header) (*http.Response, 
 	return resp, nil
 }
 
-func (p *preheat) parseLayers(resp *http.Response, header http.Header) ([]*internaltasks.PreheatRequest, error) {
+func (p *preheat) parseLayers(resp *http.Response, filter string, header http.Header, image *preheatImage) ([]*internaltasks.PreheatRequest, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -188,9 +183,9 @@ func (p *preheat) parseLayers(resp *http.Response, header http.Header) ([]*inter
 	for _, v := range manifest.References() {
 		digest := v.Digest.String()
 		layers = append(layers, &internaltasks.PreheatRequest{
-			URL:     p.layerURL(digest),
-			Tag:     p.tag,
-			Filter:  p.filter,
+			URL:     layerURL(image.protocol, image.domain, image.name, digest),
+			Tag:     p.bizTag,
+			Filter:  filter,
 			Digest:  digest,
 			Headers: httputils.HeaderToMap(header),
 		})
@@ -199,8 +194,8 @@ func (p *preheat) parseLayers(resp *http.Response, header http.Header) ([]*inter
 	return layers, nil
 }
 
-func (p *preheat) getAuthToken(header http.Header) (token string) {
-	authURL := p.authURL(header.Values("WWW-Authenticate"))
+func getAuthToken(header http.Header) (token string) {
+	authURL := authURL(header.Values("WWW-Authenticate"))
 	if len(authURL) == 0 {
 		return
 	}
@@ -220,7 +215,7 @@ func (p *preheat) getAuthToken(header http.Header) (token string) {
 	return
 }
 
-func (p *preheat) authURL(wwwAuth []string) string {
+func authURL(wwwAuth []string) string {
 	// Bearer realm="<auth-service-url>",service="<service>",scope="repository:<name>:pull"
 	if len(wwwAuth) == 0 {
 		return ""
@@ -235,10 +230,34 @@ func (p *preheat) authURL(wwwAuth []string) string {
 	return fmt.Sprintf("%s?%s", host, query)
 }
 
-func (p *preheat) manifestURL(digest string) string {
-	return fmt.Sprintf("%s://%s/v2/%s/manifests/%s", p.protocol, p.domain, p.name, digest)
+func layerURL(protocol string, domain string, name string, digest string) string {
+	return fmt.Sprintf("%s://%s/v2/%s/blobs/%s", protocol, domain, name, digest)
 }
 
-func (p *preheat) layerURL(digest string) string {
-	return fmt.Sprintf("%s://%s/v2/%s/blobs/%s", p.protocol, p.domain, p.name, digest)
+func parseAccessURL(url string) (*preheatImage, error) {
+	r := accessURLPattern.FindStringSubmatch(url)
+	if len(r) != 5 {
+		return nil, errors.New("parse access url failed")
+	}
+
+	return &preheatImage{
+		protocol: r[1],
+		domain:   r[2],
+		name:     r[3],
+		tag:      r[4],
+	}, nil
+}
+
+func getSchedulerQueues(hostnames []string) []internaltasks.Queue {
+	var queues []internaltasks.Queue
+	for _, hostname := range hostnames {
+		queue, err := internaltasks.GetSchedulerQueue(hostname)
+		if err != nil {
+			continue
+		}
+
+		queues = append(queues, queue)
+	}
+
+	return queues
 }

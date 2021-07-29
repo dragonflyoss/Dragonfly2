@@ -12,8 +12,8 @@ type Task interface {
 }
 
 type task struct {
-	Server *config.ServerConfig
 	*internaltasks.Tasks
+	Preheat Preheat
 }
 
 func New(cfg *config.Config) (Task, error) {
@@ -28,24 +28,19 @@ func New(cfg *config.Config) (Task, error) {
 		return nil, err
 	}
 
+	preheat, err := newPreheat(t, cfg.Server.Name)
+	if err != nil {
+		return nil, err
+	}
+
 	return &task{
-		Server: cfg.Server,
-		Tasks:  t,
+		Tasks:   t,
+		Preheat: preheat,
 	}, nil
 }
 
 func (t *task) CreatePreheat(hostnames []string, json types.CreatePreheatRequest) (*types.Preheat, error) {
-	preheat := newPreheat(
-		t.Tasks,
-		hostnames,
-		PreheatType(json.Type),
-		json.URL,
-		json.Filter,
-		t.Server.Name,
-		json.Headers,
-	)
-
-	return preheat.CreatePreheat()
+	return t.Preheat.CreatePreheat(hostnames, json)
 }
 
 func (t *task) GetPreheat(id string) (*types.Preheat, error) {
