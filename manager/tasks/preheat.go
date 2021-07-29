@@ -155,7 +155,7 @@ func (p *preheat) getLayers(url string, header map[string]string, retryIfUnAuth 
 		return
 	}
 
-	layers, err = p.ParseLayers(body, header)
+	layers, err = p.parseLayers(body, header)
 	return
 }
 
