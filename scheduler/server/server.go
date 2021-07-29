@@ -105,7 +105,7 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	if cfg.Task != nil && cfg.Task.Redis != nil && cfg.Task.Redis.Host != "" {
+	if cfg.Task.Redis.Host != "" {
 		s.task, err = tasks.New(context.Background(), cfg.Task, iputils.HostName, s.schedulerService)
 		if err != nil {
 			return nil, err
@@ -123,7 +123,10 @@ func (s *Server) Serve() error {
 
 	s.dynConfig.Serve()
 	s.schedulerService.Serve()
-	go s.task.Serve()
+
+	if s.task != nil {
+		go s.task.Serve()
+	}
 
 	if s.managerClient != nil {
 		retry.Run(ctx, func() (interface{}, bool, error) {

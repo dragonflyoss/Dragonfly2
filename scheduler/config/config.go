@@ -161,7 +161,7 @@ func NewDefaultTaskConfig() *TaskConfig {
 }
 
 func (c *Config) ConvertRedisHost() error {
-	if c.Manager != nil && c.Task != nil && c.Task.Redis != nil {
+	if c.Task.Redis != nil {
 		n := strings.LastIndex(c.Manager.Addr, ":")
 		if n >= 0 {
 			if ip := net.ParseIP(c.Manager.Addr[0:n]); ip != nil && !net.IPv4zero.Equal(ip) {
@@ -169,8 +169,8 @@ func (c *Config) ConvertRedisHost() error {
 				return nil
 			}
 		}
+		c.Task.Redis.Host = ""
 	}
-	c.Task.Redis.Host = ""
 	return nil
 }
 
