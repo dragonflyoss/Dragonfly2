@@ -112,7 +112,7 @@ func (e startReportPieceResultEvent) apply(s *state) {
 }
 
 func (e startReportPieceResultEvent) hashKey() string {
-	return e.peer.PeerID
+	return e.peer.Task.TaskID
 }
 
 type peerDownloadPieceSuccessEvent struct {
@@ -150,7 +150,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 }
 
 func (e peerDownloadPieceSuccessEvent) hashKey() string {
-	return e.peer.PeerID
+	return e.peer.Task.TaskID
 }
 
 type peerDownloadPieceFailEvent struct {
@@ -183,7 +183,7 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 	}
 }
 func (e peerDownloadPieceFailEvent) hashKey() string {
-	return e.peer.PeerID
+	return e.peer.Task.TaskID
 }
 
 type peerReplaceParentEvent struct {
@@ -191,7 +191,7 @@ type peerReplaceParentEvent struct {
 }
 
 func (e peerReplaceParentEvent) hashKey() string {
-	return e.peer.PeerID
+	return e.peer.Task.TaskID
 }
 
 func (e peerReplaceParentEvent) apply(s *state) {
@@ -239,7 +239,7 @@ func (e peerDownloadSuccessEvent) apply(s *state) {
 }
 
 func (e peerDownloadSuccessEvent) hashKey() string {
-	return e.peer.PeerID
+	return e.peer.Task.TaskID
 }
 
 type peerDownloadFailEvent struct {
@@ -275,7 +275,7 @@ func (e peerDownloadFailEvent) apply(s *state) {
 }
 
 func (e peerDownloadFailEvent) hashKey() string {
-	return e.peer.PeerID
+	return e.peer.Task.TaskID
 }
 
 type peerLeaveEvent struct {
@@ -289,7 +289,7 @@ func (e peerLeaveEvent) apply(s *state) {
 }
 
 func (e peerLeaveEvent) hashKey() string {
-	return e.peer.PeerID
+	return e.peer.Task.TaskID
 }
 
 func constructSuccessPeerPacket(peer *types.Peer, parent *types.Peer, candidates []*types.Peer) *schedulerRPC.PeerPacket {
