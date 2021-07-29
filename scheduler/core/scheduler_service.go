@@ -184,9 +184,9 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	if task.IsFrozen() {
 		task.SetStatus(types.TaskStatusRunning)
 	}
-	if s.config.DisableCDN {
-		// TODO NeedBackSource
-	}
+	//if s.config.DisableCDN {
+	// TODO NeedBackSource
+	//}
 	go func() {
 		if err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			if !task.IsSuccess() {
