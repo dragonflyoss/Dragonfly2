@@ -84,7 +84,7 @@ func TestTaskID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			data := TaskID(tc.url, tc.filter, tc.meta)
+			data := TaskID(tc.url, tc.meta)
 			tc.expect(t, data)
 		})
 	}
@@ -167,7 +167,7 @@ func TestTwinsTaskID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			data := TwinsTaskID(tc.url, tc.filter, tc.meta, tc.peerID)
+			data := TwinsTaskID(tc.url, tc.meta, tc.peerID)
 			tc.expect(t, data)
 		})
 	}

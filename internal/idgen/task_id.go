@@ -32,8 +32,13 @@ const (
 
 // GenerateTaskID generates a taskId.
 // filter is separated by & character.
-func TaskID(url string, filter string, meta *base.UrlMeta) string {
+func TaskID(url string, meta *base.UrlMeta) string {
 	var data []string
+
+	filter := ""
+	if meta != nil {
+		filter = meta.Filter
+	}
 
 	data = append(data, urlutils.FilterURLParam(url, strings.Split(filter, "&")))
 
@@ -55,8 +60,8 @@ func TaskID(url string, filter string, meta *base.UrlMeta) string {
 }
 
 // GenerateTwinsTaskId used A/B testing
-func TwinsTaskID(url string, filter string, meta *base.UrlMeta, peerID string) string {
-	taskID := TaskID(url, filter, meta)
+func TwinsTaskID(url string, meta *base.UrlMeta, peerID string) string {
+	taskID := TaskID(url, meta)
 
 	if crc32.ChecksumIEEE([]byte(peerID))&1 == 0 {
 		taskID += TwinsASuffix

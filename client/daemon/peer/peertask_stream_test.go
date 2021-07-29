@@ -100,9 +100,9 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		},
 	}
 	req := &scheduler.PeerTaskRequest{
-		Url:      url,
+		Url: url,
 		UrlMeta: &base.UrlMeta{
-			Tag:    "d7y-test",
+			Tag: "d7y-test",
 		},
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
@@ -199,9 +199,9 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		},
 	}
 	req := &scheduler.PeerTaskRequest{
-		Url:      url,
+		Url: url,
 		UrlMeta: &base.UrlMeta{
-			Tag:    "d7y-test",
+			Tag: "d7y-test",
 		},
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},

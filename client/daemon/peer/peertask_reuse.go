@@ -35,7 +35,7 @@ import (
 
 func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	request *FilePeerTaskRequest) (chan *FilePeerTaskProgress, bool) {
-	taskID := idgen.TaskID(request.Url, request.UrlMeta.Filter, request.UrlMeta)
+	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	reuse := ptm.storageManager.FindCompletedTask(taskID)
 	if reuse == nil {
 		return nil, false
@@ -101,7 +101,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 
 func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	request *scheduler.PeerTaskRequest) (io.ReadCloser, map[string]string, bool) {
-	taskID := idgen.TaskID(request.Url, request.UrlMeta.Filter, request.UrlMeta)
+	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	reuse := ptm.storageManager.FindCompletedTask(taskID)
 	if reuse == nil {
 		return nil, nil, false

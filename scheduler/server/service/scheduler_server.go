@@ -57,7 +57,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		logger.Errorf("validate register request failed: %v", err)
 		return
 	}
-	taskID := s.service.GenerateTaskID(request.Url, request.UrlMeta.Filter, request.UrlMeta, request.PeerId)
+	taskID := s.service.GenerateTaskID(request.Url, request.UrlMeta, request.PeerId)
 	task := types.NewTask(taskID, request.Url, request.UrlMeta.Filter, request.UrlMeta)
 	task, err = s.service.GetOrCreateTask(ctx, task)
 	if err != nil {
