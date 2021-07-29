@@ -120,7 +120,7 @@ func (t *tasks) preheat(req string) (string, error) {
 		logger.Errorf("unmarshal request err: %v, request body: %s", err, req)
 		return "", err
 	}
-	if err = validator.New().Var(request.URL, "url"); err != nil {
+	if err = validator.New().Struct(request); err != nil {
 		logger.Errorf("request url \"%s\" is invalid, error: %v", request.URL, err)
 		return "", errors.Errorf("invalid url: %s", request.URL)
 	}
