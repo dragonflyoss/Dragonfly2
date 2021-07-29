@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -100,8 +101,9 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	}
 	req := &scheduler.PeerTaskRequest{
 		Url:      url,
-		Filter:   "",
-		BizId:    "d7y-test",
+		UrlMeta: &base.UrlMeta{
+			Tag:    "d7y-test",
+		},
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	}
@@ -198,8 +200,9 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	}
 	req := &scheduler.PeerTaskRequest{
 		Url:      url,
-		Filter:   "",
-		BizId:    "d7y-test",
+		UrlMeta: &base.UrlMeta{
+			Tag:    "d7y-test",
+		},
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	}

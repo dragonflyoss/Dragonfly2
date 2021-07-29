@@ -29,7 +29,7 @@ func TestTaskID(t *testing.T) {
 		url    string
 		filter string
 		meta   *base.UrlMeta
-		bizID  string
+		tag    string
 		expect func(t *testing.T, d interface{})
 	}{
 		{
@@ -37,7 +37,6 @@ func TestTaskID(t *testing.T) {
 			url:    "https://example.com",
 			filter: "",
 			meta:   nil,
-			bizID:  "",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
 				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9", d)
@@ -50,8 +49,8 @@ func TestTaskID(t *testing.T) {
 			meta: &base.UrlMeta{
 				Range:  "foo",
 				Digest: "bar",
+				Tag:    "",
 			},
-			bizID: "",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
 				assert.Equal("aeee0e0a2a0c75130582641353c539aaf9011a0088b31347f7588e70e449a3e0", d)
@@ -61,19 +60,21 @@ func TestTaskID(t *testing.T) {
 			name:   "generate taskID with filter",
 			url:    "https://example.com?foo=foo&bar=bar",
 			filter: "foo&bar",
-			meta:   nil,
-			bizID:  "",
+			meta: &base.UrlMeta{
+				Tag: "foo",
+			},
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
 				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9", d)
 			},
 		},
 		{
-			name:   "generate taskID with bizID",
+			name:   "generate taskID with tag",
 			url:    "https://example.com",
 			filter: "",
-			meta:   nil,
-			bizID:  "foo",
+			meta: &base.UrlMeta{
+				Tag: "foo",
+			},
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
 				assert.Equal("2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b", d)
@@ -83,7 +84,7 @@ func TestTaskID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			data := TaskID(tc.url, tc.filter, tc.meta, tc.bizID)
+			data := TaskID(tc.url, tc.filter, tc.meta)
 			tc.expect(t, data)
 		})
 	}
@@ -95,7 +96,7 @@ func TestTwinsTaskID(t *testing.T) {
 		url    string
 		filter string
 		meta   *base.UrlMeta
-		bizID  string
+		tag    string
 		peerID string
 		expect func(t *testing.T, d interface{})
 	}{
@@ -104,7 +105,7 @@ func TestTwinsTaskID(t *testing.T) {
 			url:    "https://example.com",
 			filter: "",
 			meta:   nil,
-			bizID:  "",
+			tag:    "",
 			peerID: "foo",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -119,7 +120,7 @@ func TestTwinsTaskID(t *testing.T) {
 				Range:  "foo",
 				Digest: "bar",
 			},
-			bizID:  "",
+			tag:    "",
 			peerID: "foo",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -131,7 +132,7 @@ func TestTwinsTaskID(t *testing.T) {
 			url:    "https://example.com?foo=foo&bar=bar",
 			filter: "foo&bar",
 			meta:   nil,
-			bizID:  "",
+			tag:    "",
 			peerID: "foo",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -139,11 +140,11 @@ func TestTwinsTaskID(t *testing.T) {
 			},
 		},
 		{
-			name:   "generate taskID with bizID",
+			name:   "generate taskID with tag",
 			url:    "https://example.com",
 			filter: "",
 			meta:   nil,
-			bizID:  "foo",
+			tag:    "foo",
 			peerID: "foo",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -155,7 +156,7 @@ func TestTwinsTaskID(t *testing.T) {
 			url:    "https://example.com",
 			filter: "",
 			meta:   nil,
-			bizID:  "",
+			tag:    "",
 			peerID: "bar",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -166,7 +167,7 @@ func TestTwinsTaskID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			data := TwinsTaskID(tc.url, tc.filter, tc.meta, tc.bizID, tc.peerID)
+			data := TwinsTaskID(tc.url, tc.filter, tc.meta, tc.peerID)
 			tc.expect(t, data)
 		})
 	}

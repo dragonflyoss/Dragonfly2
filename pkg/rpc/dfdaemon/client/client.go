@@ -101,7 +101,7 @@ func (dc *daemonClient) getDaemonClientWithTarget(target string) (dfdaemon.Daemo
 func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error) {
 	req.Uuid = uuid.New().String()
 	// generate taskID
-	taskID := idgen.TaskID(req.Url, req.UrlMeta.Filter, req.UrlMeta, req.UrlMeta.Tag)
+	taskID := idgen.TaskID(req.Url, req.UrlMeta.Filter, req.UrlMeta)
 	return newDownResultStream(ctx, dc, taskID, req, opts)
 }
 
