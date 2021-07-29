@@ -58,24 +58,24 @@ func (mr *MockManagerClientMockRecorder) AddCDNToCDNCluster(ctx, in interface{},
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCDNToCDNCluster", reflect.TypeOf((*MockManagerClient)(nil).AddCDNToCDNCluster), varargs...)
 }
 
-// AddSchedulerClusterToSchedulerCluster mocks base method.
-func (m *MockManagerClient) AddSchedulerClusterToSchedulerCluster(ctx context.Context, in *manager.AddSchedulerClusterToSchedulerClusterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+// AddSchedulerToSchedulerCluster mocks base method.
+func (m *MockManagerClient) AddSchedulerToSchedulerCluster(ctx context.Context, in *manager.AddSchedulerToSchedulerClusterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "AddSchedulerClusterToSchedulerCluster", varargs...)
+	ret := m.ctrl.Call(m, "AddSchedulerToSchedulerCluster", varargs...)
 	ret0, _ := ret[0].(*emptypb.Empty)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// AddSchedulerClusterToSchedulerCluster indicates an expected call of AddSchedulerClusterToSchedulerCluster.
-func (mr *MockManagerClientMockRecorder) AddSchedulerClusterToSchedulerCluster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// AddSchedulerToSchedulerCluster indicates an expected call of AddSchedulerToSchedulerCluster.
+func (mr *MockManagerClientMockRecorder) AddSchedulerToSchedulerCluster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSchedulerClusterToSchedulerCluster", reflect.TypeOf((*MockManagerClient)(nil).AddSchedulerClusterToSchedulerCluster), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSchedulerToSchedulerCluster", reflect.TypeOf((*MockManagerClient)(nil).AddSchedulerToSchedulerCluster), varargs...)
 }
 
 // GetCDN mocks base method.
@@ -373,19 +373,19 @@ func (mr *MockManagerServerMockRecorder) AddCDNToCDNCluster(arg0, arg1 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCDNToCDNCluster", reflect.TypeOf((*MockManagerServer)(nil).AddCDNToCDNCluster), arg0, arg1)
 }
 
-// AddSchedulerClusterToSchedulerCluster mocks base method.
-func (m *MockManagerServer) AddSchedulerClusterToSchedulerCluster(arg0 context.Context, arg1 *manager.AddSchedulerClusterToSchedulerClusterRequest) (*emptypb.Empty, error) {
+// AddSchedulerToSchedulerCluster mocks base method.
+func (m *MockManagerServer) AddSchedulerToSchedulerCluster(arg0 context.Context, arg1 *manager.AddSchedulerToSchedulerClusterRequest) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddSchedulerClusterToSchedulerCluster", arg0, arg1)
+	ret := m.ctrl.Call(m, "AddSchedulerToSchedulerCluster", arg0, arg1)
 	ret0, _ := ret[0].(*emptypb.Empty)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// AddSchedulerClusterToSchedulerCluster indicates an expected call of AddSchedulerClusterToSchedulerCluster.
-func (mr *MockManagerServerMockRecorder) AddSchedulerClusterToSchedulerCluster(arg0, arg1 interface{}) *gomock.Call {
+// AddSchedulerToSchedulerCluster indicates an expected call of AddSchedulerToSchedulerCluster.
+func (mr *MockManagerServerMockRecorder) AddSchedulerToSchedulerCluster(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSchedulerClusterToSchedulerCluster", reflect.TypeOf((*MockManagerServer)(nil).AddSchedulerClusterToSchedulerCluster), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSchedulerToSchedulerCluster", reflect.TypeOf((*MockManagerServer)(nil).AddSchedulerToSchedulerCluster), arg0, arg1)
 }
 
 // GetCDN mocks base method.

@@ -53,10 +53,6 @@ func (m *PeerTaskRequest) Validate() error {
 
 	// no validation rules for Url
 
-	// no validation rules for Filter
-
-	// no validation rules for BizId
-
 	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PeerTaskRequestValidationError{

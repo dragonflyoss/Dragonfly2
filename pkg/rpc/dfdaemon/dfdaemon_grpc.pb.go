@@ -13,6 +13,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // DaemonClient is the client API for Daemon service.
@@ -36,7 +37,7 @@ func NewDaemonClient(cc grpc.ClientConnInterface) DaemonClient {
 }
 
 func (c *daemonClient) Download(ctx context.Context, in *DownRequest, opts ...grpc.CallOption) (Daemon_DownloadClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Daemon_serviceDesc.Streams[0], "/dfdaemon.Daemon/Download", opts...)
+	stream, err := c.cc.NewStream(ctx, &Daemon_ServiceDesc.Streams[0], "/dfdaemon.Daemon/Download", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +122,7 @@ type UnsafeDaemonServer interface {
 }
 
 func RegisterDaemonServer(s grpc.ServiceRegistrar, srv DaemonServer) {
-	s.RegisterService(&_Daemon_serviceDesc, srv)
+	s.RegisterService(&Daemon_ServiceDesc, srv)
 }
 
 func _Daemon_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -181,7 +182,10 @@ func _Daemon_CheckHealth_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Daemon_serviceDesc = grpc.ServiceDesc{
+// Daemon_ServiceDesc is the grpc.ServiceDesc for Daemon service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Daemon_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "dfdaemon.Daemon",
 	HandlerType: (*DaemonServer)(nil),
 	Methods: []grpc.MethodDesc{

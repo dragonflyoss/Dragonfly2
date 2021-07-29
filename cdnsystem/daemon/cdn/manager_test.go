@@ -67,7 +67,7 @@ func (suite *CDNManagerTestSuite) SetupSuite() {
 
 var dragonflyURL = "http://dragonfly.io.com?a=a&b=b&c=c"
 
-var taskID = idgen.TaskID(dragonflyURL, "a&b", &base.UrlMeta{Digest: "f1e2488bba4d1267948d9e2f7008571c"}, "dragonfly")
+var taskID = idgen.TaskID(dragonflyURL, &base.UrlMeta{Digest: "f1e2488bba4d1267948d9e2f7008571c", Tag: "dragonfly", Filter: "a&b"})
 
 func (suite *CDNManagerTestSuite) TearDownSuite() {
 	if suite.workHome != "" {

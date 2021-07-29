@@ -26,21 +26,16 @@ option go_package = "d7y.io/dragonfly/v2/pkg/rpc/scheduler";
 message PeerTaskRequest{
   // universal resource locator for different kind of storage
   string url = 1;
-  // filter is a regular expression
-  // used to generate same task id for different urls
-  string filter = 2;
-  // biz id is used to generate different task ids for same url
-  string biz_id = 3;
   // url meta info
-  base.UrlMeta url_meta = 4;
+  base.UrlMeta url_meta = 2;
   // peer's id and must be global uniqueness
-  string peer_id = 5;
+  string peer_id = 3;
   // peer host info
-  PeerHost peer_host = 6;
+  PeerHost peer_host = 4;
   // current host load
-  base.HostLoad host_load = 7;
+  base.HostLoad host_load = 5;
   // whether this request is caused by migration
-  bool is_migrating = 8;
+  bool is_migrating = 6;
 }
 
 message RegisterResult{

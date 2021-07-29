@@ -12,6 +12,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // SchedulerClient is the client API for Scheduler service.
@@ -48,7 +49,7 @@ func (c *schedulerClient) RegisterPeerTask(ctx context.Context, in *PeerTaskRequ
 }
 
 func (c *schedulerClient) ReportPieceResult(ctx context.Context, opts ...grpc.CallOption) (Scheduler_ReportPieceResultClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Scheduler_serviceDesc.Streams[0], "/scheduler.Scheduler/ReportPieceResult", opts...)
+	stream, err := c.cc.NewStream(ctx, &Scheduler_ServiceDesc.Streams[0], "/scheduler.Scheduler/ReportPieceResult", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +140,7 @@ type UnsafeSchedulerServer interface {
 }
 
 func RegisterSchedulerServer(s grpc.ServiceRegistrar, srv SchedulerServer) {
-	s.RegisterService(&_Scheduler_serviceDesc, srv)
+	s.RegisterService(&Scheduler_ServiceDesc, srv)
 }
 
 func _Scheduler_RegisterPeerTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -222,7 +223,10 @@ func _Scheduler_LeaveTask_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Scheduler_serviceDesc = grpc.ServiceDesc{
+// Scheduler_ServiceDesc is the grpc.ServiceDesc for Scheduler service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Scheduler_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "scheduler.Scheduler",
 	HandlerType: (*SchedulerServer)(nil),
 	Methods: []grpc.MethodDesc{

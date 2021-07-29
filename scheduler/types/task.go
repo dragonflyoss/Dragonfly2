@@ -59,7 +59,6 @@ type Task struct {
 	TaskID          string
 	URL             string
 	Filter          string
-	BizID           string
 	URLMeta         *base.UrlMeta
 	DirectPiece     []byte
 	CreateTime      time.Time
@@ -73,12 +72,11 @@ type Task struct {
 	// TODO add cdnPeers
 }
 
-func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
+func NewTask(taskID, url, filter string, meta *base.UrlMeta) *Task {
 	return &Task{
 		TaskID:    taskID,
 		URL:       url,
 		Filter:    filter,
-		BizID:     bizID,
 		URLMeta:   meta,
 		pieceList: make(map[int32]*PieceInfo),
 		peers:     sortedlist.NewSortedList(),

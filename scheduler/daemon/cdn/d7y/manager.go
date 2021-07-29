@@ -94,7 +94,6 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task) error {
 	stream, err := cm.client.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
 		TaskId:  task.TaskID,
 		Url:     task.URL,
-		Filter:  task.Filter,
 		UrlMeta: task.URLMeta,
 	})
 	if err != nil {
