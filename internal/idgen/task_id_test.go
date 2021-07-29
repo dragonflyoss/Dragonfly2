@@ -27,25 +27,21 @@ func TestTaskID(t *testing.T) {
 	tests := []struct {
 		name   string
 		url    string
-		filter string
 		meta   *base.UrlMeta
-		tag    string
 		expect func(t *testing.T, d interface{})
 	}{
 		{
-			name:   "generate taskID with url",
-			url:    "https://example.com",
-			filter: "",
-			meta:   nil,
+			name: "generate taskID with url",
+			url:  "https://example.com",
+			meta: nil,
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
 				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9", d)
 			},
 		},
 		{
-			name:   "generate taskID with meta",
-			url:    "https://example.com",
-			filter: "",
+			name: "generate taskID with meta",
+			url:  "https://example.com",
 			meta: &base.UrlMeta{
 				Range:  "foo",
 				Digest: "bar",
@@ -57,21 +53,20 @@ func TestTaskID(t *testing.T) {
 			},
 		},
 		{
-			name:   "generate taskID with filter",
-			url:    "https://example.com?foo=foo&bar=bar",
-			filter: "foo&bar",
+			name: "generate taskID with filter",
+			url:  "https://example.com?foo=foo&bar=bar",
 			meta: &base.UrlMeta{
-				Tag: "foo",
+				Tag:    "foo",
+				Filter: "foo&bar",
 			},
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Equal("9c70e827335a7bce3e16da0abff365353fe6775b253a4211263b13ec139278d9", d)
+				assert.Equal("2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b", d)
 			},
 		},
 		{
-			name:   "generate taskID with tag",
-			url:    "https://example.com",
-			filter: "",
+			name: "generate taskID with tag",
+			url:  "https://example.com",
 			meta: &base.UrlMeta{
 				Tag: "foo",
 			},
@@ -94,18 +89,14 @@ func TestTwinsTaskID(t *testing.T) {
 	tests := []struct {
 		name   string
 		url    string
-		filter string
 		meta   *base.UrlMeta
-		tag    string
 		peerID string
 		expect func(t *testing.T, d interface{})
 	}{
 		{
 			name:   "generate taskID with url",
 			url:    "https://example.com",
-			filter: "",
-			meta:   nil,
-			tag:    "",
+			meta:   &base.UrlMeta{},
 			peerID: "foo",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -113,14 +104,12 @@ func TestTwinsTaskID(t *testing.T) {
 			},
 		},
 		{
-			name:   "generate taskID with meta",
-			url:    "https://example.com",
-			filter: "",
+			name: "generate taskID with meta",
+			url:  "https://example.com",
 			meta: &base.UrlMeta{
 				Range:  "foo",
 				Digest: "bar",
 			},
-			tag:    "",
 			peerID: "foo",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -128,23 +117,11 @@ func TestTwinsTaskID(t *testing.T) {
 			},
 		},
 		{
-			name:   "generate taskID with filter",
-			url:    "https://example.com?foo=foo&bar=bar",
-			filter: "foo&bar",
-			meta:   nil,
-			tag:    "",
-			peerID: "foo",
-			expect: func(t *testing.T, d interface{}) {
-				assert := assert.New(t)
-				assert.Equal("7aba95fa869baf5226d26b1497f5d84773c16e0b5697cd649c9d63f58819dc08_B", d)
+			name: "generate taskID with filter",
+			url:  "https://example.com?foo=foo&bar=bar",
+			meta: &base.UrlMeta{
+				Filter: "foo&bar",
 			},
-		},
-		{
-			name:   "generate taskID with tag",
-			url:    "https://example.com",
-			filter: "",
-			meta:   nil,
-			tag:    "foo",
 			peerID: "foo",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -152,11 +129,21 @@ func TestTwinsTaskID(t *testing.T) {
 			},
 		},
 		{
+			name: "generate taskID with tag",
+			url:  "https://example.com",
+			meta: &base.UrlMeta{
+				Tag: "foo",
+			},
+			peerID: "foo",
+			expect: func(t *testing.T, d interface{}) {
+				assert := assert.New(t)
+				assert.Equal("2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b_B", d)
+			},
+		},
+		{
 			name:   "generate twinsA taskID",
 			url:    "https://example.com",
-			filter: "",
-			meta:   nil,
-			tag:    "",
+			meta:   &base.UrlMeta{},
 			peerID: "bar",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
