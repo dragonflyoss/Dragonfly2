@@ -30,6 +30,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 )
 
 var (
@@ -165,13 +166,13 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	}
 
 	// Pick header's parameters
-	filter := pickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
-	biz := pickHeader(req.Header, config.HeaderDragonflyBiz, rt.defaultBiz)
+	filter := httputils.PickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
+	biz := httputils.PickHeader(req.Header, config.HeaderDragonflyBiz, rt.defaultBiz)
 
 	// Delete hop-by-hop headers
 	delHopHeaders(req.Header)
 
-	meta.Header = headerToMap(req.Header)
+	meta.Header = httputils.HeaderToMap(req.Header)
 
 	body, attr, err := rt.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
@@ -196,7 +197,7 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	hdr := mapToHeader(attr)
+	hdr := httputils.MapToHeader(attr)
 	log.Infof("download stream attribute: %v", hdr)
 
 	resp := &http.Response{
@@ -243,39 +244,9 @@ var hopHeaders = []string{
 	"Upgrade",
 }
 
-// headerToMap coverts request headers to map[string]string.
-func headerToMap(header http.Header) map[string]string {
-	m := make(map[string]string)
-	for k, v := range header {
-		// TODO only use first value currently
-		m[k] = v[0]
-	}
-	return m
-}
-
-// mapToHeader coverts map[string]string to request headers.
-func mapToHeader(m map[string]string) http.Header {
-	var h = http.Header{}
-	for k, v := range m {
-		h.Set(k, v)
-	}
-	return h
-}
-
 // delHopHeaders delete hop-by-hop headers.
 func delHopHeaders(header http.Header) {
 	for _, h := range hopHeaders {
 		header.Del(h)
 	}
-}
-
-// pickHeader pick header with key.
-func pickHeader(header http.Header, key, defaultValue string) string {
-	v := header.Get(key)
-	if v != "" {
-		header.Del(key)
-		return v
-	}
-
-	return defaultValue
 }
