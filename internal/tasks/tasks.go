@@ -121,7 +121,7 @@ func MarshalRequest(v interface{}) ([]machineryv1tasks.Arg, error) {
 	}}, nil
 }
 
-func UnmarshalResult(data []reflect.Value, v interface{}) error {
+func UnmarshalResponse(data []reflect.Value, v interface{}) error {
 	if len(data) == 0 {
 		return errors.New("empty data is not specified")
 	}
@@ -136,7 +136,7 @@ func UnmarshalRequest(data string, v interface{}) error {
 	return json.Unmarshal([]byte(data), v)
 }
 
-func MarshalResult(v interface{}) (string, error) {
+func MarshalResponse(v interface{}) (string, error) {
 	data, err := json.Marshal(v)
 	if err != nil {
 		return "", err

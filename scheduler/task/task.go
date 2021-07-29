@@ -152,7 +152,7 @@ func (t *task) preheat(req string) (string, error) {
 		case types.TaskStatusFailed, types.TaskStatusCDNRegisterFail, types.TaskStatusSourceError:
 			return "", errors.Errorf("preheat task %s fail.", taskID)
 		case types.TaskStatusSuccess:
-			return internaltasks.MarshalResult(&internaltasks.PreheatResponse{})
+			return internaltasks.MarshalResponse(&internaltasks.PreheatResponse{})
 		default:
 			time.Sleep(time.Second)
 		}

@@ -185,7 +185,7 @@ func TestTaskUnmarshal(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := UnmarshalResult(tc.data, tc.value)
+			err := UnmarshalResponse(tc.data, tc.value)
 			tc.expect(t, tc.value, err)
 		})
 	}
@@ -358,7 +358,7 @@ func TestMarshalResult(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := MarshalResult(tc.value)
+			result, err := MarshalResponse(tc.value)
 			tc.expect(t, result, err)
 		})
 	}
