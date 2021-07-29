@@ -72,7 +72,7 @@ func newStreamPeerTask(ctx context.Context,
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
-	logger.Infof("step1: peer %s start to register", request.PeerId)
+	logger.Infof("step 1: peer %s start to register", request.PeerId)
 	regSpan.RecordError(err)
 	regSpan.End()
 
@@ -129,7 +129,7 @@ func newStreamPeerTask(ctx context.Context,
 	}
 
 	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
-	logger.Infof("step2: start report peer %s piece result", request.PeerId)
+	logger.Infof("step 2: start report peer %s piece result", request.PeerId)
 	if err != nil {
 		defer span.End()
 		span.RecordError(err)

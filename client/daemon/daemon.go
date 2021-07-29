@@ -111,9 +111,9 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 				PeerId: request.PeerID,
 			})
 			if er != nil {
-				logger.Errorf("step4:leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
+				logger.Errorf("step 4:leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
 			} else {
-				logger.Infof("step4:leave task %s/%s state ok", request.TaskID, request.PeerID)
+				logger.Infof("step 4:leave task %s/%s state ok", request.TaskID, request.PeerID)
 			}
 		})
 	if err != nil {

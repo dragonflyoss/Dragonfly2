@@ -89,13 +89,13 @@ func newFilePeerTask(ctx context.Context,
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
-	logger.Infof("step1: peer %s start to register", request.PeerId)
+	logger.Infof("step 1: peer %s start to register", request.PeerId)
 	regSpan.RecordError(err)
 	regSpan.End()
 
 	var backSource bool
 	if err != nil {
-		logger.Errorf("step1: peer %s register failed: err", request.PeerId, err)
+		logger.Errorf("step 1: peer %s register failed: err", request.PeerId, err)
 		// check if it is back source error
 		if de, ok := err.(*dferrors.DfError); ok && de.Code == dfcodes.SchedNeedBackSource {
 			backSource = true
@@ -110,11 +110,11 @@ func newFilePeerTask(ctx context.Context,
 	if result == nil {
 		defer span.End()
 		span.RecordError(err)
-		err = errors.Errorf("step1: peer register result is nil")
+		err = errors.Errorf("step 1: peer register result is nil")
 		return ctx, nil, nil, err
 	}
 	span.SetAttributes(config.AttributeTaskID.String(result.TaskId))
-	logger.Infof("step1: register task success, task id: %s, peer id: %s, SizeScope: %s",
+	logger.Infof("step 1: register task success, task id: %s, peer id: %s, SizeScope: %s",
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var singlePiece *scheduler.SinglePiece
@@ -148,9 +148,9 @@ func newFilePeerTask(ctx context.Context,
 	}
 
 	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
-	logger.Infof("step2: start report peer %s piece result", request.PeerId)
+	logger.Infof("step 2: start report peer %s piece result", request.PeerId)
 	if err != nil {
-		logger.Errorf("step2: peer %s report piece failed: err", request.PeerId, err)
+		logger.Errorf("step 2: peer %s report piece failed: err", request.PeerId, err)
 		defer span.End()
 		span.RecordError(err)
 		return ctx, nil, nil, err
