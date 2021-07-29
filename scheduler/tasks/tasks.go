@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	timeTick = time.Second
+	interval = time.Second
 )
 
 type Tasks interface {
@@ -143,7 +143,7 @@ func (t *tasks) preheat(req string) (string, error) {
 	}
 
 	//TODO: check better ways to get result
-	ticker := time.NewTicker(timeTick)
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
 		select {
