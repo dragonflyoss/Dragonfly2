@@ -45,21 +45,25 @@ func New(ctx context.Context, cfg *config.TaskConfig, hostname string, service *
 		BrokerDB:  cfg.Redis.BrokerDB,
 		BackendDB: cfg.Redis.BackendDB,
 	}
+
 	globalTask, err := internaltasks.New(redisConfig, internaltasks.GlobalQueue)
 	if err != nil {
 		logger.Errorf("create global tasks queue error: %v", err)
 		return nil, err
 	}
+
 	schedulerTask, err := internaltasks.New(redisConfig, internaltasks.SchedulersQueue)
 	if err != nil {
 		logger.Errorf("create scheduler tasks queue error: %v", err)
 		return nil, err
 	}
+
 	localQueue, err := internaltasks.GetSchedulerQueue(hostname)
 	if err != nil {
 		logger.Errorf("get local tasks queue name error: %v", err)
 		return nil, err
 	}
+
 	localTask, err := internaltasks.New(redisConfig, localQueue)
 	if err != nil {
 		logger.Errorf("create local tasks queue error: %v", err)
@@ -74,8 +78,12 @@ func New(ctx context.Context, cfg *config.TaskConfig, hostname string, service *
 		service:        service,
 		cfg:            cfg,
 	}
-	err = localTask.RegisterTask(internaltasks.PreheatTask, t.preheat)
-	if err != nil {
+
+	namedTaskFuncs := map[string]interface{}{
+		internaltasks.PreheatTask: t.preheat,
+	}
+
+	if err := localTask.RegisterTasks(namedTaskFuncs); err != nil {
 		logger.Errorf("register preheat tasks to local queue error: %v", err)
 		return nil, err
 	}
@@ -93,6 +101,7 @@ func (t *tasks) Serve() error {
 		}
 		return err
 	})
+
 	g.Go(func() error {
 		logger.Debugf("ready to launch %d worker(s) on scheduler queue", t.cfg.SchedulerWorkerNum)
 		err := t.schedulerTasks.LaunchWorker("scheduler_worker", t.cfg.SchedulerWorkerNum)
@@ -101,6 +110,7 @@ func (t *tasks) Serve() error {
 		}
 		return err
 	})
+
 	g.Go(func() error {
 		logger.Debugf("ready to launch %d worker(s) on local queue", t.cfg.LocalWorkerNum)
 		err := t.localTasks.LaunchWorker("local_worker", t.cfg.LocalWorkerNum)
@@ -109,50 +119,59 @@ func (t *tasks) Serve() error {
 		}
 		return err
 	})
+
 	return g.Wait()
 }
 
-func (t *tasks) preheat(req string) (string, error) {
+func (t *tasks) preheat(req string) error {
 	request := &internaltasks.PreheatRequest{}
-	err := internaltasks.UnmarshalRequest(req, request)
-	if err != nil {
+	if err := internaltasks.UnmarshalRequest(req, request); err != nil {
 		logger.Errorf("unmarshal request err: %v, request body: %s", err, req)
-		return "", err
-	}
-	if err = validator.New().Struct(request); err != nil {
-		logger.Errorf("request url \"%s\" is invalid, error: %v", request.URL, err)
-		return "", errors.Errorf("invalid url: %s", request.URL)
+		return err
 	}
 
-	meta := &base.UrlMeta{Header: request.Headers, Tag: request.Tag, Filter: request.Filter}
-	// CDN only support MD5 now.
+	if err := validator.New().Struct(request); err != nil {
+		logger.Errorf("request url \"%s\" is invalid, error: %v", request.URL, err)
+		return errors.Errorf("invalid url: %s", request.URL)
+	}
+
+	meta := &base.UrlMeta{
+		Header: request.Headers,
+		Tag:    request.Tag,
+		Filter: request.Filter,
+	}
+
+	//TODO(@zzy987) CDN only support sha256 now.
 	if strings.HasPrefix(request.Digest, "md5") {
 		meta.Digest = request.Digest
 	}
+
+	// Generate range
 	if rg := request.Headers["Range"]; len(rg) > 0 {
 		meta.Range = rg
 	}
+
 	taskID := idgen.TaskID(request.URL, meta)
 	logger.Debugf("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
+
 	task := types.NewTask(taskID, request.URL, request.Filter, meta)
-	task, err = t.service.GetOrCreateTask(t.ctx, task)
+	task, err := t.service.GetOrCreateTask(t.ctx, task)
 	if err != nil {
-		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
-		logger.Errorf("get or create task %s failed: %v", taskID, err)
-		return "", err
+		return dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
 	}
 
-	//TODO: check better ways to get result
+	//TODO(@zzy987) check better ways to get result
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
 			switch task.GetStatus() {
 			case types.TaskStatusFailed, types.TaskStatusCDNRegisterFail, types.TaskStatusSourceError:
-				return "", errors.Errorf("preheat task fail")
+				return errors.Errorf("preheat task fail")
 			case types.TaskStatusSuccess:
-				return internaltasks.MarshalResponse(&internaltasks.PreheatResponse{})
+				return nil
 			default:
 			}
 		}

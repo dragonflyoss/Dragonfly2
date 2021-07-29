@@ -58,8 +58,8 @@ func New(cfg *Config, queue Queue) (*Tasks, error) {
 	}, nil
 }
 
-func (t *Tasks) RegisterTask(name string, taskFunc interface{}) error {
-	return t.Server.RegisterTask(name, taskFunc)
+func (t *Tasks) RegisterTasks(namedTaskFuncs map[string]interface{}) error {
+	return t.Server.RegisterTasks(namedTaskFuncs)
 }
 
 func (t *Tasks) LaunchWorker(consumerTag string, concurrency int) error {
@@ -134,12 +134,4 @@ func UnmarshalResponse(data []reflect.Value, v interface{}) error {
 
 func UnmarshalRequest(data string, v interface{}) error {
 	return json.Unmarshal([]byte(data), v)
-}
-
-func MarshalResponse(v interface{}) (string, error) {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
 }
