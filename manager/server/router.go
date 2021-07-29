@@ -84,7 +84,7 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 	pn.POST("", h.CreatePermission)
 	pn.DELETE("", h.DestroyPermission)
 	pn.GET("/groups", h.GetPermissionGroups(r))
-	pn.GET("/:subject", h.GetRolesForUser)
+	pn.GET("/roles/:subject", h.GetRolesForUser)
 	pn.GET("/:subject/:object/:action", h.HasRoleForUser)
 
 	// Security Group
@@ -100,7 +100,7 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)
 
-	// auto init role checn roles
+	// auto init role check roles
 	err = rbacbase.InitRole(enforcer, r)
 	if err != nil {
 		return nil, err
