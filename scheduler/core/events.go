@@ -162,20 +162,21 @@ var _ event = peerDownloadPieceFailEvent{}
 
 func (e peerDownloadPieceFailEvent) apply(s *state) {
 	switch e.pr.Code {
-	case dfcodes.PeerTaskNotFound:
-		handlePeerLeave(e.peer, s)
-		return
-	case dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
+	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
+		// TODO PeerTaskNotFound remove dest peer task, ClientPieceDownloadFail add blank list
 		handleReplaceParent(e.peer, s)
 		return
 	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
-		if err := s.cdnManager.StartSeedTask(context.Background(), e.peer.Task); err != nil {
-			logger.Errorf("start seed task fail: %v", err)
-			e.peer.Task.SetStatus(types.TaskStatusFailed)
-			handleSeedTaskFail(e.peer.Task)
-			return
-		}
-		logger.Debugf("===== successfully obtain seeds from cdn, task: %+v =====", e.peer.Task)
+		go func(task *types.Task) {
+			task.SetStatus(types.TaskStatusRunning)
+			if err := s.cdnManager.StartSeedTask(context.Background(), task); err != nil {
+				logger.Errorf("start seed task fail: %v", err)
+				task.SetStatus(types.TaskStatusFailed)
+				handleSeedTaskFail(task)
+				return
+			}
+			logger.Debugf("===== successfully obtain seeds from cdn, task: %+v =====", e.peer.Task)
+		}(e.peer.Task)
 	default:
 		handleReplaceParent(e.peer, s)
 		return
@@ -231,6 +232,10 @@ func (e peerDownloadSuccessEvent) apply(s *state) {
 		}
 		child.PacketChan <- constructSuccessPeerPacket(child, e.peer, nil)
 	}
+	if e.peer.PacketChan != nil {
+		close(e.peer.PacketChan)
+		e.peer.PacketChan = nil
+	}
 }
 
 func (e peerDownloadSuccessEvent) hashKey() string {
@@ -262,6 +267,10 @@ func (e peerDownloadFailEvent) apply(s *state) {
 		child.PacketChan <- constructSuccessPeerPacket(child, parent, candidates)
 		return true
 	})
+	if e.peer.PacketChan != nil {
+		close(e.peer.PacketChan)
+		e.peer.PacketChan = nil
+	}
 	s.peerManager.Delete(e.peer.PeerID)
 }
 

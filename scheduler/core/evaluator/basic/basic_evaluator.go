@@ -82,7 +82,7 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 		return true
 	}
 
-	if peer.IsWaiting() {
+	if peer.IsBlocking() {
 		return false
 	}
 

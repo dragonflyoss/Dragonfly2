@@ -86,7 +86,9 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		}
 		parent, schErr := s.service.ScheduleParent(peer)
 		if schErr != nil {
-			err = dferrors.Newf(dfcodes.SchedPeerScheduleFail, "failed to schedule peer %v: %v", peer.PeerID, schErr)
+			resp.SizeScope = base.SizeScope_NORMAL
+			resp.TaskId = taskID
+			//err = dferrors.Newf(dfcodes.SchedPeerScheduleFail, "failed to schedule peer %v: %v", peer.PeerID, schErr)
 			return
 		}
 		singlePiece := task.GetPiece(0)

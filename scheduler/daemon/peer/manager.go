@@ -72,6 +72,7 @@ func (m *manager) Delete(peerID string) {
 		peer.Task.DeletePeer(peer)
 		if peer.PacketChan != nil {
 			close(peer.PacketChan)
+			logger.Infof("close peer %s stream", peerID)
 			peer.PacketChan = nil
 		}
 		m.peerMap.Delete(peerID)

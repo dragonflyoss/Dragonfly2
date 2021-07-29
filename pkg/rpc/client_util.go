@@ -47,7 +47,7 @@ func (conn *Connection) startGC() {
 			startTime := time.Now()
 
 			// TODO use anther locker, @santong
-			//conn.rwMutex.Lock()
+			conn.rwMutex.Lock()
 			// range all connections and determine whether they are expired
 			conn.accessNodeMap.Range(func(node, accessTime interface{}) bool {
 				serverNode := node.(string)
@@ -61,7 +61,7 @@ func (conn *Connection) startGC() {
 				return true
 			})
 			// TODO use anther locker, @santong
-			//conn.rwMutex.Unlock()
+			conn.rwMutex.Unlock()
 			// slow GC detected, report it with a log warning
 			if timeElapse := time.Since(startTime); timeElapse > conn.gcConnTimeout {
 				logger.GrpcLogger.With("conn", conn.name).Warnf("gc %d conns, cost: %.3f seconds", removedConnCount, timeElapse.Seconds())
@@ -81,8 +81,6 @@ func (conn *Connection) startGC() {
 
 // gcConn gc keys and clients associated with server node
 func (conn *Connection) gcConn(node string) {
-	conn.rwMutex.Lock(node, false)
-	defer conn.rwMutex.UnLock(node, false)
 	logger.GrpcLogger.With("conn", conn.name).Infof("gc keys and clients associated with server node: %s starting", node)
 	value, ok := conn.node2ClientMap.Load(node)
 	if ok {
