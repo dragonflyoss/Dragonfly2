@@ -18,7 +18,6 @@ package server
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/scheduler/tasks"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
@@ -29,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/server/service"
+	"d7y.io/dragonfly/v2/scheduler/tasks"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
@@ -47,7 +47,7 @@ type Server struct {
 	dynconfigConn    *grpc.ClientConn
 	running          bool
 	dynConfig        config.DynconfigInterface
-	task             tasks.Task
+	task             tasks.Tasks
 }
 
 func New(cfg *config.Config) (*Server, error) {

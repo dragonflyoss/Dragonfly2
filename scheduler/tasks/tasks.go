@@ -25,11 +25,11 @@ const (
 	timeTick = time.Second
 )
 
-type Task interface {
+type Tasks interface {
 	Serve() error
 }
 
-type task struct {
+type tasks struct {
 	globalTasks    *internaltasks.Tasks
 	schedulerTasks *internaltasks.Tasks
 	localTasks     *internaltasks.Tasks
@@ -38,7 +38,7 @@ type task struct {
 	cfg            *config.TaskConfig
 }
 
-func New(ctx context.Context, cfg *config.TaskConfig, hostname string, service *core.SchedulerService) (Task, error) {
+func New(ctx context.Context, cfg *config.TaskConfig, hostname string, service *core.SchedulerService) (Tasks, error) {
 	redisConfig := &internaltasks.Config{
 		Host:      cfg.Redis.Host,
 		Port:      cfg.Redis.Port,
@@ -48,26 +48,26 @@ func New(ctx context.Context, cfg *config.TaskConfig, hostname string, service *
 	}
 	globalTask, err := internaltasks.New(redisConfig, internaltasks.GlobalQueue)
 	if err != nil {
-		logger.Errorf("create global task queue error: %v", err)
+		logger.Errorf("create global tasks queue error: %v", err)
 		return nil, err
 	}
 	schedulerTask, err := internaltasks.New(redisConfig, internaltasks.SchedulersQueue)
 	if err != nil {
-		logger.Errorf("create scheduler task queue error: %v", err)
+		logger.Errorf("create scheduler tasks queue error: %v", err)
 		return nil, err
 	}
 	localQueue, err := internaltasks.GetSchedulerQueue(hostname)
 	if err != nil {
-		logger.Errorf("get local task queue name error: %v", err)
+		logger.Errorf("get local tasks queue name error: %v", err)
 		return nil, err
 	}
 	localTask, err := internaltasks.New(redisConfig, localQueue)
 	if err != nil {
-		logger.Errorf("create local task queue error: %v", err)
+		logger.Errorf("create local tasks queue error: %v", err)
 		return nil, err
 	}
 
-	t := &task{
+	t := &tasks{
 		globalTasks:    globalTask,
 		schedulerTasks: schedulerTask,
 		localTasks:     localTask,
@@ -77,14 +77,14 @@ func New(ctx context.Context, cfg *config.TaskConfig, hostname string, service *
 	}
 	err = localTask.RegisterTask(internaltasks.PreheatTask, t.preheat)
 	if err != nil {
-		logger.Errorf("register preheat task to local queue error: %v", err)
+		logger.Errorf("register preheat tasks to local queue error: %v", err)
 		return nil, err
 	}
 
 	return t, nil
 }
 
-func (t *task) Serve() error {
+func (t *tasks) Serve() error {
 	g := errgroup.Group{}
 	g.Go(func() error {
 		logger.Debugf("ready to launch %d worker(s) on global queue", t.cfg.GlobalWorkerNum)
@@ -113,7 +113,7 @@ func (t *task) Serve() error {
 	return g.Wait()
 }
 
-func (t *task) preheat(req string) (string, error) {
+func (t *tasks) preheat(req string) (string, error) {
 	request := &internaltasks.PreheatRequest{}
 	err := internaltasks.UnmarshalRequest(req, request)
 	if err != nil {
