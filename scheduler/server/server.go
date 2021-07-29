@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	"d7y.io/dragonfly/v2/scheduler/task"
+
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"

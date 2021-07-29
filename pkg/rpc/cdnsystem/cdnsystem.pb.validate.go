@@ -45,8 +45,6 @@ func (m *SeedRequest) Validate() error {
 
 	// no validation rules for Url
 
-	// no validation rules for Filter
-
 	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SeedRequestValidationError{

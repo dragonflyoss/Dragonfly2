@@ -132,9 +132,9 @@ func (t *tasks) preheat(req string) (string, error) {
 	if rg := request.Headers["Range"]; len(rg) > 0 {
 		meta.Range = rg
 	}
-	taskID := idgen.TaskID(request.URL, request.Filter, meta, request.Tag)
+	taskID := idgen.TaskID(request.URL, meta)
 	logger.Debugf("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
-	task := types.NewTask(taskID, request.URL, request.Filter, request.Tag, meta)
+	task := types.NewTask(taskID, request.URL, request.Filter, meta)
 	task, err = t.service.GetOrCreateTask(t.ctx, task)
 	if err != nil {
 		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
