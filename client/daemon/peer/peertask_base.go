@@ -225,6 +225,7 @@ loop:
 			break loop
 		}
 
+		logger.Debugf("receive peerPacket %v for peer %s", peerPacket, pt.peerID)
 		if peerPacket.Code != dfcodes.Success {
 			pt.Errorf("receive peer packet with error: %d", peerPacket.Code)
 			if pt.isExitPeerPacketCode(peerPacket) {

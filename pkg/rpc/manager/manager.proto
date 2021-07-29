@@ -117,7 +117,7 @@ message UpdateSchedulerRequest {
   int32 port = 9 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
 }
 
-message AddSchedulerClusterToSchedulerClusterRequest {
+message AddSchedulerToSchedulerClusterRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   uint64 scheduler_id = 2 [(validate.rules).uint64 = {ignore_empty: true}];
   uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {ignore_empty: true}];
@@ -151,8 +151,8 @@ service Manager {
   rpc GetScheduler(GetSchedulerRequest)returns(Scheduler);
   // Update scheduler configuration
   rpc UpdateScheduler(UpdateSchedulerRequest) returns(Scheduler);
-  // AddSchedulerClusterToSchedulerCluster add scheduler to scheduler cluster
-  rpc AddSchedulerClusterToSchedulerCluster(AddSchedulerClusterToSchedulerClusterRequest) returns(google.protobuf.Empty);
+  // AddSchedulerToSchedulerCluster add scheduler to scheduler cluster
+  rpc AddSchedulerToSchedulerCluster(AddSchedulerToSchedulerClusterRequest) returns(google.protobuf.Empty);
   // List acitve schedulers configuration
   rpc ListSchedulers(ListSchedulersRequest)returns(ListSchedulersResponse);
   // KeepAlive with manager
