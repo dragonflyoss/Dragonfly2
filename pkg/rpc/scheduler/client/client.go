@@ -39,7 +39,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 	}
 	sc := &schedulerClient{
 		rpc.NewConnection(context.Background(), "scheduler-static", addrs, []rpc.ConnOption{
-			rpc.WithConnExpireTime(5 * time.Minute),
+			rpc.WithConnExpireTime(30 * time.Minute),
 			rpc.WithDialOption(opts),
 		}),
 	}

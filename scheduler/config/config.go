@@ -113,7 +113,7 @@ func NewDefaultSchedulerConfig() *SchedulerConfig {
 		Scheduler:            "basic",
 		CDNLoad:              100,
 		ClientLoad:           10,
-		OpenMonitor:          false,
+		OpenMonitor:          true,
 		GC:                   NewDefaultGCConfig(),
 	}
 }
