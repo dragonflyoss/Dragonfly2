@@ -145,6 +145,7 @@ func (cm *manager) receivePiece(task *types.Task, stream *client.PieceSeedStream
 			if err != nil || cdnPeer == nil {
 				return err
 			}
+			task.SetStatus(types.TaskStatusSeeding)
 			cdnPeer.Touch()
 			if piece.Done {
 				task.PieceTotal = piece.TotalPieceCount

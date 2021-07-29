@@ -48,6 +48,7 @@ func (status TaskStatus) String() string {
 const (
 	TaskStatusWaiting TaskStatus = iota
 	TaskStatusRunning
+	TaskStatusSeeding
 	TaskStatusSuccess
 	TaskStatusCDNRegisterFail
 	TaskStatusFailed
@@ -169,6 +170,10 @@ func (task *Task) IsSuccess() bool {
 func (task *Task) IsFrozen() bool {
 	return task.status == TaskStatusFailed || task.status == TaskStatusWaiting ||
 		task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
+}
+
+func (task *Task) CanSchedule() bool {
+	return task.status == TaskStatusSeeding || task.status == TaskStatusSuccess
 }
 
 func (task *Task) IsWaiting() bool {

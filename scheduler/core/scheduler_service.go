@@ -178,10 +178,12 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	// notify peer tasks
 	synclock.Lock(task.TaskID, false)
 	defer synclock.UnLock(task.TaskID, false)
-	if !task.IsHealth() {
+	if task.IsHealth() && task.GetLastTriggerTime().Add(s.config.AccessWindow).After(time.Now()) {
+		return task, nil
+	}
+	if task.IsFrozen() {
 		task.SetStatus(types.TaskStatusRunning)
 	}
-
 	go func() {
 		if err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			if !task.IsSuccess() {

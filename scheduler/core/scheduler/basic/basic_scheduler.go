@@ -123,9 +123,9 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer
 		worth := s.evaluator.Evaluate(candidate, peer)
 
 		// scheduler the same parent, worth reduce a half
-		if peer.GetParent() != nil && peer.GetParent().PeerID == candidate.PeerID {
-			worth = worth / 2.0
-		}
+		//if peer.GetParent() != nil && peer.GetParent().PeerID == candidate.PeerID {
+		//	worth = worth / 2.0
+		//}
 
 		if worth > value {
 			value = worth
@@ -196,6 +196,9 @@ func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list [
 }
 
 func (s *Scheduler) selectCandidateParents(peer *types.Peer, limit int) (list []*types.Peer) {
+	if !peer.Task.CanSchedule() {
+		return nil
+	}
 	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.Peer) bool {
 		if candidateNode == nil {
 			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer is not selected because it is nil")

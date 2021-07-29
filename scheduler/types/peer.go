@@ -130,8 +130,6 @@ func (peer *Peer) disassociateChild(child *Peer) {
 }
 
 func (peer *Peer) ReplaceParent(parent *Peer) {
-	//peer.lock.Lock()
-	//defer peer.lock.Unlock()
 	oldParent := peer.parent
 	if oldParent != nil {
 		oldParent.disassociateChild(peer)

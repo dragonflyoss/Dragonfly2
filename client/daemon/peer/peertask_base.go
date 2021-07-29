@@ -685,7 +685,8 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 			span.RecordError(getErr)
 			// fast way to exit retry
 			if curPeerPacket != pt.peerPacket {
-				pt.Warnf("get piece tasks with error: %s, but peer packet changed, switch to new peer packet", getErr)
+				pt.Warnf("get piece tasks with error: %s, but peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s", getErr,
+					curPeerPacket.MainPeer.PeerId, pt.peerPacket.MainPeer.PeerId)
 				peerPacketChanged = true
 				return nil, true, nil
 			}
@@ -709,7 +710,8 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 			}
 			// fast way to exit retry
 			if curPeerPacket != pt.peerPacket {
-				pt.Warnf("get empty pieces and peer packet changed, switch to new peer packet")
+				pt.Warnf("get empty pieces and peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s",
+					curPeerPacket.MainPeer.PeerId, pt.peerPacket.MainPeer.PeerId)
 				peerPacketChanged = true
 				return nil, true, nil
 			}
