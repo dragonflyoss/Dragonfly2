@@ -18,7 +18,7 @@ package server
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/scheduler/task"
+	"d7y.io/dragonfly/v2/scheduler/tasks"
 	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
@@ -47,7 +47,7 @@ type Server struct {
 	dynconfigConn    *grpc.ClientConn
 	running          bool
 	dynConfig        config.DynconfigInterface
-	task             task.Task
+	task             tasks.Task
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -106,7 +106,7 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 	if cfg.Task != nil && cfg.Task.Redis != nil && cfg.Task.Redis.Host != "" {
-		s.task, err = task.New(context.Background(), cfg.Task, iputils.HostName, s.schedulerService)
+		s.task, err = tasks.New(context.Background(), cfg.Task, iputils.HostName, s.schedulerService)
 		if err != nil {
 			return nil, err
 		}
