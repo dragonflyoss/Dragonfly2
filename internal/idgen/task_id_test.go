@@ -39,7 +39,7 @@ func TestTaskID(t *testing.T) {
 			meta:   nil,
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Equal("9c70e827335a7bce3e16da0abff365353fe6775b253a4211263b13ec139278d9", d)
+				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9", d)
 			},
 		},
 		{
@@ -109,7 +109,7 @@ func TestTwinsTaskID(t *testing.T) {
 			peerID: "foo",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Equal("7aba95fa869baf5226d26b1497f5d84773c16e0b5697cd649c9d63f58819dc08_B", d)
+				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9_B", d)
 			},
 		},
 		{
@@ -136,7 +136,7 @@ func TestTwinsTaskID(t *testing.T) {
 			peerID: "foo",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Equal("9c70e827335a7bce3e16da0abff365353fe6775b253a4211263b13ec139278d9", d)
+				assert.Equal("7aba95fa869baf5226d26b1497f5d84773c16e0b5697cd649c9d63f58819dc08_B", d)
 			},
 		},
 		{
@@ -148,7 +148,7 @@ func TestTwinsTaskID(t *testing.T) {
 			peerID: "foo",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Equal("9c70e827335a7bce3e16da0abff365353fe6775b253a4211263b13ec139278d9", d)
+				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9_B", d)
 			},
 		},
 		{
@@ -160,7 +160,7 @@ func TestTwinsTaskID(t *testing.T) {
 			peerID: "bar",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Equal("9c70e827335a7bce3e16da0abff365353fe6775b253a4211263b13ec139278d9", d)
+				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9_A", d)
 			},
 		},
 	}
