@@ -28,14 +28,14 @@ func New(cfg *config.Config) (Task, error) {
 		return nil, err
 	}
 
-	preheat, err := newPreheat(t, cfg.Server.Name)
+	p, err := newPreheat(t, cfg.Server.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	return &task{
 		Tasks:   t,
-		Preheat: preheat,
+		Preheat: p,
 	}, nil
 }
 
