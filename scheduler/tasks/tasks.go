@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"context"
+	"github.com/go-playground/validator/v10"
 	"strings"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	internaltasks "d7y.io/dragonfly/v2/internal/tasks"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/types"
@@ -124,8 +124,9 @@ func (t *task) preheat(req string) (string, error) {
 		logger.Errorf("unmarshal request err: %v, request body: %s", err, req)
 		return "", err
 	}
-	if !urlutils.IsValidURL(request.URL) {
-		logger.Errorf("request url \"%s\" is invalid", request.URL)
+
+	if err = validator.New().Var(request.URL, "url"); err != nil {
+		logger.Errorf("request url \"%s\" is invalid, error: %v", request.URL, err)
 		return "", errors.Errorf("invalid url: %s", request.URL)
 	}
 
