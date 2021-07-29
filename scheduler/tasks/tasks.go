@@ -136,9 +136,9 @@ func (t *task) preheat(req string) (string, error) {
 	taskID := idgen.TaskID(request.URL, request.Filter, meta, request.Tag)
 	logger.Debugf("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
 	task := types.NewTask(taskID, request.URL, request.Filter, request.Tag, meta)
-	ctx, cancel := context.WithDeadline(t.ctx, time.Now().Add(timeOut))
-	defer cancel()
-	task, err = t.service.GetOrCreateTask(ctx, task)
+	//ctx, cancel := context.WithDeadline(t.ctx, time.Now().Add(timeOut))
+	//defer cancel()
+	task, err = t.service.GetOrCreateTask(t.ctx, task)
 	if err != nil {
 		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
 		logger.Errorf("get or create task %s failed: %v", taskID, err)
@@ -158,8 +158,8 @@ func (t *task) preheat(req string) (string, error) {
 				return internaltasks.MarshalResponse(&internaltasks.PreheatResponse{})
 			default:
 			}
-		case <-ctx.Done():
-			return "", errors.Errorf("time out")
+			//case <-ctx.Done():
+			//	return "", errors.Errorf("time out")
 		}
 	}
 }
