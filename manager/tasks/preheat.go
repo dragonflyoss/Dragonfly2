@@ -12,6 +12,8 @@ import (
 	internaltasks "d7y.io/dragonfly/v2/internal/tasks"
 	"d7y.io/dragonfly/v2/manager/types"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/docker/distribution"
+	"github.com/docker/distribution/manifest/schema2"
 )
 
 type PreheatType string
@@ -142,7 +144,10 @@ func (p *preheat) getLayers(url string, header map[string]string, retryIfUnAuth 
 		if retryIfUnAuth {
 			token := p.getAuthToken(resp.Header)
 			if token != "" {
-				authHeader := map[string]string{"Authorization": "Bearer " + token}
+				authHeader := map[string]string{
+					"Authorization": "Bearer " + token,
+					"Accept":        schema2.MediaTypeManifest,
+				}
 				return p.getLayers(url, authHeader, false)
 			}
 		}
@@ -150,7 +155,7 @@ func (p *preheat) getLayers(url string, header map[string]string, retryIfUnAuth 
 		return
 	}
 
-	layers = p.parseLayers(body, header)
+	layers, err = p.ParseLayers(body, header)
 	return
 }
 
@@ -200,29 +205,15 @@ func (p *preheat) authURL(wwwAuth []string) string {
 	return fmt.Sprintf("%s?%s", host, query)
 }
 
-func (p *preheat) parseLayers(body []byte, header map[string]string) (layers []*internaltasks.PreheatRequest) {
-	var meta = make(map[string]interface{})
-	json.Unmarshal(body, &meta)
-	schemaVersion := fmt.Sprintf("%v", meta["schemaVersion"])
-	var layerDigest []string
-	if schemaVersion == "1" {
-		layerDigest = p.parseLayerDigest(meta, "fsLayers", "blobSum")
-	} else {
-		mediaType := fmt.Sprintf("%s", meta["mediaType"])
-		switch mediaType {
-		case "application/vnd.docker.distribution.manifest.list.v2+json", "application/vnd.oci.image.index.v1+json":
-			manifestDigest := p.parseLayerDigest(meta, "manifests", "digest")
-			for _, digest := range manifestDigest {
-				list, _ := p.getLayers(p.manifestURL(digest), header, false)
-				layers = append(layers, list...)
-			}
-			return
-		default:
-			layerDigest = p.parseLayerDigest(meta, "layers", "digest")
-		}
+func (p *preheat) parseLayers(body []byte, header map[string]string) ([]*internaltasks.PreheatRequest, error) {
+	manifest, _, err := distribution.UnmarshalManifest(schema2.MediaTypeManifest, body)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, digest := range layerDigest {
+	var layers []*internaltasks.PreheatRequest
+	for _, v := range manifest.References() {
+		digest := v.Digest.String()
 		layers = append(layers, &internaltasks.PreheatRequest{
 			URL:     p.layerURL(digest),
 			Tag:     p.tag,
@@ -232,25 +223,7 @@ func (p *preheat) parseLayers(body []byte, header map[string]string) (layers []*
 		})
 	}
 
-	return
-}
-
-func (p *preheat) parseLayerDigest(meta map[string]interface{}, layerKey string, digestKey string) (layers []string) {
-	data := meta[layerKey]
-	if data == nil {
-		return
-	}
-	array, _ := data.([]interface{})
-	if array == nil {
-		return
-	}
-	for _, it := range array {
-		layer, _ := it.(map[string]interface{})
-		if layer != nil {
-			layers = append(layers, fmt.Sprintf("%v", layer[digestKey]))
-		}
-	}
-	return layers
+	return layers, nil
 }
 
 func (p *preheat) manifestURL(digest string) string {
