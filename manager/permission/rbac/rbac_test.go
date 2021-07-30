@@ -63,7 +63,7 @@ func TestRoleName(t *testing.T) {
 	}
 
 }
-func TestHttpMethodToAction(t *testing.T) {
+func TestHTTPMethodToAction(t *testing.T) {
 	tests := []struct {
 		method         string
 		exceptedAction string
@@ -78,7 +78,7 @@ func TestHttpMethodToAction(t *testing.T) {
 		},
 		{
 			method:         "UNKNOWN",
-			exceptedAction: "",
+			exceptedAction: "read",
 		},
 	}
 
