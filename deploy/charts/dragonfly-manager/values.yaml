@@ -185,3 +185,12 @@ dfdaemon:
         url: https://index.docker.io
       proxies:
       - regx: blobs/sha256.*
+
+mysql:
+  auth:
+    rootPassword: dragonfly-root
+    username: dragonfly
+    password: dragonfly
+
+redis:
+  password: dragonfly
