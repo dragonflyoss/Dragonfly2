@@ -177,9 +177,16 @@ func (s *GRPC) AddCDNToCDNCluster(ctx context.Context, req *manager.AddCDNToCDNC
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// It will automatically associate with the first cluster when cdn cluster id is empty.
 	cdnCluster := model.CDNCluster{}
-	if err := s.db.First(&cdnCluster, req.CdnClusterId).Error; err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
+	if req.CdnClusterId > 0 {
+		if err := s.db.First(&cdnCluster, req.CdnClusterId).Error; err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+	} else {
+		if err := s.db.First(&cdnCluster).Error; err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
 	}
 
 	cdn := model.CDN{}
@@ -391,9 +398,16 @@ func (s *GRPC) AddSchedulerToSchedulerCluster(ctx context.Context, req *manager.
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// It will automatically associate with the first cluster when scheduler cluster id is empty.
 	schedulerCluster := model.SchedulerCluster{}
-	if err := s.db.First(&schedulerCluster, req.SchedulerClusterId).Error; err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
+	if req.SchedulerClusterId > 0 {
+		if err := s.db.First(&schedulerCluster, req.SchedulerClusterId).Error; err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+	} else {
+		if err := s.db.First(&schedulerCluster).Error; err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
 	}
 
 	scheduler := model.Scheduler{}
