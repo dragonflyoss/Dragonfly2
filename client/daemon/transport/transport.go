@@ -166,19 +166,19 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 
 	// Pick header's parameters
 	filter := pickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
-	biz := pickHeader(req.Header, config.HeaderDragonflyBiz, rt.defaultBiz)
+	tag := pickHeader(req.Header, config.HeaderDragonflyBiz, rt.defaultBiz)
 
 	// Delete hop-by-hop headers
 	delHopHeaders(req.Header)
 
 	meta.Header = headerToMap(req.Header)
+	meta.Tag = tag
+	meta.Filter = filter
 
 	body, attr, err := rt.peerTaskManager.StartStreamPeerTask(
 		req.Context(),
 		&scheduler.PeerTaskRequest{
 			Url:         url,
-			Filter:      filter,
-			BizId:       biz,
 			UrlMeta:     meta,
 			PeerId:      peerID,
 			PeerHost:    rt.peerHost,

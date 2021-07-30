@@ -48,6 +48,7 @@ func (status TaskStatus) String() string {
 const (
 	TaskStatusWaiting TaskStatus = iota
 	TaskStatusRunning
+	TaskStatusSeeding
 	TaskStatusSuccess
 	TaskStatusCDNRegisterFail
 	TaskStatusFailed
@@ -59,7 +60,6 @@ type Task struct {
 	TaskID          string
 	URL             string
 	Filter          string
-	BizID           string
 	URLMeta         *base.UrlMeta
 	DirectPiece     []byte
 	CreateTime      time.Time
@@ -73,12 +73,11 @@ type Task struct {
 	// TODO add cdnPeers
 }
 
-func NewTask(taskID, url, filter, bizID string, meta *base.UrlMeta) *Task {
+func NewTask(taskID, url, filter string, meta *base.UrlMeta) *Task {
 	return &Task{
 		TaskID:    taskID,
 		URL:       url,
 		Filter:    filter,
-		BizID:     bizID,
 		URLMeta:   meta,
 		pieceList: make(map[int32]*PieceInfo),
 		peers:     sortedlist.NewSortedList(),
@@ -105,14 +104,12 @@ func (task *Task) GetPiece(pieceNum int32) *PieceInfo {
 }
 
 func (task *Task) AddPeer(peer *Peer) {
-	task.lock.Lock()
-	defer task.lock.Unlock()
 	task.peers.UpdateOrAdd(peer)
 }
 
 func (task *Task) DeletePeer(peer *Peer) {
-	task.lock.Lock()
-	defer task.lock.Unlock()
+	//task.lock.Lock()
+	//defer task.lock.Unlock()
 	task.peers.Delete(peer)
 }
 
@@ -171,6 +168,10 @@ func (task *Task) IsSuccess() bool {
 func (task *Task) IsFrozen() bool {
 	return task.status == TaskStatusFailed || task.status == TaskStatusWaiting ||
 		task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
+}
+
+func (task *Task) CanSchedule() bool {
+	return task.status == TaskStatusSeeding || task.status == TaskStatusSuccess
 }
 
 func (task *Task) IsWaiting() bool {

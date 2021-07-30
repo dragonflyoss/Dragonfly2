@@ -132,7 +132,9 @@ func (l *SortedList) RangeLimit(limit int, fn func(Item) bool) {
 	}
 	l.l.RLock()
 	defer l.l.RUnlock()
-
+	if len(l.buckets) == 0 {
+		return
+	}
 	count := 0
 	for i := l.left; i <= l.right; i++ {
 		buc := l.buckets[i]
@@ -160,7 +162,9 @@ func (l *SortedList) RangeReverseLimit(limit int, fn func(Item) bool) {
 	}
 	l.l.RLock()
 	defer l.l.RUnlock()
-
+	if len(l.buckets) == 0 {
+		return
+	}
 	count := 0
 	for i := l.right; i >= l.left; i-- {
 		for j := len(l.buckets[i].buckets) - 1; j >= 0; j-- {

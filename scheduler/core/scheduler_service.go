@@ -119,16 +119,16 @@ func (s *SchedulerService) Stop() {
 	})
 }
 
-func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string, peerID string) (taskID string) {
+func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID string) (taskID string) {
 	if s.config.ABTest {
-		return idgen.TwinsTaskID(url, filter, meta, bizID, peerID)
+		return idgen.TwinsTaskID(url, meta, peerID)
 	}
-	return idgen.TaskID(url, filter, meta, bizID)
+	return idgen.TaskID(url, meta)
 }
 
 func (s *SchedulerService) ScheduleParent(peer *types.Peer) (parent *types.Peer, err error) {
-	parent, candidates, hasParent := s.sched.ScheduleParent(peer)
-	logger.Debugf("schedule parent result: parent %v, candidates:%v", parent, candidates)
+	parent, _, hasParent := s.sched.ScheduleParent(peer)
+	//logger.Debugf("schedule parent result: parent %v, candidates:%v", parent, candidates)
 	if !hasParent || parent == nil {
 		return nil, errors.Errorf("no parent peer available for peer %v", peer.PeerID)
 	}
@@ -178,10 +178,12 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	// notify peer tasks
 	synclock.Lock(task.TaskID, false)
 	defer synclock.UnLock(task.TaskID, false)
-	if !task.IsHealth() {
+	if task.IsHealth() && task.GetLastTriggerTime().Add(s.config.AccessWindow).After(time.Now()) {
+		return task, nil
+	}
+	if task.IsFrozen() {
 		task.SetStatus(types.TaskStatusRunning)
 	}
-
 	go func() {
 		if err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			if !task.IsSuccess() {

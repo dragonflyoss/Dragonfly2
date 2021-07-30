@@ -25,8 +25,7 @@ option go_package = "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem";
 message SeedRequest{
   string task_id = 1;
   string url = 2;
-  string filter = 3;
-  base.UrlMeta url_meta = 4;
+  base.UrlMeta url_meta = 3;
 }
 
 // keep piece meta and data separately

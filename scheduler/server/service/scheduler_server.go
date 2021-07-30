@@ -57,8 +57,8 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		logger.Errorf("validate register request failed: %v", err)
 		return
 	}
-	taskID := s.service.GenerateTaskID(request.Url, request.Filter, request.UrlMeta, request.BizId, request.PeerId)
-	task := types.NewTask(taskID, request.Url, request.Filter, request.BizId, request.UrlMeta)
+	taskID := s.service.GenerateTaskID(request.Url, request.UrlMeta, request.PeerId)
+	task := types.NewTask(taskID, request.Url, request.UrlMeta.Filter, request.UrlMeta)
 	task, err = s.service.GetOrCreateTask(ctx, task)
 	if err != nil {
 		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
@@ -86,7 +86,9 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		}
 		parent, schErr := s.service.ScheduleParent(peer)
 		if schErr != nil {
-			err = dferrors.Newf(dfcodes.SchedPeerScheduleFail, "failed to schedule peer %v: %v", peer.PeerID, schErr)
+			resp.SizeScope = base.SizeScope_NORMAL
+			resp.TaskId = taskID
+			//err = dferrors.Newf(dfcodes.SchedPeerScheduleFail, "failed to schedule peer %v: %v", peer.PeerID, schErr)
 			return
 		}
 		singlePiece := task.GetPiece(0)

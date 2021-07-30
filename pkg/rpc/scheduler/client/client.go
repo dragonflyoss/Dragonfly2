@@ -39,7 +39,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 	}
 	sc := &schedulerClient{
 		rpc.NewConnection(context.Background(), "scheduler-static", addrs, []rpc.ConnOption{
-			rpc.WithConnExpireTime(5 * time.Minute),
+			rpc.WithConnExpireTime(30 * time.Minute),
 			rpc.WithDialOption(opts),
 		}),
 	}
@@ -85,7 +85,7 @@ func (sc *schedulerClient) doRegisterPeerTask(ctx context.Context, ptr *schedule
 		schedulerNode string
 		res           interface{}
 	)
-	key := idgen.TaskID(ptr.Url, ptr.Filter, ptr.UrlMeta, ptr.BizId)
+	key := idgen.TaskID(ptr.Url, ptr.UrlMeta)
 	logger.WithTaskAndPeerID(key, ptr.PeerId).Infof("generate hash key taskId: %s and start to register peer task for peer_id(%s) url(%s)", key, ptr.PeerId,
 		ptr.Url)
 	reg := func() (interface{}, error) {

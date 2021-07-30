@@ -74,7 +74,7 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 		URL:    req.Url,
 		Md5:    header["md5"],
 		TaskID: req.TaskId,
-		Filter: strings.Split(req.Filter, "&"),
+		Filter: strings.Split(req.UrlMeta.Filter, "&"),
 	}, nil
 }
 
@@ -159,7 +159,6 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 		return nil, dferrors.Newf(dfcodes.BadRequest, "failed to validate seed request for task(%s): %v", req.TaskId, err)
 	}
 	task, err := css.taskMgr.Get(req.TaskId)
-	logger.Debugf("task: %+v", task)
 	if err != nil {
 		if cdnerrors.IsDataNotFound(err) {
 			return nil, dferrors.Newf(dfcodes.CdnTaskNotFound, "failed to get task(%s) from cdn: %v", req.TaskId, err)

@@ -94,7 +94,6 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task) error {
 	stream, err := cm.client.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
 		TaskId:  task.TaskID,
 		Url:     task.URL,
-		Filter:  task.Filter,
 		UrlMeta: task.URLMeta,
 	})
 	if err != nil {
@@ -145,6 +144,7 @@ func (cm *manager) receivePiece(task *types.Task, stream *client.PieceSeedStream
 			if err != nil || cdnPeer == nil {
 				return err
 			}
+			task.SetStatus(types.TaskStatusSeeding)
 			cdnPeer.Touch()
 			if piece.Done {
 				task.PieceTotal = piece.TotalPieceCount

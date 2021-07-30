@@ -67,11 +67,12 @@ func newStreamPeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
-	logger.Debugf("request overview, pid: %s, url: %s, filter: %s, meta: %s, biz: %s",
-		request.PeerId, request.Url, request.Filter, request.UrlMeta, request.BizId)
+	logger.Debugf("request overview, pid: %s, url: %s, filter: %s, meta: %s, tag: %s",
+		request.PeerId, request.Url, request.UrlMeta.Filter, request.UrlMeta, request.UrlMeta.Tag)
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	result, err := schedulerClient.RegisterPeerTask(ctx, request)
+	logger.Infof("step 1: peer %s start to register", request.PeerId)
 	regSpan.RecordError(err)
 	regSpan.End()
 
@@ -128,6 +129,7 @@ func newStreamPeerTask(ctx context.Context,
 	}
 
 	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
+	logger.Infof("step 2: start report peer %s piece result", request.PeerId)
 	if err != nil {
 		defer span.End()
 		span.RecordError(err)

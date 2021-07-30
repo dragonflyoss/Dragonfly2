@@ -105,7 +105,7 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 			return nil, dferrors.New(code, err.Error())
 		}
 
-		logger.Warnf("try to get piece tasks, "+
+		logger.Infof("try to get piece tasks, "+
 			"but target peer task is initializing, "+
 			"there is no available pieces, "+
 			"task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
@@ -140,8 +140,6 @@ func (m *manager) Download(ctx context.Context,
 	peerTask := &peer.FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url:      req.Url,
-			Filter:   req.UrlMeta.Filter,
-			BizId:    req.UrlMeta.Tag,
 			UrlMeta:  req.UrlMeta,
 			PeerId:   clientutil.GenPeerID(m.peerHost),
 			PeerHost: m.peerHost,
