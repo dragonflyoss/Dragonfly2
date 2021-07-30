@@ -21,10 +21,10 @@ data:
       mysql:
         user: {{ .Values.mysql.auth.username }}
         password: {{ .Values.mysql.auth.password }}
-        host: {{ .Values.mysql.fullname }}
+        host: {{ .Release.Name }}-{{ default "mysql" .Values.mysql.fullnameOverride }}
         port: {{ .Values.mysql.primary.service.port }}
         dbname: {{ .Values.mysql.auth.database }}
       redis:
         password: {{ .Values.redis.password }}
-        host: {{ .Values.redis.fullname }}
+        host: {{ .Release.Name }}-{{ default "redis-cluster" .Values.redis.fullnameOverride }}
         port: {{ .Values.redis.service.port }}

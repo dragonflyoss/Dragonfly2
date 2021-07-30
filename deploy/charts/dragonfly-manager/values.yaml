@@ -231,7 +231,12 @@ mysql:
     username: dragonfly
     password: dragonfly
     database: manager
+  primary:
+    service:
+      port: 3306
 
 redis:
   enable: true
   password: dragonfly
+  service:
+    port: 6379

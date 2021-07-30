@@ -24,9 +24,9 @@ data:
       storagePattern: {{ .Values.cdn.config.base.storagePattern }}
       manager:
         addr: {{ template "dragonfly.manager.fullname" . }}:{{ .Values.manager.restPort }}
-        schedulerClusterID: {{ .Values.cdn.config.manager.cdnClusterID }}
+        schedulerClusterID: {{ .Values.cdn.config.base.manager.cdnClusterID }}
         keepAlive: 
-{{ toYaml .Values.cdn.config.manager.keepAlive | indent 10 }}
+{{ toYaml .Values.cdn.config.base.manager.keepAlive | indent 10 }}
       console: {{ .Values.cdn.config.base.console }}
 
     plugins:

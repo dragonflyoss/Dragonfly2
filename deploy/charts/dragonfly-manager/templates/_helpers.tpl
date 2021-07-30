@@ -51,6 +51,14 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- end -}}{
 
 {{/*
+Create a default fully qualified cdn name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+*/}}
+{{- define "dragonfly.manager.fullname" -}}
+{{ template "dragonfly.fullname" . }}-{{ .Values.manager.name }}
+{{- end -}}{
+
+{{/*
 Create a default fully qualified cdn's nginx name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
