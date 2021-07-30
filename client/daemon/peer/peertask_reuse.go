@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
+
 func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	request *FilePeerTaskRequest) (chan *FilePeerTaskProgress, bool) {
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
@@ -96,6 +98,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	progressCh <- pg
 
 	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
+	span.SetAttributes(config.AttributePeerTaskCost.Int64(cost))
 	return progressCh, true
 }
 

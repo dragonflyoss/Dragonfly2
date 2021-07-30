@@ -22,6 +22,8 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
+var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
+
 type KeepAlive interface {
 	Keep()
 	Alive(alive time.Duration) bool

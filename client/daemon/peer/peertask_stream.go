@@ -308,6 +308,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 						_ = pw.CloseWithError(err)
 						return
 					}
+					span.SetAttributes(config.AttributePieceSize.Int(int(wrote)))
 					s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
 					span.End()
 					desired++
@@ -351,6 +352,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 						_ = pw.CloseWithError(err)
 						return
 					}
+					span.SetAttributes(config.AttributePieceSize.Int(int(wrote)))
 					span.End()
 					s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
 					desired++

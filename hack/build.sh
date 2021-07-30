@@ -13,6 +13,7 @@ PKG=d7y.io/dragonfly/v2
 BUILD_IMAGE=golang:1.15.8
 GOPROXY=${GOPROXY:-}
 DATE=$(date "+%Y%m%d-%H:%M:%S")
+GOTAGS=${GOTAGS:-}
 
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}" || return
@@ -32,7 +33,7 @@ create-dirs() {
 build-local() {
     test -f "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1" && rm -f "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     cd "${BUILD_SOURCE_HOME}/cmd/$2" || return
-    go build -o "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
+    go build -tags="${GOTAGS}" -o="${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     chmod a+x "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     echo "BUILD: $2 in ${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
 }
@@ -95,7 +96,7 @@ main() {
     if [[ "1" == "${USE_DOCKER}" ]]; then
         echo "Begin to build with docker."
         case "${1-}" in
-        dfdaemon)
+        cdn)
             build-cdn-docker
             ;;
         dfget)
