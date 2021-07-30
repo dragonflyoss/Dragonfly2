@@ -253,8 +253,8 @@ type RedisConfig struct {
 }
 
 type TaskConfig struct {
-	GlobalWorkerNum    int          `yaml:"globalWorkerNum" mapstructure:"globalWorkerNum"`
-	SchedulerWorkerNum int          `yaml:"schedulerWorkerNum" mapstructure:"schedulerWorkerNum"`
-	LocalWorkerNum     int          `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
+	GlobalWorkerNum    uint         `yaml:"globalWorkerNum" mapstructure:"globalWorkerNum"`
+	SchedulerWorkerNum uint         `yaml:"schedulerWorkerNum" mapstructure:"schedulerWorkerNum"`
+	LocalWorkerNum     uint         `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
 	Redis              *RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
