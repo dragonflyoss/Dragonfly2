@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "dragonfly.manager.fullname" . }}
+  namespace: {{ template "dragonfly.namespace" . }}
+  labels:
+    app: {{ template "dragonfly.name" . }}
+    chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    component: "{{ $.Values.manager.name }}"
+    heritage: {{ $.Release.Service }}
+    release: {{ $.Release.Name }}
+{{- if .Values.manager.serviceAnnotations }}
+  annotations:
+{{ toYaml .Values.manager.serviceAnnotations | indent 4 }}
+{{- end }}
+spec:
+  ports:
+    - port: {{ .Values.manager.restPort }}
+      name: http-rest
+      protocol: TCP
+      targetPort: {{ .Values.manager.restPort }}
+    - port: {{ .Values.manager.grpcPort }}
+      name: http-grpc
+      protocol: TCP
+      targetPort: {{ .Values.manager.grpcPort }}
+  selector:
+    app: {{ template "dragonfly.manager.fullname" . }}
+    component: "{{ $.Values.manager.name }}"
+    release: {{ $.Release.Name }}
+  type: ClusterIP

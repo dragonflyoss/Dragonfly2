@@ -15,17 +15,10 @@ data:
       port: {{ .Values.scheduler.containerPort }}
     worker:
 {{ toYaml .Values.scheduler.config.worker | indent 6 }}
-    {{- if .Values.scheduler.config.staticCDN }}
     dynconfig:
-      cdnDirPath: /opt/dragonfly/scheduler-cdn
-    {{- end}}
-
----
-
-{{- if .Values.scheduler.config.staticCDN }}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: scheduler-static-cdn
-  namespace: {{ template "dragonfly.namespace" . }}
-{{- end}}
+{{ toYaml .Values.scheduler.config.dynconfig | indent 6 }}
+    manager:
+      addr: {{ template "dragonfly.manager.fullname" . }}:{{ .Values.manager.restPort }}
+      schedulerClusterID: {{ .Values.scheduler.config.manager.schedulerClusterID }}
+      keepAlive: 
+{{ toYaml .Values.scheduler.config.manager.keepAlive | indent 8 }}

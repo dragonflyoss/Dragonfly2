@@ -65,10 +65,6 @@ spec:
         volumeMounts:
         - name: config
           mountPath: "/etc/dragonfly"
-        {{- if .Values.scheduler.config.staticCDN }}
-        - name: cdn-config
-          mountPath: /opt/dragonfly/scheduler-cdn
-        {{- end}}
       volumes:
       - name: config
         configMap:
@@ -76,8 +72,3 @@ spec:
           items:
           - key: scheduler.yaml
             path: scheduler.yaml
-      {{- if .Values.scheduler.config.staticCDN }}
-      - name: cdn-config
-        configMap:
-          name: scheduler-static-cdn
-      {{- end}}

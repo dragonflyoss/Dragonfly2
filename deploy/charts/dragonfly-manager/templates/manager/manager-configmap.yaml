@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "dragonfly.manager.fullname" . }}
+  namespace: {{ template "dragonfly.namespace" . }}
+  labels:
+    app: {{ template "dragonfly.fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+data:
+  manager.yaml: |-
+    server:
+      rest: 
+        addr: :{{ .Values.manager.restPort }}
+      grpc:
+        port:
+          start: {{ .Values.manager.grpcPort }}
+          end: {{ .Values.manager.grpcPort }}
+    database:
+      mysql:
+        user: {{ .Values.mysql.auth.username }}
+        password: {{ .Values.mysql.auth.password }}
+        host: {{ .Values.mysql.fullname }}
+        port: {{ .Values.mysql.primary.service.port }}
+        dbname: {{ .Values.mysql.auth.database }}
+      redis:
+        password: {{ .Values.redis.password }}
+        host: {{ .Values.redis.fullname }}
+        port: {{ .Values.redis.service.port }}
