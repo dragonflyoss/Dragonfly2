@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -102,9 +103,10 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	}
 	req := &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
-			Url:      "http://localhost/test/data",
-			Filter:   "",
-			BizId:    "d7y-test",
+			Url: "http://localhost/test/data",
+			UrlMeta: &base.UrlMeta{
+				Tag: "d7y-test",
+			},
 			PeerId:   peerID,
 			PeerHost: &scheduler.PeerHost{},
 		},
@@ -212,9 +214,10 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	}
 	req := &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
-			Url:      "http://localhost/test/data",
-			Filter:   "",
-			BizId:    "d7y-test",
+			Url: "http://localhost/test/data",
+			UrlMeta: &base.UrlMeta{
+				Tag: "d7y-test",
+			},
 			PeerId:   peerID,
 			PeerHost: &scheduler.PeerHost{},
 		},

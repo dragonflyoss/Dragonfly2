@@ -119,11 +119,11 @@ func (s *SchedulerService) Stop() {
 	})
 }
 
-func (s *SchedulerService) GenerateTaskID(url string, filter string, meta *base.UrlMeta, bizID string, peerID string) (taskID string) {
+func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID string) (taskID string) {
 	if s.config.ABTest {
-		return idgen.TwinsTaskID(url, filter, meta, bizID, peerID)
+		return idgen.TwinsTaskID(url, meta, peerID)
 	}
-	return idgen.TaskID(url, filter, meta, bizID)
+	return idgen.TaskID(url, meta)
 }
 
 func (s *SchedulerService) ScheduleParent(peer *types.Peer) (parent *types.Peer, err error) {
