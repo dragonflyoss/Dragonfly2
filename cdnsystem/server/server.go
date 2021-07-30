@@ -110,7 +110,6 @@ func New(cfg *config.Config) (*Server, error) {
 		if err := s.register(context.Background()); err != nil {
 			return nil, err
 		}
-		logger.Info("cdn register to manager")
 	}
 
 	return s, nil
@@ -180,17 +179,14 @@ func (s *Server) register(ctx context.Context) error {
 	logger.Infof("update cdn %s to manager successfully", cdn.HostName)
 
 	cdnClusterID := s.config.Manager.CDNClusterID
-	if cdnClusterID != 0 {
-		if _, err := s.managerClient.AddCDNToCDNCluster(ctx, &manager.AddCDNToCDNClusterRequest{
-			CdnId:        cdn.Id,
-			CdnClusterId: cdnClusterID,
-		}); err != nil {
-			logger.Warnf("add cdn %s to cdn cluster %s failed %v", cdn.HostName, cdnClusterID, err)
-			return err
-		}
-		logger.Infof("add cdn %s to cdn cluster %s successfully", cdn.HostName, cdnClusterID)
+	if _, err := s.managerClient.AddCDNToCDNCluster(ctx, &manager.AddCDNToCDNClusterRequest{
+		CdnId:        cdn.Id,
+		CdnClusterId: cdnClusterID,
+	}); err != nil {
+		logger.Warnf("add cdn %s to cdn cluster %s failed %v", cdn.HostName, cdnClusterID, err)
+		return err
 	}
-
+	logger.Infof("add cdn %s to cdn cluster %s successfully", cdn.HostName, cdnClusterID)
 	return nil
 }
 

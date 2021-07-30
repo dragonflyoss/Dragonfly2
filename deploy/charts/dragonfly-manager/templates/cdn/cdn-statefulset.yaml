@@ -54,6 +54,12 @@ spec:
       {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.Values.cdn.priorityClassName) }}
       priorityClassName: {{ .Values.cdn.priorityClassName }}
       {{- end }}
+      initContainers:
+      - name: wait-for-manager
+        image: alioygur/wait-for:latest
+        args:
+          - "-it"
+          - {{ template "dragonfly.manager.fullname" . }}:{{ .Values.manager.restPort }}
       containers:
       - name: cdn
         image: "{{ .Values.cdn.image }}:{{ .Values.cdn.tag }}"
@@ -71,3 +77,13 @@ spec:
         - name: nginx-config
           mountPath: "/etc/nginx/nginx.conf"
           subPath: "nginx.conf"
+      volumes:
+      - name: config
+        configMap:
+          name: {{ template "dragonfly.cdn.fullname" . }}
+          items:
+          - key: cdn.yaml
+            path: cdn.yaml
+      - name: nginx-config
+        configMap:
+          name: {{ template "dragonfly.cdn.fullname" . }}

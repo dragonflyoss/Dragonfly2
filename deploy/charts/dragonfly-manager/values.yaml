@@ -15,7 +15,7 @@ scheduler:
   fullnameOverride: ""
   replicas: 3
   image: dragonflyoss/scheduler
-  tag: v0.1.0-beta
+  tag: v0.1.0
   pullPolicy: IfNotPresent
   resources:
     requests:
@@ -35,7 +35,6 @@ scheduler:
   containerPort: 8002
   service:
     type: ClusterIP
-    annotations: {}
     port: 8002
     targetPort: 8002
   config:
@@ -61,8 +60,8 @@ cdn:
   fullnameOverride: ""
   replicas: 3
   image: dragonflyoss/cdn
-  tag: v0.1.0-beta
-  pullPolicy: Always
+  tag: v0.1.0
+  pullPolicy: IfNotPresent
   resources:
     requests:
       cpu: "0"
@@ -79,6 +78,14 @@ cdn:
   statefulsetAnnotations: {}
   containerPort: 8003
   nginxContiainerPort: 8001
+  service:
+    type: ClusterIP
+    port: 8003
+    targetPort: 8003
+    extraPorts:
+      - name: http-nginx
+        port: 8001
+        targetPort: 8001
   config:
     base:
       systemReservedBandwidth: 20M
@@ -123,7 +130,7 @@ dfdaemon:
   nameOverride: ""
   fullnameOverride: ""
   image: dragonflyoss/dfdaemon
-  tag: v0.1.0-beta
+  tag: v0.1.0
   pullPolicy: IfNotPresent
   resources:
     requests:
@@ -202,17 +209,17 @@ manager:
   name: manager
   nameOverride: ""
   fullnameOverride: ""
-  replicas: 4
+  replicas: 3
   image: dragonflyoss/manager
-  tag: v0.1.0-beta
+  tag: v0.1.0
   pullPolicy: IfNotPresent
   resources:
     requests:
       cpu: "0"
       memory: "0"
     limits:
-      cpu: "4"
-      memory: "8Gi"
+      cpu: "2"
+      memory: "4Gi"
   priorityClassName: ""
   nodeSelector: {}
   terminationGracePeriodSeconds:

@@ -2,10 +2,10 @@
 
 ## Install
 
-Install with Helm 3:
+Install dragonfly-manager-chart with Helm 3:
 
 ```bash
-helm install dragonfly https://github.com/dragonfly/Dragonfly2/releases/download/v0.1.0-beta/dragonfly-chart.tgz
+helm install dragonfly https://github.com/dragonfly/Dragonfly2/releases/download/v0.1.0-beta/dragonfly-manager-chart.tgz
 ```
 
 ## Uninstall
@@ -30,7 +30,3 @@ For example:
 ```shell
 helm install --namespace dragonfly-system dragonfly https://...
 ```
-
-## Reference
-
-[https://github.com/openkruise/kruise/blob/master/charts/kruise/v0.9.0/README.md](https://github.com/openkruise/kruise/blob/master/charts/kruise/v0.9.0/README.md)

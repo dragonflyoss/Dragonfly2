@@ -53,6 +53,12 @@ spec:
       {{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1beta1") (.Values.scheduler.priorityClassName) }}
       priorityClassName: {{ .Values.scheduler.priorityClassName }}
       {{- end }}
+      initContainers:
+      - name: wait-for-manager
+        image: alioygur/wait-for:latest
+        args:
+          - "-it"
+          - {{ template "dragonfly.cdn.fullname" . }}-0:{{ .Values.cdn.nginxContiainerPort }}
       containers:
       - name: scheduler
         image: "{{ .Values.scheduler.image }}:{{ .Values.scheduler.tag }}"

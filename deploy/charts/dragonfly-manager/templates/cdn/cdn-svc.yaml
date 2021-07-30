@@ -1,0 +1,47 @@
+{{- $count := .Values.cdn.replicas | int }}
+{{- range $i, $x := until $count }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "dragonfly.cdn.fullname" $ }}-{{$i}}
+  namespace: {{ template "dragonfly.namespace" $ }}
+  labels:
+    app: {{ template "dragonfly.name" $ }}
+    chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    component: "{{ $.Values.cdn.name }}"
+    heritage: {{ $.Release.Service }}
+    release: {{ $.Release.Name }}
+{{- if $.serviceAnnotations }}
+  annotations:
+{{ toYaml $.Values.cdn.serviceAnnotations | indent 4 }}
+{{- end }}
+spec:
+  ports:
+    - port: {{$.Values.cdn.service.port}}
+      name: http
+      targetPort: {{ $.Values.cdn.service.targetPort }}
+      {{- if (and (eq $.Values.cdn.service.type "NodePort") (not (empty $.Values.cdn.service.nodePort))) }}
+      nodePort: {{ $.Values.cdn.service.nodePort }}
+      {{- end }}
+{{- range $index, $port := $.Values.cdn.service.extraPorts }}
+    - port: {{ $port.port }}
+      name: {{ $port.name }}
+      targetPort: {{ $port.port }}
+{{- end }}
+  selector:
+    app: {{ template "dragonfly.cdn.fullname" $ }}
+    component: "{{ $.Values.cdn.name }}"
+    release: {{ $.Release.Name }}
+    statefulset.kubernetes.io/pod-name: {{ template "dragonfly.cdn.fullname" $ }}-{{ $i }}
+  type: {{$.Values.cdn.service.type}}
+  {{- if eq $.Values.cdn.service.type "LoadBalancer" }}
+{{- if $.Values.cdn.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+{{ toYaml $.Values.cdn.service.loadBalancerSourceRanges | indent 4 }}
+{{- end }}
+  {{- if $.Values.cdn.service.loadBalancerIP }}
+  loadBalancerIP: {{$.Values.scheduler.serivice.loadBalancerIP }}
+  {{- end }}
+{{- end }}
+---
+{{- end }}
