@@ -180,6 +180,7 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 		}
 		log.Debugf("copied tasks data %d bytes to %s", n, req.Output)
 		tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
+		tiny.span.SetAttributes(config.AttributePeerTaskSize.Int(n))
 		return nil, tiny, nil
 	}
 	pt.SetCallback(&filePeerTaskCallback{

@@ -7,6 +7,7 @@ RUN apk --no-cache add bash make gcc libc-dev git
 COPY . /go/src/d7y.io/dragonfly/v2
 
 ARG GOPROXY
+ARG GOTAGS
 
 RUN make build-dfget && make install-dfget
 
