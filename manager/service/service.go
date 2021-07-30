@@ -62,7 +62,7 @@ type REST interface {
 	GetPermissionGroups(g *gin.Engine) types.PermissionGroups
 	CreatePermission(json types.PolicyRequest) error
 	DestroyPermission(json types.PolicyRequest) error
-	GetRolesForUser(subject string) ([]string, error)
+	GetRolesForUser(subject string) ([]map[string]string, error)
 	HasRoleForUser(subject, object, action string) (bool, error)
 }
 

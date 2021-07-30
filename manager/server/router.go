@@ -100,7 +100,7 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)
 
-	// auto init role check roles
+	// Auto init roles and check roles
 	err = rbacbase.InitRole(enforcer, r)
 	if err != nil {
 		return nil, err

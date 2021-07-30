@@ -32,7 +32,7 @@ func (h *Handlers) GetPermissionGroups(g *gin.Engine) func(ctx *gin.Context) {
 // @Success 200 {object} RoutesInfo
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /permission/roles/{userName} [get]
+// @Router /permission/roles/{subject} [get]
 
 func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 	var params types.UserRolesParams

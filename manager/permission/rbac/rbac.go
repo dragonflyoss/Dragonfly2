@@ -2,6 +2,7 @@ package rbac
 
 import (
 	"errors"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -127,12 +128,11 @@ func SystemRoles(g *gin.Engine) []string {
 }
 
 func HTTPMethodToAction(method string) string {
-	action := ""
-	switch strings.ToUpper(method) {
-	case "GET", "HEAD", "OPTIONS":
-		action = "read"
-	case "POST", "PUT", "PATCH", "DELETE":
+	action := "read"
+
+	if method == http.MethodDelete || method == http.MethodPatch || method == http.MethodPut || method == http.MethodPost {
 		action = "*"
 	}
+
 	return action
 }
