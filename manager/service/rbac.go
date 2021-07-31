@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"strings"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -19,33 +20,13 @@ func (s *rest) GetPermissionGroups(g *gin.Engine) types.PermissionGroups {
 }
 
 func (s *rest) CreatePermission(json types.PolicyRequest) error {
-	if json.Object == "admin" {
-		res, err := s.enforcer.AddRoleForUser(json.Subject, "admin")
-		if err != nil {
-			return err
-		}
-		if !res {
-			logger.Infof("The role %s of %s already exist. skip!", "admin", json.Subject)
-		}
-		return nil
-	}
-
-	wholePermissionRole := rbac.RoleName(json.Object, "write")
-	res, err := s.enforcer.HasRoleForUser(json.Subject, wholePermissionRole)
+	roleName := rbac.RoleName(json.Object, json.Action)
+	res, err := s.enforcer.AddRoleForUser(json.Subject, roleName)
 	if err != nil {
 		return err
 	}
 	if !res {
-		roleName := rbac.RoleName(json.Object, json.Action)
-		res, err := s.enforcer.AddRoleForUser(json.Subject, roleName)
-		if err != nil {
-			return err
-		}
-		if !res {
-			logger.Infof("The role %s of %s already exist. skip!", roleName, json.Subject)
-		}
-	} else {
-		logger.Infof("The user %s already has whole permission. skip!", json.Subject)
+		logger.Infof("The role %s of %s already exist. skip!", roleName, json.Subject)
 	}
 	return nil
 }
@@ -67,7 +48,7 @@ func (s *rest) GetRolesForUser(subject string) ([]map[string]string, error) {
 		} else {
 			roleInfo := strings.Split(role, ":")
 			action := policyToAction[roleInfo[1]]
-			result = append(result, map[string]string{"object": role, "description": role, "action": action})
+			result = append(result, map[string]string{"object": roleInfo[0], "description": fmt.Sprintf("%s for %s", action, roleInfo[0]), "action": action})
 		}
 	}
 

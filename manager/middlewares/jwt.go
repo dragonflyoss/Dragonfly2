@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"net/http"
 	"time"
 
 	"d7y.io/dragonfly/v2/manager/model"
@@ -25,8 +26,16 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
+			userNmae, ok := claims[identityKey]
+			if !ok {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"message": "Unavailable token: require username info",
+				})
+				c.Abort()
+				return nil
+			}
 			u := &user{
-				userName: claims[identityKey].(string),
+				userName: userNmae.(string),
 			}
 			c.Set("userName", u.userName)
 			return u

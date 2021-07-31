@@ -86,6 +86,9 @@ func GetAPIGroupName(path string) (string, error) {
 }
 
 func RoleName(object, action string) string {
+	if object == "admin" {
+		return "admin"
+	}
 	roleName := ""
 	switch action {
 	case "read":
