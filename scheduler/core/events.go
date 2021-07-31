@@ -234,7 +234,6 @@ func (e peerDownloadSuccessEvent) apply(s *state) {
 	}
 	if e.peer.PacketChan != nil {
 		close(e.peer.PacketChan)
-		e.peer.PacketChan = nil
 	}
 }
 
@@ -269,7 +268,6 @@ func (e peerDownloadFailEvent) apply(s *state) {
 	})
 	if e.peer.PacketChan != nil {
 		close(e.peer.PacketChan)
-		e.peer.PacketChan = nil
 	}
 	s.peerManager.Delete(e.peer.PeerID)
 }
