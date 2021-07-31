@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -118,7 +117,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
 	peerPacketChan := make(chan *scheduler.PeerPacket, 1)
-	var once sync.Once
+	var initialized bool
 	g, ctx := errgroup.WithContext(context.Background())
 	stopCh := make(chan struct{})
 	g.Go(func() error {
@@ -143,10 +142,11 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 				if !ok {
 					return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
 				}
-				once.Do(func() {
+				if !initialized {
 					peer.BindSendChannel(peerPacketChan)
 					peer.SetStatus(types.PeerStatusRunning)
-				})
+					initialized = true
+				}
 				if err := s.service.HandlePieceResult(peer, pieceResult); err != nil {
 					logger.Errorf("handle piece result %v fail: %v", pieceResult, err)
 				}

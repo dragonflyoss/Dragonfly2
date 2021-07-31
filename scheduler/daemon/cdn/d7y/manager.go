@@ -114,7 +114,7 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task) error {
 }
 
 func (cm *manager) receivePiece(task *types.Task, stream *client.PieceSeedStream) error {
-	var once sync.Once
+	var initialized bool
 	var cdnPeer *types.Peer
 	for {
 		piece, err := stream.Recv()
@@ -138,9 +138,10 @@ func (cm *manager) receivePiece(task *types.Task, stream *client.PieceSeedStream
 			return errors.Wrapf(ErrCDNInvokeFail, "receive piece from cdn: %v", err)
 		}
 		if piece != nil {
-			once.Do(func() {
+			if !initialized {
 				cdnPeer, err = cm.initCdnPeer(task, piece)
-			})
+				initialized = true
+			}
 			if err != nil || cdnPeer == nil {
 				return err
 			}

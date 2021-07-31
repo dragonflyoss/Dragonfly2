@@ -229,7 +229,7 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 	if len(ringNodes) == 0 {
 		return nil, dferrors.ErrNoCandidateNode
 	}
-	candidateNodes := make([]string, 0, 0)
+	candidateNodes := make([]string, 0)
 	for _, ringNode := range ringNodes {
 		candidate := true
 		for _, exclusiveNode := range exclusiveNodes {
