@@ -32,6 +32,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
+var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
+
 var (
 	// layerReg the regex to determine if it is an image download
 	layerReg = regexp.MustCompile("^.+/blobs/sha256.*$")
