@@ -97,7 +97,7 @@ func (h *Handlers) CreatePermission(ctx *gin.Context) {
 		ctx.Error(err)
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "create permission successfully"})
+	ctx.Status(http.StatusOK)
 }
 
 // @Summary Destroy Permission
@@ -121,5 +121,5 @@ func (h *Handlers) DestroyPermission(ctx *gin.Context) {
 		ctx.Error(err)
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "destroy permission successfully"})
+	ctx.Status(http.StatusOK)
 }
