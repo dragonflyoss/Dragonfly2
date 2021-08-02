@@ -19,7 +19,6 @@ package client
 import (
 	"context"
 	"io"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -56,7 +55,7 @@ func newPeerPacketStream(ctx context.Context, sc *schedulerClient, hashKey strin
 
 	pps := &peerPacketStream{
 		sc:      sc,
-		ctx:     ctx,
+		ctx:     context.Background(),
 		hashKey: hashKey,
 		ptr:     ptr,
 		opts:    opts,
@@ -126,9 +125,9 @@ func (pps *peerPacketStream) retryRecv(cause error) (*scheduler.PeerPacket, erro
 		if err != nil {
 			return nil, err
 		}
-		timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		_, err = client.RegisterPeerTask(timeCtx, pps.ptr)
+		//timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		//defer cancel()
+		_, err = client.RegisterPeerTask(pps.ctx, pps.ptr)
 		if err != nil {
 			return nil, err
 		}
@@ -198,9 +197,9 @@ func (pps *peerPacketStream) replaceClient(cause error) error {
 		if err != nil {
 			return nil, err
 		}
-		timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		_, err = client.RegisterPeerTask(timeCtx, pps.ptr)
+		//timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		//defer cancel()
+		_, err = client.RegisterPeerTask(pps.ctx, pps.ptr)
 		if err != nil {
 			return nil, err
 		}

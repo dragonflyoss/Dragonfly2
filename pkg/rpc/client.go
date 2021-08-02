@@ -214,7 +214,10 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 		}
 		if selected {
 			if client, ok := conn.node2ClientMap.Load(node); ok {
-				return client.(*candidateClient), nil
+				return &candidateClient{
+					node: candidateNode,
+					Ref:  client,
+				}, nil
 			}
 		}
 	}
@@ -226,7 +229,7 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 	if len(ringNodes) == 0 {
 		return nil, dferrors.ErrNoCandidateNode
 	}
-	candidateNodes := make([]string, 0, 0)
+	candidateNodes := make([]string, 0)
 	for _, ringNode := range ringNodes {
 		candidate := true
 		for _, exclusiveNode := range exclusiveNodes {
