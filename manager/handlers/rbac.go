@@ -49,8 +49,8 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 
 }
 
-// @Summary Judge User Roles
-// @Description Judge User Roles
+// @Summary Judge User Role
+// @Description Judge User Role
 // @Tags permission
 // @Produce json
 // @Success 200 {object}
