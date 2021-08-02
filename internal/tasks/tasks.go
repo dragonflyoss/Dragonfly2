@@ -25,8 +25,6 @@ type Config struct {
 	BackendDB int
 }
 
-var tasks = map[string]interface{}{}
-
 type Tasks struct {
 	Server *machinery.Server
 	Queue  Queue
@@ -45,10 +43,6 @@ func New(cfg *Config, queue Queue) (*Tasks, error) {
 
 	server, err := machinery.NewServer(cnf)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := server.RegisterTasks(tasks); err != nil {
 		return nil, err
 	}
 
