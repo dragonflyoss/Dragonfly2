@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -32,6 +33,8 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type SchedulerServer struct {
@@ -117,16 +120,19 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 
 func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
 	peerPacketChan := make(chan *scheduler.PeerPacket, 1)
+	var peer *types.Peer
 	var initialized bool
-	g, ctx := errgroup.WithContext(context.Background())
-	stopCh := make(chan struct{})
+	ctx, cancel := context.WithCancel(stream.Context())
+	g, ctx := errgroup.WithContext(ctx)
+	var once sync.Once
 	g.Go(func() error {
+		defer func() {
+			cancel()
+			once.Do(peer.UnBindSendChannel)
+		}()
 		for {
-			var peer *types.Peer
 			select {
 			case <-ctx.Done():
-				return nil
-			case <-stopCh:
 				return nil
 			default:
 				pieceResult, err := stream.Recv()
@@ -134,7 +140,13 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 					return nil
 				}
 				if err != nil {
-					return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error")
+					if status.Code(err) == codes.Canceled {
+						if peer != nil {
+							logger.Info("peer %s canceled", peer.PeerID)
+							return nil
+						}
+					}
+					return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error: %v", err)
 				}
 				logger.Debugf("report piece result %v of peer %s", pieceResult, pieceResult.SrcPid)
 				var ok bool
@@ -155,21 +167,22 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	})
 
 	g.Go(func() error {
+		defer func() {
+			cancel()
+			once.Do(peer.UnBindSendChannel)
+		}()
 		for {
 			select {
 			case <-ctx.Done():
 				return nil
-			case <-stopCh:
-				return nil
 			case pp, ok := <-peerPacketChan:
 				if !ok {
-					close(stopCh)
 					return nil
 				}
 				err := stream.Send(pp)
 				if err != nil {
 					logger.Errorf("send peer %s schedule packet %v failed: %v", pp.SrcPid, pp, err)
-					return err
+					return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error: %v", err)
 				}
 			}
 		}

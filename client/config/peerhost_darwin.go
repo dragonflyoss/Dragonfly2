@@ -79,11 +79,8 @@ var peerHostConfig = DaemonOption{
 				Insecure: true,
 			},
 			TCPListen: &TCPListenOption{
-				Listen: net.IPv4zero.String(),
-				PortRange: TCPListenPortRange{
-					Start: 65000,
-					End:   65535,
-				},
+				Listen:    net.IPv4zero.String(),
+				PortRange: TCPListenPortRange{},
 			},
 		},
 	},
@@ -110,8 +107,11 @@ var peerHostConfig = DaemonOption{
 				Insecure: true,
 			},
 			TCPListen: &TCPListenOption{
-				Listen:    net.IPv4zero.String(),
-				PortRange: TCPListenPortRange{},
+				Listen: net.IPv4zero.String(),
+				PortRange: TCPListenPortRange{
+					65001,
+					65001,
+				},
 			},
 		},
 	},
