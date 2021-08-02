@@ -95,7 +95,7 @@ func (t *tasks) Serve() error {
 	g := errgroup.Group{}
 	g.Go(func() error {
 		logger.Debugf("ready to launch %d worker(s) on global queue", t.cfg.GlobalWorkerNum)
-		err := t.globalTasks.LaunchWorker("global_worker", t.cfg.GlobalWorkerNum)
+		err := t.globalTasks.LaunchWorker("global_worker", int(t.cfg.GlobalWorkerNum))
 		if err != nil {
 			logger.Errorf("global queue worker error: %v", err)
 		}
@@ -104,7 +104,7 @@ func (t *tasks) Serve() error {
 
 	g.Go(func() error {
 		logger.Debugf("ready to launch %d worker(s) on scheduler queue", t.cfg.SchedulerWorkerNum)
-		err := t.schedulerTasks.LaunchWorker("scheduler_worker", t.cfg.SchedulerWorkerNum)
+		err := t.schedulerTasks.LaunchWorker("scheduler_worker", int(t.cfg.SchedulerWorkerNum))
 		if err != nil {
 			logger.Errorf("scheduler queue worker error: %v", err)
 		}
@@ -113,7 +113,7 @@ func (t *tasks) Serve() error {
 
 	g.Go(func() error {
 		logger.Debugf("ready to launch %d worker(s) on local queue", t.cfg.LocalWorkerNum)
-		err := t.localTasks.LaunchWorker("local_worker", t.cfg.LocalWorkerNum)
+		err := t.localTasks.LaunchWorker("local_worker", int(t.cfg.LocalWorkerNum))
 		if err != nil {
 			logger.Errorf("local queue worker error: %v", err)
 		}
@@ -141,7 +141,7 @@ func (t *tasks) preheat(req string) error {
 		Filter: request.Filter,
 	}
 
-	//TODO(@zzy987) CDN only support sha256 now.
+	//TODO(@zzy987) CDN don't support sha256
 	if strings.HasPrefix(request.Digest, "md5") {
 		meta.Digest = request.Digest
 	}
@@ -160,7 +160,11 @@ func (t *tasks) preheat(req string) error {
 		return dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
 	}
 
-	//TODO(@zzy987) check better ways to get result
+	return getPreheatResult(task)
+}
+
+//TODO(@zzy987) check better ways to get result
+func getPreheatResult(task *types.Task) error {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
