@@ -129,7 +129,7 @@ loop:
 }
 
 func debug() {
-	debugAddr := fmt.Sprintf("%s:%d", iputils.HostIP, 18070)
+	debugAddr := fmt.Sprintf("%s:%d", iputils.HostIP, 18066)
 	viewer.SetConfiguration(viewer.WithAddr(debugAddr))
 	statsview.New().Start()
 }
