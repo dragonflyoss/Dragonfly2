@@ -33,4 +33,4 @@ helm install --namespace dragonfly-system dragonfly https://...
 
 ## Reference
 
-[https://github.com/openkruise/kruise/blob/master/charts/kruise/v0.9.0/README.md](https://github.com/openkruise/kruise/blob/master/charts/kruise/v0.9.0/README.md)
+[https://github.com/dragonflyoss/Dragonfly2/blob/main/deploy/charts/dragonfly/README.md](https://github.com/dragonflyoss/Dragonfly2/blob/main/deploy/charts/dragonfly/README.md)
