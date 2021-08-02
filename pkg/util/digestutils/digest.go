@@ -18,6 +18,7 @@ package digestutils
 
 import (
 	"bufio"
+	"crypto"
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
@@ -29,6 +30,19 @@ import (
 	"d7y.io/dragonfly/v2/internal/constants"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+)
+
+const (
+	NO     = ""
+	MD5    = "md5"
+	SHA256 = "sha256"
+)
+
+var (
+	Algorithms = map[string]crypto.Hash{
+		SHA256: crypto.SHA256,
+		MD5:    crypto.MD5,
+	}
 )
 
 func Sha256(values ...string) string {

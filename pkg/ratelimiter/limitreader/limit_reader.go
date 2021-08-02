@@ -18,6 +18,8 @@ package limitreader
 
 import (
 	"crypto/md5"
+	"crypto/sha256"
+	"fmt"
 	"hash"
 	"io"
 
@@ -25,25 +27,36 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
+const (
+	NO     = ""
+	MD5    = "md5"
+	SHA256 = "sha256"
+)
+
 // NewLimitReader creates a LimitReader.
 // src: reader
 // rate: bytes/second
-func NewLimitReader(src io.Reader, rate int64, calculateMd5 bool) *LimitReader {
-	return NewLimitReaderWithLimiter(newRateLimiterWithDefaultWindow(rate), src, calculateMd5)
+func NewLimitReader(src io.Reader, rate int64, digestType string) *LimitReader {
+	return NewLimitReaderWithLimiter(newRateLimiterWithDefaultWindow(rate), src, digestType)
 }
 
 // NewLimitReaderWithLimiter creates LimitReader with a rateLimiter.
 // src: reader
 // rate: bytes/second
-func NewLimitReaderWithLimiter(rl *ratelimiter.RateLimiter, src io.Reader, calculateMd5 bool) *LimitReader {
-	var md5sum hash.Hash
-	if calculateMd5 {
-		md5sum = md5.New()
+func NewLimitReaderWithLimiter(rl *ratelimiter.RateLimiter, src io.Reader, digestType string) *LimitReader {
+	var digest hash.Hash
+	switch digestType {
+	case MD5:
+		digest = md5.New()
+	case SHA256:
+		digest = sha256.New()
+	default:
 	}
 	return &LimitReader{
-		Src:     src,
-		Limiter: rl,
-		md5sum:  md5sum,
+		Src:        src,
+		Limiter:    rl,
+		digest:     digest,
+		digestType: digestType,
 	}
 }
 
@@ -59,9 +72,10 @@ func NewLimitReaderWithMD5Sum(src io.Reader, rate int64, md5sum hash.Hash) *Limi
 // rate: bytes/second
 func NewLimitReaderWithLimiterAndMD5Sum(src io.Reader, rl *ratelimiter.RateLimiter, md5sum hash.Hash) *LimitReader {
 	return &LimitReader{
-		Src:     src,
-		Limiter: rl,
-		md5sum:  md5sum,
+		Src:        src,
+		Limiter:    rl,
+		digest:     md5sum,
+		digestType: MD5,
 	}
 }
 
@@ -71,9 +85,10 @@ func newRateLimiterWithDefaultWindow(rate int64) *ratelimiter.RateLimiter {
 
 // LimitReader reads stream with RateLimiter.
 type LimitReader struct {
-	Src     io.Reader
-	Limiter *ratelimiter.RateLimiter
-	md5sum  hash.Hash
+	Src        io.Reader
+	Limiter    *ratelimiter.RateLimiter
+	digest     hash.Hash
+	digestType string
 }
 
 func (lr *LimitReader) Read(p []byte) (n int, err error) {
@@ -82,8 +97,8 @@ func (lr *LimitReader) Read(p []byte) (n int, err error) {
 		return n, e
 	}
 	if n > 0 {
-		if lr.md5sum != nil {
-			lr.md5sum.Write(p[:n])
+		if lr.digest != nil {
+			lr.digest.Write(p[:n])
 		}
 		lr.Limiter.AcquireBlocking(int64(n))
 	}
@@ -92,8 +107,28 @@ func (lr *LimitReader) Read(p []byte) (n int, err error) {
 
 // Md5 calculates the md5 of all contents read.
 func (lr *LimitReader) Md5() string {
-	if lr.md5sum != nil {
-		return digestutils.ToHashString(lr.md5sum)
+	if lr.digest != nil {
+		return digestutils.ToHashString(lr.digest)
+	}
+	return ""
+}
+
+// NewLimitReaderWithLimiterAndDigest creates LimitReader with rateLimiter and digest.
+// src: reader
+// rate: bytes/second
+func NewLimitReaderWithLimiterAndDigest(src io.Reader, rl *ratelimiter.RateLimiter, digest hash.Hash, digestType string) *LimitReader {
+	return &LimitReader{
+		Src:        src,
+		Limiter:    rl,
+		digest:     digest,
+		digestType: digestType,
+	}
+}
+
+// Digest calculates the digest of all contents read, return value is like <algo>:<hex_value>
+func (lr *LimitReader) Digest() string {
+	if lr.digest != nil {
+		return fmt.Sprintf("%s:%s", lr.digestType, digestutils.ToHashString(lr.digest))
 	}
 	return ""
 }

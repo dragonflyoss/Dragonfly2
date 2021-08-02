@@ -119,8 +119,8 @@ func (mm *cacheDataManager) updateStatusAndResult(taskID string, metaData *stora
 		if metaData.TotalPieceCount > 0 {
 			originMetaData.TotalPieceCount = metaData.TotalPieceCount
 		}
-		if !stringutils.IsBlank(metaData.SourceRealMd5) {
-			originMetaData.SourceRealMd5 = metaData.SourceRealMd5
+		if !stringutils.IsBlank(metaData.SourceRealDigest) {
+			originMetaData.SourceRealDigest = metaData.SourceRealDigest
 		}
 		if !stringutils.IsBlank(metaData.PieceMd5Sign) {
 			originMetaData.PieceMd5Sign = metaData.PieceMd5Sign

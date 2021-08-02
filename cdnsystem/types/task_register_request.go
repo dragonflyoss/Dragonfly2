@@ -20,7 +20,7 @@ package types
 type TaskRegisterRequest struct {
 	URL    string            `json:"rawURL,omitempty"`
 	TaskID string            `json:"taskId,omitempty"`
-	Md5    string            `json:"md5,omitempty"`
+	Digest string            `json:"digest,omitempty"`
 	Filter []string          `json:"filter,omitempty"`
 	Header map[string]string `json:"header,omitempty"`
 }

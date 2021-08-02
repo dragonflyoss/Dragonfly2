@@ -32,6 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -60,8 +61,14 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 	header := make(map[string]string)
 	if meta != nil {
 		if !stringutils.IsBlank(meta.Digest) {
-			header["md5"] = meta.Digest
+			digest := digestutils.Parse(meta.Digest)
+			if _, ok := digestutils.Algorithms[digest[0]]; ok == true {
+				header["digest"] = meta.Digest
+			}
 		}
+		//if _, err := digest.Parse(meta.Digest); err == nil || err == digest.ErrDigestUnsupported {
+		//	header["digest"] = meta.Digest
+		//}
 		if !stringutils.IsBlank(meta.Range) {
 			header["range"] = meta.Range
 		}
@@ -72,7 +79,7 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 	return &types.TaskRegisterRequest{
 		Header: header,
 		URL:    req.Url,
-		Md5:    header["md5"],
+		Digest: header["digest"],
 		TaskID: req.TaskId,
 		Filter: strings.Split(req.UrlMeta.Filter, "&"),
 	}, nil

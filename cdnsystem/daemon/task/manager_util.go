@@ -62,7 +62,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	newTask := &types.SeedTask{
 		TaskID:           taskID,
 		Header:           request.Header,
-		RequestMd5:       request.Md5,
+		RequestDigest:    request.Digest,
 		URL:              request.URL,
 		TaskURL:          taskURL,
 		CdnStatus:        types.TaskInfoCdnStatusWaiting,
@@ -153,8 +153,8 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 		task.CdnFileLength = updateTaskInfo.CdnFileLength
 	}
 
-	if !stringutils.IsBlank(updateTaskInfo.SourceRealMd5) {
-		task.SourceRealMd5 = updateTaskInfo.SourceRealMd5
+	if !stringutils.IsBlank(updateTaskInfo.SourceRealDigest) {
+		task.SourceRealDigest = updateTaskInfo.SourceRealDigest
 	}
 
 	if !stringutils.IsBlank(updateTaskInfo.PieceMd5Sign) {
@@ -181,14 +181,14 @@ func isSameTask(task1, task2 *types.SeedTask) bool {
 		return false
 	}
 
-	if !stringutils.IsBlank(task1.RequestMd5) && !stringutils.IsBlank(task2.RequestMd5) {
-		if task1.RequestMd5 != task2.RequestMd5 {
+	if !stringutils.IsBlank(task1.RequestDigest) && !stringutils.IsBlank(task2.RequestDigest) {
+		if task1.RequestDigest != task2.RequestDigest {
 			return false
 		}
 	}
 
-	if !stringutils.IsBlank(task1.RequestMd5) && !stringutils.IsBlank(task2.SourceRealMd5) {
-		return task1.SourceRealMd5 == task2.RequestMd5
+	if !stringutils.IsBlank(task1.RequestDigest) && !stringutils.IsBlank(task2.SourceRealDigest) {
+		return task1.SourceRealDigest == task2.RequestDigest
 	}
 
 	return true
