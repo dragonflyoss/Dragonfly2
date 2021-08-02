@@ -24,6 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
+	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -49,6 +50,10 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	enforcer, err := rbac.NewEnforcer(db.DB)
+	if err != nil {
+		return nil, err
+	}
 
 	// Initialize cache
 	cache := cache.New(cfg)
@@ -57,13 +62,13 @@ func New(cfg *config.Config) (*Server, error) {
 	searcher := searcher.New()
 
 	// Initialize REST service
-	restService := service.NewREST(db, cache)
+	restService := service.NewREST(db, cache, enforcer)
 
 	// Initialize GRPC service
 	grpcService := service.NewGRPC(db, cache, searcher)
 
 	// Initialize router
-	router, err := initRouter(cfg.Verbose, restService)
+	router, err := initRouter(cfg.Verbose, restService, enforcer)
 	if err != nil {
 		return nil, err
 	}

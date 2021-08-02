@@ -5,6 +5,8 @@ import (
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+	"github.com/casbin/casbin/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
@@ -56,19 +58,27 @@ type REST interface {
 
 	SignIn(json types.SignInRequest) (*model.User, error)
 	SignUp(json types.SignUpRequest) (*model.User, error)
+
+	GetPermissionGroups(g *gin.Engine) types.PermissionGroups
+	CreatePermission(json types.PolicyRequest) error
+	DestroyPermission(json types.PolicyRequest) error
+	GetRolesForUser(subject string) ([]map[string]string, error)
+	HasRoleForUser(subject, object, action string) (bool, error)
 }
 
 type rest struct {
-	db    *gorm.DB
-	rdb   *redis.Client
-	cache *cache.Cache
+	db       *gorm.DB
+	rdb      *redis.Client
+	cache    *cache.Cache
+	enforcer *casbin.Enforcer
 }
 
 // NewREST returns a new REST instence
-func NewREST(database *database.Database, cache *cache.Cache) REST {
+func NewREST(database *database.Database, cache *cache.Cache, enforcer *casbin.Enforcer) REST {
 	return &rest{
-		db:    database.DB,
-		rdb:   database.RDB,
-		cache: cache,
+		db:       database.DB,
+		rdb:      database.RDB,
+		cache:    cache,
+		enforcer: enforcer,
 	}
 }

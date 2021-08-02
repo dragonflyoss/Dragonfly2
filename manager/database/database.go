@@ -6,6 +6,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
 	"github.com/go-redis/redis/v8"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -74,7 +75,9 @@ func migrate(db *gorm.DB) error {
 
 func seed(db *gorm.DB) error {
 	var cdnClusterCount int64
-	db.Model(model.CDNCluster{}).Count(&cdnClusterCount)
+	if err := db.Model(model.CDNCluster{}).Count(&cdnClusterCount).Error; err != nil {
+		return err
+	}
 	if cdnClusterCount <= 0 {
 		if err := db.Create(&model.CDNCluster{
 			Name:   "cdn-cluster-1",
@@ -84,8 +87,30 @@ func seed(db *gorm.DB) error {
 		}
 	}
 
+	var adminUserCount int64
+	var adminUserName = "admin"
+	if err := db.Model(model.User{}).Where("name = ?", adminUserName).Count(&adminUserCount).Error; err != nil {
+		return err
+	}
+	if adminUserCount <= 0 {
+		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte("Dragonfly2"), bcrypt.MinCost)
+		if err != nil {
+			return err
+		}
+		if err := db.Create(&model.User{
+			EncryptedPassword: string(encryptedPasswordBytes),
+			Name:              adminUserName,
+			Email:             fmt.Sprintf("%s@Dragonfly2.com", adminUserName),
+			State:             model.UserStateEnabled,
+		}).Error; err != nil {
+			return err
+		}
+	}
+
 	var schedulerClusterCount int64
-	db.Model(model.SchedulerCluster{}).Count(&schedulerClusterCount)
+	if err := db.Model(model.SchedulerCluster{}).Count(&schedulerClusterCount).Error; err != nil {
+		return err
+	}
 	if schedulerClusterCount <= 0 {
 		if err := db.Create(&model.SchedulerCluster{
 			Name:         "scheduler-cluster-1",

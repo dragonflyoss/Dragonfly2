@@ -3,12 +3,14 @@ package server
 import (
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
+	rbacbase "d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/service"
+	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )
 
-func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
+func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
 	if !verbose {
 		gin.SetMode(gin.ReleaseMode)
@@ -26,6 +28,7 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	r.Use(gin.Recovery())
 	r.Use(middlewares.Error())
 
+	rbac := middlewares.RBAC(enforcer)
 	jwt, err := middlewares.Jwt(service)
 	if err != nil {
 		return nil, err
@@ -39,7 +42,7 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	ai.POST("/signin", jwt.LoginHandler)
 	ai.POST("/signout", jwt.LogoutHandler)
 	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/signup", h.SignUp)
+	ai.POST("/signup", jwt.MiddlewareFunc(), rbac, h.SignUp)
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")
@@ -76,6 +79,14 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	ci.GET(":id", h.GetCDN)
 	ci.GET("", h.GetCDNs)
 
+	// Permission
+	pn := apiv1.Group("/permission", jwt.MiddlewareFunc(), rbac)
+	pn.POST("", h.CreatePermission)
+	pn.DELETE("", h.DestroyPermission)
+	pn.GET("/groups", h.GetPermissionGroups(r))
+	pn.GET("/roles/:subject", h.GetRolesForUser)
+	pn.GET("/:subject/:object/:action", h.HasRoleForUser)
+
 	// Security Group
 	sg := apiv1.Group("/security-groups")
 	sg.POST("", h.CreateSecurityGroup)
@@ -88,5 +99,12 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)
+
+	// Auto init roles and check roles
+	err = rbacbase.InitRole(enforcer, r)
+	if err != nil {
+		return nil, err
+	}
+
 	return r, nil
 }
