@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	"d7y.io/dragonfly/v2/scheduler/tasks"
+
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
@@ -46,6 +48,7 @@ type Server struct {
 	dynconfigConn    *grpc.ClientConn
 	running          bool
 	dynConfig        config.DynconfigInterface
+	task             tasks.Tasks
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -99,8 +102,15 @@ func New(cfg *config.Config) (*Server, error) {
 	s.schedulerService = schedulerService
 	// Initialize scheduler service
 	s.schedulerServer, err = service.NewSchedulerServer(schedulerService)
+
 	if err != nil {
 		return nil, err
+	}
+	if cfg.Task.Redis.Host != "" {
+		s.task, err = tasks.New(context.Background(), cfg.Task, iputils.HostName, s.schedulerService)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return s, nil
@@ -115,8 +125,12 @@ func (s *Server) Serve() error {
 	s.dynConfig.Serve()
 	s.schedulerService.Serve()
 
+	if s.task != nil {
+		go s.task.Serve()
+	}
+
 	if s.managerClient != nil {
-		retry.Run(ctx, func() (interface{}, bool, error) {
+		go retry.Run(ctx, func() (interface{}, bool, error) {
 			if err := s.keepAlive(ctx); err != nil {
 				logger.Errorf("keepalive to manager failed %v", err)
 				return nil, false, err
