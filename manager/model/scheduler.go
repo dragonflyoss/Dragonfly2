@@ -18,7 +18,7 @@ type Scheduler struct {
 	NetConfig          datatypes.JSONMap `gorm:"column:net_config" json:"net_config"`
 	IP                 string            `gorm:"column:ip;size:256;not null" json:"ip"`
 	Port               int32             `gorm:"column:port;not null" json:"port"`
-	Status             string            `gorm:"type:enum('active', 'inactive');default:'inactive'" json:"status"`
+	Status             string            `gorm:"column:status;size:256;default:'inactive'" json:"status"`
 	SchedulerClusterID *uint
 	SchedulerCluster   SchedulerCluster `json:"-"`
 }

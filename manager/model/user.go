@@ -13,7 +13,7 @@ type User struct {
 	Avatar            string `gorm:"column:avatar;size:256" json:"avatar"`
 	Phone             string `gorm:"column:phone;size:256" json:"phone"`
 	PrivateToken      string `gorm:"column:private_token;size:256" json:"private_token"`
-	State             string `gorm:"type:enum('enable', 'disable');default:'enable'" json:"state"`
+	State             string `gorm:"column:state;size:256;default:'enable'" json:"state"`
 	Location          string `gorm:"column:location;size:1024" json:"location"`
 	BIO               string `gorm:"column:bio;size:1024" json:"bio"`
 }

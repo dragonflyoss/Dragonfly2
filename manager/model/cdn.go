@@ -13,7 +13,7 @@ type CDN struct {
 	IP           string `gorm:"column:ip;size:256;not null" json:"ip"`
 	Port         int32  `gorm:"column:port;not null" json:"port"`
 	DownloadPort int32  `gorm:"column:download_port;not null" json:"download_port"`
-	Status       string `gorm:"type:enum('active', 'inactive');default:'inactive'" json:"status"`
+	Status       string `gorm:"column:status;size:256;default:'inactive'" json:"status"`
 	CDNClusterID *uint
 	CDNCluster   CDNCluster `json:"-"`
 }
