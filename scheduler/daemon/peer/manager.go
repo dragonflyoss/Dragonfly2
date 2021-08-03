@@ -70,10 +70,7 @@ func (m *manager) Delete(peerID string) {
 	if ok {
 		peer.Host.DeletePeer(peerID)
 		peer.Task.DeletePeer(peer)
-		if peer.PacketChan != nil {
-			close(peer.PacketChan)
-			peer.PacketChan = nil
-		}
+		peer.UnBindSendChannel()
 		m.peerMap.Delete(peerID)
 	}
 	return

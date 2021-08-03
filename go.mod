@@ -10,12 +10,14 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.6.4
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
+	github.com/casbin/casbin/v2 v2.34.1
+	github.com/casbin/gorm-adapter/v3 v3.3.2
 	github.com/colinmarc/hdfs/v2 v2.2.0
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/go-units v0.4.0
 	github.com/emirpasic/gods v1.12.0
 	github.com/envoyproxy/protoc-gen-validate v0.6.1
-	github.com/gin-gonic/gin v1.7.0
+	github.com/gin-gonic/gin v1.7.2
 	github.com/go-echarts/statsview v0.3.4
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
 	github.com/go-playground/validator/v10 v10.4.1
@@ -73,7 +75,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 	gorm.io/datatypes v1.0.1
 	gorm.io/driver/mysql v1.0.5
-	gorm.io/gorm v1.21.6
+	gorm.io/gorm v1.21.9
 	k8s.io/apimachinery v0.20.6 // indirect
 	k8s.io/client-go v11.0.0+incompatible
 )

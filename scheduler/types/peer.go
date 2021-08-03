@@ -59,8 +59,10 @@ type Peer struct {
 	Task *Task
 	// Host specifies
 	Host *PeerHost
+	// bindPacketChan
+	bindPacketChan bool
 	// PacketChan send schedulerPacket to peer client
-	PacketChan chan *scheduler.PeerPacket
+	packetChan chan *scheduler.PeerPacket
 	// createTime
 	CreateTime time.Time
 	// finishedNum specifies downloaded finished piece number
@@ -114,20 +116,22 @@ func (peer *Peer) Touch() {
 }
 
 func (peer *Peer) associateChild(child *Peer) {
+	peer.lock.Lock()
 	peer.children.Store(child.PeerID, child)
 	peer.Host.IncUploadLoad()
+	peer.lock.Unlock()
 	peer.Task.peers.Update(peer)
 }
 
 func (peer *Peer) disassociateChild(child *Peer) {
+	peer.lock.Lock()
 	peer.children.Delete(child.PeerID)
 	peer.Host.DecUploadLoad()
+	peer.lock.Unlock()
 	peer.Task.peers.Update(peer)
 }
 
 func (peer *Peer) ReplaceParent(parent *Peer) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
 	oldParent := peer.parent
 	if oldParent != nil {
 		oldParent.disassociateChild(peer)
@@ -159,15 +163,17 @@ func (peer *Peer) GetCost() int {
 
 func (peer *Peer) AddPieceInfo(finishedCount int32, cost int) {
 	peer.lock.Lock()
-	defer peer.lock.Unlock()
 	if finishedCount > peer.finishedNum.Load() {
 		peer.finishedNum.Store(finishedCount)
 		peer.costHistory = append(peer.costHistory, cost)
 		if len(peer.costHistory) > 20 {
 			peer.costHistory = peer.costHistory[len(peer.costHistory)-20:]
 		}
+		peer.lock.Unlock()
 		peer.Task.peers.Update(peer)
+		return
 	}
+	peer.lock.Unlock()
 }
 
 func (peer *Peer) GetDepth() int {
@@ -196,11 +202,16 @@ func (peer *Peer) GetTreeRoot() *Peer {
 	return node
 }
 
-// if ancestor is ancestor of peer
-func (peer *Peer) IsAncestor(ancestor *Peer) bool {
+// if peer is offspring of ancestor
+func (peer *Peer) IsDescendantOf(ancestor *Peer) bool {
 	if ancestor == nil {
 		return false
 	}
+	// TODO avoid circulation
+	peer.lock.RLock()
+	ancestor.lock.RLock()
+	defer ancestor.lock.RUnlock()
+	defer peer.lock.RUnlock()
 	node := peer
 	for node != nil {
 		if node.parent == nil || node.Host.CDN {
@@ -213,7 +224,27 @@ func (peer *Peer) IsAncestor(ancestor *Peer) bool {
 	return false
 }
 
-func (peer *Peer) IsWaiting() bool {
+func (peer *Peer) IsAncestorOf(offspring *Peer) bool {
+	if offspring == nil {
+		return false
+	}
+	offspring.lock.RLock()
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
+	defer offspring.lock.RUnlock()
+	node := offspring
+	for node != nil {
+		if node.parent == nil || node.Host.CDN {
+			return false
+		} else if node.PeerID == peer.PeerID {
+			return true
+		}
+		node = node.parent
+	}
+	return false
+}
+
+func (peer *Peer) IsBlocking() bool {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 	if peer.parent == nil {
@@ -233,10 +264,6 @@ func (peer *Peer) getFreeLoad() int {
 		return 0
 	}
 	return peer.Host.GetFreeUploadLoad()
-}
-
-func (peer *Peer) GetFinishNum() int32 {
-	return peer.finishedNum.Load()
 }
 
 func GetDiffPieceNum(src *Peer, dst *Peer) int32 {
@@ -268,15 +295,35 @@ func (peer *Peer) SetStatus(status PeerStatus) {
 func (peer *Peer) BindSendChannel(packetChan chan *scheduler.PeerPacket) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
-	peer.PacketChan = packetChan
+	peer.bindPacketChan = true
+	peer.packetChan = packetChan
 }
 
-func (peer *Peer) GetSendChannel() chan *scheduler.PeerPacket {
-	return peer.PacketChan
+func (peer *Peer) UnBindSendChannel() {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	if peer.bindPacketChan {
+		if peer.packetChan != nil {
+			close(peer.packetChan)
+		}
+		peer.bindPacketChan = false
+	}
+}
+
+func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	if peer.bindPacketChan {
+		peer.packetChan <- packet
+	}
 }
 
 func (peer *Peer) IsRunning() bool {
 	return peer.status == PeerStatusRunning
+}
+
+func (peer *Peer) IsWaiting() bool {
+	return peer.status == PeerStatusWaiting
 }
 
 func (peer *Peer) IsSuccess() bool {

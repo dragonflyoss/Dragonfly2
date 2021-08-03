@@ -105,7 +105,7 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 			return nil, dferrors.New(code, err.Error())
 		}
 
-		logger.Warnf("try to get piece tasks, "+
+		logger.Infof("try to get piece tasks, "+
 			"but target peer task is initializing, "+
 			"there is no available pieces, "+
 			"task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
