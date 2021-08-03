@@ -64,7 +64,7 @@ func (wg *workerGroup) send(e event) bool {
 
 func (wg *workerGroup) stop() {
 	close(wg.stopCh)
-	wg.s.start()
+	wg.s.stop()
 	for _, worker := range wg.workerList {
 		worker.stop()
 	}

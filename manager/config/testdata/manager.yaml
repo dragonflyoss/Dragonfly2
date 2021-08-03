@@ -1,4 +1,5 @@
 server:
+  name: foo
   grpc:
     listen: 127.0.0.1
     port:
@@ -18,7 +19,9 @@ database:
     password: bar
     host: bar
     port: 6379
-    db: 0
+    cacheDB: 0
+    brokerDB: 1
+    backendDB: 2
 
 cache:
   redis:

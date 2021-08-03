@@ -99,7 +99,7 @@ func InitMonitor(verbose bool, pprofPort int, jaeger string) func() {
 				pprofPort, _ = freeport.GetFreePort()
 			}
 
-			debugAddr := fmt.Sprintf("localhost:%d", pprofPort)
+			debugAddr := fmt.Sprintf("%s:%d", iputils.HostIP, pprofPort)
 			viewer.SetConfiguration(viewer.WithAddr(debugAddr))
 
 			logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugAddr),

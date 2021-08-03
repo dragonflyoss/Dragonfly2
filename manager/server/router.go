@@ -3,12 +3,14 @@ package server
 import (
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
+	rbacbase "d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/service"
+	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )
 
-func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
+func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
 	if !verbose {
 		gin.SetMode(gin.ReleaseMode)
@@ -26,6 +28,7 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	r.Use(gin.Recovery())
 	r.Use(middlewares.Error())
 
+	rbac := middlewares.RBAC(enforcer)
 	jwt, err := middlewares.Jwt(service)
 	if err != nil {
 		return nil, err
@@ -39,7 +42,7 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	ai.POST("/signin", jwt.LoginHandler)
 	ai.POST("/signout", jwt.LogoutHandler)
 	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/signup", h.SignUp)
+	ai.POST("/signup", jwt.MiddlewareFunc(), rbac, h.SignUp)
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")
@@ -51,12 +54,12 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	sc.PUT(":id/schedulers/:scheduler_id", h.AddSchedulerToSchedulerCluster)
 
 	// Scheduler
-	si := apiv1.Group("/schedulers")
-	si.POST("", h.CreateScheduler)
-	si.DELETE(":id", h.DestroyScheduler)
-	si.PATCH(":id", h.UpdateScheduler)
-	si.GET(":id", h.GetScheduler)
-	si.GET("", h.GetSchedulers)
+	s := apiv1.Group("/schedulers")
+	s.POST("", h.CreateScheduler)
+	s.DELETE(":id", h.DestroyScheduler)
+	s.PATCH(":id", h.UpdateScheduler)
+	s.GET(":id", h.GetScheduler)
+	s.GET("", h.GetSchedulers)
 
 	// CDN Cluster
 	cc := apiv1.Group("/cdn-clusters")
@@ -69,12 +72,20 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	cc.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToCDNCluster)
 
 	// CDN
-	ci := apiv1.Group("/cdns")
-	ci.POST("", h.CreateCDN)
-	ci.DELETE(":id", h.DestroyCDN)
-	ci.PATCH(":id", h.UpdateCDN)
-	ci.GET(":id", h.GetCDN)
-	ci.GET("", h.GetCDNs)
+	c := apiv1.Group("/cdns")
+	c.POST("", h.CreateCDN)
+	c.DELETE(":id", h.DestroyCDN)
+	c.PATCH(":id", h.UpdateCDN)
+	c.GET(":id", h.GetCDN)
+	c.GET("", h.GetCDNs)
+
+	// Permission
+	pn := apiv1.Group("/permission", jwt.MiddlewareFunc(), rbac)
+	pn.POST("", h.CreatePermission)
+	pn.DELETE("", h.DestroyPermission)
+	pn.GET("/groups", h.GetPermissionGroups(r))
+	pn.GET("/roles/:subject", h.GetRolesForUser)
+	pn.GET("/:subject/:object/:action", h.HasRoleForUser)
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")
@@ -86,7 +97,19 @@ func initRouter(verbose bool, service service.REST) (*gin.Engine, error) {
 	sg.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSecurityGroup)
 	sg.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToSecurityGroup)
 
+	// Preheat
+	ph := apiv1.Group("/preheats")
+	ph.POST("", h.CreatePreheat)
+	ph.GET(":id", h.GetPreheat)
+
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)
+
+	// Auto init roles and check roles
+	err = rbacbase.InitRole(enforcer, r)
+	if err != nil {
+		return nil, err
+	}
+
 	return r, nil
 }
