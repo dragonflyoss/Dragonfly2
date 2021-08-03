@@ -45,11 +45,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	MD5    = "md5"
-	SHA256 = "sha256"
-)
-
 // Ensure that Manager implements the CDNMgr interface
 var _ daemon.CDNMgr = (*Manager)(nil)
 
@@ -103,14 +98,16 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		//requestDigest, _ := digest.Parse(task.RequestDigest)
 		//digestType = requestDigest.Algorithm().String()
 		switch digestType {
-		case MD5:
+		case digestutils.MD5:
 			fileDigest = md5.New()
-		case SHA256:
+		case digestutils.SHA256:
 			fileDigest = sha256.New()
 		default:
+			digestType = digestutils.MD5
 			fileDigest = md5.New()
 		}
 	} else {
+		digestType = digestutils.MD5
 		fileDigest = md5.New()
 	}
 	detectResult, err := cm.detector.detectCache(task, fileDigest)
