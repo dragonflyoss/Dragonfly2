@@ -53,6 +53,11 @@ for deciding which peers transmit blocks to each other.`,
 			return err
 		}
 
+		// Convert redis host config
+		if err := cfg.Convert(); err != nil {
+			return err
+		}
+
 		return runScheduler()
 	},
 }

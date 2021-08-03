@@ -15,6 +15,7 @@ type Config struct {
 }
 
 type ServerConfig struct {
+	Name string           `yaml:"name" mapstructure:"name"`
 	GRPC *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
 	REST *RestConfig      `yaml:"rest" mapstructure:"rest"`
 }
@@ -33,10 +34,12 @@ type MysqlConfig struct {
 }
 
 type RedisConfig struct {
-	Host     string `yaml:"host" mapstructure:"host"`
-	Port     int    `yaml:"port" mapstructure:"port"`
-	Password string `yaml:"password" mapstructure:"password"`
-	DB       int    `yaml:"db" mapstructure:"db"`
+	Host      string `yaml:"host" mapstructure:"host"`
+	Port      int    `yaml:"port" mapstructure:"port"`
+	Password  string `yaml:"password" mapstructure:"password"`
+	CacheDB   int    `yaml:"cacheDB" mapstructure:"cacheDB"`
+	BrokerDB  int    `yaml:"brokerDB" mapstructure:"brokerDB"`
+	BackendDB int    `yaml:"backendDB" mapstructure:"backendDB"`
 }
 
 type CacheConfig struct {
@@ -73,6 +76,7 @@ type TCPListenPortRange struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
+			Name: "d7y/manager",
 			GRPC: &TCPListenConfig{
 				PortRange: TCPListenPortRange{
 					Start: 65003,
@@ -81,6 +85,13 @@ func New() *Config {
 			},
 			REST: &RestConfig{
 				Addr: ":8080",
+			},
+		},
+		Database: &DatabaseConfig{
+			Redis: &RedisConfig{
+				CacheDB:   0,
+				BrokerDB:  1,
+				BackendDB: 2,
 			},
 		},
 		Cache: &CacheConfig{
@@ -96,6 +107,10 @@ func New() *Config {
 }
 
 func (cfg *Config) Validate() error {
+	if cfg.Server.Name == "" {
+		return errors.New("empty server name config is not specified")
+	}
+
 	if cfg.Cache == nil {
 		return errors.New("empty cache config is not specified")
 	}
@@ -119,7 +134,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Database != nil {
-		if cfg.Database.Redis == nil {
+		if cfg.Database.Redis.Host == "" {
 			return errors.New("empty cache redis config is not specified")
 		}
 

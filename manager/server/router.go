@@ -54,12 +54,12 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 	sc.PUT(":id/schedulers/:scheduler_id", h.AddSchedulerToSchedulerCluster)
 
 	// Scheduler
-	si := apiv1.Group("/schedulers")
-	si.POST("", h.CreateScheduler)
-	si.DELETE(":id", h.DestroyScheduler)
-	si.PATCH(":id", h.UpdateScheduler)
-	si.GET(":id", h.GetScheduler)
-	si.GET("", h.GetSchedulers)
+	s := apiv1.Group("/schedulers")
+	s.POST("", h.CreateScheduler)
+	s.DELETE(":id", h.DestroyScheduler)
+	s.PATCH(":id", h.UpdateScheduler)
+	s.GET(":id", h.GetScheduler)
+	s.GET("", h.GetSchedulers)
 
 	// CDN Cluster
 	cc := apiv1.Group("/cdn-clusters")
@@ -72,12 +72,12 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 	cc.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToCDNCluster)
 
 	// CDN
-	ci := apiv1.Group("/cdns")
-	ci.POST("", h.CreateCDN)
-	ci.DELETE(":id", h.DestroyCDN)
-	ci.PATCH(":id", h.UpdateCDN)
-	ci.GET(":id", h.GetCDN)
-	ci.GET("", h.GetCDNs)
+	c := apiv1.Group("/cdns")
+	c.POST("", h.CreateCDN)
+	c.DELETE(":id", h.DestroyCDN)
+	c.PATCH(":id", h.UpdateCDN)
+	c.GET(":id", h.GetCDN)
+	c.GET("", h.GetCDNs)
 
 	// Permission
 	pn := apiv1.Group("/permission", jwt.MiddlewareFunc(), rbac)
@@ -96,6 +96,11 @@ func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (
 	sg.GET("", h.GetSecurityGroups)
 	sg.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSecurityGroup)
 	sg.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToSecurityGroup)
+
+	// Preheat
+	ph := apiv1.Group("/preheats")
+	ph.POST("", h.CreatePreheat)
+	ph.GET(":id", h.GetPreheat)
 
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)
