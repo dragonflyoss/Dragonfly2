@@ -87,6 +87,15 @@ spec:
           initialDelaySeconds: 15
           periodSeconds: 20
           terminationGracePeriodSeconds: 60
+      {{- if .Values.manager.sidecar }}
+      - name: {{ .Values.manager.sidecar.name }}
+        image: {{ .Values.manager.sidecar.image }}:{{ .Values.manager.sidecar.tag }}
+        args: {{ .Values.manager.sidecar.args }}
+        command: {{ .Values.manager.sidecar.command }}
+        imagePullPolicy: {{ .Values.manager.sidecar.pullPolicy | quote }}
+        resources:
+{{ toYaml .Values.manager.sidecar.resources | indent 12 }}
+      {{- end }}
       volumes:
       - name: config
         configMap:

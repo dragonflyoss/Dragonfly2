@@ -1,0 +1,9 @@
+dependencies:
+- name: mysql
+  repository: https://charts.bitnami.com/bitnami
+  version: 8.0.0
+- name: redis-cluster
+  repository: https://charts.bitnami.com/bitnami
+  version: 5.0.0
+digest: sha256:5cb52a680a4b879c9408a4f5a13449fe6596b092495e0fed8449a3fcf832e119
+generated: "2021-08-03T16:24:00.667629+08:00"

@@ -49,8 +49,10 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 	}
 
 	// Run migration
-	if err := migrate(db); err != nil {
-		return nil, err
+	if cfg.Migrate {
+		if err := migrate(db); err != nil {
+			return nil, err
+		}
 	}
 
 	// Run seed

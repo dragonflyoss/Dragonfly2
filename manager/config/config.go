@@ -30,6 +30,7 @@ type MysqlConfig struct {
 	Host     string `yaml:"host" mapstructure:"host"`
 	Port     int    `yaml:"port" mapstructure:"port"`
 	DBName   string `yaml:"dbname" mapstructure:"dbname"`
+	Migrate  bool   `yaml:"migrate" mapstructure:"migrate"`
 }
 
 type RedisConfig struct {
@@ -92,6 +93,11 @@ func New() *Config {
 				TTL:  30 * time.Second,
 			},
 		},
+		Database: &DatabaseConfig{
+			Mysql: &MysqlConfig{
+				Migrate: true,
+			},
+		},
 	}
 }
 
@@ -124,6 +130,9 @@ func (cfg *Config) Validate() error {
 		}
 
 		if cfg.Database.Mysql == nil {
+			if cfg.Database.Mysql.Host == "" {
+				return errors.New("empty cache mysql host is not specified")
+			}
 			return errors.New("empty cache mysql config is not specified")
 		}
 	}

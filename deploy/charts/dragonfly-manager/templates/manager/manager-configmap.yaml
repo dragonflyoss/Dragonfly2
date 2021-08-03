@@ -28,6 +28,7 @@ data:
         {{- end }}
         port: {{ .Values.mysql.primary.service.port }}
         dbname: {{ .Values.mysql.auth.database }}
+        migrate: {{ .Values.mysql.migrate }}
       redis:
         password: {{ .Values.redis.password }}
         {{- if .Values.redis.enable }}

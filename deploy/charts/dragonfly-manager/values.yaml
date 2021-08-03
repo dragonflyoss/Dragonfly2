@@ -233,6 +233,7 @@ manager:
 
 mysql:
   enable: true
+  migrate: true
   auth:
     rootPassword: dragonfly-root
     username: dragonfly
