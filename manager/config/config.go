@@ -94,6 +94,9 @@ func New() *Config {
 				BrokerDB:  1,
 				BackendDB: 2,
 			},
+			Mysql: &MysqlConfig{
+				Migrate: true,
+			},
 		},
 		Cache: &CacheConfig{
 			Redis: &RedisCacheConfig{
@@ -102,11 +105,6 @@ func New() *Config {
 			Local: &LocalCacheConfig{
 				Size: 10000,
 				TTL:  30 * time.Second,
-			},
-		},
-		Database: &DatabaseConfig{
-			Mysql: &MysqlConfig{
-				Migrate: true,
 			},
 		},
 	}
