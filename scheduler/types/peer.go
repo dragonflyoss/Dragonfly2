@@ -59,8 +59,10 @@ type Peer struct {
 	Task *Task
 	// Host specifies
 	Host *PeerHost
+	// bindPacketChan
+	bindPacketChan bool
 	// PacketChan send schedulerPacket to peer client
-	PacketChan chan *scheduler.PeerPacket
+	packetChan chan *scheduler.PeerPacket
 	// createTime
 	CreateTime time.Time
 	// finishedNum specifies downloaded finished piece number
@@ -293,11 +295,27 @@ func (peer *Peer) SetStatus(status PeerStatus) {
 func (peer *Peer) BindSendChannel(packetChan chan *scheduler.PeerPacket) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
-	peer.PacketChan = packetChan
+	peer.bindPacketChan = true
+	peer.packetChan = packetChan
 }
 
-func (peer *Peer) GetSendChannel() chan *scheduler.PeerPacket {
-	return peer.PacketChan
+func (peer *Peer) UnBindSendChannel() {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	if peer.bindPacketChan {
+		if peer.packetChan != nil {
+			close(peer.packetChan)
+		}
+		peer.bindPacketChan = false
+	}
+}
+
+func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	if peer.bindPacketChan {
+		peer.packetChan <- packet
+	}
 }
 
 func (peer *Peer) IsRunning() bool {
