@@ -16,7 +16,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
-	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -308,7 +307,7 @@ func (s *GRPC) createScheduler(ctx context.Context, req *manager.UpdateScheduler
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var netConfig datatypes.JSONMap
+	var netConfig model.JSONMap
 	if len(req.NetConfig) > 0 {
 		if err := netConfig.UnmarshalJSON(req.NetConfig); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -355,7 +354,7 @@ func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateScheduler
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	var netConfig datatypes.JSONMap
+	var netConfig model.JSONMap
 	if len(req.NetConfig) > 0 {
 		if err := netConfig.UnmarshalJSON(req.NetConfig); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
