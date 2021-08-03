@@ -130,7 +130,7 @@ func (s *Server) Serve() error {
 	}
 
 	if s.managerClient != nil {
-		retry.Run(ctx, func() (interface{}, bool, error) {
+		go retry.Run(ctx, func() (interface{}, bool, error) {
 			if err := s.keepAlive(ctx); err != nil {
 				logger.Errorf("keepalive to manager failed %v", err)
 				return nil, false, err
