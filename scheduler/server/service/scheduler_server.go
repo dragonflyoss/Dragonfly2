@@ -26,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
@@ -158,6 +159,9 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 					peer.BindSendChannel(peerPacketChan)
 					peer.SetStatus(types.PeerStatusRunning)
 					initialized = true
+				}
+				if pieceResult.PieceNum == common.EndOfPiece {
+					return nil
 				}
 				if err := s.service.HandlePieceResult(peer, pieceResult); err != nil {
 					logger.Errorf("handle piece result %v fail: %v", pieceResult, err)

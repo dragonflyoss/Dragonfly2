@@ -108,15 +108,14 @@ func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) 
 func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer, bool) {
 	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start scheduler parent flow")
 	if !s.evaluator.NeedAdjustParent(peer) {
-		//logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("peer does not need to replace the parent node, peer is %v and current parent is %v",
-		//	peer, peer.GetParent())
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("peer %s does not need to replace the parent node", peer.PeerID)
 		if peer.GetParent() == nil {
 			return nil, nil, false
 		}
 		return peer.GetParent(), []*types.Peer{peer.GetParent()}, true
 	}
 	candidateParents := s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
-	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d parent candidates %v", len(candidateParents), candidateParents)
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d candidates parent %v", len(candidateParents), candidateParents)
 	var value float64
 	var primary = peer.GetParent()
 	for _, candidate := range candidateParents {
@@ -197,6 +196,7 @@ func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list [
 
 func (s *Scheduler) selectCandidateParents(peer *types.Peer, limit int) (list []*types.Peer) {
 	if !peer.Task.CanSchedule() {
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++peer %s can not be scheduled because task status", peer.PeerID)
 		return nil
 	}
 	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.Peer) bool {

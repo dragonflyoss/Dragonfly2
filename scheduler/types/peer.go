@@ -202,7 +202,7 @@ func (peer *Peer) GetTreeRoot() *Peer {
 	return node
 }
 
-// if peer is offspring of ancestor
+// IsDescendantOf if peer is offspring of ancestor
 func (peer *Peer) IsDescendantOf(ancestor *Peer) bool {
 	if ancestor == nil {
 		return false
@@ -224,6 +224,7 @@ func (peer *Peer) IsDescendantOf(ancestor *Peer) bool {
 	return false
 }
 
+// IsAncestorOf if offspring is offspring of peer
 func (peer *Peer) IsAncestorOf(offspring *Peer) bool {
 	if offspring == nil {
 		return false
