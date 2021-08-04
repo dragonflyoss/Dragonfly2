@@ -1,6 +1,5 @@
 # Base Image for Debugging
 
-
 ## Build Base Image
 
 ```shell

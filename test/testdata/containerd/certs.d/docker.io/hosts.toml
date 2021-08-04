@@ -1,0 +1,6 @@
+server = "https://docker.io"
+
+[host."http://127.0.0.1:65001"]
+  capabilities = ["pull", "resolve"]
+  [host."http://127.0.0.1:65001".header]
+    X-Dragonfly-Registry = ["https://index.docker.io"]

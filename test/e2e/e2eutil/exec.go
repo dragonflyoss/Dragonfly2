@@ -45,3 +45,7 @@ func (p *PodExec) Command(arg ...string) *exec.Cmd {
 	extArgs = append(extArgs, arg...)
 	return KubeCtlCommand(extArgs...)
 }
+
+func KubeCtlCopyCommand(ns, pod, source, target string) *exec.Cmd {
+	return KubeCtlCommand("-n", ns, "cp", pod+":"+source, target)
+}
