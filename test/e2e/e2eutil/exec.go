@@ -31,17 +31,22 @@ func ABCommand(arg ...string) *exec.Cmd {
 type PodExec struct {
 	namespace string
 	name      string
+	container string
 }
 
-func NewPodExec(namespace string, name string) *PodExec {
+func NewPodExec(namespace string, name string, container string) *PodExec {
 	return &PodExec{
 		namespace: namespace,
 		name:      name,
+		container: container,
 	}
 }
 
 func (p *PodExec) Command(arg ...string) *exec.Cmd {
 	extArgs := []string{"-n", p.namespace, "exec", p.name, "--"}
+	if p.container != "" {
+		extArgs = []string{"-n", p.namespace, "exec", "-c", p.container, p.name, "--"}
+	}
 	extArgs = append(extArgs, arg...)
 	return KubeCtlCommand(extArgs...)
 }
