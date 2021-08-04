@@ -16,11 +16,14 @@
 
 package version
 
-const (
+var (
 	Major      = "2"
 	Minor      = "0"
 	GitVersion = "v2.0.0-rc.0"
-	GoVersion  = "go1.15.2"
+	GitCommit  = "unknown"
 	Platform   = osArch
-	BuildDay   = "2021-04-26"
+	BuildTime  = "unknown"
+	GoVersion  = "unknown"
+	Gotags     = "unknown"
+	Gogcflags  = "unknown"
 )
