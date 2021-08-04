@@ -130,8 +130,8 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 		Header:           map[string]string{"md5": "f1e2488bba4d1267948d9e2f7008571c"},
 		CdnStatus:        types.TaskInfoCdnStatusRunning,
 		PieceTotal:       0,
-		RequestMd5:       "f1e2488bba4d1267948d9e2f7008571c",
-		SourceRealMd5:    "",
+		RequestDigest:    "md5:f1e2488bba4d1267948d9e2f7008571c",
+		SourceRealDigest: "",
 		PieceMd5Sign:     "",
 	}
 
@@ -145,8 +145,8 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 		Header:           map[string]string{"md5": "f1e2488bba4d1267948d9e2f7008571c"},
 		CdnStatus:        types.TaskInfoCdnStatusSuccess,
 		PieceTotal:       0,
-		RequestMd5:       "f1e2488bba4d1267948d9e2f7008571c",
-		SourceRealMd5:    "f1e2488bba4d1267948d9e2f7008571c",
+		RequestDigest:    "md5:f1e2488bba4d1267948d9e2f7008571c",
+		SourceRealDigest: "md5:f1e2488bba4d1267948d9e2f7008571c",
 		PieceMd5Sign:     "bb138842f338fff90af737e4a6b2c6f8e2a7031ca9d5900bc9b646f6406d890f",
 	}
 	gotSeedTask, err := suite.cm.TriggerCDN(context.Background(), sourceTask)

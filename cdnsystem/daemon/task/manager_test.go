@@ -65,7 +65,7 @@ func (suite *TaskManagerTestSuite) TestRegister() {
 				req: &types.TaskRegisterRequest{
 					URL:    dragonflyURL,
 					TaskID: taskID,
-					Md5:    "f1e2488bba4d1267948d9e2f7008571c",
+					Digest: "md5:f1e2488bba4d1267948d9e2f7008571c",
 					Filter: []string{"a", "b"},
 					Header: nil,
 				},
