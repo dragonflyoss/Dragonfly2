@@ -90,8 +90,14 @@ spec:
       {{- if .Values.manager.sidecar }}
       - name: {{ .Values.manager.sidecar.name }}
         image: {{ .Values.manager.sidecar.image }}:{{ .Values.manager.sidecar.tag }}
-        args: {{ .Values.manager.sidecar.args }}
-        command: {{ .Values.manager.sidecar.command }}
+        args:
+        {{-  range .Values.manager.sidecar.args }}
+        - {{ . }}
+        {{- end }}
+        command:
+        {{-  range .Values.manager.sidecar.command }}
+        - {{ . }}
+        {{- end }}
         imagePullPolicy: {{ .Values.manager.sidecar.pullPolicy | quote }}
         resources:
 {{ toYaml .Values.manager.sidecar.resources | indent 12 }}
