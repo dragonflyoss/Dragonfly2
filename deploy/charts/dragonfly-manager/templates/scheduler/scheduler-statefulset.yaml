@@ -55,9 +55,10 @@ spec:
       {{- end }}
       initContainers:
       - name: wait-for-manager
-        image: alioygur/wait-for:latest
+        image: toschneck/wait-for-it:latest
         args:
-          - "-it"
+          - "-t"
+          - "0"
           - {{ template "dragonfly.cdn.fullname" . }}-0:{{ .Values.cdn.nginxContiainerPort }}
       containers:
       - name: scheduler

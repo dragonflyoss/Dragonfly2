@@ -55,9 +55,10 @@ spec:
       {{- if .Values.redis.enable }}
       initContainers:
       - name: wait-for-manager
-        image: alioygur/wait-for:latest
+        image: toschneck/wait-for-it:latest
         args:
-          - "-it"
+          - "-t"
+          - "0"
           - {{ .Release.Name }}-{{ default "redis-cluster" .Values.redis.fullnameOverride }}:{{ .Values.redis.service.port }}
       {{- end }}
       containers:

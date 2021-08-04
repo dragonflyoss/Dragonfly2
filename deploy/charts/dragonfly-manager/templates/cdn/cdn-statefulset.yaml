@@ -56,9 +56,10 @@ spec:
       {{- end }}
       initContainers:
       - name: wait-for-manager
-        image: alioygur/wait-for:latest
+        image: toschneck/wait-for-it:latest
         args:
-          - "-it"
+          - "-t"
+          - "0"
           - {{ template "dragonfly.manager.fullname" . }}:{{ .Values.manager.restPort }}
       containers:
       - name: cdn
