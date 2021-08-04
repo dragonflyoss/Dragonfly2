@@ -51,7 +51,7 @@ func NewSchedulerServer(service *core.SchedulerService) (server.SchedulerServer,
 
 func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
 	defer func() {
-		logger.Debugf("peer %s register result %v", request.PeerId, resp)
+		logger.Debugf("peer %s register result %v, err: %v", request.PeerId, resp, err)
 	}()
 	logger.Debugf("register peer task, req: %+v", request)
 	resp = new(scheduler.RegisterResult)
@@ -61,7 +61,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		return
 	}
 	taskID := s.service.GenerateTaskID(request.Url, request.UrlMeta, request.PeerId)
-	task := types.NewTask(taskID, request.Url, request.UrlMeta.Filter, request.UrlMeta)
+	task := types.NewTask(taskID, request.Url, request.UrlMeta)
 	task, err = s.service.GetOrCreateTask(ctx, task)
 	if err != nil {
 		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)

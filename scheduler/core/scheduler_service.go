@@ -173,7 +173,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	}
 	synclock.UnLock(task.TaskID, true)
 	// do trigger
-	task.SetLastTriggerTime(time.Now())
+	task.UpdateLastTriggerTime(time.Now())
 	// register cdn peer task
 	// notify peer tasks
 	synclock.Lock(task.TaskID, false)

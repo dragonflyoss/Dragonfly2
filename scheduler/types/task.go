@@ -59,7 +59,6 @@ type Task struct {
 	lock            sync.RWMutex
 	TaskID          string
 	URL             string
-	Filter          string
 	URLMeta         *base.UrlMeta
 	DirectPiece     []byte
 	CreateTime      time.Time
@@ -73,11 +72,10 @@ type Task struct {
 	// TODO add cdnPeers
 }
 
-func NewTask(taskID, url, filter string, meta *base.UrlMeta) *Task {
+func NewTask(taskID, url string, meta *base.UrlMeta) *Task {
 	return &Task{
 		TaskID:    taskID,
 		URL:       url,
-		Filter:    filter,
 		URLMeta:   meta,
 		pieceList: make(map[int32]*PieceInfo),
 		peers:     sortedlist.NewSortedList(),
@@ -120,8 +118,6 @@ func (task *Task) AddPiece(p *PieceInfo) {
 }
 
 func (task *Task) GetLastTriggerTime() time.Time {
-	task.lock.RLock()
-	defer task.lock.RUnlock()
 	return task.lastTriggerTime
 }
 
@@ -131,7 +127,7 @@ func (task *Task) Touch() {
 	task.lastAccessTime = time.Now()
 }
 
-func (task *Task) SetLastTriggerTime(lastTriggerTime time.Time) {
+func (task *Task) UpdateLastTriggerTime(lastTriggerTime time.Time) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
 	task.lastTriggerTime = lastTriggerTime
@@ -160,7 +156,7 @@ type PieceInfo struct {
 	PieceStyle  base.PieceStyle
 }
 
-// isSuccessCDN determines that whether the CDNStatus is success.
+// IsSuccess determines that whether the CDNStatus is success.
 func (task *Task) IsSuccess() bool {
 	return task.status == TaskStatusSuccess
 }
@@ -179,7 +175,7 @@ func (task *Task) IsWaiting() bool {
 }
 
 func (task *Task) IsHealth() bool {
-	return task.status == TaskStatusRunning || task.status == TaskStatusSuccess
+	return task.status == TaskStatusRunning || task.status == TaskStatusSuccess || task.status == TaskStatusSeeding
 }
 
 func (task *Task) IsFail() bool {
