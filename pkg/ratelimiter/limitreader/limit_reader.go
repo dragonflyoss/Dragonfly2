@@ -17,46 +17,31 @@
 package limitreader
 
 import (
-	"crypto/md5"
-	"crypto/sha256"
 	"fmt"
 	"hash"
 	"io"
+
+	"d7y.io/dragonfly/v2/internal/constants"
+	"github.com/opencontainers/go-digest"
 
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
-const (
-	NO     = ""
-	MD5    = "md5"
-	SHA256 = "sha256"
-)
-
 // NewLimitReader creates a LimitReader.
 // src: reader
 // rate: bytes/second
-func NewLimitReader(src io.Reader, rate int64, digestType string) *LimitReader {
-	return NewLimitReaderWithLimiter(newRateLimiterWithDefaultWindow(rate), src, digestType)
+func NewLimitReader(src io.Reader, rate int64) *LimitReader {
+	return NewLimitReaderWithLimiter(newRateLimiterWithDefaultWindow(rate), src)
 }
 
 // NewLimitReaderWithLimiter creates LimitReader with a rateLimiter.
 // src: reader
 // rate: bytes/second
-func NewLimitReaderWithLimiter(rl *ratelimiter.RateLimiter, src io.Reader, digestType string) *LimitReader {
-	var digest hash.Hash
-	switch digestType {
-	case MD5:
-		digest = md5.New()
-	case SHA256:
-		digest = sha256.New()
-	default:
-	}
+func NewLimitReaderWithLimiter(rl *ratelimiter.RateLimiter, src io.Reader) *LimitReader {
 	return &LimitReader{
-		Src:        src,
-		Limiter:    rl,
-		digest:     digest,
-		digestType: digestType,
+		Src:     src,
+		Limiter: rl,
 	}
 }
 
@@ -75,7 +60,7 @@ func NewLimitReaderWithLimiterAndMD5Sum(src io.Reader, rl *ratelimiter.RateLimit
 		Src:        src,
 		Limiter:    rl,
 		digest:     md5sum,
-		digestType: MD5,
+		digestType: constants.Md5Hash.String(),
 	}
 }
 
@@ -116,12 +101,12 @@ func (lr *LimitReader) Md5() string {
 // NewLimitReaderWithLimiterAndDigest creates LimitReader with rateLimiter and digest.
 // src: reader
 // rate: bytes/second
-func NewLimitReaderWithLimiterAndDigest(src io.Reader, rl *ratelimiter.RateLimiter, digest hash.Hash, digestType string) *LimitReader {
+func NewLimitReaderWithLimiterAndDigest(src io.Reader, rl *ratelimiter.RateLimiter, digest hash.Hash, digestType digest.Algorithm) *LimitReader {
 	return &LimitReader{
 		Src:        src,
 		Limiter:    rl,
 		digest:     digest,
-		digestType: digestType,
+		digestType: digestType.String(),
 	}
 }
 

@@ -66,9 +66,6 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 				header["digest"] = meta.Digest
 			}
 		}
-		//if _, err := digest.Parse(meta.Digest); err == nil || err == digest.ErrDigestUnsupported {
-		//	header["digest"] = meta.Digest
-		//}
 		if !stringutils.IsBlank(meta.Range) {
 			header["range"] = meta.Range
 		}

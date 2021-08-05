@@ -16,12 +16,14 @@
 
 package constants
 
+import "github.com/opencontainers/go-digest"
+
 const (
 	// download pattern
 	SourcePattern = "source"
 	CDNPattern    = "cdn"
 	P2PPattern    = "p2p"
 
-	Sha256Hash = "sha256"
-	Md5Hash    = "md5"
+	Sha256Hash digest.Algorithm = "sha256"
+	Md5Hash    digest.Algorithm = "md5"
 )

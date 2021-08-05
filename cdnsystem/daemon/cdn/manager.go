@@ -17,14 +17,12 @@
 package cdn
 
 import (
-	"crypto/sha256"
 	"hash"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 
 	"context"
-	"crypto/md5"
 	"fmt"
 
 	"d7y.io/dragonfly/v2/cdnsystem/daemon"
@@ -89,27 +87,15 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// obtain taskId write lock
 	cm.cdnLocker.Lock(task.TaskID, false)
 	defer cm.cdnLocker.UnLock(task.TaskID, false)
-	// first: detect Cache
+
 	var fileDigest hash.Hash
 	var digestType string
 	if !stringutils.IsBlank(task.RequestDigest) {
 		requestDigest := digestutils.Parse(task.RequestDigest)
 		digestType = requestDigest[0]
-		//requestDigest, _ := digest.Parse(task.RequestDigest)
-		//digestType = requestDigest.Algorithm().String()
-		switch digestType {
-		case digestutils.MD5:
-			fileDigest = md5.New()
-		case digestutils.SHA256:
-			fileDigest = sha256.New()
-		default:
-			digestType = digestutils.MD5
-			fileDigest = md5.New()
-		}
-	} else {
-		digestType = digestutils.MD5
-		fileDigest = md5.New()
+		fileDigest = digestutils.CreateHash(digestType)
 	}
+	// first: detect Cache
 	detectResult, err := cm.detector.detectCache(task, fileDigest)
 	if err != nil {
 		seedTask.UpdateStatus(types.TaskInfoCdnStatusFailed)
@@ -139,8 +125,13 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		return seedTask, err
 	}
 	defer body.Close()
+	var reader *limitreader.LimitReader
+	if algo, ok := digestutils.Algorithms[digestType]; ok {
+		reader = limitreader.NewLimitReaderWithLimiterAndDigest(body, cm.limiter, fileDigest, algo)
+	} else {
+		reader = limitreader.NewLimitReaderWithLimiter(cm.limiter, body)
+	}
 
-	reader := limitreader.NewLimitReaderWithLimiterAndDigest(body, cm.limiter, fileDigest, digestType)
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(reader, task, detectResult)
 	if err != nil {
