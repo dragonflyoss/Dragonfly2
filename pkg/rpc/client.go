@@ -338,7 +338,7 @@ func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientC
 	if stick && !ok {
 		conn.rwMutex.RUnlock()
 		// if request is stateful, hash key must exist in key2NodeMap
-		return nil, fmt.Errorf("it is a stateful request， but cannot find hash key(%s) in key2NodeMap", hashKey)
+		return nil, fmt.Errorf("it is a stateful request, but cannot find hash key(%s) in key2NodeMap", hashKey)
 	}
 	if ok {
 		// if exist

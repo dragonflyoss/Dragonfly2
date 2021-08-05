@@ -144,8 +144,6 @@ func (task *Task) GetLastAccessTime() time.Time {
 }
 
 func (task *Task) ListPeers() *sortedlist.SortedList {
-	task.lock.Lock()
-	defer task.lock.Unlock()
 	return task.peers
 }
 
