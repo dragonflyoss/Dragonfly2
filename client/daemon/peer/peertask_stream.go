@@ -77,6 +77,13 @@ func newStreamPeerTask(ctx context.Context,
 
 	var needBackSource bool
 	if err != nil {
+		logger.Errorf("step 1: peer %s register failed: err", request.PeerId, err)
+		if schedulerOption.DisableAutoBackSource {
+			logger.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, request.PeerId)
+			span.RecordError(err)
+			span.End()
+			return ctx, nil, nil, err
+		}
 		needBackSource = true
 		// can not detect source or scheduler error, create a new dummy scheduler client
 		schedulerClient = &dummySchedulerClient{}

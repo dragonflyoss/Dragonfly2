@@ -370,8 +370,12 @@ func (pt *peerTask) pullPiecesFromPeers(pti Task, cleanUnfinishedFunc func()) {
 		pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
 			time.Now().Sub(pt.callback.GetStartTime()).Microseconds(), pt.peerPacket.MainPeer)
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
-		//pt.failedReason = reasonScheduleTimeout
-		//pt.failedCode = dfcodes.ClientScheduleTimeout
+		if pt.schedulerOption.DisableAutoBackSource {
+			pt.failedReason = reasonScheduleTimeout
+			pt.failedCode = dfcodes.ClientScheduleTimeout
+			logger.Errorf("%s, auto back source disabled", pt.failedReason)
+			return
+		}
 		pt.Errorf("start download from source due to %s", reasonScheduleTimeout)
 		pt.needBackSource = true
 		pt.backSource()
@@ -439,6 +443,12 @@ loop:
 				}
 			case _, ok := <-pt.peerPacketReady:
 				if !ok {
+					if pt.schedulerOption.DisableAutoBackSource {
+						pt.failedReason = reasonReScheduleTimeout
+						pt.failedCode = dfcodes.ClientScheduleTimeout
+						logger.Errorf("%s, auto back source disabled", pt.failedReason)
+						return
+					}
 					pt.Errorf("start download from source due to dfcodes.SchedNeedBackSource")
 					pt.needBackSource = true
 					pt.backSource()
@@ -450,8 +460,12 @@ loop:
 				num = pt.getNextPieceNum(0)
 				continue loop
 			case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
-				//pt.failedReason = reasonReScheduleTimeout
-				//pt.failedCode = dfcodes.ClientScheduleTimeout
+				if pt.schedulerOption.DisableAutoBackSource {
+					pt.failedReason = reasonReScheduleTimeout
+					pt.failedCode = dfcodes.ClientScheduleTimeout
+					logger.Errorf("%s, auto back source disabled", pt.failedReason)
+					return
+				}
 				pt.Errorf("start download from source due to %s", reasonReScheduleTimeout)
 				pt.needBackSource = true
 				pt.backSource()

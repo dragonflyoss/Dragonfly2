@@ -26,8 +26,6 @@ import (
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
-
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -94,19 +92,19 @@ func newFilePeerTask(ctx context.Context,
 	regSpan.RecordError(err)
 	regSpan.End()
 
-	var backSource bool
+	var needBackSource bool
 	if err != nil {
 		logger.Errorf("step 1: peer %s register failed: err", request.PeerId, err)
-		// check if it is back source error
-		if de, ok := err.(*dferrors.DfError); ok && de.Code == dfcodes.SchedNeedBackSource {
-			backSource = true
-		}
-		// not back source
-		if !backSource {
+		if schedulerOption.DisableAutoBackSource {
+			logger.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, request.PeerId)
 			span.RecordError(err)
 			span.End()
 			return ctx, nil, nil, err
 		}
+		needBackSource = true
+		// can not detect source or scheduler error, create a new dummy scheduler client
+		schedulerClient = &dummySchedulerClient{}
+		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, request.PeerId)
 	}
 	if result == nil {
 		defer span.End()
@@ -119,7 +117,7 @@ func newFilePeerTask(ctx context.Context,
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var singlePiece *scheduler.SinglePiece
-	if !backSource {
+	if !needBackSource {
 		switch result.SizeScope {
 		case base.SizeScope_SMALL:
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
@@ -165,18 +163,18 @@ func newFilePeerTask(ctx context.Context,
 		progressCh:     make(chan *FilePeerTaskProgress),
 		progressStopCh: make(chan bool),
 		peerTask: peerTask{
-			host:                host,
-			needBackSource:      backSource,
-			request:             request,
-			peerPacketStream:    peerPacketStream,
-			pieceManager:        pieceManager,
-			peerPacketReady:     make(chan bool, 1),
-			peerID:              request.PeerId,
-			taskID:              result.TaskId,
-			singlePiece:         singlePiece,
-			done:                make(chan struct{}),
-			span:                span,
-			once:                sync.Once{},
+			host:             host,
+			needBackSource:   needBackSource,
+			request:          request,
+			peerPacketStream: peerPacketStream,
+			pieceManager:     pieceManager,
+			peerPacketReady:  make(chan bool, 1),
+			peerID:           request.PeerId,
+			taskID:           result.TaskId,
+			singlePiece:      singlePiece,
+			done:             make(chan struct{}),
+			span:             span,
+			once:             sync.Once{},
 			readyPieces:         NewBitmap(),
 			requestedPieces:     NewBitmap(),
 			failedPieceCh:       make(chan int32, config.DefaultPieceChanSize),
