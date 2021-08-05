@@ -350,6 +350,8 @@ func (pt *peerTask) pullSinglePiece(pti Task, cleanUnfinishedFunc func()) {
 
 // TODO when main peer is not available, switch to steel peers
 // piece manager need peer task interface, pti make it compatibility for stream peer task
+// FIXME cyclomatic complexity 42 of func `(*peerTask).pullPiecesFromPeers` is high (> 40) (gocyclo)
+// nolint
 func (pt *peerTask) pullPiecesFromPeers(pti Task, cleanUnfinishedFunc func()) {
 	defer func() {
 		close(pt.failedPieceCh)
