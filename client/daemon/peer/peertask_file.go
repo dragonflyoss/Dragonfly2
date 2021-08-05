@@ -180,7 +180,8 @@ func newFilePeerTask(ctx context.Context,
 			failedPieceCh:       make(chan int32, config.DefaultPieceChanSize),
 			failedReason:        failedReasonNotSet,
 			failedCode:          dfcodes.UnknownError,
-			contentLength:       -1,
+			contentLength:       atomic.NewInt64(-1),
+			pieceParallelCount:  atomic.NewInt32(0),
 			totalPiece:          -1,
 			schedulerOption:     schedulerOption,
 			schedulerClient:     schedulerClient,
@@ -196,7 +197,7 @@ func (pt *filePeerTask) Start(ctx context.Context) (chan *FilePeerTaskProgress, 
 	pt.ctx, pt.cancel = context.WithCancel(ctx)
 	pt.backSourceFunc = pt.backSource
 	if pt.needBackSource {
-		pt.contentLength = -1
+		pt.contentLength.Store(-1)
 		_ = pt.callback.Init(pt)
 		go pt.backSource()
 		return pt.progressCh, nil
@@ -244,7 +245,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 		},
 		TaskID:          pt.taskID,
 		PeerID:          pt.peerID,
-		ContentLength:   pt.contentLength,
+		ContentLength:   pt.contentLength.Load(),
 		CompletedLength: pt.completedLength.Load(),
 		PeerTaskDone:    false,
 	}
@@ -298,7 +299,7 @@ func (pt *filePeerTask) finish() error {
 			},
 			TaskID:          pt.taskID,
 			PeerID:          pt.peerID,
-			ContentLength:   pt.contentLength,
+			ContentLength:   pt.contentLength.Load(),
 			CompletedLength: pt.completedLength.Load(),
 			PeerTaskDone:    true,
 			DoneCallback: func() {
@@ -353,7 +354,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			},
 			TaskID:          pt.taskID,
 			PeerID:          pt.peerID,
-			ContentLength:   pt.contentLength,
+			ContentLength:   pt.contentLength.Load(),
 			CompletedLength: pt.completedLength.Load(),
 			PeerTaskDone:    true,
 			DoneCallback: func() {
@@ -398,7 +399,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 }
 
 func (pt *filePeerTask) SetContentLength(i int64) error {
-	pt.contentLength = i
+	pt.contentLength.Store(i)
 	if !pt.isCompleted() {
 		return errors.New("SetContentLength should call after task completed")
 	}

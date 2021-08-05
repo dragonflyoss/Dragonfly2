@@ -79,8 +79,8 @@ type peerTask struct {
 	// peer task meta info
 	peerID          string
 	taskID          string
-	contentLength   int64
 	totalPiece      int32
+	contentLength   *atomic.Int64
 	completedLength *atomic.Int64
 	usedTraffic     *atomic.Int64
 
@@ -90,11 +90,11 @@ type peerTask struct {
 	// TODO peerPacketStream
 	peerPacketStream schedulerclient.PeerPacketStream
 	// peerPacket is the latest available peers from peerPacketCh
-	peerPacket *scheduler.PeerPacket
+	peerPacket atomic.Value // *scheduler.PeerPacket
 	// peerPacketReady will receive a ready signal for peerPacket ready
 	peerPacketReady chan bool
 	// pieceParallelCount stands the piece parallel count from peerPacket
-	pieceParallelCount int32
+	pieceParallelCount *atomic.Int32
 
 	// done channel will be close when peer task is finished
 	done chan struct{}
@@ -143,7 +143,7 @@ func (pt *peerTask) GetTaskID() string {
 }
 
 func (pt *peerTask) GetContentLength() int64 {
-	return pt.contentLength
+	return pt.contentLength.Load()
 }
 
 func (pt *peerTask) SetContentLength(i int64) error {
@@ -270,8 +270,8 @@ loop:
 			firstPeerSpan.End()
 		}
 
-		pt.peerPacket = peerPacket
-		pt.pieceParallelCount = pt.peerPacket.ParallelCount
+		pt.peerPacket.Store(peerPacket)
+		pt.pieceParallelCount.Store(peerPacket.ParallelCount)
 		select {
 		case pt.peerPacketReady <- true:
 		case <-pt.ctx.Done():
@@ -317,7 +317,7 @@ func (pt *peerTask) pullSinglePiece(pti Task, cleanUnfinishedFunc func()) {
 	ctx, span := tracer.Start(pt.ctx, fmt.Sprintf(config.SpanDownloadPiece, pt.singlePiece.PieceInfo.PieceNum))
 	span.SetAttributes(config.AttributePiece.Int(int(pt.singlePiece.PieceInfo.PieceNum)))
 
-	pt.contentLength = int64(pt.singlePiece.PieceInfo.RangeSize)
+	pt.contentLength.Store(int64(pt.singlePiece.PieceInfo.RangeSize))
 	if err := pt.callback.Init(pti); err != nil {
 		pt.failedReason = err.Error()
 		pt.failedCode = dfcodes.ClientError
@@ -370,7 +370,7 @@ func (pt *peerTask) pullPiecesFromPeers(pti Task, cleanUnfinishedFunc func()) {
 	case <-pt.peerPacketReady:
 		// preparePieceTasksByPeer func already send piece result with error
 		pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
-			time.Now().Sub(pt.callback.GetStartTime()).Microseconds(), pt.peerPacket.MainPeer)
+			time.Now().Sub(pt.callback.GetStartTime()).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonScheduleTimeout
@@ -457,7 +457,7 @@ loop:
 					return
 				}
 				// preparePieceTasksByPeer func already send piece result with error
-				pt.Infof("new peer client ready, main peer: %s", pt.peerPacket.MainPeer)
+				pt.Infof("new peer client ready, main peer: %s", pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
 				// research from piece 0
 				num = pt.getNextPieceNum(0)
 				continue loop
@@ -478,9 +478,9 @@ loop:
 		}
 
 		if !initialized {
-			pt.contentLength = piecePacket.ContentLength
-			if pt.contentLength > 0 {
-				pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(pt.contentLength))
+			pt.contentLength.Store(piecePacket.ContentLength)
+			if pt.contentLength.Load() > 0 {
+				pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(pt.contentLength.Load()))
 			}
 			initialized = true
 			if err = pt.callback.Init(pt); err != nil {
@@ -489,7 +489,7 @@ loop:
 				pt.failedCode = dfcodes.ClientError
 				break loop
 			}
-			pc := pt.peerPacket.ParallelCount
+			pc := pt.peerPacket.Load().(*scheduler.PeerPacket).ParallelCount
 			pieceRequestCh = make(chan *DownloadPieceRequest, pieceBufferSize)
 			for i := int32(0); i < pc; i++ {
 				go pt.downloadPieceWorker(i, pti, pieceRequestCh)
@@ -619,24 +619,25 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 }
 
 func (pt *peerTask) isCompleted() bool {
-	return pt.completedLength.Load() == pt.contentLength
+	return pt.completedLength.Load() == pt.contentLength.Load()
 }
 
 func (pt *peerTask) preparePieceTasks(request *base.PieceTaskRequest) (p *base.PiecePacket, err error) {
 	defer pt.recoverFromPanic()
 prepare:
-	pt.pieceParallelCount = pt.peerPacket.ParallelCount
-	request.DstPid = pt.peerPacket.MainPeer.PeerId
-	p, err = pt.preparePieceTasksByPeer(pt.peerPacket, pt.peerPacket.MainPeer, request)
+	peerPacket := pt.peerPacket.Load().(*scheduler.PeerPacket)
+	pt.pieceParallelCount.Store(peerPacket.ParallelCount)
+	request.DstPid = peerPacket.MainPeer.PeerId
+	p, err = pt.preparePieceTasksByPeer(peerPacket, peerPacket.MainPeer, request)
 	if err == nil {
 		return
 	}
 	if err == errPeerPacketChanged {
 		goto prepare
 	}
-	for _, peer := range pt.peerPacket.StealPeers {
+	for _, peer := range peerPacket.StealPeers {
 		request.DstPid = peer.PeerId
-		p, err = pt.preparePieceTasksByPeer(pt.peerPacket, peer, request)
+		p, err = pt.preparePieceTasksByPeer(peerPacket, peer, request)
 		if err == nil {
 			return
 		}
@@ -704,7 +705,7 @@ retry:
 		pt.Errorf("send piece result error: %s, code: %d", err, code)
 	}
 
-	if code == dfcodes.CdnTaskNotFound && curPeerPacket == pt.peerPacket {
+	if code == dfcodes.CdnTaskNotFound && curPeerPacket == pt.peerPacket.Load().(*scheduler.PeerPacket) {
 		span.AddEvent("retry for CdnTaskNotFound")
 		goto retry
 	}
@@ -722,9 +723,10 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 		if getErr != nil {
 			span.RecordError(getErr)
 			// fast way to exit retry
-			if curPeerPacket.MainPeer.PeerId != pt.peerPacket.MainPeer.PeerId {
+			lastPeerPacket := pt.peerPacket.Load().(*scheduler.PeerPacket)
+			if curPeerPacket.MainPeer.PeerId != lastPeerPacket.MainPeer.PeerId {
 				pt.Warnf("get piece tasks with error: %s, but peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s", getErr,
-					curPeerPacket.MainPeer.PeerId, pt.peerPacket.MainPeer.PeerId)
+					curPeerPacket.MainPeer.PeerId, lastPeerPacket.MainPeer.PeerId)
 				peerPacketChanged = true
 				return nil, true, nil
 			}
@@ -747,9 +749,10 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 				pt.Errorf("send piece result error: %s, code: %d", peer.PeerId, er)
 			}
 			// fast way to exit retry
-			if curPeerPacket.MainPeer.PeerId != pt.peerPacket.MainPeer.PeerId {
+			lastPeerPacket := pt.peerPacket.Load().(*scheduler.PeerPacket)
+			if curPeerPacket.MainPeer.PeerId != lastPeerPacket.MainPeer.PeerId {
 				pt.Warnf("get empty pieces and peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s",
-					curPeerPacket.MainPeer.PeerId, pt.peerPacket.MainPeer.PeerId)
+					curPeerPacket.MainPeer.PeerId, lastPeerPacket.MainPeer.PeerId)
 				peerPacketChanged = true
 				return nil, true, nil
 			}

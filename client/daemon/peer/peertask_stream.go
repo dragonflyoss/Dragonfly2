@@ -159,7 +159,8 @@ func newStreamPeerTask(ctx context.Context,
 			failedPieceCh:       make(chan int32, config.DefaultPieceChanSize),
 			failedReason:        failedReasonNotSet,
 			failedCode:          dfcodes.UnknownError,
-			contentLength:       -1,
+			contentLength:       atomic.NewInt64(-1),
+			pieceParallelCount:  atomic.NewInt32(0),
 			totalPiece:          -1,
 			schedulerOption:     schedulerOption,
 			schedulerClient:     schedulerClient,
@@ -262,7 +263,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	attr := map[string]string{}
 	var reader io.Reader = pr
 	var writer io.Writer = pw
-	if s.contentLength != -1 {
+	if s.contentLength.Load() != -1 {
 		attr[headers.ContentLength] = fmt.Sprintf("%d", s.contentLength)
 	} else {
 		attr[headers.TransferEncoding] = "chunked"
@@ -395,7 +396,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 }
 
 func (s *streamPeerTask) SetContentLength(i int64) error {
-	s.contentLength = i
+	s.contentLength.Store(i)
 	if !s.isCompleted() {
 		return nil
 	}
@@ -424,7 +425,7 @@ func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
 }
 
 func (s *streamPeerTask) backSource() {
-	s.contentLength = -1
+	s.contentLength.Store(-1)
 	_ = s.callback.Init(s)
 	err := s.pieceManager.DownloadSource(s.ctx, s, s.request)
 	if err != nil {
