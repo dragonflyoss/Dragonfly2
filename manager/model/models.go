@@ -72,14 +72,5 @@ func (m JSONMap) GormDataType() string {
 }
 
 func (JSONMap) GormDBDataType(db *gorm.DB, field *schema.Field) string {
-	switch db.Dialector.Name() {
-	case "sqlite":
-		return "JSON"
-	// Support mysql version below 5.7
-	case "mysql":
-		return "text"
-	case "postgres":
-		return "JSONB"
-	}
-	return ""
+	return "text"
 }
