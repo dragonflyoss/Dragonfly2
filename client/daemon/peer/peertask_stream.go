@@ -140,7 +140,7 @@ func newStreamPeerTask(ctx context.Context,
 	if perPeerRateLimit > 0 {
 		limiter = rate.NewLimiter(perPeerRateLimit, int(perPeerRateLimit))
 	}
-	return ctx, &streamPeerTask{
+	pt := &streamPeerTask{
 		peerTask: peerTask{
 			ctx:                 ctx,
 			host:                host,
@@ -170,7 +170,12 @@ func newStreamPeerTask(ctx context.Context,
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
 		successPieceCh: make(chan int32),
-	}, nil, nil
+	}
+	// bind func that base peer task did not implement
+	pt.backSourceFunc = pt.backSource
+	pt.setContentLengthFunc = pt.SetContentLength
+	pt.reportPieceResultFunc = pt.ReportPieceResult
+	return ctx, pt, nil, nil
 }
 
 func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
@@ -213,11 +218,10 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 
 func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]string, error) {
 	s.ctx, s.cancel = context.WithCancel(ctx)
-	s.backSourceFunc = s.backSource
 	if s.needBackSource {
 		go s.backSource()
 	} else {
-		s.pullPieces(s, s.cleanUnfinished)
+		s.pullPieces(s.cleanUnfinished)
 	}
 
 	// wait first piece to get content length and attribute (eg, response header for http/https)
@@ -252,10 +256,6 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		attr[config.HeaderDragonflyPeer] = s.peerID
 		return nil, attr, err
 	case first := <-s.successPieceCh:
-		//if !ok {
-		//	s.Warnf("successPieceCh closed unexpect")
-		//	return nil, nil, errors.NewDaemonConfig("early done")
-		//}
 		firstPiece = first
 	}
 

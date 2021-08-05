@@ -159,7 +159,7 @@ func newFilePeerTask(ctx context.Context,
 	if perPeerRateLimit > 0 {
 		limiter = rate.NewLimiter(perPeerRateLimit, int(perPeerRateLimit))
 	}
-	return ctx, &filePeerTask{
+	pt := &filePeerTask{
 		progressCh:     make(chan *FilePeerTaskProgress),
 		progressStopCh: make(chan bool),
 		peerTask: peerTask{
@@ -190,12 +190,17 @@ func newFilePeerTask(ctx context.Context,
 			usedTraffic:         atomic.NewInt64(0),
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "filePeerTask"),
 		},
-	}, nil, nil
+	}
+	// bind func that base peer task did not implement
+	pt.backSourceFunc = pt.backSource
+	pt.setContentLengthFunc = pt.SetContentLength
+	pt.reportPieceResultFunc = pt.ReportPieceResult
+	return ctx, pt, nil, nil
 }
 
 func (pt *filePeerTask) Start(ctx context.Context) (chan *FilePeerTaskProgress, error) {
 	pt.ctx, pt.cancel = context.WithCancel(ctx)
-	pt.backSourceFunc = pt.backSource
+
 	if pt.needBackSource {
 		pt.contentLength.Store(-1)
 		_ = pt.callback.Init(pt)
@@ -203,7 +208,7 @@ func (pt *filePeerTask) Start(ctx context.Context) (chan *FilePeerTaskProgress, 
 		return pt.progressCh, nil
 	}
 
-	pt.pullPieces(pt, pt.cleanUnfinished)
+	pt.pullPieces(pt.cleanUnfinished)
 
 	// return a progress channel for request download progress
 	return pt.progressCh, nil

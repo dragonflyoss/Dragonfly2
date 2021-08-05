@@ -28,12 +28,13 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 
+	"github.com/go-http-utils/headers"
+
 	"d7y.io/dragonfly/v2/cdnsystem/daemon/task"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
-	"github.com/go-http-utils/headers"
 )
 
 const (
@@ -55,7 +56,7 @@ func init() {
 	if proxyEnv := os.Getenv(ProxyEnv); len(proxyEnv) > 0 {
 		proxy, err = url.Parse(proxyEnv)
 		if err != nil {
-			fmt.Printf("Back source proxy pares error: %s\n", err)
+			fmt.Printf("Back source proxy parse error: %s\n", err)
 		}
 	}
 
