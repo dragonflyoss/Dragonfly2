@@ -11,9 +11,18 @@ MANAGER_BINARY_NAME=manager
 
 PKG=d7y.io/dragonfly/v2
 BUILD_IMAGE=golang:1.15.8
+
+VERSION=$(git rev-parse --short HEAD)
+BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+
 GOPROXY=${GOPROXY:-}
-DATE=$(date "+%Y%m%d-%H:%M:%S")
 GOTAGS=${GOTAGS:-}
+GOGCFLAGS=${GOGCFLAGS:-}
+GOLDFLAGS="-X d7y.io/dragonfly/v2/version.GitCommit=${VERSION}"
+GOLDFLAGS="${GOLDFLAGS} -X d7y.io/dragonfly/v2/version.BuildTime=${BUILD_TIME}"
+GOLDFLAGS="${GOLDFLAGS} -X \"d7y.io/dragonfly/v2/version.Gotags=${GOTAGS:-none}\""
+GOLDFLAGS="${GOLDFLAGS} -X \"d7y.io/dragonfly/v2/version.GoVersion=$(go version | grep -o 'go[^ ].*')\""
+GOLDFLAGS="${GOLDFLAGS} -X \"d7y.io/dragonfly/v2/version.Gogcflags=${GOGCFLAGS:-none}\""
 
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}" || return
@@ -33,7 +42,7 @@ create-dirs() {
 build-local() {
     test -f "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1" && rm -f "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     cd "${BUILD_SOURCE_HOME}/cmd/$2" || return
-    go build -tags="${GOTAGS}" -o="${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
+    go build -tags="${GOTAGS}" -ldflags="${GOLDFLAGS}" -gcflags="${GOGCFLAGS}" -o="${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     chmod a+x "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     echo "BUILD: $2 in ${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
 }
