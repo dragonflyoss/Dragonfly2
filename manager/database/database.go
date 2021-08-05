@@ -66,7 +66,7 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 }
 
 func migrate(db *gorm.DB) error {
-	return db.Set("gorm:table_options", "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=Dynamic").AutoMigrate(
+	return db.Set("gorm:table_options", "DEFAULT CHARSET=utf8mb4 ROW_FORMAT=Dynamic").AutoMigrate(
 		&model.CDNCluster{},
 		&model.CDN{},
 		&model.SchedulerCluster{},
