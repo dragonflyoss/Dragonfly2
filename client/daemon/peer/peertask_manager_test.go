@@ -30,6 +30,8 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -331,6 +333,8 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 		peerID = "peer-0"
 		taskID = "task-0"
 	)
+
+	source.Register("http", httpprotocol.NewHTTPSourceClient())
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		n, err := w.Write(testBytes)

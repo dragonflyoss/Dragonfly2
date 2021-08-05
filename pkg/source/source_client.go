@@ -25,12 +25,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 
-	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"github.com/go-http-utils/headers"
-
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 var _ ResourceClient = (*clientManager)(nil)

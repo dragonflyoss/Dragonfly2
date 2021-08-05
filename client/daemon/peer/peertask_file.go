@@ -20,12 +20,13 @@ import (
 	"context"
 	"sync"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
+
+	"d7y.io/dragonfly/v2/internal/dferrors"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
@@ -78,7 +79,7 @@ func newFilePeerTask(ctx context.Context,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
-	perPeerRateLimit rate.Limit) (context.Context, FilePeerTask, *TinyData, error) {
+	perPeerRateLimit rate.Limit) (context.Context, *filePeerTask, *TinyData, error) {
 	ctx, span := tracer.Start(ctx, config.SpanFilePeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
@@ -184,6 +185,7 @@ func newFilePeerTask(ctx context.Context,
 			contentLength:       -1,
 			totalPiece:          -1,
 			schedulerOption:     schedulerOption,
+			schedulerClient:     schedulerClient,
 			limiter:             limiter,
 			completedLength:     atomic.NewInt64(0),
 			usedTraffic:         atomic.NewInt64(0),
@@ -411,6 +413,7 @@ func (pt *filePeerTask) backSource() {
 	err := pt.pieceManager.DownloadSource(pt.ctx, pt, pt.request)
 	if err != nil {
 		pt.Errorf("download from source error: %s", err)
+		pt.failedReason = err.Error()
 		return
 	}
 	pt.Infof("download from source ok")

@@ -132,10 +132,11 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	pt.SetCallback(&streamPeerTaskCallback{
 		ctx:   ctx,
 		ptm:   ptm,
+		pt:    pt,
 		req:   req,
 		start: time.Now(),
 	})
-	pt.(*streamPeerTask).needBackSource = true
+	pt.needBackSource = true
 
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
@@ -238,10 +239,11 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	pt.SetCallback(&streamPeerTaskCallback{
 		ctx:   ctx,
 		ptm:   ptm,
+		pt:    pt,
 		req:   req,
 		start: time.Now(),
 	})
-	pt.(*streamPeerTask).needBackSource = true
+	pt.needBackSource = true
 
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")

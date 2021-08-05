@@ -29,6 +29,7 @@ import (
 type streamPeerTaskCallback struct {
 	ctx   context.Context
 	ptm   *peerTaskManager
+	pt    *streamPeerTask
 	req   *scheduler.PeerTaskRequest
 	start time.Time
 }
@@ -90,7 +91,7 @@ func (p *streamPeerTaskCallback) Done(pt Task) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	err := p.pt.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
@@ -115,7 +116,7 @@ func (p *streamPeerTaskCallback) Fail(pt Task, code base.Code, reason string) er
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	pt.Log().Errorf("stream peer task failed, code: %d, reason: %s", code, reason)
-	err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	err := p.pt.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,

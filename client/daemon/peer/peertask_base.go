@@ -74,6 +74,7 @@ type peerTask struct {
 
 	// schedule options
 	schedulerOption config.SchedulerOption
+	schedulerClient schedulerclient.SchedulerClient
 
 	// peer task meta info
 	peerID          string
@@ -217,6 +218,11 @@ loop:
 		if err != nil {
 			pt.failedCode = dfcodes.UnknownError
 			if de, ok := err.(*dferrors.DfError); ok {
+				if de.Code == dfcodes.SchedNeedBackSource {
+					pt.needBackSource = true
+					close(pt.peerPacketReady)
+					return
+				}
 				pt.failedCode = de.Code
 				pt.failedReason = de.Message
 				pt.Errorf("receive peer packet failed: %s", pt.failedReason)
@@ -431,7 +437,13 @@ loop:
 						pt.failedCode = dfcodes.ClientContextCanceled
 					}
 				}
-			case <-pt.peerPacketReady:
+			case _, ok := <-pt.peerPacketReady:
+				if !ok {
+					pt.Errorf("start download from source due to dfcodes.SchedNeedBackSource")
+					pt.needBackSource = true
+					pt.backSource()
+					return
+				}
 				// preparePieceTasksByPeer func already send piece result with error
 				pt.Infof("new peer client ready, main peer: %s", pt.peerPacket.MainPeer)
 				// research from piece 0

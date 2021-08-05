@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/semconv"
@@ -60,7 +59,7 @@ func newStreamPeerTask(ctx context.Context,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
-	perPeerRateLimit rate.Limit) (context.Context, StreamPeerTask, *TinyData, error) {
+	perPeerRateLimit rate.Limit) (context.Context, *streamPeerTask, *TinyData, error) {
 	ctx, span := tracer.Start(ctx, config.SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
@@ -76,17 +75,12 @@ func newStreamPeerTask(ctx context.Context,
 	regSpan.RecordError(err)
 	regSpan.End()
 
-	var backSource bool
+	var needBackSource bool
 	if err != nil {
-		// check if it is back source error
-		if de, ok := err.(*dferrors.DfError); ok && de.Code == dfcodes.SchedNeedBackSource {
-			backSource = true
-		}
-		// not back source
-		if !backSource {
-			logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
-			return ctx, nil, nil, err
-		}
+		needBackSource = true
+		// can not detect source or scheduler error, create a new dummy scheduler client
+		schedulerClient = &dummySchedulerClient{}
+		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, request.PeerId)
 	}
 	if result == nil {
 		defer span.End()
@@ -99,7 +93,7 @@ func newStreamPeerTask(ctx context.Context,
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var singlePiece *scheduler.SinglePiece
-	if !backSource {
+	if !needBackSource {
 		switch result.SizeScope {
 		case base.SizeScope_SMALL:
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
@@ -143,7 +137,7 @@ func newStreamPeerTask(ctx context.Context,
 		peerTask: peerTask{
 			ctx:                 ctx,
 			host:                host,
-			needBackSource:      backSource,
+			needBackSource:      needBackSource,
 			request:             request,
 			peerPacketStream:    peerPacketStream,
 			pieceManager:        pieceManager,
@@ -161,12 +155,13 @@ func newStreamPeerTask(ctx context.Context,
 			contentLength:       -1,
 			totalPiece:          -1,
 			schedulerOption:     schedulerOption,
+			schedulerClient:     schedulerClient,
 			limiter:             limiter,
 			completedLength:     atomic.NewInt64(0),
 			usedTraffic:         atomic.NewInt64(0),
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
-		successPieceCh: make(chan int32, 4),
+		successPieceCh: make(chan int32),
 	}, nil, nil
 }
 
@@ -427,6 +422,7 @@ func (s *streamPeerTask) backSource() {
 	err := s.pieceManager.DownloadSource(s.ctx, s, s.request)
 	if err != nil {
 		s.Errorf("download from source error: %s", err)
+		s.failedReason = err.Error()
 		s.cleanUnfinished()
 		return
 	}
