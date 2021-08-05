@@ -60,9 +60,10 @@ type peerTask struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	// backSource indicates downloading resource from instead of other peers
-	backSource bool
-	request    *scheduler.PeerTaskRequest
+	// needBackSource indicates downloading resource from instead of other peers
+	needBackSource bool
+	backSourceFunc func()
+	request        *scheduler.PeerTaskRequest
 
 	// pieceManager will be used for downloading piece
 	pieceManager PieceManager
@@ -166,6 +167,10 @@ func (pt *peerTask) Context() context.Context {
 
 func (pt *peerTask) Log() *logger.SugaredLoggerOnWith {
 	return pt.SugaredLoggerOnWith
+}
+
+func (pt *peerTask) backSource() {
+	pt.backSourceFunc()
 }
 
 func (pt *peerTask) pullPieces(pti Task, cleanUnfinishedFunc func()) {
@@ -359,9 +364,11 @@ func (pt *peerTask) pullPiecesFromPeers(pti Task, cleanUnfinishedFunc func()) {
 		pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
 			time.Now().Sub(pt.callback.GetStartTime()).Microseconds(), pt.peerPacket.MainPeer)
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
-		pt.failedReason = reasonScheduleTimeout
-		pt.failedCode = dfcodes.ClientScheduleTimeout
-		pt.Errorf(pt.failedReason)
+		//pt.failedReason = reasonScheduleTimeout
+		//pt.failedCode = dfcodes.ClientScheduleTimeout
+		pt.Errorf("start download from source due to %s", reasonScheduleTimeout)
+		pt.needBackSource = true
+		pt.backSource()
 		return
 	}
 	var (
@@ -431,9 +438,12 @@ loop:
 				num = pt.getNextPieceNum(0)
 				continue loop
 			case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
-				pt.failedReason = reasonReScheduleTimeout
-				pt.failedCode = dfcodes.ClientScheduleTimeout
-				pt.Errorf(pt.failedReason)
+				//pt.failedReason = reasonReScheduleTimeout
+				//pt.failedCode = dfcodes.ClientScheduleTimeout
+				pt.Errorf("start download from source due to %s", reasonReScheduleTimeout)
+				pt.needBackSource = true
+				pt.backSource()
+				return
 			}
 			// only <-pt.peerPacketReady continue loop, others break
 			break loop

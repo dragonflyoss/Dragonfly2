@@ -67,7 +67,7 @@ type Task interface {
 	GetTaskID() string
 	GetTotalPieces() int32
 	GetContentLength() int64
-	// SetContentLength will called after download completed, when download from source without content length
+	// SetContentLength will be called after download completed, when download from source without content length
 	SetContentLength(int64) error
 	SetCallback(TaskCallback)
 	AddTraffic(int64)

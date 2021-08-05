@@ -61,7 +61,14 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	)
 	defer os.Remove(output)
 
-	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	schedulerClient, storageManager := setupPeerTaskManagerComponents(
+		ctrl,
+		componentsOption{
+			taskID:             taskID,
+			contentLength:      int64(mockContentLength),
+			pieceSize:          int32(pieceSize),
+			pieceParallelCount: pieceParallelCount,
+		})
 	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
@@ -121,7 +128,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		ptm.schedulerOption,
 		0)
 	assert.Nil(err, "new file peer task")
-	pt.(*filePeerTask).backSource = true
+	pt.(*filePeerTask).needBackSource = true
 
 	pt.SetCallback(&filePeerTaskCallback{
 		ctx:   ctx,
@@ -171,7 +178,14 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	)
 	defer os.Remove(output)
 
-	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	schedulerClient, storageManager := setupPeerTaskManagerComponents(
+		ctrl,
+		componentsOption{
+			taskID:             taskID,
+			contentLength:      int64(mockContentLength),
+			pieceSize:          int32(pieceSize),
+			pieceParallelCount: pieceParallelCount,
+		})
 	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
@@ -232,7 +246,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		ptm.schedulerOption,
 		0)
 	assert.Nil(err, "new file peer task")
-	pt.(*filePeerTask).backSource = true
+	pt.(*filePeerTask).needBackSource = true
 
 	pt.SetCallback(&filePeerTaskCallback{
 		ctx:   ctx,

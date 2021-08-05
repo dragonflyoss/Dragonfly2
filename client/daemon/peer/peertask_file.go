@@ -165,7 +165,7 @@ func newFilePeerTask(ctx context.Context,
 		progressStopCh: make(chan bool),
 		peerTask: peerTask{
 			host:                host,
-			backSource:          backSource,
+			needBackSource:      backSource,
 			request:             request,
 			peerPacketStream:    peerPacketStream,
 			pieceManager:        pieceManager,
@@ -194,19 +194,11 @@ func newFilePeerTask(ctx context.Context,
 
 func (pt *filePeerTask) Start(ctx context.Context) (chan *FilePeerTaskProgress, error) {
 	pt.ctx, pt.cancel = context.WithCancel(ctx)
-	if pt.backSource {
+	pt.backSourceFunc = pt.backSource
+	if pt.needBackSource {
 		pt.contentLength = -1
 		_ = pt.callback.Init(pt)
-		go func() {
-			defer pt.cleanUnfinished()
-			err := pt.pieceManager.DownloadSource(ctx, pt, pt.request)
-			if err != nil {
-				pt.Errorf("download from source error: %s", err)
-				return
-			}
-			pt.Infof("download from source ok")
-			pt.finish()
-		}()
+		go pt.backSource()
 		return pt.progressCh, nil
 	}
 
@@ -412,4 +404,16 @@ func (pt *filePeerTask) SetContentLength(i int64) error {
 	}
 
 	return pt.finish()
+}
+
+func (pt *filePeerTask) backSource() {
+	defer pt.cleanUnfinished()
+	err := pt.pieceManager.DownloadSource(pt.ctx, pt, pt.request)
+	if err != nil {
+		pt.Errorf("download from source error: %s", err)
+		return
+	}
+	pt.Infof("download from source ok")
+	_ = pt.finish()
+	return
 }

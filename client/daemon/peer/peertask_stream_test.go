@@ -58,7 +58,14 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 
 		url = "http://localhost/test/data"
 	)
-	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	schedulerClient, storageManager := setupPeerTaskManagerComponents(
+		ctrl,
+		componentsOption{
+			taskID:             taskID,
+			contentLength:      int64(mockContentLength),
+			pieceSize:          int32(pieceSize),
+			pieceParallelCount: pieceParallelCount,
+		})
 	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
@@ -128,7 +135,7 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		req:   req,
 		start: time.Now(),
 	})
-	pt.(*streamPeerTask).backSource = true
+	pt.(*streamPeerTask).needBackSource = true
 
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
@@ -157,7 +164,14 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 
 		url = "http://localhost/test/data"
 	)
-	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	schedulerClient, storageManager := setupPeerTaskManagerComponents(
+		ctrl,
+		componentsOption{
+			taskID:             taskID,
+			contentLength:      int64(mockContentLength),
+			pieceSize:          int32(pieceSize),
+			pieceParallelCount: pieceParallelCount,
+		})
 	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
@@ -227,7 +241,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		req:   req,
 		start: time.Now(),
 	})
-	pt.(*streamPeerTask).backSource = true
+	pt.(*streamPeerTask).needBackSource = true
 
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")

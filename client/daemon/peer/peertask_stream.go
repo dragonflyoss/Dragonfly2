@@ -143,7 +143,7 @@ func newStreamPeerTask(ctx context.Context,
 		peerTask: peerTask{
 			ctx:                 ctx,
 			host:                host,
-			backSource:          backSource,
+			needBackSource:      backSource,
 			request:             request,
 			peerPacketStream:    peerPacketStream,
 			pieceManager:        pieceManager,
@@ -210,19 +210,9 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 
 func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]string, error) {
 	s.ctx, s.cancel = context.WithCancel(ctx)
-	if s.backSource {
-		go func() {
-			s.contentLength = -1
-			_ = s.callback.Init(s)
-			err := s.pieceManager.DownloadSource(ctx, s, s.request)
-			if err != nil {
-				s.Errorf("download from source error: %s", err)
-				s.cleanUnfinished()
-				return
-			}
-			s.Debugf("download from source ok")
-			_ = s.finish()
-		}()
+	s.backSourceFunc = s.backSource
+	if s.needBackSource {
+		go s.backSource()
 	} else {
 		s.pullPieces(s, s.cleanUnfinished)
 	}
@@ -321,8 +311,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 				// not desired piece, cache it
 				cache[cur] = true
 				if cur < desired {
-					s.Warnf("piece number should be equal or greater than %d, received piece number: %d",
-						desired, cur)
+					s.Warnf("piece number should be equal or greater than %d, received piece number: %d", desired, cur)
 				}
 			}
 
@@ -430,4 +419,18 @@ func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
 		return n, err
 	}
 	return n, pc.Close()
+}
+
+func (s *streamPeerTask) backSource() {
+	s.contentLength = -1
+	_ = s.callback.Init(s)
+	err := s.pieceManager.DownloadSource(s.ctx, s, s.request)
+	if err != nil {
+		s.Errorf("download from source error: %s", err)
+		s.cleanUnfinished()
+		return
+	}
+	s.Debugf("download from source ok")
+	_ = s.finish()
+	return
 }
