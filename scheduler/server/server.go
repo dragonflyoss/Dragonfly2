@@ -78,7 +78,6 @@ func New(cfg *config.Config) (*Server, error) {
 		if err := s.register(context.Background()); err != nil {
 			return nil, err
 		}
-		logger.Info("scheduler register to manager")
 
 		if cfg.DynConfig.Type == dynconfig.ManagerSourceType {
 			options = append(options,
@@ -186,16 +185,14 @@ func (s *Server) register(ctx context.Context) error {
 	logger.Infof("update scheduler %s to manager successfully", scheduler.HostName)
 
 	schedulerClusterID := s.config.Manager.SchedulerClusterID
-	if schedulerClusterID != 0 {
-		if _, err := s.managerClient.AddSchedulerToSchedulerCluster(ctx, &manager.AddSchedulerToSchedulerClusterRequest{
-			SchedulerId:        scheduler.Id,
-			SchedulerClusterId: schedulerClusterID,
-		}); err != nil {
-			logger.Warnf("add scheduler %s to scheduler cluster %s failed %v", scheduler.HostName, schedulerClusterID, err)
-			return err
-		}
-		logger.Infof("add scheduler %s to scheduler cluster %s successfully", scheduler.HostName, schedulerClusterID)
+	if _, err := s.managerClient.AddSchedulerToSchedulerCluster(ctx, &manager.AddSchedulerToSchedulerClusterRequest{
+		SchedulerId:        scheduler.Id,
+		SchedulerClusterId: schedulerClusterID,
+	}); err != nil {
+		logger.Warnf("add scheduler %s to scheduler cluster %s failed %v", scheduler.HostName, schedulerClusterID, err)
+		return err
 	}
+	logger.Infof("add scheduler %s to scheduler cluster %s successfully", scheduler.HostName, schedulerClusterID)
 	return nil
 }
 

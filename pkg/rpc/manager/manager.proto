@@ -74,8 +74,8 @@ message UpdateCDNRequest {
 
 message AddCDNToCDNClusterRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  uint64 cdn_id = 2 [(validate.rules).uint64 = {ignore_empty: true}];
-  uint64 cdn_cluster_id = 3 [(validate.rules).uint64 = {ignore_empty: true}];
+  uint64 cdn_id = 2 [(validate.rules).uint64.gte = 1];
+  uint64 cdn_cluster_id = 3 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
 }
 
 message SchedulerCluster {
@@ -119,8 +119,8 @@ message UpdateSchedulerRequest {
 
 message AddSchedulerToSchedulerClusterRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  uint64 scheduler_id = 2 [(validate.rules).uint64 = {ignore_empty: true}];
-  uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {ignore_empty: true}];
+  uint64 scheduler_id = 2 [(validate.rules).uint64.gte = 1];
+  uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
 }
 
 message ListSchedulersRequest {

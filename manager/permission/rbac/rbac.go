@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	managermodel "d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
@@ -34,7 +35,7 @@ m = g(r.sub, p.sub) && r.obj == p.obj && (r.act == p.act || p.act == "*") || r.s
 `
 
 func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
-	gormAdapter, err := gormadapter.NewAdapterByDB(gdb)
+	adapter, err := gormadapter.NewAdapterByDBWithCustomTable(gdb, &managermodel.CasbinRule{})
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +43,7 @@ func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
 	if err != nil {
 		return nil, err
 	}
-	enforcer, err := casbin.NewEnforcer(m, gormAdapter)
+	enforcer, err := casbin.NewEnforcer(m, adapter)
 	if err != nil {
 		return nil, err
 	}
