@@ -28,9 +28,13 @@ import (
 
 	"github.com/opencontainers/go-digest"
 
-	"d7y.io/dragonfly/v2/internal/constants"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+)
+
+const (
+	Sha256Hash digest.Algorithm = "sha256"
+	Md5Hash    digest.Algorithm = "md5"
 )
 
 var (
@@ -38,8 +42,8 @@ var (
 	// If algo is not supported, Algorithms[algo] will return empty string.
 	// Please don't use digest.Algorithm() to convert a string to digest.Algorithm.
 	Algorithms = map[string]digest.Algorithm{
-		constants.Sha256Hash.String(): constants.Sha256Hash,
-		constants.Md5Hash.String():    constants.Md5Hash,
+		Sha256Hash.String(): Sha256Hash,
+		Md5Hash.String():    Md5Hash,
 	}
 )
 
@@ -74,7 +78,7 @@ func Md5Bytes(bytes []byte) string {
 }
 
 // HashFile computes hash value corresponding to hashType,
-// hashType is from constants.Md5Hash and constants.Sha256Hash.
+// hashType is from digestutils.Md5Hash and digestutils.Sha256Hash.
 func HashFile(file string, hashType digest.Algorithm) string {
 	if !fileutils.IsRegular(file) {
 		return ""
@@ -88,9 +92,9 @@ func HashFile(file string, hashType digest.Algorithm) string {
 	defer f.Close()
 
 	var h hash.Hash
-	if hashType == constants.Md5Hash {
+	if hashType == Md5Hash {
 		h = md5.New()
-	} else if hashType == constants.Sha256Hash {
+	} else if hashType == Sha256Hash {
 		h = sha256.New()
 	} else {
 		return ""
@@ -118,9 +122,9 @@ func Parse(digest string) []string {
 func CreateHash(hashType string) hash.Hash {
 	algo := Algorithms[hashType]
 	switch algo {
-	case constants.Sha256Hash:
+	case Sha256Hash:
 		return sha256.New()
-	case constants.Md5Hash:
+	case Md5Hash:
 		return md5.New()
 	default:
 		return nil

@@ -21,7 +21,6 @@ import (
 	"hash"
 	"io"
 
-	"d7y.io/dragonfly/v2/internal/constants"
 	"github.com/opencontainers/go-digest"
 
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
@@ -60,7 +59,7 @@ func NewLimitReaderWithLimiterAndMD5Sum(src io.Reader, rl *ratelimiter.RateLimit
 		Src:        src,
 		Limiter:    rl,
 		digest:     md5sum,
-		digestType: constants.Md5Hash.String(),
+		digestType: digestutils.Md5Hash.String(),
 	}
 }
 
