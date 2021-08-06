@@ -19,13 +19,13 @@ recommended. Just run `minikube start`.
 ### Clone Chart
 
 ```shell
-git clone https://github.com/dragonflyoss/Dragonfly2.git
+git clone --recursive https://github.com/dragonflyoss/Dragonfly2.git
 ```
 
 ### Install
 
 ```shell
-helm install --namespace dragonfly-system dragonfly Dragonfly2/deploy/charts/dragonfly
+helm install --namespace dragonfly-system dragonfly Dragonfly2/deploy/helm-charts/charts/dragonfly
 ```
 
 ### Wait Dragonfly Ready
