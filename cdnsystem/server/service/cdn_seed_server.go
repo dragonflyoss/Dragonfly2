@@ -62,9 +62,10 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 	if meta != nil {
 		if !stringutils.IsBlank(meta.Digest) {
 			digest := digestutils.Parse(meta.Digest)
-			if _, ok := digestutils.Algorithms[digest[0]]; ok == true {
-				header["digest"] = meta.Digest
+			if _, ok := digestutils.Algorithms[digest[0]]; !ok {
+				return nil, errors.Errorf("unsupported digest algorithm")
 			}
+			header["digest"] = meta.Digest
 		}
 		if !stringutils.IsBlank(meta.Range) {
 			header["range"] = meta.Range

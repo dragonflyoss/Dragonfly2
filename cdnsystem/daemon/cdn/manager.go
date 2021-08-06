@@ -17,7 +17,7 @@
 package cdn
 
 import (
-	"hash"
+	"crypto/md5"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
@@ -88,8 +88,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	cm.cdnLocker.Lock(task.TaskID, false)
 	defer cm.cdnLocker.UnLock(task.TaskID, false)
 
-	var fileDigest hash.Hash
-	var digestType string
+	var fileDigest = md5.New()
+	var digestType = digestutils.Md5Hash.String()
 	if !stringutils.IsBlank(task.RequestDigest) {
 		requestDigest := digestutils.Parse(task.RequestDigest)
 		digestType = requestDigest[0]
@@ -125,12 +125,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		return seedTask, err
 	}
 	defer body.Close()
-	var reader *limitreader.LimitReader
-	if algo, ok := digestutils.Algorithms[digestType]; ok {
-		reader = limitreader.NewLimitReaderWithLimiterAndDigest(body, cm.limiter, fileDigest, algo)
-	} else {
-		reader = limitreader.NewLimitReaderWithLimiter(cm.limiter, body)
-	}
+	reader := limitreader.NewLimitReaderWithLimiterAndDigest(body, cm.limiter, fileDigest, digestutils.Algorithms[digestType])
 
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(reader, task, detectResult)

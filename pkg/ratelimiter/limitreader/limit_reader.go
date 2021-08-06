@@ -44,25 +44,6 @@ func NewLimitReaderWithLimiter(rl *ratelimiter.RateLimiter, src io.Reader) *Limi
 	}
 }
 
-// NewLimitReaderWithMD5Sum creates LimitReader with a md5 sum.
-// src: reader
-// rate: bytes/second
-func NewLimitReaderWithMD5Sum(src io.Reader, rate int64, md5sum hash.Hash) *LimitReader {
-	return NewLimitReaderWithLimiterAndMD5Sum(src, newRateLimiterWithDefaultWindow(rate), md5sum)
-}
-
-// NewLimitReaderWithLimiterAndMD5Sum creates LimitReader with rateLimiter and md5 sum.
-// src: reader
-// rate: bytes/second
-func NewLimitReaderWithLimiterAndMD5Sum(src io.Reader, rl *ratelimiter.RateLimiter, md5sum hash.Hash) *LimitReader {
-	return &LimitReader{
-		Src:        src,
-		Limiter:    rl,
-		digest:     md5sum,
-		digestType: digestutils.Md5Hash.String(),
-	}
-}
-
 func newRateLimiterWithDefaultWindow(rate int64) *ratelimiter.RateLimiter {
 	return ratelimiter.NewRateLimiter(ratelimiter.TransRate(rate), 2)
 }
@@ -87,14 +68,6 @@ func (lr *LimitReader) Read(p []byte) (n int, err error) {
 		lr.Limiter.AcquireBlocking(int64(n))
 	}
 	return n, e
-}
-
-// Md5 calculates the md5 of all contents read.
-func (lr *LimitReader) Md5() string {
-	if lr.digest != nil {
-		return digestutils.ToHashString(lr.digest)
-	}
-	return ""
 }
 
 // NewLimitReaderWithLimiterAndDigest creates LimitReader with rateLimiter and digest.
