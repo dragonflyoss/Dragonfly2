@@ -33,7 +33,7 @@ install-helm() {
       curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | sh
   fi
 
-  helm install --wait --timeout 10m --create-namespace --namespace ${NAMESPACE} -f ${CHARTS_CONFIG_PATH} dragonfly ${CHARTS_PATH}
+  helm install --wait --timeout 10m --dependency-update --create-namespace --namespace ${NAMESPACE} -f ${CHARTS_CONFIG_PATH} dragonfly ${CHARTS_PATH}
 }
 
 install-file-server() {
