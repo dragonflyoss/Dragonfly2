@@ -49,7 +49,7 @@ func Test_downloadFromSource(t *testing.T) {
 	cfg := &config.DfgetConfig{
 		URL:    "http://a.b.c/xx",
 		Output: output,
-		Digest: strings.Join([]string{constants.Sha256Hash, digestutils.Sha256(content)}, ":"),
+		Digest: strings.Join([]string{constants.Sha256Hash.String(), digestutils.Sha256(content)}, ":"),
 	}
 
 	sourceClient.EXPECT().Download(context.Background(), cfg.URL, nil, nil).Return(ioutil.NopCloser(strings.NewReader(content)), nil)
