@@ -27,6 +27,8 @@ keepStorage: true
 scheduler:
   # schedule timeout
   scheduleTimeout: 30s
+  # when true, only scheduler says back source, daemon can back source
+  disableAutoBackSource: false
   # below example is a stand address
   netAddrs:
     - type: tcp
