@@ -2,7 +2,6 @@ package tasks
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -139,11 +138,7 @@ func (t *tasks) preheat(req string) error {
 		Header: request.Headers,
 		Tag:    request.Tag,
 		Filter: request.Filter,
-	}
-
-	//TODO(@zzy987) CDN don't support sha256
-	if strings.HasPrefix(request.Digest, "md5") {
-		meta.Digest = request.Digest
+		Digest: request.Digest,
 	}
 
 	// Generate range

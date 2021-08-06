@@ -22,7 +22,6 @@ import (
 	"syscall"
 	"testing"
 
-	"d7y.io/dragonfly/v2/internal/constants"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"github.com/google/uuid"
@@ -61,5 +60,5 @@ func TestHashFile(t *testing.T) {
 	f.Write([]byte("hello"))
 	f.Close()
 
-	assert.Equal(t, expected, HashFile(path, constants.Md5Hash))
+	assert.Equal(t, expected, HashFile(path, Md5Hash))
 }

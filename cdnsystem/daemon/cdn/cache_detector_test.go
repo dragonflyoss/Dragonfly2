@@ -218,37 +218,37 @@ var fullPieceMetaRecords = append(partialPieceMetaRecords, &storage.PieceMetaRec
 
 func newCompletedFileMeta(taskID string, URL string, success bool) *storage.FileMetaData {
 	return &storage.FileMetaData{
-		TaskID:          taskID,
-		TaskURL:         URL,
-		PieceSize:       2000,
-		SourceFileLen:   9789,
-		AccessTime:      1624126443284,
-		Interval:        0,
-		CdnFileLength:   9789,
-		SourceRealMd5:   "",
-		PieceMd5Sign:    "98166bdfebb7b71dd5c6d47492d844f4421d90199641ca11fd8ce3111894115a",
-		ExpireInfo:      nil,
-		Finish:          true,
-		Success:         success,
-		TotalPieceCount: 5,
+		TaskID:           taskID,
+		TaskURL:          URL,
+		PieceSize:        2000,
+		SourceFileLen:    9789,
+		AccessTime:       1624126443284,
+		Interval:         0,
+		CdnFileLength:    9789,
+		SourceRealDigest: "",
+		PieceMd5Sign:     "98166bdfebb7b71dd5c6d47492d844f4421d90199641ca11fd8ce3111894115a",
+		ExpireInfo:       nil,
+		Finish:           true,
+		Success:          success,
+		TotalPieceCount:  5,
 	}
 }
 
 func newPartialFileMeta(taskID string, URL string) *storage.FileMetaData {
 	return &storage.FileMetaData{
-		TaskID:          taskID,
-		TaskURL:         URL,
-		PieceSize:       2000,
-		SourceFileLen:   9789,
-		AccessTime:      1624126443284,
-		Interval:        0,
-		CdnFileLength:   0,
-		SourceRealMd5:   "",
-		PieceMd5Sign:    "",
-		ExpireInfo:      nil,
-		Finish:          false,
-		Success:         false,
-		TotalPieceCount: 0,
+		TaskID:           taskID,
+		TaskURL:          URL,
+		PieceSize:        2000,
+		SourceFileLen:    9789,
+		AccessTime:       1624126443284,
+		Interval:         0,
+		CdnFileLength:    0,
+		SourceRealDigest: "",
+		PieceMd5Sign:     "",
+		ExpireInfo:       nil,
+		Finish:           false,
+		Success:          false,
+		TotalPieceCount:  0,
 	}
 }
 

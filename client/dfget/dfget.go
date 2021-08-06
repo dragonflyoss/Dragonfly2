@@ -158,9 +158,9 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 
 	if !stringutils.IsBlank(cfg.Digest) {
 		parsedHash := digestutils.Parse(cfg.Digest)
-		realHash := digestutils.HashFile(target.Name(), parsedHash[0])
+		realHash := digestutils.HashFile(target.Name(), digestutils.Algorithms[parsedHash[0]])
 
-		if realHash != parsedHash[1] {
+		if realHash != "" && realHash != parsedHash[1] {
 			return errors.Errorf("%s digest is not matched: real[%s] expected[%s]", parsedHash[0], realHash, parsedHash[1])
 		}
 	}
