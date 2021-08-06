@@ -40,7 +40,6 @@ type TaskManagerTestSuite struct {
 
 func (suite *TaskManagerTestSuite) TestRegister() {
 	dragonflyURL := "http://dragonfly.io.com?a=a&b=b&c=c"
-	taskID := idgen.TaskID(dragonflyURL, &base.UrlMeta{Filter: "a&b", Tag: "dragonfly", Digest: "f1e2488bba4d1267948d9e2f7008571c"})
 	ctrl := gomock.NewController(suite.T())
 	cdnMgr := mock.NewMockCDNMgr(ctrl)
 	progressMgr := mock.NewMockSeedProgressMgr(ctrl)
@@ -59,13 +58,28 @@ func (suite *TaskManagerTestSuite) TestRegister() {
 		wantErr       bool
 	}{
 		{
-			name: "register",
+			name: "register_md5",
 			args: args{
 				ctx: context.Background(),
 				req: &types.TaskRegisterRequest{
 					URL:    dragonflyURL,
-					TaskID: taskID,
-					Md5:    "f1e2488bba4d1267948d9e2f7008571c",
+					TaskID: idgen.TaskID(dragonflyURL, &base.UrlMeta{Filter: "a&b", Tag: "dragonfly", Digest: "md5:f1e2488bba4d1267948d9e2f7008571c"}),
+					Digest: "md5:f1e2488bba4d1267948d9e2f7008571c",
+					Filter: []string{"a", "b"},
+					Header: nil,
+				},
+			},
+			wantPieceChan: nil,
+			wantErr:       false,
+		},
+		{
+			name: "register_sha256",
+			args: args{
+				ctx: context.Background(),
+				req: &types.TaskRegisterRequest{
+					URL:    dragonflyURL,
+					TaskID: idgen.TaskID(dragonflyURL, &base.UrlMeta{Filter: "a&b", Tag: "dragonfly", Digest: "sha256:b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5"}),
+					Digest: "sha256:b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5",
 					Filter: []string{"a", "b"},
 					Header: nil,
 				},
