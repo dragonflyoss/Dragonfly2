@@ -29,6 +29,7 @@ import (
 type filePeerTaskCallback struct {
 	ctx   context.Context
 	ptm   *peerTaskManager
+	pt    *filePeerTask
 	req   *FilePeerTaskRequest
 	start time.Time
 }
@@ -92,7 +93,7 @@ func (p *filePeerTaskCallback) Done(pt Task) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	err := p.pt.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
@@ -117,7 +118,7 @@ func (p *filePeerTaskCallback) Fail(pt Task, code base.Code, reason string) erro
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	pt.Log().Errorf("file peer task failed, code: %d, reason: %s", code, reason)
-	err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	err := p.pt.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,

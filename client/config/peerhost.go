@@ -30,11 +30,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
+
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
@@ -120,6 +121,9 @@ type SchedulerOption struct {
 
 	// ScheduleTimeout is request timeout.
 	ScheduleTimeout clientutil.Duration `mapstructure:"scheduleTimeout" yaml:"scheduleTimeout"`
+
+	// DisableAutoBackSource indicates not back source normally, only scheduler says back source
+	DisableAutoBackSource bool `mapstructure:"disableAutoBackSource" yaml:"disableAutoBackSource"`
 }
 
 type HostOption struct {
