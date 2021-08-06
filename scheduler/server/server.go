@@ -164,6 +164,7 @@ func (s *Server) Stop() (err error) {
 
 func (s *Server) register(ctx context.Context) error {
 	ip := s.config.Server.IP
+	host := s.config.Server.Host
 	port := int32(s.config.Server.Port)
 	idc := s.config.Host.IDC
 	location := s.config.Host.Location
@@ -172,7 +173,7 @@ func (s *Server) register(ctx context.Context) error {
 	var err error
 	scheduler, err = s.managerClient.UpdateScheduler(ctx, &manager.UpdateSchedulerRequest{
 		SourceType: manager.SourceType_SCHEDULER_SOURCE,
-		HostName:   iputils.HostName,
+		HostName:   host,
 		Ip:         ip,
 		Port:       port,
 		Idc:        idc,

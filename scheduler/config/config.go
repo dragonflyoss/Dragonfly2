@@ -100,6 +100,7 @@ func NewDefaultDynConfig() *DynConfig {
 func NewDefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
 		IP:   iputils.HostIP,
+		Host: iputils.HostName,
 		Port: 8002,
 	}
 }
@@ -226,6 +227,7 @@ type SchedulerConfig struct {
 
 type ServerConfig struct {
 	IP   string `yaml:"ip" mapstructure:"ip"`
+	Host string `yaml:"host" mapstructure:"host"`
 	Port int    `yaml:"port" mapstructure:"port"`
 }
 

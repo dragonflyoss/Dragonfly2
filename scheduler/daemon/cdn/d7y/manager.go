@@ -73,7 +73,7 @@ func cdnHostsToNetAddrs(hosts []*config.CDN) []dfnet.NetAddr {
 	for i := range hosts {
 		netAddrs = append(netAddrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", hosts[i].IP, hosts[i].Port),
+			Addr: fmt.Sprintf("%s:%d", hosts[i].HostName, hosts[i].Port),
 		})
 	}
 	return netAddrs
@@ -195,7 +195,7 @@ func (cm *manager) DownloadTinyFileContent(task *types.Task, cdnHost *types.Peer
 	// TODO download the tiny file
 	// http://host:port/download/{taskId 前3位}/{taskId}?peerId={peerId};
 	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
-		cdnHost.IP, cdnHost.DownloadPort, task.TaskID[:3], task.TaskID)
+		cdnHost.HostName, cdnHost.DownloadPort, task.TaskID[:3], task.TaskID)
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, err
