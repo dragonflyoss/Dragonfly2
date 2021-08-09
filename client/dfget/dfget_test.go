@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/internal/constants"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/source"
 	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
@@ -49,7 +48,7 @@ func Test_downloadFromSource(t *testing.T) {
 	cfg := &config.DfgetConfig{
 		URL:    "http://a.b.c/xx",
 		Output: output,
-		Digest: strings.Join([]string{constants.Sha256Hash, digestutils.Sha256(content)}, ":"),
+		Digest: strings.Join([]string{digestutils.Sha256Hash.String(), digestutils.Sha256(content)}, ":"),
 	}
 
 	sourceClient.EXPECT().Download(context.Background(), cfg.URL, nil, nil).Return(ioutil.NopCloser(strings.NewReader(content)), nil)
