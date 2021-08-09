@@ -1,7 +1,7 @@
 # Kubernetes with Dragonfly
 
 Now we can deploy all components of Dragonfly in Kubernetes cluster. We deploy scheduler and cdn as `StatefulSets`,
-daemon as `DaemonSets`.
+daemon as `DaemonSets`, manager as `Deployments`.
 
 Table of contents:
 
@@ -16,19 +16,25 @@ Table of contents:
 If there is no available Kubernetes cluster for testing, [minikube](https://minikube.sigs.k8s.io/docs/start/) is
 recommended. Just run `minikube start`.
 
-### Clone Chart
+### Helm Install With Chart Repository
+
+You can refer to document [Dragonfly Artifacthub](https://artifacthub.io/packages/helm/dragonfly/dragonfly).
+
+### Helm Install With Main Branch
+
+#### Clone Chart
 
 ```shell
 git clone --recursive https://github.com/dragonflyoss/Dragonfly2.git
 ```
 
-### Install
+#### Install
 
 ```shell
 helm install --namespace dragonfly-system dragonfly Dragonfly2/deploy/helm-charts/charts/dragonfly
 ```
 
-### Wait Dragonfly Ready
+#### Wait Dragonfly Ready
 
 Wait all pods running
 
