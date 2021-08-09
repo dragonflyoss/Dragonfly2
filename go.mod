@@ -30,6 +30,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.7.3
+	github.com/jaegertracing/jaeger-client-go v2.29.1+incompatible // indirect
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -55,6 +56,8 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.7.0
+	github.com/uber/jaeger-client-go v2.29.1+incompatible // indirect
+	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/ugorji/go v1.1.13 // indirect
 	go.opentelemetry.io/otel v0.20.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0

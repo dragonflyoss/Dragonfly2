@@ -31,8 +31,6 @@ type PeerMgr interface {
 
 	ListPeers() *sync.Map
 
-	ListPeersByTask(taskID string) []*types.Peer
-
 	Pick(task *types.Task, limit int, pickFn func(pt *types.Peer) bool) []*types.Peer
 
 	PickReverse(task *types.Task, limit int, pickFn func(peer *types.Peer) bool) []*types.Peer

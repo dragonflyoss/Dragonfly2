@@ -29,6 +29,7 @@ import (
 type Evaluator interface {
 
 	// Evaluate todo Normalization
+	// dst is parent, src is child
 	Evaluate(dst *types.Peer, src *types.Peer) float64
 
 	// NeedAdjustParent determine whether the peer needs a new parent node

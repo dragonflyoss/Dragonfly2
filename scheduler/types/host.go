@@ -18,6 +18,8 @@ package types
 
 import (
 	"sync"
+
+	"go.uber.org/atomic"
 )
 
 type PeerHost struct {
@@ -43,23 +45,23 @@ type PeerHost struct {
 	// NetTopology network device path: switch|router|...
 	NetTopology string
 	// TODO TotalUploadLoad currentUploadLoad decided by real time client report host info
-	TotalUploadLoad   int
-	currentUploadLoad int
+	TotalUploadLoad   int32
+	currentUploadLoad atomic.Int32
 	peerMap           map[string]*Peer
 }
 
 func NewClientPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc, netTopology string,
-	totalUploadLoad int) *PeerHost {
+	totalUploadLoad int32) *PeerHost {
 	return newPeerHost(uuid, ip, hostname, rpcPort, downloadPort, false, securityDomain, location, idc, netTopology, totalUploadLoad)
 }
 
 func NewCDNPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc, netTopology string,
-	totalUploadLoad int) *PeerHost {
+	totalUploadLoad int32) *PeerHost {
 	return newPeerHost(uuid, ip, hostname, rpcPort, downloadPort, true, securityDomain, location, idc, netTopology, totalUploadLoad)
 }
 
 func newPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool, securityDomain, location, idc, netTopology string,
-	totalUploadLoad int) *PeerHost {
+	totalUploadLoad int32) *PeerHost {
 	return &PeerHost{
 		UUID:            uuid,
 		IP:              ip,
@@ -101,37 +103,25 @@ func (h *PeerHost) GetPeer(peerID string) (*Peer, bool) {
 	return peer, ok
 }
 
-func (h *PeerHost) GetCurrentUpload() int {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
-	return h.currentUploadLoad
+func (h *PeerHost) GetCurrentUpload() int32 {
+	return h.currentUploadLoad.Load()
 }
 
 func (h *PeerHost) GetUploadLoadPercent() float64 {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
 	if h.TotalUploadLoad <= 0 {
 		return 1.0
 	}
-	return float64(h.currentUploadLoad) / float64(h.TotalUploadLoad)
+	return float64(h.currentUploadLoad.Load()) / float64(h.TotalUploadLoad)
 }
 
 func (h *PeerHost) GetFreeUploadLoad() int {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
-	return h.TotalUploadLoad - h.currentUploadLoad
+	return int(h.TotalUploadLoad - h.currentUploadLoad.Load())
 }
 
-func (h *PeerHost) IncUploadLoad() int {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-	h.currentUploadLoad++
-	return h.currentUploadLoad
+func (h *PeerHost) IncUploadLoad() int32 {
+	return h.currentUploadLoad.Inc()
 }
 
-func (h *PeerHost) DecUploadLoad() int {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-	h.currentUploadLoad--
-	return h.currentUploadLoad
+func (h *PeerHost) DecUploadLoad() int32 {
+	return h.currentUploadLoad.Dec()
 }

@@ -138,7 +138,7 @@ func getAvgAndLastCost(list []int, splitPos int) (avgCost, lastCost int) {
 
 // getProfits 0.0~unlimited larger and better
 func getProfits(dst *types.Peer, src *types.Peer) float64 {
-	diff := types.GetDiffPieceNum(src, dst)
+	diff := types.GetDiffPieceNum(dst, src)
 	depth := dst.GetDepth()
 
 	return float64(int(diff+1)*src.GetWholeTreeNode()) / float64(depth*depth)

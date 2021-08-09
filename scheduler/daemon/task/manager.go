@@ -72,6 +72,7 @@ func (m *manager) cleanupTasks() {
 			task := value.(*types.Task)
 			if time.Now().Sub(task.GetLastAccessTime()) > m.taskTTL {
 				m.Delete(key.(string))
+				// TODO 删除peers
 			}
 			return true
 		})

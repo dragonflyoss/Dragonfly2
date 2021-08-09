@@ -25,6 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
+	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
 	"d7y.io/dragonfly/v2/scheduler/types"
@@ -43,48 +44,34 @@ type state struct {
 	waitScheduleParentPeerQueue workqueue.DelayingInterface
 }
 
-func newState(sched scheduler.Scheduler, peerManager daemon.PeerMgr, cdnManager daemon.CDNMgr) *state {
+func newState(sched scheduler.Scheduler, peerManager daemon.PeerMgr, cdnManager daemon.CDNMgr, wsdq workqueue.DelayingInterface) *state {
 	return &state{
 		sched:                       sched,
 		peerManager:                 peerManager,
 		cdnManager:                  cdnManager,
-		waitScheduleParentPeerQueue: workqueue.NewNamedDelayingQueue("wait reSchedule parent"),
+		waitScheduleParentPeerQueue: wsdq,
 	}
 }
 
-func (s *state) start() {
-	for {
-		v, shutdown := s.waitScheduleParentPeerQueue.Get()
-		if shutdown {
-			break
-		}
-		peer := v.(*types.Peer)
-		if peer.IsDone() || peer.IsLeave() {
-			logger.WithTaskAndPeerID(peer.Task.TaskID,
-				peer.PeerID).Debugf("waitScheduleParentPeerQueue: peer has left from waitScheduleParentPeerQueue because peer is done or leave, "+
-				"peer status is %s, "+
-				"isLeave %t", peer.GetStatus(), peer.IsLeave())
-			s.waitScheduleParentPeerQueue.Done(v)
-			continue
-		}
-		parent, candidates, hashParent := s.sched.ScheduleParent(peer)
-		if !hashParent && !peer.Host.CDN {
-			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Warnf("waitScheduleParentPeerQueue: there is no available parent，reschedule it in one second")
-			s.waitScheduleParentPeerQueue.Done(v)
-			s.waitScheduleParentPeerQueue.AddAfter(peer, time.Second)
-			continue
-		}
-		peer.SendSchedulePacket(constructSuccessPeerPacket(peer, parent, candidates))
-		logger.WithTaskAndPeerID(peer.Task.TaskID,
-			peer.PeerID).Debugf("waitScheduleParentPeerQueue: peer has left from waitScheduleParentPeerQueue because it has scheduled new parent %v", parent)
-		s.waitScheduleParentPeerQueue.Done(v)
-	}
+type reScheduleParentEvent struct {
+	peer *types.Peer
 }
 
-func (s *state) stop() {
-	if !s.waitScheduleParentPeerQueue.ShuttingDown() {
-		s.waitScheduleParentPeerQueue.ShutDown()
+var _ event = reScheduleParentEvent{}
+
+func (e reScheduleParentEvent) apply(s *state) {
+	parent, candidates, hashParent := s.sched.ScheduleParent(e.peer)
+	if !hashParent && !e.peer.Host.CDN {
+		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
+			e.peer.PeerID).Warnf("reScheduleParentEvent: there is no available parent，reschedule it in one second")
+		s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
+		return
 	}
+	e.peer.SendSchedulePacket(constructSuccessPeerPacket(e.peer, parent, candidates))
+}
+
+func (e reScheduleParentEvent) hashKey() string {
+	return e.peer.Task.TaskID
 }
 
 type startReportPieceResultEvent struct {
@@ -120,6 +107,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	var candidates []*types.Peer
 	parentPeer, ok := s.peerManager.Get(e.pr.DstPid)
 	if !ok || parentPeer.IsLeave() {
+		e.peer.ReplaceParent(nil)
 		var hasParent bool
 		parentPeer, candidates, hasParent = s.sched.ScheduleParent(e.peer)
 		if !hasParent {
@@ -152,10 +140,13 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 	switch e.pr.Code {
 	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
 		// TODO PeerTaskNotFound remove dest peer task, ClientPieceDownloadFail add blank list
-		handleReplaceParent(e.peer, s)
+		reScheduleParent(e.peer, s)
 		return
 	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
 		go func(task *types.Task) {
+			// TODO
+			synclock.Lock(task.TaskID, false)
+			defer synclock.UnLock(task.TaskID, false)
 			task.SetStatus(types.TaskStatusRunning)
 			if err := s.cdnManager.StartSeedTask(context.Background(), task); err != nil {
 				logger.Errorf("start seed task fail: %v", err)
@@ -166,27 +157,13 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 			logger.Debugf("===== successfully obtain seeds from cdn, task: %+v =====", e.peer.Task)
 		}(e.peer.Task)
 	default:
-		handleReplaceParent(e.peer, s)
+		reScheduleParent(e.peer, s)
 		return
 	}
 }
 func (e peerDownloadPieceFailEvent) hashKey() string {
 	return e.peer.Task.TaskID
 }
-
-type peerReplaceParentEvent struct {
-	peer *types.Peer
-}
-
-func (e peerReplaceParentEvent) hashKey() string {
-	return e.peer.Task.TaskID
-}
-
-func (e peerReplaceParentEvent) apply(s *state) {
-	handleReplaceParent(e.peer, s)
-}
-
-var _ event = peerReplaceParentEvent{}
 
 type taskSeedFailEvent struct {
 	task *types.Task
@@ -216,7 +193,6 @@ func (e peerDownloadSuccessEvent) apply(s *state) {
 	for _, child := range children {
 		child.SendSchedulePacket(constructSuccessPeerPacket(child, e.peer, nil))
 	}
-	e.peer.UnBindSendChannel()
 }
 
 func (e peerDownloadSuccessEvent) hashKey() string {
@@ -244,7 +220,6 @@ func (e peerDownloadFailEvent) apply(s *state) {
 		child.SendSchedulePacket(constructSuccessPeerPacket(child, parent, candidates))
 		return true
 	})
-	s.peerManager.Delete(e.peer.PeerID)
 }
 
 func (e peerDownloadFailEvent) hashKey() string {
@@ -258,7 +233,20 @@ type peerLeaveEvent struct {
 var _ event = peerLeaveEvent{}
 
 func (e peerLeaveEvent) apply(s *state) {
-	handlePeerLeave(e.peer, s)
+	e.peer.MarkLeave()
+	removePeerFromCurrentTree(e.peer, s)
+	e.peer.GetChildren().Range(func(key, value interface{}) bool {
+		child := value.(*types.Peer)
+		parent, candidates, hasParent := s.sched.ScheduleParent(child)
+		if !hasParent {
+			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("handlePeerLeave: there is no available parent，reschedule it in one second")
+			s.waitScheduleParentPeerQueue.AddAfter(child, time.Second)
+			return true
+		}
+		child.SendSchedulePacket(constructSuccessPeerPacket(child, parent, candidates))
+		return true
+	})
+	s.peerManager.Delete(e.peer.PeerID)
 }
 
 func (e peerLeaveEvent) hashKey() string {
@@ -299,24 +287,7 @@ func constructFailPeerPacket(peer *types.Peer, errCode base.Code) *schedulerRPC.
 	}
 }
 
-func handlePeerLeave(peer *types.Peer, s *state) {
-	peer.MarkLeave()
-	removePeerFromCurrentTree(peer, s)
-	peer.GetChildren().Range(func(key, value interface{}) bool {
-		child := value.(*types.Peer)
-		parent, candidates, hasParent := s.sched.ScheduleParent(child)
-		if !hasParent {
-			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("handlePeerLeave: there is no available parent，reschedule it in one second")
-			s.waitScheduleParentPeerQueue.AddAfter(child, time.Second)
-			return true
-		}
-		child.SendSchedulePacket(constructSuccessPeerPacket(child, parent, candidates))
-		return true
-	})
-	s.peerManager.Delete(peer.PeerID)
-}
-
-func handleReplaceParent(peer *types.Peer, s *state) {
+func reScheduleParent(peer *types.Peer, s *state) {
 	parent, candidates, hasParent := s.sched.ScheduleParent(peer)
 	if !hasParent {
 		logger.Errorf("handleReplaceParent: failed to schedule parent to peer %s", peer.PeerID)
@@ -331,7 +302,7 @@ func handleSeedTaskFail(task *types.Task) {
 	if task.IsFail() {
 		task.ListPeers().Range(func(data sortedlist.Item) bool {
 			peer := data.(*types.Peer)
-			peer.SendSchedulePacket(constructFailPeerPacket(peer, dfcodes.CdnError))
+			peer.SendSchedulePacket(constructFailPeerPacket(peer, dfcodes.SchedNeedBackSource))
 			return true
 		})
 	}

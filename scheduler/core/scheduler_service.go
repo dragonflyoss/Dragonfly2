@@ -31,6 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/daemon"
+	"d7y.io/dragonfly/v2/scheduler/daemon/cdn"
 	"d7y.io/dragonfly/v2/scheduler/daemon/cdn/d7y"
 	"d7y.io/dragonfly/v2/scheduler/daemon/cdn/source"
 	"d7y.io/dragonfly/v2/scheduler/daemon/host"
@@ -38,6 +39,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/daemon/task"
 	"d7y.io/dragonfly/v2/scheduler/types"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/util/workqueue"
 )
 
 type SchedulerService struct {
@@ -50,12 +52,14 @@ type SchedulerService struct {
 	// Peer mgr
 	peerManager daemon.PeerMgr
 
-	sched    scheduler.Scheduler
-	worker   worker
-	config   *config.SchedulerConfig
-	wg       sync.WaitGroup
-	monitor  *monitor
-	stopOnce sync.Once
+	sched     scheduler.Scheduler
+	worker    worker
+	config    *config.SchedulerConfig
+	monitor   *monitor
+	startOnce sync.Once
+	stopOnce  sync.Once
+	done      chan struct{}
+	wg        sync.WaitGroup
 }
 
 func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface) (*SchedulerService, error) {
@@ -65,10 +69,13 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	}
 	hostManager := host.NewManager()
 	peerManager := peer.NewManager(cfg.GC, hostManager)
-	cdnManager := source.NewManager()
-	if !cfg.DisableCDN {
-		cdnManager, err = d7y.NewManager(dynConfigData.CDNs, peerManager, hostManager)
-		if err != nil {
+	var cdnManager daemon.CDNMgr
+	if cfg.DisableCDN {
+		if cdnManager, err = source.NewManager(peerManager, hostManager); err != nil {
+			return nil, errors.Wrap(err, "new back source cdn manager")
+		}
+	} else {
+		if cdnManager, err = d7y.NewManager(dynConfigData.CDNs, peerManager, hostManager); err != nil {
 			return nil, errors.Wrap(err, "new cdn manager")
 		}
 		dynConfig.Register(cdnManager)
@@ -84,10 +91,8 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	}
 
 	work := newEventLoopGroup(cfg.WorkerNum)
-	var downloadMonitor *monitor
-	if cfg.OpenMonitor {
-		downloadMonitor = newMonitor(peerManager)
-	}
+	downloadMonitor := newMonitor(cfg.OpenMonitor, peerManager)
+	done := make(chan struct{})
 	return &SchedulerService{
 		cdnManager:  cdnManager,
 		taskManager: taskManager,
@@ -97,24 +102,62 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		monitor:     downloadMonitor,
 		sched:       sched,
 		config:      cfg,
+		done:        done,
 	}, nil
 }
 
 func (s *SchedulerService) Serve() {
-	go s.worker.start(newState(s.sched, s.peerManager, s.cdnManager))
-	if s.monitor != nil {
-		go s.monitor.start()
-	}
-	logger.Debugf("start scheduler service successfully")
+	s.startOnce.Do(func() {
+		s.wg.Add(3)
+		wsdq := workqueue.NewNamedDelayingQueue("wait reSchedule parent")
+		go s.runWorkerLoop(wsdq)
+		go s.runReScheduleParentLoop(wsdq)
+		go s.runMonitor()
+		logger.Debugf("start scheduler service successfully")
+	})
 }
 
+func (s *SchedulerService) runWorkerLoop(wsdq workqueue.DelayingInterface) {
+	defer s.wg.Done()
+	s.worker.start(newState(s.sched, s.peerManager, s.cdnManager, wsdq))
+}
+
+func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterface) {
+	defer s.wg.Done()
+	for {
+		select {
+		case <-s.done:
+			wsdq.ShutDown()
+			return
+		default:
+			v, shutdown := wsdq.Get()
+			if shutdown {
+				break
+			}
+			peer := v.(*types.Peer)
+			wsdq.Done(v)
+			if peer.IsDone() || peer.IsLeave() {
+				logger.WithTaskAndPeerID(peer.Task.TaskID,
+					peer.PeerID).Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer is done or leave, peer status is %s, "+
+					"isLeave %t", peer.GetStatus(), peer.IsLeave())
+				continue
+			}
+			s.worker.send(reScheduleParentEvent{peer})
+		}
+	}
+}
+
+func (s *SchedulerService) runMonitor() {
+	defer s.wg.Done()
+	if s.monitor != nil {
+		s.monitor.start(s.done)
+	}
+}
 func (s *SchedulerService) Stop() {
 	s.stopOnce.Do(func() {
+		close(s.done)
 		if s.worker != nil {
 			s.worker.stop()
-		}
-		if s.monitor != nil {
-			s.monitor.stop()
 		}
 	})
 }
@@ -184,12 +227,9 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 	if task.IsFrozen() {
 		task.SetStatus(types.TaskStatusRunning)
 	}
-	//if s.config.DisableCDN {
-	// TODO NeedBackSource
-	//}
 	go func() {
 		if err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
-			if !task.IsSuccess() {
+			if errors.Cause(err) != cdn.ErrCDNInvokeFail {
 				task.SetStatus(types.TaskStatusFailed)
 			}
 			logger.Errorf("failed to seed task: %v", err)

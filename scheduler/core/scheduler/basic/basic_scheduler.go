@@ -115,7 +115,8 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer
 		return peer.GetParent(), []*types.Peer{peer.GetParent()}, true
 	}
 	candidateParents := s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
-	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d candidates parent %v", len(candidateParents), candidateParents)
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d candidates parent %v, current tree node count %d ", len(candidateParents),
+		candidateParents, peer.Task.ListPeers().Size())
 	var value float64
 	var primary = peer.GetParent()
 	for _, candidate := range candidateParents {

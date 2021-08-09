@@ -32,6 +32,7 @@ type manager struct {
 	cleanupExpiredPeerTicker *time.Ticker
 	peerTTL                  time.Duration
 	peerMap                  sync.Map
+	lock                     sync.RWMutex
 }
 
 func (m *manager) ListPeers() *sync.Map {
@@ -51,6 +52,8 @@ func NewManager(cfg *config.GCConfig, hostManager daemon.HostMgr) daemon.PeerMgr
 var _ daemon.PeerMgr = (*manager)(nil)
 
 func (m *manager) Add(peer *types.Peer) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	peer.Host.AddPeer(peer)
 	peer.Task.AddPeer(peer)
 	m.peerMap.Store(peer.PeerID, peer)
@@ -66,24 +69,16 @@ func (m *manager) Get(peerID string) (*types.Peer, bool) {
 }
 
 func (m *manager) Delete(peerID string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	peer, ok := m.Get(peerID)
 	if ok {
 		peer.Host.DeletePeer(peerID)
 		peer.Task.DeletePeer(peer)
 		peer.UnBindSendChannel()
+		peer.ReplaceParent(nil)
 		m.peerMap.Delete(peerID)
 	}
-	return
-}
-
-func (m *manager) ListPeersByTask(taskID string) (peers []*types.Peer) {
-	m.peerMap.Range(func(key, value interface{}) bool {
-		peer := value.(*types.Peer)
-		if peer.Task.TaskID == taskID {
-			peers = append(peers, peer)
-		}
-		return true
-	})
 	return
 }
 
@@ -130,9 +125,13 @@ func (m *manager) cleanupPeers() {
 		m.peerMap.Range(func(key, value interface{}) bool {
 			peer := value.(*types.Peer)
 			if time.Now().Sub(peer.GetLastAccessTime()) > m.peerTTL && !peer.IsDone() {
+				if !peer.IsBindSendChannel() {
+					peer.MarkLeave()
+				}
 				logger.Debugf("peer %s has been more than %s since last access, set status to zombie", peer.PeerID, m.peerTTL)
 				peer.SetStatus(types.PeerStatusZombie)
 			}
+
 			if peer.IsLeave() {
 				logger.Debugf("delete peer %s", peer.PeerID)
 				m.Delete(key.(string))
