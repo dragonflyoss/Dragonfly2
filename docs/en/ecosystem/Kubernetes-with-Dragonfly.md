@@ -18,8 +18,6 @@ recommended. Just run `minikube start`.
 
 ### Install Dragonfly
 
-You can refer to document [Dragonfly Artifacthub](https://artifacthub.io/packages/helm/dragonfly/dragonfly).
-
 #### Install with default configuration
 
 ```bash
