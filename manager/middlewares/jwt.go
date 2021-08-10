@@ -116,7 +116,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 			})
 		},
 
-		TokenLookup:    "header: Authorization, query: token, cookie: jwt",
+		TokenLookup:    "header: Authorization, cookie: jwt, query: token",
 		TokenHeadName:  "Bearer",
 		TimeFunc:       time.Now,
 		SendCookie:     true,

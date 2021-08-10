@@ -92,6 +92,15 @@ type REST interface {
 
 	CreatePreheat(types.CreatePreheatRequest) (*types.Preheat, error)
 	GetPreheat(string) (*types.Preheat, error)
+
+	CreateOauth(types.CreateOauthRequest) (*model.Oauth, error)
+	DestroyOauth(uint) error
+	UpdateOauth(uint, types.UpdateOauthRequest) (*model.Oauth, error)
+	GetOauth(uint) (*model.Oauth, error)
+	GetOauths(types.GetOauthsQuery) (*[]model.Oauth, error)
+	OauthTotalCount(types.GetOauthsQuery) (int64, error)
+	OauthSignin(name string) (string, error)
+	OauthCallback(name, code string) (*model.User, error)
 }
 
 type rest struct {
