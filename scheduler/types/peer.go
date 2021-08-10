@@ -126,14 +126,9 @@ func (peer *Peer) disassociateChild(child *Peer) {
 }
 
 func (peer *Peer) ReplaceParent(parent *Peer) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
 	oldParent := peer.parent
 	if oldParent != nil {
 		oldParent.disassociateChild(peer)
-		oldParent.children.Store(peer.PeerID, peer)
-		oldParent.Host.IncUploadLoad()
-		oldParent.Task.peers.Update(peer)
 	}
 	peer.parent = parent
 	if parent != nil {

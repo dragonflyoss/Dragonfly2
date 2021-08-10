@@ -95,7 +95,7 @@ func newFilePeerTask(ctx context.Context,
 
 	var backSource bool
 	if err != nil {
-		logger.Errorf("step 1: peer %s register failed: err", request.PeerId, err)
+		logger.Errorf("step 1: peer %s register failed: %v", request.PeerId, err)
 		// check if it is back source error
 		if de, ok := err.(*dferrors.DfError); ok && de.Code == dfcodes.SchedNeedBackSource {
 			backSource = true

@@ -83,7 +83,7 @@ var _ event = startReportPieceResultEvent{}
 func (e startReportPieceResultEvent) apply(s *state) {
 	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer)
 	if !hasParent {
-		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("peerScheduleParentEvent: there is no available parent，reschedule it in one second")
+		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("startReportPieceResultEvent: there is no available parent，reschedule it in one second")
 		s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
 		return
 	}
@@ -193,6 +193,7 @@ func (e peerDownloadSuccessEvent) apply(s *state) {
 	for _, child := range children {
 		child.SendSchedulePacket(constructSuccessPeerPacket(child, e.peer, nil))
 	}
+	e.peer.UnBindSendChannel()
 }
 
 func (e peerDownloadSuccessEvent) hashKey() string {
@@ -290,7 +291,7 @@ func constructFailPeerPacket(peer *types.Peer, errCode base.Code) *schedulerRPC.
 func reScheduleParent(peer *types.Peer, s *state) {
 	parent, candidates, hasParent := s.sched.ScheduleParent(peer)
 	if !hasParent {
-		logger.Errorf("handleReplaceParent: failed to schedule parent to peer %s", peer.PeerID)
+		logger.Errorf("handleReplaceParent: failed to schedule parent to peer %s, reschedule it in one second", peer.PeerID)
 		//peer.PacketChan <- constructFailPeerPacket(peer, dfcodes.SchedWithoutParentPeer)
 		s.waitScheduleParentPeerQueue.AddAfter(peer, time.Second)
 		return
