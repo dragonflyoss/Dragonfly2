@@ -57,7 +57,7 @@ cdn:
   image: dragonflyoss/cdn
   tag: v0.1.0-beta
   kubectlImage: bitnami/kubectl
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   resources:
     requests:
       cpu: "0"

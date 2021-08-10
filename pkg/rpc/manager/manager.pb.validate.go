@@ -558,11 +558,21 @@ func (m *AddCDNToCDNClusterRequest) Validate() error {
 		}
 	}
 
-	if m.GetCdnId() != 0 {
-
+	if m.GetCdnId() < 1 {
+		return AddCDNToCDNClusterRequestValidationError{
+			field:  "CdnId",
+			reason: "value must be greater than or equal to 1",
+		}
 	}
 
 	if m.GetCdnClusterId() != 0 {
+
+		if m.GetCdnClusterId() < 1 {
+			return AddCDNToCDNClusterRequestValidationError{
+				field:  "CdnClusterId",
+				reason: "value must be greater than or equal to 1",
+			}
+		}
 
 	}
 
@@ -1114,11 +1124,21 @@ func (m *AddSchedulerToSchedulerClusterRequest) Validate() error {
 		}
 	}
 
-	if m.GetSchedulerId() != 0 {
-
+	if m.GetSchedulerId() < 1 {
+		return AddSchedulerToSchedulerClusterRequestValidationError{
+			field:  "SchedulerId",
+			reason: "value must be greater than or equal to 1",
+		}
 	}
 
 	if m.GetSchedulerClusterId() != 0 {
+
+		if m.GetSchedulerClusterId() < 1 {
+			return AddSchedulerToSchedulerClusterRequestValidationError{
+				field:  "SchedulerClusterId",
+				reason: "value must be greater than or equal to 1",
+			}
+		}
 
 	}
 

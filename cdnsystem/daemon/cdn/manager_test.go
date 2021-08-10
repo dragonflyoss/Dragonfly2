@@ -61,13 +61,16 @@ func (suite *CDNManagerTestSuite) SetupSuite() {
 	}
 	ctrl := gomock.NewController(suite.T())
 	progressMgr := mock.NewMockSeedProgressMgr(ctrl)
-	progressMgr.EXPECT().PublishPiece(taskID, gomock.Any()).Return(nil).Times(98 * 2)
+	progressMgr.EXPECT().PublishPiece(md5TaskID, gomock.Any()).Return(nil).Times(98 * 2)
+	progressMgr.EXPECT().PublishPiece(sha256TaskID, gomock.Any()).Return(nil).Times(98 * 2)
 	suite.cm, _ = newManager(config.New(), storeMgr, progressMgr)
 }
 
-var dragonflyURL = "http://dragonfly.io.com?a=a&b=b&c=c"
-
-var taskID = idgen.TaskID(dragonflyURL, &base.UrlMeta{Digest: "f1e2488bba4d1267948d9e2f7008571c", Tag: "dragonfly", Filter: "a&b"})
+var (
+	dragonflyURL = "http://dragonfly.io.com?a=a&b=b&c=c"
+	md5TaskID    = idgen.TaskID(dragonflyURL, &base.UrlMeta{Digest: "md5:f1e2488bba4d1267948d9e2f7008571c", Tag: "dragonfly", Filter: "a&b"})
+	sha256TaskID = idgen.TaskID(dragonflyURL, &base.UrlMeta{Digest: "sha256:b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5", Tag: "dragonfly", Filter: "a&b"})
+)
 
 func (suite *CDNManagerTestSuite) TearDownSuite() {
 	if suite.workHome != "" {
@@ -120,40 +123,86 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 			return fileInfo.Size(), nil
 		},
 	).AnyTimes()
-	sourceTask := &types.SeedTask{
-		TaskID:           taskID,
-		URL:              dragonflyURL,
-		TaskURL:          urlutils.FilterURLParam(dragonflyURL, []string{"a", "b"}),
-		SourceFileLength: 9789,
-		CdnFileLength:    0,
-		PieceSize:        100,
-		Header:           map[string]string{"md5": "f1e2488bba4d1267948d9e2f7008571c"},
-		CdnStatus:        types.TaskInfoCdnStatusRunning,
-		PieceTotal:       0,
-		RequestMd5:       "f1e2488bba4d1267948d9e2f7008571c",
-		SourceRealMd5:    "",
-		PieceMd5Sign:     "",
+
+	tests := []struct {
+		name       string
+		sourceTask *types.SeedTask
+		targetTask *types.SeedTask
+	}{
+		{
+			name: "trigger_md5",
+			sourceTask: &types.SeedTask{
+				TaskID:           md5TaskID,
+				URL:              dragonflyURL,
+				TaskURL:          urlutils.FilterURLParam(dragonflyURL, []string{"a", "b"}),
+				SourceFileLength: 9789,
+				CdnFileLength:    0,
+				PieceSize:        100,
+				Header:           map[string]string{"md5": "f1e2488bba4d1267948d9e2f7008571c"},
+				CdnStatus:        types.TaskInfoCdnStatusRunning,
+				PieceTotal:       0,
+				RequestDigest:    "md5:f1e2488bba4d1267948d9e2f7008571c",
+				SourceRealDigest: "",
+				PieceMd5Sign:     "",
+			},
+			targetTask: &types.SeedTask{
+				TaskID:           md5TaskID,
+				URL:              dragonflyURL,
+				TaskURL:          urlutils.FilterURLParam(dragonflyURL, []string{"a", "b"}),
+				SourceFileLength: 9789,
+				CdnFileLength:    9789,
+				PieceSize:        100,
+				Header:           map[string]string{"md5": "f1e2488bba4d1267948d9e2f7008571c"},
+				CdnStatus:        types.TaskInfoCdnStatusSuccess,
+				PieceTotal:       0,
+				RequestDigest:    "md5:f1e2488bba4d1267948d9e2f7008571c",
+				SourceRealDigest: "md5:f1e2488bba4d1267948d9e2f7008571c",
+				PieceMd5Sign:     "bb138842f338fff90af737e4a6b2c6f8e2a7031ca9d5900bc9b646f6406d890f",
+			},
+		},
+		{
+			name: "trigger_sha256",
+			sourceTask: &types.SeedTask{
+				TaskID:           sha256TaskID,
+				URL:              dragonflyURL,
+				TaskURL:          urlutils.FilterURLParam(dragonflyURL, []string{"a", "b"}),
+				SourceFileLength: 9789,
+				CdnFileLength:    0,
+				PieceSize:        100,
+				Header:           map[string]string{"sha256": "b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5"},
+				CdnStatus:        types.TaskInfoCdnStatusRunning,
+				PieceTotal:       0,
+				RequestDigest:    "sha256:b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5",
+				SourceRealDigest: "",
+				PieceMd5Sign:     "",
+			},
+			targetTask: &types.SeedTask{
+				TaskID:           sha256TaskID,
+				URL:              dragonflyURL,
+				TaskURL:          urlutils.FilterURLParam(dragonflyURL, []string{"a", "b"}),
+				SourceFileLength: 9789,
+				CdnFileLength:    9789,
+				PieceSize:        100,
+				Header:           map[string]string{"sha256": "b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5"},
+				CdnStatus:        types.TaskInfoCdnStatusSuccess,
+				PieceTotal:       0,
+				RequestDigest:    "sha256:b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5",
+				SourceRealDigest: "sha256:b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5",
+				PieceMd5Sign:     "bb138842f338fff90af737e4a6b2c6f8e2a7031ca9d5900bc9b646f6406d890f",
+			},
+		},
 	}
 
-	targetTask := &types.SeedTask{
-		TaskID:           taskID,
-		URL:              dragonflyURL,
-		TaskURL:          urlutils.FilterURLParam(dragonflyURL, []string{"a", "b"}),
-		SourceFileLength: 9789,
-		CdnFileLength:    9789,
-		PieceSize:        100,
-		Header:           map[string]string{"md5": "f1e2488bba4d1267948d9e2f7008571c"},
-		CdnStatus:        types.TaskInfoCdnStatusSuccess,
-		PieceTotal:       0,
-		RequestMd5:       "f1e2488bba4d1267948d9e2f7008571c",
-		SourceRealMd5:    "f1e2488bba4d1267948d9e2f7008571c",
-		PieceMd5Sign:     "bb138842f338fff90af737e4a6b2c6f8e2a7031ca9d5900bc9b646f6406d890f",
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			gotSeedTask, err := suite.cm.TriggerCDN(context.Background(), tt.sourceTask)
+			suite.Nil(err)
+			suite.Equal(tt.targetTask, gotSeedTask)
+			cacheSeedTask, err := suite.cm.TriggerCDN(context.Background(), gotSeedTask)
+			suite.Nil(err)
+			suite.Equal(tt.targetTask, cacheSeedTask)
+		})
 	}
-	gotSeedTask, err := suite.cm.TriggerCDN(context.Background(), sourceTask)
-	suite.Nil(err)
-	suite.Equal(targetTask, gotSeedTask)
-	cacheSeedTask, err := suite.cm.TriggerCDN(context.Background(), gotSeedTask)
-	suite.Nil(err)
-	suite.Equal(targetTask, cacheSeedTask)
+
 	// TODO test range download
 }

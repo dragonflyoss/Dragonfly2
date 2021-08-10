@@ -26,8 +26,8 @@ type SeedTask struct {
 	Header           map[string]string `json:"header,omitempty"`
 	CdnStatus        string            `json:"cdnStatus,omitempty"`
 	PieceTotal       int32             `json:"pieceTotal,omitempty"`
-	RequestMd5       string            `json:"requestMd5,omitempty"`
-	SourceRealMd5    string            `json:"sourceRealMd5,omitempty"`
+	RequestDigest    string            `json:"requestDigest,omitempty"`
+	SourceRealDigest string            `json:"sourceRealDigest,omitempty"`
 	PieceMd5Sign     string            `json:"pieceMd5Sign,omitempty"`
 }
 
@@ -59,10 +59,10 @@ func (task *SeedTask) UpdateStatus(cdnStatus string) {
 	task.CdnStatus = cdnStatus
 }
 
-func (task *SeedTask) UpdateTaskInfo(cdnStatus, realMD5, pieceMd5Sign string, sourceFileLength, cdnFileLength int64) {
+func (task *SeedTask) UpdateTaskInfo(cdnStatus, realDigest, pieceMd5Sign string, sourceFileLength, cdnFileLength int64) {
 	task.CdnStatus = cdnStatus
 	task.PieceMd5Sign = pieceMd5Sign
-	task.SourceRealMd5 = realMD5
+	task.SourceRealDigest = realDigest
 	task.SourceFileLength = sourceFileLength
 	task.CdnFileLength = cdnFileLength
 }

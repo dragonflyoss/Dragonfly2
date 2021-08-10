@@ -44,14 +44,17 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
+		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	// Run migration
-	if err := migrate(db); err != nil {
-		return nil, err
+	if cfg.Migrate {
+		if err := migrate(db); err != nil {
+			return nil, err
+		}
 	}
 
 	// Run seed
@@ -63,7 +66,7 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 }
 
 func migrate(db *gorm.DB) error {
-	return db.AutoMigrate(
+	return db.Set("gorm:table_options", "DEFAULT CHARSET=utf8mb4 ROW_FORMAT=Dynamic").AutoMigrate(
 		&model.CDNCluster{},
 		&model.CDN{},
 		&model.SchedulerCluster{},
@@ -82,26 +85,6 @@ func seed(db *gorm.DB) error {
 		if err := db.Create(&model.CDNCluster{
 			Name:   "cdn-cluster-1",
 			Config: map[string]interface{}{},
-		}).Error; err != nil {
-			return err
-		}
-	}
-
-	var adminUserCount int64
-	var adminUserName = "admin"
-	if err := db.Model(model.User{}).Where("name = ?", adminUserName).Count(&adminUserCount).Error; err != nil {
-		return err
-	}
-	if adminUserCount <= 0 {
-		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte("Dragonfly2"), bcrypt.MinCost)
-		if err != nil {
-			return err
-		}
-		if err := db.Create(&model.User{
-			EncryptedPassword: string(encryptedPasswordBytes),
-			Name:              adminUserName,
-			Email:             fmt.Sprintf("%s@Dragonfly2.com", adminUserName),
-			State:             model.UserStateEnabled,
 		}).Error; err != nil {
 			return err
 		}
@@ -134,6 +117,26 @@ func seed(db *gorm.DB) error {
 		}
 
 		if err := db.Model(&cdnCluster).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
+			return err
+		}
+	}
+
+	var adminUserCount int64
+	var adminUserName = "admin"
+	if err := db.Model(model.User{}).Where("name = ?", adminUserName).Count(&adminUserCount).Error; err != nil {
+		return err
+	}
+	if adminUserCount <= 0 {
+		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte("Dragonfly2"), bcrypt.MinCost)
+		if err != nil {
+			return err
+		}
+		if err := db.Create(&model.User{
+			EncryptedPassword: string(encryptedPasswordBytes),
+			Name:              adminUserName,
+			Email:             fmt.Sprintf("%s@Dragonfly2.com", adminUserName),
+			State:             model.UserStateEnabled,
+		}).Error; err != nil {
 			return err
 		}
 	}

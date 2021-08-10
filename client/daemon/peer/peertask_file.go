@@ -20,7 +20,6 @@ import (
 	"context"
 	"sync"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
@@ -78,7 +77,7 @@ func newFilePeerTask(ctx context.Context,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
-	perPeerRateLimit rate.Limit) (context.Context, FilePeerTask, *TinyData, error) {
+	perPeerRateLimit rate.Limit) (context.Context, *filePeerTask, *TinyData, error) {
 	ctx, span := tracer.Start(ctx, config.SpanFilePeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
@@ -93,19 +92,19 @@ func newFilePeerTask(ctx context.Context,
 	regSpan.RecordError(err)
 	regSpan.End()
 
-	var backSource bool
+	var needBackSource bool
 	if err != nil {
 		logger.Errorf("step 1: peer %s register failed: %v", request.PeerId, err)
-		// check if it is back source error
-		if de, ok := err.(*dferrors.DfError); ok && de.Code == dfcodes.SchedNeedBackSource {
-			backSource = true
-		}
-		// not back source
-		if !backSource {
+		if schedulerOption.DisableAutoBackSource {
+			logger.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, request.PeerId)
 			span.RecordError(err)
 			span.End()
 			return ctx, nil, nil, err
 		}
+		needBackSource = true
+		// can not detect source or scheduler error, create a new dummy scheduler client
+		schedulerClient = &dummySchedulerClient{}
+		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, request.PeerId)
 	}
 	if result == nil {
 		defer span.End()
@@ -118,7 +117,7 @@ func newFilePeerTask(ctx context.Context,
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var singlePiece *scheduler.SinglePiece
-	if !backSource {
+	if !needBackSource {
 		switch result.SizeScope {
 		case base.SizeScope_SMALL:
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
@@ -160,12 +159,12 @@ func newFilePeerTask(ctx context.Context,
 	if perPeerRateLimit > 0 {
 		limiter = rate.NewLimiter(perPeerRateLimit, int(perPeerRateLimit))
 	}
-	return ctx, &filePeerTask{
+	pt := &filePeerTask{
 		progressCh:     make(chan *FilePeerTaskProgress),
 		progressStopCh: make(chan bool),
 		peerTask: peerTask{
 			host:                host,
-			backSource:          backSource,
+			needBackSource:      needBackSource,
 			request:             request,
 			peerPacketStream:    peerPacketStream,
 			pieceManager:        pieceManager,
@@ -181,36 +180,35 @@ func newFilePeerTask(ctx context.Context,
 			failedPieceCh:       make(chan int32, config.DefaultPieceChanSize),
 			failedReason:        failedReasonNotSet,
 			failedCode:          dfcodes.UnknownError,
-			contentLength:       -1,
+			contentLength:       atomic.NewInt64(-1),
+			pieceParallelCount:  atomic.NewInt32(0),
 			totalPiece:          -1,
 			schedulerOption:     schedulerOption,
+			schedulerClient:     schedulerClient,
 			limiter:             limiter,
 			completedLength:     atomic.NewInt64(0),
 			usedTraffic:         atomic.NewInt64(0),
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "filePeerTask"),
 		},
-	}, nil, nil
+	}
+	// bind func that base peer task did not implement
+	pt.backSourceFunc = pt.backSource
+	pt.setContentLengthFunc = pt.SetContentLength
+	pt.reportPieceResultFunc = pt.ReportPieceResult
+	return ctx, pt, nil, nil
 }
 
 func (pt *filePeerTask) Start(ctx context.Context) (chan *FilePeerTaskProgress, error) {
 	pt.ctx, pt.cancel = context.WithCancel(ctx)
-	if pt.backSource {
-		pt.contentLength = -1
+
+	if pt.needBackSource {
+		pt.contentLength.Store(-1)
 		_ = pt.callback.Init(pt)
-		go func() {
-			defer pt.cleanUnfinished()
-			err := pt.pieceManager.DownloadSource(ctx, pt, pt.request)
-			if err != nil {
-				pt.Errorf("download from source error: %s", err)
-				return
-			}
-			pt.Infof("download from source ok")
-			pt.finish()
-		}()
+		go pt.backSource()
 		return pt.progressCh, nil
 	}
 
-	pt.pullPieces(pt, pt.cleanUnfinished)
+	pt.pullPieces(pt.cleanUnfinished)
 
 	// return a progress channel for request download progress
 	return pt.progressCh, nil
@@ -252,7 +250,7 @@ func (pt *filePeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *sc
 		},
 		TaskID:          pt.taskID,
 		PeerID:          pt.peerID,
-		ContentLength:   pt.contentLength,
+		ContentLength:   pt.contentLength.Load(),
 		CompletedLength: pt.completedLength.Load(),
 		PeerTaskDone:    false,
 	}
@@ -306,7 +304,7 @@ func (pt *filePeerTask) finish() error {
 			},
 			TaskID:          pt.taskID,
 			PeerID:          pt.peerID,
-			ContentLength:   pt.contentLength,
+			ContentLength:   pt.contentLength.Load(),
 			CompletedLength: pt.completedLength.Load(),
 			PeerTaskDone:    true,
 			DoneCallback: func() {
@@ -361,7 +359,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			},
 			TaskID:          pt.taskID,
 			PeerID:          pt.peerID,
-			ContentLength:   pt.contentLength,
+			ContentLength:   pt.contentLength.Load(),
 			CompletedLength: pt.completedLength.Load(),
 			PeerTaskDone:    true,
 			DoneCallback: func() {
@@ -406,10 +404,23 @@ func (pt *filePeerTask) cleanUnfinished() {
 }
 
 func (pt *filePeerTask) SetContentLength(i int64) error {
-	pt.contentLength = i
+	pt.contentLength.Store(i)
 	if !pt.isCompleted() {
 		return errors.New("SetContentLength should call after task completed")
 	}
 
 	return pt.finish()
+}
+
+func (pt *filePeerTask) backSource() {
+	defer pt.cleanUnfinished()
+	err := pt.pieceManager.DownloadSource(pt.ctx, pt, pt.request)
+	if err != nil {
+		pt.Errorf("download from source error: %s", err)
+		pt.failedReason = err.Error()
+		return
+	}
+	pt.Infof("download from source ok")
+	_ = pt.finish()
+	return
 }

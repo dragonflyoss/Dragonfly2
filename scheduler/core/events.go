@@ -111,7 +111,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 		var hasParent bool
 		parentPeer, candidates, hasParent = s.sched.ScheduleParent(e.peer)
 		if !hasParent {
-			logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("peerDownloadPieceSuccessEvent: there is no available parent，reschedule it in one second")
+			logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("peerDownloadPieceSuccessEvent: there is no available parent, reschedule it in one second")
 			s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
 			return
 		}
@@ -214,7 +214,7 @@ func (e peerDownloadFailEvent) apply(s *state) {
 		child := (value).(*types.Peer)
 		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if !hasParent {
-			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("peerDownloadFailEvent: there is no available parent，reschedule it in one second")
+			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("peerDownloadFailEvent: there is no available parent, reschedule it in one second")
 			s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
 			return true
 		}

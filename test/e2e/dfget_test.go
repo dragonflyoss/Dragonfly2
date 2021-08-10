@@ -38,7 +38,7 @@ var _ = Describe("Download with dfget", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println(podName)
 			Expect(strings.HasPrefix(podName, "dragonfly-dfdaemon-")).Should(BeTrue())
-			pod := e2eutil.NewPodExec(dragonflyNamespace, podName)
+			pod := e2eutil.NewPodExec(dragonflyNamespace, podName, "dfdaemon")
 
 			for _, v := range e2eutil.GetFileList() {
 				url := e2eutil.GetFileURL(v)

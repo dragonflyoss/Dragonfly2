@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/semconv"
@@ -60,7 +59,7 @@ func newStreamPeerTask(ctx context.Context,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
-	perPeerRateLimit rate.Limit) (context.Context, StreamPeerTask, *TinyData, error) {
+	perPeerRateLimit rate.Limit) (context.Context, *streamPeerTask, *TinyData, error) {
 	ctx, span := tracer.Start(ctx, config.SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
@@ -76,17 +75,19 @@ func newStreamPeerTask(ctx context.Context,
 	regSpan.RecordError(err)
 	regSpan.End()
 
-	var backSource bool
+	var needBackSource bool
 	if err != nil {
-		// check if it is back source error
-		if de, ok := err.(*dferrors.DfError); ok && de.Code == dfcodes.SchedNeedBackSource {
-			backSource = true
-		}
-		// not back source
-		if !backSource {
-			logger.Errorf("register peer task failed: %s, peer id: %s", err, request.PeerId)
+		logger.Errorf("step 1: peer %s register failed: err", request.PeerId, err)
+		if schedulerOption.DisableAutoBackSource {
+			logger.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, request.PeerId)
+			span.RecordError(err)
+			span.End()
 			return ctx, nil, nil, err
 		}
+		needBackSource = true
+		// can not detect source or scheduler error, create a new dummy scheduler client
+		schedulerClient = &dummySchedulerClient{}
+		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, request.PeerId)
 	}
 	if result == nil {
 		defer span.End()
@@ -99,7 +100,7 @@ func newStreamPeerTask(ctx context.Context,
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var singlePiece *scheduler.SinglePiece
-	if !backSource {
+	if !needBackSource {
 		switch result.SizeScope {
 		case base.SizeScope_SMALL:
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
@@ -139,11 +140,11 @@ func newStreamPeerTask(ctx context.Context,
 	if perPeerRateLimit > 0 {
 		limiter = rate.NewLimiter(perPeerRateLimit, int(perPeerRateLimit))
 	}
-	return ctx, &streamPeerTask{
+	pt := &streamPeerTask{
 		peerTask: peerTask{
 			ctx:                 ctx,
 			host:                host,
-			backSource:          backSource,
+			needBackSource:      needBackSource,
 			request:             request,
 			peerPacketStream:    peerPacketStream,
 			pieceManager:        pieceManager,
@@ -158,16 +159,23 @@ func newStreamPeerTask(ctx context.Context,
 			failedPieceCh:       make(chan int32, config.DefaultPieceChanSize),
 			failedReason:        failedReasonNotSet,
 			failedCode:          dfcodes.UnknownError,
-			contentLength:       -1,
+			contentLength:       atomic.NewInt64(-1),
+			pieceParallelCount:  atomic.NewInt32(0),
 			totalPiece:          -1,
 			schedulerOption:     schedulerOption,
+			schedulerClient:     schedulerClient,
 			limiter:             limiter,
 			completedLength:     atomic.NewInt64(0),
 			usedTraffic:         atomic.NewInt64(0),
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
-		successPieceCh: make(chan int32, 4),
-	}, nil, nil
+		successPieceCh: make(chan int32),
+	}
+	// bind func that base peer task did not implement
+	pt.backSourceFunc = pt.backSource
+	pt.setContentLengthFunc = pt.SetContentLength
+	pt.reportPieceResultFunc = pt.ReportPieceResult
+	return ctx, pt, nil, nil
 }
 
 func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
@@ -210,21 +218,10 @@ func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *s
 
 func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]string, error) {
 	s.ctx, s.cancel = context.WithCancel(ctx)
-	if s.backSource {
-		go func() {
-			s.contentLength = -1
-			_ = s.callback.Init(s)
-			err := s.pieceManager.DownloadSource(ctx, s, s.request)
-			if err != nil {
-				s.Errorf("download from source error: %s", err)
-				s.cleanUnfinished()
-				return
-			}
-			s.Debugf("download from source ok")
-			_ = s.finish()
-		}()
+	if s.needBackSource {
+		go s.backSource()
 	} else {
-		s.pullPieces(s, s.cleanUnfinished)
+		s.pullPieces(s.cleanUnfinished)
 	}
 
 	// wait first piece to get content length and attribute (eg, response header for http/https)
@@ -259,10 +256,6 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		attr[config.HeaderDragonflyPeer] = s.peerID
 		return nil, attr, err
 	case first := <-s.successPieceCh:
-		//if !ok {
-		//	s.Warnf("successPieceCh closed unexpect")
-		//	return nil, nil, errors.NewDaemonConfig("early done")
-		//}
 		firstPiece = first
 	}
 
@@ -270,7 +263,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	attr := map[string]string{}
 	var reader io.Reader = pr
 	var writer io.Writer = pw
-	if s.contentLength != -1 {
+	if s.contentLength.Load() != -1 {
 		attr[headers.ContentLength] = fmt.Sprintf("%d", s.contentLength)
 	} else {
 		attr[headers.TransferEncoding] = "chunked"
@@ -321,8 +314,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 				// not desired piece, cache it
 				cache[cur] = true
 				if cur < desired {
-					s.Warnf("piece number should be equal or greater than %d, received piece number: %d",
-						desired, cur)
+					s.Warnf("piece number should be equal or greater than %d, received piece number: %d", desired, cur)
 				}
 			}
 
@@ -404,7 +396,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 }
 
 func (s *streamPeerTask) SetContentLength(i int64) error {
-	s.contentLength = i
+	s.contentLength.Store(i)
 	if !s.isCompleted() {
 		return nil
 	}
@@ -430,4 +422,19 @@ func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
 		return n, err
 	}
 	return n, pc.Close()
+}
+
+func (s *streamPeerTask) backSource() {
+	s.contentLength.Store(-1)
+	_ = s.callback.Init(s)
+	err := s.pieceManager.DownloadSource(s.ctx, s, s.request)
+	if err != nil {
+		s.Errorf("download from source error: %s", err)
+		s.failedReason = err.Error()
+		s.cleanUnfinished()
+		return
+	}
+	s.Debugf("download from source ok")
+	_ = s.finish()
+	return
 }

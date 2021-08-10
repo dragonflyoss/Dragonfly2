@@ -26,12 +26,12 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -67,7 +67,7 @@ type Task interface {
 	GetTaskID() string
 	GetTotalPieces() int32
 	GetContentLength() int64
-	// SetContentLength will called after download completed, when download from source without content length
+	// SetContentLength will be called after download completed, when download from source without content length
 	SetContentLength(int64) error
 	SetCallback(TaskCallback)
 	AddTraffic(int64)
@@ -186,6 +186,7 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	pt.SetCallback(&filePeerTaskCallback{
 		ctx:   ctx,
 		ptm:   ptm,
+		pt:    pt,
 		req:   req,
 		start: start,
 	})
@@ -221,12 +222,14 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 		}, nil
 	}
 
-	pt.SetCallback(&streamPeerTaskCallback{
-		ctx:   ctx,
-		ptm:   ptm,
-		req:   req,
-		start: start,
-	})
+	pt.SetCallback(
+		&streamPeerTaskCallback{
+			ctx:   ctx,
+			ptm:   ptm,
+			pt:    pt,
+			req:   req,
+			start: start,
+		})
 
 	ptm.runningPeerTasks.Store(req.PeerId, pt)
 

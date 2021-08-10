@@ -25,18 +25,17 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
-
-	"d7y.io/dragonfly/v2/pkg/source"
-	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/source"
+	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
+	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
@@ -58,7 +57,14 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 
 		url = "http://localhost/test/data"
 	)
-	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	schedulerClient, storageManager := setupPeerTaskManagerComponents(
+		ctrl,
+		componentsOption{
+			taskID:             taskID,
+			contentLength:      int64(mockContentLength),
+			pieceSize:          int32(pieceSize),
+			pieceParallelCount: pieceParallelCount,
+		})
 	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
@@ -125,10 +131,11 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	pt.SetCallback(&streamPeerTaskCallback{
 		ctx:   ctx,
 		ptm:   ptm,
+		pt:    pt,
 		req:   req,
 		start: time.Now(),
 	})
-	pt.(*streamPeerTask).backSource = true
+	pt.needBackSource = true
 
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
@@ -157,7 +164,14 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 
 		url = "http://localhost/test/data"
 	)
-	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	schedulerClient, storageManager := setupPeerTaskManagerComponents(
+		ctrl,
+		componentsOption{
+			taskID:             taskID,
+			contentLength:      int64(mockContentLength),
+			pieceSize:          int32(pieceSize),
+			pieceParallelCount: pieceParallelCount,
+		})
 	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
@@ -224,10 +238,11 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	pt.SetCallback(&streamPeerTaskCallback{
 		ctx:   ctx,
 		ptm:   ptm,
+		pt:    pt,
 		req:   req,
 		start: time.Now(),
 	})
-	pt.(*streamPeerTask).backSource = true
+	pt.needBackSource = true
 
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")

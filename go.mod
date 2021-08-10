@@ -34,7 +34,6 @@ require (
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/mattn/go-sqlite3 v2.0.1+incompatible // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mcuadros/go-gin-prometheus v0.1.0
 	github.com/mitchellh/mapstructure v1.4.1
@@ -42,7 +41,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.14.0
-	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/pborman/uuid v1.2.1
 	github.com/pelletier/go-toml v1.8.1 // indirect
@@ -76,9 +75,9 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
-	gorm.io/datatypes v1.0.1
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.9
+	gorm.io/plugin/soft_delete v1.0.2
 	k8s.io/apimachinery v0.20.6 // indirect
 	k8s.io/client-go v11.0.0+incompatible
 )

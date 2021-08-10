@@ -43,6 +43,7 @@ jobs:
       - name: Get dependencies
         run: |
           go mod vendor
+          mkdir -p /tmp/artifact
 
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
@@ -59,3 +60,10 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
           flags: e2etests
+
+      - name: Upload Logs
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: dragonfly-logs
+          path: /tmp/artifact/
