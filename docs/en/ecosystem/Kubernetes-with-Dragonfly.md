@@ -16,30 +16,56 @@ Table of contents:
 If there is no available Kubernetes cluster for testing, [minikube](https://minikube.sigs.k8s.io/docs/start/) is
 recommended. Just run `minikube start`.
 
-### Helm Install With Chart Repository
+### Install Dragonfly
 
 You can refer to document [Dragonfly Artifacthub](https://artifacthub.io/packages/helm/dragonfly/dragonfly).
 
-### Helm Install With Main Branch
+#### Install with default configuration
 
-#### Clone Chart
-
-```shell
-git clone --recursive https://github.com/dragonflyoss/Dragonfly2.git
+```bash
+$ helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
+$ helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly
 ```
 
-#### Install
+#### Install with custom configuration
 
-```shell
-helm install --namespace dragonfly-system dragonfly Dragonfly2/deploy/helm-charts/charts/dragonfly
+Create the `values.yaml` configuration file. It is recommended to use external redis and mysql instead of containers.
+
+The example uses external mysql and redis. Refer to the document for [configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#todo-configuration).
+
+```yaml
+mysql:
+  enable: false
+  auth:
+    host: mysql-host
+    username: dragonfly
+    password: dragonfly 
+    database: manager
+  primary:
+    service:
+      port: 3306
+
+redis:
+  enable: false
+  host: redis-host
+  password: dragonfly
+  service:
+    port: 6379
 ```
 
-#### Wait Dragonfly Ready
+Install dragonfly with `values.yaml`.
+
+```bash
+$ helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
+$ helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly -f values.yaml
+```
+
+### Wait Dragonfly Ready
 
 Wait all pods running
 
-```
-kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
+```bash
+$ kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 ```
 
 ### Configure Runtime
@@ -108,16 +134,16 @@ recommended. Just run `minikube start`.
 ### Build and Apply Kustomize Configuration
 
 ```shell
-git clone https://github.com/dragonflyoss/Dragonfly2.git
-kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | kubectl apply -f -
+$ git clone https://github.com/dragonflyoss/Dragonfly2.git
+$ kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | kubectl apply -f -
 ```
 
 ### Wait Dragonfly Ready
 
 Wait all pods running
 
-```
-kubectl -n dragonfly wait --for=condition=ready --all --timeout=10m pod
+```shell
+$ kubectl -n dragonfly wait --for=condition=ready --all --timeout=10m pod
 ```
 
 ### Next Steps
