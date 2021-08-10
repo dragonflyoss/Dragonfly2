@@ -135,6 +135,16 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	pn := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)
 	pn.GET("", h.GetPermissions(r))
 
+	// oauth
+	oa := apiv1.Group("/oauth")
+	oa.GET("", h.GetOauths)
+	oa.GET("/:id", h.GetOauth)
+	oa.DELETE("/:id", h.DestroyOauth)
+	oa.PUT("/:id", h.UpdateOauth)
+	oa.POST("", h.CreateOauth)
+	oa.GET("/:oauth_name/signin", h.OauthSignin)
+	oa.GET("/:oauth_name/callback", h.OauthCallback(jwt))
+
 	// Security Group
 	sg := apiv1.Group("/security-groups")
 	sg.POST("", h.CreateSecurityGroup)
