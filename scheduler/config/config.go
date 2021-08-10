@@ -78,7 +78,7 @@ func (c *Config) Validate() error {
 func NewDefaultDynConfig() *DynConfig {
 	return &DynConfig{
 		Type:       dc.LocalSourceType,
-		ExpireTime: 60000 * 1000 * 1000,
+		ExpireTime: 30 * time.Second,
 		CDNDirPath: "",
 		Data: &DynconfigData{
 			CDNs: []*CDN{
