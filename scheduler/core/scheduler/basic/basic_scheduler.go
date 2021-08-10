@@ -47,17 +47,17 @@ func newBasicSchedulerBuilder() scheduler.Builder {
 var _ scheduler.Builder = (*basicSchedulerBuilder)(nil)
 
 func (builder *basicSchedulerBuilder) Build(cfg *config.SchedulerConfig, opts *scheduler.BuildOptions) (scheduler.Scheduler, error) {
-	logger.Debugf("start create basic scheduler")
+	logger.Debugf("start create basic scheduler...")
 	evalFactory := evaluator.NewEvaluatorFactory(cfg)
 	evalFactory.Register("default", basic.NewEvaluator(cfg))
 	evalFactory.RegisterGetEvaluatorFunc(0, func(taskID string) (string, bool) { return "default", true })
-	sch := &Scheduler{
+	sched := &Scheduler{
 		evaluator:   evalFactory,
 		peerManager: opts.PeerManager,
 		cfg:         cfg,
 	}
 	logger.Debugf("create basic scheduler successfully")
-	return sch, nil
+	return sched, nil
 }
 
 func (builder *basicSchedulerBuilder) Name() string {
@@ -71,9 +71,9 @@ type Scheduler struct {
 }
 
 func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) {
-	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start scheduler children flow")
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start schedule children flow")
 	if s.evaluator.IsBadNode(peer) {
-		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("peer is badNode")
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("stop schedule children flow because peer is bad node")
 		return
 	}
 	freeUpload := peer.Host.GetFreeUploadLoad()
@@ -106,40 +106,39 @@ func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) 
 }
 
 func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer, bool) {
-	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start scheduler parent flow")
-	if !s.evaluator.NeedAdjustParent(peer) {
-		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("peer %s does not need to replace the parent node", peer.PeerID)
-		if peer.GetParent() == nil {
-			return nil, nil, false
-		}
-		return peer.GetParent(), []*types.Peer{peer.GetParent()}, true
-	}
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start schedule parent flow")
+	//if !s.evaluator.NeedAdjustParent(peer) {
+	//	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("stop schedule parent flow because peer is not need adjust parent", peer.PeerID)
+	//	if peer.GetParent() == nil {
+	//		return nil, nil, false
+	//	}
+	//	return peer.GetParent(), []*types.Peer{peer.GetParent()}, true
+	//}
 	candidateParents := s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
-	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d candidates parent %v, current tree node count %d ", len(candidateParents),
-		candidateParents, peer.Task.ListPeers().Size())
-	var value float64
-	var primary = peer.GetParent()
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d candidates parents, current task tree node count %d ",
+		len(candidateParents), peer.Task.ListPeers().Size())
+	if len(candidateParents) == 0 {
+		return nil, nil, false
+	}
+	evalResult := make(map[float64]*types.Peer)
+	var evalScore []float64
 	for _, candidate := range candidateParents {
-		worth := s.evaluator.Evaluate(candidate, peer)
-
-		// scheduler the same parent, worth reduce a half
-		//if peer.GetParent() != nil && peer.GetParent().PeerID == candidate.PeerID {
-		//	worth = worth / 2.0
-		//}
-
-		if worth > value {
-			value = worth
-			primary = candidate
-		}
+		score := s.evaluator.Evaluate(candidate, peer)
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("evaluate score candidate %s is %f", candidate.PeerID, score)
+		evalResult[score] = candidate
+		evalScore = append(evalScore, score)
 	}
-	if primary != nil {
-		if primary != peer.GetParent() {
-			peer.ReplaceParent(primary)
-		}
-		return primary, candidateParents, true
+	sort.Float64s(evalScore)
+	var parents = make([]*types.Peer, 0, len(candidateParents))
+	for i := range evalScore {
+		parent := evalResult[evalScore[len(evalScore)-i-1]]
+		parents = append(parents, parent)
 	}
-	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID)
-	return nil, nil, false
+	if parents[0] != peer.GetParent() {
+		peer.ReplaceParent(parents[0])
+	}
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("primary parent %s is selected", parents[0].PeerID)
+	return parents[0], parents[1:], true
 }
 
 func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list []*types.Peer) {

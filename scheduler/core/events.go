@@ -60,14 +60,7 @@ type reScheduleParentEvent struct {
 var _ event = reScheduleParentEvent{}
 
 func (e reScheduleParentEvent) apply(s *state) {
-	parent, candidates, hashParent := s.sched.ScheduleParent(e.peer)
-	if !hashParent && !e.peer.Host.CDN {
-		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
-			e.peer.PeerID).Warnf("reScheduleParentEvent: there is no available parent，reschedule it in one second")
-		s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
-		return
-	}
-	e.peer.SendSchedulePacket(constructSuccessPeerPacket(e.peer, parent, candidates))
+	reScheduleParent(e.peer, s)
 }
 
 func (e reScheduleParentEvent) hashKey() string {
@@ -81,6 +74,11 @@ type startReportPieceResultEvent struct {
 var _ event = startReportPieceResultEvent{}
 
 func (e startReportPieceResultEvent) apply(s *state) {
+	if e.peer.GetParent() != nil {
+		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
+			e.peer.PeerID).Warnf("startReportPieceResultEvent: no need schedule parent because peer already had parent %s", e.peer.GetParent().PeerID)
+		return
+	}
 	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer)
 	if !hasParent {
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("startReportPieceResultEvent: there is no available parent，reschedule it in one second")

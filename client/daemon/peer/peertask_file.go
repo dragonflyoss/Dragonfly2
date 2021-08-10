@@ -87,8 +87,8 @@ func newFilePeerTask(ctx context.Context,
 	logger.Infof("request overview, url: %s, filter: %s, meta: %s, biz: %s, peer: %s", request.Url, request.UrlMeta.Filter, request.UrlMeta, request.UrlMeta.Tag, request.PeerId)
 	// trace register
 	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
-	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	logger.Infof("step 1: peer %s start to register", request.PeerId)
+	result, err := schedulerClient.RegisterPeerTask(ctx, request)
 	regSpan.RecordError(err)
 	regSpan.End()
 

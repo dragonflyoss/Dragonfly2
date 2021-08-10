@@ -82,7 +82,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		hostManager.OnNotify(dynConfigData)
 		dynConfig.Register(hostManager)
 	}
-	taskManager := task.NewManager(cfg.GC)
+	taskManager := task.NewManager(cfg.GC, peerManager)
 	sched, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
 		PeerManager: peerManager,
 	})

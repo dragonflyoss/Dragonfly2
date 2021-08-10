@@ -29,6 +29,8 @@ type PeerMgr interface {
 
 	Delete(peerID string)
 
+	ListPeersByTask(taskID string) []*types.Peer
+
 	ListPeers() *sync.Map
 
 	Pick(task *types.Task, limit int, pickFn func(pt *types.Peer) bool) []*types.Peer

@@ -32,6 +32,8 @@ func (status TaskStatus) String() string {
 		return "Waiting"
 	case TaskStatusRunning:
 		return "Running"
+	case TaskStatusZombie:
+		return "Zombie"
 	case TaskStatusSuccess:
 		return "Success"
 	case TaskStatusCDNRegisterFail:
@@ -48,6 +50,7 @@ func (status TaskStatus) String() string {
 const (
 	TaskStatusWaiting TaskStatus = iota
 	TaskStatusRunning
+	TaskStatusZombie
 	TaskStatusSeeding
 	TaskStatusSuccess
 	TaskStatusCDNRegisterFail

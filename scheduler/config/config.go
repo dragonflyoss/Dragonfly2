@@ -127,7 +127,9 @@ func NewDefaultGCConfig() *GCConfig {
 		PeerGCInterval: 5 * time.Minute,
 		TaskGCInterval: 5 * time.Minute,
 		PeerTTL:        1 * time.Minute,
+		PeerTTI:        30 * time.Second,
 		TaskTTL:        2 * time.Minute,
+		TaskTTI:        30 * time.Second,
 	}
 }
 
@@ -233,9 +235,11 @@ type ServerConfig struct {
 
 type GCConfig struct {
 	PeerGCInterval time.Duration `yaml:"peerGCInterval" mapstructure:"peerGCInterval"`
-	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
 	PeerTTL        time.Duration `yaml:"peerTTL" mapstructure:"peerTTL"`
+	PeerTTI        time.Duration `yaml:"peerTTI" mapstructure:"peerTTI"`
+	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
 	TaskTTL        time.Duration `yaml:"taskTTL" mapstructure:"taskTTL"`
+	TaskTTI        time.Duration `yaml:"taskTTI" mapstructure:"taskTTI"`
 }
 
 type HostConfig struct {

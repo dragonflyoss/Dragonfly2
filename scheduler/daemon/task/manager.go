@@ -26,15 +26,19 @@ import (
 )
 
 type manager struct {
+	peerManager              daemon.PeerMgr
 	cleanupExpiredTaskTicker *time.Ticker
 	taskTTL                  time.Duration
+	taskTTI                  time.Duration
 	taskMap                  sync.Map
 }
 
-func NewManager(cfg *config.GCConfig) daemon.TaskMgr {
+func NewManager(cfg *config.GCConfig, peerManager daemon.PeerMgr) daemon.TaskMgr {
 	m := &manager{
+		peerManager:              peerManager,
 		cleanupExpiredTaskTicker: time.NewTicker(cfg.TaskGCInterval),
 		taskTTL:                  cfg.TaskTTL,
+		taskTTI:                  cfg.TaskTTI,
 	}
 	go m.cleanupTasks()
 	return m
@@ -70,9 +74,18 @@ func (m *manager) cleanupTasks() {
 	for range m.cleanupExpiredTaskTicker.C {
 		m.taskMap.Range(func(key, value interface{}) bool {
 			task := value.(*types.Task)
-			if time.Now().Sub(task.GetLastAccessTime()) > m.taskTTL {
-				m.Delete(key.(string))
-				// TODO 删除peers
+			elapse := time.Since(task.GetLastAccessTime())
+			if elapse > m.taskTTI && task.IsSuccess() {
+				task.SetStatus(types.TaskStatusZombie)
+			}
+			if elapse > m.taskTTL {
+				taskID := key.(string)
+				// TODO lock
+				m.Delete(taskID)
+				peers := m.peerManager.ListPeersByTask(taskID)
+				for _, peer := range peers {
+					m.peerManager.Delete(peer.PeerID)
+				}
 			}
 			return true
 		})

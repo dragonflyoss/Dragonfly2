@@ -17,8 +17,6 @@
 package basic
 
 import (
-	"time"
-
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
@@ -44,7 +42,7 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 		logger.Debugf("peer %s need adjust parent because it has not parent and status is %s", peer.PeerID, peer.GetStatus())
 		return true
 	}
-
+	// TODO Check whether the parent node is in the blacklist
 	if peer.GetParent() != nil && eval.IsBadNode(peer.GetParent()) {
 		logger.Debugf("peer %s need adjust parent because it current parent is bad", peer.PeerID)
 		return true
@@ -61,49 +59,27 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 	}
 
 	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
-	if avgCost*40 < lastCost {
-		logger.Debugf("peer %s is bad because recent pieces have taken too long to download", peer.PeerID)
-	}
 	// TODO adjust policy
-	result := (avgCost * 20) < lastCost
-	if result == true {
+	if (avgCost * 20) < lastCost {
 		logger.Debugf("peer %s need adjust parent because it latest download cost is too time consuming", peer.PeerID)
+		return true
 	}
-	return result
+	return false
 }
 
 func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
-	if peer.Host.CDN {
-		return false
-	}
-
 	if peer.IsBad() {
 		logger.Debugf("peer %s is bad because status is %s", peer.PeerID, peer.GetStatus())
 		return true
 	}
-
-	if peer.IsBlocking() {
-		return false
-	}
-
-	parent := peer.GetParent()
-
-	if parent == nil {
-		return false
-	}
-	if time.Now().After(peer.GetLastAccessTime().Add(5 * time.Second)) {
-		logger.Debugf("peer %s is bad because have elapsed %s > 5s since the last access", peer.PeerID, time.Now().Sub(peer.GetLastAccessTime()))
-		return true
-	}
-
-	costHistory := parent.GetCostHistory()
+	costHistory := peer.GetCostHistory()
 	if len(costHistory) < 4 {
 		return false
 	}
 
 	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
 
-	if avgCost*40 < lastCost {
+	if avgCost*40 < lastCost && !peer.Host.CDN {
 		logger.Debugf("peer %s is bad because recent pieces have taken too long to download avg[%d] last[%d]", peer.PeerID, avgCost, lastCost)
 		return true
 	}
@@ -111,13 +87,13 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 	return false
 }
 
-// The bigger the better
-func (eval *baseEvaluator) Evaluate(dst *types.Peer, src *types.Peer) float64 {
-	profits := getProfits(dst, src)
+// Evaluate The bigger, the better
+func (eval *baseEvaluator) Evaluate(parent *types.Peer, child *types.Peer) float64 {
+	profits := getProfits(parent, child)
 
-	load := getHostLoad(dst.Host)
+	load := getHostLoad(parent.Host)
 
-	dist := getDistance(dst, src)
+	dist := getDistance(parent, child)
 
 	return profits * load * dist
 }
