@@ -22,14 +22,17 @@ import (
 	"sync"
 	"time"
 
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/pkg/errors"
+	"github.com/serialx/hashring"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
+
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"github.com/pkg/errors"
-	"github.com/serialx/hashring"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
 )
 
 const (
@@ -92,8 +95,13 @@ var defaultClientOpts = []grpc.DialOption{
 		Time:    2 * time.Minute,
 		Timeout: 10 * time.Second,
 	}),
-	grpc.WithStreamInterceptor(streamClientInterceptor),
-	grpc.WithUnaryInterceptor(unaryClientInterceptor),
+	// TODO make grpc interceptor optional
+	grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+		otelgrpc.StreamClientInterceptor(),
+		streamClientInterceptor)),
+	grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+		otelgrpc.UnaryClientInterceptor(),
+		unaryClientInterceptor)),
 }
 
 type ConnOption interface {

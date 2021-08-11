@@ -17,7 +17,6 @@
 package peer
 
 import (
-	"context"
 	"time"
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -27,7 +26,6 @@ import (
 )
 
 type filePeerTaskCallback struct {
-	ctx   context.Context
 	ptm   *peerTaskManager
 	pt    *filePeerTask
 	req   *FilePeerTaskRequest
@@ -42,7 +40,7 @@ func (p *filePeerTaskCallback) GetStartTime() time.Time {
 
 func (p *filePeerTaskCallback) Init(pt Task) error {
 	// prepare storage
-	err := p.ptm.storageManager.RegisterTask(p.ctx,
+	err := p.ptm.storageManager.RegisterTask(p.pt.ctx,
 		storage.RegisterTaskRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID:      pt.GetPeerID(),
@@ -60,7 +58,7 @@ func (p *filePeerTaskCallback) Init(pt Task) error {
 
 func (p *filePeerTaskCallback) Update(pt Task) error {
 	// update storage
-	err := p.ptm.storageManager.UpdateTask(p.ctx,
+	err := p.ptm.storageManager.UpdateTask(p.pt.ctx,
 		&storage.UpdateTaskRequest{
 			PeerTaskMetaData: storage.PeerTaskMetaData{
 				PeerID: pt.GetPeerID(),
@@ -79,7 +77,7 @@ func (p *filePeerTaskCallback) Done(pt Task) error {
 	var cost = time.Now().Sub(p.start).Milliseconds()
 	pt.Log().Infof("file peer task done, cost: %dms", cost)
 	e := p.ptm.storageManager.Store(
-		context.Background(),
+		p.pt.ctx,
 		&storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID:      pt.GetPeerID(),
@@ -93,7 +91,7 @@ func (p *filePeerTaskCallback) Done(pt Task) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	err := p.pt.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	err := p.pt.schedulerClient.ReportPeerResult(p.pt.ctx, &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
@@ -118,7 +116,7 @@ func (p *filePeerTaskCallback) Fail(pt Task, code base.Code, reason string) erro
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	pt.Log().Errorf("file peer task failed, code: %d, reason: %s", code, reason)
-	err := p.pt.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+	err := p.pt.schedulerClient.ReportPeerResult(p.pt.ctx, &scheduler.PeerResult{
 		TaskId:         pt.GetTaskID(),
 		PeerId:         pt.GetPeerID(),
 		SrcIp:          p.ptm.host.Ip,
