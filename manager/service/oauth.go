@@ -99,7 +99,7 @@ func (s *rest) OauthSignin(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return o.AuthCodeURL("state"), nil
+	return o.AuthCodeURL(), nil
 }
 
 func (s *rest) OauthCallback(name, code string) (*model.User, error) {

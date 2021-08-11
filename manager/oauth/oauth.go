@@ -31,7 +31,7 @@ type Oauther interface {
 	GetRediectURL(*gorm.DB) (string, error)
 	GetOauthUserInfo(string) (*oauth2User, error)
 	ExchangeUserByCode(string, *gorm.DB) (*model.User, error)
-	AuthCodeURL(string) string
+	AuthCodeURL() string
 }
 
 func NewBaseOauth2(name string, clientID string, clientSecret string, scopes string, authURL string, tokenURL string, db *gorm.DB) (Oauther, error) {
@@ -67,8 +67,8 @@ func (oa *baseOauth2) GetRediectURL(db *gorm.DB) (string, error) {
 	return fmt.Sprintf("%s/api/v1/oauth/%s/sigin", s.Value, oa.Name), nil
 }
 
-func (oa *baseOauth2) AuthCodeURL(state string) string {
-	return oa.Config.AuthCodeURL(state)
+func (oa *baseOauth2) AuthCodeURL() string {
+	return oa.Config.AuthCodeURL("state")
 }
 
 func (oa *baseOauth2) GetOauthUserInfo(token string) (*oauth2User, error) {
