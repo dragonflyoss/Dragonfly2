@@ -22,6 +22,7 @@ import (
 
 	server2 "d7y.io/dragonfly/v2/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/tasks"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -144,7 +145,11 @@ func (s *Server) Serve() error {
 	}
 
 	logger.Infof("start server at port %d", port)
-	if err := rpc.StartTCPServer(port, port, s.schedulerServer); err != nil {
+	var opts []grpc.ServerOption
+	if s.config.Options.Telemetry.Jaeger != "" {
+		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	}
+	if err := rpc.StartTCPServer(port, port, s.schedulerServer, opts...); err != nil {
 		return err
 	}
 	return nil

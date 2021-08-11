@@ -22,14 +22,15 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/dferrors"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"github.com/pkg/errors"
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
+
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
 const (
