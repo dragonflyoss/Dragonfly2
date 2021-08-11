@@ -9,6 +9,11 @@ import (
 	"github.com/go-redis/cache/v8"
 )
 
+const (
+	CDNNamespace       = "cdn"
+	SchedulerNamespace = "scheduler"
+)
+
 type Cache struct {
 	*cache.Cache
 	TTL time.Duration
@@ -33,5 +38,13 @@ func New(cfg *config.Config) *Cache {
 }
 
 func MakeCacheKey(namespace string, id string) string {
-	return fmt.Sprintf("manager: %s: %s", namespace, id)
+	return fmt.Sprintf("manager:%s:%s", namespace, id)
+}
+
+func MakeCDNCacheKey(hostname, clusterID string) string {
+	return MakeCacheKey(CDNNamespace, fmt.Sprintf("%s-%s", hostname, clusterID))
+}
+
+func MakeSchedulerCacheKey(hostname, clusterID string) string {
+	return MakeCacheKey(SchedulerNamespace, fmt.Sprintf("%s-%s", hostname, clusterID))
 }
