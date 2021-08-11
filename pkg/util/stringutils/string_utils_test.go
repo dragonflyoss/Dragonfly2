@@ -50,3 +50,10 @@ func TestContains(t *testing.T) {
 	assert.True(t, ContainsFold([]string{"a", "B"}, "b"))
 	assert.False(t, Contains([]string{"a", "B"}, "b"))
 }
+
+func TestRandString(t *testing.T) {
+	assert.True(t, len(RandString(10)) == 10)
+	x := RandString(10)
+	y := RandString(10)
+	assert.False(t, x == y)
+}
