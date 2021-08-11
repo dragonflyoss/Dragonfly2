@@ -35,6 +35,7 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
+	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -362,7 +363,7 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  NewMockPieceDownloader(ctrl),
-			computePieceSize: computePieceSize,
+			computePieceSize: cdnutil.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: sched,

@@ -26,8 +26,12 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
+
+	"github.com/golang/mock/gomock"
+	testifyassert "github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
@@ -35,8 +39,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
-	"github.com/golang/mock/gomock"
-	testifyassert "github.com/stretchr/testify/assert"
 )
 
 func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
@@ -100,7 +102,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			computePieceSize: computePieceSize,
+			computePieceSize: cdnutil.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -219,7 +221,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			computePieceSize: computePieceSize,
+			computePieceSize: cdnutil.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,

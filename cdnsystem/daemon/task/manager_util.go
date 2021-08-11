@@ -22,7 +22,9 @@ import (
 	"reflect"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"github.com/pkg/errors"
+
+	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
 	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -30,7 +32,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -108,7 +109,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 
 	// calculate piece size and update the PieceSize and PieceTotal
 	if task.PieceSize <= 0 {
-		pieceSize := computePieceSize(task.SourceFileLength)
+		pieceSize := cdnutil.ComputePieceSize(task.SourceFileLength)
 		task.PieceSize = pieceSize
 	}
 	tm.taskStore.Add(task.TaskID, task)
@@ -192,21 +193,4 @@ func isSameTask(task1, task2 *types.SeedTask) bool {
 	}
 
 	return true
-}
-
-// computePieceSize computes the piece size with specified fileLength.
-//
-// If the fileLength<=0, which means failed to get fileLength
-// and then use the DefaultPieceSize.
-func computePieceSize(length int64) int32 {
-	if length <= 0 || length <= 200*1024*1024 {
-		return config.DefaultPieceSize
-	}
-
-	gapCount := length / int64(100*1024*1024)
-	mpSize := (gapCount-2)*1024*1024 + config.DefaultPieceSize
-	if mpSize > config.DefaultPieceSizeLimit {
-		return config.DefaultPieceSizeLimit
-	}
-	return int32(mpSize)
 }
