@@ -69,7 +69,7 @@ func Contains(slice []string, ele string) bool {
 }
 
 func RandString(len int) string {
-	r := rand.New(rand.NewSource(time.Now().Unix()))
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	bytes := make([]byte, len)
 	for i := 0; i < len; i++ {
 		b := r.Intn(26) + 65
