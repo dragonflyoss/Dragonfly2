@@ -51,18 +51,10 @@ func (m *manager) Get(uuid string) (*types.PeerHost, bool) {
 	return host.(*types.PeerHost), true
 }
 
-func (m *manager) GetOrAdd(host *types.PeerHost) (actual *types.PeerHost, loaded bool) {
-	item, loaded := m.hostMap.LoadOrStore(host.UUID, host)
-	if loaded {
-		return item.(*types.PeerHost), true
-	}
-	return host, false
-}
-
 func (m *manager) OnNotify(dynconfig *config.DynconfigData) {
 	for _, cdn := range dynconfig.CDNs {
 		cdnHost := types.NewCDNPeerHost(idgen.CDNUUID(cdn.HostName, cdn.Port), cdn.IP, cdn.HostName, cdn.Port, cdn.DownloadPort, cdn.SecurityGroup,
 			cdn.Location, cdn.IDC, cdn.NetTopology, 100)
-		m.GetOrAdd(cdnHost)
+		m.hostMap.Store(cdnHost.UUID, cdnHost)
 	}
 }
