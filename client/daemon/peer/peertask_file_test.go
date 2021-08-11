@@ -131,7 +131,6 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	pt.needBackSource = true
 
 	pt.SetCallback(&filePeerTaskCallback{
-		ctx:   ctx,
 		ptm:   ptm,
 		pt:    pt,
 		req:   req,
@@ -250,7 +249,6 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	pt.needBackSource = true
 
 	pt.SetCallback(&filePeerTaskCallback{
-		ctx:   ctx,
 		ptm:   ptm,
 		pt:    pt,
 		req:   req,
