@@ -48,14 +48,14 @@ func NewStorageCleaner(cfg *GCConfig, driver storedriver.Driver, storageMgr Mana
 }
 
 func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) {
-	freeSpace, err := cleaner.driver.GetAvailSpace()
+	freeSpace, err := cleaner.driver.GetFreeSpace()
 	if err != nil {
 		if cdnerrors.IsFileNotExist(err) {
 			err = cleaner.driver.CreateBaseDir()
 			if err != nil {
 				return nil, err
 			}
-			freeSpace, _ = cleaner.driver.GetAvailSpace()
+			freeSpace, _ = cleaner.driver.GetFreeSpace()
 		} else {
 			return nil, fmt.Errorf("get available space: %v", err)
 		}

@@ -68,7 +68,7 @@ type Driver interface {
 	Stat(raw *Raw) (*StorageInfo, error)
 
 	// GetAvailSpace returns the available disk space in B.
-	GetAvailSpace() (unit.Bytes, error)
+	GetFreeSpace() (unit.Bytes, error)
 
 	// GetTotalAndFreeSpace
 	GetTotalAndFreeSpace() (unit.Bytes, unit.Bytes, error)
@@ -254,8 +254,8 @@ func (s *driverPlugin) MoveFile(src string, dst string) error {
 }
 
 // GetAvailSpace returns the available disk space in B.
-func (s *driverPlugin) GetAvailSpace() (unit.Bytes, error) {
-	return s.instance.GetAvailSpace()
+func (s *driverPlugin) GetFreeSpace() (unit.Bytes, error) {
+	return s.instance.GetFreeSpace()
 }
 
 func (s *driverPlugin) GetHomePath() string {
