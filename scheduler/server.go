@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package server
+package scheduler
 
 import (
 	"context"
 	"time"
 
+	server2 "d7y.io/dragonfly/v2/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/tasks"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
@@ -29,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/core"
-	"d7y.io/dragonfly/v2/scheduler/server/service"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
@@ -100,7 +100,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	s.schedulerService = schedulerService
 	// Initialize scheduler service
-	s.schedulerServer, err = service.NewSchedulerServer(schedulerService)
+	s.schedulerServer, err = server2.NewSchedulerServer(schedulerService)
 
 	if err != nil {
 		return nil, err
