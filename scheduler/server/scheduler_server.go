@@ -33,10 +33,18 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/types"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+var tracer trace.Tracer
+
+func init() {
+	tracer = otel.Tracer("scheduler-server")
+}
 
 type SchedulerServer struct {
 	service *core.SchedulerService
@@ -53,6 +61,8 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	defer func() {
 		logger.Debugf("peer %s register result %v, err: %v", request.PeerId, resp, err)
 	}()
+	ctx, span := tracer.Start(ctx, "registerPeerTask")
+	defer span.End()
 	logger.Debugf("register peer task, req: %+v", request)
 	resp = new(scheduler.RegisterResult)
 	if verifyErr := validateParams(request); verifyErr != nil {

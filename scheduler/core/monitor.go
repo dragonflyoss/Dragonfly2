@@ -78,7 +78,7 @@ func (m *monitor) printDebugInfo() string {
 		return
 	})
 	sort.Slice(peers, func(i, j int) bool {
-		return !(peers[i].GetStatus()-peers[i].GetStatus() <= 0)
+		return peers[i].GetStatus() > peers[j].GetStatus()
 	})
 	buffer := bytes.NewBuffer([]byte{})
 	table := tablewriter.NewWriter(buffer)
