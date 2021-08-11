@@ -95,11 +95,11 @@ func (s *rest) OauthSignin(name string) (string, error) {
 		return "", err
 	}
 
-	o, err := oauth.NewOauth(name, oauthModel.ClientID, oauthModel.ClientSecret, oauthModel.Scopes, oauthModel.AuthURL, oauthModel.TokenURL, s.db)
+	o, err := oauth.NewBaseOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, oauthModel.Scopes, oauthModel.AuthURL, oauthModel.TokenURL, s.db)
 	if err != nil {
 		return "", err
 	}
-	return o.Config.AuthCodeURL("state"), nil
+	return o.AuthCodeURL("state"), nil
 }
 
 func (s *rest) OauthCallback(name, code string) (*model.User, error) {
@@ -108,11 +108,11 @@ func (s *rest) OauthCallback(name, code string) (*model.User, error) {
 		return nil, err
 	}
 
-	o, err := oauth.NewOauth(name, oauthModel.ClientID, oauthModel.ClientSecret, oauthModel.Scopes, oauthModel.AuthURL, oauthModel.TokenURL, s.db)
+	o, err := oauth.NewBaseOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, oauthModel.Scopes, oauthModel.AuthURL, oauthModel.TokenURL, s.db)
 	if err != nil {
 		return nil, err
 	}
-	user, err := o.GetOauthUserInfo(code)
+	user, err := o.ExchangeUserByCode(code, s.db)
 	if err != nil {
 		return nil, err
 	}
