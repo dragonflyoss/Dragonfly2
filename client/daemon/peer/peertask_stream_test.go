@@ -28,6 +28,7 @@ import (
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
@@ -97,7 +98,7 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			computePieceSize: computePieceSize,
+			computePieceSize: cdnutil.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -129,7 +130,6 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		0)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
-		ctx:   ctx,
 		ptm:   ptm,
 		pt:    pt,
 		req:   req,
@@ -204,7 +204,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			computePieceSize: computePieceSize,
+			computePieceSize: cdnutil.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -236,7 +236,6 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		0)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
-		ctx:   ctx,
 		ptm:   ptm,
 		pt:    pt,
 		req:   req,

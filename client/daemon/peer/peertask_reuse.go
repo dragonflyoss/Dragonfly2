@@ -22,15 +22,16 @@ import (
 	"io"
 	"time"
 
+	"github.com/go-http-utils/headers"
+	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"github.com/go-http-utils/headers"
-	"go.opentelemetry.io/otel/semconv"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
