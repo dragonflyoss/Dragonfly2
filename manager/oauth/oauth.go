@@ -126,12 +126,11 @@ func (oa *baseOauth2) ExchangeUserByCode(code string, db *gorm.DB) (*model.User,
 		}
 		return &user, nil
 
-	} else {
-		user := model.User{}
-		if err := db.Model(model.User{}).Where("name = ?", u.Name).First(&user).Error; err != nil {
-			return nil, err
-		}
-		return &user, nil
 	}
+	user := model.User{}
+	if err := db.Model(model.User{}).Where("name = ?", u.Name).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 
 }
