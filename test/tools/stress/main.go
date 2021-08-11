@@ -33,13 +33,13 @@ import (
 	"syscall"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/montanaflynn/stats"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var (

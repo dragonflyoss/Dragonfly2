@@ -184,7 +184,6 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 		return nil, tiny, nil
 	}
 	pt.SetCallback(&filePeerTaskCallback{
-		ctx:   ctx,
 		ptm:   ptm,
 		pt:    pt,
 		req:   req,
@@ -224,7 +223,6 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 
 	pt.SetCallback(
 		&streamPeerTaskCallback{
-			ctx:   ctx,
 			ptm:   ptm,
 			pt:    pt,
 			req:   req,
