@@ -19,9 +19,27 @@ package cdnutil
 import (
 	"fmt"
 
+	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 func GenCDNPeerID(taskID string) string {
 	return fmt.Sprintf("%s-%s_%s", iputils.HostName, taskID, "CDN")
+}
+
+// ComputePieceSize computes the piece size with specified fileLength.
+//
+// If the fileLength<=0, which means failed to get fileLength
+// and then use the DefaultPieceSize.
+func ComputePieceSize(length int64) int32 {
+	if length <= 0 || length <= 200*1024*1024 {
+		return config.DefaultPieceSize
+	}
+
+	gapCount := length / int64(100*1024*1024)
+	mpSize := (gapCount-2)*1024*1024 + config.DefaultPieceSize
+	if mpSize > config.DefaultPieceSizeLimit {
+		return config.DefaultPieceSizeLimit
+	}
+	return int32(mpSize)
 }

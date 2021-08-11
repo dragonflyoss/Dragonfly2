@@ -29,6 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -86,8 +87,8 @@ func newFilePeerTask(ctx context.Context,
 
 	logger.Infof("request overview, url: %s, filter: %s, meta: %s, biz: %s, peer: %s", request.Url, request.UrlMeta.Filter, request.UrlMeta, request.UrlMeta.Tag, request.PeerId)
 	// trace register
-	_, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
-	result, err := schedulerClient.RegisterPeerTask(ctx, request)
+	regCtx, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
+	result, err := schedulerClient.RegisterPeerTask(regCtx, request)
 	logger.Infof("step 1: peer %s start to register", request.PeerId)
 	regSpan.RecordError(err)
 	regSpan.End()
@@ -104,8 +105,10 @@ func newFilePeerTask(ctx context.Context,
 		needBackSource = true
 		// can not detect source or scheduler error, create a new dummy scheduler client
 		schedulerClient = &dummySchedulerClient{}
+		result = &scheduler.RegisterResult{TaskId: idgen.TaskID(request.Url, request.UrlMeta)}
 		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, request.PeerId)
 	}
+
 	if result == nil {
 		defer span.End()
 		span.RecordError(err)

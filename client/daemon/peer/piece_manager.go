@@ -24,7 +24,7 @@ import (
 
 	"golang.org/x/time/rate"
 
-	cdnconfig "d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -56,7 +56,7 @@ var _ PieceManager = (*pieceManager)(nil)
 func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (PieceManager, error) {
 	pm := &pieceManager{
 		storageManager:   s,
-		computePieceSize: computePieceSize,
+		computePieceSize: cdnutil.ComputePieceSize,
 		calculateDigest:  true,
 	}
 	for _, opt := range opts {
@@ -385,22 +385,4 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	log.Infof("download from source ok")
 	return nil
-}
-
-// TODO copy from cdnsystem/daemon/mgr/task/manager_util.go
-// computePieceSize computes the piece size with specified fileLength.
-//
-// If the fileLength<=0, which means failed to get fileLength
-// and then use the DefaultPieceSize.
-func computePieceSize(length int64) int32 {
-	if length <= 0 || length <= 200*1024*1024 {
-		return cdnconfig.DefaultPieceSize
-	}
-
-	gapCount := length / int64(100*1024*1024)
-	mpSize := (gapCount-2)*1024*1024 + cdnconfig.DefaultPieceSize
-	if mpSize > cdnconfig.DefaultPieceSizeLimit {
-		return cdnconfig.DefaultPieceSizeLimit
-	}
-	return int32(mpSize)
 }
