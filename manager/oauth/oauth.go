@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"gorm.io/gorm"
@@ -68,7 +69,7 @@ func (oa *baseOauth2) GetRediectURL(db *gorm.DB) (string, error) {
 }
 
 func (oa *baseOauth2) AuthCodeURL() string {
-	return oa.Config.AuthCodeURL("state")
+	return oa.Config.AuthCodeURL(stringutils.RandString(5))
 }
 
 func (oa *baseOauth2) GetOauthUserInfo(token string) (*oauth2User, error) {
