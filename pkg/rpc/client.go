@@ -22,7 +22,6 @@ import (
 	"sync"
 	"time"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/pkg/errors"
 	"github.com/serialx/hashring"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -96,12 +95,10 @@ var defaultClientOpts = []grpc.DialOption{
 		Timeout: 10 * time.Second,
 	}),
 	// TODO make grpc interceptor optional
-	grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-		otelgrpc.StreamClientInterceptor(),
-		streamClientInterceptor)),
-	grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-		otelgrpc.UnaryClientInterceptor(),
-		unaryClientInterceptor)),
+	grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor(),
+		streamClientInterceptor),
+	grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor(),
+		unaryClientInterceptor),
 }
 
 type ConnOption interface {
