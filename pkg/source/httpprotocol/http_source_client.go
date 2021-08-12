@@ -30,7 +30,7 @@ import (
 
 	"github.com/go-http-utils/headers"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/task"
+	"d7y.io/dragonfly/v2/cdnsystem/supervise/task"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
