@@ -181,30 +181,30 @@ func newStreamPeerTask(ctx context.Context,
 	return ctx, pt, nil, nil
 }
 
-func (s *streamPeerTask) ReportPieceResult(piece *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
+func (s *streamPeerTask) ReportPieceResult(result *pieceTaskResult) error {
 	defer s.recoverFromPanic()
 	// retry failed piece
-	if !pieceResult.Success {
-		_ = s.peerPacketStream.Send(pieceResult)
-		s.failedPieceCh <- pieceResult.PieceNum
+	if !result.pieceResult.Success {
+		_ = s.peerPacketStream.Send(result.pieceResult)
+		s.failedPieceCh <- result.pieceResult.PieceNum
 		return nil
 	}
 
 	s.lock.Lock()
-	if s.readyPieces.IsSet(pieceResult.PieceNum) {
+	if s.readyPieces.IsSet(result.pieceResult.PieceNum) {
 		s.lock.Unlock()
-		s.Warnf("piece %d is already reported, skipped", pieceResult.PieceNum)
+		s.Warnf("piece %d is already reported, skipped", result.pieceResult.PieceNum)
 		return nil
 	}
 	// mark piece processed
-	s.readyPieces.Set(pieceResult.PieceNum)
-	s.completedLength.Add(int64(piece.RangeSize))
+	s.readyPieces.Set(result.pieceResult.PieceNum)
+	s.completedLength.Add(int64(result.piece.RangeSize))
 	s.lock.Unlock()
 
-	pieceResult.FinishedCount = s.readyPieces.Settled()
-	_ = s.peerPacketStream.Send(pieceResult)
-	s.successPieceCh <- piece.PieceNum
-	s.Debugf("success piece %d sent", piece.PieceNum)
+	result.pieceResult.FinishedCount = s.readyPieces.Settled()
+	_ = s.peerPacketStream.Send(result.pieceResult)
+	s.successPieceCh <- result.piece.PieceNum
+	s.Debugf("success piece %d sent", result.piece.PieceNum)
 	select {
 	case <-s.ctx.Done():
 		s.Warnf("peer task context done due to %s", s.ctx.Err())
@@ -367,7 +367,7 @@ func (s *streamPeerTask) finish() error {
 		// send EOF piece result to scheduler
 		_ = s.peerPacketStream.Send(
 			scheduler.NewEndPieceResult(s.taskID, s.peerID, s.readyPieces.Settled()))
-		s.Debugf("end piece result sent")
+		s.Debugf("end piece result sent, peer task finished")
 		close(s.done)
 		//close(s.successPieceCh)
 		if err := s.callback.Done(s); err != nil {
@@ -385,7 +385,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 		// send EOF piece result to scheduler
 		_ = s.peerPacketStream.Send(
 			scheduler.NewEndPieceResult(s.taskID, s.peerID, s.readyPieces.Settled()))
-		s.Debugf("end piece result sent")
+		s.Errorf("end piece result sent, peer task failed")
 		close(s.done)
 		//close(s.successPieceCh)
 		if err := s.callback.Fail(s, s.failedCode, s.failedReason); err != nil {

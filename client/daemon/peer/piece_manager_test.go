@@ -123,9 +123,9 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		func() {
+		t.Run(tc.name, func(t *testing.T) {
 			/********** prepare test start **********/
-			mockPeerTask := NewMockPeerTask(ctrl)
+			mockPeerTask := NewMockTask(ctrl)
 			mockPeerTask.EXPECT().SetContentLength(gomock.Any()).AnyTimes().DoAndReturn(
 				func(arg0 int64) error {
 					return nil
@@ -139,11 +139,11 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 					return taskID
 				})
 			mockPeerTask.EXPECT().AddTraffic(gomock.Any()).AnyTimes().DoAndReturn(func(int642 int64) {})
-			mockPeerTask.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-				func(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
+			mockPeerTask.EXPECT().ReportPieceResult(gomock.Any()).AnyTimes().DoAndReturn(
+				func(result *pieceTaskResult) error {
 					return nil
 				})
-			mockPeerTask.EXPECT().GetContext().AnyTimes().DoAndReturn(func() context.Context {
+			mockPeerTask.EXPECT().Context().AnyTimes().DoAndReturn(func() context.Context {
 				return context.Background()
 			})
 			mockPeerTask.EXPECT().Log().AnyTimes().DoAndReturn(func() *logger.SugaredLoggerOnWith {
@@ -162,8 +162,6 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			defer storageManager.CleanUp()
 			defer os.Remove(output)
 			/********** prepare test end **********/
-
-			t.Logf("test case: %s", tc.name)
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if tc.withContentLength {
 					w.Header().Set("Content-Length",
@@ -209,6 +207,6 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			outputBytes, err := ioutil.ReadFile(output)
 			assert.Nil(err, "load output file")
 			assert.Equal(testBytes, outputBytes, "output and desired output must match")
-		}()
+		})
 	}
 }

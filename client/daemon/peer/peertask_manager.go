@@ -62,7 +62,7 @@ type TaskManager interface {
 type Task interface {
 	Context() context.Context
 	Log() *logger.SugaredLoggerOnWith
-	ReportPieceResult(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error
+	ReportPieceResult(result *pieceTaskResult) error
 	GetPeerID() string
 	GetTaskID() string
 	GetTotalPieces() int32
