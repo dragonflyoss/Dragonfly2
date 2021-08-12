@@ -60,7 +60,7 @@ func (m mockDriver) Stat(_ *Raw) (*StorageInfo, error) {
 	panic("implement me")
 }
 
-func (m mockDriver) GetAvailSpace() (unit.Bytes, error) {
+func (m mockDriver) GetFreeSpace() (unit.Bytes, error) {
 	panic("implement me")
 }
 

@@ -316,8 +316,8 @@ func (ds *driver) Remove(raw *storedriver.Raw) error {
 	return err
 }
 
-// GetAvailSpace returns the available disk space in Byte.
-func (ds *driver) GetAvailSpace() (unit.Bytes, error) {
+// GetFreeSpace returns the available disk space in Byte.
+func (ds *driver) GetFreeSpace() (unit.Bytes, error) {
 	path := ds.BaseDir
 	lock(path, -1, true)
 	defer unLock(path, -1, true)
