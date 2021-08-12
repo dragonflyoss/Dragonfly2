@@ -14,32 +14,15 @@
  * limitations under the License.
  */
 
-package tasks
+package job
 
-import (
-	"fmt"
-
-	"github.com/pkg/errors"
-)
-
-type Queue string
-
-func GetSchedulerQueue(hostname string) (Queue, error) {
-	if hostname == "" {
-		return Queue(""), errors.New("empty hostname config is not specified")
-	}
-
-	return Queue(fmt.Sprintf("scheduler_%s", hostname)), nil
+type PreheatRequest struct {
+	URL     string            `json:"url" validate:"required,url"`
+	Tag     string            `json:"tag" validate:"required"`
+	Digest  string            `json:"digest" validate:"omitempty"`
+	Filter  string            `json:"filter" validate:"omitempty"`
+	Headers map[string]string `json:"headers" validate:"omitempty"`
 }
 
-func GetCDNQueue(hostname string) (Queue, error) {
-	if hostname == "" {
-		return Queue(""), errors.New("empty hostname config is not specified")
-	}
-
-	return Queue(fmt.Sprintf("cdn_%s", hostname)), nil
-}
-
-func (q Queue) String() string {
-	return string(q)
+type PreheatResponse struct {
 }
