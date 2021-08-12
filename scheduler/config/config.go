@@ -222,7 +222,7 @@ type SchedulerConfig struct {
 	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
 	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
 	Scheduler            string        `yaml:"scheduler" mapstructure:"scheduler"`
-	CDNLoad              int           `yaml:"cDNLoad" mapstructure:"cDNLoad"`
+	CDNLoad              int           `yaml:"cdnLoad" mapstructure:"cdnLoad"`
 	ClientLoad           int32         `yaml:"clientLoad" mapstructure:"clientLoad"`
 	OpenMonitor          bool          `yaml:"openMonitor" mapstructure:"openMonitor"`
 	GC                   *GCConfig     `yaml:"gc" mapstructure:"gc"`

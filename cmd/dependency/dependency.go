@@ -68,7 +68,7 @@ func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
 		flags.Bool("verbose", false, "whether logger use debug level")
 		flags.Int("pprof-port", -1, "listen port for pprof, 0 represents random port")
 		flags.String("jaeger", "", "jaeger endpoint url, like: http://localhost:14250/api/traces")
-		flags.String("serviceName", fmt.Sprintf("%s-%s", "dragonfly", cmd.Name()), "name of the service for tracer")
+		flags.String("service-name", fmt.Sprintf("%s-%s", "dragonfly", cmd.Name()), "name of the service for tracer")
 		flags.String("config", "", fmt.Sprintf("the path of configuration file with yaml extension name, default is %s, it can also be set by env var: %s", filepath.Join(dfpath.DefaultConfigDir, rootName+".yaml"), strings.ToUpper(rootName+"_config")))
 
 		// Bind common flags
