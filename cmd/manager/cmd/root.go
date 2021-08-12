@@ -22,8 +22,8 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
+	"d7y.io/dragonfly/v2/manager"
 	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/server"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -85,7 +85,7 @@ func runManager() error {
 	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
-	svr, err := server.New(cfg)
+	svr, err := manager.New(cfg)
 	if err != nil {
 		return err
 	}
