@@ -13,6 +13,7 @@ func (s *rest) CreateCDN(json types.CreateCDNRequest) (*model.CDN, error) {
 		IP:           json.IP,
 		Port:         json.Port,
 		DownloadPort: json.DownloadPort,
+		CDNClusterID: json.CDNClusterID,
 	}
 
 	if err := s.db.Create(&cdn).Error; err != nil {
@@ -38,6 +39,7 @@ func (s *rest) UpdateCDN(id uint, json types.UpdateCDNRequest) (*model.CDN, erro
 		IP:           json.IP,
 		Port:         json.Port,
 		DownloadPort: json.DownloadPort,
+		CDNClusterID: json.CDNClusterID,
 	}).Error; err != nil {
 		return nil, err
 	}
@@ -63,6 +65,7 @@ func (s *rest) GetCDNs(q types.GetCDNsQuery) (*[]model.CDN, error) {
 		IP:           q.IP,
 		Port:         q.Port,
 		DownloadPort: q.DownloadPort,
+		CDNClusterID: q.CDNClusterID,
 	}).Find(&cdns).Error; err != nil {
 		return nil, err
 	}
@@ -79,6 +82,7 @@ func (s *rest) CDNTotalCount(q types.GetCDNsQuery) (int64, error) {
 		IP:           q.IP,
 		Port:         q.Port,
 		DownloadPort: q.DownloadPort,
+		CDNClusterID: q.CDNClusterID,
 	}).Count(&count).Error; err != nil {
 		return 0, err
 	}

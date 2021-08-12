@@ -82,7 +82,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 		if cfg.DynConfig.Type == dynconfig.ManagerSourceType {
 			options = append(options,
-				dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient)),
+				dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient, cfg.Manager.SchedulerClusterID)),
 				dynconfig.WithCachePath(config.DefaultDynconfigCachePath),
 				dynconfig.WithExpireTime(cfg.DynConfig.ExpireTime),
 			)
@@ -163,25 +163,29 @@ func (s *Server) Stop() (err error) {
 		s.dynConfig.Stop()
 		rpc.StopServer()
 		s.schedulerService.Stop()
+		s.task.Stop()
 	}
 	return
 }
 
 func (s *Server) register(ctx context.Context) error {
 	ip := s.config.Server.IP
+	host := s.config.Server.Host
 	port := int32(s.config.Server.Port)
 	idc := s.config.Host.IDC
 	location := s.config.Host.Location
+	schedulerClusterID := uint64(s.config.Manager.SchedulerClusterID)
 
 	var scheduler *manager.Scheduler
 	var err error
 	scheduler, err = s.managerClient.UpdateScheduler(ctx, &manager.UpdateSchedulerRequest{
-		SourceType: manager.SourceType_SCHEDULER_SOURCE,
-		HostName:   iputils.HostName,
-		Ip:         ip,
-		Port:       port,
-		Idc:        idc,
-		Location:   location,
+		SourceType:         manager.SourceType_SCHEDULER_SOURCE,
+		HostName:           host,
+		Ip:                 ip,
+		Port:               port,
+		Idc:                idc,
+		Location:           location,
+		SchedulerClusterId: schedulerClusterID,
 	})
 	if err != nil {
 		logger.Warnf("update scheduler %s to manager failed %v", scheduler.HostName, err)
@@ -189,19 +193,11 @@ func (s *Server) register(ctx context.Context) error {
 	}
 	logger.Infof("update scheduler %s to manager successfully", scheduler.HostName)
 
-	schedulerClusterID := s.config.Manager.SchedulerClusterID
-	if _, err := s.managerClient.AddSchedulerToSchedulerCluster(ctx, &manager.AddSchedulerToSchedulerClusterRequest{
-		SchedulerId:        scheduler.Id,
-		SchedulerClusterId: schedulerClusterID,
-	}); err != nil {
-		logger.Warnf("add scheduler %s to scheduler cluster %s failed %v", scheduler.HostName, schedulerClusterID, err)
-		return err
-	}
-	logger.Infof("add scheduler %s to scheduler cluster %s successfully", scheduler.HostName, schedulerClusterID)
 	return nil
 }
 
 func (s *Server) keepAlive(ctx context.Context) error {
+	schedulerClusterID := uint64(s.config.Manager.SchedulerClusterID)
 	stream, err := s.managerClient.KeepAlive(ctx)
 	if err != nil {
 		logger.Errorf("create keepalive failed: %v\n", err)
@@ -216,6 +212,7 @@ func (s *Server) keepAlive(ctx context.Context) error {
 			if err := stream.Send(&manager.KeepAliveRequest{
 				HostName:   hostName,
 				SourceType: manager.SourceType_SCHEDULER_SOURCE,
+				ClusterId:  schedulerClusterID,
 			}); err != nil {
 				logger.Errorf("%s send keepalive failed: %v\n", hostName, err)
 				return err

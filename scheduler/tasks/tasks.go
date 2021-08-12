@@ -25,6 +25,7 @@ const (
 
 type Tasks interface {
 	Serve() error
+	Stop()
 }
 
 type tasks struct {
@@ -119,7 +120,15 @@ func (t *tasks) Serve() error {
 		return err
 	})
 
-	return g.Wait()
+	werr := g.Wait()
+	t.Stop()
+	return werr
+}
+
+func (t *tasks) Stop() {
+	t.globalTasks.Worker.Quit()
+	t.schedulerTasks.Worker.Quit()
+	t.localTasks.Worker.Quit()
 }
 
 func (t *tasks) preheat(req string) error {

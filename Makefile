@@ -228,7 +228,7 @@ clean-e2e-test:
 .PHONY: clean-e2e-test
 
 # Kind load dragonlfy
-kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon
+kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon kind-load-manager
 	@echo "Kind load image done."
 .PHONY: docker-build
 

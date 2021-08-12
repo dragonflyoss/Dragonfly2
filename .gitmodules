@@ -1,0 +1,3 @@
+[submodule "deploy/helm-charts"]
+	path = deploy/helm-charts
+	url = https://github.com/dragonflyoss/helm-charts.git

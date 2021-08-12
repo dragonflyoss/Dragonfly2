@@ -41,6 +41,7 @@ spec:
     spec:
       containers:
       - name: nginx
+        # Pull image with dragonfly
         image: d7y.io/library/nginx:1.21.1-alpine
         imagePullPolicy: "IfNotPresent"
         ports:

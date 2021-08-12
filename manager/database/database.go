@@ -83,8 +83,12 @@ func seed(db *gorm.DB) error {
 	}
 	if cdnClusterCount <= 0 {
 		if err := db.Create(&model.CDNCluster{
-			Name:   "cdn-cluster-1",
-			Config: map[string]interface{}{},
+			Model: model.Model{
+				ID: uint(1),
+			},
+			Name:      "cdn-cluster-1",
+			Config:    map[string]interface{}{},
+			IsDefault: true,
 		}).Error; err != nil {
 			return err
 		}
@@ -96,6 +100,9 @@ func seed(db *gorm.DB) error {
 	}
 	if schedulerClusterCount <= 0 {
 		if err := db.Create(&model.SchedulerCluster{
+			Model: model.Model{
+				ID: uint(1),
+			},
 			Name:         "scheduler-cluster-1",
 			Config:       map[string]interface{}{},
 			ClientConfig: map[string]interface{}{},

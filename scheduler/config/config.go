@@ -70,6 +70,10 @@ func (c *Config) Validate() error {
 		if c.Manager.Addr == "" {
 			return errors.New("dynconfig is ManagerSourceType type requires parameter manager addr")
 		}
+
+		if c.Manager.SchedulerClusterID == 0 {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter manager schedulerClusterID")
+		}
 	}
 
 	return nil
@@ -78,7 +82,7 @@ func (c *Config) Validate() error {
 func NewDefaultDynConfig() *DynConfig {
 	return &DynConfig{
 		Type:       dc.LocalSourceType,
-		ExpireTime: 60000 * 1000 * 1000,
+		ExpireTime: 30 * time.Second,
 		CDNDirPath: "",
 		Data: &DynconfigData{
 			CDNs: []*CDN{
@@ -100,6 +104,7 @@ func NewDefaultDynConfig() *DynConfig {
 func NewDefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
 		IP:   iputils.HostIP,
+		Host: iputils.HostName,
 		Port: 8002,
 	}
 }
@@ -177,7 +182,7 @@ type ManagerConfig struct {
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
 	// SchedulerClusterID is scheduler cluster id.
-	SchedulerClusterID uint64 `yaml:"schedulerClusterID" mapstructure:"schedulerClusterID"`
+	SchedulerClusterID uint `yaml:"schedulerClusterID" mapstructure:"schedulerClusterID"`
 
 	// KeepAlive configuration
 	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
@@ -230,6 +235,7 @@ type SchedulerConfig struct {
 
 type ServerConfig struct {
 	IP   string `yaml:"ip" mapstructure:"ip"`
+	Host string `yaml:"host" mapstructure:"host"`
 	Port int    `yaml:"port" mapstructure:"port"`
 }
 
