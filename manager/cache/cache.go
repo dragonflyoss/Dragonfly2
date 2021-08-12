@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	CDNNamespace       = "cdn"
-	SchedulerNamespace = "scheduler"
+	CDNNamespace        = "cdn"
+	SchedulerNamespace  = "scheduler"
+	SchedulersNamespace = "schedulers"
 )
 
 type Cache struct {
@@ -41,10 +42,14 @@ func MakeCacheKey(namespace string, id string) string {
 	return fmt.Sprintf("manager:%s:%s", namespace, id)
 }
 
-func MakeCDNCacheKey(hostname, clusterID string) string {
-	return MakeCacheKey(CDNNamespace, fmt.Sprintf("%s-%s", hostname, clusterID))
+func MakeCDNCacheKey(hostname string, clusterID uint) string {
+	return MakeCacheKey(CDNNamespace, fmt.Sprintf("%s-%d", hostname, clusterID))
 }
 
-func MakeSchedulerCacheKey(hostname, clusterID string) string {
-	return MakeCacheKey(SchedulerNamespace, fmt.Sprintf("%s-%s", hostname, clusterID))
+func MakeSchedulerCacheKey(hostname string, clusterID uint) string {
+	return MakeCacheKey(SchedulerNamespace, fmt.Sprintf("%s-%d", hostname, clusterID))
+}
+
+func MakeSchedulersCacheKey(hostname string) string {
+	return MakeCacheKey(SchedulersNamespace, hostname)
 }

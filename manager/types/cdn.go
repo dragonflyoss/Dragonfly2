@@ -11,7 +11,7 @@ type CreateCDNRequest struct {
 	IP           string `json:"ip" binding:"required"`
 	Port         int32  `json:"port" binding:"required"`
 	DownloadPort int32  `json:"download_port" binding:"required"`
-	CDNClusterID *uint  `json:"cdn_cluster_id" binding:"required"`
+	CDNClusterID uint   `json:"cdn_cluster_id" binding:"required"`
 }
 
 type UpdateCDNRequest struct {
@@ -20,7 +20,7 @@ type UpdateCDNRequest struct {
 	IP           string `json:"ip" binding:"omitempty"`
 	Port         int32  `json:"port" binding:"omitempty"`
 	DownloadPort int32  `json:"download_port" binding:"omitempty"`
-	CDNClusterID *uint  `json:"cdn_cluster_id" binding:"omitempty"`
+	CDNClusterID uint   `json:"cdn_cluster_id" binding:"omitempty"`
 }
 
 type GetCDNsQuery struct {
@@ -30,7 +30,7 @@ type GetCDNsQuery struct {
 	IP           string `form:"ip" binding:"omitempty"`
 	Port         int32  `form:"port" binding:"omitempty"`
 	DownloadPort int32  `form:"download_port" binding:"omitempty"`
-	CDNClusterID *uint  `json:"cdn_cluster_id" binding:"omitempty"`
+	CDNClusterID uint   `json:"cdn_cluster_id" binding:"omitempty"`
 	Page         int    `form:"page" binding:"omitempty,gte=1"`
 	PerPage      int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
 	Status       string `form:"status" binding:"omitempty,oneof=active inactive"`

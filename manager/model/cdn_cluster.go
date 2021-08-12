@@ -7,6 +7,6 @@ type CDNCluster struct {
 	Config            JSONMap            `gorm:"column:config;not null;comment:configuration" json:"config"`
 	SchedulerClusters []SchedulerCluster `gorm:"many2many:cdn_cluster_scheduler_cluster;" json:"-"`
 	CDNs              []CDN              `json:"-"`
-	SecurityGroupID   *uint              `gorm:"comment:security group id"`
+	SecurityGroupID   uint               `gorm:"comment:security group id"`
 	SecurityGroup     SecurityGroup      `json:"-"`
 }

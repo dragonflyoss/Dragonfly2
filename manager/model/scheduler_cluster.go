@@ -10,6 +10,6 @@ type SchedulerCluster struct {
 	IsDefault       bool          `gorm:"column:is_default;not null;default:false;comment:default scheduler" json:"is_default"`
 	CDNClusters     []CDNCluster  `gorm:"many2many:cdn_cluster_scheduler_cluster;" json:"-"`
 	Schedulers      []Scheduler   `json:"-"`
-	SecurityGroupID *uint         `gorm:"comment:security group id"`
+	SecurityGroupID uint          `gorm:"comment:security group id"`
 	SecurityGroup   SecurityGroup `json:"-"`
 }

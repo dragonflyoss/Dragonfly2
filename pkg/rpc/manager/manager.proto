@@ -54,6 +54,7 @@ message CDN {
   int32 port = 6;
   int32 download_port = 7;
   string status = 8;
+  uint64 cdn_cluster_id = 9;
   CDNCluster cdn_cluster = 10;
 }
 
@@ -93,6 +94,7 @@ message Scheduler {
   string ip = 7;
   int32 port = 8;
   string status = 9;
+  uint64 scheduler_cluster_id = 10;
   SchedulerCluster scheduler_cluster = 11;
   repeated CDN cdns = 12;
 }

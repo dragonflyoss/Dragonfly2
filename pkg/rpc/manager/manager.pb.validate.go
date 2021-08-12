@@ -213,6 +213,8 @@ func (m *CDN) Validate() error {
 
 	// no validation rules for Status
 
+	// no validation rules for CdnClusterId
+
 	if v, ok := interface{}(m.GetCdnCluster()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CDNValidationError{
@@ -666,6 +668,8 @@ func (m *Scheduler) Validate() error {
 	// no validation rules for Port
 
 	// no validation rules for Status
+
+	// no validation rules for SchedulerClusterId
 
 	if v, ok := interface{}(m.GetSchedulerCluster()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
