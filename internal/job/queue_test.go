@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package tasks
+package job
 
 import (
 	"testing"
@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTaskGetSchedulerQueue(t *testing.T) {
+func TestJobGetSchedulerQueue(t *testing.T) {
 	tests := []struct {
 		name     string
 		hostname string
@@ -54,7 +54,7 @@ func TestTaskGetSchedulerQueue(t *testing.T) {
 	}
 }
 
-func TestTaskGetCDNQueue(t *testing.T) {
+func TestJobGetCDNQueue(t *testing.T) {
 	tests := []struct {
 		name     string
 		hostname string

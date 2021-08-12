@@ -14,32 +14,32 @@
  * limitations under the License.
  */
 
-package tasks
+package job
 
 import (
-	internaltasks "d7y.io/dragonfly/v2/internal/tasks"
+	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-type Task interface {
+type Job interface {
 	CreatePreheat([]string, types.CreatePreheatRequest) (*types.Preheat, error)
 	GetPreheat(string) (*types.Preheat, error)
 }
 
-type task struct {
-	*internaltasks.Tasks
+type job struct {
+	*internaljob.Job
 	Preheat Preheat
 }
 
-func New(cfg *config.Config) (Task, error) {
-	t, err := internaltasks.New(&internaltasks.Config{
+func New(cfg *config.Config) (Job, error) {
+	t, err := internaljob.New(&internaljob.Config{
 		Host:      cfg.Database.Redis.Host,
 		Port:      cfg.Database.Redis.Port,
 		Password:  cfg.Database.Redis.Password,
 		BrokerDB:  cfg.Database.Redis.BrokerDB,
 		BackendDB: cfg.Database.Redis.BackendDB,
-	}, internaltasks.GlobalQueue)
+	}, internaljob.GlobalQueue)
 	if err != nil {
 		return nil, err
 	}
@@ -49,25 +49,25 @@ func New(cfg *config.Config) (Task, error) {
 		return nil, err
 	}
 
-	return &task{
-		Tasks:   t,
+	return &job{
+		Job:     t,
 		Preheat: p,
 	}, nil
 }
 
-func (t *task) CreatePreheat(hostnames []string, json types.CreatePreheatRequest) (*types.Preheat, error) {
+func (t *job) CreatePreheat(hostnames []string, json types.CreatePreheatRequest) (*types.Preheat, error) {
 	return t.Preheat.CreatePreheat(hostnames, json)
 }
 
-func (t *task) GetPreheat(id string) (*types.Preheat, error) {
-	groupTaskState, err := t.GetGroupTaskState(id)
+func (t *job) GetPreheat(id string) (*types.Preheat, error) {
+	groupJobState, err := t.GetGroupJobState(id)
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.Preheat{
-		ID:        groupTaskState.GroupUUID,
-		Status:    groupTaskState.State,
-		CreatedAt: groupTaskState.CreatedAt,
+		ID:        groupJobState.GroupUUID,
+		Status:    groupJobState.State,
+		CreatedAt: groupJobState.CreatedAt,
 	}, nil
 }

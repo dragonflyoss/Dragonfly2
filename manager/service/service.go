@@ -19,8 +19,8 @@ package service
 import (
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
+	"d7y.io/dragonfly/v2/manager/job"
 	"d7y.io/dragonfly/v2/manager/model"
-	"d7y.io/dragonfly/v2/manager/tasks"
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
@@ -91,17 +91,17 @@ type rest struct {
 	db       *gorm.DB
 	rdb      *redis.Client
 	cache    *cache.Cache
-	tasks    tasks.Task
+	job      job.Job
 	enforcer *casbin.Enforcer
 }
 
 // NewREST returns a new REST instence
-func NewREST(database *database.Database, cache *cache.Cache, tasks tasks.Task, enforcer *casbin.Enforcer) REST {
+func NewREST(database *database.Database, cache *cache.Cache, job job.Job, enforcer *casbin.Enforcer) REST {
 	return &rest{
 		db:       database.DB,
 		rdb:      database.RDB,
 		cache:    cache,
-		tasks:    tasks,
+		job:      job,
 		enforcer: enforcer,
 	}
 }

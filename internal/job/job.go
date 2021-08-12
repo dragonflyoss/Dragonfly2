@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package tasks
+package job
 
 import (
 	"encoding/json"
@@ -41,13 +41,13 @@ type Config struct {
 	BackendDB int
 }
 
-type Tasks struct {
+type Job struct {
 	Server *machinery.Server
 	Worker *machinery.Worker
 	Queue  Queue
 }
 
-func New(cfg *Config, queue Queue) (*Tasks, error) {
+func New(cfg *Config, queue Queue) (*Job, error) {
 	broker := fmt.Sprintf("redis://%s@%s:%d/%d", cfg.Password, cfg.Host, cfg.Port, cfg.BrokerDB)
 	backend := fmt.Sprintf("redis://%s@%s:%d/%d", cfg.Password, cfg.Host, cfg.Port, cfg.BackendDB)
 
@@ -63,61 +63,61 @@ func New(cfg *Config, queue Queue) (*Tasks, error) {
 		return nil, err
 	}
 
-	return &Tasks{
+	return &Job{
 		Server: server,
 		Queue:  queue,
 	}, nil
 }
 
-func (t *Tasks) RegisterTasks(namedTaskFuncs map[string]interface{}) error {
-	return t.Server.RegisterTasks(namedTaskFuncs)
+func (t *Job) RegisterJob(namedJobFuncs map[string]interface{}) error {
+	return t.Server.RegisterTasks(namedJobFuncs)
 }
 
-func (t *Tasks) LaunchWorker(consumerTag string, concurrency int) error {
+func (t *Job) LaunchWorker(consumerTag string, concurrency int) error {
 	t.Worker = t.Server.NewWorker(consumerTag, concurrency)
 	return t.Worker.Launch()
 }
 
-type GroupTaskState struct {
+type GroupJobState struct {
 	GroupUUID string
 	State     string
 	CreatedAt time.Time
 }
 
-func (t *Tasks) GetGroupTaskState(groupUUID string) (*GroupTaskState, error) {
-	taskStates, err := t.Server.GetBackend().GroupTaskStates(groupUUID, 0)
+func (t *Job) GetGroupJobState(groupUUID string) (*GroupJobState, error) {
+	jobStates, err := t.Server.GetBackend().GroupTaskStates(groupUUID, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(taskStates) == 0 {
-		return nil, errors.New("empty group task")
+	if len(jobStates) == 0 {
+		return nil, errors.New("empty group job")
 	}
 
-	for _, taskState := range taskStates {
-		if taskState.IsFailure() {
-			return &GroupTaskState{
+	for _, jobState := range jobStates {
+		if jobState.IsFailure() {
+			return &GroupJobState{
 				GroupUUID: groupUUID,
 				State:     machineryv1tasks.StateFailure,
-				CreatedAt: taskState.CreatedAt,
+				CreatedAt: jobState.CreatedAt,
 			}, nil
 		}
 	}
 
-	for _, taskState := range taskStates {
-		if !taskState.IsSuccess() {
-			return &GroupTaskState{
+	for _, jobState := range jobStates {
+		if !jobState.IsSuccess() {
+			return &GroupJobState{
 				GroupUUID: groupUUID,
 				State:     machineryv1tasks.StatePending,
-				CreatedAt: taskState.CreatedAt,
+				CreatedAt: jobState.CreatedAt,
 			}, nil
 		}
 	}
 
-	return &GroupTaskState{
+	return &GroupJobState{
 		GroupUUID: groupUUID,
 		State:     machineryv1tasks.StateSuccess,
-		CreatedAt: taskStates[0].CreatedAt,
+		CreatedAt: jobStates[0].CreatedAt,
 	}, nil
 }
 

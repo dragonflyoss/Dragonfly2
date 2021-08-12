@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package tasks
+package job
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	internaltasks "d7y.io/dragonfly/v2/internal/tasks"
+	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
@@ -48,7 +48,7 @@ type Preheat interface {
 }
 
 type preheat struct {
-	tasks  *internaltasks.Tasks
+	job    *internaljob.Job
 	bizTag string
 }
 
@@ -59,9 +59,9 @@ type preheatImage struct {
 	tag      string
 }
 
-func newPreheat(tasks *internaltasks.Tasks, bizTag string) (Preheat, error) {
+func newPreheat(job *internaljob.Job, bizTag string) (Preheat, error) {
 	return &preheat{
-		tasks:  tasks,
+		job:    job,
 		bizTag: bizTag,
 	}, nil
 }
@@ -75,7 +75,7 @@ func (p *preheat) CreatePreheat(hostnames []string, json types.CreatePreheatRequ
 	queues := getSchedulerQueues(hostnames)
 
 	// Generate download files
-	var files []*internaltasks.PreheatRequest
+	var files []*internaljob.PreheatRequest
 	switch PreheatType(json.Type) {
 	case PreheatImageType:
 		// Parse image manifest url
@@ -89,7 +89,7 @@ func (p *preheat) CreatePreheat(hostnames []string, json types.CreatePreheatRequ
 			return nil, err
 		}
 	case PreheatFileType:
-		files = []*internaltasks.PreheatRequest{
+		files = []*internaljob.PreheatRequest{
 			{
 				URL:     url,
 				Tag:     p.bizTag,
@@ -101,20 +101,20 @@ func (p *preheat) CreatePreheat(hostnames []string, json types.CreatePreheatRequ
 		return nil, errors.New("unknow preheat type")
 	}
 
-	return p.createGroupTasks(files, queues)
+	return p.createGroupJob(files, queues)
 }
 
-func (p *preheat) createGroupTasks(files []*internaltasks.PreheatRequest, queues []internaltasks.Queue) (*types.Preheat, error) {
+func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []internaljob.Queue) (*types.Preheat, error) {
 	signatures := []*machineryv1tasks.Signature{}
 	for _, queue := range queues {
 		for _, file := range files {
-			args, err := internaltasks.MarshalRequest(file)
+			args, err := internaljob.MarshalRequest(file)
 			if err != nil {
 				continue
 			}
 
 			signatures = append(signatures, &machineryv1tasks.Signature{
-				Name:       internaltasks.PreheatTask,
+				Name:       internaljob.PreheatJob,
 				RoutingKey: queue.String(),
 				Args:       args,
 			})
@@ -126,7 +126,7 @@ func (p *preheat) createGroupTasks(files []*internaltasks.PreheatRequest, queues
 		return nil, err
 	}
 
-	if _, err := p.tasks.Server.SendGroup(group, 0); err != nil {
+	if _, err := p.job.Server.SendGroup(group, 0); err != nil {
 		return nil, err
 	}
 
@@ -137,7 +137,7 @@ func (p *preheat) createGroupTasks(files []*internaltasks.PreheatRequest, queues
 	}, nil
 }
 
-func (p *preheat) getLayers(url string, filter string, header http.Header, image *preheatImage) ([]*internaltasks.PreheatRequest, error) {
+func (p *preheat) getLayers(url string, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
 	resp, err := p.getManifests(url, header)
 	if err != nil {
 		return nil, err
@@ -184,7 +184,7 @@ func (p *preheat) getManifests(url string, header http.Header) (*http.Response, 
 	return resp, nil
 }
 
-func (p *preheat) parseLayers(resp *http.Response, filter string, header http.Header, image *preheatImage) ([]*internaltasks.PreheatRequest, error) {
+func (p *preheat) parseLayers(resp *http.Response, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -195,10 +195,10 @@ func (p *preheat) parseLayers(resp *http.Response, filter string, header http.He
 		return nil, err
 	}
 
-	var layers []*internaltasks.PreheatRequest
+	var layers []*internaljob.PreheatRequest
 	for _, v := range manifest.References() {
 		digest := v.Digest.String()
-		layers = append(layers, &internaltasks.PreheatRequest{
+		layers = append(layers, &internaljob.PreheatRequest{
 			URL:     layerURL(image.protocol, image.domain, image.name, digest),
 			Tag:     p.bizTag,
 			Filter:  filter,
@@ -264,10 +264,10 @@ func parseAccessURL(url string) (*preheatImage, error) {
 	}, nil
 }
 
-func getSchedulerQueues(hostnames []string) []internaltasks.Queue {
-	var queues []internaltasks.Queue
+func getSchedulerQueues(hostnames []string) []internaljob.Queue {
+	var queues []internaljob.Queue
 	for _, hostname := range hostnames {
-		queue, err := internaltasks.GetSchedulerQueue(hostname)
+		queue, err := internaljob.GetSchedulerQueue(hostname)
 		if err != nil {
 			continue
 		}

@@ -20,8 +20,8 @@ import (
 	"context"
 	"time"
 
+	"d7y.io/dragonfly/v2/scheduler/job"
 	server2 "d7y.io/dragonfly/v2/scheduler/server"
-	"d7y.io/dragonfly/v2/scheduler/tasks"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
@@ -49,7 +49,7 @@ type Server struct {
 	dynconfigConn    *grpc.ClientConn
 	running          bool
 	dynConfig        config.DynconfigInterface
-	task             tasks.Tasks
+	job              job.Job
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -106,8 +106,8 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	if cfg.Task.Redis.Host != "" {
-		s.task, err = tasks.New(context.Background(), cfg.Task, iputils.HostName, s.schedulerService)
+	if cfg.Job.Redis.Host != "" {
+		s.job, err = job.New(context.Background(), cfg.Job, iputils.HostName, s.schedulerService)
 		if err != nil {
 			return nil, err
 		}
@@ -125,8 +125,8 @@ func (s *Server) Serve() error {
 	s.dynConfig.Serve()
 	s.schedulerService.Serve()
 
-	if s.task != nil {
-		go s.task.Serve()
+	if s.job != nil {
+		go s.job.Serve()
 	}
 
 	if s.managerClient != nil {
@@ -163,7 +163,7 @@ func (s *Server) Stop() (err error) {
 		s.dynConfig.Stop()
 		rpc.StopServer()
 		s.schedulerService.Stop()
-		s.task.Stop()
+		s.job.Stop()
 	}
 	return
 }

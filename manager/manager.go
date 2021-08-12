@@ -24,12 +24,12 @@ import (
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
+	"d7y.io/dragonfly/v2/manager/job"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/proxy"
 	"d7y.io/dragonfly/v2/manager/router"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
-	"d7y.io/dragonfly/v2/manager/tasks"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"golang.org/x/sync/errgroup"
@@ -67,14 +67,14 @@ func New(cfg *config.Config) (*Server, error) {
 	// Initialize searcher
 	searcher := searcher.New()
 
-	// Initialize task
-	tasks, err := tasks.New(cfg)
+	// Initialize job
+	job, err := job.New(cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	// Initialize REST service
-	restService := service.NewREST(db, cache, tasks, enforcer)
+	restService := service.NewREST(db, cache, job, enforcer)
 
 	// Initialize GRPC service
 	grpcService := service.NewGRPC(db, cache, searcher)

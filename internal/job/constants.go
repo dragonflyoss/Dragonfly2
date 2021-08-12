@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package tasks
+package job
 
-type PreheatRequest struct {
-	URL     string            `json:"url" validate:"required,url"`
-	Tag     string            `json:"tag" validate:"required"`
-	Digest  string            `json:"digest" validate:"omitempty"`
-	Filter  string            `json:"filter" validate:"omitempty"`
-	Headers map[string]string `json:"headers" validate:"omitempty"`
-}
+// Queue Name
+const (
+	GlobalQueue     = Queue("global")
+	SchedulersQueue = Queue("schedulers")
+	CDNsQueue       = Queue("cdns")
+)
 
-type PreheatResponse struct {
-}
+// Job Name
+const (
+	PreheatJob = "preheat"
+)
