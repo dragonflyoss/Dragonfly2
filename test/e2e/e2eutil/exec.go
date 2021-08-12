@@ -28,6 +28,10 @@ func ABCommand(arg ...string) *exec.Cmd {
 	return exec.Command("ab", arg...)
 }
 
+func GitCommand(arg ...string) *exec.Cmd {
+	return exec.Command("git", arg...)
+}
+
 type PodExec struct {
 	namespace string
 	name      string

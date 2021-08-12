@@ -17,6 +17,7 @@
 package e2e
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -24,6 +25,25 @@ import (
 	. "github.com/onsi/ginkgo" //nolint
 	. "github.com/onsi/gomega" //nolint
 )
+
+var _ = BeforeSuite(func() {
+	out, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
+	Expect(err).NotTo(HaveOccurred())
+	gitCommit := strings.Fields(string(out))[0]
+
+	out, err = e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
+		"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
+	podName := strings.Trim(string(out), "'")
+	Expect(err).NotTo(HaveOccurred())
+	fmt.Println(podName)
+	Expect(strings.HasPrefix(podName, "dragonfly-dfdaemon-")).Should(BeTrue())
+	pod := e2eutil.NewPodExec(dragonflyNamespace, podName, "dfdaemon")
+	out, err = pod.Command("dfget", "version").CombinedOutput()
+	Expect(err).NotTo(HaveOccurred())
+	dfgetGitCommit := strings.Fields(string(out))[7]
+
+	Expect(gitCommit).To(Equal(dfgetGitCommit))
+})
 
 var _ = AfterSuite(func() {
 	out, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
