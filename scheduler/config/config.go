@@ -70,6 +70,10 @@ func (c *Config) Validate() error {
 		if c.Manager.Addr == "" {
 			return errors.New("dynconfig is ManagerSourceType type requires parameter manager addr")
 		}
+
+		if c.Manager.SchedulerClusterID == 0 {
+			return errors.New("dynconfig is ManagerSourceType type requires parameter manager schedulerClusterID")
+		}
 	}
 
 	return nil
@@ -175,7 +179,7 @@ type ManagerConfig struct {
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
 	// SchedulerClusterID is scheduler cluster id.
-	SchedulerClusterID uint64 `yaml:"schedulerClusterID" mapstructure:"schedulerClusterID"`
+	SchedulerClusterID uint `yaml:"schedulerClusterID" mapstructure:"schedulerClusterID"`
 
 	// KeepAlive configuration
 	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
