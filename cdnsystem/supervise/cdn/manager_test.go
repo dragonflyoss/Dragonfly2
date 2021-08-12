@@ -26,9 +26,9 @@ import (
 	"testing"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/mock"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
+	"d7y.io/dragonfly/v2/cdnsystem/supervise/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/supervise/mock"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
