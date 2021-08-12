@@ -22,14 +22,18 @@ const (
 	AttributePeerRegisterRequest = attribute.Key("d7y.peer.register.request")
 	AttributeTaskSizeScope       = attribute.Key("d7y.task.size.scope")
 	AttributeSinglePiece         = attribute.Key("d7y.peer.single.piece")
+	AttributePieceReceived       = attribute.Key("d7y.peer.piece.received")
 	AttributeLeavePeerID         = attribute.Key("d7y.leave.peer.id")
 	AttributeLeaveTaskID         = attribute.Key("d7y.leave.task.id")
 	AttributeReportPeerID        = attribute.Key("d7y.report.peer.id")
 	AttributePeerDownloadSuccess = attribute.Key("d7y.peer.download.success")
+	AttributeDownloadFileURL     = attribute.Key("d7y.file.url")
+	AttributeContentLength       = attribute.Key("d7y.source.content.length")
 	AttributePeerDownloadResult  = attribute.Key("d7y.peer.download.result")
 	AttributeSchedulePacket      = attribute.Key("d7y.schedule.packet")
 	AttributeTaskID              = attribute.Key("d7y.peer.task.id")
 	AttributePeerID              = attribute.Key("d7y.peer.id")
+	AttributeCDNSeedRequest      = attribute.Key("d7y.cdn.seed.request")
 )
 
 const (
@@ -42,4 +46,9 @@ const (
 
 const (
 	EventScheduleParentFail = "fail-schedule-parent"
+	EventPeerNotFound       = "peer-not-found"
+	EventHostNotFound       = "host-not-found"
+	EventCreatePeer         = "create-peer"
+	EventPieceReceived      = "receive-piece"
+	EventPeerDownloaded     = "downloaded"
 )
