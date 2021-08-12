@@ -29,10 +29,8 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dfpath"
-	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
@@ -43,15 +41,17 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/proxy"
-	"d7y.io/dragonfly/v2/client/daemon/service"
+	"d7y.io/dragonfly/v2/client/daemon/rpcserver"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 type Daemon interface {
@@ -72,7 +72,7 @@ type clientDaemon struct {
 
 	Option config.DaemonOption
 
-	ServiceManager service.Manager
+	RPCManager     rpcserver.Server
 	UploadManager  upload.Manager
 	ProxyManager   proxy.Manager
 	StorageManager storage.Manager
@@ -154,7 +154,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		}
 		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
 	}
-	serviceManager, err := service.NewManager(host, peerTaskManager, storageManager, downloadServerOption, peerServerOption)
+	rpcManager, err := rpcserver.NewServer(host, peerTaskManager, storageManager, downloadServerOption, peerServerOption)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		schedPeerHost: host,
 		Option:        *opt,
 
-		ServiceManager:  serviceManager,
+		RPCManager:      rpcManager,
 		PeerTaskManager: peerTaskManager,
 		PieceManager:    pieceManager,
 		ProxyManager:    proxyManager,
@@ -327,7 +327,7 @@ func (cd *clientDaemon) Serve() error {
 	g.Go(func() error {
 		defer downloadListener.Close()
 		logger.Infof("serve download grpc at unix://%s", cd.Option.Download.DownloadGRPC.UnixListen.Socket)
-		if err := cd.ServiceManager.ServeDownload(downloadListener); err != nil {
+		if err := cd.RPCManager.ServeDownload(downloadListener); err != nil {
 			logger.Errorf("failed to serve for download grpc service: %v", err)
 			return err
 		}
@@ -338,7 +338,7 @@ func (cd *clientDaemon) Serve() error {
 	g.Go(func() error {
 		defer peerListener.Close()
 		logger.Infof("serve peer grpc at %s://%s", peerListener.Addr().Network(), peerListener.Addr().String())
-		if err := cd.ServiceManager.ServePeer(peerListener); err != nil {
+		if err := cd.RPCManager.ServePeer(peerListener); err != nil {
 			logger.Errorf("failed to serve for peer grpc service: %v", err)
 			return err
 		}
@@ -388,7 +388,7 @@ func (cd *clientDaemon) Serve() error {
 			case <-time.After(cd.Option.AliveTime.Duration):
 				var keepalives = []clientutil.KeepAlive{
 					cd.StorageManager,
-					cd.ServiceManager,
+					cd.RPCManager,
 				}
 				var keep bool
 				for _, keepalive := range keepalives {
@@ -416,7 +416,7 @@ func (cd *clientDaemon) Stop() {
 	cd.once.Do(func() {
 		close(cd.done)
 		cd.GCManager.Stop()
-		cd.ServiceManager.Stop()
+		cd.RPCManager.Stop()
 		cd.UploadManager.Stop()
 
 		if cd.ProxyManager.IsEnabled() {

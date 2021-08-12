@@ -10,7 +10,7 @@ SCHEDULER_BINARY_NAME=scheduler
 MANAGER_BINARY_NAME=manager
 
 PKG=d7y.io/dragonfly/v2
-BUILD_IMAGE=golang:1.15.8
+BUILD_IMAGE=golang:1.16.6-alpine
 
 VERSION=$(git rev-parse --short HEAD)
 BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
@@ -78,6 +78,8 @@ build-docker() {
         -e CGO_ENABLED=0 \
         -e GO111MODULE=on \
         -e GOPROXY="${GOPROXY}" \
+        -e GOTAGS="${GOTAGS}" \
+        -e GOGCFLAGS="${GOGCFLAGS}" \
         -w /go/src/${PKG} \
         ${BUILD_IMAGE} \
         go build -o "/go/bin/$1" ./cmd/"$2"

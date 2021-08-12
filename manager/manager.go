@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package server
+package manager
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/proxy"
+	"d7y.io/dragonfly/v2/manager/router"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/manager/tasks"
@@ -82,7 +83,7 @@ func New(cfg *config.Config) (*Server, error) {
 	proxyServer := proxy.New(cfg.Database.Redis)
 
 	// Initialize router
-	router, err := initRouter(cfg.Verbose, restService, enforcer)
+	router, err := router.Init(cfg.Verbose, restService, enforcer)
 	if err != nil {
 		return nil, err
 	}
