@@ -41,7 +41,7 @@ host:
   idc: foo
   location: bar
 
-task:
+job:
   globalWorkerNum: 1
   schedulerWorkerNum: 1
   localWorkerNum: 5

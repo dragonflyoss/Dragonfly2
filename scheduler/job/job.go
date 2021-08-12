@@ -1,4 +1,4 @@
-package tasks
+package job
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
-	internaltasks "d7y.io/dragonfly/v2/internal/tasks"
+	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
@@ -23,22 +23,22 @@ const (
 	interval = time.Second
 )
 
-type Tasks interface {
+type Job interface {
 	Serve() error
 	Stop()
 }
 
-type tasks struct {
-	globalTasks    *internaltasks.Tasks
-	schedulerTasks *internaltasks.Tasks
-	localTasks     *internaltasks.Tasks
-	ctx            context.Context
-	service        *core.SchedulerService
-	cfg            *config.TaskConfig
+type job struct {
+	globalJob    *internaljob.Job
+	schedulerJob *internaljob.Job
+	localJob     *internaljob.Job
+	ctx          context.Context
+	service      *core.SchedulerService
+	cfg          *config.JobConfig
 }
 
-func New(ctx context.Context, cfg *config.TaskConfig, hostname string, service *core.SchedulerService) (Tasks, error) {
-	redisConfig := &internaltasks.Config{
+func New(ctx context.Context, cfg *config.JobConfig, hostname string, service *core.SchedulerService) (Job, error) {
+	redisConfig := &internaljob.Config{
 		Host:      cfg.Redis.Host,
 		Port:      cfg.Redis.Port,
 		Password:  cfg.Redis.Password,
@@ -46,56 +46,56 @@ func New(ctx context.Context, cfg *config.TaskConfig, hostname string, service *
 		BackendDB: cfg.Redis.BackendDB,
 	}
 
-	globalTask, err := internaltasks.New(redisConfig, internaltasks.GlobalQueue)
+	globalJob, err := internaljob.New(redisConfig, internaljob.GlobalQueue)
 	if err != nil {
-		logger.Errorf("create global tasks queue error: %v", err)
+		logger.Errorf("create global job queue error: %v", err)
 		return nil, err
 	}
 
-	schedulerTask, err := internaltasks.New(redisConfig, internaltasks.SchedulersQueue)
+	schedulerJob, err := internaljob.New(redisConfig, internaljob.SchedulersQueue)
 	if err != nil {
-		logger.Errorf("create scheduler tasks queue error: %v", err)
+		logger.Errorf("create scheduler job queue error: %v", err)
 		return nil, err
 	}
 
-	localQueue, err := internaltasks.GetSchedulerQueue(hostname)
+	localQueue, err := internaljob.GetSchedulerQueue(hostname)
 	if err != nil {
-		logger.Errorf("get local tasks queue name error: %v", err)
+		logger.Errorf("get local job queue name error: %v", err)
 		return nil, err
 	}
 
-	localTask, err := internaltasks.New(redisConfig, localQueue)
+	localJob, err := internaljob.New(redisConfig, localQueue)
 	if err != nil {
-		logger.Errorf("create local tasks queue error: %v", err)
+		logger.Errorf("create local job queue error: %v", err)
 		return nil, err
 	}
 
-	t := &tasks{
-		globalTasks:    globalTask,
-		schedulerTasks: schedulerTask,
-		localTasks:     localTask,
-		ctx:            ctx,
-		service:        service,
-		cfg:            cfg,
+	t := &job{
+		globalJob:    globalJob,
+		schedulerJob: schedulerJob,
+		localJob:     localJob,
+		ctx:          ctx,
+		service:      service,
+		cfg:          cfg,
 	}
 
-	namedTaskFuncs := map[string]interface{}{
-		internaltasks.PreheatTask: t.preheat,
+	namedJobFuncs := map[string]interface{}{
+		internaljob.PreheatJob: t.preheat,
 	}
 
-	if err := localTask.RegisterTasks(namedTaskFuncs); err != nil {
-		logger.Errorf("register preheat tasks to local queue error: %v", err)
+	if err := localJob.RegisterJob(namedJobFuncs); err != nil {
+		logger.Errorf("register preheat job to local queue error: %v", err)
 		return nil, err
 	}
 
 	return t, nil
 }
 
-func (t *tasks) Serve() error {
+func (t *job) Serve() error {
 	g := errgroup.Group{}
 	g.Go(func() error {
 		logger.Debugf("ready to launch %d worker(s) on global queue", t.cfg.GlobalWorkerNum)
-		err := t.globalTasks.LaunchWorker("global_worker", int(t.cfg.GlobalWorkerNum))
+		err := t.globalJob.LaunchWorker("global_worker", int(t.cfg.GlobalWorkerNum))
 		if err != nil {
 			logger.Errorf("global queue worker error: %v", err)
 		}
@@ -104,7 +104,7 @@ func (t *tasks) Serve() error {
 
 	g.Go(func() error {
 		logger.Debugf("ready to launch %d worker(s) on scheduler queue", t.cfg.SchedulerWorkerNum)
-		err := t.schedulerTasks.LaunchWorker("scheduler_worker", int(t.cfg.SchedulerWorkerNum))
+		err := t.schedulerJob.LaunchWorker("scheduler_worker", int(t.cfg.SchedulerWorkerNum))
 		if err != nil {
 			logger.Errorf("scheduler queue worker error: %v", err)
 		}
@@ -113,7 +113,7 @@ func (t *tasks) Serve() error {
 
 	g.Go(func() error {
 		logger.Debugf("ready to launch %d worker(s) on local queue", t.cfg.LocalWorkerNum)
-		err := t.localTasks.LaunchWorker("local_worker", int(t.cfg.LocalWorkerNum))
+		err := t.localJob.LaunchWorker("local_worker", int(t.cfg.LocalWorkerNum))
 		if err != nil {
 			logger.Errorf("local queue worker error: %v", err)
 		}
@@ -125,15 +125,15 @@ func (t *tasks) Serve() error {
 	return werr
 }
 
-func (t *tasks) Stop() {
-	t.globalTasks.Worker.Quit()
-	t.schedulerTasks.Worker.Quit()
-	t.localTasks.Worker.Quit()
+func (t *job) Stop() {
+	t.globalJob.Worker.Quit()
+	t.schedulerJob.Worker.Quit()
+	t.localJob.Worker.Quit()
 }
 
-func (t *tasks) preheat(req string) error {
-	request := &internaltasks.PreheatRequest{}
-	if err := internaltasks.UnmarshalRequest(req, request); err != nil {
+func (t *job) preheat(req string) error {
+	request := &internaljob.PreheatRequest{}
+	if err := internaljob.UnmarshalRequest(req, request); err != nil {
 		logger.Errorf("unmarshal request err: %v, request body: %s", err, req)
 		return err
 	}
