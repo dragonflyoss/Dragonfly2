@@ -58,6 +58,41 @@ $ helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
 $ helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly -f values.yaml
 ```
 
+#### Install with an existing manager
+
+Create the `values.yaml` configuration file. Need to configure the cluster id associated with scheduler and cdn.
+
+The example is to deploy a cluster using the existing manager and redis. Refer to the document for [configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#todo-configuration).
+
+```yaml
+scheduler:
+  config:
+    manager:
+      schedulerClusterID: 1
+
+cdn:
+  config:
+    base:
+      manager:
+        cdnClusterID: 1
+
+externalManager:
+  enable: true
+  host: "dragonfly-manager.dragonfly-system.svc.cluster.local"
+  restPort: 8080
+  grpcPort: 65003
+
+redis:
+  enable: false
+  host: redis-host
+  password: dragonfly
+  service:
+    port: 6379
+
+mysql:
+  enable: false
+```
+
 ### Wait Dragonfly Ready
 
 Wait all pods running
