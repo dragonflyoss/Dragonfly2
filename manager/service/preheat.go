@@ -14,7 +14,7 @@ func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, e
 
 		scheduler := model.Scheduler{}
 		if err := s.db.First(&scheduler, model.Scheduler{
-			SchedulerClusterID: &schedulerCluster.ID,
+			SchedulerClusterID: schedulerCluster.ID,
 			Status:             model.SchedulerStatusActive,
 		}).Error; err != nil {
 			return nil, err
@@ -32,7 +32,7 @@ func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, e
 	for _, schedulerCluster := range schedulerClusters {
 		scheduler := model.Scheduler{}
 		if err := s.db.First(&scheduler, model.Scheduler{
-			SchedulerClusterID: &schedulerCluster.ID,
+			SchedulerClusterID: schedulerCluster.ID,
 			Status:             model.SchedulerStatusActive,
 		}).Error; err != nil {
 			continue

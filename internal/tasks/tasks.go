@@ -27,6 +27,7 @@ type Config struct {
 
 type Tasks struct {
 	Server *machinery.Server
+	Worker *machinery.Worker
 	Queue  Queue
 }
 
@@ -57,7 +58,8 @@ func (t *Tasks) RegisterTasks(namedTaskFuncs map[string]interface{}) error {
 }
 
 func (t *Tasks) LaunchWorker(consumerTag string, concurrency int) error {
-	return t.Server.NewWorker(consumerTag, concurrency).Launch()
+	t.Worker = t.Server.NewWorker(consumerTag, concurrency)
+	return t.Worker.Launch()
 }
 
 type GroupTaskState struct {

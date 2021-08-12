@@ -1,7 +1,7 @@
 # Kubernetes with Dragonfly
 
 Now we can deploy all components of Dragonfly in Kubernetes cluster. We deploy scheduler and cdn as `StatefulSets`,
-daemon as `DaemonSets`.
+daemon as `DaemonSets`, manager as `Deployments`.
 
 Table of contents:
 
@@ -16,23 +16,88 @@ Table of contents:
 If there is no available Kubernetes cluster for testing, [minikube](https://minikube.sigs.k8s.io/docs/start/) is
 recommended. Just run `minikube start`.
 
-### Clone Chart
+### Install Dragonfly
+
+#### Install with default configuration
 
 ```shell
-git clone https://github.com/dragonflyoss/Dragonfly2.git
+helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
+helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly
 ```
 
-### Install
+#### Install with custom configuration
+
+Create the `values.yaml` configuration file. It is recommended to use external redis and mysql instead of containers.
+
+The example uses external mysql and redis. Refer to the document for [configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#todo-configuration).
+
+```yaml
+mysql:
+  enable: false
+  auth:
+    host: mysql-host
+    username: dragonfly
+    password: dragonfly 
+    database: manager
+  primary:
+    service:
+      port: 3306
+
+redis:
+  enable: false
+  host: redis-host
+  password: dragonfly
+  service:
+    port: 6379
+```
+
+Install dragonfly with `values.yaml`.
 
 ```shell
-helm install --namespace dragonfly-system dragonfly Dragonfly2/deploy/charts/dragonfly
+helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
+helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly -f values.yaml
+```
+
+#### Install with an existing manager
+
+Create the `values.yaml` configuration file. Need to configure the cluster id associated with scheduler and cdn.
+
+The example is to deploy a cluster using the existing manager and redis. Refer to the document for [configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#todo-configuration).
+
+```yaml
+scheduler:
+  config:
+    manager:
+      schedulerClusterID: 1
+
+cdn:
+  config:
+    base:
+      manager:
+        cdnClusterID: 1
+
+externalManager:
+  enable: true
+  host: "dragonfly-manager.dragonfly-system.svc.cluster.local"
+  restPort: 8080
+  grpcPort: 65003
+
+redis:
+  enable: false
+  host: redis-host
+  password: dragonfly
+  service:
+    port: 6379
+
+mysql:
+  enable: false
 ```
 
 ### Wait Dragonfly Ready
 
 Wait all pods running
 
-```
+```shell
 kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 ```
 
@@ -110,7 +175,7 @@ kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sampl
 
 Wait all pods running
 
-```
+```shell
 kubectl -n dragonfly wait --for=condition=ready --all --timeout=10m pod
 ```
 

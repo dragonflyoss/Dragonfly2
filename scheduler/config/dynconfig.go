@@ -177,6 +177,7 @@ func (d *dynconfig) getCDNFromDirPath() ([]*CDN, error) {
 
 type managerClient struct {
 	manager.ManagerClient
+	SchedulerClusterID uint
 }
 
 func (d *dynconfig) Register(l Observer) {
@@ -227,14 +228,18 @@ func (d *dynconfig) Stop() {
 	close(d.done)
 }
 
-func NewManagerClient(client manager.ManagerClient) dc.ManagerClient {
-	return &managerClient{client}
+func NewManagerClient(client manager.ManagerClient, schedulerClusterID uint) dc.ManagerClient {
+	return &managerClient{
+		ManagerClient:      client,
+		SchedulerClusterID: schedulerClusterID,
+	}
 }
 
 func (mc *managerClient) Get() (interface{}, error) {
 	scheduler, err := mc.GetScheduler(context.Background(), &manager.GetSchedulerRequest{
-		HostName:   iputils.HostName,
-		SourceType: manager.SourceType_SCHEDULER_SOURCE,
+		HostName:           iputils.HostName,
+		SourceType:         manager.SourceType_SCHEDULER_SOURCE,
+		SchedulerClusterId: uint64(mc.SchedulerClusterID),
 	})
 	if err != nil {
 		return nil, err

@@ -199,7 +199,7 @@ type ManagerConfig struct {
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
 	// CDNClusterID is cdn cluster id.
-	CDNClusterID uint64 `yaml:"cdnClusterID" mapstructure:"cdnClusterID"`
+	CDNClusterID uint `yaml:"cdnClusterID" mapstructure:"cdnClusterID"`
 
 	// KeepAlive configuration
 	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`

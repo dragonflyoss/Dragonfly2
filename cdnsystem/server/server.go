@@ -131,7 +131,7 @@ func (s *Server) Serve() (err error) {
 	}
 
 	if s.managerClient != nil {
-		retry.Run(ctx, func() (interface{}, bool, error) {
+		go retry.Run(ctx, func() (interface{}, bool, error) {
 			if err := s.keepAlive(ctx); err != nil {
 				logger.Errorf("keepalive to manager failed %v", err)
 				return nil, false, err
@@ -162,6 +162,7 @@ func (s *Server) register(ctx context.Context) error {
 	idc := s.config.Host.IDC
 	location := s.config.Host.Location
 	downloadPort := int32(s.config.DownloadPort)
+	cdnClusterID := uint64(s.config.Manager.CDNClusterID)
 
 	cdn, err := s.managerClient.UpdateCDN(ctx, &manager.UpdateCDNRequest{
 		SourceType:   manager.SourceType_CDN_SOURCE,
@@ -171,26 +172,18 @@ func (s *Server) register(ctx context.Context) error {
 		Idc:          idc,
 		Location:     location,
 		DownloadPort: downloadPort,
+		CdnClusterId: cdnClusterID,
 	})
 	if err != nil {
 		logger.Errorf("update cdn %s to manager failed %v", cdn.HostName, err)
 		return err
 	}
 	logger.Infof("update cdn %s to manager successfully", cdn.HostName)
-
-	cdnClusterID := s.config.Manager.CDNClusterID
-	if _, err := s.managerClient.AddCDNToCDNCluster(ctx, &manager.AddCDNToCDNClusterRequest{
-		CdnId:        cdn.Id,
-		CdnClusterId: cdnClusterID,
-	}); err != nil {
-		logger.Warnf("add cdn %s to cdn cluster %s failed %v", cdn.HostName, cdnClusterID, err)
-		return err
-	}
-	logger.Infof("add cdn %s to cdn cluster %s successfully", cdn.HostName, cdnClusterID)
 	return nil
 }
 
 func (s *Server) keepAlive(ctx context.Context) error {
+	cdnClusterID := uint64(s.config.Manager.CDNClusterID)
 	stream, err := s.managerClient.KeepAlive(ctx)
 	if err != nil {
 		logger.Errorf("create keepalive failed: %v\n", err)
@@ -205,6 +198,7 @@ func (s *Server) keepAlive(ctx context.Context) error {
 			if err := stream.Send(&manager.KeepAliveRequest{
 				HostName:   hostName,
 				SourceType: manager.SourceType_CDN_SOURCE,
+				ClusterId:  cdnClusterID,
 			}); err != nil {
 				logger.Errorf("%s send keepalive failed: %v\n", hostName, err)
 				return err

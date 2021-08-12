@@ -6,7 +6,8 @@ type CDNCluster struct {
 	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	Config            JSONMap            `gorm:"column:config;not null;comment:configuration" json:"config"`
 	SchedulerClusters []SchedulerCluster `gorm:"many2many:cdn_cluster_scheduler_cluster;" json:"-"`
+	IsDefault         bool               `gorm:"column:is_default;not null;default:false;comment:default cdn cluster" json:"is_default"`
 	CDNs              []CDN              `json:"-"`
-	SecurityGroupID   *uint              `gorm:"comment:security group id"`
+	SecurityGroupID   uint               `gorm:"comment:security group id"`
 	SecurityGroup     SecurityGroup      `json:"-"`
 }

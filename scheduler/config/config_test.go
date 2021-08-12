@@ -46,6 +46,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 		},
 		Server: &ServerConfig{
 			IP:   "127.0.0.1",
+			Host: "foo",
 			Port: 8002,
 		},
 
