@@ -36,6 +36,7 @@ var _ = BeforeSuite(func() {
 	podName := strings.Trim(string(out), "'")
 	Expect(err).NotTo(HaveOccurred())
 	fmt.Println(podName)
+
 	Expect(strings.HasPrefix(podName, "dragonfly-dfdaemon-")).Should(BeTrue())
 	pod := e2eutil.NewPodExec(dragonflyNamespace, podName, "dfdaemon")
 	out, err = pod.Command("dfget", "version").CombinedOutput()
