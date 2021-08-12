@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	daemon "d7y.io/dragonfly/v2/cdnsystem/daemon"
+	daemon "d7y.io/dragonfly/v2/cdnsystem/supervise"
 	types "d7y.io/dragonfly/v2/cdnsystem/types"
 	gomock "github.com/golang/mock/gomock"
 )
