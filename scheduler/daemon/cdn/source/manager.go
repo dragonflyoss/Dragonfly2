@@ -41,7 +41,7 @@ func (m manager) OnNotify(data *config.DynconfigData) {
 	panic("implement me")
 }
 
-func (m manager) StartSeedTask(ctx context.Context, task *types.Task) error {
+func (m manager) StartSeedTask(ctx context.Context, task *types.Task) (*types.Peer, error) {
 	//stream, err := cm.client.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
 	//	TaskId:  task.TaskID,
 	//	Url:     task.URL,
@@ -65,7 +65,7 @@ func (m manager) StartSeedTask(ctx context.Context, task *types.Task) error {
 	//source.GetContentLength(context.Background(), task.URL, nil)
 	//task.ListPeers()
 	//task.SetStatus(types.TaskStatusSuccess)
-	return nil
+	return nil, nil
 }
 
 var _ daemon.CDNMgr = (*manager)(nil)

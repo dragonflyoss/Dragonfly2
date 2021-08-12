@@ -86,9 +86,9 @@ func (cm *manager) OnNotify(c *config.DynconfigData) {
 	cm.client.UpdateState(netAddrs)
 }
 
-func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task) error {
+func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task) (*types.Peer, error) {
 	if cm.client == nil {
-		return cdn.ErrCDNRegisterFail
+		return nil, cdn.ErrCDNRegisterFail
 	}
 	stream, err := cm.client.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
 		TaskId:  task.TaskID,
@@ -100,41 +100,41 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task) error {
 			logger.Errorf("failed to obtain cdn seed: %v", cdnErr)
 			switch cdnErr.Code {
 			case dfcodes.CdnTaskRegistryFail:
-				return errors.Wrap(cdn.ErrCDNRegisterFail, "obtain seeds")
+				return nil, errors.Wrap(cdn.ErrCDNRegisterFail, "obtain seeds")
 			case dfcodes.CdnTaskDownloadFail:
-				return errors.Wrapf(cdn.ErrCDNDownloadFail, "obtain seeds")
+				return nil, errors.Wrapf(cdn.ErrCDNDownloadFail, "obtain seeds")
 			default:
-				return errors.Wrapf(cdn.ErrCDNUnknown, "obtain seeds")
+				return nil, errors.Wrapf(cdn.ErrCDNUnknown, "obtain seeds")
 			}
 		}
-		return errors.Wrapf(cdn.ErrCDNInvokeFail, "obtain seeds from cdn: %v", err)
+		return nil, errors.Wrapf(cdn.ErrCDNInvokeFail, "obtain seeds from cdn: %v", err)
 	}
 	return cm.receivePiece(task, stream)
 }
 
-func (cm *manager) receivePiece(task *types.Task, stream *client.PieceSeedStream) error {
+func (cm *manager) receivePiece(task *types.Task, stream *client.PieceSeedStream) (*types.Peer, error) {
 	var initialized bool
 	var cdnPeer *types.Peer
 	for {
 		piece, err := stream.Recv()
 		if err == io.EOF {
 			if task.GetStatus() == types.TaskStatusSuccess {
-				return nil
+				return cdnPeer, nil
 			}
-			return errors.Errorf("cdn stream receive EOF but task status is %s", task.GetStatus())
+			return cdnPeer, errors.Errorf("cdn stream receive EOF but task status is %s", task.GetStatus())
 		}
 		if err != nil {
 			if recvErr, ok := err.(*dferrors.DfError); ok {
 				switch recvErr.Code {
 				case dfcodes.CdnTaskRegistryFail:
-					return errors.Wrapf(cdn.ErrCDNRegisterFail, "receive piece")
+					return cdnPeer, errors.Wrapf(cdn.ErrCDNRegisterFail, "receive piece")
 				case dfcodes.CdnTaskDownloadFail:
-					return errors.Wrapf(cdn.ErrCDNDownloadFail, "receive piece")
+					return cdnPeer, errors.Wrapf(cdn.ErrCDNDownloadFail, "receive piece")
 				default:
-					return errors.Wrapf(cdn.ErrCDNUnknown, "recive piece")
+					return cdnPeer, errors.Wrapf(cdn.ErrCDNUnknown, "recive piece")
 				}
 			}
-			return errors.Wrapf(cdn.ErrCDNInvokeFail, "receive piece from cdn: %v", err)
+			return cdnPeer, errors.Wrapf(cdn.ErrCDNInvokeFail, "receive piece from cdn: %v", err)
 		}
 		if piece != nil {
 			if !initialized {
@@ -143,7 +143,7 @@ func (cm *manager) receivePiece(task *types.Task, stream *client.PieceSeedStream
 				initialized = true
 			}
 			if err != nil || cdnPeer == nil {
-				return err
+				return cdnPeer, err
 			}
 			cdnPeer.Touch()
 			if piece.Done {
@@ -157,7 +157,7 @@ func (cm *manager) receivePiece(task *types.Task, stream *client.PieceSeedStream
 						task.DirectPiece = content
 					}
 				}
-				return nil
+				return cdnPeer, nil
 			}
 			cdnPeer.AddPieceInfo(piece.PieceInfo.PieceNum+1, 0)
 			task.AddPiece(&types.PieceInfo{

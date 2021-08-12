@@ -83,7 +83,7 @@ func runScheduler() error {
 	s, _ := yaml.Marshal(cfg)
 	logger.Infof("scheduler configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry.Jaeger)
+	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
 	svr, err := scheduler.New(cfg)

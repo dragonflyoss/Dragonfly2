@@ -55,7 +55,7 @@ func newPeerPacketStream(ctx context.Context, sc *schedulerClient, hashKey strin
 
 	pps := &peerPacketStream{
 		sc:      sc,
-		ctx:     context.Background(),
+		ctx:     ctx,
 		hashKey: hashKey,
 		ptr:     ptr,
 		opts:    opts,

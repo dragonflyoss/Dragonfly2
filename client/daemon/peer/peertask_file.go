@@ -148,9 +148,8 @@ func newFilePeerTask(ctx context.Context,
 			logger.Infof("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
 	}
-
-	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	logger.Infof("step 2: start report peer %s piece result", request.PeerId)
+	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	if err != nil {
 		logger.Errorf("step 2: peer %s report piece failed: err", request.PeerId, err)
 		defer span.End()

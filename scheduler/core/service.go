@@ -228,7 +228,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 		task.SetStatus(types.TaskStatusRunning)
 	}
 	go func() {
-		if err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
+		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			if errors.Cause(err) != cdn.ErrCDNInvokeFail {
 				task.SetStatus(types.TaskStatusFailed)
 			}
@@ -237,19 +237,23 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *types.Task
 				logger.Error("failed to send taskSeed fail event, eventLoop is shutdown")
 			}
 		} else {
+			if ok = s.worker.send(peerDownloadSuccessEvent{cdnPeer, nil}); !ok {
+				logger.Error("failed to send taskSeed fail event, eventLoop is shutdown")
+			}
 			logger.Debugf("===== successfully obtain seeds from cdn, task: %+v ====", task)
 		}
 	}()
 	return task, nil
 }
 
-func (s *SchedulerService) HandlePieceResult(peer *types.Peer, pieceResult *schedulerRPC.PieceResult) error {
+func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *types.Peer, pieceResult *schedulerRPC.PieceResult) error {
 	peer.Touch()
 	if pieceResult.PieceNum == common.ZeroOfPiece {
-		s.worker.send(startReportPieceResultEvent{peer})
+		s.worker.send(startReportPieceResultEvent{ctx, peer})
 		return nil
 	} else if pieceResult.Success {
 		s.worker.send(peerDownloadPieceSuccessEvent{
+			ctx:  ctx,
 			peer: peer,
 			pr:   pieceResult,
 		})
@@ -264,7 +268,7 @@ func (s *SchedulerService) HandlePieceResult(peer *types.Peer, pieceResult *sche
 	return nil
 }
 
-func (s *SchedulerService) HandlePeerResult(peer *types.Peer, peerResult *schedulerRPC.PeerResult) error {
+func (s *SchedulerService) HandlePeerResult(ctx context.Context, peer *types.Peer, peerResult *schedulerRPC.PeerResult) error {
 	peer.Touch()
 	if peerResult.Success {
 		if !s.worker.send(peerDownloadSuccessEvent{peer: peer, peerResult: peerResult}) {
@@ -276,9 +280,12 @@ func (s *SchedulerService) HandlePeerResult(peer *types.Peer, peerResult *schedu
 	return nil
 }
 
-func (s *SchedulerService) HandleLeaveTask(peer *types.Peer) error {
+func (s *SchedulerService) HandleLeaveTask(ctx context.Context, peer *types.Peer) error {
 	peer.Touch()
-	if !s.worker.send(peerLeaveEvent{peer: peer}) {
+	if !s.worker.send(peerLeaveEvent{
+		ctx:  ctx,
+		peer: peer,
+	}) {
 		logger.Errorf("send peer leave event failed")
 	}
 	return nil

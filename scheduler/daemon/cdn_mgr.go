@@ -26,5 +26,5 @@ import (
 type CDNMgr interface {
 	config.Observer
 	// StartSeedTask start seed cdn task
-	StartSeedTask(ctx context.Context, task *types.Task) error
+	StartSeedTask(ctx context.Context, task *types.Task) (*types.Peer, error)
 }
