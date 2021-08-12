@@ -11,8 +11,8 @@ docs/en/user-guide/proxy/containerd.md \
 docs/en/user-guide/proxy/docker.md \
 docs/en/user-guide/registry-mirror/cri-containerd.md \
 docs/en/user-guide/registry-mirror/cri-o.md
-deploy/charts/dragonfly/templates/dfdaemon/dfdaemon-configmap.yaml \
-deploy/charts/dragonfly/values.yaml \
+deploy/helm-charts/charts/dragonfly/templates/dfdaemon/dfdaemon-configmap.yaml \
+deploy/helm-charts/charts/dragonfly/values.yaml \
 deploy/kustomize/single-cluster-native/bases/dfdaemon/daemonset.yaml \
 deploy/kustomize/single-cluster-native/bases/dfdaemon/dfget.yaml \
 deploy/kustomize/single-cluster-openkruise/bases/dfdaemon/dfget.yaml \

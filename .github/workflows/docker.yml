@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
       - name: Get Version
         id: get_version
@@ -38,6 +40,7 @@ jobs:
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
+          context: .
           file: build/images/scheduler/Dockerfile
           labels: |-
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -80,6 +83,7 @@ jobs:
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
+          context: .
           file: build/images/dfdaemon/Dockerfile
           labels: |-
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -122,6 +126,7 @@ jobs:
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
+          context: .
           file: build/images/cdn/Dockerfile
           labels: |-
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -164,6 +169,7 @@ jobs:
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
+          context: .
           file: build/images/manager/Dockerfile
           labels: |-
             org.opencontainers.image.source=https://github.com/${{ github.repository }}

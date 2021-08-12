@@ -7,7 +7,7 @@ set -o pipefail
 KIND_CONFIG_PATH="test/testdata/kind/config.yaml"
 CHARTS_CONFIG_PATH="test/testdata/charts/config.yaml"
 FILE_SERVER_CONFIG_PATH="test/testdata/k8s/file-server.yaml"
-CHARTS_PATH="deploy/charts/dragonfly"
+CHARTS_PATH="deploy/helm-charts/charts/dragonfly"
 NAMESPACE="dragonfly-system"
 E2E_NAMESPACE="dragonfly-e2e"
 FILE_SERVER_NAME="file-server-0"
@@ -33,7 +33,7 @@ install-helm() {
       curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | sh
   fi
 
-  helm install --wait --timeout 10m --create-namespace --namespace ${NAMESPACE} -f ${CHARTS_CONFIG_PATH} dragonfly ${CHARTS_PATH}
+  helm install --wait --timeout 10m --dependency-update --create-namespace --namespace ${NAMESPACE} -f ${CHARTS_CONFIG_PATH} dragonfly ${CHARTS_PATH}
 }
 
 install-file-server() {

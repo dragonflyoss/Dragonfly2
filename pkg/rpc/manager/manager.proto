@@ -54,12 +54,14 @@ message CDN {
   int32 port = 6;
   int32 download_port = 7;
   string status = 8;
+  uint64 cdn_cluster_id = 9;
   CDNCluster cdn_cluster = 10;
 }
 
 message GetCDNRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string host_name = 2 [(validate.rules).string.hostname = true];
+  uint64 cdn_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
 }
 
 message UpdateCDNRequest {
@@ -70,12 +72,7 @@ message UpdateCDNRequest {
   string ip = 5 [(validate.rules).string = {ip: true}];
   int32 port = 6 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
   int32 download_port = 7 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
-}
-
-message AddCDNToCDNClusterRequest {
-  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  uint64 cdn_id = 2 [(validate.rules).uint64.gte = 1];
-  uint64 cdn_cluster_id = 3 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+  uint64 cdn_cluster_id = 8 [(validate.rules).uint64 = {gte: 1}];
 }
 
 message SchedulerCluster {
@@ -97,6 +94,7 @@ message Scheduler {
   string ip = 7;
   int32 port = 8;
   string status = 9;
+  uint64 scheduler_cluster_id = 10;
   SchedulerCluster scheduler_cluster = 11;
   repeated CDN cdns = 12;
 }
@@ -104,6 +102,7 @@ message Scheduler {
 message GetSchedulerRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string host_name = 2 [(validate.rules).string.hostname = true];
+  uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
 }
 
 message UpdateSchedulerRequest {
@@ -115,19 +114,14 @@ message UpdateSchedulerRequest {
   bytes net_config = 7 [(validate.rules).bytes = {min_len: 1, ignore_empty: true}];
   string ip = 8 [(validate.rules).string = {ip: true}];
   int32 port = 9 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
-}
-
-message AddSchedulerToSchedulerClusterRequest {
-  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  uint64 scheduler_id = 2 [(validate.rules).uint64.gte = 1];
-  uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {ignore_empty: true, gte: 1}];
+  uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
 }
 
 message ListSchedulersRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string host_name = 2 [(validate.rules).string.hostname = true];
   string ip = 3 [(validate.rules).string.ip = true];
-  map<string, string> host_info = 4 [(validate.rules).map.ignore_empty = true];
+  map<string, string> host_info = 5 [(validate.rules).map.ignore_empty = true];
 }
 
 message ListSchedulersResponse {
@@ -137,6 +131,7 @@ message ListSchedulersResponse {
 message KeepAliveRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string host_name = 2 [(validate.rules).string.hostname = true];
+  uint64 cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
 }
 
 // Manager RPC Service 
@@ -145,14 +140,10 @@ service Manager {
   rpc GetCDN(GetCDNRequest) returns(CDN);
   // Update CDN configuration
   rpc UpdateCDN(UpdateCDNRequest) returns(CDN);
-  // AddCDNToCDNCluster add cdn to cdn cluster
-  rpc AddCDNToCDNCluster(AddCDNToCDNClusterRequest) returns(google.protobuf.Empty);
   // Get Scheduler and Scheduler cluster configuration
   rpc GetScheduler(GetSchedulerRequest)returns(Scheduler);
   // Update scheduler configuration
   rpc UpdateScheduler(UpdateSchedulerRequest) returns(Scheduler);
-  // AddSchedulerToSchedulerCluster add scheduler to scheduler cluster
-  rpc AddSchedulerToSchedulerCluster(AddSchedulerToSchedulerClusterRequest) returns(google.protobuf.Empty);
   // List acitve schedulers configuration
   rpc ListSchedulers(ListSchedulersRequest)returns(ListSchedulersResponse);
   // KeepAlive with manager
