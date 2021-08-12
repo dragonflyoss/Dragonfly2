@@ -94,6 +94,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 	var (
 		start = time.Now().UnixNano()
 		end   int64
+		err   error
 	)
 	defer func() {
 		_, rspan := tracer.Start(ctx, config.SpanPushPieceResult)
@@ -101,14 +102,14 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 		if success {
 			pm.pushSuccessResult(pt, request.DstPid, request.piece, start, end)
 		} else {
-			pm.pushFailResult(pt, request.DstPid, request.piece, start, end)
+			pm.pushFailResult(pt, request.DstPid, request.piece, start, end, err)
 		}
 		rspan.End()
 	}()
 
 	// 1. download piece from other peers
 	if pm.Limiter != nil {
-		if err := pm.Limiter.WaitN(ctx, int(request.piece.RangeSize)); err != nil {
+		if err = pm.Limiter.WaitN(ctx, int(request.piece.RangeSize)); err != nil {
 			pt.Log().Errorf("require rate limit access error: %s", err)
 			return
 		}
@@ -118,7 +119,12 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 	span.SetAttributes(config.AttributeTargetPeerID.String(request.DstPid))
 	span.SetAttributes(config.AttributeTargetPeerAddr.String(request.DstAddr))
 	span.SetAttributes(config.AttributePiece.Int(int(request.piece.PieceNum)))
-	r, c, err := pm.pieceDownloader.DownloadPiece(ctx, request)
+
+	var (
+		r io.Reader
+		c io.Closer
+	)
+	r, c, err = pm.pieceDownloader.DownloadPiece(ctx, request)
 	if err != nil {
 		span.RecordError(err)
 		span.End()
@@ -129,7 +135,8 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 	defer c.Close()
 
 	// 2. save to storage
-	n, err := pm.storageManager.WritePiece(ctx, &storage.WritePieceRequest{
+	var n int64
+	n, err = pm.storageManager.WritePiece(ctx, &storage.WritePieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
@@ -160,38 +167,44 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 
 func (pm *pieceManager) pushSuccessResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64) {
 	err := peerTask.ReportPieceResult(
-		piece,
-		&scheduler.PieceResult{
-			TaskId:        peerTask.GetTaskID(),
-			SrcPid:        peerTask.GetPeerID(),
-			DstPid:        dstPid,
-			PieceNum:      piece.PieceNum,
-			BeginTime:     uint64(start),
-			EndTime:       uint64(end),
-			Success:       true,
-			Code:          dfcodes.Success,
-			HostLoad:      nil, // TODO(jim): update host load
-			FinishedCount: 0,   // update by peer task
+		&pieceTaskResult{
+			piece: piece,
+			pieceResult: &scheduler.PieceResult{
+				TaskId:        peerTask.GetTaskID(),
+				SrcPid:        peerTask.GetPeerID(),
+				DstPid:        dstPid,
+				PieceNum:      piece.PieceNum,
+				BeginTime:     uint64(start),
+				EndTime:       uint64(end),
+				Success:       true,
+				Code:          dfcodes.Success,
+				HostLoad:      nil, // TODO(jim): update host load
+				FinishedCount: 0,   // update by peer task
+			},
+			err: nil,
 		})
 	if err != nil {
 		peerTask.Log().Errorf("report piece task error: %v", err)
 	}
 }
 
-func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64) {
-	err := peerTask.ReportPieceResult(
-		piece,
-		&scheduler.PieceResult{
-			TaskId:        peerTask.GetTaskID(),
-			SrcPid:        peerTask.GetPeerID(),
-			DstPid:        dstPid,
-			PieceNum:      piece.PieceNum,
-			BeginTime:     uint64(start),
-			EndTime:       uint64(end),
-			Success:       false,
-			Code:          dfcodes.ClientPieceDownloadFail,
-			HostLoad:      nil,
-			FinishedCount: 0, // update by peer task
+func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64, err error) {
+	err = peerTask.ReportPieceResult(
+		&pieceTaskResult{
+			piece: piece,
+			pieceResult: &scheduler.PieceResult{
+				TaskId:        peerTask.GetTaskID(),
+				SrcPid:        peerTask.GetPeerID(),
+				DstPid:        dstPid,
+				PieceNum:      piece.PieceNum,
+				BeginTime:     uint64(start),
+				EndTime:       uint64(end),
+				Success:       false,
+				Code:          dfcodes.ClientPieceDownloadFail,
+				HostLoad:      nil,
+				FinishedCount: 0, // update by peer task
+			},
+			err: err,
 		})
 	if err != nil {
 		peerTask.Log().Errorf("report piece task error: %v", err)
@@ -208,6 +221,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		success bool
 		start   = time.Now().UnixNano()
 		end     int64
+		err     error
 	)
 
 	var (
@@ -236,12 +250,12 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 					PieceMd5:    "",
 					PieceOffset: pieceOffset,
 					PieceStyle:  0,
-				}, start, end)
+				}, start, end, err)
 		}
 	}()
 
 	if pm.Limiter != nil {
-		if err := pm.Limiter.WaitN(pt.Context(), int(size)); err != nil {
+		if err = pm.Limiter.WaitN(pt.Context(), int(size)); err != nil {
 			pt.Log().Errorf("require rate limit access error: %s", err)
 			return 0, err
 		}
@@ -249,7 +263,8 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 	if pm.calculateDigest {
 		reader = digestutils.NewDigestReader(reader)
 	}
-	n, err := pm.storageManager.WritePiece(
+	var n int64
+	n, err = pm.storageManager.WritePiece(
 		pt.Context(),
 		&storage.WritePieceRequest{
 			UnknownLength: unknownLength,

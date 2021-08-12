@@ -19,11 +19,12 @@ package peer
 import (
 	"context"
 
+	"google.golang.org/grpc"
+
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
-	"google.golang.org/grpc"
 )
 
 type dummySchedulerClient struct {

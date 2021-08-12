@@ -24,10 +24,9 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/atomic"
-
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -55,6 +54,8 @@ const (
 
 var errPeerPacketChanged = errors.New("peer packet changed")
 
+var _ Task = (*peerTask)(nil)
+
 type peerTask struct {
 	*logger.SugaredLoggerOnWith
 	ctx    context.Context
@@ -64,7 +65,7 @@ type peerTask struct {
 	needBackSource bool
 
 	backSourceFunc        func()
-	reportPieceResultFunc func(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error
+	reportPieceResultFunc func(result *pieceTaskResult) error
 	setContentLengthFunc  func(i int64) error
 
 	request *scheduler.PeerTaskRequest
@@ -128,10 +129,14 @@ type peerTask struct {
 	limiter *rate.Limiter
 }
 
-var _ Task = (*peerTask)(nil)
+type pieceTaskResult struct {
+	piece       *base.PieceInfo
+	pieceResult *scheduler.PieceResult
+	err         error
+}
 
-func (pt *peerTask) ReportPieceResult(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
-	return pt.reportPieceResultFunc(pieceTask, pieceResult)
+func (pt *peerTask) ReportPieceResult(result *pieceTaskResult) error {
+	return pt.reportPieceResultFunc(result)
 }
 
 func (pt *peerTask) SetCallback(callback TaskCallback) {
@@ -446,6 +451,7 @@ loop:
 		limit = 1
 		// get failed piece
 		if num, ok = pt.waitFailedPiece(); !ok {
+			// when ok == false, indicates than need break loop
 			break loop
 		}
 	}
@@ -592,7 +598,7 @@ func (pt *peerTask) waitFailedPiece() (int32, bool) {
 		return -1, false
 	case failed := <-pt.failedPieceCh:
 		pt.Warnf("download piece/%d failed, retry", failed)
-		return -1, false
+		return -1, true
 	}
 }
 
@@ -616,8 +622,9 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 					pt.Errorf("request limiter error: %s", err)
 					waitSpan.RecordError(err)
 					waitSpan.End()
-					pti.ReportPieceResult(request.piece,
-						&scheduler.PieceResult{
+					pti.ReportPieceResult(&pieceTaskResult{
+						piece: request.piece,
+						pieceResult: &scheduler.PieceResult{
 							TaskId:        pt.GetTaskID(),
 							SrcPid:        pt.GetPeerID(),
 							DstPid:        request.DstPid,
@@ -626,7 +633,9 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 							Code:          dfcodes.ClientRequestLimitFail,
 							HostLoad:      nil,
 							FinishedCount: 0, // update by peer task
-						})
+						},
+						err: err,
+					})
 					pt.failedReason = err.Error()
 					pt.failedCode = dfcodes.ClientRequestLimitFail
 					pt.cancel()
