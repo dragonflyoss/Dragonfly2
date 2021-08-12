@@ -20,9 +20,9 @@ recommended. Just run `minikube start`.
 
 #### Install with default configuration
 
-```bash
-$ helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
-$ helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly
+```shell
+helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
+helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly
 ```
 
 #### Install with custom configuration
@@ -53,9 +53,9 @@ redis:
 
 Install dragonfly with `values.yaml`.
 
-```bash
-$ helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
-$ helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly -f values.yaml
+```shell
+helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
+helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly -f values.yaml
 ```
 
 #### Install with an existing manager
@@ -97,8 +97,8 @@ mysql:
 
 Wait all pods running
 
-```bash
-$ kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
+```shell
+kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 ```
 
 ### Configure Runtime
@@ -167,8 +167,8 @@ recommended. Just run `minikube start`.
 ### Build and Apply Kustomize Configuration
 
 ```shell
-$ git clone https://github.com/dragonflyoss/Dragonfly2.git
-$ kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | kubectl apply -f -
+git clone https://github.com/dragonflyoss/Dragonfly2.git
+kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | kubectl apply -f -
 ```
 
 ### Wait Dragonfly Ready
@@ -176,7 +176,7 @@ $ kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sam
 Wait all pods running
 
 ```shell
-$ kubectl -n dragonfly wait --for=condition=ready --all --timeout=10m pod
+kubectl -n dragonfly wait --for=condition=ready --all --timeout=10m pod
 ```
 
 ### Next Steps
