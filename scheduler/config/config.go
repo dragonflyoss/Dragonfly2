@@ -126,10 +126,10 @@ func NewDefaultGCConfig() *GCConfig {
 	return &GCConfig{
 		PeerGCInterval: 5 * time.Minute,
 		TaskGCInterval: 5 * time.Minute,
-		PeerTTL:        1 * time.Minute,
-		PeerTTI:        30 * time.Second,
-		TaskTTL:        2 * time.Minute,
-		TaskTTI:        30 * time.Second,
+		PeerTTL:        10 * time.Minute,
+		PeerTTI:        3 * time.Minute,
+		TaskTTL:        10 * time.Minute,
+		TaskTTI:        3 * time.Minute,
 	}
 }
 
