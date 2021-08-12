@@ -1,4 +1,4 @@
-package server
+package router
 
 import (
 	"d7y.io/dragonfly/v2/manager/handlers"
@@ -10,7 +10,7 @@ import (
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 )
 
-func initRouter(verbose bool, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
+func Init(verbose bool, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
 	if !verbose {
 		gin.SetMode(gin.ReleaseMode)
