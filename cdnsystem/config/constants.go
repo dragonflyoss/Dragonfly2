@@ -60,7 +60,7 @@ const (
 
 	// DefaultTaskExpireTime when a task is not accessed within the taskExpireTime,
 	// and it will be treated to be expired.
-	DefaultTaskExpireTime = 3 * time.Minute
+	DefaultTaskExpireTime = 30 * time.Minute
 )
 
 const (

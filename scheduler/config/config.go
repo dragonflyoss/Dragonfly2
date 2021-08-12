@@ -116,6 +116,7 @@ func NewDefaultSchedulerConfig() *SchedulerConfig {
 		AScheduler:           "",
 		BScheduler:           "",
 		WorkerNum:            runtime.GOMAXPROCS(0),
+		BackSourceCount:      3,
 		AccessWindow:         3 * time.Minute,
 		CandidateParentCount: 10,
 		Scheduler:            "basic",
@@ -130,8 +131,10 @@ func NewDefaultGCConfig() *GCConfig {
 	return &GCConfig{
 		PeerGCInterval: 5 * time.Minute,
 		TaskGCInterval: 5 * time.Minute,
-		PeerTTL:        5 * time.Minute,
-		TaskTTL:        1 * time.Hour,
+		PeerTTL:        10 * time.Minute,
+		PeerTTI:        3 * time.Minute,
+		TaskTTL:        10 * time.Minute,
+		TaskTTI:        3 * time.Minute,
 	}
 }
 
@@ -214,17 +217,18 @@ type DynConfig struct {
 }
 
 type SchedulerConfig struct {
-	DisableCDN bool   `yaml:"disableCDN" mapstructure:"disableCDN"`
-	ABTest     bool   `yaml:"abtest" mapstructure:"abtest"`
-	AScheduler string `yaml:"ascheduler" mapstructure:"ascheduler"`
-	BScheduler string `yaml:"bscheduler" mapstructure:"bscheduler"`
-	WorkerNum  int    `yaml:"workerNum" mapstructure:"workerNum"`
+	DisableCDN      bool   `yaml:"disableCDN" mapstructure:"disableCDN"`
+	ABTest          bool   `yaml:"abtest" mapstructure:"abtest"`
+	AScheduler      string `yaml:"ascheduler" mapstructure:"ascheduler"`
+	BScheduler      string `yaml:"bscheduler" mapstructure:"bscheduler"`
+	WorkerNum       int    `yaml:"workerNum" mapstructure:"workerNum"`
+	BackSourceCount int    `yaml:"backSourceCount" mapstructure:"backSourceCount"`
 	// AccessWindow should less than CDN task expireTime
 	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
 	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
 	Scheduler            string        `yaml:"scheduler" mapstructure:"scheduler"`
-	CDNLoad              int           `yaml:"cDNLoad" mapstructure:"cDNLoad"`
-	ClientLoad           int           `yaml:"clientLoad" mapstructure:"clientLoad"`
+	CDNLoad              int           `yaml:"cdnLoad" mapstructure:"cdnLoad"`
+	ClientLoad           int32         `yaml:"clientLoad" mapstructure:"clientLoad"`
 	OpenMonitor          bool          `yaml:"openMonitor" mapstructure:"openMonitor"`
 	GC                   *GCConfig     `yaml:"gc" mapstructure:"gc"`
 }
@@ -237,9 +241,11 @@ type ServerConfig struct {
 
 type GCConfig struct {
 	PeerGCInterval time.Duration `yaml:"peerGCInterval" mapstructure:"peerGCInterval"`
+	PeerTTL        time.Duration `yaml:"peerTTL" mapstructure:"peerTTL"`
+	PeerTTI        time.Duration `yaml:"peerTTI" mapstructure:"peerTTI"`
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
-	PeerTTL        time.Duration
-	TaskTTL        time.Duration
+	TaskTTL        time.Duration `yaml:"taskTTL" mapstructure:"taskTTL"`
+	TaskTTI        time.Duration `yaml:"taskTTI" mapstructure:"taskTTI"`
 }
 
 type HostConfig struct {

@@ -71,8 +71,8 @@ func newStreamPeerTask(ctx context.Context,
 		request.PeerId, request.Url, request.UrlMeta.Filter, request.UrlMeta, request.UrlMeta.Tag)
 	// trace register
 	regCtx, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
-	result, err := schedulerClient.RegisterPeerTask(regCtx, request)
 	logger.Infof("step 1: peer %s start to register", request.PeerId)
+	result, err := schedulerClient.RegisterPeerTask(regCtx, request)
 	regSpan.RecordError(err)
 	regSpan.End()
 

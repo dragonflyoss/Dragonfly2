@@ -32,6 +32,8 @@ func (status TaskStatus) String() string {
 		return "Waiting"
 	case TaskStatusRunning:
 		return "Running"
+	case TaskStatusZombie:
+		return "Zombie"
 	case TaskStatusSuccess:
 		return "Success"
 	case TaskStatusCDNRegisterFail:
@@ -48,6 +50,7 @@ func (status TaskStatus) String() string {
 const (
 	TaskStatusWaiting TaskStatus = iota
 	TaskStatusRunning
+	TaskStatusZombie
 	TaskStatusSeeding
 	TaskStatusSuccess
 	TaskStatusCDNRegisterFail
@@ -56,15 +59,14 @@ const (
 )
 
 type Task struct {
-	lock            sync.RWMutex
 	TaskID          string
 	URL             string
-	Filter          string
 	URLMeta         *base.UrlMeta
 	DirectPiece     []byte
 	CreateTime      time.Time
 	lastAccessTime  time.Time
 	lastTriggerTime time.Time
+	lock            sync.RWMutex
 	pieceList       map[int32]*PieceInfo
 	PieceTotal      int32
 	ContentLength   int64
@@ -73,16 +75,27 @@ type Task struct {
 	// TODO add cdnPeers
 }
 
-func NewTask(taskID, url, filter string, meta *base.UrlMeta) *Task {
+func NewTask(taskID, url string, meta *base.UrlMeta) *Task {
 	return &Task{
 		TaskID:    taskID,
 		URL:       url,
-		Filter:    filter,
 		URLMeta:   meta,
 		pieceList: make(map[int32]*PieceInfo),
 		peers:     sortedlist.NewSortedList(),
 		status:    TaskStatusWaiting,
 	}
+}
+
+func (task *Task) AddPeer(peer *Peer) {
+	task.peers.UpdateOrAdd(peer)
+}
+
+func (task *Task) DeletePeer(peer *Peer) {
+	task.peers.Delete(peer)
+}
+
+func (task *Task) ListPeers() *sortedlist.SortedList {
+	return task.peers
 }
 
 func (task *Task) SetStatus(status TaskStatus) {
@@ -103,16 +116,6 @@ func (task *Task) GetPiece(pieceNum int32) *PieceInfo {
 	return task.pieceList[pieceNum]
 }
 
-func (task *Task) AddPeer(peer *Peer) {
-	task.peers.UpdateOrAdd(peer)
-}
-
-func (task *Task) DeletePeer(peer *Peer) {
-	//task.lock.Lock()
-	//defer task.lock.Unlock()
-	task.peers.Delete(peer)
-}
-
 func (task *Task) AddPiece(p *PieceInfo) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
@@ -120,8 +123,6 @@ func (task *Task) AddPiece(p *PieceInfo) {
 }
 
 func (task *Task) GetLastTriggerTime() time.Time {
-	task.lock.RLock()
-	defer task.lock.RUnlock()
 	return task.lastTriggerTime
 }
 
@@ -131,9 +132,7 @@ func (task *Task) Touch() {
 	task.lastAccessTime = time.Now()
 }
 
-func (task *Task) SetLastTriggerTime(lastTriggerTime time.Time) {
-	task.lock.Lock()
-	defer task.lock.Unlock()
+func (task *Task) UpdateLastTriggerTime(lastTriggerTime time.Time) {
 	task.lastTriggerTime = lastTriggerTime
 }
 
@@ -143,8 +142,20 @@ func (task *Task) GetLastAccessTime() time.Time {
 	return task.lastAccessTime
 }
 
-func (task *Task) ListPeers() *sortedlist.SortedList {
-	return task.peers
+func (task *Task) Lock() {
+	task.lock.Lock()
+}
+
+func (task *Task) UnLock() {
+	task.lock.Unlock()
+}
+
+func (task *Task) RLock() {
+	task.lock.RLock()
+}
+
+func (task *Task) RUnlock() {
+	task.lock.RUnlock()
 }
 
 const TinyFileSize = 128
@@ -158,28 +169,34 @@ type PieceInfo struct {
 	PieceStyle  base.PieceStyle
 }
 
-// isSuccessCDN determines that whether the CDNStatus is success.
+// IsSuccess determines that whether cdn status is success.
 func (task *Task) IsSuccess() bool {
 	return task.status == TaskStatusSuccess
 }
 
+// IsFrozen determines that whether cdn status is frozen
 func (task *Task) IsFrozen() bool {
 	return task.status == TaskStatusFailed || task.status == TaskStatusWaiting ||
 		task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
 }
 
+// CanSchedule determines whether task can be scheduled
+// only task status is seeding or success can be scheduled
 func (task *Task) CanSchedule() bool {
 	return task.status == TaskStatusSeeding || task.status == TaskStatusSuccess
 }
 
+// IsWaiting determines whether task is waiting
 func (task *Task) IsWaiting() bool {
 	return task.status == TaskStatusWaiting
 }
 
+// IsHealth determines whether task is health
 func (task *Task) IsHealth() bool {
-	return task.status == TaskStatusRunning || task.status == TaskStatusSuccess
+	return task.status == TaskStatusRunning || task.status == TaskStatusSuccess || task.status == TaskStatusSeeding
 }
 
+// IsFail determines whether task is fail
 func (task *Task) IsFail() bool {
 	return task.status == TaskStatusFailed || task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
 }

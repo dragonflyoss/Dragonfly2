@@ -21,13 +21,10 @@ import (
 )
 
 type TaskMgr interface {
-	// Add
 	Add(task *types.Task)
 
-	// Get
 	Get(taskID string) (task *types.Task, ok bool)
 
-	// Delete
 	Delete(taskID string)
 
 	GetOrAdd(task *types.Task) (actual *types.Task, loaded bool)

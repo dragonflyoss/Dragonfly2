@@ -80,7 +80,6 @@ func (l *SortedList) Update(data Item) (err error) {
 
 	l.deleteItem(oldKey1, oldKey2, data)
 	l.addItem(key1, key2, data)
-
 	return
 }
 

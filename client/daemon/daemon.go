@@ -51,6 +51,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 )
 
 type Daemon interface {
@@ -96,7 +97,11 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		NetTopology:    opt.Host.NetTopology,
 	}
 
-	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs)
+	var opts []grpc.DialOption
+	if opt.Options.Telemetry.Jaeger != "" {
+		opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	}
+	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get schedulers")
 	}

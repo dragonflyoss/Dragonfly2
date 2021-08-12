@@ -15,3 +15,17 @@
  */
 
 package cdn
+
+import "github.com/pkg/errors"
+
+var (
+	ErrCDNRegisterFail = errors.New("cdn task register failed")
+
+	ErrCDNDownloadFail = errors.New("cdn task download failed")
+
+	ErrCDNUnknown = errors.New("cdn obtain seed encounter unknown err")
+
+	ErrCDNInvokeFail = errors.New("invoke cdn interface failed")
+
+	ErrInitCDNPeerFail = errors.New("init cdn peer failed")
+)
