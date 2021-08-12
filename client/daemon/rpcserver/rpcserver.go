@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package service
+package rpcserver
 
 import (
 	"context"
@@ -40,14 +40,14 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-type Manager interface {
+type Server interface {
 	clientutil.KeepAlive
 	ServeDownload(listener net.Listener) error
 	ServePeer(listener net.Listener) error
 	Stop()
 }
 
-type manager struct {
+type server struct {
 	clientutil.KeepAlive
 	peerHost        *scheduler.PeerHost
 	peerTaskManager peer.TaskManager
@@ -58,12 +58,12 @@ type manager struct {
 	uploadAddr     string
 }
 
-var _ dfdaemonserver.DaemonServer = (*manager)(nil)
-var _ Manager = (*manager)(nil)
+var _ dfdaemonserver.DaemonServer = (*server)(nil)
+var _ Server = (*server)(nil)
 
-func NewManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Manager, error) {
-	mgr := &manager{
-		KeepAlive:       clientutil.NewKeepAlive("service manager"),
+func NewServer(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
+	mgr := &server{
+		KeepAlive:       clientutil.NewKeepAlive("rpc server"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
@@ -73,21 +73,21 @@ func NewManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, 
 	return mgr, nil
 }
 
-func (m *manager) ServeDownload(listener net.Listener) error {
+func (m *server) ServeDownload(listener net.Listener) error {
 	return m.downloadServer.Serve(listener)
 }
 
-func (m *manager) ServePeer(listener net.Listener) error {
+func (m *server) ServePeer(listener net.Listener) error {
 	m.uploadAddr = fmt.Sprintf("%s:%d", m.peerHost.Ip, m.peerHost.DownPort)
 	return m.peerServer.Serve(listener)
 }
 
-func (m *manager) Stop() {
+func (m *server) Stop() {
 	m.peerServer.GracefulStop()
 	m.downloadServer.GracefulStop()
 }
 
-func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (m *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	m.Keep()
 	p, err := m.storageManager.GetPieces(ctx, request)
 	if err != nil {
@@ -128,12 +128,12 @@ func (m *manager) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequ
 	return p, nil
 }
 
-func (m *manager) CheckHealth(context.Context) error {
+func (m *server) CheckHealth(context.Context) error {
 	m.Keep()
 	return nil
 }
 
-func (m *manager) Download(ctx context.Context,
+func (m *server) Download(ctx context.Context,
 	req *dfdaemongrpc.DownRequest, results chan<- *dfdaemongrpc.DownResult) error {
 	m.Keep()
 	// init peer task request, peer uses different peer id to generate every request

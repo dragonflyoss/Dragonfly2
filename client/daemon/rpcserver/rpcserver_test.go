@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package service
+package rpcserver
 
 import (
 	"context"
@@ -73,7 +73,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 			}()
 			return ch, false, nil
 		})
-	m := &manager{
+	m := &server{
 		KeepAlive:       clientutil.NewKeepAlive("test"),
 		peerHost:        &scheduler.PeerHost{},
 		peerTaskManager: mockPeerTaskManager,
@@ -156,7 +156,7 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 			PieceMd5Sign:  "",
 		}, nil
 	})
-	m := &manager{
+	m := &server{
 		KeepAlive:      clientutil.NewKeepAlive("test"),
 		peerHost:       &scheduler.PeerHost{},
 		storageManager: mockStorageManger,
