@@ -24,8 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/supervise"
 	"github.com/olekukonko/tablewriter"
 	"go.uber.org/zap"
 	"k8s.io/client-go/util/workqueue"
@@ -33,11 +32,11 @@ import (
 
 type monitor struct {
 	downloadMonitorQueue workqueue.DelayingInterface
-	peerManager          daemon.PeerMgr
+	peerManager          supervise.PeerMgr
 	log                  *zap.SugaredLogger
 }
 
-func newMonitor(openMonitor bool, peerManager daemon.PeerMgr) *monitor {
+func newMonitor(openMonitor bool, peerManager supervise.PeerMgr) *monitor {
 	if !openMonitor {
 		return nil
 	}
@@ -63,10 +62,10 @@ func (m *monitor) start(done <-chan struct{}) {
 }
 
 func (m *monitor) printDebugInfo() string {
-	var peers, roots []*types.Peer
+	var peers, roots []*supervise.Peer
 	m.peerManager.ListPeers().Range(func(key interface{}, value interface{}) (ok bool) {
 		ok = true
-		peer := value.(*types.Peer)
+		peer := value.(*supervise.Peer)
 		if peer == nil {
 			m.log.Error("encounter a nil peer")
 			return
@@ -98,8 +97,8 @@ func (m *monitor) printDebugInfo() string {
 	var msgs []string
 	msgs = append(msgs, buffer.String())
 
-	var printTree func(node *types.Peer, path []string)
-	printTree = func(node *types.Peer, path []string) {
+	var printTree func(node *supervise.Peer, path []string)
+	printTree = func(node *supervise.Peer, path []string) {
 		if node == nil {
 			return
 		}
@@ -108,7 +107,7 @@ func (m *monitor) printDebugInfo() string {
 			msgs = append(msgs, node.PeerID+" || "+strings.Join(nPath, "-"))
 		}
 		node.GetChildren().Range(func(key, value interface{}) bool {
-			child := (value).(*types.Peer)
+			child := (value).(*supervise.Peer)
 			printTree(child, nPath)
 			return true
 		})

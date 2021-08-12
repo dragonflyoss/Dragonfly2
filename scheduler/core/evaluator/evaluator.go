@@ -23,19 +23,19 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/supervise"
 )
 
 type Evaluator interface {
 
 	// Evaluate todo Normalization
-	Evaluate(parent *types.Peer, child *types.Peer) float64
+	Evaluate(parent *supervise.Peer, child *supervise.Peer) float64
 
 	// NeedAdjustParent determine whether the peer needs a new parent node
-	NeedAdjustParent(peer *types.Peer) bool
+	NeedAdjustParent(peer *supervise.Peer) bool
 
 	// IsBadNode determine if peer is a failed node
-	IsBadNode(peer *types.Peer) bool
+	IsBadNode(peer *supervise.Peer) bool
 }
 
 type Factory struct {
@@ -52,15 +52,15 @@ type Factory struct {
 
 var _ Evaluator = (*Factory)(nil)
 
-func (ef *Factory) Evaluate(dst *types.Peer, src *types.Peer) float64 {
+func (ef *Factory) Evaluate(dst *supervise.Peer, src *supervise.Peer) float64 {
 	return ef.get(dst.Task.TaskID).Evaluate(dst, src)
 }
 
-func (ef *Factory) NeedAdjustParent(peer *types.Peer) bool {
+func (ef *Factory) NeedAdjustParent(peer *supervise.Peer) bool {
 	return ef.get(peer.Task.TaskID).NeedAdjustParent(peer)
 }
 
-func (ef *Factory) IsBadNode(peer *types.Peer) bool {
+func (ef *Factory) IsBadNode(peer *supervise.Peer) bool {
 	return ef.get(peer.Task.TaskID).IsBadNode(peer)
 }
 

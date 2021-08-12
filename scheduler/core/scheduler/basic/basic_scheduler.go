@@ -24,8 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator/basic"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/daemon"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/supervise"
 )
 
 const name = "basic"
@@ -66,11 +65,11 @@ func (builder *basicSchedulerBuilder) Name() string {
 
 type Scheduler struct {
 	evaluator   evaluator.Evaluator
-	peerManager daemon.PeerMgr
+	peerManager supervise.PeerMgr
 	cfg         *config.SchedulerConfig
 }
 
-func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) {
+func (s *Scheduler) ScheduleChildren(peer *supervise.Peer) (children []*supervise.Peer) {
 	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start schedule children flow")
 	if s.evaluator.IsBadNode(peer) {
 		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("stop schedule children flow because peer is bad node")
@@ -79,7 +78,7 @@ func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) 
 	freeUpload := peer.Host.GetFreeUploadLoad()
 	candidateChildren := s.selectCandidateChildren(peer, freeUpload*2)
 	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d candidate children %v", len(candidateChildren), candidateChildren)
-	evalResult := make(map[float64]*types.Peer)
+	evalResult := make(map[float64]*supervise.Peer)
 	var evalScore []float64
 	for _, child := range candidateChildren {
 		score := s.evaluator.Evaluate(peer, child)
@@ -105,7 +104,7 @@ func (s *Scheduler) ScheduleChildren(peer *types.Peer) (children []*types.Peer) 
 	return
 }
 
-func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer, bool) {
+func (s *Scheduler) ScheduleParent(peer *supervise.Peer) (*supervise.Peer, []*supervise.Peer, bool) {
 	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start schedule parent flow")
 	//if !s.evaluator.NeedAdjustParent(peer) {
 	//	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("stop schedule parent flow because peer is not need adjust parent", peer.PeerID)
@@ -120,7 +119,7 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer
 	if len(candidateParents) == 0 {
 		return nil, nil, false
 	}
-	evalResult := make(map[float64]*types.Peer)
+	evalResult := make(map[float64]*supervise.Peer)
 	var evalScore []float64
 	for _, candidate := range candidateParents {
 		score := s.evaluator.Evaluate(candidate, peer)
@@ -129,7 +128,7 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer
 		evalScore = append(evalScore, score)
 	}
 	sort.Float64s(evalScore)
-	var parents = make([]*types.Peer, 0, len(candidateParents))
+	var parents = make([]*supervise.Peer, 0, len(candidateParents))
 	for i := range evalScore {
 		parent := evalResult[evalScore[len(evalScore)-i-1]]
 		parents = append(parents, parent)
@@ -141,8 +140,8 @@ func (s *Scheduler) ScheduleParent(peer *types.Peer) (*types.Peer, []*types.Peer
 	return parents[0], parents[1:], true
 }
 
-func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list []*types.Peer) {
-	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *types.Peer) bool {
+func (s *Scheduler) selectCandidateChildren(peer *supervise.Peer, limit int) (list []*supervise.Peer) {
+	return s.peerManager.Pick(peer.Task, limit, func(candidateNode *supervise.Peer) bool {
 		if candidateNode == nil {
 			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer is not selected because it is nil")
 			return false
@@ -194,12 +193,12 @@ func (s *Scheduler) selectCandidateChildren(peer *types.Peer, limit int) (list [
 	})
 }
 
-func (s *Scheduler) selectCandidateParents(peer *types.Peer, limit int) (list []*types.Peer) {
+func (s *Scheduler) selectCandidateParents(peer *supervise.Peer, limit int) (list []*supervise.Peer) {
 	if !peer.Task.CanSchedule() {
 		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++peer %s can not be scheduled because task status", peer.PeerID)
 		return nil
 	}
-	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *types.Peer) bool {
+	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *supervise.Peer) bool {
 		if candidateNode == nil {
 			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer is not selected because it is nil")
 			return false

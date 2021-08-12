@@ -33,7 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/supervise"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
@@ -76,7 +76,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	}
 	taskID := s.service.GenerateTaskID(request.Url, request.UrlMeta, request.PeerId)
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
-	task := types.NewTask(taskID, request.Url, request.UrlMeta)
+	task := supervise.NewTask(taskID, request.Url, request.UrlMeta)
 	task, err = s.service.GetOrCreateTask(ctx, task)
 	if err != nil {
 		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
@@ -150,7 +150,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	ctx, span := tracer.Start(stream.Context(), config.SpanReportPieceResult, trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 	peerPacketChan := make(chan *scheduler.PeerPacket, 1)
-	var peer *types.Peer
+	var peer *supervise.Peer
 	initialized := false
 	ctx, cancel := context.WithCancel(ctx)
 	g, ctx := errgroup.WithContext(ctx)
@@ -188,7 +188,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 				}
 				if !initialized {
 					peer.BindSendChannel(peerPacketChan)
-					peer.SetStatus(types.PeerStatusRunning)
+					peer.SetStatus(supervise.PeerStatusRunning)
 					initialized = true
 					span.SetAttributes(config.AttributePeerID.String(peer.PeerID))
 					span.AddEvent("init")
@@ -277,9 +277,9 @@ func validateParams(req *scheduler.PeerTaskRequest) error {
 	return nil
 }
 
-func getTaskSizeScope(task *types.Task) base.SizeScope {
+func getTaskSizeScope(task *supervise.Task) base.SizeScope {
 	if task.IsSuccess() {
-		if task.ContentLength <= types.TinyFileSize {
+		if task.ContentLength <= supervise.TinyFileSize {
 			return base.SizeScope_TINY
 		}
 		if task.PieceTotal == 1 {
