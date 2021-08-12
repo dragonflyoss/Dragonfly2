@@ -88,14 +88,14 @@ func newFilePeerTask(ctx context.Context,
 	logger.Infof("request overview, url: %s, filter: %s, meta: %s, biz: %s, peer: %s", request.Url, request.UrlMeta.Filter, request.UrlMeta, request.UrlMeta.Tag, request.PeerId)
 	// trace register
 	regCtx, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
-	result, err := schedulerClient.RegisterPeerTask(regCtx, request)
 	logger.Infof("step 1: peer %s start to register", request.PeerId)
+	result, err := schedulerClient.RegisterPeerTask(regCtx, request)
 	regSpan.RecordError(err)
 	regSpan.End()
 
 	var needBackSource bool
 	if err != nil {
-		logger.Errorf("step 1: peer %s register failed: err", request.PeerId, err)
+		logger.Errorf("step 1: peer %s register failed: %v", request.PeerId, err)
 		if schedulerOption.DisableAutoBackSource {
 			logger.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, request.PeerId)
 			span.RecordError(err)
@@ -148,9 +148,8 @@ func newFilePeerTask(ctx context.Context,
 			logger.Infof("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
 	}
-
-	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	logger.Infof("step 2: start report peer %s piece result", request.PeerId)
+	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	if err != nil {
 		logger.Errorf("step 2: peer %s report piece failed: err", request.PeerId, err)
 		defer span.End()

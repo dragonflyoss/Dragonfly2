@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package server
+package scheduler
 
 import (
 	"context"
 	"time"
 
+	server2 "d7y.io/dragonfly/v2/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/tasks"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -29,7 +31,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/core"
-	"d7y.io/dragonfly/v2/scheduler/server/service"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
@@ -100,7 +101,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	s.schedulerService = schedulerService
 	// Initialize scheduler service
-	s.schedulerServer, err = service.NewSchedulerServer(schedulerService)
+	s.schedulerServer, err = server2.NewSchedulerServer(schedulerService)
 
 	if err != nil {
 		return nil, err
@@ -144,7 +145,11 @@ func (s *Server) Serve() error {
 	}
 
 	logger.Infof("start server at port %d", port)
-	if err := rpc.StartTCPServer(port, port, s.schedulerServer); err != nil {
+	var opts []grpc.ServerOption
+	if s.config.Options.Telemetry.Jaeger != "" {
+		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	}
+	if err := rpc.StartTCPServer(port, port, s.schedulerServer, opts...); err != nil {
 		return err
 	}
 	return nil

@@ -27,6 +27,7 @@ import (
 	"syscall"
 	"time"
 
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/mitchellh/mapstructure"
@@ -67,6 +68,7 @@ func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
 		flags.Bool("verbose", false, "whether logger use debug level")
 		flags.Int("pprof-port", -1, "listen port for pprof, 0 represents random port")
 		flags.String("jaeger", "", "jaeger endpoint url, like: http://localhost:14250/api/traces")
+		flags.String("service-name", fmt.Sprintf("%s-%s", "dragonfly", cmd.Name()), "name of the service for tracer")
 		flags.String("config", "", fmt.Sprintf("the path of configuration file with yaml extension name, default is %s, it can also be set by env var: %s", filepath.Join(dfpath.DefaultConfigDir, rootName+".yaml"), strings.ToUpper(rootName+"_config")))
 
 		// Bind common flags
@@ -86,7 +88,7 @@ func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
 }
 
 // InitMonitor initialize monitor and return final handler
-func InitMonitor(verbose bool, pprofPort int, jaeger string) func() {
+func InitMonitor(verbose bool, pprofPort int, otelOption base.TelemetryOption) func() {
 	var fc = make(chan func(), 5)
 
 	if verbose {
@@ -116,8 +118,8 @@ func InitMonitor(verbose bool, pprofPort int, jaeger string) func() {
 		}()
 	}
 
-	if jaeger != "" {
-		ff, err := initJaegerTracer(jaeger)
+	if otelOption.Jaeger != "" {
+		ff, err := initJaegerTracer(otelOption)
 		if err != nil {
 			logger.Warnf("init jaeger tracer error: %v", err)
 		}
@@ -227,8 +229,8 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 }
 
 // initTracer creates a new trace provider instance and registers it as global trace provider.
-func initJaegerTracer(url string) (func(), error) {
-	exp, err := jaeger.NewRawExporter(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
+func initJaegerTracer(otelOption base.TelemetryOption) (func(), error) {
+	exp, err := jaeger.NewRawExporter(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(otelOption.Jaeger)))
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +241,7 @@ func initJaegerTracer(url string) (func(), error) {
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		// Record information about this application in an Resource.
 		sdktrace.WithResource(resource.NewWithAttributes(
-			semconv.ServiceNameKey.String("dragonfly"),
+			semconv.ServiceNameKey.String(otelOption.ServiceName),
 			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", iputils.HostName, iputils.HostIP)),
 			semconv.ServiceVersionKey.String(version.GitVersion))),
 	)

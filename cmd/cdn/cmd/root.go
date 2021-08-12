@@ -73,7 +73,7 @@ func runCdnSystem() error {
 	s, _ := yaml.Marshal(cfg)
 	logger.Infof("cdn system configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry.Jaeger)
+	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
 	svr, err := server.New(cfg)
