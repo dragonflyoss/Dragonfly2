@@ -4,9 +4,6 @@ import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/scheduler/supervise"
-	"github.com/go-playground/validator/v10"
-
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -15,6 +12,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
+	"d7y.io/dragonfly/v2/scheduler/supervisor"
+	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
@@ -158,7 +157,7 @@ func (t *tasks) preheat(req string) error {
 	taskID := idgen.TaskID(request.URL, meta)
 	logger.Debugf("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
 
-	task := supervise.NewTask(taskID, request.URL, meta)
+	task := supervisor.NewTask(taskID, request.URL, meta)
 	task, err := t.service.GetOrCreateTask(t.ctx, task)
 	if err != nil {
 		return dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
@@ -168,7 +167,7 @@ func (t *tasks) preheat(req string) error {
 }
 
 //TODO(@zzy987) check better ways to get result
-func getPreheatResult(task *supervise.Task) error {
+func getPreheatResult(task *supervisor.Task) error {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -176,9 +175,9 @@ func getPreheatResult(task *supervise.Task) error {
 		select {
 		case <-ticker.C:
 			switch task.GetStatus() {
-			case supervise.TaskStatusFailed, supervise.TaskStatusCDNRegisterFail, supervise.TaskStatusSourceError:
+			case supervisor.TaskStatusFailed, supervisor.TaskStatusCDNRegisterFail, supervisor.TaskStatusSourceError:
 				return errors.Errorf("preheat task fail")
-			case supervise.TaskStatusSuccess:
+			case supervisor.TaskStatusSuccess:
 				return nil
 			default:
 			}

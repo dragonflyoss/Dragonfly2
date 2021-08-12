@@ -20,20 +20,20 @@ import (
 	"strings"
 
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/supervise"
+	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
 type Scheduler interface {
 	// ScheduleChildren schedule children to a peer
-	ScheduleChildren(peer *supervise.Peer) (children []*supervise.Peer)
+	ScheduleChildren(peer *supervisor.Peer) (children []*supervisor.Peer)
 
 	// ScheduleParent schedule a parent and candidates to a peer
-	ScheduleParent(peer *supervise.Peer) (parent *supervise.Peer, candidateParents []*supervise.Peer, hasParent bool)
+	ScheduleParent(peer *supervisor.Peer) (parent *supervisor.Peer, candidateParents []*supervisor.Peer, hasParent bool)
 }
 
 type BuildOptions struct {
-	TaskManager supervise.TaskMgr
-	PeerManager supervise.PeerMgr
+	TaskManager supervisor.TaskMgr
+	PeerManager supervisor.PeerMgr
 }
 
 var (

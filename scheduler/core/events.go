@@ -27,7 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/supervise"
+	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"go.opentelemetry.io/otel/trace"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -39,12 +39,12 @@ type event interface {
 
 type state struct {
 	sched                       scheduler.Scheduler
-	peerManager                 supervise.PeerMgr
-	cdnManager                  supervise.CDNMgr
+	peerManager                 supervisor.PeerMgr
+	cdnManager                  supervisor.CDNMgr
 	waitScheduleParentPeerQueue workqueue.DelayingInterface
 }
 
-func newState(sched scheduler.Scheduler, peerManager supervise.PeerMgr, cdnManager supervise.CDNMgr, wsdq workqueue.DelayingInterface) *state {
+func newState(sched scheduler.Scheduler, peerManager supervisor.PeerMgr, cdnManager supervisor.CDNMgr, wsdq workqueue.DelayingInterface) *state {
 	return &state{
 		sched:                       sched,
 		peerManager:                 peerManager,
@@ -54,7 +54,7 @@ func newState(sched scheduler.Scheduler, peerManager supervise.PeerMgr, cdnManag
 }
 
 type reScheduleParentEvent struct {
-	peer *supervise.Peer
+	peer *supervisor.Peer
 }
 
 var _ event = reScheduleParentEvent{}
@@ -69,7 +69,7 @@ func (e reScheduleParentEvent) hashKey() string {
 
 type startReportPieceResultEvent struct {
 	ctx  context.Context
-	peer *supervise.Peer
+	peer *supervisor.Peer
 }
 
 var _ event = startReportPieceResultEvent{}
@@ -98,7 +98,7 @@ func (e startReportPieceResultEvent) hashKey() string {
 
 type peerDownloadPieceSuccessEvent struct {
 	ctx  context.Context
-	peer *supervise.Peer
+	peer *supervisor.Peer
 	pr   *schedulerRPC.PieceResult
 }
 
@@ -109,7 +109,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	span.AddEvent("piece success")
 	e.peer.AddPieceInfo(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
 	oldParent := e.peer.GetParent()
-	var candidates []*supervise.Peer
+	var candidates []*supervisor.Peer
 	parentPeer, ok := s.peerManager.Get(e.pr.DstPid)
 	if !ok || parentPeer.IsLeave() {
 		e.peer.ReplaceParent(nil)
@@ -135,7 +135,7 @@ func (e peerDownloadPieceSuccessEvent) hashKey() string {
 }
 
 type peerDownloadPieceFailEvent struct {
-	peer *supervise.Peer
+	peer *supervisor.Peer
 	pr   *schedulerRPC.PieceResult
 }
 
@@ -148,14 +148,14 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 		reScheduleParent(e.peer, s)
 		return
 	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
-		go func(task *supervise.Task) {
+		go func(task *supervisor.Task) {
 			// TODO
 			synclock.Lock(task.TaskID, false)
 			defer synclock.UnLock(task.TaskID, false)
-			task.SetStatus(supervise.TaskStatusRunning)
+			task.SetStatus(supervisor.TaskStatusRunning)
 			if cdnPeer, err := s.cdnManager.StartSeedTask(context.Background(), task); err != nil {
 				logger.Errorf("start seed task fail: %v", err)
-				task.SetStatus(supervise.TaskStatusFailed)
+				task.SetStatus(supervisor.TaskStatusFailed)
 				handleSeedTaskFail(task)
 			} else {
 				logger.Debugf("===== successfully obtain seeds from cdn, task: %+v =====", e.peer.Task)
@@ -175,7 +175,7 @@ func (e peerDownloadPieceFailEvent) hashKey() string {
 }
 
 type taskSeedFailEvent struct {
-	task *supervise.Task
+	task *supervisor.Task
 }
 
 var _ event = taskSeedFailEvent{}
@@ -189,14 +189,14 @@ func (e taskSeedFailEvent) hashKey() string {
 }
 
 type peerDownloadSuccessEvent struct {
-	peer       *supervise.Peer
+	peer       *supervisor.Peer
 	peerResult *schedulerRPC.PeerResult
 }
 
 var _ event = peerDownloadSuccessEvent{}
 
 func (e peerDownloadSuccessEvent) apply(s *state) {
-	e.peer.SetStatus(supervise.PeerStatusSuccess)
+	e.peer.SetStatus(supervisor.PeerStatusSuccess)
 	removePeerFromCurrentTree(e.peer, s)
 	children := s.sched.ScheduleChildren(e.peer)
 	for _, child := range children {
@@ -210,17 +210,17 @@ func (e peerDownloadSuccessEvent) hashKey() string {
 }
 
 type peerDownloadFailEvent struct {
-	peer       *supervise.Peer
+	peer       *supervisor.Peer
 	peerResult *schedulerRPC.PeerResult
 }
 
 var _ event = peerDownloadFailEvent{}
 
 func (e peerDownloadFailEvent) apply(s *state) {
-	e.peer.SetStatus(supervise.PeerStatusFail)
+	e.peer.SetStatus(supervisor.PeerStatusFail)
 	removePeerFromCurrentTree(e.peer, s)
 	e.peer.GetChildren().Range(func(key, value interface{}) bool {
-		child := (value).(*supervise.Peer)
+		child := (value).(*supervisor.Peer)
 		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if !hasParent {
 			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("peerDownloadFailEvent: there is no available parent, reschedule it in one second")
@@ -238,7 +238,7 @@ func (e peerDownloadFailEvent) hashKey() string {
 
 type peerLeaveEvent struct {
 	ctx  context.Context
-	peer *supervise.Peer
+	peer *supervisor.Peer
 }
 
 var _ event = peerLeaveEvent{}
@@ -247,7 +247,7 @@ func (e peerLeaveEvent) apply(s *state) {
 	e.peer.MarkLeave()
 	removePeerFromCurrentTree(e.peer, s)
 	e.peer.GetChildren().Range(func(key, value interface{}) bool {
-		child := value.(*supervise.Peer)
+		child := value.(*supervisor.Peer)
 		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if !hasParent {
 			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("handlePeerLeave: there is no available parent，reschedule it in one second")
@@ -264,7 +264,7 @@ func (e peerLeaveEvent) hashKey() string {
 	return e.peer.Task.TaskID
 }
 
-func constructSuccessPeerPacket(peer *supervise.Peer, parent *supervise.Peer, candidates []*supervise.Peer) *schedulerRPC.PeerPacket {
+func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, candidates []*supervisor.Peer) *schedulerRPC.PeerPacket {
 	mainPeer := &schedulerRPC.PeerPacket_DestPeer{
 		Ip:      parent.Host.IP,
 		RpcPort: parent.Host.RPCPort,
@@ -290,7 +290,7 @@ func constructSuccessPeerPacket(peer *supervise.Peer, parent *supervise.Peer, ca
 	return peerPacket
 }
 
-func constructFailPeerPacket(peer *supervise.Peer, errCode base.Code) *schedulerRPC.PeerPacket {
+func constructFailPeerPacket(peer *supervisor.Peer, errCode base.Code) *schedulerRPC.PeerPacket {
 	return &schedulerRPC.PeerPacket{
 		TaskId: peer.Task.TaskID,
 		SrcPid: peer.PeerID,
@@ -298,7 +298,7 @@ func constructFailPeerPacket(peer *supervise.Peer, errCode base.Code) *scheduler
 	}
 }
 
-func reScheduleParent(peer *supervise.Peer, s *state) {
+func reScheduleParent(peer *supervisor.Peer, s *state) {
 	parent, candidates, hasParent := s.sched.ScheduleParent(peer)
 	if !hasParent {
 		logger.Errorf("handleReplaceParent: failed to schedule parent to peer %s, reschedule it in one second", peer.PeerID)
@@ -309,17 +309,17 @@ func reScheduleParent(peer *supervise.Peer, s *state) {
 	peer.SendSchedulePacket(constructSuccessPeerPacket(peer, parent, candidates))
 }
 
-func handleSeedTaskFail(task *supervise.Task) {
+func handleSeedTaskFail(task *supervisor.Task) {
 	if task.IsFail() {
 		task.ListPeers().Range(func(data sortedlist.Item) bool {
-			peer := data.(*supervise.Peer)
+			peer := data.(*supervisor.Peer)
 			peer.SendSchedulePacket(constructFailPeerPacket(peer, dfcodes.SchedNeedBackSource))
 			return true
 		})
 	}
 }
 
-func removePeerFromCurrentTree(peer *supervise.Peer, s *state) {
+func removePeerFromCurrentTree(peer *supervisor.Peer, s *state) {
 	parent := peer.GetParent()
 	peer.ReplaceParent(nil)
 	// parent frees up upload resources

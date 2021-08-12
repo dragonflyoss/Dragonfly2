@@ -30,26 +30,26 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/supervise"
-	"d7y.io/dragonfly/v2/scheduler/supervise/cdn"
-	"d7y.io/dragonfly/v2/scheduler/supervise/cdn/d7y"
-	"d7y.io/dragonfly/v2/scheduler/supervise/cdn/source"
-	"d7y.io/dragonfly/v2/scheduler/supervise/host"
-	"d7y.io/dragonfly/v2/scheduler/supervise/peer"
-	"d7y.io/dragonfly/v2/scheduler/supervise/task"
+	"d7y.io/dragonfly/v2/scheduler/supervisor"
+	"d7y.io/dragonfly/v2/scheduler/supervisor/cdn"
+	"d7y.io/dragonfly/v2/scheduler/supervisor/cdn/d7y"
+	"d7y.io/dragonfly/v2/scheduler/supervisor/cdn/source"
+	"d7y.io/dragonfly/v2/scheduler/supervisor/host"
+	"d7y.io/dragonfly/v2/scheduler/supervisor/peer"
+	"d7y.io/dragonfly/v2/scheduler/supervisor/task"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/util/workqueue"
 )
 
 type SchedulerService struct {
 	// cdn mgr
-	cdnManager supervise.CDNMgr
+	cdnManager supervisor.CDNMgr
 	// task mgr
-	taskManager supervise.TaskMgr
+	taskManager supervisor.TaskMgr
 	// host mgr
-	hostManager supervise.HostMgr
+	hostManager supervisor.HostMgr
 	// Peer mgr
-	peerManager supervise.PeerMgr
+	peerManager supervisor.PeerMgr
 
 	sched     scheduler.Scheduler
 	worker    worker
@@ -68,7 +68,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	}
 	hostManager := host.NewManager()
 	peerManager := peer.NewManager(cfg.GC, hostManager)
-	var cdnManager supervise.CDNMgr
+	var cdnManager supervisor.CDNMgr
 	if cfg.DisableCDN {
 		if cdnManager, err = source.NewManager(peerManager, hostManager); err != nil {
 			return nil, errors.Wrap(err, "new back source cdn manager")
@@ -133,7 +133,7 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 			if shutdown {
 				break
 			}
-			peer := v.(*supervise.Peer)
+			peer := v.(*supervisor.Peer)
 			wsdq.Done(v)
 			if peer.IsDone() || peer.IsLeave() {
 				logger.WithTaskAndPeerID(peer.Task.TaskID,
@@ -168,7 +168,7 @@ func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID
 	return idgen.TaskID(url, meta)
 }
 
-func (s *SchedulerService) ScheduleParent(peer *supervise.Peer) (parent *supervise.Peer, err error) {
+func (s *SchedulerService) ScheduleParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {
 	parent, _, hasParent := s.sched.ScheduleParent(peer)
 	//logger.Debugf("schedule parent result: parent %v, candidates:%v", parent, candidates)
 	if !hasParent || parent == nil {
@@ -177,34 +177,34 @@ func (s *SchedulerService) ScheduleParent(peer *supervise.Peer) (parent *supervi
 	return parent, nil
 }
 
-func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *supervise.Peer, ok bool) {
+func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *supervisor.Peer, ok bool) {
 	return s.peerManager.Get(peerTaskID)
 }
 
-func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *supervise.Task) (*supervise.Peer, error) {
+func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *supervisor.Task) (*supervisor.Peer, error) {
 	// get or create host
 	reqPeerHost := req.PeerHost
 	var (
-		peer     *supervise.Peer
+		peer     *supervisor.Peer
 		ok       bool
-		peerHost *supervise.PeerHost
+		peerHost *supervisor.PeerHost
 	)
 
 	if peerHost, ok = s.hostManager.Get(reqPeerHost.Uuid); !ok {
-		peerHost = supervise.NewClientPeerHost(reqPeerHost.Uuid, reqPeerHost.Ip, reqPeerHost.HostName, reqPeerHost.RpcPort, reqPeerHost.DownPort,
+		peerHost = supervisor.NewClientPeerHost(reqPeerHost.Uuid, reqPeerHost.Ip, reqPeerHost.HostName, reqPeerHost.RpcPort, reqPeerHost.DownPort,
 			reqPeerHost.SecurityDomain, reqPeerHost.Location, reqPeerHost.Idc, reqPeerHost.NetTopology, s.config.ClientLoad)
 		s.hostManager.Add(peerHost)
 	}
 
 	// get or creat PeerTask
 	if peer, ok = s.peerManager.Get(req.PeerId); !ok {
-		peer = supervise.NewPeer(req.PeerId, task, peerHost)
+		peer = supervisor.NewPeer(req.PeerId, task, peerHost)
 		s.peerManager.Add(peer)
 	}
 	return peer, nil
 }
 
-func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervise.Task) (*supervise.Task, error) {
+func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) (*supervisor.Task, error) {
 	synclock.Lock(task.TaskID, true)
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
@@ -224,12 +224,12 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervise.
 		return task, nil
 	}
 	if task.IsFrozen() {
-		task.SetStatus(supervise.TaskStatusRunning)
+		task.SetStatus(supervisor.TaskStatusRunning)
 	}
 	go func() {
 		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			if errors.Cause(err) != cdn.ErrCDNInvokeFail {
-				task.SetStatus(supervise.TaskStatusFailed)
+				task.SetStatus(supervisor.TaskStatusFailed)
 			}
 			logger.Errorf("failed to seed task: %v", err)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {
@@ -245,7 +245,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervise.
 	return task, nil
 }
 
-func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervise.Peer, pieceResult *schedulerRPC.PieceResult) error {
+func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *schedulerRPC.PieceResult) error {
 	peer.Touch()
 	if pieceResult.PieceNum == common.ZeroOfPiece {
 		s.worker.send(startReportPieceResultEvent{ctx, peer})
@@ -267,7 +267,7 @@ func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervis
 	return nil
 }
 
-func (s *SchedulerService) HandlePeerResult(ctx context.Context, peer *supervise.Peer, peerResult *schedulerRPC.PeerResult) error {
+func (s *SchedulerService) HandlePeerResult(ctx context.Context, peer *supervisor.Peer, peerResult *schedulerRPC.PeerResult) error {
 	peer.Touch()
 	if peerResult.Success {
 		if !s.worker.send(peerDownloadSuccessEvent{peer: peer, peerResult: peerResult}) {
@@ -279,7 +279,7 @@ func (s *SchedulerService) HandlePeerResult(ctx context.Context, peer *supervise
 	return nil
 }
 
-func (s *SchedulerService) HandleLeaveTask(ctx context.Context, peer *supervise.Peer) error {
+func (s *SchedulerService) HandleLeaveTask(ctx context.Context, peer *supervisor.Peer) error {
 	peer.Touch()
 	if !s.worker.send(peerLeaveEvent{
 		ctx:  ctx,

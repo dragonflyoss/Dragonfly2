@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	server2 "d7y.io/dragonfly/v2/scheduler/server"
+	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/tasks"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 
@@ -101,7 +101,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	s.schedulerService = schedulerService
 	// Initialize scheduler service
-	s.schedulerServer, err = server2.NewSchedulerServer(schedulerService)
+	s.schedulerServer, err = rpcserver.NewSchedulerServer(schedulerService)
 
 	if err != nil {
 		return nil, err
