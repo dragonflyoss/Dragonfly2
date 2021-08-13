@@ -17,6 +17,8 @@ import (
 )
 
 const (
+	Google            = "google"
+	Github            = "github"
 	GoogleScopes      = "https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/userinfo.profile"
 	GoogleUserInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
@@ -41,6 +43,24 @@ type Oauther interface {
 	GetOauthUserInfo(string) (*oauth2User, error)
 	ExchangeUserByCode(string, *gorm.DB) (*model.User, error)
 	AuthCodeURL() string
+}
+
+func New(oauth *model.Oauth, db *gorm.DB) (Oauther, error) {
+	var o Oauther
+	var err error
+	switch oauth.Name {
+	case Google:
+		o, err = NewGoogleOauth2(oauth.Name, oauth.ClientID, oauth.ClientSecret, db)
+	case Github:
+		o, err = NewGithubOauth2(oauth.Name, oauth.ClientID, oauth.ClientSecret, db)
+	default:
+		o, err = NewBaseOauth2(oauth.Name, oauth.ClientID, oauth.ClientSecret, oauth.Scopes, oauth.AuthURL, oauth.TokenURL, db)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return o, nil
+
 }
 
 func NewBaseOauth2(name string, clientID string, clientSecret string, scopes string, authURL string, tokenURL string, db *gorm.DB) (Oauther, error) {
