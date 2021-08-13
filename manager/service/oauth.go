@@ -1,25 +1,47 @@
 package service
 
 import (
+	"d7y.io/dragonfly/v2/manager/auth/oauth"
 	"d7y.io/dragonfly/v2/manager/model"
-	"d7y.io/dragonfly/v2/manager/oauth"
 	"d7y.io/dragonfly/v2/manager/types"
+	"golang.org/x/oauth2/github"
+	"golang.org/x/oauth2/google"
 )
 
 func (s *rest) CreateOauth(json types.CreateOauthRequest) (*model.Oauth, error) {
-	oauth := model.Oauth{
-		ClientID:     json.ClientID,
-		ClientSecret: json.ClientSecret,
-		Name:         json.Name,
-		AuthURL:      json.AuthURL,
-		TokenURL:     json.TokenURL,
+	o := model.Oauth{}
+	o.ClientID = json.ClientID
+	o.ClientSecret = json.ClientSecret
+	o.Name = json.Name
+	switch json.Name {
+	case "google":
+		o.AuthURL = google.Endpoint.AuthURL
+		o.TokenURL = google.Endpoint.TokenURL
+		o.Scopes = oauth.GoogleScopes
+		o.UserInfoURL = oauth.GoogleUserInfoURL
+
+	case "github":
+		o.AuthURL = github.Endpoint.AuthURL
+		o.TokenURL = github.Endpoint.TokenURL
+		o.Scopes = oauth.GithubScopes
+		o.UserInfoURL = oauth.GithubUserInfoURL
+	default:
+		o = model.Oauth{
+			ClientID:     json.ClientID,
+			ClientSecret: json.ClientSecret,
+			Name:         json.Name,
+			Scopes:       json.Scopes,
+			AuthURL:      json.AuthURL,
+			TokenURL:     json.TokenURL,
+			UserInfoURL:  json.UserInfoURL,
+		}
 	}
 
-	if err := s.db.Create(&oauth).Error; err != nil {
+	if err := s.db.Create(&o).Error; err != nil {
 		return nil, err
 	}
 
-	return &oauth, nil
+	return &o, nil
 }
 
 func (s *rest) DestroyOauth(id uint) error {
@@ -53,40 +75,12 @@ func (s *rest) GetOauth(id uint) (*model.Oauth, error) {
 	return &oauth, nil
 }
 
-func (s *rest) GetOauths(q types.GetOauthsQuery) (*[]model.Oauth, error) {
+func (s *rest) GetOauths() (*[]model.Oauth, error) {
 	oauths := []model.Oauth{}
-	if q.Name != "" {
-		if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Oauth{
-			Name: q.Name,
-		}).Find(&oauths).Error; err != nil {
-			return nil, err
-		}
-
-	} else {
-		if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Find(&oauths).Error; err != nil {
-			return nil, err
-		}
+	if err := s.db.Find(&oauths).Error; err != nil {
+		return nil, err
 	}
 	return &oauths, nil
-}
-
-func (s *rest) OauthTotalCount(q types.GetOauthsQuery) (int64, error) {
-	var count int64
-	if q.Name != "" {
-		if err := s.db.Model(&model.Oauth{}).Where(&model.Oauth{
-			Name: q.Name,
-		}).Count(&count).Error; err != nil {
-			return 0, err
-		}
-
-	} else {
-		if err := s.db.Model(&model.Oauth{}).Where(&model.Oauth{}).Count(&count).Error; err != nil {
-			return 0, err
-		}
-
-	}
-
-	return count, nil
 }
 
 func (s *rest) OauthSignin(name string) (string, error) {
@@ -95,10 +89,26 @@ func (s *rest) OauthSignin(name string) (string, error) {
 		return "", err
 	}
 
-	o, err := oauth.NewBaseOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, oauthModel.Scopes, oauthModel.AuthURL, oauthModel.TokenURL, s.db)
-	if err != nil {
-		return "", err
+	var o oauth.Oauther
+	var err error
+	switch name {
+	case "google":
+		o, err = oauth.NewGoogleOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, s.db)
+		if err != nil {
+			return "", err
+		}
+	case "github":
+		o, err = oauth.NewGithubOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, s.db)
+		if err != nil {
+			return "", err
+		}
+	default:
+		o, err = oauth.NewBaseOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, oauthModel.Scopes, oauthModel.AuthURL, oauthModel.TokenURL, s.db)
+		if err != nil {
+			return "", err
+		}
 	}
+
 	return o.AuthCodeURL(), nil
 }
 
@@ -107,11 +117,26 @@ func (s *rest) OauthCallback(name, code string) (*model.User, error) {
 	if err := s.db.First(&oauthModel, name).Error; err != nil {
 		return nil, err
 	}
-
-	o, err := oauth.NewBaseOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, oauthModel.Scopes, oauthModel.AuthURL, oauthModel.TokenURL, s.db)
-	if err != nil {
-		return nil, err
+	var o oauth.Oauther
+	var err error
+	switch name {
+	case "google":
+		o, err = oauth.NewGoogleOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, s.db)
+		if err != nil {
+			return nil, err
+		}
+	case "github":
+		o, err = oauth.NewGithubOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, s.db)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		o, err = oauth.NewBaseOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, oauthModel.Scopes, oauthModel.AuthURL, oauthModel.TokenURL, s.db)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	user, err := o.ExchangeUserByCode(code, s.db)
 	if err != nil {
 		return nil, err
