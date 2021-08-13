@@ -149,8 +149,8 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	oa.DELETE("/:id", h.DestroyOauth)
 	oa.PUT("/:id", h.UpdateOauth)
 	oa.POST("", h.CreateOauth)
-	oa.GET("/:oauth_name/signin", h.OauthSignin)
-	oa.GET("/:oauth_name/callback", h.OauthCallback(jwt))
+	oa.GET("/signin/:oauth_name", h.OauthSignin)
+	oa.GET("/callback/:oauth_name", h.OauthCallback(jwt))
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")
