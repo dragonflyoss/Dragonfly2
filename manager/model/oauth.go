@@ -2,8 +2,8 @@ package model
 
 type Oauth struct {
 	Model
-	Name         string `gorm:"column:name;type:varchar(256);index:unique;not null;comment:oauth name" json:"name"`
-	ClientID     string `gorm:"column:client_id;type:varchar(256);index:unique;not null;comment:client id for oauth" json:"client_id"`
+	Name         string `gorm:"column:name;type:varchar(256);index:uk_oauth_name,unique;not null;comment:oauth name" json:"name"`
+	ClientID     string `gorm:"column:client_id;type:varchar(256);index:uk_oauth_client_id,unique;not null;comment:client id for oauth" json:"client_id"`
 	ClientSecret string `gorm:"column:client_secret;type:varchar(1024);comment:client secret for oauth" json:"client_secret"`
 	// scope list split by ','
 	Scopes      string `gorm:"column:scopes;type:varchar(1024);comment:scopes" json:"scopes"`
