@@ -14,13 +14,13 @@ func (s *rest) CreateOauth(json types.CreateOauthRequest) (*model.Oauth, error) 
 	o.ClientSecret = json.ClientSecret
 	o.Name = json.Name
 	switch json.Name {
-	case "google":
+	case oauth.Google:
 		o.AuthURL = google.Endpoint.AuthURL
 		o.TokenURL = google.Endpoint.TokenURL
 		o.Scopes = oauth.GoogleScopes
 		o.UserInfoURL = oauth.GoogleUserInfoURL
 
-	case "github":
+	case oauth.Github:
 		o.AuthURL = github.Endpoint.AuthURL
 		o.TokenURL = github.Endpoint.TokenURL
 		o.Scopes = oauth.GithubScopes
@@ -89,26 +89,10 @@ func (s *rest) OauthSignin(name string) (string, error) {
 		return "", err
 	}
 
-	var o oauth.Oauther
-	var err error
-	switch name {
-	case "google":
-		o, err = oauth.NewGoogleOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, s.db)
-		if err != nil {
-			return "", err
-		}
-	case "github":
-		o, err = oauth.NewGithubOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, s.db)
-		if err != nil {
-			return "", err
-		}
-	default:
-		o, err = oauth.NewBaseOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, oauthModel.Scopes, oauthModel.AuthURL, oauthModel.TokenURL, s.db)
-		if err != nil {
-			return "", err
-		}
+	o, err := oauth.New(&oauthModel, s.db)
+	if err != nil {
+		return "", err
 	}
-
 	return o.AuthCodeURL(), nil
 }
 
@@ -117,24 +101,9 @@ func (s *rest) OauthCallback(name, code string) (*model.User, error) {
 	if err := s.db.First(&oauthModel, name).Error; err != nil {
 		return nil, err
 	}
-	var o oauth.Oauther
-	var err error
-	switch name {
-	case "google":
-		o, err = oauth.NewGoogleOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, s.db)
-		if err != nil {
-			return nil, err
-		}
-	case "github":
-		o, err = oauth.NewGithubOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, s.db)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		o, err = oauth.NewBaseOauth2(name, oauthModel.ClientID, oauthModel.ClientSecret, oauthModel.Scopes, oauthModel.AuthURL, oauthModel.TokenURL, s.db)
-		if err != nil {
-			return nil, err
-		}
+	o, err := oauth.New(&oauthModel, s.db)
+	if err != nil {
+		return nil, err
 	}
 
 	user, err := o.ExchangeUserByCode(code, s.db)
