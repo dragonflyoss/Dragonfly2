@@ -193,33 +193,17 @@ func (h *Handlers) GetOauth(ctx *gin.Context) {
 // @Tags Oauth
 // @Accept json
 // @Produce json
-// @Param page query int true "current page" default(0)
-// @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
 // @Success 200 {object} []model.Oauth
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /oauths [get]
 func (h *Handlers) GetOauths(ctx *gin.Context) {
-	var query types.GetOauthsQuery
-	if err := ctx.ShouldBindQuery(&query); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-
-	h.setPaginationDefault(&query.Page, &query.PerPage)
-	oauths, err := h.Service.GetOauths(query)
+	oauths, err := h.Service.GetOauths()
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.Service.OauthTotalCount(query)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-
-	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
 	ctx.JSON(http.StatusOK, oauths)
 }

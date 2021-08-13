@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
@@ -21,11 +22,10 @@ func NewGithubOauth2(name string, clientID string, clientSecret string, db *gorm
 	oa.Config = &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
-		Scopes: []string{"https://www.googleapis.com/auth/userinfo.profile",
-			"https://www.googleapis.com/auth/userinfo.email"},
-		Endpoint: github.Endpoint,
+		Scopes:       strings.Split(GithubScopes, ","),
+		Endpoint:     github.Endpoint,
 	}
-	oa.UserInfoURL = "https://api.github.com/user"
+	oa.UserInfoURL = GithubUserInfoURL
 
 	redirectURL, err := oa.GetRediectURL(db)
 	if err != nil {
