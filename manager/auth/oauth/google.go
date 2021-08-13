@@ -1,6 +1,8 @@
 package oauth
 
 import (
+	"strings"
+
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"gorm.io/gorm"
@@ -17,11 +19,10 @@ func NewGoogleOauth2(name string, clientID string, clientSecret string, db *gorm
 	oa.Config = &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
-		Scopes: []string{"https://www.googleapis.com/auth/userinfo.profile",
-			"https://www.googleapis.com/auth/userinfo.email"},
-		Endpoint: google.Endpoint,
+		Scopes:       strings.Split(GoogleScopes, ","),
+		Endpoint:     google.Endpoint,
 	}
-	oa.UserInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
+	oa.UserInfoURL = GithubUserInfoURL
 
 	redirectURL, err := oa.GetRediectURL(db)
 	if err != nil {

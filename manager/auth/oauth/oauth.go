@@ -16,6 +16,14 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	GoogleScopes      = "https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/userinfo.profile"
+	GoogleUserInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
+
+	GithubScopes      = "user,public_repo"
+	GithubUserInfoURL = "https://api.github.com/user"
+)
+
 type baseOauth2 struct {
 	Name        string
 	UserInfoURL string
