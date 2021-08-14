@@ -73,7 +73,7 @@ func (h *Handlers) DestroyOauth(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /{oauth_name}/sigin [get]
+// @Router /signin/{oauth_name} [get]
 func (h *Handlers) OauthSignin(ctx *gin.Context) {
 	var params types.OauthPathParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -99,7 +99,7 @@ func (h *Handlers) OauthSignin(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /{oauth_name}/callback [get]
+// @Router /callback/{oauth_name} [get]
 func (h *Handlers) OauthCallback(j *jwt.GinJWTMiddleware) func(*gin.Context) {
 	return func(ctx *gin.Context) {
 		var params types.OauthPathParams
@@ -124,7 +124,7 @@ func (h *Handlers) OauthCallback(j *jwt.GinJWTMiddleware) func(*gin.Context) {
 			ctx.Error(err)
 			return
 		}
-		ctx.SetCookie("jwt", jwtToken, 600, "", "", false, true)
+		ctx.SetCookie("jwt", jwtToken, 3600, "", "", false, true)
 		ctx.Redirect(http.StatusMovedPermanently, "/")
 	}
 }
@@ -140,7 +140,7 @@ func (h *Handlers) OauthCallback(j *jwt.GinJWTMiddleware) func(*gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /oauths/{id} [patch]
+// @Router /oauth/{id} [patch]
 func (h *Handlers) UpdateOauth(ctx *gin.Context) {
 	var params types.OauthParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -173,7 +173,7 @@ func (h *Handlers) UpdateOauth(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /oauths/{id} [get]
+// @Router /oauth/{id} [get]
 func (h *Handlers) GetOauth(ctx *gin.Context) {
 	var params types.OauthParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -199,7 +199,7 @@ func (h *Handlers) GetOauth(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /oauths [get]
+// @Router /oauth [get]
 func (h *Handlers) GetOauths(ctx *gin.Context) {
 	oauths, err := h.Service.GetOauths()
 	if err != nil {
