@@ -85,7 +85,7 @@ func (s *rest) GetOauths() (*[]model.Oauth, error) {
 
 func (s *rest) OauthSignin(name string) (string, error) {
 	oauthModel := model.Oauth{}
-	if err := s.db.First(&oauthModel, name).Error; err != nil {
+	if err := s.db.First(&oauthModel, model.Oauth{Name: name}).Error; err != nil {
 		return "", err
 	}
 
@@ -98,7 +98,7 @@ func (s *rest) OauthSignin(name string) (string, error) {
 
 func (s *rest) OauthCallback(name, code string) (*model.User, error) {
 	oauthModel := model.Oauth{}
-	if err := s.db.First(&oauthModel, name).Error; err != nil {
+	if err := s.db.First(&oauthModel, model.Oauth{Name: name}).Error; err != nil {
 		return nil, err
 	}
 	o, err := oauth.New(&oauthModel, s.db)

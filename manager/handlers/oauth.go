@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"d7y.io/dragonfly/v2/manager/types"
@@ -85,6 +86,7 @@ func (h *Handlers) OauthSignin(ctx *gin.Context) {
 		ctx.Error(err)
 		return
 	}
+	fmt.Println(oauthURL)
 	ctx.Redirect(http.StatusMovedPermanently, oauthURL)
 }
 

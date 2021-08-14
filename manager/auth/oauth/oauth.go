@@ -93,7 +93,7 @@ func (oa *baseOauth2) GetRediectURL(db *gorm.DB) (string, error) {
 	}).Error; err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s/api/v1/oauth/%s/sigin", s.Value, oa.Name), nil
+	return fmt.Sprintf("%s/api/v1/oauth/callback/%s", s.Value, oa.Name), nil
 }
 
 func (oa *baseOauth2) AuthCodeURL() string {
