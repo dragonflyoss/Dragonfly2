@@ -106,7 +106,15 @@ func (s *rest) OauthCallback(name, code string) (*model.User, error) {
 		return nil, err
 	}
 
-	user, err := o.ExchangeUserByCode(code, s.db)
+	token, err := o.ExchangeTokenByCode(code)
+	if err != nil {
+		return nil, err
+	}
+	u, err := o.GetOauthUserInfo(token)
+	if err != nil {
+		return nil, err
+	}
+	user, err := o.OauthLinkUser(u, s.db)
 	if err != nil {
 		return nil, err
 	}
