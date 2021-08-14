@@ -41,7 +41,8 @@ type oauth2User struct {
 type Oauther interface {
 	GetRediectURL(*gorm.DB) (string, error)
 	GetOauthUserInfo(string) (*oauth2User, error)
-	ExchangeUserByCode(string, *gorm.DB) (*model.User, error)
+	ExchangeTokenByCode(string) (string, error)
+	OauthLinkUser(*oauth2User, *gorm.DB) (*model.User, error)
 	AuthCodeURL() string
 }
 
@@ -118,20 +119,18 @@ func (oa *baseOauth2) GetOauthUserInfo(token string) (*oauth2User, error) {
 	return &u, nil
 }
 
-func (oa *baseOauth2) ExchangeUserByCode(code string, db *gorm.DB) (*model.User, error) {
+func (oa *baseOauth2) ExchangeTokenByCode(code string) (string, error) {
 	token, err := oa.Config.Exchange(context.Background(), code)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if oa.UserInfoURL == "" {
-		return nil, errors.New("UserInfoURL is empty")
+		return "", errors.New("UserInfoURL is empty")
 	}
-	u, err := oa.GetOauthUserInfo(token.AccessToken)
+	return token.AccessToken, nil
+}
 
-	if err != nil {
-		return nil, err
-	}
-
+func (oa *baseOauth2) OauthLinkUser(u *oauth2User, db *gorm.DB) (*model.User, error) {
 	if u.Name == "admin" {
 		return nil, errors.New("admin is not allowed to login by oauth")
 	}
