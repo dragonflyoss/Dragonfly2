@@ -30,7 +30,7 @@ func (s *rest) GetPermissions(g *gin.Engine) types.Permissions {
 }
 
 func (s *rest) CreateRole(json types.RolePermissionCreateRequest) error {
-	for _, p := range json.Permissons {
+	for _, p := range json.Permissions {
 		res, err := s.enforcer.AddPolicy(json.RoleName, p.Object, p.Action)
 		s.enforcer.GetAllObjects()
 		if err != nil {
@@ -51,7 +51,7 @@ func (s *rest) GetRoles() []string {
 func (s *rest) UpdateRole(roleName string, json types.RolePermissionUpdateRequest) error {
 	switch json.Method {
 	case "add":
-		for _, p := range json.Permissons {
+		for _, p := range json.Permissions {
 			_, err := s.enforcer.AddPolicy(roleName, p.Object, p.Action)
 			if err != nil {
 				return err
@@ -59,7 +59,7 @@ func (s *rest) UpdateRole(roleName string, json types.RolePermissionUpdateReques
 
 		}
 	case "remove":
-		for _, p := range json.Permissons {
+		for _, p := range json.Permissions {
 			_, err := s.enforcer.RemovePolicy(roleName, p.Object, p.Action)
 			if err != nil {
 				return err
@@ -69,7 +69,7 @@ func (s *rest) UpdateRole(roleName string, json types.RolePermissionUpdateReques
 	return nil
 }
 
-func (s *rest) DestoryRole(roleName string) error {
+func (s *rest) DestroyRole(roleName string) error {
 	_, err := s.enforcer.DeleteRole(roleName)
 	s.enforcer.GetAllRoles()
 	if err != nil {

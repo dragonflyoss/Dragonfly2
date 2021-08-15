@@ -39,7 +39,7 @@ type REST interface {
 	GetPermissions(*gin.Engine) types.Permissions
 
 	CreateRole(json types.RolePermissionCreateRequest) error
-	DestoryRole(string) error
+	DestroyRole(string) error
 	UpdateRole(string, types.RolePermissionUpdateRequest) error
 	GetRoles() []string
 	GetRole(string) []map[string]string

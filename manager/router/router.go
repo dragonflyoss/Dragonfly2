@@ -105,7 +105,7 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	re := apiv1.Group("/roles", jwt.MiddlewareFunc(), rbac)
 	re.POST("", h.CreateRole)
 	re.GET("", h.GetRoles)
-	re.DELETE("/:role_name", h.DestoryRole)
+	re.DELETE("/:role_name", h.DestroyRole)
 	re.GET("/:role_name", h.GetRole)
 	re.PATCH("/:role_name", h.UpdateRole)
 

@@ -129,8 +129,8 @@ func (h *Handlers) GetRole(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, h.Service.GetRole(params.RoleName))
 }
 
-// @Summary Destory Permission
-// @Description Destory Permission by json config
+// @Summary Destroy Permission
+// @Description Destroy Permission by json config
 // @Tags permission
 // @Accept json
 // @Produce json
@@ -139,13 +139,13 @@ func (h *Handlers) GetRole(ctx *gin.Context) {
 // @Failure 500
 // @Router /roles [delete]
 
-func (h *Handlers) DestoryRole(ctx *gin.Context) {
+func (h *Handlers) DestroyRole(ctx *gin.Context) {
 	var params types.RoleParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.Service.DestoryRole(params.RoleName)
+	err := h.Service.DestroyRole(params.RoleName)
 	if err != nil {
 		ctx.Error(err)
 		return
