@@ -61,7 +61,10 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	ai.POST("/signin", jwt.LoginHandler)
 	ai.POST("/signout", jwt.LogoutHandler)
 	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/signup", jwt.MiddlewareFunc(), rbac, h.SignUp)
+	ai.POST("/:user_name/roles/:role_name", h.GrantRole)
+	ai.DELETE("/:user_name/roles/:role_name", h.RevokeRole)
+
+	ai.POST("/signup", h.SignUp)
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")
@@ -98,13 +101,17 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	c.GET(":id", h.GetCDN)
 	c.GET("", h.GetCDNs)
 
+	// roles
+	re := apiv1.Group("/roles", jwt.MiddlewareFunc(), rbac)
+	re.POST("", h.CreateRole)
+	re.GET("", h.GetRoles)
+	re.DELETE("/:role_name", h.DestoryRole)
+	re.GET("/:role_name", h.GetRole)
+	re.PATCH("/:role_name", h.UpdateRole)
+
 	// Permission
-	pn := apiv1.Group("/permission", jwt.MiddlewareFunc(), rbac)
-	pn.POST("", h.CreatePermission)
-	pn.DELETE("", h.DestroyPermission)
-	pn.GET("/groups", h.GetPermissionGroups(r))
-	pn.GET("/roles/:subject", h.GetRolesForUser)
-	pn.GET("/:subject/:object/:action", h.HasRoleForUser)
+	pn := apiv1.Group("/permissions", rbac)
+	pn.GET("", h.GetPermissions(r))
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")
