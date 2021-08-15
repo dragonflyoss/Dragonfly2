@@ -30,12 +30,12 @@ type ObjectPermission struct {
 }
 
 type RolePermissionCreateRequest struct {
-	RoleName   string             `json:"role_name" binding:"required"`
+	RoleName    string             `json:"role_name" binding:"required"`
 	Permissions []ObjectPermission `json:"permissions" binding:"dive"`
 }
 
 type RolePermissionUpdateRequest struct {
-	Method     string             `json:"method" binding:"required,oneof=add remove"`
+	Method      string             `json:"method" binding:"required,oneof=add remove"`
 	Permissions []ObjectPermission `json:"permissions" binding:"dive"`
 }
 
