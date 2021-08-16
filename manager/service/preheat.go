@@ -36,7 +36,7 @@ func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, e
 			return nil, err
 		}
 
-		return s.tasks.CreatePreheat([]string{scheduler.HostName}, json)
+		return s.job.CreatePreheat([]string{scheduler.HostName}, json)
 	}
 
 	schedulerClusters := []model.SchedulerCluster{}
@@ -57,9 +57,9 @@ func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, e
 		hostnames = append(hostnames, scheduler.HostName)
 	}
 
-	return s.tasks.CreatePreheat(hostnames, json)
+	return s.job.CreatePreheat(hostnames, json)
 }
 
 func (s *rest) GetPreheat(id string) (*types.Preheat, error) {
-	return s.tasks.GetPreheat(id)
+	return s.job.GetPreheat(id)
 }

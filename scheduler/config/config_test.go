@@ -64,7 +64,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			IDC:      "foo",
 			Location: "bar",
 		},
-		Task: &TaskConfig{
+		Job: &JobConfig{
 			GlobalWorkerNum:    1,
 			SchedulerWorkerNum: 1,
 			LocalWorkerNum:     5,
@@ -98,7 +98,7 @@ func TestConvert(t *testing.T) {
 				Manager: &ManagerConfig{
 					Addr: "127.0.0.1:65003",
 				},
-				Task: &TaskConfig{
+				Job: &JobConfig{
 					Redis: &RedisConfig{
 						Host: "",
 					},
@@ -106,7 +106,7 @@ func TestConvert(t *testing.T) {
 			},
 			expect: func(t *testing.T, cfg *Config, err error) {
 				assert := assert.New(t)
-				assert.Equal("127.0.0.1", cfg.Task.Redis.Host)
+				assert.Equal("127.0.0.1", cfg.Job.Redis.Host)
 			},
 		},
 		{
@@ -115,7 +115,7 @@ func TestConvert(t *testing.T) {
 				Manager: &ManagerConfig{
 					Addr: "127.0.0.1:65003",
 				},
-				Task: &TaskConfig{
+				Job: &JobConfig{
 					Redis: &RedisConfig{
 						Host: "111.111.11.1",
 					},
@@ -123,7 +123,7 @@ func TestConvert(t *testing.T) {
 			},
 			expect: func(t *testing.T, cfg *Config, err error) {
 				assert := assert.New(t)
-				assert.Equal("111.111.11.1", cfg.Task.Redis.Host)
+				assert.Equal("111.111.11.1", cfg.Job.Redis.Host)
 			},
 		},
 		{
@@ -132,7 +132,7 @@ func TestConvert(t *testing.T) {
 				Manager: &ManagerConfig{
 					Addr: "",
 				},
-				Task: &TaskConfig{
+				Job: &JobConfig{
 					Redis: &RedisConfig{
 						Host: "111.111.11.1",
 					},
@@ -140,7 +140,7 @@ func TestConvert(t *testing.T) {
 			},
 			expect: func(t *testing.T, cfg *Config, err error) {
 				assert := assert.New(t)
-				assert.Equal("111.111.11.1", cfg.Task.Redis.Host)
+				assert.Equal("111.111.11.1", cfg.Job.Redis.Host)
 			},
 		},
 		{
@@ -149,7 +149,7 @@ func TestConvert(t *testing.T) {
 				Manager: &ManagerConfig{
 					Addr: ":65003",
 				},
-				Task: &TaskConfig{
+				Job: &JobConfig{
 					Redis: &RedisConfig{
 						Host: "",
 					},
@@ -157,7 +157,7 @@ func TestConvert(t *testing.T) {
 			},
 			expect: func(t *testing.T, cfg *Config, err error) {
 				assert := assert.New(t)
-				assert.Equal("", cfg.Task.Redis.Host)
+				assert.Equal("", cfg.Job.Redis.Host)
 			},
 		},
 		{
@@ -166,7 +166,7 @@ func TestConvert(t *testing.T) {
 				Manager: &ManagerConfig{
 					Addr: "localhost:65003",
 				},
-				Task: &TaskConfig{
+				Job: &JobConfig{
 					Redis: &RedisConfig{
 						Host: "",
 					},
@@ -174,7 +174,7 @@ func TestConvert(t *testing.T) {
 			},
 			expect: func(t *testing.T, cfg *Config, err error) {
 				assert := assert.New(t)
-				assert.Equal("localhost", cfg.Task.Redis.Host)
+				assert.Equal("localhost", cfg.Job.Redis.Host)
 			},
 		},
 	}

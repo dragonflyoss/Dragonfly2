@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package tasks
+package job
 
 import (
 	"reflect"
@@ -25,7 +25,7 @@ import (
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 )
 
-func TestTaskMarshal(t *testing.T) {
+func TestJobMarshal(t *testing.T) {
 	tests := []struct {
 		name   string
 		value  interface{}
@@ -111,7 +111,7 @@ func TestTaskMarshal(t *testing.T) {
 	}
 }
 
-func TestTaskUnmarshal(t *testing.T) {
+func TestJobUnmarshal(t *testing.T) {
 	tests := []struct {
 		name   string
 		data   []reflect.Value

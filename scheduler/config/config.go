@@ -34,7 +34,7 @@ type Config struct {
 	DynConfig    *DynConfig       `yaml:"dynConfig" mapstructure:"dynConfig"`
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
 	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
-	Task         *TaskConfig      `yaml:"task" mapstructure:"task"`
+	Job          *JobConfig       `yaml:"job" mapstructure:"job"`
 }
 
 func New() *Config {
@@ -44,7 +44,7 @@ func New() *Config {
 		DynConfig: NewDefaultDynConfig(),
 		Manager:   NewDefaultManagerConfig(),
 		Host:      NewHostConfig(),
-		Task:      NewDefaultTaskConfig(),
+		Job:       NewDefaultJobConfig(),
 	}
 }
 
@@ -151,8 +151,8 @@ func NewDefaultManagerConfig() *ManagerConfig {
 	}
 }
 
-func NewDefaultTaskConfig() *TaskConfig {
-	return &TaskConfig{
+func NewDefaultJobConfig() *JobConfig {
+	return &JobConfig{
 		GlobalWorkerNum:    10,
 		SchedulerWorkerNum: 10,
 		LocalWorkerNum:     10,
@@ -167,12 +167,12 @@ func NewDefaultTaskConfig() *TaskConfig {
 }
 
 func (c *Config) Convert() error {
-	if c.Manager.Addr != "" && c.Task.Redis.Host == "" {
+	if c.Manager.Addr != "" && c.Job.Redis.Host == "" {
 		host, _, err := net.SplitHostPort(c.Manager.Addr)
 		if err != nil {
 			return err
 		}
-		c.Task.Redis.Host = host
+		c.Job.Redis.Host = host
 	}
 	return nil
 }
@@ -264,7 +264,7 @@ type RedisConfig struct {
 	BackendDB int    `yaml:"backendDB" mapstructure:"backendDB"`
 }
 
-type TaskConfig struct {
+type JobConfig struct {
 	GlobalWorkerNum    uint         `yaml:"globalWorkerNum" mapstructure:"globalWorkerNum"`
 	SchedulerWorkerNum uint         `yaml:"schedulerWorkerNum" mapstructure:"schedulerWorkerNum"`
 	LocalWorkerNum     uint         `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
