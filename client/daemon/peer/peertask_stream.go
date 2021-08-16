@@ -267,7 +267,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 	var reader io.Reader = pr
 	var writer io.Writer = pw
 	if s.contentLength.Load() != -1 {
-		attr[headers.ContentLength] = fmt.Sprintf("%d", s.contentLength)
+		attr[headers.ContentLength] = fmt.Sprintf("%d", s.contentLength.Load())
 	} else {
 		attr[headers.TransferEncoding] = "chunked"
 	}
