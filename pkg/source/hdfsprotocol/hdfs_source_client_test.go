@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn"
+	"d7y.io/dragonfly/v2/cdnsystem/supervisor/cdn"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 
 	"d7y.io/dragonfly/v2/pkg/source"
