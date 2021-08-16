@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// cdn server
+// Package cdnsystem cdn server
 package cdnsystem
 
 import (
@@ -25,7 +25,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
-	server2 "d7y.io/dragonfly/v2/cdnsystem/server"
+	"d7y.io/dragonfly/v2/cdnsystem/rpcserver"
 	"d7y.io/dragonfly/v2/cdnsystem/supervisor/cdn"
 	"d7y.io/dragonfly/v2/cdnsystem/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/supervisor/gc"
@@ -86,7 +86,7 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, errors.Wrapf(err, "create gc manager")
 	}
 
-	cdnSeedServer, err := server2.NewCdnSeedServer(cfg, taskMgr)
+	cdnSeedServer, err := rpcserver.NewCdnSeedServer(cfg, taskMgr)
 	if err != nil {
 		return nil, errors.Wrap(err, "create seedServer")
 	}
