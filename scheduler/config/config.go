@@ -111,7 +111,7 @@ func NewDefaultServerConfig() *ServerConfig {
 
 func NewDefaultSchedulerConfig() *SchedulerConfig {
 	return &SchedulerConfig{
-		//DisableCDN:           false,
+		DisableCDN:           false,
 		ABTest:               false,
 		AScheduler:           "",
 		BScheduler:           "",
