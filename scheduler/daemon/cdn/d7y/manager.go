@@ -22,13 +22,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 	"sync"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -47,51 +45,19 @@ func init() {
 }
 
 type manager struct {
-	cdnAddrs    []dfnet.NetAddr
 	client      client.CdnClient
 	peerManager daemon.PeerMgr
 	hostManager daemon.HostMgr
 	lock        sync.RWMutex
 }
 
-func NewManager(cdnServers []*config.CDN, peerManager daemon.PeerMgr, hostManager daemon.HostMgr) (daemon.CDNMgr, error) {
-	// Initialize CDNManager client
-	cdnAddrs := cdnHostsToNetAddrs(cdnServers)
-	cdnClient, err := client.GetClientByAddr(cdnAddrs)
-	if err != nil {
-		return nil, errors.Wrapf(err, "create cdn client for scheduler")
-	}
+func NewManager(cdnClient client.CdnClient, peerManager daemon.PeerMgr, hostManager daemon.HostMgr) (daemon.CDNMgr, error) {
 	mgr := &manager{
-		cdnAddrs:    cdnAddrs,
 		client:      cdnClient,
 		peerManager: peerManager,
 		hostManager: hostManager,
 	}
 	return mgr, nil
-}
-
-// cdnHostsToNetAddrs coverts manager.CdnHosts to []dfnet.NetAddr.
-func cdnHostsToNetAddrs(hosts []*config.CDN) []dfnet.NetAddr {
-	var netAddrs []dfnet.NetAddr
-	for i := range hosts {
-		netAddrs = append(netAddrs, dfnet.NetAddr{
-			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", hosts[i].IP, hosts[i].Port),
-		})
-	}
-	return netAddrs
-}
-
-func (cm *manager) OnNotify(c *config.DynconfigData) {
-	netAddrs := cdnHostsToNetAddrs(c.CDNs)
-	if reflect.DeepEqual(netAddrs, c.CDNs) {
-		return
-	}
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
-	// Sync CDNManager client netAddrs
-	cm.cdnAddrs = netAddrs
-	cm.client.UpdateState(netAddrs)
 }
 
 func (cm *manager) StartSeedTask(ctx context.Context, task *types.Task) (*types.Peer, error) {
@@ -219,8 +185,6 @@ func (cm *manager) initCdnPeer(ctx context.Context, task *types.Task, ps *cdnsys
 
 func (cm *manager) DownloadTinyFileContent(ctx context.Context, task *types.Task, cdnHost *types.PeerHost) ([]byte, error) {
 	span := trace.SpanFromContext(ctx)
-	// no need to invoke getPieceTasks method
-	// TODO download the tiny file
 	// http://host:port/download/{taskId 前3位}/{taskId}?peerId={peerId};
 	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
 		cdnHost.IP, cdnHost.DownloadPort, task.TaskID[:3], task.TaskID)

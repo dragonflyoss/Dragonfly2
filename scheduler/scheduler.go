@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/job"
 	server2 "d7y.io/dragonfly/v2/scheduler/server"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -94,8 +95,16 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create dynamic config")
 	}
 	s.dynConfig = dynConfig
-
-	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig)
+	var opts []grpc.DialOption
+	if cfg.Options.Telemetry.Jaeger != "" {
+		opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	}
+	dyn, err := dynConfig.Get()
+	cdnClient, err := cdnclient.GetClientByAddr(dyn.CDNs, opts...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get cdn client")
+	}
+	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, cdnClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "create scheduler service")
 	}

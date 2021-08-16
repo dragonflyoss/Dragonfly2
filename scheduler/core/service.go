@@ -26,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -62,7 +63,7 @@ type SchedulerService struct {
 	wg        sync.WaitGroup
 }
 
-func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface) (*SchedulerService, error) {
+func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, cdnClient client.CdnClient) (*SchedulerService, error) {
 	dynConfigData, err := dynConfig.Get()
 	if err != nil {
 		return nil, err
@@ -75,10 +76,9 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 			return nil, errors.Wrap(err, "new back source cdn manager")
 		}
 	} else {
-		if cdnManager, err = d7y.NewManager(dynConfigData.CDNs, peerManager, hostManager); err != nil {
+		if cdnManager, err = d7y.NewManager(cdnClient, peerManager, hostManager); err != nil {
 			return nil, errors.Wrap(err, "new cdn manager")
 		}
-		dynConfig.Register(cdnManager)
 		hostManager.OnNotify(dynConfigData)
 		dynConfig.Register(hostManager)
 	}

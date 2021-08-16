@@ -19,12 +19,10 @@ package daemon
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/types"
 )
 
 type CDNMgr interface {
-	config.Observer
 	// StartSeedTask start seed cdn task
 	StartSeedTask(ctx context.Context, task *types.Task) (*types.Peer, error)
 }
