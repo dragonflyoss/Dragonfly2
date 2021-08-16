@@ -19,12 +19,12 @@ package config
 import (
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/disk"
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/cdn/storage/hybrid"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver/local"
+	"d7y.io/dragonfly/v2/cdnsystem/supervisor/cdn/storage"
+	"d7y.io/dragonfly/v2/cdnsystem/supervisor/cdn/storage/disk"
+	"d7y.io/dragonfly/v2/cdnsystem/supervisor/cdn/storage/hybrid"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"

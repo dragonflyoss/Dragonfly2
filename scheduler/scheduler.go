@@ -20,25 +20,21 @@ import (
 	"context"
 	"time"
 
-	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
-	"d7y.io/dragonfly/v2/scheduler/job"
-	server2 "d7y.io/dragonfly/v2/scheduler/server"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
-	"d7y.io/dragonfly/v2/scheduler/core"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-
-	// Server registered to grpc
-	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/core"
+	"d7y.io/dragonfly/v2/scheduler/job"
+	"d7y.io/dragonfly/v2/scheduler/rpcserver"
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"google.golang.org/grpc"
 )
 
 type Server struct {
@@ -95,22 +91,17 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create dynamic config")
 	}
 	s.dynConfig = dynConfig
-	var opts []grpc.DialOption
+	var openTele = false
 	if cfg.Options.Telemetry.Jaeger != "" {
-		opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+		openTele = true
 	}
-	dyn, err := dynConfig.Get()
-	cdnClient, err := cdnclient.GetClientByAddr(dyn.CDNs, opts...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get cdn client")
-	}
-	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, cdnClient)
+	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, openTele)
 	if err != nil {
 		return nil, errors.Wrap(err, "create scheduler service")
 	}
 	s.schedulerService = schedulerService
 	// Initialize scheduler service
-	s.schedulerServer, err = server2.NewSchedulerServer(schedulerService)
+	s.schedulerServer, err = rpcserver.NewSchedulerServer(schedulerService)
 
 	if err != nil {
 		return nil, err
