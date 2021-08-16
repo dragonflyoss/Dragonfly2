@@ -20,7 +20,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
-	"d7y.io/dragonfly/v2/scheduler/types"
+	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
 type baseEvaluator struct {
@@ -33,7 +33,7 @@ func NewEvaluator(cfg *config.SchedulerConfig) evaluator.Evaluator {
 	return eval
 }
 
-func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
+func (eval *baseEvaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
 	if peer.Host.CDN {
 		return false
 	}
@@ -67,7 +67,7 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *types.Peer) bool {
 	return false
 }
 
-func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
+func (eval *baseEvaluator) IsBadNode(peer *supervisor.Peer) bool {
 	if peer.IsBad() {
 		logger.Debugf("peer %s is bad because status is %s", peer.PeerID, peer.GetStatus())
 		return true
@@ -88,7 +88,7 @@ func (eval *baseEvaluator) IsBadNode(peer *types.Peer) bool {
 }
 
 // Evaluate The bigger, the better
-func (eval *baseEvaluator) Evaluate(parent *types.Peer, child *types.Peer) float64 {
+func (eval *baseEvaluator) Evaluate(parent *supervisor.Peer, child *supervisor.Peer) float64 {
 	profits := getProfits(parent, child)
 
 	load := getHostLoad(parent.Host)
@@ -113,20 +113,20 @@ func getAvgAndLastCost(list []int, splitPos int) (avgCost, lastCost int) {
 }
 
 // getProfits 0.0~unlimited larger and better
-func getProfits(dst *types.Peer, src *types.Peer) float64 {
-	diff := types.GetDiffPieceNum(dst, src)
+func getProfits(dst *supervisor.Peer, src *supervisor.Peer) float64 {
+	diff := supervisor.GetDiffPieceNum(dst, src)
 	depth := dst.GetDepth()
 
 	return float64(int(diff+1)*src.GetWholeTreeNode()) / float64(depth*depth)
 }
 
 // getHostLoad 0.0~1.0 larger and better
-func getHostLoad(host *types.PeerHost) float64 {
+func getHostLoad(host *supervisor.PeerHost) float64 {
 	return 1.0 - host.GetUploadLoadPercent()
 }
 
 // getDistance 0.0~1.0 larger and better
-func getDistance(dst *types.Peer, src *types.Peer) float64 {
+func getDistance(dst *supervisor.Peer, src *supervisor.Peer) float64 {
 	hostDist := 40.0
 	if dst.Host == src.Host {
 		hostDist = 0.0
