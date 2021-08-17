@@ -1,3 +1,6 @@
 [submodule "deploy/helm-charts"]
 	path = deploy/helm-charts
 	url = https://github.com/dragonflyoss/helm-charts.git
+[submodule "manager/console"]
+	path = manager/console
+	url = https://github.com/dragonflyoss/console.git
