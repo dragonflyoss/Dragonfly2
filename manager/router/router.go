@@ -129,7 +129,7 @@ func Init(verbose bool, service service.REST, enforcer *casbin.Enforcer) (*gin.E
 		return nil, err
 	}
 
-	// swagger
+	// Swagger
 	apiSeagger := ginSwagger.URL("/swagger/doc.json")
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, apiSeagger))
 
