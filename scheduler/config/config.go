@@ -39,19 +39,78 @@ type Config struct {
 
 func New() *Config {
 	return &Config{
-		Scheduler: NewDefaultSchedulerConfig(),
-		Server:    NewDefaultServerConfig(),
-		DynConfig: NewDefaultDynConfig(),
-		Manager:   NewDefaultManagerConfig(),
-		Host:      NewHostConfig(),
-		Job:       NewDefaultJobConfig(),
-	}
-}
-
-func NewHostConfig() *HostConfig {
-	return &HostConfig{
-		Location: "",
-		IDC:      "",
+		Scheduler: &SchedulerConfig{
+			DisableCDN:           false,
+			ABTest:               false,
+			AScheduler:           "",
+			BScheduler:           "",
+			WorkerNum:            runtime.GOMAXPROCS(0),
+			BackSourceCount:      3,
+			AccessWindow:         3 * time.Minute,
+			CandidateParentCount: 10,
+			Scheduler:            "basic",
+			CDNLoad:              100,
+			ClientLoad:           10,
+			OpenMonitor:          true,
+			GC: &GCConfig{
+				PeerGCInterval: 5 * time.Minute,
+				TaskGCInterval: 5 * time.Minute,
+				PeerTTL:        10 * time.Minute,
+				PeerTTI:        3 * time.Minute,
+				TaskTTL:        10 * time.Minute,
+				TaskTTI:        3 * time.Minute,
+			},
+		},
+		Server: &ServerConfig{
+			IP:   iputils.HostIP,
+			Host: iputils.HostName,
+			Port: 8002,
+		},
+		DynConfig: &DynConfig{
+			Type:       dc.LocalSourceType,
+			ExpireTime: 30 * time.Second,
+			CDNDirPath: "",
+			Data: &DynconfigData{
+				CDNs: []*CDN{
+					{
+						HostName:      "localhost",
+						IP:            "127.0.0.1",
+						Port:          8003,
+						DownloadPort:  8001,
+						SecurityGroup: "",
+						Location:      "",
+						IDC:           "",
+						NetTopology:   "",
+					},
+				},
+			},
+		},
+		Manager: &ManagerConfig{
+			Addr:               "",
+			SchedulerClusterID: 0,
+			KeepAlive: KeepAliveConfig{
+				Interval:         5 * time.Second,
+				RetryMaxAttempts: 100000000,
+				RetryInitBackOff: 5,
+				RetryMaxBackOff:  10,
+			},
+		},
+		Host: &HostConfig{
+			Location: "",
+			IDC:      "",
+		},
+		Job: &JobConfig{
+			GlobalWorkerNum:    10,
+			SchedulerWorkerNum: 10,
+			LocalWorkerNum:     10,
+			Redis: &RedisConfig{
+				Host:      "",
+				Port:      6379,
+				Password:  "",
+				BrokerDB:  1,
+				BackendDB: 2,
+			},
+		},
 	}
 }
 
@@ -77,93 +136,6 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
-}
-
-func NewDefaultDynConfig() *DynConfig {
-	return &DynConfig{
-		Type:       dc.LocalSourceType,
-		ExpireTime: 30 * time.Second,
-		CDNDirPath: "",
-		Data: &DynconfigData{
-			CDNs: []*CDN{
-				{
-					HostName:      "localhost",
-					IP:            "127.0.0.1",
-					Port:          8003,
-					DownloadPort:  8001,
-					SecurityGroup: "",
-					Location:      "",
-					IDC:           "",
-					NetTopology:   "",
-				},
-			},
-		},
-	}
-}
-
-func NewDefaultServerConfig() *ServerConfig {
-	return &ServerConfig{
-		IP:   iputils.HostIP,
-		Host: iputils.HostName,
-		Port: 8002,
-	}
-}
-
-func NewDefaultSchedulerConfig() *SchedulerConfig {
-	return &SchedulerConfig{
-		DisableCDN:           false,
-		ABTest:               false,
-		AScheduler:           "",
-		BScheduler:           "",
-		WorkerNum:            runtime.GOMAXPROCS(0),
-		BackSourceCount:      3,
-		AccessWindow:         3 * time.Minute,
-		CandidateParentCount: 10,
-		Scheduler:            "basic",
-		CDNLoad:              100,
-		ClientLoad:           10,
-		OpenMonitor:          true,
-		GC:                   NewDefaultGCConfig(),
-	}
-}
-
-func NewDefaultGCConfig() *GCConfig {
-	return &GCConfig{
-		PeerGCInterval: 5 * time.Minute,
-		TaskGCInterval: 5 * time.Minute,
-		PeerTTL:        10 * time.Minute,
-		PeerTTI:        3 * time.Minute,
-		TaskTTL:        10 * time.Minute,
-		TaskTTI:        3 * time.Minute,
-	}
-}
-
-func NewDefaultManagerConfig() *ManagerConfig {
-	return &ManagerConfig{
-		Addr:               "",
-		SchedulerClusterID: 0,
-		KeepAlive: KeepAliveConfig{
-			Interval:         5 * time.Second,
-			RetryMaxAttempts: 100000000,
-			RetryInitBackOff: 5,
-			RetryMaxBackOff:  10,
-		},
-	}
-}
-
-func NewDefaultJobConfig() *JobConfig {
-	return &JobConfig{
-		GlobalWorkerNum:    10,
-		SchedulerWorkerNum: 10,
-		LocalWorkerNum:     10,
-		Redis: &RedisConfig{
-			Host:      "",
-			Port:      6379,
-			Password:  "",
-			BrokerDB:  1,
-			BackendDB: 2,
-		},
-	}
 }
 
 func (c *Config) Convert() error {
@@ -249,10 +221,10 @@ type GCConfig struct {
 }
 
 type HostConfig struct {
-	// Peerhost location for scheduler
+	// Location for scheduler
 	Location string `mapstructure:"location" yaml:"location"`
 
-	// Peerhost idc for scheduler
+	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
 }
 

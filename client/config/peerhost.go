@@ -129,9 +129,9 @@ type SchedulerOption struct {
 type HostOption struct {
 	// SecurityDomain is the security domain
 	SecurityDomain string `mapstructure:"securityDomain" yaml:"securityDomain"`
-	// Peerhost location for scheduler
+	// Location for scheduler
 	Location string `mapstructure:"location" yaml:"location"`
-	// Peerhost idc for scheduler
+	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
 	// Peerhost net topology for scheduler
 	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`

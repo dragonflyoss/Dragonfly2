@@ -220,9 +220,9 @@ type KeepAliveConfig struct {
 }
 
 type HostConfig struct {
-	// Peerhost location for scheduler
+	// Location for scheduler
 	Location string `mapstructure:"location" yaml:"location"`
 
-	// Peerhost idc for scheduler
+	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
 }
