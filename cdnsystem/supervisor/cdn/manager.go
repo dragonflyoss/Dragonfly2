@@ -18,6 +18,7 @@ package cdn
 
 import (
 	"crypto/md5"
+	"encoding/json"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
@@ -112,6 +113,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		seedTask.UpdateStatus(types.TaskInfoCdnStatusFailed)
 		return seedTask, errors.Wrapf(err, "failed to detect cache")
 	}
+	resultBytes, _ := json.Marshal(detectResult)
+	span.SetAttributes(config.AttributeCacheResult.String(string(resultBytes)))
 	logger.WithTaskID(task.TaskID).Debugf("detects cache result: %+v", detectResult)
 	// second: report detect result
 	err = cm.cdnReporter.reportCache(ctx, task.TaskID, detectResult)
@@ -128,9 +131,13 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	server.StatSeedStart(task.TaskID, task.URL)
 	start := time.Now()
 	// third: start to download the source file
+	var downloadSpan trace.Span
+	ctx, downloadSpan = tracer.Start(ctx, config.SpanDownloadSource)
+	downloadSpan.End()
 	body, err := cm.download(ctx, task, detectResult)
 	// download fail
 	if err != nil {
+		downloadSpan.RecordError(err)
 		server.StatSeedFinish(task.TaskID, task.URL, false, err, start.Nanosecond(), time.Now().Nanosecond(), 0, 0)
 		seedTask.UpdateStatus(types.TaskInfoCdnStatusSourceError)
 		return seedTask, err

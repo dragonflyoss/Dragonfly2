@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io"
 	"sync"
@@ -30,6 +31,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type piece struct {
@@ -61,6 +63,9 @@ func newCacheWriter(cdnReporter *reporter, cacheDataManager *cacheDataManager) *
 
 // startWriter writes the stream data from the reader to the underlying storage.
 func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *types.SeedTask, detectResult *cacheResult) (*downloadMetadata, error) {
+	var writeSpan trace.Span
+	ctx, writeSpan = tracer.Start(ctx, config.SpanWriteData)
+	defer writeSpan.End()
 	if detectResult == nil {
 		detectResult = &cacheResult{}
 	}
@@ -69,6 +74,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	// the pieceNum currently have been processed
 	curPieceNum := len(detectResult.pieceMetaRecords)
 	routineCount := calculateRoutineCount(task.SourceFileLength-currentSourceFileLength, task.PieceSize)
+	writeSpan.SetAttributes(config.AttributeWriteGoroutineCount.Int(routineCount))
 	// start writer pool
 	backSourceLength, totalPieceCount, err := cw.doWrite(ctx, reader, task, routineCount, curPieceNum)
 	if err != nil {
@@ -78,6 +84,8 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *
 	if err != nil {
 		return &downloadMetadata{backSourceLength: backSourceLength}, fmt.Errorf("stat cdn download file: %v", err)
 	}
+	storageInfoBytes, _ := json.Marshal(storageInfo)
+	writeSpan.SetAttributes(config.AttributeDownloadFileInfo.String(string(storageInfoBytes)))
 	// TODO Try getting it from the ProgressManager first
 	pieceMd5Sign, _, err := cw.cacheDataManager.getPieceMd5Sign(task.TaskID)
 	if err != nil {

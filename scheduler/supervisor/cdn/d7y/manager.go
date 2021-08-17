@@ -165,7 +165,7 @@ func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stre
 
 func (cm *manager) initCdnPeer(ctx context.Context, task *supervisor.Task, ps *cdnsystem.PieceSeed) (*supervisor.Peer, error) {
 	span := trace.SpanFromContext(ctx)
-	span.AddEvent(config.EventCreatePeer)
+	span.AddEvent(config.EventCreateCDNPeer)
 	var ok bool
 	var cdnHost *supervisor.PeerHost
 	cdnPeer, ok := cm.peerManager.Get(ps.PeerId)
@@ -187,7 +187,7 @@ func (cm *manager) DownloadTinyFileContent(ctx context.Context, task *supervisor
 	// http://host:port/download/{taskId 前3位}/{taskId}?peerId={peerId};
 	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
 		cdnHost.IP, cdnHost.DownloadPort, task.TaskID[:3], task.TaskID)
-	span.SetAttributes(config.AttributeDownloadFileURL.String(url))
+	span.AddEvent(config.EventDownloadTinyFile, trace.WithAttributes(config.AttributeDownloadFileURL.String(url)))
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, err

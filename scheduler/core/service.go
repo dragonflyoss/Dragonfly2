@@ -39,6 +39,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/supervisor/task"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -211,11 +212,13 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 }
 
 func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) (*supervisor.Task, error) {
+	span := trace.SpanFromContext(ctx)
 	synclock.Lock(task.TaskID, true)
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
 		if task.GetLastTriggerTime().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
 			synclock.UnLock(task.TaskID, true)
+			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 			return task, nil
 		}
 	}
@@ -231,7 +234,9 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	}
 	if task.IsFrozen() {
 		task.SetStatus(supervisor.TaskStatusRunning)
+		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 	}
+	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 	go func() {
 		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			if errors.Cause(err) != cdn.ErrCDNInvokeFail {

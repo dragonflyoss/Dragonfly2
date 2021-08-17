@@ -152,7 +152,8 @@ func (pm *Manager) PublishPiece(ctx context.Context, taskID string, record *type
 
 func (pm *Manager) PublishTask(ctx context.Context, taskID string, task *types.SeedTask) error {
 	span := trace.SpanFromContext(ctx)
-	span.AddEvent(config.EventPublishTask)
+	taskBytes, _ := json.Marshal(task)
+	span.AddEvent(config.EventPublishTask, trace.WithAttributes(config.AttributeSeedTask.String(string(taskBytes))))
 	logger.Debugf("publish task record %+v", task)
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)

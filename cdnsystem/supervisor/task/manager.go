@@ -107,6 +107,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 	defer span.End()
 	synclock.Lock(task.TaskID, true)
 	if !task.IsFrozen() {
+		span.SetAttributes(config.AttributeTaskStatus.String(task.CdnStatus))
 		logger.WithTaskID(task.TaskID).Infof("seedTask is running or has been downloaded successfully, status: %s", task.CdnStatus)
 		synclock.UnLock(task.TaskID, true)
 		return nil
@@ -116,6 +117,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 	synclock.Lock(task.TaskID, false)
 	defer synclock.UnLock(task.TaskID, false)
 	// reconfirm
+	span.SetAttributes(config.AttributeTaskStatus.String(task.CdnStatus))
 	if !task.IsFrozen() {
 		logger.WithTaskID(task.TaskID).Infof("reconfirm find seedTask is running or has been downloaded successfully, status: %s", task.CdnStatus)
 		return nil
@@ -124,7 +126,6 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		tm.progressMgr.InitSeedProgress(ctx, task.TaskID)
 		logger.WithTaskID(task.TaskID).Infof("successfully init seed progress for task")
 	}
-	span.AddEvent(config.EventUpdateTaskStatus, trace.WithAttributes(config.AttributeTaskStatus.String(types.TaskInfoCdnStatusRunning)))
 	updatedTask, err := tm.updateTask(task.TaskID, &types.SeedTask{
 		CdnStatus: types.TaskInfoCdnStatusRunning,
 	})

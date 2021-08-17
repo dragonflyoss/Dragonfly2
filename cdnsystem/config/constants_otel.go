@@ -22,19 +22,16 @@ const (
 	AttributeObtainSeedsRequest   = attribute.Key("d7y.obtain.seeds.request")
 	AttributeGetPieceTasksRequest = attribute.Key("d7y.get.piece.tasks.request")
 	AttributePiecePacketResult    = attribute.Key("d7y.piece.packet.result")
-	AttributeDownloadFileURL      = attribute.Key("d7y.file.url")
-	AttributeContentLength        = attribute.Key("d7y.source.content.length")
-	AttributePeerDownloadResult   = attribute.Key("d7y.peer.download.result")
-	AttributeSchedulePacket       = attribute.Key("d7y.schedule.packet")
 	AttributeTaskID               = attribute.Key("d7y.task.id")
-	AttributeTaskStatus           = attribute.Key("")
+	AttributeTaskStatus           = attribute.Key("d7y.task.status")
 	AttributeTaskURL              = attribute.Key("d7y.task.url")
 	AttributeTaskInfo             = attribute.Key("d7y.taskInfo")
-	AttributeIfReuseTask          = attribute.Key("")
-	AttributeSeedPiece            = attribute.Key("")
-	AttributeSourceFileLength     = attribute.Key("")
-	AttributePeerID               = attribute.Key("d7y.peer.id")
-	AttributeCDNSeedRequest       = attribute.Key("d7y.cdn.seed.request")
+	AttributeIfReuseTask          = attribute.Key("d7y.task.already.exist")
+	AttributeSeedPiece            = attribute.Key("d7y.seed.piece")
+	AttributeSeedTask             = attribute.Key("d7y.seed.task")
+	AttributeCacheResult          = attribute.Key("d7y.cache.result")
+	AttributeWriteGoroutineCount  = attribute.Key("d7y.write.goroutine.count")
+	AttributeDownloadFileInfo     = attribute.Key("d7y.download.file.info")
 )
 
 const (
@@ -45,18 +42,14 @@ const (
 	SpanTriggerCDNSyncAction = "trigger-cdn-sync-action"
 	SpanTriggerCDN           = "trigger-cdn"
 	SpanDetectCache          = "detect-cache"
-	SpanInitSeedProgress     = "init-seed-progress"
-	SpanReportPieceResult    = "report-piece-result"
-	SpanReportPeerResult     = "report-peer-result"
-	SpanPeerLeave            = "peer-leave"
+	SpanDownloadSource       = "download-source"
+	SpanWriteData            = "write-data"
 )
 
 const (
 	EventHitUnReachableURL       = "hit-unReachableURL"
-	EventPieceReceived           = "receive-piece"
 	EventRequestSourceFileLength = "request-source-file-length"
 	EventDeleteUnReachableTask   = "downloaded"
-	EventUpdateTaskStatus        = "update-task-status"
 	EventInitSeedProgress        = "init-seed-progress"
 	EventWatchSeedProgress       = "watch-seed-progress"
 	EventPublishPiece            = "publish-piece"
