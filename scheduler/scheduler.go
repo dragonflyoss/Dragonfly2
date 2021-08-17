@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/scheduler/job"
+	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
 
@@ -46,7 +47,6 @@ type Server struct {
 	schedulerService *core.SchedulerService
 	managerClient    manager.ManagerClient
 	managerConn      *grpc.ClientConn
-	dynconfigConn    *grpc.ClientConn
 	dynConfig        config.DynconfigInterface
 	job              job.Job
 }
@@ -97,6 +97,13 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create scheduler service")
 	}
 	s.schedulerService = schedulerService
+
+	// Initialize grpc service
+	schedulerServer, err := rpcserver.NewSchedulerServer(schedulerService)
+	if err != nil {
+		return nil, err
+	}
+	s.schedulerServer = schedulerServer
 
 	// Initialize job service
 	if cfg.Job.Redis.Host != "" {
@@ -174,11 +181,10 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() {
-	s.dynconfigConn.Close()
-	s.managerConn.Close()
-	s.dynConfig.Stop()
 	rpc.StopServer()
 	s.schedulerService.Stop()
+	s.dynConfig.Stop()
+	s.managerConn.Close()
 	s.job.Stop()
 }
 
