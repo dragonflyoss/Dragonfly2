@@ -26,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
 
@@ -68,8 +69,19 @@ func Execute() {
 func init() {
 	// Initialize default manager config
 	cfg = config.New()
+
 	// Initialize cobra
 	dependency.InitCobra(rootCmd, true, cfg)
+
+	// Add flags
+	flagSet := rootCmd.Flags()
+	flagSet.StringP("public-path", "p", cfg.Server.PublicPath,
+		"Console dist path")
+
+	// Bind cmd flags
+	if err := viper.BindPFlags(flagSet); err != nil {
+		panic(errors.Wrap(err, "bind dfget flags to viper"))
+	}
 }
 
 func runManager() error {
