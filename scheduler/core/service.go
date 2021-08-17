@@ -64,7 +64,7 @@ type SchedulerService struct {
 	wg        sync.WaitGroup
 }
 
-func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, openTele bool) (*SchedulerService, error) {
+func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, openTel bool) (*SchedulerService, error) {
 	dynConfigData, err := dynConfig.Get()
 	if err != nil {
 		return nil, err
@@ -78,10 +78,13 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		}
 	} else {
 		var opts []grpc.DialOption
-		if openTele {
+		if openTel {
 			opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 		}
-		cdnClient, _ := cdn.NewRefreshableCDNClient(dynConfig, opts)
+		cdnClient, err := cdn.NewRefreshableCDNClient(dynConfig, opts)
+		if err != nil {
+			return nil, errors.Wrap(err, "new refreshable cdn client")
+		}
 		if cdnManager, err = d7y.NewManager(cdnClient, peerManager, hostManager); err != nil {
 			return nil, errors.Wrap(err, "new cdn manager")
 		}

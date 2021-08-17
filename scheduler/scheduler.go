@@ -91,11 +91,11 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create dynamic config")
 	}
 	s.dynConfig = dynConfig
-	var openTele = false
+	var openTel = false
 	if cfg.Options.Telemetry.Jaeger != "" {
-		openTele = true
+		openTel = true
 	}
-	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, openTele)
+	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, openTel)
 	if err != nil {
 		return nil, errors.Wrap(err, "create scheduler service")
 	}
