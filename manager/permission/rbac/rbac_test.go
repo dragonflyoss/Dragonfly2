@@ -18,39 +18,64 @@ package rbac
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetApiGroupName(t *testing.T) {
 	tests := []struct {
-		path              string
-		exceptedGroupName string
-		hasError          bool
+		name   string
+		path   string
+		expect func(t *testing.T, data string, err error)
 	}{
 		{
-			path:              "/api/v1/users",
-			exceptedGroupName: "users",
-			hasError:          false,
+			name: `path is /api/v1/users`,
+			path: "/api/v1/users",
+			expect: func(t *testing.T, data string, err error) {
+				assert := assert.New(t)
+				assert.Equal(data, "users")
+			},
 		},
 		{
-			path:              "/api/user",
-			exceptedGroupName: "",
-			hasError:          true,
+			name: `path is /api/v1/users/`,
+			path: "/api/v1/users/",
+			expect: func(t *testing.T, data string, err error) {
+				assert := assert.New(t)
+				assert.Equal(data, "users")
+			},
+		},
+		{
+			name: `path is /api/v1/users/name`,
+			path: "/api/v1/users/name",
+			expect: func(t *testing.T, data string, err error) {
+				assert := assert.New(t)
+				assert.Equal(data, "users")
+			},
+		},
+		{
+			name: `path is /api/user`,
+			path: "/api/user",
+			expect: func(t *testing.T, data string, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "faild to find api group")
+			},
+		},
+		{
+			name: "path is empty",
+			path: "",
+			expect: func(t *testing.T, data string, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "faild to find api group")
+			},
 		},
 	}
 
-	for _, tt := range tests {
-		groupName, err := GetAPIGroupName(tt.path)
-		if tt.hasError {
-			if err == nil {
-				t.Errorf("GetApiGroupName(%s) should return error", tt.path)
-			}
-		}
-
-		if groupName != tt.exceptedGroupName {
-			t.Errorf("GetApiGroupName(%v) = %v, want %v", tt.path, groupName, tt.exceptedGroupName)
-		}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			name, err := GetAPIGroupName(tc.path)
+			tc.expect(t, name, err)
+		})
 	}
-
 }
 
 func TestRoleName(t *testing.T) {
