@@ -18,6 +18,7 @@ package cdn
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"fmt"
 	"io"
@@ -59,7 +60,7 @@ func newCacheWriter(cdnReporter *reporter, cacheDataManager *cacheDataManager) *
 }
 
 // startWriter writes the stream data from the reader to the underlying storage.
-func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detectResult *cacheResult) (*downloadMetadata, error) {
+func (cw *cacheWriter) startWriter(ctx context.Context, reader io.Reader, task *types.SeedTask, detectResult *cacheResult) (*downloadMetadata, error) {
 	if detectResult == nil {
 		detectResult = &cacheResult{}
 	}
@@ -69,7 +70,7 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 	curPieceNum := len(detectResult.pieceMetaRecords)
 	routineCount := calculateRoutineCount(task.SourceFileLength-currentSourceFileLength, task.PieceSize)
 	// start writer pool
-	backSourceLength, totalPieceCount, err := cw.doWrite(reader, task, routineCount, curPieceNum)
+	backSourceLength, totalPieceCount, err := cw.doWrite(ctx, reader, task, routineCount, curPieceNum)
 	if err != nil {
 		return &downloadMetadata{backSourceLength: backSourceLength}, fmt.Errorf("write data: %v", err)
 	}
@@ -91,7 +92,8 @@ func (cw *cacheWriter) startWriter(reader io.Reader, task *types.SeedTask, detec
 	}, nil
 }
 
-func (cw *cacheWriter) doWrite(reader io.Reader, task *types.SeedTask, routineCount int, curPieceNum int) (n int64, totalPiece int, err error) {
+func (cw *cacheWriter) doWrite(ctx context.Context, reader io.Reader, task *types.SeedTask, routineCount int, curPieceNum int) (n int64, totalPiece int,
+	err error) {
 	var bufPool = &sync.Pool{
 		New: func() interface{} {
 			return new(bytes.Buffer)
@@ -101,7 +103,7 @@ func (cw *cacheWriter) doWrite(reader io.Reader, task *types.SeedTask, routineCo
 	buf := make([]byte, 256*1024)
 	jobCh := make(chan *piece)
 	var wg = &sync.WaitGroup{}
-	cw.writerPool(wg, routineCount, jobCh, bufPool)
+	cw.writerPool(ctx, wg, routineCount, jobCh, bufPool)
 	for {
 		var bb = bufPool.Get().(*bytes.Buffer)
 		bb.Reset()
@@ -132,7 +134,7 @@ func (cw *cacheWriter) doWrite(reader io.Reader, task *types.SeedTask, routineCo
 	return backSourceLength, curPieceNum, nil
 }
 
-func (cw *cacheWriter) writerPool(wg *sync.WaitGroup, routineCount int, pieceCh chan *piece, bufPool *sync.Pool) {
+func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, routineCount int, pieceCh chan *piece, bufPool *sync.Pool) {
 	wg.Add(routineCount)
 	for i := 0; i < routineCount; i++ {
 		go func() {
@@ -176,7 +178,7 @@ func (cw *cacheWriter) writerPool(wg *sync.WaitGroup, routineCount int, pieceCh 
 				}
 
 				if cw.cdnReporter != nil {
-					if err = cw.cdnReporter.reportPieceMetaRecord(p.taskID, pieceRecord, DownloaderReport); err != nil {
+					if err = cw.cdnReporter.reportPieceMetaRecord(ctx, p.taskID, pieceRecord, DownloaderReport); err != nil {
 						// NOTE: should we do this job again?
 						logger.Errorf("report piece status, pieceNum %d pieceMetaRecord %s: %v", p.pieceNum, pieceRecord, err)
 					}

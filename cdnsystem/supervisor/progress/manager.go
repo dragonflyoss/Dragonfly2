@@ -19,12 +19,14 @@ package progress
 import (
 	"container/list"
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/supervisor"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -32,6 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var _ supervisor.SeedProgressMgr = (*Manager)(nil)
@@ -60,6 +63,8 @@ func NewManager() (supervisor.SeedProgressMgr, error) {
 }
 
 func (pm *Manager) InitSeedProgress(ctx context.Context, taskID string) {
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent(config.EventInitSeedProgress)
 	pm.mu.Lock(taskID, true)
 	if _, ok := pm.seedSubscribers.Load(taskID); ok {
 		logger.WithTaskID(taskID).Debugf("the task seedSubscribers already exist")
@@ -81,6 +86,8 @@ func (pm *Manager) InitSeedProgress(ctx context.Context, taskID string) {
 }
 
 func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error) {
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent(config.EventWatchSeedProgress)
 	logger.Debugf("watch seed progress begin for taskID: %s", taskID)
 	pm.mu.Lock(taskID, true)
 	defer pm.mu.UnLock(taskID, true)
@@ -110,8 +117,11 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 	return ch, nil
 }
 
-// Publish publish seedPiece
-func (pm *Manager) PublishPiece(taskID string, record *types.SeedPiece) error {
+// PublishPiece publish seedPiece
+func (pm *Manager) PublishPiece(ctx context.Context, taskID string, record *types.SeedPiece) error {
+	span := trace.SpanFromContext(ctx)
+	recordBytes, _ := json.Marshal(record)
+	span.AddEvent(config.EventPublishPiece, trace.WithAttributes(config.AttributeSeedPiece.String(string(recordBytes))))
 	logger.Debugf("seed piece meta record %+v", record)
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)
@@ -141,6 +151,8 @@ func (pm *Manager) PublishPiece(taskID string, record *types.SeedPiece) error {
 }
 
 func (pm *Manager) PublishTask(ctx context.Context, taskID string, task *types.SeedTask) error {
+	span := trace.SpanFromContext(ctx)
+	span.AddEvent(config.EventPublishTask)
 	logger.Debugf("publish task record %+v", task)
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)

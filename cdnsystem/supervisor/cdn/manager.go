@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 
 	"context"
 	"fmt"
@@ -45,6 +47,12 @@ import (
 
 // Ensure that Manager implements the CDNMgr interface
 var _ supervisor.CDNMgr = (*Manager)(nil)
+
+var tracer trace.Tracer
+
+func init() {
+	tracer = otel.Tracer("cdn-server")
+}
 
 // Manager is an implementation of the interface of CDNMgr.
 type Manager struct {
@@ -82,6 +90,9 @@ func newManager(cfg *config.Config, cacheStore storage.Manager, progressMgr supe
 }
 
 func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTask *types.SeedTask, err error) {
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, config.SpanTriggerCDN)
+	defer span.End()
 	tempTask := *task
 	seedTask = &tempTask
 	// obtain taskId write lock
@@ -96,14 +107,14 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		fileDigest = digestutils.CreateHash(digestType)
 	}
 	// first: detect Cache
-	detectResult, err := cm.detector.detectCache(task, fileDigest)
+	detectResult, err := cm.detector.detectCache(ctx, task, fileDigest)
 	if err != nil {
 		seedTask.UpdateStatus(types.TaskInfoCdnStatusFailed)
 		return seedTask, errors.Wrapf(err, "failed to detect cache")
 	}
 	logger.WithTaskID(task.TaskID).Debugf("detects cache result: %+v", detectResult)
 	// second: report detect result
-	err = cm.cdnReporter.reportCache(task.TaskID, detectResult)
+	err = cm.cdnReporter.reportCache(ctx, task.TaskID, detectResult)
 	if err != nil {
 		logger.WithTaskID(task.TaskID).Errorf("failed to report cache, reset detectResult: %v", err)
 	}
@@ -128,7 +139,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	reader := limitreader.NewLimitReaderWithLimiterAndDigest(body, cm.limiter, fileDigest, digestutils.Algorithms[digestType])
 
 	// forth: write to storage
-	downloadMetadata, err := cm.writer.startWriter(reader, task, detectResult)
+	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
 	if err != nil {
 		server.StatSeedFinish(task.TaskID, task.URL, false, err, start.Nanosecond(), time.Now().Nanosecond(), downloadMetadata.backSourceLength,
 			downloadMetadata.realSourceFileLength)

@@ -61,7 +61,7 @@ func NewManager(cdnClient client.CdnClient, peerManager supervisor.PeerMgr, host
 
 func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*supervisor.Peer, error) {
 	var seedSpan trace.Span
-	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDN, trace.WithSpanKind(trace.SpanKindClient))
+	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDN)
 	defer seedSpan.End()
 	seedRequest := &cdnsystem.SeedRequest{
 		TaskId:  task.TaskID,
@@ -75,7 +75,7 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*s
 		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
 		return nil, err
 	}
-	stream, err := cm.client.ObtainSeeds(context.Background(), seedRequest)
+	stream, err := cm.client.ObtainSeeds(trace.ContextWithSpan(context.Background(), seedSpan), seedRequest)
 	if err != nil {
 		seedSpan.RecordError(err)
 		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
