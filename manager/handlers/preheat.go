@@ -29,10 +29,10 @@ import (
 // @Accept json
 // @Produce json
 // @Param CDN body types.CreatePreheatRequest true "Preheat"
-// @Success 200 {object} types.CreatePreheatResponse
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Success 200 {object} types.Preheat
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /preheats [post]
 func (h *Handlers) CreatePreheat(ctx *gin.Context) {
 	var json types.CreatePreheatRequest
@@ -56,10 +56,10 @@ func (h *Handlers) CreatePreheat(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Success 200 {object} types.GetPreheatResponse
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Success 200 {object} types.Preheat
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /preheats/{id} [get]
 func (h *Handlers) GetPreheat(ctx *gin.Context) {
 	var params types.PreheatParams

@@ -24,6 +24,8 @@ import (
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func Init(verbose bool, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
@@ -126,6 +128,10 @@ func Init(verbose bool, service service.REST, enforcer *casbin.Enforcer) (*gin.E
 	if err != nil {
 		return nil, err
 	}
+
+	// Swagger
+	apiSeagger := ginSwagger.URL("/swagger/doc.json")
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, apiSeagger))
 
 	return r, nil
 }

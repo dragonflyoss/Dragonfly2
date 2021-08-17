@@ -27,9 +27,9 @@ import (
 // @Description Get PermissionGroups
 // @Tags permission
 // @Produce json
-// @Success 200 {object} RoutesInfo
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Success 200 {object} types.PermissionGroups
+// @Failure 400
+// @Failure 500
 // @Router /permission/groups [get]
 
 func (h *Handlers) GetPermissionGroups(g *gin.Engine) func(ctx *gin.Context) {
@@ -45,9 +45,9 @@ func (h *Handlers) GetPermissionGroups(g *gin.Engine) func(ctx *gin.Context) {
 // @Description Get User Roles
 // @Tags permission
 // @Produce json
-// @Success 200 {object} RoutesInfo
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Success 200 {object} []map[string]string
+// @Failure 400
+// @Failure 500
 // @Router /permission/roles/{subject} [get]
 
 func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
@@ -70,8 +70,8 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 // @Tags permission
 // @Produce json
 // @Success 200 {object}
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /permission/{subject}/{object}/{action} [get]
 
 func (h *Handlers) HasRoleForUser(ctx *gin.Context) {
@@ -98,8 +98,8 @@ func (h *Handlers) HasRoleForUser(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /permission [post]
 
 func (h *Handlers) CreatePermission(ctx *gin.Context) {
@@ -122,8 +122,8 @@ func (h *Handlers) CreatePermission(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /permission [delete]
 
 func (h *Handlers) DestroyPermission(ctx *gin.Context) {

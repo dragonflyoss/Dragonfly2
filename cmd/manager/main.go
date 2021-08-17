@@ -16,8 +16,18 @@
 
 package main
 
-import "d7y.io/dragonfly/v2/cmd/manager/cmd"
+import (
+	_ "d7y.io/dragonfly/v2/api/manager"
+	"d7y.io/dragonfly/v2/cmd/manager/cmd"
+)
 
+// @title Dragonfly Manager
+// @version 1.0.0
+// @description Dragonfly Manager Server
+// @contact.url https://d7y.io
+// @license.name Apache 2.0
+// @host localhost:8080
+// @BasePath /api/v1
 func main() {
 	cmd.Execute()
 }

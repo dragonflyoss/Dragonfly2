@@ -30,9 +30,9 @@ import (
 // @Produce json
 // @Param SchedulerCluster body types.CreateSchedulerClusterRequest true "SchedulerCluster"
 // @Success 200 {object} model.SchedulerCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters [post]
 func (h *Handlers) CreateSchedulerCluster(ctx *gin.Context) {
 	var json types.CreateSchedulerClusterRequest
@@ -68,9 +68,9 @@ func (h *Handlers) CreateSchedulerCluster(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters/{id} [delete]
 func (h *Handlers) DestroySchedulerCluster(ctx *gin.Context) {
 	var params types.SchedulerClusterParams
@@ -96,9 +96,9 @@ func (h *Handlers) DestroySchedulerCluster(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param SchedulerCluster body types.UpdateSchedulerClusterRequest true "SchedulerCluster"
 // @Success 200 {object} model.SchedulerCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters/{id} [patch]
 func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 	var params types.SchedulerClusterParams
@@ -140,9 +140,9 @@ func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200 {object} model.SchedulerCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters/{id} [get]
 func (h *Handlers) GetSchedulerCluster(ctx *gin.Context) {
 	var params types.SchedulerClusterParams
@@ -168,9 +168,9 @@ func (h *Handlers) GetSchedulerCluster(ctx *gin.Context) {
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
 // @Success 200 {object} []model.SchedulerCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters [get]
 func (h *Handlers) GetSchedulerClusters(ctx *gin.Context) {
 	var query types.GetSchedulerClustersQuery
@@ -204,9 +204,9 @@ func (h *Handlers) GetSchedulerClusters(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param scheduler_id path string true "scheduler id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters/{id}/schedulers/{scheduler_id} [put]
 func (h *Handlers) AddSchedulerToSchedulerCluster(ctx *gin.Context) {
 	var params types.AddSchedulerToSchedulerClusterParams

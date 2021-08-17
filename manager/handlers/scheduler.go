@@ -30,9 +30,9 @@ import (
 // @Produce json
 // @Param Scheduler body types.CreateSchedulerRequest true "Scheduler"
 // @Success 200 {object} model.Scheduler
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /schedulers [post]
 func (h *Handlers) CreateScheduler(ctx *gin.Context) {
 	var json types.CreateSchedulerRequest
@@ -57,9 +57,9 @@ func (h *Handlers) CreateScheduler(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /schedulers/{id} [delete]
 func (h *Handlers) DestroyScheduler(ctx *gin.Context) {
 	var params types.SchedulerParams
@@ -85,9 +85,9 @@ func (h *Handlers) DestroyScheduler(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param Scheduler body types.UpdateSchedulerRequest true "Scheduler"
 // @Success 200 {object} model.Scheduler
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /schedulers/{id} [patch]
 func (h *Handlers) UpdateScheduler(ctx *gin.Context) {
 	var params types.SchedulerParams
@@ -118,9 +118,9 @@ func (h *Handlers) UpdateScheduler(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200 {object} model.Scheduler
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /schedulers/{id} [get]
 func (h *Handlers) GetScheduler(ctx *gin.Context) {
 	var params types.SchedulerParams
@@ -146,9 +146,9 @@ func (h *Handlers) GetScheduler(ctx *gin.Context) {
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
 // @Success 200 {object} []model.Scheduler
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /schedulers [get]
 func (h *Handlers) GetSchedulers(ctx *gin.Context) {
 	var query types.GetSchedulersQuery

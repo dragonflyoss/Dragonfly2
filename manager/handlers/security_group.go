@@ -30,9 +30,9 @@ import (
 // @Produce json
 // @Param SecurityGroup body types.CreateSecurityGroupRequest true "SecurityGroup"
 // @Success 200 {object} model.SecurityGroup
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /security-groups [post]
 func (h *Handlers) CreateSecurityGroup(ctx *gin.Context) {
 	var json types.CreateSecurityGroupRequest
@@ -57,9 +57,9 @@ func (h *Handlers) CreateSecurityGroup(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /securityGroups/{id} [delete]
 func (h *Handlers) DestroySecurityGroup(ctx *gin.Context) {
 	var params types.SecurityGroupParams
@@ -85,9 +85,9 @@ func (h *Handlers) DestroySecurityGroup(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param SecurityGroup body types.UpdateSecurityGroupRequest true "SecurityGroup"
 // @Success 200 {object} model.SecurityGroup
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /security-groups/{id} [patch]
 func (h *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
 	var params types.SecurityGroupParams
@@ -118,9 +118,9 @@ func (h *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200 {object} model.SecurityGroup
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /security-groups/{id} [get]
 func (h *Handlers) GetSecurityGroup(ctx *gin.Context) {
 	var params types.SecurityGroupParams
@@ -146,10 +146,10 @@ func (h *Handlers) GetSecurityGroup(ctx *gin.Context) {
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
 // @Success 200 {object} []model.SecurityGroup
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
-// @Router /security-groups[get]
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /security-groups [get]
 func (h *Handlers) GetSecurityGroups(ctx *gin.Context) {
 	var query types.GetSecurityGroupsQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
@@ -182,9 +182,9 @@ func (h *Handlers) GetSecurityGroups(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param instance_id path string true "instance id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /security-groups/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
 func (h *Handlers) AddSchedulerClusterToSecurityGroup(ctx *gin.Context) {
 	var params types.AddSchedulerClusterToSecurityGroupParams
@@ -210,9 +210,9 @@ func (h *Handlers) AddSchedulerClusterToSecurityGroup(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param instance_id path string true "instance id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /security-groups/{id}/cdn-clusters/{cdn_cluster_id} [put]
 func (h *Handlers) AddCDNClusterToSecurityGroup(ctx *gin.Context) {
 	var params types.AddCDNClusterToSecurityGroupParams
