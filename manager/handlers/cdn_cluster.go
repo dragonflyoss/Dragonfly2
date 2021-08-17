@@ -29,10 +29,10 @@ import (
 // @Accept json
 // @Produce json
 // @Param CDNCluster body types.CreateCDNClusterRequest true "DNCluster"
-// @Success 200 {object} model.DNCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Success 200 {object} model.CDNCluster
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters [post]
 func (h *Handlers) CreateCDNCluster(ctx *gin.Context) {
 	var json types.CreateCDNClusterRequest
@@ -68,9 +68,9 @@ func (h *Handlers) CreateCDNCluster(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters/{id} [delete]
 func (h *Handlers) DestroyCDNCluster(ctx *gin.Context) {
 	var params types.CDNClusterParams
@@ -96,9 +96,9 @@ func (h *Handlers) DestroyCDNCluster(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param CDNCluster body types.UpdateCDNClusterRequest true "CDNCluster"
 // @Success 200 {object} model.CDNCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters/{id} [patch]
 func (h *Handlers) UpdateCDNCluster(ctx *gin.Context) {
 	var params types.CDNClusterParams
@@ -140,9 +140,9 @@ func (h *Handlers) UpdateCDNCluster(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200 {object} model.CDNCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters/{id} [get]
 func (h *Handlers) GetCDNCluster(ctx *gin.Context) {
 	var params types.CDNClusterParams
@@ -168,9 +168,9 @@ func (h *Handlers) GetCDNCluster(ctx *gin.Context) {
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
 // @Success 200 {object} []model.CDNCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters [get]
 func (h *Handlers) GetCDNClusters(ctx *gin.Context) {
 	var query types.GetCDNClustersQuery
@@ -204,9 +204,9 @@ func (h *Handlers) GetCDNClusters(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param cdn_id path string true "cdn id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters/{id}/cdns/{cdn_id} [put]
 func (h *Handlers) AddCDNToCDNCluster(ctx *gin.Context) {
 	var params types.AddCDNToCDNClusterParams
@@ -232,9 +232,9 @@ func (h *Handlers) AddCDNToCDNCluster(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param scheduler_cluster_id path string true "scheduler cluster id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
 func (h *Handlers) AddSchedulerClusterToCDNCluster(ctx *gin.Context) {
 	var params types.AddSchedulerClusterToCDNClusterParams
