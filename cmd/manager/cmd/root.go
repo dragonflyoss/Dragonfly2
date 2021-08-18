@@ -91,6 +91,5 @@ func runManager() error {
 		return err
 	}
 
-	svr.Serve()
-	return nil
+	return svr.Serve()
 }

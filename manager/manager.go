@@ -17,7 +17,6 @@
 package manager
 
 import (
-	"context"
 	"net/http"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -100,7 +99,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) Serve() {
+func (s *Server) Serve() error {
 	// GRPC listener
 	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.Listen, s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
 	if err != nil {
@@ -114,7 +113,6 @@ func (s *Server) Serve() {
 		if err := s.proxyServer.Serve(); err != nil {
 			logger.Fatalf("failed to start manager proxy server: %+v", err)
 		}
-		defer s.proxyServer.Stop()
 	}()
 
 	// Serve REST
@@ -123,7 +121,6 @@ func (s *Server) Serve() {
 		if err := s.restServer.ListenAndServe(); err != nil {
 			logger.Fatalf("failed to start manager rest server: %+v", err)
 		}
-		defer s.restServer.Shutdown(context.Background())
 	}()
 
 	// Serve GRPC
@@ -131,6 +128,9 @@ func (s *Server) Serve() {
 	manager.RegisterManagerServer(grpcServer, s.service)
 	logger.Infof("serve grpc at %s://%s", lis.Addr().Network(), lis.Addr().String())
 	if err := grpcServer.Serve(lis); err != nil {
-		logger.Fatalf("failed to start manager grpc server: %+v", err)
+		logger.Errorf("failed to start manager grpc server: %+v", err)
+		return err
 	}
+
+	return nil
 }

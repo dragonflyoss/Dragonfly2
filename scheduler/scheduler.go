@@ -164,19 +164,11 @@ func (s *Server) Serve() error {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
 	if err := rpc.StartTCPServer(port, port, s.schedulerServer, opts...); err != nil {
-		logger.Fatalf("grpc start failed %v", err)
+		logger.Errorf("grpc start failed %v", err)
+		return err
 	}
-	defer s.Stop()
 
 	return nil
-}
-
-func (s *Server) Stop() {
-	rpc.StopServer()
-	s.schedulerService.Stop()
-	s.dynConfig.Stop()
-	s.managerConn.Close()
-	s.job.Stop()
 }
 
 func (s *Server) register(ctx context.Context) error {
