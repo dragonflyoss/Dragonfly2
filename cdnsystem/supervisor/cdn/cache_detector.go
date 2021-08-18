@@ -45,9 +45,9 @@ type cacheDetector struct {
 
 // cacheResult cache result of detect
 type cacheResult struct {
-	breakPoint       int64                      `json:"break_point"`        // break-point of task file
-	pieceMetaRecords []*storage.PieceMetaRecord `json:"piece_meta_records"` // piece meta data records of task
-	fileMetaData     *storage.FileMetaData      `json:"file_meta_data"`     // file meta data of task
+	breakPoint       int64                      // break-point of task file
+	pieceMetaRecords []*storage.PieceMetaRecord // piece meta data records of task
+	fileMetaData     *storage.FileMetaData      // file meta data of task
 }
 
 func (s *cacheResult) String() string {

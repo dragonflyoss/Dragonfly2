@@ -17,6 +17,7 @@
 package cdn
 
 import (
+	"context"
 	"crypto/md5"
 	"hash"
 	"io"
@@ -340,7 +341,7 @@ func (suite *CacheDetectorTestSuite) TestDetectCache() {
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			digest := md5.New()
-			got, err := suite.detector.doDetect(tt.args.task, digest)
+			got, err := suite.detector.doDetect(context.Background(), tt.args.task, digest)
 			suite.Equal(tt.want, got)
 			suite.Equal(err != nil, tt.wantErr)
 		})

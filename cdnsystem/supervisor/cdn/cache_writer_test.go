@@ -183,7 +183,7 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			suite.writer.cdnReporter.progress.InitSeedProgress(context.Background(), tt.args.task.TaskID)
-			downloadMetadata, err := suite.writer.startWriter(tt.args.reader, tt.args.task, tt.args.detectResult)
+			downloadMetadata, err := suite.writer.startWriter(context.Background(), tt.args.reader, tt.args.task, tt.args.detectResult)
 			suite.Equal(tt.wantErr, err != nil)
 			suite.Equal(tt.result, downloadMetadata)
 			suite.checkFileSize(suite.writer.cacheDataManager, tt.args.task.TaskID, contentLen)
