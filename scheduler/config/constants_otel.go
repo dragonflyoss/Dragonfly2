@@ -34,6 +34,7 @@ const (
 	AttributeTaskID              = attribute.Key("d7y.peer.task.id")
 	AttributePeerID              = attribute.Key("d7y.peer.id")
 	AttributeCDNSeedRequest      = attribute.Key("d7y.cdn.seed.request")
+	AttributeNeedSeedCDN         = attribute.Key("d7y.need.seed.cdn")
 )
 
 const (
@@ -48,7 +49,8 @@ const (
 	EventScheduleParentFail = "fail-schedule-parent"
 	EventPeerNotFound       = "peer-not-found"
 	EventHostNotFound       = "host-not-found"
-	EventCreatePeer         = "create-peer"
+	EventCreateCDNPeer      = "create-cdn-peer"
 	EventPieceReceived      = "receive-piece"
 	EventPeerDownloaded     = "downloaded"
+	EventDownloadTinyFile   = "download-tiny-file"
 )

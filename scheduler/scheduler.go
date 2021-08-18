@@ -20,24 +20,21 @@ import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/scheduler/job"
-	"d7y.io/dragonfly/v2/scheduler/rpcserver"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
-	"d7y.io/dragonfly/v2/scheduler/core"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-
-	// Server registered to grpc
-	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/core"
+	"d7y.io/dragonfly/v2/scheduler/job"
+	"d7y.io/dragonfly/v2/scheduler/rpcserver"
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"google.golang.org/grpc"
 )
 
 type Server struct {
@@ -94,8 +91,11 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create dynamic config")
 	}
 	s.dynConfig = dynConfig
-
-	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig)
+	var openTel = false
+	if cfg.Options.Telemetry.Jaeger != "" {
+		openTel = true
+	}
+	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, openTel)
 	if err != nil {
 		return nil, errors.Wrap(err, "create scheduler service")
 	}

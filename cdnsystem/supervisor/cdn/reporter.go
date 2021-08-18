@@ -17,6 +17,8 @@
 package cdn
 
 import (
+	"context"
+
 	"d7y.io/dragonfly/v2/cdnsystem/supervisor"
 	"d7y.io/dragonfly/v2/cdnsystem/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -41,11 +43,11 @@ func newReporter(publisher supervisor.SeedProgressMgr) *reporter {
 }
 
 // report cache result
-func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error {
+func (re *reporter) reportCache(ctx context.Context, taskID string, detectResult *cacheResult) error {
 	// report cache pieces status
 	if detectResult != nil && detectResult.pieceMetaRecords != nil {
 		for _, record := range detectResult.pieceMetaRecords {
-			if err := re.reportPieceMetaRecord(taskID, record, CacheReport); err != nil {
+			if err := re.reportPieceMetaRecord(ctx, taskID, record, CacheReport); err != nil {
 				return errors.Wrapf(err, "publish pieceMetaRecord: %v, seedPiece: %v", record,
 					convertPieceMeta2SeedPiece(record))
 			}
@@ -55,14 +57,14 @@ func (re *reporter) reportCache(taskID string, detectResult *cacheResult) error 
 }
 
 // reportPieceMetaRecord
-func (re *reporter) reportPieceMetaRecord(taskID string, record *storage.PieceMetaRecord,
+func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskID string, record *storage.PieceMetaRecord,
 	from string) error {
 	// report cache pieces status
 	logger.DownloaderLogger.Info(taskID,
 		zap.Int32("pieceNum", record.PieceNum),
 		zap.String("md5", record.Md5),
 		zap.String("from", from))
-	return re.progress.PublishPiece(taskID, convertPieceMeta2SeedPiece(record))
+	return re.progress.PublishPiece(ctx, taskID, convertPieceMeta2SeedPiece(record))
 }
 
 /*

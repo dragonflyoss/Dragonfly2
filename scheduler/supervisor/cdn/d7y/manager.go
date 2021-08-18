@@ -22,13 +22,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 	"sync"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -46,22 +44,14 @@ func init() {
 }
 
 type manager struct {
-	cdnAddrs    []dfnet.NetAddr
 	client      client.CdnClient
 	peerManager supervisor.PeerMgr
 	hostManager supervisor.HostMgr
 	lock        sync.RWMutex
 }
 
-func NewManager(cdnServers []*config.CDN, peerManager supervisor.PeerMgr, hostManager supervisor.HostMgr) (supervisor.CDNMgr, error) {
-	// Initialize CDNManager client
-	cdnAddrs := cdnHostsToNetAddrs(cdnServers)
-	cdnClient, err := client.GetClientByAddr(cdnAddrs)
-	if err != nil {
-		return nil, errors.Wrapf(err, "create cdn client for scheduler")
-	}
+func NewManager(cdnClient client.CdnClient, peerManager supervisor.PeerMgr, hostManager supervisor.HostMgr) (supervisor.CDNMgr, error) {
 	mgr := &manager{
-		cdnAddrs:    cdnAddrs,
 		client:      cdnClient,
 		peerManager: peerManager,
 		hostManager: hostManager,
@@ -69,33 +59,9 @@ func NewManager(cdnServers []*config.CDN, peerManager supervisor.PeerMgr, hostMa
 	return mgr, nil
 }
 
-// cdnHostsToNetAddrs coverts manager.CdnHosts to []dfnet.NetAddr.
-func cdnHostsToNetAddrs(hosts []*config.CDN) []dfnet.NetAddr {
-	var netAddrs []dfnet.NetAddr
-	for i := range hosts {
-		netAddrs = append(netAddrs, dfnet.NetAddr{
-			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", hosts[i].IP, hosts[i].Port),
-		})
-	}
-	return netAddrs
-}
-
-func (cm *manager) OnNotify(c *config.DynconfigData) {
-	netAddrs := cdnHostsToNetAddrs(c.CDNs)
-	if reflect.DeepEqual(netAddrs, c.CDNs) {
-		return
-	}
-	cm.lock.Lock()
-	defer cm.lock.Unlock()
-	// Sync CDNManager client netAddrs
-	cm.cdnAddrs = netAddrs
-	cm.client.UpdateState(netAddrs)
-}
-
 func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*supervisor.Peer, error) {
 	var seedSpan trace.Span
-	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDN, trace.WithSpanKind(trace.SpanKindClient))
+	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDN)
 	defer seedSpan.End()
 	seedRequest := &cdnsystem.SeedRequest{
 		TaskId:  task.TaskID,
@@ -109,7 +75,7 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*s
 		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
 		return nil, err
 	}
-	stream, err := cm.client.ObtainSeeds(context.Background(), seedRequest)
+	stream, err := cm.client.ObtainSeeds(trace.ContextWithSpan(context.Background(), seedSpan), seedRequest)
 	if err != nil {
 		seedSpan.RecordError(err)
 		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
@@ -199,7 +165,7 @@ func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stre
 
 func (cm *manager) initCdnPeer(ctx context.Context, task *supervisor.Task, ps *cdnsystem.PieceSeed) (*supervisor.Peer, error) {
 	span := trace.SpanFromContext(ctx)
-	span.AddEvent(config.EventCreatePeer)
+	span.AddEvent(config.EventCreateCDNPeer)
 	var ok bool
 	var cdnHost *supervisor.PeerHost
 	cdnPeer, ok := cm.peerManager.Get(ps.PeerId)
@@ -218,12 +184,10 @@ func (cm *manager) initCdnPeer(ctx context.Context, task *supervisor.Task, ps *c
 
 func (cm *manager) DownloadTinyFileContent(ctx context.Context, task *supervisor.Task, cdnHost *supervisor.PeerHost) ([]byte, error) {
 	span := trace.SpanFromContext(ctx)
-	// no need to invoke getPieceTasks method
-	// TODO download the tiny file
 	// http://host:port/download/{taskId 前3位}/{taskId}?peerId={peerId};
 	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
 		cdnHost.IP, cdnHost.DownloadPort, task.TaskID[:3], task.TaskID)
-	span.SetAttributes(config.AttributeDownloadFileURL.String(url))
+	span.AddEvent(config.EventDownloadTinyFile, trace.WithAttributes(config.AttributeDownloadFileURL.String(url)))
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, err

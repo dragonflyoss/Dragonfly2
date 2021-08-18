@@ -42,38 +42,38 @@ type Manager interface {
 	// ResetRepo reset the storage of task
 	ResetRepo(*types.SeedTask) error
 
-	// StatDownloadFile
+	// StatDownloadFile stat download file info
 	StatDownloadFile(taskID string) (*storedriver.StorageInfo, error)
 
-	// WriteDownloadFile
+	// WriteDownloadFile write data to download file
 	WriteDownloadFile(taskID string, offset int64, len int64, data io.Reader) error
 
-	// ReadDownloadFile
+	// ReadDownloadFile return reader of download file
 	ReadDownloadFile(taskID string) (io.ReadCloser, error)
 
-	// CreateUploadLink
+	// CreateUploadLink create a upload link to download file
 	CreateUploadLink(taskID string) error
 
-	// ReadFileMetaData
+	// ReadFileMetaData return meta data of download file
 	ReadFileMetaData(taskID string) (*FileMetaData, error)
 
-	// WriteFileMetaData
+	// WriteFileMetaData write file meta to storage
 	WriteFileMetaData(taskID string, meta *FileMetaData) error
 
-	// WritePieceMetaRecords
+	// WritePieceMetaRecords write piece meta records to storage
 	WritePieceMetaRecords(taskID string, metaRecords []*PieceMetaRecord) error
 
-	// AppendPieceMetaData
+	// AppendPieceMetaData append piece meta data to storage
 	AppendPieceMetaData(taskID string, metaRecord *PieceMetaRecord) error
 
-	// ReadPieceMetaRecords
+	// ReadPieceMetaRecords read piece meta records from storage
 	ReadPieceMetaRecords(taskID string) ([]*PieceMetaRecord, error)
 
-	// DeleteTask
+	// DeleteTask delete task from storage
 	DeleteTask(taskID string) error
 }
 
-// FileMetaData
+// FileMetaData meta data of task
 type FileMetaData struct {
 	TaskID           string            `json:"taskId"`
 	TaskURL          string            `json:"taskUrl"`
@@ -91,7 +91,7 @@ type FileMetaData struct {
 	//PieceMetaDataSign string            `json:"pieceMetaDataSign"`
 }
 
-// pieceMetaRecord
+// PieceMetaRecord meta data of piece
 type PieceMetaRecord struct {
 	PieceNum    int32             `json:"pieceNum"`    // piece Num start from 0
 	PieceLen    int32             `json:"pieceLen"`    // 存储到存储介质的真实长度
@@ -279,7 +279,7 @@ type DriverConfig struct {
 	GCConfig *GCConfig `yaml:"gcConfig"`
 }
 
-// GcConfig
+// GCConfig gc config
 type GCConfig struct {
 	YoungGCThreshold  unit.Bytes    `yaml:"youngGCThreshold"`
 	FullGCThreshold   unit.Bytes    `yaml:"fullGCThreshold"`
