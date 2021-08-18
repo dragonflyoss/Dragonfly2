@@ -18,6 +18,7 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -32,11 +33,19 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Ensure that Manager implements the SeedTaskMgr and gcExecutor interfaces
 var _ supervisor.SeedTaskMgr = (*Manager)(nil)
 var _ gc.Executor = (*Manager)(nil)
+
+var tracer trace.Tracer
+
+func init() {
+	tracer = otel.Tracer("cdn-task-manager")
+}
 
 // Manager is an implementation of the interface of TaskMgr.
 type Manager struct {
@@ -64,11 +73,17 @@ func NewManager(cfg *config.Config, cdnMgr supervisor.CDNMgr, progressMgr superv
 }
 
 func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.SeedPiece, err error) {
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, config.SpanTaskRegister)
+	defer span.End()
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
+		span.RecordError(err)
 		logger.WithTaskID(req.TaskID).Infof("failed to add or update task with req: %+v: %v", req, err)
 		return nil, err
 	}
+	taskBytes, _ := json.Marshal(task)
+	span.SetAttributes(config.AttributeTaskInfo.String(string(taskBytes)))
 	logger.WithTaskID(task.TaskID).Debugf("success get task info: %+v", task)
 
 	// update accessTime for taskId
@@ -87,8 +102,12 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 
 // triggerCdnSyncAction
 func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTask) error {
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, config.SpanTriggerCDNSyncAction)
+	defer span.End()
 	synclock.Lock(task.TaskID, true)
 	if !task.IsFrozen() {
+		span.SetAttributes(config.AttributeTaskStatus.String(task.CdnStatus))
 		logger.WithTaskID(task.TaskID).Infof("seedTask is running or has been downloaded successfully, status: %s", task.CdnStatus)
 		synclock.UnLock(task.TaskID, true)
 		return nil
@@ -98,6 +117,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 	synclock.Lock(task.TaskID, false)
 	defer synclock.UnLock(task.TaskID, false)
 	// reconfirm
+	span.SetAttributes(config.AttributeTaskStatus.String(task.CdnStatus))
 	if !task.IsFrozen() {
 		logger.WithTaskID(task.TaskID).Infof("reconfirm find seedTask is running or has been downloaded successfully, status: %s", task.CdnStatus)
 		return nil
@@ -106,7 +126,6 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		tm.progressMgr.InitSeedProgress(ctx, task.TaskID)
 		logger.WithTaskID(task.TaskID).Infof("successfully init seed progress for task")
 	}
-
 	updatedTask, err := tm.updateTask(task.TaskID, &types.SeedTask{
 		CdnStatus: types.TaskInfoCdnStatusRunning,
 	})

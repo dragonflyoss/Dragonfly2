@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	daemon "d7y.io/dragonfly/v2/cdnsystem/supervisor"
+	supervisor "d7y.io/dragonfly/v2/cdnsystem/supervisor"
 	types "d7y.io/dragonfly/v2/cdnsystem/types"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -78,17 +78,17 @@ func (mr *MockSeedProgressMgrMockRecorder) InitSeedProgress(arg0, arg1 interface
 }
 
 // PublishPiece mocks base method.
-func (m *MockSeedProgressMgr) PublishPiece(arg0 string, arg1 *types.SeedPiece) error {
+func (m *MockSeedProgressMgr) PublishPiece(arg0 context.Context, arg1 string, arg2 *types.SeedPiece) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PublishPiece", arg0, arg1)
+	ret := m.ctrl.Call(m, "PublishPiece", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // PublishPiece indicates an expected call of PublishPiece.
-func (mr *MockSeedProgressMgrMockRecorder) PublishPiece(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockSeedProgressMgrMockRecorder) PublishPiece(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishPiece", reflect.TypeOf((*MockSeedProgressMgr)(nil).PublishPiece), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishPiece", reflect.TypeOf((*MockSeedProgressMgr)(nil).PublishPiece), arg0, arg1, arg2)
 }
 
 // PublishTask mocks base method.
@@ -106,7 +106,7 @@ func (mr *MockSeedProgressMgrMockRecorder) PublishTask(arg0, arg1, arg2 interfac
 }
 
 // SetTaskMgr mocks base method.
-func (m *MockSeedProgressMgr) SetTaskMgr(arg0 daemon.SeedTaskMgr) {
+func (m *MockSeedProgressMgr) SetTaskMgr(arg0 supervisor.SeedTaskMgr) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetTaskMgr", arg0)
 }

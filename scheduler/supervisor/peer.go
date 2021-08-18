@@ -20,7 +20,6 @@ import (
 	"sync"
 	"time"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"go.uber.org/atomic"
 )
@@ -116,7 +115,7 @@ func (peer *Peer) Touch() {
 
 func (peer *Peer) associateChild(child *Peer) {
 	peer.children.Store(child.PeerID, child)
-	logger.Errorf("%s:%s", peer.Host.HostName, peer.Host.IncUploadLoad())
+	peer.Host.IncUploadLoad()
 	peer.Task.peers.Update(peer)
 }
 

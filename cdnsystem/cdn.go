@@ -38,6 +38,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
 
@@ -144,8 +145,11 @@ func (s *Server) Serve() (err error) {
 			nil,
 		)
 	}
-
-	err = rpc.StartTCPServer(s.config.ListenPort, s.config.ListenPort, s.seedServer)
+	var opts []grpc.ServerOption
+	if s.config.Options.Telemetry.Jaeger != "" {
+		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	}
+	err = rpc.StartTCPServer(s.config.ListenPort, s.config.ListenPort, s.seedServer, opts...)
 	if err != nil {
 		return errors.Wrap(err, "start tcp server")
 	}

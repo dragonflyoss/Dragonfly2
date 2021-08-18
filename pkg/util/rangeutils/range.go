@@ -27,8 +27,8 @@ const (
 )
 
 type Range struct {
-	StartIndex uint64
-	EndIndex   uint64
+	StartIndex uint64 `json:"start_index"`
+	EndIndex   uint64 `json:"end_index"`
 }
 
 func (r Range) String() string {

@@ -103,22 +103,22 @@ type Config struct {
 // Raw identifies a piece of data uniquely.
 // If the length<=0, it represents all data.
 type Raw struct {
-	Bucket    string
-	Key       string
-	Offset    int64
-	Length    int64
-	Trunc     bool
-	TruncSize int64
-	Append    bool
+	Bucket    string `json:"bucket"`
+	Key       string `json:"key"`
+	Offset    int64  `json:"offset"`
+	Length    int64  `json:"length"`
+	Trunc     bool   `json:"trunc"`
+	TruncSize int64  `json:"trunc_size"`
+	Append    bool   `json:"append"`
 	WalkFn    filepath.WalkFunc
 }
 
 // StorageInfo includes partial meta information of the data.
 type StorageInfo struct {
-	Path       string    // file path
-	Size       int64     // file size
-	CreateTime time.Time // create time
-	ModTime    time.Time // modified time
+	Path       string    `json:"path"`        // file path
+	Size       int64     `json:"size"`        // file size
+	CreateTime time.Time `json:"create_time"` // create time
+	ModTime    time.Time `json:"mod_time"`    // modified time
 }
 
 // driverPlugin is a wrapper of the storage driver which implements the interface of Driver.

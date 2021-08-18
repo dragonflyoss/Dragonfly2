@@ -22,9 +22,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
+	"d7y.io/dragonfly/v2/cdnsystem/config"
 	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -32,6 +31,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -40,10 +41,14 @@ const (
 
 // addOrUpdateTask add a new task or update exist task
 func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegisterRequest) (*types.SeedTask, error) {
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, config.SpanAndOrUpdateTask)
+	defer span.End()
 	taskURL := request.URL
 	if request.Filter != nil {
 		taskURL = urlutils.FilterURLParam(request.URL, request.Filter)
 	}
+	span.SetAttributes(config.AttributeTaskURL.String(taskURL))
 	taskID := request.TaskID
 	synclock.Lock(taskID, false)
 	defer synclock.UnLock(taskID, false)
@@ -51,10 +56,12 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		if unReachableStartTime, ok := key.(time.Time); ok && time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
 			existTask, err := tm.taskStore.Get(taskID)
 			if err != nil || reflect.DeepEqual(request.Header, existTask.(*types.SeedTask).Header) {
+				span.AddEvent(config.EventHitUnReachableURL)
 				return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable{URL: request.URL}, "task hit unReachable cache and interval less than %d, "+
 					"url: %s", tm.cfg.FailAccessInterval, request.URL)
 			}
 		}
+		span.AddEvent(config.EventDeleteUnReachableTask)
 		tm.taskURLUnReachableStore.Delete(taskID)
 		logger.Debugf("delete taskID: %s from url unReachable store", taskID)
 	}
@@ -71,13 +78,16 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 	// using the existing task if it already exists corresponding to taskID
 	if v, err := tm.taskStore.Get(taskID); err == nil {
+		span.SetAttributes(config.AttributeIfReuseTask.Bool(true))
 		existTask := v.(*types.SeedTask)
 		if !isSameTask(existTask, newTask) {
+			span.RecordError(fmt.Errorf("newTask: %+v, existTask: %+v", newTask, existTask))
 			return nil, cdnerrors.ErrTaskIDDuplicate{TaskID: taskID, Cause: fmt.Errorf("newTask: %+v, existTask: %+v", newTask, existTask)}
 		}
 		task = existTask
 		logger.Debugf("get exist task for taskID: %s", taskID)
 	} else {
+		span.SetAttributes(config.AttributeIfReuseTask.Bool(false))
 		logger.Debugf("get new task for taskID: %s", taskID)
 		task = newTask
 	}
@@ -89,10 +99,10 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	// get sourceContentLength with req.Header
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
+	span.AddEvent(config.EventRequestSourceFileLength)
 	sourceFileLength, err := source.GetContentLength(ctx, task.URL, request.Header)
 	if err != nil {
 		logger.WithTaskID(task.TaskID).Errorf("failed to get url (%s) content length: %v", task.URL, err)
-
 		if cdnerrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskID, time.Now())
 			return nil, err
@@ -114,6 +124,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 	tm.taskStore.Add(task.TaskID, task)
 	logger.Debugf("success add task: %+v into taskStore", task)
+
 	return task, nil
 }
 

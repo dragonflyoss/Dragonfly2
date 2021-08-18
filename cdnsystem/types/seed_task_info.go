@@ -36,17 +36,17 @@ func (task *SeedTask) IsSuccess() bool {
 	return task.CdnStatus == TaskInfoCdnStatusSuccess
 }
 
-// IsFrozen
+// IsFrozen if task status is frozen
 func (task *SeedTask) IsFrozen() bool {
 	return task.CdnStatus == TaskInfoCdnStatusFailed || task.CdnStatus == TaskInfoCdnStatusWaiting || task.CdnStatus == TaskInfoCdnStatusSourceError
 }
 
-// IsWait
+// IsWait if task status is wait
 func (task *SeedTask) IsWait() bool {
 	return task.CdnStatus == TaskInfoCdnStatusWaiting
 }
 
-// IsError
+// IsError if task status if fail
 func (task *SeedTask) IsError() bool {
 	return task.CdnStatus == TaskInfoCdnStatusFailed || task.CdnStatus == TaskInfoCdnStatusSourceError
 }

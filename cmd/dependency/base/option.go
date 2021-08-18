@@ -26,5 +26,5 @@ type Options struct {
 // TelemetryOption is the option for telemetry
 type TelemetryOption struct {
 	Jaeger      string `yaml:"jaeger" mapstructure:"jaeger"`
-	ServiceName string `yaml:"serviceName" mapstructure:"serviceName"`
+	ServiceName string `yaml:"service-name" mapstructure:"service-name"`
 }

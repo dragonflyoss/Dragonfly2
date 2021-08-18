@@ -18,14 +18,13 @@ package types
 
 import "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 
-// SeedPiece
 type SeedPiece struct {
-	PieceStyle  PieceFormat // 0: PlainUnspecified
-	PieceNum    int32
-	PieceMd5    string
-	PieceRange  *rangeutils.Range
-	OriginRange *rangeutils.Range
-	PieceLen    int32
+	PieceStyle  PieceFormat       `json:"piece_style"` // 0: PlainUnspecified
+	PieceNum    int32             `json:"piece_num"`
+	PieceMd5    string            `json:"piece_md_5"`
+	PieceRange  *rangeutils.Range `json:"piece_range"`
+	OriginRange *rangeutils.Range `json:"origin_range"`
+	PieceLen    int32             `json:"piece_len"`
 }
 
 type PieceFormat int8

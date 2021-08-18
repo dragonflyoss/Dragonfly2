@@ -61,8 +61,8 @@ func (suite *CDNManagerTestSuite) SetupSuite() {
 	}
 	ctrl := gomock.NewController(suite.T())
 	progressMgr := mock.NewMockSeedProgressMgr(ctrl)
-	progressMgr.EXPECT().PublishPiece(md5TaskID, gomock.Any()).Return(nil).Times(98 * 2)
-	progressMgr.EXPECT().PublishPiece(sha256TaskID, gomock.Any()).Return(nil).Times(98 * 2)
+	progressMgr.EXPECT().PublishPiece(gomock.Any(), md5TaskID, gomock.Any()).Return(nil).Times(98 * 2)
+	progressMgr.EXPECT().PublishPiece(gomock.Any(), sha256TaskID, gomock.Any()).Return(nil).Times(98 * 2)
 	suite.cm, _ = newManager(config.New(), storeMgr, progressMgr)
 }
 
