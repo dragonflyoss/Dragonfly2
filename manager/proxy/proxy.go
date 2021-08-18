@@ -46,7 +46,6 @@ func New(cfg *config.RedisConfig) Proxy {
 }
 
 func (p *proxy) Serve() error {
-	logger.Infof("proxy start to listen port %s", p.from)
 	listener, err := net.Listen("tcp", p.from)
 	if err != nil {
 		return err
@@ -68,7 +67,6 @@ func (p *proxy) Serve() error {
 }
 
 func (p *proxy) Stop() {
-	logger.Infof("proxy stop to listen port %s", p.from)
 	if p.done == nil {
 		return
 	}

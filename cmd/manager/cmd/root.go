@@ -89,5 +89,7 @@ func runManager() error {
 	if err != nil {
 		return err
 	}
-	return svr.Serve()
+
+	svr.Serve()
+	return nil
 }

@@ -32,7 +32,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 )
 
@@ -56,6 +55,8 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Initialize enforcer
 	enforcer, err := rbac.NewEnforcer(db.DB)
 	if err != nil {
 		return nil, err
@@ -99,56 +100,37 @@ func New(cfg *config.Config) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) Serve() error {
-	g := errgroup.Group{}
-
+func (s *Server) Serve() {
 	// GRPC listener
 	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.Listen, s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
 	if err != nil {
-		logger.Errorf("failed to net listen: %+v", err)
-		return err
+		logger.Fatalf("failed to net listen: %+v", err)
 	}
-
-	// Serve GRPC
-	g.Go(func() error {
-		defer lis.Close()
-		grpcServer := grpc.NewServer()
-		manager.RegisterManagerServer(grpcServer, s.service)
-		logger.Infof("serve grpc at %s://%s", lis.Addr().Network(), lis.Addr().String())
-		if err := grpcServer.Serve(lis); err != nil {
-			logger.Errorf("failed to start manager grpc server: %+v", err)
-		}
-		return nil
-	})
-
-	// Serve REST
-	g.Go(func() error {
-		if err := s.restServer.ListenAndServe(); err != nil {
-			logger.Errorf("failed to start manager rest server: %+v", err)
-			return err
-		}
-		return nil
-	})
+	defer lis.Close()
 
 	// Serve Proxy
-	g.Go(func() error {
+	go func() {
+		logger.Info("serve proxy")
 		if err := s.proxyServer.Serve(); err != nil {
-			logger.Errorf("failed to start manager proxy server: %+v", err)
-			return err
+			logger.Fatalf("failed to start manager proxy server: %+v", err)
 		}
-		return nil
-	})
+		defer s.proxyServer.Stop()
+	}()
 
-	return g.Wait()
-}
+	// Serve REST
+	go func() {
+		logger.Infof("serve rest at %s", s.restServer.Addr)
+		if err := s.restServer.ListenAndServe(); err != nil {
+			logger.Fatalf("failed to start manager rest server: %+v", err)
+		}
+		defer s.restServer.Shutdown(context.Background())
+	}()
 
-func (s *Server) Stop() {
-	// Stop REST
-	err := s.restServer.Shutdown(context.TODO())
-	if err != nil {
-		logger.Errorf("failed to stop manager rest server: %+v", err)
+	// Serve GRPC
+	grpcServer := grpc.NewServer()
+	manager.RegisterManagerServer(grpcServer, s.service)
+	logger.Infof("serve grpc at %s://%s", lis.Addr().Network(), lis.Addr().String())
+	if err := grpcServer.Serve(lis); err != nil {
+		logger.Fatalf("failed to start manager grpc server: %+v", err)
 	}
-
-	// Stop Proxy
-	s.proxyServer.Stop()
 }

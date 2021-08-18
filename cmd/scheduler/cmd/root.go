@@ -92,5 +92,6 @@ func runScheduler() error {
 		return err
 	}
 
-	return svr.Serve()
+	svr.Serve()
+	return nil
 }

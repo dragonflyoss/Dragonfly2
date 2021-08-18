@@ -23,7 +23,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/job"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"golang.org/x/sync/errgroup"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -118,66 +117,58 @@ func New(cfg *config.Config) (*Server, error) {
 
 func (s *Server) Serve() error {
 	port := s.config.Server.Port
-	g := errgroup.Group{}
 
-	g.Go(func() error {
+	// Serve dynConfig
+	go func() {
 		if err := s.dynConfig.Serve(); err != nil {
-			logger.Errorf("dynconfig start failed %v", err)
-			return err
+			logger.Fatalf("dynconfig start failed %v", err)
 		}
 		logger.Info("dynconfig start successfully")
-		return nil
-	})
+	}()
 
-	g.Go(func() error {
+	// Serve schedulerService
+	go func() {
 		s.schedulerService.Serve()
 		logger.Info("scheduler service start successfully")
-		return nil
-	})
+	}()
 
-	g.Go(func() error {
+	// Serve Job
+	go func() {
 		if err := s.job.Serve(); err != nil {
-			logger.Errorf("job start failed %v", err)
-			return err
+			logger.Fatalf("job start failed %v", err)
 		}
 		logger.Info("job start successfully")
-		return nil
-	})
+	}()
 
+	// Serve Keepalive
 	if s.managerClient != nil {
-		g.Go(func() error {
-			retry.Run(context.Background(), func() (interface{}, bool, error) {
-				if err := s.keepAlive(context.Background()); err != nil {
-					logger.Errorf("keepalive to manager failed %v", err)
-					return nil, false, err
-				}
-				return nil, false, nil
-			},
-				s.config.Manager.KeepAlive.RetryInitBackOff,
-				s.config.Manager.KeepAlive.RetryMaxBackOff,
-				s.config.Manager.KeepAlive.RetryMaxAttempts,
-				nil,
-			)
-			logger.Info("start keepalive")
-			return nil
-		})
+		logger.Info("start keepalive")
+		go retry.Run(context.Background(), func() (interface{}, bool, error) {
+			if err := s.keepAlive(context.Background()); err != nil {
+				logger.Errorf("keepalive to manager failed %v", err)
+				return nil, false, err
+			}
+			return nil, false, nil
+		},
+			s.config.Manager.KeepAlive.RetryInitBackOff,
+			s.config.Manager.KeepAlive.RetryMaxBackOff,
+			s.config.Manager.KeepAlive.RetryMaxAttempts,
+			nil,
+		)
 	}
 
-	g.Go(func() error {
-		logger.Infof("start server at port %d", port)
-		var opts []grpc.ServerOption
-		if s.config.Options.Telemetry.Jaeger != "" {
-			opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
-		}
-		if err := rpc.StartTCPServer(port, port, s.schedulerServer, opts...); err != nil {
-			return err
-		}
-		return nil
-	})
+	// Serve GRPC
+	logger.Infof("start server at port %d", port)
+	var opts []grpc.ServerOption
+	if s.config.Options.Telemetry.Jaeger != "" {
+		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	}
+	if err := rpc.StartTCPServer(port, port, s.schedulerServer, opts...); err != nil {
+		logger.Fatalf("grpc start failed %v", err)
+	}
+	defer s.Stop()
 
-	werr := g.Wait()
-	s.Stop()
-	return werr
+	return nil
 }
 
 func (s *Server) Stop() {
