@@ -33,7 +33,6 @@ mysql
 !.vscode/extensions.json
 *.code-workspace
 
-### macOS ###
 # General
 .DS_Store
 .AppleDouble
