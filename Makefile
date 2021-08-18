@@ -258,7 +258,7 @@ generate:
 .PHONY: generate
 
 swag:
-	@swag init --parseDependency --parseInternal --parseDepth 10 -g cmd/manager/main.go -o api/manager
+	@swag init --parseDependency --parseInternal -g cmd/manager/main.go -o api/manager
 
 # Generate changelog
 changelog:
