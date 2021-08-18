@@ -34,6 +34,11 @@ docker-build() {
       -f "${IMAGES_DIR}/${name}/Dockerfile" .
 }
 
+git-submodule() {
+  echo "update git submodule"
+  git submodule update --init --recursive
+}
+
 main() {
     case "${1-}" in
     cdn)
@@ -46,6 +51,7 @@ main() {
         docker-build scheduler
         ;;
     manager)
+        git-submodule
         docker-build manager
     esac
 }
