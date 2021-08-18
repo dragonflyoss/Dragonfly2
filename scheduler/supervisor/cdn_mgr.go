@@ -18,12 +18,9 @@ package supervisor
 
 import (
 	"context"
-
-	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 type CDNMgr interface {
-	config.Observer
 	// StartSeedTask start seed cdn task
 	StartSeedTask(ctx context.Context, task *Task) (*Peer, error)
 }

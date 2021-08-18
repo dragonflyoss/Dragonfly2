@@ -38,6 +38,9 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/supervisor/peer"
 	"d7y.io/dragonfly/v2/scheduler/supervisor/task"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -61,7 +64,7 @@ type SchedulerService struct {
 	wg        sync.WaitGroup
 }
 
-func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface) (*SchedulerService, error) {
+func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, openTel bool) (*SchedulerService, error) {
 	dynConfigData, err := dynConfig.Get()
 	if err != nil {
 		return nil, err
@@ -74,10 +77,17 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 			return nil, errors.Wrap(err, "new back source cdn manager")
 		}
 	} else {
-		if cdnManager, err = d7y.NewManager(dynConfigData.CDNs, peerManager, hostManager); err != nil {
+		var opts []grpc.DialOption
+		if openTel {
+			opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+		}
+		cdnClient, err := cdn.NewRefreshableCDNClient(dynConfig, opts)
+		if err != nil {
+			return nil, errors.Wrap(err, "new refreshable cdn client")
+		}
+		if cdnManager, err = d7y.NewManager(cdnClient, peerManager, hostManager); err != nil {
 			return nil, errors.Wrap(err, "new cdn manager")
 		}
-		dynConfig.Register(cdnManager)
 		hostManager.OnNotify(dynConfigData)
 		dynConfig.Register(hostManager)
 	}
@@ -205,11 +215,13 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 }
 
 func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) (*supervisor.Task, error) {
+	span := trace.SpanFromContext(ctx)
 	synclock.Lock(task.TaskID, true)
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
 		if task.GetLastTriggerTime().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
 			synclock.UnLock(task.TaskID, true)
+			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 			return task, nil
 		}
 	}
@@ -225,7 +237,9 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	}
 	if task.IsFrozen() {
 		task.SetStatus(supervisor.TaskStatusRunning)
+		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 	}
+	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 	go func() {
 		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			if errors.Cause(err) != cdn.ErrCDNInvokeFail {

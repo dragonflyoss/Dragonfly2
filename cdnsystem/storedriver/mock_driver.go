@@ -78,21 +78,6 @@ func (mr *MockDriverMockRecorder) Get(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDriver)(nil).Get), arg0)
 }
 
-// GetFreeSpace mocks base method.
-func (m *MockDriver) GetFreeSpace() (unit.Bytes, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFreeSpace")
-	ret0, _ := ret[0].(unit.Bytes)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetFreeSpace indicates an expected call of GetFreeSpace.
-func (mr *MockDriverMockRecorder) GetFreeSpace() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFreeSpace", reflect.TypeOf((*MockDriver)(nil).GetFreeSpace))
-}
-
 // GetBytes mocks base method.
 func (m *MockDriver) GetBytes(arg0 *Raw) ([]byte, error) {
 	m.ctrl.T.Helper()
@@ -106,6 +91,21 @@ func (m *MockDriver) GetBytes(arg0 *Raw) ([]byte, error) {
 func (mr *MockDriverMockRecorder) GetBytes(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBytes", reflect.TypeOf((*MockDriver)(nil).GetBytes), arg0)
+}
+
+// GetFreeSpace mocks base method.
+func (m *MockDriver) GetFreeSpace() (unit.Bytes, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFreeSpace")
+	ret0, _ := ret[0].(unit.Bytes)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFreeSpace indicates an expected call of GetFreeSpace.
+func (mr *MockDriverMockRecorder) GetFreeSpace() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFreeSpace", reflect.TypeOf((*MockDriver)(nil).GetFreeSpace))
 }
 
 // GetHomePath mocks base method.

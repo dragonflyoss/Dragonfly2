@@ -26,6 +26,7 @@ import (
 	"sort"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdnsystem/config"
 	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/cdnsystem/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdnsystem/types"
@@ -34,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // cacheDetector detect task cache
@@ -59,12 +61,15 @@ func newCacheDetector(cacheDataManager *cacheDataManager) *cacheDetector {
 	}
 }
 
-func (cd *cacheDetector) detectCache(task *types.SeedTask, fileDigest hash.Hash) (*cacheResult, error) {
+func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask, fileDigest hash.Hash) (*cacheResult, error) {
 	//err := cd.cacheStore.CreateUploadLink(ctx, task.TaskId)
 	//if err != nil {
 	//	return nil, errors.Wrapf(err, "failed to create upload symbolic link")
 	//}
-	result, err := cd.doDetect(task, fileDigest)
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, config.SpanDetectCache)
+	defer span.End()
+	result, err := cd.doDetect(ctx, task, fileDigest)
 	if err != nil {
 		logger.WithTaskID(task.TaskID).Infof("failed to detect cache, reset cache: %v", err)
 		metaData, err := cd.resetCache(task)
@@ -83,11 +88,14 @@ func (cd *cacheDetector) detectCache(task *types.SeedTask, fileDigest hash.Hash)
 }
 
 // doDetect the actual detect action which detects file metaData and pieces metaData of specific task
-func (cd *cacheDetector) doDetect(task *types.SeedTask, fileDigest hash.Hash) (result *cacheResult, err error) {
+func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask, fileDigest hash.Hash) (result *cacheResult, err error) {
+	span := trace.SpanFromContext(ctx)
 	fileMetaData, err := cd.cacheDataManager.readFileMetaData(task.TaskID)
 	if err != nil {
+		span.RecordError(err)
 		return nil, errors.Wrapf(err, "read file meta data of task %s", task.TaskID)
 	}
+	span.SetAttributes()
 	if err := checkSameFile(task, fileMetaData); err != nil {
 		return nil, errors.Wrapf(err, "check same file")
 	}

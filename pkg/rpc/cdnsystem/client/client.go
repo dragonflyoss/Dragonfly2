@@ -62,7 +62,7 @@ func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Cd
 	return elasticCdnClient, nil
 }
 
-// see cdnsystem.CdnClient
+// CdnClient see cdnsystem.CdnClient
 type CdnClient interface {
 	ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error)
 
