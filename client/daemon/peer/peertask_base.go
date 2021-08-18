@@ -415,11 +415,12 @@ loop:
 			})
 
 		if err != nil {
-			pt.Warnf("get piece task error: %s, wait available peers from scheduler", err)
+			pt.Warnf("get piece task error: %s, wait available peers from scheduler", err.Error())
 			pt.span.RecordError(err)
 			if num, ok = pt.waitAvailablePeerPacket(); !ok {
 				break loop
 			}
+			continue loop
 		}
 
 		if !initialized {
