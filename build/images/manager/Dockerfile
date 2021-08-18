@@ -18,7 +18,8 @@ RUN npm run build
 
 FROM ${BASE_IMAGE}
 ENV PATH=/opt/dragonfly/bin:$PATH
-COPY --from=server-builder /opt/dragonfly/bin/manager /opt/dragonfly/bin/manager
-COPY --from=console-builder /build/dist /build/dist
+RUN mkdir -p /opt/dragonfly/bin/manager/console
+COPY --from=server-builder /opt/dragonfly/bin/manager /opt/dragonfly/bin/server
+COPY --from=console-builder /build/dist /opt/dragonfly/bin/manager/console/dist
 EXPOSE 8080 65003
-ENTRYPOINT ["/opt/dragonfly/bin/manager"]
+ENTRYPOINT ["/opt/dragonfly/bin/server"]

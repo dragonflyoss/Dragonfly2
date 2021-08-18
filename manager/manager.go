@@ -56,6 +56,8 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Initialize enforcer
 	enforcer, err := rbac.NewEnforcer(db.DB)
 	if err != nil {
 		return nil, err
