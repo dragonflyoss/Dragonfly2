@@ -30,8 +30,8 @@ import (
 // @Produce json
 // @Param User body types.SignUpRequest true "User"
 // @Success 200 {object} model.User
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /user/signup [post]
 func (h *Handlers) SignUp(ctx *gin.Context) {
 	var json types.SignUpRequest
