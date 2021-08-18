@@ -52,7 +52,6 @@ main() {
         docker-build scheduler
         ;;
     manager)
-        
         docker-build manager
     esac
 }
