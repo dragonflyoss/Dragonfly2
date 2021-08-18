@@ -180,7 +180,7 @@ func (h *Handlers) GetSecurityGroups(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param instance_id path string true "instance id"
+// @Param scheduler_cluster_id path string true "scheduler cluster id"
 // @Success 200
 // @Failure 400
 // @Failure 404
@@ -208,7 +208,7 @@ func (h *Handlers) AddSchedulerClusterToSecurityGroup(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param instance_id path string true "instance id"
+// @Param cdn_cluster_id path string true "cdn cluster id"
 // @Success 200
 // @Failure 400
 // @Failure 404
