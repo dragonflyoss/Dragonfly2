@@ -91,6 +91,6 @@ func runScheduler() error {
 		logger.Errorf("get scheduler server error: %s", err)
 		return err
 	}
-
+	dependency.SetupQuitSignalHandler(func() { svr.Stop() })
 	return svr.Serve()
 }

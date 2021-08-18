@@ -17,6 +17,7 @@
 package manager
 
 import (
+	"context"
 	"net/http"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -133,4 +134,14 @@ func (s *Server) Serve() error {
 	}
 
 	return nil
+}
+
+func (s *Server) Stop() {
+	// Stop Proxy
+	s.proxyServer.Stop()
+
+	// Stop REST
+	if err := s.restServer.Shutdown(context.TODO()); err != nil {
+		logger.Errorf("failed to stop manager rest server: %+v", err)
+	}
 }

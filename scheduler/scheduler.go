@@ -224,3 +224,11 @@ func (s *Server) keepAlive(ctx context.Context) error {
 		}
 	}
 }
+
+func (s *Server) Stop() {
+	s.managerConn.Close()
+	s.dynConfig.Stop()
+	s.schedulerService.Stop()
+	s.job.Stop()
+	rpc.StopServer()
+}
