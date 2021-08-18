@@ -14,6 +14,8 @@ if protoc -I="$SRC" \
   "$SRC"/pkg/rpc/scheduler/*.proto \
   "$SRC"/pkg/rpc/manager/*.proto; then
   echo "generate grpc code success"
+  # warning messages about symlinks, fix in golang 1.17
+  # https://github.com/golang/go/issues/35941
   if cd "$SRC" && go mod tidy; then
     echo "go mod tidy success"
   else

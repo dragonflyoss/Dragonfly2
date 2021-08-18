@@ -31,9 +31,10 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Name string           `yaml:"name" mapstructure:"name"`
-	GRPC *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
-	REST *RestConfig      `yaml:"rest" mapstructure:"rest"`
+	Name       string           `yaml:"name" mapstructure:"name"`
+	PublicPath string           `yaml:"publicPath" mapstructure:"publicPath"`
+	GRPC       *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
+	REST       *RestConfig      `yaml:"rest" mapstructure:"rest"`
 }
 
 type DatabaseConfig struct {
@@ -93,7 +94,8 @@ type TCPListenPortRange struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			Name: "d7y/manager",
+			Name:       "d7y/manager",
+			PublicPath: "manager/console/dist",
 			GRPC: &TCPListenConfig{
 				PortRange: TCPListenPortRange{
 					Start: 65003,

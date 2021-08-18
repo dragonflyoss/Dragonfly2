@@ -1,49 +1,30 @@
 basePath: /api/v1
 definitions:
-  model.Assertion:
-    properties:
-      key:
-        type: string
-      policy:
-        items:
-          items:
-            type: string
-          type: array
-        type: array
-      policyMap:
-        additionalProperties:
-          type: integer
-        type: object
-      rm:
-        $ref: '#/definitions/rbac.RoleManager'
-      tokens:
-        items:
-          type: string
-        type: array
-      value:
-        type: string
-    type: object
-  model.AssertionMap:
-    additionalProperties:
-      $ref: '#/definitions/model.Assertion'
-    type: object
   model.CDN:
     properties:
       cdnclusterID:
         type: integer
+      created_at:
+        type: string
       download_port:
         type: integer
       host_name:
         type: string
+      id:
+        type: integer
       idc:
         type: string
       ip:
         type: string
+      isDel:
+        type: integer
       location:
         type: string
       port:
         type: integer
       status:
+        type: string
+      updated_at:
         type: string
     type: object
   model.CDNCluster:
@@ -52,24 +33,38 @@ definitions:
         type: string
       config:
         $ref: '#/definitions/model.JSONMap'
+      created_at:
+        type: string
+      id:
+        type: integer
       is_default:
         type: boolean
+      isDel:
+        type: integer
       name:
         type: string
       securityGroupID:
         type: integer
+      updated_at:
+        type: string
     type: object
   model.JSONMap:
     additionalProperties: true
     type: object
   model.Scheduler:
     properties:
+      created_at:
+        type: string
       host_name:
         type: string
+      id:
+        type: integer
       idc:
         type: string
       ip:
         type: string
+      isDel:
+        type: integer
       location:
         type: string
       net_config:
@@ -79,6 +74,8 @@ definitions:
       schedulerClusterID:
         type: integer
       status:
+        type: string
+      updated_at:
         type: string
       vips:
         type: string
@@ -91,24 +88,40 @@ definitions:
         $ref: '#/definitions/model.JSONMap'
       config:
         $ref: '#/definitions/model.JSONMap'
+      created_at:
+        type: string
+      id:
+        type: integer
       is_default:
         type: boolean
+      isDel:
+        type: integer
       name:
         type: string
       scopes:
         $ref: '#/definitions/model.JSONMap'
       securityGroupID:
         type: integer
+      updated_at:
+        type: string
     type: object
   model.SecurityGroup:
     properties:
       bio:
         type: string
+      created_at:
+        type: string
       domain:
         type: string
+      id:
+        type: integer
+      isDel:
+        type: integer
       name:
         type: string
       proxy_domain:
+        type: string
+      updated_at:
         type: string
     type: object
   model.User:
@@ -117,8 +130,14 @@ definitions:
         type: string
       bio:
         type: string
+      created_at:
+        type: string
       email:
         type: string
+      id:
+        type: integer
+      isDel:
+        type: integer
       location:
         type: string
       name:
@@ -129,8 +148,8 @@ definitions:
         type: string
       state:
         type: string
-    type: object
-  rbac.RoleManager:
+      updated_at:
+        type: string
     type: object
   types.CreateCDNClusterRequest:
     properties:
@@ -1262,9 +1281,9 @@ paths:
         name: id
         required: true
         type: string
-      - description: instance id
+      - description: cdn cluster id
         in: path
-        name: instance_id
+        name: cdn_cluster_id
         required: true
         type: string
       produces:
@@ -1292,9 +1311,9 @@ paths:
         name: id
         required: true
         type: string
-      - description: instance id
+      - description: scheduler cluster id
         in: path
-        name: instance_id
+        name: scheduler_cluster_id
         required: true
         type: string
       produces:

@@ -22,13 +22,14 @@ import (
 	rbacbase "d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/service"
 	"github.com/casbin/casbin/v2"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func Init(verbose bool, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
+func Init(verbose bool, publicPath string, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
 	if !verbose {
 		gin.SetMode(gin.ReleaseMode)
@@ -122,6 +123,9 @@ func Init(verbose bool, service service.REST, enforcer *casbin.Enforcer) (*gin.E
 
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)
+
+	// Manager View
+	r.Use(static.Serve("/", static.LocalFile(publicPath, false)))
 
 	// Auto init roles and check roles
 	err = rbacbase.InitRole(enforcer, r)

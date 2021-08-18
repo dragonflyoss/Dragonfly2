@@ -56,6 +56,8 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Initialize enforcer
 	enforcer, err := rbac.NewEnforcer(db.DB)
 	if err != nil {
 		return nil, err
@@ -83,7 +85,7 @@ func New(cfg *config.Config) (*Server, error) {
 	proxyServer := proxy.New(cfg.Database.Redis)
 
 	// Initialize router
-	router, err := router.Init(cfg.Verbose, restService, enforcer)
+	router, err := router.Init(cfg.Verbose, cfg.Server.PublicPath, restService, enforcer)
 	if err != nil {
 		return nil, err
 	}

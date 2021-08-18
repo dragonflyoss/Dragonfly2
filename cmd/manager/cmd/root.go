@@ -68,6 +68,7 @@ func Execute() {
 func init() {
 	// Initialize default manager config
 	cfg = config.New()
+
 	// Initialize cobra
 	dependency.InitCobra(rootCmd, true, cfg)
 }

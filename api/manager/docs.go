@@ -1369,8 +1369,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "instance id",
-                        "name": "instance_id",
+                        "description": "cdn cluster id",
+                        "name": "cdn_cluster_id",
                         "in": "path",
                         "required": true
                     }
@@ -1414,8 +1414,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "instance id",
-                        "name": "instance_id",
+                        "description": "scheduler cluster id",
+                        "name": "scheduler_cluster_id",
                         "in": "path",
                         "required": true
                     }
@@ -1516,52 +1516,14 @@ var doc = `{
         }
     },
     "definitions": {
-        "model.Assertion": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "policy": {
-                    "type": "array",
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "policyMap": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                },
-                "rm": {
-                    "$ref": "#/definitions/rbac.RoleManager"
-                },
-                "tokens": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.AssertionMap": {
-            "type": "object",
-            "additionalProperties": {
-                "$ref": "#/definitions/model.Assertion"
-            }
-        },
         "model.CDN": {
             "type": "object",
             "properties": {
                 "cdnclusterID": {
                     "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
                 },
                 "download_port": {
                     "type": "integer"
@@ -1569,11 +1531,17 @@ var doc = `{
                 "host_name": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "idc": {
                     "type": "string"
                 },
                 "ip": {
                     "type": "string"
+                },
+                "isDel": {
+                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -1582,6 +1550,9 @@ var doc = `{
                     "type": "integer"
                 },
                 "status": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -1595,6 +1566,15 @@ var doc = `{
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isDel": {
+                    "type": "integer"
+                },
                 "is_default": {
                     "type": "boolean"
                 },
@@ -1603,6 +1583,9 @@ var doc = `{
                 },
                 "securityGroupID": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -1613,14 +1596,23 @@ var doc = `{
         "model.Scheduler": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "host_name": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
                 },
                 "ip": {
                     "type": "string"
+                },
+                "isDel": {
+                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -1635,6 +1627,9 @@ var doc = `{
                     "type": "integer"
                 },
                 "status": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 },
                 "vips": {
@@ -1654,6 +1649,15 @@ var doc = `{
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isDel": {
+                    "type": "integer"
+                },
                 "is_default": {
                     "type": "boolean"
                 },
@@ -1665,6 +1669,9 @@ var doc = `{
                 },
                 "securityGroupID": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -1674,13 +1681,25 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "domain": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isDel": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
                 },
                 "proxy_domain": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -1694,8 +1713,17 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isDel": {
+                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -1711,11 +1739,11 @@ var doc = `{
                 },
                 "state": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
-        },
-        "rbac.RoleManager": {
-            "type": "object"
         },
         "types.CreateCDNClusterRequest": {
             "type": "object",
