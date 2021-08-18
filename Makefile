@@ -257,6 +257,9 @@ generate:
 	@go generate ${PKG_LIST}
 .PHONY: generate
 
+swag:
+	@swag init --parseDependency --parseInternal --parseDepth 10 -g cmd/manager/main.go -o api/manager
+
 # Generate changelog
 changelog:
 	@git-chglog -o CHANGELOG.md
@@ -306,6 +309,7 @@ help:
 	@echo "make kind-load-scheduler            kind load scheduler docker image"
 	@echo "make kind-load-dfdaemon             kind load dfdaemon docker image"
 	@echo "make kind-load-manager              kind load manager docker image"
+	@echo "make swag                           generate swagger api docs"
 	@echo "make changelog                      generate CHANGELOG.md"
 	@echo "make generate                       run go generate"
 	@echo "make clean                          clean"

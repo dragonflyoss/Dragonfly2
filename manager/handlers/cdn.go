@@ -30,9 +30,9 @@ import (
 // @Produce json
 // @Param CDN body types.CreateCDNRequest true "CDN"
 // @Success 200 {object} model.CDN
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdns [post]
 func (h *Handlers) CreateCDN(ctx *gin.Context) {
 	var json types.CreateCDNRequest
@@ -54,12 +54,12 @@ func (h *Handlers) CreateCDN(ctx *gin.Context) {
 // @Description Destroy by id
 // @Tags CDN
 // @Accept json
-// @Produce text
+// @Produce json
 // @Param id path string true "id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdns/{id} [delete]
 func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 	var params types.CDNParams
@@ -85,9 +85,9 @@ func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param CDN body types.UpdateCDNRequest true "CDN"
 // @Success 200 {object} model.CDN
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdns/{id} [patch]
 func (h *Handlers) UpdateCDN(ctx *gin.Context) {
 	var params types.CDNParams
@@ -118,9 +118,9 @@ func (h *Handlers) UpdateCDN(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200 {object} model.CDN
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdns/{id} [get]
 func (h *Handlers) GetCDN(ctx *gin.Context) {
 	var params types.CDNParams
@@ -146,9 +146,9 @@ func (h *Handlers) GetCDN(ctx *gin.Context) {
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
 // @Success 200 {object} []model.CDN
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdns [get]
 func (h *Handlers) GetCDNs(ctx *gin.Context) {
 	var query types.GetCDNsQuery

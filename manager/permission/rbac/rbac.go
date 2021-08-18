@@ -82,24 +82,13 @@ func InitRole(e *casbin.Enforcer, g *gin.Engine) error {
 }
 
 func GetAPIGroupName(path string) (string, error) {
-	apiGroupRegexp := regexp.MustCompile(`^/api/v[0-9]+/(?P<apiGroup>[\-_a-zA-Z]+)`)
+	apiGroupRegexp := regexp.MustCompile(`^/api/v[0-9]+/([-_a-zA-Z]*)[/.*]*`)
 	matchs := apiGroupRegexp.FindStringSubmatch(path)
-	if matchs == nil {
+	if len(matchs) != 2 {
 		return "", errors.New("faild to find api group")
 	}
-	apiGroupName := ""
-	regexGroupNames := apiGroupRegexp.SubexpNames()
-	for i, name := range regexGroupNames {
-		if i != 0 && name == "apiGroup" {
-			apiGroupName = matchs[i]
-		}
-	}
 
-	if apiGroupName != "" {
-		return apiGroupName, nil
-	}
-	return "", errors.New("faild to find api group")
-
+	return matchs[1], nil
 }
 
 func RoleName(object, action string) string {
@@ -128,8 +117,8 @@ func GetAPIGroupNames(g *gin.Engine) []string {
 		}
 
 	}
-	return APIGroups
 
+	return APIGroups
 }
 
 func SystemRoles(g *gin.Engine) []string {
