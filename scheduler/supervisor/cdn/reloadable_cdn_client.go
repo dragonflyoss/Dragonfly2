@@ -42,6 +42,7 @@ type refreshableCDNClient struct {
 	mu        sync.RWMutex
 	cdnClient cdnclient.CdnClient
 	cdnHosts  map[string]*supervisor.PeerHost
+	cdnConfig []*config.CDN
 }
 
 func (rcc *refreshableCDNClient) UpdateState(addrs []dfnet.NetAddr) {
@@ -82,6 +83,7 @@ func NewRefreshableCDNClient(dynConfig config.DynconfigInterface, opts []grpc.Di
 	rcc := &refreshableCDNClient{
 		cdnClient: cdnClient,
 		cdnHosts:  cdnHosts,
+		cdnConfig: dynConfigData.CDNs,
 	}
 	dynConfig.Register(rcc)
 	return rcc, nil
@@ -94,10 +96,10 @@ func (rcc *refreshableCDNClient) OnNotify(c *config.DynconfigData) {
 func (rcc *refreshableCDNClient) refresh(cdns []*config.CDN) {
 	rcc.mu.Lock()
 	defer rcc.mu.Unlock()
-	cdnHosts, netAddrs := cdnHostsToNetAddrs(cdns)
-	if reflect.DeepEqual(rcc.cdnHosts, cdnHosts) {
+	if reflect.DeepEqual(rcc.cdnConfig, cdns) {
 		return
 	}
+	cdnHosts, netAddrs := cdnHostsToNetAddrs(cdns)
 	rcc.cdnHosts = cdnHosts
 	// Sync CDNManager client netAddrs
 	rcc.cdnClient.UpdateState(netAddrs)
@@ -109,11 +111,14 @@ func cdnHostsToNetAddrs(hosts []*config.CDN) (map[string]*supervisor.PeerHost, [
 	netAddrs := make([]dfnet.NetAddr, 0, len(hosts))
 	for _, host := range hosts {
 		hostID := idgen.CDNUUID(host.HostName, host.Port)
+		if host.LoadLimit == 0 {
+			host.LoadLimit = 100
+		}
 		cdnHostMap[hostID] = supervisor.NewCDNPeerHost(hostID, host.IP, host.HostName, host.Port, host.DownloadPort, host.SecurityGroup, host.Location,
 			host.IDC, host.NetTopology, host.LoadLimit)
 		netAddrs = append(netAddrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", host.HostName, host.Port),
+			Addr: fmt.Sprintf("%s:%d", host.IP, host.Port),
 		})
 	}
 	return cdnHostMap, netAddrs
