@@ -90,6 +90,10 @@ func (task *Task) AddPeer(peer *Peer) {
 	task.peers.UpdateOrAdd(peer)
 }
 
+func (task *Task) UpdatePeer(peer *Peer) {
+	task.peers.Update(peer)
+}
+
 func (task *Task) DeletePeer(peer *Peer) {
 	task.peers.Delete(peer)
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package d7y
+package cdn
 
 import (
 	"context"
@@ -31,10 +31,21 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
-	"d7y.io/dragonfly/v2/scheduler/supervisor/cdn"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+)
+
+var (
+	ErrCDNRegisterFail = errors.New("cdn task register failed")
+
+	ErrCDNDownloadFail = errors.New("cdn task download failed")
+
+	ErrCDNUnknown = errors.New("cdn obtain seed encounter unknown err")
+
+	ErrCDNInvokeFail = errors.New("invoke cdn interface failed")
+
+	ErrInitCDNPeerFail = errors.New("init cdn peer failed")
 )
 
 var tracer trace.Tracer
@@ -44,13 +55,13 @@ func init() {
 }
 
 type manager struct {
-	client      client.CdnClient
+	client      RefreshableCDNClient
 	peerManager supervisor.PeerMgr
 	hostManager supervisor.HostMgr
 	lock        sync.RWMutex
 }
 
-func NewManager(cdnClient client.CdnClient, peerManager supervisor.PeerMgr, hostManager supervisor.HostMgr) (supervisor.CDNMgr, error) {
+func NewManager(cdnClient RefreshableCDNClient, peerManager supervisor.PeerMgr, hostManager supervisor.HostMgr) (supervisor.CDNMgr, error) {
 	mgr := &manager{
 		client:      cdnClient,
 		peerManager: peerManager,
@@ -70,7 +81,7 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*s
 	}
 	seedSpan.SetAttributes(config.AttributeCDNSeedRequest.String(seedRequest.String()))
 	if cm.client == nil {
-		err := cdn.ErrCDNRegisterFail
+		err := ErrCDNRegisterFail
 		seedSpan.RecordError(err)
 		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
 		return nil, err
@@ -83,14 +94,14 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*s
 			logger.Errorf("failed to obtain cdn seed: %v", cdnErr)
 			switch cdnErr.Code {
 			case dfcodes.CdnTaskRegistryFail:
-				return nil, errors.Wrap(cdn.ErrCDNRegisterFail, "obtain seeds")
+				return nil, errors.Wrap(ErrCDNRegisterFail, "obtain seeds")
 			case dfcodes.CdnTaskDownloadFail:
-				return nil, errors.Wrapf(cdn.ErrCDNDownloadFail, "obtain seeds")
+				return nil, errors.Wrapf(ErrCDNDownloadFail, "obtain seeds")
 			default:
-				return nil, errors.Wrapf(cdn.ErrCDNUnknown, "obtain seeds")
+				return nil, errors.Wrapf(ErrCDNUnknown, "obtain seeds")
 			}
 		}
-		return nil, errors.Wrapf(cdn.ErrCDNInvokeFail, "obtain seeds from cdn: %v", err)
+		return nil, errors.Wrapf(ErrCDNInvokeFail, "obtain seeds from cdn: %v", err)
 	}
 	return cm.receivePiece(ctx, task, stream)
 }
@@ -115,14 +126,14 @@ func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stre
 				span.RecordError(recvErr)
 				switch recvErr.Code {
 				case dfcodes.CdnTaskRegistryFail:
-					return cdnPeer, errors.Wrapf(cdn.ErrCDNRegisterFail, "receive piece")
+					return cdnPeer, errors.Wrapf(ErrCDNRegisterFail, "receive piece")
 				case dfcodes.CdnTaskDownloadFail:
-					return cdnPeer, errors.Wrapf(cdn.ErrCDNDownloadFail, "receive piece")
+					return cdnPeer, errors.Wrapf(ErrCDNDownloadFail, "receive piece")
 				default:
-					return cdnPeer, errors.Wrapf(cdn.ErrCDNUnknown, "recive piece")
+					return cdnPeer, errors.Wrapf(ErrCDNUnknown, "recive piece")
 				}
 			}
-			return cdnPeer, errors.Wrapf(cdn.ErrCDNInvokeFail, "receive piece from cdn: %v", err)
+			return cdnPeer, errors.Wrapf(ErrCDNInvokeFail, "receive piece from cdn: %v", err)
 		}
 		if piece != nil {
 			span.AddEvent(config.EventPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))
@@ -170,10 +181,12 @@ func (cm *manager) initCdnPeer(ctx context.Context, task *supervisor.Task, ps *c
 	var cdnHost *supervisor.PeerHost
 	cdnPeer, ok := cm.peerManager.Get(ps.PeerId)
 	if !ok {
-		logger.Debugf("first seed cdn task for taskID %s", task.TaskID)
 		if cdnHost, ok = cm.hostManager.Get(ps.HostUuid); !ok {
-			logger.Errorf("cannot find host %s", ps.HostUuid)
-			return nil, errors.Wrapf(cdn.ErrInitCDNPeerFail, "cannot find host %s", ps.HostUuid)
+			if cdnHost, ok = cm.client.GetCDNHost(ps.HostUuid); !ok {
+				logger.Errorf("cannot find cdn host %s", ps.HostUuid)
+				return nil, errors.Wrapf(ErrInitCDNPeerFail, "cannot find host %s", ps.HostUuid)
+			}
+			cm.hostManager.Add(cdnHost)
 		}
 		cdnPeer = supervisor.NewPeer(ps.PeerId, task, cdnHost)
 	}

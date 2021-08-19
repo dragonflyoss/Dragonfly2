@@ -22,23 +22,30 @@ import (
 	"reflect"
 	"sync"
 
+	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"google.golang.org/grpc"
 )
 
 type RefreshableCDNClient interface {
 	cdnclient.CdnClient
 	config.Observer
+	GetCDNHost(hostID string) (*supervisor.PeerHost, bool)
 }
 
 type refreshableCDNClient struct {
 	mu        sync.RWMutex
 	cdnClient cdnclient.CdnClient
-	cdnAddrs  []dfnet.NetAddr
+	cdnHosts  map[string]*supervisor.PeerHost
+}
+
+func (rcc *refreshableCDNClient) UpdateState(addrs []dfnet.NetAddr) {
+	rcc.cdnClient.UpdateState(addrs)
 }
 
 func (rcc *refreshableCDNClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*cdnclient.PieceSeedStream, error) {
@@ -49,8 +56,13 @@ func (rcc *refreshableCDNClient) GetPieceTasks(ctx context.Context, addr dfnet.N
 	return rcc.cdnClient.GetPieceTasks(ctx, addr, req, opts...)
 }
 
-func (rcc *refreshableCDNClient) UpdateState(addrs []dfnet.NetAddr) {
-	rcc.cdnClient.UpdateState(addrs)
+func (rcc *refreshableCDNClient) GetCDNHost(hostID string) (*supervisor.PeerHost, bool) {
+	rcc.mu.RLock()
+	defer rcc.mu.RUnlock()
+	if cdnHost, ok := rcc.cdnHosts[hostID]; ok {
+		return cdnHost, true
+	}
+	return nil, false
 }
 
 func (rcc *refreshableCDNClient) Close() error {
@@ -62,43 +74,47 @@ func NewRefreshableCDNClient(dynConfig config.DynconfigInterface, opts []grpc.Di
 	if err != nil {
 		return nil, err
 	}
-	cdnAddrs := cdnHostsToNetAddrs(dynConfigData.CDNs)
+	cdnHosts, cdnAddrs := cdnHostsToNetAddrs(dynConfigData.CDNs)
 	cdnClient, err := cdnclient.GetClientByAddr(cdnAddrs, opts...)
 	if err != nil {
 		return nil, err
 	}
 	rcc := &refreshableCDNClient{
 		cdnClient: cdnClient,
-		cdnAddrs:  cdnAddrs,
+		cdnHosts:  cdnHosts,
 	}
 	dynConfig.Register(rcc)
 	return rcc, nil
 }
 
 func (rcc *refreshableCDNClient) OnNotify(c *config.DynconfigData) {
-	netAddrs := cdnHostsToNetAddrs(c.CDNs)
-	rcc.refresh(netAddrs)
+	rcc.refresh(c.CDNs)
 }
 
-func (rcc *refreshableCDNClient) refresh(netAddrs []dfnet.NetAddr) {
+func (rcc *refreshableCDNClient) refresh(cdns []*config.CDN) {
 	rcc.mu.Lock()
 	defer rcc.mu.Unlock()
-
-	if reflect.DeepEqual(netAddrs, rcc.cdnAddrs) {
+	cdnHosts, netAddrs := cdnHostsToNetAddrs(cdns)
+	if reflect.DeepEqual(rcc.cdnHosts, cdnHosts) {
 		return
 	}
+	rcc.cdnHosts = cdnHosts
 	// Sync CDNManager client netAddrs
 	rcc.cdnClient.UpdateState(netAddrs)
 }
 
 // cdnHostsToNetAddrs coverts manager.CdnHosts to []dfnet.NetAddr.
-func cdnHostsToNetAddrs(hosts []*config.CDN) []dfnet.NetAddr {
-	var netAddrs []dfnet.NetAddr
-	for i := range hosts {
+func cdnHostsToNetAddrs(hosts []*config.CDN) (map[string]*supervisor.PeerHost, []dfnet.NetAddr) {
+	cdnHostMap := make(map[string]*supervisor.PeerHost, len(hosts))
+	netAddrs := make([]dfnet.NetAddr, 0, len(hosts))
+	for _, host := range hosts {
+		hostID := idgen.CDNUUID(host.HostName, host.Port)
+		cdnHostMap[hostID] = supervisor.NewCDNPeerHost(hostID, host.IP, host.HostName, host.Port, host.DownloadPort, host.SecurityGroup, host.Location,
+			host.IDC, host.NetTopology, host.LoadLimit)
 		netAddrs = append(netAddrs, dfnet.NetAddr{
 			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", hosts[i].IP, hosts[i].Port),
+			Addr: fmt.Sprintf("%s:%d", host.HostName, host.Port),
 		})
 	}
-	return netAddrs
+	return cdnHostMap, netAddrs
 }
