@@ -116,13 +116,13 @@ func (peer *Peer) Touch() {
 func (peer *Peer) associateChild(child *Peer) {
 	peer.children.Store(child.PeerID, child)
 	peer.Host.IncUploadLoad()
-	peer.Task.peers.Update(peer)
+	peer.Task.UpdatePeer(peer)
 }
 
 func (peer *Peer) disassociateChild(child *Peer) {
 	peer.children.Delete(child.PeerID)
 	peer.Host.DecUploadLoad()
-	peer.Task.peers.Update(peer)
+	peer.Task.UpdatePeer(peer)
 }
 
 func (peer *Peer) ReplaceParent(parent *Peer) {
@@ -164,7 +164,7 @@ func (peer *Peer) AddPieceInfo(finishedCount int32, cost int) {
 			peer.costHistory = peer.costHistory[len(peer.costHistory)-20:]
 		}
 		peer.lock.Unlock()
-		peer.Task.peers.Update(peer)
+		peer.Task.UpdatePeer(peer)
 		return
 	}
 	peer.lock.Unlock()

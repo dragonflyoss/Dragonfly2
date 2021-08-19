@@ -19,8 +19,6 @@ package host
 import (
 	"sync"
 
-	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
@@ -48,12 +46,4 @@ func (m *manager) Get(uuid string) (*supervisor.PeerHost, bool) {
 		return nil, false
 	}
 	return host.(*supervisor.PeerHost), true
-}
-
-func (m *manager) OnNotify(dynconfig *config.DynconfigData) {
-	for _, cdn := range dynconfig.CDNs {
-		cdnHost := supervisor.NewCDNPeerHost(idgen.CDNUUID(cdn.HostName, cdn.Port), cdn.IP, cdn.HostName, cdn.Port, cdn.DownloadPort, cdn.SecurityGroup,
-			cdn.Location, cdn.IDC, cdn.NetTopology, 100)
-		m.hostMap.Store(cdnHost.UUID, cdnHost)
-	}
 }

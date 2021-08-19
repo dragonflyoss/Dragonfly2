@@ -16,13 +16,7 @@
 
 package supervisor
 
-import (
-	"d7y.io/dragonfly/v2/scheduler/config"
-)
-
 type HostMgr interface {
-	config.Observer
-
 	Add(host *PeerHost)
 
 	Delete(uuid string)
