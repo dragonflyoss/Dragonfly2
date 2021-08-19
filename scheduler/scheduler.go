@@ -134,12 +134,14 @@ func (s *Server) Serve() error {
 	}()
 
 	// Serve Job
-	go func() {
-		if err := s.job.Serve(); err != nil {
-			logger.Fatalf("job start failed %v", err)
-		}
-		logger.Info("job start successfully")
-	}()
+	if s.job != nil {
+		go func() {
+			if err := s.job.Serve(); err != nil {
+				logger.Fatalf("job start failed %v", err)
+			}
+			logger.Info("job start successfully")
+		}()
+	}
 
 	// Serve Keepalive
 	if s.managerClient != nil {
