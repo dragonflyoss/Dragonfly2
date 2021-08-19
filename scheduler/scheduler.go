@@ -165,7 +165,7 @@ func (s *Server) Serve() error {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
 	if err := rpc.StartTCPServer(port, port, s.schedulerServer, opts...); err != nil {
-		logger.Errorf("grpc s start failed %v", err)
+		logger.Errorf("grpc start failed %v", err)
 		return err
 	}
 
