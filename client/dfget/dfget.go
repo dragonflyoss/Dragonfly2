@@ -107,8 +107,8 @@ func download(ctx context.Context, client daemonclient.DaemonClient, cfg *config
 					_ = pb.Close()
 				}
 
-				wLog.Infof("download from daemon success, length: %dByte cost: %dms", result.CompletedLength, time.Now().Sub(start).Milliseconds())
-				fmt.Printf("finish total length %d Byte\n", result.CompletedLength)
+				wLog.Infof("download from daemon success, length: %d cost: %d", result.CompletedLength, time.Now().Sub(start).Milliseconds())
+				fmt.Printf("finish total length %dbytes\n", result.CompletedLength)
 
 				break
 			}
@@ -174,8 +174,8 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 		return err
 	}
 
-	wLog.Infof("download from source success, length: %dByte cost: %dms", written, time.Now().Sub(start).Milliseconds())
-	fmt.Printf("finish total length %d Byte\n", written)
+	wLog.Infof("download from source success, length: %d cost: %d", written, time.Now().Sub(start).Milliseconds())
+	fmt.Printf("finish total length %dbytes\n", written)
 
 	return nil
 }

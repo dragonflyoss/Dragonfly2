@@ -82,17 +82,22 @@ var rootCmd = &cobra.Command{
 		}
 
 		fmt.Printf("--%s--  %s\n", start.Format("2006-01-02 15:04:05"), dfgetConfig.URL)
-		fmt.Printf("current user[%s] output path[%s]\n", basic.Username, dfgetConfig.Output)
-		fmt.Printf("dfget version[%s] default peer ip[%s]\n", version.GitVersion, iputils.HostIP)
+		fmt.Printf("dfget version: %s\n", version.GitVersion)
+		fmt.Printf("current user: %s, default peer ip: %s\n", basic.Username, iputils.HostIP)
+		fmt.Printf("output path: %s\n", dfgetConfig.Output)
 
 		//  do get file
+		var errInfo string
 		err := runDfget()
+		if err != nil {
+			errInfo = fmt.Sprintf("error: %v", err)
+		}
 
-		msg := fmt.Sprintf("download success: %t cost: %dms error:[%v]", err == nil, time.Now().Sub(start).Milliseconds(), err)
+		msg := fmt.Sprintf("download success: %t cost: %dms %s", err == nil, time.Now().Sub(start).Milliseconds(), errInfo)
 		logger.With("url", dfgetConfig.URL).Info(msg)
 		fmt.Println(msg)
 
-		return errors.Wrapf(err, "download url[%s]", dfgetConfig.URL)
+		return errors.Wrapf(err, "download url: %s", dfgetConfig.URL)
 	},
 }
 
