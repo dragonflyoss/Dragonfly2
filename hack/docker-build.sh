@@ -34,7 +34,13 @@ docker-build() {
       -f "${IMAGES_DIR}/${name}/Dockerfile" .
 }
 
+git-submodule() {
+  git submodule update --init --recursive
+}
+
 main() {
+    git-submodule
+
     case "${1-}" in
     cdn)
         docker-build cdn
