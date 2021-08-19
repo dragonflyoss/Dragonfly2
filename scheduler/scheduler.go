@@ -43,24 +43,17 @@ type Server struct {
 	schedulerService *core.SchedulerService
 	managerClient    manager.ManagerClient
 	managerConn      *grpc.ClientConn
-	dynconfigConn    *grpc.ClientConn
-	running          bool
 	dynConfig        config.DynconfigInterface
 	job              job.Job
 }
 
 func New(cfg *config.Config) (*Server, error) {
-	var err error
-	s := &Server{
-		running: false,
-		config:  cfg,
-	}
+	s := &Server{config: cfg}
 
-	// Initialize manager client
+	// Initialize manager client and dynconfig connect
 	options := []dynconfig.Option{dynconfig.WithLocalConfigPath(dependency.GetConfigPath("scheduler"))}
-	var managerConn *grpc.ClientConn
 	if cfg.Manager.Addr != "" {
-		managerConn, err = grpc.Dial(
+		managerConn, err := grpc.Dial(
 			cfg.Manager.Addr,
 			grpc.WithInsecure(),
 			grpc.WithBlock(),
@@ -69,6 +62,7 @@ func New(cfg *config.Config) (*Server, error) {
 			logger.Errorf("did not connect: %v", err)
 			return nil, err
 		}
+
 		s.managerConn = managerConn
 		s.managerClient = manager.NewManagerClient(managerConn)
 
@@ -86,11 +80,14 @@ func New(cfg *config.Config) (*Server, error) {
 		}
 	}
 
+	// Initialize dynconfig client
 	dynConfig, err := config.NewDynconfig(cfg.DynConfig.Type, cfg.DynConfig.CDNDirPath, options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "create dynamic config")
 	}
 	s.dynConfig = dynConfig
+
+	// Initialize scheduler service
 	var openTel = false
 	if cfg.Options.Telemetry.Jaeger != "" {
 		openTel = true
@@ -100,12 +97,15 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create scheduler service")
 	}
 	s.schedulerService = schedulerService
-	// Initialize scheduler service
-	s.schedulerServer, err = rpcserver.NewSchedulerServer(schedulerService)
 
+	// Initialize grpc service
+	schedulerServer, err := rpcserver.NewSchedulerServer(schedulerService)
 	if err != nil {
 		return nil, err
 	}
+	s.schedulerServer = schedulerServer
+
+	// Initialize job service
 	if cfg.Job.Redis.Host != "" {
 		s.job, err = job.New(context.Background(), cfg.Job, iputils.HostName, s.schedulerService)
 		if err != nil {
@@ -118,20 +118,34 @@ func New(cfg *config.Config) (*Server, error) {
 
 func (s *Server) Serve() error {
 	port := s.config.Server.Port
-	s.running = true
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
-	s.dynConfig.Serve()
-	s.schedulerService.Serve()
+	// Serve dynConfig
+	go func() {
+		if err := s.dynConfig.Serve(); err != nil {
+			logger.Fatalf("dynconfig start failed %v", err)
+		}
+		logger.Info("dynconfig start successfully")
+	}()
 
-	if s.job != nil {
-		go s.job.Serve()
-	}
+	// Serve schedulerService
+	go func() {
+		s.schedulerService.Serve()
+		logger.Info("scheduler service start successfully")
+	}()
 
+	// Serve Job
+	go func() {
+		if err := s.job.Serve(); err != nil {
+			logger.Fatalf("job start failed %v", err)
+		}
+		logger.Info("job start successfully")
+	}()
+
+	// Serve Keepalive
 	if s.managerClient != nil {
-		go retry.Run(ctx, func() (interface{}, bool, error) {
-			if err := s.keepAlive(ctx); err != nil {
+		logger.Info("start keepalive")
+		go retry.Run(context.Background(), func() (interface{}, bool, error) {
+			if err := s.keepAlive(context.Background()); err != nil {
 				logger.Errorf("keepalive to manager failed %v", err)
 				return nil, false, err
 			}
@@ -144,28 +158,18 @@ func (s *Server) Serve() error {
 		)
 	}
 
+	// Serve GRPC
 	logger.Infof("start server at port %d", port)
 	var opts []grpc.ServerOption
 	if s.config.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
 	if err := rpc.StartTCPServer(port, port, s.schedulerServer, opts...); err != nil {
+		logger.Errorf("grpc start failed %v", err)
 		return err
 	}
-	return nil
-}
 
-func (s *Server) Stop() (err error) {
-	if s.running {
-		s.dynconfigConn.Close()
-		s.managerConn.Close()
-		s.running = false
-		s.dynConfig.Stop()
-		rpc.StopServer()
-		s.schedulerService.Stop()
-		s.job.Stop()
-	}
-	return
+	return nil
 }
 
 func (s *Server) register(ctx context.Context) error {
@@ -219,4 +223,12 @@ func (s *Server) keepAlive(ctx context.Context) error {
 			}
 		}
 	}
+}
+
+func (s *Server) Stop() {
+	s.managerConn.Close()
+	s.dynConfig.Stop()
+	s.schedulerService.Stop()
+	s.job.Stop()
+	rpc.StopServer()
 }
