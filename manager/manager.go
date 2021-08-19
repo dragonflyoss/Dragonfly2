@@ -39,8 +39,8 @@ type Server struct {
 	// Server configuration
 	config *config.Config
 
-	// GRPC service
-	service *service.GRPC
+	// GRPC server
+	grpcServer *grpc.Server
 
 	// REST server
 	restServer *http.Server
@@ -74,62 +74,65 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	// Initialize REST service
-	restService := service.NewREST(db, cache, job, enforcer)
-
-	// Initialize GRPC service
-	grpcService := service.NewGRPC(db, cache, searcher)
-
-	// Initialize Proxy service
+	// Initialize Proxy server
 	proxyServer := proxy.New(cfg.Database.Redis)
 
-	// Initialize router
+	// Initialize REST server
+	restService := service.NewREST(db, cache, job, enforcer)
 	router, err := router.Init(cfg.Verbose, cfg.Server.PublicPath, restService, enforcer)
 	if err != nil {
 		return nil, err
 	}
+	restServer := &http.Server{
+		Addr:    cfg.Server.REST.Addr,
+		Handler: router,
+	}
+
+	// Initialize GRPC server
+	grpcService := service.NewGRPC(db, cache, searcher)
+	grpcServer := grpc.NewServer()
+	manager.RegisterManagerServer(grpcServer, grpcService)
 
 	return &Server{
-		config:  cfg,
-		service: grpcService,
-		restServer: &http.Server{
-			Addr:    cfg.Server.REST.Addr,
-			Handler: router,
-		},
+		config:      cfg,
+		grpcServer:  grpcServer,
+		restServer:  restServer,
 		proxyServer: proxyServer,
 	}, nil
 }
 
 func (s *Server) Serve() error {
-	// GRPC listener
+	// Started Proxy server
+	go func() {
+		logger.Info("started proxy")
+		if err := s.proxyServer.Serve(); err != nil {
+			logger.Fatalf("proxy server closed unexpect: %+v", err)
+		}
+	}()
+
+	// Started REST server
+	go func() {
+		logger.Infof("started rest server at %s", s.restServer.Addr)
+		if err := s.restServer.ListenAndServe(); err != nil {
+			if err == http.ErrServerClosed {
+				logger.Info("rest server closed under request")
+				return
+			}
+			logger.Fatalf("rest server closed unexpect: %+v", err)
+		}
+	}()
+
+	// Generate GRPC listener
 	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.Listen, s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
 	if err != nil {
-		logger.Fatalf("failed to net listen: %+v", err)
+		logger.Fatalf("net listener failed to start: %+v", err)
 	}
 	defer lis.Close()
 
-	// Serve Proxy
-	go func() {
-		logger.Info("serve proxy")
-		if err := s.proxyServer.Serve(); err != nil {
-			logger.Fatalf("failed to start manager proxy server: %+v", err)
-		}
-	}()
-
-	// Serve REST
-	go func() {
-		logger.Infof("serve rest at %s", s.restServer.Addr)
-		if err := s.restServer.ListenAndServe(); err != nil {
-			logger.Fatalf("failed to start manager rest server: %+v", err)
-		}
-	}()
-
-	// Serve GRPC
-	grpcServer := grpc.NewServer()
-	manager.RegisterManagerServer(grpcServer, s.service)
-	logger.Infof("serve grpc at %s://%s", lis.Addr().Network(), lis.Addr().String())
-	if err := grpcServer.Serve(lis); err != nil {
-		logger.Errorf("failed to start manager grpc server: %+v", err)
+	// Started GRPC server
+	logger.Infof("started grpc server at %s://%s", lis.Addr().Network(), lis.Addr().String())
+	if err := s.grpcServer.Serve(lis); err != nil {
+		logger.Errorf("stoped grpc server: %+v", err)
 		return err
 	}
 
@@ -137,11 +140,15 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() {
-	// Stop Proxy
+	// Stop Proxy server
 	s.proxyServer.Stop()
 
-	// Stop REST
+	// Stop REST server
 	if err := s.restServer.Shutdown(context.TODO()); err != nil {
-		logger.Errorf("failed to stop manager rest server: %+v", err)
+		logger.Errorf("rest server failed to stop: %+v", err)
 	}
+
+	// Stop GRPC server
+	s.grpcServer.GracefulStop()
+	logger.Info("grpc server closed under request")
 }

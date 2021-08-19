@@ -50,6 +50,7 @@ func (p *proxy) Serve() error {
 	if err != nil {
 		return err
 	}
+	defer listener.Close()
 
 	for {
 		select {
