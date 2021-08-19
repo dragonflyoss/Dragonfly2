@@ -228,9 +228,13 @@ func (s *Server) keepAlive(ctx context.Context) error {
 }
 
 func (s *Server) Stop() {
-	s.managerConn.Close()
+	if s.managerConn != nil {
+		s.managerConn.Close()
+	}
 	s.dynConfig.Stop()
 	s.schedulerService.Stop()
-	s.job.Stop()
+	if s.job != nil {
+		s.job.Stop()
+	}
 	rpc.StopServer()
 }
