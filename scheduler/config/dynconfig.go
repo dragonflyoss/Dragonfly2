@@ -52,6 +52,7 @@ type CDN struct {
 	Location      string `yaml:"location" mapstructure:"location" json:"location"`
 	IDC           string `yaml:"idc" mapstructure:"idc" json:"idc"`
 	NetTopology   string `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
+	LoadLimit     int32  `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit"`
 }
 
 type DynconfigInterface interface {

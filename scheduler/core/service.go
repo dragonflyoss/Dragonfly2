@@ -32,8 +32,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"d7y.io/dragonfly/v2/scheduler/supervisor/cdn"
-	"d7y.io/dragonfly/v2/scheduler/supervisor/cdn/d7y"
-	"d7y.io/dragonfly/v2/scheduler/supervisor/cdn/source"
 	"d7y.io/dragonfly/v2/scheduler/supervisor/host"
 	"d7y.io/dragonfly/v2/scheduler/supervisor/peer"
 	"d7y.io/dragonfly/v2/scheduler/supervisor/task"
@@ -65,31 +63,20 @@ type SchedulerService struct {
 }
 
 func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, openTel bool) (*SchedulerService, error) {
-	dynConfigData, err := dynConfig.Get()
-	if err != nil {
-		return nil, err
-	}
 	hostManager := host.NewManager()
 	peerManager := peer.NewManager(cfg.GC, hostManager)
-	var cdnManager supervisor.CDNMgr
-	if cfg.DisableCDN {
-		if cdnManager, err = source.NewManager(peerManager, hostManager); err != nil {
-			return nil, errors.Wrap(err, "new back source cdn manager")
-		}
-	} else {
-		var opts []grpc.DialOption
-		if openTel {
-			opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
-		}
-		cdnClient, err := cdn.NewRefreshableCDNClient(dynConfig, opts)
-		if err != nil {
-			return nil, errors.Wrap(err, "new refreshable cdn client")
-		}
-		if cdnManager, err = d7y.NewManager(cdnClient, peerManager, hostManager); err != nil {
-			return nil, errors.Wrap(err, "new cdn manager")
-		}
-		hostManager.OnNotify(dynConfigData)
-		dynConfig.Register(hostManager)
+
+	var opts []grpc.DialOption
+	if openTel {
+		opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+	}
+	cdnClient, err := cdn.NewRefreshableCDNClient(dynConfig, opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "new refreshable cdn client")
+	}
+	cdnManager, err := cdn.NewManager(cdnClient, peerManager, hostManager)
+	if err != nil {
+		return nil, errors.Wrap(err, "new cdn manager")
 	}
 	taskManager := task.NewManager(cfg.GC, peerManager)
 	sched, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{

@@ -148,7 +148,7 @@ func (m *manager) cleanupPeers() {
 			if peer.IsLeave() || peer.IsFail() || elapse > m.peerTTL {
 				logger.Debugf("delete peer %s because %s have passed since last access", peer.PeerID)
 				m.Delete(key.(string))
-				if !peer.Host.CDN && peer.Host.GetPeerTaskNum() == 0 {
+				if peer.Host.GetPeerTaskNum() == 0 {
 					m.hostManager.Delete(peer.Host.UUID)
 				}
 			}
