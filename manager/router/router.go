@@ -19,7 +19,6 @@ package router
 import (
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
-	rbacbase "d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/service"
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-contrib/static"
@@ -133,12 +132,6 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 
 	// Manager View
 	r.Use(static.Serve("/", static.LocalFile(publicPath, false)))
-
-	// Auto init roles and check roles
-	err = rbacbase.InitRole(enforcer, r)
-	if err != nil {
-		return nil, err
-	}
 
 	// Swagger
 	apiSeagger := ginSwagger.URL("/swagger/doc.json")

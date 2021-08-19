@@ -49,10 +49,10 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, user)
 }
 
-// @Summary Revoke Role
-// @Description Revoke Role by uri config
+// @Summary Delete Role For User
+// @Description Delete Role For User by uri config
 // @Tags users
-// @Accept json
+// @Accept text
 // @Produce json
 // @Success 200
 // @Failure 400 {object} HTTPError
@@ -73,10 +73,10 @@ func (h *Handlers) DeleteRoleForUser(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Grant Role
-// @Description Grant Role by uri config
+// @Summary Add Role For User
+// @Description Add Role For User by uri config
 // @Tags users
-// @Accept json
+// @Accept text
 // @Produce json
 // @Success 200
 // @Failure 400 {object} HTTPError
