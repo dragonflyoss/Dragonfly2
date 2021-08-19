@@ -62,16 +62,24 @@ func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *rest) GrantRole(userName, roleName string) error {
-	_, err := s.enforcer.AddRoleForUser(userName, roleName)
+func (s *rest) AddRoleForUser(UserID uint, roleName string) error {
+	user := model.User{}
+	if err := s.db.First(&user, UserID).Error; err != nil {
+		return err
+	}
+	_, err := s.enforcer.AddRoleForUser(user.Name, roleName)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *rest) RevokeRole(userName, roleName string) error {
-	_, err := s.enforcer.DeleteRoleForUser(userName, roleName)
+func (s *rest) DeleteRoleForUser(UserID uint, roleName string) error {
+	user := model.User{}
+	if err := s.db.First(&user, UserID).Error; err != nil {
+		return err
+	}
+	_, err := s.enforcer.DeleteRoleForUser(user.Name, roleName)
 	if err != nil {
 		return err
 	}

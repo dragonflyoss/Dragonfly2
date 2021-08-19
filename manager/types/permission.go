@@ -21,7 +21,7 @@ type RoleParams struct {
 }
 
 type UserParams struct {
-	UserName string `uri:"user_name" binding:"required"`
+	ID uint `uri:"user_name" binding:"required"`
 }
 
 type ObjectPermission struct {
@@ -29,12 +29,12 @@ type ObjectPermission struct {
 	Action string `json:"aciton" binding:"omitempty,oneof=read *"`
 }
 
-type RolePermissionCreateRequest struct {
+type CreateRolePermissionRequest struct {
 	RoleName    string             `json:"role_name" binding:"required"`
 	Permissions []ObjectPermission `json:"permissions" binding:"dive"`
 }
 
-type RolePermissionUpdateRequest struct {
+type UpdateRolePermissionRequest struct {
 	Method      string             `json:"method" binding:"required,oneof=add remove"`
 	Permissions []ObjectPermission `json:"permissions" binding:"dive"`
 }

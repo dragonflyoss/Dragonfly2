@@ -32,5 +32,5 @@ type SignUpRequest struct {
 
 type RoleRequest struct {
 	RoleName string `uri:"role_name" binding:"required,min=1"`
-	UserNmae string `uri:"user_name" binding:"required,min=1"`
+	ID       uint   `uri:"id" binding:"required,min=1"`
 }

@@ -61,8 +61,8 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	ai.POST("/signin", jwt.LoginHandler)
 	ai.POST("/signout", jwt.LogoutHandler)
 	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/:user_name/roles/:role_name", h.GrantRole)
-	ai.DELETE("/:user_name/roles/:role_name", h.RevokeRole)
+	ai.POST("/:id/roles/:role_name", h.AddRoleToUser)
+	ai.DELETE("/:id/roles/:role_name", h.DeleteRoleForUser)
 
 	ai.POST("/signup", h.SignUp)
 

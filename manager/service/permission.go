@@ -20,6 +20,7 @@ import (
 	"errors"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/gin-gonic/gin"
@@ -29,7 +30,7 @@ func (s *rest) GetPermissions(g *gin.Engine) types.Permissions {
 	return rbac.GetAPIGroupNames(g)
 }
 
-func (s *rest) CreateRole(json types.RolePermissionCreateRequest) error {
+func (s *rest) CreateRole(json types.CreateRolePermissionRequest) error {
 	for _, p := range json.Permissions {
 		res, err := s.enforcer.AddPolicy(json.RoleName, p.Object, p.Action)
 		s.enforcer.GetAllObjects()
@@ -48,7 +49,7 @@ func (s *rest) GetRoles() []string {
 	return s.enforcer.GetAllSubjects()
 }
 
-func (s *rest) UpdateRole(roleName string, json types.RolePermissionUpdateRequest) error {
+func (s *rest) UpdateRole(roleName string, json types.UpdateRolePermissionRequest) error {
 	switch json.Method {
 	case "add":
 		for _, p := range json.Permissions {
@@ -87,11 +88,17 @@ func (s *rest) GetRole(roleName string) []map[string]string {
 	return result
 }
 
-func (s *rest) GetRolesForUser(userName, currentUserName string) ([]string, error) {
+func (s *rest) GetRolesForUser(UserID uint, currentUserName string) ([]string, error) {
 	var results []string
 	var err error
-	if userName == currentUserName {
-		results, err = s.enforcer.GetRolesForUser(userName)
+	user := model.User{}
+	if err := s.db.First(&user, UserID).Error; err != nil {
+		return nil, err
+	}
+	queryUserName := user.Name
+
+	if queryUserName == currentUserName {
+		results, err = s.enforcer.GetRolesForUser(queryUserName)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +108,7 @@ func (s *rest) GetRolesForUser(userName, currentUserName string) ([]string, erro
 			return nil, err
 		}
 		if has {
-			results, err = s.enforcer.GetRolesForUser(userName)
+			results, err = s.enforcer.GetRolesForUser(queryUserName)
 			if err != nil {
 				return nil, err
 			}

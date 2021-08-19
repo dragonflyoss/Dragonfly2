@@ -57,15 +57,15 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 // @Success 200
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /users/:user_name/roles/:role_name [delete]
+// @Router /users/:id/roles/:role_name [delete]
 
-func (h *Handlers) RevokeRole(ctx *gin.Context) {
+func (h *Handlers) DeleteRoleForUser(ctx *gin.Context) {
 	var params types.RoleRequest
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.Service.RevokeRole(params.UserNmae, params.RoleName)
+	err := h.Service.DeleteRoleForUser(params.ID, params.RoleName)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -81,15 +81,15 @@ func (h *Handlers) RevokeRole(ctx *gin.Context) {
 // @Success 200
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /users/:user_name/roles/:role_name [post]
+// @Router /users/:id/roles/:role_name [post]
 
-func (h *Handlers) GrantRole(ctx *gin.Context) {
+func (h *Handlers) AddRoleToUser(ctx *gin.Context) {
 	var params types.RoleRequest
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.Service.GrantRole(params.UserNmae, params.RoleName)
+	err := h.Service.AddRoleForUser(params.ID, params.RoleName)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -104,7 +104,7 @@ func (h *Handlers) GrantRole(ctx *gin.Context) {
 // @Success 200 {object} RoutesInfo
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /user/:user_name/roles [get]
+// @Router /users/:id/roles [get]
 
 func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 	var params types.UserParams
@@ -112,11 +112,11 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	roles, err := h.Service.GetRolesForUser(params.UserName, ctx.GetString("userName"))
+	roles, err := h.Service.GetRolesForUser(params.ID, ctx.GetString("userName"))
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"roles": roles})
+	ctx.JSON(http.StatusOK, roles)
 
 }

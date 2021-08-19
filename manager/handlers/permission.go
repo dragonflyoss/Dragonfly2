@@ -52,7 +52,7 @@ func (h *Handlers) GetPermissions(g *gin.Engine) func(ctx *gin.Context) {
 // @Router /roles [post]
 
 func (h *Handlers) CreateRole(ctx *gin.Context) {
-	var json types.RolePermissionCreateRequest
+	var json types.CreateRolePermissionRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
@@ -82,7 +82,7 @@ func (h *Handlers) UpdateRole(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	var json types.RolePermissionUpdateRequest
+	var json types.UpdateRolePermissionRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
@@ -135,9 +135,9 @@ func (h *Handlers) GetRole(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Success 200
-// @Failure 400
-// @Failure 500
-// @Router /roles [delete]
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /role/:role_name [delete]
 
 func (h *Handlers) DestroyRole(ctx *gin.Context) {
 	var params types.RoleParams
