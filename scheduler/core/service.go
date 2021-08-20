@@ -201,7 +201,7 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 	return peer, nil
 }
 
-func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) (*supervisor.Task, error) {
+func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) *supervisor.Task {
 	span := trace.SpanFromContext(ctx)
 	synclock.Lock(task.TaskID, true)
 	task, ok := s.taskManager.GetOrAdd(task)
@@ -209,7 +209,9 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 		if task.GetLastTriggerTime().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
 			synclock.UnLock(task.TaskID, true)
 			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
-			return task, nil
+			span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
+			span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
+			return task
 		}
 	}
 	synclock.UnLock(task.TaskID, true)
@@ -220,11 +222,13 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	synclock.Lock(task.TaskID, false)
 	defer synclock.UnLock(task.TaskID, false)
 	if task.IsHealth() && task.GetLastTriggerTime().Add(s.config.AccessWindow).After(time.Now()) {
-		return task, nil
+		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
+		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
+		span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
+		return task
 	}
 	if task.IsFrozen() {
 		task.SetStatus(supervisor.TaskStatusRunning)
-		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 	}
 	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 	go func() {
@@ -243,7 +247,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 			logger.Debugf("===== successfully obtain seeds from cdn, task: %+v ====", task)
 		}
 	}()
-	return task, nil
+	return task
 }
 
 func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *schedulerRPC.PieceResult) error {

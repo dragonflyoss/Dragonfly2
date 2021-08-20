@@ -149,6 +149,9 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 		return
 	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
 		go func(task *supervisor.Task) {
+			if e.peer.Task.IsHealth() {
+				return
+			}
 			// TODO
 			synclock.Lock(task.TaskID, false)
 			defer synclock.UnLock(task.TaskID, false)

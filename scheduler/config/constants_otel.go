@@ -35,6 +35,8 @@ const (
 	AttributePeerID              = attribute.Key("d7y.peer.id")
 	AttributeCDNSeedRequest      = attribute.Key("d7y.cdn.seed.request")
 	AttributeNeedSeedCDN         = attribute.Key("d7y.need.seed.cdn")
+	AttributeTaskStatus          = attribute.Key("d7y.task.status")
+	AttributeLastTriggerTime     = attribute.Key("d7y.task.last.trigger.time")
 )
 
 const (

@@ -76,17 +76,10 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	}
 	taskID := s.service.GenerateTaskID(request.Url, request.UrlMeta, request.PeerId)
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
-	task := supervisor.NewTask(taskID, request.Url, request.UrlMeta)
-	task, err = s.service.GetOrCreateTask(ctx, task)
-	if err != nil {
-		err = dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
-		logger.Errorf("get or create task failed: %v", err)
-		span.RecordError(err)
-		return
-	}
+	task := s.service.GetOrCreateTask(ctx, supervisor.NewTask(taskID, request.Url, request.UrlMeta))
 	if task.IsFail() {
 		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is %s", task.GetStatus())
-		logger.Errorf("task status is unhealthy, task status is: %s", task.GetStatus())
+		logger.Errorf("task is unhealthy, task status is: %s", task.GetStatus())
 		span.RecordError(err)
 		return
 	}
