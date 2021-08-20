@@ -104,6 +104,7 @@ message PieceResult{
   base.HostLoad host_load = 9;
   // currently completed piece count
   int32 finished_count = 10;
+  // todo add pieceInfo include piece_num, range_start, range_size, piece_md5, piece_offset, piece_style
 }
 
 message PeerPacket{
@@ -147,6 +148,7 @@ message PeerResult{
   bool success = 10;
   // result code
   base.Code code = 11;
+  // todo totalPieceCount
 }
 
 message PeerTarget{
