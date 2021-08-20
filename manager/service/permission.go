@@ -119,12 +119,3 @@ func (s *rest) GetRolesForUser(UserID uint, currentUserName string) ([]string, e
 
 	return results, nil
 }
-
-func (s *rest) HasRoleForUser(subject, object, action string) (bool, error) {
-	roleName := rbac.RoleName(object, action)
-	res, err := s.enforcer.HasRoleForUser(subject, roleName)
-	if err != nil {
-		return false, err
-	}
-	return res, nil
-}
