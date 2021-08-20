@@ -99,7 +99,6 @@ func New(cfg *config.Config) (*Server, error) {
 	grpcServer := grpc.NewServer()
 	manager.RegisterManagerServer(grpcServer, grpcService)
 
-
 	return &Server{
 		config:      cfg,
 		grpcServer:  grpcServer,
