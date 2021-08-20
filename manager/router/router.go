@@ -109,7 +109,7 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	re.PATCH("/:role_name", h.UpdateRole)
 
 	// Permission
-	pn := apiv1.Group("/permissions", rbac)
+	pn := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)
 	pn.GET("", h.GetPermissions(r))
 
 	// Security Group

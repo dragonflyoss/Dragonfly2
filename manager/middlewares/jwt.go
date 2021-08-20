@@ -43,7 +43,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
-			userNmae, ok := claims[identityKey]
+			userName, ok := claims[identityKey]
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{
 					"message": "Unavailable token: require username info",
@@ -60,8 +60,8 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 				return nil
 			}
 			u := &user{
-				userName: userNmae.(string),
-				ID:       userID.(uint),
+				userName: userName.(string),
+				ID:       uint(userID.(float64)),
 			}
 			c.Set("userName", u.userName)
 			c.Set("userID", u.ID)

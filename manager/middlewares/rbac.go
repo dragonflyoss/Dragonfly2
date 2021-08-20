@@ -29,7 +29,7 @@ func RBAC(e *casbin.Enforcer) gin.HandlerFunc {
 		userName := c.GetString("userName")
 		// request path
 		p := c.Request.URL.Path
-		permissionGroupName, err := rbac.GetAPIGroupName(p)
+		permissionName, err := rbac.GetAPIGroupName(p)
 		if err != nil {
 			c.Next()
 			return
@@ -50,7 +50,7 @@ func RBAC(e *casbin.Enforcer) gin.HandlerFunc {
 			c.Next()
 			return
 		}
-		res, err := e.Enforce(userName, permissionGroupName, action)
+		res, err := e.Enforce(userName, permissionName, action)
 		if err != nil || !res {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": "permission validate error",
