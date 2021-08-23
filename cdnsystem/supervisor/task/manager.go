@@ -183,7 +183,7 @@ func (tm Manager) Get(taskID string) (*types.SeedTask, error) {
 
 func (tm Manager) Exist(taskID string) bool {
 	_, err := tm.taskStore.Get(taskID)
-	return err != nil && cdnerrors.IsDataNotFound(err)
+	return err == nil || !cdnerrors.IsDataNotFound(err)
 }
 
 func (tm Manager) GetAccessTime() (*syncmap.SyncMap, error) {

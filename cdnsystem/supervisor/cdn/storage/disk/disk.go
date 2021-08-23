@@ -131,7 +131,7 @@ func (s *diskStorageMgr) GC() error {
 	for _, taskID := range gcTaskIDs {
 		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
-		if !s.taskMgr.Exist(taskID) {
+		if s.taskMgr.Exist(taskID) {
 			logger.GcLogger.With("type", "disk").Errorf("failed to get taskID(%s): %v", taskID, err)
 			synclock.UnLock(taskID, false)
 			continue

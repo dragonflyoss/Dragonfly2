@@ -63,7 +63,7 @@ func (m *MockSeedTaskMgr) Get(arg0 string) (*types.SeedTask, error) {
 
 func (m *MockSeedTaskMgr) Exist(arg0 string) bool {
 	_, err := m.Get(arg0)
-	return err != nil && cdnerrors.IsDataNotFound(err)
+	return err == nil || !cdnerrors.IsDataNotFound(err)
 }
 
 // Get indicates an expected call of Get.
