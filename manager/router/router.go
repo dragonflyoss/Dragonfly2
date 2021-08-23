@@ -106,7 +106,8 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	re.GET("", h.GetRoles)
 	re.DELETE("/:role_name", h.DestroyRole)
 	re.GET("/:role_name", h.GetRole)
-	re.PATCH("/:role_name", h.UpdateRole)
+	re.POST("/:role_name/permission", h.RemoveRolePermission)
+	re.DELETE("/:role_name/permission", h.AddRolePermission)
 
 	// Permission
 	pn := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)

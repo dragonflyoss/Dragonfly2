@@ -40,7 +40,8 @@ type REST interface {
 
 	CreateRole(json types.CreateRolePermissionRequest) error
 	DestroyRole(string) error
-	UpdateRole(string, types.UpdateRolePermissionRequest) error
+	AddRolePermission(string, types.ObjectPermission) error
+	RemoveRolePermission(string, types.ObjectPermission) error
 	GetRoles() []string
 	GetRole(string) []map[string]string
 	GetRolesForUser(uint, string) ([]string, error)

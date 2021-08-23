@@ -49,23 +49,19 @@ func (s *rest) GetRoles() []string {
 	return s.enforcer.GetAllSubjects()
 }
 
-func (s *rest) UpdateRole(roleName string, json types.UpdateRolePermissionRequest) error {
-	switch json.Method {
-	case "add":
-		for _, p := range json.Permissions {
-			_, err := s.enforcer.AddPolicy(roleName, p.Object, p.Action)
-			if err != nil {
-				return err
-			}
+func (s *rest) AddRolePermission(roleName string, json types.ObjectPermission) error {
+	_, err := s.enforcer.AddPolicy(roleName, json.Object, json.Action)
+	if err != nil {
+		return err
+	}
 
-		}
-	case "remove":
-		for _, p := range json.Permissions {
-			_, err := s.enforcer.RemovePolicy(roleName, p.Object, p.Action)
-			if err != nil {
-				return err
-			}
-		}
+	return nil
+}
+
+func (s *rest) RemoveRolePermission(roleName string, json types.ObjectPermission) error {
+	_, err := s.enforcer.RemovePolicy(roleName, json.Object, json.Action)
+	if err != nil {
+		return err
 	}
 	return nil
 }

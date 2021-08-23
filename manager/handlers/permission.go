@@ -66,28 +66,58 @@ func (h *Handlers) CreateRole(ctx *gin.Context) {
 }
 
 // @Summary Update Role
-// @Description Update Role by json config
+// @Description Remove Role Permission by json config
 // @Tags role
 // @Accept json
 // @Produce json
 // @Success 200
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /roles [patch]
+// @Router /roles/:role_name/permission [delete]
 
-func (h *Handlers) UpdateRole(ctx *gin.Context) {
+func (h *Handlers) RemoveRolePermission(ctx *gin.Context) {
 
 	var params types.RoleParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	var json types.UpdateRolePermissionRequest
+	var json types.ObjectPermission
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.Service.UpdateRole(params.RoleName, json)
+	err := h.Service.RemoveRolePermission(params.RoleName, json)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.Status(http.StatusOK)
+}
+
+// @Summary Update Role
+// @Description Add Role Permission by json config
+// @Tags role
+// @Accept json
+// @Produce json
+// @Success 200
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /roles/:role_name/permission [post]
+
+func (h *Handlers) AddRolePermission(ctx *gin.Context) {
+
+	var params types.RoleParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	var json types.ObjectPermission
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	err := h.Service.AddRolePermission(params.RoleName, json)
 	if err != nil {
 		ctx.Error(err)
 		return
