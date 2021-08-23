@@ -8,6 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
+	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
+
 	types "d7y.io/dragonfly/v2/cdnsystem/types"
 	syncmap "d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	gomock "github.com/golang/mock/gomock"
@@ -57,6 +59,11 @@ func (m *MockSeedTaskMgr) Get(arg0 string) (*types.SeedTask, error) {
 	ret0, _ := ret[0].(*types.SeedTask)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
+}
+
+func (m *MockSeedTaskMgr) Exist(arg0 string) bool {
+	_, err := m.Get(arg0)
+	return err != nil && cdnerrors.IsDataNotFound(err)
 }
 
 // Get indicates an expected call of Get.
