@@ -225,19 +225,19 @@ func (pt *filePeerTask) ReportPieceResult(result *pieceTaskResult) error {
 	if !result.pieceResult.Success {
 		result.pieceResult.FinishedCount = pt.readyPieces.Settled()
 		_ = pt.peerPacketStream.Send(result.pieceResult)
-		pt.failedPieceCh <- result.pieceResult.PieceNum
+		pt.failedPieceCh <- result.pieceResult.PieceInfo.PieceNum
 		pt.Errorf("%d download failed, retry later", result.piece.PieceNum)
 		return nil
 	}
 
 	pt.lock.Lock()
-	if pt.readyPieces.IsSet(result.pieceResult.PieceNum) {
+	if pt.readyPieces.IsSet(result.pieceResult.PieceInfo.PieceNum) {
 		pt.lock.Unlock()
-		pt.Warnf("piece %d is already reported, skipped", result.pieceResult.PieceNum)
+		pt.Warnf("piece %d is already reported, skipped", result.pieceResult.PieceInfo.PieceNum)
 		return nil
 	}
 	// mark piece processed
-	pt.readyPieces.Set(result.pieceResult.PieceNum)
+	pt.readyPieces.Set(result.pieceResult.PieceInfo.PieceNum)
 	pt.completedLength.Add(int64(result.piece.RangeSize))
 	pt.lock.Unlock()
 

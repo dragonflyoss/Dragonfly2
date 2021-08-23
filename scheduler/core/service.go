@@ -42,6 +42,25 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
+type Options struct {
+	openTel    bool
+	disableCDN bool
+}
+
+type Option func(options *Options)
+
+func WithOpenTel(openTel bool) Option {
+	return func(options *Options) {
+		options.openTel = openTel
+	}
+}
+
+func WithDisableCDN(disableCDN bool) Option {
+	return func(options *Options) {
+		options.disableCDN = disableCDN
+	}
+}
+
 type SchedulerService struct {
 	// cdn mgr
 	cdnManager supervisor.CDNMgr
@@ -62,22 +81,14 @@ type SchedulerService struct {
 	wg        sync.WaitGroup
 }
 
-func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, openTel bool) (*SchedulerService, error) {
+func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, options ...Option) (*SchedulerService, error) {
+	ops := &Options{}
+	for _, op := range options {
+		op(ops)
+	}
+
 	hostManager := host.NewManager()
 	peerManager := peer.NewManager(cfg.GC, hostManager)
-
-	var opts []grpc.DialOption
-	if openTel {
-		opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
-	}
-	cdnClient, err := cdn.NewRefreshableCDNClient(dynConfig, opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "new refreshable cdn client")
-	}
-	cdnManager, err := cdn.NewManager(cdnClient, peerManager, hostManager)
-	if err != nil {
-		return nil, errors.Wrap(err, "new cdn manager")
-	}
 	taskManager := task.NewManager(cfg.GC, peerManager)
 	sched, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
 		PeerManager: peerManager,
@@ -89,8 +100,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	work := newEventLoopGroup(cfg.WorkerNum)
 	downloadMonitor := newMonitor(cfg.OpenMonitor, peerManager)
 	done := make(chan struct{})
-	return &SchedulerService{
-		cdnManager:  cdnManager,
+	s := &SchedulerService{
 		taskManager: taskManager,
 		hostManager: hostManager,
 		peerManager: peerManager,
@@ -99,7 +109,23 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		sched:       sched,
 		config:      cfg,
 		done:        done,
-	}, nil
+	}
+	if !ops.disableCDN {
+		var opts []grpc.DialOption
+		if ops.openTel {
+			opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+		}
+		cdnClient, err := cdn.NewRefreshableCDNClient(dynConfig, opts)
+		if err != nil {
+			return nil, errors.Wrap(err, "new refreshable cdn client")
+		}
+		cdnManager, err := cdn.NewManager(cdnClient, peerManager, hostManager)
+		if err != nil {
+			return nil, errors.Wrap(err, "new cdn manager")
+		}
+		s.cdnManager = cdnManager
+	}
+	return s, nil
 }
 
 func (s *SchedulerService) Serve() {
@@ -165,9 +191,8 @@ func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID
 	return idgen.TaskID(url, meta)
 }
 
-func (s *SchedulerService) ScheduleParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {
+func (s *SchedulerService) SelectParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {
 	parent, _, hasParent := s.sched.ScheduleParent(peer)
-	//logger.Debugf("schedule parent result: parent %v, candidates:%v", parent, candidates)
 	if !hasParent || parent == nil {
 		return nil, errors.Errorf("no parent peer available for peer %v", peer.PeerID)
 	}
@@ -178,27 +203,24 @@ func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *supervisor.
 	return s.peerManager.Get(peerTaskID)
 }
 
-func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *supervisor.Task) (*supervisor.Peer, error) {
+func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *supervisor.Task) *supervisor.Peer {
 	// get or create host
 	reqPeerHost := req.PeerHost
-	var (
-		peer     *supervisor.Peer
-		ok       bool
-		peerHost *supervisor.PeerHost
-	)
-
-	if peerHost, ok = s.hostManager.Get(reqPeerHost.Uuid); !ok {
+	peerHost, ok := s.hostManager.Get(reqPeerHost.Uuid)
+	if !ok {
 		peerHost = supervisor.NewClientPeerHost(reqPeerHost.Uuid, reqPeerHost.Ip, reqPeerHost.HostName, reqPeerHost.RpcPort, reqPeerHost.DownPort,
 			reqPeerHost.SecurityDomain, reqPeerHost.Location, reqPeerHost.Idc, reqPeerHost.NetTopology, s.config.ClientLoad)
 		s.hostManager.Add(peerHost)
 	}
-
 	// get or creat PeerTask
-	if peer, ok = s.peerManager.Get(req.PeerId); !ok {
-		peer = supervisor.NewPeer(req.PeerId, task, peerHost)
-		s.peerManager.Add(peer)
+	peer, ok := s.peerManager.Get(req.PeerId)
+	if ok {
+		logger.Warnf("peer %s has already registered", peer.PeerID)
+		return peer
 	}
-	return peer, nil
+	peer = supervisor.NewPeer(req.PeerId, task, peerHost)
+	s.peerManager.Add(peer)
+	return peer
 }
 
 func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) *supervisor.Task {
@@ -230,6 +252,11 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	if task.IsFrozen() {
 		task.SetStatus(supervisor.TaskStatusRunning)
 	}
+	if s.cdnManager == nil {
+		// TODO disable CDN
+		task.SetStatus(supervisor.TaskStatusWaitingBackSource)
+		return task
+	}
 	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 	go func() {
 		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
@@ -252,7 +279,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 
 func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *schedulerRPC.PieceResult) error {
 	peer.Touch()
-	if pieceResult.PieceNum == common.ZeroOfPiece {
+	if pieceResult.PieceInfo.PieceNum == common.ZeroOfPiece {
 		s.worker.send(startReportPieceResultEvent{ctx, peer})
 		return nil
 	} else if pieceResult.Success {

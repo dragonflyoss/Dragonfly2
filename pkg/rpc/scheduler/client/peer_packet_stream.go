@@ -77,7 +77,7 @@ func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
 	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
 	err = pps.stream.Send(pr)
 
-	if pr.PieceNum == common.EndOfPiece {
+	if pr.PieceInfo.PieceNum == common.EndOfPiece {
 		pps.closeSend()
 		return
 	}

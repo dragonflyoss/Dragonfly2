@@ -629,7 +629,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 							TaskId:        pt.GetTaskID(),
 							SrcPid:        pt.GetPeerID(),
 							DstPid:        request.DstPid,
-							PieceNum:      request.piece.PieceNum,
+							PieceInfo:     request.piece,
 							Success:       false,
 							Code:          dfcodes.ClientRequestLimitFail,
 							HostLoad:      nil,

@@ -90,8 +90,8 @@ message PieceResult{
   string src_pid = 2;
   // dest peer id
   string dst_pid = 3;
-  // piece number
-  int32 piece_num = 4;
+  // piece info
+  base.PieceInfo piece_info = 4;
   // begin time for the piece downloading
   uint64 begin_time = 5;
   // end time for the piece downloading
@@ -104,7 +104,6 @@ message PieceResult{
   base.HostLoad host_load = 9;
   // currently completed piece count
   int32 finished_count = 10;
-  // todo add pieceInfo include piece_num, range_start, range_size, piece_md5, piece_offset, piece_style
 }
 
 message PeerPacket{
@@ -148,7 +147,7 @@ message PeerResult{
   bool success = 10;
   // result code
   base.Code code = 11;
-  // todo totalPieceCount
+  int32 totalPieceCount = 12;
 }
 
 message PeerTarget{

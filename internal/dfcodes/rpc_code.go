@@ -44,7 +44,6 @@ const (
 	SchedError                     base.Code = 5000
 	SchedNeedBackSource            base.Code = 5001 // client should try to download from source
 	SchedPeerGone                  base.Code = 5002 // client should disconnect from scheduler
-	SchedPeerRegisterFail          base.Code = 5003 // peer register fail
 	SchedPeerNotFound              base.Code = 5004 // peer not found in scheduler
 	SchedPeerPieceResultReportFail base.Code = 5005 // report piece
 	SchedTaskStatusError           base.Code = 5006 // task status is fail may be in (TaskStatusFailed, TaskStatusSourceError, TaskStatusCDNRegisterFail)

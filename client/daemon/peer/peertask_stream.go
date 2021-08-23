@@ -186,18 +186,18 @@ func (s *streamPeerTask) ReportPieceResult(result *pieceTaskResult) error {
 	// retry failed piece
 	if !result.pieceResult.Success {
 		_ = s.peerPacketStream.Send(result.pieceResult)
-		s.failedPieceCh <- result.pieceResult.PieceNum
+		s.failedPieceCh <- result.pieceResult.PieceInfo.PieceNum
 		return nil
 	}
 
 	s.lock.Lock()
-	if s.readyPieces.IsSet(result.pieceResult.PieceNum) {
+	if s.readyPieces.IsSet(result.pieceResult.PieceInfo.PieceNum) {
 		s.lock.Unlock()
-		s.Warnf("piece %d is already reported, skipped", result.pieceResult.PieceNum)
+		s.Warnf("piece %d is already reported, skipped", result.pieceResult.PieceInfo.PieceNum)
 		return nil
 	}
 	// mark piece processed
-	s.readyPieces.Set(result.pieceResult.PieceNum)
+	s.readyPieces.Set(result.pieceResult.PieceInfo.PieceNum)
 	s.completedLength.Add(int64(result.piece.RangeSize))
 	s.lock.Unlock()
 

@@ -161,15 +161,8 @@ func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stre
 				span.SetAttributes(config.AttributeContentLength.Int64(task.ContentLength))
 				return cdnPeer, nil
 			}
-			cdnPeer.AddPieceInfo(piece.PieceInfo.PieceNum+1, 0)
-			task.AddPiece(&supervisor.PieceInfo{
-				PieceNum:    piece.PieceInfo.PieceNum,
-				RangeStart:  piece.PieceInfo.RangeStart,
-				RangeSize:   piece.PieceInfo.RangeSize,
-				PieceMd5:    piece.PieceInfo.PieceMd5,
-				PieceOffset: piece.PieceInfo.PieceOffset,
-				PieceStyle:  piece.PieceInfo.PieceStyle,
-			})
+			cdnPeer.UpdateProgress(piece.PieceInfo.PieceNum+1, 0)
+			task.AddPiece(piece.PieceInfo)
 		}
 	}
 }

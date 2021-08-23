@@ -35,12 +35,12 @@ type Config struct {
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
 	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
 	Job          *JobConfig       `yaml:"job" mapstructure:"job"`
+	DisableCDN   bool             `yaml:"disableCDN" mapstructure:"disableCDN"`
 }
 
 func New() *Config {
 	return &Config{
 		Scheduler: &SchedulerConfig{
-			DisableCDN:           false,
 			ABTest:               false,
 			AScheduler:           "",
 			BScheduler:           "",
@@ -112,6 +112,7 @@ func New() *Config {
 				BackendDB: 2,
 			},
 		},
+		DisableCDN: false,
 	}
 }
 
@@ -190,7 +191,6 @@ type DynConfig struct {
 }
 
 type SchedulerConfig struct {
-	DisableCDN      bool   `yaml:"disableCDN" mapstructure:"disableCDN"`
 	ABTest          bool   `yaml:"abtest" mapstructure:"abtest"`
 	AScheduler      string `yaml:"ascheduler" mapstructure:"ascheduler"`
 	BScheduler      string `yaml:"bscheduler" mapstructure:"bscheduler"`

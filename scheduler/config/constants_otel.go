@@ -48,11 +48,11 @@ const (
 )
 
 const (
-	EventScheduleParentFail = "fail-schedule-parent"
-	EventPeerNotFound       = "peer-not-found"
-	EventHostNotFound       = "host-not-found"
-	EventCreateCDNPeer      = "create-cdn-peer"
-	EventPieceReceived      = "receive-piece"
-	EventPeerDownloaded     = "downloaded"
-	EventDownloadTinyFile   = "download-tiny-file"
+	EventSmallTaskSelectParentFail = "small-task-select-parent-fail"
+	EventPeerNotFound              = "peer-not-found"
+	EventHostNotFound              = "host-not-found"
+	EventCreateCDNPeer             = "create-cdn-peer"
+	EventPieceReceived             = "receive-piece"
+	EventPeerDownloaded            = "downloaded"
+	EventDownloadTinyFile          = "download-tiny-file"
 )

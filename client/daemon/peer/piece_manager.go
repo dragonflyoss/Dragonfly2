@@ -173,13 +173,14 @@ func (pm *pieceManager) pushSuccessResult(peerTask Task, dstPid string, piece *b
 				TaskId:        peerTask.GetTaskID(),
 				SrcPid:        peerTask.GetPeerID(),
 				DstPid:        dstPid,
-				PieceNum:      piece.PieceNum,
+				PieceInfo:     piece,
 				BeginTime:     uint64(start),
 				EndTime:       uint64(end),
 				Success:       true,
 				Code:          dfcodes.Success,
 				HostLoad:      nil, // TODO(jim): update host load
 				FinishedCount: 0,   // update by peer task
+				// TODO range_start, range_size, piece_md5, piece_offset, piece_style
 			},
 			err: nil,
 		})
@@ -196,7 +197,7 @@ func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base
 				TaskId:        peerTask.GetTaskID(),
 				SrcPid:        peerTask.GetPeerID(),
 				DstPid:        dstPid,
-				PieceNum:      piece.PieceNum,
+				PieceInfo:     piece,
 				BeginTime:     uint64(start),
 				EndTime:       uint64(end),
 				Success:       false,

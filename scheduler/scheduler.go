@@ -92,7 +92,7 @@ func New(cfg *config.Config) (*Server, error) {
 	if cfg.Options.Telemetry.Jaeger != "" {
 		openTel = true
 	}
-	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, openTel)
+	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, core.WithDisableCDN(cfg.DisableCDN), core.WithOpenTel(openTel))
 	if err != nil {
 		return nil, errors.Wrap(err, "create scheduler service")
 	}

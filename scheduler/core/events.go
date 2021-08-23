@@ -107,7 +107,8 @@ var _ event = peerDownloadPieceSuccessEvent{}
 func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	span := trace.SpanFromContext(e.ctx)
 	span.AddEvent("piece success")
-	e.peer.AddPieceInfo(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
+	e.peer.UpdateProgress(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
+	e.peer.Task.AddPiece(e.pr.PieceInfo)
 	oldParent := e.peer.GetParent()
 	var candidates []*supervisor.Peer
 	parentPeer, ok := s.peerManager.Get(e.pr.DstPid)
@@ -200,6 +201,7 @@ var _ event = peerDownloadSuccessEvent{}
 
 func (e peerDownloadSuccessEvent) apply(s *state) {
 	e.peer.SetStatus(supervisor.PeerStatusSuccess)
+	e.peer.Task.UpdateTaskSuccessResult(e.peerResult.TotalPieceCount, e.peerResult.ContentLength)
 	removePeerFromCurrentTree(e.peer, s)
 	children := s.sched.ScheduleChildren(e.peer)
 	for _, child := range children {

@@ -155,7 +155,7 @@ func (peer *Peer) GetCost() int {
 	return totalCost / len(peer.costHistory)
 }
 
-func (peer *Peer) AddPieceInfo(finishedCount int32, cost int) {
+func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
 	peer.lock.Lock()
 	if finishedCount > peer.finishedNum.Load() {
 		peer.finishedNum.Store(finishedCount)
