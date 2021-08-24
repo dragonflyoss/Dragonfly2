@@ -253,15 +253,14 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 		task.SetStatus(supervisor.TaskStatusRunning)
 	}
 	if s.cdnManager == nil {
-		// TODO disable CDN
-		task.SetStatus(supervisor.TaskStatusWaitingBackSource)
+		task.SetClientBackSourceLimit(s.config.BackSourceCount)
 		return task
 	}
 	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 	go func() {
 		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			if errors.Cause(err) != cdn.ErrCDNInvokeFail {
-				task.SetStatus(supervisor.TaskStatusFailed)
+				task.SetStatus(supervisor.TaskStatusWaitingClientBackSource)
 			}
 			logger.Errorf("failed to seed task: %v", err)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {

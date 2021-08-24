@@ -77,10 +77,13 @@ var _ event = startReportPieceResultEvent{}
 func (e startReportPieceResultEvent) apply(s *state) {
 	span := trace.SpanFromContext(e.ctx)
 	if e.peer.GetParent() != nil {
-		span.AddEvent("no parent")
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
 			e.peer.PeerID).Warnf("startReportPieceResultEvent: no need schedule parent because peer already had parent %s", e.peer.GetParent().PeerID)
 		return
+	}
+	if e.peer.Task.IsWaitingClientBackSource() {
+		e.peer.Task.IncreaseBackSourceClientCount()
+		e.peer.SendSchedulePacket(constructFailPeerPacket(e.peer, dfcodes.SchedNeedBackSource))
 	}
 	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer)
 	span.AddEvent("parent")
@@ -108,6 +111,9 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	span := trace.SpanFromContext(e.ctx)
 	span.AddEvent("piece success")
 	e.peer.UpdateProgress(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
+	if e.peer.Task.IsWaitingClientBackSource() {
+		e.peer.Task.SetStatus(supervisor.TaskStatusSeeding)
+	}
 	e.peer.Task.AddPiece(e.pr.PieceInfo)
 	oldParent := e.peer.GetParent()
 	var candidates []*supervisor.Peer
@@ -159,7 +165,8 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 			task.SetStatus(supervisor.TaskStatusRunning)
 			if cdnPeer, err := s.cdnManager.StartSeedTask(context.Background(), task); err != nil {
 				logger.Errorf("start seed task fail: %v", err)
-				task.SetStatus(supervisor.TaskStatusFailed)
+				task.SetStatus(supervisor.TaskStatusWaitingClientBackSource)
+
 				handleSeedTaskFail(task)
 			} else {
 				logger.Debugf("===== successfully obtain seeds from cdn, task: %+v =====", e.peer.Task)

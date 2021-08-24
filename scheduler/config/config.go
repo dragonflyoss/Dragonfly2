@@ -195,7 +195,7 @@ type SchedulerConfig struct {
 	AScheduler      string `yaml:"ascheduler" mapstructure:"ascheduler"`
 	BScheduler      string `yaml:"bscheduler" mapstructure:"bscheduler"`
 	WorkerNum       int    `yaml:"workerNum" mapstructure:"workerNum"`
-	BackSourceCount int    `yaml:"backSourceCount" mapstructure:"backSourceCount"`
+	BackSourceCount int32  `yaml:"backSourceCount" mapstructure:"backSourceCount"`
 	// AccessWindow should less than CDN task expireTime
 	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
 	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`

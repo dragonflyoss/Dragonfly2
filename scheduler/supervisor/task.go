@@ -22,6 +22,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
+	"go.uber.org/atomic"
 )
 
 type TaskStatus uint8
@@ -34,8 +35,8 @@ func (status TaskStatus) String() string {
 		return "Running"
 	case TaskStatusSeeding:
 		return "Seeding"
-	case TaskStatusWaitingBackSource:
-		return "WaitingBackSource"
+	case TaskStatusWaitingClientBackSource:
+		return "WaitingClientBackSource"
 	case TaskStatusSuccess:
 		return "Success"
 	case TaskStatusZombie:
@@ -55,7 +56,7 @@ const (
 	TaskStatusWaiting TaskStatus = iota
 	TaskStatusRunning
 	TaskStatusSeeding
-	TaskStatusWaitingBackSource
+	TaskStatusWaitingClientBackSource
 	TaskStatusSuccess
 	TaskStatusZombie
 	TaskStatusFailed
@@ -77,6 +78,7 @@ type Task struct {
 	ContentLength   int64
 	status          TaskStatus
 	peers           *sortedlist.SortedList
+	backSourceLimit atomic.Int32
 	// TODO add cdnPeers
 }
 
@@ -120,6 +122,11 @@ func (task *Task) GetStatus() TaskStatus {
 	return task.status
 }
 
+func (task *Task) SetClientBackSourceLimit(backSourceLimit int32) {
+	task.status = TaskStatusWaitingClientBackSource
+	task.backSourceLimit.Store(backSourceLimit)
+}
+
 func (task *Task) GetPiece(pieceNum int32) *base.PieceInfo {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
@@ -127,6 +134,12 @@ func (task *Task) GetPiece(pieceNum int32) *base.PieceInfo {
 }
 
 func (task *Task) AddPiece(p *base.PieceInfo) {
+	task.lock.RLock()
+	if _, ok := task.pieceList[p.PieceNum]; ok {
+		task.lock.RUnlock()
+		return
+	}
+	task.lock.RUnlock()
 	task.lock.Lock()
 	defer task.lock.Unlock()
 	task.pieceList[p.PieceNum] = p
@@ -208,4 +221,14 @@ func (task *Task) IsHealth() bool {
 // IsFail determines whether task is fail
 func (task *Task) IsFail() bool {
 	return task.status == TaskStatusFailed || task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
+}
+
+func (task *Task) IsWaitingClientBackSource() bool {
+	return task.status == TaskStatusWaitingClientBackSource
+}
+
+func (task *Task) IncreaseBackSourceClientCount() {
+	if task.backSourceLimit.Dec() <= 0 {
+		task.status = TaskStatusSeeding
+	}
 }
