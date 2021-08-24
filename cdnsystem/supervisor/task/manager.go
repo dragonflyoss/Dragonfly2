@@ -165,10 +165,6 @@ func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
 		}
 		return nil, err
 	}
-	// update accessTime for taskID
-	if err := tm.accessTimeMap.Add(taskID, time.Now()); err != nil {
-		logger.WithTaskID(taskID).Warnf("failed to update accessTime: %v", err)
-	}
 	// type assertion
 	if info, ok := v.(*types.SeedTask); ok {
 		return info, nil
@@ -177,7 +173,17 @@ func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
 }
 
 func (tm Manager) Get(taskID string) (*types.SeedTask, error) {
-	return tm.getTask(taskID)
+	task, err := tm.getTask(taskID)
+	// update accessTime for taskID
+	if err := tm.accessTimeMap.Add(taskID, time.Now()); err != nil {
+		logger.WithTaskID(taskID).Warnf("failed to update accessTime: %v", err)
+	}
+	return task, err
+}
+
+func (tm Manager) Exist(taskID string) bool {
+	_, err := tm.taskStore.Get(taskID)
+	return err == nil || !cdnerrors.IsDataNotFound(err)
 }
 
 func (tm Manager) GetAccessTime() (*syncmap.SyncMap, error) {
