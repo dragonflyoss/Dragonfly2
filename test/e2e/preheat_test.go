@@ -38,7 +38,7 @@ var _ = Describe("Preheat with manager", func() {
 				//sha256sum1 := strings.Split(string(out), " ")[0]
 
 				// download file
-				out, err = cdnPods[0].Command("curl", "-X", "POST", "-H", `"Content-Type: application/json"`,
+				out, err = cdnPods[0].Command("curl", "-X", "POST", "-H", `'Content-Type:application/json'`,
 					"-d", fmt.Sprintf(`'{"type": "file", "url": "%s"}'`, url), "http://dragonfly-manager:8080/preheats").CombinedOutput()
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())
