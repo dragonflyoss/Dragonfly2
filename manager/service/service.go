@@ -33,11 +33,18 @@ type REST interface {
 	SignIn(json types.SignInRequest) (*model.User, error)
 	SignUp(json types.SignUpRequest) (*model.User, error)
 
-	GetPermissionGroups(g *gin.Engine) types.PermissionGroups
-	CreatePermission(json types.PolicyRequest) error
-	DestroyPermission(json types.PolicyRequest) error
-	GetRolesForUser(subject string) ([]map[string]string, error)
-	HasRoleForUser(subject, object, action string) (bool, error)
+	AddRoleForUser(uint, string) error
+	DeleteRoleForUser(uint, string) error
+
+	GetPermissions(*gin.Engine) types.Permissions
+
+	CreateRole(json types.CreateRolePermissionRequest) error
+	DestroyRole(string) error
+	AddRolePermission(string, types.ObjectPermission) error
+	RemoveRolePermission(string, types.ObjectPermission) error
+	GetRoles() []string
+	GetRole(string) []map[string]string
+	GetRolesForUser(uint, string) ([]string, error)
 
 	CreateCDNCluster(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	CreateCDNClusterWithSecurityGroupDomain(types.CreateCDNClusterRequest) (*model.CDNCluster, error)

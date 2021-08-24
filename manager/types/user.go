@@ -29,3 +29,8 @@ type SignUpRequest struct {
 	Location string `form:"location" binding:"omitempty"`
 	BIO      string `form:"bio" binding:"omitempty"`
 }
+
+type RoleRequest struct {
+	RoleName string `uri:"role_name" binding:"required,min=1"`
+	ID       uint   `uri:"id" binding:"required,min=1"`
+}

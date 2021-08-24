@@ -29,6 +29,7 @@ import (
 
 type user struct {
 	userName string
+	ID       uint
 }
 
 func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
@@ -42,7 +43,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
-			userNmae, ok := claims[identityKey]
+			userName, ok := claims[identityKey]
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{
 					"message": "Unavailable token: require username info",
@@ -50,10 +51,20 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 				c.Abort()
 				return nil
 			}
+			userID, ok := claims["ID"]
+			if !ok {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"message": "Unavailable token: require id info",
+				})
+				c.Abort()
+				return nil
+			}
 			u := &user{
-				userName: userNmae.(string),
+				userName: userName.(string),
+				ID:       uint(userID.(float64)),
 			}
 			c.Set("userName", u.userName)
+			c.Set("userID", u.ID)
 			return u
 		},
 
@@ -75,6 +86,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 			if u, ok := data.(*model.User); ok {
 				return jwt.MapClaims{
 					identityKey: u.Name,
+					"ID":        u.ID,
 				}
 			}
 			return jwt.MapClaims{}

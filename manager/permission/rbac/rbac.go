@@ -18,6 +18,7 @@ package rbac
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -47,7 +48,7 @@ g = _, _
 e = some(where (p.eft == allow))
 
 [matchers]
-m = g(r.sub, p.sub) && r.obj == p.obj && (r.act == p.act || p.act == "*") || r.sub == "admin"
+m = g(r.sub, p.sub) && r.obj == p.obj && (r.act == p.act || p.act == "*")
 `
 
 func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
@@ -69,12 +70,22 @@ func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
 func InitRole(e *casbin.Enforcer, g *gin.Engine) error {
 	systemRoles := SystemRoles(g)
 
+	var err error
 	for _, role := range systemRoles {
 		roleInfo := strings.Split(role, ":")
-		_, err := e.AddPolicy(role, roleInfo[0], roleInfo[1])
+		_, err = e.AddPolicy(role, roleInfo[0], roleInfo[1])
 		if err != nil {
 			return err
 		}
+
+		// init admin permissions
+		_, err = e.AddPolicy("admin", roleInfo[0], "*")
+		if err != nil {
+			return err
+		}
+	}
+	if _, err := e.AddRoleForUser("admin", "admin"); err != nil {
+		return err
 	}
 	logger.Info("init and check role success")
 	return nil
@@ -95,14 +106,7 @@ func RoleName(object, action string) string {
 	if object == "admin" {
 		return "admin"
 	}
-	roleName := ""
-	switch action {
-	case "read":
-		roleName = object + ":" + "read"
-	case "write":
-		roleName = object + ":" + "*"
-	}
-	return roleName
+	return fmt.Sprintf("%s:%s", object, action)
 }
 
 func GetAPIGroupNames(g *gin.Engine) []string {

@@ -19,7 +19,6 @@ package router
 import (
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
-	rbacbase "d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/service"
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-contrib/static"
@@ -61,7 +60,9 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	ai.POST("/signin", jwt.LoginHandler)
 	ai.POST("/signout", jwt.LogoutHandler)
 	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/signup", jwt.MiddlewareFunc(), rbac, h.SignUp)
+	ai.POST("/:id/roles/:role_name", h.AddRoleToUser)
+	ai.DELETE("/:id/roles/:role_name", h.DeleteRoleForUser)
+	ai.POST("/signup", h.SignUp)
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")
@@ -98,13 +99,18 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	c.GET(":id", h.GetCDN)
 	c.GET("", h.GetCDNs)
 
+	// roles
+	re := apiv1.Group("/roles", jwt.MiddlewareFunc(), rbac)
+	re.POST("", h.CreateRole)
+	re.GET("", h.GetRoles)
+	re.DELETE("/:role_name", h.DestroyRole)
+	re.GET("/:role_name", h.GetRole)
+	re.POST("/:role_name/permission", h.AddRolePermission)
+	re.DELETE("/:role_name/permission", h.RemoveRolePermission)
+
 	// Permission
-	pn := apiv1.Group("/permission", jwt.MiddlewareFunc(), rbac)
-	pn.POST("", h.CreatePermission)
-	pn.DELETE("", h.DestroyPermission)
-	pn.GET("/groups", h.GetPermissionGroups(r))
-	pn.GET("/roles/:subject", h.GetRolesForUser)
-	pn.GET("/:subject/:object/:action", h.HasRoleForUser)
+	pn := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)
+	pn.GET("", h.GetPermissions(r))
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")
@@ -126,12 +132,6 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 
 	// Manager View
 	r.Use(static.Serve("/", static.LocalFile(publicPath, false)))
-
-	// Auto init roles and check roles
-	err = rbacbase.InitRole(enforcer, r)
-	if err != nil {
-		return nil, err
-	}
 
 	// Swagger
 	apiSeagger := ginSwagger.URL("/swagger/doc.json")

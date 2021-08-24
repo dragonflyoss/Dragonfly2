@@ -91,7 +91,7 @@ func TestRoleName(t *testing.T) {
 		},
 		{
 			object:           "cdns",
-			action:           "write",
+			action:           "*",
 			exceptedRoleName: "cdns:*",
 		},
 	}
