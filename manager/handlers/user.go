@@ -48,3 +48,75 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, user)
 }
+
+// @Summary Delete Role For User
+// @Description Delete Role For User by uri config
+// @Tags users
+// @Accept text
+// @Produce json
+// @Success 200
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /users/:id/roles/:role_name [delete]
+
+func (h *Handlers) DeleteRoleForUser(ctx *gin.Context) {
+	var params types.RoleRequest
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	err := h.Service.DeleteRoleForUser(params.ID, params.RoleName)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.Status(http.StatusOK)
+}
+
+// @Summary Add Role For User
+// @Description Add Role For User by uri config
+// @Tags users
+// @Accept text
+// @Produce json
+// @Success 200
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /users/:id/roles/:role_name [post]
+
+func (h *Handlers) AddRoleToUser(ctx *gin.Context) {
+	var params types.RoleRequest
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	err := h.Service.AddRoleForUser(params.ID, params.RoleName)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.Status(http.StatusOK)
+}
+
+// @Summary Get User Roles
+// @Description Get User Roles
+// @Tags User
+// @Produce json
+// @Success 200 {object} RoutesInfo
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /users/:id/roles [get]
+
+func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
+	var params types.UserParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	roles, err := h.Service.GetRolesForUser(params.ID, ctx.GetString("userName"))
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.JSON(http.StatusOK, roles)
+
+}

@@ -23,97 +23,140 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Summary Get PermissionGroups
-// @Description Get PermissionGroups
+// @Summary Get Permissions
+// @Description Get Permissions
 // @Tags permission
 // @Produce json
-// @Success 200 {object} types.PermissionGroups
-// @Failure 400
-// @Failure 500
-// @Router /permission/groups [get]
+// @Success 200 {object} RoutesInfo
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /permissions [get]
 
-func (h *Handlers) GetPermissionGroups(g *gin.Engine) func(ctx *gin.Context) {
+func (h *Handlers) GetPermissions(g *gin.Engine) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 
-		permissionGroups := h.Service.GetPermissionGroups(g)
+		permissionGroups := h.Service.GetPermissions(g)
 
 		ctx.JSON(http.StatusOK, permissionGroups)
 	}
 }
 
-// @Summary Get User Roles
-// @Description Get User Roles
-// @Tags permission
-// @Produce json
-// @Success 200 {object} []map[string]string
-// @Failure 400
-// @Failure 500
-// @Router /permission/roles/{subject} [get]
-
-func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
-	var params types.UserRolesParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-	roles, err := h.Service.GetRolesForUser(params.Subject)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-	ctx.JSON(http.StatusOK, gin.H{"roles": roles})
-
-}
-
-// @Summary Judge User Role
-// @Description Judge User Role
-// @Tags permission
-// @Produce json
-// @Success 200 {object}
-// @Failure 400
-// @Failure 500
-// @Router /permission/{subject}/{object}/{action} [get]
-
-func (h *Handlers) HasRoleForUser(ctx *gin.Context) {
-	var params types.UserHasRoleParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-	if params.Subject == "admin" {
-		ctx.JSON(http.StatusOK, gin.H{"has": true})
-		return
-	}
-	has, err := h.Service.HasRoleForUser(params.Subject, params.Object, params.Action)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-	ctx.JSON(http.StatusOK, gin.H{"has": has})
-}
-
-// @Summary Create Permission
-// @Description Create Permission by json config
-// @Tags permission
+// @Summary Create Role
+// @Description Create Role by json config
+// @Tags role
 // @Accept json
 // @Produce json
 // @Success 200
-// @Failure 400
-// @Failure 500
-// @Router /permission [post]
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /roles [post]
 
-func (h *Handlers) CreatePermission(ctx *gin.Context) {
-	var json types.PolicyRequest
+func (h *Handlers) CreateRole(ctx *gin.Context) {
+	var json types.CreateRolePermissionRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.Service.CreatePermission(json)
+	err := h.Service.CreateRole(json)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 	ctx.Status(http.StatusOK)
+}
+
+// @Summary Update Role
+// @Description Remove Role Permission by json config
+// @Tags role
+// @Accept json
+// @Produce json
+// @Success 200
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /roles/:role_name/permission [delete]
+
+func (h *Handlers) RemoveRolePermission(ctx *gin.Context) {
+
+	var params types.RoleParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	var json types.ObjectPermission
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	err := h.Service.RemoveRolePermission(params.RoleName, json)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.Status(http.StatusOK)
+}
+
+// @Summary Update Role
+// @Description Add Role Permission by json config
+// @Tags role
+// @Accept json
+// @Produce json
+// @Success 200
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /roles/:role_name/permission [post]
+
+func (h *Handlers) AddRolePermission(ctx *gin.Context) {
+
+	var params types.RoleParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	var json types.ObjectPermission
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	err := h.Service.AddRolePermission(params.RoleName, json)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+	ctx.Status(http.StatusOK)
+}
+
+// @Summary Get Roles
+// @Description Get Roles by name
+// @Tags role
+// @Accept text
+// @Produce json
+// @Success 200
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /roles [get]
+
+func (h *Handlers) GetRoles(ctx *gin.Context) {
+	roles := h.Service.GetRoles()
+	ctx.JSON(http.StatusOK, roles)
+}
+
+// @Summary Get Role
+// @Description Get Role
+// @Tags permission
+// @Accept text
+// @Produce json
+// @Success 200
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /roles/:role_name [get]
+
+func (h *Handlers) GetRole(ctx *gin.Context) {
+	var params types.RoleParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, h.Service.GetRole(params.RoleName))
 }
 
 // @Summary Destroy Permission
@@ -122,17 +165,17 @@ func (h *Handlers) CreatePermission(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Success 200
-// @Failure 400
-// @Failure 500
-// @Router /permission [delete]
+// @Failure 400 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /role/:role_name [delete]
 
-func (h *Handlers) DestroyPermission(ctx *gin.Context) {
-	var json types.PolicyRequest
-	if err := ctx.ShouldBindJSON(&json); err != nil {
+func (h *Handlers) DestroyRole(ctx *gin.Context) {
+	var params types.RoleParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.Service.DestroyPermission(json)
+	err := h.Service.DestroyRole(params.RoleName)
 	if err != nil {
 		ctx.Error(err)
 		return

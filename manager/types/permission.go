@@ -16,20 +16,22 @@
 
 package types
 
-type PolicyRequest struct {
-	Subject string `form:"subject" binding:"required,min=1"`
-	Object  string `form:"object" binding:"required,min=1"`
-	Action  string `form:"aciton" binding:"omitempty,oneof=read write"`
+type RoleParams struct {
+	RoleName string `uri:"role_name" binding:"required,min=1"`
 }
 
-type PermissionGroups []string
-
-type UserRolesParams struct {
-	Subject string `uri:"subject" binding:"required"`
+type UserParams struct {
+	ID uint `uri:"user_name" binding:"required"`
 }
 
-type UserHasRoleParams struct {
-	UserRolesParams
-	Object string `uri:"object" binding:"required"`
-	Action string `uri:"action" binding:"omitempty,oneof=read write"`
+type ObjectPermission struct {
+	Object string `json:"object" binding:"required,min=1"`
+	Action string `json:"action" binding:"required,oneof=read *"`
 }
+
+type CreateRolePermissionRequest struct {
+	RoleName    string             `json:"role_name" binding:"required"`
+	Permissions []ObjectPermission `json:"permissions" binding:"dive"`
+}
+
+type Permissions []string
