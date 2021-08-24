@@ -62,7 +62,6 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	ai.POST("/refresh_token", jwt.RefreshHandler)
 	ai.POST("/:id/roles/:role_name", h.AddRoleToUser)
 	ai.DELETE("/:id/roles/:role_name", h.DeleteRoleForUser)
-
 	ai.POST("/signup", h.SignUp)
 
 	// Scheduler Cluster
@@ -106,8 +105,8 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	re.GET("", h.GetRoles)
 	re.DELETE("/:role_name", h.DestroyRole)
 	re.GET("/:role_name", h.GetRole)
-	re.POST("/:role_name/permission", h.RemoveRolePermission)
-	re.DELETE("/:role_name/permission", h.AddRolePermission)
+	re.POST("/:role_name/permission", h.AddRolePermission)
+	re.DELETE("/:role_name/permission", h.RemoveRolePermission)
 
 	// Permission
 	pn := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)

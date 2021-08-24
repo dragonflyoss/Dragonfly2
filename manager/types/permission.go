@@ -26,7 +26,7 @@ type UserParams struct {
 
 type ObjectPermission struct {
 	Object string `json:"object" binding:"required,min=1"`
-	Action string `json:"aciton" binding:"omitempty,oneof=read *"`
+	Action string `json:"action" binding:"required,oneof=read *"`
 }
 
 type CreateRolePermissionRequest struct {

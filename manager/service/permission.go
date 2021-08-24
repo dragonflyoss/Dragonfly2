@@ -33,7 +33,6 @@ func (s *rest) GetPermissions(g *gin.Engine) types.Permissions {
 func (s *rest) CreateRole(json types.CreateRolePermissionRequest) error {
 	for _, p := range json.Permissions {
 		res, err := s.enforcer.AddPolicy(json.RoleName, p.Object, p.Action)
-		s.enforcer.GetAllObjects()
 		if err != nil {
 			return err
 		}

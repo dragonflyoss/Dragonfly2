@@ -19,6 +19,7 @@ package middlewares
 import (
 	"net/http"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
@@ -51,9 +52,17 @@ func RBAC(e *casbin.Enforcer) gin.HandlerFunc {
 			return
 		}
 		res, err := e.Enforce(userName, permissionName, action)
-		if err != nil || !res {
+		if err != nil {
+			logger.Errorf("RBAC validate error: %s", err)
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"message": "permission validate error",
+				"message": "permission validate error, please see log!",
+			})
+			c.Abort()
+			return
+		}
+		if !res {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": "permission deny",
 			})
 			c.Abort()
 			return
