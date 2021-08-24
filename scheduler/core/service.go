@@ -239,30 +239,29 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	synclock.UnLock(task.TaskID, true)
 	// do trigger
 	task.UpdateLastTriggerTime(time.Now())
-	// register cdn peer task
-	// notify peer tasks
+
 	synclock.Lock(task.TaskID, false)
 	defer synclock.UnLock(task.TaskID, false)
-	if task.IsHealth() && task.GetLastTriggerTime().Add(s.config.AccessWindow).After(time.Now()) {
+	if task.IsHealth() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
 		span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
 		return task
 	}
-	if task.IsFrozen() {
-		task.SetStatus(supervisor.TaskStatusRunning)
-	}
+	task.SetStatus(supervisor.TaskStatusRunning)
 	if s.cdnManager == nil {
-		task.SetClientBackSourceLimit(s.config.BackSourceCount)
+		// client back source
+		span.SetAttributes(config.AttributeClientBackSource.Bool(true))
+		task.SetClientBackSourceStatusAndLimit(s.config.BackSourceCount)
 		return task
 	}
 	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 	go func() {
 		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
-			if errors.Cause(err) != cdn.ErrCDNInvokeFail {
-				task.SetStatus(supervisor.TaskStatusWaitingClientBackSource)
-			}
+			// fall back to client back source
 			logger.Errorf("failed to seed task: %v", err)
+			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
+			task.SetClientBackSourceStatusAndLimit(s.config.BackSourceCount)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {
 				logger.Error("failed to send taskSeed fail event, eventLoop is shutdown")
 			}
@@ -290,6 +289,7 @@ func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervis
 		return nil
 	} else if pieceResult.Code != dfcodes.Success {
 		s.worker.send(peerDownloadPieceFailEvent{
+			ctx:  ctx,
 			peer: peer,
 			pr:   pieceResult,
 		})

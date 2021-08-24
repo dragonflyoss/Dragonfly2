@@ -278,12 +278,14 @@ func (peer *Peer) IsBindSendChannel() bool {
 	return peer.bindPacketChan
 }
 
-func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) {
+func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) bool {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 	if peer.bindPacketChan {
 		peer.packetChan <- packet
+		return true
 	}
+	return false
 }
 
 func (peer *Peer) SetStatus(status PeerStatus) {

@@ -35,18 +35,12 @@ func (status TaskStatus) String() string {
 		return "Running"
 	case TaskStatusSeeding:
 		return "Seeding"
-	case TaskStatusWaitingClientBackSource:
-		return "WaitingClientBackSource"
 	case TaskStatusSuccess:
 		return "Success"
 	case TaskStatusZombie:
 		return "Zombie"
-	case TaskStatusFailed:
-		return "fail"
-	case TaskStatusCDNRegisterFail:
-		return "cdnRegisterFail"
-	case TaskStatusSourceError:
-		return "sourceError"
+	case TaskStatusFail:
+		return "Fail"
 	default:
 		return "unknown"
 	}
@@ -56,29 +50,27 @@ const (
 	TaskStatusWaiting TaskStatus = iota
 	TaskStatusRunning
 	TaskStatusSeeding
-	TaskStatusWaitingClientBackSource
 	TaskStatusSuccess
 	TaskStatusZombie
-	TaskStatusFailed
-	TaskStatusCDNRegisterFail
-	TaskStatusSourceError
+	TaskStatusFail
 )
 
 type Task struct {
-	lock            sync.RWMutex
-	TaskID          string
-	URL             string
-	URLMeta         *base.UrlMeta
-	DirectPiece     []byte
-	CreateTime      time.Time
-	lastAccessTime  time.Time
-	lastTriggerTime time.Time
-	pieceList       map[int32]*base.PieceInfo
-	PieceTotal      int32
-	ContentLength   int64
-	status          TaskStatus
-	peers           *sortedlist.SortedList
-	backSourceLimit atomic.Int32
+	lock                 sync.RWMutex
+	TaskID               string
+	URL                  string
+	URLMeta              *base.UrlMeta
+	DirectPiece          []byte
+	CreateTime           time.Time
+	lastAccessTime       time.Time
+	lastTriggerTime      time.Time
+	pieceList            map[int32]*base.PieceInfo
+	PieceTotal           int32
+	ContentLength        int64
+	status               TaskStatus
+	peers                *sortedlist.SortedList
+	backSourceLimit      atomic.Int32
+	needClientBackSource atomic.Bool
 	// TODO add cdnPeers
 }
 
@@ -122,9 +114,15 @@ func (task *Task) GetStatus() TaskStatus {
 	return task.status
 }
 
-func (task *Task) SetClientBackSourceLimit(backSourceLimit int32) {
-	task.status = TaskStatusWaitingClientBackSource
+func (task *Task) SetClientBackSourceStatusAndLimit(backSourceLimit int32) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.needClientBackSource.Store(true)
 	task.backSourceLimit.Store(backSourceLimit)
+}
+
+func (task *Task) NeedClientBackSource() bool {
+	return task.needClientBackSource.Load()
 }
 
 func (task *Task) GetPiece(pieceNum int32) *base.PieceInfo {
@@ -197,10 +195,10 @@ func (task *Task) IsSuccess() bool {
 }
 
 // IsFrozen determines that whether cdn status is frozen
-func (task *Task) IsFrozen() bool {
-	return task.status == TaskStatusWaiting || task.status == TaskStatusZombie || task.status == TaskStatusFailed ||
-		task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
-}
+//func (task *Task) IsFrozen() bool {
+//	return task.status == TaskStatusWaiting || task.status == TaskStatusZombie || task.status == TaskStatusFailed ||
+//		task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
+//}
 
 // CanSchedule determines whether task can be scheduled
 // only task status is seeding or success can be scheduled
@@ -220,15 +218,11 @@ func (task *Task) IsHealth() bool {
 
 // IsFail determines whether task is fail
 func (task *Task) IsFail() bool {
-	return task.status == TaskStatusFailed || task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
-}
-
-func (task *Task) IsWaitingClientBackSource() bool {
-	return task.status == TaskStatusWaitingClientBackSource
+	return task.status == TaskStatusFail
 }
 
 func (task *Task) IncreaseBackSourceClientCount() {
 	if task.backSourceLimit.Dec() <= 0 {
-		task.status = TaskStatusSeeding
+		task.needClientBackSource.Store(false)
 	}
 }

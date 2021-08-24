@@ -77,6 +77,12 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	taskID := s.service.GenerateTaskID(request.Url, request.UrlMeta, request.PeerId)
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	task := s.service.GetOrCreateTask(ctx, supervisor.NewTask(taskID, request.Url, request.UrlMeta))
+	if task.IsFail() {
+		err = dferrors.New(dfcodes.SchedTaskStatusError, "task status is fail")
+		logger.Error("task %s status is fail", task.TaskID)
+		span.RecordError(err)
+		return
+	}
 	// TODO task Unreachable
 	resp.SizeScope = getTaskSizeScope(task)
 	span.SetAttributes(config.AttributeTaskSizeScope.String(resp.SizeScope.String()))

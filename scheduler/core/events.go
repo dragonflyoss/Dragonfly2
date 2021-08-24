@@ -26,6 +26,7 @@ import (
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"go.opentelemetry.io/otel/trace"
@@ -76,18 +77,21 @@ var _ event = startReportPieceResultEvent{}
 
 func (e startReportPieceResultEvent) apply(s *state) {
 	span := trace.SpanFromContext(e.ctx)
+	span.AddEvent(config.EventStartReportPieceResult)
 	if e.peer.GetParent() != nil {
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
 			e.peer.PeerID).Warnf("startReportPieceResultEvent: no need schedule parent because peer already had parent %s", e.peer.GetParent().PeerID)
 		return
 	}
-	if e.peer.Task.IsWaitingClientBackSource() {
-		e.peer.Task.IncreaseBackSourceClientCount()
-		e.peer.SendSchedulePacket(constructFailPeerPacket(e.peer, dfcodes.SchedNeedBackSource))
-	}
 	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer)
-	span.AddEvent("parent")
 	if !hasParent {
+		if e.peer.Task.NeedClientBackSource() {
+			span.SetAttributes(config.AttributeClientBackSource.Bool(true))
+			if e.peer.SendSchedulePacket(constructFailPeerPacket(e.peer, dfcodes.SchedNeedBackSource)) {
+				e.peer.Task.IncreaseBackSourceClientCount()
+			}
+			return
+		}
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("startReportPieceResultEvent: there is no available parent，reschedule it in one second")
 		s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
 		return
@@ -109,13 +113,16 @@ var _ event = peerDownloadPieceSuccessEvent{}
 
 func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	span := trace.SpanFromContext(e.ctx)
-	span.AddEvent("piece success")
+	span.AddEvent(config.EventPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(e.pr.String())))
 	e.peer.UpdateProgress(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
-	if e.peer.Task.IsWaitingClientBackSource() {
+	e.peer.Task.AddPiece(e.pr.PieceInfo)
+	if !e.peer.Task.CanSchedule() {
 		e.peer.Task.SetStatus(supervisor.TaskStatusSeeding)
 	}
-	e.peer.Task.AddPiece(e.pr.PieceInfo)
-	oldParent := e.peer.GetParent()
+	if e.pr.DstPid == "" {
+		// client back source report
+		return
+	}
 	var candidates []*supervisor.Peer
 	parentPeer, ok := s.peerManager.Get(e.pr.DstPid)
 	if !ok || parentPeer.IsLeave() {
@@ -128,6 +135,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 			return
 		}
 	}
+	oldParent := e.peer.GetParent()
 	parentPeer.Touch()
 	if oldParent != nil {
 		candidates = append(candidates, oldParent)
@@ -142,6 +150,7 @@ func (e peerDownloadPieceSuccessEvent) hashKey() string {
 }
 
 type peerDownloadPieceFailEvent struct {
+	ctx  context.Context
 	peer *supervisor.Peer
 	pr   *schedulerRPC.PieceResult
 }
@@ -149,6 +158,8 @@ type peerDownloadPieceFailEvent struct {
 var _ event = peerDownloadPieceFailEvent{}
 
 func (e peerDownloadPieceFailEvent) apply(s *state) {
+	span := trace.SpanFromContext(e.ctx)
+	span.AddEvent(config.EventPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(e.pr.String())))
 	switch e.pr.Code {
 	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
 		// TODO PeerTaskNotFound remove dest peer task, ClientPieceDownloadFail add blank list
@@ -156,17 +167,12 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 		return
 	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
 		go func(task *supervisor.Task) {
-			if e.peer.Task.IsHealth() {
-				return
-			}
 			// TODO
 			synclock.Lock(task.TaskID, false)
 			defer synclock.UnLock(task.TaskID, false)
-			task.SetStatus(supervisor.TaskStatusRunning)
 			if cdnPeer, err := s.cdnManager.StartSeedTask(context.Background(), task); err != nil {
 				logger.Errorf("start seed task fail: %v", err)
-				task.SetStatus(supervisor.TaskStatusWaitingClientBackSource)
-
+				span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
 				handleSeedTaskFail(task)
 			} else {
 				logger.Debugf("===== successfully obtain seeds from cdn, task: %+v =====", e.peer.Task)
@@ -313,6 +319,12 @@ func constructFailPeerPacket(peer *supervisor.Peer, errCode base.Code) *schedule
 func reScheduleParent(peer *supervisor.Peer, s *state) {
 	parent, candidates, hasParent := s.sched.ScheduleParent(peer)
 	if !hasParent {
+		if peer.Task.NeedClientBackSource() {
+			if peer.SendSchedulePacket(constructFailPeerPacket(peer, dfcodes.SchedNeedBackSource)) {
+				peer.Task.IncreaseBackSourceClientCount()
+			}
+			return
+		}
 		logger.Errorf("handleReplaceParent: failed to schedule parent to peer %s, reschedule it in one second", peer.PeerID)
 		//peer.PacketChan <- constructFailPeerPacket(peer, dfcodes.SchedWithoutParentPeer)
 		s.waitScheduleParentPeerQueue.AddAfter(peer, time.Second)
@@ -322,13 +334,19 @@ func reScheduleParent(peer *supervisor.Peer, s *state) {
 }
 
 func handleSeedTaskFail(task *supervisor.Task) {
-	if task.IsFail() {
+	if task.IsFail() && task.NeedClientBackSource() {
 		task.ListPeers().Range(func(data sortedlist.Item) bool {
 			peer := data.(*supervisor.Peer)
-			peer.SendSchedulePacket(constructFailPeerPacket(peer, dfcodes.SchedNeedBackSource))
-			return true
+			if task.NeedClientBackSource() {
+				if peer.SendSchedulePacket(constructFailPeerPacket(peer, dfcodes.SchedNeedBackSource)) {
+					task.IncreaseBackSourceClientCount()
+				}
+				return true
+			}
+			return false
 		})
 	}
+	// TODO
 }
 
 func removePeerFromCurrentTree(peer *supervisor.Peer, s *state) {

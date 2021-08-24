@@ -37,6 +37,8 @@ const (
 	AttributeNeedSeedCDN         = attribute.Key("d7y.need.seed.cdn")
 	AttributeTaskStatus          = attribute.Key("d7y.task.status")
 	AttributeLastTriggerTime     = attribute.Key("d7y.task.last.trigger.time")
+	AttributeClientBackSource    = attribute.Key("d7y.need.client.back-source")
+	AttributeTriggerCDNError     = attribute.Key("d7y.trigger.cdn.error")
 )
 
 const (
@@ -55,4 +57,6 @@ const (
 	EventPieceReceived             = "receive-piece"
 	EventPeerDownloaded            = "downloaded"
 	EventDownloadTinyFile          = "download-tiny-file"
+	EventStartReportPieceResult    = "start-report-piece-result"
+	EventCDNFailBackClientSource   = "cdn-fail-back-client-source"
 )

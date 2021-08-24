@@ -136,9 +136,10 @@ func (m *manager) pick(task *supervisor.Task, limit int, reverse bool, pickFn fu
 func (m *manager) cleanupPeers() {
 	for range m.cleanupExpiredPeerTicker.C {
 		m.peerMap.Range(func(key, value interface{}) bool {
+			peerID := key.(string)
 			peer := value.(*supervisor.Peer)
 			elapse := time.Since(peer.GetLastAccessTime())
-			if elapse > m.peerTTI && !peer.IsDone() {
+			if elapse > m.peerTTI && !peer.IsDone() && !peer.Host.CDN {
 				if !peer.IsBindSendChannel() {
 					peer.MarkLeave()
 				}
@@ -146,10 +147,15 @@ func (m *manager) cleanupPeers() {
 				peer.SetStatus(supervisor.PeerStatusZombie)
 			}
 			if peer.IsLeave() || peer.IsFail() || elapse > m.peerTTL {
-				logger.Debugf("delete peer %s because %s have passed since last access", peer.PeerID)
-				m.Delete(key.(string))
+				if elapse > m.peerTTL {
+					logger.Debugf("delete peer %s because %s have passed since last access", peer.PeerID)
+				}
+				m.Delete(peerID)
 				if peer.Host.GetPeerTaskNum() == 0 {
 					m.hostManager.Delete(peer.Host.UUID)
+				}
+				if peer.Task.ListPeers().Size() == 0 {
+					peer.Task.SetStatus(supervisor.TaskStatusWaiting)
 				}
 			}
 			return true

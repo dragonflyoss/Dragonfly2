@@ -53,8 +53,8 @@ func New() *Config {
 			ClientLoad:           10,
 			OpenMonitor:          true,
 			GC: &GCConfig{
-				PeerGCInterval: 5 * time.Minute,
-				TaskGCInterval: 5 * time.Minute,
+				PeerGCInterval: 1 * time.Minute,
+				TaskGCInterval: 1 * time.Minute,
 				PeerTTL:        10 * time.Minute,
 				PeerTTI:        3 * time.Minute,
 				TaskTTL:        10 * time.Minute,
@@ -214,6 +214,7 @@ type ServerConfig struct {
 
 type GCConfig struct {
 	PeerGCInterval time.Duration `yaml:"peerGCInterval" mapstructure:"peerGCInterval"`
+	// PeerTTL is advised to set the time to be smaller than the expire time of a task in the CDN
 	PeerTTL        time.Duration `yaml:"peerTTL" mapstructure:"peerTTL"`
 	PeerTTI        time.Duration `yaml:"peerTTI" mapstructure:"peerTTI"`
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
