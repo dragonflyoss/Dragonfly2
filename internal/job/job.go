@@ -17,12 +17,14 @@
 package job
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
 
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
 
 	"github.com/RichardKnop/machinery/v1"
@@ -49,7 +51,14 @@ type Job struct {
 
 func New(cfg *Config, queue Queue) (*Job, error) {
 	broker := fmt.Sprintf("redis://%s@%s:%d/%d", cfg.Password, cfg.Host, cfg.Port, cfg.BrokerDB)
+	if err := ping(broker); err != nil {
+		return nil, err
+	}
+
 	backend := fmt.Sprintf("redis://%s@%s:%d/%d", cfg.Password, cfg.Host, cfg.Port, cfg.BackendDB)
+	if err := ping(backend); err != nil {
+		return nil, err
+	}
 
 	var cnf = &machineryv1config.Config{
 		Broker:          broker,
@@ -67,6 +76,15 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 		Server: server,
 		Queue:  queue,
 	}, nil
+}
+
+func ping(url string) error {
+	options, err := redis.ParseURL(url)
+	if err != nil {
+		return err
+	}
+	client := redis.NewClient(options)
+	return client.Ping(context.Background()).Err()
 }
 
 func (t *Job) RegisterJob(namedJobFuncs map[string]interface{}) error {

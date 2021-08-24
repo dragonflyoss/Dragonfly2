@@ -63,7 +63,10 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize cache
-	cache := cache.New(cfg)
+	cache, err := cache.New(cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	// Initialize searcher
 	searcher := searcher.New()
@@ -142,11 +145,13 @@ func (s *Server) Serve() error {
 func (s *Server) Stop() {
 	// Stop Proxy server
 	s.proxyServer.Stop()
+	logger.Info("proxy server closed under request")
 
 	// Stop REST server
-	if err := s.restServer.Shutdown(context.TODO()); err != nil {
+	if err := s.restServer.Shutdown(context.Background()); err != nil {
 		logger.Errorf("rest server failed to stop: %+v", err)
 	}
+	logger.Info("rest server closed under request")
 
 	// Stop GRPC server
 	s.grpcServer.GracefulStop()

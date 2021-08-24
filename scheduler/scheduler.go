@@ -18,21 +18,19 @@ package scheduler
 
 import (
 	"context"
-	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/job"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
@@ -41,8 +39,7 @@ type Server struct {
 	config           *config.Config
 	schedulerServer  server.SchedulerServer
 	schedulerService *core.SchedulerService
-	managerClient    manager.ManagerClient
-	managerConn      *grpc.ClientConn
+	managerClient    managerclient.Client
 	dynConfig        config.DynconfigInterface
 	job              job.Job
 }
@@ -50,51 +47,51 @@ type Server struct {
 func New(cfg *config.Config) (*Server, error) {
 	s := &Server{config: cfg}
 
-	// Initialize manager client and dynconfig connect
-	options := []dynconfig.Option{dynconfig.WithLocalConfigPath(dependency.GetConfigPath("scheduler"))}
+	// Initialize manager client
 	if cfg.Manager.Addr != "" {
-		managerConn, err := grpc.Dial(
-			cfg.Manager.Addr,
-			grpc.WithInsecure(),
-			grpc.WithBlock(),
-		)
+		managerClient, err := managerclient.New(cfg.Manager.Addr)
 		if err != nil {
-			logger.Errorf("did not connect: %v", err)
 			return nil, err
 		}
-
-		s.managerConn = managerConn
-		s.managerClient = manager.NewManagerClient(managerConn)
+		s.managerClient = managerClient
 
 		// Register to manager
-		if err := s.register(context.Background()); err != nil {
+		if _, err := s.managerClient.UpdateScheduler(&manager.UpdateSchedulerRequest{
+			SourceType:         manager.SourceType_SCHEDULER_SOURCE,
+			HostName:           s.config.Server.Host,
+			Ip:                 s.config.Server.IP,
+			Port:               int32(s.config.Server.Port),
+			Idc:                s.config.Host.IDC,
+			Location:           s.config.Host.Location,
+			SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
+		}); err != nil {
 			return nil, err
-		}
-
-		if cfg.DynConfig.Type == dynconfig.ManagerSourceType {
-			options = append(options,
-				dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient, cfg.Manager.SchedulerClusterID)),
-				dynconfig.WithCachePath(config.DefaultDynconfigCachePath),
-				dynconfig.WithExpireTime(cfg.DynConfig.ExpireTime),
-			)
 		}
 	}
 
 	// Initialize dynconfig client
+	options := []dynconfig.Option{dynconfig.WithLocalConfigPath(dependency.GetConfigPath("scheduler"))}
+	if s.managerClient != nil && cfg.DynConfig.Type == dynconfig.ManagerSourceType {
+		options = append(options,
+			dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient, cfg.Manager.SchedulerClusterID)),
+			dynconfig.WithCachePath(config.DefaultDynconfigCachePath),
+			dynconfig.WithExpireTime(cfg.DynConfig.ExpireTime),
+		)
+	}
 	dynConfig, err := config.NewDynconfig(cfg.DynConfig.Type, cfg.DynConfig.CDNDirPath, options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "create dynamic config")
+		return nil, err
 	}
 	s.dynConfig = dynConfig
 
 	// Initialize scheduler service
-	var openTel = false
+	var openTel bool
 	if cfg.Options.Telemetry.Jaeger != "" {
 		openTel = true
 	}
 	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, openTel)
 	if err != nil {
-		return nil, errors.Wrap(err, "create scheduler service")
+		return nil, err
 	}
 	s.schedulerService = schedulerService
 
@@ -117,8 +114,6 @@ func New(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) Serve() error {
-	port := s.config.Server.Port
-
 	// Serve dynConfig
 	go func() {
 		if err := s.dynConfig.Serve(); err != nil {
@@ -145,28 +140,30 @@ func (s *Server) Serve() error {
 
 	// Serve Keepalive
 	if s.managerClient != nil {
-		logger.Info("start keepalive")
-		go retry.Run(context.Background(), func() (interface{}, bool, error) {
-			if err := s.keepAlive(context.Background()); err != nil {
-				logger.Errorf("keepalive to manager failed %v", err)
-				return nil, false, err
+		go func() {
+			if err := s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
+				HostName:   s.config.Server.Host,
+				SourceType: manager.SourceType_SCHEDULER_SOURCE,
+				ClusterId:  uint64(s.config.Manager.SchedulerClusterID),
+			}); err != nil {
+				logger.Fatalf("keepalive to manager failed %v", err)
 			}
-			return nil, false, nil
-		},
-			s.config.Manager.KeepAlive.RetryInitBackOff,
-			s.config.Manager.KeepAlive.RetryMaxBackOff,
-			s.config.Manager.KeepAlive.RetryMaxAttempts,
-			nil,
-		)
+			logger.Info("keepalive to manager successfully")
+		}()
 	}
 
 	// Serve GRPC
-	logger.Infof("start server at port %d", port)
+	logger.Infof("start server at port %d", s.config.Server.Port)
 	var opts []grpc.ServerOption
 	if s.config.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
-	if err := rpc.StartTCPServer(port, port, s.schedulerServer, opts...); err != nil {
+	if err := rpc.StartTCPServer(
+		s.config.Server.Port,
+		s.config.Server.Port,
+		s.schedulerServer,
+		opts...,
+	); err != nil {
 		logger.Errorf("grpc start failed %v", err)
 		return err
 	}
@@ -174,67 +171,18 @@ func (s *Server) Serve() error {
 	return nil
 }
 
-func (s *Server) register(ctx context.Context) error {
-	ip := s.config.Server.IP
-	host := s.config.Server.Host
-	port := int32(s.config.Server.Port)
-	idc := s.config.Host.IDC
-	location := s.config.Host.Location
-	schedulerClusterID := uint64(s.config.Manager.SchedulerClusterID)
-
-	var scheduler *manager.Scheduler
-	var err error
-	scheduler, err = s.managerClient.UpdateScheduler(ctx, &manager.UpdateSchedulerRequest{
-		SourceType:         manager.SourceType_SCHEDULER_SOURCE,
-		HostName:           host,
-		Ip:                 ip,
-		Port:               port,
-		Idc:                idc,
-		Location:           location,
-		SchedulerClusterId: schedulerClusterID,
-	})
-	if err != nil {
-		logger.Warnf("update scheduler %s to manager failed %v", scheduler.HostName, err)
-		return err
-	}
-	logger.Infof("update scheduler %s to manager successfully", scheduler.HostName)
-
-	return nil
-}
-
-func (s *Server) keepAlive(ctx context.Context) error {
-	schedulerClusterID := uint64(s.config.Manager.SchedulerClusterID)
-	stream, err := s.managerClient.KeepAlive(ctx)
-	if err != nil {
-		logger.Errorf("create keepalive failed: %v\n", err)
-		return err
-	}
-
-	tick := time.NewTicker(s.config.Manager.KeepAlive.Interval)
-	hostName := iputils.HostName
-	for {
-		select {
-		case <-tick.C:
-			if err := stream.Send(&manager.KeepAliveRequest{
-				HostName:   hostName,
-				SourceType: manager.SourceType_SCHEDULER_SOURCE,
-				ClusterId:  schedulerClusterID,
-			}); err != nil {
-				logger.Errorf("%s send keepalive failed: %v\n", hostName, err)
-				return err
-			}
-		}
-	}
-}
-
 func (s *Server) Stop() {
-	if s.managerConn != nil {
-		s.managerConn.Close()
+	if s.managerClient != nil {
+		s.managerClient.Close()
+		logger.Info("manager client closed")
 	}
+
 	s.dynConfig.Stop()
+	logger.Info("dynconfig client closed")
+
 	s.schedulerService.Stop()
-	if s.job != nil {
-		s.job.Stop()
-	}
+	logger.Info("scheduler service closed")
+
 	rpc.StopServer()
+	logger.Info("grpc server closed under request")
 }

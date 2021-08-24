@@ -17,6 +17,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 
 	"d7y.io/dragonfly/v2/manager/config"
@@ -39,18 +40,29 @@ func New(cfg *config.Config) (*Database, error) {
 		return nil, err
 	}
 
+	rdb, err := NewRedis(cfg.Database.Redis)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Database{
 		DB:  db,
-		RDB: NewRedis(cfg.Database.Redis),
+		RDB: rdb,
 	}, nil
 }
 
-func NewRedis(cfg *config.RedisConfig) *redis.Client {
-	return redis.NewClient(&redis.Options{
+func NewRedis(cfg *config.RedisConfig) (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
 		Password: cfg.Password,
 		DB:       cfg.CacheDB,
 	})
+
+	if err := client.Ping(context.Background()).Err(); err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
 
 func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {

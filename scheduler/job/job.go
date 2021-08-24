@@ -15,7 +15,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -91,37 +90,22 @@ func New(ctx context.Context, cfg *config.JobConfig, hostname string, service *c
 }
 
 func (t *job) Serve() error {
-	g := errgroup.Group{}
-	g.Go(func() error {
+	go func() {
 		logger.Debugf("ready to launch %d worker(s) on global queue", t.cfg.GlobalWorkerNum)
-		err := t.globalJob.LaunchWorker("global_worker", int(t.cfg.GlobalWorkerNum))
-		if err != nil {
-			logger.Errorf("global queue worker error: %v", err)
+		if err := t.globalJob.LaunchWorker("global_worker", int(t.cfg.GlobalWorkerNum)); err != nil {
+			logger.Fatalf("global queue worker error: %v", err)
 		}
-		return err
-	})
+	}()
 
-	g.Go(func() error {
+	go func() {
 		logger.Debugf("ready to launch %d worker(s) on scheduler queue", t.cfg.SchedulerWorkerNum)
-		err := t.schedulerJob.LaunchWorker("scheduler_worker", int(t.cfg.SchedulerWorkerNum))
-		if err != nil {
-			logger.Errorf("scheduler queue worker error: %v", err)
+		if err := t.schedulerJob.LaunchWorker("scheduler_worker", int(t.cfg.SchedulerWorkerNum)); err != nil {
+			logger.Fatalf("scheduler queue worker error: %v", err)
 		}
-		return err
-	})
+	}()
 
-	g.Go(func() error {
-		logger.Debugf("ready to launch %d worker(s) on local queue", t.cfg.LocalWorkerNum)
-		err := t.localJob.LaunchWorker("local_worker", int(t.cfg.LocalWorkerNum))
-		if err != nil {
-			logger.Errorf("local queue worker error: %v", err)
-		}
-		return err
-	})
-
-	werr := g.Wait()
-	t.Stop()
-	return werr
+	logger.Debugf("ready to launch %d worker(s) on local queue", t.cfg.LocalWorkerNum)
+	return t.localJob.LaunchWorker("local_worker", int(t.cfg.LocalWorkerNum))
 }
 
 func (t *job) Stop() {
