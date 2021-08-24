@@ -37,6 +37,10 @@ var _ = Describe("Preheat with manager", func() {
 				Expect(err).NotTo(HaveOccurred())
 				//sha256sum1 := strings.Split(string(out), " ")[0]
 
+				out, err = cdnPods[0].Command("kubectl", "get", "services").CombinedOutput()
+				fmt.Println(string(out))
+				Expect(err).NotTo(HaveOccurred())
+
 				// download file
 				out, err = cdnPods[0].Command("curl", "-X", "POST", "-H", `'Content-Type:application/json'`,
 					"-d", fmt.Sprintf(`'{"type": "file", "url": "%s"}'`, url), "http://dragonfly-manager/preheats").CombinedOutput()

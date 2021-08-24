@@ -20,6 +20,11 @@ COPY --from=builder /go/src/d7y.io/dragonfly/v2/hack/cdn-nginx.conf /etc/nginx/n
 COPY --from=builder /opt/dragonfly/df-cdn/cdn /opt/dragonfly/df-cdn/cdn
 RUN apk --no-cache add curl
 
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+RUN chmod +x ./kubectl
+RUN sudo mv ./kubectl /usr/local/bin/kubectl
+RUN kubectl version --client
+
 EXPOSE 8001 8003
 
 ENTRYPOINT ["/root/start.sh"]
