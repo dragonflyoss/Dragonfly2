@@ -100,10 +100,7 @@ func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) 
 		walkTaskIds[taskID] = true
 
 		// we should return directly when we success to get info which means it is being used
-		if _, err := cleaner.taskMgr.Get(taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
-			if err != nil {
-				logger.GcLogger.With("type", storagePattern).Errorf("failed to get taskID(%s): %v", taskID, err)
-			}
+		if cleaner.taskMgr.Exist(taskID) {
 			return nil
 		}
 
