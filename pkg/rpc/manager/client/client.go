@@ -17,7 +17,7 @@ type Client interface {
 	GetScheduler(*manager.GetSchedulerRequest) (*manager.Scheduler, error)
 	UpdateScheduler(*manager.UpdateSchedulerRequest) (*manager.Scheduler, error)
 	UpdateCDN(*manager.UpdateCDNRequest) (*manager.CDN, error)
-	KeepAlive(time.Duration, *manager.KeepAliveRequest) error
+	KeepAlive(time.Duration, *manager.KeepAliveRequest)
 }
 
 type client struct {
@@ -62,13 +62,14 @@ func (c *client) UpdateCDN(cdn *manager.UpdateCDNRequest) (*manager.CDN, error) 
 	return c.ManagerClient.UpdateCDN(ctx, cdn)
 }
 
-func (c *client) KeepAlive(interval time.Duration, keepalive *manager.KeepAliveRequest) error {
+func (c *client) KeepAlive(interval time.Duration, keepalive *manager.KeepAliveRequest) {
+retry:
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	stream, err := c.ManagerClient.KeepAlive(ctx)
 	if err != nil {
-		return err
+		time.Sleep(interval)
+		cancel()
+		goto retry
 	}
 
 	tick := time.NewTicker(interval)
@@ -80,7 +81,9 @@ func (c *client) KeepAlive(interval time.Duration, keepalive *manager.KeepAliveR
 				SourceType: keepalive.SourceType,
 				ClusterId:  keepalive.ClusterId,
 			}); err != nil {
-				return err
+				stream.CloseAndRecv()
+				cancel()
+				goto retry
 			}
 		}
 	}

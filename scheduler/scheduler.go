@@ -141,13 +141,11 @@ func (s *Server) Serve() error {
 	// Serve Keepalive
 	if s.managerClient != nil {
 		go func() {
-			if err := s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
+			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
 				HostName:   s.config.Server.Host,
 				SourceType: manager.SourceType_SCHEDULER_SOURCE,
 				ClusterId:  uint64(s.config.Manager.SchedulerClusterID),
-			}); err != nil {
-				logger.Fatalf("keepalive to manager failed %v", err)
-			}
+			})
 			logger.Info("keepalive to manager successfully")
 		}()
 	}
@@ -172,13 +170,13 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() {
+	s.dynConfig.Stop()
+	logger.Info("dynconfig client closed")
+
 	if s.managerClient != nil {
 		s.managerClient.Close()
 		logger.Info("manager client closed")
 	}
-
-	s.dynConfig.Stop()
-	logger.Info("dynconfig client closed")
 
 	s.schedulerService.Stop()
 	logger.Info("scheduler service closed")
