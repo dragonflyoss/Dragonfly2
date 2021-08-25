@@ -41,10 +41,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
-const (
-	GracefulStopTimeout = 2 * time.Minute
-)
-
 type RegisterFunc func(*grpc.Server, interface{})
 
 var (

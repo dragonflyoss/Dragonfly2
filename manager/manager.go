@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	GracefulStopTimeout = 10 * time.Second
+	gracefulStopTimeout = 10 * time.Second
 )
 
 type Server struct {
@@ -165,7 +165,7 @@ func (s *Server) Stop() {
 		close(stopped)
 	}()
 
-	t := time.NewTimer(GracefulStopTimeout)
+	t := time.NewTimer(gracefulStopTimeout)
 	select {
 	case <-t.C:
 		s.grpcServer.Stop()
