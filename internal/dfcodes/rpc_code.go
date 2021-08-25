@@ -46,7 +46,7 @@ const (
 	SchedPeerGone                  base.Code = 5002 // client should disconnect from scheduler
 	SchedPeerNotFound              base.Code = 5004 // peer not found in scheduler
 	SchedPeerPieceResultReportFail base.Code = 5005 // report piece
-	SchedTaskStatusError           base.Code = 5006 // task status is fail may be in (TaskStatusFailed, TaskStatusSourceError, TaskStatusCDNRegisterFail)
+	SchedTaskStatusError           base.Code = 5006 // task status is fail
 
 	// cdnsystem response error 6000-6999
 	CdnError            base.Code = 6000

@@ -83,7 +83,6 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 		span.RecordError(err)
 		return
 	}
-	// TODO task Unreachable
 	resp.SizeScope = getTaskSizeScope(task)
 	span.SetAttributes(config.AttributeTaskSizeScope.String(resp.SizeScope.String()))
 	resp.TaskId = taskID
@@ -139,7 +138,12 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	g.Go(func() error {
 		defer func() {
 			cancel()
-			once.Do(peer.UnBindSendChannel)
+			once.Do(
+				func() {
+					if peer != nil {
+						peer.UnBindSendChannel()
+					}
+				})
 		}()
 		for {
 			select {
@@ -159,22 +163,31 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 							return nil
 						}
 					}
-					return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error: %v", err)
+					err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error: %v", err)
+					span.RecordError(err)
+					return err
 				}
 				logger.Debugf("report piece result %v of peer %s", pieceResult, pieceResult.SrcPid)
 				var ok bool
 				peer, ok = s.service.GetPeerTask(pieceResult.SrcPid)
 				if !ok {
-					return dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
+					err = dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
+					span.RecordError(err)
+					return err
+				}
+				if peer.Task.IsFail() {
+					err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is fail")
+					span.RecordError(err)
+					return err
 				}
 				if !initialized {
+					initialized = true
 					peer.BindSendChannel(peerPacketChan)
 					peer.SetStatus(supervisor.PeerStatusRunning)
-					initialized = true
 					span.SetAttributes(config.AttributePeerID.String(peer.PeerID))
-					span.AddEvent("init")
+					span.AddEvent("bind report packet chan")
 				}
-				if pieceResult.PieceInfo.PieceNum == common.EndOfPiece {
+				if pieceResult.PieceInfo != nil && pieceResult.PieceInfo.PieceNum == common.EndOfPiece {
 					return nil
 				}
 				if err := s.service.HandlePieceResult(ctx, peer, pieceResult); err != nil {
@@ -187,7 +200,12 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	g.Go(func() error {
 		defer func() {
 			cancel()
-			once.Do(peer.UnBindSendChannel)
+			once.Do(
+				func() {
+					if peer != nil {
+						peer.UnBindSendChannel()
+					}
+				})
 		}()
 		for {
 			select {
@@ -199,10 +217,18 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 					return nil
 				}
 				span.AddEvent("schedule event", trace.WithAttributes(config.AttributeSchedulePacket.String(pp.String())))
+				if pp.Code != dfcodes.Success {
+					logger.Errorf("schedule peer %s error packet %v", pp.SrcPid, pp)
+					err := dferrors.Newf(pp.Code, "peer piece result report error")
+					span.RecordError(err)
+					return err
+				}
 				err := stream.Send(pp)
 				if err != nil {
 					logger.Errorf("send peer %s schedule packet %v failed: %v", pp.SrcPid, pp, err)
-					return dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error: %v", err)
+					err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error: %v", err)
+					span.RecordError(err)
+					return err
 				}
 			}
 		}

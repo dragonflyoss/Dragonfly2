@@ -88,7 +88,7 @@ func (e startReportPieceResultEvent) apply(s *state) {
 		if e.peer.Task.NeedClientBackSource() {
 			span.SetAttributes(config.AttributeClientBackSource.Bool(true))
 			if e.peer.SendSchedulePacket(constructFailPeerPacket(e.peer, dfcodes.SchedNeedBackSource)) {
-				e.peer.Task.IncreaseBackSourceClientCount()
+				e.peer.Task.IncreaseBackSourcePeer(e.peer.PeerID)
 			}
 			return
 		}
@@ -116,11 +116,8 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	span.AddEvent(config.EventPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(e.pr.String())))
 	e.peer.UpdateProgress(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
 	e.peer.Task.AddPiece(e.pr.PieceInfo)
-	if !e.peer.Task.CanSchedule() {
+	if !e.peer.Task.CanSchedule() && e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
 		e.peer.Task.SetStatus(supervisor.TaskStatusSeeding)
-	}
-	if e.pr.DstPid == "" {
-		// client back source report
 		return
 	}
 	var candidates []*supervisor.Peer
@@ -160,6 +157,9 @@ var _ event = peerDownloadPieceFailEvent{}
 func (e peerDownloadPieceFailEvent) apply(s *state) {
 	span := trace.SpanFromContext(e.ctx)
 	span.AddEvent(config.EventPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(e.pr.String())))
+	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
+		return
+	}
 	switch e.pr.Code {
 	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
 		// TODO PeerTaskNotFound remove dest peer task, ClientPieceDownloadFail add blank list
@@ -214,7 +214,9 @@ var _ event = peerDownloadSuccessEvent{}
 
 func (e peerDownloadSuccessEvent) apply(s *state) {
 	e.peer.SetStatus(supervisor.PeerStatusSuccess)
-	e.peer.Task.UpdateTaskSuccessResult(e.peerResult.TotalPieceCount, e.peerResult.ContentLength)
+	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
+		e.peer.Task.UpdateTaskSuccessResult(e.peerResult.TotalPieceCount, e.peerResult.ContentLength)
+	}
 	removePeerFromCurrentTree(e.peer, s)
 	children := s.sched.ScheduleChildren(e.peer)
 	for _, child := range children {
@@ -236,6 +238,11 @@ var _ event = peerDownloadFailEvent{}
 
 func (e peerDownloadFailEvent) apply(s *state) {
 	e.peer.SetStatus(supervisor.PeerStatusFail)
+	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) && !e.peer.Task.IsSuccess() {
+		e.peer.Task.SetStatus(supervisor.TaskStatusFail)
+		handleSeedTaskFail(e.peer.Task)
+		return
+	}
 	removePeerFromCurrentTree(e.peer, s)
 	e.peer.GetChildren().Range(func(key, value interface{}) bool {
 		child := (value).(*supervisor.Peer)
@@ -321,7 +328,7 @@ func reScheduleParent(peer *supervisor.Peer, s *state) {
 	if !hasParent {
 		if peer.Task.NeedClientBackSource() {
 			if peer.SendSchedulePacket(constructFailPeerPacket(peer, dfcodes.SchedNeedBackSource)) {
-				peer.Task.IncreaseBackSourceClientCount()
+				peer.Task.IncreaseBackSourcePeer(peer.PeerID)
 			}
 			return
 		}
@@ -330,23 +337,29 @@ func reScheduleParent(peer *supervisor.Peer, s *state) {
 		s.waitScheduleParentPeerQueue.AddAfter(peer, time.Second)
 		return
 	}
+	// TODO if parentPeer is equal with oldParent, need schedule again ?
 	peer.SendSchedulePacket(constructSuccessPeerPacket(peer, parent, candidates))
 }
 
 func handleSeedTaskFail(task *supervisor.Task) {
-	if task.IsFail() && task.NeedClientBackSource() {
+	if task.NeedClientBackSource() {
 		task.ListPeers().Range(func(data sortedlist.Item) bool {
 			peer := data.(*supervisor.Peer)
 			if task.NeedClientBackSource() {
 				if peer.SendSchedulePacket(constructFailPeerPacket(peer, dfcodes.SchedNeedBackSource)) {
-					task.IncreaseBackSourceClientCount()
+					task.IncreaseBackSourcePeer(peer.PeerID)
 				}
 				return true
 			}
 			return false
 		})
+	} else {
+		task.ListPeers().Range(func(data sortedlist.Item) bool {
+			peer := data.(*supervisor.Peer)
+			peer.SendSchedulePacket(constructFailPeerPacket(peer, dfcodes.SchedTaskStatusError))
+			return true
+		})
 	}
-	// TODO
 }
 
 func removePeerFromCurrentTree(peer *supervisor.Peer, s *state) {

@@ -195,7 +195,7 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int) (l
 
 func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int) (list []*supervisor.Peer) {
 	if !peer.Task.CanSchedule() {
-		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++peer %s can not be scheduled because task status", peer.PeerID)
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++peer %s can not be scheduled because task status %s", peer.PeerID, peer.Task.GetStatus())
 		return nil
 	}
 	return s.peerManager.PickReverse(peer.Task, limit, func(candidateNode *supervisor.Peer) bool {

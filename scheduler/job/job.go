@@ -169,7 +169,7 @@ func getPreheatResult(task *supervisor.Task) error {
 		select {
 		case <-ticker.C:
 			switch task.GetStatus() {
-			case supervisor.TaskStatusFailed, supervisor.TaskStatusCDNRegisterFail, supervisor.TaskStatusSourceError:
+			case supervisor.TaskStatusFail:
 				return errors.Errorf("preheat task fail")
 			case supervisor.TaskStatusSuccess:
 				return nil

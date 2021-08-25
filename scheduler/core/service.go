@@ -181,6 +181,7 @@ func (s *SchedulerService) Stop() {
 		if s.worker != nil {
 			s.worker.stop()
 		}
+		s.wg.Wait()
 	})
 }
 
@@ -277,7 +278,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 
 func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *schedulerRPC.PieceResult) error {
 	peer.Touch()
-	if pieceResult.PieceInfo.PieceNum == common.ZeroOfPiece {
+	if pieceResult.PieceInfo != nil && pieceResult.PieceInfo.PieceNum == common.ZeroOfPiece {
 		s.worker.send(startReportPieceResultEvent{ctx, peer})
 		return nil
 	} else if pieceResult.Success {

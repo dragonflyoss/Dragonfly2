@@ -71,6 +71,7 @@ type Task struct {
 	peers                *sortedlist.SortedList
 	backSourceLimit      atomic.Int32
 	needClientBackSource atomic.Bool
+	backSourcePeers      []string
 	// TODO add cdnPeers
 }
 
@@ -117,6 +118,7 @@ func (task *Task) GetStatus() TaskStatus {
 func (task *Task) SetClientBackSourceStatusAndLimit(backSourceLimit int32) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
+	task.backSourcePeers = make([]string, 0, backSourceLimit)
 	task.needClientBackSource.Store(true)
 	task.backSourceLimit.Store(backSourceLimit)
 }
@@ -166,9 +168,11 @@ func (task *Task) GetLastAccessTime() time.Time {
 func (task *Task) UpdateTaskSuccessResult(pieceTotal int32, contentLength int64) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	task.status = TaskStatusSuccess
-	task.PieceTotal = pieceTotal
-	task.ContentLength = contentLength
+	if task.status != TaskStatusSuccess {
+		task.status = TaskStatusSuccess
+		task.PieceTotal = pieceTotal
+		task.ContentLength = contentLength
+	}
 }
 
 func (task *Task) Lock() {
@@ -221,8 +225,21 @@ func (task *Task) IsFail() bool {
 	return task.status == TaskStatusFail
 }
 
-func (task *Task) IncreaseBackSourceClientCount() {
+func (task *Task) IncreaseBackSourcePeer(peerID string) {
+
+	task.backSourcePeers = append(task.backSourcePeers, peerID)
 	if task.backSourceLimit.Dec() <= 0 {
 		task.needClientBackSource.Store(false)
 	}
+}
+
+func (task *Task) IsBackSourcePeer(peerID string) bool {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	for i := range task.backSourcePeers {
+		if task.backSourcePeers[i] == peerID {
+			return true
+		}
+	}
+	return false
 }
