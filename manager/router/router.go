@@ -21,6 +21,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/middlewares"
 	"d7y.io/dragonfly/v2/manager/service"
 	"github.com/casbin/casbin/v2"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
@@ -41,10 +42,15 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	p := ginprometheus.NewPrometheus("dragonfly_manager")
 	p.Use(r)
 
+	// CORS
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+
 	// Middleware
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(middlewares.Error())
+	r.Use(cors.New(corsConfig))
 
 	rbac := middlewares.RBAC(enforcer)
 	jwt, err := middlewares.Jwt(service)
