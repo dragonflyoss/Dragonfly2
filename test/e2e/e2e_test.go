@@ -30,7 +30,7 @@ var _ = BeforeSuite(func() {
 	out, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
 	gitCommit := strings.Fields(string(out))[0]
-	fmt.Printf("git merge commit: %s", gitCommit)
+	fmt.Printf("git merge commit: %s\n", gitCommit)
 
 	out, err = e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
 		"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
@@ -42,7 +42,7 @@ var _ = BeforeSuite(func() {
 	out, err = pod.Command("dfget", "version").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
 	dfgetGitCommit := strings.Fields(string(out))[7]
-	fmt.Printf("dfget merge commit: %s", gitCommit)
+	fmt.Printf("dfget merge commit: %s\n", gitCommit)
 
 	Expect(gitCommit).To(Equal(dfgetGitCommit))
 })
