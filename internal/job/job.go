@@ -87,8 +87,8 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 }
 
 func ping(options *redis.Options) error {
-	backendClient := redis.NewClient(options)
-	return backendClient.Ping(context.Background()).Err()
+	client := redis.NewClient(options)
+	return client.Ping(context.Background()).Err()
 }
 
 func (t *Job) RegisterJob(namedJobFuncs map[string]interface{}) error {
