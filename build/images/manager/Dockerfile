@@ -22,7 +22,5 @@ ENV PATH=/opt/dragonfly/bin:$PATH
 RUN mkdir -p /opt/dragonfly/bin/manager/console
 COPY --from=server-builder /opt/dragonfly/bin/manager /opt/dragonfly/bin/server
 COPY --from=console-builder /build/dist /opt/dragonfly/bin/manager/console/dist
-RUN apk --no-cache add curl
-
 EXPOSE 8080 65003
 ENTRYPOINT ["/opt/dragonfly/bin/server"]
