@@ -51,12 +51,20 @@ type Job struct {
 
 func New(cfg *Config, queue Queue) (*Job, error) {
 	broker := fmt.Sprintf("redis://%s@%s:%d/%d", cfg.Password, cfg.Host, cfg.Port, cfg.BrokerDB)
-	if err := ping(broker); err != nil {
+	if err := ping(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Password: cfg.Password,
+		DB:       cfg.BrokerDB,
+	}); err != nil {
 		return nil, err
 	}
 
 	backend := fmt.Sprintf("redis://%s@%s:%d/%d", cfg.Password, cfg.Host, cfg.Port, cfg.BackendDB)
-	if err := ping(backend); err != nil {
+	if err := ping(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Password: cfg.Password,
+		DB:       cfg.BackendDB,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -78,13 +86,9 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 	}, nil
 }
 
-func ping(url string) error {
-	options, err := redis.ParseURL(url)
-	if err != nil {
-		return err
-	}
-	client := redis.NewClient(options)
-	return client.Ping(context.Background()).Err()
+func ping(options *redis.Options) error {
+	backendClient := redis.NewClient(options)
+	return backendClient.Ping(context.Background()).Err()
 }
 
 func (t *Job) RegisterJob(namedJobFuncs map[string]interface{}) error {
