@@ -33,9 +33,6 @@ manager:
   schedulerClusterID: 1
   keepAlive:
     interval: 1000000000
-    retryMaxAttempts: 100
-    retryInitBackOff: 100
-    retryMaxBackOff: 100
 
 host:
   idc: foo

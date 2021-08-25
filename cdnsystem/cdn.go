@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
@@ -32,10 +31,10 @@ import (
 	"d7y.io/dragonfly/v2/cdnsystem/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdnsystem/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -45,8 +44,7 @@ import (
 type Server struct {
 	config        *config.Config
 	seedServer    server.SeederServer
-	managerClient manager.ManagerClient
-	managerConn   *grpc.ClientConn
+	managerClient managerclient.Client
 }
 
 // New creates a brand new server instance.
@@ -60,55 +58,62 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	// Progress manager
+	// Initialize progress manager
 	progressMgr, err := progress.NewManager()
 	if err != nil {
 		return nil, errors.Wrapf(err, "create progress manager")
 	}
 
-	// Storage manager
+	// Initialize storage manager
 	storageMgr, ok := storage.Get(cfg.StorageMode)
 	if !ok {
 		return nil, fmt.Errorf("can not find storage pattern %s", cfg.StorageMode)
 	}
-	// CDN manager
+
+	// Initialize CDN manager
 	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create cdn manager")
 	}
-	// Task manager
+
+	// Initialize task manager
 	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create task manager")
 	}
+
+	// Initialize storage manager
 	storageMgr.Initialize(taskMgr)
-	// GC manager
 	if err != nil {
-		return nil, errors.Wrapf(err, "create gc manager")
+		return nil, errors.Wrapf(err, "create storage manager")
 	}
 
+	// Initialize storage manager
 	cdnSeedServer, err := rpcserver.NewCdnSeedServer(cfg, taskMgr)
 	if err != nil {
 		return nil, errors.Wrap(err, "create seedServer")
 	}
 	s.seedServer = cdnSeedServer
 
-	// Manager client
+	// Initialize manager client
 	if cfg.Manager.Addr != "" {
-		managerConn, err := grpc.Dial(
-			cfg.Manager.Addr,
-			grpc.WithInsecure(),
-			grpc.WithBlock(),
-		)
+		managerClient, err := managerclient.New(cfg.Manager.Addr)
 		if err != nil {
-			logger.Errorf("did not connect: %v", err)
 			return nil, err
 		}
-		s.managerClient = manager.NewManagerClient(managerConn)
-		s.managerConn = managerConn
+		s.managerClient = managerClient
 
 		// Register to manager
-		if err := s.register(context.Background()); err != nil {
+		if _, err := s.managerClient.UpdateCDN(&manager.UpdateCDNRequest{
+			SourceType:   manager.SourceType_CDN_SOURCE,
+			HostName:     iputils.HostName,
+			Ip:           s.config.AdvertiseIP,
+			Port:         int32(s.config.ListenPort),
+			DownloadPort: int32(s.config.DownloadPort),
+			Idc:          s.config.Host.IDC,
+			Location:     s.config.Host.Location,
+			CdnClusterId: uint64(s.config.Manager.CDNClusterID),
+		}); err != nil {
 			return nil, err
 		}
 	}
@@ -123,28 +128,27 @@ func (s *Server) Serve() (err error) {
 		}
 	}()
 
+	// Start GC
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	// Start gc
 	err = gc.StartGC(ctx)
 	if err != nil {
 		return err
 	}
 
+	// Serve Keepalive
 	if s.managerClient != nil {
-		go retry.Run(ctx, func() (interface{}, bool, error) {
-			if err := s.keepAlive(ctx); err != nil {
-				logger.Errorf("keepalive to manager failed %v", err)
-				return nil, false, err
-			}
-			return nil, false, nil
-		},
-			s.config.Manager.KeepAlive.RetryInitBackOff,
-			s.config.Manager.KeepAlive.RetryMaxBackOff,
-			s.config.Manager.KeepAlive.RetryMaxAttempts,
-			nil,
-		)
+		go func() {
+			logger.Info("start keepalive to manager")
+			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
+				HostName:   iputils.HostName,
+				SourceType: manager.SourceType_CDN_SOURCE,
+				ClusterId:  uint64(s.config.Manager.CDNClusterID),
+			})
+		}()
 	}
+
+	// Serve GRPC
 	var opts []grpc.ServerOption
 	if s.config.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
@@ -157,56 +161,11 @@ func (s *Server) Serve() (err error) {
 }
 
 func (s *Server) Stop() {
-	s.managerConn.Close()
-}
-
-func (s *Server) register(ctx context.Context) error {
-	ip := s.config.AdvertiseIP
-	port := int32(s.config.ListenPort)
-	idc := s.config.Host.IDC
-	location := s.config.Host.Location
-	downloadPort := int32(s.config.DownloadPort)
-	cdnClusterID := uint64(s.config.Manager.CDNClusterID)
-
-	cdn, err := s.managerClient.UpdateCDN(ctx, &manager.UpdateCDNRequest{
-		SourceType:   manager.SourceType_CDN_SOURCE,
-		HostName:     iputils.HostName,
-		Ip:           ip,
-		Port:         port,
-		Idc:          idc,
-		Location:     location,
-		DownloadPort: downloadPort,
-		CdnClusterId: cdnClusterID,
-	})
-	if err != nil {
-		logger.Errorf("update cdn %s to manager failed %v", cdn.HostName, err)
-		return err
-	}
-	logger.Infof("update cdn %s to manager successfully", cdn.HostName)
-	return nil
-}
-
-func (s *Server) keepAlive(ctx context.Context) error {
-	cdnClusterID := uint64(s.config.Manager.CDNClusterID)
-	stream, err := s.managerClient.KeepAlive(ctx)
-	if err != nil {
-		logger.Errorf("create keepalive failed: %v\n", err)
-		return err
+	if s.managerClient != nil {
+		s.managerClient.Close()
+		logger.Info("manager client closed")
 	}
 
-	tick := time.NewTicker(s.config.Manager.KeepAlive.Interval)
-	hostName := iputils.HostName
-	for {
-		select {
-		case <-tick.C:
-			if err := stream.Send(&manager.KeepAliveRequest{
-				HostName:   hostName,
-				SourceType: manager.SourceType_CDN_SOURCE,
-				ClusterId:  cdnClusterID,
-			}); err != nil {
-				logger.Errorf("%s send keepalive failed: %v\n", hostName, err)
-				return err
-			}
-		}
-	}
+	rpc.StopServer()
+	logger.Info("grpc server closed under request")
 }
