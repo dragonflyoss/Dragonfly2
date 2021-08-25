@@ -50,7 +50,7 @@ var _ = Describe("Preheat with manager", func() {
 			//sha256sum1 := strings.Split(string(out), " ")[0]
 
 			// download file
-			curlcmd := managerPods[0].Command("curl", "-s", "-X", "POST", "-H", `'Content-Type:application/json'`,
+			curlcmd := managerPods[0].Command("curl", "-s", "-X", "POST", "-H", `"Content-Type:application/json"`,
 				"-d", fmt.Sprintf(`'{"type":"file","url":"%s"}'`, url), "http://dragonfly-manager.dragonfly-system.svc:8080/api/v1/preheats")
 			fmt.Println(curlcmd.String())
 			out, err = curlcmd.CombinedOutput()
