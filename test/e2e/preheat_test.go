@@ -38,30 +38,31 @@ var _ = Describe("Preheat with manager", func() {
 				managerPods[i] = e2eutil.NewPodExec(dragonflyNamespace, podName, "manager")
 			}
 
-			for _, v := range e2eutil.GetFileList() {
-				url := e2eutil.GetFileURL(v)
-				fmt.Println("download url " + url)
+			//for _, v := range e2eutil.GetFileList() {
+			//url := e2eutil.GetFileURL(v)
+			url := "https://github.com/"
+			fmt.Println("download url " + url)
 
-				// get original file digest
-				out, err = e2eutil.DockerCommand("sha256sum", v).CombinedOutput()
-				fmt.Println(string(out))
-				Expect(err).NotTo(HaveOccurred())
-				//sha256sum1 := strings.Split(string(out), " ")[0]
+			// get original file digest
+			//out, err = e2eutil.DockerCommand("sha256sum", v).CombinedOutput()
+			//fmt.Println(string(out))
+			//Expect(err).NotTo(HaveOccurred())
+			//sha256sum1 := strings.Split(string(out), " ")[0]
 
-				// download file
-				out, err = managerPods[0].Command("curl", "-X", "POST", "-H", `'Content-Type:application/json'`,
-					"-d", fmt.Sprintf(`'{"type":"file","url":"%s"}'`, url), "localhost:8080/api/v1/preheats/").CombinedOutput()
-				fmt.Println(string(out))
-				Expect(err).NotTo(HaveOccurred())
+			// download file
+			out, err = managerPods[0].Command("curl", "-s", "-X", "POST", "-H", `'Content-Type:application/json'`,
+				"-d", fmt.Sprintf(`'{"type":"file","url":"%s"}'`, url), "localhost:8080/api/v1/preheats/").CombinedOutput()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
 
-				// get downloaded file digest
-				//out, err = pod.Command("sha256sum", "/tmp/d7y.out").CombinedOutput()
-				//fmt.Println(string(out))
-				//Expect(err).NotTo(HaveOccurred())
-				//sha256sum2 := strings.Split(string(out), " ")[0]
-				//
-				//Expect(sha256sum1).To(Equal(sha256sum2))
-			}
+			// get downloaded file digest
+			//out, err = pod.Command("sha256sum", "/tmp/d7y.out").CombinedOutput()
+			//fmt.Println(string(out))
+			//Expect(err).NotTo(HaveOccurred())
+			//sha256sum2 := strings.Split(string(out), " ")[0]
+			//
+			//Expect(sha256sum1).To(Equal(sha256sum2))
+			//}
 		})
 	})
 })
