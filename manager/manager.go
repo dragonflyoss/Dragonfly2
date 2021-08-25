@@ -91,6 +91,12 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Initialize roles and check roles
+	err = rbac.InitRole(enforcer, router)
+	if err != nil {
+		return nil, err
+	}
 	restServer := &http.Server{
 		Addr:    cfg.Server.REST.Addr,
 		Handler: router,

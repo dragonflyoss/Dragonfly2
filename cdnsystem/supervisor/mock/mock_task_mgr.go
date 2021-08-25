@@ -50,6 +50,20 @@ func (mr *MockSeedTaskMgrMockRecorder) Delete(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSeedTaskMgr)(nil).Delete), arg0)
 }
 
+// Exist mocks base method.
+func (m *MockSeedTaskMgr) Exist(arg0 string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Exist", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// Exist indicates an expected call of Exist.
+func (mr *MockSeedTaskMgrMockRecorder) Exist(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exist", reflect.TypeOf((*MockSeedTaskMgr)(nil).Exist), arg0)
+}
+
 // Get mocks base method.
 func (m *MockSeedTaskMgr) Get(arg0 string) (*types.SeedTask, error) {
 	m.ctrl.T.Helper()
