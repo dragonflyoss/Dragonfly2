@@ -212,6 +212,8 @@ definitions:
     properties:
       bio:
         type: string
+      cdn_cluster_id:
+        type: integer
       client_config:
         additionalProperties: true
         type: object
@@ -333,6 +335,8 @@ definitions:
     properties:
       bio:
         type: string
+      cdn_cluster_id:
+        type: integer
       client_config:
         additionalProperties: true
         type: object

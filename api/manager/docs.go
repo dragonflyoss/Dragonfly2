@@ -1839,6 +1839,9 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
+                "cdn_cluster_id": {
+                    "type": "integer"
+                },
                 "client_config": {
                     "type": "object",
                     "additionalProperties": true
@@ -2011,6 +2014,9 @@ var doc = `{
             "properties": {
                 "bio": {
                     "type": "string"
+                },
+                "cdn_cluster_id": {
+                    "type": "integer"
                 },
                 "client_config": {
                     "type": "object",

@@ -122,7 +122,7 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	c.GET(":id", h.GetCDN)
 	c.GET("", h.GetCDNs)
 
-	// roles
+	// Role
 	re := apiv1.Group("/roles", jwt.MiddlewareFunc(), rbac)
 	re.POST("", h.CreateRole)
 	re.GET("", h.GetRoles)
