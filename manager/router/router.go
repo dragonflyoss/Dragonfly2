@@ -43,7 +43,7 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// Logging to a file.
+	// Logging to a file
 	if !console {
 		gin.DisableConsoleColor()
 		logDir := filepath.Join(dfpath.LogDir, "manager")
