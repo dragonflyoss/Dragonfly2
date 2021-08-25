@@ -79,7 +79,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 	// Initialize REST server
 	restService := service.NewREST(db, cache, job, enforcer)
-	router, err := router.Init(cfg.Verbose, cfg.Server.PublicPath, restService, enforcer)
+	router, err := router.Init(cfg.Console, cfg.Verbose, cfg.Server.PublicPath, restService, enforcer)
 	if err != nil {
 		return nil, err
 	}
