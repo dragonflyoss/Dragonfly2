@@ -51,7 +51,7 @@ var _ = Describe("Preheat with manager", func() {
 
 			// download file
 			out, err = managerPods[0].Command("curl", "-s", "-X", "POST", "-H", `'Content-Type:application/json'`,
-				"-d", fmt.Sprintf(`'{"type":"file","url":"%s"}'`, url), "localhost:8080/api/v1/preheats/").CombinedOutput()
+				"-d", fmt.Sprintf(`'{"type":"file","url":"%s"}'`, url), "localhost:8080/api/v1/preheats").CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 
