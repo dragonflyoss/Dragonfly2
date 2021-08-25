@@ -17,6 +17,11 @@
 package router
 
 import (
+	"io"
+	"os"
+	"path/filepath"
+
+	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
 	"d7y.io/dragonfly/v2/manager/service"
@@ -28,10 +33,22 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func Init(verbose bool, publicPath string, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
+const (
+	GinLogFileName = "gin.log"
+)
+
+func Init(console bool, verbose bool, publicPath string, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
 	if !verbose {
 		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// Logging to a file.
+	if !console {
+		gin.DisableConsoleColor()
+		logDir := filepath.Join(dfpath.LogDir, "manager")
+		f, _ := os.Create(filepath.Join(logDir, GinLogFileName))
+		gin.DefaultWriter = io.MultiWriter(f)
 	}
 
 	r := gin.New()
