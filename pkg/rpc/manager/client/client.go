@@ -6,10 +6,15 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
 )
 
 const (
-	contextTimeout = 2 * time.Minute
+	contextTimeout    = 2 * time.Minute
+	backoffBaseDelay  = 1 * time.Second
+	backoffMultiplier = 1.6
+	backoffJitter     = 0.2
+	backoffMaxDelay   = 10 * time.Second
 )
 
 type Client interface {
@@ -30,6 +35,14 @@ func New(target string) (Client, error) {
 		target,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
+		grpc.WithConnectParams(grpc.ConnectParams{
+			Backoff: backoff.Config{
+				BaseDelay:  backoffBaseDelay,
+				Multiplier: backoffMultiplier,
+				Jitter:     backoffJitter,
+				MaxDelay:   backoffMaxDelay,
+			},
+		}),
 	)
 	if err != nil {
 		return nil, err

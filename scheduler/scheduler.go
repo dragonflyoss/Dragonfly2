@@ -141,12 +141,12 @@ func (s *Server) Serve() error {
 	// Serve Keepalive
 	if s.managerClient != nil {
 		go func() {
+			logger.Info("start keepalive to manager")
 			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
 				HostName:   s.config.Server.Host,
 				SourceType: manager.SourceType_SCHEDULER_SOURCE,
 				ClusterId:  uint64(s.config.Manager.SchedulerClusterID),
 			})
-			logger.Info("keepalive to manager successfully")
 		}()
 	}
 
