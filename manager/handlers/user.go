@@ -49,6 +49,37 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, user)
 }
 
+// @Summary Reset Password For User
+// @Description reset password for user by json config
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param User body types.ResetPasswordRequest true "User"
+// @Success 200
+// @Failure 400
+// @Failure 500
+// @Router /users/:id/reset_password [post]
+func (h *Handlers) ResetPassword(ctx *gin.Context) {
+	var params types.UserIDRequest
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+	var json types.ResetPasswordRequest
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	err := h.Service.ResetPassword(params.ID, ctx.GetString("userName"), json)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
 // @Summary Delete Role For User
 // @Description Delete Role For User by uri config
 // @Tags users

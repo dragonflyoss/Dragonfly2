@@ -21,6 +21,11 @@ type SignInRequest struct {
 	Password string `form:"password" binding:"required,min=8,max=20"`
 }
 
+type ResetPasswordRequest struct {
+	OldPassword string `form:"old_password" binding:"required,min=8,max=20"`
+	NewPassword string `form:"new_password" binding:"required,min=8,max=20"`
+}
+
 type SignUpRequest struct {
 	SignInRequest
 	Email    string `form:"email" binding:"required,email"`
@@ -29,8 +34,11 @@ type SignUpRequest struct {
 	Location string `form:"location" binding:"omitempty"`
 	BIO      string `form:"bio" binding:"omitempty"`
 }
+type UserIDRequest struct {
+	ID uint `uri:"id" binding:"required,min=1"`
+}
 
 type RoleRequest struct {
+	UserIDRequest
 	RoleName string `uri:"role_name" binding:"required,min=1"`
-	ID       uint   `uri:"id" binding:"required,min=1"`
 }

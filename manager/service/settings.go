@@ -1,11 +1,21 @@
 package service
 
 import (
+	"errors"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
+var AvaliableSettings = []string{
+	"server_domain",
+}
+
 func (s *rest) CreateSetting(json types.CreateSettingRequest) (*model.Settings, error) {
+	if !stringutils.Contains(AvaliableSettings, json.Key) {
+		return nil, errors.New("invalid setting key")
+	}
 	setting := model.Settings{
 		Key:   json.Key,
 		Value: json.Value,
