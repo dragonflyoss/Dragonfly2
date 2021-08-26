@@ -61,6 +61,7 @@ func init() {
 	}
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig.InsecureSkipVerify = true
 	transport.DialContext = (&net.Dialer{
 		Timeout:   3 * time.Second,
 		KeepAlive: 30 * time.Second,
