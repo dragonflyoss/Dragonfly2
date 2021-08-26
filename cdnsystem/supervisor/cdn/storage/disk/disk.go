@@ -236,31 +236,17 @@ func (s *diskStorageMgr) ResetRepo(task *types.SeedTask) error {
 		logger.WithTaskID(task.TaskID).Errorf("reset repo: failed to delete task files: %v", err)
 	}
 	// 判断是否有足够空间存放
-	return s.tryDiskSpace(task.URL, task.TaskID, task.SourceFileLength)
+	return s.tryDiskSpace(task.SourceFileLength)
 }
 
-func (s *diskStorageMgr) tryDiskSpace(url, taskID string, fileLength int64) error {
+func (s *diskStorageMgr) tryDiskSpace(fileLength int64) error {
 	freeSpace, err := s.diskDriver.GetFreeSpace()
 	if err != nil {
-		if cdnerrors.IsFileNotExist(err) {
-			err = s.diskDriver.CreateBaseDir()
-			if err != nil {
-				return err
-			}
-			freeSpace, err = s.diskDriver.GetFreeSpace()
-			if err != nil {
-				return fmt.Errorf("get free space: %v", err)
-			}
-		} else {
-			return fmt.Errorf("get free space: %v", err)
-		}
+		return nil
 	}
-	if unit.Bytes(fileLength) < freeSpace {
+	if unit.Bytes(fileLength) > freeSpace {
 		// TODO(zzy987) make error type public
 		return fmt.Errorf("not enough free space left")
-	}
-	if fileLength == 0 {
-		return fmt.Errorf("file length is 0")
 	}
 
 	remainder := atomic.NewInt64(0)
@@ -293,8 +279,7 @@ func (s *diskStorageMgr) tryDiskSpace(url, taskID string, fileLength int64) erro
 		s.cleaner.GC("disk", true)
 		freeSpace, err = s.diskDriver.GetFreeSpace()
 		if err != nil {
-			// TODO(zzy987) think of this, freeSpace = 0 or return err?
-			freeSpace = 0
+			return nil
 		}
 		canUseDisk = freeSpace-unit.Bytes(remainder.Load()) >= unit.Bytes(fileLength)
 	}
