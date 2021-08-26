@@ -47,6 +47,7 @@ const (
 	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
 	reasonContextCanceled       = "context canceled"
 	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
+	reasonBackSourceDisabled    = "download from source disabled"
 
 	failedReasonNotSet = "unknown"
 	failedCodeNotSet   = 0
