@@ -125,7 +125,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	_, pt, _, err := newFilePeerTask(ctx,
 		ptm.host,
 		ptm.pieceManager,
-		&req.PeerTaskRequest,
+		req,
 		ptm.schedulerClient,
 		ptm.schedulerOption,
 		0)
@@ -243,7 +243,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	_, pt, _, err := newFilePeerTask(ctx,
 		ptm.host,
 		ptm.pieceManager,
-		&req.PeerTaskRequest,
+		req,
 		ptm.schedulerClient,
 		ptm.schedulerOption,
 		0)

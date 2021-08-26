@@ -147,8 +147,12 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	}
 	// TODO ensure scheduler is ok first
 	start := time.Now()
+	limit := ptm.perPeerRateLimit
+	if req.Limit > 0 {
+		limit = rate.Limit(req.Limit)
+	}
 	ctx, pt, tiny, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager,
-		&req.PeerTaskRequest, ptm.schedulerClient, ptm.schedulerOption, ptm.perPeerRateLimit)
+		req, ptm.schedulerClient, ptm.schedulerOption, limit)
 	if err != nil {
 		return nil, nil, err
 	}

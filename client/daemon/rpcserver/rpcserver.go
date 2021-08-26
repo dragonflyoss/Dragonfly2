@@ -144,7 +144,11 @@ func (m *server) Download(ctx context.Context,
 			PeerId:   clientutil.GenPeerID(m.peerHost),
 			PeerHost: m.peerHost,
 		},
-		Output: req.Output,
+		Output:            req.Output,
+		Limit:             req.Limit,
+		DisableBackSource: req.DisableBackSource,
+		Pattern:           req.Pattern,
+		Callsystem:        req.Callsystem,
 	}
 	log := logger.With("peer", peerTask.PeerId, "component", "downloadService")
 
