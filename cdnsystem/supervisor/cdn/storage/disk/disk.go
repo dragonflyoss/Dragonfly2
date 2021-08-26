@@ -20,8 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"path"
 	"strings"
 	"time"
+
+	"go.uber.org/atomic"
 
 	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
@@ -131,7 +135,7 @@ func (s *diskStorageMgr) GC() error {
 	for _, taskID := range gcTaskIDs {
 		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
-		if s.taskMgr.Exist(taskID) {
+		if _, exist := s.taskMgr.Exist(taskID); exist {
 			synclock.UnLock(taskID, false)
 			continue
 		}
@@ -228,5 +232,74 @@ func (s *diskStorageMgr) DeleteTask(taskID string) error {
 }
 
 func (s *diskStorageMgr) ResetRepo(task *types.SeedTask) error {
-	return s.DeleteTask(task.TaskID)
+	if err := s.DeleteTask(task.TaskID); err != nil {
+		logger.WithTaskID(task.TaskID).Errorf("reset repo: failed to delete task files: %v", err)
+	}
+	// 判断是否有足够空间存放
+	return s.tryDiskSpace(task.URL, task.TaskID, task.SourceFileLength)
+}
+
+func (s *diskStorageMgr) tryDiskSpace(url, taskID string, fileLength int64) error {
+	freeSpace, err := s.diskDriver.GetFreeSpace()
+	if err != nil {
+		if cdnerrors.IsFileNotExist(err) {
+			err = s.diskDriver.CreateBaseDir()
+			if err != nil {
+				return err
+			}
+			freeSpace, err = s.diskDriver.GetFreeSpace()
+			if err != nil {
+				return fmt.Errorf("get free space: %v", err)
+			}
+		} else {
+			return fmt.Errorf("get free space: %v", err)
+		}
+	}
+	if unit.Bytes(fileLength) < freeSpace {
+		// TODO(zzy987) make error type public
+		return fmt.Errorf("not enough free space left")
+	}
+	if fileLength == 0 {
+		return fmt.Errorf("file length is 0")
+	}
+
+	remainder := atomic.NewInt64(0)
+	s.diskDriver.Walk(&storedriver.Raw{
+		WalkFn: func(filePath string, info os.FileInfo, err error) error {
+			if fileutils.IsRegular(filePath) {
+				taskID := path.Base(filePath)
+				task, exist := s.taskMgr.Exist(taskID)
+				if exist {
+					var totalLen int64 = 0
+					if task.CdnFileLength > 0 {
+						totalLen = task.CdnFileLength
+					} else {
+						totalLen = task.SourceFileLength
+					}
+					if totalLen > 0 {
+						remainder.Add(totalLen - info.Size())
+					}
+				} else {
+					logger.Warnf("failed to get task: %s: %v", taskID, err)
+				}
+			}
+			return nil
+		},
+	})
+
+	canUseDisk := freeSpace-unit.Bytes(remainder.Load()) >= unit.Bytes(fileLength)
+	if !canUseDisk {
+		// 如果剩余空间过小，则强制执行一次fullgc后在检查是否满足
+		s.cleaner.GC("disk", true)
+		freeSpace, err = s.diskDriver.GetFreeSpace()
+		if err != nil {
+			// TODO(zzy987) think of this, freeSpace = 0 or return err?
+			freeSpace = 0
+		}
+		canUseDisk = freeSpace-unit.Bytes(remainder.Load()) >= unit.Bytes(fileLength)
+	}
+	if canUseDisk {
+		return nil
+	}
+	return fmt.Errorf("not enough free space left")
 }

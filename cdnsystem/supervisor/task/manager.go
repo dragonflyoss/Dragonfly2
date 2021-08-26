@@ -19,7 +19,6 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"d7y.io/dragonfly/v2/cdnsystem/config"
@@ -181,13 +180,9 @@ func (tm Manager) Get(taskID string) (*types.SeedTask, error) {
 	return task, err
 }
 
-func (tm Manager) Exist(taskID string) bool {
-	_, err := tm.getTask(taskID)
-	return err == nil || !cdnerrors.IsDataNotFound(err)
-}
-
-func (tm Manager) GetAccessTime() (*syncmap.SyncMap, error) {
-	return tm.accessTimeMap, nil
+func (tm Manager) Exist(taskID string) (*types.SeedTask, bool) {
+	task, err := tm.getTask(taskID)
+	return task, err == nil || !cdnerrors.IsDataNotFound(err)
 }
 
 func (tm Manager) Delete(taskID string) error {
@@ -215,10 +210,7 @@ func (tm *Manager) GC() error {
 	var removedTaskCount int
 	startTime := time.Now()
 	// get all taskIDs and the corresponding accessTime
-	taskAccessMap, err := tm.GetAccessTime()
-	if err != nil {
-		return fmt.Errorf("gc tasks: failed to get task accessTime map for GC: %v", err)
-	}
+	taskAccessMap := tm.accessTimeMap
 
 	// range all tasks and determine whether they are expired
 	taskIDs := taskAccessMap.ListKeyAsStringSlice()

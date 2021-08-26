@@ -177,10 +177,7 @@ func (h *hybridStorageMgr) gcTasks(gcTaskIDs []string, isDisk bool) int {
 	for _, taskID := range gcTaskIDs {
 		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
-		if _, err := h.taskMgr.Get(taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
-			if err != nil {
-				logger.GcLogger.With("type", "hybrid").Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
-			}
+		if _, exist := h.taskMgr.Exist(taskID); exist {
 			synclock.UnLock(taskID, false)
 			continue
 		}
@@ -353,8 +350,8 @@ func (h *hybridStorageMgr) tryShmSpace(url, taskID string, fileLength int64) (st
 			WalkFn: func(filePath string, info os.FileInfo, err error) error {
 				if fileutils.IsRegular(filePath) {
 					taskID := path.Base(filePath)
-					task, err := h.taskMgr.Get(taskID)
-					if err == nil {
+					task, exist := h.taskMgr.Exist(taskID)
+					if exist {
 						var totalLen int64 = 0
 						if task.CdnFileLength > 0 {
 							totalLen = task.CdnFileLength
