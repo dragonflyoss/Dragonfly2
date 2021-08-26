@@ -17,7 +17,6 @@
 package config
 
 import (
-	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -28,6 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
@@ -176,11 +176,6 @@ func (d *dynconfig) getCDNFromDirPath() ([]*CDN, error) {
 	return data, nil
 }
 
-type managerClient struct {
-	manager.ManagerClient
-	SchedulerClusterID uint
-}
-
 func (d *dynconfig) Register(l Observer) {
 	d.observers[l] = struct{}{}
 }
@@ -229,15 +224,20 @@ func (d *dynconfig) Stop() {
 	close(d.done)
 }
 
-func NewManagerClient(client manager.ManagerClient, schedulerClusterID uint) dc.ManagerClient {
+type managerClient struct {
+	managerclient.Client
+	SchedulerClusterID uint
+}
+
+func NewManagerClient(client managerclient.Client, schedulerClusterID uint) dc.ManagerClient {
 	return &managerClient{
-		ManagerClient:      client,
+		Client:             client,
 		SchedulerClusterID: schedulerClusterID,
 	}
 }
 
 func (mc *managerClient) Get() (interface{}, error) {
-	scheduler, err := mc.GetScheduler(context.Background(), &manager.GetSchedulerRequest{
+	scheduler, err := mc.GetScheduler(&manager.GetSchedulerRequest{
 		HostName:           iputils.HostName,
 		SourceType:         manager.SourceType_SCHEDULER_SOURCE,
 		SchedulerClusterId: uint64(mc.SchedulerClusterID),

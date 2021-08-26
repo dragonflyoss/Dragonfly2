@@ -54,10 +54,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			Addr:               "127.0.0.1:65003",
 			SchedulerClusterID: 1,
 			KeepAlive: KeepAliveConfig{
-				Interval:         1 * time.Second,
-				RetryMaxAttempts: 100,
-				RetryInitBackOff: 100,
-				RetryMaxBackOff:  100,
+				Interval: 1 * time.Second,
 			},
 		},
 		Host: &HostConfig{
