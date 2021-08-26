@@ -30,8 +30,9 @@ import (
 )
 
 type REST interface {
-	SignIn(json types.SignInRequest) (*model.User, error)
-	SignUp(json types.SignUpRequest) (*model.User, error)
+	SignIn(types.SignInRequest) (*model.User, error)
+	SignUp(types.SignUpRequest) (*model.User, error)
+	ResetPassword(uint, string, types.ResetPasswordRequest) error
 
 	AddRoleForUser(uint, string) error
 	DeleteRoleForUser(uint, string) error

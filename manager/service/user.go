@@ -17,6 +17,8 @@
 package service
 
 import (
+	"errors"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"golang.org/x/crypto/bcrypt"
@@ -36,6 +38,48 @@ func (s *rest) SignIn(json types.SignInRequest) (*model.User, error) {
 	}
 
 	return &user, nil
+}
+
+func (s *rest) ResetPassword(uid uint, userName string, json types.ResetPasswordRequest) error {
+	user := model.User{}
+	if err := s.db.First(&user, model.User{
+		Name: userName,
+	}).Error; err != nil {
+		return err
+	}
+
+	updatePassword := func(uid uint, password string) error {
+		user := model.User{}
+		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(json.NewPassword), bcrypt.MinCost)
+		if err != nil {
+			return err
+		}
+		if err := s.db.First(&user, uid).Updates(model.User{
+			EncryptedPassword: string(encryptedPasswordBytes),
+		}).Error; err != nil {
+			return err
+		}
+		return nil
+
+	}
+
+	if user.ID == uid {
+		err := bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(json.OldPassword))
+		if err != nil {
+			return err
+		}
+		return updatePassword(uid, json.NewPassword)
+	} else {
+		// validate user permission
+		has, err := s.enforcer.Enforce(userName, "users", "*")
+		if err != nil {
+			return err
+		}
+		if !has {
+			return errors.New("permission deny")
+		}
+		return updatePassword(uid, json.NewPassword)
+	}
 }
 
 func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
