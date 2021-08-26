@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: curl
+  namespace: dragonfly-e2e
+spec:
+  selector:
+    matchLabels:
+      app: dragonfly
+      component: curl
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: dragonfly
+        component: file-server
+    spec:
+      containers:
+      - name: curl
+        # Pull image with dragonfly
+        image: d7y.io/library/appropriate/curl:latest
+        imagePullPolicy: "IfNotPresent"
+        volumeMounts:
+        - mountPath: /curl
+          name: curl-volume
+      volumes:
+      - name: app-volume
+        emptyDir: {}
