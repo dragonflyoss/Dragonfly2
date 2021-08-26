@@ -83,8 +83,11 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	ai.POST("/signin", jwt.LoginHandler)
 	ai.POST("/signout", jwt.LogoutHandler)
 	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/:id/roles/:role_name", h.AddRoleToUser)
-	ai.DELETE("/:id/roles/:role_name", h.DeleteRoleForUser)
+	ai.POST("/reset_password", h.ResetPassword)
+
+	ai.POST("/:id/roles/:role_name", h.AddRoleToUser, jwt.MiddlewareFunc(), rbac)
+	ai.DELETE("/:id/roles/:role_name", h.DeleteRoleForUser, jwt.MiddlewareFunc(), rbac)
+
 	ai.POST("/signup", h.SignUp)
 
 	// Scheduler Cluster
