@@ -133,10 +133,7 @@ func NewDefaultBaseProperties() *BaseProperties {
 		AdvertiseIP:             iputils.HostIP,
 		Manager: ManagerConfig{
 			KeepAlive: KeepAliveConfig{
-				Interval:         DefaultKeepAliveInterval,
-				RetryMaxAttempts: DefaultKeepAliveRetryMaxAttempts,
-				RetryInitBackOff: DefaultKeepAliveRetryInitBackOff,
-				RetryMaxBackOff:  DefaultKeepAliveRetryMaxBackOff,
+				Interval: DefaultKeepAliveInterval,
 			},
 		},
 		Host: HostConfig{},
@@ -208,15 +205,6 @@ type ManagerConfig struct {
 type KeepAliveConfig struct {
 	// Keep alive interval
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
-
-	// Keep alive retry max attempts
-	RetryMaxAttempts int `yaml:"retryMaxAttempts" mapstructure:"retryMaxAttempts"`
-
-	// Keep alive retry init backoff
-	RetryInitBackOff float64 `yaml:"retryInitBackOff" mapstructure:"retryInitBackOff"`
-
-	// Keep alive retry max backoff
-	RetryMaxBackOff float64 `yaml:"retryMaxBackOff" mapstructure:"retryMaxBackOff"`
 }
 
 type HostConfig struct {

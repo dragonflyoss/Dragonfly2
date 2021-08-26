@@ -35,6 +35,12 @@ func (s *rest) CreateSchedulerCluster(json types.CreateSchedulerClusterRequest) 
 		return nil, err
 	}
 
+	if json.CDNClusterID > 0 {
+		if err := s.AddSchedulerClusterToCDNCluster(json.CDNClusterID, schedulerCluster.ID); err != nil {
+			return nil, err
+		}
+	}
+
 	return &schedulerCluster, nil
 }
 
@@ -57,6 +63,12 @@ func (s *rest) CreateSchedulerClusterWithSecurityGroupDomain(json types.CreateSc
 
 	if err := s.db.Model(&securityGroup).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 		return nil, err
+	}
+
+	if json.CDNClusterID > 0 {
+		if err := s.AddSchedulerClusterToCDNCluster(json.CDNClusterID, schedulerCluster.ID); err != nil {
+			return nil, err
+		}
 	}
 
 	return &schedulerCluster, nil
@@ -83,6 +95,12 @@ func (s *rest) UpdateSchedulerCluster(id uint, json types.UpdateSchedulerCluster
 		return nil, err
 	}
 
+	if json.CDNClusterID > 0 {
+		if err := s.AddSchedulerClusterToCDNCluster(json.CDNClusterID, schedulerCluster.ID); err != nil {
+			return nil, err
+		}
+	}
+
 	return &schedulerCluster, nil
 }
 
@@ -105,6 +123,12 @@ func (s *rest) UpdateSchedulerClusterWithSecurityGroupDomain(id uint, json types
 
 	if err := s.db.Model(&securityGroup).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 		return nil, err
+	}
+
+	if json.CDNClusterID > 0 {
+		if err := s.AddSchedulerClusterToCDNCluster(json.CDNClusterID, schedulerCluster.ID); err != nil {
+			return nil, err
+		}
 	}
 
 	return &schedulerCluster, nil

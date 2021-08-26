@@ -80,5 +80,7 @@ func runCdnSystem() error {
 	if err != nil {
 		return err
 	}
+
+	dependency.SetupQuitSignalHandler(func() { svr.Stop() })
 	return svr.Serve()
 }

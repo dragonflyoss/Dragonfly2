@@ -17,10 +17,16 @@
 package router
 
 import (
+	"io"
+	"os"
+	"path/filepath"
+
+	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
 	"d7y.io/dragonfly/v2/manager/service"
 	"github.com/casbin/casbin/v2"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
@@ -28,10 +34,22 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func Init(verbose bool, publicPath string, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
+const (
+	GinLogFileName = "gin.log"
+)
+
+func Init(console bool, verbose bool, publicPath string, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
 	if !verbose {
 		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// Logging to a file
+	if !console {
+		gin.DisableConsoleColor()
+		logDir := filepath.Join(dfpath.LogDir, "manager")
+		f, _ := os.Create(filepath.Join(logDir, GinLogFileName))
+		gin.DefaultWriter = io.MultiWriter(f)
 	}
 
 	r := gin.New()
@@ -41,10 +59,15 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	p := ginprometheus.NewPrometheus("dragonfly_manager")
 	p.Use(r)
 
+	// CORS
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+
 	// Middleware
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(middlewares.Error())
+	r.Use(cors.New(corsConfig))
 
 	rbac := middlewares.RBAC(enforcer)
 	jwt, err := middlewares.Jwt(service)
@@ -99,7 +122,7 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	c.GET(":id", h.GetCDN)
 	c.GET("", h.GetCDNs)
 
-	// roles
+	// Role
 	re := apiv1.Group("/roles", jwt.MiddlewareFunc(), rbac)
 	re.POST("", h.CreateRole)
 	re.GET("", h.GetRoles)
