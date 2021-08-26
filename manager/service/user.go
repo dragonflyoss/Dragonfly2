@@ -69,17 +69,16 @@ func (s *rest) ResetPassword(uid uint, userName string, json types.ResetPassword
 			return err
 		}
 		return updatePassword(uid, json.NewPassword)
-	} else {
-		// validate user permission
-		has, err := s.enforcer.Enforce(userName, "users", "*")
-		if err != nil {
-			return err
-		}
-		if !has {
-			return errors.New("permission deny")
-		}
-		return updatePassword(uid, json.NewPassword)
 	}
+	// validate user permission
+	has, err := s.enforcer.Enforce(userName, "users", "*")
+	if err != nil {
+		return err
+	}
+	if !has {
+		return errors.New("permission deny")
+	}
+	return updatePassword(uid, json.NewPassword)
 }
 
 func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
