@@ -7,6 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 
 	"d7y.io/dragonfly/v2/manager/types"
@@ -18,7 +21,7 @@ import (
 
 const (
 	cdnCachePath = "/tmp/cdn/download"
-	preheatUrl   = "http://dragonfly-manager.dragonfly-system.svc:8080/api/v1/preheats"
+	preheatURL   = "http://dragonfly-manager.dragonfly-system.svc:8080/api/v1/preheats"
 )
 
 var _ = Describe("Preheat with manager", func() {
@@ -36,25 +39,25 @@ var _ = Describe("Preheat with manager", func() {
 			}
 
 			for _, v := range e2eutil.GetFileList() {
-				//for _, cdn := range cdnPods {
-				//	cdn.Command("rm", "-rf", cdnCachePath).CombinedOutput()
-				//	cdn.Command("mkdir", cdnCachePath).CombinedOutput()
-				//}
-
 				url := e2eutil.GetFileURL(v)
 				fmt.Println("download url " + url)
 
 				// get original file digest
-				//out, err := e2eutil.DockerCommand("sha256sum", v).CombinedOutput()
-				//fmt.Println(string(out))
-				//Expect(err).NotTo(HaveOccurred())
-				//sha256sum1 := strings.Split(string(out), " ")[0]
-
-				// preheat file
-				out, err := cdnPods[0].Command("curl", "-s", "-X", "POST", "-H", "Content-Type:application/json",
-					"-d", fmt.Sprintf(`{"type":"file","url":"%s"}`, url), preheatUrl).CombinedOutput()
+				out, err := e2eutil.DockerCommand("sha256sum", v).CombinedOutput()
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())
+				sha256sum1 := strings.Split(string(out), " ")[0]
+
+				// preheat file
+				out, err = cdnPods[0].Command("curl", "-s", "-X", "POST", "-H", "Content-Type:application/json",
+					"-d", fmt.Sprintf(`{"type":"file","url":"%s"}`, url), preheatURL).CombinedOutput()
+				fmt.Println(string(out))
+				Expect(err).NotTo(HaveOccurred())
+
+				// generate task_id, also the filename
+				// TODO(zzy987) this tag may not always be right.
+				taskID := idgen.TaskID(url, &base.UrlMeta{Tag: "d7y/manager"})
+				fmt.Println(taskID)
 
 				// wait for success
 				preheatJob := &types.Preheat{}
@@ -63,31 +66,32 @@ var _ = Describe("Preheat with manager", func() {
 				waitForDone(preheatJob, cdnPods[0])
 
 				// get downloaded file digest
-				//var sha256sum2 string
-				//for _, cdn := range cdnPods {
-				//	out, err = cdn.Command("ls", cdnCachePath).CombinedOutput()
-				//	fmt.Println(string(out))
-				//	dir := strings.Split(string(out), "\n")[0]
-				//	if len(dir) != 3 {
-				//		continue
-				//	}
-				//	fmt.Println(dir)
-				//
-				//	out, err = cdn.Command("ls", fmt.Sprintf("%s/%s/", cdnCachePath, dir)).CombinedOutput()
-				//	Expect(err).NotTo(HaveOccurred())
-				//	file := strings.Split(strings.Split(string(out), "\n")[0], ".")[0]
-				//	if len(file) != 64 {
-				//		continue
-				//	}
-				//	fmt.Println(file)
-				//
-				//	out, err = cdn.Command("sha256sum", fmt.Sprintf("%s/%s/%s", cdnCachePath, dir, file)).CombinedOutput()
-				//	fmt.Println(string(out))
-				//	Expect(err).NotTo(HaveOccurred())
-				//	sha256sum2 = strings.Split(string(out), " ")[0]
-				//	break
-				//}
-				//Expect(sha256sum1).To(Equal(sha256sum2))
+				var sha256sum2 string
+				for _, cdn := range cdnPods {
+					out, err = cdn.Command("ls", cdnCachePath).CombinedOutput()
+					Expect(err).NotTo(HaveOccurred())
+					dir := taskID[0:3]
+					if !strings.Contains(string(out), dir) {
+						continue
+					}
+
+					out, err = cdn.Command("ls", fmt.Sprintf("%s/%s", cdnCachePath, dir)).CombinedOutput()
+					Expect(err).NotTo(HaveOccurred())
+					file := taskID
+					if !strings.Contains(string(out), file) {
+						continue
+					}
+
+					out, err = cdn.Command("sha256sum", fmt.Sprintf("%s/%s/%s", cdnCachePath, dir, file)).CombinedOutput()
+					fmt.Println(string(out))
+					Expect(err).NotTo(HaveOccurred())
+					sha256sum2 = strings.Split(string(out), " ")[0]
+					break
+				}
+				if sha256sum2 == "" {
+
+				}
+				Expect(sha256sum1).To(Equal(sha256sum2))
 			}
 		})
 	})
@@ -103,7 +107,7 @@ func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
 		case <-ctx.Done():
 			return false
 		case <-ticker.C:
-			out, err := pod.Command("curl", "-s", fmt.Sprintf("%s/%s", preheatUrl, preheat.ID)).CombinedOutput()
+			out, err := pod.Command("curl", "-s", fmt.Sprintf("%s/%s", preheatURL, preheat.ID)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 			err = json.Unmarshal(out, preheat)
