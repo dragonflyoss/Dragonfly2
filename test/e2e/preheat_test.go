@@ -89,7 +89,7 @@ var _ = Describe("Preheat with manager", func() {
 					break
 				}
 				if sha256sum2 == "" {
-
+					fmt.Println("preheat file not found")
 				}
 				Expect(sha256sum1).To(Equal(sha256sum2))
 			}
