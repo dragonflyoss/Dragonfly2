@@ -103,7 +103,7 @@ var _ = Describe("Preheat with manager", func() {
 			fd.Close()
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := e2eutil.ABCommand("-c", "100", "-n", "200", "-T", "application/json", "-p", dataFilePath, fmt.Sprintf("127.0.0.1:%s/%s", manager.Port, manager.PreheatPath), url).CombinedOutput()
+			out, err := e2eutil.ABCommand("-c", "100", "-n", "200", "-T", "application/json", "-p", dataFilePath, "-X", proxy, fmt.Sprintf("http://%s:%s/%s", manager.Service, manager.Port, manager.PreheatPath)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 			os.Remove(dataFilePath)
