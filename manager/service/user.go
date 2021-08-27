@@ -17,7 +17,7 @@
 package service
 
 import (
-	"errors"
+	"fmt"
 
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
@@ -40,45 +40,28 @@ func (s *rest) SignIn(json types.SignInRequest) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *rest) ResetPassword(uid uint, userName string, json types.ResetPasswordRequest) error {
+func (s *rest) ResetPassword(id uint, json types.ResetPasswordRequest) error {
 	user := model.User{}
-	if err := s.db.First(&user, model.User{
-		Name: userName,
+	if err := s.db.First(&user, id).Error; err != nil {
+		return err
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(json.OldPassword)); err != nil {
+		return err
+	}
+
+	encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(json.NewPassword), bcrypt.MinCost)
+	if err != nil {
+		return err
+	}
+
+	if err := s.db.First(&user, id).Updates(model.User{
+		EncryptedPassword: string(encryptedPasswordBytes),
 	}).Error; err != nil {
 		return err
 	}
 
-	updatePassword := func(uid uint, password string) error {
-		user := model.User{}
-		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(json.NewPassword), bcrypt.MinCost)
-		if err != nil {
-			return err
-		}
-		if err := s.db.First(&user, uid).Updates(model.User{
-			EncryptedPassword: string(encryptedPasswordBytes),
-		}).Error; err != nil {
-			return err
-		}
-		return nil
-
-	}
-
-	if user.ID == uid {
-		err := bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(json.OldPassword))
-		if err != nil {
-			return err
-		}
-		return updatePassword(uid, json.NewPassword)
-	}
-	// validate user permission
-	has, err := s.enforcer.Enforce(userName, "users", "*")
-	if err != nil {
-		return err
-	}
-	if !has {
-		return errors.New("permission deny")
-	}
-	return updatePassword(uid, json.NewPassword)
+	return nil
 }
 
 func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
@@ -105,26 +88,18 @@ func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *rest) AddRoleForUser(UserID uint, roleName string) error {
-	user := model.User{}
-	if err := s.db.First(&user, UserID).Error; err != nil {
+func (s *rest) AddRoleForUser(json types.AddRoleForUserParams) error {
+	if _, err := s.enforcer.AddRoleForUser(fmt.Sprint(json.ID), json.RoleName); err != nil {
 		return err
 	}
-	_, err := s.enforcer.AddRoleForUser(user.Name, roleName)
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 
-func (s *rest) DeleteRoleForUser(UserID uint, roleName string) error {
-	user := model.User{}
-	if err := s.db.First(&user, UserID).Error; err != nil {
+func (s *rest) DeleteRoleForUser(json types.DeleteRoleForUserParams) error {
+	if _, err := s.enforcer.DeleteRoleForUser(fmt.Sprint(json.ID), json.RoleName); err != nil {
 		return err
 	}
-	_, err := s.enforcer.DeleteRoleForUser(user.Name, roleName)
-	if err != nil {
-		return err
-	}
+
 	return nil
 }

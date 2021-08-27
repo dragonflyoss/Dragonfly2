@@ -32,10 +32,10 @@ import (
 type REST interface {
 	SignIn(types.SignInRequest) (*model.User, error)
 	SignUp(types.SignUpRequest) (*model.User, error)
-	ResetPassword(uint, string, types.ResetPasswordRequest) error
+	ResetPassword(uint, types.ResetPasswordRequest) error
 
-	AddRoleForUser(uint, string) error
-	DeleteRoleForUser(uint, string) error
+	AddRoleForUser(types.AddRoleForUserParams) error
+	DeleteRoleForUser(types.DeleteRoleForUserParams) error
 
 	GetPermissions(*gin.Engine) types.Permissions
 
