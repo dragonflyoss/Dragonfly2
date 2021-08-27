@@ -17,28 +17,30 @@
 package types
 
 type SignInRequest struct {
-	Name     string `form:"name" binding:"required,min=3,max=10"`
-	Password string `form:"password" binding:"required,min=8,max=20"`
+	Name     string `json:"name" binding:"required,min=3,max=10"`
+	Password string `json:"password" binding:"required,min=8,max=20"`
 }
 
 type ResetPasswordRequest struct {
-	OldPassword string `form:"old_password" binding:"required,min=8,max=20"`
-	NewPassword string `form:"new_password" binding:"required,min=8,max=20"`
+	OldPassword string `json:"old_password" binding:"required,min=8,max=20"`
+	NewPassword string `json:"new_password" binding:"required,min=8,max=20"`
 }
 
 type SignUpRequest struct {
 	SignInRequest
-	Email    string `form:"email" binding:"required,email"`
-	Phone    string `form:"phone" binding:"omitempty"`
-	Avatar   string `form:"avatar" binding:"omitempty"`
-	Location string `form:"location" binding:"omitempty"`
-	BIO      string `form:"bio" binding:"omitempty"`
-}
-type UserIDRequest struct {
-	ID uint `uri:"id" binding:"required,min=1"`
+	Email    string `json:"email" binding:"required,email"`
+	Phone    string `json:"phone" binding:"omitempty"`
+	Avatar   string `json:"avatar" binding:"omitempty"`
+	Location string `json:"location" binding:"omitempty"`
+	BIO      string `json:"bio" binding:"omitempty"`
 }
 
-type RoleRequest struct {
-	UserIDRequest
+type DeleteRoleForUserParams struct {
+	ID       uint   `uri:"id" binding:"required"`
+	RoleName string `uri:"role_name" binding:"required,min=1"`
+}
+
+type AddRoleForUserParams struct {
+	ID       uint   `uri:"id" binding:"required"`
 	RoleName string `uri:"role_name" binding:"required,min=1"`
 }
