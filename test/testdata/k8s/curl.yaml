@@ -13,16 +13,15 @@ spec:
     metadata:
       labels:
         app: dragonfly
-        component: file-server
+        component: curl
     spec:
       containers:
       - name: curl
-        # Pull image with dragonfly
-        image: d7y.io/library/appropriate/curl:latest
+        image: curlimages/curl:7.78.0
         imagePullPolicy: "IfNotPresent"
-        volumeMounts:
-        - mountPath: /curl
-          name: curl-volume
+        command:
+        - sleep
+        - "3600"
       volumes:
       - name: app-volume
         emptyDir: {}

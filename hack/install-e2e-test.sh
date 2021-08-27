@@ -7,10 +7,12 @@ set -o pipefail
 KIND_CONFIG_PATH="test/testdata/kind/config.yaml"
 CHARTS_CONFIG_PATH="test/testdata/charts/config.yaml"
 FILE_SERVER_CONFIG_PATH="test/testdata/k8s/file-server.yaml"
+CURL_CONFIG_PATH="test/testdata/k8s/curl.yaml"
 CHARTS_PATH="deploy/helm-charts/charts/dragonfly"
 NAMESPACE="dragonfly-system"
 E2E_NAMESPACE="dragonfly-e2e"
 FILE_SERVER_NAME="file-server-0"
+CURL_COMPONENT="curl"
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}/../" || return
 
@@ -40,6 +42,13 @@ install-file-server() {
   kubectl apply -f ${FILE_SERVER_CONFIG_PATH}
   kubectl wait --namespace ${E2E_NAMESPACE} \
   --for=condition=ready pod ${FILE_SERVER_NAME} \
+  --timeout=10m
+}
+
+install-curl() {
+  kubectl apply -f ${CURL_CONFIG_PATH}
+  kubectl wait --namespace ${E2E_NAMESPACE} \
+  --for=condition=ready pod -l component={CURL_COMPONENT} \
   --timeout=10m
 }
 
@@ -76,6 +85,9 @@ install-local() {
   print_step_info "start install file server"
   install-file-server
 
+  print_step_info "start install curl"
+  install-curl
+
   print_step_info "start install ginkgo"
   install-ginkgo
 
@@ -95,6 +107,9 @@ install-actions() {
 
   print_step_info "start install file server"
   install-file-server
+
+  print_step_info "start install curl"
+  install-curl
 
   print_step_info "start install ginkgo"
   install-ginkgo

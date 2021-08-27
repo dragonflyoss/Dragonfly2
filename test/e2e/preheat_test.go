@@ -22,6 +22,10 @@ import (
 	. "github.com/onsi/gomega" //nolint
 )
 
+const (
+	dragonflyE2E = "dragonfly-e2e"
+)
+
 var _ = Describe("Preheat with manager", func() {
 	Context("preheat", func() {
 		It("preheat should be ok", func() {
@@ -36,18 +40,26 @@ var _ = Describe("Preheat with manager", func() {
 				cdnPods[i] = e2eutil.NewPodExec(dragonflyNamespace, podName, "cdn")
 			}
 
+			out, err := e2eutil.KubeCtlCommand("-n", dragonflyE2E, "get", "pod", "-l", "component=curl",
+				"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
+			podName := strings.Trim(string(out), "'")
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(podName)
+			Expect(strings.HasPrefix(podName, "curl-")).Should(BeTrue())
+			curlPod := e2eutil.NewPodExec(dragonflyNamespace, podName, "curl")
+
 			for _, v := range e2eutil.GetFileList() {
 				url := e2eutil.GetFileURL(v)
 				fmt.Println("download url " + url)
 
 				// get original file digest
-				out, err := e2eutil.DockerCommand("sha256sum", v).CombinedOutput()
+				out, err = e2eutil.DockerCommand("sha256sum", v).CombinedOutput()
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())
 				sha256sum1 := strings.Split(string(out), " ")[0]
 
 				// preheat file
-				out, err = cdnPods[0].Command("curl", "-s", "-X", "POST", "-H", "Content-Type:application/json",
+				out, err = curlPod.Command("curl", "-s", "-X", "POST", "-H", "Content-Type:application/json",
 					"-d", fmt.Sprintf(`{"type":"file","url":"%s"}`, url), manager.PreheatURL).CombinedOutput()
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())
