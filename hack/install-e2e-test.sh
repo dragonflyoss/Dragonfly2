@@ -48,7 +48,7 @@ install-file-server() {
 install-curl() {
   kubectl apply -f ${CURL_CONFIG_PATH}
   kubectl wait --namespace ${E2E_NAMESPACE} \
-  --for=condition=ready pod -l component={CURL_COMPONENT} \
+  --for=condition=ready pod -l component=${CURL_COMPONENT} \
   --timeout=10m
 }
 
