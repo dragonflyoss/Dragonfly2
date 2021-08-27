@@ -46,7 +46,7 @@ var _ = Describe("Preheat with manager", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println(podName)
 			Expect(strings.HasPrefix(podName, "curl-")).Should(BeTrue())
-			curlPod := e2eutil.NewPodExec(dragonflyNamespace, podName, "curl")
+			curlPod := e2eutil.NewPodExec(dragonflyE2E, podName, "curl")
 
 			for _, v := range e2eutil.GetFileList() {
 				url := e2eutil.GetFileURL(v)
@@ -59,7 +59,7 @@ var _ = Describe("Preheat with manager", func() {
 				sha256sum1 := strings.Split(string(out), " ")[0]
 
 				// preheat file
-				out, err = curlPod.Command("curl", "-s", "-X", "POST", "-H", "Content-Type:application/json",
+				out, err = curlPod.CurlCommand("-s", "-X", "POST", "-H", "Content-Type:application/json",
 					"-d", fmt.Sprintf(`{"type":"file","url":"%s"}`, url), manager.PreheatURL).CombinedOutput()
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())

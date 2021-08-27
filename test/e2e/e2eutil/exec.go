@@ -55,6 +55,10 @@ func (p *PodExec) Command(arg ...string) *exec.Cmd {
 	return KubeCtlCommand(extArgs...)
 }
 
+func (p *PodExec) CurlCommand(arg ...string) *exec.Cmd {
+	return p.Command(append([]string{"/usr/bin/curl"}, arg...)...)
+}
+
 func KubeCtlCopyCommand(ns, pod, source, target string) *exec.Cmd {
 	return KubeCtlCommand("-n", ns, "cp", pod+":"+source, target)
 }
