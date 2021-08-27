@@ -8,16 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/test/e2e/manager"
-
 	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-
-	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-
 	"d7y.io/dragonfly/v2/manager/types"
-
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
+	"d7y.io/dragonfly/v2/test/e2e/manager"
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	. "github.com/onsi/ginkgo" //nolint
 	. "github.com/onsi/gomega" //nolint
 )
@@ -73,9 +69,9 @@ var _ = Describe("Preheat with manager", func() {
 				preheatJob := &types.Preheat{}
 				err = json.Unmarshal(out, preheatJob)
 				Expect(err).NotTo(HaveOccurred())
-				waitForDone(preheatJob, cdnPods[0])
+				done := waitForDone(preheatJob, curlPod)
+				Expect(done).Should(BeTrue())
 
-				// get downloaded file digest
 				var sha256sum2 string
 				for _, cdn := range cdnPods {
 					out, err = cdn.Command("ls", manager.CDNCachePath).CombinedOutput()
@@ -92,6 +88,7 @@ var _ = Describe("Preheat with manager", func() {
 						continue
 					}
 
+					// calculate digest of downloaded file
 					out, err = cdn.Command("sha256sum", fmt.Sprintf("%s/%s/%s", manager.CDNCachePath, dir, file)).CombinedOutput()
 					fmt.Println(string(out))
 					Expect(err).NotTo(HaveOccurred())
