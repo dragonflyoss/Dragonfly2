@@ -349,7 +349,7 @@ func (h *hybridStorageMgr) tryShmSpace(url, taskID string, fileLength int64) (st
 		h.memoryDriver.Walk(&storedriver.Raw{
 			WalkFn: func(filePath string, info os.FileInfo, err error) error {
 				if fileutils.IsRegular(filePath) {
-					taskID := path.Base(filePath)
+					taskID := strings.Split(path.Base(filePath), ".")[0]
 					task, exist := h.taskMgr.Exist(taskID)
 					if exist {
 						var totalLen int64 = 0
@@ -362,7 +362,7 @@ func (h *hybridStorageMgr) tryShmSpace(url, taskID string, fileLength int64) (st
 							remainder.Add(totalLen - info.Size())
 						}
 					} else {
-						logger.Warnf("failed to get task: %s: %v", taskID, err)
+						logger.Warnf("failed to get task: %s", taskID)
 					}
 				}
 				return nil

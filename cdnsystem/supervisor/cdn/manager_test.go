@@ -64,6 +64,10 @@ func (suite *CDNManagerTestSuite) SetupSuite() {
 	progressMgr.EXPECT().PublishPiece(gomock.Any(), md5TaskID, gomock.Any()).Return(nil).Times(98 * 2)
 	progressMgr.EXPECT().PublishPiece(gomock.Any(), sha256TaskID, gomock.Any()).Return(nil).Times(98 * 2)
 	suite.cm, _ = newManager(config.New(), storeMgr, progressMgr)
+	taskMgr := mock.NewMockSeedTaskMgr(ctrl)
+	// During the second test case, storeMgr will check the file downloaded by the first test case.
+	taskMgr.EXPECT().Exist(md5TaskID).Return(nil, false).Times(3)
+	storeMgr.Initialize(taskMgr)
 }
 
 var (
