@@ -24,7 +24,7 @@ import (
 )
 
 // @Summary SignUp user
-// @Description SignUp user by json config
+// @Description signup by json config
 // @Tags User
 // @Accept json
 // @Produce json
@@ -50,7 +50,7 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 }
 
 // @Summary Reset Password For User
-// @Description reset password for user by json config
+// @Description reset password by json config
 // @Tags User
 // @Accept json
 // @Produce json
@@ -58,21 +58,15 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /users/:id/reset_password [post]
+// @Router /users/reset_password [post]
 func (h *Handlers) ResetPassword(ctx *gin.Context) {
-	var params types.UserIDRequest
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
 	var json types.ResetPasswordRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	err := h.Service.ResetPassword(params.ID, ctx.GetString("userName"), json)
-	if err != nil {
+	if err := h.Service.ResetPassword(ctx.GetUint("userID"), json); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -81,7 +75,7 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 }
 
 // @Summary Delete Role For User
-// @Description Delete Role For User by uri config
+// @Description delete role by uri config
 // @Tags users
 // @Accept text
 // @Produce json
@@ -89,23 +83,23 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /users/:id/roles/:role_name [delete]
-
 func (h *Handlers) DeleteRoleForUser(ctx *gin.Context) {
-	var params types.RoleRequest
+	var params types.DeleteRoleForUserParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.Service.DeleteRoleForUser(params.ID, params.RoleName)
-	if err != nil {
+
+	if err := h.Service.DeleteRoleForUser(params); err != nil {
 		ctx.Error(err)
 		return
 	}
+
 	ctx.Status(http.StatusOK)
 }
 
 // @Summary Add Role For User
-// @Description Add Role For User by uri config
+// @Description add role to user by uri config
 // @Tags users
 // @Accept text
 // @Produce json
@@ -113,41 +107,41 @@ func (h *Handlers) DeleteRoleForUser(ctx *gin.Context) {
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /users/:id/roles/:role_name [post]
-
 func (h *Handlers) AddRoleToUser(ctx *gin.Context) {
-	var params types.RoleRequest
+	var params types.AddRoleForUserParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.Service.AddRoleForUser(params.ID, params.RoleName)
-	if err != nil {
+
+	if err := h.Service.AddRoleForUser(params); err != nil {
 		ctx.Error(err)
 		return
 	}
+
 	ctx.Status(http.StatusOK)
 }
 
 // @Summary Get User Roles
-// @Description Get User Roles
+// @Description get roles by json config
 // @Tags User
 // @Produce json
 // @Success 200 {object} RoutesInfo
 // @Failure 400 {object} HTTPError
 // @Failure 500 {object} HTTPError
 // @Router /users/:id/roles [get]
-
 func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 	var params types.UserParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
+
 	roles, err := h.Service.GetRolesForUser(params.ID, ctx.GetString("userName"))
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
-	ctx.JSON(http.StatusOK, roles)
 
+	ctx.JSON(http.StatusOK, roles)
 }

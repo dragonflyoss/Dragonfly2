@@ -82,13 +82,11 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	ai := apiv1.Group("/users")
 	ai.POST("/signin", jwt.LoginHandler)
 	ai.POST("/signout", jwt.LogoutHandler)
+	ai.POST("/signup", h.SignUp)
 	ai.POST("/refresh_token", jwt.RefreshHandler)
 	ai.POST("/reset_password", h.ResetPassword)
-
 	ai.POST("/:id/roles/:role_name", h.AddRoleToUser, jwt.MiddlewareFunc(), rbac)
 	ai.DELETE("/:id/roles/:role_name", h.DeleteRoleForUser, jwt.MiddlewareFunc(), rbac)
-
-	ai.POST("/signup", h.SignUp)
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")

@@ -43,26 +43,30 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
+
 			userName, ok := claims[identityKey]
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{
-					"message": "Unavailable token: require username info",
+					"message": "Unavailable token: require user name",
 				})
 				c.Abort()
 				return nil
 			}
+
 			userID, ok := claims["ID"]
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{
-					"message": "Unavailable token: require id info",
+					"message": "Unavailable token: require user id",
 				})
 				c.Abort()
 				return nil
 			}
+
 			u := &user{
 				userName: userName.(string),
-				ID:       uint(userID.(float64)),
+				ID:       userID.(uint),
 			}
+
 			c.Set("userName", u.userName)
 			c.Set("userID", u.ID)
 			return u
@@ -70,7 +74,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 
 		Authenticator: func(c *gin.Context) (interface{}, error) {
 			var json types.SignInRequest
-			if err := c.ShouldBind(&json); err != nil {
+			if err := c.ShouldBindJSON(&json); err != nil {
 				return "", jwt.ErrMissingLoginValues
 			}
 
@@ -89,6 +93,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 					"ID":        u.ID,
 				}
 			}
+
 			return jwt.MapClaims{}
 		},
 
