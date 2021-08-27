@@ -1,4 +1,4 @@
-package e2e
+package manager
 
 import (
 	"context"
@@ -11,15 +11,11 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/test/e2e"
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
-	"d7y.io/dragonfly/v2/test/e2e/manager"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	. "github.com/onsi/ginkgo" //nolint
 	. "github.com/onsi/gomega" //nolint
-)
-
-const (
-	dragonflyE2E = "dragonfly-e2e"
 )
 
 var _ = Describe("Preheat with manager", func() {
@@ -27,22 +23,22 @@ var _ = Describe("Preheat with manager", func() {
 		It("preheat should be ok", func() {
 			var cdnPods [3]*e2eutil.PodExec
 			for i := 0; i < 3; i++ {
-				out, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=cdn",
+				out, err := e2eutil.KubeCtlCommand("-n", e2e.DragonflyNamespace, "get", "pod", "-l", "component=cdn",
 					"-o", fmt.Sprintf("jsonpath='{range .items[%d]}{.metadata.name}{end}'", i)).CombinedOutput()
 				podName := strings.Trim(string(out), "'")
 				Expect(err).NotTo(HaveOccurred())
 				fmt.Println(podName)
 				Expect(strings.HasPrefix(podName, "dragonfly-cdn-")).Should(BeTrue())
-				cdnPods[i] = e2eutil.NewPodExec(dragonflyNamespace, podName, "cdn")
+				cdnPods[i] = e2eutil.NewPodExec(e2e.DragonflyNamespace, podName, "cdn")
 			}
 
-			out, err := e2eutil.KubeCtlCommand("-n", dragonflyE2E, "get", "pod", "-l", "component=curl",
+			out, err := e2eutil.KubeCtlCommand("-n", e2e.E2ENamespace, "get", "pod", "-l", "component=curl",
 				"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 			podName := strings.Trim(string(out), "'")
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println(podName)
 			Expect(strings.HasPrefix(podName, "curl-")).Should(BeTrue())
-			curlPod := e2eutil.NewPodExec(dragonflyE2E, podName, "curl")
+			curlPod := e2eutil.NewPodExec(e2e.E2ENamespace, podName, "curl")
 
 			for _, v := range e2eutil.GetFileList() {
 				url := e2eutil.GetFileURL(v)
@@ -55,8 +51,9 @@ var _ = Describe("Preheat with manager", func() {
 				sha256sum1 := strings.Split(string(out), " ")[0]
 
 				// preheat file
-				out, err = curlPod.CurlCommand("-s", "-X", "POST", "-H", "Content-Type:application/json",
-					"-d", fmt.Sprintf(`{"type":"file","url":"%s"}`, url), manager.PreheatURL).CombinedOutput()
+				out, err = curlPod.CurlCommand("POST", "Content-Type:application/json",
+					fmt.Sprintf(`{"type":"file","url":"%s"}`, url),
+					fmt.Sprintf("http://%s:%s/%s", e2e.ManagerService, e2e.ManagerPort, e2e.PreheatPath)).CombinedOutput()
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())
 
@@ -74,14 +71,14 @@ var _ = Describe("Preheat with manager", func() {
 
 				var sha256sum2 string
 				for _, cdn := range cdnPods {
-					out, err = cdn.Command("ls", manager.CDNCachePath).CombinedOutput()
+					out, err = cdn.Command("ls", e2e.CDNCachePath).CombinedOutput()
 					Expect(err).NotTo(HaveOccurred())
 					dir := taskID[0:3]
 					if !strings.Contains(string(out), dir) {
 						continue
 					}
 
-					out, err = cdn.Command("ls", fmt.Sprintf("%s/%s", manager.CDNCachePath, dir)).CombinedOutput()
+					out, err = cdn.Command("ls", fmt.Sprintf("%s/%s", e2e.CDNCachePath, dir)).CombinedOutput()
 					Expect(err).NotTo(HaveOccurred())
 					file := taskID
 					if !strings.Contains(string(out), file) {
@@ -89,7 +86,7 @@ var _ = Describe("Preheat with manager", func() {
 					}
 
 					// calculate digest of downloaded file
-					out, err = cdn.Command("sha256sum", fmt.Sprintf("%s/%s/%s", manager.CDNCachePath, dir, file)).CombinedOutput()
+					out, err = cdn.Command("sha256sum", fmt.Sprintf("%s/%s/%s", e2e.CDNCachePath, dir, file)).CombinedOutput()
 					fmt.Println(string(out))
 					Expect(err).NotTo(HaveOccurred())
 					sha256sum2 = strings.Split(string(out), " ")[0]
@@ -103,7 +100,7 @@ var _ = Describe("Preheat with manager", func() {
 		})
 
 		It("concurrency 100 preheat should be ok", func() {
-			url := e2eutil.GetFileURL(hostnameFilePath)
+			url := e2eutil.GetFileURL(e2e.HostnameFilePath)
 			fmt.Println("download url " + url)
 			dataFilePath := "post_data"
 			fd, err := os.Create(dataFilePath)
@@ -112,7 +109,7 @@ var _ = Describe("Preheat with manager", func() {
 			fd.Close()
 			Expect(err).NotTo(HaveOccurred())
 
-			out, err := e2eutil.ABCommand("-c", "100", "-n", "200", "-T", "application/json", "-p", dataFilePath, "-X", proxy, fmt.Sprintf("http://%s:%s/%s", manager.Service, manager.Port, manager.PreheatPath)).CombinedOutput()
+			out, err := e2eutil.ABCommand("-c", "100", "-n", "200", "-T", "application/json", "-p", dataFilePath, "-X", e2e.Proxy, fmt.Sprintf("http://%s:%s/%s", e2e.ManagerService, e2e.ManagerPort, e2e.PreheatPath)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 			os.Remove(dataFilePath)
@@ -131,7 +128,8 @@ func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
 		case <-ctx.Done():
 			return false
 		case <-ticker.C:
-			out, err := pod.Command("curl", "-s", fmt.Sprintf("%s/%s", manager.PreheatURL, preheat.ID)).CombinedOutput()
+			out, err := pod.CurlCommand("", "", "",
+				fmt.Sprintf("http://%s:%s/%s/%s", e2e.ManagerService, e2e.ManagerPort, e2e.PreheatPath, preheat.ID)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 			err = json.Unmarshal(out, preheat)
