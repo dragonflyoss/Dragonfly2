@@ -20,13 +20,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
@@ -36,9 +34,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var tracer trace.Tracer
@@ -129,113 +124,43 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	var span trace.Span
 	ctx, span := tracer.Start(stream.Context(), config.SpanReportPieceResult, trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
-	peerPacketChan := make(chan *scheduler.PeerPacket, 1)
-	var peer *supervisor.Peer
-	initialized := false
-	ctx, cancel := context.WithCancel(ctx)
-	g, ctx := errgroup.WithContext(ctx)
-	var once sync.Once
-	g.Go(func() error {
-		defer func() {
-			cancel()
-			once.Do(
-				func() {
-					if peer != nil {
-						peer.UnBindSendChannel()
-					}
-				})
-		}()
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			default:
-				pieceResult, err := stream.Recv()
-				if err == io.EOF {
-					span.AddEvent("report piece process exited because client has terminated sending the request")
-					return nil
-				}
-				if err != nil {
-					if status.Code(err) == codes.Canceled {
-						span.AddEvent("report piece process exited because an error exception was received")
-						if peer != nil {
-							logger.Info("peer %s canceled", peer.PeerID)
-							return nil
-						}
-					}
-					err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error: %v", err)
-					span.RecordError(err)
-					return err
-				}
-				logger.Debugf("report piece result %v of peer %s", pieceResult, pieceResult.SrcPid)
-				var ok bool
-				peer, ok = s.service.GetPeerTask(pieceResult.SrcPid)
-				if !ok {
-					err = dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
-					span.RecordError(err)
-					return err
-				}
-				if peer.Task.IsFail() {
-					err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is fail")
-					span.RecordError(err)
-					return err
-				}
-				if !initialized {
-					initialized = true
-					peer.BindSendChannel(peerPacketChan)
-					peer.SetStatus(supervisor.PeerStatusRunning)
-					span.SetAttributes(config.AttributePeerID.String(peer.PeerID))
-					span.AddEvent("bind report packet chan")
-				}
-				if pieceResult.PieceInfo != nil && pieceResult.PieceInfo.PieceNum == common.EndOfPiece {
-					return nil
-				}
-				if err := s.service.HandlePieceResult(ctx, peer, pieceResult); err != nil {
-					logger.Errorf("handle piece result %v fail: %v", pieceResult, err)
-				}
-			}
+	pieceResult, err := stream.Recv()
+	if err != nil {
+		if err == io.EOF {
+			return nil
 		}
-	})
+		err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "error receiving from peer stream: %v", err)
+		span.RecordError(err)
+		return err
+	}
+	logger.Debugf("peer %s start report piece result", pieceResult.SrcPid)
+	peer, ok := s.service.GetPeerTask(pieceResult.SrcPid)
+	if !ok {
+		err = dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
+		span.RecordError(err)
+		return err
+	}
+	if peer.Task.IsFail() {
+		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is fail")
+		span.RecordError(err)
+		return err
+	}
+	if err := s.service.HandlePieceResult(ctx, peer, pieceResult); err != nil {
+		logger.Errorf("handle piece result %v fail: %v", pieceResult, err)
 
-	g.Go(func() error {
-		defer func() {
-			cancel()
-			once.Do(
-				func() {
-					if peer != nil {
-						peer.UnBindSendChannel()
-					}
-				})
-		}()
-		for {
-			select {
-			case <-ctx.Done():
-				return nil
-			case pp, ok := <-peerPacketChan:
-				if !ok {
-					span.AddEvent("exit report piece process due to send channel has closed")
-					return nil
-				}
-				span.AddEvent("schedule event", trace.WithAttributes(config.AttributeSchedulePacket.String(pp.String())))
-				if pp.Code != dfcodes.Success {
-					logger.Errorf("schedule peer %s error packet %v", pp.SrcPid, pp)
-					err := dferrors.Newf(pp.Code, "peer piece result report error")
-					span.RecordError(err)
-					return err
-				}
-				err := stream.Send(pp)
-				if err != nil {
-					logger.Errorf("send peer %s schedule packet %v failed: %v", pp.SrcPid, pp, err)
-					err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer piece result report error: %v", err)
-					span.RecordError(err)
-					return err
-				}
+	}
+	conn := peer.BindNewConn(stream)
+	for {
+		select {
+		case <-conn.Done():
+			return conn.Err()
+		case <-conn.Receiver():
+			if err := s.service.HandlePieceResult(ctx, peer, pieceResult); err != nil {
+				logger.Errorf("handle piece result %v fail: %v", pieceResult, err)
+				return err
 			}
 		}
-	})
-	err := g.Wait()
-	logger.Debugf("report piece result: %v", err)
-	return err
+	}
 }
 
 func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (err error) {

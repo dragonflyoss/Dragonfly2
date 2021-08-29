@@ -243,3 +243,41 @@ func (task *Task) IsBackSourcePeer(peerID string) bool {
 	}
 	return false
 }
+
+func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
+	return task.pick(limit, false, pickFn)
+}
+
+func (task *Task) PickReverse(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
+	return task.pick(limit, true, pickFn)
+}
+
+func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
+	if pickFn == nil {
+		return
+	}
+	if !reverse {
+		task.ListPeers().Range(func(data sortedlist.Item) bool {
+			if len(pickedPeers) >= limit {
+				return false
+			}
+			peer := data.(*Peer)
+			if pickFn(peer) {
+				pickedPeers = append(pickedPeers, peer)
+			}
+			return true
+		})
+		return
+	}
+	task.ListPeers().RangeReverse(func(data sortedlist.Item) bool {
+		if len(pickedPeers) >= limit {
+			return false
+		}
+		peer := data.(*Peer)
+		if pickFn(peer) {
+			pickedPeers = append(pickedPeers, peer)
+		}
+		return true
+	})
+	return
+}

@@ -21,7 +21,6 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
@@ -88,48 +87,9 @@ func (m *manager) Delete(peerID string) {
 	if ok {
 		peer.Host.DeletePeer(peerID)
 		peer.Task.DeletePeer(peer)
-		peer.UnBindSendChannel()
 		peer.ReplaceParent(nil)
 		m.peerMap.Delete(peerID)
 	}
-	return
-}
-
-func (m *manager) Pick(task *supervisor.Task, limit int, pickFn func(peer *supervisor.Peer) bool) (pickedPeers []*supervisor.Peer) {
-	return m.pick(task, limit, false, pickFn)
-}
-
-func (m *manager) PickReverse(task *supervisor.Task, limit int, pickFn func(peer *supervisor.Peer) bool) (pickedPeers []*supervisor.Peer) {
-	return m.pick(task, limit, true, pickFn)
-}
-
-func (m *manager) pick(task *supervisor.Task, limit int, reverse bool, pickFn func(peer *supervisor.Peer) bool) (pickedPeers []*supervisor.Peer) {
-	if pickFn == nil {
-		return
-	}
-	if !reverse {
-		task.ListPeers().Range(func(data sortedlist.Item) bool {
-			if len(pickedPeers) >= limit {
-				return false
-			}
-			peer := data.(*supervisor.Peer)
-			if pickFn(peer) {
-				pickedPeers = append(pickedPeers, peer)
-			}
-			return true
-		})
-		return
-	}
-	task.ListPeers().RangeReverse(func(data sortedlist.Item) bool {
-		if len(pickedPeers) >= limit {
-			return false
-		}
-		peer := data.(*supervisor.Peer)
-		if pickFn(peer) {
-			pickedPeers = append(pickedPeers, peer)
-		}
-		return true
-	})
 	return
 }
 
@@ -140,7 +100,7 @@ func (m *manager) cleanupPeers() {
 			peer := value.(*supervisor.Peer)
 			elapse := time.Since(peer.GetLastAccessTime())
 			if elapse > m.peerTTI && !peer.IsDone() && !peer.Host.CDN {
-				if !peer.IsBindSendChannel() {
+				if !peer.IsConnected() {
 					peer.MarkLeave()
 				}
 				logger.Debugf("peer %s has been more than %s since last access, set status to zombie", peer.PeerID, m.peerTTI)

@@ -164,6 +164,12 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 					"isLeave %t", peer.GetStatus(), peer.IsLeave())
 				continue
 			}
+			if peer.GetParent() != nil {
+				logger.WithTaskAndPeerID(peer.Task.TaskID,
+					peer.PeerID).Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer has parent %s",
+					peer.GetParent().PeerID)
+				continue
+			}
 			s.worker.send(reScheduleParentEvent{peer})
 		}
 	}
@@ -278,7 +284,9 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 
 func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *schedulerRPC.PieceResult) error {
 	peer.Touch()
-	if pieceResult.PieceInfo != nil && pieceResult.PieceInfo.PieceNum == common.ZeroOfPiece {
+	if pieceResult.PieceInfo != nil && pieceResult.PieceInfo.PieceNum == common.EndOfPiece {
+		return nil
+	} else if pieceResult.PieceInfo != nil && pieceResult.PieceInfo.PieceNum == common.ZeroOfPiece {
 		s.worker.send(startReportPieceResultEvent{ctx, peer})
 		return nil
 	} else if pieceResult.Success {
