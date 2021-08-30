@@ -25,12 +25,13 @@ import (
 
 // @Summary Create Role
 // @Description Create Role by json config
-// @Tags role
+// @Tags Role
 // @Accept json
 // @Produce json
+// @Param Role body types.CreateRoleRequest true "Role"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /roles [post]
 func (h *Handlers) CreateRole(ctx *gin.Context) {
 	var json types.CreateRoleRequest
@@ -49,14 +50,14 @@ func (h *Handlers) CreateRole(ctx *gin.Context) {
 
 // @Summary Destroy Role
 // @Description Destroy role by json config
-// @Tags permission
+// @Tags Role
 // @Accept json
 // @Produce json
 // @Param role path string true "role"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
-// @Router /role/:role [delete]
+// @Failure 400
+// @Failure 500
+// @Router /roles/:role [delete]
 func (h *Handlers) DestroyRole(ctx *gin.Context) {
 	var params types.RoleParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -77,12 +78,13 @@ func (h *Handlers) DestroyRole(ctx *gin.Context) {
 
 // @Summary Get Role
 // @Description Get Role
-// @Tags permission
+// @Tags Role
 // @Accept json
 // @Produce json
+// @Param role path string true "role"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /roles/:role [get]
 func (h *Handlers) GetRole(ctx *gin.Context) {
 	var params types.RoleParams
@@ -96,12 +98,12 @@ func (h *Handlers) GetRole(ctx *gin.Context) {
 
 // @Summary Get Roles
 // @Description Get roles
-// @Tags role
+// @Tags Role
 // @Accept json
 // @Produce json
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /roles [get]
 func (h *Handlers) GetRoles(ctx *gin.Context) {
 	roles := h.Service.GetRoles()
@@ -110,14 +112,14 @@ func (h *Handlers) GetRoles(ctx *gin.Context) {
 
 // @Summary Add Permission For Role
 // @Description Add Permission by json config
-// @Tags role
+// @Tags Role
 // @Accept json
 // @Produce json
 // @Param Permission body types.AddPermissionForRoleRequest true "Permission"
 // @Param role path string true "role"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /roles/:role/permissions [post]
 func (h *Handlers) AddPermissionForRole(ctx *gin.Context) {
 	var params types.RoleParams
@@ -145,14 +147,14 @@ func (h *Handlers) AddPermissionForRole(ctx *gin.Context) {
 
 // @Summary Update Role
 // @Description Remove Role Permission by json config
-// @Tags role
+// @Tags Role
 // @Accept json
 // @Produce json
 // @Param Permission body types.DeletePermissionForRoleRequest true "Permission"
 // @Param role path string true "role"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /roles/:role/permissions [delete]
 func (h *Handlers) DeletePermissionForRole(ctx *gin.Context) {
 	var params types.RoleParams

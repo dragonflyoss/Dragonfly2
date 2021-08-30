@@ -24,15 +24,14 @@ import (
 
 // @Summary Get Permissions
 // @Description Get Permissions
-// @Tags permission
+// @Tags Permission
 // @Produce json
-// @Success 200 {object} RoutesInfo
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Success 200 {object} []rbac.Permission
+// @Failure 400
+// @Failure 500
 // @Router /permissions [get]
 func (h *Handlers) GetPermissions(g *gin.Engine) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		permissions := h.Service.GetPermissions(g)
-		ctx.JSON(http.StatusOK, permissions)
+		ctx.JSON(http.StatusOK, h.Service.GetPermissions(g))
 	}
 }

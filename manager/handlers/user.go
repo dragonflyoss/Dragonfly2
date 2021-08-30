@@ -86,8 +86,8 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200 {object} []string
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /users/:id/roles [get]
 func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 	var params types.UserParams
@@ -107,14 +107,14 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 
 // @Summary Add Role For User
 // @Description add role to user by uri config
-// @Tags users
-// @Accept text
+// @Tags Users
+// @Accept json
 // @Produce json
 // @Param id path string true "id"
 // @Param role path string true "role"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /users/:id/roles/:role [put]
 func (h *Handlers) AddRoleToUser(ctx *gin.Context) {
 	var params types.AddRoleForUserParams
@@ -136,14 +136,14 @@ func (h *Handlers) AddRoleToUser(ctx *gin.Context) {
 
 // @Summary Delete Role For User
 // @Description delete role by uri config
-// @Tags users
-// @Accept text
+// @Tags Users
+// @Accept json
 // @Produce json
 // @Param id path string true "id"
 // @Param role path string true "role"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 500
 // @Router /users/:id/roles/:role [delete]
 func (h *Handlers) DeleteRoleForUser(ctx *gin.Context) {
 	var params types.DeleteRoleForUserParams
