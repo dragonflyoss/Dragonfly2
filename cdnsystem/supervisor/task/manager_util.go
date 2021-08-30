@@ -90,6 +90,11 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		span.SetAttributes(config.AttributeIfReuseTask.Bool(false))
 		logger.Debugf("get new task for taskID: %s", taskID)
 		task = newTask
+		if task.SourceFileLength != IllegalSourceFileLen {
+			if err := tm.cdnMgr.TryFreeSpace(task.SourceFileLength); err != nil && cdnerrors.IsLackOfResources(err) {
+				return nil, err
+			}
+		}
 	}
 
 	if task.SourceFileLength != IllegalSourceFileLen {
@@ -111,6 +116,11 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	// if not support file length header request ,return -1
 	task.SourceFileLength = sourceFileLength
 	logger.WithTaskID(taskID).Debugf("get file content length: %d", sourceFileLength)
+	if task.SourceFileLength > 0 {
+		if err := tm.cdnMgr.TryFreeSpace(task.SourceFileLength); err != nil && cdnerrors.IsLackOfResources(err) {
+			return nil, err
+		}
+	}
 
 	// if success to get the information successfully with the req.Header then update the task.Header to req.Header.
 	if request.Header != nil {

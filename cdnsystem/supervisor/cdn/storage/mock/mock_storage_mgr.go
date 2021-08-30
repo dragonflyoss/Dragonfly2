@@ -80,6 +80,20 @@ func (mr *MockManagerMockRecorder) DeleteTask(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockManager)(nil).DeleteTask), arg0)
 }
 
+// GetFreeSpace mocks base method.
+func (m *MockManager) GetFreeSpace() int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFreeSpace")
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// GetFreeSpace indicates an expected call of GetFreeSpace.
+func (mr *MockManagerMockRecorder) GetFreeSpace() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFreeSpace", reflect.TypeOf((*MockManager)(nil).GetFreeSpace))
+}
+
 // Initialize mocks base method.
 func (m *MockManager) Initialize(arg0 supervisor.SeedTaskMgr) {
 	m.ctrl.T.Helper()

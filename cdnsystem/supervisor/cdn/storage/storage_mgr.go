@@ -71,6 +71,9 @@ type Manager interface {
 
 	// DeleteTask delete task from storage
 	DeleteTask(taskID string) error
+
+	// GetFreeSpace return the free space of the storage
+	GetFreeSpace() int64
 }
 
 // FileMetaData meta data of task

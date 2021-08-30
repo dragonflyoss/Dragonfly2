@@ -232,21 +232,13 @@ func (s *diskStorageMgr) DeleteTask(taskID string) error {
 }
 
 func (s *diskStorageMgr) ResetRepo(task *types.SeedTask) error {
-	if err := s.DeleteTask(task.TaskID); err != nil {
-		logger.WithTaskID(task.TaskID).Errorf("reset repo: failed to delete task files: %v", err)
-	}
-	// 判断是否有足够空间存放
-	return s.tryDiskSpace(task.SourceFileLength)
+	return s.DeleteTask(task.TaskID)
 }
 
-func (s *diskStorageMgr) tryDiskSpace(fileLength int64) error {
+func (s *diskStorageMgr) GetFreeSpace() int64 {
 	freeSpace, err := s.diskDriver.GetFreeSpace()
 	if err != nil {
-		return nil
-	}
-	if unit.Bytes(fileLength) > freeSpace {
-		// TODO(zzy987) make error type public
-		return fmt.Errorf("not enough free space left")
+		return 0
 	}
 
 	remainder := atomic.NewInt64(0)
@@ -273,18 +265,5 @@ func (s *diskStorageMgr) tryDiskSpace(fileLength int64) error {
 		},
 	})
 
-	canUseDisk := freeSpace-unit.Bytes(remainder.Load()) >= unit.Bytes(fileLength)
-	if !canUseDisk {
-		// 如果剩余空间过小，则强制执行一次fullgc后在检查是否满足
-		s.cleaner.GC("disk", true)
-		freeSpace, err = s.diskDriver.GetFreeSpace()
-		if err != nil {
-			return nil
-		}
-		canUseDisk = freeSpace-unit.Bytes(remainder.Load()) >= unit.Bytes(fileLength)
-	}
-	if canUseDisk {
-		return nil
-	}
-	return fmt.Errorf("not enough free space left")
+	return freeSpace.ToNumber() - remainder.Load()
 }
