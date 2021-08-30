@@ -502,9 +502,12 @@ func (pt *peerTask) waitFirstPeerPacket() bool {
 		// when schedule timeout, receivePeerPacket will close pt.peerPacketReady
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonBackSourceDisabled
-			pt.Errorf("%s, auto back source disabled", pt.failedReason)
+			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
+			pt.span.RecordError(err)
+			pt.Errorf(err.Error())
 		} else {
-			pt.Errorf("start download from source due to dfcodes.SchedNeedBackSource")
+			pt.Warnf("start download from source due to dfcodes.SchedNeedBackSource")
+			pt.span.AddEvent("back source due to scheduler says need back source")
 			pt.needBackSource = true
 			pt.backSource()
 		}
@@ -512,9 +515,12 @@ func (pt *peerTask) waitFirstPeerPacket() bool {
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonScheduleTimeout
 			pt.failedCode = dfcodes.ClientScheduleTimeout
-			pt.Errorf("%s, auto back source disabled", pt.failedReason)
+			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
+			pt.span.RecordError(err)
+			pt.Errorf(err.Error())
 		} else {
-			pt.Errorf("start download from source due to %s", reasonScheduleTimeout)
+			pt.Warnf("start download from source due to %s", reasonScheduleTimeout)
+			pt.span.AddEvent("back source due to schedule timeout")
 			pt.needBackSource = true
 			pt.backSource()
 		}
@@ -546,9 +552,12 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 		// when schedule timeout, receivePeerPacket will close pt.peerPacketReady
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonBackSourceDisabled
-			logger.Errorf("%s, auto back source disabled", pt.failedReason)
+			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
+			pt.span.RecordError(err)
+			pt.Errorf(err.Error())
 		} else {
-			pt.Errorf("start download from source due to dfcodes.SchedNeedBackSource")
+			pt.Warnf("start download from source due to dfcodes.SchedNeedBackSource")
+			pt.span.AddEvent("back source due to scheduler says need back source ")
 			pt.needBackSource = true
 			pt.backSource()
 		}
@@ -556,9 +565,12 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonReScheduleTimeout
 			pt.failedCode = dfcodes.ClientScheduleTimeout
-			logger.Errorf("%s, auto back source disabled", pt.failedReason)
+			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
+			pt.span.RecordError(err)
+			pt.Errorf(err.Error())
 		} else {
-			pt.Errorf("start download from source due to %s", reasonReScheduleTimeout)
+			pt.Warnf("start download from source due to %s", reasonReScheduleTimeout)
+			pt.span.AddEvent("back source due to schedule timeout")
 			pt.needBackSource = true
 			pt.backSource()
 		}
