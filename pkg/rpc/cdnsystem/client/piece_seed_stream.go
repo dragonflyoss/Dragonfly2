@@ -24,6 +24,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type PieceSeedStream struct {
@@ -88,6 +90,9 @@ func (pss *PieceSeedStream) Recv() (ps *cdnsystem.PieceSeed, err error) {
 }
 
 func (pss *PieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error) {
+	if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
+		return nil, cause
+	}
 	if err := pss.replaceStream(cause); err != nil {
 		return nil, err
 	}

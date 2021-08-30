@@ -99,7 +99,7 @@ func (drs *DownResultStream) Recv() (dr *dfdaemon.DownResult, err error) {
 }
 
 func (drs *DownResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error) {
-	if status.Code(cause) == codes.DeadlineExceeded {
+	if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
 		return nil, cause
 	}
 

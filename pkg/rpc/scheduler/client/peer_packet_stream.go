@@ -103,7 +103,7 @@ func (pps *peerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
 }
 
 func (pps *peerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) error {
-	if status.Code(cause) == codes.DeadlineExceeded {
+	if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
 		return cause
 	}
 
@@ -115,7 +115,7 @@ func (pps *peerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) e
 }
 
 func (pps *peerPacketStream) retryRecv(cause error) (*scheduler.PeerPacket, error) {
-	if status.Code(cause) == codes.DeadlineExceeded {
+	if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
 		return nil, cause
 	}
 	_, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
