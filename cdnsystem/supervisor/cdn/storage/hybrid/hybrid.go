@@ -297,7 +297,7 @@ func (h *hybridStorageMgr) StatDownloadFile(taskID string) (*storedriver.Storage
 func (h *hybridStorageMgr) GetFreeSpace() int64 {
 	var memoryFreeSpace, diskFreeSpace int64
 	remainder := atomic.NewInt64(0)
-	h.diskDriver.Walk(&storedriver.Raw{
+	r := &storedriver.Raw{
 		WalkFn: func(filePath string, info os.FileInfo, err error) error {
 			if fileutils.IsRegular(filePath) {
 				taskID := strings.Split(path.Base(filePath), ".")[0]
@@ -318,7 +318,9 @@ func (h *hybridStorageMgr) GetFreeSpace() int64 {
 			}
 			return nil
 		},
-	})
+	}
+
+	h.diskDriver.Walk(r)
 	dFree, err := h.diskDriver.GetFreeSpace()
 	if err != nil {
 		diskFreeSpace = 0
@@ -328,28 +330,7 @@ func (h *hybridStorageMgr) GetFreeSpace() int64 {
 
 	if h.hasShm {
 		remainder = atomic.NewInt64(0)
-		h.memoryDriver.Walk(&storedriver.Raw{
-			WalkFn: func(filePath string, info os.FileInfo, err error) error {
-				if fileutils.IsRegular(filePath) {
-					taskID := strings.Split(path.Base(filePath), ".")[0]
-					task, exist := h.taskMgr.Exist(taskID)
-					if exist {
-						var totalLen int64 = 0
-						if task.CdnFileLength > 0 {
-							totalLen = task.CdnFileLength
-						} else {
-							totalLen = task.SourceFileLength
-						}
-						if totalLen > 0 {
-							remainder.Add(totalLen - info.Size())
-						}
-					} else {
-						logger.Warnf("failed to get task: %s", taskID)
-					}
-				}
-				return nil
-			},
-		})
+		h.memoryDriver.Walk(r)
 		memoryFreeSpace = h.getMemoryUsableSpace().ToNumber() - remainder.Load()
 	}
 
