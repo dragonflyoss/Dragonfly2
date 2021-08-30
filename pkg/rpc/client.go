@@ -372,7 +372,7 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	logger.With("conn", conn.name).Infof("start try migrate server node for key %s, cause err: %v", key, cause)
 	// TODO recover findCandidateClientConn error
 	if e, ok := cause.(*dferrors.DfError); ok {
-		if e.Code != dfcodes.ResourceLacked && e.Code != dfcodes.UnknownError {
+		if e.Code != dfcodes.ResourceLacked {
 			return "", cause
 		}
 	}

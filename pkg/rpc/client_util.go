@@ -24,7 +24,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -185,10 +184,8 @@ type RetryMeta struct {
 func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {
 	var res interface{}
 	for i := 0; i < maxAttempts; i++ {
-		if e, ok := cause.(*dferrors.DfError); ok {
-			if e.Code != dfcodes.UnknownError {
-				return res, cause
-			}
+		if _, ok := cause.(*dferrors.DfError); ok {
+			return res, cause
 		}
 		if i > 0 {
 			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))

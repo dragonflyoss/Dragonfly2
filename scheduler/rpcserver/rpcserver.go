@@ -150,6 +150,8 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 
 	}
 	conn := peer.BindNewConn(stream)
+	logger.Infof("peer %s is connected", peer.PeerID)
+	defer logger.Infof("peer %s is disconnect", peer.PeerID)
 	for {
 		select {
 		case <-conn.Done():
