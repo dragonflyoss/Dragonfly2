@@ -83,6 +83,9 @@ func (e startReportPieceResultEvent) apply(s *state) {
 			e.peer.PeerID).Warnf("startReportPieceResultEvent: no need schedule parent because peer already had parent %s", e.peer.GetParent().PeerID)
 		return
 	}
+	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
+		return
+	}
 	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer)
 	// No parent node is currently available
 	if !hasParent {
@@ -259,7 +262,7 @@ func (e peerDownloadFailEvent) apply(s *state) {
 		child := (value).(*supervisor.Peer)
 		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if !hasParent {
-			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("peerDownloadFailEvent: there is no available parent, reschedule it in one second")
+			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("peerDownloadFailEvent: there is no available parent, reschedule it later")
 			s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
 			return true
 		}
@@ -286,7 +289,7 @@ func (e peerLeaveEvent) apply(s *state) {
 		child := value.(*supervisor.Peer)
 		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if !hasParent {
-			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("handlePeerLeave: there is no available parent，reschedule it in one second")
+			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("handlePeerLeave: there is no available parent，reschedule it later")
 			s.waitScheduleParentPeerQueue.AddAfter(child, time.Second)
 			return true
 		}
@@ -338,7 +341,7 @@ func reScheduleParent(peer *supervisor.Peer, s *state) {
 			}
 			return
 		}
-		logger.Errorf("handleReplaceParent: failed to schedule parent to peer %s, reschedule it in one second", peer.PeerID)
+		logger.Errorf("handleReplaceParent: failed to schedule parent to peer %s, reschedule it later", peer.PeerID)
 		//peer.PacketChan <- constructFailPeerPacket(peer, dfcodes.SchedWithoutParentPeer)
 		s.waitScheduleParentPeerQueue.AddAfter(peer, time.Second)
 		return

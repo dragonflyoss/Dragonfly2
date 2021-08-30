@@ -333,6 +333,7 @@ func (peer *Peer) CloseChannel(err error) error {
 	defer peer.lock.Unlock()
 	if peer.conn != nil {
 		peer.conn.CloseWithError(err)
+		return nil
 	}
 	return errors.New("client peer is not connected")
 }
