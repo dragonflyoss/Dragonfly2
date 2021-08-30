@@ -371,9 +371,9 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 func (s *streamPeerTask) finish() error {
 	// send last progress
 	s.once.Do(func() {
+		s.success = true
 		// let stream return immediately
 		close(s.streamDone)
-		s.peerTaskDone = true
 		// send EOF piece result to scheduler
 		_ = s.peerPacketStream.Send(
 			scheduler.NewEndPieceResult(s.taskID, s.peerID, s.readyPieces.Settled()))

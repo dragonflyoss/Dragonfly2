@@ -104,8 +104,8 @@ type peerTask struct {
 
 	// done channel will be close when peer task is finished
 	done chan struct{}
-	// peerTaskDone will be true after peer task done
-	peerTaskDone bool
+	// success will be true after peer task done
+	success bool
 	// span stands open telemetry trace span
 	span trace.Span
 
@@ -113,7 +113,7 @@ type peerTask struct {
 	once sync.Once
 
 	// failedPieceCh will hold all pieces which download failed,
-	// those pieces will be retry later
+	// those pieces will be retried later
 	failedPieceCh chan int32
 	// failedReason will be set when peer task failed
 	failedReason string
@@ -226,26 +226,28 @@ loop:
 			break loop
 		}
 		if err != nil {
-			if !pt.peerTaskDone {
-				pt.failedCode = dfcodes.UnknownError
-				if de, ok := err.(*dferrors.DfError); ok {
-					if de.Code == dfcodes.SchedNeedBackSource {
-						pt.needBackSource = true
-						close(pt.peerPacketReady)
-						return
-					}
-					pt.failedCode = de.Code
-					pt.failedReason = de.Message
-					pt.Errorf("receive peer packet failed: %s", pt.failedReason)
-				} else {
-					pt.Errorf("receive peer packet failed: %s", err)
+			// when success, context will be cancelled, check if pt.success is true
+			if pt.success {
+				return
+			}
+			pt.failedCode = dfcodes.UnknownError
+			if de, ok := err.(*dferrors.DfError); ok {
+				if de.Code == dfcodes.SchedNeedBackSource {
+					pt.needBackSource = true
+					close(pt.peerPacketReady)
+					return
 				}
-				if !firstSpanDone {
-					firstPeerSpan.RecordError(err)
-				}
-				break loop
+				pt.failedCode = de.Code
+				pt.failedReason = de.Message
+				pt.Errorf("receive peer packet failed: %s", pt.failedReason)
+			} else {
+				pt.Errorf("receive peer packet failed: %s", err)
 			}
 			pt.cancel()
+			if !firstSpanDone {
+				firstPeerSpan.RecordError(err)
+			}
+			break loop
 		}
 
 		logger.Debugf("receive peerPacket %v for peer %s", peerPacket, pt.peerID)
@@ -390,7 +392,7 @@ loop:
 			break loop
 		case <-pt.ctx.Done():
 			pt.Debugf("context done due to %s", pt.ctx.Err())
-			if !pt.peerTaskDone {
+			if !pt.success {
 				if pt.failedCode == failedCodeNotSet {
 					pt.failedReason = reasonContextCanceled
 					pt.failedCode = dfcodes.ClientContextCanceled
@@ -528,7 +530,7 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 		pt.Infof("peer task done, stop wait available peer packet")
 	case <-pt.ctx.Done():
 		pt.Debugf("context done due to %s", pt.ctx.Err())
-		if !pt.peerTaskDone {
+		if !pt.success {
 			if pt.failedCode == failedCodeNotSet {
 				pt.failedReason = reasonContextCanceled
 				pt.failedCode = dfcodes.ClientContextCanceled
@@ -582,7 +584,7 @@ func (pt *peerTask) dispatchPieceRequest(pieceRequestCh chan *DownloadPieceReque
 			pt.Warnf("peer task done, but still some piece request not process")
 		case <-pt.ctx.Done():
 			pt.Warnf("context done due to %s", pt.ctx.Err())
-			if !pt.peerTaskDone {
+			if !pt.success {
 				if pt.failedCode == failedCodeNotSet {
 					pt.failedReason = reasonContextCanceled
 					pt.failedCode = dfcodes.ClientContextCanceled
@@ -602,7 +604,7 @@ func (pt *peerTask) waitFailedPiece() (int32, bool) {
 		pt.Infof("peer task done, stop wait failed piece")
 		return -1, false
 	case <-pt.ctx.Done():
-		if !pt.peerTaskDone {
+		if !pt.success {
 			if pt.failedCode == failedCodeNotSet {
 				pt.failedReason = reasonContextCanceled
 				pt.failedCode = dfcodes.ClientContextCanceled
