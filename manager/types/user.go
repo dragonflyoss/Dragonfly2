@@ -16,6 +16,10 @@
 
 package types
 
+type UserParams struct {
+	ID uint `uri:"id" binding:"required"`
+}
+
 type SignInRequest struct {
 	Name     string `json:"name" binding:"required,min=3,max=10"`
 	Password string `json:"password" binding:"required,min=8,max=20"`
@@ -36,11 +40,11 @@ type SignUpRequest struct {
 }
 
 type DeleteRoleForUserParams struct {
-	ID       uint   `uri:"id" binding:"required"`
-	RoleName string `uri:"role_name" binding:"required,min=1"`
+	ID   uint   `uri:"id" binding:"required"`
+	Role string `uri:"role" binding:"required,min=1"`
 }
 
 type AddRoleForUserParams struct {
-	ID       uint   `uri:"id" binding:"required"`
-	RoleName string `uri:"role_name" binding:"required,min=1"`
+	ID   uint   `uri:"id" binding:"required"`
+	Role string `uri:"role" binding:"required,min=1"`
 }

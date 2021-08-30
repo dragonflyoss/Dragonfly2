@@ -21,6 +21,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/job"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
@@ -33,19 +34,18 @@ type REST interface {
 	SignIn(types.SignInRequest) (*model.User, error)
 	SignUp(types.SignUpRequest) (*model.User, error)
 	ResetPassword(uint, types.ResetPasswordRequest) error
+	GetRolesForUser(uint) ([]string, error)
+	AddRoleForUser(types.AddRoleForUserParams) (bool, error)
+	DeleteRoleForUser(types.DeleteRoleForUserParams) (bool, error)
 
-	AddRoleForUser(types.AddRoleForUserParams) error
-	DeleteRoleForUser(types.DeleteRoleForUserParams) error
-
-	GetPermissions(*gin.Engine) types.Permissions
-
-	CreateRole(json types.CreateRolePermissionRequest) error
-	DestroyRole(string) error
-	AddRolePermission(string, types.ObjectPermission) error
-	RemoveRolePermission(string, types.ObjectPermission) error
+	CreateRole(json types.CreateRoleRequest) error
+	DestroyRole(string) (bool, error)
+	GetRole(string) [][]string
 	GetRoles() []string
-	GetRole(string) []map[string]string
-	GetRolesForUser(uint, string) ([]string, error)
+	AddPermissionForRole(string, types.AddPermissionForRoleRequest) (bool, error)
+	DeletePermissionForRole(string, types.DeletePermissionForRoleRequest) (bool, error)
+
+	GetPermissions(*gin.Engine) []rbac.Permission
 
 	CreateCDNCluster(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	CreateCDNClusterWithSecurityGroupDomain(types.CreateCDNClusterRequest) (*model.CDNCluster, error)

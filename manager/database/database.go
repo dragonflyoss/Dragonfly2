@@ -158,20 +158,21 @@ func seed(db *gorm.DB) error {
 		}
 	}
 
-	var adminUserCount int64
-	var adminUserName = "admin"
-	if err := db.Model(model.User{}).Where("name = ?", adminUserName).Count(&adminUserCount).Error; err != nil {
+	var rootUserCount int64
+	if err := db.Model(model.User{}).Count(&rootUserCount).Error; err != nil {
 		return err
 	}
-	if adminUserCount <= 0 {
-		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte("Dragonfly2"), bcrypt.MinCost)
+	if rootUserCount <= 0 {
+		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte("dragonfly"), bcrypt.MinCost)
 		if err != nil {
 			return err
 		}
 		if err := db.Create(&model.User{
+			Model: model.Model{
+				ID: uint(1),
+			},
 			EncryptedPassword: string(encryptedPasswordBytes),
-			Name:              adminUserName,
-			Email:             fmt.Sprintf("%s@Dragonfly2.com", adminUserName),
+			Name:              "root",
 			State:             model.UserStateEnabled,
 		}).Error; err != nil {
 			return err

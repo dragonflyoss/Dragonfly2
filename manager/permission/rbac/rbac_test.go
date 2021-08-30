@@ -57,7 +57,7 @@ func TestGetApiGroupName(t *testing.T) {
 			path: "/api/user",
 			expect: func(t *testing.T, data string, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "faild to find api group")
+				assert.EqualError(err, "cannot find group name")
 			},
 		},
 		{
@@ -65,7 +65,7 @@ func TestGetApiGroupName(t *testing.T) {
 			path: "",
 			expect: func(t *testing.T, data string, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "faild to find api group")
+				assert.EqualError(err, "cannot find group name")
 			},
 		},
 	}
@@ -78,32 +78,6 @@ func TestGetApiGroupName(t *testing.T) {
 	}
 }
 
-func TestRoleName(t *testing.T) {
-	tests := []struct {
-		object           string
-		action           string
-		exceptedRoleName string
-	}{
-		{
-			object:           "users",
-			action:           "read",
-			exceptedRoleName: "users:read",
-		},
-		{
-			object:           "cdns",
-			action:           "*",
-			exceptedRoleName: "cdns:*",
-		},
-	}
-
-	for _, tt := range tests {
-		roleName := RoleName(tt.object, tt.action)
-		if roleName != tt.exceptedRoleName {
-			t.Errorf("RoleName(%v, %v) = %v, want %v", tt.object, tt.action, roleName, tt.exceptedRoleName)
-		}
-	}
-
-}
 func TestHTTPMethodToAction(t *testing.T) {
 	tests := []struct {
 		method         string
@@ -129,5 +103,4 @@ func TestHTTPMethodToAction(t *testing.T) {
 			t.Errorf("HttpMethodToAction(%v) = %v, want %v", tt.method, action, tt.exceptedAction)
 		}
 	}
-
 }

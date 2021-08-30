@@ -88,18 +88,14 @@ func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *rest) AddRoleForUser(json types.AddRoleForUserParams) error {
-	if _, err := s.enforcer.AddRoleForUser(fmt.Sprint(json.ID), json.RoleName); err != nil {
-		return err
-	}
-
-	return nil
+func (s *rest) GetRolesForUser(id uint) ([]string, error) {
+	return s.enforcer.GetRolesForUser(fmt.Sprint(id))
 }
 
-func (s *rest) DeleteRoleForUser(json types.DeleteRoleForUserParams) error {
-	if _, err := s.enforcer.DeleteRoleForUser(fmt.Sprint(json.ID), json.RoleName); err != nil {
-		return err
-	}
+func (s *rest) AddRoleForUser(json types.AddRoleForUserParams) (bool, error) {
+	return s.enforcer.AddRoleForUser(fmt.Sprint(json.ID), json.Role)
+}
 
-	return nil
+func (s *rest) DeleteRoleForUser(json types.DeleteRoleForUserParams) (bool, error) {
+	return s.enforcer.DeleteRoleForUser(fmt.Sprint(json.ID), json.Role)
 }
