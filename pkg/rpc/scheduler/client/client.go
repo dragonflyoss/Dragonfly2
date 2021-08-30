@@ -47,10 +47,11 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 	return sc, nil
 }
 
-// see scheduler.SchedulerClient
+// SchedulerClient see scheduler.SchedulerClient
 type SchedulerClient interface {
+	// RegisterPeerTask register peer task to scheduler
 	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest, ...grpc.CallOption) (*scheduler.RegisterResult, error)
-	// IsMigrating of ptr will be set to true
+	// ReportPieceResult IsMigrating of ptr will be set to true
 	ReportPieceResult(context.Context, string, *scheduler.PeerTaskRequest, ...grpc.CallOption) (PeerPacketStream, error)
 
 	ReportPeerResult(context.Context, *scheduler.PeerResult, ...grpc.CallOption) error

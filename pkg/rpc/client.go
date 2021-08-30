@@ -26,6 +26,7 @@ import (
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -204,16 +205,10 @@ func (conn *Connection) AddServerNodes(addrs []dfnet.NetAddr) error {
 }
 
 // findCandidateClientConn find candidate node client conn other than exclusiveNodes
-func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...string) (*candidateClient, error) {
+func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes sets.String) (*candidateClient, error) {
 	if node, ok := conn.key2NodeMap.Load(key); ok {
 		candidateNode := node.(string)
-		selected := true
-		for _, exclusiveNode := range exclusiveNodes {
-			if exclusiveNode == candidateNode {
-				selected = false
-			}
-		}
-		if selected {
+		if !exclusiveNodes.Has(candidateNode) {
 			if client, ok := conn.node2ClientMap.Load(node); ok {
 				return &candidateClient{
 					node: candidateNode,
@@ -232,23 +227,17 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes ...st
 	}
 	candidateNodes := make([]string, 0)
 	for _, ringNode := range ringNodes {
-		candidate := true
-		for _, exclusiveNode := range exclusiveNodes {
-			if exclusiveNode == ringNode {
-				candidate = false
-			}
-		}
-		if candidate {
+		if !exclusiveNodes.Has(ringNode) {
 			candidateNodes = append(candidateNodes, ringNode)
 		}
 	}
 	logger.With("conn", conn.name).Infof("candidate result for hash key %s: all server node list: %v, exclusiveNodes node list: %v, candidate node list: %v",
-		key, ringNodes, exclusiveNodes, candidateNodes)
+		key, ringNodes, exclusiveNodes.List(), candidateNodes)
 	for _, candidateNode := range candidateNodes {
 		// Check whether there is a corresponding mapping client in the node2ClientMap
 		// TODO 下面部分可以直接调用loadOrCreate方法，但是日志没有这么调用打印全
 		if client, ok := conn.node2ClientMap.Load(candidateNode); ok {
-			logger.With("conn", conn.name).Infof("hit cache candidateNode %s for hash key %s", candidateNode, key)
+			logger.With("conn", conn.name).Debugf("hit cache candidateNode %s for hash key %s", candidateNode, key)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  client,
@@ -351,12 +340,12 @@ func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientC
 		}
 		return clientConn, nil
 	}
-	logger.With("conn", conn.name).Infof("no server node associated with hash key %s was found, start find candidate", hashKey)
+	logger.With("conn", conn.name).Infof("no server node associated with hash key %s was found, start find candidate server", hashKey)
 	conn.rwMutex.RUnlock()
 	// if absence
 	conn.rwMutex.Lock()
 	defer conn.rwMutex.Unlock()
-	client, err := conn.findCandidateClientConn(hashKey)
+	client, err := conn.findCandidateClientConn(hashKey, sets.NewString())
 	if err != nil {
 		return nil, errors.Wrapf(err, "prob candidate client conn for hash key %s", hashKey)
 	}
@@ -378,16 +367,17 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	}
 	currentNode := ""
 	conn.rwMutex.RLock()
-	if currentNode, ok := conn.key2NodeMap.Load(key); ok {
-		preNode = currentNode.(string)
-		exclusiveNodes = append(exclusiveNodes, currentNode.(string))
+	if node, ok := conn.key2NodeMap.Load(key); ok {
+		currentNode = node.(string)
+		preNode = currentNode
+		exclusiveNodes = append(exclusiveNodes, preNode)
 	} else {
 		logger.With("conn", conn.name).Warnf("failed to find server node for hash key %s", key)
 	}
 	conn.rwMutex.RUnlock()
 	conn.rwMutex.Lock()
 	defer conn.rwMutex.Unlock()
-	client, err := conn.findCandidateClientConn(key, exclusiveNodes...)
+	client, err := conn.findCandidateClientConn(key, sets.NewString(exclusiveNodes...))
 	if err != nil {
 		return "", errors.Wrapf(err, "find candidate client conn for hash key %s", key)
 	}
