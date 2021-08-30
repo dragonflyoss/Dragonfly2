@@ -32,13 +32,13 @@ var _ = Describe("Preheat with manager", func() {
 				cdnPods[i] = e2eutil.NewPodExec(e2e.DragonflyNamespace, podName, "cdn")
 			}
 
-			out, err := e2eutil.KubeCtlCommand("-n", e2e.E2ENamespace, "get", "pod", "-l", "component=curl",
+			out, err := e2eutil.KubeCtlCommand("-n", e2e.E2ENamespace, "get", "pod", "-l", "component=file-server",
 				"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 			podName := strings.Trim(string(out), "'")
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println(podName)
-			Expect(strings.HasPrefix(podName, "curl-")).Should(BeTrue())
-			curlPod := e2eutil.NewPodExec(e2e.E2ENamespace, podName, "curl")
+			Expect(strings.HasPrefix(podName, "file-server-")).Should(BeTrue())
+			fsPod := e2eutil.NewPodExec(e2e.E2ENamespace, podName, "file-server")
 
 			for _, v := range e2eutil.GetFileList() {
 				url := e2eutil.GetFileURL(v)
@@ -51,7 +51,7 @@ var _ = Describe("Preheat with manager", func() {
 				sha256sum1 := strings.Split(string(out), " ")[0]
 
 				// preheat file
-				out, err = curlPod.CurlCommand("POST", "Content-Type:application/json",
+				out, err = fsPod.CurlCommand("POST", "Content-Type:application/json",
 					fmt.Sprintf(`{"type":"file","url":"%s"}`, url),
 					fmt.Sprintf("http://%s:%s/%s", e2e.ManagerService, e2e.ManagerPort, e2e.PreheatPath)).CombinedOutput()
 				fmt.Println(string(out))
@@ -66,7 +66,7 @@ var _ = Describe("Preheat with manager", func() {
 				preheatJob := &types.Preheat{}
 				err = json.Unmarshal(out, preheatJob)
 				Expect(err).NotTo(HaveOccurred())
-				done := waitForDone(preheatJob, curlPod)
+				done := waitForDone(preheatJob, fsPod)
 				Expect(done).Should(BeTrue())
 
 				var sha256sum2 string
