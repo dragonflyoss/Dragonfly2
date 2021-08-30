@@ -29,11 +29,6 @@ import (
 )
 
 var _ = BeforeSuite(func() {
-	out, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
-	Expect(err).NotTo(HaveOccurred())
-	gitCommit := strings.Fields(string(out))[0]
-	fmt.Printf("git merge commit: %s\n", gitCommit)
-
 	for i := 0; i < 3; i++ {
 		out, err := e2eutil.KubeCtlCommand("-n", e2e.DragonflyNamespace, "get", "pod", "-l", "component=manager",
 			"-o", fmt.Sprintf("jsonpath='{range .items[%d]}{.metadata.name}{end}'", i)).CombinedOutput()
