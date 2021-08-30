@@ -20,7 +20,6 @@ import (
 	"context"
 	"io"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -78,10 +77,8 @@ func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
 	pps.lastPieceResult = pr
 	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
 	err = pps.stream.Send(pr)
-	if e, ok := err.(*dferrors.DfError); ok {
-		if e.Code != dfcodes.UnknownError {
-			return err
-		}
+	if _, ok := err.(*dferrors.DfError); ok {
+		return err
 	}
 
 	if pr.PieceInfo.PieceNum == common.EndOfPiece {
@@ -104,10 +101,8 @@ func (pps *peerPacketStream) closeSend() error {
 func (pps *peerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
 	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
 	if pp, err = pps.stream.Recv(); err != nil && err != io.EOF {
-		if e, ok := err.(*dferrors.DfError); ok {
-			if e.Code != dfcodes.UnknownError {
-				return pp, err
-			}
+		if _, ok := err.(*dferrors.DfError); ok {
+			return pp, err
 		}
 		pp, err = pps.retryRecv(err)
 	}
