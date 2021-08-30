@@ -79,14 +79,38 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	apiv1 := r.Group("/api/v1")
 
 	// User
-	ai := apiv1.Group("/users")
-	ai.POST("/signin", jwt.LoginHandler)
-	ai.POST("/signout", jwt.LogoutHandler)
-	ai.POST("/signup", h.SignUp)
-	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/reset_password", h.ResetPassword)
-	ai.POST("/:id/roles/:role_name", h.AddRoleToUser, jwt.MiddlewareFunc(), rbac)
-	ai.DELETE("/:id/roles/:role_name", h.DeleteRoleForUser, jwt.MiddlewareFunc(), rbac)
+	u := apiv1.Group("/users")
+	u.POST("/signin", jwt.LoginHandler)
+	u.POST("/signout", jwt.LogoutHandler)
+	u.POST("/signup", h.SignUp)
+	u.POST("/refresh_token", jwt.RefreshHandler)
+	u.POST("/:id/reset_password", h.ResetPassword)
+	u.GET("/:id/roles", h.GetRolesForUser)
+	u.PUT("/:id/roles/:role", h.AddRoleToUser)
+	u.DELETE("/:id/roles/:role", h.DeleteRoleForUser)
+
+	// Role
+	re := apiv1.Group("/roles")
+	re.POST("", h.CreateRole)
+	re.DELETE("/:role", h.DestroyRole)
+	re.GET("/:role", h.GetRole)
+	re.GET("", h.GetRoles)
+	re.POST("/:role/permissions", h.AddPermissionForRole)
+	re.DELETE("/:role/permissions", h.DeletePermissionForRole)
+
+	// Permission
+	pm := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)
+	pm.GET("", h.GetPermissions(r))
+
+	// Oauth
+	oa := apiv1.Group("/oauth")
+	oa.GET("", h.GetOauths)
+	oa.GET("/:id", h.GetOauth)
+	oa.DELETE("/:id", h.DestroyOauth)
+	oa.PUT("/:id", h.UpdateOauth)
+	oa.POST("", h.CreateOauth)
+	oa.GET("/signin/:oauth_name", h.OauthSignin)
+	oa.GET("/callback/:oauth_name", h.OauthCallback(jwt))
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")
@@ -129,29 +153,6 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	c.PATCH(":id", h.UpdateCDN)
 	c.GET(":id", h.GetCDN)
 	c.GET("", h.GetCDNs)
-
-	// Role
-	re := apiv1.Group("/roles", jwt.MiddlewareFunc(), rbac)
-	re.POST("", h.CreateRole)
-	re.GET("", h.GetRoles)
-	re.DELETE("/:role_name", h.DestroyRole)
-	re.GET("/:role_name", h.GetRole)
-	re.POST("/:role_name/permission", h.AddRolePermission)
-	re.DELETE("/:role_name/permission", h.RemoveRolePermission)
-
-	// Permission
-	pn := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)
-	pn.GET("", h.GetPermissions(r))
-
-	// oauth
-	oa := apiv1.Group("/oauth")
-	oa.GET("", h.GetOauths)
-	oa.GET("/:id", h.GetOauth)
-	oa.DELETE("/:id", h.DestroyOauth)
-	oa.PUT("/:id", h.UpdateOauth)
-	oa.POST("", h.CreateOauth)
-	oa.GET("/signin/:oauth_name", h.OauthSignin)
-	oa.GET("/callback/:oauth_name", h.OauthCallback(jwt))
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")
