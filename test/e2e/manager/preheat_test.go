@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"d7y.io/dragonfly/v2/test/e2e"
+
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/test/e2e"
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	. "github.com/onsi/ginkgo" //nolint
@@ -38,7 +39,7 @@ var _ = Describe("Preheat with manager", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println(podName)
 			Expect(strings.HasPrefix(podName, "file-server-")).Should(BeTrue())
-			fsPod := e2eutil.NewPodExec(e2e.E2ENamespace, podName, "file-server")
+			fsPod := e2eutil.NewPodExec(e2e.E2ENamespace, podName, "")
 
 			for _, v := range e2eutil.GetFileList() {
 				url := e2eutil.GetFileURL(v)

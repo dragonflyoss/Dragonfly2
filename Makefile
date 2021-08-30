@@ -197,12 +197,12 @@ install-actions-e2e-test:
 
 # Run github actions E2E tests
 actions-e2e-test: install-actions-e2e-test
-	@ginkgo -v -r --failFast test/e2e test/e2e/manager --trace --progress
+	@ginkgo -v -r --failFast test/e2e --trace --progress
 .PHONY: actions-e2e-test
 
 # Run github actions E2E tests with coverage
 actions-e2e-test-coverage: install-actions-e2e-test
-	@ginkgo -v -r --failFast -cover test/e2e test/e2e/manager --trace --progress
+	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
 	@cat test/e2e/*.coverprofile >> coverage.txt
 .PHONY: actions-e2e-test-coverage
 
@@ -213,12 +213,12 @@ install-e2e-test:
 
 # Run E2E tests
 e2e-test: install-e2e-test
-	@ginkgo -v -r --failFast test/e2e test/e2e/manager --trace --progress
+	@ginkgo -v -r --failFast test/e2e --trace --progress
 .PHONY: e2e-test
 
 # Run E2E tests with coverage
 e2e-test-coverage: install-e2e-test
-	@ginkgo -v -r --failFast -cover test/e2e test/e2e/manager --trace --progress
+	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
 	@cat test/e2e/*.coverprofile >> coverage.txt
 .PHONY: e2e-test-coverage
 
