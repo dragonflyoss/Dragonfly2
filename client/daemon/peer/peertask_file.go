@@ -296,9 +296,10 @@ func (pt *filePeerTask) finish() error {
 		pt.Debugf("finish end piece result sent")
 
 		var (
-			success = true
-			code    = dfcodes.Success
-			message = "Success"
+			success      = true
+			code         = dfcodes.Success
+			message      = "Success"
+			progressDone bool
 		)
 
 		// callback to store data to output
@@ -322,7 +323,7 @@ func (pt *filePeerTask) finish() error {
 			CompletedLength: pt.completedLength.Load(),
 			PeerTaskDone:    true,
 			DoneCallback: func() {
-				pt.peerTaskDone = true
+				progressDone = true
 				close(pt.progressStopCh)
 			},
 		}
@@ -341,13 +342,14 @@ func (pt *filePeerTask) finish() error {
 		case <-pt.progressStopCh:
 			pt.Infof("progress stopped")
 		case <-pt.ctx.Done():
-			if pt.peerTaskDone {
+			if progressDone {
 				pt.Debugf("progress stopped and context done")
 			} else {
 				pt.Warnf("wait progress stopped failed, context done, but progress not stopped")
 			}
 		}
 		pt.Debugf("finished: close channel")
+		pt.success = true
 		close(pt.done)
 		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 		pt.span.End()
@@ -365,6 +367,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			scheduler.NewEndPieceResult(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 		pt.Debugf("clean up end piece result sent")
 
+		var progressDone bool
 		pg := &FilePeerTaskProgress{
 			State: &ProgressState{
 				Success: false,
@@ -377,7 +380,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			CompletedLength: pt.completedLength.Load(),
 			PeerTaskDone:    true,
 			DoneCallback: func() {
-				pt.peerTaskDone = true
+				progressDone = true
 				close(pt.progressStopCh)
 			},
 		}
@@ -396,7 +399,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 		case <-pt.progressStopCh:
 			pt.Infof("progress stopped")
 		case <-pt.ctx.Done():
-			if pt.peerTaskDone {
+			if progressDone {
 				pt.Debugf("progress stopped and context done")
 			} else {
 				pt.Warnf("wait progress stopped failed, context done, but progress not stopped")
