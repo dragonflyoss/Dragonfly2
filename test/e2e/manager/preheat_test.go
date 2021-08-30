@@ -58,11 +58,6 @@ var _ = Describe("Preheat with manager", func() {
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())
 
-				// generate task_id, also the filename
-				// TODO(zzy987) this tag may not always be right.
-				taskID := idgen.TaskID(url, &base.UrlMeta{Tag: "d7y/manager"})
-				fmt.Println(taskID)
-
 				// wait for success
 				preheatJob := &types.Preheat{}
 				err = json.Unmarshal(out, preheatJob)
@@ -70,10 +65,17 @@ var _ = Describe("Preheat with manager", func() {
 				done := waitForDone(preheatJob, fsPod)
 				Expect(done).Should(BeTrue())
 
+				// generate task_id, also the filename
+				// TODO(zzy987) this tag may not always be right.
+				taskID := idgen.TaskID(url, &base.UrlMeta{Tag: "d7y/manager"})
+				fmt.Println(taskID)
+
 				var sha256sum2 string
 				for _, cdn := range cdnPods {
 					out, err = cdn.Command("ls", e2e.CDNCachePath).CombinedOutput()
-					Expect(err).NotTo(HaveOccurred())
+					if err != nil {
+						continue
+					}
 					dir := taskID[0:3]
 					if !strings.Contains(string(out), dir) {
 						continue
@@ -115,6 +117,78 @@ var _ = Describe("Preheat with manager", func() {
 			Expect(err).NotTo(HaveOccurred())
 			os.Remove(dataFilePath)
 			Expect(err).NotTo(HaveOccurred())
+
+			out, err = e2eutil.DockerCommand("sha256sum", e2e.HostnameFilePath).CombinedOutput()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
+			sha256sum1 := strings.Split(string(out), " ")[0]
+
+			var cdnPods [3]*e2eutil.PodExec
+			for i := 0; i < 3; i++ {
+				out, err = e2eutil.KubeCtlCommand("-n", e2e.DragonflyNamespace, "get", "pod", "-l", "component=cdn",
+					"-o", fmt.Sprintf("jsonpath='{range .items[%d]}{.metadata.name}{end}'", i)).CombinedOutput()
+				podName := strings.Trim(string(out), "'")
+				Expect(err).NotTo(HaveOccurred())
+				fmt.Println(podName)
+				Expect(strings.HasPrefix(podName, "dragonfly-cdn-")).Should(BeTrue())
+				cdnPods[i] = e2eutil.NewPodExec(e2e.DragonflyNamespace, podName, "cdn")
+			}
+
+			out, err = e2eutil.KubeCtlCommand("-n", e2e.E2ENamespace, "get", "pod", "-l", "component=file-server",
+				"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
+			podName := strings.Trim(string(out), "'")
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(podName)
+			Expect(strings.HasPrefix(podName, "file-server-")).Should(BeTrue())
+			fsPod := e2eutil.NewPodExec(e2e.E2ENamespace, podName, "")
+
+			// use a curl to preheat the same file, git a id to wait for success
+			out, err = fsPod.CurlCommand("POST", "Content-Type:application/json",
+				fmt.Sprintf(`{"type":"file","url":"%s"}`, url),
+				fmt.Sprintf("http://%s:%s/%s", e2e.ManagerService, e2e.ManagerPort, e2e.PreheatPath)).CombinedOutput()
+			fmt.Println(string(out))
+			Expect(err).NotTo(HaveOccurred())
+
+			// wait for success
+			preheatJob := &types.Preheat{}
+			err = json.Unmarshal(out, preheatJob)
+			Expect(err).NotTo(HaveOccurred())
+			done := waitForDone(preheatJob, fsPod)
+			Expect(done).Should(BeTrue())
+
+			// TODO(zzy987) this tag may not always be right.
+			taskID := idgen.TaskID(url, &base.UrlMeta{Tag: "d7y/manager"})
+			fmt.Println(taskID)
+
+			var sha256sum2 string
+			for _, cdn := range cdnPods {
+				out, err = cdn.Command("ls", e2e.CDNCachePath).CombinedOutput()
+				if err != nil {
+					continue
+				}
+				dir := taskID[0:3]
+				if !strings.Contains(string(out), dir) {
+					continue
+				}
+
+				out, err = cdn.Command("ls", fmt.Sprintf("%s/%s", e2e.CDNCachePath, dir)).CombinedOutput()
+				Expect(err).NotTo(HaveOccurred())
+				file := taskID
+				if !strings.Contains(string(out), file) {
+					continue
+				}
+
+				// calculate digest of downloaded file
+				out, err = cdn.Command("sha256sum", fmt.Sprintf("%s/%s/%s", e2e.CDNCachePath, dir, file)).CombinedOutput()
+				fmt.Println(string(out))
+				Expect(err).NotTo(HaveOccurred())
+				sha256sum2 = strings.Split(string(out), " ")[0]
+				break
+			}
+			if sha256sum2 == "" {
+				fmt.Println("preheat file not found")
+			}
+			Expect(sha256sum1).To(Equal(sha256sum2))
 		})
 	})
 })
