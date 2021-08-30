@@ -41,10 +41,10 @@ type SignUpRequest struct {
 
 type DeleteRoleForUserParams struct {
 	ID   uint   `uri:"id" binding:"required"`
-	Role string `uri:"role" binding:"required,min=1"`
+	Role string `uri:"role" binding:"required"`
 }
 
 type AddRoleForUserParams struct {
 	ID   uint   `uri:"id" binding:"required"`
-	Role string `uri:"role" binding:"required,min=1"`
+	Role string `uri:"role" binding:"required"`
 }
