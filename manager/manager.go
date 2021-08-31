@@ -93,7 +93,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize roles and check roles
-	err = rbac.InitRole(enforcer, router)
+	err = rbac.InitRBAC(enforcer, router)
 	if err != nil {
 		return nil, err
 	}
