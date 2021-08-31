@@ -164,6 +164,11 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int) []
 				candidateNode.PeerID)
 			return false
 		}
+		if candidateNode.IsWaiting() {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer %s is not selected because it's status is Waiting******",
+				candidateNode.PeerID)
+			return false
+		}
 		if candidateNode == peer {
 			logger.WithTaskAndPeerID(peer.Task.TaskID,
 				peer.PeerID).Debugf("******candidate child peer %s is not selected because it and peer are the same******",
