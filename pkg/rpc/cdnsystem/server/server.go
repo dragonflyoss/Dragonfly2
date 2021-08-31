@@ -39,7 +39,7 @@ func init() {
 	})
 }
 
-// see cdnsystem.SeederServer
+// SeederServer see cdnsystem.SeederServer
 type SeederServer interface {
 	ObtainSeeds(context.Context, *cdnsystem.SeedRequest, chan<- *cdnsystem.PieceSeed) error
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)

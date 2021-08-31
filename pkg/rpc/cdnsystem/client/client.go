@@ -101,17 +101,15 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest,
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		defer func() {
-			logger.WithTaskID(req.TaskId).Infof("invoke cdn node %s GetPieceTasks", addr.GetEndpoint())
-		}()
 		client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
 		if err != nil {
 			return nil, err
 		}
 		return client.GetPieceTasks(ctx, req, opts...)
 	}, 0.2, 2.0, 3, nil)
-	if err == nil {
-		return res.(*base.PiecePacket), nil
+	if err != nil {
+		logger.WithTaskID(req.TaskId).Infof("GetPieceTasks: invoke cdn node %s GetPieceTasks failed: %v", addr.GetEndpoint(), err)
+		return nil, err
 	}
-	return nil, err
+	return res.(*base.PiecePacket), nil
 }
