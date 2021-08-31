@@ -33,6 +33,8 @@ import (
 type REST interface {
 	SignIn(types.SignInRequest) (*model.User, error)
 	SignUp(types.SignUpRequest) (*model.User, error)
+	Oauth2Signin(string, string) (string, error)
+	Oauth2SigninCallback(string, string) (*model.User, error)
 	ResetPassword(uint, types.ResetPasswordRequest) error
 	GetRolesForUser(uint) ([]string, error)
 	AddRoleForUser(types.AddRoleForUserParams) (bool, error)
@@ -105,8 +107,6 @@ type REST interface {
 	UpdateOauth(uint, types.UpdateOauthRequest) (*model.Oauth, error)
 	GetOauth(uint) (*model.Oauth, error)
 	GetOauths() (*[]model.Oauth, error)
-	OauthSignin(name string) (string, error)
-	OauthCallback(name, code string) (*model.User, error)
 }
 
 type rest struct {

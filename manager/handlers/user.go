@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"d7y.io/dragonfly/v2/manager/types"
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -78,6 +79,81 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 	}
 
 	ctx.Status(http.StatusOK)
+}
+
+// @Summary Oauth2 Signin
+// @Description oauth2 signin by json config
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param name path string true "name"
+// @Param redirect_url query string true "redirect_url"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /user/signin/{name} [get]
+func (h *Handlers) Oauth2Signin(ctx *gin.Context) {
+	var params types.Oauth2SigninParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	var query types.Oauth2SigninQuery
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	authURL, err := h.Service.Oauth2Signin(params.Name, query.RedirectURL)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.Redirect(http.StatusFound, authURL)
+}
+
+// @Summary Oauth2 Signin Callback
+// @Description oauth2 signin callback by json config
+// @Tags Oauth2
+// @Param name path string true "name"
+// @Param code query string true "code"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /user/signin/{name}/callback [get]
+func (h *Handlers) Oauth2SigninCallback(j *jwt.GinJWTMiddleware) func(*gin.Context) {
+	return func(ctx *gin.Context) {
+		var params types.Oauth2SigninCallbackParams
+		if err := ctx.ShouldBindUri(&params); err != nil {
+			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+			return
+		}
+
+		var query types.Oauth2SigninCallbackQuery
+		if err := ctx.ShouldBindQuery(&query); err != nil {
+			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+			return
+		}
+
+		user, err := h.Service.Oauth2SigninCallback(params.Name, query.Code)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+
+		jwtToken, _, err := j.TokenGenerator(user)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+
+		ctx.SetCookie("jwt", jwtToken, 3600, "", "", false, true)
+		ctx.Redirect(http.StatusFound, "/")
+	}
 }
 
 // @Summary Get User Roles

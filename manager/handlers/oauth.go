@@ -1,11 +1,9 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"d7y.io/dragonfly/v2/manager/types"
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -61,72 +59,6 @@ func (h *Handlers) DestroyOauth(ctx *gin.Context) {
 	}
 
 	ctx.Status(http.StatusOK)
-}
-
-// @Summary start oauth signin
-// @Description start oauth signin
-// @Tags Oauth
-// @Accept json
-// @Produce json
-// @Param oauth_name path string true "oauth_name"
-// @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
-// @Router /signin/{oauth_name} [get]
-func (h *Handlers) OauthSignin(ctx *gin.Context) {
-	var params types.OauthPathParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-
-	oauthURL, err := h.Service.OauthSignin(params.OauthName)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-	fmt.Println(oauthURL)
-	ctx.Redirect(http.StatusMovedPermanently, oauthURL)
-}
-
-// @Summary start oauth callback
-// @Description start oauth callback
-// @Tags Oauth
-// @Param oauth_name path string true "oauth_name"
-// @Param code query string true "code"
-// @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
-// @Router /callback/{oauth_name} [get]
-func (h *Handlers) OauthCallback(j *jwt.GinJWTMiddleware) func(*gin.Context) {
-	return func(ctx *gin.Context) {
-		var params types.OauthPathParams
-		if err := ctx.ShouldBindUri(&params); err != nil {
-			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-			return
-		}
-
-		code := ctx.Query("code")
-		if code == "" {
-			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": "code is required"})
-			return
-		}
-
-		user, err := h.Service.OauthCallback(params.OauthName, code)
-		if err != nil {
-			ctx.Error(err)
-			return
-		}
-		jwtToken, _, err := j.TokenGenerator(user)
-		if err != nil {
-			ctx.Error(err)
-			return
-		}
-		ctx.SetCookie("jwt", jwtToken, 3600, "", "", false, true)
-		ctx.Redirect(http.StatusMovedPermanently, "/")
-	}
 }
 
 // @Summary Update Oauth

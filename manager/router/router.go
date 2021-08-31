@@ -83,6 +83,8 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	u.POST("/signin", jwt.LoginHandler)
 	u.POST("/signout", jwt.LogoutHandler)
 	u.POST("/signup", h.SignUp)
+	u.GET("/signin/:name", h.OauthSignin)
+	u.GET("/signin/:name/callback", h.OauthSigninCallback(jwt))
 	u.POST("/refresh_token", jwt.RefreshHandler)
 	u.POST("/:id/reset_password", h.ResetPassword)
 	u.GET("/:id/roles", h.GetRolesForUser)
@@ -109,8 +111,6 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	oa.DELETE("/:id", h.DestroyOauth)
 	oa.PUT("/:id", h.UpdateOauth)
 	oa.POST("", h.CreateOauth)
-	oa.GET("/signin/:oauth_name", h.OauthSignin)
-	oa.GET("/callback/:oauth_name", h.OauthCallback(jwt))
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")

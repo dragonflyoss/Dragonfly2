@@ -19,6 +19,7 @@ package service
 import (
 	"fmt"
 
+	"d7y.io/dragonfly/v2/manager/auth/oauth2"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"golang.org/x/crypto/bcrypt"
@@ -86,6 +87,49 @@ func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
 	}
 
 	return &user, nil
+}
+
+func (s *rest) Oauth2Signin(name string, redirectURL string) (string, error) {
+	oauth2 := model.Oauth2{}
+	if err := s.db.First(&oauth2, model.Oauth2{Name: name}).Error; err != nil {
+		return "", err
+	}
+
+	o, err := oauth2.New(oauth2.Name, oauth2.ClientID, oauth2.ClientID, redirectURL)
+	if err != nil {
+		return "", err
+	}
+
+	return o.AuthCodeURL(), nil
+}
+
+func (s *rest) Oauth2SigninCallback(name, code string) (*model.User, error) {
+	oauth2Model := model.Oauth2{}
+	if err := s.db.First(&oauth2Model, model.Oauth2{Name: name}).Error; err != nil {
+		return nil, err
+	}
+
+	o, err := oauth2.New(&oauth2Model, s.db)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := o.ExchangeTokenByCode(code)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := o.GetOauth2UserInfo(token)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := o.Oauth2LinkUser(u, s.db)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (s *rest) GetRolesForUser(id uint) ([]string, error) {

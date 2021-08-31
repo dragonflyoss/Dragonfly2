@@ -4,10 +4,6 @@ type OauthParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
-type OauthPathParams struct {
-	OauthName string `uri:"oauth_name" binding:"required"`
-}
-
 type OauthBaseRquest struct {
 	Name         string `json:"name" binding:"required"`
 	ClientID     string `json:"client_id" binding:"required"`
