@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -114,12 +115,11 @@ func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr,
 		}
 		return client.GetPieceTasks(ctx, ptr, opts...)
 	}, 0.2, 2.0, 3, nil)
-
-	if err == nil {
-		return res.(*base.PiecePacket), nil
+	if err != nil {
+		logger.WithTaskID(ptr.TaskId).Infof("GetPieceTasks: invoke daemon node %s GetPieceTasks failed: %v", target, err)
+		return nil, err
 	}
-
-	return nil, err
+	return res.(*base.PiecePacket), nil
 }
 
 func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (err error) {
@@ -130,6 +130,9 @@ func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, o
 		}
 		return client.CheckHealth(ctx, new(empty.Empty), opts...)
 	}, 0.2, 2.0, 3, nil)
-
+	if err != nil {
+		logger.Infof("CheckHealth: invoke daemon node %s CheckHealth failed: %v", target, err)
+		return
+	}
 	return
 }

@@ -113,6 +113,7 @@ func (drs *DownResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error
 
 func (drs *DownResultStream) replaceStream(cause error) error {
 	if drs.StreamTimes >= drs.MaxAttempts {
+		logger.WithTaskID(drs.hashKey).Info("replace stream reach max attempt")
 		return cause
 	}
 	var target string
@@ -126,7 +127,7 @@ func (drs *DownResultStream) replaceStream(cause error) error {
 		return client.Download(drs.ctx, drs.req, drs.opts...)
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
 	if err != nil {
-		logger.WithTaskID(drs.hashKey).Infof("replaceStream: invoke daemon node %s Download", target)
+		logger.WithTaskID(drs.hashKey).Infof("replaceStream: invoke daemon node %s Download failed: %v", target, err)
 		return drs.replaceClient(cause)
 	}
 	drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
@@ -153,7 +154,7 @@ func (drs *DownResultStream) replaceClient(cause error) error {
 		return client.Download(drs.ctx, drs.req, drs.opts...)
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, cause)
 	if err != nil {
-		logger.WithTaskID(drs.hashKey).Infof("replaceClient: invoke daemon node %s Download", target)
+		logger.WithTaskID(drs.hashKey).Infof("replaceClient: invoke daemon node %s Download failed: %v", target, err)
 		return drs.replaceClient(cause)
 	}
 	drs.stream = stream.(dfdaemon.Daemon_DownloadClient)

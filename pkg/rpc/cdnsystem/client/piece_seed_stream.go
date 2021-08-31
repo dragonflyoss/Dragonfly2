@@ -102,6 +102,7 @@ func (pss *PieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error)
 
 func (pss *PieceSeedStream) replaceStream(cause error) error {
 	if pss.StreamTimes >= pss.MaxAttempts {
+		logger.WithTaskID(pss.hashKey).Info("replace stream reach max attempt")
 		return cause
 	}
 	var target string
@@ -115,7 +116,7 @@ func (pss *PieceSeedStream) replaceStream(cause error) error {
 		return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
 	if err != nil {
-		logger.WithTaskID(pss.hashKey).Infof("replaceStream: invoke cdn node %s ObtainSeeds", target)
+		logger.WithTaskID(pss.hashKey).Infof("replaceStream: invoke cdn node %s ObtainSeeds failed: %v", target, err)
 		return pss.replaceStream(cause)
 	}
 	pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
