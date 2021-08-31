@@ -24,11 +24,6 @@ import (
 	. "github.com/onsi/gomega" //nolint
 )
 
-const (
-	hostnameFilePath = "/etc/hostname"
-	proxy            = "localhost:65001"
-)
-
 var _ = Describe("Download concurrency", func() {
 	Context("ab", func() {
 		It("concurrent 100 should be ok", func() {

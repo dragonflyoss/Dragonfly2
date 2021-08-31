@@ -1,6 +1,8 @@
 package e2eutil
 
 import (
+	"encoding/json"
+	"fmt"
 	"os/exec"
 )
 
@@ -53,6 +55,23 @@ func (p *PodExec) Command(arg ...string) *exec.Cmd {
 	}
 	extArgs = append(extArgs, arg...)
 	return KubeCtlCommand(extArgs...)
+}
+
+func (p *PodExec) CurlCommand(method string, header map[string]string, data map[string]interface{}, target string) *exec.Cmd {
+	extArgs := []string{"/usr/bin/curl", target, "-s"}
+	if method != "" {
+		extArgs = append(extArgs, "-X", method)
+	}
+	if header != nil {
+		for k, v := range header {
+			extArgs = append(extArgs, "-H", fmt.Sprintf("%s:%s", k, v))
+		}
+	}
+	if data != nil {
+		jsonData, _ := json.Marshal(data)
+		extArgs = append(extArgs, "-d", string(jsonData))
+	}
+	return p.Command(extArgs...)
 }
 
 func KubeCtlCopyCommand(ns, pod, source, target string) *exec.Cmd {

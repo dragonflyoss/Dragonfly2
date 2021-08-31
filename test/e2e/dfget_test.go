@@ -25,10 +25,6 @@ import (
 	. "github.com/onsi/gomega" //nolint
 )
 
-const (
-	dragonflyNamespace = "dragonfly-system"
-)
-
 var _ = Describe("Download with dfget", func() {
 	Context("dfget", func() {
 		It("dfget download should be ok", func() {
