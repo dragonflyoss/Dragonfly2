@@ -37,7 +37,11 @@ import (
 
 type FilePeerTaskRequest struct {
 	scheduler.PeerTaskRequest
-	Output string
+	Output            string
+	Limit             float64
+	DisableBackSource bool
+	Pattern           string
+	Callsystem        string
 }
 
 // FilePeerTask represents a peer task to download a file
@@ -52,6 +56,11 @@ type filePeerTask struct {
 	// progressCh holds progress status
 	progressCh     chan *FilePeerTaskProgress
 	progressStopCh chan bool
+
+	// disableBackSource indicates not back source when failed
+	disableBackSource bool
+	pattern           string
+	callsystem        string
 }
 
 var _ FilePeerTask = (*filePeerTask)(nil)
@@ -75,7 +84,7 @@ type FilePeerTaskProgress struct {
 func newFilePeerTask(ctx context.Context,
 	host *scheduler.PeerHost,
 	pieceManager PieceManager,
-	request *scheduler.PeerTaskRequest,
+	request *FilePeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
 	perPeerRateLimit rate.Limit) (context.Context, *filePeerTask, *TinyData, error) {
@@ -89,7 +98,7 @@ func newFilePeerTask(ctx context.Context,
 	// trace register
 	regCtx, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
 	logger.Infof("step 1: peer %s start to register", request.PeerId)
-	result, err := schedulerClient.RegisterPeerTask(regCtx, request)
+	result, err := schedulerClient.RegisterPeerTask(regCtx, &request.PeerTaskRequest)
 	regSpan.RecordError(err)
 	regSpan.End()
 
@@ -149,7 +158,7 @@ func newFilePeerTask(ctx context.Context,
 		}
 	}
 	logger.Infof("step 2: start report peer %s piece result", request.PeerId)
-	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
+	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, &request.PeerTaskRequest)
 	if err != nil {
 		logger.Errorf("step 2: peer %s report piece failed: err", request.PeerId, err)
 		defer span.End()
@@ -162,12 +171,15 @@ func newFilePeerTask(ctx context.Context,
 		limiter = rate.NewLimiter(perPeerRateLimit, int(perPeerRateLimit))
 	}
 	pt := &filePeerTask{
-		progressCh:     make(chan *FilePeerTaskProgress),
-		progressStopCh: make(chan bool),
+		progressCh:        make(chan *FilePeerTaskProgress),
+		progressStopCh:    make(chan bool),
+		disableBackSource: request.DisableBackSource,
+		pattern:           request.Pattern,
+		callsystem:        request.Callsystem,
 		peerTask: peerTask{
 			host:                host,
 			needBackSource:      needBackSource,
-			request:             request,
+			request:             &request.PeerTaskRequest,
 			peerPacketStream:    peerPacketStream,
 			pieceManager:        pieceManager,
 			peerPacketReady:     make(chan bool, 1),
@@ -284,9 +296,10 @@ func (pt *filePeerTask) finish() error {
 		pt.Debugf("finish end piece result sent")
 
 		var (
-			success = true
-			code    = dfcodes.Success
-			message = "Success"
+			success      = true
+			code         = dfcodes.Success
+			message      = "Success"
+			progressDone bool
 		)
 
 		// callback to store data to output
@@ -310,7 +323,7 @@ func (pt *filePeerTask) finish() error {
 			CompletedLength: pt.completedLength.Load(),
 			PeerTaskDone:    true,
 			DoneCallback: func() {
-				pt.peerTaskDone = true
+				progressDone = true
 				close(pt.progressStopCh)
 			},
 		}
@@ -329,13 +342,14 @@ func (pt *filePeerTask) finish() error {
 		case <-pt.progressStopCh:
 			pt.Infof("progress stopped")
 		case <-pt.ctx.Done():
-			if pt.peerTaskDone {
+			if progressDone {
 				pt.Debugf("progress stopped and context done")
 			} else {
 				pt.Warnf("wait progress stopped failed, context done, but progress not stopped")
 			}
 		}
 		pt.Debugf("finished: close channel")
+		pt.success = true
 		close(pt.done)
 		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 		pt.span.End()
@@ -353,6 +367,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			scheduler.NewEndPieceResult(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 		pt.Debugf("clean up end piece result sent")
 
+		var progressDone bool
 		pg := &FilePeerTaskProgress{
 			State: &ProgressState{
 				Success: false,
@@ -365,7 +380,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 			CompletedLength: pt.completedLength.Load(),
 			PeerTaskDone:    true,
 			DoneCallback: func() {
-				pt.peerTaskDone = true
+				progressDone = true
 				close(pt.progressStopCh)
 			},
 		}
@@ -384,7 +399,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 		case <-pt.progressStopCh:
 			pt.Infof("progress stopped")
 		case <-pt.ctx.Done():
-			if pt.peerTaskDone {
+			if progressDone {
 				pt.Debugf("progress stopped and context done")
 			} else {
 				pt.Warnf("wait progress stopped failed, context done, but progress not stopped")
@@ -416,6 +431,11 @@ func (pt *filePeerTask) SetContentLength(i int64) error {
 
 func (pt *filePeerTask) backSource() {
 	defer pt.cleanUnfinished()
+	if pt.disableBackSource {
+		pt.Errorf(reasonBackSourceDisabled)
+		pt.failedReason = reasonBackSourceDisabled
+		return
+	}
 	err := pt.pieceManager.DownloadSource(pt.ctx, pt, pt.request)
 	if err != nil {
 		pt.Errorf("download from source error: %s", err)

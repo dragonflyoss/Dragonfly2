@@ -17,11 +17,16 @@
 package router
 
 import (
+	"io"
+	"os"
+	"path/filepath"
+
+	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
-	rbacbase "d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/service"
 	"github.com/casbin/casbin/v2"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
@@ -29,10 +34,22 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func Init(verbose bool, publicPath string, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
+const (
+	GinLogFileName = "gin.log"
+)
+
+func Init(console bool, verbose bool, publicPath string, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
 	if !verbose {
 		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// Logging to a file
+	if !console {
+		gin.DisableConsoleColor()
+		logDir := filepath.Join(dfpath.LogDir, "manager")
+		f, _ := os.Create(filepath.Join(logDir, GinLogFileName))
+		gin.DefaultWriter = io.MultiWriter(f)
 	}
 
 	r := gin.New()
@@ -42,10 +59,15 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	p := ginprometheus.NewPrometheus("dragonfly_manager")
 	p.Use(r)
 
+	// CORS
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true
+
 	// Middleware
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(middlewares.Error())
+	r.Use(cors.New(corsConfig))
 
 	rbac := middlewares.RBAC(enforcer)
 	jwt, err := middlewares.Jwt(service)
@@ -57,11 +79,38 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	apiv1 := r.Group("/api/v1")
 
 	// User
-	ai := apiv1.Group("/users")
-	ai.POST("/signin", jwt.LoginHandler)
-	ai.POST("/signout", jwt.LogoutHandler)
-	ai.POST("/refresh_token", jwt.RefreshHandler)
-	ai.POST("/signup", jwt.MiddlewareFunc(), rbac, h.SignUp)
+	u := apiv1.Group("/users")
+	u.POST("/signin", jwt.LoginHandler)
+	u.POST("/signout", jwt.LogoutHandler)
+	u.POST("/signup", h.SignUp)
+	u.POST("/refresh_token", jwt.RefreshHandler)
+	u.POST("/:id/reset_password", h.ResetPassword)
+	u.GET("/:id/roles", h.GetRolesForUser)
+	u.PUT("/:id/roles/:role", h.AddRoleToUser)
+	u.DELETE("/:id/roles/:role", h.DeleteRoleForUser)
+
+	// Role
+	re := apiv1.Group("/roles")
+	re.POST("", h.CreateRole)
+	re.DELETE("/:role", h.DestroyRole)
+	re.GET("/:role", h.GetRole)
+	re.GET("", h.GetRoles)
+	re.POST("/:role/permissions", h.AddPermissionForRole)
+	re.DELETE("/:role/permissions", h.DeletePermissionForRole)
+
+	// Permission
+	pm := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)
+	pm.GET("", h.GetPermissions(r))
+
+	// Oauth
+	oa := apiv1.Group("/oauth")
+	oa.GET("", h.GetOauths)
+	oa.GET("/:id", h.GetOauth)
+	oa.DELETE("/:id", h.DestroyOauth)
+	oa.PUT("/:id", h.UpdateOauth)
+	oa.POST("", h.CreateOauth)
+	oa.GET("/signin/:oauth_name", h.OauthSignin)
+	oa.GET("/callback/:oauth_name", h.OauthCallback(jwt))
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")
@@ -80,6 +129,13 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	s.GET(":id", h.GetScheduler)
 	s.GET("", h.GetSchedulers)
 
+	// Settings
+	st := apiv1.Group("/settings")
+	st.POST("", h.CreateSetting)
+	st.DELETE(":id", h.DestroySetting)
+	st.PATCH("", h.UpdateSetting)
+	st.GET("", h.GetSettings)
+
 	// CDN Cluster
 	cc := apiv1.Group("/cdn-clusters")
 	cc.POST("", h.CreateCDNCluster)
@@ -97,14 +153,6 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 	c.PATCH(":id", h.UpdateCDN)
 	c.GET(":id", h.GetCDN)
 	c.GET("", h.GetCDNs)
-
-	// Permission
-	pn := apiv1.Group("/permission", jwt.MiddlewareFunc(), rbac)
-	pn.POST("", h.CreatePermission)
-	pn.DELETE("", h.DestroyPermission)
-	pn.GET("/groups", h.GetPermissionGroups(r))
-	pn.GET("/roles/:subject", h.GetRolesForUser)
-	pn.GET("/:subject/:object/:action", h.HasRoleForUser)
 
 	// Security Group
 	sg := apiv1.Group("/security-groups")
@@ -126,12 +174,6 @@ func Init(verbose bool, publicPath string, service service.REST, enforcer *casbi
 
 	// Manager View
 	r.Use(static.Serve("/", static.LocalFile(publicPath, false)))
-
-	// Auto init roles and check roles
-	err = rbacbase.InitRole(enforcer, r)
-	if err != nil {
-		return nil, err
-	}
 
 	// Swagger
 	apiSeagger := ginSwagger.URL("/swagger/doc.json")

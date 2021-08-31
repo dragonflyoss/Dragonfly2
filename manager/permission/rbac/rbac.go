@@ -20,9 +20,7 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
-	"strings"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	managermodel "d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/casbin/casbin/v2"
@@ -47,7 +45,7 @@ g = _, _
 e = some(where (p.eft == allow))
 
 [matchers]
-m = g(r.sub, p.sub) && r.obj == p.obj && (r.act == p.act || p.act == "*") || r.sub == "admin"
+m = g(r.sub, p.sub) && r.obj == p.obj && (r.act == p.act || p.act == "*")
 `
 
 func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
@@ -55,90 +53,83 @@ func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	m, err := model.NewModelFromString(modelText)
 	if err != nil {
 		return nil, err
 	}
+
 	enforcer, err := casbin.NewEnforcer(m, adapter)
 	if err != nil {
 		return nil, err
 	}
+
 	return enforcer, nil
 }
 
-func InitRole(e *casbin.Enforcer, g *gin.Engine) error {
-	systemRoles := SystemRoles(g)
-
-	for _, role := range systemRoles {
-		roleInfo := strings.Split(role, ":")
-		_, err := e.AddPolicy(role, roleInfo[0], roleInfo[1])
-		if err != nil {
+func InitRBAC(e *casbin.Enforcer, g *gin.Engine) error {
+	permissions := GetPermissions(g)
+	for _, permission := range permissions {
+		if _, err := e.AddPermissionForUser("root", permission.Object, "*"); err != nil {
 			return err
 		}
 	}
-	logger.Info("init and check role success")
-	return nil
 
+	if _, err := e.AddRoleForUser("1", "root"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type Permission struct {
+	Object string
+	Action string
+}
+
+func GetPermissions(g *gin.Engine) []Permission {
+	permissions := []Permission{}
+	actions := []string{"read", "*"}
+	for _, permission := range GetAPIGroupNames(g) {
+		for _, action := range actions {
+			permissions = append(permissions, Permission{
+				Object: permission,
+				Action: action,
+			})
+		}
+	}
+
+	return permissions
+}
+
+func GetAPIGroupNames(g *gin.Engine) []string {
+	apiGroupNames := []string{}
+	for _, route := range g.Routes() {
+		name, err := GetAPIGroupName(route.Path)
+		if err != nil {
+			continue
+		}
+
+		if !stringutils.Contains(apiGroupNames, name) {
+			apiGroupNames = append(apiGroupNames, name)
+		}
+	}
+
+	return apiGroupNames
 }
 
 func GetAPIGroupName(path string) (string, error) {
 	apiGroupRegexp := regexp.MustCompile(`^/api/v[0-9]+/([-_a-zA-Z]*)[/.*]*`)
 	matchs := apiGroupRegexp.FindStringSubmatch(path)
 	if len(matchs) != 2 {
-		return "", errors.New("faild to find api group")
+		return "", errors.New("cannot find group name")
 	}
 
 	return matchs[1], nil
 }
 
-func RoleName(object, action string) string {
-	if object == "admin" {
-		return "admin"
-	}
-	roleName := ""
-	switch action {
-	case "read":
-		roleName = object + ":" + "read"
-	case "write":
-		roleName = object + ":" + "*"
-	}
-	return roleName
-}
-
-func GetAPIGroupNames(g *gin.Engine) []string {
-	APIGroups := []string{}
-	for _, route := range g.Routes() {
-		apiGroupName, err := GetAPIGroupName(route.Path)
-		if err != nil {
-			continue
-		}
-		if !stringutils.Contains(APIGroups, apiGroupName) {
-			APIGroups = append(APIGroups, apiGroupName)
-		}
-
-	}
-
-	return APIGroups
-}
-
-func SystemRoles(g *gin.Engine) []string {
-	Roles := []string{}
-	policyKeys := []string{"read", "*"}
-
-	for _, apiGroup := range GetAPIGroupNames(g) {
-		for _, p := range policyKeys {
-			if !stringutils.Contains(Roles, apiGroup+":"+p) {
-				Roles = append(Roles, apiGroup+":"+p)
-			}
-
-		}
-	}
-	return Roles
-}
-
 func HTTPMethodToAction(method string) string {
 	action := "read"
-
 	if method == http.MethodDelete || method == http.MethodPatch || method == http.MethodPut || method == http.MethodPost {
 		action = "*"
 	}

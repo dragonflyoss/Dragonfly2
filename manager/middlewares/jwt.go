@@ -28,11 +28,13 @@ import (
 )
 
 type user struct {
-	userName string
+	name string
+	id   uint
 }
 
 func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
-	var identityKey = "username"
+	identityKey := "id"
+
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
 		Realm:       "Dragonfly",
 		Key:         []byte("Secret Key"),
@@ -42,24 +44,38 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
-			userNmae, ok := claims[identityKey]
+
+			id, ok := claims[identityKey]
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{
-					"message": "Unavailable token: require username info",
+					"message": "Unavailable token: require user name",
 				})
 				c.Abort()
 				return nil
 			}
-			u := &user{
-				userName: userNmae.(string),
+
+			name, ok := claims["name"]
+			if !ok {
+				c.JSON(http.StatusUnauthorized, gin.H{
+					"message": "Unavailable token: require user id",
+				})
+				c.Abort()
+				return nil
 			}
-			c.Set("userName", u.userName)
+
+			u := &user{
+				name: name.(string),
+				id:   id.(uint),
+			}
+
+			c.Set("name", u.name)
+			c.Set("id", u.id)
 			return u
 		},
 
 		Authenticator: func(c *gin.Context) (interface{}, error) {
 			var json types.SignInRequest
-			if err := c.ShouldBind(&json); err != nil {
+			if err := c.ShouldBindJSON(&json); err != nil {
 				return "", jwt.ErrMissingLoginValues
 			}
 
@@ -74,9 +90,11 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if u, ok := data.(*model.User); ok {
 				return jwt.MapClaims{
-					identityKey: u.Name,
+					identityKey: u.ID,
+					"name":      u.Name,
 				}
 			}
+
 			return jwt.MapClaims{}
 		},
 
@@ -104,7 +122,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 			})
 		},
 
-		TokenLookup:    "header: Authorization, query: token, cookie: jwt",
+		TokenLookup:    "header: Authorization, cookie: jwt, query: token",
 		TokenHeadName:  "Bearer",
 		TimeFunc:       time.Now,
 		SendCookie:     true,

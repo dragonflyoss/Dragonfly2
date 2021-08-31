@@ -16,20 +16,23 @@
 
 package types
 
-type PolicyRequest struct {
-	Subject string `form:"subject" binding:"required,min=1"`
-	Object  string `form:"object" binding:"required,min=1"`
-	Action  string `form:"aciton" binding:"omitempty,oneof=read write"`
+import (
+	"d7y.io/dragonfly/v2/manager/permission/rbac"
+)
+
+type CreateRoleRequest struct {
+	Role        string            `json:"role" binding:"required"`
+	Permissions []rbac.Permission `json:"permissions" binding:"required"`
 }
 
-type PermissionGroups []string
-
-type UserRolesParams struct {
-	Subject string `uri:"subject" binding:"required"`
+type RoleParams struct {
+	Role string `uri:"role" binding:"required"`
 }
 
-type UserHasRoleParams struct {
-	UserRolesParams
-	Object string `uri:"object" binding:"required"`
-	Action string `uri:"action" binding:"omitempty,oneof=read write"`
+type AddPermissionForRoleRequest struct {
+	rbac.Permission `json:",inline" binding:"required"`
+}
+
+type DeletePermissionForRoleRequest struct {
+	rbac.Permission `json:",inline" binding:"required"`
 }

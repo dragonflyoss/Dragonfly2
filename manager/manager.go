@@ -19,6 +19,7 @@ package manager
 import (
 	"context"
 	"net/http"
+	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/cache"
@@ -33,6 +34,10 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"google.golang.org/grpc"
+)
+
+const (
+	gracefulStopTimeout = 10 * time.Second
 )
 
 type Server struct {
@@ -63,7 +68,10 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize cache
-	cache := cache.New(cfg)
+	cache, err := cache.New(cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	// Initialize searcher
 	searcher := searcher.New()
@@ -79,7 +87,13 @@ func New(cfg *config.Config) (*Server, error) {
 
 	// Initialize REST server
 	restService := service.NewREST(db, cache, job, enforcer)
-	router, err := router.Init(cfg.Verbose, cfg.Server.PublicPath, restService, enforcer)
+	router, err := router.Init(cfg.Console, cfg.Verbose, cfg.Server.PublicPath, restService, enforcer)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize roles and check roles
+	err = rbac.InitRBAC(enforcer, router)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +129,6 @@ func (s *Server) Serve() error {
 		logger.Infof("started rest server at %s", s.restServer.Addr)
 		if err := s.restServer.ListenAndServe(); err != nil {
 			if err == http.ErrServerClosed {
-				logger.Info("rest server closed under request")
 				return
 			}
 			logger.Fatalf("rest server closed unexpect: %+v", err)
@@ -140,15 +153,29 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() {
-	// Stop Proxy server
-	s.proxyServer.Stop()
-
 	// Stop REST server
-	if err := s.restServer.Shutdown(context.TODO()); err != nil {
+	if err := s.restServer.Shutdown(context.Background()); err != nil {
 		logger.Errorf("rest server failed to stop: %+v", err)
 	}
+	logger.Info("rest server closed under request")
+
+	// Stop Proxy server
+	s.proxyServer.Stop()
+	logger.Info("proxy server closed under request")
 
 	// Stop GRPC server
-	s.grpcServer.GracefulStop()
-	logger.Info("grpc server closed under request")
+	stopped := make(chan struct{})
+	go func() {
+		s.grpcServer.GracefulStop()
+		logger.Info("grpc server closed under request")
+		close(stopped)
+	}()
+
+	t := time.NewTimer(gracefulStopTimeout)
+	select {
+	case <-t.C:
+		s.grpcServer.Stop()
+	case <-stopped:
+		t.Stop()
+	}
 }

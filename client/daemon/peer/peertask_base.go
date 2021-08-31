@@ -47,6 +47,7 @@ const (
 	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
 	reasonContextCanceled       = "context canceled"
 	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
+	reasonBackSourceDisabled    = "download from source disabled"
 
 	failedReasonNotSet = "unknown"
 	failedCodeNotSet   = 0
@@ -103,8 +104,8 @@ type peerTask struct {
 
 	// done channel will be close when peer task is finished
 	done chan struct{}
-	// peerTaskDone will be true after peer task done
-	peerTaskDone bool
+	// success will be true after peer task done
+	success bool
 	// span stands open telemetry trace span
 	span trace.Span
 
@@ -112,7 +113,7 @@ type peerTask struct {
 	once sync.Once
 
 	// failedPieceCh will hold all pieces which download failed,
-	// those pieces will be retry later
+	// those pieces will be retried later
 	failedPieceCh chan int32
 	// failedReason will be set when peer task failed
 	failedReason string
@@ -225,6 +226,10 @@ loop:
 			break loop
 		}
 		if err != nil {
+			// when success, context will be cancelled, check if pt.success is true
+			if pt.success {
+				return
+			}
 			pt.failedCode = dfcodes.UnknownError
 			if de, ok := err.(*dferrors.DfError); ok {
 				if de.Code == dfcodes.SchedNeedBackSource {
@@ -387,7 +392,7 @@ loop:
 			break loop
 		case <-pt.ctx.Done():
 			pt.Debugf("context done due to %s", pt.ctx.Err())
-			if !pt.peerTaskDone {
+			if !pt.success {
 				if pt.failedCode == failedCodeNotSet {
 					pt.failedReason = reasonContextCanceled
 					pt.failedCode = dfcodes.ClientContextCanceled
@@ -487,20 +492,38 @@ func (pt *peerTask) waitFirstPeerPacket() bool {
 			pt.failedReason = err.Error()
 		}
 		pt.span.AddEvent(fmt.Sprintf("pulling pieces end due to %s", err))
-	case <-pt.peerPacketReady:
-		// preparePieceTasksByPeer func already send piece result with error
-		pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
-			time.Now().Sub(pt.callback.GetStartTime()).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
-		return true
+	case _, ok := <-pt.peerPacketReady:
+		if ok {
+			// preparePieceTasksByPeer func already send piece result with error
+			pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
+				time.Now().Sub(pt.callback.GetStartTime()).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
+			return true
+		}
+		// when schedule timeout, receivePeerPacket will close pt.peerPacketReady
+		if pt.schedulerOption.DisableAutoBackSource {
+			pt.failedReason = reasonBackSourceDisabled
+			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
+			pt.span.RecordError(err)
+			pt.Errorf(err.Error())
+		} else {
+			pt.Warnf("start download from source due to dfcodes.SchedNeedBackSource")
+			pt.span.AddEvent("back source due to scheduler says need back source")
+			pt.needBackSource = true
+			pt.backSource()
+		}
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonScheduleTimeout
 			pt.failedCode = dfcodes.ClientScheduleTimeout
-			logger.Errorf("%s, auto back source disabled", pt.failedReason)
+			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
+			pt.span.RecordError(err)
+			pt.Errorf(err.Error())
+		} else {
+			pt.Warnf("start download from source due to %s", reasonScheduleTimeout)
+			pt.span.AddEvent("back source due to schedule timeout")
+			pt.needBackSource = true
+			pt.backSource()
 		}
-		pt.Errorf("start download from source due to %s", reasonScheduleTimeout)
-		pt.needBackSource = true
-		pt.backSource()
 	}
 	return false
 }
@@ -510,10 +533,10 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 	select {
 	// when peer task without content length or total pieces count, match here
 	case <-pt.done:
-		pt.Infof("peer task done, stop get pieces from peer")
+		pt.Infof("peer task done, stop wait available peer packet")
 	case <-pt.ctx.Done():
 		pt.Debugf("context done due to %s", pt.ctx.Err())
-		if !pt.peerTaskDone {
+		if !pt.success {
 			if pt.failedCode == failedCodeNotSet {
 				pt.failedReason = reasonContextCanceled
 				pt.failedCode = dfcodes.ClientContextCanceled
@@ -528,11 +551,13 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 		}
 		// when schedule timeout, receivePeerPacket will close pt.peerPacketReady
 		if pt.schedulerOption.DisableAutoBackSource {
-			pt.failedReason = reasonReScheduleTimeout
-			pt.failedCode = dfcodes.ClientScheduleTimeout
-			logger.Errorf("%s, auto back source disabled", pt.failedReason)
+			pt.failedReason = reasonBackSourceDisabled
+			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
+			pt.span.RecordError(err)
+			pt.Errorf(err.Error())
 		} else {
-			pt.Errorf("start download from source due to dfcodes.SchedNeedBackSource")
+			pt.Warnf("start download from source due to dfcodes.SchedNeedBackSource")
+			pt.span.AddEvent("back source due to scheduler says need back source ")
 			pt.needBackSource = true
 			pt.backSource()
 		}
@@ -540,11 +565,15 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonReScheduleTimeout
 			pt.failedCode = dfcodes.ClientScheduleTimeout
-			logger.Errorf("%s, auto back source disabled", pt.failedReason)
+			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
+			pt.span.RecordError(err)
+			pt.Errorf(err.Error())
+		} else {
+			pt.Warnf("start download from source due to %s", reasonReScheduleTimeout)
+			pt.span.AddEvent("back source due to schedule timeout")
+			pt.needBackSource = true
+			pt.backSource()
 		}
-		pt.Errorf("start download from source due to %s", reasonReScheduleTimeout)
-		pt.needBackSource = true
-		pt.backSource()
 	}
 	return -1, false
 }
@@ -567,7 +596,7 @@ func (pt *peerTask) dispatchPieceRequest(pieceRequestCh chan *DownloadPieceReque
 			pt.Warnf("peer task done, but still some piece request not process")
 		case <-pt.ctx.Done():
 			pt.Warnf("context done due to %s", pt.ctx.Err())
-			if !pt.peerTaskDone {
+			if !pt.success {
 				if pt.failedCode == failedCodeNotSet {
 					pt.failedReason = reasonContextCanceled
 					pt.failedCode = dfcodes.ClientContextCanceled
@@ -584,10 +613,10 @@ func (pt *peerTask) waitFailedPiece() (int32, bool) {
 	// use no default branch select to wait failed piece or exit
 	select {
 	case <-pt.done:
-		pt.Infof("peer task done, stop get pieces from peer")
+		pt.Infof("peer task done, stop wait failed piece")
 		return -1, false
 	case <-pt.ctx.Done():
-		if !pt.peerTaskDone {
+		if !pt.success {
 			if pt.failedCode == failedCodeNotSet {
 				pt.failedReason = reasonContextCanceled
 				pt.failedCode = dfcodes.ClientContextCanceled

@@ -37,7 +37,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 		expire         time.Duration
 		sleep          func()
 		cleanFileCache func(t *testing.T)
-		mock           func(m *mocks.MockManagerClientMockRecorder)
+		mock           func(m *mocks.MockClientMockRecorder)
 		expect         func(t *testing.T, data *DynconfigData, err error)
 	}{
 		{
@@ -49,8 +49,8 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 				}
 			},
 			sleep: func() {},
-			mock: func(m *mocks.MockManagerClientMockRecorder) {
-				m.GetScheduler(gomock.Any(), gomock.Any()).Return(&manager.Scheduler{
+			mock: func(m *mocks.MockClientMockRecorder) {
+				m.GetScheduler(gomock.Any()).Return(&manager.Scheduler{
 					Cdns: []*manager.CDN{
 						{
 							HostName:     "foo",
@@ -80,9 +80,9 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			sleep: func() {
 				time.Sleep(100 * time.Millisecond)
 			},
-			mock: func(m *mocks.MockManagerClientMockRecorder) {
+			mock: func(m *mocks.MockClientMockRecorder) {
 				gomock.InOrder(
-					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&manager.Scheduler{
+					m.GetScheduler(gomock.Any()).Return(&manager.Scheduler{
 						Cdns: []*manager.CDN{
 							{
 								HostName:     "foo",
@@ -92,7 +92,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 							},
 						},
 					}, nil).Times(1),
-					m.GetScheduler(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1),
+					m.GetScheduler(gomock.Any()).Return(nil, errors.New("foo")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, data *DynconfigData, err error) {
@@ -109,7 +109,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			mockManagerClient := mocks.NewMockManagerClient(ctl)
+			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
 			d, err := NewDynconfig(dc.ManagerSourceType, "", []dc.Option{

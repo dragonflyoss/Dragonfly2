@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -185,6 +186,9 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 	var res interface{}
 	for i := 0; i < maxAttempts; i++ {
 		if _, ok := cause.(*dferrors.DfError); ok {
+			return res, cause
+		}
+		if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
 			return res, cause
 		}
 		if i > 0 {

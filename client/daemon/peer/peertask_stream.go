@@ -49,6 +49,7 @@ type StreamPeerTask interface {
 
 type streamPeerTask struct {
 	peerTask
+	streamDone     chan struct{}
 	successPieceCh chan int32
 }
 
@@ -70,7 +71,9 @@ func newStreamPeerTask(ctx context.Context,
 	logger.Debugf("request overview, pid: %s, url: %s, filter: %s, meta: %s, tag: %s",
 		request.PeerId, request.Url, request.UrlMeta.Filter, request.UrlMeta, request.UrlMeta.Tag)
 	// trace register
-	regCtx, regSpan := tracer.Start(ctx, config.SpanRegisterTask)
+	regCtx, cancel := context.WithTimeout(ctx, schedulerOption.ScheduleTimeout.Duration)
+	defer cancel()
+	regCtx, regSpan := tracer.Start(regCtx, config.SpanRegisterTask)
 	logger.Infof("step 1: peer %s start to register", request.PeerId)
 	result, err := schedulerClient.RegisterPeerTask(regCtx, request)
 	regSpan.RecordError(err)
@@ -78,7 +81,10 @@ func newStreamPeerTask(ctx context.Context,
 
 	var needBackSource bool
 	if err != nil {
-		logger.Errorf("step 1: peer %s register failed: err", request.PeerId, err)
+		if err == context.DeadlineExceeded {
+			logger.Errorf("scheduler did not response in %s", schedulerOption.ScheduleTimeout.Duration)
+		}
+		logger.Errorf("step 1: peer %s register failed: %s", request.PeerId, err)
 		if schedulerOption.DisableAutoBackSource {
 			logger.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, request.PeerId)
 			span.RecordError(err)
@@ -144,6 +150,8 @@ func newStreamPeerTask(ctx context.Context,
 		limiter = rate.NewLimiter(perPeerRateLimit, int(perPeerRateLimit))
 	}
 	pt := &streamPeerTask{
+		successPieceCh: make(chan int32),
+		streamDone:     make(chan struct{}),
 		peerTask: peerTask{
 			ctx:                 ctx,
 			host:                host,
@@ -172,7 +180,6 @@ func newStreamPeerTask(ctx context.Context,
 			usedTraffic:         atomic.NewInt64(0),
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
-		successPieceCh: make(chan int32),
 	}
 	// bind func that base peer task did not implement
 	pt.backSourceFunc = pt.backSource
@@ -329,9 +336,9 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 					s.Errorf("CloseWithError failed: %s", err)
 				}
 				return
-			case <-s.done:
+			case <-s.streamDone:
 				for {
-					// all data is wrote to local storage, and all data is wrote to pipe write
+					// all data wrote to local storage, and all data wrote to pipe write
 					if s.readyPieces.Settled() == desired {
 						pw.Close()
 						return
@@ -364,17 +371,19 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 func (s *streamPeerTask) finish() error {
 	// send last progress
 	s.once.Do(func() {
+		s.success = true
+		// let stream return immediately
+		close(s.streamDone)
 		// send EOF piece result to scheduler
 		_ = s.peerPacketStream.Send(
 			scheduler.NewEndPieceResult(s.taskID, s.peerID, s.readyPieces.Settled()))
 		s.Debugf("end piece result sent, peer task finished")
-		close(s.done)
-		//close(s.successPieceCh)
 		if err := s.callback.Done(s); err != nil {
 			s.span.RecordError(err)
 			s.Errorf("done callback error: %s", err)
 		}
 		s.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
+		close(s.done)
 	})
 	return nil
 }
@@ -386,6 +395,7 @@ func (s *streamPeerTask) cleanUnfinished() {
 		_ = s.peerPacketStream.Send(
 			scheduler.NewEndPieceResult(s.taskID, s.peerID, s.readyPieces.Settled()))
 		s.Errorf("end piece result sent, peer task failed")
+		close(s.streamDone)
 		close(s.done)
 		//close(s.successPieceCh)
 		if err := s.callback.Fail(s, s.failedCode, s.failedReason); err != nil {

@@ -32,6 +32,7 @@ type CreateSchedulerClusterRequest struct {
 	ClientConfig        map[string]interface{} `json:"client_config" binding:"required"`
 	Scopes              map[string]interface{} `json:"scopes" binding:"omitempty"`
 	IsDefault           bool                   `json:"is_default" binding:"omitempty"`
+	CDNClusterID        uint                   `json:"cdn_cluster_id" binding:"omitempty"`
 	SecurityGroupDomain string                 `json:"security_group_domain" binding:"omitempty"`
 }
 
@@ -42,6 +43,7 @@ type UpdateSchedulerClusterRequest struct {
 	ClientConfig        map[string]interface{} `json:"client_config" binding:"omitempty"`
 	Scopes              map[string]interface{} `json:"scopes" binding:"omitempty"`
 	IsDefault           bool                   `json:"is_default" binding:"omitempty"`
+	CDNClusterID        uint                   `json:"cdn_cluster_id" binding:"omitempty"`
 	SecurityGroupDomain string                 `json:"security_group_domain" binding:"omitempty"`
 }
 

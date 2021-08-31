@@ -17,6 +17,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 
 	"d7y.io/dragonfly/v2/manager/config"
@@ -39,18 +40,29 @@ func New(cfg *config.Config) (*Database, error) {
 		return nil, err
 	}
 
+	rdb, err := NewRedis(cfg.Database.Redis)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Database{
 		DB:  db,
-		RDB: NewRedis(cfg.Database.Redis),
+		RDB: rdb,
 	}, nil
 }
 
-func NewRedis(cfg *config.RedisConfig) *redis.Client {
-	return redis.NewClient(&redis.Options{
+func NewRedis(cfg *config.RedisConfig) (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
 		Password: cfg.Password,
 		DB:       cfg.CacheDB,
 	})
+
+	if err := client.Ping(context.Background()).Err(); err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
 
 func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
@@ -89,6 +101,8 @@ func migrate(db *gorm.DB) error {
 		&model.Scheduler{},
 		&model.SecurityGroup{},
 		&model.User{},
+		&model.Settings{},
+		&model.Oauth{},
 	)
 }
 
@@ -144,20 +158,21 @@ func seed(db *gorm.DB) error {
 		}
 	}
 
-	var adminUserCount int64
-	var adminUserName = "admin"
-	if err := db.Model(model.User{}).Where("name = ?", adminUserName).Count(&adminUserCount).Error; err != nil {
+	var rootUserCount int64
+	if err := db.Model(model.User{}).Count(&rootUserCount).Error; err != nil {
 		return err
 	}
-	if adminUserCount <= 0 {
-		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte("Dragonfly2"), bcrypt.MinCost)
+	if rootUserCount <= 0 {
+		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte("dragonfly"), bcrypt.MinCost)
 		if err != nil {
 			return err
 		}
 		if err := db.Create(&model.User{
+			Model: model.Model{
+				ID: uint(1),
+			},
 			EncryptedPassword: string(encryptedPasswordBytes),
-			Name:              adminUserName,
-			Email:             fmt.Sprintf("%s@Dragonfly2.com", adminUserName),
+			Name:              "root",
 			State:             model.UserStateEnabled,
 		}).Error; err != nil {
 			return err

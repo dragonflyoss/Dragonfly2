@@ -35,6 +35,9 @@ type SeedTaskMgr interface {
 	// Get get task Info with specified taskId.
 	Get(string) (*types.SeedTask, error)
 
+	// Exist check task existence with specified taskId.
+	Exist(string) bool
+
 	// GetAccessTime get all tasks accessTime.
 	GetAccessTime() (*syncmap.SyncMap, error)
 

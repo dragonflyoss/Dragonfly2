@@ -17,6 +17,8 @@
 package service
 
 import (
+	"fmt"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"golang.org/x/crypto/bcrypt"
@@ -36,6 +38,30 @@ func (s *rest) SignIn(json types.SignInRequest) (*model.User, error) {
 	}
 
 	return &user, nil
+}
+
+func (s *rest) ResetPassword(id uint, json types.ResetPasswordRequest) error {
+	user := model.User{}
+	if err := s.db.First(&user, id).Error; err != nil {
+		return err
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(json.OldPassword)); err != nil {
+		return err
+	}
+
+	encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(json.NewPassword), bcrypt.MinCost)
+	if err != nil {
+		return err
+	}
+
+	if err := s.db.First(&user, id).Updates(model.User{
+		EncryptedPassword: string(encryptedPasswordBytes),
+	}).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
@@ -60,4 +86,16 @@ func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
 	}
 
 	return &user, nil
+}
+
+func (s *rest) GetRolesForUser(id uint) ([]string, error) {
+	return s.enforcer.GetRolesForUser(fmt.Sprint(id))
+}
+
+func (s *rest) AddRoleForUser(json types.AddRoleForUserParams) (bool, error) {
+	return s.enforcer.AddRoleForUser(fmt.Sprint(json.ID), json.Role)
+}
+
+func (s *rest) DeleteRoleForUser(json types.DeleteRoleForUserParams) (bool, error) {
+	return s.enforcer.DeleteRoleForUser(fmt.Sprint(json.ID), json.Role)
 }

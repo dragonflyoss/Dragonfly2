@@ -37,21 +37,26 @@ type Cache struct {
 }
 
 // New cache instance
-func New(cfg *config.Config) *Cache {
+func New(cfg *config.Config) (*Cache, error) {
 	var localCache *cache.TinyLFU
 	if cfg.Cache != nil {
 		localCache = cache.NewTinyLFU(cfg.Cache.Local.Size, cfg.Cache.Local.TTL)
+	}
+
+	rdb, err := database.NewRedis(cfg.Database.Redis)
+	if err != nil {
+		return nil, err
 	}
 
 	// If the attribute TTL of cache.Item(cache's instance) is 0, redis expiration time is 1 hour.
 	// cfg.TTL Set the expiration time of TinyLFU.
 	return &Cache{
 		Cache: cache.New(&cache.Options{
-			Redis:      database.NewRedis(cfg.Database.Redis),
+			Redis:      rdb,
 			LocalCache: localCache,
 		}),
 		TTL: cfg.Cache.Redis.TTL,
-	}
+	}, nil
 }
 
 func MakeCacheKey(namespace string, id string) string {
