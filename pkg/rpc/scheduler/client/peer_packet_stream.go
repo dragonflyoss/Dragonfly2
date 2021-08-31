@@ -183,7 +183,7 @@ func (pps *peerPacketStream) replaceStream(cause error) error {
 	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, cause)
 	if err != nil {
 		logger.WithTaskID(pps.hashKey).Infof("replaceStream: invoke scheduler node %s ReportPieceResult failed: %v", target, err)
-		err = pps.replaceStream(cause)
+		return pps.replaceStream(cause)
 	}
 	pps.stream = res.(scheduler.Scheduler_ReportPieceResultClient)
 	pps.retryMeta.StreamTimes++

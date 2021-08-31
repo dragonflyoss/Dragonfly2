@@ -115,13 +115,12 @@ func (sc *schedulerClient) retryRegisterPeerTask(ctx context.Context, hashKey st
 	var (
 		taskID        string
 		schedulerNode string
-		res           interface{}
 	)
-	if preNode, err := sc.TryMigrate(hashKey, cause, exclusiveNodes); err != nil {
+	preNode, err := sc.TryMigrate(hashKey, cause, exclusiveNodes)
+	if err != nil {
 		return nil, cause
-	} else {
-		exclusiveNodes = append(exclusiveNodes, preNode)
 	}
+	exclusiveNodes = append(exclusiveNodes, preNode)
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error
@@ -187,11 +186,11 @@ func (sc *schedulerClient) retryReportPeerResult(ctx context.Context, pr *schedu
 		suc           bool
 		code          base.Code
 	)
-	if preNode, err := sc.TryMigrate(pr.TaskId, err, exclusiveNodes); err != nil {
+	preNode, err := sc.TryMigrate(pr.TaskId, err, exclusiveNodes)
+	if err != nil {
 		return cause
-	} else {
-		exclusiveNodes = append(exclusiveNodes, preNode)
 	}
+	exclusiveNodes = append(exclusiveNodes, preNode)
 	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		client, schedulerNode, err = sc.getSchedulerClient(pr.TaskId, true)
