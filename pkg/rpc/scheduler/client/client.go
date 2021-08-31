@@ -160,14 +160,12 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string,
 func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
 	var (
 		schedulerNode string
-		code          base.Code
 	)
 	_, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error
 		client, schedulerNode, err = sc.getSchedulerClient(pr.TaskId, true)
 		if err != nil {
-			code = dfcodes.ServerUnavailable
 			return nil, err
 		}
 		return client.ReportPeerResult(ctx, pr, opts...)
