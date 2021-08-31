@@ -178,8 +178,8 @@ func (pm *pieceManager) pushSuccessResult(peerTask Task, dstPid string, piece *b
 				EndTime:       uint64(end),
 				Success:       true,
 				Code:          dfcodes.Success,
-				HostLoad:      nil, // TODO(jim): update host load
-				FinishedCount: 0,   // update by peer task
+				HostLoad:      nil,                // TODO(jim): update host load
+				FinishedCount: piece.PieceNum + 1, // update by peer task
 				// TODO range_start, range_size, piece_md5, piece_offset, piece_style
 			},
 			err: nil,
@@ -372,10 +372,11 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 						},
 						ContentLength: contentLength,
 					})
+				pt.SetTotalPieces(pieceNum + 1)
 				return pt.SetContentLength(contentLength)
 			}
 		}
-		// unreachable code
+		//unreachable code
 		//return nil
 	}
 
@@ -399,6 +400,8 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 			return storage.ErrShortRead
 		}
 	}
+	pt.SetTotalPieces(maxPieceNum)
+	pt.SetContentLength(contentLength)
 	log.Infof("download from source ok")
 	return nil
 }

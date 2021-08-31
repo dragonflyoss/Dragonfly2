@@ -100,7 +100,7 @@ func (p *filePeerTaskCallback) Done(pt Task) error {
 		Url:             p.req.Url,
 		ContentLength:   pt.GetContentLength(),
 		Traffic:         pt.GetTraffic(),
-		TotalPieceCount: p.pt.totalPiece,
+		TotalPieceCount: pt.GetTotalPieces(),
 		Cost:            uint32(cost),
 		Success:         true,
 		Code:            dfcodes.Success,

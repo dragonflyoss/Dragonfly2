@@ -68,6 +68,7 @@ type peerTask struct {
 	backSourceFunc        func()
 	reportPieceResultFunc func(result *pieceTaskResult) error
 	setContentLengthFunc  func(i int64) error
+	setTotalPiecesFunc    func(i int32)
 
 	request *scheduler.PeerTaskRequest
 
@@ -170,6 +171,10 @@ func (pt *peerTask) GetTraffic() int64 {
 
 func (pt *peerTask) GetTotalPieces() int32 {
 	return pt.totalPiece
+}
+
+func (pt *peerTask) SetTotalPieces(i int32) {
+	pt.setTotalPiecesFunc(i)
 }
 
 func (pt *peerTask) Context() context.Context {
@@ -369,7 +374,7 @@ func (pt *peerTask) pullPiecesFromPeers(cleanUnfinishedFunc func()) {
 	}()
 
 	if !pt.waitFirstPeerPacket() {
-		// TODO modify log back source
+		// TODO 如果是客户端直接回源，这里不应该在输出错误日志
 		pt.Errorf("wait first peer packet error")
 		return
 	}

@@ -208,6 +208,7 @@ func newFilePeerTask(ctx context.Context,
 	// bind func that base peer task did not implement
 	pt.backSourceFunc = pt.backSource
 	pt.setContentLengthFunc = pt.SetContentLength
+	pt.setTotalPiecesFunc = pt.SetTotalPieces
 	pt.reportPieceResultFunc = pt.ReportPieceResult
 	return ctx, pt, nil, nil
 }
@@ -420,6 +421,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 	})
 }
 
+// TODO SetContentLength 需要和pt.finish解绑，以便在下载进度处可以看到文件长度
 func (pt *filePeerTask) SetContentLength(i int64) error {
 	pt.contentLength.Store(i)
 	if !pt.isCompleted() {
@@ -427,6 +429,10 @@ func (pt *filePeerTask) SetContentLength(i int64) error {
 	}
 
 	return pt.finish()
+}
+
+func (pt *filePeerTask) SetTotalPieces(i int32) {
+	pt.totalPiece = i
 }
 
 func (pt *filePeerTask) backSource() {
