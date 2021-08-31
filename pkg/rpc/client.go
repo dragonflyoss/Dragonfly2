@@ -323,6 +323,7 @@ func (conn *Connection) loadOrCreateClientConnByNode(node string) (clientConn *g
 // stick whether hash key need already associated with specify node
 func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientConn, error) {
 	logger.With("conn", conn.name).Debugf("start to get client conn hashKey %s, stick %t", hashKey, stick)
+	defer logger.With("conn", conn.name).Debugf("get client conn hashKey %s, stick %t end", hashKey, stick)
 	conn.rwMutex.RLock()
 	node, ok := conn.key2NodeMap.Load(hashKey)
 	if stick && !ok {
