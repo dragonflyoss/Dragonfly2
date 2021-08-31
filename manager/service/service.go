@@ -21,6 +21,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/job"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
@@ -30,21 +31,21 @@ import (
 )
 
 type REST interface {
-	SignIn(json types.SignInRequest) (*model.User, error)
-	SignUp(json types.SignUpRequest) (*model.User, error)
+	SignIn(types.SignInRequest) (*model.User, error)
+	SignUp(types.SignUpRequest) (*model.User, error)
+	ResetPassword(uint, types.ResetPasswordRequest) error
+	GetRolesForUser(uint) ([]string, error)
+	AddRoleForUser(types.AddRoleForUserParams) (bool, error)
+	DeleteRoleForUser(types.DeleteRoleForUserParams) (bool, error)
 
-	AddRoleForUser(uint, string) error
-	DeleteRoleForUser(uint, string) error
-
-	GetPermissions(*gin.Engine) types.Permissions
-
-	CreateRole(json types.CreateRolePermissionRequest) error
-	DestroyRole(string) error
-	AddRolePermission(string, types.ObjectPermission) error
-	RemoveRolePermission(string, types.ObjectPermission) error
+	CreateRole(json types.CreateRoleRequest) error
+	DestroyRole(string) (bool, error)
+	GetRole(string) [][]string
 	GetRoles() []string
-	GetRole(string) []map[string]string
-	GetRolesForUser(uint, string) ([]string, error)
+	AddPermissionForRole(string, types.AddPermissionForRoleRequest) (bool, error)
+	DeletePermissionForRole(string, types.DeletePermissionForRoleRequest) (bool, error)
+
+	GetPermissions(*gin.Engine) []rbac.Permission
 
 	CreateCDNCluster(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	CreateCDNClusterWithSecurityGroupDomain(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
@@ -81,6 +82,12 @@ type REST interface {
 	GetSchedulers(types.GetSchedulersQuery) (*[]model.Scheduler, error)
 	SchedulerTotalCount(types.GetSchedulersQuery) (int64, error)
 
+	CreateSetting(types.CreateSettingRequest) (*model.Settings, error)
+	DestroySetting(string) error
+	UpdateSetting(string, types.UpdateSettingRequest) (*model.Settings, error)
+	GetSettings(types.GetSettingsQuery) (*[]model.Settings, error)
+	SettingTotalCount() (int64, error)
+
 	CreateSecurityGroup(types.CreateSecurityGroupRequest) (*model.SecurityGroup, error)
 	DestroySecurityGroup(uint) error
 	UpdateSecurityGroup(uint, types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error)
@@ -92,6 +99,14 @@ type REST interface {
 
 	CreatePreheat(types.CreatePreheatRequest) (*types.Preheat, error)
 	GetPreheat(string) (*types.Preheat, error)
+
+	CreateOauth(types.CreateOauthRequest) (*model.Oauth, error)
+	DestroyOauth(uint) error
+	UpdateOauth(uint, types.UpdateOauthRequest) (*model.Oauth, error)
+	GetOauth(uint) (*model.Oauth, error)
+	GetOauths() (*[]model.Oauth, error)
+	OauthSignin(name string) (string, error)
+	OauthCallback(name, code string) (*model.User, error)
 }
 
 type rest struct {

@@ -28,12 +28,13 @@ import (
 )
 
 type user struct {
-	userName string
-	ID       uint
+	name string
+	id   uint
 }
 
 func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
-	var identityKey = "username"
+	identityKey := "id"
+
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
 		Realm:       "Dragonfly",
 		Key:         []byte("Secret Key"),
@@ -43,34 +44,38 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
-			userName, ok := claims[identityKey]
+
+			id, ok := claims[identityKey]
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{
-					"message": "Unavailable token: require username info",
+					"message": "Unavailable token: require user name",
 				})
 				c.Abort()
 				return nil
 			}
-			userID, ok := claims["ID"]
+
+			name, ok := claims["name"]
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{
-					"message": "Unavailable token: require id info",
+					"message": "Unavailable token: require user id",
 				})
 				c.Abort()
 				return nil
 			}
+
 			u := &user{
-				userName: userName.(string),
-				ID:       uint(userID.(float64)),
+				name: name.(string),
+				id:   id.(uint),
 			}
-			c.Set("userName", u.userName)
-			c.Set("userID", u.ID)
+
+			c.Set("name", u.name)
+			c.Set("id", u.id)
 			return u
 		},
 
 		Authenticator: func(c *gin.Context) (interface{}, error) {
 			var json types.SignInRequest
-			if err := c.ShouldBind(&json); err != nil {
+			if err := c.ShouldBindJSON(&json); err != nil {
 				return "", jwt.ErrMissingLoginValues
 			}
 
@@ -85,10 +90,11 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if u, ok := data.(*model.User); ok {
 				return jwt.MapClaims{
-					identityKey: u.Name,
-					"ID":        u.ID,
+					identityKey: u.ID,
+					"name":      u.Name,
 				}
 			}
+
 			return jwt.MapClaims{}
 		},
 
@@ -116,7 +122,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 			})
 		},
 
-		TokenLookup:    "header: Authorization, query: token, cookie: jwt",
+		TokenLookup:    "header: Authorization, cookie: jwt, query: token",
 		TokenHeadName:  "Bearer",
 		TimeFunc:       time.Now,
 		SendCookie:     true,
