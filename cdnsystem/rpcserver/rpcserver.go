@@ -143,7 +143,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	// register task
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
 	if err != nil {
-		if cdnerrors.IsLackOfResources(err) {
+		if cdnerrors.IsResourcesLacked(err) {
 			err = dferrors.Newf(dfcodes.ResourceLacked, "resources lacked for task(%s): %v", req.TaskId, err)
 			span.RecordError(err)
 			return err

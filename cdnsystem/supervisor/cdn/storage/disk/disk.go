@@ -235,14 +235,9 @@ func (s *diskStorageMgr) ResetRepo(task *types.SeedTask) error {
 	return s.DeleteTask(task.TaskID)
 }
 
-func (s *diskStorageMgr) GetFreeSpace() int64 {
-	freeSpace, err := s.diskDriver.GetFreeSpace()
-	if err != nil {
-		return 0
-	}
-
+func (s *diskStorageMgr) TryFreeSpace(fileLength int64) error {
 	remainder := atomic.NewInt64(0)
-	s.diskDriver.Walk(&storedriver.Raw{
+	r := &storedriver.Raw{
 		WalkFn: func(filePath string, info os.FileInfo, err error) error {
 			if fileutils.IsRegular(filePath) {
 				taskID := strings.Split(path.Base(filePath), ".")[0]
@@ -263,7 +258,28 @@ func (s *diskStorageMgr) GetFreeSpace() int64 {
 			}
 			return nil
 		},
-	})
+	}
+	s.diskDriver.Walk(r)
 
-	return freeSpace.ToNumber() - remainder.Load()
+	freeSpace, err := s.diskDriver.GetFreeSpace()
+	if err != nil {
+		return err
+	}
+
+	enoughSpace := freeSpace.ToNumber()-remainder.Load() > fileLength
+	if !enoughSpace {
+		s.cleaner.GC("disk", true)
+		remainder.Store(0)
+		s.diskDriver.Walk(r)
+		freeSpace, err = s.diskDriver.GetFreeSpace()
+		if err != nil {
+			return err
+		}
+		enoughSpace = freeSpace.ToNumber()-remainder.Load() > fileLength
+	}
+	if !enoughSpace {
+		return cdnerrors.ErrResourcesLacked
+	}
+
+	return nil
 }

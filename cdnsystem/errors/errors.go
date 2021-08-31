@@ -93,8 +93,8 @@ var (
 	// ErrConvertFailed represents failed to convert.
 	ErrConvertFailed = errors.New("convert failed")
 
-	// ErrLackOfResources represents a lack of resources, for example, the disk does not have enough space.
-	ErrLackOfResources = errors.New("lack of resources")
+	// ErrResourcesLacked represents a lack of resources, for example, the disk does not have enough space.
+	ErrResourcesLacked = errors.New("resources lacked")
 )
 
 // IsSystemError checks the error is a system error or not.
@@ -156,6 +156,6 @@ func IsFileNotExist(err error) bool {
 	return ok
 }
 
-func IsLackOfResources(err error) bool {
-	return errors.Cause(err) == ErrLackOfResources
+func IsResourcesLacked(err error) bool {
+	return errors.Cause(err) == ErrResourcesLacked
 }

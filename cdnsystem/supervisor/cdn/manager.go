@@ -20,8 +20,6 @@ import (
 	"crypto/md5"
 	"time"
 
-	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
-
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -177,10 +175,7 @@ func (cm *Manager) Delete(taskID string) error {
 }
 
 func (cm *Manager) TryFreeSpace(fileLength int64) error {
-	if fileLength >= cm.cacheStore.GetFreeSpace() {
-		return cdnerrors.ErrLackOfResources
-	}
-	return nil
+	return cm.cacheStore.TryFreeSpace(fileLength)
 }
 
 func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceDigest string, downloadMetadata *downloadMetadata) (bool, error) {

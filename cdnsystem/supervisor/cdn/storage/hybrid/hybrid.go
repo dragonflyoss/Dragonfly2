@@ -294,8 +294,7 @@ func (h *hybridStorageMgr) StatDownloadFile(taskID string) (*storedriver.Storage
 	return h.diskDriver.Stat(storage.GetDownloadRaw(taskID))
 }
 
-func (h *hybridStorageMgr) GetFreeSpace() int64 {
-	var memoryFreeSpace, diskFreeSpace int64
+func (h *hybridStorageMgr) TryFreeSpace(fileLength int64) error {
 	remainder := atomic.NewInt64(0)
 	r := &storedriver.Raw{
 		WalkFn: func(filePath string, info os.FileInfo, err error) error {
@@ -319,25 +318,29 @@ func (h *hybridStorageMgr) GetFreeSpace() int64 {
 			return nil
 		},
 	}
-
 	h.diskDriver.Walk(r)
-	dFree, err := h.diskDriver.GetFreeSpace()
+
+	diskFreeSpace, err := h.diskDriver.GetFreeSpace()
 	if err != nil {
-		diskFreeSpace = 0
-	} else {
-		diskFreeSpace = dFree.ToNumber() - remainder.Load()
+		return err
 	}
 
-	if h.hasShm {
-		remainder = atomic.NewInt64(0)
-		h.memoryDriver.Walk(r)
-		memoryFreeSpace = h.getMemoryUsableSpace().ToNumber() - remainder.Load()
+	enoughSpace := diskFreeSpace.ToNumber()-remainder.Load() > fileLength
+	if !enoughSpace {
+		h.diskDriverCleaner.GC("hybrid", true)
+		remainder.Store(0)
+		h.diskDriver.Walk(r)
+		diskFreeSpace, err = h.diskDriver.GetFreeSpace()
+		if err != nil {
+			return err
+		}
+		enoughSpace = diskFreeSpace.ToNumber()-remainder.Load() > fileLength
+	}
+	if !enoughSpace {
+		return cdnerrors.ErrResourcesLacked
 	}
 
-	if memoryFreeSpace > diskFreeSpace {
-		return memoryFreeSpace
-	}
-	return diskFreeSpace
+	return nil
 }
 
 func (h *hybridStorageMgr) deleteDiskFiles(taskID string) error {
