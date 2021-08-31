@@ -25,8 +25,11 @@ import (
 var _ = Describe("Preheat with manager", func() {
 	Context("preheat", func() {
 		It("preheat files should be ok", func() {
-			cdnPods := getCDNs()
-			fsPod := getFS()
+			var cdnPods [3]*e2eutil.PodExec
+			for i := 0; i < 3; i++ {
+				cdnPods[i] = getCDNExec(i)
+			}
+			fsPod := getFileServerExec()
 
 			for _, v := range e2eutil.GetFileList() {
 				url := e2eutil.GetFileURL(v)
@@ -72,8 +75,11 @@ var _ = Describe("Preheat with manager", func() {
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println(taskIDs)
 
-			cdnPods := getCDNs()
-			fsPod := getFS()
+			var cdnPods [3]*e2eutil.PodExec
+			for i := 0; i < 3; i++ {
+				cdnPods[i] = getCDNExec(i)
+			}
+			fsPod := getFileServerExec()
 
 			// preheat file
 			out, err := fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"},
@@ -122,8 +128,11 @@ var _ = Describe("Preheat with manager", func() {
 			Expect(err).NotTo(HaveOccurred())
 			sha256sum1 := strings.Split(string(out), " ")[0]
 
-			cdnPods := getCDNs()
-			fsPod := getFS()
+			var cdnPods [3]*e2eutil.PodExec
+			for i := 0; i < 3; i++ {
+				cdnPods[i] = getCDNExec(i)
+			}
+			fsPod := getFileServerExec()
 
 			// use a curl to preheat the same file, git a id to wait for success
 			out, err = fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"},
@@ -211,23 +220,19 @@ func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, taskID string) string {
 	return sha256sum2
 }
 
-// getCDNs get cdn pods
-func getCDNs() [3]*e2eutil.PodExec {
-	var cdnPods [3]*e2eutil.PodExec
-	for i := 0; i < 3; i++ {
-		out, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=cdn",
-			"-o", fmt.Sprintf("jsonpath='{range .items[%d]}{.metadata.name}{end}'", i)).CombinedOutput()
-		podName := strings.Trim(string(out), "'")
-		Expect(err).NotTo(HaveOccurred())
-		fmt.Println(podName)
-		Expect(strings.HasPrefix(podName, "dragonfly-cdn-")).Should(BeTrue())
-		cdnPods[i] = e2eutil.NewPodExec(dragonflyNamespace, podName, "cdn")
-	}
-	return cdnPods
+// getCDNExec get cdn pods
+func getCDNExec(n int) *e2eutil.PodExec {
+	out, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=cdn",
+		"-o", fmt.Sprintf("jsonpath='{range .items[%d]}{.metadata.name}{end}'", n)).CombinedOutput()
+	podName := strings.Trim(string(out), "'")
+	Expect(err).NotTo(HaveOccurred())
+	fmt.Println(podName)
+	Expect(strings.HasPrefix(podName, "dragonfly-cdn-")).Should(BeTrue())
+	return e2eutil.NewPodExec(dragonflyNamespace, podName, "cdn")
 }
 
-// getFS get the file-server pod for curl
-func getFS() *e2eutil.PodExec {
+// getFileServerExec get the file-server pod for curl
+func getFileServerExec() *e2eutil.PodExec {
 	out, err := e2eutil.KubeCtlCommand("-n", e2eNamespace, "get", "pod", "-l", "component=file-server",
 		"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 	podName := strings.Trim(string(out), "'")

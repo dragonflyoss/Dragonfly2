@@ -58,7 +58,7 @@ func (p *PodExec) Command(arg ...string) *exec.Cmd {
 }
 
 func (p *PodExec) CurlCommand(method string, header map[string]string, data map[string]interface{}, target string) *exec.Cmd {
-	extArgs := []string{"/usr/bin/curl", "-s"}
+	extArgs := []string{"/usr/bin/curl", target, "-s"}
 	if method != "" {
 		extArgs = append(extArgs, "-X", method)
 	}
@@ -71,7 +71,7 @@ func (p *PodExec) CurlCommand(method string, header map[string]string, data map[
 		jsonData, _ := json.Marshal(data)
 		extArgs = append(extArgs, "-d", string(jsonData))
 	}
-	return p.Command(append(extArgs, target)...)
+	return p.Command(extArgs...)
 }
 
 func KubeCtlCopyCommand(ns, pod, source, target string) *exec.Cmd {
