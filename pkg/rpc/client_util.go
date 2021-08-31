@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
@@ -189,6 +190,9 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 			if e.Code != dfcodes.UnknownError {
 				return res, cause
 			}
+		}
+		if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
+			return res, cause
 		}
 		if i > 0 {
 			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))

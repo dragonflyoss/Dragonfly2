@@ -24,6 +24,14 @@ import (
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	. "github.com/onsi/ginkgo" //nolint
 	. "github.com/onsi/gomega" //nolint
+
+	_ "d7y.io/dragonfly/v2/test/e2e/manager"
+)
+
+const (
+	proxy              = "localhost:65001"
+	hostnameFilePath   = "/etc/hostname"
+	dragonflyNamespace = "dragonfly-system"
 )
 
 var _ = BeforeSuite(func() {
