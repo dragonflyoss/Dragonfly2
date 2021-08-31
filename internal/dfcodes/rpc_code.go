@@ -25,7 +25,7 @@ const (
 	ServerUnavailable base.Code = 500 // framework can not find server node
 
 	// common response error 1000-1999
-	ResourceLacked   base.Code = 1000 // client can be migrated to another scheduler
+	ResourceLacked   base.Code = 1000 // client can be migrated to another scheduler/CDN
 	BadRequest       base.Code = 1400
 	PeerTaskNotFound base.Code = 1404
 	UnknownError     base.Code = 1500

@@ -18,7 +18,6 @@ package client
 
 import (
 	"context"
-	"io"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -92,11 +91,7 @@ func (drs *DownResultStream) Recv() (dr *dfdaemon.DownResult, err error) {
 		}
 	}()
 	drs.dc.UpdateAccessNodeMapByHashKey(drs.hashKey)
-	if dr, err = drs.stream.Recv(); err != nil && err != io.EOF {
-		dr, err = drs.retryRecv(err)
-	}
-
-	return
+	return drs.stream.Recv()
 }
 
 func (drs *DownResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error) {

@@ -18,7 +18,6 @@ package client
 
 import (
 	"context"
-	"io"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -84,16 +83,14 @@ func (pss *PieceSeedStream) initStream() error {
 
 func (pss *PieceSeedStream) Recv() (ps *cdnsystem.PieceSeed, err error) {
 	pss.sc.UpdateAccessNodeMapByHashKey(pss.hashKey)
-	if ps, err = pss.stream.Recv(); err != nil && err != io.EOF {
-		ps, err = pss.retryRecv(err)
-	}
-	return
+	return pss.stream.Recv()
 }
 
 func (pss *PieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error) {
 	if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
 		return nil, cause
 	}
+
 	if err := pss.replaceStream(cause); err != nil {
 		return nil, err
 	}

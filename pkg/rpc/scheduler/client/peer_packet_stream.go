@@ -18,9 +18,7 @@ package client
 
 import (
 	"context"
-	"io"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -77,9 +75,6 @@ func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
 	pps.lastPieceResult = pr
 	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
 	err = pps.stream.Send(pr)
-	if _, ok := err.(*dferrors.DfError); ok {
-		return err
-	}
 
 	if pr.PieceInfo.PieceNum == common.EndOfPiece {
 		pps.closeSend()
@@ -88,7 +83,6 @@ func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
 
 	if err != nil {
 		pps.closeSend()
-		err = pps.retrySend(pr, err)
 	}
 
 	return
@@ -100,13 +94,7 @@ func (pps *peerPacketStream) closeSend() error {
 
 func (pps *peerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
 	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
-	if pp, err = pps.stream.Recv(); err != nil && err != io.EOF {
-		if _, ok := err.(*dferrors.DfError); ok {
-			return pp, err
-		}
-		pp, err = pps.retryRecv(err)
-	}
-	return
+	return pps.stream.Recv()
 }
 
 func (pps *peerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) error {
