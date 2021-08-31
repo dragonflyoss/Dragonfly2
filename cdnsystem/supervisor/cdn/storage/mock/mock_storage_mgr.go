@@ -80,20 +80,6 @@ func (mr *MockManagerMockRecorder) DeleteTask(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockManager)(nil).DeleteTask), arg0)
 }
 
-// GetFreeSpace mocks base method.
-func (m *MockManager) GetFreeSpace() int64 {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFreeSpace")
-	ret0, _ := ret[0].(int64)
-	return ret0
-}
-
-// GetFreeSpace indicates an expected call of GetFreeSpace.
-func (mr *MockManagerMockRecorder) GetFreeSpace() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFreeSpace", reflect.TypeOf((*MockManager)(nil).GetFreeSpace))
-}
-
 // Initialize mocks base method.
 func (m *MockManager) Initialize(arg0 supervisor.SeedTaskMgr) {
 	m.ctrl.T.Helper()
@@ -178,6 +164,20 @@ func (m *MockManager) StatDownloadFile(arg0 string) (*storedriver.StorageInfo, e
 func (mr *MockManagerMockRecorder) StatDownloadFile(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatDownloadFile", reflect.TypeOf((*MockManager)(nil).StatDownloadFile), arg0)
+}
+
+// TryFreeSpace mocks base method.
+func (m *MockManager) TryFreeSpace(arg0 int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TryFreeSpace", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TryFreeSpace indicates an expected call of TryFreeSpace.
+func (mr *MockManagerMockRecorder) TryFreeSpace(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryFreeSpace", reflect.TypeOf((*MockManager)(nil).TryFreeSpace), arg0)
 }
 
 // WriteDownloadFile mocks base method.
