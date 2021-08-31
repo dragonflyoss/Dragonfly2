@@ -25,7 +25,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
@@ -360,6 +362,10 @@ func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientC
 // preNode node before the migration
 func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []string) (preNode string, err error) {
 	logger.With("conn", conn.name).Infof("start try migrate server node for key %s, cause err: %v", key, cause)
+	if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
+		logger.With("conn", conn.name).Infof("migrate server node for key %s failed, cause err: %v", key, cause)
+		return "", cause
+	}
 	// TODO recover findCandidateClientConn error
 	if e, ok := cause.(*dferrors.DfError); ok {
 		if e.Code != dfcodes.ResourceLacked && e.Code != dfcodes.UnknownError {

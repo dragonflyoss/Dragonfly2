@@ -67,7 +67,7 @@ func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Da
 	return elasticDaemonClient, nil
 }
 
-// see dfdaemon.DaemonClient
+// DaemonClient see dfdaemon.DaemonClient
 type DaemonClient interface {
 	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error)
 
