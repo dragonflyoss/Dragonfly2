@@ -28,13 +28,13 @@ import (
 var _ = Describe("Download with dfget", func() {
 	Context("dfget", func() {
 		It("dfget download should be ok", func() {
-			out, err := e2eutil.KubeCtlCommand("-n", DragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
+			out, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
 				"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
 			podName := strings.Trim(string(out), "'")
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Println(podName)
 			Expect(strings.HasPrefix(podName, "dragonfly-dfdaemon-")).Should(BeTrue())
-			pod := e2eutil.NewPodExec(DragonflyNamespace, podName, "dfdaemon")
+			pod := e2eutil.NewPodExec(dragonflyNamespace, podName, "dfdaemon")
 
 			for _, v := range e2eutil.GetFileList() {
 				url := e2eutil.GetFileURL(v)

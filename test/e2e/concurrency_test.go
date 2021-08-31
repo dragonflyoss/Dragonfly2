@@ -27,37 +27,37 @@ import (
 var _ = Describe("Download concurrency", func() {
 	Context("ab", func() {
 		It("concurrent 100 should be ok", func() {
-			url := e2eutil.GetFileURL(HostnameFilePath)
+			url := e2eutil.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := e2eutil.ABCommand("-c", "100", "-n", "200", "-X", Proxy, url).CombinedOutput()
+			out, err := e2eutil.ABCommand("-c", "100", "-n", "200", "-X", proxy, url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("concurrent 200 should be ok", func() {
-			url := e2eutil.GetFileURL(HostnameFilePath)
+			url := e2eutil.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := e2eutil.ABCommand("-c", "200", "-n", "400", "-X", Proxy, url).CombinedOutput()
+			out, err := e2eutil.ABCommand("-c", "200", "-n", "400", "-X", proxy, url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("concurrent 500 should be ok", func() {
-			url := e2eutil.GetFileURL(HostnameFilePath)
+			url := e2eutil.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := e2eutil.ABCommand("-c", "500", "-n", "1000", "-X", Proxy, url).CombinedOutput()
+			out, err := e2eutil.ABCommand("-c", "500", "-n", "1000", "-X", proxy, url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("concurrent 1000 should be ok", func() {
-			url := e2eutil.GetFileURL(HostnameFilePath)
+			url := e2eutil.GetFileURL(hostnameFilePath)
 			fmt.Println("download url " + url)
 
-			out, err := e2eutil.ABCommand("-c", "1000", "-n", "2000", "-X", Proxy, url).CombinedOutput()
+			out, err := e2eutil.ABCommand("-c", "1000", "-n", "2000", "-X", proxy, url).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 		})
