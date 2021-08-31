@@ -369,6 +369,7 @@ func (pt *peerTask) pullPiecesFromPeers(cleanUnfinishedFunc func()) {
 	}()
 
 	if !pt.waitFirstPeerPacket() {
+		// TODO modify log back source
 		pt.Errorf("wait first peer packet error")
 		return
 	}

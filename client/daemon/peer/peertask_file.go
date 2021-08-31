@@ -436,7 +436,14 @@ func (pt *filePeerTask) backSource() {
 		pt.failedReason = reasonBackSourceDisabled
 		return
 	}
-	err := pt.pieceManager.DownloadSource(pt.ctx, pt, pt.request)
+	_ = pt.callback.Init(pt)
+	peerPacketStream, err := pt.schedulerClient.ReportPieceResult(pt.ctx, pt.taskID, pt.request)
+	if err != nil {
+		logger.Errorf("step 2: peer %s report piece failed: err", pt.request.PeerId, err)
+	}
+	pt.peerPacketStream = peerPacketStream
+	logger.Infof("step 2: start report peer %s back source piece result", pt.request.PeerId)
+	err = pt.pieceManager.DownloadSource(pt.ctx, pt, pt.request)
 	if err != nil {
 		pt.Errorf("download from source error: %s", err)
 		pt.failedReason = err.Error()

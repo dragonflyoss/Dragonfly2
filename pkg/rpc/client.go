@@ -180,9 +180,10 @@ func (conn *Connection) UpdateAccessNodeMapByHashKey(key string) {
 	node, ok := conn.key2NodeMap.Load(key)
 	if ok {
 		conn.accessNodeMap.Store(node, time.Now())
-		logger.With("conn", conn.name).Debugf("successfully update server node %s access time for hashKey %s", node, key)
 		_, ok := conn.node2ClientMap.Load(node)
-		if !ok {
+		if ok {
+			logger.With("conn", conn.name).Debugf("successfully update server node %s access time for hashKey %s", node, key)
+		} else {
 			logger.With("conn", conn.name).Warnf("successfully update server node %s access time for hashKey %s,"+
 				"but cannot found client conn in node2ClientMap", node, key)
 		}
