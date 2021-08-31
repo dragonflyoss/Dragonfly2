@@ -4,14 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"strings"
 	"time"
-
-	"github.com/docker/distribution"
-	"github.com/docker/distribution/manifest/schema2"
 
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/manager/types"
@@ -56,10 +51,10 @@ var _ = Describe("Preheat with manager", func() {
 				Expect(done).Should(BeTrue())
 
 				// generate task_id, also the filename
-				taskID := idgen.TaskID(url, &base.UrlMeta{Tag: managerTag})
-				fmt.Println(taskID)
+				cdnTaskID := idgen.TaskID(url, &base.UrlMeta{Tag: managerTag})
+				fmt.Println(cdnTaskID)
 
-				sha256sum2 := checkPreheatResult(cdnPods, taskID)
+				sha256sum2 := checkPreheatResult(cdnPods, cdnTaskID)
 				if sha256sum2 == "" {
 					fmt.Println("preheat file not found")
 				}
@@ -71,9 +66,16 @@ var _ = Describe("Preheat with manager", func() {
 			url := "https://registry-1.docker.io/v2/library/alpine/manifests/3.14"
 			fmt.Println("download image " + url)
 
-			taskIDs, digests, err := getLayers(url)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(taskIDs)
+			var (
+				cdnTaskIDs = []string{
+					"effb4ac6e36d9a2a425ab142ba0a21fd0d49feea67a839fbd776ebb04e6f9eb7",
+					"ceaaf57ceba7221c2d54c62d77860e28b091837f235ba802c0722c522d6c7a8a",
+				}
+				sha256sum1 = []string{
+					"14119a10abf4669e8cdbdff324a9f9605d99697215a0d21c360fe8dfa8471bab",
+					"a0d0a0d46f8b52473982a3c466318f479767577551a53ffc9074c9fa7035982e",
+				}
+			)
 
 			var cdnPods [3]*e2eutil.PodExec
 			for i := 0; i < 3; i++ {
@@ -95,12 +97,12 @@ var _ = Describe("Preheat with manager", func() {
 			done := waitForDone(preheatJob, fsPod)
 			Expect(done).Should(BeTrue())
 
-			for i, taskID := range taskIDs {
-				digest2 := checkPreheatResult(cdnPods, taskID)
-				if digest2 == "" {
+			for i, cdnTaskID := range cdnTaskIDs {
+				sha256sum2 := checkPreheatResult(cdnPods, cdnTaskID)
+				if sha256sum2 == "" {
 					fmt.Println("preheat file not found")
 				}
-				Expect(digests[i]).To(Equal(digest2))
+				Expect(sha256sum1[i]).To(Equal(sha256sum2))
 			}
 		})
 
@@ -149,10 +151,10 @@ var _ = Describe("Preheat with manager", func() {
 			Expect(done).Should(BeTrue())
 
 			// generate task id to find the file
-			taskID := idgen.TaskID(url, &base.UrlMeta{Tag: managerTag})
-			fmt.Println(taskID)
+			cdnTaskID := idgen.TaskID(url, &base.UrlMeta{Tag: managerTag})
+			fmt.Println(cdnTaskID)
 
-			sha256sum2 := checkPreheatResult(cdnPods, taskID)
+			sha256sum2 := checkPreheatResult(cdnPods, cdnTaskID)
 			if sha256sum2 == "" {
 				fmt.Println("preheat file not found")
 			}
@@ -188,7 +190,7 @@ func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
 	}
 }
 
-func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, taskID string) string {
+func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, cdnTaskID string) string {
 	var sha256sum2 string
 	for _, cdn := range cdnPods {
 		out, err := cdn.Command("ls", cdnCachePath).CombinedOutput()
@@ -197,7 +199,7 @@ func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, taskID string) string {
 			continue
 		}
 		// directory name is the first three characters of the task id
-		dir := taskID[0:3]
+		dir := cdnTaskID[0:3]
 		if !strings.Contains(string(out), dir) {
 			continue
 		}
@@ -205,7 +207,7 @@ func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, taskID string) string {
 		out, err = cdn.Command("ls", fmt.Sprintf("%s/%s", cdnCachePath, dir)).CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 		// file name is the same as task id
-		file := taskID
+		file := cdnTaskID
 		if !strings.Contains(string(out), file) {
 			continue
 		}
@@ -240,107 +242,4 @@ func getFileServerExec() *e2eutil.PodExec {
 	fmt.Println(podName)
 	Expect(strings.HasPrefix(podName, "file-server-")).Should(BeTrue())
 	return e2eutil.NewPodExec(e2eNamespace, podName, "")
-}
-
-func getLayers(url string) (taskIDs, digests []string, err error) {
-	header := http.Header{}
-	resp, err := getManifests(url, header)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode/100 != 2 {
-		if resp.StatusCode == http.StatusUnauthorized {
-			token := getAuthToken(resp.Header)
-			bearer := "Bearer " + token
-			header.Add("Authorization", bearer)
-
-			resp, err = getManifests(url, header)
-			if err != nil {
-				return nil, nil, err
-			}
-		} else {
-			return nil, nil, fmt.Errorf("request registry %d", resp.StatusCode)
-		}
-	}
-
-	return parseLayers(resp)
-}
-
-func getManifests(url string, header http.Header) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header = header
-	req.Header.Add("Accept", schema2.MediaTypeManifest)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-func getAuthToken(header http.Header) (token string) {
-	authURL := authURL(header.Values("WWW-Authenticate"))
-	if len(authURL) == 0 {
-		return
-	}
-
-	resp, err := http.Get(authURL)
-	if err != nil {
-		return
-	}
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-	var result map[string]interface{}
-	json.Unmarshal(body, &result)
-	if result["token"] != nil {
-		token = fmt.Sprintf("%v", result["token"])
-	}
-	return
-}
-
-func authURL(wwwAuth []string) string {
-	// Bearer realm="<auth-service-url>",service="<service>",scope="repository:<name>:pull"
-	if len(wwwAuth) == 0 {
-		return ""
-	}
-	polished := make([]string, 0)
-	for _, it := range wwwAuth {
-		polished = append(polished, strings.ReplaceAll(it, "\"", ""))
-	}
-	fileds := strings.Split(polished[0], ",")
-	host := strings.Split(fileds[0], "=")[1]
-	query := strings.Join(fileds[1:], "&")
-	return fmt.Sprintf("%s?%s", host, query)
-}
-
-func parseLayers(resp *http.Response) (taskIDs, digests []string, err error) {
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	manifest, _, err := distribution.UnmarshalManifest(schema2.MediaTypeManifest, body)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	for _, v := range manifest.References() {
-		digest := v.Digest.String()
-		if !strings.Contains(digest, ":") {
-			return nil, nil, fmt.Errorf("get wrong digest")
-		}
-		digests = append(digests, strings.Split(digest, ":")[1])
-		taskIDs = append(taskIDs, idgen.TaskID(fmt.Sprintf("https://registry-1.docker.io/v2/library/alpine/blobs/%s", digest),
-			&base.UrlMeta{Digest: digest, Tag: managerTag}))
-	}
-
-	return taskIDs, digests, err
 }
