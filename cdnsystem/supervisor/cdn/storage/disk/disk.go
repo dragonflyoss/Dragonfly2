@@ -240,7 +240,7 @@ func (s *diskStorageMgr) TryFreeSpace(fileLength int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if freeSpace > 500*unit.GB {
+	if freeSpace > 500*unit.GB && freeSpace.ToNumber() > fileLength {
 		return true, nil
 	}
 

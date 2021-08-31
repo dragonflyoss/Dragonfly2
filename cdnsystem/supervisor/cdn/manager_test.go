@@ -25,8 +25,6 @@ import (
 	"strings"
 	"testing"
 
-	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
-
 	"d7y.io/dragonfly/v2/cdnsystem/config"
 	"d7y.io/dragonfly/v2/cdnsystem/plugins"
 	"d7y.io/dragonfly/v2/cdnsystem/supervisor/cdn/storage"
@@ -66,12 +64,6 @@ func (suite *CDNManagerTestSuite) SetupSuite() {
 	progressMgr.EXPECT().PublishPiece(gomock.Any(), md5TaskID, gomock.Any()).Return(nil).Times(98 * 2)
 	progressMgr.EXPECT().PublishPiece(gomock.Any(), sha256TaskID, gomock.Any()).Return(nil).Times(98 * 2)
 	suite.cm, _ = newManager(config.New(), storeMgr, progressMgr)
-	taskMgr := mock.NewMockSeedTaskMgr(ctrl)
-	storeMgr.Initialize(taskMgr)
-	// small file test case will enter Exist for 3 times in TryFreeSpace
-	// large file test case will enter Exist for 3 * 2 times in TryFreeSpace and 1 time in GC.
-	taskMgr.EXPECT().Exist(md5TaskID).Return(nil, false).Times(10)
-	taskMgr.EXPECT().Exist(sha256TaskID).Return(nil, false).Times(10)
 }
 
 var (
@@ -213,33 +205,4 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 	}
 
 	// TODO test range download
-}
-
-func (suite *CDNManagerTestSuite) TestTryFreeSpace() {
-	tests := []struct {
-		name       string
-		fileLength int64
-		succeed    func(ok bool, err error) bool
-	}{
-		{
-			name:       "test for a small file",
-			fileLength: 0x1000,
-			succeed: func(ok bool, err error) bool {
-				return ok == true && err == nil
-			},
-		},
-		{
-			name:       "test for a very large file",
-			fileLength: 0x7fffffffffffffff,
-			succeed: func(ok bool, err error) bool {
-				return ok == false && cdnerrors.IsResourcesLacked(err)
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			suite.True(tt.succeed(suite.cm.TryFreeSpace(tt.fileLength)))
-		})
-	}
 }

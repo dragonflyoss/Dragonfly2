@@ -175,7 +175,6 @@ func (cm *Manager) Delete(taskID string) error {
 }
 
 func (cm *Manager) TryFreeSpace(fileLength int64) (bool, error) {
-	// if mustBeEnough == true, it means we are sure that the free space is enough.
 	return cm.cacheStore.TryFreeSpace(fileLength)
 }
 

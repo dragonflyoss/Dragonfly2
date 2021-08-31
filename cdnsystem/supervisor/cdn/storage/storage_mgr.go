@@ -72,7 +72,7 @@ type Manager interface {
 	// DeleteTask delete task from storage
 	DeleteTask(taskID string) error
 
-	// TryFreeSpace checks if there is enough space for the file
+	// TryFreeSpace checks if there is enough space for the file, return true while we are sure that there is enough space.
 	TryFreeSpace(fileLength int64) (bool, error)
 }
 

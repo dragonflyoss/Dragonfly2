@@ -299,7 +299,7 @@ func (h *hybridStorageMgr) TryFreeSpace(fileLength int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if diskFreeSpace > 500*unit.GB {
+	if diskFreeSpace > 500*unit.GB && diskFreeSpace.ToNumber() > fileLength {
 		return true, nil
 	}
 
