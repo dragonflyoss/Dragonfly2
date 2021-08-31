@@ -179,14 +179,12 @@ func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *supervisor.
 }
 
 func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *supervisor.Task) (*supervisor.Peer, error) {
-	// get or create host
-	reqPeerHost := req.PeerHost
 	var (
 		peer     *supervisor.Peer
 		ok       bool
 		peerHost *supervisor.PeerHost
 	)
-
+	reqPeerHost := req.PeerHost
 	if peerHost, ok = s.hostManager.Get(reqPeerHost.Uuid); !ok {
 		peerHost = supervisor.NewClientPeerHost(reqPeerHost.Uuid, reqPeerHost.Ip, reqPeerHost.HostName, reqPeerHost.RpcPort, reqPeerHost.DownPort,
 			reqPeerHost.SecurityDomain, reqPeerHost.Location, reqPeerHost.Idc, reqPeerHost.NetTopology, s.config.ClientLoad)

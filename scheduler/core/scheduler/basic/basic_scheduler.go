@@ -146,6 +146,7 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int) (l
 			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer is not selected because it is nil")
 			return false
 		}
+		// TODO IsWaiting
 		if candidateNode.IsDone() {
 			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer %s is not selected because it has done",
 				candidateNode.PeerID)

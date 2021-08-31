@@ -23,7 +23,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -64,22 +63,23 @@ func newPieceSeedStream(ctx context.Context, sc *cdnClient, hashKey string, sr *
 }
 
 func (pss *PieceSeedStream) initStream() error {
+	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, cdnServerNode, err := pss.sc.getCdnClient(pss.hashKey, false)
+		var client cdnsystem.SeederClient
+		var err error
+		client, target, err = pss.sc.getCdnClient(pss.hashKey, false)
 		if err != nil {
 			return nil, err
 		}
-		logger.WithTaskID(pss.hashKey).Infof("invoke cdn node %s ObtainSeeds", cdnServerNode)
 		return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, nil)
-	if err == nil {
-		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
-		pss.StreamTimes = 1
-	}
 	if err != nil {
-		err = pss.replaceClient(pss.hashKey, err)
+		logger.WithTaskID(pss.hashKey).Infof("initStream: invoke cdn node %s ObtainSeeds failed: %v", target, err)
+		return pss.replaceClient(pss.hashKey, err)
 	}
-	return err
+	pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
+	pss.StreamTimes = 1
+	return nil
 }
 
 func (pss *PieceSeedStream) Recv() (ps *cdnsystem.PieceSeed, err error) {
@@ -91,58 +91,61 @@ func (pss *PieceSeedStream) Recv() (ps *cdnsystem.PieceSeed, err error) {
 }
 
 func (pss *PieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error) {
-	if status.Code(cause) == codes.DeadlineExceeded {
+	if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
 		return nil, cause
 	}
-
-	if err := pss.replaceStream(pss.hashKey, cause); err != nil {
-		if err := pss.replaceClient(pss.hashKey, cause); err != nil {
-			return nil, cause
-		}
+	if err := pss.replaceStream(cause); err != nil {
+		return nil, err
 	}
-
 	return pss.Recv()
 }
 
-func (pss *PieceSeedStream) replaceStream(key string, cause error) error {
+func (pss *PieceSeedStream) replaceStream(cause error) error {
 	if pss.StreamTimes >= pss.MaxAttempts {
-		return errors.New("times of replacing stream reaches limit")
+		logger.WithTaskID(pss.hashKey).Info("replace stream reach max attempt")
+		return cause
 	}
-
+	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, _, err := pss.sc.getCdnClient(key, true)
+		var client cdnsystem.SeederClient
+		var err error
+		client, target, err = pss.sc.getCdnClient(pss.hashKey, true)
 		if err != nil {
 			return nil, err
 		}
 		return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
-	if err == nil {
-		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
-		pss.StreamTimes++
+	if err != nil {
+		logger.WithTaskID(pss.hashKey).Infof("replaceStream: invoke cdn node %s ObtainSeeds failed: %v", target, err)
+		return pss.replaceStream(cause)
 	}
-	return err
+	pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
+	pss.StreamTimes++
+	return nil
 }
 
 func (pss *PieceSeedStream) replaceClient(key string, cause error) error {
 	preNode, err := pss.sc.TryMigrate(key, cause, pss.failedServers)
 	if err != nil {
-		return err
+		logger.WithTaskID(pss.hashKey).Infof("replaceClient: tryMigrate cdn node failed: %v", err)
+		return cause
 	}
 	pss.failedServers = append(pss.failedServers, preNode)
-
+	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, _, err := pss.sc.getCdnClient(key, true)
+		var client cdnsystem.SeederClient
+		var err error
+		client, target, err = pss.sc.getCdnClient(key, true)
 		if err != nil {
 			return nil, err
 		}
 		return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
-	if err == nil {
-		pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
-		pss.StreamTimes = 1
-	}
 	if err != nil {
-		err = pss.replaceClient(key, cause)
+		logger.WithTaskID(pss.hashKey).Infof("replaceClient: invoke cdn node %s ObtainSeeds failed: %v", target, err)
+		return pss.replaceClient(key, cause)
 	}
-	return err
+	pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
+	pss.StreamTimes = 1
+	return nil
 }
