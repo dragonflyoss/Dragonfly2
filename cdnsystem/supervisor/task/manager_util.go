@@ -90,11 +90,6 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		span.SetAttributes(config.AttributeIfReuseTask.Bool(false))
 		logger.Debugf("get new task for taskID: %s", taskID)
 		task = newTask
-		if task.SourceFileLength != IllegalSourceFileLen {
-			if err := tm.cdnMgr.TryFreeSpace(task.SourceFileLength); err != nil && cdnerrors.IsResourcesLacked(err) {
-				return nil, err
-			}
-		}
 	}
 
 	if task.SourceFileLength != IllegalSourceFileLen {
@@ -117,8 +112,11 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	task.SourceFileLength = sourceFileLength
 	logger.WithTaskID(taskID).Debugf("get file content length: %d", sourceFileLength)
 	if task.SourceFileLength > 0 {
-		if err := tm.cdnMgr.TryFreeSpace(task.SourceFileLength); err != nil && cdnerrors.IsResourcesLacked(err) {
-			return nil, err
+		ok, err := tm.cdnMgr.TryFreeSpace(task.SourceFileLength)
+		if err != nil {
+			logger.Errorf("failed to try free space: %v", err)
+		} else if !ok {
+			return nil, cdnerrors.ErrResourcesLacked
 		}
 	}
 

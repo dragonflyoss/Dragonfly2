@@ -167,11 +167,12 @@ func (mr *MockManagerMockRecorder) StatDownloadFile(arg0 interface{}) *gomock.Ca
 }
 
 // TryFreeSpace mocks base method.
-func (m *MockManager) TryFreeSpace(arg0 int64) error {
+func (m *MockManager) TryFreeSpace(arg0 int64) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TryFreeSpace", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // TryFreeSpace indicates an expected call of TryFreeSpace.

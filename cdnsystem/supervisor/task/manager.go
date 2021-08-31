@@ -182,7 +182,7 @@ func (tm Manager) Get(taskID string) (*types.SeedTask, error) {
 
 func (tm Manager) Exist(taskID string) (*types.SeedTask, bool) {
 	task, err := tm.getTask(taskID)
-	return task, err == nil || !cdnerrors.IsDataNotFound(err)
+	return task, err == nil
 }
 
 func (tm Manager) Delete(taskID string) error {

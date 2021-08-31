@@ -219,20 +219,20 @@ func (suite *CDNManagerTestSuite) TestTryFreeSpace() {
 	tests := []struct {
 		name       string
 		fileLength int64
-		succeed    func(error) bool
+		succeed    func(ok bool, err error) bool
 	}{
 		{
 			name:       "test for a small file",
 			fileLength: 0x1000,
-			succeed: func(err error) bool {
-				return err == nil
+			succeed: func(ok bool, err error) bool {
+				return ok == true && err == nil
 			},
 		},
 		{
 			name:       "test for a very large file",
 			fileLength: 0x7fffffffffffffff,
-			succeed: func(err error) bool {
-				return cdnerrors.IsResourcesLacked(err)
+			succeed: func(ok bool, err error) bool {
+				return ok == false && cdnerrors.IsResourcesLacked(err)
 			},
 		},
 	}

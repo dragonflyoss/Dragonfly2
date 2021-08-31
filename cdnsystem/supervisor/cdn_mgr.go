@@ -36,5 +36,5 @@ type CDNMgr interface {
 	Delete(string) error
 
 	// TryFreeSpace checks if the free space of the storage is larger than the fileLength.
-	TryFreeSpace(fileLength int64) error
+	TryFreeSpace(fileLength int64) (bool, error)
 }
