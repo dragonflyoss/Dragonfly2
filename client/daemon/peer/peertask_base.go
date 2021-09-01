@@ -627,6 +627,7 @@ func (pt *peerTask) waitFailedPiece() (int32, bool) {
 				pt.failedReason = reasonContextCanceled
 				pt.failedCode = dfcodes.ClientContextCanceled
 			}
+			// TODO wait fix success is true
 			pt.Errorf("context done due to %s, progress is not done", pt.ctx.Err())
 		} else {
 			pt.Debugf("context done due to %s, progress is already done", pt.ctx.Err())

@@ -129,7 +129,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		if err == io.EOF {
 			return nil
 		}
-		err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "error receiving from peer stream: %v", err)
+		err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "receive an error from peer stream: %v", err)
 		span.RecordError(err)
 		return err
 	}
@@ -141,12 +141,12 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		return err
 	}
 	if peer.Task.IsFail() {
-		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "task status is fail")
+		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "peer's task status is fail, task status %s", peer.Task.GetStatus())
 		span.RecordError(err)
 		return err
 	}
 	if err := s.service.HandlePieceResult(ctx, peer, pieceResult); err != nil {
-		logger.Errorf("handle piece result %v fail: %v", pieceResult, err)
+		logger.Errorf("peer %s handle piece result %v fail: %v", peer.PeerID, pieceResult, err)
 
 	}
 	conn := peer.BindNewConn(stream)
@@ -156,14 +156,13 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		select {
 		case <-conn.Done():
 			return conn.Err()
-		case pieceResult := <-conn.Receiver():
-			if pieceResult == nil {
-				fmt.Printf("dddddddddddddddddddd")
-				return nil
+		case piece := <-conn.Receiver():
+			if piece == nil {
+				logger.Infof("peer %s channel has been closed", peer.PeerID)
+				continue
 			}
-			if err := s.service.HandlePieceResult(ctx, peer, pieceResult); err != nil {
-				logger.Errorf("handle piece result %v fail: %v", pieceResult, err)
-				return err
+			if err := s.service.HandlePieceResult(ctx, peer, piece); err != nil {
+				logger.Errorf("peer %s handle piece result %v fail: %v", peer.PeerID, piece, err)
 			}
 		}
 	}

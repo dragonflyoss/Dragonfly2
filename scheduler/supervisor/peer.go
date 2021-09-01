@@ -352,8 +352,8 @@ type Channel struct {
 
 func newChannel(stream scheduler.Scheduler_ReportPieceResultServer) *Channel {
 	c := &Channel{
-		sender:   make(chan *scheduler.PeerPacket, 10),
-		receiver: make(chan *scheduler.PieceResult, 10),
+		sender:   make(chan *scheduler.PeerPacket),
+		receiver: make(chan *scheduler.PieceResult),
 		stream:   stream,
 		closed:   atomic.NewBool(false),
 		done:     make(chan struct{}),
@@ -377,7 +377,7 @@ func (c *Channel) Send(packet *scheduler.PeerPacket) error {
 	case c.sender <- packet:
 		return nil
 	default:
-		return errors.New("send channel already full")
+		return errors.New("send channel is blocking")
 	}
 }
 
