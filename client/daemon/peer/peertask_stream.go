@@ -184,6 +184,7 @@ func newStreamPeerTask(ctx context.Context,
 	// bind func that base peer task did not implement
 	pt.backSourceFunc = pt.backSource
 	pt.setContentLengthFunc = pt.SetContentLength
+	pt.setTotalPiecesFunc = pt.SetTotalPieces
 	pt.reportPieceResultFunc = pt.ReportPieceResult
 	return ctx, pt, nil, nil
 }
@@ -440,6 +441,12 @@ func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
 func (s *streamPeerTask) backSource() {
 	s.contentLength.Store(-1)
 	_ = s.callback.Init(s)
+	if peerPacketStream, err := s.schedulerClient.ReportPieceResult(s.ctx, s.taskID, s.request); err != nil {
+		logger.Errorf("step 2: peer %s report piece failed: err", s.request.PeerId, err)
+	} else {
+		s.peerPacketStream = peerPacketStream
+	}
+	logger.Infof("step 2: start report peer %s back source piece result", s.request.PeerId)
 	err := s.pieceManager.DownloadSource(s.ctx, s, s.request)
 	if err != nil {
 		s.Errorf("download from source error: %s", err)
