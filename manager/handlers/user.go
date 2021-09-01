@@ -87,7 +87,6 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param name path string true "name"
-// @Param redirect_url query string true "redirect_url"
 // @Success 200
 // @Failure 400
 // @Failure 404
