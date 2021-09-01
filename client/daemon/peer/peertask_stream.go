@@ -417,6 +417,10 @@ func (s *streamPeerTask) SetContentLength(i int64) error {
 	return s.finish()
 }
 
+func (s *streamPeerTask) SetTotalPieces(i int32) {
+	s.totalPiece = i
+}
+
 func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
 	pr, pc, err := s.pieceManager.ReadPiece(s.ctx, &storage.ReadPieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
