@@ -1,6 +1,6 @@
 # Dragonfly Document
 
-Dragonfly Document is written, drawn, memorialized representation of all things about Dragonfly. For those who are generally interested in Dragonfly, README.md of this repo is sufficient. While for end users, all details contained in `/docs` is the best guide all should have. And for developers, contents in Developer Guide part is that all need.
+Dragonfly Document is written, drawn, memorialized representation of all things about Dragonfly. For those who are generally interested in Dragonfly, README.md of this repo is sufficient. While for end users, all details contained in `/docs` is the best guide all should have. And for developers, contents in [Developer Guide](#Developer Guide) part is that all need.
 
 Organization of document is as following:
 
