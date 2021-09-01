@@ -9,7 +9,6 @@ import (
 	reflect "reflect"
 
 	types "d7y.io/dragonfly/v2/cdnsystem/types"
-	syncmap "d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -51,11 +50,12 @@ func (mr *MockSeedTaskMgrMockRecorder) Delete(arg0 interface{}) *gomock.Call {
 }
 
 // Exist mocks base method.
-func (m *MockSeedTaskMgr) Exist(arg0 string) bool {
+func (m *MockSeedTaskMgr) Exist(arg0 string) (*types.SeedTask, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Exist", arg0)
-	ret0, _ := ret[0].(bool)
-	return ret0
+	ret0, _ := ret[0].(*types.SeedTask)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
 }
 
 // Exist indicates an expected call of Exist.
@@ -77,21 +77,6 @@ func (m *MockSeedTaskMgr) Get(arg0 string) (*types.SeedTask, error) {
 func (mr *MockSeedTaskMgrMockRecorder) Get(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockSeedTaskMgr)(nil).Get), arg0)
-}
-
-// GetAccessTime mocks base method.
-func (m *MockSeedTaskMgr) GetAccessTime() (*syncmap.SyncMap, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAccessTime")
-	ret0, _ := ret[0].(*syncmap.SyncMap)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAccessTime indicates an expected call of GetAccessTime.
-func (mr *MockSeedTaskMgrMockRecorder) GetAccessTime() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccessTime", reflect.TypeOf((*MockSeedTaskMgr)(nil).GetAccessTime))
 }
 
 // GetPieces mocks base method.
