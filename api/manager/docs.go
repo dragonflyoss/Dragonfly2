@@ -590,6 +590,256 @@ var doc = `{
                 }
             }
         },
+        "/oauth": {
+            "get": {
+                "description": "Get Oauths",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Oauth"
+                ],
+                "summary": "Get Oauths",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "current page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 2,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Oauth"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "create by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Oauth"
+                ],
+                "summary": "Create Oauth",
+                "parameters": [
+                    {
+                        "description": "Oauth",
+                        "name": "Oauth",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateOauthRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Oauth"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/oauth/{id}": {
+            "get": {
+                "description": "Get Oauth by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Oauth"
+                ],
+                "summary": "Get Oauth",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Oauth"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Oauth"
+                ],
+                "summary": "Destroy Oauth",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Oauth"
+                ],
+                "summary": "Update Oauth",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Oauth",
+                        "name": "Oauth",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateOauthRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Oauth"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/permissions": {
+            "get": {
+                "description": "Get Permissions",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Permission"
+                ],
+                "summary": "Get Permissions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/rbac.Permission"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/preheats": {
             "post": {
                 "description": "create by json config",
@@ -666,6 +916,221 @@ var doc = `{
                         "description": ""
                     },
                     "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/roles": {
+            "get": {
+                "description": "Get roles",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Get Roles",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "Create Role by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Create Role",
+                "parameters": [
+                    {
+                        "description": "Role",
+                        "name": "Role",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/roles/:role": {
+            "get": {
+                "description": "Get Role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Get Role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "role",
+                        "name": "role",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy role by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Destroy Role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "role",
+                        "name": "role",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/roles/:role/permissions": {
+            "post": {
+                "description": "Add Permission by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Add Permission For Role",
+                "parameters": [
+                    {
+                        "description": "Permission",
+                        "name": "Permission",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.AddPermissionForRoleRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "role",
+                        "name": "role",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove Role Permission by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Role"
+                ],
+                "summary": "Update Role",
+                "parameters": [
+                    {
+                        "description": "Permission",
+                        "name": "Permission",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.DeletePermissionForRoleRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "role",
+                        "name": "role",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
                         "description": ""
                     },
                     "500": {
@@ -1474,9 +1939,86 @@ var doc = `{
                 }
             }
         },
+        "/user/signin/{name}": {
+            "get": {
+                "description": "oauth signin by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Oauth Signin",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/user/signin/{name}/callback": {
+            "get": {
+                "description": "oauth signin callback by json config",
+                "tags": [
+                    "Oauth"
+                ],
+                "summary": "Oauth Signin Callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/user/signup": {
             "post": {
-                "description": "SignUp user by json config",
+                "description": "signup by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -1513,17 +2055,212 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/users/:id/reset_password": {
+            "post": {
+                "description": "reset password by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Reset Password For User",
+                "parameters": [
+                    {
+                        "description": "User",
+                        "name": "User",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/users/:id/roles": {
+            "get": {
+                "description": "get roles by json config",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User Roles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/users/:id/roles/:role": {
+            "put": {
+                "description": "add role to user by uri config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Add Role For User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "role",
+                        "name": "role",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "delete role by uri config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete Role For User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "role",
+                        "name": "role",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "model.Assertion": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "policy": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "policyMap": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "rm": {
+                    "$ref": "#/definitions/rbac.RoleManager"
+                },
+                "tokens": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AssertionMap": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/model.Assertion"
+            }
+        },
         "model.CDN": {
             "type": "object",
             "properties": {
                 "cdnclusterID": {
                     "type": "integer"
-                },
-                "created_at": {
-                    "type": "string"
                 },
                 "download_port": {
                     "type": "integer"
@@ -1531,17 +2268,11 @@ var doc = `{
                 "host_name": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "idc": {
                     "type": "string"
                 },
                 "ip": {
                     "type": "string"
-                },
-                "isDel": {
-                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -1550,9 +2281,6 @@ var doc = `{
                     "type": "integer"
                 },
                 "status": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -1566,15 +2294,6 @@ var doc = `{
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "isDel": {
-                    "type": "integer"
-                },
                 "is_default": {
                     "type": "boolean"
                 },
@@ -1583,9 +2302,6 @@ var doc = `{
                 },
                 "securityGroupID": {
                     "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -1593,26 +2309,37 @@ var doc = `{
             "type": "object",
             "additionalProperties": true
         },
+        "model.Oauth": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "client_secret": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "redirect_url": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Scheduler": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
                 "host_name": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
                 },
                 "ip": {
                     "type": "string"
-                },
-                "isDel": {
-                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -1627,9 +2354,6 @@ var doc = `{
                     "type": "integer"
                 },
                 "status": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 },
                 "vips": {
@@ -1649,15 +2373,6 @@ var doc = `{
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "isDel": {
-                    "type": "integer"
-                },
                 "is_default": {
                     "type": "boolean"
                 },
@@ -1669,9 +2384,6 @@ var doc = `{
                 },
                 "securityGroupID": {
                     "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -1681,25 +2393,13 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "domain": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "isDel": {
-                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
                 },
                 "proxy_domain": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -1713,17 +2413,8 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "isDel": {
-                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -1739,8 +2430,38 @@ var doc = `{
                 },
                 "state": {
                     "type": "string"
+                }
+            }
+        },
+        "rbac.Permission": {
+            "type": "object",
+            "required": [
+                "action",
+                "object"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string"
                 },
-                "updated_at": {
+                "object": {
+                    "type": "string"
+                }
+            }
+        },
+        "rbac.RoleManager": {
+            "type": "object"
+        },
+        "types.AddPermissionForRoleRequest": {
+            "type": "object",
+            "required": [
+                "action",
+                "object"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "object": {
                     "type": "string"
                 }
             }
@@ -1801,6 +2522,31 @@ var doc = `{
                 }
             }
         },
+        "types.CreateOauthRequest": {
+            "type": "object",
+            "required": [
+                "client_id",
+                "client_secret",
+                "name"
+            ],
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "client_secret": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "redirect_url": {
+                    "type": "string"
+                }
+            }
+        },
         "types.CreatePreheatRequest": {
             "type": "object",
             "required": [
@@ -1824,6 +2570,24 @@ var doc = `{
                     "type": "string"
                 },
                 "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateRoleRequest": {
+            "type": "object",
+            "required": [
+                "permissions",
+                "role"
+            ],
+            "properties": {
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/rbac.Permission"
+                    }
+                },
+                "role": {
                     "type": "string"
                 }
             }
@@ -1923,6 +2687,21 @@ var doc = `{
                 }
             }
         },
+        "types.DeletePermissionForRoleRequest": {
+            "type": "object",
+            "required": [
+                "action",
+                "object"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "object": {
+                    "type": "string"
+                }
+            }
+        },
         "types.Preheat": {
             "type": "object",
             "properties": {
@@ -1933,6 +2712,21 @@ var doc = `{
                     "type": "string"
                 },
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "old_password"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string"
+                },
+                "old_password": {
                     "type": "string"
                 }
             }
@@ -2006,6 +2800,26 @@ var doc = `{
                 },
                 "port": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.UpdateOauthRequest": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "client_secret": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "redirect_url": {
+                    "type": "string"
                 }
             }
         },

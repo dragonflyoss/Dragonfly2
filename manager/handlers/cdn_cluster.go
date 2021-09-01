@@ -79,8 +79,7 @@ func (h *Handlers) DestroyCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.Service.DestroyCDNCluster(params.ID)
-	if err != nil {
+	if err := h.Service.DestroyCDNCluster(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -215,8 +214,7 @@ func (h *Handlers) AddCDNToCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.Service.AddCDNToCDNCluster(params.ID, params.CDNID)
-	if err != nil {
+	if err := h.Service.AddCDNToCDNCluster(params.ID, params.CDNID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -243,8 +241,7 @@ func (h *Handlers) AddSchedulerClusterToCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.Service.AddSchedulerClusterToCDNCluster(params.ID, params.SchedulerClusterID)
-	if err != nil {
+	if err := h.Service.AddSchedulerClusterToCDNCluster(params.ID, params.SchedulerClusterID); err != nil {
 		ctx.Error(err)
 		return
 	}

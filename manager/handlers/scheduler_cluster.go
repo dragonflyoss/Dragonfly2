@@ -79,8 +79,7 @@ func (h *Handlers) DestroySchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.Service.DestroySchedulerCluster(params.ID)
-	if err != nil {
+	if err := h.Service.DestroySchedulerCluster(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}

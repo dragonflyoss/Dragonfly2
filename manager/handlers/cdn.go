@@ -68,8 +68,7 @@ func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 		return
 	}
 
-	err := h.Service.DestroyCDN(params.ID)
-	if err != nil {
+	if err := h.Service.DestroyCDN(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}

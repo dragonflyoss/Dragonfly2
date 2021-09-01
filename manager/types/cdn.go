@@ -46,7 +46,7 @@ type GetCDNsQuery struct {
 	IP           string `form:"ip" binding:"omitempty"`
 	Port         int32  `form:"port" binding:"omitempty"`
 	DownloadPort int32  `form:"download_port" binding:"omitempty"`
-	CDNClusterID uint   `json:"cdn_cluster_id" binding:"omitempty"`
+	CDNClusterID uint   `form:"cdn_cluster_id" binding:"omitempty"`
 	Page         int    `form:"page" binding:"omitempty,gte=1"`
 	PerPage      int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
 	Status       string `form:"status" binding:"omitempty,oneof=active inactive"`

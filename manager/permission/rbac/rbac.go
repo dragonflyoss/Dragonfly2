@@ -18,6 +18,7 @@ package rbac
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/casbin/casbin/v2/model"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -48,6 +50,16 @@ e = some(where (p.eft == allow))
 m = g(r.sub, p.sub) && r.obj == p.obj && (r.act == p.act || p.act == "*")
 `
 
+const (
+	RootRole  = "root"
+	GuestRole = "guest"
+)
+
+const (
+	AllAction  = "*"
+	ReadAction = "read"
+)
+
 func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
 	adapter, err := gormadapter.NewAdapterByDBWithCustomTable(gdb, &managermodel.CasbinRule{})
 	if err != nil {
@@ -67,29 +79,57 @@ func NewEnforcer(gdb *gorm.DB) (*casbin.Enforcer, error) {
 	return enforcer, nil
 }
 
-func InitRBAC(e *casbin.Enforcer, g *gin.Engine) error {
+func InitRBAC(e *casbin.Enforcer, g *gin.Engine, db *gorm.DB) error {
+	// Create roles
 	permissions := GetPermissions(g)
 	for _, permission := range permissions {
-		if _, err := e.AddPermissionForUser("root", permission.Object, "*"); err != nil {
+		if _, err := e.AddPermissionForUser(RootRole, permission.Object, AllAction); err != nil {
+			return err
+		}
+
+		if _, err := e.AddPermissionForUser(GuestRole, permission.Object, ReadAction); err != nil {
 			return err
 		}
 	}
 
-	if _, err := e.AddRoleForUser("1", "root"); err != nil {
+	// Create root user for the first time
+	var rootUserCount int64
+	if err := db.Model(managermodel.User{}).Count(&rootUserCount).Error; err != nil {
 		return err
+	}
+
+	if rootUserCount <= 0 {
+		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte("dragonfly"), bcrypt.MinCost)
+		if err != nil {
+			return err
+		}
+
+		rootUser := managermodel.User{
+			EncryptedPassword: string(encryptedPasswordBytes),
+			Name:              "root",
+			State:             managermodel.UserStateEnabled,
+		}
+
+		if err := db.Create(&rootUser).Error; err != nil {
+			return err
+		}
+
+		if _, err := e.AddRoleForUser(fmt.Sprint(rootUser.ID), RootRole); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 type Permission struct {
-	Object string
-	Action string
+	Object string `json:"object" binding:"required"`
+	Action string `json:"action" binding:"required,oneof=read *"`
 }
 
 func GetPermissions(g *gin.Engine) []Permission {
 	permissions := []Permission{}
-	actions := []string{"read", "*"}
+	actions := []string{AllAction, ReadAction}
 	for _, permission := range GetAPIGroupNames(g) {
 		for _, action := range actions {
 			permissions = append(permissions, Permission{
@@ -129,9 +169,9 @@ func GetAPIGroupName(path string) (string, error) {
 }
 
 func HTTPMethodToAction(method string) string {
-	action := "read"
+	action := ReadAction
 	if method == http.MethodDelete || method == http.MethodPatch || method == http.MethodPut || method == http.MethodPost {
-		action = "*"
+		action = AllAction
 	}
 
 	return action

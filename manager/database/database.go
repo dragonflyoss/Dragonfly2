@@ -23,7 +23,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
 	"github.com/go-redis/redis/v8"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -101,7 +100,6 @@ func migrate(db *gorm.DB) error {
 		&model.Scheduler{},
 		&model.SecurityGroup{},
 		&model.User{},
-		&model.Settings{},
 		&model.Oauth{},
 	)
 }
@@ -154,27 +152,6 @@ func seed(db *gorm.DB) error {
 		}
 
 		if err := db.Model(&cdnCluster).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
-			return err
-		}
-	}
-
-	var rootUserCount int64
-	if err := db.Model(model.User{}).Count(&rootUserCount).Error; err != nil {
-		return err
-	}
-	if rootUserCount <= 0 {
-		encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte("dragonfly"), bcrypt.MinCost)
-		if err != nil {
-			return err
-		}
-		if err := db.Create(&model.User{
-			Model: model.Model{
-				ID: uint(1),
-			},
-			EncryptedPassword: string(encryptedPasswordBytes),
-			Name:              "root",
-			State:             model.UserStateEnabled,
-		}).Error; err != nil {
 			return err
 		}
 	}

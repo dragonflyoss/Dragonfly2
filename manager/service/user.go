@@ -19,8 +19,14 @@ package service
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+
+	manageroauth "d7y.io/dragonfly/v2/manager/auth/oauth"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
+	"github.com/VividCortex/mysqlerr"
+	"github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -32,8 +38,7 @@ func (s *rest) SignIn(json types.SignInRequest) (*model.User, error) {
 		return nil, err
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(json.Password))
-	if err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(json.Password)); err != nil {
 		return nil, err
 	}
 
@@ -82,6 +87,66 @@ func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
 	}
 
 	if err := s.db.Create(&user).Error; err != nil {
+		return nil, err
+	}
+
+	if _, err := s.enforcer.AddRoleForUser(fmt.Sprint(user.ID), rbac.GuestRole); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (s *rest) OauthSignin(name string) (string, error) {
+	oauth := model.Oauth{}
+	if err := s.db.First(&oauth, model.Oauth{Name: name}).Error; err != nil {
+		return "", err
+	}
+
+	o, err := manageroauth.New(oauth.Name, oauth.ClientID, oauth.ClientSecret, oauth.RedirectURL)
+	if err != nil {
+		return "", err
+	}
+
+	return o.AuthCodeURL(), nil
+}
+
+func (s *rest) OauthSigninCallback(name, code string) (*model.User, error) {
+	oauth := model.Oauth{}
+	if err := s.db.First(&oauth, model.Oauth{Name: name}).Error; err != nil {
+		return nil, err
+	}
+
+	o, err := manageroauth.New(oauth.Name, oauth.ClientID, oauth.ClientSecret, oauth.RedirectURL)
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := o.Exchange(code)
+	if err != nil {
+		return nil, err
+	}
+
+	oauthUser, err := o.GetUser(token)
+	if err != nil {
+		return nil, err
+	}
+
+	user := model.User{
+		Name:   oauthUser.Name,
+		Email:  oauthUser.Email,
+		Avatar: oauthUser.Avatar,
+		State:  model.UserStateEnabled,
+	}
+	if err := s.db.Create(&user).Error; err != nil {
+		if err, ok := errors.Cause(err).(*mysql.MySQLError); ok && err.Number == mysqlerr.ER_DUP_ENTRY {
+			return &user, nil
+		}
+
+		return nil, err
+	}
+
+	if _, err := s.enforcer.AddRoleForUser(fmt.Sprint(user.ID), rbac.GuestRole); err != nil {
 		return nil, err
 	}
 

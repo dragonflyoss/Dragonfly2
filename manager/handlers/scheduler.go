@@ -68,8 +68,7 @@ func (h *Handlers) DestroyScheduler(ctx *gin.Context) {
 		return
 	}
 
-	err := h.Service.DestroyScheduler(params.ID)
-	if err != nil {
+	if err := h.Service.DestroyScheduler(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}

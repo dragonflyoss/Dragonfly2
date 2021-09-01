@@ -25,6 +25,18 @@ type SignInRequest struct {
 	Password string `json:"password" binding:"required,min=8,max=20"`
 }
 
+type OauthSigninParams struct {
+	Name string `uri:"name" binding:"required"`
+}
+
+type OauthSigninCallbackParams struct {
+	Name string `uri:"name" binding:"required"`
+}
+
+type OauthSigninCallbackQuery struct {
+	Code string `form:"code" binding:"required"`
+}
+
 type ResetPasswordRequest struct {
 	OldPassword string `json:"old_password" binding:"required,min=8,max=20"`
 	NewPassword string `json:"new_password" binding:"required,min=8,max=20"`

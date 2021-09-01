@@ -40,7 +40,7 @@ func (s *rest) GetRole(role string) [][]string {
 }
 
 func (s *rest) GetRoles() []string {
-	return s.enforcer.GetAllRoles()
+	return s.enforcer.GetAllSubjects()
 }
 
 func (s *rest) AddPermissionForRole(role string, json types.AddPermissionForRoleRequest) (bool, error) {

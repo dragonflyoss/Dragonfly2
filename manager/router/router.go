@@ -83,6 +83,8 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	u.POST("/signin", jwt.LoginHandler)
 	u.POST("/signout", jwt.LogoutHandler)
 	u.POST("/signup", h.SignUp)
+	u.GET("/signin/:name", h.OauthSignin)
+	u.GET("/signin/:name/callback", h.OauthSigninCallback(jwt))
 	u.POST("/refresh_token", jwt.RefreshHandler)
 	u.POST("/:id/reset_password", h.ResetPassword)
 	u.GET("/:id/roles", h.GetRolesForUser)
@@ -104,13 +106,11 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 
 	// Oauth
 	oa := apiv1.Group("/oauth")
-	oa.GET("", h.GetOauths)
-	oa.GET("/:id", h.GetOauth)
-	oa.DELETE("/:id", h.DestroyOauth)
-	oa.PUT("/:id", h.UpdateOauth)
 	oa.POST("", h.CreateOauth)
-	oa.GET("/signin/:oauth_name", h.OauthSignin)
-	oa.GET("/callback/:oauth_name", h.OauthCallback(jwt))
+	oa.DELETE(":id", h.DestroyOauth)
+	oa.PATCH(":id", h.UpdateOauth)
+	oa.GET(":id", h.GetOauth)
+	oa.GET("", h.GetOauths)
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")
@@ -128,13 +128,6 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	s.PATCH(":id", h.UpdateScheduler)
 	s.GET(":id", h.GetScheduler)
 	s.GET("", h.GetSchedulers)
-
-	// Settings
-	st := apiv1.Group("/settings")
-	st.POST("", h.CreateSetting)
-	st.DELETE(":id", h.DestroySetting)
-	st.PATCH("", h.UpdateSetting)
-	st.GET("", h.GetSettings)
 
 	// CDN Cluster
 	cc := apiv1.Group("/cdn-clusters")

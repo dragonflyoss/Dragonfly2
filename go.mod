@@ -31,6 +31,8 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
+	github.com/google/go-github v17.0.0+incompatible
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.7.3
 	github.com/jarcoal/httpmock v1.0.8
@@ -73,6 +75,7 @@ require (
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	golang.org/x/tools v0.1.4 // indirect
 	gonum.org/v1/gonum v0.9.3
+	google.golang.org/api v0.39.0
 	google.golang.org/grpc v1.39.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
@@ -81,6 +84,6 @@ require (
 	gorm.io/driver/mysql v1.0.5
 	gorm.io/gorm v1.21.9
 	gorm.io/plugin/soft_delete v1.0.2
-	k8s.io/apimachinery v0.20.6 // indirect
+	k8s.io/apimachinery v0.20.6
 	k8s.io/client-go v11.0.0+incompatible
 )
