@@ -1,6 +1,6 @@
 # Dragonfly Document
 
-Dragonfly Document is written, drawn, memorialized representation of all things about Dragonfly. For those who are generally interested in Dragonfly, README.md of this repo is sufficient. While for end users, all details contained in `/docs` is the best guide all should have. And for developers, contents in Developer Guide part is that all need.
+Dragonfly Document is written, drawn, memorialized representation of all things about Dragonfly. For those who are generally interested in Dragonfly, README.md of this repo is sufficient. While for end users, all details contained in `/docs` is the best guide all should have. And for developers, contents in [Developer Guide](#Developer Guide) part is that all need.
 
 Organization of document is as following:
 
@@ -55,11 +55,11 @@ better understanding of how Dragonfly is designed, developer could learn source 
 
 ### [TODO] Design Doc
 
-[Design Doc](./design) is content all about design of Dragonfly. It includes all things taken into consideration at the very beginning, the architecture designed for all components in Dragonfly, the interactive workflow between components, all APIs in Dragonfly and some technical things else.
+[Design Doc](./design/design.md) is content all about design of Dragonfly. It includes all things taken into consideration at the very beginning, the architecture designed for all components in Dragonfly, the interactive workflow between components, all APIs in Dragonfly and some technical things else.
 
 ### [TODO] Test Guide
 
-[Test Guide](./test-guide) is the best reference helping contributors get aware of how to setup testing environment and do it. Currently we can divide test of Dragonfly into four dimensions:
+[Test Guide](./test-guide/test-guide.md) is the best reference helping contributors get aware of how to setup testing environment and do it. Currently we can divide test of Dragonfly into four dimensions:
 
 * unit test;
 * API integration test;

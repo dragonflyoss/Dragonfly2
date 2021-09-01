@@ -1,0 +1,47 @@
+# This file is the template of manager configuration file.
+# You can configure your manager by change the parameter according your requirement.
+---
+# current server info used for server
+server:
+  # grpc server configure
+  grpc:
+    # listen address
+    listen: 127.0.0.1
+    # listen port, manager will try to listen
+    # when this port is not available, manager will try next port
+    port:
+      start: 65003
+      end: 65003
+  # rest server configure
+  rest:
+    # stand address
+    addr: :8080
+
+# database info used for server
+database:
+  # mysql configure
+  mysql:
+    user: dragonfly
+    password: dragonfly
+    host: dragonfly
+    port: 3306
+    dbname: manager
+  # redis configure
+  redis:
+    password: dragonfly
+    host: dragonfly
+    port: 6379
+    db: 0
+
+# manager server cache
+cache:
+  # redis cache configure
+  redis:
+    # cache ttl configure
+    ttl: 30000000000
+  # local cache configure
+  local:
+    # lfu cache size
+    size: 10000
+    # cache ttl configure
+    ttl: 30000000000
