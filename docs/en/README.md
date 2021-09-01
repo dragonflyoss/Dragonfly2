@@ -55,11 +55,11 @@ better understanding of how Dragonfly is designed, developer could learn source 
 
 ### [TODO] Design Doc
 
-[Design Doc](./design) is content all about design of Dragonfly. It includes all things taken into consideration at the very beginning, the architecture designed for all components in Dragonfly, the interactive workflow between components, all APIs in Dragonfly and some technical things else.
+[Design Doc](./design/design.md) is content all about design of Dragonfly. It includes all things taken into consideration at the very beginning, the architecture designed for all components in Dragonfly, the interactive workflow between components, all APIs in Dragonfly and some technical things else.
 
 ### [TODO] Test Guide
 
-[Test Guide](./test-guide) is the best reference helping contributors get aware of how to setup testing environment and do it. Currently we can divide test of Dragonfly into four dimensions:
+[Test Guide](./test-guide/test-guide.md) is the best reference helping contributors get aware of how to setup testing environment and do it. Currently we can divide test of Dragonfly into four dimensions:
 
 * unit test;
 * API integration test;
