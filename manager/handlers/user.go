@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	"d7y.io/dragonfly/v2/manager/types"
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -78,6 +79,68 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 	}
 
 	ctx.Status(http.StatusOK)
+}
+
+// @Summary Oauth Signin
+// @Description oauth signin by json config
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param name path string true "name"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /user/signin/{name} [get]
+func (h *Handlers) OauthSignin(ctx *gin.Context) {
+	var params types.OauthSigninParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	authURL, err := h.Service.OauthSignin(params.Name)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.Redirect(http.StatusFound, authURL)
+}
+
+// @Summary Oauth Signin Callback
+// @Description oauth signin callback by json config
+// @Tags Oauth
+// @Param name path string true "name"
+// @Param code query string true "code"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /user/signin/{name}/callback [get]
+func (h *Handlers) OauthSigninCallback(j *jwt.GinJWTMiddleware) func(*gin.Context) {
+	return func(ctx *gin.Context) {
+		var params types.OauthSigninCallbackParams
+		if err := ctx.ShouldBindUri(&params); err != nil {
+			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+			return
+		}
+
+		var query types.OauthSigninCallbackQuery
+		if err := ctx.ShouldBindQuery(&query); err != nil {
+			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+			return
+		}
+
+		user, err := h.Service.OauthSigninCallback(params.Name, query.Code)
+		if err != nil {
+			ctx.Error(err)
+			return
+		}
+
+		ctx.Set("user", user)
+		j.LoginHandler(ctx)
+	}
 }
 
 // @Summary Get User Roles

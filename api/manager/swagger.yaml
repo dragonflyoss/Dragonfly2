@@ -1,30 +1,49 @@
 basePath: /api/v1
 definitions:
+  model.Assertion:
+    properties:
+      key:
+        type: string
+      policy:
+        items:
+          items:
+            type: string
+          type: array
+        type: array
+      policyMap:
+        additionalProperties:
+          type: integer
+        type: object
+      rm:
+        $ref: '#/definitions/rbac.RoleManager'
+      tokens:
+        items:
+          type: string
+        type: array
+      value:
+        type: string
+    type: object
+  model.AssertionMap:
+    additionalProperties:
+      $ref: '#/definitions/model.Assertion'
+    type: object
   model.CDN:
     properties:
       cdnclusterID:
         type: integer
-      created_at:
-        type: string
       download_port:
         type: integer
       host_name:
         type: string
-      id:
-        type: integer
       idc:
         type: string
       ip:
         type: string
-      isDel:
-        type: integer
       location:
         type: string
       port:
         type: integer
       status:
-        type: string
-      updated_at:
         type: string
     type: object
   model.CDNCluster:
@@ -33,38 +52,37 @@ definitions:
         type: string
       config:
         $ref: '#/definitions/model.JSONMap'
-      created_at:
-        type: string
-      id:
-        type: integer
       is_default:
         type: boolean
-      isDel:
-        type: integer
       name:
         type: string
       securityGroupID:
         type: integer
-      updated_at:
-        type: string
     type: object
   model.JSONMap:
     additionalProperties: true
     type: object
+  model.Oauth:
+    properties:
+      bio:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      name:
+        type: string
+      redirect_url:
+        type: string
+    type: object
   model.Scheduler:
     properties:
-      created_at:
-        type: string
       host_name:
         type: string
-      id:
-        type: integer
       idc:
         type: string
       ip:
         type: string
-      isDel:
-        type: integer
       location:
         type: string
       net_config:
@@ -74,8 +92,6 @@ definitions:
       schedulerClusterID:
         type: integer
       status:
-        type: string
-      updated_at:
         type: string
       vips:
         type: string
@@ -88,40 +104,24 @@ definitions:
         $ref: '#/definitions/model.JSONMap'
       config:
         $ref: '#/definitions/model.JSONMap'
-      created_at:
-        type: string
-      id:
-        type: integer
       is_default:
         type: boolean
-      isDel:
-        type: integer
       name:
         type: string
       scopes:
         $ref: '#/definitions/model.JSONMap'
       securityGroupID:
         type: integer
-      updated_at:
-        type: string
     type: object
   model.SecurityGroup:
     properties:
       bio:
         type: string
-      created_at:
-        type: string
       domain:
         type: string
-      id:
-        type: integer
-      isDel:
-        type: integer
       name:
         type: string
       proxy_domain:
-        type: string
-      updated_at:
         type: string
     type: object
   model.User:
@@ -130,14 +130,8 @@ definitions:
         type: string
       bio:
         type: string
-      created_at:
-        type: string
       email:
         type: string
-      id:
-        type: integer
-      isDel:
-        type: integer
       location:
         type: string
       name:
@@ -148,8 +142,28 @@ definitions:
         type: string
       state:
         type: string
-      updated_at:
+    type: object
+  rbac.Permission:
+    properties:
+      action:
         type: string
+      object:
+        type: string
+    required:
+    - action
+    - object
+    type: object
+  rbac.RoleManager:
+    type: object
+  types.AddPermissionForRoleRequest:
+    properties:
+      action:
+        type: string
+      object:
+        type: string
+    required:
+    - action
+    - object
     type: object
   types.CreateCDNClusterRequest:
     properties:
@@ -190,6 +204,23 @@ definitions:
     - ip
     - port
     type: object
+  types.CreateOauthRequest:
+    properties:
+      bio:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      name:
+        type: string
+      redirect_url:
+        type: string
+    required:
+    - client_id
+    - client_secret
+    - name
+    type: object
   types.CreatePreheatRequest:
     properties:
       filter:
@@ -207,6 +238,18 @@ definitions:
     required:
     - type
     - url
+    type: object
+  types.CreateRoleRequest:
+    properties:
+      permissions:
+        items:
+          $ref: '#/definitions/rbac.Permission'
+        type: array
+      role:
+        type: string
+    required:
+    - permissions
+    - role
     type: object
   types.CreateSchedulerClusterRequest:
     properties:
@@ -274,6 +317,16 @@ definitions:
     - domain
     - name
     type: object
+  types.DeletePermissionForRoleRequest:
+    properties:
+      action:
+        type: string
+      object:
+        type: string
+    required:
+    - action
+    - object
+    type: object
   types.Preheat:
     properties:
       create_at:
@@ -282,6 +335,16 @@ definitions:
         type: string
       status:
         type: string
+    type: object
+  types.ResetPasswordRequest:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
     type: object
   types.SignUpRequest:
     properties:
@@ -330,6 +393,19 @@ definitions:
         type: string
       port:
         type: integer
+    type: object
+  types.UpdateOauthRequest:
+    properties:
+      bio:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      name:
+        type: string
+      redirect_url:
+        type: string
     type: object
   types.UpdateSchedulerClusterRequest:
     properties:
@@ -769,6 +845,173 @@ paths:
       summary: Get Health
       tags:
       - Health
+  /oauth:
+    get:
+      consumes:
+      - application/json
+      description: Get Oauths
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Oauth'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Oauths
+      tags:
+      - Oauth
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: Oauth
+        in: body
+        name: Oauth
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateOauthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Oauth'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Oauth
+      tags:
+      - Oauth
+  /oauth/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy Oauth
+      tags:
+      - Oauth
+    get:
+      consumes:
+      - application/json
+      description: Get Oauth by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Oauth'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Oauth
+      tags:
+      - Oauth
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Oauth
+        in: body
+        name: Oauth
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateOauthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Oauth'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Oauth
+      tags:
+      - Oauth
+  /permissions:
+    get:
+      description: Get Permissions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/rbac.Permission'
+            type: array
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Permissions
+      tags:
+      - Permission
   /preheats:
     post:
       consumes:
@@ -824,6 +1067,148 @@ paths:
       summary: Get Preheat
       tags:
       - Preheat
+  /roles:
+    get:
+      consumes:
+      - application/json
+      description: Get roles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Roles
+      tags:
+      - Role
+    post:
+      consumes:
+      - application/json
+      description: Create Role by json config
+      parameters:
+      - description: Role
+        in: body
+        name: Role
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Role
+      tags:
+      - Role
+  /roles/:role:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy role by json config
+      parameters:
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy Role
+      tags:
+      - Role
+    get:
+      consumes:
+      - application/json
+      description: Get Role
+      parameters:
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Role
+      tags:
+      - Role
+  /roles/:role/permissions:
+    delete:
+      consumes:
+      - application/json
+      description: Remove Role Permission by json config
+      parameters:
+      - description: Permission
+        in: body
+        name: Permission
+        required: true
+        schema:
+          $ref: '#/definitions/types.DeletePermissionForRoleRequest'
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Role
+      tags:
+      - Role
+    post:
+      consumes:
+      - application/json
+      description: Add Permission by json config
+      parameters:
+      - description: Permission
+        in: body
+        name: Permission
+        required: true
+        schema:
+          $ref: '#/definitions/types.AddPermissionForRoleRequest'
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Add Permission For Role
+      tags:
+      - Role
   /scheduler-clusters:
     get:
       consumes:
@@ -1359,11 +1744,62 @@ paths:
       summary: Destroy SecurityGroup
       tags:
       - SecurityGroup
+  /user/signin/{name}:
+    get:
+      consumes:
+      - application/json
+      description: oauth signin by json config
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Oauth Signin
+      tags:
+      - User
+  /user/signin/{name}/callback:
+    get:
+      description: oauth signin callback by json config
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: code
+        in: query
+        name: code
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Oauth Signin Callback
+      tags:
+      - Oauth
   /user/signup:
     post:
       consumes:
       - application/json
-      description: SignUp user by json config
+      description: signup by json config
       parameters:
       - description: User
         in: body
@@ -1385,4 +1821,108 @@ paths:
       summary: SignUp user
       tags:
       - User
+  /users/:id/reset_password:
+    post:
+      consumes:
+      - application/json
+      description: reset password by json config
+      parameters:
+      - description: User
+        in: body
+        name: User
+        required: true
+        schema:
+          $ref: '#/definitions/types.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Reset Password For User
+      tags:
+      - User
+  /users/:id/roles:
+    get:
+      description: get roles by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Get User Roles
+      tags:
+      - User
+  /users/:id/roles/:role:
+    delete:
+      consumes:
+      - application/json
+      description: delete role by uri config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Delete Role For User
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: add role to user by uri config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Add Role For User
+      tags:
+      - Users
 swagger: "2.0"

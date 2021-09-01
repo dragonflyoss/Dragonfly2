@@ -38,8 +38,8 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
 		Realm:       "Dragonfly",
 		Key:         []byte("Secret Key"),
-		Timeout:     time.Hour,
-		MaxRefresh:  time.Hour,
+		Timeout:     2 * 24 * time.Hour,
+		MaxRefresh:  2 * 24 * time.Hour,
 		IdentityKey: identityKey,
 
 		IdentityHandler: func(c *gin.Context) interface{} {
@@ -63,35 +63,45 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 				return nil
 			}
 
-			u := &user{
+			user := &user{
 				name: name.(string),
 				id:   id.(uint),
 			}
 
-			c.Set("name", u.name)
-			c.Set("id", u.id)
-			return u
+			c.Set("name", user.name)
+			c.Set("id", user.id)
+			return user
 		},
 
 		Authenticator: func(c *gin.Context) (interface{}, error) {
+			// Oauth2 signin
+			if rawUser, ok := c.Get("user"); ok {
+				user, ok := rawUser.(*model.User)
+				if !ok {
+					return "", jwt.ErrFailedAuthentication
+				}
+				return user, nil
+			}
+
+			// Normal signin
 			var json types.SignInRequest
 			if err := c.ShouldBindJSON(&json); err != nil {
 				return "", jwt.ErrMissingLoginValues
 			}
 
-			u, err := service.SignIn(json)
+			user, err := service.SignIn(json)
 			if err != nil {
 				return "", jwt.ErrFailedAuthentication
 			}
 
-			return u, nil
+			return user, nil
 		},
 
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
-			if u, ok := data.(*model.User); ok {
+			if user, ok := data.(*model.User); ok {
 				return jwt.MapClaims{
-					identityKey: u.ID,
-					"name":      u.Name,
+					identityKey: user.ID,
+					"name":      user.Name,
 				}
 			}
 
@@ -105,6 +115,13 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 		},
 
 		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
+			// Oauth2 signin
+			if _, ok := c.Get("user"); ok {
+				c.Redirect(http.StatusFound, "/")
+				return
+			}
+
+			// Normal signin
 			c.JSON(code, gin.H{
 				"token":  token,
 				"expire": expire.Format(time.RFC3339),

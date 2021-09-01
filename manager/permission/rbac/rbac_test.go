@@ -85,15 +85,15 @@ func TestHTTPMethodToAction(t *testing.T) {
 	}{
 		{
 			method:         "GET",
-			exceptedAction: "read",
+			exceptedAction: ReadAction,
 		},
 		{
 			method:         "POST",
-			exceptedAction: "*",
+			exceptedAction: AllAction,
 		},
 		{
 			method:         "UNKNOWN",
-			exceptedAction: "read",
+			exceptedAction: ReadAction,
 		},
 	}
 
