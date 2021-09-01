@@ -174,6 +174,10 @@ func (cm *Manager) Delete(taskID string) error {
 	return nil
 }
 
+func (cm *Manager) TryFreeSpace(fileLength int64) (bool, error) {
+	return cm.cacheStore.TryFreeSpace(fileLength)
+}
+
 func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceDigest string, downloadMetadata *downloadMetadata) (bool, error) {
 	logger.WithTaskID(task.TaskID).Debugf("handle cdn result, downloadMetaData: %+v", downloadMetadata)
 	var isSuccess = true

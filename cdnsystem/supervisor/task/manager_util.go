@@ -111,6 +111,14 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	// if not support file length header request ,return -1
 	task.SourceFileLength = sourceFileLength
 	logger.WithTaskID(taskID).Debugf("get file content length: %d", sourceFileLength)
+	if task.SourceFileLength > 0 {
+		ok, err := tm.cdnMgr.TryFreeSpace(task.SourceFileLength)
+		if err != nil {
+			logger.Errorf("failed to try free space: %v", err)
+		} else if !ok {
+			return nil, cdnerrors.ErrResourcesLacked
+		}
+	}
 
 	// if success to get the information successfully with the req.Header then update the task.Header to req.Header.
 	if request.Header != nil {

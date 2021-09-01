@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"d7y.io/dragonfly/v2/cdnsystem/types"
-	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 )
 
 // SeedTaskMgr as an interface defines all operations against SeedTask.
@@ -36,10 +35,7 @@ type SeedTaskMgr interface {
 	Get(string) (*types.SeedTask, error)
 
 	// Exist check task existence with specified taskId.
-	Exist(string) bool
-
-	// GetAccessTime get all tasks accessTime.
-	GetAccessTime() (*syncmap.SyncMap, error)
+	Exist(string) (*types.SeedTask, bool)
 
 	// Delete delete a task.
 	Delete(string) error
