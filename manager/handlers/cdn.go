@@ -17,9 +17,10 @@
 package handlers
 
 import (
+	"net/http"
+
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 // @Summary Create CDN
