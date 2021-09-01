@@ -190,25 +190,20 @@ test-coverage:
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 
-# Install github actions E2E tests environment
-install-actions-e2e-test:
-	@./hack/install-e2e-test.sh actions
-.PHONY: install-actions-e2e-test
-
 # Run github actions E2E tests
-actions-e2e-test: install-actions-e2e-test
+actions-e2e-test:
 	@ginkgo -v -r --failFast test/e2e --trace --progress
 .PHONY: actions-e2e-test
 
 # Run github actions E2E tests with coverage
-actions-e2e-test-coverage: install-actions-e2e-test
+actions-e2e-test-coverage:
 	@ginkgo -v -r --failFast -cover test/e2e --trace --progress
 	@cat test/e2e/*.coverprofile >> coverage.txt
 .PHONY: actions-e2e-test-coverage
 
 # Install E2E tests environment
 install-e2e-test:
-	@./hack/install-e2e-test.sh local
+	@./hack/install-e2e-test.sh
 .PHONY: install-e2e-test
 
 # Run E2E tests
@@ -295,7 +290,6 @@ help:
 	@echo "make build-dfget-man-page           generate dfget man page"
 	@echo "make test                           run unittests"
 	@echo "make test-coverage                  run tests with coverage"
-	@echo "make install-actions-e2e-test       install github actions E2E tests environment"
 	@echo "make actions-e2e-test               run github actons E2E tests"
 	@echo "make actions-e2e-test-coverage      run github actons E2E tests with coverage"
 	@echo "make install-e2e-test               install E2E tests environment"

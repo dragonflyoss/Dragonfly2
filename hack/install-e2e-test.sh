@@ -83,26 +83,6 @@ install-local() {
   install-apache-bench
 }
 
-install-actions() {
-  print_step_info "start building docker images"
-  make docker-build
-
-  print_step_info "start loading image for kind"
-  make kind-load
-
-  print_step_info "start helm install dragonfly"
-  install-helm
-
-  print_step_info "start install file server"
-  install-file-server
-
-  print_step_info "start install ginkgo"
-  install-ginkgo
-
-  print_step_info "start install apache bench"
-  install-apache-bench
-}
-
 print_step_info() {
   echo "-----------------------------"
   echo $1
@@ -110,13 +90,7 @@ print_step_info() {
 }
 
 main() {
-    case "${1-}" in
-    local)
-        install-local
-        ;;
-    actions)
-        install-actions
-    esac
+  install-local
 }
 
 main "$@"
