@@ -1,10 +1,30 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package oauth2
 
 import (
-	"context"
 	"errors"
+	"time"
 
 	xoauth2 "golang.org/x/oauth2"
+)
+
+const (
+	timeout = 5 * time.Second
 )
 
 const (
@@ -20,8 +40,8 @@ type User struct {
 
 type Oauth2 interface {
 	AuthCodeURL() string
-	Exchange(context.Context, string) (*xoauth2.Token, error)
-	GetUser(context.Context, *xoauth2.Token) (*User, error)
+	Exchange(string) (*xoauth2.Token, error)
+	GetUser(*xoauth2.Token) (*User, error)
 }
 
 type oauth2 struct {
@@ -46,10 +66,10 @@ func (g *oauth2) AuthCodeURL() string {
 	return g.Oauth2.AuthCodeURL()
 }
 
-func (g *oauth2) Exchange(ctx context.Context, code string) (*xoauth2.Token, error) {
-	return g.Oauth2.Exchange(ctx, code)
+func (g *oauth2) Exchange(code string) (*xoauth2.Token, error) {
+	return g.Oauth2.Exchange(code)
 }
 
-func (g *oauth2) GetUser(ctx context.Context, token *xoauth2.Token) (*User, error) {
-	return g.Oauth2.GetUser(ctx, token)
+func (g *oauth2) GetUser(token *xoauth2.Token) (*User, error) {
+	return g.Oauth2.GetUser(token)
 }

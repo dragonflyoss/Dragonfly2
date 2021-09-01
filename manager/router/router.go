@@ -83,8 +83,8 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	u.POST("/signin", jwt.LoginHandler)
 	u.POST("/signout", jwt.LogoutHandler)
 	u.POST("/signup", h.SignUp)
-	u.GET("/signin/:name", h.OauthSignin)
-	u.GET("/signin/:name/callback", h.OauthSigninCallback(jwt))
+	u.GET("/signin/:name", h.Oauth2Signin)
+	u.GET("/signin/:name/callback", h.Oauth2SigninCallback(jwt))
 	u.POST("/refresh_token", jwt.RefreshHandler)
 	u.POST("/:id/reset_password", h.ResetPassword)
 	u.GET("/:id/roles", h.GetRolesForUser)
@@ -104,13 +104,13 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	pm := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)
 	pm.GET("", h.GetPermissions(r))
 
-	// Oauth
-	oa := apiv1.Group("/oauth")
-	oa.GET("", h.GetOauths)
-	oa.GET("/:id", h.GetOauth)
-	oa.DELETE("/:id", h.DestroyOauth)
-	oa.PUT("/:id", h.UpdateOauth)
-	oa.POST("", h.CreateOauth)
+	// Oauth2
+	oa := apiv1.Group("/oauth2")
+	oa.POST("", h.CreateOauth2)
+	oa.DELETE(":id", h.DestroyOauth2)
+	oa.PATCH(":id", h.UpdateOauth2)
+	oa.GET(":id", h.GetOauth2)
+	oa.GET("", h.GetOauth2s)
 
 	// Scheduler Cluster
 	sc := apiv1.Group("/scheduler-clusters")

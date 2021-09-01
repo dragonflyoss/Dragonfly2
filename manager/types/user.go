@@ -25,19 +25,19 @@ type SignInRequest struct {
 	Password string `json:"password" binding:"required,min=8,max=20"`
 }
 
-type OauthSigninParams struct {
+type Oauth2SigninParams struct {
 	Name string `uri:"name" binding:"required"`
 }
 
-type OauthSigninQuery struct {
+type Oauth2SigninQuery struct {
 	RedirectURL string `uri:"redirect_url" binding:"omitempty,url_encoded"`
 }
 
-type OauthSigninCallbackParams struct {
+type Oauth2SigninCallbackParams struct {
 	Name string `uri:"name" binding:"required"`
 }
 
-type OauthSigninCallbackQuery struct {
+type Oauth2SigninCallbackQuery struct {
 	Code string `form:"code" binding:"required"`
 }
 

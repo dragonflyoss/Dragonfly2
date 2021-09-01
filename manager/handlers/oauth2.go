@@ -23,36 +23,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Summary Create CDN
+// @Summary Create Oauth2
 // @Description create by json config
-// @Tags CDN
+// @Tags Oauth2
 // @Accept json
 // @Produce json
-// @Param CDN body types.CreateCDNRequest true "CDN"
-// @Success 200 {object} model.CDN
+// @Param Oauth2 body types.CreateOauth2Request true "Oauth2"
+// @Success 200 {object} model.Oauth2
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdns [post]
-func (h *Handlers) CreateCDN(ctx *gin.Context) {
-	var json types.CreateCDNRequest
+// @Router /oauth2 [post]
+func (h *Handlers) CreateOauth2(ctx *gin.Context) {
+	var json types.CreateOauth2Request
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	cdn, err := h.Service.CreateCDN(json)
+	oauth2, err := h.Service.CreateOauth2(json)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, cdn)
+	ctx.JSON(http.StatusOK, oauth2)
 }
 
-// @Summary Destroy CDN
+// @Summary Destroy Oauth2
 // @Description Destroy by id
-// @Tags CDN
+// @Tags Oauth2
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
@@ -60,15 +60,15 @@ func (h *Handlers) CreateCDN(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdns/{id} [delete]
-func (h *Handlers) DestroyCDN(ctx *gin.Context) {
-	var params types.CDNParams
+// @Router /oauth2/{id} [delete]
+func (h *Handlers) DestroyOauth2(ctx *gin.Context) {
+	var params types.Oauth2Params
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.Service.DestroyCDN(params.ID); err != nil {
+	if err := h.Service.DestroyOauth2(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -76,99 +76,99 @@ func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Update CDN
+// @Summary Update Oauth2
 // @Description Update by json config
-// @Tags CDN
+// @Tags Oauth2
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param CDN body types.UpdateCDNRequest true "CDN"
-// @Success 200 {object} model.CDN
+// @Param Oauth2 body types.UpdateOauth2Request true "Oauth2"
+// @Success 200 {object} model.Oauth2
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdns/{id} [patch]
-func (h *Handlers) UpdateCDN(ctx *gin.Context) {
-	var params types.CDNParams
+// @Router /oauth2/{id} [patch]
+func (h *Handlers) UpdateOauth2(ctx *gin.Context) {
+	var params types.Oauth2Params
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	var json types.UpdateCDNRequest
+	var json types.UpdateOauth2Request
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	cdn, err := h.Service.UpdateCDN(params.ID, json)
+	oauth2, err := h.Service.UpdateOauth2(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, cdn)
+	ctx.JSON(http.StatusOK, oauth2)
 }
 
-// @Summary Get CDN
-// @Description Get CDN by id
-// @Tags CDN
+// @Summary Get Oauth2
+// @Description Get Oauth2 by id
+// @Tags Oauth2
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Success 200 {object} model.CDN
+// @Success 200 {object} model.Oauth2
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdns/{id} [get]
-func (h *Handlers) GetCDN(ctx *gin.Context) {
-	var params types.CDNParams
+// @Router /oauth2/{id} [get]
+func (h *Handlers) GetOauth2(ctx *gin.Context) {
+	var params types.Oauth2Params
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	cdn, err := h.Service.GetCDN(params.ID)
+	oauth2, err := h.Service.GetOauth2(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, cdn)
+	ctx.JSON(http.StatusOK, oauth2)
 }
 
-// @Summary Get CDNs
-// @Description Get CDNs
-// @Tags CDN
+// @Summary Get Oauth2s
+// @Description Get Oauth2s
+// @Tags Oauth2
 // @Accept json
 // @Produce json
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
-// @Success 200 {object} []model.CDN
+// @Success 200 {object} []model.Oauth2
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdns [get]
-func (h *Handlers) GetCDNs(ctx *gin.Context) {
-	var query types.GetCDNsQuery
+// @Router /oauth2 [get]
+func (h *Handlers) GetOauth2s(ctx *gin.Context) {
+	var query types.GetOauth2sQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	cdns, err := h.Service.GetCDNs(query)
+	oauth2, err := h.Service.GetOauth2s(query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.Service.CDNTotalCount(query)
+	totalCount, err := h.Service.Oauth2TotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
 	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
-	ctx.JSON(http.StatusOK, cdns)
+	ctx.JSON(http.StatusOK, oauth2)
 }

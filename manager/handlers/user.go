@@ -145,13 +145,9 @@ func (h *Handlers) Oauth2SigninCallback(j *jwt.GinJWTMiddleware) func(*gin.Conte
 			return
 		}
 
-		jwtToken, _, err := j.TokenGenerator(user)
-		if err != nil {
-			ctx.Error(err)
-			return
-		}
+		ctx.Set("user", user)
+		j.LoginHandler(ctx)
 
-		ctx.SetCookie("jwt", jwtToken, 3600, "", "", false, true)
 		ctx.Redirect(http.StatusFound, "/")
 	}
 }

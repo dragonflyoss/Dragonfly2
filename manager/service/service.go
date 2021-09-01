@@ -49,6 +49,13 @@ type REST interface {
 
 	GetPermissions(*gin.Engine) []rbac.Permission
 
+	CreateOauth2(types.CreateOauth2Request) (*model.Oauth2, error)
+	DestroyOauth2(uint) error
+	UpdateOauth2(uint, types.UpdateOauth2Request) (*model.Oauth2, error)
+	GetOauth2(uint) (*model.Oauth2, error)
+	GetOauth2s(types.GetOauth2sQuery) (*[]model.Oauth2, error)
+	Oauth2TotalCount(types.GetOauth2sQuery) (int64, error)
+
 	CreateCDNCluster(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	CreateCDNClusterWithSecurityGroupDomain(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	DestroyCDNCluster(uint) error
@@ -101,12 +108,6 @@ type REST interface {
 
 	CreatePreheat(types.CreatePreheatRequest) (*types.Preheat, error)
 	GetPreheat(string) (*types.Preheat, error)
-
-	CreateOauth(types.CreateOauthRequest) (*model.Oauth, error)
-	DestroyOauth(uint) error
-	UpdateOauth(uint, types.UpdateOauthRequest) (*model.Oauth, error)
-	GetOauth(uint) (*model.Oauth, error)
-	GetOauths() (*[]model.Oauth, error)
 }
 
 type rest struct {

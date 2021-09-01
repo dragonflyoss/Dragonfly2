@@ -19,8 +19,9 @@ package service
 import (
 	"fmt"
 
-	"d7y.io/dragonfly/v2/manager/auth/oauth2"
+	authoauth2 "d7y.io/dragonfly/v2/manager/auth/oauth2"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -33,8 +34,7 @@ func (s *rest) SignIn(json types.SignInRequest) (*model.User, error) {
 		return nil, err
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(json.Password))
-	if err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(json.Password)); err != nil {
 		return nil, err
 	}
 
@@ -86,6 +86,10 @@ func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
 		return nil, err
 	}
 
+	if _, err := s.enforcer.AddRoleForUser(fmt.Sprint(user.ID), rbac.GuestRole); err != nil {
+		return nil, err
+	}
+
 	return &user, nil
 }
 
@@ -95,7 +99,7 @@ func (s *rest) Oauth2Signin(name string, redirectURL string) (string, error) {
 		return "", err
 	}
 
-	o, err := oauth2.New(oauth2.Name, oauth2.ClientID, oauth2.ClientID, redirectURL)
+	o, err := authoauth2.New(oauth2.Name, oauth2.ClientID, oauth2.ClientSecret, redirectURL)
 	if err != nil {
 		return "", err
 	}
@@ -104,32 +108,41 @@ func (s *rest) Oauth2Signin(name string, redirectURL string) (string, error) {
 }
 
 func (s *rest) Oauth2SigninCallback(name, code string) (*model.User, error) {
-	oauth2Model := model.Oauth2{}
-	if err := s.db.First(&oauth2Model, model.Oauth2{Name: name}).Error; err != nil {
+	oauth2 := model.Oauth2{}
+	if err := s.db.First(&oauth2, model.Oauth2{Name: name}).Error; err != nil {
 		return nil, err
 	}
 
-	o, err := oauth2.New(&oauth2Model, s.db)
+	o, err := authoauth2.New(oauth2.Name, oauth2.ClientID, oauth2.ClientSecret, "")
 	if err != nil {
 		return nil, err
 	}
 
-	token, err := o.ExchangeTokenByCode(code)
+	token, err := o.Exchange(code)
 	if err != nil {
 		return nil, err
 	}
 
-	u, err := o.GetOauth2UserInfo(token)
+	oauthUser, err := o.GetUser(token)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := o.Oauth2LinkUser(u, s.db)
-	if err != nil {
+	user := model.User{
+		Name:   oauthUser.Name,
+		Email:  oauthUser.Email,
+		Avatar: oauthUser.Avatar,
+		State:  model.UserStateEnabled,
+	}
+	if err := s.db.Create(&user).Error; err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	if _, err := s.enforcer.AddRoleForUser(fmt.Sprint(user.ID), rbac.GuestRole); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
 
 func (s *rest) GetRolesForUser(id uint) ([]string, error) {
