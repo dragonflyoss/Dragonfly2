@@ -21,14 +21,14 @@ type Oauth2Params struct {
 }
 
 type CreateOauth2Request struct {
-	Name         string `json:"name" binding:"required"`
+	Name         string `json:"name" binding:"required,oneof=github google"`
 	BIO          string `json:"bio" binding:"omitempty"`
 	ClientID     string `json:"client_id" binding:"required"`
 	ClientSecret string `json:"client_secret" binding:"required"`
 }
 
 type UpdateOauth2Request struct {
-	Name         string `json:"name" binding:"omitempty"`
+	Name         string `json:"name" binding:"omitempty,oneof=github google"`
 	BIO          string `json:"bio" binding:"omitempty"`
 	ClientID     string `json:"client_id" binding:"omitempty"`
 	ClientSecret string `json:"client_secret" binding:"omitempty"`
@@ -37,6 +37,6 @@ type UpdateOauth2Request struct {
 type GetOauth2sQuery struct {
 	Page     int    `form:"page" binding:"omitempty,gte=1"`
 	PerPage  int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
-	Name     string `json:"name" binding:"omitempty"`
+	Name     string `json:"name" binding:"omitempty,oneof=github google"`
 	ClientID string `json:"client_id" binding:"omitempty"`
 }
