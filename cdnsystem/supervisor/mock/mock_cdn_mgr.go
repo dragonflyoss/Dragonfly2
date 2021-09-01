@@ -63,3 +63,18 @@ func (mr *MockCDNMgrMockRecorder) TriggerCDN(arg0, arg1 interface{}) *gomock.Cal
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TriggerCDN", reflect.TypeOf((*MockCDNMgr)(nil).TriggerCDN), arg0, arg1)
 }
+
+// TryFreeSpace mocks base method.
+func (m *MockCDNMgr) TryFreeSpace(arg0 int64) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TryFreeSpace", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TryFreeSpace indicates an expected call of TryFreeSpace.
+func (mr *MockCDNMgrMockRecorder) TryFreeSpace(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryFreeSpace", reflect.TypeOf((*MockCDNMgr)(nil).TryFreeSpace), arg0)
+}

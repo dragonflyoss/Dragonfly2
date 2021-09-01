@@ -166,6 +166,21 @@ func (mr *MockManagerMockRecorder) StatDownloadFile(arg0 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatDownloadFile", reflect.TypeOf((*MockManager)(nil).StatDownloadFile), arg0)
 }
 
+// TryFreeSpace mocks base method.
+func (m *MockManager) TryFreeSpace(arg0 int64) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TryFreeSpace", arg0)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TryFreeSpace indicates an expected call of TryFreeSpace.
+func (mr *MockManagerMockRecorder) TryFreeSpace(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryFreeSpace", reflect.TypeOf((*MockManager)(nil).TryFreeSpace), arg0)
+}
+
 // WriteDownloadFile mocks base method.
 func (m *MockManager) WriteDownloadFile(arg0 string, arg1, arg2 int64, arg3 io.Reader) error {
 	m.ctrl.T.Helper()
