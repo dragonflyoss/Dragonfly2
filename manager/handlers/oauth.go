@@ -23,36 +23,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Summary Create Oauth2
+// @Summary Create Oauth
 // @Description create by json config
-// @Tags Oauth2
+// @Tags Oauth
 // @Accept json
 // @Produce json
-// @Param Oauth2 body types.CreateOauth2Request true "Oauth2"
-// @Success 200 {object} model.Oauth2
+// @Param Oauth body types.CreateOauthRequest true "Oauth"
+// @Success 200 {object} model.Oauth
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /oauth2 [post]
-func (h *Handlers) CreateOauth2(ctx *gin.Context) {
-	var json types.CreateOauth2Request
+// @Router /oauth [post]
+func (h *Handlers) CreateOauth(ctx *gin.Context) {
+	var json types.CreateOauthRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	oauth2, err := h.Service.CreateOauth2(json)
+	oauth, err := h.Service.CreateOauth(json)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, oauth2)
+	ctx.JSON(http.StatusOK, oauth)
 }
 
-// @Summary Destroy Oauth2
+// @Summary Destroy Oauth
 // @Description Destroy by id
-// @Tags Oauth2
+// @Tags Oauth
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
@@ -60,15 +60,15 @@ func (h *Handlers) CreateOauth2(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /oauth2/{id} [delete]
-func (h *Handlers) DestroyOauth2(ctx *gin.Context) {
-	var params types.Oauth2Params
+// @Router /oauth/{id} [delete]
+func (h *Handlers) DestroyOauth(ctx *gin.Context) {
+	var params types.OauthParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.Service.DestroyOauth2(params.ID); err != nil {
+	if err := h.Service.DestroyOauth(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -76,99 +76,99 @@ func (h *Handlers) DestroyOauth2(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Update Oauth2
+// @Summary Update Oauth
 // @Description Update by json config
-// @Tags Oauth2
+// @Tags Oauth
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param Oauth2 body types.UpdateOauth2Request true "Oauth2"
-// @Success 200 {object} model.Oauth2
+// @Param Oauth body types.UpdateOauthRequest true "Oauth"
+// @Success 200 {object} model.Oauth
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /oauth2/{id} [patch]
-func (h *Handlers) UpdateOauth2(ctx *gin.Context) {
-	var params types.Oauth2Params
+// @Router /oauth/{id} [patch]
+func (h *Handlers) UpdateOauth(ctx *gin.Context) {
+	var params types.OauthParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	var json types.UpdateOauth2Request
+	var json types.UpdateOauthRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	oauth2, err := h.Service.UpdateOauth2(params.ID, json)
+	oauth, err := h.Service.UpdateOauth(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, oauth2)
+	ctx.JSON(http.StatusOK, oauth)
 }
 
-// @Summary Get Oauth2
-// @Description Get Oauth2 by id
-// @Tags Oauth2
+// @Summary Get Oauth
+// @Description Get Oauth by id
+// @Tags Oauth
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Success 200 {object} model.Oauth2
+// @Success 200 {object} model.Oauth
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /oauth2/{id} [get]
-func (h *Handlers) GetOauth2(ctx *gin.Context) {
-	var params types.Oauth2Params
+// @Router /oauth/{id} [get]
+func (h *Handlers) GetOauth(ctx *gin.Context) {
+	var params types.OauthParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	oauth2, err := h.Service.GetOauth2(params.ID)
+	oauth, err := h.Service.GetOauth(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, oauth2)
+	ctx.JSON(http.StatusOK, oauth)
 }
 
-// @Summary Get Oauth2s
-// @Description Get Oauth2s
-// @Tags Oauth2
+// @Summary Get Oauths
+// @Description Get Oauths
+// @Tags Oauth
 // @Accept json
 // @Produce json
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
-// @Success 200 {object} []model.Oauth2
+// @Success 200 {object} []model.Oauth
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /oauth2 [get]
-func (h *Handlers) GetOauth2s(ctx *gin.Context) {
-	var query types.GetOauth2sQuery
+// @Router /oauth [get]
+func (h *Handlers) GetOauths(ctx *gin.Context) {
+	var query types.GetOauthsQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	oauth2, err := h.Service.GetOauth2s(query)
+	oauth, err := h.Service.GetOauths(query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.Service.Oauth2TotalCount(query)
+	totalCount, err := h.Service.OauthTotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
 	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
-	ctx.JSON(http.StatusOK, oauth2)
+	ctx.JSON(http.StatusOK, oauth)
 }

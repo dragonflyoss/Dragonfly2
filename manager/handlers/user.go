@@ -81,8 +81,8 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Oauth2 Signin
-// @Description oauth2 signin by json config
+// @Summary Oauth Signin
+// @Description oauth signin by json config
 // @Tags User
 // @Accept json
 // @Produce json
@@ -93,20 +93,14 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 // @Failure 404
 // @Failure 500
 // @Router /user/signin/{name} [get]
-func (h *Handlers) Oauth2Signin(ctx *gin.Context) {
-	var params types.Oauth2SigninParams
+func (h *Handlers) OauthSignin(ctx *gin.Context) {
+	var params types.OauthSigninParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	var query types.Oauth2SigninQuery
-	if err := ctx.ShouldBindQuery(&query); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-
-	authURL, err := h.Service.Oauth2Signin(params.Name, query.RedirectURL)
+	authURL, err := h.Service.OauthSignin(params.Name)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -115,9 +109,9 @@ func (h *Handlers) Oauth2Signin(ctx *gin.Context) {
 	ctx.Redirect(http.StatusFound, authURL)
 }
 
-// @Summary Oauth2 Signin Callback
-// @Description oauth2 signin callback by json config
-// @Tags Oauth2
+// @Summary Oauth Signin Callback
+// @Description oauth signin callback by json config
+// @Tags Oauth
 // @Param name path string true "name"
 // @Param code query string true "code"
 // @Success 200
@@ -125,21 +119,21 @@ func (h *Handlers) Oauth2Signin(ctx *gin.Context) {
 // @Failure 404
 // @Failure 500
 // @Router /user/signin/{name}/callback [get]
-func (h *Handlers) Oauth2SigninCallback(j *jwt.GinJWTMiddleware) func(*gin.Context) {
+func (h *Handlers) OauthSigninCallback(j *jwt.GinJWTMiddleware) func(*gin.Context) {
 	return func(ctx *gin.Context) {
-		var params types.Oauth2SigninCallbackParams
+		var params types.OauthSigninCallbackParams
 		if err := ctx.ShouldBindUri(&params); err != nil {
 			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 			return
 		}
 
-		var query types.Oauth2SigninCallbackQuery
+		var query types.OauthSigninCallbackQuery
 		if err := ctx.ShouldBindQuery(&query); err != nil {
 			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 			return
 		}
 
-		user, err := h.Service.Oauth2SigninCallback(params.Name, query.Code)
+		user, err := h.Service.OauthSigninCallback(params.Name, query.Code)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -147,8 +141,6 @@ func (h *Handlers) Oauth2SigninCallback(j *jwt.GinJWTMiddleware) func(*gin.Conte
 
 		ctx.Set("user", user)
 		j.LoginHandler(ctx)
-
-		ctx.Redirect(http.StatusFound, "/")
 	}
 }
 

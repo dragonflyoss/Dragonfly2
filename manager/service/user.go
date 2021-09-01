@@ -19,10 +19,14 @@ package service
 import (
 	"fmt"
 
-	authoauth2 "d7y.io/dragonfly/v2/manager/auth/oauth2"
+	"github.com/pkg/errors"
+
+	manageroauth "d7y.io/dragonfly/v2/manager/auth/oauth"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
+	"github.com/VividCortex/mysqlerr"
+	"github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -93,13 +97,13 @@ func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *rest) Oauth2Signin(name string, redirectURL string) (string, error) {
-	oauth2 := model.Oauth2{}
-	if err := s.db.First(&oauth2, model.Oauth2{Name: name}).Error; err != nil {
+func (s *rest) OauthSignin(name string) (string, error) {
+	oauth := model.Oauth{}
+	if err := s.db.First(&oauth, model.Oauth{Name: name}).Error; err != nil {
 		return "", err
 	}
 
-	o, err := authoauth2.New(oauth2.Name, oauth2.ClientID, oauth2.ClientSecret, redirectURL)
+	o, err := manageroauth.New(oauth.Name, oauth.ClientID, oauth.ClientSecret, oauth.RedirectURL)
 	if err != nil {
 		return "", err
 	}
@@ -107,13 +111,13 @@ func (s *rest) Oauth2Signin(name string, redirectURL string) (string, error) {
 	return o.AuthCodeURL(), nil
 }
 
-func (s *rest) Oauth2SigninCallback(name, code string) (*model.User, error) {
-	oauth2 := model.Oauth2{}
-	if err := s.db.First(&oauth2, model.Oauth2{Name: name}).Error; err != nil {
+func (s *rest) OauthSigninCallback(name, code string) (*model.User, error) {
+	oauth := model.Oauth{}
+	if err := s.db.First(&oauth, model.Oauth{Name: name}).Error; err != nil {
 		return nil, err
 	}
 
-	o, err := authoauth2.New(oauth2.Name, oauth2.ClientID, oauth2.ClientSecret, "")
+	o, err := manageroauth.New(oauth.Name, oauth.ClientID, oauth.ClientSecret, oauth.RedirectURL)
 	if err != nil {
 		return nil, err
 	}
@@ -135,6 +139,10 @@ func (s *rest) Oauth2SigninCallback(name, code string) (*model.User, error) {
 		State:  model.UserStateEnabled,
 	}
 	if err := s.db.Create(&user).Error; err != nil {
+		if err, ok := errors.Cause(err).(*mysql.MySQLError); ok && err.Number == mysqlerr.ER_DUP_ENTRY {
+			return &user, nil
+		}
+
 		return nil, err
 	}
 

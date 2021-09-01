@@ -16,27 +16,29 @@
 
 package types
 
-type Oauth2Params struct {
+type OauthParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
-type CreateOauth2Request struct {
+type CreateOauthRequest struct {
 	Name         string `json:"name" binding:"required,oneof=github google"`
 	BIO          string `json:"bio" binding:"omitempty"`
 	ClientID     string `json:"client_id" binding:"required"`
 	ClientSecret string `json:"client_secret" binding:"required"`
+	RedirectURL  string `json:"redirect_url" binding:"omitempty,url"`
 }
 
-type UpdateOauth2Request struct {
+type UpdateOauthRequest struct {
 	Name         string `json:"name" binding:"omitempty,oneof=github google"`
 	BIO          string `json:"bio" binding:"omitempty"`
 	ClientID     string `json:"client_id" binding:"omitempty"`
 	ClientSecret string `json:"client_secret" binding:"omitempty"`
+	RedirectURL  string `json:"redirect_url" binding:"omitempty,url"`
 }
 
-type GetOauth2sQuery struct {
+type GetOauthsQuery struct {
 	Page     int    `form:"page" binding:"omitempty,gte=1"`
 	PerPage  int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
-	Name     string `json:"name" binding:"omitempty,oneof=github google"`
-	ClientID string `json:"client_id" binding:"omitempty"`
+	Name     string `form:"name" binding:"omitempty,oneof=github google"`
+	ClientID string `form:"client_id" binding:"omitempty"`
 }

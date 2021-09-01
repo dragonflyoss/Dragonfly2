@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package oauth2
+package oauth
 
 import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
 
-	xoauth2 "golang.org/x/oauth2"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	oauth2v2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
@@ -32,13 +32,13 @@ var googleScopes = []string{
 	"https://www.googleapis.com/auth/userinfo.profile",
 }
 
-type oauth2Google struct {
-	*xoauth2.Config
+type oauthGoogle struct {
+	*oauth2.Config
 }
 
-func newGoogle(name, clientID, clientSecret, redirectURL string) *oauth2Google {
-	return &oauth2Google{
-		Config: &xoauth2.Config{
+func newGoogle(name, clientID, clientSecret, redirectURL string) *oauthGoogle {
+	return &oauthGoogle{
+		Config: &oauth2.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
 			Scopes:       googleScopes,
@@ -48,20 +48,20 @@ func newGoogle(name, clientID, clientSecret, redirectURL string) *oauth2Google {
 	}
 }
 
-func (g *oauth2Google) AuthCodeURL() string {
+func (g *oauthGoogle) AuthCodeURL() string {
 	b := make([]byte, 16)
 	rand.Read(b)
 	return g.Config.AuthCodeURL(base64.URLEncoding.EncodeToString(b))
 }
 
-func (g *oauth2Google) Exchange(code string) (*xoauth2.Token, error) {
+func (g *oauthGoogle) Exchange(code string) (*oauth2.Token, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	return g.Config.Exchange(ctx, code)
 }
 
-func (g *oauth2Google) GetUser(token *xoauth2.Token) (*User, error) {
+func (g *oauthGoogle) GetUser(token *oauth2.Token) (*User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

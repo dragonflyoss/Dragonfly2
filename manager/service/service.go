@@ -33,8 +33,8 @@ import (
 type REST interface {
 	SignIn(types.SignInRequest) (*model.User, error)
 	SignUp(types.SignUpRequest) (*model.User, error)
-	Oauth2Signin(string, string) (string, error)
-	Oauth2SigninCallback(string, string) (*model.User, error)
+	OauthSignin(string) (string, error)
+	OauthSigninCallback(string, string) (*model.User, error)
 	ResetPassword(uint, types.ResetPasswordRequest) error
 	GetRolesForUser(uint) ([]string, error)
 	AddRoleForUser(types.AddRoleForUserParams) (bool, error)
@@ -49,12 +49,12 @@ type REST interface {
 
 	GetPermissions(*gin.Engine) []rbac.Permission
 
-	CreateOauth2(types.CreateOauth2Request) (*model.Oauth2, error)
-	DestroyOauth2(uint) error
-	UpdateOauth2(uint, types.UpdateOauth2Request) (*model.Oauth2, error)
-	GetOauth2(uint) (*model.Oauth2, error)
-	GetOauth2s(types.GetOauth2sQuery) (*[]model.Oauth2, error)
-	Oauth2TotalCount(types.GetOauth2sQuery) (int64, error)
+	CreateOauth(types.CreateOauthRequest) (*model.Oauth, error)
+	DestroyOauth(uint) error
+	UpdateOauth(uint, types.UpdateOauthRequest) (*model.Oauth, error)
+	GetOauth(uint) (*model.Oauth, error)
+	GetOauths(types.GetOauthsQuery) (*[]model.Oauth, error)
+	OauthTotalCount(types.GetOauthsQuery) (int64, error)
 
 	CreateCDNCluster(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	CreateCDNClusterWithSecurityGroupDomain(types.CreateCDNClusterRequest) (*model.CDNCluster, error)

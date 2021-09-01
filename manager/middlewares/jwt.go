@@ -115,6 +115,13 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 		},
 
 		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
+			// Oauth2 signin
+			if _, ok := c.Get("user"); ok {
+				c.Redirect(http.StatusFound, "/")
+				return
+			}
+
+			// Normal signin
 			c.JSON(code, gin.H{
 				"token":  token,
 				"expire": expire.Format(time.RFC3339),

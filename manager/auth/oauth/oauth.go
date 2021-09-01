@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package oauth2
+package oauth
 
 import (
 	"errors"
 	"time"
 
-	xoauth2 "golang.org/x/oauth2"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -38,18 +38,18 @@ type User struct {
 	Avatar string
 }
 
-type Oauth2 interface {
+type Oauth interface {
 	AuthCodeURL() string
-	Exchange(string) (*xoauth2.Token, error)
-	GetUser(*xoauth2.Token) (*User, error)
+	Exchange(string) (*oauth2.Token, error)
+	GetUser(*oauth2.Token) (*User, error)
 }
 
-type oauth2 struct {
-	Oauth2 Oauth2
+type oauth struct {
+	Oauth Oauth
 }
 
-func New(name, clientID, clientSecret, redirectURL string) (Oauth2, error) {
-	var o Oauth2
+func New(name, clientID, clientSecret, redirectURL string) (Oauth, error) {
+	var o Oauth
 	switch name {
 	case Google:
 		o = newGoogle(name, clientID, clientSecret, redirectURL)
@@ -62,14 +62,14 @@ func New(name, clientID, clientSecret, redirectURL string) (Oauth2, error) {
 	return o, nil
 }
 
-func (g *oauth2) AuthCodeURL() string {
-	return g.Oauth2.AuthCodeURL()
+func (g *oauth) AuthCodeURL() string {
+	return g.Oauth.AuthCodeURL()
 }
 
-func (g *oauth2) Exchange(code string) (*xoauth2.Token, error) {
-	return g.Oauth2.Exchange(code)
+func (g *oauth) Exchange(code string) (*oauth2.Token, error) {
+	return g.Oauth.Exchange(code)
 }
 
-func (g *oauth2) GetUser(token *xoauth2.Token) (*User, error) {
-	return g.Oauth2.GetUser(token)
+func (g *oauth) GetUser(token *oauth2.Token) (*User, error) {
+	return g.Oauth.GetUser(token)
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package oauth2
+package oauth
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"encoding/base64"
 
 	"github.com/google/go-github/github"
-	xoauth2 "golang.org/x/oauth2"
+	"golang.org/x/oauth2"
 	oauth2github "golang.org/x/oauth2/github"
 )
 
@@ -31,13 +31,13 @@ var githubScopes = []string{
 	"public_repo",
 }
 
-type oauth2Github struct {
-	*xoauth2.Config
+type oauthGithub struct {
+	*oauth2.Config
 }
 
-func newGithub(name, clientID, clientSecret, redirectURL string) *oauth2Github {
-	return &oauth2Github{
-		Config: &xoauth2.Config{
+func newGithub(name, clientID, clientSecret, redirectURL string) *oauthGithub {
+	return &oauthGithub{
+		Config: &oauth2.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
 			Scopes:       githubScopes,
@@ -47,20 +47,20 @@ func newGithub(name, clientID, clientSecret, redirectURL string) *oauth2Github {
 	}
 }
 
-func (g *oauth2Github) AuthCodeURL() string {
+func (g *oauthGithub) AuthCodeURL() string {
 	b := make([]byte, 16)
 	rand.Read(b)
 	return g.Config.AuthCodeURL(base64.URLEncoding.EncodeToString(b))
 }
 
-func (g *oauth2Github) Exchange(code string) (*xoauth2.Token, error) {
+func (g *oauthGithub) Exchange(code string) (*oauth2.Token, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	return g.Config.Exchange(ctx, code)
 }
 
-func (g *oauth2Github) GetUser(token *xoauth2.Token) (*User, error) {
+func (g *oauthGithub) GetUser(token *oauth2.Token) (*User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
