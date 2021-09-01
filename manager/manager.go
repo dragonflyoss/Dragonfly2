@@ -91,15 +91,15 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// Initialize roles and check roles
-	err = rbac.InitRBAC(enforcer, router)
-	if err != nil {
-		return nil, err
-	}
 	restServer := &http.Server{
 		Addr:    cfg.Server.REST.Addr,
 		Handler: router,
+	}
+
+	// Initialize roles and check roles
+	err = rbac.InitRBAC(enforcer, router, db.DB)
+	if err != nil {
+		return nil, err
 	}
 
 	// Initialize GRPC server

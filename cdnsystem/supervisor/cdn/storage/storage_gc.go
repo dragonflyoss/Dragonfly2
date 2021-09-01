@@ -100,7 +100,7 @@ func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) 
 		walkTaskIds[taskID] = true
 
 		// we should return directly when we success to get info which means it is being used
-		if cleaner.taskMgr.Exist(taskID) {
+		if _, exist := cleaner.taskMgr.Exist(taskID); exist {
 			return nil
 		}
 

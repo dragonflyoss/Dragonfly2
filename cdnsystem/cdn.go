@@ -84,9 +84,6 @@ func New(cfg *config.Config) (*Server, error) {
 
 	// Initialize storage manager
 	storageMgr.Initialize(taskMgr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "create storage manager")
-	}
 
 	// Initialize storage manager
 	cdnSeedServer, err := rpcserver.NewCdnSeedServer(cfg, taskMgr)
