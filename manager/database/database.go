@@ -100,7 +100,6 @@ func migrate(db *gorm.DB) error {
 		&model.Scheduler{},
 		&model.SecurityGroup{},
 		&model.User{},
-		&model.Settings{},
 		&model.Oauth{},
 	)
 }

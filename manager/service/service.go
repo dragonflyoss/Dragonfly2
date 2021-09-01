@@ -91,12 +91,6 @@ type REST interface {
 	GetSchedulers(types.GetSchedulersQuery) (*[]model.Scheduler, error)
 	SchedulerTotalCount(types.GetSchedulersQuery) (int64, error)
 
-	CreateSetting(types.CreateSettingRequest) (*model.Settings, error)
-	DestroySetting(string) error
-	UpdateSetting(string, types.UpdateSettingRequest) (*model.Settings, error)
-	GetSettings(types.GetSettingsQuery) (*[]model.Settings, error)
-	SettingTotalCount() (int64, error)
-
 	CreateSecurityGroup(types.CreateSecurityGroupRequest) (*model.SecurityGroup, error)
 	DestroySecurityGroup(uint) error
 	UpdateSecurityGroup(uint, types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error)

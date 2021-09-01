@@ -129,13 +129,6 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	s.GET(":id", h.GetScheduler)
 	s.GET("", h.GetSchedulers)
 
-	// Settings
-	st := apiv1.Group("/settings")
-	st.POST("", h.CreateSetting)
-	st.DELETE(":id", h.DestroySetting)
-	st.PATCH("", h.UpdateSetting)
-	st.GET("", h.GetSettings)
-
 	// CDN Cluster
 	cc := apiv1.Group("/cdn-clusters")
 	cc.POST("", h.CreateCDNCluster)
