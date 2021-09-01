@@ -68,8 +68,7 @@ func (h *Handlers) DestroySecurityGroup(ctx *gin.Context) {
 		return
 	}
 
-	err := h.Service.DestroySecurityGroup(params.ID)
-	if err != nil {
+	if err := h.Service.DestroySecurityGroup(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
