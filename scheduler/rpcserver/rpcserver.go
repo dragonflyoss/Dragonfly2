@@ -157,6 +157,10 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		case <-conn.Done():
 			return conn.Err()
 		case pieceResult := <-conn.Receiver():
+			if pieceResult == nil {
+				fmt.Printf("dddddddddddddddddddd")
+				return nil
+			}
 			if err := s.service.HandlePieceResult(ctx, peer, pieceResult); err != nil {
 				logger.Errorf("handle piece result %v fail: %v", pieceResult, err)
 				return err

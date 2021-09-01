@@ -17,6 +17,7 @@
 package supervisor
 
 import (
+	"io"
 	"sync"
 	"time"
 
@@ -429,6 +430,9 @@ func (c *Channel) receiveLoop() {
 			return
 		default:
 			pieceResult, err := c.stream.Recv()
+			if err == io.EOF {
+				return
+			}
 			if err != nil {
 				c.err = err
 				return
