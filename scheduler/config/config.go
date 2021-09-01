@@ -109,7 +109,7 @@ func New() *Config {
 				BackendDB: 2,
 			},
 		},
-		DisableCDN: true,
+		DisableCDN: false,
 	}
 }
 
