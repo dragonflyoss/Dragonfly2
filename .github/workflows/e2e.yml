@@ -67,7 +67,7 @@ jobs:
           kubectl apply -f test/testdata/k8s/file-server.yaml
           kubectl wait --namespace dragonfly-e2e \
           --for=condition=ready pod file-server-0 \
-          --timeout=2m
+          --timeout=10m
 
       - name: Install ginkgo
         run: go get github.com/onsi/ginkgo/ginkgo
