@@ -33,6 +33,8 @@ import (
 type REST interface {
 	SignIn(types.SignInRequest) (*model.User, error)
 	SignUp(types.SignUpRequest) (*model.User, error)
+	OauthSignin(string) (string, error)
+	OauthSigninCallback(string, string) (*model.User, error)
 	ResetPassword(uint, types.ResetPasswordRequest) error
 	GetRolesForUser(uint) ([]string, error)
 	AddRoleForUser(types.AddRoleForUserParams) (bool, error)
@@ -46,6 +48,13 @@ type REST interface {
 	DeletePermissionForRole(string, types.DeletePermissionForRoleRequest) (bool, error)
 
 	GetPermissions(*gin.Engine) []rbac.Permission
+
+	CreateOauth(types.CreateOauthRequest) (*model.Oauth, error)
+	DestroyOauth(uint) error
+	UpdateOauth(uint, types.UpdateOauthRequest) (*model.Oauth, error)
+	GetOauth(uint) (*model.Oauth, error)
+	GetOauths(types.GetOauthsQuery) (*[]model.Oauth, error)
+	OauthTotalCount(types.GetOauthsQuery) (int64, error)
 
 	CreateCDNCluster(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	CreateCDNClusterWithSecurityGroupDomain(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
@@ -82,12 +91,6 @@ type REST interface {
 	GetSchedulers(types.GetSchedulersQuery) (*[]model.Scheduler, error)
 	SchedulerTotalCount(types.GetSchedulersQuery) (int64, error)
 
-	CreateSetting(types.CreateSettingRequest) (*model.Settings, error)
-	DestroySetting(string) error
-	UpdateSetting(string, types.UpdateSettingRequest) (*model.Settings, error)
-	GetSettings(types.GetSettingsQuery) (*[]model.Settings, error)
-	SettingTotalCount() (int64, error)
-
 	CreateSecurityGroup(types.CreateSecurityGroupRequest) (*model.SecurityGroup, error)
 	DestroySecurityGroup(uint) error
 	UpdateSecurityGroup(uint, types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error)
@@ -99,14 +102,6 @@ type REST interface {
 
 	CreatePreheat(types.CreatePreheatRequest) (*types.Preheat, error)
 	GetPreheat(string) (*types.Preheat, error)
-
-	CreateOauth(types.CreateOauthRequest) (*model.Oauth, error)
-	DestroyOauth(uint) error
-	UpdateOauth(uint, types.UpdateOauthRequest) (*model.Oauth, error)
-	GetOauth(uint) (*model.Oauth, error)
-	GetOauths() (*[]model.Oauth, error)
-	OauthSignin(name string) (string, error)
-	OauthCallback(name, code string) (*model.User, error)
 }
 
 type rest struct {

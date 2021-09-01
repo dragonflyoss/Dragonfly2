@@ -1,164 +1,75 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package oauth
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
+	"time"
 
-	"d7y.io/dragonfly/v2/manager/model"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
-	"gorm.io/gorm"
 )
 
 const (
-	Google            = "google"
-	Github            = "github"
-	GoogleScopes      = "https://www.googleapis.com/auth/userinfo.email,https://www.googleapis.com/auth/userinfo.profile"
-	GoogleUserInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
-
-	GithubScopes      = "user,public_repo"
-	GithubUserInfoURL = "https://api.github.com/user"
+	timeout = 5 * time.Second
 )
 
-type baseOauth2 struct {
-	Name        string
-	UserInfoURL string
-	Config      *oauth2.Config
+const (
+	Google = "google"
+	Github = "github"
+)
+
+type User struct {
+	Name   string
+	Email  string
+	Avatar string
 }
 
-type oauth2User struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-// oauth interface
-type Oauther interface {
-	GetRediectURL(*gorm.DB) (string, error)
-	GetOauthUserInfo(string) (*oauth2User, error)
-	ExchangeTokenByCode(string) (string, error)
-	OauthLinkUser(*oauth2User, *gorm.DB) (*model.User, error)
+type Oauth interface {
 	AuthCodeURL() string
+	Exchange(string) (*oauth2.Token, error)
+	GetUser(*oauth2.Token) (*User, error)
 }
 
-func New(oauth *model.Oauth, db *gorm.DB) (Oauther, error) {
-	var o Oauther
-	var err error
-	switch oauth.Name {
+type oauth struct {
+	Oauth Oauth
+}
+
+func New(name, clientID, clientSecret, redirectURL string) (Oauth, error) {
+	var o Oauth
+	switch name {
 	case Google:
-		o, err = NewGoogleOauth2(oauth.Name, oauth.ClientID, oauth.ClientSecret, db)
+		o = newGoogle(name, clientID, clientSecret, redirectURL)
 	case Github:
-		o, err = NewGithubOauth2(oauth.Name, oauth.ClientID, oauth.ClientSecret, db)
+		o = newGithub(name, clientID, clientSecret, redirectURL)
 	default:
-		o, err = NewBaseOauth2(oauth.Name, oauth.ClientID, oauth.ClientSecret, oauth.Scopes, oauth.AuthURL, oauth.TokenURL, db)
+		return nil, errors.New("invalid oauth name")
 	}
-	if err != nil {
-		return nil, err
-	}
+
 	return o, nil
-
 }
 
-func NewBaseOauth2(name string, clientID string, clientSecret string, scopes string, authURL string, tokenURL string, db *gorm.DB) (Oauther, error) {
-
-	oa := &baseOauth2{
-		Name: name,
-		Config: &oauth2.Config{
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-			Scopes:       strings.Split(scopes, ","),
-			Endpoint: oauth2.Endpoint{
-				AuthURL:  authURL,
-				TokenURL: tokenURL,
-			},
-		},
-	}
-	redirectURL, err := oa.GetRediectURL(db)
-	if err != nil {
-		return nil, err
-	}
-	oa.Config.RedirectURL = redirectURL
-	return oa, nil
+func (g *oauth) AuthCodeURL() string {
+	return g.Oauth.AuthCodeURL()
 }
 
-func (oa *baseOauth2) GetRediectURL(db *gorm.DB) (string, error) {
-
-	s := model.Settings{}
-	if err := db.First(&s, model.Settings{
-		Key: "server_domain",
-	}).Error; err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s/api/v1/oauth/callback/%s", s.Value, oa.Name), nil
+func (g *oauth) Exchange(code string) (*oauth2.Token, error) {
+	return g.Oauth.Exchange(code)
 }
 
-func (oa *baseOauth2) AuthCodeURL() string {
-	return oa.Config.AuthCodeURL(stringutils.RandString(5))
-}
-
-func (oa *baseOauth2) GetOauthUserInfo(token string) (*oauth2User, error) {
-	response, err := http.Get(fmt.Sprintf("%s?access_token=%s", oa.UserInfoURL, token))
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close()
-	contents, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	u := oauth2User{}
-	err = json.Unmarshal(contents, &u)
-	if err != nil {
-		return nil, err
-	}
-	return &u, nil
-}
-
-func (oa *baseOauth2) ExchangeTokenByCode(code string) (string, error) {
-	token, err := oa.Config.Exchange(context.Background(), code)
-	if err != nil {
-		return "", err
-	}
-	if oa.UserInfoURL == "" {
-		return "", errors.New("UserInfoURL is empty")
-	}
-	return token.AccessToken, nil
-}
-
-func (oa *baseOauth2) OauthLinkUser(u *oauth2User, db *gorm.DB) (*model.User, error) {
-	if u.Name == "admin" {
-		return nil, errors.New("admin is not allowed to login by oauth")
-	}
-	encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte("Dragonfly2"), bcrypt.MinCost)
-	if err != nil {
-		return nil, err
-	}
-	var userCount int64
-	if err := db.Model(model.User{}).Where("name = ?", u.Name).Count(&userCount).Error; err != nil {
-		return nil, err
-	}
-	if userCount <= 0 {
-		user := model.User{
-			EncryptedPassword: string(encryptedPasswordBytes),
-			Name:              u.Name,
-			Email:             u.Email,
-		}
-
-		if err := db.Create(&user).Error; err != nil {
-			return nil, err
-		}
-		return &user, nil
-
-	}
-	user := model.User{}
-	if err := db.Model(model.User{}).Where("name = ?", u.Name).First(&user).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
-
+func (g *oauth) GetUser(token *oauth2.Token) (*User, error) {
+	return g.Oauth.GetUser(token)
 }
