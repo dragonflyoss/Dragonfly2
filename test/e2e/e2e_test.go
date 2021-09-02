@@ -59,10 +59,12 @@ var _ = BeforeSuite(func() {
 
 	mode := os.Getenv("DRAGONFLY_E2E_TEST_MODE")
 	if mode == compatibilityTestMode {
+		fmt.Println("1111111111111111111")
 		Expect(gitCommit).NotTo(Equal(dfgetGitCommit))
 		return
 	}
 
+	fmt.Println("22222222222222")
 	Expect(gitCommit).To(Equal(dfgetGitCommit))
 })
 
