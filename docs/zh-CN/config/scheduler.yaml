@@ -1,0 +1,132 @@
+# scheduler 配置文件模版, 您可以根据您的需求更改这里的参数来配置您的 Scheduler
+
+# scheduler 调度策略配置
+scheduler:
+  # abtest if open abtest
+  # default: false
+  abtest: false
+  # ascheduler
+  ascheduler: ddd
+  # bscheduler
+  bscheduler: ""
+  # workerNum
+  # default:
+  workerNum: ""
+  # backSourceCount
+  # default:
+  backSourceCount: 3
+  # accessWindow
+  # default:
+  accessWindow: 3s
+  # candidateParentCount
+  # default: 1
+  candidateParentCount: 1
+  # scheduler
+  # default: basic
+  scheduler: basic
+  # cdnLoad
+  # default:
+  cdnLoad: ""
+  # clientLoad
+  # default:
+  clientLoad: ""
+  # clientLoad
+  # default:
+  openMonitor: ""
+  # gc
+  gc:
+    # peerGCInterval
+    peerGCInterval: ""
+    # peerTTL
+    peerTTL: ""
+    # peerTTI
+    peerTTI: ""
+    # taskGCInterval
+    taskGCInterval: ""
+    # taskTTL
+    taskTTL: ""
+    # taskTTI
+    taskTTI: ""
+
+# server configuration
+server:
+  # ip
+  ip: ""
+  # host
+  host: ""
+  # ListenPort is the ip and port scheduler server listens on.
+  # default: 8002
+  port: 8002
+
+# dynamic data configuration
+dynConfig:
+  # type
+  type: ""
+  # expireTime
+  expireTime: ""
+  # cdnDirPath
+  cdnDirPath: ""
+  # data
+  data: ""
+
+# manager configuration
+manager:
+  # addr
+  addr: 127.0.0.1:65003
+  # schedulerClusterID
+  schedulerClusterID: 1
+  # keepAlive
+  keepAlive:
+    # interval
+    interval: ""
+
+# host configuration
+host:
+  # location
+  location: ""
+  # idc
+  idc: ""
+
+# job configuration
+job:
+  # globalWorkerNum
+  globalWorkerNum: 2
+  # schedulerWorkerNum
+  schedulerWorkerNum: 3
+  # localWorkerNum
+  localWorkerNum: 3
+  # redis
+  redis:
+    # host
+    host: fff
+    # port
+    port: 33
+    # password
+    password: ""
+    # brokerDB
+    brokerDB: ""
+    # backendDB
+    backendDB: ""
+
+# Whether to disable CDN
+# default: false
+disableCDN: false
+
+# Console shows log on console
+# default: false
+console: false
+
+# Whether to enable debug level logger and enable pprof
+# default: false
+verbose: false
+
+# listen port for pprof, only valid when the verbose option is true
+# default is -1. If it is 0, pprof will use a random port.
+pprofPort: -1
+
+# jaeger endpoint url
+jaeger:
+
+# service name used in tracer
+# default: dragonfly-cdn
+service-name: dragonfly-cdn
