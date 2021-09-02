@@ -1,66 +1,66 @@
-# 这个文件是 CDN 的配置模版
-# 你可以通过修改这里的配置项来自定义你的 CDN 系统
+# CDN 配置模版
+# 你可以通过修改这里的配置项来自定义你的 CDN
 ---
 base:  # 基础配置项
-  # listenPort 是 cdn 服务的监听端口。
+  # CDN 服务监听的端口
   # 默认值：8003
   listenPort: 8003
 
-  # downloadPort 是 CDN 提供文件下载的端口。
+  # CDN 提供文件下载服务的端口
   # 你需要先启动一个文件服务器，并且该文件服务器监听该下载端口。
   # 默认值：8001
   downloadPort: 8001
 
-  # systemReservedBandwidth 是为系统软件预留的网络带宽。
+  # 为系统软件预留的网络带宽
   # 接收的输入格式以 G(B)/g/M(B)/m/K(B)/k/B 结尾作为单位。如果您输入一个不带单位的整数，它的单位会被认为是 B(Byte)。
   # 默认值：20 MB
   systemReservedBandwidth: 20M
 
-  # maxBandwidth 是 CDN 可以使用的最大网络带宽。
+  # CDN 可以使用的最大网络带宽
   # 接收的输入格式以 G(B)/g/M(B)/m/K(B)/k/B 结尾作为单位。如果您输入一个不带单位的整数，它的单位会被认为是 B(Byte)。
   # 默认值：1G
   maxBandwidth: 1G
 
-  # advertiseIP 是 CDN 暴露给 p2p 网络中的其他 peer 的 IP 地址。
+  # CDN 暴露给 p2p 网络中的其他 peer 的 IP 地址
   # 默认值：首个非本地回环IP。
   advertiseIP:
 
-  # failAccessInterval 是 CDN 请求某个 URL 失败后，不再对该 URL 发起请求的时间间隔长度。
+  # CDN 请求某个 URL 失败后，不再对该 URL 发起请求的时间间隔长度
   # 换句话说，如果一个回源下载任务失败了，在这段时间里它将不会被重试。
   # 默认值：3m
   failAccessInterval: 3m
 
-  # gcInitialDelay 是 CDN 启动后到启动第一次垃圾回收的时间间隔。
+  # CDN 启动后到启动第一次垃圾回收的时间间隔
   # 默认值：6s
   gcInitialDelay: 6s
 
-  # gcMetaInterval 是进行元数据信息回收的时间间隔。
+  # 进行元数据信息回收的时间间隔
   # 每隔一个该时间间隔，CDN 就会启动一次元数据信息回收。
   # 默认值：2m0s
   gcMetaInterval: 2m
 
-  # taskExpireTime 是任务失效时间。
+  # 任务失效时间
   # 如果一个任务的信息距离上次访问过去了一个该时间间隔，该任务信息将被认为已经失效。
   # 默认值：3m0s
   taskExpireTime: 3m
 
-  # storagePattern 指定 CDN 使用的存储插件，可选[disk/hybrid]。disk 完全使用硬盘存储，hybrid 同时使用内存和硬盘进行存储。
+  # CDN 使用的存储插件，可选[disk/hybrid]。disk 完全使用硬盘存储，hybrid 同时使用内存和硬盘进行存储。
   # 默认值：disk
   storagePattern: disk
 
-  # manager 指定 CDN 连接的 manager，可以不指定。
-  # 各项配置默认值如下，如果 addr 为空字符串，CDN将不会连接manager。
+  # CDN 连接的 manager，可以不指定。
+  # 各项配置默认值如下。如果 addr 为空字符串，CDN将不会连接manager。
   manager:
     addr: ""
     cdnClusterID: 0
     keepAlive:
       intercal: 5s
 
-  # host 表示主机的信息
+  # 主机信息
   host:
-    # location 表示地理位置
+    # 地理位置
     location: ""
-    # IDC(Internet Data Center)，互联网数据中心机房
+    # IDC(Internet Data Center)，互联网数据中心
     idc: ""
 
 plugins:
@@ -105,22 +105,22 @@ plugins:
               cleanRatio: 3
               intervalThreshold: 2h0m0s
 
-# console 表示是否在控制台程序中显示日志。
+# 是否在控制台程序中显示日志。
 # 默认值：false
 console: false
 
-# verbose 表示是否使用调试级别的日志、是否启用 pprof。
+# 是否使用调试级别的日志、是否启用 pprof。
 # 默认值：false
 verbose: false
 
-# pprofPort 表示 pprof 监听的端口，仅在 verbose 为 true 时可用。
-# 默认值：-1（表示不启动 pprofPort），为 0 时使用随机值
+# pprof 监听的端口，仅在 verbose 为 true 时可用。
+# 默认值：-1（表示不启动），为 0 时使用随机值
 pprofPort: -1
 
-# jaeger 表示 jaeger 的地址
+# jaeger 地址
 # 默认使用空字符串（不配置 jaeger）
 jaeger: ""
 
-# service-name 表示 tracer 中使用的 service-name
+# tracer 中使用的 service-name
 #默认值：dragonfly-cdn
 service-name: dragonfly-cdn
