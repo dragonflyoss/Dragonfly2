@@ -68,7 +68,7 @@ plugins:
     - name: disk
       enable: true
       config:
-        baseDir: /Users/username/ftp
+        baseDir: /Users/{username}/ftp
     - name: memory
       enable: false
       config:
@@ -114,11 +114,13 @@ console: false
 verbose: false
 
 # pprofPort 表示 pprof 监听的端口，仅在 verbose 为 true 时可用。
-# 默认使用随机值
-pprofPort: 0
+# 默认值：-1（表示不启动 pprofPort），为 0 时使用随机值
+pprofPort: -1
 
-
+# jaeger 表示 jaeger 的地址
+# 默认使用空字符串（不配置 jaeger）
 jaeger: ""
 
-
+# service-name 表示 tracer 中使用的 service-name
+#默认值：dragonfly-cdn
 service-name: dragonfly-cdn

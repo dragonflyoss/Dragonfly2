@@ -16,11 +16,12 @@ go run cmd/cdnsystem/main.go --profiler
 ### 可选参数
 
 ```
-      --config string    the path of configuration file with yaml extension name, default is /Users/${USER_HOME}/.dragonfly/config/cdn.yaml, it can also be 
-      set by env var:CDN_CONFIG，The settings and uses of each configuration item can refer to cdn.yaml in config directory
-      --console          whether logger output records to the stdout
-  -h, --help             help for cdn
-      --jaeger string    jaeger endpoint url, like: http://localhost:14250/api/traces
-      --pprof-port int   listen port for pprof, 0 represents random port (default -1)
-      --verbose          whether logger use debug level
+      --config string         配置文件地址，默认值为/Users/{username}/.dragonfly/config/cdn.yaml。也能使用环境变量 CDN_CONFIG 进行配置。
+      --console               是否在控制台中显示日志信息
+  -h, --help                  显示 cdn 的帮助信息
+      --jaeger string         配置 jaeger 地址 url，例如 http://localhost:14250/api/traces
+      --pprof-port int        pprof 监听的端口，为 0 时使用随机端口（默认值为 -1）
+      --service-name string   在 tracer 中使用的服务名（默认值为"dragonfly-cdn"）
+      --verbose               是否开启调试级别的日志打印
+
 ```
