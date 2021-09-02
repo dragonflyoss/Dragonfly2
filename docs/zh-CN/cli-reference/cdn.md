@@ -7,7 +7,7 @@ CDN 是一个长时间运行的服务进程，它缓存从源下载的数据，�
 go run cmd/cdnsystem/main.go [Option]
 ```
 ## 输出日志配置
-如果你期望把系统执行日志输出到命令终端，设置环境变量 console=true 
+如果您想要将日志输出到命令终端，请使用 --console 将环境变量 console 设置为 true。
 
 ## Runtime metrics monitoring
 ```
