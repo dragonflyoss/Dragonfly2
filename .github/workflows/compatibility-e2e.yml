@@ -61,14 +61,14 @@ jobs:
           make docker-build-manager
           make docker-build-cdn
           make docker-build-scheduler
-          docker pull dragonflyoss/dfdaemon:${{ DRAGONFLY_DFDAEMON_IMAGE_TAG }}
+          docker pull dragonflyoss/dfdaemon:${{ env.DRAGONFLY_DFDAEMON_IMAGE_TAG }}
 
       - name: Prepare kind environment
         run: |
           make kind-load-manager
           make kind-load-cdn
           make kind-load-scheduler
-          kind load docker-image dragonflyoss/dfdaemon:${{ DRAGONFLY_DFDAEMON_IMAGE_TAG }}
+          kind load docker-image dragonflyoss/dfdaemon:${{ env.DRAGONFLY_DFDAEMON_IMAGE_TAG }}
 
       - name: Install dragonfly
         run: |
