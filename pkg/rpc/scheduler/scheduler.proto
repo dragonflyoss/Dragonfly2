@@ -146,7 +146,7 @@ message PeerResult{
   bool success = 10;
   // result code
   base.Code code = 11;
-  int32 totalPieceCount = 12;
+  int32 total_piece_count = 12;
 }
 
 message PeerTarget{
