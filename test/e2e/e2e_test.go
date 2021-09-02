@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -34,23 +35,33 @@ const (
 	dragonflyNamespace = "dragonfly-system"
 )
 
+const (
+	compatibilityTestMode = "compatibility"
+)
+
 var _ = BeforeSuite(func() {
-	out, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
+	rawGitCommit, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
-	gitCommit := strings.Fields(string(out))[0]
+	gitCommit := strings.Fields(string(rawGitCommit))[0]
 	fmt.Printf("git merge commit: %s\n", gitCommit)
 
-	out, err = e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
+	rawPodName, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
 		"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
-	podName := strings.Trim(string(out), "'")
+	podName := strings.Trim(string(rawPodName), "'")
 	Expect(err).NotTo(HaveOccurred())
-
 	Expect(strings.HasPrefix(podName, "dragonfly-dfdaemon-")).Should(BeTrue())
+
 	pod := e2eutil.NewPodExec(dragonflyNamespace, podName, "dfdaemon")
-	out, err = pod.Command("dfget", "version").CombinedOutput()
+	rawDfgetVersion, err := pod.Command("dfget", "version").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
-	dfgetGitCommit := strings.Fields(string(out))[7]
-	fmt.Printf("dfget merge commit: %s\n", gitCommit)
+	dfgetGitCommit := strings.Fields(string(rawDfgetVersion))[7]
+	fmt.Printf("dfget merge commit: %s\n", dfgetGitCommit)
+
+	mode := os.Getenv("DRAGONFLY_E2E_TEST_MODE")
+	if mode == compatibilityTestMode {
+		Expect(gitCommit).NotTo(Equal(dfgetGitCommit))
+		return
+	}
 
 	Expect(gitCommit).To(Equal(dfgetGitCommit))
 })
