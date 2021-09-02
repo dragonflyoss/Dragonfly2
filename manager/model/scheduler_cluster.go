@@ -24,8 +24,8 @@ type SchedulerCluster struct {
 	ClientConfig    JSONMap       `gorm:"column:client_config;not null;comment:client configuration" json:"client_config"`
 	Scopes          JSONMap       `gorm:"column:scopes;comment:match scopes" json:"scopes"`
 	IsDefault       bool          `gorm:"column:is_default;not null;default:false;comment:default scheduler cluster" json:"is_default"`
-	CDNClusters     []CDNCluster  `gorm:"many2many:cdn_cluster_scheduler_cluster;" json:"-"`
+	CDNClusters     []CDNCluster  `gorm:"many2many:cdn_cluster_scheduler_cluster;" json:"cdn_clusters"`
 	Schedulers      []Scheduler   `json:"-"`
-	SecurityGroupID uint          `gorm:"comment:security group id"`
+	SecurityGroupID uint          `gorm:"comment:security group id" json:"security_group_id"`
 	SecurityGroup   SecurityGroup `json:"-"`
 }
