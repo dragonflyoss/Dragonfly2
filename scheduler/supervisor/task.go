@@ -226,11 +226,19 @@ func (task *Task) IsFail() bool {
 }
 
 func (task *Task) IncreaseBackSourcePeer(peerID string) {
-
+	task.lock.Lock()
+	defer task.lock.Unlock()
 	task.backSourcePeers = append(task.backSourcePeers, peerID)
 	if task.backSourceLimit.Dec() <= 0 {
 		task.needClientBackSource.Store(false)
 	}
+}
+
+func (task *Task) GetBackSourcePeers() []string {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	backSourcePeers := task.backSourcePeers
+	return backSourcePeers
 }
 
 func (task *Task) IsBackSourcePeer(peerID string) bool {

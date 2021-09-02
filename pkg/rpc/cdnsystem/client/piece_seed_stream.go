@@ -19,9 +19,11 @@ package client
 import (
 	"context"
 
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -49,9 +51,9 @@ func newPieceSeedStream(ctx context.Context, sc *cdnClient, hashKey string, sr *
 		sr:      sr,
 		opts:    opts,
 		RetryMeta: rpc.RetryMeta{
-			MaxAttempts: 5,
-			InitBackoff: 0.5,
-			MaxBackOff:  4.0,
+			MaxAttempts: 3,
+			InitBackoff: 0.2,
+			MaxBackOff:  2.0,
 		},
 	}
 
@@ -73,7 +75,10 @@ func (pss *PieceSeedStream) initStream() error {
 		return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, nil)
 	if err != nil {
-		logger.WithTaskID(pss.hashKey).Infof("initStream: invoke cdn node %s ObtainSeeds failed: %v", target, err)
+		if errors.Cause(err) == dferrors.ErrNoCandidateNode {
+			return errors.Wrapf(err, "get grpc server instance failed")
+		}
+		logger.WithTaskID(pss.hashKey).Errorf("initStream: invoke cdn node %s ObtainSeeds failed: %v", target, err)
 		return pss.replaceClient(pss.hashKey, err)
 	}
 	pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)

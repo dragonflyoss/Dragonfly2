@@ -71,6 +71,8 @@ func NewManager(cdnClient RefreshableCDNClient, peerManager supervisor.PeerMgr, 
 }
 
 func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*supervisor.Peer, error) {
+	logger.Infof("start seed task %s", task.TaskID)
+	defer logger.Infof("finish seed task %s", task.TaskID)
 	var seedSpan trace.Span
 	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDN)
 	defer seedSpan.End()

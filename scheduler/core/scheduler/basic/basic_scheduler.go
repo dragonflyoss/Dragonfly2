@@ -70,15 +70,12 @@ type Scheduler struct {
 }
 
 func (s *Scheduler) ScheduleChildren(peer *supervisor.Peer) (children []*supervisor.Peer) {
-	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start schedule children flow")
 	if s.evaluator.IsBadNode(peer) {
-		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("stop schedule children flow because peer is bad node")
+		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("terminate schedule children flow because peer is bad node")
 		return
 	}
 	freeUpload := peer.Host.GetFreeUploadLoad()
 	candidateChildren := s.selectCandidateChildren(peer, freeUpload*2)
-	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d candidate children, current task tree node count %d",
-		len(candidateChildren), peer.Task.ListPeers().Size())
 	if len(candidateChildren) == 0 {
 		return nil
 	}
@@ -114,7 +111,6 @@ func (s *Scheduler) ScheduleChildren(peer *supervisor.Peer) (children []*supervi
 }
 
 func (s *Scheduler) ScheduleParent(peer *supervisor.Peer) (*supervisor.Peer, []*supervisor.Peer, bool) {
-	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start schedule parent flow")
 	//if !s.evaluator.NeedAdjustParent(peer) {
 	//	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("stop schedule parent flow because peer is not need adjust parent", peer.PeerID)
 	//	if peer.GetParent() == nil {
@@ -123,8 +119,6 @@ func (s *Scheduler) ScheduleParent(peer *supervisor.Peer) (*supervisor.Peer, []*
 	//	return peer.GetParent(), []*types.Peer{peer.GetParent()}, true
 	//}
 	candidateParents := s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
-	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("select num %d candidates parents, current task tree node count %d",
-		len(candidateParents), peer.Task.ListPeers().Size())
 	if len(candidateParents) == 0 {
 		return nil, nil, false
 	}
@@ -148,8 +142,11 @@ func (s *Scheduler) ScheduleParent(peer *supervisor.Peer) (*supervisor.Peer, []*
 	return parents[0], parents[1:], true
 }
 
-func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int) []*supervisor.Peer {
-	return peer.Task.Pick(limit, func(candidateNode *supervisor.Peer) bool {
+func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int) (candidateChildren []*supervisor.Peer) {
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start schedule children flow")
+	defer logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("finish schedule parent flow, select num %d candidate children, "+
+		"current task tree node count %d, back source peers: %s", len(candidateChildren), peer.Task.ListPeers().Size(), peer.Task.GetBackSourcePeers())
+	candidateChildren = peer.Task.Pick(limit, func(candidateNode *supervisor.Peer) bool {
 		if candidateNode == nil {
 			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer is not selected because it is nil******")
 			return false
@@ -213,16 +210,20 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int) []
 		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******[default]candidate child peer %s is selected[default]******", candidateNode.PeerID)
 		return true
 	})
+	return
 }
 
-func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int) []*supervisor.Peer {
+func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int) (candidateParents []*supervisor.Peer) {
+	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start schedule parent flow")
+	defer logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("finish schedule parent flow, select num %d candidates parents,"+
+		"current task tree node count %d, back source peers: %s", len(candidateParents), peer.Task.ListPeers().Size(), peer.Task.GetBackSourcePeers())
 	if !peer.Task.CanSchedule() {
 		logger.WithTaskAndPeerID(peer.Task.TaskID,
 			peer.PeerID).Debugf("++++++peer can not be scheduled because task cannot be scheduled at this time，waiting task status become seeding. "+
 			"it current status is %s++++++", peer.Task.GetStatus())
 		return nil
 	}
-	return peer.Task.PickReverse(limit, func(candidateNode *supervisor.Peer) bool {
+	candidateParents = peer.Task.PickReverse(limit, func(candidateNode *supervisor.Peer) bool {
 		if candidateNode == nil {
 			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer is not selected because it is nil++++++")
 			return false
@@ -260,7 +261,7 @@ func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int) []*
 		}
 		if candidateNode.GetFinishedNum() <= peer.GetFinishedNum() {
 			logger.WithTaskAndPeerID(peer.Task.TaskID,
-				peer.PeerID).Debugf("++++++candidate parent peer %s is not selected because it finished number of download is equal to or greater than peer"+
+				peer.PeerID).Debugf("++++++candidate parent peer %s is not selected because it finished number of download is equal to or smaller than peer"+
 				"'s++++++",
 				candidateNode.PeerID)
 			return false
@@ -268,4 +269,5 @@ func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int) []*
 		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++[default]candidate parent peer %s is selected[default]", candidateNode.PeerID)
 		return true
 	})
+	return
 }

@@ -19,7 +19,9 @@ package client
 import (
 	"context"
 
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -59,9 +61,9 @@ func newPeerPacketStream(ctx context.Context, sc *schedulerClient, hashKey strin
 		ptr:     ptr,
 		opts:    opts,
 		retryMeta: rpc.RetryMeta{
-			MaxAttempts: 5,
-			InitBackoff: 0.5,
-			MaxBackOff:  4.0,
+			MaxAttempts: 3,
+			InitBackoff: 0.2,
+			MaxBackOff:  2.0,
 		},
 	}
 
@@ -154,6 +156,9 @@ func (pps *peerPacketStream) initStream() error {
 		return client.ReportPieceResult(pps.ctx, pps.opts...)
 	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, nil)
 	if err != nil {
+		if errors.Cause(err) == dferrors.ErrNoCandidateNode {
+			return errors.Wrapf(err, "get grpc server instance failed")
+		}
 		logger.WithTaskID(pps.hashKey).Infof("initStream: invoke scheduler node %s ReportPieceResult failed: %v", target, err)
 		return pps.replaceClient(err)
 	}

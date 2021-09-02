@@ -48,6 +48,7 @@ func (status PeerStatus) String() string {
 const (
 	PeerStatusWaiting PeerStatus = iota
 	PeerStatusRunning
+	// TODO add Seeding status
 	PeerStatusZombie
 	PeerStatusFail
 	PeerStatusSuccess
