@@ -136,7 +136,7 @@ func (s *rest) UpdateSchedulerClusterWithSecurityGroupDomain(id uint, json types
 
 func (s *rest) GetSchedulerCluster(id uint) (*model.SchedulerCluster, error) {
 	schedulerCluster := model.SchedulerCluster{}
-	if err := s.db.First(&schedulerCluster, id).Error; err != nil {
+	if err := s.db.Preload("CDNClusters").First(&schedulerCluster, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -147,7 +147,7 @@ func (s *rest) GetSchedulerClusters(q types.GetSchedulerClustersQuery) (*[]model
 	schedulerClusters := []model.SchedulerCluster{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SchedulerCluster{
 		Name: q.Name,
-	}).Find(&schedulerClusters).Error; err != nil {
+	}).Preload("CDNClusters").Find(&schedulerClusters).Error; err != nil {
 		return nil, err
 	}
 
