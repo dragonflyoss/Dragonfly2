@@ -19,9 +19,13 @@ base:
   # default: 1G, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
   maxBandwidth: 1G
 
-  # FailAccessInterval is the interval time after failed to access the URL.
-  # If a task failed to be downloaded from the source, it will not be retried in the time since the last failure.
-  # default: 3m
+  # CDN 暴露给 p2p 网络中的其他 peer 的 IP 地址
+  # 默认值：首个非本地回环IP。
+  advertiseIP:
+
+  # CDN 请求某个 URL 失败后，不再对该 URL 发起请求的时间间隔长度
+  # 换句话说，如果一个回源下载任务失败了，在这段时间里它将不会被重试。
+  # 默认值：3m
   failAccessInterval: 3m
 
   # GCInitialDelay is the delay time from the start to the first GC execution.
@@ -42,51 +46,57 @@ base:
 
   # manager configuration
   manager:
-    addr: 127.0.0.1:65003
-    cdnClusterID: 1
+    addr: ""
+    cdnClusterID: 0
+    keepAlive:
+      interval: 5s
+
+  # host configuration
+  host:
+    location:
+    idc:
 
 plugins:
-  storageDriver:
+  storagedriver:
     - name: disk
       enable: true
       config:
-        baseDir: /tmp/cdnsystem2
+        baseDir: /Users/Zhangzheyi/ftp
     - name: memory
-      enable: true
+      enable: false
       config:
-        baseDir: /tmp/memory/dragonfly
-
-  storageManager:
+        baseDir: /dev/shm/dragonfly
+  storagemanager:
     - name: disk
       enable: true
       config:
-        gcInitialDelay: 5s
+        gcInitialDelay: 0s
         gcInterval: 15s
         driverConfigs:
           disk:
             gcConfig:
-              youngGCThreshold: 100G
-              fullGCThreshold: 5G
+              youngGCThreshold: 100.0GB
+              fullGCThreshold: 5.0GB
               cleanRatio: 1
-              intervalThreshold: 2h
+              intervalThreshold: 2h0m0s
     - name: hybrid
       enable: false
       config:
-        gcInitialDelay: 5s
+        gcInitialDelay: 0s
         gcInterval: 15s
         driverConfigs:
           disk:
             gcConfig:
-              youngGCThreshold: 100G
-              fullGCThreshold: 5G
+              youngGCThreshold: 100.0GB
+              fullGCThreshold: 5.0GB
               cleanRatio: 1
-              intervalThreshold: 2h
+              intervalThreshold: 2h0m0s
           memory:
             gcConfig:
-              youngGCThreshold: 100G
-              fullGCThreshold: 5G
+              youngGCThreshold: 100.0GB
+              fullGCThreshold: 5.0GB
               cleanRatio: 3
-              intervalThreshold: 2h
+              intervalThreshold: 2h0m0s
 
 # Console shows log on console
 # default: false
@@ -97,6 +107,12 @@ console: false
 verbose: false
 
 # listen port for pprof, only valid when the verbose option is true
-# default is random port
-pprofPort: 0
+# default is -1. If it is 0, pprof will use a random port.
+pprofPort: -1
 
+# jaeger endpoint url
+jaeger:
+
+# service name used in tracer
+# default: dragonfly-cdn
+service-name: dragonfly-cdn

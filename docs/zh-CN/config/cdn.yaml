@@ -46,7 +46,7 @@ base:  # 基础配置项
 
   # CDN 使用的存储插件，可选[disk/hybrid]。disk 完全使用硬盘存储，hybrid 同时使用内存和硬盘进行存储。
   # 默认值：disk
-  storagePattern: disk
+  storageMode: disk
 
   # CDN 连接的 manager，可以不指定。
   # 各项配置默认值如下。如果 addr 为空字符串，CDN将不会连接manager。
@@ -54,7 +54,7 @@ base:  # 基础配置项
     addr: ""
     cdnClusterID: 0
     keepAlive:
-      intercal: 5s
+      interval: 5s
 
   # 主机信息
   host:
@@ -119,8 +119,8 @@ pprofPort: -1
 
 # jaeger 地址
 # 默认使用空字符串（不配置 jaeger）
-jaeger: ""
+jaeger:
 
 # tracer 中使用的 service-name
-#默认值：dragonfly-cdn
+# 默认值：dragonfly-cdn
 service-name: dragonfly-cdn
