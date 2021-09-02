@@ -58,7 +58,7 @@ jobs:
         uses: engineerd/setup-kind@v0.5.0
         with:
           version: ${{ env.KIND_VERSION }}
-          config: ${{ ene.KIND_CONFIG_PATH }}
+          config: ${{ env.KIND_CONFIG_PATH }}
 
       - name: Build images
         run: |
