@@ -7,7 +7,7 @@ cdn:
   tag: latest
 
 dfdaemon:
-  image: d7yio/dfdaemon
+  image: dragonflyoss/dfdaemon
   tag: v0.4.0
   config:
     proxy:

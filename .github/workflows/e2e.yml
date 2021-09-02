@@ -45,6 +45,7 @@ jobs:
       - name: Get dependencies
         run: |
           go mod vendor
+          go get github.com/onsi/ginkgo/ginkgo
           mkdir -p /tmp/artifact
 
       - name: Setup Kind
@@ -56,21 +57,14 @@ jobs:
       - name: Build images
         run: make docker-build
 
-      - name: Kind load image
+      - name: Prepare kind environment
         run: make kind-load
 
-      - name: Helm install
-        run: helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f test/testdata/charts/config.yaml dragonfly deploy/helm-charts/charts/dragonfly
-
-      - name: Install file server
+      - name: Install dragonfly
         run: |
+          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f test/testdata/charts/config.yaml dragonfly deploy/helm-charts/charts/dragonfly
           kubectl apply -f test/testdata/k8s/file-server.yaml
-          kubectl get po --namespace dragonfly-system
-          kubectl get po --namespace dragonfly-e2e
           kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
-
-      - name: Install ginkgo
-        run: go get github.com/onsi/ginkgo/ginkgo
 
       - name: Run E2E test
         run: make actions-e2e-test-coverage
