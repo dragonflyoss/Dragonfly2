@@ -11,6 +11,8 @@ env:
   KIND_VERSION: v0.11.1
   CONTAINERD_VERSION: v1.5.2
   GOPROXY: https://goproxy.io,direct
+  DRAGONFLY_E2E_TEST_MODE: compatibility
+  DRAGONFLY_DFDAEMON_IMAGE_TAG: v0.4.0
 
 jobs:
   skip_check:
@@ -59,14 +61,14 @@ jobs:
           make docker-build-manager
           make docker-build-cdn
           make docker-build-scheduler
-          docker pull dragonflyoss/dfdaemon:v0.4.0
+          docker pull dragonflyoss/dfdaemon:${{ DRAGONFLY_DFDAEMON_IMAGE_TAG }}
 
       - name: Prepare kind environment
         run: |
           make kind-load-manager
           make kind-load-cdn
           make kind-load-scheduler
-          kind load docker-image dragonflyoss/dfdaemon:v0.4.0
+          kind load docker-image dragonflyoss/dfdaemon:${{ DRAGONFLY_DFDAEMON_IMAGE_TAG }}
 
       - name: Install dragonfly
         run: |

@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -32,6 +33,10 @@ const (
 	proxy              = "localhost:65001"
 	hostnameFilePath   = "/etc/hostname"
 	dragonflyNamespace = "dragonfly-system"
+)
+
+const (
+	compatibilityTestMode = "compatibility"
 )
 
 var _ = BeforeSuite(func() {
@@ -51,6 +56,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	dfgetGitCommit := strings.Fields(string(out))[7]
 	fmt.Printf("dfget merge commit: %s\n", gitCommit)
+
+	mode := os.Getenv("DRAGONFLY_E2E_TEST_MODE")
+	if mode == compatibilityTestMode {
+		Expect(gitCommit).NotTo(Equal(dfgetGitCommit))
+		return
+	}
 
 	Expect(gitCommit).To(Equal(dfgetGitCommit))
 })
