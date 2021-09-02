@@ -88,7 +88,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
-          flags: e2etests
+          flags: compatibility-e2etests
 
       - name: Upload Logs
         uses: actions/upload-artifact@v2
