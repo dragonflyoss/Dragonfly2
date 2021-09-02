@@ -50,5 +50,5 @@ type GetSchedulersQuery struct {
 	Location           string `form:"location" binding:"omitempty"`
 	IP                 string `form:"ip" binding:"omitempty"`
 	Status             string `form:"status" binding:"omitempty,oneof=active inactive"`
-	SchedulerClusterID uint   `form:"scheduler_cluster_id" binding:"required"`
+	SchedulerClusterID uint   `form:"scheduler_cluster_id" binding:"omitempty"`
 }
