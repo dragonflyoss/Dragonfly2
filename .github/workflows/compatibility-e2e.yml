@@ -59,6 +59,11 @@ jobs:
       - name: Kind load image
         run: make kind-load
 
+      - name: Prepare stable dragonfly
+        run: |
+          docker pull dragonflyoss/dfdaemon:v0.4.0
+          kind load docker-image dragonflyoss/dfdaemon:v0.4.0
+
       - name: Helm install
         run: helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f test/testdata/charts/compatibility-config.yaml dragonfly deploy/helm-charts/charts/dragonfly
 
