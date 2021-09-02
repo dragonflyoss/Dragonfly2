@@ -11,6 +11,10 @@ env:
   KIND_VERSION: v0.11.1
   CONTAINERD_VERSION: v1.5.2
   GOPROXY: https://goproxy.io,direct
+  KIND_CONFIG_PATH: test/testdata/kind/config.yaml
+  DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
+  DRAGONFLY_CHARTS_CONFIG_PATH: test/testdata/charts/config.yaml
+  DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
 
 jobs:
   skip_check:
@@ -52,7 +56,7 @@ jobs:
         uses: engineerd/setup-kind@v0.5.0
         with:
           version: ${{ env.KIND_VERSION }}
-          config: ./test/testdata/kind/config.yaml
+          config: ${{ env.KIND_CONFIG_PATH }}
 
       - name: Build images
         run: make docker-build
@@ -60,10 +64,10 @@ jobs:
       - name: Prepare kind environment
         run: make kind-load
 
-      - name: Install dragonfly
+      - name: Setup dragonfly
         run: |
-          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f test/testdata/charts/config.yaml dragonfly deploy/helm-charts/charts/dragonfly
-          kubectl apply -f test/testdata/k8s/file-server.yaml
+          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f ${{ env.DRAGONFLY_CHARTS_CONFIG_PATH }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
+          kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
           kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
 
       - name: Run E2E test

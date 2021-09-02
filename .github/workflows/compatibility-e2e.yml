@@ -11,8 +11,12 @@ env:
   KIND_VERSION: v0.11.1
   CONTAINERD_VERSION: v1.5.2
   GOPROXY: https://goproxy.io,direct
+  KIND_CONFIG_PATH: test/testdata/kind/config.yaml
   DRAGONFLY_E2E_TEST_MODE: compatibility
-  DRAGONFLY_DFDAEMON_IMAGE_TAG: v0.4.0
+  DRAGONFLY_DFDAEMON_IMAGE: dragonflyoss/dfdaemon:v0.4.0
+  DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
+  DRAGONFLY_CHARTS_CONFIG_PATH: test/testdata/charts/compatibility-config.yaml
+  DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
 
 jobs:
   skip_check:
@@ -54,28 +58,26 @@ jobs:
         uses: engineerd/setup-kind@v0.5.0
         with:
           version: ${{ env.KIND_VERSION }}
-          config: ./test/testdata/kind/config.yaml
+          config: ${{ ene.KIND_CONFIG_PATH }}
 
       - name: Build images
         run: |
           make docker-build-manager
           make docker-build-cdn
           make docker-build-scheduler
-          docker pull dragonflyoss/dfdaemon:${{ env.DRAGONFLY_DFDAEMON_IMAGE_TAG }}
+          docker pull ${{ env.DRAGONFLY_DFDAEMON_IMAGE }}
 
       - name: Prepare kind environment
         run: |
           make kind-load-manager
           make kind-load-cdn
           make kind-load-scheduler
-          kind load docker-image dragonflyoss/dfdaemon:${{ env.DRAGONFLY_DFDAEMON_IMAGE_TAG }}
+          kind load docker-image ${{ env.DRAGONFLY_DFDAEMON_IMAGE }}
 
-      - name: Install dragonfly
+      - name: Setup dragonfly
         run: |
-          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f test/testdata/charts/compatibility-config.yaml dragonfly deploy/helm-charts/charts/dragonfly
-          kubectl apply -f test/testdata/k8s/file-server.yaml
-          kubectl get po --namespace dragonfly-e2e
-          kubectl get po --namespace dragonfly-system
+          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f ${{ env.DRAGONFLY_CHARTS_CONFIG_PATH }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
+          kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
           kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
 
       - name: Run compatibility E2E test
