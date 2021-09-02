@@ -1,17 +1,17 @@
 # 安装 Dragonfly CDN
 
-本文档阐述如何安装并启动 Dragonfly CDN
+本文档阐述如何安装并启动 Dragonfly CDN。
 
-## context
+## 部署方式
 
-用以下的方式之一安装 CDN：
+用下列方式之一部署 CDN：
 
 - 通过 Docker 部署
 - 直接在物理机上部署：推荐用于生产用途
 
-## 先决条件 Prerequisites
+## 环境要求
 
-使用 Docker 部署时，以下条件必须满足
+使用 Docker 部署时，以下条件必须满足：
 
 所需软件 | 版本要求
 ---|---
@@ -26,7 +26,7 @@ Git|1.9.1+
 Golang|1.12.x
 Nginx|0.8+
 
-## Procedure - 使用 Docker 部署
+## 使用 Docker 部署
 
 ### 获取 CDN 镜像
 
@@ -52,7 +52,7 @@ Nginx|0.8+
     cd Dragonfly2
     ```
 
-3. 构建 CDN 镜像
+3. 构建 CDN 的 Docker 镜像
 
     ```sh
     TAG="1.0.0"
@@ -67,18 +67,18 @@ Nginx|0.8+
 
 ### 启动 cdn
 
-**注意：** 需要使用上述步骤获得的 ID 替换 ${cdnDockerImageId}
+**注意：** 需要使用上述步骤获得的 ID 替换 ${cdnDockerImageId}。
 
 ```sh
 docker run -d --name cdn --restart=always -p 8001:8001 -p 8003:8003 -v /home/admin/ftp:/home/admin/ftp ${cdnDockerImageId} 
 --download-port=8001
 ```
 
-## Procedure - 在物理机上部署
+## 在物理机上部署
 
 ### 获取 CDN 可执行文件
 
-1. 下载压缩包。您可以从 [github releases page](https://github.
+1. 下载 Dragonfly 项目的压缩包。您可以从 [github releases page](https://github.
    com/dragonflyoss/Dragonfly2/releases) 下载一个已发布的最近版本
    
     ```sh
@@ -153,7 +153,7 @@ cdn --home-dir=$cdnHomeDir --port=8003 --download-port=$cdnDownloadPort
 
 ## 检查
 
-- CDN 被启动之后，运行下列命令以检查 Nginx 和 **cdn** 是否正在运行，以及 `8001` 和 `8003` 端口是否可用。
+- CDN 部署完成之后，运行以下命令以检查 Nginx 和 **cdn** 是否正在运行，以及 `8001` 和 `8003` 端口是否可用。
 
     ```sh
     telnet 127.0.0.1 8001
