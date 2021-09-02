@@ -72,6 +72,8 @@ jobs:
         run: |
           helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system -f test/testdata/charts/compatibility-config.yaml dragonfly deploy/helm-charts/charts/dragonfly
           kubectl apply -f test/testdata/k8s/file-server.yaml
+          kubectl get po --namespace dragonfly-e2e
+          kubectl get po --namespace dragonfly-system
           kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
 
       - name: Run compatibility E2E test
