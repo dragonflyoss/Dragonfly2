@@ -68,7 +68,7 @@ plugins:
     - name: disk
       enable: true
       config:
-        baseDir: /Users/{username}/ftp
+        baseDir: /Users/${USER_HOME}/ftp
     - name: memory
       enable: false
       config:

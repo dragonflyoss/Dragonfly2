@@ -16,7 +16,7 @@ go run cmd/cdnsystem/main.go --profiler
 ### 可选参数
 
 ```
-      --config string         配置文件地址，默认值为/Users/{username}/.dragonfly/config/cdn.yaml。也能使用环境变量 CDN_CONFIG 进行配置。
+      --config string         配置文件地址，默认值为/Users/${USER_HOME}/.dragonfly/config/cdn.yaml。也能使用环境变量 CDN_CONFIG 进行配置。
       --console               是否在控制台中显示日志信息
   -h, --help                  显示 cdn 的帮助信息
       --jaeger string         配置 jaeger 地址 url，例如 http://localhost:14250/api/traces
