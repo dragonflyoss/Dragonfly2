@@ -79,7 +79,7 @@ jobs:
           kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
 
       - name: Run compatibility E2E test
-        run: make actions-e2e-test
+        run: make actions-e2e-test-coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

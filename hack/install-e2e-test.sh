@@ -60,7 +60,13 @@ install-apache-bench() {
   fi
 }
 
-install-local() {
+print_step_info() {
+  echo "-----------------------------"
+  echo $1
+  echo "-----------------------------"
+}
+
+main() {
   print_step_info "start kind create cluster"
   install-kind
 
@@ -81,16 +87,6 @@ install-local() {
 
   print_step_info "start install apache bench"
   install-apache-bench
-}
-
-print_step_info() {
-  echo "-----------------------------"
-  echo $1
-  echo "-----------------------------"
-}
-
-main() {
-  install-local
 }
 
 main "$@"
