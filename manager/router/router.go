@@ -92,7 +92,7 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	u.DELETE("/:id/roles/:role", h.DeleteRoleForUser)
 
 	// Role
-	re := apiv1.Group("/roles")
+	re := apiv1.Group("/roles", jwt.MiddlewareFunc())
 	re.POST("", h.CreateRole)
 	re.DELETE("/:role", h.DestroyRole)
 	re.GET("/:role", h.GetRole)
@@ -105,7 +105,7 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	pm.GET("", h.GetPermissions(r))
 
 	// Oauth
-	oa := apiv1.Group("/oauth")
+	oa := apiv1.Group("/oauth", jwt.MiddlewareFunc())
 	oa.POST("", h.CreateOauth)
 	oa.DELETE(":id", h.DestroyOauth)
 	oa.PATCH(":id", h.UpdateOauth)
@@ -113,7 +113,7 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	oa.GET("", h.GetOauths)
 
 	// Scheduler Cluster
-	sc := apiv1.Group("/scheduler-clusters")
+	sc := apiv1.Group("/scheduler-clusters", jwt.MiddlewareFunc())
 	sc.POST("", h.CreateSchedulerCluster)
 	sc.DELETE(":id", h.DestroySchedulerCluster)
 	sc.PATCH(":id", h.UpdateSchedulerCluster)
@@ -122,7 +122,7 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	sc.PUT(":id/schedulers/:scheduler_id", h.AddSchedulerToSchedulerCluster)
 
 	// Scheduler
-	s := apiv1.Group("/schedulers")
+	s := apiv1.Group("/schedulers", jwt.MiddlewareFunc())
 	s.POST("", h.CreateScheduler)
 	s.DELETE(":id", h.DestroyScheduler)
 	s.PATCH(":id", h.UpdateScheduler)
@@ -130,7 +130,7 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	s.GET("", h.GetSchedulers)
 
 	// CDN Cluster
-	cc := apiv1.Group("/cdn-clusters")
+	cc := apiv1.Group("/cdn-clusters", jwt.MiddlewareFunc())
 	cc.POST("", h.CreateCDNCluster)
 	cc.DELETE(":id", h.DestroyCDNCluster)
 	cc.PATCH(":id", h.UpdateCDNCluster)
@@ -140,7 +140,7 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	cc.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToCDNCluster)
 
 	// CDN
-	c := apiv1.Group("/cdns")
+	c := apiv1.Group("/cdns", jwt.MiddlewareFunc())
 	c.POST("", h.CreateCDN)
 	c.DELETE(":id", h.DestroyCDN)
 	c.PATCH(":id", h.UpdateCDN)
@@ -148,7 +148,7 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	c.GET("", h.GetCDNs)
 
 	// Security Group
-	sg := apiv1.Group("/security-groups")
+	sg := apiv1.Group("/security-groups", jwt.MiddlewareFunc())
 	sg.POST("", h.CreateSecurityGroup)
 	sg.DELETE(":id", h.DestroySecurityGroup)
 	sg.PATCH(":id", h.UpdateSecurityGroup)
