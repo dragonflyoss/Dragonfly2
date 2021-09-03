@@ -24,6 +24,33 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary Get User
+// @Description Get User by id
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Success 200 {object} model.User
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /users/{id} [get]
+func (h *Handlers) GetUser(ctx *gin.Context) {
+	var params types.UserParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	user, err := h.Service.GetUser(params.ID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, user)
+}
+
 // @Summary SignUp user
 // @Description signup by json config
 // @Tags User

@@ -30,6 +30,15 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func (s *rest) GetUser(id uint) (*model.User, error) {
+	user := model.User{}
+	if err := s.db.First(&user, id).Error; err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 func (s *rest) SignIn(json types.SignInRequest) (*model.User, error) {
 	user := model.User{}
 	if err := s.db.First(&user, model.User{
