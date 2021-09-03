@@ -75,11 +75,15 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 		return nil, err
 	}
 
+	// Manager View
+	r.Use(static.Serve("/", static.LocalFile(publicPath, true)))
+
 	// Router
 	apiv1 := r.Group("/api/v1")
 
 	// User
 	u := apiv1.Group("/users")
+	u.GET("/:id", jwt.MiddlewareFunc(), rbac, h.GetUser)
 	u.POST("/signin", jwt.LoginHandler)
 	u.POST("/signout", jwt.LogoutHandler)
 	u.POST("/signup", h.SignUp)
@@ -169,8 +173,10 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	apiSeagger := ginSwagger.URL("/swagger/doc.json")
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, apiSeagger))
 
-	// Manager View
-	r.Use(static.Serve("/", static.LocalFile(publicPath, false)))
+	// Fallback To Manager View
+	r.NoRoute(func(c *gin.Context) {
+		c.File(filepath.Join(publicPath, "index.html"))
+	})
 
 	return r, nil
 }

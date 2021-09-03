@@ -122,7 +122,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 		TokenHeadName:  "Bearer",
 		TimeFunc:       time.Now,
 		SendCookie:     true,
-		CookieHTTPOnly: true,
+		CookieHTTPOnly: false,
 	})
 
 	if err != nil {
