@@ -677,9 +677,10 @@ func (r *Regexp) MarshalYAML() (interface{}, error) {
 
 // HijackConfig represents how dfdaemon hijacks http requests.
 type HijackConfig struct {
-	Cert  string        `yaml:"cert" mapstructure:"cert"`
-	Key   string        `yaml:"key" mapstructure:"key"`
-	Hosts []*HijackHost `yaml:"hosts" mapstructure:"hosts"`
+	Cert  string             `yaml:"cert" mapstructure:"cert"`
+	Key   string             `yaml:"key" mapstructure:"key"`
+	Hosts []*HijackHost      `yaml:"hosts" mapstructure:"hosts"`
+	SNI   []*TCPListenOption `yaml:"sni" mapstructure:"sni"`
 }
 
 // HijackHost is a hijack rule for the hosts that matches Regx.
