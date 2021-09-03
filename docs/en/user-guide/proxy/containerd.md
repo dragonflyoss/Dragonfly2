@@ -87,7 +87,7 @@ Environment="HTTP_PROXY=http://127.0.0.1:65001"
 Environment="HTTPS_PROXY=http://127.0.0.1:65001"
 ```
 
-### Step 5: Pull images with proxy
+### Step 4: Pull images with proxy
 
 Through the above steps, we can start to validate if Dragonfly works as expected.
 
