@@ -27,11 +27,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type user struct {
-	name string
-	id   uint
-}
-
 func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 	identityKey := "id"
 
@@ -48,29 +43,14 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 			id, ok := claims[identityKey]
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{
-					"message": "Unavailable token: require user name",
-				})
-				c.Abort()
-				return nil
-			}
-
-			name, ok := claims["name"]
-			if !ok {
-				c.JSON(http.StatusUnauthorized, gin.H{
 					"message": "Unavailable token: require user id",
 				})
 				c.Abort()
 				return nil
 			}
 
-			user := &user{
-				name: name.(string),
-				id:   id.(uint),
-			}
-
-			c.Set("name", user.name)
-			c.Set("id", user.id)
-			return user
+			c.Set("id", id)
+			return id
 		},
 
 		Authenticator: func(c *gin.Context) (interface{}, error) {
@@ -101,7 +81,6 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 			if user, ok := data.(*model.User); ok {
 				return jwt.MapClaims{
 					identityKey: user.ID,
-					"name":      user.Name,
 				}
 			}
 
@@ -110,7 +89,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{
-				"message": message,
+				"message": http.StatusText(code),
 			})
 		},
 
@@ -139,7 +118,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 			})
 		},
 
-		TokenLookup:    "header: Authorization, cookie: jwt, query: token",
+		TokenLookup:    "cookie: jwt, header: Authorization, query: token",
 		TokenHeadName:  "Bearer",
 		TimeFunc:       time.Now,
 		SendCookie:     true,
