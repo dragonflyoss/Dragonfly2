@@ -39,9 +39,8 @@ func RBAC(e *casbin.Enforcer) gin.HandlerFunc {
 			return
 		}
 
-		ok, err := e.Enforce(fmt.Sprint(c.GetUint("id")), permission, action)
-		if err != nil {
-			logger.Errorf("RBAC validate error: %s", err)
+		id, ok := c.Get("id")
+		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": "permission validate error!",
 			})
@@ -49,7 +48,14 @@ func RBAC(e *casbin.Enforcer) gin.HandlerFunc {
 			return
 		}
 
-		if !ok {
+		if ok, err := e.Enforce(fmt.Sprint(id.(float64)), permission, action); err != nil {
+			logger.Errorf("RBAC validate error: %s", err)
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": "permission validate error!",
+			})
+			c.Abort()
+			return
+		} else if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": "permission deny",
 			})

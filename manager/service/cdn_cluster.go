@@ -36,6 +36,11 @@ func (s *rest) CreateCDNCluster(json types.CreateCDNClusterRequest) (*model.CDNC
 }
 
 func (s *rest) DestroyCDNCluster(id uint) error {
+	cdnCluster := model.CDNCluster{}
+	if err := s.db.First(&cdnCluster, id).Error; err != nil {
+		return err
+	}
+
 	if err := s.db.Unscoped().Delete(&model.CDNCluster{}, id).Error; err != nil {
 		return err
 	}

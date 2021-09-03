@@ -37,6 +37,11 @@ func (s *rest) CreateSecurityGroup(json types.CreateSecurityGroupRequest) (*mode
 }
 
 func (s *rest) DestroySecurityGroup(id uint) error {
+	securityGroup := model.SecurityGroup{}
+	if err := s.db.First(&securityGroup, id).Error; err != nil {
+		return err
+	}
+
 	if err := s.db.Unscoped().Delete(&model.SecurityGroup{}, id).Error; err != nil {
 		return err
 	}

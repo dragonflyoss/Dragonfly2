@@ -41,6 +41,11 @@ func (s *rest) CreateScheduler(json types.CreateSchedulerRequest) (*model.Schedu
 }
 
 func (s *rest) DestroyScheduler(id uint) error {
+	scheduler := model.Scheduler{}
+	if err := s.db.First(&scheduler, id).Error; err != nil {
+		return err
+	}
+
 	if err := s.db.Unscoped().Delete(&model.Scheduler{}, id).Error; err != nil {
 		return err
 	}
