@@ -85,6 +85,12 @@ var _ = AfterSuite(func() {
 	Expect(strings.HasPrefix(podName, "dragonfly-dfdaemon-")).Should(BeTrue())
 
 	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, podName, "/var/log/dragonfly/daemon/core.log", "/tmp/artifact/daemon.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-0", "/var/log/dragonfly/manager/core.log", "/tmp/artifact/manager-0.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-0", "/var/log/dragonfly/manager/gin.log", "/tmp/artifact/manager-gin-0.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-1", "/var/log/dragonfly/manager/core.log", "/tmp/artifact/manager-1.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-1", "/var/log/dragonfly/manager/gin.log", "/tmp/artifact/manager-gin-1.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-2", "/var/log/dragonfly/manager/core.log", "/tmp/artifact/manager-2.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-2", "/var/log/dragonfly/manager/gin.log", "/tmp/artifact/manager-gin-2.log").CombinedOutput()
 	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-cdn-0", "/var/log/dragonfly/cdn/core.log", "/tmp/artifact/cdn-0.log").CombinedOutput()
 	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-cdn-1", "/var/log/dragonfly/cdn/core.log", "/tmp/artifact/cdn-1.log").CombinedOutput()
 	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-cdn-2", "/var/log/dragonfly/cdn/core.log", "/tmp/artifact/cdn-2.log").CombinedOutput()
