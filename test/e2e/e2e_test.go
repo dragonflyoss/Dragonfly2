@@ -43,10 +43,10 @@ const (
 var _ = BeforeSuite(func() {
 	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
 	if mode != "" {
-		rawImage, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
+		rawImage, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", fmt.Sprintf("component=%s", mode),
 			"-o", "jsonpath='{range .items[*]}{.spec.containers[0].image}{end}'").CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
-		fmt.Printf("compatibility module image name: %s\n", string(rawImage))
+		fmt.Printf("special image name: %s\n", string(rawImage))
 		Expect(fmt.Sprintf("dragonflyoss/%s:%s", mode, stableImageTag)).To(Equal(string(rawImage)))
 	}
 
@@ -71,8 +71,8 @@ var _ = BeforeSuite(func() {
 		Expect(gitCommit).NotTo(Equal(dfgetGitCommit))
 		return
 	}
-	Expect(gitCommit).To(Equal(dfgetGitCommit))
 
+	Expect(gitCommit).To(Equal(dfgetGitCommit))
 })
 
 var _ = AfterSuite(func() {
