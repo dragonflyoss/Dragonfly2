@@ -44,11 +44,12 @@ var _ = BeforeSuite(func() {
 	if mode != "" {
 		rawImage, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", fmt.Sprintf("component=%s", mode),
 			"-o", "jsonpath='{range .items[*]}{.spec.containers[0].image}{end}'").CombinedOutput()
+		image := strings.Trim(string(rawImage), "'")
 		Expect(err).NotTo(HaveOccurred())
-		fmt.Printf("special image name: %s\n", string(rawImage))
+		fmt.Printf("special image name: %s\n", image)
 
 		stableImageTag := os.Getenv("DRAGONFLY_STABLE_IMAGE_TAG")
-		Expect(fmt.Sprintf("dragonflyoss/%s:%s", mode, stableImageTag)).To(Equal(string(rawImage)))
+		Expect(fmt.Sprintf("dragonflyoss/%s:%s", mode, stableImageTag)).To(Equal(image))
 	}
 
 	rawGitCommit, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
