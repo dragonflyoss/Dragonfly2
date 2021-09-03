@@ -622,16 +622,7 @@ func (pt *peerTask) waitFailedPiece() (int32, bool) {
 		pt.Infof("peer task done, stop wait failed piece")
 		return -1, false
 	case <-pt.ctx.Done():
-		if !pt.success {
-			if pt.failedCode == failedCodeNotSet {
-				pt.failedReason = reasonContextCanceled
-				pt.failedCode = dfcodes.ClientContextCanceled
-			}
-			// TODO wait fix success is true
-			pt.Errorf("context done due to %s, progress is not done", pt.ctx.Err())
-		} else {
-			pt.Debugf("context done due to %s, progress is already done", pt.ctx.Err())
-		}
+		pt.Debugf("context done due to %s, stop wait failed piece", pt.ctx.Err())
 		return -1, false
 	case failed := <-pt.failedPieceCh:
 		pt.Warnf("download piece/%d failed, retry", failed)
