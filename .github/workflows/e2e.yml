@@ -84,5 +84,5 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: dragonfly-logs
+          name: e2e-tests-logs
           path: /tmp/artifact/
