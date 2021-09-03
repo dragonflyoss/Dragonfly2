@@ -95,5 +95,5 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: dragonfly-compatibility-${{ matrix.module }}-logs
+          name: ${{ matrix.module }}-compatibility-e2e-tests-logs
           path: /tmp/artifact/
