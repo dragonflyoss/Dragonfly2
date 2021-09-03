@@ -38,6 +38,11 @@ func (s *rest) CreateOauth(json types.CreateOauthRequest) (*model.Oauth, error) 
 }
 
 func (s *rest) DestroyOauth(id uint) error {
+	oauth := model.Oauth{}
+	if err := s.db.First(&oauth, id).Error; err != nil {
+		return err
+	}
+
 	if err := s.db.Unscoped().Delete(&model.Oauth{}, id).Error; err != nil {
 		return err
 	}

@@ -40,6 +40,11 @@ func (s *rest) CreateCDN(json types.CreateCDNRequest) (*model.CDN, error) {
 }
 
 func (s *rest) DestroyCDN(id uint) error {
+	cdn := model.CDN{}
+	if err := s.db.First(&cdn, id).Error; err != nil {
+		return err
+	}
+
 	if err := s.db.Unscoped().Delete(&model.CDN{}, id).Error; err != nil {
 		return err
 	}

@@ -165,12 +165,12 @@ func Init(console bool, verbose bool, publicPath string, service service.REST, e
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)
 
-	// Manager View
-	r.Use(static.Serve("/", static.LocalFile(publicPath, false)))
-
 	// Swagger
 	apiSeagger := ginSwagger.URL("/swagger/doc.json")
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, apiSeagger))
+
+	// Manager View
+	r.Use(static.Serve("/", static.LocalFile(publicPath, false)))
 
 	return r, nil
 }
