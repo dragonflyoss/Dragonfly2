@@ -37,7 +37,6 @@ const (
 
 const (
 	dfdaemonCompatibilityTestMode = "dfdaemon"
-	stableImageTag                = "v0.4.0"
 )
 
 var _ = BeforeSuite(func() {
@@ -47,6 +46,8 @@ var _ = BeforeSuite(func() {
 			"-o", "jsonpath='{range .items[*]}{.spec.containers[0].image}{end}'").CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 		fmt.Printf("special image name: %s\n", string(rawImage))
+
+		stableImageTag := os.Getenv("DRAGONFLY_STABLE_IMAGE_TAG")
 		Expect(fmt.Sprintf("dragonflyoss/%s:%s", mode, stableImageTag)).To(Equal(string(rawImage)))
 	}
 
