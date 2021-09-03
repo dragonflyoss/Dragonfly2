@@ -36,7 +36,7 @@ const (
 )
 
 const (
-	compatibilityTestMode = "compatibility"
+	dfdaemonCompatibilityTestMode = "dfdaemon"
 )
 
 var _ = BeforeSuite(func() {
@@ -57,8 +57,8 @@ var _ = BeforeSuite(func() {
 	dfgetGitCommit := strings.Fields(string(rawDfgetVersion))[7]
 	fmt.Printf("dfget merge commit: %s\n", dfgetGitCommit)
 
-	mode := os.Getenv("DRAGONFLY_E2E_TEST_MODE")
-	if mode == compatibilityTestMode {
+	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
+	if mode == dfdaemonCompatibilityTestMode {
 		Expect(gitCommit).NotTo(Equal(dfgetGitCommit))
 		return
 	}
