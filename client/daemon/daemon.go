@@ -367,6 +367,28 @@ func (cd *clientDaemon) Serve() error {
 			}
 			return nil
 		})
+		// serve proxy sni service
+		if cd.Option.Proxy.HijackHTTPS != nil && len(cd.Option.Proxy.HijackHTTPS.SNI) > 0 {
+			for _, opt := range cd.Option.Proxy.HijackHTTPS.SNI {
+
+				listener, port, err := cd.prepareTCPListener(config.ListenOption{
+					TCPListen: opt,
+				}, false)
+				if err != nil {
+					logger.Errorf("failed to listen for proxy sni service: %v", err)
+					return err
+				}
+				logger.Infof("serve proxy sni at tcp://%s:%d", opt.Listen, port)
+
+				g.Go(func() error {
+					err := cd.ProxyManager.ServeSNI(listener)
+					if err != nil {
+						logger.Errorf("failed to serve proxy sni service: %v", err)
+					}
+					return err
+				})
+			}
+		}
 	}
 
 	// serve upload service

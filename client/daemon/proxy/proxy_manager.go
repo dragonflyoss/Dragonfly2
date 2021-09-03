@@ -37,7 +37,8 @@ import (
 )
 
 type Manager interface {
-	Serve(lis net.Listener) error
+	Serve(net.Listener) error
+	ServeSNI(net.Listener) error
 	Stop() error
 	IsEnabled() bool
 }
@@ -98,7 +99,9 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskMana
 			if err != nil {
 				return nil, errors.Wrap(err, "cert from file")
 			}
-
+			if cert.Leaf != nil && cert.Leaf.IsCA {
+				logger.Debugf("hijack https request with CA <%s>", cert.Leaf.Subject.CommonName)
+			}
 			options = append(options, WithCert(cert))
 		}
 	}
@@ -115,10 +118,14 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskMana
 	}, nil
 }
 
-func (pm *proxyManager) Serve(lis net.Listener) error {
+func (pm *proxyManager) Serve(listener net.Listener) error {
 	_ = WithDirectHandler(newDirectHandler())(pm.Proxy)
 	pm.Server.Handler = pm.Proxy
-	return pm.Server.Serve(lis)
+	return pm.Server.Serve(listener)
+}
+
+func (pm *proxyManager) ServeSNI(listener net.Listener) error {
+	return pm.Proxy.ServeSNI(listener)
 }
 
 func (pm *proxyManager) Stop() error {
