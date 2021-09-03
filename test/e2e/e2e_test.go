@@ -37,9 +37,19 @@ const (
 
 const (
 	dfdaemonCompatibilityTestMode = "dfdaemon"
+	stableImageTag                = "v0.4.0"
 )
 
 var _ = BeforeSuite(func() {
+	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
+	if mode != "" {
+		rawImage, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
+			"-o", "jsonpath='{range .items[*]}{.spec.containers[0].image}{end}'").CombinedOutput()
+		Expect(err).NotTo(HaveOccurred())
+		fmt.Printf("compatibility module image name: %s\n", string(rawImage))
+		Expect(fmt.Sprintf("dragonflyoss/%s:%s", mode, stableImageTag)).To(Equal(string(rawImage)))
+	}
+
 	rawGitCommit, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
 	gitCommit := strings.Fields(string(rawGitCommit))[0]
@@ -57,13 +67,12 @@ var _ = BeforeSuite(func() {
 	dfgetGitCommit := strings.Fields(string(rawDfgetVersion))[7]
 	fmt.Printf("dfget merge commit: %s\n", dfgetGitCommit)
 
-	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
 	if mode == dfdaemonCompatibilityTestMode {
 		Expect(gitCommit).NotTo(Equal(dfgetGitCommit))
 		return
 	}
-
 	Expect(gitCommit).To(Equal(dfgetGitCommit))
+
 })
 
 var _ = AfterSuite(func() {
