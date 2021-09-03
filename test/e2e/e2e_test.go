@@ -42,9 +42,9 @@ const (
 var _ = BeforeSuite(func() {
 	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
 	if mode != "" {
-		rawImage, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", fmt.Sprintf("component=%s", mode),
-			"-o", "jsonpath='{range .items[*]}{.spec.containers[0].image}{end}'").CombinedOutput()
-		image := strings.Trim(string(rawImage), "'")
+		rawImages, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", fmt.Sprintf("component=%s", mode),
+			"-o", "jsonpath='{range .items[0]}{.spec.containers[0].image}{end}'").CombinedOutput()
+		image := strings.Trim(string(rawImages), "'")
 		Expect(err).NotTo(HaveOccurred())
 		fmt.Printf("special image name: %s\n", image)
 
