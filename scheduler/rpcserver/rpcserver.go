@@ -65,7 +65,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	resp = new(scheduler.RegisterResult)
 	if verifyErr := validateParams(request); verifyErr != nil {
 		err = dferrors.Newf(dfcodes.BadRequest, "bad request param: %v", verifyErr)
-		logger.Errorf("validate register request failed: %v", err)
+		logger.Errorf("register request: %v", err)
 		span.RecordError(err)
 		return
 	}
@@ -151,7 +151,9 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	}
 	conn := peer.BindNewConn(stream)
 	logger.Infof("peer %s is connected", peer.PeerID)
-	defer logger.Infof("peer %s is disconnect", peer.PeerID)
+	defer func() {
+		logger.Infof("peer %s is disconnect: %v", peer.PeerID, conn.Err())
+	}()
 	for {
 		select {
 		case <-conn.Done():

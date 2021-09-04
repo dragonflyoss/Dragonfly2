@@ -77,7 +77,6 @@ var _ event = startReportPieceResultEvent{}
 
 func (e startReportPieceResultEvent) apply(s *state) {
 	span := trace.SpanFromContext(e.ctx)
-	span.AddEvent(config.EventStartReportPieceResult)
 	if e.peer.GetParent() != nil {
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
 			e.peer.PeerID).Warnf("startReportPieceResultEvent: no need schedule parent because peer already had parent %s", e.peer.GetParent().PeerID)
@@ -98,6 +97,8 @@ func (e startReportPieceResultEvent) apply(s *state) {
 				e.peer.Task.IncreaseBackSourcePeer(e.peer.PeerID)
 				s.waitScheduleParentPeerQueue.Done(e.peer)
 			}
+			logger.WithTaskAndPeerID(e.peer.Task.TaskID,
+				e.peer.PeerID).Infof("startReportPieceResultEvent: peer %s need back source because no parent node is available for scheduling", e.peer.PeerID)
 			return
 		}
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
@@ -123,8 +124,6 @@ type peerDownloadPieceSuccessEvent struct {
 var _ event = peerDownloadPieceSuccessEvent{}
 
 func (e peerDownloadPieceSuccessEvent) apply(s *state) {
-	span := trace.SpanFromContext(e.ctx)
-	span.AddEvent(config.EventPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(e.pr.String())))
 	e.peer.UpdateProgress(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
 	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
 		e.peer.Task.AddPiece(e.pr.PieceInfo)
@@ -179,7 +178,6 @@ var _ event = peerDownloadPieceFailEvent{}
 
 func (e peerDownloadPieceFailEvent) apply(s *state) {
 	span := trace.SpanFromContext(e.ctx)
-	span.AddEvent(config.EventPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(e.pr.String())))
 	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
 		return
 	}
@@ -373,7 +371,7 @@ func handleSeedTaskFail(task *supervisor.Task) {
 		task.ListPeers().Range(func(data sortedlist.Item) bool {
 			peer := data.(*supervisor.Peer)
 			if task.NeedClientBackSource() {
-				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source", peer.PeerID)) == nil {
+				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source because cdn seed task failed", peer.PeerID)) == nil {
 					task.IncreaseBackSourcePeer(peer.PeerID)
 				}
 				return true

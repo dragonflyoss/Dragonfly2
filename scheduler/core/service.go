@@ -266,7 +266,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	go func() {
 		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			// fall back to client back source
-			logger.Errorf("seed task failed: %v", err)
+			logger.WithTaskID(task.TaskID).Errorf("seed task failed: %v", err)
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
 			task.SetClientBackSourceStatusAndLimit(s.config.BackSourceCount)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {

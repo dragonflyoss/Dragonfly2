@@ -21,6 +21,10 @@ import (
 	"io"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -107,10 +111,31 @@ func (conn *Connection) gcConn(node string) {
 	logger.GrpcLogger.With("conn", conn.name).Infof("gc keys and clients associated with server node: %s ending", node)
 }
 
+type messageType attribute.KeyValue
+
+var (
+	messageSent     = messageType(attribute.Key("message.type").String("request"))
+	messageReceived = messageType(attribute.Key("message.type").String("response"))
+)
+
+func (m messageType) Event(ctx context.Context, id int, message interface{}) {
+	span := trace.SpanFromContext(ctx)
+	if p, ok := message.(proto.Message); ok {
+		span.AddEvent("message", trace.WithAttributes(
+			attribute.KeyValue(m),
+			semconv.RPCMessageIDKey.Int(id),
+			semconv.RPCMessageUncompressedSizeKey.String(proto.CompactTextString(p)),
+		))
+	}
+}
+
 type wrappedClientStream struct {
 	grpc.ClientStream
 	method string
 	cc     *grpc.ClientConn
+
+	receivedMessageID int
+	sentMessageID     int
 }
 
 func (w *wrappedClientStream) RecvMsg(m interface{}) error {
@@ -119,13 +144,18 @@ func (w *wrappedClientStream) RecvMsg(m interface{}) error {
 		err = convertClientError(err)
 		logger.GrpcLogger.Errorf("client receive a message: %T error: %v for method: %s target: %s connState: %s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
-
+	if err == nil {
+		w.receivedMessageID++
+		messageReceived.Event(w.Context(), w.receivedMessageID, m)
+	}
 	return err
 }
 
 func (w *wrappedClientStream) SendMsg(m interface{}) error {
 	err := w.ClientStream.SendMsg(m)
-	if err != nil {
+	w.sentMessageID++
+	messageSent.Event(w.Context(), w.sentMessageID, m)
+	if err != nil && err != io.EOF {
 		logger.GrpcLogger.Errorf("client send a message: %T error: %v for method: %s target: %s connState: %s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
 
@@ -148,7 +178,10 @@ func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grp
 }
 
 func unaryClientInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	messageSent.Event(ctx, 1, req)
 	err := invoker(ctx, method, req, reply, cc, opts...)
+
+	messageReceived.Event(ctx, 1, reply)
 	if err != nil {
 		err = convertClientError(err)
 		logger.GrpcLogger.Errorf("do unary client error: %v for method: %s target: %s connState: %s", err, method, cc.Target(), cc.GetState().String())
