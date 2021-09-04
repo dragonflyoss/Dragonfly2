@@ -368,6 +368,11 @@ func (pt *filePeerTask) cleanUnfinished() {
 			scheduler.NewEndPieceResult(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 		pt.Debugf("clean up end piece result sent")
 
+		if err := pt.callback.Fail(pt, pt.failedCode, pt.failedReason); err != nil {
+			pt.span.RecordError(err)
+			pt.Errorf("peer task fail callback failed: %s", err)
+		}
+
 		var progressDone bool
 		pg := &FilePeerTaskProgress{
 			State: &ProgressState{
@@ -405,11 +410,6 @@ func (pt *filePeerTask) cleanUnfinished() {
 			} else {
 				pt.Warnf("wait progress stopped failed, context done, but progress not stopped")
 			}
-		}
-
-		if err := pt.callback.Fail(pt, pt.failedCode, pt.failedReason); err != nil {
-			pt.span.RecordError(err)
-			pt.Errorf("peer task fail callback failed: %s", err)
 		}
 
 		pt.Debugf("clean unfinished: close channel")

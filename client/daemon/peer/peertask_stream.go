@@ -396,13 +396,13 @@ func (s *streamPeerTask) cleanUnfinished() {
 		_ = s.peerPacketStream.Send(
 			scheduler.NewEndPieceResult(s.taskID, s.peerID, s.readyPieces.Settled()))
 		s.Errorf("end piece result sent, peer task failed")
-		close(s.streamDone)
-		close(s.done)
 		//close(s.successPieceCh)
 		if err := s.callback.Fail(s, s.failedCode, s.failedReason); err != nil {
 			s.span.RecordError(err)
 			s.Errorf("fail callback error: %s", err)
 		}
+		close(s.streamDone)
+		close(s.done)
 		s.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 		s.span.SetAttributes(config.AttributePeerTaskCode.Int(int(s.failedCode)))
 		s.span.SetAttributes(config.AttributePeerTaskMessage.String(s.failedReason))
