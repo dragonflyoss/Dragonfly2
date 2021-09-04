@@ -436,6 +436,8 @@ func (pt *filePeerTask) SetTotalPieces(i int32) {
 }
 
 func (pt *filePeerTask) backSource() {
+	backSourceCtx, backSourceSpan := tracer.Start(pt.ctx, config.SpanBackSource)
+	defer backSourceSpan.End()
 	defer pt.cleanUnfinished()
 	if pt.disableBackSource {
 		pt.Errorf(reasonBackSourceDisabled)
@@ -443,7 +445,9 @@ func (pt *filePeerTask) backSource() {
 		return
 	}
 	_ = pt.callback.Init(pt)
-	if peerPacketStream, err := pt.schedulerClient.ReportPieceResult(pt.ctx, pt.taskID, pt.request); err != nil {
+	reportPieceCtx, reportPieceSpan := tracer.Start(backSourceCtx, config.SpanReportPieceResult)
+	defer reportPieceSpan.End()
+	if peerPacketStream, err := pt.schedulerClient.ReportPieceResult(reportPieceCtx, pt.taskID, pt.request); err != nil {
 		logger.Errorf("step 2: peer %s report piece failed: err", pt.request.PeerId, err)
 	} else {
 		pt.peerPacketStream = peerPacketStream
@@ -453,8 +457,11 @@ func (pt *filePeerTask) backSource() {
 	if err != nil {
 		pt.Errorf("download from source error: %s", err)
 		pt.failedReason = err.Error()
+		backSourceSpan.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		backSourceSpan.RecordError(err)
 		return
 	}
 	pt.Infof("download from source ok")
+	backSourceSpan.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 	_ = pt.finish()
 }
