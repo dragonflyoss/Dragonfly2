@@ -76,7 +76,7 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*s
 	logger.Infof("start seed task %s", task.TaskID)
 	defer logger.Infof("finish seed task %s, task status is %s", task.TaskID, task.GetStatus())
 	var seedSpan trace.Span
-	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDN)
+	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDNSeed)
 	defer seedSpan.End()
 	seedRequest := &cdnsystem.SeedRequest{
 		TaskId:  task.TaskID,
@@ -90,7 +90,7 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*s
 		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
 		return nil, err
 	}
-	stream, err := cm.client.ObtainSeeds(ctx, seedRequest)
+	stream, err := cm.client.ObtainSeeds(trace.ContextWithSpan(context.Background(), seedSpan), seedRequest)
 	if err != nil {
 		seedSpan.RecordError(err)
 		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
@@ -127,7 +127,6 @@ func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stre
 			span.RecordError(err)
 			span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
 			if recvErr, ok := err.(*dferrors.DfError); ok {
-				span.RecordError(recvErr)
 				switch recvErr.Code {
 				case dfcodes.CdnTaskRegistryFail:
 					return cdnPeer, errors.Wrapf(ErrCDNRegisterFail, "receive piece")

@@ -43,7 +43,7 @@ const (
 
 const (
 	SpanPeerRegister      = "peer-register"
-	SpanTriggerCDN        = "trigger-cdn"
+	SpanTriggerCDNSeed    = "trigger-cdn-seed"
 	SpanReportPieceResult = "report-piece-result"
 	SpanReportPeerResult  = "report-peer-result"
 	SpanPeerLeave         = "peer-leave"

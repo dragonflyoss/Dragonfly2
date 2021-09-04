@@ -74,7 +74,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	task := s.service.GetOrCreateTask(ctx, supervisor.NewTask(taskID, request.Url, request.UrlMeta))
 	if task.IsFail() {
 		err = dferrors.New(dfcodes.SchedTaskStatusError, "task status is fail")
-		logger.Error("task %s status is fail", task.TaskID)
+		logger.Errorf("task %s status is fail", task.TaskID)
 		span.RecordError(err)
 		return
 	}
@@ -198,8 +198,6 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 	peer, ok := s.service.GetPeerTask(target.PeerId)
 	if !ok {
 		logger.Warnf("leave task: peer %s is not exists", target.PeerId)
-		err = dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", target.PeerId)
-		span.RecordError(err)
 		return
 	}
 	return s.service.HandleLeaveTask(ctx, peer)
