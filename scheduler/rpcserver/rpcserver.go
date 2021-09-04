@@ -153,6 +153,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	logger.Infof("peer %s is connected", peer.PeerID)
 	defer func() {
 		logger.Infof("peer %s is disconnect: %v", peer.PeerID, conn.Err())
+		span.RecordError(conn.Err())
 	}()
 	for {
 		select {

@@ -85,17 +85,15 @@ func (e startReportPieceResultEvent) apply(s *state) {
 	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
 			e.peer.PeerID).Info("startReportPieceResultEvent: no need schedule parent because peer is back source peer")
-		s.waitScheduleParentPeerQueue.Done(e.peer)
 		return
 	}
 	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer)
 	// No parent node is currently available
 	if !hasParent {
-		if e.peer.Task.NeedClientBackSource() {
+		if e.peer.Task.NeedClientBackSource() && !e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
 			span.SetAttributes(config.AttributeClientBackSource.Bool(true))
 			if e.peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source", e.peer.PeerID)) == nil {
 				e.peer.Task.IncreaseBackSourcePeer(e.peer.PeerID)
-				s.waitScheduleParentPeerQueue.Done(e.peer)
 			}
 			logger.WithTaskAndPeerID(e.peer.Task.TaskID,
 				e.peer.PeerID).Infof("startReportPieceResultEvent: peer %s need back source because no parent node is available for scheduling", e.peer.PeerID)
@@ -349,7 +347,7 @@ func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, 
 func reScheduleParent(peer *supervisor.Peer, s *state) {
 	parent, candidates, hasParent := s.sched.ScheduleParent(peer)
 	if !hasParent {
-		if peer.Task.NeedClientBackSource() {
+		if peer.Task.NeedClientBackSource() && !peer.Task.IsBackSourcePeer(peer.PeerID) {
 			if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source", peer.PeerID)) == nil {
 				peer.Task.IncreaseBackSourcePeer(peer.PeerID)
 			}
@@ -370,7 +368,7 @@ func handleSeedTaskFail(task *supervisor.Task) {
 	if task.NeedClientBackSource() {
 		task.ListPeers().Range(func(data sortedlist.Item) bool {
 			peer := data.(*supervisor.Peer)
-			if task.NeedClientBackSource() {
+			if task.NeedClientBackSource() && !task.IsBackSourcePeer(peer.PeerID) {
 				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source because cdn seed task failed", peer.PeerID)) == nil {
 					task.IncreaseBackSourcePeer(peer.PeerID)
 				}

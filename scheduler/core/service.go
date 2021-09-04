@@ -158,6 +158,11 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 			}
 			peer := v.(*supervisor.Peer)
 			wsdq.Done(v)
+			if peer.Task.IsBackSourcePeer(peer.PeerID) {
+				logger.WithTaskAndPeerID(peer.Task.TaskID,
+					peer.PeerID).Debugf("runReScheduleLoop: peer is back source client, no need to reschedule it")
+				continue
+			}
 			if peer.IsDone() || peer.IsLeave() {
 				logger.WithTaskAndPeerID(peer.Task.TaskID,
 					peer.PeerID).Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer is done or leave, peer status is %s, "+
