@@ -34,7 +34,7 @@ endpoint: /healthy/
 go run cmd/manager/main.go --jaeger  http://localhost:14250/api/traces
 ```
 
-### Options
+## Options
 
 ```
       --config string         the path of configuration file with yaml extension name, default is /etc/dragonfly/manager.yaml, it can also be set by env var: MANAGER_CONFIG
@@ -45,3 +45,5 @@ go run cmd/manager/main.go --jaeger  http://localhost:14250/api/traces
       --service-name string   name of the service for tracer (default "dragonfly-manager")
       --verbose               whether logger use debug level
 ```
+## Config file
+[manger config](../config/manager.yaml)
