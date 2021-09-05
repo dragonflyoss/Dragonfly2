@@ -141,7 +141,9 @@ func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stre
 		if piece != nil {
 			if !initialized {
 				cdnPeer, err = cm.initCdnPeer(ctx, task, piece)
-				task.SetStatus(supervisor.TaskStatusSeeding)
+				if !task.CanSchedule() {
+					task.SetStatus(supervisor.TaskStatusSeeding)
+				}
 				initialized = true
 			}
 			span.AddEvent(config.EventCDNPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))

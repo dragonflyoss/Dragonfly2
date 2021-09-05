@@ -188,19 +188,24 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 	switch e.pr.Code {
 	case dfcodes.ClientWaitPieceReady:
 		return
-	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
-		// TODO PeerTaskNotFound remove dest peer task, ClientPieceDownloadFail add blank list
-		reScheduleParent(e.peer, s)
-		return
-	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
+	case dfcodes.PeerTaskNotFound:
+		s.peerManager.Delete(e.pr.DstPid)
+	case dfcodes.CdnTaskNotFound:
+		s.peerManager.Delete(e.pr.DstPid)
+		go func() {
+			s.cdnManager.StartSeedTask(e.ctx, e.peer.Task)
+		}()
+	case dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
+		s.peerManager.Delete(e.pr.DstPid)
+		go s.cdnManager.StartSeedTask(context.Background(), e.peer.Task)
 		go func(task *supervisor.Task) {
 			// TODO
 			synclock.Lock(task.TaskID, false)
 			defer synclock.UnLock(task.TaskID, false)
-			if cdnPeer, err := s.cdnManager.StartSeedTask(context.Background(), task); err != nil {
+			if cdnPeer, err :=; err != nil {
 				logger.Errorf("start seed task fail: %v", err)
 				span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
-				handleCDNSeedTaskFail(task)
+				//handleCDNSeedTaskFail(task)
 			} else {
 				logger.Debugf("===== successfully obtain seeds from cdn, task: %+v =====", e.peer.Task)
 				children := s.sched.ScheduleChildren(cdnPeer)
@@ -212,9 +217,9 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 			}
 		}(e.peer.Task)
 	default:
-		reScheduleParent(e.peer, s)
-		return
+		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Debugf("report piece download fail message, piece result %s", e.pr.String())
 	}
+	reScheduleParent(e.peer, s)
 }
 func (e peerDownloadPieceFailEvent) hashKey() string {
 	return e.peer.Task.TaskID
@@ -351,6 +356,10 @@ func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, 
 }
 
 func reScheduleParent(peer *supervisor.Peer, s *state) {
+	if peer.Task.IsFail() {
+		peer.CloseChannel(dferrors.New(dfcodes.SchedTaskStatusError, "schedule task status failed"))
+		return
+	}
 	parent, candidates, hasParent := s.sched.ScheduleParent(peer)
 	if !hasParent {
 		if peer.Task.NeedClientBackSource() && !peer.Task.IsBackSourcePeer(peer.PeerID) {
