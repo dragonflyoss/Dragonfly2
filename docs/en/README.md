@@ -10,7 +10,7 @@ Organization of document is as following:
     * [WIP dfget](cli-reference/dfget.md)
     * [WIP cdnsystem](cli-reference/cdn.md)
     * [WIP scheduler](cli-reference/scheduler.md)
-    * [TODO manager](cli-reference/manager.md)
+    * [WIP manager](cli-reference/manager.md)
 * [TODO API Reference](#API-Reference)
 * [Ecosystem](#Ecosystem)
     * [Kubernetes Integration](ecosystem/Kubernetes-with-Dragonfly.md)
