@@ -240,24 +240,27 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	synclock.Lock(task.TaskID, true)
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
+		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
+		span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
 		if task.GetLastTriggerTime().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
 			synclock.UnLock(task.TaskID, true)
 			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
-			span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
-			span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
 			return task
 		}
+	} else {
+		logger.WithTaskID(task.TaskID).Infof("add new task %s", task.TaskID)
 	}
+
 	synclock.UnLock(task.TaskID, true)
 	// do trigger
 	task.UpdateLastTriggerTime(time.Now())
 
 	synclock.Lock(task.TaskID, false)
 	defer synclock.UnLock(task.TaskID, false)
+	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
+	span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
 	if task.IsHealth() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
-		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
-		span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
 		return task
 	}
 	task.SetStatus(supervisor.TaskStatusRunning)

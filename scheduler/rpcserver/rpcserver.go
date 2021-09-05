@@ -145,16 +145,15 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		span.RecordError(err)
 		return err
 	}
-	if err := s.service.HandlePieceResult(ctx, peer, pieceResult); err != nil {
-		logger.Errorf("peer %s handle piece result %v fail: %v", peer.PeerID, pieceResult, err)
-
-	}
 	conn := peer.BindNewConn(stream)
 	logger.Infof("peer %s is connected", peer.PeerID)
 	defer func() {
 		logger.Infof("peer %s is disconnect: %v", peer.PeerID, conn.Err())
 		span.RecordError(conn.Err())
 	}()
+	if err := s.service.HandlePieceResult(ctx, peer, pieceResult); err != nil {
+		logger.Errorf("peer %s handle piece result %v fail: %v", peer.PeerID, pieceResult, err)
+	}
 	for {
 		select {
 		case <-conn.Done():
