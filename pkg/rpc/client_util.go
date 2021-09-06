@@ -21,13 +21,13 @@ import (
 	"io"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -121,10 +121,11 @@ var (
 func (m messageType) Event(ctx context.Context, id int, message interface{}) {
 	span := trace.SpanFromContext(ctx)
 	if p, ok := message.(proto.Message); ok {
+		content, _ := proto.Marshal(p)
 		span.AddEvent("message", trace.WithAttributes(
 			attribute.KeyValue(m),
 			semconv.RPCMessageIDKey.Int(id),
-			semconv.RPCMessageUncompressedSizeKey.String(proto.CompactTextString(p)),
+			semconv.RPCMessageUncompressedSizeKey.String(string(content)),
 		))
 	}
 }

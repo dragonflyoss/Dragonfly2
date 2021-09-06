@@ -202,7 +202,7 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 			// TODO
 			synclock.Lock(task.TaskID, false)
 			defer synclock.UnLock(task.TaskID, false)
-			if cdnPeer, err :=; err != nil {
+			if cdnPeer, err := s.cdnManager.StartSeedTask(context.Background(), task); err != nil {
 				logger.Errorf("start seed task fail: %v", err)
 				span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
 				//handleCDNSeedTaskFail(task)

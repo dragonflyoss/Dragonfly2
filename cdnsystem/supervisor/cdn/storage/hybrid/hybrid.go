@@ -299,7 +299,7 @@ func (h *hybridStorageMgr) TryFreeSpace(fileLength int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if diskFreeSpace > 500*unit.GB && diskFreeSpace.ToNumber() > fileLength {
+	if diskFreeSpace > 100*unit.GB && diskFreeSpace.ToNumber() > fileLength {
 		return true, nil
 	}
 
@@ -319,8 +319,6 @@ func (h *hybridStorageMgr) TryFreeSpace(fileLength int64) (bool, error) {
 					if totalLen > 0 {
 						remainder.Add(totalLen - info.Size())
 					}
-				} else {
-					logger.Warnf("failed to get task: %s", taskID)
 				}
 			}
 			return nil
@@ -413,8 +411,6 @@ func (h *hybridStorageMgr) tryShmSpace(url, taskID string, fileLength int64) (st
 						if totalLen > 0 {
 							remainder.Add(totalLen - info.Size())
 						}
-					} else {
-						logger.Warnf("failed to get task: %s", taskID)
 					}
 				}
 				return nil

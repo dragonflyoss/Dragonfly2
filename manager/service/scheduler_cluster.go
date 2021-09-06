@@ -75,6 +75,11 @@ func (s *rest) CreateSchedulerClusterWithSecurityGroupDomain(json types.CreateSc
 }
 
 func (s *rest) DestroySchedulerCluster(id uint) error {
+	schedulerCluster := model.SchedulerCluster{}
+	if err := s.db.First(&schedulerCluster, id).Error; err != nil {
+		return err
+	}
+
 	if err := s.db.Unscoped().Delete(&model.SchedulerCluster{}, id).Error; err != nil {
 		return err
 	}

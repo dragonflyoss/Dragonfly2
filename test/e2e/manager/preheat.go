@@ -180,9 +180,9 @@ var _ = Describe("Preheat with manager", func() {
 })
 
 func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
-	ticker := time.NewTicker(time.Second * 3)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 	for {
 		select {
