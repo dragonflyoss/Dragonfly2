@@ -43,7 +43,7 @@ const (
 
 const (
 	SpanPeerRegister      = "peer-register"
-	SpanTriggerCDN        = "trigger-cdn"
+	SpanTriggerCDNSeed    = "trigger-cdn-seed"
 	SpanReportPieceResult = "report-piece-result"
 	SpanReportPeerResult  = "report-peer-result"
 	SpanPeerLeave         = "peer-leave"
@@ -54,9 +54,8 @@ const (
 	EventPeerNotFound              = "peer-not-found"
 	EventHostNotFound              = "host-not-found"
 	EventCreateCDNPeer             = "create-cdn-peer"
-	EventPieceReceived             = "receive-piece"
+	EventCDNPieceReceived          = "receive-cdn-piece"
 	EventPeerDownloaded            = "downloaded"
 	EventDownloadTinyFile          = "download-tiny-file"
-	EventStartReportPieceResult    = "start-report-piece-result"
 	EventCDNFailBackClientSource   = "cdn-fail-back-client-source"
 )

@@ -37,6 +37,8 @@ import (
 )
 
 var (
+	ErrCDNClientUninitialized = errors.New("cdn client is not initialized")
+
 	ErrCDNRegisterFail = errors.New("cdn task register failed")
 
 	ErrCDNDownloadFail = errors.New("cdn task download failed")
@@ -72,9 +74,9 @@ func NewManager(cdnClient RefreshableCDNClient, peerManager supervisor.PeerMgr, 
 
 func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*supervisor.Peer, error) {
 	logger.Infof("start seed task %s", task.TaskID)
-	defer logger.Infof("finish seed task %s", task.TaskID)
+	defer logger.Infof("finish seed task %s, task status is %s", task.TaskID, task.GetStatus())
 	var seedSpan trace.Span
-	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDN)
+	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDNSeed)
 	defer seedSpan.End()
 	seedRequest := &cdnsystem.SeedRequest{
 		TaskId:  task.TaskID,
@@ -83,7 +85,7 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*s
 	}
 	seedSpan.SetAttributes(config.AttributeCDNSeedRequest.String(seedRequest.String()))
 	if cm.client == nil {
-		err := ErrCDNRegisterFail
+		err := ErrCDNClientUninitialized
 		seedSpan.RecordError(err)
 		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
 		return nil, err
@@ -125,7 +127,6 @@ func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stre
 			span.RecordError(err)
 			span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
 			if recvErr, ok := err.(*dferrors.DfError); ok {
-				span.RecordError(recvErr)
 				switch recvErr.Code {
 				case dfcodes.CdnTaskRegistryFail:
 					return cdnPeer, errors.Wrapf(ErrCDNRegisterFail, "receive piece")
@@ -138,12 +139,14 @@ func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stre
 			return cdnPeer, errors.Wrapf(ErrCDNInvokeFail, "receive piece from cdn: %v", err)
 		}
 		if piece != nil {
-			span.AddEvent(config.EventPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))
 			if !initialized {
 				cdnPeer, err = cm.initCdnPeer(ctx, task, piece)
-				task.SetStatus(supervisor.TaskStatusSeeding)
+				if !task.CanSchedule() {
+					task.SetStatus(supervisor.TaskStatusSeeding)
+				}
 				initialized = true
 			}
+			span.AddEvent(config.EventCDNPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))
 			if err != nil || cdnPeer == nil {
 				return cdnPeer, err
 			}

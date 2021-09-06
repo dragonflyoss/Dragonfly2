@@ -215,7 +215,7 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int) (c
 
 func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int) (candidateParents []*supervisor.Peer) {
 	logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debug("start schedule parent flow")
-	defer logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("finish schedule parent flow, select num %d candidates parents,"+
+	defer logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("finish schedule parent flow, select num %d candidates parents, "+
 		"current task tree node count %d, back source peers: %s", len(candidateParents), peer.Task.ListPeers().Size(), peer.Task.GetBackSourcePeers())
 	if !peer.Task.CanSchedule() {
 		logger.WithTaskAndPeerID(peer.Task.TaskID,

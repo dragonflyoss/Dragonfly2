@@ -122,14 +122,9 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	span.SetAttributes(config.AttributeTaskID.String(req.TaskId))
 	defer func() {
 		if r := recover(); r != nil {
-			err = dferrors.Newf(dfcodes.UnknownError, "encounter an panic: %v", r)
+			err = dferrors.Newf(dfcodes.UnknownError, "obtain task(%s) seeds encounter an panic: %v", req.TaskId, r)
 			span.RecordError(err)
-			logger.WithTaskID(req.TaskId).Errorf("failed to obtain task(%s) seeds, req=%+v: %v", req.TaskId, req, err)
-		}
-
-		if err != nil {
-			span.RecordError(err)
-			logger.WithTaskID(req.TaskId).Errorf("failed to obtain task(%s) seeds, req=%+v: %v", req.TaskId, req, err)
+			logger.WithTaskID(req.TaskId).Errorf("%v", err)
 		}
 	}()
 	logger.Infof("obtain seeds request: %+v", req)
@@ -198,13 +193,9 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 	span.SetAttributes(config.AttributeTaskID.String(req.TaskId))
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Errorf("encounter an panic: %v", r)
+			err = dferrors.Newf(dfcodes.UnknownError, "get task(%s) piece tasks encounter an panic: %v", req.TaskId, r)
 			span.RecordError(err)
-			logger.WithTaskID(req.TaskId).Errorf("failed to get piece tasks, req=%+v: %v", req, err)
-		}
-		if err != nil {
-			span.RecordError(err)
-			logger.WithTaskID(req.TaskId).Errorf("failed to get piece tasks, req=%+v: %v", req, err)
+			logger.WithTaskID(req.TaskId).Errorf("%v", err)
 		}
 	}()
 	logger.Infof("get piece tasks: %+v", req)

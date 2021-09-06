@@ -72,7 +72,6 @@ type Task struct {
 	backSourceLimit      atomic.Int32
 	needClientBackSource atomic.Bool
 	backSourcePeers      []string
-	// TODO add cdnPeers
 }
 
 func NewTask(taskID, url string, meta *base.UrlMeta) *Task {
@@ -228,6 +227,11 @@ func (task *Task) IsFail() bool {
 func (task *Task) IncreaseBackSourcePeer(peerID string) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
+	for i := range task.backSourcePeers {
+		if task.backSourcePeers[i] == peerID {
+			return
+		}
+	}
 	task.backSourcePeers = append(task.backSourcePeers, peerID)
 	if task.backSourceLimit.Dec() <= 0 {
 		task.needClientBackSource.Store(false)

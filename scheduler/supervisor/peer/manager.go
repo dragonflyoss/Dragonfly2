@@ -103,18 +103,20 @@ func (m *manager) cleanupPeers() {
 				if !peer.IsConnected() {
 					peer.MarkLeave()
 				}
-				logger.Debugf("peer %s has been more than %s since last access, set status to zombie", peer.PeerID, m.peerTTI)
+				logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Infof("peer has been more than %s since last access, "+
+					"it's status changes from %s to zombie", m.peerTTI, peer.GetStatus().String())
 				peer.SetStatus(supervisor.PeerStatusZombie)
 			}
 			if peer.IsLeave() || peer.IsFail() || elapse > m.peerTTL {
 				if elapse > m.peerTTL {
-					logger.Debugf("delete peer %s because %s have passed since last access", peer.PeerID)
+					logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Infof("delete peer because %s have passed since last access", m.peerTTL)
 				}
 				m.Delete(peerID)
 				if peer.Host.GetPeerTaskNum() == 0 {
 					m.hostManager.Delete(peer.Host.UUID)
 				}
 				if peer.Task.ListPeers().Size() == 0 {
+					logger.WithTaskID(peer.Task.TaskID).Info("peers is empty, task status become waiting")
 					peer.Task.SetStatus(supervisor.TaskStatusWaiting)
 				}
 			}
