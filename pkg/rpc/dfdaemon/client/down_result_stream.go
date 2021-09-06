@@ -18,11 +18,12 @@ package client
 
 import (
 	"context"
-	"io"
 
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -49,9 +50,9 @@ func newDownResultStream(ctx context.Context, dc *daemonClient, hashKey string, 
 		opts:    opts,
 
 		RetryMeta: rpc.RetryMeta{
-			MaxAttempts: 5,
-			MaxBackOff:  5.0,
-			InitBackoff: 1.0,
+			MaxAttempts: 3,
+			MaxBackOff:  2.0,
+			InitBackoff: 0.2,
 		},
 	}
 
@@ -73,6 +74,9 @@ func (drs *DownResultStream) initStream() error {
 		return client.Download(drs.ctx, drs.req, drs.opts...)
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, nil)
 	if err != nil {
+		if errors.Cause(err) == dferrors.ErrNoCandidateNode {
+			return errors.Wrapf(err, "get grpc server instance failed")
+		}
 		logger.WithTaskID(drs.hashKey).Infof("initStream: invoke daemon node %s Download failed: %v", target, err)
 		return drs.replaceClient(err)
 	}
@@ -92,11 +96,7 @@ func (drs *DownResultStream) Recv() (dr *dfdaemon.DownResult, err error) {
 		}
 	}()
 	drs.dc.UpdateAccessNodeMapByHashKey(drs.hashKey)
-	if dr, err = drs.stream.Recv(); err != nil && err != io.EOF {
-		dr, err = drs.retryRecv(err)
-	}
-
-	return
+	return drs.stream.Recv()
 }
 
 func (drs *DownResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error) {

@@ -44,15 +44,15 @@ type proxy struct {
 	scheduler.UnimplementedSchedulerServer
 }
 
-// see scheduler.SchedulerServer
+// SchedulerServer scheduler.SchedulerServer
 type SchedulerServer interface {
-	// RegisterPeerTask
+	// RegisterPeerTask register a peer to scheduler
 	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error)
-	// ReportPieceResult
+	// ReportPieceResult report piece result to scheduler
 	ReportPieceResult(scheduler.Scheduler_ReportPieceResultServer) error
-	// ReportPeerResult
+	// ReportPeerResult report peer download result to scheduler
 	ReportPeerResult(context.Context, *scheduler.PeerResult) error
-	// LeaveTask
+	// LeaveTask leave peer from scheduler
 	LeaveTask(context.Context, *scheduler.PeerTarget) error
 }
 

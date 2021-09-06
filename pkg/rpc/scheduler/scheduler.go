@@ -17,14 +17,22 @@
 package scheduler
 
 import (
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 )
 
 func NewZeroPieceResult(taskID, peerID string) *PieceResult {
 	return &PieceResult{
-		TaskId:   taskID,
-		SrcPid:   peerID,
-		PieceNum: common.ZeroOfPiece,
+		TaskId: taskID,
+		SrcPid: peerID,
+		PieceInfo: &base.PieceInfo{
+			PieceNum:    common.ZeroOfPiece,
+			RangeStart:  0,
+			RangeSize:   0,
+			PieceMd5:    "",
+			PieceOffset: 0,
+			PieceStyle:  0,
+		},
 	}
 }
 
@@ -32,7 +40,14 @@ func NewEndPieceResult(taskID, peerID string, finishedCount int32) *PieceResult 
 	return &PieceResult{
 		TaskId:        taskID,
 		SrcPid:        peerID,
-		PieceNum:      common.EndOfPiece,
 		FinishedCount: finishedCount,
+		PieceInfo: &base.PieceInfo{
+			PieceNum:    common.EndOfPiece,
+			RangeStart:  0,
+			RangeSize:   0,
+			PieceMd5:    "",
+			PieceOffset: 0,
+			PieceStyle:  0,
+		},
 	}
 }

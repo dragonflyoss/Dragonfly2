@@ -184,6 +184,7 @@ func newStreamPeerTask(ctx context.Context,
 	// bind func that base peer task did not implement
 	pt.backSourceFunc = pt.backSource
 	pt.setContentLengthFunc = pt.SetContentLength
+	pt.setTotalPiecesFunc = pt.SetTotalPieces
 	pt.reportPieceResultFunc = pt.ReportPieceResult
 	return ctx, pt, nil, nil
 }
@@ -193,18 +194,18 @@ func (s *streamPeerTask) ReportPieceResult(result *pieceTaskResult) error {
 	// retry failed piece
 	if !result.pieceResult.Success {
 		_ = s.peerPacketStream.Send(result.pieceResult)
-		s.failedPieceCh <- result.pieceResult.PieceNum
+		s.failedPieceCh <- result.pieceResult.PieceInfo.PieceNum
 		return nil
 	}
 
 	s.lock.Lock()
-	if s.readyPieces.IsSet(result.pieceResult.PieceNum) {
+	if s.readyPieces.IsSet(result.pieceResult.PieceInfo.PieceNum) {
 		s.lock.Unlock()
-		s.Warnf("piece %d is already reported, skipped", result.pieceResult.PieceNum)
+		s.Warnf("piece %d is already reported, skipped", result.pieceResult.PieceInfo.PieceNum)
 		return nil
 	}
 	// mark piece processed
-	s.readyPieces.Set(result.pieceResult.PieceNum)
+	s.readyPieces.Set(result.pieceResult.PieceInfo.PieceNum)
 	s.completedLength.Add(int64(result.piece.RangeSize))
 	s.lock.Unlock()
 
@@ -416,6 +417,10 @@ func (s *streamPeerTask) SetContentLength(i int64) error {
 	return s.finish()
 }
 
+func (s *streamPeerTask) SetTotalPieces(i int32) {
+	s.totalPiece = i
+}
+
 func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
 	pr, pc, err := s.pieceManager.ReadPiece(s.ctx, &storage.ReadPieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
@@ -440,6 +445,12 @@ func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
 func (s *streamPeerTask) backSource() {
 	s.contentLength.Store(-1)
 	_ = s.callback.Init(s)
+	if peerPacketStream, err := s.schedulerClient.ReportPieceResult(s.ctx, s.taskID, s.request); err != nil {
+		logger.Errorf("step 2: peer %s report piece failed: err", s.request.PeerId, err)
+	} else {
+		s.peerPacketStream = peerPacketStream
+	}
+	logger.Infof("step 2: start report peer %s back source piece result", s.request.PeerId)
 	err := s.pieceManager.DownloadSource(s.ctx, s, s.request)
 	if err != nil {
 		s.Errorf("download from source error: %s", err)

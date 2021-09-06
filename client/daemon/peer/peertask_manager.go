@@ -66,6 +66,7 @@ type Task interface {
 	GetPeerID() string
 	GetTaskID() string
 	GetTotalPieces() int32
+	SetTotalPieces(int32)
 	GetContentLength() int64
 	// SetContentLength will be called after download completed, when download from source without content length
 	SetContentLength(int64) error

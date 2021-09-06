@@ -31,7 +31,6 @@ type worker interface {
 type workerGroup struct {
 	workerNum  int
 	workerList []*baseWorker
-	stopCh     chan struct{}
 }
 
 var _ worker = (*workerGroup)(nil)
@@ -40,7 +39,6 @@ func newEventLoopGroup(workerNum int) worker {
 	return &workerGroup{
 		workerNum:  workerNum,
 		workerList: make([]*baseWorker, 0, workerNum),
-		stopCh:     make(chan struct{}),
 	}
 }
 
@@ -59,7 +57,6 @@ func (wg *workerGroup) send(e event) bool {
 }
 
 func (wg *workerGroup) stop() {
-	close(wg.stopCh)
 	for _, worker := range wg.workerList {
 		worker.stop()
 	}

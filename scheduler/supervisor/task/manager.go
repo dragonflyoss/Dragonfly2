@@ -72,19 +72,22 @@ func (m *manager) GetOrAdd(task *supervisor.Task) (actual *supervisor.Task, load
 func (m *manager) cleanupTasks() {
 	for range m.cleanupExpiredTaskTicker.C {
 		m.taskMap.Range(func(key, value interface{}) bool {
+			taskID := key.(string)
 			task := value.(*supervisor.Task)
 			elapse := time.Since(task.GetLastAccessTime())
 			if elapse > m.taskTTI && task.IsSuccess() {
 				task.SetStatus(supervisor.TaskStatusZombie)
 			}
+			if task.ListPeers().Size() == 0 {
+				task.SetStatus(supervisor.TaskStatusWaiting)
+			}
 			if elapse > m.taskTTL {
-				taskID := key.(string)
 				// TODO lock
-				m.Delete(taskID)
 				peers := m.peerManager.ListPeersByTask(taskID)
 				for _, peer := range peers {
 					m.peerManager.Delete(peer.PeerID)
 				}
+				m.Delete(taskID)
 			}
 			return true
 		})

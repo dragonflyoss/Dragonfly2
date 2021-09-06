@@ -207,6 +207,7 @@ func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTask
 			logger.WithTaskID(req.TaskId).Errorf("failed to get piece tasks, req=%+v: %v", req, err)
 		}
 	}()
+	logger.Infof("get piece tasks: %+v", req)
 	if err := checkPieceTasksRequestParams(req); err != nil {
 		err = dferrors.Newf(dfcodes.BadRequest, "failed to validate seed request for task(%s): %v", req.TaskId, err)
 		span.RecordError(err)
