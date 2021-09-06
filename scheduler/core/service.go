@@ -235,24 +235,27 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	synclock.Lock(task.TaskID, true)
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
+		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
+		span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
 		if task.GetLastTriggerTime().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
 			synclock.UnLock(task.TaskID, true)
 			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
-			span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
-			span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
 			return task
 		}
+	} else {
+		logger.WithTaskID(task.TaskID).Infof("add new task %s", task.TaskID)
 	}
+
 	synclock.UnLock(task.TaskID, true)
 	// do trigger
 	task.UpdateLastTriggerTime(time.Now())
 
 	synclock.Lock(task.TaskID, false)
 	defer synclock.UnLock(task.TaskID, false)
+	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
+	span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
 	if task.IsHealth() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
-		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
-		span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
 		return task
 	}
 	task.SetStatus(supervisor.TaskStatusRunning)
@@ -266,7 +269,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	go func() {
 		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			// fall back to client back source
-			logger.Errorf("seed task failed: %v", err)
+			logger.WithTaskID(task.TaskID).Errorf("seed task failed: %v", err)
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
 			task.SetClientBackSourceStatusAndLimit(s.config.BackSourceCount)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {

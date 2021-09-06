@@ -325,9 +325,11 @@ func (conn *Connection) loadOrCreateClientConnByNode(node string) (clientConn *g
 
 // GetClientConn get conn or bind hashKey to candidate node, don't do the migrate action
 // stick whether hash key need already associated with specify node
-func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientConn, error) {
+func (conn *Connection) GetClientConn(hashKey string, stick bool) (clientConn *grpc.ClientConn, err error) {
 	logger.GrpcLogger.With("conn", conn.name).Debugf("start to get client conn hashKey %s, stick %t", hashKey, stick)
-	defer logger.GrpcLogger.With("conn", conn.name).Debugf("get client conn done, hashKey %s, stick %t end", hashKey, stick)
+	defer func() {
+		logger.GrpcLogger.With("conn", conn.name).Debugf("get client conn done, hashKey %s, stick %t end: %v", hashKey, stick, err)
+	}()
 	conn.rwMutex.RLock()
 	node, ok := conn.key2NodeMap.Load(hashKey)
 	if stick && !ok {
@@ -338,7 +340,7 @@ func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientC
 	if ok {
 		// if exist
 		serverNode := node.(string)
-		clientConn, err := conn.loadOrCreateClientConnByNode(serverNode)
+		clientConn, err = conn.loadOrCreateClientConnByNode(serverNode)
 		conn.rwMutex.RUnlock()
 		if err != nil {
 			return nil, err
