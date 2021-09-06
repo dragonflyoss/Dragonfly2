@@ -96,7 +96,7 @@ job:
   schedulerWorkerNum: 3
   # localWorkerNum
   localWorkerNum: 3
-  # redis
+  # redis configuration
   redis:
     # host
     host: fff
