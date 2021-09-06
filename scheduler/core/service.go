@@ -163,7 +163,8 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 			peer := rsPeer.peer
 			wsdq.Done(v)
 			if rsPeer.times > maxRescheduleTimes {
-				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times")) == nil {
+				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times", 
+					peer.PeerID)) == nil {
 					peer.Task.IncreaseBackSourcePeer(peer.PeerID)
 				}
 				continue
@@ -185,7 +186,7 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 					peer.GetParent().PeerID)
 				continue
 			}
-			rsPeer.times ++
+			rsPeer.times = rsPeer.times + 1
 			s.worker.send(reScheduleParentEvent{rsPeer: rsPeer})
 		}
 	}
