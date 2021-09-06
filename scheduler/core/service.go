@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -41,6 +42,8 @@ import (
 	"google.golang.org/grpc"
 	"k8s.io/client-go/util/workqueue"
 )
+
+const maxRescheduleTimes = 8
 
 type Options struct {
 	openTel    bool
@@ -156,8 +159,20 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 			if shutdown {
 				break
 			}
-			peer := v.(*supervisor.Peer)
+			rsPeer := v.(*rsPeer)
+			peer := rsPeer.peer
 			wsdq.Done(v)
+			if rsPeer.times > maxRescheduleTimes {
+				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times")) == nil {
+					peer.Task.IncreaseBackSourcePeer(peer.PeerID)
+				}
+				continue
+			}
+			if peer.Task.IsBackSourcePeer(peer.PeerID) {
+				logger.WithTaskAndPeerID(peer.Task.TaskID,
+					peer.PeerID).Debugf("runReScheduleLoop: peer is back source client, no need to reschedule it")
+				continue
+			}
 			if peer.IsDone() || peer.IsLeave() {
 				logger.WithTaskAndPeerID(peer.Task.TaskID,
 					peer.PeerID).Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer is done or leave, peer status is %s, "+
@@ -170,7 +185,8 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 					peer.GetParent().PeerID)
 				continue
 			}
-			s.worker.send(reScheduleParentEvent{peer})
+			rsPeer.times ++
+			s.worker.send(reScheduleParentEvent{rsPeer: rsPeer})
 		}
 	}
 }

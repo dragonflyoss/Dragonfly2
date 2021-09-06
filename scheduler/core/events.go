@@ -38,6 +38,11 @@ type event interface {
 	apply(s *state)
 }
 
+type rsPeer struct {
+	times int32
+	peer  *supervisor.Peer
+}
+
 type state struct {
 	sched                       scheduler.Scheduler
 	peerManager                 supervisor.PeerMgr
@@ -55,17 +60,17 @@ func newState(sched scheduler.Scheduler, peerManager supervisor.PeerMgr, cdnMana
 }
 
 type reScheduleParentEvent struct {
-	peer *supervisor.Peer
+	rsPeer *rsPeer
 }
 
 var _ event = reScheduleParentEvent{}
 
 func (e reScheduleParentEvent) apply(s *state) {
-	reScheduleParent(e.peer, s)
+	reScheduleParent(e.rsPeer, s)
 }
 
 func (e reScheduleParentEvent) hashKey() string {
-	return e.peer.Task.TaskID
+	return e.rsPeer.peer.Task.TaskID
 }
 
 type startReportPieceResultEvent struct {
@@ -80,33 +85,36 @@ func (e startReportPieceResultEvent) apply(s *state) {
 	parent := e.peer.GetParent()
 	if parent != nil {
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
-			e.peer.PeerID).Warnf("startReportPieceResultEvent: no need schedule parent because peer already had parent %s", e.peer.GetParent().PeerID)
+			e.peer.PeerID).Warnf("startReportPieceResultEvent: no need schedule parent because peer already had parent %s", parent.PeerID)
+		if err := e.peer.SendSchedulePacket(constructSuccessPeerPacket(e.peer, parent, nil)); err != nil {
+			logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("send schedule packet to peer failed: %v", err)
+		}
 		return
 	}
 	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
 			e.peer.PeerID).Info("startReportPieceResultEvent: no need schedule parent because peer is back source peer")
-		s.waitScheduleParentPeerQueue.Done(e.peer)
 		return
 	}
 	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer)
 	// No parent node is currently available
 	if !hasParent {
-		if e.peer.Task.NeedClientBackSource() {
+		if e.peer.Task.NeedClientBackSource() && !e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
 			span.SetAttributes(config.AttributeClientBackSource.Bool(true))
 			if e.peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source", e.peer.PeerID)) == nil {
 				e.peer.Task.IncreaseBackSourcePeer(e.peer.PeerID)
-				s.waitScheduleParentPeerQueue.Done(e.peer)
 			}
+			logger.WithTaskAndPeerID(e.peer.Task.TaskID,
+				e.peer.PeerID).Info("startReportPieceResultEvent: peer need back source because no parent node is available for scheduling")
 			return
 		}
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
 			e.peer.PeerID).Warnf("startReportPieceResultEvent: no parent node is currently available，reschedule it later")
-		s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
+		s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer}, time.Second)
 		return
 	}
 	if err := e.peer.SendSchedulePacket(constructSuccessPeerPacket(e.peer, parent, candidates)); err != nil {
-		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("send schedule packet to peer %s failed: %v", e.peer.PeerID, err)
+		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("send schedule packet failed: %v", err)
 	}
 }
 
@@ -138,18 +146,20 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	if ok {
 		oldParent := e.peer.GetParent()
 		if e.pr.DstPid != e.peer.PeerID && (oldParent == nil || oldParent.PeerID != e.pr.DstPid) {
+			logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Debugf("parent peerID is not same as DestPid, replace it's parent node with %s",
+				e.pr.DstPid)
 			e.peer.ReplaceParent(parentPeer)
 		}
 	} else if parentPeer.IsLeave() {
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
-			e.peer.PeerID).Warnf("peerDownloadPieceSuccessEvent: need reschedule parent for peer because it's parent is leave")
+			e.peer.PeerID).Warnf("peerDownloadPieceSuccessEvent: need reschedule parent for peer because it's parent is already left")
 		e.peer.ReplaceParent(nil)
 		var hasParent bool
 		parentPeer, candidates, hasParent = s.sched.ScheduleParent(e.peer)
 		if !hasParent {
 			logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("peerDownloadPieceSuccessEvent: no parent node is currently available, " +
 				"reschedule it later")
-			s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
+			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer}, time.Second)
 			return
 		}
 	}
@@ -183,11 +193,16 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 	switch e.pr.Code {
 	case dfcodes.ClientWaitPieceReady:
 		return
-	case dfcodes.PeerTaskNotFound, dfcodes.ClientPieceRequestFail, dfcodes.ClientPieceDownloadFail:
-		// TODO PeerTaskNotFound remove dest peer task, ClientPieceDownloadFail add blank list
-		reScheduleParent(e.peer, s)
-		return
-	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
+	case dfcodes.PeerTaskNotFound:
+		s.peerManager.Delete(e.pr.DstPid)
+	case dfcodes.CdnTaskNotFound:
+		s.peerManager.Delete(e.pr.DstPid)
+		go func() {
+			s.cdnManager.StartSeedTask(e.ctx, e.peer.Task)
+		}()
+	case dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
+		s.peerManager.Delete(e.pr.DstPid)
+		go s.cdnManager.StartSeedTask(context.Background(), e.peer.Task)
 		go func(task *supervisor.Task) {
 			// TODO
 			synclock.Lock(task.TaskID, false)
@@ -195,7 +210,7 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 			if cdnPeer, err := s.cdnManager.StartSeedTask(context.Background(), task); err != nil {
 				logger.Errorf("start seed task fail: %v", err)
 				span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
-				handleSeedTaskFail(task)
+				//handleCDNSeedTaskFail(task)
 			} else {
 				logger.Debugf("===== successfully obtain seeds from cdn, task: %+v =====", e.peer.Task)
 				children := s.sched.ScheduleChildren(cdnPeer)
@@ -207,9 +222,9 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 			}
 		}(e.peer.Task)
 	default:
-		reScheduleParent(e.peer, s)
-		return
+		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Debugf("report piece download fail message, piece result %s", e.pr.String())
 	}
+	reScheduleParent(&rsPeer{peer: e.peer}, s)
 }
 func (e peerDownloadPieceFailEvent) hashKey() string {
 	return e.peer.Task.TaskID
@@ -222,7 +237,7 @@ type taskSeedFailEvent struct {
 var _ event = taskSeedFailEvent{}
 
 func (e taskSeedFailEvent) apply(s *state) {
-	handleSeedTaskFail(e.task)
+	handleCDNSeedTaskFail(e.task)
 }
 
 func (e taskSeedFailEvent) hashKey() string {
@@ -265,7 +280,7 @@ func (e peerDownloadFailEvent) apply(s *state) {
 	e.peer.SetStatus(supervisor.PeerStatusFail)
 	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) && !e.peer.Task.IsSuccess() {
 		e.peer.Task.SetStatus(supervisor.TaskStatusFail)
-		handleSeedTaskFail(e.peer.Task)
+		handleCDNSeedTaskFail(e.peer.Task)
 		return
 	}
 	removePeerFromCurrentTree(e.peer, s)
@@ -345,18 +360,22 @@ func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, 
 	return peerPacket
 }
 
-func reScheduleParent(peer *supervisor.Peer, s *state) {
+func reScheduleParent(rsPeer *rsPeer, s *state) {
+	peer := rsPeer.peer
+	if peer.Task.IsFail() {
+		peer.CloseChannel(dferrors.New(dfcodes.SchedTaskStatusError, "schedule task status failed"))
+		return
+	}
 	parent, candidates, hasParent := s.sched.ScheduleParent(peer)
 	if !hasParent {
-		if peer.Task.NeedClientBackSource() {
+		if peer.Task.NeedClientBackSource() && !peer.Task.IsBackSourcePeer(peer.PeerID) {
 			if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source", peer.PeerID)) == nil {
 				peer.Task.IncreaseBackSourcePeer(peer.PeerID)
 			}
 			return
 		}
 		logger.Errorf("reScheduleParent: failed to schedule parent to peer %s, reschedule it later", peer.PeerID)
-		//peer.PacketChan <- constructFailPeerPacket(peer, dfcodes.SchedWithoutParentPeer)
-		s.waitScheduleParentPeerQueue.AddAfter(peer, time.Second)
+		s.waitScheduleParentPeerQueue.AddAfter(rsPeer, time.Second)
 		return
 	}
 	// TODO if parentPeer is equal with oldParent, need schedule again ?
@@ -365,13 +384,15 @@ func reScheduleParent(peer *supervisor.Peer, s *state) {
 	}
 }
 
-func handleSeedTaskFail(task *supervisor.Task) {
+func handleCDNSeedTaskFail(task *supervisor.Task) {
 	if task.NeedClientBackSource() {
 		task.ListPeers().Range(func(data sortedlist.Item) bool {
 			peer := data.(*supervisor.Peer)
 			if task.NeedClientBackSource() {
-				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source", peer.PeerID)) == nil {
-					task.IncreaseBackSourcePeer(peer.PeerID)
+				if !task.IsBackSourcePeer(peer.PeerID) {
+					if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source because cdn seed task failed", peer.PeerID)) == nil {
+						task.IncreaseBackSourcePeer(peer.PeerID)
+					}
 				}
 				return true
 			}
