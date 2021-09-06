@@ -40,6 +40,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -157,21 +158,21 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 		default:
 			v, shutdown := wsdq.Get()
 			if shutdown {
+				logger.Infof("wait schedule delay queue is shutdown")
 				break
 			}
 			rsPeer := v.(*rsPeer)
 			peer := rsPeer.peer
 			wsdq.Done(v)
 			if rsPeer.times > maxRescheduleTimes {
-				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times", 
+				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times",
 					peer.PeerID)) == nil {
 					peer.Task.IncreaseBackSourcePeer(peer.PeerID)
 				}
 				continue
 			}
 			if peer.Task.IsBackSourcePeer(peer.PeerID) {
-				logger.WithTaskAndPeerID(peer.Task.TaskID,
-					peer.PeerID).Debugf("runReScheduleLoop: peer is back source client, no need to reschedule it")
+				logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("runReScheduleLoop: peer is back source client, no need to reschedule it")
 				continue
 			}
 			if peer.IsDone() || peer.IsLeave() {
@@ -180,13 +181,12 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 					"isLeave %t", peer.GetStatus(), peer.IsLeave())
 				continue
 			}
-			if peer.GetParent() != nil {
+			parent := peer.GetParent()
+			if parent != nil {
 				logger.WithTaskAndPeerID(peer.Task.TaskID,
-					peer.PeerID).Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer has parent %s",
-					peer.GetParent().PeerID)
+					peer.PeerID).Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer has parent %s", parent.PeerID)
 				continue
 			}
-			rsPeer.times = rsPeer.times + 1
 			s.worker.send(reScheduleParentEvent{rsPeer: rsPeer})
 		}
 	}
@@ -216,7 +216,7 @@ func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID
 }
 
 func (s *SchedulerService) SelectParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {
-	parent, _, hasParent := s.sched.ScheduleParent(peer)
+	parent, _, hasParent := s.sched.ScheduleParent(peer, sets.NewString())
 	if !hasParent || parent == nil {
 		return nil, errors.Errorf("no parent peer available for peer %v", peer.PeerID)
 	}

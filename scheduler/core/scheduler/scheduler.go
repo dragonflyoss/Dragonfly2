@@ -21,14 +21,15 @@ import (
 
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type Scheduler interface {
 	// ScheduleChildren schedule children to a peer
-	ScheduleChildren(peer *supervisor.Peer) (children []*supervisor.Peer)
+	ScheduleChildren(peer *supervisor.Peer, blankChildren sets.String) (children []*supervisor.Peer)
 
 	// ScheduleParent schedule a parent and candidates to a peer
-	ScheduleParent(peer *supervisor.Peer) (parent *supervisor.Peer, candidateParents []*supervisor.Peer, hasParent bool)
+	ScheduleParent(peer *supervisor.Peer, blankParents sets.String) (parent *supervisor.Peer, candidateParents []*supervisor.Peer, hasParent bool)
 }
 
 type BuildOptions struct {
