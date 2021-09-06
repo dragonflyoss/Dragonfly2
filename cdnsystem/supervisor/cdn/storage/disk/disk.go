@@ -20,8 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"path"
 	"strings"
 	"time"
+
+	"go.uber.org/atomic"
 
 	cdnerrors "d7y.io/dragonfly/v2/cdnsystem/errors"
 	"d7y.io/dragonfly/v2/cdnsystem/storedriver"
@@ -131,7 +135,7 @@ func (s *diskStorageMgr) GC() error {
 	for _, taskID := range gcTaskIDs {
 		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
-		if s.taskMgr.Exist(taskID) {
+		if _, exist := s.taskMgr.Exist(taskID); exist {
 			synclock.UnLock(taskID, false)
 			continue
 		}
@@ -229,4 +233,54 @@ func (s *diskStorageMgr) DeleteTask(taskID string) error {
 
 func (s *diskStorageMgr) ResetRepo(task *types.SeedTask) error {
 	return s.DeleteTask(task.TaskID)
+}
+
+func (s *diskStorageMgr) TryFreeSpace(fileLength int64) (bool, error) {
+	freeSpace, err := s.diskDriver.GetFreeSpace()
+	if err != nil {
+		return false, err
+	}
+	if freeSpace > 100*unit.GB && freeSpace.ToNumber() > fileLength {
+		return true, nil
+	}
+
+	remainder := atomic.NewInt64(0)
+	r := &storedriver.Raw{
+		WalkFn: func(filePath string, info os.FileInfo, err error) error {
+			if fileutils.IsRegular(filePath) {
+				taskID := strings.Split(path.Base(filePath), ".")[0]
+				task, exist := s.taskMgr.Exist(taskID)
+				if exist {
+					var totalLen int64 = 0
+					if task.CdnFileLength > 0 {
+						totalLen = task.CdnFileLength
+					} else {
+						totalLen = task.SourceFileLength
+					}
+					if totalLen > 0 {
+						remainder.Add(totalLen - info.Size())
+					}
+				}
+			}
+			return nil
+		},
+	}
+	s.diskDriver.Walk(r)
+
+	enoughSpace := freeSpace.ToNumber()-remainder.Load() > fileLength
+	if !enoughSpace {
+		s.cleaner.GC("disk", true)
+		remainder.Store(0)
+		s.diskDriver.Walk(r)
+		freeSpace, err = s.diskDriver.GetFreeSpace()
+		if err != nil {
+			return false, err
+		}
+		enoughSpace = freeSpace.ToNumber()-remainder.Load() > fileLength
+	}
+	if !enoughSpace {
+		return false, nil
+	}
+
+	return true, nil
 }

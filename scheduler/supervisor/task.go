@@ -22,6 +22,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
+	"go.uber.org/atomic"
 )
 
 type TaskStatus uint8
@@ -32,16 +33,14 @@ func (status TaskStatus) String() string {
 		return "Waiting"
 	case TaskStatusRunning:
 		return "Running"
-	case TaskStatusZombie:
-		return "Zombie"
+	case TaskStatusSeeding:
+		return "Seeding"
 	case TaskStatusSuccess:
 		return "Success"
-	case TaskStatusCDNRegisterFail:
-		return "cdnRegisterFail"
-	case TaskStatusFailed:
-		return "fail"
-	case TaskStatusSourceError:
-		return "sourceError"
+	case TaskStatusZombie:
+		return "Zombie"
+	case TaskStatusFail:
+		return "Fail"
 	default:
 		return "unknown"
 	}
@@ -50,39 +49,40 @@ func (status TaskStatus) String() string {
 const (
 	TaskStatusWaiting TaskStatus = iota
 	TaskStatusRunning
-	TaskStatusZombie
 	TaskStatusSeeding
 	TaskStatusSuccess
-	TaskStatusCDNRegisterFail
-	TaskStatusFailed
-	TaskStatusSourceError
+	TaskStatusZombie
+	TaskStatusFail
 )
 
 type Task struct {
-	TaskID          string
-	URL             string
-	URLMeta         *base.UrlMeta
-	DirectPiece     []byte
-	CreateTime      time.Time
-	lastAccessTime  time.Time
-	lastTriggerTime time.Time
-	lock            sync.RWMutex
-	pieceList       map[int32]*PieceInfo
-	PieceTotal      int32
-	ContentLength   int64
-	status          TaskStatus
-	peers           *sortedlist.SortedList
-	// TODO add cdnPeers
+	lock                 sync.RWMutex
+	TaskID               string
+	URL                  string
+	URLMeta              *base.UrlMeta
+	DirectPiece          []byte
+	CreateTime           time.Time
+	lastAccessTime       time.Time
+	lastTriggerTime      time.Time
+	pieceList            map[int32]*base.PieceInfo
+	PieceTotal           int32
+	ContentLength        int64
+	status               TaskStatus
+	peers                *sortedlist.SortedList
+	backSourceLimit      atomic.Int32
+	needClientBackSource atomic.Bool
+	backSourcePeers      []string
 }
 
 func NewTask(taskID, url string, meta *base.UrlMeta) *Task {
 	return &Task{
-		TaskID:    taskID,
-		URL:       url,
-		URLMeta:   meta,
-		pieceList: make(map[int32]*PieceInfo),
-		peers:     sortedlist.NewSortedList(),
-		status:    TaskStatusWaiting,
+		TaskID:     taskID,
+		URL:        url,
+		URLMeta:    meta,
+		CreateTime: time.Now(),
+		pieceList:  make(map[int32]*base.PieceInfo),
+		peers:      sortedlist.NewSortedList(),
+		status:     TaskStatusWaiting,
 	}
 }
 
@@ -114,13 +114,31 @@ func (task *Task) GetStatus() TaskStatus {
 	return task.status
 }
 
-func (task *Task) GetPiece(pieceNum int32) *PieceInfo {
+func (task *Task) SetClientBackSourceStatusAndLimit(backSourceLimit int32) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.backSourcePeers = make([]string, 0, backSourceLimit)
+	task.needClientBackSource.Store(true)
+	task.backSourceLimit.Store(backSourceLimit)
+}
+
+func (task *Task) NeedClientBackSource() bool {
+	return task.needClientBackSource.Load()
+}
+
+func (task *Task) GetPiece(pieceNum int32) *base.PieceInfo {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
 	return task.pieceList[pieceNum]
 }
 
-func (task *Task) AddPiece(p *PieceInfo) {
+func (task *Task) AddPiece(p *base.PieceInfo) {
+	task.lock.RLock()
+	if _, ok := task.pieceList[p.PieceNum]; ok {
+		task.lock.RUnlock()
+		return
+	}
+	task.lock.RUnlock()
 	task.lock.Lock()
 	defer task.lock.Unlock()
 	task.pieceList[p.PieceNum] = p
@@ -130,20 +148,30 @@ func (task *Task) GetLastTriggerTime() time.Time {
 	return task.lastTriggerTime
 }
 
+func (task *Task) UpdateLastTriggerTime(lastTriggerTime time.Time) {
+	task.lastTriggerTime = lastTriggerTime
+}
+
 func (task *Task) Touch() {
 	task.lock.Lock()
 	defer task.lock.Unlock()
 	task.lastAccessTime = time.Now()
 }
 
-func (task *Task) UpdateLastTriggerTime(lastTriggerTime time.Time) {
-	task.lastTriggerTime = lastTriggerTime
-}
-
 func (task *Task) GetLastAccessTime() time.Time {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
 	return task.lastAccessTime
+}
+
+func (task *Task) UpdateTaskSuccessResult(pieceTotal int32, contentLength int64) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	if task.status != TaskStatusSuccess {
+		task.status = TaskStatusSuccess
+		task.PieceTotal = pieceTotal
+		task.ContentLength = contentLength
+	}
 }
 
 func (task *Task) Lock() {
@@ -164,25 +192,16 @@ func (task *Task) RUnlock() {
 
 const TinyFileSize = 128
 
-type PieceInfo struct {
-	PieceNum    int32
-	RangeStart  uint64
-	RangeSize   int32
-	PieceMd5    string
-	PieceOffset uint64
-	PieceStyle  base.PieceStyle
-}
-
 // IsSuccess determines that whether cdn status is success.
 func (task *Task) IsSuccess() bool {
 	return task.status == TaskStatusSuccess
 }
 
 // IsFrozen determines that whether cdn status is frozen
-func (task *Task) IsFrozen() bool {
-	return task.status == TaskStatusFailed || task.status == TaskStatusWaiting ||
-		task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
-}
+//func (task *Task) IsFrozen() bool {
+//	return task.status == TaskStatusWaiting || task.status == TaskStatusZombie || task.status == TaskStatusFailed ||
+//		task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
+//}
 
 // CanSchedule determines whether task can be scheduled
 // only task status is seeding or success can be scheduled
@@ -197,10 +216,80 @@ func (task *Task) IsWaiting() bool {
 
 // IsHealth determines whether task is health
 func (task *Task) IsHealth() bool {
-	return task.status == TaskStatusRunning || task.status == TaskStatusSuccess || task.status == TaskStatusSeeding
+	return task.status == TaskStatusRunning || task.status == TaskStatusSeeding || task.status == TaskStatusSuccess
 }
 
 // IsFail determines whether task is fail
 func (task *Task) IsFail() bool {
-	return task.status == TaskStatusFailed || task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
+	return task.status == TaskStatusFail
+}
+
+func (task *Task) IncreaseBackSourcePeer(peerID string) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	for i := range task.backSourcePeers {
+		if task.backSourcePeers[i] == peerID {
+			return
+		}
+	}
+	task.backSourcePeers = append(task.backSourcePeers, peerID)
+	if task.backSourceLimit.Dec() <= 0 {
+		task.needClientBackSource.Store(false)
+	}
+}
+
+func (task *Task) GetBackSourcePeers() []string {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	backSourcePeers := task.backSourcePeers
+	return backSourcePeers
+}
+
+func (task *Task) IsBackSourcePeer(peerID string) bool {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	for i := range task.backSourcePeers {
+		if task.backSourcePeers[i] == peerID {
+			return true
+		}
+	}
+	return false
+}
+
+func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
+	return task.pick(limit, false, pickFn)
+}
+
+func (task *Task) PickReverse(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
+	return task.pick(limit, true, pickFn)
+}
+
+func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
+	if pickFn == nil {
+		return
+	}
+	if !reverse {
+		task.ListPeers().Range(func(data sortedlist.Item) bool {
+			if len(pickedPeers) >= limit {
+				return false
+			}
+			peer := data.(*Peer)
+			if pickFn(peer) {
+				pickedPeers = append(pickedPeers, peer)
+			}
+			return true
+		})
+		return
+	}
+	task.ListPeers().RangeReverse(func(data sortedlist.Item) bool {
+		if len(pickedPeers) >= limit {
+			return false
+		}
+		peer := data.(*Peer)
+		if pickFn(peer) {
+			pickedPeers = append(pickedPeers, peer)
+		}
+		return true
+	})
+	return
 }

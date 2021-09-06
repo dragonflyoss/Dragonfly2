@@ -177,10 +177,7 @@ func (h *hybridStorageMgr) gcTasks(gcTaskIDs []string, isDisk bool) int {
 	for _, taskID := range gcTaskIDs {
 		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
-		if _, err := h.taskMgr.Get(taskID); err == nil || !cdnerrors.IsDataNotFound(err) {
-			if err != nil {
-				logger.GcLogger.With("type", "hybrid").Errorf("gc disk: failed to get taskID(%s): %v", taskID, err)
-			}
+		if _, exist := h.taskMgr.Exist(taskID); exist {
 			synclock.UnLock(taskID, false)
 			continue
 		}
@@ -297,6 +294,56 @@ func (h *hybridStorageMgr) StatDownloadFile(taskID string) (*storedriver.Storage
 	return h.diskDriver.Stat(storage.GetDownloadRaw(taskID))
 }
 
+func (h *hybridStorageMgr) TryFreeSpace(fileLength int64) (bool, error) {
+	diskFreeSpace, err := h.diskDriver.GetFreeSpace()
+	if err != nil {
+		return false, err
+	}
+	if diskFreeSpace > 100*unit.GB && diskFreeSpace.ToNumber() > fileLength {
+		return true, nil
+	}
+
+	remainder := atomic.NewInt64(0)
+	r := &storedriver.Raw{
+		WalkFn: func(filePath string, info os.FileInfo, err error) error {
+			if fileutils.IsRegular(filePath) {
+				taskID := strings.Split(path.Base(filePath), ".")[0]
+				task, exist := h.taskMgr.Exist(taskID)
+				if exist {
+					var totalLen int64 = 0
+					if task.CdnFileLength > 0 {
+						totalLen = task.CdnFileLength
+					} else {
+						totalLen = task.SourceFileLength
+					}
+					if totalLen > 0 {
+						remainder.Add(totalLen - info.Size())
+					}
+				}
+			}
+			return nil
+		},
+	}
+	h.diskDriver.Walk(r)
+
+	enoughSpace := diskFreeSpace.ToNumber()-remainder.Load() > fileLength
+	if !enoughSpace {
+		h.diskDriverCleaner.GC("hybrid", true)
+		remainder.Store(0)
+		h.diskDriver.Walk(r)
+		diskFreeSpace, err = h.diskDriver.GetFreeSpace()
+		if err != nil {
+			return false, err
+		}
+		enoughSpace = diskFreeSpace.ToNumber()-remainder.Load() > fileLength
+	}
+	if !enoughSpace {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (h *hybridStorageMgr) deleteDiskFiles(taskID string) error {
 	return h.deleteTaskFiles(taskID, true, true)
 }
@@ -352,9 +399,9 @@ func (h *hybridStorageMgr) tryShmSpace(url, taskID string, fileLength int64) (st
 		h.memoryDriver.Walk(&storedriver.Raw{
 			WalkFn: func(filePath string, info os.FileInfo, err error) error {
 				if fileutils.IsRegular(filePath) {
-					taskID := path.Base(filePath)
-					task, err := h.taskMgr.Get(taskID)
-					if err == nil {
+					taskID := strings.Split(path.Base(filePath), ".")[0]
+					task, exist := h.taskMgr.Exist(taskID)
+					if exist {
 						var totalLen int64 = 0
 						if task.CdnFileLength > 0 {
 							totalLen = task.CdnFileLength
@@ -364,8 +411,6 @@ func (h *hybridStorageMgr) tryShmSpace(url, taskID string, fileLength int64) (st
 						if totalLen > 0 {
 							remainder.Add(totalLen - info.Size())
 						}
-					} else {
-						logger.Warnf("failed to get task: %s: %v", taskID, err)
 					}
 				}
 				return nil

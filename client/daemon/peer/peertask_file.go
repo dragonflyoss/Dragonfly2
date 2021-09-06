@@ -208,6 +208,7 @@ func newFilePeerTask(ctx context.Context,
 	// bind func that base peer task did not implement
 	pt.backSourceFunc = pt.backSource
 	pt.setContentLengthFunc = pt.SetContentLength
+	pt.setTotalPiecesFunc = pt.SetTotalPieces
 	pt.reportPieceResultFunc = pt.ReportPieceResult
 	return ctx, pt, nil, nil
 }
@@ -237,19 +238,19 @@ func (pt *filePeerTask) ReportPieceResult(result *pieceTaskResult) error {
 	if !result.pieceResult.Success {
 		result.pieceResult.FinishedCount = pt.readyPieces.Settled()
 		_ = pt.peerPacketStream.Send(result.pieceResult)
-		pt.failedPieceCh <- result.pieceResult.PieceNum
+		pt.failedPieceCh <- result.pieceResult.PieceInfo.PieceNum
 		pt.Errorf("%d download failed, retry later", result.piece.PieceNum)
 		return nil
 	}
 
 	pt.lock.Lock()
-	if pt.readyPieces.IsSet(result.pieceResult.PieceNum) {
+	if pt.readyPieces.IsSet(result.pieceResult.PieceInfo.PieceNum) {
 		pt.lock.Unlock()
-		pt.Warnf("piece %d is already reported, skipped", result.pieceResult.PieceNum)
+		pt.Warnf("piece %d is already reported, skipped", result.pieceResult.PieceInfo.PieceNum)
 		return nil
 	}
 	// mark piece processed
-	pt.readyPieces.Set(result.pieceResult.PieceNum)
+	pt.readyPieces.Set(result.pieceResult.PieceInfo.PieceNum)
 	pt.completedLength.Add(int64(result.piece.RangeSize))
 	pt.lock.Unlock()
 
@@ -367,6 +368,11 @@ func (pt *filePeerTask) cleanUnfinished() {
 			scheduler.NewEndPieceResult(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 		pt.Debugf("clean up end piece result sent")
 
+		if err := pt.callback.Fail(pt, pt.failedCode, pt.failedReason); err != nil {
+			pt.span.RecordError(err)
+			pt.Errorf("peer task fail callback failed: %s", err)
+		}
+
 		var progressDone bool
 		pg := &FilePeerTaskProgress{
 			State: &ProgressState{
@@ -406,11 +412,6 @@ func (pt *filePeerTask) cleanUnfinished() {
 			}
 		}
 
-		if err := pt.callback.Fail(pt, pt.failedCode, pt.failedReason); err != nil {
-			pt.span.RecordError(err)
-			pt.Errorf("peer task fail callback failed: %s", err)
-		}
-
 		pt.Debugf("clean unfinished: close channel")
 		close(pt.done)
 		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
@@ -420,6 +421,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 	})
 }
 
+// TODO SetContentLength 需要和pt.finish解绑，以便在下载进度处可以看到文件长度
 func (pt *filePeerTask) SetContentLength(i int64) error {
 	pt.contentLength.Store(i)
 	if !pt.isCompleted() {
@@ -429,20 +431,37 @@ func (pt *filePeerTask) SetContentLength(i int64) error {
 	return pt.finish()
 }
 
+func (pt *filePeerTask) SetTotalPieces(i int32) {
+	pt.totalPiece = i
+}
+
 func (pt *filePeerTask) backSource() {
+	backSourceCtx, backSourceSpan := tracer.Start(pt.ctx, config.SpanBackSource)
+	defer backSourceSpan.End()
 	defer pt.cleanUnfinished()
 	if pt.disableBackSource {
 		pt.Errorf(reasonBackSourceDisabled)
 		pt.failedReason = reasonBackSourceDisabled
 		return
 	}
+	_ = pt.callback.Init(pt)
+	reportPieceCtx, reportPieceSpan := tracer.Start(backSourceCtx, config.SpanReportPieceResult)
+	defer reportPieceSpan.End()
+	if peerPacketStream, err := pt.schedulerClient.ReportPieceResult(reportPieceCtx, pt.taskID, pt.request); err != nil {
+		logger.Errorf("step 2: peer %s report piece failed: err", pt.request.PeerId, err)
+	} else {
+		pt.peerPacketStream = peerPacketStream
+	}
+	logger.Infof("step 2: start report peer %s back source piece result", pt.request.PeerId)
 	err := pt.pieceManager.DownloadSource(pt.ctx, pt, pt.request)
 	if err != nil {
 		pt.Errorf("download from source error: %s", err)
 		pt.failedReason = err.Error()
+		backSourceSpan.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		backSourceSpan.RecordError(err)
 		return
 	}
 	pt.Infof("download from source ok")
+	backSourceSpan.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 	_ = pt.finish()
-	return
 }

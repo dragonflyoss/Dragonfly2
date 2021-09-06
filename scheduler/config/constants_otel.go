@@ -35,22 +35,27 @@ const (
 	AttributePeerID              = attribute.Key("d7y.peer.id")
 	AttributeCDNSeedRequest      = attribute.Key("d7y.cdn.seed.request")
 	AttributeNeedSeedCDN         = attribute.Key("d7y.need.seed.cdn")
+	AttributeTaskStatus          = attribute.Key("d7y.task.status")
+	AttributeLastTriggerTime     = attribute.Key("d7y.task.last.trigger.time")
+	AttributeClientBackSource    = attribute.Key("d7y.need.client.back-source")
+	AttributeTriggerCDNError     = attribute.Key("d7y.trigger.cdn.error")
 )
 
 const (
 	SpanPeerRegister      = "peer-register"
-	SpanTriggerCDN        = "trigger-cdn"
+	SpanTriggerCDNSeed    = "trigger-cdn-seed"
 	SpanReportPieceResult = "report-piece-result"
 	SpanReportPeerResult  = "report-peer-result"
 	SpanPeerLeave         = "peer-leave"
 )
 
 const (
-	EventScheduleParentFail = "fail-schedule-parent"
-	EventPeerNotFound       = "peer-not-found"
-	EventHostNotFound       = "host-not-found"
-	EventCreateCDNPeer      = "create-cdn-peer"
-	EventPieceReceived      = "receive-piece"
-	EventPeerDownloaded     = "downloaded"
-	EventDownloadTinyFile   = "download-tiny-file"
+	EventSmallTaskSelectParentFail = "small-task-select-parent-fail"
+	EventPeerNotFound              = "peer-not-found"
+	EventHostNotFound              = "host-not-found"
+	EventCreateCDNPeer             = "create-cdn-peer"
+	EventCDNPieceReceived          = "receive-cdn-piece"
+	EventPeerDownloaded            = "downloaded"
+	EventDownloadTinyFile          = "download-tiny-file"
+	EventCDNFailBackClientSource   = "cdn-fail-back-client-source"
 )

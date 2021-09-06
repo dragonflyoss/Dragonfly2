@@ -17,9 +17,9 @@
 package peer
 
 import (
-	"context"
 	"time"
 
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -92,20 +92,24 @@ func (p *filePeerTaskCallback) Done(pt Task) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	err := p.pt.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
-		TaskId:         pt.GetTaskID(),
-		PeerId:         pt.GetPeerID(),
-		SrcIp:          p.ptm.host.Ip,
-		SecurityDomain: p.ptm.host.SecurityDomain,
-		Idc:            p.ptm.host.Idc,
-		Url:            p.req.Url,
-		ContentLength:  pt.GetContentLength(),
-		Traffic:        pt.GetTraffic(),
-		Cost:           uint32(cost),
-		Success:        true,
-		Code:           dfcodes.Success,
+	peerResultCtx, peerResultSpan := tracer.Start(p.pt.ctx, config.SpanReportPeerResult)
+	defer peerResultSpan.End()
+	err := p.pt.schedulerClient.ReportPeerResult(peerResultCtx, &scheduler.PeerResult{
+		TaskId:          pt.GetTaskID(),
+		PeerId:          pt.GetPeerID(),
+		SrcIp:           p.ptm.host.Ip,
+		SecurityDomain:  p.ptm.host.SecurityDomain,
+		Idc:             p.ptm.host.Idc,
+		Url:             p.req.Url,
+		ContentLength:   pt.GetContentLength(),
+		Traffic:         pt.GetTraffic(),
+		TotalPieceCount: pt.GetTotalPieces(),
+		Cost:            uint32(cost),
+		Success:         true,
+		Code:            dfcodes.Success,
 	})
 	if err != nil {
+		peerResultSpan.RecordError(err)
 		pt.Log().Errorf("step 3: report successful peer result, error: %v", err)
 	} else {
 		pt.Log().Infof("step 3: report successful peer result ok")
@@ -117,20 +121,24 @@ func (p *filePeerTaskCallback) Fail(pt Task, code base.Code, reason string) erro
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	pt.Log().Errorf("file peer task failed, code: %d, reason: %s", code, reason)
-	err := p.pt.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
-		TaskId:         pt.GetTaskID(),
-		PeerId:         pt.GetPeerID(),
-		SrcIp:          p.ptm.host.Ip,
-		SecurityDomain: p.ptm.host.SecurityDomain,
-		Idc:            p.ptm.host.Idc,
-		Url:            p.req.Url,
-		ContentLength:  pt.GetContentLength(),
-		Traffic:        pt.GetTraffic(),
-		Cost:           uint32(end.Sub(p.start).Milliseconds()),
-		Success:        false,
-		Code:           code,
+	peerResultCtx, peerResultSpan := tracer.Start(p.pt.ctx, config.SpanReportPeerResult)
+	defer peerResultSpan.End()
+	err := p.pt.schedulerClient.ReportPeerResult(peerResultCtx, &scheduler.PeerResult{
+		TaskId:          pt.GetTaskID(),
+		PeerId:          pt.GetPeerID(),
+		SrcIp:           p.ptm.host.Ip,
+		SecurityDomain:  p.ptm.host.SecurityDomain,
+		Idc:             p.ptm.host.Idc,
+		Url:             p.req.Url,
+		ContentLength:   pt.GetContentLength(),
+		Traffic:         pt.GetTraffic(),
+		TotalPieceCount: p.pt.totalPiece,
+		Cost:            uint32(end.Sub(p.start).Milliseconds()),
+		Success:         false,
+		Code:            code,
 	})
 	if err != nil {
+		peerResultSpan.RecordError(err)
 		pt.Log().Errorf("step 3: report fail peer result, error: %v", err)
 	} else {
 		pt.Log().Infof("step 3: report fail peer result ok")

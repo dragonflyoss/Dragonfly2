@@ -27,19 +27,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type user struct {
-	name string
-	id   uint
-}
-
 func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 	identityKey := "id"
 
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
 		Realm:       "Dragonfly",
 		Key:         []byte("Secret Key"),
-		Timeout:     time.Hour,
-		MaxRefresh:  time.Hour,
+		Timeout:     2 * 24 * time.Hour,
+		MaxRefresh:  2 * 24 * time.Hour,
 		IdentityKey: identityKey,
 
 		IdentityHandler: func(c *gin.Context) interface{} {
@@ -48,50 +43,44 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 			id, ok := claims[identityKey]
 			if !ok {
 				c.JSON(http.StatusUnauthorized, gin.H{
-					"message": "Unavailable token: require user name",
-				})
-				c.Abort()
-				return nil
-			}
-
-			name, ok := claims["name"]
-			if !ok {
-				c.JSON(http.StatusUnauthorized, gin.H{
 					"message": "Unavailable token: require user id",
 				})
 				c.Abort()
 				return nil
 			}
 
-			u := &user{
-				name: name.(string),
-				id:   id.(uint),
-			}
-
-			c.Set("name", u.name)
-			c.Set("id", u.id)
-			return u
+			c.Set("id", id)
+			return id
 		},
 
 		Authenticator: func(c *gin.Context) (interface{}, error) {
+			// Oauth2 signin
+			if rawUser, ok := c.Get("user"); ok {
+				user, ok := rawUser.(*model.User)
+				if !ok {
+					return "", jwt.ErrFailedAuthentication
+				}
+				return user, nil
+			}
+
+			// Normal signin
 			var json types.SignInRequest
 			if err := c.ShouldBindJSON(&json); err != nil {
 				return "", jwt.ErrMissingLoginValues
 			}
 
-			u, err := service.SignIn(json)
+			user, err := service.SignIn(json)
 			if err != nil {
 				return "", jwt.ErrFailedAuthentication
 			}
 
-			return u, nil
+			return user, nil
 		},
 
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
-			if u, ok := data.(*model.User); ok {
+			if user, ok := data.(*model.User); ok {
 				return jwt.MapClaims{
-					identityKey: u.ID,
-					"name":      u.Name,
+					identityKey: user.ID,
 				}
 			}
 
@@ -100,11 +89,18 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{
-				"message": message,
+				"message": http.StatusText(code),
 			})
 		},
 
 		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
+			// Oauth2 signin
+			if _, ok := c.Get("user"); ok {
+				c.Redirect(http.StatusFound, "/")
+				return
+			}
+
+			// Normal signin
 			c.JSON(code, gin.H{
 				"token":  token,
 				"expire": expire.Format(time.RFC3339),
@@ -122,11 +118,11 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 			})
 		},
 
-		TokenLookup:    "header: Authorization, cookie: jwt, query: token",
+		TokenLookup:    "cookie: jwt, header: Authorization, query: token",
 		TokenHeadName:  "Bearer",
 		TimeFunc:       time.Now,
 		SendCookie:     true,
-		CookieHTTPOnly: true,
+		CookieHTTPOnly: false,
 	})
 
 	if err != nil {

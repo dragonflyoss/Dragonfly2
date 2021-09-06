@@ -1,11 +1,25 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package job
 
 import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
@@ -142,11 +156,7 @@ func (t *job) preheat(req string) error {
 	logger.Debugf("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
 
 	task := supervisor.NewTask(taskID, request.URL, meta)
-	task, err := t.service.GetOrCreateTask(t.ctx, task)
-	if err != nil {
-		return dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
-	}
-
+	task = t.service.GetOrCreateTask(t.ctx, task)
 	return getPreheatResult(task)
 }
 
@@ -159,7 +169,7 @@ func getPreheatResult(task *supervisor.Task) error {
 		select {
 		case <-ticker.C:
 			switch task.GetStatus() {
-			case supervisor.TaskStatusFailed, supervisor.TaskStatusCDNRegisterFail, supervisor.TaskStatusSourceError:
+			case supervisor.TaskStatusFail:
 				return errors.Errorf("preheat task fail")
 			case supervisor.TaskStatusSuccess:
 				return nil

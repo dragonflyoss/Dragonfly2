@@ -184,6 +184,7 @@ func newStreamPeerTask(ctx context.Context,
 	// bind func that base peer task did not implement
 	pt.backSourceFunc = pt.backSource
 	pt.setContentLengthFunc = pt.SetContentLength
+	pt.setTotalPiecesFunc = pt.SetTotalPieces
 	pt.reportPieceResultFunc = pt.ReportPieceResult
 	return ctx, pt, nil, nil
 }
@@ -193,18 +194,18 @@ func (s *streamPeerTask) ReportPieceResult(result *pieceTaskResult) error {
 	// retry failed piece
 	if !result.pieceResult.Success {
 		_ = s.peerPacketStream.Send(result.pieceResult)
-		s.failedPieceCh <- result.pieceResult.PieceNum
+		s.failedPieceCh <- result.pieceResult.PieceInfo.PieceNum
 		return nil
 	}
 
 	s.lock.Lock()
-	if s.readyPieces.IsSet(result.pieceResult.PieceNum) {
+	if s.readyPieces.IsSet(result.pieceResult.PieceInfo.PieceNum) {
 		s.lock.Unlock()
-		s.Warnf("piece %d is already reported, skipped", result.pieceResult.PieceNum)
+		s.Warnf("piece %d is already reported, skipped", result.pieceResult.PieceInfo.PieceNum)
 		return nil
 	}
 	// mark piece processed
-	s.readyPieces.Set(result.pieceResult.PieceNum)
+	s.readyPieces.Set(result.pieceResult.PieceInfo.PieceNum)
 	s.completedLength.Add(int64(result.piece.RangeSize))
 	s.lock.Unlock()
 
@@ -395,13 +396,13 @@ func (s *streamPeerTask) cleanUnfinished() {
 		_ = s.peerPacketStream.Send(
 			scheduler.NewEndPieceResult(s.taskID, s.peerID, s.readyPieces.Settled()))
 		s.Errorf("end piece result sent, peer task failed")
-		close(s.streamDone)
-		close(s.done)
 		//close(s.successPieceCh)
 		if err := s.callback.Fail(s, s.failedCode, s.failedReason); err != nil {
 			s.span.RecordError(err)
 			s.Errorf("fail callback error: %s", err)
 		}
+		close(s.streamDone)
+		close(s.done)
 		s.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 		s.span.SetAttributes(config.AttributePeerTaskCode.Int(int(s.failedCode)))
 		s.span.SetAttributes(config.AttributePeerTaskMessage.String(s.failedReason))
@@ -414,6 +415,10 @@ func (s *streamPeerTask) SetContentLength(i int64) error {
 		return nil
 	}
 	return s.finish()
+}
+
+func (s *streamPeerTask) SetTotalPieces(i int32) {
+	s.totalPiece = i
 }
 
 func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
@@ -438,16 +443,29 @@ func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
 }
 
 func (s *streamPeerTask) backSource() {
+	backSourceCtx, backSourceSpan := tracer.Start(s.ctx, config.SpanBackSource)
+	defer backSourceSpan.End()
 	s.contentLength.Store(-1)
 	_ = s.callback.Init(s)
+	reportPieceCtx, reportPieceSpan := tracer.Start(backSourceCtx, config.SpanReportPieceResult)
+	defer reportPieceSpan.End()
+	if peerPacketStream, err := s.schedulerClient.ReportPieceResult(reportPieceCtx, s.taskID, s.request); err != nil {
+		logger.Errorf("step 2: peer %s report piece failed: err", s.request.PeerId, err)
+	} else {
+		s.peerPacketStream = peerPacketStream
+	}
+	logger.Infof("step 2: start report peer %s back source piece result", s.request.PeerId)
 	err := s.pieceManager.DownloadSource(s.ctx, s, s.request)
 	if err != nil {
 		s.Errorf("download from source error: %s", err)
 		s.failedReason = err.Error()
 		s.cleanUnfinished()
+		backSourceSpan.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		backSourceSpan.RecordError(err)
 		return
 	}
 	s.Debugf("download from source ok")
+	backSourceSpan.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 	_ = s.finish()
 	return
 }

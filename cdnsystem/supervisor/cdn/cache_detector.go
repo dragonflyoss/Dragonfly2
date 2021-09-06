@@ -61,7 +61,7 @@ func newCacheDetector(cacheDataManager *cacheDataManager) *cacheDetector {
 	}
 }
 
-func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask, fileDigest hash.Hash) (*cacheResult, error) {
+func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask, fileDigest hash.Hash) (result *cacheResult, err error) {
 	//err := cd.cacheStore.CreateUploadLink(ctx, task.TaskId)
 	//if err != nil {
 	//	return nil, errors.Wrapf(err, "failed to create upload symbolic link")
@@ -69,7 +69,10 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask, 
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanDetectCache)
 	defer span.End()
-	result, err := cd.doDetect(ctx, task, fileDigest)
+	defer func() {
+		span.SetAttributes(config.AttributeDetectCacheResult.String(result.String()))
+	}()
+	result, err = cd.doDetect(ctx, task, fileDigest)
 	if err != nil {
 		logger.WithTaskID(task.TaskID).Infof("failed to detect cache, reset cache: %v", err)
 		metaData, err := cd.resetCache(task)
