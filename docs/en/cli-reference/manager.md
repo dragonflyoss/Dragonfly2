@@ -9,20 +9,42 @@ go run cmd/manager/main.go [Option]
 ```
 
 ## Log configuration
-set environment variable console=local if you want to print logs to Terminal
+```
+1. set environment variable console=local if you want to print logs to Terminal
+2. log path: /var/log/dragonfly/manager/
+```
 
 ## Runtime metrics monitoring
 ```
-go run cmd/scheduler/main.go --profiler
+go run cmd/manager/main.go --pprof-port port
 ```
-### Options
+
+## Swagger support
+endpoint: /swagger/doc.json   
+
+## Prometheus metrics monitoring
+endpoint:  /metrics  
+
+## HealthCheck
+endpoint: /healthy/   
+
+
+## Enable jaeger
+```
+go run cmd/manager/main.go --jaeger  http://localhost:14250/api/traces
+```
+
+## Options
 
 ```
-      --config string    the path of configuration file with yaml extension name, default is /Users/${USER_HOME}/.dragonfly/config/scheduler.yaml, it can 
-      also be set by env var:SCHEDULER_CONFIG，The settings and uses of each configuration item can refer to scheduler.yaml in config directory
-      --console          whether logger output records to the stdout
-  -h, --help             help for cdn
-      --jaeger string    jaeger endpoint url, like: http://localhost:14250/api/traces
-      --pprof-port int   listen port for pprof, 0 represents random port (default -1)
-      --verbose          whether logger use debug level
+      --config string         the path of configuration file with yaml extension name, default is /etc/dragonfly/manager.yaml, it can also be set by env var: MANAGER_CONFIG
+      --console               whether logger output records to the stdout
+  -h, --help                  help for manager
+      --jaeger string         jaeger endpoint url, like: http://localhost:14250/api/traces
+      --pprof-port int        listen port for pprof, 0 represents random port (default -1)
+      --service-name string   name of the service for tracer (default "dragonfly-manager")
+      --verbose               whether logger use debug level
 ```
+
+## Config file
+[manger config](../config/manager.yaml)
