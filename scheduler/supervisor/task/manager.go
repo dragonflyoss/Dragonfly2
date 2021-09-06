@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
@@ -76,17 +77,21 @@ func (m *manager) cleanupTasks() {
 			task := value.(*supervisor.Task)
 			elapse := time.Since(task.GetLastAccessTime())
 			if elapse > m.taskTTI && task.IsSuccess() {
+				logger.WithTaskID(task.TaskID).Info("elapse larger than taskTTI, task status become zombie")
 				task.SetStatus(supervisor.TaskStatusZombie)
 			}
 			if task.ListPeers().Size() == 0 {
+				logger.WithTaskID(task.TaskID).Info("peers is empty, task status become waiting")
 				task.SetStatus(supervisor.TaskStatusWaiting)
 			}
 			if elapse > m.taskTTL {
 				// TODO lock
 				peers := m.peerManager.ListPeersByTask(taskID)
 				for _, peer := range peers {
+					logger.WithTaskID(task.TaskID).Infof("delete peer %s because task is time to leave", peer.PeerID)
 					m.peerManager.Delete(peer.PeerID)
 				}
+				logger.WithTaskID(task.TaskID).Info("delete task because elapse larger than task TTL")
 				m.Delete(taskID)
 			}
 			return true

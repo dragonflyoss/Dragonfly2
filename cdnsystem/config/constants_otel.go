@@ -32,6 +32,7 @@ const (
 	AttributeCacheResult          = attribute.Key("d7y.cache.result")
 	AttributeWriteGoroutineCount  = attribute.Key("d7y.write.goroutine.count")
 	AttributeDownloadFileInfo     = attribute.Key("d7y.download.file.info")
+	AttributeDetectCacheResult    = attribute.Key("d7y.detect.cache.result")
 )
 
 const (
