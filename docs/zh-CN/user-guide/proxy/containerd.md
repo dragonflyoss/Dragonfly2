@@ -96,4 +96,52 @@ Environment="HTTPS_PROXY=http://127.0.0.1:65001"
 ctr image pull your.private.registry/namespace/image:latest
 ```
 
-## Custom assets [TODO]
+## 自定义配置项
+
+### 使用自签名证书注册
+
+如果您使用一个自签名证书进行注册，你可以用以下配置来忽略证书错误：
+
+```yaml
+proxy:
+  security:
+    insecure: true
+  tcpListen:
+    listen: 0.0.0.0
+    port: 65001
+  proxies:
+    - regx: blobs/sha256.*
+  hijackHTTPS:
+    # CA certificate's path used to hijack https requests
+    cert: ca.crt
+    key: ca.key
+    hosts:
+      - regx: your.private.registry
+        insecure: true
+```
+
+也可以使用以下配置提供一个证书：
+
+```yaml
+proxy:
+  security:
+    insecure: true
+  tcpListen:
+    listen: 0.0.0.0
+    port: 65001
+  proxies:
+    - regx: blobs/sha256.*
+  hijackHTTPS:
+    # CA certificate's path used to hijack https requests
+    cert: ca.crt
+    key: ca.key
+    hosts:
+      - regx: your.private.registry
+        certs: ["server.crt"]
+```
+
+您能使用以下命令获取您服务器的证书：
+
+```
+openssl x509 -in <(openssl s_client -showcerts -servername xxx -connect xxx:443 -prexit 2>/dev/null)
+```
