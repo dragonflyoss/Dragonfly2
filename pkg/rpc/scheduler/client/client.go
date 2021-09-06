@@ -148,7 +148,9 @@ func (sc *schedulerClient) retryRegisterPeerTask(ctx context.Context, hashKey st
 
 func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error) {
 	pps, err := newPeerPacketStream(ctx, sc, taskID, ptr, opts)
-
+	if err != nil {
+		return pps, err
+	}
 	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskID: %s", taskID)
 
 	// trigger scheduling

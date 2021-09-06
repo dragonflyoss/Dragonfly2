@@ -24,6 +24,6 @@ type CDNCluster struct {
 	SchedulerClusters []SchedulerCluster `gorm:"many2many:cdn_cluster_scheduler_cluster;" json:"-"`
 	IsDefault         bool               `gorm:"column:is_default;not null;default:false;comment:default cdn cluster" json:"is_default"`
 	CDNs              []CDN              `json:"-"`
-	SecurityGroupID   uint               `gorm:"comment:security group id"`
+	SecurityGroupID   uint               `gorm:"comment:security group id" json:"security_group_id"`
 	SecurityGroup     SecurityGroup      `json:"-"`
 }

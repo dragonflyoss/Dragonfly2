@@ -18,9 +18,10 @@ package client
 
 import (
 	"context"
-	"io"
 
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -60,9 +61,9 @@ func newPeerPacketStream(ctx context.Context, sc *schedulerClient, hashKey strin
 		ptr:     ptr,
 		opts:    opts,
 		retryMeta: rpc.RetryMeta{
-			MaxAttempts: 5,
-			InitBackoff: 0.5,
-			MaxBackOff:  4.0,
+			MaxAttempts: 3,
+			InitBackoff: 0.2,
+			MaxBackOff:  2.0,
 		},
 	}
 
@@ -77,14 +78,13 @@ func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
 	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
 	err = pps.stream.Send(pr)
 
-	if pr.PieceNum == common.EndOfPiece {
+	if pr.PieceInfo.PieceNum == common.EndOfPiece {
 		pps.closeSend()
 		return
 	}
 
 	if err != nil {
 		pps.closeSend()
-		err = pps.retrySend(pr, err)
 	}
 
 	return
@@ -96,10 +96,7 @@ func (pps *peerPacketStream) closeSend() error {
 
 func (pps *peerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
 	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
-	if pp, err = pps.stream.Recv(); err != nil && err != io.EOF {
-		pp, err = pps.retryRecv(err)
-	}
-	return
+	return pps.stream.Recv()
 }
 
 func (pps *peerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) error {
@@ -108,7 +105,7 @@ func (pps *peerPacketStream) retrySend(pr *scheduler.PieceResult, cause error) e
 	}
 
 	if err := pps.replaceStream(cause); err != nil {
-		return err
+		return cause
 	}
 
 	return pps.Send(pr)
@@ -159,6 +156,9 @@ func (pps *peerPacketStream) initStream() error {
 		return client.ReportPieceResult(pps.ctx, pps.opts...)
 	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, nil)
 	if err != nil {
+		if errors.Cause(err) == dferrors.ErrNoCandidateNode {
+			return errors.Wrapf(err, "get grpc server instance failed")
+		}
 		logger.WithTaskID(pps.hashKey).Infof("initStream: invoke scheduler node %s ReportPieceResult failed: %v", target, err)
 		return pps.replaceClient(err)
 	}

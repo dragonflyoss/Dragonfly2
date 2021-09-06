@@ -180,14 +180,15 @@ func (conn *Connection) UpdateAccessNodeMapByHashKey(key string) {
 	node, ok := conn.key2NodeMap.Load(key)
 	if ok {
 		conn.accessNodeMap.Store(node, time.Now())
-		logger.With("conn", conn.name).Debugf("successfully update server node %s access time for hashKey %s", node, key)
 		_, ok := conn.node2ClientMap.Load(node)
-		if !ok {
-			logger.With("conn", conn.name).Warnf("successfully update server node %s access time for hashKey %s,"+
+		if ok {
+			logger.GrpcLogger.With("conn", conn.name).Debugf("successfully update server node %s access time for hashKey %s", node, key)
+		} else {
+			logger.GrpcLogger.With("conn", conn.name).Warnf("successfully update server node %s access time for hashKey %s,"+
 				"but cannot found client conn in node2ClientMap", node, key)
 		}
 	} else {
-		logger.With("conn", conn.name).Errorf("update access node map failed, hash key (%s) not found in key2NodeMap", key)
+		logger.GrpcLogger.With("conn", conn.name).Errorf("update access node map failed, hash key (%s) not found in key2NodeMap", key)
 	}
 }
 
@@ -201,7 +202,7 @@ func (conn *Connection) AddServerNodes(addrs []dfnet.NetAddr) error {
 	for _, addr := range addrs {
 		serverNode := addr.GetEndpoint()
 		conn.hashRing = conn.hashRing.AddNode(serverNode)
-		logger.With("conn", conn.name).Debugf("success add %s to server node list", addr)
+		logger.GrpcLogger.With("conn", conn.name).Debugf("success add %s to server node list", addr)
 	}
 	return nil
 }
@@ -222,7 +223,7 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes sets.
 
 	ringNodes, ok := conn.hashRing.GetNodes(key, conn.hashRing.Size())
 	if !ok {
-		logger.Warnf("cannot obtain expected %d server nodes", conn.hashRing.Size())
+		logger.GrpcLogger.Warnf("cannot obtain expected %d server nodes", conn.hashRing.Size())
 	}
 	if len(ringNodes) == 0 {
 		return nil, dferrors.ErrNoCandidateNode
@@ -233,29 +234,30 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes sets.
 			candidateNodes = append(candidateNodes, ringNode)
 		}
 	}
-	logger.With("conn", conn.name).Infof("candidate result for hash key %s: all server node list: %v, exclusiveNodes node list: %v, candidate node list: %v",
+	logger.GrpcLogger.With("conn", conn.name).Infof("candidate result for hash key %s: all server node list: %v, exclusiveNodes node list: %v, "+
+		"candidate node list: %v",
 		key, ringNodes, exclusiveNodes.List(), candidateNodes)
 	for _, candidateNode := range candidateNodes {
 		// Check whether there is a corresponding mapping client in the node2ClientMap
 		// TODO 下面部分可以直接调用loadOrCreate方法，但是日志没有这么调用打印全
 		if client, ok := conn.node2ClientMap.Load(candidateNode); ok {
-			logger.With("conn", conn.name).Debugf("hit cache candidateNode %s for hash key %s", candidateNode, key)
+			logger.GrpcLogger.With("conn", conn.name).Debugf("hit cache candidateNode %s for hash key %s", candidateNode, key)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  client,
 			}, nil
 		}
-		logger.With("conn", conn.name).Debugf("attempt to connect candidateNode %s for hash key %s", candidateNode, key)
+		logger.GrpcLogger.With("conn", conn.name).Debugf("attempt to connect candidateNode %s for hash key %s", candidateNode, key)
 		clientConn, err := conn.createClient(candidateNode, append(defaultClientOpts, conn.dialOpts...)...)
 		if err == nil {
-			logger.With("conn", conn.name).Infof("success connect to candidateNode %s for hash key %s", candidateNode, key)
+			logger.GrpcLogger.With("conn", conn.name).Infof("success connect to candidateNode %s for hash key %s", candidateNode, key)
 			return &candidateClient{
 				node: candidateNode,
 				Ref:  clientConn,
 			}, nil
 		}
 
-		logger.With("conn", conn.name).Infof("failed to connect candidateNode %s for hash key %s: %v", candidateNode, key, err)
+		logger.GrpcLogger.With("conn", conn.name).Infof("failed to connect candidateNode %s for hash key %s: %v", candidateNode, key, err)
 	}
 	return nil, dferrors.ErrNoCandidateNode
 }
@@ -285,14 +287,14 @@ func (conn *Connection) GetServerNode(hashKey string) (string, bool) {
 }
 
 func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, error) {
-	logger.With("conn", conn.name).Debugf("start to get client conn by target %s", node)
+	logger.GrpcLogger.With("conn", conn.name).Debugf("start to get client conn by target %s", node)
 	conn.rwMutex.RLock()
 	defer conn.rwMutex.RUnlock()
 	clientConn, err := conn.loadOrCreateClientConnByNode(node)
 	if err != nil {
 		return nil, errors.Wrapf(err, "get client conn by conn %s", node)
 	}
-	logger.With("conn", conn.name).Debugf("successfully get %s client conn", node)
+	logger.GrpcLogger.With("conn", conn.name).Debugf("successfully get %s client conn", node)
 	return clientConn, nil
 }
 
@@ -305,14 +307,14 @@ func (conn *Connection) loadOrCreateClientConnByNode(node string) (clientConn *g
 	conn.accessNodeMap.Store(node, time.Now())
 	client, ok := conn.node2ClientMap.Load(node)
 	if ok {
-		logger.With("conn", conn.name).Debugf("hit cache clientConn associated with node %s", node)
+		logger.GrpcLogger.With("conn", conn.name).Debugf("hit cache clientConn associated with node %s", node)
 		return client.(*grpc.ClientConn), nil
 	}
 
-	logger.With("conn", conn.name).Debugf("failed to load clientConn associated with node %s, attempt to create it", node)
+	logger.GrpcLogger.With("conn", conn.name).Debugf("failed to load clientConn associated with node %s, attempt to create it", node)
 	clientConn, err = conn.createClient(node, append(defaultClientOpts, conn.dialOpts...)...)
 	if err == nil {
-		logger.With("conn", conn.name).Infof("success connect to node %s", node)
+		logger.GrpcLogger.With("conn", conn.name).Infof("success connect to node %s", node)
 		// bind
 		conn.node2ClientMap.Store(node, clientConn)
 		return clientConn, nil
@@ -324,8 +326,8 @@ func (conn *Connection) loadOrCreateClientConnByNode(node string) (clientConn *g
 // GetClientConn get conn or bind hashKey to candidate node, don't do the migrate action
 // stick whether hash key need already associated with specify node
 func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientConn, error) {
-	logger.With("conn", conn.name).Debugf("start to get client conn hashKey %s, stick %t", hashKey, stick)
-	defer logger.With("conn", conn.name).Debugf("get client conn done, hashKey %s, stick %t end", hashKey, stick)
+	logger.GrpcLogger.With("conn", conn.name).Debugf("start to get client conn hashKey %s, stick %t", hashKey, stick)
+	defer logger.GrpcLogger.With("conn", conn.name).Debugf("get client conn done, hashKey %s, stick %t end", hashKey, stick)
 	conn.rwMutex.RLock()
 	node, ok := conn.key2NodeMap.Load(hashKey)
 	if stick && !ok {
@@ -343,7 +345,7 @@ func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientC
 		}
 		return clientConn, nil
 	}
-	logger.With("conn", conn.name).Infof("no server node associated with hash key %s was found, start find candidate server", hashKey)
+	logger.GrpcLogger.With("conn", conn.name).Infof("no server node associated with hash key %s was found, start find candidate server", hashKey)
 	conn.rwMutex.RUnlock()
 	// if absence
 	conn.rwMutex.Lock()
@@ -361,14 +363,14 @@ func (conn *Connection) GetClientConn(hashKey string, stick bool) (*grpc.ClientC
 // TryMigrate migrate key to another hash node other than exclusiveNodes
 // preNode node before the migration
 func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []string) (preNode string, err error) {
-	logger.With("conn", conn.name).Infof("start try migrate server node for key %s, cause err: %v", key, cause)
+	logger.GrpcLogger.With("conn", conn.name).Infof("start try migrate server node for key %s, cause err: %v", key, cause)
 	if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
-		logger.With("conn", conn.name).Infof("migrate server node for key %s failed, cause err: %v", key, cause)
+		logger.GrpcLogger.With("conn", conn.name).Infof("migrate server node for key %s failed, cause err: %v", key, cause)
 		return "", cause
 	}
 	// TODO recover findCandidateClientConn error
 	if e, ok := cause.(*dferrors.DfError); ok {
-		if e.Code != dfcodes.ResourceLacked && e.Code != dfcodes.UnknownError {
+		if e.Code != dfcodes.ResourceLacked {
 			return "", cause
 		}
 	}
@@ -378,8 +380,6 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 		currentNode = node.(string)
 		preNode = currentNode
 		exclusiveNodes = append(exclusiveNodes, preNode)
-	} else {
-		logger.With("conn", conn.name).Warnf("failed to find server node for hash key %s", key)
 	}
 	conn.rwMutex.RUnlock()
 	conn.rwMutex.Lock()
@@ -388,7 +388,7 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	if err != nil {
 		return "", errors.Wrapf(err, "find candidate client conn for hash key %s", key)
 	}
-	logger.With("conn", conn.name).Infof("successfully migrate hash key %s from server node %s to %s", key, currentNode, client.node)
+	logger.GrpcLogger.With("conn", conn.name).Infof("successfully migrate hash key %s from server node %s to %s", key, currentNode, client.node)
 	conn.key2NodeMap.Store(key, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
 	conn.accessNodeMap.Store(client.node, time.Now())

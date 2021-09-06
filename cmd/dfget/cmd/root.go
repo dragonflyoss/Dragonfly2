@@ -140,7 +140,7 @@ func init() {
 		"Filter the query parameters of the url, P2P overlay is the same one if the filtered url is same, "+
 			"in format of key&sign, which will filter 'key' and 'sign' query parameters")
 
-	flagSet.StringArrayP("header", "H", dfgetConfig.Header, "url header, eg: --header='Accept: *' --header='Host: abc'")
+	flagSet.StringSliceP("header", "H", dfgetConfig.Header, "url header, eg: --header='Accept: *' --header='Host: abc'")
 
 	flagSet.Bool("disable-back-source", dfgetConfig.DisableBackSource,
 		"Disable downloading directly from source when the daemon fails to download file")
