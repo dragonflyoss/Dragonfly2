@@ -181,12 +181,6 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 					"isLeave %t", peer.GetStatus(), peer.IsLeave())
 				continue
 			}
-			parent := peer.GetParent()
-			if parent != nil {
-				logger.WithTaskAndPeerID(peer.Task.TaskID,
-					peer.PeerID).Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer has parent %s", parent.PeerID)
-				continue
-			}
 			s.worker.send(reScheduleParentEvent{rsPeer: rsPeer})
 		}
 	}
