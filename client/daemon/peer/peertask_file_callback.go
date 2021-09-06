@@ -19,6 +19,7 @@ package peer
 import (
 	"time"
 
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -91,7 +92,9 @@ func (p *filePeerTaskCallback) Done(pt Task) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	err := p.pt.schedulerClient.ReportPeerResult(p.pt.ctx, &scheduler.PeerResult{
+	peerResultCtx, peerResultSpan := tracer.Start(p.pt.ctx, config.SpanReportPeerResult)
+	defer peerResultSpan.End()
+	err := p.pt.schedulerClient.ReportPeerResult(peerResultCtx, &scheduler.PeerResult{
 		TaskId:          pt.GetTaskID(),
 		PeerId:          pt.GetPeerID(),
 		SrcIp:           p.ptm.host.Ip,
@@ -106,6 +109,7 @@ func (p *filePeerTaskCallback) Done(pt Task) error {
 		Code:            dfcodes.Success,
 	})
 	if err != nil {
+		peerResultSpan.RecordError(err)
 		pt.Log().Errorf("step 3: report successful peer result, error: %v", err)
 	} else {
 		pt.Log().Infof("step 3: report successful peer result ok")
@@ -117,7 +121,9 @@ func (p *filePeerTaskCallback) Fail(pt Task, code base.Code, reason string) erro
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	pt.Log().Errorf("file peer task failed, code: %d, reason: %s", code, reason)
-	err := p.pt.schedulerClient.ReportPeerResult(p.pt.ctx, &scheduler.PeerResult{
+	peerResultCtx, peerResultSpan := tracer.Start(p.pt.ctx, config.SpanReportPeerResult)
+	defer peerResultSpan.End()
+	err := p.pt.schedulerClient.ReportPeerResult(peerResultCtx, &scheduler.PeerResult{
 		TaskId:          pt.GetTaskID(),
 		PeerId:          pt.GetPeerID(),
 		SrcIp:           p.ptm.host.Ip,
@@ -132,6 +138,7 @@ func (p *filePeerTaskCallback) Fail(pt Task, code base.Code, reason string) erro
 		Code:            code,
 	})
 	if err != nil {
+		peerResultSpan.RecordError(err)
 		pt.Log().Errorf("step 3: report fail peer result, error: %v", err)
 	} else {
 		pt.Log().Infof("step 3: report fail peer result ok")
