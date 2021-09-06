@@ -69,7 +69,7 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
 
 func (eval *baseEvaluator) IsBadNode(peer *supervisor.Peer) bool {
 	if peer.IsBad() {
-		logger.Debugf("peer %s is bad because status is %s", peer.PeerID, peer.GetStatus())
+		logger.Debugf("peer %s is bad because it's status is %s", peer.PeerID, peer.GetStatus())
 		return true
 	}
 	costHistory := peer.GetCostHistory()

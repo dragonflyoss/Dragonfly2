@@ -35,12 +35,12 @@ type Config struct {
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
 	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
 	Job          *JobConfig       `yaml:"job" mapstructure:"job"`
+	DisableCDN   bool             `yaml:"disableCDN" mapstructure:"disableCDN"`
 }
 
 func New() *Config {
 	return &Config{
 		Scheduler: &SchedulerConfig{
-			DisableCDN:           false,
 			ABTest:               false,
 			AScheduler:           "",
 			BScheduler:           "",
@@ -53,8 +53,8 @@ func New() *Config {
 			ClientLoad:           10,
 			OpenMonitor:          true,
 			GC: &GCConfig{
-				PeerGCInterval: 5 * time.Minute,
-				TaskGCInterval: 5 * time.Minute,
+				PeerGCInterval: 1 * time.Minute,
+				TaskGCInterval: 1 * time.Minute,
 				PeerTTL:        10 * time.Minute,
 				PeerTTI:        3 * time.Minute,
 				TaskTTL:        10 * time.Minute,
@@ -109,6 +109,7 @@ func New() *Config {
 				BackendDB: 2,
 			},
 		},
+		DisableCDN: false,
 	}
 }
 
@@ -178,12 +179,11 @@ type DynConfig struct {
 }
 
 type SchedulerConfig struct {
-	DisableCDN      bool   `yaml:"disableCDN" mapstructure:"disableCDN"`
 	ABTest          bool   `yaml:"abtest" mapstructure:"abtest"`
 	AScheduler      string `yaml:"ascheduler" mapstructure:"ascheduler"`
 	BScheduler      string `yaml:"bscheduler" mapstructure:"bscheduler"`
 	WorkerNum       int    `yaml:"workerNum" mapstructure:"workerNum"`
-	BackSourceCount int    `yaml:"backSourceCount" mapstructure:"backSourceCount"`
+	BackSourceCount int32  `yaml:"backSourceCount" mapstructure:"backSourceCount"`
 	// AccessWindow should less than CDN task expireTime
 	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
 	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
@@ -202,6 +202,7 @@ type ServerConfig struct {
 
 type GCConfig struct {
 	PeerGCInterval time.Duration `yaml:"peerGCInterval" mapstructure:"peerGCInterval"`
+	// PeerTTL is advised to set the time to be smaller than the expire time of a task in the CDN
 	PeerTTL        time.Duration `yaml:"peerTTL" mapstructure:"peerTTL"`
 	PeerTTI        time.Duration `yaml:"peerTTI" mapstructure:"peerTTI"`
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`

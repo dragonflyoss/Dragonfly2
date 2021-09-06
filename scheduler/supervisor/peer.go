@@ -17,10 +17,12 @@
 package supervisor
 
 import (
+	"io"
 	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
 
@@ -32,12 +34,12 @@ func (status PeerStatus) String() string {
 		return "Waiting"
 	case PeerStatusRunning:
 		return "Running"
-	case PeerStatusSuccess:
-		return "Success"
-	case PeerStatusFail:
-		return "Fail"
 	case PeerStatusZombie:
 		return "Zombie"
+	case PeerStatusFail:
+		return "Fail"
+	case PeerStatusSuccess:
+		return "Success"
 	default:
 		return "unknown"
 	}
@@ -46,6 +48,7 @@ func (status PeerStatus) String() string {
 const (
 	PeerStatusWaiting PeerStatus = iota
 	PeerStatusRunning
+	// TODO add Seeding status
 	PeerStatusZombie
 	PeerStatusFail
 	PeerStatusSuccess
@@ -59,10 +62,7 @@ type Peer struct {
 	Task *Task
 	// Host specifies
 	Host *PeerHost
-	// bindPacketChan
-	bindPacketChan bool
-	// PacketChan send schedulerPacket to peer client
-	packetChan chan *scheduler.PeerPacket
+	conn *Channel
 	// createTime
 	CreateTime time.Time
 	// finishedNum specifies downloaded finished piece number
@@ -155,7 +155,7 @@ func (peer *Peer) GetCost() int {
 	return totalCost / len(peer.costHistory)
 }
 
-func (peer *Peer) AddPieceInfo(finishedCount int32, cost int) {
+func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
 	peer.lock.Lock()
 	if finishedCount > peer.finishedNum.Load() {
 		peer.finishedNum.Store(finishedCount)
@@ -254,38 +254,6 @@ func (peer *Peer) GetChildren() *sync.Map {
 	return &peer.children
 }
 
-func (peer *Peer) BindSendChannel(packetChan chan *scheduler.PeerPacket) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	peer.bindPacketChan = true
-	peer.packetChan = packetChan
-}
-
-func (peer *Peer) UnBindSendChannel() {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	if peer.bindPacketChan {
-		if peer.packetChan != nil {
-			close(peer.packetChan)
-		}
-		peer.bindPacketChan = false
-	}
-}
-
-func (peer *Peer) IsBindSendChannel() bool {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	return peer.bindPacketChan
-}
-
-func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	if peer.bindPacketChan {
-		peer.packetChan <- packet
-	}
-}
-
 func (peer *Peer) SetStatus(status PeerStatus) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
@@ -332,4 +300,164 @@ func (peer *Peer) IsBad() bool {
 
 func (peer *Peer) IsFail() bool {
 	return peer.status == PeerStatusFail
+}
+
+func (peer *Peer) BindNewConn(stream scheduler.Scheduler_ReportPieceResultServer) *Channel {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	if peer.status == PeerStatusWaiting {
+		peer.status = PeerStatusRunning
+	}
+	peer.conn = newChannel(stream)
+	return peer.conn
+}
+
+func (peer *Peer) IsConnected() bool {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
+	if peer.conn == nil {
+		return false
+	}
+	return !peer.conn.IsClosed()
+}
+
+func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) error {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	if peer.conn != nil {
+		return peer.conn.Send(packet)
+	}
+	return errors.New("client peer is not connected")
+}
+
+func (peer *Peer) CloseChannel(err error) error {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	if peer.conn != nil {
+		peer.conn.CloseWithError(err)
+		return nil
+	}
+	return errors.New("client peer is not connected")
+}
+
+type Channel struct {
+	startOnce sync.Once
+	sender    chan *scheduler.PeerPacket
+	receiver  chan *scheduler.PieceResult
+	stream    scheduler.Scheduler_ReportPieceResultServer
+	closed    *atomic.Bool
+	done      chan struct{}
+	wg        sync.WaitGroup
+	err       error
+}
+
+func newChannel(stream scheduler.Scheduler_ReportPieceResultServer) *Channel {
+	c := &Channel{
+		sender:   make(chan *scheduler.PeerPacket),
+		receiver: make(chan *scheduler.PieceResult),
+		stream:   stream,
+		closed:   atomic.NewBool(false),
+		done:     make(chan struct{}),
+	}
+	c.start()
+	return c
+}
+
+func (c *Channel) start() {
+	c.startOnce.Do(func() {
+		c.wg.Add(2)
+		go c.receiveLoop()
+		go c.sendLoop()
+	})
+}
+
+func (c *Channel) Send(packet *scheduler.PeerPacket) error {
+	select {
+	case <-c.done:
+		return errors.New("conn has closed")
+	case c.sender <- packet:
+		return nil
+	default:
+		return errors.New("send channel is blocking")
+	}
+}
+
+func (c *Channel) Receiver() <-chan *scheduler.PieceResult {
+	return c.receiver
+}
+
+func (c *Channel) Close() {
+	if !c.closed.CAS(false, true) {
+		return
+	}
+	go func() {
+		close(c.done)
+		c.wg.Wait()
+	}()
+}
+
+func (c *Channel) CloseWithError(err error) {
+	c.err = err
+	c.Close()
+}
+
+func (c *Channel) Err() error {
+	err := c.err
+	return err
+}
+
+func (c *Channel) Done() <-chan struct{} {
+	if c.done == nil {
+		c.done = make(chan struct{})
+	}
+	d := c.done
+	return d
+}
+
+func (c *Channel) IsClosed() bool {
+	return c.closed.Load()
+}
+
+func (c *Channel) receiveLoop() {
+	defer func() {
+		close(c.receiver)
+		c.wg.Done()
+		c.Close()
+	}()
+
+	for {
+		select {
+		case <-c.done:
+			return
+		default:
+			pieceResult, err := c.stream.Recv()
+			if err == io.EOF {
+				return
+			}
+			if err != nil {
+				c.err = err
+				return
+			}
+			c.receiver <- pieceResult
+		}
+	}
+}
+
+func (c *Channel) sendLoop() {
+	defer func() {
+		c.wg.Done()
+		c.Close()
+	}()
+
+	for {
+		select {
+		case <-c.done:
+			return
+		case packet := <-c.sender:
+			if err := c.stream.Send(packet); err != nil {
+				c.err = err
+				return
+			}
+		}
+	}
 }

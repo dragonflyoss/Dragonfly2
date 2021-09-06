@@ -90,8 +90,8 @@ message PieceResult{
   string src_pid = 2;
   // dest peer id
   string dst_pid = 3;
-  // piece number
-  int32 piece_num = 4;
+  // piece info
+  base.PieceInfo piece_info = 4;
   // begin time for the piece downloading
   uint64 begin_time = 5;
   // end time for the piece downloading
@@ -122,7 +122,6 @@ message PeerPacket{
   string src_pid = 3;
 
   // concurrent downloading count from main peer
-  // TODO what effect
   int32 parallel_count = 4;
   DestPeer main_peer = 5;
   repeated DestPeer steal_peers = 6;
@@ -147,6 +146,7 @@ message PeerResult{
   bool success = 10;
   // result code
   base.Code code = 11;
+  int32 total_piece_count = 12;
 }
 
 message PeerTarget{
