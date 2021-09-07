@@ -171,7 +171,7 @@ func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 	return nil
 }
 
-// ResolverError is implemented from balancer.Balancer, copied from baseBalancer.
+// ResolverError is implemented from balancer.Balancer, modified from baseBalancer, and update the state of the balancer.
 func (b *d7yBalancer) ResolverError(err error) {
 	b.resolverErr = err
 

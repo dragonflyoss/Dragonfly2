@@ -65,7 +65,11 @@ type d7yResolver struct {
 func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
 	addresses := make([]resolver.Address, len(addrs))
 	for i, addr := range addrs {
-		addresses[i] = resolver.Address{Addr: addr.GetEndpoint()}
+		if addr.Type == dfnet.UNIX {
+			addresses[i] = resolver.Address{Addr: addr.GetEndpoint()}
+		} else {
+			addresses[i] = resolver.Address{Addr: addr.Addr}
+		}
 	}
 	return r.cc.UpdateState(resolver.State{Addresses: addresses})
 }
