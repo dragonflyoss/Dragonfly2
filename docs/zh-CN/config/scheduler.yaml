@@ -16,16 +16,16 @@ scheduler:
   # workerNum 执行调度任务处理的 goroutine 数量
   # default: 默认机器可用的 CPU 数量
   workerNum: 12
-  # backSourceCount 当 CDN 不可用时，回源客户端的数量
+  # backSourceCount 当 CDN 禁用或不可用时，回源客户端的数量
   # default: 3
   backSourceCount: 3
-  # accessWindow 距离上次触发 CDN 回源的时间窗口
+  # accessWindow 可触发 CDN 回源的时间间隔窗口
   # default: 3m
   accessWindow: 3m
   # candidateParentCount 候选父节点数量，
   # default: 10
   candidateParentCount: 10
-  # scheduler 当前采用的 scheduler 调度策略
+  # scheduler 当前生效的 scheduler 调度策略
   # default: basic
   scheduler: basic
   # cdnLoad CDN 节点可以提供上传的最大负载
@@ -102,9 +102,9 @@ job:
   # redis configuration
   redis:
     # host
-    host: fff
+    host: ""
     # port
-    port: 33
+    port:
     # password
     password: ""
     # brokerDB
