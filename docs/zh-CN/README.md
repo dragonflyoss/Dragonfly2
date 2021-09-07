@@ -37,9 +37,9 @@ Dragonfly Document 是关于 Dragonfly 的介绍。对于一般对 Dragonfly 感
 
 对于几乎所有用户，命令行是您可能需要的第一个参考。 [CLI Reference](cli-reference)目录下的文档是关于Dragonfly CLI的命令详细使用，包括`dfget`、`cdnsystem`、`scheduler`和`manager`。您可以获得有关命令的介绍、概要、示例和选项。最后但同样重要的是，Dragonfly 可以保证命令行文档与 Dragonfly CLI 的源代码高度一致。更重要的是，所有命令行文档都是通过源代码自动生成的。
 
-## [TODO] API参考
+## API参考
 
-命令行是体验 Dragonfly 能力的最简单方法。 API参考将为 Dragonfly 带来更多更进一步的体验。 Commandline只是API的一种组合用法，如果你想破解或利用Dragonfly的更多优势，请参见[API参考](./api-reference)。与命令行文档一样，所有 API 文档都是通过源代码自动生成的。
+命令行是体验 Dragonfly 能力的最简单方法。 API参考将为 Dragonfly 带来更多更进一步的体验。 Commandline只是API的一种组合用法，如果你想破解或利用Dragonfly的更多优势，请参见[API参考](./api-reference/api.md)。与命令行文档一样，所有 API 文档都是通过源代码自动生成的。
 
 ## 生态
 
