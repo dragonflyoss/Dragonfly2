@@ -39,7 +39,7 @@ Dragonfly Document 是关于 Dragonfly 的介绍。对于一般对 Dragonfly 感
 
 ## API参考
 
-命令行是体验 Dragonfly 能力的最简单方法。 API参考将为 Dragonfly 带来更多更进一步的体验。 Commandline只是API的一种组合用法，如果你想破解或利用Dragonfly的更多优势，请参见[API参考](./api-reference/api.md)。与命令行文档一样，所有 API 文档都是通过源代码自动生成的。
+命令行是体验 Dragonfly 能力的最简单方法。 API参考将为 Dragonfly 带来更多更进一步的体验。 Commandline只是API的一种组合用法，如果你想破解或利用Dragonfly的更多优势，请参见[API参考](./api-reference)。与命令行文档一样，所有 API 文档都是通过源代码自动生成的。
 
 ## 生态
 
