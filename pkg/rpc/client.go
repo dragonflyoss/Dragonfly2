@@ -162,6 +162,7 @@ func (conn *Connection) NewClient(target string, opts ...grpc.DialOption) (*grpc
 	// should not retry
 	ctx, cancel := context.WithTimeout(context.Background(), conn.dialTimeout)
 	defer cancel()
+	opts = append(conn.dialOpts, opts...)
 	return grpc.DialContext(ctx, target, opts...)
 }
 

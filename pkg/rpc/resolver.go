@@ -78,6 +78,7 @@ func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
 			addresses[i] = resolver.Address{Addr: addr.Addr}
 		}
 	}
+	r.addrs = addrs
 	if r.cc == nil {
 		return nil
 	}

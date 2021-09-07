@@ -36,7 +36,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient,
 		return nil, errors.New("address list of cdn is empty")
 	}
 	cc := &cdnClient{
-		rpc.NewConnection(context.Background(), "cdn", addrs, []rpc.ConnOption{
+		rpc.NewConnection(context.Background(), rpc.CDNScheme, addrs, []rpc.ConnOption{
 			rpc.WithConnExpireTime(60 * time.Second),
 			rpc.WithDialOption(opts),
 		}),
@@ -50,7 +50,7 @@ var elasticCdnClient *cdnClient
 func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
 	once.Do(func() {
 		elasticCdnClient = &cdnClient{
-			rpc.NewConnection(context.Background(), "cdn-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+			rpc.NewConnection(context.Background(), rpc.CDNScheme, make([]dfnet.NetAddr, 0), []rpc.ConnOption{
 				rpc.WithConnExpireTime(30 * time.Second),
 				rpc.WithDialOption(opts),
 			}),

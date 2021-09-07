@@ -41,7 +41,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 		return nil, errors.New("address list of daemon is empty")
 	}
 	dc := &daemonClient{
-		rpc.NewConnection(context.Background(), "daemon-static", addrs, []rpc.ConnOption{
+		rpc.NewConnection(context.Background(), rpc.DaemonScheme, addrs, []rpc.ConnOption{
 			rpc.WithConnExpireTime(60 * time.Second),
 			rpc.WithDialOption(opts),
 		}),
@@ -55,7 +55,7 @@ var elasticDaemonClient *daemonClient
 func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	once.Do(func() {
 		elasticDaemonClient = &daemonClient{
-			rpc.NewConnection(context.Background(), "daemon-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+			rpc.NewConnection(context.Background(), rpc.DaemonScheme, make([]dfnet.NetAddr, 0), []rpc.ConnOption{
 				rpc.WithConnExpireTime(30 * time.Second),
 				rpc.WithDialOption(opts),
 			}),
