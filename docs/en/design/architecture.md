@@ -1,7 +1,7 @@
 # Product Thinking and Design
 
 ## Positioning
-Provide enterprise-level (efficient, stable, secure, low-cost, product-oriented) file distribution and management services, and become the cloud-native best practice and standard solution in this field.
+Provide enterprise-level (efficient, stable, secure, low-cost, product-oriented) file distribution and management services, and become the cloud-native best practice and standard solution in this realm.
 
 ## What problems are solved
 
@@ -11,7 +11,7 @@ Provide enterprise-level (efficient, stable, secure, low-cost, product-oriented)
 
 **Single distribution mode:** Currently only supports active pull mode, lack of active push and active synchronization capabilities
 
-**Lack of productization capabilities:** No complete console functions are provided, such as distribution task management and control, data market, multi-tenancy, and permission control, etc.
+**Lack of product capabilities:** No well-experienced console functions are capabilities, such as distribution task management and control, data market, multi-tenancy, and permission control, etc.
 
 ## Core Competence
 
@@ -25,7 +25,7 @@ Provide enterprise-level (efficient, stable, secure, low-cost, product-oriented)
 - Support more efficient IO methods: multi-threaded IO, memory mapping, DMA, etc.
 - Support dynamic compression, memory file system and more efficient scheduling algorithms to improve distribution efficiency
 - The client supports third-party software's native integration of Dragonfly's P2P capabilities through the C/S mode
-- Productization capabilities: support file upload, task management of various distribution modes, data views, and global management and control functions
+- Production capabilities: support file upload, task management of various distribution modes, data views, and global management and control functions
 - One set of internal and external, core features are shared with each other, and non-common features are extended separately
 - Further integration with the ecosystem: Harbor, Nydus (image downloading solution on demand), warehouse services of various cloud vendors, etc.
 
