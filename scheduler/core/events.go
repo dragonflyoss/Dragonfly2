@@ -39,8 +39,9 @@ type event interface {
 }
 
 type rsPeer struct {
-	times int32
-	peer  *supervisor.Peer
+	times        int32
+	peer         *supervisor.Peer
+	blankParents sets.String
 }
 
 type state struct {
@@ -76,10 +77,11 @@ func (e reScheduleParentEvent) apply(s *state) {
 		return
 	}
 	oldParent := peer.GetParent()
-	blankParents := sets.NewString()
-	// TODO 如果之前的scheduleChildren的时候已经分配了新的父节点，则不需要在调度
-	if oldParent != nil {
-		blankParents.Insert(oldParent.PeerID)
+	blankParents := rsPeer.blankParents
+	if oldParent != nil && !blankParents.Has(oldParent.PeerID) {
+		logger.WithTaskAndPeerID(peer.Task.TaskID,
+			peer.PeerID).Warnf("reScheduleParent： peer already schedule a parent %s and new parent is not in blank parents", oldParent.PeerID)
+		return
 	}
 	parent, candidates, hasParent := s.sched.ScheduleParent(peer, blankParents)
 	if !hasParent {
@@ -189,7 +191,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 		if !hasParent {
 			logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("peerDownloadPieceSuccessEvent: no parent node is currently available, " +
 				"reschedule it later")
-			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer}, time.Second)
+			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer, blankParents: sets.NewString(parentPeer.PeerID)}, time.Second)
 			return
 		}
 	}
@@ -299,7 +301,7 @@ func (e peerDownloadFailEvent) apply(s *state) {
 		parent, candidates, hasParent := s.sched.ScheduleParent(child, sets.NewString(e.peer.PeerID))
 		if !hasParent {
 			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("peerDownloadFailEvent: there is no available parent, reschedule it later")
-			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer}, time.Second)
+			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer, blankParents: sets.NewString(e.peer.PeerID)}, time.Second)
 			return true
 		}
 		if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, parent, candidates)); err != nil {
@@ -328,7 +330,7 @@ func (e peerLeaveEvent) apply(s *state) {
 		parent, candidates, hasParent := s.sched.ScheduleParent(child, sets.NewString(e.peer.PeerID))
 		if !hasParent {
 			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("handlePeerLeave: there is no available parent，reschedule it later")
-			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: child}, time.Second)
+			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: child, blankParents: sets.NewString(e.peer.PeerID)}, time.Second)
 			return true
 		}
 		if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, parent, candidates)); err != nil {
