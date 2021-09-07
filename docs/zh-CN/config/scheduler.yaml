@@ -52,7 +52,7 @@ scheduler:
     # taskTTI 的 TTI 时间，距离上次 task 的访问时间超过改值则 task 会被设置成 zombie 状态
     taskTTI: 3m
 
-# server configuration
+# server scheduler 服务实例配置信息
 server:
   # ip
   ip:
