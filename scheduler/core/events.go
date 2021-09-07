@@ -236,7 +236,7 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 	default:
 		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Debugf("report piece download fail message, piece result %s", e.pr.String())
 	}
-	s.waitScheduleParentPeerQueue.Add(&rsPeer{peer: e.peer})
+	s.waitScheduleParentPeerQueue.Add(&rsPeer{peer: e.peer, blankParents: sets.NewString(e.pr.DstPid)})
 }
 func (e peerDownloadPieceFailEvent) hashKey() string {
 	return e.peer.Task.TaskID
@@ -265,7 +265,7 @@ var _ event = peerDownloadSuccessEvent{}
 
 func (e peerDownloadSuccessEvent) apply(s *state) {
 	e.peer.SetStatus(supervisor.PeerStatusSuccess)
-	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
+	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) && !e.peer.Task.IsSuccess() {
 		e.peer.Task.UpdateTaskSuccessResult(e.peerResult.TotalPieceCount, e.peerResult.ContentLength)
 	}
 	removePeerFromCurrentTree(e.peer, s)
