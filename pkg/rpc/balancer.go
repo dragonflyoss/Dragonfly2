@@ -41,8 +41,8 @@ var (
 	_ balancer.Builder  = &d7yBalancerBuilder{}
 	_ balancer.Balancer = &d7yBalancer{}
 
-	SubConnNotFoundError  = fmt.Errorf("SubConn not found")
-	ResetSubConnFailError = fmt.Errorf("reset SubConn fail")
+	ErrSubConnNotFound  = fmt.Errorf("SubConn not found")
+	ErrResetSubConnFail = fmt.Errorf("reset SubConn fail")
 )
 
 func init() {
@@ -205,7 +205,7 @@ func (b *d7yBalancer) regeneratePicker() {
 		b.picker = base.NewErrPicker(b.mergeErrors())
 	} else {
 		b.state = connectivity.Ready
-		b.picker = NewD7yReportingPicker(availableSCs, b.pickResultChan)
+		b.picker = newD7yReportingPicker(availableSCs, b.pickResultChan)
 	}
 }
 
@@ -270,7 +270,7 @@ func (b *d7yBalancer) resetSubConn(sc balancer.SubConn) error {
 func (b *d7yBalancer) getSubConnAddr(sc balancer.SubConn) (string, error) {
 	v, ok := b.scInfos.Load(sc)
 	if !ok {
-		return "", SubConnNotFoundError
+		return "", ErrSubConnNotFound
 	}
 	return v.(*subConnInfo).addr, nil
 }
@@ -279,14 +279,14 @@ func (b *d7yBalancer) getSubConnAddr(sc balancer.SubConn) (string, error) {
 func (b *d7yBalancer) resetSubConnWithAddr(addr string) error {
 	sc, ok := b.subConns[addr]
 	if !ok {
-		return SubConnNotFoundError
+		return ErrSubConnNotFound
 	}
 	b.scInfos.Delete(sc)
 	b.cc.RemoveSubConn(sc)
 	newSC, err := b.cc.NewSubConn([]resolver.Address{b.addrInfos[addr]}, balancer.NewSubConnOptions{HealthCheckEnabled: false})
 	if err != nil {
 		log.Printf("Consistent Hash Balancer: failed to create new SubConn: %v", err)
-		return ResetSubConnFailError
+		return ErrResetSubConnFail
 	}
 	b.subConns[addr] = newSC
 	b.scInfos.Store(newSC, &subConnInfo{

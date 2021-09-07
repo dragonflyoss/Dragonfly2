@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	Key2taskId = "task_id"
+	Key2taskID = "task_id"
 )
 
 var (
@@ -37,7 +37,7 @@ type pickResult struct {
 	SC  balancer.SubConn
 }
 
-func NewD7yPicker(subConns map[string]balancer.SubConn) *d7yPicker {
+func newD7yPicker(subConns map[string]balancer.SubConn) *d7yPicker {
 	addrs := make([]string, 0)
 	for addr := range subConns {
 		addrs = append(addrs, addr)
@@ -49,7 +49,7 @@ func NewD7yPicker(subConns map[string]balancer.SubConn) *d7yPicker {
 	}
 }
 
-func NewD7yReportingPicker(subConns map[string]balancer.SubConn, reportChan chan<- pickResult) *d7yPicker {
+func newD7yReportingPicker(subConns map[string]balancer.SubConn, reportChan chan<- pickResult) *d7yPicker {
 	addrs := make([]string, 0)
 	for addr := range subConns {
 		addrs = append(addrs, addr)
@@ -71,9 +71,8 @@ type d7yPicker struct {
 
 func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	var ret balancer.PickResult
-	key, ok := info.Ctx.Value(Key2taskId).(string)
+	key, ok := info.Ctx.Value(Key2taskID).(string)
 	if !ok {
-		// for keepAlive
 		key = info.FullMethodName
 	}
 	log.Printf("pick for %s\n", key)
