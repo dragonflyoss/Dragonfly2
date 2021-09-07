@@ -6,11 +6,15 @@ scheduler:
   # abtest if open abtest
   # default: false
   abtest: false
-  # ascheduler
-  ascheduler:
-  # bscheduler
-  bscheduler:
-  # workerNum
+  # aevaluator specify which evaluator is used when taskID suffix with _A
+  # only take effect when abtest is true
+  # default: ""
+  aevaluator: ""
+  # bevaluator specify which evaluator is used when taskID suffix with _B
+  # only take effect when abtest is true
+  # default: ""
+  bevaluator: ""
+  # workerNum is work num of
   # default:
   workerNum: 12
   # backSourceCount

@@ -40,8 +40,8 @@ func TestSchedulerConfig_Load(t *testing.T) {
 		},
 		Scheduler: &SchedulerConfig{
 			ABTest:     true,
-			AScheduler: "a-scheduler",
-			BScheduler: "b-scheduler",
+			AEvaluator: "a-evaluator",
+			BEvaluator: "b-evaluator",
 			WorkerNum:  8,
 		},
 		Server: &ServerConfig{

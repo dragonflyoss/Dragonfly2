@@ -2,74 +2,78 @@
 
 # scheduler 调度策略配置
 scheduler:
-  # abtest if open abtest
+  # abtest 是否开启ab测试
   # default: false
   abtest: false
-  # ascheduler
-  ascheduler: ddd
-  # bscheduler
-  bscheduler: ""
-  # workerNum
-  # default:
-  workerNum: ""
-  # backSourceCount
-  # default:
+  # aevaluator 指定当开启AB测试时，后缀为 _A 的 taskID 使用的 evaluator 计算方法
+  # 只有当开启了 AB 测试的情况下该配置才生效
+  # default: ""
+  aevaluator: ""
+  # bevaluator 指定当开启AB测试时，后缀为 _B 的 taskID 使用的 evaluator 计算方法
+  # 只有当开启了 AB 测试的情况下该配置才生效
+  # default: ""
+  bevaluator: ""
+  # workerNum 执行调度任务处理的 goroutine 数量
+  # default: 默认机器可用的 CPU 数量
+  workerNum: 12
+  # backSourceCount 当 CDN 不可用时，回源客户端的数量
+  # default: 3
   backSourceCount: 3
-  # accessWindow
-  # default:
-  accessWindow: 3s
-  # candidateParentCount
-  # default: 1
-  candidateParentCount: 1
-  # scheduler
+  # accessWindow 距离上次触发 CDN 回源的时间窗口
+  # default: 3m
+  accessWindow: 3m
+  # candidateParentCount 候选父节点数量，
+  # default: 10
+  candidateParentCount: 10
+  # scheduler 当前采用的 scheduler 调度策略
   # default: basic
   scheduler: basic
-  # cdnLoad
-  # default:
-  cdnLoad: ""
-  # clientLoad
-  # default:
-  clientLoad: ""
-  # clientLoad
-  # default:
-  openMonitor: ""
-  # gc
+  # cdnLoad CDN 节点可以提供上传的最大负载
+  # default: 100
+  cdnLoad: 100
+  # clientLoad 普通客户端节点可以提供上传的最大负载
+  # default: 10
+  clientLoad: 10
+  # openMonitor 是否打开监控，目前只监控了当前的 peer 列表状态信息
+  # default: false
+  openMonitor: false
+  # gc 元数据回收策略
   gc:
-    # peerGCInterval
-    peerGCInterval: ""
-    # peerTTL
-    peerTTL: ""
-    # peerTTI
-    peerTTI: ""
-    # taskGCInterval
-    taskGCInterval: ""
-    # taskTTL
-    taskTTL: ""
-    # taskTTI
-    taskTTI: ""
+    # peerGCInterval peer 的回收间隔
+    peerGCInterval: 1m
+    # peerTTL peer 的离开时间, 距离上次 peer 的访问时间超过改值则 peer 会被设置成 leave 状态
+    peerTTL: 10m
+    # peerTTI peer 的 TTI 时间，距离上次 peer 的访问时间超过改值则 peer 会被设置成 zombie 状态
+    peerTTI: 3m
+    # taskGCInterval task 的回收间隔
+    taskGCInterval: 1m
+    # taskTTL task 的离开时间, 距离上次 task 的访问时间超过改值则 task 会被设置成 leave 状态
+    taskTTL: 10m
+    # taskTTI 的 TTI 时间，距离上次 task 的访问时间超过改值则 task 会被设置成 zombie 状态
+    taskTTI: 3m
 
 # server configuration
 server:
   # ip
-  ip: ""
+  ip:
   # host
-  host: ""
+  host:
   # ListenPort is the ip and port scheduler server listens on.
   # default: 8002
-  port: 8002
+  port:
 
-# dynamic data configuration
+# 动态数据配置
 dynConfig:
   # type
-  type: ""
+  type:
   # expireTime
-  expireTime: ""
+  expireTime:
   # cdnDirPath
-  cdnDirPath: ""
+  cdnDirPath:
   # data
   data: ""
 
-# manager configuration
+# manager 配置
 manager:
   # addr
   addr: 127.0.0.1:65003
@@ -80,14 +84,14 @@ manager:
     # interval
     interval: ""
 
-# host configuration
+# 主机配置
 host:
   # location
   location: ""
   # idc
   idc: ""
 
-# job configuration
+# 异步任务配置
 job:
   # globalWorkerNum
   globalWorkerNum: 2
@@ -95,7 +99,7 @@ job:
   schedulerWorkerNum: 3
   # localWorkerNum
   localWorkerNum: 3
-  # redis
+  # redis configuration
   redis:
     # host
     host: fff
@@ -108,25 +112,26 @@ job:
     # backendDB
     backendDB: ""
 
-# Whether to disable CDN
+# disableCDN 是否停用 CDN
 # default: false
 disableCDN: false
 
-# Console shows log on console
+# Console 是否在控制台程序中显示日志
 # default: false
 console: false
 
-# Whether to enable debug level logger and enable pprof
+# verbose 是否使用调试级别的日志、是否启用 pprof。
 # default: false
 verbose: false
 
-# listen port for pprof, only valid when the verbose option is true
+# pprofPort pprof 监听的端口，仅在 verbose 为 true 时可用
 # default is -1. If it is 0, pprof will use a random port.
 pprofPort: -1
 
-# jaeger endpoint url
+# jaeger 地址
+# 默认使用空字符串（不配置 jaeger）
 jaeger:
 
-# service name used in tracer
-# default: dragonfly-cdn
-service-name: dragonfly-cdn
+# tracer 中使用的 service-name
+# 默认值：dragonfly-cdn
+service-name: dragonfly-scheduler
