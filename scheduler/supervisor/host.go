@@ -19,6 +19,7 @@ package supervisor
 import (
 	"sync"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"go.uber.org/atomic"
 )
 
@@ -48,6 +49,7 @@ type PeerHost struct {
 	TotalUploadLoad   int32
 	currentUploadLoad atomic.Int32
 	peerMap           map[string]*Peer
+	logger            *logger.SugaredLoggerOnWith
 }
 
 func NewClientPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc, netTopology string,
@@ -75,6 +77,7 @@ func newPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN b
 		NetTopology:     netTopology,
 		TotalUploadLoad: totalUploadLoad,
 		peerMap:         make(map[string]*Peer),
+		logger:          logger.With("hostUUID", uuid),
 	}
 }
 
@@ -124,4 +127,8 @@ func (h *PeerHost) IncUploadLoad() int32 {
 
 func (h *PeerHost) DecUploadLoad() int32 {
 	return h.currentUploadLoad.Dec()
+}
+
+func (h *PeerHost) Log() *logger.SugaredLoggerOnWith {
+	return h.logger
 }

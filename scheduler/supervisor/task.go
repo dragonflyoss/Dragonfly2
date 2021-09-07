@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"go.uber.org/atomic"
@@ -72,6 +73,7 @@ type Task struct {
 	backSourceLimit      atomic.Int32
 	needClientBackSource atomic.Bool
 	backSourcePeers      []string
+	logger               *logger.SugaredLoggerOnWith
 }
 
 func NewTask(taskID, url string, meta *base.UrlMeta) *Task {
@@ -83,6 +85,7 @@ func NewTask(taskID, url string, meta *base.UrlMeta) *Task {
 		pieceList:  make(map[int32]*base.PieceInfo),
 		peers:      sortedlist.NewSortedList(),
 		status:     TaskStatusWaiting,
+		logger:     logger.WithTaskID(taskID),
 	}
 }
 
@@ -292,4 +295,8 @@ func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (p
 		return true
 	})
 	return
+}
+
+func (task *Task) Log() *logger.SugaredLoggerOnWith {
+	return task.logger
 }

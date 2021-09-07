@@ -79,13 +79,11 @@ func (e startReportPieceResultEvent) apply(s *state) {
 	span := trace.SpanFromContext(e.ctx)
 	parent := e.peer.GetParent()
 	if parent != nil {
-		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
-			e.peer.PeerID).Warnf("startReportPieceResultEvent: no need schedule parent because peer already had parent %s", e.peer.GetParent().PeerID)
+		e.peer.Log().Warnf("startReportPieceResultEvent: no need schedule parent because peer already had parent %s", e.peer.GetParent().PeerID)
 		return
 	}
 	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
-		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
-			e.peer.PeerID).Info("startReportPieceResultEvent: no need schedule parent because peer is back source peer")
+		e.peer.Log().Info("startReportPieceResultEvent: no need schedule parent because peer is back source peer")
 		s.waitScheduleParentPeerQueue.Done(e.peer)
 		return
 	}
@@ -100,13 +98,12 @@ func (e startReportPieceResultEvent) apply(s *state) {
 			}
 			return
 		}
-		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
-			e.peer.PeerID).Warnf("startReportPieceResultEvent: no parent node is currently available，reschedule it later")
+		e.peer.Log().Warnf("startReportPieceResultEvent: no parent node is currently available，reschedule it later")
 		s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
 		return
 	}
 	if err := e.peer.SendSchedulePacket(constructSuccessPeerPacket(e.peer, parent, candidates)); err != nil {
-		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("send schedule packet to peer %s failed: %v", e.peer.PeerID, err)
+		e.peer.Log().Warnf("send schedule packet to peer %s failed: %v", e.peer.PeerID, err)
 	}
 }
 
@@ -127,8 +124,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	if e.peer.Task.IsBackSourcePeer(e.peer.PeerID) {
 		e.peer.Task.AddPiece(e.pr.PieceInfo)
 		if !e.peer.Task.CanSchedule() {
-			logger.WithTaskAndPeerID(e.peer.Task.TaskID,
-				e.peer.PeerID).Warnf("peerDownloadPieceSuccessEvent: update task status seeding")
+			e.peer.Log().Warnf("peerDownloadPieceSuccessEvent: update task status seeding")
 			e.peer.Task.SetStatus(supervisor.TaskStatusSeeding)
 		}
 		return
@@ -141,13 +137,12 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 			e.peer.ReplaceParent(parentPeer)
 		}
 	} else if parentPeer.IsLeave() {
-		logger.WithTaskAndPeerID(e.peer.Task.TaskID,
-			e.peer.PeerID).Warnf("peerDownloadPieceSuccessEvent: need reschedule parent for peer because it's parent is leave")
+		e.peer.Log().Warnf("peerDownloadPieceSuccessEvent: need reschedule parent for peer because it's parent is leave")
 		e.peer.ReplaceParent(nil)
 		var hasParent bool
 		parentPeer, candidates, hasParent = s.sched.ScheduleParent(e.peer)
 		if !hasParent {
-			logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("peerDownloadPieceSuccessEvent: no parent node is currently available, " +
+			e.peer.Log().Warnf("peerDownloadPieceSuccessEvent: no parent node is currently available, " +
 				"reschedule it later")
 			s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
 			return
@@ -159,7 +154,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	}
 	// TODO if parentPeer is equal with oldParent, need schedule again ?
 	if err := e.peer.SendSchedulePacket(constructSuccessPeerPacket(e.peer, parentPeer, candidates)); err != nil {
-		logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("send schedule packet to peer %s failed: %v", e.peer.PeerID, err)
+		e.peer.Log().Warnf("send schedule packet to peer %s failed: %v", e.peer.PeerID, err)
 	}
 }
 
@@ -201,7 +196,7 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 				children := s.sched.ScheduleChildren(cdnPeer)
 				for _, child := range children {
 					if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, cdnPeer, nil)); err != nil {
-						logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("send schedule packet to peer %s failed: %v", child.PeerID, err)
+						e.peer.Log().Warnf("send schedule packet to peer %s failed: %v", child.PeerID, err)
 					}
 				}
 			}
@@ -245,7 +240,7 @@ func (e peerDownloadSuccessEvent) apply(s *state) {
 	children := s.sched.ScheduleChildren(e.peer)
 	for _, child := range children {
 		if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, e.peer, nil)); err != nil {
-			logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("send schedule packet to peer %s failed: %v", child.PeerID, err)
+			e.peer.Log().Warnf("send schedule packet to peer %s failed: %v", child.PeerID, err)
 		}
 	}
 }
@@ -273,12 +268,12 @@ func (e peerDownloadFailEvent) apply(s *state) {
 		child := (value).(*supervisor.Peer)
 		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if !hasParent {
-			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("peerDownloadFailEvent: there is no available parent, reschedule it later")
+			e.peer.Log().Warnf("peerDownloadFailEvent: there is no available parent, reschedule it later")
 			s.waitScheduleParentPeerQueue.AddAfter(e.peer, time.Second)
 			return true
 		}
 		if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, parent, candidates)); err != nil {
-			logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("send schedule packet to peer %s failed: %v", child.PeerID, err)
+			e.peer.Log().Warnf("send schedule packet to peer %s failed: %v", child.PeerID, err)
 		}
 		return true
 	})
@@ -302,12 +297,12 @@ func (e peerLeaveEvent) apply(s *state) {
 		child := value.(*supervisor.Peer)
 		parent, candidates, hasParent := s.sched.ScheduleParent(child)
 		if !hasParent {
-			logger.WithTaskAndPeerID(child.Task.TaskID, child.PeerID).Warnf("handlePeerLeave: there is no available parent，reschedule it later")
+			e.peer.Log().Warnf("handlePeerLeave: there is no available parent，reschedule it later")
 			s.waitScheduleParentPeerQueue.AddAfter(child, time.Second)
 			return true
 		}
 		if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, parent, candidates)); err != nil {
-			logger.WithTaskAndPeerID(e.peer.Task.TaskID, e.peer.PeerID).Warnf("send schedule packet to peer %s failed: %v", child.PeerID, err)
+			e.peer.Log().Warnf("send schedule packet to peer %s failed: %v", child.PeerID, err)
 		}
 		return true
 	})
@@ -361,7 +356,7 @@ func reScheduleParent(peer *supervisor.Peer, s *state) {
 	}
 	// TODO if parentPeer is equal with oldParent, need schedule again ?
 	if err := peer.SendSchedulePacket(constructSuccessPeerPacket(peer, parent, candidates)); err != nil {
-		logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Warnf("send schedule packet to peer %s failed: %v", peer.PeerID, err)
+		peer.Log().Warnf("send schedule packet to peer %s failed: %v", peer.PeerID, err)
 	}
 }
 
@@ -394,7 +389,7 @@ func removePeerFromCurrentTree(peer *supervisor.Peer, s *state) {
 		children := s.sched.ScheduleChildren(parent)
 		for _, child := range children {
 			if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, peer, nil)); err != nil {
-				logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Warnf("send schedule packet to peer %s failed: %v", child.PeerID, err)
+				peer.Log().Warnf("send schedule packet to peer %s failed: %v", child.PeerID, err)
 			}
 		}
 	}
