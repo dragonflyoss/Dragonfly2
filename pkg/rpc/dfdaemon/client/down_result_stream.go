@@ -67,7 +67,7 @@ func (drs *DownResultStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client dfdaemon.DaemonClient
 		var err error
-		client, target, err = drs.dc.getDaemonClient(drs.hashKey, false)
+		client, target, err = drs.dc.getDaemonClient()
 		if err != nil {
 			return nil, err
 		}
@@ -90,12 +90,12 @@ func (drs *DownResultStream) Recv() (dr *dfdaemon.DownResult, err error) {
 		if dr != nil {
 			if dr.TaskId != drs.hashKey {
 				logger.WithTaskAndPeerID(dr.TaskId, dr.PeerId).Warnf("down result stream correct taskId from %s to %s", drs.hashKey, dr.TaskId)
-				drs.dc.Connection.CorrectKey2NodeRelation(drs.hashKey, dr.TaskId)
+				//drs.dc.Connection.CorrectKey2NodeRelation(drs.hashKey, dr.TaskId)
 				drs.hashKey = dr.TaskId
 			}
 		}
 	}()
-	drs.dc.UpdateAccessNodeMapByHashKey(drs.hashKey)
+	//drs.dc.UpdateAccessNodeMapByHashKey(drs.hashKey)
 	return drs.stream.Recv()
 }
 
@@ -120,7 +120,7 @@ func (drs *DownResultStream) replaceStream(cause error) error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client dfdaemon.DaemonClient
 		var err error
-		client, target, err = drs.dc.getDaemonClient(drs.hashKey, true)
+		client, target, err = drs.dc.getDaemonClient()
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +147,7 @@ func (drs *DownResultStream) replaceClient(cause error) error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client dfdaemon.DaemonClient
 		var err error
-		client, target, err = drs.dc.getDaemonClient(drs.hashKey, true)
+		client, target, err = drs.dc.getDaemonClient()
 		if err != nil {
 			return nil, err
 		}

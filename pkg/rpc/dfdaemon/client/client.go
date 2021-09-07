@@ -83,20 +83,13 @@ type daemonClient struct {
 	*rpc.Connection
 }
 
-func (dc *daemonClient) getDaemonClient(key string, stick bool) (dfdaemon.DaemonClient, string, error) {
-	clientConn, err := dc.Connection.GetClientConn(key, stick)
+func (dc *daemonClient) getDaemonClient() (dfdaemon.DaemonClient, string, error) {
+	// "dfdaemon.Daemon" is the dfdaemon._Daemon_serviceDesc.ServiceName
+	clientConn, err := dc.Connection.NewClient(fmt.Sprintf("%s:///%s", rpc.DaemonScheme, "dfdaemon.Daemon"))
 	if err != nil {
 		return nil, "", err
 	}
 	return dfdaemon.NewDaemonClient(clientConn), clientConn.Target(), nil
-}
-
-func (dc *daemonClient) getDaemonClientWithTarget(target string) (dfdaemon.DaemonClient, error) {
-	conn, err := dc.Connection.GetClientConnByTarget(target)
-	if err != nil {
-		return nil, err
-	}
-	return dfdaemon.NewDaemonClient(conn), nil
 }
 
 func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error) {
@@ -109,7 +102,7 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
 	error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
+		client, _, err := dc.getDaemonClient()
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +117,7 @@ func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr,
 
 func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (err error) {
 	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
+		client, _, err := dc.getDaemonClient()
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect server %s: %v", target.GetEndpoint(), err)
 		}

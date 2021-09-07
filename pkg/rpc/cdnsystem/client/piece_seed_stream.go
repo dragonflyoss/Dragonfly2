@@ -68,7 +68,7 @@ func (pss *PieceSeedStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client cdnsystem.SeederClient
 		var err error
-		client, target, err = pss.sc.getCdnClient(pss.hashKey, false)
+		client, target, err = pss.sc.getCdnClient()
 		if err != nil {
 			return nil, err
 		}
@@ -87,7 +87,7 @@ func (pss *PieceSeedStream) initStream() error {
 }
 
 func (pss *PieceSeedStream) Recv() (ps *cdnsystem.PieceSeed, err error) {
-	pss.sc.UpdateAccessNodeMapByHashKey(pss.hashKey)
+	//pss.sc.UpdateAccessNodeMapByHashKey(pss.hashKey)
 	return pss.stream.Recv()
 }
 
@@ -111,7 +111,7 @@ func (pss *PieceSeedStream) replaceStream(cause error) error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client cdnsystem.SeederClient
 		var err error
-		client, target, err = pss.sc.getCdnClient(pss.hashKey, true)
+		client, target, err = pss.sc.getCdnClient()
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +137,7 @@ func (pss *PieceSeedStream) replaceClient(key string, cause error) error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client cdnsystem.SeederClient
 		var err error
-		client, target, err = pss.sc.getCdnClient(key, true)
+		client, target, err = pss.sc.getCdnClient()
 		if err != nil {
 			return nil, err
 		}

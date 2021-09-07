@@ -75,7 +75,7 @@ func newPeerPacketStream(ctx context.Context, sc *schedulerClient, hashKey strin
 
 func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
 	pps.lastPieceResult = pr
-	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
+	//pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
 	err = pps.stream.Send(pr)
 
 	if pr.PieceInfo.PieceNum == common.EndOfPiece {
@@ -95,7 +95,7 @@ func (pps *peerPacketStream) closeSend() error {
 }
 
 func (pps *peerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
-	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
+	//pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
 	return pps.stream.Recv()
 }
 
@@ -116,7 +116,7 @@ func (pps *peerPacketStream) retryRecv(cause error) (*scheduler.PeerPacket, erro
 		return nil, cause
 	}
 	_, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, _, err := pps.sc.getSchedulerClient(pps.hashKey, false)
+		client, _, err := pps.sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +149,7 @@ func (pps *peerPacketStream) initStream() error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error
-		client, target, err = pps.sc.getSchedulerClient(pps.hashKey, true)
+		client, target, err = pps.sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +175,7 @@ func (pps *peerPacketStream) replaceStream(cause error) error {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error
-		client, target, err = pps.sc.getSchedulerClient(pps.hashKey, true)
+		client, target, err = pps.sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}
@@ -201,7 +201,7 @@ func (pps *peerPacketStream) replaceClient(cause error) error {
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error
-		client, target, err = pps.sc.getSchedulerClient(pps.hashKey, true)
+		client, target, err = pps.sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}

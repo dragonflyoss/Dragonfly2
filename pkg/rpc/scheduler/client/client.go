@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
@@ -65,8 +66,9 @@ type schedulerClient struct {
 	*rpc.Connection
 }
 
-func (sc *schedulerClient) getSchedulerClient(key string, stick bool) (scheduler.SchedulerClient, string, error) {
-	clientConn, err := sc.Connection.GetClientConn(key, stick)
+func (sc *schedulerClient) getSchedulerClient() (scheduler.SchedulerClient, string, error) {
+	// "scheduler.Scheduler" is the scheduler._Scheduler_serviceDesc.ServiceName
+	clientConn, err := sc.Connection.NewClient(fmt.Sprintf("%s:///%s", rpc.SchedulerScheme, "scheduler.Scheduler"))
 	if err != nil {
 		return nil, "", err
 	}
@@ -85,7 +87,7 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	reg := func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error
-		client, schedulerNode, err = sc.getSchedulerClient(key, false)
+		client, schedulerNode, err = sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +102,7 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	taskID = rr.TaskId
 	if taskID != key {
 		logger.WithTaskAndPeerID(taskID, ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", key, taskID)
-		sc.Connection.CorrectKey2NodeRelation(key, taskID)
+		//sc.Connection.CorrectKey2NodeRelation(key, taskID)
 	}
 	logger.WithTaskAndPeerID(taskID, ptr.PeerId).
 		Infof("register peer task result success url: %s, scheduler: %s", ptr.Url, schedulerNode)
@@ -124,7 +126,7 @@ func (sc *schedulerClient) retryRegisterPeerTask(ctx context.Context, hashKey st
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error
-		client, schedulerNode, err = sc.getSchedulerClient(hashKey, true)
+		client, schedulerNode, err = sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +140,7 @@ func (sc *schedulerClient) retryRegisterPeerTask(ctx context.Context, hashKey st
 	taskID = rr.TaskId
 	if taskID != hashKey {
 		logger.WithTaskAndPeerID(taskID, ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", hashKey, taskID)
-		sc.Connection.CorrectKey2NodeRelation(hashKey, taskID)
+		//sc.Connection.CorrectKey2NodeRelation(hashKey, taskID)
 	}
 	logger.WithTaskAndPeerID(taskID, ptr.PeerId).
 		Infof("register peer task result success url: %s, scheduler: %s", ptr.Url, schedulerNode)
@@ -165,7 +167,7 @@ func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.P
 	_, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error
-		client, schedulerNode, err = sc.getSchedulerClient(pr.TaskId, true)
+		client, schedulerNode, err = sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +197,7 @@ func (sc *schedulerClient) retryReportPeerResult(ctx context.Context, pr *schedu
 	exclusiveNodes = append(exclusiveNodes, preNode)
 	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
-		client, schedulerNode, err = sc.getSchedulerClient(pr.TaskId, true)
+		client, schedulerNode, err = sc.getSchedulerClient()
 		if err != nil {
 			code = dfcodes.ServerUnavailable
 			return nil, err
@@ -226,7 +228,7 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 
 	leaveFun := func() (interface{}, error) {
 		var client scheduler.SchedulerClient
-		client, schedulerNode, err = sc.getSchedulerClient(pt.TaskId, false)
+		client, schedulerNode, err = sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}

@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -79,20 +80,13 @@ type cdnClient struct {
 
 var _ CdnClient = (*cdnClient)(nil)
 
-func (cc *cdnClient) getCdnClient(key string, stick bool) (cdnsystem.SeederClient, string, error) {
-	clientConn, err := cc.Connection.GetClientConn(key, stick)
+func (cc *cdnClient) getCdnClient() (cdnsystem.SeederClient, string, error) {
+	// "cdnsystem.Seeder" is the cdnsystem._Seeder_serviceDesc.ServiceName
+	clientConn, err := cc.Connection.NewClient(fmt.Sprintf("%s:///%s", rpc.CDNScheme, "cdnsystem.Seeder"))
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "get ClientConn for hashKey %s", key)
+		return nil, "", err
 	}
 	return cdnsystem.NewSeederClient(clientConn), clientConn.Target(), nil
-}
-
-func (cc *cdnClient) getSeederClientWithTarget(target string) (cdnsystem.SeederClient, error) {
-	conn, err := cc.Connection.GetClientConnByTarget(target)
-	if err != nil {
-		return nil, err
-	}
-	return cdnsystem.NewSeederClient(conn), nil
 }
 
 func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error) {
@@ -101,7 +95,7 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest,
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
+		client, _, err := cc.getCdnClient()
 		if err != nil {
 			return nil, err
 		}
