@@ -1,4 +1,4 @@
-# [WIP] Dragonfly 快速开始
+# Dragonfly 快速开始
 
 Dragonfly 快速开始文档的目标是帮助您快速开始使用 Dragonfly。
 
