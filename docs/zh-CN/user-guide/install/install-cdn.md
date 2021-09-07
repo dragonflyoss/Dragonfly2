@@ -35,7 +35,7 @@ Nginx|0.8+
 1. 获取最新的 CDN 镜像
 
     ```sh
-    docker pull d7yio/cdn
+    docker pull dragonflyoss/cdn
     ```
 
 或者您可以构建自己的 CDN 镜像
@@ -118,9 +118,7 @@ docker run -d --name cdn --restart=always -p 8001:8001 -p 8003:8003 -v /home/adm
 ### 启动 cdn
 
 ```sh
-cdnHomeDir=/home/admin/cdn
-cdnDownloadPort=8001
-cdn --home-dir=$cdnHomeDir --port=8003 --download-port=$cdnDownloadPort
+cdn --port=8003 --download-port=8001
 ```
 
 ### 启动 file server

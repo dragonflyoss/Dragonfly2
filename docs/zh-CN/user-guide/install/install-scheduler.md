@@ -35,7 +35,7 @@ Nginx|0.8+
 1. 获取最新的 scheduler 镜像
 
     ```sh
-    docker pull d7yio/scheduler
+    docker pull dragonflyoss/scheduler
     ```
 
 或者您可以构建自己的 scheduler 镜像
