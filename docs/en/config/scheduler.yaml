@@ -53,7 +53,7 @@ scheduler:
     # taskTTI task's TTI duration
     taskTTI: 3m
 
-# server configuration
+# server scheduler instance configuration
 server:
   # ip
   ip:
@@ -76,23 +76,23 @@ dynConfig:
 
 # manager configuration
 manager:
-  # addr
+  # addr manager access address
   addr: 127.0.0.1:65003
-  # schedulerClusterID
+  # schedulerClusterID cluster id to which scheduler instance belongs
   schedulerClusterID: 1
-  # keepAlive
+  # keepAlive keep alive configuration
   keepAlive:
     # interval
-    interval: ""
+    interval: 5s
 
-# host configuration
+# host scheduler host configuration
 host:
-  # location
+  # location is the location of scheduler instance
   location: ""
-  # idc
+  # idc is the idc of scheduler instance
   idc: ""
 
-# job configuration
+# machinery async job configuration, see https://github.com/RichardKnop/machinery
 job:
   # globalWorkerNum
   globalWorkerNum: 2
