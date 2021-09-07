@@ -65,8 +65,10 @@ server:
 # 动态数据配置
 dynConfig:
   # type 动态数据来源类型 manager 从远端manager读取 / local 从本地文件读取
-  type: "local"
+  # default: local
+  type: local
   # expireTime 缓存的过期时间
+  # default 30s
   expireTime: 30s
   # cdnDirPath cdn 实例列表文件存放的目录
   cdnDirPath:
