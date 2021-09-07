@@ -3,38 +3,45 @@
 Manager is a process that runs in the background and plays the role of the brain of each subsystem cluster in Dragonfly. It is used to manage the dynamic 
 configuration of each system module and provide functions such as heartbeat keeping alive, monitoring the market, and product functions.
 
-## Try it
+### Try it
+
 ```
-go run cmd/manager/main.go [Option]
+manager [Option]
 ```
 
-## Log configuration
+### Log configuration
+
 ```
-1. set environment variable console=local if you want to print logs to Terminal
+1. set option --console if you want to print logs to Terminal
 2. log path: /var/log/dragonfly/manager/
 ```
 
-## Runtime metrics monitoring
+### Runtime metrics monitoring
+
 ```
-go run cmd/manager/main.go --pprof-port port
+manager --pprof-port port
 ```
 
-## Swagger support
+### Swagger support
+
 endpoint: /swagger/doc.json   
 
-## Prometheus metrics monitoring
+### Prometheus metrics monitoring
+
 endpoint:  /metrics  
 
-## HealthCheck
-endpoint: /healthy/   
+### HealthCheck
+
+endpoint: /healthy/
 
 
-## Enable jaeger
+### Enable jaeger
+
 ```
-go run cmd/manager/main.go --jaeger  http://localhost:14250/api/traces
+manager --jaeger  http://localhost:14250/api/traces
 ```
 
-## Options
+### Options
 
 ```
       --config string         the path of configuration file with yaml extension name, default is /etc/dragonfly/manager.yaml, it can also be set by env var: MANAGER_CONFIG
@@ -46,5 +53,5 @@ go run cmd/manager/main.go --jaeger  http://localhost:14250/api/traces
       --verbose               whether logger use debug level
 ```
 
-## Config file
-[manger config](../config/manager.yaml)
+### Manager Config
+[Config Example](../config/manager.yaml)

@@ -1,0 +1,45 @@
+# 此文件是manger的配置文件模板，你可以通过根据需要改变对应的值来配置manger服务。
+---
+# 当前的服务配置 
+server:
+  # grpc服务配置
+  grpc:
+    # 监听的ip地址
+    listen: 127.0.0.1
+    # 监听的端口, manger会从start到end之间的按顺序中选择一个可用端口 
+    port:
+      start: 65003
+      end: 65003
+  # rest服务配置 
+  rest:
+    # 标准的rest服务地址: ip:port, ip不配置则默认为0.0.0.0 
+    addr: :8080
+
+# 数据库配置, 当前只支持mysql以及redis 
+database:
+  # mysql配置 
+  mysql:
+    user: dragonfly
+    password: dragonfly
+    host: dragonfly
+    port: 3306
+    dbname: manager
+  # redis配置 
+  redis:
+    password: dragonfly
+    host: dragonfly
+    port: 6379
+    db: 0
+
+# 缓存配置 
+cache:
+  # redis缓存配置
+  redis:
+    # ttl配置，单位[纳秒]
+    ttl: 30000000000
+  # 本地缓存配置
+  local:
+    # LFU缓存大小
+    size: 10000
+    # ttl配置，单位[纳秒]
+    ttl: 3000000000
