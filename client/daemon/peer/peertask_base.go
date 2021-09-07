@@ -68,6 +68,7 @@ type peerTask struct {
 	backSourceFunc        func()
 	reportPieceResultFunc func(result *pieceTaskResult) error
 	setContentLengthFunc  func(i int64) error
+	setTotalPiecesFunc    func(i int32)
 
 	request *scheduler.PeerTaskRequest
 
@@ -170,6 +171,10 @@ func (pt *peerTask) GetTraffic() int64 {
 
 func (pt *peerTask) GetTotalPieces() int32 {
 	return pt.totalPiece
+}
+
+func (pt *peerTask) SetTotalPieces(i int32) {
+	pt.setTotalPiecesFunc(i)
 }
 
 func (pt *peerTask) Context() context.Context {
@@ -369,6 +374,7 @@ func (pt *peerTask) pullPiecesFromPeers(cleanUnfinishedFunc func()) {
 	}()
 
 	if !pt.waitFirstPeerPacket() {
+		// TODO 如果是客户端直接回源，这里不应该在输出错误日志
 		pt.Errorf("wait first peer packet error")
 		return
 	}
@@ -616,15 +622,7 @@ func (pt *peerTask) waitFailedPiece() (int32, bool) {
 		pt.Infof("peer task done, stop wait failed piece")
 		return -1, false
 	case <-pt.ctx.Done():
-		if !pt.success {
-			if pt.failedCode == failedCodeNotSet {
-				pt.failedReason = reasonContextCanceled
-				pt.failedCode = dfcodes.ClientContextCanceled
-			}
-			pt.Errorf("context done due to %s, progress is not done", pt.ctx.Err())
-		} else {
-			pt.Debugf("context done due to %s, progress is already done", pt.ctx.Err())
-		}
+		pt.Debugf("context done due to %s, stop wait failed piece", pt.ctx.Err())
 		return -1, false
 	case failed := <-pt.failedPieceCh:
 		pt.Warnf("download piece/%d failed, retry", failed)
@@ -658,7 +656,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 							TaskId:        pt.GetTaskID(),
 							SrcPid:        pt.GetPeerID(),
 							DstPid:        request.DstPid,
-							PieceNum:      request.piece.PieceNum,
+							PieceInfo:     request.piece,
 							Success:       false,
 							Code:          dfcodes.ClientRequestLimitFail,
 							HostLoad:      nil,
@@ -769,6 +767,7 @@ retry:
 		TaskId:        pt.taskID,
 		SrcPid:        pt.peerID,
 		DstPid:        peer.PeerId,
+		PieceInfo:     &base.PieceInfo{},
 		Success:       false,
 		Code:          code,
 		HostLoad:      nil,
@@ -813,6 +812,7 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 				TaskId:        pt.taskID,
 				SrcPid:        pt.peerID,
 				DstPid:        peer.PeerId,
+				PieceInfo:     &base.PieceInfo{},
 				Success:       false,
 				Code:          dfcodes.ClientWaitPieceReady,
 				HostLoad:      nil,

@@ -20,8 +20,6 @@ import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
@@ -158,11 +156,7 @@ func (t *job) preheat(req string) error {
 	logger.Debugf("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
 
 	task := supervisor.NewTask(taskID, request.URL, meta)
-	task, err := t.service.GetOrCreateTask(t.ctx, task)
-	if err != nil {
-		return dferrors.Newf(dfcodes.SchedCDNSeedFail, "create task failed: %v", err)
-	}
-
+	task = t.service.GetOrCreateTask(t.ctx, task)
 	return getPreheatResult(task)
 }
 
@@ -175,7 +169,7 @@ func getPreheatResult(task *supervisor.Task) error {
 		select {
 		case <-ticker.C:
 			switch task.GetStatus() {
-			case supervisor.TaskStatusFailed, supervisor.TaskStatusCDNRegisterFail, supervisor.TaskStatusSourceError:
+			case supervisor.TaskStatusFail:
 				return errors.Errorf("preheat task fail")
 			case supervisor.TaskStatusSuccess:
 				return nil

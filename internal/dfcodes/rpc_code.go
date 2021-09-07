@@ -25,7 +25,7 @@ const (
 	ServerUnavailable base.Code = 500 // framework can not find server node
 
 	// common response error 1000-1999
-	ResourceLacked   base.Code = 1000 // client can be migrated to another scheduler
+	ResourceLacked   base.Code = 1000 // client can be migrated to another scheduler/CDN
 	BadRequest       base.Code = 1400
 	PeerTaskNotFound base.Code = 1404
 	UnknownError     base.Code = 1500
@@ -41,16 +41,12 @@ const (
 	ClientRequestLimitFail  base.Code = 4006
 
 	// scheduler response error 5000-5999
-	SchedError base.Code = 5000
-	/** @deprecated */
+	SchedError                     base.Code = 5000
 	SchedNeedBackSource            base.Code = 5001 // client should try to download from source
 	SchedPeerGone                  base.Code = 5002 // client should disconnect from scheduler
-	SchedPeerRegisterFail          base.Code = 5003
-	SchedPeerScheduleFail          base.Code = 5004
-	SchedPeerNotFound              base.Code = 5005
-	SchedPeerPieceResultReportFail base.Code = 5006
-	SchedCDNSeedFail               base.Code = 5007
-	SchedTaskStatusError           base.Code = 5008
+	SchedPeerNotFound              base.Code = 5004 // peer not found in scheduler
+	SchedPeerPieceResultReportFail base.Code = 5005 // report piece
+	SchedTaskStatusError           base.Code = 5006 // task status is fail
 
 	// cdnsystem response error 6000-6999
 	CdnError            base.Code = 6000

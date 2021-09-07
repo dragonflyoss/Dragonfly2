@@ -130,6 +130,9 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				func(arg0 int64) error {
 					return nil
 				})
+			mockPeerTask.EXPECT().SetTotalPieces(gomock.Any()).AnyTimes().DoAndReturn(
+				func(arg0 int32) {
+				})
 			mockPeerTask.EXPECT().GetPeerID().AnyTimes().DoAndReturn(
 				func() string {
 					return peerID

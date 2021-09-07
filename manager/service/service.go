@@ -31,6 +31,7 @@ import (
 )
 
 type REST interface {
+	GetUser(uint) (*model.User, error)
 	SignIn(types.SignInRequest) (*model.User, error)
 	SignUp(types.SignUpRequest) (*model.User, error)
 	OauthSignin(string) (string, error)

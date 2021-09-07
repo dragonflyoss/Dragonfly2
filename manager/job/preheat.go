@@ -30,8 +30,8 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/docker/distribution"
-	"github.com/docker/distribution/manifest/schema2"
+	"github.com/distribution/distribution/v3"
+	"github.com/distribution/distribution/v3/manifest/schema2"
 )
 
 type PreheatType string

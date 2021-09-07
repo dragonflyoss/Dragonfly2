@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -34,23 +35,44 @@ const (
 	dragonflyNamespace = "dragonfly-system"
 )
 
+const (
+	dfdaemonCompatibilityTestMode = "dfdaemon"
+)
+
 var _ = BeforeSuite(func() {
-	out, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
+	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
+	if mode != "" {
+		rawImages, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", fmt.Sprintf("component=%s", mode),
+			"-o", "jsonpath='{range .items[0]}{.spec.containers[0].image}{end}'").CombinedOutput()
+		image := strings.Trim(string(rawImages), "'")
+		Expect(err).NotTo(HaveOccurred())
+		fmt.Printf("special image name: %s\n", image)
+
+		stableImageTag := os.Getenv("DRAGONFLY_STABLE_IMAGE_TAG")
+		Expect(fmt.Sprintf("dragonflyoss/%s:%s", mode, stableImageTag)).To(Equal(image))
+	}
+
+	rawGitCommit, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
-	gitCommit := strings.Fields(string(out))[0]
+	gitCommit := strings.Fields(string(rawGitCommit))[0]
 	fmt.Printf("git merge commit: %s\n", gitCommit)
 
-	out, err = e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
+	rawPodName, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
 		"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
-	podName := strings.Trim(string(out), "'")
+	podName := strings.Trim(string(rawPodName), "'")
 	Expect(err).NotTo(HaveOccurred())
-
 	Expect(strings.HasPrefix(podName, "dragonfly-dfdaemon-")).Should(BeTrue())
+
 	pod := e2eutil.NewPodExec(dragonflyNamespace, podName, "dfdaemon")
-	out, err = pod.Command("dfget", "version").CombinedOutput()
+	rawDfgetVersion, err := pod.Command("dfget", "version").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
-	dfgetGitCommit := strings.Fields(string(out))[7]
-	fmt.Printf("dfget merge commit: %s\n", gitCommit)
+	dfgetGitCommit := strings.Fields(string(rawDfgetVersion))[7]
+	fmt.Printf("dfget merge commit: %s\n", dfgetGitCommit)
+
+	if mode == dfdaemonCompatibilityTestMode {
+		Expect(gitCommit).NotTo(Equal(dfgetGitCommit))
+		return
+	}
 
 	Expect(gitCommit).To(Equal(dfgetGitCommit))
 })
@@ -63,6 +85,12 @@ var _ = AfterSuite(func() {
 	Expect(strings.HasPrefix(podName, "dragonfly-dfdaemon-")).Should(BeTrue())
 
 	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, podName, "/var/log/dragonfly/daemon/core.log", "/tmp/artifact/daemon.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-0", "/var/log/dragonfly/manager/core.log", "/tmp/artifact/manager-0.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-0", "/var/log/dragonfly/manager/gin.log", "/tmp/artifact/manager-gin-0.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-1", "/var/log/dragonfly/manager/core.log", "/tmp/artifact/manager-1.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-1", "/var/log/dragonfly/manager/gin.log", "/tmp/artifact/manager-gin-1.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-2", "/var/log/dragonfly/manager/core.log", "/tmp/artifact/manager-2.log").CombinedOutput()
+	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-2", "/var/log/dragonfly/manager/gin.log", "/tmp/artifact/manager-gin-2.log").CombinedOutput()
 	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-cdn-0", "/var/log/dragonfly/cdn/core.log", "/tmp/artifact/cdn-0.log").CombinedOutput()
 	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-cdn-1", "/var/log/dragonfly/cdn/core.log", "/tmp/artifact/cdn-1.log").CombinedOutput()
 	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-cdn-2", "/var/log/dragonfly/cdn/core.log", "/tmp/artifact/cdn-2.log").CombinedOutput()

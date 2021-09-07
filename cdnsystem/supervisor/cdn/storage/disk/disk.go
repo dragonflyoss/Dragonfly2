@@ -240,7 +240,7 @@ func (s *diskStorageMgr) TryFreeSpace(fileLength int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if freeSpace > 500*unit.GB && freeSpace.ToNumber() > fileLength {
+	if freeSpace > 100*unit.GB && freeSpace.ToNumber() > fileLength {
 		return true, nil
 	}
 
@@ -260,8 +260,6 @@ func (s *diskStorageMgr) TryFreeSpace(fileLength int64) (bool, error) {
 					if totalLen > 0 {
 						remainder.Add(totalLen - info.Size())
 					}
-				} else {
-					logger.Warnf("failed to get task: %s", taskID)
 				}
 			}
 			return nil
