@@ -118,14 +118,16 @@ Or you can build your own cdn executable file.
 ### Start cdn
 
 ```sh
-cdn --port=8003 --download-port=8001
+cdnHomeDir=/home/admin
+cdnDownloadPort=8001
+cdn --port=8003 --download-port=$cdnDownloadPort
 ```
 
 ### Start file server
 
 You can start a file server in any way. However, the following conditions must be met:
 
-- It must be rooted at `${cdnHomeDir}/ftp` which is defined in the previous step.
+- It must be rooted at `cdnHomeDir/ftp` which is defined in the previous step.
 - It must listen on the port `cdnDownloadPort` which is defined in the previous step.
 
 Let's take nginx as an example.
@@ -138,7 +140,7 @@ Let's take nginx as an example.
    listen 8001;
    location / {
      # Must be ${cdnHomeDir}/ftp
-     root /home/admin/cdn/ftp;
+     root /home/admin/ftp;
     }
    }
    ```

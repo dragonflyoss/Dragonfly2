@@ -118,7 +118,9 @@ docker run -d --name cdn --restart=always -p 8001:8001 -p 8003:8003 -v /home/adm
 ### 启动 cdn
 
 ```sh
-cdn --port=8003 --download-port=8001
+cdnHomeDir=/home/admin
+cdnDownloadPort=8001
+cdn --port=8003 --download-port=$cdnDownloadPort
 ```
 
 ### 启动 file server
@@ -137,8 +139,8 @@ cdn --port=8003 --download-port=8001
    # Must be ${cdnDownloadPort}
    listen 8001;
    location / {
-     # Must be ${cdnHomeDir}/repo
-     root /home/admin/cdn/repo;
+     # Must be ${cdnHomeDir}/ftp
+     root /home/admin/ftp;
     }
    }
    ```
