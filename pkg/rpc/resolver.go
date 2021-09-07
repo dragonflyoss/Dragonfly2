@@ -31,7 +31,11 @@ var (
 	_ resolver.Builder  = &d7yResolverBuilder{}
 	_ resolver.Resolver = &d7yResolver{}
 
-	Scheme2Resolver = map[string]*d7yResolver{}
+	Scheme2Resolver = map[string]*d7yResolver{
+		CDNScheme:       {addrs: make([]dfnet.NetAddr, 0)},
+		SchedulerScheme: {addrs: make([]dfnet.NetAddr, 0)},
+		ManagerScheme:   {addrs: make([]dfnet.NetAddr, 0)},
+	}
 )
 
 func init() {
@@ -45,21 +49,21 @@ type d7yResolverBuilder struct {
 }
 
 func (builder *d7yResolverBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
-	Scheme2Resolver[builder.scheme] = &d7yResolver{
-		target: target,
-		cc:     cc,
-	}
-	return Scheme2Resolver[builder.scheme], nil
+	r := Scheme2Resolver[builder.scheme]
+	r.target = target
+	r.cc = cc
+	err := r.UpdateAddrs(r.addrs)
+	return r, err
 }
 
 func (builder *d7yResolverBuilder) Scheme() string {
 	return builder.scheme
 }
 
-// TODO(zzy987) record address, and do not update if addrs are the same when UpdateAddrs is called.
 type d7yResolver struct {
 	target resolver.Target
 	cc     resolver.ClientConn
+	addrs  []dfnet.NetAddr
 }
 
 func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
@@ -70,6 +74,9 @@ func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
 		} else {
 			addresses[i] = resolver.Address{Addr: addr.Addr}
 		}
+	}
+	if r.cc == nil {
+		return nil
 	}
 	return r.cc.UpdateState(resolver.State{Addresses: addresses})
 }

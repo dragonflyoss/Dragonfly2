@@ -67,7 +67,7 @@ func (builder *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.B
 	return b
 }
 
-// Name returns the name of the d7yBalancer registering in grpc.
+// Name returns the scheme of the d7yBalancer registering in grpc.
 func (builder *d7yBalancerBuilder) Name() string {
 	return d7yBalancerPolicy
 }
