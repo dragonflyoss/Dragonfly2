@@ -64,34 +64,34 @@ server:
 
 # 动态数据配置
 dynConfig:
-  # type
-  type:
-  # expireTime
-  expireTime:
-  # cdnDirPath
+  # type 动态数据来源类型 manager 从远端manager读取 / local 从本地文件读取
+  type: "local"
+  # expireTime 缓存的过期时间
+  expireTime: 30s
+  # cdnDirPath cdn 实例列表文件存放的目录
   cdnDirPath:
-  # data
+  # data 本地 CDN 动态配置
   data: ""
 
 # manager 配置
 manager:
-  # addr
-  addr: 127.0.0.1:65003
-  # schedulerClusterID
-  schedulerClusterID: 1
-  # keepAlive
+  # addr manager 访问地址
+  addr: ""
+  # schedulerClusterID 要注册的 scheduler 集群 ID
+  schedulerClusterID:
+  # keepAlive 和 manager 保持心跳的配置
   keepAlive:
-    # interval
-    interval: ""
+    # interval 保持心跳的时间间隔
+    interval: 5s
 
-# 主机配置
+# scheduler 自身主机信息
 host:
-  # location
+  # location scheduler 实例所在的地理位置信息
   location: ""
-  # idc
+  # idc scheduler 实例所在机房
   idc: ""
 
-# 异步任务配置
+# machinery 异步任务配置，配置参考 https://github.com/RichardKnop/machinery
 job:
   # globalWorkerNum
   globalWorkerNum: 2
@@ -101,9 +101,9 @@ job:
   localWorkerNum: 3
   # redis configuration
   redis:
-    # host
+    # host redis 服务实例地址
     host: ""
-    # port
+    # port redis 服务实例端口
     port:
     # password
     password: ""
