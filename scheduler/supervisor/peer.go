@@ -344,6 +344,17 @@ func (peer *Peer) CloseChannel(err error) error {
 }
 
 func (peer *Peer) Log() *logger.SugaredLoggerOnWith {
+	peer.lock.RLock()
+	if peer.logger != nil {
+		peer.lock.RUnlock()
+		return peer.logger
+	}
+	peer.lock.RUnlock()
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	if peer.logger == nil {
+		peer.logger = logger.WithTaskID(peer.PeerID)
+	}
 	return peer.logger
 }
 

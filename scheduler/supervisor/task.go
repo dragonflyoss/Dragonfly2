@@ -298,5 +298,16 @@ func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (p
 }
 
 func (task *Task) Log() *logger.SugaredLoggerOnWith {
+	task.lock.RLock()
+	if task.logger != nil {
+		task.lock.RUnlock()
+		return task.logger
+	}
+	task.lock.RUnlock()
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	if task.logger == nil {
+		task.logger = logger.WithTaskID(task.TaskID)
+	}
 	return task.logger
 }

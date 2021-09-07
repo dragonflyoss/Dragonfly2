@@ -130,5 +130,16 @@ func (h *PeerHost) DecUploadLoad() int32 {
 }
 
 func (h *PeerHost) Log() *logger.SugaredLoggerOnWith {
+	h.lock.RLock()
+	if h.logger != nil {
+		h.lock.RUnlock()
+		return h.logger
+	}
+	h.lock.RUnlock()
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	if h.logger == nil {
+		h.logger = logger.WithTaskID(h.UUID)
+	}
 	return h.logger
 }
