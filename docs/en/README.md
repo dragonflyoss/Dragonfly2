@@ -8,7 +8,7 @@ Organization of document is as following:
 * [User Guide](#User-Guide)
 * [CLI Reference](#CLI-Reference)
     * [WIP dfget](cli-reference/dfget.md)
-    * [WIP cdnsystem](cli-reference/cdn.md)
+    * [WIP cdn](cli-reference/cdn.md)
     * [WIP scheduler](cli-reference/scheduler.md)
     * [manager](cli-reference/manager.md)
 * [API Reference](#API-Reference)
@@ -37,7 +37,7 @@ understand Dragonfly better would be included as well.
 
 ## CLI Reference
 
-For almost all users, commandline is the first reference you may need. Document in directory [CLI Reference](cli-reference) is about command detailed usage of Dragonfly CLI including `dfget`, `cdnsystem`, `scheduler` and `manager`. You can get introductions, synopsis, examples, options about command. Last but not least, Dragonfly can guarantee commandline docs is strongly consistent with Dragonfly CLI's source code. What's more, all commandline docs are auto generated via source code.
+For almost all users, commandline is the first reference you may need. Document in directory [CLI Reference](cli-reference) is about command detailed usage of Dragonfly CLI including `dfget`, `cdn`, `scheduler` and `manager`. You can get introductions, synopsis, examples, options about command. Last but not least, Dragonfly can guarantee commandline docs is strongly consistent with Dragonfly CLI's source code. What's more, all commandline docs are auto generated via source code.
 
 ## API Reference
 
