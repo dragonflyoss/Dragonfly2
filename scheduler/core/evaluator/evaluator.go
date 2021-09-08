@@ -46,8 +46,8 @@ type Factory struct {
 	cache                        map[string]Evaluator
 	cacheClearFunc               sync.Once
 	abtest                       bool
-	ascheduler                   string
-	bscheduler                   string
+	aEvaluator                   string
+	bEvaluator                   string
 }
 
 var _ Evaluator = (*Factory)(nil)
@@ -70,8 +70,8 @@ func NewEvaluatorFactory(cfg *config.SchedulerConfig) *Factory {
 		getEvaluatorFuncs: map[int]getEvaluatorFunc{},
 		cache:             map[string]Evaluator{},
 		abtest:            cfg.ABTest,
-		ascheduler:        cfg.AScheduler,
-		bscheduler:        cfg.BScheduler,
+		aEvaluator:        cfg.AEvaluator,
+		bEvaluator:        cfg.BEvaluator,
 	}
 	return factory
 }
@@ -104,12 +104,12 @@ func (ef *Factory) get(taskID string) Evaluator {
 	if ef.abtest {
 		name := ""
 		if strings.HasSuffix(taskID, idgen.TwinsBSuffix) {
-			if ef.bscheduler != "" {
-				name = ef.bscheduler
+			if ef.bEvaluator != "" {
+				name = ef.bEvaluator
 			}
 		} else {
-			if ef.ascheduler != "" {
-				name = ef.ascheduler
+			if ef.aEvaluator != "" {
+				name = ef.aEvaluator
 			}
 		}
 		if name != "" {

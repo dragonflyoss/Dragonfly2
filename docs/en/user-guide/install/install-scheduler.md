@@ -35,7 +35,7 @@ You can get it from [DockerHub](https://hub.docker.com/) directly.
 1. Obtain the latest Docker image of the scheduler.
 
     ```sh
-    docker pull d7yio/scheduler
+    docker pull dragonflyoss/scheduler
     ```
 
 Or you can build your own scheduler image.

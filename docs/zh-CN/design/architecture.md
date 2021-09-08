@@ -44,7 +44,7 @@
 
 #### CDN模块
 
-![cdn](../images/cdn.png)
+![cdn][cdn]
 
 ### 子系统功能
 
@@ -100,3 +100,4 @@
 [arch]: ../images/arch.png
 [association]: ../images/association.png
 [download-process]: ../images/download-process.png
+[cdn]: ../images/cdn.png

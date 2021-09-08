@@ -1,6 +1,5 @@
 # This file is the template of cdn system configuration file.
 # You can configure your cdn system by change the parameter according your requirement.
----
 base:
   # listenPort is the port cdn server listens on.
   # default: 8003
@@ -18,6 +17,10 @@ base:
   # MaxBandwidth is the network bandwidth that cdn can use.
   # default: 1G, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
   maxBandwidth: 1G
+
+  # AdvertiseIP is used to set the ip that we advertise to other peer in the p2p-network.
+  # By default, the first non-loop address is advertised.
+  advertiseIP:
 
   # FailAccessInterval is the interval time after failed to access the URL.
   # If a task failed to be downloaded from the source, it will not be retried in the time since the last failure.
@@ -42,51 +45,57 @@ base:
 
   # manager configuration
   manager:
-    addr: 127.0.0.1:65003
-    cdnClusterID: 1
+    addr: ""
+    cdnClusterID: 0
+    keepAlive:
+      interval: 5s
+
+  # host configuration
+  host:
+    location:
+    idc:
 
 plugins:
-  storageDriver:
+  storagedriver:
     - name: disk
       enable: true
       config:
-        baseDir: /tmp/cdnsystem2
+        baseDir: /Users/${USER_HOME}/ftp
     - name: memory
-      enable: true
+      enable: false
       config:
-        baseDir: /tmp/memory/dragonfly
-
-  storageManager:
+        baseDir: /dev/shm/dragonfly
+  storagemanager:
     - name: disk
       enable: true
       config:
-        gcInitialDelay: 5s
+        gcInitialDelay: 0s
         gcInterval: 15s
         driverConfigs:
           disk:
             gcConfig:
-              youngGCThreshold: 100G
-              fullGCThreshold: 5G
+              youngGCThreshold: 100.0GB
+              fullGCThreshold: 5.0GB
               cleanRatio: 1
-              intervalThreshold: 2h
+              intervalThreshold: 2h0m0s
     - name: hybrid
       enable: false
       config:
-        gcInitialDelay: 5s
+        gcInitialDelay: 0s
         gcInterval: 15s
         driverConfigs:
           disk:
             gcConfig:
-              youngGCThreshold: 100G
-              fullGCThreshold: 5G
+              youngGCThreshold: 100.0GB
+              fullGCThreshold: 5.0GB
               cleanRatio: 1
-              intervalThreshold: 2h
+              intervalThreshold: 2h0m0s
           memory:
             gcConfig:
-              youngGCThreshold: 100G
-              fullGCThreshold: 5G
+              youngGCThreshold: 100.0GB
+              fullGCThreshold: 5.0GB
               cleanRatio: 3
-              intervalThreshold: 2h
+              intervalThreshold: 2h0m0s
 
 # Console shows log on console
 # default: false
@@ -97,6 +106,12 @@ console: false
 verbose: false
 
 # listen port for pprof, only valid when the verbose option is true
-# default is random port
-pprofPort: 0
+# default is -1. If it is 0, pprof will use a random port.
+pprofPort: -1
 
+# jaeger endpoint url
+jaeger:
+
+# service name used in tracer
+# default: dragonfly-cdn
+service-name: dragonfly-cdn
