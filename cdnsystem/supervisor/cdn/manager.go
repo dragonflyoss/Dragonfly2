@@ -113,15 +113,15 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		return seedTask, errors.Wrapf(err, "failed to detect cache")
 	}
 	span.SetAttributes(config.AttributeCacheResult.String(detectResult.String()))
-	logger.WithTaskID(task.TaskID).Debugf("detects cache result: %+v", detectResult)
+	task.Log().Debugf("detects cache result: %+v", detectResult)
 	// second: report detect result
 	err = cm.cdnReporter.reportCache(ctx, task.TaskID, detectResult)
 	if err != nil {
-		logger.WithTaskID(task.TaskID).Errorf("failed to report cache, reset detectResult: %v", err)
+		task.Log().Errorf("failed to report cache, reset detectResult: %v", err)
 	}
 	// full cache
 	if detectResult.breakPoint == -1 {
-		logger.WithTaskID(task.TaskID).Infof("cache full hit on local")
+		task.Log().Infof("cache full hit on local")
 		seedTask.UpdateTaskInfo(types.TaskInfoCdnStatusSuccess, detectResult.fileMetaData.SourceRealDigest, detectResult.fileMetaData.PieceMd5Sign,
 			detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength)
 		return seedTask, nil
@@ -148,7 +148,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	if err != nil {
 		server.StatSeedFinish(task.TaskID, task.URL, false, err, start.Nanosecond(), time.Now().Nanosecond(), downloadMetadata.backSourceLength,
 			downloadMetadata.realSourceFileLength)
-		logger.WithTaskID(task.TaskID).Errorf("failed to write for task: %v", err)
+		task.Log().Errorf("failed to write for task: %v", err)
 		seedTask.UpdateStatus(types.TaskInfoCdnStatusFailed)
 		return seedTask, err
 	}
@@ -179,7 +179,7 @@ func (cm *Manager) TryFreeSpace(fileLength int64) (bool, error) {
 }
 
 func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceDigest string, downloadMetadata *downloadMetadata) (bool, error) {
-	logger.WithTaskID(task.TaskID).Debugf("handle cdn result, downloadMetaData: %+v", downloadMetadata)
+	task.Log().Debugf("handle cdn result, downloadMetaData: %+v", downloadMetadata)
 	var isSuccess = true
 	var errorMsg string
 	// check md5
@@ -222,7 +222,7 @@ func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceDigest string, do
 		return false, errors.New(errorMsg)
 	}
 
-	logger.WithTaskID(task.TaskID).Infof("success to get task, downloadMetadata: %+v realDigest: %s", downloadMetadata, sourceDigest)
+	task.Log().Infof("success to get task, downloadMetadata: %+v realDigest: %s", downloadMetadata, sourceDigest)
 
 	return true, nil
 }

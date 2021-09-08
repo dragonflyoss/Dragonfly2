@@ -35,10 +35,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const (
-	IllegalSourceFileLen = -100
-)
-
 // addOrUpdateTask add a new task or update exist task
 func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegisterRequest) (*types.SeedTask, error) {
 	var span trace.Span
@@ -67,15 +63,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	}
 
 	var task *types.SeedTask
-	newTask := &types.SeedTask{
-		TaskID:           taskID,
-		Header:           request.Header,
-		RequestDigest:    request.Digest,
-		URL:              request.URL,
-		TaskURL:          taskURL,
-		CdnStatus:        types.TaskInfoCdnStatusWaiting,
-		SourceFileLength: IllegalSourceFileLen,
-	}
+	newTask := types.NewSeedTask(taskID, request.Header, request.Digest, request.URL, taskURL)
 	// using the existing task if it already exists corresponding to taskID
 	if v, err := tm.taskStore.Get(taskID); err == nil {
 		span.SetAttributes(config.AttributeIfReuseTask.Bool(true))
@@ -92,7 +80,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		task = newTask
 	}
 
-	if task.SourceFileLength != IllegalSourceFileLen {
+	if task.SourceFileLength != types.IllegalSourceFileLen {
 		return task, nil
 	}
 
@@ -102,7 +90,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	span.AddEvent(config.EventRequestSourceFileLength)
 	sourceFileLength, err := source.GetContentLength(ctx, task.URL, request.Header)
 	if err != nil {
-		logger.WithTaskID(task.TaskID).Errorf("failed to get url (%s) content length: %v", task.URL, err)
+		task.Log().Errorf("failed to get url (%s) content length: %v", task.URL, err)
 		if cdnerrors.IsURLNotReachable(err) {
 			tm.taskURLUnReachableStore.Add(taskID, time.Now())
 			return nil, err

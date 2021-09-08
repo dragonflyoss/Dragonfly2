@@ -176,8 +176,7 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 				continue
 			}
 			if peer.IsDone() || peer.IsLeave() {
-				logger.WithTaskAndPeerID(peer.Task.TaskID,
-					peer.PeerID).Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer is done or leave, peer status is %s, "+
+				peer.Log().Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer is done or leave, peer status is %s, "+
 					"isLeave %t", peer.GetStatus(), peer.IsLeave())
 				continue
 			}
@@ -254,7 +253,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 			return task
 		}
 	} else {
-		logger.WithTaskID(task.TaskID).Infof("add new task %s", task.TaskID)
+		task.Log().Infof("add new task %s", task.TaskID)
 	}
 
 	synclock.UnLock(task.TaskID, true)
@@ -280,7 +279,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	go func() {
 		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			// fall back to client back source
-			logger.WithTaskID(task.TaskID).Errorf("seed task failed: %v", err)
+			task.Log().Errorf("seed task failed: %v", err)
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
 			task.SetClientBackSourceStatusAndLimit(s.config.BackSourceCount)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {

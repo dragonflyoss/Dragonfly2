@@ -16,6 +16,10 @@
 
 package types
 
+import (
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+)
+
 type SeedTask struct {
 	TaskID           string            `json:"taskId,omitempty"`
 	URL              string            `json:"url,omitempty"`
@@ -29,6 +33,24 @@ type SeedTask struct {
 	RequestDigest    string            `json:"requestDigest,omitempty"`
 	SourceRealDigest string            `json:"sourceRealDigest,omitempty"`
 	PieceMd5Sign     string            `json:"pieceMd5Sign,omitempty"`
+	logger           *logger.SugaredLoggerOnWith
+}
+
+const (
+	IllegalSourceFileLen = -100
+)
+
+func NewSeedTask(taskID string, header map[string]string, digest string, url string, taskURL string) *SeedTask {
+	return &SeedTask{
+		TaskID:           taskID,
+		Header:           header,
+		RequestDigest:    digest,
+		URL:              url,
+		TaskURL:          taskURL,
+		CdnStatus:        TaskInfoCdnStatusWaiting,
+		SourceFileLength: IllegalSourceFileLen,
+		logger:           logger.WithTaskID(taskID),
+	}
 }
 
 // IsSuccess determines that whether the CDNStatus is success.
@@ -65,6 +87,13 @@ func (task *SeedTask) UpdateTaskInfo(cdnStatus, realDigest, pieceMd5Sign string,
 	task.SourceRealDigest = realDigest
 	task.SourceFileLength = sourceFileLength
 	task.CdnFileLength = cdnFileLength
+}
+
+func (task *SeedTask) Log() *logger.SugaredLoggerOnWith {
+	if task.logger == nil {
+		task.logger = logger.WithTaskID(task.TaskID)
+	}
+	return task.logger
 }
 
 const (
