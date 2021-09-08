@@ -303,6 +303,7 @@ func (b *d7yBalancer) scManager() {
 	// The first goroutine listens to the pickResultChan, put pickResults into a queue.
 	// Because the second go routine will reset a SubConn if there is no pickResult with the SubConn in the queue,
 	// and we want to hold a SubConn for a while to reuse it, I use a "shadow context" with timeout to achieve both.
+	b.pickResults.Add(struct{}{})
 	go func() {
 		for {
 			pr := <-b.pickResultChan
@@ -333,7 +334,10 @@ func (b *d7yBalancer) scManager() {
 				time.Sleep(connectionLifetime)
 				continue
 			}
-			pr := v.(pickResult)
+			pr, ok := v.(pickResult)
+			if !ok {
+				time.Sleep(connectionLifetime / 5)
+			}
 			b.pickResults.Done(v)
 			select {
 			case <-pr.Ctx.Done():

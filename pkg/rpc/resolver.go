@@ -70,6 +70,9 @@ type d7yResolver struct {
 }
 
 func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
+	if len(addrs) == 0 {
+		return nil
+	}
 	addresses := make([]resolver.Address, len(addrs))
 	for i, addr := range addrs {
 		if addr.Type == dfnet.UNIX {
