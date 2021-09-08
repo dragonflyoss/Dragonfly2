@@ -38,7 +38,7 @@ jobs:
       matrix:
         module: ["manager", "scheduler", "cdn", "dfdaemon"]
     needs: skip_check
-    if: needs.skip_check.outputs.noop != 'true'
+    if: ${{ needs.skip_check.outputs.should_skip != 'true' }}
 
     steps:
       - name: Checkout code
