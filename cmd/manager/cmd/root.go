@@ -24,6 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/manager"
 	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/version"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -74,6 +75,7 @@ func init() {
 }
 
 func runManager() error {
+	logger.Infof("Version:\n%s", version.Version())
 	// manager config values
 	s, err := yaml.Marshal(cfg)
 
