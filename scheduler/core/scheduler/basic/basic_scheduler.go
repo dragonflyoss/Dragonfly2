@@ -25,6 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator/basic"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const name = "basic"
@@ -69,13 +70,13 @@ type Scheduler struct {
 	cfg         *config.SchedulerConfig
 }
 
-func (s *Scheduler) ScheduleChildren(peer *supervisor.Peer) (children []*supervisor.Peer) {
+func (s *Scheduler) ScheduleChildren(peer *supervisor.Peer, blankChildren sets.String) (children []*supervisor.Peer) {
 	if s.evaluator.IsBadNode(peer) {
 		peer.Log().Debug("terminate schedule children flow because peer is bad node")
 		return
 	}
 	freeUpload := peer.Host.GetFreeUploadLoad()
-	candidateChildren := s.selectCandidateChildren(peer, freeUpload*2)
+	candidateChildren := s.selectCandidateChildren(peer, freeUpload*2, blankChildren)
 	if len(candidateChildren) == 0 {
 		return nil
 	}
@@ -110,7 +111,7 @@ func (s *Scheduler) ScheduleChildren(peer *supervisor.Peer) (children []*supervi
 	return
 }
 
-func (s *Scheduler) ScheduleParent(peer *supervisor.Peer) (*supervisor.Peer, []*supervisor.Peer, bool) {
+func (s *Scheduler) ScheduleParent(peer *supervisor.Peer, blankParents sets.String) (*supervisor.Peer, []*supervisor.Peer, bool) {
 	//if !s.evaluator.NeedAdjustParent(peer) {
 	//	peer.Log().Debugf("stop schedule parent flow because peer is not need adjust parent", peer.PeerID)
 	//	if peer.GetParent() == nil {
@@ -118,7 +119,7 @@ func (s *Scheduler) ScheduleParent(peer *supervisor.Peer) (*supervisor.Peer, []*
 	//	}
 	//	return peer.GetParent(), []*types.Peer{peer.GetParent()}, true
 	//}
-	candidateParents := s.selectCandidateParents(peer, s.cfg.CandidateParentCount)
+	candidateParents := s.selectCandidateParents(peer, s.cfg.CandidateParentCount, blankParents)
 	if len(candidateParents) == 0 {
 		return nil, nil, false
 	}
@@ -142,13 +143,17 @@ func (s *Scheduler) ScheduleParent(peer *supervisor.Peer) (*supervisor.Peer, []*
 	return parents[0], parents[1:], true
 }
 
-func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int) (candidateChildren []*supervisor.Peer) {
+func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int, blankChildren sets.String) (candidateChildren []*supervisor.Peer) {
 	peer.Log().Debug("start schedule children flow")
 	defer peer.Log().Debugf("finish schedule parent flow, select num %d candidate children, "+
 		"current task tree node count %d, back source peers: %s", len(candidateChildren), peer.Task.ListPeers().Size(), peer.Task.GetBackSourcePeers())
 	candidateChildren = peer.Task.Pick(limit, func(candidateNode *supervisor.Peer) bool {
 		if candidateNode == nil {
 			peer.Log().Debugf("******candidate child peer is not selected because it is nil******")
+			return false
+		}
+		if blankChildren != nil && blankChildren.Has(candidateNode.PeerID) {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer is not selected because it in blank children set******")
 			return false
 		}
 		if candidateNode.IsDone() {
@@ -200,7 +205,7 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int) (c
 	return
 }
 
-func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int) (candidateParents []*supervisor.Peer) {
+func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int, blankParents sets.String) (candidateParents []*supervisor.Peer) {
 	peer.Log().Debug("start schedule parent flow")
 	defer peer.Log().Debugf("finish schedule parent flow, select num %d candidates parents, "+
 		"current task tree node count %d, back source peers: %s", len(candidateParents), peer.Task.ListPeers().Size(), peer.Task.GetBackSourcePeers())
@@ -212,6 +217,10 @@ func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int) (ca
 	candidateParents = peer.Task.PickReverse(limit, func(candidateNode *supervisor.Peer) bool {
 		if candidateNode == nil {
 			peer.Log().Debugf("++++++candidate parent peer is not selected because it is nil++++++")
+			return false
+		}
+		if blankParents != nil && blankParents.Has(candidateNode.PeerID) {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer is not selected because it in blank parent set++++++")
 			return false
 		}
 		if s.evaluator.IsBadNode(candidateNode) {
