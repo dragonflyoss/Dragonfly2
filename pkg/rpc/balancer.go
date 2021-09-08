@@ -59,7 +59,7 @@ func (builder *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.B
 		addrInfos:      make(map[string]resolver.Address),
 		subConns:       make(map[string]balancer.SubConn),
 		scInfos:        sync.Map{},
-		pickResultChan: make(chan pickResult),
+		pickResultChan: make(chan PickResult),
 		pickResults:    workqueue.New(),
 		scCounts:       make(map[balancer.SubConn]*int32),
 	}
@@ -102,7 +102,7 @@ type d7yBalancer struct {
 	connErr error
 
 	// pickResultChan is the channel for the picker to report PickResult to the balancer.
-	pickResultChan chan pickResult
+	pickResultChan chan PickResult
 	// pickResults is the Queue storing PickResult with a undone context, updating asynchronously.
 	pickResults workqueue.Interface
 	// scCounts records the amount of PickResults with the SubConn in pickResults.
@@ -301,7 +301,7 @@ func (b *d7yBalancer) resetSubConnWithAddr(addr string) error {
 // scManager launches two goroutines to receive PickResult and query whether the context of the stored PickResult is done.
 func (b *d7yBalancer) scManager() {
 	// The first goroutine listens to the pickResultChan, put pickResults into a queue.
-	// Because the second go routine will reset a SubConn if there is no pickResult with the SubConn in the queue,
+	// Because the second go routine will reset a SubConn if there is no PickResult with the SubConn in the queue,
 	// and we want to hold a SubConn for a while to reuse it, I use a "shadow context" with timeout to achieve both.
 	b.pickResults.Add(struct{}{})
 	go func() {
@@ -311,7 +311,7 @@ func (b *d7yBalancer) scManager() {
 			// Use a shadow context to ensure one of the necessary conditions of calling resetSubConn is that at least a defined time duration has passed since each previous request.
 			// This trick can reduce a goroutine traversing the entire map and compare time.Now() and the recorded expired time.
 			shadowCtx, _ := context.WithTimeout(context.Background(), connectionLifetime)
-			b.pickResults.Add(pickResult{Ctx: shadowCtx, SC: pr.SC})
+			b.pickResults.Add(PickResult{Ctx: shadowCtx, SC: pr.SC})
 			b.scCountsLock.Lock()
 			cnt, ok := b.scCounts[pr.SC]
 			if !ok {
@@ -325,7 +325,7 @@ func (b *d7yBalancer) scManager() {
 		}
 	}()
 
-	// The second goroutine checks the pickResults in the queue. if the context of a pickResult is done, it will drop the pickResults.
+	// The second goroutine checks the pickResults in the queue. if the context of a PickResult is done, it will drop the pickResults.
 	// It will reset a SubConn when there is no pickResults with the SubConn after dropped one.
 	go func() {
 		for {
@@ -334,7 +334,7 @@ func (b *d7yBalancer) scManager() {
 				time.Sleep(connectionLifetime)
 				continue
 			}
-			pr, ok := v.(pickResult)
+			pr, ok := v.(PickResult)
 			if !ok {
 				time.Sleep(connectionLifetime / 5)
 			}

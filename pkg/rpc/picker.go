@@ -24,15 +24,21 @@ import (
 	"google.golang.org/grpc/balancer"
 )
 
-const (
-	Key2taskID = "task_id"
-)
+// PickKey is a context.Context Value key. Its associated value should
+// be a *PickReq struct.
+type PickKey struct{}
+
+// PickReq is a context.Context Value.
+type PickReq struct {
+	Key     string
+	Attempt int
+}
 
 var (
 	_ balancer.Picker = &d7yPicker{}
 )
 
-type pickResult struct {
+type PickResult struct {
 	Ctx context.Context
 	SC  balancer.SubConn
 }
@@ -49,7 +55,7 @@ func newD7yPicker(subConns map[string]balancer.SubConn) *d7yPicker {
 	}
 }
 
-func newD7yReportingPicker(subConns map[string]balancer.SubConn, reportChan chan<- pickResult) *d7yPicker {
+func newD7yReportingPicker(subConns map[string]balancer.SubConn, reportChan chan<- PickResult) *d7yPicker {
 	addrs := make([]string, 0)
 	for addr := range subConns {
 		addrs = append(addrs, addr)
@@ -66,20 +72,23 @@ type d7yPicker struct {
 	subConns   map[string]balancer.SubConn // address string -> balancer.SubConn
 	hashRing   *hashring.HashRing
 	needReport bool
-	reportChan chan<- pickResult
+	reportChan chan<- PickResult
 }
 
 func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	var ret balancer.PickResult
-	key, ok := info.Ctx.Value(Key2taskID).(string)
+	pickReq, ok := info.Ctx.Value(PickKey{}).(*PickReq)
 	if !ok {
-		key = info.FullMethodName
+		pickReq = &PickReq{
+			Key:     info.FullMethodName,
+			Attempt: 1,
+		}
 	}
-	log.Printf("pick for %s\n", key)
-	if targetAddr, ok := p.hashRing.GetNode(key); ok {
-		ret.SubConn = p.subConns[targetAddr]
+	log.Printf("pick for %s, for %d time(s)\n", pickReq.Key, pickReq.Attempt)
+	if targetAddr, ok := p.hashRing.GetNodes(pickReq.Key, pickReq.Attempt); ok {
+		ret.SubConn = p.subConns[targetAddr[pickReq.Attempt-1]]
 		if p.needReport {
-			p.reportChan <- pickResult{Ctx: info.Ctx, SC: ret.SubConn}
+			p.reportChan <- PickResult{Ctx: info.Ctx, SC: ret.SubConn}
 		}
 	}
 	if ret.SubConn == nil {
