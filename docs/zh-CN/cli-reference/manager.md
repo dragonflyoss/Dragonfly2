@@ -23,20 +23,20 @@ manager [Option]
 
 ### Swagger支持
 
-端点：/swagger/doc.json
+端点: /swagger/doc.json
 
 ### Prometheus集成
 
-端点：/metrics
+端点: /metrics
 
 ### 健康检查
 
-端点： /healthy/
+端点: /healthy/
 
 ### jaeger集成
 
 ```
-启动时配置--jaeger  http://localhost:14250/api/traces
+启动时配置 --jaeger  http://localhost:14250/api/traces
 ```
 
 ### 可选参数
