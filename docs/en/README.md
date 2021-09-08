@@ -55,12 +55,12 @@ native systems with Dragonfly, such as other CNCF project [Kubernetes](ecosystem
 [Develop Guide](development/local.md) helps (potential) developers/contributors to understand the theory inside Dragonfly rather than the interface it exposes. With 
 better understanding of how Dragonfly is designed, developer could learn source code of Dragonfly much easier and know how to debug, test and hack.
 
-### [TODO] Design Doc
+### Design Doc
 
 [Design Doc](./design/architecture.md) is content all about design of Dragonfly. It includes all things taken into consideration at the very beginning, the 
 architecture designed for all components in Dragonfly, the interactive workflow between components, all APIs in Dragonfly and some technical things else.
 
-### [TODO] Test Guide
+### Test Guide
 
 [Test Guide](./test-guide/test-guide.md) is the best reference helping contributors get aware of how to setup testing environment and do it. Currently we can divide test of Dragonfly into four dimensions:
 
