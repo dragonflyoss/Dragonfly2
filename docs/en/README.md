@@ -31,7 +31,7 @@ how to install Dragonfly and how to experience Dragonfly's usage.
 
 ## User Guide
 
-[User Guide](user-guide/README.md) helps all kinds of guidance end users need to experience Dragonfly. Not only the very brief [Quick Start]
+[User Guide](user-guide) helps all kinds of guidance end users need to experience Dragonfly. Not only the very brief [Quick Start]
 (user-guide/quick-start.md), but the detailed binary installation and configure illustration. In addition, any concept and function which help users 
 understand Dragonfly better would be included as well.
 
@@ -41,7 +41,9 @@ For almost all users, commandline is the first reference you may need. Document 
 
 ## API Reference
 
-Commandline is the easiest way to experience Dragonfly's ability. API extension will bring more further experience of Dragonfly. Commandline is just one kind of combination usage of API, if you wish to hack or take more advantages of Dragonfly, please see [API Reference](./api-reference). Like command line document, all API docs are auto generated via source code.
+Commandline is the easiest way to experience Dragonfly's ability. API extension will bring more further experience of Dragonfly. Commandline is just one 
+kind of combination usage of API, if you wish to hack or take more advantages of Dragonfly, please see [API Reference](/api/README.md). Like command line 
+document, all API docs are auto generated via source code.
 
 ## Ecosystem
 
