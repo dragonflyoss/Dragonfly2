@@ -159,6 +159,8 @@ func init() {
 
 // runDfget does some init operations and starts to download.
 func runDfget() error {
+	logger.Infof("Version:\n%s", version.Version())
+
 	// Dfget config values
 	s, _ := yaml.Marshal(dfgetConfig)
 	logger.Infof("client dfget configuration:\n%s", string(s))

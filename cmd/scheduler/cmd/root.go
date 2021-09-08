@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/version"
 )
 
 var (
@@ -80,8 +81,11 @@ func init() {
 }
 
 func runScheduler() error {
+	logger.Infof("Version:\n%s", version.Version())
+
 	// scheduler config values
 	s, _ := yaml.Marshal(cfg)
+
 	logger.Infof("scheduler configuration:\n%s", string(s))
 
 	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
