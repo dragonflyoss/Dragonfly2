@@ -292,7 +292,6 @@ help:
 	@echo "make clean-e2e-test                 clean e2e tests"
 	@echo "make swag-manager                   generate swagger api"
 	@echo "make kind-load-image                kind load docker image"
-	@echo "make changelog                      generate CHANGELOG.md"
 	@echo "make kind-load-cdn                  kind load cdn docker image"
 	@echo "make kind-load-scheduler            kind load scheduler docker image"
 	@echo "make kind-load-dfdaemon             kind load dfdaemon docker image"
