@@ -1,4 +1,4 @@
-[install-client](./install-client.md) 是 client 的安装指南
+[install-client](./install-dfdaemon.md) 是 dfdaemon 的安装指南
 
 [install-manager](./install-manager.md) 是 manager 的安装指南
 
