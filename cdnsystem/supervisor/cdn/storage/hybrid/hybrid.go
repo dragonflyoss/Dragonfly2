@@ -276,7 +276,7 @@ func (h *hybridStorageMgr) CreateUploadLink(taskID string) error {
 
 func (h *hybridStorageMgr) ResetRepo(task *types.SeedTask) error {
 	if err := h.deleteTaskFiles(task.TaskID, false, true); err != nil {
-		logger.WithTaskID(task.TaskID).Errorf("reset repo: failed to delete task files: %v", err)
+		task.Log().Errorf("reset repo: failed to delete task files: %v", err)
 	}
 	// 判断是否有足够空间存放
 	shmPath, err := h.tryShmSpace(task.URL, task.TaskID, task.SourceFileLength)
