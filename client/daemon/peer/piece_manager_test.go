@@ -58,6 +58,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		output = "../test/testdata/test.output"
 	)
 
+	pieceDownloadTimeout := 30 * time.Second
 	storageManager, _ := storage.NewStorageManager(
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
@@ -176,7 +177,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			pm, err := NewPieceManager(storageManager)
+			pm, err := NewPieceManager(storageManager, pieceDownloadTimeout)
 			assert.Nil(err)
 			pm.(*pieceManager).computePieceSize = func(length int64) int32 {
 				return tc.pieceSize

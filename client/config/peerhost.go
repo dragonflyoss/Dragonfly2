@@ -142,11 +142,12 @@ type HostOption struct {
 }
 
 type DownloadOption struct {
-	TotalRateLimit   clientutil.RateLimit `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
-	PerPeerRateLimit clientutil.RateLimit `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
-	DownloadGRPC     ListenOption         `mapstructure:"downloadGRPC" yaml:"downloadGRPC"`
-	PeerGRPC         ListenOption         `mapstructure:"peerGRPC" yaml:"peerGRPC"`
-	CalculateDigest  bool                 `mapstructure:"calculateDigest" yaml:"calculateDigest"`
+	TotalRateLimit       clientutil.RateLimit `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
+	PerPeerRateLimit     clientutil.RateLimit `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
+	PieceDownloadTimeout time.Duration        `mapstructure:"pieceDownloadTimeout" yaml:"pieceDownloadTimeout"`
+	DownloadGRPC         ListenOption         `mapstructure:"downloadGRPC" yaml:"downloadGRPC"`
+	PeerGRPC             ListenOption         `mapstructure:"peerGRPC" yaml:"peerGRPC"`
+	CalculateDigest      bool                 `mapstructure:"calculateDigest" yaml:"calculateDigest"`
 }
 
 type ProxyOption struct {
