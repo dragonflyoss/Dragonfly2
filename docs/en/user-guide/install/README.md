@@ -1,4 +1,4 @@
-[install-client](./install-client.md) is the installation instructions of client
+[install-client](./install-dfdaemon.md) is the installation instructions of dfdaemon
 
 [install-manager](./install-manager.md) is the installation instructions of manager
 

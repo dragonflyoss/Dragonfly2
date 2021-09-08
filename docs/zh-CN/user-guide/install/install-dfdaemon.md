@@ -1,10 +1,10 @@
-# 安装 Dragonfly Manager
+# 安装 Dragonfly Dfdaemon
 
-本文档阐述如何安装并启动 Dragonfly Manger。
+本文档阐述如何安装并启动 Dragonfly Dfdaemon。
 
 ## 部署方式
 
-用下列方式之一部署 Manager：
+用下列方式之一部署 dfdaemon：
 
 - 通过 Docker 部署：推荐用于生产用途
 - 直接在物理机上部署
@@ -28,17 +28,17 @@ Nginx|0.8+
 
 ## 使用 Docker 部署
 
-### 获取 Manager 镜像
+### 获取 dfdaemon 镜像
 
-您可以直接从 [DockerHub](https://hub.docker.com/) 获取 Manager 镜像。
+您可以直接从 [DockerHub](https://hub.docker.com/) 获取 dfdaemon 镜像。
 
-1. 获取最新的 Manager 镜像
+1. 获取最新的 dfdaemon 镜像
 
     ```sh
-    docker pull dragonflyoss/manager
+    docker pull dragonflyoss/dfdaemon
     ```
 
-或者您可以构建自己的 manager 镜像
+或者您可以构建自己的 dfdaemon 镜像
 
 1. 获取 Dragonfly 的源码
 
@@ -52,30 +52,30 @@ Nginx|0.8+
     cd Dragonfly2
     ```
 
-3. 构建 manager 的 Docker 镜像
+3. 构建 dfdaemon 的 Docker 镜像
 
     ```sh
     TAG="1.0.0"
-    make docker-build-manager D7Y_VERSION=$TAG
+    make docker-build-dfdaemon D7Y_VERSION=$TAG
     ```
 
-4. 获取最新的 manager 镜像 ID
+4. 获取最新的 dfdaemon 镜像 ID
 
     ```sh
-    docker image ls | grep 'manager' | awk '{print $3}' | head -n1
+    docker image ls | grep 'dfdaemon' | awk '{print $3}' | head -n1
     ```
 
-### 启动 manager
+### 启动 dfdaemon
 
-**注意：** 需要使用上述步骤获得的 ID 替换 ${managerDockerImageId}。
+**注意：** 需要使用上述步骤获得的 ID 替换 ${dfdaemonDockerImageId}。
 
 ```sh
-docker run -d --name manager --restart=always -p 8002 ${managerDockerImageId}
+docker run -d --name dfdaemon --restart=always -p 8002  ${dfdaemonDockerImageId} daemon
 ```
 
 ## 在物理机上部署
 
-### 获取 manager 可执行文件
+### 获取 dfget 可执行文件
 
 1. 下载 Dragonfly 项目的压缩包。您可以从 [github releases page](https://github.
    com/dragonflyoss/Dragonfly2/releases) 下载一个已发布的最近版本
@@ -92,9 +92,9 @@ docker run -d --name manager --restart=always -p 8002 ${managerDockerImageId}
     tar -zxf Dragonfly2_1.0.0_linux_amd64.tar.gz -C xxx
     ```
 
-3. 把 `manager` 移动到环境变量 `PATH` 下以确保您可以直接使用 `manager` 命令
+3. 把 `dfget` 移动到环境变量 `PATH` 下以确保您可以直接使用 `dfget` 命令
 
-或者您可以编译生成自己的 manager 可执行文件。
+或者您可以编译生成自己的 dfget 可执行文件。
 
 1. 获取 Dragonfly 的源码
 
@@ -111,19 +111,19 @@ docker run -d --name manager --restart=always -p 8002 ${managerDockerImageId}
 3. 编译源码
 
     ```sh
-    make build-manager && make install-manager
+    make build-dfget && make install-dfget
     ```
 
-### 启动 manager
+### 启动 dfdaemon
 
 ```sh
-manager --options
+dfget dfdaemon --options
 ```
 
 ## 检查
 
-- manager 部署完成之后，运行以下命令以检查 **manager** 是否正在运行，以及 `8080` 端口是否可用。
+- dfget 部署完成之后，运行以下命令以检查 **dfdaemon** 是否正在运行，以及 `65001` 端口是否可用。
 
     ```sh
-    telnet 127.0.0.1 8080
+    telnet 127.0.0.1 65001
     ```

@@ -160,26 +160,27 @@ helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly
 
 Create the `values.yaml` configuration file. It is recommended to use external redis and mysql instead of containers.
 
-The example uses external mysql and redis. Refer to the document for [configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#todo-configuration).
+The example uses external mysql and redis. Refer to the document for [configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values).
 
 ```yaml
 mysql:
   enable: false
-  auth:
-    host: mysql-host
-    username: dragonfly
-    password: dragonfly 
-    database: manager
-  primary:
-    service:
-      port: 3306
+
+externalMysql:
+  migrate: true
+  host: mysql-host
+  username: dragonfly
+  password: dragonfly
+  database: manager
+  port: 3306
 
 redis:
   enable: false
+
+externalRedis:
   host: redis-host
   password: dragonfly
-  service:
-    port: 6379
+  port: 6379
 ```
 
 Install dragonfly with `values.yaml`.
@@ -193,7 +194,7 @@ helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly
 
 Create the `values.yaml` configuration file. Need to configure the cluster id associated with scheduler and cdn.
 
-The example is to deploy a cluster using the existing manager and redis. Refer to the document for [configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#todo-configuration).
+The example is to deploy a cluster using the existing manager and redis. Refer to the document for [configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values).
 
 ```yaml
 scheduler:
@@ -207,6 +208,9 @@ cdn:
       manager:
         cdnClusterID: 1
 
+manager:
+  enable: false
+
 externalManager:
   enable: true
   host: "dragonfly-manager.dragonfly-system.svc.cluster.local"
@@ -215,10 +219,11 @@ externalManager:
 
 redis:
   enable: false
+
+externalRedis:
   host: redis-host
   password: dragonfly
-  service:
-    port: 6379
+  port: 6379
 
 mysql:
   enable: false

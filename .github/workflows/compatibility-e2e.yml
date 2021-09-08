@@ -28,8 +28,8 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          paths_ignore: '["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]'
-          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
+          paths_ignore: '["**.md", "**.png", "**.jpg", "**.svg", "docs/**"]'
+          do_not_skip: '["push", "workflow_dispatch", "schedule"]'
 
   compatibility_e2e_tests:
     name: e2e_tests_with_${{ matrix.module }}
