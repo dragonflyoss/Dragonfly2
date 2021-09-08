@@ -10,8 +10,8 @@ Organization of document is as following:
     * [WIP dfget](cli-reference/dfget.md)
     * [WIP cdnsystem](cli-reference/cdn.md)
     * [WIP scheduler](cli-reference/scheduler.md)
-    * [TODO manager](cli-reference/manager.md)
-* [TODO API Reference](#API-Reference)
+    * [manager](cli-reference/manager.md)
+* [API Reference](#API-Reference)
 * [Ecosystem](#Ecosystem)
     * [Kubernetes Integration](ecosystem/Kubernetes-with-Dragonfly.md)
     * [WIP Harbor Integration](ecosystem/Harbor-with-Dragonfly.md)
@@ -39,7 +39,7 @@ understand Dragonfly better would be included as well.
 
 For almost all users, commandline is the first reference you may need. Document in directory [CLI Reference](cli-reference) is about command detailed usage of Dragonfly CLI including `dfget`, `cdnsystem`, `scheduler` and `manager`. You can get introductions, synopsis, examples, options about command. Last but not least, Dragonfly can guarantee commandline docs is strongly consistent with Dragonfly CLI's source code. What's more, all commandline docs are auto generated via source code.
 
-## [TODO] API Reference
+## API Reference
 
 Commandline is the easiest way to experience Dragonfly's ability. API extension will bring more further experience of Dragonfly. Commandline is just one kind of combination usage of API, if you wish to hack or take more advantages of Dragonfly, please see [API Reference](./api-reference). Like command line document, all API docs are auto generated via source code.
 
