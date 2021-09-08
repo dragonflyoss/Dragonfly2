@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"github.com/pkg/errors"
 	"go.uber.org/atomic"
@@ -73,6 +74,7 @@ type Peer struct {
 	status         PeerStatus
 	costHistory    []int
 	leave          atomic.Bool
+	logger         *logger.SugaredLoggerOnWith
 }
 
 func NewPeer(peerID string, task *Task, host *PeerHost) *Peer {
@@ -83,6 +85,7 @@ func NewPeer(peerID string, task *Task, host *PeerHost) *Peer {
 		CreateTime:     time.Now(),
 		lastAccessTime: time.Now(),
 		status:         PeerStatusWaiting,
+		logger:         logger.WithTaskAndPeerID(task.TaskID, peerID),
 	}
 }
 
@@ -338,6 +341,13 @@ func (peer *Peer) CloseChannel(err error) error {
 		return nil
 	}
 	return errors.New("client peer is not connected")
+}
+
+func (peer *Peer) Log() *logger.SugaredLoggerOnWith {
+	if peer.logger == nil {
+		peer.logger = logger.WithTaskID(peer.PeerID)
+	}
+	return peer.logger
 }
 
 type Channel struct {

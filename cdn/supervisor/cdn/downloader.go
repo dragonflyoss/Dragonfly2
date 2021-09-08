@@ -22,7 +22,6 @@ import (
 	"io"
 
 	"d7y.io/dragonfly/v2/cdn/types"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
@@ -43,7 +42,7 @@ func (cm *Manager) download(ctx context.Context, task *types.SeedTask, detectRes
 			headers[RangeHeaderName] = fmt.Sprintf("bytes=%s", breakRange)
 		}
 	}
-	logger.WithTaskID(task.TaskID).Infof("start download url %s at range: %d-%d: with header: %+v", task.URL, detectResult.breakPoint,
+	task.Log().Infof("start download url %s at range: %d-%d: with header: %+v", task.URL, detectResult.breakPoint,
 		task.SourceFileLength, task.Header)
 	reader, responseHeader, err := source.DownloadWithResponseHeader(ctx, task.URL, headers)
 	// update Expire info
