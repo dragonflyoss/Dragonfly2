@@ -626,7 +626,7 @@ func (pt *peerTask) waitFailedPiece() (int32, bool) {
 		return -1, false
 	case failed := <-pt.failedPieceCh:
 		pt.Warnf("download piece/%d failed, retry", failed)
-		return -1, true
+		return failed, true
 	}
 }
 
