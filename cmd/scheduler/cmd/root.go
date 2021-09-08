@@ -19,15 +19,16 @@ package cmd
 import (
 	"os"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
+
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/version"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -36,9 +37,10 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:               "scheduler",
-	Short:             "the scheduler of dragonfly",
-	Long:              `scheduler is a long-running process and is mainly responsible for deciding which peers transmit blocks to each other.`,
+	Use:   "scheduler",
+	Short: "the scheduler of dragonfly",
+	Long: `Scheduler is a long-running process which receives and manages download tasks from the client, notify the CDN to return to the source, 
+generate and maintain a P2P network during the download process, and push suitable download nodes to the client`,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,

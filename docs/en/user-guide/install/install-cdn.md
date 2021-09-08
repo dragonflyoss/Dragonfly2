@@ -35,7 +35,7 @@ You can get it from [DockerHub](https://hub.docker.com/) directly.
 1. Obtain the latest Docker image of the cdn.
 
     ```sh
-    docker pull d7yio/cdn
+    docker pull dragonflyoss/cdn
     ```
 
 Or you can build your own cdn image.
@@ -118,16 +118,16 @@ Or you can build your own cdn executable file.
 ### Start cdn
 
 ```sh
-cdnHomeDir=/home/admin/cdn
+cdnHomeDir=/home/admin
 cdnDownloadPort=8001
-cdn --home-dir=$cdnHomeDir --port=8003 --download-port=$cdnDownloadPort
+cdn --port=8003 --download-port=$cdnDownloadPort
 ```
 
 ### Start file server
 
 You can start a file server in any way. However, the following conditions must be met:
 
-- It must be rooted at `${cdnHomeDir}/ftp` which is defined in the previous step.
+- It must be rooted at `cdnHomeDir/ftp` which is defined in the previous step.
 - It must listen on the port `cdnDownloadPort` which is defined in the previous step.
 
 Let's take nginx as an example.
@@ -139,8 +139,8 @@ Let's take nginx as an example.
    # Must be ${cdnDownloadPort}
    listen 8001;
    location / {
-     # Must be ${cdnHomeDir}/repo
-     root /home/admin/cdn/repo;
+     # Must be ${cdnHomeDir}/ftp
+     root /home/admin/ftp;
     }
    }
    ```

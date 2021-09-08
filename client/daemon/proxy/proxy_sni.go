@@ -26,13 +26,14 @@ import (
 	"time"
 
 	"github.com/golang/groupcache/lru"
+	"github.com/pkg/errors"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 func (proxy *Proxy) ServeSNI(l net.Listener) error {
 	if proxy.cert == nil {
-		return fmt.Errorf("empty cert")
+		return errors.New("empty cert")
 	}
 	if proxy.cert.Leaf != nil && proxy.cert.Leaf.IsCA {
 		logger.Infof("hijack sni https request with CA <%s>", proxy.cert.Leaf.Subject.CommonName)

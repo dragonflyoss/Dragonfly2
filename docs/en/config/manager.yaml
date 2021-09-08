@@ -37,11 +37,11 @@ database:
 cache:
   # redis cache configure
   redis:
-    # cache ttl configure
+    # cache ttl configure unit[nanosecond]
     ttl: 30000000000
   # local cache configure
   local:
     # lfu cache size
     size: 10000
-    # cache ttl configure
+    # cache ttl configure unit[nanosecond]
     ttl: 30000000000
