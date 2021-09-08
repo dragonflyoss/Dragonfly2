@@ -65,19 +65,22 @@ var defaultTransport http.RoundTripper = &http.Transport{
 	ExpectContinueTimeout: 2 * time.Second,
 }
 
-func NewPieceDownloader(opts ...func(*pieceDownloader) error) (PieceDownloader, error) {
+func NewPieceDownloader(timeout time.Duration, opts ...func(*pieceDownloader) error) (PieceDownloader, error) {
 	pd := &pieceDownloader{}
+
 	for _, opt := range opts {
 		if err := opt(pd); err != nil {
 			return nil, err
 		}
 	}
+
 	if pd.transport == nil {
 		pd.transport = defaultTransport
 	}
+
 	pd.httpClient = &http.Client{
 		Transport: pd.transport,
-		Timeout:   30 * time.Second,
+		Timeout:   timeout,
 	}
 	return pd, nil
 }

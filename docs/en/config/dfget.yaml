@@ -61,6 +61,8 @@ download:
   totalRateLimit: 200Mi
   # per peer task download limit per second
   perPeerRateLimit: 100Mi
+  # download piece timeout
+  pieceDownloadTimeout: 30s
   # download grpc option
   downloadGRPC:
     # security option

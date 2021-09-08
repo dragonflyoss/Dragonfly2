@@ -18,6 +18,7 @@ host:
   netTopology: d7y
 
 download:
+  pieceDownloadTimeout: 30s
   totalRateLimit: 200Mi
   perPeerRateLimit: 20Mi
   downloadGRPC:

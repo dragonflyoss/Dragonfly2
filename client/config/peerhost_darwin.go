@@ -20,6 +20,7 @@ package config
 
 import (
 	"net"
+	"time"
 
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"golang.org/x/time/rate"
@@ -60,6 +61,7 @@ var peerHostConfig = DaemonOption{
 		NetTopology:    "",
 	},
 	Download: DownloadOption{
+		PieceDownloadTimeout: 30 * time.Second,
 		TotalRateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(DefaultTotalDownloadLimit),
 		},

@@ -53,7 +53,7 @@ type pieceManager struct {
 
 var _ PieceManager = (*pieceManager)(nil)
 
-func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (PieceManager, error) {
+func NewPieceManager(s storage.TaskStorageDriver, pieceDownloadTimeout time.Duration, opts ...func(*pieceManager)) (PieceManager, error) {
 	pm := &pieceManager{
 		storageManager:   s,
 		computePieceSize: cdnutil.ComputePieceSize,
@@ -65,15 +65,9 @@ func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (
 
 	// set default value
 	if pm.pieceDownloader == nil {
-		pm.pieceDownloader, _ = NewPieceDownloader()
+		pm.pieceDownloader, _ = NewPieceDownloader(pieceDownloadTimeout)
 	}
 	return pm, nil
-}
-
-func WithPieceDownloader(d PieceDownloader) func(*pieceManager) {
-	return func(pm *pieceManager) {
-		pm.pieceDownloader = d
-	}
 }
 
 func WithCalculateDigest(enable bool) func(*pieceManager) {
