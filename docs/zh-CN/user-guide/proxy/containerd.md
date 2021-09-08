@@ -1,19 +1,18 @@
-# Use dfget daemon as HTTP proxy for containerd
+# 使用 dfget daemon 作为 containerd 的 http 代理
 
-Currently, `ctr` command of containerd doesn't support private registries with `registry-mirrors`,
-in order to do so, we need to use HTTP proxy for containerd.
+目前 containerd 的 `ctr` 命令不支持带有 registry-mirrors 的私有注册表，为此，我们需要为 containerd 使用 HTTP 代理。
 
-## Quick Start
+## 快速开始
 
-### Step 1: Generate CA certificate for HTTP proxy
+### 第一步：为 http 代理生成 CA 证书
 
-Generate a CA certificate private key.
+生成一个 CA 证书私钥。
 
 ```bash
 openssl genrsa -out ca.key 2048
 ```
 
-Open openssl config file `openssl.conf`. Note set `basicConstraints` to true, that you can modify the values.
+打开 openssl 配置文件 `openssl.conf`。设置 `basicConstraints` 为 true，然后您就能修改这些值。
 
 ```text
 [ req ]
@@ -47,17 +46,17 @@ challengePassword_max		= 20
 basicConstraints         = CA:TRUE
 ```
 
-Generate the CA certificate.
+生成 CA 证书。
 
 ```bash
 openssl req -new -key ca.key -nodes -out ca.csr -config openssl.conf
 openssl x509 -req -days 36500 -extfile openssl.conf -extensions v3_ca -in ca.csr -signkey ca.key -out ca.crt
 ```
 
-### Step 2: Configure dfget daemon
+### 第二步：配置 dfget daemon
 
-To use dfget daemon as HTTP proxy, first you need to append a proxy rule in
-`/etc/dragonfly/dfget.yaml`, This will proxy `your.private.registry`'s requests for image layers:
+为了将 dfget daemon 作为 http 代理使用，首先你需要在 `/etc/dragonfly/dfget.yaml` 中增加一条代理规则，
+它将会代理 `your.private.registry` 对镜像层的请求：
 
 ```yaml
 proxy:
@@ -76,10 +75,10 @@ proxy:
       - regx: your.private.registry
 ```
 
-### Step 3: Configure containerd
+### 第三步：配置 containerd
 
-Set dfget damone as `HTTP_PROXY` and `HTTPS_PROXY` for containerd in
-`/etc/systemd/system/containerd.service.d/http-proxy.conf`:
+在 `/etc/systemd/system/containerd.service.d/http-proxy.conf` 设置 dfdaemon 为 docker daemon 的
+`HTTP_PROXY` 和 `HTTPS_PROXY` 代理：
 
 ```
 [Service]
@@ -87,22 +86,21 @@ Environment="HTTP_PROXY=http://127.0.0.1:65001"
 Environment="HTTPS_PROXY=http://127.0.0.1:65001"
 ```
 
-### Step 4: Pull images with proxy
+### 第四步：使用代理拉取镜像
 
-Through the above steps, we can start to validate if Dragonfly works as expected.
+完成以上的步骤后，我们可以尝试验证 Dragonfly 是否像我们预期的一样正常工作。
 
-And you can pull the image as usual, for example:
+您可以像往常一样拉取镜像，比如：
 
 ```bash
 ctr image pull your.private.registry/namespace/image:latest
 ```
 
-## Custom assets
+## 自定义配置项
 
-### Registry uses a self-signed certificate
+### 使用自签名证书注册
 
-If your registry uses a self-signed certificate, you can either choose to
-ignore the certificate error with:
+如果您使用一个自签名证书进行注册，你可以用以下配置来忽略证书错误：
 
 ```yaml
 proxy:
@@ -122,7 +120,7 @@ proxy:
         insecure: true
 ```
 
-Or provide a certificate with:
+也可以使用以下配置提供一个证书：
 
 ```yaml
 proxy:
@@ -142,7 +140,7 @@ proxy:
         certs: ["server.crt"]
 ```
 
-You can get the certificate of your server with:
+您能使用以下命令获取您服务器的证书：
 
 ```
 openssl x509 -in <(openssl s_client -showcerts -servername xxx -connect xxx:443 -prexit 2>/dev/null)

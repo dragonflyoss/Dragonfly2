@@ -5,8 +5,8 @@ dynconfig:
 
 scheduler:
   abtest: true
-  ascheduler: "a-scheduler"
-  bscheduler: "b-scheduler"
+  aevaluator: "a-evaluator"
+  bevaluator: "b-evaluator"
   workerNum: 8
   workerJobPoolSize: 10000
   senderNum: 10

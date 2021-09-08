@@ -8,3 +8,9 @@ We encourage users to experience Dragonfly in different ways. When doing this, t
   [swagger2markup](https://github.com/Swagger2Markup/swagger2markup). Please **DO NOT** edit [api.md](../docs/en/api-reference/api.md) directly.
 
 Directory `/api` mainly describes the second part **Dragonfly Manager's Raw API**.
+
+Currently, the description of swagger format is provided, which can be viewed in `manager`. It contains two format files of swagger, JSON and yaml. You can 
+browse through relevant viewing tools to obtain the specific call method of API, or view online through the `/swagger/doc.json` endpoint of manager service.
+
+Through manager's API, you can integrate with your own services, so you can automatically manage dragonfly and improve the level of Devops.
+

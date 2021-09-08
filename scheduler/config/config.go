@@ -42,8 +42,8 @@ func New() *Config {
 	return &Config{
 		Scheduler: &SchedulerConfig{
 			ABTest:               false,
-			AScheduler:           "",
-			BScheduler:           "",
+			AEvaluator:           "",
+			BEvaluator:           "",
 			WorkerNum:            runtime.GOMAXPROCS(0),
 			BackSourceCount:      3,
 			AccessWindow:         3 * time.Minute,
@@ -51,7 +51,7 @@ func New() *Config {
 			Scheduler:            "basic",
 			CDNLoad:              100,
 			ClientLoad:           10,
-			OpenMonitor:          true,
+			OpenMonitor:          false,
 			GC: &GCConfig{
 				PeerGCInterval: 1 * time.Minute,
 				TaskGCInterval: 1 * time.Minute,
@@ -180,8 +180,8 @@ type DynConfig struct {
 
 type SchedulerConfig struct {
 	ABTest          bool   `yaml:"abtest" mapstructure:"abtest"`
-	AScheduler      string `yaml:"ascheduler" mapstructure:"ascheduler"`
-	BScheduler      string `yaml:"bscheduler" mapstructure:"bscheduler"`
+	AEvaluator      string `yaml:"aevaluator" mapstructure:"aevaluator"`
+	BEvaluator      string `yaml:"bevaluator" mapstructure:"bevaluator"`
 	WorkerNum       int    `yaml:"workerNum" mapstructure:"workerNum"`
 	BackSourceCount int32  `yaml:"backSourceCount" mapstructure:"backSourceCount"`
 	// AccessWindow should less than CDN task expireTime
