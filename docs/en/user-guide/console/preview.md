@@ -4,17 +4,17 @@ The Manager console controls other module services.
 
 ## Relationship
 
-<div align="center">
-  <img src="../../images/manager-console/relationship.jpg" width="500" title="manager-relationship">
-</div>
-
 - CDN cluster and Scheduler cluster have a `1:N` relationship
 - CDN cluster and CDN instance have a `1:N` relationship
 - Scheduler cluster and Scheduler instance have a `1:N` relationship
 
-When the Scheduler instance starts, it reports to the manager the Scheduler Cluster ID. Refer to the document [scheduler-config](../../config/scheduler.yaml) to configure `schedulerClusterID`.
+<div align="center">
+  <img src="../../images/manager-console/relationship.jpg" width="500" title="manager-relationship">
+</div>
 
-When the CDN instance starts, it reports to the manager the CDN Cluster ID. Refer to the document [scheduler-config](../../config/cdn.yaml) to configure `cdnClusterID`.
+When the Scheduler instance starts, it reports to the manager the Scheduler Cluster ID. Refer to [document](../../config/scheduler.yaml) to configure `schedulerClusterID`.
+
+When the CDN instance starts, it reports to the manager the CDN Cluster ID. Refer to [document](../../config/cdn.yaml) to configure `cdnClusterID`.
 
 ## User account
 

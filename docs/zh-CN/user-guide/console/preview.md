@@ -12,9 +12,9 @@ Manager 控制台方便用户控制集群各模块服务。
 - CDN 集群与 CDN 实例是一对多关系
 - Scheduler 集群与 Scheduler 实例是一对多关系
 
-Scheduler 实例信息通过，配置文件启动实例上报指定 Scheduler 集群 ID。参考文档 [scheduler-config](../../config/scheduler.yaml) 配置 `schedulerClusterID`。
+Scheduler 实例信息通过，配置文件启动实例上报指定 Scheduler 集群 ID。参考[文档配置](../../config/scheduler.yaml) `schedulerClusterID`。
 
-CDN 实例信息通过，配置文件启动实例上报指定 CDN 集群 ID。参考文档 [cdn-config](../../config/cdn.yaml) 配置 `cdnClusterID`。
+CDN 实例信息通过，配置文件启动实例上报指定 CDN 集群 ID。参考[文档配置](../../config/cdn.yaml) `cdnClusterID`。
 
 ## 用户账号
 
