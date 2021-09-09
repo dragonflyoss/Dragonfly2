@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
+	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 

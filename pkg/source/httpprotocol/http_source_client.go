@@ -26,7 +26,7 @@ import (
 	"os"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/types"
+	"d7y.io/dragonfly/v2/cdn/types"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 
 	"github.com/go-http-utils/headers"
