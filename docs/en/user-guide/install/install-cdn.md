@@ -34,36 +34,36 @@ You can get it from [DockerHub](https://hub.docker.com/) directly.
 
 1. Obtain the latest Docker image of the cdn.
 
-    ```sh
-    docker pull dragonflyoss/cdn
-    ```
+```sh
+docker pull dragonflyoss/cdn
+```
 
 Or you can build your own cdn image.
 
 1. Obtain the source code of Dragonfly.
 
-    ```sh
-    git clone https://github.com/dragonflyoss/Dragonfly2.git
-    ```
+```sh
+git clone https://github.com/dragonflyoss/Dragonfly2.git
+```
 
 2. Enter the project directory.
 
-    ```sh
-    cd Dragonfly2
-    ```
+```sh
+cd Dragonfly2
+```
 
 3. Build the Docker image.
 
-    ```sh
-    TAG="1.0.0"
-    make docker-build-cdn D7Y_VERSION=$TAG
-    ```
+```sh
+TAG="2.0.0"
+make docker-build-cdn D7Y_VERSION=$TAG
+```
 
 4. Obtain the latest Docker image ID of the cdn.
 
-    ```sh
-    docker image ls | grep 'cdn' | awk '{print $3}' | head -n1
-    ```
+```sh
+docker image ls | grep 'cdn' | awk '{print $3}' | head -n1
+```
 
 ### Start cdn
 
@@ -74,6 +74,13 @@ docker run -d --name cdn --restart=always -p 8001:8001 -p 8003:8003 -v /home/adm
 --download-port=8001
 ```
 
+After cdn is installed, run the following commands to verify if Nginx and **cdn** are started, and if Port `8001` and `8003` are available.
+
+```sh
+telnet 127.0.0.1 8001
+telnet 127.0.0.1 8003
+```
+
 ## Procedure - When Deploying with Physical Machines
 
 ### Get cdn executable file
@@ -81,17 +88,17 @@ docker run -d --name cdn --restart=always -p 8001:8001 -p 8003:8003 -v /home/adm
 1. Download a binary package of the cdn. You can download one of the latest builds for Dragonfly on the [github releases page](https://github.
    com/dragonflyoss/Dragonfly2/releases).
 
-    ```sh
-    version=1.0.0
-    wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
-    ```
+```sh
+version=2.0.0
+wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
+```
 
 2. Unzip the package.
 
-    ```bash
-    # Replace `xxx` with the installation directory.
-    tar -zxf Dragonfly2_1.0.0_linux_amd64.tar.gz -C xxx
-    ```
+```bash
+# Replace `xxx` with the installation directory.
+tar -zxf Dragonfly2_2.0.0_linux_amd64.tar.gz -C xxx
+```
 
 3. Move the `cdn` to your `PATH` environment variable to make sure you can directly use `cdn` command.
 
@@ -99,21 +106,21 @@ Or you can build your own cdn executable file.
 
 1. Obtain the source code of Dragonfly.
 
-    ```sh
-    git clone https://github.com/dragonflyoss/Dragonfly2.git
-    ```
+```sh
+git clone https://github.com/dragonflyoss/Dragonfly2.git
+```
 
 2. Enter the project directory.
 
-    ```sh
-    cd Dragonfly2
-    ```
+```sh
+cd Dragonfly2
+```
 
 3. Compile the source code.
 
-    ```sh
-    make build-cdn && make install-cdn
-    ```
+```sh
+make build-cdn && make install-cdn
+```
 
 ### Start cdn
 
@@ -134,28 +141,26 @@ Let's take nginx as an example.
 
 1. Add the following configuration items to the Nginx configuration file.
 
-   ```conf
-   server {
-   # Must be ${cdnDownloadPort}
-   listen 8001;
-   location / {
-     # Must be ${cdnHomeDir}/ftp
-     root /home/admin/ftp;
-    }
-   }
-   ```
+```conf
+server {
+# Must be ${cdnDownloadPort}
+listen 8001;
+location / {
+ # Must be ${cdnHomeDir}/ftp
+ root /home/admin/ftp;
+}
+}
+```
 
 2. Start Nginx.
 
-   ```sh
-   sudo nginx
-   ```
+```sh
+sudo nginx
+```
 
-## After this Task
+After cdn is installed, run the following commands to verify if Nginx and **cdn** are started, and if Port `8001` and `8003` are available.
 
-- After cdn is installed, run the following commands to verify if Nginx and **cdn** are started, and if Port `8001` and `8003` are available.
-
-    ```sh
-    telnet 127.0.0.1 8001
-    telnet 127.0.0.1 8003
-    ```
+```sh
+telnet 127.0.0.1 8001
+telnet 127.0.0.1 8003
+```

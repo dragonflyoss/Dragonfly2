@@ -3,7 +3,7 @@
 Dragonfly Quick Start document aims to help you to quick start Dragonfly journey. This experiment is quite easy and
 simplified.
 
-You can have a quick start following [Kubernetes-with-Dragonfly](../ecosystem/Kubernetes-with-Dragonfly.md)
+You can have a quick start following [Kubernetes-with-Dragonfly](../ecosystem/Kubernetes-with-Dragonfly.md). We recommend to use `Containerd with CRI` and `CRI-O` client.
 
 This table describes some container runtimes version and documents.
 
@@ -13,15 +13,13 @@ This table describes some container runtimes version and documents.
 | Containerd with CRI | v1.1.0+ | [Link](./registry-mirror/cri-containerd.md) | Yes | crictl pull docker.io/library/alpine:latest |
 | CRI-O | All | [Link](./registry-mirror/cri-o.md) | Yes | crictl pull docker.io/library/alpine:latest |
 
-When using Dragonfly in Kubernetes, we recommend to use `Containerd with CRI` and `CRI-O`, deploying document can be
-found in [Kubernetes-with-Dragonfly](../ecosystem/Kubernetes-with-Dragonfly.md).
-
 ## SEE ALSO
 
 - [install manager](../user-guide/install/install-manager.md) - how to install the Dragonfly manager
 - [install cdn](../user-guide/install/install-cdn.md) - how to install the Dragonfly cdn
 - [install scheduler](../user-guide/install/install-scheduler.md) - how to install the Dragonfly scheduler
-- [proxy](../user-guide/proxy/containerd.md) - make Dragonfly as an HTTP proxy for docker daemon
+- [manager console](../user-guide/console/preview.md) - preview manager console
+- [docker proxy](../user-guide/proxy/docker.md) - make Dragonfly as an HTTP proxy for docker daemon
 - Container Runtimes
     - [cri-o mirror](../user-guide/registry-mirror/cri-o.md) - make Dragonfly as Registry Mirror for CRIO daemon
-    - [cri-containerd_mirror](../user-guide/registry-mirror/cri-containerd.md) - make Dragonfly as Registry Mirror for containerd daemon
+    - [cri-containerd mirror](../user-guide/registry-mirror/cri-containerd.md) - make Dragonfly as Registry Mirror for containerd daemon

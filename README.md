@@ -67,7 +67,12 @@ You can find the Dragonfly documentation [on the website][website].
 Welcome developers to actively participate in community discussions and contribute code to Dragonfly. We will remain concerned about the issues discussed in the community and respond quickly.
 
 - Discussions: [Github Discussion Forum][discussion]
+- Twitter: [@dragonfly_oss](https://twitter.com/dragonfly_oss)
 - DingTalk: 23304666
+
+<div align="center">
+  <img src="docs/en/images/community/dingtalk-group.jpeg" width="250" title="dingtalk">
+</div>
 
 ## Contributing
 You should check out our [CONTRIBUTING][contributing] and develop the project together.
