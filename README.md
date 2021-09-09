@@ -57,13 +57,15 @@ Dragonfly is now hosted by the Cloud Native Computing Foundation (CNCF) as an In
 
 ## Getting Started
 
-- [Quick start][quickstart]
+- [Quick Start][quickstart]
 - [Installation][installation]
 
 ## Documentation
-You can find the Dragonfly documentation [on the website][website].
+
+You can find the full documentation [on the repo][document].
 
 ## Community
+
 Welcome developers to actively participate in community discussions and contribute code to Dragonfly. We will remain concerned about the issues discussed in the community and respond quickly.
 
 - Discussions: [Github Discussion Forum][discussion]
@@ -88,3 +90,4 @@ Please refer to our [Code of Conduct][codeconduct].
 [discussion]: https://github.com/dragonflyoss/Dragonfly2/discussions
 [contributing]: CONTRIBUTING.md
 [codeconduct]: CODE_OF_CONDUCT.md
+[document]: docs/README.md
