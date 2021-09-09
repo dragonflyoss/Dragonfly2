@@ -283,7 +283,7 @@ help:
 	@echo "make build-rpm-dfget                build rpm dfget"
 	@echo "make build-deb-dfget                build deb dfget"
 	@echo "make build-dfget-man-page           generate dfget man page"
-	@echo "make test                           run unittests"
+	@echo "make test                           run unit tests"
 	@echo "make test-coverage                  run tests with coverage"
 	@echo "make actions-e2e-test-coverage      run github actons E2E tests with coverage"
 	@echo "make install-e2e-test               install E2E tests environment"
