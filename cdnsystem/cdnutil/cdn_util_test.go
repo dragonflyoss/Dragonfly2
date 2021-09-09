@@ -29,3 +29,14 @@ func TestGenCdnPeerID(t *testing.T) {
 		t.Errorf("GenCdnPeerID() = %v, want %v", got, want)
 	}
 }
+
+func TestComputePieceSize(t *testing.T) {
+	var length int64 = 2002 * 1024 * 1024
+	if size := ComputePieceSize(length); size == 4*1024*1024 {
+		fmt.Printf(string("length <= 0 || length <= 200*1024*1024"))
+	} else if size := ComputePieceSize(length); size == 15*1024*1024 {
+		fmt.Printf(string("mapsize <= 15*1024*1024"))
+	} else {
+		fmt.Printf(string("输出mpSize"))
+	}
+}
