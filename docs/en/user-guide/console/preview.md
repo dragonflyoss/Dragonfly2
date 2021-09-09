@@ -12,5 +12,5 @@ Default root username: `root` password: `dragonfly`.
 
 ![signup][signup]
 
-[signin]: docs/en/images/manager-console/signin.jpg
-[signup]: docs/en/images/manager-console/signup.jpg
+[signin]: ../../images/manager-console/signin.jpg
+[signup]: ../../images/manager-console/signup.jpg

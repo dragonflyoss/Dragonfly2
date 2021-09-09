@@ -12,5 +12,5 @@ Manager 控制台方便用户控制集群各模块服务。
 
 ![signup][signup]
 
-[signin]: docs/en/images/manager-console/signin.jpg
-[signup]: docs/en/images/manager-console/signup.jpg
+[signin]: ../../../en/images/manager-console/signin.jpg
+[signup]: ../../../en/images/manager-console/signup.jpg
