@@ -2,9 +2,11 @@
 
 The Manager console controls other module services. 
 
-Relationship:
+## Relationship
 
-![manager-relationship][manager-relationship]
+<div align="center">
+  <img src="../../images/manager-console/relationship.jpg" width="500" title="manager-relationship">
+</div>
 
 - CDN cluster and Scheduler cluster have a `1:N` relationship
 - CDN cluster and CDN instance have a `1:N` relationship
@@ -14,19 +16,19 @@ When the Scheduler instance starts, it reports to the manager the Scheduler Clus
 
 When the CDN instance starts, it reports to the manager the CDN Cluster ID. Refer to the document [scheduler-config](../../config/cdn.yaml) to configure `cdnClusterID`.
 
+## User account
+
 Default root username: `root` password: `dragonfly`.
 
-## Sign in
+## Pages
+
+### Sign in
 
 ![signin][signin]
 
-## Sign up
+### Sign up
 
 ![signup][signup]
-
-## Configuration
-
-The configuration page includes operation Scheduler cluster and CDN cluster configuration information, and displays Scheduler instance and CDN instance information.
 
 ### Scheduler Cluster
 
@@ -50,4 +52,3 @@ The configuration page includes operation Scheduler cluster and CDN cluster conf
 [add-scheduler-cluster]: ../../images/manager-console/add-scheduler-cluster.jpg
 [cdn-cluster]: ../../images/manager-console/cdn-cluster.jpg
 [add-cdn-cluster]: ../../images/manager-console/add-cdn-cluster.jpg
-[manager-relationship]: ../../images/manager-console/relationship.jpg
