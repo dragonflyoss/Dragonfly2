@@ -1,6 +1,6 @@
 # Manager Console
 
-The Manager console controls other module services. 
+Used to manage the dynamic configuration that each module depends on, and provide keepalive and metrics functions.
 
 ## Relationship
 
