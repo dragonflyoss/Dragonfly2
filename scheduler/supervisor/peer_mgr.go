@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ./mock/mock_peer_mgr.go -package mock d7y.io/dragonfly/v2/scheduler/supervisor PeerMgr
+
 package supervisor
 
 import (

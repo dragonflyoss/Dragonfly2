@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ./mock/mock_task_mgr.go -package mock d7y.io/dragonfly/v2/scheduler/supervisor TaskMgr
+
 package supervisor
 
 type TaskMgr interface {
