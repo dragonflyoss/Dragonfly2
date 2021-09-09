@@ -54,7 +54,7 @@ Dragonfly Document 是关于 Dragonfly 的介绍。对于一般对 Dragonfly 感
 
 ### 设计文档
 
-[Design Doc](./design/architecture.md) 是关于 Dragonfly 设计的内容。它包括一开始就考虑到的所有事情，为 Dragonfly 中所有组件设计的架构，组件之间的交互工作流，Dragonfly 中的所有 API 以及其他一些技术内容。
+[设计文档](./design/architecture.md) 是关于 Dragonfly 设计的内容。它包括一开始就考虑到的所有事情，为 Dragonfly 中所有组件设计的架构，组件之间的交互工作流，Dragonfly 中的所有 API 以及其他一些技术内容。
 
 ### 测试指南
 
