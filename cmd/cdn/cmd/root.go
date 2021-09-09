@@ -19,8 +19,8 @@ package cmd
 import (
 	"os"
 
-	"d7y.io/dragonfly/v2/cdnsystem"
-	"d7y.io/dragonfly/v2/cdnsystem/config"
+	"d7y.io/dragonfly/v2/cdn"
+	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
@@ -79,7 +79,7 @@ func runCdnSystem() error {
 	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
-	svr, err := cdnsystem.New(cfg)
+	svr, err := cdn.New(cfg)
 	if err != nil {
 		return err
 	}
