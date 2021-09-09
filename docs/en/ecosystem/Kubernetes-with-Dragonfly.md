@@ -237,6 +237,14 @@ Wait all pods running
 kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 ```
 
+### Manager Console
+
+The console page will be displayed on `dragonfly-manager.dragonfly-system.svc.cluster.local:8080`.
+
+If you need to bind Ingress, you can refer to [configuration options of Helm Charts](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values), or create it manually.
+
+Console features preview reference document [console preview](../user-guide/console/preview.md).
+
 ### Configure Runtime Manually
 
 Use Containerd with CRI as example, more runtimes can be found [here](../user-guide/quick-start.md)

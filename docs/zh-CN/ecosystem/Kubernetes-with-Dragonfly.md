@@ -236,6 +236,14 @@ mysql:
 kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 ```
 
+### Manager 控制台
+
+控制台页面会在 `dragonfly-manager.dragonfly-system.svc.cluster.local:8080` 展示。
+
+需要绑定 Ingress 可以参考 [Helm Charts 配置选项](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values), 或者手动自行创建 Ingress。
+
+控制台功能预览参考文档 [console preview](../user-guide/console/preview.md)。
+
 ### 运行时配置
 
 以 Containerd 和 CRI 为例，更多运行时[文档](../user-guide/quick-start.md)
