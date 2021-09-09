@@ -30,7 +30,7 @@ Dragonfly Document 是关于 Dragonfly 的介绍。对于一般对 Dragonfly 感
 
 ## 用户指南
 
-[用户指南](user-guide/README.md) 帮助用户体验 Dragonfly 所需的各种指南。不仅仅是非常简短的 [快速开始]
+[用户指南](user-guide) 帮助用户体验 Dragonfly 所需的各种指南。不仅仅是非常简短的 [快速开始]
 (user-guide/quick-start.md)，而且包括详细的安装和配置说明。此外，任何有助于用户更好地理解 Dragonfly 的概念也将包括在内。
 
 ## CLI参考
@@ -39,7 +39,8 @@ Dragonfly Document 是关于 Dragonfly 的介绍。对于一般对 Dragonfly 感
 
 ## API参考
 
-命令行是体验 Dragonfly 能力的最简单方法。 API参考将为 Dragonfly 带来更多更进一步的体验。 Commandline只是API的一种组合用法，如果你想破解或利用Dragonfly的更多优势，请参见[API参考](./api-reference)。与命令行文档一样，所有 API 文档都是通过源代码自动生成的。
+命令行是体验 Dragonfly 能力的最简单方法。 API参考将为 Dragonfly 带来更多更进一步的体验。 Commandline只是API的一种组合用法，如果你想破解或利用Dragonfly的更多优势，请参见[API参考](/api/README.md)。与命令行文档一样，所有 API 
+文档都是通过源代码自动生成的。
 
 ## 生态
 
@@ -51,11 +52,11 @@ Dragonfly Document 是关于 Dragonfly 的介绍。对于一般对 Dragonfly 感
 [开发者指南](development/local.md) 帮助（潜在的）开发者/贡献者理解 Dragonfly 内部的理论而不是它公开的接口。和
 更好地理解 Dragonfly 的设计方式，开发人员可以更轻松地学习 Dragonfly 的源代码，并知道如何调试、测试和破解。
 
-### [TODO] 设计文档
+### 设计文档
 
-[Design Doc](./design/architecture.md) 是关于 Dragonfly 设计的内容。它包括一开始就考虑到的所有事情，为 Dragonfly 中所有组件设计的架构，组件之间的交互工作流，Dragonfly 中的所有 API 以及其他一些技术内容。
+[设计文档](./design/architecture.md) 是关于 Dragonfly 设计的内容。它包括一开始就考虑到的所有事情，为 Dragonfly 中所有组件设计的架构，组件之间的交互工作流，Dragonfly 中的所有 API 以及其他一些技术内容。
 
-### [TODO] 测试指南
+### 测试指南
 
 [测试指南](./test-guide/test-guide.md) 是帮助贡献者了解如何设置测试环境并进行操作的最佳参考。目前我们可以将 Dragonfly 的测试分为四个维度：
 

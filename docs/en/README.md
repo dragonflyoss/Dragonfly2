@@ -7,9 +7,9 @@ Organization of document is as following:
 * [Quick Start](#Quick-Start)
 * [User Guide](#User-Guide)
 * [CLI Reference](#CLI-Reference)
-    * [WIP dfget](cli-reference/dfget.md)
-    * [WIP cdn](cli-reference/cdn.md)
-    * [WIP scheduler](cli-reference/scheduler.md)
+    * [dfget](cli-reference/dfget.md)
+    * [cdn](cli-reference/cdn.md)
+    * [scheduler](cli-reference/scheduler.md)
     * [manager](cli-reference/manager.md)
 * [API Reference](#API-Reference)
 * [Ecosystem](#Ecosystem)
@@ -31,7 +31,7 @@ how to install Dragonfly and how to experience Dragonfly's usage.
 
 ## User Guide
 
-[User Guide](user-guide/README.md) helps all kinds of guidance end users need to experience Dragonfly. Not only the very brief [Quick Start]
+[User Guide](user-guide) helps all kinds of guidance end users need to experience Dragonfly. Not only the very brief [Quick Start]
 (user-guide/quick-start.md), but the detailed binary installation and configure illustration. In addition, any concept and function which help users 
 understand Dragonfly better would be included as well.
 
@@ -41,7 +41,9 @@ For almost all users, commandline is the first reference you may need. Document 
 
 ## API Reference
 
-Commandline is the easiest way to experience Dragonfly's ability. API extension will bring more further experience of Dragonfly. Commandline is just one kind of combination usage of API, if you wish to hack or take more advantages of Dragonfly, please see [API Reference](./api-reference). Like command line document, all API docs are auto generated via source code.
+Commandline is the easiest way to experience Dragonfly's ability. API extension will bring more further experience of Dragonfly. Commandline is just one 
+kind of combination usage of API, if you wish to hack or take more advantages of Dragonfly, please see [API Reference](/api/README.md). Like command line 
+document, all API docs are auto generated via source code.
 
 ## Ecosystem
 
@@ -53,12 +55,12 @@ native systems with Dragonfly, such as other CNCF project [Kubernetes](ecosystem
 [Develop Guide](development/local.md) helps (potential) developers/contributors to understand the theory inside Dragonfly rather than the interface it exposes. With 
 better understanding of how Dragonfly is designed, developer could learn source code of Dragonfly much easier and know how to debug, test and hack.
 
-### [TODO] Design Doc
+### Design Doc
 
 [Design Doc](./design/architecture.md) is content all about design of Dragonfly. It includes all things taken into consideration at the very beginning, the 
 architecture designed for all components in Dragonfly, the interactive workflow between components, all APIs in Dragonfly and some technical things else.
 
-### [TODO] Test Guide
+### Test Guide
 
 [Test Guide](./test-guide/test-guide.md) is the best reference helping contributors get aware of how to setup testing environment and do it. Currently we can divide test of Dragonfly into four dimensions:
 
