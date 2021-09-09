@@ -1,14 +1,33 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v2.0.0"></a>
+## [v2.0.0] - 2021-09-09
 ### Chore
+- skip e2e ([#631](https://github.com/dragonflyoss/Dragonfly2/issues/631))
+- rename cdnsystem to cdn ([#626](https://github.com/dragonflyoss/Dragonfly2/issues/626))
+- skip workflows ([#624](https://github.com/dragonflyoss/Dragonfly2/issues/624))
+- update changelog ([#622](https://github.com/dragonflyoss/Dragonfly2/issues/622))
 - update submodule version ([#608](https://github.com/dragonflyoss/Dragonfly2/issues/608))
 - optimize app and tracer log ([#607](https://github.com/dragonflyoss/Dragonfly2/issues/607))
 
 ### Docs
+- maintainers ([#636](https://github.com/dragonflyoss/Dragonfly2/issues/636))
+- test guide link ([#635](https://github.com/dragonflyoss/Dragonfly2/issues/635))
+- add manager preview ([#634](https://github.com/dragonflyoss/Dragonfly2/issues/634))
+- install ([#628](https://github.com/dragonflyoss/Dragonfly2/issues/628))
+- update document ([#625](https://github.com/dragonflyoss/Dragonfly2/issues/625))
+- update docs/zh-CN/config/dfget.yaml ([#623](https://github.com/dragonflyoss/Dragonfly2/issues/623))
+- Update documents ([#595](https://github.com/dragonflyoss/Dragonfly2/issues/595))
 - update runtime guide in helm deploy ([#612](https://github.com/dragonflyoss/Dragonfly2/issues/612))
 
 ### Feat
+- update console submodule ([#637](https://github.com/dragonflyoss/Dragonfly2/issues/637))
+- update submodule ([#632](https://github.com/dragonflyoss/Dragonfly2/issues/632))
+- beautify scheduler & CDN log ([#618](https://github.com/dragonflyoss/Dragonfly2/issues/618))
+- Print version information when the system starts up ([#620](https://github.com/dragonflyoss/Dragonfly2/issues/620))
+- add piece download timeout ([#621](https://github.com/dragonflyoss/Dragonfly2/issues/621))
 - notice client back source when rescheduled parent reach max times ([#611](https://github.com/dragonflyoss/Dragonfly2/issues/611))
 
 ### Feature
@@ -16,6 +35,9 @@
 
 ### Fix
 - return failed piece ([#619](https://github.com/dragonflyoss/Dragonfly2/issues/619))
+
+### Test
+- preheat e2e ([#627](https://github.com/dragonflyoss/Dragonfly2/issues/627))
 
 
 <a name="v2.0.0-alpha-2"></a>
@@ -332,7 +354,8 @@
 - idgen add digest ([#243](https://github.com/dragonflyoss/Dragonfly2/issues/243))
 
 
-[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.0-alpha-2...HEAD
+[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.0...HEAD
+[v2.0.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.0-alpha-2...v2.0.0
 [v2.0.0-alpha-2]: https://github.com/dragonflyoss/Dragonfly2/compare/v0.5.0...v2.0.0-alpha-2
 [v0.5.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v0.4.0...v0.5.0
 [v0.4.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v0.3.0...v0.4.0
