@@ -65,7 +65,7 @@ Dragonfly Document 是关于 Dragonfly 的介绍。对于一般对 Dragonfly 感
 * CLI集成测试；
 * 节点 e2e 测试。
 
-更多详情请参考[测试](./test-guide)。
+更多详情请参考[测试](./test-guide/test-guide.md)。
 
 ## 写在后面
 

@@ -69,7 +69,7 @@ architecture designed for all components in Dragonfly, the interactive workflow 
 * CLI integration test;
 * node e2e test.
 
-For more details, please refer to [test](./test-guide).
+For more details, please refer to [test](./test-guide/test-guide.md).
 
 ## Conclusion
 
