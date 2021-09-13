@@ -21,16 +21,13 @@ import "fmt"
 var (
 	Major      = "2"
 	Minor      = "0"
-	GitVersion = "v2.0.0-rc.0"
-	GitCommit  = "unknown"
+	GitVersion = "v2.0.0"
+	GitCommit  = "3f8535a797da131a47d7a678b8f4a28f4ba42a31"
 	Platform   = osArch
-	BuildTime  = "unknown"
-	GoVersion  = "unknown"
-	Gotags     = "unknown"
-	Gogcflags  = "unknown"
+	GoVersion  = "go1.15"
 )
 
 func Version() string {
-	return fmt.Sprintf("Major: %s, Minor: %s, GitVersion: %s, GitCommit: %s, Platform: %s, BuildTime: %s, GoVersion: %s, Gotags: %s, Gogcflags: %s", Major,
-		Minor, GitVersion, GitCommit, Platform, BuildTime, GoVersion, Gotags, Gogcflags)
+	return fmt.Sprintf("Major: %s, Minor: %s, GitVersion: %s, GitCommit: %s, Platform: %s, GoVersion: %s", Major,
+		Minor, GitVersion, GitCommit, Platform, GoVersion)
 }
