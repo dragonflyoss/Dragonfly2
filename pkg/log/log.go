@@ -17,17 +17,52 @@
 package log
 
 import (
+	"path"
+
 	"go.uber.org/zap/zapcore"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
+	"d7y.io/dragonfly/v2/internal/dfpath"
 )
 
-// SetCoreLevel set core log level, export internal SetCoreLevel for using dragonfly as library
+// SetCoreLevel sets core log level, export internal SetCoreLevel for using dragonfly as library
 func SetCoreLevel(level zapcore.Level) {
 	logcore.SetCoreLevel(level)
 }
 
-// SetGrpcLevel set grpc log level, export internal SetGrpcLevel for using dragonfly as library
+// SetGrpcLevel sets grpc log level, export internal SetGrpcLevel for using dragonfly as library
 func SetGrpcLevel(level zapcore.Level) {
 	logcore.SetGrpcLevel(level)
+}
+
+// SetupDaemon sets daemon log config: path, console
+func SetupDaemon(logDir string, console bool) error {
+	if console {
+		return nil
+	}
+
+	if logDir == "" {
+		logDir = path.Join(dfpath.LogDir, "daemon")
+	}
+
+	coreLogger, err := logcore.CreateLogger(path.Join(logDir, logcore.CoreLogFileName), 100, 7, 14, false, false)
+	if err != nil {
+		return err
+	}
+	logger.SetCoreLogger(coreLogger.Sugar())
+
+	grpcLogger, err := logcore.CreateLogger(path.Join(logDir, logcore.GrpcLogFileName), 100, 7, 14, false, false)
+	if err != nil {
+		return err
+	}
+	logger.SetGrpcLogger(grpcLogger.Sugar())
+
+	gcLogger, err := logcore.CreateLogger(path.Join(logDir, logcore.GCLogFileName), 100, 7, 14, false, false)
+	if err != nil {
+		return err
+	}
+	logger.SetGcLogger(gcLogger.Sugar())
+
+	return nil
 }
