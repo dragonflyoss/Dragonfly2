@@ -72,7 +72,6 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 			SingularTable: true,
 		},
 		DisableForeignKeyConstraintWhenMigrating: true,
-		PrepareStmt:                              true,
 	})
 	if err != nil {
 		return nil, err
