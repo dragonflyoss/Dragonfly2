@@ -32,6 +32,6 @@ import (
 // @Router /permissions [get]
 func (h *Handlers) GetPermissions(g *gin.Engine) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, h.Service.GetPermissions(g))
+		ctx.JSON(http.StatusOK, h.service.GetPermissions(g))
 	}
 }

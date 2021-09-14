@@ -16,10 +16,12 @@
 
 package version
 
+import "fmt"
+
 var (
 	Major      = "2"
 	Minor      = "0"
-	GitVersion = "v2.0.0-rc.0"
+	GitVersion = "v2.0.0"
 	GitCommit  = "unknown"
 	Platform   = osArch
 	BuildTime  = "unknown"
@@ -27,3 +29,8 @@ var (
 	Gotags     = "unknown"
 	Gogcflags  = "unknown"
 )
+
+func Version() string {
+	return fmt.Sprintf("Major: %s, Minor: %s, GitVersion: %s, GitCommit: %s, Platform: %s, BuildTime: %s, GoVersion: %s, Gotags: %s, Gogcflags: %s", Major,
+		Minor, GitVersion, GitCommit, Platform, BuildTime, GoVersion, Gotags, Gogcflags)
+}

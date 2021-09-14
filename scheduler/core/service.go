@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -39,8 +40,11 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/workqueue"
 )
+
+const maxRescheduleTimes = 8
 
 type Options struct {
 	openTel    bool
@@ -154,23 +158,29 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 		default:
 			v, shutdown := wsdq.Get()
 			if shutdown {
+				logger.Infof("wait schedule delay queue is shutdown")
 				break
 			}
-			peer := v.(*supervisor.Peer)
+			rsPeer := v.(*rsPeer)
+			peer := rsPeer.peer
 			wsdq.Done(v)
+			if rsPeer.times > maxRescheduleTimes {
+				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times",
+					peer.PeerID)) == nil {
+					peer.Task.IncreaseBackSourcePeer(peer.PeerID)
+				}
+				continue
+			}
+			if peer.Task.IsBackSourcePeer(peer.PeerID) {
+				logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("runReScheduleLoop: peer is back source client, no need to reschedule it")
+				continue
+			}
 			if peer.IsDone() || peer.IsLeave() {
-				logger.WithTaskAndPeerID(peer.Task.TaskID,
-					peer.PeerID).Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer is done or leave, peer status is %s, "+
+				peer.Log().Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer is done or leave, peer status is %s, "+
 					"isLeave %t", peer.GetStatus(), peer.IsLeave())
 				continue
 			}
-			if peer.GetParent() != nil {
-				logger.WithTaskAndPeerID(peer.Task.TaskID,
-					peer.PeerID).Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer has parent %s",
-					peer.GetParent().PeerID)
-				continue
-			}
-			s.worker.send(reScheduleParentEvent{peer})
+			s.worker.send(reScheduleParentEvent{rsPeer: rsPeer})
 		}
 	}
 }
@@ -199,7 +209,7 @@ func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID
 }
 
 func (s *SchedulerService) SelectParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {
-	parent, _, hasParent := s.sched.ScheduleParent(peer)
+	parent, _, hasParent := s.sched.ScheduleParent(peer, sets.NewString())
 	if !hasParent || parent == nil {
 		return nil, errors.Errorf("no parent peer available for peer %v", peer.PeerID)
 	}
@@ -243,7 +253,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 			return task
 		}
 	} else {
-		logger.WithTaskID(task.TaskID).Infof("add new task %s", task.TaskID)
+		task.Log().Infof("add new task %s", task.TaskID)
 	}
 
 	synclock.UnLock(task.TaskID, true)
@@ -269,7 +279,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	go func() {
 		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
 			// fall back to client back source
-			logger.WithTaskID(task.TaskID).Errorf("seed task failed: %v", err)
+			task.Log().Errorf("seed task failed: %v", err)
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
 			task.SetClientBackSourceStatusAndLimit(s.config.BackSourceCount)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {

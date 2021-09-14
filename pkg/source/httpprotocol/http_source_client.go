@@ -26,11 +26,11 @@ import (
 	"os"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/types"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 
 	"github.com/go-http-utils/headers"
 
-	"d7y.io/dragonfly/v2/cdnsystem/supervisor/task"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -113,7 +113,7 @@ func (client *httpSourceClient) GetContentLength(ctx context.Context, url string
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
 		// TODO Whether this situation should be distinguished from the err situation,
 		//similar to proposing another error type to indicate that this  error can interact with the URL, but the status code does not meet expectations
-		return task.IllegalSourceFileLen, fmt.Errorf("get http resource length failed, unexpected code: %d", resp.StatusCode)
+		return types.IllegalSourceFileLen, fmt.Errorf("get http resource length failed, unexpected code: %d", resp.StatusCode)
 	}
 	return resp.ContentLength, nil
 }

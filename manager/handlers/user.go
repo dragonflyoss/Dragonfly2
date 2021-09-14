@@ -42,7 +42,7 @@ func (h *Handlers) GetUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.Service.GetUser(params.ID)
+	user, err := h.service.GetUser(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -68,7 +68,7 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.Service.SignUp(json)
+	user, err := h.service.SignUp(json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -100,7 +100,7 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.Service.ResetPassword(params.ID, json); err != nil {
+	if err := h.service.ResetPassword(params.ID, json); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -126,7 +126,7 @@ func (h *Handlers) OauthSignin(ctx *gin.Context) {
 		return
 	}
 
-	authURL, err := h.Service.OauthSignin(params.Name)
+	authURL, err := h.service.OauthSignin(params.Name)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -159,7 +159,7 @@ func (h *Handlers) OauthSigninCallback(j *jwt.GinJWTMiddleware) func(*gin.Contex
 			return
 		}
 
-		user, err := h.Service.OauthSigninCallback(params.Name, query.Code)
+		user, err := h.service.OauthSigninCallback(params.Name, query.Code)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -186,7 +186,7 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 		return
 	}
 
-	roles, err := h.Service.GetRolesForUser(params.ID)
+	roles, err := h.service.GetRolesForUser(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -213,7 +213,7 @@ func (h *Handlers) AddRoleToUser(ctx *gin.Context) {
 		return
 	}
 
-	if ok, err := h.Service.AddRoleForUser(params); err != nil {
+	if ok, err := h.service.AddRoleForUser(params); err != nil {
 		ctx.Error(err)
 		return
 	} else if !ok {
@@ -242,7 +242,7 @@ func (h *Handlers) DeleteRoleForUser(ctx *gin.Context) {
 		return
 	}
 
-	if ok, err := h.Service.DeleteRoleForUser(params); err != nil {
+	if ok, err := h.service.DeleteRoleForUser(params); err != nil {
 		ctx.Error(err)
 		return
 	} else if !ok {

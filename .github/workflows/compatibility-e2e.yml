@@ -12,7 +12,7 @@ env:
   CONTAINERD_VERSION: v1.5.2
   GOPROXY: https://goproxy.io,direct
   KIND_CONFIG_PATH: test/testdata/kind/config.yaml
-  DRAGONFLY_STABLE_IMAGE_TAG: v0.4.0
+  DRAGONFLY_STABLE_IMAGE_TAG: v2.0.0
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
   DRAGONFLY_CHARTS_CONFIG_PATH: test/testdata/charts/config.yaml
   DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
@@ -28,8 +28,8 @@ jobs:
         uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          paths_ignore: '["**.md", "**.png", "**.jpg", "**.svg"]'
-          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
+          paths_ignore: '["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]'
+          do_not_skip: '["push", "workflow_dispatch", "schedule"]'
 
   compatibility_e2e_tests:
     name: e2e_tests_with_${{ matrix.module }}
@@ -38,7 +38,7 @@ jobs:
       matrix:
         module: ["manager", "scheduler", "cdn", "dfdaemon"]
     needs: skip_check
-    if: needs.skip_check.outputs.noop != 'true'
+    if: ${{ needs.skip_check.outputs.should_skip != 'true' }}
 
     steps:
       - name: Checkout code

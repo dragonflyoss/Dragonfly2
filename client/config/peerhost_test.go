@@ -248,6 +248,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			AdvertiseIP:    "0.0.0.0",
 		},
 		Download: DownloadOption{
+			PieceDownloadTimeout: 30 * time.Second,
 			TotalRateLimit: clientutil.RateLimit{
 				Limit: 209715200,
 			},

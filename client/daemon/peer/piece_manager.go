@@ -24,7 +24,7 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/cdnsystem/cdnutil"
+	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -53,7 +53,7 @@ type pieceManager struct {
 
 var _ PieceManager = (*pieceManager)(nil)
 
-func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (PieceManager, error) {
+func NewPieceManager(s storage.TaskStorageDriver, pieceDownloadTimeout time.Duration, opts ...func(*pieceManager)) (PieceManager, error) {
 	pm := &pieceManager{
 		storageManager:   s,
 		computePieceSize: cdnutil.ComputePieceSize,
@@ -65,15 +65,9 @@ func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (
 
 	// set default value
 	if pm.pieceDownloader == nil {
-		pm.pieceDownloader, _ = NewPieceDownloader()
+		pm.pieceDownloader, _ = NewPieceDownloader(pieceDownloadTimeout)
 	}
 	return pm, nil
-}
-
-func WithPieceDownloader(d PieceDownloader) func(*pieceManager) {
-	return func(pm *pieceManager) {
-		pm.pieceDownloader = d
-	}
 }
 
 func WithCalculateDigest(enable bool) func(*pieceManager) {
