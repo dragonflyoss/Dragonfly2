@@ -57,12 +57,12 @@ const (
 
 type Peer struct {
 	lock sync.RWMutex
-	// PeerID specifies ID of peer
-	PeerID string
+	// ID specifies ID of peer
+	ID string
 	// Task specifies
 	Task *Task
 	// Host specifies
-	Host *PeerHost
+	Host *Host
 	conn *Channel
 	// createTime
 	CreateTime time.Time
@@ -77,26 +77,27 @@ type Peer struct {
 	logger         *logger.SugaredLoggerOnWith
 }
 
-func NewPeer(peerID string, task *Task, host *PeerHost) *Peer {
+func NewPeer(id string, task *Task, host *Host) *Peer {
 	return &Peer{
-		PeerID:         peerID,
+		ID:             id,
 		Task:           task,
 		Host:           host,
 		CreateTime:     time.Now(),
 		lastAccessTime: time.Now(),
 		status:         PeerStatusWaiting,
-		logger:         logger.WithTaskAndPeerID(task.TaskID, peerID),
+		logger:         logger.WithTaskAndPeerID(task.TaskID, id),
 	}
 }
 
 // TODO: remove
-func (peer *Peer) GetWholeTreeNode() int {
+func (peer *Peer) GetTreeLen() int {
 	count := 1
 	peer.children.Range(func(key, value interface{}) bool {
-		peerNode := value.(*Peer)
-		count += peerNode.GetWholeTreeNode()
+		node := value.(*Peer)
+		count += node.GetTreeLen()
 		return true
 	})
+
 	return count
 }
 
@@ -117,13 +118,13 @@ func (peer *Peer) Touch() {
 }
 
 func (peer *Peer) associateChild(child *Peer) {
-	peer.children.Store(child.PeerID, child)
+	peer.children.Store(child.ID, child)
 	peer.Host.IncUploadLoad()
 	peer.Task.UpdatePeer(peer)
 }
 
 func (peer *Peer) disassociateChild(child *Peer) {
-	peer.children.Delete(child.PeerID)
+	peer.children.Delete(child.ID)
 	peer.Host.DecUploadLoad()
 	peer.Task.UpdatePeer(peer)
 }
@@ -213,7 +214,7 @@ func isDescendant(ancestor, offspring *Peer) bool {
 	for node != nil {
 		if node.parent == nil {
 			return false
-		} else if node.PeerID == ancestor.PeerID {
+		} else if node.ID == ancestor.ID {
 			return true
 		}
 		node = node.parent
@@ -238,7 +239,7 @@ func (peer *Peer) getFreeLoad() int {
 	if peer.Host == nil {
 		return 0
 	}
-	return peer.Host.GetFreeUploadLoad()
+	return int(peer.Host.GetFreeUploadLoad())
 }
 
 func GetDiffPieceNum(dst *Peer, src *Peer) int32 {
@@ -344,9 +345,6 @@ func (peer *Peer) CloseChannel(err error) error {
 }
 
 func (peer *Peer) Log() *logger.SugaredLoggerOnWith {
-	if peer.logger == nil {
-		peer.logger = logger.WithTaskID(peer.PeerID)
-	}
 	return peer.logger
 }
 

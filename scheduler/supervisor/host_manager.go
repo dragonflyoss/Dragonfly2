@@ -16,12 +16,39 @@
 
 package supervisor
 
-type TaskMgr interface {
-	Add(task *Task)
+import (
+	"sync"
+)
 
-	Get(taskID string) (task *Task, ok bool)
+type HostManager interface {
+	Add(*Host)
 
-	Delete(taskID string)
+	Delete(string)
 
-	GetOrAdd(task *Task) (actual *Task, loaded bool)
+	Get(string) (*Host, bool)
+}
+
+type hostManager struct {
+	*sync.Map
+}
+
+func NewHostManager() HostManager {
+	return &hostManager{&sync.Map{}}
+}
+
+func (m *hostManager) Get(key string) (*Host, bool) {
+	host, ok := m.Load(key)
+	if !ok {
+		return nil, false
+	}
+
+	return host.(*Host), true
+}
+
+func (m *hostManager) Add(host *Host) {
+	m.Store(host.UUID, host)
+}
+
+func (m *hostManager) Delete(key string) {
+	m.Map.Delete(key)
 }

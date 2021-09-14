@@ -86,11 +86,11 @@ func (m *monitor) printDebugInfo() string {
 	for _, peer := range peers {
 		parentNode := ""
 		if peer.GetParent() != nil {
-			parentNode = peer.GetParent().PeerID
+			parentNode = peer.GetParent().ID
 		}
-		table.Append([]string{peer.PeerID, peer.Task.TaskID, peer.Task.URL[len(peer.Task.URL)-15 : len(peer.Task.URL)], parentNode, peer.GetStatus().String(),
+		table.Append([]string{peer.ID, peer.Task.TaskID, peer.Task.URL[len(peer.Task.URL)-15 : len(peer.Task.URL)], parentNode, peer.GetStatus().String(),
 			peer.CreateTime.String(), strconv.Itoa(int(peer.GetFinishedNum())),
-			strconv.FormatBool(peer.IsSuccess()), strconv.Itoa(peer.Host.GetFreeUploadLoad())})
+			strconv.FormatBool(peer.IsSuccess()), strconv.Itoa(int(peer.Host.GetFreeUploadLoad()))})
 	}
 	table.Render()
 
@@ -102,9 +102,9 @@ func (m *monitor) printDebugInfo() string {
 		if node == nil {
 			return
 		}
-		nPath := append(path, fmt.Sprintf("%s(%d)(%s)", node.PeerID, node.GetWholeTreeNode(), node.GetStatus()))
+		nPath := append(path, fmt.Sprintf("%s(%d)(%s)", node.ID, node.GetWholeTreeNode(), node.GetStatus()))
 		if len(path) >= 1 {
-			msgs = append(msgs, node.PeerID+" || "+strings.Join(nPath, "-"))
+			msgs = append(msgs, node.ID+" || "+strings.Join(nPath, "-"))
 		}
 		node.GetChildren().Range(func(key, value interface{}) bool {
 			child := (value).(*supervisor.Peer)

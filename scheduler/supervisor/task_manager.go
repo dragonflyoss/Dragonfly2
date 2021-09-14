@@ -14,26 +14,35 @@
  * limitations under the License.
  */
 
-package task
+package supervisor
 
 import (
 	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
-type manager struct {
-	peerManager              supervisor.PeerMgr
+type TaskManager interface {
+	Add(task *Task)
+
+	Get(taskID string) (task *Task, ok bool)
+
+	Delete(taskID string)
+
+	GetOrAdd(task *Task) (actual *Task, loaded bool)
+}
+
+type taskManager struct {
+	peerManager              PeerManager
 	cleanupExpiredTaskTicker *time.Ticker
 	taskTTL                  time.Duration
 	taskTTI                  time.Duration
 	taskMap                  sync.Map
 }
 
-func NewManager(cfg *config.GCConfig, peerManager supervisor.PeerMgr) supervisor.TaskMgr {
-	m := &manager{
+func NewTaskManager(cfg *config.GCConfig, peerManager PeerManager) TaskManager {
+	m := &taskManager{
 		peerManager:              peerManager,
 		cleanupExpiredTaskTicker: time.NewTicker(cfg.TaskGCInterval),
 		taskTTL:                  cfg.TaskTTL,
@@ -43,52 +52,50 @@ func NewManager(cfg *config.GCConfig, peerManager supervisor.PeerMgr) supervisor
 	return m
 }
 
-var _ supervisor.TaskMgr = (*manager)(nil)
-
-func (m *manager) Delete(taskID string) {
+func (m *taskManager) Delete(taskID string) {
 	m.taskMap.Delete(taskID)
 }
 
-func (m *manager) Add(task *supervisor.Task) {
+func (m *taskManager) Add(task *Task) {
 	m.taskMap.Store(task.TaskID, task)
 }
 
-func (m *manager) Get(taskID string) (task *supervisor.Task, ok bool) {
+func (m *taskManager) Get(taskID string) (task *Task, ok bool) {
 	item, ok := m.taskMap.Load(taskID)
 	if !ok {
 		return nil, false
 	}
-	return item.(*supervisor.Task), true
+	return item.(*Task), true
 }
 
-func (m *manager) GetOrAdd(task *supervisor.Task) (actual *supervisor.Task, loaded bool) {
+func (m *taskManager) GetOrAdd(task *Task) (actual *Task, loaded bool) {
 	item, loaded := m.taskMap.LoadOrStore(task.TaskID, task)
 	if loaded {
-		return item.(*supervisor.Task), true
+		return item.(*Task), true
 	}
 	return task, false
 }
 
-func (m *manager) cleanupTasks() {
+func (m *taskManager) cleanupTasks() {
 	for range m.cleanupExpiredTaskTicker.C {
 		m.taskMap.Range(func(key, value interface{}) bool {
 			taskID := key.(string)
-			task := value.(*supervisor.Task)
+			task := value.(*Task)
 			elapse := time.Since(task.GetLastAccessTime())
 			if elapse > m.taskTTI && task.IsSuccess() {
 				task.Log().Info("elapse larger than taskTTI, task status become zombie")
-				task.SetStatus(supervisor.TaskStatusZombie)
+				task.SetStatus(TaskStatusZombie)
 			}
 			if task.ListPeers().Size() == 0 {
 				task.Log().Info("peers is empty, task status become waiting")
-				task.SetStatus(supervisor.TaskStatusWaiting)
+				task.SetStatus(TaskStatusWaiting)
 			}
 			if elapse > m.taskTTL {
 				// TODO lock
 				peers := m.peerManager.ListPeersByTask(taskID)
 				for _, peer := range peers {
-					task.Log().Infof("delete peer %s because task is time to leave", peer.PeerID)
-					m.peerManager.Delete(peer.PeerID)
+					task.Log().Infof("delete peer %s because task is time to leave", peer.ID)
+					m.peerManager.Delete(peer.ID)
 				}
 				task.Log().Info("delete task because elapse larger than task TTL")
 				m.Delete(taskID)

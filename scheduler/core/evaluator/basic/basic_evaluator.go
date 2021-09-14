@@ -39,17 +39,17 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
 	}
 
 	if peer.GetParent() == nil && !peer.IsDone() {
-		logger.Debugf("peer %s need adjust parent because it has not parent and status is %s", peer.PeerID, peer.GetStatus())
+		logger.Debugf("peer %s need adjust parent because it has not parent and status is %s", peer.ID, peer.GetStatus())
 		return true
 	}
 	// TODO Check whether the parent node is in the blacklist
 	if peer.GetParent() != nil && eval.IsBadNode(peer.GetParent()) {
-		logger.Debugf("peer %s need adjust parent because it current parent is bad", peer.PeerID)
+		logger.Debugf("peer %s need adjust parent because it current parent is bad", peer.ID)
 		return true
 	}
 
 	if peer.GetParent() != nil && peer.GetParent().IsLeave() {
-		logger.Debugf("peer %s need adjust parent because it current parent is status is leave", peer.PeerID)
+		logger.Debugf("peer %s need adjust parent because it current parent is status is leave", peer.ID)
 		return true
 	}
 
@@ -61,7 +61,7 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
 	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
 	// TODO adjust policy
 	if (avgCost * 20) < lastCost {
-		logger.Debugf("peer %s need adjust parent because it latest download cost is too time consuming", peer.PeerID)
+		logger.Debugf("peer %s need adjust parent because it latest download cost is too time consuming", peer.ID)
 		return true
 	}
 	return false
@@ -69,7 +69,7 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
 
 func (eval *baseEvaluator) IsBadNode(peer *supervisor.Peer) bool {
 	if peer.IsBad() {
-		logger.Debugf("peer %s is bad because it's status is %s", peer.PeerID, peer.GetStatus())
+		logger.Debugf("peer %s is bad because it's status is %s", peer.ID, peer.GetStatus())
 		return true
 	}
 	costHistory := peer.GetCostHistory()
@@ -80,7 +80,7 @@ func (eval *baseEvaluator) IsBadNode(peer *supervisor.Peer) bool {
 	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
 
 	if avgCost*40 < lastCost && !peer.Host.CDN {
-		logger.Debugf("peer %s is bad because recent pieces have taken too long to download avg[%d] last[%d]", peer.PeerID, avgCost, lastCost)
+		logger.Debugf("peer %s is bad because recent pieces have taken too long to download avg[%d] last[%d]", peer.ID, avgCost, lastCost)
 		return true
 	}
 

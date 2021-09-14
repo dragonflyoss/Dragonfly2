@@ -66,7 +66,7 @@ func (builder *basicSchedulerBuilder) Name() string {
 
 type Scheduler struct {
 	evaluator   evaluator.Evaluator
-	peerManager supervisor.PeerMgr
+	peerManager supervisor.PeerManager
 	cfg         *config.SchedulerConfig
 }
 
@@ -76,7 +76,7 @@ func (s *Scheduler) ScheduleChildren(peer *supervisor.Peer, blankChildren sets.S
 		return
 	}
 	freeUpload := peer.Host.GetFreeUploadLoad()
-	candidateChildren := s.selectCandidateChildren(peer, freeUpload*2, blankChildren)
+	candidateChildren := s.selectCandidateChildren(peer, int(freeUpload)*2, blankChildren)
 	if len(candidateChildren) == 0 {
 		return nil
 	}
@@ -127,7 +127,7 @@ func (s *Scheduler) ScheduleParent(peer *supervisor.Peer, blankParents sets.Stri
 	var evalScore []float64
 	for _, parent := range candidateParents {
 		score := s.evaluator.Evaluate(parent, peer)
-		peer.Log().Debugf("evaluate score candidate %s is %f", parent.PeerID, score)
+		peer.Log().Debugf("evaluate score candidate %s is %f", parent.ID, score)
 		evalResult[score] = append(evalResult[score], parent)
 		evalScore = append(evalScore, score)
 	}
@@ -139,7 +139,7 @@ func (s *Scheduler) ScheduleParent(peer *supervisor.Peer, blankParents sets.Stri
 	if parents[0] != peer.GetParent() {
 		peer.ReplaceParent(parents[0])
 	}
-	peer.Log().Debugf("primary parent %s is selected", parents[0].PeerID)
+	peer.Log().Debugf("primary parent %s is selected", parents[0].ID)
 	return parents[0], parents[1:], true
 }
 
@@ -152,54 +152,54 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int, bl
 			peer.Log().Debugf("******candidate child peer is not selected because it is nil******")
 			return false
 		}
-		if blankChildren != nil && blankChildren.Has(candidateNode.PeerID) {
-			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("******candidate child peer is not selected because it in blank children set******")
+		if blankChildren != nil && blankChildren.Has(candidateNode.ID) {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.ID).Debugf("******candidate child peer is not selected because it in blank children set******")
 			return false
 		}
 		if candidateNode.IsDone() {
-			peer.Log().Debugf("******candidate child peer %s is not selected because it has done******", candidateNode.PeerID)
+			peer.Log().Debugf("******candidate child peer %s is not selected because it has done******", candidateNode.ID)
 			return false
 		}
 		if candidateNode.IsLeave() {
-			peer.Log().Debugf("******candidate child peer %s is not selected because it has left******", candidateNode.PeerID)
+			peer.Log().Debugf("******candidate child peer %s is not selected because it has left******", candidateNode.ID)
 			return false
 		}
 		if candidateNode.IsWaiting() {
-			peer.Log().Debugf("******candidate child peer %s is not selected because it's status is Waiting******", candidateNode.PeerID)
+			peer.Log().Debugf("******candidate child peer %s is not selected because it's status is Waiting******", candidateNode.ID)
 			return false
 		}
 		if candidateNode == peer {
-			peer.Log().Debugf("******candidate child peer %s is not selected because it and peer are the same******", candidateNode.PeerID)
+			peer.Log().Debugf("******candidate child peer %s is not selected because it and peer are the same******", candidateNode.ID)
 			return false
 		}
 		if candidateNode.IsAncestorOf(peer) {
-			peer.Log().Debugf("******candidate child peer %s is not selected because peer's ancestor is candidate peer******", candidateNode.PeerID)
+			peer.Log().Debugf("******candidate child peer %s is not selected because peer's ancestor is candidate peer******", candidateNode.ID)
 			return false
 		}
 		if candidateNode.GetFinishedNum() >= peer.GetFinishedNum() {
 			peer.Log().Debugf("******candidate child peer %s is not selected because it finished number of download is equal to or greater than peer's"+
-				"******", candidateNode.PeerID)
+				"******", candidateNode.ID)
 			return false
 		}
 		if candidateNode.Host != nil && candidateNode.Host.CDN {
-			peer.Log().Debugf("******candidate child peer %s is not selected because it is a cdn host******", candidateNode.PeerID)
+			peer.Log().Debugf("******candidate child peer %s is not selected because it is a cdn host******", candidateNode.ID)
 			return false
 		}
 		if !candidateNode.IsConnected() {
-			peer.Log().Debugf("******candidate child peer %s is not selected because it is not connected******", candidateNode.PeerID)
+			peer.Log().Debugf("******candidate child peer %s is not selected because it is not connected******", candidateNode.ID)
 			return false
 		}
 		if candidateNode.GetParent() == nil {
-			peer.Log().Debugf("******[selected]candidate child peer %s is selected because it has not parent[selected]******", candidateNode.PeerID)
+			peer.Log().Debugf("******[selected]candidate child peer %s is selected because it has not parent[selected]******", candidateNode.ID)
 			return true
 		}
 
 		if candidateNode.GetParent() != nil && s.evaluator.IsBadNode(candidateNode.GetParent()) {
 			peer.Log().Debugf("******[selected]candidate child peer %s is selected because parent's status is not health[selected]******",
-				candidateNode.PeerID)
+				candidateNode.ID)
 			return true
 		}
-		peer.Log().Debugf("******[default]candidate child peer %s is selected[default]******", candidateNode.PeerID)
+		peer.Log().Debugf("******[default]candidate child peer %s is selected[default]******", candidateNode.ID)
 		return true
 	})
 	return
@@ -219,46 +219,46 @@ func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int, bla
 			peer.Log().Debugf("++++++candidate parent peer is not selected because it is nil++++++")
 			return false
 		}
-		if blankParents != nil && blankParents.Has(candidateNode.PeerID) {
-			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("++++++candidate parent peer is not selected because it in blank parent set++++++")
+		if blankParents != nil && blankParents.Has(candidateNode.ID) {
+			logger.WithTaskAndPeerID(peer.Task.TaskID, peer.ID).Debugf("++++++candidate parent peer is not selected because it in blank parent set++++++")
 			return false
 		}
 		if s.evaluator.IsBadNode(candidateNode) {
 			peer.Log().Debugf("++++++candidate parent peer %s is not selected because it is badNode++++++",
-				candidateNode.PeerID)
+				candidateNode.ID)
 			return false
 		}
 		if candidateNode.IsLeave() {
 			peer.Log().Debugf("++++++candidate parent peer %s is not selected because it has already left++++++",
-				candidateNode.PeerID)
+				candidateNode.ID)
 			return false
 		}
 		if candidateNode == peer {
 			peer.Log().Debugf("++++++candidate parent peer %s is not selected because it and peer are the same++++++",
-				candidateNode.PeerID)
+				candidateNode.ID)
 			return false
 		}
 		if candidateNode.IsDescendantOf(peer) {
 			peer.Log().Debugf("++++++candidate parent peer %s is not selected because it's ancestor is peer++++++",
-				candidateNode.PeerID)
+				candidateNode.ID)
 			return false
 		}
 		if candidateNode.Host.GetFreeUploadLoad() <= 0 {
 			peer.Log().Debugf("++++++candidate parent peer %s is not selected because it's free upload load equal to less than zero++++++",
-				candidateNode.PeerID)
+				candidateNode.ID)
 			return false
 		}
 		if candidateNode.IsWaiting() {
 			peer.Log().Debugf("++++++candidate parent peer %s is not selected because it's status is waiting++++++",
-				candidateNode.PeerID)
+				candidateNode.ID)
 			return false
 		}
 		if candidateNode.GetFinishedNum() <= peer.GetFinishedNum() {
 			peer.Log().Debugf("++++++candidate parent peer %s is not selected because it finished number of download is equal to or smaller than peer's"+
-				"++++++", candidateNode.PeerID)
+				"++++++", candidateNode.ID)
 			return false
 		}
-		peer.Log().Debugf("++++++[default]candidate parent peer %s is selected[default]", candidateNode.PeerID)
+		peer.Log().Debugf("++++++[default]candidate parent peer %s is selected[default]", candidateNode.ID)
 		return true
 	})
 	return

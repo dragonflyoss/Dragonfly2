@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cdn
+package supervisor
 
 import (
 	"context"
@@ -22,59 +22,58 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"sync"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
 )
 
 var (
 	ErrCDNClientUninitialized = errors.New("cdn client is not initialized")
-
-	ErrCDNRegisterFail = errors.New("cdn task register failed")
-
-	ErrCDNDownloadFail = errors.New("cdn task download failed")
-
-	ErrCDNUnknown = errors.New("cdn obtain seed encounter unknown err")
-
-	ErrCDNInvokeFail = errors.New("invoke cdn interface failed")
-
-	ErrInitCDNPeerFail = errors.New("init cdn peer failed")
+	ErrCDNRegisterFail        = errors.New("cdn task register failed")
+	ErrCDNDownloadFail        = errors.New("cdn task download failed")
+	ErrCDNUnknown             = errors.New("cdn obtain seed encounter unknown err")
+	ErrCDNInvokeFail          = errors.New("invoke cdn interface failed")
+	ErrInitCDNPeerFail        = errors.New("init cdn peer failed")
 )
 
-var tracer trace.Tracer
+var tracer = otel.Tracer("scheduler-cdn")
 
-func init() {
-	tracer = otel.Tracer("scheduler-cdn")
+type CDNManager interface {
+	// StartSeedTask start seed cdn task
+	StartSeedTask(ctx context.Context, task *Task) (*Peer, error)
 }
 
-type manager struct {
-	client      RefreshableCDNClient
-	peerManager supervisor.PeerMgr
-	hostManager supervisor.HostMgr
-	lock        sync.RWMutex
+type cdnManager struct {
+	client      CDNDynmaicClient
+	peerManager PeerManager
+	hostManager HostManager
 }
 
-func NewManager(cdnClient RefreshableCDNClient, peerManager supervisor.PeerMgr, hostManager supervisor.HostMgr) (supervisor.CDNMgr, error) {
-	mgr := &manager{
-		client:      cdnClient,
+func NewCDNManager(client CDNDynmaicClient, peerManager PeerManager, hostManager HostManager) CDNManager {
+	return &cdnManager{
+		client:      client,
 		peerManager: peerManager,
 		hostManager: hostManager,
 	}
-	return mgr, nil
 }
 
-func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*supervisor.Peer, error) {
+func (cm *cdnManager) StartSeedTask(ctx context.Context, task *Task) (*Peer, error) {
 	logger.Infof("start seed task %s", task.TaskID)
 	defer logger.Infof("finish seed task %s, task status is %s", task.TaskID, task.GetStatus())
+
 	var seedSpan trace.Span
 	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDNSeed)
 	defer seedSpan.End()
@@ -84,12 +83,14 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*s
 		UrlMeta: task.URLMeta,
 	}
 	seedSpan.SetAttributes(config.AttributeCDNSeedRequest.String(seedRequest.String()))
+
 	if cm.client == nil {
 		err := ErrCDNClientUninitialized
 		seedSpan.RecordError(err)
 		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
 		return nil, err
 	}
+
 	stream, err := cm.client.ObtainSeeds(trace.ContextWithSpan(context.Background(), seedSpan), seedRequest)
 	if err != nil {
 		seedSpan.RecordError(err)
@@ -107,17 +108,19 @@ func (cm *manager) StartSeedTask(ctx context.Context, task *supervisor.Task) (*s
 		}
 		return nil, errors.Wrapf(ErrCDNInvokeFail, "obtain seeds from cdn: %v", err)
 	}
+
 	return cm.receivePiece(ctx, task, stream)
 }
 
-func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stream *client.PieceSeedStream) (*supervisor.Peer, error) {
+func (cm *cdnManager) receivePiece(ctx context.Context, task *Task, stream *client.PieceSeedStream) (*Peer, error) {
 	span := trace.SpanFromContext(ctx)
 	var initialized bool
-	var cdnPeer *supervisor.Peer
+	var cdnPeer *Peer
+
 	for {
 		piece, err := stream.Recv()
 		if err == io.EOF {
-			if task.GetStatus() == supervisor.TaskStatusSuccess {
+			if task.GetStatus() == TaskStatusSuccess {
 				span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
 				return cdnPeer, nil
 			}
@@ -140,9 +143,9 @@ func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stre
 		}
 		if piece != nil {
 			if !initialized {
-				cdnPeer, err = cm.initCdnPeer(ctx, task, piece)
+				cdnPeer, err = cm.initCDNPeer(ctx, task, piece)
 				if !task.CanSchedule() {
-					task.SetStatus(supervisor.TaskStatusSeeding)
+					task.SetStatus(TaskStatusSeeding)
 				}
 				initialized = true
 			}
@@ -154,9 +157,9 @@ func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stre
 			if piece.Done {
 				task.PieceTotal = piece.TotalPieceCount
 				task.ContentLength = piece.ContentLength
-				task.SetStatus(supervisor.TaskStatusSuccess)
-				cdnPeer.SetStatus(supervisor.PeerStatusSuccess)
-				if task.ContentLength <= supervisor.TinyFileSize {
+				task.SetStatus(TaskStatusSuccess)
+				cdnPeer.SetStatus(PeerStatusSuccess)
+				if task.ContentLength <= TinyFileSize {
 					content, er := cm.DownloadTinyFileContent(ctx, task, cdnPeer.Host)
 					if er == nil && len(content) == int(task.ContentLength) {
 						task.DirectPiece = content
@@ -172,42 +175,126 @@ func (cm *manager) receivePiece(ctx context.Context, task *supervisor.Task, stre
 	}
 }
 
-func (cm *manager) initCdnPeer(ctx context.Context, task *supervisor.Task, ps *cdnsystem.PieceSeed) (*supervisor.Peer, error) {
+func (cm *cdnManager) initCDNPeer(ctx context.Context, task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent(config.EventCreateCDNPeer)
+
+	var host *Host
 	var ok bool
-	var cdnHost *supervisor.PeerHost
-	cdnPeer, ok := cm.peerManager.Get(ps.PeerId)
+	peer, ok := cm.peerManager.Get(ps.PeerId)
 	if !ok {
-		if cdnHost, ok = cm.hostManager.Get(ps.HostUuid); !ok {
-			if cdnHost, ok = cm.client.GetCDNHost(ps.HostUuid); !ok {
+		if host, ok = cm.hostManager.Get(ps.HostUuid); !ok {
+			if host, ok = cm.client.GetHost(ps.HostUuid); !ok {
 				logger.Errorf("cannot find cdn host %s", ps.HostUuid)
 				return nil, errors.Wrapf(ErrInitCDNPeerFail, "cannot find host %s", ps.HostUuid)
 			}
-			cm.hostManager.Add(cdnHost)
+			cm.hostManager.Add(host)
 		}
-		cdnPeer = supervisor.NewPeer(ps.PeerId, task, cdnHost)
+		peer = NewPeer(ps.PeerId, task, host)
 	}
-	cdnPeer.SetStatus(supervisor.PeerStatusRunning)
-	cm.peerManager.Add(cdnPeer)
-	return cdnPeer, nil
+
+	peer.SetStatus(PeerStatusRunning)
+	cm.peerManager.Add(peer)
+	return peer, nil
 }
 
-func (cm *manager) DownloadTinyFileContent(ctx context.Context, task *supervisor.Task, cdnHost *supervisor.PeerHost) ([]byte, error) {
-	span := trace.SpanFromContext(ctx)
-	// http://host:port/download/{taskId 前3位}/{taskId}?peerId={peerId};
+func (cm *cdnManager) DownloadTinyFileContent(ctx context.Context, task *Task, cdnHost *Host) ([]byte, error) {
+	// download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=scheduler;
+	// taskIndex is the first three characters of taskID
 	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
 		cdnHost.IP, cdnHost.DownloadPort, task.TaskID[:3], task.TaskID)
+
+	span := trace.SpanFromContext(ctx)
 	span.AddEvent(config.EventDownloadTinyFile, trace.WithAttributes(config.AttributeDownloadFileURL.String(url)))
-	response, err := http.Get(url)
+
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
-	content, err := ioutil.ReadAll(response.Body)
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	return content, nil
+	return data, nil
+}
+
+type CDNDynmaicClient interface {
+	cdnclient.CdnClient
+	config.Observer
+	GetHost(hostID string) (*Host, bool)
+}
+
+type cdnDynmaicClient struct {
+	cdnclient.CdnClient
+	hosts map[string]*Host
+	cdns  []*config.CDN
+	lock  sync.RWMutex
+}
+
+func NewCDNDynmaicClient(dynConfig config.DynconfigInterface, opts []grpc.DialOption) (CDNDynmaicClient, error) {
+	config, err := dynConfig.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := cdnclient.GetClientByAddr(cdnsToNetAddrs(config.CDNs), opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	dc := &cdnDynmaicClient{
+		CdnClient: client,
+		hosts:     cdnsToHosts(config.CDNs),
+		cdns:      config.CDNs,
+	}
+
+	dynConfig.Register(dc)
+	return dc, nil
+}
+
+func (dc *cdnDynmaicClient) GetHost(id string) (*Host, bool) {
+	dc.lock.RLock()
+	defer dc.lock.RUnlock()
+
+	cdnHost, ok := dc.hosts[id]
+	return cdnHost, ok
+}
+
+func (dc *cdnDynmaicClient) OnNotify(c *config.DynconfigData) {
+	dc.lock.Lock()
+	defer dc.lock.Unlock()
+
+	if reflect.DeepEqual(dc.cdns, c.CDNs) {
+		return
+	}
+	dc.hosts = cdnsToHosts(c.CDNs)
+	dc.UpdateState(cdnsToNetAddrs(c.CDNs))
+}
+
+// cdnsToHosts coverts []*config.CDN to map[string]*Host.
+func cdnsToHosts(cdns []*config.CDN) map[string]*Host {
+	hosts := make(map[string]*Host, len(cdns))
+	for _, cdn := range cdns {
+		id := idgen.CDN(cdn.HostName, cdn.Port)
+		hosts[id] = NewCDNHost(id, cdn.IP, cdn.HostName, cdn.Port, cdn.DownloadPort, cdn.SecurityGroup, cdn.Location,
+			cdn.IDC, cdn.NetTopology, cdn.LoadLimit)
+	}
+
+	return hosts
+}
+
+// cdnsToNetAddrs coverts []*config.CDN to []dfnet.NetAddr.
+func cdnsToNetAddrs(cdns []*config.CDN) []dfnet.NetAddr {
+	netAddrs := make([]dfnet.NetAddr, 0, len(cdns))
+	for _, cdn := range cdns {
+		netAddrs = append(netAddrs, dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: fmt.Sprintf("%s:%d", cdn.IP, cdn.Port),
+		})
+	}
+
+	return netAddrs
 }

@@ -32,10 +32,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
-	"d7y.io/dragonfly/v2/scheduler/supervisor/cdn"
-	"d7y.io/dragonfly/v2/scheduler/supervisor/host"
-	"d7y.io/dragonfly/v2/scheduler/supervisor/peer"
-	"d7y.io/dragonfly/v2/scheduler/supervisor/task"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/trace"
@@ -67,13 +63,13 @@ func WithDisableCDN(disableCDN bool) Option {
 
 type SchedulerService struct {
 	// cdn mgr
-	cdnManager supervisor.CDNMgr
+	cdnManager supervisor.CDNManager
 	// task mgr
-	taskManager supervisor.TaskMgr
+	taskManager supervisor.TaskManager
 	// host mgr
-	hostManager supervisor.HostMgr
+	hostManager supervisor.HostManager
 	// Peer mgr
-	peerManager supervisor.PeerMgr
+	peerManager supervisor.PeerManager
 
 	sched     scheduler.Scheduler
 	worker    worker
@@ -91,9 +87,9 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		op(ops)
 	}
 
-	hostManager := host.NewManager()
-	peerManager := peer.NewManager(cfg.GC, hostManager)
-	taskManager := task.NewManager(cfg.GC, peerManager)
+	hostManager := supervisor.NewHostManager()
+	peerManager := supervisor.NewPeerManager(cfg.GC, hostManager)
+	taskManager := supervisor.NewTaskManager(cfg.GC, peerManager)
 	sched, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
 		PeerManager: peerManager,
 	})
@@ -119,11 +115,12 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		if ops.openTel {
 			opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 		}
-		cdnClient, err := cdn.NewRefreshableCDNClient(dynConfig, opts)
+		client, err := supervisor.NewCDNDynmaicClient(dynConfig, opts)
 		if err != nil {
 			return nil, errors.Wrap(err, "new refreshable cdn client")
 		}
-		cdnManager, err := cdn.NewManager(cdnClient, peerManager, hostManager)
+
+		cdnManager := supervisor.NewCDNManager(client, peerManager, hostManager)
 		if err != nil {
 			return nil, errors.Wrap(err, "new cdn manager")
 		}
@@ -166,13 +163,13 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 			wsdq.Done(v)
 			if rsPeer.times > maxRescheduleTimes {
 				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times",
-					peer.PeerID)) == nil {
-					peer.Task.IncreaseBackSourcePeer(peer.PeerID)
+					peer.ID)) == nil {
+					peer.Task.IncreaseBackSourcePeer(peer.ID)
 				}
 				continue
 			}
-			if peer.Task.IsBackSourcePeer(peer.PeerID) {
-				logger.WithTaskAndPeerID(peer.Task.TaskID, peer.PeerID).Debugf("runReScheduleLoop: peer is back source client, no need to reschedule it")
+			if peer.Task.IsBackSourcePeer(peer.ID) {
+				logger.WithTaskAndPeerID(peer.Task.TaskID, peer.ID).Debugf("runReScheduleLoop: peer is back source client, no need to reschedule it")
 				continue
 			}
 			if peer.IsDone() || peer.IsLeave() {
@@ -211,7 +208,7 @@ func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID
 func (s *SchedulerService) SelectParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {
 	parent, _, hasParent := s.sched.ScheduleParent(peer, sets.NewString())
 	if !hasParent || parent == nil {
-		return nil, errors.Errorf("no parent peer available for peer %v", peer.PeerID)
+		return nil, errors.Errorf("no parent peer available for peer %v", peer.ID)
 	}
 	return parent, nil
 }
@@ -222,20 +219,20 @@ func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *supervisor.
 
 func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *supervisor.Task) *supervisor.Peer {
 	// get or create host
-	reqPeerHost := req.PeerHost
-	peerHost, ok := s.hostManager.Get(reqPeerHost.Uuid)
+	peerHost := req.PeerHost
+	host, ok := s.hostManager.Get(peerHost.Uuid)
 	if !ok {
-		peerHost = supervisor.NewClientPeerHost(reqPeerHost.Uuid, reqPeerHost.Ip, reqPeerHost.HostName, reqPeerHost.RpcPort, reqPeerHost.DownPort,
-			reqPeerHost.SecurityDomain, reqPeerHost.Location, reqPeerHost.Idc, reqPeerHost.NetTopology, s.config.ClientLoad)
-		s.hostManager.Add(peerHost)
+		host = supervisor.NewClientHost(peerHost.Uuid, peerHost.Ip, peerHost.HostName, peerHost.RpcPort, peerHost.DownPort,
+			peerHost.SecurityDomain, peerHost.Location, peerHost.Idc, peerHost.NetTopology, s.config.ClientLoad)
+		s.hostManager.Add(host)
 	}
 	// get or creat PeerTask
 	peer, ok := s.peerManager.Get(req.PeerId)
 	if ok {
-		logger.Warnf("peer %s has already registered", peer.PeerID)
+		logger.Warnf("peer %s has already registered", peer.ID)
 		return peer
 	}
-	peer = supervisor.NewPeer(req.PeerId, task, peerHost)
+	peer = supervisor.NewPeer(req.PeerId, task, host)
 	s.peerManager.Add(peer)
 	return peer
 }
