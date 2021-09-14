@@ -41,7 +41,7 @@ func (h *Handlers) CreatePreheat(ctx *gin.Context) {
 		return
 	}
 
-	preheat, err := h.Service.CreatePreheat(json)
+	preheat, err := h.service.CreatePreheat(json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -68,7 +68,7 @@ func (h *Handlers) GetPreheat(ctx *gin.Context) {
 		return
 	}
 
-	preheat, err := h.Service.GetPreheat(params.ID)
+	preheat, err := h.service.GetPreheat(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return

@@ -33,6 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
 
@@ -87,7 +88,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 	// Initialize REST server
 	restService := service.NewREST(db, cache, job, enforcer)
-	router, err := router.Init(cfg.Console, cfg.Verbose, cfg.Server.PublicPath, restService, enforcer)
+	router, err := router.Init(cfg, restService, enforcer)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +105,12 @@ func New(cfg *config.Config) (*Server, error) {
 
 	// Initialize GRPC server
 	grpcService := service.NewGRPC(db, cache, searcher)
-	grpcServer := grpc.NewServer()
+	var opts []grpc.ServerOption
+	if cfg.Options.Telemetry.Jaeger != "" {
+		opts = append(opts, grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	}
+
+	grpcServer := grpc.NewServer(opts...)
 	manager.RegisterManagerServer(grpcServer, grpcService)
 
 	return &Server{

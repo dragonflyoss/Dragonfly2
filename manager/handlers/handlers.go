@@ -26,11 +26,13 @@ import (
 )
 
 type Handlers struct {
-	Service service.REST
+	service service.REST
 }
 
 func New(service service.REST) *Handlers {
-	return &Handlers{Service: service}
+	return &Handlers{
+		service: service,
+	}
 }
 
 func (h *Handlers) setPaginationDefault(page, perPage *int) {

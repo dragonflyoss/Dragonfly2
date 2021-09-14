@@ -41,7 +41,7 @@ func (h *Handlers) CreateOauth(ctx *gin.Context) {
 		return
 	}
 
-	oauth, err := h.Service.CreateOauth(json)
+	oauth, err := h.service.CreateOauth(json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -68,7 +68,7 @@ func (h *Handlers) DestroyOauth(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.Service.DestroyOauth(params.ID); err != nil {
+	if err := h.service.DestroyOauth(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -101,7 +101,7 @@ func (h *Handlers) UpdateOauth(ctx *gin.Context) {
 		return
 	}
 
-	oauth, err := h.Service.UpdateOauth(params.ID, json)
+	oauth, err := h.service.UpdateOauth(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -128,7 +128,7 @@ func (h *Handlers) GetOauth(ctx *gin.Context) {
 		return
 	}
 
-	oauth, err := h.Service.GetOauth(params.ID)
+	oauth, err := h.service.GetOauth(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -157,13 +157,13 @@ func (h *Handlers) GetOauths(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	oauth, err := h.Service.GetOauths(query)
+	oauth, err := h.service.GetOauths(query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.Service.OauthTotalCount(query)
+	totalCount, err := h.service.OauthTotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return

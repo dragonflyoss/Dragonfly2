@@ -14,24 +14,10 @@
  * limitations under the License.
  */
 
-package handlers
+package config
 
-import (
-	"net/http"
+import "go.opentelemetry.io/otel/attribute"
 
-	"github.com/gin-gonic/gin"
+const (
+	AttributeID = attribute.Key("d7y.manager.id")
 )
-
-// @Summary Get Permissions
-// @Description Get Permissions
-// @Tags Permission
-// @Produce json
-// @Success 200 {object} []rbac.Permission
-// @Failure 400
-// @Failure 500
-// @Router /permissions [get]
-func (h *Handlers) GetPermissions(g *gin.Engine) func(ctx *gin.Context) {
-	return func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, h.service.GetPermissions(g))
-	}
-}

@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package handlers
+package middlewares
 
 import (
-	"net/http"
-
+	"d7y.io/dragonfly/v2/manager/config"
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
 )
 
-// @Summary Get Permissions
-// @Description Get Permissions
-// @Tags Permission
-// @Produce json
-// @Success 200 {object} []rbac.Permission
-// @Failure 400
-// @Failure 500
-// @Router /permissions [get]
-func (h *Handlers) GetPermissions(g *gin.Engine) func(ctx *gin.Context) {
-	return func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, h.service.GetPermissions(g))
+const (
+	TracerName = "dragonfly-manager-rest"
+)
+
+func Tracer() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tracer := otel.Tracer(TracerName)
+		_, span := tracer.Start(c.Request.Context(), c.HandlerName())
+		span.SetAttributes(config.AttributeID.Float64(c.GetFloat64("id")))
+		defer span.End()
+		c.Next()
 	}
 }
